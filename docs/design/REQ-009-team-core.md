@@ -1,9 +1,10 @@
 # REQ-009 — проект кода: ядро Sai Team (журнал, состояние, хранение, писатель, восстановление, чтение, роли, язык)
 
-WF-02, шаг 1 (CODE-DESIGNER), прогон `PROD-20261006-01`. Редакция **r1** — доработка по FAIL ворот
-(`handoffs/PROD-20261006-01/step-04b-code-design-validator.json`, замечания F1–F16) и решениям ORCH в
-`handoffs/PROD-20261006-01/step-04-code-designer-r1.json`; первая редакция (r0) —
-`handoffs/PROD-20261006-01/step-04-code-designer.json`. Требование — блок REQ-009 в `docs/requirements.yaml` (15
+WF-02, шаг 1 (CODE-DESIGNER), прогон `PROD-20261006-01`. Редакция **r2** — доработка по FAIL повторных ворот
+(`handoffs/PROD-20261006-01/step-04b-code-design-validator-r1.json`, замечания N1–N10) и решениям ORCH в
+`handoffs/PROD-20261006-01/step-04-code-designer-r2.json`; редакция r1 — по замечаниям F1–F16
+(`handoffs/PROD-20261006-01/step-04b-code-design-validator.json`, `handoffs/PROD-20261006-01/step-04-code-designer-r1.json`);
+первая редакция (r0) — `handoffs/PROD-20261006-01/step-04-code-designer.json`. Требование — блок REQ-009 в `docs/requirements.yaml` (15
 критериев). Решение — `decisions/0015-product-virtual-team-start.md` (D-A…D-F). Следующие требования, ради которых здесь
 одним местом зафиксированы схема события, каталог типов, редьюсер, раскладка папки проекта и язык: REQ-010
 (исполнители), REQ-013 (движок), зарезервированные REQ-011 (бизнес-интерфейс) и REQ-012 (Pixel Office как зеркало).
@@ -18,6 +19,15 @@ F2 — п. 4.1, 6.5 (потолок ≥ 0, 0 = нет потолка), TM-60; F3
 (имя по шаблону, без маскирования), TM-58, P8; F11 — п. 6.3 (права после замка и проверки журнала), TM-61; F12 — ссылки
 на тесты в п. 4, 8, 9; F13 — п. 6.4, 10.3, 12 (тексты `E_DISK`); F14 — п. 17, 19 (I3: `E_PROJECT_BUSY`); F15 — п. 6.5;
 F16 — п. 19 (P10). Сценарий scripted — п. 4.1 (`scenario_file`), 6.5, TM-59 (решение ORCH по вопросу ворот).
+
+Что изменено в r2: N1 — п. 15.1 (вступление, TM-13, TM-14, TM-45, TM-47), п. 15.3 (режим библиотеки `fault-inject.js`:
+`installFaults`, `withFaults`, восстановление); N2 — п. 4.1 (`PROJECT_PAUSED`, `PROJECT_RESUMED`, `PROJECT_RECOVERED`),
+5.1 (`paused_by` вместо `recovered`), 5.2 (И13), 5.3, 6.3 (шаг 8.6, связь с REQ-013), 10.2 (`pause`), 12, TM-19, TM-54,
+п. 17, P11; N3 — п. 4.1 (`MEMORY_ADDED.executor`), 5.2 (И12), 6.4 (`addMemory`), TM-53, п. 17; N4 — п. 4 (вступление),
+4.1, 4.2, 6.4 (шаг 2), 11 (`EVENT_TYPES`), TM-08, п. 16 (R2); N5 — п. 6.7 (шаг 4), 14, TM-50, п. 19 (I5, I6, P8, P9);
+N6 — TM-14, п. 12; N7 — п. 15.1 (абзац после таблицы), п. 19 (I2, I4 удалены), п. 16 (Q12); N8 — п. 4.2
+(`TASK_WAITING_USER`), 5.2 (И19), TM-55; N9 — п. 6.5 (`scenario_bytes`), TM-59, п. 17; N10 — п. 2.1 (`PROJECT_ENTRIES`),
+TM-03, п. 17.
 
 ## 0. Проверенные факты (до проекта, своими запусками)
 
