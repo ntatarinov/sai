@@ -1,0 +1,107 @@
+{
+  "handoff_id": "step02-r2-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r2.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0002",
+    "agent_run_id": "a9a62593eb3aa3478",
+    "rework_of": "handoffs/ISS-0002-20260930-01/step-02-code-designer.json",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-02b-req-validator.json",
+      "docs/design/REQ-002-idea-verdict.md"
+    ],
+    "why": "Before CODE-DESIGN-VALIDATOR: REQ-VALIDATOR (step 02b) ruled that criterion 11 keeps two clauses the design's §9 does not test yet, and confirmed both are testable on this Mac with a probe.",
+    "parallel_work_now": "REQ-ANALYST is reworking REQ-002 criterion 11 in docs/requirements.yaml (Fix A: any entry at the run-folder path is E_USAGE exit 2, P12; 'not a regular file' applies to apply-verdict targets only). Do not edit requirements.yaml."
+  },
+  "task": {
+    "description": "Update design v4 §9 (and §5/§4.1 only if needed): add a W row for a target that is not a regular file (fifo; socket via chdir and a relative name because of the 104-byte macOS limit) run with a spawn timeout, and P13 — SIGKILL in the middle of writing run.json for prepare-run; check §9 and §4.1/§6 against criterion 11 as being reworked (Fix A, P12 E_USAGE exit 2). Design docs only.",
+    "acceptance_criteria": [
+      "new rows mapped in §9 with their checks",
+      "result.changes lists sections changed",
+      "no implementation code"
+    ]
+  },
+  "created_at": "2026-10-01T01:49:12Z",
+  "started_at": "2026-10-01T01:49:12Z",
+  "completed_at": "2026-10-01T02:31:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-03 step 2 round 2 for ISS-0002. Design only: the one project file changed is docs/design/REQ-002-idea-verdict.md (version 4, round 2). docs/requirements.yaml, tools/ and every other file are untouched. Next: CODE-DESIGN-VALIDATOR.\n\nWHAT CHANGED\n- W51: RF, apply-report.json is a fifo -> 'E_WRITE <R>/apply-report.json: is not a regular file (EINVAL); nothing was changed'. Every CLI spawn now has a 10 s timeout, so the pre-fix run (which hangs reading the fifo) fails on A1 instead of hanging the suite.\n- W52: RR, proposed-actions.json is a unix socket -> the same line for that target. The socket is made by a child node process started with cwd = the target folder, listening on the relative name and exiting at once. The socket file stays, and no chdir happens in the test process.\n- P13: SIGKILL in the middle of writing run.json (partial-kill). K1 SIGKILL; K2 <R> absent; K3 the next prepare-run with the same args exits 1 with exactly the leftover line for runs/.WF06-20260925-01.sai-tmp; K4 delete it, then A6.\n- P14: SIGKILL at the commit point (the rename of the temp folder; on the pre-fix code, the write of run.json). Same checks.\n- L09: tree() lists a fifo and a socket as type 'o', never opens them, and finishes inside a timeout. Mutant M18 (read before the type check) must fail W51 and W52; M13 and M16 now also name P13 and L09.\n- 9.1 got a table 'criterion 11, part by part -> tests'. I checked it against the live criterion 11 (REQ-002 block 39 lines, 99b10223...; file 4450091a...), the same text REQ-VALIDATOR r2 passed at 02:11Z. Every part maps to named rows: targets of both commands; each variant (apply-verdict target folder/link/not-regular W06-W12, W51, W52; path link W13; prepare-run path link P04 and file P03); read-only; leftovers; any OS error; both exceptions; SIGKILL for both commands (W47, W48, P13, P14); the P12 carve-out; convergence with the same args (A6 and K4).\n- Fix A alignment: 4.1, 6 and 9 already said that any entry at the run-folder path is E_USAGE, exit 2 (P12). Wording now names any file type (fifo, socket) and states that 'not a regular file' is a rule for apply-verdict targets only (4.1 and the 6 E_WRITE row).\n- Round-1 validator notes fixed: W46's A6 (the first re-run gives changed === 0); 5.2 item 3 states convergence in bytes with the same args, the same --created-at for prepare-run, output 'applied' or 'unchanged'; 7 lists --created-at; the criterion-3 row in 9 names prepare.write.test.js for prepare-run's E_WRITE.\n\nEVIDENCE I PRODUCED (pre-fix copy, scratch .../scratchpad/cd-iss0002/probe-r2/, 2026-10-01)\n- W51: status null, SIGTERM, ETIMEDOUT after 4008 ms with a 4 s timeout; STATE.md already changed, proposed-actions.json created.\n- W52: exit 1, 'Unknown system error -102 ... open', 8 trace lines, STATE.md changed, apply-report.json untouched.\n- P13: <R> left with all copies and run.json at 517 of 1035 bytes. P14: <R> left with copies and no run.json.\n- The fixture target path is 108 bytes under this Mac's normal TMPDIR (getconf DARWIN_USER_TEMP_DIR is 49 bytes) and 187 bytes in an agent scratch TMPDIR. Both are over macOS's 104-byte socket limit, so the relative name is always needed.\n- A socket created by a child process persists after the child exits, even at a 279-byte absolute path; reading it fails the same way as with a live server.\n- server.close() after returning to the previous cwd did NOT remove the socket file. Node unlinks the relative name in the wrong folder, which could hit a same-named file in tools/. This is why the design uses a child process instead of chdir in the test process.\n\nOPEN ITEMS FOR ORCH (unchanged from round 1 unless noted)\n1. decisions/ entry for the write strategy (Q12): ORCH scheduled it after design validation, before implementation (REQ-VALIDATOR r2).\n2. ISS-0003 text: its cases a and e are closed by this design (W19, P03).\n3. WF-06 and verdict-executor.md do not say what to do on E_WRITE or leftovers; outside this run's write set.\n4. validate reads through a symlinked run folder: register or accept (Q11).\n5. TEST-DESIGNER and TEST-DESIGN-VALIDATOR must be on the route (9.7). On the pre-fix copy, W51 runs to its 10 s timeout.\n\nNo agent events written (R2).",
+    "changes": [
+      {
+        "section": "Header",
+        "change": "Round-2 note: what was added and why (REQ-VALIDATOR step 02b, ORCH Fix A and F2-F4)."
+      },
+      {
+        "section": "4.1",
+        "change": "Any entry at the run-folder path, of any file type (fifo, socket) or a link, even a broken one, is E_USAGE, exit 2 (P12); 'target is not a regular file' applies to apply-verdict targets only."
+      },
+      {
+        "section": "5.1 (D7 row)",
+        "change": "Points to REQ-002 criterion 11 (added from the 12 proposal, reworked per Fix A and F2-F4) instead of a pending proposal."
+      },
+      {
+        "section": "5.2",
+        "change": "Item 3: convergence stated in bytes with the same arguments (prepare-run: same --created-at); output 'applied' or 'unchanged' (W15, W46). Interruption paragraph: for prepare-run the run folder is either absent or complete (W47, W48, P13, P14)."
+      },
+      {
+        "section": "6",
+        "change": "E_USAGE row names any file type at the run-folder path (P12). E_WRITE row says 'target of apply-verdict' and that an entry at the run-folder path itself is E_USAGE."
+      },
+      {
+        "section": "7",
+        "change": "prepare-run line gains [--created-at <YYYY-MM-DDTHH:MM:SSZ>]; a bullet explains its default, its E_USAGE, and why tests pass it."
+      },
+      {
+        "section": "9 (table)",
+        "change": "Criterion-3 row adds prepare.write.test.js (E_WRITE of prepare-run: P03-P11, P13, P14); criterion-4 row notes the design is stricter (P12); the ISS-0002 row becomes 'REQ-002 AC11' with W01-W52, P01-P14, L01-L09."
+      },
+      {
+        "section": "9.1",
+        "change": "New table 'criterion 11 part by part -> tests', checked against the live text REQ-VALIDATOR r2 passed (incl. the criterion-4 path note keeping W13 in criterion 11 and the P12 coverage item); new behaviour B30 (target not a regular file: W51, W52); B13 adds P13, P14; B28 adds L09."
+      },
+      {
+        "section": "9.2",
+        "change": "File ranges W01-W52, P01-P14, L01-L09; a 10 s timeout on every CLI spawn; tree() never opens a fifo, socket or device; new paragraph on how the fifo (mkfifo) and the socket (child process with cwd, relative name) are made and removed, with the measured path lengths and the server.close pitfall."
+      },
+      {
+        "section": "9.3",
+        "change": "A6 wording: same arguments, the same --created-at for prepare-run, and W15/W46 where the first re-run already gives changed === 0. Interruption checks K1-K4 cover P13 and P14 (K2: <R> absent; K3: same command and arguments)."
+      },
+      {
+        "section": "9.4",
+        "change": "Header W01-W52; reduction bullet for the fifo and socket variants; W46 gets its A6 note; new rows W51 (fifo) and W52 (socket) with the exact stderr and the verified pre-fix result."
+      },
+      {
+        "section": "9.5",
+        "change": "Header P01-P14; intro explains the fixed --created-at and the clean run.json size (1035 B); new rows P13 (SIGKILL mid-write of run.json) and P14 (SIGKILL at the commit point), with K1-K4 and the verified pre-fix result."
+      },
+      {
+        "section": "9.6",
+        "change": "Header L01-L09; new row L09 (fifo and socket listed as 'o', not opened, inside a timeout)."
+      },
+      {
+        "section": "9.7",
+        "change": "Pre-fix run expects L01-L09 to pass and notes W51's 10 s timeout; M13 adds P13; M16 adds L09; new mutant M18 (read before the type check) that W51 and W52 must kill."
+      },
+      {
+        "section": "12",
+        "change": "Q1: criterion 11 exists, was reworked, and passed REQ-VALIDATOR r2; 9.1 maps it. Q3: round-2 probes listed. Q5: criterion 11 parts and B1-B30 mapped to tests."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-002-idea-verdict.md"
+    ]
+  }
+}

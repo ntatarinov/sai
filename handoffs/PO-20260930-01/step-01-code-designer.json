@@ -1,0 +1,63 @@
+{
+  "handoff_id": "step01-PO-20260930-01",
+  "run_id": "PO-20260930-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PO-20260930-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-001",
+      "REQ-007"
+    ],
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "decisions/0003-pixel-office-as-pipeline-tooling.md",
+      "decisions/0002-process-tooling-node.md",
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md",
+      "reference/pixel-office-osnova/",
+      "tools/",
+      "handoffs/PO-20260930-01/step-00b-req-validator-r4.json"
+    ],
+    "agent_run_id": "a84976571da2e10ed",
+    "write_set": "Design output: docs/design/REQ-001-pixel-office.md (one document for REQ-001 and REQ-007, or a second docs/design/REQ-007-*.md if clearer). The implementation write set the design may plan for is the one REQ-001/REQ-007 list and ORCH declared for REQ-006 (handoffs/BP-20260930-01/parallel-runs.jsonl): tools/src/pixel-office/, new tools/test/pixel-office-*.test.js, tools/README.md, tools/package.json (only the new script), tools/eslint.config.js (only a files+globals block), .claude/settings.json. Never tools/src/snapshot.js, tools/src/cli.js, .claude/agents/, docs/business-plan/.",
+    "validator_note_H1": "REQ-VALIDATOR round 4, note H1 (non-blocking): AC14's print-config finds use -name '*.js'; ESLint also lints .mjs/.cjs. Put in the design's verification mapping: use -name '*.*js' in both finds, and RELEASE-VALIDATOR also reads eslint.config.js against the stated property (only a files+globals block).",
+    "parallel_work_now": "Run ISS-0002 will change tools/src/apply.js, prepare.js, util.js and add tools/test/apply.write.test.js, prepare.write.test.js, listing.test.js; run BP-20260930-01 researchers write docs/business-plan/research/. Do not plan changes to those files.",
+    "interruptions": [
+      {
+        "at": "неизвестно (агент остановлен лимитом API; файла docs/design/REQ-001-pixel-office.md ещё нет; в handoff ничего не записано; агент готовил пробный репозиторий в scratchpad)",
+        "cause": "API session limit (HTTP 429), request req_011Cfanja2mSfpi1fM5FEGv3; по сообщению API сброс в 11:20 (Asia/Almaty) = 2026-10-01T06:20Z",
+        "checked_by_orch_at": "2026-10-01T06:26:06Z",
+        "resumed_at": "2026-10-01T06:26:06Z",
+        "how": "same agent run resumed via SendMessage"
+      }
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 1 for REQ-001 and REQ-007 (Pixel Office): produce the design before any implementation. Answer every question REQ-001/REQ-007 leave to the design (which hook events, linking a task description to its subagent run, command vs async hooks, how the hook finds a working Node without relying on PATH, what CLAUDE_PROJECT_DIR is and which settings files a session started in sai/ reads, whether a background-woken turn fires UserPromptSubmit, how Pixel Office's hook output is told apart, the exact command the UAT step uses to start a real Claude Code session) — each answer from the official Claude Code docs you open (URL) or a probe you run on this machine (command and output), never assumed. Define modules, interfaces, data shapes (event line, journal, task, office state), error paths (Q10), the security model (localhost only, write secret outside the repo, narrow write right, data minimisation), and map every acceptance criterion of REQ-001 and REQ-007 to named tests (Q5). Reuse what osnova did right (reference/pixel-office-osnova/: one event model, BFS on the walkable grid, read-only page, simulation mode marked). Design docs only — no implementation code.",
+    "acceptance_criteria": [
+      "every REQ-001/REQ-007 criterion mapped to a named test or named step",
+      "every open design question answered with a cited doc URL or a probe (command + output)",
+      "write set stays inside context.write_set",
+      "no implementation code in the design"
+    ]
+  },
+  "created_at": "2026-10-01T01:41:54Z",
+  "started_at": "2026-10-01T01:41:54Z",
+  "completed_at": "2026-10-01T07:10:19Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-02 step 1, REQ-001 + REQ-007: design written to docs/design/REQ-001-pixel-office.md (one document, sections 0-14 plus probe appendix P0-P10, about 2,200 lines, 31 tables, no implementation code). Only that file was written in the project; all probes ran in the session scratchpad. Design is NOT yet checked by CODE-DESIGN-VALIDATOR.\n\nANSWERS (sources: official docs opened 2026-10-01, or probes with command and output in Appendix A):\n1. Events: SessionStart, SessionEnd, UserPromptSubmit, Stop, SubagentStart, SubagentStop (no matcher) + PostToolUse with matcher Agent. PreToolUse is not needed: PostToolUse(Agent) alone carries tool_input.description, subagent_type, tool_use_id, tool_response.agentId and the caller's agent_id/agent_type. [https://code.claude.com/docs/en/hooks sections Hook lifecycle, PreToolUse input > Agent; probes P2, P8]\n2. Description link: tool_response.agentId (PostToolUse) == agent_id (SubagentStart/Stop), 4 of 4 in probe P2 (format 'a'+16 hex), same on 2.1.286 (P8). Event ORDER differs between versions (2.1.284: SubagentStart before PostToolUse; 2.1.286: after), so link by equality only; no link means no description (AC6 z). Foreground launches get their description only after SubagentStop (2.1.284).\n3. Handler: synchronous command, exec form with a guard script, timeout 4. async rejected (-p kills async hooks at teardown, outcome cancelled; timeout not enforced), http rejected (SessionStart supports only command/mcp_tool; failures visible). Probe P6: exit 1 -> outcome error, over timeout -> cancelled. [hooks: Hook handler fields, Run hooks in the background, Timeouts]\n4. Node 22 without PATH: the hook inherits the parent env unchanged (P1: PATH=/usr/bin:/bin:/usr/sbin:/sbin). hook.sh tries <state dir>/node-path (recorded by the server) -> PATH node if v22 -> <каталог Homebrew> and /usr/local/opt/node@22/bin -> silent exit 0. Verified here: <каталог Homebrew> is v25.2.1, <каталог Homebrew> is v22.21.1; probe P5 (5 scenarios, 43 ms per run).\n5. CLAUDE_PROJECT_DIR = directory where the session started (sai/), NOT the git root (P1: .../repo/sub vs git root .../repo). A session started in sai/ reads: sai/.claude/settings.json (yes), sai/.claude/settings.local.json (legacy, yes), <общая папка>/.claude/settings.local.json (yes), <общая папка>/.claude/settings.json (NO); user settings per docs; no managed settings, 0 plugin hooks. [https://code.claude.com/docs/en/settings 'Where Claude Code keeps the local file in a git repository'; hooks 'Reference scripts by path'; P1]\n6. A turn woken by background work DOES fire UserPromptSubmit; prompt starts with <task-notification> (P1, P2, P4, P8). Stop does not mean idle (background_tasks still running). Consequence: the 'main session is processing a request' row also appears for woken turns; AC3 forbids storing a flag, so this is a documented limitation.\n7. Telling hook_response apart: stream-json hook_started/hook_response carry no command text and equal hook_name for several handlers. The settings command first writes 'sai-pixel-office' to stderr (invisible to the user on exit 0, arrives in hook_response.stderr, P6) and the UAT also uses --setting-sources project.\n8. UAT command: 'claude' is not on PATH; the VS Code extension bundles it at <домашняя папка>/.vscode/extensions/anthropic.claude-code-2.1.284-darwin-arm64/resources/native-binary/claude (2.1.286 is now installed too). Exact command in design section 1.8: env -i ... PATH=/usr/bin:/bin ... \"$CLAUDE_BIN\" -p \"$PROMPT\" --output-format stream-json --verbose --include-hook-events --setting-sources project --no-session-persistence --model sonnet --max-budget-usd 2, run from <папка Sai>.\n\nMODULES: tools/src/pixel-office/{config,state-dir,protocol,journal,server,main}.js, hook.sh, hook.js; public/{schema,texts,format,model,app,boot}.js, index.html, style.css, and REQ-007 files layout, office-model, office-sim, office-view, office-report (.js). Data shapes: event line (10 keys), state dir (5 files outside the repo), read API, Task/MainRow/Model, OfficeModel, Card. Security: 127.0.0.1 only plus Host check, HMAC-signed writes (secret never on the wire), one narrow write path, bodies built from an allowlist. Error paths: 29 rows (hook, server, page) plus an AP-014 class rule.\n\nVERIFICATION MAPPING (section 10): 111 test IDs in 6 files (HK, SV, PG, ST, LY, OF); every criterion of REQ-001 (14) and REQ-007 (8) mapped to named tests, commands or steps (10.3); UAT steps U1-U4 (U3 = real headless Chrome check, added by the design; probe P9 confirmed CSP/ES modules/canvas/port 4780 on Chrome 154); step T = AC14 commands with the validator's H1 note applied (-name '*.*js' in both finds, RELEASE-VALIDATOR also reads eslint.config.js); 24 mutants for TEST-DESIGN-VALIDATOR. All hashes in 10.5 were checked against requirements.yaml.\n\nOPEN QUESTIONS LEFT (section 13): (1) tools/test/pixel-office-helpers.js is outside the write_set wording (only *.test.js) - ORCH to confirm; (2) design extends AC6(g): an open main-session row is also closed by a server start (self-healing) - validator/ORCH to confirm, removable in one line; (3) woken turns are shown as 'processing a request'; (4) SubagentStop form for Claude-internal agents not observable in -p; (5) interactive CLI trust dialog and VS Code cwd behaviour only by docs - checked by UAT step U2; (6) U1 uses --setting-sources project; (7) probes cover 2.1.284 and 2.1.286 only; (8) port 4780 verified in Chrome only; (9) adversarially conflict-filled journals can be slow (detection, not protection); (10) known limitations for the README; (11) agent-team teammates not probed; (12) office-report.js lives in public/ to stay inside REQ-007's write set - REVIEWER may ask to move it; (13) hidden-tab timer throttling not probed.\n\nPROPOSALS: one decisions/ record (D1-D10: hook stamps time, sync command handler, HMAC signature, PostToolUse linking, server-start anchor by line number, Node discovery, stderr marker, office computed from the journal, AC6(g) extension, pure ES modules) - number: next free after 0004, which the ISS-0002 run created meanwhile; three anti-pattern entries for DOC-UPDATER (interleaved probe log, event order assumed from one version, long work without a skeleton file lost on API limit stop).\n\nOBSERVATIONS: (a) the REQ-001/REQ-007 blocks differ from the validator's PASS hashes only by the status flip pending -> in_progress (restoring 'pending' reproduces d0641025... and b0a739b4...), criteria text unchanged; (b) ~/.claude/settings.json changed during the API-limit pause (model opus -> sonnet, mtime 09:36 local): not by me - my probes P6-P8 used --setting-sources project; (c) no ~/.sai-pixel-office exists (R2: nothing written to any journal); (d) no quality-bar item lowered.",
+    "changes": [
+      "Created docs/design/REQ-001-pixel-office.md (new; design for REQ-001 and REQ-007, no implementation code).",
+      "No other project file changed. Probes P0-P10 ran in the session scratchpad only; no settings file was modified by the designer."
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-001-pixel-office.md"
+    ]
+  }
+}

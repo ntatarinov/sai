@@ -1,0 +1,77 @@
+{
+  "handoff_id": "step04-reviewer-r1-PO-20261002-01",
+  "run_id": "PO-20261002-01",
+  "workflow_id": "WF-04",
+  "step": "04",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PO-20261002-01/step-04-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "PLAN.md, точка остановки, п. 1",
+    "requirement_ids": [
+      "REQ-007",
+      "REQ-001"
+    ],
+    "route": "CODE-FIXER (готово) -> SECURITY-REVIEWER и REVIEWER (малая правка, оба читают разницу) -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> владелец",
+    "agent_run_id": "ae5566d43379b4139",
+    "write_set": [
+      "handoffs/PO-20261002-01/step-04-reviewer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<вне проекта>/orch/before-po3-fix",
+    "parallel_work_now": "второй проверяющий (SECURITY-REVIEWER и REVIEWER — только читают)",
+    "artifacts_in": [
+      "handoffs/PO-20261002-01/step-07a-code-fixer.json",
+      "tools/src/pixel-office/",
+      "docs/design/REQ-001-pixel-office.md",
+      "docs/quality-bar.md"
+    ]
+  },
+  "task": {
+    "description": "Повторные ворота после правки кода CODE-FIXER (handoffs/PO-20261002-01/step-07a-code-fixer.json): изменены tools/src/pixel-office/main.js и public/app.js, office-view.js, office-model.js, style.css; копии до — <вне проекта>/orch/before-po3-fix/src (сравните diff -r сами — проверяйте именно разницу и её соседство). Что изменено: холст вписывается после отрисовки легенды (rebuild(), start()); подпись «ПЕРЕГОВОРНАЯ» сдвинута; ширина облачка ≤139 с сжатием текста; легенда — имя, « · » и состояние в одну строку; возврат фокуса клавиатуры после перестройки легенды и карточки; исправлен комментарий office-model.js; обработчики SIGINT/SIGTERM в main.js ставятся до печати ссылки. Прежние ворота (безопасность step-03, ревью step-04) прошли для кода до правки. Два прежних теста (LY-05, OF-34) ожидают старое поведение — их правит TEST-DESIGNER после ворот, замечанием не ставить. hook.js не менялся (расследование CODE-FIXER — в его result.issues I3). Ничего не правьте. Порт 4780 и ~/.sai-pixel-office не трогать; сервер — свой порт и своя пустая папка вне проекта. Предел расхода жёсткий: проверяйте разницу, не весь код. Длинные команды — в фоне. Результат: result.verdict, summary, findings (Critical, High, Medium блокируют). По роли: объём (изменены только перечисленные файлы, тесты/сервер/хук нетронуты), согласие с проектом REQ-001 п. 4.12–4.13 и описанием интерфейса для затронутых мест, идиома и отсутствие мёртвого кода, закрытие замечаний прежнего ревью F1–F2 (фокус, комментарий), cd tools && npm run check (ожидаемо 422 из 424: LY-05 и OF-34 — намеренное изменение).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "замечания с местом, важностью и исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T13:17:02Z",
+  "started_at": "2026-10-05T13:17:02Z",
+  "completed_at": "2026-10-05T13:18:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Объём: diff -rq показал изменёнными ровно main.js, public/app.js, office-model.js, office-view.js, style.css; тесты, сервер, hook.js не менялись (diff по src). Правки малые и по делу: холст вписывается после легенды (rebuild, start); подпись сдвинута; облачко ≤139 с fillText maxWidth; легенда в одну строку; фокус возвращается на новую кнопку легенды и новый «×»; комментарий office-model.js исправлен (F1, F2 закрыты); SIGINT/SIGTERM ставятся до печати ссылки, при сбое записи обработчики снимаются и сервер закрывается. Эрозии планки нет (grep по skip/todo/eslint-disable/|| true пуст). npm run check: 424 теста, 422 прошли, 2 упали — ожидаемо LY-05 и OF-34 (правит TEST-DESIGNER). Следить: тесты на возврат фокуса и порядок сигналов должен написать TEST-DESIGNER.",
+    "findings": [
+      {
+        "place": "tools/src/pixel-office/public/style.css:325-332 (.swatch)",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "flex: none у .swatch остался после перехода .legend-item на inline-block и больше ничего не делает.",
+        "fix": "Убрать flex: none."
+      },
+      {
+        "place": "tools/src/pixel-office/public/app.js:216-219 (focusedElement)",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "Однострочная обёртка над document.activeElement; допустимо как точка подмены, но можно использовать els-документ напрямую.",
+        "fix": "По желанию упростить."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_correction": {
+    "at": "2026-10-05T13:44:19Z",
+    "by": "ORCH",
+    "changes": [
+      {
+        "field": "status",
+        "was": "DONE",
+        "now": "COMPLETED"
+      }
+    ],
+    "note": "формат по handoffs.md (RV-2 итоговой проверки); если completed_at не в UTC — значение оставлено как записал получатель, время указано в его result",
+    "also": "result.status DONE -> COMPLETED; completed_at приведён к UTC (18:18:04+0500 = 13:18:04Z)"
+  }
+}

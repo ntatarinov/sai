@@ -1,0 +1,77 @@
+{
+  "run_id": "PO-20261002-01",
+  "workflow_id": "WF-04",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "priority": "HIGH",
+  "handoff_id": "step05-test-designer-r1-PO-20261002-01",
+  "step": "05",
+  "round": 1,
+  "file": "handoffs/PO-20261002-01/step-05-test-designer-r1.json",
+  "status": "COMPLETED",
+  "context": {
+    "plan": "PLAN.md, точка остановки, п. 1 (итерация 3)",
+    "requirement_ids": [
+      "REQ-007",
+      "REQ-001"
+    ],
+    "route": "FRONTEND-DEV -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER (this) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> CODE-FIXER (мелочи Low ревью) -> владелец",
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/pixel-office-hook.test.js",
+      "tools/test/pixel-office-server.test.js",
+      "tools/test/pixel-office-page.test.js",
+      "tools/test/pixel-office-settings.test.js",
+      "tools/test/pixel-office-layout.test.js",
+      "tools/test/pixel-office-office.test.js",
+      "tools/test/pixel-office-panels.test.js",
+      "tools/test/pixel-office-helpers.js"
+    ],
+    "before_copy": "<вне проекта>/orch/before-po3-tests-r1",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PO-20261002-01/step-05b-test-design-validator-run2.json",
+      "handoffs/PO-20261002-01/step-05b-test-design-validator-run3.json",
+      "docs/design/REQ-001-pixel-office.md (раздел 10)",
+      "docs/requirements.yaml (блоки REQ-007, REQ-001)",
+      "handoffs/PO-20261002-01/step-02-frontend-dev.json",
+      "handoffs/PO-20261002-01/step-04-reviewer.json",
+      "tools/src/pixel-office/",
+      "tools/test/helpers.js",
+      "docs/quality-bar.md"
+    ],
+    "rework_of": "handoffs/PO-20261002-01/step-05-test-designer.json"
+  },
+  "task": {
+    "description": "Доработка тестов после FAIL двух проверок (часть A — step-05b-test-design-validator-run2.json, часть B — run3.json); только по перечню (AP-019), только файлы write_set, код не менять.\nБлокирующие (Medium): F1 (A) — PN-04, panels-тест, ≈строки 274–277: ожидаемый набор фильтра «Работа» берётся из WORK_EVENTS самого кода — тест сравнивает код с собой; задать ожидаемое независимо, из текста критерия/проекта (мутант «убрать PostToolUse, добавить SessionStart и SessionEnd» должен падать). F2 (A) — LY-05 и OF-32: критерий 12 закреплён не полностью — кресла отдыха в зале (30,20) и (32,20) и нижний ряд кресел переговорной (x=28, 30, 32, 34 при y=6) нигде не проверяются; добавить проверки (мутант «убрать кресла зала» должен падать). F3 (A) — защита порта 4780: runMain и spawnMain принимают явный --port 4780 без проверки (main берёт последний --port); HK-17 проверяет только startServer; SV-40 вызывает main без --port (регресс разбора аргументов привязал бы 4780): добавить помощник assertSafeArgs (порт только 0, иначе тест падает сразу, до запуска процесса), использовать во всех помощниках запуска, добавить тест на него и --port 0 в случаи SV-40. F10 (B, критерий 15) — выживший мутант: убрать проверку `!runningIds.has(sid)` в taskPanel (panels.js) — идущая сессия с завершённой задачей получает вторую сводку в «Истории»; добавить в PN-10 случай «у идущей сессии нет сводки в «История»» и перезапустить мутант. F11 (B) — PG-08 имеет жёсткий предел 1000 мс по настенным часам и падает под нагрузкой (1059 мс при 356 мс обычно): брать лучший из нескольких прогонов или процессорное время, предел оставить осмысленным.\nНизкие (по возможности, дёшево): F4 — PG-20 не читает .css; F5 — самосравнение в PN-06; F6 — runReportChild без childEnv, SV-21 подключается к сетевым адресам машины (сделать независимым от адресов); F7 — предел 300 на смешанном списке «Текущие» и «История»; F9 — тёмный цвет пола не закреплён тестом (брать ожидаемое из описания интерфейса, не из BASE_COLORS кода); пределы 2000 мс в HK-11a–e, j — привести в соответствие с жёстким выходом хука 1500 мс и нагрузкой (не жёстче, чем нужно). F8 (описание E35 проекта) и exit 3 в hook.sh — не ваши: решает ORCH, не править.\nПосле правок: cd tools && npm run check (все тесты, прежние 197 зелёные), затем свои мутанты для F1, F2, F3, F10 на копии вне проекта — ловятся. Порт 4780 и ~/.sai-pixel-office не трогать. Предел расхода жёсткий: без повторов. Копия tools/test до доработки — <вне проекта>/orch/before-po3-tests-r1. Каждая команда — с ограничением по времени; долгие — в фоне с выводом в файл.",
+    "acceptance_criteria": [
+      "F1, F2, F3, F10, F11 исправлены, мутанты ловятся",
+      "низкие исправлены или названы с причиной",
+      "npm run check — все тесты проходят",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T12:38:47Z",
+  "started_at": "2026-10-05T12:38:47Z",
+  "completed_at": "2026-10-05T12:43:12Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка по перечню, только файлы write_set; код не менялся. `cd tools && npm run check`: код 0, tests 424, pass 424, fail 0, skipped 0, todo 0 (прежние 197 зелёные).\nF1: PN-04 берёт набор «Работа» из текста критерия 14 (литерал из пяти видов), не из WORK_EVENTS; мутант «PostToolUse -> SessionStart» падает (PN-04).\nF2: LY-05 закрепляет кресла (28,30,32,34 при y=6) и (30,20), (32,20) как chair; OF-32 проверяет, что кресла нарисованы (fillRect 16x18); мутанты «убрать кресла зала» и «убрать нижний ряд переговорной» падают (LY-05, OF-32).\nF3: помощник assertSafeArgs (порт только 0; 4780 не допускается никогда; без --port — падение) вызывается в runMain и spawnMain до запуска процесса; порты занятых/свободных портов в SV-10, SV-11*, SV-38 разрешены явно через allowPorts; SV-40 идёт с --port 0 и проверяет args; новый SV-40b тестирует помощник. Мутант «помощник пускает 4780» падает (SV-40b).\nF10: PN-10 проверяет, что среди сводок с running=false только закончившаяся сессия (у идущей нет сводки в «История»); мутант «убрать !runningIds.has(sid)» падает (PN-10).\nF11: PG-08 берёт лучшее из трёх прогонов, предел 1000 мс оставлен.\nНизкие: F4 сделано (PG-20 читает style.css: нет http(s)://, javascript:, @import, url()); F5 сделано (самосравнение в PN-06 убрано, проверка секунд ':01'); F6 сделано для runReportChild (окружение с временным HOME); F9 сделано (цвета пола, стены и плитки заданы литералами из описания интерфейса в LY-07); пределы HK-11a–e, j подняты с 2000 до 3500 мс (жёсткий выход хука 1500 мс плюс запуск Node под нагрузкой). Не сделано: F7 (предел 300 на смешанном списке) и часть F6 про сетевые адреса в SV-21 — оставлены как есть ради расхода; SV-21 по-прежнему проверяет отказ на нелокальных IPv4 адресах машины (без них проверка вхолостую, основную работу делает подмена listen). F8 и exit 3 в hook.sh — не трогал по указанию.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "не сделано, Low",
+        "text": "F7 (предел 300 для смешанного списка «Текущие»+«История») и независимость SV-21 от сетевых адресов не сделаны: нужны отдельные сценарии; предел на смешанных списках остаётся закрыт PG-18/PN-11 только для истории."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/pixel-office-helpers.js",
+      "tools/test/pixel-office-layout.test.js",
+      "tools/test/pixel-office-office.test.js",
+      "tools/test/pixel-office-page.test.js",
+      "tools/test/pixel-office-panels.test.js",
+      "tools/test/pixel-office-server.test.js",
+      "tools/test/pixel-office-hook.test.js"
+    ]
+  }
+}

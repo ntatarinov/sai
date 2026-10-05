@@ -1,0 +1,67 @@
+{
+  "handoff_id": "step00a-r5-PO-20260930-01",
+  "run_id": "PO-20260930-01",
+  "workflow_id": "WF-02",
+  "step": "00a",
+  "round": 5,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/PO-20260930-01/step-00a-req-analyst-r5.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-001",
+      "REQ-007"
+    ],
+    "agent_run_id": "a81e13fc8b7a7810d",
+    "rework_of": "handoffs/PO-20260930-01/step-00a-req-analyst-r4.json",
+    "artifacts_in": [
+      "handoffs/PO-20260930-01/step-01b-code-design-validator-req001.json",
+      "docs/requirements.yaml",
+      "docs/design/REQ-001-pixel-office.md"
+    ],
+    "orch_rulings": {
+      "C2": "Amend REQ-001 criterion 6(г): an open main-session row is also closed as «окончание не записано» at a server start after its start — the same rule (в) already has for tasks. Keep all other rules of (г) as they are. Phrase it so that the design's rule (design §4.2, §3.5, §9.4 item 7, test PG-12d6, decision D9) is exactly what the text says; add the scenario to the criterion's «Проверка:» line (the page test for (г) covers the server-start case).",
+      "C3": "Add tools/test/pixel-office-helpers.js to the write-set list «Что меняется» of REQ-001 and REQ-007: one new helper file, not named *.test.js because `npm test` is `node --test \"test/**/*.test.js\"` and must not run it as a test; keep «прежние тесты не меняются» and «только новые файлы». The path is inside ORCH's declaration (tools/test/).",
+      "scope": "No other criterion changes. C1 (poll protocol: timeout, one request in flight, `from` equals entries.length) is a design fix, no requirement text change unless you find REQ-001 criterion 7 cannot be read to demand it: say so in result rather than edit."
+    },
+    "edit_scope": "docs/requirements.yaml: REQ-001 and REQ-007 blocks only. REQ-005/REQ-006 block hashes (33/44463bb3…, 148/b958eb67…) and the REQ-002 block (as it is now) must not change: measure with REQ-006 criterion 14's awk from the sai root before and after. Nobody else writes the file during your round.",
+    "parallel_work_now": "REQ-007's design validator may still be reading the REQ-007 block while you edit; edit in one atomic write."
+  },
+  "task": {
+    "description": "Round 5 of REQ-001/REQ-007: apply C2 and C3 per context.orch_rulings. Requirement text only.",
+    "acceptance_criteria": [
+      "result.changes one entry per item (C2, C3) with where",
+      "only REQ-001 and REQ-007 blocks changed; REQ-005/REQ-006/REQ-002 block hashes before/after in result",
+      "every changed check dry-run; outputs in short in result"
+    ]
+  },
+  "created_at": "2026-10-01T07:47:30Z",
+  "started_at": "2026-10-01T07:47:30Z",
+  "completed_at": "2026-10-01T07:59:54Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST round 5 (PO-20260930-01, same agent_run_id a81e13fc8b7a7810d). C2 and C3 are applied as ruled in context.orch_rulings, in one atomic write (temp file + rename) guarded by a byte comparison with a before-copy taken at 2026-10-01T07:51:08Z. Only the REQ-001 and REQ-007 blocks changed: 5 exact replacements, each matched once inside its own block. ruby Psych parses REQ-001..REQ-007. REQ-001 still has 14 criteria and REQ-007 has 8, each with «Проверка». Only criterion 6 of REQ-001 differs from before; no REQ-007 criterion changed; REQ-002..REQ-006 parse identically; the original_request strings are untouched and equal.\n\nHashes. I ran the awk of REQ-006 criterion 14 from the sai root, piped to wc -l and shasum -a 256; before at 07:51:08Z, after at 07:57:58Z:\n- REQ-002: 39 lines, 99b102238a7f13eb48c11040ed92d575c3f6f237a88af98ccebdcc4aa87d41cf before and after. This is the block as it stands now (ORCH reopened its status, and the ISS-0002 criterion 11 is in it), so it differs from the c43c045d… of round 4.\n- REQ-005: 33 lines, 44463bb385bfd8cd9cc7a14d8153eccadeb95cc57baa2f3b62c38211af3d219e before and after.\n- REQ-006: 148 lines, b958eb676765ca879d9ccb23ba0e8cd434b9bf33b8cd3138294e72c925da1674 before and after.\nFurther checks. cmp shows the header, and everything from «  - id: REQ-002» to the line before the REQ-007 comment, byte-identical. REQ-001 is identical from its id line through original_request, and so is REQ-007 from its comment through original_request.\n- REQ-001 block (as it is, status in_progress): 5579b68fc0c0ab28067940906cf175ffdd3abca17cdbc282e98f078c02919151 -> 16aece8f2c41fbe8cdc49adb435b2b9eed8ac3961e498f2164ce3b06d74db775.\n- REQ-007 block (as it is): 99950b239d0f40b993129af5e0703c6d89617a0cdc1751fc5de537ba3e3aaa65 -> 30fc093a4a28b350ae7d65fedb18076b965234735cdd70168ee0b0ceaee3adc7.\n- For the designer, who cites the hashes in §0 and §11: the same blocks with the status line restored to pending, the form the validator used, are REQ-001 530b1c3b13d58598ebb77ef50e60e42bb518654650423d7b20b39fdc416d4e21 and REQ-007 d842c5983085e38796e939fb6af7dc0bad5fa4225772fe96070377e578f1ead5. On the pre-edit file this method reproduces d0641025… and b0a739b4… exactly, so since round 4 only the status lines changed in these two blocks.\n- Whole file: 4450091aa8dd0481464ebe0d79f2ba61a6c7264cd585b767e3708a8d6c09ba0b -> de702d1909e0de5f446a1cad87f6a3d0364aa53acbb1b02b22d0fe8c69d4dd8c (631 -> 640 lines).\n\nC2. Criterion 6(г) now reads: if there is no end of answer (interruption, API error), the row is closed as «окончание не записано» at the next request of the same session or at a session-end event after its start, and if neither happened, at a server start after its start (as for tasks in (в)); a row closed only by a server start stays open for an end of answer: one that comes later closes it as «завершена»; an end-of-answer event without an open row changes nothing. The rest of (г) is as before.\nThis is the design’s rule exactly:\n- §4.2: the first of Stop, next request and session end decides, and only if none exists does a server start with journal_lines > the row’s index close it (closed_by server_start in §3.5);\n- D9 option 2 and README limitation 7 («следующим запросом, концом сессии или запуском сервера»);\n- the late Stop gives «завершена» (the self-correction noted in §4.2).\nThe «Проверка:» line of criterion 6 now names PG-12d6’s scenario: request, then server start gives «окончание не записано», then end of answer gives «завершена». I added no scenario the design has no test for (for example a server start before the request); the generic «отдельный сценарий на каждое правило» covers the boundary.\nThe «Сбои» paragraph got one sentence: a main-session row without an end of answer stays «обрабатывает запрос» until the next request, a session end or a server start.\nDry run of the amended rule (scratchpad/mainrow-sim.mjs). The design’s first-event rule was compared with an independent event-driven reading of the new wording, at every prefix of 4,000 random journals (two sessions, resumes, 0-3 server starts; 38,734 comparisons): 0 differences. A reading in which a server start closes the row for good differs in 1,476 cases, which is why the late-Stop sentence is in the text. Scenarios:\n- request, then server start: unrecorded; then a Stop: completed;\n- server start before the request: in progress;\n- server start, then next request, or session end: unrecorded;\n- no server start: in progress;\n- session end, resume, then a Stop with no row: the row stays unrecorded.\nNo REQ-007 text change for C2: the design (§4.5) makes the «Основная сессия» character work while a main row is open, and REQ-007’s criteria never say when that character works, so the new closure reaches the office through REQ-001 6(г). Observation, not changed: REQ-007 leaves that state to the design.\n\nC3. tools/test/pixel-office-helpers.js is in the write-set lists of both requirements, as one new file shared by REQ-001 and REQ-007 tests, with the reason it is not *.test.js. «Прежние тесты не меняются» and «только новые файлы» are kept, and tools/test/helpers.js is named as unchanged, since the two names are close. The path is inside ORCH’s declaration (tools/test/).\nDry run on a scratch copy of tools/ (removed afterwards):\n- `npm test` is `node --test \"test/**/*.test.js\"`. With a helper whose top level calls a throwing test, npm test ran 1 test with 0 failures, so the helper is not run.\n- prettier --check and eslint both cover it: a mis-formatted helper and an unused variable each exit 1.\n- The AC14 rules hash (856ee001…) and globals hash (bec0f88d…) are unchanged with the helper present.\n- The Q6 directive grep over tools/test catches an inline `/* eslint no-undef: 0 */` inside it.\n\nC1: no requirement edit. Criterion 7 can be read to demand the outcome of all three parts, so it is a design fix.\n- (a) Timeout. «если сервер недоступен — пишет «Нет связи с сервером Pixel Office»» is not met by a page that waits for ever on a server that accepted the connection and never answers, and the bound «показывает новое событие не позже чем через 5 секунд» is broken while the poll hangs. The same requirement already lists «сервер завис (принял соединение и не отвечает)» as a failure case for the hook (criterion 10).\n- (c) from equal to entries.length is the means to «после восстановления догружает пропущенные события» without duplicates or shifted indices: criterion 5 requires one array, and criterion 4’s rules are index-based.\n- (b) One request in flight is a means to (c), not a demand of the letter.\nThe «Проверка:» line of criterion 7 names only «обрыв и восстановление», so the design must add the tests the validator proposed: hung server, a response with the wrong from, visibility. If ORCH wants the hung-server case spelled out in the requirement, one phrase in that «Проверка:» line would do; I did not apply it, since the ruling was a design fix.\n\nNot applied: the design findings C4-C10 and the validator’s hardening proposals (for example the `/* global x */` pattern for the AC14 directive grep) are not requirement edits under the ruling «No other criterion changes». The hardening proposals are for ORCH to record as decisions (quality-bar §4). Open: nothing new.",
+    "changes": [
+      {
+        "id": "C2",
+        "change": "REQ-001 criterion 6(г): a server start after the row’s start now also closes an open main-session row as «окончание не записано», if no next request and no session end came; a row closed only by a server start stays open for an end of answer, which closes it as «завершена»; the rest of (г) is unchanged. The «Проверка:» line adds the scenario request -> server start -> «окончание не записано» -> end of answer -> «завершена» (design PG-12d6). The «Сбои» paragraph gets one sentence about the row’s residual case. The wording matches design §4.2, §3.5 (closed_by server_start), §9.4 item 7 and D9 option 2. Dry run: 38,734 prefix comparisons of the design rule against an independent reading of the new wording, 0 differences; a reading where the server start closes for good: 1,476 differences.",
+        "where": "requirements.yaml 270 (REQ-001 criterion 6, (г) and its «Проверка:»), 194-196 (description «Сбои»)"
+      },
+      {
+        "id": "C3",
+        "change": "tools/test/pixel-office-helpers.js is added to the write-set lists «Что меняется в проекте» of REQ-001 and REQ-007 as one new helper file shared by their tests, with the reason it is not *.test.js (`npm test` is `node --test \"test/**/*.test.js\"`). «Прежние тесты не меняются» and «только новые файлы» are kept; tools/test/helpers.js is named as unchanged. Dry run on a scratch copy of tools/: npm test does not run the helper (1 test, 0 failures); prettier and eslint cover it; the AC14 rules and globals hashes are unchanged; the Q6 grep over tools/test catches an inline eslint directive in it.",
+        "where": "requirements.yaml 201-206 (REQ-001 description «Что меняется в проекте»), 612-619 (REQ-007 description «Что меняется в проекте»)"
+      },
+      {
+        "id": "C1",
+        "change": "No requirement edit. Criterion 7 can be read to demand the outcome of all three parts: (a) a timeout, since «если сервер недоступен» and the 5 s bound are not met by a page that waits for ever on a hung server; (c) from equal to entries.length, since «догружает пропущенные события» needs no duplicates or shifted indices (criterion 5: one array; criterion 4: index-based rules). (b) One request in flight is a means to (c). Its «Проверка:» line names only «обрыв и восстановление», so the design must add the hung-server, wrong-from and visibility tests. If ORCH wants the hung-server case literal in the text, one phrase in that «Проверка:» line would do.",
+        "where": "requirements.yaml 271 (REQ-001 criterion 7), not changed"
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

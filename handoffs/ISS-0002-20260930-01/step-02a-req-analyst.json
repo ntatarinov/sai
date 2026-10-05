@@ -1,0 +1,68 @@
+{
+  "handoff_id": "step02a-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02a",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/ISS-0002-20260930-01/step-02a-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002"
+    ],
+    "issue_id": "ISS-0002",
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "docs/design/REQ-002-idea-verdict.md",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "handoffs/ISS-0002-20260930-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0002-20260930-01/step-02-code-designer.json"
+    ],
+    "agent_run_id": "aa84e8d8793fad93a",
+    "why": "Q1: REQ-002 has no acceptance criterion for write failures (AC6/AC7 cover only failures detected before writing). The design (v4, §12, Q1 row) proposes a text; the requirement comes first, the design is validated against it.",
+    "edit_scope": "docs/requirements.yaml: only the REQ-002 block (append one criterion; keep existing ones byte-identical). REQ-005 and REQ-006 blocks are protected by REQ-006's block hashes: run REQ-006 criterion 14's awk from the sai root for REQ-005 and REQ-006 before and after (33/44463bb3…, 148/b958eb67… must not change). A REQ-VALIDATOR (run PO-20260930-01) may be reading REQ-001/REQ-007 while you write; nobody else writes the file.",
+    "interruptions": [
+      {
+        "at": "неизвестно (агент остановлен лимитом API между 2026-09-30T18:27Z и уведомлением; docs/requirements.yaml не менялся с 2026-09-30T18:11:49Z (до запуска шага))",
+        "cause": "API session limit (HTTP 429), request req_011Cfa6auKiEwW6q9q7th5VU; по сообщению API сброс в 02:00 (Asia/Almaty) = 2026-09-30T21:00Z",
+        "checked_by_orch_at": "2026-10-01T01:22:42Z",
+        "resumed_at": "2026-10-01T01:22:42Z",
+        "how": "same agent run resumed via SendMessage"
+      }
+    ]
+  },
+  "task": {
+    "description": "Add to REQ-002 one acceptance criterion for write failures of apply-verdict and prepare-run, based on the proposal in design §12 (Q1 row): exit code 1, an E_WRITE line without a stack trace, the strict listing of the project unchanged, no target ever partially written; name how it is checked (the test files the design names). Record in original_request/description only what the sources say: this comes from ISS-0002 (found by agents), not from the owner. Requirement text only.",
+    "acceptance_criteria": [
+      "exactly one new criterion appended to REQ-002, with «Проверка:» or an equivalent named check",
+      "existing REQ-002 criteria and every other block byte-identical (sha256 of the file outside the REQ-002 block before/after in result)",
+      "REQ-005/REQ-006 block hashes before/after in result, unchanged"
+    ]
+  },
+  "created_at": "2026-09-30T18:18:12Z",
+  "started_at": "2026-09-30T18:18:12Z",
+  "completed_at": "2026-10-01T01:31:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST, WF-03 step 02a for ISS-0002. Requirement text only. In docs/requirements.yaml I appended one acceptance criterion to REQ-002 (criterion 11). I also added 6 lines at the end of REQ-002's description that record where it comes from. Nothing else changed: no existing criterion, no other REQ-002 field (id, title, owner, status, depends_on, original_request), no other block. Next: REQ-VALIDATOR (Q2: I do not validate my own text).\n\nNEW CRITERION 11 (verbatim):\nСбой записи (ISS-0002): других ошибок из критериев 3, 4, 6, 7 нет, но apply-verdict или prepare-run не может записать свои цели — у apply-verdict STATE.md, apply-report.json и при ACCEPT proposed-actions.json, у prepare-run папку прогона (и runs/, если её нет): цель — папка, ссылка или не обычный файл; на пути к цели вместо папки ссылка или файл; существующую цель нельзя прочитать для сравнения; цель, которую нужно изменить, или папка, где цель нужно изменить или создать, только для чтения; остаток прерванного или параллельного запуска; любая ошибка ОС на любом шаге записи (в том числе ENOSPC, EFBIG, EIO). Тогда код выхода 1, stdout пуст, в stderr только строки E_WRITE без трассировки стека; команда ничего не пишет вне проекта и не меняет ничего из того, что видит строгий список проекта: папки, файлы и ссылки, их права, байты и время изменения файлов, текст ссылок (время изменения папок не сравнивается). Исключения из «не меняет»: двойной сбой (после сбоя не удалось удалить свою временную запись или вернуть уже заменённую цель) — каждая такая запись и цель названа в строках E_WRITE, остальное как до запуска; сбой уборки после применения — все цели как после запуска без сбоя, каждая оставшаяся временная запись названа в строках E_WRITE. Ни при сбое, ни когда процесс убит сигналом SIGKILL, цель не бывает записана частично: каждая цель — как до запуска или целиком новая, а если в STATE.md уже новое содержимое, то и в остальных целях тоже. После устранения причины и удаления названных остатков повторный запуск даёт те же байты целей, что запуск без сбоя. Проверка: `cd tools && node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js` — код 0 (эти файлы входят в `npm run check`); есть тесты на каждый вид сбоя из списка, на каждую цель обеих команд, на оба исключения и на SIGKILL у обеих команд; каждый тест на отказ сравнивает строгий список до и после запуска; listing.test.js проверяет, что строгий список видит папки, ссылки, права и время изменения файлов\n\nADDED TO THE REQ-002 DESCRIPTION (verbatim, folded):\nКритерий 11 (запись apply-verdict и prepare-run — всё или ничего) добавлен 2026-10-01 по ISS-0002, а не из запроса владельца: дефект нашли агенты — BACKEND-DEV при исправлении ISS-0001, подтвердил и расширил REVIEWER (решение I1); ISSUE-FIXER в диагнозе добавил механизм M2 (цель, обрезанная при записи на месте) и тот же пробел в prepare-run. Основа текста — предложение CODE-DESIGNER: дизайн, версия 4, §12, строка Q1.\n\nHASHES. All commands run from the sai root. Bn = REQ-006 criterion 14 awk, verbatim. The REQ-002 block uses the same awk with REQ-002. 'Outside' = every line except the REQ-002 block as that awk bounds it, with trailing blank lines counted outside: awk '/^  - id: REQ-002$/{inb=1;next} inb&&/^  [-#]/{inb=0;printf \"%s\",buf;buf=\"\"} inb&&/^[[:space:]]*$/{buf=buf $0 \"\\n\";next} inb{buf=\"\";next} {print} END{printf \"%s\",buf}' docs/requirements.yaml | shasum -a 256\n- BEFORE (2026-10-01T01:25:19Z): B5 33 lines 44463bb385bfd8cd9cc7a14d8153eccadeb95cc57baa2f3b62c38211af3d219e; B6 148 lines b958eb676765ca879d9ccb23ba0e8cd434b9bf33b8cd3138294e72c925da1674. In both, head -n 1 | grep -cx gives 1 and the hash is not the empty-input hash. Outside REQ-002: 586 lines 4e2cf53e8be644a44d9fab9ec394c058527e3a7f167d7fd3e9158f6420fea25b. REQ-002 block: 32 lines 0b405f3dad06af9eae2b8baaac39ed9d4785a94d2881ffd23b00c1d55aa2e971. Whole file: 618 lines, 146341 B, e3ff122583913d071c224461cbcc7f9cfd906e2904fbf622a68f480f86a28cb2.\n- AFTER (2026-10-01T01:29:43Z): B5 33 lines 44463bb385bfd8cd9cc7a14d8153eccadeb95cc57baa2f3b62c38211af3d219e (unchanged); B6 148 lines b958eb676765ca879d9ccb23ba0e8cd434b9bf33b8cd3138294e72c925da1674 (unchanged; head checks 1 in both). Outside REQ-002: 586 lines 4e2cf53e8be644a44d9fab9ec394c058527e3a7f167d7fd3e9158f6420fea25b (unchanged). REQ-002 block: 39 lines c43c045d5ae634fbac07fd8cf6ab8c49eaa62751b4802372fe68eaccd21863b4. Whole file: 625 lines, 150383 B, 4fe2c96e1db5eced5aacb5dde050f7e7d796cea5bea2f1f6d24a6763e682b6b3.\n- PROOF THAT ONLY LINES WERE ADDED. diff from the original copy to the live file gives exactly '291a292,297' (description) and '302a309' (criterion), with 0 deleted lines. Byte ranges are identical: old 1-291 = new 1-291, old 292-302 = new 298-308, old 303-618 = new 310-625. Ruby Psych parse: the other 6 requirements are value-identical. In REQ-002 the criteria go from 10 to 11, the first 10 are identical, criterion 11 equals the text above, and the description is the old one plus the added text.\n\nHOW IT WAS WRITTEN. I built the new file in my scratchpad from a byte copy of the original; the script only inserts lines, after exact anchor checks. All checks above ran on that copy first. Then a guard confirmed the live file was still e3ff1225... and byte-equal to the copy. One mv (a rename on the same device, 16777231) replaced it, so a reader saw either the old file or the new one, never a partial one. No temp file appeared in the project. The file was unchanged from 2026-09-30T18:11:49Z until this write.\n\nHOW CRITERION 11 DIFFERS FROM THE DESIGN §12 (Q1) TEXT, AND WHY\n- Precondition 'no other errors from criteria 3, 4, 6, 7'. Without it the text collides with AC4: anything at the run-folder path of prepare-run gives E_USAGE, code 2 (design §4.1, P12). It also collides with AC7: STATE.md as a folder or unreadable gives E_STATE_ANCHOR (W18, cli.test.js).\n- 'Read-only' counts only when a target must change, or must change or be created in that folder. The design's controls W22 and W27 succeed with read-only entries that need no change.\n- Named exceptions: double fault and cleanup failure after the apply (design §5.2; W44-W46, P11). As written, §12 promises an unchanged listing in cases where the design's own rows leave named entries behind.\n- 'Nothing written outside the project' (Q11; W11, W13, P04). Without it, a write through a link could pass the 'listing unchanged' check.\n- proposed-actions.json is a target only on ACCEPT (AC9; the EF rows).\n- Added: SIGKILL with 'if STATE.md has new content, so do the others' (§5.2; W47, W48); convergence after the cause and the named leftovers are removed (A6, K4); empty stdout (A2).\n- Check: the three test files §9 names. That includes listing.test.js, which §12 leaves out. The command form comes from §9.7, plus the coverage the tests must show.\n\nOPEN ITEMS FOR ORCH\n1. REQ-002 still reads 'status: done   # RELEASE-VALIDATOR PASS 2026-09-28', but criterion 11 is not built or verified. I did not touch status: under [образец] WF-01, REQ-ANALYST does not change it. Proposal (Q14): ORCH decides in this run, for example in_progress until RELEASE-VALIDATOR re-verifies criterion 11 when ISS-0002 closes.\n2. Criterion 11 needs tests that design v4 does not list yet. This is for CODE-DESIGN-VALIDATOR; I am not validating the design. (a) No row for a target that is not a regular file (fifo or socket; the W1.2 EINVAL branch, §5.6), while the criterion asks for a test per kind. (b) No SIGKILL row for prepare-run (P01-P12), while the criterion asks for SIGKILL tests for both commands.\n3. Design §4.1/P12 widens AC4: any entry at the run-folder path, even a dangling link, gives E_USAGE, code 2. AC4's text names only an existing folder. AC4 stayed byte-identical under this scope; amending it is a separate decision.\n4. Line shift for PO-20260930-01 phase 2: lines after 291 moved by 6 and lines after 302 by 7. REQ-003 is now at 311, REQ-004 at 334, REQ-005 at 362, REQ-006 at 399 and REQ-007 at 551 (was 544). REQ-001 (6-270) has not moved. The REQ-002 block as I leave it: 39 lines, c43c045d5ae634fbac07fd8cf6ab8c49eaa62751b4802372fe68eaccd21863b4.\n5. Not covered on purpose: the snapshot out-file write (cli.js:145) stays with ISS-0003 (design D6 lists all five write sites; AP-014).\n\nQuality bar: nothing lowered. Criterion 11 is stricter than AC6/AC7: it checks folders, modes, links and file mtimes, not only file hashes. Attribution follows the sources (ISS-0002, step-01 diagnosis, design §12); nothing is attributed to the owner. R2: no agent events were written.",
+    "changes": [
+      {
+        "file": "docs/requirements.yaml",
+        "block": "REQ-002",
+        "field": "acceptance_criteria",
+        "change": "Criterion 11 appended after the 10 existing ones, which are byte-identical. It covers write failures of apply-verdict and prepare-run (ISS-0002): exit code 1, empty stdout, only E_WRITE lines with no stack trace, nothing changed in the strict listing and nothing written outside the project, the named double-fault and post-apply cleanup exceptions, no target ever partially written (SIGKILL included), and convergence. Check: tools/test/apply.write.test.js, prepare.write.test.js, listing.test.js. The text is in the summary."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "block": "REQ-002",
+        "field": "description",
+        "change": "6 lines appended after the last line; existing lines are unchanged. They record that criterion 11 was added 2026-10-01 from ISS-0002, not from the owner's request. They say who found it: BACKEND-DEV and REVIEWER (I1), with ISSUE-FIXER adding M2 and the prepare-run gap. They give the basis: the CODE-DESIGNER proposal, design v4 §12, Q1 row."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

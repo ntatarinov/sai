@@ -1,0 +1,151 @@
+{
+  "handoff_id": "step07a-code-fixer-PO-20261002-01",
+  "run_id": "PO-20261002-01",
+  "workflow_id": "WF-04",
+  "step": "07a",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PO-20261002-01/step-07a-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "PLAN.md, точка остановки, п. 1 (итерация 3)",
+    "requirement_ids": [
+      "REQ-007",
+      "REQ-001"
+    ],
+    "route": "DESIGN-QA-VALIDATOR (FAIL) -> CODE-FIXER (this) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER (тесты на легенду, обработчики сигналов) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> владелец",
+    "agent_run_id": "a4069de5f0b7b9a78",
+    "write_set": [
+      "tools/src/pixel-office/public/ (texts.js, layout.js, office-model.js, office-sim.js, office-view.js, panels.js, app.js, boot.js, index.html, style.css, office-report.js)",
+      "tools/src/pixel-office/main.js — только пункт 4",
+      "tools/src/pixel-office/hook.js и hook.sh — только пункт 5"
+    ],
+    "before_copy": "<вне проекта>/orch/before-po3-fix",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PO-20261002-01/step-07-design-qa-validator.json",
+      "handoffs/PO-20261002-01/step-04-reviewer.json",
+      "handoffs/PO-20261002-01/step-05-test-designer.json",
+      "docs/design/REQ-001-pixel-office.md",
+      "docs/design/REQ-007-office-ui.md",
+      "docs/design/samples/office-actual-2026-10-05-real.png",
+      "docs/design/samples/office-actual-2026-10-05-real-after-resize.png",
+      "tools/src/pixel-office/"
+    ]
+  },
+  "task": {
+    "description": "WF-04, шаг 5 (и WF-02, после FAIL): исправление кода офиса Pixel Office по находкам сравнения со скриншотом (handoffs/PO-20261002-01/step-07-design-qa-validator.json, FAIL: одна Critical) и накопленным замечаниям. Только перечень ниже (AP-019); код — tools/src/pixel-office/; тесты не менять (их правит TEST-DESIGNER следующим шагом; названные провалы прежних тестов — в result.issues).\n1. QA F1 (Critical): app.js, rebuild(): guarded(\"холст\", fit) вызывается до renderAll(), поэтому fit() считает высоту при пустой легенде — холст 1120 × 952 вместо 1000 × 850 при 1920 × 1080, легенда (y=1049, высота 105) обрезается панелью и не видна до изменения размера окна или данных. Исправить: вписывать холст после того, как легенда нарисована, и заново при каждом изменении высоты легенды (по проекту docs/design/REQ-001-pixel-office.md, п. 4.12–4.13, и описанию интерфейса, раздел 4); легенда видна сразу при открытии в 1920 × 1080 без изменения размера окна.\n2. QA Low: F2 — метка «ПЕРЕГОВОРНАЯ» заходит на рамку доски (сдвинуть метку по описанию п. 3.5, не меняя размеров); F3 — зазор перед « · » в легенде шире описанного; F4 — облачка «Только что получил задачу» шире расчёта описания (≈150 px вместо 139 при шаге мест 144) и накладываются на соседей — не накладываться (например, ограничить ширину облачка по описанию или измерять текст); F5 — на узком экране 390 px длинные имена в легенде переносятся по центру кнопки, а «· свободен» уходит вправо — выровнять по описанию п. 9.1.\n3. REVIEWER (handoffs/PO-20261002-01/step-04-reviewer.json): F1 — app.js:436 и :723: перестройка модели (раз в 10 с и по данным) пересоздаёт кнопки легенды и содержимое карточки, фокус клавиатуры теряется: запомнить data-key перед заменой и вернуть фокус; F2 — office-model.js:4: комментарий «No state is kept» неверен из-за кэша LAYOUTS: поправить комментарий и назвать зависимость Sim от тождества объекта сетки.\n4. TEST-DESIGNER (step-05-test-designer.json, I1): tools/src/pixel-office/main.js ставит обработчики SIGINT/SIGTERM только после печати ссылки; SIGTERM сразу после ссылки убивает процесс сигналом (код null, не 0; видно в 2 из 5 быстрых убийств) — ставить обработчики до печати ссылки.\n5. TEST-DESIGNER (I3): однажды tools/src/pixel-office/hook.js прожил ≈26 с в сценарии «молчащий сервер» (HK-11d) при нагрузке, хотя жёсткий выход 1.5 с; ≈120 повторных запусков — ≈1.1 с. Хук блокирует работу Claude Code пока жив — расследуйте: прочитайте hook.js и hook.sh, найдите путь, при котором жёсткий таймер не срабатывает (например, не сброшен/не взведён до первой операции, неблокирующий сокет, ожидание записи), воспроизведите под нагрузкой на копии вне проекта (несколько параллельных запусков при занятых ядрах), и исправьте, если причина найдена и исправление минимально и по проекту (раздел 6); если не нашли — запишите в result.issues что проверено и какие запуски сделаны, ничего не меняя.\nГраницы: меняются только tools/src/pixel-office/public/*, main.js, hook.js, hook.sh (последние три — только по пунктам 4 и 5); сервер (server.js, journal.js, protocol.js, config.js, state-dir.js), schema.js, format.js, model.js, настройки и тесты — не трогать. После правок: cd tools && npm run check (все прежние 424 теста; провалы по намеренно изменённому поведению — поимённо в result.issues с причиной), страницу — на своём порту и пустой папке состояния вне проекта на 1920 × 1080: легенда видна сразу; порт 4780 и ~/.sai-pixel-office не трогать. Не изменять поведение сверх перечня. Копии до — <вне проекта>/orch/before-po3-fix. Предел расхода у владельца жёсткий; длинные команды — в фоне с выводом в файл.",
+    "acceptance_criteria": [
+      "F1 (Critical): легенда видна сразу при открытии в 1920 × 1080, проверено запуском страницы",
+      "F2–F5, REVIEWER F1–F2, обработчики сигналов исправлены",
+      "hook.js: причина найдена и исправлена или записано, что проверено",
+      "npm run check — вывод; провалы только по намеренным изменениям и названы",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T12:55:46Z",
+  "started_at": "2026-10-05T12:55:46Z",
+  "completed_at": "2026-10-05T13:08:31Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты все пункты перечня, кроме п. 5: причина долгой работы хука не найдена, хук не изменён (что проверено — в issues I3). Холст теперь вписывается после того, как нарисована легенда; в окне 1920 × 1080 легенда видна сразу (проверено на своём сервере). Подпись «ПЕРЕГОВОРНАЯ» сдвинута левее рамки доски. Ширина облачка ограничена расчётом описания. В легенде имя и состояние идут одной строкой текста, прижатой к левому краю. Перестройка легенды и карточки возвращает фокус клавиатуры на то же место. Комментарий в office-model.js исправлен. Обработчики SIGINT/SIGTERM в main.js ставятся до печати ссылки. npm run check: форматирование и линтер чисты, 422 из 424 тестов проходят; оба падения — тесты прежнего поведения, которое изменено намеренно: LY-05 (п. 2, F2) и OF-34 (п. 2, F4).",
+    "changes": [
+      {
+        "item": "1 (QA F1, Critical)",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "rebuild(), start()",
+        "what": "guarded(\"холст\", fit) перенесён после renderAll(): место под холст меряется при уже нарисованной легенде. Высота легенды меняется только в renderAll (при каждой модели); выбор персонажа (openCard) меняет только aria-pressed, не высоту; изменение окна — прежний слушатель resize. Проверено: 1920 × 1080, 11 персонажей — холст 1440 × 900 (36 px на клетку), легенда top 997, высота 39, низ 1036 ≤ низ внутренней области 1053; scrollHeight 1080; resize не делался."
+      },
+      {
+        "item": "2 (QA F2)",
+        "file": "tools/src/pixel-office/public/office-view.js",
+        "where": "ROOM_LABEL_AT, meeting",
+        "what": "Начало подписи x 604 → 580 (на 4 px правее стены переговорной, x = 576); размер шрифта и y не менялись. На снимке подпись кончается до рамки доски (x = 672)."
+      },
+      {
+        "item": "2 (QA F3)",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".legend-item, .swatch, .legend-item .state::before",
+        "what": "Кнопка легенды — inline-block вместо inline-flex с gap 6 px. Квадрат — inline-block с отступом справа 6 px. ::before «· » → « · »: имя, « · » и состояние идут одной строкой без двойного зазора."
+      },
+      {
+        "item": "2 (QA F4)",
+        "file": "tools/src/pixel-office/public/office-view.js",
+        "where": "drawOffice, шаг 10 (облачка); константа BUBBLE_TEXT_MAX = 125",
+        "what": "Ширина облачка = min(ширина текста, 125) + 14 ≤ 139 (описание п. 3.9). Более широкий текст рисуется с maxWidth = 125: fillText сам сжимает его. Короткие фразы — как раньше. Проверено: облачка WRITER и CHECKER на соседних местах стоят с зазором."
+      },
+      {
+        "item": "2 (QA F5)",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".legend-item",
+        "what": "text-align: left и строчная раскладка: длинное имя переносится от левого края, состояние идёт сразу за именем. Снимок 390 × 844 — все строки легенды прижаты влево."
+      },
+      {
+        "item": "3 (REVIEWER F1)",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "renderLegend(), renderCard(), новая focusedElement()",
+        "what": "Перед заменой кнопок легенды запоминается ключ кнопки с фокусом (document.activeElement), после замены фокус ставится на новую кнопку с тем же ключом. Если фокус стоял на «×» карточки, после перестройки он переходит на новую «×»."
+      },
+      {
+        "item": "3 (REVIEWER F2)",
+        "file": "tools/src/pixel-office/public/office-model.js",
+        "where": "шапка модуля, строки 4–8",
+        "what": "Вместо «No state is kept» сказано: модуль хранит только кэш сеток LAYOUTS по числу столов; Sim (office-sim.js) узнаёт о смене сетки, сравнивая объекты сетки по тождеству (D21). Код не менялся."
+      },
+      {
+        "item": "4 (TEST-DESIGNER I1)",
+        "file": "tools/src/pixel-office/main.js",
+        "where": "конец run()",
+        "what": "process.on(SIGINT/SIGTERM, stop) теперь ставится до io.out.write(ссылки). Если запись ссылки упала, обработчики снимаются, сервер закрывается, ошибка уходит дальше, как раньше. Проверено: 10 запусков «прочитать ссылку — сразу SIGTERM», все с кодом 0 и без сигнала."
+      },
+      {
+        "item": "5 (TEST-DESIGNER I3)",
+        "file": "tools/src/pixel-office/hook.js, hook.sh",
+        "where": "—",
+        "what": "Не изменены: причина не найдена (см. issues I3)."
+      }
+    ],
+    "self_check": {
+      "failing_before": "Упавшей команды для F1 нет (находка со снимка). До правки, по QA: canvas [87, 952], legend [1049, 105], inner [87, 966] — легенда за нижним краем.",
+      "page_after": "node tools/src/pixel-office/main.js --port 47821 --dir <scratchpad>/cf-page/state (новая пустая папка). 36 событий отправлены настоящим hook.js с SAI_PIXEL_OFFICE_DIR=этой папке. Chrome headless, область 1920 × 1080, снимок через 4 с после открытия, без resize: {\"vp\":[1920,1080],\"canvasAttr\":[1440,900],\"canvas\":[87,900,1440],\"legend\":[997,39,1472],\"inner\":[87,966,1472],\"items\":11,\"scrollH\":1080}. 390 × 844: легенда в колонку, всё прижато влево. Снимки: <scratchpad>/cf-page/wide.png, narrow.png, bubbles.png. Сервер и Chrome остановлены (lsof по 47821 и 9341 пусто). Порт 4780 и ~/.sai-pixel-office не трогались.",
+      "npm_run_check": "prettier --check: All matched files use Prettier code style!; eslint . --max-warnings 0: без вывода; node --test: tests 424, pass 422, fail 2 (not ok 127 LY-05, not ok 173 OF-34), duration 12308 ms; EXIT 1. Полный вывод: <scratchpad>/cf-check1.txt",
+      "files_changed": "diff -rq с копией до (orch/before-po3-fix): изменены только main.js, public/app.js, public/office-model.js, public/office-view.js, public/style.css; tools/test не изменён."
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "test_expects_old_behavior",
+        "text": "LY-05 (tools/test/pixel-office-layout.test.js:359) ждёт подпись «ПЕРЕГОВОРНАЯ» в (604, 21). По п. 2 (QA F2) подпись намеренно сдвинута в (580, 21). Новое ожидаемое: [580, 21]; подпись не заходит на рамку доски (x = 672). Правит TEST-DESIGNER."
+      },
+      {
+        "id": "I2",
+        "kind": "test_expects_old_behavior",
+        "text": "OF-34 (tools/test/pixel-office-office.test.js:1868) ждёт ширину облачка measureText + 14 без предела (при 0,6 · 10 px на знак «Только что получил задачу» даёт 164). По п. 2 (QA F4) ширина ограничена: min(текст, 125) + 14 = 139, а широкий текст рисуется с 4-м аргументом fillText maxWidth = 125. Новое ожидаемое: ширина 139, fillText(text, bx + 7, by + 12, 125); короткие фразы — как раньше. Правит TEST-DESIGNER. Описание п. 3.9 и проект п. 4.5 об ограничении не говорят: CODE-DESIGNER может дописать по строке («ширина не больше 139, текст сжимается»)."
+      },
+      {
+        "id": "I3",
+        "kind": "not_found",
+        "text": "п. 5, hook.js ≈26 с: причина не найдена, hook.js и hook.sh не изменены. Что прочитано: жёсткий таймер setTimeout(quit, 1500) взводится сразу после import config.js, до чтения stdin и до POST. Он держит цикл событий (ref), quit = синхронный process.exit(0). У POST свой AbortSignal.timeout(1000). Синхронные чтения файлов состояния (readSmall) на обычных файлах не блокируют. Пути, где взведённый таймер не сработал бы, в коде нет. Без ограничения остаются только запуск Node и загрузка модулей до взвода таймера: их время в 1,5 с не входит. Запуски на копии tools/src/pixel-office в <scratchpad>/cf-hook (repro.mjs: hook.sh с node-path, молчащий TCP-сервер как в HK-11d, отдельная папка состояния): (а) без нагрузки 2 × 20 параллельных — мин 1176, медиана 1226, макс 1247 мс; (б) 14 процессов yes на 10 ядрах, 5 × 40 параллельных — медиана 1490, p95 1551, макс 1581 мс, >2000 мс — 0 из 200; (в) 20 процессов yes, 2 × 100 параллельных — медиана 1938, p95 2182, макс 2241 мс, >2000 мс — 65 из 200 (это тоже запуск Node до взвода таймера); все коды 0. 26 с не воспроизвелось. Тот прогон npm run check у TEST-DESIGNER шёл 973 с, то есть машина была перегружена гораздо сильнее (вероятно, память или диск, а не только процессор). Предел 2000 мс у HK-11* под нагрузкой (в) превышается и без всякого дефекта — это вопрос к TEST-DESIGNER или владельцу (см. его I5)."
+      },
+      {
+        "id": "I4",
+        "kind": "note",
+        "text": "Возврат фокуса (п. 3, REVIEWER F1) идёт через document.activeElement. В поддельном DOM тестов (tools/test/pixel-office-helpers.js) есть только document.focused и нет activeElement, поэтому прежние тесты эту ветку не проходят. Тесту на возврат фокуса нужно, чтобы поддельный документ отдавал activeElement (TEST-DESIGNER). В проекте п. 4.12 правило о фокусе при перестройке не записано: по REVIEWER F1 это дело CODE-DESIGNER."
+      },
+      {
+        "id": "I5",
+        "kind": "note",
+        "text": "Кнопки легенды теперь inline-block. В узкой раскладке (< 600 px) правило min-height: 28px осталось, но текст стоит у верха кнопки, а не по центру. На снимке 390 × 844 это не видно, строки по 33 px."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/office-view.js",
+      "tools/src/pixel-office/public/office-model.js",
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/main.js"
+    ]
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "handoff_id": "step02-r8-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02",
+  "round": 8,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r8.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0002",
+    "agent_run_id": "a9a62593eb3aa3478",
+    "rework_of": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r7.json",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-07-test-design-validator.json",
+      "docs/design/REQ-002-idea-verdict.md"
+    ],
+    "before_copy": "<вне проекта>/orch/REQ-002-design.v4r7.md (sha 96470fe2…, the version ORCH diffed after round 7); ORCH diffs your edit against it",
+    "orch_rulings": {
+      "scope": "TEST-DESIGN-VALIDATOR returned a narrow FAIL: four surviving mutants X1-X4 (and neighbours Y1-Y3) need test rows; the code needs no change. The exact row texts, mutant numbers M26-M29 and the design places to edit (sections 9.1, 9.2, 9.4, 9.5, 9.7) are in result.summary of step-07-test-design-validator.json, section (4). Accept them: add rows W55 (first backup removal fails), W56 (EEXIST at the hard link, preempt), W57 (program error with a string code and no syscall at the STATE.md commit, bug-code), P19 (EEXIST at the temp-folder mkdir, preempt), P20 (bug-code at lstat of the run folder), the mutants M26-M29 as the validator numbers them, and the neighbours Y1-Y3 as additional mutants if the validator gives them numbers; add the probe effects it describes (preempt for linkSync and mkdirSync, bug-code) to the fault list of section 9.2; update every count the design states (W, P, M, B if a behaviour is added) and the header. Accept the validator's non-blocking test-hygiene rows only where it gave exact texts; otherwise leave them out and say so.",
+      "not_changed": "No existing row, test id, contract or code behaviour changes; added ids only. If you find a defect in a proposed text, fix it and say so. Record the TEST-DESIGN-VALIDATOR FAIL and this round in the header, and say that the design validator did not re-check this round.",
+      "state": "Design text only; nobody else edits the design. Do not touch tools/. TEST-DESIGNER implements the new rows in parallel from the same validator texts."
+    }
+  },
+  "task": {
+    "description": "Round 8 of the ISS-0002 design: add the rows and mutants the test design validator requires. Design text only.",
+    "acceptance_criteria": [
+      "result.changes one entry per added row and mutant and per section edited",
+      "only added ids; no existing row/test id/contract changed (ORCH diffs against the before-copy)",
+      "counts consistent everywhere"
+    ]
+  },
+  "created_at": "2026-10-01T13:17:08Z",
+  "started_at": "2026-10-01T13:17:08Z",
+  "completed_at": "2026-10-01T13:26:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-03 step 2 round 8 for ISS-0002. Text-only edit of docs/design/REQ-002-idea-verdict.md: the rows and mutants TEST-DESIGN-VALIDATOR required (step-07, section 4). I did not touch tools/, docs/requirements.yaml (sha256 de702d19...) or decisions/. Next: TEST-DESIGNER implements the rows from the same texts; ORCH diffs against context.before_copy.\n\nCHECK AGAINST THE ROUND-7 COPY (context.before_copy, sha256 96470fe2d6e0699b..., equal to the live file before I started). The diff has 18 hunks, 1471 -> 1508 lines; a word-level diff shows only the phrases listed in the changes. Ids added: W55, W56, W57, P19, P20, M26, M27, M28, M29. No id is removed or reordered, and no W, P, L or M row changed its text. Among existing id rows only B10, B16 and B20 changed, in their tests cells, as the validator ordered. Counts now: W 58 (W01-W57 and W13b), P 20, L 9, B 31, M 29; tests W+P+L = 87 (the 82 plus the five). Tables intact, 22 fenced blocks as before, no implementation code. The edited file has sha256 a9ac0c4176b0b1f3e3d8ddf62629f4bbaef60bbd7a1815506014c270ccd26b69.\n\nPROBES (scratch .../scratchpad/cd-iss0002/probe-r8/; the live code was only read). Node note: the Homebrew node is not executable (as reported), so I ran my probes with the private copy by absolute path (bd/nodebin/node, v22.21.1); I did not touch PATH or anything under <каталог Homebrew> I wrote my own injector (bug-code; preempt for writeFileSync, linkSync, mkdirSync) and a scenario runner with a strict listing, built X1-X4 and Y1-Y3 from the current live util.js (463d9b4f..., the validated hash; each patch matched exactly once), and ran:\n- Live code, all five rows as the validator wrote them. W55: one E_WRITE line for <R>/.proposed-actions.json.sai-old, three targets equal to the clean bytes, the kept .sai-old equals the old proposed-actions.json in every field including mtime, the other two .sai-old gone, and after deleting the named leftover the run prints 'unchanged' (exit 0). W56: the 'leftover .STATE.md.sai-old' line, the foreign file intact. W57 and P20: exit 1, an uncaught Error printed with 'code: 'ERR_INJECTED_BUG'' and trace lines, no E_WRITE line, listing unchanged. P19: the 'leftover runs/.WF06-20260925-01.sai-tmp' line under E_WRITE <R>, the foreign folder and held.txt untouched, <R> absent.\n- Mutants, each against its row: X4 fails W55 (the other two .sai-old stay unnamed and the next run refuses); X2 fails W56 ('cannot keep the old version as .STATE.md.sai-old (EEXIST)', no hint); Y1 fails W56 (the foreign file is deleted); X1 fails W57 (an E_WRITE line, no trace) and P20 (exit 0, 'prepared'); X3 fails P19 ('cannot create the temporary folder ... (EEXIST)'); Y2 fails P19 (exit 0, the foreign held.txt inside the new run folder); Y3 fails P19 (the foreign folder is deleted).\n- Pre-fix code: the faults never fire (no such calls there), all five exit 0, which is the 'мутанты: код 0' in each row.\n\nFIXES TO THE VALIDATOR'S TEXTS (as you asked, 'fix it and say so')\n1. W57 and P20 said 'как W49' and 'как P16'. Read literally that demands 'TypeError: injected bug' in stderr, which a bug-code error is not (it is an Error). I spelled the check out: stderr has 'code: 'ERR_INJECTED_BUG'' (what Node prints for an uncaught error with a code, whatever its message) and trace lines, and no E_WRITE line. The bare string ERR_INJECTED_BUG does not discriminate: under X1 it also appears inside the wrong E_WRITE line ('cannot be replaced (ERR_INJECTED_BUG)'); W57 says so. I left the error's message free in the 9.2 contract.\n2. The rule paragraph in 9.4 for rows with 'A5 заменяется' now lists W55 and W56 (and P19), says W55 replaces all three targets and that P19's foreign entries are a folder and its file. Its '.sai-old' exception is now limited to the .sai-old the run creates itself (W45, W46, W55): W56's foreign .sai-old is not a hard link and falls under the general rule (mtime not compared). Without this the mtime handling of the new rows was undefined.\n3. The validator's texts had no 'До исправления' column; all five rows get 'мутанты: код 0' (checked on the pre-fix code).\n4. W55, W56 and P19 refer to the A5 rule and say the targets are compared without mtime, as W46 does.\n\nBEYOND THE VALIDATOR'S 9.1 LIST (easy to revert if you want only what it listed)\n- Three rows of the criterion-11 table in 9.1: W55 in the cleanup exception row ('W46 (сбой на последней уборке), W55 (сбой на первой ...)'), because X4 shows W46 alone cannot prove 'каждая оставшаяся запись названа'; W56 and P19 in the leftover/parallel-run row; and W55, W56, P19 in the 'any OS error' row (cleanup, hard link, folder creation).\n- The 9.2 sentence on faults that exist only in the fixed code now includes W55, W56, W57 (it listed W54 after the validator's earlier F1).\n\nLEFT OUT, AS YOU SAID (no exact texts): N1 (optional rows W58 and W59, only described), N2, N3, N5 (a sentence for 9.2 and M16), and N4, which is not a design item.\n\nTWO SMALL NOTES. B10's behaviour text says 'чужой временный файл', while W56 and P19 are the hard-link and temp-folder legs of the same lock (5.5); I kept B10's text and the validator's mapping (tests cell only). The header records the TEST-DESIGN-VALIDATOR FAIL (step-07, 2026-10-01T13:14Z), this round, and that CODE-DESIGN-VALIDATOR has not re-checked it.\n\nSTILL OPEN (unchanged): ISS-0003's text; WF-06 and verdict-executor.md say nothing about E_WRITE or leftovers; the optional tightening of criterion 11's 'уже' clause (ORCH's call). Scratch names: probe-r8/inject.mjs, scen8.mjs, live/ (copy of the live tools), mut/X1 X2 Y1 X3 Y2 Y3 X4. No agent events written (R2).",
+    "changes": [
+      {
+        "item": "W55",
+        "sections": [
+          "9.4 (new row)"
+        ],
+        "change": "State RR; unlinkSync of <R>/.proposed-actions.json.sai-old after the commit fails with EIO (the first of three removals); expected: a single E_WRITE line for that file ('applied, but this backup of the old version could not be removed (EIO)'); A5 replaced (three targets clean bytes without mtime, the kept .sai-old equal to the old proposed-actions.json in every field, the other two .sai-old removed); A6 first re-run gives changed === 0; pre-fix 'мутанты: код 0'. Checked on live, X4 and pre-fix."
+      },
+      {
+        "item": "W56",
+        "sections": [
+          "9.4 (new row)"
+        ],
+        "change": "State RR; linkSync from STATE.md to .STATE.md.sai-old with effect preempt (another run created the name first); expected 'E_WRITE STATE.md: leftover .STATE.md.sai-old …'; A5 replaced (list before plus the foreign .STATE.md.sai-old with the text, not overwritten, not deleted); pre-fix 'мутанты: код 0'. Checked on live, X2, Y1 and pre-fix."
+      },
+      {
+        "item": "W57",
+        "sections": [
+          "9.4 (new row)"
+        ],
+        "change": "State RR; renameSync from .STATE.md.sai-tmp to STATE.md with effect bug-code; twin of W49; expected exit 1 from Node, stderr with code: 'ERR_INJECTED_BUG' and trace lines, no E_WRITE line, stdout empty, A5 listing as before; the text spells out the check instead of 'как W49' (fix 1) and notes that the bare string is not enough. Checked on live, X1 and pre-fix."
+      },
+      {
+        "item": "P19",
+        "sections": [
+          "9.5 (new row)"
+        ],
+        "change": "runs/ present; mkdirSync of runs/.WF06-20260925-01.sai-tmp with effect preempt (a foreign folder with held.txt); expected 'E_WRITE <R>: leftover runs/.WF06-20260925-01.sai-tmp …'; A5 replaced (list before plus the foreign folder and its file, untouched; <R> absent); explains that the mkdir is the only lock and P06 tests only the check before it; pre-fix 'мутанты: код 0'. Checked on live, X3, Y2, Y3 and pre-fix."
+      },
+      {
+        "item": "P20",
+        "sections": [
+          "9.5 (new row)"
+        ],
+        "change": "runs/ present; lstatSync of <R> with effect bug-code (the first such call is the 'something is at the run-folder path' check, 4.1); as P16 but with code: 'ERR_INJECTED_BUG' in stderr instead of TypeError; pre-fix 'мутанты: код 0'. Checked on live, X1 and pre-fix."
+      },
+      {
+        "item": "M26",
+        "sections": [
+          "9.7 (new mutant row)"
+        ],
+        "change": "The post-commit cleanup (W4) stops at the first failed removal instead of running all of them (validator's X4); killed by W55, W46 still passes."
+      },
+      {
+        "item": "M27",
+        "sections": [
+          "9.7 (new mutant row)"
+        ],
+        "change": "EEXIST at the hard link (W2) is not a leftover: 'cannot keep the old version…' is printed (X2); or the old entry is tracked before the link and the cleanup deletes the other run's copy (Y1); killed by W56."
+      },
+      {
+        "item": "M28",
+        "sections": [
+          "9.7 (new mutant row)"
+        ],
+        "change": "isOsError looks only at code, not at code and syscall (X1); killed by W57 and P20."
+      },
+      {
+        "item": "M29",
+        "sections": [
+          "9.7 (new mutant row)"
+        ],
+        "change": "EEXIST at the prepare-run temp-folder mkdir (P2) is not a leftover (X3); or the folder is created with recursive: true so the lock is gone (Y2); or it is counted as made before the mkdir so the cleanup deletes the other run's folder (Y3); killed by P19."
+      },
+      {
+        "item": "9.7 note",
+        "sections": [
+          "9.7 (paragraph after the mutant table)"
+        ],
+        "change": "New paragraph: M26-M29 were found by TEST-DESIGN-VALIDATOR (X1-X4 pass all 82 rows, Y1-Y3 too); what each mutant does to which row on the scratch copy; the five scenarios pass on the live code; on the pre-fix code the faults never fire (exit 0)."
+      },
+      {
+        "item": "9.1 mapping",
+        "sections": [
+          "9.1 (rows B10, B16, B20)",
+          "9.1 (criterion-11 table, three rows)"
+        ],
+        "change": "Tests cells: B10 'W38' -> 'W38, W56; P19'; B16 'W46' -> 'W46, W55'; B20 'W49, W54; P15, P16, P17' -> 'W49, W54, W57; P15, P16, P17, P20' (as the validator ordered). Beyond its list: the criterion-11 table row for leftovers/parallel runs gets W56 and P19, the 'any OS error' row gets W56 (hard link), P19 (folder creation) and W55 (cleanup), and the cleanup-exception row gets W55 next to W46."
+      },
+      {
+        "item": "9.2 contract",
+        "sections": [
+          "9.2 (fault table, row 'effect')",
+          "9.2 (sentence on faults that exist only in the fixed code)"
+        ],
+        "change": "preempt now also for linkSync (creates the 'to' file with the foreign text) and mkdirSync (creates the folder with held.txt inside, same text), then the real method runs; new effect bug-code (any fn; an Error with code ERR_INJECTED_BUG and no syscall; the message is free, rows check code: 'ERR_INJECTED_BUG'). W55, W56, W57 added to the list of faults that exist only in the fixed code."
+      },
+      {
+        "item": "9.4 rule and heading",
+        "sections": [
+          "9.4 (paragraph on rows with 'A5 заменяется')",
+          "9.4 (heading)"
+        ],
+        "change": "Rule: row list now W38, W44, W45, W46, W55, W56 and P11, P19; W46 and W55 replace all three targets; P19's foreign folder and file are named entries; the .sai-old exception is limited to the .sai-old the run creates (W45, W46, W55) and W56's foreign .sai-old is an ordinary named entry (fix 2). Heading: 'W01–W54 и W13b, всего 55' became 'W01–W57 и W13b, всего 58'."
+      },
+      {
+        "item": "counts",
+        "sections": [
+          "9 (table, row AC11)",
+          "9.2 ('Файлы')",
+          "9.5 (heading)"
+        ],
+        "change": "W01–W54 -> W01–W57 (and W13b) and P01–P18 -> P01–P20 in the AC11 row and in 9.2 'Файлы'; the 9.5 heading reads P01–P20. B stays B1–B31 (no new behaviour), L01–L09 unchanged, the mutant list is M1–M29 (no range is stated)."
+      },
+      {
+        "item": "12 (Q3)",
+        "sections": [
+          "12 (row Q3)"
+        ],
+        "change": "Appended the round-8 probe sentence: the five rows on the live code, the pre-fix code and the mutants M26–M29 (X1–X4, Y1–Y3)."
+      },
+      {
+        "item": "header",
+        "sections": [
+          "Header"
+        ],
+        "change": "Added 'Статус тестов': TEST-DESIGN-VALIDATOR FAIL (narrow; step-07, 2026-10-01T13:14Z; 82 rows exist and kill M1–M25, but X1–X4 and Y1–Y3 pass them all; no code change needed), and the round-8 note (additions only; what was added where; corrections to the validator's texts are in this handoff; CODE-DESIGN-VALIDATOR has not checked round 8, ORCH diffs it against the version after round 7)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-002-idea-verdict.md"
+    ]
+  }
+}

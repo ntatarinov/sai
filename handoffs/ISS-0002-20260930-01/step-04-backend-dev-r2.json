@@ -1,0 +1,65 @@
+{
+  "handoff_id": "step04-r2-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "04",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/ISS-0002-20260930-01/step-04-backend-dev-r2.json",
+  "status": "COMPLETED",
+  "priority": "LOW",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0002",
+    "agent_run_id": "adc0c88bcbbf9f213",
+    "rework_of": "handoffs/ISS-0002-20260930-01/step-04-backend-dev.json",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-05-reviewer.json",
+      "tools/src/util.js"
+    ],
+    "reviewed_copy": "<вне проекта>/orch/src.reviewed (tools/src as REVIEWER passed it; ORCH diffs your edit against it and expects comment lines only)",
+    "write_set": "tools/src/util.js comments only."
+  },
+  "task": {
+    "description": "REVIEWER PASS came with two LOW notes that are comments, not logic. F1: at both fsync-by-flush calls (util.js around lines 298 and 515) add a short comment saying that `flush: true` only syncs to disk because the options object has no `encoding` — adding `encoding` there silently skips the sync (probed by REVIEWER on Node 22.21.1); a test row will count fs.fsyncSync calls. F6: reword the comment at util.js lines ~103-105 («nothing catches everything» is loosely worded): the code rethrows a program error after rollback and cleanup, and only OS errors become E_WRITE. Change comments only: no statement, expression, whitespace outside the comment lines, or import changes. Run cd tools && npm run format:check, lint and test and report counts. SAFETY as before: never run apply-verdict or prepare-run on the real project; do not touch tools/test or other files.",
+    "acceptance_criteria": [
+      "only comment lines differ from the reviewed copy (diff in result.summary)",
+      "format:check, lint, test results with counts",
+      "real STATE.md and runs/ untouched"
+    ]
+  },
+  "created_at": "2026-10-01T08:05:28Z",
+  "started_at": "2026-10-01T08:05:28Z",
+  "completed_at": "2026-10-01T08:10:11Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "BACKEND-DEV r2 for ISS-0002: comment-only edit of tools/src/util.js after the REVIEWER PASS (notes F1 and F6). Nothing else was touched: not apply.js, prepare.js, tools/test, package.json, eslint.config.js or any other file. Next: ORCH diffs against the reviewed copy.\n\nDIFF against context.reviewed_copy (.../scratchpad/orch/src.reviewed/util.js, sha256 8bed1968...; before my edit the live tools/src was byte-identical to that copy, diff -r empty). `diff -u`, file headers omitted:\n@@ -101,8 +101,9 @@\n const ROLLBACK_INCOMPLETE = \"rollback incomplete; see the next lines\";\n \n // Node describes operating-system errors of `fs` with a string `code` and `syscall`.\n-// Only those become E_WRITE lines; any other exception is a program error and keeps\n-// its stack trace (design §5.3, Q6). Nothing in this section catches \"everything\".\n+// Only those become E_WRITE lines. Any other exception is a program error: rollback\n+// and cleanup run, then it is rethrown unchanged, with its stack trace (design §5.3,\n+// Q6). No catch in this section turns it into E_WRITE or drops it.\n export function isOsError(err) {\n   return (\n     err !== null &&\n@@ -295,6 +296,8 @@\n function stage(plan, journal) {\n   plan.tmpEntry = journal.track(\"tmp\", plan, plan.tmpRel, plan.tmpAbs);\n   try {\n+    // No `encoding` in these options, on purpose: with `encoding: \"utf8\"` Node 22.21.1\n+    // takes a fast path that ignores `flush`, so fs.fsyncSync is silently not called.\n     fs.writeFileSync(plan.tmpAbs, plan.content, { flag: \"wx\", flush: true });\n   } catch (err) {\n     // Not ours when the exclusive create met an existing name; otherwise a partial\n@@ -511,6 +514,8 @@\n             err.code,\n           ),\n       );\n+      // No `encoding` here either (see stage()): it would silently turn the fsync of\n+      // `flush: true` off.\n       osCall(\n         () => fs.writeFileSync(abs, file.content, { flag: \"wx\", flush: true }),\n         (err) => new WriteFailure(finalRel, \"cannot write\", err.code),\n\nPROOF THAT ONLY COMMENT LINES CHANGED.\n1. diff -r reviewed copy vs live tools/src lists exactly one file, util.js, with three hunks: 3 comment lines replace 2 (lines 104-105), +2 comment lines (after line 297), +2 comment lines (after line 513). 7 lines added, 2 removed, 542 -> 547 lines, every one of them a `//` line.\n2. Every changed line (difflib over both files) matches ^\\s*// : none that is not a full-line comment.\n3. With all full-line comments stripped from both files the rest is identical, 482 lines each, blank lines included, so no whitespace outside comment lines changed. No trailing whitespace in the new lines; the longest new line is 87 characters (the longest comment line already in the file is 91).\n4. I parsed both files with acorn (ecmaVersion latest, sourceType module, the copy in tools/node_modules) and compared the ASTs with positions removed: identical, 39 top-level nodes. So no statement, expression, import or declaration changed.\napply.js (sha256 fdd0e0b6...) and prepare.js (66551a90...) are byte-identical to the reviewed copy. util.js sha256: 8bed1968... -> 463d9b4f4ed891c7f5724d72e13e7ac3f97697b5e45a37cb72773f0484ab451c.\n\nWHAT THE COMMENTS SAY, AND HOW I CHECKED IT (Q3: I did not just repeat the reviewer's probe).\nF1, util.js lines 299-300 (stage) and 517-518 (createFolderAllOrNothing): the options of the two fs.writeFileSync(..., { flag: \"wx\", flush: true }) calls must stay free of `encoding`. Checked three ways on Node v22.21.1. (a) The installed Node's own source, printed with fs.writeFileSync.toString(): the C++ fast path is taken when typeof data === 'string' and options.encoding is 'utf8' or 'utf-8', and it calls binding.writeFileUtf8(path, data, flags, mode) without any flush; only the JS path calls fs.fsyncSync(fd) when flush is set. (b) A probe that counts fs.fsyncSync calls of one writeFileSync of a string: {flag:\"wx\",flush:true} -> 1 call; the same plus encoding \"utf8\" or \"utf-8\" -> 0 calls, file written fine; encoding \"latin1\" -> 1 call; a Buffer -> 1 call even with encoding \"utf8\". So the comment names `encoding: \"utf8\"`, which is what I confirmed. (c) On the real code paths through the real CLI, with a preload that patches fs.fsyncSync (scratch projects only): apply-verdict on first apply 3 calls, on re-apply of all three targets 3, in escalate mode 2, when nothing must change 0; prepare-run 4 (3 source copies + run.json). On a scratch copy of tools/ where encoding: \"utf8\" was added to both calls, every one of those counts drops to 0 while all commands still exit 0 with the same stdout: exactly the silent regression the comments warn about. For TEST-DESIGNER's row: one fs.fsyncSync per temp file (per changed target; per file in the new run folder), measured by a preload that wraps fs.fsyncSync like the fault-inject module wraps the other methods. I did not mention that row in the code comments, because it does not exist yet.\nF6, util.js lines 103-106 (above isOsError): the old closing sentence 'Nothing in this section catches \"everything\"' is replaced by what the code does: only OS errors (string code and syscall) become E_WRITE lines; any other exception is a program error, rollback and cleanup run, then it is rethrown unchanged with its stack trace (design 5.3, Q6); no catch in this section turns it into E_WRITE or drops it. I re-read every catch block of the section for that last clause: osCall, osError, entryAt, exists, stage, both catches in writeAllOrNothing and all three in createFolderAllOrNothing either handle an OS error or rethrow the exception unchanged, after undo() or the temp-folder removal where something was created. (As the REVIEWER noted in F5, a program error thrown inside the post-commit cleanup loop leaves the remaining .sai-old backups; the comment does not claim otherwise, it follows the wording of design 5.3.)\n\nCHECKS (cd tools, after the edit): npm run format:check exit 0, 'All matched files use Prettier code style!'. npm run lint exit 0 (eslint . --max-warnings 0, no output). npm run test exit 0: tests 115, suites 0, pass 115, fail 0, cancelled 0, skipped 0, todo 0 (the same counts as before the edit). As extra evidence for the \"no behaviour change\" claim my scratch matrix (the 67 rows W01-W52, W13b, P01-P14 through the real CLI, see the first handoff) was re-run on the edited file: 67 of 67 pass.\n\nSAFETY. apply-verdict and prepare-run were never run on the real project, runs/ or STATE.md; all runs used scratch temp projects and scratch copies of tools/. Real files before -> after this edit: STATE.md sha256 e5ef7412f59c8b8ad0b4d50b0f1edbb8ba6796e7a8d5de1592605d5786945c19 -> the same (byte-identical to the copy I saved at the start of the whole task); runs/ content manifest 71d9a79e705e219be2d303b044713ee6ae6dd75f3acabb950b58c94a220dc594 -> the same; runs/ stat manifest (type, mode, size, mtime of every entry, folders included) 4eae08336076d1dd9f98b3d7510952e07406df362163b31df9726f0061802a00 -> the same. Manifest of tools/ (node_modules excluded) before/after this edit differs only in src/util.js. No .sai- entry in the real project. Nothing committed.\n",
+    "changes": [
+      {
+        "file": "tools/src/util.js",
+        "item": "F6",
+        "lines": "103-106",
+        "change": "Comment above isOsError reworded: only OS errors become E_WRITE; any other exception is a program error, rollback and cleanup run, then it is rethrown unchanged with its stack trace; no catch in the section turns it into E_WRITE or drops it. Replaces the loose closing sentence 'Nothing in this section catches \"everything\"'. 3 lines replace 2, plus one line more."
+      },
+      {
+        "file": "tools/src/util.js",
+        "item": "F1 (stage)",
+        "lines": "299-300",
+        "change": "Two comment lines above the fs.writeFileSync of the temp file: no `encoding` in these options, on purpose; with encoding \"utf8\" Node 22.21.1 takes a fast path that ignores `flush`, so fs.fsyncSync is silently not called."
+      },
+      {
+        "file": "tools/src/util.js",
+        "item": "F1 (createFolderAllOrNothing)",
+        "lines": "517-518",
+        "change": "Two comment lines above the fs.writeFileSync of each file in the temporary run folder: no `encoding` here either (see stage()); it would silently turn the fsync of `flush: true` off."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/util.js"
+    ]
+  }
+}

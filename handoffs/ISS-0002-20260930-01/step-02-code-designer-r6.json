@@ -1,0 +1,80 @@
+{
+  "handoff_id": "step02-r6-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02",
+  "round": 6,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r6.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0002",
+    "agent_run_id": "a9a62593eb3aa3478",
+    "rework_of": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r5.json",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-02-code-designer-r5.json",
+      "docs/design/REQ-002-idea-verdict.md"
+    ],
+    "before_copy": "<вне проекта>/orch/REQ-002-design.v4r5.md (the round-5 version ORCH diffed; ORCH will diff your edit against it)",
+    "orch_rulings": {
+      "W54_M25": "Accepted: close the apply-verdict gap you found in round 5 (the W1 loop has its own catch-all that survives W49 and every other row): add row W54 («lstatSync of STATE.md → bug», expected as in P16) and mutant M25, with your probes. Update every count the design states (W, M) and the header. Nothing else changes."
+    }
+  },
+  "task": {
+    "description": "Round 6 of the ISS-0002 design: add W54 and M25 per context.orch_rulings. Text only. After this, the design goes to CODE-DESIGN-VALIDATOR for one delta check covering rounds 5 and 6.",
+    "acceptance_criteria": [
+      "result.changes one entry per item (W54, M25, counts, header)",
+      "no existing row, test id or contract changed (ORCH diffs against the before-copy)"
+    ]
+  },
+  "created_at": "2026-10-01T11:34:25Z",
+  "started_at": "2026-10-01T11:34:25Z",
+  "completed_at": "2026-10-01T11:39:08Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-03 step 2 round 6 for ISS-0002. Text-only edit of docs/design/REQ-002-idea-verdict.md: row W54 and mutant M25 close the apply-verdict gap found in round 5. I touched no other file (docs/requirements.yaml sha256 de702d19..., decisions/ and tools/ are as I found them). Next: CODE-DESIGN-VALIDATOR, one delta check of rounds 5 and 6.\n\nCHECK AGAINST THE ROUND-5 COPY (context.before_copy, sha256 c938ae01a451131d..., equal to the live file before I started). The diff has 9 hunks, 1440 -> 1458 lines; a word-level diff shows only the phrases in the changes. No row id is removed or reordered; ids added are W54 and M25. The only existing row whose text changed is B20 (tests cell, see below). Rows now: W 55 (W01-W54 and W13b), P 18, L 9, B 31, M 25, each defined once; every referenced id exists; no broken table; 22 fenced blocks as before; no implementation code. The edited file has sha256 003257c0e07b79488e2b57d2bd31627c803a7230d80b0a1965cab31a6ba9e84f.\n\nWHAT W54 IS. State RR, fault lstatSync of STATE.md -> bug (TypeError). It is the twin of W50 (same call, OS error instead of program error) and the apply-verdict counterpart of P16. The first lstat of STATE.md is the W1.2 check of that target (STATE.md has no folder on its path, so W1.1 does not call lstat). Expected, as in P16: exit 1 from Node; stderr has 'TypeError: injected bug' and trace lines; no E_WRITE line; stdout empty ('applied' not printed); A5 listing unchanged. Pre-fix column 'мутанты: код 0'.\n\nPROBES (scratch .../scratchpad/cd-iss0002/probe-r6/; live code only read)\n- M25 is built from the CURRENT live util.js (546 lines, with BACKEND-DEV's comments): the W1 loop of writeAllOrNothing turns any exception into a violation; the text to replace matched exactly once.\n- All 53 existing apply-verdict rows (W01-W52 and W13b), run with the REVIEWER's independent harness (copied to probe-r6/harness/ so I did not write into the reviewer's folder; I only added the W54 row to my copy): under M25 0 of 53 fail, and W54 fails (A3, A4: the output is 'E_WRITE STATE.md: cannot be checked (EIO); nothing was changed' instead of a TypeError with a trace). On the unmutated copy W49, W50 and W54 pass. So M25 survives every existing row, including W49, and only W54 kills it.\n- Pre-fix code, W54: the fault never fires (the old code has no lstat there), the harness shows A1-A5 failing, i.e. 'applied recommend', exit 0.\n- Independent direct scenario (my own script, strict listing with file mtimes): live code exit 1, TypeError, 10 trace lines, 0 E_WRITE, listing unchanged; M25 exit 1, 1 E_WRITE, 0 trace lines, listing unchanged; pre-fix exit 0 'applied recommend'.\n\nITEMS\n- W54: new row after W53 (9.4).\n- M25: new mutant row (9.7), W54 as the killing row, with a note in 9.7 that says what I ran and what came out. 12 row Q3 got the round-6 probe sentence.\n- Counts: W01-W53 became W01-W54 in the 9 table row for AC11, in 9.2 'Файлы' and in the 9.4 heading, which now says 'всего 55'. The mutant list is M1-M25 (no range is stated).\n- Header: round-6 note (round 5 accepted by ORCH with its 20 hunks; what round 6 adds; rounds 5 and 6 are not yet checked by CODE-DESIGN-VALIDATOR, one delta check).\n\nTWO THINGS TO KNOW\n1. Beyond the literal ask I changed B20's tests cell, 'W49; P15, P16, P17' -> 'W49, W54; P15, P16, P17', and appended a sentence to Q3. Without the first, W54 would be a test row that no behaviour in 9.1 points to (every other program-error row is listed under B20). If you want only W54 and M25, revert that cell. The Q3 sentence is the evidence list the earlier rounds also kept.\n2. I did NOT touch the paragraph in 9.2 that lists faults existing only in the fixed code ('Сбои строк W36-W38, ..., W50 ...'). W54's fault belongs there as W50's does. I left it because it is not a count and you said nothing else changes; the 'До исправления' column of W54 already says 'мутанты: код 0'. The same applies to P15-P17 from round 5. The validator may want it listed.\n\nSTILL OPEN (unchanged): ISS-0003's text; WF-06 and verdict-executor.md say nothing about E_WRITE or leftovers; TEST-DESIGNER and TEST-DESIGN-VALIDATOR stay on the route. From round 5 and not added: F5 (a program error inside the post-commit cleanup) and the reviewer's optional rows for ruling 2. Scratch names: probe-r6/harness (reviewer's stand, copy), tools-live (copy of live tools), tools-MW1 (= design M25), rows-MW1.out (all rows under M25), w54-direct.mjs. No agent events written (R2).",
+    "changes": [
+      {
+        "item": "W54",
+        "sections": [
+          "9.4 (new row W54)",
+          "9.1 (row B20, tests cell)"
+        ],
+        "change": "New row after W53: state RR, lstatSync of STATE.md -> bug (TypeError), the first such call being the W1.2 check of the target; twin of W50 (same place, program error instead of OS error); expected as in P16: exit 1 from Node, 'TypeError: injected bug' and trace lines in stderr, no E_WRITE line, stdout empty, A5 listing as before; pre-fix 'мутанты: код 0' (checked: the old code exits 0 'applied recommend'). B20 tests cell: 'W49' became 'W49, W54' (the only existing row whose text changed; beyond the literal ask, so that W54 is reachable from a behaviour)."
+      },
+      {
+        "item": "M25",
+        "sections": [
+          "9.7 (new mutant row M25 and a note)",
+          "12 (row Q3)"
+        ],
+        "change": "New mutant: in the W1 check of apply-verdict any exception, not only an OS error, is recorded as an E_WRITE violation; killed by W54 (W49 still passes). The note after the mutant table records the probes: all 53 existing apply-verdict rows (W01-W52 and W13b) pass under M25 on the REVIEWER's stand; W54 fails (A3, A4); W54 passes on the live code; the pre-fix code has no lstat there and exits 0. Q3 got the round-6 probe sentence."
+      },
+      {
+        "item": "counts",
+        "sections": [
+          "9 (table, row AC11)",
+          "9.2 ('Файлы')",
+          "9.4 (heading)"
+        ],
+        "change": "W01-W53 became W01-W54 (and W13b) in all three places; the 9.4 heading says 'всего 55'. The mutant list is M1-M25; no mutant range is stated in the design (the round-5 notes that say M20-M24 describe what was run in round 5)."
+      },
+      {
+        "item": "header",
+        "sections": [
+          "Header"
+        ],
+        "change": "Added the round-6 note: round 5 accepted by ORCH (20 hunks against the version before it); round 6 is text only, no existing row, test id or contract changed; W54 and M25 close the same gap in apply-verdict that P17 closed in prepare-run; where the counts changed; the probes are in 12 (Q3); rounds 5 and 6 are not yet checked by CODE-DESIGN-VALIDATOR (one delta check)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-002-idea-verdict.md"
+    ]
+  }
+}

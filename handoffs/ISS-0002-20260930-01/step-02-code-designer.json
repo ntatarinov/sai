@@ -1,0 +1,125 @@
+{
+  "handoff_id": "step02-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0002-20260930-01/step-02-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0002",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-01-issue-fixer.json",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/issues/ISS-0003-unguarded-fs-calls.md",
+      "docs/design/REQ-002-idea-verdict.md",
+      "docs/requirements.yaml",
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md",
+      "tools/src/",
+      "tools/test/"
+    ],
+    "agent_run_id": "a9a62593eb3aa3478",
+    "orch_rulings": {
+      "severity": "ISS-0002 re-rated HIGH by ORCH because of mechanism M2 (in-place write can truncate STATE.md; no copy to restore).",
+      "scope": "ISS-0002 covers apply-verdict (M1 and M2) and the same gap in prepare-run (prepare.js:133-138, design §4.1), as the fixer found. ISS-0003 (stack-trace sweep) comes later and reuses the §6 code you define here.",
+      "write_set": "Declared for this run (REQ-006 parallel-runs.jsonl): tools/src/prepare.js, apply.js, cli.js, util.js, validate.js, tools/test/, docs/design/REQ-002-idea-verdict.md, docs/issues/, docs/anti-patterns.md, handoffs/ISS-0002-20260930-01/. tools/src/snapshot.js is protected while REQ-006 runs: the design must not require changing it."
+    },
+    "parallel_work_now": "Run PO-20260930-01 (Pixel Office) works on docs/requirements.yaml now and later on tools/src/pixel-office/, tools/test/pixel-office-*, tools/package.json, eslint.config.js; do not design changes to those. Run BP-20260930-01 researchers write docs/business-plan/research/."
+  },
+  "task": {
+    "description": "WF-03 step 2 for ISS-0002: design the fix in docs/design/REQ-002-idea-verdict.md. Decide D1-D7 from the ISSUE-FIXER handoff: the exact guarantee of the write phase (incl. how folder timestamps count), a write strategy with no in-place writes (temp file beside each target, rename order, commit point, what happens when a rename fails), the behaviour changes a rename approach brings (read-only files, read-only folders, symlinked outputs) with a decision for each, temp-file names that validate's run-folder scans cannot misread, and the §6 code for a failed write (name, exit code, file field, OS error in the message; reusable by ISS-0003; no catch-all). Cover prepare-run (§4.1) the same way. Map every behaviour to a test in §9: the fixer's matrix (targets x failure kinds K1-K8 x recommend/escalate x first apply/re-apply) or a justified reduction, each test checking exit code, error line, no trace and an unchanged listing that includes folders, with in-process failure injection that fails on the pre-fix code. Design docs only — no implementation code.",
+    "acceptance_criteria": [
+      "design sections changed are listed in result.changes with what changed",
+      "every decision D1-D7 answered with a reason",
+      "§9 maps each new behaviour to a named test",
+      "no implementation code in the design; nothing outside the declared write set"
+    ]
+  },
+  "created_at": "2026-09-30T17:33:16Z",
+  "started_at": "2026-09-30T17:33:16Z",
+  "completed_at": "2026-09-30T18:15:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-03 step 2 for ISS-0002. Design only: the one project file changed is docs/design/REQ-002-idea-verdict.md (now version 4). No code, tests or other docs changed. Next: CODE-DESIGN-VALIDATOR.\n\nIN SHORT. The write phase of apply-verdict and prepare-run becomes all-or-nothing. New bytes go only into a temp file next to each target. The old file is kept as a hard link. Renames commit the set, STATE.md last. A failed rename rolls back from the hard links. Any handled failure gives exit 1, only E_WRITE lines, no trace, and a strict listing of <root> equal to the one before. New section-6 code: E_WRITE, exit 1. Tests: W01-W50 (apply-verdict), P01-P12 (prepare-run), L01-L08 (the listing tool), mapped from behaviours B1-B29. Faults are injected inside the CLI process and fail on the pre-fix code; rows that fail pre-fix only because the mechanism does not exist yet are backed by mutants M1-M17.\n\nDECISIONS (design 5.1; details 5.2-5.7)\n- D1 guarantee (5.2). Every handled failure: exit 1; empty stdout; stderr only E_WRITE lines; no '^\\s+at ' line; the strict listing of <root> is unchanged (entries incl. folders and links, types, modes, file bytes, file mtimes, link text). Folder mtimes are not compared: creating and removing a temp changes them. atime and ctime are not compared. Named exceptions: a double fault (own temp cannot be removed, or a rollback fails) and a failed cleanup after the commit (applied, a .sai-old is left, exit 1); each gets its own lines. On SIGKILL each target is wholly old or wholly new, and STATE.md changes last. Leftovers block the next run until deleted; after that it converges. Power loss is not promised (no test can show it, Q3); temps are fsynced anyway. Why: this is what section 5 already promised; folder mtimes change under any rename approach.\n- D2 strategy (5.3). W1 check, no disk change, all violations at once in target order: folders on the path are real folders (lstat); target absent or a regular file (lstat); no leftover .<name>.sai-tmp or .sai-old; an existing target is readable; unchanged targets are skipped; a target that must change is writable (access W_OK). W2 staging in commit order: fs.writeFileSync(tmp, bytes, {flag: 'wx', flush: true}); if the target exists, chmod the temp to the target's mode, then linkSync(target, .sai-old). W3 commit: renameSync(tmp, target) in the order proposed-actions.json, apply-report.json, STATE.md (the commit point). If rename k fails, targets 1..k-1 are rolled back in reverse: renameSync(.sai-old, target) gives back the same file (bytes, mode, mtime, inode), or a created target is unlinked; then the rest is cleaned up. W4: unlink the .sai-old files. Why: an in-place write truncates under any order (M2); a rename in one folder is atomic for readers (also AP-008); a hard link restores the exact old file without another write that could fail. prepare-run: the run folder (or runs/ if it is missing) is built in .<name>.sai-tmp/ and committed by one rename; on failure the temp folder is removed.\n- D3 behaviour changes (5.4), each with a test. A read-only target that must change is refused (EACCES, or EPERM for a macOS 'Locked' file, verified): the same error as today, without the partial write. An unchanged read-only target is fine. The mode of a replaced target is carried over (chmod); inode, owner, ACLs and xattrs are not (documented). A read-only folder where a target must change is a NEW refusal (today the in-place write works, C3b and C7); this is deliberate, because the alternative brings M2 back. A symlinked target (dangling, inside or outside <root>) is refused with ELOOP: a rename would silently replace the link, and following it writes outside <root> (Q11). A symlinked folder on the path (runs, runs/<RUN-ID>) is refused too: same class (AP-014); today it exits 0 and writes outside <root> (verified). A filesystem without hard links (FAT) gives a clean refusal; not tested there; the project is on APFS.\n- D4 temp names (5.5): .<name>.sai-tmp and .<name>.sai-old next to the target; for prepare-run a folder .<name>.sai-tmp/. A leading dot and a suffix that is neither .json nor .md, so no validate scan can match (validate.js:143, :607-608); the prepare-run folder does not match RUN_ID_RE; validate.js is unchanged. snapshot lists leftovers (they are not hidden), and a file --allow never allows them; snapshot.js is unchanged. Fixed names plus exclusive creation act as a lock against a second concurrent run. A leftover is refused with its name and never deleted automatically: it may belong to a running command, and after an interrupted STATE.md write a human or ORCH should look.\n- D5 code (6, 5.6): E_WRITE, exit 1. File field: path from <root>; outside <root> it is the path as given on the command line (for ISS-0003). Message: 'E_WRITE <file>: <cause> (<OS code>); <outcome>', with an exact catalogue of causes and three outcomes ('nothing was changed'; 'no target was changed; leftovers are listed next'; 'rollback incomplete; see the next lines'). A target that cannot be read for the comparison (C5) uses the same code. Check violations are all reported at once; after the first disk change only the first failure is reported. Only OS errors (string code and syscall) become E_WRITE. Any other exception runs rollback and cleanup and is rethrown with its trace, so there is no catch-all; main in cli.js is unchanged.\n- D6 scope (5.7): apply.js:100-107, prepare.js:36 and :133-138, and two helpers in util.js (writeAllOrNothing, createFolderAllOrNothing; signatures only). cli.js, validate.js, snapshot.js and listFiles are unchanged. All five write sites in tools/src are listed (grep 2026-09-30); cli.js:145 (the snapshot out-file) stays with ISS-0003.\n- D7 paperwork: the sections listed in changes. The REQ-002 criterion and the decisions/ entry are proposals for ORCH (open questions 1 and 2).\n\nTESTS (9.1-9.7). Behaviours B1-B29 each map to named tests. The fixer's matrix is reduced with a stated rule: one row where the fixed code has its own branch. The checks do not depend on mode or on first/re-apply; staging and commit depend on the position in the commit order and on whether the target existed. Every error row asserts A1 exit code, A2 empty stdout, A3 exact stderr lines, A4 no trace, A5 unchanged strict listing, and A6 convergence to the clean bytes. Controls W01-W03 and P01 show that the listing sees the writes. Fault injection: a preload module (node --import) patches the node:fs default export inside the spawned CLI, so the exit code and stderr are visible. Each fault fires on both code versions: for example, 'commit of T' is renameSync(tmp to T) on the fixed code, or writeFileSync(T) on the pre-fix code. Verified on the pre-fix copy: ENOSPC on apply-report.json gives exit 1, 8 trace lines, STATE.md already changed and proposed-actions.json created. tree() in helpers.js becomes a strict listing (folders, modes, links, file mtimes; unreadable files do not throw), which also tightens the AC6 and AC7 tests. Fail-first procedure on ORCH's pre-fix copy (manifest 2ec4056d...) and mutants M1-M17 are in 9.7; TEST-DESIGN-VALIDATOR applies at least one mutant itself.\n\nFACTS I VERIFIED MYSELF (scratch: <вне проекта>/cd-iss0002/probe/):\n- Node 22.21.1: writeFileSync with a string takes a fast path that bypasses the exported openSync and writeSync, so injection must patch writeFileSync itself; with flush: true it calls fs.fsyncSync.\n- rename over a symlink replaces the link; file onto a folder: EISDIR; folder onto an empty folder: replaces it; folder onto a non-empty folder: ENOTEMPTY; folder onto a file: ENOTDIR.\n- link onto an existing name: EEXIST; renaming the hard link back restores the same inode and content; wx on an existing file: EEXIST; creating a temp in a 555 folder: EACCES.\n- access W_OK: 444 gives EACCES; a uchg ('Locked') file gives EPERM, and link and rename over it give EPERM too.\n- /bin/sh 'ulimit -f 1' is 1024 B here; Node gets EFBIG and the partial file stays.\n- Fixture sizes after a clean recommend apply: STATE.md 1066 B, proposed-actions.json 353 B, apply-report.json 419 B.\n- Pre-fix results: W12 (STATE.md is a symlink: exit 0, the link target rewritten); W13 (symlinked run folder: exit 0, both outputs written outside <root>); P03 (ENOTDIR trace); P04 (exit 0, run folder created outside <root>); P12 (ENOENT trace, exit 1).\n- Live tools/src and tools/test equal ORCH's pre-fix manifest, checked at the start and at the end.\n\nOPEN QUESTIONS FOR ORCH\n1. REQ-002 has no acceptance criterion for write failures (AC6 and AC7 cover only the pre-write checks). Proposed text: design section 12, Q1. REQ-ANALYST and REQ-VALIDATOR can add it once PO-20260930-01 frees docs/requirements.yaml; until then the section-9 rows map to ISS-0002 and 5.2.\n2. Q12: a decisions/ entry for the write strategy is proposed. The question, the four options, the choice and the reasons are in design section 11, including the deliberate new refusal for read-only folders and symlinked targets. decisions/ is not in this run's write set.\n3. Overlap with ISS-0003: this design closes its case a (W19) and case e (P03) and the call sites apply.js:103 and :105 and prepare.js:135, :136 and :138. ISS-0003 keeps b and g1 (cli.js:145, snapshot out-file: E_WRITE with label, 5.6), c, d, f, g2 and validate.js:606. Its text needs updating.\n4. WF-06 and verdict-executor.md say 'never edit files by hand' but not what to do on E_WRITE or on leftovers (for example: report the lines to ORCH, who deletes the leftovers after checking). Both files are outside this run's write set; .claude/agents/ is protected by REQ-006.\n5. Read-side sibling, not fixed here: validate reads through a symlinked run folder (resolveRunDir uses statSync). It only reads; register it or accept it (Q11).\n6. The route in the issue text lacks TEST-DESIGNER and TEST-DESIGN-VALIDATOR; section 9.7 needs both (the fail-first run and the mutants).\n\nPROPOSAL TO RAISE THE BAR (quality-bar section 4, optional): a failure test proves 'nothing changed' with a strict listing (folders, modes, links, file bytes and mtimes), not with file hashes alone. Check: TEST-DESIGN-VALIDATOR rejects a state-unchanged assertion that uses a files-only listing. This design already does it for tools/test through tree().\n\nNothing outside the declared write set was changed. No agent events were written (R2).",
+    "changes": [
+      {
+        "section": "Header",
+        "change": "Version 4 with the list of changed sections; states that CODE-DESIGN-VALIDATOR has not checked v4."
+      },
+      {
+        "section": "4.1",
+        "change": "E_USAGE when anything, even a dangling link, is at the run-folder path (lstat); a failed lstat counts as 'nothing there' and is handled by P1-P4. New rule: the write is all-or-nothing, built in runs/.<RUN-ID>.sai-tmp/ (or .runs.sai-tmp/) and committed by one rename; E_WRITE on failure."
+      },
+      {
+        "section": "5, item 5",
+        "change": "Rewritten: all-or-nothing write; commit order proposed-actions.json, apply-report.json, STATE.md last; 'unchanged' and 'applied <mode>' kept; E_WRITE, exit 1 on failure."
+      },
+      {
+        "section": "5.1 (new)",
+        "change": "Table D1-D7: decision and reason for each, and the M1/M2 basis from the diagnosis."
+      },
+      {
+        "section": "5.2 (new)",
+        "change": "The guarantee: exit 1, only E_WRITE lines, no trace, strict listing unchanged; folder mtimes, atime and ctime not compared; named exceptions; behaviour on SIGKILL; power loss not promised."
+      },
+      {
+        "section": "5.3 (new)",
+        "change": "Write procedure W1-W4 (checks; staging with wx and flush, chmod, hard link; commit renames; rollback; cleanup), general rules (only OS errors become E_WRITE, no catch-all, fs via the default export with lexical paths), the prepare-run variant P1-P4, and why the guards live in the operations."
+      },
+      {
+        "section": "5.4 (new)",
+        "change": "Behaviour-change table: read-only files, modes, inode, read-only folders (new refusal), folder targets, symlinked targets and folders, filesystems without hard links, prepare-run cases for runs."
+      },
+      {
+        "section": "5.5 (new)",
+        "change": "Temp names .<name>.sai-tmp, .<name>.sai-old and folder .<name>.sai-tmp/; why validate cannot misread them; visibility to snapshot; the lock; leftovers refused, never auto-deleted; fsync."
+      },
+      {
+        "section": "5.6 (new)",
+        "change": "E_WRITE message catalogue: format, causes with codes, three outcomes, extra lines, line order, error path to the CLI, reuse by ISS-0003."
+      },
+      {
+        "section": "5.7 (new)",
+        "change": "Signatures of writeAllOrNothing and createFolderAllOrNothing in util.js; per-file change list (apply.js, prepare.js, util.js change; cli.js, validate.js, snapshot.js and listFiles do not)."
+      },
+      {
+        "section": "6",
+        "change": "New row E_WRITE (exit 1). E_USAGE row: anything at the run-folder path. Intro: for E_WRITE 'all found' means the check violations. Closing line: read, parse and write errors never print a trace; only program errors do, on purpose."
+      },
+      {
+        "section": "7",
+        "change": "stdout and exit-code contract of apply-verdict and prepare-run; temp names and leftovers; snapshot lists leftovers."
+      },
+      {
+        "section": "9 (table)",
+        "change": "AC6 and AC7 rows use the strict tree(); the Q10 row adds E_WRITE; new row ISS-0002 pointing to W01-W50, P01-P12, L01-L08."
+      },
+      {
+        "section": "9.1-9.7 (new)",
+        "change": "Behaviours B1-B29 mapped to tests; how the tests are built (states RF/RR/EF, strict tree() format, CLI spawn, fault-injection contract with pre-fix and post-fix alternatives, environment); assertions A1-A6, controls, K1-K4; tables W01-W50 and P01-P12 with exact expected stderr and the pre-fix result; L01-L08; the fail-first procedure and mutants M1-M17."
+      },
+      {
+        "section": "10",
+        "change": "Q5, Q6, Q10 and Q11 rows extended for ISS-0002; pointer to section 12."
+      },
+      {
+        "section": "11",
+        "change": "Conscious decisions: rename with hard-link rollback (four options weighed), refuse instead of bypass, fixed temp names without auto-delete, fsync without a power-loss promise, POSIX only."
+      },
+      {
+        "section": "12 (new)",
+        "change": "Quality bar of this change: each of Q1-Q14 and R1-R3 marked applies or does not apply, with how; proposed REQ-002 criterion text; the decisions/ proposal."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-002-idea-verdict.md"
+    ]
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "handoff_id": "step01-ISS-0001-20260930-01",
+  "run_id": "ISS-0001-20260930-01",
+  "workflow_id": "ISSUE",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/ISS-0001-20260930-01/step-01-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "LOW",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-003",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0001",
+    "artifacts_in": [
+      "docs/issues/ISS-0001-remaining-stack-traces.md",
+      "docs/design/REQ-002-idea-verdict.md",
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md",
+      "tools/src/",
+      "tools/test/"
+    ],
+    "agent_run_id": "a81d27b17e6330851",
+    "route": "BACKEND-DEV (this) -> REVIEWER -> TEST-RUNNER -> DOC-UPDATER, as written in ISS-0001 (AP-009: ORCH does not write code).",
+    "parallel_work_now": "REQ-ANALYST is editing docs/requirements.yaml (REQ-006) and may dry-run npm run snapshot / snapshot-diff. Keep every file you save self-consistent (never leave one file importing something another file does not export yet)."
+  },
+  "task": {
+    "description": "Fix ISS-0001: the three unrealistic paths print a Node stack trace instead of an error code. Read through readTextFile (tools/src/util.js) and report E_VERDICT_MD (validate.js, reading verdict-N.md in checkVerdict), E_STATE_ANCHOR (apply.js, reading STATE.md), E_USAGE (cli.js read for snapshot-diff), with the exit codes the design gives (docs/design/REQ-002-idea-verdict.md §6-§7). One test per case; each failure test also checks that nothing was written (Q5). Use only error codes and meanings that the design already defines; if a case does not fit them, stop and report instead of inventing one.",
+    "acceptance_criteria": [
+      "each of the 3 cases: exit code and error code as in the design, no stack trace on stderr (test asserts it)",
+      "each failure test asserts the state did not change (files/listing unchanged)",
+      "edits only in tools/src/validate.js, apply.js, cli.js, util.js if needed, and tools/test/; not package.json, eslint.config.js or anything outside tools/",
+      "cd tools && npm run check exits 0; output (last lines, test count) in result",
+      "result.changes lists files and what changed"
+    ]
+  },
+  "created_at": "2026-09-30T16:23:19Z",
+  "started_at": "2026-09-30T16:23:19Z",
+  "completed_at": "2026-09-30T16:34:16Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "ISS-0001 fixed. The three paths now read through readTextFile (tools/src/util.js, unchanged) and print a design §6 error line instead of a Node stack trace: (1) validate, verdict-N.md is a folder or unreadable -> 'E_VERDICT_MD verdict-N.md: ...', exit 1; (2) apply-verdict, STATE.md is a folder -> 'E_STATE_ANCHOR STATE.md: ...', exit 1, nothing written; (3) snapshot-diff, a folder instead of a snapshot file -> 'E_USAGE: ...', exit 2. No new code or meaning: each case joins the missing-file case that already mapped to the same code (E_VERDICT_MD 'нет .md'; E_STATE_ANCHOR for a missing STATE.md, with its existing test; E_USAGE 'snapshot not found'). Tests: 4 new in tools/test/cli.test.js, one per case plus a second one for case 1, because the issue names two variants (folder, unreadable). Each runs the real CLI and asserts the exit code, the error line, no '    at ' line on stderr (the design §9 Q10 pattern) and an unchanged tree() (recursive paths + sha256) of the project or snapshot folder (Q5). Proof that the tests catch the defect: original src + new cli.test.js in a scratch copy -> the 4 new tests fail (3 on the stderr match, because the crash also exits 1; snapshot-diff on exit 1 instead of 2) and the 9 old ones pass; with the fix all pass. Scratch runs (not in the suite) also show unreadable STATE.md -> E_STATE_ANCHOR exit 1 and unreadable snapshot -> E_USAGE exit 2, no stack trace, nothing changed. Check 'cd tools && npm run check' -> exit 0 (baseline before the change: exit 0, 111 tests). Last lines of the output: 'All matched files use Prettier code style!'; 'eslint . --max-warnings 0' with no findings; '1..115', '# tests 115', '# suites 0', '# pass 115', '# fail 0', '# cancelled 0', '# skipped 0', '# todo 0'. Test count: 115 (111 + 4). Scope: only the 4 files in changes; util.js byte-identical; package.json, package-lock.json and eslint.config.js untouched (mtime 2026-09-25); nothing outside tools/ edited except this handoff; the issue file not touched. The diff has no skip/todo/only, no eslint-disable, no masked exit code. Every save kept tools/ runnable for the parallel REQ-ANALYST: readTextFile was already exported by util.js, and each import was added before its first use. Out-of-scope findings (not fixed: outside this task, and §6 has no code for a failed write) are in result.issues for ORCH to register.",
+    "changes": [
+      {
+        "file": "tools/src/validate.js",
+        "change": "checkVerdict reads verdict-N.md through readTextFile (was fs.existsSync + fs.readFileSync). Missing, a folder or unreadable all give E_VERDICT_MD (design §4.8, §6), exit 1. Message now 'must be a readable file, mention the chosen idea and contain ## Ограничения' (was 'must exist, ...'). readTextFile was already imported."
+      },
+      {
+        "file": "tools/src/apply.js",
+        "change": "applyVerdict reads STATE.md through readTextFile (was fs.existsSync + fs.readFileSync). Missing, a folder or unreadable give 'E_STATE_ANCHOR STATE.md: STATE.md missing, not a file or unreadable' (was 'STATE.md not found'), exit 1, before any write. readTextFile added to the ./util.js import."
+      },
+      {
+        "file": "tools/src/cli.js",
+        "change": "snapshot-diff 'read' uses readTextFile (was fs.existsSync + fs.readFileSync). A missing, folder or unreadable snapshot throws UsageError 'snapshot missing, not a file or unreadable: <path>' -> E_USAGE, exit 2. readTextFile added to the ./util.js import."
+      },
+      {
+        "file": "tools/test/cli.test.js",
+        "change": "Imports tree from helpers.js. New helper failsCleanly(dir, exitCode, line, command) asserts the exit code, the error line on stderr, no '    at ' stack-trace line, and tree(dir) unchanged. 4 new tests: validate with verdict-1.md as a folder; validate with verdict-1.md unreadable (chmod 000, restored in finally; like the existing E_SOURCE_CHANGED test it needs a non-root user); apply-verdict with STATE.md as a folder; snapshot-diff with a folder as <after>. Existing tests unchanged."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/validate.js",
+      "tools/src/apply.js",
+      "tools/src/cli.js",
+      "tools/test/cli.test.js"
+    ],
+    "issues": [
+      {
+        "severity": "MEDIUM (proposed; ORCH decides)",
+        "title": "apply-verdict writes STATE.md and then crashes if a later target in the run folder is a folder",
+        "evidence": "Scratch runs of the fixed CLI on a valid fixture run: runs/<RUN-ID>/proposed-actions.json created as a folder -> exit 1, Node stack trace 'Error: EISDIR: illegal operation on a directory, read', STATE.md already rewritten. apply-report.json as a folder -> same, with STATE.md and proposed-actions.json already written.",
+        "where": "tools/src/apply.js write loop (fs.existsSync + fs.readFileSync of an existing target, then fs.writeFileSync)",
+        "why": "Breaks design §5 ('any issue means nothing is written'). Unlike ISS-0001 it leaves a half-applied state. It needs a deliberately created folder, so it is not a realistic failure.",
+        "proposal": "New issue via ORCH: CODE-DESIGNER defines a pre-write check of every target (absent or a regular file) and its §6 code; BACKEND-DEV implements it with a test per target that asserts an unchanged tree()."
+      },
+      {
+        "severity": "LOW (proposed)",
+        "title": "More Node stack traces on unrealistic paths, same class as ISS-0001; each fails before any write",
+        "evidence": [
+          "apply-verdict, STATE.md read-only (chmod 444): EACCES on write (apply.js write loop)",
+          "snapshot, output path is a folder: EISDIR (cli.js snapshot, fs.writeFileSync)",
+          "snapshot, a file under --root unreadable: EACCES (snapshot.js, fs.readFileSync)",
+          "snapshot, --root does not exist: ENOENT scandir (util.js listFiles, fs.readdirSync)",
+          "prepare-run, runs is a file: ENOTDIR mkdir (prepare.js, fs.mkdirSync)",
+          "validate, run folder without read permission (mode 300): EACCES scandir (validate.js checkUnknownLensFiles, fs.readdirSync)"
+        ],
+        "note": "Each one reproduced with the fixed CLI in scratch temp folders: exit 1 with a stack trace. Write failures have no §6 code, so they need a design decision, not a guess.",
+        "proposal": "One follow-up issue that sweeps every fs call in tools/src, not only these, with a test per call site."
+      },
+      {
+        "severity": "PROCESS (Q13 candidate, for DOC-UPDATER)",
+        "title": "The reported instances get fixed, the rest of the class stays",
+        "detail": "readTextFile fixed some reads earlier; RELEASE-VALIDATOR then found 3 more (ISS-0001); this run found 8 more of the same class (the two entries above). Candidate anti-pattern: when fixing a class of defect, search every call site and fix or list them in the same work."
+      },
+      {
+        "severity": "DOC (for DOC-UPDATER)",
+        "title": "Design §6 rows do not name these cases",
+        "detail": "E_VERDICT_MD ('нет .md'), E_STATE_ANCHOR ('нет строки-якоря ...') and E_USAGE (snapshot files not mentioned) now also cover 'missing, not a file or unreadable'. The code follows the existing precedent (a missing STATE.md and a missing snapshot already used these codes). DOC-UPDATER may add these words to the 'Когда' column."
+      }
+    ]
+  }
+}

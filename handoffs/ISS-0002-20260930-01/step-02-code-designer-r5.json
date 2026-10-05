@@ -1,0 +1,109 @@
+{
+  "handoff_id": "step02-r5-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02",
+  "round": 5,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r5.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0002",
+    "agent_run_id": "a9a62593eb3aa3478",
+    "rework_of": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r4.json",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-05-reviewer.json",
+      "docs/design/REQ-002-idea-verdict.md"
+    ],
+    "before_copy": "<вне проекта>/orch/REQ-002-design.v4r4.md (the version ORCH diffed after round 4; ORCH will diff your edit against it)",
+    "orch_rulings": {
+      "scope": "REVIEWER PASS on the implementation came with four design additions that must be in the design before TEST-DESIGNER maps rows. The exact texts are in result.summary of step-05-reviewer.json: ruling 1 (§5.7: three new exports, a table row for isOsError), ruling 2 (§5.6: one sentence on <file> for «cannot be checked»), ruling 3 (§5.3: one sentence on a program error with a failing rollback or cleanup), F4 (two new rows P15 and P16 for prepare-run program errors and two new mutants M20 and M21), plus F1: a row for TEST-DESIGNER that counts fs.fsyncSync calls (the flush: true fsync works only because the options have no encoding). Accept them with the reviewer's exact text; if you find a defect in a proposed text, fix it and say so.",
+      "not_changed": "No existing row, test id or contract changes. Update the row counts wherever the design states them (P01-P14 becomes P01-P16; mutants), and the header: record the REVIEWER PASS (step-05-reviewer.json, 2026-10-01T08:03Z) and this round."
+    },
+    "parallel_work_now": "BACKEND-DEV adds comments in tools/src/util.js (no design effect). Nobody else edits the design."
+  },
+  "task": {
+    "description": "Round 5 of the ISS-0002 design: add the four reviewer-required additions and the fsync row as ruled in context.orch_rulings. Design text only, no implementation code. Change nothing else.",
+    "acceptance_criteria": [
+      "result.changes one entry per item (rulings 1-3, F4 rows P15/P16 and mutants M20/M21, F1 fsync row, header, counts) with section and what changed",
+      "no existing row, test id or contract changed (ORCH diffs against the before-copy)"
+    ]
+  },
+  "created_at": "2026-10-01T08:05:28Z",
+  "started_at": "2026-10-01T08:05:28Z",
+  "completed_at": "2026-10-01T08:18:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-03 step 2 round 5 for ISS-0002. Text-only edit of docs/design/REQ-002-idea-verdict.md. docs/requirements.yaml, decisions/ and tools/ are untouched by me (BACKEND-DEV's own comment edits in tools/src/util.js are theirs). Next: TEST-DESIGNER maps the rows; ORCH diffs against context.before_copy.\n\nCHECK AGAINST THE BEFORE-COPY (sha256 fd2b8f81e4d92446..., equal to the live file before I started). The diff has 20 hunks, 1397 -> 1440 lines; a word-level diff shows only the phrases listed in the changes. No row id is removed or reordered. Ids added: W53, P15, P16, P17, P18, B31, M20-M24. The only existing row whose text changed is B20 (its tests cell, as ordered). Rows now: W 54 (W01-W53 and W13b), P 18, L 9, B 31, M 24; each defined once, every referenced id exists, no broken table, 22 fenced blocks as before, no implementation code. The edited file has sha256 c938ae01a451131d2efe56411eea83084ef4082f1800a4e0498b6abaa902a8af.\n\nREVIEWER'S TEXTS: ACCEPTED, WITH THESE FIXES (as you asked, 'fix it and say so')\n1. Ruling 1. The util.js row of the 5.7 file table still said 'два помощника' next to 'три новых экспорта'; it now says 'два помощника и isOsError'.\n2. Ruling 3. The leftover list omitted prepare-run's temp folder although the text cites P1; I added 'временная папка prepare-run' (I ran it: a TypeError at the rename plus EIO at the folder removal leaves the temp folder, and the next prepare-run names it as 'leftover').\n3. F4, pre-fix column. The reviewer wrote 'мутанты'; the design's convention is 'мутанты: код 0', and I confirmed it (on the pre-fix code both scenarios exit 0 'prepared', because the faulted calls do not exist there).\n4. F4, M21. The reviewer's text names the private function 'occupied', which the design never defines; M21 is now described by behaviour (the check 'something is at the run-folder path', 4.1, treats any lstat exception as 'no entry').\n5. F4 is incomplete against its own count. The reviewer says prepare-run has THREE places that separate an OS error from a program error, but their rows cover two. I built a mutant for the third (the P1 phase of createFolderAllOrNothing turns any exception into E_WRITE) and ran it: P15 and P16 both still pass, so it survives. I added P17 (lstatSync of runs -> bug) and mutant M22. Evidence: live code, exit 1, TypeError, trace, no E_WRITE, listing unchanged; mutant, one E_WRITE line and no trace; pre-fix code, exit 0.\n\nWHAT EACH ITEM ADDED\n- Ruling 1 (5.7): 'три новых экспорта', the table row for isOsError exactly as proposed, 'признак ошибки ОС' removed from the list of util.js internals.\n- Ruling 2 (5.6): the cannot-be-checked row now says <файл> is the path whose lstat failed: the target, a folder on the way to it, a .sai-tmp or .sai-old leftover, or prepare-run's temp folder. I ran two cases: a leftover name (E_WRITE .STATE.md.sai-tmp: cannot be checked (EIO)) and runs with mode 000 (E_WRITE runs/.WF06-20260925-01.sai-tmp: cannot be checked (EACCES)).\n- Ruling 3 (5.3, general rules): one bullet, as proposed plus fix 2. I ran both commands before accepting the claim: exit 1 from Node, TypeError and trace, zero E_WRITE lines, leftovers named by the next run.\n- F4: rows P15, P16 (as proposed, fixes 3 and 4), P17 (fix 5), mutants M20, M21, M22, and B20's tests cell 'W49; P15, P16, P17'. I ran each mutant: M20 fails P15 only, M21 fails P16 only, M22 fails P17 only.\n- F1: rows W53 (apply-verdict, state RR) and P18 (prepare-run), mutants M23 and M24, new behaviour B31, and one sentence in 9.2. The reviewer asked for one row; I wrote two because util.js has two flush calls and a mutant at one does not touch the other (probe: with encoding added at the W2 write the apply-verdict count is 0 and prepare-run's stays 4; at the P2 writes the reverse). The rows count fs.fsyncSync calls: exactly 3 for apply-verdict (one per temp file) and exactly 4 for prepare-run (3 copies and run.json), all before the first rename; on the pre-fix code both are 0. The exact count matters: with zero calls 'all fsyncs before the first rename' holds by itself (I saw this under the mutants), so the rows demand the count. The counting runs in the test process through mock.method on fs.fsyncSync and fs.renameSync (recording into one list and calling the real method), not through the fault-inject module: these two rows need neither exit code nor stderr, and no new module feature is needed. 9.2 says so, because it states that every row spawns the CLI. Node 22.21.1 confirms the reviewer's observation: with encoding in the options, flush is skipped.\n\nCOUNTS. ORCH expected P01-P14 to become P01-P16; it is P01-P18 because of P17 and P18 (fixes 5 and F1). Updated: the 9 table row for AC11, 9.2 'Файлы', the 9.4 and 9.5 headings (W01-W53 and W13b, 54 in all; P01-P18), 12 row Q5 (B1-B31). The mutant list is M1-M24 (no range is stated anywhere). Header: the REVIEWER PASS (step-05-reviewer.json, 2026-10-01T08:03Z, for the code built on version 4 round 4, sha256 fd2b8f81...) and a round-5 note; it says CODE-DESIGN-VALIDATOR has not checked round 5. 12 row Q3 lists the round-5 probes.\n\nTWO THINGS I FOUND AND DID NOT ADD (your call)\n1. Same gap in apply-verdict: the W1 loop of writeAllOrNothing has its own catch, and a mutant that turns any exception there into a violation survives W49 and every other row (probe: lstatSync of STATE.md -> bug gives exit 1, trace, no E_WRITE on the live code; with the mutant, one E_WRITE line and no trace). The reviewer's F4 is about prepare-run, so I stopped there. If you want it: row 'W54 | RR | lstatSync STATE.md - bug | as P16 (A5: listing as before)' and mutant 'M25 in the W1 loop of apply-verdict any exception becomes a violation | W54'.\n2. Optional items left out because you did not list them: F5 (a program error thrown in the post-commit cleanup leaves backups; the 5.3 bullet already says the next run names leftovers), the reviewer's optional rows for ruling 2 (a cannot-be-checked row for the other four paths and for runs-missing), F6 and F7 (code comment and a note, not design).\n\nSCRATCH NAMES. Probes in .../scratchpad/cd-iss0002/probe-r5/: inject.mjs, count-fsync.mjs, scen.mjs, mut/. In that folder mut/M22 is the design's M23, mut/M23 is the design's M24 and mut/MP1 is the design's M22; mut/MW1 is the W1 mutant of item 1 above. The live tools were only read; every run used scratch fixtures. No agent events written (R2).",
+    "changes": [
+      {
+        "item": "ruling 1",
+        "sections": [
+          "5.7"
+        ],
+        "change": "'два новых экспорта' became 'три новых экспорта'; added the table row for isOsError(err) with the reviewer's text; removed 'признак ошибки ОС (code и syscall — строки)' from the list of things internal to util.js. Fix: the util.js row of the file table now says 'два помощника и isOsError' (it said 'два помощника' beside 'три экспорта')."
+      },
+      {
+        "item": "ruling 2",
+        "sections": [
+          "5.6"
+        ],
+        "change": "In the 'cannot be checked' row, added: <файл> is the path whose lstat failed: the target, a folder on the way to it, a .<имя>.sai-tmp or .<имя>.sai-old leftover, or prepare-run's temp folder. Text as proposed; checked on two cases (leftover name; runs with mode 000)."
+      },
+      {
+        "item": "ruling 3",
+        "sections": [
+          "5.3 (general rules)"
+        ],
+        "change": "New bullet after the program-error bullet: when rollback or cleanup also fail after a program error there are no E_WRITE lines, the exception goes on unchanged (trace, exit 1), the leftovers are named by the next run as 'leftover' (W1.3, P1), and there is no test row for it. Fix: 'временная папка prepare-run' added to the list of leftovers (checked)."
+      },
+      {
+        "item": "F4",
+        "sections": [
+          "9.5 (rows P15, P16, P17)",
+          "9.7 (mutants M20, M21, M22 and a note)",
+          "9.1 (row B20)"
+        ],
+        "change": "Rows P15 (renameSync of the temp folder -> bug) and P16 (lstatSync of <R> -> bug) as proposed; pre-fix column 'мутанты: код 0'. Mutants M20 (P4 catch-all) and M21 (the run-folder check swallows every exception, described by behaviour instead of the private name 'occupied'). B20 tests cell: 'W49; P15, P16, P17'. Added by me because F4 names three places but covers two: row P17 (lstatSync of runs -> bug) and mutant M22 (P1 catch-all), which survives P15 and P16 (checked). The note under the mutant table records which row kills which mutant."
+      },
+      {
+        "item": "F1",
+        "sections": [
+          "9.4 (row W53)",
+          "9.5 (row P18)",
+          "9.7 (mutants M23, M24)",
+          "9.1 (new row B31)",
+          "9.2 ('Запуск')"
+        ],
+        "change": "Row W53 (apply-verdict, RR): exactly 3 fs.fsyncSync calls, one per temp file, all before the first of 3 renames, no other fsync; pre-fix 0. Row P18 (prepare-run): exactly 4 calls (3 copies and run.json), all before the single rename; pre-fix 0. The note says why the exact count is required and that flush: true works only because the options have no encoding (checked on Node 22.21.1). Mutants M23 (encoding added at the W2 temp-file write) and M24 (the same at the P2 writes into the temp folder). New behaviour B31 -> W53, P18. 9.2: W53 and P18 call applyVerdict and prepareRun in the test process with mock.method on fsyncSync and renameSync, because 9.2 said every row spawns the CLI."
+      },
+      {
+        "item": "header",
+        "sections": [
+          "Header"
+        ],
+        "change": "Added 'Статус реализации': REVIEWER PASS (step-05-reviewer.json, 2026-10-01T08:03Z) for the code built on version 4 round 4 (sha256 fd2b8f81...), and a round-5 note listing the changed sections; it says CODE-DESIGN-VALIDATOR has not checked round 5 and that ORCH diffs it against the version after round 4."
+      },
+      {
+        "item": "counts",
+        "sections": [
+          "9 (table, row AC11)",
+          "9.2 ('Файлы')",
+          "9.4 (heading)",
+          "9.5 (heading)",
+          "12 (rows Q5 and Q3)"
+        ],
+        "change": "W01-W52 and W13b became W01-W53 and W13b (54 rows in all, in the heading); P01-P14 became P01-P18; B1-B30 became B1-B31 in Q5; the mutant list is M1-M24 (no range is stated in the design). Q3 lists the round-5 probes. ORCH's expected P01-P16 is P01-P18 because of P17 (F4 completion) and P18 (F1, prepare-run)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-002-idea-verdict.md"
+    ]
+  }
+}

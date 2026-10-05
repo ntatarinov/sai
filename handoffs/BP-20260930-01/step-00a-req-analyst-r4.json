@@ -1,0 +1,91 @@
+{
+  "handoff_id": "step00a-r4-BP-20260930-01",
+  "run_id": "BP-20260930-01",
+  "workflow_id": "WF-07",
+  "step": "00a",
+  "round": 4,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/BP-20260930-01/step-00a-req-analyst-r4.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-006"
+    ],
+    "artifacts_in": [
+      "handoffs/BP-20260930-01/step-00b-req-validator-r3.json",
+      "docs/requirements.yaml"
+    ],
+    "agent_run_id": "a4782636cdabc16f1",
+    "rework_of": "handoffs/BP-20260930-01/step-00a-req-analyst-r3.json",
+    "orch_rulings": {
+      "R1": "Accept the validator's fix: record the block's line count, require > 0 and first line «  - id: REQ-006», and treat the empty-input hash as a failed command.",
+      "R2": "Accept: protect the REQ-005 block the same way (its own awk hash, line count, first-line check).",
+      "R3": "Accept: each declaration names the requirement or issue the run serves (never REQ-006), cross-checked against the run's handoffs; the run's own handoffs/<run_id>/ folder must be among its declared paths.",
+      "R4": "Accept: the 2a handoff stores the competitor table, the 2b handoff stores its command outputs; if RELEASE-VALIDATOR contradicts 2b, REQ-006 goes blocked and the owner decides.",
+      "S1-S4": "Accept all four."
+    },
+    "file_lock": "Another REQ-ANALYST (run PO-20260930-01, agent a81e13fc8b7a7810d) is writing the REQ-001 block of docs/requirements.yaml now. Phase 1: prepare the new REQ-006 block in your scratchpad and dry-run the commands against a scratch copy — do not write docs/requirements.yaml. ORCH will message you when the file is free. Phase 2: replace only the REQ-006 block in one write; record sha256 of everything before the REQ-006 block before and after."
+  },
+  "task": {
+    "description": "Rework REQ-006 (round 4): fix R1-R4 and S1-S4 from result.summary of step-00b-req-validator-r3.json as ruled in context.orch_rulings. Requirement text only. Two phases per context.file_lock.",
+    "acceptance_criteria": [
+      "result.changes has one entry per finding (R1-R4, S1-S4) with what changed and where",
+      "only the REQ-006 block changed (sha256 of the rest before/after in result)",
+      "every new or changed command dry-run by you; outputs in short in result"
+    ]
+  },
+  "created_at": "2026-09-30T16:54:14Z",
+  "started_at": "2026-09-30T16:54:14Z",
+  "completed_at": "2026-09-30T17:11:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST round 4: REQ-006 reworked for R1-R4 and S1-S4, as ORCH ruled.\nPhase 1 (file locked by PO-20260930-01): I prepared the text in the scratchpad and dry-ran it on a scratch copy. Phase 2 (after ORCH said the file was free): I made one atomic write (temp file plus rename) that aborts if the prefix or REQ-006 text changed since my read. It replaced only REQ-006 description..last criterion (lines 353-471 before, 353-476 after). Nothing before line 353 was touched; the REQ-001 block that PO rewrote is unchanged.\nHashes of everything before the REQ-006 block: lines 1-325 (before the REQ-006 header comment): before f286465bce462b061feeae0dade3e93906420e406f2c216553ee85c21fb37293, after the same. Lines 1-328 (before «  - id: REQ-006»): before 39cdf120d6cc1b7c28fe25159bfac6e91feb91c8323849b7bb1e8924c68c0545, after the same. Lines 1-352 are byte-identical (cmp), which also covers REQ-006 title, owner, status, depends_on and original_request. Before my write, the REQ-006 block hash was 84caa600… (143 lines), as PO reported, and the text equalled my round-3 text.\nChecks on the real file after the write: ruby Psych parses REQ-001..006; REQ-001..005 are unchanged vs the pre-write copy (parsed); REQ-006 has 19 criteria, each with «Проверка:»; the text on disk is byte-identical to the prepared round-4 text; the commands extracted from the disk text are identical to the ones dry-run in phase 1. On the real file, Б6 gives 148 lines and ac7e7b48… (changed from 84caa600… because the text changed; ORCH records the value after the in_progress flip at snapshot time), and Б5 gives 33 lines and 44463bb3…, unchanged. The wrong-path guard fails as designed. A fresh snapshot (218 files) gives before-grep 0 and З = 30 lines equal to the independent find+shasum. Only the description and criteria 4, 5, 6, 7, 14, 15 and 17 changed vs round 3. Nothing under tools/, docs/issues/, docs/anti-patterns.md, docs/design/ or STATE.md was touched. All dry runs used bash with system binaries (/usr/bin grep, find, awk, jq); tools commands ran on the first try.\nOpen question: none new. Criterion 15 now requires every declared run to have handoffs/<run_id>/ with a handoff whose requirement_ids are all listed in serves, so ORCH must list REQ-002, REQ-003, REQ-004 (not only ISS-0001) in ISS-0001 serves. Re-validation: step-00b-req-validator-r4.json.",
+    "changes": [
+      {
+        "id": "R1",
+        "change": "Criterion 14 (а)/(в): the step-1 handoffs record req006_block_lines as well as req006_block_sha256. A block hash counts only if lines > 0, the first line is exactly «  - id: REQ-006» (grep -cx), and the sha256 is not e3b0c442… (empty input, i.e. the command failed). Б runs from the sai root, or with ../docs/requirements.yaml from tools/. Dry run on the real file: 148 lines, first line matched, ac7e7b48…, PASS. From tools/ with the wrong path, and on a CRLF copy: 0 lines, e3b0c442…, guard FAIL.",
+        "where": "requirements.yaml 471 (AC14)"
+      },
+      {
+        "id": "R2",
+        "change": "Criterion 14: the REQ-005 block is protected the same way. Б5 is Б6 with REQ-005; req005_block_lines and req005_block_sha256 are recorded in the step-1 handoffs and checked at step 4 with the same guards. The description names REQ-005 as protected because its rules are imported. Dry run: Б5 on the real file gives 33 lines and 44463bb3…, the same as before this edit. Changing REQ-005 criterion 4 wording changes Б5 (27e4fa49…) and leaves Б6 alone; editing REQ-001 or appending REQ-007 changes neither.",
+        "where": "requirements.yaml 427 (description), 471 (AC14)"
+      },
+      {
+        "id": "R3",
+        "change": "Criterion 15: each declaration line carries serves (a non-empty list of REQ/ISS/decision ids, never REQ-006) and must list its own handoffs/<run_id>/; run_id is the handoffs folder name; paths may be extended with a new line for the same run_id. Only runs with at least one handoff in handoffs/<run_id>/ contribute to the allow list <А> (a loop with ls and jq). New step-4 check (5): the run's handoff requirement_ids contain no REQ-006 and are all in serves (comm -23). Check (6): the first line of a run first declared after the pinned prefix is not later than its earliest handoff created_at. Criterion 14's snapshot-diff uses $(cat <А>). Description: the parallel-work paragraph says each run names what it serves. Dry runs: the shape check rejects a missing serves, serves with REQ-006 and a missing own handoffs path. Serves matches the real ISS-0001 (REQ-002/003/004) and PO (REQ-001) handoffs; a short serves lists the missing ids; a synthetic handoff naming REQ-006 is caught. <А> gives 7 allows for the two real runs and none for a declared run without handoffs, whose change to quality-bar.md then fails snapshot-diff (exit 1).",
+        "where": "requirements.yaml 424 (description), 471 (AC14), 472 (AC15)"
+      },
+      {
+        "id": "R4",
+        "change": "Criterion 4: the 2a handoff stores result.value_table, the output of T = awk '/^[|] Конкурент [|]/{f=1} f&&!/^[|]/{exit} f' <brief> without the final newline; in «рано» the table-header command runs on jq -r .result.value_table. Criterion 5: 2b stores result.checks, its own command outputs. At step 4 RELEASE-VALIDATOR re-reviews the 2b verdict from the coverage tables and result.value_table; if it disagrees in either direction, REQ-006 is blocked «вердикт ворот оспорен», both verdicts go to the owner, and there is no 2b rework. Criterion 6 lists that among the blocked paths. Criterion 7: in the 14-day outcome the table in the final file must equal result.value_table (diff empty), and neither 2c nor step-3 reworks may change it. Criterion 17: a contradiction is not a rework; REQ-006 is blocked at once. Description updated. Dry run: T extracts exactly the 4 table lines, the value_table round trip diffs empty, the «рано» header check gives 1, and a table edited after 2a is caught.",
+        "where": "requirements.yaml 373 (description), 461 (AC4), 462 (AC5), 463 (AC6), 464 (AC7), 474 (AC17)"
+      },
+      {
+        "id": "S1",
+        "change": "Criterion 14: two more snapshot-diff controls. «changed»: a before copy where docs/owner-goals.md gets a zero hash, built as { grep -v -F '  docs/owner-goals.md' <до>; printf '%064d  docs/owner-goals.md' 0; echo; }, must give exit 1 and exactly «changed docs/owner-goals.md». «removed»: an after copy without that line (grep -v -F) must give exit 1 and exactly «removed docs/owner-goals.md». Any file present in both snapshots and outside the allowed and declared paths may replace owner-goals.md. Dry run: both controls gave exit 1 and exactly those lines; control 1 gave exactly the 3 added lines.",
+        "where": "requirements.yaml 471 (AC14)"
+      },
+      {
+        "id": "S2",
+        "change": "Criterion 14 (а): the before-snapshot grep is now grep -cE 'handoffs/<BP-ID>/step-01|session-review-|pixel-office-brief', and it must be 0. Dry run: 0 on a fresh snapshot of the real tree (218 files).",
+        "where": "requirements.yaml 471 (AC14)"
+      },
+      {
+        "id": "S3",
+        "change": "Criterion 5: the SOURCE_UNAVAILABLE re-run is named …-runN.json instead of …-run2.json.",
+        "where": "requirements.yaml 462 (AC5)"
+      },
+      {
+        "id": "S4",
+        "change": "Criterion 15 (1): declared_at must match --arg t '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' via test($t). Literals are passed with --arg, so the YAML string has no double quotes or backslashes. Dry run: «2026-09-30 16:40:00» is rejected and «2026-09-30T16:40:00Z» accepted; an empty file gives true.",
+        "where": "requirements.yaml 472 (AC15)"
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

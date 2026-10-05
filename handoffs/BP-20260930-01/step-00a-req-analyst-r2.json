@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step00a-r2-BP-20260930-01",
+  "run_id": "BP-20260930-01",
+  "workflow_id": "WF-07",
+  "step": "00a",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/BP-20260930-01/step-00a-req-analyst-r2.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-006"
+    ],
+    "artifacts_in": [
+      "handoffs/BP-20260930-01/step-00b-req-validator.json",
+      "docs/requirements.yaml"
+    ],
+    "agent_run_id": "a4782636cdabc16f1",
+    "rework_of": "handoffs/BP-20260930-01/step-00a-req-analyst.json",
+    "orch_rulings": {
+      "B2": "Owner's words are the default: any FAIL at step 2b gives «рано» at once, no reworks at the gate. No request to the owner. Remove the substance/formatting split and its attribution to the plan. The writer self-checks the mechanical format (word count, markers, table columns) with the requirement's own commands before handing to 2b, and lists the command output in result.",
+      "B5": "Option without mandate change: a criterion that every task.description of steps 1b, 2a, 2b, 2c, 3 and 4 states that REQ-006 governs where the mandate names REQ-005 or its sections, and names the extra sources allowed for this run (e.g. the step-2a/2b handoffs for the «рано» document). Checked with jq + grep. Mandates stay frozen.",
+      "B4": "Add --allow STATE.md. REQ-006 status: ORCH flips it to in_progress after 00b PASS and before the snapshot; docs/requirements.yaml is not touched again until step 5.",
+      "other": "Apply the validator's fixes for B1, B3 and M1-M7 as proposed."
+    }
+  },
+  "task": {
+    "description": "Rework REQ-006 per the step-00b findings (B1-B5, M1-M7) and ORCH's rulings in context.orch_rulings. Requirement text only.",
+    "acceptance_criteria": [
+      "every finding B1-B5 and M1-M7 is addressed; result.changes lists each finding id with what changed (requirements.yaml line numbers)",
+      "no new owner attribution; original_request unchanged unless a finding requires it"
+    ]
+  },
+  "created_at": "2026-09-30T13:42:47Z",
+  "started_at": "2026-09-30T13:42:47Z",
+  "completed_at": "2026-09-30T14:13:12Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST round 2: REQ-006 reworked in docs/requirements.yaml per step-00b findings and ORCH rulings. The header, title and original_request (lines 159-185) are byte-identical to round 1 (cmp and a ruby comparison). The description (186-269) and criteria (271-288, now 18) were rewritten. YAML parses (ruby Psych, REQ-001..006), and all 18 criteria end with «Проверка:». No «по существу», «оформление» or «третий по счёту» remains. The two «план владельца, п. 3» citations support only «отклонил — сразу рано». A dry run on scratch data showed the new commands work: the AC4 value-line checks on a synthetic brief (1 line, 18 words, 1 terminal mark, 5/5 strings, 1 heading, header row found), the M1 grep (3/3), and the B3 grep on a current snapshot (0; old pattern 9). New AC15 (task descriptions under frozen mandates) shifts the former AC15-17 to AC16-18; AC16 references criteria 4 and 7-13 and «кроме последнего» (= AC18). Open questions: (1) with no rework at the gate, the 60-word limit and the five required strings decide the outcome; the owner may widen them (description 233-235 marks them as the analyst numbers). (2) AC15 fixes literal phrases ORCH must put into task.description; ORCH may want to copy them from AC15 verbatim to avoid a false FAIL. Re-validation: new step-00b-req-validator-r2.json.",
+    "changes": [
+      {
+        "id": "B1",
+        "change": "AC4: the value line must contain «$10 в месяц», «допущение», «Claude», «Copilot», «Pretty Prompt» (grep -cF on the extracted line V) and say why the result cannot be had the same way in Claude, Copilot and Pretty Prompt. AC5: new FAIL condition «не говорит, почему результат нельзя получить тем же способом в Claude, Copilot и Pretty Prompt». Description 192-196 says the same.",
+        "lines": "192-196, 274, 275"
+      },
+      {
+        "id": "B2",
+        "change": "Per ORCH ruling: the substance/formatting split is gone (no «по существу»/«оформление», no result.reasons kind, no 2a/2b -rN, no «третий по счёту 2b»). Any 2b FAIL gives «рано» at once; AC6 requires exactly one step-02a-* and one step-02b-* file. «(план владельца, п. 3)» now cites only «отклонил — сразу рано», which the plan says literally. Mitigation: AC4 defines the mechanical commands (V | wc -l, wc -w, [.!?] count and end, grep -cF of 5 strings, grep -c '^## ', grep -Fxc of the table header); the writer puts their output in result.self_check before 2b; 2b and RELEASE-VALIDATOR re-run them. AC8 heading singular: «## Попытка сформулировать ценность», with one attempt from step-02a and reasons from step-02b. AC7: step-3 reworks must not change the value line.",
+        "lines": "199-203, 263-264, 274, 275, 276, 277, 278"
+      },
+      {
+        "id": "B3",
+        "change": "AC14: snapshot check is now grep -cE 'handoffs/<BP-ID>/step-01|session-review-' = 0 (dry run on today's snapshot: 0; the old pattern gave 9).",
+        "lines": "284"
+      },
+      {
+        "id": "B4",
+        "change": "AC14: --allow STATE.md added (content checked at step 5). After 00b PASS ORCH sets REQ-006 in_progress, then takes the «до» snapshot; docs/requirements.yaml is not touched again until step 5 or a move to blocked. Process paragraph updated.",
+        "lines": "250, 284"
+      },
+      {
+        "id": "B5",
+        "change": "Mandates stay frozen (ORCH ruling). New AC15: task.description of every 1b, 2a, 2b, 2c, 3, 4 handoff (and -rN) contains «REQ-006 действует вместо REQ-005» and a line starting «Дополнительные источники этого прогона:»; 2b contains «Шаг 2b задан критериями 4–6 REQ-006»; step 3 contains the literal sentence replacing the REQ-005 section/30-day-plan/kill-criteria checks; 2c names step-02a/02b handoffs and lists them in context.artifacts_in. Check: jq + grep -F. Description names the mandate/WF-07 lines that say REQ-005 (plan-validator.md 20, 35-36; plan-writer.md 21-25; WF-07 6, 20, 37, 44, 46).",
+        "lines": "236-245, 285"
+      },
+      {
+        "id": "M1",
+        "change": "AC12: grep -ciE 'Д7|активн[[:alpha:]]* пользовател' = 0 (dry run matched 3 of 3 test lines, not «активно ищут»).",
+        "lines": "282"
+      },
+      {
+        "id": "M2",
+        "change": "AC1: the AP-008 clause is now checkable — result.artifacts_out of each step-1 handoff (and -rN) is exactly one path, its own file; check jq.",
+        "lines": "271"
+      },
+      {
+        "id": "M3",
+        "change": "AC10: «не меньше 5 первоисточников (если в документе их меньше — все)».",
+        "lines": "280"
+      },
+      {
+        "id": "M4",
+        "change": "AC18: failure path — on ORCH check FAIL, DOC-UPDATER fixes in step-05-doc-updater-rN.json with result.changes, returning status to in_progress until fixed; ORCH re-checks; at most two reworks, then blocked; done is final only if context.orch_check.verdict of the last step-5 handoff is PASS (jq). AC6 and the process paragraph now list step 5 among blocked paths / rework limits.",
+        "lines": "263-264, 276, 288"
+      },
+      {
+        "id": "M5",
+        "change": "AC16: step 3 checks criteria 7–13 and, for the «проверка на 14 дней» outcome, 4. AC3: «FAIL после второй доработки».",
+        "lines": "273, 286"
+      },
+      {
+        "id": "M6",
+        "change": "Description names the origin of items not in the owner's section-4 list (scenarios, intermediate signals, «Что нужно узнать сначала», the WF-07 variant) — reviewer §1, ORCH §2, ORCH step-00a task — and says the owner may strike them. Per ruling (3), the 1 500- and 60-word limits are marked as the analyst's conversions, not the owner's words.",
+        "lines": "227-235"
+      },
+      {
+        "id": "M7",
+        "change": "Description no longer states «входит в подписку Microsoft Copilot»; only the pointer «research/pixel-office.md, строки 167–169» remains (also in AC2). AC2: the Claude row is attributed to the reviewer's «Claude» (reviews file, section 3), not to pixel-office.md sections 2 and 7.",
+        "lines": "197, 272"
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

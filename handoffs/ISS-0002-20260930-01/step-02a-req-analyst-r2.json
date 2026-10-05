@@ -1,0 +1,70 @@
+{
+  "handoff_id": "step02a-r2-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02a",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/ISS-0002-20260930-01/step-02a-req-analyst-r2.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002"
+    ],
+    "issue_id": "ISS-0002",
+    "agent_run_id": "aa84e8d8793fad93a",
+    "rework_of": "handoffs/ISS-0002-20260930-01/step-02a-req-analyst.json",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-02b-req-validator.json",
+      "docs/requirements.yaml",
+      "docs/design/REQ-002-idea-verdict.md"
+    ],
+    "orch_rulings": {
+      "F1": "Fix A: criterion 11 states that any entry at the run-folder path (even a broken link) is E_USAGE, exit 2 (§4.1, P12); «цель — папка, ссылка или не обычный файл» applies to apply-verdict's targets only. Criterion 4 stays byte-identical.",
+      "F2-F4": "Accept as proposed.",
+      "status": "ORCH flipped REQ-002 to in_progress (Q14) at the time of this handoff; do not change the status line."
+    },
+    "edit_scope": "Only criterion 11 of REQ-002 (and REQ-002 description lines you added, if needed). Criteria 1-10 byte-identical. REQ-005/REQ-006 block hashes before/after (33/44463bb3…, 148/b958eb67…). Nobody else writes the file during your round."
+  },
+  "task": {
+    "description": "Rework REQ-002 criterion 11 per F1-F4 from result.summary of step-02b-req-validator.json as ruled in context.orch_rulings. Requirement text only.",
+    "acceptance_criteria": [
+      "result.changes one entry per finding F1-F4",
+      "criteria 1-10 byte-identical; REQ-005/REQ-006 hashes unchanged (before/after in result)"
+    ]
+  },
+  "created_at": "2026-10-01T01:49:12Z",
+  "started_at": "2026-10-01T01:49:12Z",
+  "completed_at": "2026-10-01T01:57:49Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST, WF-03 step 02a round 2 for ISS-0002. Rework of REQ-002 criterion 11 per F1-F4 of step-02b-req-validator.json, as ruled in context.orch_rulings. Requirement text only. The one changed line is criterion 11 (line 315 of docs/requirements.yaml); diff before -> after = '315c315'. Unchanged: criteria 1-10 (byte-identical, equal to the pre-ISS-0002 original), ORCH's status line (in_progress), the description lines I added in round 1 (no change needed), and every other block. Next: REQ-VALIDATOR re-check (Q2).\n\nCRITERION 11, ROUND 2 (verbatim):\nСбой записи (ISS-0002): других ошибок из критериев 3, 4, 6, 7 нет («папка вне runs/» из критерия 4 определяется по пути, без перехода по ссылкам); у prepare-run по пути папки прогона нет никакой записи — любая запись там, даже битая ссылка, — это E_USAGE, код 2 (дизайн §4.1, P12); но apply-verdict или prepare-run не может записать свои цели — у apply-verdict STATE.md, apply-report.json и при ACCEPT proposed-actions.json, у prepare-run папку прогона (и runs/, если её нет): цель apply-verdict — папка, ссылка или не обычный файл; на пути к цели вместо папки ссылка или файл; существующую цель нельзя прочитать для сравнения; цель, которую нужно изменить, или папка, где цель нужно изменить или создать, только для чтения; остаток прерванного или параллельного запуска; любая ошибка ОС на любом шаге записи (в том числе ENOSPC, EFBIG, EIO). Тогда код выхода 1, stdout пуст, в stderr только строки E_WRITE без трассировки стека; команда ничего не пишет вне проекта и не меняет ничего из того, что видит строгий список проекта: папки, файлы и ссылки, их права, байты и время изменения файлов, текст ссылок (время изменения папок не сравнивается). Исключения из «не меняет»: двойной сбой (после сбоя не удалось удалить свою временную запись или вернуть уже заменённую цель) — каждая такая запись и цель названа в строках E_WRITE, остальное как до запуска; сбой уборки после применения — все цели как после запуска без сбоя, каждая оставшаяся временная запись названа в строках E_WRITE, остальное как до запуска. Ни при сбое, ни когда процесс убит сигналом SIGKILL, цель не бывает записана частично: каждая цель — как до запуска или целиком новая, а если в STATE.md уже новое содержимое, то и в остальных целях тоже. После устранения причины и удаления названных остатков повторный запуск с теми же аргументами (у prepare-run — с тем же --created-at) даёт те же байты целей, что запуск без сбоя. Проверка: `cd tools && node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js` — код 0 (эти файлы входят в `npm run check`); есть тесты на каждый вид сбоя из списка, а у вида с вариантами — на каждый вариант, возможный у команды (у apply-verdict: цель — папка, ссылка, не обычный файл; на пути — ссылка; у prepare-run: на пути — ссылка и файл), на каждую цель обеих команд, на оба исключения, на SIGKILL у обеих команд и на битую ссылку по пути папки прогона prepare-run (E_USAGE, код 2); каждый тест на отказ сравнивает строгий список до и после запуска; listing.test.js проверяет, что строгий список видит папки, ссылки, права и время изменения файлов\n\nHASHES. All commands run from the sai root. B5/B6 = REQ-006 criterion 14 awk, verbatim. 'Outside' and the REQ-002 block use the same awk forms as round 1 (see the round-1 handoff).\n- BEFORE r2 (2026-10-01T01:51:02Z; the file already had ORCH's status flip and the REQ-001 edit of PO-20260930-01): REQ-005 33 lines 44463bb385bfd8cd9cc7a14d8153eccadeb95cc57baa2f3b62c38211af3d219e; REQ-006 148 lines b958eb676765ca879d9ccb23ba0e8cd434b9bf33b8cd3138294e72c925da1674. In both, the head line check gives 1 and the hash is not the empty-input hash. Outside REQ-002: 592 lines 82656f70481ac7d38438aa7af06422583ef359f5aff1182e80dac7b1b09e1d61. REQ-002 block: 39 lines 90eb12d9b8d5642bda1b0d9bf9bd1124cfb83a8879eac3902377b11566da9503. REQ-002 without criterion 11: f8cfbac18b3b49992fbafd0c4fcad101e8c773751f695ec8eee55b3a458dc713. Criteria 1-10 (lines 305-314): 82aa9818504d8bee3040f9fdee36e5b8e36e9c640a438386b8b704f97de54446. Whole file: 631 lines, 153940 B, 8d4a07a9f438dee7f27bfe89175a63aea0890aeb4814222d475de13f85113707.\n- AFTER r2 (landed 2026-10-01T01:56:20Z): REQ-005 33 lines 44463bb385bfd8cd9cc7a14d8153eccadeb95cc57baa2f3b62c38211af3d219e (unchanged); REQ-006 148 lines b958eb676765ca879d9ccb23ba0e8cd434b9bf33b8cd3138294e72c925da1674 (unchanged; head check 1 in both). Outside REQ-002: 592 lines 82656f70... (unchanged). REQ-002 without criterion 11: f8cfbac1... (unchanged). Criteria 1-10: 82aa9818... (unchanged; cmp against the round-1 original copy, lines 293-302: identical). REQ-002 block: 39 lines 99b102238a7f13eb48c11040ed92d575c3f6f237a88af98ccebdcc4aa87d41cf. Whole file: 631 lines, 154841 B, 4450091aa8dd0481464ebe0d79f2ba61a6c7264cd585b767e3708a8d6c09ba0b.\n- Ruby Psych parse: 7 requirements. The other 6 are value-identical to before. All REQ-002 fields except acceptance_criteria are identical (status in_progress). Criteria 1-10 are identical, and criterion 11 equals the text above.\n\nHOW IT WAS WRITTEN. As in round 1: a byte copy in my scratchpad, one line replaced after an exact-match assertion on the round-1 text, and all checks on the copy first. Then a guard confirmed the live file was still 8d4a07a9..., and one mv (a rename on the same device) replaced it. Readers saw either the old file or the new one, never a partial one. Note: the file's mtime is 2026-10-01T01:52:23Z, when the copy was written in the scratchpad; mv keeps the mtime. The content landed at 01:56:20Z.\n\nNOTES\n- The 'P12' reference stays valid: the CODE-DESIGNER round 2 task adds a W row (fifo/socket) and P13 (SIGKILL) without renumbering the existing rows.\n- The F1 optional point was checked against tools/src/cli.js resolveRunDir. It first checks 'directly inside runs/' on the path alone (path.resolve/path.relative, no realpath), then checks existence with existsSync/statSync, which follow links. So a link at runs/<RUN-ID> to a folder outside the project passes criterion 4 and is handled by criterion 11 (W13: E_WRITE ELOOP).\n- Nothing in the bar was lowered. All four changes make the text stricter or more exact. R2: no agent events written.",
+    "changes": [
+      {
+        "finding": "F1",
+        "ruling": "Fix A",
+        "change": "Precondition made input-based for prepare-run: «у prepare-run по пути папки прогона нет никакой записи — любая запись там, даже битая ссылка, — это E_USAGE, код 2 (дизайн §4.1, P12)». The first kind is restricted to apply-verdict: «цель apply-verdict — папка, ссылка или не обычный файл». The validator's optional point is included: «(«папка вне runs/» из критерия 4 определяется по пути, без перехода по ссылкам)», which matches cli.js resolveRunDir and keeps W13 in criterion 11 under any reading. The coverage list gains «на битую ссылку по пути папки прогона prepare-run (E_USAGE, код 2)», so the new statement has a named test (P12, run by the same command). Criterion 4 is byte-identical."
+      },
+      {
+        "finding": "F2",
+        "ruling": "as proposed",
+        "change": "Coverage clause: «есть тесты на каждый вид сбоя из списка, а у вида с вариантами — на каждый вариант, возможный у команды (у apply-verdict: цель — папка, ссылка, не обычный файл; на пути — ссылка; у prepare-run: на пути — ссылка и файл), ...»."
+      },
+      {
+        "finding": "F3",
+        "ruling": "as proposed",
+        "change": "Convergence: «повторный запуск с теми же аргументами (у prepare-run — с тем же --created-at) даёт те же байты целей, что запуск без сбоя»."
+      },
+      {
+        "finding": "F4",
+        "ruling": "as proposed",
+        "change": "Exception «сбой уборки после применения» now ends with «, остальное как до запуска» (as W46 expects: no other changes)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

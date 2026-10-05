@@ -1,0 +1,84 @@
+{
+  "handoff_id": "step00a-r3-PO-20260930-01",
+  "run_id": "PO-20260930-01",
+  "workflow_id": "WF-02",
+  "step": "00a",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/PO-20260930-01/step-00a-req-analyst-r3.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-001", "REQ-007"],
+    "artifacts_in": [
+      "handoffs/PO-20260930-01/step-00b-req-validator-r2.json",
+      "docs/requirements.yaml"
+    ],
+    "agent_run_id": "a81e13fc8b7a7810d",
+    "rework_of": "handoffs/PO-20260930-01/step-00a-req-analyst-r2.json",
+    "orch_rulings": {
+      "N1": "Accept: except for the last line, marks depend only on journal content; a forward-dated line is judged by the lines after it; the server appends in acceptance order; test that the same journal read now and two hours later gives the same marks.",
+      "N2": "Accept: a session-end only affects tasks started before it; a session is running if its last event is not a session-end; test end -> resume with the same session_id -> subagent start.",
+      "N3": "Accept: eslint.config.js may only gain a files + globals block (checkable).",
+      "N4": "Accept: case-insensitive handler grep; every <script> in served HTML has a src.",
+      "N5": "Accept: SessionStart's own source field is never sent; one journal line per example."
+    },
+    "edit_scope": "docs/requirements.yaml: only the REQ-001 and REQ-007 blocks. Measure REQ-005 and REQ-006 blocks with REQ-006 criterion 14's awk from the sai root before and after (33/44463bb3…, 148/b958eb67… must not change). Nobody else writes the file during your round."
+  },
+  "task": {
+    "description": "Rework REQ-001 and REQ-007 (round 3) per N1-N5 from result.summary of step-00b-req-validator-r2.json as ruled in context.orch_rulings. Requirement text only.",
+    "acceptance_criteria": [
+      "result.changes has one entry per finding (N1-N5) with what changed and where",
+      "REQ-005/REQ-006 block hashes before/after in result, unchanged",
+      "every new or changed check dry-run by you; outputs in short in result"
+    ]
+  },
+  "created_at": "2026-09-30T17:59:44Z",
+  "started_at": "2026-09-30T17:59:44Z",
+  "completed_at": "2026-09-30T18:14:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST round 3 (PO-20260930-01, same agent_run_id a81e13fc8b7a7810d). N1-N5 are fixed as ruled in context.orch_rulings. Only the REQ-001 and REQ-007 blocks changed, in 22 exact replacements; each matched once and lay inside its block. The write was atomic (temp file + rename).\n\nProtected blocks. I ran the awk of REQ-006 criterion 14 from the sai root, piped to wc -l and to shasum -a 256:\n- REQ-005: before (2026-09-30T18:00:05Z) 33 lines, 44463bb385bfd8cd9cc7a14d8153eccadeb95cc57baa2f3b62c38211af3d219e. After (2026-09-30T18:12:01Z) 33 lines, 44463bb385bfd8cd9cc7a14d8153eccadeb95cc57baa2f3b62c38211af3d219e.\n- REQ-006: before 148 lines, b958eb676765ca879d9ccb23ba0e8cd434b9bf33b8cd3138294e72c925da1674. After 148 lines, b958eb676765ca879d9ccb23ba0e8cd434b9bf33b8cd3138294e72c925da1674.\nOther checks. cmp shows everything from «  - id: REQ-002» up to the REQ-007 comment line is identical. The header is identical. REQ-001 and REQ-007 are identical from their id line through original_request.\n- REQ-001 block: bac0bb44ced3adced675ebe31cf07c0d92c63587c5064fede8ad4cfd60c123ca -> b4cf9bc0256c224b9575776975d48567aa0c4dd25d3be9d53fa70ab93e9e6d9d.\n- REQ-007: 5f5b8be65cb2addc25b0edb9f604b41bdf2b2c0166c60903aa68f65cf1949871 -> b0a739b43349de04c7fc57ff5cd1a7b40254392bd94dc790b23dc065f7497527.\n- Whole file: c170e322abeb6416d5f2ebceb19ee2eecc934f546fbf9cf1d82227c2e2a9aed8 -> e3ff122583913d071c224461cbcc7f9cfd906e2904fbf622a68f480f86a28cb2 (605 -> 618 lines).\n- ruby Psych parses REQ-001..REQ-007. REQ-001 has 14 criteria and REQ-007 has 8, each with «Проверка». The original_request strings are still equal.\n\nN1 deviates from the validator’s wording. Its example rule (judge a line by the next line «that fits the lines before it») fails the validator’s own test «a back-dated line after real lines marks only itself» when real events are sparse. I simulated it (scratchpad/readrule-sim.mjs):\n- real 10:00, 10:05, 10:10, then a back-dated 10:00: the two real lines were marked, the forged one was not;\n- the same happens when the journal starts with a single real line.\nSo AC4 now uses a symmetric, content-only rule. A conflict is a pair where the later line in the file is more than 120 s earlier. While conflicts remain, mark the line in the most conflicts; on a tie, mark the later line in the file. Only the last line uses the clock. The ORCH ruling holds: marks depend only on content except for the last line; a forward-dated line is judged by the lines after it; the server appends in acceptance order; the same journal read at T and T+2 h gives the same marks.\nSimulated (scratchpad/readrule-sim2.mjs):\n- honest journals of 400 lines with ±59 s and gaps of 1, 20 and 600 s: 0 marks;\n- the validator’s example (real 10:00, forged 11:00, then 10:01, 10:30, 10:59): only the forged line, at 10:59:30 and at 13:00;\n- a back-dated line, dense and sparse: only itself;\n- two forged future lines followed by three real lines: only the forged ones;\n- a mixed journal: the same marks at T and T+2 h;\n- a +1 h last line: marked by the clock rule (в).\nOne tie is documented in the description: two forged future lines followed by exactly two real lines marks the real ones until one more real line arrives. The rule is detection; the guard is the mandate (R2).\n\nDry runs of the new and changed checks (commands taken from the parsed YAML):\n- AC14, from tools/: `find src test -name '*.js' | xargs -n 1 npx eslint --print-config | jq -S -c .rules | sort -u | shasum -a 256` gives 856ee00120171941ee04ed2318fd4d5a4264a59fcff999b4fb5a1b22f695be08 over 23 files. The globals command gives bec0f88d493c5af9403051ad0ff2c4216dbab9ca43f4f5fbf7fedb8934b825bd. The eslint word grep gives 1.\n- On a scratch copy of eslint.config.js (node_modules symlinked, removed afterwards), the allowed files+globals block keeps all three hashes. Each weakening changes one: `\"no-undef\": 0` in the base rules (rules 3f65dfcb), a rules block for page files (page rules 3f65dfcb), browser globals for all files (globals 00b00bfe), and global ignores (print-config prints undefined).\n- REQ-007 AC6 grep -i: clean 1, onClick 0 (found), javascript: 0, missing folder 2.\n- The script-src logic flags an inline block and an upper-case inline <SCRIPT>, and passes external scripts.\n- N2 simulation (end, resume with the same session_id, start): the task started before the end shows «окончание не записано», the task after the resume «в работе», and the session is running.\n- N5 simulation: forwarding SessionStart.source gives 400 and 0 lines, which the new one-line-per-example test catches; dropping it gives 1 line.\n\nDocs re-checked on 2026-09-30:\n- cli-reference.md is unchanged. --fork-session reads «When resuming, create a new session ID instead of reusing the original».\n- hooks.md is unchanged since round 2. SessionStart source values are startup, resume, clear, compact and fork; «resume» covers --resume, --continue and /resume. SessionEnd reason values include resume and clear.\n\nThe write set is unchanged. STATE.md is still outside ORCH’s declaration; the description now notes that REQ-006 AC14 (--allow STATE.md) allows it for every run.",
+    "changes": [
+      {
+        "id": "N1",
+        "change": "AC4’s read rule is rewritten:\n- (а) source not REAL;\n- (б) among REAL lines, a conflict is a pair where the later line in the file is more than 120 s earlier. While conflicts remain, mark the line in the most conflicts; on a tie, mark the later line in the file;\n- (в) only the last line uses the clock (more than 60 s in the future).\nExcept for (в), marks depend only on content, and a journal of accepted lines has no conflicts. The criterion states that the server appends in acceptance order and that the 120 s threshold is twice the write tolerance.\nTests: accepted lines only, no marks; SIMULATION; a back-dated line (also after only two real lines 10 minutes apart); a +1 h line followed by an hour of real lines; the same journal read at T and T+2 h gives the same marks; the last line +1 h.\nAC2 now says lines follow acceptance order, and 20 concurrent writes at −59..+59 s must stay unmarked (the test calls the same rule function as the page).\nThe description («Где что лежит») says the rule is detection, not protection, documents the tie case, and states the assumption that the clock is not set back. «Числа»: 120 s is the conflict threshold.\nThis deviates from the validator’s example rule, which the simulation showed marks real lines in the sparse case; details are in the summary.",
+        "where": "requirements.yaml 254 (AC2), 256 (AC4), 167-172 (description «Где что лежит»), 233 («Числа»)"
+      },
+      {
+        "id": "N2",
+        "change": "AC6(в): a task without an end is «окончание не записано» if a server start or its session’s end came after the task began. A session end affects only tasks started before it, so after a resume with the same session_id, new tasks are «в работе». The test is: session end, SessionStart (resume) with the same session_id, subagent start; the task must be «в работе». AC6(г) now reads «при событии окончания сессии после её начала».\n«Сбои» is reworded the same way.\nNew fact (12): resuming (--resume, --continue, /resume) keeps the session_id; only --fork-session gives a new one (cli-reference); SessionStart then carries source «resume», and SessionEnd can carry reason «resume» or «clear». The sources list now names --fork-session.\nREQ-007: a running session is one with an event after the last server start whose last event is not a session end; a resumed session runs again. REQ-007 AC1’s test adds the same end, resume, start sequence.",
+        "where": "requirements.yaml 66 (sources), 106-109 (fact 12), 178-183 («Сбои»), 258 (AC6); 580-582 (REQ-007 description), 611 (REQ-007 AC1)"
+      },
+      {
+        "id": "N3",
+        "change": "AC14: tools/eslint.config.js may gain only a block with files and languageOptions.globals. This is checked through ESLint’s own effective config, from tools/:\n- `find src test -name '*.js' | xargs -n 1 npx eslint --print-config | jq -S -c .rules | sort -u | shasum -a 256` must be 856ee00120171941ee04ed2318fd4d5a4264a59fcff999b4fb5a1b22f695be08 (one rules line for all files);\n- the globals of files outside public/ must hash to bec0f88d493c5af9403051ad0ff2c4216dbab9ca43f4f5fbf7fedb8934b825bd;\n- the old word grep stays, for ignores.\nUnlike a grep, this catches numeric severities: the validator’s `\"no-undef\": 0` changes the rules hash. xargs -n 1 replaces -exec … \\; because a bare backslash would break the YAML double-quoted string. Dry runs are in the summary.",
+        "where": "requirements.yaml 266 (AC14)"
+      },
+      {
+        "id": "N4",
+        "change": "REQ-007 AC6: the handler grep is now case-insensitive and also catches javascript: URLs: `grep -rniE ' on[a-z]+=|javascript:' tools/src/pixel-office/public; echo $?`, which must print no lines and exit 1. The test of REQ-001 criterion 8 checks that every <script> in HTML served by the server, office files included, has src.\nREQ-001 AC8 itself now requires src on every <script> in served HTML, checked in tools/test/pixel-office-server.test.js. The page is REQ-001’s, and the CSP forbids inline scripts anyway.",
+        "where": "requirements.yaml 260 (REQ-001 AC8), 616 (REQ-007 AC6)"
+      },
+      {
+        "id": "N5",
+        "change": "AC3: SessionStart’s own input field source (startup, resume, clear, compact, fork) is listed as never sent; it is not the journal’s source. The AC3 test now requires each documented example of each connected event to produce exactly one journal line, including the SessionStart example with its own source field. Simulation: forwarding the field gives 400 and 0 lines, which this test catches.",
+        "where": "requirements.yaml 255 (AC3)"
+      },
+      {
+        "id": "note-sessionend",
+        "change": "The validator’s note (no change required) is now in the text. AC1(ж) says hook_response for SessionEnd appears only for background handlers, so SessionEnd is checked by the criterion 10 test.",
+        "where": "requirements.yaml 253 (AC1)"
+      },
+      {
+        "id": "note-state",
+        "change": "The validator’s note (no change required) is now in the text. The STATE.md sentence in the write set says it is not in the run’s declaration, but REQ-006 AC14 (--allow STATE.md) allows it for every run.",
+        "where": "requirements.yaml 204-206 (description «Что меняется в проекте»)"
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

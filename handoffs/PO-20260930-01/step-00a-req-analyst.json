@@ -1,0 +1,164 @@
+{
+  "handoff_id": "step00a-PO-20260930-01",
+  "run_id": "PO-20260930-01",
+  "workflow_id": "WF-02",
+  "step": "00a",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/PO-20260930-01/step-00a-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-001"
+    ],
+    "artifacts_in": [
+      "decisions/0003-pixel-office-as-pipeline-tooling.md",
+      "decisions/0002-process-tooling-node.md",
+      "docs/requirements.yaml",
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md",
+      "reference/pixel-office-osnova/",
+      ".claude/agents/orchestrator.md",
+      "STATE.md"
+    ],
+    "agent_run_id": "a81e13fc8b7a7810d",
+    "route": "REQ-ANALYST (this) -> REQ-VALIDATOR -> CODE-DESIGNER -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV + FRONTEND-DEV -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER (orchestrator.md, Pipeline order)",
+    "note": "REQ-001 was written by ORCH on 2026-09-25 and never validated (same pattern as AP-011). decisions/0003 now places it in tools/ on Node 22 under 0002 instead of waiting for 0001.",
+    "parallel_work_now": "REQ-VALIDATOR (run BP-20260930-01, round 3) is reading the REQ-006 block of docs/requirements.yaml while you edit; you are the only writer of the file. Do not touch any other block: record the sha256 of the REQ-006 block (awk from the line '  - id: REQ-006' to the line before the next '  - id: ' or end of file) and of the REQ-002..REQ-005 part, before and after your edit, in result. A REVIEWER run is reading tools/."
+  },
+  "task": {
+    "description": "Rework REQ-001 (Pixel Office) in docs/requirements.yaml so it can pass REQ-VALIDATOR and be built under decisions/0003. Requirement text only; edit only the REQ-001 block.",
+    "acceptance_criteria": [
+      "original_request keeps the existing quotes and adds the owner's quotes from decisions/0003 verbatim, with their dates as written there",
+      "depends_on / comment reflect decisions/0003 (not 0001); description says what the owner gets: a local link where he sees, live, which tasks the agents are doing, from real Claude Code hook events (R2)",
+      "every acceptance criterion names how it is checked (test file/command, grep, or a named step such as a real Claude Code session run by UAT-RUNNER with its output attached)",
+      "covers at least: real hook events with hook time (no hand-written events as source of truth, AP-002); REAL vs SIMULATION marking; one event stream for journal/agent card/task view; write right only for the event source, page read-only; reachability on the grid; hook fast and silent when the server is down (Q10); write secret outside the repo (Q7); server reachable only from the owner's own computer; hooks configured only in sai/.claude/settings.json (decisions/0003 boundary); what hook data is stored and shown, and what is not (e.g. full prompt text) — your call, with the reason; one command to start and the link printed; cd tools && npm run check passes (Q4 via 0002/0003)",
+      "facts about Claude Code hooks (event names, fields, timing) are not assumed: either cite the official Claude Code hooks documentation you opened (URL in the description) or leave them to the design as an explicit question",
+      "anything from osnova not needed for the owner's two requests is listed as out of scope, not silently dropped",
+      "result lists open questions; sha256 of the file outside the REQ-001 block before/after your edit shows nothing else changed"
+    ]
+  },
+  "created_at": "2026-09-30T16:38:34Z",
+  "started_at": "2026-09-30T16:38:34Z",
+  "completed_at": "2026-09-30T17:08:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST: REQ-001 reworked. Only the REQ-001 entry changed: old lines 6-36 were replaced by new lines 6-203 of docs/requirements.yaml in one atomic splice (temp file + rename). The two comment lines about WF-06 between REQ-001 and REQ-002 and everything from REQ-002 on are byte-identical.\n\nWhat REQ-001 now settles:\n- What the owner gets: `cd tools && npm run pixel-office` prints «Pixel Office: http://127.0.0.1:<порт>/». The default port is fixed and documented in tools/README.md. The page updates live (5 s at most, no reload) and shows an office with role characters, a task list, an event journal and an agent card, all built from one array of events. The stack follows decisions/0003: tools/, Node 22, no runtime dependencies, depends_on [REQ-002], and it does not need 0001.\n- A task is one subagent run (Agent tool): role (agent_type), short description, start, end and a state («в работе», «завершена» or «окончание не записано»). The main session is a separate row with no prompt text. Rules cover a resumed subagent (same task), a stop event with no start (no task: internal Claude Code agents), and lost ends after a server restart, a session end or an interrupted turn («окончание не записано», never a false «в работе»).\n- Hook facts come from the official docs, opened 2026-09-30 (https://code.claude.com/docs/en/hooks and https://code.claude.com/docs/en/settings), with sections named. The main ones: hook input has no time field, so hook time means the clock read when the hook fires. SubagentStart also fires on resume. SubagentStop also fires for internal agents. An exit code other than 0 or 2 shows a hook-error notice. stdout of UserPromptSubmit and SessionStart goes into Claude’s context. The project .claude/settings.json is read from the session’s primary working directory. Four things are left to the design as explicit questions: which events to use, how the task description links to agent_id, command or http hook and async, and how the hook finds Node 22.\n- Stored: time, source, hook_event_name, session_id, agent_id, agent_type, tool_use_id and a description of at most 100 characters. Not stored or shown: prompt text, the subagent’s task text, answers and background_tasks, transcript, cwd and scratchpad paths, and any other input field. Reasons: they are not needed to see tasks; they risk leaking secrets and personal data (Q7) from a journal that is unencrypted and readable without login; Claude Code already keeps the transcripts; and osnova’s rule shows no model reasoning.\n- Journal ~/.sai-pixel-office/events.jsonl (append-only) and secret ~/.sai-pixel-office/write-secret (file 0600, folder 0700) sit outside the repo. The reason: npm run snapshot covers the whole sai/ tree, and other runs’ snapshot-diff checks (REQ-004 AC4, REQ-006 AC14) would break.\n- Server: listens on 127.0.0.1 only, returns 403 for any other Host, sends no Access-Control-Allow-Origin, sets a CSP. It has one write route, protected by the secret. A time check of ±60 s blocks back-dated events. The hook exits 0 within 2 s with empty stdout in 6 failure cases. Each handler timeout is at most 5 s. Hooks are set only in sai/.claude/settings.json.\n- AC1 is checked by two named steps. Step «реальная сессия» (UAT-RUNNER): run `claude -p` in sai/, attach the journal lines, grep for the session_id inside sai/ (it may appear only in the handoff folder), then run again with the server stopped. Step «обычная сессия владельца»: journal lines from the owner’s own session in sai/ plus the owner’s exact words on hook-error notices. This puts UAT-RUNNER into the route between TEST-RUNNER and RELEASE-VALIDATOR, which is ORCH’s call.\n- Out of scope, listed with reasons. From osnova: login and permissions, the requirement card and the runtime API, question/answer/meeting events, replay and speeds, the requirement filter, a fixed Asia/Almaty zone, simulation mode, the 12 fixed roles, .NET and EF Core, the seed file, and decoration. Not from osnova: Claude Code’s own task list, permission waits, tool-level actions, sessions outside sai/, journal rotation, and the paid product.\n- There are now 16 criteria (up from 8), and each has «Проверка:». The jq and grep commands were taken from the parsed YAML and run on samples: each gave the expected result.\n\nOpen questions:\n(1) Owner and ORCH: the hooks in sai/.claude/settings.json run only in sessions started in sai/, or moved there with /cd (settings docs). This pipeline session seems to have been started from platform/: the scratchpad path contains -Users-whooch-solution-platform, and platform/CLAUDE.md is in context. This needs checking. Unless the pipeline runs from sai/, Pixel Office will show none of its work. Where to start sessions is the owner’s decision; decisions/0003 forbids user-level hooks.\n(2) Owner: here a task means a subagent launch. If he also meant Claude Code’s own task list (TaskCreated/TaskCompleted), that is a separate requirement.\n(3) Design: which events to use. How the description links to agent_id: the docs do not call tool_response.agentId in PostToolUse and agent_id in SubagentStart the same identifier. Command or http hook, and async: an http connection failure is a non-blocking error, and async hooks are killed at -p teardown. Node 22 in the hook environment: on this machine <каталог Homebrew> is Node 25.2.1, Node 22 is only at <каталог Homebrew> via the shell profile, and Claude Code runs as the VS Code extension 2.1.284.\n(4) UAT: `claude` is not on PATH in agent shells (command -v claude prints nothing), so the design must name the binary or command to use.\n(5) ORCH: REQ-006 AC14 protects tools/src/snapshot.js and .claude/agents/. REQ-001 paths must be declared one by one in parallel-runs.jsonl, because tools/ as a whole cannot be declared; .claude/settings.json must be declared too. If the REQ-006 before-snapshot is taken while PO-20260930-01 is still open, docs/requirements.yaml must also be declared for this run.\n(6) Size: REQ-001 is one feature but large. If REQ-VALIDATOR finds it too big, the proposed split is (a) hook, server, journal and task list; (b) office canvas, movement and agent card. That needs new REQ ids, which is outside this handoff’s edit scope.\n(7) STATE.md, «Что делать дальше» items 2-3, still puts REQ-001 after 0001. This is for ORCH or DOC-UPDATER.\n\nHashes (sha256; before taken 2026-09-30T16:39:27Z from the unchanged file feef8a49..., after taken 2026-09-30T17:05:24Z):\n- REQ-006 block (awk from line «  - id: REQ-006» to the line before the next «  - id: » or EOF): before 84caa60084594fd3561e67bd6271a68b6378b5d04d04e4895a0e785f12772f78, after 84caa60084594fd3561e67bd6271a68b6378b5d04d04e4895a0e785f12772f78. REQ-006 AC14 value Б gives the same value before and after.\n- REQ-002..REQ-005 part (from «  - id: REQ-002» to the line before «  - id: REQ-006»): before 71f5be84786fe77a1f3aee17d51e9240b7843158f438ea5f8587b7b626e8db60, after 71f5be84786fe77a1f3aee17d51e9240b7843158f438ea5f8587b7b626e8db60.\n- Header, lines 1-5: 007174d53c97f88518e0440788a11a0de34927d5de3f46789b21ea39340c0c2d before and after. The WF-06 comment lines between REQ-001 and REQ-002: ca9e4c5bbfc5687727d296d97f9a6d6c84a115662a1cf6a545d7017494354ea2 before and after. REQ-002 to EOF: f5f266322ddd4078602fc2e74241b989079352ab19fbda6c50272274779cf59e before and after. cmp of old lines 37-EOF against new lines 204-EOF: identical.\n- Changed: REQ-001 awk range 086c31375658fafa1a68e882ebd857fad3194232ceab3b5375d40efcf4b2dd66 -> c77fbfeda9c883f27c0709d563e66d0486d99405e32ca2c602dcef0fce512522. Whole file feef8a495579ef71fe188c14040342f5b6b8444d51d8f798359984fbb00aca86 -> 0f37a040d5e6ee00a82df8ec738b0a9d270bbbd8b336f3a835af3e5fbef6773e. ruby Psych parses REQ-001..REQ-006. No file other than docs/requirements.yaml and this handoff was edited; tools/ was only read.",
+    "changes": [
+      {
+        "id": "title",
+        "change": "Now says what the owner gets: a local link where he sees live which tasks Sai agents are doing, from real Claude Code hook events.",
+        "where": "requirements.yaml 7"
+      },
+      {
+        "id": "owner",
+        "change": "ORCH -> BACKEND-DEV. Per [образец] WF-01 the owner is the implementing role; the comment names FRONTEND-DEV for the page and the route handoff.",
+        "where": "requirements.yaml 8"
+      },
+      {
+        "id": "depends_on",
+        "change": "[] with comment «блокируется решением decisions/0001» -> [REQ-002], with a comment that tools/ and npm run check come from REQ-002 (done), the stack is decisions/0003 via 0002, and 0001 is not needed.",
+        "where": "requirements.yaml 10"
+      },
+      {
+        "id": "original_request",
+        "change": "Existing quotes kept byte-identical (lines 12-16). Added: the osnova sentence just before them («Это не просто декоративная анимация и не dashboard со статусами.», with its source file); the two «запусти pixel office…» quotes with «(в сессии Claude Code, между 2026-09-25 и 2026-09-28; точная дата не записана)»; and «Ты мощный и сильный разработчик…» with «(2026-09-30)». Wording and dates are as in decisions/0003. Checked on the parsed YAML: each quote is present verbatim.",
+        "where": "requirements.yaml 11-25"
+      },
+      {
+        "id": "description",
+        "change": "Rewritten in sections: what the owner gets; how it differs from osnova; what a task is; hook facts (1)-(9) cited from the docs with URLs and sections, plus design questions; what is stored and what is not, with reasons; where the files live and why not in sai/; failures (Q10); out of scope (osnova and other items); the analyst’s numbers; parallel-run constraints (REQ-006 AC14); how each criterion is checked; mapping to the quality bar; open questions.",
+        "where": "requirements.yaml 26-186"
+      },
+      {
+        "id": "AC1",
+        "change": "Old AC1 (real session, hook output attached) became two named steps: UAT «реальная сессия», items (а)-(ж): the link, binary and time window, a -p session in sai/ with exactly one subagent, journal lines with jq keys, a grep for session_id inside sai/, and a rerun with the server stopped; and «обычная сессия владельца».",
+        "where": "requirements.yaml 188"
+      },
+      {
+        "id": "AC2",
+        "change": "Old AC2 (hook time, no pre-written events) is now precise. The docs show no time field in hook input, so the time is the clock read when the hook fires. Adds: stored in UTC; ±60 s check giving 400 with the journal unchanged; append-only journal; 20 concurrent writes; an empty journal on first start; a grep for ISO timestamps in tools/src/pixel-office.",
+        "where": "requirements.yaml 189"
+      },
+      {
+        "id": "AC3",
+        "change": "New: a list of the only fields stored (allowlist) and of fields never stored. Test uses documented input examples carrying marker strings; also checked in the UAT step, item (д).",
+        "where": "requirements.yaml 190"
+      },
+      {
+        "id": "AC4",
+        "change": "From old AC3. The server sets REAL; a request carrying a source field gets 400. A non-REAL line in the file is shown as «не из хуков» and is not used. The requirement card is dropped because it is out of scope.",
+        "where": "requirements.yaml 191"
+      },
+      {
+        "id": "AC5",
+        "change": "From old AC4. One event stream feeds the journal, the task list (it replaces osnova’s requirement card) and the agent card. The server serves only events and its own start times.",
+        "where": "requirements.yaml 192"
+      },
+      {
+        "id": "AC6",
+        "change": "New: task rules (а)-(ж): resume, stop without start, lost ends, the main-session row, sort order, time zone label, empty-journal hint. Test for (е): 2026-09-20T04:00:00Z under TZ=Asia/Almaty shows 09:00 (checked with Node 22.21.1).",
+        "where": "requirements.yaml 193"
+      },
+      {
+        "id": "AC7",
+        "change": "New: who appears in the office; at least 24 desks placed the same way from the same journal; state changes at once; characters move only on task start and task end, and only between the launcher and the subagent.",
+        "where": "requirements.yaml 194"
+      },
+      {
+        "id": "AC8",
+        "change": "From old AC6. The layout test is modelled on the reference tests/layout.js; a movement run must never stand on a wall or desk cell, as in behaviour.js «Проходимость».",
+        "where": "requirements.yaml 195"
+      },
+      {
+        "id": "AC9",
+        "change": "New: one start command and the printed link; a fixed default port; «already running» exits 0; «port busy» gives a Russian message with no stack trace and exit 1; live update within 5 s; «Нет связи с сервером Pixel Office» and catch-up after reconnect.",
+        "where": "requirements.yaml 196"
+      },
+      {
+        "id": "AC10",
+        "change": "From old AC5. One write route that needs the secret; 401 and 400 leave the journal unchanged; a corrupt journal line is skipped; the page only sends GET; no served file contains the secret; event text is shown as text, not HTML; a CSP header without unsafe-inline.",
+        "where": "requirements.yaml 197"
+      },
+      {
+        "id": "AC11",
+        "change": "New: listens on 127.0.0.1 only; another Host gets 403; no Access-Control-Allow-Origin header; grep finds no external URLs in public/; lsof in the UAT step.",
+        "where": "requirements.yaml 198"
+      },
+      {
+        "id": "AC12",
+        "change": "From old AC7, now with numbers: 6 failure cases (refused, hung, 401/500, no state folder or secret, input not JSON, no Node 22). In each the hook exits 0 within 2 s with empty stdout. Handler timeout is at most 5 s, checked with jq --arg p pixel-office (no double quotes, so no escaping inside YAML).",
+        "where": "requirements.yaml 199"
+      },
+      {
+        "id": "AC13",
+        "change": "From old AC8. Exact paths and permissions; secret length at least 43 characters and different on each new folder; not printed; grep -rqF -f <secret file> returns 1 without showing the secret; HOME=<tmp> npm run check creates no .sai-pixel-office.",
+        "where": "requirements.yaml 200"
+      },
+      {
+        "id": "AC14",
+        "change": "New: hooks only in sai/.claude/settings.json, checked by a settings test; grep -c pixel-office in ~/.claude/settings.json and in sai/.claude/settings.local.json gives 0.",
+        "where": "requirements.yaml 201"
+      },
+      {
+        "id": "AC15",
+        "change": "New: tools/README.md gets sections «## Pixel Office» and «## Проверка» (Q4 requires the check command to be described in a README). Checked with grep -F on fixed strings.",
+        "where": "requirements.yaml 202"
+      },
+      {
+        "id": "AC16",
+        "change": "New: Q4 check on a clean copy with HOME=<tmp>; no runtime dependencies (jq); new files not excluded from prettier or eslint (Q6 greps).",
+        "where": "requirements.yaml 203"
+      },
+      {
+        "id": "dry-runs",
+        "change": "Commands were taken from the parsed YAML and run on samples in the scratchpad. AC12 jq: true on a valid settings file, false when a timeout is missing or no Pixel Office handler exists. AC16 jq on tools/package.json: true. The AC16 greps on .prettierignore and eslint.config.js: empty (exit 1). AC2 grep: catches a literal ISO time, ignores a regex like \\d{4}-. AC13 grep -rqF -f: 1 when absent, 0 when present. AC1 grep with --exclude-dir: finds only handoffs/, skips node_modules. grep -c pixel-office ~/.claude/settings.json: 0 today. ls -ld of a 0700 folder prints drwx------.",
+        "where": "scratchpad only; nothing in the project was run or changed"
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

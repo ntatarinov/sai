@@ -1,0 +1,70 @@
+{
+  "handoff_id": "step01-r3-PO-20260930-01",
+  "run_id": "PO-20260930-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PO-20260930-01/step-01-code-designer-r3.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-001",
+      "REQ-007"
+    ],
+    "agent_run_id": "a84976571da2e10ed",
+    "rework_of": "handoffs/PO-20260930-01/step-01-code-designer-r2.json",
+    "artifacts_in": [
+      "handoffs/PO-20260930-01/step-01b-code-design-validator-req001-r2.json",
+      "handoffs/PO-20260930-01/step-01b-code-design-validator-req007-r2.json",
+      "docs/design/REQ-001-pixel-office.md"
+    ],
+    "before_copy": "<вне проекта>/orch/REQ-001-design.v2.md (sha e09f7631…, 2888 lines: the version both validators passed); ORCH diffs your edit against it",
+    "orch_rulings": {
+      "scope": "Both design validators returned PASS (REQ-001 part: n1-n9; REQ-007 part: NF1-NF9; findings with locations and exact texts are in result.summary of the two r2 handoffs). Apply all of them in one text-only pass: n1 (medium) — add the three cases (9)-(11) and mutants M45-M47 that the REQ-001 validator wrote (PG-12d6 does not separate: the next request of another session closing the row, a SessionEnd of another session closing it, a SessionEnd before the request closing it); n2-n9; NF1-NF9 (including NF3: run the U3 recipe through bash, not zsh; NF4: stale references to item 14 of §13 and «шаг 5»; NF1: card field `label` vs `full`; NF2: textAlign). Accept the proposed texts; if you find a defect in one, fix it and say so.",
+      "header": "Record both PASSes (the two r2 handoffs, 2026-10-01) and this round; say that the validators did not re-check this round's edits.",
+      "not_changed": "No existing row, test id, contract, module or write-set entry changes; added ids only. Section 10 keeps mapping all 14 criteria of REQ-001 and all 8 of REQ-007; mutant list becomes M1-M47 (check that the numbering stays unique).",
+      "state": "Nobody else edits the design. Do not edit docs/requirements.yaml. ORCH writes the decision record for D1-D8 and D10-D14 meanwhile (decisions/ is outside your task)."
+    }
+  },
+  "task": {
+    "description": "Round 3 of the Pixel Office design: apply n1-n9 and NF1-NF9 per context.orch_rulings. Design text only; no implementation code.",
+    "acceptance_criteria": [
+      "result.changes one entry per item (n1-n9, NF1-NF9) with section and what changed",
+      "only added ids; no existing row/test id/contract changed (ORCH diffs against the before-copy)",
+      "section 10 still maps every criterion; mutant numbering unique"
+    ]
+  },
+  "created_at": "2026-10-01T12:08:47Z",
+  "started_at": "2026-10-01T12:08:47Z",
+  "completed_at": "2026-10-01T12:23:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-02 step 1, round 3: a text-only pass after both CODE-DESIGN-VALIDATOR PASSes (round 2). All 18 notes - n1-n9 (REQ-001 part) and NF1-NF9 (REQ-007 part) - are applied in one pass to docs/design/REQ-001-pixel-office.md, the only file written. The validators have NOT re-checked these edits (the header says so).\n\nWHAT THE FILE LOOKS LIKE NOW (checked by script against ORCH's before-copy, sha e09f7631..., 2888 lines): 3025 lines (sha 49eba7c9...), 35 tables well-formed, mutants M1-M51 unique and sequential (M1-M44 identical to the passed version), the test catalog is still 145 rows with the same ids in the same order, section 10.3 (the mapping of all 14 criteria of REQ-001 and all 8 of REQ-007), section 11 (quality bar) and section 12 (decisions) are byte-identical to the passed version. Diff against the before-copy: 31 hunks, 173 lines added, 36 removed; every removed line is an in-place extension of an existing row or a stale-word fix, each named in result.changes. Not changed: any test id, module, write-set entry, docs/requirements.yaml (sha de702d19...), anything outside the design file. Existing contracts are not changed; the gaps the notes name (NF1, NF2, NF6-NF9) are filled by additions.\n\nn1 (the medium one): PG-12d6 now has eleven cases; (9a), (9b), (10), (11) separate the three wrong readings the validator named - the next request of another session closes the row, a SessionEnd of another session closes it, a SessionEnd before the request closes it - as mutants M45, M46, M47. I ran them (probe P21, Appendix A, command and output): the rule gives the expected rows, M45 differs on (9), M46 on (10), M47 on (11), nothing else moved. NF3: the U3 recipe is run through /bin/bash from a file and cleans up $TMP after the conditions. NF4: item 14 of section 13 is closed as confirmed by ORCH, section 14 says boot.js needs the eslint block at step 6, the module graph gives model.js and office-model.js their texts.js import. NF1: the Card gets the field full (card title) and keeps label as the short canvas label.\n\nWHERE I DID NOT TAKE A PROPOSED TEXT LITERALLY, AND WHY\n- Mutant numbering: the list ends at M51, not M47 as in the ORCH ruling, because n3 asks for four more mutants (M48-M51) and ORCH said to apply all notes; the numbering is unique and no existing M-number moved.\n- NF1: the validator offered a rename of Card.label to full, or saying that Card.label is the full name. Both change what an existing field means or is called; I added the field full and left label as in section 3.6, so no existing contract changes and the clash is gone. OF-10 now asserts the card title.\n- n4: not the bare 'или запуском сервера' - it would read as an equal alternative; the text follows the amended criterion 6(г): next request or session end first, a server start only if neither.\n- Small additions beyond the numbered notes, each named in result.changes: the validator's remark under C2 that the catalogue text of case (3) must say that the current server's start record is in the journal (otherwise (3) does not separate M41); ORCH's O1 ruling recorded in section 13 item 2; an OF-13 case for the NF7 definition; the OF-10 card-title check; P21's second command (first-load time) that I re-measured for n7.\n\nFOR ORCH: diff against the before-copy shows the change set above; the header and Appendix C (new) map each note to its sections. The REQ-001 validator's n7 measurement is confirmed on this Mac (see n7). Nothing is left open from n1-n9 and NF1-NF9.",
+    "changes": [
+      "n1 [medium] - sections 10.2 (PG-12d6), 10.6 (M45-M47), 4.2 (pointer), App. A P21. Added cases (9a), (9b), (10), (11) to PG-12d6: the next request of another session, a SessionEnd of another session and a SessionEnd before the request do not close the row ((9b): with a server start between the requests the S1 row is 'окончание не записано' with closed_by server_start, not next_prompt). Mutants M45 (next request of ANY session closes), M46 (SessionEnd of ANY session closes), M47 (any earlier SessionEnd of the same session closes). The case count 'eight' became 'eleven'. Probe P21 (command and output in Appendix A) runs the rule on the new cases: i1 gives two rows in progress, i2 gives unrecorded/server_start and in progress, j and k give in progress; M45 differs on i1, i2, M46 on j, M47 on k; the earlier cases and mutants are unchanged. Also applied the validator's remark under C2: the catalogue text of case (3) now says that the start record of the current server is in the journal before the request (otherwise (3) does not separate M41).",
+      "n2 - section 10.2 (PG-14b). Added to the existing words: 'tick' is a call of the interval callback, not 2 seconds of time; the request starts at a tick, three calls of the callback and the tick at +2 s send nothing, the abort and the message come at +3 s, the tick at +4 s resumes polling.",
+      "n3 - section 10.6 (M48-M51). Mutants added: M48 no 'one request in flight' rule (PG-14b, PG-14d), M49 no immediate poll when the tab becomes visible (PG-14d), M50 next request with after = lines from the response instead of entries.length (PG-14c, the 'пропущенный' case whose lines differ from entries.length), M51 no immediate re-poll after a response with a wrong from (PG-14c). The list now ends at M51, not M47 as the ORCH ruling expected (it counted only n1's three); M1-M44 are untouched, numbering is unique and sequential. A paragraph under the table says who ran them (the REQ-001 validator on its own implementation of the protocol).",
+      "n4 - section 1.1 (the StopFailure bullet). The closing of the main-session row now reads '...следующим запросом или концом сессии, а если не было ни того, ни другого - запуском сервера (п. 4.2)'. Not the bare 'или запуском сервера' that the note proposed: that would read as an equal alternative, while the amended 6(г) puts the server start last.",
+      "n5 - section 13 (item 14, intro; item 2). Item 14 is closed: 'Подтверждено ORCH' with the date and the source (context.orch_rulings.section_13_item_14 in the round-2 validator handoffs) and ORCH's reason; the intro says items 1, 2 and 14 are closed and kept for numbering. ORCH's O1 ruling (context.orch_rulings.O1_optional: no clause in REQ-007 criterion 2, section 4.5 stands) is recorded in item 2 (small addition beyond the numbered notes).",
+      "n6 - section 2.1. The file listing now has the line for tools/test/pixel-office-helpers.js (not *.test.js, section 10.1; TEST-DESIGNER).",
+      "n7 - sections 4.6 (new bullet), 9.4 (README limitation 13), App. A P21 (second command). The first full load also has the 3 s limit. I re-measured it on this Mac (server reads and parses the file, page does fetch and response.json(); 431 bytes per line; median of three): 100,000 lines 0.41 s, 300,000 1.28 s, 600,000 2.54 s, 1,000,000 5.00 s; the validator's 0.33, 1.2, 2.6, 5.1 s agree. The limit is reached at about 700,000 lines; the requirement fixes 100,000 as the scale, so the limit stays 3 s and README limitation 13 says so (how to remove the journal: limitation 11).",
+      "n8 - sections 3.5 (entries bullet), 8.3 (E27), 10.2 (PG-19). An element that fails the shape check (null, foreign keys, unknown kind) stays in entries as null, so the array length and the line numbers do not change; PG-19 now asserts that the next request uses after = entries.length.",
+      "n9 - header and Appendix C. The header records both PASSes (the two round-2 handoffs, 2026-10-01; passed file sha256 e09f7631..., 2888 lines), this round, and that the validators did not re-check the round-3 edits; the stale line 'CODE-DESIGN-VALIDATOR версию 2 ещё не проверял' is replaced; the title line says 'текстовые правки раунда 3'. New Appendix C maps every note to its sections.",
+      "NF1 - sections 3.7, 10.2 (OF-10), App. C. The Card shape gets the field full (the full name, shown in card-title per section 4.7); label keeps its section 3.6 meaning (the short canvas label), a sentence says so. No rename and no redefinition (ORCH: no contract changes); OF-10 now asserts that the card title is the full name (main session: MAIN_LABEL), not the short label.",
+      "NF2 - sections 4.5 (label bullet), 10.1 (fake canvas), 10.2 (OF-19). Labels are drawn with textAlign = 'center' at x = (cell_x + 0.5)*CELL; the fake ctx records textAlign at the moment of fillText and OF-19 checks it. Numbers in the text: the last desk's centre is 540 px and a 130 px label spans 475-605 px of 648; with the default left alignment at 528 px it would reach 658.",
+      "NF3 - section 10.4 (U3). The recipe is saved to a file and run as /bin/bash <file> (under zsh, the tool shell, 'set -m' aborts at once - \"can't change option: -m\", exit 1, no Chrome started: the validator's measurement); conditions 1-5 are evaluated in the same file after the recipe, and rm -rf \"$TMP\" only after them. The recipe itself is not changed.",
+      "NF4 - sections 13 (item 14), 14 (FRONTEND-DEV REQ-001 row), 2.1 (module graph). (a) Item 14 closed as confirmed by ORCH (see n5). (b) The row says the eslint block is needed by boot.js 'уже на шаге 6' (was 5); the step list itself was already right. (c) The graph now reads model.js -> schema.js, texts.js and office-model.js -> layout.js, texts.js (ROLE_UNKNOWN in the task role, MAIN_LABEL for the main character); no new module or file.",
+      "NF5 - section 10.2 (OF-10). The case that mutant M29 needs is named: a line without agent_id but with the role's agent_type (a --agent session) and an untrusted line do not reach a role card.",
+      "NF6 - sections 4.5 (Sim.sync, point 2), 10.2 (OF-18). The routes (current and queued) of a walker removed together with its queue count as finished for after, so a result of another walker waiting for such a handoff starts; the findPath = null case already said so. OF-18 checks it.",
+      "NF7 - sections 3.8, 10.2 (OF-13). Without --session the output key session is null, with --session it is the given id; main.present is true if the model has the main character (at least one trusted line), under --session if that session has such a line. OF-13 got the same journal without --session (session: null, main.present) so that the new definition has a test (small addition beyond the note).",
+      "NF8 - sections 4.5 (label bullet), 10.2 (OF-19). roleLabel takes simple parentheses only (a pair with no other parentheses between the last '(' and the final ')'); nested and unbalanced parentheses leave the role whole. Two cases in OF-19: 'foo (a (b))' stays 'foo (a (b))' and 'foo (bar' stays 'foo (bar'.",
+      "NF9 - sections 4.5 (drawing, new bullet), 10.2 (OF-21). If drawing throws, the app writes console.error once per distinct message and keeps the animation loop alive (otherwise about 60 lines per second); U3 needs only one line. OF-21 checks that a second frame with the same error adds no line."
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-001-pixel-office.md"
+    ]
+  }
+}

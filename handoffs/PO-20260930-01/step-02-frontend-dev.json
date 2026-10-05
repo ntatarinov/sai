@@ -1,0 +1,204 @@
+{
+  "handoff_id": "step02-frontend-PO-20260930-01",
+  "run_id": "PO-20260930-01",
+  "workflow_id": "WF-02",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/PO-20260930-01/step-02-frontend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-001",
+      "REQ-007"
+    ],
+    "agent_run_id": "af9cbd6951b6fb37a",
+    "artifacts_in": [
+      "docs/design/REQ-001-pixel-office.md",
+      "docs/requirements.yaml",
+      "decisions/0003-pixel-office-as-pipeline-tooling.md",
+      "decisions/0002-process-tooling-node.md",
+      "decisions/0005-pixel-office-design.md",
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md",
+      "handoffs/PO-20260930-01/step-01b-code-design-validator-req007-r2.json",
+      "handoffs/PO-20260930-01/step-01b-code-design-validator-req007-r3.json",
+      "handoffs/PO-20260930-01/step-01b-code-design-validator-req001-r2.json",
+      "handoffs/PO-20260930-01/step-02-backend-dev.json",
+      "tools/package.json",
+      "tools/eslint.config.js",
+      "reference/pixel-office-osnova/"
+    ],
+    "design_state": "Design v2r3 (3,025 lines, sha 49eba7c95a905b21…) passed BOTH CODE-DESIGN-VALIDATOR runs: round 2 and the round-3 re-check (step-01b-...-req001-r3.json and -req007-r3.json, 2026-10-01). Final: do not edit the design; report any defect or ambiguity in result.issues.",
+    "route": "BACKEND-DEV (running since earlier today: server, hook, schema.js) + FRONTEND-DEV (this) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> UAT-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER.",
+    "write_set": "Yours (design §14): tools/src/pixel-office/public/{texts,format,model,app,boot}.js, index.html, style.css (REQ-001 page) and public/{layout,office-model,office-sim,office-view,office-report}.js plus the office parts of app.js, index.html, texts.js, style.css (REQ-007); in tools/eslint.config.js exactly ONE block {files: [\"src/pixel-office/public/**/*.js\"], languageOptions: {globals: <browser>}} and nothing else. NOT yours: public/schema.js and everything on the server side (BACKEND-DEV), tools/README.md (BACKEND-DEV, last), tools/test/ (TEST-DESIGNER), tools/package.json, and everything in design §14 «Не меняется» — in particular tools/src/snapshot.js, cli.js, apply.js, prepare.js, util.js, validate.js, package-lock.json, .prettierignore, .gitignore, .claude/agents/, docs/business-plan/.",
+    "parallel_work_now": "BACKEND-DEV writes the server side and public/schema.js beside you: public/schema.js is the shared contract (design §3) — code against §3 and, when schema.js exists, check that your imports match it exactly; do not edit it, report mismatches. ISS-0002 TEST-DESIGNER writes new tests in tools/test/. The full npm run check can fail on files being written by others: check your own files with npx prettier --check <files> and npx eslint <files> while you work; run the full check at the end and report which failures are not yours. Keep every file you save self-consistent.",
+    "validator_hints_for_you": "From the REQ-001 validator's round-3 report, items FRONTEND-DEV must get right: Card.full (card title) and Card.label (short canvas label); textAlign center and x for labels; invalid journal elements stay in `entries` as null; the roleLabel bracket rule; route-finished-for-after; main.present; console.error once per distinct message; the first-load limit (about 700,000 lines before the page could never load: README limitation 13, which BACKEND-DEV writes). Five INFO nits in the validators' handoffs are not design changes.",
+    "interruptions": [
+      {
+        "at": "неизвестно (агент остановлен лимитом API; в handoff ничего не записано; агент добавлял сторожевой таймер перерисовки офиса для шага U3 (--dump-dom))",
+        "cause": "API session limit (HTTP 429), request req_011CfbbukwquJ9rYDXjPnTSM; сброс по сообщению API в 21:30 (Asia/Almaty) = 2026-10-01T16:30Z",
+        "checked_by_orch_at": "2026-10-01T16:34:57Z",
+        "resumed_at": "2026-10-01T16:34:57Z",
+        "how": "same agent run resumed via SendMessage"
+      }
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 2b for REQ-001 (page) and REQ-007 (office): implement the page and the office exactly as design docs/design/REQ-001-pixel-office.md describes (sections 0-4, 9-10 and 14; decisions D8, D10-D14 in decisions/0005): the pure ES modules (format, texts, model with the journal-reading rule and the task/main-row rules; layout, office-model, office-sim, office-view, office-report), the thin DOM layer (app.js, boot.js, index.html, style.css) with the poll protocol of §4.6 (request timeout, one request in flight, `from` check, poll on tab return, «Нет связи с сервером Pixel Office» and catch-up after recovery), the task list, event journal, agent card, office with walking characters on the walkable grid (BFS), role labels (roleLabel with maxWidth, Card.full for the card title, textAlign center) and the markup/label contract of §4.7; office-report.js with `--session` semantics and the error paths of §3.8; the eslint block with browser globals. Order per §14 steps 4-7 (each step ends with clean prettier/eslint on your files; app.js is written after the modules it imports). Plain ES modules, no build step, no runtime dependencies, no inline handlers, every <script> with src and type=module where the design says so (CSP of §5.4); the page only reads (no write path, no secret). Write NO tests (TEST-DESIGNER's step). SAFETY: during development never start a server on port 4780 or with the real state directory ~/.sai-pixel-office; manual runs use a temp state directory and a free port (BACKEND-DEV's config makes both overridable; until main.js exists, test the modules with node directly on generated journals). Do not start a real Claude Code session. This shell has no `timeout`: bound every command another way.",
+    "acceptance_criteria": [
+      "every REQ-001 (page) and REQ-007 criterion of design §10.3 has code that realises it; mapping criterion -> file/function in result.summary",
+      "npx prettier --check and npx eslint --max-warnings 0 clean on your files; npm run check result with counts and each failure explained (yours or not yours)",
+      "write set respected; frozen files unchanged (hash check listed)",
+      "no inline handlers, every <script> has src; real ~/.sai-pixel-office and port 4780 untouched; real STATE.md and runs/ untouched",
+      "result.changes lists files; open questions listed"
+    ]
+  },
+  "created_at": "2026-10-01T12:45:40Z",
+  "started_at": "2026-10-01T12:45:40Z",
+  "completed_at": "2026-10-01T16:39:24Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "RESULT. WF-02 step 2b is done for REQ-001 (page) and REQ-007 (office), built to design docs/design/REQ-001-pixel-office.md v2r3 (sha256 49eba7c95a905b21... unchanged by me). Twelve new files in tools/src/pixel-office/public/ (texts, format, model, layout, office-model, office-sim, office-view, app, boot, office-report .js; index.html; style.css) plus exactly ONE block in tools/eslint.config.js ({files: [\"src/pixel-office/public/**/*.js\"], languageOptions: {globals: {...globals.browser}}}). Nothing was redesigned and no test was written. Order of design 14 followed: step 4 (format, texts, model), step 5 (layout, office-model, office-sim, office-view), step 6 (app, boot, index.html, style.css, eslint block; app.js written after every module it imports), step 7 (office-report); each step ended with clean prettier and eslint on my files. No defect blocks. 10 items are in result.issues (I0-I9); I1 (requestAnimationFrame does not fire in the U3 recipe) and I5 (DOM details left to me) matter most to TEST-DESIGNER and UAT-RUNNER.\n\nMAPPING REQ-001 (page parts) -> code\n- AC2 time (hook's moment, UTC in the file, owner's clock on the page): the page never computes or shifts a time; format.js fmtTime / fmtTimeSec / fmtDateTime / tzLabel (zone read from Intl at every call; an unreadable time gives an empty string). Tasks show fmtTime, journal rows fmtTimeSec, server starts fmtDateTime, zone in #tz-label. Checked under TZ=Asia/Almaty: 04:00Z shows \"09:00\", label \"Asia/Almaty\".\n- AC3 only needed fields on the page: app.js applyAnswer passes every element of an answer through schema.parseLine (foreign key or unknown kind -> null, kept in entries); model.js journalRow copies only the fields of 3.5.\n- AC4 REAL/SIMULATION and the reading rule: model.js readRule(entries, nowMs) with rule (a) source not REAL, (b) conflicts (one-pass fast path; Fenwick-tree degrees and a candidate loop; tie goes to the later line), (c) last line \"future\"; buildModel gives marks, trusted and journal rows (marked, reason). Header mark: texts.HEADER_BADGE set by app.js decorate(). Marked rows are shown with their source and NOT_FROM_HOOKS (app.js journalItem) and take part in nothing (tasks, sessions, main rows, office, card).\n- AC5 one stream: app.js keeps ONE entries array (changed in place); rebuild() builds model and office once and renderAll() draws journal, list, legend, card and the office from them; getModel().entries is that array.\n- AC6 tasks (а)-(з): model.js buildModel. (а) repeated start: same task, resumed_at; (б) stop without start: no task, the row stays in the journal; (в) state \"unrecorded\" by server start (journal_lines > index of the last start; stale records with journal_lines > number of lines are dropped, E33) or by SessionEnd of the session of the LAST start; after a resume (SessionEnd, SessionStart, start) the task is in progress; (г) row of the main session: MainRow with closed_by stop / next_prompt / session_end / server_start, a late Stop returns a server_start row to \"completed\" (the 11 cases of PG-12d6 checked); (д) list order: in progress first, new on top; (е) time and zone; (ж) empty journal: app.js renderEmpty (EMPTY_JOURNAL and EMPTY_HINT); (з) description only through linkOf: PostToolUse with launched_agent_id equal to the key, duplicates of tool_use_id collapsed, exactly one left, else description, subagent_type and launched_by are null. Time of every server start: app.js renderStarts. Beside \"in progress\": started and last-event spans (app.js taskItem), and an extra ended span for completed tasks (the requirement lists the end as a field of a task).\n- AC7 one command / live: app.js createApp: start(), poll() / requestCycle() / getJson(), onTick(), onVisibility(), setConnected(). Interval POLL_MS 2 s; one request in flight; own timer of POLL_TIMEOUT_MS 3 s around the whole request (also works if the fetch ignores abort; the first load has the same limit); after = entries.length; an answer is applied only if from is 0 (array replaced) or entries.length (appended), otherwise discarded with one immediate retry and the second misfit is a failure; shape check (app is \"sai-pixel-office\", whole numbers, arrays); failure shows NO_CONNECTION and keeps what is loaded; first good answer hides it and the cursor loads what was missed; poll at once on visibilitychange to visible; model rebuilt on change and at least every 10 s.\n- AC8/AC9 page only reads, nothing external: getJson is the only network function (GET, relative /api/events); all journal text goes in through textContent (the markup helpers never use any HTML-string API); index.html has one <script type=\"module\" src=\"boot.js\">, no <style>, no style or on* attributes; style.css is external; the grep commands of the design are clean (see CHECKS).\n- AC14: the eslint block (only files and languageOptions.globals).\n\nMAPPING REQ-007 (office) -> code\n- AC1 composition: office-model.js buildOffice(model, desks = DESKS): desk 0 main, roles on desks 1.. in order of first appearance (Map keys, so __proto__ and constructor are plain roles), overflow stays in legend with seated false; sessions_running from model.js sessions (rule 4.3). 28 desks (layout.js DESKS).\n- AC2 states: buildOffice characters working / working_count / counts straight from the model (unrecorded is not work; marked lines change nothing; main works while a main row is open).\n- AC3 movements: buildOffice routes: handoff at the FIRST start of a task (walker = launcher from launched_by, target = role), result at every stop of Task.stop_indices with after = id of the handoff; none if the launcher is unknown, walker equals target, or a desk is missing. office-sim.js createSim: sync / enqueue({seen}) / tick / positions / cell. app.js rebuild(): the first load passes all routes as seen, later polls queue only new ones.\n- AC4 grid: layout.js MAP, DESKS, cellKind, walkable, findPath (breadth-first, right-left-down-up, bounded by the grid; [] / null as designed); office-view.js drawOffice reads cellKind from the same file; office-sim.js moves only along findPath; unreachable target leaves the walker in place and the route counts as finished for `after`.\n- AC5 card and one stream: office-model.js buildCard (full and label, in progress, last 5 completed by end_index, last 10 trusted events: lines with agent_id of the role plus linking lines of its tasks; a main-session line with agent_type is not on a role card); app.js renderCard / selectCharacter / onClick with office-view.js canvasPoint and hitTest.\n- AC6 page rules for office files: all of the above plus data-drawn only after a completed drawOffice (app.js drawOnce), one console.error line per distinct message (reportOnce), animation loop survives errors.\n- AC7 office on real events: office-report.js (runReport, buildReport) with --session semantics of 3.8 and the error paths of 3.8 / 8.4: exit 0 report, 1 cannot report (no file, directory, not readable, no valid line, no line of the session, server-starts.jsonl unreadable), 2 usage; Russian text on stderr, no stack trace, stdout empty on failure, writes nothing.\n- AC8: as AC14 above.\n\nCHECKS (all run by me, real output)\n- npx prettier --check on my 13 files: \"All matched files use Prettier code style!\". npx eslint --max-warnings 0 on my files: no output (0 problems).\n- npm run check (full, Node 22.21.1; run at 13:27Z and again at 16:37Z after the restart, identical result): prettier ok on the whole of tools/; eslint 0 problems, 0 warnings; node --test: tests 197, pass 197, fail 0, cancelled 0, skipped 0, todo 0 (WF-06 tests only: there are no pixel-office tests yet, TEST-DESIGNER's step). Nothing failed, so no failure that is not mine.\n- Design 10.5 items that concern me: (5) prettier --find-config-path on index.html exits 1; (6) rules hash 856ee00120171941... equals the pin; (7) globals outside public/ hash bec0f88d493c5af9... equals the pin; (8) grep -nwE 'off|warn|ignores' tools/eslint.config.js exits 1. Greps of 10.3 and 10.5 over public/ and src/pixel-office: https?:// exit 1; ' on[a-z]+=|javascript:' exit 1; timestamp pattern exit 1; eslint / prettier-ignore / skip: / todo: / global comments exit 1; no innerHTML, outerHTML, insertAdjacentHTML, document.write, eval(, new Function, setAttribute(\"style\"), localStorage, sessionStorage, indexedDB, document.cookie; no Math.random, Date.now, new Date in layout, office-model, office-sim; no node:, process, Buffer, require outside office-report.js (case-insensitive); nothing references office-report.js; index.html has 1 script (type module, src), 0 <style>, 0 style attributes.\n- Schema contract: every name I import from public/schema.js (POLL_MS, POLL_TIMEOUT_MS, parseLine, LAST_LINE_FUTURE_MS, READ_CONFLICT_MS, SOURCE_REAL) is exported by it; no mismatch; schema.js not edited.\n- Self-checks (scratch scripts in the session scratchpad .../scratchpad/fe/, not in the repo): t-model: readRule equals a literal brute-force definition on 3000 random journals (2467 with conflicts), 0 mismatches; table k/m of README limitation 4 as stated; buildModel on 100 000 accepted lines 50-70 ms, with 5 forged lines 98-114 ms and exactly those 5 marked. t-office: LY-01..08 properties, 756 desk pairs reachable, longest path 37, roleLabel on the 23 real agent names plus general-purpose, Explore, Plan (all at most 16 code points, all distinct, CODE-DESIGN-VAL... and ORCH as in the design), OF-01/03/05/06/07/08/09/10/15/18 style cases, fake-ctx drawing (one fillRect per cell first, label fillText with maxWidth 130, textAlign center, x at the cell centre), canvasPoint and hitTest. t-app: fake DOM built by parsing index.html, fake fetch and clock: PG-13/14/14b/14c/14d/15/16/17/18/19/21 and OF-14/15/21 style scenarios, hang that ignores abort, first load of 100 000 lines through the page 163-211 ms. t-report: OF-13 and OF-17a-f with real child processes (exit codes 0/1/2, Russian stderr, no stack lines, journal sha256 unchanged). t-sim-mc: 300 random journals (173 569 routes) polled in random chunks: always drained, only floor cells, everyone back on the seat, result never before its handoff. t-texts: the 17 rows of the table of 4.7 equal texts.js. t-model-diff (added after the restart): buildModel against a separately written, literal reading of 4.2 and 4.3 on 4000 random journals (untrusted and forged lines, null lines, three sessions, resumptions, stale and fresh server-start records): main rows (state, closed_by, end_index), task state, role, session, start and stop indices, description, launcher and the running flag of sessions all agree, 0 differences; all three task states occurred.\n- Real browser (Google Chrome 154.0.8037.59 headless, the real server code from tools/src/pixel-office, TEMP state directory and free port, never 4780 or ~/.sai-pixel-office): the U3 recipe of 10.4 (e2e.sh): conditions 1-5 all ok, data-drawn=\"5\", no CONSOLE line, the hostile description became text (no <img>). A DevTools-driven session (cdp.mjs): badge, zone, first load, office drawn, new event on screen after 760 ms without reload, legend, two characters, canvas changes while a walker walks (screenshots), click on the stretched canvas opens the card of the role, completed task and card change together, no horizontal scroll at 420 px; 14 of 15 checks ok; the 15th (\"no console errors\") sees only the browser's own favicon request (I4) and the connection-refused lines after I stopped the server on purpose, no page exception and no CSP violation. Screenshots in the scratchpad (shot.png, card.png, mobile.png).\n\nAP-014 class list (every OS call in my files; `grep -rnE 'node:(fs|net|http|child_process|crypto)' tools/src/pixel-office/public`): only office-report.js imports node:fs; its 3 call sites are handled: fs.readFileSync of the journal -> readText -> ReportError with a Russian message (not found, directory, no rights, other code), exit 1; fs.readFileSync of server-starts.jsonl -> same function (missing file is allowed, anything else exit 1); fs.realpathSync twice in isMain() inside try/catch (false = not started as a program). The page has no OS call; every fetch failure is handled in requestCycle.\n\nFROZEN FILES (sha256 first 12 hex, before -> after; unchanged unless stated): tools/src/snapshot.js 1866d97937bc same; cli.js 9f663b616d45 same; apply.js fdd0e0b62311 same; prepare.js 66551a908093 same; util.js 463d9b4f4ed8 same; validate.js 1f493f089d6d same; clean.js 539da76f7754 same; contract.js fdd21d34b75c same; package-lock.json 92d27c4ea99a same; .prettierignore cd446cc56527 same; .gitignore 4d56952b0fb1 same; CLAUDE.md 63211bdf6109 same; every file of .claude/agents/ and docs/business-plan/ same; every earlier test in tools/test same; tools/package.json b2caa7f8adcf same; docs/requirements.yaml de702d1909e0 same; the design 49eba7c95a90 same; STATE.md e5ef7412f59c same; runs/ untouched. The only changed watched file is tools/eslint.config.js: 1d6556b927c4 -> 3c9657d457dd (my one allowed block). Full lists: scratchpad/fe/frozen-before.txt, frozen-after.txt (13:30Z) and frozen-after2.txt (16:37Z); the diff shows that single line. Real ~/.sai-pixel-office does not exist, nothing listened on port 4780 at any check.\n\nHASHES OF MY FILES (sha256, first 12 hex): texts bc6f96850ceb; format 863af5e792e0; model 3063ff032bad; layout 22b3efcc4c61; office-model d90b0dc2e9b1; office-sim 5b3018832b99; office-view 7dc3e8c08c5f; app a125e4fc09d9; boot 77396dfc3ac8; office-report e7c42e7e432a; index.html 21e19ad7621e; style.css 0b861c166938; eslint.config.js 3c9657d457dd.\n\nAFTER THE API-LIMIT INTERRUPTION (recorded by ORCH in context.interruptions; my handoff was still PENDING and empty). I re-read the saved state instead of trusting my last edit: the sha256 of every file in public/ and of tools/eslint.config.js equals the value I had recorded before the stop (list above), and app.js holds the staleness watchdog (drawOnce, modelVersion, drawnVersion and the check in onTick), so no edit was lost. Imports re-checked against the real tools/src/pixel-office: public/schema.js is unchanged (139d7aca048d) and exports everything 2.3 lists; only journal.js and protocol.js import public/schema.js and nothing server-side imports my modules; server.js answers GET /api/events with {app, lines, from, events, server_starts} (what validShape expects), serves index.html and any plain-named .html/.js/.css file of public/ with text/javascript for modules and the CSP of 5.4 for HTML; all 51 named imports inside my modules resolve (aliases resolved), 0 problems. Regression after the restart with the same results: prettier, eslint, the 8 scratch suites, the U3 recipe (data-drawn=\"5\", no console line), the DevTools session (14 of 15, the 15th as explained), the full npm run check, the design greps, the two eslint pins, the frozen-file diff.\n\nENVIRONMENT. At 12:50-12:53Z the execute bit of the two Homebrew Node binaries was removed (BACKEND-DEV's issue I0 names the cause). I did not touch anything under <каталог Homebrew> every command used the coordinator's private copy (scratchpad/bd/nodebin) first in PATH. Before that message I had made my own copy of the same binary in my scratch folder; I deleted it after the message. No recursive chmod and no symlink to process.execPath anywhere in my scripts (my cleanups use rm only; my only chmod calls are non-recursive, on named paths in temp folders: one test file made unreadable and restored at once, one temp state directory set to 0700).\n\nOPEN QUESTIONS (details in result.issues): I1 should the design state that the office is also drawn at the poll tick (needed by the U3 recipe)? I2 desk_index in positions for the hit-test tie. I3 reserve or escape the key \"main\". I5 TEST-DESIGNER should read the list of DOM details before writing PG-12/PG-23/OF-10/OF-21. I6 card of the main session shows only the number of running sessions.",
+    "issues": [
+      {
+        "id": "I0",
+        "severity": "INFO (environment; cause named by BACKEND-DEV I0, repair is the owner's)",
+        "title": "Homebrew Node binaries lost their execute bit during my work",
+        "detail": "stat showed -rw------- with ctime 2026-10-01 17:50:35 and 17:53:29 local on <каталог Homebrew node@22>/bin/node and <каталог Homebrew> a bare node, npm or npx failed with 'permission denied'. I only read and stat-ed there; I changed nothing under <каталог Homebrew> Until the coordinator's message I used a private copy of the same binary and its dylib in my own scratch folder, then deleted it and used the coordinator's copy (scratchpad/bd/nodebin) first in PATH for every command. Nothing in the repository depends on this.",
+        "needs": "owner: repair the two binaries (BACKEND-DEV I0 has the command). DOC-UPDATER: Q13 candidate already proposed by BACKEND-DEV I8."
+      },
+      {
+        "id": "I1",
+        "severity": "MEDIUM (a fact of the real browser that the design's step U3 does not know; fixed in code, design text and OF-21 need one sentence)",
+        "title": "requestAnimationFrame does not fire in the headless --dump-dom recipe of step U3, so a page that draws only in frames fails U3 condition 4",
+        "detail": "Probe (scratchpad/fe/raf/probe.mjs, Chrome 154.0.8037.59, flags of 10.4: --headless=new --disable-gpu --virtual-time-budget=6000 --dump-dom): a page with a requestAnimationFrame loop and a 2 s setInterval printed 'raf=0 interval2s=3 elapsed=6000 vis=visible': timers run, frames do not. My first build drew the office only inside animation frames: the dump showed <canvas id=\"office\" ... data-drawn=\"0\"> (one frame ran before the data came), so condition 4 (data-drawn with a number of 1 or more) failed on a healthy page although the screenshot run, which forces frames, showed the office. Design 4.5 and 4.7 do not say when drawOffice runs; the stand-in pages of probe P17 evidently did not depend on frames. Fix in app.js: onTick() calls drawOnce() when the model was rebuilt (modelVersion) and no frame has drawn it yet (drawnVersion), so the office on screen matches the journal within one poll period also in a hidden tab or a browser that gives no frames; in a normal visible tab frames draw first and the tick does nothing. After the fix: conditions 1-5 of U3 all ok, data-drawn=\"5\" (scratchpad/fe/e2e.sh).",
+        "proposal": "Design: add one sentence to 4.5/4.7 ('the office is also drawn at the poll tick if no frame drew the current model'). TEST-DESIGNER OF-21: data-drawn is absent until the first completed drawOffice, which happens in a frame or at the first tick (clock advanced by POLL_MS) after a model change; with a throwing ctx the tick tries again every period and console.error stays at one line per message. UAT-RUNNER: U3 is a valid check of this page only because of this tick."
+      },
+      {
+        "id": "I2",
+        "severity": "LOW (design gap, resolved by an extra field)",
+        "title": "hitTest must break ties by the smaller desk_index, but Sim.positions() entries in 2.3 have no desk_index",
+        "detail": "2.3 gives positions as {key, x, y, state, route, queued} and hitTest(positions, px, py) takes only positions. I added desk_index to every entry of Sim.positions() (extra field) and hitTest uses it when both entries have it, otherwise the order in the array; the sim keeps its characters in the order of the desks, so both readings agree. A test that deep-compares a whole positions() entry would see the extra key.",
+        "needs": "designer/TEST-DESIGNER to confirm (or to put desk_index into the 2.3 shape)."
+      },
+      {
+        "id": "I3",
+        "severity": "LOW (design gap)",
+        "title": "A role literally named \"main\" would collide with the key of the main session",
+        "detail": "3.6 gives character.key as \"main\" or the role (agent_type); desks, route.walker/target and Sim keys use that one string. Real roles are never named so, but nothing forbids it. Implemented (office-model.js buildOffice): the key \"main\" is reserved for the main session; a role named \"main\" gets no desk (legend entry with seated false, tasks stay in the list), so it cannot take over desk 0 or duplicate a character. Checked in scratch (t-main-role).",
+        "needs": "designer: reserve the key in 3.6 or name another key for the main session."
+      },
+      {
+        "id": "I4",
+        "severity": "INFO",
+        "title": "A normal browser also asks for /favicon.ico and gets 404",
+        "detail": "Seen through the DevTools protocol: 'network 404 .../favicon.ico' and one console line 'Failed to load resource: the server responded with a status of 404'. The U3 recipe (headless --dump-dom) does not request an icon, so condition 5 is not affected. A link rel=icon with a data: address was tried and is blocked by img-src 'self' (a CSP console error), so it was reverted. Design 5.2 makes every unknown path a 404 and 5.4 fixes the policy; both are BACKEND-DEV / design territory.",
+        "needs": "optional: ORCH to decide whether the server may answer /favicon.ico with 204."
+      },
+      {
+        "id": "I5",
+        "severity": "INFO (for TEST-DESIGNER: choices where 4.7 leaves room; none contradicts the design)",
+        "title": "DOM and API details to read before writing PG-12, PG-23, OF-10, OF-15, OF-18, OF-20 and OF-21",
+        "detail": "Tasks (#tasks > li, data-kind, data-key, data-state): spans in order role, desc, state, started (fmtTime), last-event (in progress only; for a row of the main session it is taken from its session), ended (extra, completed only, fmtTime of ended_at), session (first 8 code points). desc is present for tasks (empty text when there is no description) and absent for a row of the main session. data-label on started / last-event / ended holds a caption that CSS shows before the time (texts LABEL_STARTED, LABEL_LAST_EVENT, LABEL_ENDED, extra to the table of 4.7). Journal (#journal > li, data-index, data-marked 'true' or 'false'): spans time, event (EVENT_LABELS), role, desc, session, source, mark (always present; text NOT_FROM_HOOKS only when marked); newest first, the last 200 non-empty lines; SHOWN_NOTE gets n = 200 and N = number of non-empty lines; the list shows 300 items. #empty holds one text 'EMPTY_JOURNAL newline EMPTY_HINT'. #connection: NO_CONNECTION and hidden false when there is no connection, empty text and hidden true otherwise. #server-starts: one li per record in file order (CSS shows the newest at the bottom of a column-reverse list). #legend li.legend-item[data-role] with role, count, desk. #card as 4.7 with the title = full; for the main session card-working holds CARD_SESSIONS plus the number of running sessions only. Data attributes are written with both setAttribute and dataset. The page uses only createElement, textContent, appendChild, replaceChildren, classList.add, dataset, setAttribute, hidden, addEventListener (document and canvas), getElementById, visibilityState, getBoundingClientRect, getContext, and on the context fillRect, fillText and the properties fillStyle, font, textAlign: the fakes of 10.1 are enough. createApp: start() looks the elements up, registers the interval and the visibility listener, asks for the first frame and then polls; poll() resolves at once if a request is in flight (it does not hand back the in-flight promise, so awaiting it cannot deadlock on a hanging fetch); the interval callback returns undefined; a response counts as good if status is 200 (or, when the fake has no status, ok is true); every request is fetchFn(url, {method: 'GET', signal}). Sim: routes start at the first tick after enqueue, not at enqueue; positions() state 'waiting' means the walker sits and the head of its queue waits for `after`; route is the id of the current route; queued counts the waiting routes without the current one; enqueue sorts a copy by event_index (handoff before result). drawOffice draws a badge for a count above 1 with fillRect and one more fillText (centred, same maxWidth), so a test that counts fillText calls must expect labels plus badges. Model.serverStarts is the array as sent; only the rules drop records with journal_lines above the number of lines.",
+        "needs": "TEST-DESIGNER: use these as the contract of the DOM layer; if a reading is wrong, FRONTEND-DEV changes the code, not the design."
+      },
+      {
+        "id": "I6",
+        "severity": "INFO (ambiguity, literal reading chosen)",
+        "title": "Card of the main session: 4.7 says card-working holds 'CARD_WORKING and the number (for the main session CARD_SESSIONS and the number of running sessions)'",
+        "detail": "Read as a replacement, not an addition: the main card shows 'идущих сессий: N' only; its working_count is not shown on the card (it is in the office model and in the list of tasks). Both texts would be a one-line change.",
+        "needs": "designer/TEST-DESIGNER to confirm."
+      },
+      {
+        "id": "I7",
+        "severity": "INFO (choices in office-report.js where 3.8 is silent)",
+        "title": "office-report.js: details beyond the text of 3.8",
+        "detail": "roles come from the legend, so a role without a desk is listed with desk_index null; with --session the counts, working and the routes are limited to the tasks whose session_id (the session of the LAST start, 3.5) equals the id, while desk_index and cells are the same as on the page (the office is built from the whole journal); main.working with --session means an open row of that session; a key given twice, an empty --journal value and any other word are usage errors (exit 2, the design lists only the four cases of E30a); an incomplete last line without a newline is not a line, as on the server. Extra exports runReport(argv, io) and buildReport(entries, starts, nowMs, session) exist for tests; the program starts only when it is the file Node was started with.",
+        "needs": "none, unless TEST-DESIGNER reads 3.8 differently."
+      },
+      {
+        "id": "I8",
+        "severity": "INFO",
+        "title": "tools/README.md re-read against the finished page (BACKEND-DEV issue I6)",
+        "detail": "The paragraphs 'Pixel Office', 'Запуск', 'Как смотреть задачи' and limitations 1, 5, 6, 7, 10, 13 agree with the page as built: task fields including the end of a task, the row of the main session, the journal, the office with the card on a click, live update within 5 s (measured 760 ms in Chrome), 'Нет связи с сервером Pixel Office', poll at once when the tab returns, the 3 s limit of the first load. I found no mismatch and did not edit the README."
+      },
+      {
+        "id": "I9",
+        "severity": "INFO",
+        "title": "The legend is not capped",
+        "detail": "The design caps the journal at 200 and the list at 300 but not the legend (requirement REQ-007 AC1 wants every role with a task in the legend). A journal with thousands of different agent_type values would give thousands of legend items. Real roles are the files of .claude/agents plus a few built-in types (about 30), so I did not add a cap that the requirement does not allow."
+      }
+    ],
+    "changes": [
+      {
+        "file": "tools/src/pixel-office/public/texts.js",
+        "change": "new: the 17 constants of table 4.7 (values compared with the design by script) and three small captions (LABEL_STARTED, LABEL_LAST_EVENT, LABEL_ENDED)"
+      },
+      {
+        "file": "tools/src/pixel-office/public/format.js",
+        "change": "new: fmtTime, fmtTimeSec, fmtDateTime, tzLabel (zone of the computer read from Intl at each call, empty string on an unreadable time)"
+      },
+      {
+        "file": "tools/src/pixel-office/public/model.js",
+        "change": "new: readRule (rules a, b, c with a fast path and a Fenwick tree) and buildModel (marks, trusted, sessions, tasks with stop_indices and links, rows of the main session, list order, journal rows)"
+      },
+      {
+        "file": "tools/src/pixel-office/public/layout.js",
+        "change": "new: the 27 x 24 grid MAP, 28 DESKS, cellKind, walkable, findPath (breadth-first, bounded by the grid)"
+      },
+      {
+        "file": "tools/src/pixel-office/public/office-model.js",
+        "change": "new: roleLabel, buildOffice (desks, characters, legend, routes with after) and buildCard"
+      },
+      {
+        "file": "tools/src/pixel-office/public/office-sim.js",
+        "change": "new: createSim with sync, enqueue({seen}), tick, positions, cell (speed 3.4 cells/s, pause 0.6 s, routes wait for `after`)"
+      },
+      {
+        "file": "tools/src/pixel-office/public/office-view.js",
+        "change": "new: CELL_COLORS, LABEL_FONT, LABEL_MAX_WIDTH, drawOffice (one rectangle per cell, monitors, characters, centred captions with maxWidth, badges), canvasPoint, hitTest"
+      },
+      {
+        "file": "tools/src/pixel-office/public/app.js",
+        "change": "new: createApp(env): poll protocol of 4.6, model rebuild, journal, list, server starts, legend, card, office frames, click, data-drawn, tick-time drawing when no frame did"
+      },
+      {
+        "file": "tools/src/pixel-office/public/boot.js",
+        "change": "new: the only file that reads window; creates the app with the real fetch, clocks, timers, frames and starts it"
+      },
+      {
+        "file": "tools/src/pixel-office/public/index.html",
+        "change": "new: ids of table 4.7, canvas 648 x 576, one script type=module src, no style element, no style or on* attributes, two columns"
+      },
+      {
+        "file": "tools/src/pixel-office/public/style.css",
+        "change": "new: dark theme by classes only, two columns that become one below 1100 px, no horizontal scroll at 420 px"
+      },
+      {
+        "file": "tools/src/pixel-office/public/office-report.js",
+        "change": "new: node office-report.js --journal <file> [--session <id>] with the semantics and exit codes of 3.8 / 8.4; exports runReport and buildReport"
+      },
+      {
+        "file": "tools/eslint.config.js",
+        "change": "modified: ONE block added, {files: [\"src/pixel-office/public/**/*.js\"], languageOptions: {globals: {...globals.browser}}}; nothing else (hash 1d6556b927c4 -> 3c9657d457dd; rules hash and non-public globals hash equal the pins)"
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/texts.js",
+      "tools/src/pixel-office/public/format.js",
+      "tools/src/pixel-office/public/model.js",
+      "tools/src/pixel-office/public/layout.js",
+      "tools/src/pixel-office/public/office-model.js",
+      "tools/src/pixel-office/public/office-sim.js",
+      "tools/src/pixel-office/public/office-view.js",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/boot.js",
+      "tools/src/pixel-office/public/index.html",
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/public/office-report.js",
+      "tools/eslint.config.js"
+    ]
+  }
+}

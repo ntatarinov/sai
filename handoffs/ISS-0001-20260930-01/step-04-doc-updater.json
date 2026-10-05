@@ -1,0 +1,83 @@
+{
+  "handoff_id": "step04-ISS-0001-20260930-01",
+  "run_id": "ISS-0001-20260930-01",
+  "workflow_id": "ISSUE",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/ISS-0001-20260930-01/step-04-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "LOW",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-003",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0001",
+    "artifacts_in": [
+      "handoffs/ISS-0001-20260930-01/step-01-backend-dev.json",
+      "handoffs/ISS-0001-20260930-01/step-02-reviewer.json",
+      "handoffs/ISS-0001-20260930-01/step-03-test-runner.json",
+      "docs/issues/ISS-0001-remaining-stack-traces.md",
+      "docs/design/REQ-002-idea-verdict.md",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "[образец]/docs/anti-patterns.md"
+    ],
+    "agent_run_id": "aeffd0ab93c72055d",
+    "protected": "STATE.md from «### Решение владельца о старте» to «<!-- sai:wf06:end -->» must stay byte-identical (WF-06). Do not touch docs/business-plan/, .claude/agents/, docs/workflows/, docs/requirements.yaml or tools/."
+  },
+  "task": {
+    "description": "Bookkeeping for ISS-0001 after REVIEWER PASS and TEST-RUNNER PASS: (1) close ISS-0001 (status closed, date, who fixed/reviewed/tested, handoff links); (2) record the REVIEWER-confirmed follow-ups as new issue files in the ISS-0001 format: ISS-0002 (MEDIUM) apply-verdict can leave a half-applied state (reviewer ruling I1, incl. the wider cases it found; needs a design for writes plus a §6 code for a failed write — route CODE-DESIGNER -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV -> REVIEWER -> TEST-RUNNER -> DOC-UPDATER) and ISS-0003 (LOW) one sweep of the unguarded file-system call sites the reviewer listed (ruling I2; realistic cases such as a mistyped --root or output folder first); (3) add the anti-pattern from ruling I3 to docs/anti-patterns.md, citing the [образец] entries the reviewer named only after you open them and confirm they say that; (4) docs/design/REQ-002-idea-verdict.md: §6 'Когда' wording for E_VERDICT_MD, E_STATE_ANCHOR, E_USAGE now covers missing / not a file / unreadable (ruling I4), §7 says snapshot-diff inputs are regular files (reviewer note); (5) STATE.md: ISS-0001 closed, ISS-0002 and ISS-0003 open, one line each.",
+    "acceptance_criteria": [
+      "ISS-0001 file says closed with date and handoff links",
+      "docs/issues/ISS-0002-*.md and ISS-0003-*.md exist with severity, what is wrong, evidence (from the reviewer's reproduction), how to fix, route",
+      "new AP entry in the file's format; [образец] citations verified by you",
+      "design §6/§7 edits limited to the wording above",
+      "STATE.md protected WF-06 section byte-identical (sha256 before/after in result)",
+      "result.changes lists every file and what changed"
+    ]
+  },
+  "created_at": "2026-09-30T16:54:48Z",
+  "started_at": "2026-09-30T16:54:48Z",
+  "completed_at": "2026-09-30T17:10:33Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "DOC-UPDATER: ISS-0001 bookkeeping done. Facts come from step-01 (BACKEND-DEV), step-02 (REVIEWER PASS, rulings I1-I4, notes O1-O2) and step-03 (TEST-RUNNER PASS, 115/115). I read each one in full.\n\n1 ISS-0001 CLOSED. The header now says 'Статус: closed, 2026-09-30' (re-wrapped). A new section '## Закрыто' gives: the clock time 2026-09-30T17:04:07Z; run ISS-0001-20260930-01; the route actually taken (BACKEND-DEV -> REVIEWER -> TEST-RUNNER -> DOC-UPDATER); who fixed, reviewed and tested it, with the step-01..04 handoff paths; the 4 regression tests in tools/test/cli.test.js; REVIEWER's own fail-first check (on pre-fix code exactly the 4 new tests fail); pointers to ISS-0002, ISS-0003 and AP-014. The original sections are unchanged.\n\n2 NEW ISSUES, in the ISS-0001 format: a header line (severity, status, who found it, bar item), then Что не так / Доказательство / Почему <severity> / Как исправить / Маршрут.\n- docs/issues/ISS-0002-apply-verdict-partial-write.md, MEDIUM. The write loop is apply.js:100-107; a failure at the compare-read (:103) or the write (:105) of file 2 or 3 leaves the earlier writes in place. Evidence: all four I1 reproductions by REVIEWER (proposed-actions.json as a folder, apply-report.json as a folder, run folder mode 555, apply-report.json mode 444), saying who found which, plus the convergence on re-run. Why MEDIUM and not LOW or HIGH, as ruled. Fix per I1: a write phase that cannot half-apply (e.g. temp file + rename, STATE.md last), a §6 code for a failed write, and one test per target and failure kind, with a listing that includes folders (O2). Route: exactly as you assigned it.\n- docs/issues/ISS-0003-unguarded-fs-calls.md, LOW. The eight I2 cases, the plausible ones first: d (--root missing) and g1 (parent folder of <out-file> missing). Then g2, b, c, a, e, f. It separates read errors (c, d, f, g2: §6 already promises no trace) from write errors (a, b, e, g1: no §6 code yet). It gives REVIEWER's call-site list. Per AP-014 it also lists the other 8 lines with fs calls in tools/src from my own grep (18 lines in all; every module imports fs the same way), marked as not assessed by REVIEWER. Route: you named none, so I used the ISS-0002 shape. CODE-DESIGNER goes first because I2 leaves the codes to it. The issue says ORCH confirms the route at dispatch.\nI checked every file:line cited in both issues read-only against the current tools/src and tools/test. tools/ is unchanged since TEST-RUNNER; its newest file is src/cli.js, 16:30Z.\n\n3 AP-014 is appended to docs/anti-patterns.md, in the file's four-field format: +30/-0, and the old file is an exact byte prefix of the new one. I verified the [образец] citations myself in [образец]/docs/anti-patterns.md (read-only):\n- line 2227 'An established template-substitution mechanism applied to two of three sibling code paths, not all three';\n- line 2439 'A gate-approved design fixing a shared write function missed a sibling write path constructing the same state independently';\n- line 2475 'ISS-0397's own join_counters fix still missed a THIRD sibling read/write path, in a different module ...'.\nEach says what REVIEWER said it says. AP-014 is the next free number: grep finds no AP-014 anywhere in sai/.\n\n4 DESIGN docs/design/REQ-002-idea-verdict.md, +8/-7, only these places:\n- §6 'Когда' of E_USAGE adds 'snapshot-diff: файл снимка отсутствует, не является обычным файлом или не читается' (still код 2);\n- E_VERDICT_MD now reads '.md отсутствует, не является обычным файлом или не читается; ...';\n- E_STATE_ANCHOR now reads 'STATE.md отсутствует, не является обычным файлом или не читается; ...';\n- the §7 snapshot-diff bullet now says <before> and <after> are regular files (not a folder, not a pipe like <(...)), otherwise E_USAGE, код 2. The rest of the bullet is unchanged, only re-wrapped.\nI checked the wording against the code: readTextFile is statSync().isFile() plus readFileSync inside try (util.js:55-62); also validate.js:856-867, apply.js:42-49, cli.js:153-158, and cli.js:179-180 (E_USAGE -> exit 2). The pipe case is REVIEWER's O1 reproduction.\n\n5 STATE.md: the line 'ISS-0001 open' (old line 44) became three one-line items: ISS-0001 closed 2026-09-30; ISS-0002 (MEDIUM) open; ISS-0003 (LOW) open. Also line 35: '111 тестов' became '115 тестов', the count this fix changed (TEST-RUNNER 115/115; tools/ unchanged since). Nothing else changed.\n\nPROTECTED SECTION. Range: from the first byte of '### Решение владельца о старте' through the newline after '<!-- sai:wf06:end -->', i.e. sed -n '/^### Решение владельца о старте/,/<!-- sai:wf06:end -->/p' STATE.md | shasum -a 256. This is the same method, and the same value, as the previous DOC-UPDATER (BP-20260929-01 step 05).\n- before: 995d9e21086335bc96cc30a9b8ce6a67d5d9920152d0c6d54f2e3e7337e8139f (8642 bytes);\n- after: 995d9e21086335bc96cc30a9b8ce6a67d5d9920152d0c6d54f2e3e7337e8139f;\n- cmp of the saved byte copies: identical, and the hash was re-checked just before this handoff was written.\nThe section moved from lines 67-107 to 69-109 because two lines were added above it. Whole STATE.md: 8c7cb84c... before, e5ef7412... after.\n\nSCOPE. Files in sai/ changed since this step was created (find -newer this handoff): the 6 files in changes, plus docs/requirements.yaml at 17:05:13Z. The parallel REQ-ANALYST wrote that one (BP-20260930-01 step-00a r4); I did not. Nothing changed under docs/business-plan/, .claude/agents/, docs/workflows/ or tools/. I only read [образец]. I wrote no agent events (R2). No requirement status changed; REQ-002..004 are already done and nothing flips here. Not applicable here: there is no README.md in sai/ or tools/, and no docs/status/ run-history volume. The only other file I edited is this handoff.\n\nFOR ORCH (I did not change these; they are outside this task):\n(a) The route against the floor. Sai's pipeline order (.claude/agents/orchestrator.md) and [образец] WF-03 step 4 both put TEST-DESIGNER -> TEST-DESIGN-VALIDATOR between REVIEWER and TEST-RUNNER: someone other than the code author writes the fail-first regression test. [образец] ORCHESTRATOR.md also says ORCH 'MUST NOT ... skip a producer/validator pair'. Your ISS-0002 route and the ISS-0003 route derived from it lack that pair. I recorded your route unchanged and added a short 'Сверка с документами' note under it in both issues, so this gets decided at dispatch. ISS-0001 had the same shape. There, REVIEWER ran the fail-first check itself, so I closed it as instructed and recorded exactly which checks were made.\n(b) Same-class §6 wording gaps (AP-014: list the siblings). E_SOURCE_PATH (prepare.js:83, 'source not allowed, missing, not a file or unreadable', against §6 'файла нет') and E_SOURCE_CHANGED (validate.js:221, 'cleaned copy missing, not a file or unreadable', against §6 'нет очищенной копии') have the same gap as I4. I did not edit them, because the task limits the design edit to three rows.\n(c) The design §9 Q10 row still names only the broken-JSON test in cli.test.js, not the four ISS-0001 tests (cli.test.js:163/174/187/197). I did not edit it, for the same reason.",
+    "changes": [
+      {
+        "file": "docs/issues/ISS-0001-remaining-stack-traces.md",
+        "change": "Status open -> 'closed, 2026-09-30' (header re-wrapped). New section '## Закрыто': clock time 2026-09-30T17:04:07Z, run ISS-0001-20260930-01, the route taken, fixed by BACKEND-DEV / reviewed by REVIEWER (PASS, own fail-first check) / tested by TEST-RUNNER (PASS, 115/115) with the step-01..04 handoff paths, the 4 regression tests in tools/test/cli.test.js, follow-ups ISS-0002, ISS-0003 and AP-014. +26/-2; the original sections are unchanged."
+      },
+      {
+        "file": "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+        "change": "New issue, MEDIUM, open. Что не так (apply.js:100-107, compare-read :103 / write :105; design §5); Доказательство (the four REVIEWER I1 reproductions, who found which, convergence on re-run); Почему MEDIUM; Как исправить (I1: atomic write phase, §6 code for a failed write, one test per target and failure kind, listing incl. folders per O2; the shared write code with ISS-0003); Маршрут: CODE-DESIGNER -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV -> REVIEWER -> TEST-RUNNER -> DOC-UPDATER as assigned by ORCH, plus a note that the Sai pipeline order and [образец] WF-03 step 4 also have TEST-DESIGNER -> TEST-DESIGN-VALIDATOR."
+      },
+      {
+        "file": "docs/issues/ISS-0003-unguarded-fs-calls.md",
+        "change": "New issue, LOW, open. The eight I2 cases (REVIEWER reproductions), plausible first (d: --root missing; g1: parent folder of <out-file> missing), then g2, b, c, a, e, f; read errors (c, d, f, g2) vs write errors (a, b, e, g1); REVIEWER's call-site list; the other 8 fs call lines in tools/src from grep (18 in all), marked as not assessed; fix per I2 (CODE-DESIGNER decides codes; one test per call site, listing incl. folders); route of the same shape as ISS-0002, to be confirmed by ORCH, with the same TEST-DESIGNER note."
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "change": "Appended AP-014 'Исправлены названные места, остальные того же класса остались' (+30/-0, append only), citing [образец]/docs/anti-patterns.md lines 2227, 2439 and 2475 by title after reading them myself."
+      },
+      {
+        "file": "docs/design/REQ-002-idea-verdict.md",
+        "change": "§6 'Когда' of E_USAGE (+ snapshot-diff input missing / not a regular file / unreadable, код 2), E_VERDICT_MD and E_STATE_ANCHOR (+ missing / not a regular file / unreadable); §7 snapshot-diff bullet: <before>/<after> are regular files, otherwise E_USAGE, код 2. +8/-7; nothing else in the design."
+      },
+      {
+        "file": "STATE.md",
+        "change": "Old line 44 (ISS-0001 open) became three one-line items: ISS-0001 closed 2026-09-30; ISS-0002 (MEDIUM) open; ISS-0003 (LOW) open. Line 35: '111 тестов' -> '115 тестов'. +4/-2. Protected section '### Решение владельца о старте' .. '<!-- sai:wf06:end -->' byte-identical: sha256 995d9e21086335bc96cc30a9b8ce6a67d5d9920152d0c6d54f2e3e7337e8139f before and after."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0001-remaining-stack-traces.md",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/issues/ISS-0003-unguarded-fs-calls.md",
+      "docs/anti-patterns.md",
+      "docs/design/REQ-002-idea-verdict.md",
+      "STATE.md"
+    ]
+  }
+}

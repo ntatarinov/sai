@@ -1,0 +1,127 @@
+{
+  "handoff_id": "step02-r3-ISS-0002-20260930-01",
+  "run_id": "ISS-0002-20260930-01",
+  "workflow_id": "WF-03",
+  "step": "02",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r3.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "issue_id": "ISS-0002",
+    "agent_run_id": "a9a62593eb3aa3478",
+    "rework_of": "handoffs/ISS-0002-20260930-01/step-02-code-designer-r2.json",
+    "artifacts_in": [
+      "handoffs/ISS-0002-20260930-01/step-03-code-design-validator.json",
+      "docs/design/REQ-002-idea-verdict.md"
+    ],
+    "orch_rulings": {
+      "F1": "Accept. ORCH's ruling cited §5.4, but §5.4 covers only the write side; the validator is right. Add the row to the §5.4 table, a bullet to §11 and a clause to the Q11 rows in §10 and §12, with the validator's wording from its handoff: validate and the read phase of apply-verdict follow a symlinked run folder (read only; nothing is written outside <root>), accepted by ORCH 2026-10-01, to be recorded in decisions/0004 together with the write strategy. No new test is needed for PASS.",
+      "F2-F8": "Accept all as proposed."
+    },
+    "parallel_work_now": "Nobody else edits docs/design/REQ-002-idea-verdict.md. The Pixel Office designer writes docs/design/REQ-001-pixel-office.md. Do not edit requirements.yaml."
+  },
+  "task": {
+    "description": "Rework design v4 (round 3) per F1-F8 of result.summary in step-03-code-design-validator.json, as ruled in context.orch_rulings. Design docs only; touch only the sections the findings name.",
+    "acceptance_criteria": [
+      "result.changes one entry per finding F1-F8 with section and what changed",
+      "no implementation code; no change outside the declared write set"
+    ]
+  },
+  "created_at": "2026-10-01T06:42:51Z",
+  "started_at": "2026-10-01T06:42:51Z",
+  "completed_at": "2026-10-01T06:52:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-DESIGNER, WF-03 step 2 round 3 for ISS-0002. Design only: the one project file changed is docs/design/REQ-002-idea-verdict.md (version 4, round 3). docs/requirements.yaml (sha256 4450091a...), tools/src and tools/test (23 files, equal to ORCH's pre-fix manifest) and every other file are untouched. Next: CODE-DESIGN-VALIDATOR re-check of the sections listed in changes.\n\nALL EIGHT FINDINGS FIXED, as ORCH ruled (F1 as ruled; F2-F8 as proposed).\n- F1 (blocking): the read-through of a symlinked run folder is now stated in 5.4 (new table row), in 11 (new bullet), and in the Q11 rows of 10 and 12. Wording: validate and the read phase of apply-verdict follow a symlinked runs/<RUN-ID> (or runs); they only read; nothing is written outside <root> (W1.1; W13, W13b); cli.js and validate.js do not change; ORCH accepted it on 2026-10-01; decisions/0004 will record it together with the write strategy. No new test, per ORCH. The row's 'before' column is my own evidence on the pre-fix copy: validate exits 0 with 'OK WF06-20260925-01 (stage review)' through a link to a run outside <root>.\n- F2: 9.2 now says tree() returns one string, lines joined with newline, extra optional, so apply.reject, apply.state, apply.accept and cli.test.js need no edit (I grepped all callers: four files, all assert.equal on strings).\n- F3: 9.2 now says the existing chmod tests restore the mode they read before the chmod. I ran it instead of reading it: under umask 077 the fixture file is 0600 and restoring the literal 0o644 gives 0644, so a strict listing that records modes would differ; under umask 022 it is equal.\n- F4: I dropped the label field from this change (the validator's first option). Nothing in this change calls it and no test row covers it. 5.7 now says targets are { rel, content } inside root only; 5.6 'Для ISS-0003' says the out-of-root file-name rule and the helper extension are ISS-0003's, with its own test.\n- F5: 5.5, 7 and 12 (R2) now say that snapshot lists only files, so a leftover file and a temp folder with a file in it show up in snapshot-diff and an empty temp folder does not (the command's own leftover check, W1.3/P1, still refuses it). Verified on the real snapshot.js: .STATE.md.sai-tmp, .STATE.md.sai-old and a file inside a temp folder are listed; an empty runs/.X.sai-tmp and an empty .runs.sai-tmp are not.\n- F6: 5.2 and 5.3 (W3) now say 'if STATE.md is among the replaced targets, it is replaced last'. A skipped STATE.md (already equal, W1.5) takes no part; an interrupted run then adds no new inconsistency, because the same one existed before it. If STATE.md is not replaced, the commit point is the last rename of the replaced targets.\n- F7: 9.4 has a rule before the table. Rows with 'A5 заменяется' compare entries added or replaced by the run by type, mode, size and sha256, without mtime; a .sai-old hard link is compared in every field, mtime too, with the old file's line in the 'before' listing; every other entry must equal the 'before' listing in full. Rows W44, W45, W46 and P11 point to it.\n- F8: new row W13b (runs is a link to a folder outside <root> that holds the run): two E_WRITE lines naming 'folder runs'. New mutant M19 (W1.1 checks only runs/<RUN-ID>) is killed by W13b; M7 now names W13b too. Pre-fix result of W13b, which I ran: exit 0, STATE.md changed, proposed-actions.json and apply-report.json written outside <root>, runs still a link.\n\nTHINGS I FOUND WHILE FIXING (beyond the findings; all small, all done)\n- W38 has the same unpredictable-mtime problem as W44-W46 (a 'foreign' temp file created during the run), so the F7 rule covers W38 too.\n- The injection's 'partial' effect did not define 'half'. 9.2 now says the first floor(n/2) characters of the string, so the expected size and sha256 in W44 and P11 can be computed. This matters because the fixture text is Cyrillic: a byte half and a character half differ.\n- 5.7's row for snapshot.js had the same imprecise wording as F5 ('leftovers are regular files, visible'); fixed.\n- 5.6's first paragraph named out-of-root files without saying that this change has none; it is marked as ISS-0003's rule.\n- 12 (Q3) lists the round-3 probes; the header's outdated sentence 'CODE-DESIGN-VALIDATOR has not checked version 4' now records the round-2 FAIL and the round-3 note (the validator asked for this).\n\nOPEN POINTS FOR ORCH\n1. Criterion 11's last sentence ('если в STATE.md уже новое содержимое, то и в остальных целях тоже') has the same corner as F6 when STATE.md is already equal to the new text and is skipped. Read as 'when the run replaces STATE.md' it is true; the design says so in 5.2 and in the 9.1 row. I did not touch docs/requirements.yaml.\n2. 5.6 is named by F4 but not in the validator's list of sections to re-check; it is listed in changes.\n3. The optional 'fixation' row for validate on a symlinked run folder was not added (your ruling). The accepted behaviour is written in 5.4 and 11, not tested.\n4. decisions/0004 (write strategy, read-through acceptance) is still to be written by ORCH before implementation; the design cites the number as ORCH named it.\n5. Still open from earlier rounds: ISS-0003's text (its cases a and e are closed here); WF-06 and verdict-executor.md say nothing about E_WRITE or leftovers; TEST-DESIGNER and TEST-DESIGN-VALIDATOR must be on the route.\n\nEVIDENCE (pre-fix copy, scratch .../scratchpad/cd-iss0002/probe-r3/, 2026-10-01): links.mjs (validate and apply-verdict through a link to a run outside <root>, and W13b); umask.mjs (mode before and after restoring 0o644 under umask 022 and 077); snap.mjs (what snapshot lists). Mechanical checks of the final design: tables consistent (0 problems); rows W01-W52 plus W13b, P01-P14, L01-L09, B1-B30, M1-M19 each defined once; every referenced row id exists; fenced blocks unchanged (22), no implementation code added. Only the design file and docs/design/REQ-001-pixel-office.md (the Pixel Office designer's own file) changed in sai/ during this round. No agent events written (R2).",
+    "changes": [
+      {
+        "finding": "F1",
+        "sections": [
+          "5.4",
+          "11",
+          "10 (Q11)",
+          "12 (Q11, Q3)"
+        ],
+        "change": "5.4: new table row 'validate and the read phase of apply-verdict; runs/<RUN-ID> (or runs) is a link to a folder outside <root>': now reads through the link, validate exits 0 (checked 2026-10-01 on the pre-fix code); after: unchanged for validate, apply-verdict reads and then refuses to write with E_WRITE ELOOP (W13, W13b); why: resolveRunDir compares paths and uses statSync, cli.js and validate.js do not change; read only, writes outside <root> closed by W1.1; accepted by ORCH 2026-10-01; decisions/0004 to record it with the write strategy; no separate test (ORCH ruling). The existing row for a linked folder on the path now cites W13 and W13b. 11: new bullet with the same acceptance (AP-014). 10 and 12, row Q11: added 'чтение по ссылке на папку прогона принято (5.4, 11); запись за пределы <root> закрыта (W1.1)'; 10 also says the run-folder rule is judged by path, without following links. 12, row Q3: round-3 probes listed."
+      },
+      {
+        "finding": "F2",
+        "sections": [
+          "9.2"
+        ],
+        "change": "Strict listing: tree() returns one string, entries joined with a newline; extra is optional; so the existing assert.equal(tree(root), before) in apply.reject, apply.state, apply.accept and cli.test.js need no edit."
+      },
+      {
+        "finding": "F3",
+        "sections": [
+          "9.2"
+        ],
+        "change": "Existing chmod tests (cli.test.js 'unreadable verdict-1.md', which compares the listing; validate.run.test.js, which does not) restore the mode they read before the chmod, not the literal 0o644; checked 2026-10-01: under umask 077 the file is 0600 and the literal gives 0644, under umask 022 no difference."
+      },
+      {
+        "finding": "F4",
+        "sections": [
+          "5.7",
+          "5.6"
+        ],
+        "change": "5.7: label removed from the targets of writeAllOrNothing; targets are { rel, content } inside root; a target outside root is not supported by this change. 5.6: the 'Для ISS-0003' paragraph says the file-name rule for a file outside <root> and the helper extension are not part of this change (no caller, no test row) and ISS-0003 adds them with its own test; the first paragraph marks the out-of-root rule as ISS-0003's and says this change has no such targets."
+      },
+      {
+        "finding": "F5",
+        "sections": [
+          "5.5",
+          "7",
+          "12 (R2)",
+          "5.7 (snapshot.js row)"
+        ],
+        "change": "Reworded to: a leftover file, or a temp folder with a file in it, shows up in snapshot-diff; an empty temp folder does not (the command's own leftover check W1.3/P1 still sees it and refuses). 5.5 cites the reason (listFiles lists files only) and the check on the real snapshot.js (2026-10-01). 5.7's row for snapshot.js had the same imprecise wording and was fixed the same way."
+      },
+      {
+        "finding": "F6",
+        "sections": [
+          "5.2",
+          "5.3 (W3)",
+          "9.1 (criterion-11 row)"
+        ],
+        "change": "5.2 and W3: 'if STATE.md is among the replaced targets, it is replaced last'; if STATE.md need not be replaced (W1.5) it takes no part, and the commit point is the last rename of the replaced targets; an interrupted run then adds no inconsistency that did not exist before. 9.1: the criterion-11 row for 'if STATE.md is new, so are the others' says it holds when the run replaces STATE.md, and that W47, W48 and mutant M1 test it from the other side."
+      },
+      {
+        "finding": "F7",
+        "sections": [
+          "9.4 (rule before the table; rows W38, W44, W45, W46)",
+          "9.5 (row P11)",
+          "9.2 (effect table, 'partial')"
+        ],
+        "change": "New rule for rows with 'A5 заменяется': entries added or replaced by the run are compared by type, mode, size and sha256, mtime excluded; a .sai-old hard link is compared in every field, mtime included, with the old file's line in the 'before' listing; every other entry must equal the 'before' listing in full. W44, W45, W46 and P11 now cite the rule and say which entries are added or replaced. W38 has the same defect and uses the rule too. 9.2: 'partial' is defined as the first floor(n/2) characters of the string, so the expected size and sha256 can be computed."
+      },
+      {
+        "finding": "F8",
+        "sections": [
+          "9.4 (new row W13b)",
+          "9.7 (M7, new M19)",
+          "9.1 (criterion-11 table, B4)",
+          "5.4",
+          "10 and 12 (Q11)"
+        ],
+        "change": "New row W13b (RF; runs is a link to a folder outside <root> that holds the run; two E_WRITE lines naming 'folder runs'; pre-fix: exit 0, STATE.md changed, both other targets written outside <root>; checked 2026-10-01). New mutant M19 (W1.1 checks only runs/<RUN-ID>), killed by W13b while W13 still passes; M7 now lists W13b. References to W13b added in the 9.1 table rows for a link on the path and for 'nothing outside the project', in B4, in the 5.4 row, and in the Q11 rows."
+      },
+      {
+        "finding": "header (the validator's note, not a finding)",
+        "sections": [
+          "Header"
+        ],
+        "change": "Removed the outdated sentence 'CODE-DESIGN-VALIDATOR has not checked version 4'; added the status line (round 2: FAIL, F1 medium blocking, F2-F8 low) and a round-3 note that lists the changed sections."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-002-idea-verdict.md"
+    ]
+  }
+}

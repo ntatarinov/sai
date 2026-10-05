@@ -1,0 +1,61 @@
+{
+  "handoff_id": "step03-security-reviewer-PO-20261002-01",
+  "run_id": "PO-20261002-01",
+  "workflow_id": "WF-04",
+  "step": "03",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PO-20261002-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "PLAN.md, точка остановки, п. 1 (итерация 3)",
+    "requirement_ids": [
+      "REQ-007",
+      "REQ-001"
+    ],
+    "route": "FRONTEND-DEV (готово) -> SECURITY-REVIEWER (this) -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> владелец",
+    "agent_run_id": "af2e1364338df577d",
+    "write_set": [
+      "handoffs/PO-20261002-01/step-03-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<вне проекта>/orch/before-po3-build",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PO-20261002-01/step-02-frontend-dev.json",
+      "tools/src/pixel-office/public/",
+      "tools/README.md",
+      "docs/design/REQ-001-pixel-office.md",
+      "docs/requirements.yaml (блоки REQ-007, REQ-001)",
+      "docs/quality-bar.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3 — ворота: проверка безопасности сборки офиса Pixel Office (handoffs/PO-20261002-01/step-02-frontend-dev.json). Изменено: tools/src/pixel-office/public/ (texts.js, layout.js, office-model.js, office-sim.js, office-view.js, panels.js — новый, app.js, boot.js, index.html, style.css, office-report.js) и tools/README.md; копии до — <вне проекта>/orch/before-po3-build. Сервер, хук и схема не менялись — сверьте сравнением с копиями и git-независимо (sha256).\nПо вашей роли и docs/quality-bar.md §2.1 пройдите каждый пункт Q7–Q11 и R3: применим и выполнен (чем проверено — своими запусками) или неприменим (почему). Особо: страница только читает (только GET), текст из событий (описания, имена ролей, session_id) выводится как текст, а не разметка — проверьте на сочинённом событии вроде <img src=x onerror=alert(1)> в отдельной папке состояния вне проекта на своём порту; ничего не грузится с других адресов; Content-Security-Policy не нарушена (нет встроенных скриптов, обработчиков в атрибутах, атрибута style — D16); нет секретов; в журнал и на страницу не попадает то, чего хук не присылал (R2); новые поля холста и класса цвета не дают вставки разметки; грепы критериев 6 и 12 REQ-007 — повторите сами; нет eval, innerHTML, document.write, new Function; ограничения размеров (до 300 элементов, длинные тексты) не дают зависания страницы на большом журнале (запустите на сочинённом журнале в тысячи строк в отдельной папке).\nПорт 4780 и ~/.sai-pixel-office не трогать; сочинённые события — только в своей папке состояния вне проекта на своём порту, потом остановить сервер. Ничего не правьте. Предел расхода у владельца жёсткий: без повторов. Каждая команда — с ограничением по времени.\nРезультат: result.verdict — PASS или FAIL; result.summary — по пунктам Q7–Q11 и R3 с доказательствами; result.findings — место, важность (Critical, High, Medium блокируют), исправление.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый пункт Q7–Q11 и R3 — применим/неприменим, с доказательством",
+      "замечания с местом, важностью и исправлением"
+    ]
+  },
+  "created_at": "2026-10-03T14:37:06Z",
+  "started_at": "2026-10-03T14:37:06Z",
+  "completed_at": "2026-10-03T14:46:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Область затронута: изменение — файлы страницы Pixel Office, которые получает браузер (tools/src/pixel-office/public/: app.js, boot.js, index.html, style.css, texts.js, layout.js, office-model.js, office-sim.js, office-view.js, office-report.js, новый panels.js) и tools/README.md; страница показывает в браузере текст из событий хуков (описания, имена ролей, session_id). Всё проверено своими командами и своими запусками; отчёт разработчика за доказательство не принимался.\n\nЧто изменено (своя сверка): diff -rq с копией «до» — изменены app.js, boot.js, index.html, layout.js, office-model.js, office-report.js, office-sim.js, office-view.js, style.css, texts.js; panels.js новый; schema.js, format.js, model.js совпадают побайтно (cmp). Сервера, хука и state-dir в копии «до» нет; что они не менялись, видно по времени изменения: config.js, hook.js, hook.sh, journal.js, main.js, protocol.js, server.js, state-dir.js — 2026-10-01, раньше начала прогона 2026-10-03.\n\nПункты планки:\n- Q7 — применим, выполнен. По файлам страницы grep -rniE 'secret|token|api[_-]?key|password|passwd|bearer|authorization|PIXEL_OFFICE_' дал код 1, ничего не найдено. Поиск строк из 32 и более знаков [A-Za-z0-9+/_-] по public/* и README нашёл только строки-разделители из дефисов в комментариях. В README строка 60 только описывает файл write-secret (права 0600, 43 знака) и значения не содержит. Значение write-secret из моей папки состояния не нашлось ни в DOM страницы, ни в журнале сервера, ни в ответе /api/events (0 совпадений в каждом). GET /write-secret и /../state/write-secret (--path-as-is) — 404.\n- Q8 — неприменим: данных магазинов нет, это служебная страница конвейера, которая только читает события хуков. Какие поля уходят клиенту, решает сервер, и он в этой работе не менялся.\n- Q9 — неприменим: базы данных и SQL в изменении нет, страница обращается только к /api/events.\n- Q10 — применим, выполнен, проверено запуском. Свой сервер на порту 4797 с отдельной папкой состояния вне проекта; Chrome headless управлялся через CDP. Страница была LIVE (data-state=live, 703 нарисованных персонажа, 200 строк журнала). Я остановил сервер, и через 8 с страница показала data-state=down и «Нет связи с сервером Pixel Office». Нарисованное и журнал остались (703 и 200), исключений нет. В консоли только «Failed to load resource» (одна 404 и ERR_CONNECTION_REFUSED). В коде: getJson ограничен POLL_TIMEOUT_MS = 3000 через AbortController и свой таймер; ответ неверного вида, ошибка сети и не-JSON ведут к setLink(\"down\"); одновременно идёт не больше одного запроса (inFlight); рисование обёрнуто в guarded и reportOnce.\n- Q11 — неприменим: страница не ходит по адресам, которые задаёт пользователь; единственный запрос — относительный `${API_EVENTS}?after=<число>` на свой сервер. grep -rEn 'https?://' public дал код 1, ничего не найдено. Через CDP: performance resource entries с чужих адресов — [], запросы — только «GET /api/events?after=0» и «GET /api/events?after=4905».\n- R3 — неприменим: фото покупателей нет, продукта нет.\n- R2 (Pixel Office) — применим, выполнен. Страница только читает: fetch есть в одном месте, getJson, с method:\"GET\". Через CDP перехвачено 7 запросов, все GET. Сервер слушает только 127.0.0.1 (lsof: TCP 127.0.0.1:4797 LISTEN). PUT / — 405. POST /api/events без секрета — 401. Host: evil.example — 403. В коде страницы нет заготовленных событий: grep 'hook_event_name\\s*:' по public — пусто; Date.now и new Date есть только в boot.js (часы), в office-report.js (время отчёта) и в schema.js (проверка формата). Math.random — код 1. office-report.js — программа для Node: она только читает журнал (readFileSync), пишет JSON.stringify в stdout и ничего не дописывает. Мои сочинённые 4905 строк лежали только в моей папке вне проекта.\n- Вывод текста как текста — выполнен, проверено запуском. В своей папке состояния я сочинил журнал из 4905 строк: 700 сессий и столько же ролей. В agent_type был «<svg onload=alert(i)> (R<b>)», в description — «<script>alert(i)</script>…» до 100 знаков. Ещё была идущая сессия с session_id, agent_id, agent_type, tool_use_id и description из «<img src=x onerror=alert(1)>», с хвостом '\"><img…' и с '\"]{}</style><img…', а также строка с source «<img src=x>» (пометка «не из хуков»). Итог: в DOM 0 элементов img/svg/iframe/object/embed; единственный script — boot.js; в выгрузке DOM экранированы 14 вхождений «&lt;img src=x onerror=alert(1)&gt;», 233 «&lt;script&gt;alert», 1633 «&lt;svg onload», 4 «&lt;/style&gt;&lt;img». Диалогов (Page.javascriptDialogOpening) — 0, исключений — 0. В коде текст ставится через textContent (make) и fillText холста. Данные из событий попадают в атрибуты только через setAttribute и dataset с постоянными именами (data-key, data-session и т. п.): значение атрибута разметкой не становится. data-color — число из colorOfDesk.\n- CSP (D16) — выполнено. Заголовок сервера: default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'. В DOM 0 элементов с атрибутом style, 0 встроенных скриптов. grep -rniE ' on[a-z]+=|javascript:' public дал код 1. Поиск innerHTML, outerHTML, insertAdjacentHTML, document.write, eval(, new Function, строковых setTimeout/setInterval, createContextualFragment, DOMParser, srcdoc, .style и cssText ничего не нашёл (найден только setAttribute с постоянными именами или data-*). В журнале Chrome нарушений CSP («Refused…») нет.\n- Пределы против зависания — выполнено, проверено запуском. На журнале из 4905 строк с 703 персонажами: журнал показывает 200 строк (JOURNAL_LIMIT), панель задач — «показано 300 из 1402» (LIST_LIMIT 300). PerformanceObserver longtask за загрузку и опросы насчитал 1 долгую задачу длиной 69 мс. В Node на том же журнале buildModel занял 3 мс, buildOffice — 4 мс, панели — 2 мс; buildLayout(2000) — 2 мс.\n- Грепы критериев 6 и 12 REQ-007 повторены: 'https?://' — 1; ' on[a-z]+=|javascript:' — 1; 'Math.random' — 1. Во всех трёх случаях ничего не найдено.\n\nПроверка, что сам ничего не менял: sha256 всех 55 файлов tools/ (без node_modules) до и после проверки — diff пуст.\nЧистка: оба запуска сервера на порту 4797 остановлены (lsof — 0), Chrome остановлен (pgrep — 0). Порт 4780 и рабочий журнал владельца не использовались.\n\nВопросы к ORCH:\n(1) В копии «до» нет server.js, hook.js и state-dir.js. Что они не менялись, я подтвердил по времени изменения файлов, а не по sha256 с копией.\n(2) В tools/test нет ни одного теста pixel-office: тест секрета критерия 8 REQ-001 и тесты критерия 6 REQ-007 с поддельным fetch и полезной нагрузкой <img onerror> ещё не написаны. Это шаг TEST-DESIGNER; мои запуски их не заменяют.\n(3) Раскрываю: один раз прочитал время изменения файла events.jsonl в рабочей папке состояния владельца (stat, только метаданные). Ничего там не открывал и не писал.",
+    "findings": [
+      {
+        "id": "S1",
+        "location": "tools/src/pixel-office/public/office-view.js:79-92 (fitCanvas) и layout.js (officeSize)",
+        "bar_item": "Q10 (не нарушен)",
+        "severity": "Low",
+        "what": "При 703 ролях холст становится 2248×136 px на минимальном размере клетки и растёт в ширину линейно с числом столов. Зависания нет: одна долгая задача на 69 мс. Но при очень большом числе ролей холст упрётся в предел размера canvas браузера, и рисование не пройдёт, хотя ошибки не будет. Источник ролей — только хук с секретом, так что это не уязвимость.",
+        "fix": "Не блокирует. На усмотрение REVIEWER и DESIGN-QA-VALIDATOR: ограничить размер холста или число рисуемых столов и показывать пометку, как у пределов 200 и 300."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

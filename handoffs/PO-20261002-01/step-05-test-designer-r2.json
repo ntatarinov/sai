@@ -1,0 +1,72 @@
+{
+  "run_id": "PO-20261002-01",
+  "workflow_id": "WF-04",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "priority": "HIGH",
+  "handoff_id": "step05-test-designer-r2-PO-20261002-01",
+  "step": "05",
+  "round": 2,
+  "file": "handoffs/PO-20261002-01/step-05-test-designer-r2.json",
+  "status": "COMPLETED",
+  "context": {
+    "plan": "PLAN.md, точка остановки, п. 1 (итерация 3)",
+    "requirement_ids": [
+      "REQ-007",
+      "REQ-001"
+    ],
+    "route": "FRONTEND-DEV -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER (this) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> CODE-FIXER (мелочи Low ревью) -> владелец",
+    "agent_run_id": "a1f7b989bf18a6106",
+    "write_set": [
+      "tools/test/pixel-office-hook.test.js",
+      "tools/test/pixel-office-server.test.js",
+      "tools/test/pixel-office-page.test.js",
+      "tools/test/pixel-office-settings.test.js",
+      "tools/test/pixel-office-layout.test.js",
+      "tools/test/pixel-office-office.test.js",
+      "tools/test/pixel-office-panels.test.js",
+      "tools/test/pixel-office-helpers.js"
+    ],
+    "before_copy": "<вне проекта>/orch/before-po3-tests-r2",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PO-20261002-01/step-07a-code-fixer.json",
+      "handoffs/PO-20261002-01/step-07-design-qa-validator.json",
+      "handoffs/PO-20261002-01/step-03-security-reviewer-r1.json",
+      "handoffs/PO-20261002-01/step-04-reviewer-r1.json",
+      "handoffs/PO-20261002-01/step-05b-test-design-validator-run2.json",
+      "handoffs/PO-20261002-01/step-05b-test-design-validator-run3.json",
+      "docs/design/REQ-001-pixel-office.md (раздел 10)",
+      "docs/requirements.yaml (блоки REQ-007, REQ-001)",
+      "handoffs/PO-20261002-01/step-02-frontend-dev.json",
+      "handoffs/PO-20261002-01/step-04-reviewer.json",
+      "tools/src/pixel-office/",
+      "tools/test/helpers.js",
+      "docs/quality-bar.md"
+    ],
+    "rework_of": "handoffs/PO-20261002-01/step-05-test-designer-r1.json (и step-07a-code-fixer.json: изменение кода)"
+  },
+  "task": {
+    "description": "Тесты после намеренного изменения кода (CODE-FIXER, handoffs/PO-20261002-01/step-07a-code-fixer.json; ворота безопасности и ревью по правке — PASS): только файлы write_set, код не менять; только перечень (AP-019).\n1. Обновить два теста, которые ждут прежнее поведение: LY-05 (pixel-office-layout.test.js ≈359) — подпись «ПЕРЕГОВОРНАЯ» теперь в (580, 21), не заходит на рамку доски (x = 672); OF-34 (pixel-office-office.test.js ≈1868) — ширина облачка ограничена: min(текст, 125) + 14 = 139, широкий текст рисуется fillText(text, bx + 7, by + 12, 125), короткие фразы как раньше.\n2. Новые тесты на исправленные дефекты (без них такой дефект снова прошёл бы незамеченным — это Critical QA F1): (а) при первом открытии страницы (первая перестройка, start()/rebuild()) холст вписывается ПОСЛЕ отрисовки легенды: легенда помещается в панель и не обрезается — проверить на поддельном документе/измерениях тестового стенда по правилам вашего файла помощников, чтобы мутант «вписать холст до легенды» падал; (б) после перестройки легенды и карточки фокус клавиатуры возвращается на ту же кнопку (поддельный документ должен отдавать activeElement — расширить помощник); (в) main.js: обработчики SIGINT/SIGTERM ставятся до печати ссылки — запуск, чтение ссылки и немедленный SIGTERM много раз подряд (≥10), каждый раз код 0, не сигнал; всё на --port 0 через assertSafeArgs; (г) ширина облачка не превышает 139 при любом тексте.\n3. Мутанты на копии вне проекта: «холст до легенды», «фокус не возвращается», «обработчики после печати ссылки», «облачко без предела» — тесты должны падать. cd tools && npm run check — все тесты проходят; без skip/todo/отключённого линтера; порт 4780 и ~/.sai-pixel-office не трогать. Расхождения кода с проектом — в result.issues. Предел расхода жёсткий; долгие команды — в фоне с выводом в файл. Копия tools/test до — <вне проекта>/orch/before-po3-tests-r2.",
+    "acceptance_criteria": [
+      "LY-05 и OF-34 обновлены по новому поведению",
+      "новые тесты (а)–(г) есть, мутанты ловятся",
+      "npm run check — все тесты проходят",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T13:18:52Z",
+  "started_at": "2026-10-05T13:18:52Z",
+  "completed_at": "2026-10-05T13:21:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Только файлы write_set; код не менялся. npm run check: код 0, tests 428, pass 428, fail 0, skipped 0, todo 0.\n1. Обновлены LY-05 (подпись «ПЕРЕГОВОРНАЯ» в (580, 21)) и OF-34 (ширина min(текст,125)+14 = 139, широкий текст рисуется с maxWidth 125, короткая фраза как раньше, без maxWidth).\n2. Новые тесты: OF-36 — при первой загрузке холст вписывается после отрисовки легенды (стенд: панель 1472x600, запись легенды 30 px через offsetHeight от числа детей; ожидаемая клетка 20 px, холст + легенда помещаются; то же после перестройки с новой ролью); OF-37 — после перестройки легенды и карточки фокус возвращается на кнопку того же персонажа, а «×» держит фокус (помощник FakeDocument теперь отдаёт activeElement; раньше код этой ветки тестами не выполнялся); SV-42b — 12 запусков подряд «ссылка прочитана — сразу SIGTERM», каждый раз код 0 и signal null (все на --port 0 через assertSafeArgs); OF-34b — ширина облачка не больше 139 для текстов от пустого до 300 символов и суррогатных пар, maxWidth 125 только у широких.\n3. Мутанты на копии вне проекта (хеш рабочего дерева до и после равен, после проб копия зелёная): «холст до легенды» — падает OF-36; «фокус не возвращается» — падает OF-37 (1); «обработчики после печати ссылки» — падают SV-42b, SV-09, SV-42, SV-45, SV-46, SV-47 (6); «облачко без предела» — падают OF-34, OF-34b (2).",
+    "issues": [],
+    "artifacts_out": [
+      "tools/test/pixel-office-helpers.js",
+      "tools/test/pixel-office-layout.test.js",
+      "tools/test/pixel-office-office.test.js",
+      "tools/test/pixel-office-server.test.js"
+    ]
+  }
+}

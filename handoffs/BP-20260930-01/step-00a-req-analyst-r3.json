@@ -1,0 +1,116 @@
+{
+  "handoff_id": "step00a-r3-BP-20260930-01",
+  "run_id": "BP-20260930-01",
+  "workflow_id": "WF-07",
+  "step": "00a",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/BP-20260930-01/step-00a-req-analyst-r3.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-006"
+    ],
+    "artifacts_in": [
+      "handoffs/BP-20260930-01/step-00b-req-validator-r2.json",
+      "docs/requirements.yaml",
+      "tools/src/snapshot.js",
+      "decisions/0003-pixel-office-as-pipeline-tooling.md"
+    ],
+    "agent_run_id": "a4782636cdabc16f1",
+    "rework_of": "handoffs/BP-20260930-01/step-00a-req-analyst-r2.json",
+    "parallel_work_now": "Run ISS-0001-20260930-01 (BACKEND-DEV) is changing tools/src/validate.js, apply.js, cli.js (maybe util.js) and tools/test/ right now. Do not edit tools/. If a tools command fails during your dry runs, retry once after a minute and say so in the result.",
+    "orch_additions": {
+      "parallel_runs": "Owner's rule «Агента должны многопоточно работать» and the ORCH mandate (parallel by default) conflict with criterion 14 as written: its allowlist forbids any other change anywhere in the project between the before-snapshot and step 4, so no other run (REQ-001 Pixel Office, ISS-0001, decisions) could work during REQ-006. Amend so that parallel runs are allowed while what REQ-006 protects stays provably unchanged: (1) a protected set, byte-identical between the before and after snapshots, checked on the snapshot lines themselves: docs/business-plan/README.md; research/pixel-office.md, agent-pipeline.md, kpp-vision.md; docs/business-plan/reviews/; .claude/agents/; docs/workflows/WF-07-business-plan.md; tools/src/snapshot.js (the diff logic the check relies on); (2) the REQ-006 block of docs/requirements.yaml protected by the sha256 of the block extracted with a fixed awk command, recorded by ORCH at snapshot time and recomputed at step 4 — then docs/requirements.yaml as a file may be allowed; (3) ORCH declares every parallel run in an append-only handoffs/<BP-ID>/parallel-runs.json (run_id, declared_at from the clock, paths) before dispatching it; runs already in progress at snapshot time are declared before step 1 is dispatched; no declared path may equal, contain or lie inside a protected path; (4) at step 4 RELEASE-VALIDATOR adds one --allow per declared path, checks (1) and (2) and the non-intersection, snapshot-diff exit 0. Your wording and exact commands; keep AP-007's purpose intact.",
+      "N2": "Use «план ORCH, одобренный владельцем» wherever the owner is credited with ORCH's plan; the owner's own words are only «Делай»."
+    },
+    "edit_scope": "Only the REQ-006 block of docs/requirements.yaml. Record the sha256 of the REQ-001…REQ-005 part (everything before the REQ-006 block) before and after your edit in result, to show it is unchanged."
+  },
+  "task": {
+    "description": "Rework REQ-006 (round 3): fix N1-N4 and M-a…M-g from result.summary of step-00b-req-validator-r2.json, and apply ORCH's additions in context.orch_additions. Requirement text only.",
+    "acceptance_criteria": [
+      "result.changes has one entry per finding id (N1-N4, M-a…M-g) and per ORCH addition, with what changed and where",
+      "only the REQ-006 block changed (sha256 of the rest before/after in result)",
+      "every new or changed command dry-run by you; outputs in short in result"
+    ]
+  },
+  "created_at": "2026-09-30T16:23:19Z",
+  "started_at": "2026-09-30T16:23:19Z",
+  "completed_at": "2026-09-30T16:37:05Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-ANALYST round 3: REQ-006 reworked for N1-N4, M-a..M-g and both ORCH additions.\nEdit scope: only the REQ-006 block (description and criteria) changed, via an atomic splice that located the block end rather than EOF. sha256 of lines 1-158 (REQ-001..REQ-005, everything before the REQ-006 header): before b41b4742b50ad911c300406a3e15b207c6924db9df0c3feef465143f66613cbb, after b41b4742b50ad911c300406a3e15b207c6924db9df0c3feef465143f66613cbb. Lines 1-185 (plus REQ-006 header, title, owner, status, depends_on, original_request) are byte-identical (cmp). ruby Psych parses REQ-001..006; REQ-006 has 19 criteria (was 18; the new parallel-runs criterion is AC15, so the former 15-18 are 16-19), each with «Проверка:».\nDry runs: every new or changed command was extracted from the parsed requirement text and executed; results are in changes. The tools commands (snapshot, snapshot-diff) worked on the first try, with no retry needed, while ISS-0001 was active; nothing under tools/ was edited. In this session grep and find are shell wrappers (ugrep/bfs), so all dry runs used /usr/bin tools.\nDeviation from the ORCH text: the declarations file is handoffs/<BP-ID>/parallel-runs.jsonl (JSON Lines), not .json, so that append-only is checkable by pinning line count and head -n sha256; jq -s reads it as an array.\nOpen questions: (1) The step-4 snapshot-diff still executes tools/src/cli.js, util.js and tools/package.json, which ISS-0001 and the PO run may change; only snapshot.js is protected, as ORCH listed. REQ-006 makes the protected-set check independent of tools/ (find + shasum) and adds a positive control for snapshot-diff; if ORCH wants the full diff tool-proof, those three files would have to be protected, which blocks runs that edit them. (2) ISS-0001 lists tools/src/ as a folder in artifacts_in; its declaration must name files, because tools/src/ contains the protected snapshot.js. (3) The PO run (REQ-ANALYST for REQ-001) edits the same docs/requirements.yaml; ORCH should declare it (docs/requirements.yaml is allowed only as a declared path) and serialize writes to the file. Б catches any overwrite of the REQ-006 block. Re-validation: step-00b-req-validator-r3.json.",
+    "changes": [
+      {
+        "id": "N1",
+        "change": "AC4 now says where each command runs. At 2a/2b all commands run on the file (L = V). At steps 3-4 with the 14-day outcome: the value-line commands with L = V plus the table-header command, without grep -c '^## ' (final headings are AC7). With «рано»: the value-line commands with L = jq -r .result.value_sentence of the 2a handoff; the one-heading rule is taken from result.headings of 2b. AC17 now scopes step 3 to «4 (часть для шагов 3 и 4) и 7–13». Dry run: L taken from a 2a handoff gives wc -l 1, 27 words, 1 terminal mark, 5/5 strings.",
+        "where": "requirements.yaml 289 (AC4), 302 (AC17)"
+      },
+      {
+        "id": "N2",
+        "change": "«(план владельца, п. 3)» becomes «(план ORCH, одобренный владельцем («Делай»), п. 3)», in the description (199) and AC6 (291). «Не из списка владельца» becomes «Не из плана ORCH, одобренного владельцем (раздел 4 файла отзывов)» (230). Parsed text: «план владельца» 0 hits, the ORCH-plan wording 3 hits. Every other «владел…» sentence reviewed: each is either about who decides or quotes a recorded owner rule with its file.",
+        "where": "requirements.yaml 199, 230, 291"
+      },
+      {
+        "id": "N3",
+        "change": "AC6: exactly one 2a handoff with result.value_sentence and exactly one 2b handoff with verdict PASS or FAIL. Any other 2a/2b handoff may only be an interrupted run (FAILED + not_agent_attested, AP-006) or at most one 2b with SOURCE_UNAVAILABLE. A re-run after those is named -runN, not -rN, because it is not a rework (jq -s over step-02a-*/step-02b-*). AC18 has the general -runN rule: a resumed agent keeps its id, a -runN run gets a new one. The description process paragraph names -runN.",
+        "where": "requirements.yaml 276, 291 (AC6), 303 (AC18)"
+      },
+      {
+        "id": "N4",
+        "change": "AC5: new fields result.unopened (link and cause) and verdict SOURCE_UNAVAILABLE. An unopened link is not a violation; the row's fact is checked through another link of the same row. SOURCE_UNAVAILABLE applies only if no link of some row opens and none of conditions 1-6 holds. ORCH then sends one new 2b run (-run2); a second SOURCE_UNAVAILABLE means REQ-006 blocked «источник недоступен», not «рано». AC6 lists blocked via 2b. The description gate paragraph and the Q10 sentence are adjusted.",
+        "where": "requirements.yaml 202-204, 281-283, 290 (AC5), 291 (AC6)"
+      },
+      {
+        "id": "M-a",
+        "change": "Description lists WF-07 lines 6, 20, 37, 44, 46, 48, 85, 86. AC16 (former AC15) now includes step 5 in the steps whose task.description must carry the phrases.",
+        "where": "requirements.yaml 246, 301 (AC16)"
+      },
+      {
+        "id": "M-b",
+        "change": "AC16: the sources line is checked with jq -r .task.description | grep -c '^Дополнительные источники этого прогона:'. Each phrase must sit on one line. ORCH runs the checks on every handoff before dispatch and writes the output to context.task_check. Dry run: a phrase wrapped by a newline gives 0 and a mid-line sources phrase gives 0; the correct forms give 1.",
+        "where": "requirements.yaml 301 (AC16)"
+      },
+      {
+        "id": "M-c",
+        "change": "LC_ALL=C.UTF-8 prefix added to the Cyrillic case-insensitive greps in AC9 (294) and AC12 (297). Confirmed with system BSD grep: under C «КПП» vs 'кпп' gives 0, under C.UTF-8 it gives 1. In this session `grep` is a ugrep wrapper that ignores the locale, so every dry run used /usr/bin tools. As written: AC9 3/3, AC12 3/3 with «активно ищут» not matched.",
+        "where": "requirements.yaml 294, 297"
+      },
+      {
+        "id": "M-d",
+        "change": "AC4: the value line carries no links; its sources are the table right under it. AC10 lists two exceptions: the value line (sources = the table) and the quoted rejected sentence in the «рано» document, which is a quotation, not a claim of the document. AC8 says the same.",
+        "where": "requirements.yaml 289 (AC4), 293 (AC8), 295 (AC10)"
+      },
+      {
+        "id": "M-e",
+        "change": "AC5: result.reasons items are {check, text}. check = condition number 1-6 (conditions are now numbered), and for condition 1 also the AC4 command that fired, verbatim; text = one line. AC8: the «рано» document quotes each text verbatim plus its check; checked by grep -cF of each line of jq -r '.result.reasons[].text'. This is traceability only; it has no split in consequences (the B2 ruling stands).",
+        "where": "requirements.yaml 290 (AC5), 293 (AC8)"
+      },
+      {
+        "id": "M-f",
+        "change": "Description: rework limits read «1b, 3, 4 — как в WF-07; шаг 5 — не больше двух по этому требованию (в WF-07 лимита нет)». AC19: in the rework DOC-UPDATER itself returns the status to in_progress as its first action and sets done again as its last; new item (е) makes ORCH check context.agent_run_id of step-5 handoffs. AC14: the in_progress flip is named as the only change to the REQ-006 block before step 5 or blocked, and the block hash Б protects the rest.",
+        "where": "requirements.yaml 277, 299 (AC14), 304 (AC19)"
+      },
+      {
+        "id": "M-g",
+        "change": "Kept «с заполненным agent_run_id» on purpose. AC18 now states that a resumed agent keeps its id and a -runN run gets a new one, matching BP-20260929-01 practice.",
+        "where": "requirements.yaml 303 (AC18)"
+      },
+      {
+        "id": "ORCH:parallel_runs",
+        "change": "AC14 rewritten and new AC15 added; the former 15-18 are now 16-19. AC14: (а) status flip, then parallel-runs.jsonl created, then the before snapshot; step-1 handoffs record snapshot_before_sha256 and req006_block_sha256 = Б (a fixed awk that extracts only the REQ-006 block up to the next «  -»/«  #» entry, trailing blank lines dropped, then shasum). (б) Protected set З as ORCH listed, with a fixed grep -E for its snapshot lines. (в) Step 4 checks: З lines of before equal those of after AND equal an independent find … -exec shasum listing, so they do not depend on tools/; Б equals the recorded hash; snapshot-diff with the REQ-006 outputs, handoffs/<BP-ID>/, STATE.md and one --allow per declared path, exit 0; positive control without the three REQ-006 output allows gives exit 1 and 3 added lines; docs/requirements.yaml changes only as a declared path. (г) AP-007: anything outside allowed and declared paths means a new BP-ID or the owner's written exception. AC15: append-only JSON Lines file; declare before dispatch, in-progress runs before step 1; line count and sha256 pinned in the step-1 handoffs; checks for shape, monotonic declared_at, pinned prefix, no intersection with З and REQ-006 outputs (equal, contains, inside), and declared_at no later than the run's first handoff. Description: new «Параллельная работа» paragraph citing the owner rule as recorded in WF-06:24 and orchestrator.md:35. Dry runs as written: Б stable when REQ-007 is appended after REQ-006, when REQ-001 is edited and with trailing blank lines, and it changes on a status flip or an AC edit; З = 30 lines, identical to the find listing, a tampered line is detected; step-01 grep 0; snapshot-diff exit 0, undeclared change exit 1, control exit 1 with 3 added lines (zsh and bash); intersection 0 on clean declarations and 1-9 on tools/src/, tools/src/snapshot.js, docs/, .claude/, .claude/agents/new.md, reviews/x.md, handoffs/BP-…/foo.json, research/; shape rejects null or short time; order rejects a backdated append; editing a pinned line changes the prefix hash.",
+        "where": "requirements.yaml 251-256, 262, 299 (AC14), 300 (AC15); cross-references updated in 289, 291, 293, 295, 301, 302"
+      },
+      {
+        "id": "ORCH:N2",
+        "change": "Applied as N2 above: the ORCH plan is credited as «план ORCH, одобренный владельцем («Делай»)»; the owner's own words remain only «Делай».",
+        "where": "requirements.yaml 199, 230, 291"
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

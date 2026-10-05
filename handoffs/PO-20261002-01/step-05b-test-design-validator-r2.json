@@ -1,0 +1,70 @@
+{
+  "run_id": "PO-20261002-01",
+  "workflow_id": "WF-04",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "priority": "HIGH",
+  "handoff_id": "step05b-test-design-validator-r2-PO-20261002-01",
+  "step": "05b",
+  "round": 2,
+  "file": "handoffs/PO-20261002-01/step-05b-test-design-validator-r2.json",
+  "status": "COMPLETED",
+  "context": {
+    "plan": "PLAN.md, точка остановки, п. 1 (итерация 3)",
+    "requirement_ids": [
+      "REQ-007",
+      "REQ-001"
+    ],
+    "route": "TEST-DESIGNER (готово) -> TEST-DESIGN-VALIDATOR (this) -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> CODE-FIXER (мелочи Low, I1, I3) -> SECURITY-REVIEWER и REVIEWER заново -> владелец",
+    "agent_run_id": "ab033dfa3869f2cca",
+    "write_set": [
+      "handoffs/PO-20261002-01/step-05b-test-design-validator-r2.json — только status, completed_at, result"
+    ],
+    "before_copy": "<вне проекта>/orch/before-po3-tests-r1 (tests до доработки)",
+    "parallel_work_now": "второй проверяющий — только читает проект и работает на своих портах",
+    "artifacts_in": [
+      "handoffs/PO-20261002-01/step-05-test-designer-r2.json",
+      "handoffs/PO-20261002-01/step-07a-code-fixer.json",
+      "handoffs/PO-20261002-01/step-05-test-designer-r1.json",
+      "handoffs/PO-20261002-01/step-05b-test-design-validator-run2.json",
+      "handoffs/PO-20261002-01/step-05b-test-design-validator-run3.json",
+      "tools/test/pixel-office-*.js"
+    ],
+    "interruptions": [],
+    "run_of": "handoffs/PO-20261002-01/step-05b-test-design-validator.json (запуск 1, остановлен по таймауту; это не доработка)",
+    "rework_of": "handoffs/PO-20261002-01/step-05b-test-design-validator-r1.json"
+  },
+  "task": {
+    "description": "Проверка тестов после намеренного изменения кода (handoffs/PO-20261002-01/step-05-test-designer-r2.json): обновлены LY-05 и OF-34, добавлены OF-36 (холст вписывается после легенды — это Critical-дефект QA F1), OF-37 (возврат фокуса), SV-42b (сигналы до печати ссылки), OF-34b (ширина облачка). Проверьте сами: каждый новый тест ловит нарушение — примените на КОПИИ вне проекта свои мутанты: холст до легенды; фокус не возвращается; обработчики сигналов после печати ссылки; облачко без предела — тесты должны падать; обновлённые LY-05 и OF-34 не ослаблены (сравните с копией до — <вне проекта>/orch/before-po3-tests-r2); нет skip/todo/отключённого линтера; помощник по-прежнему защищает порт 4780; npm run check проходит (428 тестов). Ничего в проекте не правьте. Порт 4780 и ~/.sai-pixel-office не трогать; свои порты и своя пустая папка состояния вне проекта. Длинные команды — в фоне с выводом в файл. Предел расхода жёсткий. Результат: result.verdict, summary, findings (Critical, High, Medium блокируют).",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "каждый новый тест — мутант, который он ловит",
+      "прежние проверки не ослаблены"
+    ]
+  },
+  "created_at": "2026-10-05T13:22:07Z",
+  "started_at": "2026-10-05T13:22:07Z",
+  "completed_at": "2026-10-05T13:28:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Вердикт: FAIL — одна блокирующая находка (Medium, F1): OF-37 ловит нарушение, но подвисает вместо ясного падения. Остальное в порядке.\nМои мутанты на копиях вне проекта (tools без node_modules, ссылка на node_modules проекта):\n- холст до легенды (fit перед renderAll в rebuild): падает OF-36 (1 из 130, ясное сообщение по ширине холста). ЛОВИТ.\n- обработчики сигналов после печати ссылки: SV-42b падает (ERR_ASSERTION) с первого раза; на неизменённом коде SV-42b прошёл 3 из 3. ЛОВИТ.\n- облачко без предела: (а) BUBBLE_TEXT_MAX = 1e9 и (б) убран maxWidth у fillText — оба раза падают OF-34 и OF-34b (2 из 2). ЛОВИТ.\n- фокус не возвращается: (а) убрано legendButton(focusKey)?.focus(), (б) убрано close.focus() у карточки. В тесте OF-37 как он написан оба мутанта приводят к ЗАВИСАНИЮ: assert.equal(page.doc.activeElement, fresh) при несовпадении строит сравнение двух больших циклических деревьев FakeElement, процесс работал более 2 минут без вывода (в файловом прогоне office был убит по времени, 68 с, SIGKILL). Если те же проверки заменить на assert.ok(a === b, сообщение) (только в моей копии), оба мутанта падают за секунды с понятным сообщением ('the focus went to the new button', 'focus on the cross'). То есть нарушение тест фиксирует по смыслу, но при регрессии `npm run check` (у node --test нет предела по умолчанию) повис бы, а не упал.\nОбновлённые тесты не ослаблены (diff с копией до): LY-05 — только новая координата подписи (580,21); OF-34 строже (ширина min(текст,125)+14, ровно 139, maxWidth 125 у широкого, у короткого его нет, порядок отрисовки сохранён); помощник — добавлен только геттер activeElement, защита порта 4780 (assertSafeArgs, SV-40b) не тронута. Новые SV-42b идёт на --port 0 через spawnMain/assertSafeArgs.\nПроверки: npm run check в проекте код 0, tests 428, pass 428, fail 0, skipped 0, todo 0 (prettier, eslint чисты); grep по tools/test/pixel-office-*.js на skip/todo/only/eslint-disable/prettier-ignore/'|| true' пуст. Проект не менялся: хеш tools/src+tools/test до и после c2bebd12041c6128111535eea77831546c1c159a0bec84fc8d89294f6e440797. Порт 4780 и ~/.sai-pixel-office не трогал.",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Medium",
+        "where": "tools/test/pixel-office-office.test.js, OF-37 (assert.equal(page.doc.activeElement, old/fresh/cross()), три места)",
+        "what": "При нарушении (фокус не возвращается на новую кнопку легенды или на новую «×») assert.equal сравнивает два объекта FakeElement с циклическими ссылками; генерация сообщения о расхождении виснет более 2 минут, а набор office при прогоне файлом был убит по времени. Нарушение не даёт ясного падения, а подвешивает npm run check. Проверено двумя мутантами (нет focus у кнопки легенды, нет focus у «×»); при замене на assert.ok(a === b, 'сообщение') оба падают сразу.",
+        "fix": "В OF-37 заменить три assert.equal на assert.ok(page.doc.activeElement === X, 'понятное сообщение'); при случае проверить так же прежний PN-18 (assert.equal(page.doc.focused, button()) — тот же приём, пока проходит, Low). После правки применить оба мутанта фокуса снова: тест должен падать за секунды."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "where": "tools/test/pixel-office-panels.test.js, PN-18",
+        "what": "assert.equal на элементах DOM: тот же риск подвисания при регрессии фокуса; сейчас тест проходит.",
+        "fix": "assert.ok(a === b, сообщение)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
