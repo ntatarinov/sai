@@ -20,7 +20,13 @@ import {
   roleLabel,
 } from "./office-model.js";
 import { createSim } from "./office-sim.js";
-import { canvasPoint, drawOffice, fitCanvas, hitTest } from "./office-view.js";
+import {
+  MIN_CELL_PX,
+  canvasPoint,
+  drawOffice,
+  fitCanvas,
+  hitTest,
+} from "./office-view.js";
 import {
   FILTERS,
   TONES,
@@ -81,6 +87,7 @@ import {
   NO_CONNECTION,
   NO_DATA,
   OFFICE_NAME,
+  OFFICE_SCROLL_LABEL,
   PAUSE,
   RESUME,
   SECTION_CURRENT,
@@ -209,7 +216,7 @@ export function createApp(env) {
   const legendButtons = new Map();
   let journalItems = [];
   let ctx = null;
-  let cellPx = 24;
+  let cellPx = MIN_CELL_PX;
   let lastFrameAt = null;
   // The model is rebuilt: modelVersion grows. The office is drawn: drawnVersion
   // takes the version it was drawn from. If they differ at a tick of the
@@ -1260,10 +1267,13 @@ export function createApp(env) {
     return ok ? r : null;
   }
 
-  // The place for the canvas and its size: a whole number of pixels per cell
-  // (design 4.13). Width and height are attributes of the canvas, not a style.
+  // The place for the canvas and its size: a whole number of pixels per cell,
+  // not less than MIN_CELL_PX (design 4.13, 4.15, 8). Width and height are
+  // attributes of the canvas, not a style. The gap above the legend is read
+  // from the scroll area of the canvas: a scrolled canvas may reach below it.
   function fit() {
     const canvas = els.office;
+    const holder = els.officeScroll ?? canvas;
     const inner = els.officeInner;
     if (!ctx || !canvas || !inner) return;
     const view = typeof viewportFn === "function" ? viewportFn() : null;
@@ -1275,7 +1285,7 @@ export function createApp(env) {
     // out for an element that has no rectangle.
     const box = rectOf(inner);
     const legendBox = els.legend ? rectOf(els.legend) : null;
-    const canvasBox = box ? rectOf(canvas) : null;
+    const canvasBox = box ? rectOf(holder) : null;
     const byRect =
       box !== null &&
       (els.legend === null || (legendBox !== null && canvasBox !== null));
@@ -1293,7 +1303,7 @@ export function createApp(env) {
           } else {
             legendHeight = els.legend.offsetHeight || 0;
             gap =
-              els.legend.offsetTop - (canvas.offsetTop + canvas.offsetHeight);
+              els.legend.offsetTop - (holder.offsetTop + holder.offsetHeight);
           }
           if (!Number.isFinite(gap) || gap < 0) gap = 0;
         }
@@ -1406,6 +1416,7 @@ export function createApp(env) {
     for (const m of SPEED_IDS) els.speeds[m] = byId(`speed-${m}`);
     els.officePanel = byId("office-panel");
     els.officeInner = byId("office-inner");
+    els.officeScroll = byId("office-scroll");
     els.office = byId("office");
     els.officeNote = byId("office-note");
     els.legend = byId("legend");
@@ -1431,6 +1442,8 @@ export function createApp(env) {
     if (els.badge) els.badge.textContent = HEADER_BADGE;
     if (els.officePanel)
       els.officePanel.setAttribute("aria-label", OFFICE_NAME);
+    if (els.officeScroll)
+      els.officeScroll.setAttribute("aria-label", OFFICE_SCROLL_LABEL);
     if (els.journalTitle) els.journalTitle.textContent = JOURNAL_TITLE;
     if (els.tasksTitle) els.tasksTitle.textContent = TASKS_TITLE;
     if (els.pause) {

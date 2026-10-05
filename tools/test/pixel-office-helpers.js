@@ -295,6 +295,47 @@ export function rolesJournal(n, { stopped = false, session = "S0" } = {}) {
   return j;
 }
 
+// design 4.15, 10: the roles of the owner's legend (the snapshot of
+// 2026-10-06), in the order of their desks 1..18; the main session is desk 0.
+// The files of .claude/agents/ are not read.
+export const LEGEND_ROLES = [
+  "Sai Documentation Updater (DOC-UPDATER)",
+  "Sai Reviewer (REVIEWER)",
+  "Sai Requirement Analyst (REQ-ANALYST)",
+  "Sai Requirement Validator (REQ-VALIDATOR)",
+  "Sai GUI Design Analyst (GUI-DESIGN-ANALYST)",
+  "Sai Code Designer (CODE-DESIGNER)",
+  "Sai Code Design Validator (CODE-DESIGN-VALIDATOR)",
+  "Sai Frontend Developer (FRONTEND-DEV)",
+  "Sai Security Reviewer (SECURITY-REVIEWER)",
+  "Sai Test Designer (TEST-DESIGNER)",
+  "Sai Test Design Validator (TEST-DESIGN-VALIDATOR)",
+  "Sai Design QA Validator (DESIGN-QA-VALIDATOR)",
+  "Sai Test Runner (TEST-RUNNER)",
+  "Sai Code Fixer (CODE-FIXER)",
+  "Sai Release Validator (RELEASE-VALIDATOR)",
+  "Sai Plan Validator (PLAN-VALIDATOR)",
+  "Sai Plan Writer (PLAN-WRITER)",
+  "Sai Backend Developer (BACKEND-DEV)",
+];
+
+// The main session and the 18 roles of LEGEND_ROLES, each started once by the
+// main session: 19 desks.
+export function legendJournal() {
+  const j = journal();
+  j.sessionStart("S0");
+  j.prompt("S0");
+  LEGEND_ROLES.forEach((role, i) => {
+    const id = `agent-${i}`;
+    j.post("S0", `tu-${i}`, id, {
+      subagentType: role,
+      description: `task ${i}`,
+    });
+    j.subStart("S0", id, role);
+  });
+  return j;
+}
+
 // ------------------------------------------------------------- hook runner
 
 // command and args of the hook as Claude Code starts them: from settings.json
@@ -1238,8 +1279,9 @@ export async function freePort() {
 // ------------------------------------------------------ the scale tests (SC, OF-38)
 
 // Measures of the office panel as rectangles (design 4.14, rule 5): the area
-// #office-inner, the legend (its height) and the gap between the canvas and
-// the legend. Sizes may be fractional, as at a scale above 1.
+// #office-inner, the legend (its height) and the gap between the scroll area
+// of the canvas (#office-scroll, design 4.15, 8) and the legend. Sizes may be
+// fractional, as at a scale above 1.
 export function setPanelRects(page, { width, height, legend, gap }) {
   const canvasBottom = 500;
   page.el("office-inner").rect = {
@@ -1249,7 +1291,7 @@ export function setPanelRects(page, { width, height, legend, gap }) {
     height,
     bottom: height,
   };
-  page.canvas.rect = {
+  page.el("office-scroll").rect = {
     left: 0,
     top: 0,
     width: 1,
@@ -1271,8 +1313,9 @@ export function setPanelInts(page, { width, height, legend, gap }) {
   const inner = page.el("office-inner");
   inner.clientWidth = width;
   inner.clientHeight = height;
-  page.canvas.offsetTop = 0;
-  page.canvas.offsetHeight = 500;
+  const scroll = page.el("office-scroll");
+  scroll.offsetTop = 0;
+  scroll.offsetHeight = 500;
   const legendEl = page.el("legend");
   legendEl.offsetHeight = legend;
   legendEl.offsetTop = 500 + gap;

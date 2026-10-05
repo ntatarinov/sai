@@ -1,0 +1,75 @@
+{
+  "handoff_id": "step03-security-reviewer-PO-20261006-01",
+  "run_id": "PO-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PO-20261006-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-007"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PO-20261006-01/step-03-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po4/build-before",
+    "parallel_work_now": "REVIEWER (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-001-pixel-office.md (4.15)",
+      "docs/design/REQ-007-office-ui.md",
+      "docs/requirements.yaml (блок REQ-007)",
+      "handoffs/PO-20261006-01/step-02-frontend-dev.json",
+      "tools/src/pixel-office/public/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3: ворота безопасности после кода уплотнённого офиса (handoffs/PO-20261006-01/step-02-frontend-dev.json; проект docs/design/REQ-001-pixel-office.md 4.15; копия до — <рабочая папка ORCH>/orch/po4/build-before). Сами, не по отчёту: по каждому пункту Q7–Q11, R2, R3 — «выполнен» или «неприменим» со своей проверкой; изменения касаются раскладки, отрисовки (холст, плашка), CSS, #office-scroll и легенды: проверьте, что (а) нет innerHTML/outerHTML/insertAdjacentHTML/document.write/eval/Function и записи style из скриптов, атрибута style нет (D16), CSP не ослаблена; (б) текст из журнала и подписи ролей рисуются только как текст (fillText/textContent); (в) нет внешних запросов и адресов; (г) R2: офис показывает только состояния из журнала — раскладка и плашка не придумывают событий; (д) число px-строк в style.css и масштаб 0012 не сломаны; (е) #office-scroll и прокручиваемая легенда доступны с клавиатуры без ловушки фокуса; (ж) сервер и хук не менялись (diff -rq с копией до: только public/ и tools/test). Запустите сами cd tools && npm test. Ничего не правьте. Не запускайте на порту 4780 и ~/.sai-pixel-office; свой сервер — свободный порт, временная папка, остановить. Результат: result.verdict PASS/FAIL, по каждому пункту — выполнен/неприменим с доказательством, findings.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый пункт — с доказательством"
+    ]
+  },
+  "created_at": "2026-10-05T21:11:15Z",
+  "started_at": "2026-10-05T21:11:15Z",
+  "completed_at": "2026-10-05T21:12:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Область затронута частично (страница Pixel Office: холст, плашка, CSS, #office-scroll, легенда; показ данных в браузере). Сервер, хук, журнал не менялись: diff -rq с копией до - различаются только 6 файлов public/ (app.js, index.html, layout.js, office-view.js, style.css, texts.js) и 4 файла tools/test. Q7 выполнен: поиск secret/token/password/api key по public/ - единственное совпадение schema.js:53, комментарий про маску; в изменении ключей нет. Q8 неприменим: нет данных магазинов и новых путей к данным, сервер не менялся. Q9 неприменим: SQL нет (grep). Q10 выполнен/без изменений: единственный fetch - boot.js:9 (относительный URL, существовал раньше), новых вызовов нет; npm test 483/483. Q11 неприменим: сервер не ходит по адресам, внешних адресов нет (grep https?:// пуст). R3 неприменим: фото нет. R2 выполнен: layout.js и office-view.js только раскладывают и рисуют уже полученные состояния; Date.now/Math.random/setInterval в них нет; подпись берётся из d.character.label, текст пузырей из модели, ничего не сочиняется. Дополнительно: innerHTML/outerHTML/insertAdjacentHTML/document.write/eval/new Function/.style./cssText/style= - 0 совпадений в public/; CSP в server.js не менялась (default-src 'self', script/style/connect/img 'self', без unsafe-inline); весь текст на холсте - fillText; px-строк в style.css 15 и до, и после, SC-03 проходит; #office-scroll - div tabindex=0 с aria-label, фокус виден ([tabindex]:focus-visible), прокрутка стрелками, ловушки нет (Tab-цикл только у модального окна истории, прежний, закрывается Esc); легенда прокручивается внутри своей полосы, её кнопки фокусируемы.",
+    "table": {
+      "Q7": "выполнен",
+      "Q8": "неприменим",
+      "Q9": "неприменим",
+      "Q10": "выполнен",
+      "Q11": "неприменим",
+      "R2": "выполнен",
+      "R3": "неприменим"
+    },
+    "findings": [
+      {
+        "place": "tools/src/pixel-office/public/index.html:66-72",
+        "item": "доп.",
+        "severity": "low (не блокирует)",
+        "what": "#office-scroll имеет tabindex=0 всегда, в том числе когда холст помещается и прокручивать нечего - лишняя остановка Tab",
+        "fix": "по желанию: выставлять tabindex только при переполнении"
+      }
+    ],
+    "self_check": [
+      "diff -rq build-before/src tools/src; diff -rq build-before/test tools/test -> только 6 public + 4 test",
+      "grep -nE 'innerHTML|outerHTML|insertAdjacentHTML|document\\.write|eval\\(|new Function|\\.style\\.|cssText|style=' public/*.js index.html -> пусто",
+      "grep -nE 'https?://|fetch\\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon' public/* -> только boot.js:9 fetch (относительный)",
+      "grep -c px style.css: 15 до, 15 после",
+      "cd tools && npm test -> tests 483, pass 483, fail 0",
+      "node --test test/pixel-office-scale.test.js -> pass 6 fail 0",
+      "shasum public/* до и после проверки совпали (код не менялся)"
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}

@@ -79,6 +79,8 @@ export const LABEL_ENDED = "конец";
 export const LEGEND_WORKING = "работает";
 export const LEGEND_IDLE = "свободен";
 export const LEGEND_IDLE_MAIN = "свободна";
+// The name of the area that scrolls the canvas when it does not fit.
+export const OFFICE_SCROLL_LABEL = "Офис — прокрутка";
 export const CANVAS_UNSUPPORTED = "Холст не поддерживается: офис не показан";
 // The text of the noscript element of the markup; the page never sets it.
 export const NOSCRIPT = "Для страницы нужен JavaScript.";

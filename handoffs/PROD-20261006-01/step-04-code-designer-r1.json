@@ -1,0 +1,111 @@
+{
+  "handoff_id": "step04-code-designer-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-04-code-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "docs/design/REQ-009-team-core.md",
+      "handoffs/PROD-20261006-01/step-04-code-designer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/REQ-009-team-core.before-r1.md",
+    "parallel_work_now": "REQ-ANALYST (requirements.yaml), TEST-DESIGN-VALIDATOR (офис)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-04b-code-design-validator.json",
+      "docs/requirements.yaml"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 1, доработка r1 проекта docs/design/REQ-009-team-core.md по FAIL ворот (handoffs/PROD-20261006-01/step-04b-code-design-validator.json — прочтите ВСЕ findings F1–F16 и вопросы; копия до — <рабочая папка ORCH>/orch/prod/REQ-009-team-core.before-r1.md). Решения ORCH по findings и вопросам ворот: F7/критерий 13: два случая REQ-009 критерий 13 (EACCES при создании папки проекта и EIO при записи файла результата) проверяются на уровне API ядра (функции createProject и writeResultFile возвращают понятную ошибку E_DISK/…, процесс не падает, состояние не меняется), а на уровне команды — те случаи, где есть команда: say (ENOSPC) в REQ-009; команды new и запись результата — в REQ-010 (там же команда-уровневые отказы EACCES/EIO) — REQ-ANALYST правит формулировки критериев (REQ-009 13 и REQ-010), CODE-DESIGNER убирает из проекта «вспомогательный процесс вместо cli» и тестирует API напрямую. F2: ядро ХРАНИТ потолок стоимости ≥ 0 (0 = «потолка нет»); проект с потолком 0 создаётся (по API), а реальный запуск без потолка запрещает исполнитель REQ-010 — как в критерии 3 REQ-010. F3: у события запуска исполнитель обязан совпадать с исполнителем проекта (иначе ядро отвергает событие, код ошибки) — добавить инвариант. F4: восстановление: писатель при открытии после аварии пишет события о незавершённых «в работе»/«на проверке» задачах и открытых запусках (plan, goal_check) — «прервана»; PROJECT_RESUMED разрешён и из running/planning, если предшествовало восстановление (опишите точное условие — событие RECOVERED или поле recovery у RESUMED). F5: расписать для КАЖДОГО из 35 типов, какие поля состояния меняются (таблицей: тип → поля → условия очистки reason/waiting, Task.files, ссылка на существующую задачу обязательна; двойной BUDGET_SPENT на один run_id запрещён). F6: опишите случай EEXIST при возврате замка — остаточный риск назван (и попадёт в запись 0017). F8: P-запись включает пункт про непотеряние хешей (поля hash не маскируются; проверка по шаблону). F9: рабочая папка агента — подпапка work/ проекта, НЕ корень; events.jsonl и writer.lock лежат вне work/; файлы агента становятся файлами результата через ядро (копирование в files/ с маскированием текста, правами 0600 и событием RESULT_FILE) — опишите функцию ядра. F10: имена файлов результата проверяются шаблоном (латиница, цифры, точка, дефис, подчёркивание, ≤ 80 знаков, без «..» и без начала с точки) и НЕ проходят через maskSecrets. F11–F16: исправьте. Сценарий scripted: в PROJECT_CREATED.data — поле scenario_file (имя файла внутри папки проекта: scenario.json копируется в проект при создании), run-task и start берут его оттуда. I3 (проект занят) относится к say/answer/pause/stop/budget — вопрос REQ-013, опишите в проекте ядра, что ядро возвращает E_PROJECT_BUSY и какие команды это затрагивает. Если нужна правка критериев — не ждите REQ-ANALYST: читайте блоки в docs/requirements.yaml как они будут (REQ-ANALYST правит параллельно), расхождения — в result.issues. Писать только docs/design/REQ-009-team-core.md. Номера тестов TM-… — те же, новые — следующие свободные. Каждая команда — с ограничением по времени (на macOS нет timeout). Кода реализации нет.",
+    "acceptance_criteria": [
+      "F1–F9 закрыты, F10–F16 исправлены",
+      "схема ядра согласована с REQ-010/013",
+      "изменён только REQ-009-team-core.md"
+    ]
+  },
+  "created_at": "2026-10-05T21:22:22Z",
+  "started_at": "2026-10-05T21:22:22Z",
+  "completed_at": "2026-10-05T21:31:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проект docs/design/REQ-009-team-core.md доработан до r1 по FAIL ворот (F1–F16) и решениям ORCH, включая дополнение ORCH (инструменты только в work/; F3, F4 — инварианты ядра). Каталог — 36 типов (добавлен PROJECT_RECOVERED), полная таблица «тип → поля состояния» (п. 5.3), инварианты И12–И18, раскладка папки проекта с work/, importWorkFile, scenario_file, потолок 0, единое правило «сбой записи ломает писателя», путь EEXIST при возврате замка и E_LOCK_LOST, API-уровень критерия 13 через runGuarded. Тесты TM-01…TM-52 сохранены, новые TM-53…TM-61. Кода реализации нет.",
+    "changes": [
+      "F1: п. 6.4 шаг 8 — любой сбой шага 7 всегда ломает писателя, и при удачном откате; TM-13, TM-14 переписаны (in-process mock.method).",
+      "F2: п. 4.1, 6.5 — budget_usd 0..BUDGET_MAX, 0 = потолка нет; запрет настоящих запусков — исполнитель REQ-010; TM-60.",
+      "F3: И12 — executor RUN_STARTED/AGENT_ACTIVITY равен executor проекта (E_TRANSITION, rule И12); TM-53.",
+      "F4: новый тип PROJECT_RECOVERED (только ядро); п. 6.3 шаг 8 — восстановление закрывает все открытые запуски (RUN_FINISHED interrupted, включая plan/goal_check), прерывает задачи running и review, помечает проект planning/running; И13 — точное условие PROJECT_RESUMED {after:recovery} из running/planning только при recovered=true, запрет начала работы до него; И14 — TASK_INTERRUPTED без открытых запусков; TM-54, TM-19 дополнен.",
+      "F5: п. 5.3 — таблица для каждого из 36 типов (поля, «меняет задачу» для И6), правила очистки reason/waiting, Task.files только из RESULT_FILE; И15 (RUN_FINISHED.files), И16 (роль/статус RUN_STARTED), И17 (существующая задача, E_TASK_NOT_FOUND), И18 (RUN_REFUSED), И8 (двойной BUDGET_SPENT запрещён); goal_check.after_seq заменён на seq + tasks_changed_seq; TM-55.",
+      "F6: п. 6.2 шаг 4 — EEXIST на возврате: удалить stale, E_PROJECT_BUSY; остаточный риск описан (README, P1, запись 0017); п. 6.4 шаг 7 — проверка своего pid в writer.lock перед записью, E_LOCK_LOST; TM-56.",
+      "F7: п. 10.4 — EACCES (createProject) и EIO (writeResultFile) на уровне API: TeamError E_DISK, процесс продолжает, состояние прежнее; runGuarded(fn, io) — общая обёртка main и команд REQ-010/013; TM-45, TM-47 без процесса-помощника.",
+      "F8: п. 3.4 — отступления name/hash вынесены; RESULT_FILE пишет только ядро (append отклоняет), sha256 считает ядро; P7.",
+      "F9: п. 2.1 — work/ (cwd исполнителя) отдельно от events.jsonl/writer.lock/scenario.json/files/; п. 6.7 — importWorkFile (путь по шаблону до fs, без ссылок, UTF-8, маскирование, 0600, RESULT_FILE from_work); TM-03, TM-20 обновлены, TM-57.",
+      "F10: п. 6.6 — имя файла только по шаблону (латиница, цифры, . - _, ≤80, без .., не с точки), без maskSecrets; FILE_NAME_MAX 80; TM-58; P8; факт F4 п. 0 дополнен запуском.",
+      "F11: п. 6.3 — сужение прав перенесено на шаг 6, после замка и повторной проверки журнала; TM-61.",
+      "F12: ссылки исправлены (типы — TM-38, роли/internal — TM-37); SCRIPTED_SUFFIX проверяется TM-38 (вторая фикстура scripted).",
+      "F13: п. 10.3 — один текст E_DISK и отдельный для rollback failed; п. 12 — точная формулировка (часть строки или целая строка).",
+      "F14: E_BUSY переименован в E_PROJECT_BUSY; п. 17, I3 — затронуты say, answer, pause, stop, budget, resume, add-task, run-task.",
+      "F15: п. 6.5 — остаточный риск замены пустой папки при rename назван.",
+      "F16: P10 — помощники тестов в границе 0015.",
+      "Сценарий scripted (решение ORCH): PROJECT_CREATED.data.scenario_file, createProject(scenario_json) копирует байт-в-байт в scenario.json 0600, writer.scenarioPath; TM-59; P9.",
+      "Прочее: TASK_FAILED.reason result_file и фраза; новые коды E_LOCK_LOST, E_TASK_NOT_FOUND, E_WORK_FILE; п. 13 — четыре места writeFile; предложение записи названо decisions/0017-team-core-storage.md (P1–P11)."
+    ],
+    "self_check": [
+      "perl -e 'alarm 20; exec @ARGV' node scratchpad/m.mjs (maskSecrets на именах): plan.v2.md → [скрыто], report.2026.md → [скрыто], report_v2.md / notes-final.md / scenario.json без изменений, ghp_… → [скрыто] — подтверждает F10 ворот; node v22.21.1.",
+      "shasum исходного файла до правки = копии до r1 (6c6170ef…bea7e8c); после r1 — 5aad4d91…11d9ea6c.",
+      "Скрипт по файлу: в таблицах п. 4 — 36 типов; каждый есть в таблице п. 5.3 и в таблице языка п. 9 (разница пуста).",
+      "grep: TM-01…TM-61 — каждый номер в таблице п. 15.1 есть (61 уникальный); строк планки Q1–Q14, R1–R3 — 17.",
+      "grep 'E_BUSY|процесс-помощник|FILE_NAME_MAX 100|<путь компьютера>/|whooch' — остались только упоминания в списке правок и в Q13 (AP-005), путей компьютера нет.",
+      "sed по docs/requirements.yaml: REQ-010 уже говорит work/ и scenario_file (критерий 16); критерий 13 REQ-009 пока «команда team»; списки инструментов REQ-010 — «внутри папки проекта».",
+      "Критерии 3 и 5 REQ-009 с F3/F4 не противоречат: 5(б) требует события восстановления и прерывания — дополнительные RUN_FINISHED/PROJECT_RECOVERED не запрещены; 5(г) — повторный захват ничего не добавляет (PROJECT_RECOVERED пишется только при recovered=false)."
+    ],
+    "issues": [
+      {
+        "kind": "question",
+        "text": "I2: критерий 13 REQ-009 в docs/requirements.yaml на момент r1 ещё говорит «команда team завершается кодом не 0» для EACCES и EIO; проект проверяет их на уровне API (п. 10.4) по решению ORCH — нужна правка REQ-ANALYST, иначе RELEASE-VALIDATOR увидит расхождение."
+      },
+      {
+        "kind": "question",
+        "text": "I4: REQ-010 (описание, списки инструментов ролей) говорит «Read, Write, Edit, Glob, Grep внутри папки проекта», а по решению ORCH инструменты работают только внутри work/ — правка формулировки REQ-ANALYST."
+      },
+      {
+        "kind": "question",
+        "text": "I3 (F14): пока движок держит замок, say, answer, pause, stop, budget, resume, add-task, run-task из другого процесса получают E_PROJECT_BUSY; канал приёма команд работающим движком (критерий 9 REQ-013) — решение проекта REQ-013."
+      },
+      {
+        "kind": "question",
+        "text": "I5: importWorkFile принимает только UTF-8 текст (маскирование над текстом); двоичные результаты отклоняются E_WORK_FILE — нужны ли они (дизайнер), решает владелец/REQ-010."
+      },
+      {
+        "kind": "question",
+        "text": "I6: имена файлов не маскируются (F10, решение ORCH) — имя, похожее на ключ, сохранится; остаточный риск в P8."
+      },
+      {
+        "kind": "note",
+        "text": "Типов стало 36 (задание называло 35): добавлен PROJECT_RECOVERED — выбран вариант «событие», а не поле recovery у RESUMED, потому что восстановление — настоящее изменение (R2) и даёт точное условие И13."
+      },
+      {
+        "kind": "note",
+        "text": "За пределами перечня, но как следствие правок: запрет public append для PROJECT_CREATED/PROJECT_RECOVERED/RESULT_FILE (F8, F4). Нужно ли так же закрыть LOCK_STALE_REMOVED и JOURNAL_RECOVERED (сейчас через append допустимы) — вопрос, не решён."
+      },
+      {
+        "kind": "proposal",
+        "text": "Запись decisions/0017-team-core-storage.md (пишет ORCH): P1–P11 из п. 19 проекта, включая остаточный риск гонки трёх процессов на устаревшем замке (F6), P7 (hash не маскируется), P8 (имена по шаблону), P9 (сценарий и work/ без маскирования), P10 (помощники тестов), P11 (восстановление)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-009-team-core.md"
+    ]
+  }
+}

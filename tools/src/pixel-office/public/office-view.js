@@ -3,18 +3,40 @@
 // is given and reads the same grid as the routes (layout.js), so what is drawn
 // is what the characters walk on. Everything is drawn in logical pixels of the
 // canvas: cell (x, y) starts at (x * 24, y * 24), after a transform that moves
-// the left wall to the edge and scales the cell to a whole number of pixels.
+// the left wall to the edge and scales the cell to a whole number of pixels
+// (not smaller than MIN_CELL_PX, design 4.15, 5).
 
 import { CELL, cellKind } from "./layout.js";
 import { ROLE_PALETTE } from "./office-model.js";
 import { ROOM_LABELS } from "./texts.js";
 
-// The smallest cell on the screen, in pixels.
-export const MIN_CELL_PX = 4;
+// The figure of a character spans the logical rows FIGURE_TOP..FIGURE_BOTTOM
+// of its cell (hair from y + 2, body down to y + 9 + 11); the caption font is
+// LABEL_FONT_UNITS logical px. On the screen the figure must be at least
+// MIN_FIGURE_PX and the caption at least MIN_LABEL_PX CSS px (criterion 18(b)).
+export const FIGURE_TOP = 2;
+export const FIGURE_BOTTOM = 20;
+export const LABEL_FONT_UNITS = 9;
+export const MIN_FIGURE_PX = 20;
+export const MIN_LABEL_PX = 10;
+// The smallest cell on the screen, in pixels: 27.
+export const MIN_CELL_PX = Math.ceil(
+  Math.max(
+    (MIN_FIGURE_PX * CELL) / (FIGURE_BOTTOM - FIGURE_TOP),
+    (MIN_LABEL_PX * CELL) / LABEL_FONT_UNITS,
+  ),
+);
 export const LABEL_FONT = "9px system-ui";
 // Narrower than the distance between two seats of a row (144 px), so the
 // captions of neighbours do not overlap.
 export const LABEL_MAX_WIDTH = 130;
+// The plate under a caption that touches a wall or a drawn partition line
+// (design 4.5, step 8): the text box is LABEL_ASCENT above and LABEL_DESCENT
+// below the base line, the plate is LABEL_PLATE_PAD wider on each side.
+export const LABEL_ASCENT = 8;
+export const LABEL_DESCENT = 3;
+export const LABEL_PLATE_PAD = 2;
+export const LABEL_PLATE_COLOR = "rgba(15, 21, 32, 0.85)";
 
 // The colour of the base of a cell by its kind: walls, tiles, and the floor
 // for everything else (floor and whatever stands on it), as a checkerboard.
@@ -79,21 +101,77 @@ function mod(a, b) {
 }
 
 // The largest whole number of pixels per cell at which the office fits the
-// area. An area that is zero or not a number gives 24 px per cell; an
-// infinite height means "as wide as the panel".
+// area, but not less than MIN_CELL_PX. An area that is zero or not a number
+// gives MIN_CELL_PX and fits = false; an infinite height means "as wide as the
+// panel". A canvas that does not fit scrolls inside #office-scroll.
 export function fitCanvas(layout, area) {
   const cols = layout.width;
   const rows = layout.height;
   const width = area === null || area === undefined ? NaN : area.width;
   const height = area === null || area === undefined ? NaN : area.height;
-  let cellPx = CELL;
-  if (Number.isFinite(width) && width > 0 && height > 0) {
+  const good = Number.isFinite(width) && width > 0 && height > 0;
+  let cellPx = MIN_CELL_PX;
+  if (good) {
     cellPx = Math.max(
       MIN_CELL_PX,
       Math.floor(Math.min(width / cols, height / rows)),
     );
   }
-  return { cellPx, width: cols * cellPx, height: rows * cellPx };
+  const w = cols * cellPx;
+  const h = rows * cellPx;
+  return {
+    cellPx,
+    width: w,
+    height: h,
+    fits: good && w <= width && h <= height,
+  };
+}
+
+// Strict overlap of [a1, a2] x [b1, b2] and [c1, c2] x [d1, d2]: touching by
+// an edge is not an overlap.
+function overlaps(a1, a2, b1, b2, c1, c2, d1, d2) {
+  return a1 < c2 && c1 < a2 && b1 < d2 && d1 < b2;
+}
+
+// The plate under the caption of a character standing at (X, Y) (logical px)
+// whose text is w px wide, or null: a plate is drawn only when the box of the
+// caption overlaps a wall cell or a drawn partition line (design 4.5, step 8).
+export function labelPlate(layout, X, Y, w) {
+  if (!Number.isFinite(w) || w <= 0) return null;
+  const cx = X + 12;
+  const b = Y + 31;
+  const l = cx - w / 2;
+  const r = cx + w / 2;
+  const t = b - LABEL_ASCENT;
+  const u = b + LABEL_DESCENT;
+  let touches = false;
+  for (
+    let y = Math.floor(t / CELL);
+    !touches && y <= Math.ceil(u / CELL) - 1;
+    y++
+  ) {
+    for (let x = Math.floor(l / CELL); x <= Math.ceil(r / CELL) - 1; x++) {
+      if (cellKind(layout, x, y) === "wall") {
+        touches = true;
+        break;
+      }
+    }
+  }
+  for (const p of layout.partitions) {
+    if (touches) break;
+    const px1 = CELL * p.x + 11;
+    const px2 = CELL * p.x + 13;
+    touches =
+      overlaps(l, r, t, u, px1, px2, CELL * p.top, CELL * p.gap) ||
+      overlaps(l, r, t, u, px1, px2, CELL * (p.gap + 1), CELL * (p.bottom + 1));
+  }
+  if (!touches) return null;
+  return {
+    x: l - LABEL_PLATE_PAD,
+    y: t,
+    w: w + 2 * LABEL_PLATE_PAD,
+    h: LABEL_ASCENT + LABEL_DESCENT,
+  };
 }
 
 function rect(ctx, color, x, y, w, h) {
@@ -134,7 +212,8 @@ function drawDetail(ctx, kind, x, y) {
   }
 }
 
-// Step 1: every cell of the office, then the furniture, then the partitions.
+// Step 1: every cell of the office, then the furniture, then the partition
+// lines (2 px in the middle of the partition cell, broken at the passage).
 // It depends only on the grid: never on the journal or the clock.
 export function drawStatic(ctx, layout) {
   for (let y = 0; y < layout.height; y++) {
@@ -172,7 +251,7 @@ export function drawStatic(ctx, layout) {
     rect(
       ctx,
       WALL_STRIPE,
-      p.x * CELL - 1,
+      p.x * CELL + 11,
       p.top * CELL,
       2,
       (p.gap - p.top) * CELL,
@@ -180,7 +259,7 @@ export function drawStatic(ctx, layout) {
     rect(
       ctx,
       WALL_STRIPE,
-      p.x * CELL - 1,
+      p.x * CELL + 11,
       (p.gap + 1) * CELL,
       2,
       (p.bottom - p.gap) * CELL,
@@ -310,12 +389,19 @@ export function drawOffice(ctx, office, frame) {
     }
   }
 
-  // 8. Captions, 9. badges.
+  // 8. Captions, each on a plate if it touches a wall or a partition line;
+  // 9. badges.
   ctx.font = LABEL_FONT;
   ctx.textAlign = "center";
-  ctx.fillStyle = LABEL_COLOR;
   for (const d of drawn) {
-    ctx.fillText(d.character.label, d.x + 12, d.y + 31, LABEL_MAX_WIDTH);
+    const label = d.character.label;
+    const w = Math.min(ctx.measureText(label).width, LABEL_MAX_WIDTH);
+    const plate = labelPlate(layout, d.x, d.y, w);
+    if (plate !== null) {
+      rect(ctx, LABEL_PLATE_COLOR, plate.x, plate.y, plate.w, plate.h);
+    }
+    ctx.fillStyle = LABEL_COLOR;
+    ctx.fillText(label, d.x + 12, d.y + 31, LABEL_MAX_WIDTH);
   }
   for (const d of drawn) {
     if (d.character.working_count > 1) {

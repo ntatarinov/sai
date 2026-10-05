@@ -1,0 +1,88 @@
+{
+  "handoff_id": "step04-reviewer-PO-20261006-01",
+  "run_id": "PO-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PO-20261006-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-007"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PO-20261006-01/step-04-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po4/build-before",
+    "parallel_work_now": "SECURITY-REVIEWER (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-001-pixel-office.md (4.15)",
+      "docs/design/REQ-007-office-ui.md",
+      "docs/requirements.yaml (блок REQ-007)",
+      "handoffs/PO-20261006-01/step-02-frontend-dev.json",
+      "tools/src/pixel-office/public/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью кода уплотнённого офиса (handoffs/PO-20261006-01/step-02-frontend-dev.json; проект docs/design/REQ-001-pixel-office.md 4.15 и описание docs/design/REQ-007-office-ui.md; копия до — <рабочая папка ORCH>/orch/po4/build-before). Проверьте: изменены ли ТОЛЬКО файлы write_set (diff -rq с копией до: tools/src/pixel-office/public/*, и в tools/test — прежние тесты, названные в 4.15 п. 10, плюс три места, о которых сказано в result.issues I1 разработчика: клик-помощник OF-10/OF-11/OF-20, клик в PN-18, setPanelRects/setPanelInts в pixel-office-helpers.js — оцените, оправданы ли); решение, а не костыль; идиомы; мёртвый код (в том числе устаревший код старой раскладки 40 × 34 и перегородок-границ D15) и лишняя работа; код следует проекту (формулы раскладки, MIN_CELL_PX, fitCanvas.fits, labelPlate, легенда-полоса, #office-scroll), расхождения; изменённые прежние тесты расширены/пересчитаны, не ослаблены (сравните до/после по 4.15 п. 10); эрозия планки (skip, eslint-disable, || true); D16 и масштаб 0012 не сломаны; открытые вопросы разработчика I4 (пустой #office-scroll при отсутствии canvas — фокусируем ли) и I5. Запустите сами cd tools && npm test. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "файлы сверены с копией до",
+      "замечания с местом, важностью и исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T21:11:15Z",
+  "started_at": "2026-10-05T21:11:15Z",
+  "completed_at": "2026-10-05T21:12:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Раскладка 35x22, клетки partition, MIN_CELL_PX=27 по формуле, fitCanvas с fits, labelPlate, легенда-полоса и #office-scroll сделаны по 4.15 (v3.3); решение, а не костыль. Устаревший код (BAY_*, leftClosed, граничные перегородки, 24 по умолчанию, 960x600) удалён, grep по public/ пуст. Изменены только файлы write_set; прежние тесты пересчитаны по таблице п. 10 без ослабления; три места вне таблицы (I1) оправданы. D16 цел (style= и .style нет, 15 px-строк в style.css), масштаб 0012 цел. Блокирующих находок нет; две Low записаны. За чем следить: настоящие подписи до 98 px (вопрос 28) в колонках 0 и 1 могут получить плашку; это для DESIGN-QA.",
+    "findings": [
+      {
+        "place": "tools/src/pixel-office/public/index.html:66-72; app.js:1483-1488",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "I4: при отсутствии canvas #office-scroll остаётся пустым фокусируемым элементом (tabindex 0, aria-label) рядом с заметкой «Холст не поддерживается». Проект скрывать его не требует; фокус на пустую область вводит в заблуждение.",
+        "fix": "Не сейчас. Если владелец захочет: в ветке !supported ставить els.officeScroll.hidden = true (атрибут, не style). Это новая правка проекта и теста PN-17; решает ORCH, дефект ISS по поручению ORCH."
+      },
+      {
+        "place": "tools/src/pixel-office/public/app.js:1274-1275",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "Запасной путь `els.officeScroll ?? canvas` в fit: проект (п. 8) его допускает, разметка всегда содержит обёртку, поэтому ветка почти недостижима в продукте. Лишнего кода мало, оставлено по проекту.",
+        "fix": "Менять не нужно."
+      }
+    ],
+    "checks": {
+      "write_set": "diff -rq с копией до: изменены app.js, index.html, layout.js, office-view.js, style.css, texts.js в public/ и pixel-office-helpers.js, -layout, -office, -panels тесты; больше ничего. texts.js (OFFICE_SCROLL_LABEL) лежит в public/, нужен по 4.15 п. 7.",
+      "I1": "clickCharacter (OF-10/11/20), клик PN-18: холст показан размером layout*24, клик остаётся в логических px при любой клетке, сила та же; setPanelRects/setPanelInts: прямоугольник и смещения на #office-scroll, как требуют 4.15 п. 8 и 14.2. Оправданы; TEST-DESIGNER подтвердит.",
+      "I5": "Принято: реальные подписи до 91,4 px в этом журнале ниже порога 94; плашки у d=5, 11, 18 совпадают с проектом.",
+      "tests_vs_table": "LY-01/02/05..12, OF-18/20/33/34/36/38, PN-12/17 сверены с таблицей 4.15 п. 10: числа пересчитаны, утверждения заменены равной силы (OF-18 ч.4 через функцию шага createSim, закрытая клетка на пути и вне пути; OF-36 сохраняет различение «подогнан после легенды»); ни удалённых, ни пропущенных."
+    },
+    "self_check": {
+      "npm_test": "cd tools && npm test -> # tests 483 # pass 483 # fail 0 # skipped 0 # todo 0",
+      "npm_run_check": "cd tools && npm run check -> Prettier: All matched files use Prettier code style!; eslint без вывода; 483/483, exit 0",
+      "erosion_grep": "grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true|style=|\\.style\\b|\\.only\\(' по public/ и четырём изменённым тестам -> пусто",
+      "dead_code_grep": "grep -rnEi 'bays?|bay_|leftClosed|BAY_|40 x 34|960' src/pixel-office/public -> только font-weight: 600 в style.css",
+      "px_lines": "grep -cE '[0-9.]+px' style.css -> 15",
+      "browser": "не запускал (ревью по коду, тестам и протоколу измерений разработчика); измерения в браузере проверяет DESIGN-QA-VALIDATOR"
+    },
+    "issues": [
+      {
+        "kind": "question",
+        "text": "Вопрос к ORCH по I4: нужна ли скрытая пустая #office-scroll при неподдерживаемом canvas? Low, не блокирует; при решении «да» это правка проекта 4.15 и PN-17."
+      },
+      {
+        "kind": "note",
+        "text": "Задание ORCH не называло ожидаемого вердикта (AP-018 не применимо). Порт 4780 и ~/.sai-pixel-office не использовались."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

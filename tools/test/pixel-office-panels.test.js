@@ -15,6 +15,7 @@ import {
   LIVE,
   MAIN_ROW,
   NOSCRIPT,
+  OFFICE_SCROLL_LABEL,
   NOT_FROM_HOOKS,
   NO_CONNECTION,
   NO_DATA,
@@ -726,7 +727,7 @@ test("PN-11: the limit of summaries - 400 finished sessions with one task: 300 i
 
 // ------------------------------------------------------------------ PN-12
 
-test("PN-12: before the first load and after a failed one - the task body is empty, 'Сейчас' is hidden, the legend is empty, the office is the fixed layer with an empty bay 0 and no characters", async () => {
+test("PN-12: before the first load and after a failed one - the task body is empty, 'Сейчас' is hidden, the legend is empty, the office is the fixed layer with an empty zone of desks (35 x 22) and no characters", async () => {
   for (const mode of ["hang", "fail"]) {
     const page = makePage({ entries: [] });
     page.server.mode = mode;
@@ -736,6 +737,10 @@ test("PN-12: before the first load and after a failed one - the task body is emp
     assert.equal(page.el("now").hidden, true);
     assert.equal(page.legend().length, 0);
     assert.deepEqual(page.app.getOffice().layout, buildLayout(0));
+    assert.deepEqual(
+      [page.app.getOffice().layout.width, page.app.getOffice().layout.height],
+      [35, 22],
+    );
     assert.equal(page.app.getOffice().characters.length, 0);
     assert.equal(page.el("tasks").byClass("section-title").length, 0);
   }
@@ -892,6 +897,7 @@ test("PN-17: markup and captions - every identifier of the frame table of 4.7 is
     ["speed-4", "BUTTON", "ctl"],
     ["office-panel", "SECTION", "panel-office"],
     ["office-inner", "DIV", "office-inner"],
+    ["office-scroll", "DIV", "office-scroll"],
     ["office", "CANVAS", null],
     ["office-note", "P", "office-note"],
     ["legend", "UL", "legend"],
@@ -913,6 +919,9 @@ test("PN-17: markup and captions - every identifier of the frame table of 4.7 is
     if (cls !== null) assert.ok(el.classes.has(cls), `${id}.${cls}`);
   }
   assert.ok(doc.getElementById("journal").getAttribute("tabindex") === "0");
+  const scroll = doc.getElementById("office-scroll");
+  assert.equal(scroll.getAttribute("tabindex"), "0");
+  assert.equal(scroll.getAttribute("aria-label"), OFFICE_SCROLL_LABEL);
   assert.equal(doc.getElementById("card").getAttribute("role"), "dialog");
   const constants = () => ({
     title: doc.root.find((e) => e.classes.has("top-title")).textContent,
@@ -942,6 +951,10 @@ test("PN-17: markup and captions - every identifier of the frame table of 4.7 is
   page.el("pause").click();
   page.el("pause").click();
   assert.equal(page.text("source-badge"), HEADER_BADGE);
+  assert.equal(
+    page.el("office-scroll").getAttribute("aria-label"),
+    OFFICE_SCROLL_LABEL,
+  );
   assert.equal(page.text("journal-title"), JOURNAL_TITLE);
   assert.equal(page.text("tasks-title"), TASKS_TITLE);
   assert.equal(page.text("pause"), PAUSE);
@@ -1006,11 +1019,12 @@ test("PN-18: the legend and the card - a legend button opens the same card as a 
   // the same card from the canvas
   const office = page.app.getOffice();
   const seat = office.layout.desks[1].seat;
+  // the canvas is shown at 24 px per cell: a click is in logical px
   page.canvas.rect = {
     left: 0,
     top: 0,
-    width: page.canvas.width,
-    height: page.canvas.height,
+    width: office.layout.width * 24,
+    height: office.layout.height * 24,
   };
   page.canvas.click({
     clientX: seat[0] * 24 + 12 - office.layout.min_x * 24,

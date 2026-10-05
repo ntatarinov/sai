@@ -23,9 +23,12 @@ import {
 } from "../src/pixel-office/public/office-sim.js";
 import {
   LABEL_FONT,
+  LABEL_PLATE_COLOR,
+  MIN_CELL_PX,
   canvasPoint,
   drawOffice,
   hitTest,
+  labelPlate,
 } from "../src/pixel-office/public/office-view.js";
 import {
   FIXED_CELLS,
@@ -33,6 +36,7 @@ import {
   canStep,
   cellKind,
   deskSpot,
+  findPath,
 } from "../src/pixel-office/public/layout.js";
 import {
   buildReport,
@@ -52,14 +56,18 @@ import {
   NOW,
   PUBLIC,
   REPORT_JS,
+  LEGEND_ROLES,
   T0,
   agentFiles,
   agentNames,
   at,
   entryOf,
   journal,
+  legendJournal,
   makeCtx,
   makePage,
+  cssDecls,
+  parseCss,
   rolesJournal,
   sandbox,
   setPanelInts,
@@ -573,11 +581,13 @@ function clickCharacter(page, key) {
   const office = page.app.getOffice();
   const c = office.characters.find((x) => x.key === key);
   const seat = office.layout.desks[c.desk_index].seat;
+  // the canvas is shown at 24 px per cell, whatever its cell: a click is then
+  // in logical px of the canvas
   page.canvas.rect = {
     left: 0,
     top: 0,
-    width: page.canvas.width,
-    height: page.canvas.height,
+    width: office.layout.width * 24,
+    height: office.layout.height * 24,
   };
   const k = 24;
   page.canvas.click({
@@ -1035,7 +1045,10 @@ test("OF-18: Sim.sync - a walker in the middle of a route stays; a character wit
     s3.positions().some((p) => p.key === "role:Lead"),
     false,
   );
-  // 4. a new grid: a partition appears across the path of a walker
+  // 4. a new grid closes a step of the rest of the path of a walker. A
+  // partition never closes a path any more (design 4.15, 3), so the change of
+  // the grid is modelled by a step function of createSim (as in OF-09): with
+  // the new grid object (after a poll with a new role) it closes one cell.
   const chars2 = (n) =>
     Array.from({ length: n }, (_v, i) => ({
       key: i === 0 ? "main" : `role:r${i}`,
@@ -1052,10 +1065,22 @@ test("OF-18: Sim.sync - a walker in the middle of a route stays; a character wit
     from_cell: [...layout.desks[1].seat],
     to_cell: [18, 4],
   });
-  const runWalk = (growAt) => {
-    const small = { layout: buildLayout(2), characters: chars2(2), routes: [] };
-    const big = { layout: buildLayout(3), characters: chars2(3), routes: [] };
-    const sim = createSim();
+  const small = { layout: buildLayout(2), characters: chars2(2), routes: [] };
+  const big = { layout: buildLayout(3), characters: chars2(3), routes: [] };
+  const steadyPath = findPath(
+    small.layout,
+    small.layout.desks[1].seat,
+    [18, 4],
+  );
+  assert.ok(steadyPath.length > 8, "a long enough path");
+  // a cell well after the place of the walker when the grid changes
+  const closedCell = steadyPath[steadyPath.length - 3];
+  const stepWith = (closed) => (l, x, y, nx, ny) =>
+    !(l === big.layout && nx === closed[0] && ny === closed[1]) &&
+    canStep(l, x, y, nx, ny);
+  const runWalk = (growAt, closed) => {
+    const step = stepWith(closed);
+    const sim = createSim({ canStep: step });
     sim.sync(small);
     sim.enqueue([route(small.layout)]);
     const cells = [];
@@ -1070,9 +1095,9 @@ test("OF-18: Sim.sync - a walker in the middle of a route stays; a character wit
       const prev = cells[cells.length - 1];
       if (prev && (prev[0] !== c[0] || prev[1] !== c[1])) {
         assert.equal(
-          canStep(layout, prev[0], prev[1], c[0], c[1]),
+          step(layout, prev[0], prev[1], c[0], c[1]),
           true,
-          `a step across a barrier at frame ${i}: ${prev} -> ${c}`,
+          `a step into a closed cell at frame ${i}: ${prev} -> ${c}`,
         );
       }
       cells.push(c);
@@ -1082,28 +1107,22 @@ test("OF-18: Sim.sync - a walker in the middle of a route stays; a character wit
     assert.deepEqual(sim.cell("role:r1"), seat, "the walker came home");
     return cells;
   };
-  const grown = runWalk(30);
-  const steady = runWalk(-1);
-  assert.notDeepEqual(grown, steady, "the new partition changed the path");
+  const grown = runWalk(30, closedCell);
+  const steady = runWalk(-1, closedCell);
+  assert.ok(
+    steady.some((c) => c[0] === closedCell[0] && c[1] === closedCell[1]),
+    "without the new grid the walker passes the cell",
+  );
+  assert.ok(
+    grown.every((c) => c[0] !== closedCell[0] || c[1] !== closedCell[1]),
+    "with the new grid the walker never enters the closed cell",
+  );
+  assert.notDeepEqual(grown, steady, "the new grid changed the path");
   // a new grid that does not close the path leaves it as it was
-  const crossingFree = (growAt) => {
-    const small = { layout: buildLayout(2), characters: chars2(2), routes: [] };
-    const big = { layout: buildLayout(3), characters: chars2(3), routes: [] };
-    const sim = createSim();
-    sim.sync(small);
-    sim.enqueue([
-      { ...route(small.layout), to_cell: [13, 4], id: "10:handoff" },
-    ]);
-    const cells = [];
-    for (let i = 0; i < 3000; i++) {
-      if (i === growAt) sim.sync(big);
-      sim.tick(1 / 60);
-      cells.push(sim.cell("role:r1").join(","));
-      if (i > 60 && sim.positions().every((p) => p.state === "seated")) break;
-    }
-    return cells;
-  };
-  assert.deepEqual(crossingFree(20), crossingFree(-1));
+  const away = [22, 15];
+  assert.ok(steadyPath.every((c) => c[0] !== away[0] || c[1] !== away[1]));
+  const key = (cells) => cells.map((c) => c.join(","));
+  assert.deepEqual(key(runWalk(20, away)), key(runWalk(-1, away)));
 });
 
 // ----------------------------------------------------------------- OF-19
@@ -1155,26 +1174,34 @@ test("OF-19: captions - at most 16 code points on real agent_type and the three 
 
 // ----------------------------------------------------------------- OF-20
 
-test("OF-20: a click - canvasPoint on a scaled canvas and with min_x = -18; hitTest limits and ties; a click beside clears the choice and opens no card", async () => {
-  const layout = buildLayout(25);
-  const canvas = {
-    width: 1440,
-    height: 900,
-    getBoundingClientRect: () => ({
-      left: 10,
-      top: 20,
-      width: 720,
-      height: 450,
-    }),
-  };
-  const p = canvasPoint(
-    { clientX: 10 + 360, clientY: 20 + 225 },
-    canvas,
-    layout,
-    24,
-  );
-  assert.equal(p.px, 720 + layout.min_x * 24);
-  assert.equal(p.py, 450);
+test("OF-20: a click - canvasPoint on a scaled canvas with min_x = 5 and min_x = -6; hitTest limits and ties; a click beside clears the choice and opens no card", async () => {
+  for (const [desks, minX] of [
+    [19, 5],
+    [29, -6],
+  ]) {
+    const grid = buildLayout(desks);
+    assert.equal(grid.min_x, minX);
+    // the canvas at 48 px per cell shown at half its size
+    const canvas = {
+      width: grid.width * 48,
+      height: grid.height * 48,
+      getBoundingClientRect: () => ({
+        left: 10,
+        top: 20,
+        width: grid.width * 24,
+        height: grid.height * 24,
+      }),
+    };
+    const p = canvasPoint(
+      { clientX: 10 + 360, clientY: 20 + 225 },
+      canvas,
+      grid,
+      48,
+    );
+    assert.equal(p.px, 360 + minX * 24);
+    assert.equal(p.py, 225);
+  }
+  const layout = buildLayout(29);
   const zero = {
     width: 100,
     height: 100,
@@ -1202,8 +1229,16 @@ test("OF-20: a click - canvasPoint on a scaled canvas and with min_x = -18; hitT
   await page.start();
   clickCharacter(page, "role:Explore");
   assert.equal(page.el("card-overlay").hidden, false);
-  page.canvas.rect = { left: 0, top: 0, width: 960, height: 600 };
-  page.canvas.click({ clientX: 940, clientY: 590 });
+  page.canvas.rect = {
+    left: 0,
+    top: 0,
+    width: page.canvas.width,
+    height: page.canvas.height,
+  };
+  page.canvas.click({
+    clientX: page.canvas.width - 20,
+    clientY: page.canvas.height - 10,
+  });
   assert.equal(page.el("card-overlay").hidden, true);
   assert.equal(
     page.legend().every((b) => b.getAttribute("aria-pressed") === "false"),
@@ -1835,6 +1870,7 @@ test("OF-33: in the full frame no wall, furniture or reserved cell has the colou
     "plant",
     "shelf",
     "chair",
+    "partition",
   ];
   const frame = ctx.lastFrame();
   let checked = 0;
@@ -1916,8 +1952,9 @@ test("OF-34: a bubble in the frame - width measureText + 14, height 18, centred 
     BUBBLE_TEXTS.got_request,
     "the later event is drawn later",
   );
-  // edges
-  const wide = buildLayout(25);
+  // edges: an office with extra columns (29 desks, min_x = -6 < 0)
+  const wide = buildLayout(29);
+  assert.equal(wide.min_x, -6);
   const edge = (x, y) => {
     const c = makeCtx();
     drawOffice(
@@ -2031,10 +2068,10 @@ test("OF-36: the legend fits the panel on the first load - the canvas is fitted 
   launch(j, "S1", "a1", "Explore");
   launch(j, "S1", "a2", "Plan");
   const page = makePage({ entries: [...j.entries] });
-  // measurements of a stand: the panel is 1472 x 600; every legend entry is 30 px high
+  // measurements of a stand: the panel is 1472 x 760; every legend entry is 30 px high
   const inner = page.el("office-inner");
   inner.clientWidth = 1472;
-  inner.clientHeight = 600;
+  inner.clientHeight = 760;
   Object.defineProperty(page.el("legend"), "offsetHeight", {
     get() {
       return this.children.length * 30;
@@ -2044,28 +2081,32 @@ test("OF-36: the legend fits the panel on the first load - the canvas is fitted 
   assert.equal(page.legend().length, 3);
   const legendHeight = 3 * 30;
   const expected = Math.max(
-    4,
-    Math.floor(Math.min(1472 / 40, (600 - legendHeight) / 25)),
+    27,
+    Math.floor(Math.min(1472 / 35, (760 - legendHeight) / 22)),
   );
-  assert.equal(expected, 20);
+  assert.equal(expected, 30);
+  // without the legend the cell would be 34: 748 + 90 > 760
+  assert.equal(Math.floor(Math.min(1472 / 35, 760 / 22)), 34);
   assert.equal(
     page.canvas.width,
-    40 * expected,
+    35 * expected,
     "the canvas leaves room for the legend",
   );
-  assert.equal(page.canvas.height, 25 * expected);
+  assert.equal(page.canvas.height, 22 * expected);
+  assert.deepEqual([page.canvas.width, page.canvas.height], [1050, 660]);
   assert.ok(
-    page.canvas.height + legendHeight <= 600,
+    page.canvas.height + legendHeight <= 760,
     "the legend is not cut off",
   );
   // and after a rebuild with one more role
   launch(j, "S1", "a3", "Sai Orchestrator (ORCH)");
   await page.push(...j.entries.slice(-2));
   const again = Math.max(
-    4,
-    Math.floor(Math.min(1472 / 40, (600 - 4 * 30) / 25)),
+    27,
+    Math.floor(Math.min(1472 / 35, (760 - 4 * 30) / 22)),
   );
-  assert.equal(page.canvas.width, 40 * again);
+  assert.equal(again, 29);
+  assert.equal(page.canvas.width, 35 * again);
 });
 
 test("OF-37: after the legend and the card are rebuilt the keyboard focus returns to the button of the same character, and '×' keeps the focus", async () => {
@@ -2120,23 +2161,23 @@ async function fittedPage(setup, { frames = false } = {}) {
   return page;
 }
 const cellOf = (page) => [
-  page.canvas.width / 40,
+  page.canvas.width / 35,
   page.canvas.width,
   page.canvas.height,
 ];
 
 test("OF-38: the canvas is fitted at a scale above 1 - rectangles first, whole numbers as the way out, the two modes are not mixed; the result depends only on the measures", async () => {
   const cases = [
-    [{ width: 1472, height: 966, legend: 39, gap: 10 }, [36, 1440, 900]],
+    [{ width: 1472, height: 966, legend: 39, gap: 10 }, [41, 1435, 902]],
     [
       { width: 1963.33, height: 1288.67, legend: 52, gap: 13.33 },
-      [48, 1920, 1200],
+      [55, 1925, 1210],
     ],
-    [{ width: 3169, height: 1990, legend: 58.5, gap: 15 }, [76, 3040, 1900]],
-    [{ width: 3169, height: 1990, legend: 91.5, gap: 15 }, [75, 3000, 1875]],
+    [{ width: 3169, height: 1990, legend: 58.5, gap: 15 }, [87, 3045, 1914]],
+    [{ width: 3169, height: 1990, legend: 91.5, gap: 15 }, [85, 2975, 1870]],
     [
       { width: 1963.33, height: 1448.67, legend: 52, gap: 13.33 },
-      [49, 1960, 1225],
+      [56, 1960, 1232],
     ],
   ];
   for (const [m, want] of cases) {
@@ -2148,7 +2189,14 @@ test("OF-38: the canvas is fitted at a scale above 1 - rectangles first, whole n
   const ints = await fittedPage((p) =>
     setPanelInts(p, { width: 1963, height: 1289, legend: 52, gap: 13 }),
   );
-  assert.deepEqual(cellOf(ints), [48, 1920, 1200]);
+  assert.deepEqual(cellOf(ints), [55, 1925, 1210]);
+  // a stand below the lower bound: the cell stays 27 and the canvas does not
+  // fit its area (it scrolls inside #office-scroll, OF-40)
+  const below = await fittedPage((p) =>
+    setPanelRects(p, { width: 1472, height: 600, legend: 90, gap: 10 }),
+  );
+  assert.equal(Math.floor(Math.min(1472 / 35, 500 / 22)), 22);
+  assert.deepEqual(cellOf(below), [27, 945, 594]);
   // an empty rectangle of the area: the whole numbers are read, even where the
   // legend has a good rectangle
   const mixed = await fittedPage((p) => {
@@ -2164,8 +2212,8 @@ test("OF-38: the canvas is fitted at a scale above 1 - rectangles first, whole n
     };
   });
   assert.equal(
-    mixed.canvas.width / 40,
-    Math.floor(Math.min(1472 / 40, 500 / 25)),
+    mixed.canvas.width / 35,
+    Math.max(27, Math.floor(Math.min(1472 / 35, 500 / 22))),
   );
   // a rectangle of the area but none of the legend: all four measures are
   // whole numbers, the modes are not mixed
@@ -2179,7 +2227,7 @@ test("OF-38: the canvas is fitted at a scale above 1 - rectangles first, whole n
       bottom: 1990,
     };
   });
-  assert.equal(half.canvas.width / 40, 20);
+  assert.equal(half.canvas.width / 35, 27);
   // a rectangle of the area: no whole number is looked at
   const rects = await fittedPage((p) => {
     setPanelInts(p, { width: 400, height: 300, legend: 10, gap: 0 });
@@ -2190,7 +2238,7 @@ test("OF-38: the canvas is fitted at a scale above 1 - rectangles first, whole n
       gap: 13.33,
     });
   });
-  assert.deepEqual(cellOf(rects), [48, 1920, 1200]);
+  assert.deepEqual(cellOf(rects), [55, 1925, 1210]);
   // the root size is not read: the stand's documentElement throws
   const page = await fittedPage((p) => {
     Object.defineProperty(p.doc, "documentElement", {
@@ -2200,19 +2248,19 @@ test("OF-38: the canvas is fitted at a scale above 1 - rectangles first, whole n
     });
     setPanelRects(p, { width: 3169, height: 1990, legend: 58.5, gap: 15 });
   });
-  assert.deepEqual(cellOf(page), [76, 3040, 1900]);
+  assert.deepEqual(cellOf(page), [87, 3045, 1914]);
 });
 
 test("OF-38: resize - a new window gives new attributes and exactly one new frame; the same measures change nothing", async () => {
   const page = await fittedPage((p) =>
     setPanelRects(p, { width: 1472, height: 966, legend: 39, gap: 10 }),
   );
-  assert.deepEqual(cellOf(page), [36, 1440, 900]);
+  assert.deepEqual(cellOf(page), [41, 1435, 902]);
   assert.ok(page.resizeListeners.length >= 1);
   const frames = () => page.ctx.frames().length;
   const before = frames();
   for (const fn of page.resizeListeners) fn();
-  assert.deepEqual(cellOf(page), [36, 1440, 900]);
+  assert.deepEqual(cellOf(page), [41, 1435, 902]);
   assert.equal(frames(), before, "the same measures: no new frame");
   setPanelRects(page, {
     width: 1963.33,
@@ -2221,13 +2269,13 @@ test("OF-38: resize - a new window gives new attributes and exactly one new fram
     gap: 13.33,
   });
   for (const fn of page.resizeListeners) fn();
-  assert.deepEqual(cellOf(page), [48, 1920, 1200]);
+  assert.deepEqual(cellOf(page), [55, 1925, 1210]);
   assert.equal(frames(), before + 1, "one new frame");
   for (const fn of page.resizeListeners) fn();
   assert.equal(frames(), before + 1, "and no more");
 });
 
-test("OF-38: the canvas fonts do not depend on the cell - the same font strings at 24 and 48, setTransform scale is cellPx / 24", () => {
+test("OF-38: the canvas fonts do not depend on the cell - the same font strings at 27 and 54, setTransform scale is cellPx / 24", () => {
   const j = journal();
   j.sessionStart("S1");
   launch(j, "S1", "a1", "Explore");
@@ -2243,8 +2291,8 @@ test("OF-38: the canvas fonts do not depend on the cell - the same font strings 
     });
     return ctx;
   };
-  const a = run(24);
-  const b = run(48);
+  const a = run(27);
+  const b = run(54);
   const fonts = (ctx) => [...new Set(ctx.calls.map((c) => c.font))].sort();
   assert.deepEqual(fonts(a), fonts(b));
   const allowed = new Set([
@@ -2260,11 +2308,11 @@ test("OF-38: the canvas fonts do not depend on the cell - the same font strings 
       assert.ok(allowed.has(c.font), `a canvas font ${c.font}`);
     }
   }
-  assert.equal(a.calls.find((c) => c.op === "setTransform").args[0], 1);
-  assert.equal(b.calls.find((c) => c.op === "setTransform").args[0], 2);
+  assert.equal(a.calls.find((c) => c.op === "setTransform").args[0], 27 / 24);
+  assert.equal(b.calls.find((c) => c.op === "setTransform").args[0], 54 / 24);
 });
 
-test("OF-38: a failure - a NaN gap, a zero area or a missing rectangle gives the cell 24; the journal and the canvas stay as they were", async () => {
+test("OF-38: a failure - a NaN gap, a zero area or a missing rectangle gives the cell 27; the journal and the canvas stay as they were", async () => {
   const bad = [
     { width: 1963.33, height: 1288.67, legend: 52, gap: NaN },
     { width: 0, height: 0, legend: 52, gap: 10 },
@@ -2275,10 +2323,284 @@ test("OF-38: a failure - a NaN gap, a zero area or a missing rectangle gives the
     const entries = JSON.stringify(page.server.entries);
     const rows = page.rows().length;
     for (const fn of page.resizeListeners) fn();
-    assert.deepEqual(sizeBefore, [960, 600], JSON.stringify(m));
+    assert.deepEqual(sizeBefore, [945, 594], JSON.stringify(m));
     assert.deepEqual([page.canvas.width, page.canvas.height], sizeBefore);
     assert.equal(JSON.stringify(page.server.entries), entries);
     assert.equal(page.rows().length, rows);
     assert.equal(page.app.getOffice().characters.length, 2);
   }
+});
+
+// ------------------------------------------------ design 4.15, 10: OF-39...OF-42
+
+// The frame of every character seated at its place.
+function seatedFrame(o, cellPx) {
+  return {
+    positions: o.characters.map((c) => ({
+      key: c.key,
+      x: o.layout.desks[c.desk_index].seat[0],
+      y: o.layout.desks[c.desk_index].seat[1],
+      state: "seated",
+    })),
+    selectedKey: null,
+    bubbles: new Map(),
+    cellPx,
+  };
+}
+
+const fontPx = (font) => Number(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
+
+test("OF-39: 19 desks at the smallest cell - the figure is at least 20 px and the caption at least 10 px on the screen; 19 laptops, 19 chairs of the desks, 19 characters (data-drawn) and the three captions of the rooms", async () => {
+  assert.equal(MIN_CELL_PX, 27);
+  assert.equal(LEGEND_ROLES.length, 18);
+  const j = legendJournal();
+  const { o } = mk(j.entries);
+  assert.equal(o.characters.length, 19);
+  assert.equal(o.layout.desks.length, 19);
+  // the role i of the list stands at the desk i + 1 (the main session at 0)
+  LEGEND_ROLES.forEach((role, i) => {
+    assert.equal(charOf(o, `role:${role}`).desk_index, i + 1, role);
+  });
+  const ctx = makeCtx();
+  const count = drawOffice(ctx, o, seatedFrame(o, MIN_CELL_PX));
+  assert.equal(count, 19);
+  const calls = ctx.lastFrame();
+  const k = calls[0].args[0];
+  assert.equal(calls[0].op, "setTransform");
+  assert.equal(k, MIN_CELL_PX / 24);
+  const rects = calls.filter((c) => c.op === "fillRect").map((c) => c.args);
+  const has = (...want) =>
+    rects.filter((r) => r.every((v, i) => v === want[i])).length;
+  for (const c of o.characters) {
+    const spot = o.layout.desks[c.desk_index];
+    const [sx, sy] = [spot.seat[0] * 24, spot.seat[1] * 24];
+    const [bx, by] = [spot.block[0] * 24, spot.block[1] * 24];
+    // the figure: from the top of the hair to the bottom of the body
+    const hair = rects.filter(
+      (r) => r[0] === sx + 8 && r[1] === sy + 2 && r[2] === 8 && r[3] === 3,
+    );
+    const body = rects.filter(
+      (r) => r[0] === sx + 6 && r[1] === sy + 9 && r[2] === 12 && r[3] === 11,
+    );
+    assert.equal(hair.length, 1, c.key);
+    assert.equal(body.length, 1, c.key);
+    const height = body[0][1] + body[0][3] - hair[0][1];
+    assert.ok(height * k >= 20, `${c.key}: the figure is ${height * k} px`);
+    // one laptop screen, one base and one chair at every desk
+    assert.equal(has(bx + 23, by + 5, 16, 11), 1, `${c.key}: screen`);
+    assert.equal(has(bx + 21, by + 16, 20, 3), 1, `${c.key}: base`);
+    assert.equal(has(sx + 4, sy + 6, 16, 18), 1, `${c.key}: chair`);
+    // the caption: the size of its font on the screen
+    const caption = calls.find(
+      (x) =>
+        x.op === "fillText" &&
+        x.args[0] === c.label &&
+        x.args[3] === 130 &&
+        x.args[1] === sx + 12 &&
+        x.args[2] === sy + 31,
+    );
+    assert.ok(caption !== undefined, `${c.key}: caption`);
+    assert.ok(
+      fontPx(caption.font) * k >= 10,
+      `${c.key}: the font ${caption.font}`,
+    );
+  }
+  // the captions of the rooms
+  for (const [name, x, y] of [
+    ["meeting", 580, 21],
+    ["server", 624, 309],
+    ["kitchen", 842, 261],
+  ]) {
+    const hits = calls.filter(
+      (c) =>
+        c.op === "fillText" &&
+        c.args[0] === ROOM_LABELS[name] &&
+        c.args[1] === x &&
+        c.args[2] === y,
+    );
+    assert.equal(hits.length, 1, name);
+  }
+  // the page draws 19 characters on its own
+  const page = makePage({ entries: [...j.entries] });
+  await page.start();
+  assert.equal(page.canvas.hasAttribute("data-drawn"), false);
+  page.frames.step();
+  assert.equal(page.canvas.dataset.drawn, "19");
+  assert.equal(page.canvas.width, 35 * MIN_CELL_PX);
+  assert.equal(page.canvas.height, 22 * MIN_CELL_PX);
+});
+
+const STYLE_CSS = fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8");
+const WIDE = "@media (min-width: 1240px) and (min-height: 640px)";
+const NARROW = "@media (max-width: 599px)";
+
+test("OF-40: 40 desks in a stand of 1022 x 670 - the cell stays 27 and the canvas (1404 x 594) is wider than its area, so it scrolls inside #office-scroll; the click on the shifted rectangle of the canvas hits the right character", async () => {
+  const j = rolesJournal(39);
+  const page = makePage({ entries: [...j.entries] });
+  setPanelRects(page, { width: 1022, height: 670, legend: 39, gap: 10 });
+  await page.start();
+  const o = page.app.getOffice();
+  assert.equal(o.characters.length, 40);
+  assert.equal(o.layout.width, 52);
+  assert.equal(o.layout.height, 22);
+  assert.equal(page.canvas.width, 1404);
+  assert.equal(page.canvas.height, 594);
+  assert.ok(1404 > 1022);
+  // the canvas is the child of #office-scroll
+  const scroll = page.el("office-scroll");
+  assert.ok(scroll.children.length === 1 && scroll.children[0] === page.canvas);
+  assert.equal(page.canvas.hasAttribute("style"), false);
+  assert.equal(scroll.hasAttribute("style"), false);
+  assert.equal(page.el("office-inner").hasAttribute("style"), false);
+  // the sheet: the wrapper scrolls, the area does not
+  const rules = parseCss(STYLE_CSS);
+  const wrap = cssDecls(rules, ".office-scroll");
+  assert.equal(wrap.get("overflow"), "auto");
+  assert.equal(wrap.get("max-width"), "100%");
+  assert.equal(wrap.get("min-height"), "0");
+  assert.equal(cssDecls(rules, ".office-inner").get("overflow"), "hidden");
+  for (const media of [WIDE, NARROW])
+    assert.equal(
+      cssDecls(rules, ".office-scroll", media).has("overflow"),
+      false,
+    );
+  // a click in the scrolled canvas: its rectangle is shifted by the scroll
+  for (const [desk, shift] of [
+    [2, 250],
+    [39, 0],
+    [21, 400],
+  ]) {
+    const character = o.characters.find((c) => c.desk_index === desk);
+    assert.ok(character !== undefined, `desk ${desk}`);
+    const seat = o.layout.desks[desk].seat;
+    page.canvas.rect = { left: -shift, top: 0, width: 1404, height: 594 };
+    page.canvas.click({
+      clientX: -shift + (seat[0] - o.layout.min_x) * 27 + 13.5,
+      clientY: seat[1] * 27 + 13.5,
+    });
+    assert.equal(page.el("card-overlay").hidden, false, `desk ${desk}`);
+    assert.equal(
+      page.el("card").byClass("card-title")[0].textContent,
+      character.full,
+      `desk ${desk}`,
+    );
+    page.el("card-overlay").hidden = true;
+  }
+});
+
+test("OF-41: the legend is a strip of two lines - the rule .legend with max-height 2.4375rem and overflow-y auto stands only inside the wide @media; the canvas is fitted after the legend (cell 28, 980 x 616); all 19 legend items are in #legend and none is hidden", async () => {
+  const rules = parseCss(STYLE_CSS);
+  const wide = cssDecls(rules, ".legend", WIDE);
+  assert.equal(wide.get("max-height"), "2.4375rem");
+  assert.equal(wide.get("overflow-y"), "auto");
+  assert.equal(cssDecls(rules, ".legend", null).has("max-height"), false);
+  assert.equal(cssDecls(rules, ".legend", NARROW).has("max-height"), false);
+  assert.equal(
+    rules.filter((r) => r.media !== null && r.media.includes("1240px")).length >
+      0,
+    true,
+  );
+  const j = legendJournal();
+  const page = makePage({ entries: [...j.entries] });
+  setPanelRects(page, { width: 1022, height: 670, legend: 39, gap: 10 });
+  await page.start();
+  assert.equal(page.canvas.width, 980);
+  assert.equal(page.canvas.height, 616);
+  const o = page.app.getOffice();
+  const items = page.legend();
+  assert.equal(items.length, 19);
+  assert.deepEqual(
+    items.map((b) => b.dataset.key).sort(),
+    o.characters.map((c) => c.key).sort(),
+  );
+  for (const b of items) {
+    assert.equal(b.hidden, false, b.dataset.key);
+    assert.equal(b.hasAttribute("hidden"), false, b.dataset.key);
+    assert.ok(page.el("legend").all((e) => e === b).length === 1);
+  }
+  // without the legend the same stand would give a bigger cell: the band counts
+  const free = makePage({ entries: [...j.entries] });
+  setPanelRects(free, { width: 1022, height: 670, legend: 1, gap: 0 });
+  await free.start();
+  assert.equal(free.canvas.width, 35 * 29);
+});
+
+test("OF-42: the plate under a caption - labelPlate by the numbers of the design (the edges 72 / 72.5 and 94 / 95, an undrawn line, the passage row, the lower wall, the extra column); in a frame of 19 desks exactly three plates, at the desks 5, 11 and 18, each right before its caption", () => {
+  const l19 = buildLayout(19);
+  const place = (layout, d) => layout.desks[d].seat.map((v) => v * 24);
+  assert.deepEqual(place(l19, 2), [504, 48]);
+  assert.deepEqual(place(l19, 0), [216, 48]);
+  assert.deepEqual(place(l19, 8), [504, 192]);
+  assert.deepEqual(place(l19, 18), [216, 480]);
+  const at = (layout, d, w) => labelPlate(layout, ...place(layout, d), w);
+  // the wall x = 23 touches a caption wider than 72 px in column 2
+  assert.equal(at(l19, 2, 72), null);
+  assert.deepEqual(at(l19, 2, 72.5), { x: 477.75, y: 71, w: 76.5, h: 11 });
+  assert.notEqual(at(l19, 2, 130), null);
+  // the line x = 11 touches a caption wider than 94 px in column 0
+  assert.equal(at(l19, 0, 94), null);
+  assert.notEqual(at(l19, 0, 95), null);
+  // the same place with one desk: the line is not drawn, so no plate
+  assert.deepEqual(buildLayout(1).partitions, []);
+  assert.equal(at(buildLayout(1), 0, 130), null);
+  // the passage row 9: nothing is touched
+  assert.equal(at(l19, 8, 130), null);
+  // the lower wall: any caption of the lowest row
+  assert.notEqual(at(l19, 18, 1), null);
+  // an extra column: the line x = 5
+  const l22 = buildLayout(22);
+  assert.deepEqual(place(l22, 21), [72, 48]);
+  assert.equal(at(l22, 21, 94), null);
+  assert.notEqual(at(l22, 21, 95), null);
+  // a width that is not a width
+  for (const w of [0, -1, Number.NaN]) assert.equal(at(l19, 2, w), null);
+
+  // the frame
+  const { o } = mk(legendJournal().entries);
+  const ctx = makeCtx();
+  drawOffice(ctx, o, seatedFrame(o, MIN_CELL_PX));
+  const calls = ctx.lastFrame();
+  const plates = calls
+    .map((c, i) => [c, i])
+    .filter(([c]) => c.op === "fillRect" && c.fillStyle === LABEL_PLATE_COLOR);
+  assert.equal(plates.length, 3);
+  const captions = calls
+    .map((c, i) => [c, i])
+    .filter(
+      ([c]) => c.op === "fillText" && c.args.length === 4 && c.args[3] === 130,
+    );
+  assert.equal(captions.length, 19);
+  const firstCaption = captions[0][1];
+  for (const [, i] of plates)
+    assert.ok(i > firstCaption, "a plate before the captions");
+  const plated = [];
+  for (const c of o.characters) {
+    const spot = o.layout.desks[c.desk_index];
+    const cx = spot.seat[0] * 24 + 12;
+    const b = spot.seat[1] * 24 + 31;
+    const hit = captions.find(([x]) => x.args[1] === cx && x.args[2] === b);
+    assert.ok(hit !== undefined, `${c.key}: caption`);
+    assert.equal(hit[0].args[0], c.label);
+    const before = calls[hit[1] - 1];
+    const isPlate =
+      before.op === "fillRect" && before.fillStyle === LABEL_PLATE_COLOR;
+    if (!isPlate) continue;
+    plated.push(c.desk_index);
+    const w = Math.min(5.4 * Array.from(c.label).length, 130);
+    const want = [cx - w / 2 - 2, b - 8, w + 4, 11];
+    want.forEach((v, n) =>
+      assert.ok(
+        Math.abs(before.args[n] - v) < 1e-9,
+        `${c.key}: plate ${before.args}`,
+      ),
+    );
+  }
+  assert.deepEqual(plated, [5, 11, 18]);
+  // the labels of the plated ones and of the free ones named by the design
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[4]}`).label, "GUI-DESIGN-ANAL…");
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[10]}`).label, "TEST-DESIGN-VAL…");
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[17]}`).label, "BACKEND-DEV");
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[13]}`).label, "CODE-FIXER");
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[7]}`).label, "FRONTEND-DEV");
+  assert.equal(charOf(o, "main").label, "Основная сессия");
 });
