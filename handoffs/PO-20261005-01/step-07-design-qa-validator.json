@@ -1,0 +1,76 @@
+{
+  "handoff_id": "step07-design-qa-validator-PO-20261005-01",
+  "run_id": "PO-20261005-01",
+  "workflow_id": "WF-04",
+  "step": "07",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "DESIGN-QA-VALIDATOR",
+  "file": "handoffs/PO-20261005-01/step-07-design-qa-validator.json",
+  "status": "DONE",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: Full HD и 2K",
+    "requirement_ids": [
+      "REQ-007"
+    ],
+    "route": "... TEST-RUNNER (PASS 439/439) -> DESIGN-QA-VALIDATOR (this) -> RELEASE-VALIDATOR",
+    "agent_run_id": null,
+    "write_set": [
+      "docs/design/samples/office-actual-1920x1080-2026-10-05.png",
+      "docs/design/samples/office-actual-2560x1440-2026-10-05.png",
+      "handoffs/PO-20261005-01/step-07-design-qa-validator.json — только status, completed_at, result"
+    ],
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/samples/office-2026-10-02.jpg",
+      "docs/design/REQ-007-office-ui.md",
+      "decisions/0012-pixel-office-scale-full-hd-2k.md",
+      "handoffs/PO-20261005-01/step-06-test-runner.json"
+    ]
+  },
+  "task": {
+    "description": "WF-04, шаг 4: проверка готовой страницы Pixel Office при Full HD и 2K (критерии 16 и 17 REQ-007; решение decisions/0012-pixel-office-scale-full-hd-2k.md; проект docs/design/REQ-001-pixel-office.md п. 4.14 и 10.3 — шаги Q, M, M1). Сами запустите отдельный экземпляр сервера Pixel Office на свободном порту (порт 0 или любой, но НЕ 4780) с временной папкой состояния (НЕ ~/.sai-pixel-office) и с одним и тем же журналом из примера проекта (или тестового журнала помощников), и снимите страницу браузером (Playwright или headless Chrome, что есть в окружении; ничего не устанавливайте в проект) в окнах 1920×1080 и 2560×1440. Измерьте и запишите: размер шрифта корня (16 и 21,33 px с допуском 0,05), нет прокрутки страницы (scrollHeight/scrollWidth окна не больше окна), легенда видна целиком, размер клетки холста и его отношение к Full HD при том же журнале (не меньше 1,0 и ближе к масштабу окна), правая колонка во столько же раз шире. Сверка прежнего и нового style.css по шагу M1 — копия до: <рабочая папка ORCH>/orch/res1/build-before/public/. Откройте сами снимки и сравните по устройству и смыслу с docs/design/samples/office-2026-10-02.jpg и docs/design/REQ-007-office-ui.md. Снимки сохраните как docs/design/samples/office-actual-1920x1080-2026-10-05.png и office-actual-2560x1440-2026-10-05.png (только эти два файла в проекте, больше ничего не менять). Остановите свой сервер по окончании. Результат: result.verdict PASS/FAIL, измерения таблицей в summary, findings.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "измерения при двух размерах окна с цифрами",
+      "два снимка сохранены",
+      "сервер остановлен, 4780 и ~/.sai-pixel-office не тронуты"
+    ]
+  },
+  "created_at": "2026-10-05T16:15:19Z",
+  "started_at": "2026-10-05T16:15:19Z",
+  "completed_at": "2026-10-05T16:19:13Z",
+  "result": {
+    "status": "DONE",
+    "verdict": "PASS",
+    "summary": "PASS. Проверены: офис при 1920 × 1080 и 2560 × 1440 (журнал: 1 основная сессия + 12 ролей через hook.js, 17 событий, 4 в работе; состояние LIVE). Сравнивалось с образцом (office-2026-10-02.jpg) и описанием REQ-007, п. 1.0, 1.1, 1.3, 10.4. Строка Full HD / 2K:\n| Измерение | 1920×1080 | 2560×1440 |\n| корневой шрифт, px | 16 | 21,3333 (допуск 0,05 соблюдён) |\n| scrollWidth × scrollHeight | 1920 × 1080 | 2560 × 1440 (равны окну, прокрутки нет) |\n| шапка, высота | 60 | 80 |\n| правая колонка, ширина | 380 | 506,66 (в 1,3333 раза) |\n| журнал / задачи, высота | 489 / 489 | 652,02 / 652,02 |\n| панель офиса | 1498 × 992 | 1997,38 × 1322,69 |\n| холст | 1040 × 884 (клетка 26, 40 × 34) | 1400 × 1190 (клетка 35, 40 × 34) |\n| отношение клетки к Full HD | 1,000 | 1,346 (не меньше 1,0; масштаб окна 1,333) |\n| легенда (13 пунктов, 2 строки) | y 981–1020, внутренняя область до 1053: видна целиком | y 1319–1371, внутренняя область до 1404: видна целиком; не прокручивается |\nШаг M1: после замены px на rem вне X1–X4 старый и новый style.css различаются только правилом html (font-size: clamp(16px, min(100vw / 120, 100vh / 67.5), 24px)) и комментарием («380 px» -> «23.75rem»). grep '[0-9.]+px' style.css -> 15 строк (X1 10, X2 2, X3 1, X4 2); style= в index.html -> 0; documentElement|setAttribute.*style в *.js -> нет строк (код 1). По устройству и смыслу страница совпадает с образцом: шапка (связь, «Сейчас», Пауза/1×/2×/4×), офис с отсеками, переговорной, серверной, кухней, легенда под холстом, справа Журнал над «Задачи», та же раскладка в обоих окнах. Различия названы в описании (разд. 11): названия, число столов, нет выдуманных реплик и движений (R2), панель «Задачи» вместо «Требований».",
+    "findings": [
+      {
+        "screen": "2560 × 1440, холст",
+        "checked": "размер клетки",
+        "severity": "Low",
+        "what": "Числа клетки 36 и 48 из п. 1.3 относятся к офису из одного отсека; на этом журнале (13 столов) клетка 26 и 35. Описание само говорит, что проверяется отношение, а не числа.",
+        "fix": "Правка не нужна."
+      }
+    ],
+    "self_check": {
+      "tool": "Playwright 1.x (playwright-core из ~/.npm/_npx, chromium headless), скрипт в папке scratchpad вне проекта; page.screenshot, deviceScaleFactor 1, ожидание 5 с",
+      "server": "cd tools && node src/pixel-office/main.js --port 0 --dir <scratchpad>/dqa-res3/state -> http://127.0.0.1:51652/; события отправлены через src/pixel-office/hook.js с SAI_PIXEL_OFFICE_DIR этой папки; сервер остановлен (порт свободен)",
+      "windows": "1920 × 1080 и 2560 × 1440",
+      "snapshots": [
+        "docs/design/samples/office-actual-1920x1080-2026-10-05.png",
+        "docs/design/samples/office-actual-2560x1440-2026-10-05.png"
+      ],
+      "untouched": "порт 4780 и ~/.sai-pixel-office не использовались; код, описание и образец не менялись"
+    },
+    "issues": [
+      "Не проверялись другие окна (2560×1600, 3440×1440, 3840×2160, 1920×1200) и узкий экран: вне задания.",
+      "Реплики, перемещения и состояния «пусто/ошибка/нет связи» не снимались: вне задания."
+    ],
+    "artifacts_out": [
+      "docs/design/samples/office-actual-1920x1080-2026-10-05.png",
+      "docs/design/samples/office-actual-2560x1440-2026-10-05.png"
+    ]
+  }
+}

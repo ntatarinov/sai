@@ -1,0 +1,58 @@
+{
+  "handoff_id": "step05b-test-design-validator-PO-20261005-01",
+  "run_id": "PO-20261005-01",
+  "workflow_id": "WF-02",
+  "step": "05b",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PO-20261005-01/step-05b-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: Full HD и 2K",
+    "requirement_ids": [
+      "REQ-007"
+    ],
+    "route": "... TEST-DESIGNER -> TEST-DESIGN-VALIDATOR (this) -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> RELEASE-VALIDATOR",
+    "agent_run_id": null,
+    "write_set": [
+      "PO-20261005-01/step-05b-test-design-validator.json — только status, completed_at, result"
+    ],
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PO-20261005-01/step-05-test-designer.json",
+      "docs/design/REQ-001-pixel-office.md",
+      "docs/requirements.yaml (REQ-007)"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5b: независимая проверка тестов масштаба (handoffs/PO-20261005-01/step-05-test-designer.json): tools/test/pixel-office-scale.test.js (SC-01…SC-06), расширение LY-11, OF-38 (4 теста), два помощника в pixel-office-helpers.js. Критерии — 16 и 17 (а–ж) REQ-007 в docs/requirements.yaml; проект — docs/design/REQ-001-pixel-office.md v3.1 (10.2, 10.3, 10.6). Сами прочитайте и запустите тесты (cd tools && npm run check: ожидается 439 из 439, без skip/todo); у каждого критерия должен быть настоящий тест или названная команда; проверки содержательны, тесты независимы; тесты отказа проверяют неизменное состояние. Для новой логики сами примените не меньше 5 мутантов из M98–M112 на копии вне проекта (рабочие файлы проекта не менять) — тесты должны падать; порт 4780 и ~/.sai-pixel-office не трогать. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary с доказательствами, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый критерий 16 и 17 — с доказательством",
+      "мутанты применены сами, результат записан"
+    ]
+  },
+  "created_at": "2026-10-05T16:11:18Z",
+  "started_at": "2026-10-05T16:11:18Z",
+  "completed_at": "2026-10-05T16:13:44Z",
+  "result": {
+    "verdict": "PASS",
+    "summary": "Сам прочитал pixel-office-scale.test.js (SC-01..06), LY-11 (extension), OF-38 (4 теста), setPanelRects/setPanelInts. Сам запустил cd tools && npm run check: код 0, 439 из 439, fail 0, skipped 0, todo 0. Таблица покрытия: 16 - LY-11 ext + OF-38 (1)-(4) + SC-05, окна в браузере - шаги Q/M за DESIGN-QA-VALIDATOR (названы командами, не тестами; верно по критерию); 17а - SC-01 (одно правило html, выражение, нет font-size у :root/body), SC-02 (16/21,33/24 по десяти окнам, S, пределы 16..24 по сетке); 17б - SC-03 (15 строк px по видам, радиусы и комментарии без px), SC-04, SC-05; 17в - SC-02; 17г - SC-04 (значения таблицы в rem; сверка со старым style.css - шаг M, команда); 17д - LY-11 ext (2K-клетка 76 не меньше FullHD 48) + OF-38 (прямоугольники первыми, целые как запасной путь, режимы не смешиваются, зависимость только от размеров); 17е - SC-06 (нет style=, нет documentElement/setProperty/.style, innerWidth только в boot.js) + OF-38 (documentElement бросает); 17ж - прогон выше. Проверки содержательны (значения, не 'не упало'); тест отказа OF-38 (NaN-зазор, нулевая область) проверяет размер холста 960x600 до/после resize, журнал, число строк, модель - неизменны. Независимость: у каждого теста свои данные и страница, часов и случайности нет, skip/todo нет. Q8, Q11, R3 не затронуты (адресов и фото нет) - верно; Q10 - OF-38 отказ. Мутанты своими руками на копии вне проекта (scratchpad/val; база 66 из 66 в трёх файлах): M98 упали 2 (SC-03, SC-04); M99 2 (SC-01, SC-02); M101 3 (SC-01..03); M102 3 (SC-01..03); M105 1 (SC-05); M106 2 (SC-03, SC-04); M107 2 (SC-03, SC-04); M108 (resize не подписан) 1 (OF-38 resize); M110 1 (OF-38 шрифты); M111 2 (OF-38 x2); M112 1 (SC-04; в проекте SC-03 назван, но поймал SC-04); M103 2 (OF-38, SC-06); M104 3 (SC-01, SC-03, SC-05). Итого 13 мутантов, все пойманы; после проб копия снова 66/66. Хеши файлов tools/src, tools/test, .claude до и после совпали (cmp - SAME), рабочее дерево не менялось.",
+    "findings": [
+      {
+        "place": "tools/test/pixel-office-scale.test.js, SC-05",
+        "severity": "Low",
+        "what": "Порог @media в app.js проверяется регулярным выражением по тексту (const WIDE_MIN_WIDTH = 1240;) - переименование константы с сохранением значения даст ложное падение; M105 пойман, но по порогу в @media, не по app.js.",
+        "fix": "Не блокирует; при случае проверять значение через импорт или экспорт константы."
+      },
+      {
+        "place": "отчёт TEST-DESIGNER, M112",
+        "severity": "Info",
+        "what": "В проекте M112 ожидает падения SC-03; фактически ловит SC-04 (мой мутант - border-left 0.1875rem, не 1px-линия). Мутант на настоящую 1px-линию в rem сам не прогонял.",
+        "fix": "Не блокирует."
+      }
+    ]
+  }
+}

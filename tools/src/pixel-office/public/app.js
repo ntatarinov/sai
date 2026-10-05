@@ -841,6 +841,22 @@ export function createApp(env) {
 
   // ------------------------------------------------------------ the office
 
+  // The rectangle of an element, or null when there is none or it is empty.
+  function rectOf(el) {
+    if (typeof el.getBoundingClientRect !== "function") return null;
+    const r = el.getBoundingClientRect();
+    const ok =
+      r !== null &&
+      typeof r === "object" &&
+      Number.isFinite(r.width) &&
+      Number.isFinite(r.height) &&
+      Number.isFinite(r.top) &&
+      Number.isFinite(r.bottom) &&
+      r.width > 0 &&
+      r.height > 0;
+    return ok ? r : null;
+  }
+
   // The place for the canvas and its size: a whole number of pixels per cell
   // (design 4.13). Width and height are attributes of the canvas, not a style.
   function fit() {
@@ -851,14 +867,31 @@ export function createApp(env) {
     const wide =
       view === null ||
       (view.width >= WIDE_MIN_WIDTH && view.height >= WIDE_MIN_HEIGHT);
+    // At a scale above 1 the panel has fractional sizes: the rectangles are
+    // read first (design 4.14, rule 5); the whole-number sizes are the way
+    // out for an element that has no rectangle.
+    const box = rectOf(inner);
+    const legendBox = els.legend ? rectOf(els.legend) : null;
+    const canvasBox = box ? rectOf(canvas) : null;
+    const byRect =
+      box !== null &&
+      (els.legend === null || (legendBox !== null && canvasBox !== null));
+    const areaWidth = byRect ? box.width : inner.clientWidth;
     let height = Infinity;
     if (wide) {
-      height = inner.clientHeight;
+      height = byRect ? box.height : inner.clientHeight;
       if (height > 0) {
-        const legendHeight = els.legend ? els.legend.offsetHeight || 0 : 0;
+        let legendHeight = 0;
         let gap = 0;
         if (els.legend) {
-          gap = els.legend.offsetTop - (canvas.offsetTop + canvas.offsetHeight);
+          if (byRect) {
+            legendHeight = legendBox.height;
+            gap = legendBox.top - canvasBox.bottom;
+          } else {
+            legendHeight = els.legend.offsetHeight || 0;
+            gap =
+              els.legend.offsetTop - (canvas.offsetTop + canvas.offsetHeight);
+          }
           if (!Number.isFinite(gap) || gap < 0) gap = 0;
         }
         // A legend that takes the whole panel leaves no place: the canvas then
@@ -866,7 +899,7 @@ export function createApp(env) {
         height = Math.max(1, height - legendHeight - gap);
       }
     }
-    const size = fitCanvas(office.layout, { width: inner.clientWidth, height });
+    const size = fitCanvas(office.layout, { width: areaWidth, height });
     cellPx = size.cellPx;
     if (canvas.width !== size.width || canvas.height !== size.height) {
       canvas.width = size.width;

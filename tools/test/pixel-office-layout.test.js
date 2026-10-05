@@ -576,6 +576,31 @@ test("LY-11: fitCanvas - a whole number of pixels per cell, max(4, floor(min(w/c
   }
 });
 
+test("LY-11 (extension): the canvas at 1440 x 900 and 1920 x 1200 and the 2K and 4K examples; the cell in 2K is not smaller than in Full HD", () => {
+  const small = buildLayout(0);
+  assert.equal(small.width, 40);
+  assert.equal(small.height, 25);
+  const at = (width, height) => fitCanvas(small, { width, height });
+  assert.deepEqual(at(1472, 917), { cellPx: 36, width: 1440, height: 900 });
+  assert.deepEqual(at(1963.33, 1223.33), {
+    cellPx: 48,
+    width: 1920,
+    height: 1200,
+  });
+  assert.deepEqual(at(1963.33, 1383.33), {
+    cellPx: 49,
+    width: 1960,
+    height: 1225,
+  });
+  assert.deepEqual(at(3169, 1916.5), { cellPx: 76, width: 3040, height: 1900 });
+  assert.equal(at(3169, 1883.5).cellPx, 75);
+  assert.ok(at(1963.33, 1223.33).cellPx >= at(1472, 917).cellPx);
+  assert.ok(at(3169, 1916.5).cellPx >= at(1963.33, 1223.33).cellPx);
+  for (const size of [at(1963.33, 1223.33), at(3169, 1916.5)]) {
+    assert.ok(Number.isInteger(size.cellPx));
+  }
+});
+
 test("LY-12: <canvas id='office'> has width 960 and height 600 (officeSize(0) x 24) and no style attribute", () => {
   const doc = new FakeDocument(indexHtml());
   const canvas = doc.getElementById("office");

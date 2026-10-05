@@ -62,6 +62,8 @@ import {
   makePage,
   rolesJournal,
   sandbox,
+  setPanelInts,
+  setPanelRects,
   settle,
   sha256File,
   withText,
@@ -2103,4 +2105,180 @@ test("OF-37: after the legend and the card are rebuilt the keyboard focus return
     page.doc.activeElement === cross(),
     "focus is not on the expected element",
   );
+});
+
+// ----------------------------------------------------------------- OF-38
+
+async function fittedPage(setup, { frames = false } = {}) {
+  const j = journal();
+  j.sessionStart("S1");
+  launch(j, "S1", "a1", "Explore");
+  const page = makePage({ entries: [...j.entries] });
+  setup(page);
+  await page.start();
+  if (frames) page.frames.step(16);
+  return page;
+}
+const cellOf = (page) => [
+  page.canvas.width / 40,
+  page.canvas.width,
+  page.canvas.height,
+];
+
+test("OF-38: the canvas is fitted at a scale above 1 - rectangles first, whole numbers as the way out, the two modes are not mixed; the result depends only on the measures", async () => {
+  const cases = [
+    [{ width: 1472, height: 966, legend: 39, gap: 10 }, [36, 1440, 900]],
+    [
+      { width: 1963.33, height: 1288.67, legend: 52, gap: 13.33 },
+      [48, 1920, 1200],
+    ],
+    [{ width: 3169, height: 1990, legend: 58.5, gap: 15 }, [76, 3040, 1900]],
+    [{ width: 3169, height: 1990, legend: 91.5, gap: 15 }, [75, 3000, 1875]],
+    [
+      { width: 1963.33, height: 1448.67, legend: 52, gap: 13.33 },
+      [49, 1960, 1225],
+    ],
+  ];
+  for (const [m, want] of cases) {
+    const page = await fittedPage((p) => setPanelRects(p, m));
+    assert.deepEqual(cellOf(page), want, JSON.stringify(m));
+    assert.ok(page.canvas.height + m.legend + m.gap <= m.height + 1e-6);
+  }
+  // the same numbers as whole numbers give the same cell
+  const ints = await fittedPage((p) =>
+    setPanelInts(p, { width: 1963, height: 1289, legend: 52, gap: 13 }),
+  );
+  assert.deepEqual(cellOf(ints), [48, 1920, 1200]);
+  // an empty rectangle of the area: the whole numbers are read, even where the
+  // legend has a good rectangle
+  const mixed = await fittedPage((p) => {
+    const m = { width: 1472, height: 600, legend: 90, gap: 10 };
+    setPanelInts(p, m);
+    setPanelRects(p, { width: 3169, height: 1990, legend: 1, gap: 1 });
+    p.el("office-inner").rect = {
+      left: 0,
+      top: 0,
+      width: 0,
+      height: 0,
+      bottom: 0,
+    };
+  });
+  assert.equal(
+    mixed.canvas.width / 40,
+    Math.floor(Math.min(1472 / 40, 500 / 25)),
+  );
+  // a rectangle of the area but none of the legend: all four measures are
+  // whole numbers, the modes are not mixed
+  const half = await fittedPage((p) => {
+    setPanelInts(p, { width: 1472, height: 600, legend: 90, gap: 10 });
+    p.el("office-inner").rect = {
+      left: 0,
+      top: 0,
+      width: 3169,
+      height: 1990,
+      bottom: 1990,
+    };
+  });
+  assert.equal(half.canvas.width / 40, 20);
+  // a rectangle of the area: no whole number is looked at
+  const rects = await fittedPage((p) => {
+    setPanelInts(p, { width: 400, height: 300, legend: 10, gap: 0 });
+    setPanelRects(p, {
+      width: 1963.33,
+      height: 1288.67,
+      legend: 52,
+      gap: 13.33,
+    });
+  });
+  assert.deepEqual(cellOf(rects), [48, 1920, 1200]);
+  // the root size is not read: the stand's documentElement throws
+  const page = await fittedPage((p) => {
+    Object.defineProperty(p.doc, "documentElement", {
+      get() {
+        throw new Error("documentElement is read");
+      },
+    });
+    setPanelRects(p, { width: 3169, height: 1990, legend: 58.5, gap: 15 });
+  });
+  assert.deepEqual(cellOf(page), [76, 3040, 1900]);
+});
+
+test("OF-38: resize - a new window gives new attributes and exactly one new frame; the same measures change nothing", async () => {
+  const page = await fittedPage((p) =>
+    setPanelRects(p, { width: 1472, height: 966, legend: 39, gap: 10 }),
+  );
+  assert.deepEqual(cellOf(page), [36, 1440, 900]);
+  assert.ok(page.resizeListeners.length >= 1);
+  const frames = () => page.ctx.frames().length;
+  const before = frames();
+  for (const fn of page.resizeListeners) fn();
+  assert.deepEqual(cellOf(page), [36, 1440, 900]);
+  assert.equal(frames(), before, "the same measures: no new frame");
+  setPanelRects(page, {
+    width: 1963.33,
+    height: 1288.67,
+    legend: 52,
+    gap: 13.33,
+  });
+  for (const fn of page.resizeListeners) fn();
+  assert.deepEqual(cellOf(page), [48, 1920, 1200]);
+  assert.equal(frames(), before + 1, "one new frame");
+  for (const fn of page.resizeListeners) fn();
+  assert.equal(frames(), before + 1, "and no more");
+});
+
+test("OF-38: the canvas fonts do not depend on the cell - the same font strings at 24 and 48, setTransform scale is cellPx / 24", () => {
+  const j = journal();
+  j.sessionStart("S1");
+  launch(j, "S1", "a1", "Explore");
+  const { o } = mk(j.entries);
+  const seat = o.layout.desks[0].seat;
+  const run = (cellPx) => {
+    const ctx = makeCtx();
+    drawOffice(ctx, o, {
+      positions: [{ key: "main", x: seat[0], y: seat[1], state: "seated" }],
+      selectedKey: null,
+      bubbles: new Map([["main", { text: "Готово", event_index: 1 }]]),
+      cellPx,
+    });
+    return ctx;
+  };
+  const a = run(24);
+  const b = run(48);
+  const fonts = (ctx) => [...new Set(ctx.calls.map((c) => c.font))].sort();
+  assert.deepEqual(fonts(a), fonts(b));
+  const allowed = new Set([
+    "9px system-ui",
+    "bold 8px system-ui",
+    "bold 7px system-ui",
+    "10px system-ui",
+  ]);
+  for (const ctx of [a, b]) {
+    const texts = ctx.calls.filter((c) => c.op === "fillText");
+    assert.ok(texts.length > 0);
+    for (const c of texts) {
+      assert.ok(allowed.has(c.font), `a canvas font ${c.font}`);
+    }
+  }
+  assert.equal(a.calls.find((c) => c.op === "setTransform").args[0], 1);
+  assert.equal(b.calls.find((c) => c.op === "setTransform").args[0], 2);
+});
+
+test("OF-38: a failure - a NaN gap, a zero area or a missing rectangle gives the cell 24; the journal and the canvas stay as they were", async () => {
+  const bad = [
+    { width: 1963.33, height: 1288.67, legend: 52, gap: NaN },
+    { width: 0, height: 0, legend: 52, gap: 10 },
+  ];
+  for (const m of bad) {
+    const page = await fittedPage((p) => setPanelRects(p, m));
+    const sizeBefore = [page.canvas.width, page.canvas.height];
+    const entries = JSON.stringify(page.server.entries);
+    const rows = page.rows().length;
+    for (const fn of page.resizeListeners) fn();
+    assert.deepEqual(sizeBefore, [960, 600], JSON.stringify(m));
+    assert.deepEqual([page.canvas.width, page.canvas.height], sizeBefore);
+    assert.equal(JSON.stringify(page.server.entries), entries);
+    assert.equal(page.rows().length, rows);
+    assert.equal(page.app.getOffice().characters.length, 2);
+  }
 });

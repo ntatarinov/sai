@@ -1,0 +1,82 @@
+{
+  "handoff_id": "step05-test-designer-PO-20261005-01",
+  "run_id": "PO-20261005-01",
+  "workflow_id": "WF-04",
+  "step": "05",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PO-20261005-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: адаптация под Full HD и 2K",
+    "requirement_ids": [
+      "REQ-007"
+    ],
+    "route": "FRONTEND-DEV -> SECURITY-REVIEWER (PASS) -> REVIEWER (PASS) -> TEST-DESIGNER (this) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> RELEASE-VALIDATOR",
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/pixel-office-scale.test.js (новый)",
+      "tools/test/pixel-office-layout.test.js (только расширение LY-11)",
+      "tools/test/pixel-office-office.test.js (только добавление OF-38)",
+      "tools/test/pixel-office-helpers.js (только расширение)"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/res1/build-before/test",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-001-pixel-office.md",
+      "docs/requirements.yaml (блок REQ-007)",
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/public/app.js",
+      "handoffs/PO-20261005-01/step-02-frontend-dev.json",
+      "decisions/0012-pixel-office-scale-full-hd-2k.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02/WF-04, шаг 5: тесты для адаптации страницы Pixel Office под Full HD и 2K (код — handoffs/PO-20261005-01/step-02-frontend-dev.json; безопасность и ревью — PASS). Спецификация — проект docs/design/REQ-001-pixel-office.md версия 3.1: п. 4.14, каталог тестов 10.2 (новые SC-01…SC-06, расширение LY-11, OF-38), сопоставление 10.3 (строки критерий 16 и 17 а–ж), мутанты M98–M112 в 10.6, п. 14.1; главнее — текст критериев 16 и 17 REQ-007 в docs/requirements.yaml. Слова владельца 2026-10-05: «Адаптируй экран и элеенты под full hd и 2k разрешение».\nЧто написать: новый файл tools/test/pixel-office-scale.test.js (SC-01…SC-06: правило корня в style.css и его выражение; формула дает 16 / 21,33 / 24 px в окнах 1920 × 1080, 2560 × 1440, 3840 × 2160, 2560 × 1080 и др. с допуском 0,05 px — расчёт выражения в node по тексту правила; чтение style.css: все размеры в rem, строки с px — ровно перечень исключений проекта (15 строк: рамки 1px, outline/outline-offset 2px, правило корня, @media), border-radius в rem; нет style-атрибута в index.html и записи style из скриптов; в правилах .office-inner нет border и padding (SC-05); и т. д. — как в каталоге); расширить LY-11 в tools/test/pixel-office-layout.test.js (размеры холста при 1440 × 900 и 1920 × 1200 и новые примеры проекта); OF-38 в tools/test/pixel-office-office.test.js (при масштабе > 1 клетка холста пересчитывается и не меньше, чем при Full HD; fit читает прямоугольники первыми, запасной путь целых при нулевом прямоугольнике, режимы не смешиваются) — на заменителях страницы по правилам вашего файла помощников (tools/test/pixel-office-helpers.js — можно расширить помощник, не меняя прежних проверок); существующие тесты не менять, кроме расширения LY-11. Номер OF-38 свободен (OF-36, OF-37 заняты). Тесты не зависят друг от друга, свой порт 0 и временные папки; порт 4780 и ~/.sai-pixel-office не трогать; assert на DOM-элементах — assert.ok(a === b, сообщение), не equal/deepEqual (урок: сравнение DOM-деревьев зависает при провале). Мутанты: примените на КОПИИ вне проекта мутанты M98–M112 из проекта (не меньше 8, в том числе: px вместо rem у правой колонки, убрано правило корня, fit без пересчёта при S > 1, режимы смешаны) — тесты должны падать; без skip/todo/отключённого линтера. Если код противоречит проекту — не подгонять тест, запись в result.issues. cd tools && npm run check — все тесты проходят (428 прежних + новые). Предел расхода жёсткий; долгие команды — в фоне. Копии до — <рабочая папка ORCH>/orch/res1/build-before/test.",
+    "acceptance_criteria": [
+      "каждый критерий 16 и 17 (а–ж) закрыт тестом, командой или шагом (сопоставление в result)",
+      "мутанты (не меньше 8) на копии вне проекта падают",
+      "npm run check — все тесты проходят; без skip/todo",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T16:06:34Z",
+  "started_at": "2026-10-05T16:06:34Z",
+  "completed_at": "2026-10-05T16:11:01Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Написаны SC-01...SC-06 (новый файл), расширение LY-11 (отдельный test, прежний не тронут), четыре теста OF-38 (клетка при S>1 и порядок чтения прямоугольники/целые; resize; шрифты и k холста; отказ с неизменностью состояния), два помощника в helpers (setPanelRects, setPanelInts; прежнее не менялось). Код не менялся. cd tools && npm run check: код 0, 439 тестов (428 прежних + 11 новых), pass 439, fail 0, skipped 0, todo 0. Пункты планки: Q8, Q11, R3 не затронуты (страница только читает свой журнал, адресов нет, фото нет); Q10 - OF-38 отказ (NaN-зазор, нулевая область -> клетка 24, журнал, модель и холст неизменны); Q7 - секретов в тестах нет. Мутанты на копии вне проекта (tools+.claude в scratchpad/orch/.../mut), рабочее дерево не менялось: M98 (2 теста упали: SC-03, SC-04), M99 (3: SC-01, SC-02, SC-03), M100 (3), M101 (3), M102 (3: SC-01..03), M103 (4: OF-36, OF-38 x2, SC-06; чтение documentElement в fit), M105 (3: SC-03, SC-04, SC-05), M106 (2: SC-03, SC-04), M107 (2: SC-03, SC-04), M108 (1: OF-38 resize), M110 (1: OF-38 шрифты), M111 (2: OF-38 x2), M112 (1: SC-03), плюс свои: режимы смешаны (1: OF-38), padding у .office-inner (2: SC-03, SC-05), fit без прямоугольника ширины (2: OF-38 x2), шрифт подписей 18px (1: OF-38 шрифты). Всего 17 мутантов, все пойманы. M104 (правило html в @media) покрыт только проверкой SC-01 по тексту, отдельно не прогонялся.",
+    "coverage": {
+      "16 (два окна 1920x1080 и 2560x1440)": "LY-11 (расширение), OF-38 пункты (1)-(4), SC-05; шаги Q и M - не тесты, за DESIGN-QA-VALIDATOR",
+      "17а (правило корня, формула)": "SC-01, SC-02",
+      "17б (все размеры в rem, перечень px 15 строк)": "SC-03, SC-04, SC-05",
+      "17в (16/21,33/24 px по окнам, S от 1 до 1,5)": "SC-02",
+      "17г (отношения к Full HD, значения таблицы 10.4)": "SC-04; сверка со старым style.css - шаг M1 (команда, не тест)",
+      "17д (холст при S>1, клетка 2K не меньше Full HD)": "LY-11 (расширение), OF-38 (1)-(9)",
+      "17е (масштаб не скриптом и не атрибутом)": "SC-06 (PG-20 и grep style= - уже были/команды)",
+      "17ж (npm run check, skipped 0, todo 0)": "прогон: код 0, 439/439, skipped 0, todo 0"
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Тесты менял только в пределах write_set: pixel-office-scale.test.js (новый), pixel-office-layout.test.js (добавлен LY-11 extension, прежний LY-11 как был), pixel-office-office.test.js (добавлено в конец), pixel-office-helpers.js (добавлено в конец)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Расхождения кода с проектом не найдено. Мутант M103 в копии: переменная document в createApp доступна, мутант применён внутри fit."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Скопированный для мутантов каталог требует .claude/agents рядом (helpers читает ROOT/.claude); копия сделана вместе с ним. Рабочее дерево не менялось этим шагом (src/ изменён только FRONTEND-DEV)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/pixel-office-scale.test.js",
+      "tools/test/pixel-office-layout.test.js",
+      "tools/test/pixel-office-office.test.js",
+      "tools/test/pixel-office-helpers.js"
+    ]
+  }
+}

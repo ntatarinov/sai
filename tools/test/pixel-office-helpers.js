@@ -1192,3 +1192,46 @@ export async function freePort() {
   await new Promise((r) => s.close(r));
   return port;
 }
+
+// ------------------------------------------------------ the scale tests (SC, OF-38)
+
+// Measures of the office panel as rectangles (design 4.14, rule 5): the area
+// #office-inner, the legend (its height) and the gap between the canvas and
+// the legend. Sizes may be fractional, as at a scale above 1.
+export function setPanelRects(page, { width, height, legend, gap }) {
+  const canvasBottom = 500;
+  page.el("office-inner").rect = {
+    left: 0,
+    top: 0,
+    width,
+    height,
+    bottom: height,
+  };
+  page.canvas.rect = {
+    left: 0,
+    top: 0,
+    width: 1,
+    height: canvasBottom,
+    bottom: canvasBottom,
+  };
+  page.el("legend").rect = {
+    left: 0,
+    top: canvasBottom + gap,
+    width: 1,
+    height: legend,
+    bottom: canvasBottom + gap + legend,
+  };
+}
+
+// The same measures as whole numbers: clientWidth, clientHeight, offsetHeight
+// and offsetTop, the way out when there is no rectangle.
+export function setPanelInts(page, { width, height, legend, gap }) {
+  const inner = page.el("office-inner");
+  inner.clientWidth = width;
+  inner.clientHeight = height;
+  page.canvas.offsetTop = 0;
+  page.canvas.offsetHeight = 500;
+  const legendEl = page.el("legend");
+  legendEl.offsetHeight = legend;
+  legendEl.offsetTop = 500 + gap;
+}

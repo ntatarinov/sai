@@ -1,0 +1,75 @@
+{
+  "handoff_id": "step02-frontend-dev-PO-20261005-01",
+  "run_id": "PO-20261005-01",
+  "workflow_id": "WF-04",
+  "step": "02",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/PO-20261005-01/step-02-frontend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: адаптация под Full HD и 2K",
+    "requirement_ids": [
+      "REQ-007"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR (PASS) -> FRONTEND-DEV (this) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> RELEASE-VALIDATOR",
+    "agent_run_id": "ab8f9d470307b2a8c",
+    "write_set": [
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/office-view.js",
+      "tools/src/pixel-office/public/index.html (только если план 14.1 велит)"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/res1/build-before",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-007-office-ui.md",
+      "docs/design/REQ-001-pixel-office.md",
+      "decisions/0012-pixel-office-scale-full-hd-2k.md",
+      "docs/requirements.yaml (блок REQ-007)",
+      "tools/src/pixel-office/public/",
+      "handoffs/PO-20261005-01/step-01b-code-design-validator-r1.json"
+    ]
+  },
+  "task": {
+    "description": "WF-04, шаг 2 (и WF-02, шаг 2): адаптация страницы Pixel Office под Full HD и 2K по проверенному описанию интерфейса docs/design/REQ-007-office-ui.md (п. 1.0, 1.3, 1.4, 3.1, 10.4), проекту кода docs/design/REQ-001-pixel-office.md версия 3.1 (п. 4.14 «Масштаб страницы», 14.1 «План реализации», решения D22–D24 — decisions/0012) и правленому REQ-007 (описание «Размер окна и масштаб», критерии 16 и 17 в docs/requirements.yaml). Слова владельца 2026-10-05: «Адаптируй экран и элеенты под full hd и 2k разрешение».\nПорядок — план 14.1 проекта; первым шагом — копия прежнего style.css вне проекта (sha256 в проекте) для критерия 17(г). Что сделать: правило корневого шрифта html { font-size: clamp(16px, min(100vw / 120, 100vh / 67.5), 24px) } чистым CSS; перевод всех размеров style.css из px в rem по правилу 4.14 (px ÷ 16 без округления, четыре исключения: рамки 1 px, outline 2px и outline-offset 2px, само правило корня, пороги @media); после правки grep по px в style.css находит ровно 15 строк по проекту (проверьте); комментарии с числами px в style.css переписать; app.js — fit читает getBoundingClientRect первым, целые client*/offset* — запасной путь (D24, правило 5 п. 4.14); office-view.js — шрифты холста остаются пикселями холста; index.html — только если план 14.1 велит. После каждого шага: cd tools && npm run check (прежние тесты зелёные; названные тесты, чьё ожидание меняется намеренно, — поимённо в result.issues с причиной), страницу проверьте на своём порту в окнах 1920 × 1080 и 2560 × 1440 (headless Chrome; размер окна подберите так, чтобы область страницы была нужной): корень 16 px и 21,33 px, нет прокрутки страницы, легенда видна, правая колонка 380 и 506,67 px.\nПишете только файлы write_set; тесты не пишете (их пишет TEST-DESIGNER следующим шагом), сервер, хук и конфигурация — не трогать. Нужно отступить от проекта — не молча: вопрос в result.issues с названием раздела. Правила страницы: только GET, текст как текст, нет внешних адресов, нет встроенных скриптов и обработчиков, НЕТ атрибута style и записи style из скрипта (D16). Пробы — на своём порту и пустой папке состояния вне проекта (можно положить копию журнала), порт 4780 и ~/.sai-pixel-office не трогать. Предел расхода жёсткий: работайте экономно. Долгие команды — в фоне с выводом в файл. Копии до — <рабочая папка ORCH>/orch/res1/build-before.",
+    "acceptance_criteria": [
+      "правило корня, перевод в rem и вписывание холста выполнены по плану 14.1",
+      "в style.css ровно 15 строк с px (исключения проекта)",
+      "npm run check — вывод; провалы только по намеренным изменениям и названы",
+      "проверено на 1920 × 1080 и 2560 × 1440: корень, колонка, нет прокрутки, легенда видна",
+      "нет style-атрибута; изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T16:02:47Z",
+  "started_at": "2026-10-05T16:02:47Z",
+  "completed_at": "2026-10-05T16:04:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "По плану 14.1: правило html { font-size: clamp(16px, min(100vw / 120, 100vh / 67.5), 24px) } сразу после :root; style.css переведён в rem по правилу 4.14 (px / 16, без округления), grep по px находит ровно 15 строк (X1: 10 рамок 1px; X2: outline 2px и outline-offset 2px; X3: правило корня; X4: две строки @media); комментарий с 380 px переписан (23.75rem). app.js, fit: getBoundingClientRect первым (#office-inner, #legend, canvas; зазор = legend.top - canvas.bottom), целые client*/offset* - запасной путь, если прямоугольника нет или он нулевой. office-view.js и index.html не менялись. Копия прежнего style.css (sha256 6cd03e87...6198, совпадает с проектом): scratchpad/orch/res1/build-before/public/style.css. npm run check: 428 тестов, 428 pass, 0 fail, форматирование и линтер чисты. Проверка на своём порту 4791, папка состояния вне проекта (копия журнала), окна через CDP: 1920x1080 - корень 16px, прокрутки нет (scrollWidth/Height = окну), легенда видна (низ 1030 при низе панели 1066), правая колонка 380 px, холст 1000x850 (атрибуты), style-атрибутов 0; 2560x1440 - корень 21.3333px, прокрутки нет, легенда видна (низ 1395.6 при низе панели 1421.3), колонка 506.66 px, холст 1360x1156, style-атрибутов 0. Секретов в public/ нет.",
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Намеренно изменённых ожиданий существующих тестов нет: все 428 тестов зелёные. Тесты OF-38, LY-11 и новый pixel-office-scale.test.js - за TEST-DESIGNER (шаг 5)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Перечень px в office-view.js (7 строк по п. 14.1) не менялся; файл не трогался."
+      },
+      {
+        "kind": "NOTE",
+        "text": "В fit при пустой легенде (нулевой прямоугольник) или нулевом холсте весь расчёт идёт по запасному пути целых величин (один режим на расчёт, без смешивания); отступления от проекта нет, но SC-05/OF-38 стоит проверить на этом случае."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Проба не включала окно 2560x1440 с легендой в несколько строк и 3840x2160; только два окна задания."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/public/app.js"
+    ]
+  }
+}
