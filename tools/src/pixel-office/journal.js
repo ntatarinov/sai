@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { EVENTS_FILE, STARTS_FILE } from "./config.js";
-import { isCanonicalTime, parseLine } from "./public/schema.js";
+import { SOURCE_REAL, isCanonicalTime, parseLine } from "./public/schema.js";
 
 // The journal (or the start records) cannot be appended to: read-only file,
 // full disk, missing directory. code is the OS code, for example EACCES.
@@ -28,6 +28,8 @@ export class JournalReadError extends Error {
 const NEWLINE = 0x0a;
 // The index of line starts is built from the file in pieces of this size.
 const SCAN_CHUNK = 1024 * 1024;
+// lastOwnerPrompt reads the journal from the end in batches of this many lines.
+const BACK_BATCH = 512;
 
 // Opening the journal and the start records: a link in the last path component
 // is refused (ELOOP) instead of followed, so nothing is read from or appended
@@ -350,6 +352,44 @@ export function createJournal(dir, options = {}) {
         }
         const events = texts.map((text, i) => parseEventLine(text, from + i));
         return { lines, from, events };
+      }
+      throw new JournalReadError("EIO", EVENTS_FILE);
+    },
+
+    // The last line in file order (not by time) that is an owner message: a
+    // hook UserPromptSubmit with source REAL and prompt_kind "owner"; of the
+    // given session when sessionId is not null, of any session when it is
+    // null (REQ-008 5.3). {time, session_id} or null. Reads from the end in
+    // batches through the index of line starts and stops at the first match;
+    // corrupt lines are skipped as in read.
+    lastOwnerPrompt(sessionId) {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        refresh();
+        let end = index.offsets.length;
+        let stale = false;
+        while (end > 0) {
+          const from = Math.max(0, end - BACK_BATCH);
+          const texts = readLines(from, end);
+          if (texts === null) {
+            resetIndex();
+            stale = true;
+            break;
+          }
+          for (let i = texts.length - 1; i >= 0; i -= 1) {
+            const line = parseEventLine(texts[i], from + i);
+            if (
+              line !== null &&
+              line.hook_event_name === "UserPromptSubmit" &&
+              line.source === SOURCE_REAL &&
+              line.prompt_kind === "owner" &&
+              (sessionId === null || line.session_id === sessionId)
+            ) {
+              return { time: line.time, session_id: line.session_id };
+            }
+          }
+          end = from;
+        }
+        if (!stale) return null;
       }
       throw new JournalReadError("EIO", EVENTS_FILE);
     },

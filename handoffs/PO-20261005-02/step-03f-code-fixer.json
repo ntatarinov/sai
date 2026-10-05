@@ -1,0 +1,95 @@
+{
+  "handoff_id": "step03f-code-fixer-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-02",
+  "step": "03f",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PO-20261005-02/step-03f-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "route": "CODE-FIXER (this) -> SECURITY-REVIEWER (повтор) -> REVIEWER (повтор по mask.js, README) -> TEST-DESIGNER",
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/pixel-office/mask.js",
+      "tools/README.md",
+      "handoffs/PO-20261005-02/step-03f-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/fix-a-before",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-008-history.md",
+      "handoffs/PO-20261005-02/step-03-security-reviewer.json",
+      "tools/src/pixel-office/mask.js"
+    ]
+  },
+  "task": {
+    "description": "WF-02, после FAIL шага 3: исправление маскирования (части (а) REQ-008) по замечаниям ворот безопасности F1 и F2 (handoffs/PO-20261005-02/step-03-security-reviewer.json; прочтите сами) и по проекту r4 — docs/design/REQ-008-history.md п. 3.1 (правила В1–В5, M4–M6, M9, M8; таблицы Q-1…Q-13, E-1…E-8, N-1…N-9), п. 9 (README), п. 21 «Доработка r4 — что изменено» (что именно менять в mask.js и README); ворота проекта — PASS (step-01b-code-design-validator-r3.json). Правите только tools/src/pixel-office/mask.js и tools/README.md (раздел «### Хранение текста»: остаточный риск, примеры форм, которые теперь маскируются, и честно названные пробелы — пробел перед «=», имя, слитое с другим словом (mypassword=), имена вне списка M9 (SECRET_ACCESS_KEY=), побочное маскирование max_token=1000; строки, которые проверяет DC-01 — п. 9/11 проекта). Требования к коду: одним проходом по отрезкам-идентификаторам (регулярное выражение с повтором перед именем запрещено: квадратичное), линейное время, повторное маскирование ничего не меняет (В5: левая граница — по исходному знаку), примеры критерия 7 «НЕ маскируются» не ломаются. Прогоните сами все входы таблиц Q, E, N проекта (скриптом вне проекта, в рабочей папке ORCH) — результат должен совпасть; 14 враждебных входов по 64 КБ — не медленнее 50 мс; 50 000 случайных входов — повторное маскирование не отличается. Тесты не пишите (их пишет TEST-DESIGNER), существующие не меняйте; cd tools && npm run check остаётся зелёным (439). Проект — закон; расхождение — result.issues. Копии до — <рабочая папка ORCH>/orch/po2/fix-a-before. Каждая команда — с ограничением по времени; порт 4780 и ~/.sai-pixel-office не трогать.",
+    "acceptance_criteria": [
+      "все входы таблиц Q, E, N дают результат проекта",
+      "время и повторное маскирование — как в проекте",
+      "npm run check проходит",
+      "изменены только mask.js и tools/README.md"
+    ]
+  },
+  "created_at": "2026-10-05T17:37:20Z",
+  "started_at": "2026-10-05T17:37:20Z",
+  "completed_at": "2026-10-05T17:40:33Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "F1 и F2 исправлены в mask.js по проекту r4 (п. 3.1 M4–M6, M8, M9, В1–В5; п. 3.2; п. 21): M4–M6 — левая граница «не буква и не цифра» через просмотр назад (знак проверяется во входе прохода, В5); M8 и M9 — значение в кавычках (В1–В4) общим просмотром scanQuoted/scanValue; M9 — один проход по отрезкам-идентификаторам [A-Za-z0-9_-]+ со сравнением хвоста (до 14 знаков) с семью именами, необязательная кавычка после имени (ключ JSON), без регулярного выражения с повтором перед именем; M8 — поиск bearer[ \\t]+ с просмотром назад и продолжением за поглощённым значением. Сигнатуры maskSecrets/prepareText не менялись. README «### Хранение текста»: абзац «Маскирование» дополнен (граница ключей после =/_/-/:, имя на конце переменной, ключ JSON, значение в кавычках с примером), «Остаточный риск» — прежний пример про кавычки убран, перечислены пробелы п. 3.3 (mypassword=, SECRET_ACCESS_KEY= и др., пробел перед =, часть после кавычки, многострочное значение, типографские кавычки), добавлено «Следствие правила M9» (max_token=1000).",
+    "changes": [
+      {
+        "finding": "F2",
+        "file": "tools/src/pixel-office/mask.js",
+        "place": "PREFIXED_KEYS, maskPrefixedKeys (M4–M6)",
+        "change": "левая граница (^|[^A-Za-z0-9_+=-]) → (?<![A-Za-z0-9]); правая граница M6 прежняя"
+      },
+      {
+        "finding": "F1",
+        "file": "tools/src/pixel-office/mask.js",
+        "place": "новые QUOTES, isLineEnd, scanQuoted, scanValue",
+        "change": "значение в кавычках по В1–В4: закрывает такая же неэкранированная кавычка в строке (\\ не экранирует конец строки), без неё — до конца строки/текста, пустое \"\" не заменяется; без кавычек — до пробела или кавычки, пустое или начинающееся с метки не заменяется"
+      },
+      {
+        "finding": "F1",
+        "file": "tools/src/pixel-office/mask.js",
+        "place": "BEARER, maskBearer (M8)",
+        "change": "цикл exec по (?<![A-Za-z0-9_])bearer[ \\t]+, значение через scanValue, поиск продолжается за значением (В5)"
+      },
+      {
+        "finding": "F1, F2",
+        "file": "tools/src/pixel-office/mask.js",
+        "place": "NAMES, endsWithName, SEGMENT, maskNamedValues (M9)",
+        "change": "один проход по отрезкам-идентификаторам; имя равно одному из семи или оканчивается им после _ или -; затем необязательная кавычка, = или :, пробелы/табуляции, значение через scanValue"
+      },
+      {
+        "finding": "F1, F2 (п. 9, п. 3.3)",
+        "file": "tools/README.md",
+        "place": "### Хранение текста — «Маскирование», «Остаточный риск», новое «Следствие правила M9»",
+        "change": "как в summary; строки DC-01 сохранены (каждая ≥ 1), число '^## ' — 2, как до"
+      }
+    ],
+    "self_check": "Скрипты вне проекта: <рабочая папка ORCH>/orch/po2/fix-a-probe (probe.mjs, ba.mjs, check.log). (1) Упавшее до (проба ворот, ba.mjs): password=\"hunter2\", {\"api_key\":\"abcd1234\"}, Bearer \"eyAbc123\", AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE, DB_PASSWORD=hunter2 — копия до: без изменений; после: password=[скрыто], {\"api_key\":[скрыто]}, Bearer [скрыто], AWS_ACCESS_KEY_ID=[скрыто], DB_PASSWORD=[скрыто]. (2) probe.mjs: все строки Q-1…Q-13, E-1…E-8, N-1…N-9 и SECRET_ACCESS_KEY=abcd/EFGH+ijkl дают результат таблицы п. 3.1 и повторяемы — 0 расхождений. (3) 14 враждебных входов по 64 КБ (_×, a_×, _password×, password=\"×, \"password\"×, Bearer \"×, \\×, -sk-×, короткие -sk-/=ghp_/=AKIA, =×, кавычка без закрытия, Bearer `a`×) — худший 2,08 мс (предел 50 мс), все повторяемы; ×16 входа: _× 3,7 мс, _password× 2,5 мс, password=\"× 21,5 мс (×15 к 1,43 мс — линейно). (4) 50 000 случайных входов (части п. 3.2: password, DB_, Bearer, sk-, ghp_, AKIA, кавычки, \\, =, :, _, -, /, ., \\n, \\r, метка и др.) — 0 нарушений повторяемости. (5) cd tools && npm run check: prettier — All matched files use Prettier code style!; eslint . --max-warnings 0 — без ошибок; # tests 439 # pass 439 # fail 0 # skipped 0; exit 0. (6) diff -rq с копией до: изменены только src/pixel-office/mask.js и README.md; test/ без изменений. Все команды — с perl alarm; порт 4780 и ~/.sai-pixel-office не трогались.",
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Тесты r4 (HK-21 строки Q/E/N, HK-24 новые непокрытые, HK-27 новые входы, SV-63) ещё не написаны — их пишет TEST-DESIGNER; существующие 439 проходят, ни один не проверял прежнее поведение, изменённое этой правкой."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Решение в пределах проекта: незакавыченное значение, начинающееся с метки, поглощается без замены (как прежнее регулярное выражение), поиск M8/M9 продолжается за ним; кавычка без закрытия и без содержимого в конце текста (password=\") заменяется меткой по букве В3 (пустым по В4 считается только \"\")."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/mask.js",
+      "tools/README.md"
+    ]
+  }
+}

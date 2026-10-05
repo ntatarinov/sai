@@ -37,7 +37,9 @@ const MAIN_EVENTS = new Set([
   "Stop",
 ]);
 
-const TONES = Object.freeze({
+// The colour group of each kind of event: the stripe of a journal row and the
+// dot of a line of the timeline of the window of history.
+export const TONES = Object.freeze({
   UserPromptSubmit: "start",
   SubagentStart: "start",
   Stop: "end",
@@ -115,6 +117,9 @@ export function journalRows(model, office) {
       description,
       work: WORK_EVENTS.includes(kind),
       office: officeLines.has(row.index),
+      // "owner", "service" or null: which row may open the window of history
+      // (REQ-008, design 7.5).
+      prompt_kind: row.prompt_kind,
     };
   });
 }

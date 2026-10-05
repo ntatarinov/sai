@@ -1,0 +1,58 @@
+{
+  "handoff_id": "step04-reviewer-r1-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PO-20261005-02/step-04-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PO-20261005-02/step-04-reviewer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/fix-a-before",
+    "parallel_work_now": "SECURITY-REVIEWER r1 (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-008-history.md (п. 3, 9, 21)",
+      "handoffs/PO-20261005-02/step-03-security-reviewer.json",
+      "handoffs/PO-20261005-02/step-03f-code-fixer.json",
+      "tools/src/pixel-office/mask.js",
+      "tools/README.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор по исправлению маскирования (handoffs/PO-20261005-02/step-03f-code-fixer.json; проект docs/design/REQ-008-history.md п. 3, 9, 21; копия до — <рабочая папка ORCH>/orch/po2/fix-a-before). Объём: только tools/src/pixel-office/mask.js и tools/README.md (diff -rq с копией до — изменены ли ТОЛЬКО они). Проверьте: решение, а не костыль; идиомы; нет мёртвого кода и лишней работы; нет регулярного выражения с повтором перед именем (квадратичное); сигнатуры не изменились; код следует проекту (правила В1–В5, M4–M9); README — все строки DC-01 на месте, остаточный риск честен, число «## » = 2; эрозия планки (skip, eslint-disable, || true) — нет; сами запустите cd tools && npm run check. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "замечания с местом, важностью и исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T17:41:27Z",
+  "started_at": "2026-10-05T17:41:27Z",
+  "completed_at": "2026-10-05T17:42:12Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Исправление F1/F2 — решение, а не костыль: маскирование M4–M6 через просмотр назад, M8/M9 одним проходом по отрезкам-идентификаторам со сравнением хвоста (до 14 знаков) и общим scanQuoted/scanValue (В1–В5); регулярного выражения с повтором перед именем нет, время линейное. Сигнатуры maskSecrets/prepareText не менялись, мёртвого кода и лишней работы не найдено, стиль как у соседнего кода (чистый модуль, без Node API). README: все 14 строк DC-01 на месте (каждая >=1), число '^## ' = 2, остаточный риск назван честно (mypassword=, SECRET_ACCESS_KEY=, пробел перед '=', часть после кавычки, многострочное значение, типографские кавычки, побочное max_token=1000). Эрозии планки нет. Следить: пробелы п. 3.3 остаются осознанным остаточным риском.",
+    "findings": [
+      {
+        "place": "tools/src/pixel-office/mask.js:1-8 (шапка модуля)",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "Шапка говорит «каждое правило — одно регулярное выражение с одним повтором или простой просмотр»; M8/M9 теперь — циклы с exec по отрезкам и просмотром назад. Смысл верен (один проход), но формулировка слегка устарела.",
+        "fix": "При случайной правке файла уточнить шапку; не блокирует."
+      }
+    ],
+    "self_check": "diff -rq с копией до: отличаются только src/pixel-office/mask.js и README.md (прочее — только файлы, которых нет в частичной копии: package.json, eslint.config.js и т.п.; test/ идентичен). cd tools && npm run check (perl alarm): prettier, eslint --max-warnings 0 зелёные; # tests 439 # pass 439 # fail 0 # skipped 0 # todo 0; exit 0. grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true' mask.js README.md: единственное совпадение — README.md:15, текст «в тестах нет skip и todo» (не эрозия). grep -c '^## ' README.md = 2. Строки DC-01 grep -cF: pixel-office-note 2, --text 2, SAI_PIXEL_OFFICE_STORE_TEXT 1, 0011 2, ### Хранение текста 1, остаточный риск 1, [скрыто] 3, /api/note 2, --session 1, без --session 1, «и у сервера, и у Claude Code (в обоих местах)» 1, три части через точку 1, a.test.js 1, 22.21.1 1. Свои пробы (скрипт вне проекта, scratchpad rv.mjs): password=\"hunter2\"→password=[скрыто]; {\"api_key\":\"abcd1234\"}→{\"api_key\":[скрыто]}; Bearer \"eyAbc123\"→Bearer [скрыто]; DB_PASSWORD=hunter2 и AWS_ACCESS_KEY_ID=AKIA…→скрыто; mypassword=x и password=\"\" не меняются; max_token=1000→скрыто; повторное маскирование равно первому во всех; входы по 64 КБ (_×, password=\"×, Bearer \"×, a_password×) — 0,2–2,6 мс. Применимые пункты планки: Q2, Q3, Q6, Q7, Q10 — выполнены; Q8, Q11, R3 — неприменимы (чистая функция без внешних вызовов и данных магазина).",
+    "issues": [],
+    "artifacts_out": []
+  }
+}

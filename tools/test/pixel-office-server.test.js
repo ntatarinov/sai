@@ -30,6 +30,8 @@ import {
   freePort,
   hookInputs,
   iso,
+  MASK_ROWS,
+  MASK_RULE_ROWS,
   occupyPort,
   prepareState,
   request,
@@ -388,7 +390,7 @@ test("SV-18: CSP on HTML, no inline anything; every script has src and type modu
   assert.equal(/\sstyle\s*=/i.test(r.body), false);
 });
 
-test("SV-19: only POST /api/events and GET are allowed; other methods 405; POST elsewhere 404 or 405; the journal does not change", async (t) => {
+test("SV-19: only POST /api/events, POST /api/note and GET are allowed; other methods 405; POST elsewhere 404 or 405; the journal does not change", async (t) => {
   const srv = await startServer(t, { now: fixedNow });
   await srv.post(sb("Stop", "s", 0));
   const before = srv.sha();
@@ -396,7 +398,19 @@ test("SV-19: only POST /api/events and GET are allowed; other methods 405; POST 
     const r = await request(srv.port, { method, path: "/api/events" });
     assert.equal(r.status, 405, method);
   }
-  for (const p of ["/", "/app.js", "/api/other", "/api/events/x"]) {
+  for (const method of ["PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]) {
+    const r = await request(srv.port, { method, path: "/api/note" });
+    assert.equal(r.status, 405, `/api/note ${method}`);
+    assert.equal(r.headers.allow, "POST", `/api/note ${method}`);
+  }
+  for (const p of [
+    "/",
+    "/app.js",
+    "/api/other",
+    "/api/events/x",
+    "/api/note/x",
+    "/api/notes",
+  ]) {
     const r = await request(srv.port, {
       method: "POST",
       path: p,
@@ -1340,4 +1354,589 @@ test("SV-42b: the handlers of SIGINT and SIGTERM are in place before the link is
     assert.equal(result.signal, null, `run ${i}: ended by ${result.signal}`);
     assert.equal(result.code, 0, `run ${i}`);
   }
+});
+
+// ------------------------------------------------------------ REQ-008 (a)
+
+const owner = (session, offsetSec, text = "сделай X") =>
+  sb("UserPromptSubmit", session, offsetSec, {
+    prompt_kind: "owner",
+    prompt_text: text,
+  });
+
+// The journal after a request: lines as objects.
+const journalOf = (srv) => srv.lines().map((l) => JSON.parse(l));
+
+// A refusal changes nothing: the sha256 and the number of lines of the journal.
+async function refused(srv, send, status, error) {
+  const sha = srv.sha();
+  const count = srv.lines().length;
+  const r = await send();
+  assert.equal(r.status, status, `${r.body}`);
+  if (error !== undefined) assert.equal(JSON.parse(r.body).error, error);
+  assert.equal(srv.sha(), sha, "the journal changed");
+  assert.equal(srv.lines().length, count);
+  return r;
+}
+
+test("SV-55: /api/events refuses wrong prompt fields, fields of the orchestrator and any source - 400, the journal does not change", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  assert.equal((await srv.post(owner("s1", 0))).status, 204);
+  const base = (extra) => sb("UserPromptSubmit", "s1", 1, extra);
+  const cases = {
+    "prompt_text not a string": base({ prompt_kind: "owner", prompt_text: 5 }),
+    "prompt_text 4001": base({
+      prompt_kind: "owner",
+      prompt_text: "а".repeat(4001),
+    }),
+    "prompt_text empty": base({ prompt_kind: "owner", prompt_text: "" }),
+    "prompt_text of a Stop": sb("Stop", "s1", 1, {
+      prompt_kind: "owner",
+      prompt_text: "x",
+    }),
+    "prompt_kind of a Stop": sb("Stop", "s1", 1, { prompt_kind: "owner" }),
+    "prompt_truncated of a Stop": sb("Stop", "s1", 1, {
+      prompt_truncated: true,
+    }),
+    "prompt_text of a service": base({
+      prompt_kind: "service",
+      prompt_text: "x",
+    }),
+    "prompt_text without kind": base({ prompt_text: "x" }),
+    "prompt_kind outside": base({ prompt_kind: "admin" }),
+    "prompt_truncated without text": base({
+      prompt_kind: "owner",
+      prompt_truncated: true,
+    }),
+    "prompt_truncated false": base({
+      prompt_kind: "owner",
+      prompt_text: "x",
+      prompt_truncated: false,
+    }),
+    note_text: base({ note_text: "x" }),
+    req_id: base({ req_id: "REQ-008" }),
+    request_time: base({ request_time: iso(T0) }),
+    request_time_auto: base({ request_time_auto: true }),
+    "source ORCH": base({ source: "ORCH" }),
+    "source REAL": base({ source: "REAL" }),
+    "source empty": base({ source: "" }),
+    "source SIMULATION": base({ source: "SIMULATION" }),
+  };
+  for (const [name, body] of Object.entries(cases)) {
+    await refused(srv, () => srv.post(body), 400);
+    assert.ok(name);
+  }
+  // A note as a body: no hook_event_name.
+  await refused(
+    srv,
+    () => srv.post({ time: iso(T0), source: "ORCH", note_text: "x" }),
+    400,
+  );
+  const sha = srv.sha();
+  assert.equal(srv.lines().length, 1);
+  assert.equal(srv.sha(), sha);
+});
+
+test("SV-56: the body of /api/note on /api/events is 400 and no ORCH line appears", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  assert.equal((await srv.post(owner("s1", 0))).status, 204);
+  for (const body of [
+    { note_text: "как понял", req_id: "REQ-008" },
+    { note_text: "как понял", session_id: "s1", request_time: iso(T0) },
+    { time: iso(T0), source: "ORCH", note_text: "x" },
+  ]) {
+    await refused(srv, () => srv.post(body), 400);
+  }
+  for (const line of journalOf(srv)) assert.notEqual(line.source, "ORCH");
+});
+
+test("SV-57: a correct owner message on /api/events is 204; the line has source REAL, the time of the body and the prompt fields", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  const r = await srv.post(
+    sb("UserPromptSubmit", "s1", 0, {
+      prompt_kind: "owner",
+      prompt_text: "сделай X",
+      prompt_truncated: true,
+    }),
+  );
+  assert.equal(r.status, 204);
+  assert.equal(r.body, "");
+  const lines = journalOf(srv);
+  assert.equal(lines.length, 1);
+  assert.deepEqual(lines[0], {
+    time: iso(T0),
+    source: "REAL",
+    hook_event_name: "UserPromptSubmit",
+    session_id: "s1",
+    prompt_kind: "owner",
+    prompt_text: "сделай X",
+    prompt_truncated: true,
+  });
+  const service = await srv.post(
+    sb("UserPromptSubmit", "s1", 1, { prompt_kind: "service" }),
+  );
+  assert.equal(service.status, 204);
+  assert.equal(journalOf(srv)[1].prompt_kind, "service");
+});
+
+test("SV-60: both write paths - 401, 403, 405 with Allow, 413 in one table; /api/note field table; an accepted note is 200 with source and time of the server", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  assert.equal((await srv.post(owner("s1", -5))).status, 204);
+  const paths = [
+    ["/api/events", (body, o) => srv.post(body, o), owner("s1", 0)],
+    ["/api/note", (body, o) => srv.postNote(body, o), { note_text: "x" }],
+  ];
+  for (const [p, send, good] of paths) {
+    await refused(srv, () => send(good, { sign: false }), 401);
+    await refused(srv, () => send(good, { sign: "0".repeat(64) }), 401);
+    await refused(srv, () => send(good, { key: "чужой-секрет" }), 401);
+    await refused(
+      srv,
+      () =>
+        request(srv.port, {
+          method: "POST",
+          path: p,
+          host: "evil.example",
+          body: JSON.stringify(good),
+        }),
+      403,
+    );
+    await refused(srv, () => send(null, { raw: "x".repeat(16385) }), 413);
+    await refused(
+      srv,
+      () => send(null, { raw: JSON.stringify({ pad: "x".repeat(20000) }) }),
+      413,
+    );
+    await refused(srv, () => send(null, { raw: "not json" }), 400, "not_json");
+    await refused(srv, () => send(null, { raw: "[1]" }), 400, "not_json");
+  }
+  for (const method of ["GET", "PUT", "DELETE", "PATCH"]) {
+    const r = await request(srv.port, { method, path: "/api/note" });
+    assert.equal(r.status, 405, method);
+    assert.equal(r.headers.allow, "POST", method);
+  }
+  for (const method of ["PUT", "DELETE", "PATCH"]) {
+    const r = await request(srv.port, { method, path: "/api/events" });
+    assert.equal(r.status, 405, `events ${method}`);
+    assert.equal(r.headers.allow, "GET, POST", `events ${method}`);
+  }
+  // A foreign Host is refused with 403 before the body is read: a 20 KB
+  // unsigned body gives 403, not 413 or 401, and the journal does not change.
+  for (const p of ["/api/events", "/api/note"]) {
+    await refused(
+      srv,
+      () =>
+        request(srv.port, {
+          method: "POST",
+          path: p,
+          host: "evil.example",
+          body: "x".repeat(20000),
+        }),
+      403,
+    );
+  }
+
+  // /api/note field table.
+  const note = (extra) => ({ note_text: "как понял", ...extra });
+  const bad = {
+    "hook field prompt_kind": [
+      note({ prompt_kind: "owner" }),
+      "unknown_key:prompt_kind",
+    ],
+    "hook field prompt_text": [
+      note({ prompt_text: "x" }),
+      "unknown_key:prompt_text",
+    ],
+    "hook field prompt_truncated": [
+      note({ prompt_truncated: true }),
+      "unknown_key:prompt_truncated",
+    ],
+    hook_event_name: [
+      note({ hook_event_name: "Stop" }),
+      "unknown_key:hook_event_name",
+    ],
+    agent_id: [note({ agent_id: "a" }), "unknown_key:agent_id"],
+    request_time_auto: [
+      note({ request_time_auto: true }),
+      "unknown_key:request_time_auto",
+    ],
+    "source ORCH": [note({ source: "ORCH" }), "has_source"],
+    "source REAL": [note({ source: "REAL" }), "has_source"],
+    "source empty": [note({ source: "" }), "has_source"],
+    time: [note({ time: iso(T0) }), "has_time"],
+    "note_text 2001": [{ note_text: "а".repeat(2001) }, "bad_value:note_text"],
+    "note_text not a string": [{ note_text: 7 }, "bad_value:note_text"],
+    "note_text null": [{ note_text: null }, "bad_value:note_text"],
+    "note_text empty": [{ note_text: "" }, "empty_note"],
+    "note_text spaces": [{ note_text: " \n\t " }, "empty_note"],
+    "no note_text": [{ req_id: "REQ-008" }, "missing:note_text"],
+    "REQ-8": [note({ req_id: "REQ-8" }), "bad_value:req_id"],
+    "../x": [note({ req_id: "../x" }), "bad_value:req_id"],
+    "req_id number": [note({ req_id: 8 }), "bad_value:req_id"],
+    "request_time +61 s": [
+      note({ request_time: iso(T0 + 61000) }),
+      "bad_value:request_time",
+    ],
+    "request_time not a time": [
+      note({ request_time: "вчера" }),
+      "bad_value:request_time",
+    ],
+    "request_time not canonical": [
+      note({ request_time: "2026-09-20T10:00:00Z" }),
+      "bad_value:request_time",
+    ],
+    "session_id 201": [
+      note({ session_id: "s".repeat(201) }),
+      "bad_value:session_id",
+    ],
+    "session_id number": [note({ session_id: 5 }), "bad_value:session_id"],
+    "session_id empty": [note({ session_id: "" }), "bad_value:session_id"],
+  };
+  for (const [name, [body, error]] of Object.entries(bad)) {
+    const r = await refused(srv, () => srv.postNote(body), 400);
+    assert.equal(JSON.parse(r.body).error, error, name);
+    assert.equal(
+      r.body.includes("как понял"),
+      false,
+      "the body is not repeated",
+    );
+  }
+  // Accepted: limits themselves, +59 s, 200 characters.
+  const ok = [
+    note({ note_text: "а".repeat(2000) }),
+    note({ request_time: iso(T0 + 59000) }),
+    note({ session_id: "s".repeat(200), req_id: "REQ-123456" }),
+    note({ req_id: "REQ-008", request_time: iso(T0 - 10000) }),
+  ];
+  for (const body of ok) {
+    const before = srv.lines().length;
+    const r = await srv.postNote(body);
+    assert.equal(r.status, 200, r.body);
+    assert.match(r.headers["content-type"], /^application\/json/);
+    assert.equal(srv.lines().length, before + 1);
+    const line = journalOf(srv).at(-1);
+    assert.equal(line.source, "ORCH");
+    assert.equal(line.time, iso(T0));
+    assert.equal(Object.hasOwn(line, "hook_event_name"), false);
+    assert.equal(r.body.includes("как понял"), false);
+  }
+});
+
+test("SV-61: the write paths are exactly /api/events and /api/note; a signed POST anywhere else is 404 or 405 and writes nothing", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  const source = fs.readFileSync(path.join(SRC, "server.js"), "utf8");
+  const found = [...source.matchAll(/"(\/api\/[A-Za-z0-9/_-]*)"/g)].map(
+    (m) => m[1],
+  );
+  assert.deepEqual([...new Set(found)].sort(), ["/api/events", "/api/note"]);
+  assert.equal((await srv.post(owner("s1", 0))).status, 204);
+  const others = [
+    "/",
+    "/index.html",
+    "/app.js",
+    "/api",
+    "/api/",
+    "/api/other",
+    "/api/event",
+    "/api/events/x",
+    "/api/note/x",
+    "/api/notes",
+    "/api/Note",
+    "/api/note.json",
+    "/events",
+    "/note",
+  ];
+  for (const p of others) {
+    for (const method of ["POST", "PUT", "DELETE"]) {
+      const body = JSON.stringify({ note_text: "x" });
+      const sha = srv.sha();
+      const r = await request(srv.port, {
+        method,
+        path: p,
+        headers: {
+          "content-type": "application/json",
+          "x-pixel-office-signature": signBody(srv.secret, body),
+        },
+        body,
+      });
+      assert.ok([404, 405].includes(r.status), `${method} ${p}: ${r.status}`);
+      assert.equal(srv.sha(), sha, `${method} ${p}`);
+    }
+  }
+  assert.equal(srv.lines().length, 1);
+  assert.equal((await srv.postNote({ note_text: "x" })).status, 200);
+  assert.equal((await srv.post(owner("s1", 1))).status, 204);
+});
+
+test("SV-63: the same open examples sent to both paths are stored masked - no secret value in events.jsonl, the label in its place, the rest kept; masking twice changes nothing", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  const rows = [...MASK_ROWS, ...MASK_RULE_ROWS];
+  let n = 0;
+  for (const row of rows) {
+    n += 1;
+    const asPrompt = await srv.post(
+      sb("UserPromptSubmit", `s-${n}`, 0, {
+        prompt_kind: "owner",
+        prompt_text: row.input,
+      }),
+    );
+    assert.equal(asPrompt.status, 204, row.id);
+    const asNote = await srv.postNote({ note_text: row.input });
+    assert.equal(asNote.status, 200, row.id);
+    const [promptLine, noteLine] = journalOf(srv).slice(-2);
+    assert.equal(promptLine.prompt_text, row.expected, `events ${row.id}`);
+    assert.equal(noteLine.note_text, row.expected, `note ${row.id}`);
+  }
+  const file = fs.readFileSync(srv.eventsFile, "utf8");
+  for (const row of rows) {
+    for (const piece of row.leak) {
+      assert.equal(
+        file.includes(JSON.stringify(piece).slice(1, -1)),
+        false,
+        `${row.id}: ${piece}`,
+      );
+    }
+  }
+  // An already masked text is not lengthened or changed by the second masking.
+  const masked = `password=${"[скрыто]"} и Bearer [скрыто] и [скрыто]`;
+  assert.equal((await srv.post(owner("s-m", 0, masked))).status, 204);
+  assert.equal(journalOf(srv).at(-1).prompt_text, masked);
+  // A text that is longer than the limit only after masking: events cut it to
+  // 4000 and mark it; note refuses it without a write.
+  const grows = "token=x ".repeat(500);
+  assert.equal(grows.length, 4000);
+  assert.equal((await srv.post(owner("s-g", 0, grows))).status, 204);
+  const cut = journalOf(srv).at(-1);
+  assert.equal(Array.from(cut.prompt_text).length, 4000);
+  assert.equal(cut.prompt_truncated, true);
+  assert.equal(cut.prompt_text.includes("token=x"), false);
+  const longNote = "token=x ".repeat(250);
+  assert.equal(longNote.length, 2000);
+  await refused(
+    srv,
+    () => srv.postNote({ note_text: longNote }),
+    400,
+    "too_long_after_mask",
+  );
+});
+
+test("SV-64: with storage off the server refuses prompt_text and note_text (400 text_storage_off) and keeps the journal; prompt_kind alone is accepted", async (t) => {
+  const srv = await startServer(t, { now: fixedNow, storeText: false });
+  const kindOnly = await srv.post(
+    sb("UserPromptSubmit", "s1", 0, { prompt_kind: "owner" }),
+  );
+  assert.equal(kindOnly.status, 204);
+  await refused(srv, () => srv.post(owner("s1", 1)), 400, "text_storage_off");
+  await refused(
+    srv,
+    () => srv.postNote({ note_text: "как понял" }),
+    400,
+    "text_storage_off",
+  );
+  assert.equal(srv.lines().length, 1);
+  // The switch is read from the environment when it is not given.
+  const prior = process.env.SAI_PIXEL_OFFICE_STORE_TEXT;
+  t.after(() => {
+    if (prior === undefined) delete process.env.SAI_PIXEL_OFFICE_STORE_TEXT;
+    else process.env.SAI_PIXEL_OFFICE_STORE_TEXT = prior;
+  });
+  for (const [value, status] of [
+    ["0", 400],
+    ["yes", 400],
+    ["1", 204],
+    ["", 204],
+  ]) {
+    process.env.SAI_PIXEL_OFFICE_STORE_TEXT = value;
+    const box = sandbox(t);
+    const secret = prepareState(box);
+    const { createServer } = await import("../src/pixel-office/server.js");
+    const server = createServer({
+      stateDir: box.dir,
+      port: 0,
+      now: fixedNow,
+      warn() {},
+    });
+    const { port } = await server.listen();
+    t.after(() => server.close());
+    const body = JSON.stringify(owner("s1", 0));
+    const r = await request(port, {
+      method: "POST",
+      path: "/api/events",
+      headers: { "x-pixel-office-signature": signBody(secret, body) },
+      body,
+    });
+    assert.equal(r.status, status, `value ${JSON.stringify(value)}`);
+  }
+});
+
+test("SV-65: a note without request_time is bound by the server to the last owner message of the whole journal (any session), with request_time_auto; session_id narrows it; none found - no binding; an explicit request_time is kept without request_time_auto", async (t) => {
+  const A = owner("s-A", -30);
+  const B = owner("s-B", -20);
+  const service = sb("UserPromptSubmit", "s-B", -10, {
+    prompt_kind: "service",
+  });
+  const legacy = sb("UserPromptSubmit", "s-B", -5);
+  const srv = await startServer(t, {
+    now: fixedNow,
+    setup: (box) => {
+      const lines = [A, B, service, legacy].map((l) =>
+        JSON.stringify({ ...l, source: "REAL" }),
+      );
+      fs.writeFileSync(
+        path.join(box.dir, "events.jsonl"),
+        `${lines.join("\n")}\n`,
+        { mode: 0o600 },
+      );
+    },
+  });
+  const last = () => journalOf(srv).at(-1);
+
+  // The main case: no request_time and no session_id (how ORCH calls).
+  const r1 = await srv.postNote({
+    note_text: "как понял 1",
+    req_id: "REQ-008",
+  });
+  assert.equal(r1.status, 200);
+  assert.deepEqual(JSON.parse(r1.body), {
+    request_time: B.time,
+    request_time_auto: true,
+  });
+  assert.deepEqual(last(), {
+    time: iso(T0),
+    source: "ORCH",
+    note_text: "как понял 1",
+    req_id: "REQ-008",
+    request_time: B.time,
+    request_time_auto: true,
+  });
+  // session_id narrows the search.
+  const r2 = await srv.postNote({
+    note_text: "как понял 2",
+    session_id: "s-A",
+  });
+  assert.deepEqual(JSON.parse(r2.body), {
+    request_time: A.time,
+    request_time_auto: true,
+  });
+  assert.equal(last().session_id, "s-A");
+  assert.equal(last().request_time, A.time);
+  // A session without an owner message: no binding.
+  const r3 = await srv.postNote({
+    note_text: "как понял 3",
+    session_id: "s-none",
+  });
+  assert.deepEqual(JSON.parse(r3.body), {
+    request_time: null,
+    request_time_auto: false,
+  });
+  assert.equal(Object.hasOwn(last(), "request_time"), false);
+  assert.equal(Object.hasOwn(last(), "request_time_auto"), false);
+  // An explicit request_time: kept, no auto mark (even if it matches nothing).
+  const explicit = iso(T0 - 100000);
+  const r4 = await srv.postNote({
+    note_text: "как понял 4",
+    request_time: explicit,
+  });
+  assert.deepEqual(JSON.parse(r4.body), {
+    request_time: explicit,
+    request_time_auto: false,
+  });
+  assert.equal(last().request_time, explicit);
+  assert.equal(Object.hasOwn(last(), "request_time_auto"), false);
+  assert.equal(Object.hasOwn(last(), "session_id"), false);
+  // A later owner message moves the binding; the notes of ORCH are not owners.
+  assert.equal((await srv.post(owner("s-C", 1))).status, 204);
+  const r5 = await srv.postNote({ note_text: "как понял 5" });
+  assert.equal(JSON.parse(r5.body).request_time, iso(T0 + 1000));
+  // A journal without any owner message.
+  const empty = await startServer(t, { now: fixedNow });
+  assert.equal((await empty.post(sb("Stop", "s", 0))).status, 204);
+  assert.equal(
+    (
+      await empty.post(
+        sb("UserPromptSubmit", "s", 1, { prompt_kind: "service" }),
+      )
+    ).status,
+    204,
+  );
+  const r6 = await empty.postNote({ note_text: "как понял" });
+  assert.deepEqual(JSON.parse(r6.body), {
+    request_time: null,
+    request_time_auto: false,
+  });
+  const noted = journalOf(empty).at(-1);
+  assert.equal(Object.hasOwn(noted, "request_time"), false);
+});
+
+test("SV-66: after the writes of criteria 1 and 5 events.jsonl and write-secret are 0600, the directory 0700, and the directory holds only STATE_FILES", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  assert.equal((await srv.post(owner("s1", 0, "текст-проба-66"))).status, 204);
+  assert.equal(
+    (await srv.postNote({ note_text: "запись-проба-66" })).status,
+    200,
+  );
+  const mode = (p) => fs.statSync(p).mode & 0o777;
+  assert.equal(mode(srv.eventsFile), 0o600);
+  assert.equal(mode(path.join(srv.dir, "write-secret")), 0o600);
+  assert.equal(mode(srv.dir), 0o700);
+  for (const name of fs.readdirSync(srv.dir)) {
+    assert.ok(STATE_FILES.includes(name), `a new file: ${name}`);
+  }
+  // Nothing with the texts anywhere else in the temporary folder.
+  const walk = (dir) =>
+    fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const full = path.join(dir, e.name);
+      return e.isDirectory() ? walk(full) : [full];
+    });
+  for (const file of walk(srv.box.root)) {
+    if (file === srv.eventsFile) continue;
+    const text = fs.readFileSync(file, "utf8");
+    assert.equal(text.includes("текст-проба-66"), false, file);
+    assert.equal(text.includes("запись-проба-66"), false, file);
+  }
+});
+
+test("SV-67: the server makes no outgoing requests (grep of server.js is empty) and the texts reach neither its stdout nor its stderr", async (t) => {
+  const source = fs.readFileSync(path.join(SRC, "server.js"), "utf8");
+  assert.equal(/https?\.request|fetch\(|net\.connect/.test(source), false);
+  const box = sandbox(t);
+  const run = await spawnMain(t, box);
+  const secret = fs
+    .readFileSync(path.join(box.dir, "write-secret"), "utf8")
+    .trim();
+  const needle = "уникальная-подстрока-67";
+  const send = (p, value) => {
+    const body = JSON.stringify(value);
+    return request(run.port, {
+      method: "POST",
+      path: p,
+      headers: { "x-pixel-office-signature": signBody(secret, body) },
+      body,
+    });
+  };
+  const time = new Date().toISOString();
+  const first = await send("/api/events", {
+    time,
+    hook_event_name: "UserPromptSubmit",
+    session_id: "s67",
+    prompt_kind: "owner",
+    prompt_text: `сделай ${needle}`,
+  });
+  assert.equal(first.status, 204);
+  assert.equal(
+    (await send("/api/note", { note_text: `понял ${needle}` })).status,
+    200,
+  );
+  // Refusals and a corrupted line produce warnings: none repeats the text.
+  await send("/api/events", {
+    time,
+    hook_event_name: "Stop",
+    session_id: "s67",
+    note_text: needle,
+  });
+  await send("/api/note", { note_text: needle, source: "ORCH" });
+  await run.stop();
+  assert.equal(run.out.stdout.includes(needle), false);
+  assert.equal(run.out.stderr.includes(needle), false);
+  assert.equal(run.out.stdout.includes(secret), false);
 });

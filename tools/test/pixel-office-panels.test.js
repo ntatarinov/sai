@@ -39,6 +39,18 @@ import {
   sandbox,
   withText,
 } from "./pixel-office-helpers.js";
+import fs from "node:fs";
+import path from "node:path";
+import { buildHistory } from "../src/pixel-office/public/history.js";
+import * as TX from "../src/pixel-office/public/texts.js";
+import {
+  PUBLIC,
+  cssDecls,
+  historyDom,
+  historyRowOf,
+  historyRows,
+  parseCss,
+} from "./pixel-office-helpers.js";
 
 // "Работа" by the text of criterion 14 REQ-007, not by the constant of the code.
 const CRITERION_WORK = [
@@ -1026,4 +1038,580 @@ test("PN-18: the legend and the card - a legend button opens the same card as a 
     page.legend().every((b) => b.getAttribute("aria-pressed") === "false"),
     true,
   );
+});
+
+// ------------------------------------------------ REQ-008 part (b): PN-19..22
+
+// Two requests of one session, a service message between them and a row of
+// the old format (no prompt_kind) of another session that has no window.
+function twoRequests() {
+  const j = journal();
+  j.sessionStart("S1");
+  const o1 = j.ownerPrompt("S1", "первый запрос");
+  launch(j, "S1", "a1", "Explore", { description: "работа А" });
+  j.subStop("S1", "a1", "Explore");
+  j.stop("S1");
+  const svc = j.servicePrompt("S1");
+  const o2 = j.ownerPrompt("S1", "второй запрос");
+  launch(j, "S1", "a2", "Plan", { description: "работа Б" });
+  const old = j.prompt("S9");
+  return { j, o1, o2, svc, old };
+}
+
+const INTERACTIVE = ["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA"];
+const interactive = (root) =>
+  root.all(
+    (e) =>
+      INTERACTIVE.includes(e.tagName) ||
+      e.attrs.has("tabindex") ||
+      e.attrs.has("role"),
+  );
+const itemOf = (page, key) =>
+  page.items().find((i) => i.dataset.key === key) ?? null;
+const buttonOf = (page, key) => itemOf(page, key)?.byClass("history-open")[0];
+
+test("PN-19: opening - from a row of the journal and from the button of a card of a task or of the main session, not from the card itself or from the card of an agent; a service message only says so; a row without a window is as it was; the order of the sections", async () => {
+  const fx = twoRequests();
+  const page = await loaded(fx.j.entries);
+  const h = buildHistory(page.app.getModel());
+  const k1 = `req:${fx.o1}`;
+  const k2 = `req:${fx.o2}`;
+  assert.deepEqual([...h.byKey.keys()], [k1, k2]);
+
+  // rows of the journal
+  assert.deepEqual(
+    historyRows(page).map((r) => r.dataset.request),
+    [k1, k2],
+  );
+  for (const row of historyRows(page)) {
+    assert.equal(row.getAttribute("tabindex"), "0");
+    const last = row.children[row.children.length - 1];
+    assert.equal(last.tagName, "SPAN");
+    assert.ok(last.classes.has("history-open"));
+    assert.equal(last.textContent, TX.HISTORY_OPEN);
+    assert.equal(
+      interactive(row).filter((e) => e !== row).length,
+      0,
+      "no interactive element inside the row",
+    );
+  }
+  const svcRow = page
+    .rows()
+    .find((r) => r.textContent.includes(TX.HISTORY_SERVICE));
+  assert.ok(svcRow !== undefined, "the service message is signed");
+  assert.equal(svcRow.classes.has("opens-history"), false);
+  assert.equal(svcRow.hasAttribute("tabindex"), false);
+  assert.equal(svcRow.hasAttribute("data-request"), false);
+  assert.equal(
+    svcRow.byClass("history-service")[0].textContent,
+    TX.HISTORY_SERVICE,
+  );
+  const plain = page
+    .rows()
+    .filter((r) => !r.classes.has("opens-history") && r !== svcRow);
+  for (const row of plain) {
+    assert.equal(row.hasAttribute("tabindex"), false);
+    assert.equal(row.byClass("history-open").length, 0);
+    assert.equal(row.byClass("history-service").length, 0);
+  }
+  // a click on the service row and on a row without a window opens nothing
+  svcRow.click();
+  for (const row of plain) row.click();
+  const dom = historyDom(page);
+  assert.equal(dom.isOpen(), false);
+  // the row of the first request opens the first window, the second the second
+  historyRowOf(page, k1).click();
+  assert.equal(dom.isOpen(), true);
+  assert.equal(dom.title().textContent, "первый запрос");
+  // the order of the sections, top to bottom
+  assert.equal(dom.body.children[0].textContent, TX.HISTORY_BADGE);
+  assert.deepEqual(
+    dom.body.children.slice(3).map((k) => k.dataset.section),
+    ["request", "understood", "work", "timeline"],
+  );
+  dom.close.click();
+  historyRowOf(page, k2).click();
+  assert.equal(dom.title().textContent, "второй запрос");
+  dom.close.click();
+  assert.equal(dom.isOpen(), false);
+
+  // cards of the panel: a button with the key of the request, last in the card
+  const expected = new Map([
+    ["a1", k1],
+    ["a2", k2],
+    [`main:${fx.o1}`, k1],
+    [`main:${fx.svc}`, k1],
+    [`main:${fx.o2}`, k2],
+  ]);
+  const items = page.items();
+  assert.ok(items.length >= 6);
+  for (const item of items) {
+    const key = item.dataset.key;
+    const buttons = item.byClass("history-open");
+    assert.equal(item.tagName, "DIV");
+    assert.equal(
+      item.hasAttribute("tabindex"),
+      false,
+      `${key}: no focus on the card`,
+    );
+    assert.equal(item.hasAttribute("role"), false, `${key}: no role`);
+    assert.equal(item.listeners.size, 0, `${key}: no handlers on the card`);
+    if (!expected.has(key)) {
+      assert.equal(buttons.length, 0, `${key}: no window, no button`);
+      assert.equal(interactive(item).length, 0);
+      continue;
+    }
+    assert.equal(buttons.length, 1, key);
+    const b = buttons[0];
+    assert.ok(
+      item.children[item.children.length - 1] === b,
+      "the button is last",
+    );
+    assert.equal(b.tagName, "BUTTON");
+    assert.equal(b.getAttribute("type"), "button");
+    assert.equal(b.textContent, TX.HISTORY_OPEN);
+    assert.equal(b.dataset.request, expected.get(key));
+    assert.equal(
+      interactive(item).length,
+      1,
+      "the button is the only interactive element",
+    );
+  }
+  assert.equal(
+    items.filter((i) => expected.has(i.dataset.key)).length,
+    expected.size,
+  );
+  // a click on the card (and on its parts) but the button opens nothing
+  for (const item of items) {
+    item.click();
+    for (const part of item.children) {
+      if (part.tagName !== "BUTTON") part.click();
+    }
+  }
+  assert.equal(dom.isOpen(), false);
+  // the button of the task opens the window of its own request
+  buttonOf(page, "a1").click();
+  assert.equal(dom.isOpen(), true);
+  assert.equal(dom.title().textContent, "первый запрос");
+  dom.close.click();
+  buttonOf(page, `main:${fx.o2}`).click();
+  assert.equal(dom.title().textContent, "второй запрос");
+  dom.close.click();
+
+  // the card of an agent (finished and in progress) has no button and opens no window
+  for (const role of ["role:Explore", "role:Plan"]) {
+    const legend = page.legend().find((b) => b.dataset.key === role);
+    legend.click();
+    assert.equal(page.el("card-overlay").hidden, false);
+    const card = page.el("card");
+    assert.ok(card.byClass("item").length > 0, `${role}: the card has items`);
+    assert.equal(card.byClass("history-open").length, 0);
+    assert.equal(card.all((e) => e.hasAttribute("data-request")).length, 0);
+    for (const el of card.all((e) => e.tagName !== "BUTTON")) el.click();
+    assert.equal(dom.isOpen(), false);
+    page.el("card").byClass("card-close")[0].click();
+    assert.equal(page.el("card-overlay").hidden, true);
+  }
+});
+
+// A hostile text of the owner, of a record, of a role and of a description.
+const HOSTILE_TEXT = [
+  "<script>window.__x=1</script>",
+  "<img src=x onerror=window.__x=2>",
+  "&lt;b&gt;",
+  "ключ [скрыто] и конец",
+].join("\n");
+
+test("PN-20: text from the journal is text - <script>, <img onerror>, &lt;b&gt;, '[скрыто]', a role and a session named __proto__ show literally; nothing is created or run; the code of the page has no way to markup", async () => {
+  const j = journal();
+  j.sessionStart("__proto__");
+  const o = j.ownerPrompt("__proto__", HOSTILE_TEXT);
+  j.note({
+    session_id: "__proto__",
+    request_time: j.entries[o].time,
+    req_id: "REQ-009",
+    note_text: "<b>жирный</b> и <script>window.__x=3</script> [скрыто]",
+  });
+  j.post("__proto__", "tu-h", "h1", {
+    subagentType: "<b>x</b>",
+    description: IMG,
+  });
+  j.subStart("__proto__", "h1", "<b>x</b>");
+  j.subStart("__proto__", "h2", "__proto__");
+  const page = await loaded(j.entries);
+  assert.equal(historyRowOf(page, `req:${o}`) !== null, true);
+  historyRowOf(page, `req:${o}`).click();
+  const dom = historyDom(page);
+  assert.equal(dom.isOpen(), true);
+
+  // the text of the owner: one block, every character as written
+  const quote = dom.section("request").byClass("history-quote")[0];
+  assert.equal(quote.textContent, HOSTILE_TEXT);
+  const masked = quote.byClass("history-masked");
+  assert.equal(masked.length, 1);
+  assert.equal(masked[0].textContent, "[скрыто]");
+  assert.equal(
+    dom.section("understood").byClass("history-quote")[0].textContent,
+    "<b>жирный</b> и <script>window.__x=3</script> [скрыто]",
+  );
+  const text = dom.body.textContent;
+  for (const s of [
+    "<script>window.__x=1</script>",
+    "<img src=x onerror=window.__x=2>",
+    "&lt;b&gt;",
+    IMG,
+    "<b>x</b>",
+    "__proto__",
+  ]) {
+    assert.ok(text.includes(s), s);
+  }
+  assert.equal(
+    dom.title().textContent,
+    "REQ-009 — <b>жирный</b> и <script>window.__x=3</script> [скрыто]",
+  );
+  // nothing was made of it
+  assert.equal(globalThis.__x, undefined);
+  assert.equal(globalThis.window?.__x, undefined);
+  for (const tag of ["script", "img", "b", "i", "a", "iframe"]) {
+    assert.equal(page.created(tag).length, 0, tag);
+  }
+  assert.equal(page.doc.htmlWrites, 0);
+  assert.equal(page.doc.styleTouches, 0);
+  const allowed = new Set([
+    "SPAN",
+    "P",
+    "H2",
+    "H3",
+    "SECTION",
+    "DIV",
+    "TABLE",
+    "THEAD",
+    "TBODY",
+    "TR",
+    "TH",
+    "TD",
+    "OL",
+    "LI",
+  ]);
+  for (const el of dom.body.all(() => true)) {
+    assert.ok(
+      allowed.has(el.tagName),
+      `an element ${el.tagName} in the window`,
+    );
+    assert.equal(el.hasAttribute("style"), false);
+  }
+  assert.equal({}.session_id, undefined);
+  assert.equal(Object.hasOwn(Object.prototype, "polluted"), false);
+  // the table: the hostile role and description are cells of text
+  const roles = dom
+    .section("work")
+    .byClass("history-role")
+    .map((e) => e.textContent);
+  assert.deepEqual(roles, ["<b>x</b>", "__proto__"]);
+  assert.equal(dom.section("work").byClass("history-does")[0].textContent, IMG);
+
+  // the code of the page: no markup APIs, no style attribute, no address but 127.0.0.1
+  const files = fs
+    .readdirSync(PUBLIC)
+    .filter((f) => /\.(js|html|css)$/.test(f));
+  for (const f of files) {
+    const code = fs.readFileSync(path.join(PUBLIC, f), "utf8");
+    for (const re of [
+      /innerHTML/,
+      /outerHTML/,
+      /insertAdjacentHTML/,
+      /document\.write/,
+      /\beval\(/,
+    ]) {
+      assert.equal(re.test(code), false, `${f}: ${re}`);
+    }
+    assert.equal(/\sstyle\s*=/i.test(code), false, `${f}: style attribute`);
+    for (const m of code.matchAll(/https?:\/\/[^\s"'`)]*/g)) {
+      assert.ok(m[0].startsWith("http://127.0.0.1"), `${f}: ${m[0]}`);
+    }
+  }
+});
+
+function pressKey(target, key, extra = {}) {
+  let prevented = 0;
+  target.fire("keydown", {
+    key,
+    preventDefault: () => (prevented += 1),
+    ...extra,
+  });
+  return prevented;
+}
+
+test("PN-21: the keyboard and the focus - Enter and Space open from the row, Escape, the cross and the overlay close, the focus returns to the opener, Tab goes round, data-modal on the body; Escape closes only the top window; a card of an agent that is open closes when the window opens", async () => {
+  const fx = twoRequests();
+  const page = await loaded(fx.j.entries);
+  const k1 = `req:${fx.o1}`;
+  const dom = historyDom(page);
+  const bodyEl = () => page.el("history-overlay").parentNode;
+  const modal = () => bodyEl().getAttribute("data-modal");
+  const esc = () =>
+    page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  const row = () => historyRowOf(page, k1);
+  const focusedIs = (el, why) => assert.ok(page.doc.focused === el, why);
+  assert.equal(modal(), null);
+
+  // Enter and Space open; other keys do not
+  pressKey(row(), "a");
+  pressKey(row(), "Tab");
+  assert.equal(dom.isOpen(), false);
+  assert.equal(
+    pressKey(row(), "Enter") > 0,
+    true,
+    "the key does not scroll the page",
+  );
+  assert.equal(dom.isOpen(), true);
+  focusedIs(dom.close, "focus is on the cross");
+  assert.equal(modal(), "history");
+  assert.equal(dom.dialog.getAttribute("role"), "dialog");
+  assert.equal(dom.dialog.getAttribute("aria-modal"), "true");
+  // Escape closes, the focus goes back to the row, the attribute is gone
+  esc();
+  assert.equal(dom.isOpen(), false);
+  assert.equal(modal(), null);
+  assert.equal(dom.body.children.length, 0);
+  focusedIs(row(), "focus is on the row");
+  pressKey(row(), " ");
+  assert.equal(dom.isOpen(), true);
+  // the cross
+  dom.close.click();
+  assert.equal(dom.isOpen(), false);
+  assert.equal(modal(), null);
+  focusedIs(row(), "focus is on the row after the cross");
+  // the overlay: a click on the window stays, a click beside it closes
+  row().click();
+  dom.overlay.fire("click", { target: dom.dialog });
+  dom.overlay.fire("click", { target: dom.body });
+  assert.equal(dom.isOpen(), true);
+  dom.overlay.click({ target: dom.overlay });
+  assert.equal(dom.isOpen(), false);
+  focusedIs(row(), "focus is on the row after the overlay");
+
+  // Tab goes round the cross and the body, Shift+Tab the other way
+  row().click();
+  focusedIs(dom.close, "start");
+  assert.equal(pressKey(page.doc, "Tab") > 0, true);
+  focusedIs(dom.body, "Tab: body");
+  pressKey(page.doc, "Tab");
+  focusedIs(dom.close, "Tab: back to the cross");
+  pressKey(page.doc, "Tab", { shiftKey: true });
+  focusedIs(dom.body, "Shift+Tab from the cross");
+  pressKey(page.doc, "Tab", { shiftKey: true });
+  focusedIs(dom.close, "Shift+Tab from the body");
+  pressKey(page.doc, "a");
+  focusedIs(dom.close, "another key does not move the focus");
+  assert.equal(dom.isOpen(), true);
+  esc();
+
+  // the button of a card: the focus comes back to the button
+  buttonOf(page, "a1").click();
+  assert.equal(dom.isOpen(), true);
+  assert.equal(modal(), "history");
+  focusedIs(dom.close, "focus is on the cross (card)");
+  esc();
+  assert.equal(modal(), null);
+  focusedIs(buttonOf(page, "a1"), "focus is on the button of the card");
+  buttonOf(page, "a1").click();
+  dom.close.click();
+  focusedIs(
+    buttonOf(page, "a1"),
+    "the cross: focus is on the button of the card",
+  );
+
+  // the open window follows the journal and keeps the scroll and the focus
+  const k2 = `req:${fx.o2}`;
+  historyRowOf(page, k2).click();
+  const count = () => dom.section("timeline").byClass("history-event").length;
+  const before = count();
+  dom.body.scrollTop = 7;
+  fx.j.subStart("S1", "a3", "Explore");
+  await page.push(fx.j.entries[fx.j.entries.length - 1]);
+  assert.equal(dom.isOpen(), true);
+  assert.equal(count(), before + 1);
+  assert.equal(dom.body.scrollTop, 7);
+  focusedIs(dom.close, "the focus stays on the cross");
+  dom.close.click();
+
+  // one window at a time: the card of an agent closes when the window opens
+  const card = page.el("card-overlay");
+  const both = () => !card.hidden && dom.isOpen();
+  const legend = () =>
+    page.legend().find((b) => b.dataset.key === "role:Explore");
+  legend().click();
+  assert.equal(card.hidden, false);
+  // Escape closes the card (the old behaviour) when no window is open
+  esc();
+  assert.equal(card.hidden, true);
+  legend().click();
+  assert.equal(both(), false);
+  // Tab reached the button under the card: Enter on it
+  buttonOf(page, "a1").click();
+  assert.equal(card.hidden, true, "the card is closed");
+  assert.equal(dom.isOpen(), true);
+  assert.equal(both(), false);
+  assert.equal(
+    page
+      .legend()
+      .find((b) => b.dataset.key === "role:Explore")
+      .getAttribute("aria-pressed"),
+    "true",
+    "the choice of the character stays",
+  );
+  // one Escape closes only the window; the card is not opened again
+  esc();
+  assert.equal(dom.isOpen(), false);
+  assert.equal(card.hidden, true);
+  assert.equal(modal(), null);
+  focusedIs(buttonOf(page, "a1"), "focus is on the button after the window");
+  esc();
+  assert.equal(card.hidden, true);
+  assert.equal(both(), false);
+  // a row of the journal does the same
+  legend().click();
+  row().click();
+  assert.equal(card.hidden, true);
+  assert.equal(dom.isOpen(), true);
+  esc();
+  assert.equal(dom.isOpen(), false);
+  assert.equal(card.hidden, true);
+  focusedIs(row(), "focus is on the row");
+});
+
+test("PN-21b: Escape with nothing open does nothing - no window, no card, no data-modal", async () => {
+  const fx = twoRequests();
+  const page = await loaded(fx.j.entries);
+  const dom = historyDom(page);
+  page.doc.fire("keydown", { key: "Escape" });
+  assert.equal(dom.isOpen(), false);
+  assert.equal(page.el("card-overlay").hidden, true);
+  assert.equal(dom.overlay.parentNode.getAttribute("data-modal"), null);
+});
+
+const ALLOWED_PX_LINES = new Set([
+  "font-size: clamp(16px, min(100vw / 120, 100vh / 67.5), 24px);",
+  "outline: 2px solid var(--accent);",
+  "outline-offset: 2px;",
+  "border-bottom: 1px solid var(--line);",
+  "border: 1px solid var(--line);",
+  "border: 1px solid var(--now-line);",
+  "@media (min-width: 1240px) and (min-height: 640px) {",
+  "@media (max-width: 599px) {",
+]);
+
+test("PN-22: the contract of the CSS of the window - the height is bound in vh, the body scrolls inside, no scroll sideways, the page under it does not scroll; sizes in rem; no px but the lines of 1 and 2 px and the thresholds; the outline of the focused row", () => {
+  const css = fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8");
+  const rules = parseCss(css);
+  const top = (sel) => cssDecls(rules, sel);
+  const rem = (v) => {
+    const m = /^(-?\d*\.?\d+)rem$/.exec(v ?? "");
+    assert.ok(m !== null, `not in rem: ${v}`);
+    return Number(m[1]);
+  };
+
+  // the window
+  const win = top(".history");
+  assert.match(
+    win.get("max-height"),
+    /\b\d+(\.\d+)?d?vh\b/,
+    "the limit of the height in vh/dvh",
+  );
+  assert.ok(win.get("max-height").includes("3.5rem"));
+  assert.equal(win.get("overflow"), "hidden");
+  assert.equal(win.get("display"), "flex");
+  assert.equal(win.get("flex-direction"), "column");
+  assert.equal(win.get("width"), "min(55rem, 100% - 2rem)");
+  assert.equal(rem(win.get("border-radius")), 0.75);
+  assert.equal(win.get("margin"), "1.75rem auto 0");
+  assert.equal(cssDecls(rules, ".history").get("position"), "relative");
+  // the body: the only place that scrolls
+  const body = top(".history-body");
+  assert.equal(body.get("overflow-y"), "auto");
+  assert.equal(body.get("overflow-x"), "hidden");
+  assert.equal(body.get("overflow-wrap"), "anywhere");
+  assert.equal(body.get("min-height"), "0");
+  assert.equal(body.get("flex"), "1 1 auto");
+  assert.equal(rem(body.get("padding")), 1.5);
+  // the overlay does not scroll, the page under it does not either
+  const overlay = top(".history-overlay");
+  assert.equal(overlay.get("overflow"), "hidden");
+  assert.equal(overlay.get("position"), "fixed");
+  assert.equal(overlay.get("inset"), "0");
+  assert.equal(top("body[data-modal]").get("overflow"), "hidden");
+  assert.ok(
+    Number(overlay.get("z-index")) > Number(top(".overlay").get("z-index")),
+  );
+  // texts keep paragraphs and wrap
+  assert.equal(top(".history-quote").get("white-space"), "pre-wrap");
+  assert.equal(top(".history-note-text").get("white-space"), "pre-wrap");
+  // the cross: 2 rem hit area, 1.5 rem sign, 0.75 and 0.875 rem from the corner
+  const cross = top(".history-close");
+  assert.equal(rem(cross.get("width")), 2);
+  assert.equal(rem(cross.get("height")), 2);
+  assert.equal(rem(cross.get("font-size")), 1.5);
+  assert.equal(rem(cross.get("top")), 0.75);
+  assert.equal(rem(cross.get("right")), 0.875);
+  // the table and the quote
+  assert.equal(
+    rem(top(".history-quote").get("border-left").split(" ")[0]),
+    0.1875,
+  );
+  assert.equal(
+    top(".history-quote").get("border-radius"),
+    "0 0.4375rem 0.4375rem 0",
+  );
+  // the focus outline of a row that opens: inside the scrolling list
+  assert.equal(
+    top(".row.opens-history:focus-visible").get("outline-offset"),
+    "-0.125rem",
+  );
+  assert.equal(top(".row.opens-history").get("cursor"), "pointer");
+
+  // a narrow window: the whole screen, a bigger cross
+  const narrow = "@media (max-width: 599px)";
+  const nwin = cssDecls(rules, ".history", narrow);
+  assert.equal(nwin.get("width"), "100%");
+  assert.equal(nwin.get("height"), "100%");
+  assert.equal(nwin.get("max-height"), "none");
+  assert.equal(nwin.get("margin"), "0");
+  assert.ok(
+    rem(cssDecls(rules, ".history-close", narrow).get("width")) >= 2.75,
+  );
+  assert.ok(
+    rem(cssDecls(rules, ".history-close", narrow).get("height")) >= 2.75,
+  );
+  assert.equal(rem(cssDecls(rules, ".history-body", narrow).get("padding")), 1);
+
+  // the rules of the window have no px but the line of 1 px
+  for (const rule of rules) {
+    const own = rule.selectors.some((s) =>
+      /history|opens-history|data-modal/.test(s),
+    );
+    if (!own) continue;
+    for (const [name, value] of rule.decls) {
+      if (!/\d\s*px/.test(value)) continue;
+      assert.ok(
+        name.startsWith("border") && /^1px solid /.test(value),
+        `${rule.selectors[0]}: ${name}: ${value}`,
+      );
+    }
+  }
+  // no new px strings in the whole sheet
+  for (const line of css.split("\n")) {
+    if (!/\d\s*px/.test(line)) continue;
+    if (/^\s*\/?\*/.test(line)) continue;
+    assert.ok(
+      ALLOWED_PX_LINES.has(line.trim()),
+      `a new px line: ${line.trim()}`,
+    );
+  }
+  // no horizontal scroll rule is lifted: nothing of the window sets overflow-x visible or scroll
+  for (const rule of rules) {
+    if (!rule.selectors.some((s) => /history/.test(s))) continue;
+    const ox = rule.decls.get("overflow-x");
+    if (ox !== undefined) assert.equal(ox, "hidden");
+  }
 });

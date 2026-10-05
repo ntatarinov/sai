@@ -1,0 +1,83 @@
+{
+  "handoff_id": "step03-security-reviewer-b-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PO-20261005-02/step-03-security-reviewer-b.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PO-20261005-02/step-03-security-reviewer-b.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/build-b-before",
+    "parallel_work_now": "REVIEWER (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-008-history.md (п. 7, 8, 12.1, 14)",
+      "docs/design/REQ-008-history-view.md",
+      "docs/requirements.yaml (блок REQ-008, критерии 9–13)",
+      "handoffs/PO-20261005-02/step-02b-frontend-dev.json",
+      "tools/src/pixel-office/public/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3: ворота безопасности после кода части (б) REQ-008 — страница, окно «Просмотр истории» (handoffs/PO-20261005-02/step-02b-frontend-dev.json; проект docs/design/REQ-008-history.md п. 7, 14; копия до — <рабочая папка ORCH>/orch/po2/build-b-before). Сами, не по отчёту: по каждому пункту Q7–Q11, R2, R3 — «выполнен» или «неприменим» со своей проверкой. Особо: текст из журнала (сообщения владельца, записи ORCH, описания задач, метка «[скрыто]») попадает на страницу ТОЛЬКО как текст (textContent; нет innerHTML/insertAdjacentHTML/outerHTML/document.write/eval/Function и атрибутов-обработчиков из данных) — проверьте враждебными строками (<script>, <img onerror>, кавычки, очень длинный текст без пробелов, управляющие знаки, строки с \"__proto__\" в полях) через настоящую страницу в headless-браузере на своём сервере (порт 0/свободный, НЕ 4780; временная папка состояния, НЕ ~/.sai-pixel-office; журнал наполняйте через hook.js и pixel-office-note); CSP страницы не ослаблена (index.html, заголовки сервера; нет inline-скриптов/стилей, атрибута style); нет внешних адресов и запросов (сеть браузера); R2 — окно показывает только данные журнала, ничего придуманного (пустые состояния честные); атрибут data-modal — не через style; публичная часть не содержит секретов; число px-линий в style.css 15 (SC-03) — масштаб decisions/0012 не сломан. Запустите сами cd tools && npm run check. Ничего не правьте. Результат: result.verdict PASS/FAIL, по каждому пункту — выполнен/неприменим с доказательством, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый пункт Q7–Q11, R2, R3 — с доказательством",
+      "замечания с местом, важностью и исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T18:49:41Z",
+  "started_at": "2026-10-05T18:49:41Z",
+  "completed_at": "2026-10-05T18:54:16Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "area": "Затронута: страница Pixel Office показывает в браузере владельца текст из журнала (сообщения владельца, записи ORCH, описания задач, роли, метка [скрыто]). Изменены только public/: app.js, model.js, panels.js, texts.js, index.html, style.css, новый history.js (diff -rq с копией до). server.js, hook.js, note.js, schema.js не менялись. Отличия в tools/test/pixel-office-{hook,note,server}.test.js — работа TEST-DESIGNER r1 параллельно, вне этой проверки.",
+      "items": {
+        "Q7": "применим, выполнен. grep по public/*.js, *.css, index.html на ключи (sk-, ghp_, AKIA, PRIVATE KEY, password/secret/token=..., write-secret, имя заголовка подписи) — совпадение одно: schema.js:60 \"<task-notification\" (маркер служебного сообщения, не секрет). Браузерная проба: ключ sk-ant-api03-Q×40 в сообщении владельца и в записи ORCH — в events.jsonl его нет (journalHasRawSecret=false), в окне его нет (hasSecret=false), вместо него [скрыто] (3 span.history-masked).",
+        "Q8": "неприменим: данных магазинов нет; страница служебная, локальная, один владелец.",
+        "Q9": "неприменим: базы и сырых запросов нет (журнал JSONL, Map-структуры в history.js).",
+        "Q10": "применим, выполнен. Окно строится внутри guarded(\"история\", renderHistory); ключ исчез или указывает на другую строку -> HISTORY_ERROR (openRequest сверяет time и session_id); нет связи -> NO_CONNECTION в окне; до первого ответа -> HISTORY_LOADING. Новых внешних вызовов нет: единственный fetch — прежний GET /api/events с прежним таймаутом.",
+        "Q11": "применим, выполнен. В public/ нет http(s)/ws адресов (grep пуст). Сеть headless Chrome: 19 запросов, все на http://127.0.0.1:<свой порт>/ (16 путей: статика, /api/events, /favicon.ico 404 — было и раньше); foreignRequests=[]. Метод только GET (app.js:272).",
+        "R3": "неприменим: фото покупателей нет.",
+        "R2": "применим, выполнен. Страница только читает (только GET /api/events, нет POST/подписи в public/). Заранее написанных событий в коде нет (grep hook_event_name:/session_id:/time:\"20.. в public/*.js пуст). history.js — чистая функция модели: окна только по строкам prompt_kind=owner с trusted и без пометок, записи ORCH — только из строк журнала. Пустые состояния честные: «в этом запросе задач не было», «оркестратор не записал, как понял», «текст не сохраняется»; служебное сообщение помечено «служебное сообщение» и окна не открывает (проба: 2 строки-открывателя на 2 сообщения владельца, 1 служебная метка). Журнал в пробе наполнен только через hook.js (10 вызовов, все exit 0) и pixel-office-note (3 записи, exit 0).",
+        "XSS_text_only": "выполнен. Код: все узлы окна через make() -> createElement + textContent (app.js:227-232), maskedInto режет по [скрыто] и кладёт части как текст, setData — только setAttribute data-*/dataset с постоянными именами; grep innerHTML|outerHTML|insertAdjacentHTML|document.write|eval(|Function(|.style|cssText|setAttribute(on/style/href/src) по public/ — пусто. Браузер (Chrome headless, CDP): враждебные строки в prompt (<script>, <img onerror>, <svg onload>, кавычки, &amp;, \\u0007, ESC, U+202E, __proto__/constructor, JSON с __proto__, javascript:), в agent_type, description, agent_id=__proto__, session_id=__proto__, в записях ORCH, 3500 знаков без пробелов — window.__pwn=null во всех окнах (из журнала, из кнопки задачи, после опроса 2.5 с), ({}).polluted=null, в #history-body 0 элементов script/img/svg/iframe/object/a, 0 атрибутов on* на всей странице, текст «<script>window.__pwn=1</script>» виден как текст; Map-ключи __proto__/constructor не ломают окно (заголовок «constructor», роль/описание показаны дословно).",
+        "CSP": "не ослаблена. Заголовок ответа /: default-src self; script-src self; style-src self; connect-src self; img-src self; base-uri none; form-action none; frame-ancestors none; object-src none; плюс X-Frame-Options DENY, nosniff, no-referrer. server.js не изменён. index.html: один <script type=module src=boot.js>, inline-скриптов 0, <style> нет, атрибутов style и on* нет; в рантайме [style]=0 при 1920, 2560, 390. data-modal=history ставится setAttribute на body и снимается при Esc (проверено), стиль — body[data-modal]{overflow:hidden} в style.css. Консоль: только 404 favicon.ico, нарушений CSP и исключений нет.",
+        "paths_write": "неприменим: часть (б) файлов не пишет.",
+        "SC03_px": "выполнен: grep -c px style.css = 15 (до — тоже 15); рамка окна/таблицы/рельса объединены с .card в одно правило border:1px. Горизонтальной прокрутки нет: окно с текстом 3500 знаков при 1920×1080 — bodyOverflowX=0, docOverflowX=0; окно без длинного текста при 2560×1440 и 390×844 — 0/0 (overflow-wrap:anywhere в .history-body)."
+      }
+    },
+    "findings": [],
+    "self_check": {
+      "npm_run_check": "cd tools && perl alarm 400 npm run check -> EXIT 0; prettier ok, eslint без вывода, # tests 472 # pass 472 # fail 0 # skipped 0",
+      "diff_scope": "diff -rq build-b-before/src tools/src -> отличаются app.js, index.html, model.js, panels.js, style.css, texts.js; Only in public: history.js",
+      "sinks_grep": "grep -nE \"innerHTML|outerHTML|insertAdjacentHTML|document\\.write|eval\\(|Function\\(|\\.style\\b|cssText|setAttribute\\(\\\"(on|style|href|src)\" public/*.js index.html -> пусто",
+      "urls_grep": "grep -nE \"https?://|wss?://\" public/* -> пусто",
+      "secrets_grep": "1 совпадение: schema.js:60 \"<task-notification\" — маркер, не секрет",
+      "browser_probe": "scratchpad/secb/probe.mjs: сервер main.js --port 0 --dir <scratchpad>/state (порт 58460, не 4780; ~/.sai-pixel-office не трогался), Chrome --headless=new с отдельным профилем в scratchpad, CDP; вывод scratchpad/secb/probe-out.json; сервер и Chrome остановлены (serverExit 0, lsof по порту пуст, процессов нет)",
+      "hashes": "shasum всех файлов tools/ docs/ decisions/ (126) до и после — совпадают (diff пуст)"
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Длинный текст без пробелов проверен на отсутствие горизонтальной прокрутки при 1920×1080; при 2560×1440 и 390×844 измерено окно без длинного текста (правило overflow-wrap:anywhere одно и то же). Не блокирует."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Отличия tools/test/pixel-office-{hook,note,server}.test.js от копии до — параллельная работа TEST-DESIGNER r1, в эту проверку не входили."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

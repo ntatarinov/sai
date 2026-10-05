@@ -9,8 +9,9 @@
 // (document, fetch, clocks, timers, frames, the size of the window), so a test
 // can replace all of it.
 
-import { POLL_MS, POLL_TIMEOUT_MS, parseLine } from "./schema.js";
+import { MASK_LABEL, POLL_MS, POLL_TIMEOUT_MS, parseLine } from "./schema.js";
 import { buildModel } from "./model.js";
+import { buildHistory } from "./history.js";
 import {
   bubblesAt,
   buildCard,
@@ -22,6 +23,7 @@ import { createSim } from "./office-sim.js";
 import { canvasPoint, drawOffice, fitCanvas, hitTest } from "./office-view.js";
 import {
   FILTERS,
+  TONES,
   filterJournal,
   journalRows,
   nowLine,
@@ -39,6 +41,30 @@ import {
   EMPTY_JOURNAL,
   FILTER_LABELS,
   HEADER_BADGE,
+  HISTORY_BADGE,
+  HISTORY_CLOSE,
+  HISTORY_COL_AGENT,
+  HISTORY_COL_DOES,
+  HISTORY_COL_RESULT,
+  HISTORY_COL_TASK,
+  HISTORY_EMPTY_CELL,
+  HISTORY_ERROR,
+  HISTORY_LOADING,
+  HISTORY_META_FINISHED,
+  HISTORY_META_STARTED,
+  HISTORY_NOTE_AUTO,
+  HISTORY_NOTE_BY,
+  HISTORY_NOTE_MISSING,
+  HISTORY_NO_TASKS,
+  HISTORY_OPEN,
+  HISTORY_SECTION_REQUEST,
+  HISTORY_SECTION_TIMELINE,
+  HISTORY_SECTION_UNDERSTOOD,
+  HISTORY_SECTION_WORK,
+  HISTORY_SERVICE,
+  HISTORY_TASK_N,
+  HISTORY_TEXT_DISABLED,
+  HISTORY_TRUNCATED,
   JOURNAL_COUNT,
   JOURNAL_TITLE,
   JOURNAL_ZONE,
@@ -145,6 +171,7 @@ export function createApp(env) {
   let model = buildModel(entries, serverStarts, nowFn());
   let office = buildOffice(model);
   let rows = journalRows(model, office);
+  let history = buildHistory(model);
   let sim = createSim();
   sim.sync(office);
 
@@ -167,6 +194,16 @@ export function createApp(env) {
   // What opened the card: the key of a legend button, or null (the canvas).
   let openerKey = null;
   let journalShown = false;
+  // The window of history: the key of the open request (null: closed), the
+  // time and session of that request (a key that later names another line is
+  // an error, not another request), and what opened it: {kind: "journal",
+  // index} or {kind: "task", key}.
+  let historyKey = null;
+  let historyOf = null;
+  let historyOpener = null;
+  // The buttons "открыть историю запроса" of the panel of tasks by the key of
+  // their item, as drawn last.
+  const taskButtons = new Map();
   // The legend buttons by the key of the character and the rows of the journal
   // as drawn last: the page finds its own elements without searching the DOM.
   const legendButtons = new Map();
@@ -258,6 +295,8 @@ export function createApp(env) {
     guarded("шапка", renderLink);
     // Before the first answer the list of the journal tells about the link.
     if (!loaded) guarded("журнал", renderJournal);
+    // The open window of history tells about a lost link.
+    if (historyKey !== null) guarded("история", renderHistory);
   }
 
   // Applies a consistent answer. from = 0: the array is replaced; from =
@@ -350,6 +389,7 @@ export function createApp(env) {
       model = buildModel(entries, serverStarts, now);
       office = buildOffice(model);
       rows = journalRows(model, office);
+      history = buildHistory(model);
       sim.sync(office);
       sim.enqueue(office.routes, { seen: !historyDone });
       if (fromAnswer) historyDone = true;
@@ -382,6 +422,7 @@ export function createApp(env) {
     guarded("журнал", renderJournal);
     guarded("задачи", renderTasks);
     guarded("карточка", renderCard);
+    guarded("история", renderHistory);
   }
 
   // ------------------------------------------------------------ header
@@ -506,6 +547,31 @@ export function createApp(env) {
     return li;
   }
 
+  // A row of the journal panel: a message of the owner with a window opens it
+  // (the row itself takes the focus and the action); a service message only
+  // says so (REQ-008, design 7.5). The rows of the card stay as they are.
+  function journalPanelRow(view) {
+    const li = journalRow(view);
+    if (view.kind !== "UserPromptSubmit") return li;
+    const key = `req:${view.index}`;
+    if (view.prompt_kind === "owner" && history.byKey.has(key)) {
+      li.classList.add("opens-history");
+      li.setAttribute("tabindex", "0");
+      setData(li, "request", key);
+      li.appendChild(make("span", "history-open", HISTORY_OPEN));
+      const opener = { kind: "journal", index: view.index };
+      li.addEventListener("click", () => openHistory(key, opener));
+      li.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        if (typeof event.preventDefault === "function") event.preventDefault();
+        openHistory(key, opener);
+      });
+    } else if (view.prompt_kind === "service") {
+      li.appendChild(make("span", "history-service", HISTORY_SERVICE));
+    }
+    return li;
+  }
+
   function journalNote(reason) {
     const li = make("li", "journal-empty");
     setData(li, "reason", reason);
@@ -553,9 +619,13 @@ export function createApp(env) {
     const atBottom =
       list.scrollHeight - list.clientHeight - list.scrollTop <= BOTTOM_SLACK;
     const anchor = anchorOf(list);
+    // The rows are replaced: the row with the focus gets it back.
+    const focused = focusedElement();
+    const focusIndex =
+      journalItems.find((item) => item.li === focused)?.index ?? null;
     journalItems = picked.rows.map((view) => ({
       index: view.index,
-      li: journalRow(view),
+      li: journalPanelRow(view),
     }));
     let items = journalItems.map((item) => item.li);
     if (rows.length === 0) items = [journalNote("empty")];
@@ -569,6 +639,9 @@ export function createApp(env) {
         same === undefined ? 0 : same.li.offsetTop - anchor.offset;
     }
     journalShown = true;
+    if (focusIndex !== null) {
+      journalItems.find((item) => item.index === focusIndex)?.li.focus();
+    }
   }
 
   function renderFilters() {
@@ -674,9 +747,37 @@ export function createApp(env) {
     return h3;
   }
 
+  // An item of the panel of tasks: the contents of itemInto (the same as in the
+  // card of an agent) and, last, a separate button that opens the window of
+  // the request the item belongs to; the item itself is not a button
+  // (REQ-008, design 7.5).
+  function panelItem(item) {
+    const el = itemInto(make("div", "item"), item);
+    const key =
+      item.kind === "task"
+        ? history.windowOfTask.get(item.key)
+        : history.windowOfMainRow.get(item.key);
+    if (key === undefined) return el;
+    const button = make("button", "history-open", HISTORY_OPEN);
+    button.setAttribute("type", "button");
+    setData(button, "request", key);
+    const opener = { kind: "task", key: item.key };
+    button.addEventListener("click", () => openHistory(key, opener));
+    el.appendChild(button);
+    taskButtons.set(item.key, button);
+    return el;
+  }
+
   function renderTasks() {
     const body = els.tasks;
     if (!body) return;
+    // The buttons are replaced: the button with the focus gets it back.
+    const focused = focusedElement();
+    let focusKey = null;
+    for (const [key, button] of taskButtons) {
+      if (button === focused) focusKey = key;
+    }
+    taskButtons.clear();
     if (!loaded) {
       body.replaceChildren();
       return;
@@ -687,17 +788,14 @@ export function createApp(env) {
     if (panel.current.length === 0) {
       out.push(make("p", "section-empty", NOW_EMPTY));
     }
-    for (const item of panel.current)
-      out.push(itemInto(make("div", "item"), item));
+    for (const item of panel.current) out.push(panelItem(item));
     out.push(sectionTitle("history", SECTION_HISTORY));
     if (panel.history.length === 0) {
       out.push(make("p", "section-empty", NO_DATA));
     }
     for (const entry of panel.history) {
       out.push(
-        entry.kind === "session"
-          ? sessionCard(entry)
-          : itemInto(make("div", "item"), entry),
+        entry.kind === "session" ? sessionCard(entry) : panelItem(entry),
       );
     }
     if (panel.total > panel.shown) {
@@ -720,6 +818,7 @@ export function createApp(env) {
       out.push(ul);
     }
     body.replaceChildren(...out);
+    if (focusKey !== null) taskButtons.get(focusKey)?.focus();
   }
 
   // ------------------------------------------------------------ card
@@ -837,6 +936,310 @@ export function createApp(env) {
     guarded("карточка", renderCard);
     if (openerKey !== null) legendButton(openerKey)?.focus();
     openerKey = null;
+  }
+
+  // ------------------------------------------------------------ history
+
+  // The body element of the page: the attribute data-modal on it stops the
+  // page under the window from scrolling (a style attribute is not used).
+  function pageBody() {
+    return document.body ?? els.historyOverlay?.parentNode ?? null;
+  }
+
+  // A text of the journal with every label "[скрыто]" in its own span; all of
+  // it as text, never as markup.
+  function maskedInto(el, text) {
+    const parts = text.split(MASK_LABEL);
+    parts.forEach((part, k) => {
+      if (k > 0) el.appendChild(make("span", "history-masked", MASK_LABEL));
+      if (part !== "") el.appendChild(make("span", undefined, part));
+    });
+    return el;
+  }
+
+  function historyState(state) {
+    const span = make("span", "history-state", STATE_LABELS[state] ?? state);
+    setData(span, "state", state);
+    return span;
+  }
+
+  function historyAutoMark() {
+    return make("span", "history-auto", ` · ${HISTORY_NOTE_AUTO}`);
+  }
+
+  function historySection(name, heading) {
+    const section = make("section", "history-section");
+    setData(section, "section", name);
+    section.appendChild(make("h3", "history-heading", heading));
+    return section;
+  }
+
+  function historyMeta(request) {
+    const meta = make("p", "history-meta");
+    meta.appendChild(historyState(request.state));
+    meta.appendChild(make("span", undefined, " · "));
+    meta.appendChild(
+      make(
+        "span",
+        "history-started",
+        `${HISTORY_META_STARTED} ${fmtDateTime(request.started_at)}`,
+      ),
+    );
+    // Without a Stop the words of the state already stand first: "finished"
+    // would be false for a request still in work, and repeating the state
+    // adds nothing.
+    if (request.finished_at !== null) {
+      meta.appendChild(make("span", undefined, " · "));
+      meta.appendChild(
+        make(
+          "span",
+          "history-finished",
+          `${HISTORY_META_FINISHED} ${fmtDateTime(request.finished_at)}`,
+        ),
+      );
+    }
+    return meta;
+  }
+
+  function requestSection(request) {
+    if (request.text === null) {
+      const line = make("p", "history-disabled", HISTORY_TEXT_DISABLED);
+      setData(line, "section", "request");
+      return line;
+    }
+    const section = historySection("request", HISTORY_SECTION_REQUEST);
+    section.appendChild(maskedInto(make("div", "history-quote"), request.text));
+    if (request.truncated) {
+      section.appendChild(
+        make(
+          "p",
+          "history-truncated",
+          fill(HISTORY_TRUNCATED, { n: Array.from(request.text).length }),
+        ),
+      );
+    }
+    return section;
+  }
+
+  function understoodSection(request) {
+    const section = historySection("understood", HISTORY_SECTION_UNDERSTOOD);
+    const note = request.note;
+    if (note === null) {
+      section.appendChild(make("p", "history-missing", HISTORY_NOTE_MISSING));
+      return section;
+    }
+    const by = make("p", "history-by");
+    by.appendChild(
+      make("span", undefined, `${HISTORY_NOTE_BY} · ${fmtTimeSec(note.time)}`),
+    );
+    if (note.auto) {
+      by.appendChild(historyAutoMark());
+    }
+    section.appendChild(by);
+    section.appendChild(maskedInto(make("div", "history-quote"), note.text));
+    return section;
+  }
+
+  // A cell of the table with the caption of its column, shown only when the
+  // table is a stack of cards in a narrow window.
+  function historyCell(column, value, className) {
+    const td = make("td");
+    setData(td, "column", column);
+    td.appendChild(make("span", "history-cell-label", column));
+    td.appendChild(make("span", className, value));
+    return td;
+  }
+
+  function resultOf(task) {
+    let text = `${LABEL_STARTED} ${fmtTime(task.started_at)}`;
+    if (task.state === "completed") {
+      text += ` · ${LABEL_ENDED} ${fmtTime(task.ended_at)}`;
+    } else if (task.state === "in_progress") {
+      text += ` · ${LABEL_LAST_EVENT} ${fmtTime(task.session_last_event_at)}`;
+    }
+    return text;
+  }
+
+  function workSection(request) {
+    const section = historySection("work", HISTORY_SECTION_WORK);
+    if (request.tasks.length === 0) {
+      section.appendChild(make("p", "history-none", HISTORY_NO_TASKS));
+      return section;
+    }
+    const table = make("table", "history-table");
+    const head = make("thead");
+    const headRow = make("tr");
+    for (const column of [
+      HISTORY_COL_TASK,
+      HISTORY_COL_AGENT,
+      HISTORY_COL_DOES,
+      HISTORY_COL_RESULT,
+    ]) {
+      headRow.appendChild(make("th", undefined, column));
+    }
+    head.appendChild(headRow);
+    table.appendChild(head);
+    const bodyRows = make("tbody");
+    for (const task of request.tasks) {
+      const tr = make("tr");
+      setData(tr, "key", task.key);
+      setData(tr, "state", task.state);
+      const first = make("td");
+      first.appendChild(
+        make("span", "history-task", fill(HISTORY_TASK_N, { n: task.ordinal })),
+      );
+      first.appendChild(historyState(task.state));
+      tr.appendChild(first);
+      tr.appendChild(historyCell(HISTORY_COL_AGENT, task.role, "history-role"));
+      tr.appendChild(
+        task.description === null
+          ? historyCell(HISTORY_COL_DOES, HISTORY_EMPTY_CELL, "history-empty")
+          : historyCell(HISTORY_COL_DOES, task.description, "history-does"),
+      );
+      tr.appendChild(
+        historyCell(HISTORY_COL_RESULT, resultOf(task), "history-result"),
+      );
+      bodyRows.appendChild(tr);
+    }
+    table.appendChild(bodyRows);
+    section.appendChild(table);
+    return section;
+  }
+
+  function timelineSection(request) {
+    const section = historySection("timeline", HISTORY_SECTION_TIMELINE);
+    const list = make("ol", "history-timeline");
+    for (const item of request.timeline) {
+      const li = make("li", "history-event");
+      setData(li, "kind", item.kind);
+      const kind = model.entries[item.index]?.hook_event_name;
+      setData(
+        li,
+        "tone",
+        item.kind === "note" ? "note" : (TONES[kind] ?? "session"),
+      );
+      const line = make("span", "history-event-line");
+      line.appendChild(make("span", "time", fmtTimeSec(item.time)));
+      line.appendChild(make("span", undefined, " · "));
+      line.appendChild(make("span", "who", item.who));
+      line.appendChild(make("span", undefined, " — "));
+      if (item.kind === "note" && item.auto === true) {
+        line.appendChild(make("span", "what", HISTORY_NOTE_BY));
+        line.appendChild(historyAutoMark());
+      } else {
+        line.appendChild(make("span", "what", item.what));
+      }
+      li.appendChild(line);
+      if (item.detail !== null) {
+        li.appendChild(
+          item.kind === "note"
+            ? maskedInto(make("span", "history-note-text"), item.detail)
+            : make("span", "history-detail", item.detail),
+        );
+      }
+      list.appendChild(li);
+    }
+    section.appendChild(list);
+    return section;
+  }
+
+  // The request that the window shows, or null when it is gone from the data
+  // or its key now names another line.
+  function openRequest() {
+    const request = history.byKey.get(historyKey);
+    if (request === undefined || historyOf === null) return null;
+    if (
+      request.time !== historyOf.time ||
+      request.session_id !== historyOf.session_id
+    ) {
+      return null;
+    }
+    return request;
+  }
+
+  // Draws the open window again from the model; the scroll position of the
+  // body is kept, "×" and the body are not replaced, so the focus stays.
+  function renderHistory() {
+    const body = els.historyBody;
+    if (!body || historyKey === null) return;
+    const top = body.scrollTop;
+    const out = [make("span", "history-badge", HISTORY_BADGE)];
+    const request = loaded ? openRequest() : null;
+    if (!loaded) {
+      const line = make("p", "history-loading", HISTORY_LOADING);
+      line.setAttribute("id", "history-title");
+      out.push(line);
+    } else if (request === null) {
+      const line = make("p", "history-error", HISTORY_ERROR);
+      line.setAttribute("id", "history-title");
+      out.push(line);
+    } else {
+      const title = make("h2", "history-title", request.title);
+      title.setAttribute("id", "history-title");
+      out.push(title, historyMeta(request));
+      if (link === "down") {
+        out.push(make("p", "history-offline", NO_CONNECTION));
+      }
+      out.push(
+        requestSection(request),
+        understoodSection(request),
+        workSection(request),
+        timelineSection(request),
+      );
+    }
+    body.replaceChildren(...out);
+    body.scrollTop = top;
+  }
+
+  // Opens the window of a request. Only one window is open at a time: an
+  // open card of an agent closes first (the choice of the character stays,
+  // the focus is not given back to it).
+  function openHistory(key, opener) {
+    resolveEls();
+    if (!els.historyOverlay || !els.historyBody) return;
+    const request = history.byKey.get(key);
+    if (request === undefined) return;
+    if (cardOpen) {
+      cardOpen = false;
+      openerKey = null;
+      guarded("карточка", renderCard);
+    }
+    historyKey = key;
+    historyOf = { time: request.time, session_id: request.session_id };
+    historyOpener = opener ?? null;
+    els.historyBody.scrollTop = 0;
+    guarded("история", renderHistory);
+    els.historyOverlay.hidden = false;
+    pageBody()?.setAttribute("data-modal", "history");
+    els.historyClose?.focus();
+  }
+
+  // The element that opened the window, found again after the panels were
+  // drawn anew; else the list of the journal.
+  function historyOpenerElement() {
+    const opener = historyOpener;
+    if (opener !== null && opener.kind === "journal") {
+      const row = journalItems.find((item) => item.index === opener.index);
+      if (row !== undefined && row.li.classList.contains("opens-history")) {
+        return row.li;
+      }
+    } else if (opener !== null && opener.kind === "task") {
+      const button = taskButtons.get(opener.key);
+      if (button !== undefined) return button;
+    }
+    return els.journal ?? null;
+  }
+
+  function closeHistory() {
+    resolveEls();
+    if (historyKey === null) return;
+    historyKey = null;
+    historyOf = null;
+    if (els.historyOverlay) els.historyOverlay.hidden = true;
+    els.historyBody?.replaceChildren();
+    pageBody()?.removeAttribute("data-modal");
+    historyOpenerElement()?.focus();
+    historyOpener = null;
   }
 
   // ------------------------------------------------------------ the office
@@ -965,7 +1368,27 @@ export function createApp(env) {
     if (document.visibilityState === "visible") poll();
   }
 
+  // One handler of the keys of the page. While the window of history is open
+  // it takes the keys: Esc closes only it, Tab and Shift+Tab go round "×" and
+  // the body of the window. Otherwise Esc closes the card of an agent.
   function onKey(event) {
+    if (historyKey !== null) {
+      const prevent = () => {
+        if (typeof event.preventDefault === "function") event.preventDefault();
+      };
+      if (event.key === "Escape") {
+        prevent();
+        closeHistory();
+      } else if (event.key === "Tab") {
+        prevent();
+        const active = focusedElement();
+        let next = event.shiftKey === true ? els.historyBody : els.historyClose;
+        if (active === els.historyClose) next = els.historyBody;
+        else if (active === els.historyBody) next = els.historyClose;
+        next?.focus();
+      }
+      return;
+    }
     if (event.key === "Escape" && cardOpen) closeCard();
   }
 
@@ -995,6 +1418,10 @@ export function createApp(env) {
     els.tasks = byId("tasks");
     els.overlay = byId("card-overlay");
     els.card = byId("card");
+    els.historyOverlay = byId("history-overlay");
+    els.history = byId("history");
+    els.historyClose = byId("history-close");
+    els.historyBody = byId("history-body");
   }
 
   // The constant captions are set once more from texts.js, the listeners are
@@ -1024,6 +1451,17 @@ export function createApp(env) {
     if (els.overlay) {
       els.overlay.addEventListener("click", (event) => {
         if (event.target === els.overlay) closeCard();
+      });
+    }
+    if (els.historyClose) {
+      els.historyClose.textContent = "×";
+      els.historyClose.setAttribute("aria-label", HISTORY_CLOSE);
+      els.historyClose.title = HISTORY_CLOSE;
+      els.historyClose.addEventListener("click", () => closeHistory());
+    }
+    if (els.historyOverlay) {
+      els.historyOverlay.addEventListener("click", (event) => {
+        if (event.target === els.historyOverlay) closeHistory();
       });
     }
     if (els.office) {
@@ -1077,5 +1515,8 @@ export function createApp(env) {
     setSpeed,
     selectCharacter,
     closeCard,
+    getHistory: () => history,
+    openHistory,
+    closeHistory,
   };
 }

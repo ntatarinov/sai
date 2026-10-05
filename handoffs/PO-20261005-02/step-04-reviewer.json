@@ -1,0 +1,99 @@
+{
+  "handoff_id": "step04-reviewer-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PO-20261005-02/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PO-20261005-02/step-04-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/build-a-before",
+    "parallel_work_now": "SECURITY-REVIEWER (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-008-history.md",
+      "docs/requirements.yaml (блок REQ-008)",
+      "decisions/0011-pixel-office-stores-owner-requests.md",
+      "handoffs/PO-20261005-02/step-02-backend-dev.json",
+      "tools/src/pixel-office/",
+      "tools/README.md",
+      ".claude/agents/orchestrator.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью после кода части (а) REQ-008 (handoffs/PO-20261005-02/step-02-backend-dev.json; проект docs/design/REQ-008-history.md; копия до — <рабочая папка ORCH>/orch/po2/build-a-before). Проверьте по роли: настоящее ли это решение, а не костыль; идиомы Node/стека Sai; лишняя работа и мёртвый код; расхождения с проектом и записанными решениями (decisions/0003, 0005, 0007, 0011, 0012); эрозия планки (Q1–Q14, R1–R3; в том числе: заглушённые линтер/тесты, || true, пропуски); изменены ли только файлы write_set разработчика (сравните с копией до — diff -rq; schema.js лежит в public/ — известное отклонение write_set от проекта, принято); четыре прежних теста по п. 12.1 (HK-03b, SV-19, PG-22 изменены; PG-12d5 намеренно не тронут до части (б)) — расширены, не ослаблены; хеш tools/package.json (критерий 14 REQ-001: jq ... sha256 без двух скриптов 5c592925…); orchestrator.md — только пункт «как понял», G1–G4 проходят (команда одна строка, --text, без --session); README — все строки DC-01. Вопросы разработчика (его result.issues 3 и 5): противоречие проекта по коду ошибки поля ORCH на /api/events (п. 2.1 не allowed:<поле> и п. 5.2 unknown_key/missing) — оцените, ломает ли это критерий; и список его собственных решений для ревью. Запустите сами cd tools && npm run check. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "замечания с местом, важностью и исправлением",
+      "файлы сверены с копией до"
+    ]
+  },
+  "created_at": "2026-10-05T17:22:31Z",
+  "started_at": "2026-10-05T17:22:31Z",
+  "completed_at": "2026-10-05T17:24:12Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Часть (а) REQ-008 сделана по проекту, а не обходом: один контракт строки в schema.js для хука, сервера и страницы; маскирование в отдельном модуле без регулярных выражений с вложенными повторами и в трёх местах (хук, команда, сервер); привязка к сообщению владельца и запись — одна синхронная последовательность без await; хук и команда ходят через свой http.Agent (прокси не уводит подписанное тело); таймауты и явные коды выхода; ошибки журнала дают 500, а не падение. Эрозии планки нет: skip/only/todo/eslint-disable/|| true — 0; четыре прежних теста расширены, не ослаблены (HK-03b стал сильнее: три прогона, метка prompt ровно один раз и только как prompt_text; SV-19 и PG-22 — только добавления; PG-12d5 не тронут намеренно). Изменены только файлы write_set (diff -r с копией до) плюс известный public/schema.js. Хеш tools/package.json без двух скриптов = 5c592925… (совпал); добавлена одна строка скрипта. orchestrator.md — один пункт, G1=1, G2=1, G3=1, G4=0. README: все 14 строк DC-01 найдены, число '## ' = 2. cd tools && npm run check: 439/439. Блокирующих находок нет. За чем следить: значения в кавычках не маскируются (по букве критерия 7) — вопрос к проекту; PG-12d5 в части (б).",
+    "findings": [
+      {
+        "place": "tools/src/pixel-office/mask.js: NAMED_VALUE (M9), BEARER (M8); критерий 7 REQ-008, docs/design/REQ-008-history.md п. 3.1, 3.3",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Секрет в кавычках не маскируется: проверено запуском maskSecrets — password=\"hunter2\", token: 'abc123secret', {\"token\": \"abcdefg\"} остаются как есть (значение берётся «до пробела или кавычки», при кавычке сразу после = пустое — правило не срабатывает). Код следует букве критерия 7 и проекту; это пробел самого правила (частая форма), а не ошибка исполнения. Остаточный риск в п. 3.3 проекта его не называет, README называет только «значение в кавычках после password=».",
+        "fix": "Вопрос к CODE-DESIGNER/REQ-ANALYST (см. issues): пропускать одну открывающую кавычку и брать значение до закрывающей, добавить форму JSON; либо назвать оба случая в остаточном риске README (' и JSON-форма \"token\": \"...\"). Код до решения не менять."
+      },
+      {
+        "place": "tools/README.md, абзац «Остаточный риск»",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Пример «значение в кавычках после password=» в скобках к пункту «короче 32 знаков»; формы token: '...' и JSON \"token\": \"...\" не названы.",
+        "fix": "Добавить их в перечень остаточного риска (и сохранить строку «остаточный риск», которую ищет DC-01)."
+      },
+      {
+        "place": "tools/src/pixel-office/server.js, processEvent (validateWriteBody с text_storage_off)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "При выключенном хранении у сервера и включённом у хука событие UserPromptSubmit теряется целиком (400). Это записанный проектом и README известный риск (критерий 8), код следует ему; отмечено, чтобы не потерялось.",
+        "fix": "Менять не нужно; при желании — ISS: сервер мог бы отбросить prompt_text и принять событие. Только по решению владельца (противоречит критерию 8)."
+      },
+      {
+        "place": "tools/src/pixel-office/note.js, main(): ветка StateDirError",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Относительный SAI_PIXEL_OFFICE_DIR выводит текст ошибки resolveStateDir как есть; в таблице исходов п. 6 проекта этот случай не назван (код 1). Текст не содержит секрета или значения тела — безопасно.",
+        "fix": "Добавить строку в таблицу п. 6 при ближайшей правке проекта."
+      }
+    ],
+    "self_check": "cd tools && npm run check -> # tests 439, # pass 439, # fail 0, # skipped 0, # todo 0 (prettier и eslint --max-warnings 0 чисто). diff -rq копия-до/{src,test} tools/{src,test}: отличаются config.js, hook.js, journal.js, protocol.js, public/schema.js, server.js, test/pixel-office-{helpers,hook.test,page.test,server.test}.js; новые mask.js, note.js — все из write_set; package.json: +1 строка скрипта pixel-office-note; README.md и orchestrator.md изменены. jq -S -c 'del(.scripts[\"pixel-office\"], .scripts[\"pixel-office-note\"])' tools/package.json | shasum -a 256 -> 5c59292586d92e95c1ea507ef7a46790a125677172c3fe3abfd90dedd9edf0a4. grep -nE '\\.skip\\(|\\.only\\(|todo|TODO|eslint-disable|\\|\\| true|FIXME' по изменённым src и test -> пусто (rc 1). grep -nE 'https?://[^1l]|0[.]0[.]0[.]0|localhost' note.js и orchestrator.md -> пусто. Секреты (sk-, ghp_, AKIA) в изменённых файлах не найдены (только в тестовых образцах нет). orchestrator.md: grep -c pixel-office-note=1; 'до раздачи|до запуска агентов'=1; 'pixel-office-note[^`]*--text'=1; grep -oE 'pixel-office-note[^`]*' | grep -c -e --session = 0. README: 14 строк DC-01 по grep -cF — каждая >= 1; grep -c '^## ' = 2. Пробы: validateWriteBody({hook_event_name:'Stop', note_text:'x'}) -> {ok:false, reason:'not_allowed:note_text'}; maskSecrets: 'a.test.js' -> '[скрыто]' (следствие M7, названо в README), 'password=[кавычка]hunter2' не маскируется (находка 1). Код во время ревью не менялся.",
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "text": "Вопрос developer-а 3 (причина отказа поля ORCH на /api/events): п. 2.1 (not_allowed:<поле>) и п. 5.2 (unknown_key:note_text / missing:hook_event_name) противоречат друг другу. Критерий не ломается: критерий 4/6 REQ-008 требует отказа 400 и неизменного журнала, а не точной строки причины (проверено пробой: тело ORCH на validateWriteBody -> 400-причина not_allowed:note_text, запись не создаётся). Выбор разработчика (контракт п. 2.1 как общий и более поздний) разумен. Просьба к CODE-DESIGNER уточнить п. 5.2 одной фразой; SV-56 должен проверять 400 и sha256 журнала, а не строку причины."
+      },
+      {
+        "kind": "QUESTION",
+        "text": "Вопрос developer-а 5 (его решения): (1) prepareText отбрасывает хвостовой отрезок без пробелов только при разрезе внутри отрезка — верно, лишнего не отбрасывает; (2) левая граница [A-Za-z0-9_] у M2/M8 — как у M9, согласовано; (3) M3 проверяет один знак схемы — линейно, допустимо; (4) time_skew при нечисловых часах сервера — недостижимая защитная ветка, безвредна; (5) --help в любом месте и код 1 «соединение прервано» — разумно, в таблицу п. 6 стоит дописать; (6) повторный checkNoteLine записи — защита в той же операции, оставить. Расхождений с decisions/0003, 0005, 0007, 0011, 0012 не найдено; решения 0011 соблюдены (по умолчанию включено, отключение переменной, маскирование на трёх линиях, текст только владельца и ORCH)."
+      },
+      {
+        "kind": "QUESTION",
+        "text": "К записи/проекту: маскирование значений в кавычках (находка 1) — решить, расширять ли правила M8/M9 (критерий 7 говорит «до пробела или кавычки»). До решения код следует записанному."
+      },
+      {
+        "kind": "NOTE",
+        "text": "PG-12d5 намеренно не тронут до части (б) (model.js добавляет prompt_kind): принято, должен быть изменён в раунде (б). Для ORCH: низкие находки 1–4 по желанию завести как ISS (по quality-bar §6 п. 6); запрета на PASS они не создают. Q2/Q10/Q11 по коду: у внешнего вызова note.js таймаут 3 с, адрес только 127.0.0.1 и порт из файла; Q8, R3 не затронуты (данных магазинов и фото нет)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

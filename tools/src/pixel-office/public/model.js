@@ -10,6 +10,7 @@
 
 import {
   LAST_LINE_FUTURE_MS,
+  PROMPT_KINDS,
   READ_CONFLICT_MS,
   SOURCE_REAL,
 } from "./schema.js";
@@ -175,6 +176,15 @@ function usableStarts(serverStarts, lineCount) {
 
 // ---------------------------------------------------------------- 3.5 journal
 
+// The kind of a request (owner or service) of a UserPromptSubmit line, or
+// null for other events and for lines written before the kind existed.
+function promptKind(e) {
+  return e.hook_event_name === "UserPromptSubmit" &&
+    PROMPT_KINDS.includes(e.prompt_kind)
+    ? e.prompt_kind
+    : null;
+}
+
 function journalRow(e, index, mark) {
   const kind = e.hook_event_name;
   let role = typeof e.agent_type === "string" ? e.agent_type : "";
@@ -193,6 +203,7 @@ function journalRow(e, index, mark) {
     source: typeof e.source === "string" ? e.source : "",
     marked: mark !== null,
     reason: mark,
+    prompt_kind: promptKind(e),
   };
 }
 
@@ -313,6 +324,7 @@ export function buildModel(entries, serverStarts, nowMs) {
           start_index: i,
           end_index: null,
           closed_by: null,
+          prompt_kind: promptKind(e),
         };
         mainRows.push(row);
         openRow.set(sid, row);

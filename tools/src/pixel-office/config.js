@@ -25,6 +25,9 @@ export const STATE_FILES = Object.freeze([
 // Environment variables.
 export const ENV_STATE_DIR = "SAI_PIXEL_OFFICE_DIR";
 export const ENV_NODE_FALLBACKS = "SAI_NODE_FALLBACKS";
+// Storage of message texts (REQ-008, decisions/0011): on when the variable is
+// absent, empty or "1"; any other value turns it off (protocol.storeTextEnabled).
+export const ENV_STORE_TEXT = "SAI_PIXEL_OFFICE_STORE_TEXT";
 
 // Longest accepted write request body, in bytes.
 export const BODY_MAX = 16384;
@@ -33,6 +36,10 @@ export const HOOK_HTTP_MS = 1000;
 export const HOOK_HARD_EXIT_MS = 1500;
 // Longest hook input the hook reads, in bytes.
 export const HOOK_INPUT_MAX = 8 * 1024 * 1024;
+// How many UTF-16 units of a message text the hook processes at all (64 KB).
+export const PROMPT_SCAN_MAX = 65536;
+// The whole time of the request of the command pixel-office-note.
+export const NOTE_HTTP_MS = 3000;
 
 // Value of the "app" field of every read response: a repeated start of the
 // command recognises a Pixel Office server on a busy port by it.

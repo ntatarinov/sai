@@ -1,0 +1,64 @@
+{
+  "handoff_id": "step05-test-designer-PO-20261005-02-r1",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PO-20261005-02/step-05-test-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/pixel-office-note.test.js",
+      "tools/test/pixel-office-hook.test.js",
+      "tools/test/pixel-office-server.test.js",
+      "tools/test/pixel-office-helpers.js (только добавление)",
+      "handoffs/PO-20261005-02/step-05-test-designer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/test-a-before",
+    "parallel_work_now": "FRONTEND-DEV (пишет только tools/src/pixel-office/public/ и тест PG-12d5)",
+    "artifacts_in": [
+      "handoffs/PO-20261005-02/step-05b-test-design-validator.json",
+      "handoffs/PO-20261005-02/step-05-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка r1 тестов части (а) REQ-008 по замечаниям TEST-DESIGN-VALIDATOR (handoffs/PO-20261005-02/step-05b-test-design-validator.json, findings 1–6; прочтите сами). Блокируют: (1) SV-68 (критерий 17а) — добавьте проверку: при молчащем сервере и при закрытом порте в stdout+stderr команды нет секрета, note_text и подписи (три случая: таймаут, закрытый порт, нормальный отказ) — мутанты MU-X1 (печатает тело и секрет при таймауте) и MU-X2 (печатает тело при закрытом порте) должны падать; (2) у SV-68 нет своего срока: поставьте { timeout: 20000 } на SV-68 (и на другие тесты команды, которые могут повиснуть), чтобы MU-19 (команда без срока 3 с) падала утверждением/отменой теста в разумное время, а не зависанием файла; проверьте мутантом MU-19 с 600 с вместо 3 с — файл завершается за < 60 с. Low (по возможности, мелко): (3) HK-26 — проверка «остальные поля на месте» безусловная; (6) SV-60 — 403 на чужой Host до чтения тела и Allow на /api/events. Пункты 4 и 5 — не тесты (п. 5 — текст проекта, будет поправлен отдельно). Пишете только tools/test/pixel-office-note.test.js, pixel-office-hook.test.js, pixel-office-server.test.js, pixel-office-helpers.js (только добавление) и свои поля handoff-а; прежние тесты не ослаблять; мутанты — на копии вне проекта; cd tools && npm run check проходит (472). Порт 4780 и ~/.sai-pixel-office не трогать; файлы tools/src/pixel-office/public/ сейчас правит FRONTEND-DEV — не трогать. Каждая команда — с ограничением по времени; долгие — в фоне.",
+    "acceptance_criteria": [
+      "findings 1 и 2 закрыты, мутанты MU-X1, MU-X2, MU-19 падают",
+      "npm run check проходит",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T18:38:39Z",
+  "started_at": "2026-10-05T18:38:39Z",
+  "completed_at": "2026-10-05T18:43:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 по замечаниям 1, 2, 3, 6 (4 и 5 - не тесты). (1) SV-68: в трёх случаях (молчащий сервер, голова и тишина, закрытый порт) в stdout+stderr нет секрета, note_text, подписи и тела запроса, stdout пуст; значения берутся из prepareState и из записанного запроса. (2) SV-68 получил { timeout: 20000 }; SV-58, SV-62, SV-69, SV-70 - { timeout: 30000 }. (3) HK-26: проверка безусловная: ровно 5 строк s-big-1..5 (вход 0 - ~9,5 МБ в байтах, больше HOOK_INPUT_MAX, строки нет - утверждается), у каждой hook_event_name, prompt_kind=owner, time; входы 1 и 2 (одно длинное слово) - без prompt_text и prompt_truncated; входы 3-5 - маскированный текст <= PROMPT_MAX, без секрета, prompt_truncated=true; пятая строка начинается с token=[скрыто]. (6) SV-60: PUT/DELETE/PATCH на /api/events - 405 с Allow \"GET, POST\" (GET на /api/events - 200, это чтение журнала); чужой Host с неподписанным 20-КБ телом на /api/events и /api/note - 403 (не 401/413), журнал не изменился (refused). Q10: SV-68/SV-69, HK-26; остальные пункты Q8, Q9, Q11, R3 - как в прежней таблице (без изменений). Прежние тесты не ослаблены.",
+    "changes": [
+      "tools/test/pixel-office-note.test.js: SV-68 - проверка отсутствия утечек в трёх случаях + timeout 20000 (замечания 1, 2); timeout 30000 на SV-58, SV-62, SV-69, SV-70 (замечание 2)",
+      "tools/test/pixel-office-hook.test.js: HK-26 - безусловные проверки строк (замечание 3); импорт HOOK_INPUT_MAX",
+      "tools/test/pixel-office-server.test.js: SV-60 - Allow на /api/events и 403 на чужой Host до чтения тела (замечание 6)",
+      "tools/test/pixel-office-helpers.js: не менялся в этом круге"
+    ],
+    "self_check": "cd tools && npm run check: tests 472, pass 471, fail 1. Падает только PG-12d5 (tools/test/pixel-office-page.test.js:465, 'the text of a request is nowhere in the row') - тест FRONTEND-DEV, правится параллельно; я его файл и public/ не трогал (git status: изменены только мои три файла + helpers с прошлого круга; node --test test/pixel-office-page.test.js отдельно: pass 56, fail 1 - тот же PG-12d5). Все мои файлы и prettier/eslint - чисто; мои тесты: note 7/7, hook и server зелёные. Мутанты на копии scratchpad/td (проект не трогался; node --test test/pixel-office-note.test.js): базa pass 7 fail 0 (7 с); MU-X1 (таймаут печатает тело и секрет) - fail 1 (SV-68), 3 с; MU-X2 (закрытый порт печатает тело) - fail 1 (SV-68), 6 с; MU-19 (NOTE_HTTP_MS = 600000 вместо 3000) - cancelled 1 (SV-68 отменён своим timeout), файл завершился за 21 с (< 60 с); после восстановления - pass 7 fail 0. Порт 4780 и ~/.sai-pixel-office не использовались.",
+    "issues": [
+      "Падение PG-12d5 в итоговом прогоне - не от этой работы (тест и public/ - FRONTEND-DEV); ожидается, что оно исчезнет после его правки. Свидетельство: тест не импортирует и не использует ни одного моего файла; падает с тем же результатом при отдельном запуске файла.",
+      "Замечание 5 (текст п. 11 проекта про 4000 эмодзи) - не тест, правится отдельно.",
+      "GET /api/events отвечает 200 (чтение журнала), а Allow на нём - \"GET, POST\": тест зафиксировал это фактическое поведение."
+    ],
+    "artifacts_out": [
+      "tools/test/pixel-office-note.test.js",
+      "tools/test/pixel-office-hook.test.js",
+      "tools/test/pixel-office-server.test.js"
+    ]
+  }
+}

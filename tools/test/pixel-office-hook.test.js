@@ -4,12 +4,19 @@
 // real server on port 0 or a fake one.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import {
+  BODY_MAX,
+  HOOK_INPUT_MAX,
+  PROMPT_SCAN_MAX,
+} from "../src/pixel-office/config.js";
+import { maskSecrets, prepareText } from "../src/pixel-office/mask.js";
 import {
   buildWriteBody,
   signBody,
@@ -18,10 +25,17 @@ import {
 import {
   HOOK_EVENTS,
   LINE_KEYS,
+  MASK_LABEL,
+  PROMPT_MAX,
+  SERVICE_MARKERS,
   isCanonicalTime,
 } from "../src/pixel-office/public/schema.js";
 import {
   LABELS,
+  MASK_KEEP_ROWS,
+  MASK_ROWS,
+  MASK_RESIDUAL,
+  MASK_RULE_ROWS,
   ROOT,
   SRC,
   assertSafeEnv,
@@ -29,6 +43,7 @@ import {
   hookInputs,
   isInsideTmp,
   prepareState,
+  rng,
   runHook,
   sandbox,
   sha256OrNone,
@@ -114,7 +129,6 @@ test("HK-02: the time is the canonical UTC record with milliseconds, as the hook
 
 for (const [suffix, event] of [
   ["a", "SessionStart"],
-  ["b", "UserPromptSubmit"],
   ["c", "PostToolUse"],
   ["d", "SubagentStart"],
   ["e", "SubagentStop"],
@@ -143,6 +157,65 @@ for (const [suffix, event] of [
     }
   });
 }
+
+// REQ-008 12.1: the text of an owner message is stored in exactly one place
+// when storage is on; with storage off and for a service message nothing of
+// the input reaches the journal, as before.
+test("HK-03b: UserPromptSubmit - forbidden fields (unique labels) never reach the journal; the message text only as prompt_text of an owner message with storage on", async (t) => {
+  const checkKeys = (line) => {
+    for (const key of Object.keys(line)) {
+      assert.ok(LINE_KEYS.includes(key), `key ${key} is not in LINE_KEYS`);
+    }
+  };
+  const runOnce = async (input, envExtra) => {
+    const srv = await startServer(t);
+    const r = await runHook(srv.box, input, {
+      event: "UserPromptSubmit",
+      envExtra,
+    });
+    quiet(r);
+    const lines = srv.lines();
+    assert.equal(lines.length, 1, "exactly one line");
+    const line = JSON.parse(lines[0]);
+    checkKeys(line);
+    const file = fs.readFileSync(srv.eventsFile, "utf8");
+    const used = LABELS.filter((l) => JSON.stringify(input).includes(l));
+    assert.ok(used.length > 0, "the input has labels");
+    return { line, file, used };
+  };
+
+  // (1) Storage off: no label at all, the prompt included.
+  const off = hookInputs().UserPromptSubmit;
+  const r1 = await runOnce(off, { SAI_PIXEL_OFFICE_STORE_TEXT: "0" });
+  for (const l of r1.used) assert.equal(r1.file.includes(l), false, l);
+  assert.equal(r1.line.prompt_kind, "owner");
+  assert.equal(Object.hasOwn(r1.line, "prompt_text"), false);
+
+  // (2) A service message: no label at all.
+  const service = hookInputs().UserPromptSubmit;
+  service.prompt = `<system-reminder>${service.prompt}`;
+  const r2 = await runOnce(service, {});
+  for (const l of r2.used) assert.equal(r2.file.includes(l), false, l);
+  assert.equal(r2.line.prompt_kind, "service");
+  assert.equal(Object.hasOwn(r2.line, "prompt_text"), false);
+
+  // (3) An owner message, storage on: the prompt label exactly once, as
+  // prompt_text; every other label nowhere.
+  const owner = hookInputs().UserPromptSubmit;
+  const r3 = await runOnce(owner, {});
+  for (const l of r3.used) {
+    if (l === owner.prompt) continue;
+    assert.equal(r3.file.includes(l), false, l);
+  }
+  assert.equal(r3.file.split(owner.prompt).length - 1, 1, "prompt once");
+  assert.equal(r3.line.prompt_kind, "owner");
+  assert.equal(r3.line.prompt_text, owner.prompt);
+  assert.equal(Object.hasOwn(r3.line, "prompt"), false);
+  for (const [key, value] of Object.entries(r3.line)) {
+    if (key === "prompt_text") continue;
+    assert.equal(String(value).includes(owner.prompt), false, key);
+  }
+});
 
 test("HK-04: the own field `source` of SessionStart does not reach the line; the source is REAL", async (t) => {
   const srv = await startServer(t);
@@ -612,4 +685,524 @@ test("HK-17: every child process of the tests gets HOME and the state directory 
   const srv = await startServer(t);
   assert.notEqual(srv.port, 4780);
   assert.ok(isInsideTmp(srv.dir));
+});
+
+// ------------------------------------------------------------ REQ-008 (a)
+
+const NOW_ISO = "2026-10-05T12:00:00.000Z";
+const UPS = (prompt, session = "sess-ups-01") => ({
+  hook_event_name: "UserPromptSubmit",
+  session_id: session,
+  prompt,
+});
+const ON = { storeText: true };
+
+// Every file of a folder, recursively, as [path, text].
+function filesUnder(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...filesUnder(full));
+    else if (entry.isFile()) out.push([full, fs.readFileSync(full, "utf8")]);
+  }
+  return out;
+}
+
+function bodyBytes(body) {
+  return Buffer.byteLength(JSON.stringify(body), "utf8");
+}
+
+// No piece of `value` that is `size` characters long stays in `text`.
+function noPiece(text, value, size = 8) {
+  for (let i = 0; i + size <= value.length; i += 1) {
+    assert.equal(
+      text.includes(value.slice(i, i + size)),
+      false,
+      `piece ${JSON.stringify(value.slice(i, i + size))} stays`,
+    );
+  }
+}
+
+test("HK-18: an owner message gives prompt_kind owner and prompt_text; 4001 and 10000 characters are cut to 4000 with prompt_truncated; exactly 4000 is not; the body fits BODY_MAX; other events get none of the new fields", async (t) => {
+  const plain = buildWriteBody(UPS("сделай X"), NOW_ISO, ON);
+  assert.equal(plain.prompt_kind, "owner");
+  assert.equal(plain.prompt_text, "сделай X");
+  assert.equal(Object.hasOwn(plain, "prompt_truncated"), false);
+
+  const exact = buildWriteBody(UPS("а".repeat(4000)), NOW_ISO, ON);
+  assert.equal(Array.from(exact.prompt_text).length, 4000);
+  assert.equal(Object.hasOwn(exact, "prompt_truncated"), false);
+  for (const n of [4001, 10000]) {
+    const cut = buildWriteBody(UPS("а".repeat(n)), NOW_ISO, ON);
+    assert.equal(Array.from(cut.prompt_text).length, PROMPT_MAX, `n=${n}`);
+    assert.equal(cut.prompt_truncated, true, `n=${n}`);
+  }
+  // 4000 characters of 6 bytes in JSON (\u0001) do not fit BODY_MAX: the text
+  // is the longest start with which the body fits.
+  const heavy = buildWriteBody(UPS("\u0001".repeat(4000)), NOW_ISO, ON);
+  assert.ok(bodyBytes(heavy) <= BODY_MAX, `${bodyBytes(heavy)} bytes`);
+  assert.equal(heavy.prompt_truncated, true);
+  const longer = { ...heavy, prompt_text: `${heavy.prompt_text}\u0001` };
+  assert.ok(bodyBytes(longer) > BODY_MAX, "the cut is the longest possible");
+  // 4000 emoji (4 bytes each) in a long session id.
+  const emoji = buildWriteBody(
+    UPS("😀".repeat(4000), "s".repeat(128)),
+    NOW_ISO,
+    ON,
+  );
+  assert.ok(bodyBytes(emoji) <= BODY_MAX);
+  assert.equal(
+    Array.from(emoji.prompt_text).every((c) => c === "😀"),
+    true,
+  );
+
+  // The same through the hook program: the body that is sent fits.
+  const box = sandbox(t);
+  const cap = await captureServer(t, box);
+  const r = await runHook(box, UPS("\u0001".repeat(4000)), {
+    event: "UserPromptSubmit",
+  });
+  quiet(r);
+  assert.equal(cap.requests.length, 1);
+  assert.ok(Buffer.byteLength(cap.requests[0].body) <= BODY_MAX);
+  assert.equal(JSON.parse(cap.requests[0].body).prompt_truncated, true);
+
+  // Only UserPromptSubmit gets the three fields; keys stay in LINE_KEYS.
+  const newKeys = ["prompt_kind", "prompt_text", "prompt_truncated"];
+  const inputs = hookInputs();
+  for (const event of HOOK_EVENTS) {
+    const input = { ...inputs[event], prompt: "сделай X" };
+    const body = buildWriteBody(input, NOW_ISO, ON);
+    assert.notEqual(body, null, event);
+    for (const key of Object.keys(body)) {
+      assert.ok(LINE_KEYS.includes(key), `${event}: ${key}`);
+      if (newKeys.includes(key)) {
+        assert.equal(event, "UserPromptSubmit", `${event}: ${key}`);
+      }
+    }
+  }
+});
+
+test("HK-19: each of the five service markers (also after white space) gives prompt_kind service and no text anywhere in the journal; a marker in the middle stays owner", async (t) => {
+  const srv = await startServer(t);
+  const unique = [];
+  for (const [i, marker] of SERVICE_MARKERS.entries()) {
+    for (const lead of ["", "  \n\t"]) {
+      const word = `уникальная-подстрока-${i}-${lead.length}-${Date.now()}`;
+      unique.push(word);
+      const r = await runHook(
+        srv.box,
+        UPS(`${lead}${marker} ${word} хвост`, `sess-svc-${i}`),
+        { event: "UserPromptSubmit" },
+      );
+      quiet(r);
+    }
+  }
+  const lines = srv.lines().map((l) => JSON.parse(l));
+  assert.equal(lines.length, SERVICE_MARKERS.length * 2);
+  for (const line of lines) {
+    assert.equal(line.prompt_kind, "service");
+    assert.equal(Object.hasOwn(line, "prompt_text"), false);
+  }
+  const file = fs.readFileSync(srv.eventsFile, "utf8");
+  for (const word of unique) {
+    assert.equal(file.split(word).length - 1, 0, `${word} is in the journal`);
+  }
+  const mid = buildWriteBody(UPS("сделай <system-reminder>"), NOW_ISO, ON);
+  assert.equal(mid.prompt_kind, "owner");
+  assert.equal(mid.prompt_text, "сделай <system-reminder>");
+});
+
+const QUIET_INPUTS = () => [
+  UPS("сделай уникальная-подстрока-тихо-1"),
+  UPS("<system-reminder> служебное уникальная-подстрока-тихо-2"),
+  UPS(""),
+];
+
+test("HK-29: the server is not running; an owner message (storage on) and a service message - exit 0, quiet, journal not created", async (t) => {
+  const box = sandbox(t);
+  prepareState(box);
+  fs.writeFileSync(path.join(box.dir, "port"), `${await deadPort()}\n`);
+  for (const input of QUIET_INPUTS()) {
+    const r = await runHook(box, input, { event: "UserPromptSubmit" });
+    quiet(r);
+    assert.ok(r.ms <= 3500, `took ${r.ms} ms`);
+    assert.equal(sha256OrNone(path.join(box.dir, "events.jsonl")), "none");
+  }
+});
+
+test("HK-30: the server accepts the connection and is silent; an owner message and a service message - exit 0, quiet, within 3500 ms", async (t) => {
+  const box = sandbox(t);
+  prepareState(box);
+  const sockets = new Set();
+  const silent = net.createServer((s) => sockets.add(s));
+  await new Promise((r) => silent.listen(0, "127.0.0.1", r));
+  t.after(() => {
+    for (const s of sockets) s.destroy();
+    silent.close();
+  });
+  fs.writeFileSync(path.join(box.dir, "port"), `${silent.address().port}\n`);
+  for (const input of QUIET_INPUTS()) {
+    const r = await runHook(box, input, { event: "UserPromptSubmit" });
+    quiet(r);
+    assert.ok(r.ms <= 3500, `took ${r.ms} ms`);
+    assert.equal(sha256OrNone(path.join(box.dir, "events.jsonl")), "none");
+  }
+});
+
+test("HK-31: hook.sh run directly (no guard that discards output) prints nothing to stdout or stderr on owner and service messages", async (t) => {
+  const srv = await startServer(t);
+  const run = (input) =>
+    new Promise((resolve) => {
+      const child = spawn("/bin/sh", [path.join(SRC, "hook.sh")], {
+        env: childEnv(srv.box),
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      let out = "";
+      let err = "";
+      child.stdout.on("data", (d) => (out += d));
+      child.stderr.on("data", (d) => (err += d));
+      child.on("close", (code) => resolve({ code, out, err }));
+      child.stdin.end(input);
+    });
+  const inputs = QUIET_INPUTS();
+  for (const input of inputs) {
+    const r = await run(JSON.stringify(input));
+    assert.equal(r.code, 0);
+    assert.equal(r.out, "");
+    assert.equal(r.err, "");
+  }
+  assert.equal(srv.lines().length, inputs.length);
+});
+
+test("HK-20: with the server stopped the message text is in no file of the temporary folder or the state directory, nor in stdout or stderr", async (t) => {
+  const box = sandbox(t);
+  prepareState(box);
+  fs.writeFileSync(path.join(box.dir, "port"), `${await deadPort()}\n`);
+  const needle = `уникальная-подстрока-${crypto.randomBytes(6).toString("hex")}`;
+  const r = await runHook(box, UPS(`сделай ${needle} позже`), {
+    event: "UserPromptSubmit",
+  });
+  quiet(r);
+  assert.equal(r.stdout.includes(needle), false);
+  assert.equal(r.stderr.includes(needle), false);
+  for (const [file, text] of filesUnder(box.root)) {
+    if (path.basename(file) === "events.jsonl") continue;
+    assert.equal(text.includes(needle), false, file);
+  }
+  assert.equal(sha256OrNone(path.join(box.dir, "events.jsonl")), "none");
+  // hook.sh itself prints nothing; the settings command only the mark (HK-13).
+  const srv = await startServer(t);
+  const direct = await runHook(srv.box, UPS(`<system-reminder> ${needle}`), {
+    event: "UserPromptSubmit",
+  });
+  quiet(direct);
+  assert.equal(direct.stderr.includes(needle), false);
+});
+
+test("HK-21: masking - every rule M1-M10 (exact result), the tables Q, E and N of design 3.1, the five forms of F1 and the six of F2; idempotent on every row and on 10000 seeded inputs", () => {
+  const L = MASK_LABEL;
+  assert.equal(L, "[скрыто]");
+  for (const row of [...MASK_RULE_ROWS, ...MASK_ROWS]) {
+    const out = maskSecrets(row.input);
+    assert.equal(out, row.expected, row.id);
+    for (const piece of row.leak) {
+      assert.equal(out.includes(piece), false, `${row.id}: ${piece}`);
+    }
+    assert.equal(maskSecrets(out), out, `${row.id}: second pass`);
+  }
+  for (const input of MASK_KEEP_ROWS) {
+    assert.equal(maskSecrets(input), input, input);
+  }
+  // M7: 127.0.0.1 (four parts) and panels.js (two) stay; the name with two
+  // dots is masked (the consequence named in the design).
+  assert.equal(maskSecrets("127.0.0.1 panels.js"), "127.0.0.1 panels.js");
+  assert.equal(maskSecrets("тест a.test.js"), `тест ${L}`);
+  // Not a string -> an empty string, never an exception.
+  for (const v of [undefined, null, 5, {}, []]) {
+    assert.equal(maskSecrets(v), "");
+  }
+  // Seeded generator: the parts of design 3.2.
+  const parts = [
+    "password",
+    "DB_",
+    "Bearer ",
+    "sk-",
+    "ghp_",
+    "AKIA",
+    '"',
+    "'",
+    "`",
+    "\\",
+    "=",
+    ":",
+    "_",
+    "-",
+    "/",
+    ".",
+    "\n",
+    " ",
+    MASK_LABEL,
+    "token",
+    "abcdefghij0123456789",
+    "ZZZZEXAMPLE00001",
+    "x",
+  ];
+  const next = rng(20261005);
+  for (let n = 0; n < 10000; n += 1) {
+    let text = "";
+    const count = 1 + Math.floor(next() * 12);
+    for (let i = 0; i < count; i += 1) {
+      text += parts[Math.floor(next() * parts.length)];
+    }
+    const once = maskSecrets(text);
+    assert.equal(maskSecrets(once), once, JSON.stringify(text));
+  }
+});
+
+test("HK-22: the hook sends the text already masked - no secret value in the intercepted body", async (t) => {
+  const box = sandbox(t);
+  const cap = await captureServer(t, box);
+  const value = "primer42secretvalue";
+  const key = "sk-ant-abcdefghij1234567890";
+  const r = await runHook(
+    box,
+    UPS(`вот password="${value}" и ключ ${key} и Bearer eyAbc123 готово`),
+    { event: "UserPromptSubmit" },
+  );
+  quiet(r);
+  assert.equal(cap.requests.length, 1);
+  const body = cap.requests[0].body;
+  for (const secret of [value, key, "eyAbc123"]) {
+    assert.equal(body.includes(secret), false, secret);
+  }
+  const sent = JSON.parse(body);
+  assert.equal(
+    sent.prompt_text,
+    `вот password=${MASK_LABEL} и ключ ${MASK_LABEL} и Bearer ${MASK_LABEL} готово`,
+  );
+});
+
+test("HK-23: a secret at the border of 4000 characters (and of the scan limit) leaves no piece of 8 characters; a quoted value cut by the border is hidden to the end", () => {
+  const filler = (n) => "слово ".repeat(Math.ceil(n / 6)).slice(0, n);
+  const key = "sk-ant-abcdefghijklmnopqrstuvwxyz0123456789";
+  for (const at of [3965, 3970, 3980, 3990, 3995, 3999]) {
+    const body = buildWriteBody(UPS(`${filler(at)}${key} хвост`), NOW_ISO, ON);
+    noPiece(body.prompt_text, key);
+    assert.ok(Array.from(body.prompt_text).length <= PROMPT_MAX);
+    // The key is one label (8 characters) before the cut.
+    if (at >= 3993) assert.equal(body.prompt_truncated, true, `at ${at}`);
+  }
+  const quoted = "tango victor whisky 12345 november";
+  for (const at of [3960, 3980, 3990, 3996]) {
+    const text = `${filler(at)}password="${quoted} дальше конец"`;
+    const body = buildWriteBody(UPS(text), NOW_ISO, ON);
+    noPiece(body.prompt_text, quoted);
+    assert.equal(/tango|victor|whisky/.test(body.prompt_text), false);
+    if (at < 3990)
+      assert.ok(body.prompt_text.includes("password="), `at ${at}`);
+  }
+  // The scan limit: the cut goes through the secret, the run is dropped.
+  const raw = `${"слово ".repeat(16)}${key} хвост`;
+  const cut = raw.indexOf(key) + 15;
+  const prepared = prepareText(raw, cut, PROMPT_MAX);
+  assert.equal(prepared.truncated, true);
+  noPiece(prepared.text, key);
+  assert.equal(prepared.text.includes("sk-ant"), false);
+  // The real limit: a secret across 65536 units.
+  const p2 = prepareText(
+    `${" ".repeat(PROMPT_SCAN_MAX - 10)}${key}${key}`,
+    PROMPT_SCAN_MAX,
+    PROMPT_SCAN_MAX,
+  );
+  noPiece(p2.text, key);
+  // Masking comes before the cut: a masked key is one label, never half of one.
+  const near = prepareText(`${"а".repeat(3995)} ${key}`, PROMPT_SCAN_MAX, 4000);
+  assert.equal(near.text.includes("sk-"), false);
+  noPiece(near.text, key);
+});
+
+test("HK-24: the known uncovered cases (design 3.3) are NOT masked - a change of the rules shows here", () => {
+  for (const input of MASK_RESIDUAL) {
+    assert.equal(maskSecrets(input), input, input);
+  }
+  // Part after a quote inside a value without quotes: one piece stays.
+  assert.equal(maskSecrets('password=ab"cd'), `password=${MASK_LABEL}"cd`);
+  // A quoted value goes on the next line: only the first line is hidden.
+  assert.equal(maskSecrets('password="ab\ncd"'), `password=${MASK_LABEL}\ncd"`);
+  // Decision of ORCH (N3), named in the README: escaped quotes and two-character
+  // assignment signs leave the value open (or half open).
+  const L = MASK_LABEL;
+  assert.equal(
+    maskSecrets(String.raw`password=\"primer42\"`),
+    String.raw`password=${L}"primer42\"`,
+  );
+  assert.equal(
+    maskSecrets(String.raw`curl -d "{\"password\":\"primer42\"}"`),
+    String.raw`curl -d "{\"password\":\"primer42\"}"`,
+  );
+  assert.equal(maskSecrets('password=>"primer42"'), `password=${L}"primer42"`);
+  assert.equal(maskSecrets('PASSWORD:="primer42"'), `PASSWORD:${L}"primer42"`);
+  // Typographic quotes are not quotes.
+  assert.equal(
+    maskSecrets("password=«primer 42»"),
+    `password=${MASK_LABEL} 42»`,
+  );
+});
+
+test("HK-25: storage off at the hook (0 or any other value but empty or 1) - prompt_kind stays, no text; on for absent, empty and 1", async (t) => {
+  const srv = await startServer(t);
+  const word = "уникальная-подстрока-хранение";
+  const cases = [
+    ["0", false],
+    ["yes", false],
+    ["true", false],
+    ["", true],
+    ["1", true],
+  ];
+  for (const [value] of cases) {
+    const r = await runHook(srv.box, UPS(`сделай ${word}`, `s-${value}`), {
+      event: "UserPromptSubmit",
+      envExtra: { SAI_PIXEL_OFFICE_STORE_TEXT: value },
+    });
+    quiet(r);
+  }
+  const lines = srv.lines().map((l) => JSON.parse(l));
+  assert.equal(lines.length, cases.length);
+  for (const [i, [value, stored]] of cases.entries()) {
+    assert.equal(lines[i].prompt_kind, "owner", `value ${value}`);
+    assert.equal(Object.hasOwn(lines[i], "prompt_text"), stored, value);
+    assert.equal(
+      lines[i].prompt_text === `сделай ${word}`,
+      stored,
+      `value ${value}`,
+    );
+  }
+  assert.equal(
+    buildWriteBody(UPS("сделай X"), NOW_ISO).prompt_text,
+    undefined,
+    "no option: storage off",
+  );
+  assert.equal(
+    buildWriteBody(UPS("сделай X"), NOW_ISO, { storeText: false }).prompt_kind,
+    "owner",
+  );
+});
+
+test("HK-26: 5 MB of text, 5 MB of one character and pathological strings - each within 2 s, exit 0, quiet; the line has masked text of at most 4000 or none", async (t) => {
+  const srv = await startServer(t);
+  const secret = "primer42zz";
+  const inputs = [
+    "слово и дело ".repeat(Math.ceil(5e6 / 13)),
+    "a".repeat(5e6),
+    "_".repeat(5e6),
+    `password="${"x ".repeat(2.5e6)}`,
+    `token=${secret} ${"-sk-".repeat(1.2e6)}`,
+    `${'Bearer "'.repeat(5e5)}`,
+  ];
+  for (const [i, prompt] of inputs.entries()) {
+    const r = await runHook(srv.box, UPS(prompt, `s-big-${i}`), {
+      event: "UserPromptSubmit",
+    });
+    quiet(r);
+    assert.ok(r.ms <= 2000, `input ${i} took ${r.ms} ms`);
+  }
+  const lines = srv.lines().map((l) => JSON.parse(l));
+  // Input 0 is about 9.5 MB in bytes (Cyrillic): over the hook input limit,
+  // so the hook sends nothing for it. Every other input gives one line.
+  assert.ok(Buffer.byteLength(inputs[0]) > HOOK_INPUT_MAX);
+  assert.deepEqual(
+    lines.map((l) => l.session_id),
+    [1, 2, 3, 4, 5].map((n) => `s-big-${n}`),
+  );
+  // One long unbroken token (inputs 1 and 2) is not scanned: the line has no
+  // text at all, never an unmasked one. The others have masked text of at
+  // most PROMPT_MAX characters.
+  const withoutText = new Set(["s-big-1", "s-big-2"]);
+  for (const line of lines) {
+    const i = line.session_id;
+    assert.equal(line.hook_event_name, "UserPromptSubmit", i);
+    assert.equal(line.prompt_kind, "owner", i);
+    assert.equal(typeof line.time, "string", i);
+    if (withoutText.has(i)) {
+      assert.equal("prompt_text" in line, false, i);
+      assert.equal("prompt_truncated" in line, false, i);
+      continue;
+    }
+    assert.equal(typeof line.prompt_text, "string", i);
+    assert.ok(Array.from(line.prompt_text).length <= PROMPT_MAX, i);
+    assert.equal(line.prompt_text.includes(secret), false, i);
+    assert.equal(line.prompt_truncated, true, i);
+  }
+  const fifth = lines.find((l) => l.session_id === "s-big-4");
+  assert.ok(fifth.prompt_text.startsWith(`token=${MASK_LABEL}`));
+});
+
+test("HK-27: maskSecrets on 64 KB of hostile text takes at most 200 ms each (linear time); a 16 times longer input does not take 200 times longer", () => {
+  const rep = (unit, size = 65536) =>
+    unit.repeat(Math.ceil(size / unit.length));
+  const hostile = {
+    underscore: rep("_"),
+    a_: rep("a_"),
+    _password: rep("_password"),
+    'password="': rep('password="'),
+    '"password"': rep('"password"'),
+    'Bearer "': rep('Bearer "'),
+    backslash: rep("\\"),
+    "-sk-": rep("-sk-"),
+    "short -sk-": rep("-sk- "),
+    "=ghp_": rep("=ghp_"),
+    "=AKIA": rep("=AKIA"),
+    equals: rep("="),
+    "open quote": rep('x="'),
+    BEGIN: rep("-----BEGIN "),
+    dots: rep("a.b."),
+    slashes: rep("a/"),
+    "token=": rep("token="),
+    "://": rep("a://b:"),
+  };
+  const time = (text) => {
+    const t0 = performance.now();
+    maskSecrets(text);
+    return performance.now() - t0;
+  };
+  maskSecrets("warm up password=x");
+  for (const [name, text] of Object.entries(hostile)) {
+    const ms = time(text);
+    assert.ok(ms <= 200, `${name}: ${ms.toFixed(1)} ms`);
+  }
+  // Linear growth: 4 times the input is nowhere near 16 times the time.
+  for (const name of ["underscore", "_password", 'password="']) {
+    const unit = hostile[name].slice(0, 16);
+    const small = Math.max(time(rep(unit, 16384)), 0.5);
+    const large = time(rep(unit, 65536));
+    assert.ok(large <= small * 12 + 20, `${name}: ${small} -> ${large}`);
+  }
+});
+
+test("HK-28: with proxy variables in the environment the signed body still goes to 127.0.0.1 - the fake proxy gets no connection", async (t) => {
+  const box = sandbox(t);
+  const cap = await captureServer(t, box);
+  let connections = 0;
+  const proxy = net.createServer((s) => {
+    connections += 1;
+    s.destroy();
+  });
+  await new Promise((r) => proxy.listen(0, "127.0.0.1", r));
+  t.after(() => proxy.close());
+  const url = `http://127.0.0.1:${proxy.address().port}`;
+  for (const extra of [
+    { NODE_USE_ENV_PROXY: "1", HTTP_PROXY: url, http_proxy: url },
+    { NODE_OPTIONS: "--use-env-proxy", HTTP_PROXY: url, http_proxy: url },
+  ]) {
+    const r = await runHook(box, UPS("сделай X"), {
+      event: "UserPromptSubmit",
+      envExtra: extra,
+    });
+    assert.equal(r.code, 0);
+    assert.equal(r.stdout, "");
+  }
+  assert.equal(cap.requests.length, 2, "both bodies reached the server");
+  assert.equal(connections, 0, "the proxy got a connection");
+  assert.equal(JSON.parse(cap.requests[0].body).prompt_text, "сделай X");
 });

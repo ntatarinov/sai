@@ -1,0 +1,99 @@
+{
+  "handoff_id": "step04-reviewer-b-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PO-20261005-02/step-04-reviewer-b.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PO-20261005-02/step-04-reviewer-b.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/build-b-before",
+    "parallel_work_now": "SECURITY-REVIEWER (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-008-history.md (п. 7, 8, 12.1, 14)",
+      "docs/design/REQ-008-history-view.md",
+      "docs/requirements.yaml (блок REQ-008, критерии 9–13)",
+      "handoffs/PO-20261005-02/step-02b-frontend-dev.json",
+      "tools/src/pixel-office/public/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью после кода части (б) REQ-008 (handoffs/PO-20261005-02/step-02b-frontend-dev.json; проект docs/design/REQ-008-history.md п. 7, 8, 12.1 и описание docs/design/REQ-008-history-view.md; копия до — <рабочая папка ORCH>/orch/po2/build-b-before). Проверьте: изменены ли ТОЛЬКО файлы write_set разработчика (diff -rq с копией до: public/model.js, history.js (новый), texts.js, index.html, style.css, panels.js, app.js и тест PG-12d5 в test/pixel-office-page.test.js); решение, а не костыль; идиомы; мёртвый код, лишняя работа; расхождения с проектом и решениями (decisions/0005, 0011, 0012); эрозия планки (skip, eslint-disable, || true; PG-12d5 расширен, не ослаблен — сравните до/после и п. 12.1); масштаб 2K не сломан (SC-тесты, px-линий 15); schema.js не менялся; два вопроса разработчика (его result.issues 1 и 2): формулировка «завершён в работе» при отсутствии времени окончания — оцените; обрезка контура фокуса у строки журнала — оцените; перед ними — все остальные его заметки (п. 3–4). Запустите сами cd tools && npm run check. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "файлы сверены с копией до",
+      "замечания с местом, важностью и исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T18:49:41Z",
+  "started_at": "2026-10-05T18:49:41Z",
+  "completed_at": "2026-10-05T18:51:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Часть (б) сделана по проекту, без костылей: history.js — чистая функция по правилам п. 7.3, весь текст через textContent/createElement, нет innerHTML/style=/внешних адресов, нет skip/eslint-disable/|| true. Файлы сверены с копией до: изменены только model.js, history.js (новый), texts.js, index.html, style.css, panels.js, app.js и test/pixel-office-page.test.js (в нём правка только PG-12d5: расширен, не ослаблен — прежние проверки на месте, добавлены prompt_kind в списке ключей, prompt_kind==='owner', нет ключа prompt_text, подстроки нет в JSON — п. 12.1). schema.js не менялся (diff -q: одинаков с копией до); различия в test/pixel-office-hook|note|server.test.js — параллельная работа TEST-DESIGNER, не этого шага. Масштаб 2K: px-строк в style.css ровно 15 (SC-03 зелёный), новые размеры в rem; рамка окна/таблицы/рельса собрана в общее правило с .card — приём приемлем. Два блокирующих Medium: (1) подпись «завершён в работе» противоречива; (2) обрезка контура фокуса у строки журнала исправима без новой px-строки. Оба — правки в одну-две строки.",
+    "findings": [
+      {
+        "place": "tools/src/pixel-office/public/app.js, historyMeta (строки ~965–985)",
+        "severity": "Medium",
+        "blocking": true,
+        "issue": "Ответ на вопрос 1: при отсутствии Stop к слову «завершён» дописывается слово статуса — получается «завершён в работе» / «завершён окончание не записано». Это ложное утверждение для владельца (в работе — значит не завершён), хотя буква описания п. 3.2 («вместо времени — слова статуса») выполнена. Описание двусмысленно, код передал двусмысленность на экран.",
+        "fix": "Если finished_at === null — не писать «завершён»: показывать только слова статуса без подписи (например «в работе» / «окончание не записано») либо не показывать эту часть меты, т. к. метка состояния уже стоит рядом. Решение по тексту — GUI-DESIGN-ANALYST/ORCH (уточнить п. 3.2 и строку 201 описания), правка — CODE-FIXER, одна строка в historyMeta; тест PN/PG на эту подпись согласовать с формулировкой."
+      },
+      {
+        "place": "tools/src/pixel-office/public/style.css, правило [tabindex]:focus-visible (строка ~73) и .row.opens-history",
+        "severity": "Medium",
+        "blocking": true,
+        "issue": "Ответ на вопрос 2: контур фокуса строки журнала обрезается слева и справа прокруткой #journal — клавиатурный фокус виден не полностью (критерий 13, доступность). Утверждение разработчика «без новой px-строки не исправить» неверно: достаточно сдвинуть контур внутрь строки в rem, px-строка не нужна (SC-03 остаётся 15).",
+        "fix": "Добавить правило .row.opens-history:focus-visible { outline-offset: -0.125rem; } (или внутренний отступ списка журнала в rem). Ширина контура 2px остаётся в уже существующей px-строке. Проверить на 1920×1080 и 2560×1440."
+      },
+      {
+        "place": "tools/src/pixel-office/public/history.js, noteView (поле what) и app.js, timelineSection",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "noteView собирает what с «· привязано автоматически» строкой, а app.js для auto-записи это поле игнорирует и строит подпись заново из тех же ключей — два места делают одно и то же.",
+        "fix": "Либо app.js берёт item.what для не-auto и тот же what для auto с выделением части, либо noteView отдаёт what без хвоста. Не блокирует."
+      },
+      {
+        "place": "tools/src/pixel-office/public/app.js, onKey",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "Tab при открытом окне переключает только × и тело; если в теле появятся интерактивные элементы, цикл их пропустит. Сейчас их нет — по проекту верно.",
+        "fix": "Следить при расширении окна; ничего не менять сейчас."
+      },
+      {
+        "place": "заметки разработчика п. 3–4 (ключи шаблонов, hook_event_name в тоне точки, строка 2 у PostToolUse/SubagentStart, отсутствие описания у SubagentStop, getHistory/openHistory/closeHistory в createApp, data-modal на родителе при отсутствии document.body)",
+        "severity": "Low",
+        "blocking": false,
+        "issue": "Все расхождения со строкой журнала сделаны по проекту п. 7.3 (правило 7) и честно записаны; поведение согласуется с решениями 0005/0011/0012 (данные только из журнала, R2; размеры в rem). Запасной путь pageBody() нужен только FakeDocument — допустим.",
+        "fix": "Принять; TEST-DESIGNER учесть заметки (ключи, экспорт getHistory)."
+      }
+    ],
+    "self_check": {
+      "commands": "cd tools && npm run check (perl alarm 280) -> exit 0; '# tests 472 # pass 472 # fail 0 # skipped 0 # todo 0'. diff -rq копия до / tools/{src,test,package.json} -> различаются только файлы write_set + test/pixel-office-{hook,note,server}.test.js (TEST-DESIGNER). diff -q schema.js -> schema-same. grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true' по public/*.js и pixel-office-page.test.js -> пусто; grep innerHTML|style=|https?:// по public -> пусто. grep -cE '[0-9]px' style.css -> 15. diff PG-12d5 до/после просмотрен. Код не менялся.",
+      "qbar": "Q2, Q3 — свой запуск check; Q6 — эрозии нет, PG-12d5 усилен; Q7 — секретов нет; Q10 — ошибка/нет связи в окне обрабатываются (HISTORY_ERROR, NO_CONNECTION); Q8, Q11, R3 — не применимы к странице; R2 — только данные журнала, ничего не выдумано."
+    },
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "text": "К ORCH/GUI-DESIGN-ANALYST: уточнить п. 3.2 и строку 201 описания REQ-008-history-view.md — что показывать в мете, когда времени окончания нет (предложение: только слова статуса без «завершён»)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Низкая важность (Low) из findings 3–5 по quality-bar §6 п. 6 — на усмотрение ORCH завести дефект; блокируют только два Medium."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

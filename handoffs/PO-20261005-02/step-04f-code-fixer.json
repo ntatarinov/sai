@@ -1,0 +1,97 @@
+{
+  "handoff_id": "step04f-code-fixer-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-02",
+  "step": "04f",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PO-20261005-02/step-04f-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/public/panels.js (только если нужно)",
+      "docs/design/REQ-008-history-view.md (одно предложение п. 3.2)",
+      "handoffs/PO-20261005-02/step-04f-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/fix-c-before",
+    "parallel_work_now": "TEST-DESIGN-VALIDATOR r1 (только чтение, тесты части (а))",
+    "artifacts_in": [
+      "handoffs/PO-20261005-02/step-04-reviewer-b.json",
+      "docs/design/REQ-008-history-view.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, после FAIL ревью части (б) (handoffs/PO-20261005-02/step-04-reviewer-b.json — прочтите замечания; безопасность части (б) — PASS). Решения ORCH: (1) historyMeta в tools/src/pixel-office/public/app.js: при finished_at === null показывать ТОЛЬКО слова статуса (без слова «завершён» и без подстановки времени) — одна строка; поправьте соответствующее предложение в docs/design/REQ-008-history-view.md (п. 3.2, и где ещё сказано «вместо времени» — одно согласованное предложение) и, если проект docs/design/REQ-008-history.md п. 7 говорит иначе — запись в result.issues (проект не правьте); (2) style.css: контур фокуса строки журнала не обрезается — правило `.row.opens-history:focus-visible { outline-offset: -0.125rem; }` (или равное по смыслу; число px-строк остаётся 15 — SC-03; размеры в rem); проверьте в headless-браузере на своём сервере (порт свободный, НЕ 4780, временная папка, НЕ ~/.sai-pixel-office), что контур виден со всех сторон; (3) Low: дублирование подписи «привязано автоматически» в noteView и timelineSection — вынести в одну функцию, если это проще и не меняет поведение. Пишете только tools/src/pixel-office/public/app.js, style.css (и panels.js, только если нужно для (3)) и docs/design/REQ-008-history-view.md (одно предложение п. 3.2). Тесты не менять; cd tools && npm run check проходит (472). Копия до — <рабочая папка ORCH>/orch/po2/fix-c-before. Каждая команда — с ограничением по времени.",
+    "acceptance_criteria": [
+      "замечания 1 и 2 закрыты",
+      "npm run check проходит",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T18:55:25Z",
+  "started_at": "2026-10-05T18:55:25Z",
+  "completed_at": "2026-10-05T19:00:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты замечания 1 и 2 ревью части (б) и Low-дубль подписи «привязано автоматически». Тесты не менялись; npm run check: 472 из 472.",
+    "changes": [
+      {
+        "finding": 1,
+        "file": "tools/src/pixel-office/public/app.js",
+        "place": "historyMeta",
+        "change": "при finished_at === null в span.history-finished стоят только слова статуса (одна строка, без «завершён» и без времени); при наличии Stop — «завершён дд.мм.гггг, чч:мм:сс» как раньше"
+      },
+      {
+        "finding": 1,
+        "file": "docs/design/REQ-008-history-view.md",
+        "place": "п. 3.2 (три места: первая строка, пункт про «завершён», строка таблицы состояний «Запрос в работе»)",
+        "change": "одно согласованное правило: без Stop слова «завершён» нет, стоят только слова статуса без времени"
+      },
+      {
+        "finding": 2,
+        "file": "tools/src/pixel-office/public/style.css",
+        "place": "после .row.opens-history",
+        "change": ".row.opens-history:focus-visible { outline-offset: -0.125rem; } — контур внутрь строки; px-строк по-прежнему 15"
+      },
+      {
+        "finding": 3,
+        "file": "tools/src/pixel-office/public/app.js",
+        "place": "historyAutoMark() (новая), understoodSection, timelineSection",
+        "change": "подпись «· привязано автоматически» строится в одной функции; поведение и DOM прежние. history.js и panels.js не менялись"
+      }
+    ],
+    "self_check": {
+      "before": "упавшей команды не было; замечания найдены чтением кода",
+      "after": "cd tools && npm run check (perl alarm 280): # tests 472, # pass 472, # fail 0, # skipped 0, # todo 0. grep -cE '[0-9]px' style.css = 15.",
+      "browser": "chrome-headless-shell из кэша playwright, файл во временной папке scratchpad, сервер не запускался, порт не использовался; настоящий style.css, строка li.row.opens-history в прокручиваемом ul#journal с фокусом через focus(): при 1920x1080 и 2560x1440 контур 2px виден со всех четырёх сторон (скриншот просмотрен для 1920x1080; 2560x1440 снят, смотрелся только размер файла)"
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Проект docs/design/REQ-008-history.md (п. 7, строка 577 и далее) о содержимом меты при finished_at === null ничего не говорит, только имена ключей texts.js (HISTORY_META_FINISHED) — противоречия нет, проект не правился."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Тесты на подпись меты при finished_at === null (PG/PN) в tools/test не найдены (grep history-finished пуст); новое ожидаемое поведение — только слова статуса без «завершён» — TEST-DESIGNER учесть."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Low из ревью 4 (Tab в окне) и 5 (заметки разработчика) не трогались: вне перечня."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/style.css",
+      "docs/design/REQ-008-history-view.md"
+    ]
+  }
+}

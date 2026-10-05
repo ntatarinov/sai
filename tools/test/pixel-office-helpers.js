@@ -199,8 +199,34 @@ export function journal() {
       entries.push(entry);
       return entries.length - 1;
     },
+    // REQ-008: an owner message with its stored text (kind A), a service
+    // message, and a record of the orchestrator (kind B, no hook_event_name).
+    ownerPrompt(s, text, extra = {}) {
+      const fields = { prompt_kind: "owner", ...extra };
+      if (text !== undefined && text !== null) fields.prompt_text = text;
+      return j.add("UserPromptSubmit", s, fields);
+    },
+    servicePrompt: (s, extra = {}) =>
+      j.add("UserPromptSubmit", s, { prompt_kind: "service", ...extra }),
+    note(fields = {}) {
+      sec += 1;
+      entries.push(noteEntry(at(sec), fields));
+      return entries.length - 1;
+    },
   };
   return j;
+}
+
+// A record of the orchestrator as it stands in the journal (REQ-008 2.1,
+// kind B): fields = {note_text, session_id, req_id, request_time,
+// request_time_auto}; note_text defaults to a fixed text.
+export function noteEntry(isoTime, fields = {}) {
+  return {
+    time: isoTime,
+    source: "ORCH",
+    note_text: "как понял: пример",
+    ...fields,
+  };
 }
 
 // A line of a write request (no source) or of a journal.
@@ -447,6 +473,9 @@ export async function startServer(t, o = {}) {
     journal: o.journal,
     publicDir: o.publicDir,
     warn: (m) => warnings.push(m),
+    // Text storage is given explicitly, never taken from the environment of
+    // the test run (REQ-008 12.1): on unless the test turns it off.
+    storeText: o.storeText ?? true,
   });
   const { port } = await server.listen();
   t.after(() => server.close());
@@ -470,6 +499,19 @@ export async function startServer(t, o = {}) {
       return request(port, {
         method: "POST",
         path: "/api/events",
+        headers: h,
+        body: text,
+      });
+    },
+    // A signed write of a record of the orchestrator (POST /api/note).
+    postNote(body, { sign = true, key = secret, headers = {}, raw } = {}) {
+      const text = raw ?? JSON.stringify(body);
+      const h = { "content-type": "application/json", ...headers };
+      if (sign === true) h[SIGNATURE_HEADER] = signBody(key, text);
+      else if (typeof sign === "string") h[SIGNATURE_HEADER] = sign;
+      return request(port, {
+        method: "POST",
+        path: "/api/note",
         headers: h,
         body: text,
       });
@@ -1234,4 +1276,417 @@ export function setPanelInts(page, { width, height, legend, gap }) {
   const legendEl = page.el("legend");
   legendEl.offsetHeight = legend;
   legendEl.offsetTop = 500 + gap;
+}
+
+// ------------------------------------------------ REQ-008: masking examples
+
+// The tables of design REQ-008, section 3.1 (all values are invented). `leak`
+// lists the pieces that must not survive masking (a `grep -F` of each is 1).
+const LB = "[скрыто]";
+
+// Forms of a value in quotes (Q) and boundaries (E): input -> exact result.
+export const MASK_ROWS = [
+  {
+    id: "Q-1",
+    input: 'password="primer 42" дальше',
+    expected: `password=${LB} дальше`,
+    leak: ["primer 42"],
+  },
+  {
+    id: "Q-2",
+    input: "token='abc123xyz' дальше",
+    expected: `token=${LB} дальше`,
+    leak: ["abc123xyz"],
+  },
+  {
+    id: "Q-3",
+    input: "secret=`s3cr3t` дальше",
+    expected: `secret=${LB} дальше`,
+    leak: ["s3cr3t"],
+  },
+  {
+    id: "Q-4",
+    input: '{"password": "primer42", "user": "anna"}',
+    expected: `{"password": ${LB}, "user": "anna"}`,
+    leak: ["primer42"],
+  },
+  {
+    id: "Q-5",
+    input: 'curl -H "x: 1" Bearer "eyAbc123" дальше',
+    expected: `curl -H "x: 1" Bearer ${LB} дальше`,
+    leak: ["eyAbc123"],
+  },
+  {
+    id: "Q-6",
+    input: '{"api_key":"abcd1234"}',
+    expected: `{"api_key":${LB}}`,
+    leak: ["abcd1234"],
+  },
+  {
+    id: "Q-7",
+    input: 'password="primer 42 без конца\nвторая строка',
+    expected: `password=${LB}\nвторая строка`,
+    leak: ["primer 42", "без конца"],
+  },
+  {
+    id: "Q-8",
+    input: 'password="a\\"b c" хвост',
+    expected: `password=${LB} хвост`,
+    leak: ['b c"', "a\\"],
+  },
+  {
+    id: "Q-9",
+    input: `password="ab'cd ef" хвост`,
+    expected: `password=${LB} хвост`,
+    leak: ["cd ef"],
+  },
+  { id: "Q-10", input: 'password=""', expected: 'password=""', leak: [] },
+  {
+    id: "Q-11",
+    input: 'password: "[скрыто]"',
+    expected: `password: ${LB}`,
+    leak: [],
+  },
+  {
+    id: "Q-12",
+    input: "Bearer `a`Bearer b",
+    expected: `Bearer ${LB}Bearer ${LB}`,
+    leak: [],
+  },
+  {
+    id: "Q-13",
+    input: 'password="abc\\\nnext=1 token=x',
+    expected: `password=${LB}\nnext=1 token=${LB}`,
+    leak: ["abc"],
+  },
+  {
+    id: "E-1",
+    input: "AWS_ACCESS_KEY_ID=AKIAZZZZEXAMPLE00001",
+    expected: `AWS_ACCESS_KEY_ID=${LB}`,
+    leak: ["AKIAZZZZEXAMPLE00001"],
+  },
+  {
+    id: "E-2",
+    input: "id=AKIAZZZZEXAMPLE00001",
+    expected: `id=${LB}`,
+    leak: ["AKIAZZZZEXAMPLE00001"],
+  },
+  {
+    id: "E-3",
+    input: "K=ghp_abcdefghij0123456789",
+    expected: `K=${LB}`,
+    leak: ["ghp_abcdefghij0123456789"],
+  },
+  {
+    id: "E-4",
+    input: "X=sk-ant-abcdefghij12345",
+    expected: `X=${LB}`,
+    leak: ["sk-ant-abcdefghij12345"],
+  },
+  {
+    id: "E-5",
+    input: "DB_PASSWORD=primer42",
+    expected: `DB_PASSWORD=${LB}`,
+    leak: ["primer42"],
+  },
+  {
+    id: "E-6",
+    input: "my_password=primer42",
+    expected: `my_password=${LB}`,
+    leak: ["primer42"],
+  },
+  {
+    id: "E-7",
+    input: "GITHUB_TOKEN=ghp_abcdefghij0123456789",
+    expected: `GITHUB_TOKEN=${LB}`,
+    leak: ["ghp_abcdefghij0123456789"],
+  },
+  {
+    id: "E-8",
+    input: "max_token=1000",
+    expected: `max_token=${LB}`,
+    leak: [],
+  },
+];
+
+// The rules M1-M10 one by one: a text that is masked (exact result).
+export const MASK_RULE_ROWS = [
+  {
+    id: "M1",
+    input:
+      "до\n-----BEGIN PRIVATE KEY-----\nMIIBabc123xyz\n-----END PRIVATE KEY-----\nпосле",
+    expected: `до\n${LB}\nпосле`,
+    leak: ["MIIBabc123xyz"],
+  },
+  {
+    id: "M1-cut",
+    input: "до\n-----BEGIN PRIVATE KEY-----\nMIIBabc123xyz\nещё строка",
+    expected: `до\n${LB}`,
+    leak: ["MIIBabc123xyz", "ещё строка"],
+  },
+  {
+    id: "M2",
+    input: "Authorization: Basic dXNlcjpwYXNz дальше\nследующая",
+    expected: `Authorization: ${LB}\nследующая`,
+    leak: ["dXNlcjpwYXNz"],
+  },
+  {
+    id: "M3",
+    input: "открой https://anna:primer42@example.org/x",
+    expected: `открой https://${LB}@example.org/x`,
+    leak: ["primer42"],
+  },
+  {
+    id: "M4",
+    input: "ключ sk-ant-abcdefghij1234567890 конец",
+    expected: `ключ ${LB} конец`,
+    leak: ["abcdefghij1234567890"],
+  },
+  {
+    id: "M4-proj",
+    input: "sk-proj-abcd_efgh-ijkl_mnop-1234",
+    expected: LB,
+    leak: ["abcd_efgh"],
+  },
+  {
+    id: "M5-ghp",
+    input: "токен ghp_abcdefghij0123456789 конец",
+    expected: `токен ${LB} конец`,
+    leak: ["abcdefghij0123456789"],
+  },
+  {
+    id: "M5-gho",
+    input: "gho_abcdefghij0123456789",
+    expected: LB,
+    leak: ["abcdefghij0123456789"],
+  },
+  {
+    id: "M5-ghs",
+    input: "ghs_abcdefghij0123456789",
+    expected: LB,
+    leak: ["abcdefghij0123456789"],
+  },
+  {
+    id: "M5-pat",
+    input: "github_pat_abcdefghij0123456789_xyz",
+    expected: LB,
+    leak: ["abcdefghij0123456789"],
+  },
+  {
+    id: "M6-AKIA",
+    input: "ключ AKIAZZZZEXAMPLE00001 конец",
+    expected: `ключ ${LB} конец`,
+    leak: ["AKIAZZZZEXAMPLE00001"],
+  },
+  {
+    id: "M6-ASIA",
+    input: "ключ ASIAZZZZEXAMPLE00001 конец",
+    expected: `ключ ${LB} конец`,
+    leak: ["ASIAZZZZEXAMPLE00001"],
+  },
+  {
+    id: "M7-jwt",
+    input: "jwt eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0In0.abcDEF123_-x. конец",
+    expected: `jwt ${LB}. конец`,
+    leak: ["eyJhbGciOiJIUzI1NiJ9"],
+  },
+  {
+    id: "M7-no-eyJ",
+    input: "три части abcd.efgh.ijkl конец",
+    expected: `три части ${LB} конец`,
+    leak: ["efgh"],
+  },
+  {
+    id: "M7-file",
+    input: "см. a.test.js",
+    expected: `см. ${LB}`,
+    leak: ["a.test.js"],
+  },
+  {
+    id: "M8",
+    input: "curl Bearer abcdef123 дальше",
+    expected: `curl Bearer ${LB} дальше`,
+    leak: ["abcdef123"],
+  },
+  {
+    id: "M9-upper",
+    input: "PASSWORD=primer42 дальше",
+    expected: `PASSWORD=${LB} дальше`,
+    leak: ["primer42"],
+  },
+  {
+    id: "M9-mixed",
+    input: "Api_Key: primer42 дальше",
+    expected: `Api_Key: ${LB} дальше`,
+    leak: ["primer42"],
+  },
+  {
+    id: "M9-passwd",
+    input: "passwd=primer42 apikey=primer43 authorization=primer44",
+    expected: `passwd=${LB} apikey=${LB} authorization=${LB}`,
+    leak: ["primer42", "primer43", "primer44"],
+  },
+  {
+    id: "M10-base64",
+    input: "Zm9vYmFyMTIzNDU2Nzg5MGFiY2RlZmdoaWprbG1ub3A=",
+    expected: LB,
+    leak: ["Zm9vYmFyMTIzNDU2"],
+  },
+  {
+    id: "M10-40",
+    input: "строка abcdefghij0123456789abcdefghij0123456789, конец",
+    expected: `строка ${LB}, конец`,
+    leak: ["abcdefghij0123456789abcdefghij"],
+  },
+];
+
+// Text that must stay as it is (N-1...N-7 and the examples of criterion 7).
+export const MASK_KEEP_ROWS = [
+  "docs/design/samples/history-view-sample-2026-10-05",
+  "tools/src/pixel-office/public/panels.js",
+  "REQ-008",
+  "docs/design/REQ-008-history.md",
+  "abcdefghijklmnopqrstuvwxyzabcdefghijklmn",
+  "task-abcdefghijklmnopqrst",
+  "xAKIAZZZZEXAMPLE00001",
+  "docs/abcdefghij0123456789abcdefghij0123456789",
+  "сделай X, версия 22 и номер 12345",
+  "127.0.0.1",
+  "a3f5c9e1b7d2486f90ab",
+  "ABCDEF0123456789ABCDEF0123456789ABCD",
+  "1234567890123456789012345678901234567890",
+  'password=""',
+];
+
+// Known uncovered cases (design 3.3): these are NOT masked; a change of the
+// rules must show up here.
+export const MASK_RESIDUAL = [
+  "пароль от почты — имя кота и год: тигр 2019",
+  "мой ключ доступа: красный слон двадцать семь",
+  "Zm9vYmFyMTIzNDU2Nzg5MGFi/Y2RlZmdoaWprbG1ub3A",
+  "AB12CD34EF56GH78IJ90KL12MN34OP56QR78",
+  "k9x2m4p7q1w8",
+  "mypassword=primer42",
+  "password = primer42",
+  "SECRET_ACCESS_KEY=abcd/EFGH+ijkl",
+  "--password primer42",
+  "pwd=primer42",
+  "api-key: primer42",
+];
+
+// ------------------------------------------------ REQ-008 part (b): history
+
+export const HISTORY_TEXT = "Первая строка запроса\n\nВторой абзац запроса";
+export const HISTORY_NOTE_TEXT =
+  "Понял так: сделать окно\nвторая строка понимания";
+
+// The journal of the criterion fixture (REQ-008 criterion 10): one message of
+// the owner with a text of two paragraphs, a record of the orchestrator with a
+// number of a requirement, two tasks (one finished, with a description; one
+// not finished, without one) and one service message. `idx` has the index of
+// every line.
+export function historyFixture() {
+  const j = journal();
+  const idx = {};
+  idx.start = j.sessionStart("S1");
+  idx.owner = j.ownerPrompt("S1", HISTORY_TEXT);
+  idx.note = j.note({
+    session_id: "S1",
+    request_time: j.entries[idx.owner].time,
+    req_id: "REQ-008",
+    note_text: HISTORY_NOTE_TEXT,
+  });
+  idx.post1 = j.post("S1", "tu-a1", "a1", {
+    subagentType: "Plan",
+    description: "Проект окна",
+  });
+  idx.a1 = j.subStart("S1", "a1", "Plan");
+  idx.a2 = j.subStart("S1", "a2", "Explore");
+  idx.a1stop = j.subStop("S1", "a1", "Plan");
+  idx.service = j.servicePrompt("S1");
+  return { j, entries: j.entries, idx };
+}
+
+// The elements of the window of history of a started page.
+export function historyDom(page) {
+  const overlay = page.el("history-overlay");
+  const body = page.el("history-body");
+  return {
+    overlay,
+    body,
+    dialog: page.el("history"),
+    close: page.el("history-close"),
+    isOpen: () => overlay.hidden === false,
+    section: (name) => body.find((e) => e.dataset.section === name),
+    title: () => body.find((e) => e.attrs.get("id") === "history-title"),
+    meta: () => body.byClass("history-meta")[0],
+  };
+}
+
+// The rows of the journal that open a window, and the buttons of the cards of
+// the task panel.
+export const historyRows = (page) =>
+  page.rows().filter((r) => r.classes.has("opens-history"));
+export const historyRowOf = (page, key) =>
+  page.rows().find((r) => r.dataset.request === key) ?? null;
+export const historyButtons = (page) =>
+  page.items().flatMap((item) => item.byClass("history-open"));
+
+// The rules of a style sheet as {media, selectors, decls}; a comment is
+// dropped, a nested @media block keeps its head in `media`.
+export function parseCss(css) {
+  const out = [];
+  const decls = (inner) => {
+    const map = new Map();
+    for (const part of inner.split(";")) {
+      const c = part.indexOf(":");
+      if (c < 0) continue;
+      map.set(
+        part.slice(0, c).trim(),
+        part
+          .slice(c + 1)
+          .trim()
+          .replace(/\s+/g, " "),
+      );
+    }
+    return map;
+  };
+  const walk = (text, media) => {
+    let pos = 0;
+    while (pos < text.length) {
+      const open = text.indexOf("{", pos);
+      if (open < 0) break;
+      const head = text.slice(pos, open).trim();
+      let depth = 1;
+      let k = open + 1;
+      while (k < text.length && depth > 0) {
+        if (text[k] === "{") depth += 1;
+        else if (text[k] === "}") depth -= 1;
+        k += 1;
+      }
+      const inner = text.slice(open + 1, k - 1);
+      if (head.startsWith("@media")) walk(inner, head);
+      else if (!head.startsWith("@")) {
+        out.push({
+          media,
+          selectors: head.split(",").map((s) => s.trim().replace(/\s+/g, " ")),
+          decls: decls(inner),
+        });
+      }
+      pos = k;
+    }
+  };
+  walk(css.replace(/\/\*[\s\S]*?\*\//g, ""), null);
+  return out;
+}
+
+// The declarations that apply to one selector (later rules win) in one media
+// block (null: outside of any).
+export function cssDecls(rules, selector, media = null) {
+  const merged = new Map();
+  for (const rule of rules) {
+    if (rule.media !== media || !rule.selectors.includes(selector)) continue;
+    for (const [name, value] of rule.decls) merged.set(name, value);
+  }
+  return merged;
 }

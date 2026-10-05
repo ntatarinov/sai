@@ -36,11 +36,15 @@ function readInput(max) {
 }
 
 // One POST; resolves when the answer is read, the connection fails or the time
-// is up. The status of the answer does not matter: there are no retries.
+// is up. The status of the answer does not matter: there are no retries. The
+// request goes through an agent of its own, not the default one: proxy
+// variables of the environment never send the signed body away from
+// 127.0.0.1 (REQ-008, F6).
 function post(http, host, port, body, signature, headerName, timeoutMs) {
   return new Promise((resolve) => {
     const req = http.request(
       {
+        agent: new http.Agent({ keepAlive: false }),
         host,
         port,
         path: "/api/events",
@@ -74,7 +78,9 @@ async function run() {
   const stateDir = await import("./state-dir.js");
 
   const text = await readInput(config.HOOK_INPUT_MAX);
-  const body = protocol.buildWriteBody(JSON.parse(text), firedAt);
+  const body = protocol.buildWriteBody(JSON.parse(text), firedAt, {
+    storeText: protocol.storeTextEnabled(process.env),
+  });
   if (body === null) return;
 
   const dir = stateDir.resolveStateDir(process.env, os.homedir());

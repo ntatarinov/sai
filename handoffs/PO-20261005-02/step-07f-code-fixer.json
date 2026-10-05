@@ -1,0 +1,107 @@
+{
+  "handoff_id": "step07f-code-fixer-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-04",
+  "step": "07f",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PO-20261005-02/step-07f-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "MEDIUM",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: просмотр истории",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/style.css",
+      "docs/design/REQ-008-history-view.md",
+      "tools/test/pixel-office-page.test.js (только утверждение меты без Stop)",
+      "handoffs/PO-20261005-02/step-07f-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/po2/fix-d-before",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PO-20261005-02/step-07-design-qa-validator.json"
+    ]
+  },
+  "task": {
+    "description": "WF-04, после PASS DESIGN-QA (handoffs/PO-20261005-02/step-07-design-qa-validator.json; прочтите findings Low 1–4): небольшие правки видимого, по решениям ORCH. (2) Мета без времени окончания выводит «в работе · начат … · в работе» — слово статуса повторяется: оставьте слова статуса один раз (например «начат дд.мм.гггг, чч:мм:сс · в работе» без повтора; выберите по смыслу п. 3.2 описания и поправьте предложение п. 3.2 так, чтобы оно не требовало повтора); (1) контур фокуса у «×» на узком экране срезан сверху и справа — сместить внутрь (outline-offset отрицательный, как у .row.opens-history:focus-visible; число px-строк в style.css остаётся 15, размеры в rem); (4) описание: контур фокуса строки журнала нарисован внутри строки, а не снаружи с зазором — осознанное отступление (журнал прокручивается и срезал бы внешний контур) — поправьте текст описания в этом месте, код не менять; (3) Low «текст проходит под × при прокрутке, у кнопки нет фона» — дайте кнопке × фон цвета окна (значение — из существующих переменных/цветов окна), если это не ломает контракт PN-22. Пишете только tools/src/pixel-office/public/app.js, style.css, docs/design/REQ-008-history-view.md и в tools/test/pixel-office-page.test.js ТОЛЬКО то утверждение теста PG-27 (и других мест), которое прямо требует старый вид меты без Stop, — приведите его к новому виду, не ослабляя остальное; PN-22 (контракт CSS) не ослаблять — если фон ×/контур требует изменить его утверждение, запись в result.issues и не трогать. cd tools && npm run check проходит (483). Проверьте в headless-браузере на своём сервере (порт свободный, НЕ 4780, временная папка, НЕ ~/.sai-pixel-office), что мета и контур × выглядят верно при 1920×1080 и 480×900; серверы остановите. Копия до — <рабочая папка ORCH>/orch/po2/fix-d-before. Заполните только status (COMPLETED/FAILED), completed_at (UTC, date -u) и result.",
+    "acceptance_criteria": [
+      "findings 1–4 закрыты или названа причина",
+      "npm run check проходит",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T19:22:24Z",
+  "started_at": "2026-10-05T19:22:24Z",
+  "completed_at": "2026-10-05T19:28:57Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты находки Low 1-4 DESIGN-QA: мета без Stop больше не повторяет слово статуса; у «×» фон цвета окна и контур внутрь на узком экране; описание поправлено про контур строки журнала.",
+    "changes": [
+      {
+        "finding": 2,
+        "file": "tools/src/pixel-office/public/app.js",
+        "place": "historyMeta",
+        "change": "без Stop части «завершён …» и разделителя перед ней нет: мета = метка статуса · «начат …». С Stop вид прежний."
+      },
+      {
+        "finding": 2,
+        "file": "docs/design/REQ-008-history-view.md",
+        "place": "п. 3.2 (оба абзаца) и строка таблицы «Запрос в работе»",
+        "change": "предложение не требует повтора слов статуса: без Stop остаются метка статуса и «начат»."
+      },
+      {
+        "finding": 2,
+        "file": "tools/test/pixel-office-page.test.js",
+        "place": "PG-27 (мета без Stop, ожидаемая строка) и проверка запроса «окончание не записано» (PG-27, строка с d3)",
+        "change": "из ожидаемой строки убрано повторное « · слова статуса»; остальные утверждения (нет «завершён», секции, порядок) не менялись."
+      },
+      {
+        "finding": 1,
+        "file": "tools/src/pixel-office/public/style.css",
+        "place": "@media (max-width: 599px) .history-close:focus-visible",
+        "change": "outline-offset: -0.125rem; число строк с px в style.css прежнее: 15."
+      },
+      {
+        "finding": 1,
+        "file": "docs/design/REQ-008-history-view.md",
+        "place": "п. о фокусе",
+        "change": "записано: у «×» на узком экране контур внутрь."
+      },
+      {
+        "finding": 3,
+        "file": "tools/src/pixel-office/public/style.css",
+        "place": ".history-close",
+        "change": "background: none -> var(--panel) (#161f2e, цвет окна). Утверждения PN-22 не менялись и проходят."
+      },
+      {
+        "finding": 3,
+        "file": "docs/design/REQ-008-history-view.md",
+        "place": "п. «×»",
+        "change": "добавлен фон #161f2e."
+      },
+      {
+        "finding": 4,
+        "file": "docs/design/REQ-008-history-view.md",
+        "place": "п. 1 (фокус) и п. о фокусе",
+        "change": "написано, что у строки журнала обводка внутри строки (−2 px) осознанно; код не менялся."
+      }
+    ],
+    "self_check": "Headless Chrome 1920x1080 и 480x900, свой сервер на порту 51869 во временной папке (не 4780, не ~/.sai-pixel-office), две записи журнала. Мета завершённого запроса: «завершена · начат 06.10.2026, 00:26:20 · завершён 06.10.2026, 00:26:20»; запроса в работе: «в работе · начат 06.10.2026, 00:26:20». «×» с фокусом: 1920 - outline solid 2px rgb(90,169,255) offset 2px, фон rgb(22,31,46); 480 - тот же контур, offset -2px, фон rgb(22,31,46), «×» 44x44 в углу (x 436, y 0); снимок: контур виден со всех четырёх сторон. Серверы и Chrome остановлены. cd tools && npm run check: 1..483, tests 483, pass 483, fail 0, skipped 0.",
+    "issues": [
+      "В первом проходе правка фона по ошибке затронула и кнопку закрытия карточки агента (style.css, строка 729); откатил, различие с копией «до» теперь только .history-close и одно новое правило в @media.",
+      "Тесты PN-22 не менялись: фон и контур «×» его утверждений не нарушают."
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/style.css",
+      "docs/design/REQ-008-history-view.md",
+      "tools/test/pixel-office-page.test.js"
+    ]
+  }
+}

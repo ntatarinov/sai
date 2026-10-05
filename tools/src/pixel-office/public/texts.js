@@ -112,3 +112,36 @@ export const ROOM_LABELS = Object.freeze({
   server: "СЕРВЕРНАЯ",
   kitchen: "КУХНЯ",
 });
+
+// ------------------------------------------------- the window of history
+
+// The window "Просмотр истории" of one request of the owner (REQ-008,
+// description of the window section 7). {time} is a date and time, {n} a
+// number; the separator " · " and the time of a record of the orchestrator
+// are added by the code.
+export const HISTORY_BADGE = "Просмотр истории";
+export const HISTORY_CLOSE = "Закрыть";
+export const HISTORY_OPEN = "открыть историю запроса";
+export const HISTORY_SERVICE = "служебное сообщение";
+export const HISTORY_TITLE_NO_TEXT = "Запрос владельца · {time}";
+export const HISTORY_SECTION_REQUEST = "Исходный запрос";
+export const HISTORY_SECTION_UNDERSTOOD = "Как оркестратор понял";
+export const HISTORY_SECTION_WORK = "Кто работал и что сделал";
+export const HISTORY_SECTION_TIMELINE = "Хронология";
+export const HISTORY_TRUNCATED = "обрезано: показаны первые {n} знаков";
+export const HISTORY_TEXT_DISABLED = "текст не сохраняется";
+export const HISTORY_NOTE_BY = "Оркестратор записал";
+export const HISTORY_NOTE_AUTO = "привязано автоматически";
+export const HISTORY_NOTE_MISSING = "оркестратор не записал, как понял";
+export const HISTORY_COL_TASK = "Задача";
+export const HISTORY_COL_AGENT = "Агент";
+export const HISTORY_COL_DOES = "Что делал";
+export const HISTORY_COL_RESULT = "Итог";
+export const HISTORY_TASK_N = "Задача {n}";
+export const HISTORY_EMPTY_CELL = "—";
+export const HISTORY_NO_TASKS = "в этом запросе задач не было";
+export const HISTORY_WHO_ORCH = "Оркестратор";
+export const HISTORY_LOADING = "Загрузка…";
+export const HISTORY_ERROR = "Не удалось показать историю запроса";
+export const HISTORY_META_STARTED = "начат";
+export const HISTORY_META_FINISHED = "завершён";

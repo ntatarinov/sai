@@ -1,0 +1,148 @@
+{
+  "handoff_id": "step01-code-designer-PO-20261005-02",
+  "run_id": "PO-20261005-02",
+  "workflow_id": "WF-04",
+  "step": "01",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PO-20261005-02/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "запрос владельца 2026-10-05: «Оркестратор должен видеть сообщение и показывать как понял он мое сообщение»",
+    "requirement_ids": [
+      "REQ-008"
+    ],
+    "route": "REQ-VALIDATOR (PASS r2) -> GUI-DESIGN-ANALYST + CODE-DESIGNER -> CODE-DESIGN-VALIDATOR (оба) -> BACKEND-DEV (часть а) -> FRONTEND-DEV (часть б) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA-VALIDATOR -> RELEASE-VALIDATOR -> DOC-UPDATER",
+    "agent_run_id": null,
+    "write_set": [
+      "docs/design/REQ-008-history.md"
+    ],
+    "parallel_work_now": "GUI-DESIGN-ANALYST (docs/design/REQ-008-history-view.md)",
+    "artifacts_in": [
+      "docs/requirements.yaml (блок REQ-008 целиком; затронутые критерии REQ-001 и REQ-007)",
+      "decisions/0011-pixel-office-stores-owner-requests.md",
+      "decisions/0012-pixel-office-scale-full-hd-2k.md",
+      "docs/design/samples/history-view-sample-2026-10-05.jpg",
+      "docs/design/REQ-001-pixel-office.md",
+      "docs/design/REQ-007-office-ui.md",
+      "tools/src/pixel-office/",
+      "handoffs/PO-20261005-02/step-00b-req-validator-r2.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 1: проект кода для REQ-008 (проверено REQ-VALIDATOR, PASS r2) — новый файл docs/design/REQ-008-history.md (docs/design/REQ-001-pixel-office.md v3.1 не менять — он закрыт прогоном PO-20261005-01; ссылаться на его разделы). Решение — decisions/0011. Проект: (а) данные — hook.js (prompt_kind, prompt_text, prompt_truncated, маскирование «[скрыто]» с правилами: что маскируется, строчный hex от 32 знаков тоже, остаточный риск назван, предел 4 000), protocol.js/config.js (SAI_PIXEL_OFFICE_STORE_TEXT), journal.js (поля строки, пределы, чтение), server.js (/api/note: подпись тем же секретом, принимает только note_text, req_id, request_time, session_id; source ORCH и время ставит сервер; привязка к последнему сообщению владельца, request_time_auto; пределы 2 000), команда pixel-office-note (файл, npm-скрипт — значение фиксируется в проекте: одна строка вида node src/pixel-office/<файл>.js; код выхода: 0 при отключённом хранении; секрет не печатается), правка роли .claude/agents/orchestrator.md (обязанность ORCH: записывать «как понял» через pixel-office-note по каждому сообщению владельца до передачи работы агентам — формулировка текста для роли), tools/README.md (раздел «### Хранение текста»: остаточный риск, строчный hex), tools/package.json (хеши критерия 14 REQ-001 — не нарушить); (б) модель страницы — сводка запроса по критериям REQ-008 (связка запроса, записи ORCH, задач и событий; правила сопоставления; что при отсутствии данных), как окно получает данные (какой ответ сервера, поля, пределы), без внешних адресов; (в) пути отказа и ошибки (каждая — код, сообщение, неизменное состояние журнала), безопасность (Q7–Q11, R2, R3), (г) таблица «критерий → тест» с именами файлов и номерами тестов (свободные номера — по существующим файлам), мутанты, раздел о планке Q1–Q14 и R1–R3, (д) план раундов: часть (а) для BACKEND-DEV, часть (б) для FRONTEND-DEV, порядок и общие файлы. Описание интерфейса пишет параллельно GUI-DESIGN-ANALYST (docs/design/REQ-008-history-view.md); общие места — ключи texts.js, форма ответа сервера — согласуйте по его файлу, когда он появится; расхождения — в result.issues. Кода реализации нет (только формы данных, сигнатуры, таблицы). Писать только docs/design/REQ-008-history.md. Путей этого компьютера и названий других проектов в файле нет. Каждая команда — с ограничением по времени.",
+    "acceptance_criteria": [
+      "каждый критерий REQ-008 — часть проекта и тест в таблице",
+      "формы данных, пути отказа, безопасность, мутанты, раздел о планке",
+      "план раундов для BACKEND-DEV и FRONTEND-DEV",
+      "нет кода реализации; изменён только docs/design/REQ-008-history.md"
+    ]
+  },
+  "created_at": "2026-10-05T16:26:49Z",
+  "started_at": "2026-10-05T16:26:49Z",
+  "completed_at": "2026-10-05T16:37:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проект кода REQ-008 — docs/design/REQ-008-history.md. (а) Данные: два вида строки журнала (событие хука + prompt_kind/prompt_text/prompt_truncated; запись ORCH без hook_event_name), модуль mask.js (правила M1–M10, повторяемость, линейность, остаточный риск), хук (вид сообщения, 64 КБ → маскирование → 4 000, подгонка под BODY_MAX, своё http.Agent), сервер (POST /api/note: порядок проверок, привязка к последнему сообщению владельца и запись в одной синхронной последовательности, lastOwnerPrompt), команда note.js / npm-скрипт \"node src/pixel-office/note.js\" (коды 0/1/2, сообщения, только 127.0.0.1), SAI_PIXEL_OFFICE_STORE_TEXT, README, текст пункта роли ORCH. (б) history.js: окно запроса, правила сопоставления задач, записей ORCH, статуса, заголовка, хронологии; данные — тот же GET /api/events; разметка и ключи texts.js сверены с REQ-008-history-view.md. Пути отказа E1–E14, безопасность, таблица «критерий → тест» (19 критериев, HK-18…28, SV-55…70, PG-24…28, PN-19…22, DC-01…02, шаг Q-H), 19 мутантов, планка Q1–Q14 и R1–R3, план раундов (а)/(б).",
+    "changes": [
+      {
+        "file": "docs/design/REQ-008-history.md",
+        "what": "новый файл: п. 0 проверенные факты F1–F8; п. 1 состав и владельцы; п. 2 формы данных; п. 3 маскирование; п. 4 хук; п. 5 сервер; п. 6 команда; п. 7 модель страницы и окно; п. 8 пути отказа; п. 9 README; п. 10 текст роли ORCH; п. 11 критерий → тест; п. 12 места использования общих функций; п. 13 открытые вопросы; п. 14 безопасность; п. 15 мутанты; п. 16 планка; п. 17 план раундов"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "node: buildWriteBody({hook_event_name:'UserPromptSubmit',session_id:'s-1',prompt:'сделай X'}, now)",
+        "out": "{\"time\":\"2026-10-05T16:29:40.100Z\",\"hook_event_name\":\"UserPromptSubmit\",\"session_id\":\"s-1\"} — текст сейчас не хранится (F1)"
+      },
+      {
+        "cmd": "node: checkLine({time,source:'ORCH',note_text:'x'}, true)",
+        "out": "{\"ok\":false,\"reason\":\"unknown_key:note_text\"} (F2)"
+      },
+      {
+        "cmd": "node: buildModel([UPS, ORCH-строка], [], now) → journal.length, mainRows.length, marks",
+        "out": "1 1 [null,null] (F3)"
+      },
+      {
+        "cmd": "grep 204 server.js и pixel-office-server.test.js",
+        "out": "sendEmpty(res, 204); тесты ждут 204 (F4)"
+      },
+      {
+        "cmd": "cd tools && jq -S -c 'del(.scripts[\"pixel-office\"], .scripts[\"pixel-office-note\"])' package.json | shasum -a 256",
+        "out": "5c59292586d92e95c1ea507ef7a46790a125677172c3fe3abfd90dedd9edf0a4 (F5, совпадает с критерием 14 REQ-001)"
+      },
+      {
+        "cmd": "проба: дочерний Node, NODE_USE_ENV_PROXY=1 HTTP_PROXY=<поддельный прокси>, http.request на 127.0.0.1 агентом по умолчанию и своим",
+        "out": "default [ 'proxy http://127.0.0.1:54958/' ]; own [ 'target' ] (F6)"
+      },
+      {
+        "cmd": "grep последних номеров HK/SV/PG/PN",
+        "out": "HK 17, SV 54, PG 23, PN 18 (F8)"
+      },
+      {
+        "cmd": "grep -nE '<путь компьютера>|whooch|[образец]|[образец]|[образец]|Advisor|[система компании]' docs/design/REQ-008-history.md",
+        "out": "пусто (код 1)"
+      },
+      {
+        "cmd": "проверка путей в проекте: каждый `tools|docs|decisions|.claude/...` существует или назван создаваемым",
+        "out": "не существуют только создаваемые этой работой mask.js, note.js, public/history.js, test/pixel-office-docs.test.js и предлагаемая decisions/0013; decisions/0002, 0011 — короткие ссылки на существующие файлы"
+      },
+      {
+        "cmd": "git status --short",
+        "out": "изменён только docs/design/REQ-008-history.md (плюс этот handoff); прочие ?? — чужие файлы прогона"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "требование",
+        "text": "Критерии 4 и 5 REQ-008 пишут «200» для успеха /api/events, а сервер и тесты REQ-001 дают 204 (F4). Проект оставляет 204 у /api/events и 200 — у /api/note. Нужна поправка критерия 4 (WF-01) или подтверждение ORCH."
+      },
+      {
+        "id": "I2",
+        "kind": "требование, Low",
+        "text": "Ошибки использования команды (в т. ч. --secret, --host) — код 2; критерий 8 говорит «код 1 только при недоступном сервере и неверном ответе», критерии 5 и 19 — «не 0». Противоречия нет, отмечено."
+      },
+      {
+        "id": "I3",
+        "kind": "риск",
+        "text": "Хранение выключено у сервера, но не у Claude Code: хук шлёт prompt_text, сервер по критерию 8 отвечает 400 — событие UserPromptSubmit теряется целиком. README велит задавать переменную в обоих местах; альтернатива противоречит букве критерия 8 — вопрос владельцу."
+      },
+      {
+        "id": "I4",
+        "kind": "блокирует раунд (а) в части роли",
+        "text": "Критерий 16 требует --session <session_id этой сессии>, но ORCH в сессии свой session_id напрямую не видит. Нужен ответ: брать его из последней строки UserPromptSubmit журнала (jq) или ввести --session last (меняет формулировку критерия)."
+      },
+      {
+        "id": "I5",
+        "kind": "предложение decisions/",
+        "text": "decisions/0013-pixel-office-mask-rules.md: правила M1–M10, сужение JWT до начала eyJ (иначе ложные срабатывания на именах файлов), повторяемость маскирования, остаточный риск."
+      },
+      {
+        "id": "I6",
+        "kind": "проверка критерия 13",
+        "text": "Размеры окна при 1920×1080 и 2560×1440 без настоящего браузера в npm run check не измерить (decisions/0002). Проект: PN-22 — контракт CSS, размеры и отсутствие горизонтальной прокрутки — шаг Q-H DESIGN-QA-VALIDATOR (headless Chrome). Подтвердить, что это закрывает критерий."
+      },
+      {
+        "id": "I7",
+        "kind": "тест",
+        "text": "Список запрещённых фраз образца (критерий 9) не должен содержать название другого проекта, видное на скриншоте; TEST-DESIGNER берёт фразы без него."
+      },
+      {
+        "id": "I8",
+        "kind": "находка того же рода (AP-014), Q13",
+        "text": "Хук сейчас шлёт подписанное тело агентом по умолчанию: при NODE_USE_ENV_PROXY=1 и HTTP_PROXY оно уходит в прокси (проба F6). Исправление включено в проект (своё http.Agent, HK-28). Кандидат в docs/anti-patterns.md — решает ORCH. Также при NODE_USE_ENV_PROXY=1 Node печатает предупреждение в stderr до кода хука."
+      },
+      {
+        "id": "I9",
+        "kind": "сверка с GUI-DESIGN-ANALYST",
+        "text": "Ключи texts.js и id разметки взяты из docs/design/REQ-008-history-view.md п. 7 без расхождений; ответы на его вопросы I1 (какая карточка открывает окно), I2 (пределов нет), I3 (ordinal, firstLine) — в п. 7.3–7.4 проекта. Расхождений не найдено."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-008-history.md"
+    ]
+  }
+}

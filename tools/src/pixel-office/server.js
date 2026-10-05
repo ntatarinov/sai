@@ -1,6 +1,7 @@
-// The Pixel Office HTTP server (design 2.2, section 5): localhost only, one
-// signed write path, a read API, and the static files of public/. node:http
-// only, no dependencies (decisions/0002).
+// The Pixel Office HTTP server (design 2.2, section 5): 127.0.0.1 only, two
+// signed write paths (hook events and records of the orchestrator, REQ-008),
+// a read API, and the static files of public/. node:http only, no
+// dependencies (decisions/0002).
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -17,11 +18,20 @@ import {
   JournalWriteError,
   createJournal,
 } from "./journal.js";
+import { maskSecrets } from "./mask.js";
 import {
   SIGNATURE_HEADER,
+  storeTextEnabled,
+  validateNoteBody,
   validateWriteBody,
   verifySignature,
 } from "./protocol.js";
+import {
+  NOTE_MAX,
+  SOURCE_ORCH,
+  checkNoteLine,
+  codePointLength,
+} from "./public/schema.js";
 import { readSecret, writeSmallFile } from "./state-dir.js";
 
 const DEFAULT_PUBLIC_DIR = path.join(
@@ -139,11 +149,17 @@ function describeError(err) {
   return text.replace(/\s+/g, " ").slice(0, 200);
 }
 
-// options = { stateDir, port, now, journal, publicDir, warn }. Only stateDir
-// and port are required. now returns milliseconds; journal replaces the
-// journal (tests); warn receives one-line messages for stderr.
+// options = { stateDir, port, now, journal, publicDir, warn, storeText }. Only
+// stateDir and port are required. now returns milliseconds; journal replaces
+// the journal (tests); warn receives one-line messages for stderr; storeText
+// (boolean) says whether message texts are stored - when it is not given, it
+// is read once from SAI_PIXEL_OFFICE_STORE_TEXT (REQ-008 2.4).
 export function createServer(options) {
   const { stateDir } = options;
+  const storeText =
+    typeof options.storeText === "boolean"
+      ? options.storeText
+      : storeTextEnabled(process.env);
   const requestedPort = options.port ?? 0;
   const now = options.now ?? Date.now;
   const publicDir = options.publicDir ?? DEFAULT_PUBLIC_DIR;
@@ -260,10 +276,9 @@ export function createServer(options) {
     }
   }
 
-  // The body is complete. Signature, then JSON, then the form of the body; the
-  // time check and the append run in one synchronous sequence, so the time is
-  // compared with the clock at the moment the line is written.
-  function processBody(req, res, body) {
+  // The body is complete: the signature, then JSON. The parsed object, or
+  // null when the answer (401 or 400) is sent already.
+  function signedObject(req, res, body) {
     const key = getSecret();
     const signature = req.headers[SIGNATURE_HEADER];
     if (
@@ -272,37 +287,114 @@ export function createServer(options) {
       !verifySignature(key, body, signature)
     ) {
       sendJson(res, 401, { error: "unauthorized" });
-      return;
+      return null;
     }
     let value;
     try {
       value = JSON.parse(body.toString("utf8"));
     } catch {
       sendJson(res, 400, { error: "not_json" });
-      return;
+      return null;
     }
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
       sendJson(res, 400, { error: "not_json" });
-      return;
+      return null;
     }
-    const checked = validateWriteBody(value, now());
+    return value;
+  }
+
+  function appendOr500(res, line, what) {
+    try {
+      journal.append(line);
+      return true;
+    } catch (err) {
+      if (!(err instanceof JournalWriteError)) throw err;
+      warn(`Pixel Office: не удалось записать ${what} в журнал (${err.code})`);
+      sendJson(res, 500, { error: "write_failed" });
+      return false;
+    }
+  }
+
+  // POST /api/events. The form of the body; the time check and the append run
+  // in one synchronous sequence, so the time is compared with the clock at the
+  // moment the line is written.
+  function processEvent(req, res, body) {
+    const value = signedObject(req, res, body);
+    if (value === null) return;
+    const checked = validateWriteBody(value, now(), { storeText });
     if (!checked.ok) {
       sendJson(res, 400, { error: checked.reason });
       return;
     }
-    try {
-      journal.append(checked.line);
-    } catch (err) {
-      if (!(err instanceof JournalWriteError)) throw err;
-      warn(`Pixel Office: не удалось записать событие в журнал (${err.code})`);
-      sendJson(res, 500, { error: "write_failed" });
-      return;
-    }
+    if (!appendOr500(res, checked.line, "событие")) return;
     sendEmpty(res, 204);
   }
 
-  // POST /api/events: the only write path.
-  function handleWrite(req, res) {
+  // POST /api/note: a record of the orchestrator (REQ-008 5.2, steps 5-10).
+  // The form of the body, the storage switch, masking; then the binding to the
+  // last owner message and the append run in one synchronous sequence (no
+  // await): no other line can come between the search and the append.
+  function processNote(req, res, body) {
+    const value = signedObject(req, res, body);
+    if (value === null) return;
+    const nowMs = now();
+    const checked = validateNoteBody(value, nowMs);
+    if (!checked.ok) {
+      sendJson(res, 400, { error: checked.reason });
+      return;
+    }
+    if (!storeText) {
+      sendJson(res, 400, { error: "text_storage_off" });
+      return;
+    }
+    const { fields } = checked;
+    const noteText = maskSecrets(fields.note_text);
+    if (codePointLength(noteText, NOTE_MAX) > NOTE_MAX) {
+      sendJson(res, 400, { error: "too_long_after_mask" });
+      return;
+    }
+    let requestTime = fields.request_time ?? null;
+    let auto = false;
+    if (requestTime === null) {
+      let found;
+      try {
+        found = journal.lastOwnerPrompt(fields.session_id ?? null);
+      } catch (err) {
+        if (!(err instanceof JournalReadError)) throw err;
+        warn(`Pixel Office: ${err.message}`);
+        sendJson(res, 500, { error: "read_failed" });
+        return;
+      }
+      if (found !== null) {
+        requestTime = found.time;
+        auto = true;
+      }
+    }
+    const record = {
+      time: new Date(nowMs).toISOString(),
+      source: SOURCE_ORCH,
+      note_text: noteText,
+    };
+    if (fields.session_id !== undefined) record.session_id = fields.session_id;
+    if (fields.req_id !== undefined) record.req_id = fields.req_id;
+    if (requestTime !== null) record.request_time = requestTime;
+    if (auto) record.request_time_auto = true;
+    // The canonical order of the keys, and the last check of the record.
+    const line = checkNoteLine(record);
+    if (!line.ok) {
+      sendJson(res, 400, { error: line.reason });
+      return;
+    }
+    if (!appendOr500(res, line.line, "запись оркестратора")) return;
+    sendJson(res, 200, {
+      request_time: requestTime,
+      request_time_auto: auto,
+    });
+  }
+
+  // A signed write (POST /api/events or POST /api/note): the body is read up
+  // to BODY_MAX bytes and given to onBody.
+  function handleWrite(req, res, onBody) {
     const declared = req.headers["content-length"];
     let tooLarge =
       declared !== undefined &&
@@ -330,7 +422,7 @@ export function createServer(options) {
     req.on(
       "end",
       guarded(res, () => {
-        if (!tooLarge) processBody(req, res, Buffer.concat(chunks, total));
+        if (!tooLarge) onBody(req, res, Buffer.concat(chunks, total));
       }),
     );
   }
@@ -354,8 +446,13 @@ export function createServer(options) {
     const query = q === -1 ? "" : target.slice(q + 1);
     if (pathname === "/api/events") {
       if (req.method === "GET") handleRead(res, query);
-      else if (req.method === "POST") handleWrite(req, res);
+      else if (req.method === "POST") handleWrite(req, res, processEvent);
       else sendEmpty(res, 405, { Allow: "GET, POST" });
+      return;
+    }
+    if (pathname === "/api/note") {
+      if (req.method === "POST") handleWrite(req, res, processNote);
+      else sendEmpty(res, 405, { Allow: "POST" });
       return;
     }
     const name = staticName(pathname);

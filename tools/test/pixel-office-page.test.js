@@ -37,6 +37,20 @@ import {
   sandbox,
   withText,
 } from "./pixel-office-helpers.js";
+import { buildHistory } from "../src/pixel-office/public/history.js";
+import { fmtTimeSec } from "../src/pixel-office/public/format.js";
+import { buildOffice } from "../src/pixel-office/public/office-model.js";
+import * as TX from "../src/pixel-office/public/texts.js";
+import {
+  HISTORY_NOTE_TEXT,
+  HISTORY_TEXT,
+  historyButtons,
+  historyDom,
+  historyFixture,
+  historyRowOf,
+  historyRows,
+  noteEntry,
+} from "./pixel-office-helpers.js";
 
 const IMG = "<img src=x onerror=alert(1)>";
 
@@ -463,8 +477,11 @@ test("PG-12d4: Stop without an open row changes nothing and makes no row", () =>
 });
 
 test("PG-12d5: the text of a request is nowhere in the row", () => {
+  // REQ-008 design 12.1: the journal line now carries the stored text of the
+  // owner message; the row of the main session gets only prompt_kind.
+  const unique = "pg12d5-unique-request-text-7f3a";
   const j = journal();
-  j.prompt("S1");
+  j.prompt("S1", { prompt_kind: "owner", prompt_text: unique });
   const row = model(j.entries).mainRows[0];
   assert.deepEqual(Object.keys(row).sort(), [
     "closed_by",
@@ -472,11 +489,15 @@ test("PG-12d5: the text of a request is nowhere in the row", () => {
     "ended_at",
     "key",
     "kind",
+    "prompt_kind",
     "session_id",
     "start_index",
     "started_at",
     "state",
   ]);
+  assert.equal(row.prompt_kind, "owner");
+  assert.ok(!Object.hasOwn(row, "prompt_text"));
+  assert.ok(!JSON.stringify(row).includes(unique));
   assert.equal(MAIN_ROW, "Основная сессия — обрабатывает запрос");
 });
 
@@ -1113,6 +1134,15 @@ test("PG-22: parseLine, isCanonicalTime and truncateDescription - limits and ref
   assert.equal(parseLine({ ...ok, session_id: "x".repeat(129) }), null);
   assert.ok(parseLine({ ...ok, session_id: "x".repeat(128) }) !== null);
   assert.equal(parseLine({ ...ok, time: "2026-09-20T10:00:00Z" }), null);
+  // REQ-008 2.1: a hook event with source ORCH is corrupt; other foreign
+  // sources are read as before; a record of the orchestrator (kind B) is a
+  // line, and kind B with hook_event_name or with source REAL is not.
+  assert.equal(parseLine({ ...ok, source: "ORCH" }), null);
+  assert.ok(parseLine({ ...ok, source: "SIMULATION" }) !== null);
+  const note = { time: at(2), source: "ORCH", note_text: "как понял" };
+  assert.ok(parseLine(note) !== null);
+  assert.equal(parseLine({ ...note, hook_event_name: "Stop" }), null);
+  assert.equal(parseLine({ ...note, source: "REAL" }), null);
   assert.equal(isCanonicalTime("2026-09-20T10:00:00.000Z"), true);
   assert.equal(isCanonicalTime("2026-02-30T10:00:00.000Z"), false);
   assert.equal(isCanonicalTime("2026-09-20T10:00:00.000+05:00"), false);
@@ -1168,4 +1198,767 @@ test("PG-23: role and description of the journal rows by kind; hostile values ar
     .sort();
   assert.deepEqual(keys, ["a1", "main:1"]);
   assert.equal(ROLE_UNKNOWN, "(роль не указана)");
+});
+
+// ------------------------------------------------ REQ-008 part (b): PG-24..28
+
+const hist = (entries) => buildHistory(model(entries));
+const fillN = (text, n) => text.replace("{n}", String(n));
+const mapOf = (items) => items.map((i) => [i.who, i.what]);
+
+async function openWindow(page, key) {
+  const row = historyRowOf(page, key);
+  assert.ok(row !== null, `no row for ${key}`);
+  row.click();
+  const dom = historyDom(page);
+  assert.equal(dom.isOpen(), true);
+  return dom;
+}
+
+test("PG-24: a message without a stored text has text = null; the window shows HISTORY_TEXT_DISABLED instead of the section and the title is the caption with the time", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  const bare = j.ownerPrompt("S1", null);
+  const filled = j.ownerPrompt("S1", "с текстом");
+  const h = hist(j.entries);
+  assert.equal(h.requests.length, 2);
+  const r = h.byKey.get(`req:${bare}`);
+  assert.equal(r.text, null);
+  assert.equal(r.truncated, false);
+  assert.equal(
+    r.title,
+    TX.HISTORY_TITLE_NO_TEXT.replace(
+      "{time}",
+      fmtDateTime(j.entries[bare].time),
+    ),
+  );
+  assert.equal(h.byKey.get(`req:${filled}`).text, "с текстом");
+  // an empty stored text is no text either (the model does not parse lines)
+  const raw = [{ ...j.entries[bare], prompt_text: "" }];
+  assert.equal(hist(raw).requests[0].text, null);
+
+  const page = await loaded(j.entries);
+  const dom = await openWindow(page, `req:${bare}`);
+  const line = dom.section("request");
+  assert.equal(line.tagName, "P");
+  assert.ok(line.classes.has("history-disabled"));
+  assert.equal(line.textContent, TX.HISTORY_TEXT_DISABLED);
+  assert.equal(dom.body.byClass("history-quote").length, 0);
+  assert.equal(
+    dom.body.all((e) => e.textContent === TX.HISTORY_SECTION_REQUEST).length,
+    0,
+    "no heading of the section without a text",
+  );
+  assert.equal(
+    dom.title().textContent,
+    TX.HISTORY_TITLE_NO_TEXT.replace(
+      "{time}",
+      fmtDateTime(j.entries[bare].time),
+    ),
+  );
+  // the other sections stay
+  for (const name of ["understood", "work", "timeline"]) {
+    assert.ok(dom.section(name) !== undefined, name);
+  }
+});
+
+// Phrases of the sample screenshot of the owner (docs/design/samples/
+// history-view-sample-2026-10-05.jpg), written down here as forbidden; the
+// name of the other project on the screenshot is not written (design I7).
+const SAMPLE_PHRASES = [
+  "Локальный адрес, статус и переподключение",
+  "Надо еще показывать где то адрес",
+  "Виджет адреса и статуса в топбаре",
+  "health-эндпоинт",
+  "Разработчик фронтенда",
+  "требование заведено",
+  "принято в работу",
+  "Как система это поняла",
+  "задача назначена",
+  "внеплановую проверку",
+  "companion-процесса",
+  "checkSystemStatus",
+  "sysStatus",
+  "Готово и проверено вживую",
+];
+
+test("PG-25: the window is built only from the lines of the journal - an empty journal has no requests and no opener; nothing of the sample or of a written text is in public/; two fixtures show only their own strings and times", async () => {
+  // an empty journal
+  const empty = hist([]);
+  assert.equal(empty.requests.length, 0);
+  assert.equal(empty.byKey.size, 0);
+  assert.equal(empty.windowOfTask.size, 0);
+  assert.equal(empty.windowOfMainRow.size, 0);
+  let page = await loaded([]);
+  assert.equal(historyRows(page).length, 0);
+  assert.equal(historyButtons(page).length, 0);
+  assert.equal(historyDom(page).overlay.hidden, true);
+  assert.equal(historyDom(page).body.children.length, 0);
+
+  // lines that open nothing: no owner message (old lines, service, orphan note)
+  const j = journal();
+  j.sessionStart("S1");
+  j.prompt("S1");
+  j.servicePrompt("S1");
+  launchLine(j, "a9");
+  const orphan = "Запись без запроса ЯЯЯ";
+  j.note({ note_text: orphan, request_time: j.entries[1].time });
+  assert.equal(hist(j.entries).requests.length, 0);
+  page = await loaded(j.entries);
+  assert.equal(historyRows(page).length, 0);
+  assert.equal(historyButtons(page).length, 0);
+  assert.equal(page.doc.root.textContent.includes(orphan), false);
+
+  // the strings of the window are the strings of the fixture
+  const grab = async (entries) => {
+    const p = await loaded(entries);
+    const key = `req:${hist(entries).requests[0].index}`;
+    const dom = await openWindow(p, key);
+    return { dom, text: dom.body.textContent, p };
+  };
+  const a = historyFixture();
+  const resA = await grab(a.entries);
+  assert.ok(resA.text.includes(HISTORY_TEXT.split("\n")[0]));
+  assert.ok(resA.text.includes("Проект окна"));
+  assert.ok(resA.text.includes(HISTORY_NOTE_TEXT.split("\n")[0]));
+  const b = journal();
+  b.sessionStart("SX");
+  const ob = b.ownerPrompt("SX", "Совсем другой текст ББ");
+  b.note({
+    session_id: "SX",
+    request_time: b.entries[ob].time,
+    req_id: "REQ-777",
+    note_text: "Другое понимание ББ",
+  });
+  b.post("SX", "tu-q", "q1", {
+    subagentType: "Explore",
+    description: "Описание ББ",
+  });
+  b.subStart("SX", "q1", "Explore");
+  const resB = await grab(b.entries);
+  for (const s of [
+    "Совсем другой текст ББ",
+    "Другое понимание ББ",
+    "Описание ББ",
+    "REQ-777",
+  ]) {
+    assert.ok(resB.text.includes(s), s);
+    assert.equal(resA.text.includes(s), false, `A has ${s}`);
+  }
+  for (const s of [
+    "Проект окна",
+    "Первая строка запроса",
+    "Понял так",
+    "REQ-008",
+  ]) {
+    assert.equal(resB.text.includes(s), false, `B has ${s}`);
+  }
+  // every time of the timeline is the time of a line of the journal
+  const times = new Set(a.entries.map((e) => fmtTimeSec(e.time)));
+  const shown = resA.dom.body
+    .byClass("history-event")
+    .map((li) => li.byClass("time")[0].textContent);
+  assert.ok(shown.length > 0);
+  for (const t of shown)
+    assert.ok(times.has(t), `a time ${t} is not in the journal`);
+
+  // nothing is written in public/: neither the sample nor a text of the fixtures
+  const forbidden = [
+    ...SAMPLE_PHRASES,
+    "Первая строка запроса",
+    "Проект окна",
+    "Понял так",
+    "Совсем другой текст",
+    "Другое понимание",
+  ];
+  for (const f of fs.readdirSync(PUBLIC)) {
+    const text = fs.readFileSync(path.join(PUBLIC, f), "utf8").toLowerCase();
+    for (const phrase of forbidden) {
+      assert.equal(
+        text.includes(phrase.toLowerCase()),
+        false,
+        `${f}: ${phrase}`,
+      );
+    }
+  }
+});
+
+function launchLine(j, id) {
+  j.post("S1", `tu-${id}`, id, { subagentType: "Explore" });
+  return j.subStart("S1", id, "Explore");
+}
+
+const OMIT_INDEX = [
+  "first_index",
+  "last_index",
+  "first_start_index",
+  "last_start_index",
+  "end_index",
+  "stop_indices",
+  "start_index",
+];
+function withoutIndexes(list) {
+  return list.map((item) => {
+    const copy = { ...item };
+    for (const k of OMIT_INDEX) delete copy[k];
+    if (typeof copy.key === "string" && copy.key.startsWith("main:"))
+      delete copy.key;
+    return copy;
+  });
+}
+
+test("PG-26: records of the orchestrator change neither the tasks, the rows of the main session, the marks, the sessions nor the office; on the page the panels and the characters stay as they were", async () => {
+  const fx = historyFixture();
+  const base = fx.entries.filter((e) => e.source !== "ORCH");
+  const t = base[base.length - 1].time;
+  const notes = [
+    noteEntry(t, { request_time: base[1].time, note_text: "ещё запись" }),
+    noteEntry(t, { session_id: "S1", note_text: "без времени запроса" }),
+    noteEntry(t, {
+      request_time: "2020-01-01T00:00:00.000Z",
+      note_text: "ничья",
+    }),
+  ];
+  // appended at the end: everything equal, also the office
+  const m0 = model(base);
+  const m1 = model([...base, ...notes]);
+  for (const k of ["tasks", "mainRows", "sessions", "list", "journal"]) {
+    assert.deepEqual(m1[k], m0[k], k);
+  }
+  assert.deepEqual(m1.marks.slice(0, base.length), m0.marks);
+  assert.deepEqual(m1.trusted.slice(0, base.length), m0.trusted);
+  for (let i = base.length; i < m1.trusted.length; i += 1) {
+    assert.equal(
+      m1.trusted[i],
+      false,
+      "a record is never trusted as a hook line",
+    );
+  }
+  assert.deepEqual(buildOffice(m1), buildOffice(m0));
+  // in the middle: the same, but for the numbers of the lines
+  const mid = [...base.slice(0, 2), ...notes, ...base.slice(2)];
+  const m2 = model(mid);
+  assert.deepEqual(withoutIndexes(m2.tasks), withoutIndexes(m0.tasks));
+  assert.deepEqual(withoutIndexes(m2.mainRows), withoutIndexes(m0.mainRows));
+  assert.deepEqual(withoutIndexes(m2.sessions), withoutIndexes(m0.sessions));
+  assert.deepEqual(
+    m2.journal.length,
+    m0.journal.length,
+    "a record is no row of the journal",
+  );
+
+  // the page: before and after a record arrives
+  const page = await loaded(base);
+  const snap = () => ({
+    tasks: page.el("tasks").textContent,
+    rows: page.rows().map((r) => r.textContent),
+    legend: page.legend().map((b) => b.textContent),
+    now: page.text("now"),
+    characters: JSON.stringify(page.app.getOffice().characters),
+  });
+  const before = snap();
+  await page.push(
+    noteEntry(t, { request_time: base[1].time, note_text: "ещё запись" }),
+  );
+  assert.equal(page.app.getModel().entries.length, base.length + 1);
+  assert.deepEqual(snap(), before);
+  assert.equal(page.rows().length, before.rows.length);
+});
+
+test("PG-27: the criterion fixture - title, meta, text with paragraphs, table with ordinals, states and a dash, timeline with the note signed 'Оркестратор записал'; the rules of title, status, truncation and a request without tasks or with many", async () => {
+  const fx = historyFixture();
+  const { idx, entries } = fx;
+  const h = hist(entries);
+  assert.equal(h.requests.length, 1, "the service message opens no window");
+  const r = h.requests[0];
+  assert.equal(r.key, `req:${idx.owner}`);
+  assert.equal(r.text, HISTORY_TEXT);
+  assert.equal(r.title, `REQ-008 — ${HISTORY_NOTE_TEXT.split("\n")[0]}`);
+  assert.equal(r.note.text, HISTORY_NOTE_TEXT);
+  assert.equal(r.started_at, entries[idx.owner].time);
+  assert.equal(r.finished_at, null);
+  assert.equal(r.state, "in_progress", "the service row is the last row");
+  assert.deepEqual(
+    r.tasks.map((t) => [t.ordinal, t.key, t.role, t.description, t.state]),
+    [
+      [1, "a1", "Plan", "Проект окна", "completed"],
+      [2, "a2", "Explore", null, "in_progress"],
+    ],
+  );
+  assert.deepEqual(mapOf(r.timeline), [
+    [TX.MAIN_LABEL, TX.EVENT_LABELS.UserPromptSubmit],
+    [TX.HISTORY_WHO_ORCH, TX.HISTORY_NOTE_BY],
+    [TX.MAIN_LABEL, TX.EVENT_LABELS.PostToolUse],
+    ["Plan", TX.EVENT_LABELS.SubagentStart],
+    ["Explore", TX.EVENT_LABELS.SubagentStart],
+    ["Plan", TX.EVENT_LABELS.SubagentStop],
+    [TX.MAIN_LABEL, TX.HISTORY_SERVICE],
+  ]);
+  assert.equal(r.timeline[1].detail, HISTORY_NOTE_TEXT);
+  assert.equal(r.timeline[0].detail, null);
+
+  const page = await loaded(entries);
+  const dom = await openWindow(page, r.key);
+  // order, top to bottom
+  const kids = dom.body.children;
+  assert.equal(kids[0].textContent, TX.HISTORY_BADGE);
+  assert.equal(kids[1].tagName, "H2");
+  assert.ok(kids[1] === dom.title());
+  assert.equal(kids[1].textContent, r.title);
+  assert.ok(kids[2] === dom.meta());
+  assert.deepEqual(
+    kids.slice(3).map((k) => k.dataset.section),
+    ["request", "understood", "work", "timeline"],
+  );
+  assert.equal(dom.dialog.getAttribute("aria-labelledby"), "history-title");
+  // meta: no "завершён" without a Stop
+  assert.equal(
+    dom.meta().textContent,
+    `${TX.STATE_LABELS.in_progress} · ${TX.HISTORY_META_STARTED} ${fmtDateTime(r.started_at)}`,
+  );
+  assert.equal(
+    dom.meta().textContent.includes(TX.HISTORY_META_FINISHED),
+    false,
+  );
+  // the text keeps its paragraphs as one text
+  const quote = dom.section("request").byClass("history-quote")[0];
+  assert.equal(quote.textContent, HISTORY_TEXT);
+  assert.equal(dom.section("request").byClass("history-truncated").length, 0);
+  // the understanding
+  const by = dom.section("understood").byClass("history-by")[0];
+  assert.equal(
+    by.textContent,
+    `${TX.HISTORY_NOTE_BY} · ${fmtTimeSec(r.note.time)}`,
+  );
+  assert.equal(
+    dom.section("understood").byClass("history-quote")[0].textContent,
+    HISTORY_NOTE_TEXT,
+  );
+  assert.equal(dom.body.byClass("history-auto").length, 0);
+  // the table
+  const table = dom.section("work").byClass("history-table")[0];
+  assert.deepEqual(
+    table.all((e) => e.tagName === "TH").map((e) => e.textContent),
+    [
+      TX.HISTORY_COL_TASK,
+      TX.HISTORY_COL_AGENT,
+      TX.HISTORY_COL_DOES,
+      TX.HISTORY_COL_RESULT,
+    ],
+  );
+  const trs = table.all(
+    (e) => e.tagName === "TR" && e.dataset.key !== undefined,
+  );
+  assert.deepEqual(
+    trs.map((e) => [e.dataset.key, e.dataset.state]),
+    [
+      ["a1", "completed"],
+      ["a2", "in_progress"],
+    ],
+  );
+  const cells = (tr) => tr.children.map((td) => td.textContent);
+  const t1 = r.tasks[0];
+  const t2 = r.tasks[1];
+  assert.deepEqual(cells(trs[0]), [
+    `${TX.HISTORY_TASK_N.replace("{n}", "1")}${TX.STATE_LABELS.completed}`,
+    `${TX.HISTORY_COL_AGENT}Plan`,
+    `${TX.HISTORY_COL_DOES}Проект окна`,
+    `${TX.HISTORY_COL_RESULT}${TX.LABEL_STARTED} ${fmtTime(t1.started_at)} · ${TX.LABEL_ENDED} ${fmtTime(t1.ended_at)}`,
+  ]);
+  assert.deepEqual(cells(trs[1]), [
+    `${TX.HISTORY_TASK_N.replace("{n}", "2")}${TX.STATE_LABELS.in_progress}`,
+    `${TX.HISTORY_COL_AGENT}Explore`,
+    `${TX.HISTORY_COL_DOES}${TX.HISTORY_EMPTY_CELL}`,
+    `${TX.HISTORY_COL_RESULT}${TX.LABEL_STARTED} ${fmtTime(t2.started_at)} · ${TX.LABEL_LAST_EVENT} ${fmtTime(t2.session_last_event_at)}`,
+  ]);
+  // the timeline: one li per item, the note signed, the service message named
+  const lis = dom.section("timeline").byClass("history-event");
+  assert.equal(lis.length, r.timeline.length);
+  assert.deepEqual(
+    lis.map((li) => [
+      li.byClass("who")[0].textContent,
+      li.byClass("what")[0].textContent,
+    ]),
+    mapOf(r.timeline),
+  );
+  assert.deepEqual(
+    lis.map((li) => li.byClass("time")[0].textContent),
+    r.timeline.map((i) => fmtTimeSec(i.time)),
+  );
+  assert.equal(lis[1].dataset.kind, "note");
+  assert.equal(lis[1].byClass("what")[0].textContent, TX.HISTORY_NOTE_BY);
+  assert.equal(
+    lis[1].byClass("history-note-text")[0].textContent,
+    HISTORY_NOTE_TEXT,
+  );
+  assert.equal(lis[2].byClass("history-detail")[0].textContent, "Проект окна");
+  assert.equal(lis[0].byClass("history-detail").length, 0);
+
+  // a finished request: "завершён" with the time of the last Stop of the main session
+  const j = journal();
+  j.sessionStart("S2");
+  const o = j.ownerPrompt("S2", "завершённый запрос");
+  launchLine2(j, "S2", "b1");
+  j.subStop("S2", "b1", "Explore");
+  const stop = j.stop("S2");
+  const done = hist(j.entries).requests[0];
+  assert.equal(done.state, "completed");
+  assert.equal(done.finished_at, j.entries[stop].time);
+  const p2 = await loaded(j.entries);
+  const d2 = await openWindow(p2, `req:${o}`);
+  assert.equal(
+    d2.meta().textContent,
+    `${TX.STATE_LABELS.completed} · ${TX.HISTORY_META_STARTED} ${fmtDateTime(done.started_at)} · ${TX.HISTORY_META_FINISHED} ${fmtDateTime(done.finished_at)}`,
+  );
+  // closed by the next message, no Stop: unrecorded and no "завершён"
+  const k = journal();
+  k.sessionStart("S2");
+  const o1 = k.ownerPrompt("S2", "первый");
+  k.ownerPrompt("S2", "второй");
+  const first = hist(k.entries).byKey.get(`req:${o1}`);
+  assert.equal(first.state, "unrecorded");
+  assert.equal(first.finished_at, null);
+  const p3 = await loaded(k.entries);
+  const d3 = await openWindow(p3, `req:${o1}`);
+  assert.equal(
+    d3.meta().textContent,
+    `${TX.STATE_LABELS.unrecorded} · ${TX.HISTORY_META_STARTED} ${fmtDateTime(first.started_at)}`,
+  );
+  assert.equal(d3.meta().textContent.includes(TX.HISTORY_META_FINISHED), false);
+  assert.equal(
+    d3.section("work").byClass("history-none")[0].textContent,
+    TX.HISTORY_NO_TASKS,
+  );
+  assert.equal(d3.section("work").byClass("history-table").length, 0);
+});
+
+function launchLine2(j, session, id) {
+  j.post(session, `tu-${id}`, id, { subagentType: "Explore" });
+  return j.subStart(session, id, "Explore");
+}
+
+test("PG-27b: the title by the rules - requirement and first line of the note, else the first line of the text cut at 120 code points, else the caption with the time; a truncated text says how many characters are shown; a request with 300 tasks shows all of them", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  const long = "я".repeat(150);
+  const emoji = "😀".repeat(130);
+  const oLong = j.ownerPrompt("S1", `  \n${long}\nвторая`);
+  const oEmoji = j.ownerPrompt("S1", emoji, { prompt_truncated: true });
+  const oNote = j.ownerPrompt("S1", "текст запроса");
+  j.note({
+    request_time: j.entries[oNote].time,
+    req_id: "REQ-123",
+    note_text: "\n\nпервая строка записи\nвторая строка",
+  });
+  const oNoReq = j.ownerPrompt("S1", "текст без номера");
+  j.note({
+    request_time: j.entries[oNoReq].time,
+    note_text: "запись без номера",
+  });
+  const h = hist(j.entries);
+  assert.equal(h.byKey.get(`req:${oLong}`).title, `${"я".repeat(120)}…`);
+  assert.equal(Array.from(h.byKey.get(`req:${oEmoji}`).title).length, 121);
+  assert.equal(
+    h.byKey.get(`req:${oNote}`).title,
+    "REQ-123 — первая строка записи",
+  );
+  assert.equal(
+    h.byKey.get(`req:${oNoReq}`).title,
+    "текст без номера",
+    "a record without a number does not change the title",
+  );
+  assert.equal(h.byKey.get(`req:${oEmoji}`).truncated, true);
+  assert.equal(h.byKey.get(`req:${oLong}`).truncated, false);
+
+  const page = await loaded(j.entries);
+  let dom = await openWindow(page, `req:${oEmoji}`);
+  const note = dom.section("request").byClass("history-truncated")[0];
+  assert.equal(note.textContent, fillN(TX.HISTORY_TRUNCATED, 130));
+  page.el("history-close").click();
+  dom = await openWindow(page, `req:${oLong}`);
+  assert.equal(dom.section("request").byClass("history-truncated").length, 0);
+  page.el("history-close").click();
+
+  // many rows: all of them are shown, nothing is cut
+  const big = journal();
+  big.sessionStart("S1");
+  const o = big.ownerPrompt("S1", "много задач");
+  for (let n = 0; n < 300; n += 1) {
+    big.post("S1", `tu-${n}`, `t${n}`, {
+      subagentType: "Explore",
+      description: `задача ${n}`,
+    });
+    big.subStart("S1", `t${n}`, "Explore");
+    big.subStop("S1", `t${n}`, "Explore");
+  }
+  const r = hist(big.entries).byKey.get(`req:${o}`);
+  assert.equal(r.tasks.length, 300);
+  assert.deepEqual(
+    r.tasks.map((t) => t.ordinal),
+    Array.from({ length: 300 }, (_v, i) => i + 1),
+  );
+  const pb = await loaded(big.entries);
+  // the journal shows only the last 200 rows: the window opens from a card
+  assert.ok(historyButtons(pb).length > 0);
+  historyButtons(pb)[0].click();
+  const db = historyDom(pb);
+  assert.equal(db.isOpen(), true);
+  assert.equal(db.title().textContent, r.title);
+  assert.equal(
+    db
+      .section("work")
+      .all((e) => e.tagName === "TR" && e.dataset.key !== undefined).length,
+    300,
+  );
+  assert.equal(
+    db.section("timeline").byClass("history-event").length,
+    r.timeline.length,
+  );
+  assert.ok(r.timeline.length >= 900);
+});
+
+// Two lines of a request that share the time of the message of two sessions.
+function sameTimeJournal() {
+  const j = journal();
+  j.sessionStart("SA");
+  j.sessionStart("SB");
+  j.time(99);
+  const a = j.ownerPrompt("SA", "запрос A");
+  j.time(99);
+  const b = j.ownerPrompt("SB", "запрос B");
+  return { j, a, b, t: j.entries[a].time };
+}
+
+test("PG-28: binding of the records of the orchestrator and the borders of the window - the latest record is shown, the earlier ones stay in the timeline; the time of the record decides, a session tells only between equal times; auto is signed; no record has its own line; the borders", async () => {
+  // the latest by time, then by the number of the line
+  {
+    const j = journal();
+    j.sessionStart("S1");
+    const o = j.ownerPrompt("S1", "запрос");
+    const rt = j.entries[o].time;
+    j.note({
+      session_id: "S1",
+      request_time: rt,
+      note_text: "ранняя запись",
+      req_id: "REQ-001",
+    });
+    const n2 = j.note({
+      session_id: "S1",
+      request_time: rt,
+      note_text: "поздняя запись",
+      req_id: "REQ-002",
+    });
+    // a record later by number but earlier by time
+    j.raw(
+      noteEntry(at(1), { request_time: rt, note_text: "старая по времени" }),
+    );
+    // two records of one time: the larger number is the later one
+    j.raw(noteEntry(at(500), { request_time: rt, note_text: "равная первая" }));
+    const n5 = j.raw(
+      noteEntry(at(500), { request_time: rt, note_text: "равная вторая" }),
+    );
+    const r = hist(j.entries).requests[0];
+    assert.equal(r.note.index, n5);
+    assert.equal(r.note.text, "равная вторая");
+    assert.deepEqual(
+      r.notes.map((n) => n.text),
+      [
+        "ранняя запись",
+        "поздняя запись",
+        "старая по времени",
+        "равная первая",
+        "равная вторая",
+      ],
+    );
+    // the latest record has no number: the title is the first line of the text
+    assert.equal(r.title, "запрос");
+    // without the tie-by-number case the later-by-time one wins
+    j.entries.splice(j.entries.length - 2, 2);
+    const r2 = hist(j.entries).requests[0];
+    assert.equal(r2.note.index, n2);
+    assert.equal(r2.title, "REQ-002 — поздняя запись");
+    assert.equal(r2.timeline.filter((i) => i.kind === "note").length, 3);
+    const page = await loaded(j.entries);
+    const dom = await openWindow(page, r2.key);
+    assert.equal(
+      dom.section("understood").byClass("history-quote")[0].textContent,
+      "поздняя запись",
+    );
+    assert.equal(
+      dom.section("understood").textContent.includes("ранняя запись"),
+      false,
+    );
+    const tl = dom.section("timeline").textContent;
+    assert.ok(tl.includes("ранняя запись") && tl.includes("поздняя запись"));
+  }
+
+  // no record: the line of the section, no block, nothing invented
+  {
+    const j = journal();
+    j.sessionStart("S1");
+    const o = j.ownerPrompt("S1", "запрос без записи");
+    const r = hist(j.entries).requests[0];
+    assert.equal(r.note, null);
+    assert.deepEqual(r.notes, []);
+    const page = await loaded(j.entries);
+    const dom = await openWindow(page, `req:${o}`);
+    const sec = dom.section("understood");
+    assert.equal(
+      sec.byClass("history-missing")[0].textContent,
+      TX.HISTORY_NOTE_MISSING,
+    );
+    assert.equal(sec.byClass("history-quote").length, 0);
+    assert.equal(sec.byClass("history-by").length, 0);
+  }
+
+  // two messages of one time: the session of the record tells; without one, none
+  const noteOf = (fields) => {
+    const s = sameTimeJournal();
+    s.j.note({ request_time: s.t, note_text: "понимание", ...fields });
+    const h = hist(s.j.entries);
+    return [h.byKey.get(`req:${s.a}`).note, h.byKey.get(`req:${s.b}`).note];
+  };
+  {
+    const [na, nb] = noteOf({ session_id: "SB" });
+    assert.equal(na, null);
+    assert.equal(nb.text, "понимание");
+    const [pa, pb] = noteOf({ session_id: "SA" });
+    assert.equal(pa.text, "понимание");
+    assert.equal(pb, null);
+    assert.deepEqual(
+      noteOf({}),
+      [null, null],
+      "no session: the record is tied to none",
+    );
+    assert.deepEqual(noteOf({ session_id: "SC" }), [null, null]);
+  }
+  // one candidate: the time decides, whatever the session of the record
+  {
+    const j = journal();
+    j.sessionStart("S1");
+    j.sessionStart("S2");
+    const a = j.ownerPrompt("S1", "первый");
+    const b = j.ownerPrompt("S2", "второй");
+    j.note({
+      session_id: "S1",
+      request_time: j.entries[b].time,
+      note_text: "про второй",
+    });
+    const h = hist(j.entries);
+    assert.equal(h.byKey.get(`req:${a}`).note, null);
+    assert.equal(h.byKey.get(`req:${b}`).note.text, "про второй");
+    assert.equal(h.byKey.get(`req:${b}`).note.index, j.entries.length - 1);
+  }
+  // records that tie to no request
+  {
+    const j = journal();
+    j.sessionStart("S1");
+    const oldRow = j.prompt("S1");
+    const svc = j.servicePrompt("S1");
+    const o = j.ownerPrompt("S1", "запрос");
+    j.note({ note_text: "без времени" });
+    j.note({
+      request_time: "2020-01-01T00:00:00.000Z",
+      note_text: "другое время",
+    });
+    j.note({
+      request_time: j.entries[oldRow].time,
+      note_text: "к старой строке",
+    });
+    j.note({ request_time: j.entries[svc].time, note_text: "к служебному" });
+    const h = hist(j.entries);
+    assert.equal(h.requests.length, 1);
+    assert.equal(h.byKey.get(`req:${o}`).note, null);
+    assert.equal(
+      h.byKey.get(`req:${o}`).timeline.filter((i) => i.kind === "note").length,
+      0,
+    );
+  }
+
+  // auto is signed, an explicit time is not
+  {
+    const j = journal();
+    j.sessionStart("S1");
+    const a = j.ownerPrompt("S1", "автоматически");
+    j.note({
+      request_time: j.entries[a].time,
+      request_time_auto: true,
+      note_text: "авто",
+    });
+    const b = j.ownerPrompt("S1", "явно");
+    j.note({ request_time: j.entries[b].time, note_text: "явная" });
+    const h = hist(j.entries);
+    const ra = h.byKey.get(`req:${a}`);
+    const rb = h.byKey.get(`req:${b}`);
+    assert.equal(ra.note.auto, true);
+    assert.equal(rb.note.auto, false);
+    const page = await loaded(j.entries);
+    let dom = await openWindow(page, ra.key);
+    assert.equal(
+      dom.section("understood").byClass("history-by")[0].textContent,
+      `${TX.HISTORY_NOTE_BY} · ${fmtTimeSec(ra.note.time)} · ${TX.HISTORY_NOTE_AUTO}`,
+    );
+    const li = dom
+      .section("timeline")
+      .byClass("history-event")
+      .find((e) => e.dataset.kind === "note");
+    assert.equal(li.byClass("what")[0].textContent, TX.HISTORY_NOTE_BY);
+    assert.equal(
+      li.byClass("history-auto")[0].textContent,
+      ` · ${TX.HISTORY_NOTE_AUTO}`,
+    );
+    page.el("history-close").click();
+    dom = await openWindow(page, rb.key);
+    assert.equal(
+      dom.section("understood").byClass("history-by")[0].textContent,
+      `${TX.HISTORY_NOTE_BY} · ${fmtTimeSec(rb.note.time)}`,
+    );
+    assert.equal(dom.body.byClass("history-auto").length, 0);
+  }
+
+  // borders: the next message of the same session cuts; other sessions and
+  // service messages do not; lines before the first message are in no window
+  {
+    const j = journal();
+    j.sessionStart("S1");
+    const pre = launchLine(j, "e1");
+    const o1 = j.ownerPrompt("S1", "первое");
+    launchLine(j, "a1");
+    const p1 = j.ownerPrompt("S2", "чужая сессия");
+    launchLine2(j, "S2", "b1");
+    const svc = j.servicePrompt("S1");
+    launchLine(j, "a2");
+    j.prompt("S1");
+    const o2 = j.ownerPrompt("S1", "второе");
+    launchLine(j, "a3");
+    launchLine2(j, "S2", "b2");
+    const h = hist(j.entries);
+    assert.deepEqual(
+      h.requests.map((r) => r.index),
+      [o1, p1, o2],
+    );
+    const tasksOf = (i) => h.byKey.get(`req:${i}`).tasks.map((t) => t.key);
+    assert.deepEqual(tasksOf(o1), ["a1", "a2"]);
+    assert.deepEqual(tasksOf(p1), ["b1", "b2"]);
+    assert.deepEqual(tasksOf(o2), ["a3"]);
+    assert.equal(h.windowOfTask.has("e1"), false, "before the first message");
+    assert.ok(pre < o1);
+    assert.equal(h.windowOfTask.get("a2"), `req:${o1}`);
+    assert.equal(h.windowOfTask.get("a3"), `req:${o2}`);
+    assert.equal(h.windowOfTask.get("b2"), `req:${p1}`);
+    assert.equal(h.windowOfMainRow.get(`main:${svc}`), `req:${o1}`);
+    assert.equal(h.windowOfMainRow.get(`main:${o1}`), `req:${o1}`);
+    assert.equal(h.windowOfMainRow.get(`main:${o2}`), `req:${o2}`);
+    // the timeline of a window holds only the lines of its session
+    for (const r of h.requests) {
+      for (const item of r.timeline.filter((i) => i.kind === "event")) {
+        assert.equal(j.entries[item.index].session_id, r.session_id);
+        assert.ok(item.index >= r.index);
+      }
+    }
+    assert.equal(
+      h.byKey.get(`req:${o1}`).timeline.filter((i) => i.index > o2).length,
+      0,
+    );
+  }
 });
