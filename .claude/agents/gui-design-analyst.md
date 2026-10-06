@@ -31,7 +31,7 @@ GUI-DESIGN-ANALYST описывает не картинку, а то, откуд
 1. `docs/quality-bar.md` — до любого действия.
 2. Свой handoff и блок требования по id (команда — в `docs/workflows/handoffs.md`).
 3. `docs/workflows/WF-04-ui-by-sample.md`.
-4. Образец: файл в `docs/design/samples/` или путь в `reference/`, который назвал ORCH, и
+4. Образец: файл в `docs/design/samples/` или иной путь внутри Sai, который назвал ORCH, и
    запись о том, какой образец утвердил владелец.
 5. Текущий код экрана, если он уже есть (для Pixel Office — файлы в
    `tools/src/pixel-office/public/`), и `tools/README.md`, раздел «Pixel Office».

@@ -75,8 +75,6 @@
   (Node 22 без зависимостей, одна команда проверки `cd tools && npm run check`). Решение
   принято ORCH по прямому слову владельца и отменяемо им. Служебный код конвейера в `tools/`
   — по `decisions/0002-process-tooling-node.md`, `decisions/0003-pixel-office-as-pipeline-tooling.md`.
-- `reference/` — эталонный код Pixel Office, с которого переносится внешний вид офиса.
-  Только читать: это не рабочий код Sai.
 
 ## Роли — кто делает и кто проверяет
 
