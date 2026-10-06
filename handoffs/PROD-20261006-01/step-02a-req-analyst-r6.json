@@ -1,0 +1,59 @@
+{
+  "handoff_id": "step02a-req-analyst-r6-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-01",
+  "step": "02a",
+  "round": 6,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/PROD-20261006-01/step-02a-req-analyst-r6.json",
+  "status": "COMPLETED",
+  "priority": "MEDIUM",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-001",
+      "REQ-008",
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "docs/requirements.yaml (блоки REQ-001, REQ-008, при необходимости REQ-009/010 — только выражение jq и перечень ключей скриптов)",
+      "handoffs/PROD-20261006-01/step-02a-req-analyst-r6.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/requirements.before-r6.yaml",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "tools/package.json",
+      "handoffs/PROD-20261006-01/step-18-test-runner.json"
+    ]
+  },
+  "task": {
+    "description": "WF-01, малая правка r6 docs/requirements.yaml (копия до — <рабочая папка ORCH>/orch/prod/requirements.before-r6.yaml): критерий 14 REQ-001 (и все места, повторяющие его команду: REQ-008 критерий 14/15 или где встречается `del(.scripts[\"pixel-office\"], .scripts[\"pixel-office-note\"])`) пересчитывает хеш tools/package.json без скриптов проекта; прогон PROD-20261006-01 добавил скрипт `team` (REQ-009) — реестр ключей скриптов и выражение jq теперь должны исключать и `.scripts[\"team\"]`: команда `jq -S -c 'del(.scripts[\"pixel-office\"], .scripts[\"pixel-office-note\"], .scripts[\"team\"])' tools/package.json | shasum -a 256` даёт прежнее значение 5c59292586d92e95c1ea507ef7a46790a125677172c3fe3abfd90dedd9edf0a4 (проверьте сами командой), а перечень ключей `jq -r '.scripts | keys | join(\",\")' tools/package.json` называет прежние ключи плюс pixel-office, pixel-office-note и team. Исправьте слова и выражения в этих критериях ТОЛЬКО так (значение хеша не меняется — это сумма файла без наших скриптов); ничего другого не менять. ВАЖНО: REQ-010 и REQ-013 могут добавить ещё скрипты — в REQ-010 (блок) проверьте, какие скрипты он называет (он их заводит командой team? или отдельными), и приведите критерии к фактическим ключам в tools/package.json (jq). Менять только блоки REQ-001, REQ-008 (и REQ-009/010 при необходимости согласования ключей). Результат: result.summary — «место → было → стало» и вывод команд проверки. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "выражение jq и перечень ключей приведены к фактическим",
+      "хеш прежний, проверен командой",
+      "изменены только указанные блоки"
+    ]
+  },
+  "created_at": "2026-10-06T00:27:25Z",
+  "started_at": "2026-10-06T00:27:25Z",
+  "completed_at": "2026-10-06T00:27:49Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Место: REQ-001, критерий 14 (одна строка, 303 файла docs/requirements.yaml). Было: «меняется только добавлением скриптов pixel-office и pixel-office-note», jq del(...) с двумя ключами, «без обоих скриптов», перечень ключей «прежние плюс pixel-office и pixel-office-note». Стало: добавлены (REQ-009) team в слова, в выражение del(...) и в перечень ключей; «без этих трёх скриптов»; добавлено примечание, что REQ-010 и REQ-013 новых скриптов не заводят (их команды — подкоманды npm run team --). Хеш прежний: 5c59292586d92e95c1ea507ef7a46790a125677172c3fe3abfd90dedd9edf0a4. REQ-008 команду не повторяет (grep по del( и keys | join — только критерий 14 REQ-001), блоки REQ-008/009/010/013 не менялись.",
+    "changes": [
+      "REQ-001 критерий 14: выражение jq, слова о добавленных скриптах и перечень ключей приведены к фактическим (pixel-office, pixel-office-note, team)"
+    ],
+    "self_check": [
+      "jq -S -c 'del(.scripts[\"pixel-office\"], .scripts[\"pixel-office-note\"], .scripts[\"team\"])' tools/package.json | shasum -a 256 -> 5c59292586d92e95c1ea507ef7a46790a125677172c3fe3abfd90dedd9edf0a4",
+      "jq -r '.scripts | keys | join(\",\")' tools/package.json -> apply-verdict,check,format,format:check,lint,pixel-office,pixel-office-note,prepare-run,snapshot,snapshot-diff,team,test,validate",
+      "diff копии до и файла после: изменена только строка 303 (1 строка), остальное идентично"
+    ],
+    "issues": [],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

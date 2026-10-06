@@ -1,0 +1,126 @@
+{
+  "handoff_id": "step13-reviewer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "13",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-13-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-13-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/build-exec-before",
+    "parallel_work_now": "SECURITY-REVIEWER (только чтение), TEST-DESIGNER (тесты ядра)",
+    "artifacts_in": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md",
+      "docs/requirements.yaml (блок REQ-010)",
+      "decisions/0015-product-virtual-team-start.md",
+      "handoffs/PROD-20261006-01/step-11-backend-dev.json",
+      "tools/src/team/",
+      "tools/test/fixtures/team/",
+      "tools/README.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью кода исполнителей REQ-010 (handoffs/PROD-20261006-01/step-11-backend-dev.json; проект docs/design/REQ-010-agent-executors.md и поправки ядра в docs/design/REQ-009-team-core.md r4; копия до — <рабочая папка ORCH>/orch/prod/build-exec-before). ЖЁСТКИЕ ПРАВИЛА для вас: НИКОГДА не запускайте настоящий claude (ни claude -p, ни через PATH): SAI_TEAM_CLAUDE_BIN только на поддельный файл tools/test/fixtures/team/fake-claude.js или на несуществующий missing-*; SAI_TEAM_HOME — только временная папка; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен. Проверьте: изменены ли ТОЛЬКО файлы write_set разработчика (diff -rq с копией до: tools/src/team/ (новые executors/, config.js, role-internal.js, executor.js, runner.js; поправки store.js, language.js, errors.js, roles.js, cli.js), tools/README.md, tools/test/fixtures/team/ (новые); package.json не менялся; тесты team-*.test.js принадлежат TEST-DESIGNER — их различия с копией до не ваша тема); решение, а не костыль; идиомы Node 22 без зависимостей; мёртвый код, дублирование; код следует проекту (формы, сигнатуры, порядок проверок, учёт стоимости: потолок запуска = min(остаток, SAI_TEAM_RUN_CAP_USD или четверть потолка), accounted: assumed; TASK_FAILED только существующими причинами + detail; TM-04 — четыре места записи; scripted без записи на диск); обработка ошибок и сбоев; эрозия планки (skip, eslint-disable, || true, пустые catch, process.exit); отклонения разработчика (его result.issues I1–I9 — оцените каждое и назовите, что должно быть поправлено в проекте/требованиях: I3 — grep EX-13 даёт ложное совпадение на RegExp#exec в lock.js; I4 — stderr claude не сохраняется; I6 — runTask возвращает объект с error вместо throw); поддельный claude и образцы stream-json: источник образцов записан, формат по справке, нет настоящих данных/секретов; запустите сами cd tools && npm test. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "файлы сверены с копией до",
+      "отклонения разработчика оценены"
+    ]
+  },
+  "created_at": "2026-10-05T22:45:25Z",
+  "started_at": "2026-10-05T22:45:25Z",
+  "completed_at": "2026-10-05T22:47:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Код сделан по проекту аккуратно: порядок проверок, потолок min(остаток, RUN_CAP или 1/4), accounted assumed, записи только через ядро (мест записи 4, scripted не пишет на диск), spawn без оболочки в своей группе, окружение по списку, ошибки не глотаются, эрозии планки нет. Одна блокирующая находка: таймаут claude-cli не ограничивает запуск, если потомок вне группы держит stdout (воспроизведено). Остальное — не блокирует.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/team/executors/claude-cli.js:290-310 (обработчик exit) и :273-277 (таймер)",
+        "severity": "High",
+        "blocking": true,
+        "what": "Если процесс claude вышел сам, а потомок в другой группе (setsid/detached) держит stdout, 'close' не приходит. В exit-обработчике группа уже пуста, stop() не вызывается, ветка stopping.then(...destroy) не подключается. Позже таймер таймаута вызывает stop(), но подписки на stopping уже нет, поэтому stdout никто не закрывает и run() не возвращается. Проба: поддельный исполняемый файл (не claude) запускает detached-потомка с унаследованным stdout и выходит; timeout_ms=1500, через 8 с run() всё ещё не вернулся. Нарушает Q10 (у внешнего вызова есть таймаут) и п. 5.6 проекта; run-task зависнет.",
+        "fix": "Вынести закрытие потоков из ветки 'stopping': после 'exit' запускать отдельный ограниченный таймер (GROUP_GONE_WAIT_MS), по которому destroy stdout/stderr и finish(), независимо от того, был ли stop(). Тест: потомок вне группы + таймаут."
+      },
+      {
+        "id": "F2",
+        "place": "tools/src/team/runner.js:78-93 и executors/scripted.js:~225-240",
+        "severity": "Low",
+        "blocking": false,
+        "what": "abortablePause и pause — одна и та же функция в двух файлах; has/isPlainObject тоже повторяются (executor.js, scripted.js). Дублирование.",
+        "fix": "Вынести в общий маленький модуль или экспортировать из executor.js."
+      },
+      {
+        "id": "F3",
+        "place": "tools/src/team/executor.js:18 (OUTCOMES), executors/stream.js:10 (KNOWN_FIELDS)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "OUTCOMES нигде в src не используется (только объявление); KNOWN_FIELDS нужен тесту EX-21 (допустимо, если тест его импортирует). Мёртвый экспорт.",
+        "fix": "Использовать OUTCOMES (например, проверкой результата в runner) или убрать."
+      },
+      {
+        "id": "F4",
+        "place": "docs/design/REQ-010-agent-executors.md:318 против :750",
+        "severity": "Medium",
+        "blocking": false,
+        "what": "Проект противоречит себе: п. 5.3 — «последние 4 KiB stderr в памяти», п. 11 (Q7) — «stderr не сохраняется». Код следует безопасному варианту (I4), то есть расхождения с проектом по существу нет, но запись неверна.",
+        "fix": "CODE-DESIGNER: привести п. 5.3 к «stderr читается и отбрасывается»."
+      },
+      {
+        "id": "F5",
+        "place": "docs/design/REQ-010-agent-executors.md:817 (EX-13)",
+        "severity": "Medium",
+        "blocking": false,
+        "what": "Шаблон grep 'exec(Sync)?[(]' даёт ложное совпадение на RegExp#exec в tools/src/team/lock.js:199 (I3); тест по нему красный. Это ошибка проекта, не кода.",
+        "fix": "CODE-DESIGNER/TEST-DESIGNER: искать child_process, cp.exec, execFile, spawnSync, а не голое exec(."
+      },
+      {
+        "id": "F6",
+        "place": "tools/src/team/cli.js:304",
+        "severity": "Low",
+        "blocking": false,
+        "what": "process.exit(EXIT.REFUSED) по таймеру 15 с — единственный process.exit; он прямо предписан проектом п. 9.3 (запись не делается, следующий писатель восстановит). Не эрозия, но проверить, что тест это покрывает.",
+        "fix": "Нет правки кода; убедиться, что EX на двойной SIGTERM есть."
+      }
+    ],
+    "deviations": {
+      "I1": "Верно: write_set — BACKEND-DEV, проект отдавал фикстуры TEST-DESIGNER. Два лишних образца (result-string/result-text) нужны EX-48 и записаны в README. Принять; проект п. 1/15.4 поправить.",
+      "I2": "Принято, для TEST-DESIGNER (structured_output исключать из EX-21; __CF_USER_TEXT_ENCODING на macOS в EX-11).",
+      "I3": "Подтверждено: ложное совпадение — ошибка шаблона проекта (F5), код не менять.",
+      "I4": "Приемлемо и безопасней; поправить проект (F4). Добавление остановки группы после нормального выхода разумно, но именно оно не покрывает случай F1.",
+      "I5": "Принято, уточнения не противоречат проекту; зафиксировать в п. 5.4/8.",
+      "I6": "Совпадает с проектом (RunTaskResult содержит error, п. 8.1, строка 480-481); cli бросает error. Допустимо. Смешение «бросить» и «вернуть error» стоит явно описать в проекте.",
+      "I7": "Принято, для TEST-DESIGNER.",
+      "I8": "Принято: путь fault-inject.js в п. 15.2 — tools/test/, не fixtures/; поправить проект.",
+      "I9": "Верно: UAT настоящего запуска не делался и не должен без согласия владельца."
+    },
+    "self_check": [
+      "diff -rq копия до tools: изменены только src/team (cli, errors, language, roles, store), новые config, executor, executors/, role-internal, runner, README.md, test/fixtures/team/; package.json не отличается; tools/src/pixel-office без отличий; различия в test/team-*.test.js и team-helpers.js — TEST-DESIGNER, не оценивались.",
+      "cd tools && npm run check (HOME и SAI_TEAM_HOME во временной папке, BIN не задан, REAL_RUNS не задан): # tests 632, pass 632, fail 0, cancelled 0, skipped 0, todo 0. ~/.sai-team не создан.",
+      "grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true|process\\.exit|catch *\\{ *\\}|\\.only\\(' по src/team и fake-claude.js: только process.exit в cli.js:304 (по проекту), fake-claude.js:28 (код 90) и process.exitCode; пустых catch нет (есть catch с комментарием причины).",
+      "поиск секретов ghp_|sk-|api key вне FAKE: пусто. child_process: только executors/claude-cli.js (spawn, shell:false, detached) и RegExp#exec в lock.js.",
+      "проба F1: поддельный fake.js в временной папке (не claude), timeout_ms 1500: run() не вернулся за 8 с (HANG>8s). Настоящий claude не запускался.",
+      "Флаги claude-cli в buildArgs совпадают со справкой F3 проекта (--restricted, --safe-mode, --permission-prompts none и др.); сверить с настоящим claude не мог (запрещено)."
+    ],
+    "issues": [
+      {
+        "kind": "question",
+        "text": "Блокирует F1 — CODE-FIXER. F4, F5 и поправки по I1/I5/I6/I8 — CODE-DESIGNER/DOC-UPDATER через ORCH."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

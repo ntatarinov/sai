@@ -1,0 +1,102 @@
+{
+  "handoff_id": "step15-code-fixer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "15",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261006-01/step-15-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/store.js",
+      "tools/src/team/reducer.js",
+      "tools/src/team/ (смежные модули, если нужно)",
+      "tools/README.md (одна строка про ручное удаление замка)",
+      "handoffs/PROD-20261006-01/step-15-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-recover-before",
+    "parallel_work_now": "TEST-DESIGN-VALIDATOR (exec-*, только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "handoffs/PROD-20261006-01/step-04-code-designer-r5.json",
+      "handoffs/PROD-20261006-01/step-14-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02: привести код ядра к проекту r5 (docs/design/REQ-009-team-core.md, правка по конфликту восстановления; handoffs/PROD-20261006-01/step-04-code-designer-r5.json; прочтите п. 6.3 шаг 8, п. 4.1/4.2, И13, И21, п. 15.1a, п. 19 P11 и итоговые «F11», I7, I8). Нужно: tools/src/team/store.js — функция recover(): восстановление ТОЛЬКО после аварии (остался замок умершего процесса ИЛИ оборвана последняя строка журнала); после штатного close() ничего не пишется и не прерывается; прерываются открытые запуски, задачи «в работе» и задачи «на проверке» с открытым запуском проверки; «на проверке» без открытого запуска остаётся; PROJECT_RECOVERED — только если проект был в планировании/работе и хоть что-то прервано; иначе только LOCK_STALE_REMOVED/JOURNAL_RECOVERED; tools/src/team/reducer.js — И13 (задача «на проверке» без открытого запуска допустима; прерванных запусков и задач вместе ≥ 1) и новое И21 (запрещено прерывать при восстановлении «на проверке», если её запуск проверки не прерван). Решения ORCH по вопросам проектировщика: I8 — принято его понимание (прерывать «в работе» и без открытого запуска; PROJECT_RECOVERED при любом прерванном); I7 — запуск, оставшийся открытым при штатно закрытом писателе, ядро сознательно не закрывает (ошибка вызывающего кода/ручное удаление замка — остаточный риск в README: строка в разделе ядра «ручное удаление замка» и в записи 0017 — запись пишет DOC-UPDATER позже; вы добавьте строку в tools/README.md); все вызывающие (runner) обязаны закрывать запуски в finally — проверьте, что runner так и делает. Тесты НЕ пишите и существующие не меняйте (тесты TM-12, TM-17, TM-19, TM-38, TM-51, TM-54, новые TM-64, TM-65 и TM-63 (importResultBytes) обновит/напишет TEST-DESIGNER после вас) — в result.summary перечислите, какие прежние тесты ядра и исполнителей (team-*, exec-*) ваша правка ломает, и почему (ожидаемо). Проверьте вручную пробой (SAI_TEAM_HOME — временная): штатный close → повторное открытие: журнал не меняется; kill -9 писателя с открытым запуском → восстановление по r5; задача «на проверке» без запуска после аварии остаётся. ЖЁСТКИЕ ПРАВИЛА: настоящий claude НЕ запускать; ~/.sai-team и ~/.sai-pixel-office не трогать; порт 4780 не нужен; не оставлять процессов. Если исправление требует изменения формы данных/кода ошибки — result.issues. cd tools && npm test: допускаются падения ТОЛЬКО тестов, перечисленных вами как «ожидаемо ломаются». Копии до — <рабочая папка ORCH>/orch/prod/fix-recover-before. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "восстановление по r5, пробы подтверждены",
+      "список ожидаемо ломающихся тестов в result",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T23:40:12Z",
+  "started_at": "2026-10-05T23:40:12Z",
+  "completed_at": "2026-10-05T23:43:31Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Код ядра приведён к r5. store.js recover(): восстановление только при crashed = (снят замок мёртвого pid) || (оборванная последняя строка); после штатного close() ничего не пишется. При аварии: RUN_FINISHED interrupted на каждый открытый запуск; TASK_INTERRUPTED recovery — задачи running (и без открытого запуска, I8) и задачи review, чей запуск review закрыт в этом восстановлении; review без открытого запуска остаётся; PROJECT_RECOVERED — только из planning/running и если closed_runs + interrupted_tasks >= 1. reducer.js: И13 (review без открытого запуска допустим; сумма >= 1), новый И21. В tools/README.md добавлен абзац об остаточном риске ручного удаления замка. Ожидаемо ломаются только 2 теста, оба в team-recovery.test.js: «TM-54 recovery closes every open run…» (строка 304) и «TM-54 recovery of planning…» (строка 470). Их фикстура закрыта штатным close() без аварии, а r5 (п. 15.1a) требует SIGKILL. Тесты TM-12, TM-17, TM-19, TM-38, TM-51 и все exec-* проходят без изменений: их фикстуры уже создают аварию или не затронуты правкой. TM-64, TM-65 и обновление TM-19/TM-54 по п. 15.1a — за TEST-DESIGNER.",
+    "changes": [
+      {
+        "item": "п. 6.3 шаг 8 (решения ORCH (1)-(3), I8)",
+        "file": "tools/src/team/store.js",
+        "where": "recover()",
+        "what": "crashed-условие с ранним выходом; набор задач review с прерванным запуском review; фильтр прерываемых задач: running || (review && запуск review закрыт); PROJECT_RECOVERED только при openRuns + interrupted > 0; комментарии r5/I7"
+      },
+      {
+        "item": "И13 (r5)",
+        "file": "tools/src/team/reducer.js",
+        "where": "PROJECT_RECOVERED",
+        "what": "запрет только задач running (review допустим); отказ при closed_runs + interrupted_tasks < 1"
+      },
+      {
+        "item": "И21 (r5)",
+        "file": "tools/src/team/reducer.js",
+        "where": "TASK_INTERRUPTED + новая reviewRunInterrupted()",
+        "what": "при cause=recovery задача review — только если последний закрытый запуск review этой задачи (started_seq > review_since_seq) закрыт interrupted; иначе E_TRANSITION rule И21; заголовок модуля: И1-И21"
+      },
+      {
+        "item": "I7 (README)",
+        "file": "tools/README.md",
+        "where": "раздел «Восстановление после аварии», абзац после «Команды чтения…»",
+        "what": "остаточный риск: ручное удаление writer.lock или штатное закрытие с открытым запуском — ядро не прерывает, запуск остаётся открытым (ссылка на 0017)"
+      }
+    ],
+    "self_check": [
+      "До (код r4, воспроизведено CODE-DESIGNER, F11): штатный close + openWriter давали TASK_INTERRUPTED:recovery PROJECT_RECOVERED.",
+      "После, проба clean (временный SAI_TEAM_HOME в scratchpad, perl alarm 60): задачи A=running с открытым work, B=review с открытым review, C=review без запуска, D=running без запуска, открыт goal_check; close; openWriter+close x3 → notices [], 'journal unchanged after 3 reopen: true'; say → added [\"CHAT\"], A/D running, B/C review, запуски r-00001,r-00003,r-00005 открыты (I7).",
+      "Проба crash (дочерний процесс через API, SIGKILL, замок остался) → added LOCK_STALE_REMOVED, RUN_FINISHED:t-0001, RUN_FINISHED:t-0002, RUN_FINISHED(goal_check), TASK_INTERRUPTED t-0001,t-0002,t-0004, PROJECT_RECOVERED{running,closed_runs:3,interrupted_tasks:3}, CHAT; t-0003=review; проект paused/recovery; повторное открытие → только CHAT.",
+      "Проба crash-review (SIGKILL, задача review без запуска) → LOCK_STALE_REMOVED, CHAT; задача review, проект running, PROJECT_RECOVERED нет. Проба torn (обрыв строки) → JOURNAL_RECOVERED, CHAT; итог тот же.",
+      "reduce напрямую: TASK_INTERRUPTED recovery на review без прерванного запуска → E_TRANSITION И21; PROJECT_RECOVERED {0,0} → E_TRANSITION И13; TASK_INTERRUPTED stop на review — принят; PROJECT_RECOVERED {1,0} при review без запуска — принят.",
+      "cd tools && npm run check (perl alarm 600): prettier — 'All matched files use Prettier code style!'; eslint --max-warnings 0 — без ошибок; node --test: '# tests 750 / # pass 748 / # fail 2' — not ok 601 'TM-54 recovery closes every open run…' (ожидалось RUN_FINISHED…PROJECT_RECOVERED, фактически без них — фикстура без аварии), not ok 603 'TM-54 recovery of planning…' (actual [] vs ['RUN_FINISHED','PROJECT_RECOVERED']). Повторный npm run check после добавления строки в README и записи handoff-а: тот же итог — prettier OK, eslint OK, tests 750 / pass 748 / fail 2 (те же not ok 601 и 603).",
+      "pgrep probe.mjs — процессов не осталось; временные HOME удалены; ~/.sai-team, ~/.sai-pixel-office, порт 4780 не затрагивались; настоящий claude не запускался."
+    ],
+    "issues": [
+      {
+        "kind": "ожидаемо ломающиеся тесты (для TEST-DESIGNER)",
+        "text": "tools/test/team-recovery.test.js: «TM-54 recovery closes every open run, interrupts the tasks, pauses the project 'by a crash'…» (строка 304) и «TM-54 recovery of planning: the open plan run is closed…» (строка 470). Фикстура leaveRunning + штатный p.writer.close() — по r5 это не авария, восстановления нет. Новое ожидаемое поведение — п. 15.1/15.1a, TM-54: авария SIGKILL, сначала LOCK_STALE_REMOVED, задача C review без запуска остаётся. Остальные тесты из списка ORCH (TM-12, TM-17, TM-19, TM-38, TM-51) и все exec-* проходят; их обновление по п. 15.1a (например, review в TM-19) и новые TM-63, TM-64, TM-65 — за TEST-DESIGNER."
+      },
+      {
+        "kind": "I7: runner закрывает запуски не на всех путях (вне задания, нужен проект)",
+        "text": "tools/src/team/runner.js не закрывает открытый запуск в finally. Запуск work остаётся открытым при штатном writer.close() (cli.js finally) в трёх случаях: (1) сбой записи AGENT_ACTIVITY (writeError) — писатель сломан (#broken), RUN_FINISHED записать нельзя, но close() снимает замок чисто; (2) executor.run бросает не TeamError; (3) acceptResult пробрасывает ошибку, не являющуюся отказом файла (например, E_DISK при импорте). Раньше (r4) следующий писатель это восстанавливал; по r5 запуск остаётся открытым навсегда (И16 не даёт начать задачу снова). Простого добавления finally недостаточно: в случае (1) записать нельзя. Возможный путь — сломанный писатель не снимает замок при close() или считает это аварией. Это меняет поведение ядра/REQ-010 и нужно решение ORCH или CODE-DESIGNER; кодом не правил."
+      },
+      {
+        "kind": "AP-005: README вне разрешённой одной строки",
+        "text": "tools/README.md, раздел «Восстановление после аварии», пункт 2: «задачи «в работе» и «на проверке» получают статус «прервана»» и общее «Восстановление делает только писатель…» описывают r4. По r5 «на проверке» прерывается только при прерванном запуске проверки, восстановление — только после аварии (п. 14). Write_set разрешал одну строку — не правил; поправить DOC-UPDATER."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/store.js",
+      "tools/src/team/reducer.js",
+      "tools/README.md"
+    ]
+  }
+}

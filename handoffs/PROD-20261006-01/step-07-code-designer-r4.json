@@ -1,0 +1,74 @@
+{
+  "handoff_id": "step07-code-designer-r4-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "07",
+  "round": 4,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-07-code-designer-r4.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "docs/design/REQ-010-agent-executors.md",
+      "handoffs/PROD-20261006-01/step-07-code-designer-r4.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r4.md",
+    "parallel_work_now": "TEST-DESIGNER (exec-closure.test.js)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-17b-test-design-validator.json",
+      "handoffs/PROD-20261006-01/step-17-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, малая правка r4 проекта docs/design/REQ-010-agent-executors.md (копия до — <рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r4.md): формулировка EX-52 (б) недостижима — lstat EIO при приёме файла превращается в E_WORK_FILE (задача падает штатно, это не «выброс»), поэтому часть про E_DISK → result_disk осталась без теста (handoffs/PROD-20261006-01/step-17b-test-design-validator.json). Исправьте проект: EX-52 (б) = «выброс не-TeamError при приёме результата (например TypeError на записи .partial) → запуск закрыт, TASK_FAILED result_file»; новый EX-54: «E_DISK при записи RESULT_FILE (ENOSPC) → TASK_FAILED detail result_disk, RUN_FINISHED failed, BUDGET_SPENT, писатель сломан, замок остался, следующее открытие восстанавливает» — как в коде tools/src/team/runner.js (closeAfterError: прочтите, не придумывайте); мутант на ветку E_DISK → result_disk. Больше ничего не менять. Писать только docs/design/REQ-010-agent-executors.md и свои поля handoff-а. Кода реализации нет. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "EX-52 (б) и EX-54 согласованы с кодом",
+      "изменён только REQ-010-agent-executors.md"
+    ]
+  },
+  "created_at": "2026-10-06T00:21:59Z",
+  "started_at": "2026-10-06T00:21:59Z",
+  "completed_at": "2026-10-06T00:23:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Малая правка r4 проекта REQ-010: EX-52 (б) — выброс не TeamError (TypeError на записи .partial) → TASK_FAILED result_file; новый EX-54 про E_DISK при записи результата, по runner.js (а) файл: result_disk, писатель цел; (б) событие RESULT_FILE: писатель сломан, замок остался.",
+    "changes": [
+      "шапка: редакция r4",
+      "таблица тестов: EX-52 (б) переписан, (в) и EX-53 — «выброс при приёме»; новая строка EX-54",
+      "таблица мутантов: три строки r4",
+      "счётчики EX-01…EX-54; Q10",
+      "п. 8.2 (шаг 8), 8.5 (шаг 6), 9.4: пример ошибки приёма заменён на достижимый (lstat EIO — E_WORK_FILE)",
+      "п. 18: I9"
+    ],
+    "self_check": [
+      "ЗАПУСК на копии вне проекта (scratchpad/ex54/tools, perl alarm 120, поддельный файл): ENOSPC на .partial → runTask не бросает; журнал RUN_FINISHED failed, BUDGET_SPENT reported, TASK_FAILED result_file/result_disk; писатель не сломан",
+      "ЗАПУСК: ENOSPC на writeSync events.jsonl, nth 6 (RESULT_FILE) → E_DISK rollback ok, писатель сломан, замок остался, RUN_FINISHED/BUDGET_SPENT/TASK_FAILED нет",
+      "прочитан runner.js closeAfterError, acceptResult, writerBroken; files.js readWorkFile (lstat EIO → E_WORK_FILE); тест exec-closure EX-52 (b) уже использует TypeError на writeFileSync .partial",
+      "git status: из проекта изменён только docs/design/REQ-010-agent-executors.md"
+    ],
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "text": "Формула ORCH для EX-54 (result_disk + RUN_FINISHED + BUDGET_SPENT и сломанный писатель) по коду невозможна в одном исходе: TASK_FAILED пишет только целый писатель. Разделено на (а) и (б), п. 18 I9."
+      },
+      {
+        "kind": "QUESTION",
+        "text": "Ветка E_DISK → result_disk внутри closeAfterError недостижима (мёртвый код); мутант на неё без теста. Мутант на ветку отказа приёма (acceptResult) ловит EX-54 (а). Оставить или убрать — решает ORCH."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Сверх приказа заменён пример «E_DISK при чтении» в п. 8.2, 8.5, 9.4 — те же недостижимые слова, что в EX-52 (б) (AP-005)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-010-agent-executors.md"
+    ]
+  }
+}

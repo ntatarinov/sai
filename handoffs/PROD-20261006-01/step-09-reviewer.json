@@ -1,0 +1,122 @@
+{
+  "handoff_id": "step09-reviewer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-09-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-09-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/build-core-before",
+    "parallel_work_now": "SECURITY-REVIEWER (только чтение), CODE-DESIGN-VALIDATOR (REQ-010)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/requirements.yaml (блок REQ-009)",
+      "decisions/0015-product-virtual-team-start.md",
+      "decisions/0017-team-core-storage.md",
+      "handoffs/PROD-20261006-01/step-05-backend-dev.json",
+      "tools/src/team/",
+      "tools/test/fault-inject.js",
+      "tools/README.md",
+      "tools/package.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью кода ядра REQ-009 (handoffs/PROD-20261006-01/step-05-backend-dev.json; проект docs/design/REQ-009-team-core.md; копия до — <рабочая папка ORCH>/orch/prod/build-core-before). Проверьте: изменены ли ТОЛЬКО файлы write_set (diff -rq с копией до: tools/src/team/ новый; tools/package.json — только скрипт team; tools/README.md — новый раздел; tools/test/fault-inject.js — расширение; больше ничего); решение, а не костыль; идиомы Node 22 без зависимостей; мёртвый код, лишняя работа, дублирование; код следует проекту (формы, сигнатуры, инварианты И1–И20, 37 типов в schema = reducer = language = roles; таблицы состояния и фраз); эрозия планки (skip, eslint-disable, || true, заглушённые ошибки, пустые catch); обработка ошибок: диск не роняет процесс, E_INTERNAL для программных ошибок; отклонения разработчика (его result.issues 1–5: L4 строже проекта + attempt в plan.last_rejection (меняет форму 5.1); план с 0 задач отклоняется; владение fault-inject.js; несоответствие хеша REQ-001 критерий 14 после добавления скрипта team; E_INTERNAL) — оцените каждое, назовите, что должно быть поправлено в проекте/требованиях (это решит ORCH); fault-inject.js: режим --import прежний, библиотечный режим — не ломает старые тесты; запустите сами cd tools && npm test. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "файлы сверены с копией до",
+      "отклонения разработчика оценены"
+    ]
+  },
+  "created_at": "2026-10-05T22:12:32Z",
+  "started_at": "2026-10-05T22:12:32Z",
+  "completed_at": "2026-10-05T22:13:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Ядро сделано по проекту, не костыль: сбои ОС дают E_DISK/E_CONFLICT/E_WRITER_BROKEN с откатом, баг программы проходит как E_INTERNAL (код 3); запись в журнал — по замку, с проверкой размера и fsync; 37 типов совпадают в schema/language(PHRASES)/reducer; зависимостей нет, Node 22 ESM. Файлы сверены с копией до: изменены только tools/src/team/ (новый), tools/package.json (+скрипт team), tools/README.md (+раздел), tools/test/fault-inject.js; остальное в tools/ совпадает (различия копии — только файлы, которых в копии нет: .gitignore, eslint.config.js, package-lock.json, .prettierignore, не изменялись; git status: M README, package.json, fault-inject.js, ?? src/team/). Тесты не менялись. npm test сам: 493/493, skipped 0, todo 0. Отклонения разработчика оценены ниже; блокирующих находок нет, но нужны правки проекта/требований (решает ORCH).",
+    "findings": [
+      {
+        "place": "docs/design/REQ-009-team-core.md п. 5.1 (стр. 304), 5.3 (стр. 370), И20 (стр. 355); tools/src/team/reducer.js",
+        "severity": "Medium",
+        "blocking": false,
+        "what": "Отклонение 1: plan.last_rejection получил поле attempt (форма {reason,detail}→{reason,detail,attempt}) и ворота L4 строже (round PLAN_REJECTED/PLAN_RECEIVED = plan.round; повторный PLAN_REJECTED той же попытки — И20). Обоснованно: без attempt нельзя отличить отказ 2-й попытки от 1-й, а И20 уже требует этого различия. Но это расхождение с формой проекта без записи.",
+        "fix": "CODE-DESIGNER: поправить п. 5.1/5.3/И20 и TM-62 под attempt и L4; код менять не нужно."
+      },
+      {
+        "place": "docs/design/REQ-009-team-core.md п. 4.1; tools/src/team/schema.js:183 (list(...,1))",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Отклонение 2: план с 0 задач отклоняется (E_EVENT), нижняя граница в проекте не названа. Решение разумное (пустой план бессмыслен для движка).",
+        "fix": "Назвать в п. 4.1 «1..40» и добавить случай в тест; код оставить."
+      },
+      {
+        "place": "docs/requirements.yaml, REQ-001 критерий 14 (хеш package.json по del pixel-office и pixel-office-note)",
+        "severity": "Medium",
+        "blocking": false,
+        "what": "Отклонение 4: после добавления скрипта team хеш 5c5929… из критерия не совпадает (417bad…); с del и team — прежний. Автотеста нет, но RELEASE-VALIDATOR по тексту критерия получит провал. Сам скрипт team предписан проектом п. 1, т.е. правка кода верна.",
+        "fix": "REQ-ANALYST/DOC-UPDATER: обновить команду критерия (добавить del scripts.team) и перечень ключей скриптов (+team); то же для строки в REQ-008, если она повторяет критерий."
+      },
+      {
+        "place": "tools/test/fault-inject.js; docs/design/REQ-009 стр. 70, 44",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Отклонение 3: проект отдаёт fault-inject.js TEST-DESIGNER, handoff ORCH — BACKEND-DEV; сделано по handoff. Расширение обратно совместимо: режим --import прежний (чтение SAI_TEST_FAULTS при загрузке), новое — библиотечный режим installFaults/withFaults, fn по дескриптору, partial для writeSync; L3 исправлен (URL, путь, --import=, NODE_OPTIONS; SAI_TEST_FAULTS без --import — ошибка загрузки). Старые тесты проходят (493/493, файлы теста не менялись). Смена текста ошибки «…writeFileSync only» на «…writeFileSync and writeSync only» — не ломает ни один тест.",
+        "fix": "ORCH: поправить владельца файла в п. 1 проекта; автор этого кода (BACKEND-DEV) не должен сам проверять — TEST-DESIGN-VALIDATOR обязан применить к нему мутант."
+      },
+      {
+        "place": "tools/src/team/errors.js (fromOsError)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Отклонение 5: не-ОС ошибка → E_INTERNAL, код 3 (иначе баг выглядел бы как сбой диска). Верно, соответствует Q10; проект п. 10.3/11 это подразумевает.",
+        "fix": "Записать в п. 10.3 явно."
+      },
+      {
+        "place": "tools/src/team/errors.js, schema.js, reducer.js, home.js, lock.js, files.js, view.js, store.js (дополнительные экспорты из NOTE разработчика)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Сверх п. 11 добавлены экспорты и необязательные параметры (isOsError, mapTextFields, reduceInPlace, checkName и др.). Мёртвого кода не найдено: каждый имя используется минимум дважды в src/team. Это расширение публичной формы, а не лишняя работа.",
+        "fix": "Перенести перечень в п. 11 проекта."
+      },
+      {
+        "place": "tools/src/team/*.js — пустые/глотающие catch (cli.js:43, journal.js:34, lock.js:95/146/157, files.js:176/204, store.js:498 и др.)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Все просмотрены: каждый — уборка/закрытие дескриптора после уже случившейся ошибки или разбор с переводом в TeamError, с комментарием; ошибка основной операции не теряется. Эрозии нет.",
+        "fix": "Не требуется."
+      },
+      {
+        "place": "tools/src/team/store.js:10",
+        "severity": "Low",
+        "blocking": false,
+        "what": "maskSecrets импортируется из ../pixel-office/mask.js — единственная связь модулей, по проекту; не дублирование.",
+        "fix": "За чем следить: изменение mask.js теперь влияет на Team."
+      }
+    ],
+    "self_check": [
+      "diff -rq <копия до> tools -x node_modules: различия только README.md, package.json, test/fault-inject.js, src/team (новый) + файлы, которых нет в копии (.gitignore, .prettierignore, eslint.config.js, package-lock.json — не в git status как изменённые)",
+      "diff package.json: единственная добавленная строка \"team\": \"node src/team/cli.js\"; зависимостей нет",
+      "grep -nEi '\\.skip\\(|todo|eslint-disable|\\|\\| true|process\\.exit' tools/src/team/*.js: совпадений нет (кроме process.exitCode в cli.js:183 — код выхода не скрыт)",
+      "cd tools && npm test: # tests 493 # pass 493 # fail 0 # skipped 0 # todo 0",
+      "node: типов в EVENT_TYPES 37; PHRASES 82 записи (варианты фраз по типам)",
+      "Q-пункты: Q3 запуск есть; Q6 эрозии нет; Q7 секретов нет; Q10 сбои ОС не роняют процесс (E_DISK, E_INTERNAL=3); Q2/Q12 — отклонения выше названы; Q8, Q11, R3, Q9 — внешних вызовов и SQL нет, неприменимы"
+    ],
+    "issues": [
+      "Вопрос ORCH: поправки проекта (п. 5.1/5.3/И20/TM-62, п. 4.1 «1..40», п. 10.3 E_INTERNAL, п. 1 владелец fault-inject.js, п. 11 доп. экспорты) — CODE-DESIGNER; критерий 14 REQ-001 — REQ-ANALYST/DOC-UPDATER. Блокирующих для кода нет.",
+      "L1/L2 из NOTE разработчика (к документу) мной не проверялись отдельно."
+    ],
+    "artifacts_out": []
+  }
+}

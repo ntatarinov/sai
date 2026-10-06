@@ -1,0 +1,71 @@
+{
+  "handoff_id": "step33-test-designer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "33",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-33-test-designer.json",
+  "status": "FAILED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-helpers.js (добавлением)",
+      "tools/test/listing.test.js (только очистка)",
+      "handoffs/PROD-20261006-01/step-33-test-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/test-flaky-before",
+    "parallel_work_now": "CODE-DESIGNER (проектные файлы)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-32-test-design-validator.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5, правка r1 по FAIL ворот (handoffs/PROD-20261006-01/step-32-test-design-validator.json — F1 High: TM-67 нестабилен под нагрузкой). Решение ORCH: проигравший гонку на устаревшем замке (3+ одновременных открывающих) может получить E_LOCK_LOST — это записанный остаточный риск проекта REQ-009 (п. 6.2, F6, P1) и допустимый исход «писатель потерял замок и больше ничего не пишет». Исправьте TM-67 (tools/test/team-recovery.test.js или где он лежит): допустимые исходы каждого открывающего — «открыт» (дальше штатно закрыт), E_PROJECT_BUSY или E_LOCK_LOST; ИТОГОВЫЕ утверждения НЕ ослаблять: восстановление записано ровно один раз в раунде, открытых запусков и задач «в работе» не осталось, журнал после ещё одного открытия не меняется; добавьте проверку, что хотя бы один открывающий завершился успешно в каждом раунде (иначе проект не восстановлен); стабильность: тест должен проходить при нагрузке — проверьте 4 параллельных прогона набора (npm test в 4 процессах одновременно, 3 раза) и одиночный прогон ≥ 5 раз: 0 падений; если под нагрузкой всё ещё есть падения — найдите причину и назовите (таймауты, не гонка), не снижая сути проверки. Мутант «признак аварии только у снявшего замок» должен по-прежнему падать (на копии вне проекта). F3 (Low): tools/test/listing.test.js оставляет папки sai-listing-* в os.tmpdir() — если это тот же тест-автор и безопасно, добавьте очистку в after; иначе result.issues. Пишете только tools/test/team-recovery.test.js (и team-helpers.js — добавлением) и, для F3, tools/test/listing.test.js. ЖЁСТКИЕ ПРАВИЛА: настоящий claude не запускать; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; процессов не оставлять. cd tools && npm run check проходит. Копии до — <рабочая папка ORCH>/orch/prod/test-flaky-before. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "TM-67 стабилен под нагрузкой, суть сохранена",
+      "мутант падает",
+      "npm run check проходит"
+    ]
+  },
+  "created_at": "2026-10-06T01:57:00Z",
+  "started_at": "2026-10-06T01:57:00Z",
+  "completed_at": "2026-10-06T02:20:00Z",
+  "result": {
+    "status": "FAILED",
+    "summary": "Остановка: TM-67 исправлен по решению ORCH (E_LOCK_LOST допустим; не менее одного успешного открывающего в раунде; итоговые утверждения сохранены), но под нагрузкой тест ещё раз упал и причина — ошибка кода, не таймаут: гонка на устаревшем замке может оставить проект с RUN_FINISHED и TASK_INTERRUPTED, но без PROJECT_RECOVERED. Править код — CODE-FIXER через ORCH. F3 сделан.\nПРАВКИ (F1) tools/test/team-recovery.test.js TM-67: (1) исходы открывающего: opened, E_PROJECT_BUSY или E_LOCK_LOST; (2) assert opened>=1 в каждом раунде (сообщение теперь содержит результаты всех открывающих); (3) счётчики в PROJECT_RECOVERED: closed_runs и interrupted_tasks допустимы 0 или 1 (если первый писатель закрыл запуск и потерял замок, следующий пишет PROJECT_RECOVERED, считая только своё; под нагрузкой это наблюдалось: closed_runs 0 вместо 1); from_status=running как было; (4) НЕ ослаблено: ровно один RUN_FINISHED (r-00001, interrupted), один TASK_INTERRUPTED (t-0001, recovery), ровно один PROJECT_RECOVERED, не более одного LOCK_STALE_REMOVED с pid, нет JOURNAL_RECOVERED, восстановление до первого CHAT, CHAT по числу opened, runs.open пуст, статусы задач, paused/recovery, замка нет, ещё одно открытие без notices и журнал побайтово тот же. team-helpers.js не менялся (runOpeners достаточно).\nF3 tools/test/listing.test.js: scratch() запоминает папки, after() возвращает владельцу права (chmod только по именованным путям своих папок, ссылки не обходятся: lstat, symlink пропускается) и удаляет их; проверено на временном TMPDIR: после прогона sai-listing-* = 0, 9/9.\nПРОГОНЫ: одиночный TM-67 6 + 5 раз = 0 падений. 4 параллельных npm test x3 до моих правок счётчика: 3 падения из 12 (TM-67: closed_runs 0 вместо 1 дважды; 'round 2: nobody opened' один раз). После правки счётчика 4 параллельных npm test x6 (24 прогона): 2 падения: (а) LY-10 (limit 200 ms, чужой тест на время, не из этой работы) и (б) TM-67 'round 1: PROJECT_RECOVERED 0 !== 1' при RUN_FINISHED=1 и TASK_INTERRUPTED=1 (ниже). 4 параллельных одного TM-67 x5 (20 прогонов): 0 падений. Таймауты не причина: TM-67 падал за 3.7-5.8 с при лимите 280 с, CHILD_TIMEOUT не срабатывал.\nПРИЧИНА (по чтению tools/src/team/store.js recover(), шаг 8.6, и lock.js acquireLock F6): писатель A закрывает запуск (RUN_FINISHED) и прерывает задачу (TASK_INTERRUPTED), теряет замок (E_LOCK_LOST) до PROJECT_RECOVERED; открывающий B видит открытых запусков нет, задача уже interrupted, openRuns+interrupted=0, и PROJECT_RECOVERED не пишет. Итог: проект остаётся без PROJECT_RECOVERED (статус не paused). Это не остаточный риск 'писатель потерял замок и больше ничего не пишет': последствие остаётся в журнале. Условие шага 8.6 считает только работу этого писателя, а не состояние (например, статус running при отсутствии открытых запусков и запущенных задач, но есть interrupted с cause recovery без PROJECT_RECOVERED). Детерминированно воспроизвести через пользовательский API не удалось (outcome interrupted и TASK_INTERRUPTED пишет только ядро); доказательство - счётчики журнала в упавшем прогоне (<врем. папка>/.../scratchpad/td33/q54.out).\nМУТАНТ (копия вне проекта td33/copy, openRuns пуст без stalePid, т.е. признак аварии только у снявшего замок): падают 3 теста: TM-17, TM-64 (B), TM-67. Рабочее дерево мутантом не менялось; после пробы тесты на проекте зелёные.\nСАМОПРОВЕРКА: cd tools && npm run check, rc=0, tests 783, pass 783, fail 0, skipped 0, todo 0, prettier чист. Процессов fake-claude/probe нет, ~/.sai-team не трогалось, настоящий claude не запускался, порт 4780 не использован, SAI_TEAM_HOME и HOME временные.",
+    "changes": [
+      "tools/test/team-recovery.test.js — F1: допущен E_LOCK_LOST; проверка opened>=1 с результатами в сообщении; closed_runs/interrupted_tasks в {0,1}; остальные утверждения без изменений",
+      "tools/test/listing.test.js — F3: after() с возвратом прав и удалением папок sai-listing-*",
+      "tools/test/team-helpers.js — не менялся"
+    ],
+    "self_check": [
+      "npm run check: rc=0, 783/783, skipped 0, todo 0 (td33/check.out)",
+      "одиночный TM-67 x11: 0 падений; 4 параллельных TM-67 x5: 0 падений",
+      "4 параллельных npm test x3 до правки: 3/12 падений TM-67; x6 после правки: 2/24 (LY-10 и TM-67 из-за кода)",
+      "мутант: 3 теста падают (TM-17, TM-64 B, TM-67)"
+    ],
+    "issues": [
+      {
+        "kind": "BLOCKED",
+        "at": "2026-10-06T02:20:00Z",
+        "what": "TM-67 нельзя сделать стабильным под нагрузкой, не ослабляя итоговое утверждение 'ровно один PROJECT_RECOVERED': в редких гонках (около 1 из 24 полных прогонов при 4 параллельных) журнал получает RUN_FINISHED и TASK_INTERRUPTED без PROJECT_RECOVERED. Причина в коде tools/src/team/store.js recover(), шаг 8.6: условие openRuns.length + interrupted.length > 0 не видит работу, уже сделанную потерявшим замок писателем.",
+        "need": "CODE-FIXER через ORCH: следующий открывающий должен дописать PROJECT_RECOVERED, если состояние показывает прерванное восстановление (статус planning/running, нет открытых запусков и задач в работе, есть задача interrupted с cause recovery без последующего PROJECT_RECOVERED), либо CODE-DESIGNER/ORCH записывает иное допустимое поведение (Q12) с изменением проекта; после правки кода — SECURITY-REVIEWER и REVIEWER, затем повторить 4x3 параллельных прогона."
+      },
+      "LY-10 (layout, лимит 200 ms) упал один раз под нагрузкой 4 параллельных наборов - тест на время, не из этой работы, вопрос ORCH.",
+      "Допуск closed_runs/interrupted_tasks 0 или 1 в TM-67 - моя правка за рамкой слов ORCH, вызванная наблюдённой под нагрузкой гонкой; прошу подтвердить."
+    ],
+    "artifacts_out": [
+      "tools/test/team-recovery.test.js",
+      "tools/test/listing.test.js"
+    ]
+  }
+}

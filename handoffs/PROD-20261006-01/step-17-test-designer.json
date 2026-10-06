@@ -1,0 +1,114 @@
+{
+  "handoff_id": "step17-test-designer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "17",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-17-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": ["REQ-009", "REQ-010"],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/team-*.test.js (обновление перечисленных и новые тесты)",
+      "tools/test/team-helpers.js (добавление)",
+      "tools/test/exec-closure.test.js (новый)",
+      "handoffs/PROD-20261006-01/step-17-test-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/test-upd-before",
+    "parallel_work_now": "TEST-DESIGN-VALIDATOR (exec-*, только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/design/REQ-010-agent-executors.md",
+      "tools/src/team/",
+      "handoffs/PROD-20261006-01/step-15-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-16-code-fixer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5: обновить и дописать тесты после правок кода ядра и исполнителей (код — handoffs/PROD-20261006-01/step-15-code-fixer.json и step-16-code-fixer.json; проекты — docs/design/REQ-009-team-core.md (r6: п. 15.1a, 15.1b, 6.3, 6.4, И13, И21, И22; тесты TM-63…TM-66) и docs/design/REQ-010-agent-executors.md (r3: шаг 8 в п. 8.2; EX-52, EX-53)). Сделать: (1) обновить ожидаемо ломающиеся прежние тесты ядра по п. 15.1a и 15.1b «до/после», НЕ ослабляя: TM-12, TM-17, TM-19, TM-38, TM-51, TM-54 (две части: данные собираются настоящей аварией — SIGKILL дочернего процесса с открытым писателем или обрывом последней строки, не штатным close()), TM-13 (4 режима), TM-14 (2 теста), TM-46 (3), TM-47, TM-48 — файлы tools/test/team-*.test.js; каждое изменение — в result.summary с «было → стало» и обоснованием, что проверка не слабее (она проверяет то же свойство в условиях новых правил); (2) написать новые: TM-63 (writer.importResultBytes: имя, байты, маскирование текста, права 0600, единое место записи, отказы — по разделу 6.8), TM-64 (чистое повторное открытие не пишет восстановления), TM-65 (задача «на проверке» без открытого запуска остаётся после аварии; И21 и И13 прямым вызовом reduce), TM-66 (четыре части — по п. 15.1b/6.4), И22 — по проекту; (3) EX-52 и EX-53 (runner закрывает запуск на всех путях: здоровый писатель; сломанный — замок остаётся, say восстанавливает) — в НОВОМ файле tools/test/exec-closure.test.js (существующие exec-*.test.js не менять: их проверяет TEST-DESIGN-VALIDATOR параллельно); (4) тест на README: строки про восстановление после аварии и замок сломанного писателя — только если проект называет такую проверку DC-… (README обновит DOC-UPDATER позже: если тест проверяет строку, которой в README ещё нет, не пишите его — запишите в result.issues). Правила: SAI_TEAM_HOME — временная папка; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; настоящий claude не запускать (SAI_TEAM_CLAUDE_BIN только fake/probe из fixtures/team или missing-*; защита assertSafeEnv); сети и портов нет; процессов не оставлять; независимые тесты; без skip/todo. Мутанты — на КОПИИ вне проекта: не меньше 12 из новых таблиц проекта (п. 15 ядра/исполнителей: новые мутанты r5/r6, в том числе: восстановление после штатного close, прерывание «на проверке» без открытого запуска, close сломанного писателя снимает замок, runner не закрывает запуск при исключении исполнителя, importResultBytes без маскирования) — тесты должны падать. cd tools && npm test проходит (все 750+новые). Копии до — <рабочая папка ORCH>/orch/prod/test-upd-before. Предел расхода жёсткий; долгие команды в фоне, весь фон завершить. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "упавшие ожидаемо тесты обновлены без ослабления",
+      "TM-63…66, EX-52, EX-53 написаны",
+      "не меньше 12 мутантов падают",
+      "npm test проходит полностью"
+    ]
+  },
+  "created_at": "2026-10-05T23:53:34Z",
+  "started_at": "2026-10-05T23:53:34Z",
+  "completed_at": "2026-10-06T00:07:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Тесты обновлены и дописаны под r5/r6 ядра и r3 исполнителей. npm test: 774 (было 750 + 24 новых), все проходят.\nОБНОВЛЕНО (было -> стало; проверки не ослаблены, добавлены):\n- TM-12 (team-writer): те же два события; добавлено: ровно 3 строки, статус проекта прежний.\n- TM-17 (team-recovery): фикстура теперь с открытым work; было JOURNAL_RECOVERED,TASK_INTERRUPTED,PROJECT_RECOVERED,CHAT -> добавлены RUN_FINISHED{interrupted} и данные PROJECT_RECOVERED{1,1}.\n- TM-19: добавлена задача review без запуска: ни первый, ни второй say её не прерывает; отдельный тест «целый журнал ничего не дописывает».\n- TM-38 (team-language): recovered() теперь настоящая авария (дочерний процесс, SIGKILL, замок мёртвого pid) + обрыв строки, а не рукописный замок.\n- TM-51: добавлено: ровно 3 события, статус прежний.\n- TM-54 (обе части): фикстура - настоящий SIGKILL дочернего процесса с открытым писателем; добавлены LOCK_STALE_REMOVED и задача C review без запуска (остаётся review); числа PROJECT_RECOVERED прежние (3 и 2), все проверки N2/И13/И14 сохранены; planning: LOCK_STALE_REMOVED,RUN_FINISHED,PROJECT_RECOVERED.\n- TM-13 (3 режима) и TM-14 (2): все проверки до close() прежние; после close() было «открыть заново и писать» -> замок остаётся (байт-в-байт), openWriter в том же процессе E_PROJECT_BUSY (pid процесса), снимок папки прежний; TM-14 №2 «событие записано» теперь по чтению журнала и readProject. Перенесённая проверка «следующий писатель пишет дальше» - новые тесты TM-13 (по режиму) в дочернем процессе: LOCK_STALE_REMOVED, CHAT, строк +2.\n- TM-46 (3), TM-48: было «снимок папки не изменился» -> не изменился всё, кроме writer.lock мёртвого pid команды (проверено: pid, ESRCH, права 0600) + журнал не вырос + следующий say снимает замок (LOCK_STALE_REMOVED, CHAT). TM-47: до close() прежнее, после - E_PROJECT_BUSY; новый тест в дочернем процессе: после смерти b.md свободно и пишется.\nНОВОЕ: TM-63 (3 теста: байты/имя/маскирование/0600/событие/work без изменений; 11 отказов с неизменным <HOME>; сбой записи E_DISK без .partial и закрытый писатель), TM-64 (2 фикстуры, 3 повторных открытия, журнал побайтно, один CHAT), TM-65 (1)-(4) (авария замком, обрыв строки, running без запуска + review без запуска, reduce напрямую И21/И13), TM-66 (1)-(4) (+ вариант SIGKILL), EX-52 (а),(б), EX-53 (а),(б),(в) в НОВОМ exec-closure.test.js. И22 покрыт TM-64/TM-66/EX-52/EX-53.\nТаблица критерий->тест: п.15 проекта (TM-13/14/46-48/54 крит. 4,5,13; TM-17/19/38/51 крит. 5; TM-63 крит. 2,7,12; TM-64/65/66 крит. 4,5; EX-52/53 крит. 15). Q8: чужой проект недостижим по конструкции (TM-26, TM-24 без изменений); Q10: сбои записи/чтения во всех тестах; Q11 не затронут (нет адресов); R3 не затронут (фото нет); Q7: секретов нет (только ghp_FAKE). DC-проверки README: проект не называет такой теста - не писался.\nПомощники (team-helpers.js, добавление): runWriterChild, crashWriter, lockOf, assertDead, assertOnlyDeadLockAdded, HELPERS_URL, pid в runTeam.",
+    "changes": [
+      {
+        "file": "tools/test/team-helpers.js",
+        "what": "добавлены помощники аварий и сломанного писателя; pid в runTeam"
+      },
+      {
+        "file": "tools/test/team-writer.test.js",
+        "what": "TM-12, TM-13 (+дочерний процесс), TM-14"
+      },
+      {
+        "file": "tools/test/team-faults.test.js",
+        "what": "TM-46 x3, TM-47 (+дочерний процесс), TM-48"
+      },
+      {
+        "file": "tools/test/team-recovery.test.js",
+        "what": "TM-17, TM-19, TM-51, TM-54 x2; новые TM-64, TM-65, TM-66"
+      },
+      {
+        "file": "tools/test/team-language.test.js",
+        "what": "TM-38: настоящая авария"
+      },
+      {
+        "file": "tools/test/team-store.test.js",
+        "what": "новый TM-63"
+      },
+      {
+        "file": "tools/test/exec-closure.test.js",
+        "what": "новый: EX-52, EX-53"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check (perl alarm 590): код выхода 0; Prettier OK; eslint --max-warnings 0 OK; # tests 774 / # pass 774 / # fail 0. До работы (базовый прогон на коде r6): 750 / 739 / 11 (TM-46x3, TM-47, TM-48, TM-54x2, TM-13x3, TM-14) - все из перечня ожидаемых, теперь обновлены.",
+      "Мутанты (копия вне проекта scratchpad/mut/copy; прогон team-recovery/writer/faults/store/state/language + exec-closure, база 128/128). Упали: M01 восстановление при каждом открытии - 2; M02 авария только по замку - 4; M03 только по обрыву - 16; M04 прерывать каждую review - 5; M05 не прерывать running без запуска - 9; M06 PROJECT_RECOVERED без прерванного - 2; M07 без И21 - 1 (TM-65 (4)); M08 И13 допускает 0 - 1; M09 close() сломанного снимает замок - 20; M10 close() здорового не снимает замок - 36; M11 markBroken не ломает - 2; M13 importResultBytes без маскирования - 1 (TM-63); M14 не-UTF-8 принимается - 1; M15 runner не закрывает запуск - 4; M16 нет BUDGET_SPENT при закрытии - 1; M17 задача не получает TASK_FAILED - 2; M18 нет markBroken при сбое закрытия - 1 (EX-53 в); M19 ошибка закрытия заменяет исходную - 5; M20 isAlive считает свой pid мёртвым - 9. Итого 19 пойманных. M12 (обход проверки живого pid только в openWriter) - 0 падений: эквивалентен, acquireLock проверяет заново; заменён M20. Хеш src/ до и после: bfeb6c10238f = bfeb6c10238f; в копии после восстановления 128/128.",
+      "Процессы: pgrep fake-claude/cli.js пуст; ~/.sai-team не существует; порт 4780 и настоящий claude не использовались; SAI_TEAM_CLAUDE_BIN только fixtures fake-claude.js."
+    ],
+    "issues": [
+      {
+        "kind": "расхождение с проектом",
+        "text": "EX-52 (б) по проекту: ошибка ЧТЕНИЯ lstatSync EIO при приёме - но readWorkFile превращает её в E_WORK_FILE (отказ файла, задача падает штатно, не бросок). Написано на реальный бросок: writeFileSync effect bug (TypeError) на .partial при приёме: RUN_FINISHED failed с расходом, BUDGET_SPENT reported, TASK_FAILED result_file, исходная TypeError наружу. Проект EX-52 (б) стоит уточнить."
+      },
+      {
+        "kind": "расхождение с проектом",
+        "text": "EX-53: проект пишет PROJECT_RECOVERED{running,...}; у проекта в статусе created (makeProject без PROJECT_STARTED) восстановление PROJECT_RECOVERED не пишет (статус не planning/running), остальное то же. Тест стартует проект PROJECT_STARTED перед run-task. Случай created не покрыт отдельным тестом."
+      },
+      {
+        "kind": "отклонение от текста проекта",
+        "text": "EX-52/EX-53 в новом exec-closure.test.js, не в team-faults.test.js (по заданию). TM-66 (1) использует --import fault-inject.js с nth=3 (как в проекте)."
+      },
+      {
+        "kind": "наблюдение",
+        "text": "Файлы tools/test/exec-*.test.js и exec-helpers.js в рабочем дереве отличаются от копии test-upd-before - их правил не я (параллельно TEST-DESIGN-VALIDATOR); моя запись - только write_set. npm run check прошёл на текущем дереве."
+      },
+      {
+        "kind": "README",
+        "text": "Тест на строки README не написан: проект не называет проверку DC-… для них."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-helpers.js",
+      "tools/test/team-writer.test.js",
+      "tools/test/team-faults.test.js",
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-language.test.js",
+      "tools/test/team-store.test.js",
+      "tools/test/exec-closure.test.js"
+    ]
+  }
+}

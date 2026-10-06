@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step12-security-reviewer-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "12",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-12-security-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-12-security-reviewer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-exec-before",
+    "parallel_work_now": "REVIEWER r1 (только чтение), TEST-DESIGNER (тесты ядра)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-12f-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-12-security-reviewer.json",
+      "handoffs/PROD-20261006-01/step-13-reviewer.json",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, повтор (узкий) после исправлений (handoffs/PROD-20261006-01/step-12f-code-fixer.json; прежние заключения — step-12-security-reviewer.json (F1 Medium стоимость, F2–F4 Low) и step-13-reviewer.json; копия до — <рабочая папка ORCH>/orch/prod/fix-exec-before). ЖЁСТКИЕ ПРАВИЛА: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только на поддельный tools/test/fixtures/team/fake-claude.js или missing-*; SAI_TEAM_HOME — временная папка; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов. Своими пробами: F1 — стоимость 1e303, 1e21, 1e10, 5e8, -1, NaN, 'abc', Infinity через run-task на fake-claude: BUDGET_SPENT записан, spent_usd растёт, следующий запуск учитывает; F2 — checkBudget с NaN/строкой/Infinity → отказ до spawn (счётчик запусков fake = 0); F3 — подмена пути (каталог → символьная ссылка наружу) при removeSource: внешний файл цел; F4 — 9 МиБ строка без перевода строки: память не растёт кратно; ревью F1 (High) — потомок вне группы держит stdout после выхода claude: run() возвращается по таймауту, процессов не остаётся (проверьте сами: ps до/после; убейте любой остаток вручную и сообщите); новых дыр в изменённых файлах (diff с копией до: common.js, executor.js, executors/claude-cli.js, executors/scripted.js, runner.js) нет; условия реальных запусков внутри run() не ослаблены; поведение «стоимость > 1e9 → засчитана как assumed» — оцените. Остальные пункты Q7–Q11, R2, R3 — как в первом заключении. cd tools && npm test. Ничего не правьте. Результат: result.verdict PASS/FAIL, по F1–F4 и ревью-F1 с доказательствами, findings.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "находки — с доказательством пробами"
+    ]
+  },
+  "created_at": "2026-10-05T23:01:31Z",
+  "started_at": "2026-10-05T23:01:31Z",
+  "completed_at": "2026-10-05T23:06:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Узкий повтор после CODE-FIXER (step-12f). Область затронута: изменения касаются запуска дочернего процесса, учёта потолка расходов и удаления файлов из work/. diff с копией «до» (fix-exec-before/team): изменены executor.js, executors/claude-cli.js, executors/scripted.js, runner.js, добавлен common.js; больше ничего в src/team не менялось.\nНастоящий claude не запускался. SAI_TEAM_CLAUDE_BIN — только tools/test/fixtures/team/fake-claude.js (в пробах run-task) или <tmp>/missing-claude (npm test). В прямых пробах run() процесс подставлялся через io.spawn (пробные node-скрипты в scratchpad), а bin в конфиге оставался fake-claude. HOME и SAI_TEAM_HOME — временные папки (удалены), ~/.sai-team не существует, ~/.sai-pixel-office не трогался, порт 4780 не использовался.\nF1 (Medium, было блокирующим) — ЗАКРЫТ. run-task на fake-claude, budget 1, две задачи подряд. При set_cost = 1e303, 1e21, 1e10, -1 и 1e999 (то есть Infinity): RUN_FINISHED cost null, BUDGET_SPENT 0.25 assumed, total 0.25, затем 0.5; spent_usd 0.5; оба кода 0, fake запущен 2 раза. 5e8: reported 500000000, второй run-task — код 1, RUN_REFUSED budget_exhausted, fake запущен 1 раз (то есть следующий запуск учитывает расход). 0.123456789: reported 0.123457, total 0.246914. NaN и 'abc' в JSON-потоке недостижимы: литерал NaN — это SyntaxError, а строку отбрасывает stream.js (typeof number). Поэтому они проверены на recordableCost: 1e303, 1e21, 1e10, 1e9+1, MAX_VALUE, 1.7e302, -1, NaN, 'abc', Infinity, -Infinity, null, true дают null; 1e9, 5e8, 0, 0.123456789 дают 1e9, 5e8, 0, 0.123457.\nОценка правила «стоимость > 1e9 → assumed»: безопасно. Один запуск ограничен --max-budget-usd (не больше BUDGET_MAX 1e5 × 0.25), значит число > 1e9 — не стоимость. Списание потолка запуска — то же правило, что для неизвестной стоимости, а ядро может записать любую сумму до 1e9 при budget ≤ 1e5. Немонотонность (5e8 списывается полностью, 1e10 — только 0.25) не открывает лишних запусков: и то и другое — ложный отчёт, а сам процесс ограничен --max-budget-usd. Границу нужно внести в проект п. 8.4 (CODE-FIXER уже поднял это к ORCH).\nF2 (Low) — ЗАКРЫТ. checkBudget: (1,NaN), ('1',0), (1,'0'), (Infinity,0), (1,Infinity), (NaN,0), (undefined,0), (1,-Infinity) дают E_BUDGET_EXHAUSTED; (1,0,0.25) и (0,0,null) проходят. Прямой run() с подсчётом spawn при (1,NaN), ('1',0), (1,Infinity), (Infinity,0), (1,'0') даёт E_BUDGET_EXHAUSTED, spawn вызван 0 раз.\nF3 (Low) — ЗАКРЫТ. runTask на fake-claude, writer.importWorkFile обёрнут так, что подмена делается сразу после импорта. Подменялись: work/out → ссылка наружу; work/out/sub → ссылка наружу; сам файл → ссылка; сам work/ → ссылка на папку с out/report.md. Во всех 4 случаях внешний файл цел (EXTERNAL), задача в review, files/t-0001-1-report.md есть. Без подмены исходник из work/ удаляется (source_left=false).\nF4 (Low) — ЗАКРЫТ. Скрипт пишет 9 MiB 'a' без перевода строки кусками по 64 KiB и висит. Итог: invalid_output «Ответ исполнителя слишком большой» за 94 мс, пиковый прирост RSS 8.4 MiB (в первом заключении было ~450 MB).\nРевью F1 (High) — ЗАКРЫТ. Claude выходит сразу, а потомок с detached:true и унаследованным stdout живёт 60 с. При timeout_ms 1500 run() вернулся за 2004 мс: outcome timeout, detail «Не удалось остановить процессы исполнителя», transient false. При timeout_ms 60000 — за 5051 мс: invalid_output, detail group, transient false. Потомок после возврата run() жив (остаточный риск п. 5.6/P7, известен). Я убил его вручную (SIGKILL pid 47505 и 47550), после этого kill(pid,0) даёт ESRCH. ps до и после проб по escaper/bigline/fake-claude/потомкам — пусто.\nУсловия реальных запусков внутри run() не ослаблены. check() в diff не менялся, checkBudget стал строже. Прямые пробы: REAL_RUNS='true' или не задан → E_REAL_RUNS_OFF; budget 0 → E_NO_BUDGET; spent=budget → E_BUDGET_EXHAUSTED; executor scripted → E_EXECUTOR; во всех случаях spawn 0. Единственный spawn в src/team — claude-cli.js:203, массив аргументов; shell:true нет.\nНовых дыр в изменённых файлах нет (прочитан весь diff). forceClose идемпотентен (done), все таймеры очищаются после await stopping, порядок снятия onAbort безопасен. common.js — чистые функции без состояния. scripted переведён на общий abortablePause без изменения поведения.\nТаблица пунктов:\nQ7 — применим, выполнен. grep секретов по изменённым файлам и по diff: совпадений нет, кроме комментария и вызова maskSecrets. Окружение потомка (buildChildEnv) не менялось. Файлы страницы не менялись (Pixel Office вне diff).\nQ8 — применим (проекты не смешиваются, только work/ проекта), выполнен; удаление из work/ усилено (F3).\nQ9 — неприменим: базы и SQL нет.\nQ10 — применим, выполнен: F1, F2, F4 и ревью F1 закрыты пробами выше; ошибка одного запуска больше не ломает учёт следующих.\nQ11 — применим, выполнен в прежних границах: сетевых импортов, fetch и WebSocket в src/team нет; аргументы ролей (buildArgs) не менялись.\nR2 — применим (правда событий Sai Team), выполнен: событий заранее в коде нет; в журнале при неизвестной стоимости честно стоит null/assumed, а не выдуманная сумма.\nR3 — неприменим: фото покупателей нет.\nЗапись файлов только в своей папке — выполнено (F3). Вывод текста как разметки — неприменим: страница не менялась.\nnpm test (HOME, SAI_TEAM_HOME — временные, CLAUDE_BIN missing): 636 pass, 0 fail.\nОжидаемый вердикт в задании не назван (AP-018 не сработал).",
+    "findings": [
+      {
+        "id": "N1",
+        "location": "tools/src/team/executors/claude-cli.js:316-345 (forceClose, обработчик exit)",
+        "bar_item": "Q10 / проект п. 5.6",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Потомок, который ушёл из группы (setsid или detached), после возврата run() остаётся жить. Проба: pid 47505 и 47550 были живы до ручного SIGKILL. run() больше не зависает, но процесс может дальше писать в work/; удаление теперь от этого защищено (F3). Риск известен (P7), не новый.",
+        "fix": "Не в этом изменении. Записать в проекте п. 5.6 ограниченное ожидание close (GROUP_GONE_WAIT_MS / CLOSE_GRACE_MS) и остаточный риск; TEST-DESIGNER в тесте убивает потомка сам и проверяет ESRCH."
+      },
+      {
+        "id": "N2",
+        "location": "tools/src/team/executor.js:302-314 (isMoney/checkBudget)",
+        "bar_item": "условие остатка внутри run()",
+        "severity": "Info",
+        "blocking": false,
+        "problem": "Отрицательное конечное spent_usd проходит: checkBudget({budget 1, spent -100, max 0.25}) → pass. Через ядро это недостижимо, потому что spent_usd — проверенная сумма ≥ 0.",
+        "fix": "По желанию: в isMoney для spent требовать x >= 0."
+      },
+      {
+        "id": "N3",
+        "location": "tools/src/team/runner.js:573-590 (removeSource)",
+        "bar_item": "запись и удаление только в своей папке",
+        "severity": "Info",
+        "blocking": false,
+        "problem": "Между обходом lstat и unlinkSync остаётся окно в микросекунды (TOCTOU). Подмена в этом окне требует живого процесса вне группы (N1). Практическая подмена между импортом и удалением, которую можно сделать пробой, закрыта: 4 из 4 случаев.",
+        "fix": "Не требуется; при желании — unlinkat относительно открытого дескриптора папки (в Node его нет), то есть принять как остаток."
+      },
+      {
+        "id": "N4",
+        "location": "tools/src/team/runner.js:40-63 (COST_REPORTED_MAX, recordableCost)",
+        "bar_item": "Q10 / проект п. 8.4",
+        "severity": "Info",
+        "blocking": false,
+        "problem": "Новое правило «стоимость > 1e9 → assumed» и граница 1e9 пока есть только в коде, в проекте их нет.",
+        "fix": "CODE-DESIGNER или DOC-UPDATER вносит их в п. 8.4 (CODE-FIXER уже поднял это к ORCH)."
+      }
+    ],
+    "self_check": [
+      "diff -rq fix-exec-before/team tools/src/team: Only in tools/src/team: common.js; differ: executor.js, executors/claude-cli.js, executors/scripted.js, runner.js",
+      "F1 run-task (node scratchpad/sr12/f1.mjs): 1e303/1e21/1e10/-1/Infinity → коды 0 0, spent 0.5, fake starts 2, BUDGET_SPENT 0.25/assumed total=0.25; 0.25/assumed total=0.5; 5e8 → коды 0 1, spent 500000000, fake starts 1, RUN_REFUSED budget_exhausted; 0.123456789 → reported 0.123457, total 0.246914",
+      "recordableCost: 1e+303→null, 1e+21→null, 10000000000→null, 1000000001→null, 1000000000→1000000000, 500000000→500000000, -1→null, NaN→null, abc→null, Infinity→null, -Infinity→null, null→null, true→null, 0→0, 0.123456789→0.123457, MAX_VALUE→null, 1.7e+302→null",
+      "F2: checkBudget 8 плохих сочетаний → E_BUDGET_EXHAUSTED, (1,0,0.25) и (0,0,null) → pass; run() прямой с подсчётом spawn: 5 сочетаний → E_BUDGET_EXHAUSTED, spawn calls 0",
+      "F3 (scratchpad/sr12/f3.mjs): none → status=review, source_left=false; dir, middir, file, work → status=review, external=EXTERNAL, files=t-0001-1-report.md",
+      "F4: BIG: outcome=invalid_output detail=Ответ исполнителя слишком большой in 94 ms, peak RSS growth 8.4 MiB",
+      "Ревью F1: ESC timeout_ms=1500 → 2004 ms outcome=timeout detail=Не удалось остановить процессы исполнителя transient=false; timeout_ms=60000 → 5051 ms outcome=invalid_output detail=group transient=false; потомки 47505 и 47550 убиты вручную → ESRCH",
+      "Условия run(): REAL_RUNS true/не задан → E_REAL_RUNS_OFF; budget 0 → E_NO_BUDGET; spent=budget → E_BUDGET_EXHAUSTED; executor scripted → E_EXECUTOR; spawn 0 во всех случаях",
+      "grep секретов (sk-ant|ghp_|AKIA|api_key|token|secret|password) по изменённым файлам и по diff: только комментарий claude-cli.js:87 и maskSecrets; сеть (node:http/https/net/tls/dgram/dns, fetch, WebSocket, innerHTML, eval, shell:true): 0 совпадений",
+      "cd tools && HOME=<tmp> SAI_TEAM_HOME=<tmp>/team SAI_TEAM_CLAUDE_BIN=<tmp>/missing-claude npm test → # pass 636 # fail 0 # skipped 0",
+      "Хеши tools/src до и после проверки совпадают. Разные хеши только у tools/test/team-{journal,read,recovery,store}.test.js — это параллельная работа TEST-DESIGNER (handoff: parallel_work_now); я в tools/test ничего не писал",
+      "ps -axo по escaper/bigline/fake-claude/потомкам до и после — пусто; временные папки sr12-* удалены; ~/.sai-team: No such file or directory"
+    ],
+    "issues": [
+      {
+        "kind": "к ORCH",
+        "text": "N1 и N4 — нужно внести в проект REQ-010 (п. 5.6: ограниченное ожидание close и остаточный потомок вне группы; п. 8.4: COST_REPORTED_MAX = 1e9 → assumed). Не блокирует."
+      },
+      {
+        "kind": "к ORCH",
+        "text": "Во время проверки TEST-DESIGNER менял 4 файла tools/test/team-*.test.js (параллельная работа). npm test с ними — 636/636."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "handoff_id": "step28-code-fixer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "28",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261006-01/step-28-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/store.js",
+      "tools/src/team/executors/claude-cli.js",
+      "tools/src/team/ (смежные, если нужно)",
+      "handoffs/PROD-20261006-01/step-28-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-s1-before",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/design/REQ-010-agent-executors.md",
+      "handoffs/PROD-20261006-01/step-25-security-reviewer.json",
+      "handoffs/PROD-20261006-01/step-26-code-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02: привести код к проектам (docs/design/REQ-009-team-core.md r8; docs/design/REQ-010-agent-executors.md r6) по находкам итоговых ворот: (1) S1 (Medium, блок; handoffs/PROD-20261006-01/step-25-security-reviewer.json — прочтите пробу G): tools/src/team/store.js recover(): условие восстановления — НЕ stalePid, а состояние: оборвана последняя строка журнала ИЛИ в состоянии есть открытые запуски или задачи «в работе» (писатель, получивший замок, восстанавливает; stalePid/LOCK_STALE_REMOVED — только уведомление снявшему замок); «на проверке» без открытого запуска остаётся; после штатного close() повторное открытие ничего не пишет; PROJECT_RECOVERED — по правилам проекта r8 (п. 6.3, 6.4, И13/И21/И22, п. 15.1c); (2) I11 (а) (handoffs/PROD-20261006-01/step-26-code-designer.json): в claude-cli.js если процессы не остановились (группа не остановлена), исход получает detail group и transient: false ВСЕГДА — в том числе при invalid_output и любом другом исходе: повторов нет, пока потомок прежней попытки жив; (3) Проба G должна давать 0 «сломанных» проектов из 20 раундов (6 одновременных открывающих после аварии, процесс-писатель убит SIGKILL): повторите пробу (скрипты — в scratchpad sr25/p/ или напишите свои) на исправленном коде: восстановление записано ровно один раз, открытых запусков нет. Тесты НЕ писать и не менять (TEST-DESIGNER потом); в result.summary перечислите ожидаемо ломающиеся тесты. ЖЁСТКИЕ ПРАВИЛА: настоящий claude не запускать; SAI_TEAM_CLAUDE_BIN — только fake/probe файлы из tools/test/fixtures/team или missing-*; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; процессов не оставлять. cd tools && npm test: допустимы падения только перечисленных ожидаемо ломающихся тестов. Копии до — <рабочая папка ORCH>/orch/prod/fix-s1-before. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "проба G: 0 из 20 раундов сломано",
+      "I11(а) закрыт",
+      "список ожидаемо ломающихся тестов",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-06T01:09:49Z",
+  "started_at": "2026-10-06T01:09:49Z",
+  "completed_at": "2026-10-06T01:14:06Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "S1 исправлен. В store.js recover() больше нет условия «stalePid или обрыв». Писатель, получивший замок, восстанавливает проект, если оборвана последняя строка журнала или в журнале есть открытые запуски или задачи running (REQ-009 r8, п. 6.3, шаг 8). LOCK_STALE_REMOVED пишется только при stalePid ≠ null и служит лишь уведомлением. Если признаков нет, ничего не пишется. Задача review без открытого запуска остаётся review. PROJECT_RECOVERED пишется по прежним правилам (статус planning или running и closed_runs + interrupted_tasks ≥ 1; И13, И21, И22).",
+      "I11 (а) исправлен. В claude-cli.js схема ответа проверяется до поправки «группа не ушла». Поэтому при groupStuck любой исход, в том числе invalid_output по схеме, получает detail group и transient: false, а ok превращается в failed (REQ-010 r6, п. 5.4).",
+      "Проба G (SIGKILL процесса-писателя с открытым r-00001 и задачей running, затем 6 одновременных открывающих, 20 раундов): сломано 0 из 20, PROJECT_RECOVERED ровно 1 в 20 из 20, открытых запусков и задач running нет. На копии «до» сломано 16 из 20.",
+      "Ожидаемо ломаются 2 теста (npm run check: 776 тестов, 774 прошли, 2 упали). (1) TM-64 «a clean reopening writes no recovery: a task in work with its open run (the error of the caller, I7)» (team-recovery.test.js), вариант (B). По п. 15.1c новое ожидание такое: первое открытие пишет RUN_FINISHED {interrupted}, TASK_INTERRUPTED {recovery}, PROJECT_RECOVERED {running, 1, 1}; следующие открытия пишут только CHAT. (2) TM-19 «a whole journal gets nothing appended» (team-recovery.test.js:328). Фикстура crashed(t, undefined, withReviewTask): задача t-0001 в состоянии running без открытого запуска, штатный close, журнал цел. По r8 (п. 6.3, шаг 8, «или задачи running»; I8) это признак «незакрытая работа». Новое ожидание: notices ['Прерваны задачи: t-0001', 'Работа проекта прервалась — продолжите её командой возобновления'], TASK_INTERRUPTED {recovery} по t-0001, PROJECT_RECOVERED {running, 0, 1}, t-0001 interrupted, t-0002 остаётся review, второе открытие пишет только CHAT. Этого теста нет в перечне п. 15.1c (см. issues). Оба теста правит TEST-DESIGNER."
+    ],
+    "changes": [
+      {
+        "item": "S1 (step-25), REQ-009 r8 п. 6.3 шаг 8, п. 6.2 шаг 5",
+        "file": "tools/src/team/store.js",
+        "where": "recover(), начало функции и комментарий над ней",
+        "what": "Удалены строки `const crashed = stalePid !== null || journal.tail !== null; if (!crashed) return;`. Шаги 8.1–8.6 идут как прежде, и каждый срабатывает по своему признаку: обрыв даёт усечение и JOURNAL_RECOVERED; stalePid даёт LOCK_STALE_REMOVED; открытые запуски дают RUN_FINISHED interrupted; задачи running и review с прерванным review дают TASK_INTERRUPTED; PROJECT_RECOVERED пишется, только если что-то прервано. Без признаков ничего не пишется. Комментарий переписан под r8."
+      },
+      {
+        "item": "I11 (а) (step-26), REQ-010 r6 п. 5.4, 5.6",
+        "file": "tools/src/team/executors/claude-cli.js",
+        "where": "run(), разбор итога после parser.finish()",
+        "what": "Проверка схемы ответа (checkAnswer) перенесена в вердикт, до поправки groupStuck. Поправка ставит detail = FAIL_DETAIL.group и transient = false для любого исхода, а ok заменяет на failed. Убраны прежний поздний возврат invalid_output/transient:true/schema и отдельная строка `if (state.groupStuck) return {...out, outcome:'failed'}`. Без groupStuck поведение не изменилось (ответ вне схемы по-прежнему invalid_output, transient true, detail schema)."
+      }
+    ],
+    "self_check": [
+      "Упавшая команда «до» — проба G. Свой скрипт <рабочая папка ORCH>/cf28/probe.mjs (writer.mjs, opener.mjs). Писатель открывает проект, пишет TASK_STARTED и RUN_STARTED и убивается SIGKILL; затем 6 одновременных openWriter + say + close, после них ещё одно открытие. Окружение: perl alarm, временные SAI_TEAM_HOME и HOME в scratchpad, SAI_TEAM_CLAUDE_BIN = <tmp>/missing-claude. На копии fix-s1-before (team + pixel-office в <рабочая папка ORCH>/cf28/bm) результат {rounds:20, broken:16, recoveredOnce:4, openRunsLeft:16, runningLeft:16}.",
+      "Проба G «после», исправленный код: {rounds:20, broken:0, recoveredOnce:20, openRunsLeft:0, runningLeft:0, afterOneMoreWrites:0, otherErr:[], opened:20, busy:100}. Отдельно штатный close() с задачей review после закрытого запуска и 3 повторных открытия: добавлено 0 событий, задача review. С одним открывающим (3 раунда) LOCK_STALE_REMOVED записан 3 из 3. В гонке 6 открывающих уведомление теряется (staleNotices 0), это известное следствие п. 6.2, шаг 5.",
+      "I11 (а), проба <рабочая папка ORCH>/cf28/i11.test.mjs через node --test и perl alarm 90. io.spawn заменён процессом-заглушкой stub.cjs: он печатает образец, оставляет потомка вне группы с открытым stdout и выходит с кодом 0. Исправленный код: stream-out-of-schema → invalid_output, detail group, transient false; stream-ok → failed, group, false, answer null; stream-not-json → invalid_output, group, false. Итог: pass 3, fail 0. Копия «до»: out-of-schema даёт detail «Ответ исполнителя не соответствует схеме» (fail 1). Потомки заглушки убиты в finally.",
+      "cd tools && npm run check: HOME, SAI_TEAM_HOME и кэш npm временные в <рабочая папка ORCH>/cf28/chk, SAI_TEAM_CLAUDE_BIN = missing-claude, perl alarm 900. Вывод: «All matched files use Prettier code style!», eslint --max-warnings 0 без вывода, # tests 776 # pass 774 # fail 2 # cancelled 0 # skipped 0 # todo 0, exit 1. Упали not ok 607 TM-19 «a whole journal gets nothing appended» (actual notices ['Прерваны задачи: t-0001', 'Работа проекта прервалась — продолжите её командой возобновления'], expected []) и not ok 615 TM-64 (B). Оба падения вызваны намеренным изменением поведения по r8 (см. summary).",
+      "diff -rq копии fix-s1-before/team с tools/src/team: различаются только store.js и executors/claude-cli.js. Тесты не менялись.",
+      "Настоящий claude не запускался. Порт 4780 не использовался. ~/.sai-team не существует. Временные HOME и SAI_TEAM_HOME после прогона пусты, папок sb-* нет. Новых процессов node/perl/claude нет: comm списков pid до и после пуст."
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "to": "ORCH/TEST-DESIGNER",
+        "text": "Ожидаемо ломаются TM-64 (B) и TM-19 «a whole journal gets nothing appended» (team-recovery.test.js:328). Новое ожидание для обоих — в summary."
+      },
+      {
+        "kind": "QUESTION",
+        "to": "ORCH/CODE-DESIGNER",
+        "text": "В п. 15.1c REQ-009 r8 сказано, что падает только прежний TM-64 (B), а TM-19 в таблице значится как «то же». Но первый тест TM-19 («a whole journal gets nothing appended») держит задачу running без открытого запуска после штатного close и ждёт, что ничего не будет записано. По п. 6.3, шаг 8 r8 («или задачи running»; I8) это признак восстановления. Код сделан по п. 6.3. Таблицу 15.1c нужно дополнить строкой TM-19 (этот тест) до того, как TEST-DESIGNER будет его менять."
+      },
+      {
+        "kind": "NOTE",
+        "to": "ORCH",
+        "text": "I11 (б) (свои тесты для «ok при groupStuck → failed» и для ответа вне схемы при groupStuck) — за TEST-DESIGNER. Готовая проба есть в scratchpad cf28/i11.test.mjs, её можно взять за образец."
+      },
+      {
+        "kind": "NOTE",
+        "to": "ORCH",
+        "text": "Дальше нужен повтор SECURITY-REVIEWER и REVIEWER (шаги 3–4)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/store.js",
+      "tools/src/team/executors/claude-cli.js"
+    ]
+  }
+}

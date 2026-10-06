@@ -1,0 +1,98 @@
+{
+  "handoff_id": "step29-test-designer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "29",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-29-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/team-*.test.js (TM-19, TM-64, TM-67)",
+      "tools/test/team-helpers.js (добавлением)",
+      "tools/test/exec-findings.test.js или новый tools/test/exec-group.test.js",
+      "tools/test/exec-helpers.js (добавлением)",
+      "handoffs/PROD-20261006-01/step-29-test-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/test-s1-before",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/design/REQ-010-agent-executors.md",
+      "tools/src/team/",
+      "handoffs/PROD-20261006-01/step-28-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-25-security-reviewer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5: тесты после правки восстановления по состоянию (код — handoffs/PROD-20261006-01/step-28-code-fixer.json; проекты docs/design/REQ-009-team-core.md r8 (п. 6.3, 6.4, И13/И21/И22, п. 15.1c — «до/после»; TM-67) и docs/design/REQ-010-agent-executors.md r6 (п. 5.4, 5.6, 8.4, EX-… exec-findings); безопасность — находка S1 в handoffs/PROD-20261006-01/step-25-security-reviewer.json, проба G). Сделать: (1) обновить ожидаемо упавшие тесты, не ослабляя: TM-64 (B) и TM-19 «a whole journal gets nothing appended» (team-recovery.test.js ~ строка 328: фикстура — задача running без открытого запуска после штатного закрытия — по r8 это признак восстановления; перепишите фикстуру так, чтобы она проверяла то же свойство — штатно закрытый проект без открытой работы ничего не получает — и отдельно проверьте новое поведение; в result.summary «было → стало»); (2) написать TM-67 (гонка: после аварии — писатель убит SIGKILL с открытым запуском и задачей running — N=6 одновременных открывающих (реальные процессы), 20 раундов: восстановление записано ровно один раз в каждом раунде, открытых запусков нет; мутант «признак аварии только у снявшего замок» на копии вне проекта падает); (3) тесты на правила REQ-010 r6 без тестов (I11 (б)): итог ok при неостановленной группе → failed + detail group + transient false; ответ вне схемы и битый поток при неостановленной группе → detail group, transient false (без повторов); оставшаяся после штатного выхода группа останавливается; recordableCost-правило уже есть — не дублировать; новые тесты — в exec-findings.test.js или новом exec-group.test.js; (4) убедитесь, что таблица тестов проекта и фактические тесты не расходятся; расхождения таблицы 15.1c (в таблице нет первого TM-19) — в result.issues. Правила: SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; настоящий claude не запускать (SAI_TEAM_CLAUDE_BIN — fake/probe или missing-*; assertSafeEnv); у каждого теста, запускающего процессы, свой timeout (withLimit); процессов не оставлять; независимые тесты; без skip/todo. Мутанты — на КОПИИ вне проекта: не меньше 8 (в том числе: признак аварии у снявшего замок, восстановление после штатного close, ok остаётся ok при неостановленной группе, transient true при неостановленной группе, группа не останавливается после штатного выхода). Если код противоречит проекту — не подгоняйте тест: result.issues. cd tools && npm run check проходит. Копии до — <рабочая папка ORCH>/orch/prod/test-s1-before. Предел расхода жёсткий; долгие команды в фоне, весь фон завершить до ответа. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "упавшие обновлены без ослабления",
+      "TM-67 и тесты I11(б) написаны",
+      "не меньше 8 мутантов падают",
+      "npm run check проходит"
+    ]
+  },
+  "created_at": "2026-10-06T01:15:15Z",
+  "started_at": "2026-10-06T01:15:15Z",
+  "completed_at": "2026-10-06T01:22:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Обновлены без ослабления два теста (team-recovery.test.js). БЫЛО → СТАЛО. (1) TM-19 «a whole journal gets nothing appended»: было — штатно закрытый проект, задача t-0001 running без открытого запуска, ждём «ничего не записано»; по r8 (п. 6.3, шаг 8) это признак восстановления. Стало — то же свойство на проекте без открытой работы (t-0001 и t-0002 на review, запусков нет): notices [], журнал до say байт-в-байт прежний, добавлен только CHAT, runs.open пуст, задачи review. Новое поведение отдельным тестом «TM-19 (r8) a task in work with no open run after a normal close…»: первое открытие даёт notices ['Прерваны задачи: t-0001','Работа проекта прервалась…'], TASK_INTERRUPTED{recovery}, PROJECT_RECOVERED{running,0,1}, CHAT; t-0001 interrupted, t-0002 остаётся review; второе открытие — только CHAT. (2) TM-64 (B): было — задача running с открытым запуском после close() остаётся running и запуск открыт. Стало — отдельный тест «TM-64 (B) (r8)…»: первое открытие пишет RUN_FINISHED{r-00001,interrupted}, TASK_INTERRUPTED{recovery}, PROJECT_RECOVERED{running,1,1}, без LOCK_STALE_REMOVED/JOURNAL_RECOVERED, notices (3 строки); проект paused/recovery, runs.open пуст; три следующих открытия — хеш журнала не меняется, notices []; say — только CHAT. Вариант (A) (review без запуска) остался в цикле без изменений.",
+      "TM-67 (team-recovery.test.js, помощник runOpeners в team-helpers.js): 20 раундов, каждый — свой временный SAI_TEAM_HOME; писатель-процесс убит SIGKILL с открытым r-00001, задача A running, C review; затем 6 реальных процессов открывают одновременно (барьер по часам), openWriter+say+close. Проверки: каждый — «opened» или E_PROJECT_BUSY, opened ≥ 1; ровно по одному RUN_FINISHED{interrupted}, TASK_INTERRUPTED{recovery}, PROJECT_RECOVERED{running,1,1}; LOCK_STALE_REMOVED ≤ 1 с pid убитого; JOURNAL_RECOVERED нет; восстановление раньше первого CHAT; CHAT ровно по числу opened; runs.open пуст, A interrupted, C review, paused/recovery, замка нет; ещё одно открытие — журнал байт-в-байт тот же. Каждый дочерний процесс с ограничением 30 с и ожидается до конца; таймаут теста 280 с (~18 с).",
+      "I11 (б) (новый tools/test/exec-group.test.js; io.spawn подменён заглушкой Node с образцом из fixtures/team, потомок вне группы держит stdout либо внутри группы; настоящий claude и fake-файлы не запускались): ok при неостановленной группе → failed + detail group + transient false + answer null; ответ вне схемы → invalid_output + detail group (не текст схемы) + transient false; битый поток (not-json) → то же; контроль без зависшей группы: ok остаётся ok, вне схемы остаётся invalid_output/schema/transient true; оставшаяся после штатного выхода группа останавливается (потомок мёртв до возврата run, итог ok). Потомки убиваются самим тестом, каждый вызов в withLimit. recordableCost-правило не дублировал.",
+      "Таблица «критерий → тест»: TM-19 (оба + r8) -> team-recovery; TM-64 (A), (B r8) -> team-recovery; TM-67 -> team-recovery; REQ-010 п. 5.4 «ok → failed при groupStuck» -> exec-group тест 1; п. 5.4 / I11(а) «любой исход при groupStuck: group, transient false» -> тесты 2, 3 (+ уже существующие три теста exec-findings); п. 5.6 «оставшаяся группа останавливается» -> тест 5; контроль тест 4.",
+      "Планка: Q8 (магазины) — не затронут, это ядро команды без магазинов; Q10 — сбой процесса/потомка/гонка открывающих покрыты (E_PROJECT_BUSY допустим, прочих ошибок нет, процессов не остаётся); Q11 — не затронут, адресов нет; R3 — не затронут, фото нет; Q7 — секретов в тестах нет, SAI_TEAM_HOME временная, assertSafeHome/assertSafeEnv; R2 — событий Pixel Office не писалось."
+    ],
+    "changes": [
+      {
+        "file": "tools/test/team-recovery.test.js",
+        "what": "TM-19 whole journal переписан (новая фикстура reviewOnly); добавлен TM-19 (r8); TM-64 (B) вынесен из цикла в отдельный тест с новым ожиданием (А остался в цикле); добавлен TM-67; шапка файла дополнена"
+      },
+      {
+        "file": "tools/test/team-helpers.js",
+        "what": "добавлением: runOpeners(home,id,n) — N одновременных процессов-открывающих"
+      },
+      {
+        "file": "tools/test/exec-group.test.js",
+        "what": "новый: 5 тестов I11 (б) и п. 5.6"
+      },
+      {
+        "file": "tools/test/exec-helpers.js",
+        "what": "не менялся (хватило существующих помощников)"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check (HOME, SAI_TEAM_HOME, кэш npm — временные в scratchpad td29/chk, SAI_TEAM_CLAUDE_BIN = missing-claude, perl alarm 900): prettier — all matched files use Prettier code style; eslint --max-warnings 0 без вывода; # tests 783 # pass 783 # fail 0 # cancelled 0 # skipped 0 # todo 0; exit 0. Вывод: scratchpad td29/check.out.",
+      "Мутанты — на копии вне проекта (scratchpad td29/copy, скрипт td29/mut.py), все 12 пойманы; рабочее дерево не менялось (хеши src+test до/после мутантов совпали; src равен test-s1-before). Для store.js прогон team-recovery.test.js, для claude-cli.js — exec-group+exec-findings. M1 признак аварии только у снявшего замок (stalePid/обрыв): упали 3 (TM-19 r8, TM-64 B, TM-67). M2 восстановление прерывает review без запуска (после штатного close): 9 (TM-19 x3, TM-54, TM-64 A, TM-65 (1)(2)(3), TM-67). M3 PROJECT_RECOVERED при пустом прерывании: 6 (TM-19 whole journal, TM-64 A, TM-65 (1)(2), TM-66 x2). M4 задачи running не прерываются: 9 (TM-17, TM-19 x2, TM-54, TM-64 B, TM-65 (3), TM-66 x2, TM-67). M5 открытые запуски не закрываются: 7 (TM-17, TM-54 x2, TM-64 B, TM-66 x2, TM-67). M6 LOCK_STALE_REMOVED не пишется: 7 (TM-51, TM-54 x2, TM-65 (1)(3), TM-66 x2). M7 closed_runs=0 в PROJECT_RECOVERED: 6 (TM-17, TM-54 x2, TM-64 B, TM-66, TM-67). M8 ok остаётся ok при неостановленной группе: 1 (I11 ok→failed). M9 transient true при неостановленной группе: 6 (три теста exec-findings и три теста I11). M10 схема побеждает поправку группы (старый порядок): 1 (I11 вне схемы). M11 detail группы убран: 6. M12 группа не останавливается после штатного выхода: 1 (п. 5.6).",
+      "Настоящий claude не запускался; ~/.sai-team не существует; порт 4780 не использовался; стоящих процессов нет (ps чист)."
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "to": "ORCH/CODE-DESIGNER",
+        "text": "Расхождение таблиц с тестами: (1) п. 15.1c REQ-009 r8 и строка TM-19 п. 15.1 не знают первого TM-19 «a whole journal gets nothing appended» (его фикстура изменена здесь, как просил CODE-FIXER) и нового «TM-19 (r8) a task in work with no open run after a normal close…»; (2) строка TM-64 в таблице описывает (B) уже по r8 — фактические тесты совпадают, но (B) теперь отдельный тест, не элемент цикла; (3) в таблице REQ-010 п. 15.1 нет файла tools/test/exec-group.test.js (5 новых тестов I11 (б)); п. 18 I11 (б) и п. 15.2 («теста нет — I11») надо обновить; (4) мутанты 15.2 REQ-009 о «признаке аварии только у stalePid» теперь ловят TM-19 (r8), TM-64 (B), TM-67."
+      },
+      {
+        "kind": "NOTE",
+        "to": "ORCH",
+        "text": "Тесты I11 (б) занимают около 15 с (три ожидания по GROUP_GONE_WAIT_MS ≈ 5 с, ограничение кода); TM-67 — около 18 с. Кода менять не потребовалось, противоречий кода и проекта не найдено."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-helpers.js",
+      "tools/test/exec-group.test.js"
+    ]
+  }
+}

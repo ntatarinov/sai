@@ -1,0 +1,120 @@
+{
+  "handoff_id": "step04b-code-design-validator-r2-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "04b",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261006-01/step-04b-code-design-validator-r2.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-04b-code-design-validator-r2.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/REQ-009-team-core.before-r2.md",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/requirements.yaml",
+      "handoffs/PROD-20261006-01/step-04b-code-design-validator-r1.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 1b, повторные ворота r2: проект ядра docs/design/REQ-009-team-core.md после доработок r2 и r3 (handoffs/PROD-20261006-01/step-04-code-designer-r2.json и -r3.json; прежние ворота — step-04b-code-design-validator-r1.json: N1–N5 блокирующие, N6–N10 Low; копия проекта до r2 — <рабочая папка ORCH>/orch/prod/REQ-009-team-core.before-r2.md). Критерии — блок REQ-009 в docs/requirements.yaml (после малой правки r4 аналитика); блоки REQ-010 и REQ-013 — достаточность ядра. Проверьте сами по роли и WF-02: каждое замечание N1–N10 снято по существу (N1 — интерфейс fault-inject.js (installFaults/withFaults) однозначен и реализуем на Node 22: проверьте запуском на небольшом примере вне проекта, что подмена fs-методов внутри процесса и восстановление работают; N2 — PROJECT_RECOVERED → paused/paused_by=recovery и PROJECT_RESUMED из paused — разберите вручную 2 последовательности событий, включая аварию во время планирования; нет «смены статуса без смены» — TM-54/TM-62; N3 — executor у всех событий AGENT; N4 — пять типов и два значения только для ядра; N5 — README, TM-50, P8/P9); новое в r3: PLAN_RETRY (37 типов) — каталог = таблица состояния = таблица фраз = тесты, инвариант И20; 15 критериев покрыты строками «критерий → тест» (TM-01…TM-62 — номера свободны по tools/test), планка Q1–Q14, R1–R3 названа; кода реализации нет; противоречий внутри проекта нет (сверьте разделы между собой — п. 4.1, 5.3, 6.3, 6.4, 11, 15, 17, 19); схема достаточна для REQ-010 и REQ-013; строить можно без догадок. Ничего не правьте. Все фоновые процессы завершите. Результат: result.verdict PASS/FAIL, summary с доказательствами, findings (Critical/High/Medium блокируют). Если остаются только Low — PASS.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "N1–N10 — снятие с доказательством",
+      "замечания с местом, важностью, исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T21:47:19Z",
+  "started_at": "2026-10-05T21:47:19Z",
+  "completed_at": "2026-10-05T21:50:48Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": [
+      "Хеш проекта до и после проверки один: sha256 9a7fb0e6f3c5ca3dbaf1522f1c1bd502aeb0c317b251e7f531fc5d601210a9ae. Копия до r2 отличается: diff даёт 432 строки. Проект и код я не менял. Папки tools/src/team нет, номеров TM-* в tools/test нет (0).",
+      "N1 снято. В п. 15.3 интерфейс однозначен. Fault дополнен полями fn openSync, writeSync, fsyncSync, ftruncateSync; фильтр по дескриптору идёт через учёт openSync/closeSync. Описаны nth, code и partial для writeSync. Функции: installFaults → {restore, fired}; withFaults → {value, error, fired}, restore вызывается в finally. Повторная установка — ошибка. Режим --import определяется по execArgv. Я сам собрал образец по этому описанию на Node v22.21.1 вне проекта (scratchpad/cdv-r2). Сбои writeSync EIO и ENOSPC, partial ENOSPC и fsyncSync EIO срабатывают (fired=[true]), откат ok, файл прежний, после withFaults все функции fs исходные. Сбой fsync вместе с ftruncate даёт rollback=failed и ровно прежний файл плюс одну целую строку, как ожидает TM-14. mkdirSync EACCES срабатывает, после restore mkdir проходит. Вторая установка отклоняется, двойной restore безопасен, дескриптор, открытый до установки, не перехватывается. execArgv при --import <URL> и --import=<URL> распознаётся, при --import <путь> — нет (L3).",
+      "N2 снято. PROJECT_RECOVERED переводит planning/running → paused с paused_by=recovery. PROJECT_RESUMED разрешён только из paused или waiting_user, after строго по причине (И13). Это согласовано в п. 4.1, 5.1, 5.2, 5.3, 6.3 (шаг 8.6 и связь с REQ-013), 10.2 (pause), 12, 14, 16 R2, 17, P11, TM-19 и TM-54. Вручную разобраны две последовательности. (1) Авария во время планирования: CREATED → STARTED (created→running) → PLANNING_STARTED r0 (running→planning, attempt=1) → RUN_STARTED plan r-00001 → RUN_FINISHED → PLAN_REJECTED a1 → PLAN_RETRY a2 (статус не меняется) → RUN_STARTED plan r-00002 → авария. Восстановление пишет RUN_FINISHED r-00002 interrupted (task=null), задач нет, затем PROJECT_RECOVERED {from_status:planning, closed_runs:1, interrupted_tasks:0}: planning→paused. После этого PLANNING_STARTED и PLAN_RETRY отклоняются (И13, И20), RESUMED{command} отклоняется, RESUMED{recovery} даёт paused→running, затем PLANNING_STARTED даёт running→planning с attempt=1. (2) Авария в running с задачами A (running, открытый work), B (review, открытый review) и открытым goal_check: три RUN_FINISHED interrupted, TASK_INTERRUPTED A (running→interrupted) и B (review→interrupted), RECOVERED running→paused, RESUMED{recovery} paused→running, TASK_STARTED A (interrupted→running), RUN_STARTED work, attempts=2. Если проект на паузе пользователя или в waiting_user, RECOVERED не пишется: закрываются только запуски и задачи, при повторном захвате ничего не дописывается (5г). Во всех шагах каждое событие смены статуса меняет статус. В таблицах п. 4.1–4.2 нет перехода A→A. TM-54 и TM-62 проверяют это воспроизведением.",
+      "N3 снято. Скрипт по п. 4.1–4.2: источник AGENT есть только у MEMORY_ADDED и AGENT_ACTIVITY. У обоих executor обязателен при AGENT (И12, п. 6.4 шаг 2, addMemory). TM-53 перечисляет такие типы из EVENT_TYPES.",
+      "N4 снято. Пять типов и два значения названы одинаково в п. 4 (вступление), п. 4.1–4.2 (столбец «Кто»), п. 6.4 шаг 2, п. 11 (coreOnly, coreOnlyValues), TM-08, п. 16 R2 и P11. REQ-010 для отмены использует cancelled/cancel (п. 17; критерий 7 REQ-010: «после отмены задача прервана»), это не противоречит.",
+      "N5 снято: в п. 14 есть фраза «имена файлов результата не маскируются, проверка шаблоном», остаточный риск и «только текстовые файлы UTF-8, двоичные отклоняются»; TM-50 проверяет эти строки; есть P8 и P9; I5 и I6 закрыты. N6 снято: TM-14 допускает только два исхода, двойной сбой вынесен в п. 12. N7 снято: grep «P1–P10», «на момент r1», «команда team» пуст, в Q12 стоит P1–P11. N8 снято: И19 и TM-55. N9 снято: п. 6.5 (scenario_bytes как Buffer, проверка fatal UTF-8 и JSON.parse, на диск пишется тот же Buffer) и TM-59; я проверил сам: BOM декодер пропускает и JSON разбирается, 0xff даёт TypeError, сырой BOM в JSON.parse даёт SyntaxError. N10 снято: PROJECT_ENTRIES в п. 2.1 и п. 11, TM-03 сверяет папку со списком, п. 17.",
+      "r3, PLAN_RETRY. Скрипт: в каталоге п. 4.1–4.2 37 типов, все уникальны. В п. 5.3 те же 37 (вместе с общими строками «A / B»), в п. 9 те же 37, расхождений нет. Цифра «36» встречается только в номере TM-36. И20 согласован с п. 4.1 (PLANNING_STARTED из created/running, PLAN_RETRY только в planning после PLAN_REJECTED a1), с п. 5.3 (attempt=2, статус не меняется), с И13 (запрет при recovery), с фразой п. 9, TM-38 (37 типов), TM-62, мутантом, P3 и п. 18.",
+      "Покрытие и планка. TM-01…TM-62: 62 уникальных номера, пропусков нет. Критерии 1–15 все есть в столбце «Крит.». Раздел о планке называет все 17 пунктов: Q1–Q14 и R1–R3. Блоки ``` стоят на строках 296/327, 631/636, 767/779 — это формы данных, кода реализации нет. Защита в одной операции: п. 6.4, 6.5, 6.6, 6.7 — один вызов. Против decisions: последняя запись — 0016, отступления от 0015 вынесены в P7–P10, 0017 по решению ORCH пишет DOC-UPDATER. Сверил между собой п. 4.1, 5.3, 6.3, 6.4, 11, 15, 17, 19: противоречий нет, кроме Low L1 и L2.",
+      "Достаточность для REQ-010 и REQ-013. По REQ-010: критерий 2 (executor у событий AGENT), критерий 7 (отмена — cancel/cancelled), критерий 16 (work/, importWorkFile, scenario_bytes). По REQ-013: критерий восстановления (resume → openWriter → RECOVERED → RESUMED{recovery} → перезапуск interrupted, попытка засчитана), пауза («идущие доводятся» — ядро при паузе пользователя запуски не запрещает), критерий 11 (нет смены статуса без смены), повтор плана через PLAN_RETRY, E_PROJECT_BUSY и канал команд через PROJECT_ENTRIES. Схемы хватает.",
+      "Итог: блокирующих замечаний нет, осталось четыре Low (L1–L4). AP-018: ожидаемого вердикта в задании нет («PASS/FAIL»); вердикт я вывел сам по пунктам."
+    ],
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 15.1 TM-62 («`project` показывает «составляет план заново»»); п. 10.2 ProjectView",
+        "what": "В ProjectView нет фраз событий проекта: фраза есть только у задач (tasks[].phrase). Фразу PLAN_RETRY показывает только `events` (EventView.phrase). Как тест написан сейчас, его по форме вывода не выполнить.",
+        "fix": "В TM-62 заменить `project` на `events <id>`: фраза события PLAN_RETRY — «Руководитель проекта составляет план заново»."
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocking": false,
+        "where": "шапка, строка 3 («Редакция **r2**»)",
+        "what": "Проект уже в редакции r3 (строка 23 «Что изменено в r3»), а в шапке написано r2.",
+        "fix": "Написать «Редакция r3» и сослаться на step-04-code-designer-r3.json."
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 15.3, «Режим --import (прежний)»",
+        "what": "Режим определяется только тогда, когда значение --import в execArgv равно import.meta.url. Я проверил: при `--import <абсолютный путь>` и при NODE_OPTIONS=--import модуль уйдёт в режим библиотеки и молча ничего не подменит. Раньше сбои ставились при любой загрузке. Нынешние вызовы (helpers.js:576, URL) не затронуты, но обратная совместимость теперь держится только на форме URL.",
+        "fix": "Сравнивать после приведения (pathToFileURL для значения, которое не является URL). Ещё лучше: при заданной SAI_TEST_FAULTS и нераспознанном режиме бросать ошибку загрузки, а не молчать."
+      },
+      {
+        "id": "L4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 5.2 И20; п. 4.1 PLAN_REJECTED, PLAN_RECEIVED",
+        "what": "round проверяется только у PLAN_RETRY (= plan.round). У PLAN_REJECTED и PLAN_RECEIVED он не сверяется с plan.round. Второй PLAN_REJECTED с тем же attempt (когда last_rejection уже есть) не запрещён. Движок так писать не должен, но ядро это пропустит.",
+        "fix": "Добавить в И20: round у PLAN_REJECTED и PLAN_RECEIVED равен plan.round; PLAN_REJECTED — только при last_rejection = null для текущей попытки. Добавить случай в TM-62."
+      }
+    ],
+    "self_check": [
+      "shasum -a 256 docs/design/REQ-009-team-core.md до и после → 9a7fb0e6f3c5ca3dbaf1522f1c1bd502aeb0c317b251e7f531fc5d601210a9ae оба раза; diff с копией before-r2 → 432 строки",
+      "ls tools/src/team → No such file or directory; grep -rhoE '\"?TM-[0-9]+' tools/test/ | wc -l → 0; ls decisions → последняя 0016",
+      "sed tools/test/fault-inject.js: SINGLE_PATH = writeFileSync, unlinkSync, chmodSync, mkdirSync, rmSync, lstatSync; TWO_PATHS = renameSync, linkSync → writeSync/fsyncSync/ftruncateSync/openSync не перехватываются (п. 0 F5 верен); helpers.js:575 FAULT_MODULE_URL = pathToFileURL(...).href, :730 node.push('--import', FAULT_MODULE_URL)",
+      "perl -e 'alarm 20; exec @ARGV' node t.mjs (scratchpad/cdv-r2, образец installFaults/withFaults по п. 15.3, ядро через import fs from 'node:fs') → importMode false; writeSync throw EIO/ENOSPC, partial ENOSPC, fsyncSync EIO: rollback ok, fired [true], same true, restored true; fsync+ftruncate: EIO failed [true,true] файл \"{seq:1}\\n{seq:2}\\n\"; mkdir EACCES [true] нет папки, restore ok; second install: 'fault-inject: already installed'; double restore ok; pre-opened fd not matched: null [false]",
+      "node --import <URL> → execArgv ['--import','file:///…/fi.mjs',…]; importMode via --import URL: true; --import=URL: true; --import PATH: false (L3)",
+      "node -e TextDecoder fatal: BOM+{\"a\":\"ж\"} → разобран; 0xff → TypeError ERR_ENCODING_INVALID_ENCODED_DATA; JSON.parse('\\uFEFF{}') → SyntaxError (п. 6.5 N9 верен)",
+      "maskSecrets: plan.v2.md → [скрыто], report_v2.md без изменений (п. 0 F4 верен); фраза PLAN_RETRY не маскируется",
+      "python-сверка проекта: catalog 37/37 уникальных, AGENT-source ['MEMORY_ADDED','AGENT_ACTIVITY']; п. 5.3 — 37, missing/extra пусто; п. 9 — 37, missing/extra пусто; TM 62 уникальных TM-01…TM-62, пропусков нет; критерии [1..15]; планка Q1–Q14, R1–R3; ``` на строках 296, 327, 631, 636, 767, 779; '36 ' только строка 948 (TM-36); 'P1–P10', 'на момент r1', 'команда team', 'scenario_json' — пусто",
+      "sed docs/requirements.yaml: REQ-009 критерии 4 и 13 называют fault-inject.js (r4 внесена: уровни API и команды); REQ-010 критерий 2 «каждое событие AGENT несёт отметку scripted», критерий 7 «после отмены задача прервана»; REQ-013 «Пауза…» (идущие доводятся до итога), «Восстановление…» (при resume — прервана, перезапуск, попытка засчитана), «Правда событий» (нет смены статуса без смены)",
+      "фоновых процессов не запускал; все запуски Node — с perl alarm 20"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "note",
+        "text": "AP-018: ожидаемого вердикта в задании нет («PASS/FAIL»); по правилу задания «только Low — PASS» вердикт я вывел сам по пунктам."
+      },
+      {
+        "id": "I2",
+        "kind": "note",
+        "text": "L1–L4 не блокируют. Их можно внести малой правкой CODE-DESIGNER до TEST-DESIGNER, или TEST-DESIGNER учтёт L1 и L4 в TM-62, а L3 — при расширении fault-inject.js (п. 15.3), по решению ORCH."
+      },
+      {
+        "id": "I3",
+        "kind": "note",
+        "text": "Запись decisions/0017 (P1–P11) ещё не сделана (последняя — 0016). По решению ORCH её пишет DOC-UPDATER; к проекту это не замечание."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

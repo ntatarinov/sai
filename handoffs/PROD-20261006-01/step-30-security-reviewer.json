@@ -1,0 +1,118 @@
+{
+  "handoff_id": "step30-security-reviewer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "30",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-30-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-30-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-s1-before",
+    "parallel_work_now": "REVIEWER, TEST-DESIGN-VALIDATOR (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/requirements.yaml (REQ-009, REQ-010)",
+      "tools/src/team/",
+      "tools/test/",
+      "handoffs/PROD-20261006-01/step-28-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-29-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, повтор (узкий) после исправления S1 и I11(а) (handoffs/PROD-20261006-01/step-28-code-fixer.json; прежнее заключение — step-25-security-reviewer.json: S1 Medium, S2 Low, S3, S4 Info; копия до исправления — <рабочая папка ORCH>/orch/prod/fix-s1-before). ЖЁСТКИЕ ПРАВИЛА: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только fake/probe под tools/test/fixtures/team или missing-*; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов (ps до/после). Своими пробами: S1 — повторите свою пробу G (авария: писатель убит SIGKILL с открытым запуском и задачей running; 6 одновременных открывающих; не менее 30 раундов): восстановление ровно один раз, проект не остаётся с открытой работой; нет НОВОЙ регрессии: восстановление не прерывает живую работу ЖИВОГО писателя (держатель замка жив — второй открывающий получает «занято» и ничего не пишет; проверьте при открытых запусках у живого писателя, в том числе долгоживущий писатель, держащий замок; чужой/переиспользованный pid; замок-симлинк; подмена замка); после штатного close() (нет открытых запусков/задач running) ничего не пишется, «на проверке» без запуска остаётся; broken-писатель оставляет замок; журнал нельзя подделать публичным append (core-only: PROJECT_RECOVERED, TASK_INTERRUPTED recovery, RUN_FINISHED interrupted); I11(а) — при неостановленной группе любой исход detail group, transient false, повторов нет; новых дыр в изменённых файлах (diff с копией до: store.js, claude-cli.js) нет; остаточный риск S2 (расход теряется при сбое записи) — записан в проекте и 0017/0018? оцените. Остальные пункты Q7–Q11, R2, R3 — как в прошлых воротах. Запустите cd tools && npm run check. Ничего не правьте. Результат: result.verdict PASS/FAIL, S1 с доказательством пробой, findings.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "S1 закрыт — проба G на ≥ 30 раундах",
+      "нет прерывания живой работы живого писателя"
+    ]
+  },
+  "created_at": "2026-10-06T01:23:26Z",
+  "started_at": "2026-10-06T01:23:26Z",
+  "completed_at": "2026-10-06T01:29:04Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": [
+      "Область затронута: восстановление после аварии и замок писателя (store.js recover()), разбор итога исполнителя при неостановленной группе (executors/claude-cli.js). Сверка с копией «до» (orch/prod/fix-s1-before/team): различаются только store.js и executors/claude-cli.js; diff -u прочитан полностью. lock.js, runner.js, reducer.js, schema.js и pixel-office/* не изменены.",
+      "S1 закрыт. Проба G (настоящий SIGKILL писателя, державшего замок, с открытым r-00001 и задачей running; затем 6 одновременных openWriter+say+close; 40 раундов). Текущий код: восстановление ровно один раз в 40 из 40, повторных 0, открытых запусков 0, задач running 0, журнал читается 40/40, замка не остаётся, ещё одно открытие ничего не пишет 40/40, восстановление раньше первого CHAT 40/40. Копия «до»: не восстановлено 39 из 40.",
+      "Новой регрессии нет. Живой писатель с открытым запуском (держит замок 4 с): 30 открывающих получили E_PROJECT_BUSY, журнал байт-в-байт тот же, писатель дописал свои события и закрыл свой запуск (failed), событий восстановления 0 (проба H). Чужой живой pid в замке при открытой работе в журнале: 3 последовательных и 6 одновременных открывающих получили E_PROJECT_BUSY, журнал не изменён; замок-симлинк: E_LOCK_BAD, журнал не изменён, симлинк не тронут (проба I). Гонка «после аварии 6 открывающих сразу начинают свою работу», 40 раундов: живая работа прервана 0 раз, E_LOCK_LOST 0 (проба L). Подмена замка поверх живого писателя (S4, тот же уровень доверия, что запись в журнал): как в step-25, у запуска живого писателя ровно один RUN_FINISHED, писатель получает E_LOCK_LOST и дальше не пишет (проба J).",
+      "Штатный close() без открытой работы: три повторных открытия — notices [], журнал байт-в-байт тот же, задача review без запуска остаётся review (проба B). Сломанный писатель держит замок, пока его процесс жив (E_PROJECT_BUSY), после выхода — только LOCK_STALE_REMOVED (проба E). Публичный append отклоняет PROJECT_RECOVERED, LOCK_STALE_REMOVED, JOURNAL_RECOVERED, RUN_FINISHED interrupted, TASK_INTERRUPTED recovery (ENGINE и USER); журнал не изменён (проба A).",
+      "I11(а) выполнен: при неостановленной группе ответ вне схемы → invalid_output, ok → failed, не-JSON → invalid_output; у всех detail «Не удалось остановить процессы исполнителя», transient false, answer null (проба на текущем коде, 3/3). transient false — повторов нет. Без groupStuck поведение то же, что прежде (diff).",
+      "npm run check: prettier OK, eslint без вывода, tests 783, pass 783, fail/cancelled/skipped/todo 0, exit 0.",
+      "Таблица пунктов:",
+      "Q7 — применим, выполнен: в изменённых файлах нет секретов (grep пуст); новых выводов текста ошибок нет; маскирование не менялось; страница Pixel Office не менялась.",
+      "Q8 — неприменим: магазинов и арендаторов нет, локальные файлы одного владельца.",
+      "Q9 — неприменим: базы данных и запросов нет.",
+      "Q10 — применим, выполнен: восстановление после аварии не теряется в гонке (G 40/40), живой писатель не прерывается (H, I, L), сломанный писатель держит замок (E), неостановленная группа не повторяется (I11а). Остаточный риск S2 — см. находку S5.",
+      "Q11 — неприменим: внешние адреса и запреты сети исполнителя не менялись (diff claude-cli.js затрагивает только разбор итога).",
+      "R3 — неприменим: фото покупателей нет.",
+      "R2 — применим, выполнен: pixel-office/* байт-в-байт равен копии в пробе; события восстановления пишет только ядро (проба A); заранее написанных событий в изменённых файлах нет.",
+      "Запись файлов: пути не менялись (files.js, lock.js не изменены). Показ в браузере: не затронут."
+    ],
+    "findings": [
+      {
+        "id": "S5",
+        "where": "tools/README.md:165-171 (раздел «Восстановление после аварии»); decisions/0017-team-core-storage.md",
+        "bar": "Q3/Q12 (документ совпадает с поведением; остаточный риск назван) — к Q10",
+        "severity": "Low",
+        "blocking": false,
+        "what": "README:167 всё ещё говорит «Восстановление бывает только после аварии: когда писатель берёт замок умершего процесса или находит оборванную строку. После штатного закрытия писателя восстановления нет». По r8 восстановление идёт по признакам журнала: открытые запуски или задачи running восстанавливаются и после штатного close() (TM-64 (B), TM-19 r8). Остаточный риск S2 (расход запуска, не записанный до аварии, не учитывается; превышение не больше max_budget_usd запуска) записан в проекте (REQ-009 п. 12 стр. 990, Q10 стр. 1302, P14), но ни в README (grep по «BUDGET_SPENT», «не учитыва» — только правило assumed), ни в 0017 его нет, хотя проект (стр. 990) говорит «Назван в README (п. 14)».",
+        "fix": "DOC-UPDATER: переписать README:167 под r8 и добавить остаточный риск S2 в README (п. 14) и в 0017 (P13, P14). Кода не касается."
+      },
+      {
+        "id": "S6",
+        "where": "tools/src/team/lock.js acquireLock, ветка EEXIST (F6), вместе с store.js recover() r8",
+        "bar": "Q10",
+        "severity": "Info",
+        "blocking": false,
+        "what": "Известный остаток F6 (lock.js не менялся): при редком чередовании третий процесс может отнять замок у только что открывшегося живого писателя. С r8 новый держатель закроет открытую работу потерявшего замок как interrupted. Это не новая потеря: потерявший замок и прежде не мог ничего дописать (E_LOCK_LOST на следующей записи), а его работа оставалась открытой навсегда; теперь журнал согласован. В 40 раундах пробы L случаев не было.",
+        "fix": "Не требуется; при желании упомянуть в 0017 рядом с F6."
+      }
+    ],
+    "self_check": [
+      "Копия «до»: diff -rq orch/prod/fix-s1-before/team tools/src/team — только store.js и executors/claude-cli.js; diff -u прочитан.",
+      "Код не менялся: shasum -a 256 всех 139 файлов tools (без node_modules) до и после — diff пуст (HASHES_SAME).",
+      "npm run check (HOME, SAI_TEAM_HOME, кэш npm — временные в <рабочая папка ORCH>/sr30/chk, SAI_TEAM_CLAUDE_BIN=<рабочая папка ORCH>/sr30/missing-claude, perl alarm 900): «All matched files use Prettier code style!», eslint --max-warnings 0 без вывода, # tests 783 # pass 783 # fail 0 # cancelled 0 # skipped 0 # todo 0, exit 0; временные HOME и SAI_TEAM_HOME после прогона пусты.",
+      "Пробы: <рабочая папка ORCH>/sr30/p/parent.mjs и child.mjs (perl alarm на каждый процесс; SAI_TEAM_HOME и HOME — временные sb-* в <рабочая папка ORCH>/sr30/p, удалены; SAI_TEAM_CLAUDE_BIN = несуществующий <рабочая папка ORCH>/sr30/p/missing-claude; копия «до» запускалась из <рабочая папка ORCH>/sr30/bm (team из fix-s1-before + текущий pixel-office)).",
+      "G (40 раундов): current {killedHeldLock:40, recoveredExactlyOnce:40, recoveredMoreThanOnce:0, notRecovered:0, openRunsLeft:0, runningLeft:0, journalOk:40, lockLeft:0, extraOpenWrote:0, openedTotal:40, busy:200, chatsMatch:40, recoveryBeforeFirstChat:40, staleEvents:6}; before {recoveredExactlyOnce:1, notRecovered:39, openRunsLeft:39, runningLeft:39}.",
+      "H: {lockHeldByHolder:true, openersBusyOf30:{busy:30}, journalUnchangedDuringHold:true, holderAfter.res:[ok,ok,ok,finished], broken:false, runFinishedForHolderRun:[failed], recoveryEvents:0, lockLeft:null}.",
+      "I: {reusedLivePid:[E_PROJECT_BUSY×3], raceReused:[E_PROJECT_BUSY×6], unchangedReused:true, symlinkLock:E_LOCK_BAD, unchangedSymlink:true, symlinkStill:true, openRunsStillOpen:[r-00001]}.",
+      "L (40 раундов, 6 открывающих после аварии сразу начинают работу и через 300 мс пишут): {openedPerRound:{1:40}, lockLost:0, liveRunInterrupted:0, journalOk:40, recOnce:40}.",
+      "J: подделка мёртвого pid поверх живого писателя → LOCK_STALE_REMOVED, RUN_FINISHED(interrupted), TASK_INTERRUPTED, PROJECT_RECOVERED; живой писатель: E_LOCK_LOST, затем E_WRITER_BROKEN, broken; RUN_FINISHED у его запуска ровно 1 (S4, как в step-25).",
+      "B: TASK_REVIEW после RUN_FINISHED ok, close(); три открытия — notices [], журнал не изменён; t-0001 review, runs.open пуст, замка нет.",
+      "E: E_DISK, broken, замок остался; открытие при живом процессе → E_PROJECT_BUSY; после выхода — notices «Снят устаревший замок…», добавлен только LOCK_STALE_REMOVED.",
+      "A: все шесть попыток → E_EVENT «… пишет только ядро», journalUnchanged true, broken false.",
+      "I11(а): node --test scratchpad/cf28/i11.test.mjs против текущего кода (временные HOME/SAI_TEAM_HOME, perl alarm 120): out-of-schema → invalid_output/group/false; ok → failed/group/false; not-json → invalid_output/group/false; answer null; pass 3, fail 0; потомки заглушки убиты, временные папки пусты.",
+      "Q7: grep -nE 'sk-…|ghp_|AKIA…|BEGIN PRIVATE|api_key=…|password=…' по store.js и claude-cli.js — пусто (exit 1).",
+      "S2: grep по tools/README.md и decisions/0017, 0018 — остаточного риска учёта нет; в docs/design/REQ-009-team-core.md — стр. 990, 1302, 1426 (P14).",
+      "Настоящий claude не запускался; порт 4780 не использовался; ~/.sai-team не существует ни до, ни после; ~/.sai-pixel-office пробы не трогали.",
+      "Процессы: моих процессов после проверки нет (pgrep по sr30/cf28/sr25 пуст); новые pid в списке — fake-claude и node из scratchpad/tdv32 параллельного TEST-DESIGN-VALIDATOR, не мои."
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "to": "ORCH",
+        "text": "S5 (Low, не блокирует): README:167 не соответствует r8, остаточный риск S2 не записан в README и 0017 (проект обещает «назван в README (п. 14)»). Это шаг DOC-UPDATER."
+      },
+      {
+        "kind": "NOTE",
+        "to": "ORCH",
+        "text": "Мой PASS не разрешает мерж (R1). Дальше — REVIEWER (шаг 4)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,102 @@
+// The settings of the executors from the environment (design REQ-010, section 2).
+//
+// readConfig is called once at the start of a command. A value is never printed
+// or written anywhere (Q7): an error names only the variable.
+import path from "node:path";
+import { executorError } from "./errors.js";
+
+export const TASK_TIMEOUT_MS_DEFAULT = 1_200_000;
+export const RETRY_DELAY_MS_DEFAULT = 10_000;
+export const RETRIES_MAX = 2;
+export const KILL_GRACE_MS = 3000;
+export const GROUP_GONE_WAIT_MS = 5000;
+export const RUN_CAP_SHARE = 0.25;
+
+const TASK_TIMEOUT_MS_MIN = 1000;
+const TASK_TIMEOUT_MS_MAX = 86_400_000;
+const RETRY_DELAY_MS_MAX = 600_000;
+const RUN_CAP_USD_MIN = 0.01;
+const RUN_CAP_USD_MAX = 100000;
+const USD_PATTERN = /^[0-9]+(\.[0-9]{1,6})?$/;
+
+// The only names of the environment a Claude Code process gets (section 5.3).
+export const CHILD_ENV_ALLOW = Object.freeze([
+  "PATH",
+  "HOME",
+  "USER",
+  "LOGNAME",
+  "LANG",
+  "LC_ALL",
+  "LC_CTYPE",
+  "TMPDIR",
+  "TZ",
+  "CLAUDE_CONFIG_DIR",
+]);
+
+function configError(name) {
+  return executorError("E_CONFIG", name);
+}
+
+function intSetting(env, name, min, max, fallback) {
+  const raw = env[name];
+  if (raw === undefined) return fallback;
+  if (typeof raw !== "string" || !/^[0-9]{1,9}$/.test(raw)) {
+    throw configError(name);
+  }
+  const value = Number(raw);
+  if (value < min || value > max) throw configError(name);
+  return value;
+}
+
+function runCapSetting(env) {
+  const name = "SAI_TEAM_RUN_CAP_USD";
+  const raw = env[name];
+  if (raw === undefined) return null;
+  if (typeof raw !== "string" || raw.length > 20 || !USD_PATTERN.test(raw)) {
+    throw configError(name);
+  }
+  const value = Number(raw);
+  if (
+    !Number.isFinite(value) ||
+    value < RUN_CAP_USD_MIN ||
+    value > RUN_CAP_USD_MAX
+  ) {
+    throw configError(name);
+  }
+  return value;
+}
+
+function claudeBinSetting(env) {
+  const name = "SAI_TEAM_CLAUDE_BIN";
+  const raw = env[name];
+  if (raw === undefined) return "claude";
+  if (typeof raw !== "string" || raw === "" || !path.isAbsolute(raw)) {
+    throw configError(name);
+  }
+  return raw;
+}
+
+// Config = { realRuns, claudeBin, web, taskTimeoutMs, retryDelayMs, runCapUsd }.
+export function readConfig(env = process.env) {
+  const e = env ?? {};
+  return Object.freeze({
+    realRuns: e.SAI_TEAM_REAL_RUNS === "1",
+    claudeBin: claudeBinSetting(e),
+    web: e.SAI_TEAM_WEB !== "0",
+    taskTimeoutMs: intSetting(
+      e,
+      "SAI_TEAM_TASK_TIMEOUT_MS",
+      TASK_TIMEOUT_MS_MIN,
+      TASK_TIMEOUT_MS_MAX,
+      TASK_TIMEOUT_MS_DEFAULT,
+    ),
+    retryDelayMs: intSetting(
+      e,
+      "SAI_TEAM_RETRY_DELAY_MS",
+      0,
+      RETRY_DELAY_MS_MAX,
+      RETRY_DELAY_MS_DEFAULT,
+    ),
+    runCapUsd: runCapSetting(e),
+  });
+}

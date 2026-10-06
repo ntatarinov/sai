@@ -7,7 +7,7 @@
   "from_agent": "ORCH",
   "to_agent": "CODE-DESIGNER",
   "file": "handoffs/PROD-20261006-01/step-04-code-designer-r2.json",
-  "status": "PENDING",
+  "status": "COMPLETED",
   "priority": "HIGH",
   "context": {
     "plan": "слова владельца 2026-10-06",
@@ -36,6 +36,50 @@
   },
   "created_at": "2026-10-05T21:38:45Z",
   "started_at": "2026-10-05T21:38:45Z",
-  "completed_at": null,
-  "result": null
+  "completed_at": "2026-10-05T21:44:55Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проект docs/design/REQ-009-team-core.md доработан до редакции r2 по замечаниям N1–N10 и решениям ORCH. N1: сбои для критериев 4 и 13 вносит только tools/test/fault-inject.js. У него появился режим библиотеки installFaults/withFaults с восстановлением, режим --import не изменился. N2: PROJECT_RECOVERED теперь настоящая смена статуса planning/running → paused с paused_by=recovery, а PROJECT_RESUMED разрешён только из paused/waiting_user. N3: у каждого события AGENT есть executor. N4: пять типов и два значения пишет только ядро. N5–N10 исправлены. Остальное не менялось, кода реализации нет.",
+    "changes": [
+      "N1: п. 15.1 (вступление; TM-13, TM-14, TM-45, TM-47 на withFaults); п. 15.3 переписан. Описаны спецификация Fault (новые fn openSync/writeSync/fsyncSync/ftruncateSync, фильтр paths, учёт fd через openSync/closeSync, nth, code, partial для writeSync в байтах), режим --import (по process.execArgv; прежнее поведение) и режим библиотеки: installFaults → {restore, fired}, withFaults → {value, error, fired}. Описано восстановление функций, повторная установка — ошибка. mock.method остаётся только в TM-15 (счёт вызовов fsync) и TM-56; абзац после таблицы говорит, что критерии 4 и 13 выполняются буквально",
+      "N2: п. 4.1 (PROJECT_PAUSED, PROJECT_RESUMED, PROJECT_RECOVERED → paused), п. 5.1 (paused_by вместо recovered), п. 5.2 (И13: after строго по причине, RESUMED из running/planning запрещён, в каталоге нет переходов A→A), п. 5.3 (строки и правило очистки paused_by), п. 6.3 (шаг 8.6, критерий 5г, связь с критериями 10 и 11 REQ-013), п. 10.2 (поле pause {by, text} «прервано аварией»), п. 12, п. 14, TM-19, TM-54 (с проверкой «нет смены статуса без смены» при воспроизведении), п. 17, P11, мутант",
+      "N3: п. 4.1 (MEMORY_ADDED.executor обязателен при AGENT, запрещён при ENGINE/USER), И12 (все события AGENT), п. 6.4 (шаг 2, addMemory), TM-53, п. 17, мутант",
+      "N4: п. 4 (вступление: пять типов «только ядро» и два значения), п. 4.1–4.2 (LOCK_STALE_REMOVED, JOURNAL_RECOVERED, RUN_FINISHED interrupted, TASK_INTERRUPTED recovery), п. 6.4 шаг 2, п. 11 (EVENT_TYPES.coreOnlyValues), TM-08, п. 16 R2, P11, мутант",
+      "N5: п. 6.7 шаг 4, п. 14 (решение по UTF-8, фраза «имена файлов результата не маскируются, проверка шаблоном», остаточный риск), TM-50, п. 19 (I5, I6 закрыты решением ORCH; P8, P9)",
+      "N6: TM-14 — только два исхода: при удачном откате файл прежний, при неудачном — прежний плюс одна целая строка; п. 12 — двойной сбой (часть строки) вынесен за пределы критерия 4",
+      "N7: удалены абзац после таблицы п. 15.1 со старым текстом, вопросы I2 и I4; в Q12 «P1–P11»",
+      "N8: п. 4.2 TASK_WAITING_USER; новый И19 (approval только для critical, draft обязателен — файл kind=draft этой задачи; иначе E_TRANSITION, rule И19); TM-55, мутант",
+      "N9: п. 6.5 — scenario_bytes: Buffer (строка → E_EVENT), строгое UTF-8 и JSON.parse только для проверки, на диск пишется тот же Buffer; вызывающий читает readFileSync без кодировки; TM-59 (sha256 копии = sha256 исходного файла, в том числе с BOM; не-UTF-8 и строка → E_EVENT); п. 17, P9, мутант",
+      "N10: п. 2.1 — список PROJECT_ENTRIES в home.js; REQ-013 расширяет его записью в своём проекте (вне work/, без занятых имён); п. 11, TM-03 сверяет папку со списком, п. 17"
+    ],
+    "self_check": [
+      "cmp проекта с копией до r2 перед правкой — одинаковы (правка шла от той же версии)",
+      "perl -e 'alarm 20; exec @ARGV' node --import <file URL pre.mjs> m.mjs (Node v22.21.1, scratchpad): process.execArgv = [\"--import\",\"file:///…/pre.mjs\"] и import.meta.url совпадают — режим --import определяется надёжно; JSON.parse(\"\\uFEFF{}\") → SyntaxError; TextDecoder fatal пропускает BOM и даёт '{' (BOM принимается проверкой, байты сохраняются); 0xff → TypeError; подмена fs.writeSync и возврат исходной функции работают",
+      "sed tools/test/fault-inject.js: загрузка при импорте читает SAI_TEST_FAULTS и бросает, если переменной нет → нужен режим по execArgv (п. 15.3); tools/test/helpers.js:576,730 грузит модуль через --import с pathToFileURL(...).href — прежний режим не меняется",
+      "sed docs/requirements.yaml: критерии 4 и 13 REQ-009 называют fault-inject.js; критерий 11 REQ-013 — «нет событий смены статуса без смены»; критерий 2 REQ-010 — «каждое событие AGENT несёт отметку scripted»",
+      "python-сверка проекта: типов в п. 4.1–4.2 = 36, в п. 9 — те же 36, в п. 5.3 — те же (JOURNAL_RECOVERED и PROJECT_FAILED стоят в общих строках «A / B»); TM — 61 уникальный; критерии 1–15 покрыты; в планке Q1–Q14, R1–R3 — все 17; ``` — 6 (три блока форм данных, как раньше)",
+      "grep 'recovered =|scenario_json|P1–P10|на момент r1|вопрос I5|/Users|/private' по проекту → пусто (остаётся только «вместо recovered» в списке правок r2); mock.method — только TM-15, TM-56 и пояснения",
+      "shasum -a 256 проекта после r2: 308c0ac9fe06558b979d67cad89e658393dfee30a31171372cd932bf60d336b4"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "question",
+        "text": "Найдено сверх перечня, не исправлялось (AP-019). В п. 4.1 PLANNING_STARTED разрешён только из created/running → planning, а attempt 1..2 подразумевает вторую попытку после PLAN_REJECTED, когда проект уже в planning. Переход planning→planning запрещён И13 и критерием 11 REQ-013. Нужно решение ORCH: вторая попытка пишется без PLANNING_STARTED (attempt — в PLAN_REJECTED/PLAN_RECEIVED), или PLAN_REJECTED возвращает проект в running. Вопрос для REQ-013 или следующей редакции ядра."
+      },
+      {
+        "id": "I2",
+        "kind": "note",
+        "text": "N4: кроме двух типов, «только ядро» стали значения TASK_INTERRUPTED.cause=recovery и RUN_FINISHED.outcome=interrupted (по исправлению N4 у валидатора: иначе строка R2 неверна). REQ-010 и REQ-013 для остановки пользователем используют cause=stop/cancel и outcome=cancelled — ORCH, подтвердите."
+      },
+      {
+        "id": "I3",
+        "kind": "note",
+        "text": "Запись decisions/0017 (P1–P11) пишет DOC-UPDATER/ORCH. P8 и P9 теперь содержат решения I5/I6, P11 — новую модель восстановления (paused)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-009-team-core.md"
+    ]
+  }
 }

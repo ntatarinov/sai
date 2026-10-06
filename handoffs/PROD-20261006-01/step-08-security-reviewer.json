@@ -1,0 +1,105 @@
+{
+  "handoff_id": "step08-security-reviewer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "08",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-08-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-08-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/build-core-before",
+    "parallel_work_now": "REVIEWER (только чтение), CODE-DESIGN-VALIDATOR (REQ-010)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/requirements.yaml (блок REQ-009)",
+      "decisions/0015-product-virtual-team-start.md",
+      "decisions/0017-team-core-storage.md",
+      "handoffs/PROD-20261006-01/step-05-backend-dev.json",
+      "tools/src/team/",
+      "tools/test/fault-inject.js",
+      "tools/README.md",
+      "tools/package.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3: ворота безопасности после кода ядра REQ-009 (handoffs/PROD-20261006-01/step-05-backend-dev.json; проект docs/design/REQ-009-team-core.md; копия до — <рабочая папка ORCH>/orch/prod/build-core-before). Сами, не по отчёту: по каждому пункту Q7–Q11, R2, R3 — «выполнен»/«неприменим» со своей проверкой. Особо (враждебными пробами во временной папке: переменная SAI_TEAM_HOME → временная папка; НИКОГДА не писать в ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен): права 0700/0600 при создании и при существующих более широких правах; пути не выходят из папки проекта (id вида ../, абсолютные пути, ссылки-симлинки на каталог/файл внутри ~/.sai-team, имена файлов с нулевым байтом, очень длинные); проверка id ДО обращения к файлам; запись одной целой строкой, fsync, откат ftruncate; замок писателя с pid: два писателя, устаревший замок, подмена замка, гонка (запустите два процесса); чтение не меняет файлы (хеши до/после при оборванной последней строке); восстановление только писателем; маскирование (maskSecrets) — только текстовые поля, секреты в сообщениях/целях/памяти/именах не попадают в журнал и вывод CLI (проверьте формы: sk-…, ghp_, password=\"…\", Bearer, JWT — как в decisions/0013); файлы результата: только текст UTF-8, двоичные и очень большие отклоняются, имена шаблоном, перезапись запрещена, work/ вне журнала и замка; журнал нельзя подделать публичным append (пять типов и два значения только ядро; источник/исполнитель/время); устойчивость к враждебному входу: огромные строки, мусор в журнале (повреждённая строка посередине — что делает редьюсер: понятная ошибка, не падение), глубокая вложенность data, __proto__ и constructor в полях, управляющие знаки и U+202E в тексте (CLI выводит текст — экранирование?), время выполнения на 50 тысячах событий; CLI: коды выхода, нет трассировок стека и секретов в stderr, id проекта в сообщениях не раскрывает путь; нет зависимостей времени выполнения (tools/package.json), нет node:sqlite, нет exec/spawn/сети в ядре (grep по tools/src/team); fault-inject.js не влияет на рабочий код вне тестов. Запустите сами cd tools && npm test. Ничего не правьте. Результат: result.verdict PASS/FAIL, по каждому пункту — выполнен/неприменим с доказательством, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый пункт Q7–Q11, R2, R3 — с доказательством пробами"
+    ]
+  },
+  "created_at": "2026-10-05T22:12:32Z",
+  "started_at": "2026-10-05T22:12:32Z",
+  "completed_at": "2026-10-05T22:17:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Область затронута: новое ядро tools/src/team/ пишет и читает файлы на диске (журнал, замок, files/, work/), принимает ввод (CLI-аргументы, содержимое work/ от агента, сам журнал), хранит текст пользователя и агента (Q7, маскирование). Изменение по копии «до»: новый каталог src/team/ (12 модулей), test/fault-inject.js, README.md, package.json (только скрипт team); остальное в src/ и test/ не изменено (diff -rq). Все пробы — во временных SAI_TEAM_HOME в scratchpad (удалены); ~/.sai-team не создан, ~/.sai-pixel-office и порт 4780 не трогались. npm test: 493/493, exit 0. Вердикт FAIL по одной блокирующей находке: readWorkFile принимает жёсткую ссылку из work/ на файл вне work/ (журнал другого проекта импортирован в files/ как результат) — нарушено «из work/ только внутри work/, без ссылок» (проект п. 6.7, README, Q8 как принцип для проектов). Остальное выполнено.\n\nТаблица пунктов:\n- Q7 — применим, выполнен. Поиск секретов по src/team, test/fault-inject.js, README.md, package.json: одно совпадение — описание правил маскирования в старом разделе README (пример «primer 42», не секрет). Пробой: секреты 9 форм (sk-…, ghp_…, password=\"…\", Bearer, JWT, Authorization: Basic, user:pass@ в URL, AKIA…, api_key=) в цели, сообщении (say), задаче (text, done_when), памяти, writeResultFile и importWorkFile — ни одного маркера ни в events.jsonl, ни в files/, ни в stdout/stderr команд project/events/say/projects. Имена файлов не маскируются (имя ghp_abcdefghijklmnopqrstuvwxyz0123 принято) — названный в проекте остаточный риск P8. Низкая находка F2: E_USAGE повторяет аргумент пользователя в stderr без маскирования. Браузера нет, ключей в ядре нет, окружение — только SAI_TEAM_HOME.\n- Q8 — применим как принцип изоляции проектов; НЕ выполнен в одном месте (F1). Выполнено: id проверяется шаблоном до любого fs (счётчик вызовов lstat/stat/open/readdir/readFile = 0 для ../x, /etc, id/../id, id\\0, 100000 знаков, пустого, null, числа, объекта, пробела, верхнего регистра — все E_NOT_FOUND); ссылка на папку проекта, events.jsonl-ссылка, FIFO, чужой журнал под новым id, ссылка-папка files/ — все E_NOT_FOUND / E_DISK, в чужой проект ничего не записано; строка чужого проекта в середине журнала — E_CORRUPT (И1). Не выполнено: work/hard.md — жёсткая ссылка на events.jsonl другого проекта — импортирована OK, содержимое чужого журнала в files/hard.md.\n- Q9 — неприменим: базы и запросов нет; grep select/insert/update/delete/sqlite/.query/.prepare по src/team — пусто.\n- Q10 — применим, выполнен. Сбои: частичная запись (ENOSPC) — E_DISK rollback ok, журнал байт-в-байт прежний, писатель дальше E_WRITER_BROKEN; сбой fsync — откат ok; сбой ftruncate при откате — E_DISK «откат не удался», читатель показывает хвост, следующий писатель восстанавливает; результат с неудачным событием удаляется. Мусор в середине журнала — E_CORRUPT с номером строки (не падение), projects показывает ошибку проекта и продолжает; глубокая вложенность (200000), __proto__ в конверте и data — E_CORRUPT/E_EVENT, прототип не загрязнён; хвост 50 МБ — показан как недописанная строка за 62 мс; 50 000 событий: project 0,18 с, events последняя страница 165 мс, projects 152 мс, say 295 мс. CLI: коды 0/1/2 проверены, stderr без стека и без путей (проверено на всех отказах). Сетевых вызовов нет.\n- Q11 — неприменим: ядро не ходит по адресам; grep http(s)://, net., tls, dgram, fetch по src/team — пусто.\n- R2 — применим (правда событий ядра), выполнен. Публичный append отклоняет все 5 типов только ядра (PROJECT_CREATED, PROJECT_RECOVERED, LOCK_STALE_REMOVED, JOURNAL_RECOVERED, RESULT_FILE) и значения cause=recovery, outcome=interrupted; ключи seq/project во входе, ts у ENGINE, будущее время, время раньше последней записи более чем на 2 с, неканоническое время, USER с типом ENGINE, AGENT-память без executor, вопрос от USER — отказ; после всех попыток в журнале только PROJECT_CREATED. Время ядра — с часов; заранее написанных событий и фиксированных дат в src/team нет (grep). Pixel Office не изменён (diff).\n- R3 — неприменим: фото нет (grep photo/image/фото — пусто).\n- Пути и запись (п. 3 роли): права 0700/0600 при создании (umask 0); 0755/0777/0644 — читатель только предупреждает и ничего не меняет, писатель сужает с notices; chmod не идёт по ссылке в files/ (цель осталась 644); папка данных-ссылка — E_HOME. Имена результата: ../, /abs, .hidden, a..b, \\0, 81 знак, кириллица — E_FILE_NAME; перезапись — E_FILE_EXISTS; Buffer и >5 МиБ — E_EVENT; двоичный и >5 МиБ файл work/ — E_WORK_FILE; симлинк на файл и на каталог в work/ — E_WORK_FILE/link; файлы 0600. Замок: второй писатель — E_PROJECT_BUSY, журнал не изменён, чтение работает; устаревший замок (pid мёртвого процесса) снят с LOCK_STALE_REMOVED и остатки .new убраны; мусорный и симлинк-замок — E_LOCK_BAD, цель ссылки не тронута; подмена замка под живым писателем — E_LOCK_LOST, журнал не изменён, чужой замок не удалён при close; чужая дозапись — E_CONFLICT. Гонка 12 процессов: 3 успеха = 3 CHAT, остальные E_PROJECT_BUSY, seq сплошные, остатков нет; 5 раундов по 6 процессов на одном устаревшем замке: ровно один успех и одно LOCK_STALE_REMOVED в раунде, журнал цел. Чтение при оборванной строке: хеши, права и mtime всех файлов до/после равны; восстановление — только say (JOURNAL_RECOVERED).\n- Показ текста: браузера нет; CLI выводит JSON — управляющие < 0x20 экранируются, но U+202E и C1 (U+009B) выходят как есть; ключ данных из журнала с ESC попадает в stderr сырым (F3, низкая).\n- Зависимости: tools/package.json — без dependencies; импорты src/team — только node:fs/os/path/crypto/url и свои модули; нет node:sqlite, child_process, exec/spawn, сети (grep: единственное совпадение — RegExp.exec в lock.js:199). fault-inject.js живёт в test/, src/ на него не ссылается (grep пусто), в --import режиме требует явной загрузки.",
+    "findings": [
+      {
+        "id": "F1",
+        "where": "tools/src/team/files.js:161-197 (readWorkFile)",
+        "bar": "Q8 (изоляция проектов), путь за пределы папки через ссылку; проект п. 6.7, README «ссылки … отклоняются»",
+        "severity": "Medium — блокирующая",
+        "what": "Обход lstat отсекает только символические ссылки. Жёсткая ссылка work/hard.md на events.jsonl другого проекта (или на любой файл пользователя на том же томе) — обычный файл для lstat/fstat, проходит проверку dev/ino и импортируется в files/ как результат (проба P3: содержимое чужого журнала оказалось в files/hard.md, событие RESULT_FILE записано). Агент пишет в work/ и может создать такую ссылку.",
+        "fix": "В readWorkFile после fstat отклонять файл с fst.nlink !== 1 (и то же по lstat-результату) — E_WORK_FILE {reason:'link'}; добавить тест TM на жёсткую ссылку из work/ на файл другого проекта (отказ, files/ и журнал не изменены)."
+      },
+      {
+        "id": "F2",
+        "where": "tools/src/team/cli.js:64, 71, 84, 87 (сообщения E_USAGE)",
+        "bar": "Q7 (секрет не в сообщениях об ошибках)",
+        "severity": "Low — не блокирующая",
+        "what": "Неизвестная команда, параметр и лишний аргумент повторяются в stderr как есть: `say <id> --text x password=hunter2` → «E_USAGE: Лишний аргумент password=hunter2»; `--sk-…` → «Неизвестный параметр --sk-…». Это ввод самого пользователя в его терминал, ничего не сохраняется, но stderr может попасть в журналы обёрток (движок, хуки).",
+        "fix": "Не повторять значение аргумента (называть только позицию/«лишний аргумент») или пропускать его через maskSecrets и обрезать до короткой длины."
+      },
+      {
+        "id": "F3",
+        "where": "tools/src/team/errors.js:59 (formatError), schema.js:513/446 (имя поля в eventError); вывод JSON в cli.js:39",
+        "bar": "показ чужого текста как текста (п. 3 роли)",
+        "severity": "Low — не блокирующая",
+        "what": "formatError убирает только \\r\\n: ключ data из повреждённого журнала с ESC/BEL (проба: \"\\u001b]0;pwn\\u0007\") выходит в stderr сырым — управляющая последовательность терминала. JSON.stringify в stdout не экранирует U+202E и C1 (U+009B) из текста сообщений. Записать такой журнал может только процесс того же пользователя (в т.ч. агент), поэтому риск низкий.",
+        "fix": "В formatError и в предупреждениях заменять управляющие знаки (C0, DEL, C1) и bidi-знаки (U+202A–U+202E, U+2066–U+2069) на \\uXXXX; имя неизвестного поля в E_EVENT/E_CORRUPT ограничить шаблоном или длиной."
+      }
+    ],
+    "self_check": [
+      "cd tools && SAI_TEAM_HOME=<tmp> npm test → # tests 493, # pass 493, # fail 0, skipped 0, EXIT=0",
+      "diff -rq <before>/src tools/src → Only in tools/src: team; diff -rq <before>/test tools/test → differ: fault-inject.js; diff package.json → +\"team\": \"node src/team/cli.js\"",
+      "grep секретов (sk-, gh[pos]_, github_pat_, AKIA, BEGIN PRIVATE, bearer, password|secret|token|api_key=…) по src/team, test/fault-inject.js, README.md, package.json → 1 совпадение README.md:83 (описание правил, пример, не секрет)",
+      "grep sqlite|child_process|exec(|spawn|node:net|http|fetch(|eval(|new Function|innerHTML|console. по src/team → только lock.js:199 RegExp.exec",
+      "grep select|insert into|update…set|delete from|.query(|.prepare( по src/team → пусто (exit 1); grep https?://|net.|tls|dgram → пусто; grep фиксированных дат/ts → пусто; grep photo|image|фото → пусто; grep fault-inject по src/ → пусто",
+      "проба p1.mjs (scratchpad/secrev08): P1 права [700,700,700,700,600]; чтение — 4 warnings, режимы не изменены; писатель — 4 notices, [700,700,600,700]; цель ссылки в files/ осталась 644; папка данных-ссылка → E_HOME",
+      "P2: 14 плохих id → E_NOT_FOUND при 0 вызовах fs; ссылка-папка проекта, чужой журнал под новым id, events-ссылка, FIFO → E_NOT_FOUND; files/-ссылка → E_DISK, в чужом files/ пусто",
+      "P3 importWorkFile: ok.md OK (password=[скрыто] [скрыто]); bin.dat not text; big.md size; link.md link; dirlink/… link; ../, /etc/passwd, sub/../, \\0, 9 частей, 300 знаков, ./ → path; повтор → E_FILE_EXISTS; hard.md (жёсткая ссылка на журнал другого проекта) → OK, в files/hard.md содержимое чужого журнала (F1)",
+      "P4: 20 попыток подделки через публичный append → все отклонены (E_EVENT/E_TIME), ({}).polluted === undefined, в журнале только PROJECT_CREATED/ENGINE",
+      "P5: 9 форм секретов в цели/say/задаче/памяти/файле/work → маркеры в журнале и files: [], в выводе CLI: []; E_USAGE повторяет password=hunter2 и sk-… (F2); id с sk-… → «E_NOT_FOUND: Проект не найден»",
+      "P6: say 4001 и 10 МБ → E_TOO_LONG; мусор в строке 2 → E_CORRUPT «строке 2: строка не JSON» exit 1, файл не изменён; ESC в ключе из журнала → сырой в stderr (F3); вложенность 200000 → E_CORRUPT; __proto__ → E_CORRUPT; чужой project → E_CORRUPT И1; stderr без стека/путей [false,false,false]; хвост 50 МБ → exit 0, 62 мс",
+      "P7: при оборванной строке projects/project/events → 0,0,0, снимок (режим, sha256, mtime всех файлов) до/после равен; say → JOURNAL_RECOVERED, notices",
+      "P8 (fault-inject withFaults): writeSync partial ENOSPC → E_DISK {rollback:ok}, sha и размер прежние, дальше E_WRITER_BROKEN; fsync EIO → rollback ok; ftruncate EIO → «откат не удался», читатель видит хвост; сбой события RESULT_FILE → файл удалён, files/ пуст",
+      "проба p2.mjs: L1 второй писатель → E_PROJECT_BUSY (pid), журнал не изменён, чтение 0/0, замок снят после close; L2 мёртвый pid → LOCK_STALE_REMOVED, остатки .new убраны; мусор/симлинк-замок → E_LOCK_BAD; pid 1 → E_PROJECT_BUSY; L3 подмена замка → E_LOCK_LOST, журнал не изменён, чужой замок сохранён; чужая дозапись → E_CONFLICT; L4 12 процессов: ok 3 = 3 CHAT, остальные E_PROJECT_BUSY, seq сплошные; 5×6 на устаревшем замке: по одному успеху и одному LOCK_STALE_REMOVED; L5 50 000 событий: project 0,18 с (6,2 МБ, chat 50000), events 165 мс, projects 152 мс, say 295 мс",
+      "CLI: SAI_TEAM_HOME '' и относительный → E_HOME exit 1; файл → E_HOME «это не папка»; несуществующий → projects [] exit 0, папка не создана; без аргументов → E_USAGE exit 2; --limit 0 → exit 2; нечитаемая папка → E_DISK (EACCES) exit 1",
+      "хеши tools/ (без node_modules, 81 файл) до и после проверки: diff пустой — HASHES_EQUAL; ~/.sai-team не существует; ~/.sai-pixel-office не изменён (mtime 00:55); временные папок проб удалены"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "F1 — блокирующая (Medium): исправление CODE-FIXER в files.js (nlink !== 1 → E_WORK_FILE link) и тест; после правки — повторная проверка безопасности. F2, F3 — низкие, не блокируют; решение ORCH, исправлять ли в этом же круге."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Тестов TM-* ядра в tools/test нет (их пишет TEST-DESIGNER); npm test 493/493 — это прежние тесты, ядро ими не покрыто. Мои выводы — по своим пробам, не по тестам."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

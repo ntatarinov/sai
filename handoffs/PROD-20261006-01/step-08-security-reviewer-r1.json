@@ -1,0 +1,73 @@
+{
+  "handoff_id": "step08-security-reviewer-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "08",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-08-security-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-08-security-reviewer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-core-before",
+    "parallel_work_now": "CODE-DESIGNER (REQ-010, только docs)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-08f-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-08-security-reviewer.json",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, повтор (узкий) после исправления F1–F3 (handoffs/PROD-20261006-01/step-08f-code-fixer.json; прежнее заключение — step-08-security-reviewer.json; копия до исправления — <рабочая папка ORCH>/orch/prod/fix-core-before). Сами своими пробами (SAI_TEAM_HOME — временная папка; НИКОГДА ~/.sai-team и ~/.sai-pixel-office): F1 — жёсткая ссылка в work/ на чужой events.jsonl и на любой файл вне проекта отклоняется (E_WORK_FILE «link»), файл в files/ не появляется; обычные файлы принимаются; проверьте и обход через гонку (ссылка создаётся между lstat и open — проверка по fstat); F2 — E_USAGE не повторяет пользовательские аргументы; F3 — управляющие и двунаправленные знаки экранируются в stderr и в JSON (JSON валиден, JSON.parse возвращает оригинал); новых дыр в изменённых файлах (diff с копией до: только files.js, cli.js, errors.js) нет; открытое замечание разработчика: имя неизвестного поля в E_EVENT/E_CORRUPT экранируется при выводе, но не ограничено по длине — оцените как Low. Прочие пункты Q7–Q11, R2, R3 — как в первом заключении, неизменённые файлы не пересматривать (сверьте хеши с копией до). cd tools && npm test. Ничего не правьте. Результат: result.verdict PASS/FAIL, F1–F3 с доказательством, findings.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "F1–F3 — с доказательством пробами"
+    ]
+  },
+  "created_at": "2026-10-05T22:20:47Z",
+  "started_at": "2026-10-05T22:20:47Z",
+  "completed_at": "2026-10-05T22:21:59Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Область затронута (запись и чтение файлов work/files, ввод CLI, вывод в терминал). diff -rq с копией до: различаются только team/cli.js, errors.js, files.js; остальные модули src/team и test/ байт-в-байт равны, их не пересматривал. Пробы только во временных папках в scratchpad; ~/.sai-team не создан, ~/.sai-pixel-office и порт 4780 не трогались. npm test: 493/493. F1 закрыта, F2 закрыта, F3 закрыта; новых дыр в трёх изменённых файлах нет. Q7 выполнен (E_USAGE больше не повторяет ввод, управляющие знаки экранируются), Q8 выполнен (F1 закрыта), Q9 и Q11 неприменимы, Q10 выполнен (прежнее заключение, код отказов не менялся), R2 выполнен и R3 неприменим (файлы не менялись). Открытое замечание про неограниченную длину имени поля: Low.",
+    "findings": [
+      {
+        "id": "F4",
+        "where": "tools/src/team/errors.js (formatError), store.js (проверка ключей data)",
+        "bar": "Q10 (граница размера вывода)",
+        "severity": "Low",
+        "what": "Имя неизвестного поля в E_EVENT/E_CORRUPT экранируется, но не ограничено по длине: ключ в 100000 знаков даёт строку stderr 100028 знаков (проба), сообщение в 200000 знаков — 200009. Утечки и исполнения нет, только шум в терминале владельца.",
+        "fix": "Обрезать имя поля в сообщении до 80 знаков с пометкой; не блокирует."
+      }
+    ],
+    "f_results": {
+      "F1": "закрыта. Пробы (importWorkFile на проекте): work/hard.md — жёсткая ссылка на events.jsonl другого проекта -> E_WORK_FILE reason=link; work/out.md — ссылка на файл вне проекта -> link; work/d/x.md — ссылка в подпапке -> link; в files/ ничего, журнал 1 строка без изменений. Обычные ok.md и d2/n.md приняты (files/ok.md, n.md). Вторая ссылка на свой файл в work/ (nlink 2) тоже отклоняется — строго, допустимо. Гонки через подмену fs.openSync: (а) между lstat и open создана ссылка на тот же inode (nlink становится 2) -> E_WORK_FILE changed; (б) файл заменён жёсткой ссылкой на внешний файл (другой inode) -> changed; (в) тот же файл получил вторую ссылку -> changed. Проверка по fstat (nlink, dev, ino) в files.js:182-188 работает.",
+      "F2": "закрыта. node src/team/cli.js projects --sk-123 -> «E_USAGE: Неизвестный параметр»; projects password=hunter2 -> «Лишний аргумент»; sk-ghp_abc -> общая «Неизвестная команда: нужна projects, …» без имени; events x --after -> «Нужно значение параметра»; параметр дважды, лишний id — без значений; код выхода 2; значения не повторяются. Сообщений с ${arg} в cli.js не осталось (diff).",
+      "F3": "закрыта. formatError(TeamError с ESC]0;x BEL U+202E U+009B U+2066 U+200F U+061C DEL и \\n) -> одна строка без сырых управляющих и двунаправленных знаков (регэксп-проверка false), \\uXXXX вместо них. runGuarded: данные с U+202E, U+009B, ESC, U+2066, эмодзи и ключом с ESC -> stdout валидный JSON, без сырых знаков, JSON.parse возвращает исходный объект (сравнение true), эмодзи не тронут. Предупреждения warn тоже через escapeUnsafe (diff). Диапазоны покрывают C0, DEL, C1, 061C, 200E/F, 202A-E, 2066-9."
+    },
+    "self_check": [
+      "diff -rq до/после team и test: различаются только cli.js, errors.js, files.js",
+      "diff -u по трём файлам прочитан целиком: только описанные правки, новых путей чтения, записи и вызовов нет",
+      "пробы p2.mjs и CLI (временный SAI_TEAM_HOME, scratchpad/sr1) — вывод выше в result.f_results",
+      "cd tools && npm test: # tests 493 # pass 493 # fail 0 # skipped 0",
+      "ls ~/.sai-team: нет такой папки"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Тестов на F1–F3 в наборе пока нет (разработчик это отметил) — задача TEST-DESIGNER. PASS не разрешает мерж (R1)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

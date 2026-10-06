@@ -1,0 +1,64 @@
+{
+  "handoff_id": "step14-test-designer-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "14",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-14-test-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/exec-*.test.js (кроме exec-closure.test.js)",
+      "tools/test/exec-helpers.js",
+      "handoffs/PROD-20261006-01/step-14-test-designer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/test-upd-before",
+    "parallel_work_now": "TEST-DESIGNER (team-*.test.js, exec-closure.test.js)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-14b-test-design-validator.json",
+      "handoffs/PROD-20261006-01/step-14-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка r1 тестов исполнителей по FAIL ворот (handoffs/PROD-20261006-01/step-14b-test-design-validator.json — прочтите F1 и мутант V07). Блокирующее F1 (Medium): тесты, которые вызывают run() напрямую и ждут таймаута, не имеют собственного timeout: EX-22 (первый тест), EX-28, и тесты run() в exec-findings. При мутанте «таймаут не срабатывает» (V07) набор зависает без итога и оставляет процессы. Исправление: поставить { timeout: 30000 } (или гонку с таймером, которая роняет тест утверждением) на эти тесты и на все остальные тесты, которые вызывают run()/runTask/runTeam и могут зависнуть при сломанной защите (проверьте ВСЕ exec-*.test.js: любой тест с запуском дочернего процесса должен иметь свой предел); finally гарантированно убивает остатки процессов fake-claude и потомков и чистит временные папки. Проверка: повторите мутант V07 («таймаут никогда не срабатывает») на КОПИИ вне проекта — набор должен завершиться с падающими тестами за разумное время (< 3 минут) и без остаточных процессов (ps до/после). F2 (Low): EX-39 использует chmod 0500 — оставьте, но если процесс запущен под root (process.getuid() === 0), тест должен ПРОВЕРЯТЬ тот же отказ другим способом (например, путь внутри каталога-файла, ENOTDIR) вместо chmod — без skip. Пишете только файлы tools/test/exec-*.test.js и exec-helpers.js (исправления: добавление timeout и защита finally; проверки не ослаблять; параллельно другой TEST-DESIGNER пишет tools/test/team-*.test.js и exec-closure.test.js — их не трогайте). ЖЁСТКИЕ ПРАВИЛА: настоящий claude не запускать (SAI_TEAM_CLAUDE_BIN — только fake/probe или missing-*); SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов. cd tools && npm test проходит. Копии до — <рабочая папка ORCH>/orch/prod/test-upd-before. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "F1 закрыт: мутант V07 завершается падением без зависания и без остаточных процессов",
+      "npm test проходит",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-06T00:01:16Z",
+  "started_at": "2026-10-06T00:01:16Z",
+  "completed_at": "2026-10-06T00:10:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 по FAIL ворот. F1 (Medium) закрыт: (1) новый помощник withLimit(promise, 30 с) в exec-helpers.js гонит ожидание с таймером, который роняет тест утверждением (не зависанием); им обёрнуты ВСЕ прямые вызовы getExecutor(..).run()/claude.run()/runTask() во всех exec-*.test.js (EX-22 первый тест, EX-33/EX-47 budget, findings 'потомок вне группы' и 'the same with a long timeout', EX-09, executor и stream) — 17 мест, finally тестов (kill остатков) выполняется; (2) корень зависания V07 оказался глубже: runTeam (spawnSync) ждал закрытия труб, которые держит осиротевший потомок fake-claude, и после таймаута не возвращался — теперь вывод идёт в файлы рядом с HOME песочницы (внутри временной папки теста), killSignal SIGKILL, CHILD_TIMEOUT_MS 45 с, а при ошибке/таймауте reapFakes() убивает процессы fake-claude и потомков из журнала (только если ps подтверждает, что это fake-claude/его потомок — защита от повторного использования pid); spawnTeam тоже вызывает reapFakes по своему таймеру; makeSandbox t.after вызывает reapFakes перед удалением папки — остатки убиваются в любом тесте, даже упавшем. Проверки не ослаблены, добавлено только ограничение времени и очистка. F2 (Low): EX-39 под root (process.getuid()===0) вместо chmod 0500 использует SAI_TEAM_HOME внутри обычного файла (ENOTDIR): ожидает отказ E_HOME 'Папка данных Sai Team недоступна: ENOTDIR' (проверено вручную тем же вызовом: код 1, ту же строку), без skip; все остальные утверждения (код 1, пусто stdout, одна строка без трассировки, снимок home неизменен, нет .creating-*) общие для обеих веток. Под обычным пользователем — прежний chmod 0500, возврат прав в finally. Ветку root на этой машине не прогнать (не root); отличие отказа (E_HOME вместо E_DISK) объясняется тем, что при недоступном корне данных Sai ещё не доходит до записи.",
+    "changes": [
+      "tools/test/exec-helpers.js: CALL_LIMIT_MS, withLimit, reapFakes; runTeam на файлах вместо труб + SIGKILL + 45 с + reap; spawnTeam reap по таймеру; makeSandbox t.after reap перед rm (F1)",
+      "tools/test/exec-process.test.js, exec-findings.test.js, exec-executor.test.js, exec-budget.test.js, exec-commands.test.js, exec-stream.test.js: прямые run()/runTask() обёрнуты в withLimit, импорт withLimit (F1)",
+      "tools/test/exec-faults.test.js: EX-39 ветка под root (F2)"
+    ],
+    "self_check": "cd tools && npm run check: код 0 — format:check чист, lint 0 предупреждений, 774 tests, 774 pass, 0 fail, 0 skipped, 0 todo (26 с); после прогона временных папок sai-exec-* нет. Мутант V07 ('таймаут никогда не срабатывает': }, request.limits.timeout_ms) -> }, 2000000000)) на КОПИИ в scratchpad/r1 (рабочее дерево по shasum tools/src+tools/test до/после тем же, diff пуст): node --test test/exec-*.test.js завершился за 94 с (<3 мин) с итогом 119 tests, 112 pass, 7 fail: EX-33, EX-47, 'потомок вне группы' (findings), 'задача с таким потомком' (findings), EX-22 (оба теста), EX-28; ps до и после по fake-claude/setInterval идентичны (единственный процесс — PID 95048 'node -e setInterval', запущен в 04:54 до моей работы, не в этих прогонах, не мой; не трогал), временных папок нет. До правки (по отчёту ворот) тот же мутант вис без итога и оставлял процессы. Настоящий claude не запускался, ~/.sai-team и ~/.sai-pixel-office и порт 4780 не трогались.",
+    "issues": [
+      "Информационно: осиротевший процесс 'node -e setInterval(() => {}, 1000)' PID 95048 (старт 04:54) остался от чьего-то прежнего прогона до этой работы; владелец прогона/ORCH может завершить его (kill 95048). Мой reapFakes его не затрагивает (его нет в журналах моих песочниц)."
+    ],
+    "artifacts_out": [
+      "tools/test/exec-helpers.js",
+      "tools/test/exec-process.test.js",
+      "tools/test/exec-findings.test.js",
+      "tools/test/exec-executor.test.js",
+      "tools/test/exec-budget.test.js",
+      "tools/test/exec-commands.test.js",
+      "tools/test/exec-stream.test.js",
+      "tools/test/exec-faults.test.js"
+    ]
+  }
+}

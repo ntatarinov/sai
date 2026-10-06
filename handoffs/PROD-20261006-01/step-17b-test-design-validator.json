@@ -1,0 +1,89 @@
+{
+  "handoff_id": "step17b-test-design-validator-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "17b",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261006-01/step-17b-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-17b-test-design-validator.json — только status, completed_at, result"
+    ],
+    "parallel_work_now": "TEST-RUNNER (только чтение)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-17-test-designer.json",
+      "handoffs/PROD-20261006-01/step-14-test-designer-r1.json",
+      "docs/design/REQ-009-team-core.md",
+      "docs/design/REQ-010-agent-executors.md",
+      "tools/test/",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5b (узкий): независимая проверка (1) обновлённых и новых тестов ядра (handoffs/PROD-20261006-01/step-17-test-designer.json: обновлены TM-12, 13, 14, 17, 19, 38, 46, 47, 48, 51, оба TM-54 — «было → стало» в его result.summary; новые TM-63, 64, 65, 66, EX-52/EX-53 в exec-closure.test.js) и (2) правок таймаутов в exec-* (step-14-test-designer-r1.json, закрытие F1 прежних ворот step-14b: мутант V07 «таймаут не срабатывает»). Проект: docs/design/REQ-009-team-core.md (r6: п. 15.1a, 15.1b, 6.3, 6.4, 6.8, И13, И21, И22) и docs/design/REQ-010-agent-executors.md (r3: шаг 8 п. 8.2, EX-52/53). ЖЁСТКИЕ ПРАВИЛА: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только fake/probe под tools/test/fixtures/team или missing-*; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов (ps до/после). Проверьте сами: cd tools && npm test (ожидается 774, без skip/todo; набор team-* и exec-* по три раза подряд); для КАЖДОГО обновлённого теста из таблицы «было → стало» — проверка не слабее (сверьте по diff с копией <рабочая папка ORCH>/orch/prod/test-upd-before и сам текст теста: что он проверяет теперь и что проверял); новые тесты содержательны (TM-63 importResultBytes: маскирование, права, единое место записи; TM-64; TM-65; TM-66; EX-52/53 — на всех путях закрытия запуска); возможности мутантов: примените сами не меньше 10 мутантов на КОПИИ вне проекта (в том числе: восстановление после штатного close, прерывание «на проверке» без запуска, close сломанного писателя снимает замок, runner не закрывает запуск при исключении исполнителя, importResultBytes без маскирования, и V07 «таймаут не срабатывает» — набор должен завершиться падением за разумное время без остаточных процессов); защита assertSafeEnv не ослаблена; неподдельный claude не запускается ни при каких условиях; нет остаточных процессов. Оцените issue тестировщика: EX-52(б) в проекте сформулирован (lstat EIO) иначе, чем тест (TypeError на .partial) — достаточно ли; случай статуса created при восстановлении без теста. Ничего не правьте. Все фоновые процессы завершите. Результат: result.verdict PASS/FAIL, summary с доказательствами, findings (Critical/High/Medium блокируют).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "обновлённые тесты не ослаблены — с доказательством",
+      "мутанты применены сами",
+      "нет остаточных процессов"
+    ]
+  },
+  "created_at": "2026-10-06T00:11:31Z",
+  "started_at": "2026-10-06T00:11:31Z",
+  "completed_at": "2026-10-06T00:21:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "ВЕРДИКТ FAIL (одна находка Medium). Всё остальное проверено своими запусками.\nПРОГОН: cd tools && npm test -> 774 tests / 774 pass / 0 fail / 0 skipped / 0 todo (дважды: до и после проб). Набор team-*.test.js + exec-*.test.js три раза подряд: 281/281/0 каждый раз. grep skip/todo в test/: пусто.\nОБНОВЛЁННЫЕ ТЕСТЫ (diff с test-upd-before + чтение текста): ни один не ослаблен. TM-12/TM-51: добавлены ровно 3 события и статус прежний. TM-17: добавлены RUN_FINISHED{interrupted}, данные PROJECT_RECOVERED{1,1}, все прежние ряды на месте. TM-19: добавлена review без запуска, прежние проверки целы, отдельный тест целого журнала. TM-38: настоящая авария (SIGKILL, замок мёртвого pid) вместо рукописного замка. TM-54 (обе): настоящий SIGKILL; прежние числа/проверки И13/И14 прежние (diff показывает только добавления LOCK_STALE_REMOVED, задачу C review и смену номера r-00004 -> r-00005 из-за новой фикстуры). TM-13 (3 режима), TM-14 (2), TM-46 (3), TM-47, TM-48: все проверки до close() прежние; прежнее 'после close() писатель открывается и пишет' заменено на строгие E_PROJECT_BUSY / замок побайтно / снимок папки + перенос в новые тесты в дочернем процессе (LOCK_STALE_REMOVED, CHAT, число строк); снимок 'не изменился' заменён на 'не изменился кроме writer.lock мёртвого pid' (pid, ESRCH, 0600 проверяются) + следующий say восстанавливается. Это не слабее: проверка точнее и сильнее прежней.\nНОВЫЕ ТЕСТЫ: TM-63 (3 теста: маскирование ключа, 0600, событие с bytes/sha256/from_work, work/ не тронут, ключа нет в журнале; 11 отказов с неизменной папкой данных; E_DISK без .partial, закрытый писатель) содержателен; TM-64 (2 фикстуры, три открытия, журнал побайтно, один CHAT); TM-65 (1)-(4) (замок мёртвого pid, обрыв строки, смешанный случай 0/1, reduce напрямую И21/И13 с неизменностью входа); TM-66 (1)-(4) (самозавершение со сломанным писателем + SIGKILL-вариант, живой процесс: замок побайтно и E_PROJECT_BUSY, markBroken, контроль и E_LOCK_LOST). EX-52 (а),(б), EX-53 (а),(б),(в) в exec-closure.test.js проверяют закрытие запуска, TASK_FAILED, BUDGET_SPENT, исходную ошибку, замок и восстановление следующим say.\nТАЙМАУТЫ exec-* (step-14 r1): withLimit обёртывает 17 вызовов; runTeam на файлах, SIGKILL, reapFakes; assertSafeEnv побайтно тот же (diff функции пуст); src/ не отличается от test-upd-before.\nМУТАНТЫ (копия вне проекта scratchpad/tdv/sai/tools; база 167/167 для team-*+exec-closure): M01 восстановление при каждом открытии -2; M02 только по замку -4; M03 прерывать любую review -5; M04 running без запуска не прерывается -2; M05 close() сломанного снимает замок -20; M06 close() здорового не снимает замок -44; M07 runner не закрывает запуск при исключении -4 (EX-52 а,б; EX-53 б,в); M08 importResultBytes без маскирования -1 (TM-63); M09 нет markBroken при сбое закрытия -1 (EX-53 в); M10 без И21 -1 (TM-65 (4)); M11 И13 допускает 0 -1; M12 нет BUDGET_SPENT при закрытии -1 (EX-52 б); M13 задача не получает TASK_FAILED -2; M14 не-UTF-8 принимается -1; M15 нет лимита 5 МиБ -1 (TM-63). Итого 15 пойманных. V07 «таймаут не срабатывает» (exec-*): завершился за 93 с, 119 тестов, 7 упало (EX-33, EX-47, потомок вне группы, задача с таким потомком, EX-22 x2, ...), остаточных процессов нет (ps до/после по fake-claude/setInterval: 0), временных sai-exec-* нет. НЕ пойманы: M16 (acquireLock считает свой pid мёртвым) - эквивалент: openWriter заранее проверяет lockHolder и отдаёт E_PROJECT_BUSY; M17 (ветка E_DISK->result_disk в closeAfterError) - выжил на team-*+exec-* целиком (281/281) - см. находку F1; M18 (PROJECT_RECOVERED при статусе created) - выжил, практически эквивалент, см. F3.\nИЗМЕРЕНИЕ БЕЗОПАСНОСТИ: настоящий claude не запускался (все запуски через fake-claude.js, assertSafeEnv, SAI_TEAM_HOME временная, HOME временный); ~/.sai-team не существует и не создан; ~/.sai-pixel-office не трогал; порт 4780 не использовал. Q8/Q11/R3 не затронуты (нет адресов и фото); Q10 покрыт; Q7: секретов нет (только FAKE_KEY).\nХЕШИ tools/src+test+package.json до и после: идентичны (diff пуст). Рабочее дерево не менялось. Процессов нет.",
+    "findings": [
+      {
+        "place": "tools/test/exec-closure.test.js EX-52 (б); tools/src/team/runner.js closeAfterError (ветка err.code==='E_DISK' -> 'result_disk')",
+        "severity": "Medium",
+        "what": "Проект (REQ-010 п. 15, EX-52 (б)) требует: ошибка E_DISK при приёме -> TASK_FAILED{reason:'result_file', detail: FAIL_DETAIL.result_disk}. Тест написан на TypeError и проверяет только detail 'result_file' (DETAIL_FILE). Мутант M17 (ветка E_DISK заменена на false) проходит все 281 теста team-*+exec-*: ветка closeAfterError с result_disk не доказана тестом ни одного из путей. Q5/Q10.",
+        "fix": "TEST-DESIGNER: добавить тест (б') с реально бросающим TeamError E_DISK на приёме на этом пути (например, t.mock.method на чём-то, что кидает E_DISK после RUN_STARTED при приёме, или fault на запись .partial с кодом, который проходит мимо refusal-ветки строки 615), с ожиданием detail 'Не удалось записать файл результата на диск'; либо CODE-DESIGNER уточняет проект, если ветка недостижима, и тогда ветка удаляется кодом. Мутант M17 должен падать."
+      },
+      {
+        "place": "issue тестировщика про EX-52 (б)",
+        "severity": "Low",
+        "what": "Отклонение от проекта (TypeError на .partial вместо lstat EIO) само по себе достаточно для закрытия пути 'не отказ файла': мутанты M07/M12/M13 падают на нём. Но проект сформулирован на недостижимый вариант (lstat EIO превращается в E_WORK_FILE), и именно поэтому его E_DISK-часть осталась без теста (см. F1). Нужна правка проекта п. 15 EX-52 (б) по результату F1.",
+        "fix": "CODE-DESIGNER: уточнить EX-52 (б) под достижимый путь."
+      },
+      {
+        "place": "EX-53, статус created",
+        "severity": "Low",
+        "what": "Случай 'проект created': PROJECT_RECOVERED не пишется, потому что статус не planning/running, а прерывать нечего; мутант M18 проходит. Отдельный тест не нужен для закрытия критерия (недостижимое различие: запуск и задача у created невозможны), но вывод 'не пишется' нигде не зафиксирован.",
+        "fix": "Не блокирует; по желанию одна строка в проекте и тест TM-64 на created."
+      },
+      {
+        "place": "tools/test/exec-closure.test.js runCommand, runTask без withLimit",
+        "severity": "Low",
+        "what": "runCommand использует spawnSync с трубами (как прежний runTeam до правки r1) и runTask в EX-52 не обёрнут withLimit/reapFakes; при поломке таймаута/закрытия тест может висеть до CHILD_TIMEOUT_MS без очистки. Мутанты на этих путях падают быстро, не зависают.",
+        "fix": "TEST-DESIGNER: использовать общий runTeam/withLimit из exec-helpers."
+      }
+    ],
+    "self_check": [
+      "cd tools && npm test -> # tests 774 / # pass 774 / # fail 0 / # skipped 0 / # todo 0 (до и после проб)",
+      "node --test test/team-*.test.js test/exec-*.test.js x3 -> 281/281/0 каждый раз",
+      "grep skip/todo в test/ -> пусто",
+      "diff -rq test-upd-before/{src,test} с рабочим деревом: src без отличий; test: exec-* withLimit/reapFakes, team-* по таблице автора",
+      "мутанты M01-M18 и V07 по summary; V07: 93 с, 7 упало; M17 повторно на всех exec-*+team-* -> 281/281 (выжил)",
+      "shasum tools/src+test+package.json до/после: diff пуст (TREE-SAME); копия мутантов вне проекта возвращена к исходному (diff -rq пуст)",
+      "ps -eo pid,command | grep fake-claude|setInterval после работы: 0; ~/.sai-team отсутствует"
+    ],
+    "issues": [
+      "F1 (Medium) блокирует: нужен тест на ветку E_DISK->result_disk в closeAfterError (мутант M17) либо уточнение проекта EX-52 (б).",
+      "Одновременно шёл TEST-RUNNER: в начале моего ps были чужие fake-claude (pid 10452/10456/10507/10508, старт 05:11 локального времени); они завершились сами, моих остаточных процессов нет."
+    ],
+    "artifacts_out": []
+  }
+}

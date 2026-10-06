@@ -1,0 +1,120 @@
+{
+  "handoff_id": "step12f-code-fixer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "12f",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261006-01/step-12f-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/executors/",
+      "tools/src/team/runner.js",
+      "tools/src/team/ (общий модуль для устранения дублирования — только если безопасно)",
+      "handoffs/PROD-20261006-01/step-12f-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-exec-before",
+    "parallel_work_now": "TEST-DESIGNER (tools/test/team-*.test.js — ядро)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-12-security-reviewer.json",
+      "handoffs/PROD-20261006-01/step-13-reviewer.json",
+      "docs/design/REQ-010-agent-executors.md",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, после FAIL шагов 3 и 4 исполнителей REQ-010: исправить код (handoffs/PROD-20261006-01/step-12-security-reviewer.json — F1 (Medium, блокирует), F2–F4 (Low); handoffs/PROD-20261006-01/step-13-reviewer.json — F1 (High, блокирует) и Low; прочтите оба целиком вместе с их пробами). Правки в tools/src/team/executors/*.js, runner.js и связанных: (РЕВЬЮ F1, High) таймаут запуска claude-cli: если claude вышел сам, а потомок вне группы держит stdout/stderr, run() обязан вернуться по таймауту: после события exit запускать отдельный ограниченный таймер, который закрывает потоки независимо от того, вызывался ли stop(); результат — понятный исход (таймаут/группа не остановилась по правилам проекта п. 5.6 и failDetailFor); проба на поддельном файле с потомком в другой группе (setsid-подобный через detached) при timeout_ms 1500: run() вернулся за разумное время (< 5 с) и процессов не осталось; (БЕЗОПАСНОСТЬ F1, Medium) огромная/неконечная стоимость (1e303 → ceil6 Infinity → ядро отвергает RUN_FINISHED): стоимость, которую ядро записать не может, трактовать как отсутствующую (null → засчитывается потолок запуска, accounted: assumed); пробы 1e303, 1e21, -1, NaN, 'abc', Infinity: BUDGET_SPENT записан, spent_usd вырос, следующий запуск учитывает расход; (F2) checkBudget требует конечные числа spent_usd/budget_usd (иначе E_CONFIG/отказ до spawn); (F3) removeSource: проверка всего пути (каждая часть — не символьная ссылка и внутри work/) перед unlink; (F4) чтение stdout без Buffer.concat на каждый кусок (накопление списком кусков, лимит по сумме длин, склейка один раз) — память при 9 МиБ строке без перевода строки не растёт в 50 раз; (Low ревью) убрать дублирование abortablePause/pause и has/isPlainObject (общий модуль) и мёртвый экспорт OUTCOMES — если это безопасно и однозначно. Тесты НЕ пишите (их пишет TEST-DESIGNER): в result.summary передайте точные пробы (входы, ожидаемые результаты) для каждой находки как тестовые случаи. Прежние тесты не менять. ЖЁСТКИЕ ПРАВИЛА: настоящий claude НЕ запускать (SAI_TEAM_CLAUDE_BIN — только поддельный файл tools/test/fixtures/team/fake-claude.js или missing-*); SAI_TEAM_HOME — временная папка; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; в конце — ни одного остаточного процесса. cd tools && npm test проходит (632). Копии до — <рабочая папка ORCH>/orch/prod/fix-exec-before. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "обе блокирующие находки закрыты пробами",
+      "F2–F4 исправлены",
+      "npm test проходит",
+      "изменены только файлы write_set; пробы переданы TEST-DESIGNER"
+    ]
+  },
+  "created_at": "2026-10-05T22:53:25Z",
+  "started_at": "2026-10-05T22:53:25Z",
+  "completed_at": "2026-10-05T23:00:15Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты обе блокирующие находки (ревью F1 High, безопасность F1 Medium), безопасность F2–F4 и дублирование из Low ревью (F2). OUTCOMES не удалён: он есть в списке экспортов проекта (п. 15/строка 710), удаление — смена проекта. Тесты не писались и не менялись. Пробы для TEST-DESIGNER (только поддельные файлы, HOME/SAI_TEAM_HOME временные):\nP1 (ревью F1): поддельный исполняемый файл запускает потомка с detached:true и stdio inherit (держит stdout в другой группе, живёт 60 с) и сразу выходит с кодом 0; run() напрямую, timeout_ms 1500 → run() вернулся за ~2006 мс; outcome 'timeout', detail FAIL_DETAIL.group «Не удалось остановить процессы исполнителя», transient false (failDetailFor → 'group', повтора нет). Тот же файл при timeout_ms 60000 → вернулся за ~5070 мс (GROUP_GONE_WAIT_MS после exit), outcome invalid_output, detail group, transient false. Потомок вне группы не убивается (остаточный риск п. 5.6, setsid) — тест должен сам убить его pid (файл пишет pid) и проверить ESRCH. До исправления: run() возвращался только когда потомок сам выходил (9,6 с при потомке на 9 с; при долгом — зависание).\nP2 (безопасность F1): run-task с fake-claude, plan default {stream:'stream-ok.jsonl', set_cost:X}, budget 1, две задачи подряд. X = 1e303, 1e21, -1, 1e999 (JSON → Infinity): RUN_FINISHED cost_usd null, BUDGET_SPENT {cost_usd 0.25, accounted 'assumed', total 0.25}, второй запуск max_budget_usd 0.25 и BUDGET_SPENT total 0.5; оба кода 0. X = 0.123456789 → reported 0.123457, total 0.246914. X = 5e8 → reported 500000000, второй run-task код 1, RUN_REFUSED budget_exhausted, fake запущен 1 раз. Юнит recordableCost (runner.js, экспорт): 1e303, 1e21, 1e16, 1e9+1, MAX_VALUE, -1, NaN, 'abc', Infinity, -Infinity, null, true → null; 1e9 → 1e9; 5e8 → 5e8; 0 → 0; 0.123456789 → 0.123457.\nP3 (безопасность F2): checkBudget({project:{budget_usd:b,spent_usd:s},limits:{max_budget_usd:m}}): (1,NaN,0.25), ('1',0,0.25), (1,'0',0.25), (Infinity,0,0.25), (1,Infinity,0.25), (NaN,0,null), (undefined,0,null) → E_BUDGET_EXHAUSTED; (1,0,0.25) и (0,0,null) — проходят. run() claude-cli напрямую с подсчитывающим spawn: spent NaN, budget '1', spent Infinity → throw E_BUDGET_EXHAUSTED, spawn 0 раз.\nP4 (безопасность F3): runTask с fake-claude (work_files out/report.md, answer_files ['out/report.md']); importWorkFile обёрнут: после импорта work/out переименована и заменена симлинком на внешнюю папку с report.md → внешний report.md цел, status review, files/t-0001-1-report.md есть. На старом runner тот же сценарий удалил внешний файл. Без подмены исходник удаляется как раньше.\nP5 (безопасность F4): поддельный файл пишет 9 MiB 'a' без перевода строки кусками 64 KiB и висит; run() напрямую: outcome invalid_output, detail too_big, прирост RSS 9 МБ за 97 мс (на старом коде 436 МБ). Разбиение: stream-ok.jsonl кусками по 1–7 байт без последнего \\n → outcome ok, lines 7, activities 3, cost 0.05.",
+    "changes": [
+      {
+        "finding": "ревью F1 (High)",
+        "file": "tools/src/team/executors/claude-cli.js",
+        "place": "run(): stop(), обработчик exit, новая forceClose/forceCloseSoon, CLOSE_GRACE_MS=500",
+        "what": "После exit всегда запускается ограниченный таймер GROUP_GONE_WAIT_MS; остановка (таймаут/отмена/слишком большой вывод) после exit или застрявшая группа закрывает потоки через 500 мс после stopGroup. Принудительное закрытие означает, что поток держит живой процесс попытки: groupStuck → detail group, transient false. Таймеры очищаются; exit после завершения ничего не планирует."
+      },
+      {
+        "finding": "безопасность F1 (Medium)",
+        "file": "tools/src/team/runner.js",
+        "place": "recordableCost (новый экспорт), строка cost в цикле попыток, chargeIfSpawned",
+        "what": "Стоимость, не конечная/отрицательная/ceil6 не конечный/больше 1e9 (COST_REPORTED_MAX), считается неизвестной: RUN_FINISHED cost_usd null, BUDGET_SPENT = потолок запуска, assumed. Действует и для scripted."
+      },
+      {
+        "finding": "безопасность F2 (Low)",
+        "file": "tools/src/team/executor.js",
+        "place": "checkBudget",
+        "what": "budget_usd и spent_usd должны быть конечными числами, иначе E_BUDGET_EXHAUSTED до spawn."
+      },
+      {
+        "finding": "безопасность F3 (Low)",
+        "file": "tools/src/team/runner.js",
+        "place": "removeSource(workDir, relPath)",
+        "what": "Перед unlink заново обходится весь путь lstat: work/ и каждая папка — настоящие папки, последняя часть — обычный файл; ссылка или '..' — ничего не удаляется."
+      },
+      {
+        "finding": "безопасность F4 (Low)",
+        "file": "tools/src/team/executors/claude-cli.js",
+        "place": "onData/takeLine",
+        "what": "Хвост строки копится списком кусков с суммой длин; склейка один раз на конце строки; предел 8 MiB по сумме."
+      },
+      {
+        "finding": "ревью F2 (Low)",
+        "file": "tools/src/team/common.js (новый), executor.js, executors/scripted.js, runner.js",
+        "place": "has, isPlainObject, abortablePause",
+        "what": "Общие функции вынесены в common.js; локальные копии удалены (scripted pause → abortablePause с необязательным signal)."
+      }
+    ],
+    "self_check": [
+      "До: проба P1 — run() вернулся за 9648 мс только потому, что потомок сам вышел на 9-й секунде (зависание до выхода потомка); P5 — RSS +435.9 МБ; P4 на старом runner — внешний report.md удалён; разбор ревью/безопасности воспроизведён.",
+      "После: P1 — 2006 мс (timeout 1500) и 5071 мс (timeout 60000); P2–P5 — как в summary.",
+      "cd tools && HOME=<tmp> SAI_TEAM_HOME=<tmp>/team SAI_TEAM_CLAUDE_BIN=<tmp>/missing-claude npm run check: 'All matched files use Prettier code style!', eslint --max-warnings 0 без вывода ошибок, # tests 633 # pass 633 # fail 0 # cancelled 0 # skipped 0, exit=0 (633 — с тестом, добавленным параллельно TEST-DESIGNER).",
+      "Настоящий claude не запускался: SAI_TEAM_CLAUDE_BIN — только tools/test/fixtures/team/fake-claude.js, missing-claude или пробные node-скрипты в scratchpad. ~/.sai-team не существует; ~/.sai-pixel-office не трогался; порт 4780 не использовался.",
+      "Остаточные процессы: ps по пробным скриптам, fake-claude и потомкам — пусто (вышедшие из группы потомки проб убиты самими пробами).",
+      "diff с копией до: изменены executor.js, executors/claude-cli.js, executors/scripted.js, runner.js; добавлен common.js."
+    ],
+    "issues": [
+      {
+        "kind": "для TEST-DESIGNER",
+        "text": "Изменилось поведение, которое могут проверять тесты: (а) стоимость > 1e9 (например 1e16) теперь assumed = потолок запуска, а не reported; (б) запуск, после выхода которого stdout держит процесс вне группы, теперь кончается detail group и transient false (без повтора). Существующие 633 теста проходят."
+      },
+      {
+        "kind": "к ORCH/CODE-DESIGNER",
+        "text": "ревью F3: OUTCOMES не удалён и не задействован — он в списке экспортов executor.js в проекте REQ-010 (строка 710); решение за проектом. KNOWN_FIELDS оставлен (нужен EX-21)."
+      },
+      {
+        "kind": "к ORCH/CODE-DESIGNER",
+        "text": "Проект п. 5.6 говорит «run разрешается только после close»; теперь ожидание close после exit ограничено (GROUP_GONE_WAIT_MS, или 500 мс после остановки группы) с detail group. Нужно внести в п. 5.6. Граница COST_REPORTED_MAX = 1e9 и правило «неизвестная стоимость» для слишком большой стоимости — в п. 8.4. Потомок, ушедший из группы (setsid), по-прежнему не убивается — остаточный риск P7."
+      },
+      {
+        "kind": "write_set",
+        "text": "executor.js изменён (checkBudget по F2 и удаление копий has/isPlainObject) — это файл, названный в задаче («checkBudget»), и общий модуль tools/src/team/common.js добавлен по пункту write_set про общий модуль."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/common.js",
+      "tools/src/team/executor.js",
+      "tools/src/team/executors/claude-cli.js",
+      "tools/src/team/executors/scripted.js",
+      "tools/src/team/runner.js"
+    ]
+  }
+}

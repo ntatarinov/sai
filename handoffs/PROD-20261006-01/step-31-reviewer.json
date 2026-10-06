@@ -1,0 +1,86 @@
+{
+  "handoff_id": "step31-reviewer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "31",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-31-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-31-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-recover-before",
+    "parallel_work_now": "SECURITY-REVIEWER, TEST-DESIGN-VALIDATOR (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/requirements.yaml (REQ-009, REQ-010)",
+      "tools/src/team/",
+      "tools/test/",
+      "handoffs/PROD-20261006-01/step-28-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-29-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, итоговое ревью кода, изменённого после последнего PASS (step-13-reviewer-r1): правки step-15 (store.js recover, reducer.js И13/И21), step-16 (store.js: сломанный писатель оставляет замок; runner.js: закрытие запуска на всех путях), step-19 (runner.js: удалена недостижимая ветка), step-21 (language.js: MEMORY_ADDED), step-28 (store.js: восстановление по состоянию; claude-cli.js: группа → transient false); копия до всех — <рабочая папка ORCH>/orch/prod/fix-recover-before (для store.js/reducer.js/runner.js/language.js/claude-cli.js; прочие файлы tools/src/team не должны отличаться). ЖЁСТКИЕ ПРАВИЛА: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только fake/probe под tools/test/fixtures/team или missing-*; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов (ps до/после). Проверьте: diff с копией до — изменены ТОЛЬКО перечисленные файлы; каждая правка — решение, а не костыль; код следует проектам (docs/design/REQ-009-team-core.md r8, docs/design/REQ-010-agent-executors.md r6); нет мёртвого кода и дублирования (в т.ч. остатки stalePid-логики восстановления, неиспользуемые имена); обработка ошибок; эрозия планки (skip, eslint-disable, || true, пустые catch, process.exit); читаемость recover() (ключевая функция): однозначна ли; согласованы ли reducer И13/И21/И22 с кодом; тесты (team-*.test.js, exec-*.test.js) — только как контекст; запустите сами cd tools && npm run check. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "файлы сверены с копией до"
+    ]
+  },
+  "created_at": "2026-10-06T01:23:26Z",
+  "started_at": "2026-10-06T01:23:26Z",
+  "completed_at": "2026-10-06T01:25:39Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Diff с копией до: различаются ровно store.js, reducer.js, runner.js, language.js, executors/claude-cli.js; остальные файлы tools/src/team идентичны. Каждая правка — решение, не костыль. recover() (store.js): признак восстановления — по журналу (оборванная строка, открытые запуски, задачи running), stalePid остался только уведомлением (LOCK_STALE_REMOVED); без признака ничего не пишется, ровно один раз; шаги 8.4-8.6 совпадают с проектом r8 п. 6.3; задача review прерывается только если её review-запуск закрыт в этом восстановлении; PROJECT_RECOVERED только при closed_runs+interrupted_tasks>=1. Остатков старой логики crashed/stalePid-ветвления нет. Сбой ftruncate ломает писателя (INTERNAL_BREAK), openWriter при сбое после создания писателя вызывает close() — замок остаётся, авария не теряется; до создания писателя замок снимается. Reducer И13/И21 согласованы с кодом recover() и с проектом (И13: нет running и открытых запусков, сумма>=1; review без запуска допустим; И21: последний закрытый review-запуск после review_since_seq закрыт interrupted); И22 по проекту — свойство вызывающих, не reduce. runner.js: все пути выхода по throw закрывают открытый запуск (failed + BUDGET_SPENT, если процесс шёл) и задачу running (result_file при accepting, иначе retries_exhausted); сбой закрытия -> markBroken, исходная ошибка идёт наверх, не глотается. Недостижимая ветка удалена. language.js: MEMORY_ADDED получает суффикс scripted — по проекту. claude-cli.js: проверка схемы ответа перенесена до поправки «группа не ушла», группа даёт transient false и не принимает ok — устранён дубль возврата. Эрозии планки нет: skip/todo/eslint-disable/|| true/process.exit в изменённых файлах — пусто; пустых catch нет (catch без параметра в runner.js:491 вызывает markBroken). cd tools && npm run check: 783 теста, pass 783, fail 0, skipped 0, todo 0. Блокирующих находок нет.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/team/store.js:392-396",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Геттер Writer.broken не описан в таблице методов проекта REQ-009 п. 6.4 и в src нигде не используется — только тесты (exec-closure, team-recovery). Публичный API, добавленный ради тестов.",
+        "fix": "Описать геттер в п. 6.4 проекта (DOC-UPDATER) либо проверять состояние через E_WRITER_BROKEN."
+      },
+      {
+        "id": "F2",
+        "place": "tools/src/team/runner.js:493 (try/catch/finally с флагом failure) и комментарий шага 7",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Конструкция try { return await attempts() } catch { failure = err; throw } finally { if (failure !== null) closeAfterError() } обходится проще: catch { closeAfterError(); throw err }. Комментарий шага 7 «write nothing more» теперь неточен: closeAfterError пытается писать (на сломанном писателе безвредно — E_WRITER_BROKEN, markBroken).",
+        "fix": "Упростить до catch с вызовом closeAfterError; поправить комментарий шага 7."
+      },
+      {
+        "id": "F3",
+        "place": "tools/src/team/store.js:395-410,573-580 (комментарии), reducer.js:2",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Комментарии в коде ссылаются на артефакты процесса («rule 1 of ORCH, PROD-20261006-01 step 16») вместо разделов проекта; шапка reducer.js говорит И1-И21, а И22 в проекте есть (но не в reduce — это верно, стоит оговорить).",
+        "fix": "Ссылаться на п. 6.3/6.4 проекта и И22; в шапке reducer.js оговорить, что И22 — свойство вызывающих."
+      },
+      {
+        "id": "F4",
+        "place": "tools/src/team/runner.js:482-491 (closeAfterError)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Если finishRun записан, а BUDGET_SPENT нет (сбой записи), потраченная сумма не учтена; писатель сломан, замок остаётся — это границы принятого проекта (двойной сбой), но стоит помнить для REQ-013.",
+        "fix": "Не требуется; учесть в проекте REQ-013."
+      }
+    ],
+    "self_check": "diff -rq и diff -u копия до vs tools/src/team: отличаются только store.js, reducer.js, runner.js, language.js, executors/claude-cli.js; cd tools && npm run check -> tests 783, pass 783, fail 0, skipped 0, todo 0; grep -nE \"\\.skip\\(|todo|eslint-disable|\\|\\| true|process\\.exit|catch \\{\\}\" по пяти файлам — совпадений нет, кроме 7 «catch {» с непустым телом/комментарием (store.js:380,438,548 разбор UTF-8/JSON и откат; runner.js:491 markBroken; claude-cli.js:101,255,356 — не менялись); grep stalePid|crashed по src — stalePid только в store.js (получение замка, LOCK_STALE_REMOVED); ~/.sai-team не существует; настоящий claude не запускался.",
+    "issues": [],
+    "artifacts_out": []
+  }
+}

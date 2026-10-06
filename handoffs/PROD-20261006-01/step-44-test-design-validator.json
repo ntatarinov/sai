@@ -1,0 +1,59 @@
+{
+  "handoff_id": "step44-test-design-validator-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "44",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261006-01/step-44-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-44-test-design-validator.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/test-m03-before",
+    "parallel_work_now": "TEST-RUNNER (только чтение)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-41-test-designer.json",
+      "handoffs/PROD-20261006-01/step-40-test-design-validator.json",
+      "tools/test/",
+      "tools/src/team/",
+      "docs/design/REQ-009-team-core.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5b, повтор (узкий) после правки r1 (handoffs/PROD-20261006-01/step-41-test-designer.json; прежние ворота — step-40-test-design-validator.json: F1 Medium (мутант M03), Low: assertSafeEnv, EX-22; копия до — <рабочая папка ORCH>/orch/prod/test-m03-before). ЖЁСТКИЕ ПРАВИЛА: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только fake/probe под tools/test/fixtures/team или missing-*; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов (ps до/после). Сами: cd tools && npm test (789, без skip/todo); набор team-* и exec-* ≥ 3 раза одиночно и ≥ 3 раза в 4 параллельных процессах — 0 падений; мутант M03 («проверка замка ПОСЛЕ записи») на КОПИИ вне проекта (копируйте tools целиком вместе с docs-зависимостями для TM-01 doc-тестов, если нужно) — теперь падают TM-56, TM-68 (г), TM-66 (4); счётчики countJournalCalls корректны (исправление помощника: closeSync mock) — убедитесь, что счётчик не считает закрытый дескриптор; assertSafeEnv: ссылка в tmp на $HOME/.sai-team с несуществующим хвостом — отказ (EX-38); EX-22 допуск 3000 мс — суть не потеряна; сами повторите ещё не менее 6 прежних мутантов (S1, пакет по трём append, пакет без отката, recover после штатного close, runner не закрывает запуск, ok при неостановленной группе, V07) — падают; тесты не ослаблены (diff с копией). Замечание тестировщика: «старые bad()-случаи EX-38 data-folder/HOME отказывают из-за чужого пути claude, а не папки» — оцените (Low). Ничего не правьте. Все фоновые процессы завершите. Результат: result.verdict PASS/FAIL, summary с доказательствами, findings (Critical/High/Medium блокируют).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "M03 падает — проверено",
+      "стабильность подтверждена"
+    ]
+  },
+  "created_at": "2026-10-06T04:06:58Z",
+  "started_at": "2026-10-06T04:06:58Z",
+  "completed_at": "2026-10-06T04:24:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "ВЕРДИКТ PASS. Прежняя находка F1 (Medium, мутант M03) закрыта; новых Critical/High/Medium нет.\nПРОГОН (свой): cd tools && npm test -> # tests 789 / pass 789 / fail 0 / cancelled 0 / skipped 0 / todo 0; grep skip/todo в tools/test: только флаги --dangerously-skip-permissions и слово «skip» в имени EX-02 (не пропуски). СТАБИЛЬНОСТЬ team-*+exec-* (296): одиночно 3 раза 296/296/0; 3 раунда по 4 параллельных процесса (12 процессов): 12x '# fail 0', 12x '# pass 296', 12x код 0.\nM03 («проверка замка после записи», копия вне проекта <рабочая папка ORCH>/tdv2/mut/sai, tools+docs, базовый прогон копии 296/296): падают 3 — TM-56 «a writer whose lock was taken by another process finds out at its next append», TM-68 (d) «the lock lost BEFORE the batch», TM-66 (4) control. До правки падало 0 (step-40). Это ровно названные заданием.\ncountJournalCalls: в team-helpers.js добавлен мок closeSync, снимающий дескриптор из набора fds; читал код: закрытый номер больше не считается журналом (файл замка с тем же номером не даёт ложных счётчиков). Утверждения: TM-56 и гонка E_PROJECT_BUSY 0/0/0, TM-66 потерянный замок 0/0/0, TM-68 (d) 1/1/0 (одна LOCK_STALE_REMOVED). Утверждения не ослаблены: diff с копией до (test-m03-before) по 6 файлам — только добавления проверок (3 deepStrictEqual-счётчика, closeSync, realWithMissingTail, 6 отказов EX-38, EX-22); src/ проекта в копии до не лежит, моё сравнение src с step-40 не требовалось: хеши 190 файлов tools/src+tools/test+docs до и после равны.\nassertSafeEnv/EX-38: тест теперь создаёт ссылку tmp->$HOME и отвергает <ссылка>/.sai-team, .../.sai-team/x/y, .../.sai-pixel-office/x, .../nonexistent-folder-sai (SAI_TEAM_HOME и HOME) с годным поддельным файлом (причина только папка), плюс разрешён несуществующий путь внутри tmp. Мутант (мой): checkFolder на старом realOrNull(resolved) ?? resolved -> exec-guard.test.js: 1 падение, «Missing expected exception ... to-home/.sai-team»; после возврата 5/5 зелёные.\nEX-22: timeout_ms 1000 -> 3000 (и SAI_TEAM_TASK_TIMEOUT_MS 3000); границы 2700..15000; проверки pid-ов поддельного файла и потомка (оба остановлены) и detail/transient/spawned остались; суть (таймаут останавливает процесс и потомка) не потеряна. Мутант M12 (таймаут не срабатывает) по-прежнему роняет 7, в т.ч. EX-22.\nПРЕЖНИЕ МУТАНТЫ (мои, набор 296): M01 три append вместо пакета: 2 упало (TM-68 e, f); M02 пакет без отката: 7; M04 (S1) признак аварии только у снявшего замок: 7; M05 recover после штатного close: 13; M07 сломанный писатель снимает замок: 24; M08 runner не закрывает запуск: 4; M11 ok при неостановленной группе: 1 (I11 b); M12 V07: 7. Итого 9 мутантов (+M03), все убиты (требовалось >= 6 прежних).\nРабочее дерево: хеши tools/src, tools/test, docs до/после равны (cmp); процессов node/fake-claude после нет (ps до/после отличаются лишь оболочками zsh -c моих вызовов). Реальный claude не запускался, ~/.sai-team и ~/.sai-pixel-office не трогались, порт не использовался.",
+    "findings": [
+      {
+        "place": "tools/test/exec-guard.test.js EX-38 «data folder and HOME», старые строки bad()",
+        "severity": "Low",
+        "what": "Замечание тестировщика ВЕРНО лишь отчасти: старые bad() используют execEnv по умолчанию, где SAI_TEAM_CLAUDE_BIN вне fixtures копии, и отказ идёт от BIN (проверено: assertSafeEnv(execEnv(sb,{}), dir) -> 'SAI_TEAM_CLAUDE_BIN is outside fixtures'). Но я прогнал те же старые строки с годным BIN (f.exec): все отказывают именно из-за папки, значит утверждения по существу верны, только в тесте изоляции от BIN нет. Папку теперь доказывают новые badFolder (мутант старого checkFolder их роняет).",
+        "fix": "По желанию: в bad() передавать SAI_TEAM_CLAUDE_BIN: f.exec. Не блокирует."
+      }
+    ],
+    "self_check": "cd tools && npm test -> 789/789, skipped 0, todo 0. node --test test/team-*.test.js test/exec-*.test.js: 3 одиночных (296/296/0), 3x4 параллельных (12x fail 0, pass 296, код 0). Мутанты: python3 <рабочая папка ORCH>/tdv2/mut.py M03/M01/M02/M05/M11/M12/M08/M04/M07 на копии <рабочая папка ORCH>/tdv2/mut/sai (логи <рабочая папка ORCH>/tdv2/mut/*.log): M03 fail 3 (TM-56, TM-68 d, TM-66 4); M01 2; M02 7; M04 7; M05 13; M07 24; M08 4; M11 1; M12 7. Мутант checkFolder: exec-guard 1 fail. Хеши: shasum по tools/src, tools/test, docs до/после (cmp) равны, <рабочая папка ORCH>/tdv2/hash-before.txt, hash-after.txt. ps до/после: процессов node/fake-claude нет.",
+    "issues": [],
+    "artifacts_out": []
+  }
+}

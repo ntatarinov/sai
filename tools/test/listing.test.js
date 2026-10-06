@@ -8,16 +8,44 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { test } from "node:test";
+import { after, test } from "node:test";
 import { listing, makeFifo, makeSocket, tree } from "./helpers.js";
 
 const HELPERS_URL = pathToFileURL(
   path.join(path.dirname(fileURLToPath(import.meta.url)), "helpers.js"),
 ).href;
 
+const roots = [];
+
 function scratch() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "sai-listing-"));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "sai-listing-"));
+  roots.push(root);
+  return root;
 }
+
+// Give the owner back the rights that the tests took away (named paths of our own
+// scratch folders only; links are never followed), then remove the folder.
+function reopen(p) {
+  const st = fs.lstatSync(p);
+  if (st.isSymbolicLink()) return;
+  if (st.isDirectory()) {
+    fs.chmodSync(p, 0o700);
+    for (const name of fs.readdirSync(p)) reopen(path.join(p, name));
+  } else if (st.isFile()) {
+    fs.chmodSync(p, 0o600);
+  }
+}
+
+after(() => {
+  for (const root of roots) {
+    try {
+      reopen(root);
+    } catch {
+      // the folder is removed below in any case
+    }
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("L01 an added empty folder makes the two listings differ", () => {
   const root = scratch();

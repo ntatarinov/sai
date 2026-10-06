@@ -1,0 +1,149 @@
+{
+  "handoff_id": "step07b-code-design-validator-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "07b",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261006-01/step-07b-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-07b-code-design-validator.json — только status, completed_at, result"
+    ],
+    "before_copy": null,
+    "parallel_work_now": "REQ-ANALYST (requirements.yaml), BACKEND-DEV (ядро)",
+    "artifacts_in": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md",
+      "docs/requirements.yaml"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 1b: ворота перед кодом для REQ-010 — проект docs/design/REQ-010-agent-executors.md (handoffs/PROD-20261006-01/step-07-code-designer.json). Критерии — блок REQ-010 в docs/requirements.yaml (16 критериев; параллельно REQ-ANALYST правит критерий 14: «на проверке» вместо «готово» — по решению ORCH I1; читайте как есть); ядро — docs/design/REQ-009-team-core.md (ворота PASS) и BACKEND-DEV сейчас строит его (tools/src/team/ — читать можно, не мешать); REQ-013 — достаточность исполнителя. Проверьте сами по роли и WF-02: каждый из 16 критериев покрыт частью проекта и строкой «критерий → тест» (EX-01…EX-48; свободные номера — сверьте по tools/test), планка Q1–Q14 и R1–R3; кода реализации нет; безопасность: Q7 (секреты по ссылке, окружение дочернего процесса — фиксированный список, нет ANTHROPIC_API_KEY, нет утечки секретов в журнал), Q10, Q11 (разбор исходящих запросов Исследователя; выключатель SAI_TEAM_WEB), R2 (события настоящие), условия реальных запусков внутри run() и счётчик запусков; spawn без оболочки; убийство группы процессов по таймауту; рабочая папка work/; ОСОБО проверьте факты о флагах claude: проект называет флаги изоляции (--restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --permission-prompts none) и формат stream-json — убедитесь по `claude --help` и `--version` установленной версии (бинарь расширения редактора; путь — в docs/product/current-state.md; ТОЛЬКО --help и --version; НИКОГДА не запускайте claude -p и настоящие сессии — расход лимита владельца), что КАЖДЫЙ названный флаг существует; несуществующий флаг — замечание High (запуск упадёт); то, что подтвердить без запуска нельзя, должно быть названо в проекте как «не подтверждено, проверяется UAT» и разбор должен быть «по форме с запасом»; согласованность с ядром (формы событий и каталог 37 типов, importWorkFile, TASK_REVIEW, scenario_file, work/, TM-04); тесты на поддельном исполняемом файле SAI_TEAM_CLAUDE_BIN и защита, чтобы тест никогда не запустил настоящий claude; можно строить без догадок. Решения ORCH по вопросам проектировщика REQ-010: I1 — после успешного run-task задача получает статус «на проверке» (TASK_REVIEW), «готово» ставит только проверка REQ-013; критерий 14 REQ-010 в requirements.yaml поправляет REQ-ANALYST (формулировка: «на проверке»); I2 — ядро не меняется: при сетевой ошибке и исчерпании потолка между повторами используется существующая причина TASK_FAILED (executor_error) с полем detail: network|budget; фраза не обещает повтор (исполнитель сообщает «сбой, попробуем снова» только если повтор действительно будет — проверка в проекте); EX-29/EX-47 соответственно; I3 — удаление исходных копий принятых файлов из work/ принято; TM-04 ядра относится к файлам ядра (tools/src/team/*.js вне executors/), исполнители лежат в tools/src/team/executors/ и пишут в work/ только через собственный модуль, названный в проекте — проверьте согласованность с TM-04 и с критерием 2 REQ-009 (grep по местам записи) и назовите, если нужно уточнить TM-04 (это правка проекта ядра — result.issues); I4 — настоящий запуск не делается, до согласия владельца; I5 — версия claude 2.1.289 запишет DOC-UPDATER. Ничего не правьте. Все фоновые процессы завершите. Результат: result.verdict PASS/FAIL, summary с доказательствами, findings (Critical/High/Medium блокируют).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый критерий и пункт планки — с доказательством",
+      "флаги claude сверены с --help",
+      "замечания с местом, важностью, исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T22:10:03Z",
+  "started_at": "2026-10-05T22:10:03Z",
+  "completed_at": "2026-10-05T22:12:13Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": [
+      "Флаги claude: установленный файл .vscode/extensions/anthropic.claude-code-2.1.289-darwin-arm64/resources/native-binary/claude, --version = 2.1.289, код 0; --help (310 строк) содержит КАЖДЫЙ флаг п. 5.2: -p/--print, --output-format (stream-json), --verbose, --max-budget-usd (только с --print), --json-schema, --tools, --allowedTools, --disallowedTools, --permission-prompts (host|none), --restricted, --safe-mode, --strict-mcp-config, --no-session-persistence (только с --print), --append-system-prompt. Несуществующих флагов нет. Факты F2, F4, F5, F6 повторены (which claude — not found; grep -c строк в файле: 'stream-json requires --verbose' 2, 'Input must be provided either through stdin…' 2, structured_output 38, total_cost_usd 15, error_max_budget_usd 5; WebFetch(domain: в settings schema — 5). Неподтверждаемое без запуска (вложенность stream-json, совместимость флагов 9–13, вход по подписке, [::1]) названо в I4 как UAT; разбор п. 5.4 — по форме с запасом. Настоящий claude не запускался.",
+      "Критерии → тесты: все 16 критериев имеют строки EX-01…EX-48 (14 — UAT, 13 — ещё чистая копия); номера EX свободны (grep '\"EX-' по tools/test — 0). Но критерии 8, 9, 11 покрыты противоречиво (F1–F3).",
+      "Сигнатуры/данные/ошибки: п. 3, 5, 8, 9, 10 полны; противоречия порядка — F2; неопределённость EX-29 — F3.",
+      "Планка: п. 16 называет Q1–Q14 и R1–R3 с объяснением — пройдено.",
+      "Защита в той же операции: check внутри run до spawn (п. 5.1), EX-09 — пройдено.",
+      "Решения: опора на 0015/0017; конфликт с критерием 2 REQ-009 и TM-04 ядра — F4.",
+      "Кода реализации нет (поиск function/const/import/return — 0; блоки ``` — только формы данных). Настоящих секретов в примерах нет.",
+      "Безопасность: Q7 (CHILD_ENV_ALLOW без ANTHROPIC_API_KEY, stderr не хранится, текст через stdin), Q10, Q11 (SAI_TEAM_WEB, deny-правила, остаток назван), R2, spawn shell:false detached:true, убийство группы, cwd=work/ — описаны; тест на флаги изоляции отсутствует — F5.",
+      "Согласованность с ядром: формы событий сверены с docs/design/REQ-009-team-core.md п. 4 и tools/src/team/schema.js; TASK_FAILED.reason в ядре = {retries_exhausted, rejected_by_user, executor_not_found, invalid_output, result_file} — executor_error из решения ORCH I2 там нет (F3).",
+      "Однозначность: нарушена (F1, F2, F3, F6) — FAIL.",
+      "Хеш проекта до и после: a1970069a181210671519476e6f86eefb630db8e — не менялся."
+    ],
+    "findings": [
+      {
+        "n": 1,
+        "severity": "High",
+        "blocking": true,
+        "where": "п. 8.2 шаг 6.2 и 6.5, п. 8.4 (правило «по худшему случаю»), п. 8.3, EX-26, EX-28",
+        "what": "max_budget_usd каждой попытки = весь остаток, а попытка без cost_usd (таймаут, убит, выход без строки result) учитывается как max_budget_usd. Значит после любого такого сбоя claude-cli остаток = 0 и шаг 6.1 пишет RUN_REFUSED + TASK_FAILED: повтор после таймаута на claude-cli невозможен, что противоречит критерию 8 («таймаут считается тем же временным сбоем», 2 повтора). EX-28 (таймаут, таймаут, успех) не задаёт исполнителя; EX-26 (выход 1 ×2) не задаёт, выводит ли поддельный файл строку result с расходом — тест строится на догадке.",
+        "fix": "Выбрать и записать правило: например, потолок попытки = остаток / оставшиеся попытки (или иное), либо явно признать, что на claude-cli без расхода повтора нет, и согласовать с критерием 8 через ORCH; задать исполнитель и план поддельного файла в EX-26/EX-28 (с расходом/без) и добавить тест на таймаут claude-cli с повтором."
+      },
+      {
+        "n": 2,
+        "severity": "High",
+        "blocking": true,
+        "where": "п. 8.2 шаги 3 и 4; п. 5.1 условие 4; EX-32",
+        "what": "Шаг 3 вызывает claude-cli check с max = остаток; условие 4 check при остатке 0 бросает E_BUDGET_EXHAUSTED без записи. До шага 4 (RUN_REFUSED) выполнение не доходит, а EX-32 и критерий 11 ждут ровно одну строку RUN_REFUSED. Порядок противоречив.",
+        "fix": "Явно указать: на шаге 3 условие 4 не проверяется (или шаг 4 идёт до check), и какой именно путь даёт RUN_REFUSED для claude-cli; согласовать с EX-09 (прямой run — без записи)."
+      },
+      {
+        "n": 3,
+        "severity": "High",
+        "blocking": true,
+        "where": "п. 8.2 шаг 6.1 и 6.5, п. 8.3, п. 18 I2, EX-29, EX-47; ядро п. 4.2 и tools/src/team/schema.js:341-348; фраза RUN_FINISHED network ядра п. 7",
+        "what": "Решение ORCH I2 называет «существующую причину TASK_FAILED (executor_error) с detail network|budget», но такой причины нет ни в проекте ядра, ни в коде ядра (ни одного вхождения executor_error в docs/, tools/, decisions/). Проект использует retries_exhausted, а EX-29 оставлен неопределённым («I2 решает, какого события»). Фраза ядра RUN_FINISHED network «Нет доступа к сети, попробуем ещё раз» пишется и на 3-й попытке и когда повтор отменён потолком — обещание повтора, которого не будет (противоречит условию ORCH I2 и R2); фраза TASK_FAILED для retries_exhausted — «задача не получилась», о сети не говорит, а критерий 9 требует фразы о сети. detail в проекте — русский текст, а не код network|budget.",
+        "fix": "ORCH уточняет I2 с учётом реального каталога (retries_exhausted + detail, или правка ядра); проект записывает точные события и фразы для 3-й неудачи сети и для исчерпания потолка между попытками, как не обещать повтор на последней попытке, и точную строку, с которой EX-29 сравнивает фразу."
+      },
+      {
+        "n": 4,
+        "severity": "High",
+        "blocking": true,
+        "where": "п. 14 (место записи №5, scripted.js writeFileSync), п. 18 I3(б); ядро п. 13 и TM-04; критерий 2 REQ-009",
+        "what": "Критерий 2 REQ-009 требует, чтобы каждое место writeFile в tools/src/team/ было записью журнала, файла результата, замка или производного файла; запись файла сценария в work/ — ни то, ни другое. TM-04 ищет grep -r по всему tools/src/team/ (включая executors/) и ждёт ровно 4 места; ядро п. 13 прямо говорит «файлы в work/ пишет процесс агента, не код tools/src/team/». Трактовка ORCH I3 («TM-04 — файлы вне executors/») с текстом TM-04 и критерия не совпадает.",
+        "fix": "Через ORCH: правка проекта ядра (п. 13, TM-04: места ядра + места п. 14 REQ-010) и формулировки критерия 2 REQ-009 (REQ-ANALYST), либо убрать запись из scripted; без этого код REQ-010 провалит TM-04."
+      },
+      {
+        "n": 5,
+        "severity": "Medium",
+        "blocking": true,
+        "where": "п. 5.2 строки 9–14, п. 15.1 EX-11/EX-16, п. 15.5",
+        "what": "Ни один тест не проверяет наличие --restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --permission-prompts none и --append-system-prompt; на них опираются Q7 и Q8 (п. 11, 16). Мутант «убрать --restricted» не ловится.",
+        "fix": "Добавить в EX-11 проверку точного argv по buildArgs (все 14 позиций) и мутант «нет --restricted»."
+      },
+      {
+        "n": 6,
+        "severity": "Medium",
+        "blocking": true,
+        "where": "п. 15.2 assertSafeEnv против EX-15",
+        "what": "Помощник требует, чтобы realpath(SAI_TEAM_CLAUDE_BIN) был файлом внутри fixtures/team/, а EX-15 ставит несуществующий абсолютный путь и относительный путь — оба через runTeam упадут в помощнике, до команды. Как тест проходит, не сказано.",
+        "fix": "Назвать допустимую форму для EX-15 (например, несуществующее имя внутри fixtures/team/, проверка папки, а не файла) и для относительного пути — так, чтобы защита от настоящего claude сохранялась."
+      },
+      {
+        "n": 7,
+        "severity": "Low",
+        "blocking": false,
+        "where": "ядро п. 17 и столбец «Кто» п. 4.2",
+        "what": "Ядро перечисляет события REQ-010 без TASK_STARTED и TASK_REVIEW (у TASK_REVIEW «Кто: 013»), а REQ-010 их пишет (п. 4, решение I1). Код ядра это не ограничивает.",
+        "fix": "Уточнить п. 17 и «Кто» в проекте ядра при следующей правке."
+      },
+      {
+        "n": 8,
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 0 F7",
+        "what": "«папки tools/src/team/ ещё нет» — устарело: сейчас там 12 файлов ядра (BACKEND-DEV).",
+        "fix": "Обновить при доработке."
+      }
+    ],
+    "self_check": [
+      "perl -e 'alarm 20; exec @ARGV' <ext 2.1.289>/resources/native-binary/claude --version → '2.1.289 (Claude Code)', код 0",
+      "… --help > scratchpad/help.txt → код 0, 310 строк; grep -nE по флагам: строки 23 (--allowedTools), 26 (--append-system-prompt), 81 (--disallowedTools), 127 (--json-schema), 130 (--max-budget-usd, only with --print), 142 (--no-session-persistence), 145 (--output-format text|json|stream-json), 150 (--permission-mode), 154 (--permission-prompts host|none), 170 (-p, --print), 194 (--restricted), 212 (--safe-mode), 229 (--strict-mcp-config), 254 (--tools), 259 (--verbose)",
+      "grep -c -a -F по файлу claude: 'stream-json requires --verbose' 2; 'Input must be provided either through stdin or as a prompt argument' 2; structured_output 38; total_cost_usd 15; error_max_budget_usd 5 — совпадает с F5/F6",
+      "which claude → 'claude not found' (F2 подтверждён); grep -c 'WebFetch(domain:' claude-code-settings.schema.json → 5 (F4)",
+      "grep -rn executor_error docs/ tools/src tools/test decisions → 0; sed tools/src/team/schema.js:341-348 → TASK_FAILED.reason без executor_error",
+      "grep -rnE 'writeFile|appendFile|createWriteStream' tools/src/team/ → 4 места (files.js:100, store.js:479, store.js:485, lock.js:113) — scripted.js добавит пятое",
+      "grep -rhoE '\"EX-[0-9]+' tools/test → пусто",
+      "shasum docs/design/REQ-010-agent-executors.md до и после → a1970069a181210671519476e6f86eefb630db8e"
+    ],
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "text": "Решение I2 ссылается на причину TASK_FAILED executor_error, которой нет в каталоге ядра (проект и schema.js). Нужно новое решение: retries_exhausted + detail или правка ядра; и правило фразы RUN_FINISHED network на последней попытке (F3)."
+      },
+      {
+        "kind": "QUESTION",
+        "text": "I3/TM-04: текст TM-04 и критерия 2 REQ-009 охватывает весь tools/src/team/ включая executors/; нужна правка проекта ядра (п. 13, TM-04) и формулировки критерия 2 REQ-009 через REQ-ANALYST, пока BACKEND-DEV строит ядро (F4)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Правило учёта «по худшему случаю» при потолке попытки = весь остаток исключает повторы claude-cli после таймаута — возможно, нужно решение ORCH о делении потолка между попытками (F1)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

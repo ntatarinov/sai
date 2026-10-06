@@ -1,0 +1,58 @@
+{
+  "handoff_id": "step13-reviewer-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "13",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-13-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-13-reviewer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-exec-before",
+    "parallel_work_now": "SECURITY-REVIEWER r1, TEST-DESIGNER",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-12f-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-12-security-reviewer.json",
+      "handoffs/PROD-20261006-01/step-13-reviewer.json",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор (узкий) по исправлениям (handoffs/PROD-20261006-01/step-12f-code-fixer.json; прежнее ревью — step-13-reviewer.json; копия до — <рабочая папка ORCH>/orch/prod/fix-exec-before). ЖЁСТКИЕ ПРАВИЛА: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только на поддельный tools/test/fixtures/team/fake-claude.js или missing-*; SAI_TEAM_HOME — временная папка; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов. Проверьте: diff с копией до — изменены только common.js (новый), executor.js, executors/claude-cli.js, executors/scripted.js, runner.js (tests/ — параллельная работа TEST-DESIGNER, не ваша тема); исправление F1 (High) — ограниченный таймер после exit, GROUP_GONE_WAIT_MS, исход detail group не повторяется (transient false) — решение, а не костыль; нет ли гонок/двойных закрытий потоков; recordableCost; дублирование убрано в common.js без изменения поведения; идиомы; мёртвый код (OUTCOMES оставлен по проекту); эрозия планки; cd tools && npm test. Ничего не правьте. Результат: result.verdict PASS/FAIL, summary, findings.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "diff сверен"
+    ]
+  },
+  "created_at": "2026-10-05T23:01:31Z",
+  "started_at": "2026-10-05T23:01:31Z",
+  "completed_at": "2026-10-05T23:03:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Diff с копией до: изменены ровно common.js (новый), executor.js, executors/claude-cli.js, executors/scripted.js, runner.js (tests/ — team-state.test.js, работа TEST-DESIGNER, не оценивалась). F1 (High) закрыт решением, не костылём: после exit всегда запускается ограниченный таймер GROUP_GONE_WAIT_MS; остановка после exit или застрявшая группа закрывает потоки через CLOSE_GRACE_MS=500 мс; принудительное закрытие ставит groupStuck, поэтому исход detail group, transient false, повтор не делается. Гонок и двойных закрытий нет: forceClose/finish защищены флагом done, destroy идемпотентен, таймеры (timer, drainTimer, graceTimers) очищаются до return, подписка на signal снимается после await stopping, поздний exit после done ничего не планирует. recordableCost: нечисло, отрицательное, ceil6 не конечный или >1e9 -> null -> BUDGET_SPENT = потолок, assumed; единая точка для finishRun и chargeIfSpawned, поведение для нормальных значений прежнее. Дублирование (has, isPlainObject, abortablePause) вынесено в common.js без изменения поведения; идиомы Node 22/ESM, без зависимостей. checkBudget и removeSource ужесточены по замечаниям безопасности, в рамках перечня, лишней работы нет. OUTCOMES оставлен по проекту (экспорт в списке проекта), не находка. Эрозии планки нет: grep по skip/todo/eslint-disable/|| true/process.exit в изменённых файлах пуст. cd tools && npm test: 633 pass, 0 fail, 0 skipped (SAI_TEAM_HOME временный, настоящий claude не запускался, процессов не осталось).",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/team/executors/claude-cli.js:211-250,340-346",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Таймеры forceCloseSoon/drainTimer больше не unref; безопасно, так как run() их всегда очищает до возврата, но при будущем раннем return без очистки процесс удерживался бы живым. Также forceCloseSoon регистрируется дважды (в stop() и в exit) — безвредно из-за done.",
+        "fix": "Не требуется; при желании unref() или одна регистрация."
+      }
+    ],
+    "self_check": "diff -rq и diff -u с копией до по src/team; cd tools && npm test -> tests 633, pass 633, fail 0, skipped 0, todo 0; grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true|process\\.exit' по изменённым файлам — пусто; grep OUTCOMES — только объявление в executor.js:19 (по проекту); pgrep fake-claude — пусто.",
+    "issues": [],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "handoff_id": "step07-code-designer-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "07",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-07-code-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010",
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md (минимально: importResultBytes, TM-63)",
+      "handoffs/PROD-20261006-01/step-07-code-designer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r1.md",
+    "parallel_work_now": "SECURITY-REVIEWER и REVIEWER (ядро, только чтение)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-07b-code-design-validator.json",
+      "docs/requirements.yaml",
+      "tools/src/team/schema.js"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 1, доработка r1 проекта docs/design/REQ-010-agent-executors.md по FAIL ворот (handoffs/PROD-20261006-01/step-07b-code-design-validator.json — прочтите ВСЕ findings и вопросы; копия до — <рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r1.md). Решения ORCH: (1) учёт стоимости/повторы: потолок одного запуска = min(остаток потолка проекта, SAI_TEAM_RUN_CAP_USD или по умолчанию четверть потолка проекта — выберите и запишите); запуск без отчёта о стоимости (таймаут, убит, нет строки result) засчитывается как потолок ЭТОГО запуска (accounted: assumed), а не весь остаток; повтор возможен, пока остаток ≥ потолка запуска; тесты EX-26/EX-28 называют исполнитель (поддельный бинарь) и отчёт/не отчёт о стоимости; критерий 8 REQ-010 выполняется; (2) порядок проверок в run(): условия 1–3 (флаг, потолок проекта > 0) — отказ без события; условие 4 (остаток) — вызывающий (команда/движок) записывает RUN_REFUSED при E_BUDGET_EXHAUSTED через writer.append (run() сам журнал не пишет) — так критерий 11 и EX-32 выполняются: опишите точно, кто и когда пишет RUN_REFUSED; (3) причины сбоя задачи: берите ТОЛЬКО реально существующий в каталоге ядра список причин TASK_FAILED (docs/design/REQ-009-team-core.md и tools/src/team/schema.js — прочтите) и поле detail/ data для различия (network|budget|timeout|…); моё прежнее решение про «executor_error» отменяется, если такой причины нет; фраза про сеть — на последней попытке НЕ обещает повтор (фраза выбирается по тому, будет ли повтор: опишите событие повтора и фразы), итоговая фраза о сбое упоминает сеть при сетевой причине (критерий 9); EX-29 определите; (4) scripted НЕ пишет в work/ сам: его результат содержит файлы в памяти (имя + байты), которые движок принимает ядерной функцией importResultBytes(project, name, bytes) — это ЕДИНОЕ место записи файла результата в ядре (его первое «место записи» из четырёх; новой точки записи не добавляется; TM-04 остаётся «четыре места»); опишите функцию как небольшую поправку проекта ядра docs/design/REQ-009-team-core.md (разделы файлов/результатов, новый тест TM-63, README-строка) — вы МОЖЕТЕ править docs/design/REQ-009-team-core.md минимально и только ради этого (копия до — <рабочая папка ORCH>/orch/prod/REQ-009-team-core.before-r4.md; перечислите правки); критерий 2 REQ-009 остаётся выполненным; claude-cli пишет в work/ дочерний процесс, не наш код; (5) добавьте тест(ы) на аргументы запуска: ровно названные флаги изоляции (--restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --permission-prompts none, --append-system-prompt) присутствуют; мутант «убрали --restricted» падает; (6) защита тестов assertSafeEnv: опишите, как тесты отказов (EX-15: несуществующий абсолютный и относительный путь) проходят защиту: защита проверяет, что значение SAI_TEAM_CLAUDE_BIN либо внутри fixtures/team/ и существует, либо проверяется ТОЛЬКО на отказ ДО spawn (счётчик spawn 0) — выберите безопасный способ, при котором настоящий claude не может запуститься в тесте; Low: перечень событий, которые пишет REQ-010 (TASK_STARTED, TASK_REVIEW), и устаревший факт F7 в §0 — исправьте. Остальное в проекте не менять. Писать только docs/design/REQ-010-agent-executors.md и (минимально) docs/design/REQ-009-team-core.md и свои поля handoff-а. Настоящий claude не запускать (только --help/--version). Кода реализации нет. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "findings 1–6 закрыты",
+      "причины сбоев — только из реального каталога ядра",
+      "scripted не пишет в work/",
+      "изменены только два проектных файла"
+    ]
+  },
+  "created_at": "2026-10-05T22:13:57Z",
+  "started_at": "2026-10-05T22:13:57Z",
+  "completed_at": "2026-10-05T22:22:13Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 проекта REQ-010 по FAIL ворот (замечания 1–8) и решениям ORCH: потолок одного запуска = min(остаток, SAI_TEAM_RUN_CAP_USD или четверть потолка проекта), запуск без отчёта о расходе списывает потолок этого запуска; RUN_REFUSED пишет только вызывающий при E_BUDGET_EXHAUSTED (условие 4), условия 1–3 — без события; причины TASK_FAILED только из каталога ядра, различие — detail из FAIL_DETAIL, повтор объявляет только TASK_RETRY после окончательного решения, фразы сети/потолка — правка таблицы фраз; scripted ничего не пишет на диск, файлы в памяти принимает writer.importResultBytes ядра (TM-04 остаётся четыре места); тест argv флагов изоляции; защита тестов для EX-15. Проект ядра поправлен до r4 минимально.",
+    "changes": [
+      "docs/design/REQ-010-agent-executors.md: шапка r1 — перечень правок с номерами замечаний",
+      "№1: п. 2 (SAI_TEAM_RUN_CAP_USD, RUN_CAP_SHARE=0.25), п. 8.4 (runCapFor/maxBudgetFor, «расход не пришёл» = потолок этого запуска), п. 8.2 шаг 6.1, п. 13 README, EX-26 (claude-cli, варианты с отчётом и без + scripted), EX-28 (claude-cli, hang без отчёта, повтор после таймаута), EX-31 (RUN_CAP=1), EX-33, EX-47, новый EX-50, мутанты, P4",
+      "№2: п. 3.1 правило 1 (кто пишет RUN_REFUSED), п. 3.2 (checkBudget, runCapFor), п. 4, п. 5.1, п. 6.1 (checkBudget у scripted), п. 8.2 шаги 3–4 и 6.3, п. 9.4, EX-32 (включая порядок условий 2 раньше 4 и прямой run)",
+      "№3: F11/F12 в п. 0; п. 4; п. 8.2 шаг 6.5 (решение о повторе до TASK_RETRY; потолок между попытками — RUN_REFUSED + TASK_FAILED без TASK_RETRY); п. 8.3 (только reason ядра, detail из FAIL_DETAIL); новый п. 8.6 (фразы: RUN_FINISHED network «Нет доступа к сети», TASK_FAILED сеть/потолок); п. 10.1, 10.3; EX-29 определён (точные строки); EX-47; п. 18 I2 — решено",
+      "№4: п. 1 (store.js, language.js), п. 3.1 (RunResult.outputs), п. 6.2 (write_work_file удалён, result.files, record_input в памяти, scripted без записи на диск), п. 8.5 (importResultBytes), п. 14 (место №5 убрано, TM-04 = 4), новый EX-51, фикстура scenario-files.json, п. 18 I3(б) — решено",
+      "№5: новый EX-49 (argv = buildArgs по позициям; шесть флагов изоляции; мутанты --restricted/--safe-mode/--permission-prompts host)",
+      "№6: п. 15.2 assertSafeEnv — три формы (рабочая; missing-* в fixtures/team без файла; относительное missing-* только при пустом PATH), runTeamExpectRefusal со счётчиком 0; EX-15, EX-38",
+      "№7: ядро п. 4.2 «Кто» у TASK_REVIEW = 010, 013; ядро п. 17 — TASK_STARTED, TASK_REVIEW, MEMORY_ADDED, RESULT_FILE через importWorkFile/importResultBytes",
+      "№8: п. 0 F7 — ядро в коде (12 файлов, 4 места записи)",
+      "docs/design/REQ-009-team-core.md (r4): шапка r4; п. 6.4 таблица методов; новый п. 6.8 importResultBytes; п. 9 таблица фраз (RUN_FINISHED network, две строки TASK_FAILED), правило и экспорт FAIL_DETAIL; п. 11 (language.js, Writer); п. 13 строка files.js; п. 14 README; TM-63; мутант п. 15.2; TM-01…TM-63 в п. 1 и 18; п. 4.2, п. 17 (замечание 7)"
+    ],
+    "self_check": [
+      "grep -nE 'write_work_file|№5|EX-01…EX-48|TM-01…TM-62|executor_error|попробуем ещё раз|<путь компьютера>/' по обоим проектам — остались только упоминания «было → стало», факты F11/F12 и запись «прежнего места №5 больше нет»",
+      "цикл по EX-01…EX-51: у каждого номера есть строка в таблице п. 15.1 (missing — 0); у каждой строки — критерий",
+      "sed tools/src/team/schema.js TASK_FAILED: reason ∈ {retries_exhausted, rejected_by_user, executor_not_found, invalid_output, result_file} — проект использует только их",
+      "grep -rnE 'writeFile|appendFile|createWriteStream' tools/src/team/ → 4 места (files.js:100, store.js:479, store.js:485, lock.js:113); importResultBytes идёт через publishResultFile — TM-04 остаётся 4",
+      "sed tools/src/team/language.js: RUN_FINISHED network «Нет доступа к сети, попробуем ещё раз», TASK_FAILED прочее «{name}: задача не получилась» (F12); grep 'попробуем ещё раз' tools/test — пусто (тестов на старую фразу нет)",
+      "sed tools/src/team/store.js importWorkFile/#publish — новый метод ложится на тот же #publish",
+      "diff с копиями до: REQ-010 — 331 строк изменений, REQ-009 — 54+ (только перечисленные места); кода реализации не добавлено (только формы, сигнатуры, таблицы); настоящий claude не запускался",
+      "shasum: REQ-010 3db4ff62d3cf8231e30c255f927cf6fd97780811 (до правки строк таблицы ядра), ядро — изменено после этого замера строками п. 9"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Правка проекта ядра r4 вышла за «только importResultBytes»: таблица фраз п. 9 (RUN_FINISHED network, две строки TASK_FAILED, экспорт FAIL_DETAIL) — нужна по решению ORCH (3), иначе проект ядра молча расходился бы с language.js; п. 4.2 и п. 17 — по Low 7, который ORCH велел исправить. Если ORCH против — откатить эти места по копии до (before-r4)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "language.js и store.js ядра уже в коде: правку (FAIL_DETAIL, фразы, importResultBytes) делает BACKEND-DEV в раундах 1–2 REQ-010; TM-63 пишет TEST-DESIGNER."
+      },
+      {
+        "kind": "QUESTION",
+        "text": "scripted без cost_usd в сценарии учитывается как assumed = потолок запуска (четверть потолка проекта по умолчанию); длинные сценарии REQ-013 исчерпают потолок через 4 запуска, если не задают cost_usd: 0 — учесть в проекте REQ-013 (не менялось в r1)."
+      },
+      {
+        "kind": "PROPOSAL",
+        "text": "decisions/0018-team-executors.md: P4 переписан (потолок запуска = min(остаток, SAI_TEAM_RUN_CAP_USD или четверть потолка), расход без итога = потолок этого запуска)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md"
+    ]
+  }
+}

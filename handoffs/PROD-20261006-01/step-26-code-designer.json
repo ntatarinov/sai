@@ -1,0 +1,97 @@
+{
+  "handoff_id": "step26-code-designer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "26",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-26-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md",
+      "handoffs/PROD-20261006-01/step-26-code-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r6.md",
+    "parallel_work_now": "DOC-UPDATER (decisions/0018), SECURITY-REVIEWER (только чтение)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-24-code-design-validator.json",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 1, доработка r6 проекта docs/design/REQ-010-agent-executors.md и правка r8 docs/design/REQ-009-team-core.md по FAIL итоговых ворот (handoffs/PROD-20261006-01/step-24-code-design-validator.json — прочтите ВСЕ замечания M1, M2, L1–L7 и вопросы; копии до — <рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r6.md, <рабочая папка ORCH>/orch/prod/REQ-009-team-core.before-r8.md). M1 (блок): допишите в пп. 5.4, 5.6, 8.4 проекта REQ-010 фактические правила кода, появившиеся после проверок безопасности: расход > 1e9, не конечное число, отрицательный → «не пришёл»: списывается потолок ЭТОГО запуска, accounted: assumed (recordableCost); если процесс вышел, а потомок вне группы держит stdout, run() ждёт ограниченное время (GROUP_GONE_WAIT_MS), закрывает потоки и возвращает причину group без повтора; итог ok при неостановленной группе превращается в failed (claude-cli.js — прочтите место); после штатного выхода процесса оставшаяся группа останавливается; свяжите с тестами exec-findings (какие EX/probe-тесты); исправьте противоречащие места таблицы 5.4. Low: L1 (шаги 8.3, 8.5.6: убрана недостижимая ветка result_disk в closeAfterError; stopGroup в finally — как в коде), L2 (убрать устаревший вопрос I1), L3 (шапка: редакция r8/«что изменено в r6/r7»), L4 (REQ-009 п. 11: maskSecrets импортируется и в runner.js — правка текста), L5 (nlink отказывает; common.js есть; сигнатура maxBudgetFor(state, config)), L6 (п. 15.4: добавить фикстуры stream-lies, stream-result-string, stream-result-text, fake-claude-probe.js), L7 (I10: пометка BUDGET_SPENT у scripted — решение ORCH: пометка НЕ добавляется (событие числовое; пометка есть у фраз), запишите как принятое). M2 (граница файлов тестов) — решает запись decisions/0018 (пишет DOC-UPDATER параллельно): в проекте формулируйте «в границе записи 0018». Всё остальное в проектах не менять. Писать только два проектных файла и свои поля handoff-а. Кода реализации нет. Настоящий claude не запускать. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "M1 и L1–L7 исправлены",
+      "проект совпадает с кодом",
+      "изменены только два проектных файла"
+    ]
+  },
+  "created_at": "2026-10-06T00:56:01Z",
+  "started_at": "2026-10-06T00:56:01Z",
+  "completed_at": "2026-10-06T01:08:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "REQ-010 доработан до r6 по FAIL ворот step-24 (M1, M2, L1, L2, L4–L7): проект приведён к коду. Правила кода не менялись.",
+      "REQ-009 поднят до r8 (L3, L4, L5) и, по дополнению ORCH, переписан под S1. Восстановление делает тот, кто получил замок, если журнал оборван или в нём есть незакрытая работа (открытые запуски или задачи running). stalePid — только уведомление LOCK_STALE_REMOVED. Добавлены TM-67 (гонка после аварии) и мутант «признак аварии только у снявшего замок». S2 назван остаточным риском (п. 12, 14, P14). S3 и S4 записаны как информация.",
+      "Найдено сверх перечня (I11 REQ-010, вопрос ниже). Если замечена поправка groupStuck, а ответ не прошёл схему, код даёт transient: true — повтор при живом потомке возможен. Кроме того, у правил «ok при groupStuck → failed» и «оставшаяся группа после штатного выхода останавливается» нет своих тестов."
+    ],
+    "changes": [
+      "REQ-010 шапка: редакция r6, у каждой правки номер замечания.",
+      "REQ-010 M1: п. 0 F14 (recordableCost, свой запуск), F15 (проба группы); п. 2 — CLOSE_GRACE_MS, COST_REPORTED_MAX; п. 5.4 — строка «вывод больше предела», поправка «группа не ушла» (detail group, transient false, ok → failed), правило cost_usd; п. 5.6 — остановка оставшейся группы после выхода, ограниченное ожидание close (GROUP_GONE_WAIT_MS и CLOSE_GRACE_MS), принудительное закрытие потоков; п. 8.4 — recordableCost (конечное число ≥ 0, ceil6 ≤ 1e9, иначе «не пришёл» → assumed, потолок этого запуска; то же в RUN_FINISHED.cost_usd); п. 15.1 — строка exec-findings с названиями тестов и уточнённым столбцом критериев; п. 15.5 — 5 мутантов; п. 18 — I11, P10.",
+      "REQ-010 M2: п. 1 (exec-*.test.js, exec-helpers.js, fixtures/team/** — в границе записи 0018, неверная ссылка на P10 0017 убрана), п. 16 Q12, п. 18 P9.",
+      "REQ-010 L1: п. 8.2, шаг 7 (runner прерывает попытку сигналом, stopGroup не вызывает), шаг 8.1 (в finally процессов нет), шаг 8.3 (только result_file, ветки result_disk нет), п. 8.5, шаг 6, I9 закрыт.",
+      "REQ-010 L2: I1 закрыт требованием. L4: п. 1 — runner.js импортирует maskSecrets и prepareText из mask.js. L5: п. 1 и 10.1 — common.js; maxBudgetFor(state, config) в п. 8.1, 8.2, 8.4, 10.1; floor6, ceil6, round6 — в executor.js, runner.js их реэкспортирует; в п. 8.1 добавлены поле run в RunTaskResult и recordableCost, failDetailFor. L6: п. 1 и 15.4 — stream-result-string, stream-result-text, stream-lies, fake-claude-probe.js (режимы). L7: п. 6.3, I10 — решение ORCH: пометки у BUDGET_SPENT нет.",
+      "REQ-010 I7: одна фраза-уточнение — по ядру r8 задачу running восстановил бы следующий держатель замка (следствие S1, AP-014).",
+      "REQ-009 L3: шапка r8, добавлены «Что изменено в r7» и «Что изменено в r8». L4: п. 11 — mask.js импортируют store.js и runner.js (REQ-010). L5: п. 6.7, шаг 3 — отказ жёсткой ссылке (nlink = 1 по lstat и fstat).",
+      "REQ-009 S1 (дополнение ORCH): п. 0 F13 (проба G, свой запуск: 19 из 20); п. 4.1 PROJECT_RECOVERED; п. 5.2 — И13, И21, И22; п. 6.2, шаг 5 (stalePid — уведомление); п. 6.3, шаг 8 (признаки «обрыв» и «незакрытая работа», ровно один раз, остаточный риск F6), абзацы после шага 8; п. 6.4, шаг 10; п. 12 — две строки; п. 14; п. 15.1 — вступление, TM-17, TM-19, TM-54, TM-64 (B: первое открытие восстанавливает), TM-66, новый TM-67 (6 открывающих, 20 раундов); новый п. 15.1c «до/после»; п. 15.2 — мутанты; п. 16 — Q10, Q12, Q13, R2; п. 17, 18; п. 19 — I7 закрыт, P11, новый P13.",
+      "REQ-009 S2: п. 12 (строка), п. 14 (README), п. 16 Q10, п. 19 P14 (для 0017). S3, S4 — п. 19, информация."
+    ],
+    "self_check": [
+      "Перед правкой: diff проектов с копиями «до» (before-r6, before-r8) — совпадали.",
+      "node --input-type=module (perl alarm 20): recordableCost от 2e9, 5e8, 0.1234561, -1, NaN, 1e9 → null 500000000 0.123457 null null 1000000000.",
+      "Проба группы (perl alarm 60): run claude-cli с подменённым io.spawn — заглушка Node печатает образец, запускает потомка и выходит. Настоящий claude не запускался. Результаты. Потомок в группе: ok, после run его нет. Потомок вне группы держит stdout: run вернулся за ~5048 мс, outcome failed, transient false, detail «Не удалось остановить процессы исполнителя», cost 0.05, потомок жив (убит пробой). С stream-out-of-schema.jsonl: invalid_output, transient true, detail «Ответ исполнителя не соответствует схеме» — это I11.",
+      "Проба G проверки безопасности, повтор (perl alarm 240, временные SAI_TEAM_HOME и HOME, fake-claude): current — stuckOpenRunAfterRace 19, stuckAfterOneMoreOpen 19, recovered 1 из 20; before — 0, 0, 20. Папки sb-* удалены.",
+      "Чтение кода: runner.js (recordableCost, COST_REPORTED_MAX, closeAfterError без result_disk и без stopGroup, maxBudgetFor(state, config), импорт mask.js), claude-cli.js (CLOSE_GRACE_MS, forceClose, groupStuck, exit → stopGroup), store.js (recover: crashed = stalePid || tail), files.js (nlink), common.js, exec-findings.test.js (14 тестов, названия сверены), fixtures/team/README.md.",
+      "grep путей компьютера (<путь компьютера>/, /private/, scratchpad) в обоих проектах — пусто. Все 17 пунктов планки (Q1–Q14, R1–R3) есть строками п. 16 в обоих проектах. Кода реализации нет: только формы, сигнатуры, таблицы.",
+      "AP-005: поиск maxBudgetFor(state), ceil6(RunResult, result_disk | result_file, «P10 записи 0017» как границы, crashed, «только после аварии», TM-01…TM-66 — устаревших ссылок нет. Оставлены история r5 в шапке и явные пометки «было».",
+      "Изменены только docs/design/REQ-010-agent-executors.md (sha1 f24bbc61…) и docs/design/REQ-009-team-core.md (sha1 457ee751…), а в handoff — только status, completed_at, result. Прочие изменения в git status — от параллельных шагов (DOC-UPDATER)."
+    ],
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "to": "ORCH",
+        "text": "I11 (а), REQ-010: если поправка groupStuck сработала, а ответ не прошёл схему, claude-cli.js возвращает invalid_output с transient: true (проба F15). Так повтор возможен при живом потомке прежней попытки, а это расходится с п. 5.4/5.6/8.3. Проект правило не ослабляет. Исправление: поправка после проверки схемы плюс тест — CODE-FIXER и TEST-DESIGNER, по решению ORCH."
+      },
+      {
+        "kind": "QUESTION",
+        "to": "ORCH",
+        "text": "I11 (б), REQ-010: у правил «ok при groupStuck → failed» и «оставшаяся группа после штатного выхода останавливается» нет своих тестов (проверены только пробой F15). Нужны ли тесты, например новые режимы fake-claude-probe.js, решает ORCH."
+      },
+      {
+        "kind": "NOTE",
+        "to": "ORCH",
+        "text": "S1 в REQ-009 r8 меняет поведение ядра. CODE-FIXER: store.js recover — условие «обрыв или незакрытая работа». TEST-DESIGNER: TM-64 (B) по п. 15.1c и новый TM-67. После этого нужен повтор ворот безопасности и ревью."
+      },
+      {
+        "kind": "PROPOSAL",
+        "to": "ORCH/DOC-UPDATER",
+        "text": "Для 0017: P13 (признак аварии по журналу у получившего замок; stalePid — уведомление) и P14 (остаточный риск S2: расход запуска, не записанный до аварии, не учитывается). Для 0018: P9 (граница файлов тестов) и P10 (записываемый расход ≤ 1e9; группа не ушла — без повтора, удачный итог не принимается). Тексты — в п. 19 REQ-009 и п. 18 REQ-010."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md"
+    ]
+  }
+}

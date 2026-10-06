@@ -1,0 +1,119 @@
+{
+  "handoff_id": "step12-security-reviewer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "12",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-12-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-12-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/build-exec-before",
+    "parallel_work_now": "REVIEWER (только чтение), TEST-DESIGNER (тесты ядра)",
+    "artifacts_in": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md",
+      "docs/requirements.yaml (блок REQ-010)",
+      "decisions/0015-product-virtual-team-start.md",
+      "handoffs/PROD-20261006-01/step-11-backend-dev.json",
+      "tools/src/team/",
+      "tools/test/fixtures/team/",
+      "tools/README.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3: ворота безопасности после кода исполнителей REQ-010 (handoffs/PROD-20261006-01/step-11-backend-dev.json; проект docs/design/REQ-010-agent-executors.md; копия до — <рабочая папка ORCH>/orch/prod/build-exec-before). ЖЁСТКИЕ ПРАВИЛА для вас: НИКОГДА не запускайте настоящий claude (ни claude -p, ни через PATH): SAI_TEAM_CLAUDE_BIN только на поддельный файл tools/test/fixtures/team/fake-claude.js или на несуществующий missing-*; SAI_TEAM_HOME — только временная папка; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен. Это самый рискованный участок продукта: код запускает дочерний процесс по тексту, который выбирает модель. Сами, не по отчёту, по каждому пункту Q7–Q11, R2, R3 — «выполнен»/«неприменим» со своей проверкой. Особо (на поддельном claude и юнит-пробами): условия реальных запусков ВНУТРИ run() claude-cli (SAI_TEAM_REAL_RUNS ровно '1', потолок > 0, остаток; отказ ДО spawn — счётчик запусков 0, журнал не меняется; прямой вызов run() в обход runner/команды; start/resume REQ-013 ещё нет); невозможность подмены: ни при каких значениях окружения (SAI_TEAM_CLAUDE_BIN пустой, относительный, на symlink, на настоящий claude по PATH) настоящий claude не запускается без условий; spawn без оболочки (shell: false, массив аргументов, текст задачи через stdin, не через аргументы/оболочку: инъекция в имя проекта/задачи/роли/цели); флаги изоляции в argv (--restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --permission-prompts none, --append-system-prompt) и списки инструментов по ролям (--tools/--allowedTools: у всех нет Bash и субагентов; Исследователь: WebSearch/WebFetch только при SAI_TEAM_WEB не 0 и при реальных запусках; правила запрета локальных адресов); рабочая папка work/ (cwd), путь не выходит; окружение дочернего процесса — фиксированный список (HOME, PATH + что проект называет), нет ANTHROPIC_API_KEY и других секретов; таймаут 20 минут и убийство ГРУППЫ процессов (detached, kill(-pgid)) — проверьте на поддельном claude, который порождает внука и зависает: после таймаута процессов не остаётся; ни одного остаточного процесса после пробы; разбор stream-json: враждебные строки (огромные, мусор, __proto__, бесконечный поток без result — лимит памяти/размера), неизвестные события пропускаются, обязательные поля; стоимость: отрицательная/NaN/огромная/строка в cost → не ломает учёт; потолок запуска и проекта; файлы результата из work/: только текст UTF-8, символьные и жёсткие ссылки отклонены, имена шаблоном, перезапись запрещена, секреты в содержимом маскируются, журнал не подделать (importResultBytes — единое место записи; публичный append не принимает core-only); scripted: честная пометка (executor=scripted в событиях, фраза «тестовый исполнитель»), не по умолчанию, не подставляется тихо; чтение сценария без следования ссылкам; команды new/add-task/run-task: коды выхода, отказ без трассировок и секретов, маскирование целей/описаний; нет сети в коде ядра/исполнителей кроме того, что делает дочерний claude (grep по tools/src/team); нет зависимостей времени выполнения. Запустите сами cd tools && npm test (ожидается 632+). Ничего не правьте. Результат: result.verdict PASS/FAIL, по каждому пункту — выполнен/неприменим с доказательством пробами, findings (место, важность, исправление).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый пункт Q7–Q11, R2, R3 — с доказательством пробами",
+      "настоящий claude не запускался"
+    ]
+  },
+  "created_at": "2026-10-05T22:45:25Z",
+  "started_at": "2026-10-05T22:45:25Z",
+  "completed_at": "2026-10-05T22:52:47Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Область затронута: код запускает дочерний процесс (claude-cli), читает вывод чужой программы (stream-json), пишет файлы результата из work/, принимает ввод команд new/add-task/run-task, работает с секретами окружения и потолком расходов. Изменение — src/team (config.js, executor.js, executors/*, role-internal.js, runner.js, cli.js, errors.js, language.js, roles.js, store.js importResultBytes), fixtures/team, README (diff с копией до).\nНастоящий claude не запускался: claude нет в PATH (which claude → not found); SAI_TEAM_CLAUDE_BIN во всех пробах — только tools/test/fixtures/team/fake-claude.js (и симлинк на него при выключенных запусках) или .../missing-claude; в пробе «bin не задан» PATH указывал на пустую папку → E_EXECUTOR_NOT_FOUND. SAI_TEAM_HOME и HOME — временные папки; ~/.sai-team не создан; порт 4780 не использовался.\nnpm test (HOME, SAI_TEAM_HOME — временные): 632 из 632 pass, 0 fail.\nТаблица пунктов:\nQ7 — применим, выполнен. grep секретов по src/team, fixtures/team, README: только вымышленные приманки ghp_FAKEfake… в двух фикстурах (нужны для маскирования). Окружение дочернего: buildChildEnv из PATH/HOME/ANTHROPIC_API_KEY/GITHUB_TOKEN/AWS_*/NODE_OPTIONS/LD_PRELOAD/DYLD_*/SAI_TEAM_* → только PATH, HOME, CLAUDE_CONFIG_DIR; на деле (fake-claude, родитель с ANTHROPIC_API_KEY и GITHUB_TOKEN) env_names = HOME,LANG,LOGNAME,PATH,TMPDIR,USER,__CF_USER_TEXT_ENCODING (последнее добавляет macOS). E_CONFIG называет только имя переменной. Текст задачи — через stdin, не в argv (argv без текста задачи; stdin-1.bin содержит текст, секрет в нём уже «[скрыто]»). Цель, текст задачи, AGENT_ACTIVITY, файл результата маскируются (в журнале 0 совпадений ghp_FAKE/AKIAFAKE; files/t-0001-1-report.md = «[скрыто]», 0600); исходник принятого файла из work/ удалён, неназванный остался. stderr процесса не хранится.\nQ8 — применим (принцип «проекты не смешиваются»), выполнен. cwd = <HOME>/<id>/work (лог fake-claude), --add-dir не передаётся; work_dir-симлинк и пропавшая папка → E_WORK_DIR до spawn; файлы из work/: симлинк, жёсткая ссылка, ../, абсолютный путь, симлинк-папка, не UTF-8 — все отклонены result_file, files/ пуст, внешний файл цел. Id проекта '../../etc' → E_NOT_FOUND.\nQ9 — неприменим: базы и SQL нет (grep по src/team — нет).\nQ10 — применим, НЕ выполнен в одном месте (находка F1): огромная стоимость в итоге потока (total_cost_usd = 1e303) ломает учёт — RUN_FINISHED отклоняется ядром (E_EVENT cost_usd), BUDGET_SPENT не пишется, восстановление закрывает запуск interrupted без списания, spent_usd остаётся 0, следующий run-task снова запускает процесс без списания. Остальное выполнено: таймаут 20 мин по умолчанию (TASK_TIMEOUT_MS_DEFAULT=1200000); таймаут 1500 мс с зависшим fake и внуком → 3 попытки timeout, TASK_FAILED «Задача заняла слишком много времени», все 6 pid (fake и внуки) ушли; отмена SIGTERM → TASK_INTERRUPTED, pid ушли; процесс, игнорирующий SIGTERM, с внуком → SIGKILL группе через 3 с, группа ушла; строка 9 MiB → invalid_output «слишком большой»; бесконечный поток без result (неизвестный type / assistant) → обрыв на 64 MiB, активностей ≤ 300; поток без result → timeout; мусор, массивы, null, type не строка → broken; __proto__ в structured_output → checkAnswer отказ ($.__proto__), прототип не загрязнён; cost -1/NaN/строка/true/Infinity → null → accounted assumed = потолок запуска (0.25); 1e16 → списано, следующий запуск отказ E_BUDGET_EXHAUSTED; 0.123456789 → 0.123457. Коды выхода без трасс: 0/1/2 по таблице п. 9.4.\nQ11 — применим (исходящие Исследователя делает дочерний claude), выполнен в границах проекта. Код src/team в сеть не ходит: импортов http/https/net/tls/dgram/dns, fetch, WebSocket нет (внешние импорты: child_process, crypto, fs, os, path, url). WebSearch/WebFetch только у researcher и только при SAI_TEAM_WEB ≠ 0 (web=false → нет), и только при реальных запусках; при WebFetch — --disallowedTools с правилами localhost, 127.0.0.1, [::1], 0.0.0.0, 169.254.169.254. Остаток (частные сети, DNS) — признан проектом, README и 0015; проверить адрес до запроса Sai не может.\nR2 — применим (правда событий Sai Team; Pixel Office не менялся: diff только src/team), выполнен. AGENT_ACTIVITY пишется в onEvent синхронно по разобранной строке; у scripted все события executor=scripted (6 из 6), фразы TASK_*/RUN_*/AGENT_ACTIVITY с суффиксом «— тестовый исполнитель», new даёт executor_note «тестовый исполнитель — только для тестов»; new без --executor → claude-cli; getExecutor без запасного варианта; сценарий-симлинк → E_SCENARIO, журнал байт-в-байт тот же; заранее написанных событий в src/team нет.\nR3 — неприменим: фото покупателей нет.\nУсловия реальных запусков внутри run() — выполнены (прямой вызов run с подсчитывающим spawn): REAL_RUNS не '1' ('true','yes',' 1','1 ','01','','0','１') → E_REAL_RUNS_OFF; budget 0/NaN → E_NO_BUDGET; остаток 0, max > остатка, max NaN/Infinity/0 → E_BUDGET_EXHAUSTED; чужой executor → E_EXECUTOR; через команду без REAL_RUNS/с REAL_RUNS=true/симлинк-bin → код 1, журнал байт-в-байт, лога fake нет (0 запусков). SAI_TEAM_CLAUDE_BIN пустой/относительный/' /abs' → E_CONFIG, код 2. Исключение — находка F2 (spent_usd NaN проходит checkBudget). spawn: shell:false, detached:true, массив аргументов, единственный вызов spawn в src/team; 14 аргументов изоляции на месте у всех 10 ролей; Bash/Task/Agent нет ни у одной роли; запрещённых флагов (--add-dir, --dangerously-skip-permissions, --permission-mode, --mcp-config, --settings, --agents, --model, --resume) нет. Инъекция в текст задачи ($(touch …), `id`, --dangerously-skip-permissions) — только в stdin, /tmp/pwn-secrev не создан.\nЖурнал: публичный append отклоняет RESULT_FILE, PROJECT_CREATED, RUN_FINISHED interrupted и чужой source; importResultBytes отклоняет не-UTF-8, строку вместо Buffer, > 5 MiB, имя с ../, перезапись (E_FILE_EXISTS); журнал при отказах байт-в-байт; принятый файл маскирован, 0600. Зависимостей времени выполнения нет (dependencies отсутствует).",
+    "findings": [
+      {
+        "id": "F1",
+        "location": "tools/src/team/executors/stream.js:121-126 (приём total_cost_usd) и tools/src/team/runner.js:308, 435-468 (ceil6 и запись RUN_FINISHED/BUDGET_SPENT)",
+        "bar_item": "Q10 (ошибка одного запуска не ломает другие; потолок расходов)",
+        "severity": "Medium",
+        "blocking": true,
+        "problem": "Разборщик принимает любое конечное total_cost_usd ≥ 0. При cost ≥ ~1.8e302 ceil6 даёт Infinity, ядро отклоняет RUN_FINISHED (E_EVENT: cost_usd) уже после MEMORY_ADDED (и после импорта файлов, если они есть); BUDGET_SPENT не пишется; следующий писатель закрывает запуск interrupted без списания. Проба (fake-claude, set_cost 1e303): spent_usd = 0 после двух запусков, оба процесса запущены, второй run-task прошёл условия остатка. Потолок проекта перестаёт работать для таких отчётов, журнал неполон.",
+        "fix": "Принимать стоимость только в диапазоне, который ядро может записать: в stream.js (или в runner перед ceil6) считать cost недопустимым (null → accounted assumed = потолок запуска), если ceil6(cost) не конечное число или больше разумной границы (например LIMITS.BUDGET_MAX); либо зажимать до max(cost, …) с пометкой. Добавить тест: set_cost 1e303 → RUN_FINISHED и BUDGET_SPENT записаны, spent_usd увеличен, следующий запуск по остатку."
+      },
+      {
+        "id": "F2",
+        "location": "tools/src/team/executor.js:312-327 (checkBudget), tools/src/team/executors/claude-cli.js:108-114 (check)",
+        "bar_item": "условие остатка внутри run() (защита в той же операции)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "checkBudget не проверяет, что budget_usd и spent_usd — конечные числа: при spent_usd = NaN сравнение max > NaN ложно, и check пропускает; при budget_usd = '1' (строка) — тоже. Проба прямым вызовом run(): spawn вызван в обоих случаях. Через runner/команду недостижимо (spent_usd ядра всегда проверенная сумма), но run() обещает защиту сам при прямом вызове движком REQ-013.",
+        "fix": "В checkBudget (и условии 3 check) требовать typeof === 'number' && Number.isFinite для budget_usd и spent_usd; иначе E_BUDGET_EXHAUSTED (или E_INTERNAL). Тест прямого вызова run с NaN/строкой — spawn 0."
+      },
+      {
+        "id": "F3",
+        "location": "tools/src/team/runner.js:565-583 (removeSource)",
+        "bar_item": "запись/удаление файлов только в своей папке",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Перед unlinkSync проверяется lstat только последней части пути; промежуточные папки проверены раньше в readWorkFile. Если между приёмом и удалением папку внутри work/ подменят симлинком (процесс, ушедший из группы через setsid — остаточный риск п. 5.6), unlink удалит одноимённый файл вне work/.",
+        "fix": "Перед удалением повторить обход частей lstat (как readWorkFile) или сверить realpath(dirname) с realpath(workDir) и dev/ino файла с принятым."
+      },
+      {
+        "id": "F4",
+        "location": "tools/src/team/executors/claude-cli.js:247-266 (onData)",
+        "bar_item": "Q10 (ограничение памяти разбора)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Строка без перевода строки собирается Buffer.concat на каждом куске: для строки 9 MiB проба показала рост RSS ~450 MB до обрыва (квадратичная пересборка). Предел 8 MiB/64 MiB срабатывает, но пиковая память в десятки раз больше предела.",
+        "fix": "Копить куски массивом и считать длину; склеивать только при найденном \\n или проверять предел строки до concat."
+      }
+    ],
+    "self_check": [
+      "Хеши до/после: find tools docs decisions handoffs (без node_modules) | shasum — 539 файлов; отличие только handoffs/PROD-20261006-01/step-13-reviewer.json (его пишет параллельный REVIEWER, не я); код не менялся.",
+      "~/.sai-pixel-office/events.jsonl изменился за время проверки — это живой хук Pixel Office от запущенных сессий Claude Code; мои пробы и npm test шли с HOME во временной папке и в ~/.sai-pixel-office не писали. ~/.sai-team: No such file or directory.",
+      "cd tools && HOME=<tmp> SAI_TEAM_HOME=<tmp> SAI_TEAM_CLAUDE_BIN=<tmp>/missing-claude npm test → # tests 632 # pass 632 # fail 0, exit=0.",
+      "which claude → claude not found.",
+      "p1.mjs (юнит-пробы): realRuns только для '1'; bin '' / 'claude' / './fake' / '../x' / ' /abs' → E_CONFIG; run(): realOff, realTrueStr → E_REAL_RUNS_OFF; budget0, budgetNaN → E_NO_BUDGET; noRest, maxOverRest, maxNaN, maxInf, maxZero → E_BUDGET_EXHAUSTED; workMissing, workLink → E_WORK_DIR; wrongExec → E_EXECUTOR; spentNaN, budgetStr → NO THROW (spawn вызван, F2). argv всех 10 ролей × web on/off: tools = allowedTools, без Bash/Task/Agent, флаги изоляции есть, запрещённых нет; researcher web=false — без WebSearch/WebFetch и без --disallowedTools. childEnv names [PATH, HOME, CLAUDE_CONFIG_DIR] из враждебного окружения. Парсер: 6 broken, 3 skipped, __proto__ → checkAnswer {ok:false,path:'$.__proto__'}, ({}).polluted undefined; cost -1/NaN/'1'/Infinity/true/null → null, 1e308 → 1e308 (F1). ceil6 не-money только для 1e303 и MAX_VALUE; round6 итогов 200 000 случайных — 0 расхождений.",
+      "flowA.sh (команды): без REAL_RUNS, REAL_RUNS=true, симлинк-bin → E_REAL_RUNS_OFF exit=1, events.jsonl: OK (shasum -c), log.jsonl fake отсутствует; bin относительный/пустой → E_CONFIG exit=2; bin не задан + PATH пустая папка → E_EXECUTOR_NOT_FOUND exit=1, TASK_FAILED executor_not_found.",
+      "flowB.sh (fake, REAL_RUNS=1, ANTHROPIC_API_KEY и GITHUB_TOKEN в окружении родителя): exit=0; argv 22 элемента без текста задачи; cwd = .../<id>/work; env_names HOME,LANG,LOGNAME,PATH,TMPDIR,USER,__CF_USER_TEXT_ENCODING; stdin содержит '$(touch /tmp/pwn-secrev)' (1) и '[скрыто]'; /tmp/pwn-secrev нет; work/out/report.md удалён, other.md остался; files/t-0001-1-report.md 0600 «Отчёт с ключом [скрыто] и [скрыто]»; ghp_FAKE/AKIAFAKE в журнале — 0.",
+      "flowC.sh: timeout 1500 мс, fake со внуком висит → E_TASK_FAILED «Задача заняла слишком много времени» exit=1, 3×RUN_FINISHED timeout, pid 26549 26551 26570 26571 26623 26626 — все gone; SIGTERM run-task → E_TASK_CANCELLED exit=1, TASK_INTERRUPTED, pid 26721 26727 gone.",
+      "flowD.sh: cost 1e303 → E_EVENT: Событие отклонено: cost_usd, нет RUN_FINISHED/BUDGET_SPENT, затем RUN_FINISHED interrupted + TASK_INTERRUPTED recovery, spent_usd 0, второй запуск тоже без списания (F1); cost -1 → assumed 0.25; 1e16 → reported, следующий E_BUDGET_EXHAUSTED; файлы symlink/hardlink/dotdot/abs/dirlink/binary → E_TASK_FAILED result_file, files/ пуст.",
+      "p2.mjs (run с подменённым spawn простого node-скрипта, не claude; shell:false и detached:true проверены в подмене): hugeLine → invalid_output too_big, rss +453 MB (F4); endlessUnknown → too_big на 65383 строках; endlessAssistant → too_big, activities 300, dropped 211906; slowNoResult → timeout 1555 мс; ignoreTerm+внук → timeout 4560 мс, groupAlive false.",
+      "flowE.sh: scripted → 6× executor scripted, фразы с «— тестовый исполнитель», executor_note; scenario.json → симлинк → E_SCENARIO, журнал OK; отказы new/add-task/run-task: коды 1/2, одна строка без трасс и путей (сценарий /etc/nonexistent… — путь не выведен).",
+      "p3.mjs: append RESULT_FILE/PROJECT_CREATED/RUN_FINISHED interrupted/AGENT BUDGET_SET → E_EVENT; importResultBytes отказы E_EVENT/E_FILE_NAME/E_FILE_EXISTS, журнал неизменен.",
+      "grep -rnE 'node:(http|https|net|tls|dgram|dns)|fetch\\(|WebSocket|cp\\.(exec|execSync|execFile|execFileSync|spawnSync|fork)|require\\(' src/team → пусто; spawn( — одно место claude-cli.js:201.",
+      "Остаточные процессы: новых процессов моих проб нет (сравнение списков pid до/после — только системные mdworker и Chrome). Фоновых задач нет."
+    ],
+    "issues": [
+      {
+        "kind": "к ORCH",
+        "text": "F1 блокирующая: нужен CODE-FIXER (малое исправление в stream.js или runner.js + тест), затем повтор этой проверки. F2–F4 — Low, не блокируют; удобно исправить тем же проходом."
+      },
+      {
+        "kind": "к ORCH, информация",
+        "text": "run() доверяет io.config от вызывающего (не перечитывает окружение) — так по проекту п. 3.1; движок REQ-013 обязан передавать readConfig(env), а не собранный руками объект. Критерий 14 (UAT настоящего запуска) не выполнялся — ждёт согласия владельца."
+      },
+      {
+        "kind": "AP-018",
+        "text": "Ожидаемого вердикта в задании нет; вердикт выведен по пробам."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

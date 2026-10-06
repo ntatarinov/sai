@@ -1,0 +1,58 @@
+{
+  "handoff_id": "step19-code-fixer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "19",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261006-01/step-19-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "MEDIUM",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/runner.js",
+      "handoffs/PROD-20261006-01/step-19-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-dead-before",
+    "parallel_work_now": "TEST-DESIGNER (exec-closure.test.js)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-07-code-designer-r4.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02: удалить недостижимую ветку в tools/src/team/runner.js (closeAfterError: E_DISK → result_disk) — мёртвый код по заключению проектировщика (handoffs/PROD-20261006-01/step-07-code-designer-r4.json, EX-54 и примечание о мутанте): убедитесь сами (прочтите closeAfterError и места вызова; докажите недостижимость: какой код ошибки реально приходит в эту ветку; сломанный писатель и TASK_FAILED не бывают в одном запуске), удалите ветку и связанные неиспользуемые имена/константы, сохраните поведение всех достижимых путей. Если ветка ОКАЗАЛАСЬ достижимой — не удаляйте, result.issues с входом, который до неё доходит. Тесты НЕ писать и не менять. Проверка: cd tools && npm test проходит (774+). Копии до — <рабочая папка ORCH>/orch/prod/fix-dead-before. ЖЁСТКИЕ ПРАВИЛА: настоящий claude не запускать; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; процессов не оставлять. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "недостижимость доказана, ветка удалена",
+      "npm test проходит",
+      "изменён только runner.js"
+    ]
+  },
+  "created_at": "2026-10-06T00:24:01Z",
+  "started_at": "2026-10-06T00:24:01Z",
+  "completed_at": "2026-10-06T00:26:27Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Ветка E_DISK -> result_disk внутри closeAfterError недостижима; удалена вместе с ставшим ненужным параметром err. Достижимая ветка result_disk в acceptResult (возврат refusal) и FAIL_DETAIL.result_disk сохранены.",
+    "proof_unreachable": "В closeAfterError ветка accepting=true получает ошибку только из acceptResult (accepting сбрасывается после неё). Оттуда E_DISK приходит двумя путями: (1) E_DISK без details.rollback — acceptResult возвращает refusal, не бросает, до closeAfterError не доходит; (2) E_DISK с rollback (writerBroken) — acceptResult бросает, но писатель сломан (store.js #commit ставит #broken), и failTask -> writer.append бросает writerBroken до записи события, catch делает markBroken; выбор detail ни на что не влияет. readWorkFile/checkWorkPath бросают только E_WORK_FILE, E_DISK оттуда не идёт. Сломанный писатель и TASK_FAILED в одном запуске не бывают.",
+    "changes": [
+      {
+        "file": "tools/src/team/runner.js",
+        "place": "closeAfterError (ветка accepting)",
+        "change": "failTask('result_file', err is E_DISK ? 'result_disk' : 'result_file') -> failTask('result_file','result_file'); параметр err и аргумент вызова closeAfterError(failure) убраны"
+      }
+    ],
+    "self_check": "diff с копией до — только эти две правки. npm test: 776 тестов, 776 pass, 0 fail (один промежуточный прогон дал 1 fail при параллельной правке test/exec-closure.test.js TEST-DESIGNER-ом; повтор — 0 fail). npm run check: format:check OK; eslint падает на tools/test/exec-closure.test.js:294 no-useless-assignment (файл TEST-DESIGNER-а, вне write_set, к runner.js не относится) — до npm test цепочка не дошла, тесты прогнаны отдельно.",
+    "issues": [
+      "Линтер: tools/test/exec-closure.test.js строка 294, переменная result не используется (no-useless-assignment) — исправляет TEST-DESIGNER/TEST-FIXER; мутант на ветку E_DISK->result_disk в closeAfterError теперь не нужен (ветки нет), строка о нём в таблице мутантов проекта REQ-010 устарела — решает ORCH/CODE-DESIGNER."
+    ],
+    "artifacts_out": [
+      "tools/src/team/runner.js"
+    ]
+  }
+}

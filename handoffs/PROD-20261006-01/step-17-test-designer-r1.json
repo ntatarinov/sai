@@ -1,0 +1,58 @@
+{
+  "handoff_id": "step17-test-designer-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "17",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-17-test-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/exec-closure.test.js",
+      "tools/test/exec-helpers.js (только добавлением)",
+      "handoffs/PROD-20261006-01/step-17-test-designer-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": null,
+    "parallel_work_now": "CODE-DESIGNER (docs/design/REQ-010...)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-17b-test-design-validator.json",
+      "handoffs/PROD-20261006-01/step-17-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка r1 по FAIL ворот (handoffs/PROD-20261006-01/step-17b-test-design-validator.json, находка Medium): мутант M17 (ветка E_DISK → result_disk в closeAfterError в tools/src/team/runner.js) проходит все тесты. Напишите тест на эту ветку: отказ записи при приёме файла результата, который является E_DISK (например ENOSPC на запись RESULT_FILE через fault-inject.js или готовый приём в EX-53/EX-52-стиле: acceptResult получает E_DISK), — задача получает TASK_FAILED с причиной и detail result_disk (сверьте по tools/src/team/runner.js и проекту docs/design/REQ-010-agent-executors.md шаг 8 п. 8.2), запуск закрыт RUN_FINISHED failed, BUDGET_SPENT записан, писатель сломан → замок остался и следующее открытие восстанавливает (по правилу r6) — проверьте, что именно происходит по коду, и тестируйте это. Мутант M17 должен падать: проверьте на КОПИИ вне проекта. Low: оберните runCommand на трубах и runTask в EX-52 withLimit (как в других exec-*). Пишете только tools/test/exec-closure.test.js (и exec-helpers.js — только если нужно, добавлением). Другой агент правит docs/design/REQ-010-agent-executors.md (формулировку EX-52 б) — вы проект не трогаете. ЖЁСТКИЕ ПРАВИЛА: настоящий claude не запускать (SAI_TEAM_CLAUDE_BIN — fake/probe или missing-*); SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов. cd tools && npm test проходит. Каждая команда — с ограничением по времени (на macOS нет timeout).",
+    "acceptance_criteria": [
+      "тест на E_DISK → result_disk",
+      "M17 падает на копии вне проекта",
+      "npm test проходит"
+    ]
+  },
+  "created_at": "2026-10-06T00:21:59Z",
+  "started_at": "2026-10-06T00:21:59Z",
+  "completed_at": "2026-10-06T00:26:01Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 по FAIL ворот step-17b и уточнению ORCH (проект r4, EX-54; ветка E_DISK->result_disk в closeAfterError мертва, M17 не нужен). Тест (б') на мёртвой ветке убран. Написаны EX-54 (а) и (б) в tools/test/exec-closure.test.js. (а) ENOSPC на writeFileSync .partial: runTask не бросает, возвращает error E_DISK без details.rollback; RUN_FINISHED failed cost 0.05 files [], BUDGET_SPENT reported, TASK_FAILED {result_file, result_disk}; RESULT_FILE нет, files/ пуст, writer.broken=false, замка нет после close(), следующее открытие без notices. (б) настоящая команда run-task, ENOSPC на writeSync events.jsonl на записи RESULT_FILE (номер измерен на чистом прогоне): E_DISK без стека, замок с pid завершившегося процесса остался, в журнале только целые TASK_STARTED, RUN_STARTED, AGENT_ACTIVITY (нет RESULT_FILE, RUN_FINISHED, BUDGET_SPENT, TASK_FAILED), files/ пуст; следующий say восстанавливает (LOCK_STALE_REMOVED, RUN_FINISHED interrupted, TASK_INTERRUPTED recovery, PROJECT_RECOVERED, CHAT), второй say ничего. Отклонение от текста проекта: (б) — командой (дочерний процесс), а не в процессе теста, потому что замок живого процесса теста не восстанавливается (E_PROJECT_BUSY); так же сделан EX-53. Low: runCommand на файлах/SIGKILL/reapFakes, runTask в EX-52 под withLimit. Критерий -> тест: E_DISK при записи файла результата -> result_disk: EX-54 (а); сломанный писатель, замок остался, восстановление: EX-54 (б). Q10 покрыт; Q8, Q11, R3 не затронуты (адресов и фото нет).",
+    "changes": [
+      "tools/test/exec-closure.test.js: EX-54 (а), (б) и DETAIL_DISK (замечание F1 Medium, уточнение ORCH); runCommand и withLimit (Low F2); убран промежуточный (б'); prettier. exec-helpers.js не менялся."
+    ],
+    "self_check": [
+      "cd tools && npm run check -> 776 tests / 776 pass / 0 fail / 0 skipped / 0 todo, код 0 (format, lint без ошибок).",
+      "Мутант A на копии вне проекта (scratchpad/m54): на ветке отказа приёма 'result_disk' -> 'result_file' (runner.js, refusal(err, ...)): exec-closure 6 pass / 1 fail, падает EX-54 (а).",
+      "Мутант B на копии: убрано 'if (writerBroken(err)) throw err;': 6 pass / 1 fail, падает EX-54 (б).",
+      "shasum tools/src+test+package.json до и после мутантов совпал; процессов fake-claude нет."
+    ],
+    "issues": [],
+    "artifacts_out": [
+      "tools/test/exec-closure.test.js"
+    ]
+  }
+}

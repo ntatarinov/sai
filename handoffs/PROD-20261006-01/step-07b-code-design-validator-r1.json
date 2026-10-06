@@ -1,0 +1,121 @@
+{
+  "handoff_id": "step07b-code-design-validator-r1-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "07b",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261006-01/step-07b-code-design-validator-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-07b-code-design-validator-r1.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r1.md",
+    "parallel_work_now": "TEST-DESIGNER (тесты ядра, tools/test/)",
+    "artifacts_in": [
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-009-team-core.md",
+      "docs/requirements.yaml",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 1b, повторные ворота: проект docs/design/REQ-010-agent-executors.md после доработки r1 (handoffs/PROD-20261006-01/step-07-code-designer-r1.json; прежние ворота — step-07b-code-design-validator.json: 6 блокирующих — 4 High, 2 Medium). Копия до — <рабочая папка ORCH>/orch/prod/REQ-010-agent-executors.before-r1.md; проект ядра правился минимально (r4: importResultBytes, FAIL_DETAIL, фразы; копия до — <рабочая папка ORCH>/orch/prod/REQ-009-team-core.before-r4.md): проверьте и эти правки (diff) на согласованность с кодом ядра tools/src/team/ (он уже построен; language.js и store.js получат изменения в раундах REQ-010 — это нормально). Проверьте сами по роли и WF-02: каждое из 6 прежних замечаний снято по существу (учёт стоимости и повторы после таймаута — разберите вручную сценарий: потолок проекта 1.00, потолок запуска 0.25, первый запуск таймаут без отчёта → засчитано 0.25, остаток 0.75, повтор разрешён…; порядок проверок и кто пишет RUN_REFUSED; причины TASK_FAILED только из реального каталога — сверьте с tools/src/team/schema.js и фразами; scripted не пишет на диск, importResultBytes — через существующее место записи, TM-04 остаётся «четыре места»; тест на аргументы изоляции EX-49; защита assertSafeEnv EX-15/EX-38 — можно ли обойти и запустить настоящий claude); 16 критериев REQ-010 покрыты (EX-01…EX-51 — номера свободны по tools/test), планка Q1–Q14, R1–R3; кода реализации нет; флаги claude — по --help/--version (ТОЛЬКО их; НИКОГДА claude -p и настоящие сессии), перепроверьте, что исправления не добавили несуществующих флагов; можно строить без догадок; открытый вопрос дизайнера — бюджет scripted без cost_usd = четверть: оцените, не мешает ли REQ-013 (это вопрос проекта REQ-013 — не блок). Ничего не правьте. Все фоновые процессы завершите. Результат: result.verdict PASS/FAIL, summary с доказательствами, findings (Critical/High/Medium блокируют).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждое замечание — снятие с доказательством",
+      "замечания с местом, важностью, исправлением"
+    ]
+  },
+  "created_at": "2026-10-05T22:23:29Z",
+  "started_at": "2026-10-05T22:23:29Z",
+  "completed_at": "2026-10-05T22:27:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": [
+      "Прежние 6 блокирующих замечаний сняты по существу. (1) Потолок запуска: runCapFor/maxBudgetFor п. 8.4; разобран вручную сценарий: потолок 1.00, потолок запуска floor6(1×0.25)=0.25; попытка 1 таймаут без отчёта → BUDGET_SPENT assumed 0.25, остаток 0.75; checkBudget следующей попытки: min(0.75,0.25)=0.25 > 1e-6 → TASK_RETRY, попытка 2 (0.25) → остаток 0.5 → попытка 3 с 0.25; с set_cost 0.1 итог 0.6 — совпадает с EX-28. EX-47 (cap 0.6): 0.6 reported → остаток 0.4 → повтор с 0.4 → assumed 0.4 → остаток 0 → RUN_REFUSED + TASK_FAILED budget, TASK_RETRY один — сходится. EX-31 (1, 0.7, 0.4) и EX-26 (а/б) сходятся. (2) Порядок: check в runner шаг 3 (условия 1–4 по порядку), RUN_REFUSED пишет только вызывающий (runner шаг 4 / шаг 6.5 / 6.3), run/check не пишут; reducer.js:469 RUN_REFUSED допускает waiting/running/interrupted/failed без открытого запуска — пути шагов 4, 6.3, 6.5 допустимы. (3) Причины TASK_FAILED — только retries_exhausted/executor_not_found/invalid_output/result_file, сверено с schema.js:341-349; FAIL_DETAIL ≤ DETAIL_MAX 500; фразы: в language.js строка RUN_FINISHED network «…попробуем ещё раз» (будет заменена в раунде 1 — нормально), выбор строки по data (dataIs) позволяет условие reason+detail; TASK_RETRY пишется только после решения о повторе. (4) scripted ничего не пишет: outputs в памяти → writer.importResultBytes → #publish → publishResultFile (files.js:93, первое место TM-04); grep мест записи сейчас — 4 (files.js:100, store.js:479, store.js:485, lock.js:113); TM-04 остаётся «четыре». (5) EX-49 — точный argv по buildArgs и шесть флагов изоляции своей строкой, мутанты названы. (6) assertSafeEnv: три формы; разобраны обходы — ссылка в fixtures на настоящий claude отсекается realpath; форма 2 — только несуществующее missing-* в fixtures (spawn → ENOENT); форма 3 — относительное missing-* при PATH = пустая временная папка (поиск по PATH ничего не найдёт); незаданный BIN и 'claude' отвергаются; HOME пуст — входа нет. Пути к настоящему claude через помощники не нашёл.",
+      "Флаги claude: --version → 2.1.289 (Claude Code), код 0; --help → 310 строк, код 0; все 33 флага, упомянутые в проекте (используемые и запрещённые), есть в справке; r1 новых флагов не добавил (по diff — только уже проверенные --restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --permission-prompts, --append-system-prompt, --disallowedTools, --max-budget-usd). Настоящий claude не запускался.",
+      "Критерии → тесты: 16 критериев покрыты EX-01…EX-51 (непрерывно, без повторов; 14 — UAT, 13 — ещё прогон на чистой копии); номера EX и TM-63 в tools/test свободны (тестов team-* пока нет).",
+      "Правка проекта ядра r4 (diff с копией before-r4): importResultBytes (п. 6.8, TM-63), FAIL_DETAIL и три строки фраз, п. 17 и «Кто» TASK_REVIEW — согласуются с кодом ядра (store.js #publish/writeResultFile/importWorkFile, files.js publishResultFile, language.js row/dataIs, schema.js, reducer.js); схема и каталог не тронуты.",
+      "Планка п. 16: Q1–Q14 и R1–R3 названы с объяснением — пройдено. Решения 0015 (D-B, Q11) и 0017 — противоречий нет; P4 выносит выбор потолка запуска в запись. Кода реализации нет (поиск function/const/import/return — только строка команды теста EX-39; блоки ``` — формы данных).",
+      "Однозначность: найдено противоречие п. 6.1/6.2 и EX-51 (чтение сценария с O_NOFOLLOW против запрета openSync) — Medium, блокирует → FAIL. Остальные замечания неблокирующие.",
+      "Открытый вопрос дизайнера (scripted без cost_usd = потолок запуска, четверть): REQ-010 не мешает; для REQ-013 означает, что прогон без cost_usd в сценарии израсходует потолок проекта за 4 запуска (план, работа, проверка, сверка цели) — сценарии REQ-013 должны задавать cost_usd (в том числе 0) или большой --budget/SAI_TEAM_RUN_CAP_USD. Вопрос проекта REQ-013, не блок.",
+      "Хеш проекта до и после: REQ-010 3db4ff62d3cf8231e30c255f927cf6fd97780811, REQ-009 1bc139a7f6e3801028df5b59021eedc6cf4b11f0 — не менялись."
+    ],
+    "findings": [
+      {
+        "n": 1,
+        "severity": "Medium",
+        "blocking": true,
+        "where": "п. 6.1 (сценарий читается «O_RDONLY|O_NOFOLLOW») и п. 6.2 («нет open* на запись — только чтение сценария») против EX-51 (grep '…|openSync' по executors/scripted.js должен быть пуст)",
+        "what": "Текст проекта разрешает открыть сценарий на чтение, а образец ядра (files.js readWorkFile) читает через fs.openSync(…, READ_FLAGS). Разработчик, следующий п. 6.1 и идиоме ядра, напишет openSync — и EX-51 упадёт; или тест придётся ослаблять. Контракт и тест расходятся (AP-014: соседние места одного правила).",
+        "fix": "Записать способ чтения однозначно: например, fs.readFileSync(path, {flag: O_RDONLY|O_NOFOLLOW}) с проверкой размера (проверено: на Node 22.21.1 работает, ссылка → ELOOP), без openSync; либо убрать openSync из grep EX-51 и запретить только флаги записи. Одно из двух — в п. 6.2 и EX-51 одинаково."
+      },
+      {
+        "n": 2,
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 5.3 (lstat work_dir «перед spawn … до RUN_STARTED»), п. 8.2 шаг 3 («здесь же E_WORK_DIR»), таблица п. 5.1",
+        "what": "Кто проверяет E_WORK_DIR до RUN_STARTED (check или runner) и в каком порядке относительно условия 4 (E_BUDGET_EXHAUSTED → RUN_REFUSED), не сказано; в таблице check его нет, а повторная проверка внутри run идёт уже после RUN_STARTED (путь шага 6.3).",
+        "fix": "Добавить E_WORK_DIR строкой в порядок check (например, после условия 3 и до 4) или явно в runner с местом в порядке."
+      },
+      {
+        "n": 3,
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 8.3, строка «группа процессов не остановилась», и правило «detail по outcome последней попытки»",
+        "what": "Для outcome timeout с RunResult.detail = «Не удалось остановить процессы…» два правила дают разный detail (timeout или group); теста нет.",
+        "fix": "Сказать, что при RunResult.detail = FAIL_DETAIL.group берётся group (приоритет над outcome)."
+      },
+      {
+        "n": 4,
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 15.2 (все new/run-task только через runTeam) и EX-39/EX-40 (node --import fault-inject.js …)",
+        "what": "Не сказано, как runTeam принимает аргументы node (--import), чтобы EX-39/EX-40 шли через assertSafeEnv.",
+        "fix": "Добавить в runTeam параметр nodeArgs (или назвать отдельный помощник с той же проверкой)."
+      },
+      {
+        "n": 5,
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 8.4 / EX-50 (потолок 0.000003) и SAI_TEAM_RUN_CAP_USD=0.000001",
+        "what": "При остатке > 0, но потолке запуска ≤ 1e-6 отказ называется «Потолок расходов проекта исчерпан», хотя ничего не потрачено; SAI_TEAM_RUN_CAP_USD ≤ 0.000001 проходит readConfig, но любой запуск отказывает.",
+        "fix": "Нижняя граница SAI_TEAM_RUN_CAP_USD > 1e-6 в readConfig (E_CONFIG) и/или отдельный текст отказа; не блок."
+      }
+    ],
+    "self_check": [
+      "<ext 2.1.289>/resources/native-binary/claude --version (perl alarm 20) → '2.1.289 (Claude Code)', code=0; --help → code=0, 310 строк; grep по 33 флагам проекта — каждый ≥ 1 строки (-p 2, --restricted 1, --safe-mode 1, --permission-prompts 1, --no-session-persistence 1, --strict-mcp-config 2, --max-budget-usd 1 «only works with --print», …); which claude → 'claude not found'",
+      "diff копия-before-r4 REQ-009-team-core.md ↔ текущий: только r4-правки (п. 6.4, 6.8, 9, 11, 13, 14, 17, TM-63, TASK_REVIEW «Кто»)",
+      "grep -rnE 'writeFile|appendFile|createWriteStream' tools/src/team/ → files.js:100, store.js:479, store.js:485, lock.js:113 (4)",
+      "sed schema.js:226-349 → TASK_FAILED.reason = retries_exhausted|rejected_by_user|executor_not_found|invalid_output|result_file; RUN_REFUSED.reason = budget_exhausted; TASK_RETRY.reason = failed|timeout|invalid_output|network; BUDGET_SPENT.accounted = reported|assumed; DETAIL_MAX 500",
+      "sed reducer.js:305-320,375-500,573-600 → RUN_REFUSED (И18) в waiting/running/interrupted/failed без открытого запуска; TASK_FAILED из running/…; BUDGET_SPENT проверяет только сумму (И8)",
+      "sed language.js → PHRASES row(type,text,when) с dataIs; RUN_FINISHED network «Нет доступа к сети, попробуем ещё раз» (до правки), not_found «Исполнитель недоступен»",
+      "sed store.js:280-350 → #publish → publishResultFile; writeResultFile/importWorkFile — from_work false/true",
+      "node -e readFileSync(s.json,{flag:O_RDONLY|O_NOFOLLOW}) → 8 байт; по ссылке → ELOOP (Node v22.21.1) — чтение без openSync возможно",
+      "grep -oE таблицы 15.1 → EX-01…EX-51 без пропусков и повторов; grep -rlE 'EX-[0-9]+' tools/test → пусто; ls tools/test | grep team → пусто",
+      "shasum до и после: REQ-010 3db4ff62d3cf8231e30c255f927cf6fd97780811, REQ-009 1bc139a7f6e3801028df5b59021eedc6cf4b11f0"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Блокирует только замечание 1 (Medium): одна строка в п. 6.1/6.2 или в EX-51 снимает его; остальное в проекте r1 проходит."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Для REQ-013: при правиле «расход без отчёта = потолок запуска (¼)» сценарии scripted движка должны задавать cost_usd, иначе потолок проекта кончится за 4 запуска."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "handoff_id": "step14b-test-design-validator-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "14b",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261006-01/step-14b-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-14b-test-design-validator.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/test-exec-before",
+    "parallel_work_now": "CODE-DESIGNER (ядро, только свой файл)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-14-test-designer.json",
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/requirements.yaml (блок REQ-010)"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5b: независимая проверка тестов исполнителей REQ-010 (handoffs/PROD-20261006-01/step-14-test-designer.json): tools/test/exec-*.test.js, exec-helpers.js, fixtures/team/ (fake-claude-probe.js, stream-lies.jsonl). Критерии — блок REQ-010 в docs/requirements.yaml (16 критериев; 14 — UAT, не тест); проект — docs/design/REQ-010-agent-executors.md (EX-01…EX-51, п. 15 мутанты). ЖЁСТКИЕ ПРАВИЛА для вас: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только fake-claude/probe или missing-*; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов. Проверьте сами: cd tools && npm test (ожидается 750, без skip/todo; набор exec-* три раза подряд — стабильны, независимы, нет остаточных процессов после прогона: ps до/после); каждый критерий 1–13, 15, 16 REQ-010 закрыт настоящим тестом; критерий 14 назван ожидающим согласия владельца; проверки содержательны; тесты отказа проверяют неизменное состояние (хеши); защита assertSafeEnv — попытайтесь обойти (пути вне fixtures, симлинк, настоящий claude по PATH): настоящий claude запуститься не должен; прежние тесты не ослаблены (diff с копией <рабочая папка ORCH>/orch/prod/test-exec-before); тесты на находки безопасности (1e303/…, checkBudget, removeSource, 9 МиБ, потомок вне группы). Для новой логики сами примените не меньше 12 мутантов из п. 15 на КОПИИ вне проекта (в том числе: REAL_RUNS слабее, потолок не проверяется, spawn shell: true, ANTHROPIC_API_KEY в окружении, нет убийства группы, таймаут не срабатывает — оцените, что тест ловит зависанием (не утверждением) и достаточно ли у него своего timeout; повторы без пауз, scripted назван реальным, убран --restricted, ссылка принята, секрет не маскируется) — тесты должны падать; рабочие файлы не менять. Учтите: два выживших эквивалентных мутанта у тестировщика — оцените; конфликт ядра/REQ-010 (восстановление прерывает «на проверке» при каждом открытии, его issue №1) — НЕ ваша тема: ORCH решает отдельно (правка ядра идёт); EX-39 использует chmod 0500 вместо fault-inject — оцените (допустимо, если безопасно и стабильно на macOS и CI). Ничего не правьте. Все фоновые процессы завершите. Результат: result.verdict PASS/FAIL, summary с доказательствами, findings (Critical/High/Medium блокируют).",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "каждый критерий — с доказательством",
+      "мутанты применены сами, остаточных процессов нет"
+    ]
+  },
+  "created_at": "2026-10-05T23:35:08Z",
+  "started_at": "2026-10-05T23:35:08Z",
+  "completed_at": "2026-10-06T00:00:48Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Вердикт FAIL: один Medium (мутант «таймаут не срабатывает» ловится зависанием набора, у прямых тестов run() нет своего таймаута; остальное PASS).\nПрогоны: cd tools && npm test в начале — 750 тестов, 750 pass, 0 fail, 0 skipped, 0 todo, код 0; к концу работы ядро (параллельный TEST-DESIGNER) дописало тесты team-*, и тот же прогон даёт 766/766 (exec-* не менялись: 114 тестов). Набор node --test test/exec-*.test.js три раза подряд: 114/114 каждый раз; каждый из 14 файлов по отдельности в обратном порядке — 0 fail; два набора одновременно (нагрузка) — 114/114 оба. ps до/после — fake-claude/probe 0; временных папок sai-exec-test-* не осталось (кроме двух от моих убитых мутантов V07 — удалены). grep skip/todo/only в exec-* — только слова «skip» в тексте флагов --dangerously-skip-permissions и названии EX-02. Файлы exec-* и fixtures/team по хешам не менялись за время моей работы; рабочее дерево tools/ по хешам менялось только в файлах ядра (README.md, reducer.js, runner.js, store.js, team-faults/helpers/language/recovery/writer) — это параллельная работа ядра, мои мутанты шли на копиях в scratchpad/v/mut.\nПрежние тесты не ослаблены: diff -rq с копией до — src идентичен; в test только новые exec-* файлы, fake-claude-probe.js, stream-lies.jsonl и две добавленные строки fixtures/team/README.md (только добавление); прежние файлы тестов и fake-claude.js байт-в-байт те же.\nПокрытие критерий -> тест (проверено чтением и мутантами): 1 EX-01,02,48; 2 EX-03..07,44,51; 3 EX-08,09,10,45 (хеши журнала и дерева до/после, счётчик запусков 0); 4 EX-11..15,49 (argv позиционно, stdin байт-в-байт, shell false, missing-* без трассировки); 5 EX-16,17; 6 EX-18..21; 7 EX-22..25,46 (kill(pid,0), группа, SIGTERM run-task); 8 EX-26..28; 9 EX-29; 10 EX-30; 11 EX-31..34,47,50 и находки (1e303/1e21/1e10/-1/Infinity, 5e8, checkBudget NaN/строка/Infinity до spawn, recordableCost); 12 EX-35,36; 13 EX-37,38 (npm ci на чистой копии — за TEST-RUNNER/RELEASE-VALIDATOR, не за этими тестами); 14 — НЕ тест, UAT настоящего запуска, названа ожидающей письменного согласия владельца, не выполнялась; 15 EX-39,40; 16 EX-41..43,51 и removeSource по ссылкам. Все 51 EX присутствуют в файлах, критерии 1–13, 15, 16 закрыты настоящими запускаемыми тестами со сверкой значений и состояния (хеши, snapshot с режимами), не «не упало».\nЗащита assertSafeEnv — своя проба из 15 случаев (scratchpad/v/g/probe.mjs, во временной папке): настоящий claude (абсолютный путь из расширения), симлинк во временной папке на настоящий claude, относительное claude, missing-x при непустом PATH, ../-обход из fixtures, missing-* вне fixtures, SAI_TEAM_HOME=~/.sai-team, HOME=настоящий, пустое/не заданное — все отказаны; принято только: fake-claude.js, симлинк на fake-claude.js (внутри fixtures — безопасно), missing-* в fixtures без файла и голое missing-x при пустом PATH. Настоящий claude не запускался ни мной, ни тестами (ps: только процесс редактора, не мой). ~/.sai-team не существует; ~/.sai-pixel-office и порт 4780 не трогал (4780 слушает чужой уже запущенный сервер).\nМутанты — сам, на копиях scratchpad/v/mut (каждый — свежая копия src+test+README, harness run.mjs, лимит 150 с на набор): применено 34, упали (число упавших тестов): V01 REAL_RUNS слабее (4), V02 проверка REAL_RUNS убрана (5), V03 потолок>0 не проверяется (2), V04 shell:true (59), V05 ANTHROPIC_API_KEY в окружении (1), V06 убийство только процесса без группы (3), V07 таймаут не срабатывает (ЗАВИСАНИЕ набора без сводки + 4 теста упали по 60 с/5 с; см. F1), V08 повтор без паузы (3), V09 три повтора (8), V10 scripted без суффикса (2), V11 убран --restricted (1), V12b ссылка принята (lstat->stat и без O_NOFOLLOW) (1), V13c секрет не маскируется (runner+store) (1), V14 секрет не маскируется в файлах (2), V15 checkBudget NaN проходит (2), V16 recordableCost без границ (2), V17 removeSource идёт по ссылкам (2), V18 лимит строки 1 ГиБ (1), V19 нет ограниченного ожидания close (1, 71 с), V20 --add-dir (4), V21 Bash у Разработчика (3), V22 потолок запуска > остатка не проверяется (2), V23 нет запрещающих правил WebFetch (3), V24 cwd не work/ (10), V25 расход без отчёта = 0 (6), V26 сбой сети без повтора (1), V27 SAI_TEAM_WEB=0 игнорируется (1), V28 getExecutor с запасным scripted (1), V29 нет убийства при отмене (1), V30 текст задачи ещё и в argv (3), V31b жёсткая ссылка принята (обе проверки nlink убраны) (1). Итого падают 33 из 34 с настоящим падением ассерта + V07 зависанием. Выжили 4 мутанта и все объяснены: V12 (убрана только lstat-проверка ссылки в readWorkFile) и V31 (убрана только первая проверка nlink) — эквивалентны: следом работают isFile()/isDirectory() по lstat и O_NOFOLLOW/fstat nlink; при снятии обеих защит V12b и V31b ловятся; V13 (маска в store.js отключена) и V13b (маска в runner.prepared отключена) — двойная защита: V13 ловят тесты ядра TM-43/TM-32 (проверено запуском team-* на копии), V13c (обе) ловит EX-35. Два эквивалентных выживших мутанта автора (M20, M54) оценены как верные: M20 = мой V12, M54 — groupStuck и так выставляет forceClose.\nEX-39 (chmod 0500 вместо fault-inject): допустимо на macOS/Linux обычным пользователем — своя временная папка, по имени, права возвращаются в finally (AP-020 не нарушен), проверка и сообщение настоящие и сильнее внедрения; ограничение — под root (контейнер CI) chmod не мешает записи и тест упадёт на status 1 (не пройдёт молча); см. F2 Low.\nРасхождение ядра/REQ-010 (TASK_INTERRUPTED recovery после review) — не моя тема, ORCH решает отдельно; в тестах не подгонялось (EX-32 использует failed, EX-45 — review в одном процессе).",
+    "findings": [
+      {
+        "place": "tools/test/exec-process.test.js: EX-22 'a timeout stops the process and its child: run() returns'; такие же прямые await run() с timeout в exec-findings.test.js (потомок вне группы, 'the same with a long timeout'), exec-retry (EX-28), exec-budget",
+        "severity": "Medium",
+        "what": "У тестов, которые ждут возврата прямого run() при таймауте, нет своего предела (нет {timeout} у test(), нет Promise.race). Мутант V07 «таймаут не срабатывает» (setTimeout не срабатывает) виснет до внешнего убийства: набор не выдаёт сводки, 5 тестов-процессов остаются (fake-claude + потомок, при убийстве набора — сироты) и временные папки sai-exec-test-* не чистятся; ловится только по таймауту CI, а не по ассерту. Часть тестов через runTeam (spawnSync, 60 с) падает нормально, прямые — нет",
+        "fix": "добавить опцию {timeout: 30000} (или обёртку race с отказом) к тестам EX-22 (первый), EX-28, тестам exec-findings с run() и всем, что ждёт run() при таймауте; в finally уже есть killQuietly — он выполнится после отказа по таймауту; после правки повторить V07: набор должен завершаться со сводкой и падением, процессов не остаётся"
+      },
+      {
+        "place": "tools/test/exec-faults.test.js EX-39",
+        "severity": "Low",
+        "what": "EACCES вызван chmod 0500, а не fault-inject (п. 15.3 не сделан — вне write_set TEST-DESIGNER); под root (типичный контейнер CI) запись не блокируется, тест красный не по вине кода. Критерий 15(а) говорит «с fault-inject.js»",
+        "fix": "после решения ORCH по п. 15.3 добавить вариант с внедрением, либо принять chmod как допустимый для macOS/обычного пользователя; не добавлять skip"
+      },
+      {
+        "place": "допущение задания",
+        "severity": "Info",
+        "what": "npm test в задании ожидался 750; на моём первом прогоне 750, к концу — 766 из-за параллельной работы над тестами ядра (exec-* стабильны, 114)",
+        "fix": "не требуется; TEST-RUNNER фиксирует число в своём прогоне"
+      },
+      {
+        "place": "критерий 14 и часть критерия 13",
+        "severity": "Info",
+        "what": "UAT настоящего запуска (14) не тест и ждёт согласия владельца; npm ci на чистой копии (13) — за TEST-RUNNER/RELEASE-VALIDATOR",
+        "fix": "по WF-02"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm test (начало): # tests 750 # pass 750 # fail 0 # cancelled 0 # skipped 0 # todo 0, код 0; (конец, после правок ядра параллельной работой): # tests 766 # pass 766 # fail 0 # skipped 0 # todo 0.",
+      "node --test test/exec-*.test.js x3: run1/2/3 exit=0 tests 114 pass 114 fail 0 skipped 0 todo 0; по файлам в обратном порядке — все fail 0; два набора одновременно — 114/114 оба; ps по fake-claude|probe до и после: 0.",
+      "Хеши tools/ (без node_modules, 137 файлов) до и после: exec-* и fixtures/team без изменений; разошлись только README.md, reducer.js, runner.js, store.js, team-faults/helpers/language/recovery/writer — работа ядра параллельно, не мутанты (мутанты — только в scratchpad/v/mut/<id>/, рабочее дерево не менялось и после проб тесты снова зелёные).",
+      "diff -rq с копией до (orch/prod/test-exec-before): src идентичен; test — только новые exec-*, fake-claude-probe.js, stream-lies.jsonl, +2 строки fixtures/team/README.md.",
+      "Проба assertSafeEnv: 15 случаев, ACCEPTED только ok_fake, symlink_tmp_to_fake, rel_missing_empty, missing_in_fixtures; real_abs, symlink на настоящий claude, rel_claude, rel_missing_nonempty_path, dotdot, dotdot2, missing_outside, home_real, home_tmpish_link, unset, empty — refused. Файл-проба вне проекта; временная папка удалена.",
+      "Мутанты: harness scratchpad/v/mut/run.mjs, 34 мутанта, вывод по каждому в scratchpad/v/mut/<id>/out.txt; V07 — SIGKILL по 150 с, STRAY после — убиты (pkill/ps после: 0).",
+      "Фоновых процессов нет: ps | grep fake-claude|probe|sai-exec|v/mut = 0; ~/.sai-team не существует; ~/.sai-pixel-office и порт 4780 не использованы."
+    ],
+    "issues": [
+      {
+        "kind": "вопрос ORCH",
+        "text": "Вердикт FAIL только из-за F1 (Medium: у прямых тестов run() при таймауте нет своего предела). Правка тестовая, мелкая: TEST-DESIGNER добавляет {timeout} и повторяет V07. После неё я ожидаю PASS без других правок. Конфликт ядра по review/recovery не оценивался, как поручено."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

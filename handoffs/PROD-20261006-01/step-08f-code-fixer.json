@@ -1,0 +1,87 @@
+{
+  "handoff_id": "step08f-code-fixer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "08f",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261006-01/step-08f-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/files.js",
+      "tools/src/team/cli.js",
+      "tools/src/team/errors.js (при необходимости: formatError)",
+      "handoffs/PROD-20261006-01/step-08f-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-core-before",
+    "parallel_work_now": "CODE-DESIGNER (только docs/design/REQ-010 и REQ-009)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-08-security-reviewer.json",
+      "docs/design/REQ-009-team-core.md",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, после FAIL шага 3 (handoffs/PROD-20261006-01/step-08-security-reviewer.json — прочтите F1–F3 и пробы). Исправить в коде ядра tools/src/team/: F1 (Medium, блокирует) — files.js readWorkFile: отклонять файл с nlink !== 1 (жёсткая ссылка) как E_WORK_FILE с причиной «link» (как симлинк); проверьте и другие пути чтения work/ на тот же обход; F2 (Low) — cli.js: сообщения E_USAGE не повторяют аргументы пользователя в stderr без маскирования (используйте тот же способ маскирования, что и для других текстовых выводов, либо не эхо-повторять значение — достаточно названия опции); F3 (Low) — formatError и JSON-вывод: управляющие знаки (ESC, C1 U+0080–U+009F, U+202E и подобные двунаправленные) в данных экранируются или удаляются при выводе в stderr/текстовом режиме; JSON-режим остаётся валидным JSON (экранирование \\uXXXX). Проект — docs/design/REQ-009-team-core.md (п. 6.7, п. 10 — коды ошибок и форматы): не противоречьте; если исправление требует изменения формы — result.issues. Тесты (TM-…) НЕ пишите — их пишет TEST-DESIGNER (передайте ему в result.summary точные пробы F1–F3 как тестовые случаи); прежние тесты не менять. Проверка: проберите F1 сами (жёсткая ссылка в work/ на чужой events.jsonl — отказ, файл в files/ не появился) во временной папке (SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен). cd tools && npm test проходит (493). Копии до — <рабочая папка ORCH>/orch/prod/fix-core-before. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "F1 закрыт пробой",
+      "F2 и F3 исправлены",
+      "npm test проходит",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-05T22:19:13Z",
+  "started_at": "2026-10-05T22:19:13Z",
+  "completed_at": "2026-10-05T22:20:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "F1, F2, F3 исправлены в tools/src/team/{files,cli,errors}.js. Пробы для TEST-DESIGNER (тестовые случаи): (F1) work/hard.md — жёсткая ссылка (fs.linkSync) на файл вне work/ (events.jsonl другого проекта): importWorkFile/readWorkFile -> E_WORK_FILE {reason:'link'}, в files/ ничего, журнал не изменён; обычный файл work/ok.md читается как раньше. (F2) команды `team projects --sk-123` -> stderr «E_USAGE: Неизвестный параметр», `team projects password=hunter2` -> «E_USAGE: Лишний аргумент», exit 2, значение не повторяется; также неизвестная команда, параметр дважды, нет значения. (F3) formatError(TeamError с ESC]0;x BEL U+202E U+009B) -> строка без сырых управляющих, с \\u001b … \\u0007 \\u202e \\u009b; runGuarded с данными {a:'x\\u202e\\u009b\\u001b'} -> stdout {\"a\":\"x\\u202e\\u009b\\u001b\"}, JSON.parse возвращает исходные знаки; предупреждения warn в stderr тоже экранируются (журнал с ESC в ключе data -> stderr без сырого ESC). Тесты не писаны и прежние не менялись.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/src/team/files.js",
+        "place": "readWorkFile",
+        "change": "lstat каждой части: обычный файл с nlink !== 1 -> E_WORK_FILE {reason:'link'}; после fstat тоже fst.nlink !== 1 -> 'link'. Других мест чтения work/ нет (store.js вызывает только readWorkFile)."
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/team/cli.js",
+        "place": "parseArgs, run (default)",
+        "change": "сообщения E_USAGE больше не содержат аргументов пользователя (команда, параметр, лишний аргумент, значение): только название ошибки."
+      },
+      {
+        "finding": "F3",
+        "file": "tools/src/team/errors.js, tools/src/team/cli.js",
+        "place": "escapeUnsafe (новая, экспорт), formatError, runGuarded, warn",
+        "change": "C0, DEL, C1, U+061C, U+200E/F, U+202A-202E, U+2066-2069 -> \\uXXXX в stderr (formatError, предупреждения) и в строке JSON stdout (остаётся валидным JSON); без регулярного выражения, чтобы не отключать no-control-regex."
+      }
+    ],
+    "self_check": [
+      "проба F1 (временная папка, SAI_TEAM_HOME временный, удалена): до — по отчёту шага 08 hard.md импортирован; после — readWorkFile(w,'hard.md') -> E_WORK_FILE {\"reason\":\"link\"}; ok.md -> \"ok\\n\"",
+      "проба F2: `node src/team/cli.js projects --sk-123` -> «E_USAGE: Неизвестный параметр» exit 2; `projects password=hunter2` -> «E_USAGE: Лишний аргумент» exit 2",
+      "проба F3: formatError -> «E_EVENT: a\\u001b]0;x\\u0007\\u202e\\u009bz»; runGuarded -> {\"a\":\"x\\u202e\\u009b\\u001b\"}, JSON.parse длина 4",
+      "первый npm run check: eslint no-control-regex в errors.js:59 — исправлено заменой регулярного выражения на функцию isUnsafe (правило не отключено)",
+      "cd tools && npm run check: format:check чисто, eslint --max-warnings 0 чисто, npm test: # tests 493 # pass 493 # fail 0 # skipped 0",
+      "diff -rq до/после: различаются только team/cli.js, errors.js, files.js; test/ без изменений; ~/.sai-team не создан, порт 4780 не использовался"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Тестов, чьё ожидание изменилось, нет: 493 прежних проходят. Текст E_USAGE для неизвестной команды теперь не содержит её имя (проект п. 10.3 формат строки не меняет). Имя неизвестного поля в E_EVENT/E_CORRUPT не ограничивалось шаблоном или длиной — только экранирование при выводе (formatError). Нужна повторная проверка SECURITY-REVIEWER и REVIEWER."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/files.js",
+      "tools/src/team/cli.js",
+      "tools/src/team/errors.js"
+    ]
+  }
+}

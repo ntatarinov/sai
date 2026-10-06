@@ -1,0 +1,63 @@
+{
+  "handoff_id": "step22-test-designer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "22",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-01/step-22-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "MEDIUM",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/team-language.test.js",
+      "tools/test/exec-executor.test.js",
+      "tools/test/exec-helpers.js (добавлением)",
+      "handoffs/PROD-20261006-01/step-22-test-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/test-fin-before",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-21-code-fixer.json",
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/requirements.yaml (блок REQ-010)"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5, финальная правка тестов (handoffs/PROD-20261006-01/step-21-code-fixer.json; проекты docs/design/REQ-009-team-core.md r7 и docs/design/REQ-010-agent-executors.md r5; блок REQ-010 в requirements.yaml r7). (1) TM-38 (team-language.test.js, SUFFIXED): обновите — у MEMORY_ADDED на проекте scripted фраза оканчивается пометкой «тестовый исполнитель» (SCRIPTED_SUFFIX); не ослабляя остальное (проверка пометки теперь охватывает и MEMORY_ADDED; на real-проекте пометки нет); мутант «пометки нет у MEMORY_ADDED» должен падать (на копии вне проекта). (2) EX-13 (exec-executor.test.js ~ строка 860): сделайте проверку не слабее проекта (REQ-010 п. 15, EX-13 и критерий 4 блока REQ-010): паттерн `child_process|execFile|execSync|[^.[:alnum:]_]exec[(]` (в JS-регэкспе — эквивалент) по ВСЕМ файлам tools/src/team/ (а не только с child_process); допустимое единственное совпадение — import child_process в executors/claude-cli.js; `cp.spawn` — один вызов; `shell: false` — единственное `shell:`; RegExp#exec (`.exec(`) не нарушение; мутант «добавили execSync в другом файле» — падает. Пишете только tools/test/team-language.test.js и tools/test/exec-executor.test.js (и helpers — добавлением). ЖЁСТКИЕ ПРАВИЛА: настоящий claude не запускать (SAI_TEAM_CLAUDE_BIN — fake/probe или missing-*); SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов. cd tools && npm run check проходит (776; format и lint чисты). Копии до — <рабочая папка ORCH>/orch/prod/test-fin-before. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "TM-38 и EX-13 обновлены без ослабления, мутанты падают",
+      "npm run check проходит"
+    ]
+  },
+  "created_at": "2026-10-06T00:44:03Z",
+  "started_at": "2026-10-06T00:44:03Z",
+  "completed_at": "2026-10-06T00:47:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Финальная правка двух тестов. TM-38 (team-language.test.js, SUFFIXED + название): MEMORY_ADDED на scripted-проекте оканчивается на SCRIPTED_SUFFIX; прочие проверки не ослаблены (суффикс ровно у TASK_*, RUN_*, AGENT_ACTIVITY, MEMORY_ADDED; у real-проекта пометки нет нигде). EX-13 (exec-executor.test.js): по ВСЕМ файлам tools/src/team/ шаблон child_process|execFile|execSync|(?:^|[^.\\w])exec[(] — единственное совпадение 'executors/claude-cli.js: child_process' (deepEqual); shell: ровно одно и это false; cp.spawn ровно один; spawnSync, fork(, import {exec|spawn} запрещены; RegExp#exec (.exec() не нарушение. Таблица: REQ-009 TM-38 -> team-language.test.js; REQ-010 EX-13 / критерий 4 -> exec-executor.test.js. Пункты Q8, Q10, Q11, R3: не затронуты этой правкой (только пометка фразы и статический запрет форм запуска процесса); настоящий claude не запускался.",
+    "changes": [
+      {
+        "file": "tools/test/team-language.test.js",
+        "change": "SUFFIXED включает MEMORY_ADDED; название теста TM-38 обновлено"
+      },
+      {
+        "file": "tools/test/exec-executor.test.js",
+        "change": "EX-13 переписан: шаблон проекта по всем файлам, единственное совпадение, один shell:, один cp.spawn"
+      }
+    ],
+    "self_check": "cd tools && npm run check: код 0; tests 776, pass 776, fail 0 (format и lint чисты). Мутанты на временной копии (scratchpad/mut), файлы возвращались из рабочего дерева, после каждого прогон team-language+exec-executor: pass 29/fail 0 на исходном. M1 убрана пометка у MEMORY_ADDED: падает 1 (TM-38 scripted). M1b пометка и у real-проекта: падает 5 (TM-38 x3, TM-39, EX-15). M2 execSync + import child_process в roles.js: падает 1 (EX-13). M3 голый exec(\"x\") в lock.js: падает 1 (EX-13). M4 shell: true: падает 12 (в т.ч. EX-13). M5 второй cp.spawn: падает 1 (EX-13). M6 /a/.exec(s) в lock.js: 0 падений (не нарушение, как требует проект). Рабочее дерево: diff с копией до (test-fin-before) — различаются только два файла тестов, tools/src не тронут. Процессов не осталось.",
+    "issues": [],
+    "artifacts_out": [
+      "tools/test/team-language.test.js",
+      "tools/test/exec-executor.test.js"
+    ]
+  }
+}

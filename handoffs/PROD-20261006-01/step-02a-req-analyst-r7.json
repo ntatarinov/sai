@@ -1,0 +1,59 @@
+{
+  "handoff_id": "step02a-req-analyst-r7-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-01",
+  "step": "02a",
+  "round": 7,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/PROD-20261006-01/step-02a-req-analyst-r7.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "docs/requirements.yaml (блоки REQ-009 и REQ-010)",
+      "handoffs/PROD-20261006-01/step-02a-req-analyst-r7.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/requirements.before-r7.yaml",
+    "parallel_work_now": "CODE-DESIGNER (docs/design/REQ-010...)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-01/step-20-release-validator.json"
+    ]
+  },
+  "task": {
+    "description": "WF-01, малая правка r7 блоков REQ-009 и REQ-010 в docs/requirements.yaml (копия до — <рабочая папка ORCH>/orch/prod/requirements.before-r7.yaml). Основание — FAIL приёмки (handoffs/PROD-20261006-01/step-20-release-validator.json: прочтите F5, F6, F9 и F7). (1) F5: критерий 4 REQ-010 — grep `exec(Sync)?[(]|execFileSync` по tools/src/team/ находит `RegExp#exec` (lock.js:199): перепишите проверку так, чтобы ловить именно запуск процессов: `grep -rnE 'child_process|execFile|execSync|[^.\\w]exec[(]' tools/src/team/` — допускается ТОЛЬКО одно место с child_process (executors/proc.js или как есть — проверьте командой и укажите фактическое), `spawn` — единственный вызов, `shell: false`; если регулярные выражения `.exec(` допустимы, исключите их шаблоном `[.]exec[(]`; проверьте команду САМИ на текущем коде и приведите вывод; (2) F6: тесты исполнителей лежат в tools/test/exec-*.test.js (exec-executor, exec-roles-tools, exec-stream, exec-process, exec-retry, exec-budget, exec-secrets, exec-workdir, exec-commands, exec-faults, exec-scripted-source, exec-docs, exec-guard, exec-findings, exec-closure) и exec-helpers.js; тесты ядра — team-*.test.js: исправьте во всех критериях REQ-009/REQ-010 имена файлов на фактические (ищите team-executor, team-scripted-source, team-roles-tools и подобные несуществующие; проверьте каждое имя командой ls). Больше ничего не менять. Менять только блоки REQ-009 и REQ-010. Каждая команда — с ограничением по времени (на macOS нет timeout). Результат: result.summary — «место → было → стало» и вывод проверенных команд.",
+    "acceptance_criteria": [
+      "F5 и F6 исправлены, команды проверены",
+      "изменены только блоки REQ-009 и REQ-010"
+    ]
+  },
+  "created_at": "2026-10-06T00:40:05Z",
+  "started_at": "2026-10-06T00:40:05Z",
+  "completed_at": "2026-10-06T00:40:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-010 (файл docs/requirements.yaml, строки 1016-1608 — блоки REQ-009/010; REQ-009 правок не потребовал, имён несуществующих файлов в нём нет). F5, критерий 4: было `grep -rnE 'exec(Sync)?[(]|execFileSync' tools/src/team/` пусто (ловило RegExp#exec, lock.js:199) -> стало `grep -rnE 'child_process|execFile|execSync|[^.[:alnum:]_]exec[(]' tools/src/team/` находит ровно одну строку (import cp from node:child_process, executors/claude-cli.js:9; .exec( регулярок не ловится) и `grep -rnE 'cp[.]spawn' tools/src/team/` — одна строка; shell: false уже в критерии. F6/F7: имена тестов: критерии 1 и 2 team-executor.test.js -> exec-executor.test.js (2 места); критерий 2 team-scripted-source.test.js -> exec-scripted-source.test.js; критерий 5 team-roles-tools.test.js -> exec-roles-tools.test.js; описание REQ-010 и критерий про npm ci team-*.test.js -> exec-*.test.js (+ помощник exec-helpers.js в описании).",
+    "changes": [
+      "REQ-010 строки 1438,1450,1457,1472,1494-1498,1504,1580 — как в summary"
+    ],
+    "self_check": [
+      "Своя проверка нового grep на текущем коде: tools/src/team/executors/claude-cli.js:9:import cp from \"node:child_process\"; (1 строка, lock.js:199 не найден)",
+      "grep -rnE 'cp[.]spawn': claude-cli.js:190 (1 строка; вызов spawn( — строка 203)",
+      "grep -rn shell tools/src/team/: только claude-cli.js:207 shell: false",
+      "ls: exec-executor, exec-scripted-source, exec-roles-tools .test.js существуют; в блоках 009/010 несуществующих tools/test/ файлов нет (проверено циклом по всем путям)",
+      "diff с копией до правки: изменены только строки 1438-1584 внутри REQ-010; остальное идентично"
+    ],
+    "issues": [
+      "Нет"
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

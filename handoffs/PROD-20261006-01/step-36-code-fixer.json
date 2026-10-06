@@ -1,0 +1,83 @@
+{
+  "handoff_id": "step36-code-fixer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "36",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261006-01/step-36-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/store.js",
+      "tools/src/team/ (journal/writer, если нужно)",
+      "handoffs/PROD-20261006-01/step-36-code-fixer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-batch-before",
+    "parallel_work_now": "CODE-DESIGNER (REQ-009 doc)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md",
+      "handoffs/PROD-20261006-01/step-33-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02: привести код к решению ORCH — tools/src/team/store.js recover() (шаг 8.6) и journal/writer (добавьте/используйте пакетную запись appendBatch: одна запись, один fsync, откат ftruncate; сломанный писатель — по правилам). Решение ORCH по находке тестировщика (handoffs/PROD-20261006-01/step-33-test-designer.json, FAILED с BLOCKED: по чтению recover() в store.js шаг 8.6): писатель A при восстановлении закрывает запуск и прерывает задачу отдельными append-ами, теряет замок до записи PROJECT_RECOVERED; следующий писатель B не находит ни открытых запусков, ни running-задач и PROJECT_RECOVERED не пишет: проект остаётся «в работе» без работы. Решение: ВСЕ события восстановления (RUN_FINISHED interrupted по каждому открытому запуску, TASK_INTERRUPTED recovery по каждой прерываемой задаче, PROJECT_RECOVERED с итоговыми числами) записываются ОДНИМ пакетом: одна запись в файл (конкатенация целых строк), один fsync, при сбое — один откат ftruncate к прежней длине; проверка замка — ДО пакета; события получают seq подряд; редьюсер применяет пакет как последовательность; при сбое пакет либо весь записан, либо журнал как был. LOCK_STALE_REMOVED и JOURNAL_RECOVERED остаются отдельными записями до пакета (уведомления). Инвариант: «после записи пакета проект не содержит открытой работы и статус paused/recovery либо проект не был running/planning». Проверьте пробой: сымитируйте потерю замка писателем A между закрытием запуска и PROJECT_RECOVERED (прежний сценарий тестировщика: подмена замка на время восстановления/fault-injection через tools/test/fault-inject.js) — после правки такого окна нет (пакет весь или ничего); пробу G на ≥ 40 раундах: 6 одновременных открывающих после аварии — PROJECT_RECOVERED ровно один раз с честными числами (closed_runs ≥ 1, interrupted_tasks ≥ 1 по фактической работе), открытой работы нет; после штатного close() ничего не пишется; живой писатель не прерывается. Тесты НЕ писать и не менять; перечислите в result.summary ожидаемо ломающиеся. ЖЁСТКИЕ ПРАВИЛА: настоящий claude не запускать; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; процессов не оставлять. Копии до — <рабочая папка ORCH>/orch/prod/fix-batch-before. Каждая команда — с ограничением по времени (на macOS нет timeout). Заполните только status (COMPLETED/FAILED), completed_at (UTC; date -u) и result.",
+    "acceptance_criteria": [
+      "пакет восстановления атомарен",
+      "проба G ≥ 40 раундов",
+      "изменены только файлы write_set"
+    ]
+  },
+  "created_at": "2026-10-06T02:21:03Z",
+  "started_at": "2026-10-06T02:21:03Z",
+  "completed_at": "2026-10-06T02:29:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Восстановление (шаги 8.4-8.6) пишется одним пакетом: все RUN_FINISHED interrupted, все TASK_INTERRUPTED recovery и PROJECT_RECOVERED (с итоговыми числами) — одна запись конкатенации целых строк, один fsync, при сбое один ftruncate к прежней длине; проверка замка одна, до пакета; seq подряд; каждое событие пакета проходит редьюсер на состоянии после предыдущих (И7, И13, И14, И21 проверяются до записи). LOCK_STALE_REMOVED и JOURNAL_RECOVERED — отдельные записи до пакета. Окна «запуск закрыт, PROJECT_RECOVERED нет» больше нет: пакет либо весь, либо журнал как был. Ожидаемо ломающихся тестов нет: npm run check 783/783. TM-67 сейчас допускает closed_runs/interrupted_tasks 0 или 1 (правка TEST-DESIGNER шага 33); после этой правки честные числа всегда 1/1 — допуск можно вернуть к строгому (решение ORCH/TEST-DESIGNER).",
+    "changes": [
+      {
+        "item": "решение ORCH (находка step-33, BLOCKED)",
+        "file": "tools/src/team/journal.js",
+        "place": "appendLine -> общий appendBytes; новая export appendBatch(file, expectedBytes, lines, lockCheck)",
+        "what": "запись нескольких целых строк одним writeAll + одним fsync; при сбое ftruncate+fsync к expectedBytes (rollback ok/failed, E_DISK как у appendLine); E_CONFLICT при чужом размере; appendLine — та же функция для одной строки; комментарий в шапке обновлён"
+      },
+      {
+        "item": "решение ORCH",
+        "file": "tools/src/team/store.js",
+        "place": "Writer: #prepare(input, internal, state = this.state); новый #appendBatch(inputs); INTERNAL_BATCH (не экспортируется, как INTERNAL_APPEND)",
+        "what": "пакет готовится последовательно на промежуточном состоянии (seq подряд, reduce каждого), затем одна запись appendBatch с assertLockHeld; при любом сбое writer broken (F1), state не меняется"
+      },
+      {
+        "item": "решение ORCH",
+        "file": "tools/src/team/store.js",
+        "place": "recover(), шаги 8.4-8.6",
+        "what": "события закрытия запусков, прерывания задач и PROJECT_RECOVERED собираются в один пакет и пишутся одним INTERNAL_BATCH; условие шага 8.6 и числа те же (статус не меняется событиями RUN_FINISHED/TASK_INTERRUPTED — проверено по reducer.js); notices после записи в прежнем порядке"
+      }
+    ],
+    "self_check": {
+      "falling_scenario_before": "проба <рабочая папка ORCH>/cf36/probe-window.mjs на копии до правки (fix-batch-before, режим after-task: замок подменён на мёртвый pid сразу после записи TASK_INTERRUPTED): first E_LOCK_LOST, журнал LOCK_STALE_REMOVED,RUN_FINISHED,TASK_INTERRUPTED; второй открывающий: +LOCK_STALE_REMOVED, PROJECT_RECOVERED нет, status running, открытых запусков и задач в работе нет — дефект воспроизведён. Режим after-run на копии до: PROJECT_RECOVERED с closed_runs 0 (нечестные числа).",
+      "falling_scenario_after": "та же проба на текущем коде: after-task и after-run — первый открывающий записал LOCK_STALE_REMOVED + пакет RUN_FINISHED,TASK_INTERRUPTED,PROJECT_RECOVERED{running,1,1} (подмена замка после пакета), второй пишет только LOCK_STALE_REMOVED, status paused; before-batch (замок потерян до пакета) — E_LOCK_LOST, журнал только LOCK_STALE_REMOVED, второй пишет полный пакет {1,1}; partial (EIO на половине записи пакета) — E_DISK, журнал откатан до LOCK_STALE_REMOVED, второй пишет полный пакет {1,1}.",
+      "probe_G": "probe-g.mjs (6 одновременных открывающих после SIGKILL-аварии, фикстура TM-67): 40 раундов одиночно — 0 сбоев; затем под нагрузкой 4 процесса x 40 раундов дважды (320 раундов): в каждом раунде ровно один RUN_FINISHED, один TASK_INTERRUPTED, ровно один PROJECT_RECOVERED с closed_runs=1, interrupted_tasks=1, from_status=running, пакет подряд, CHAT после восстановления, нет открытых запусков и задач в работе, paused/recovery, замка нет; повторное открытие+close() без notices, журнал побайтово тот же; живой писатель в процессе пробы — 3 открывающих получают E_PROJECT_BUSY, журнал не меняется. Наблюдено E_LOCK_LOST: 10 раз за 320 раундов (F6, допустимо). Единственный сбой пробы: 1 раунд из 320 'nobody opened' (все 6 — E_PROJECT_BUSY/E_LOCK_LOST) при верном восстановлении — см. issues.",
+      "npm_run_check": "cd tools && npm run check (TMPDIR временный): rc=0; prettier, eslint --max-warnings 0 чисто; # tests 783 # pass 783 # fail 0 # skipped 0 # todo 0; вывод <рабочая папка ORCH>/cf36/check.out",
+      "targeted": "node --test team-recovery, team-journal, team-faults, team-writer, team-store: 102/102"
+    },
+    "issues": [
+      "Не код этой правки: под нагрузкой (4x40 раундов) 1 раз из 320 ни один из 6 открывающих не открыл проект (E_PROJECT_BUSY/E_LOCK_LOST у всех), восстановление при этом записано верно и ровно один раз. Это гонка замка (lock.js, F6: кража при rename/link-back), вне write_set. Утверждение TM-67 'opened >= 1 в каждом раунде' может редко падать под нагрузкой — решение ORCH (остаточный риск или правка lock.js через CODE-DESIGNER).",
+      "TM-67 (tools/test/team-recovery.test.js) допускает closed_runs/interrupted_tasks 0 или 1; после пакета правильно только 1/1 — можно ужесточить (TEST-DESIGNER). Теста на атомарность пакета (сбой writeSync/fsync в середине пакета -> журнал как был; потеря замка между событиями невозможна) нет — нужен TEST-DESIGNER.",
+      "Проект docs/design/REQ-009-team-core.md (шаг 8 п. 6.3, п. 6.4/13 о единственных местах записи журнала) должен назвать appendBatch и пакет восстановления — правит CODE-DESIGNER (parallel_work_now).",
+      "Журналы, уже испорченные старым кодом (RUN_FINISHED+TASK_INTERRUPTED без PROJECT_RECOVERED, статус running без работы), новый код не чинит — по решению ORCH пакет только предотвращает; если нужно лечение таких журналов — решение ORCH/CODE-DESIGNER.",
+      "npm run check оставляет во временной папке (TMPDIR) каталоги sai-wf06-* (~180), sai-outside-*, sai-snap-* — чужие тесты, не эта работа; удалены вручную из временной папки."
+    ],
+    "artifacts_out": [
+      "tools/src/team/journal.js",
+      "tools/src/team/store.js"
+    ]
+  }
+}

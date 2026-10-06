@@ -300,7 +300,7 @@ requirements:
       - >-
         Обработчики Pixel Office в Sai — только в .claude/settings.json (граница decisions/0003; слова владельца 2026-10-02 «Все должно быть в проекте sai»): там — обработчик Pixel Office на каждое событие, которое называет дизайн, и он запускает хук из tools/src/pixel-office/; ни в одном другом файле настроек Claude Code внутри Sai (в том числе .claude/settings.local.json и каталоги .claude/ в подкаталогах Sai) и ни в одном файле пользовательских настроек Claude Code (каталог ~/.claude/) обработчиков Pixel Office нет; пока Sai лежит внутри общего git-репозитория (до своего репозитория, шаг 2f итерации 2), их нет и в файлах настроек папки .claude корня этого репозитория (общем и локальном): локальный файл корня читают сессии, начатые в sai/ (факт 8 описания), а общий проверяется для надёжности; сейчас папки .claude в корне нет, но файлы там могут появиться. Копия обработчиков в настройках проекта папки, где начинаются сессии владельца, допустима только по decisions/0007 — временная мера этого компьютера, не часть Sai; этот критерий её не проверяет. Проверка: tools/test/pixel-office-settings.test.js — читает ../.claude/settings.json: события из дизайна, путь к хуку, timeout; шаг UAT «реальная сессия» и RELEASE-VALIDATOR из корня Sai: `find . ~/.claude -name node_modules -prune -o -path '*/.claude/settings*.json' -print | xargs grep -l pixel-office` печатает ровно одну строку — ./.claude/settings.json; пока Sai лежит внутри общего git-репозитория (до шага 2f итерации 2), из корня Sai: `R="$(git rev-parse --show-toplevel)" && test -n "$R" && { test ! -d "$R/.claude" || ! find "$R/.claude" -maxdepth 1 -name 'settings*.json' -exec grep -l pixel-office {} + | grep -q .; }; echo $?` печатает 0; если git не нашёл корень, команда печатает не 0 (сейчас — 128) и проверка не пройдена; 1 — в файлах настроек папки .claude корня есть обработчики Pixel Office; после шага 2f этот пункт не применяется: корнем станет сам Sai, и его .claude проверяет первая команда
       - "tools/README.md: раздел «## Pixel Office» — команда `npm run pixel-office` и вид строки со ссылкой с номером порта по умолчанию, как остановить сервер, каталог ~/.sai-pixel-office/ и что в нём, что из входа хука хранится и что нет, что видны только сессии, «в настройках которых есть обработчики Pixel Office», — запущенные в sai/, а сессии другой папки — только «при копии обработчиков» в её настройках проекта (со ссылкой https://code.claude.com/docs/en/settings), и что интерактивной сессии нужно принять диалог доверия к папке (https://code.claude.com/docs/en/hooks); в нём подраздел «### Ограничения» — задача может остаться «в работе», если событие окончания потеряно, а сервер не перезапускался (до следующего запуска сервера); страницу без входа может прочитать любая учётная запись этого компьютера через 127.0.0.1; правило чтения — обнаружение, а не защита: одной вписанной строки «из будущего» хватает, чтобы пометить «не из хуков» настоящие строки, пришедшие после неё со временем раньше её времени больше чем на 2 минуты; пометка снимается, когда таких строк станет на одну больше, чем вписанных, а если они больше не придут — остаётся навсегда (критерий 4); раздел «## Проверка» — команда `npm run check` (Q4: команда описана в README). Проверка: `grep -F` в tools/README.md каждой из строк «## Pixel Office», «npm run pixel-office», «~/.sai-pixel-office/», «https://code.claude.com/docs/en/settings», «в настройках которых есть обработчики Pixel Office», «при копии обработчиков», «https://code.claude.com/docs/en/hooks», «### Ограничения», «остаться «в работе»», «учётная запись», «одной вписанной строки», «навсегда», «## Проверка», «npm run check» — не меньше 1 строки на каждую; раздел о хранении текста по decisions/0011 (поправка 0011): подраздел «### Хранение текста» — что хранится (текст сообщений владельца и записи оркестратора «как понял»; ответы модели, входы и выходы инструментов и сообщения агентов — нет), предел 4 000 и 2 000 знаков, метка «[скрыто]», как отключить (SAI_PIXEL_OFFICE_STORE_TEXT=0), команда `npm run pixel-office-note` и «остаточный риск» маскирования с названными примерами нераспознаваемого — полный перечень проверок в критерии 15 REQ-008; `grep -nF` строк «### Хранение текста», «[скрыто]», «остаточный риск», «pixel-office-note», «SAI_PIXEL_OFFICE_STORE_TEXT» — не меньше 1 строки на каждую"
-      - "Одна команда проверки, и её не обходят (Q4, Q6, decisions/0002 и 0003): на копии всего каталога sai/ без node_modules во временной папке `cd tools && npm ci && HOME=<временный каталог> npm run check` проходит — prettier --check, eslint --max-warnings 0, node --test, все тесты, включая прежние тесты WF-06 и тесты REQ-007; после прогона в <временный каталог> нет .sai-pixel-office. Зависимостей во время выполнения и новых зависимостей разработки нет: `jq -e '(.dependencies // {}) | length == 0' tools/package.json` — true; tools/package.json меняется только добавлением скриптов pixel-office и (REQ-008, decisions/0011) pixel-office-note — `jq -S -c 'del(.scripts[\"pixel-office\"], .scripts[\"pixel-office-note\"])' tools/package.json | shasum -a 256` — 5c59292586d92e95c1ea507ef7a46790a125677172c3fe3abfd90dedd9edf0a4 (то же значение, что было при одном скрипте pixel-office: без обоих скриптов файл не изменился; прежние скрипты проверки, зависимости разработки и engines, ключа prettier нет); тем же прогоном `jq -r '.scripts | keys | join(\",\")' tools/package.json` называет ровно прежние ключи плюс pixel-office и pixel-office-note, а значение скрипта pixel-office-note фиксирует проект REQ-008 (одна строка вида `node src/pixel-office/<файл>.js`; проверка — jq -r на это значение, оно записывается в проект до реализации и меняется только вместе с проектом); sha256 tools/package-lock.json — 92d27c4ea99a9e6bb95a4b86bb045a02b934e280e9fe99d8c5c7ab5ed87b5bde. Из проверки ничего не исключено и ничего не пропущено: sha256 tools/.prettierignore — cd446cc56527781766c31a3be7e148c9c4727f5ae7f3c1056382bc29c022b338 (в нём, как сейчас, только node_modules и package-lock.json); sha256 tools/.gitignore — 4d56952b0fb13bf8f9b6c13a6d4c34a075bac3af447636a1df4335d7576e2f97 (prettier 3 учитывает и его; в нём, как сейчас, только node_modules/); своих настроек у prettier нет — из tools/ `npx prettier --find-config-path src/pixel-office/public/index.html; echo $?` — 1 («Can not find configure file»: ни .prettierrc в tools/ и выше, ни ключа prettier в package.json); tools/eslint.config.js получает только блок с files и languageOptions.globals (глобальные имена браузера для tools/src/pixel-office/public/), поэтому из tools/: правила всех файлов прежние — `find src test -name '*.js' | xargs -n 1 npx eslint --print-config | jq -S -c .rules | sort -u | shasum -a 256` — 856ee00120171941ee04ed2318fd4d5a4264a59fcff999b4fb5a1b22f695be08 (одна строка правил на все файлы; любое изменение правил — словом или числом, в любом блоке — меняет сумму); глобальные имена вне public/ прежние — `find src test -name '*.js' -not -path 'src/pixel-office/public/*' | xargs -n 1 npx eslint --print-config | jq -S -c .languageOptions.globals | sort -u | shasum -a 256` — bec0f88d493c5af9403051ad0ff2c4216dbab9ca43f4f5fbf7fedb8934b825bd; из корня sai `grep -nwE 'off|warn|ignores' tools/eslint.config.js; echo $?` — только 1; `grep -rnE 'eslint-disable|/[*][[:space:]]*eslint[[:space:]]|prettier-ignore' tools/src/pixel-office tools/test; echo $?` — только 1 (ловит и правила в комментариях вида /* eslint no-undef: 0 */, которых --print-config не видит); `grep -rnE '[.](skip|todo)[(]|(skip|todo):' tools/test; echo $?` — только 1 (код 2 — каталога нет, не проходит); `ls tools/test/pixel-office-hook.test.js tools/test/pixel-office-server.test.js tools/test/pixel-office-page.test.js tools/test/pixel-office-settings.test.js` — код 0; в итоге node --test — «skipped 0» и «todo 0» (пропущенный тест код выхода не меняет). Проверка: вывод команд приложен (TEST-RUNNER; RELEASE-VALIDATOR повторяет сам)"
+      - "Одна команда проверки, и её не обходят (Q4, Q6, decisions/0002 и 0003): на копии всего каталога sai/ без node_modules во временной папке `cd tools && npm ci && HOME=<временный каталог> npm run check` проходит — prettier --check, eslint --max-warnings 0, node --test, все тесты, включая прежние тесты WF-06 и тесты REQ-007; после прогона в <временный каталог> нет .sai-pixel-office. Зависимостей во время выполнения и новых зависимостей разработки нет: `jq -e '(.dependencies // {}) | length == 0' tools/package.json` — true; tools/package.json меняется только добавлением скриптов pixel-office, (REQ-008, decisions/0011) pixel-office-note и (REQ-009) team — `jq -S -c 'del(.scripts[\"pixel-office\"], .scripts[\"pixel-office-note\"], .scripts[\"team\"])' tools/package.json | shasum -a 256` — 5c59292586d92e95c1ea507ef7a46790a125677172c3fe3abfd90dedd9edf0a4 (то же значение, что было при одном скрипте pixel-office: без этих трёх скриптов файл не изменился; прежние скрипты проверки, зависимости разработки и engines, ключа prettier нет); тем же прогоном `jq -r '.scripts | keys | join(\",\")' tools/package.json` называет ровно прежние ключи плюс pixel-office, pixel-office-note и team (REQ-010 и REQ-013 новых скриптов не заводят: их команды — подкоманды `npm run team --`), а значение скрипта pixel-office-note фиксирует проект REQ-008 (одна строка вида `node src/pixel-office/<файл>.js`; проверка — jq -r на это значение, оно записывается в проект до реализации и меняется только вместе с проектом); sha256 tools/package-lock.json — 92d27c4ea99a9e6bb95a4b86bb045a02b934e280e9fe99d8c5c7ab5ed87b5bde. Из проверки ничего не исключено и ничего не пропущено: sha256 tools/.prettierignore — cd446cc56527781766c31a3be7e148c9c4727f5ae7f3c1056382bc29c022b338 (в нём, как сейчас, только node_modules и package-lock.json); sha256 tools/.gitignore — 4d56952b0fb13bf8f9b6c13a6d4c34a075bac3af447636a1df4335d7576e2f97 (prettier 3 учитывает и его; в нём, как сейчас, только node_modules/); своих настроек у prettier нет — из tools/ `npx prettier --find-config-path src/pixel-office/public/index.html; echo $?` — 1 («Can not find configure file»: ни .prettierrc в tools/ и выше, ни ключа prettier в package.json); tools/eslint.config.js получает только блок с files и languageOptions.globals (глобальные имена браузера для tools/src/pixel-office/public/), поэтому из tools/: правила всех файлов прежние — `find src test -name '*.js' | xargs -n 1 npx eslint --print-config | jq -S -c .rules | sort -u | shasum -a 256` — 856ee00120171941ee04ed2318fd4d5a4264a59fcff999b4fb5a1b22f695be08 (одна строка правил на все файлы; любое изменение правил — словом или числом, в любом блоке — меняет сумму); глобальные имена вне public/ прежние — `find src test -name '*.js' -not -path 'src/pixel-office/public/*' | xargs -n 1 npx eslint --print-config | jq -S -c .languageOptions.globals | sort -u | shasum -a 256` — bec0f88d493c5af9403051ad0ff2c4216dbab9ca43f4f5fbf7fedb8934b825bd; из корня sai `grep -nwE 'off|warn|ignores' tools/eslint.config.js; echo $?` — только 1; `grep -rnE 'eslint-disable|/[*][[:space:]]*eslint[[:space:]]|prettier-ignore' tools/src/pixel-office tools/test; echo $?` — только 1 (ловит и правила в комментариях вида /* eslint no-undef: 0 */, которых --print-config не видит); `grep -rnE '[.](skip|todo)[(]|(skip|todo):' tools/test; echo $?` — только 1 (код 2 — каталога нет, не проходит); `ls tools/test/pixel-office-hook.test.js tools/test/pixel-office-server.test.js tools/test/pixel-office-page.test.js tools/test/pixel-office-settings.test.js` — код 0; в итоге node --test — «skipped 0» и «todo 0» (пропущенный тест код выхода не меняет). Проверка: вывод команд приложен (TEST-RUNNER; RELEASE-VALIDATOR повторяет сам)"
 
   # WF-06 «Выбор идеи»: один запрос владельца разбит на три требования по размеру.
   # Дизайн всех трёх: docs/design/REQ-002-idea-verdict.md.
@@ -1016,7 +1016,7 @@ requirements:
   - id: REQ-009
     title: Sai Team, часть 1 — ядро проекта — состояние, журнал событий как единственный источник правды, хранение, восстановление, чтение, каталог ролей и человеческий язык событий (без интерфейса)
     owner: BACKEND-DEV
-    status: pending
+    status: in_progress   # прогон PROD-20261006-01 (2026-10-06): ядро построено и принято по всем критериям, проверяемым без настоящего Claude (789 тестов, повторные ворота безопасности, ревью и тестов, мутанты, пробы гонки, чистая копия); остаток — depends_on REQ-002 ещё in_progress, done невозможен (шапка файла)
     depends_on: [REQ-002]   # tools/ и одна команда проверки cd tools && npm run check (decisions/0002); REQ-002 сейчас in_progress (2026-10-01 добавлен критерий 11, ISS-0002), и пока он снова не done, REQ-009 не может стать done — как у REQ-001
     original_request: >
       «Твоя задача — ДОВЕСТИ ПРОДУКТ ДО РАБОЧЕГО СОСТОЯНИЯ.»; «Главный ориентир:
@@ -1323,7 +1323,7 @@ requirements:
   - id: REQ-010
     title: Sai Team, часть 2 — исполнители агентов — интерфейс run, claude-cli, scripted (только для тестов), инструменты ролей, потолок стоимости на запуск (без интерфейса)
     owner: BACKEND-DEV
-    status: pending
+    status: in_progress   # прогон PROD-20261006-01 (2026-10-06): исполнители построены и приняты по всем критериям, проверяемым без настоящего Claude (789 тестов, повторные ворота безопасности, ревью и тестов, мутанты, пробы гонки, чистая копия); остатки — критерий 14 (UAT настоящего запуска claude-cli) ждёт письменного согласия владельца и потолка расходов; depends_on REQ-002 ещё in_progress, done невозможен (шапка файла)
     depends_on: [REQ-009]   # проект, задачи, журнал, писатель, каталог ролей, язык событий; через REQ-009 — и REQ-002 (сейчас in_progress)
     original_request: >
       «Твоя задача — ДОВЕСТИ ПРОДУКТ ДО РАБОЧЕГО СОСТОЯНИЯ.»; «Главный ориентир:
@@ -1435,7 +1435,7 @@ requirements:
       ENGINE — настоящие события в момент изменения, события scripted помечены.
 
       Файлы (от корня Sai): tools/src/team/ (интерфейс run, исполнители, внутреннее
-      соответствие ролей, команды new, add-task, run-task), tools/test/team-*.test.js,
+      соответствие ролей, команды new, add-task, run-task), tools/test/exec-*.test.js (и помощник exec-helpers.js),
       поддельный исполняемый файл, записи stream-json и сценарии scripted для тестов в
       tools/test/fixtures/team/, tools/package.json, tools/README.md (раздел «## Sai
       Team — исполнители»). Не затрагиваются: tools/src/pixel-office/, .claude/agents/
@@ -1447,14 +1447,14 @@ requirements:
       вовне (письма, публикации, платежи); исполнитель через Anthropic API по ключу
       (запасной вариант — отдельным требованием); выбор модели пользователем.
     acceptance_criteria:
-      - "Один интерфейс, два исполнителя. Тест tools/test/team-executor.test.js прогоняет
+      - "Один интерфейс, два исполнителя. Тест tools/test/exec-executor.test.js прогоняет
         один и тот же набор проверок контракта run(роль, задача, контекст, ограничения)
         для scripted и для claude-cli на поддельном исполняемом файле (критерий 6): оба
         отдают поток событий и итог с полями статус, файлы-результаты, краткий итог,
         расход; итог проверяется по схеме ответа роли, ответ вне схемы — сбой задачи
         с понятной причиной, а не принятый результат"
       - "scripted — только для тестов и честно помечен. Тест
-        tools/test/team-executor.test.js: `npm run team -- new --goal \"x\" --budget 1`
+        tools/test/exec-executor.test.js: `npm run team -- new --goal \"x\" --budget 1`
         без --executor создаёт проект с executor claude-cli; --executor scripted без
         --scenario или с несуществующим файлом — отказ, код не 0, проект не создан;
         проект с executor scripted: первое событие ENGINE после run-task говорит о
@@ -1469,7 +1469,7 @@ requirements:
         tools/README.md` пусто, а `grep -n 'scripted' tools/README.md` находит строку со
         словами «только для тестов»; `grep -rn 'fixtures/team' tools/src/team/` пусто;
         `find tools/src/team -iname '*scenario*' -o -iname '*сценари*' -o -iname
-        '*demo*'` пусто; тест tools/test/team-scripted-source.test.js берёт из каждого
+        '*demo*'` пусто; тест tools/test/exec-scripted-source.test.js берёт из каждого
         файла сценария в tools/test/fixtures/team/ все строковые значения длиннее 20
         знаков и ищет каждое в файлах tools/src/team/ — 0 совпадений"
       - "Настоящие запуски только при условиях. Тест на поддельном исполняемом файле,
@@ -1491,7 +1491,11 @@ requirements:
         имена переменных окружения в файл теста): исполнитель вызывает spawn с массивом
         аргументов и shell: false (тест на поддельном spawn проверяет, что в
         аргументах вызова `shell` равно false; `grep -rn 'shell:' tools/src/team/` не
-        находит ни одной строки, кроме `shell: false`; `grep -rnE 'exec(Sync)?[(]|execFileSync' tools/src/team/` пусто); среди
+        находит ни одной строки, кроме `shell: false`; `grep -rnE 'child_process|execFile|execSync|[^.[:alnum:]_]exec[(]' tools/src/team/`
+        находит ровно одну строку — `import cp from "node:child_process"` в
+        tools/src/team/executors/claude-cli.js; вызовы RegExp `.exec(` не считаются
+        запуском процесса и шаблоном не ловятся; `grep -rnE 'cp[.]spawn' tools/src/team/`
+        находит ровно одну строку — единственный вызов spawn); среди
         аргументов `-p`, `--output-format stream-json`, `--max-budget-usd` со значением
         не больше остатка потолка проекта, `--json-schema`; нет `--add-dir`,
         `--dangerously-skip-permissions`, `--permission-mode bypassPermissions`;
@@ -1501,7 +1505,7 @@ requirements:
         SAI_TEAM_CLAUDE_BIN указывает на несуществующий файл — задача «не удалось» с
         событием «исполнитель не найден», процесс завершается кодом не 0 без
         трассировки стека"
-      - "Точные инструменты ролей. Тест tools/test/team-roles-tools.test.js перебирает
+      - "Точные инструменты ролей. Тест tools/test/exec-roles-tools.test.js перебирает
         все десять ролей каталога и для каждой запускает run-task на поддельном файле:
         переданный набор доступных инструментов в argv равен ровно (как множество)
         Read, Write, Edit, Glob, Grep, WebSearch, WebFetch у Исследователя и Read,
@@ -1577,15 +1581,16 @@ requirements:
         и потолка на запуск; правило учёта запуска без расхода; команды new, add-task,
         run-task с примерами. На копии каталога Sai без node_modules во временной папке
         `cd tools && npm ci && npm run check` проходит с кодом 0, тесты
-        tools/test/team-*.test.js входят в прогон. Ни один тест не запускает настоящий
+        tools/test/exec-*.test.js входят в прогон. Ни один тест не запускает настоящий
         claude: помощник тестов падает сразу, если SAI_TEAM_CLAUDE_BIN не задан или
         указывает на файл вне tools/test/fixtures/team/ (урок AP-025; отдельный тест
         помощника проверяет оба случая); вывод приложен"
       - "UAT — ждёт письменного согласия владельца (расход его лимита). Один настоящий
         `npm run team -- run-task` на claude-cli для одной небольшой задачи роли
         Исследователь с потолком, который назовёт владелец, только после его
-        письменного согласия в сессии: задача доходит до итога («готово» по итогу
-        исполнителя или «не удалось» с понятной причиной); журнал, файлы результата и
+        письменного согласия в сессии: задача доходит до итога («на проверке» по итогу
+        исполнителя — статус «готово» ставит проверка REQ-013, критерий готовности, а не
+        run-task — или «не удалось» с понятной причиной); журнал, файлы результата и
         вывод `npm run team -- project <id>` приложены к отчёту UAT-RUNNER; расход не
         больше потолка; запись в файл вне папки проекта, если задача её попросит, не
         выполнена; если формат stream-json настоящей версии расходится с образцами

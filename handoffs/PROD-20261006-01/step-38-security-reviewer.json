@@ -1,0 +1,75 @@
+{
+  "handoff_id": "step38-security-reviewer-PROD-20261006-01",
+  "run_id": "PROD-20261006-01",
+  "workflow_id": "WF-02",
+  "step": "38",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-01/step-38-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06",
+    "requirement_ids": [
+      "REQ-009",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-01/step-38-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "<рабочая папка ORCH>/orch/prod/fix-batch-before",
+    "parallel_work_now": "REVIEWER, TEST-DESIGN-VALIDATOR (только чтение)",
+    "artifacts_in": [
+      "docs/design/REQ-009-team-core.md (r10)",
+      "docs/design/REQ-010-agent-executors.md",
+      "tools/src/team/",
+      "tools/test/",
+      "handoffs/PROD-20261006-01/step-36-code-fixer.json",
+      "handoffs/PROD-20261006-01/step-37-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, повтор (узкий) после пакетного восстановления (handoffs/PROD-20261006-01/step-36-code-fixer.json: journal.js appendBatch, store.js recover() и #appendBatch; прежнее заключение — step-30-security-reviewer.json PASS по S1; копия до — <рабочая папка ORCH>/orch/prod/fix-batch-before). ЖЁСТКИЕ ПРАВИЛА: НИКОГДА не запускайте настоящий claude; SAI_TEAM_CLAUDE_BIN только fake/probe под tools/test/fixtures/team или missing-*; SAI_TEAM_HOME — временная; НИКОГДА ~/.sai-team и ~/.sai-pixel-office; порт 4780 не нужен; не оставляйте процессов (ps до/после). Своими пробами: пакет записывается ЦЕЛИКОМ или не записывается (сбой write/fsync/потеря замка до/после — журнал либо с тремя событиями, либо как был; откат ftruncate корректен: проверьте длину файла и целостность последней строки); проверка замка ДО пакета (нельзя записать пакет чужому/потерянному замку); seq подряд и редьюсер проверяет события пакета ДО записи; публичный append по-прежнему отклоняет core-only типы; приём пакета не может быть вызван снаружи (нет публичного appendBatch у писателя; #appendBatch приватный); проба G на ≥ 40 раундах (6 одновременных открывающих после аварии) — восстановление ровно один раз; живой писатель не прерывается (занятый замок, переиспользованный pid, замок-симлинк); после штатного close() ничего не пишется; остаточный риск (смерть процесса в середине записи пакета: начало пакета может остаться без PROJECT_RECOVERED) — оцените вероятность и последствия, предложите (если есть) простое закрытие: например, при починке оборванной последней строки проверять незавершённый пакет — НО это Low, если окно реально лишь при смерти процесса/питания в середине одного write; ничего не правьте. Новых дыр в изменённых файлах (diff с копией до: journal.js, store.js) нет. cd tools && npm run check. Результат: result.verdict PASS/FAIL, по пробам — доказательства, findings.",
+    "acceptance_criteria": [
+      "result.verdict PASS или FAIL",
+      "атомарность пакета — доказана пробами",
+      "живой писатель не прерывается"
+    ]
+  },
+  "created_at": "2026-10-06T03:32:35Z",
+  "started_at": "2026-10-06T03:32:35Z",
+  "completed_at": "2026-10-06T03:40:42Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Область затронута: запись файла журнала (tools/src/team/journal.js appendBatch/appendBytes, store.js #appendBatch, recover() шаги 8.4-8.6) под замком писателя. Изменены только два файла (diff -rq с копией до). Пакет восстановления атомарен: сбой write (partial/throw/bug) и fsync -> один ftruncate к прежней длине, журнал = крах + LOCK_STALE_REMOVED, байт в байт ожидаемой длины, последняя строка целая, readJournal без хвоста; следующий открывающий пишет весь пакет {running,1,1} ровно один раз. Замок проверяется до пакета: подмена замка (мёртвый pid, живой чужой pid, симлинк) после LOCK_STALE_REMOVED -> E_LOCK_LOST, пакет не записан; чужие байты -> E_CONFLICT, пакет не записан. seq подряд и редьюсер на промежуточном состоянии до записи (#prepare(input,true,state) вне try; reducer И7/И13/И14/И21); публичный append отклоняет PROJECT_RECOVERED/LOCK_STALE_REMOVED/JOURNAL_RECOVERED/TASK_INTERRUPTED(recovery) с E_EVENT; у писателя нет метода batch, store экспортирует только createProject/listProjects/openWriter/readEvents/readProject; INTERNAL_BATCH — неэкспортируемая WeakMap. Проба G: 50 раундов одиночно и 3x40 под нагрузкой (170 раундов) — 0 сбоев, PROJECT_RECOVERED ровно один раз {1,1}, после close() ничего не пишется, живой писатель не прерывается. Живой писатель: занятый замок (4 открывающих E_PROJECT_BUSY), переиспользованный pid (E_PROJECT_BUSY, журнал и замок нетронуты), замок-симлинк (E_LOCK_BAD, журнал, ссылка и цель нетронуты). npm run check rc=0, 789/789. Остаточный риск (Low) — находка F-1.\n\nПункты: Q7 — применим и выполнен (поиск по диффу: ни секретов, ни логирования, ни сетевых вызовов; сообщения ошибок — коды OS и rollback, без данных). Q8 — неприменим (служебный код tools/, нет данных магазинов). Q9 — неприменим (нет базы и запросов). Q10 — применим и выполнен (сбой write/fsync/ftruncate/bug обработан явно: E_DISK с rollback ok/failed, писатель broken, ошибка одного открывающего не ломает других — проба G и пробы сбоев). Q11 — неприменим (нет внешних адресов). R3 — неприменим (нет фото). R2 — неприменим к изменению (Pixel Office не затронут; ~/.sai-pixel-office не писался). Запись файлов — только events.jsonl проекта под домом (путь не менялся); показ в браузере не затронут. Общий механизм: appendLine и appendBatch — одна функция appendBytes (одинаковые проверки замка, размера и откат).",
+    "findings": [
+      {
+        "id": "F-1",
+        "place": "tools/src/team/store.js:710-727 (recover, шаг 8.5: review-задачи выбираются только по reviewInterrupted текущего прохода)",
+        "rule": "Q10 (остаточный риск целостности после аварии)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Если процесс умирает внутри одного write() пакета (проба partial-kill: половина буфера и SIGKILL) и в журнале остаётся целая строка RUN_FINISHED(review, interrupted), а TASK_INTERRUPTED оборван, следующий открывающий отрезает хвост (JOURNAL_RECOVERED), но review-задачу не прерывает (открытого запуска уже нет) и PROJECT_RECOVERED не пишет: проект остаётся running, задача review ждёт проверки, которой не будет. Для рабочего запуска (как TM-67) вреда нет: задача running прерывается, PROJECT_RECOVERED {closed_runs 0, interrupted_tasks 1}, paused. Вероятность: окно только при смерти процесса/питания внутри одного системного вызова write небольшого буфера (SIGKILL не рвёт write обычного файла посреди; частичная запись при ENOSPC/EIO откатывается — доказано пробами) — практически только сбой питания или ядра. Последствия: проект «в работе» без работы до действия владельца; данные не теряются и не раскрываются.",
+        "fix": "Простое закрытие (по решению ORCH/CODE-DESIGNER, не обязательно сейчас): в recover шаг 8.5 считать прерываемой и review-задачу, у которой последний review-запуск после review_since_seq закрыт с outcome interrupted (та же логика, что reviewRunInterrupted в reducer.js, И21) — хотя бы когда journal.tail !== null; тогда остаток пакета дописывается TASK_INTERRUPTED + PROJECT_RECOVERED. Тест — partial-kill на writeSync nth 2 с фикстурой открытого review-запуска."
+      }
+    ],
+    "self_check": {
+      "scope": "diff -rq копии до (fix-batch-before/team) и tools/src/team: отличаются только journal.js и store.js; оба диффа прочитаны целиком.",
+      "probes_atomicity": "<рабочая папка ORCH>/sr38/probe-atom.mjs (временные дома, дети через tools/test/fault-inject.js; вывод <рабочая папка ORCH>/sr38/atom2.out): 22/22 OK. partial-write EIO / write ENOSPC / fsync EIO / bug TypeError на 2-м writeSync|fsync events.jsonl -> E_DISK rollback ok (bug — сырой TypeError), journal bytes 2274 = ожидаемые 2274, последний байт \\n, все строки JSON, хвоста нет; второй открывающий: +LOCK_STALE_REMOVED,RUN_FINISHED,TASK_INTERRUPTED,PROJECT_RECOVERED {running,1,1}, paused. partial + ftruncate EIO -> E_DISK rollback failed, хвост 69 байт; следующий: JOURNAL_RECOVERED, TASK_INTERRUPTED, PROJECT_RECOVERED {0,1}, paused, открытой работы нет. Замок подменён после LOCK_STALE_REMOVED (dead/foreign-live/symlink) -> E_LOCK_LOST, журнал = +LOCK_STALE_REMOVED; следующий — полный пакет {1,1}. Чужие байты перед пакетом -> E_CONFLICT, пакет не записан. Публичный append: E_EVENT для 4 core-типов, журнал неизменён; прототип Writer без batch; store exports [createProject,listProjects,openWriter,readEvents,readProject]. partial-kill: work-run -> PROJECT_RECOVERED {0,1} paused; review-run -> PROJECT_RECOVERED нет, status running (F-1).",
+      "probe_G": "<рабочая папка ORCH>/sr38/probe-g.mjs (копия пробы CODE-FIXER, прочитана): 50 раундов -> rounds 50, fail 0, opened 51, E_PROJECT_BUSY 249; под нагрузкой 3x40 параллельно -> fail 0/0/0, E_LOCK_LOST 2/3/2 (F6, допустимо), opened >= 1 в каждом раунде. Каждый раунд проверяет: ровно один RUN_FINISHED/TASK_INTERRUPTED/PROJECT_RECOVERED {1,1,running}, пакет подряд, paused/recovery, замка нет, повторное open+close без notices и журнал побайтово тот же, 3 открывающих при живом писателе — E_PROJECT_BUSY и журнал не меняется.",
+      "live_writer": "holdWriter: 4 открывающих E_PROJECT_BUSY, журнал тот же; замок с живым чужим pid: E_PROJECT_BUSY, журнал и замок нетронуты; writer.lock — симлинк: E_LOCK_BAD, журнал, ссылка и цель нетронуты.",
+      "npm_run_check": "cd tools && npm run check (TMPDIR временный) rc=0; prettier/eslint --max-warnings 0 чисто; # tests 789 # pass 789 # fail 0 # skipped 0 # todo 0; вывод <рабочая папка ORCH>/sr38/check.out",
+      "secret_scan": "grep -inE 'secret|token|api[_-]?key|password|sk-|http|exec|spawn|eval|innerHTML|console\\.' по добавленным строкам диффа journal.js и store.js: совпадений нет (rc=1).",
+      "unchanged": "shasum 601 файла tools/docs/decisions/handoffs до и после (<рабочая папка ORCH>/sr38/hash-before.txt, hash-after.txt): отличие только handoffs/PROD-20261006-01/step-39-reviewer.json (параллельный REVIEWER, не моя запись); tools/src и tools/test без изменений.",
+      "safety": "настоящий claude не запускался, SAI_TEAM_CLAUDE_BIN не задавался; дома только mkdtemp во временной папке пробы (удалены); ~/.sai-team не существует, ~/.sai-pixel-office не писался; порт 4780 не использовался (его слушал заранее работавший процесс владельца pid 64421, был в ps до); ps до/после — новых процессов нет."
+    },
+    "issues": [
+      "F-1 (Low, не блокирует): решить, закрывать ли остаточное окно смерти процесса внутри write пакета для review-задачи (предложение в findings) и нужен ли тест TEST-DESIGNER.",
+      "Наблюдение, не находка: journal.js экспортирует appendBatch как функцию модуля (как и appendLine); доступа к пакету писателя с core-типами снаружи она не даёт — store его не реэкспортирует, проверка замка и размера внутри."
+    ],
+    "artifacts_out": []
+  }
+}
