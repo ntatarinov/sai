@@ -94,7 +94,13 @@ export const PATTERNS = Object.freeze({
   hash: /^[0-9a-f]{64}$/,
   ts: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
   name: /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}$/,
+  // (r13, C6/C7) the name of a message of the channel of the engine and its nonce.
+  msg: /^m-[0-9]{12}\.json$/,
+  nonce: /^[0-9a-f]{16}$/,
 });
+
+// (r13, C7) identifiers of not executed messages in one event of the clean-up.
+export const DROPPED_MAX = 100;
 
 // ISO 8601 UTC with milliseconds, exactly in the form of Date#toISOString().
 export function isCanonicalTs(s) {
@@ -124,11 +130,33 @@ const taskId = () => ({ kind: "id", pattern: "task" });
 const runId = () => ({ kind: "id", pattern: "run" });
 const name = (extra = {}) => ({ kind: "name", ...extra });
 const hash = () => ({ kind: "hash" });
-const list = (max, item, min = 0) => ({ kind: "list", max, min, item });
+// (r13) a value by a pattern of PATTERNS: not text, so it is never masked.
+const token = (pattern, extra = {}) => ({ kind: "token", pattern, ...extra });
+const list = (max, item, min = 0, extra = {}) => ({
+  kind: "list",
+  max,
+  min,
+  item,
+  ...extra,
+});
 const object = (fields) => ({ kind: "object", fields });
 
 const L = LIMITS;
 const ROUND = int(0, 2);
+// (r13, C6) the message of the channel an event of a command came from.
+const MSG_FIELDS = Object.freeze({
+  msg: token("msg", { optional: true }),
+  nonce: token("nonce", { optional: true }),
+});
+// The types whose USER events may carry MSG_FIELDS.
+export const MSG_TYPES = Object.freeze([
+  "CHAT",
+  "PROJECT_PAUSED",
+  "PROJECT_RESUMED",
+  "PROJECT_STOPPED",
+  "BUDGET_SET",
+  "DECISION_RECEIVED",
+]);
 const PLAN_TASK = object({
   id: taskId(),
   role: code(ROLE_CODES),
@@ -192,10 +220,11 @@ export const EVENT_TYPES = Object.freeze({
       "goal_check_failed",
     ]),
   }),
-  PROJECT_PAUSED: type(["USER"], "none", {}),
+  PROJECT_PAUSED: type(["USER"], "none", { ...MSG_FIELDS }),
   PROJECT_RESUMED: type(["USER", "ENGINE"], "none", {
     parallel: int(1, 3, { nullable: true }),
     after: code(["command", "decision", "budget", "recovery"]),
+    ...MSG_FIELDS,
   }),
   PROJECT_RECOVERED: type(
     ["ENGINE"],
@@ -207,7 +236,7 @@ export const EVENT_TYPES = Object.freeze({
     },
     { coreOnly: true },
   ),
-  PROJECT_STOPPED: type(["USER"], "none", {}),
+  PROJECT_STOPPED: type(["USER"], "none", { ...MSG_FIELDS }),
   PROJECT_DONE: type(["ENGINE"], "none", {}),
   PROJECT_FAILED: type(["ENGINE"], "none", {
     reason: code(["user_rejected", "unrecoverable"]),
@@ -229,11 +258,16 @@ export const EVENT_TYPES = Object.freeze({
     accounted: code(["reported", "assumed"]),
     total_usd: money(),
   }),
-  BUDGET_SET: type(["USER"], "none", { budget_usd: money(0, L.BUDGET_MAX) }),
+  BUDGET_SET: type(["USER"], "none", {
+    budget_usd: money(0, L.BUDGET_MAX),
+    ...MSG_FIELDS,
+  }),
   CHAT: type(["USER", "ENGINE"], "optional", {
     text: text(L.TEXT_MAX),
     kind: code(["message", "question"]),
     truncated: bool(),
+    ...MSG_FIELDS,
+    dropped: list(DROPPED_MAX, token("nonce"), 1, { optional: true }),
   }),
   MEMORY_ADDED: type(["ENGINE", "AGENT", "USER"], "optional", {
     kind: code(["fact", "decision", "note"]),
@@ -274,7 +308,7 @@ export const EVENT_TYPES = Object.freeze({
   TASK_STARTED: type(["ENGINE"], "required", {}),
   RUN_STARTED: type(["ENGINE"], "by_purpose", {
     run_id: runId(),
-    purpose: code(["work", "review", "plan", "goal_check"]),
+    purpose: code(["work", "review", "plan", "goal_check", "reassign"]),
     role: code(ROLE_CODES),
     executor: code(EXECUTORS),
     max_budget_usd: money(0, Infinity, { nullable: true }),
@@ -333,6 +367,7 @@ export const EVENT_TYPES = Object.freeze({
   DECISION_RECEIVED: type(["USER"], "required", {
     decision: code(["approve", "change", "reject"]),
     text: text(L.TEXT_MAX, { nullable: true }),
+    ...MSG_FIELDS,
   }),
   TASK_DONE: type(["ENGINE"], "required", {
     via: code(["review", "approval"]),
@@ -345,6 +380,7 @@ export const EVENT_TYPES = Object.freeze({
       "executor_not_found",
       "invalid_output",
       "result_file",
+      "dependency_closed",
     ]),
     detail: text(L.DETAIL_MAX),
   }),
@@ -397,6 +433,11 @@ function checkValue(spec, value, field, limits) {
       return;
     case "hash":
       if (typeof value !== "string" || !PATTERNS.hash.test(value)) {
+        throw eventError(field);
+      }
+      return;
+    case "token":
+      if (typeof value !== "string" || !PATTERNS[spec.pattern].test(value)) {
         throw eventError(field);
       }
       return;
@@ -471,8 +512,26 @@ function checkCrossFields(input) {
       throw eventError("executor");
     }
   } else if (type === "RUN_STARTED") {
-    const needsTask = data.purpose === "work" || data.purpose === "review";
+    const needsTask = ["work", "review", "reassign"].includes(data.purpose);
     if (needsTask !== (task !== null)) throw eventError("task");
+  }
+  checkMessageFields(input);
+}
+
+// (r13, C6, C7) msg and nonce come together and only on a USER event of a
+// command; dropped only on CHAT of the engine, without repeats.
+function checkMessageFields({ type, source, data }) {
+  if (!MSG_TYPES.includes(type)) return;
+  const hasMsg = has(data, "msg");
+  if (hasMsg !== has(data, "nonce")) {
+    throw eventError(hasMsg ? "nonce" : "msg");
+  }
+  if (hasMsg && source !== "USER") throw eventError("msg");
+  if (type === "CHAT" && has(data, "dropped")) {
+    if (source !== "ENGINE") throw eventError("dropped");
+    if (new Set(data.dropped).size !== data.dropped.length) {
+      throw eventError("dropped");
+    }
   }
 }
 

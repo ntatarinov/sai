@@ -48,9 +48,18 @@ export function isAlive(pid) {
   }
 }
 
+// (r13, C4) The only holder a lock may name: the engine of REQ-013.
+export const ENGINE_HOLDER = "engine";
+
 // The pid in a lock file, or null when there is no file; throws E_LOCK_BAD for a
 // lock that is not a small regular file with JSON {"pid": int >= 1}.
 function readLockPid(file) {
+  const value = readLock(file);
+  return value === null ? null : value.pid;
+}
+
+// The content of a lock file ({ pid, ...} as JSON), or null when there is no file.
+function readLock(file) {
   let st;
   try {
     st = fs.lstatSync(file);
@@ -80,13 +89,19 @@ function readLockPid(file) {
   ) {
     throw badLock();
   }
-  return value.pid;
+  return value;
 }
 
-// The pid of the current lock of a project and whether it is alive, or null.
+// The pid of the current lock of a project, whether it is alive and who holds it
+// (r13, C4: "engine" only for exactly that string, otherwise null), or null.
 export function lockHolder(projectDir) {
-  const pid = readLockPid(path.join(projectDir, LOCK_FILE));
-  return pid === null ? null : { pid, alive: isAlive(pid) };
+  const value = readLock(path.join(projectDir, LOCK_FILE));
+  if (value === null) return null;
+  return {
+    pid: value.pid,
+    alive: isAlive(value.pid),
+    holder: value.holder === ENGINE_HOLDER ? ENGINE_HOLDER : null,
+  };
 }
 
 function unlinkQuietly(file) {
@@ -98,12 +113,23 @@ function unlinkQuietly(file) {
 }
 
 // Takes the right to write. Returns { stalePid } — the pid of a stale lock that
-// was removed, or null. Throws E_PROJECT_BUSY, E_LOCK_BAD or E_DISK.
-export function acquireLock(projectDir, pid, since = new Date().toISOString()) {
+// was removed, or null. Throws E_PROJECT_BUSY, E_LOCK_BAD or E_DISK. holder (r13,
+// C4): "engine" writes {"pid","since","holder":"engine"}; null — the former
+// content; any other value is a bug of the program.
+export function acquireLock(
+  projectDir,
+  pid,
+  since = new Date().toISOString(),
+  holder = null,
+) {
+  if (holder !== null && holder !== ENGINE_HOLDER) {
+    throw new Error("acquireLock: unknown holder");
+  }
   const lockFile = path.join(projectDir, LOCK_FILE);
   const tempFile = path.join(projectDir, `${LOCK_FILE}.${pid}.new`);
   const staleFile = path.join(projectDir, `${LOCK_FILE}.stale-${pid}`);
-  const content = Buffer.from(`${JSON.stringify({ pid, since })}\n`, "utf8");
+  const body = holder === null ? { pid, since } : { pid, since, holder };
+  const content = Buffer.from(`${JSON.stringify(body)}\n`, "utf8");
   let stalePid = null;
   for (let round = 0; round < ROUNDS_MAX; round += 1) {
     // The temporary name carries our own pid: no other live process uses it, so a

@@ -1,0 +1,117 @@
+{
+  "handoff_id": "step27-security-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "27",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-27-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-27-security-reviewer.json — только status, completed_at, result",
+      "handoffs/PROD-20261006-02/step-27-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "CODE-DESIGNER (правка проекта по ревью)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-26-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-24-security-reviewer.json",
+      "handoffs/PROD-20261006-02/step-25-reviewer.json",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, повторная проверка безопасности после правки кода по ревью (AP-049): handoffs/PROD-20261006-02/step-26-backend-dev.json (до этого — step-24-security-reviewer.json PASS и step-25-reviewer.json FAIL). ORCH сам: cd tools && npm run check — 923 из 923 (проверьте сами). Проверьте сами изменённый код: engine.js (общий receive() для Engine.command и handleTaken; goalRun без planRun — пауза отменяет все запуски; signal.reason), channel.js (rmSync убран → переименование плохой папки taken/.bad-<rand> с lstat; NUMBER_MAX, NUMBER_JUMP_MAX, E_CHANNEL_FULL, E_CHANNEL_BAD; запрет замены stop-файла дублем при остановке; chmodSync только на проверенных своих папках), single-run.js, runner.js, reducer.js, cli.js, множества И24 рядом с состоянием; ваши прежние Low F-1 и F-2 закрыты? Опробуйте сами (во временных папках вне проекта, пробы — в scratchpad sec-req013/r2/): подмена taken/high папкой с симлинком наружу, номер m-999999999999 и скачок выше high+1 000 000, дубль stop при остановке, команда до открытия движка, команда после выхода, гонка 4 отправителей; пункты Q7–Q11, R3 по новому коду; настоящий claude не запускается. Ничего не правьте. Результат: result.verdict PASS/FAIL, findings (место, важность, доказательство, исправление), summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "прежние Low F-1 и F-2 закрыты — с пробой",
+      "нет новых дыр от правки"
+    ]
+  },
+  "created_at": "2026-10-06T13:08:31Z",
+  "started_at": "2026-10-06T13:08:31Z",
+  "completed_at": "2026-10-06T13:12:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "area": "Затронута: канал команд inbox/ (запись файлов, приём данных от другого процесса), движок (receive для command и handleTaken), отмена запусков. Pixel Office, сеть, данные магазинов, фото — не затронуты (в изменённых файлах нет http/fetch/innerHTML, нет файлов pixel-office/).",
+      "prev_F-1 (Low)": "ЗАКРЫТ. rmSync в channel.js нет; writeHigh переименовывает папку на месте taken/high в taken/.bad-<rand16> (lstat: папка, не ссылка), содержимое не трогается. Проба A1/A2: папка high со ссылкой наружу — уехала в .bad-*, внутри [link, x], внешняя папка цела. A3/A4: high — ссылка на внешний файл/папку — заменяется сама ссылка renameSync, внешний файл не изменён (victim=000000000777). chmodSync оставлен только после goodDir (папка, не ссылка, свой владелец) — обоснование п. 13.4 принято.",
+      "prev_F-2 (Low)": "ЗАКРЫТ. NUMBER_MAX=999999999999, NUMBER_JUMP_MAX=1000000. Проба B1: m-999999999999 — E_CHANNEL_BAD, high не поднят, файл удалён; B2: high+1000001 — E_CHANNEL_BAD; B3: ровно high+1000000 — принят (граница включительно); B4: high=NUMBER_MAX — отправитель E_CHANNEL_FULL за 6 мс, ничего не опубликовано; C1: уборка при старте с подложенным m-999999999999 — high=3, далёкий номер сброшен в dropped.",
+      "reviewer F-5": "Проверено пробой D1 и движком: дубль номера идущего stop получает E_CHANNEL_STALE, файл .taking-* остаётся файлом stop (nonce совпадает), PROJECT_STOPPED один с nonce stop, ack stop ok. resume и say во время остановки — E_ENGINE_STOPPING, событий нет.",
+      "receive()": "Команда до открытия — E_INTERNAL «engine not open»; после выхода — E_CHANNEL_TIMEOUT «Проект завершил работу», событий USER CHAT после выхода нет (проба engine). Общий путь для command и handleTaken подтверждён чтением engine.js:932–1019.",
+      "race": "4 отправителя × 10 сообщений, 3 прогона: 40/40 уникальных сообщений, имён и nonce в каждом.",
+      "check": "cd tools && npm run check — exit 0, # tests 923, # pass 923, # fail 0, # skipped 0.",
+      "items": {
+        "Q7": "применим и выполнен — поиск секретов по 10 изменённым файлам: совпадения только в тестах (проверка отсутствия sk-/ghp_/AKIA в README и приманка EN-62); текст say/answer маскируется у отправителя (maskedArgs) и в ядре (store.js mapTextFields maskSecrets); сообщения ошибок не содержат входных данных.",
+        "Q8": "неприменим — нет данных магазинов; канал проверяет m.project === id (проект — свой).",
+        "Q9": "неприменим — нет базы и сырых запросов, только файлы.",
+        "Q10": "применим и выполнен — переполнение нумерации даёт явный E_CHANNEL_FULL/E_CHANNEL_BAD вместо таймаута; ошибки записи ack/high перехвачены (refuse/answer), одно плохое сообщение не ломает другие (гонка 40/40); ожидание отправителя ограничено ACK_WAIT_MS.",
+        "Q11": "неприменим — внешних адресов и запросов нет.",
+        "R3": "неприменим — фото покупателей нет.",
+        "R2": "неприменим — Pixel Office не изменён; событий канал не пишет, события пишет движок через writer ядра.",
+        "paths": "запись только внутри inbox/ проекта; новые renameSync (.bad-*) остаются в taken/; ссылки не проходятся (lstat, O_NOFOLLOW, проверки A1–A4).",
+        "markup": "неприменим — страниц в изменении нет."
+      }
+    },
+    "findings": [
+      {
+        "id": "F-1",
+        "place": "tools/src/team/engine/channel.js:371–372 (publishMessage) против 869 (take, NUMBER_JUMP_MAX)",
+        "item": "Q10",
+        "severity": "Low",
+        "what": "Новое от правки: отправитель считает номер как 1+max(всех имён inbox/, high) без предела NUMBER_JUMP_MAX, а движок отклоняет номер > high+NUMBER_JUMP_MAX. Подложенный в inbox/ файл с далёким номером (например m-000002000000, тот же пользователь, папка 0700) на время до следующего опроса делает номер настоящей команды тоже далёким — она отклоняется E_CHANNEL_BAD (не повторяется, повтор только для E_CHANNEL_STALE). Проба C2: законная команда say получила E_CHANNEL_BAD. До правки команда проходила. Эффект разовый, нужен процесс того же пользователя — поэтому Low, не блокирует.",
+        "fix": "Отправителю применять то же правило, что движку: при подсчёте top учитывать только имена с номером ≤ high + NUMBER_JUMP_MAX (одно общее правило-функция в channel.js); тест: подложенный далёкий номер + настоящий отправитель → ok."
+      },
+      {
+        "id": "F-2",
+        "place": "tools/src/team/engine/channel.js:597 (writeHigh) и 689–698 (cleanUp, others)",
+        "item": "гигиена путей записи (не пункт планки)",
+        "severity": "Info",
+        "what": "Папки taken/.bad-* никогда не убираются и при каждом открытии дают уведомление «посторонние файлы» (проба A5). Безопасности не вредит (содержимое не трогается, всё внутри taken/).",
+        "fix": "По желанию: назвать .bad-* в тексте уведомления или в проекте п. 13.7; не трогать содержимое."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum tools/src tools/test tools/README.md tools/package.json до и после",
+        "output": "165 файлов, diff пуст (<рабочая папка ORCH>/sec-req013/r2/hash-before.txt, hash-after.txt)"
+      },
+      {
+        "command": "cd tools && npm run check",
+        "output": "exit 0; # tests 923 # pass 923 # fail 0 # skipped 0 (<рабочая папка ORCH>/sec-req013/r2/check.log)"
+      },
+      {
+        "command": "node <рабочая папка ORCH>/sec-req013/r2/probe-channel.mjs (данные в <рабочая папка ORCH>/sec-req013/r2/tmp)",
+        "output": "A1 high файл, .bad-* [link,x], outside [keep.txt]; A2 ok; A3 victim 000000000777 не изменён; A4 outside цел; A5 notice посторонние; B1 E_CHANNEL_BAD high 1; B2 E_CHANNEL_BAD; B3 m-000001000001 принят; B4 E_CHANNEL_FULL 6 мс, inbox [ack,taken]; C1 high 3 dropped 2; C2 E_CHANNEL_BAD (находка F-1); D1 дубль E_CHANNEL_STALE, taking=stop; D2 stop ack ok"
+      },
+      {
+        "command": "TMPDIR=<рабочая папка ORCH>/sec-req013/r2/tmp node --test <рабочая папка ORCH>/sec-req013/r2/probe-engine.test.mjs (scripted, assertSafeEnv, настоящий claude не запускался)",
+        "output": "before-open E_INTERNAL «engine not open»; after-exit E_CHANNEL_TIMEOUT «Проект завершил работу», chatAfter []; stop: dup E_CHANNEL_STALE, resume/say E_ENGINE_STOPPING, stopAck true, один PROJECT_STOPPED с nonce stop. (Падение 1-го теста пробы — мой ожидаемый код E_CHANNEL_TIMEOUT_GONE, фактический публичный код E_CHANNEL_TIMEOUT, поведение верное.)"
+      },
+      {
+        "command": "bash <рабочая папка ORCH>/sec-req013/r2/race-main.sh ×3",
+        "output": "chat 40 unique 40 msgs unique 40 nonces unique 40 — во всех трёх"
+      },
+      {
+        "command": "grep секретов/сети/innerHTML по 10 изменённым файлам; grep fs-записей в engine/*, runner, reducer, cli",
+        "output": "секретов нет (только тестовые проверки); сети и разметки нет; записи только в channel.js внутри inbox/ и прежний removeSource runner.js:660–674 с lstat-проверкой"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "F-1 Low — новое следствие правки F-2 (рассогласование правила номера у отправителя и движка); не блокирует, решение о правке — ORCH/CODE-FIXER. PASS не разрешает мерж (R1)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

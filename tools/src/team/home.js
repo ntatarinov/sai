@@ -12,10 +12,14 @@ export const FILES_DIR = "files";
 export const WORK_DIR = "work";
 export const SCENARIO_FILE = "scenario.json";
 export const LOCK_FILE = "writer.lock";
+// (r13) the channel of the engine of REQ-013 (decisions/0020); only
+// engine/channel.js works inside it.
+export const INBOX_DIR = "inbox";
 
 // The allowed entries of a project folder (N10). Permanent: events.jsonl, files/,
 // work/, scenario.json (scripted only), writer.lock (only while the right to write
-// is taken). Temporary leftovers of a crash, removed by the next writer: the
+// is taken), inbox/ (created by the engine of REQ-013; its taken/ and ack/ and
+// their files are checked by engine/channel.js). Temporary leftovers of a crash, removed by the next writer: the
 // temporary lock file and the stale lock in the moment of its removal.
 export const PROJECT_ENTRIES = Object.freeze([
   Object.freeze({
@@ -51,6 +55,13 @@ export const PROJECT_ENTRIES = Object.freeze([
     kind: "file",
     mode: 0o600,
     when: "writer",
+    temporary: false,
+  }),
+  Object.freeze({
+    name: INBOX_DIR,
+    kind: "dir",
+    mode: 0o700,
+    when: "engine",
     temporary: false,
   }),
   Object.freeze({
@@ -210,6 +221,7 @@ function ownedEntries(projectDir) {
     [EVENTS_FILE, "file"],
     [SCENARIO_FILE, "file"],
     [LOCK_FILE, "file"],
+    [INBOX_DIR, "dir"],
   ];
   let names = [];
   try {
@@ -251,7 +263,7 @@ function modeProblems(projectDir) {
 }
 
 // For the writer, after the lock is taken and the journal checked (F11): narrows
-// the modes of <HOME>, the project folder, files/, work/ and the files of the core
+// the modes of <HOME>, the project folder, files/, work/, inbox/ and the files of the core
 // (not the content of work/). Returns notices.
 export function ensureModes(projectDir) {
   const notices = [];

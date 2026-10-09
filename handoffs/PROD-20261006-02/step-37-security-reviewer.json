@@ -1,0 +1,137 @@
+{
+  "handoff_id": "step37-security-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "37",
+  "round": 4,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-37-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-37-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "REVIEWER (шаг 38), TEST-DESIGNER (шаг 39, только tests)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-36-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-33-security-reviewer.json",
+      "docs/design/REQ-013-team-engine.md",
+      "tools/src/team/engine/channel.js"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, безопасность дельты после правки F1 (AP-049; ваш прежний PASS — step-33-security-reviewer.json): handoffs/PROD-20261006-02/step-36-backend-dev.json. Изменён только tools/src/team/engine/channel.js: уборка .tmp-<pid>-<16 hex> (удаляется, только если pid мёртв или имя не по шаблону), повтор отправителя при ENOENT собственного временного файла в пределах PUBLISH_TRIES_MAX. Проверьте сами пробой (в scratchpad sec-req013/r5/ — папку создайте): можно ли подложить .tmp-<pid>-… с pid живого процесса (например своего), чтобы уборка не удаляла мусор вечно/забила папку; проверка pid (kill 0 / EPERM) — не даёт ли ложных «жив» бесконечно блокирующих открытие; гонка двух отправителей и уборки; повтор ENOENT — не бесконечный цикл, не двойной эффект (одно событие на сообщение), не открывает путь за пределы inbox/; прежние права и маскирование; места записи — пять (REQ-009 крит. 2); npm run check (938 из 938 — проверьте); настоящий claude не запускается. Ничего не правьте. Результат: result.verdict PASS/FAIL, findings, summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "пробы на подложенные .tmp- с живым pid",
+      "повтор отправителя ограничен и не дублирует событие"
+    ]
+  },
+  "created_at": "2026-10-06T16:44:28Z",
+  "started_at": "2026-10-06T16:44:28Z",
+  "completed_at": "2026-10-06T16:49:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "area": "Затронута: канал команд движка (tools/src/team/engine/channel.js) — поверхности «пишет файлы» (inbox/) и «приходит извне» (файлы inbox/ от других процессов того же пользователя). Браузер, сеть, данные магазинов, фото не затронуты: в channel.js нет http/fetch/innerHTML/console.",
+      "delta": "Копии «до» нет (before_copy: нет). Мутанты разработчика (<рабочая папка ORCH>/bd-req013/m1, m2) отличаются от текущего channel.js ровно в двух местах правки: removableLeftover в уборке (стр. 810) и условие повтора ENOENT (стр. 413). Прочитаны SENDER_TMP/removableLeftover (стр. 66–80), publishMessage (385–424), cleanUp 2.6 (807–818).",
+      "подложенные .tmp- живых pid": "P1: 3000 файлов .tmp-<свой pid>-<hex> + .tmp-1-… (pid 1, kill 0 → EPERM → «жив») + .tmp-0001-… — openInbox за 18 мс, без исключения и без уведомления, файлы остаются; уборка не ждёт и не повторяет — блокировки открытия нет (isAlive только решает «удалить или оставить»). В счёт INBOX_ENTRIES_MAX не входят (listMessages фильтрует MSG_NAME) — после этого say публикуется и исполняется, одно событие. Удаляются: pid 0, pid вне safe-integer, мёртвый pid, HEX в верхнем регистре, 17 hex, .tmp-high- и .tmp-x в inbox/. Подложить может только тот же пользователь (inbox/ 0700 своего пользователя) — он и так может писать в папку что угодно; новой возможности засорить папку правка не даёт.",
+      "повтор ENOENT": "Ограничен: каждый повтор — итерация того же цикла PUBLISH_TRIES_MAX=50. P2 (временный файл удаляется перед каждым linkSync): E_CHANNEL_FULL, 50 linkSync, 51 запись (первая + 50 замен), ни сообщения, ни .tmp не осталось, событий нет. P3: ENOENT при живом своём .tmp — E_DISK сразу, 1 попытка. P4: потеря 3 раза — опубликовано одно сообщение, одно событие, .tmp не осталось. Двойного эффекта нет: linkSync атомарен, ENOENT значит ссылка не создана; повтор — после ошибки, не после успеха. Путь: новый временный — только через writeInboxFile(paths.inbox, …, `.tmp-${pid}-`), dirname = inbox/ (P2), режим 0600, flag wx.",
+      "гонка": "EN-67 (start, resume) — 5 раундов × 4 параллельных процесса: 20/20 «# pass 2», в выводе ENOENT/E_DISK только в названиях тестов. 9м ×3 — 3 × pass 2. Отправитель не может потерять файл из-за уборки: уборка не трогает .tmp живого pid (собственный процесс отправителя жив во время публикации).",
+      "права и маскирование": "Без изменений: writeInboxFile wx/0600/flush; say/answer маскируются maskSecrets (стр. 321, 323) — P1: текст с sk-ant-… в событии «P1 [скрыто]».",
+      "места записи": "grep -rnE 'appendFile|createWriteStream|writeFile' tools/src/team/ — ровно 5 мест: store.js:593, 599; files.js:100; engine/channel.js:178; lock.js:139. Повтор использует то же место channel.js:178 (writeInboxFile).",
+      "check": "cd tools && TMPDIR=<scratch> npm run check — exit 0; # tests 940, # pass 940, # fail 0, # skipped 0, # todo 0. 940, а не 938: во время проверки TEST-DESIGNER (шаг 39, параллельно) изменил tools/test/team-channel.test.js и team-engine-budget.test.js; tools/src не менялся (хеш всех файлов src до и после совпадает).",
+      "items": {
+        "Q7": "применим и выполнен — grep sk-|ghp_|AKIA|token|password|secret|console. по channel.js: только импорт и вызовы maskSecrets; новые отказы — существующие E_CHANNEL_FULL/E_DISK с постоянными текстами; P5: сырая ошибка ОС превращается formatError в E_INTERNAL без пути.",
+        "Q8": "неприменим — данных магазинов нет; канал — папка своего проекта.",
+        "Q9": "неприменим — базы и запросов нет.",
+        "Q10": "применим и выполнен — повтор ограничен PUBLISH_TRIES_MAX, исчерпание — явный E_CHANNEL_FULL; иной ENOENT/ошибка — E_DISK; .tmp убирается в finally в любом исходе; внешних вызовов нет. Замечание Info I-1 (не блокирует).",
+        "Q11": "неприменим — сервер никуда не ходит.",
+        "R3": "неприменим — фото нет.",
+        "R2": "неприменим — Pixel Office не затронут; события движка пишутся только через writer ядра, правка новых мест записи журнала не добавляет.",
+        "путь в своей папке": "выполнен — имена временных файлов строятся из process.pid и rand16 в paths.inbox; уборка удаляет только имена из readdirSync(inbox) через path.join(inbox, name) (имя без разделителей).",
+        "показ текста": "неприменим — страницы нет."
+      }
+    },
+    "findings": [
+      {
+        "id": "I-1",
+        "place": "tools/src/team/engine/channel.js:413",
+        "item": "Q10",
+        "severity": "Info",
+        "what": "В ветке ENOENT вызов lstatOrNull(tmp) бросает необработанную ошибку ОС, если lstat даёт не ENOENT (P5: EACCES) — она уходит из publishMessage не как TeamError и показывается как E_INTERNAL, а не E_DISK. Утечки нет (formatError без пути), отказ явный; в своей папке 0700 практически недостижимо.",
+        "fix": "По желанию: обернуть lstatOrNull в той ветке и при ошибке бросать fromOsError(err, \"write\")."
+      },
+      {
+        "id": "I-2",
+        "place": "tools/src/team/engine/channel.js:413-415",
+        "item": "Q10",
+        "severity": "Info",
+        "what": "При исчерпании попыток последний повтор пишет временный файл, который уже не будет использован (51 запись на 50 попыток); он удаляется в finally. Ограничено, мусора не остаётся.",
+        "fix": "Не требуется; при желании не писать новый файл на последней итерации."
+      },
+      {
+        "id": "I-3",
+        "place": "tools/src/team/engine/channel.js:73-80",
+        "item": "Q10",
+        "severity": "Info",
+        "what": "Подложенный .tmp-<живой pid>-<16 hex> (в т. ч. pid 1 через EPERM, .tmp-0001-…) остаётся сколь угодно долго. Безвредно: не сообщение, не в счёте INBOX_ENTRIES_MAX, открытие не блокирует; подложить может только сам пользователь (inbox/ 0700). Это остаток, названный в проекте r5.5.",
+        "fix": "Не требуется."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum tools/src tools/test tools/README.md tools/package.json до и после",
+        "output": "167 файлов; tools/src — совпадает (сводный хеш 2edb0d37… до и после); изменились только tools/test/team-channel.test.js и tools/test/team-engine-budget.test.js — правка параллельного TEST-DESIGNER (шаг 39). <рабочая папка ORCH>/sec-req013/r5/hash-before.txt, hash-mid.txt, hash-after.txt"
+      },
+      {
+        "command": "diff текущего channel.js с bd-req013/m1 и m2",
+        "output": "m1: стр. 810 LEFTOVER.test вместо removableLeftover; m2: стр. 413 if (false) — других различий нет"
+      },
+      {
+        "command": "пробы P1–P5 (дописаны к копии team-channel.test.js в <рабочая папка ORCH>/sec-req013/r5/copy, TMPDIR=<рабочая папка ORCH>/sec-req013/r5/tmp): node --test --test-name-pattern='SEC-PROBE'",
+        "output": "P1 openInbox ms=18 notices=[] dropped=0; pid1 stays=true pid0001 stays=true; events=1 text=[\"P1 [скрыто]\"]. P2 code=E_CHANNEL_FULL writes=51 links=50 modes=384(0600) dirs=inbox names=[] (моё ожидание 50 записей было неточным — 51, см. I-2). P3 code=E_DISK links=1 tmpLeft=0. P4 ok=true msgs=1 events=1 tmpLeft=0. P5 class=Error code=EACCES (→ E_INTERNAL, см. I-1)"
+      },
+      {
+        "command": "5 × (4 одновременных node --test --test-name-pattern='EN-67' test/team-recovery.test.js)",
+        "output": "failed=0 of 20; 20 × # pass 2; ENOENT/E_DISK — только в названиях тестов (<рабочая папка ORCH>/sec-req013/r5/race/)"
+      },
+      {
+        "command": "3 × node --test --test-name-pattern='9м' test/team-channel.test.js",
+        "output": "3 × # pass 2 # fail 0"
+      },
+      {
+        "command": "cd tools && TMPDIR=<рабочая папка ORCH>/sec-req013/r5/tmp npm run check",
+        "output": "exit 0; # tests 940 # pass 940 # fail 0 # skipped 0 # todo 0 (<рабочая папка ORCH>/sec-req013/r5/check.log)"
+      },
+      {
+        "command": "grep -rnE 'appendFile|createWriteStream|writeFile' tools/src/team/",
+        "output": "5 мест: store.js:593, store.js:599, files.js:100, engine/channel.js:178, lock.js:139"
+      },
+      {
+        "command": "grep -nEi 'sk-|ghp_|AKIA|token|password|secret|console\\.|innerHTML|http|fetch' channel.js",
+        "output": "только maskSecrets (стр. 14, 246, 321, 323)"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Счёт тестов 940, а не 938: TEST-DESIGNER (шаг 39) параллельно менял два файла тестов; исходники не менялись. Подтвердить 938 для состояния step-36 нельзя — тесты менялись во время проверки; ORCH стоит сверить итоговое число после шага 39."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Настоящий claude не запускался: пробы и тесты — на поддельном claude песочницы тестов."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -148,7 +148,7 @@ function sourcesBelow(dir) {
   return out.sort();
 }
 
-test("TM-04 the places that write files in tools/src/team are exactly the four of the design", () => {
+test("TM-04 the places that write files in tools/src/team are exactly the five of the design (four of the core and the channel of REQ-013)", () => {
   const found = [];
   for (const file of sourcesBelow(TEAM_SRC)) {
     fs.readFileSync(file, "utf8")
@@ -165,7 +165,13 @@ test("TM-04 the places that write files in tools/src/team are exactly the four o
   }
   assert.deepStrictEqual(
     found.map((f) => f.file).sort(),
-    ["files.js", "lock.js", "store.js", "store.js"],
+    [
+      path.join("engine", "channel.js"),
+      "files.js",
+      "lock.js",
+      "store.js",
+      "store.js",
+    ],
     found.map((f) => `${f.file}:${f.line}`).join(", "),
   );
   for (const hit of found) {

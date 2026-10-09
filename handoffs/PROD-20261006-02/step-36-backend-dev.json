@@ -1,0 +1,95 @@
+{
+  "handoff_id": "step36-backend-dev-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "36",
+  "round": 4,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261006-02/step-36-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/engine/channel.js (и только то, что требует проект)",
+      "tools/test/team-channel.test.js, tools/test/team-recovery.test.js, tools/test/team-engine-helpers.js, tools/test/fixtures/team/**",
+      "handoffs/PROD-20261006-02/step-36-backend-dev.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-013-team-engine.md",
+      "handoffs/PROD-20261006-02/step-35-test-design-validator.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, правка кода по проекту r5.5 (docs/design/REQ-013-team-engine.md: п. 13.4 шаг 2.6, п. 13.6 шаги 5 и 8, п. 22, п. 28; дефект F1 из handoffs/PROD-20261006-02/step-35-test-design-validator.json). Сделайте: (1) F1 High: при уборке inbox/ файл .tmp-<pid>-<rand16> удаляется только если его pid мёртв; .cancel-* удаляются, отправитель пропускает ENOENT; если свой временный файл исчез — отправитель пишет новый и повторяет в пределах PUBLISH_TRIES_MAX, при исчерпании — существующий E_CHANNEL_FULL (нового отказа нет); (2) тесты (сначала падающие): EN-57 (9м) — детерминированный, через обёртку fs: уборка в окне между записью временного файла и linkSync + случай с удалённым временным файлом; EN-67 расширить отправителями say к открывающемуся движку (4 процесса, ожидания по событию); два мутанта проекта («уборка удаляет все .tmp», «нет повтора при ENOENT») — примените сами на копиях в <рабочая папка ORCH>/bd-req013/ и скажите, что тесты падают на каждом; (3) повторите гонку EN-67 в 4 параллельных процессах не менее 20 раз подряд (цикл), ни одного E_DISK ENOENT. Не трогайте тесты F2, F3, F5 (их делает TEST-DESIGNER). Правила прежние: npm run check код 0, число тестов до/после (сейчас 936), настоящий claude не запускать, TM/EX не ослаблять; не менять requirements.yaml, проекты, решения. Результат: result.summary, result.checks, result.issues.",
+    "acceptance_criteria": [
+      "F1 исправлен, детерминированный тест падал до правки",
+      "20 прогонов гонки EN-67 в 4 процессах без E_DISK ENOENT",
+      "мутанты пойманы",
+      "npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-06T16:35:52Z",
+  "started_at": "2026-10-06T16:35:52Z",
+  "completed_at": "2026-10-06T16:43:52Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "(1) F1 (High), channel.js": "Уборка (п. 13.4, шаг 2.6): .cancel-* удаляются; .tmp-* в inbox/ удаляется только если имя не по шаблону отправителя ^\\.tmp-[0-9]+-[0-9a-f]{16}$ или pid из имени не жив (isAlive ядра); временный файл живого отправителя не трогается никогда (removableLeftover). Отправитель (п. 13.6, шаг 5): linkSync с ENOENT при исчезнувшем своём временном файле (lstat — нет) — пишет новый временный файл и повторяет; это попытка из того же PUBLISH_TRIES_MAX, при исчерпании — прежний E_CHANNEL_FULL; иной ENOENT/ошибка — как раньше E_DISK. unlinkSync(.tmp) в любом исходе с пропуском ENOENT (как было).",
+      "(2) тесты": "team-channel.test.js EN-57 (9м), два теста, детерминированные через обёртку fs (t.mock.method linkSync/writeFileSync): (а) уборка openInbox выполняется внутри linkSync отправителя, после записи его временного файла — публикация с первой попытки, один временный файл, событие одно; до правки — E_DISK (ENOENT); (б) обёртка удаляет временный файл перед linkSync — отправитель пишет второй и публикует, ack ok; там же уборка удаляет .tmp мёртвого pid и .tmp не по шаблону и оставляет .tmp живого pid; до правки — fail. team-recovery.test.js EN-67 (оба режима start/resume) расширен: два отправителя say сразу и два — в момент появления замка (движок открывается); ни у одного нет E_DISK/ENOENT; код 0 ⇔ ровно одно событие с его текстом, иначе код 1 с понятным отказом (E_PROJECT_BUSY, E_CHANNEL_DROPPED, E_CHANNEL_TIMEOUT, E_CHANNEL_UNCONFIRMED, E_ENGINE_STOPPING, E_CHANNEL) и ноль событий. Ожидания — по событию (замок, журнал).",
+      "(3) мутанты (копии в <рабочая папка ORCH>/bd-req013/m1, m2)": "m1 «уборка удаляет все .tmp» — EN-57 (9м) оба теста fail; m2 «нет повтора при ENOENT» — EN-57 (9м) второй тест fail. Пойманы оба.",
+      "(4) гонка": "EN-67 (start и resume) — 20 раундов по 4 параллельных процесса (80 прогонов): 80/80 зелёные (# pass 2 каждый), ни одного ENOENT/E_DISK в выводе."
+    },
+    "files": {
+      "modified": [
+        "tools/src/team/engine/channel.js",
+        "tools/test/team-channel.test.js",
+        "tools/test/team-recovery.test.js"
+      ]
+    },
+    "checks": [
+      {
+        "command": "cd tools && npm run check (до)",
+        "output": "936 тестов (итог step-34/35)"
+      },
+      {
+        "command": "node --test --test-name-pattern='9м' test/team-channel.test.js (до правки)",
+        "output": "# pass 0 # fail 2 (первый — code E_DISK от linkSync ENOENT)"
+      },
+      {
+        "command": "cd tools && npm run check (после)",
+        "output": "exit 0; prettier, eslint чисто; # tests 938, # pass 938, # fail 0, # skipped 0"
+      },
+      {
+        "command": "20 × (4 одновременных node --test --test-name-pattern='EN-67' test/team-recovery.test.js)",
+        "output": "failed runs: 0 of 80; grep ENOENT по 80 выводам — 0 файлов"
+      },
+      {
+        "command": "мутанты в bd-req013/m1, m2: node --test --test-name-pattern='9м' test/team-channel.test.js",
+        "output": "m1: # pass 0 # fail 2; m2: # pass 1 # fail 1"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Тесты F2, F3, F5 (TEST-DESIGNER) не трогались. Других файлов, кроме channel.js и двух файлов тестов, правка не потребовала."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Остаточный (по проекту r5.5): pid в имени .tmp может быть повторно занят чужим процессом — тогда файл остаётся до следующей уборки; это безвредно (не сообщение, в счёт и предел не входит)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/engine/channel.js",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-recovery.test.js"
+    ]
+  }
+}

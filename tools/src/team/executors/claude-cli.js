@@ -399,8 +399,10 @@ export async function run(request, io) {
     ...out,
     transient: false,
     answer,
-    summary: answer.summary,
-    files: answer.files.map((f) => ({
+    // The answers of the engine without a work (plan, review, goal check, choice
+    // of a role; design REQ-013) have neither summary nor files.
+    summary: typeof answer.summary === "string" ? answer.summary : null,
+    files: (Array.isArray(answer.files) ? answer.files : []).map((f) => ({
       path: f.path,
       kind: f.kind ?? "result",
     })),

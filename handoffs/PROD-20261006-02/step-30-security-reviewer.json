@@ -1,0 +1,117 @@
+{
+  "handoff_id": "step30-security-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "30",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-30-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-30-security-reviewer.json — только status, completed_at, result",
+      "handoffs/PROD-20261006-02/step-30-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "REVIEWER (шаг 29)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-28-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-27-security-reviewer.json",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, проверка безопасности дельты после вашего PASS (step-27-security-reviewer.json) — правки step-28-backend-dev.json (AP-049): src/team/errors.js (новые коды), engine/commands.js (checkResume, E_NOT_STARTED), engine/answers.js (checkDecision с facts, E_NOT_WAITING), engine/channel.js (чтение facts из журнала после взятия замка в deliver) и тесты. Проверьте сами: не открыта ли гонка при чтении журнала в deliver без движка (чтение под замком, без записи вне пяти мест), нет ли утечки текста пользователя/секретов в новые ошибки, не стал ли какой-либо отказ записывать в журнал, не ослаблены ли проверки канала; новый тест team-engine-r52.test.js; npm run check (ожидаемо 926 из 926 — проверьте); ваши Low: отправитель без предела NUMBER_JUMP_MAX — оставлен как есть (в проекте r5.2 правила нет), ORCH заведёт дефект — согласны ли вы с Low. Настоящий claude не запускается. Ничего не правьте. Результат: result.verdict PASS/FAIL, findings, summary. Пробы — sec-req013/r3/ в scratchpad.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "дельта проверена по коду и пробой",
+      "Low про предел номера у отправителя оценён"
+    ]
+  },
+  "created_at": "2026-10-06T13:17:31Z",
+  "started_at": "2026-10-06T13:17:31Z",
+  "completed_at": "2026-10-06T13:20:24Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "area": "Затронута: команды движка без движка (deliver: запись журнала под замком), коды отказов, чтение журнала. Pixel Office, сеть, данные магазинов, фото, страницы — не затронуты (в изменённых файлах нет http/fetch/innerHTML, файлов pixel-office/ нет).",
+      "delta": "По хешам относительно моей проверки r2 (hash-after r2 → hash-before r3) изменились ровно 8 файлов step-28: errors.js, engine/commands.js, engine/answers.js, engine/channel.js, fixtures/team/README.md, team-engine-docs/units.test.js, новый team-engine-r52.test.js. Копии «до» нет (before_copy: нет); diff errors/commands/answers — против копии en77 с теми же хешами, что в r2 (7d19f70, 53331d6, 6efa49a): только E_NOT_STARTED, case created, проверки facts/config на null, checkDecision(…, facts) с budgetFailed. channel.js: копии r2 нет; diff против более старой копии en77 даёт кроме deliver только правки r2, уже проверенные мной (NUMBER_MAX/JUMP, .bad-*, дубль stop) — новое в r3 только импорт readProject/scanFacts и чтение facts в deliver.",
+      "race (deliver)": "readProject → openForReading → readJournal только читает (readAll, разбор; ни write/truncate/chmod/rename — проверено чтением journal.js:81–138, home.js modeWarnings без изменений). Вызов стоит после openWriter (замок взят, recover выполнен), до applyCommand, внутри try/finally с writer.close(). Писатель под замком один, поэтому facts из файла совпадают с writer.state. Проба P3: оборванный хвост — openWriter отбросил строку, readProject после него tail=null, answer change принят. Проба P4: 6 одновременных CLI answer — 3× change t-0002 записаны, t-0001 (потолок) 2× E_NOT_WAITING и 1× E_PROJECT_BUSY, лишних событий нет, журнал читается.",
+      "refusals do not write": "checkResume (E_NOT_STARTED) и checkDecision (E_NOT_WAITING) бросают до writer.append. Проба P1: deliver answer по задаче, упавшей на потолке, — E_NOT_WAITING, хеш журнала и снимок папки проекта те же. Тест r52 F-7/F-8 проверяет то же через CLI (хеш журнала, снимок, fakeStarts=0). P2: deliver resume без движка — E_INTERNAL «(resume)», папка не изменена (как и до правки: config не передавался).",
+      "no leak": "Новые тексты ENGINE_MESSAGES — постоянные строки без подстановок; P1: в message/details/stack ошибки нет ни текста ответа, ни приманки sk-ant-api03-…; details = {}.",
+      "channel checks": "Сторона движка (take/handleTaken, NUMBER_JUMP_MAX, .bad-*, дубль stop) в r3 не менялась; все вызовы applyCommand (engine.js:246, 854, 989; channel.js:540) передают facts; проверка ответа стала строже (budgetFailed), не слабее.",
+      "Low step-27 F-1": "Согласен с Low и с заведением дефекта. Код не менялся (channel.js:373 next = 1 + max(top, high) без предела). Нужен процесс того же пользователя с записью в inbox/ 0700; итог — один явный отказ E_CHANNEL_BAD (не тихий), подложенный файл движок отклоняет и убирает, журнал не портится. Правило в проекте r5.2 для отправителя не записано — правка через CODE-DESIGNER (предложение BACKEND-DEV в step-28 issues разумно: общая функция предела номера для отправителя и движка + тест).",
+      "check": "cd tools && npm run check — exit 0, # tests 926, # pass 926, # fail 0, # skipped 0 (подтверждено).",
+      "items": {
+        "Q7": "применим и выполнен — поиск секретов по 6 изменённым файлам кода/тестов и README фикстур: совпадения только maskSecrets и описание приманок ghp_FAKE; новые сообщения ошибок без входных данных (P1).",
+        "Q8": "неприменим — данных магазинов нет; проект ищется по своему id (checkDecision: задача другого проекта — «не найдена»).",
+        "Q9": "неприменим — базы и запросов нет, только файл журнала.",
+        "Q10": "применим и выполнен — отказы явные (E_NOT_STARTED, E_NOT_WAITING, E_INTERNAL при отсутствии facts/config), ошибка чтения журнала в deliver закрывает писателя (finally), одновременные команды не мешают друг другу (P4).",
+        "Q11": "неприменим — внешних адресов нет.",
+        "R3": "неприменим — фото покупателей нет.",
+        "R2": "неприменим — Pixel Office не изменён; событий не придумано, события пишет только writer ядра.",
+        "paths": "новых путей записи нет; readProject читает журнал своего проекта через resolveProjectDir.",
+        "markup": "неприменим — страниц в изменении нет."
+      }
+    },
+    "findings": [
+      {
+        "id": "F-1",
+        "place": "tools/src/team/engine/channel.js:373 (publishMessage)",
+        "item": "Q10",
+        "severity": "Low",
+        "what": "Перенесено из step-27 F-1 без изменений: отправитель не применяет NUMBER_JUMP_MAX; подложенный далёкий номер делает одну настоящую команду отклонённой E_CHANNEL_BAD. Оценка Low подтверждена (не блокирует).",
+        "fix": "Дефект через ORCH → CODE-DESIGNER: общее правило предела номера для отправителя и движка, тест «подложенный далёкий номер + настоящий отправитель → ok»."
+      },
+      {
+        "id": "F-2",
+        "place": "tools/src/team/engine/commands.js:275 (answer) против 223–228 (resume)",
+        "item": "Q10 (согласованность общего механизма, AP-014)",
+        "severity": "Info",
+        "what": "resume отклоняет facts === null как E_INTERNAL, answer — только undefined; при facts === null checkDecision упадёт TypeError на failed-задаче. Сейчас недостижимо: все четыре вызова applyCommand передают объект; записи нет в любом случае (бросок до append).",
+        "fix": "По желанию: в answer проверять facts == null так же, как в resume."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum tools/src tools/test tools/README.md tools/package.json до и после; diff с r2/hash-after.txt",
+        "output": "166 файлов; до/после diff пуст (<рабочая папка ORCH>/sec-req013/r3/hash-before.txt, hash-after.txt); против r2 изменены ровно 8 файлов step-28"
+      },
+      {
+        "command": "diff en77-копии (хеши = r2) с текущими errors.js, commands.js, answers.js, channel.js",
+        "output": "правки только описанные в step-28; в channel.js новое — import readProject/scanFacts и facts в deliver (535–546)"
+      },
+      {
+        "command": "cd tools && TMPDIR=<рабочая папка ORCH>/sec-req013/r3 npm run check",
+        "output": "exit 0; # tests 926 # pass 926 # fail 0 # skipped 0 (<рабочая папка ORCH>/sec-req013/r3/check.log)"
+      },
+      {
+        "command": "TMPDIR=<рабочая папка ORCH>/sec-req013/r3/tmp node --test <рабочая папка ORCH>/sec-req013/r3/probe-r3.test.mjs (песочницы exec-helpers, настоящий claude не запускался)",
+        "output": "4/4 pass. P1 E_NOT_WAITING, details {}, без текста и приманки, журнал и папка те же; P2 deliver resume без движка E_INTERNAL (resume), папка та же; P3 оборванный хвост — notice «Журнал восстановлен…», answer change принят, tail null; P4 6 параллельных answer: t-0002 0×3 записаны, t-0001 E_NOT_WAITING×2 + E_PROJECT_BUSY×1, добавлены только DECISION_RECEIVED:t-0002×3"
+      },
+      {
+        "command": "grep секретов (sk-|ghp_|AKIA|token|password|secret) и http/fetch/innerHTML по изменённым файлам",
+        "output": "только maskSecrets и описание приманок ghp_FAKE в README фикстур; сети и разметки нет"
+      },
+      {
+        "command": "grep readJournal/openForReading/modeWarnings на fs-записи",
+        "output": "journal.js readJournal — только чтение; chmod только в ensureModes (писатель), modeWarnings только читает"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Low F-1 (предел номера у отправителя) — согласен с Low и с дефектом через ORCH; PASS не разрешает мерж (R1). Ожидаемый итог 926/926 был назван в задании (AP-018) — проверен самостоятельно, совпал."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "handoff_id": "step31-backend-dev-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "31",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261006-02/step-31-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/**",
+      "tools/test/team-*.test.js, tools/test/team-engine-helpers.js, tools/test/exec-*.test.js, tools/test/fixtures/team/**",
+      "tools/README.md",
+      "handoffs/PROD-20261006-02/step-31-backend-dev.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-013-team-engine.md",
+      "handoffs/PROD-20261006-02/step-29-reviewer.json",
+      "handoffs/PROD-20261006-02/step-30-security-reviewer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, правка кода по проекту r5.3 (docs/design/REQ-013-team-engine.md: п. 12.3, 12.4, 13.5 шаг 6, 13.6, 28; handoffs/PROD-20261006-02/step-29-reviewer.json R-1…R-7, step-30-security-reviewer.json). Сделайте (сначала падающий тест): (1) R-1: после сигнала процесса движок отклоняет все сообщения, включая второй stop, кодом E_ENGINE_STOPPING до разбора (п. 13.8); порядок «сначала прервать, потом остановить» сохраняется; TASK_INTERRUPTED получает причину stop, не cancel; тест EN-57 (9л) по пробе <рабочая папка ORCH>/rev-req013/r2/probe-signal-stop.test.mjs, мутант; (2) предел номера: одна функция nextNumber для отправителя и движка; номера выше high + NUMBER_JUMP_MAX не учитываются при расчёте; n > NUMBER_MAX → E_CHANNEL_FULL; тест EN-57 (9к), мутант; (3) п. 28: R-3 (комментарий applyCommand — facts для resume и answer), R-4 (deliver читает журнал только для resume и answer), R-5 (CANCEL_CAUSES в одном месте), Info (facts null и undefined одинаково во всех командах); (4) R-6 EN-76 находит запуск не только по литералу — если проект r5.3 это называет; иначе в result.issues. Правила прежние: npm run check код 0, число тестов до/после (сейчас 926), гонки в 4 процессах при правке конкурентности, настоящий claude не запускать, TM/EX не ослаблять; не менять requirements.yaml, проекты, решения. Результат: result.summary (номер → что сделано → тест), result.checks, result.issues.",
+    "acceptance_criteria": [
+      "R-1 и предел номера исправлены с тестами (падали до правки)",
+      "R-3, R-4, R-5 и Info выполнены",
+      "npm run check код 0, прежние тесты не ослаблены"
+    ]
+  },
+  "created_at": "2026-10-06T13:23:45Z",
+  "started_at": "2026-10-06T13:23:45Z",
+  "completed_at": "2026-10-06T13:28:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "(1) R-1": "engine.js receive(): с момента stop или сигнала процесса и до разбора по п. 13.8 любое сообщение (и через канал, и через command), в том числе второй stop, отклоняется E_ENGINE_STOPPING; разбор при выходе (draining) — прежние правила п. 13.8. Порядок «сначала прервать, потом остановить» не тронут: обычный stop по-прежнему abort(\"stop\") → TASK_INTERRUPTED {cause:\"stop\"} → PROJECT_STOPPED (EN-51, EN-57 (5,6) проходят). Тест EN-57 (9л) в team-channel.test.js (по пробе rev-req013/r2/probe-signal-stop.test.mjs, поддельный claude с hang): после requestStop(\"signal\") stop через command и через канал (sendToEngine) — E_ENGINE_STOPPING, итог paused, в журнале PROJECT_PAUSED и нет PROJECT_STOPPED, TASK_INTERRUPTED cause cancel (это сигнал, а не stop), замок снят (писатель цел). До правки — fail; мутант «stop исполняется во время остановки по сигналу» — тест падает.",
+      "(2) предел номера": "channel.js: countsAsNumber(n, high) = n ≤ high + NUMBER_JUMP_MAX и nextNumber(numbers, high) = 1 + max(high, учтённые номера), > NUMBER_MAX → E_CHANNEL_FULL — одно правило: отправитель (publishMessage) считает номер через nextNumber, движок при взятии отклоняет номер, для которого countsAsNumber ложно (E_CHANNEL_BAD), уборка поднимает high только учтёнными номерами (основа — max(high, наибольший номер msgs)). Тест EN-57 (9к): подложенный m-<high+2 000 001> и настоящий отправитель → отправитель получает high+1, код 0, событие; подложенный — E_CHANNEL_BAD, событий нет. До правки — fail; мутант «отправитель учитывает далёкие номера» — тест падает. Прежние тесты security F-2 проходят.",
+      "(3) п. 28: R-3, R-4, R-5, Info": "R-3: комментарий applyCommand — facts для resume и answer, config для resume. R-4: deliver без движка читает журнал (scanFacts) только для resume и answer. R-5: правило причины отмены — одна функция cancelCauseOf(signal) в runner.js, single-run.js её импортирует (вторая копия CANCEL_CAUSES удалена). Info: facts и config, равные null или undefined, одинаково дают E_INTERNAL (функция absent) в resume и answer. Поведение не менялось; покрыто прежними тестами (EN-21, EN-36…38, F-8, runSingle cancelled, EN-51).",
+      "(4) R-6": "Не правилось: строка EN-76 в п. 21 проекта r5.3 по-прежнему описывает запуск по литералу start|resume|run-task — в result.issues."
+    },
+    "files": {
+      "modified": [
+        "tools/src/team/engine/engine.js",
+        "tools/src/team/engine/channel.js",
+        "tools/src/team/engine/commands.js",
+        "tools/src/team/engine/single-run.js",
+        "tools/src/team/runner.js",
+        "tools/test/team-channel.test.js"
+      ]
+    },
+    "checks": [
+      {
+        "command": "cd tools && npm run check (до)",
+        "output": "926 тестов (итог step-28)"
+      },
+      {
+        "command": "node --test --test-name-pattern='9к|9л' test/team-channel.test.js (до правки)",
+        "output": "# pass 0 # fail 2"
+      },
+      {
+        "command": "cd tools && npm run check (после)",
+        "output": "exit 0; prettier, eslint чисто; # tests 928, # pass 928, # fail 0, # skipped 0"
+      },
+      {
+        "command": "4 одновременных node --test test/team-channel.test.js test/team-engine-control.test.js",
+        "output": "4 × exit 0, 34/34"
+      },
+      {
+        "command": "мутанты п. 22 r5.3 на копии во временной папке",
+        "output": "«отправитель учитывает номера выше high + NUMBER_JUMP_MAX» — EN-57 (9к) fail; «stop исполняется во время остановки по сигналу» — EN-57 (9л) fail"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NEEDS_DESIGN",
+        "text": "R-6: EN-76 находит запуск по литералу [\"start\"|\"resume\"|\"run-task\"]; п. 21 r5.3 описывает именно это, расширение (любой вызов runTeam/spawnTeam/spawn* в team-*.test.js) не названо — не правилось по заданию."
+      },
+      {
+        "kind": "NOTE",
+        "text": "R-2 (упоминания cancelCause в тексте проекта) — правка проекта, не кода; код уже без опции cancelCause."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Уборка: основа предела — max(high, наибольший номер msgs) (прежде — max(high + NUMBER_JUMP_MAX, наибольший номер msgs)); при пустом журнале сообщений поведение то же, правило теперь одно с отправителем и движком (countsAsNumber)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/engine/engine.js",
+      "tools/src/team/engine/channel.js",
+      "tools/src/team/engine/commands.js",
+      "tools/src/team/engine/single-run.js",
+      "tools/src/team/runner.js",
+      "tools/test/team-channel.test.js"
+    ]
+  }
+}

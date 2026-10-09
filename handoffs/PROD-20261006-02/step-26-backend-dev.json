@@ -1,0 +1,125 @@
+{
+  "handoff_id": "step26-backend-dev-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "26",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261006-02/step-26-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/**",
+      "tools/test/team-*.test.js, tools/test/team-engine-helpers.js, tools/test/exec-*.test.js, tools/test/fixtures/team/**",
+      "tools/README.md",
+      "handoffs/PROD-20261006-02/step-26-backend-dev.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-25-reviewer.json",
+      "handoffs/PROD-20261006-02/step-24-security-reviewer.json",
+      "docs/design/REQ-013-team-engine.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, правка по FAIL ревью (handoffs/PROD-20261006-02/step-25-reviewer.json — прочтите все 12 находок и пробы в <рабочая папка ORCH>/rev-req013/; безопасность — step-24-security-reviewer.json PASS с двумя Low). Исправьте: (1) F-1 High: сверка цели не прошла → план следующего раунда не запускается внутри действия goal (убрать вызов planRun из goalRun; переход делает nextActions); пауза должна отменять любой запуск; тест на п. 12.1 для обоих раундов (запуск раунда 1 закрывается cancelled после PROJECT_PAUSED) — сначала упавший тест; (2) F-2 Medium: один общий обработчик для stop/конечного статуса/остановки в Engine.command и handleTaken; тесты EN-21, EN-36…38, EN-42, EN-50, EN-51 остаются и проходят через общий путь; (3) F-3 Medium: EN-76 проверяет по-настоящему — каждый тестовый файл, запускающий движок, либо вызывает assertSafeEnv, либо получает его только через помощник, в котором assertSafeEnv вызывается перед каждым стартом (проверка по коду, не по комментарию); комментарии не засчитываются; (4) Low безопасности F-1: вместо рекурсивного rmSync на подменённом taken/high — переименовать плохую папку в сторону (с проверкой lstat) или убрать вызов; chmodSync — убрать или обосновать в result; (5) Low безопасности F-2: отправитель отвечает E_CHANNEL_FULL, когда следующий номер длиннее 12 цифр; движок отклоняет номер, намного превышающий high (задайте предел константой и назовите), тесты; (6) ревьюер F-5: во время остановки файл stop в taken/ не может быть заменён дублем с тем же номером — исправьте и тест; (7) остальные Low ревьюера, меняющие только код/тесты, — по возможности; те, что требуют правки проекта (выбор DECISION_NEEDED, выживший мутант EN-60, устаревшая фраза README образцов), — не править в проекте, перечислите в result.issues. Правила те же: npm run check код 0, число тестов до/после, гонки в 4 процессах при правке конкурентности, настоящий claude не запускать, TM/EX не ослаблять. Не менять requirements.yaml, проекты, решения. Результат: result.summary по находкам (номер → что сделано → тест), result.checks, result.issues.",
+    "acceptance_criteria": [
+      "F-1, F-2, F-3 ревью исправлены с тестами (F-1 — тест падал до правки)",
+      "Low безопасности F-1, F-2 и ревьюера F-5 исправлены с тестами",
+      "npm run check код 0, ни один прежний тест не ослаблен"
+    ]
+  },
+  "created_at": "2026-10-06T12:58:42Z",
+  "started_at": "2026-10-06T12:58:42Z",
+  "completed_at": "2026-10-06T13:07:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "F-1 (High)": "engine.js: goalRun больше не вызывает planRun — после GOAL_CHECK_RESULT {passed:false} при round < 2 действие goal завершается, план раунда round+1 ставит nextActions отдельным действием «plan» (одна реализация перехода). Пауза отменяет каждое действие вида plan (abort(\"cancel\")); работа, проверка, выбор роли и сверка цели доводятся до итога, как в п. 12.1. Тесты (team-engine-control.test.js): «EN-50 a pause cancels the run of the planner of round 0…» и «…of a round of more tasks (round 1…)» — RUN_FINISHED cancelled после PROJECT_PAUSED, PLAN_RECEIVED этого раунда нет, после resume PLANNING_STARTED того же раунда. Тест раунда 1 ДО правки падал: «the run of the planner of round 1 closed as cancelled did not come: … GOAL_CHECK_RESULT, PLANNING_STARTED, RUN_STARTED, PROJECT_PAUSED» (# pass 0 # fail 1); после правки проходит.",
+      "F-2 (Medium)": "Одна функция receive(message, ids, draining): не открыт — E_INTERNAL («engine not open»); после выхода — E_CHANNEL_TIMEOUT «Проект завершил работу»; сбой или идущая остановка — E_ENGINE_STOPPING; выход после сигнала или конечного статуса — E_FINISHED/E_ENGINE_STOPPING по п. 13.8; stop — E_STOPPED/E_FINISHED или requestStop. И Engine.command, и handleTaken канала вызывают её; handleTaken только добавляет ack, command — Promise. EN-21, EN-36…38, EN-42, EN-50, EN-51 идут через command → receive и проходят. Новый тест «a command of the engine: before the opening E_INTERNAL, during a stop E_ENGINE_STOPPING, after the end …».",
+      "F-3 (Medium)": "EN-76 переписан: комментарии вырезаются; в помощниках (exec-helpers.js: runTeam, spawnTeam, runTeamExpectRefusal; team-engine-helpers.js: startEngine, runToEnd, spawnEngine, manualEngine) проверяется, что вызов assertSafeEnv( в коде функции стоит раньше первого запуска (spawn/spawnSync/runTeam/createEngine/spawnTeam); для каждого team-*.test.js без собственного вызова assertSafeEnv( каждый запуск (вызов со словом start|resume|run-task, createEngine, помощник движка) должен идти через импортированную проверенную функцию помощника. Освобождения за импорт нет. Проверено на копии: файл с createEngine и assertSafeEnv только в комментарии — EN-76 падает; spawnEngine без assertSafeEnv — падает.",
+      "security F-1 (Low)": "channel.js: рекурсивный rmSync убран; папка на месте taken/high (lstat: папка, не ссылка) переименовывается в taken/.bad-<rand16> (renameSync внутри taken/, содержимое не трогается), затем high пишется заново. Тест «security F-1: a folder in place of taken/high is moved aside…». chmodSync оставлен: п. 13.4 шаг 1 проекта прямо требует «права сужаются до 0700» для inbox/, taken/, ack/; вызывается только для папки, прошедшей lstat (папка, не ссылка, владелец свой).",
+      "security F-2 (Low)": "channel.js: константы NUMBER_MAX = 999 999 999 999 и NUMBER_JUMP_MAX = 1 000 000. Отправитель: следующий номер > NUMBER_MAX — E_CHANNEL_FULL без публикации. Движок: взятый номер > high + NUMBER_JUMP_MAX — ack E_CHANNEL_BAD, high не поднимается; уборка не поднимает high далёким номером (он только сбрасывается в dropped). Тесты «security F-2: a sender that would need a number of 13 digits…» и «…the clean-up does not raise high…»; мутант без проверок — тест падает.",
+      "reviewer F-5 (Low)": "channel.js take(): если taken/.taking-<имя> уже есть (идёт stop), файл в inbox/ не переименовывается, а отклоняется как устаревший (ack E_CHANNEL_STALE, файл удалён); файл stop не заменяется. Тест «EN-57 (F-5) while a stop is in work its taken file is never replaced…»; без проверки — тест падает.",
+      "reviewer F-10, F-11, F-12 (Low)": "F-10: причина отмены передаётся через abort(reason) и читается из signal.reason (runner.js, single-run.js), объект опций больше не меняется после вызова; cancelCause убран из опций. F-11: один импорт errors.js в cli.js. F-12: И24 проверяется по Set, хранящимся рядом с состоянием, которое меняется на месте (WeakMap), форма состояния не менялась; события без msg/nonce/dropped проверку пропускают."
+    },
+    "files": {
+      "modified": [
+        "tools/src/team/engine/engine.js",
+        "tools/src/team/engine/channel.js",
+        "tools/src/team/engine/single-run.js",
+        "tools/src/team/runner.js",
+        "tools/src/team/reducer.js",
+        "tools/src/team/cli.js",
+        "tools/test/team-engine-control.test.js",
+        "tools/test/team-engine-docs.test.js",
+        "tools/test/team-channel.test.js",
+        "tools/test/team-engine-units.test.js"
+      ]
+    },
+    "checks": [
+      {
+        "command": "cd tools && npm run check (до правки)",
+        "output": "916 тестов (итог step-23)"
+      },
+      {
+        "command": "node --test --test-name-pattern='round 1, after' test/team-engine-control.test.js (до правки F-1)",
+        "output": "# pass 0 # fail 1 — «the run of the planner of round 1 closed as cancelled did not come»"
+      },
+      {
+        "command": "cd tools && npm run check (после)",
+        "output": "exit 0; prettier, eslint чисто; # tests 923, # pass 923, # fail 0, # skipped 0"
+      },
+      {
+        "command": "4 одновременных node --test test/team-channel.test.js test/team-recovery.test.js test/team-engine-control.test.js (правка канала и движка)",
+        "output": "4 × exit 0, 74/74"
+      },
+      {
+        "command": "мутанты на копии во временной папке",
+        "output": "убраны проверка дубля .taking (F-5) — тест F-5 падает; проверки NUMBER_MAX/NUMBER_JUMP_MAX — тест security F-2 падает; тестовый файл с createEngine и assertSafeEnv только в комментарии — EN-76 падает; spawnEngine без assertSafeEnv — EN-76 падает"
+      },
+      {
+        "command": "grep rmSync tools/src/team/engine/channel.js",
+        "output": "пусто"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "TEST_CHANGE",
+        "text": "team-engine-units.test.js (runSingle cancelled): отмена теперь abort(\"stop\") вместо записи opts.cancelCause — следствие F-10; проверка (RUN_FINISHED cancelled, BUDGET_SPENT, TASK_INTERRUPTED stop) не изменилась."
+      },
+      {
+        "kind": "NEEDS_DESIGN",
+        "text": "Не правились (нужна правка проекта, CODE-DESIGNER): F-7 — код и текст для resume проекта «создан» (сейчас E_TRANSITION И13); F-8 — ответ change/reject на задачу, упавшую по потолку (checkDecision без facts, выбор (з)); F-9 — фраза раздела «Источник образцов» в tests/fixtures/team/README.md; DESIGN_UPDATE ревьюера (п. 1.2, 2.2 — причина отмены через signal.reason, 4.1 — Engine.command/facts и receive, 4.5, 4.2/15.2, 6.1/9.4, 13.5 шаг 2 — отказ дубля при идущей остановке, 13.7 — renameSync в .bad-* и chmodSync, 15.3, 17, 21 — EN-76, 22 — мутант EN-60 эквивалентен; новые константы NUMBER_MAX и NUMBER_JUMP_MAX в п. 3)."
+      },
+      {
+        "kind": "MUTANT",
+        "text": "Мутант «выход без последнего просмотра inbox/» (EN-60) по-прежнему не ловится — предложено записать эквивалентным (решает проект/TEST-DESIGNER)."
+      },
+      {
+        "kind": "DECISION_NEEDED_LIST",
+        "text": "Выборы шага 22 без изменений (на REVIEWER): resume created; resume после аварии без паузы; planning без запуска; вопросы задач сразу; повторы SINGLE_RUNS_MAX без паузы; planNote с перечнем ролей; FAIL_DETAIL в вопросах; вход scripted у runSingle; checkDecision без facts; closedSincePlan на PLAN_RECEIVED."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/engine/engine.js",
+      "tools/src/team/engine/channel.js",
+      "tools/src/team/engine/single-run.js",
+      "tools/src/team/runner.js",
+      "tools/src/team/reducer.js",
+      "tools/src/team/cli.js",
+      "tools/test/team-engine-control.test.js",
+      "tools/test/team-engine-docs.test.js",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-engine-units.test.js"
+    ]
+  }
+}

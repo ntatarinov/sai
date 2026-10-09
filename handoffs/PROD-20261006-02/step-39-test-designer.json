@@ -1,0 +1,88 @@
+{
+  "handoff_id": "step39-test-designer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "39",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-02/step-39-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/team-*.test.js, tools/test/team-engine-helpers.js, tools/test/exec-*.test.js, tools/test/fixtures/team/**",
+      "handoffs/PROD-20261006-02/step-39-test-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "SECURITY-REVIEWER (37), REVIEWER (38) — читают src, вы меняете только tests",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-35-test-design-validator.json",
+      "docs/design/REQ-013-team-engine.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка тестов по handoffs/PROD-20261006-02/step-35-test-design-validator.json (F2, F3, F5; F1 исправил BACKEND-DEV — step-36). Проект: docs/design/REQ-013-team-engine.md r5.5, п. 22 (указания). Сделайте: F2 — EN-57 (3): тест на номер, равный high (поздний отправитель получает «устарел», не «номер 5 снова» при номере 4), мутант V04 должен падать; F3 — EN-57: сбой fsync на ВТОРОМ вызове (порции пакетом), мутант V07 (порции отдельными записями) должен падать; F5 — M25 (проверка потолка всегда проходит): тест, который падает (красный), а не вешает прогон, с собственным пределом времени. Примените эти три мутанта сами на копиях в <рабочая папка ORCH>/td2-req013/ (не в проекте). Код src/ не меняйте. Тесты не оставлять красными. npm run check код 0 (938 → ?). Результат: result.summary, result.mutants, result.checks, result.issues.",
+    "acceptance_criteria": [
+      "F2, F3, F5 закрыты — мутанты V04, V07, M25 падают на тестах",
+      "npm run check код 0",
+      "src/ не менялся"
+    ]
+  },
+  "created_at": "2026-10-06T16:44:28Z",
+  "started_at": "2026-10-06T16:44:28Z",
+  "completed_at": "2026-10-06T17:03:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "F2": "team-channel.test.js, EN-57 (3, 4, 8): к номеру 4 (< high) добавлен поздний отправитель с номером 5 (== high): ack E_CHANNEL_STALE, события нет, high остаётся 5.",
+      "F3": "team-channel.test.js, новый тест «EN-57 (9ж, F3)»: сбой fsync на втором вызове (nth 2) при уборке 250 сообщений; на коде уборка идёт одним пакетом (один fsync), проект открывается, порции [100,100,50], 250 учтены, файлов в inbox нет; порции отдельными записями упали бы на втором fsync (E_DISK). (Решение по проекту п.22 'ни одной порции не записано' неприменимо на исходном коде: проект допускает 'или все три одним пакетом'.)",
+      "F5": "team-engine-budget.test.js, новый тест «EN-40 (M25)»: движок отдельным процессом (spawnEngine start --parallel 1), ожидание вопроса о потолке с пределом 20 с (until), затем stop через канал и withLimit(run.done, 20000); зависание движка даёт красный тест через 20 с, а не ожидание общего таймаута; процесс убивается в t.after.",
+      "Q8_Q10_Q11_R3": "не затронуты этой доработкой (тесты канала/потолка; новых внешних вызовов, адресов, магазинов и фото нет)."
+    },
+    "mutants": [
+      {
+        "id": "V04",
+        "mutant": "channel: taken.n < high вместо <= (номер, равный high, исполняется)",
+        "result": "пойман",
+        "killed_by": "EN-57 (3, 4, 8) (1 тест)",
+        "run": "team-channel+team-engine-budget в копии td2-req013/m-V04: tests 35 pass 34 fail 1"
+      },
+      {
+        "id": "V07",
+        "mutant": "store.recordDropped: порции отдельными append, не пакетом",
+        "result": "пойман",
+        "killed_by": "EN-57 (9ж, F3) (1 тест)",
+        "run": "копия m-V07: tests 35 pass 34 fail 1"
+      },
+      {
+        "id": "M25",
+        "mutant": "schedule.enough() всегда true",
+        "result": "пойман красным тестом без зависания",
+        "killed_by": "EN-40 (M25): 'the question at the ceiling did not come', ~21 с, процесс движка убит",
+        "run": "копия m-M25, --test-name-pattern M25: tests 1 pass 0 fail 1, exit 1. Остальные тесты файла в этом мутанте зависают в процессе теста (синхронный цикл) — это прежнее поведение, новый тест его не заменяет, а добавляет красный."
+      }
+    ],
+    "checks": {
+      "npm_run_check": "cd tools && npm run check: код 0; tests 940 (было 938... новых 2), pass 940, fail 0, cancelled 0, skipped 0, todo 0",
+      "on_code": "team-channel+team-engine-budget после правок: 35/35 зелёные",
+      "isolation": "мутанты — в копиях scratchpad/td2-req013/m-*, diff src копий с проектом — только строки мутации (2, 6, 2); копии удалены, процессы убиты; src/ не менялся мной (git показывает M у src от прежних шагов)",
+      "tree_hash_note": "hash-before снят по tools без node_modules до мутантов: 294e2922445fc3b075d0ea20aab87c6a2c24d2b8; после — тесты менялись только в двух файлах write_set"
+    },
+    "issues": [
+      {
+        "kind": "INFO",
+        "text": "Было 938 по заданию; фактически до моих правок 938, после 940 (+EN-57 (9ж, F3), +EN-40 (M25)); EN-57 (3,4,8) расширен без нового теста."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-channel.test.js",
+      "tools/test/team-engine-budget.test.js"
+    ]
+  }
+}

@@ -198,7 +198,7 @@ test("EX-51 a scenario that is missing, empty, not UTF-8 or of a wrong form is E
   }
 });
 
-test("EX-51 the places of the code that write files are exactly the four of the core (TM-04)", () => {
+test("EX-51 the places of the code that write files are exactly the four of the core and the channel of REQ-013 (TM-04)", () => {
   const places = [];
   walk(TEAM_SRC, (f) => {
     fs.readFileSync(f, "utf8")
@@ -209,8 +209,9 @@ test("EX-51 the places of the code that write files are exactly the four of the 
         }
       });
   });
-  assert.equal(places.length, 4, places.join(", "));
+  assert.equal(places.length, 5, places.join(", "));
   assert.deepEqual(places.map((p) => p.split(":")[0]).sort(), [
+    "channel.js",
     "files.js",
     "lock.js",
     "store.js",

@@ -1,0 +1,200 @@
+{
+  "handoff_id": "step23-backend-dev-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "23",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261006-02/step-23-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/** (включая engine/channel.js, executors/claude-cli.js — только строка/блок дефекта)",
+      "tools/test/team-*.test.js, tools/test/team-engine-helpers.js, tools/test/exec-*.test.js, tools/test/fixtures/team/**",
+      "tools/README.md",
+      "handoffs/PROD-20261006-02/step-23-backend-dev.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-22-backend-dev.json",
+      "docs/design/REQ-013-team-engine.md",
+      "docs/design/REQ-009-team-core.md",
+      "decisions/0020-team-engine-channel.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 2, раунды 4–6 из п. 24 проекта docs/design/REQ-013-team-engine.md (r5.1) — продолжение шага 22 (раунды 1–3 готовы, 882 теста). Раунд 4: engine/channel.js (deliver, sendToEngine, engineHolder, openInbox, parseEngineArgs; нумерация, linkSync публикации, taken/high, .taking-…, ack, nonce, уборка порциями, пределы 64 КиБ / 10 с / 12 с / 200 мс), маршрут в cli.js, M2 (E_ENGINE_RUNNING); тесты EN-53, EN-55…EN-64 в team-channel.test.js (гонки EN-57, EN-60 — в этом раунде и в 4 параллельных процессах; пробы из scratchpad cdv-req013/ r2…r5 можно использовать как образцы). Раунд 5: восстановление и один движок, тесты EN-61, EN-65…EN-68 (гонка EN-67 — в этом раунде). Раунд 6: tools/README.md (раздел движка и канала, только то, что реально сделано), EN-75…EN-77; UAT НЕ запускать. Решения ORCH по вашим пунктам: (1) ИСПРАВИТЬ дефект executors/claude-cli.js:403 (answer.files.map на ответах без files): минимальная правка (не-рабочие ответы без файлов обрабатываются без падения), тест в exec-*.test.js на реальный исполнитель с fake-claude и ответом плана/проверки/сверки цели/reassign; это разрешённое исключение из «не трогать», назовите в result.issues; (2) tools/test/team-engine-helpers.js — в write_set, консолидируйте повторяющийся помощник; (3) правка runner.js (число попыток для имён файлов результата) принята при условии, что EX-тесты не изменены и добавлен тест на второй запуск той же задачи; (4) Engine.command принят; (5) TM-04 и EX-51: обновите с «четыре» до «пять» мест записи ровно настолько, чтобы npm run check был 0 и channel.js был единственным добавленным местом (проверка остаётся строгой: список мест фиксирован); назовите в result.issues; (6) DECISION_NEEDED — ваши выборы приняты на проверку REVIEWER, ничего не менять, но перечислите их в result.issues коротко. Остальные правила шага 22 те же (без сети в src/team кроме fs, настоящий claude не запускать, npm run check код 0 после каждого раунда, число тестов до/после, гонки, мутанты на новую логику канала — назвать пойманные). Не менять docs/requirements.yaml, проекты и решения. Результат: result.summary по раундам, result.files, result.checks, result.issues.",
+    "acceptance_criteria": [
+      "раунды 4–6 реализованы по проекту",
+      "дефект claude-cli.js исправлен с тестом на реальном исполнителе с fake-claude",
+      "TM-04/EX-51 — строго пять мест, npm run check код 0",
+      "гонки EN-57, EN-60, EN-67 в 4 параллельных процессах зелёные"
+    ]
+  },
+  "created_at": "2026-10-06T12:15:53Z",
+  "started_at": "2026-10-06T12:15:53Z",
+  "completed_at": "2026-10-06T12:40:08Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "orch_items": "(1) claude-cli.js: summary/files ответа без них — null/[] (единственная правка файла), тест exec-engine.test.js на fake-claude с ответами плана, проверки, сверки цели и выбора роли + runSingle плана; новые образцы stream-engine-*.jsonl. (2) tools/test/team-engine-helpers.js создан, повторы помощника из 10 файлов собраны в него. (3) тест второго запуска той же задачи (имена t-0001-1-…, t-0001-2-…) в exec-engine.test.js; EX-тесты на имена не менялись. (5) TM-04 и EX-51 — строго пять мест (четыре ядра + engine/channel.js). Тестов 882 → 893 до раунда 4.",
+      "round_4": "engine/channel.js: deliver, sendToEngine, engineHolder, openInbox (take/answer/sweep), parseEngineArgs; номер = 1+max(inbox, taken/high), публикация linkSync, взятие renameSync в taken/.taking-…, high до исполнения, ack по nonce, уборка (по nonce, (dev,ino), порции через writer.recordDropped, ack E_CHANNEL_DROPPED), пределы 64 КиБ, 10 с, опрос 100/50 мс, 1 с ожидания inbox/. Движок: openInbox при открытии, приём в каждом tick, stop через канал (ack после PROJECT_STOPPED), отказ E_ENGINE_STOPPING, разбор лежащих сообщений перед выходом, без ack при сломанном писателе. cli.js: say/pause/stop/budget/answer через deliver, resume через канал при живом движке, M2 (E_ENGINE_RUNNING у add-task/run-task до открытия и повторно по E_PROJECT_BUSY). Тесты EN-53, EN-55…EN-60, EN-62…EN-64 в team-channel.test.js. Тестов → 908.",
+      "round_5": "Открытие движка асинхронное: проигравший гонку за замок до 3 раз через 100 мс смотрит holder (start → E_ENGINE_RUNNING, resume → E_ALREADY_RUNNING); Engine.facts() для EN-66; предзагрузка fixtures/team/slow-inbox.js для EN-61. Тесты EN-61, EN-65…EN-68 в team-recovery.test.js.",
+      "round_6": "tools/README.md: раздел «## Sai Team — движок» (подразделы п. 20, только сделанное; сказано, что настоящий Claude Code движком не запускался), одна фраза раздела ядра о «проект занят» уточнена (канал движка); README образцов: engine-basic.json, slow-inbox.js, stream-engine-*. Тесты EN-75, EN-76 (team-engine-docs.test.js); EN-77 — команда на чистой копии. UAT не запускался. Тестов → 916."
+    },
+    "files": {
+      "created": [
+        "tools/src/team/engine/channel.js",
+        "tools/test/team-engine-helpers.js",
+        "tools/test/team-engine-docs.test.js",
+        "tools/test/exec-engine.test.js",
+        "tools/test/fixtures/team/slow-inbox.js",
+        "tools/test/fixtures/team/stream-engine-plan.jsonl",
+        "tools/test/fixtures/team/stream-engine-pass.jsonl",
+        "tools/test/fixtures/team/stream-engine-reassign.jsonl"
+      ],
+      "modified": [
+        "tools/src/team/engine/engine.js",
+        "tools/src/team/engine/commands.js",
+        "tools/src/team/cli.js",
+        "tools/src/team/executors/claude-cli.js",
+        "tools/README.md",
+        "tools/test/team-channel.test.js",
+        "tools/test/team-recovery.test.js",
+        "tools/test/team-state.test.js",
+        "tools/test/exec-scripted-source.test.js",
+        "tools/test/exec-stream.test.js",
+        "tools/test/fixtures/team/README.md",
+        "tools/test/team-planner.test.js",
+        "tools/test/team-engine.test.js",
+        "tools/test/team-engine-failure.test.js",
+        "tools/test/team-engine-context.test.js",
+        "tools/test/team-engine-review.test.js",
+        "tools/test/team-engine-approval.test.js",
+        "tools/test/team-engine-budget.test.js",
+        "tools/test/team-engine-finish.test.js",
+        "tools/test/team-engine-control.test.js",
+        "tools/test/team-engine-truth.test.js"
+      ]
+    },
+    "checks": [
+      {
+        "command": "cd tools && npm run check (начало шага)",
+        "output": "882 теста (итог шага 22)"
+      },
+      {
+        "command": "cd tools && npm run check (раунд 4)",
+        "output": "exit 0; # tests 908, # pass 908, # fail 0"
+      },
+      {
+        "command": "cd tools && npm run check (раунды 5–6, итог)",
+        "output": "exit 0; prettier и eslint чисто; # tests 916, # pass 916, # fail 0, # skipped 0"
+      },
+      {
+        "command": "4 одновременных node --test test/team-channel.test.js (гонки EN-57, EN-60)",
+        "output": "первый прогон: 3×21/21 и 1× fail EN-64 M2 (тест ждал TASK_STARTED, а движок ещё дописывал RUN_STARTED — гонка теста, хеш журнала до/после); ожидание исправлено на RUN_STARTED; повтор: 4 × exit 0, 21/21"
+      },
+      {
+        "command": "4 одновременных node --test test/team-recovery.test.js (гонка EN-67)",
+        "output": "4 × exit 0, 42/42"
+      },
+      {
+        "command": "EN-77: rsync копии sai/ без node_modules и .git во временную папку; cd tools && npm ci --prefer-offline && npm run check",
+        "output": "ci exit 0, found 0 vulnerabilities; check exit 0, # tests 916, # pass 916"
+      },
+      {
+        "command": "мутанты канала на копии во временной папке (по одному, с откатом)",
+        "output": "убиты: без проверки «устарел» (EN-57 (3)), уборка по имени (9а), уборка без state.nonces (9г), уборка без ack (9а), отправитель принимает ack с любыми правами (EN-62), отправитель без maskSecrets (EN-62), отправитель не смотрит holder (EN-63), исполнение во время stop (EN-57 (5,6)), публикация renameSync вместо linkSync (EN-57). НЕ убит: выход без последнего просмотра inbox/ (EN-60) — см. issues"
+      },
+      {
+        "command": "мутанты правок ORCH",
+        "output": "откат правки claude-cli.js — exec-engine 5 fail; имена файлов по номеру попытки вызова — тест второго запуска fail"
+      },
+      {
+        "command": "grep -rnE 'node:(http|https|net|tls|dgram)|fetch[(]' tools/src/team",
+        "output": "пусто (EN-39, EN-53)"
+      },
+      {
+        "command": "git status",
+        "output": "изменены только файлы tools/ из write_set; docs/requirements.yaml, проекты и решения не трогались"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "ALLOWED_EXCEPTION",
+        "text": "executors/claude-cli.js изменён (решение ORCH 1 в step-23): summary и files итога берутся из ответа только если они есть (иначе null и []). Тест — tools/test/exec-engine.test.js на fake-claude: ответы плана, проверки, сверки цели, выбора роли и runSingle плана; без правки 5 из 6 тестов падают."
+      },
+      {
+        "kind": "TEST_CHANGE",
+        "text": "TM-04 (team-state.test.js) и EX-51 (exec-scripted-source.test.js): «четыре места» → строго пять (files.js, lock.js, store.js ×2, engine/channel.js); список фиксирован, проверка «только fs.writeFileSync(» осталась (решение ORCH 5)."
+      },
+      {
+        "kind": "TEST_CHANGE",
+        "text": "EX-21 (exec-stream.test.js): перечень допустимых полей ответа в образцах дополнен полями схем ответов движка — берутся из самих PLAN/REVIEW/GOAL/REASSIGN_ANSWER_SCHEMA, а не перечислены руками; без этого новые образцы stream-engine-*.jsonl (нужны тесту решения 1) не прошли бы. Прежние проверки не ослаблены; строки образцов внесены в README образцов."
+      },
+      {
+        "kind": "MUTANT_SURVIVED",
+        "text": "Мутант «выход движка без последнего просмотра inbox/» (п. 22 → EN-60) тестом EN-60 не ловится: без разбора при выходе отправитель видит смерть pid и отзывает сообщение — итог тот же (код ≠ 0, событий 0), инвариант теста соблюдается. Окно, где разбор при выходе что-то меняет, — между последним просмотром и снятием замка в одном синхронном шаге; без крючка в коде тест его не создаст. Предлагаю TEST-DESIGNER решить: принять как эквивалентный или дать в проекте крючок."
+      },
+      {
+        "kind": "DEVIATION",
+        "text": "EN-76 проверяет: каждый team-*.test.js, который запускает start/resume/run-task или движок, содержит assertSafeEnv или берёт запуск из team-engine-helpers.js; а в помощнике каждая функция с createEngine/spawnTeam вызывает assertSafeEnv раньше запуска. Буквальный grep -L assertSafeEnv после консолидации помощника (решение ORCH 2) не подходит."
+      },
+      {
+        "kind": "DEVIATION",
+        "text": "Канал: сообщения при выходе по сигналу (проект на паузе): resume → E_ENGINE_STOPPING, остальное исполняется; после done/failed — say исполняется, остальное E_FINISHED; после stop — всё E_ENGINE_STOPPING (п. 13.8). Ack уборки несёт msg = имя одного из файлов сообщения. Негодный taken/high в виде папки удаляется rmSync внутри taken/ (иначе движок не открылся бы, п. 13.4 «не отказывается никогда») — это вызов вне перечня п. 13.7, в канале."
+      },
+      {
+        "kind": "DEVIATION",
+        "text": "Пустой текст say/answer через канал и через deliver — E_EVENT «Событие отклонено: text», как у ядра без движка (TM-33), а не E_USAGE. Engine.facts() добавлен для EN-66 (только чтение)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "EN-61 задерживает уборку нового движка предзагрузкой tools/test/fixtures/team/slow-inbox.js через NODE_OPTIONS=--import (только тест; код движка крючков не имеет). EN-40…EN-43 остались на scripted; после правки claude-cli вариант с fake-claude возможен — не делался."
+      },
+      {
+        "kind": "DECISION_NEEDED_LIST",
+        "text": "Выборы шага 22 (на проверку REVIEWER, не менялись): resume проекта created — E_TRANSITION (И13); resume после аварии без паузы восстановления — без PROJECT_RESUMED, с заметкой; planning без запуска плана — продолжение того же раунда и попытки; вопросы задач пишутся сразу, PROJECT_WAITING только если проект running/planning, на паузе вопросы не пишутся; повторы проверки/сверки (SINGLE_RUNS_MAX) без паузы; planNote с перечнем ролей и форматом ответа; plan_failed/goal_check_failed со вставкой FAIL_DETAIL; вход scripted у runSingle — файл без задачи r-NNNNN-<имя>; checkDecision без facts допускает ответ на задачу, упавшую по потолку; closedSincePlan сбрасывается на PLAN_RECEIVED."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/engine/channel.js",
+      "tools/test/team-engine-helpers.js",
+      "tools/test/team-engine-docs.test.js",
+      "tools/test/exec-engine.test.js",
+      "tools/test/fixtures/team/slow-inbox.js",
+      "tools/test/fixtures/team/stream-engine-plan.jsonl",
+      "tools/test/fixtures/team/stream-engine-pass.jsonl",
+      "tools/test/fixtures/team/stream-engine-reassign.jsonl",
+      "tools/src/team/engine/engine.js",
+      "tools/src/team/engine/commands.js",
+      "tools/src/team/cli.js",
+      "tools/src/team/executors/claude-cli.js",
+      "tools/README.md",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-state.test.js",
+      "tools/test/exec-scripted-source.test.js",
+      "tools/test/exec-stream.test.js",
+      "tools/test/fixtures/team/README.md",
+      "tools/test/team-planner.test.js",
+      "tools/test/team-engine.test.js",
+      "tools/test/team-engine-failure.test.js",
+      "tools/test/team-engine-context.test.js",
+      "tools/test/team-engine-review.test.js",
+      "tools/test/team-engine-approval.test.js",
+      "tools/test/team-engine-budget.test.js",
+      "tools/test/team-engine-finish.test.js",
+      "tools/test/team-engine-control.test.js",
+      "tools/test/team-engine-truth.test.js"
+    ]
+  }
+}

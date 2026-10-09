@@ -1,0 +1,271 @@
+{
+  "handoff_id": "step22-backend-dev-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "22",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261006-02/step-22-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/** (кроме channel.js)",
+      "tools/test/team-*.test.js, tools/test/exec-*.test.js, tools/test/fixtures/team/**",
+      "tools/README.md не менять",
+      "handoffs/PROD-20261006-02/step-22-backend-dev.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-013-team-engine.md",
+      "docs/design/REQ-009-team-core.md",
+      "decisions/0020-team-engine-channel.md",
+      "docs/requirements.yaml (REQ-013)"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 2, раунды 1–3 из п. 24 проекта docs/design/REQ-013-team-engine.md (r5.1, прошёл ворота: handoffs/PROD-20261006-02/step-21-code-design-validator.json PASS). Строите по проекту БЕЗ догадок; решения ORCH по I-1…I-12 — в конце п. 26 проекта; решение 0020 принято. Раунд 1: ядро и исполнители — правки C1 (причина dependency_closed, И6', И25), C2 (reassign), C4 (holder в замке, lockHolder), C5 (runner.js, как назван в проекте), C6/C7 (msg, nonce, state.nonces, И24, recordDropped) строго по разделу 20 docs/design/REQ-009-team-core.md и п. 2–3 проекта; home.js (inbox/), errors.js; тесты EN-80, EN-81, И24 из EN-64, TM-69…TM-72; прежние тесты TM-*/EX-* — без изменения проверок (если тест вынужден измениться, например TM-04/EX-51 «четыре места» — только вместе с реальной причиной, назвать в result.issues, не ослаблять; TEST-DESIGNER потом проверит). Раунд 2: plan.js, review.js, answers.js, facts.js, schedule.js (чистые функции) и single-run.js, тесты EN-04 и модульные. Раунд 3: engine.js без канала (start/resume в процессе), applyCommand; тесты EN-01…EN-47, EN-50…EN-52, EN-70…EN-72. Раунды 4–6 (channel.js, восстановление, README) — следующим запуском, НЕ делайте их. Правила: Node 22 без runtime-зависимостей; в tools/src/team/ нет node:net/http/https/tls/dgram/fetch; настоящий claude НЕ запускать (только scripted/fake-claude); писатель и места записи по REQ-009 критерий 2 (channel.js — только в раунде 4); границы файлов тестов — 0020; каждый раунд — cd tools && npm run check код 0 (prettier, lint, все тесты), в result — число тестов до/после; тест гонки в том же раунде, где правится конкурентность, и в 4 параллельных процессах; тесты отказа проверяют отсутствие побочных обращений; у тестов с процессами свой timeout; ожидания — по событию, не по sleep. Читайте tools/src/team/ и проект сами. Не менять docs/requirements.yaml, проекты и решения (расхождение с проектом — в result.issues, а не правка). Результат: result.summary по раундам, result.files (созданные и изменённые), result.checks (команды и вывод кратко), result.issues.",
+    "acceptance_criteria": [
+      "раунды 1–3 реализованы по проекту без догадок",
+      "npm run check код 0, прежние тесты ядра и исполнителей не ослаблены",
+      "тесты из таблицы «критерий → тест» раундов 1–3 есть и проходят",
+      "расхождения с проектом — только в result.issues"
+    ]
+  },
+  "created_at": "2026-10-06T11:32:24Z",
+  "started_at": "2026-10-06T11:32:24Z",
+  "completed_at": "2026-10-06T12:14:27Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "round_1": "Ядро и исполнители по REQ-009 разд. 20 и п. 2–3 REQ-013: C1 (TASK_FAILED.reason dependency_closed, FAIL_DETAIL.dependency_closed и фраза; isClosedTask; И6' с сообщением правила «И6»; И25), C2 (RUN_STARTED.purpose reassign: задача review, роль project_manager, проект running; фраза; PURPOSES scripted), C4 (acquireLock(..., holder) с {pid,since,holder:'engine'}, lockHolder → {pid,alive,holder}, openWriter opts.holder), C6/C7 (необязательные msg/nonce у USER-событий шести команд, dropped у CHAT ENGINE, state.msgs/nonces, И24 до записи, writer.recordDropped порциями по 100 одним пакетом), C5 (runTask: startFrom, budgetFor, cancelCause; экспорт defaultContext, depsOf), home.js (inbox/ в PROJECT_ENTRIES и в сужении прав), errors.js (ENGINE_MESSAGES и engineError). Тесты TM-69…TM-72 (+TM-38 r13), EN-80 (ядро), EN-81, И24 из EN-64. Прежние TM/EX — без изменений. Тестов 789 → 812.",
+      "round_2": "Чистые модули engine/: facts.js (scanFacts/noteEvent), answers.js (QUESTION, checkDecision, openQuestions, pendingDecisions, closedTasks), plan.js (PLAN_ANSWER_SCHEMA, PLAN_DETAIL, validatePlan в порядке п. 5.3, orderPlan, planNote), review.js (схемы ответов, reviewContext, goalContext, reassignNote), schedule.js (константы п. 3, slotBudget, readyTasks, nextActions); single-run.js (runSingle: проверки исполнителя до записи, закрытие запуска на всех путях, markBroken при невозможности). Тесты EN-04 и модульные (team-engine-units). Тестов 812 → 836.",
+      "round_3": "engine.js без канала (createEngine: открытие п. 4.2 с предпроверкой исполнителя до записи, цикл tick, действия п. 4.4, план с одной повторной попыткой, проверка отдельным запуском, передача роли, согласования, резерв потолка, сверка цели и раунды дозадач, пауза/остановка/сигнал, сбой писателя; runEngineCommand), commands.js (COMMANDS, parseCommand, applyCommand п. 15.5, checkResume п. 12.2), cli.js (start/resume как движок в процессе; pause/stop/budget/answer/say без движка через applyCommand; say в двух формах). Тесты EN-01…EN-05, EN-10…EN-14, EN-20, EN-21, EN-25, EN-26, EN-30…EN-32, EN-35…EN-39, EN-40…EN-43, EN-45…EN-47, EN-50…EN-52, EN-70…EN-72, EN-80 (с движком). Тестов 836 → 882. Раунды 4–6 не делались."
+    },
+    "files": {
+      "created": [
+        "tools/src/team/engine/facts.js",
+        "tools/src/team/engine/answers.js",
+        "tools/src/team/engine/plan.js",
+        "tools/src/team/engine/review.js",
+        "tools/src/team/engine/schedule.js",
+        "tools/src/team/engine/single-run.js",
+        "tools/src/team/engine/commands.js",
+        "tools/src/team/engine/engine.js",
+        "tools/test/team-core-r13.test.js",
+        "tools/test/team-channel.test.js",
+        "tools/test/team-engine.test.js",
+        "tools/test/team-engine-approval.test.js",
+        "tools/test/team-planner.test.js",
+        "tools/test/team-engine-units.test.js",
+        "tools/test/team-engine-failure.test.js",
+        "tools/test/team-engine-context.test.js",
+        "tools/test/team-engine-review.test.js",
+        "tools/test/team-engine-budget.test.js",
+        "tools/test/team-engine-finish.test.js",
+        "tools/test/team-engine-control.test.js",
+        "tools/test/team-engine-truth.test.js",
+        "tools/test/fixtures/team/engine-basic.json"
+      ],
+      "modified": [
+        "tools/src/team/schema.js",
+        "tools/src/team/reducer.js",
+        "tools/src/team/store.js",
+        "tools/src/team/lock.js",
+        "tools/src/team/language.js",
+        "tools/src/team/errors.js",
+        "tools/src/team/home.js",
+        "tools/src/team/runner.js",
+        "tools/src/team/cli.js",
+        "tools/src/team/executors/scripted.js"
+      ]
+    },
+    "changes": [
+      {
+        "file": "tools/src/team/schema.js",
+        "what": "PATTERNS.msg/nonce, DROPPED_MAX, вид поля token, MSG_FIELDS у шести типов, dropped у CHAT, purpose reassign (task обязателен), reason dependency_closed, checkMessageFields",
+        "design": "REQ-009 разд. 20.1, 20.2, 20.4"
+      },
+      {
+        "file": "tools/src/team/reducer.js",
+        "what": "isClosedTask, И6' (rule И6), И25, И16 для reassign, state.msgs/nonces и И24 до обработчика",
+        "design": "REQ-009 разд. 20.1, 20.2, 20.4"
+      },
+      {
+        "file": "tools/src/team/lock.js",
+        "what": "ENGINE_HOLDER, readLock, lockHolder с holder, acquireLock(..., holder)",
+        "design": "REQ-009 разд. 20.3 (C4)"
+      },
+      {
+        "file": "tools/src/team/store.js",
+        "what": "openWriter opts.holder (проверка до доступа к файлам), writer.recordDropped через #appendBatch",
+        "design": "REQ-009 разд. 20.3, 20.4 (C4, C7)"
+      },
+      {
+        "file": "tools/src/team/language.js",
+        "what": "FAIL_DETAIL.dependency_closed, фразы dependency_closed и reassign",
+        "design": "REQ-009 разд. 20.1, 20.2"
+      },
+      {
+        "file": "tools/src/team/executors/scripted.js",
+        "what": "PURPOSES += reassign",
+        "design": "REQ-009 разд. 20.2"
+      },
+      {
+        "file": "tools/src/team/errors.js",
+        "what": "ENGINE_MESSAGES (коды п. 15.3), engineError с проверкой параметров (pid, id, task)",
+        "design": "REQ-013 п. 15.3"
+      },
+      {
+        "file": "tools/src/team/home.js",
+        "what": "INBOX_DIR, запись inbox/ (0700, when engine) в PROJECT_ENTRIES и в ownedEntries",
+        "design": "REQ-013 п. 1.2, REQ-009 разд. 20.5"
+      },
+      {
+        "file": "tools/src/team/runner.js",
+        "what": "C5: startFrom, budgetFor (в шагах 3, 6.1, 6.5), cancelCause (читается при прерывании); экспорт defaultContext, depsOf; имя файла результата по номеру попытки задачи (см. issues)",
+        "design": "REQ-013 п. 2.2"
+      },
+      {
+        "file": "tools/src/team/cli.js",
+        "what": "команды start/resume/pause/stop/budget/answer, say позиционно, новый текст E_USAGE «Неизвестная команда…», selfCommand без движка",
+        "design": "REQ-013 п. 15.1, 15.2 (без канала — раунд 4)"
+      },
+      {
+        "file": "tools/src/team/engine/*.js",
+        "what": "восемь модулей движка (без channel.js)",
+        "design": "REQ-013 п. 4–12, 14, 15.5, 16, 19"
+      },
+      {
+        "file": "tools/test/*.test.js, fixtures/team/engine-basic.json",
+        "what": "тесты раундов 1–3 по таблице п. 21 и TM-69…TM-72; сценарий с cost_usd в каждой записи",
+        "design": "REQ-013 п. 21, 24; REQ-009 разд. 20.6; решение 0020 (граница тестов)"
+      }
+    ],
+    "checks": [
+      {
+        "command": "cd tools && npm run check (до работы)",
+        "output": "exit 0; # tests 789, # pass 789, # fail 0"
+      },
+      {
+        "command": "cd tools && npm run check (раунд 1)",
+        "output": "exit 0; # tests 812, # pass 812, # fail 0"
+      },
+      {
+        "command": "cd tools && npm run check (раунд 2)",
+        "output": "exit 0; # tests 836, # pass 836, # fail 0"
+      },
+      {
+        "command": "cd tools && npm run check (раунд 3, итог)",
+        "output": "exit 0; prettier --check, eslint --max-warnings 0 чисто; # tests 882, # pass 882, # fail 0, # skipped 0, # todo 0"
+      },
+      {
+        "command": "4 одновременных node --test test/team-recovery.test.js test/team-core-r13.test.js test/team-engine.test.js (замок изменён в раунде 1)",
+        "output": "4 × exit 0, 63/63"
+      },
+      {
+        "command": "мутанты на копии во временной папке: free=parallel+1; reservedByOthers=0; CYCLE_RUNS_MAX=4; ROUNDS_MAX=3",
+        "output": "убиты: EN-10 (3 fail), EN-43 (1 fail), EN-31 (3 fail), EN-46 (1 fail)"
+      },
+      {
+        "command": "grep -rnE 'node:(http|https|net|tls|dgram)|fetch[(]' tools/src/team",
+        "output": "пусто, код 1"
+      },
+      {
+        "command": "поиск секретов (sk-, ghp_, AKIA, xox, BEGIN KEY, password=) по изменённым файлам",
+        "output": "одно совпадение: tools/test/team-planner.test.js:247 «sk-ant-xxxxx» — вымышленная приманка в тесте EN-04, не секрет"
+      },
+      {
+        "command": "поиск skip/todo/eslint-disable/|| true по изменённым файлам",
+        "output": "нет (claude-cli.js:370 stats.skipped — имя поля, файл не менялся)"
+      },
+      {
+        "command": "git status (папка sai)",
+        "output": "изменены только файлы tools/src/team/** (кроме channel.js — не создан) и tools/test/team-*.test.js, fixtures/team/engine-basic.json; README не менялся"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "DESIGN_GAP",
+        "severity": "high",
+        "text": "tools/src/team/executors/claude-cli.js (п. 1.2 проекта: «не затрагиваются») собирает итог только по схеме работы: строка 403 answer.files.map и summary: answer.summary. Для ответов плана, проверки, сверки цели и выбора роли поля files нет → TypeError. Подтверждено запуском поддельного исполнителя с образцом ответа плана во временной папке: «THROWN TypeError Cannot read properties of undefined (reading 'map')». Следствие: на claude-cli каждый запуск runSingle закрывается как failed (E_INTERNAL) — план → вопрос plan_failed; критерий 13 (UAT) невыполним. Файл не менял. Предложение для CODE-DESIGNER: files: Array.isArray(answer.files) ? … : [], summary: typeof answer.summary === 'string' ? answer.summary : null, и тест EX на ответ без files. Поэтому EN-40, EN-42, EN-43 написаны на scripted: счётчик запусков — RUN_STARTED журнала, потолок попытки — max_budget_usd (то же значение claude-cli передаёт как --max-budget-usd); вариант с поддельным claude — после правки."
+      },
+      {
+        "kind": "WRITE_SET",
+        "severity": "medium",
+        "text": "Помощник tools/test/team-engine-helpers.js (п. 1.1, 0020) не входит в write_set шага (только team-*.test.js). Небольшой помощник (создание проекта scripted после assertSafeEnv, запуск движка, ожидание события, проверка EN-47 в t.after) повторён в каждом файле тестов движка. Предлагаю дать файл в write_set раунда 4 и собрать повторы в него."
+      },
+      {
+        "kind": "DEVIATION",
+        "severity": "medium",
+        "text": "runner.js: имя файла результата берёт номер попытки задачи (task.attempts после RUN_STARTED), а не номер попытки внутри вызова runTask. Без этого второй запуск той же задачи движком (повтор после «не прошла», change) получает E_FILE_EXISTS на том же имени (t-0001-1-…) и задача падает с result_file. Для свежей задачи run-task имена прежние; EX-тесты прошли без изменений. Нужна строка в проекте REQ-013 п. 2.2 (C5)."
+      },
+      {
+        "kind": "DEVIATION",
+        "severity": "low",
+        "text": "Engine = { run, state, requestStop } дополнен command(message, ids) — тот же applyCommand, которым в раунде 4 воспользуется канал; в раунде 3 им пользуются тесты (EN-21, EN-36…EN-38, EN-42, EN-50, EN-51). requestStop принимает второй аргумент ids (msg/nonce сообщения stop)."
+      },
+      {
+        "kind": "DEVIATION",
+        "severity": "low",
+        "text": "facts.js: кроме четырёх полей п. 4.5 — reassigned, startedSeq, failedSeq, failDetail, budgetFailed, askedSeq, reviewNotes, goalNotes, planOpen, pending; все выводятся из журнала тем же noteEvent (EN-66 сохранится). closedSincePlan обнуляется на PLAN_RECEIVED, а не на PLANNING_STARTED: план, прерванный паузой или plan_failed, перепланируется тем же раундом и не теряет закрытые задачи в своём входе."
+      },
+      {
+        "kind": "DECISION_NEEDED",
+        "severity": "low",
+        "text": "Решения без явного текста в проекте: (а) resume проекта created — отказ ядра E_TRANSITION (И13), в п. 15.3 кода нет; (б) resume после аварии без паузы восстановления (planning/running, работы не было) — PROJECT_RESUMED записать нельзя (И13), движок продолжает без него с заметкой в notices; planning без запуска плана продолжается тем же раундом и попыткой без нового PLANNING_STARTED; (в) вопросы задач пишутся сразу, как появились (и при работе соседних задач), PROJECT_WAITING — только если проект running/planning, на паузе вопросы не пишутся (resume отвечает E_OPEN_QUESTION с номером задачи); (г) повторы проверки и сверки цели (SINGLE_RUNS_MAX) — без паузы между ними; (д) planNote содержит перечень ролей каталога и формат ответа плана, review/goal/reassign — постоянные указания ответа; (е) QUESTION.plan_failed и goal_check_failed со вставкой FAIL_DETAIL для сбоя запуска (п. 5.4, 11.5); (ж) runSingle сохраняет вход scripted (record_input) файлом без задачи r-NNNNN-<имя> — нужно тестам EN-02, EN-21, EN-26; (з) checkDecision без facts допускает ответ на задачу, упавшую по потолку."
+      },
+      {
+        "kind": "NOTE",
+        "severity": "low",
+        "text": "Раунд 4 (channel.js) сделает мест записи пять: TM-04 (team-state.test.js) и EX-51 (exec-scripted-source.test.js) сейчас требуют ровно четыре — их правит TEST-DESIGNER/следующий запуск вместе с каналом. EN-72 уже написан так, что в engine/ допускается только channel.js."
+      },
+      {
+        "kind": "NOTE",
+        "severity": "low",
+        "text": "В раунде 3 команды при живом движке получают E_PROJECT_BUSY (resume running — E_ALREADY_RUNNING); маршрут через канал, M2 (E_ENGINE_RUNNING для add-task/run-task), часть EN-50 «через канал» — раунд 4. Текст E_USAGE «Неизвестная команда…» изменён на новый список; тестов на старый текст не было (grep пуст), cli.test.js не менялся."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/engine/facts.js",
+      "tools/src/team/engine/answers.js",
+      "tools/src/team/engine/plan.js",
+      "tools/src/team/engine/review.js",
+      "tools/src/team/engine/schedule.js",
+      "tools/src/team/engine/single-run.js",
+      "tools/src/team/engine/commands.js",
+      "tools/src/team/engine/engine.js",
+      "tools/src/team/schema.js",
+      "tools/src/team/reducer.js",
+      "tools/src/team/store.js",
+      "tools/src/team/lock.js",
+      "tools/src/team/language.js",
+      "tools/src/team/errors.js",
+      "tools/src/team/home.js",
+      "tools/src/team/runner.js",
+      "tools/src/team/cli.js",
+      "tools/src/team/executors/scripted.js",
+      "tools/test/team-core-r13.test.js",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-engine.test.js",
+      "tools/test/team-engine-approval.test.js",
+      "tools/test/team-planner.test.js",
+      "tools/test/team-engine-units.test.js",
+      "tools/test/team-engine-failure.test.js",
+      "tools/test/team-engine-context.test.js",
+      "tools/test/team-engine-review.test.js",
+      "tools/test/team-engine-budget.test.js",
+      "tools/test/team-engine-finish.test.js",
+      "tools/test/team-engine-control.test.js",
+      "tools/test/team-engine-truth.test.js",
+      "tools/test/fixtures/team/engine-basic.json"
+    ]
+  }
+}

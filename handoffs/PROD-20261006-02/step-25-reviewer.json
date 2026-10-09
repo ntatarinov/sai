@@ -1,0 +1,208 @@
+{
+  "handoff_id": "step25-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "25",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-25-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-25-reviewer.json — только status, completed_at, result",
+      "handoffs/PROD-20261006-02/step-25-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-22-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-23-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-24-security-reviewer.json",
+      "docs/design/REQ-013-team-engine.md",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью кода REQ-013 (handoffs/PROD-20261006-02/step-22-backend-dev.json, step-23-backend-dev.json; безопасность — step-24-security-reviewer.json PASS, два Low: F-1 rmSync/chmodSync в channel.js вне списка п. 13.7 проекта, F-2 переполнение номера сообщения — ORCH пока принимает их как известные Low-риски и заведёт дефекты; ревьюер может поднять их выше). ORCH сам запустил cd tools && npm run check: 916 из 916. Прочтите код сами и проверьте по своей роли: настоящее ли решение, не костыль; код соответствует проекту docs/design/REQ-013-team-engine.md r5.1 и docs/design/REQ-009-team-core.md раздел 20 (расхождения — по списку, особенно: выборы BACKEND-DEV DECISION_NEEDED в result.issues step-22 — resume проекта в created, resume после аварии без паузы восстановления и т. п.; правка runner.js — имена файлов результата по числу попыток; Engine.command и Engine.facts, не названные в проекте; расширение EX-21; замена grep в EN-76; выжившее: «движок выходит без последнего просмотра inbox/» не ловится EN-60); нет лишней работы и мёртвого кода; идиомы Node 22 (без зависимостей), нет скрытых блокировок/утечек таймеров и процессов; решения 0015–0020 соблюдены, граница файлов тестов; прежние тесты ядра и исполнителей не ослаблены (сверьте изменения TM-04, EX-51, EX-21, TM/EX в git diff против последнего коммита репозитория sai: git -C <корень Sai> diff --stat и по файлам); планка не понижена. Ничего не правьте. Результат: result.verdict PASS/FAIL; findings — место, важность, исправление; summary по пунктам.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "расхождения с проектом перечислены по местам",
+      "ослабление прежних тестов проверено по diff"
+    ]
+  },
+  "created_at": "2026-10-06T12:49:51Z",
+  "started_at": "2026-10-06T12:49:51Z",
+  "completed_at": "2026-10-06T12:56:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": {
+      "overall": "FAIL: одна находка High (пауза не отменяет запуск плана в раунде дозадач, воспроизведено) и две Medium. В целом это настоящее решение, а не костыль: правки ядра C1/C2/C4/C6/C7 сделаны в той же операции, что запись (И6', И16, И24, И25 в reducer до записи), канал устроен по п. 13, движок без сетевого кода и без зависимостей во время выполнения. Ожидаемый вердикт в задании не назван.",
+      "runner_js": "Имя файла результата по task.attempts (runner.js:352-359) — устранение причины, а не обход: без него второй запуск той же задачи получает E_FILE_EXISTS. Для run-task свежей задачи имена прежние; тест второго запуска есть (exec-engine.test.js:104, 155). Принимаю. Нужна строка в п. 2.2 проекта (CODE-DESIGNER).",
+      "claude_cli_js": "Правка claude-cli.js:402-408 настоящая: ответ сверяется со схемой запроса раньше (claude-cli.js:374-383), значит у рабочих ответов summary и files по-прежнему обязательны, а у ответов движка их нет. Аргументы и окружение не тронуты. Проект п. 1.2 всё ещё пишет «claude-cli.js не затрагивается» — нужна поправка проекта.",
+      "engine_command_facts": "Engine.facts — только чтение для EN-66, принимаю (Low). Engine.command дублирует правила handleTaken; тесты EN-21, EN-36…38, EN-42, EN-50, EN-51 идут через этот второй путь, а не через путь канала (F-2).",
+      "ex21": "EX-21: проверка «в образцах нет выдуманных полей» осталась, разрешённый набор расширен полями схем движка, взятыми из самих схем. Это не ослабление по сути. Общая фраза README образцов устарела (F-9).",
+      "en76": "EN-76: файл, импортирующий team-engine-helpers.js, освобождён от проверки, хотя сам может запускать движок напрямую. В трёх файлах assertSafeEnv есть только в комментарии, поэтому буквальный grep -L проекта проходит за счёт комментариев. Проверка не проверяет то, что заявляет (F-3). По сути все запуски сейчас защищены: окружение приходит из engineProject → assertSafeEnv.",
+      "en60_mutant": "Мутант «выход без последнего просмотра inbox/» выжил, и это по сути эквивалент. Перед maybeExit wake() всегда сначала обслуживает inbox (engine.js:296), а разбор в exit() (engine.js:886-892) отличается только для файла, опубликованного в синхронном окне между последним tick и exit. Без крючка тест такое окно не создаст. Предлагаю записать мутант эквивалентным в п. 22 проекта, а не добавлять крючок в код.",
+      "decision_needed": "(а) resume проекта в created → E_TRANSITION с текстом «И13 — …» (проверено: код 1, stderr «E_TRANSITION: Действие недопустимо в текущем состоянии: И13 — возобновить можно только проект на паузе или ждущий решения»). Работает, но в тексте технические слова — Low F-7. (б) resume после аварии без паузы восстановления — продолжение без PROJECT_RESUMED, с заметкой. Принимаю: И13 запрещает resume из running/planning, а п. 4.2 шаг 8 разрешает запись только там, где И13 допускает. (в) Вопросы пишутся сразу, PROJECT_WAITING — только из running/planning. Принимаю: соответствует п. 9.4 и критерию 3, а п. 6.1 шаг 2 («и нет действий в работе») противоречит п. 9.4 — исправить в проекте. (г) Повторы SINGLE_RUNS_MAX без паузы. Допустимо, но расходится с runTask (там пауза SAI_TEAM_RETRY_DELAY_MS) — Low, вопрос к проекту. (д), (е) — принимаю. (ж) Вход scripted у runSingle — путь только тестового исполнителя, принимаю. (з) checkDecision принимает change/reject по задаче, упавшей на потолке, хотя вопрос по ней не открыт; п. 9.2 требует открытый вопрос или ожидание task_failed — Low F-8. closedSincePlan обнуляется на PLAN_RECEIVED — принимаю, это лучше п. 4.5 (прерванный план не теряет закрытые задачи); нужна поправка проекта.",
+      "old_tests": "Ослабления прежних тестов по git diff нет. team-recovery.test.js — только добавления (импорты и EN-61, EN-65…EN-68 после TM-68), прежние TM не менялись. team-state.test.js — только TM-04: «четыре» → строго пять с фиксированным списком путей, проверка «только fs.writeFileSync(» осталась. exec-scripted-source.test.js — только EX-51 (5, фиксированный список). exec-stream.test.js — EX-21 (см. выше). cli.test.js не менялся.",
+      "idioms": "Node 22, модули ES, без зависимостей во время выполнения. Таймеры снимаются: exit() снимает опрос (engine.js:881-883), принудительный выход по сигналу через unref и clearTimeout в finally, обработчики сигналов снимаются (engine.js:1080-1084). Обещания launch имеют .catch(fail).finally. Утечек и скрытых блокировок не нашёл. Мелочи — F-10…F-12.",
+      "decisions": "0015–0020 соблюдены. Граница файлов тестов 0020/0018 P9 соблюдена: exec-engine.test.js — граница exec-*; slow-inbox.js и stream-engine-*.jsonl — fixtures/team/**. Сетевых модулей в src/team нет. Пять мест записи. Единственное расхождение с перечнем проекта — rmSync/chmodSync канала (F-4, как F-1 SECURITY-REVIEWER).",
+      "watch_next": "Поправки проекта (CODE-DESIGNER) по списку issues. Тест паузы во время плана (в п. 21 его нет вовсе). F-2 и F-3."
+    },
+    "findings": [
+      {
+        "id": "F-1",
+        "place": "tools/src/team/engine/engine.js:784-785 (goalRun вызывает planRun внутри действия с ключом \"goal\"), 987-990 (execute: при pause отменяется только view.inFlight.get(\"plan\"))",
+        "severity": "High",
+        "blocking": true,
+        "what": "Если сверка цели не прошла и round < 2, план раунда дозадач запускается внутри действия \"goal\". Пауза отменяет только действие с ключом \"plan\", поэтому этот запуск плана не отменяется. Это нарушает п. 12.1 («Запуск плана в работе — отменяется»): запуск продолжает работать и тратить потолок на паузе, а его ответ потом отбрасывается (engine.js:678). Проверено своей пробой (rev-req013/probe-pause.test.mjs, scripted, план с delay 30 с). Раунд 0: после PROJECT_PAUSED через 28 мс идёт RUN_FINISHED cancelled. Раунд 1: за 3024 мс после PROJECT_PAUSED (seq 25) запуск r-00005 не закрыт. Кроме того, вызов в строках 784-785 повторяет ветку nextActions (schedule.js: goalFresh && goal.passed === false && round < ROUNDS_MAX → plan), то есть это две реализации одного перехода. Теста на отмену плана при паузе нет ни для одного раунда (EN-50 его не проверяет).",
+        "fix": "Убрать вызов planRun из goalRun: после GOAL_CHECK_RESULT {passed:false} действие завершается, и план раунда round+1 ставит nextActions под ключом \"plan\". Другой вариант — в execute отменять действие по kind \"plan\" и по плану, идущему внутри \"goal\". Тест (TEST-DESIGNER): пауза во время запуска плана в раундах 0 и 1 → RUN_FINISHED cancelled, нет PLAN_RECEIVED, после resume — PLANNING_STARTED того же раунда."
+      },
+      {
+        "id": "F-2",
+        "place": "tools/src/team/engine/engine.js:996-1022 (Engine.command) и 931-968 (handleTaken)",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "Один механизм — исполнение команды пользователя живым движком — сделан двумя функциями со своими копиями правил: stop/E_STOPPED/E_FINISHED, отказ во время остановки, ответ до открытия (command отвечает E_CHANNEL_TIMEOUT_GONE «Проект завершил работу» и тогда, когда движок ещё не открыт). Канал идёт через handleTaken, а тесты EN-21, EN-36…EN-38, EN-42, EN-50, EN-51 — через command. Зелёные тесты не доказывают поведение пути, которым пользуется канал (AP-014). В проекте (п. 4.1) command не назван; ORCH принял его как API, но не как второй набор правил.",
+        "fix": "Свести к одной функции: command(message, ids) и handleTaken вызывают общий обработчик (проверка stopping/конечного статуса/stop → requestStop или execute), а handleTaken лишь добавляет ack. Отказ «движок не открыт» — отдельный код или E_INTERNAL, а не текст «Проект завершил работу». Дописать command и facts в п. 4.1 проекта."
+      },
+      {
+        "id": "F-3",
+        "place": "tools/test/team-engine-docs.test.js:73-87 (EN-76); комментарии tools/test/team-channel.test.js:5, team-planner.test.js:3, team-engine-finish.test.js:3",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "EN-76 считает файл защищённым, если в нём есть строка assertSafeEnv или импорт из team-engine-helpers.js. Импорт освобождает и прямые запуски в этом файле (например, team-channel.test.js:192 runTeam([\"resume\"…])). В трёх файлах assertSafeEnv встречается только в комментарии, так что и буквальный grep -L проекта проходит за счёт комментариев. Сейчас утверждение отчёта step-23 «буквальный grep не подходит» неверно: свой прогон grep -lE '\"(start|resume|run-task)\"|createEngine\\(…' team-*.test.js | xargs grep -L assertSafeEnv дал пустой вывод. По сути запуски сейчас защищены (окружение из engineProject/assertSafeEnv), но проверка не проверяет то, что заявляет (quality-bar §6 п. 5).",
+        "fix": "EN-76: без освобождения за импорт. Для каждого файла каждый прямой запуск (runTeam/spawnTeam с start|resume|run-task, createEngine) либо получает окружение из функции помощника, либо в файле есть вызов assertSafeEnv( — вызов, а не строка в комментарии. Проверку помощника оставить. Строку EN-76 в п. 21 проекта обновить (CODE-DESIGNER)."
+      },
+      {
+        "id": "F-4",
+        "place": "tools/src/team/engine/channel.js:581-585 (rmSync recursive), 549 (chmodSync)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Вызовы вне перечня п. 13.7/18 проекта; совпадает с F-1 SECURITY-REVIEWER. Не поднимаю: в issues step-23 расхождение названо, опасности вне inbox/ проба безопасности не нашла.",
+        "fix": "Переименовать негодную папку в taken/.bad-<rand16> (renameSync в перечне) с проверкой isOwn или внести вызовы в п. 13.7 проекта."
+      },
+      {
+        "id": "F-5",
+        "place": "tools/src/team/engine/channel.js:796-799 (take: renameSync в taken/.taking-<имя>)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Во время остановки файл stop лежит в taken/.taking-m-N. Если опоздавший отправитель опубликовал дубль с тем же номером N (сценарий п. 13.5, «проба ворот r1»), renameSync заменит файл stop: rename(2) в POSIX молча заменяет цель. Затем дубль получит «устарел», а его .taking удалится, то есть файл stop исчезнет до PROJECT_STOPPED. Это противоречит п. 13.5 шаг 2 («переименование ничего не заменяет»). При падении в этом окне уборка не учтёт stop; отправитель stop получит E_CHANNEL_UNCONFIRMED. Найдено чтением кода, пробой не воспроизводилось.",
+        "fix": "Перед переименованием проверить, что такого имени в taken/ нет (иначе отклонить как устаревшее, не трогая файл stop), или брать в уникальное имя .taking-<имя>-<rand>; добавить тест."
+      },
+      {
+        "id": "F-6",
+        "place": "tools/src/team/engine/channel.js:363, 23, 720-725",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Переполнение номера 12 цифр (F-2 SECURITY-REVIEWER). Нужен процесс того же пользователя; согласен с Low, не поднимаю.",
+        "fix": "Как в step-24: E_CHANNEL_FULL у отправителя при 1+max > 999999999999; движок не поднимает high номером выше разумного предела."
+      },
+      {
+        "id": "F-7",
+        "place": "tools/src/team/engine/commands.js:206-211 (checkResume, default)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "resume проекта «создан» отвечает кодом ядра с технической меткой: «E_TRANSITION: Действие недопустимо в текущем состоянии: И13 — …» (своя проба rev-req013/probe-created.test.mjs). Код ответа в п. 15.3 не задан (выбор (а) step-22).",
+        "fix": "CODE-DESIGNER: код и текст для resume из created (например, «Проект ещё не запускался — запустите его командой start»), затем правка."
+      },
+      {
+        "id": "F-8",
+        "place": "tools/src/team/engine/answers.js:181-185 (checkDecision, ветка failed)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Ответ change/reject принимается по любой незакрытой задаче «не удалось», в том числе по упавшей на потолке, где вопроса нет (openQuestions её исключает). По п. 9.2 нужно, чтобы проект ждал task_failed по ней или вопрос по ней был открыт (выбор (з) step-22).",
+        "fix": "Либо добавить условие п. 9.2 (вопрос открыт — иначе E_NOT_WAITING), либо записать выбор в проекте."
+      },
+      {
+        "id": "F-9",
+        "place": "tools/test/fixtures/team/README.md:13 (раздел «Источник образцов»)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Фраза «содержимое structured_output — поля схемы ответа задачи (summary, files, …)» устарела: образцы stream-engine-* содержат поля схем движка (tasks, passed, notes, role, reason), и EX-21 их теперь допускает.",
+        "fix": "Дописать в фразу поля схем ответов движка REQ-013."
+      },
+      {
+        "id": "F-10",
+        "place": "tools/src/team/runner.js:162-166, 567-569; engine.js:832",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Причину отмены движок передаёт, меняя объект опций после вызова runTask (entry.runOpts.cancelCause = cause), а runner читает её лениво. Это скрытая связь через изменяемый объект. Недопустимое значение на момент прерывания молча заменяется на \"cancel\".",
+        "fix": "Передавать причину через abort(reason) и читать signal.reason; в проекте п. 2.2 описать, что причина известна только в момент отмены."
+      },
+      {
+        "id": "F-11",
+        "place": "tools/src/team/cli.js:25-37",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Два отдельных импорта из ./errors.js (engineError — вторым).",
+        "fix": "Один импорт."
+      },
+      {
+        "id": "F-12",
+        "place": "tools/src/team/reducer.js:666-676, 731-732",
+        "severity": "Low",
+        "blocking": false,
+        "what": "И24 проверяется через Array.includes по state.msgs и state.nonces на каждом событии. При большом числе сообщений воспроизведение журнала квадратичное.",
+        "fix": "Держать Set для проверки (или проверять только события с msg/nonce/dropped); форму состояния для replay не менять."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && npm run check (TMPDIR — папка проверки в рабочей папке ORCH)",
+        "output": "exit 0; prettier: All matched files use Prettier code style; eslint чисто; # tests 916, # pass 916, # fail 0, # cancelled 0, # skipped 0, # todo 0"
+      },
+      {
+        "command": "grep -nE '\\.skip\\(|\\.todo\\(|TODO|eslint-disable|\\|\\| true|\\.only\\(|\\{ ?skip|\\{ ?todo' по 47 изменённым и новым файлам tools/ (git diff --name-only + ls-files --others)",
+        "output": "пусто, exit 1"
+      },
+      {
+        "command": "git -C sai diff --stat; git diff tools/test/ (прежние тесты)",
+        "output": "изменены только TM-04 (team-state), EX-51 (exec-scripted-source), EX-21 (exec-stream), README образцов; team-recovery — только добавления"
+      },
+      {
+        "command": "node --test <рабочая папка ORCH>/rev-req013/probe-pause.test.mjs (scripted, план с delay 30 с; пауза через Engine.command во время запуска плана)",
+        "output": "round 0: plan run closed within 3 s after pause: true (28 ms) — 5 PROJECT_PAUSED, 6 RUN_FINISHED cancelled; round 1: plan run closed within 3 s after pause: null (3024 ms) — 24 RUN_STARTED plan r-00005, 25 PROJECT_PAUSED, RUN_FINISHED нет"
+      },
+      {
+        "command": "node --test <рабочая папка ORCH>/rev-req013/probe-created.test.mjs (resume проекта created через CLI)",
+        "output": "status 1 stderr \"E_TRANSITION: Действие недопустимо в текущем состоянии: И13 — возобновить можно только проект на паузе или ждущий решения\""
+      },
+      {
+        "command": "grep -lE '\"(start|resume|run-task)\"|createEngine\\(|startEngine\\(|spawnEngine\\(|runToEnd\\(|manualEngine\\(' team-*.test.js | xargs grep -L assertSafeEnv",
+        "output": "пусто; в team-channel.test.js:5, team-planner.test.js:3, team-engine-finish.test.js:3 assertSafeEnv только в комментарии"
+      },
+      {
+        "command": "shasum всех файлов tools/src, tools/test, tools/README.md, tools/package.json до и после проверки (<рабочая папка ORCH>/rev-req013/hash-before.txt, hash-after.txt)",
+        "output": "165 файлов; diff пуст — hashes identical"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "DESIGN_UPDATE",
+        "text": "CODE-DESIGNER (через ORCH): проект REQ-013 расходится с кодом в местах, принятых ORCH или мной, и это нужно записать, чтобы код не расходился с проектом молча. п. 1.2 — claude-cli.js изменён; п. 2.2 — имена файлов результата по task.attempts, причина отмены известна только при отмене; п. 4.1 — Engine.command, Engine.facts; п. 4.5 — дополнительные поля facts, closedSincePlan обнуляется на PLAN_RECEIVED; п. 4.2 шаг 8 / 15.2 — resume после аварии без паузы восстановления продолжает без PROJECT_RESUMED, planning продолжается без нового PLANNING_STARTED; п. 6.1 шаг 2 противоречит п. 9.4 (вопрос пишется и при действиях в работе); п. 13.5 шаг 2 — замена .taking при остановке (F-5); п. 13.7 — rmSync/chmodSync (F-4); п. 15.3 — код для resume из created (F-7); п. 17 — пустой текст через канал даёт E_EVENT, а не E_USAGE; п. 21 — EN-76 (F-3); п. 22 — мутант EN-60 записать эквивалентным."
+      },
+      {
+        "kind": "TEST_GAP",
+        "text": "TEST-DESIGNER: в п. 21 нет теста на п. 12.1 «запуск плана при паузе отменяется» ни для раунда 0, ни для раунда дозадач — из-за этого F-1 прошёл зелёным. Нужны тест (с F-1) и тест F-5."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Повторы SINGLE_RUNS_MAX (проверка, сверка цели) идут без паузы, а повторы runTask — с паузой SAI_TEAM_RETRY_DELAY_MS. Вопрос к проекту, единообразно ли так задумано (выбор (г) step-22). Не находка."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Пробы — в <рабочая папка ORCH>/rev-req013/ (probe-pause.test.mjs, probe-created.test.mjs, check.log, hash-*.txt); данные проб — во временной папке там же (TMPDIR), проект не менялся. Настоящий claude не запускался."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

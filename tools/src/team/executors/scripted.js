@@ -23,7 +23,7 @@ const STEPS_MAX = 100;
 const FILES_MAX = 50;
 const CONTENT_BYTES_MAX = 1024 * 1024;
 const DELAY_MS_MAX = 60_000;
-const PURPOSES = ["work", "review", "plan", "goal_check"];
+const PURPOSES = ["work", "review", "plan", "goal_check", "reassign"];
 const ACTIVITIES = ["reading", "searching", "writing", "thinking", "other"];
 const RESULT_OUTCOMES = [
   "ok",

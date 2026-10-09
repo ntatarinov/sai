@@ -145,3 +145,75 @@ export function executorError(code, part = null, details = {}) {
   }
   return new TeamError(code, message, details);
 }
+
+// The codes of the engine (design REQ-013, section 15.3) with their messages. A
+// placeholder {pid}, {id} or {task} is filled by engineError from its parameters
+// (numbers and ids only, never a text of the user). E_CHANNEL_TIMEOUT has two
+// forms: the engine did not take the message, or the engine has ended.
+export const ENGINE_MESSAGES = Object.freeze({
+  E_NOT_STARTABLE: "Проект уже запускался — продолжите его командой resume",
+  // (r5.2, F-7) resume of a project that never started
+  E_NOT_STARTED: "Проект ещё не запускался — запустите его командой start",
+  E_ENGINE_RUNNING:
+    "Проект сейчас ведёт запущенный процесс Sai Team (pid {pid}): эта команда доступна после его остановки",
+  E_ALREADY_RUNNING: "Проект уже выполняется",
+  E_STOPPED: "Проект остановлен — продолжить его нельзя",
+  E_FINISHED: "Проект завершён — продолжить его нельзя",
+  E_PAUSE_STATE:
+    "Поставить на паузу можно только проект в работе или ждущий решения",
+  E_OPEN_QUESTION:
+    "Сначала ответьте на вопрос по задаче {task}: npm run team -- answer {id} {task} …",
+  E_BUDGET_NEEDED:
+    "Сначала поднимите потолок расходов: npm run team -- budget {id} <сумма>",
+  E_BUDGET_LOW: "Новый потолок должен быть больше уже израсходованного",
+  E_NOT_WAITING: "Задача не ждёт вашего решения",
+  E_ANSWER_KIND:
+    "Такой ответ здесь не подходит: можно change с текстом или reject",
+  E_MSG_TOO_BIG: "Сообщение слишком большое",
+  E_CHANNEL:
+    "Связь с работающим проектом недоступна: папка сообщений повреждена или чужая",
+  E_CHANNEL_BAD: "Сообщение не принято: повреждено или чужое",
+  E_ENGINE_STOPPING: "Проект останавливается — сообщение не принято",
+  E_CHANNEL_DROPPED:
+    "Сообщение не выполнено: проект перезапускался. Повторите команду",
+  E_CHANNEL_STALE: "Номер сообщения устарел",
+  E_CHANNEL_FULL:
+    "Проект не успевает принимать сообщения — повторите через несколько секунд",
+  E_CHANNEL_TIMEOUT:
+    "Сообщение не подтверждено: проект его не принял. Повторите команду",
+  E_CHANNEL_TIMEOUT_GONE: "Проект завершил работу. Повторите команду",
+  E_CHANNEL_UNCONFIRMED:
+    "Сообщение передано, но подтверждение не пришло вовремя; проверьте журнал проекта: npm run team -- events {id}",
+});
+
+const ENGINE_PARAMS = Object.freeze({
+  pid: /^[0-9]{1,10}$/,
+  id: /^p-[0-9]{8}-[0-9a-f]{6}$/,
+  task: /^t-[0-9]{4}$/,
+});
+
+// A refusal of the engine. `key` is a key of ENGINE_MESSAGES; the code of the
+// error is the key without the suffix _GONE (E_CHANNEL_TIMEOUT_GONE is the second
+// form of E_CHANNEL_TIMEOUT).
+export function engineError(key, params = {}, details = {}) {
+  const base = ENGINE_MESSAGES[key];
+  if (base === undefined) {
+    return new TeamError(
+      "E_INTERNAL",
+      "Внутренняя ошибка ядра Sai Team (code)",
+    );
+  }
+  let bad = false;
+  const message = base.replace(/\{(pid|id|task)\}/g, (_, name) => {
+    const value = String(params[name] ?? "");
+    if (!ENGINE_PARAMS[name].test(value)) bad = true;
+    return value;
+  });
+  if (bad) {
+    return new TeamError(
+      "E_INTERNAL",
+      "Внутренняя ошибка ядра Sai Team (params)",
+    );
+  }
+  return new TeamError(key.replace(/_GONE$/, ""), message, details);
+}

@@ -32,6 +32,7 @@ import {
 } from "./home.js";
 import { appendBatch, appendLine, readJournal, truncateTo } from "./journal.js";
 import {
+  ENGINE_HOLDER,
   acquireLock,
   assertLockHeld,
   cleanLockLeftovers,
@@ -40,6 +41,7 @@ import {
 } from "./lock.js";
 import { reduce, reduceInPlace, runIdFor, taskIdFor } from "./reducer.js";
 import {
+  DROPPED_MAX,
   EVENT_TYPES,
   LIMITS,
   PATTERNS,
@@ -305,6 +307,34 @@ class Writer {
       task: null,
       data: { text, kind: "message", truncated: false },
     });
+  }
+
+  // (r13, C7) The clean-up of the channel of the engine: the nonces of messages
+  // that were not executed, by DROPPED_MAX in one CHAT of the engine each, all
+  // parts as one batch (all or nothing, one fsync). textFor(count, part, parts)
+  // gives the text of a part. An empty list writes nothing.
+  recordDropped(ids, textFor) {
+    if (!Array.isArray(ids)) throw eventError("dropped");
+    if (typeof textFor !== "function") throw eventError("text");
+    if (ids.length === 0) return [];
+    const sorted = [...ids].sort();
+    const parts = [];
+    for (let i = 0; i < sorted.length; i += DROPPED_MAX) {
+      parts.push(sorted.slice(i, i + DROPPED_MAX));
+    }
+    return this.#appendBatch(
+      parts.map((part, i) => ({
+        source: "ENGINE",
+        type: "CHAT",
+        task: null,
+        data: {
+          text: textFor(part.length, i + 1, parts.length),
+          kind: "message",
+          truncated: false,
+          dropped: part,
+        },
+      })),
+    );
   }
 
   addTask(task, source = "ENGINE") {
@@ -590,9 +620,17 @@ export function createProject(input, opts = {}) {
 
 // ---- opening for writing (section 6.3) ---------------------------------------------
 
+// (r13, C4) opts.holder: only "engine" (the engine of REQ-013); absent — null.
+function lockHolderOf(opts) {
+  if (opts.holder === undefined || opts.holder === null) return null;
+  if (opts.holder !== ENGINE_HOLDER) throw internalError("holder");
+  return ENGINE_HOLDER;
+}
+
 export function openWriter(id, opts = {}) {
   const home = homeOf(opts);
   const clock = clockOf(opts);
+  const lockAs = lockHolderOf(opts);
   const pid = process.pid;
   const dir = resolveProjectDir(home, id);
   const holder = lockHolder(dir);
@@ -605,7 +643,12 @@ export function openWriter(id, opts = {}) {
   }
   const eventsFile = path.join(dir, EVENTS_FILE);
   readJournal(eventsFile, id);
-  const { stalePid } = acquireLock(dir, pid, new Date(clock()).toISOString());
+  const { stalePid } = acquireLock(
+    dir,
+    pid,
+    new Date(clock()).toISOString(),
+    lockAs,
+  );
   let writer = null;
   try {
     const journal = readJournal(eventsFile, id);

@@ -1,0 +1,115 @@
+{
+  "handoff_id": "step28-backend-dev-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "28",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261006-02/step-28-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/team/**",
+      "tools/test/team-*.test.js, tools/test/team-engine-helpers.js, tools/test/exec-*.test.js, tools/test/fixtures/team/**",
+      "tools/README.md",
+      "handoffs/PROD-20261006-02/step-28-backend-dev.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-013-team-engine.md",
+      "handoffs/PROD-20261006-02/step-25-reviewer.json",
+      "handoffs/PROD-20261006-02/step-27-security-reviewer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, правка кода по проекту r5.2 (docs/design/REQ-013-team-engine.md — п. 9.2, 15.3, 17, 28 и др.; handoffs/PROD-20261006-02/step-25-reviewer.json issues; step-27-security-reviewer.json PASS с Low). Сделайте: (1) F-7: resume проекта, который не запускался — E_NOT_STARTED с текстом «Проект ещё не запускался — запустите его командой start» (п. 15.3/17); (2) F-8: ответ на задачу, упавшую только по потолку — E_NOT_WAITING (п. 9.2, checkDecision с facts); (3) F-9 и п. 28 проекта: tools/test/fixtures/team/README.md, раздел «Источник образцов stream-json» — дописать поля схем ответов движка; другие места п. 28 проекта (д), (е), (ж) — привести код к тому, что записано, если он расходится (иначе только отметить в result); выбор (г) принят как записан; (4) Low безопасности step-27 F-1: отправитель при выборе номера применяет то же правило NUMBER_JUMP_MAX, что движок: подложенный файл с далёким номером в inbox/ не делает номер настоящей команды далёким (игнорировать такие имена при расчёте — опишите правило в result и сверьте с п. 13.6 проекта; если проект его не описывает — не придумывайте, перечислите в result.issues); тест; (5) Low Info step-27 F-2: папки taken/.bad-* — не менять, перечислить в result.issues. Для каждого пункта: сначала падающий тест, затем правка. Правила прежние: npm run check код 0, число тестов до/после, гонки в 4 процессах при правке конкурентности, настоящий claude не запускать, TM/EX не ослаблять; не менять requirements.yaml, проекты, решения. Результат: result.summary (номер → что сделано → тест), result.checks, result.issues.",
+    "acceptance_criteria": [
+      "F-7, F-8, README, Low безопасности исправлены с тестами (падали до правки)",
+      "npm run check код 0, прежние тесты не ослаблены",
+      "расхождения с проектом — только в result.issues"
+    ]
+  },
+  "created_at": "2026-10-06T13:13:08Z",
+  "started_at": "2026-10-06T13:13:08Z",
+  "completed_at": "2026-10-06T13:16:39Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "(1) F-7": "errors.js: E_NOT_STARTED «Проект ещё не запускался — запустите его командой start»; commands.js checkResume: статус created → E_NOT_STARTED (до любой записи; тот же путь у движка при открытии и у сообщения канала). Тест team-engine-r52.test.js «F-7 resume of a project that never started…»: до правки падал (stderr был «E_TRANSITION: … И13 …»), после — проходит; журнал и папка проекта без изменений, исполнитель не запускался.",
+      "(2) F-8": "answers.js: checkDecision(state, taskId, decision, text, facts) — задача failed, не закрытая, но упавшая только по потолку (facts.budgetFailed) → E_NOT_WAITING. commands.js: answer требует facts (иначе E_INTERNAL); движок передаёт свои, команда без движка (channel.js deliver) читает их из журнала под только что взятым замком (scanFacts(readProject)). Тест «F-8 an answer for a task that failed only on the ceiling…»: до правки change/reject принимались (exit 0), после — E_NOT_WAITING, хеш журнала тот же; задача, упавшая иначе, по-прежнему принимает change.",
+      "(3) F-9 и п. 28": "tools/test/fixtures/team/README.md, раздел «Источник образцов stream-json»: дописано, что в stream-engine-*.jsonl structured_output содержит поля схем ответов движка (PLAN_/REVIEW_/GOAL_/REASSIGN_ANSWER_SCHEMA и их поля). Тест «F-9 …» в team-engine-docs.test.js: до правки fail, после pass. П. 28 (д), (е), (ж) — код уже соответствует записанному, не менялся: (д) planNote содержит перечень ролей и формат ответа, входы проверки/сверки/выбора роли — постоянные указания (plan.js, review.js); (е) QUESTION.plan_failed/goal_check_failed со вставкой FAIL_DETAIL при сбое запуска (answers.js, engine.js); (ж) runSingle сохраняет вход scripted файлом без задачи r-NNNNN-<имя> (single-run.js). Выбор (г) — как записан, без изменений.",
+      "(4) Low безопасности step-27 F-1": "Не правилось: п. 13.6 проекта r5.2 задаёт отправителю n = 1 + max(наибольший номер в inbox/, high) и правила NUMBER_JUMP_MAX для отправителя не описывает (оно записано только для движка и уборки, п. 13.7). По заданию «не придумывать» — перечислено в result.issues с предлагаемым правилом.",
+      "(5) Info step-27 F-2": "Папки taken/.bad-* не менялись — в result.issues."
+    },
+    "files": {
+      "modified": [
+        "tools/src/team/errors.js",
+        "tools/src/team/engine/commands.js",
+        "tools/src/team/engine/answers.js",
+        "tools/src/team/engine/channel.js",
+        "tools/test/fixtures/team/README.md",
+        "tools/test/team-engine-r52.test.js",
+        "tools/test/team-engine-docs.test.js",
+        "tools/test/team-engine-units.test.js"
+      ]
+    },
+    "checks": [
+      {
+        "command": "cd tools && npm run check (до)",
+        "output": "923 теста (итог step-26)"
+      },
+      {
+        "command": "node --test test/team-engine-r52.test.js (до правки)",
+        "output": "# pass 0 # fail 2 (F-7: stderr E_TRANSITION; F-8: exit 0 вместо 1)"
+      },
+      {
+        "command": "node --test --test-name-pattern='F-9' test/team-engine-docs.test.js (до правки README)",
+        "output": "# pass 0 # fail 1"
+      },
+      {
+        "command": "cd tools && npm run check (после)",
+        "output": "exit 0; prettier, eslint чисто; # tests 926, # pass 926, # fail 0, # skipped 0"
+      },
+      {
+        "command": "4 одновременных node --test test/team-channel.test.js (deliver изменён)",
+        "output": "4 × exit 0, 25/25"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NEEDS_DESIGN",
+        "text": "Low step-27 F-1 (расчёт номера отправителем): п. 13.6 r5.2 не описывает предел для отправителя, код не менялся. Предлагаемое правило для CODE-DESIGNER: при расчёте n отправитель учитывает только имена inbox/ с номером ≤ high + NUMBER_JUMP_MAX (одна общая функция с движком в channel.js), тест — подложенный далёкий номер + настоящий отправитель → ack ok."
+      },
+      {
+        "kind": "INFO",
+        "text": "step-27 F-2: папки taken/.bad-* (подменённый high, отодвинутый в сторону) не убираются и при каждом открытии дают уведомление «посторонние файлы»; не менялось по заданию."
+      },
+      {
+        "kind": "TEST_CHANGE",
+        "text": "team-engine-units.test.js: вызовы checkDecision получают facts (новая сигнатура п. 9.2 r5.2); таблица ожиданий не изменилась."
+      },
+      {
+        "kind": "NOTE",
+        "text": "applyCommand resume/answer без facts или config теперь E_INTERNAL (внутренняя защита: deliver без движка resume не исполняет — resume без движка становится движком, cli.js)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/errors.js",
+      "tools/src/team/engine/commands.js",
+      "tools/src/team/engine/answers.js",
+      "tools/src/team/engine/channel.js",
+      "tools/test/fixtures/team/README.md",
+      "tools/test/team-engine-r52.test.js",
+      "tools/test/team-engine-docs.test.js",
+      "tools/test/team-engine-units.test.js"
+    ]
+  }
+}

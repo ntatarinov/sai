@@ -30,6 +30,10 @@ const WORK_STARTERS = new Set([
 
 const MONEY_EPSILON = 1e-6;
 
+// (r13, C1) the reasons that close a task: the user rejected it, or it depended
+// on a rejected one.
+const CLOSING_REASONS = ["rejected_by_user", "dependency_closed"];
+
 export function initialState() {
   return null;
 }
@@ -56,6 +60,16 @@ function requireStatus(state, allowed, rule, what) {
 
 function findTask(state, id) {
   return state.tasks.find((t) => t.id === id) ?? null;
+}
+
+// (r13, C1) A closed task: failed, and rejected by the user (by its reason or by
+// its last decision) or failed because it depended on a closed one.
+export function isClosedTask(t) {
+  return (
+    t.status === "failed" &&
+    (CLOSING_REASONS.includes(t.reason) ||
+      t.last_decision?.decision === "reject")
+  );
 }
 
 function openRunOfTask(state, taskId) {
@@ -145,6 +159,8 @@ function initState(event) {
     memory: [],
     files: [],
     chat: [],
+    msgs: [],
+    nonces: [],
   };
 }
 
@@ -284,8 +300,12 @@ const HANDLERS = {
   PROJECT_DONE(s) {
     requireStatus(s, ["running"], "И2", "проект не в работе");
     if (s.tasks.length === 0) fail("И6", "в проекте нет задач");
-    if (s.tasks.some((t) => t.status !== "done")) {
+    // (r13, C1) И6': every task is done or closed, and at least one is done.
+    if (s.tasks.some((t) => t.status !== "done" && !isClosedTask(t))) {
       fail("И6", "не все задачи готовы");
+    }
+    if (!s.tasks.some((t) => t.status === "done")) {
+      fail("И6", "нет ни одной готовой задачи");
     }
     if (
       s.goal_check.passed !== true ||
@@ -416,14 +436,21 @@ const HANDLERS = {
     if (d.executor !== s.executor)
       fail("И12", "исполнитель не тот, что у проекта");
     let t = null;
-    if (d.purpose === "work" || d.purpose === "review") {
+    if (["work", "review", "reassign"].includes(d.purpose)) {
       t = findTask(s, e.task);
       if (d.purpose === "work") {
         if (t.status !== "running") fail("И16", "задача не в работе");
         if (d.role !== t.role) fail("И16", "роль запуска не та, что у задачи");
-      } else {
+      } else if (d.purpose === "review") {
         if (t.status !== "review") fail("И16", "задача не на проверке");
         if (d.role !== "reviewer") fail("И16", "проверку ведёт проверяющий");
+      } else {
+        // (r13, C2) the project manager chooses another role for a task on review.
+        if (t.status !== "review") fail("И16", "задача не на проверке");
+        if (d.role !== "project_manager") {
+          fail("И16", "другую роль выбирает руководитель проекта");
+        }
+        if (s.status !== "running") fail("И16", "проект не в работе");
       }
       if (openRunOfTask(s, t.id))
         fail("И16", "у задачи уже есть открытый запуск");
@@ -587,6 +614,13 @@ const HANDLERS = {
     touch(s, e, t);
   },
   TASK_FAILED(s, e, t) {
+    if (e.data.reason === "dependency_closed") {
+      // (r13, C1, И25) only a waiting task with a closed dependency.
+      if (t.status !== "waiting") fail("И25", "задача не ждёт");
+      if (!t.depends_on.some((id) => isClosedTask(findTask(s, id)))) {
+        fail("И25", "задача не зависит от закрытой");
+      }
+    }
     if (
       !["running", "review", "waiting_user", "interrupted", "waiting"].includes(
         t.status,
@@ -615,6 +649,64 @@ const HANDLERS = {
     touch(s, e, t);
   },
 };
+
+// (r13, C6, C7, И24) the identifiers of the messages of the channel an event
+// carries: its msg, its nonce and the nonces of a clean-up (dropped).
+function messageIds(event) {
+  const d = event.data;
+  if (d === null || typeof d !== "object") return { msg: null, nonces: [] };
+  const nonces = [];
+  if (typeof d.nonce === "string") nonces.push(d.nonce);
+  if (Array.isArray(d.dropped)) nonces.push(...d.dropped);
+  return { msg: typeof d.msg === "string" ? d.msg : null, nonces };
+}
+
+// The Sets of state.msgs and state.nonces, kept beside a state that is changed in
+// place (replay), so that И24 does not search the arrays at every event. The form
+// of the state does not change; a state without a fresh cache gets new Sets.
+const MESSAGE_SETS = new WeakMap();
+
+function messageSets(state) {
+  let sets = MESSAGE_SETS.get(state);
+  if (
+    sets === undefined ||
+    sets.msgs.size !== state.msgs.length ||
+    sets.nonces.size !== state.nonces.length
+  ) {
+    sets = { msgs: new Set(state.msgs), nonces: new Set(state.nonces) };
+    MESSAGE_SETS.set(state, sets);
+  }
+  return sets;
+}
+
+// И24: neither the name nor any nonce of a message repeats in the journal.
+function checkMessageIds(state, ids) {
+  if (ids.msg === null && ids.nonces.length === 0) return;
+  const sets = messageSets(state);
+  if (ids.msg !== null && sets.msgs.has(ids.msg)) {
+    fail("И24", "сообщение с этим именем уже исполнено");
+  }
+  const seen = new Set();
+  for (const nonce of ids.nonces) {
+    if (seen.has(nonce) || sets.nonces.has(nonce)) {
+      fail("И24", "сообщение с этим идентификатором уже учтено");
+    }
+    seen.add(nonce);
+  }
+}
+
+function addMessageIds(state, ids) {
+  if (ids.msg === null && ids.nonces.length === 0) return;
+  const sets = MESSAGE_SETS.get(state);
+  if (ids.msg !== null) {
+    state.msgs.push(ids.msg);
+    sets?.msgs.add(ids.msg);
+  }
+  for (const nonce of ids.nonces) {
+    state.nonces.push(nonce);
+    sets?.nonces.add(nonce);
+  }
+}
 
 // "Changes the task" (section 5.3): the task gets updated_at, the project
 // tasks_changed_seq (И6).
@@ -666,7 +758,10 @@ export function reduceInPlace(state, event) {
   }
   const handler = HANDLERS[event.type];
   if (handler === undefined) fail("И2", "неизвестный тип события");
+  const ids = messageIds(event);
+  checkMessageIds(state, ids);
   handler(state, event, task);
+  addMessageIds(state, ids);
   state.last_seq = event.seq;
   state.last_ts = event.ts;
   state.updated_at = event.ts;

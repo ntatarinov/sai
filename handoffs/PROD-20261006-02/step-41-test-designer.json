@@ -1,0 +1,78 @@
+{
+  "handoff_id": "step41-test-designer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "41",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261006-02/step-41-test-designer.json",
+  "status": "FAILED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/team-engine-budget.test.js, tools/test/team-engine-budget-m25.test.js, tools/test/team-engine-helpers.js, tools/test/fixtures/team/**",
+      "handoffs/PROD-20261006-02/step-41-test-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-40-test-design-validator.json",
+      "handoffs/PROD-20261006-02/step-39-test-designer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка F5r по handoffs/PROD-20261006-02/step-40-test-design-validator.json (issues, F5r Low): тест EN-40 (M25) запускается в составе файла team-engine-budget.test.js, где первый же тест (EN-40) на мутанте M25 виснет, и до нового теста дело не доходит. Вынесите EN-40 (M25) в ОТДЕЛЬНЫЙ файл tools/test/team-engine-budget-m25.test.js (имя в границе team-engine-*.test.js по 0020), чтобы в npm run check при мутанте M25 падал красный тест, а не зависала вся прогонка файла; в исходном файле тест оставьте только если он там нужен по смыслу (иначе удалите дубль, число тестов назовите). Примените мутант M25 сами на копии в <рабочая папка ORCH>/td3-req013/: npm run check должен дать красный отдельным файлом (зависание другого файла budget на M25 допустимо только если оно не мешает красному — измерьте и скажите). Код src/ не менять. npm run check код 0 (940 → ?). Ноутбук засыпал во время прошлой проверки: ORCH запустил caffeinate на 4 часа; если замечаете паузы машины — скажите. Результат: result.summary, result.mutants, result.checks, result.issues.",
+    "acceptance_criteria": [
+      "EN-40 (M25) в отдельном файле, на мутанте M25 красный, не зависание всей прогонки",
+      "npm run check код 0",
+      "src/ не менялся"
+    ]
+  },
+  "created_at": "2026-10-06T19:54:39Z",
+  "started_at": "2026-10-06T19:54:39Z",
+  "completed_at": "2026-10-06T23:42:08Z",
+  "result": {
+    "status": "FAILED",
+    "summary": {
+      "change": "EN-40 (M25) вынесен из tools/test/team-engine-budget.test.js в отдельный tools/test/team-engine-budget-m25.test.js (движок отдельным процессом, свой предел 20 с, stop через канал, withLimit). В исходном файле тест удалён (дубля нет), его лишний импорт spawnEngine убран. Тестов в budget: 4 + 1 в новом файле = 5, общее число 940 (без изменения).",
+      "M25": "Мутант enough() always true на копии (diff src копии с проектом: 2 строки): отдельный файл даёт красный тест 'the question at the ceiling did not come' за ~21 с (1 тест, fail 1). Оба файла budget вместе в одном node --test: красный тест нового файла приходит, а team-engine-budget.test.js висит без результата — красному это не мешает, но общий прогон при этом не завершается, пока висящий файл не убит внешним пределом. Измерено на двух файлах, весь npm run check на мутанте не доводился до конца.",
+      "src": "src/ мной не менялся."
+    },
+    "mutants": [
+      {
+        "id": "M25",
+        "mutant": "schedule.enough(): return true",
+        "result": "пойман",
+        "killed_by": "EN-40 (M25) в team-engine-budget-m25.test.js (1 тест, ~21 с)",
+        "note": "копия td3-req013 удалена; мои зависшие процессы мутанта убиты вручную (они грузили машину 99% CPU)"
+      }
+    ],
+    "checks": {
+      "files_alone": "node --test team-engine-budget.test.js team-engine-budget-m25.test.js: tests 5 pass 5 fail 0; eslint --max-warnings 0 и prettier на двух файлах чисты",
+      "npm_run_check": "НЕ код 0. Четыре полных прогона после правки: 11, 9, 7 и 17 падений; набор падающих тестов каждый раз разный (W02, EX-22, HK-11d, SV-51, EN-58, TM-24 и др.), все в файлах, не связанных с budget; длительность прогона 1150-1830 с вместо обычных нескольких минут. До правки (17:03Z) тот же npm run check давал 940/940 код 0",
+      "attribution": "работа не задела упавшие тесты: на budget-файлы не ссылается ни один другой файл (grep). Повтор без работы не выполнен. Часть падений (EX-22 и др.) повторилась и при запуске файлов отдельно — машина перегружена (load average 12-17 при 10 ядрах, прогон в 5-6 раз медленнее обычного, возможны паузы машины/сна)."
+    },
+    "issues": [
+      {
+        "kind": "BLOCKED",
+        "at": "2026-10-06T23:30:00Z",
+        "text": "npm run check не даёт код 0 из-за перегрузки/пауз машины (таймерные тесты падают случайно в разных файлах). Для доказательства нужен прогон на спокойной машине (caffeinate, ничего параллельно); после этого результат принять по повтору. Правки тестов M25 готовы и проверены по отдельности."
+      },
+      {
+        "kind": "INFO",
+        "at": "2026-10-06T23:30:00Z",
+        "text": "Мои мутантные процессы (node test/team-engine-budget.test.js на M25) зависали и грелись, пока я не убил их; это ухудшило первые прогоны. pkill -f с путём копии убивает и свою оболочку."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-engine-budget.test.js",
+      "tools/test/team-engine-budget-m25.test.js"
+    ]
+  }
+}

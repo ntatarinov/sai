@@ -1,0 +1,117 @@
+{
+  "handoff_id": "step32-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "32",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-32-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-32-reviewer.json — только status, completed_at, result",
+      "handoffs/PROD-20261006-02/step-32-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "SECURITY-REVIEWER (дельта шага 31)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-29-reviewer.json",
+      "handoffs/PROD-20261006-02/step-31-backend-dev.json",
+      "docs/design/REQ-013-team-engine.md",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повторное ревью после правок step-31 (handoffs/PROD-20261006-02/step-31-backend-dev.json) по вашему FAIL step-29-reviewer.json (R-1 Medium блокировал, R-2…R-7 Low). Проект — docs/design/REQ-013-team-engine.md r5.3. Прогоните сами cd tools && npm run check (ожидаемо 928 из 928). Проверьте: R-1 закрыт (повторите probe-signal-stop; заметьте: проект r5.3 — после сигнала до итогового просмотра все сообщения, включая stop, получают E_ENGINE_STOPPING, проект завершается на паузе; TASK_INTERRUPTED с причиной cancel при сигнале — по проекту?); R-3, R-4, R-5 и Info выполнены; предел номера nextNumber/countsAsNumber/NUMBER_MAX/E_CHANNEL_FULL по п. 13.6 r5.3 и поведение уборки (расчёт предела от max(high, наибольший номер в журнале) — разработчик пометил это в issues; решите, расходится ли это с проектом и блокирует ли); прежние тесты не ослаблены; код соответствует проекту r5.3; нет новых дыр от правок (общий cancelCauseOf в runner.js). Ничего не правьте. Новые мелкие замечания, не меняющие исход, — Low, не блокируют. Результат: result.verdict PASS/FAIL; findings; summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "R-1 закрыт с повтором пробы",
+      "код соответствует проекту r5.3"
+    ]
+  },
+  "created_at": "2026-10-06T13:29:02Z",
+  "started_at": "2026-10-06T13:29:02Z",
+  "completed_at": "2026-10-06T13:32:23Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "overall": "PASS. R-1 (Medium) закрыт, это подтверждено повтором пробы. R-3, R-4, R-5 и Info выполнены. Общее правило номера (countsAsNumber и nextNumber) одно для отправителя, движка и уборки. Прежние тесты не ослаблены. npm run check: 928 из 928, код 0. Новых находок Critical, High и Medium нет, есть две Low. Ожидаемый вердикт в задании не назван.",
+      "R-1": "ЗАКРЫТ. receive (engine.js:937-939): при stop !== null и !draining отклоняются все сообщения, в том числе stop. Это п. 12.4 и п. 13.5 (шаг 6) r5.3. Проба r3/probe-signal-stop.test.mjs (поддельный claude с hang): после сигнала stop, say, pause и budget через command, а также stop через канал получают E_ENGINE_STOPPING. В журнале: RUN_FINISHED cancelled → TASK_INTERRUPTED {cause:cancel} → PROJECT_PAUSED, итог paused, PROJECT_STOPPED нет. Причина cancel при сигнале соответствует проекту: п. 12.4 требует abort(\"cancel\"). Формулировка задания step-31 («причина stop») с проектом расходится, а код и EN-57 (9л) следуют проекту. Тест 9л не зависит от времени: при закрытии действия (engine.js:441-442) вызывается wake() → serveInbox() без draining, поэтому лежащий stop отклоняется до выхода. Stop, опубликованный уже в разборе по п. 13.8, исполнится после PROJECT_PAUSED. Это по п. 13.8 и 12.3 («остановить потом обычной командой») и безопасно: действия уже закрыты. Мутант «stop исполняется во время остановки по сигналу» на копии — 9л падает.",
+      "number": "Предел номера. nextNumber и countsAsNumber (channel.js:41-57) использует отправитель (publishMessage), движок при взятии (channel.js:892) и уборка. NUMBER_MAX → E_CHANNEL_FULL, как в п. 13.6. Мутант «отправитель учитывает все номера» на копии — 9к падает. В уборке граница считается от base = max(high, наибольший номер msgs) + NUMBER_JUMP_MAX. В п. 13.7 записано max(high + NUMBER_JUMP_MAX, наибольший номер msgs), в п. 13.6 — high + NUMBER_JUMP_MAX. Результаты различаются, только когда наибольший номер msgs > high, то есть когда taken/high был испорчен. Тогда граница выше не больше чем на NUMBER_JUMP_MAX, исчерпания нумерации нет: тот же шаг движок допускает и при взятии. Разработчик сам отметил это в issues, значит отступление не молчаливое. Правило кода связнее проекта. Не блокирует; это Low R3-1 к CODE-DESIGNER.",
+      "low_prev": "R-3 закрыт (commands.js:202-204). R-4 закрыт (channel.js:551-555): facts только для resume и answer, другие команды facts не читают. Проверено поиском: opts.facts используется только в ветках resume и answer. R-5 закрыт: cancelCauseOf — runner.js:44-46, single-run.js импортирует его. Убранная проверка CANCEL_CAUSES.includes(cause) была всегда истинной, поведение то же. Info закрыт: absent() даёт одинаковое E_INTERNAL для null и undefined в resume и answer. R-2 закрыт в проекте (п. 0, 1.2, 2.2). R-6 не правился: п. 21 r5.3 по-прежнему описывает поиск по литералу, вопрос остаётся у CODE-DESIGNER.",
+      "old_tests": "Сравнил с копией step-29 (rev-req013/r2/copy). В team-channel.test.js только добавления: импорты, 9к и 9л, удалённых строк нет. team-engine-helpers.js совпадает с рабочим: отличие от r2/copy — это мой мутант прошлого ревью. Признаков эрозии в 6 изменённых файлах нет.",
+      "new_work": "Лишней работы нет: изменения укладываются в перечень п. 28 r5.3. Новых дыр от общего cancelCauseOf нет: оба места вызывают одну функцию с тем же правилом."
+    },
+    "findings": [
+      {
+        "id": "R3-1",
+        "place": "tools/src/team/engine/channel.js:761-765 (уборка, шаг 2.3) против docs/design/REQ-013-team-engine.md п. 13.7 и п. 13.6",
+        "severity": "Low",
+        "blocking": false,
+        "what": "В уборке граница учёта найденных номеров — max(high, наибольший номер msgs) + NUMBER_JUMP_MAX. В п. 13.7 записано max(high + NUMBER_JUMP_MAX, наибольший номер msgs), в п. 13.6 — high + NUMBER_JUMP_MAX, а в п. 13.4 (шаг 2.3) фильтра нет вовсе. Результаты различаются, только если taken/high был испорчен и наибольший номер msgs > high. На безопасность это не влияет. Разработчик сам отметил это в issues.",
+        "fix": "CODE-DESIGNER: привести п. 13.4 (шаг 2.3), 13.6 и 13.7 к одной формулировке — countsAsNumber(n, max(high, наибольший номер msgs)), как в коде. Либо код — к тексту п. 13.7, если ORCH выберет текст."
+      },
+      {
+        "id": "R3-2",
+        "place": "tools/src/team/engine/engine.js:937-942 (receive)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "После новой строки 939 следующая проверка stop.reason === \"stop\" срабатывает только при draining (выход после stop, п. 13.8). Из кода и комментария это не видно, и проверка выглядит лишней.",
+        "fix": "Уточнить комментарий: при draining после stop — E_ENGINE_STOPPING. Либо объединить две проверки. Поведение не меняется."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && TMPDIR=<рабочая папка ORCH>/rev-req013/r3/tmp npm run check",
+        "output": "exit 0; prettier: All matched files use Prettier code style; eslint --max-warnings 0 без вывода; # tests 928, # pass 928, # fail 0, # cancelled 0, # skipped 0, # todo 0 (лог: <рабочая папка ORCH>/rev-req013/r3/check.log)"
+      },
+      {
+        "command": "node --test <рабочая папка ORCH>/rev-req013/r3/probe-signal-stop.test.mjs (повтор пробы R-1 с поддельным claude и assertSafeEnv; настоящий claude не запускался)",
+        "output": "# pass 5. stop, say, pause, budget через command — refused E_ENGINE_STOPPING (+0…1 мс); stop через канал — E_ENGINE_STOPPING (+72 мс); везде run {status:paused}, журнал …9 RUN_FINISHED cancelled, 11 TASK_INTERRUPTED {cause:cancel}, 12 USER PROJECT_PAUSED; PROJECT_STOPPED нет"
+      },
+      {
+        "command": "мутанты на копии <рабочая папка ORCH>/rev-req013/r3/copy/tools: (а) engine.js:939 + '&& message.kind !== \"stop\"'; (б) nextNumber учитывает все номера",
+        "output": "(а) EN-57 (9л): # pass 0 # fail 1; (б) EN-57 (9к): # pass 0 # fail 1"
+      },
+      {
+        "command": "diff -u rev-req013/r2/copy/tools/<файл> tools/<файл> для engine.js, channel.js, commands.js, single-run.js, runner.js, team-channel.test.js, team-engine-helpers.js",
+        "output": "изменения перечислены в summary; в тестах только добавления"
+      },
+      {
+        "command": "grep -nE '\\.skip\\(|\\.todo\\(|TODO|FIXME|eslint-disable|\\|\\| true|\\.only\\(|\\{ ?skip|\\{ ?todo' по 6 изменённым файлам",
+        "output": "пусто, exit 1"
+      },
+      {
+        "command": "shasum tools/src tools/test README.md package.json eslint.config.js до и после ревью",
+        "output": "167 файлов, diff пуст (r3/hash-before.txt, r3/hash-after.txt)"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "DESIGN_UPDATE",
+        "text": "CODE-DESIGNER: R3-1 — одна формулировка границы уборки в п. 13.4 (шаг 2.3), 13.6 и 13.7. R-6 (EN-76 находит запуск не только по литералу) по-прежнему не назван в п. 21: решить, вносить ли его."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Задание step-31 требовало «TASK_INTERRUPTED получает причину stop, не cancel» при сигнале. Это расходится с п. 12.4 r5.3 (abort(\"cancel\")). Код и тест 9л верно следуют проекту (cause cancel). ORCH: учесть это в формулировках следующих заданий."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Вопрос по выбору (г) step-22 (SINGLE_RUNS_MAX без паузы) по-прежнему открыт по п. 28. Не блокирует."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Вне рабочей папки: одна команда (cp engine.js /tmp/x) по ошибке записала копию в /tmp. Файл сразу удалён, проект не затронут."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

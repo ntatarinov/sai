@@ -1,0 +1,140 @@
+{
+  "handoff_id": "step24-security-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "24",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-24-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-24-security-reviewer.json — только status, completed_at, result",
+      "handoffs/PROD-20261006-02/step-24-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-22-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-23-backend-dev.json",
+      "docs/design/REQ-013-team-engine.md",
+      "decisions/0020-team-engine-channel.md",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3: безопасность кода REQ-013 (handoffs/PROD-20261006-02/step-22-backend-dev.json и step-23-backend-dev.json). ORCH сам запустил cd tools && npm run check: 916 из 916, grep сетевых модулей в src/team пуст. Прочтите код сами и проверьте по своей роли (Q7–Q11, R3 и пункты планки): новый tools/src/team/engine/ (особенно channel.js — нумерация, linkSync, taken/high, .taking-…, ack, nonce, уборка, права 0700/0600, lstat, пределы, маскирование, чужой замок, symlink/hardlink и обход путей, чтение вне папки проекта, удаление чужих файлов; rmSync по taken/high-папке, которого нет в списке вызовов записи проекта — оцените), engine.js, commands.js, single-run.js, plan/review/answers/facts/schedule.js; правки ядра (schema, reducer, store, lock, runner.js: имена файлов результата), executors/claude-cli.js (исправление answer.files — не открыло ли ослабление изоляции/allowedTools/потолка), cli.js (маршрут канала, разбор аргументов, M2); не доверяйте утверждению «настоящий claude не запускался» — проверьте по коду, что любой настоящий запуск требует SAI_TEAM_REAL_RUNS=1 и потолок > 0, и что движок не обходит этот путь; текст пользователя/ответов не идёт в оболочку; секреты маскируются до записи (журнал, ack, вывод ошибок); нет сети/кода действий вовне; места записи — REQ-009 крит. 2 (пять мест). Пробуйте атаки сами (поддельные сообщения с чужим pid, длинные имена, симлинки в inbox/, подмена taken/high, гонки), только внутри временных папок вне проекта. Ничего не правьте. Результат: result.verdict PASS/FAIL; result.findings — место, важность (Critical/High/Medium блокируют), доказательство, исправление; result.summary — по пунктам Q7–Q11, R3.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "каждый пункт Q7–Q11 и R3 — выполнен или неприменим со своей проверкой",
+      "атаки на канал опробованы самим ревьюером"
+    ]
+  },
+  "created_at": "2026-10-06T12:42:30Z",
+  "started_at": "2026-10-06T12:42:30Z",
+  "completed_at": "2026-10-06T12:49:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "area": "Область затронута: секреты (маскирование текста команд и ответов), приём данных извне (файлы канала inbox/ от другого процесса), запись и удаление файлов (пять мест записи, channel.js), запуск внешнего процесса claude (claude-cli.js). Прочитаны сам: engine/channel.js целиком, engine/commands.js целиком, engine/engine.js (открытие, канал, выход, runEngineCommand), single-run.js (проверки исполнителя, importOutputs), diff HEAD по cli.js, home.js, lock.js, runner.js, claude-cli.js, scripted.js, store.js (append/recordDropped), errors.js (engineError, formatError), executor.js (checkBudget), config.js (realRuns). Ожидаемый вердикт в задании не назван.",
+      "Q7": "применим и выполнен. Поиск секретов по 47 изменённым/новым файлам tools/ — совпадения только в README (описание правил маскирования) и приманки тестов (ghp_FAKE…, sk-ant-xxxxx) — не секреты. Маскирование: core append маскирует текстовые поля всех событий (store.js:208 mapTextFields+maskSecrets), отправитель канала маскирует say/answer до записи файла (channel.js:279–285), проверка длины до и после маски (channel.js:203–206, commands.js:131–134). Проба I: say с ключом sk-ant-api03-… через файл канала → в журнале «ключ [скрыто]», секрета в events.jsonl нет. Сообщения ack — только тексты ENGINE_MESSAGES с параметрами pid/id/task по шаблону (errors.js:196–216); вывод ошибок через escapeUnsafe (errors.js:86). Окружение claude — только CHILD_ENV_ALLOW (не менялось).",
+      "Q8": "неприменим: данных магазинов и путей к ним нет (служебный код tools/, один пользователь ОС). Аналог — граница проекта: id проверяется шаблоном до пути (home.js:191–211), проба ../x, .., id/../id, /etc → E_NOT_FOUND; сообщение с чужим project → E_CHANNEL_BAD (проба H).",
+      "Q9": "неприменим: базы и SQL нет; поиск select/insert/sql по tools/src/team пуст.",
+      "Q10": "применим и выполнен. Испорченный ввод канала не роняет движок: симлинк, папка вместо файла, права 0644, чужой project, лишние ключи, >64 КиБ, повтор nonce (И24 → E_TRANSITION), старый номер (≤ high → отказ) — все пробы дали отказ без падения; таймауты отправителя 10 с (ACK_WAIT_MS), ожидание inbox 1 с; живой чужой pid в замке → E_CHANNEL / E_CHANNEL_TIMEOUT с отзывом сообщения (inbox пуст после), мёртвый pid → запись самой командой. 4 процесса × 10 сообщений к одному движку: 40 событий, 40 уникальных msg и nonce, inbox/ и ack/ пусты после. Сетевых внешних вызовов нет (единственный внешний процесс — claude, таймаут taskTimeoutMs не менялся).",
+      "Q11": "неприменим к новому коду: адресов, по которым ходит сервер, нет; node:http/https/net/tls/dgram/fetch в tools/src/team не найдено. Аргументы claude (WEB_DENY_RULES, --tools/--allowedTools) правкой не затронуты — diff claude-cli.js только строки summary/files.",
+      "R3": "неприменим: фото покупателей в Sai Team не обрабатываются.",
+      "R2": "неприменим: движок не пишет журнал Pixel Office; из pixel-office импортируется только mask.js (grep import).",
+      "real_runs": "Настоящий запуск claude невозможен в обход: claude-cli.run() сам вызывает check() первым шагом (realRuns === SAI_TEAM_REAL_RUNS==='1', budget_usd > 0, checkBudget: max_budget_usd > 1e-6 и ≤ остатка), single-run вызывает executor.check и executor.run, engine.preflight — check; других spawn/child_process в src/team нет (единственный импорт — claude-cli.js:9). spawn — shell:false, текст задачи — в stdin, не в аргументах.",
+      "claude_cli_fix": "Правка answer.files/summary не ослабляет изоляцию: аргументы и окружение не изменены; single-run для ответов без работы result.files не импортирует вовсе (importOutputs берёт только outputs scripted), runner для работы по-прежнему проверяет каждый путь checkWorkPath/readWorkFile/checkResultName; номер попытки в имени — целое из task.attempts, имя проходит checkResultName.",
+      "writes": "writeFileSync в src/team ровно в пяти местах: files.js:100, lock.js:139, store.js:593, store.js:599, engine/channel.js:137 (wx, 0600, flush). Канал меняет файлы только внутри inbox/ (lstat, не симлинк, свой uid, O_NOFOLLOW, совпадение inode). Вне перечня п. 13.7: rmSync (channel.js:584) и chmodSync (channel.js:549) — см. находку F-1.",
+      "agent_vector": "Агент claude (инструменты Read/Write/Edit/Glob/Grep, cwd work/) не может подделать команду канала даже при выходе за work/: файл Write создаётся с правами по umask (0644), канал принимает только ровно 0600 (проба G: budget 999 с 0644 → не исполнен)."
+    },
+    "findings": [
+      {
+        "id": "F-1",
+        "place": "tools/src/team/engine/channel.js:581–585 (writeHigh), 549 (prepareDir chmodSync)",
+        "item": "REQ-009 крит. 2 / п. 13.7 проекта (места записи), Q7-смежное",
+        "severity": "Low",
+        "what": "fs.rmSync(taken/high, {recursive:true, force:true}) и chmodSync — вызовы вне перечня п. 13.7 проекта; у rmSync нет проверки владельца (isOwn), только lstat isDirectory. Опасности за пределами inbox/ проба не показала: папка taken/high с симлинком на внешнюю папку удалена, внешний файл цел (проба A — Node rm не идёт по симлинкам). Остаётся только TOCTOU подменой компонента taken тем же пользователем в папке 0700 — вне модели угроз.",
+        "fix": "Либо внести rmSync/chmodSync в п. 13.7 проекта (CODE-DESIGNER), либо вместо рекурсивного удаления переименовывать негодную папку в taken/.bad-<rand> (renameSync уже в перечне) и проверять isOwn. Не блокирует."
+      },
+      {
+        "id": "F-2",
+        "place": "tools/src/team/engine/channel.js:363 (publishMessage), 23 (MSG_NAME), 720–725 (cleanUp high из state.msgs)",
+        "item": "Q10",
+        "severity": "Low",
+        "what": "Переполнение нумерации: сообщение m-999999999999.json (12 девяток, 0600, верный JSON) делает high = 999999999999; следующий номер отправителя — 13 цифр (m-1000000000000.json), MSG_NAME его не видит, движок не берёт, отправитель 10 с ждёт и получает E_CHANNEL_TIMEOUT (проба D3: 10013 мс). high сохраняется после перезапуска (проба D4), а если такое сообщение исполнено — номер попадает в журнал (state.msgs) и канал проекта сломан навсегда; при живом движке pause/stop/say через канал не проходят. Нужен процесс того же пользователя, пишущий в inbox/ 0700 с правами 0600, — поэтому Low.",
+        "fix": "Отправитель: если 1+max > 999999999999 — E_CHANNEL_FULL сразу, без публикации; движок: номер выше разумного предела (например, high + 10^6) считать негодным (E_CHANNEL_BAD) и не поднимать им high. Тест на оба. Не блокирует."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum всех файлов tools/src, tools/test, tools/README.md, tools/package.json, docs, decisions до и после проверки (S/hash-before.txt, hash-after.txt)",
+        "output": "246 файлов; diff пуст — «hashes identical»"
+      },
+      {
+        "command": "grep секретов (sk-, ghp_, AKIA, xox, BEGIN PRIVATE KEY, password=, api_key=, secret=, token=, ANTHROPIC_API_KEY) по 47 изменённым/новым файлам tools/",
+        "output": "README.md:81–95, 258 (описание правил); exec-scripted-source.test.js:24 и team-channel.test.js:891 ghp_FAKE…; team-planner.test.js:248 sk-ant-xxxxx — все приманки/описания, не секреты"
+      },
+      {
+        "command": "grep -rnE 'node:(http|https|net|tls|dgram|child_process)|fetch\\(|WebSocket' tools/src/team",
+        "output": "только claude-cli.js:9 import cp from node:child_process"
+      },
+      {
+        "command": "grep eval/new Function/shell:true/execSync по tools/src/team",
+        "output": "нет (только RegExp.exec)"
+      },
+      {
+        "command": "grep fs-мутаций по tools/src/team",
+        "output": "writeFileSync: files.js:100, lock.js:139, store.js:593, 599, channel.js:137; канал: unlink 102, link 365/599, rename 423/588/798, mkdir 545, chmod 549, rmSync 584"
+      },
+      {
+        "command": "node S/probe1.mjs (временная папка вне проекта)",
+        "output": "A taken/high-папка с симлинком наружу → удалена, внешний файл «precious» цел; B симлинк-сообщение → не взято, цель цела, ack нет; C жёсткая ссылка на внешний верный файл → исполнима (тот же uid), внешний файл цел после удаления ссылки; G права 0644 → не исполнено; H чужой project → E_CHANNEL_BAD; X лишний ключ → E_CHANNEL_BAD; папка m-….json → не взята, осталась .taking-…; I секрет → «ключ [скрыто]», в events.jsonl нет; D1–D4 переполнение → E_CHANNEL_TIMEOUT за 10013 мс, high=999999999999 после переоткрытия"
+      },
+      {
+        "command": "node S/probe2.mjs",
+        "output": "застрявшие папки-сообщения: dropped 2 на первом открытии, 0 на следующих, одно событие dropped; id ../x, .., id/../id, /etc → E_NOT_FOUND"
+      },
+      {
+        "command": "node S/probe3.mjs",
+        "output": "повтор того же nonce под новым номером после подмены taken/high → E_TRANSITION И24; старый номер → take() null"
+      },
+      {
+        "command": "node S/probe4.mjs",
+        "output": "замок holder engine с живым чужим pid 1, inbox нет → E_CHANNEL за 1044 мс; с inbox → E_CHANNEL_TIMEOUT 10037 мс, inbox пуст; мёртвый pid → via self, CHAT записан"
+      },
+      {
+        "command": "bash S/race-main.sh (1 движок + 4 процесса-отправителя × 10 say)",
+        "output": "40 CHAT, 40 уникальных текстов, msg и nonce; inbox/ и ack/ пусты, в taken/ только high"
+      },
+      {
+        "command": "4 параллельных node --test test/team-channel.test.js test/team-recovery.test.js",
+        "output": "4 × exit 0; # tests 63, # pass 63, # fail 0"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Пробы — в <рабочая папка ORCH>/sec-req013/ (probe1–4.mjs, race-*.mjs/sh, race-*.log); probe1 по ошибке создал данные в системной временной папке (не в проекте), удалены сразу. Настоящий claude не запускался."
+      },
+      {
+        "kind": "NOTE",
+        "text": "sender_pid в сообщении ничем не проверяется (поддельный pid исполняется) — по проекту это поле справочное; доверие канала держится на правах 0700/0600 и владельце, не на pid. Находкой не считаю."
+      },
+      {
+        "kind": "NOTE",
+        "text": "F-1 и F-2 — Low, не блокируют; передать CODE-DESIGNER/CODE-FIXER на усмотрение ORCH."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,114 @@
+{
+  "handoff_id": "step33-security-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "33",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-33-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-33-security-reviewer.json — только status, completed_at, result",
+      "handoffs/PROD-20261006-02/step-33-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "REVIEWER (шаг 32)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-31-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-30-security-reviewer.json",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, безопасность дельты после правок step-31-backend-dev.json (AP-049; ваш прежний PASS — step-30-security-reviewer.json): engine.js (отклонение всех сообщений после сигнала/stop, E_ENGINE_STOPPING), channel.js (nextNumber, countsAsNumber, NUMBER_MAX, E_CHANNEL_FULL; расчёт предела от max(high, наибольший номер в журнале) в уборке), commands.js, single-run.js, runner.js (cancelCauseOf), тест team-channel.test.js. Проверьте сами пробой (sec-req013/r4/): ваш прежний Low (подложенный далёкий номер в inbox/) закрыт; нет нового пути поднять high подделкой (уборка при старте с далёкими номерами, номера в журнале); нет блокировки канала навсегда; отказ на сигнале не открывает гонку и не теряет сообщение молча (отправитель получает отказ); ничего не пишется вне пяти мест; npm run check (ожидаемо 928 из 928 — проверьте). Настоящий claude не запускается. Ничего не правьте. Результат: result.verdict PASS/FAIL, findings, summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "Low про предел номера закрыт — пробой",
+      "нет новых путей поднять high или заблокировать канал"
+    ]
+  },
+  "created_at": "2026-10-06T13:29:02Z",
+  "started_at": "2026-10-06T13:29:02Z",
+  "completed_at": "2026-10-06T13:33:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "area": "Затронута: канал команд движка (номера сообщений, high, уборка при старте), отказы движка во время остановки. Pixel Office, сеть, данные магазинов, фото, страницы не затронуты (в дельте нет http/fetch/innerHTML и новых записей файлов).",
+      "delta": "По хешам против моей проверки r3 (hash-after r3 → hash-before r4) изменились ровно 6 файлов step-31: engine.js, channel.js, commands.js, single-run.js, runner.js, test/team-channel.test.js. Копии «до» в handoff нет (before_copy: нет); сравнение — с копией rev-req013/r2/copy, у которой хеши всех 6 файлов совпадают с r3-after. Изменения только описанные в step-31.",
+      "Low step-27/30 F-1 закрыт": "publishMessage считает номер через nextNumber(names, high): номера выше high + NUMBER_JUMP_MAX не учитываются; то же правило countsAsNumber у движка при взятии и в уборке. Пробы: P1 nextNumber([5+J+1, 5+3J], 5) = 6; P3 далёкий подложенный + настоящий → настоящий получает high+1 и берётся первым; тест EN-57 (9к) проходит (3 повтора). Граница: подложенный ровно high+J учитывается, отправитель берёт high+J+1 — P2: движок сначала берёт подложенный (high поднимается до high+J ещё до проверки содержимого, отказ E_CHANNEL_BAD), затем принимает настоящий — отказа отправителю нет.",
+      "нет нового пути поднять high": "Уборка: base = max(high, наибольший номер msgs журнала), учитываются только найденные номера ≤ base+J. msgs журнала пополняет только исполненное сообщение канала (reducer addMessageIds по data.msg; recordDropped пишет только nonces, не msg; deliver без движка msg не передаёт), а исполненный номер уже прошёл countsAsNumber — значит msgsTop ≤ прежний high+J, подделкой номеров в inbox/ msgs не поднять. P4: high=5, в inbox/ 5+J+1, 5+5J, NUMBER_MAX → high остаётся 5, все три получают E_CHANNEL_DROPPED, следующий номер 6. P5: битый файл high + подложенный 2J → high 0 (≤ J). Прирост за один старт — не больше J, как и до правки (было near = high+J).",
+      "нет блокировки навсегда": "Отправитель не выходит за предел движка (P1, P2); E_CHANNEL_FULL — явный отказ только при next > NUMBER_MAX. Прежнее свойство (не из дельты): каждый подложенный файл в окне поднимает high не больше чем на J; исчерпать NUMBER_MAX ≈ 1e12 можно лишь ~1e6 подложенных файлов тем же пользователем с записью в inbox/ 0700 — см. Info F-1.",
+      "отказ на сигнале": "engine.receive: при stop !== null и !draining — E_ENGINE_STOPPING для любого сообщения, в том числе второго stop. receive синхронен (один поток), гонки нет. handleTaken ловит TeamError и пишет ack {ok:false, code} — отправитель получает отказ; если ack не записался — отправитель сообщает «не подтверждено», не молча. Через command() — reject с тем же кодом. Сообщения, оставшиеся в inbox/ к выходу, разбирает draining по прежним правилам п. 13.8. Тест EN-57 (9л): stop через канал и через command — E_ENGINE_STOPPING, PROJECT_PAUSED есть, PROJECT_STOPPED нет, замок снят; 3 повтора — 2/2.",
+      "запись вне пяти мест": "В дельте исходников нет ни одного нового вызова записи (write/rename/unlink/mkdir/chmod/link) — grep по добавленным строкам находит только помощники песочницы в тесте. deliver теперь читает журнал только для resume/answer — меньше чтения, не больше записи.",
+      "commands/single-run/runner": "absent(): null и undefined одинаково дают E_INTERNAL до append (закрывает мой Info F-2 из step-30). cancelCauseOf — одна функция вместо двух копий; в single-run убрана всегда истинная проверка CANCEL_CAUSES.includes(cause) — поведение то же.",
+      "check": "cd tools && npm run check — exit 0, # tests 928, # pass 928, # fail 0, # skipped 0 (ожидание 928 было названо в задании — проверено самостоятельно, совпало).",
+      "items": {
+        "Q7": "применим и выполнен — grep секретов (sk-|ghp_|AKIA|token|password|secret) по добавленным строкам 6 файлов: совпадений нет; новые отказы — постоянные тексты engineError без подстановок.",
+        "Q8": "неприменим — данных магазинов нет; канал — папка своего проекта.",
+        "Q9": "неприменим — базы и запросов нет.",
+        "Q10": "применим и выполнен — отказы явные (E_ENGINE_STOPPING с ack, E_CHANNEL_BAD, E_CHANNEL_FULL, E_INTERNAL до записи); подложенный файл не отнимает номер у настоящего отправителя (P1–P3, 9к).",
+        "Q11": "неприменим — внешних адресов нет.",
+        "R3": "неприменим — фото покупателей нет.",
+        "R2": "неприменим — Pixel Office не изменён; событий не придумано.",
+        "paths": "новых путей записи нет (см. выше).",
+        "markup": "неприменим — страниц в изменении нет."
+      }
+    },
+    "findings": [
+      {
+        "id": "F-1",
+        "place": "tools/src/team/engine/channel.js:889–910 (take), 757–765 (cleanUp)",
+        "item": "Q10",
+        "severity": "Info",
+        "what": "Не из дельты, прежнее свойство окна: подложенный файл с номером в окне (≤ high+J) поднимает high до своего номера ещё до проверки содержимого; цепочка подложенных файлов (high+J, high+2J, …) принимается подряд, и окно движется (P3: далёкий файл начинает учитываться после того, как настоящий поднял high). Исчерпать NUMBER_MAX можно только ~1e6 файлами, записанными тем же пользователем в inbox/ 0700; итог — явный E_CHANNEL_FULL, не тихая потеря. Не блокирует.",
+        "fix": "По желанию владельца, отдельно: записать в проекте, что угроза «тот же пользователь пишет в inbox/» вне модели, или ограничить прирост high за проход/старт."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum tools/src tools/test tools/README.md tools/package.json до и после; diff с r3/hash-after.txt",
+        "output": "166 файлов; против r3 изменены ровно 6 файлов step-31; до/после проверки diff пуст (HASH-SAME) — <рабочая папка ORCH>/sec-req013/r4/hash-before.txt, hash-after.txt"
+      },
+      {
+        "command": "shasum копий rev-req013/r2/copy/… = хешам r3-after; diff -u копия → текущие 6 файлов",
+        "output": "только правки step-31: countsAsNumber/nextNumber, publishMessage через nextNumber, base в cleanUp, take через countsAsNumber, facts только для resume/answer в deliver; receive: stop!==null && !draining → E_ENGINE_STOPPING; absent(); cancelCauseOf"
+      },
+      {
+        "command": "TMPDIR=<рабочая папка ORCH>/sec-req013/r4/tmp node --test <рабочая папка ORCH>/sec-req013/r4/probe-r4.test.mjs",
+        "output": "5/5 pass: P1 nextNumber далёкие не учитываются, граница high+J учитывается, E_CHANNEL_FULL выше NUMBER_MAX; P2 плохой подложенный high+J → E_CHANNEL_BAD, high 1000002 после настоящего m-000001000002 (принят); P3 настоящий high+1 взят первым, далёкий учтён только после сдвига окна; P4 уборка: high 5, три далёких — E_CHANNEL_DROPPED; P5 битый high + 2J → high 0 (<рабочая папка ORCH>/sec-req013/r4/probe-r4.log)"
+      },
+      {
+        "command": "node --test --test-name-pattern='9к|9л' test/team-channel.test.js ×3",
+        "output": "3 × # pass 2 # fail 0"
+      },
+      {
+        "command": "cd tools && TMPDIR=<рабочая папка ORCH>/sec-req013/r4/tmp npm run check",
+        "output": "exit 0; # tests 928 # pass 928 # fail 0 # skipped 0 (<рабочая папка ORCH>/sec-req013/r4/check.log)"
+      },
+      {
+        "command": "grep write|rename|unlink|mkdir|chmod|link|spawn|exec|http|fetch|innerHTML|sk-|ghp_|AKIA|token|password|secret по добавленным строкам дельты",
+        "output": "только execEnv/writePlan/existsSync(writer.lock) в тесте 9л (песочница, поддельный claude, assertSafeEnv); в исходниках — ничего"
+      },
+      {
+        "command": "grep recordDropped/addMessageIds/messageIds (store.js, reducer.js)",
+        "output": "recordDropped пишет data.dropped (nonces), msgs пополняется только data.msg исполненных сообщений"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Low F-1 step-27/30 закрыт (пробы P1–P3, тест 9к); мой Info F-2 step-30 (facts === null в answer) тоже закрыт absent(). Новый Info F-1 — прежнее свойство окна, не из дельты, не блокирует. Ожидаемый итог 928/928 был назван в задании (AP-018) — проверен самостоятельно. PASS не разрешает мерж (R1). Настоящий claude не запускался."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

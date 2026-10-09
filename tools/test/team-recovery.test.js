@@ -1,5 +1,7 @@
 // Sai Team core: recovery after a crash, reading of a broken journal (design
-// REQ-009, TM-16, TM-17, TM-18, TM-19, TM-51, TM-54, TM-64, TM-65, TM-66, TM-67, TM-68).
+// REQ-009, TM-16, TM-17, TM-18, TM-19, TM-51, TM-54, TM-64, TM-65, TM-66, TM-67, TM-68),
+// and the engine of REQ-013 after a crash, one engine per project (EN-61,
+// EN-65 ... EN-68).
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,6 +10,33 @@ import { TeamError } from "../src/team/errors.js";
 import { reduce } from "../src/team/reducer.js";
 import { openWriter, readProject } from "../src/team/store.js";
 import { withFaults } from "./fault-inject.js";
+import { createEngine } from "../src/team/engine/engine.js";
+import { scanFacts } from "../src/team/engine/facts.js";
+import { replay } from "../src/team/reducer.js";
+import {
+  FAULT_URL,
+  FIXTURES,
+  assertSafeEnv,
+  journal,
+  ofType,
+  runTeam as runCli,
+  spawnTeam,
+  waitUntil,
+  withLimit,
+} from "./exec-helpers.js";
+import {
+  GOAL_OK,
+  PASS,
+  WORK_OK,
+  engineProject,
+  engineReady,
+  item,
+  planRun,
+  rewriteScenario,
+  scenarioRun,
+  spawnEngine,
+  until,
+} from "./team-engine-helpers.js";
 import {
   assertAppendRefused,
   assertRefusal,
@@ -1700,3 +1729,344 @@ test("TM-68 (f) one fsync of the journal for the whole batch, one write, no ftru
   assert.equal(counts.ftruncateSync, 0, "no rollback");
   assert.equal(counts.writeSync, 1, "one write for three events");
 });
+
+// ---- the engine after a crash (design REQ-013, section 14; criterion 10) ----------
+
+const SLOW_WORK = scenarioRun({ purpose: "work" }, WORK_OK, [
+  { delay_ms: 60_000 },
+]);
+const FAST = [
+  scenarioRun({ purpose: "work" }, WORK_OK),
+  scenarioRun({ purpose: "review" }, PASS),
+  scenarioRun({ purpose: "goal_check" }, GOAL_OK),
+];
+
+function messageFile(p, n, text) {
+  const body = {
+    v: 1,
+    project: p.id,
+    nonce: `${String(n).padStart(4, "0")}${"a".repeat(12)}`,
+    sender_pid: process.pid,
+    sent_at: new Date().toISOString(),
+    kind: "say",
+    args: { text },
+  };
+  const file = path.join(
+    p.dir,
+    "inbox",
+    `m-${String(n).padStart(12, "0")}.json`,
+  );
+  fs.writeFileSync(file, JSON.stringify(body), { mode: 0o600 });
+  return body.nonce;
+}
+
+async function killedEngine(t, p, argv) {
+  const run = spawnEngine(t, p, argv);
+  await engineReady(p);
+  await until(
+    p,
+    (e) => e.type === "RUN_STARTED" && e.task !== null,
+    "the work",
+  );
+  return run;
+}
+
+async function sigkill(run) {
+  run.child.kill("SIGKILL");
+  const r = await withLimit(run.done);
+  assert.equal(r.signal, "SIGKILL");
+}
+
+test(
+  "EN-61 after SIGKILL of the engine: say writes itself (LOCK_STALE_REMOVED, one CHAT); a waiting sender revokes on the death of the pid; the next engine executes none of the leftovers, drops them by nonce and answers a sender E_CHANNEL_DROPPED",
+  { timeout: 120_000 },
+  async (t) => {
+    const p = engineProject(t, [planRun([item("a")]), SLOW_WORK]);
+    const engine = await killedEngine(t, p);
+    process.kill(engine.child.pid, "SIGSTOP");
+    const left = [
+      messageFile(p, 10, "Остаток 1"),
+      messageFile(p, 11, "Остаток 2"),
+    ];
+    const waiting = spawnTeam(["say", p.id, "Ждёт убитый движок"], p.env);
+    await waitUntil(() =>
+      fs.readdirSync(path.join(p.dir, "inbox")).includes("m-000000000012.json"),
+    );
+    process.kill(engine.child.pid, "SIGKILL");
+    await withLimit(engine.done);
+    const gone = await withLimit(waiting.done);
+    assert.equal(gone.status, 1, gone.stderr);
+    assert.equal(
+      gone.stderr,
+      "E_CHANNEL_TIMEOUT: Проект завершил работу. Повторите команду\n",
+    );
+    const self = runCli(["say", p.id, "Сам по себе"], p.env);
+    assert.equal(self.status, 0, self.stderr);
+    let events = journal(p);
+    assert.equal(ofType(events, "LOCK_STALE_REMOVED").length, 1);
+    const own = events.filter((e) => e.type === "CHAT" && e.source === "USER");
+    assert.deepStrictEqual(
+      own.map((e) => [e.data.text, e.data.msg]),
+      [["Сам по себе", undefined]],
+    );
+    // the next engine: its clean-up is slowed down, a sender writes to it meanwhile
+    rewriteScenario(p, FAST);
+    const slow = path.join(FIXTURES, "slow-inbox.js");
+    const env = {
+      ...p.env,
+      NODE_OPTIONS: `--import ${slow}`,
+      SAI_TEST_INBOX_WAIT_MS: "2000",
+    };
+    assertSafeEnv(env);
+    const next = spawnTeam(["resume", p.id], env);
+    t.after(() => next.child.kill("SIGKILL"));
+    await waitUntil(() => {
+      try {
+        const lock = JSON.parse(
+          fs.readFileSync(path.join(p.dir, "writer.lock"), "utf8"),
+        );
+        return lock.holder === "engine" && lock.pid === next.child.pid;
+      } catch {
+        return false;
+      }
+    });
+    const late = await withLimit(
+      spawnTeam(["say", p.id, "Новому движку"], p.env).done,
+    );
+    assert.equal(late.status, 1, late.stderr);
+    assert.equal(
+      late.stderr,
+      "E_CHANNEL_DROPPED: Сообщение не выполнено: проект перезапускался. Повторите команду\n",
+    );
+    const end = await withLimit(next.done, 60_000);
+    assert.equal(end.status, 0, end.stderr);
+    events = journal(p);
+    const dropped = events.filter((e) => e.data.dropped !== undefined);
+    const ids = dropped.flatMap((e) => e.data.dropped);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.equal(ids.length, 3, "the two leftovers and the late sender");
+    for (const id of left) assert.ok(ids.includes(id));
+    assert.deepStrictEqual(
+      dropped.map((e) => e.data.text),
+      ["Сообщения, полученные до готовности проекта, не выполнены: 3"],
+    );
+    for (const text of [
+      "Остаток 1",
+      "Остаток 2",
+      "Ждёт убитый движок",
+      "Новому движку",
+    ]) {
+      assert.equal(
+        events.some((e) => e.source === "USER" && e.data.text === text),
+        false,
+        text,
+      );
+    }
+    assert.equal(events.at(-1).type, "PROJECT_DONE");
+  },
+);
+
+test(
+  "EN-65 SIGKILL of the engine with tasks in work: resume removes the stale lock, the tasks are interrupted and started again, the attempt counted; no task is done twice",
+  { timeout: 120_000 },
+  async (t) => {
+    const p = engineProject(t, [planRun([item("a"), item("b")]), SLOW_WORK]);
+    const engine = await killedEngine(t, p);
+    await until(
+      p,
+      (e) => e.type === "RUN_STARTED" && e.task === "t-0002",
+      "the second work",
+    );
+    await sigkill(engine);
+    rewriteScenario(p, FAST);
+    const r = runCli(["resume", p.id], p.env);
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(JSON.parse(r.stdout).project.status, "done");
+    const events = journal(p);
+    assert.equal(ofType(events, "LOCK_STALE_REMOVED").length, 1);
+    assert.deepStrictEqual(
+      ofType(events, "TASK_INTERRUPTED").map((e) => [e.task, e.data.cause]),
+      [
+        ["t-0001", "recovery"],
+        ["t-0002", "recovery"],
+      ],
+    );
+    assert.deepStrictEqual(
+      ofType(events, "PROJECT_RESUMED").map((e) => e.data.after),
+      ["recovery"],
+    );
+    const recovered = ofType(events, "PROJECT_RECOVERED")[0];
+    for (const task of ["t-0001", "t-0002"]) {
+      const again = events.find(
+        (e) =>
+          e.type === "TASK_STARTED" && e.task === task && e.seq > recovered.seq,
+      );
+      assert.ok(again, task);
+      assert.equal(
+        ofType(events, "TASK_DONE").filter((e) => e.task === task).length,
+        1,
+      );
+    }
+    const state = readProject(p.id, { home: p.sb.home }).state;
+    assert.deepStrictEqual(
+      state.tasks.map((x) => x.attempts),
+      [2, 2],
+    );
+    assertStatusChanges(events);
+  },
+);
+
+test(
+  "EN-66 SIGKILL in the middle of a line: the torn line is dropped; the state of the engine equals the replay of the journal, its facts equal scanFacts",
+  { timeout: 120_000 },
+  async (t) => {
+    const p = engineProject(t, [planRun([item("a"), item("b")]), ...FAST]);
+    const faults = [
+      { fn: "writeSync", paths: [p.events], nth: 8, effect: "partial-kill" },
+    ];
+    const env = {
+      ...p.env,
+      NODE_OPTIONS: `--import ${FAULT_URL}`,
+      SAI_TEST_FAULTS: JSON.stringify(faults),
+    };
+    assertSafeEnv(env);
+    const crashed = await withLimit(spawnTeam(["start", p.id], env).done);
+    assert.equal(crashed.signal, "SIGKILL", crashed.stderr);
+    const torn = fs.readFileSync(p.events, "utf8");
+    assert.equal(torn.endsWith("\n"), false, "a line was torn");
+    assertSafeEnv(p.env);
+    const engine = createEngine(p.id, {
+      home: p.sb.home,
+      env: p.env,
+      mode: "resume",
+    });
+    const result = await withLimit(engine.run());
+    assert.equal(result.status, "done");
+    const events = journal(p);
+    assert.equal(ofType(events, "JOURNAL_RECOVERED").length, 1);
+    assert.deepStrictEqual(replay(events), engine.state());
+    assert.deepStrictEqual(scanFacts(events), engine.facts());
+  },
+);
+
+// (r5.5, F1) the senders of say to an engine that is opening: none may get E_DISK
+// (its temporary file removed by the clean-up); each ends with code 0 and exactly
+// one event of its text, or with a refusal the user understands.
+const SENDER_REFUSALS =
+  /^E_(PROJECT_BUSY|CHANNEL_DROPPED|CHANNEL_TIMEOUT|CHANNEL_UNCONFIRMED|ENGINE_STOPPING|CHANNEL): /;
+
+for (const mode of ["start", "resume"]) {
+  test(
+    `EN-67 (race) four ${mode} at once: one engine, the others refused, one ${mode === "start" ? "PROJECT_STARTED" : "PROJECT_RESUMED"}; senders of say to the opening engine never get E_DISK`,
+    { timeout: 120_000 },
+    async (t) => {
+      const p = engineProject(t, [planRun([item("a")]), SLOW_WORK]);
+      if (mode === "resume") {
+        const w = openWriter(p.id, { home: p.sb.home });
+        w.append(usr("PROJECT_STARTED", { parallel: 1 }));
+        w.append(usr("PROJECT_PAUSED"));
+        w.close();
+      }
+      const runs = [1, 2, 3, 4].map(() => spawnTeam([mode, p.id], p.env));
+      t.after(() => {
+        for (const r of runs) r.child.kill("SIGKILL");
+      });
+      const lockFile = path.join(p.dir, "writer.lock");
+      const senders = [0, 1].map((i) =>
+        spawnTeam(["say", p.id, `Отправитель ${i}`], p.env),
+      );
+      // the next senders start the moment a lock appears: the engine is opening
+      await waitUntil(() => fs.existsSync(lockFile), 20_000, 2);
+      senders.push(
+        ...[2, 3].map((i) =>
+          spawnTeam(["say", p.id, `Отправитель ${i}`], p.env),
+        ),
+      );
+      await engineReady(p);
+      const lock = JSON.parse(fs.readFileSync(lockFile, "utf8"));
+      const winner = runs.find((r) => r.child.pid === lock.pid);
+      assert.ok(winner, "the engine is one of the four");
+      const losers = runs.filter((r) => r !== winner);
+      const results = await withLimit(
+        Promise.all(losers.map((r) => r.done)),
+        60_000,
+      );
+      for (const r of results) {
+        assert.equal(r.status, 1, r.stderr);
+        assert.match(
+          r.stderr,
+          /^E_(ENGINE_RUNNING|ALREADY_RUNNING|PROJECT_BUSY): /,
+        );
+      }
+      const said = await withLimit(
+        Promise.all(senders.map((r) => r.done)),
+        60_000,
+      );
+      assert.equal(winner.child.exitCode, null, "the engine still runs");
+      winner.child.kill("SIGTERM");
+      await withLimit(winner.done);
+      const events = journal(p);
+      said.forEach((r, i) => {
+        assert.equal(/E_DISK|ENOENT/.test(r.stderr), false, r.stderr);
+        const n = events.filter(
+          (e) => e.type === "CHAT" && e.data.text === `Отправитель ${i}`,
+        ).length;
+        if (r.status === 0) assert.equal(n, 1, `sender ${i}`);
+        else {
+          assert.equal(r.status, 1, r.stderr);
+          assert.match(r.stderr, SENDER_REFUSALS);
+          assert.equal(n, 0, `sender ${i}: ${r.stderr}`);
+        }
+      });
+      const type = mode === "start" ? "PROJECT_STARTED" : "PROJECT_RESUMED";
+      assert.equal(ofType(journal(p), type).length, 1);
+    },
+  );
+}
+
+test(
+  "EN-68 a broken writer of the engine (EIO): exit 1, the lock stays; the next resume recovers and cleans inbox/",
+  { timeout: 120_000 },
+  async (t) => {
+    const p = engineProject(t, [planRun([item("a")]), ...FAST]);
+    const faults = [
+      {
+        fn: "writeSync",
+        paths: [p.events],
+        nth: 8,
+        effect: "throw",
+        code: "EIO",
+      },
+    ];
+    const env = {
+      ...p.env,
+      NODE_OPTIONS: `--import ${FAULT_URL}`,
+      SAI_TEST_FAULTS: JSON.stringify(faults),
+    };
+    assertSafeEnv(env);
+    const run = spawnTeam(["start", p.id], env);
+    const r = await withLimit(run.done);
+    assert.equal(r.status, 1, r.stderr);
+    assert.match(r.stderr, /^E_DISK: /);
+    const lock = JSON.parse(
+      fs.readFileSync(path.join(p.dir, "writer.lock"), "utf8"),
+    );
+    assert.equal(
+      lock.pid,
+      run.child.pid,
+      "the lock of the broken engine stays",
+    );
+    const nonce = messageFile(p, 50, "Лежит после сбоя");
+    rewriteScenario(p, FAST);
+    const again = runCli(["resume", p.id], p.env);
+    assert.equal(again.status, 0, again.stderr);
+    const events = journal(p);
+    assert.equal(ofType(events, "LOCK_STALE_REMOVED").length, 1);
+    assert.ok(events.some((e) => e.data.dropped?.includes(nonce)));
+    assert.equal(
+      events.some((e) => e.data.text === "Лежит после сбоя"),
+      false,
+    );
+    assert.equal(events.at(-1).type, "PROJECT_DONE");
+  },
+);

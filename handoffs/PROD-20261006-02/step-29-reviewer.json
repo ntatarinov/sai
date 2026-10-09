@@ -1,0 +1,161 @@
+{
+  "handoff_id": "step29-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "29",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-29-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-29-reviewer.json — только status, completed_at, result",
+      "handoffs/PROD-20261006-02/step-29-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "SECURITY-REVIEWER (дельта шага 28)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-25-reviewer.json",
+      "handoffs/PROD-20261006-02/step-26-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-28-backend-dev.json",
+      "docs/design/REQ-013-team-engine.md",
+      "tools/src/team/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повторное ревью (AP-049) после правок step-26 и step-28 (handoffs/PROD-20261006-02/step-26-backend-dev.json, step-28-backend-dev.json) по вашему FAIL step-25-reviewer.json. Проект — docs/design/REQ-013-team-engine.md r5.2 (внесены выборы BACKEND-DEV, п. 28, правки по вашему DESIGN_UPDATE). ORCH сам не прогонял check после step-28 — прогоните сами: cd tools && npm run check (ожидаемо 926 из 926). Проверьте сами: F-1 High, F-2, F-3 Medium закрыты (повторите свою пробу probe-pause для раундов 0 и 1; общий receive(); EN-76 без комментариев); Low F-4…F-12 — что исправлено, что оставлено в issues (F-7, F-8 исправлены в step-28; F-9 README); код соответствует проекту r5.2 (расхождения по списку); новая работа (step-26/28) не добавила лишнего, мёртвого кода, скрытых блокировок/утечек; прежние тесты ядра/исполнителей не ослаблены (git diff против последнего коммита sai: TM/EX, в т.ч. изменённый тест cancel в team-engine-units.test.js и вызовы checkDecision с facts); безопасность дала PASS (step-27) и Low — отправитель выбирает номер без предела NUMBER_JUMP_MAX (в проекте этого правила нет; ORCH заведёт дефект, не блокирует если вы согласны). Ничего не правьте. Результат: result.verdict PASS/FAIL; findings — место, важность, исправление; summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "F-1…F-3 прежнего ревью закрыты — с повтором проб",
+      "код соответствует проекту r5.2"
+    ]
+  },
+  "created_at": "2026-10-06T13:17:31Z",
+  "started_at": "2026-10-06T13:17:31Z",
+  "completed_at": "2026-10-06T13:22:23Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": {
+      "overall": "FAIL: F-1 (High), F-2 и F-3 (Medium) прежнего ревью закрыты, и это проверено повтором проб. Но в новом общем receive() нашлась одна новая находка Medium (R-1, воспроизведена): команда stop, пришедшая во время остановки по сигналу, пока действия ещё идут, сразу пишет PROJECT_STOPPED, раньше RUN_FINISHED и TASK_INTERRUPTED, и причина у них cancel, а не stop. Всё остальное — Low. Ожидаемый вердикт в задании не назван.",
+      "F-1": "ЗАКРЫТ. goalRun больше не вызывает planRun (engine.js:779-784, комментарий там же). execute при pause отменяет каждое действие вида plan (engine.js:994-999). Повтор моей пробы probe-pause для раундов 0 и 1: RUN_FINISHED cancelled пришёл через 27 и 28 мс после PROJECT_PAUSED (раньше в раунде 1 за 3024 мс не закрывался). Тесты EN-50 для раундов 0 и 1 есть в team-engine-control.test.js. Две реализации одного перехода больше нет: план раунда дозадач ставит только nextActions.",
+      "F-2": "ЗАКРЫТ. Один обработчик receive(message, ids, draining) (engine.js:932-955). handleTaken только добавляет ack (958-976), command — Promise поверх receive (1006-1020). До открытия — E_INTERNAL. Тесты EN-21, EN-36…38, EN-42, EN-50, EN-51 идут через тот же путь, что канал. Соответствует п. 4.1 r5.2. Новая находка R-1 — в ветке receive для остановки по сигналу.",
+      "F-3": "ЗАКРЫТ. EN-76 (team-engine-docs.test.js:64-152) вырезает комментарии и не освобождает файл за импорт. Помощник засчитывается, только если assertSafeEnv( стоит в его коде раньше запуска. Мутанты на копии в рабочей папке: файл с createEngine и assertSafeEnv только в комментарии — EN-76 падает (unguarded team-zz-mutant.test.js: createEngine); startEngine без assertSafeEnv — падает («team-engine-helpers.js: startEngine»). Остаточная слабость — Low R-6.",
+      "low_prev": "F-4 закрыт: rmSync нет, вместо него renameSync в .bad-* (п. 13.7 r5.2). F-5 закрыт (п. 13.5 шаг 2; тест есть, SECURITY-REVIEWER подтвердил пробой D1). F-6 закрыт: NUMBER_MAX и NUMBER_JUMP_MAX, п. 13.7. F-7 закрыт: E_NOT_STARTED (errors.js:156, commands.js:157-158, п. 15.3/17). F-8 закрыт: checkDecision с facts.budgetFailed (answers.js:136-165), тот же признак в openQuestions (answers.js:88-93), п. 9.2. Вызовы applyCommand сверены во всех местах: deliver, engine:246, engine:854, execute. F-9 закрыт (README образцов + тест F-9). F-10 закрыт (signal.reason в runner.js:161 и single-run.js:227), F-11 и F-12 закрыты. Мутант EN-60 записан эквивалентным (п. 22).",
+      "old_tests": "git diff HEAD по tools/test: удалённые строки — только прежние TM-04 и EX-51 (заменены строгими пятью местами, как принято в step-25) и таблица README образцов, переписанная с теми же строками и тремя новыми. team-engine-units.test.js не отслеживается git (новый файл этого прогона), поэтому сравнивать его с коммитом нельзя. Тест отмены в нём (abort(\"stop\"), строка 720) проверяет то же, что раньше; checkDecision получает facts0 = scanFacts(журнала), строки 484-519, и таблица ожиданий не менялась. Признаков эрозии в 48 изменённых и новых файлах нет.",
+      "new_work": "Лишней работы нет. Изменения шагов 26 и 28 укладываются в перечень п. 28 r5.2. Утечек нет: таймеры и обработчики снимаются, как в step-25. Скрытых блокировок не нашёл. Мелочи — R-2…R-7.",
+      "security_low": "Low SECURITY-REVIEWER step-27 F-1 (отправитель считает номер без предела NUMBER_JUMP_MAX) — согласен: Low, не блокирует. В п. 13.6 r5.2 этого правила нет, поэтому код правильно не придумывал его. Дефект и правка проекта — через ORCH (R-7).",
+      "watch_next": "R-1: правка receive и строка в п. 12.4/13.5 проекта, затем тест. Low R-2…R-7 — CODE-DESIGNER или дефекты."
+    },
+    "findings": [
+      {
+        "id": "R-1",
+        "place": "tools/src/team/engine/engine.js:938-955 (receive: ветка draining || stop !== null при stop.reason === \"signal\")",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "Что не так. После SIGINT/SIGTERM (requestStop(\"signal\")) действия ещё останавливаются, а команда stop из канала или command в этот момент уже исполняется: execute → applyCommand(stop) сразу пишет PROJECT_STOPPED. Запуски закрываются после него, и TASK_INTERRUPTED получает cause cancel, а не stop. Это нарушает порядок п. 12.3 («сначала прервать, потом остановить»): ядро после PROJECT_STOPPED не принимает TASK_FAILED, RESULT_FILE и AGENT_ACTIVITY (И2). Значит, если запуск отдаст итог или поток в этом окне, запись откажет. Кроме того, журнал говорит неправду о причине прерывания. Как воспроизведено: проба r2/probe-signal-stop.test.mjs (поддельный claude с hang, без настоящего claude). Журнал: 9 USER PROJECT_STOPPED, 10 ENGINE RUN_FINISHED cancelled, 12 ENGINE TASK_INTERRUPTED {cause:cancel}. Для сравнения, обычный stop (EN-51) идёт в порядке «прервать → PROJECT_STOPPED». Пауза и say в том же окне безвредны (PROJECT_PAUSED или CHAT, затем запуски закрываются, повторного PROJECT_PAUSED нет). Пробел и в проекте: п. 13.5 шаг 6 запрещает исполнение «во время остановки» только после взятия stop, а п. 12.4 и 13.8 описывают лишь разбор после ожидания действий.",
+        "fix": "В receive, пока идёт остановка по сигналу и draining ещё не начался (действия в работе), отклонять stop — E_ENGINE_STOPPING, как в п. 13.5 шаг 6. Сейчас самое простое и прямо по п. 13.5 — отклонять все команды до разбора по п. 13.8. Другой вариант — перевести остановку в reason stop: abort(\"stop\") и PROJECT_STOPPED после закрытия действий. CODE-DESIGNER дописывает строку в п. 12.4/13.5. Тест: сигнал, затем stop при запуске в работе → нет PROJECT_STOPPED раньше RUN_FINISHED, вывод по выбранному правилу."
+      },
+      {
+        "id": "R-2",
+        "place": "docs/design/REQ-013-team-engine.md:66, 101, 285, 592, 603",
+        "severity": "Low",
+        "blocking": false,
+        "what": "В проекте остались упоминания опции cancelCause: п. 0 F7, п. 1.2, п. 4.4, п. 12.3 («abort … с cancelCause:\"stop\"»), п. 12.4. Это расходится с п. 2.2 r5.2 («Опции cancelCause нет», причина — signal.reason) и с кодом.",
+        "fix": "CODE-DESIGNER: заменить на abort(\"stop\")/abort(\"cancel\") и signal.reason."
+      },
+      {
+        "id": "R-3",
+        "place": "tools/src/team/engine/commands.js:196-199 (комментарий applyCommand)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Комментарий называет facts только «for resume», а после F-8 facts обязательны и для answer (commands.js:275-281).",
+        "fix": "Дописать answer в комментарий."
+      },
+      {
+        "id": "R-4",
+        "place": "tools/src/team/engine/channel.js:536-539 (deliver)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Без движка каждая команда (say, pause, stop, budget тоже) второй раз читает и разбирает весь журнал: scanFacts(readProject(...)) сразу после openWriter, который его уже прочёл. Facts нужны только resume и answer. Это верно (журнал читается под замком), но лишнее чтение растёт с длиной журнала.",
+        "fix": "Считать facts только для answer и resume (или брать события, которые прочёл писатель, если store это даёт). Без изменения поведения."
+      },
+      {
+        "id": "R-5",
+        "place": "tools/src/team/runner.js:39, tools/src/team/engine/single-run.js:14",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Список CANCEL_CAUSES и правило «иное значение → cancel» повторены в двух файлах. Это один механизм, и при изменении две копии разойдутся.",
+        "fix": "Одна константа или функция cancelCauseOf(signal) в runner.js, single-run.js её импортирует."
+      },
+      {
+        "id": "R-6",
+        "place": "tools/test/team-engine-docs.test.js:142-146 (EN-76)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Запуск находится только по литералу [\"start\"|\"resume\"|\"run-task\" в первом аргументе. runTeam(argv, env) с переменной argv проверку не проходит. Кроме того, один вызов assertSafeEnv( где угодно в файле освобождает все запуски этого файла (так в п. 21 r5.2). Сейчас обхода нет: все файлы, которые запускают с переменной, вызывают assertSafeEnv сами или через помощник.",
+        "fix": "По желанию: считать запуском любой вызов runTeam/spawnTeam/spawn* в team-*.test.js, а не только с литералом."
+      },
+      {
+        "id": "R-7",
+        "place": "tools/src/team/engine/channel.js (publishMessage, расчёт n) — Low step-27 F-1",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Согласен с SECURITY-REVIEWER: отправитель считает номер без предела NUMBER_JUMP_MAX, и подложенный далёкий номер разово отклоняет настоящую команду E_CHANNEL_BAD. В п. 13.6 r5.2 правила нет, код ему соответствует.",
+        "fix": "ORCH заводит дефект. CODE-DESIGNER вносит общее правило номера в п. 13.6 (одна функция с движком). Тест: подложенный далёкий номер + настоящий отправитель → ok."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && TMPDIR=<рабочая папка ORCH>/rev-req013/r2/tmp npm run check",
+        "output": "exit 0; prettier и eslint без замечаний; # tests 926, # pass 926, # fail 0, # cancelled 0, # skipped 0, # todo 0 (лог: <рабочая папка ORCH>/rev-req013/r2/check.log)"
+      },
+      {
+        "command": "node --test <рабочая папка ORCH>/rev-req013/r2/probe-pause.test.mjs (повтор пробы step-25, scripted)",
+        "output": "round 0: plan run closed within 3 s after pause: true (27 ms), 5 PROJECT_PAUSED, 6 RUN_FINISHED cancelled; round 1: true (28 ms), 25 PROJECT_PAUSED, 26 RUN_FINISHED r-00005 cancelled; # pass 2"
+      },
+      {
+        "command": "node --test <рабочая папка ORCH>/rev-req013/r2/probe-signal-stop.test.mjs (поддельный claude, assertSafeEnv, настоящий claude не запускался)",
+        "output": "signal then stop -> ok PROJECT_STOPPED seq 9; 10 RUN_FINISHED cancelled; 12 TASK_INTERRUPTED {cause:cancel} (находка R-1); signal then say -> CHAT, затем PROJECT_PAUSED 13; signal then pause -> PROJECT_PAUSED 9, повторного нет"
+      },
+      {
+        "command": "мутанты EN-76 на копии <рабочая папка ORCH>/rev-req013/r2/copy/tools (файл с createEngine и assertSafeEnv только в комментарии; startEngine без assertSafeEnv)",
+        "output": "оба: # pass 0 # fail 1 (unguarded 'team-zz-mutant.test.js: createEngine'; 'team-engine-helpers.js: startEngine')"
+      },
+      {
+        "command": "(git diff --name-only HEAD -- tools; git ls-files --others --exclude-standard tools) | xargs grep -nE '\\.skip\\(|\\.todo\\(|TODO|FIXME|eslint-disable|\\|\\| true|\\.only\\(|\\{ ?skip|\\{ ?todo'",
+        "output": "пусто, exit 1 (48 файлов); git diff HEAD -- tools/package.json tools/eslint.config.js пусто"
+      },
+      {
+        "command": "git diff HEAD -- tools/test/ | grep '^-[^-]'",
+        "output": "только прежние заголовки и проверки TM-04/EX-51 (четыре места → пять) и строки таблицы README образцов (переписаны с теми же строками)"
+      },
+      {
+        "command": "shasum tools/src tools/test tools/README.md tools/package.json до и после",
+        "output": "166 файлов, diff пуст (<рабочая папка ORCH>/rev-req013/r2/hash-before.txt, hash-after.txt)"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "DESIGN_UPDATE",
+        "text": "CODE-DESIGNER: (1) п. 12.4/13.5 — что делает команда (особенно stop), пришедшая во время остановки по сигналу до разбора по п. 13.8 (R-1); (2) убрать cancelCause из п. 0 F7, 1.2, 4.4, 12.3, 12.4 (R-2); (3) п. 13.6 — предел номера у отправителя (R-7)."
+      },
+      {
+        "kind": "DEFECT",
+        "text": "ORCH: дефект по Low step-27 F-1 = R-7 (номер отправителя без NUMBER_JUMP_MAX). Не блокирует, с этим согласен."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Задание просит git diff team-engine-units.test.js против последнего коммита, но этот файл не отслеживается git (новый в прогоне). Тест отмены и вызовы checkDecision проверены чтением (строки 484-519, 720). Выбор (г) step-22 (повторы SINGLE_RUNS_MAX без паузы) по-прежнему открытый вопрос п. 28. Решение за ORCH или владельцем, не блокирует."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

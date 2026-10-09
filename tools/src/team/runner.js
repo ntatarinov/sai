@@ -33,7 +33,17 @@ export { ceil6, floor6, round6 };
 const MONEY_EPSILON = 1e-6;
 const ATTEMPTS_MAX = 1 + RETRIES_MAX;
 const MEMORY_CONTEXT_MAX = 50;
-const STARTABLE = ["waiting", "interrupted", "failed"];
+// The statuses run-task starts a task from; the engine of REQ-013 passes its own
+// (opts.startFrom, design REQ-013, section 2.2, C5).
+const STARTABLE = Object.freeze(["waiting", "interrupted", "failed"]);
+const CANCEL_CAUSES = Object.freeze(["cancel", "stop"]);
+
+// The cause of an interrupted run from the reason of the abort of its signal:
+// "stop" or "cancel"; any other reason is "cancel" (section 2.2, C5). The one
+// place of this rule (runTask, runSingle).
+export function cancelCauseOf(signal) {
+  return CANCEL_CAUSES.includes(signal?.reason) ? signal.reason : "cancel";
+}
 const PROJECT_RUNNABLE = ["created", "running", "waiting_user"];
 const REFUSED_DETAIL = "Потолок расходов исчерпан";
 const NOFOLLOW = fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW;
@@ -102,8 +112,8 @@ function taskView(state, taskId) {
 }
 
 // The files of the tasks this one depends on (masked already: files/ holds only
-// masked text).
-function depsOf(writer, task) {
+// masked text). Only the tasks of task.depends_on (design REQ-013, section 7.1).
+export function depsOf(writer, task) {
   const filesDir = path.join(path.dirname(writer.workDir), FILES_DIR);
   const deps = [];
   for (const depId of task.depends_on) {
@@ -125,7 +135,7 @@ function depsOf(writer, task) {
   return deps;
 }
 
-function defaultContext(writer, task) {
+export function defaultContext(writer, task) {
   const state = writer.state;
   return {
     goal: state.goal,
@@ -139,10 +149,29 @@ function defaultContext(writer, task) {
 
 // RunTaskResult = { status, task, last_outcome, attempts, spent_usd, budget_usd,
 //                   run, error }.
+// The options of the engine of REQ-013 (section 2.2, C5; run-task passes none):
+// startFrom — the statuses a task is started from; budgetFor(state) — the ceiling
+// of the next run, asked at every point the ceiling is taken (by default
+// maxBudgetFor). The cause of TASK_INTERRUPTED on a cancel is the reason of the
+// abort of opts.signal ("stop" or "cancel"; any other reason is "cancel").
 export async function runTask(writer, taskId, opts = {}) {
   const config = opts.config;
   const signal = opts.signal ?? new AbortController().signal;
   const sleep = typeof opts.sleep === "function" ? opts.sleep : abortablePause;
+  const startFrom = opts.startFrom ?? STARTABLE;
+  const budgetFor =
+    typeof opts.budgetFor === "function"
+      ? opts.budgetFor
+      : (state) => maxBudgetFor(state, config);
+  // The cause of TASK_INTERRUPTED is the reason of the abort of the signal: the
+  // engine aborts a stop with "stop" (section 12.3); any other abort is "cancel".
+  const cancelCause = () => cancelCauseOf(signal);
+  if (!Array.isArray(startFrom)) {
+    throw new TeamError(
+      "E_INTERNAL",
+      "Внутренняя ошибка ядра Sai Team (runner options)",
+    );
+  }
 
   // Steps 1-2: the task and the project.
   const start = writer.state;
@@ -150,7 +179,7 @@ export async function runTask(writer, taskId, opts = {}) {
   if (task === undefined) {
     throw new TeamError("E_TASK_NOT_FOUND", "Задача не найдена в этом проекте");
   }
-  if (!STARTABLE.includes(task.status)) {
+  if (!startFrom.includes(task.status)) {
     throw executorError("E_TASK_STATE", TASK_STATUS_TEXT[task.status]);
   }
   for (const depId of task.depends_on) {
@@ -181,7 +210,7 @@ export async function runTask(writer, taskId, opts = {}) {
     attempt: 1,
     context,
     limits: {
-      max_budget_usd: maxBudgetFor(start, config),
+      max_budget_usd: budgetFor(start),
       timeout_ms: config.taskTimeoutMs,
       work_dir: writer.workDir,
     },
@@ -273,7 +302,7 @@ export async function runTask(writer, taskId, opts = {}) {
 
   async function attempts() {
     for (let n = 1; n <= ATTEMPTS_MAX; n += 1) {
-      const maxBudget = maxBudgetFor(writer.state, config);
+      const maxBudget = budgetFor(writer.state);
       request.attempt = n;
       request.project.spent_usd = writer.state.spent_usd;
       request.limits.max_budget_usd = maxBudget;
@@ -327,7 +356,14 @@ export async function runTask(writer, taskId, opts = {}) {
 
       if (result.outcome === "ok") {
         accepting = true;
-        const accepted = await acceptResult(result, n);
+        // The name of a file carries the number of the attempt of the task (its
+        // RUN_STARTED work, И16): unique across the calls of the engine, which
+        // starts one task several times (design REQ-013, sections 8.2, 9.3); for
+        // a fresh task of run-task it is the attempt of this call, as before.
+        const accepted = await acceptResult(
+          result,
+          writer.state.tasks.find((t) => t.id === taskId).attempts,
+        );
         accepting = false;
         if (accepted.error !== null) {
           finishRun(thisRunId, "failed", null, cost, accepted.names);
@@ -393,7 +429,7 @@ export async function runTask(writer, taskId, opts = {}) {
           project: { ...request.project, spent_usd: writer.state.spent_usd },
           limits: {
             ...request.limits,
-            max_budget_usd: maxBudgetFor(writer.state, config),
+            max_budget_usd: budgetFor(writer.state),
           },
         };
         let budgetLeft = true;
@@ -535,7 +571,9 @@ export async function runTask(writer, taskId, opts = {}) {
       source: "ENGINE",
       type: "TASK_INTERRUPTED",
       task: taskId,
-      data: { cause: "cancel" },
+      data: {
+        cause: cancelCause(),
+      },
     });
   }
 

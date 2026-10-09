@@ -1,6 +1,12 @@
 // Tests of the parser of `stream-json` and of what a run makes of a stream (design
 // REQ-010, section 15.1: EX-18...EX-21; criterion 6). Only the fake executable is
 // started, with the recorded samples of tools/test/fixtures/team/.
+import { PLAN_ANSWER_SCHEMA } from "../src/team/engine/plan.js";
+import {
+  GOAL_ANSWER_SCHEMA,
+  REASSIGN_ANSWER_SCHEMA,
+  REVIEW_ANSWER_SCHEMA,
+} from "../src/team/engine/review.js";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -341,6 +347,7 @@ const F6 = new Set([
   "parent_tool_use_id",
   "result",
 ]);
+// (REQ-013) plus the fields of the answers of the engine, taken from their schemas.
 const ANSWER_FIELDS = new Set([
   "summary",
   "files",
@@ -348,7 +355,19 @@ const ANSWER_FIELDS = new Set([
   "kind",
   "memory",
   "text",
+  ...schemaFields(PLAN_ANSWER_SCHEMA),
+  ...schemaFields(REVIEW_ANSWER_SCHEMA),
+  ...schemaFields(GOAL_ANSWER_SCHEMA),
+  ...schemaFields(REASSIGN_ANSWER_SCHEMA),
 ]);
+
+function schemaFields(schema) {
+  const out = [];
+  for (const [key, sub] of Object.entries(schema.properties ?? {})) {
+    out.push(key, ...schemaFields(sub.items ?? sub));
+  }
+  return out;
+}
 
 function collectKeys(value, inAnswer, out, file) {
   if (Array.isArray(value)) {

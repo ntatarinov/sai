@@ -1,0 +1,94 @@
+{
+  "handoff_id": "step38-reviewer-PROD-20261006-02",
+  "run_id": "PROD-20261006-02",
+  "workflow_id": "WF-02",
+  "step": "38",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261006-02/step-38-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261006-02/step-38-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "SECURITY-REVIEWER (шаг 37), TEST-DESIGNER (шаг 39, только tests)",
+    "artifacts_in": [
+      "handoffs/PROD-20261006-02/step-36-backend-dev.json",
+      "handoffs/PROD-20261006-02/step-32-reviewer.json",
+      "docs/design/REQ-013-team-engine.md",
+      "tools/src/team/engine/channel.js"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, ревью дельты после правки F1 (AP-049; ваш прежний PASS — step-32-reviewer.json): handoffs/PROD-20261006-02/step-36-backend-dev.json; проект docs/design/REQ-013-team-engine.md r5.5 (п. 13.4 шаг 2.6, п. 13.6 шаги 5 и 8). Прогоните сами cd tools && npm run check (ожидаемо 938 из 938). Проверьте: код channel.js соответствует проекту r5.5 в обеих частях (уборка .tmp- по pid; повтор отправителя при ENOENT в PUBLISH_TRIES_MAX); нет лишнего; тесты EN-57 (9м), EN-67 содержательные и детерминированные; прежние тесты не ослаблены; других изменений в src/ нет (сверьте по хешам/времени, файлы вне channel.js не менялись). Ничего не правьте. Новые мелкие замечания, не меняющие исход, — Low. Результат: result.verdict PASS/FAIL; findings; summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "код соответствует проекту r5.5",
+      "изменён только channel.js"
+    ]
+  },
+  "created_at": "2026-10-06T16:44:28Z",
+  "started_at": "2026-10-06T16:44:28Z",
+  "completed_at": "2026-10-06T16:47:46Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "Q1 причина": "Верно: гонка убрана у причины. Уборка (channel.js removableLeftover, строки 66-80, вызов 810) удаляет .tmp- только если имя не по шаблону отправителя или pid мёртв (isAlive ядра); .cancel- удаляются; живой pid не трогается. Отправитель (publishMessage, 386-425): ENOENT от linkSync при исчезнувшем своём .tmp (lstat null) - новый .tmp, продолжение цикла в пределах PUBLISH_TRIES_MAX, при исчерпании прежний E_CHANNEL_FULL; иной ENOENT и прочее - E_DISK; unlinkQuietly в finally. Ничего не проглочено.",
+      "Q2 проект r5.5": "Совпадает с п. 13.4 шаг 2.6 и п. 13.6 шаг 5 построчно, включая шаблон ^\\.tmp-[0-9]+-[0-9a-f]{16}$ и пропуск ENOENT при unlink .cancel (п. 13.6 шаг 8, не менялся). Новой записи decisions/ не требуется.",
+      "Q3 лишнее": "Нет: в src изменён только tools/src/team/engine/channel.js (find tools/src -newer step-36 - один файл; других файлов src со времени step-35 не менялось). LEFTOVER (738) оставлен для шага приёма - уместно.",
+      "Q4 планка": "grep skip/todo/eslint-disable/|| true/.only по channel.js, team-channel.test.js, team-recovery.test.js - пусто. Прежние тесты не ослаблены (правки только добавляющие; EN-67 расширен отправителями say, ожидания строже: нет E_DISK/ENOENT, код 0 <=> ровно одно событие).",
+      "Q5 тесты": "EN-57 (9м) два теста детерминированы (обёртка fs.linkSync через t.mock.method, без sleep): (а) уборка внутри linkSync отправителя, один .tmp, одно событие; (б) .tmp удалён перед linkSync - второй .tmp, ack ok, плюс уборка dead pid/не по шаблону удаляет, live оставляет. EN-67 (start/resume) ожидания по замку и журналу. Сам запускал: 9м pass 2/fail 0; EN-67 pass 2/fail 0.",
+      "Что стоит проверить TEST-DESIGNER": "Прогон npm run check у меня НЕ дал ожидаемых 938/938: 939 тестов (параллельно TEST-DESIGNER добавил team-engine-gaps.test.js и правил team-channel.test.js/team-engine-budget.test.js). Прогон 1: 1 fail - EN-57 (9ж, F3) 'Missing expected exception' (team-channel.test.js:722, тест F3 TEST-DESIGNER, ожидаемо красный до правки/в работе). Прогон 2: 1 fail - EN-40 (M25) 'no result within 20000 ms (hang)' (team-engine-budget.test.js:295); отдельно тот же тест pass 1/fail 0 - похоже на нагрузку от параллельной работы, не на channel.js. Оба вне дельты F1; TEST-RUNNER должен прогнать на устоявшемся дереве."
+    },
+    "findings": [
+      {
+        "place": "tools/test/team-engine-budget.test.js:295 (EN-40 M25)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Тест с жёстким пределом 20 с висит под нагрузкой полной проверки при параллельных работах (в одном из двух моих прогонов); соло зелёный. Файл не из дельты F1.",
+        "fix": "Следить в прогоне TEST-RUNNER; если повторится на тихой машине - дефект с запасом предела."
+      },
+      {
+        "place": "tools/test/team-channel.test.js:702-722 (EN-57 9ж, F3)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Красный тест F3 от параллельной работы TEST-DESIGNER (шаг 39) делает npm run check красным в момент моего ревью; не часть F1.",
+        "fix": "Не требуется от дельты F1; закрывается правкой по F3 по перечню step-35."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "find tools (без node_modules) | shasum до/после; find tools -newer step-35",
+        "output": "171 файл (r4/hash-before.txt). Новее step-35: team-recovery.test.js, team-channel.test.js, team-engine-budget.test.js, channel.js; src - только channel.js. Копии до нет, сверка с проектом r5.5 построчно."
+      },
+      {
+        "command": "cd tools && npm run check (дважды)",
+        "output": "# tests 939, pass 938, fail 1 (прогон 1: EN-57 9ж F3; прогон 2: EN-40 M25 hang под нагрузкой); prettier/eslint чисто"
+      },
+      {
+        "command": "node --test --test-name-pattern 9м test/team-channel.test.js; EN-67 test/team-recovery.test.js; EN-40 (M25) соло",
+        "output": "pass 2 fail 0; pass 2 fail 0; pass 1 fail 0"
+      },
+      {
+        "command": "grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true|\\.only\\(' channel.js team-channel.test.js team-recovery.test.js",
+        "output": "пусто"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Задание ожидало 938 из 938; измерено 939 с 1 красным (чужие работы TEST-DESIGNER, вне F1) - вердикт выведен из своего чтения кода и тестов дельты (AP-018)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

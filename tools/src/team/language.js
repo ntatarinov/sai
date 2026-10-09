@@ -25,6 +25,8 @@ export const FAIL_DETAIL = Object.freeze({
   result_file: "Файл результата не найден в рабочей папке или недопустим",
   result_disk: "Не удалось записать файл результата на диск",
   group: "Не удалось остановить процессы исполнителя",
+  // (r13, C1) written by the engine of REQ-013.
+  dependency_closed: "Задача зависит от отклонённой",
 });
 
 const always = () => true;
@@ -169,6 +171,11 @@ export const PHRASES = Object.freeze([
     dataIs("purpose", "goal_check"),
   ),
   row(
+    "RUN_STARTED",
+    "Руководитель проекта подбирает другого специалиста",
+    dataIs("purpose", "reassign"),
+  ),
+  row(
     "AGENT_ACTIVITY",
     "{name} изучает материалы",
     dataIs("activity", "reading"),
@@ -246,6 +253,11 @@ export const PHRASES = Object.freeze([
     "TASK_FAILED",
     "Задача отклонена вами",
     dataIs("reason", "rejected_by_user"),
+  ),
+  row(
+    "TASK_FAILED",
+    "{name}: задача не нужна — она зависела от отклонённой",
+    dataIs("reason", "dependency_closed"),
   ),
   row(
     "TASK_FAILED",

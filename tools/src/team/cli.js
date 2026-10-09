@@ -3,10 +3,15 @@
 //   npm run team -- projects
 //   npm run team -- project <id>
 //   npm run team -- events <id> [--after N] [--limit M]
-//   npm run team -- say <id> --text "<text>"
+//   npm run team -- say <id> "<text>"   (or: say <id> --text "<text>")
 //   npm run team -- new --goal "<goal>" --budget <usd> [--executor claude-cli|scripted] [--scenario <file>]
 //   npm run team -- add-task <id> --role <code> --text "<text>" --done-when "<criterion>"
 //   npm run team -- run-task <id> <task>
+//   npm run team -- start <id> [--parallel N]      (design REQ-013, section 15)
+//   npm run team -- resume <id> [--parallel N]
+//   npm run team -- pause <id> | stop <id>
+//   npm run team -- budget <id> <usd>
+//   npm run team -- answer <id> <task> approve|change|reject [--text "<text>"]
 //
 // Success: one line of JSON on stdout, exit code 0. A refusal: stdout empty, one line
 // "<CODE>: <message>" on stderr, exit code 1 (2 for E_USAGE, 3 for a bug of the
@@ -18,10 +23,18 @@ import { readConfig } from "./config.js";
 import {
   EXIT,
   TeamError,
+  engineError,
   escapeUnsafe,
   exitCodeFor,
   formatError,
 } from "./errors.js";
+import {
+  COMMANDS as ENGINE_COMMANDS,
+  messageOf,
+  parseCommand,
+} from "./engine/commands.js";
+import { runEngineCommand } from "./engine/engine.js";
+import { deliver, engineHolder } from "./engine/channel.js";
 import { ROLES, roleByCode } from "./roles.js";
 import { runTask } from "./runner.js";
 import {
@@ -45,7 +58,7 @@ const COMMANDS = {
   projects: { positional: 0, options: [] },
   project: { positional: 1, options: [] },
   events: { positional: 1, options: ["--after", "--limit"] },
-  say: { positional: 1, options: ["--text"] },
+  say: { positional: 2, min: 1, options: ["--text"] },
   new: {
     positional: 0,
     options: ["--goal", "--budget", "--executor", "--scenario"],
@@ -55,10 +68,13 @@ const COMMANDS = {
     options: ["--role", "--text", "--done-when"],
   },
   "run-task": { positional: 2, options: [] },
+  ...ENGINE_COMMANDS,
 };
 
 const UNKNOWN_COMMAND =
-  "Неизвестная команда: нужна projects, project, events, say, new, add-task или run-task";
+  "Неизвестная команда: нужна projects, project, events, say, new, add-task, run-task, start, resume, pause, stop, budget или answer";
+const ANSWER_LATER =
+  "Ответ записан; он будет выполнен, когда проект продолжит работу";
 const BUDGET_PATTERN = /^[0-9]+(\.[0-9]{1,6})?$/;
 const SCRIPTED_NOTE = "тестовый исполнитель — только для тестов";
 // The time a cancelled run-task waits for the executor to stop (section 9.3).
@@ -146,10 +162,14 @@ function parseArgs(argv) {
   if (spec.positional >= 1 && positional.length === 0) {
     throw usage("Нужен id проекта");
   }
-  if (spec.positional === 2 && positional.length === 1) {
+  const min = spec.min ?? spec.positional;
+  if (spec.positional === 2 && min === 2 && positional.length === 1) {
     throw usage("Нужен id задачи");
   }
   if (positional.length > spec.positional) throw usage("Лишний аргумент");
+  if (Object.prototype.hasOwnProperty.call(ENGINE_COMMANDS, command)) {
+    return parseCommand(command, positional, options);
+  }
   const args = { command, id: positional[0] };
   if (command === "events") {
     args.after = 0;
@@ -169,8 +189,14 @@ function parseArgs(argv) {
     }
   }
   if (command === "say") {
-    if (options["--text"] === undefined) throw usage("Нужен --text");
-    args.text = options["--text"];
+    const text = options["--text"];
+    if (text !== undefined && positional.length > 1) {
+      throw usage("Текст сообщения указан дважды");
+    }
+    if (text === undefined && positional.length < 2) {
+      throw usage("Нужен --text");
+    }
+    args.text = text ?? positional[1];
   }
   if (command === "new") Object.assign(args, parseNew(options));
   if (command === "add-task") Object.assign(args, parseAddTask(options));
@@ -263,8 +289,25 @@ function newProject(args, env) {
   return { ok: true, project, notices };
 }
 
+// M2 (design REQ-013, section 15.2): add-task and run-task are not for a project
+// that a running engine leads; checked before the opening and again on its
+// refusal "busy" (the engine may have taken the lock in between).
+function openPlainWriter(id, env) {
+  const live = engineHolder(id, { env });
+  if (live !== null) throw engineError("E_ENGINE_RUNNING", { pid: live.pid });
+  try {
+    return openWriter(id, { env });
+  } catch (err) {
+    if (err instanceof TeamError && err.code === "E_PROJECT_BUSY") {
+      const now = engineHolder(id, { env });
+      if (now !== null) throw engineError("E_ENGINE_RUNNING", { pid: now.pid });
+    }
+    throw err;
+  }
+}
+
 function addTask(args, env) {
-  const writer = openWriter(args.id, { env });
+  const writer = openPlainWriter(args.id, env);
   try {
     const before = writer.state;
     const event = writer.addTask(
@@ -295,7 +338,7 @@ function addTask(args, env) {
 // next writer recovers the project).
 async function runTaskCommand(args, env) {
   const config = readConfig(env);
-  const writer = openWriter(args.id, { env });
+  const writer = openPlainWriter(args.id, env);
   const controller = new AbortController();
   let forced = null;
   const onSignal = () => {
@@ -327,6 +370,26 @@ async function runTaskCommand(args, env) {
     if (forced !== null) clearTimeout(forced);
     writer.close();
   }
+}
+
+// The commands of the channel (design REQ-013, sections 13.9, 15.1, 15.2): through
+// the running engine, or written by the command itself when no engine runs.
+async function channelCommand(args, env) {
+  const message = messageOf(args);
+  const r = await deliver(args.id, message, { env });
+  if (r.via === "engine") {
+    return { ok: true, event: r.ack.event, notices: r.ack.notices };
+  }
+  const notices = [...r.notices];
+  if (message.kind === "answer") notices.push(ANSWER_LATER);
+  return { ok: true, event: r.event, notices };
+}
+
+// resume: through the channel when the engine runs, otherwise this process becomes
+// the engine.
+function resumeCommand(args, env) {
+  if (engineHolder(args.id, { env }) !== null) return channelCommand(args, env);
+  return runEngineCommand("resume", args, env);
 }
 
 function warn(io, warnings) {
@@ -363,20 +426,16 @@ function run(args, env, io) {
         warnings: r.warnings,
       };
     }
-    case "say": {
-      const writer = openWriter(args.id, opts);
-      try {
-        const before = writer.state;
-        const event = writer.say(args.text);
-        return {
-          ok: true,
-          event: eventView(event, before),
-          notices: writer.notices,
-        };
-      } finally {
-        writer.close();
-      }
-    }
+    case "start":
+      return runEngineCommand("start", args, env);
+    case "resume":
+      return resumeCommand(args, env);
+    case "say":
+    case "pause":
+    case "stop":
+    case "budget":
+    case "answer":
+      return channelCommand(args, env);
     case "new":
       return newProject(args, env);
     case "add-task":
