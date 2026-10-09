@@ -1,0 +1,86 @@
+{
+  "handoff_id": "step20-test-runner-PROD-20261009-01",
+  "run_id": "PROD-20261009-01",
+  "workflow_id": "WF-02",
+  "step": "20",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-RUNNER",
+  "file": "handoffs/PROD-20261009-01/step-20-test-runner.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-014"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261009-01/step-20-test-runner.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261009-01/step-19-test-design-validator.json",
+      "docs/requirements.yaml (REQ-014)"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 6: запустите проверку REQ-014 целиком и доложите PASS или FAIL с настоящим выводом. Ворота пройдены (безопасность step-16, ревью step-17, слова step-15, тесты step-19). Работа закоммичена локально (a879495). Условия: ничего параллельно не запускайте, проверьте uptime (машина свободна), caffeinate идёт; настоящий claude НЕ запускать. Команды (код выхода берите прямо: команда > лог; echo exit=$?): (1) cd tools && npm run check — ожидаемо 996 из 996; (2) cd tools && npm run traces — код 0, следов 0; (3) чистая установка на копии в <рабочая папка ORCH>/tr-req014/: git clone локального репозитория (путь — корень Sai, git rev-parse --show-toplevel) в пустую папку, HOME — пустая временная папка; там cd tools && npm ci && npm run check — код 0 (996 из 996); (4) гонки traces-check/traces-faults (TC-19 add) — 4 одновременных node --test по файлу, 3 раунда; (5) grep: в tools/src/traces нет node:http/https/net/tls/dgram и fetch(; child_process только в git-files.js; (6) поиск имени пользователя и путей компьютера по изменённым в a879495 файлам — через npm run traces и через git grep по пометке <имя> (должна быть только пометка). Красные тесты разберите: повтор по одному, причина (код / тест / окружение). Ничего не править. Результат: result.verdict PASS/FAIL, result.commands (команда → код выхода → итог), result.failures, summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "код выхода каждой команды взят напрямую",
+      "чистая установка на клоне выполнена"
+    ]
+  },
+  "created_at": "2026-10-09T18:42:22Z",
+  "started_at": "2026-10-09T18:42:22Z",
+  "completed_at": "2026-10-09T18:47:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Вся проверка на коммите a879495 зелёная: 996 тестов из 996, падений, пропусков и todo нет. Следов компьютера нет (0 из 832 файлов). Чистая установка на клоне прошла так же (996 из 996). Гонки traces-check и traces-faults: 24 запуска, все с кодом 0. Файлы проекта не менялись.",
+    "commands": [
+      {
+        "command": "cd tools && npm run check > лог",
+        "exit": 0,
+        "outcome": "format, lint, test пройдены; # tests 996, # pass 996, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 67119.99; около 71 с; блоков not ok: 0"
+      },
+      {
+        "command": "cd tools && npm run traces > лог",
+        "exit": 0,
+        "outcome": "traces: файлов проверено 832, следов 0, пропущено 18 (двоичные)"
+      },
+      {
+        "command": "git clone корня Sai в tr-req014/clone, HOME пустая папка tr-req014/home; cd tools && npm ci && npm run check",
+        "exit": "clone 0; npm ci 0; check 0",
+        "outcome": "клон на a879495; # tests 996, # pass 996, # fail 0, # skipped 0, # todo 0, # duration_ms 67051.73"
+      },
+      {
+        "command": "гонки: 4 одновременных node --test по test/traces-check.test.js и по test/traces-faults.test.js, 3 раунда (24 запуска)",
+        "exit": "все 24 = 0",
+        "outcome": "check-файл: 14 тестов, faults-файл: 29 тестов, в каждом запуске # fail 0"
+      },
+      {
+        "command": "grep -rnE node:(http|https|net|tls|dgram)|fetch( tools/src/traces",
+        "exit": 1,
+        "outcome": "совпадений нет (1 = пусто)"
+      },
+      {
+        "command": "grep -rn child_process tools/src/traces",
+        "exit": 0,
+        "outcome": "только git-files.js (импорт execFileSync и комментарий); в остальных 6 файлах 0"
+      },
+      {
+        "command": "поиск имени пользователя и пути компьютера: grep по файлам a879495 и git grep по всему дереву (имя взято из id -un, в отчёт не пишу)",
+        "exit": "0 и 0 совпадений",
+        "outcome": "имени пользователя совпадений 0 (в изменённых файлах и во всём дереве); пометка <имя> есть (132 строки в дереве); \"/Users/\" встречается только как образец в тексте и примерах (grep-команды, описание правила), реального пути с именем нет; npm run traces следов 0"
+      }
+    ],
+    "failures": [],
+    "findings": [],
+    "self_check": "Node v22.21.1; uptime без другой нагрузки (load около 4); логи в tr-req014/ рабочей папки ORCH; git status после прогона: только этот handoff (неотслеживаемый). Числа взяты из итоговых строк node --test.",
+    "issues": [],
+    "artifacts_out": []
+  }
+}
