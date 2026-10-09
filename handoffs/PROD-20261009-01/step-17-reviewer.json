@@ -1,0 +1,81 @@
+{
+  "handoff_id": "step17-reviewer-PROD-20261009-01",
+  "run_id": "PROD-20261009-01",
+  "workflow_id": "WF-02",
+  "step": "17",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261009-01/step-17-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-014"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261009-01/step-17-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "SECURITY-REVIEWER (шаг 16), REQ-VALIDATOR (шаг 15)",
+    "artifacts_in": [
+      "handoffs/PROD-20261009-01/step-14-backend-dev.json",
+      "handoffs/PROD-20261009-01/step-12-reviewer.json",
+      "docs/design/REQ-014-traces.md",
+      "tools/src/traces/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повторное ревью после правки кода (AP-049): handoffs/PROD-20261009-01/step-14-backend-dev.json по вашему FAIL step-12-reviewer.json (F1 Medium; F2–F5 Low). Прогоните сами cd tools && npm run check (ожидаемо 995 из 995) и npm run traces. Проверьте: F1 (cli.js: Map/hasOwn; toString, constructor, __proto__, hasOwnProperty, valueOf → E_TRACE_USAGE код 2 без стека — повторите свои пробы) закрыт; F2 (TC-11), F3 (TC-22, TC-25), F4 (экспорты), F5 (stdin 30 с) закрыты — мутанты теперь убиваются? (повторите 4 своих мутанта на копиях в rev-req014/r2/ в scratchpad); новая работа по проекту r3 (предел 16 МиБ, линейный разбор, realpath, fsmonitor) соответствует проекту (расхождения по списку; разработчик сообщил: usage-ошибка — одна строка со ссылкой на --help, а проект п. 7 говорит 'печатает и справку' — решите, расхождение ли и блокирует ли); лишнего нет; тесты содержательны, EN-51 в team-engine-control.test.js (REQ-013) теперь не зависит от порядка строк журнала, но по-прежнему требует обе задачи по одному разу с причиной stop — не ослабление ли? (проверьте по смыслу и мутантом); имя пользователя, названия других проектов и пути компьютера в изменённых файлах отсутствуют. Ничего не правьте. Результат: result.verdict PASS/FAIL; findings; summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "F1 закрыт с повтором проб",
+      "EN-51 не ослаблен — проверено"
+    ]
+  },
+  "created_at": "2026-10-09T18:10:27Z",
+  "started_at": "2026-10-09T18:10:27Z",
+  "completed_at": "2026-10-09T18:15:46Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS, находок Critical/High/Medium нет. F1 закрыт: Map вместо объекта в cli.js, мои пробы toString, constructor, __proto__, hasOwnProperty, valueOf -> код 2, одна строка `traces: E_TRACE_USAGE: ...`, без стека. F2–F5 закрыты: повтор четырёх моих мутантов на копии (rev-req014/r2/) — все убиты (A `[x](..)`, B used.add, E сортировка по UTF-16, K прототипный поиск подкоманды); базовые 55/55. Новая работа по r3 соответствует проекту: предел 16 МиБ (lstat до чтения, O_NOFOLLOW, ограниченное чтение, пропуск как у двоичного), realpath внутри корня (check и hash-line через один readText), core.fsmonitor=false в обоих вызовах git, экспорты урезаны до нужных тестам. Расхождение про usage-ошибку: п. 2 r3 и TC-24 требуют одну строку stderr без стека, а таблица п. 7 (строка 421) говорит «+ справка» — это внутреннее противоречие проекта, код следует более новому и точному п. 2/TC-24 (подсказка «справка: npm run traces -- --help», полная справка по --help); не блокирует, проект надо поправить (Low). EN-51 не ослаблен: сравнение остаётся deepStrictEqual на ровно два элемента [t-0001, stop], [t-0002, stop] (дубликат, пропуск или другая причина — падение), только сортировка перенесена с ожидания на фактические строки журнала; мутант (stop убран из CANCEL_CAUSES в runner.js) на копии валит EN-51. Имя пользователя в файлах git — 0 файлов; названий других проектов и путей компьютера в traces/тестах нет; skip/todo/eslint-disable/sleep нет.",
+    "findings": [
+      {
+        "id": "G1",
+        "location": "docs/design/REQ-014-traces.md:421 (таблица п. 7, «неверные ключи — E_TRACE_USAGE + справка») против п. 2 r3 и TC-24",
+        "bar": "Q12 (проект)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Проект противоречит сам себе; код следует п. 2/TC-24 (одна строка), таблица п. 7 устарела.",
+        "fix": "CODE-DESIGNER: заменить в п. 7 «+ справка» на «одна строка со ссылкой на --help»."
+      },
+      {
+        "id": "G2",
+        "location": "tools/src/traces/check.js (too-large, outside-root идут как пропуск с кодом 0)",
+        "bar": "Q6",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Файл больше 16 МиБ по содержимому не проверяется и не делает проверку красной — так задано проектом r3 (как двоичный); принято как ограничение, но его нет среди «Ограничений» п. 16/README.",
+        "fix": "Назвать в п. 16 и tools/README.md (DOC-UPDATER)."
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check -> код 0; traces: файлов проверено 829, следов 0, пропущено 18; # tests 995 # pass 995 # fail 0",
+      "npm run traces -> код 0",
+      "5 проб прототипных имён: код 2, одна строка E_TRACE_USAGE, без стека",
+      "мутанты A, B, E, K на копии: каждый 54 pass / 1 fail (убит); EN-51 мутант: not ok",
+      "git ls-files + others, grep имени пользователя -> 0 файлов; grep названий проектов/путей в traces и тестах -> пусто",
+      "код не менялся"
+    ],
+    "issues": [
+      {
+        "kind": "note",
+        "text": "Исправить п. 7 проекта (G1) и добавить ограничение «файл больше 16 МиБ не проверяется» (G2) — малые правки документов."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

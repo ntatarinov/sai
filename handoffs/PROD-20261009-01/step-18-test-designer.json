@@ -1,0 +1,345 @@
+{
+  "handoff_id": "step18-test-designer-PROD-20261009-01",
+  "run_id": "PROD-20261009-01",
+  "workflow_id": "WF-02",
+  "step": "18",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261009-01/step-18-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-014"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/test/traces-*.test.js",
+      "tools/test/fixtures/traces/**",
+      "handoffs/PROD-20261009-01/step-18-test-designer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "docs/design/REQ-014-traces.md",
+      "docs/requirements.yaml (REQ-014)",
+      "decisions/0021-traces-check.md",
+      "tools/test/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5: независимая проверка и дополнение тестов REQ-014. Код прошёл безопасность (handoffs/PROD-20261009-01/step-16 PASS) и ревью (step-17 PASS), слова требования — step-15 PASS, проект r3. BACKEND-DEV написал тесты вместе с кодом (traces-check, traces-runtime, traces-readme, traces-faults + fixtures/traces/helpers.js; сейчас 995). Ваша работа: (1) пройдите 6 критериев REQ-014 (docs/requirements.yaml) и таблицу 'критерий → тест' проекта docs/design/REQ-014-traces.md п. 14 — у каждого есть содержательный тест; допишите недостающие и слабые; (2) тесты отказа проверяют неизменное состояние (файл хешей, исключения не изменились после отказа add; нет записей вне tools/traces/) и отсутствие вывода названия; (3) мутанты — примените сами на копиях в <рабочая папка ORCH>/td-req014/ не менее 15 разных по смыслу (деление на слова/пары, NFKC и невидимые знаки, регистр, исключение только на эту строку этого файла, хеш строки, ссылки за корень, закодированные пути, пометка <имя>, SAI_TRACE_LIST, предел 16 МиБ, realpath, git-аргументы, замок add, writeAllOrNothing, код выхода 0/1/2, имена файлов, вывод без названия); каждый должен падать; выжившие — тест или объяснение; (4) нет skip/todo/only; независимые (свой временный репозиторий и HOME; GIT_CONFIG_GLOBAL отключён), ожидания не по sleep; у тестов с процессами свой timeout; гонка двух-четырёх add в 4 параллельных процессах (не терять хеши) — тест и прогон; (5) критерий 3 (чистая машина: git clone + npm ci + check + pixel-office --port + team projects) — это шаг RELEASE-VALIDATOR, не тест; критерий 2 'Sai чист' — тест читает скрипт check в tools/package.json (traces входит); (6) EN-51 (REQ-013) — убедитесь, что тест всё ещё содержателен (сделан детерминированным в step-14). Код src/ не менять; дефект кода — в result.issues с воспроизведением. Не писать имя пользователя, названия других проектов, пути компьютера. npm run check код 0 (число до/после). Результат: result.summary, result.coverage (критерий → тесты), result.mutants, result.checks, result.issues.",
+    "acceptance_criteria": [
+      "каждый критерий 1–6 покрыт содержательным тестом (таблица в result.coverage), критерий 3 назван шагом выпуска",
+      "не менее 15 мутантов, все падают или объяснены",
+      "npm run check код 0, ничего не пропущено",
+      "src/ не менялся"
+    ]
+  },
+  "created_at": "2026-10-09T18:16:08Z",
+  "started_at": "2026-10-09T18:16:08Z",
+  "completed_at": "2026-10-09T18:27:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проверил 6 критериев REQ-014 и таблицу п. 14 проекта: у критериев 1, 2, 4, 5, 6 есть содержательные тесты (55 -> 56 в traces-*), критерий 3 — шаг RELEASE-VALIDATOR, не тест. Недостающее нашёл одно: предел 16 МиБ «до чтения» ни один тест не отличал от «после» (мутант M17b выживал) — добавлен тест TF-7 «файл больше предела не открывается» (в процессе, через мок fs.openSync). Остальные тесты оставлены как есть. Тесты отказа проверяют неизменное состояние (хеши файла хешей, нет замка и лишних папок, список файлов до/после) и отсутствие названия и пути в выводе (TC-9, TC-14, TC-16, TC-18, TF-8). Гонка: TC-19 запускает 4 процесса add сразу; ни один хеш не потерян, 5 отдельных прогонов подряд зелёные; M20, M29, M40 её роняют. Независимость: свой git init и HOME во временной папке, GIT_CONFIG_GLOBAL=/dev/null, GIT_CONFIG_NOSYSTEM=1, ожидания без sleep, у процессов timeout 60 с; skip/todo/only нет. EN-51 (REQ-013) содержателен: deepStrictEqual на ровно два [t-0001,stop],[t-0002,stop], ожидание через waitUntil, не sleep; 3 прогона подряд 7/7. Мутантов 46 (все убиты после добавления TF-7). Планка: Q8, Q11, R3 не затронуты (нет данных магазинов, адресов, фото); Q10 — TF-1…TF-9, TL-1; Q7 — секретов в тестах нет, пути домашних каталогов собираются из частей. Код не менялся.",
+    "coverage": [
+      {
+        "criterion": "1 Находит следы",
+        "tests": "traces-check: TC-1, TC-1b, TC-2 (пути macOS/Linux/закодированные), TC-3/TC-9 (название со stdin, файл и вывод без названия), TC-4 (регистр), TC-5 (ссылка за корень), TC-6/7 (a/Zqxwvorg/b, zqxwvorg-api), TC-8 (чистый — 0), TC-10 (<имя>), TC-11 (исключение: эта строка этого файла), TC-12/13 (SAI_TRACE_LIST), TC-17, TC-18 (имя файла: метка, формат, номер k по LC_ALL=C sort, sha256 пути), TC-21 (NFC/NFD, полноширинные, невидимые), TC-22, TC-24, TC-25; запись add: TC-14…TC-16, TC-19, TC-23"
+      },
+      {
+        "criterion": "2 Sai чист",
+        "tests": "TC-20 (скрипт check в tools/package.json содержит npm run traces до npm run test, scripts.traces); код 0 на Sai — сам npm run check (шаг traces: файлов 830, следов 0); независимая сверка с SAI_TRACE_LIST — шаг RELEASE-VALIDATOR"
+      },
+      {
+        "criterion": "3 Чистая машина",
+        "tests": "не тест: шаг приёмки RELEASE-VALIDATOR (git clone, npm ci, check, pixel-office --port, team projects, список файлов до/после); не входит в npm run check"
+      },
+      {
+        "criterion": "4 Нет внешних сервисов",
+        "tests": "traces-runtime: TR-4a (нет dependencies), TR-4b (сетевые импорты и fetch( только в NETWORK_FILES), TR-4c (child_process; ровно два вызова git, аргументы), TR-4d (адреса 127.0.0.1), TR-4e, TR-4f (страницы)"
+      },
+      {
+        "criterion": "5 Одна инструкция",
+        "tests": "traces-readme: TD-1 (пять команд в разделе), TD-2 (устаревших фраз нет), TD-3 (нет копии папки и адреса, кроме пометки)"
+      },
+      {
+        "criterion": "6 Сбои (Q10)",
+        "tests": "traces-faults: TF-1 (двоичный), TF-2 (нет прав, и в процессе под root), TF-3 (вне git), TF-4, TF-5 (нет git), TF-6 (негодные файлы данных), TF-7 (16 МиБ+1, 3 ГиБ, плюс новый: файл не открывается), TF-8 (ссылка за корень), TF-9 (fsmonitor), TL-1 (строка 100 000 знаков)"
+      },
+      {
+        "criterion": "EN-51 (REQ-013)",
+        "tests": "team-engine-control.test.js: EN-51 — содержателен, 3 прогона подряд зелёные; не менялся"
+      }
+    ],
+    "mutants": [
+      {
+        "id": "M01",
+        "change": "words: MIN_WORD 3->1",
+        "failing_tests": "3 (TC-13, TC-14, TC-17)"
+      },
+      {
+        "id": "M02",
+        "change": "пары только в пределах строки",
+        "failing_tests": "1 (TC-17)"
+      },
+      {
+        "id": "M03",
+        "change": "NFKC -> NFC",
+        "failing_tests": "1 (TC-21)"
+      },
+      {
+        "id": "M03b",
+        "change": "без нормализации",
+        "failing_tests": "1 (TC-21)"
+      },
+      {
+        "id": "M04",
+        "change": "невидимые знаки заменяются пробелом",
+        "failing_tests": "1 (TC-21)"
+      },
+      {
+        "id": "M05",
+        "change": "без toLowerCase",
+        "failing_tests": "7 (TC-4, TC-6/7, TC-15, TC-17 и др.)"
+      },
+      {
+        "id": "M06",
+        "change": "исключение по пути без хеша",
+        "failing_tests": "1 (TC-11)"
+      },
+      {
+        "id": "M07",
+        "change": "исключение по хешу без пути",
+        "failing_tests": "1 (TC-11)"
+      },
+      {
+        "id": "M08",
+        "change": "исключение скрывает название на строке",
+        "failing_tests": "1 (TC-11)"
+      },
+      {
+        "id": "M09",
+        "change": "хеш строки по её части",
+        "failing_tests": "2 (TC-11)"
+      },
+      {
+        "id": "M10",
+        "change": "ссылка: нет resolved === '..'",
+        "failing_tests": "1 (TC-22)"
+      },
+      {
+        "id": "M11",
+        "change": "нет раскодирования %XX",
+        "failing_tests": "1 (TC-22)"
+      },
+      {
+        "id": "M12",
+        "change": "негодный %XX считается следом",
+        "failing_tests": "1 (TC-22)"
+      },
+      {
+        "id": "M13",
+        "change": "закодированный путь не проверяется",
+        "failing_tests": "1 (TC-1b)"
+      },
+      {
+        "id": "M14",
+        "change": "пометка <имя> считается следом",
+        "failing_tests": "1 (TC-10)"
+      },
+      {
+        "id": "M14b",
+        "change": "закодированный: нет проверки завершающего дефиса",
+        "failing_tests": "1 (TC-1b)"
+      },
+      {
+        "id": "M15",
+        "change": "SAI_TRACE_LIST игнорируется",
+        "failing_tests": "2 (TC-12, TC-13)"
+      },
+      {
+        "id": "M16",
+        "change": "открытый список внутри репозитория принят",
+        "failing_tests": "1 (TC-13)"
+      },
+      {
+        "id": "M16b",
+        "change": "открытый список: нет realpath-проверки",
+        "failing_tests": "1 (TC-13)"
+      },
+      {
+        "id": "M17",
+        "change": "предел 16 -> 17 МиБ",
+        "failing_tests": "1 (TF-7)"
+      },
+      {
+        "id": "M17b",
+        "change": "нет проверки размера до чтения",
+        "failing_tests": "первый прогон: 0 (выживал) -> добавлен тест TF-7 «не открывается»; после: 1 (новый TF-7)"
+      },
+      {
+        "id": "M18",
+        "change": "нет realpath-проверки файла",
+        "failing_tests": "1 (TF-8)"
+      },
+      {
+        "id": "M19",
+        "change": "нет core.fsmonitor=false в ls-files",
+        "failing_tests": "2 (TF-9, TR-4c)"
+      },
+      {
+        "id": "M19b",
+        "change": "другой аргумент git rev-parse",
+        "failing_tests": "35"
+      },
+      {
+        "id": "M20",
+        "change": "замок не эксклюзивный",
+        "failing_tests": "2 (TC-19)"
+      },
+      {
+        "id": "M21",
+        "change": "add пишет на месте, без writeAllOrNothing",
+        "failing_tests": "2 (TC-16)"
+      },
+      {
+        "id": "M22",
+        "change": "нечитаемый файл даёт код 0",
+        "failing_tests": "2 (TF-2)"
+      },
+      {
+        "id": "M22b",
+        "change": "след даёт код 2 вместо 1",
+        "failing_tests": "19"
+      },
+      {
+        "id": "M22c",
+        "change": "ошибка использования даёт код 1",
+        "failing_tests": "13"
+      },
+      {
+        "id": "M23",
+        "change": "путь файла не проверяется",
+        "failing_tests": "2 (TC-18, TC-25)"
+      },
+      {
+        "id": "M24",
+        "change": "печатается путь вместо метки",
+        "failing_tests": "2 (TC-18, TC-25)"
+      },
+      {
+        "id": "M25",
+        "change": "сортировка путей по UTF-16",
+        "failing_tests": "1 (TC-25)"
+      },
+      {
+        "id": "M26",
+        "change": "разбор подкоманды через in",
+        "failing_tests": "1 (TC-24)"
+      },
+      {
+        "id": "M27",
+        "change": "add без повторного чтения",
+        "failing_tests": "1 (TC-19)"
+      },
+      {
+        "id": "M28",
+        "change": "замок не удаляется",
+        "failing_tests": "6 (TC-14, TC-16, TC-19 и др.)"
+      },
+      {
+        "id": "M29",
+        "change": "хеши не сортируются",
+        "failing_tests": "1 (TC-19, 4 процесса)"
+      },
+      {
+        "id": "M30",
+        "change": "огороженные блоки не учитываются",
+        "failing_tests": "1 (TC-22)"
+      },
+      {
+        "id": "M31",
+        "change": "предел строки 100k -> 1M",
+        "failing_tests": "1 (TL-1)"
+      },
+      {
+        "id": "M32",
+        "change": "двоичный файл не определяется",
+        "failing_tests": "2 (TC-23, TF-1)"
+      },
+      {
+        "id": "M33",
+        "change": "Markdown не разбирается",
+        "failing_tests": "3 (TC-5, TC-22, TL-1)"
+      },
+      {
+        "id": "M34",
+        "change": "заголовок ссылки часть адреса",
+        "failing_tests": "1 (TC-22)"
+      },
+      {
+        "id": "M35",
+        "change": "нет файла хешей = пустой",
+        "failing_tests": "1 (TF-6)"
+      },
+      {
+        "id": "M36",
+        "change": "ошибка add показывает текст строки",
+        "failing_tests": "2 (TC-13, TC-14)"
+      },
+      {
+        "id": "M37",
+        "change": "нет --others",
+        "failing_tests": "16"
+      },
+      {
+        "id": "M38",
+        "change": "неиспользованное исключение не сообщается",
+        "failing_tests": "2 (TC-11, TF-6)"
+      },
+      {
+        "id": "M39",
+        "change": "уже внесённый хеш считается добавленным",
+        "failing_tests": "1 (TC-15)"
+      },
+      {
+        "id": "M40",
+        "change": "замок живого pid снимается",
+        "failing_tests": "1 (TC-19)"
+      }
+    ],
+    "mutants_summary": "46 мутантов на копиях в рабочей папке ORCH (td-req014/), рабочее дерево не менялось (src и README совпадают с копией построчно, diff -r пуст). Все убиты; единственный выживший первого прогона M17b (нет проверки размера до чтения: ограниченное чтение всё равно давало «больше 16 МиБ») убит новым тестом TF-7. Скрипт мутантов: td-req014/mut.py.",
+    "changes": [
+      {
+        "file": "tools/test/traces-faults.test.js",
+        "what": "добавлен тест «TF-7 a file over the limit is never opened by check (in the process)»: разреженный файл MAX_FILE_BYTES+1, мок fs.openSync, checkRepo; файл помечен too-large и не открыт, соседний открыт"
+      }
+    ],
+    "checks": "cd tools && npm run check: format:check, lint, traces (файлов 830, следов 0, пропущено 18), test — до: 995 тестов, 995 pass; после: 996 тестов, 996 pass, 0 fail, 0 skipped, 0 todo. traces-* отдельно: 55 -> 56 pass. 4 процесса add: 5 прогонов подряд зелёные. EN-51: 3 прогона 7/7.",
+    "self_check": "npm run check код 0 (996/996); мутанты — см. mutants; tools/src не менялся (diff -r с копией, сделанной до правки, пуст).",
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Дефектов кода не найдено; воспроизведений нет."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Критерий 3 (чистая машина) тестом не покрыт намеренно — шаг RELEASE-VALIDATOR; он же проверяет критерий 2 со списком SAI_TRACE_LIST."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Мок fs.openSync в TF-7 зависит от того, что check.js вызывает fs.openSync через объект fs (сейчас так); при переходе на именованный импорт тест перестанет ловить M17b — тогда его надо переписать."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/traces-faults.test.js",
+      "tools/test/traces-check.test.js",
+      "tools/test/traces-runtime.test.js",
+      "tools/test/traces-readme.test.js",
+      "tools/test/fixtures/traces/helpers.js"
+    ]
+  }
+}

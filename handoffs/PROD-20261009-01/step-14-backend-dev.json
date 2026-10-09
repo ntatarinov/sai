@@ -1,0 +1,104 @@
+{
+  "handoff_id": "step14-backend-dev-PROD-20261009-01",
+  "run_id": "PROD-20261009-01",
+  "workflow_id": "WF-02",
+  "step": "14",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261009-01/step-14-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-014"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/traces/**",
+      "tools/traces/**",
+      "tools/package.json",
+      "tools/test/traces-*.test.js",
+      "tools/test/fixtures/traces/**",
+      "tools/test/team-engine-control.test.js (только EN-51)",
+      "tools/test/team-engine-helpers.js (если нужно для EN-51)",
+      "handoffs/PROD-20261009-01/step-14-backend-dev.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "REQ-ANALYST (только слова требования)",
+    "artifacts_in": [
+      "docs/design/REQ-014-traces.md",
+      "decisions/0021-traces-check.md",
+      "handoffs/PROD-20261009-01/step-11-security-reviewer.json",
+      "handoffs/PROD-20261009-01/step-12-reviewer.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, правка кода REQ-014 по проекту r3 (docs/design/REQ-014-traces.md r3 и decisions/0021 D1, D11–D13) и FAIL ревью/безопасности (handoffs/PROD-20261009-01/step-11-security-reviewer.json, step-12-reviewer.json — прочтите находки и пробы). Для каждого пункта — сначала падающий тест: (1) безопасность F1 Medium: MAX_FILE_BYTES = 16 МиБ, проверка stat.size ДО чтения, крупный файл пропускается с пометкой (как двоичный), стека нет; тест на разреженный файл; (2) безопасность F2: разбор скобок Markdown за один проход (линейно), строки длиннее 100 000 знаков пропускаются для разбора ссылок с пометкой; тест с пределом времени на 100 000 '['; (3) безопасность F3: файл, чей realpath выходит за корень, пропускается с пометкой и не читается; hash-line и замок add не следуют за симлинком наружу; тест; (4) безопасность F4: оба вызова git с -c core.fsmonitor=false (аргументы дословно по проекту п. 4); обновите TR-4c; (5) ревью F1 Medium: cli.js Object.hasOwn/Map — toString, constructor, __proto__, hasOwnProperty, valueOf → E_TRACE_USAGE код 2; тест; (6) ревью F2: TC-11 проверяет отсутствие строки 'исключение не использовано' при сработавшем исключении (мутант на used.add убит); F3: тесты на ссылку ровно [x](..) и сортировку путей побайтно (не UTF-16); F4: убрать export у 7 экспортов без потребителей (п. 1.4); F5: ожидание stdin не дольше 30 с (п. по проекту); (7) нестабильный EN-51 в tools/test/team-engine-control.test.js (около строки 180): падал редко (две записи в обратном порядке) — найдите причину и сделайте тест детерминированным (ожидание по событию/сортировка по seq), не ослабляя проверку; это вне REQ-014, но в write_set разрешено; примените мутант на смысл теста. Правила прежние: npm run check код 0 (число тестов до/после; сейчас 988), мутанты — примените сами на копиях в <рабочая папка ORCH>/bd-req014/r2/ и скажите, что падают; не писать имя пользователя, названия других проектов, пути компьютера; npm run traces после правок — код 0; не менять docs/requirements.yaml, проекты, решения. Результат: result.summary (пункт → что сделано → тест), result.checks, result.issues.",
+    "acceptance_criteria": [
+      "все пункты исправлены, тест падал до правки",
+      "npm run check код 0, npm run traces код 0",
+      "EN-51 детерминирован",
+      "нет следов в изменённых файлах"
+    ]
+  },
+  "created_at": "2026-10-09T17:54:41Z",
+  "started_at": "2026-10-09T17:54:41Z",
+  "completed_at": "2026-10-09T18:09:15Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Правка REQ-014 по проекту r3 и FAIL шагов 11–12. По каждому пункту сначала написан тест; новые тесты падали на коде r2, после правки — зелёные.\n(1) Безопасность F1. MAX_FILE_BYTES = 16 МиБ (экспортирован из check.js). Размер берётся из lstat до чтения. Чтение ограничено: O_NOFOLLOW и не больше MAX+1 байта; файл, выросший после lstat, даёт тот же пропуск «больше 16 МиБ», код как у двоичного. Тест TF-7: разреженный файл MAX+1 со следом в другом файле — код 1; без следа — 0; ровно MAX читается; 3 ГиБ ≤ 10 с, стека нет; hash-line отказывает.\n(2) Безопасность F2. Разбор ссылок в rules.js линейный: пары [ ] — одним проходом со стеком; код в строке — по таблице прогонов обратных кавычек; адрес и заголовок — по таблицам «следующий знак» и глубине скобок. Строка длиннее MAX_LINE_CHARS = 100 000 знаков для ссылок не разбирается: пометка «ссылки не разобраны (строка длиннее 100000 знаков)», код не меняет; правила путей и названий к ней применяются. Тест TL-1: 100 000 «[» — ≤ 5 с; ровно 100 000 — разбирается; 100 001 — пометка; путь домашнего каталога в такой строке — код 1.\n(3) Безопасность F3. check: realpath файла не внутри realpath корня — «пропущен: вне корня репозитория», файл не читается. hash-line берёт тот же readText. В add до замка — lstat звеньев tools, tools/traces и файла хешей и проверка realpath; ссылка — E_WRITE, замок и папки не создаются. Тест TF-8: папка d/ — ссылка наружу; check, hash-line и add с tools/traces или tools — ссылкой наружу; чужой «застарелый» замок во внешней папке остаётся байт в байт.\n(4) Безопасность F4. -c core.fsmonitor=false в обоих вызовах git, аргументы дословно по п. 4. TR-4c обновлён. Тест TF-9: проба core.fsmonitor срабатывает от самого git, но не от check.\n(5) Ревью F1. KEYS и opts — Map: toString, constructor, __proto__, hasOwnProperty, valueOf и ключи вида --toString дают E_TRACE_USAGE, код 2, одну строку stderr без стека. Тест TC-24.\n(6) Ревью F2–F5.\n- F2: TC-11 проверяет, что строки «исключение не использовано» нет при сработавшем исключении.\n- F3: TC-22 — [x](..) и [x](../); TC-25 — сортировка по байтам UTF-8: U+1F600 против U+FF21, метка k сверяется командой LC_ALL=C sort.\n- F4: export снят у INPUT_MAX, NAME_REASONS, namesOfInput, normalizeLine, hiddenLabel, splitLines, judgeAddress. Экспортированы только то, что берут тесты: MAX_FILE_BYTES, MAX_LINE_CHARS, readInput, readText.\n- F5: чтение stdin перенесено в add.js (readInput). При EAGAIN — повтор каждые 20 мс; 30 с без новых байтов — E_TRACE_NAME «ввод не закончился за 30 с». Тест F5: инъекция EAGAIN, предел 200 мс.\nТесты TC-11, TC-22 и TC-25 проходили и на коде r2: они ловят мутанты, а не прежние ошибки.\n(7) EN-51. Причина: каждый запуск пишет TASK_INTERRUPTED, когда его процесс завершается после kill. Порядок двух строк в журнале — порядок смерти процессов. Тест сравнивал строки в порядке журнала с отсортированным ожиданием, поэтому падал при обратном порядке (ровно то, что было в падении: t-0002 раньше t-0001). Теперь сравнение — по задаче (сортировка строк по task). Проверка не ослаблена: каждая задача ровно один раз, с cause «stop».",
+    "changes": [
+      "tools/src/traces/check.js — MAX_FILE_BYTES, readText (lstat, realpath, предел, ограниченное чтение), longLines, пометки «больше 16 МиБ», «вне корня репозитория», «ссылки не разобраны…»; снят export hiddenLabel и splitLines (п. 6, 2.1, 1.4)",
+      "tools/src/traces/rules.js — линейный разбор ссылок, MAX_LINE_CHARS, markdownLinks возвращает long; снят export judgeAddress (п. 3.4)",
+      "tools/src/traces/git-files.js — -c core.fsmonitor=false в обоих вызовах (п. 4)",
+      "tools/src/traces/cli.js — разбор через Map, ошибка разбора одной строкой со ссылкой на --help; hash-line через readText (п. 2, 2.3)",
+      "tools/src/traces/add.js — guardWritePath до замка; readInput с пределом ожидания 30 с; сняты export INPUT_MAX, LOCK_REL, namesOfInput (п. 2.2, шаги 1 и 3а)",
+      "tools/src/traces/lists.js, words.js — сняты export NAME_REASONS и normalizeLine (п. 1.4)",
+      "tools/test/traces-check.test.js — TC-11 (нет «не использовано»), TC-22 ([x](..), [x](../)), TC-24, TC-25; тест usage — одна строка stderr",
+      "tools/test/traces-faults.test.js — TF-7, TF-8, TF-9, TL-1, F5; инъекции TF-2 перенесены с readFileSync на openSync (чтение теперь через openSync/readSync)",
+      "tools/test/traces-runtime.test.js — TR-4c с core.fsmonitor=false",
+      "tools/test/team-engine-control.test.js — EN-51: сравнение TASK_INTERRUPTED по задаче"
+    ],
+    "checks": [
+      "Новые тесты на коде r2 до правки: падали usage и TC-24; файл traces-faults целиком не загружался — на коде r2 нет MAX_FILE_BYTES, MAX_LINE_CHARS и readInput. После правки все зелёные.",
+      "cd tools && npm run check — код 0 два раза подряд: prettier «All matched files use Prettier code style!», eslint без ошибок, «traces: файлов проверено 826, следов 0, пропущено 18», «# tests 995 # pass 995 # fail 0 # cancelled 0 # skipped 0 # todo 0» (было 988).",
+      "npm run traces на Sai — код 0 (шаг check).",
+      "Мутанты на копии в рабочей папке ORCH (bd-req014/r2), все убиты, кроме R1b:\n- без предела размера и с неограниченным чтением — TF-7;\n- поиск «]» просмотром остатка строки (квадратичный) — TL-1, время;\n- без предела длины строки — TL-1;\n- без проверки realpath — TF-8;\n- add без проверки папки записи — TF-8, после усиления «застарелым» замком;\n- hash-line читает файл напрямую — TC-23, TF-7, TF-8;\n- ls-files без core.fsmonitor=false — TF-9, TR-4c;\n- разбор подкоманд через in — TC-24;\n- сработавшее исключение не отмечено — TC-11;\n- без resolved === \"..\" — TC-22;\n- сортировка по UTF-16 — TC-25;\n- без предела ожидания stdin — F5, тайм-аут.\nR1b (убрана только проверка stat.size до чтения) выжил: мутант равносилен, потому что чтение и так ограничено MAX+1 байтом и дает тот же пропуск. После прогона diff -r копии и tools/src/traces — без отличий.",
+      "EN-51, мутанты на копии: cause «x» вместо «stop» — тест падает; TASK_INTERRUPTED не пишется для t-0002 — падает; обратный порядок строк в журнале (то, что видели при падении) — новый тест проходит, а прежнее сравнение в порядке журнала на нём и падало. Отдельно EN-51 — 7/7 зелёных в файле.",
+      "Поиск имени пользователя, названий других проектов и путей этого компьютера по изменённым файлам — пусто. Поиск skip, todo, eslint-disable, prettier-ignore, «|| true» — пусто. Поиск секретов — пусто."
+    ],
+    "issues": [
+      {
+        "kind": "deviation",
+        "text": "Таблица п. 7 говорит «E_TRACE_USAGE + справка», а TC-24 (r3) требует ровно одну строку stderr. Сделано одной строкой с подсказкой «справка: npm run traces -- --help»; полная справка — только по --help (код 0)."
+      },
+      {
+        "kind": "deviation",
+        "text": "Экспорты сверх п. 1.4: readInput (add.js) и readText (check.js). readInput берёт тест F5. readText берут cli.js (hash-line по тем же правилам) и экспорт нужен для этого."
+      },
+      {
+        "kind": "note",
+        "text": "Мутант R1b (убрана только проверка stat.size до чтения) равносилен: ограниченное чтение дает тот же пропуск. Проверка до чтения оставлена по проекту: файл больше предела не открывается и не читается вовсе."
+      },
+      {
+        "kind": "note",
+        "text": "Report дополнен полем longLines по форме r3; поле notes (негодный %XX) осталось с r2."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/traces/check.js",
+      "tools/src/traces/rules.js",
+      "tools/src/traces/git-files.js",
+      "tools/src/traces/cli.js",
+      "tools/src/traces/add.js",
+      "tools/src/traces/lists.js",
+      "tools/src/traces/words.js",
+      "tools/test/traces-check.test.js",
+      "tools/test/traces-faults.test.js",
+      "tools/test/traces-runtime.test.js",
+      "tools/test/team-engine-control.test.js"
+    ]
+  }
+}

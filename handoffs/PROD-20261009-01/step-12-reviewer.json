@@ -1,0 +1,114 @@
+{
+  "handoff_id": "step12-reviewer-PROD-20261009-01",
+  "run_id": "PROD-20261009-01",
+  "workflow_id": "WF-02",
+  "step": "12",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261009-01/step-12-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-014"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261009-01/step-12-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "SECURITY-REVIEWER (шаг 11)",
+    "artifacts_in": [
+      "handoffs/PROD-20261009-01/step-10-backend-dev.json",
+      "docs/design/REQ-014-traces.md",
+      "tools/src/traces/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью кода REQ-014 (handoffs/PROD-20261009-01/step-10-backend-dev.json; проект docs/design/REQ-014-traces.md r2; решения 0019–0021). Прогоните сами cd tools && npm run check (ожидаемо 988; возможен редкий красный EN-51 в team-engine-control.test.js — вне этого требования, отметьте как Low если повторится) и npm run traces. Проверьте: настоящее ли решение, не костыль; код соответствует проекту r2 (расхождения по списку: имя helpers в tools/test/fixtures/traces/ вместо traces-helpers.js; поле notes в выводе; все правила п. 3, форматы файлов данных п. 5, вывод п. 2.1, коды выхода, пути отказа п. 7, места записи п. 8); нет лишнего и мёртвого кода; идиомы Node 22; тесты содержательны (traces-check, traces-runtime, traces-readme, traces-faults) и независимы (свой HOME/временный репозиторий, без sleep), мутанты — выжили? проверьте 3–4 сами на копиях в <рабочая папка ORCH>/rev-req014/; замены в handoffs/ — только следы (сравните git diff: меняются только пути/имя пользователя/названия на пометки, смысл записей, ключи JSON, status/result не затронуты; JSON валиден); README: нет запрещённых фраз, адрес — пометка; в изменённых файлах нет имени пользователя, названий других проектов и путей компьютера (поиск командой npm run traces и своим); prior-тесты не ослаблены. Ничего не правьте. Результат: result.verdict PASS/FAIL; findings; summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "соответствие проекту проверено по списку",
+      "замены в handoffs проверены по git diff"
+    ]
+  },
+  "created_at": "2026-10-09T17:45:03Z",
+  "started_at": "2026-10-09T17:45:03Z",
+  "completed_at": "2026-10-09T17:50:22Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "FAIL: одна блокирующая находка Medium (F1). Остальное сходится.\n1. Причина, не симптом: ошибки не глотаются (OS-ошибки отделены от ошибок программы через isOsError, TraceError только для известных отказов), «не читается» даёт код 2, а не зелёный; костылей и заглушек нет.\n2. С проектом r2: правила п. 3.1-3.5, форматы п. 5, вывод п. 2.1, коды выхода, пути отказа п. 7, места записи п. 8 (только writeAllOrNothing, замок wx, повторное чтение, папки до замка, удаление своих пустых папок), ровно два вызова git — сходятся. Расхождения, названные в задании (helpers в fixtures/traces, поле notes) — обоснованы write_set и п. 3.4, принимаются. Расхождение с п. 2: неизвестная подкоманда (F1). Не сделано в этом шаге и не должно: tools/README.md (DOC-UPDATER, п. 1.2), хеши владельца (п. 13, шаг В).\n3. Не больше заказанного: мёртвого кода нет; три экспорта без внешнего потребителя — Low (F4).\n4. Планка: поиск skip/todo/eslint-disable/prettier-ignore/|| true/sleep по новым файлам — пусто; check = format:check && lint && traces && test, шаги на месте; существующие тесты не изменены (git status: изменений в старых test/ нет). Секретов нет. Q10: таймаут git 30 с, сбои файлов не роняют проверку (кроме F1).\n5. Идиомы Node 22, ES-модули, нет зависимостей; child_process только в git-files.js. Тесты содержательны, независимы (свой git init, HOME и конфиг git внутри временной папки, sleep нет), отказы проверяют неизменность состояния. Мутанты: из 8 моих выжило 4 (F2, F3).\nЗамены в handoffs: git diff — 19 файлов, 21 строка (21 - 21), число строк не изменилось, JSON валиден во всех 19, ключи и структура совпадают (сравнены разбором), status/result не затронуты; меняются только имя пользователя -> «<имя>» (в закодированной форме тоже) и в одной строке три названия проектов -> пометки; четвёртое слово («Advisor», общее английское, п. 13/F9) оставлено осознанно. Имени пользователя в файлах git (cached + others) — 0 файлов; названий других проектов и путей компьютера в новых/изменённых файлах нет (кроме комментариев-образцов «/Users/<name>» в rules.js и helpers.js — это не след по правилу п. 3.2).\nREADME: запрещённых фраз нет, «://» и «git@» нет, адрес — «<адрес репозитория Sai>», копии папки нет.\nTEST-DESIGNER: добавить проверки на F1, F2, F3.",
+    "findings": [
+      {
+        "id": "F1",
+        "location": "tools/src/traces/cli.js:41-51 (parseArgs: `command in KEYS`, `KEYS[command].includes`)",
+        "bar": "Q10; проект п. 2 (неизвестная подкоманда — E_TRACE_USAGE, код 2), п. 7",
+        "severity": "Medium",
+        "blocking": true,
+        "problem": "KEYS — обычный объект, оператор in видит унаследованные имена. Моя проба: `node src/traces/cli.js toString` → молча выполняет check и печатает отчёт (вместо E_TRACE_USAGE, код 2); `node src/traces/cli.js constructor --root .` → падает со стеком «TypeError: KEYS[command].includes is not a function» (кривой ввод роняет процесс; проект требует ошибку одной строкой без стека). То же для valueOf, hasOwnProperty, __proto__. Тест usage проверяет только `nope` — прототипные имена не пробуются (AP-014: род ошибки, а не названное место).",
+        "fix": "Проверять Object.hasOwn(KEYS, command) (или сделать KEYS Map / объектом без прототипа) и там же в `name in opts` (opts тоже объект; ключ там ограничен KEYS, но для единообразия — Object.hasOwn). Добавить в тест usage случаи `toString`, `constructor --root x`, `__proto__`: код 2, строка E_TRACE_USAGE, нет стека."
+      },
+      {
+        "id": "F2",
+        "location": "tools/src/traces/check.js:78-79 (used.add(n)); tools/test/traces-check.test.js TC-11",
+        "bar": "Q5",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Мутант «исключение, которое сработало, не отмечается использованным» выживает (48/48 зелёных): TC-11 в случае, когда исключение работает, проверяет только код 0 и «следов 0», но не то, что строки «исключение не использовано» нет. Ложное «не использовано» на рабочем исключении осталось бы незамеченным.",
+        "fix": "В TC-11 после assertClean добавить проверку, что в stdout нет «исключение не использовано»."
+      },
+      {
+        "id": "F3",
+        "location": "tools/src/traces/rules.js:162 (`resolved === \"..\"`); tools/src/traces/git-files.js:89-91 (сортировка по байтам); tests",
+        "bar": "Q5",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Выжили ещё два мутанта: (а) без `resolved === \"..\"` ссылка `[x](..)` из корневого файла (ровно «..», без «/») не находится — ни один тест такой ссылки не имеет (проверены только `../x.md`); (б) сортировка по UTF-16 вместо байтов UTF-8 даёт тот же результат на всех тестовых путях (нужны символы вне BMP против U+E000-U+FFFF), поэтому номер k в метке мог бы разойтись с командой поиска в README.",
+        "fix": "Тесты: `[x](..)` и `[x](../)` -> след; два пути (один с символом вне BMP, другой с U+FF21-ом) — k метки совпадает с `LC_ALL=C sort`."
+      },
+      {
+        "id": "F4",
+        "location": "tools/src/traces/check.js:20,56; rules.js:152; add.js:18 (hiddenLabel, splitLines, judgeAddress, INPUT_MAX экспортируются, снаружи не используются)",
+        "bar": "Q-стиль",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Экспорты без внешнего потребителя (для остального tools/src так не принято). Вред нулевой.",
+        "fix": "Убрать `export`, когда CODE-FIXER будет править F1."
+      },
+      {
+        "id": "F5",
+        "location": "tools/src/traces/cli.js:62-85 (readStdin, ветка EAGAIN)",
+        "bar": "Q10",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "При EAGAIN ввод опрашивается каждые 20 мс без границы по времени: если stdin неблокирующий и никогда не закроется, add висит бесконечно. Для ручного запуска владельцем приемлемо; у остальных внешних вызовов таймауты есть.",
+        "fix": "Не обязательно; при желании — ограничение числа повторов или запись в README, что add читает до конца ввода."
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check -> код 0: «traces: файлов проверено 824, следов 0, пропущено 18», «# tests 988 # pass 988 # fail 0 # skipped 0 # todo 0». EN-51 не краснел.",
+      "cd tools && npm run traces -> код 0 («файлов проверено 824, следов 0, пропущено 18»).",
+      "Проба F1: `node src/traces/cli.js toString` -> отчёт check, код 0; `node src/traces/cli.js constructor --root .` -> «TypeError: KEYS[command].includes is not a function» со стеком.",
+      "Эрозия: grep -nE \"\\.skip\\(|todo|eslint-disable|prettier-ignore|\\|\\| true|setTimeout|sleep|\\.only\\(\" по src/traces, test/traces-*.js, test/fixtures/traces -> пусто.",
+      "Имя пользователя: git ls-files -z --cached --others --exclude-standard | xargs -0 grep -Il \"$USER\" | wc -l -> 0. Поиск названий других проектов и /Users/, /home/ по src/traces, тестам, README, tools/traces, decisions/0021 -> только два комментария-образца «/Users/<name>» (rules.js:7, helpers.js:28).",
+      "Замены в handoffs: скрипт в рабочей папке ORCH сравнил HEAD и рабочую копию 19 файлов: JSON валиден, ключи/структура те же, число строк то же (changedLines 1-2 на файл, всего 21), status/result не затронуты (в step-05-req-validator.json изменена строка внутри result.self_check[4] — шаблон поиска, по плану п. 13); git diff --stat: 19 files changed, 21 insertions(+), 21 deletions(-).",
+      "Мутанты на копиях в rev-req014/ (node --test test/traces-*.test.js, исходно 48/48): C (порядок хешей не проверяется) убит; D (lstat -> stat) убит; F (адрес на ~ не проверяется) убит; G (открытый список по realpath) убит; A (`resolved === \"..\"`), B (used.add), E (сортировка по UTF-16), H (ошибка close замка) выжили -> F2, F3.",
+      "Прежние тесты: git status — изменений в существующих test/*.js нет; npm run check 988 зелёных.",
+      "Код во время проверки не менялся; изменения только в этом handoff."
+    ],
+    "issues": [
+      {
+        "kind": "note",
+        "text": "tools/README.md (раздел «Проверка» и «Следы», проект п. 1.2) ещё не написан — DOC-UPDATER, шаг после тестов; нужно, чтобы команда поиска по метке из п. 2.1 попала в документ."
+      },
+      {
+        "kind": "note",
+        "text": "Хеши названий в tools/traces/forbidden-names.sha256 пока только заголовок: критерий 2 держится сверкой RELEASE-VALIDATOR с SAI_TRACE_LIST (п. 13, шаги В и Г); имя пользователя вне путей ловится только после внесения владельцем."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

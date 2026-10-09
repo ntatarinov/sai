@@ -1,0 +1,325 @@
+{
+  "handoff_id": "step19-test-design-validator-PROD-20261009-01",
+  "run_id": "PROD-20261009-01",
+  "workflow_id": "WF-02",
+  "step": "19",
+  "round": 0,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261009-01/step-19-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-014"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261009-01/step-19-test-design-validator.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого",
+    "artifacts_in": [
+      "handoffs/PROD-20261009-01/step-18-test-designer.json",
+      "docs/design/REQ-014-traces.md",
+      "docs/requirements.yaml (REQ-014)",
+      "tools/test/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5b: независимая проверка тестов REQ-014 (handoffs/PROD-20261009-01/step-18-test-designer.json; тесты — tools/test/traces-check, traces-runtime, traces-readme, traces-faults и fixtures/traces/helpers.js; сейчас 996). Проверьте сами: (1) каждый из 6 критериев (docs/requirements.yaml, блок REQ-014) и каждая строка таблицы 'критерий → тест' (docs/design/REQ-014-traces.md п. 14) имеют настоящий запускаемый тест с содержательной проверкой — сопоставление ваше; критерий 3 (чистая машина) и независимая сверка критерия 2 (SAI_TRACE_LIST) — шаги RELEASE-VALIDATOR, не тесты; (2) нет skip/todo/only, тесты независимы (своя папка/HOME, GIT_CONFIG_GLOBAL отключён), ожидания по событию, у тестов с процессами свой timeout; (3) тесты отказа проверяют неизменное состояние и отсутствие названия/пути в выводе; (4) мутанты — примените сами на копиях в <рабочая папка ORCH>/vtest-req014/ (не в проекте, не в системной temp) не менее 15 разных по смыслу из: деление на слова/пары, NFKC/невидимые знаки, регистр, исключение на другую строку/файл, хеш строки, ссылки за корень, закодированные пути и пометка <имя>, SAI_TRACE_LIST, предел 16 МиБ (проверка до чтения), realpath, аргументы git (fsmonitor, quotePath), замок add, writeAllOrNothing, коды выхода 0/1/2, имена файлов, вывод без названия, Map/hasOwn в cli.js; каждый должен падать; (5) гонка add (TC-19) — запустите сами в 4 параллельных процессах не менее 5 раундов; (6) cd tools && npm run check — 996 из 996 и npm run traces — код 0, оба с кодом выхода напрямую; красные — повтором по одному; (7) тест TF-7 подменяет fs.openSync через объект fs (хрупкость, замечание TEST-DESIGNER) — оценить; (8) EN-51 (REQ-013) содержателен. Ничего не править. Результат: result.verdict PASS/FAIL; findings — место, важность, исправление; result.mutants; summary.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "сопоставление критерий → тест самим проверяющим",
+      "не менее 15 мутантов применены",
+      "гонка add запущена самим"
+    ]
+  },
+  "created_at": "2026-10-09T18:27:23Z",
+  "started_at": "2026-10-09T18:27:23Z",
+  "completed_at": "2026-10-09T18:41:53Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Verdict PASS. (1) Own mapping criterion -> test, from docs/requirements.yaml REQ-014 and the table of docs/design/REQ-014-traces.md p. 14.1: criterion 1 (finds traces) - traces-check TC-1, TC-1b, TC-2, TC-3/9, TC-4, TC-5, TC-6/7, TC-8, TC-10, TC-11, TC-12/13, TC-17, TC-18, TC-21, TC-22, TC-24, TC-25 and add TC-14/15/16/19/23 - every sub-case of the criterion text (macOS/Linux path, encoded path, NFC/NFD, invisible sign, case, link out of root, a/Zqxwvorg/b, zqxwvorg-api, file name with label k and sha256 prefix checked against the git|sort|sed command, file of hashes and output without the name, <name> placeholder, exception only for this line of this file, open list) has a running test with a value check. Criterion 2 - TC-20 (script check contains npm run traces before npm run test, no ||) plus my own run of npm run traces (code 0); the independent check with SAI_TRACE_LIST is a RELEASE-VALIDATOR step. Criterion 3 - RELEASE-VALIDATOR step, not a test. Criterion 4 - traces-runtime TR-4a..TR-4f. Criterion 5 - traces-readme TD-1..TD-3. Criterion 6 (Q10) - traces-faults TF-1..TF-9, TL-1. Every row of the p. 14.1 table has a test. (2) No skip/todo/only (grep and runner: skipped 0, todo 0); no sleep; every test has its own mkdtemp repository, HOME, XDG_CONFIG_HOME, GIT_CONFIG_GLOBAL=/dev/null, GIT_CONFIG_NOSYSTEM=1; processes have timeout 60 s (helpers) / 20 s (TL-1); waits in EN-51 are by waitUntil; chmod and links only inside the temporary folder (AP-020 not triggered). (3) Failure tests check unchanged state (hash of the file of hashes, no lock, folder list before/after in TC-14/16/19, TF-8) and no name/path in the output (TC-9, TC-14, TC-16, TC-18, TF-3, TF-8). (4) Mutants: 42 applied by me on copies in the ORCH scratchpad vtest-req014/ (project tree untouched), 41 killed, 1 equivalent (V40, see findings); my own list overlaps the author's but all numbers below are mine. (5) Race add: 8 rounds x 4 parallel processes by my own script (each round: 1 process code 0, 3 code 2 E_TRACE_BUSY, retried one by one; 4 hashes in file, no lock left in every round) and 6 repeated runs of the TC-19 tests (3/3 pass each). (6) cd tools && npm run check: exit 0, tests 996, pass 996, fail 0, skipped 0, todo 0; npm run traces: exit 0 (files 831, traces 0, skipped 18; 831 because this handoff file is new). traces-* alone: 56/56. (7) TF-7 in-process (mock of fs.openSync through the fs object): works now (kills V14), and is not silently fragile: it also asserts that the neighbour file b.txt was opened, so if check.js stops going through the fs object the test fails loudly, not green; accepted with a LOW note. (8) EN-51 (REQ-013): deepStrictEqual of exactly [t-0001,stop],[t-0002,stop] sorted by task, waits by waitUntil with timeout, kills checked by pid and process group; substantive; diff of the file is 8 lines.",
+    "coverage": "see summary (own mapping)",
+    "mutants": [
+      {
+        "id": "V01",
+        "change": "words.js MIN_WORD 3->1",
+        "failing_tests": "3 (TC-13, TC-14, TC-17)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V02",
+        "change": "NFKC->NFC",
+        "failing_tests": "1 (TC-21)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V03",
+        "change": "invisible characters replaced by a space",
+        "failing_tests": "1 (TC-21)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V04",
+        "change": "no toLowerCase",
+        "failing_tests": "7",
+        "status": "KILLED"
+      },
+      {
+        "id": "V05",
+        "change": "exception by path without line hash",
+        "failing_tests": "1 (TC-11)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V06",
+        "change": "line hash of a part of the line",
+        "failing_tests": "1 (TC-11)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V07",
+        "change": "exception hides a name on the same line",
+        "failing_tests": "1 (TC-11)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V08",
+        "change": "link: no resolved === '..'",
+        "failing_tests": "1 (TC-22)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V09",
+        "change": "no %XX decoding",
+        "failing_tests": "1 (TC-22)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V10",
+        "change": "bad %XX counted as a trace",
+        "failing_tests": "1 (TC-22)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V11",
+        "change": "SAI_TRACE_LIST ignored",
+        "failing_tests": "2 (TC-12, TC-13)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V12",
+        "change": "open list inside the repo accepted",
+        "failing_tests": "1 (TC-13)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V13",
+        "change": "open list: no realpath check",
+        "failing_tests": "1 (TC-13)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V14",
+        "change": "no size check before read (lstat size)",
+        "failing_tests": "1 (TF-7 in-process)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V15",
+        "change": "limit 16 -> 17 MiB",
+        "failing_tests": "1 (TF-7)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V16",
+        "change": "no realpath-in-root check of a file",
+        "failing_tests": "1 (TF-8)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V17",
+        "change": "no core.fsmonitor=false in ls-files",
+        "failing_tests": "2 (TF-9, TR-4c)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V18",
+        "change": "no core.quotePath=false",
+        "failing_tests": "1 (TR-4c)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V19",
+        "change": "lock not exclusive (w instead of wx)",
+        "failing_tests": "2 (TC-19)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V20",
+        "change": "add writes in place, no writeAllOrNothing",
+        "failing_tests": "2 (TC-16)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V21",
+        "change": "a trace gives exit 2",
+        "failing_tests": "19",
+        "status": "KILLED"
+      },
+      {
+        "id": "V22",
+        "change": "usage error gives exit 1",
+        "failing_tests": "13",
+        "status": "KILLED"
+      },
+      {
+        "id": "V23",
+        "change": "unreadable file gives exit 0",
+        "failing_tests": "2 (TF-2)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V24",
+        "change": "names in file paths not checked",
+        "failing_tests": "2 (TC-18, TC-25)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V25",
+        "change": "path printed instead of label",
+        "failing_tests": "2 (TC-18, TC-25)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V26",
+        "change": "subcommand parsing via in",
+        "failing_tests": "1 (TC-24)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V27",
+        "change": "paths sorted by UTF-16",
+        "failing_tests": "1 (TC-25)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V28",
+        "change": "hashes not sorted in add",
+        "failing_tests": "1 (TC-19, 4 processes)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V29",
+        "change": "lock of a dead pid never taken over",
+        "failing_tests": "1 (TC-19)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V30",
+        "change": "<name> placeholder counted as a trace",
+        "failing_tests": "1 (TC-10)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V31",
+        "change": "encoded form: no trailing dash check",
+        "failing_tests": "1 (TC-1b)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V32",
+        "change": "no --others",
+        "failing_tests": "17",
+        "status": "KILLED"
+      },
+      {
+        "id": "V33",
+        "change": "add without re-read",
+        "failing_tests": "1 (TC-19)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V34",
+        "change": "binary file not detected",
+        "failing_tests": "2 (TC-23, TF-1)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V35",
+        "change": "line limit 100k -> 1M",
+        "failing_tests": "1 (TL-1)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V36",
+        "change": "fenced blocks ignored",
+        "failing_tests": "1 (TC-22)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V37",
+        "change": "unused exceptions not reported",
+        "failing_tests": "2 (TC-11, TF-6)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V38",
+        "change": "existing hash counted as added",
+        "failing_tests": "1 (TC-15)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V39",
+        "change": "lock not removed",
+        "failing_tests": "6",
+        "status": "KILLED"
+      },
+      {
+        "id": "V41",
+        "change": "hash-line without path-name guard",
+        "failing_tests": "1 (TC-23)",
+        "status": "KILLED"
+      },
+      {
+        "id": "V42",
+        "change": "add error message shows the line text",
+        "failing_tests": "6",
+        "status": "KILLED"
+      },
+      {
+        "id": "V40",
+        "change": "object lookup of subcommand keys instead of Map.get",
+        "failing_tests": "0",
+        "status": "SURVIVED, equivalent: KEYS.has(command) is checked before and rejects toString etc. with E_TRACE_USAGE, so the changed line is unreachable for inherited names"
+      }
+    ],
+    "mutants_summary": "42 applied, 41 killed, 1 equivalent survivor (V40). Covered meanings: word/pair split, NFKC, invisible signs, case, exception file+hash, line hash, links out of root, %XX, SAI_TRACE_LIST and its realpath, 16 MiB limit before reading, realpath of file, git arguments fsmonitor/quotePath/--others, add lock, writeAllOrNothing, re-read, sort of hashes, exit codes 0/1/2, file names with label, output without name, Map vs inherited names.",
+    "findings": [
+      {
+        "place": "tools/src/traces/cli.js (mutant V40)",
+        "severity": "INFO",
+        "what": "Replacing KEYS.get(command) by an object lookup does not fail any test, but the mutant is equivalent: KEYS.has(command) throws first.",
+        "fix": "none needed; TC-24 already kills the real regression (V26, parsing through in)."
+      },
+      {
+        "place": "tools/test/traces-faults.test.js, TF-7 (in the process)",
+        "severity": "LOW",
+        "what": "The mock replaces fs.openSync on the default fs object; a change of check.js to a named import would stop the mock from seeing calls.",
+        "fix": "no change needed now: the test also asserts that b.txt was opened, so it would fail (not pass silently); if it fails after such a refactor, rewrite it to observe the read another way."
+      }
+    ],
+    "self_check": "Commands run by me in this turn: (a) hashes of git ls-files --cached --others --exclude-standard (849 files) before and after all mutants: diff empty, SAME; (b) cd tools && npm run check -> exit 0, tests 996 pass 996 fail 0 skipped 0 todo 0; (c) cd tools && npm run traces -> exit 0, 'traces: файлов проверено 831, следов 0, пропущено 18'; (d) mutants: python script in scratchpad vtest-req014/mut.py, each mutant a copy of tools/ (node_modules linked) + README, run 'node --test' on the four traces-* files, results per mutant in the mutants field; (e) race: 8 rounds x 4 parallel 'add' processes -> every round codes {0,2,2,2}, 4 hashes, no lock; 6 x TC-19 -> 3/3 pass; (f) node --test test/traces-*.test.js after all -> 56 pass 0 fail. The red-run rule (quality-bar p. 6.4) did not arise: nothing went red in the unmodified tree.",
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Own mutant copies were removed after each run; vtest-req014/ keeps only mut.py, results.json and the two hash lists in the ORCH scratchpad."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

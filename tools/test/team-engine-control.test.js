@@ -213,12 +213,16 @@ test(
     }
     for (const pid of pids) assert.equal(pidAlive(pid), false, `pid ${pid}`);
     const events = journal(p);
+    // Each run writes its TASK_INTERRUPTED when its own process exits after the kill,
+    // so the two lines come in the order the processes die: compare them by task.
     assert.deepStrictEqual(
-      ofType(events, "TASK_INTERRUPTED").map((x) => [x.task, x.data.cause]),
+      ofType(events, "TASK_INTERRUPTED")
+        .map((x) => [x.task, x.data.cause])
+        .sort((a, b) => a[0].localeCompare(b[0])),
       [
         ["t-0001", "stop"],
         ["t-0002", "stop"],
-      ].sort(),
+      ],
     );
     assert.deepStrictEqual(
       ofType(events, "RUN_FINISHED").map((x) => x.data.outcome),

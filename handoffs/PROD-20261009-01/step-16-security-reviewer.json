@@ -1,0 +1,100 @@
+{
+  "handoff_id": "step16-security-reviewer-PROD-20261009-01",
+  "run_id": "PROD-20261009-01",
+  "workflow_id": "WF-02",
+  "step": "16",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261009-01/step-16-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-014"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261009-01/step-16-security-reviewer.json — только status, completed_at, result"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "REVIEWER (шаг 17), REQ-VALIDATOR (шаг 15)",
+    "artifacts_in": [
+      "handoffs/PROD-20261009-01/step-14-backend-dev.json",
+      "handoffs/PROD-20261009-01/step-11-security-reviewer.json",
+      "tools/src/traces/"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3, повторная проверка после правки кода (AP-049): handoffs/PROD-20261009-01/step-14-backend-dev.json по вашему FAIL step-11-security-reviewer.json (F1 Medium; F2–F4 Low). Проект r3 и 0021 D1, D11–D13. Прогоните сами cd tools && npm run check (код выхода прямо; ожидаемо 995 из 995) и npm run traces. Повторите свои пробы: файл крупнее 16 МиБ (разреженный 3 GiB) — пропуск с пометкой без стека; строка из 100 000 '[' — время; подмена tracked-папки симлинком наружу (check не читает, hash-line не печатает хеш чужой строки, add отказывает, замок не создаётся/не удаляется вне корня); core.fsmonitor — в обоих вызовах git (проверьте, что fsmonitor из .git/config не исполняется); новые пути чтения (lstat, readText с ограничением чтения) — не открыли ли чтение вне корня, не создали ли гонку TOCTOU между lstat и чтением, не печатают ли пути/название; изменение team-engine-control.test.js EN-51 — не ослабление; Q7–Q11, R3 заново. Ничего не правьте. Результат: result.verdict PASS/FAIL, findings, summary. Пробы — sec-req014/r2/ в scratchpad.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "F1–F4 закрыты — каждое пробой",
+      "нет новых дыр от правки"
+    ]
+  },
+  "created_at": "2026-10-09T18:10:27Z",
+  "started_at": "2026-10-09T18:10:27Z",
+  "completed_at": "2026-10-09T18:13:50Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "surface_map": [
+        "tools/src/traces/check.js — «приходит извне» (файлы рабочей копии): новый readText — lstat, realpath, предел 16 МиБ, чтение с O_NOFOLLOW не больше MAX+1 байта",
+        "tools/src/traces/rules.js — «приходит извне» (строки Markdown): линейный разбор, MAX_LINE_CHARS",
+        "tools/src/traces/git-files.js — запуск git: -c core.fsmonitor=false в обоих вызовах",
+        "tools/src/traces/add.js — «пишет файлы» и «приходит извне» (stdin): guardWritePath до замка, readInput с ожиданием 30 с",
+        "tools/src/traces/cli.js — «приходит извне» (argv): разбор через Map; hash-line через readText",
+        "tools/src/traces/lists.js, words.js — сняты export, поверхность не изменилась",
+        "tools/test/* (traces-*, team-engine-control EN-51) — нет поверхности: тесты; EN-51 не ослаблен — по-прежнему ровно две записи TASK_INTERRUPTED t-0001 и t-0002 с cause «stop», сравнение после сортировки по задаче вместо порядка журнала",
+        "«уходит в браузер», «сервер ходит сам», «данные магазинов», «фото покупателей» — не задеты"
+      ],
+      "closed": {
+        "F1": "закрыт: разреженный файл 3 ГиБ — «пропущен: больше 16 МиБ», код 0, 0,13 с, стека нет; hash-line — E_TRACE_USAGE «файл больше 16 МиБ», код 2; файл 16 МиБ + 1 — пропуск с пометкой",
+        "F2": "закрыт: 100 000 '[' — 0,14 с; 1 000 000 '[' — 0,13 с и пометка «ссылки не разобраны (строка длиннее 100000 знаков)»; 99 000 '(' и 30 000 пар обратных кавычек со ссылкой за корень в конце — 0,13 с, ссылка найдена; смысл ссылок прежний (../x.md, <../a b.md>, ../x_(1).md, определение, %2E%2E — след; внутри кода и docs/x.md — нет)",
+        "F3": "закрыт: tracked d → ссылка наружу — «d/b.txt: пропущен: вне корня репозитория», не читается; hash-line d/b.txt — «файл вне корня репозитория», код 2, хеша нет; add при tools/traces, tools или самом файле хешей — ссылке: E_WRITE (ELOOP), код 2, чужой застарелый замок во внешней папке остался байт в байт, нового замка и файлов снаружи нет",
+        "F4": "закрыт: core.fsmonitor из .git/config и из глобального конфига при check не исполняется (контроль: обычный git status тот же скрипт исполняет)"
+      },
+      "points": {
+        "Q7": "применим, выполнен: поиск ключей, токенов, приватных ключей по tools/src/traces — совпадений нет; во всех выводах проб (3 ГиБ, ссылки наружу, add, hash-line, имена в путях и тексте) Zqxwvorg ни в каком регистре — 0, строк стека — 0, домашних и временных путей — 0",
+        "Q8": "неприменим: данных магазинов нет",
+        "Q9": "неприменим: запросов к хранилищу нет",
+        "Q10": "применим, выполнен: большой файл, файл вне корня, FIFO и ссылки — пропуск с пометкой, остальные файлы проверяются; git с таймаутом 30 с; stdin — предел 64 КиБ и 30 с ожидания; строка Markdown — линейное время и предел 100 000 знаков",
+        "Q11": "неприменим: сети нет (импорты только node:fs, node:path, node:crypto, node:child_process и свои модули)",
+        "R3": "неприменим: фото нет",
+        "R2": "неприменим: Pixel Office не задет",
+        "write_paths": "выполнено: см. F3; запись только через writeAllOrNothing",
+        "git_args": "выполнено: два execFileSync без оболочки, фиксированные аргументы; --root '--upload-pack=touch PWNED' — «папки --root нет», файла-метки нет",
+        "new_read_paths": "чтение вне корня не открыто (realpath внутри realpath корня, O_NOFOLLOW на последнем звене); пути и название не печатаются. Остаётся узкое окно TOCTOU между realpath и open при подмене родительской папки одновременно с проверкой — требует того, кто уже пишет в рабочую копию в этот момент; итог — только номер строки или хеш одной строки; не находка, записано в issues"
+      }
+    },
+    "findings": [],
+    "self_check": {
+      "commands": [
+        "cd tools && npm run check → exit 0; # tests 995, # pass 995, # fail 0; traces: файлов проверено 829, следов 0, пропущено 18",
+        "npm run traces → exit 0; «файлов проверено 829, следов 0, пропущено 18»",
+        "пробы: <рабочая папка ORCH>/sec-req014/r2/probe.sh, лог probe.log",
+        "по выводам проб: grep -ci zqxwvorg → 0; строк стека → 0; домашних и временных путей → 0",
+        "git diff tools/test/team-engine-control.test.js — прочитан: только сортировка по задаче"
+      ],
+      "hashes": "sha256 13 файлов (tools/src/traces/*, tools/traces/*, tools/package.json, tools/test/team-engine-control.test.js, .gitignore, README.md) до и после проверки совпали"
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Ожидаемый вердикт в задании не назван; вердикт выведен самостоятельно."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Файл больше 16 МиБ пропускается с кодом 0 (как двоичный, по проекту r3): название в таком файле не будет найдено, но пометка в выводе есть. Решение проекта, не находка."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Окно TOCTOU между realpath и open в readText (подмена родительской папки во время проверки) — остаточный риск низкой важности, не находка."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
