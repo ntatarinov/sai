@@ -14,7 +14,7 @@ import path from "node:path";
 import { maskSecrets } from "../../pixel-office/mask.js";
 import { TeamError, engineError, eventError, fromOsError } from "../errors.js";
 import { resolveHome, resolveProjectDir, INBOX_DIR } from "../home.js";
-import { ENGINE_HOLDER, isAlive, lockHolder } from "../lock.js";
+import { ENGINE_HOLDER, holdsLive, isAlive, lockHolder } from "../lock.js";
 import { LIMITS, PATTERNS, isCanonicalTs } from "../schema.js";
 import { openWriter, readProject } from "../store.js";
 import { eventView } from "../view.js";
@@ -535,7 +535,9 @@ export async function sendToEngine(id, message, opts = {}) {
       }
       throw new TeamError(r.ack.code, r.ack.message);
     }
-    if (!isAlive(enginePid)) {
+    // (0026 R2) The same rule as lockHolder: a closed broken engine writer of this
+    // process is not a live engine.
+    if (!holdsLive(enginePid, projectDir)) {
       // One more look: the ack may have come just before the engine ended.
       const last = readAck(ackFile, nonce);
       if (last.ack !== undefined || last.bad) continue;

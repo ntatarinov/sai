@@ -1,0 +1,112 @@
+{
+  "handoff_id": "step33-code-fixer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "33",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261010-01/step-33-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": [
+      "REQ-011",
+      "REQ-009",
+      "REQ-013"
+    ],
+    "artifacts_in": [
+      "docs/design/ISS-0010-web-chat-write-recovery.md (r3)",
+      "decisions/0026-team-core-reclaim-own-broken-lock.md (r3, принято)",
+      "handoffs/PROD-20261010-01/step-32-code-design-validator.json (PASS)"
+    ],
+    "write_set": [
+      "tools/src/team/lock.js",
+      "tools/src/team/store.js",
+      "tools/src/team/engine/channel.js",
+      "tools/src/web/texts.js",
+      "tools/src/web/api.js",
+      "tools/test/team-writer.test.js",
+      "tools/test/team-faults.test.js",
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-web-faults.test.js",
+      "handoffs/PROD-20261010-01/step-33-code-fixer.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны по тексту поручения ORCH (result.issues I1)"
+  },
+  "task": {
+    "description": "WF-03, шаг 4: исправление ISS-0010 по проекту r3 и решению 0026 — lock.js (ORPHANED, HELD/билет, noteOrphanedLock, holdsLive, acquireLock → {stalePid, ticket}), store.js (билет писателю, close() сломанного → noteOrphanedLock), channel.js (М7), texts.js и api.js (chatDisk, chatDiskUnsure, E_DISK с rollback failed); привести ожидания только названных проектом тестов (п. 8: TM-13 ×3, TM-14 ×2, TM-47 в процессе, TM-66 (2), (3), WEB-10a, WEB-10f); новые TM-73…77, WEB-10g/h не писать; npm run check и npm run traces; ручная проверка трёх сценариев на копии вне репозитория."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T16:29:24Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправление ISS-0010 построено ровно по проекту r3: процесс снова открывает проект после своего закрытого сломанного писателя, который ещё держал замок (снятие штатным путём с LOCK_STALE_REMOVED {свой pid} и восстановлением по журналу); поздний close() писателя, потерявшего замок, ничего не отмечает; ожидание подтверждения движка проверяет живость тем же правилом R2; сервер говорит правдивые тексты chatDisk и chatDiskUnsure. Ожидания 10 названных проектом тестов приведены к новому поведению без ослабления проверок. npm run check — код 0 (1094 из 1094), npm run traces — код 0. На копии вне репозитория три сценария до исправления падают, после — проходят.",
+    "changes": [
+      "М3/М4, п. 4.1: tools/src/team/lock.js — состояние модуля HELD (Map ключ → билет последнего успешного захвата) и ORPHANED (Set), ключ path.resolve(projectDir); новая экспортируемая holdsLive(pid, projectDir) = isAlive(pid) && !(pid === process.pid && ORPHANED.has(key)) — единственное место правила R2",
+      "п. 4.1 (r3, F1): lock.js — новая экспортируемая noteOrphanedLock(projectDir, ticket): отмечает папку, только если HELD.get(key) === ticket и writer.lock — обычный файл ≤ 4096 байт, байт-в-байт равный ticket.bytes; иначе false; файлов не пишет, не бросает (ошибка чтения → false)",
+      "п. 4.1: lock.js lockHolder — alive = holdsLive(pid, projectDir) вместо isAlive(pid); форма ответа та же",
+      "п. 4.1: lock.js acquireLock — шаг «замок занят»: holdsLive(holder, projectDir) вместо isAlive(holder); при успешном linkSync — замороженный билет {bytes: записанное содержимое}, HELD.set, ORPHANED.delete, возврат {stalePid, ticket}; комментарий функции обновлён",
+      "п. 4.2: tools/src/team/store.js — импорт noteOrphanedLock; openWriter берёт {stalePid, ticket} и передаёт ticket в конструктор Writer (приватное поле #ticket, наружу не отдаётся); Writer.close(): у сломанного — noteOrphanedLock(this.#dir, this.#ticket), замок не трогается; иначе releaseLock как прежде; комментарий close() обновлён. recover, markBroken, #commit не менялись",
+      "М7, п. 4.3: tools/src/team/engine/channel.js — импорт holdsLive; в цикле ожидания подтверждения sendToEngine проверка !isAlive(enginePid) заменена на !holdsLive(enginePid, projectDir); ветка дальше без изменений; isAlive остаётся для removableLeftover",
+      "п. 5.1: tools/src/web/texts.js — TEXT.chatDisk = «Диск не принимает записи: сообщение не сохранено. Освободите место и повторите»; новый TEXT.chatDiskUnsure = «Диск не принимает записи: сообщение могло сохраниться. Проверьте чат, прежде чем отправлять снова»",
+      "п. 5.2 (М6): tools/src/web/api.js chatFailure — E_DISK с details.rollback === \"failed\" → 500 chatDiskUnsure, field null; прочие E_DISK — по таблице CHAT_REFUSALS (chatDisk); postChat не менялся",
+      "п. 8 К8: tools/test/team-writer.test.js — общий помощник reopenAfterBroken: close() сломанного не меняет байты замка, затем openWriter того же процесса — успех, notices называют свой pid, в журнале ровно LOCK_STALE_REMOVED {pid: process.pid}, last_seq = прежний + 1, новый писатель пишет CHAT, здоровый close() снимает замок. Применён в TM-13 в процессе (×3, EIO/ENOSPC/partial ENOSPC) и TM-14 (оба); в TM-14 «откат не удался» дополнительно: целая строка CHAT «Сбой отката» — ровно одно событие журнала на своём seq. Варианты TM-13 в дочернем процессе не тронуты",
+      "п. 8 К8: tools/test/team-faults.test.js TM-47 (в процессе) — вместо E_PROJECT_BUSY: байты замка и папка после close() те же, затем openWriter — LOCK_STALE_REMOVED {pid: process.pid}, имя b.md свободно, файл записан. TM-47 в дочернем процессе не тронут",
+      "п. 8 К7: tools/test/team-recovery.test.js TM-66 (2) — прежняя подготовка и проверки close() (байты, снимок, повторный close, запись после close) сохранены; затем openWriter — LOCK_STALE_REMOVED {pid: process.pid}, RUN_FINISHED interrupted, TASK_INTERRUPTED {cause: recovery}, PROJECT_RECOVERED {from_status: running, closed_runs: 1, interrupted_tasks: 1}; повторное открытие — без событий и без notices; название теста приведено к поведению",
+      "п. 8 К7: team-recovery.test.js TM-66 (3) — markBroken → close (байты и снимок те же, markBroken после close не ошибка) → openWriter — только LOCK_STALE_REMOVED {pid: process.pid}, без пакета восстановления; название теста приведено к поведению. TM-66 (1) и (4) не тронуты",
+      "п. 8 К1: tools/test/team-web-faults.test.js WEB-10a (EIO при чате) — 500 с новым текстом chatDisk, без стека, хеш журнала тот же; следующий POST «После сбоя» — 200 «Отправлено», в журнале после прежних строк ровно LOCK_STALE_REMOVED {pid: process.pid} и CHAT USER «После сбоя», writer.lock нет (было: 409 и комментарий о принятом риске W9); название теста приведено",
+      "п. 8 К3: team-web-faults.test.js WEB-10f — строка E_DISK таблицы с новым текстом; добавлены проверки chatFailure для E_DISK {rollback: failed} → 500 chatDiskUnsure и {rollback: ok} → 500 chatDisk, ctx.warn не вызван (строка без details уже покрыта таблицей)"
+    ],
+    "self_check": [
+      "до правки кода (HEAD): ожидаемые проектом падения отсутствовали; после правки кода, до правки тестов: cd tools && npm run check → prettier (2 файла) исправлен npx prettier --write; затем # tests 1094, # pass 1084, # fail 10 — ровно названные проектом: TM-47 в процессе, TM-66 (2), TM-66 (3), WEB-10a, WEB-10f, TM-13 ×3 (throw EIO, throw ENOSPC, partial ENOSPC), TM-14 ×2; других падений нет",
+      "после правки тестов: cd tools && npm run check → код 0: «All matched files use Prettier code style!», eslint --max-warnings 0 без вывода, «traces: файлов проверено 911, следов 0, пропущено 26», # tests 1094 # pass 1094 # fail 0 # cancelled 0 # skipped 0 # todo 0",
+      "cd tools && npm run traces → код 0: «traces: файлов проверено 911, следов 0, пропущено 26»",
+      "пять мест записи (п. 7): grep -rnE 'writeFile|appendFile|createWriteStream' tools/src/team/ — HEAD (git archive в <scratch>/head) и рабочее дерево: diff без номеров строк пуст (channel.js, files.js, lock.js, store.js ×2); grep -rnE 'appendFile|writeFile|createWriteStream|openSync' tools/src/web/ — пусто (код 1)",
+      "копии вне репозитория: <scratch>/after (rsync рабочего дерева без .git и node_modules; diff -r с tools/ репозитория пуст) и <scratch>/before (git archive HEAD); в каждой npm ci — «added 80 packages»; Node v22.21.1. Ручной сценарий <scratch>/manual/manual-iss10.test.js (вне репозитория), node --test --test-reporter=tap --test-timeout=90000",
+      "сценарий A (сервер в процессе, ENOSPC на writeSync events.jsonl на каждый из двух первых POST, затем без сбоя). ДО: «1st: 500 Не удалось записать на диск — сообщение не сохранено» / «2nd: 409 Сообщение не отправлено, повторите через несколько секунд» (сбой даже не сработал — до записи не дошло) / «3rd (space free): 409 …» / added [] / lock after: true. ПОСЛЕ: «1st: 500 Диск не принимает записи: сообщение не сохранено. Освободите место и повторите» / «2nd (disk still full): 500 тот же текст» (сбой сработал на LOCK_STALE_REMOVED, R5) / journal unchanged: true / «3rd (space free): 200 Отправлено» / added [[\"LOCK_STALE_REMOVED\",<свой pid>],[\"CHAT\",\"После сбоя\"]] / lock after: false",
+      "сценарий B (lostlock, часы неподвижны): ДО и ПОСЛЕ одинаково: «W1 write: E_LOCK_LOST broken: true» / «W1 closed late; lock bytes same: true» / «W3 open while W2 healthy: E_PROJECT_BUSY Проект занят другим процессом (pid <свой>)» / «lock bytes same: true journal same: true» / «W2 write: ok, broken: false»; вариант (д): «W4 write: E_LOCK_LOST broken: true», W4.close() без файла, затем замок со своим pid и другим since → «E_PROJECT_BUSY lock untouched: true» (ПОСЛЕ)",
+      "сценарий C (движок в процессе: openWriter holder engine + openInbox; sendToEngine say; когда сообщение в inbox/ — markBroken() и close() писателя движка). ДО: «send: E_CHANNEL_TIMEOUT | Сообщение не подтверждено: проект его не принял. Повторите команду | after 10008 ms». ПОСЛЕ: «send: E_CHANNEL_TIMEOUT | Проект завершил работу. Повторите команду | after 50 ms» / «inbox left: 0 journal same: true» / «deliver via: self [[\"LOCK_STALE_REMOVED\",<свой pid>],[\"CHAT\",\"Снова\"]]». Итог файла: ДО pass 1 fail 2, ПОСЛЕ pass 3 fail 0",
+      "весь набор на копии <scratch>/after: node --test --test-timeout=90000 \"test/**/*.test.js\" → код 0, # tests 1094 # pass 1094 # fail 0; format:check и lint на копии — без ошибок; npm run traces на копии — E_TRACE_NOT_GIT (копия без .git, ожидаемо), в репозитории — код 0"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "process",
+        "text": "ORCH не создал файл handoff-а step-33 заранее. Я записал его по поручению; context и task — по тексту поручения, created_at и started_at — null (получатель их не ставит); их стоит сверить."
+      },
+      {
+        "id": "I2",
+        "kind": "tests-for-step-6",
+        "text": "Изменённые ожидания (п. 8 проекта, К7, К8, К1, К3) внесены мной по поручению ORCH: TM-13 ×3, TM-14 ×2, TM-47 (в процессе), TM-66 (2), (3), WEB-10a, WEB-10f; названия TM-66 (2), (3) и WEB-10a приведены к новому поведению. Проверки не ослаблены: байты замка и снимок папки после close() по-прежнему сверяются, добавлены проверки событий журнала. TEST-DESIGNER (шаг 6) и TEST-DESIGN-VALIDATOR должны проверить их как свои."
+      },
+      {
+        "id": "I3",
+        "kind": "tests-for-step-6",
+        "text": "Не написаны (TEST-DESIGNER, шаг 6): TM-73, TM-74, TM-75 (а–д), TM-76, TM-77, WEB-10g, WEB-10h; также второй прогон WEB-10a с code ENOSPC (п. 8 К1, «таблица кодов») — я поменял только ожидания существующего прогона с EIO. Сценарии A, B (в т. ч. (г), (д)) и C проверены вручную на копии (self_check), файл ручной проверки в репозиторий не переносился."
+      },
+      {
+        "id": "I4",
+        "kind": "docs-for-step-10",
+        "text": "Документы п. 10 проекта (0017 P12, 0025 W9, decisions/README.md, REQ-009/011/013, tools/README.md, docs/anti-patterns.md, ISS-0010, STATE.md) не менялись — это DOC-UPDATER, шаг 10."
+      },
+      {
+        "id": "I5",
+        "kind": "note",
+        "text": "Отступлений от проекта нет. Одна защитная деталь в noteOrphanedLock: билет undefined/null → false (иначе HELD.get(key) === undefined совпало бы при отсутствии захвата); на поведение по проекту не влияет — openWriter всегда передаёт билет."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/lock.js",
+      "tools/src/team/store.js",
+      "tools/src/team/engine/channel.js",
+      "tools/src/web/texts.js",
+      "tools/src/web/api.js",
+      "tools/test/team-writer.test.js",
+      "tools/test/team-faults.test.js",
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-web-faults.test.js"
+    ]
+  }
+}

@@ -35,7 +35,7 @@ const INTERNAL = {
   reload: false,
 };
 
-test("WEB-10a EIO on the write of the core when a message is sent: 500 «не удалось записать на диск», no stack; the journal is unchanged; the next requests answer as usual", async (t) => {
+test("WEB-10a EIO on the write of the core when a message is sent: 500 «диск не принимает записи», no stack; the journal is unchanged; the next requests answer as usual, and the next message is saved without a restart (ISS-0010)", async (t) => {
   const box = webSandbox(t);
   const p = project(t, box);
   withPlan(p.w, [planTask("t-0001", "researcher")]);
@@ -59,34 +59,39 @@ test("WEB-10a EIO on the write of the core when a message is sent: 500 «не у
   assert.deepStrictEqual(faults.fired(), [true]);
   assert.equal(r.status, 500);
   assert.deepStrictEqual(r.json, {
-    error_text: "Не удалось записать на диск — сообщение не сохранено",
+    error_text:
+      "Диск не принимает записи: сообщение не сохранено. Освободите место и повторите",
     field: null,
     reload: false,
   });
   assert.doesNotMatch(r.text, NO_STACK);
   assert.equal(sha256(fs.readFileSync(p.events)), hash);
+  const lines = journal(p).length;
   assert.equal((await s.get(`/api/projects/${p.id}`)).status, 200);
   assert.equal((await s.get("/api/projects")).status, 200);
-  // The next write answers with a plain text, without a stack. The behaviour is
-  // fixed as observed: the broken writer of the core keeps its lock while the
-  // process of the server lives, so the next message gets exactly 409 «повторите
-  // через несколько секунд» until the server is restarted. This is the known
-  // defect docs/issues/ISS-0010 (accepted risk, decisions/0025, W9); when ISS-0010
-  // is fixed, change this expectation together with the fix
-  // (TEST-DESIGN-VALIDATOR F3).
+  // (ISS-0010, decision 0026) The disk takes writes again: the next message is
+  // saved without a restart of the server. The process removes the lock its
+  // closed broken writer left (LOCK_STALE_REMOVED with its own pid), then writes
+  // the message; before the fix this was 409 until a restart.
   const again = await s.post(
     `/api/projects/${p.id}/chat`,
     { text: "После сбоя" },
     { key },
   );
-  assert.equal(again.status, 409, again.text);
-  assert.deepStrictEqual(again.json, {
-    error_text: "Сообщение не отправлено, повторите через несколько секунд",
-    field: null,
-    reload: false,
-  });
+  assert.equal(again.status, 200, again.text);
+  assert.equal(again.json.result_text, "Отправлено");
   assert.doesNotMatch(again.text, NO_STACK);
-  assert.equal(sha256(fs.readFileSync(p.events)), hash, "nothing half-written");
+  const added = journal(p).slice(lines);
+  assert.deepStrictEqual(
+    added.map((e) => [e.type, e.source]),
+    [
+      ["LOCK_STALE_REMOVED", "ENGINE"],
+      ["CHAT", "USER"],
+    ],
+  );
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  assert.equal(added[1].data.text, "После сбоя");
+  assert.equal(fs.existsSync(path.join(p.dir, "writer.lock")), false);
 });
 
 test("WEB-10a EIO while a new project is written (the event file of the folder being made): 500 «проект не создан», no new folder, no stack; the next request answers", async (t) => {
@@ -474,7 +479,12 @@ const CHAT_ROWS = [
     "Связь с работающим проектом недоступна. Перезапустите Sai Team",
     null,
   ],
-  ["E_DISK", 500, "Не удалось записать на диск — сообщение не сохранено", null],
+  [
+    "E_DISK",
+    500,
+    "Диск не принимает записи: сообщение не сохранено. Освободите место и повторите",
+    null,
+  ],
 ];
 
 test("WEB-10f (r3, F6) chatFailure: every code of the rows «чат» of section 10 gives its status, text and field without a warning (E_CHANNEL_STALE — 504 «не подтверждено»); E_NOT_FOUND — «not found»; an unknown code — 500 with the general text and exactly one warning", () => {
@@ -490,6 +500,30 @@ test("WEB-10f (r3, F6) chatFailure: every code of the rows «чат» of section
       code,
     );
     assert.deepStrictEqual(warned, [], code);
+  }
+  // (ISS-0010, design section 5.2) E_DISK whose rollback failed: the message may
+  // be saved; a good rollback or no details — «не сохранено»
+  for (const [details, text] of [
+    [
+      { rollback: "failed" },
+      "Диск не принимает записи: сообщение могло сохраниться. Проверьте чат, прежде чем отправлять снова",
+    ],
+    [
+      { rollback: "ok" },
+      "Диск не принимает записи: сообщение не сохранено. Освободите место и повторите",
+    ],
+  ]) {
+    const warned = [];
+    const r = chatFailure(
+      { warn: (l) => warned.push(l) },
+      new TeamError("E_DISK", "сообщение ядра", details),
+    );
+    assert.deepStrictEqual(
+      r,
+      { status: 500, body: { error_text: text, field: null, reload: false } },
+      details.rollback,
+    );
+    assert.deepStrictEqual(warned, [], details.rollback);
   }
   const warned = [];
   const nf = chatFailure(

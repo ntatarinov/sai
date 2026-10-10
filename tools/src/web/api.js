@@ -244,6 +244,11 @@ const CHAT_REFUSALS = Object.freeze({
 export function chatFailure(ctx, err) {
   const code = codeOf(err);
   if (code === "E_NOT_FOUND") return notFoundReply();
+  // (design ISS-0010, section 5.2) The rollback of the core failed: the whole
+  // line of the message may be in the journal.
+  if (code === "E_DISK" && err?.details?.rollback === "failed") {
+    return failure(500, TEXT.chatDiskUnsure, null);
+  }
   if (code !== null && Object.hasOwn(CHAT_REFUSALS, code)) {
     const [status, text, field] = CHAT_REFUSALS[code];
     return failure(status, text, field);

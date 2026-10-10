@@ -140,6 +140,41 @@ function bytesOf(file) {
   return fs.readFileSync(file);
 }
 
+// (design ISS-0010, К8; decision 0026) close() of a broken writer that still holds
+// the lock leaves it byte for byte; the same process then opens the project again:
+// the lock is removed as stale (its own pid), the journal goes on after `lines`
+// events with LOCK_STALE_REMOVED, the new writer writes, and its close() gives the
+// lock back.
+function reopenAfterBroken(t, p, home, clock, lines) {
+  const lockFile = path.join(p.dir, "writer.lock");
+  const lockBefore = fs.readFileSync(lockFile);
+  p.writer.close();
+  assert.ok(
+    fs.readFileSync(lockFile).equals(lockBefore),
+    "close() leaves the lock byte for byte the same",
+  );
+  assert.equal(lockOf(p.dir).pid, process.pid);
+  const again = openTracked(t, home, p.id, clock);
+  assert.ok(
+    again.notices.some((n) => n.includes(String(process.pid))),
+    "the notices name the removed lock",
+  );
+  const added = journalOf(p.events).slice(lines);
+  assert.deepStrictEqual(
+    added.map((e) => [e.type, e.source]),
+    [["LOCK_STALE_REMOVED", "ENGINE"]],
+  );
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  assert.equal(again.state.last_seq, lines + 1);
+  again.say("После восстановления");
+  const last = journalOf(p.events).at(-1);
+  assert.equal(last.type, "CHAT");
+  assert.equal(last.data.text, "После восстановления");
+  assert.equal(journalOf(p.events).length, lines + 2);
+  again.close();
+  assert.equal(fs.existsSync(lockFile), false, "a healthy close() frees it");
+}
+
 const WRITE_FAULTS = [
   ["EIO", "throw"],
   ["ENOSPC", "throw"],
@@ -184,23 +219,9 @@ for (const [code, effect] of WRITE_FAULTS) {
     assert.match(next.message, /откройте проект заново/);
     assert.ok(bytesOf(p.events).equals(before));
 
-    // (r6) close() of a broken writer keeps the lock: the process is alive, so the
-    // project is busy for everybody, also for this process; nothing changes.
-    const lockBefore = fs.readFileSync(path.join(p.dir, "writer.lock"));
-    w.close();
-    const folder = snapshot(p.dir);
-    assert.ok(
-      fs.readFileSync(path.join(p.dir, "writer.lock")).equals(lockBefore),
-      "the lock is byte for byte the same",
-    );
-    assert.equal(lockOf(p.dir).pid, process.pid);
-    const busy = assertRefusal(
-      p.dir,
-      () => openWriter(p.id, { home, now: clock }),
-      "E_PROJECT_BUSY",
-    );
-    assert.equal(busy.details.pid, process.pid);
-    assert.deepStrictEqual(snapshot(p.dir), folder);
+    // (r6) close() of a broken writer keeps the lock byte for byte; (decision
+    // 0026) this process then opens the project again with the stale-lock removal.
+    reopenAfterBroken(t, p, home, clock, journalOf(p.events).length);
   });
 
   // The check that the next writer goes on (moved here from the same test of r5): the
@@ -268,17 +289,9 @@ test("TM-14 a failed fsync with a good rollback: no new line, the writer is brok
   assert.ok(bytesOf(p.events).equals(before), "no record");
   assert.deepStrictEqual(w.state, state);
   assertRefusal(p.dir, () => w.say("Ещё"), "E_WRITER_BROKEN");
-  // (r6) the lock stays after close(); the same process cannot open the project
-  w.close();
-  const folder = snapshot(p.dir);
-  assert.equal(lockOf(p.dir).pid, process.pid);
-  const busy = assertRefusal(
-    p.dir,
-    () => openWriter(p.id, { home, now: clock }),
-    "E_PROJECT_BUSY",
-  );
-  assert.equal(busy.details.pid, process.pid);
-  assert.deepStrictEqual(snapshot(p.dir), folder);
+  // (r6) the lock stays after close(); (decision 0026) the same process opens the
+  // project again with the stale-lock removal
+  reopenAfterBroken(t, p, home, clock, state.last_seq);
 });
 
 test("TM-14 a failed fsync and a failed rollback: the journal has the whole line of the event, the state has not", (t) => {
@@ -311,7 +324,8 @@ test("TM-14 a failed fsync and a failed rollback: the journal has the whole line
   assert.deepStrictEqual(w.state, state, "the state has no event");
   assertRefusal(p.dir, () => w.say("Ещё"), "E_WRITER_BROKEN");
   // (r6) the event that was written is read from the journal, without a new writer;
-  // after close() the lock stays and the same process gets E_PROJECT_BUSY
+  // (decision 0026) after close() the lock stays and the same process opens the
+  // project again: the whole line stays an event of the journal
   const last = journalOf(p.events).at(-1);
   assert.equal(last.type, "CHAT");
   assert.equal(last.data.text, "Сбой отката");
@@ -321,16 +335,15 @@ test("TM-14 a failed fsync and a failed rollback: the journal has the whole line
     state.last_seq + 1,
     "a reader sees the event that was written",
   );
-  w.close();
-  const folder = snapshot(p.dir);
-  assert.equal(lockOf(p.dir).pid, process.pid);
-  const busy = assertRefusal(
-    p.dir,
-    () => openWriter(p.id, { home, now: clock }),
-    "E_PROJECT_BUSY",
+  reopenAfterBroken(t, p, home, clock, state.last_seq + 1);
+  const events = journalOf(p.events);
+  assert.equal(
+    events.filter((e) => e.type === "CHAT" && e.data.text === "Сбой отката")
+      .length,
+    1,
+    "the whole line is one event of the journal",
   );
-  assert.equal(busy.details.pid, process.pid);
-  assert.deepStrictEqual(snapshot(p.dir), folder);
+  assert.equal(events[state.last_seq].type, "CHAT");
 });
 
 // ---- TM-15 ---------------------------------------------------------------------------

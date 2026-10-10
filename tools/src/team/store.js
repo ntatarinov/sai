@@ -37,6 +37,7 @@ import {
   assertLockHeld,
   cleanLockLeftovers,
   lockHolder,
+  noteOrphanedLock,
   releaseLock,
 } from "./lock.js";
 import { reduce, reduceInPlace, runIdFor, taskIdFor } from "./reducer.js";
@@ -150,8 +151,19 @@ class Writer {
   #bytes;
   #broken = false;
   #closed = false;
+  #ticket;
 
-  constructor({ id, dir, pid, clock, state, bytes, notices, scenario }) {
+  constructor({
+    id,
+    dir,
+    pid,
+    clock,
+    state,
+    bytes,
+    notices,
+    scenario,
+    ticket,
+  }) {
     this.id = id;
     this.state = state;
     this.notices = notices;
@@ -163,6 +175,7 @@ class Writer {
     this.#pid = pid;
     this.#clock = clock;
     this.#bytes = bytes;
+    this.#ticket = ticket;
     INTERNAL_APPEND.set(this, (input) => this.#append(input, true));
     INTERNAL_BATCH.set(this, (inputs) => this.#appendBatch(inputs));
     INTERNAL_BREAK.set(this, () => {
@@ -467,15 +480,19 @@ class Writer {
     this.#broken = true;
   }
 
-  // Gives the right to write back. Never throws; a lock left behind becomes stale
-  // when the process ends. A broken writer keeps its lock (rule 1 of ORCH,
-  // PROD-20261006-01 step 16): its open runs could not be closed, so the project is
-  // left as after a crash, and the next writer recovers it once this process is
-  // gone (section 6.3, step 8); until then the project is busy.
+  // Gives the right to write back. Never throws. A broken writer keeps its lock
+  // (rule 1 of ORCH, PROD-20261006-01 step 16): its open runs could not be closed,
+  // so the project is left as after a crash, and the next writer recovers it
+  // (section 6.3, step 8). For other processes the lock is stale once this process
+  // is gone; (0026 R1) for this process — at once, when this writer still holds
+  // the lock (noteOrphanedLock checks it; the lock file is not touched).
   close() {
     if (this.#closed) return;
     this.#closed = true;
-    if (this.#broken) return;
+    if (this.#broken) {
+      noteOrphanedLock(this.#dir, this.#ticket);
+      return;
+    }
     releaseLock(this.#dir, this.#pid);
   }
 }
@@ -643,7 +660,7 @@ export function openWriter(id, opts = {}) {
   }
   const eventsFile = path.join(dir, EVENTS_FILE);
   readJournal(eventsFile, id);
-  const { stalePid } = acquireLock(
+  const { stalePid, ticket } = acquireLock(
     dir,
     pid,
     new Date(clock()).toISOString(),
@@ -671,6 +688,7 @@ export function openWriter(id, opts = {}) {
       bytes: journal.bytes,
       notices,
       scenario: scenario && journal.state.scenario_file !== null,
+      ticket,
     });
     recover(writer, journal, eventsFile, stalePid, notices);
     return writer;

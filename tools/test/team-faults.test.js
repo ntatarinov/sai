@@ -306,17 +306,22 @@ test("TM-47 a failure at the link, at the removal of the partial file or at the 
   assert.equal(fs.existsSync(path.join(filesDir, "b.md")), false);
   assert.deepStrictEqual(snapshot(p.dir), before);
   assertRefusal(p.dir, () => w.say("Ещё"), "E_WRITER_BROKEN");
-  // (r6) after close() the lock of the live process stays: the project is busy for
-  // this process, the folder is as it was
+  // (r6) after close() the lock of the live process stays byte for byte, the folder
+  // is as it was; (decision 0026) this process then opens the project again: the
+  // stale lock of its own pid is removed, the name b.md is free and the file is
+  // written
+  const lockFile = path.join(p.dir, "writer.lock");
+  const lockBefore = fs.readFileSync(lockFile);
+  const lines = journalOf(p.events).length;
   w.close();
-  const folder = snapshot(p.dir);
-  const busy = assertRefusal(
-    p.dir,
-    () => openWriter(p.id, { home, now: makeClock(Date.now(), 1) }),
-    "E_PROJECT_BUSY",
-  );
-  assert.equal(busy.details.pid, process.pid);
-  assert.deepStrictEqual(snapshot(p.dir), folder);
+  assert.ok(fs.readFileSync(lockFile).equals(lockBefore));
+  assert.deepStrictEqual(snapshot(p.dir), before);
+  const again = openTracked(t, home, p.id, makeClock(Date.now(), 1));
+  const added = journalOf(p.events).slice(lines);
+  assert.deepStrictEqual(typesOf(added), ["LOCK_STALE_REMOVED"]);
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  again.writeResultFile({ name: "b.md", content: "Текст" });
+  assert.deepStrictEqual(fs.readdirSync(filesDir).sort(), ["b.md"]);
 });
 
 test("TM-47 the same failure of the event in a child process: after its death the next writer takes the stale lock, the name b.md is free and the file is written", (t) => {

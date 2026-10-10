@@ -1237,7 +1237,7 @@ H.startRun(w, "work", "developer", "t-0001");`,
   assert.equal(w.state.status, "paused");
 });
 
-test("TM-66 (2) the process is alive: close() of a broken writer leaves the lock byte for byte, the project is busy for this process", (t) => {
+test("TM-66 (2) the process is alive: close() of a broken writer leaves the lock byte for byte; this process then opens the project with one recovery (decision 0026)", (t) => {
   const home = makeHome(t);
   const p = startProject(t, home, makeClock());
   const w = p.writer;
@@ -1260,19 +1260,45 @@ test("TM-66 (2) the process is alive: close() of a broken writer leaves the lock
   w.close();
   assert.ok(fs.readFileSync(lockFile).equals(lockBytes));
   assert.deepStrictEqual(snapshot(p.dir), folder, "close() changed nothing");
-  const busy = assertRefusal(
-    p.dir,
-    () => openWriter(p.id, { home, now: makeClock(Date.now(), 1) }),
-    "E_PROJECT_BUSY",
-  );
-  assert.equal(busy.details.pid, process.pid);
   // a second close() and a write after close() change nothing and do not throw
   w.close();
   assertRefusal(p.dir, () => w.say("После"), "E_WRITER_BROKEN");
   assert.deepStrictEqual(snapshot(p.dir), folder);
+
+  // (decision 0026) the same process opens the project again: its own lock is
+  // removed as stale and the project is recovered as after the death of a process
+  const base = journalOf(p.events).length;
+  const again = openTracked(t, home, p.id, makeClock(Date.now(), 1));
+  assert.ok(again.notices.some((n) => n.includes(String(process.pid))));
+  const added = journalOf(p.events).slice(base);
+  assert.deepStrictEqual(
+    added.map((e) => [e.type, e.task]),
+    [
+      ["LOCK_STALE_REMOVED", null],
+      ["RUN_FINISHED", "t-0001"],
+      ["TASK_INTERRUPTED", "t-0001"],
+      ["PROJECT_RECOVERED", null],
+    ],
+  );
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  assert.equal(added[1].data.outcome, "interrupted");
+  assert.deepStrictEqual(added[2].data, { cause: "recovery" });
+  assert.deepStrictEqual(added[3].data, {
+    from_status: "running",
+    closed_runs: 1,
+    interrupted_tasks: 1,
+  });
+  assert.deepStrictEqual(again.state.runs.open, {});
+  again.close();
+  assert.equal(fs.existsSync(lockFile), false);
+  const hash = sha256(fs.readFileSync(p.events));
+  const reopened = openTracked(t, home, p.id, makeClock(Date.now(), 1));
+  assert.deepStrictEqual(reopened.notices, [], "no second recovery");
+  reopened.close();
+  assert.equal(sha256(fs.readFileSync(p.events)), hash, "no events");
 });
 
-test("TM-66 (3) markBroken(): a healthy writer becomes broken and keeps its lock on close()", (t) => {
+test("TM-66 (3) markBroken(): a healthy writer becomes broken and keeps its lock on close(); this process then opens the project without a recovery batch (decision 0026)", (t) => {
   const home = makeHome(t);
   const p = startProject(t, home, makeClock());
   const w = p.writer;
@@ -1286,15 +1312,20 @@ test("TM-66 (3) markBroken(): a healthy writer becomes broken and keeps its lock
   w.close();
   assert.ok(fs.readFileSync(path.join(p.dir, "writer.lock")).equals(lockBytes));
   assert.deepStrictEqual(snapshot(p.dir), folder);
-  assertRefusal(
-    p.dir,
-    () => openWriter(p.id, { home, now: makeClock(Date.now(), 1) }),
-    "E_PROJECT_BUSY",
-  );
   // markBroken() twice and after close() is not an error
   w.markBroken();
   w.markBroken();
   assert.deepStrictEqual(snapshot(p.dir), folder);
+
+  // (decision 0026) the same process opens the project again: only the removal of
+  // its own stale lock — there is no unclosed work to recover
+  const base = journalOf(p.events).length;
+  const again = openTracked(t, home, p.id, makeClock(Date.now(), 1));
+  const added = journalOf(p.events).slice(base);
+  assert.deepStrictEqual(typesOf(added), ["LOCK_STALE_REMOVED"]);
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  again.close();
+  assert.equal(fs.existsSync(path.join(p.dir, "writer.lock")), false);
 });
 
 test("TM-66 (4) control: a healthy writer gives the lock back; a writer that lost its lock does not touch the lock of another", (t) => {
