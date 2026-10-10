@@ -11,6 +11,7 @@ import { test } from "node:test";
 import { TeamError } from "../src/team/errors.js";
 import { chatFailure } from "../src/web/api.js";
 import { BODY_IDLE_MS } from "../src/web/config.js";
+import { lockHolder } from "../src/team/lock.js";
 import { installFaults } from "./fault-inject.js";
 import { FIXTURES, journal, sha256 } from "./exec-helpers.js";
 import { holdWriter } from "./team-helpers.js";
@@ -34,65 +35,99 @@ const INTERNAL = {
   field: null,
   reload: false,
 };
+const DISK_FULL = {
+  error_text:
+    "Диск не принимает записи: сообщение не сохранено. Освободите место и повторите",
+  field: null,
+  reload: false,
+};
+const DISK_UNSURE = {
+  error_text:
+    "Диск не принимает записи: сообщение могло сохраниться. Проверьте чат, прежде чем отправлять снова",
+  field: null,
+  reload: false,
+};
+const LOCK = "writer.lock";
 
-test("WEB-10a EIO on the write of the core when a message is sent: 500 «диск не принимает записи», no stack; the journal is unchanged; the next requests answer as usual, and the next message is saved without a restart (ISS-0010)", async (t) => {
-  const box = webSandbox(t);
-  const p = project(t, box);
-  withPlan(p.w, [planTask("t-0001", "researcher")]);
-  p.w.close();
-  const s = await startServer(t, box);
-  const key = await s.key();
-  const hash = sha256(fs.readFileSync(p.events));
-  const faults = installFaults([
-    { fn: "writeSync", paths: [p.events], effect: "throw", code: "EIO" },
-  ]);
-  let r;
-  try {
-    r = await s.post(
+// A snapshot without the given paths.
+function except(snap, names) {
+  return Object.fromEntries(
+    Object.entries(snap).filter(([rel]) => !names.includes(rel)),
+  );
+}
+
+// writer.lock and every leftover writer.lock.* of a project folder.
+function lockNames(dir) {
+  return fs
+    .readdirSync(dir)
+    .filter((n) => n === LOCK || n.startsWith(`${LOCK}.`))
+    .sort();
+}
+
+// (ISS-0010, design r3, К1) The regression test of the defect: ENOSPC is the case
+// of the defect, EIO the second run of the table of codes.
+for (const code of ["ENOSPC", "EIO"]) {
+  test(`WEB-10a ${code} on the write of the core when a message is sent: 500 «диск не принимает записи», no stack; the journal and the folder unchanged; the next requests answer as usual, and once the disk takes writes the next message is saved without a restart — 200 (ISS-0010)`, async (t) => {
+    const box = webSandbox(t);
+    const p = project(t, box);
+    withPlan(p.w, [planTask("t-0001", "researcher")]);
+    p.w.close();
+    const s = await startServer(t, box);
+    const key = await s.key();
+    const hash = sha256(fs.readFileSync(p.events));
+    const folder = snapshot(p.dir);
+    const faults = installFaults([
+      { fn: "writeSync", paths: [p.events], effect: "throw", code },
+    ]);
+    let r;
+    try {
+      r = await s.post(
+        `/api/projects/${p.id}/chat`,
+        { text: "При сбое диска" },
+        { key },
+      );
+    } finally {
+      faults.restore();
+    }
+    assert.deepStrictEqual(faults.fired(), [true]);
+    assert.equal(r.status, 500, r.text);
+    assert.deepStrictEqual(r.json, DISK_FULL);
+    assert.doesNotMatch(r.text, NO_STACK);
+    assert.equal(r.text.includes(code), false, "no code of the system");
+    assert.equal(sha256(fs.readFileSync(p.events)), hash);
+    assert.deepStrictEqual(
+      except(snapshot(p.dir), [LOCK]),
+      except(folder, [LOCK]),
+      "only the lock of the broken writer is left",
+    );
+    const lines = journal(p).length;
+    assert.equal((await s.get(`/api/projects/${p.id}`)).status, 200);
+    assert.equal((await s.get("/api/projects")).status, 200);
+    // (ISS-0010, decision 0026) The disk takes writes again: the next message is
+    // saved without a restart of the server. The process removes the lock its
+    // closed broken writer left (LOCK_STALE_REMOVED with its own pid), then writes
+    // the message; before the fix this was 409 until a restart.
+    const again = await s.post(
       `/api/projects/${p.id}/chat`,
-      { text: "При сбое диска" },
+      { text: "После сбоя" },
       { key },
     );
-  } finally {
-    faults.restore();
-  }
-  assert.deepStrictEqual(faults.fired(), [true]);
-  assert.equal(r.status, 500);
-  assert.deepStrictEqual(r.json, {
-    error_text:
-      "Диск не принимает записи: сообщение не сохранено. Освободите место и повторите",
-    field: null,
-    reload: false,
+    assert.equal(again.status, 200, again.text);
+    assert.equal(again.json.result_text, "Отправлено");
+    assert.doesNotMatch(again.text, NO_STACK);
+    const added = journal(p).slice(lines);
+    assert.deepStrictEqual(
+      added.map((e) => [e.type, e.source]),
+      [
+        ["LOCK_STALE_REMOVED", "ENGINE"],
+        ["CHAT", "USER"],
+      ],
+    );
+    assert.deepStrictEqual(added[0].data, { pid: process.pid });
+    assert.equal(added[1].data.text, "После сбоя");
+    assert.deepStrictEqual(lockNames(p.dir), [], "no lock, no leftovers");
   });
-  assert.doesNotMatch(r.text, NO_STACK);
-  assert.equal(sha256(fs.readFileSync(p.events)), hash);
-  const lines = journal(p).length;
-  assert.equal((await s.get(`/api/projects/${p.id}`)).status, 200);
-  assert.equal((await s.get("/api/projects")).status, 200);
-  // (ISS-0010, decision 0026) The disk takes writes again: the next message is
-  // saved without a restart of the server. The process removes the lock its
-  // closed broken writer left (LOCK_STALE_REMOVED with its own pid), then writes
-  // the message; before the fix this was 409 until a restart.
-  const again = await s.post(
-    `/api/projects/${p.id}/chat`,
-    { text: "После сбоя" },
-    { key },
-  );
-  assert.equal(again.status, 200, again.text);
-  assert.equal(again.json.result_text, "Отправлено");
-  assert.doesNotMatch(again.text, NO_STACK);
-  const added = journal(p).slice(lines);
-  assert.deepStrictEqual(
-    added.map((e) => [e.type, e.source]),
-    [
-      ["LOCK_STALE_REMOVED", "ENGINE"],
-      ["CHAT", "USER"],
-    ],
-  );
-  assert.deepStrictEqual(added[0].data, { pid: process.pid });
-  assert.equal(added[1].data.text, "После сбоя");
-  assert.equal(fs.existsSync(path.join(p.dir, "writer.lock")), false);
-});
+}
 
 test("WEB-10a EIO while a new project is written (the event file of the folder being made): 500 «проект не создан», no new folder, no stack; the next request answers", async (t) => {
   const box = webSandbox(t);
@@ -412,6 +447,194 @@ test("WEB-10e a pause shorter than bodyIdleMs between parts is not 408: the coun
   );
   assert.equal(c.status, 201, c.text);
   assert.equal(engines.calls.length, 1);
+});
+
+// (ISS-0010, design r3, К2, F5) While the disk takes no writes, every try is 500
+// «освободите место и повторите», never 409; the journal stays as it was. The
+// three tries fail at three places: the CHAT; the LOCK_STALE_REMOVED of the removal
+// of the own lock; the temporary file of the new lock (before linkSync).
+test("WEB-10g (ISS-0010) the failure of the disk repeats three times — CHAT, LOCK_STALE_REMOVED, the temporary lock file: each time 500 «диск не принимает записи», not one 409, the journal unchanged, the server answers; then the disk takes writes: 200, LOCK_STALE_REMOVED with the own pid, then CHAT, no lock left", async (t) => {
+  const box = webSandbox(t);
+  const p = project(t, box);
+  withPlan(p.w, [planTask("t-0001", "researcher")]);
+  p.w.close();
+  const s = await startServer(t, box);
+  const key = await s.key();
+  const hash = sha256(fs.readFileSync(p.events));
+  const folder = snapshot(p.dir);
+  const lines = journal(p).length;
+  const tempLock = path.join(p.dir, `${LOCK}.${process.pid}.new`);
+  const tries = [
+    [
+      "the CHAT",
+      [{ fn: "writeSync", paths: [p.events], effect: "throw", code: "ENOSPC" }],
+    ],
+    [
+      "the LOCK_STALE_REMOVED",
+      [
+        {
+          fn: "writeSync",
+          paths: [p.events],
+          effect: "throw",
+          code: "ENOSPC",
+          nth: 1,
+        },
+      ],
+    ],
+    [
+      "the temporary lock file",
+      [
+        {
+          fn: "writeFileSync",
+          paths: [tempLock],
+          effect: "throw",
+          code: "ENOSPC",
+        },
+      ],
+    ],
+  ];
+  for (const [i, [where, list]] of tries.entries()) {
+    const tag = `try ${i + 1} (${where})`;
+    const lockBefore = fs.existsSync(path.join(p.dir, LOCK))
+      ? fs.readFileSync(path.join(p.dir, LOCK))
+      : null;
+    const faults = installFaults(list);
+    let r;
+    try {
+      r = await s.post(
+        `/api/projects/${p.id}/chat`,
+        { text: `Попытка ${i + 1}` },
+        { key },
+      );
+    } finally {
+      faults.restore();
+    }
+    assert.deepStrictEqual(faults.fired(), [true], tag);
+    assert.equal(r.status, 500, `${tag}: ${r.text}`);
+    assert.deepStrictEqual(r.json, DISK_FULL, tag);
+    assert.doesNotMatch(r.text, NO_STACK, tag);
+    assert.equal(r.text.includes("ENOSPC"), false, tag);
+    assert.equal(sha256(fs.readFileSync(p.events)), hash, `${tag}: journal`);
+    assert.deepStrictEqual(
+      except(snapshot(p.dir), [LOCK]),
+      except(folder, [LOCK]),
+      `${tag}: the folder except the lock`,
+    );
+    // the lock is the own one, left by a closed broken writer (marked)
+    assert.deepStrictEqual(lockNames(p.dir), [LOCK], `${tag}: no leftovers`);
+    assert.deepStrictEqual(
+      lockHolder(p.dir),
+      { pid: process.pid, alive: false, holder: null },
+      tag,
+    );
+    if (i === 2) {
+      // the failure came before linkSync: the lock of the second try stays
+      assert.ok(
+        fs.readFileSync(path.join(p.dir, LOCK)).equals(lockBefore),
+        `${tag}: lock bytes`,
+      );
+    }
+    assert.equal((await s.get("/api/projects")).status, 200, tag);
+    assert.equal((await s.get(`/api/projects/${p.id}`)).status, 200, tag);
+  }
+  assert.equal(journal(p).length, lines);
+
+  const ok = await s.post(
+    `/api/projects/${p.id}/chat`,
+    { text: "Место освободилось" },
+    { key },
+  );
+  assert.equal(ok.status, 200, ok.text);
+  assert.equal(ok.json.result_text, "Отправлено");
+  const added = journal(p).slice(lines);
+  assert.deepStrictEqual(
+    added.map((e) => [e.type, e.source]),
+    [
+      ["LOCK_STALE_REMOVED", "ENGINE"],
+      ["CHAT", "USER"],
+    ],
+  );
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  assert.equal(added[1].data.text, "Место освободилось");
+  assert.deepStrictEqual(lockNames(p.dir), [], "no lock, no leftovers");
+});
+
+// (ISS-0010, design r3, К3) The rollback of the core failed: the whole line of the
+// message may be in the journal — the person does not hear «не сохранено».
+test("WEB-10h (ISS-0010) fsync and its rollback fail: 500 «сообщение могло сохраниться», the journal gets exactly the whole line of that CHAT and nothing else; the next message is 200 with LOCK_STALE_REMOVED and its own CHAT, the first one is not written twice", async (t) => {
+  const box = webSandbox(t);
+  const p = project(t, box);
+  p.w.close();
+  const s = await startServer(t, box);
+  const key = await s.key();
+  const before = fs.readFileSync(p.events);
+  const folder = snapshot(p.dir);
+  const lines = journal(p).length;
+  const faults = installFaults([
+    { fn: "fsyncSync", paths: [p.events], effect: "throw", code: "EIO" },
+    { fn: "ftruncateSync", paths: [p.events], effect: "throw", code: "EIO" },
+  ]);
+  let r;
+  try {
+    r = await s.post(
+      `/api/projects/${p.id}/chat`,
+      { text: "Сбой отката" },
+      { key },
+    );
+  } finally {
+    faults.restore();
+  }
+  assert.deepStrictEqual(faults.fired(), [true, true]);
+  assert.equal(r.status, 500, r.text);
+  assert.deepStrictEqual(r.json, DISK_UNSURE);
+  assert.doesNotMatch(r.text, NO_STACK);
+  const after = fs.readFileSync(p.events);
+  assert.ok(after.subarray(0, before.length).equals(before), "the old lines");
+  const tail = after.subarray(before.length).toString("utf8");
+  assert.ok(tail.endsWith("\n"));
+  assert.equal(tail.split("\n").length, 2, "exactly one whole line");
+  const line = JSON.parse(tail);
+  assert.deepStrictEqual(
+    [line.seq, line.type, line.source, line.data.text],
+    [lines + 1, "CHAT", "USER", "Сбой отката"],
+  );
+  assert.deepStrictEqual(
+    except(snapshot(p.dir), [LOCK, "events.jsonl"]),
+    except(folder, [LOCK, "events.jsonl"]),
+    "nothing else changed",
+  );
+  assert.deepStrictEqual(lockNames(p.dir), [LOCK]);
+  assert.deepStrictEqual(lockHolder(p.dir), {
+    pid: process.pid,
+    alive: false,
+    holder: null,
+  });
+  assert.equal((await s.get("/api/projects")).status, 200);
+
+  const next = await s.post(
+    `/api/projects/${p.id}/chat`,
+    { text: "Следующее" },
+    { key },
+  );
+  assert.equal(next.status, 200, next.text);
+  assert.equal(next.json.result_text, "Отправлено");
+  const added = journal(p).slice(lines + 1);
+  assert.deepStrictEqual(
+    added.map((e) => [e.type, e.source]),
+    [
+      ["LOCK_STALE_REMOVED", "ENGINE"],
+      ["CHAT", "USER"],
+    ],
+  );
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  assert.equal(added[1].data.text, "Следующее");
+  assert.equal(
+    journal(p).filter((e) => e.type === "CHAT" && e.data.text === "Сбой отката")
+      .length,
+    1,
+    "the first message is one event, the server did not repeat it",
+  );
+  assert.deepStrictEqual(lockNames(p.dir), []);
 });
 
 const CHAT_ROWS = [

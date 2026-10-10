@@ -72,6 +72,8 @@ import {
   snapshot,
   startProject,
   startRun,
+  STORE_URL,
+  T0,
   typesOf,
   usr,
   withPlan,
@@ -2107,3 +2109,419 @@ test(
     assert.equal(events.at(-1).type, "PROJECT_DONE");
   },
 );
+
+// ---- ISS-0010, decision 0026: a lock left by a closed broken writer of this process
+// (design ISS-0010-web-chat-write-recovery r3, section 8: TM-73 ... TM-76) ----------
+
+const STALE_NOTICE = (pid) =>
+  `Снят устаревший замок процесса ${pid}: проект снова доступен`;
+
+// The writer `w` of the project `p` gets a real failure of the write of the journal
+// (code) on its next say: E_DISK, the rollback is good, the writer is broken.
+function breakBySay(p, w, code, text = "Сбой") {
+  const result = withFaults(
+    [{ fn: "writeSync", paths: [p.events], effect: "throw", code }],
+    () => w.say(text),
+  );
+  assert.deepStrictEqual(result.fired, [true], "the failure fired");
+  assert.ok(result.error instanceof TeamError, String(result.error));
+  assert.equal(result.error.code, "E_DISK");
+  assert.equal(result.error.details.os_code, code);
+  assert.equal(result.error.details.rollback, "ok");
+  assert.equal(w.broken, true);
+}
+
+// close() of a broken writer: the lock file and the folder byte for byte as before.
+function closeBroken(p, w) {
+  const lockFile = path.join(p.dir, "writer.lock");
+  const lockBytes = fs.readFileSync(lockFile);
+  const folder = snapshot(p.dir);
+  w.close();
+  assert.ok(fs.readFileSync(lockFile).equals(lockBytes), "lock bytes");
+  assert.deepStrictEqual(snapshot(p.dir), folder, "close() changed nothing");
+  return lockBytes;
+}
+
+// A writer left by this process: say under EIO, then close() (the folder is marked).
+function orphanOwnLock(t, home, clock) {
+  const p = startProject(t, home, clock);
+  p.writer.say("До сбоя");
+  breakBySay(p, p.writer, "EIO");
+  closeBroken(p, p.writer);
+  return p;
+}
+
+test("TM-73 (ISS-0010, К1) ENOSPC on say in this process: close() leaves the lock byte for byte; the same process then opens the project — LOCK_STALE_REMOVED with its own pid, then CHAT; the recovery is written once", (t) => {
+  const home = makeHome(t);
+  const clock = makeClock();
+  const p = startProject(t, home, clock);
+  p.writer.say("До сбоя");
+  const hash = sha256(fs.readFileSync(p.events));
+  breakBySay(p, p.writer, "ENOSPC");
+  assert.equal(sha256(fs.readFileSync(p.events)), hash, "the rollback");
+  closeBroken(p, p.writer);
+  assert.equal(lockOf(p.dir).pid, process.pid);
+
+  const lines = journalOf(p.events).length;
+  const w = openTracked(t, home, p.id, clock);
+  assert.deepStrictEqual(w.notices, [STALE_NOTICE(process.pid)]);
+  const removed = journalOf(p.events).slice(lines);
+  assert.deepStrictEqual(typesOf(removed), ["LOCK_STALE_REMOVED"]);
+  assert.deepStrictEqual(removed[0].data, { pid: process.pid });
+  assert.equal(removed[0].source, "ENGINE");
+  w.say("После сбоя");
+  const added = journalOf(p.events).slice(lines);
+  assert.deepStrictEqual(
+    added.map((e) => [e.type, e.source]),
+    [
+      ["LOCK_STALE_REMOVED", "ENGINE"],
+      ["CHAT", "USER"],
+    ],
+  );
+  assert.equal(added[1].data.text, "После сбоя");
+  assert.equal(added[1].seq, removed[0].seq + 1);
+  w.close();
+  assert.equal(fs.existsSync(path.join(p.dir, "writer.lock")), false);
+
+  const after = sha256(fs.readFileSync(p.events));
+  const again = openTracked(t, home, p.id, clock);
+  assert.deepStrictEqual(again.notices, [], "no second recovery");
+  again.close();
+  assert.equal(sha256(fs.readFileSync(p.events)), after, "no events");
+});
+
+// A child process that breaks its writer by a real failure (EIO on the 3rd write of
+// the journal: TASK_STARTED, RUN_STARTED, then the say), calls close(), prints
+// "ready <code>" and stays alive until its stdin ends; then it exits by itself.
+async function brokenWriterAlive(t, home, id, events) {
+  const code = `import * as H from ${JSON.stringify(HELPERS_URL)};
+import { openWriter } from ${JSON.stringify(STORE_URL)};
+const w = openWriter(process.env.TEAM_TEST_ID, { home: process.env.SAI_TEAM_HOME, now: H.makeClock(${T0 + 600_000}, 10) });
+w.append(H.eng("TASK_STARTED", {}, "t-0001"));
+H.startRun(w, "work", "developer", "t-0001");
+let code = "ok";
+try { w.say("Сбой"); } catch (e) { code = e.code; }
+w.close();
+process.stdout.write("ready " + code + "\\n");
+process.stdin.on("data", () => {});
+process.stdin.on("end", () => process.exit(0));`;
+  const env = childEnv(home, {
+    TEAM_TEST_ID: id,
+    SAI_TEST_FAULTS: JSON.stringify([
+      {
+        fn: "writeSync",
+        paths: [events],
+        effect: "throw",
+        code: "EIO",
+        nth: 3,
+      },
+    ]),
+  });
+  const child = spawn(
+    process.execPath,
+    ["--import", FAULT_URL, "--input-type=module", "-e", code],
+    { env, stdio: ["pipe", "pipe", "pipe"] },
+  );
+  t.after(() => child.kill("SIGKILL"));
+  const exited = new Promise((resolve) =>
+    child.once("exit", (status, signal) => resolve({ status, signal })),
+  );
+  const ready = await new Promise((resolve, reject) => {
+    let out = "";
+    let err = "";
+    const timer = setTimeout(
+      () => reject(new Error(`the child did not get ready: ${err}`)),
+      CHILD_TIMEOUT_MS,
+    );
+    child.stderr.on("data", (d) => {
+      err += d;
+    });
+    child.stdout.on("data", (d) => {
+      out += d;
+      const m = /ready (\S+)\n/.exec(out);
+      if (m !== null) {
+        clearTimeout(timer);
+        resolve(m[1]);
+      }
+    });
+    exited.then(() => {
+      clearTimeout(timer);
+      reject(new Error(`the child ended early: ${err}`));
+    });
+  });
+  return { child, ready, exited };
+}
+
+test(
+  "TM-74 (ISS-0010, К5) another process with a closed broken writer is alive: this process gets E_PROJECT_BUSY with its pid, the folder unchanged; after it ends by itself — one recovery as TM-66 (1)",
+  { timeout: 60_000 },
+  async (t) => {
+    const home = makeHome(t);
+    const p = projectWithPlan(t, home);
+    const base = journalOf(p.events).length;
+    const c = await brokenWriterAlive(t, home, p.id, p.events);
+    assert.equal(c.ready, "E_DISK");
+    assert.equal(lockOf(p.dir).pid, c.child.pid);
+    assert.deepStrictEqual(lockHolder(p.dir), {
+      pid: c.child.pid,
+      alive: true,
+      holder: null,
+    });
+    const hash = sha256(fs.readFileSync(p.events));
+    const lockBytes = fs.readFileSync(path.join(p.dir, "writer.lock"));
+    const err = assertRefusal(
+      p.dir,
+      () => openWriter(p.id, { home, now: makeClock(Date.now(), 1) }),
+      "E_PROJECT_BUSY",
+    );
+    assert.equal(err.details.pid, c.child.pid);
+    assert.equal(sha256(fs.readFileSync(p.events)), hash);
+    assert.ok(
+      fs.readFileSync(path.join(p.dir, "writer.lock")).equals(lockBytes),
+    );
+
+    c.child.stdin.end();
+    assert.deepStrictEqual(await c.exited, { status: 0, signal: null });
+    const w = openTracked(t, home, p.id, makeClock(Date.now(), 1));
+    assert.ok(w.notices.includes(STALE_NOTICE(c.child.pid)));
+    const added = journalOf(p.events).slice(base + 2);
+    assert.deepStrictEqual(
+      added.map((e) => [e.type, e.task]),
+      [
+        ["LOCK_STALE_REMOVED", null],
+        ["RUN_FINISHED", "t-0001"],
+        ["TASK_INTERRUPTED", "t-0001"],
+        ["PROJECT_RECOVERED", null],
+      ],
+    );
+    assert.deepStrictEqual(added[0].data, { pid: c.child.pid });
+    assert.equal(added[1].data.outcome, "interrupted");
+    assert.deepStrictEqual(added[2].data, { cause: "recovery" });
+    assert.deepStrictEqual(added[3].data, {
+      from_status: "running",
+      closed_runs: 1,
+      interrupted_tasks: 1,
+    });
+  },
+);
+
+test("TM-75 (а) (ISS-0010, К6) after the removal of its own lock a healthy writer of this process is protected again: a second opening in the same process is E_PROJECT_BUSY, nothing changes", (t) => {
+  const home = makeHome(t);
+  const clock = makeClock();
+  const p = orphanOwnLock(t, home, clock);
+  const a = openTracked(t, home, p.id, clock);
+  assert.deepStrictEqual(a.notices, [STALE_NOTICE(process.pid)]);
+  assert.equal(a.broken, false);
+  const lockBytes = fs.readFileSync(path.join(p.dir, "writer.lock"));
+  assert.deepStrictEqual(lockHolder(p.dir), {
+    pid: process.pid,
+    alive: true,
+    holder: null,
+  });
+  const err = assertRefusal(
+    p.dir,
+    () => openWriter(p.id, { home, now: clock }),
+    "E_PROJECT_BUSY",
+  );
+  assert.equal(err.details.pid, process.pid);
+  assert.ok(fs.readFileSync(path.join(p.dir, "writer.lock")).equals(lockBytes));
+  a.say("Писатель A пишет дальше");
+  assert.equal(journalOf(p.events).at(-1).data.text, "Писатель A пишет дальше");
+});
+
+for (const [name, breakIt] of [
+  ["say under EIO", (p, w) => breakBySay(p, w, "EIO")],
+  [
+    "markBroken()",
+    (p, w) => {
+      w.markBroken();
+      assert.equal(w.broken, true);
+    },
+  ],
+]) {
+  test(`TM-75 (б) (ISS-0010, К6) a broken writer of this process that is not closed yet (${name}) keeps the project busy for this process: E_PROJECT_BUSY, the folder unchanged`, (t) => {
+    const home = makeHome(t);
+    const clock = makeClock();
+    const p = startProject(t, home, clock);
+    p.writer.say("До");
+    breakIt(p, p.writer);
+    assert.deepStrictEqual(lockHolder(p.dir), {
+      pid: process.pid,
+      alive: true,
+      holder: null,
+    });
+    const hash = sha256(fs.readFileSync(p.events));
+    const err = assertRefusal(
+      p.dir,
+      () => openWriter(p.id, { home, now: clock }),
+      "E_PROJECT_BUSY",
+    );
+    assert.equal(err.details.pid, process.pid);
+    assert.equal(sha256(fs.readFileSync(p.events)), hash);
+  });
+}
+
+test("TM-75 (в) (ISS-0010, К6) a folder marked by this process whose lock now names another live process: E_PROJECT_BUSY with that pid, the lock untouched", (t) => {
+  const home = makeHome(t);
+  const clock = makeClock();
+  const p = orphanOwnLock(t, home, clock);
+  assert.equal(lockHolder(p.dir).alive, false, "the folder is marked");
+  const lockFile = path.join(p.dir, "writer.lock");
+  fs.rmSync(lockFile);
+  fs.writeFileSync(
+    lockFile,
+    `${JSON.stringify({ pid: process.ppid, since: "2026-10-10T08:00:00.000Z" })}\n`,
+    { mode: 0o600 },
+  );
+  const foreign = fs.readFileSync(lockFile);
+  assert.deepStrictEqual(lockHolder(p.dir), {
+    pid: process.ppid,
+    alive: true,
+    holder: null,
+  });
+  const err = assertRefusal(
+    p.dir,
+    () => openWriter(p.id, { home, now: clock }),
+    "E_PROJECT_BUSY",
+  );
+  assert.equal(err.details.pid, process.ppid);
+  assert.ok(fs.readFileSync(lockFile).equals(foreign), "the lock of another");
+});
+
+test("TM-75 (г) (ISS-0010, К6, Ф7) the clock stands still: W1 loses its lock, W2 of the same process takes it, W1 is closed late — the third opening is E_PROJECT_BUSY, the lock and the journal unchanged, W2 writes on", (t) => {
+  const home = makeHome(t);
+  const { id } = newProject(home, makeClock());
+  const dir = path.join(home, id);
+  const events = path.join(dir, "events.jsonl");
+  const lockFile = path.join(dir, "writer.lock");
+  // one and the same `now`: the locks of W1 and W2 are equal byte for byte
+  const still = makeClock();
+  still.set(T0 + 3_600_000);
+  const w1 = openTracked(t, home, id, still);
+  const w1Lock = fs.readFileSync(lockFile);
+  fs.rmSync(lockFile);
+  assertRefusal(dir, () => w1.say("Без замка"), "E_LOCK_LOST");
+  assert.equal(w1.broken, true);
+  const w2 = openTracked(t, home, id, still);
+  assert.equal(w2.broken, false);
+  const w2Lock = fs.readFileSync(lockFile);
+  assert.ok(w2Lock.equals(w1Lock), "the clock stands still: the same bytes");
+
+  w1.close();
+  assert.ok(fs.readFileSync(lockFile).equals(w2Lock), "lock bytes");
+  assert.deepStrictEqual(lockHolder(dir), {
+    pid: process.pid,
+    alive: true,
+    holder: null,
+  });
+  const hash = sha256(fs.readFileSync(events));
+  const err = assertRefusal(
+    dir,
+    () => openWriter(id, { home, now: still }),
+    "E_PROJECT_BUSY",
+  );
+  assert.equal(err.details.pid, process.pid);
+  assert.ok(fs.readFileSync(lockFile).equals(w2Lock), "lock bytes");
+  assert.equal(sha256(fs.readFileSync(events)), hash, "journal");
+
+  const lines = journalOf(events).length;
+  w2.say("W2 пишет дальше");
+  assert.equal(w2.broken, false);
+  const added = journalOf(events).slice(lines);
+  assert.deepStrictEqual(typesOf(added), ["CHAT"]);
+  assert.equal(added[0].data.text, "W2 пишет дальше");
+});
+
+test("TM-75 (д) (ISS-0010, К6) W1 loses its lock and is closed with no lock file; a lock with this pid and another since is put in its place: E_PROJECT_BUSY, the lock untouched", (t) => {
+  const home = makeHome(t);
+  const clock = makeClock();
+  const { id } = newProject(home, clock);
+  const dir = path.join(home, id);
+  const events = path.join(dir, "events.jsonl");
+  const lockFile = path.join(dir, "writer.lock");
+  const w1 = openTracked(t, home, id, clock);
+  const own = lockOf(dir);
+  fs.rmSync(lockFile);
+  assertRefusal(dir, () => w1.say("Без замка"), "E_LOCK_LOST");
+  assert.equal(w1.broken, true);
+  const folder = snapshot(dir);
+  w1.close();
+  assert.deepStrictEqual(snapshot(dir), folder, "close() wrote nothing");
+
+  fs.writeFileSync(
+    lockFile,
+    `${JSON.stringify({ pid: process.pid, since: "2026-10-10T08:00:00.000Z" })}\n`,
+    { mode: 0o600 },
+  );
+  assert.notEqual(lockOf(dir).since, own.since);
+  const planted = fs.readFileSync(lockFile);
+  assert.deepStrictEqual(lockHolder(dir), {
+    pid: process.pid,
+    alive: true,
+    holder: null,
+  });
+  const hash = sha256(fs.readFileSync(events));
+  const err = assertRefusal(
+    dir,
+    () => openWriter(id, { home, now: clock }),
+    "E_PROJECT_BUSY",
+  );
+  assert.equal(err.details.pid, process.pid);
+  assert.ok(fs.readFileSync(lockFile).equals(planted), "lock untouched");
+  assert.equal(sha256(fs.readFileSync(events)), hash);
+});
+
+test("TM-76 (ISS-0010, К4, М2) the broken engine of this process is closed: lockHolder says not alive, engineHolder is null; deliver writes itself with the recovery of the interrupted work, nothing goes to inbox/", async (t) => {
+  const home = makeHome(t);
+  const clock = makeClock();
+  const { id } = newProject(home, clock);
+  const dir = path.join(home, id);
+  const p = { id, dir, events: path.join(dir, "events.jsonl") };
+  const w = openWriter(id, { home, now: clock, holder: "engine" });
+  t.after(() => w.close());
+  withPlan(w, [planTask("t-0001", "developer")]);
+  w.append(eng("TASK_STARTED", {}, "t-0001"));
+  startRun(w, "work", "developer", "t-0001");
+  breakBySay(p, w, "EIO", "Сбой движка");
+  closeBroken(p, w);
+  assert.equal(lockOf(dir).holder, "engine");
+  assert.deepStrictEqual(lockHolder(dir), {
+    pid: process.pid,
+    alive: false,
+    holder: "engine",
+  });
+  assert.equal(engineHolder(id, { home }), null);
+
+  const lines = journalOf(p.events).length;
+  const res = await deliver(
+    id,
+    { kind: "say", args: { text: "После сбоя движка" } },
+    { home, now: clock },
+  );
+  assert.equal(res.via, "self");
+  assert.equal(res.event.type, "CHAT");
+  assert.ok(res.notices.includes(STALE_NOTICE(process.pid)));
+  const added = journalOf(p.events).slice(lines);
+  assert.deepStrictEqual(
+    added.map((e) => [e.type, e.task]),
+    [
+      ["LOCK_STALE_REMOVED", null],
+      ["RUN_FINISHED", "t-0001"],
+      ["TASK_INTERRUPTED", "t-0001"],
+      ["PROJECT_RECOVERED", null],
+      ["CHAT", null],
+    ],
+  );
+  assert.deepStrictEqual(added[0].data, { pid: process.pid });
+  assert.equal(added[1].data.outcome, "interrupted");
+  assert.deepStrictEqual(added[2].data, { cause: "recovery" });
+  assert.deepStrictEqual(added[3].data, {
+    from_status: "running",
+    closed_runs: 1,
+    interrupted_tasks: 1,
+  });
+  assert.equal(added[4].data.text, "После сбоя движка");
+  assert.equal(fs.existsSync(path.join(dir, "inbox")), false, "no channel");
+  assert.equal(fs.existsSync(path.join(dir, "writer.lock")), false);
+  assert.equal(readProject(id, { home }).state.status, "paused");
+});

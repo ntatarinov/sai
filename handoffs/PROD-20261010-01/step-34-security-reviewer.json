@@ -1,0 +1,73 @@
+{
+  "handoff_id": "step34-security-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "34",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-34-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": ["REQ-011", "REQ-009", "REQ-013"],
+    "write_set": ["handoffs/PROD-20261010-01/step-34-security-reviewer.json"],
+    "before_copy": "git diff 5fa9d16 3699438 -- tools",
+    "artifacts_in": [
+      "docs/design/ISS-0010-web-chat-write-recovery.md (r3)",
+      "decisions/0026-team-core-reclaim-own-broken-lock.md, 0017",
+      "handoffs/PROD-20261010-01/step-33-code-fixer.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context записан по тексту поручения"
+  },
+  "completed_at": "2026-10-10T16:42:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Предмет — коммит 3699438 против 5fa9d16 (tools): lock.js, store.js, engine/channel.js, web/api.js, web/texts.js и 4 файла тестов. Карта поверхностей: lock.js, store.js — «пишет файлы» (файл-замок, журнал: права записи, один писатель, путь в своей папке); channel.js — «приходит извне» (inbox/ack канала, отзыв сообщения) и «пишет файлы» (rename в inbox/); api.js, texts.js — «уходит в браузер» (текст отказа чата); test/team-*.test.js — нет поверхности (тесты, в рантайм не грузятся). «Держит секрет», «сервер ходит сам», «данные магазинов», «фото» — в разнице нет. Пункты: Q7 — выполнен (поиск по добавленным строкам пуст; новые тексты статичны, без pid/путей/кодов; chatFailure не подставляет err.message; страница выводит error_text без innerHTML). Q8 — неприменим (нет данных магазинов). Q9 — неприменим (нет запросов к БД). Q10 — выполнен: noteOrphanedLock не бросает (try/catch → false), сбой чтения оставляет прежнее «занят» (fail-safe); снятие своего брошенного замка идёт штатным acquireLock со сверкой содержимого; сбой одного запроса чата больше не ломает следующие (атака A1, A8); путь rollback:\"failed\" даёт правдивый 500. Q11 — неприменим (исходящих запросов нет). R3 — неприменим (фото нет). R2 (Pixel Office) — неприменим: файлы Pixel Office не менялись; журнал проекта пишет только ядро (LOCK_STALE_REMOVED с pid своего процесса — правда). Доп. проверки: «пишет файлы» — новых мест записи нет (в добавленных строках нет writeFile/append/rename/unlink/link), замок по-прежнему path.join(projectDir, 'writer.lock'), resolveProjectDir отвергает символическую ссылку на папку проекта; подложенный замок-ссылка → E_LOCK_BAD (A4a). «Уходит в браузер» — тексты статичны, вывод textContent. AP-014: все проверки живости в tools/src/team идут через holdsLive/lockHolder (lock.js 142, 211; channel.js 339, 489, 540; store.js 654; engine.js 203, 222), вне класса — cleanLockLeftovers (lock.js 277) и removableLeftover (channel.js 79), как в проекте п. 2. Атаки на копии вне репозитория (<scratch>/sec34, npm ci, данные во временной папке): (1) дочерний процесс при брошенном замке своего процесса и при здоровом W2 — E_PROJECT_BUSY, байты замка не тронуты; сломанный, но не закрытый писатель — E_PROJECT_BUSY (R3); третий писатель при здоровом W2 — E_PROJECT_BUSY; закрытый сломанный писатель пишет — E_WRITER_BROKEN; поздний close() потерявшего замок — E_PROJECT_BUSY (И-1а). (2) символическая ссылка с теми же байтами — не отмечается, открытие E_LOCK_BAD; подложенный замок со своим pid и другими байтами — не отмечается, E_PROJECT_BUSY; чужой живой pid поверх брошенного — E_PROJECT_BUSY, замок не тронут; гонка «чтение → rename» (другой живой процесс занял имя) — E_PROJECT_BUSY, замок возвращён другому; подделанный билет (те же байты, другой объект) — false. Найдена одна обходная дорожка (F1, Low): ключ ORPHANED/HELD — path.resolve, а не сама папка: при двух написаниях одного каталога данных в одном процессе (символическая ссылка) и захвате в ту же миллисекунду после внешнего удаления замка третий писатель получает замок здорового W2; W2 при записи получает E_CONFLICT, журнал не испорчен. В продукте недостижимо: сервер и движок берут один home (web/main.js:97 resolveHome), удаление замка извне требует того же пользователя. (3) ORPHANED/HELD — только память; 2000 циклов открытия/поломки/закрытия на одной папке — прирост кучи ~480 КБ на 999 событий журнала, HELD — одна запись на ключ, ORPHANED ⊆ ключей HELD; рост ограничен числом папок (написаний пути). (4) chatDisk/chatDiskUnsure — без путей, pid, кодов. (5) М7: движок в процессе сломан и закрыт во время ожидания — E_CHANNEL_TIMEOUT_GONE через ~320 мс, inbox/ без сообщений, журнал байт-в-байт, следующая доставка via self, CHAT ровно 1; отзыв — атомарный rename в .cancel-, взятое движком сообщение даёт E_CHANNEL_UNCONFIRMED (без дубля). (6) Восстановление: пока сломанный писатель не закрыт — E_PROJECT_BUSY (открытые запуски не трогаются); после close() — RUN_FINISHED×2, TASK_INTERRUPTED×2, PROJECT_RECOVERED по запускам самого брошенного писателя; движок закрывает писателя только при пустом inFlight (engine.js 841-892, exit() ставит exiting до close и больше inbox не обслуживает). Живые запуски здорового писателя пометить нельзя: его захват убирает папку из ORPHANED (lock.js 205); исключение — только сценарий F1.",
+    "findings": [
+      {
+        "id": "F1",
+        "file": "tools/src/team/lock.js",
+        "line": 62,
+        "item": "Q10 (один писатель, И-1а проекта ISS-0010 п. 4.1)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "keyOf(projectDir) = path.resolve(projectDir): HELD и ORPHANED различают написания пути, а не папку. Повтор: home и симлинк на него в одном процессе; W1 (home) открыт в момент T, writer.lock удалён извне, W1.say → E_LOCK_LOST; W2 (симлинк) открыт в ту же миллисекунду T (те же байты замка); W1.close() → HELD.get(home-ключ) всё ещё билет W1, байты совпадают → ORPHANED; W3 (home) открывается при здоровом W2 и снимает его замок; W2.say → E_CONFLICT. Журнал не испорчен (проверка конфликта), но правило «пока здоровый писатель открыт, третий — занят» нарушено. В продукте недостижимо (один home на процесс), нужен и внешний удалитель замка, и совпадение миллисекунды.",
+        "fix": "Ключ строить по самой папке: fs.realpathSync(projectDir) (или dev:ino из lstat) в keyOf; либо в noteOrphanedLock дополнительно сверять ino/dev файла-замка с тем, что дал linkSync этого захвата (сохранить в билете). Тест: две записи home через симлинк, фиксированные часы — третий открывающий E_PROJECT_BUSY."
+      }
+    ],
+    "self_check": {
+      "copy": "<scratch>/sec34/sai — rsync без .git и node_modules; npm ci; Node v22.21.1; хеши 9 файлов разницы в копии = git show 3699438:<file> (совпали все)",
+      "commands": [
+        {"cmd": "node --test test/team-faults.test.js test/team-recovery.test.js test/team-web-faults.test.js test/team-writer.test.js test/team-channel.test.js test/team-security.test.js (в <scratch>/sec34/sai/tools)", "out": "tests 120, pass 120, fail 0"},
+        {"cmd": "node --expose-gc <scratch>/sec34/attack.mjs <scratch>/sec34/sai/tools (3 прогона подряд, одинаково)", "out": "A1 child open after own orphan: E_PROJECT_BUSY / lock bytes unchanged: true / same process reopen: ok / child open while w2 healthy: E_PROJECT_BUSY / third open in-process while w2 healthy: E_PROJECT_BUSY / w1 append after close: E_WRITER_BROKEN / events [PROJECT_CREATED, LOCK_STALE_REMOVED, CHAT]; A2 open while broken not closed: E_PROJECT_BUSY; A3 late close after lost lock → open: E_PROJECT_BUSY; A3b other spelling same ms: ok, w2 write: E_CONFLICT (F1); A3c (до разницы) см. issues; A4a symlinked lock: E_LOCK_BAD; A4b own pid other bytes: E_PROJECT_BUSY; A4c other live pid: E_PROJECT_BUSY, lock kept; A4d TOCTOU read→rename: E_PROJECT_BUSY, lock given back; A5 forged ticket: false ×3, open: E_PROJECT_BUSY; A6 heap +479 KB / 2000 cycles, LOCK_STALE_REMOVED 999; A7 broken not closed: E_PROJECT_BUSY, after close tail [RUN_FINISHED, RUN_FINISHED, TASK_INTERRUPTED, TASK_INTERRUPTED, PROJECT_RECOVERED]; A8 E_CHANNEL_TIMEOUT 'Проект завершил работу. Повторите команду' за 317 мс, inbox [ack, taken] (только папки), journal unchanged: true, deliver via self, CHAT 1"},
+        {"cmd": "git diff 5fa9d16 3699438 -- tools | grep -E '^\\+' | grep -niE 'secret|token|password|api[_-]?key|sk-[a-z0-9]|bearer|BEGIN [A-Z ]*PRIVATE|ghp_|AKIA'", "out": "(пусто, exit 1)"},
+        {"cmd": "grep -rniE 'sk-[a-z0-9]{10,}|ghp_…|AKIA…|BEGIN … PRIVATE KEY|password\\s*[:=]…' tools/src/pixel-office/public tools/src/web", "out": "tools/src/pixel-office/public/schema.js:60 \"<task-notification\" — ложное совпадение (sk-notification), не секрет"},
+        {"cmd": "grep -nE 'chatDisk(Unsure)?:' -A2 tools/src/web/texts.js | grep -nE 'pid|/|\\$\\{|lock|замок'", "out": "(пусто)"},
+        {"cmd": "grep -rn 'innerHTML|insertAdjacentHTML|outerHTML' tools/src/web/public", "out": "(пусто); error_text читается в app.js:75"},
+        {"cmd": "git diff 5fa9d16 3699438 -- tools/src | grep -E '^\\+' | grep -nE 'writeFile|appendFile|createWriteStream|openSync|unlink|rename|link|rm'", "out": "только комментарий и 'if (linked) {' — новых мест записи нет"},
+        {"cmd": "grep -rnE 'isAlive|holdsLive|\\.alive' tools/src/team", "out": "lock.js 42,68,70,142,211,277; channel.js 17,79,339,489,540; store.js 654; engine.js 203,222"}
+      ],
+      "hashes_before": {
+        "tools/src/team/engine/channel.js": "71c468e401e625500cd396104c1d9a58dd5c8805c1e9699beb42a1aa1bfcf77f",
+        "tools/src/team/lock.js": "02319e508bed8f9ddc9a4b90f79f8d523b3f61d6518977d7dde7455d8a8f7fec",
+        "tools/src/team/store.js": "20a0d0bb1337e59aeb238a9bdbb757fb94b5eb4362178b37d51dabbad62564bc",
+        "tools/src/web/api.js": "3d976e28a69ecb79800f62f8a224744eaa8c9a23036dddde72409e460f502d6a",
+        "tools/src/web/texts.js": "75a5f2041dc17a88db38e356ad4c6d982898460addacd3f17c040ce824e78030",
+        "tools/test/team-faults.test.js": "36c771a969fe0d4a07e1fd517e194c3fd336d1a3a23d7447b38b779f92a06d93",
+        "tools/test/team-recovery.test.js": "37d133a01387d68dc56bf0ee6cc88812625af7eb62af96ce5a88b830d598848c",
+        "tools/test/team-web-faults.test.js": "1cccba4c748c9e7afa1453950517debea03e2f37e32f5eccd2b10eb8ae8c9ef6",
+        "tools/test/team-writer.test.js": "0e7731cdec4c497e1ff2409f998c39aef54dd4670f9e979d5638c78b1f34a89d"
+      },
+      "hashes_after": "5 файлов tools/src и team-faults, team-writer — те же. tools/test/team-recovery.test.js и team-web-faults.test.js в рабочем дереве изменились во время проверки (не мной: параллельная работа, также незакоммиченная правка team-channel.test.js и новый коммит 38230ec ISS-0012). Предмет проверки — коммит 3699438; его версии этих файлов совпадают с копией (git show 3699438:<file> = копия), так что проверенное содержимое неизменно.",
+      "notes": "Один ранний прогон attack.mjs во время правки самого скрипта упал E_TIME (И11) в recover на цикле A6; в 4 следующих прогонах не повторился; вероятно, шаг системных часов назад — правило reducer, не разница."
+    },
+    "issues": [
+      {"kind": "INFO", "text": "Рабочее дерево менялось во время проверки (team-recovery.test.js, team-web-faults.test.js, team-channel.test.js; коммит 38230ec ISS-0012). Вердикт относится к 3699438; 38230ec этой проверкой не покрыт."},
+      {"kind": "PRE-EXISTING", "text": "Вне разницы (releaseLock не менялся): здоровый писатель W1, потерявший замок (удалён извне), при close() снимает замок W2 этого же процесса — releaseLock сверяет только pid (lock.js 243-252). Атака A3c: третье открытие при здоровом W2 — ok, W2.say → E_CONFLICT. Журнал не портится, но «один писатель» нарушается. Предлагаю отдельный дефект: releaseLock по билету (сверка байтов, как noteOrphanedLock)."},
+      {"kind": "INFO", "text": "assertLockHeld сверяет только pid (до разницы): в одном процессе два писателя с одним pid ловятся лишь проверкой конфликта журнала (E_CONFLICT), а не E_LOCK_LOST. С 0026 это не расширилось, кроме сценария F1."}
+    ],
+    "artifacts_out": []
+  }
+}

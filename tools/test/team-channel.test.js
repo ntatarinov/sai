@@ -9,7 +9,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { TeamError } from "../src/team/errors.js";
-import { openInbox, sendToEngine } from "../src/team/engine/channel.js";
+import {
+  ACK_WAIT_MS,
+  deliver,
+  openInbox,
+  sendToEngine,
+} from "../src/team/engine/channel.js";
 import { openWriter } from "../src/team/store.js";
 import { createEngine } from "../src/team/engine/engine.js";
 import {
@@ -50,6 +55,7 @@ import {
   holdWriter,
   makeClock,
   makeHome,
+  newProject,
   runTeam as runTeamIn,
   sha256,
   startProject,
@@ -1519,5 +1525,74 @@ test(
       0,
       "no temporary file is left",
     );
+  },
+);
+
+// ---- TM-77 (ISS-0010, design r3, К10, М7; decision 0026 R2) ------------------------
+
+test(
+  "TM-77 (ISS-0010, К10) the broken engine writer of this process is closed while a message waits for its ack: the send is refused at once with «Проект завершил работу», the message revoked, the journal unchanged; the next deliver writes itself",
+  { timeout: 60_000 },
+  async (t) => {
+    const home = makeHome(t);
+    const clock = makeClock();
+    const { id } = newProject(home, clock);
+    const dir = path.join(home, id);
+    const events = path.join(dir, "events.jsonl");
+    const inbox = path.join(dir, "inbox");
+    const w = openWriter(id, { home, holder: "engine" });
+    t.after(() => w.close());
+    openInbox(dir, w, id);
+    const hash = sha256(fs.readFileSync(events));
+    const lockBytes = fs.readFileSync(path.join(dir, "writer.lock"));
+    const messages = () => fs.readdirSync(inbox).filter((n) => MSG.test(n));
+
+    const sending = sendToEngine(
+      id,
+      { kind: "say", args: { text: "Пока движок ждёт" } },
+      { home },
+    ).then(
+      (value) => ({ value }),
+      (error) => ({ error }),
+    );
+    const deadline = Date.now() + 5_000;
+    while (messages().length === 0) {
+      assert.ok(Date.now() < deadline, "the message did not come to inbox/");
+      await new Promise((r) => setTimeout(r, 5));
+    }
+    w.markBroken();
+    w.close();
+    const closedAt = Date.now();
+    const r = await sending;
+    const took = Date.now() - closedAt;
+    assert.ok(r.error instanceof TeamError, JSON.stringify(r));
+    assert.equal(r.error.code, "E_CHANNEL_TIMEOUT");
+    assert.equal(r.error.message, "Проект завершил работу. Повторите команду");
+    assert.ok(took < ACK_WAIT_MS / 2, `${took} ms after close()`);
+    assert.deepStrictEqual(messages(), [], "the message is revoked");
+    assert.equal(sha256(fs.readFileSync(events)), hash, "journal");
+    assert.ok(
+      fs.readFileSync(path.join(dir, "writer.lock")).equals(lockBytes),
+      "the lock of the broken engine stays byte for byte",
+    );
+
+    const lines = journal(events).length;
+    const res = await deliver(
+      id,
+      { kind: "say", args: { text: "Снова" } },
+      { home },
+    );
+    assert.equal(res.via, "self");
+    const added = journal(events).slice(lines);
+    assert.deepStrictEqual(
+      added.map((e) => [e.type, e.source]),
+      [
+        ["LOCK_STALE_REMOVED", "ENGINE"],
+        ["CHAT", "USER"],
+      ],
+    );
+    assert.deepStrictEqual(added[0].data, { pid: process.pid });
+    assert.equal(added[1].data.text, "Снова");
+    assert.equal(fs.existsSync(path.join(dir, "writer.lock")), false);
   },
 );
