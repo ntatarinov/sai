@@ -1,0 +1,60 @@
+{
+  "handoff_id": "step42-test-designer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "42",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261010-01/step-42-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0015",
+    "requirement_ids": [
+      "REQ-011"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-40-test-design-validator.json (F1)",
+      "tools/test/team-web-channel.test.js"
+    ],
+    "write_set": [
+      "tools/test/team-web-channel.test.js",
+      "docs/issues/ISS-0015-web15-flaky-snapshot.md",
+      "handoffs/PROD-20261010-01/step-42-test-designer.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны по тексту поручения ORCH"
+  },
+  "task": {
+    "description": "Устранить нестабильность WEB-15 (б): снимок журнала после SIGSTOP и стабильного хеша; проверить соседние тесты; доказать под нагрузкой и мутантом."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T18:08:56Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Причина: хеш журнала брался до SIGSTOP при живом движке, который дописывал события; запись в это окно давала ложное «the server wrote nothing». Исправлено в WEB-15 (б): сначала SIGSTOP, затем stableHash (5 одинаковых опросов по 40 мс, до 250 опросов, иначе падение), и только потом отправка. Проверка не ослаблена: сравнивается хеш всего журнала. Соседние тесты: живой движок только в team-web-channel.test.js; WEB-15 (в) сравнивает только inbox/ (гонки нет), WEB-15 (race) снимков не берёт; в остальных team-web-*.test.js хеши берутся при закрытом писателе или чужом держателе замка (не движок) — гонки нет. Завела docs/issues/ISS-0015-web15-flaky-snapshot.md (closed).",
+    "changes": [
+      {
+        "file": "tools/test/team-web-channel.test.js",
+        "what": "добавлен stableHash; в WEB-15 (б) SIGSTOP перед снятием хеша, хеш после стабилизации журнала"
+      },
+      {
+        "file": "docs/issues/ISS-0015-web15-flaky-snapshot.md",
+        "what": "новый, статус closed"
+      }
+    ],
+    "self_check": "Нагрузка: 3 одновременных npm run check — код 0, 1109/1109 у каждого (~151 с); параллельно файл team-web-channel.test.js в цикле 15 раз (node --test --test-timeout=90000) — 15 из 15 код 0. Мутант: копия <scratch>/m15 (rsync без .git и node_modules, npm ci); до мутанта файл 6/6; мутант — appendFileSync в events.jsonl внутри revoke() в tools/src/team/engine/channel.js (сервер пишет при отзыве) — 4/6, падают WEB-15 (б) «the server wrote nothing» и WEB-15 (race). Рабочее дерево: src не тронут, git diff — только team-web-channel.test.js. Финально: cd tools && npm run check ×2 — код 0, 1109/1109 оба раза; npm run traces — код 0, файлов 923, следов 0, пропущено 26 (двоичные).",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "process",
+        "text": "ORCH не создал файл step-42 заранее; записан по поручению ORCH."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-web-channel.test.js",
+      "docs/issues/ISS-0015-web15-flaky-snapshot.md"
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+{
+ "handoff_id": "step41-test-runner-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-02",
+ "step": "41",
+ "from_agent": "ORCH",
+ "to_agent": "TEST-RUNNER",
+ "file": "handoffs/PROD-20261010-01/step-41-test-runner.json",
+ "status": "COMPLETED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": ["REQ-011"],
+  "agent_run_id": null,
+  "artifacts_in": ["handoffs/PROD-20261010-01/step-39-test-designer.json"],
+  "write_set": ["handoffs/PROD-20261010-01/step-41-test-runner.json"],
+  "note": "Файл создан TEST-RUNNER по указанию ORCH. created_at и agent_run_id знает только ORCH. WF-02 шаг 6 (повтор после всех правок кода) и WF-03 шаг 8 для ISS-0010."
+ },
+ "task": {
+  "description": "REQ-011 и ISS-0010, HEAD 60a9de9: npm run check целиком три раза подряд, npm run traces, чистая копия git archive HEAD с npm ci и npm run check, один запуск team-web (scripted) на временных SAI_TEAM_HOME и HOME."
+ },
+ "created_at": null,
+ "started_at": null,
+ "completed_at": "2026-10-10T17:52:30Z",
+ "result": {
+  "status": "COMPLETED",
+  "verdict": "PASS",
+  "summary": "Все три прогона npm run check прошли с кодом 0: 1109 тестов, 1109 прошли, 0 упали, 0 пропущено, 0 todo. npm run traces: код 0. Чистая копия (git archive HEAD, npm ci, npm run check): код 0, те же 1109 из 1109. team-web (scripted, порт 0): GET / 200, SIGINT даёт код выхода 0, stderr пуст. Падений нет, дефектов заводить не нужно. Репозиторий не менялся, кроме этого handoff-а.",
+  "findings": [
+    {
+      "place": "чистая копия из git archive",
+      "severity": "Note",
+      "what": "В копии, распакованной из git archive без каталога .git, npm run check останавливается на ступени traces с кодом 2: E_TRACE_NOT_GIT (команда проверяет файлы, которые отслеживает git, и это задумано). После git init и коммита копии (те же файлы) npm run check даёт код 0. Это не падение теста и не дефект кода, а свойство ступени traces: проверка требует git-репозитория.",
+      "fix": "Не требуется; чистую копию для npm run check нужно делать как git clone либо git archive с последующим git init."
+    }
+  ],
+  "self_check": [
+    "node -v: v22.21.1; caffeinate -i -t 2400 запущен до прогонов и остановлен после (pgrep пуст)",
+    "npm run check, прогон 1: код 0, 80 с; # tests 1109, # pass 1109, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 73992.80; stderr 0 байт",
+    "npm run check, прогон 2: код 0, 108 с; # tests 1109, # pass 1109, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 101946.01; stderr 0 байт",
+    "npm run check, прогон 3: код 0, 104 с; # tests 1109, # pass 1109, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 93117.70; stderr 0 байт",
+    "npm run traces отдельно: код 0; 'traces: файлов проверено 921, следов 0, пропущено 26'; stderr 0 байт",
+    "чистая копия <scratch>/clean (git archive HEAD): npm ci код 0; npm run check без .git: код 2, stderr 'E_TRACE_NOT_GIT'; после git init и коммита копии: код 0, # tests 1109, # pass 1109, # fail 0, # skipped 0, # todo 0, traces 921 файл, следов 0, stderr 0 байт",
+    "team-web: node src/web/main.js --port 0 --executor scripted --scenario <scratch>/tw/scen.json, HOME и SAI_TEAM_HOME во временных папках вне проекта; GET http://127.0.0.1:<порт>/ 200 text/html; charset=utf-8; SIGINT код выхода 0; stderr 0 байт. Через npm run team-web: GET / 200, SIGINT код 0, stderr только npm notice о новой версии npm",
+    "падений нет, поэтому разбор причин (стабильно/нестабильно, тест/код) не нужен; три прогона дали одинаковые числа",
+    "настоящий Claude не запускался (executor scripted)",
+    "полный вывод и stderr: <scratch>/r41/check{1,2,3}.out|.err|.code, traces.out|.err, clean-ci.out|.err, clean-check.out|.err, clean2-check.out|.err, tw/out|err, tw/out2|err2"
+  ],
+  "issues": [],
+  "artifacts_out": []
+ }
+}

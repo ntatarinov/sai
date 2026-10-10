@@ -1,0 +1,64 @@
+{
+  "handoff_id": "step40-test-design-validator-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "40",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261010-01/step-40-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": [
+      "REQ-011",
+      "REQ-009",
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-37-test-design-validator.json (F1, F2)",
+      "handoffs/PROD-20261010-01/step-39-test-designer.json",
+      "tools/test/team-recovery.test.js",
+      "docs/design/ISS-0010-web-chat-write-recovery.md п. 8.1"
+    ],
+    "write_set": [
+      "handoffs/PROD-20261010-01/step-40-test-design-validator.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны по тексту поручения ORCH"
+  },
+  "task": {
+    "description": "WF-03, шаг 7, круг 2: проверить доработку F1/F2 — TM-75 (е), (ж); мутанты V2, V3 и M05–M09 на копии вне репозитория; независимость и устойчивость; npm run check дважды; npm run traces."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T18:02:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Покрытие: условие (2) noteOrphanedLock (байты замка = ticket.bytes) — TM-75 (е); условие «обычный файл» — TM-75 (ж); остальное К1–К10 как в шаге 37, не менялось. Мутанты (копия <scratch>/v2: rsync без .git и node_modules, npm ci, --test-timeout=90000; 5 файлов тестов, 129 тестов, BASE 0 падений; после каждой пробы файлы src возвращены и сверены diff с оригиналом, END 129/129): V2 (убрана сверка readFileSync с ticket.bytes) — 1 падение, TM-75 (е) (на шаге 37 было 0 из 1107); V3 (убрана проверка isFile/размера) — 1 падение, TM-75 (ж); M05 (noteOrphanedLock в markBroken) — 1, TM-75 (б); M06 (отмечает без условия) — 3, TM-75 (г), (е), (ж); M07 (сверяет только pid в файле, без билета) — 2, TM-75 (г), (е); M08 (без сверки билета, остальное есть) — 1, TM-75 (г); M09 (сверяет только билет) — 3, TM-75 (д), (е), (ж). Каждый мутант падает на названном проектом тесте. Независимость: (е) и (ж) каждый отдельно через --test-name-pattern — 1 pass, 0 fail; три файла (recovery, writer, channel) ×3 с --test-concurrency=8 — 101/101 каждый раз. Читал сами тесты: (е) — подложенный замок с pid процесса и другим since, проверены байты замка, lockHolder.alive=true, E_PROJECT_BUSY с pid через assertRefusal (снимок папки), хеш журнала; (ж) — ссылка на файл с байтами билета, после close() ссылка осталась, затем обычный замок вместо неё и E_PROJECT_BUSY, замок не тронут; своя папка у каждого, часов и случайности нет, секретов нет. Ограничение V3: часть «не больше 4096 байт» недостижима тестом — файл больше 4096 байт не может быть равен ticket.bytes, который код сам записал и который короче, поэтому проверка размера только страхует чтение; признаю допустимым (отмечено в п. 8.1), иного не требую. npm run check: запуск 1 — код 0, 1109/1109; запуск 2 — код 1, 1108/1109, упал WEB-15 (б) (team-web-channel.test.js:144, хеш журнала до/после SIGSTOP); запуск 3 — код 0, 1109/1109. Падение WEB-15 (б) не из-за этой работы: файл team-web-channel.test.js и код не менялись (git status чист), тест отдельно 6 из 6 pass, между взятием хеша и SIGSTOP у живого движка есть окно записи, параллельно в машине шёл чужой прогон (step-41) — нагрузка. Принято по quality-bar §6 п. 4, вынесено как находка F1 Low. npm run traces — код 0, файлов 922, следов 0, пропущено 26 (двоичные). Хеши отслеживаемых файлов до и после совпадают.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/test/team-web-channel.test.js, WEB-15 (б), строки 128–144",
+        "severity": "Low",
+        "what": "Нестабильность: хеш журнала берётся до SIGSTOP, пока движок ещё работает; запись движка в это окно даёт ложное «the server wrote nothing». Один раз упал в 1 из 3 полных прогонов; отдельно 6/6 pass. Не относится к ISS-0010.",
+        "fix": "Взять хеш после SIGSTOP (и паузы), либо сравнивать только события с текстом сообщения. Отдельным дефектом/заметкой для TEST-DESIGNER, не блокирует шаг."
+      }
+    ],
+    "self_check": "Мутанты: bash <scratch>/mut.sh (python-замены в <scratch>/v2/tools/src/team/{lock,store}.js, прогон node --test --test-timeout=90000 по 5 файлам) — BASE 129/129; V2 128/129; V3 128/129; M05 128/129; M06 126/129; M07 127/129; M08 128/129; M09 126/129; END 129/129, diff src с оригиналом — restored. Отдельно: node --test --test-name-pattern 'TM-75 \\(е\\)' и '\\(ж\\)' — pass 1 fail 0 оба. cd tools && npm run check ×3: код 0 / код 1 (WEB-15 б) / код 0, везде tests 1109. npm run traces: код 0, следов 0. Хеши: shasum всех git ls-files до и после (947 строк) — diff пуст; в дереве лишь чужой неотслеживаемый step-41-test-runner.json.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "process",
+        "text": "ORCH не создал файл step-40 заранее; записан по поручению ORCH."
+      },
+      {
+        "id": "I2",
+        "kind": "note",
+        "text": "Рядом с моим прогоном шёл прогон step-41 (TEST-RUNNER); параллельные прогоны на одной машине могут давать нагрузочные сбои вроде WEB-15 (б)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

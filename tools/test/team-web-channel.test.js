@@ -65,6 +65,20 @@ const withText = (p, text) =>
 const lockOf = (p) =>
   JSON.parse(fs.readFileSync(path.join(p.dir, "writer.lock"), "utf8"));
 
+// The hash of a file once it has stayed the same for `polls` polls in a row.
+async function stableHash(file, polls = 5, gapMs = 40) {
+  let last = sha256(fs.readFileSync(file));
+  let same = 0;
+  for (let i = 0; i < 250 && same < polls; i++) {
+    await new Promise((r) => setTimeout(r, gapMs));
+    const now = sha256(fs.readFileSync(file));
+    same = now === last ? same + 1 : 0;
+    last = now;
+  }
+  assert.ok(same >= polls, "the journal did not settle after SIGSTOP");
+  return last;
+}
+
 async function live(t, workMs) {
   const p = engineProject(t, liveRuns(workMs));
   const box = { sb: p.sb, env: p.env, home: p.sb.home };
@@ -125,7 +139,8 @@ test(
     const { p, s, run } = await live(t);
     await until(p, (e) => e.type === "TASK_STARTED", "the work");
     const key = await s.key();
-    const before = sha256(fs.readFileSync(p.events));
+    // Stop the engine first, and only then take the journal hash: a live engine
+    // still writes (the hash taken before SIGSTOP raced with its last events).
     process.kill(run.child.pid, "SIGSTOP");
     t.after(() => {
       try {
@@ -134,6 +149,7 @@ test(
         // gone
       }
     });
+    const before = await stableHash(p.events);
     const text = "Сообщение под SIGSTOP";
     const started = Date.now();
     const r = await s.post(`/api/projects/${p.id}/chat`, { text }, { key });
