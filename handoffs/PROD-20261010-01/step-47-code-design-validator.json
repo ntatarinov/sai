@@ -1,0 +1,75 @@
+{
+ "handoff_id": "step47-code-design-validator-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-04",
+ "step": "1b",
+ "from_agent": "ORCH",
+ "to_agent": "CODE-DESIGN-VALIDATOR",
+ "file": "handoffs/PROD-20261010-01/step-47-code-design-validator.json",
+ "status": "COMPLETED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": [
+   "REQ-011"
+  ],
+  "artifacts_in": [
+   "docs/design/REQ-011-ui.md (п. 8.1, 8.1a переписан ORCH)",
+   "tools/src/web/public/app.js",
+   "handoffs/PROD-20261010-01/step-46-code-design-validator.json"
+  ],
+  "write_set": [
+   "handoffs/PROD-20261010-01/step-47-code-design-validator.json"
+  ],
+  "note": "Круг 2 после FAIL step-46 (F-1, N-2, N-3). Ожидаемый итог в поручении не назван; вердикт выведен заново."
+ },
+ "task": {
+  "description": "WF-04, шаг 1b, повтор: проверка п. 8.1 и 8.1a описания REQ-011-ui.md против app.js (refreshProject, renderChat, updateChatForm)."
+ },
+ "created_at": null,
+ "started_at": null,
+ "completed_at": "2026-10-10T18:31:00Z",
+ "result": {
+  "status": "COMPLETED",
+  "verdict": "PASS",
+  "summary": [
+   "Хеш описания (sha256) до и после: 2c91e8d463c04780bb5236c9fac2dca50d155e0ec9b782f435096c7002a87a54, совпал. Часы машины: 2026-10-10T18:30Z, completed_at не позже.",
+   "F-1 (проект 200, чат на первом запросе не прошёл): ЗАКРЫТО. п. 8.1a теперь списком называет три исхода по одному разу. Нет связи: refreshProject, ветка chatKind==='down' && app.chat===null ставит chatDown=true и вызывает renderChat; в renderChat chat-down показан, chat-loading скрыт, chat-form не скрыта (скрывается только при off), updateChatForm делает sendButton.disabled при app.chat===null — «поле остаётся, Отправить недоступна» совпадает с кодом. Отказ с текстом: ветка chatKind==='error' ставит chatOff=true; off=true даёт «Чат недоступен» (chat-off), форма скрыта, «Загрузка…» скрыта — совпадает. «Не найдено» чата: classify не даёт ни одной из веток (ветки notfound для чата нет), остаётся «Загрузка…»; на следующем опросе проект тоже 404 и показывается п. 8.3 — совпадает.",
+   "Противоречие со строкой 8.1 «Связь потеряна после загрузки»: нет. Эта строка — про последнее загруженное; случай «чат ещё ни разу не загружен» вынесен в 8.1a и в ячейку «чат» строки «Ошибка сервера с текстом»; строка «Нет связи» говорит о первой загрузке и отсылает к 8.1a. Разработчик не вынужден выбирать (см. N-4, пожелание).",
+   "N-2 закрыто (три пункта списком). N-3: заголовок «(r3.1, r3.2)» исправлен; отступ строки «и ещё N» (6 px) в п. 5.8 и п. 5.6 по-прежнему не назван — неблокирующее N-5.",
+   "Строить без догадок: да для проверенных мест (п. 8.1, 8.1a); остальные пункты описания не менялись с step-46, где они были пройдены. Кода реализации в изменённых местах нет.",
+   "cd tools && npm run traces: код выхода 0, «файлов проверено 930, следов 0»."
+  ],
+  "findings": [
+   {
+    "id": "N-4",
+    "blocking": false,
+    "place": "п. 8.1, строка «Связь потеряна после загрузки», ячейка «Чат»",
+    "what": "Ячейка говорит «последнее загруженное», не оговаривая, что при ни разу не загруженном чате действует 8.1a.",
+    "need": "Добавить отсылку к п. 8.1a (по желанию)."
+   },
+   {
+    "id": "N-5",
+    "blocking": false,
+    "place": "п. 5.6 и 5.8, строка «и ещё N»",
+    "what": "Отступ от списка не назван (в style.css .more margin-top 0.375rem = 6 px); п. 0.2 не допускает значений «на вкус разработчика».",
+    "need": "Назвать отступ 6 px."
+   },
+   {
+    "id": "N-6",
+    "blocking": false,
+    "place": "app.js, refreshProject, ветки chatKind==='error' и 'down' (замечание к коду, не к описанию)",
+    "what": "Переход между опросами: если первый опрос чата дал «нет связи» (chatDown=true), а следующий — отказ с текстом, chatDown не сбрасывается, и показывается «нет связи», а не «Чат недоступен». Описание этого перехода не называет.",
+    "need": "Решение ORCH: уточнить описание (приоритет последнего исхода) или записать дефектом кода."
+   }
+  ],
+  "self_check": [
+   "sha256sum-аналог: shasum -a 256 docs/design/REQ-011-ui.md до и после — 2c91e8d4…7a54, совпал.",
+   "Прочитаны docs/design/REQ-011-ui.md строки 596-660 и tools/src/web/public/app.js (state, poll, refresh, refreshProject, renderProject, renderChat, updateChatForm), index.html (chat-loading/down/off/send).",
+   "cd tools && npm run traces → rc=0, «traces: файлов проверено 930, следов 0, пропущено 26»."
+  ],
+  "issues": [
+   "N-6 — на решение ORCH (не блокирует)."
+  ],
+  "artifacts_out": []
+ }
+}
