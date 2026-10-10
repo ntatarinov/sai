@@ -1,0 +1,76 @@
+{
+  "handoff_id": "step21-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-04",
+  "step": "21",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-21-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-011"],
+    "write_set": ["handoffs/PROD-20261010-01/step-21-reviewer.json"],
+    "before_copy": "git diff HEAD~1; прошлый круг — step-11-reviewer.json (N1, N2, F3), правки — step-19-code-fixer.json",
+    "artifacts_in": [
+      "tools/src/web/public/app.js, index.html",
+      "tools/test/team-web-page.test.js",
+      "docs/design/REQ-011-ui.md r3.1"
+    ]
+  },
+  "task": {
+    "description": "Повторные ворота REQ-011: закрыты ли N1 и N2; состояния «нет связи» и «отказ с текстом» на первой загрузке проекта (step-19); единый механизм; тесты WEB-P13/P14; описание r3.1; границы; решение по замечанию CODE-FIXER о чате."
+  },
+  "created_at": "2026-10-10T15:03:00Z",
+  "started_at": "2026-10-10T15:03:00Z",
+  "completed_at": "2026-10-10T15:06:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "N1 закрыто: withTask и тернарники убраны, строка «задача · роль» заполняется всегда из r.link и r.role (app.js, блок (6) «результат»), комментарий ссылается на п. 7.1 (6) проекта. N2 закрыто для app.js (заголовок: ui r3.1). Состояния первой загрузки: при ошибке первого опроса и пустом чате app.chatDown = (kind === down), app.chatOff = (kind === error) (app.js:557-561), обе подписи и форма переключаются в одном месте — renderChat (app.js:802-810); каркас скрывается атрибутом data-frame в одном цикле renderProject; это тот же механизм, что у chatDown на потере связи после загрузки (app.js:579-581), второго пути нет; chatOff сбрасывается при 200 проекта и в resetProject. Костыля нет: ошибка не глотается, «Загрузка…» не маскируется, опрос идёт. Тесты WEB-P13/P14 содержательны: проверяют, что чат не запрашивается до 200, что скрыт весь каркас (3 из 3), что нигде не остаётся «Загрузка…», точный текст подписей, отсутствие формы, повтор опроса без изменений, возврат к обычному виду, таймер опроса; мутанты M1-M4 из step-19 убиты (до правки оба падают). Описание r3.1 (п. 8.1 и 8.1a) совпадает с кодом: тексты, 404 исключён, чат не запрашивается, возврат после 200. Границы: src/team и src/pixel-office не менялись, файлы вне write_set не тронуты. cd tools && npm run check — код 0: 1092/1092, следов нет (прошлый блок step-16/18 снят). Замечание CODE-FIXER (проект 200, чат отказал с текстом — вечное «Загрузка…») оценено как НЕ блокирующее: описание его не требует (в ячейке «—»), состояние требует повреждённого файла чата при читаемом проекте, это отдельное поведение вне F-1/F-2. Но это тот же род ошибки (вечное «Загрузка…», AP-014), поэтому заводится дефектом по quality-bar §6 п. 6 и предложен точный способ. TEST-DESIGNER/DESIGN-QA: проверить снимками «первая загрузка без связи» и «повреждённый проект».",
+    "findings": [
+      {
+        "id": "R1",
+        "location": "tools/src/web/public/app.js:571-586 (ветка chatKind после запроса чата)",
+        "bar": "AP-014 (соседние места одного механизма), описание 8.1 (ячейка «чат» в строке «Ошибка сервера с текстом» — «—»)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Проект ответил 200, а чат на первом запросе отказал с текстом (500, E_CORRUPT и т. п.): chatKind === error не обрабатывается, app.chat остаётся null, показано «Загрузка…», форма отправки недоступна, объяснения нет, пока чат не ответит. Для chatKind === down рядом ветка есть (app.chatDown), для error — нет.",
+        "fix": "Не блокирует. Отдельным дефектом (или в одном проходе с R2, до повторной съёмки DESIGN-QA): в app.js добавить else if (chatKind === error && app.chat === null) { app.chatOff = true; renderChat(false); }, а в ветке ok рядом с app.chatDown = false добавить app.chatOff = false — подпись #chat-off и скрытие формы уже работают через renderChat; в REQ-011-ui.md дописать в 8.1a и в ячейку «чат» строки «Ошибка сервера с текстом» «Чат недоступен», если проект уже загружен, но чат отказал; тест WEB-P15 по образцу WEB-P14 (проект 200, чат 500 → «Чат недоступен», форма скрыта, затем чат 200 → сообщения)."
+      },
+      {
+        "id": "R2",
+        "location": "tools/src/web/public/style.css:2",
+        "bar": "качество документов (AP-005 по смыслу)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "В шапке style.css ссылка «REQ-011-ui.md r2»; app.js и index.html уже на r3.1 (CODE-FIXER это заметил).",
+        "fix": "r2 → r3.1 в том же проходе, что R1."
+      },
+      {
+        "id": "F3",
+        "location": "tools/README.md:395; tools/test/pixel-office-settings.test.js:96-101",
+        "bar": "Q12 (проект п. 1.2, 14)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Прежнее открытое по проекту r3: ссылка вернётся в README после сужения ST-06 до раздела «## Pixel Office». Не относится к этим правкам, состояние не изменилось.",
+        "fix": "Как в step-11."
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check -> код 0 (prettier, eslint, traces, tests 1092 pass 1092, fail 0, skipped 0, todo 0).",
+      "grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true' tools/src/web/public/*.js tools/test/team-web-page.test.js -> пусто.",
+      "grep withTask tools/src/web/public/app.js -> пусто; r2 в app.js нет, в style.css:2 есть (R2).",
+      "git diff HEAD~1 --stat -- tools/src/team tools/src/pixel-office -> пусто; git status: нового нет, кроме чужого step-20.",
+      "Прочитано: diff app.js, index.html, team-web-page.test.js, REQ-011-ui.md; app.js 520-600, 690-740, 799-890 целиком по месту. Код во время проверки не менялся."
+    ],
+    "issues": [
+      {
+        "kind": "DEFECT_PROPOSAL",
+        "text": "R1: чат отказал с текстом при загруженном проекте — вечное «Загрузка…» без пояснения. ORCH завести дефект по WF-03 (quality-bar §6 п. 6) или взять в один проход с R2 до повторной съёмки DESIGN-QA."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
