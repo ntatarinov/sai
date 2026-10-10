@@ -2471,6 +2471,76 @@ test("TM-75 (д) (ISS-0010, К6) W1 loses its lock and is closed with no lock fi
   assert.equal(sha256(fs.readFileSync(events)), hash);
 });
 
+test("TM-75 (е) (ISS-0010, К6, И-1а) the lock file is replaced by a file of this pid with another since; the writer is marked broken and closed: the folder is not marked, lockHolder says alive, E_PROJECT_BUSY, the planted lock untouched", (t) => {
+  const home = makeHome(t);
+  const clock = makeClock();
+  const { id } = newProject(home, clock);
+  const dir = path.join(home, id);
+  const events = path.join(dir, "events.jsonl");
+  const lockFile = path.join(dir, "writer.lock");
+  const w1 = openTracked(t, home, id, clock);
+  const own = lockOf(dir);
+  // the pid is ours (the writer still "holds" it by pid), the content is not
+  fs.rmSync(lockFile);
+  fs.writeFileSync(
+    lockFile,
+    `${JSON.stringify({ pid: process.pid, since: "2026-10-10T08:00:00.000Z" })}\n`,
+    { mode: 0o600 },
+  );
+  assert.notEqual(lockOf(dir).since, own.since);
+  const planted = fs.readFileSync(lockFile);
+  w1.markBroken();
+  w1.close();
+  assert.ok(fs.readFileSync(lockFile).equals(planted), "close() left the lock");
+  assert.deepStrictEqual(lockHolder(dir), {
+    pid: process.pid,
+    alive: true,
+    holder: null,
+  });
+  const hash = sha256(fs.readFileSync(events));
+  const err = assertRefusal(
+    dir,
+    () => openWriter(id, { home, now: clock }),
+    "E_PROJECT_BUSY",
+  );
+  assert.equal(err.details.pid, process.pid);
+  assert.ok(fs.readFileSync(lockFile).equals(planted), "lock untouched");
+  assert.equal(sha256(fs.readFileSync(events)), hash);
+});
+
+test("TM-75 (ж) (ISS-0010, К6, И-1а) writer.lock is a link to a file with the very bytes of the writer's lock; after close() of the broken writer the folder is not marked: a regular lock of this pid put in place of the link keeps the project busy", (t) => {
+  const home = makeHome(t);
+  const clock = makeClock();
+  const { id } = newProject(home, clock);
+  const dir = path.join(home, id);
+  const lockFile = path.join(dir, "writer.lock");
+  const w1 = openTracked(t, home, id, clock);
+  const bytes = fs.readFileSync(lockFile);
+  const target = path.join(dir, "lock-copy");
+  fs.writeFileSync(target, bytes, { mode: 0o600 });
+  fs.rmSync(lockFile);
+  fs.symlinkSync(target, lockFile);
+  w1.markBroken();
+  w1.close();
+  assert.ok(fs.lstatSync(lockFile).isSymbolicLink(), "close() left the link");
+
+  // the link goes away, a regular lock of this pid and another since appears
+  fs.rmSync(lockFile);
+  fs.writeFileSync(
+    lockFile,
+    `${JSON.stringify({ pid: process.pid, since: "2026-10-10T08:00:00.000Z" })}\n`,
+    { mode: 0o600 },
+  );
+  const planted = fs.readFileSync(lockFile);
+  const err = assertRefusal(
+    dir,
+    () => openWriter(id, { home, now: clock }),
+    "E_PROJECT_BUSY",
+  );
+  assert.equal(err.details.pid, process.pid);
+  assert.ok(fs.readFileSync(lockFile).equals(planted), "lock untouched");
+});
+
 test("TM-76 (ISS-0010, К4, М2) the broken engine of this process is closed: lockHolder says not alive, engineHolder is null; deliver writes itself with the recovery of the interrupted work, nothing goes to inbox/", async (t) => {
   const home = makeHome(t);
   const clock = makeClock();

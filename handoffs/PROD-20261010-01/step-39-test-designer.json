@@ -1,0 +1,56 @@
+{
+  "handoff_id": "step39-test-designer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "39",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261010-01/step-39-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": [
+      "REQ-011",
+      "REQ-009",
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-37-test-design-validator.json (F1, F2)",
+      "docs/design/ISS-0010-web-chat-write-recovery.md r3 п. 4.1, 8.1"
+    ],
+    "write_set": [
+      "tools/test/team-recovery.test.js",
+      "docs/design/ISS-0010-web-chat-write-recovery.md (только перечень мутантов п. 8.1)",
+      "handoffs/PROD-20261010-01/step-39-test-designer.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны по тексту поручения ORCH"
+  },
+  "task": {
+    "description": "Доработка после FAIL шага 7: F1 (TM-75 е, мутант V2), F2 (мутант V3); V2 и V3 в перечень п. 8.1."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T17:44:34Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "F1: добавлен TM-75 (е) — W1 открыт, writer.lock подменён файлом с pid этого процесса и другим since, W1.markBroken(), W1.close(); проверено: байты подложенного замка прежние, lockHolder(dir).alive === true, openWriter — E_PROJECT_BUSY с process.pid через assertRefusal (снимок папки), хеш журнала тот же. F2: добавлен TM-75 (ж) — writer.lock заменён ссылкой на файл с байтами билета, W1.markBroken()+close(); затем ссылка заменена обычным замком с pid этого процесса и другим since; ожидается E_PROJECT_BUSY, замок не тронут (под V3 папка была бы отмечена и открытие прошло бы). Проверка размера (> 4096 байт) отдельным тестом недостижима: файл больше 4096 байт не может быть равен ticket.bytes, поэтому ловится только часть V3 «не обычный файл» — отмечено в п. 8.1. Таблица: К6 (И-1а, содержимое замка) -> TM-75 (е); К6 (И-1а, не обычный файл) -> TM-75 (ж). Пункты Q8, Q10, Q11, R3 — без изменений относительно шага 36 (не затронуты этой доработкой). Секретов в тестах нет, у каждого теста своя папка, часов и случайности нет.",
+    "changes": [
+      {
+        "file": "tools/test/team-recovery.test.js",
+        "what": "F1: новый тест TM-75 (е); F2: новый тест TM-75 (ж); оба перед TM-76"
+      },
+      {
+        "file": "docs/design/ISS-0010-web-chat-write-recovery.md",
+        "what": "п. 8.1: две строки — мутанты V2 и V3 (только перечень)"
+      }
+    ],
+    "self_check": "Копия вне репозитория (<scratch>/f1: rsync без .git и node_modules, npm ci, --test-timeout=90000), team-recovery.test.js. Код: 53 pass, 0 fail. Мутант V2 (удалена строка сверки readFileSync(file) !== ticket.bytes): 52 pass, 1 fail — TM-75 (е) (1 тест). Мутант V3 (удалена проверка !st.isFile() || st.size > LOCK_BYTES_MAX): 52 pass, 1 fail — TM-75 (ж) (1 тест). Мутанты применялись только в копии; src в репозитории не менялся (git status: изменены лишь тест и проект). cd tools && npm run check, запуск 1: tests 1109, pass 1109, fail 0; запуск 2: tests 1109, pass 1109, fail 0; ещё один запуск с кодом возврата: код 0. npm run traces: файлов 919, следов 0, пропущено 26 (двоичные), код 0.",
+    "issues": [],
+    "artifacts_out": [
+      "tools/test/team-recovery.test.js",
+      "docs/design/ISS-0010-web-chat-write-recovery.md"
+    ]
+  }
+}

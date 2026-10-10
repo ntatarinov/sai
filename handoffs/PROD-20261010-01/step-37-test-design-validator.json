@@ -1,0 +1,98 @@
+{
+  "handoff_id": "step37-test-design-validator-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "37",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261010-01/step-37-test-design-validator.json",
+  "status": "FAILED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": ["REQ-011", "REQ-009", "REQ-013"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/ISS-0010-web-chat-write-recovery.md (r3, К1–К10, 13 мутантов)",
+      "handoffs/PROD-20261010-01/step-33-code-fixer.json",
+      "handoffs/PROD-20261010-01/step-36-test-designer.json",
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-web-faults.test.js",
+      "tools/test/team-writer.test.js",
+      "tools/test/team-faults.test.js",
+      "commit 5fa9d16 (до исправления), db732df (HEAD)"
+    ],
+    "pre_fix_copy": "git archive 5fa9d16 в <scratch>/before (+ тесты HEAD) и <scratch>/before2 (+ тесты HEAD + texts.js HEAD)",
+    "write_set": [
+      "handoffs/PROD-20261010-01/step-37-test-design-validator.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны получателем по тексту поручения ORCH (result.issues I1)"
+  },
+  "task": {
+    "description": "WF-03, шаг 7, ISS-0010: проверить тесты TM-73…77, WEB-10a/g/h и изменённые CODE-FIXER TM-13/14/47/66, WEB-10f по проекту r3: у каждого К настоящий тест; регрессионный WEB-10a падает на 5fa9d16 (на дефекте 409); проверки содержательны, тесты отказа сверяют неизменность; независимость и устойчивость; не меньше 8 из 13 мутантов проекта + 2 своих на копии вне репозитория (--test-timeout=90000); npm run check дважды и npm run traces; репозиторий не править, кроме этого handoff-а."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T17:31:36Z",
+  "result": {
+    "status": "FAILED",
+    "verdict": "FAIL",
+    "summary": "FAIL по п. 3 «ловят ли тесты ошибку» (и п. 1, краевой случай проекта): условие (2) noteOrphanedLock — «содержимое writer.lock байт-в-байт равно ticket.bytes» (проект п. 4.1, И-1а «…или другое содержимое») — не проверено ни одним тестом: мой мутант V2 (удалена только строка сверки байтов) проходит весь набор 1107/1107. Мутант проекта M09 «сверяет только билет» TM-75 (д) ловит лишь потому, что в (д) файла замка при close() нет и падает lstatSync, а не сверка содержимого. Остальное в порядке. Покрытие (своя таблица от К): К1 — WEB-10a ENOSPC/EIO (регрессионный), TM-73; К2 — WEB-10g (три места сбоя, ни одного 409, хеш журнала, папка кроме замка, нет остатков writer.lock.*); К3 — WEB-10h (+ строки E_DISK rollback failed/ok в WEB-10f; без details — строка CHAT_ROWS); К4 — TM-76; К5 — TM-74 (дочерний процесс, E_PROJECT_BUSY с его pid, хеши; после выхода — восстановление как TM-66 (1)); К6 — TM-75 (а), (б)×2, (в), (г) при неподвижных часах (makeClock().set), (д); К7 — TM-66 (2), (3); К8 — TM-13×3, TM-14×2, TM-47 (в процессе), варианты в дочернем процессе не тронуты; К9 — npm run check; К10 — TM-77. skip/todo/only нет. Тесты отказа сверяют неизменность через assertRefusal (снимок папки), хеш events.jsonl и байты writer.lock. Регрессия: на копии 5fa9d16 с тестами HEAD 9 из 15 новых падают (WEB-10a ENOSPC — по тексту); на копии 5fa9d16 с новым texts.js WEB-10a ENOSPC падает на самом дефекте: expected 200, actual 409. Мутанты (копия HEAD вне репозитория, 5 файлов: 127 тестов, BASE 0 падений): все 13 проекта пойманы — M01 16, M02 17, M03 1 (TM-75 в), M04 1 (TM-75 а), M05 1 (TM-75 б markBroken), M06 2 (TM-75 г, д), M07 1 (г), M08 1 (г), M09 1 (д), M10 1 (TM-77), M11 33 (в т.ч. TM-74, TM-66 (2)), M12 2 (WEB-10h, WEB-10f), M13 4 (WEB-10a×2, WEB-10g, WEB-10f); свои: V1 «holdsLive для чужого pid всегда false» — 19 (TM-74, TM-75 в, TM-11, EN-55…EN-67, WEB-10b и др.); V2 «noteOrphanedLock без сверки байтов» — 0 из 1107 (выжил); V3 «без проверки isFile/размера» — 0 из 1107 (выжил, Low). Проба теста-дополнения (вне репозитория) ловит V2: на HEAD pass, с V2 fail (alive expected true, actual false). Независимость: каждый из 14 новых/изменённых тестов отдельно — 0 падений; три файла ×3 с --test-concurrency=8 — 95/95 каждый раз. npm run check ×2 — код 0, 1107/1107; npm run traces — код 0 (918 файлов, следов 0). Отслеживаемые файлы до и после — хеши совпадают.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/test/team-recovery.test.js, раздел ISS-0010 (TM-75); условие (2) noteOrphanedLock в tools/src/team/lock.js",
+        "severity": "Medium",
+        "what": "Сверка содержимого writer.lock с ticket.bytes (проект п. 4.1; И-1а: писатель, у которого в файле «другое содержимое», папку не отмечает) не покрыта: мутант V2 — удалена одна строка `if (fs.readFileSync(file, \"utf8\") !== ticket.bytes) return false;` — проходит весь набор (1107/1107). TM-75 (д) ловит M09 только из-за отсутствия файла при close() (lstatSync бросает), т. е. проектное утверждение «M09 ловит TM-75 (д)» верно лишь для мутанта, удаляющего и lstat.",
+        "fix": "TEST-DESIGNER: добавить TM-75 (е): W1 открыт → тест заменяет writer.lock файлом со своим pid и другим since (assertLockHeld сверяет только pid, W1 его «держит») → W1.markBroken() → W1.close() → lockHolder(dir).alive === true → openWriter — E_PROJECT_BUSY с process.pid через assertRefusal, байты подложенного замка те же. Проба такого теста вне репозитория: HEAD — pass, V2 — fail. Дописать V2 в перечень мутантов (проект п. 8.1 — CODE-DESIGNER/DOC-UPDATER по решению ORCH)."
+      },
+      {
+        "id": "F2",
+        "place": "tools/src/team/lock.js noteOrphanedLock (проверка st.isFile() и размера)",
+        "severity": "Low",
+        "what": "Мутант V3 (удалена проверка «обычный файл не больше 4096 байт») выживает весь набор. Случай надуманный (ссылка на файл с теми же байтами), сам по себе не FAIL.",
+        "fix": "по желанию — вариант TM-75 (е) с writer.lock-ссылкой на файл с байтами билета: ожидать E_PROJECT_BUSY."
+      }
+    ],
+    "self_check": [
+      "до работы: git ls-files | shasum по всем отслеживаемым файлам → <scratch>/wt-before.txt; git status — чисто",
+      "копии вне репозитория: git archive 5fa9d16 → <scratch>/before и <scratch>/before2 (+ тесты HEAD: team-recovery, team-channel, team-web-faults, team-writer, team-faults; в before2 ещё texts.js HEAD); git archive HEAD → <scratch>/mut и <scratch>/pristine; diff -r tools/src и tools/test копии с деревом — пусто; Node v22.21.1",
+      "регрессия, before: node --test --test-reporter=tap --test-timeout=90000 --test-name-pattern=\"TM-7[3-7]|WEB-10[agh]\" (три файла) → exit 1, # tests 15 # pass 6 # fail 9: not ok TM-77 (expected «Проект завершил работу. Повторите команду», actual «Сообщение не подтверждено: проект его не принял. Повторите команду»), TM-73, TM-75 (а), TM-75 (в), TM-76, WEB-10a ENOSPC, WEB-10a EIO, WEB-10g, WEB-10h; ok TM-74, TM-75 (б)×2, (г), (д), WEB-10a создания проекта",
+      "регрессия, before2 (новый texts.js): тот же запуск → exit 1, # fail 9; WEB-10a ENOSPC, team-web-faults.test.js:70: expected: 200, actual: 409 — падение на самом дефекте",
+      "мутанты: <scratch>/scripts/mutate.py (замена образца, найденного ровно 1 раз) + run-mutants.sh: восстановление tools/src из pristine перед каждым, node --test --test-reporter=tap --test-timeout=90000 по 5 файлам (team-recovery, team-channel, team-web-faults, team-writer, team-faults). BASE exit 0 # tests 127 # fail 0",
+      "M01 isAlive в acquireLock → fail 16 (TM-73, TM-66 (2), (3), TM-75 (а), TM-76, TM-77, WEB-10a×2, WEB-10g, WEB-10h, TM-47, TM-13×3, TM-14×2); M02 lockHolder isAlive → fail 17 (+TM-75 (в)); M03 → 1 (TM-75 (в)); M04 → 1 (TM-75 (а)); M05 → 1 (TM-75 (б) markBroken); M06 → 2 (TM-75 (г), (д)); M07 → 1 (TM-75 (г)); M08 → 1 (TM-75 (г)); M09 (без lstat/размера/байтов) → 1 (TM-75 (д)); M10 → 1 (TM-77); M11 → 33 (TM-74, TM-66 (1)–(3), TM-13 в т.ч. дочерние, TM-46, TM-47, TM-48, TM-68 (a–c), EN-57, EN-68, TM-73, TM-75 (а, в, г), TM-76, TM-77, WEB-10a×2, WEB-10g, WEB-10h, TM-14×2); M12 → 2 (WEB-10h, WEB-10f); M13 → 4 (WEB-10a×2, WEB-10g, WEB-10f)",
+      "свои мутанты: V1 holdsLive = pid === process.pid && isAlive && !ORPHANED (чужой pid всегда не живой) → fail 19 (TM-74, TM-75 (в), TM-11, TM-56, TM-61, TM-67, EN-55…EN-64, EN-67×2, WEB-10b); V2 без строки сверки байтов → 5 файлов fail 0, весь набор (\"test/**/*.test.js\") # tests 1107 # fail 0 — ВЫЖИЛ; V3 без isFile/размера → весь набор # tests 1107 # fail 0 — выжил",
+      "проба дополнения вне репозитория (<scratch>/probe/zz-probe.test.js в копии): HEAD → # pass 1 # fail 0; с V2 → # fail 1 (alive expected: true, actual: false); копия восстановлена (diff -r с pristine пуст), проба удалена",
+      "независимость: каждый из TM-73, TM-74, TM-75 (а)…(д), TM-76, TM-77, WEB-10a ENOSPC, WEB-10a EIO, WEB-10g, WEB-10h, WEB-10f отдельно (--test-name-pattern) → fail 0; три файла 3 раза подряд с --test-concurrency=8 → # tests 95 # fail 0 ×3",
+      "устойчивость (чтение): TM-75 (г) — makeClock().set (неподвижные часы, байты замков W1 и W2 сверены равными); TM-77 — опрос inbox/ шагом 5 мс с пределом 5 с, порог took < ACK_WAIT_MS/2; TM-74 — дочерний процесс с CHILD_TIMEOUT_MS и SIGKILL в t.after; TM-75 (в) — process.ppid как живой чужой pid; Math.random, skip/todo/only, eslint-disable в 5 файлах — нет (grep пуст)",
+      "cd tools && npm run check (1) → exit 0: «All matched files use Prettier code style!», «traces: файлов проверено 918, следов 0, пропущено 26», # tests 1107 # pass 1107 # fail 0 # cancelled 0 # skipped 0 # todo 0",
+      "cd tools && npm run check (2) → exit 0, те же числа: # tests 1107 # pass 1107 # fail 0",
+      "cd tools && npm run traces → exit 0: «traces: файлов проверено 918, следов 0, пропущено 26»",
+      "после работы: shasum всех отслеживаемых файлов → diff с wt-before.txt пуст; git status: только чужой новый ?? handoffs/PROD-20261010-01/step-38-uat-runner.json (не мой) и этот файл"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "process",
+        "text": "ORCH не создал файл step-37 заранее; записан мной по прямому поручению ORCH, context и task — по тексту поручения, created_at/started_at — null."
+      },
+      {
+        "id": "I2",
+        "kind": "process",
+        "text": "Подтверждаю I2 шага 36: тесты ISS-0010 (TM-73…77, WEB-10g/h) лежат в коммитах 43304a8 (ISS-0013) и 38230ec (ISS-0012) — git show --stat; коммит db732df добавил только +3/-1 в team-web-faults и handoff. Учесть при выпуске (шаг 11)."
+      },
+      {
+        "id": "I3",
+        "kind": "note",
+        "text": "Во время проверки в дереве появился чужой файл handoffs/PROD-20261010-01/step-38-uat-runner.json (шаг 8 начат до вердикта шага 7?) — сверить порядок ворот ORCH. Отслеживаемые файлы не менялись."
+      },
+      {
+        "id": "I4",
+        "kind": "route",
+        "text": "F1 — к TEST-DESIGNER через ORCH (дописать TM-75 (е)); после — повторная проверка TEST-DESIGN-VALIDATOR. Дефектов кода тесты не нашли — CODE-FIXER не нужен."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
