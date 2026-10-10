@@ -902,3 +902,150 @@ test("WEB-P12 (crit. 3, 5, 9) the real page against the real server: the key of 
   assert.equal(stalePage.byId("chat-reload").hidden, false);
   assert.equal(stalePage.byId("chat-text").value, "Из старой страницы");
 });
+
+// ---- the first poll of a project fails (DESIGN-QA-VALIDATOR F-1, F-2; description 8.1 r3.1) ----
+
+// What the page of a project shows: the frame (head, six answers, all tasks), the
+// captions «Загрузка…» that are shown, and the state of the chat.
+function projectView(page) {
+  const body = page.byId("project-body");
+  const frame = body.querySelectorAll("[data-frame]");
+  const loadingShown = [
+    ...body.querySelectorAll("[data-loading]"),
+    page.byId("chat-loading"),
+  ].filter(visible).length;
+  return {
+    frameShown: frame.filter(visible).length,
+    frameCount: frame.length,
+    loadingShown,
+    projectDown: visible(page.byId("project-down")),
+    chatDown: visible(page.byId("chat-down")),
+    chatOff: visible(page.byId("chat-off")),
+    chatForm: visible(page.byId("chat-form")),
+    errorBar: visible(page.byId("error-bar")),
+  };
+}
+
+test("WEB-P13 (F-1, 8.1) the first load of a project without connection: the chat says «Нет связи…», the left panel shows only the text of the failure without the empty frame, no «Загрузка…» stays; when the connection is back all is shown and the polling goes on", async () => {
+  let online = false;
+  const page = loadPage({
+    publicDir: PUBLIC_DIR,
+    hash: `#/projects/${ID}`,
+    fetch: (p, init) => {
+      if (!online) throw new TypeError("Failed to fetch");
+      return router({
+        [API]: { status: 200, body: projectBody() },
+        [`${API}/chat`]: { status: 200, body: chatBody([message(5)]) },
+      })(p, init);
+    },
+  });
+  await page.settle();
+  assert.deepStrictEqual(
+    page.calls.map((c) => c.path),
+    [API],
+    "the chat is not asked before the project answered 200",
+  );
+  assert.equal(linkState(page), "down");
+  let v = projectView(page);
+  assert.equal(v.frameCount, 3, "head, answers and tasks are the frame");
+  assert.equal(v.frameShown, 0, "no empty frame");
+  assert.equal(v.loadingShown, 0, "no «Загрузка…» stays");
+  assert.equal(v.projectDown, true);
+  assert.equal(v.chatDown, true, "the chat says no connection");
+  assert.equal(
+    page.byId("chat-down").textContent.trim(),
+    "Нет связи с сервером Sai. Страница повторит попытку сама.",
+  );
+  assert.equal(v.chatOff, false);
+  assert.equal(page.timers.size, 1, "the next poll is planned");
+
+  // still no connection on the next poll: the same, nothing turns to «Загрузка…»
+  await page.advance(5000);
+  v = projectView(page);
+  assert.equal(v.frameShown, 0);
+  assert.equal(v.loadingShown, 0);
+  assert.equal(v.chatDown, true);
+
+  // the connection is back: the project answers 200, the chat is asked and shown
+  online = true;
+  const n = page.calls.length;
+  await page.advance(5000);
+  assert.deepStrictEqual(
+    page.calls.slice(n).map((c) => c.path),
+    [API, `${API}/chat`],
+  );
+  assert.equal(linkState(page), "live");
+  v = projectView(page);
+  assert.equal(v.frameShown, 3, "the head, the answers and the tasks are back");
+  assert.equal(v.loadingShown, 0);
+  assert.equal(v.projectDown, false);
+  assert.equal(v.chatDown, false);
+  assert.equal(v.chatForm, true);
+  assert.equal(page.byId("project-goal").textContent, "Вымышленная цель");
+  assert.ok(page.byId("chat-list").textContent.includes("Сообщение 5"));
+  assert.equal(page.timers.size, 1, "the polling goes on");
+});
+
+test("WEB-P14 (F-2, 8.1) the first load of a project refused with a text (500, a broken project): the error bar with error_text, no empty frame, the chat says «Чат недоступен» without the form and no «Загрузка…»; after the project answers 200 all is shown as usual", async () => {
+  let broken = true;
+  const page = loadPage({
+    publicDir: PUBLIC_DIR,
+    hash: `#/projects/${ID}`,
+    fetch: router({
+      [API]: () =>
+        broken
+          ? {
+              status: 500,
+              body: {
+                error_text: "Данные проекта повреждены",
+                field: null,
+                reload: false,
+              },
+            }
+          : { status: 200, body: projectBody() },
+      [`${API}/chat`]: { status: 200, body: chatBody([message(9)]) },
+    }),
+  });
+  await page.settle();
+  assert.deepStrictEqual(
+    page.calls.map((c) => c.path),
+    [API],
+    "the chat is not asked after a refusal",
+  );
+  assert.equal(linkState(page), "live");
+  let v = projectView(page);
+  assert.equal(v.errorBar, true);
+  assert.equal(
+    page.byId("error-text").textContent,
+    "Данные проекта повреждены",
+  );
+  assert.equal(v.frameShown, 0, "no empty frame");
+  assert.equal(v.loadingShown, 0, "no «Загрузка…» stays");
+  assert.equal(v.projectDown, false, "it is not «no connection»");
+  assert.equal(v.chatDown, false);
+  assert.equal(v.chatOff, true);
+  assert.equal(page.byId("chat-off").textContent.trim(), "Чат недоступен");
+  assert.equal(v.chatForm, false, "no field to type into an unavailable chat");
+
+  await page.advance(5000);
+  v = projectView(page);
+  assert.equal(v.frameShown, 0);
+  assert.equal(v.loadingShown, 0);
+  assert.equal(v.chatOff, true);
+
+  broken = false;
+  const n = page.calls.length;
+  await page.advance(5000);
+  assert.deepStrictEqual(
+    page.calls.slice(n).map((c) => c.path),
+    [API, `${API}/chat`],
+  );
+  v = projectView(page);
+  assert.equal(v.errorBar, false);
+  assert.equal(v.frameShown, 3);
+  assert.equal(v.loadingShown, 0);
+  assert.equal(v.chatOff, false);
+  assert.equal(v.chatForm, true);
+  assert.ok(page.byId("chat-list").textContent.includes("Сообщение 9"));
+  assert.equal(page.timers.size, 1, "the polling goes on");
+});

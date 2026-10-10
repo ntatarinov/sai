@@ -1,5 +1,5 @@
 // Sai Team: the business page (description of the interface docs/design/REQ-011-ui.md
-// r3; contract of the fields docs/design/REQ-011-team-web.md, sections 5.2-5.7, 6.3, 9).
+// r3.1; contract of the fields docs/design/REQ-011-team-web.md, sections 5.2-5.7, 6.3, 9).
 //
 // Rules this file keeps:
 // - every constant caption lives in index.html; this file has no letters of the
@@ -219,6 +219,9 @@ const app = {
   chatApi: null,
   chat: null,
   chatDown: false,
+  // The project refused with a text before it ever loaded: the chat has no address
+  // and shows the caption #chat-off (description 8.1).
+  chatOff: false,
   chatBottomCount: 0,
   chatFirst: true,
   focusChat: false,
@@ -541,13 +544,21 @@ async function refreshProject(gen, route, outcome) {
       app.project = reply.body;
       app.projectState = "ok";
       app.chatApi = reply.body.links.chat.api;
+      app.chatOff = false;
       renderProject();
     });
   } else if (kind === "notfound") {
     app.projectState = "notfound";
     renderProject();
   } else if (app.project === null) {
+    // Nothing loaded yet and the chat is not asked (no address): the chat says what
+    // the project got — no connection, or unavailable after a refusal with a text
+    // (description 8.1); never the loading caption for ever.
     app.projectState = kind;
+    if (app.chat === null) {
+      app.chatDown = kind === "down";
+      app.chatOff = kind === "error";
+    }
     renderProject();
   }
   if (kind === "notfound") return;
@@ -577,6 +588,7 @@ function resetProject() {
   app.chatApi = null;
   app.chat = null;
   app.chatDown = false;
+  app.chatOff = false;
   app.chatFirst = true;
   app.chatBottomCount = 0;
   byId("chat-text").value = "";
@@ -598,7 +610,12 @@ function renderProject() {
   const loading = p === null;
   const body = byId("project-body");
   setHidden(byId("project-down"), !(loading && state === "down"));
+  // No project loaded and the first poll failed: only the text of the failure (or
+  // the error bar), no empty frame of the head, the six answers and the tasks.
   const blank = loading && (state === "down" || state === "error");
+  for (const el of body.querySelectorAll("[data-frame]")) {
+    setHidden(el, blank);
+  }
   for (const el of body.querySelectorAll("[data-loading]")) {
     setHidden(el, !loading || blank);
   }
@@ -782,8 +799,14 @@ function isNearBottom(list) {
 function renderChat(forceBottom) {
   const list = byId("chat-list");
   const messages = app.chat;
-  setHidden(byId("chat-loading"), messages !== null || app.chatDown);
+  const off = messages === null && !app.chatDown && app.chatOff;
+  setHidden(
+    byId("chat-loading"),
+    messages !== null || app.chatDown || app.chatOff,
+  );
   setHidden(byId("chat-down"), messages !== null || !app.chatDown);
+  setHidden(byId("chat-off"), !off);
+  setHidden(byId("chat-form"), off);
   setHidden(byId("chat-empty"), messages === null || messages.length > 0);
   updateChatForm();
   if (messages === null) {

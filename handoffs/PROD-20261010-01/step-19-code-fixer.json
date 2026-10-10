@@ -1,0 +1,128 @@
+{
+  "handoff_id": "step19-code-fixer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-04",
+  "step": "19",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261010-01/step-19-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-011"
+    ],
+    "rework_of": [
+      "handoffs/PROD-20261010-01/step-18-design-qa-validator.json"
+    ],
+    "write_set": [
+      "tools/src/web/public/app.js",
+      "tools/src/web/public/index.html",
+      "tools/src/web/public/style.css",
+      "tools/test/team-web-page.test.js",
+      "docs/design/REQ-011-ui.md",
+      "handoffs/PROD-20261010-01/step-19-code-fixer.json"
+    ],
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-18-design-qa-validator.json (F-1 High, F-2 Medium)",
+      "docs/design/samples/req011-actual-offline-first-1470x784-2026-10-10.png",
+      "docs/design/REQ-011-ui.md r3 (п. 8.1, 8.2, 8.4)"
+    ],
+    "parallel_work_now": "никого"
+  },
+  "task": {
+    "description": "WF-04 шаг 5, REQ-011: исправить F-1 и F-2 по решениям ORCH (1) первая загрузка без связи — чат «Нет связи…», левая панель без каркаса; (2) отказ с текстом — полоса error_text, каркас скрыт, чат — подпись «Чат недоступен» в index.html; (3) после 200 — всё как обычно, опрос идёт. Дописать п. об этих состояниях в REQ-011-ui.md (r3 → r3.1), тесты в team-web-page.test.js, мутанты, npm run check и npm run traces."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T15:02:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "F-1 и F-2 исправлены в app.js и index.html: пока проект ни разу не ответил 200, каркас заголовка, шести ответов и «Все задачи» скрыт (метка data-frame), «Загрузка…» не остаётся; при «нет связи» на первом опросе чат показывает #chat-down («Нет связи с сервером Sai. Страница повторит попытку сама.»), при отказе с текстом — полоса error_text и в чате подпись «Чат недоступен» (#chat-off, в index.html) без формы отправки; после ответа 200 экран и чат показываются как обычно, опрос не прерывается. Описание REQ-011-ui.md → r3.1 (п. 8.1 и новый п. 8.1a). Тесты WEB-P13, WEB-P14 добавлены (по прямому заданию ORCH), мутанты убиты. npm test — 1092/1092; npm run check и npm run traces — код 1 только из-за следов в чужих handoff-ах step-16 и step-18 (см. issues).",
+    "files": [
+      "tools/src/web/public/app.js",
+      "tools/src/web/public/index.html",
+      "tools/test/team-web-page.test.js",
+      "docs/design/REQ-011-ui.md",
+      "handoffs/PROD-20261010-01/step-19-code-fixer.json"
+    ],
+    "changes": [
+      {
+        "item": "F-1",
+        "file": "tools/src/web/public/app.js",
+        "place": "refreshProject, ветка app.project === null",
+        "what": "если чат ещё не загружен: app.chatDown = (kind === \"down\"), app.chatOff = (kind === \"error\"); чат уходит из «Загрузка…» в «нет связи» (или «недоступен»). При ответе 200 app.chatOff = false; resetProject сбрасывает chatOff."
+      },
+      {
+        "item": "F-1, F-2",
+        "file": "tools/src/web/public/app.js",
+        "place": "renderProject",
+        "what": "элементы [data-frame] (заголовок, ответы, «Все задачи») скрыты, пока проект не загружен и первый опрос дал down или error; [data-loading] по-прежнему скрыты в этом случае."
+      },
+      {
+        "item": "F-2",
+        "file": "tools/src/web/public/app.js",
+        "place": "renderChat, состояние app",
+        "what": "новое поле app.chatOff; #chat-loading скрыт при chatDown или chatOff; #chat-off показан и #chat-form скрыт, когда сообщений нет, связи не «нет», а проект отказал с текстом. Кириллицы в app.js нет (проверено grep)."
+      },
+      {
+        "item": "F-1, F-2",
+        "file": "tools/src/web/public/index.html",
+        "place": "#project-head, .answers (теперь id=\"answers\"), #tasks-section; чат",
+        "what": "атрибут data-frame на трёх частях каркаса; подпись <p id=\"chat-off\" class=\"quiet chat-state\" hidden>Чат недоступен</p>; ссылка в шапке файла r2 → r3.1."
+      },
+      {
+        "item": "F-1, F-2 (описание)",
+        "file": "docs/design/REQ-011-ui.md",
+        "place": "история редакций, п. 8.1 (строки «Нет связи», «Ошибка сервера с текстом»), новый п. 8.1a",
+        "what": "редакция r3.1: что показывает страница проекта и чат, когда первая загрузка проекта не удалась (нет связи / отказ с текстом), и возврат к обычному виду после 200."
+      },
+      {
+        "item": "тесты",
+        "file": "tools/test/team-web-page.test.js",
+        "place": "WEB-P13, WEB-P14, помощник projectView",
+        "what": "WEB-P13 — первая загрузка без связи, повторный опрос без связи, возврат связи; WEB-P14 — отказ 500 с error_text, повторный отказ, затем 200. В обоих: каркас скрыт (0 из 3), «Загрузка…» не показан нигде (тело и чат), состояние чата, затем всё показано, чат запрошен, таймер опроса есть."
+      }
+    ],
+    "self_check": [
+      "До правки (мутант M4 = код до правки, копия вне Sai в <scratch>/fix19): WEB-P13 и WEB-P14 падают — «no empty frame: 3 !== 0».",
+      "Мутант M1 (убрано переключение чата в «нет связи»/«недоступен» в refreshProject): WEB-P13, WEB-P14 падают — «no «Загрузка…» stays: 1 !== 0».",
+      "Мутант M2 (убрано только app.chatDown = kind === \"down\"): WEB-P13 падает, WEB-P14 проходит (ожидаемо — проверяет отказ с текстом).",
+      "Мутант M3 (убрано скрытие [data-frame]): WEB-P13 и WEB-P14 падают.",
+      "После правки: node --test test/team-web-page.test.js — 14/14 pass.",
+      "cd tools && npm run check — код 1: format:check «All matched files use Prettier code style!», eslint --max-warnings 0 — без вывода (0 ошибок), traces: «файлов проверено 893, следов 5, пропущено 23» — все 5 следов в чужих файлах: step-16-test-runner.json:56 (путь домашнего каталога), step-18-design-qa-validator.json:116 (путь домашнего каталога, название из списка), :117, :133 (путь домашнего каталога); npm test в check не дошёл.",
+      "cd tools && npm test отдельно — код 0: tests 1092, pass 1092, fail 0, skipped 0, todo 0, cancelled 0.",
+      "npm run traces — тот же итог, что в check (код 1, 5 следов только в step-16 и step-18)."
+    ],
+    "issues": [
+      {
+        "kind": "BLOCKER_OUTSIDE",
+        "text": "npm run check и npm run traces дают код 1 не из-за этой работы: все 5 следов — в handoffs/PROD-20261010-01/step-16-test-runner.json:56 и step-18-design-qa-validator.json:116, 117, 133 (абсолютные пути scratchpad и домашнего каталога, название из списка в :116). Эти файлы вне write_set и не менялись (время изменения 19:46 и 19:55 местного, до этого шага). Нужно: авторам (или ORCH) заменить пути на <scratch>/… и убрать название; после этого check должен пройти — тесты отдельно 1092/1092."
+      },
+      {
+        "kind": "note",
+        "text": "Тесты WEB-P13 и WEB-P14 написаны CODE-FIXER по прямому заданию ORCH (обычно — TEST-DESIGNER); их стоит проверить TEST-DESIGN-VALIDATOR."
+      },
+      {
+        "kind": "note",
+        "text": "style.css не менялся — стили не понадобились ([hidden] уже display:none !important, подпись взяла .quiet .chat-state). В шапке style.css осталась ссылка «REQ-011-ui.md r2» (было и до этой работы) — не правил, вне перечня."
+      },
+      {
+        "kind": "note",
+        "text": "Попутно (не правил): если проект ответил 200, а чат на первом запросе отказал с текстом (не 404), чат по-прежнему показывает «Загрузка…» до удачного ответа чата — случай вне F-1/F-2, описание его не называет."
+      },
+      {
+        "kind": "note",
+        "text": "Повторная съёмка DESIGN-QA-VALIDATOR нужна только для состояний F-1/F-2 (первая загрузка без связи; повреждённый проект) после ворот SECURITY-REVIEWER и REVIEWER."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/web/public/app.js",
+      "tools/src/web/public/index.html",
+      "tools/test/team-web-page.test.js",
+      "docs/design/REQ-011-ui.md",
+      "handoffs/PROD-20261010-01/step-19-code-fixer.json"
+    ]
+  }
+}

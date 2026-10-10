@@ -1,0 +1,59 @@
+{
+  "handoff_id": "step17-security-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "17",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-17-security-reviewer.json",
+  "status": "COMPLETED",
+  "completed_at": "2026-10-10T14:43:24Z",
+  "task": {
+    "description": "Финальные ворота (AP-049) REQ-011: правка ORCH в tools/src/web/public/app.js после PASS step-10."
+  },
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Карта: изменён один файл, tools/src/web/public/app.js, поверхность «уходит в браузер». Хеши остальных 9 файлов tools/src/web совпадают с hashes_before step-10 (api, config, display, engines, main, server, texts, index.html, style.css); app.js: 2195a72c -> 7b80e1f4 (только эта правка по хешам; прежний текст app.js не сохранён, построчный diff невозможен: git HEAD~1 не содержит tools/src/web, всё добавлено одним коммитом 2c60024, рабочее дерево чисто). Правка: блок (6) результатов (app.js ~705-720) строит строку без ветки «только имя»: name, task_text — setText (textContent); ссылки task и role — setLink -> linkHash(link.api), т.е. только из Link.api сервера; r.role не null: display.js:324-326 фильтр f.task!==null, resultRef (270-280) всегда задаёт role: roleRef(...), task берётся из ctx.tasks. Заголовок r2->r3 — комментарий, не влияет. Q7 выполнен (поиск секретов в src/web и public — пусто); Q8 неприменим (данных магазинов нет); Q9 неприменим (нет SQL); Q10 выполнен без изменений (fetch один, window.fetch в request с try/catch; сетевых модулей и записи файлов в src/web нет); Q11 неприменим (сервер сам никуда не ходит); R3 неприменим (фото нет); R2 неприменим к правке (страница только читает, новых источников событий нет). Новых небезопасных выводов нет.",
+    "findings": [],
+    "self_check": {
+      "hashes_other_files_equal_step10": true,
+      "commands": [
+        {
+          "cmd": "grep -rnE 'innerHTML|outerHTML|insertAdjacentHTML|document\\.write|eval\\(|new Function|srcdoc' tools/src/web/public/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rniE 'token|secret|passw|apikey|api_key' tools/src/web/public/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rnEi 'sk-[A-Za-z0-9_-]{16,}|AKIA|ghp_|xox[abp]-|-----BEGIN' tools/src/web/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rnE 'appendFile|writeFile|createWriteStream|rename|unlink|node:(https|net|tls|child_process)|spawn' tools/src/web/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -n 'fetch(' tools/src/web/public/app.js",
+          "out": "app.js:42 window.fetch — единственный"
+        },
+        {
+          "cmd": "node --check tools/src/web/public/app.js",
+          "out": "syntax ok"
+        },
+        {
+          "cmd": "node --test test/team-web-*.test.js (в tools/)",
+          "out": "tests 94, pass 94, fail 0"
+        }
+      ],
+      "hashes_after": "код во время проверки не менялся (git status чист)"
+    },
+    "issues": [
+      "Диф HEAD~1..HEAD не отделяет правку ORCH от всего web (всё в одном коммите 2c60024); изоляция сделана по хешам step-10. Прежний текст app.js нигде не сохранён."
+    ],
+    "artifacts_out": []
+  }
+}
