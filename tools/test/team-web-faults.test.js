@@ -509,8 +509,10 @@ test("WEB-10g (ISS-0010) the failure of the disk repeats three times — CHAT, L
     } finally {
       faults.restore();
     }
+    // the status first: a 409 (the defect) is named as such, not as a fault that
+    // did not fire
+    assert.equal(r.status, 500, `${tag}: ${r.status} ${r.text}`);
     assert.deepStrictEqual(faults.fired(), [true], tag);
-    assert.equal(r.status, 500, `${tag}: ${r.text}`);
     assert.deepStrictEqual(r.json, DISK_FULL, tag);
     assert.doesNotMatch(r.text, NO_STACK, tag);
     assert.equal(r.text.includes("ENOSPC"), false, tag);

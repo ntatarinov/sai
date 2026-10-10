@@ -1,0 +1,97 @@
+{
+  "handoff_id": "step36-test-designer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "36",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261010-01/step-36-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": [
+      "REQ-011",
+      "REQ-009",
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/ISS-0010-web-chat-write-recovery.md (r3)",
+      "handoffs/PROD-20261010-01/step-33-code-fixer.json",
+      "commit 3699438 (исправление), 5fa9d16 (код до исправления)"
+    ],
+    "pre_fix_copy": "git archive 5fa9d16 tools в <scratch>/iss10/before",
+    "write_set": [
+      "tools/test/team-*.test.js",
+      "handoffs/PROD-20261010-01/step-36-test-designer.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны получателем по тексту поручения ORCH (result.issues I1)"
+  },
+  "task": {
+    "description": "WF-03, шаг 6, ISS-0010: тесты по проекту r3 — TM-73…TM-76 (team-recovery), TM-77 (team-channel), WEB-10g, WEB-10h, второй прогон WEB-10a с ENOSPC (регрессионный, падает на 5fa9d16), TM-75 (г) при неподвижных часах и (д); каждый тест отказа сверяет неизменность; 13 мутантов проекта на копии вне репозитория; npm run check дважды и npm run traces; src не править."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T17:07:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Написаны все тесты п. 8 проекта r3, которых не было: 13 новых тестов (1094 → 1107). Таблица «критерий → тест»: К1 — WEB-10a ENOSPC (регрессионный, новый прогон) и WEB-10a EIO (тот же тест, второй код), TM-73; К2 — WEB-10g; К3 — WEB-10h и строка E_DISK/rollback в WEB-10f (CODE-FIXER, проверена); К4 — TM-76; К5 — TM-74; К6 — TM-75 (а), (б)×2 (say под EIO и markBroken), (в), (г), (д); К7 — TM-66 (2), (3) (CODE-FIXER, проверены как свои); К8 — TM-13×3, TM-14×2, TM-47 (CODE-FIXER, проверены); К9 — весь npm run check; К10 — TM-77. Зачем: TM-73 — ядро снимает свой брошенный замок ровно один раз; TM-74 — другой процесс по-прежнему «занят»; TM-75 — защита «один писатель» в одном процессе не ослаблена (в т.ч. поздний close() потерявшего замок писателя при неподвижных часах — байты замков W1 и W2 совпадают); TM-76 — сломанный движок в процессе не держит чат; TM-77 — отправитель не ждёт 10 с; WEB-10g — повтор сбоя в трёх местах даёт 500 с правдивым текстом, не 409; WEB-10h — «могло сохраниться» при неудачном откате; WEB-10a — сам дефект. Каждый тест отказа сверяет неизменность: хеш events.jsonl, snapshot папки (кроме замка там, где он по проекту меняется), байты writer.lock, отсутствие остатков writer.lock.*. Устойчивость: ни одного реального ожидания > 2 с в проходящих тестах (TM-77 — около 0,1 с), TM-75 (г) — неподвижные часы (makeClock().set), у каждого теста своя временная папка. Пункты планки: Q8 — неприменим как магазины, по принципу: ключ — папка одного проекта, тесты в разных папках; Q10 — цель (WEB-10a/g/h, TM-77); Q11 — неприменим (внешних адресов нет); R3 — неприменим (фото нет); Q7 — секретов в тестах нет. Регрессия: на копии 5fa9d16 WEB-10a ENOSPC падает (текст, а при новом тексте — 409), на текущем коде проходит. Все 13 мутантов проекта применены на копии вне репозитория — каждый падает на названных проектом тестах; рабочее дерево не менялось.",
+    "changes": [
+      "tools/test/team-recovery.test.js: импорты spawn, lockHolder, deliver, engineHolder, CHILD_TIMEOUT_MS, childEnv, HELPERS_URL, STORE_URL, T0; в конце файла раздел «ISS-0010, decision 0026»: помощники breakBySay, closeBroken, orphanOwnLock, brokenWriterAlive; тесты TM-73, TM-74, TM-75 (а), TM-75 (б) ×2, TM-75 (в), TM-75 (г), TM-75 (д), TM-76",
+      "tools/test/team-channel.test.js: импорты ACK_WAIT_MS, deliver, newProject; в конце — TM-77",
+      "tools/test/team-web-faults.test.js: константы DISK_FULL, DISK_UNSURE, помощники except() и lockNames(), импорт lockHolder; WEB-10a чата стал циклом по кодам [ENOSPC, EIO] (ожидания CODE-FIXER сохранены, добавлены: снимок папки кроме замка, нет кода системы в ответе, нет остатков writer.lock.*); новые WEB-10g и WEB-10h перед таблицей CHAT_ROWS; в WEB-10g статус проверяется раньше срабатывания сбоя, чтобы мутант назывался «409»"
+    ],
+    "self_check": [
+      "cd tools && npm run check (1-й, после всех тестов кроме перестановки проверки в WEB-10g) → код 0: «All matched files use Prettier code style!», eslint без вывода, «traces: файлов проверено 914, следов 0, пропущено 26», # tests 1107 # pass 1107 # fail 0 # cancelled 0 # skipped 0 # todo 0",
+      "cd tools && npm run check (2-й, окончательный) → код 0: Prettier ok, «traces: файлов проверено 916, следов 0, пропущено 26», # tests 1107 # pass 1107 # fail 0 # cancelled 0 # skipped 0 # todo 0; (3-й) → код 0, те же числа",
+      "cd tools && npm run traces → код 0: «traces: файлов проверено 916, следов 0, пропущено 26»",
+      "копия ДО исправления: git archive 5fa9d16 tools в <scratch>/iss10/before + три моих файла тестов, npm ci («found 0 vulnerabilities»); node --test --test-reporter=tap --test-timeout=90000 --test-name-pattern=\"TM-7[3-7]|WEB-10[agh]\" test/team-recovery.test.js test/team-channel.test.js test/team-web-faults.test.js → код 1, # tests 15 # pass 6 # fail 9: not ok TM-77 (actual «Сообщение не подтверждено: проект его не принял. Повторите команду», expected «Проект завершил работу. Повторите команду»), TM-73 («Проект занят другим процессом (pid N)»), TM-75 (а), TM-75 (в), TM-76 (alive: true вместо false), WEB-10a ENOSPC и WEB-10a EIO (error_text «Не удалось записать на диск — сообщение не сохранено»), WEB-10g, WEB-10h; проходят TM-74, TM-75 (б)×2, (г), (д) — тесты-охранники «защита не ослаблена», их доказательство — мутанты ниже",
+      "регрессия WEB-10a ENOSPC на копии 5fa9d16 с одним новым texts.js (<scratch>/iss10/before2) → код 1: «expected: 200, actual: 409» — падает именно на дефекте (409 до перезапуска)",
+      "копия ПОСЛЕ (<scratch>/iss10/after, rsync tools без node_modules, npm ci): тот же запуск → код 0, # tests 15 # pass 15 # fail 0",
+      "мутанты: rsync всего репозитория без .git и node_modules в <scratch>/iss10/repo, npm ci, diff -rq с рабочим деревом пуст; каждый мутант — замена одной строки в копии (скрипт <scratch>/iss10/mut/apply.py, проверка «образец найден ровно 1 раз»), затем node --test --test-reporter=tap --test-timeout=90000 \"test/**/*.test.js\", затем восстановление. Без мутанта (BASE): # tests 1107 # pass 1107 # fail 0",
+      "M01 acquireLock снова isAlive(holder) → fail 16: TM-73, TM-66 (2), TM-66 (3), TM-75 (а), TM-76, TM-77, WEB-10a ENOSPC, WEB-10a EIO, WEB-10g (try 2: «409 Сообщение не отправлено…»), WEB-10h, TM-47, TM-13×3, TM-14×2",
+      "M02 lockHolder без holdsLive (isAlive) → fail 17: те же + TM-75 (в); в т.ч. TM-73 и TM-76",
+      "M03 holdsLive без pid === process.pid → fail 1: TM-75 (в)",
+      "M04 acquireLock не удаляет ключ из ORPHANED → fail 1: TM-75 (а)",
+      "M05 noteOrphanedLock в markBroken() → fail 1: TM-75 (б) (markBroken())",
+      "M06 noteOrphanedLock отмечает без условия (как r2) → fail 2: TM-75 (г), TM-75 (д)",
+      "M07 noteOrphanedLock сверяет только pid в файле → fail 1: TM-75 (г)",
+      "M08 noteOrphanedLock сверяет только содержимое (без билета) → fail 1: TM-75 (г) (третье открытие: alive false вместо true — байты совпадают при неподвижных часах)",
+      "M09 noteOrphanedLock сверяет только билет → fail 1: TM-75 (д)",
+      "M10 в ожидании sendToEngine снова isAlive(enginePid) → fail 1: TM-77 (actual «Сообщение не подтверждено: проект его не принял…»)",
+      "M11 close() сломанного писателя снимает замок (вариант D) → fail 37: среди них TM-74, TM-66 (2), а также TM-66 (1), TM-13 (в т.ч. в дочернем процессе), TM-46, TM-47, TM-68 (а–в), EX-53, EX-54, EN-68, WEB-10a/g/h",
+      "M12 chatFailure без ветки rollback → fail 2: WEB-10h, WEB-10f",
+      "M13 прежний текст chatDisk → fail 4: WEB-10a ENOSPC, WEB-10a EIO, WEB-10g, WEB-10f",
+      "рабочее дерево: shasum -a 256 всех файлов tools/src, tools/test, package.json, package-lock.json (206) до и после мутантов — diff пуст; tools/src — хеши как в начале работы (80 файлов, diff пуст); после восстановления diff -rq копии с деревом пуст",
+      "grep skip/todo/eslint-disable в трёх файлах тестов — пусто; Node v22.21.1"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "process",
+        "text": "ORCH не создал файл handoff-а step-36 заранее; я записал его по поручению, context и task — по тексту поручения, created_at/started_at — null. На старте работы step-34 (SECURITY-REVIEWER) и step-35 (REVIEWER) в дереве не было; они появились во время работы (оба PASS) — ворота шага 5 пройдены, но порядок «ворота до тестов» подтвердить по времени файлов я не могу; сверить ORCH."
+      },
+      {
+        "id": "I2",
+        "kind": "process",
+        "text": "Параллельная работа (AP-008): мои незавершённые файлы тестов (team-recovery, team-channel, team-web-faults) попали в чужие коммиты 38230ec (ISS-0012) и 43304a8 (ISS-0013) — я ничего не коммитил. Текущее дерево отличается от 43304a8 только последней правкой WEB-10g (порядок проверок, +3/-1 строки). Стоит, чтобы коммит шага 6/11 не приписывал тесты ISS-0010 другим дефектам; запись в docs/anti-patterns.md — на решение ORCH."
+      },
+      {
+        "id": "I3",
+        "kind": "note",
+        "text": "Тесты CODE-FIXER (TM-13×3, TM-14×2, TM-47, TM-66 (2), (3), WEB-10a EIO, WEB-10f) проверены как свои: ожидания по проекту, не ослаблены; WEB-10a расширен проверками (снимок папки, остатки замка). Мутанты M01, M02, M11 их ловят."
+      },
+      {
+        "id": "I4",
+        "kind": "note",
+        "text": "Дефектов кода новые тесты не нашли. Тесты TM-74, TM-75 (б), (г), (д) проходят и на коде до исправления — это ожидаемо: они проверяют, что защита не ослаблена; их доказательство — мутанты M05–M09, M11."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-recovery.test.js",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-web-faults.test.js"
+    ]
+  }
+}
