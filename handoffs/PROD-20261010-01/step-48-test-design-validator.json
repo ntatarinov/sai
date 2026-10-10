@@ -1,0 +1,74 @@
+{
+  "handoff_id": "step48-test-design-validator-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "48",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261010-01/step-48-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0015",
+    "requirement_ids": [
+      "REQ-011"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-42-test-designer.json",
+      "tools/test/team-web-channel.test.js",
+      "docs/issues/ISS-0015-web15-flaky-snapshot.md",
+      "handoffs/PROD-20261010-01/step-43-release-validator.json (F3)"
+    ],
+    "write_set": [
+      "handoffs/PROD-20261010-01/step-48-test-design-validator.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны по тексту поручения ORCH"
+  },
+  "task": {
+    "description": "Проверить правку WEB-15 (б) (stableHash, ISS-0015): проверка не ослаблена; мутанты на копии вне репозитория; соседние тесты; устойчивость; npm run check дважды; npm run traces."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T18:44:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. (1) Проверка не ослаблена: после SIGSTOP stableHash ждёт, пока sha256 всего events.jsonl повторится 5 опросов по 40 мс (не больше 250 опросов, то есть ~10 с, иначе падение «the journal did not settle»); затем отправка, и после ответа 504 сравнивается sha256 всего журнала с этим значением (assert.equal(..., before, «the server wrote nothing»)); ограничения 10-12 с ответа и остальные проверки не тронуты. (2) Мутанты на копии <scratch>/v3 (rsync без .git и node_modules, npm ci, --test-timeout=90000, только tools/src/team/engine/channel.js): без мутанта 6/6; сервер дописывает байт в журнал в цикле ожидания (W, W2) — 4/6, падают WEB-15 (а) и (б) «the server wrote nothing»; дописывает байт при отзыве (W3, как у автора) — 5/6, падает только (б); сервер пишет в цикле ожидания событие CHAT с текстом сообщения — 3/6, падают (а), (б) и (race). То есть (б) падает на любом мутанте записи; (race) падает только если сервер пишет событие с текстом: хеш журнала в (race) не сверяется, а заявленное в step-42 «байт при отзыве роняет (race)» я не воспроизвёл (см. F1; к правке это не относится). (3) Прочие мутанты канала: не отзывать сообщение (R) — 4/6, падают (б) и (race); не проверять живость движка (L) — 5/6, падает (race); после всех мутантов копия src совпала с рабочей (diff -r пуст), 6/6. (4) Соседние тесты: живой движок и SIGSTOP только в team-web-channel.test.js; WEB-15 (в) сравнивает только inbox/, (race) снимков не берёт; WEB-5c (team-web-chat) снимков до ответа не берёт, WEB-5d и team-web-guard/faults берут хеш при закрытом писателе или чужом держателе замка; в остальных team-web-*.test.js живого движка нет. Гонки того же рода нет. (5) Устойчивость: файл 10 раз подряд — 10 из 10 код 0 (6/6); ещё 5 раз при 10 фоновых циклах `yes` на 10 ядрах — 5 из 5, 6/6; один полный npm run check при 8 циклах `yes`: team-web-channel весь зелёный, упал один тест TM-67 (team-recovery.test.js) — см. F2. cd tools && npm run check без нагрузки дважды — код 0, 1109/1109 оба раза; npm run traces — код 0, файлов проверено 932, следов 0, пропущено 26 (двоичные).",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/test/team-web-channel.test.js, WEB-15 (race); handoffs/PROD-20261010-01/step-42-test-designer.json (self_check)",
+        "severity": "Info",
+        "what": "Утверждение автора «мутант: байт в журнал при отзыве роняет WEB-15 (б) и (race)» мной не воспроизведено: в четырёх вариантах (байт, перевод строки, строка JSON в revoke и в цикле ожидания) (race) остаётся зелёным; падает только если сервер пишет событие CHAT с текстом сообщения. (race) не обещает неизменность журнала, поэтому это не дефект правки.",
+        "fix": "Не блокирует. В отчётах писать цифры мутантов, которые перепроверены; при желании добавить в (race) после kill сверку хеша журнала через stableHash, но это отдельная доработка по решению ORCH."
+      },
+      {
+        "id": "F2",
+        "place": "tools/test/team-recovery.test.js, TM-67 (строка 1382)",
+        "severity": "Low",
+        "what": "Нестабильность под сильной нагрузкой: при 8 циклах `yes` на 10 ядрах TM-67 упал «round 17: RUN_FINISHED 0 !== 1» (1 раз в полном npm run check; и 1 из 4 прогонов отдельного файла под той же нагрузкой, ещё 3 зелёные). Без нагрузки — зелёный в обоих полных прогонах. К этой работе не относится: правка меняет только tools/test/team-web-channel.test.js, которого team-recovery.test.js и team-helpers.js не загружают (grep по team-web-channel в tools/test/*.js — только сам файл); падение воспроизведено отдельно от работы (quality-bar §6, п. 4, внешняя причина).",
+        "fix": "Отдельный дефект для TEST-DESIGNER/ISSUE-FIXER: гонка открывателей на раунде с RUN_FINISHED в TM-67 при нехватке CPU (ограничить время раунда или повторить раунд); не блокирует шаг."
+      }
+    ],
+    "self_check": "Хеши рабочего дерева (shasum -a 256 по всем файлам без .git и tools/node_modules, 958 файлов, <scratch>/hash-before.txt и hash-after.txt): diff пуст, хеши совпали до и после. git status --short пуст. Мутанты: python3 -I <scratch>/mut3.py <scratch>/v3 {W,W2,W3,R,L}, затем cd tools && node --test --test-timeout=90000 test/team-web-channel.test.js — BASE 6/6; W 4/6; W2 4/6; W3 5/6; R 4/6; L 5/6; сервер пишет CHAT 3/6; END 6/6; diff -r <scratch>/v3/tools/src tools/src пуст. Устойчивость: цикл из 10 запусков того же файла — rc=0, pass 6 каждый; 5 запусков при 10 `yes` — rc=0, pass 6 каждый. cd tools && npm run check (без нагрузки) дважды: rc=0, tests 1109, pass 1109, fail 0; под нагрузкой 8 `yes`: rc=1, 1108/1109, упал TM-67. cd tools && npm run traces: файлов проверено 932, следов 0, пропущено 26. Фоновые `yes` остановлены (pgrep -x yes — 0).",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "process",
+        "text": "ORCH не создал файл step-48 заранее; записан по поручению ORCH."
+      },
+      {
+        "id": "I2",
+        "kind": "note",
+        "text": "Нагрузочный прогон с `yes` случайно сначала не стартовал (нет команды timeout); повторён с 8 циклами yes. Один мой временный файл вывода был в системной папке и удалён."
+      },
+      {
+        "id": "I3",
+        "kind": "note",
+        "text": "F2 (TM-67 под нагрузкой) — ORCH решает, заводить ли дефект; на вердикт этого шага не влияет."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
