@@ -1,66 +1,66 @@
 {
-  "handoff_id": "step27-reviewer-PROD-20261010-01",
-  "run_id": "PROD-20261010-01",
-  "workflow_id": "WF-04",
-  "step": "27",
-  "round": 4,
-  "from_agent": "ORCH",
-  "to_agent": "REVIEWER",
-  "file": "handoffs/PROD-20261010-01/step-27-reviewer.json",
+ "handoff_id": "step27-reviewer-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-04",
+ "step": "27",
+ "round": 4,
+ "from_agent": "ORCH",
+ "to_agent": "REVIEWER",
+ "file": "handoffs/PROD-20261010-01/step-27-reviewer.json",
+ "status": "COMPLETED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": [
+   "REQ-011"
+  ],
+  "write_set": [
+   "handoffs/PROD-20261010-01/step-27-reviewer.json"
+  ],
+  "before_copy": "git diff db90880 HEAD -- tools docs/design/REQ-011-ui.md docs/issues; правки — step-25-code-fixer.json",
+  "artifacts_in": [
+   "tools/src/web/public/app.js, index.html, style.css",
+   "tools/test/team-web-page.test.js",
+   "docs/design/REQ-011-ui.md r3.2",
+   "docs/issues/ISS-0011-web-chat-error-after-project-ok.md"
+  ]
+ },
+ "created_at": "2026-10-10T15:27:00Z",
+ "started_at": "2026-10-10T15:27:00Z",
+ "completed_at": "2026-10-10T15:29:00Z",
+ "result": {
   "status": "COMPLETED",
-  "priority": "HIGH",
-  "context": {
-    "requirement_ids": [
-      "REQ-011"
-    ],
-    "write_set": [
-      "handoffs/PROD-20261010-01/step-27-reviewer.json"
-    ],
-    "before_copy": "git diff db90880 HEAD -- tools docs/design/REQ-011-ui.md docs/issues; правки — step-25-code-fixer.json",
-    "artifacts_in": [
-      "tools/src/web/public/app.js, index.html, style.css",
-      "tools/test/team-web-page.test.js",
-      "docs/design/REQ-011-ui.md r3.2",
-      "docs/issues/ISS-0011-web-chat-error-after-project-ok.md"
-    ]
-  },
-  "created_at": "2026-10-10T15:27:00Z",
-  "started_at": "2026-10-10T15:27:00Z",
-  "completed_at": "2026-10-10T15:34:00Z",
-  "result": {
-    "status": "COMPLETED",
-    "verdict": "PASS",
-    "summary": "1) renderChat(false) в ветке ok (app.js:549-551) чинит заявленный дефект: после 200 проекта чат перерисовывается сразу, старое «Чат недоступен» не висит до ответа чата (WEB-P14 это проверяет и падает без строки). Мигания нет: renderProject, renderChat и разбор ответа чата идут в одной синхронной цепочке без await на обычном опросе (чат запрашивается параллельно через Promise.all), поэтому состояние «chatOff сброшен, затем выставлен снова» браузер не рисует; при непустом чате перерисовка идемпотентна (syncList по ключу, прокрутка по isNearBottom, счётчик непрочитанных не меняется), при пустом возвращается до chatFirst. На первом опросе проекта chatOff и так false. 2) Ветка chatKind===error && app.chat===null (app.js:585-590) ставит app.chatOff и зовёт renderChat(false) — тот же механизм (флаг + renderChat, подписи и форма в одном месте, app.js:807-817), что у chatDown и у первой загрузки проекта (app.js:562-563); второго пути нет; chatOff сбрасывается при 200 проекта и в resetProject. Ошибка не глотается (текст идёт в outcome.errors в classify), опрос продолжается. 3) Описание r3.2 (п. 8.1, 8.1a, история) совпадает с кодом: «Чат недоступен» без формы, «Загрузка…» не остаётся, при 200 чата обычный вид. 4) Тесты: WEB-P14 усилен содержательно (чат удерживается деферредом, до его ответа проверены: нет chatOff, форма видна, «Загрузка…» одна; затем обычный вид); WEB-P16 — проект 200, чат 500: подпись, форма скрыта, нет «Загрузка…», повтор опроса, возврат к обычному виду при 200 чата, таймер опроса. Не подгонка: assert на видимое состояние, мутанты из step-25 убиты. WEB-P15 (проект ещё не ответил) не привязан к правке, но проверяет граничное состояние 8.1 и не вредит. 5) Границы: src/team и src/pixel-office, REQ-009/013/014 не тронуты (git diff --stat: только app.js, index.html, style.css, тест, ui.md, ISS-0011). 6) Эрозии планки нет: grep по skip/todo/eslint-disable/|| true пуст, проверок не убрано. 7) cd tools && npm run check: код 0, tests 1094, pass 1094, fail 0, skipped 0, todo 0 (prettier, eslint, traces внутри). 8) ISS-0011: содержание итога совпадает с кодом; есть расхождения оформления с ISS-0001 (см. N1). TEST-DESIGNER/DESIGN-QA: перепроверить снимки «проект 200, чат 500» и «восстановление» после r3.2.",
-    "findings": [
-      {
-        "id": "N1",
-        "location": "docs/issues/ISS-0011-web-chat-error-after-project-ok.md:3, 12-18",
-        "severity": "Low",
-        "blocking": false,
-        "problem": "Закрытие оформлено не как у ISS-0001: раздел назван «Итог», а не «Закрыто»; нет времени закрытия по часам (UTC) и маршрута; статус closed поставил CODE-FIXER до TEST-RUNNER, RELEASE-VALIDATOR и DOC-UPDATER (по роли DOC-UPDATER закрывает дефекты с итогом, действительно полученным). Содержание итога верное.",
-        "fix": "Не блокирует. DOC-UPDATER при учёте прогона привести к виду ISS-0001: «## Закрыто», время UTC, маршрут CODE-FIXER → REVIEWER → TEST-RUNNER → DOC-UPDATER; внести ISS-0011 в STATE.md (там сейчас «дефекты — ISS-0010»). Если RELEASE-VALIDATOR не подтвердит — вернуть статус open."
-      },
-      {
-        "id": "N2",
-        "location": "tools/src/web/public/app.js:571-590; docs/design/REQ-011-ui.md п. 8.1a (новый абзац)",
-        "severity": "Low",
-        "blocking": false,
-        "problem": "Описание говорит «любой отказ с Failure.error_text, кроме потери связи», а код обрабатывает только chatKind===error; ответ чата 404 при проекте 200 (гонка: проект удалён между двумя запросами) классифицируется как notfound, ветки нет — чат остаётся на «Загрузка…» до следующего опроса, где проект ответит 404 и экран перейдёт в «не найден». Узкий случай, самовосстанавливается за один опрос.",
-        "fix": "Не блокирует. Либо сузить формулировку в 8.1a («кроме потери связи и 404»), либо при chatKind===notfound && app.chat===null тоже ставить chatOff. Решает ORCH; при желании — отдельный дефект."
-      }
-    ],
-    "self_check": [
-      "cd tools && npm run check -> код 0; tests 1094, pass 1094, fail 0, cancelled 0, skipped 0, todo 0.",
-      "grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true' tools/src/web/public/app.js tools/test/team-web-page.test.js -> пусто.",
-      "git diff db90880 HEAD --stat -- tools/src/team tools/src/pixel-office -> пусто.",
-      "Прочитано: полный diff db90880..HEAD по tools, ui.md, ISS-0011; app.js refreshProject, classify, renderChat по месту; step-25. Код во время проверки не менялся."
-    ],
-    "issues": [
-      {
-        "kind": "NOTE",
-        "text": "N1 передать DOC-UPDATER (оформление закрытия ISS-0011, STATE.md); N2 — решение ORCH: сузить текст 8.1a или дополнить ветку."
-      }
-    ],
-    "artifacts_out": []
-  }
+  "verdict": "PASS",
+  "summary": "1) renderChat(false) в ветке ok (app.js:549-551) чинит заявленный дефект: после 200 проекта чат перерисовывается сразу, старое «Чат недоступен» не висит до ответа чата (WEB-P14 это проверяет и падает без строки). Мигания нет: renderProject, renderChat и разбор ответа чата идут в одной синхронной цепочке без await на обычном опросе (чат запрашивается параллельно через Promise.all), поэтому состояние «chatOff сброшен, затем выставлен снова» браузер не рисует; при непустом чате перерисовка идемпотентна (syncList по ключу, прокрутка по isNearBottom, счётчик непрочитанных не меняется), при пустом возвращается до chatFirst. На первом опросе проекта chatOff и так false. 2) Ветка chatKind===error && app.chat===null (app.js:585-590) ставит app.chatOff и зовёт renderChat(false) — тот же механизм (флаг + renderChat, подписи и форма в одном месте, app.js:807-817), что у chatDown и у первой загрузки проекта (app.js:562-563); второго пути нет; chatOff сбрасывается при 200 проекта и в resetProject. Ошибка не глотается (текст идёт в outcome.errors в classify), опрос продолжается. 3) Описание r3.2 (п. 8.1, 8.1a, история) совпадает с кодом: «Чат недоступен» без формы, «Загрузка…» не остаётся, при 200 чата обычный вид. 4) Тесты: WEB-P14 усилен содержательно (чат удерживается деферредом, до его ответа проверены: нет chatOff, форма видна, «Загрузка…» одна; затем обычный вид); WEB-P16 — проект 200, чат 500: подпись, форма скрыта, нет «Загрузка…», повтор опроса, возврат к обычному виду при 200 чата, таймер опроса. Не подгонка: assert на видимое состояние, мутанты из step-25 убиты. WEB-P15 (проект ещё не ответил) не привязан к правке, но проверяет граничное состояние 8.1 и не вредит. 5) Границы: src/team и src/pixel-office, REQ-009/013/014 не тронуты (git diff --stat: только app.js, index.html, style.css, тест, ui.md, ISS-0011). 6) Эрозии планки нет: grep по skip/todo/eslint-disable/|| true пуст, проверок не убрано. 7) cd tools && npm run check: код 0, tests 1094, pass 1094, fail 0, skipped 0, todo 0 (prettier, eslint, traces внутри). 8) ISS-0011: содержание итога совпадает с кодом; есть расхождения оформления с ISS-0001 (см. N1). TEST-DESIGNER/DESIGN-QA: перепроверить снимки «проект 200, чат 500» и «восстановление» после r3.2.",
+  "findings": [
+   {
+    "id": "N1",
+    "location": "docs/issues/ISS-0011-web-chat-error-after-project-ok.md:3, 12-18",
+    "severity": "Low",
+    "blocking": false,
+    "problem": "Закрытие оформлено не как у ISS-0001: раздел назван «Итог», а не «Закрыто»; нет времени закрытия по часам (UTC) и маршрута; статус closed поставил CODE-FIXER до TEST-RUNNER, RELEASE-VALIDATOR и DOC-UPDATER (по роли DOC-UPDATER закрывает дефекты с итогом, действительно полученным). Содержание итога верное.",
+    "fix": "Не блокирует. DOC-UPDATER при учёте прогона привести к виду ISS-0001: «## Закрыто», время UTC, маршрут CODE-FIXER → REVIEWER → TEST-RUNNER → DOC-UPDATER; внести ISS-0011 в STATE.md (там сейчас «дефекты — ISS-0010»). Если RELEASE-VALIDATOR не подтвердит — вернуть статус open."
+   },
+   {
+    "id": "N2",
+    "location": "tools/src/web/public/app.js:571-590; docs/design/REQ-011-ui.md п. 8.1a (новый абзац)",
+    "severity": "Low",
+    "blocking": false,
+    "problem": "Описание говорит «любой отказ с Failure.error_text, кроме потери связи», а код обрабатывает только chatKind===error; ответ чата 404 при проекте 200 (гонка: проект удалён между двумя запросами) классифицируется как notfound, ветки нет — чат остаётся на «Загрузка…» до следующего опроса, где проект ответит 404 и экран перейдёт в «не найден». Узкий случай, самовосстанавливается за один опрос.",
+    "fix": "Не блокирует. Либо сузить формулировку в 8.1a («кроме потери связи и 404»), либо при chatKind===notfound && app.chat===null тоже ставить chatOff. Решает ORCH; при желании — отдельный дефект."
+   }
+  ],
+  "self_check": [
+   "cd tools && npm run check -> код 0; tests 1094, pass 1094, fail 0, cancelled 0, skipped 0, todo 0.",
+   "grep -nE '\\.skip\\(|todo|eslint-disable|\\|\\| true' tools/src/web/public/app.js tools/test/team-web-page.test.js -> пусто.",
+   "git diff db90880 HEAD --stat -- tools/src/team tools/src/pixel-office -> пусто.",
+   "Прочитано: полный diff db90880..HEAD по tools, ui.md, ISS-0011; app.js refreshProject, classify, renderChat по месту; step-25. Код во время проверки не менялся."
+  ],
+  "issues": [
+   {
+    "kind": "NOTE",
+    "text": "N1 передать DOC-UPDATER (оформление закрытия ISS-0011, STATE.md); N2 — решение ORCH: сузить текст 8.1a или дополнить ветку."
+   }
+  ],
+  "artifacts_out": []
+ }
 }

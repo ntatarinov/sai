@@ -1,0 +1,93 @@
+{
+  "handoff_id": "step32-code-design-validator-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "32",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261010-01/step-32-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": ["REQ-011", "REQ-009", "REQ-013"],
+    "artifacts_in": [
+      "docs/design/ISS-0010-web-chat-write-recovery.md (r3)",
+      "decisions/0026-team-core-reclaim-own-broken-lock.md (r3)",
+      "handoffs/PROD-20261010-01/step-31-code-design-validator.json"
+    ],
+    "write_set": ["handoffs/PROD-20261010-01/step-32-code-design-validator.json"],
+    "note": "файл handoff-а ORCH заранее не создал; context и task записаны по тексту поручения ORCH (result.issues I1)"
+  },
+  "task": {
+    "description": "WF-03, шаг 3, повтор ворот (круг 2) проекта исправления ISS-0010 r3: F1 (билет HELD + байты замка, сценарий lostlock до/после, гонки, мутанты каждой половины), F2 (М7, channel.js:538, другие проверки живости), F3–F5, список меняющихся тестов, К1–К10, 17 пунктов планки, нет кода, остаточный риск I-2; npm run traces код 0."
+  },
+  "created_at": null,
+  "started_at": "2026-10-10T16:09:20Z",
+  "completed_at": "2026-10-10T16:17:02Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": [
+      "Хеши проекта и 0026 до (16:09:20Z) и после (16:16:08Z) совпадают. Проект и код Sai я не менял: tools/src в рабочем дереве совпадает с HEAD (diff -r с копией пуст). Свои копии: <scratch>/c32/base (git archive HEAD) и <scratch>/c32/proto. В proto я поставил пробу правила r3: HELD/билет, noteOrphanedLock, holdsLive, close(), М7. Мутанты включаются через SAI_MUT. Это инструмент проверки, не код для Sai. Примечание: поручение называло <scratch>/v32 — это папка CODE-DESIGNER. Я по ошибке распаковал в неё тот же HEAD (файлы tools/ идентичны HEAD, его скрипты и home не тронуты) и дальше работал только в c32.",
+      "(1) F1 закрыт. Повторил lostlock (TM-75 (г), часы неподвижны). ДО: «W3 open: E_PROJECT_BUSY», W2.say ok. ПОСЛЕ (проба r3): W3 тоже E_PROJECT_BUSY, W2.say ok, W2 не сломан, байты замка те же. Гонки на пробе: (д) подложенный свой замок с другим since → E_PROJECT_BUSY, замок не тронут. Два писателя в одном процессе: после снятия W2 здоров, W3 → занят; повторный W1.close() после захвата W2 ничего не меняет. Сломан, но не закрыт (и markBroken) → занят. Непрочитанный замок (chmod 000) при close() → занят, как сказано в 0026 «замок не прочитан». Чужой живой pid поверх отмеченной папки → занят, замок тот же. Замок захвачен чужим до close(), потом подложен свой pid → занят. R5: сбой на LOCK_STALE_REMOVED → E_DISK, журнал тот же; следующее открытие проходит. Два параллельных deliver после отметки → оба self, один LOCK_STALE_REMOVED, два CHAT, замка нет.",
+      "Мутанты каждой половины условия. «Отметка без условия» и «сверка только pid»: S2 W3 ok, W2.say E_CONFLICT — ловит (г). «Только содержимое»: S2 W3 ok, E_CONFLICT — ловит (г), потому что часы неподвижны. «Только билет»: S3 открытие проходит поверх подложенного замка (а ещё S6 и S8) — ловит (д). «holdsLive = isAlive»: S1 reopen E_PROJECT_BUSY — ловит TM-73 и WEB-10a. Каждая половина условия нужна, и каждую ловит тест из таблицы 8.1.",
+      "(2) F2 закрыт. Место М7 названо (п. 2, 4.3, 7; 0026 R2 и граница). Повтор ackwait: ДО (base) — E_CHANNEL_TIMEOUT «Сообщение не подтверждено…» через 10036 мс после закрытия, следующий deliver тоже падает E_CHANNEL_TIMEOUT. ПОСЛЕ (proto) — «Проект завершил работу. Повторите команду» через 37 мс, inbox пуст, журнал тот же, затем deliver self: LOCK_STALE_REMOVED, CHAT. Мутант m7 (снова isAlive) — 10033 мс, текст прежний: TM-77 его ловит. grep isAlive|.alive|process.kill по tools/src (кроме pixel-office): все места из перечня п. 2 есть; cli.js 296/302/391 идут через engineHolder (М4). Вне перечня: traces/add.js:164 pidAlive (замок traces, не замок писателя Sai Team) и executors/proc.js:26 groupAlive (группа процессов исполнителя). Оба вне класса, но фраза п. 2 «других мест нет» сказана шире, чем охватывает её grep (N1, не блокирует).",
+      "(3) F3 закрыт: строки 6–7, Q12 и I-3 говорят «принято», как decisions/0026 и строка 0026 в decisions/README.md. F4 закрыт: п. 10 называет TM-50 (раздел «## Sai Team — ядро», слово «занят») и WEB-13a («| Принято» в строках 0024 и 0025). Я проверил по тексту тестов: они ищут ровно это. F5 закрыт: WEB-10g называет окончание журнала (LOCK_STALE_REMOVED, затем CHAT), а ещё отсутствие замка и остатков. Последовательность из четырёх POST я повторил на уровне deliver. Proto: E_DISK, E_DISK, E_DISK, затем ok self: PROJECT_CREATED, LOCK_STALE_REMOVED, CHAT, замка нет, остатков 0. Base: E_DISK, затем три E_PROJECT_BUSY.",
+      "(4) Список меняющихся тестов полон. Полный node --test на base: 1011 тестов, 951 pass, 60 fail (документные тесты без docs/ на копии). На proto: 1011, 942 pass, 69 fail. Новые падения (comm) ровно такие: TM-13 ×3, TM-14 ×2, TM-47 «a failure at the link…», TM-66 (2), TM-66 (3), WEB-10a. Это совпадает с п. 8 («ожидаемые падения»). WEB-10f меняется из-за текста, а тексты проба не меняла. Исправленных тестов нет; EX-, EN-, TM-11, TM-12, TM-66 (1)/(4), WEB-10b (в нём holdWriter — дочерний процесс) зелёные. Таблица К1–К10: у каждого К есть элемент проекта и тест, мутантов 13, каждый с ловящим тестом. Планка: все 17 пунктов (Q1–Q14, R1–R3) названы с объяснением. Кода реализации нет: только сигнатуры, формула holdsLive, таблицы. Порядок (lock/store → channel → web), один разработчик, пути отказа (п. 6, включая М7 и F1) однозначны. Мелкое: таблица файлов п. 3 не называет tools/test/team-channel.test.js, хотя TM-77 по К10 живёт там (N2, не блокирует).",
+      "(5) Остаточный риск I-2 описан честно. В 0026 и в п. 9 Q10 он назван риском решения, а не исключением из планки. Довод проверяем: отказ называет pid живого держателя; сервер отвечает; первая запись со страницы снимает свой замок (S1, S10 на пробе); выход сервера снимает риск полностью. Нарушение Q10 он не маскирует: сломанная запись своего процесса чинится без перезапуска, а другой процесс получает правдивый отказ по P12. Второй остаточный риск — «замок не прочитан при close()». Это прежнее поведение в узком случае; на пробе (S6) подтверждено.",
+      "npm run traces в репозитории: «файлов проверено 910, следов 0, пропущено 26», код 0."
+    ],
+    "findings": [
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocking": false,
+        "item": "А2 (AP-014), формулировка",
+        "where": "проект п. 2, абзац «Все проверки живости в tools/src (кроме Pixel Office)… Других мест нет»",
+        "what": "Grep в этом абзаце охватывает только tools/src/team и isAlive|.alive. Ещё две проверки живости pid в tools/src не названы: src/traces/add.js:164 (pidAlive, замок traces) и src/team/executors/proc.js:26 (groupAlive, группа исполнителя). Обе вне класса «свой брошенный замок писателя», но утверждение шире, чем его проверка.",
+        "fix_needed": "При следующей правке документа (DOC-UPDATER или новая редакция) сузить фразу до tools/src/team или назвать эти два места «вне класса» с причиной."
+      },
+      {
+        "id": "N2",
+        "severity": "Low",
+        "blocking": false,
+        "item": "Б3",
+        "where": "проект п. 3, строка тестов (TEST-DESIGNER)",
+        "what": "Список файлов тестов не называет tools/test/team-channel.test.js, а К10 (TM-77) кладёт тест туда.",
+        "fix_needed": "Добавить файл в строку п. 3 при следующей правке. TEST-DESIGNER берёт файл из К10 — это не мешает строить."
+      }
+    ],
+    "self_check": [
+      "shasum -a 256: проект b141042f8b389123d293877779e834663eb9a394a76520d347125dd7b678ffe3 до (16:09:20Z) и после (16:16:08Z); 0026 b124b152ca1912974aaf9849248eb18faa0d834d31fa202c29af15fb8543e55f до и после",
+      "git archive HEAD tools/src tools/test tools/package.json tools/package-lock.json → <scratch>/c32/base и <scratch>/c32/proto; diff -r tools/src <scratch>/c32/base/tools/src — пусто; node v22.21.1",
+      "проба r3 в <scratch>/c32/proto: lock.js (HELD, ORPHANED, noteOrphanedLock, holdsLive, билет при linked), store.js (#ticket, close()), channel.js:538 → holdsLive; SAI_MUT: always|pidonly|bytesonly|ticketonly|isAliveOnly|m7",
+      "<scratch>/c32/scripts/scen.mjs, base: «S1 reopen: E_PROJECT_BUSY (pid 16548)» / «S2 W3 open: E_PROJECT_BUSY» / «S3 … E_PROJECT_BUSY»",
+      "scen.mjs, proto: «S1 reopen: ok notices=[Снят устаревший замок процесса 16549…]» / «S1 say: ok PROJECT_CREATED,LOCK_STALE_REMOVED,CHAT» / «S2 W3 open: E_PROJECT_BUSY … W2.say: ok W2 broken false lock same: true» / «S3 open over planted own lock: E_PROJECT_BUSY lock same: true» / «S4 W2 (reclaim): ok; W3 while W2 healthy: E_PROJECT_BUSY; W3 after W1.close() again: E_PROJECT_BUSY» / «S5 broken not closed / markBroken not closed: E_PROJECT_BUSY» / «S6 unreadable lock: E_PROJECT_BUSY» / «S7 foreign live lock: E_PROJECT_BUSY lock same: true» / «S8 … E_PROJECT_BUSY» / «S9 reopen with fault: E_DISK journal same: true; reopen ok: LOCK_STALE_REMOVED» / «S10 self self …LOCK_STALE_REMOVED,CHAT,CHAT lock: false»",
+      "мутанты: always — «S2 W3 open: ok», «W2.say: E_CONFLICT W2 broken true»; pidonly — то же; bytesonly — то же; ticketonly — «S2 W3 open: E_PROJECT_BUSY», «S3 open over planted own lock: ok … lock same: false»; isAliveOnly — «S1 reopen: E_PROJECT_BUSY»",
+      "<scratch>/c32/scripts/ackwait.mjs: base — «send: E_CHANNEL_TIMEOUT | Сообщение не подтверждено: проект его не принял. Повторите команду | after close 10036 ms», deliver затем E_CHANNEL_TIMEOUT; proto — «… | Проект завершил работу. Повторите команду | after close 37 ms» / «inbox left: 0 journal same: true» / «deliver: self LOCK_STALE_REMOVED,CHAT»; SAI_MUT=m7 — «… не подтверждено … after close 10033 ms»",
+      "<scratch>/c32/scripts/web10g.mjs: proto — «1: E_DISK rollback=ok» «2: E_DISK rollback=ok» «3: E_DISK … lock true» «4: ok self PROJECT_CREATED,LOCK_STALE_REMOVED,CHAT lock: false leftovers: 0»; base — «2: E_PROJECT_BUSY» «3: E_PROJECT_BUSY» «4: E_PROJECT_BUSY»",
+      "node --test --test-reporter=tap \"test/**/*.test.js\": base — tests 1011, pass 951, fail 60; proto — tests 1011, pass 942, fail 69; comm новых падений: TM-13 ×3, TM-14 ×2, TM-47 «a failure at the link…», TM-66 (2), TM-66 (3), WEB-10a; исправленных нет",
+      "grep -rnE 'isAlive|\\.alive\\b|process\\.kill|lockHolder|engineHolder' tools/src (без pixel): lock.js 44,102,162,228; store.js 637; channel.js 79,338-339,488-489,538; engine.js 200-203,221-222; cli.js 296,302,391 (engineHolder); traces/add.js:164; executors/proc.js 16,26",
+      "cd tools && npm run traces: «файлов проверено 910, следов 0, пропущено 26», exit 0"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "process",
+        "text": "ORCH не создал файл handoff-а step-32 заранее. Я записал его по поручению; context и task заполнены по тексту поручения, их стоит сверить."
+      },
+      {
+        "id": "I2",
+        "kind": "note",
+        "text": "Я по ошибке распаковал git archive HEAD в <scratch>/v32 (папку CODE-DESIGNER): файлы tools/ там те же, что в HEAD, его скрипты и данные не тронуты. Вся проверка шла в <scratch>/c32. Проба в c32/proto — инструмент проверки, в Sai не переносится."
+      },
+      {
+        "id": "I3",
+        "kind": "note",
+        "text": "N1 и N2 не блокируют. Их можно учесть, когда DOC-UPDATER будет править документ на шаге 10, или в следующей редакции проекта; решает ORCH."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

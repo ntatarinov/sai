@@ -1,55 +1,77 @@
 {
-  "handoff_id": "step24-test-designer-PROD-20261010-01",
-  "run_id": "PROD-20261010-01",
-  "workflow_id": "WF-02",
-  "step": "24",
-  "from_agent": "ORCH",
-  "to_agent": "TEST-DESIGNER",
-  "file": "handoffs/PROD-20261010-01/step-24-test-designer.json",
+ "handoff_id": "step24-test-designer-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-02",
+ "step": "24",
+ "from_agent": "ORCH",
+ "to_agent": "TEST-DESIGNER",
+ "file": "handoffs/PROD-20261010-01/step-24-test-designer.json",
+ "status": "FAILED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": [
+   "REQ-011"
+  ],
+  "artifacts_in": [
+   "handoffs/PROD-20261010-01/step-23-test-design-validator.json",
+   "docs/design/REQ-011-ui.md r3.1 (п. 8.1, 8.1a)"
+  ],
+  "write_set": [
+   "tools/test/team-web-page.test.js",
+   "handoffs/PROD-20261010-01/step-24-test-designer.json"
+  ]
+ },
+ "task": {
+  "description": "Доработка после FAIL шага 5b (step-23): замечание 1 (Medium, выживший мутант chatOff) и замечание 2 (Low, состояние «проект ещё не ответил»)."
+ },
+ "created_at": null,
+ "started_at": "2026-10-10T15:09:00Z",
+ "completed_at": "2026-10-10T15:20:00Z",
+ "result": {
   "status": "IN_PROGRESS",
-  "priority": "HIGH",
-  "context": {
-    "requirement_ids": ["REQ-011"],
-    "artifacts_in": [
-      "handoffs/PROD-20261010-01/step-23-test-design-validator.json",
-      "docs/design/REQ-011-ui.md r3.1 (п. 8.1, 8.1a)"
-    ],
-    "write_set": ["tools/test/team-web-page.test.js", "handoffs/PROD-20261010-01/step-24-test-designer.json"]
-  },
-  "task": {
-    "description": "Доработка после FAIL шага 5b (step-23): замечание 1 (Medium, выживший мутант chatOff) и замечание 2 (Low, состояние «проект ещё не ответил»)."
-  },
-  "created_at": null,
-  "started_at": "2026-10-10T15:09:00Z",
-  "completed_at": null,
-  "result": {
-    "status": "IN_PROGRESS",
-    "summary": "Замечание 2 закрыто: добавлен WEB-P15 (проект не ответил: каркас показан, 3 из 3; «Загрузка…» в карточках и в чате; нет связи/отказа/полосы ошибки; форма чата есть; чат не запрошен; после ответа всё заполнено) — соответствует п. 8.1 таблицы «Загрузка». Мутант setHidden(el, loading) для каркаса убит (WEB-P15). Замечание 1 НЕ закрыто, остановка: сделать проверку «chat-off скрыт, пока чат не ответил» нельзя без правки кода. Причина (проверено на копии): в refreshProject ветка kind === \"ok\" сбрасывает app.chatOff, но вызывает только renderProject(), а он при загруженном проекте чат не перерисовывает; поэтому после ответа 200 проекта и до ответа чата на экране остаётся прежнее «Чат недоступен» без формы (DOM не обновлён), хотя состояние уже chatOff=false. Далее чат отвечает 200 (messages !== null) или down (chatDown), и в обоих случаях chatOff уже не влияет на показ; значит на текущем коде мутант «не сбрасывать chatOff» эквивалентен (ни один путь его не показывает), а п. 8.1a «как только проект ответил 200, экран показывается целиком» нарушен на время ответа чата. WEB-P14 доработан: ответ чата управляем (отложенный), пока чат не ответил, проверены каркас 3 из 3 и chatDown=false; после отдачи 200 — полоса ошибки скрыта, «Загрузка…» нет, chat-off скрыт, форма видна, сообщение 9 показано, опрос идёт. Пока код не исправлен, проверка chat-off/формы в окне ожидания чата в тест не включена (иначе красный тест на баге).",
-    "table": [
-      ["8.1 «Загрузка» (ответа проекта ещё не было)", "WEB-P15", "каркас показан, «Загрузка…», нет ошибок, форма чата есть; мутант setHidden(el, loading) убит"],
-      ["8.1a F-2 возврат после отказа, чат ещё не ответил", "WEB-P14 (доработан)", "ответ чата управляем; chat-off/форма в окне ожидания — ждёт правки кода (issues)"],
-      ["8.1a F-1, F-2 остальное", "WEB-P13, WEB-P14", "без изменений"]
-    ],
-    "changes": [
-      "tools/test/team-web-page.test.js: WEB-P14 — чат отвечает через deferred (chatGate), проверки до и после ответа чата (замечание 1, частично); новый WEB-P15 (замечание 2); prettier"
-    ],
-    "self_check": [
-      "копия вне репозитория: <scratch>/cp24 (rsync без .git и node_modules), cd tools && npm ci — код 0; node --test --test-timeout=90000 test/team-web-page.test.js",
-      "мутант setHidden(el, loading) для каркаса: fail 1 (WEB-P15) — убит",
-      "мутант «не сбрасывать chatOff при 200» на текущем коде + тест из репозитория: fail 0 — выживает (эквивалентен, см. summary)",
-      "доказательство, что тест ловит после правки кода: в копии добавлен renderChat(false) после renderProject() в ветке ok и усиленный P14 (chatOff false, chatForm true, loadingShown 1 до ответа чата): базовый прогон fail 0; мутант «не сбрасывать chatOff» — fail 1 (WEB-P14) — убит",
-      "cd tools && npm run check, прогон 1: код 0; # tests 1093, # pass 1093, # fail 0, # skipped 0, # todo 0 (включает traces и prettier)",
-      "cd tools && npm run check, прогон 2: код 0; те же числа; traces внутри check: следов 0",
-      "рабочее дерево: изменён только tools/test/team-web-page.test.js; src не тронут; мутанты и правка кода — только в копии"
-    ],
-    "issues": [
-      {
-        "kind": "BLOCKED",
-        "at": "2026-10-10T15:30:00Z",
-        "what": "Замечание 1 (Medium) закрыть нельзя без правки кода: tools/src/web/public/app.js, refreshProject, ветка kind === \"ok\" — после renderProject() вызвать renderChat(false), чтобы «Чат недоступен» без формы не оставалось на экране до ответа чата (п. 8.1a); проверено на копии: с этой правкой усиленный WEB-P14 проходит и мутант «не сбрасывать chatOff» убит (fail 1).",
-        "need": "CODE-FIXER вносит правку, затем SECURITY-REVIEWER и REVIEWER; после этого TEST-DESIGNER добавляет в WEB-P14 проверки окна ожидания чата: chatOff false, chatForm true, loadingShown 1 (готовый текст — в копии <scratch>/cp24/tools/test/team-web-page.test.js)."
-      }
-    ],
-    "artifacts_out": ["tools/test/team-web-page.test.js"]
-  }
+  "summary": "Замечание 2 закрыто: добавлен WEB-P15 (проект не ответил: каркас показан, 3 из 3; «Загрузка…» в карточках и в чате; нет связи/отказа/полосы ошибки; форма чата есть; чат не запрошен; после ответа всё заполнено) — соответствует п. 8.1 таблицы «Загрузка». Мутант setHidden(el, loading) для каркаса убит (WEB-P15). Замечание 1 НЕ закрыто, остановка: сделать проверку «chat-off скрыт, пока чат не ответил» нельзя без правки кода. Причина (проверено на копии): в refreshProject ветка kind === \"ok\" сбрасывает app.chatOff, но вызывает только renderProject(), а он при загруженном проекте чат не перерисовывает; поэтому после ответа 200 проекта и до ответа чата на экране остаётся прежнее «Чат недоступен» без формы (DOM не обновлён), хотя состояние уже chatOff=false. Далее чат отвечает 200 (messages !== null) или down (chatDown), и в обоих случаях chatOff уже не влияет на показ; значит на текущем коде мутант «не сбрасывать chatOff» эквивалентен (ни один путь его не показывает), а п. 8.1a «как только проект ответил 200, экран показывается целиком» нарушен на время ответа чата. WEB-P14 доработан: ответ чата управляем (отложенный), пока чат не ответил, проверены каркас 3 из 3 и chatDown=false; после отдачи 200 — полоса ошибки скрыта, «Загрузка…» нет, chat-off скрыт, форма видна, сообщение 9 показано, опрос идёт. Пока код не исправлен, проверка chat-off/формы в окне ожидания чата в тест не включена (иначе красный тест на баге).",
+  "table": [
+   [
+    "8.1 «Загрузка» (ответа проекта ещё не было)",
+    "WEB-P15",
+    "каркас показан, «Загрузка…», нет ошибок, форма чата есть; мутант setHidden(el, loading) убит"
+   ],
+   [
+    "8.1a F-2 возврат после отказа, чат ещё не ответил",
+    "WEB-P14 (доработан)",
+    "ответ чата управляем; chat-off/форма в окне ожидания — ждёт правки кода (issues)"
+   ],
+   [
+    "8.1a F-1, F-2 остальное",
+    "WEB-P13, WEB-P14",
+    "без изменений"
+   ]
+  ],
+  "changes": [
+   "tools/test/team-web-page.test.js: WEB-P14 — чат отвечает через deferred (chatGate), проверки до и после ответа чата (замечание 1, частично); новый WEB-P15 (замечание 2); prettier"
+  ],
+  "self_check": [
+   "копия вне репозитория: <scratch>/cp24 (rsync без .git и node_modules), cd tools && npm ci — код 0; node --test --test-timeout=90000 test/team-web-page.test.js",
+   "мутант setHidden(el, loading) для каркаса: fail 1 (WEB-P15) — убит",
+   "мутант «не сбрасывать chatOff при 200» на текущем коде + тест из репозитория: fail 0 — выживает (эквивалентен, см. summary)",
+   "доказательство, что тест ловит после правки кода: в копии добавлен renderChat(false) после renderProject() в ветке ok и усиленный P14 (chatOff false, chatForm true, loadingShown 1 до ответа чата): базовый прогон fail 0; мутант «не сбрасывать chatOff» — fail 1 (WEB-P14) — убит",
+   "cd tools && npm run check, прогон 1: код 0; # tests 1093, # pass 1093, # fail 0, # skipped 0, # todo 0 (включает traces и prettier)",
+   "cd tools && npm run check, прогон 2: код 0; те же числа; traces внутри check: следов 0",
+   "рабочее дерево: изменён только tools/test/team-web-page.test.js; src не тронут; мутанты и правка кода — только в копии"
+  ],
+  "issues": [
+   {
+    "kind": "BLOCKED",
+    "at": "2026-10-10T15:30:00Z",
+    "what": "Замечание 1 (Medium) закрыть нельзя без правки кода: tools/src/web/public/app.js, refreshProject, ветка kind === \"ok\" — после renderProject() вызвать renderChat(false), чтобы «Чат недоступен» без формы не оставалось на экране до ответа чата (п. 8.1a); проверено на копии: с этой правкой усиленный WEB-P14 проходит и мутант «не сбрасывать chatOff» убит (fail 1).",
+    "need": "CODE-FIXER вносит правку, затем SECURITY-REVIEWER и REVIEWER; после этого TEST-DESIGNER добавляет в WEB-P14 проверки окна ожидания чата: chatOff false, chatForm true, loadingShown 1 (готовый текст — в копии <scratch>/cp24/tools/test/team-web-page.test.js)."
+   }
+  ],
+  "artifacts_out": [
+   "tools/test/team-web-page.test.js"
+  ]
+ },
+ "issues": [
+  "ORCH 2026-10-10: статус исправлен с IN_PROGRESS на FAILED — шаг остановлен (замечание 1 требовало правки кода) и заменён шагом step-25-code-fixer."
+ ]
 }
