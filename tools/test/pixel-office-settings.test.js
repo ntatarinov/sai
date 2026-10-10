@@ -94,7 +94,15 @@ test("ST-06: the README has the 14 lines of criterion 13 and the link; its port 
     assert.ok(readme.includes(line), `README lacks: ${line}`);
   }
   assert.ok(readme.includes("http://127.0.0.1:"));
-  const ports = [...readme.matchAll(/http:\/\/127\.0\.0\.1:(\d+)/g)].map((m) =>
+  // The port of Pixel Office is checked where it is written: in the section
+  // «## Pixel Office», up to the next heading «## » (design REQ-011 r3, 1.2, F3;
+  // other sections, such as the one of Sai Team, have their own ports).
+  const start = readme.indexOf("\n## Pixel Office\n");
+  assert.ok(start !== -1);
+  const rest = readme.slice(start + 1);
+  const next = rest.indexOf("\n## ", 1);
+  const pixel = next === -1 ? rest : rest.slice(0, next);
+  const ports = [...pixel.matchAll(/http:\/\/127\.0\.0\.1:(\d+)/g)].map((m) =>
     Number(m[1]),
   );
   assert.ok(ports.length >= 1);

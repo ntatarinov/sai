@@ -1,0 +1,98 @@
+{
+  "handoff_id": "step11-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "11",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-11-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": ["REQ-011"],
+    "agent_run_id": null,
+    "write_set": ["handoffs/PROD-20261010-01/step-11-reviewer.json"],
+    "before_copy": "нет копии «до»; прошлый круг — handoffs/PROD-20261010-01/step-08-reviewer.json (F1…F11, I2), правки — step-09-code-fixer.json",
+    "artifacts_in": [
+      "docs/design/REQ-011-team-web.md (r3)",
+      "docs/design/REQ-011-ui.md (r3)",
+      "decisions/0025-team-web-server.md (W4 п. 3, W8)",
+      "handoffs/PROD-20261010-01/step-08-reviewer.json",
+      "handoffs/PROD-20261010-01/step-09-code-fixer.json",
+      "tools/src/web/{display,api,config,server,main}.js, tools/src/web/public/app.js, index.html (шаблон tpl-result)"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4, круг 2: повторное ревью REQ-011 после правок CODE-FIXER (step-09) по F1…F11 и S-1 против проекта r3, описания r3 и 0025 (W8); решить, мёртвый ли код защитная ветка «только имя» в app.js; единый механизм, границы REQ-009/013/014, эрозия планки. TR-4b и TR-4e падают ожидаемо до шага 5. Код не править.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "по каждому F1…F11 — закрыто или нет, со своей проверкой",
+      "замечания с файлом и строкой, блокирующие отделены"
+    ]
+  },
+  "created_at": "2026-10-10T12:44:00Z",
+  "started_at": "2026-10-10T12:44:00Z",
+  "completed_at": "2026-10-10T12:54:25Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Изменённые файлы step-09 прочитаны целиком (display.js, api.js, server.js, config.js, public/app.js), main.js и шаблон tpl-result — по месту; сверены с проектом r3, описанием r3 и 0025 (W4 п. 3, W8). По прошлым замечаниям: F1 — закрыто по выбору r3/W8: results = state.files с task !== null (display.js:324-326), resultRef без ветки null, комментарий app.js ссылается на п. 7.1 (6); своя проба engine-basic — 4 файла, у всех задача, роль, ссылка, r-…-input.md нет. F2 — принято в r3 п. 4.3, код (server.js:50) совпадает. F3 — открыто по проекту (r3 п. 1.2, 14: README временно без ссылки до сужения ST-06 на шаге 5) — не блокирует. F4 — закрыто: поле truncated (display.js:344-356, 412), приглушается только последняя метка при truncated (app.js:829-849). F5 — закрыто: m×k ≤ 0 (display.js:207), записано в r3 п. 7.2 и 0025 W4 п. 3. F6 — закрыто: E_CHANNEL_STALE/E_USAGE/E_CORRUPT в CHAT_REFUSALS, chatFailure экспортирован (api.js:223-252) по п. 8.2, 10. F7 — закрыто: первый опрос — проект (и карточка) сразу, чат после 200; дальше проект и чат через Promise.all, при 404 ответ чата отброшен (app.js:531-572) — по п. 9 r3. F8 — закрыто: DECIMAL (app.js:26, 480-484) по п. 8.1. F9 — закрыто: поля app.link нет (grep пуст). F10 — закрыто: catch опроса ставит «down» для того же поколения (app.js:264-267). F11 — принято в r3 п. 2 шаг 5, main.js:155-158 совпадает с текстом проекта (только код ОС вида E[A-Z]+). S-1 — код по п. 4.1 r3 (server.js:329-404), своя проба: 408, Connection: close, общий текст, закрытие через 15 с, папка данных байт в байт та же, следующий GET 200; вердикт по безопасности — за SECURITY-REVIEWER (см. issues). Пять вопросов: (1) причина, а не симптом — да, ошибок не глотает (408 намеренно без строки в err по проекту); (2) с записанным — сходится, кроме мёртвой ветки N1 (Low); (3) лишнего нет: правки ровно по F1, F4, F6–F10, S-1, main.js и README не тронуты; (4) планка держится: skip/todo/eslint-disable/|| true нет, check не изменён, NETWORK_FILES только расширен; (5) идиомы — таймер простоя снимается во всех трёх исходах (end, 413, close), unref, обработчики снимаются; три таблицы перевода кодов (readFailure, createFailure, chatFailure) — одного рода и согласованы. Защитная ветка app.js:713-723 — мёртвый код (N1): сервер по r3 не шлёт ResultRef с null, ядро не пускает файл с задачей не из плана (reducer.js:400-405, findTask); решено Low, как F9 прошлого круга: во всех достижимых состояниях вид совпадает с описанием r3 п. 5.8. TEST-DESIGNER стоит проверить особо: WEB-4f (фикстура с файлами без задачи и проект только из них → results []), WEB-5e (truncated, последняя метка), WEB-10e (408 через opts.bodyIdleMs, сброс отсчёта на части, папка и счётчик engines неизменны), WEB-10f (все строки «чат» п. 10 и неизвестный код → один ctx.warn), WEB-3g (budget_usd: null), сужение ST-06 до раздела Pixel Office. Страничные правила F7, F8, F10 автотестом не покрываются (jsdom нет, п. 0) — сценарии UAT.",
+    "findings": [
+      {
+        "id": "N1",
+        "location": "tools/src/web/public/app.js:713-723",
+        "bar": "качество кода; Q12 (описание r3 п. 5.8 «Строка есть у каждого файла»; 0025 W8 «Отвергнуто: null в полях задачи и роли»)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Защитная ветка withTask = r.link !== null && r.role !== null прячет строку «задача · роль» и показывает только имя. По контракту r3 (п. 5.3, 5.5) и W8 сервер ResultRef с null не отдаёт, а display.js:270-280 строит link и role всегда (задача файла всегда найдена: reducer.js:400-405 через findTask). Ветка недостижима — мёртвый код — и хранит остаток отвергнутого в W8 варианта; к тому же она защищает только от null, а не от отсутствующего поля (undefined дал бы исключение и «Нет связи» через safely). Вид страницы во всех достижимых состояниях совпадает с описанием, поэтому не блокирует (та же оценка, что F9 прошлого круга).",
+        "fix": "CODE-FIXER, вместе с правкой README по F3 после шага 5 (код всё равно пойдёт на шаги 3 и 4): убрать withTask, setHidden(meta) и тернарники — строка «задача · роль» заполняется всегда из r.link, r.task_text, r.role.link, r.role.title; комментарий — «у каждого ResultRef задача и роль (проект REQ-011 r3, п. 5.5, 7.1 (6))»."
+      },
+      {
+        "id": "N2",
+        "location": "tools/src/web/public/app.js:1-2",
+        "bar": "качество документов (AP-005 по смыслу)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Заголовок файла ссылается на «docs/design/REQ-011-ui.md r2», а код уже следует r3 (F4, F7, F8, F10 — правила r3).",
+        "fix": "CODE-FIXER в том же проходе, что N1: «r2» → «r3»."
+      },
+      {
+        "id": "F3",
+        "location": "tools/README.md:395; tools/test/pixel-office-settings.test.js:96-101",
+        "bar": "Q12 (проект п. 1.2, 14)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Остаётся открытым по проекту r3: ссылка http://127.0.0.1:4781/ вернётся в README после того, как TEST-DESIGNER сузит ST-06 до раздела «## Pixel Office».",
+        "fix": "Как в r3 п. 1.2 и 14: шаг 5 — ST-06; затем CODE-FIXER — README:395 (вместе с N1, N2)."
+      }
+    ],
+    "self_check": [
+      "Прочитано целиком: tools/src/web/display.js, api.js, server.js, config.js, public/app.js; main.js:145-160; index.html:465-473 (tpl-result); проект r3 п. 0, 4.1, 4.3, 5.3, 5.5, 7.1, 8.1, 8.2, 9, 10, 13, 14, 15; описание r3 п. 5.8, 6.3; git diff decisions/0025 (W4 п. 3, W8).",
+      "cd tools && npm run check -> код 1: «All matched files use Prettier code style!»; eslint без вывода; «traces: файлов проверено 867, следов 0, пропущено 18»; # tests 996, # pass 994, # fail 2, # skipped 0, # todo 0; упали ровно not ok 922 TR-4b (web/public/app.js сверх NETWORK_FILES) и not ok 925 TR-4e (web/public/app.js 1 !== 0) — ожидаемый провал п. 17 проекта, других падений нет.",
+      "cd tools && npm run traces -> код 0.",
+      "Эрозия: grep -rnE \"\\.skip\\(|\\.todo\\(|todo|TODO|FIXME|eslint-disable|\\|\\| true\" tools/src/web tools/package.json tools/eslint.config.js tools/test/traces-runtime.test.js -> пусто (код 1); git diff tools/package.json — только + \"team-web\"; eslint.config.js — только globals браузера для src/web/public; traces-runtime.test.js — только + \"web/server.js\" в NETWORK_FILES.",
+      "Границы: git status --short tools/src/team tools/src/pixel-office -> пусто; fetch( в public — одна строка app.js:42; innerHTML|outerHTML|insertAdjacentHTML в public -> пусто; кириллица в app.js (grep -P '[\\x{0400}-\\x{04FF}]') -> пусто; grep app.link -> пусто.",
+      "Своя проба (env -i, временные HOME и SAI_TEAM_HOME в scratchpad, node src/web/main.js --port 0 --executor scripted --scenario test/fixtures/team/engine-basic.json; удалено после): POST создания -> 201 started:true; через 6 с GET проекта: status done, results = [t-0001-1-input.md t-0001 роль 3, t-0001-1-report.md t-0001 3, t-0002-1-input.md t-0002 6, t-0002-1-report.md t-0002 6], у всех link; r-…-plan-input.md и r-…-goal-input.md нет.",
+      "Проба S-1 (сырой сокет: заголовки с Content-Length: 100 и 10 байт тела, дальше тишина): соединение закрыто через 15 с; «HTTP/1.1 408 Request Timeout», Content-Type: application/json; charset=utf-8, Connection: close, nosniff, no-store, тело {\"error_text\":\"Что-то пошло не так. Повторите позже\",\"field\":null,\"reload\":false}; shasum всех файлов SAI_TEAM_HOME до и после равны; следующий GET /api/projects -> 200; stderr — только строка о правах папки при запуске.",
+      "POST чата «проба» -> 200, message.truncated: false, labels_text [].",
+      "Сервер остановлен SIGINT, pgrep — процесса нет. Код во время проверки не менялся."
+    ],
+    "issues": [
+      {
+        "kind": "question",
+        "text": "Для ORCH: правка S-1 (server.js readBody, config.js BODY_IDLE_MS) — область SECURITY-REVIEWER; после правки кода шаг 3 повторяется, а handoff-а SECURITY-REVIEWER после step-09 в папке прогона нет (есть step-01…step-09). Своя проба поведения совпадает с п. 4.1 r3, но вердикт по Q10/Q11 за ним."
+      },
+      {
+        "kind": "note",
+        "text": "N1, N2 и F3 (README) — одним проходом CODE-FIXER после шага 5, затем шаги 3 и 4 по этим строкам."
+      },
+      {
+        "kind": "AP-018",
+        "text": "Ожидаемый вердикт в задании не назван; названы ожидаемые падения TR-4b/TR-4e — проверены своим прогоном, других нет."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

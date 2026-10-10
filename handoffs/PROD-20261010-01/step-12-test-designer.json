@@ -1,0 +1,618 @@
+{
+ "handoff_id": "step12-test-designer-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-02",
+ "step": "12",
+ "from_agent": "ORCH",
+ "to_agent": "TEST-DESIGNER",
+ "file": "handoffs/PROD-20261010-01/step-12-test-designer.json",
+ "status": "COMPLETED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": [
+   "REQ-011"
+  ],
+  "agent_run_id": null,
+  "artifacts_in": [
+   "docs/design/REQ-011-team-web.md (r3, п. 1.2, 13, 14, 15, 15.1, 17)",
+   "docs/requirements.yaml (REQ-011, 15 критериев)",
+   "handoffs/PROD-20261010-01/step-10-security-reviewer.json",
+   "handoffs/PROD-20261010-01/step-11-reviewer.json",
+   "tools/src/web/*, tools/src/web/public/*",
+   "decisions/0020, 0023 (D2), 0024, 0025"
+  ],
+  "write_set": "tools/test/team-web-*.js (граница team-* по 0020); tools/test/traces-runtime.test.js (NETWORK_FILES, TR-4d, TR-4e); tools/test/pixel-office-settings.test.js (ST-06); tools/README.md (ссылка http://127.0.0.1:4781/); этот handoff",
+  "note": "Файл handoff-а создан TEST-DESIGNER по прямому указанию ORCH в сообщении запуска (handoff заранее не был создан); заголовок и context переписаны из этого сообщения — см. result.issues I3."
+ },
+ "task": {
+  "description": "WF-02, шаг 5, REQ-011: тесты к tools/src/web/* и public/* по таблице «критерий → тест» и мутантам проекта r3 (п. 15, 15.1, 17), тест на каждый из 15 критериев, тесты отказа с неизменным состоянием, мутанты на копии, тесты свойств/границ; правки traces-runtime (NETWORK_FILES += web/public/app.js, TR-4e, listen( в TR-4d) и ST-06 (раздел Pixel Office), затем ссылка в README; jsdom — только если установка возможна без нарушения правил, иначе модель DOM и честный перечень непокрытого; код src не править; npm run check и npm run traces.",
+  "acceptance_criteria": [
+   "тест на каждый критерий REQ-011 (кроме 11 — по проекту не автотест)",
+   "обязательные: WEB-3g, WEB-4f, WEB-4c (медиана < 0), WEB-5e, WEB-9b, WEB-9e/9f/9g, WEB-10e, WEB-10f, 413 до записи в канал, гонка «сообщение в момент завершения движка» (504), E_CHANNEL_STALE",
+   "мутанты применены и откатаны на копии",
+   "cd tools && npm run check — код 0; npm run traces — код 0"
+  ]
+ },
+ "created_at": null,
+ "started_at": null,
+ "completed_at": "2026-10-10T14:06:08Z",
+ "result": {
+  "status": "COMPLETED",
+  "summary": "Написаны 13 файлов тестов tools/test/team-web-*.test.js (93 теста) и 3 помощника (team-web-helpers.js, team-web-fixtures.js, team-web-dom.js). Тестов в npm test: было 996 (# tests 996, 2 ожидаемых падения TR-4b/TR-4e), стало 1090, 0 падений. Строк в tools/test/team-web-*.js — 6 383 (wc -l). Таблица «критерий → тест» (Q5): 1 Запуск и адрес — team-web-server: WEB-1a (команда печатает ровно «Sai Team: http://127.0.0.1:<порт>/», ::1 и другие адреса компьютера — отказ соединения, SIGTERM → 0, папка данных не создаётся), WEB-1a (объект сервера, константы п. 3), WEB-1b (12 чужих Host × 5 путей + POST → 403 без цели/ид фикстуры, папка неизменна), WEB-1c (файлы страницы, CSP, заголовки, «не найдено»), WEB-1d (405 + Allow), WEB-1e (ключ: 64 hex, новый на каждый запуск, нигде в ответах), WEB-1f (loadPublicFiles: метка ровно одна, обе формы), WEB-1g (параметры команды → 2/1, одна строка), WEB-1h (порт занят ×2). 2 Список — team-web-list: WEB-2 (три проекта через API ядра; status_text = вывод `npm run team -- project`, прогресс из replay, needs_decision только у waiting_user — в т.ч. ожидание потолка без вопроса, test_executor только у scripted, «рынок вырос на 12%» без изменений, нет % вне цели; страница проекта те же поля), WEB-2 (listItem по всем статусам), WEB-2b (испорченная строка → broken/«повреждены», EIO чтения через fault-inject → «не удалось прочитать», остальные на месте), WEB-2 (нет папки данных → пусто, не создаётся). 3 Новый проект — team-web-create: WEB-3a (цель 1 и 2000 кодовых точек, секрет маскируется, PROJECT_STARTED движка сервера), WEB-3b (27 неверных тел → 400 с текстом и field, папок нет, start не вызван; края 1/2000/100000 проходят), WEB-3c (те же значения у `npm run team -- new`), WEB-3d (claude-cli без SAI_TEAM_REAL_RUNS → 400, папки нет, поддельный claude 0 запусков), WEB-3e ×2 (6 знаков после запятой; E_EVENT после маскирования → field goal; E_DISK → 500), WEB-3f ×2 (каждый код WHY_NOT_STARTED и неизвестный → 201 started:false; настоящий движок с E_CONFIG), WEB-3g (budget_usd: null → 400 field budget_usd, папки нет), postProject не бросает. 4 Шесть вопросов — team-web-project: WEB-4a (5 фраз = phrasesForJournal, at = ts), WEB-4b (все 7 статусов задач; только running/review, без повторов; reason_text по последнему событию), WEB-4c ×4 (пример 2/4/9 мин → 12 мин; одна готовая/ноль/чётное/округление вверх/u=0; медиана < 0 — фикстура с TASK_DONE на 1,5 с раньше TASK_STARTED через USER-событие → «срок пока не оценить»; конечные статусы), свойства: dueText на 500 сгенерированных состояниях (зерно), busyRoles на 300; WEB-4d (failed + waiting_text = projectView), WEB-4e ×2 (задача+проект — 1 вопрос, ответ закрывает, без вопроса — 0, open ровно пока считается; старый вопрос проекта до PROJECT_WAITING не считается; порядок по chat_n), WEB-4f ×2 (только файлы с задачей в порядке состояния, = объединение tasks[].files, у каждого task/task_text/role/link; проект только с файлами без задачи → []; настоящий прогон engine-basic), WEB-4g (pause_text после stopAll движка сервера, tail_text при недописанной строке и чтение её не режет, tasks_empty_text). 5 Чат — team-web-chat: WEB-5a (б) (без движка: одно CHAT USER, маскирование, inbox/ нет), WEB-5b (а) (движок сервера в процессе: «Отправлено», событие с msg, проект доходит до done), WEB-5c (а) (движок — отдельный процесс start: замок тот же, проект done), WEB-5d (в) (holdWriter → 409, хеш журнала тот же), WEB-5e (вопрос, «ждёт ответа», task.link, truncated:true → последняя метка «сообщение сокращено», false — нет; sentMessage по event.data.truncated), WEB-5f (4001 → 400 field text, хеш; 4000 проходит), WEB-5g (<script> тем же текстом; grep innerHTML… пуст), чат несуществующего/испорченного проекта. 6 Связи — team-web-links: WEB-6 (обход всех Link.api фикстуры: 200, тот же проект; карточка = publicRole и только задачи этой роли этого проекта; чужая задача — 404), WEB-6 (карточки 1…10; ни prompt/tools каталога, ни кода роли ни в одном ответе). 7 Без технических слов — team-web-words: WEB-7a (все (п)-поля на проектах во всех 8 статусах проекта и 7 статусах задачи, >200 текстов, и тексты отказов HTTP и chatFailure всех кодов), WEB-7a (все тексты texts.js; проверка самого детектора), WEB-7b (видимый текст index.html и атрибуты; нет style= и %), WEB-7c (нет кириллицы в public/*.js), WEB-7d («рост на 12% по JSON-выгрузке» без изменений). 8 Живое обновление — team-web-live: WEB-8a (событие через ядро — в следующем ответе чата, страницы, списка), WEB-8b (const REFRESH_MS = 5000; ≤ 5000), WEB-8c (>100 GET-маршрутов на всех статусах, испорченном и с хвостом — снимок путей/хешей SAI_TEAM_HOME неизменен); плюс WEB-P1 (период от начала опроса, медленный ответ). 9 Защита — team-web-guard: WEB-9a (15 видов неверных заголовков × 2 маршрута → 403, ключ верного вида не этого запуска → reload:true; снимок и хеш неизменны, start не вызван), WEB-9b (29 «не найдено»: ..%2Fx, %2Fetc%2Fpasswd, ../x, несуществующий, папка без журнала, ссылка, t-9999, задача другого проекта, роли 0/11/01/1.0, POST чата — тело и заголовки байт в байт), WEB-9c (три образца секрета → [скрыто]), WEB-9d (grep записи/inbox/child_process пуст, channel только строка импорта api.js, deliver( один раз), WEB-9e (200/201/400/403/404/405/408/409/413/500 — JSON-тип, nosniff, no-store), WEB-9f (6 принятых и 8 отвергнутых Content-Type), WEB-9g (старый ключ → reload:true, без ключа → false, неизменность; GET без ключа работает). 10 Сбои — team-web-faults: WEB-10a (EIO writeSync журнала через fault-inject при чате → 500 «сообщение не сохранено», хеш неизменен; EIO записи events.jsonl создаваемой папки → 500 «проект не создан», папки нет), WEB-10b (держатель не движок), WEB-10c (SAI_TEAM_CLAUDE_BIN = fixtures/missing-claude, REAL_RUNS=1: проект создан, PROJECT_WAITING, waiting_text словами, без стека), WEB-10d (испорченная строка: 4 маршрута → «повреждены», список работает), WEB-10 (неожиданное исключение обработчика → 500 общий текст + одна строка warn), WEB-10e ×3 (bodyIdleMs 200: 10 байт и тишина → 408, Connection: close, снимок/start/warn неизменны, поздний остаток ничего не меняет; ни одного байта тела → 408; части через 120 мс при 250 — не 408), WEB-10f (chatFailure: все 15 строк «чат» п. 10 с точным статусом/текстом/field и без warn — в т.ч. E_CHANNEL_STALE → 504; E_NOT_FOUND → 404; неизвестный → 500 и ровно один warn). 11 Приёмка глазами — не автотест по проекту (п. 15): DESIGN-QA-VALIDATOR, BA-ANALYST, UAT-RUNNER. 12 Документация — team-web-docs WEB-12 (раздел README со ссылкой http://127.0.0.1:4781/, шесть вопросов, правило срока, только этот компьютер; скрипт team-web; ≥12 файлов team-web-*.test.js в прогоне). 13 Решение — WEB-13a (0024 содержит tools/src/web/, 127.0.0.1, 0015, REQ-013; 0024 и 0025 «Принято» в decisions/README.md). 14 Сеть — WEB-14 (grep сети по team/ и web/, один fetch( внутри request, адреса относительные, main.js без сети, listen(…, HOST)) и traces-runtime TR-4b/4d/4e с web/server.js и web/public/app.js. 15 Канал — team-web-channel (движок — отдельный процесс scripted): WEB-15 (а)(д) (ack, одно CHAT USER с msg, замок тот же, файла сообщения нет, приманка-секрет ни в одном файле проекта с inbox/), (б) SIGSTOP → 504 через 10–12 с, после SIGCONT события нет, (в) тело > 64 КиБ по Content-Length и chunked → 413 до записи: inbox/ байт в байт, CHAT USER нет; край BODY_MAX читается, (г) SIGKILL → сервер пишет один раз, LOCK_STALE_REMOVED с pid движка, (гонка) сообщение опубликовано, движок убит до приёма → 504 сразу (<9 с), события нет, сообщение отозвано, WEB-15e BODY_MAX = MSG_BYTES_MAX. Логика страницы (app.js) — team-web-page WEB-P1…P12 в модели DOM (не jsdom): период 5000 от начала опроса и без наложения (кр. 8), порядок опроса F7 (первый — проект и карточка, чат после 200; дальше всё вместе; 404 отбрасывает чат), блок связи F10 (нет связи, нечитаемый ответ, исключение внутри опроса → «Нет связи…», данные остаются, опрос идёт), потолок F8 (15 строк: «12,5»→12.5, «0x10»/«1e2»/«+5»/«.5»/«5.»→null), заголовки POST и ключ, 5.7 (started:false — остаётся на форме; true — переход), F-3 «Обновить страницу» и текст в поле, отказы чата (504 warn, field text), сообщения только текстом и приглушённая только последняя метка при truncated, «и ещё N» = длина results − 10, адреса только из Link.api, readRoute; WEB-P12 — настоящая страница против настоящего сервера (создание, чат, страница старого запуска). Пункты планки: Q8 — как принцип для проектов: WEB-9b (чужой/несуществующий путь неотличим), WEB-6 (задачи и роли только своего проекта, задача другого проекта — 404); Q10 — WEB-10a…10f, WEB-15 (б)(гонка), WEB-1h; Q11 — неприменим (сервер не ходит по адресам пользователя; страница — только относительные /api: WEB-14, TR-4e); R3 — неприменим (фото нет). Q7 — секретов в тестах нет (только вымышленные образцы maskSecrets с FAKE), ключ страницы не в ответах (WEB-1e). Q6 — skip/todo нет, проверки не ослаблены: ST-06 сужена до раздела Pixel Office по п. 1.2 (мутант T01 показывает, что она по-прежнему ловит неверный порт Pixel Office).",
+  "files": [
+   "tools/test/team-web-helpers.js",
+   "tools/test/team-web-fixtures.js",
+   "tools/test/team-web-dom.js",
+   "tools/test/team-web-server.test.js",
+   "tools/test/team-web-list.test.js",
+   "tools/test/team-web-create.test.js",
+   "tools/test/team-web-project.test.js",
+   "tools/test/team-web-chat.test.js",
+   "tools/test/team-web-links.test.js",
+   "tools/test/team-web-words.test.js",
+   "tools/test/team-web-live.test.js",
+   "tools/test/team-web-guard.test.js",
+   "tools/test/team-web-faults.test.js",
+   "tools/test/team-web-docs.test.js",
+   "tools/test/team-web-channel.test.js",
+   "tools/test/team-web-page.test.js",
+   "tools/test/traces-runtime.test.js",
+   "tools/test/pixel-office-settings.test.js",
+   "tools/README.md"
+  ],
+  "changes": [
+   {
+    "file": "tools/test/team-web-*.test.js (13 файлов)",
+    "what": "новые тесты WEB-1a…WEB-15e и WEB-P1…P12, 93 теста"
+   },
+   {
+    "file": "tools/test/team-web-helpers.js",
+    "what": "песочница (makeSandbox/execEnv/assertSafeEnv), сервер в процессе на порту 0, сырые HTTP-запросы с Host/частями тела, ключ через GET /, фикстуры через API ядра с часами, technical() — слова критерия 7"
+   },
+   {
+    "file": "tools/test/team-web-fixtures.js",
+    "what": "проект с задачами во всех статусах; проекты во всех 8 статусах проекта"
+   },
+   {
+    "file": "tools/test/team-web-dom.js",
+    "what": "модель DOM без зависимостей: разбор настоящего index.html, элементы/шаблоны/селекторы app.js, события; запуск настоящего app.js в vm с поддельными fetch, таймерами и location"
+   },
+   {
+    "file": "tools/test/traces-runtime.test.js",
+    "place": "NETWORK_FILES, TR-4d (3), TR-4e",
+    "what": "web/public/app.js в NETWORK_FILES; listen( проверяется и у web/server.js (последний аргумент HOST) и web/config.js HOST = 127.0.0.1; правило TR-4e для web/public/app.js: ровно один fetch( внутри async function request(path, init) с window.fetch(path, {, все const API_* — относительные /api, нет XMLHttpRequest/WebSocket/EventSource/sendBeacon/new URL(/location.origin. Проверки только добавлены, существующие не ослаблены."
+   },
+   {
+    "file": "tools/test/pixel-office-settings.test.js",
+    "place": "ST-06",
+    "what": "проверка «каждый http://127.0.0.1:<порт> — порт Pixel Office» ограничена разделом «## Pixel Office» (до следующего «## »), остальные проверки ST-06 без изменений (п. 1.2 r3, F3)"
+   },
+   {
+    "file": "tools/README.md",
+    "place": "раздел «## Sai Team — интерфейс», «Запуск»",
+    "what": "возвращена ссылка: «по умолчанию `Sai Team: http://127.0.0.1:4781/`» вместо временной записи без ссылки (п. 14 r3, F3; по указанию ORCH сделано на этом шаге)"
+   }
+  ],
+  "self_check": [
+   {
+    "command": "cd tools && npm run check",
+    "output": "format:check — All matched files use Prettier code style!; lint — без вывода (0 ошибок); traces — «traces: файлов проверено 885, следов 0, пропущено 18»; test — # tests 1090, # pass 1090, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 71602; код выхода 0"
+   },
+   {
+    "command": "cd tools && npm run traces",
+    "output": "traces: файлов проверено 885, следов 0, пропущено 18; код 0"
+   },
+   {
+    "command": "cd tools && npm test (до работы, базовый прогон)",
+    "output": "# tests 996, # pass 994, # fail 2: not ok TR-4b, not ok TR-4e (ожидаемый провал шагов 2–5 по п. 17 r3)"
+   },
+   {
+    "command": "мутанты: scratchpad/mutants.py на копии Sai вне проекта (rsync без .git и node_modules); каждый мутант — замена одного места, прогон node --test (все team-web-*.test.js, кроме channel; с channel/traces/ST-06 где нужно), восстановление файла",
+    "output": "41 мутант; в первом прогоне убито 39, выжили M21a и P03 — тесты дополнены (WEB-10e «ни одного байта тела», WEB-P4 — исключение изнутри request), повтор: оба убиты. Итог 41/41. Рабочее дерево не менялось: find tools/src -newer tools/test/team-web-helpers.js — пусто; diff -r tools/src <копия>/tools/src после прогона — без различий."
+   },
+   {
+    "mutants": [
+     {
+      "id": "M01",
+      "what": "listen(port) without HOST",
+      "run1": "KILLED 6/93",
+      "killed_by": [
+       "WEB-14",
+       "WEB-1a",
+       "WEB-1a",
+       "WEB-1h",
+       "WEB-1h",
+       "TR-4d"
+      ],
+      "final": "KILLED 6/93"
+     },
+     {
+      "id": "M02",
+      "what": "no check of Host",
+      "run1": "KILLED 3/87",
+      "killed_by": [
+       "WEB-5c (а)",
+       "WEB-1b",
+       "WEB-7a"
+      ],
+      "final": "KILLED 3/87"
+     },
+     {
+      "id": "M03a",
+      "what": "no comparison of the key",
+      "run1": "KILLED 4/87",
+      "killed_by": [
+       "WEB-9a",
+       "WEB-9g",
+       "WEB-P12 (crit. 3, 5, 9)",
+       "WEB-7a"
+      ],
+      "final": "KILLED 4/87"
+     },
+     {
+      "id": "M03b",
+      "what": "only the length of the key compared",
+      "run1": "KILLED 4/87",
+      "killed_by": [
+       "WEB-9a",
+       "WEB-9g",
+       "WEB-P12 (crit. 3, 5, 9)",
+       "WEB-7a"
+      ],
+      "final": "KILLED 4/87"
+     },
+     {
+      "id": "M04",
+      "what": "needs_decision = waits.count > 0",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-2"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "M05",
+      "what": "the median is the mean",
+      "run1": "KILLED 3/87",
+      "killed_by": [
+       "WEB-4c (3)",
+       "WEB-4c (3)",
+       "WEB-4c"
+      ],
+      "final": "KILLED 3/87"
+     },
+     {
+      "id": "M06",
+      "what": "Math.floor instead of ceil(u/p)",
+      "run1": "KILLED 3/87",
+      "killed_by": [
+       "WEB-4c (3)",
+       "WEB-4c (3)",
+       "WEB-4c"
+      ],
+      "final": "KILLED 3/87"
+     },
+     {
+      "id": "M07",
+      "what": "the question of the project counted without the rule of 7.3",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-4e (5)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "M08",
+      "what": "postChat writes through openWriter().say instead of deliver",
+      "run1": "KILLED 8/94",
+      "killed_by": [
+       "WEB-15 (а)",
+       "WEB-15 (б)",
+       "WEB-15 (в)",
+       "WEB-15 (race)",
+       "test/team-web-channel.test.js",
+       "WEB-5b (а)",
+       "WEB-5c (а)",
+       "WEB-9d"
+      ],
+      "final": "KILLED 8/94"
+     },
+     {
+      "id": "M09",
+      "what": "readProject cached between requests",
+      "run1": "KILLED 5/87",
+      "killed_by": [
+       "WEB-8a",
+       "WEB-P12 (crit. 3, 5, 9)",
+       "WEB-4a (1)",
+       "WEB-4e (5)",
+       "WEB-4g"
+      ],
+      "final": "KILLED 5/87"
+     },
+     {
+      "id": "M10",
+      "what": "404 of a pattern with another body",
+      "run1": "KILLED 2/87",
+      "killed_by": [
+       "WEB-9b",
+       "WEB-1c"
+      ],
+      "final": "KILLED 2/87"
+     },
+     {
+      "id": "M11",
+      "what": "ceiling > 0 became >= 0",
+      "run1": "KILLED 3/87",
+      "killed_by": [
+       "WEB-3b",
+       "WEB-3c",
+       "WEB-7a"
+      ],
+      "final": "KILLED 3/87"
+     },
+     {
+      "id": "M12a",
+      "what": "e.message of the core in error_text (chat)",
+      "run1": "KILLED 6/87",
+      "killed_by": [
+       "WEB-5d (в)",
+       "WEB-5f",
+       "WEB-5",
+       "WEB-10a",
+       "WEB-10b",
+       "WEB-10f (r3, F6)"
+      ],
+      "final": "KILLED 6/87"
+     },
+     {
+      "id": "M12b",
+      "what": "e.message of the core in error_text (reading)",
+      "run1": "KILLED 2/87",
+      "killed_by": [
+       "WEB-10d",
+       "WEB-2b"
+      ],
+      "final": "KILLED 2/87"
+     },
+     {
+      "id": "M13",
+      "what": "API answers as text/plain",
+      "run1": "KILLED 9/87",
+      "killed_by": [
+       "WEB-5a (б)",
+       "WEB-3a",
+       "WEB-3b",
+       "WEB-10e (r3, S-1)",
+       "WEB-9e",
+       "WEB-2",
+       "WEB-1b",
+       "WEB-1c",
+       "WEB-1d"
+      ],
+      "final": "KILLED 9/87"
+     },
+     {
+      "id": "M14",
+      "what": "Content-Type compared strictly whole",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-9f"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "M15",
+      "what": "a stale key refused as no key",
+      "run1": "KILLED 3/87",
+      "killed_by": [
+       "WEB-9a",
+       "WEB-9g",
+       "WEB-P12 (crit. 3, 5, 9)"
+      ],
+      "final": "KILLED 3/87"
+     },
+     {
+      "id": "M16",
+      "what": "ceiling without toFixed(6)",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-3e"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "M17",
+      "what": "open = question",
+      "run1": "KILLED 2/87",
+      "killed_by": [
+       "WEB-4e (5)",
+       "WEB-4e (5)"
+      ],
+      "final": "KILLED 2/87"
+     },
+     {
+      "id": "M18",
+      "what": "results from all state.files",
+      "run1": "KILLED 3/87",
+      "killed_by": [
+       "WEB-6",
+       "WEB-4f (6, r3 F1)",
+       "WEB-4f (6)"
+      ],
+      "final": "KILLED 3/87"
+     },
+     {
+      "id": "M19",
+      "what": "m*k === 0 instead of <= 0",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-4c (3, r3 F5)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "M20a",
+      "what": "truncated always false",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-5e"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "M20b",
+      "what": "the label «сокращено» without truncated",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-4e (5)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "M21a",
+      "what": "no idle timer of the body",
+      "run1": "SURVIVED 0/87",
+      "killed_by": [],
+      "final": "KILLED 1/88 (после добавления теста WEB-10e «ни одного байта тела»): WEB-10e"
+     },
+     {
+      "id": "M21b",
+      "what": "the idle timer not restarted by a new part",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-10e"
+      ],
+      "final": "KILLED 1/88 (повтор): WEB-10e"
+     },
+     {
+      "id": "M22",
+      "what": "E_CHANNEL_STALE removed from the chat refusals",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-10f (r3, F6)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "S01",
+      "what": "a role number with a leading zero accepted",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-9b"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "S02",
+      "what": "four phrases instead of five",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-4a (1)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "S03",
+      "what": "waiting_user counted as busy",
+      "run1": "KILLED 2/87",
+      "killed_by": [
+       "WEB-4b (2)",
+       "WEB-4b"
+      ],
+      "final": "KILLED 2/87"
+     },
+     {
+      "id": "S04",
+      "what": "no limit of the body (413 left to the channel)",
+      "run1": "KILLED 4/93",
+      "killed_by": [
+       "WEB-15 (в)",
+       "WEB-15e",
+       "WEB-9e",
+       "WEB-1a"
+      ],
+      "final": "KILLED 4/93"
+     },
+     {
+      "id": "S05",
+      "what": "real runs checked after the project is made",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-3d"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "S06",
+      "what": "the key printed into the API list",
+      "run1": "KILLED 2/87",
+      "killed_by": [
+       "WEB-2",
+       "WEB-1a"
+      ],
+      "final": "KILLED 2/87"
+     },
+     {
+      "id": "P01",
+      "what": "REFRESH_MS 6000",
+      "run1": "KILLED 6/87",
+      "killed_by": [
+       "WEB-8b",
+       "WEB-P1 (crit. 8)",
+       "WEB-P2 (r3, F7)",
+       "WEB-P3 (F7)",
+       "WEB-P4 (r3, F10)",
+       "WEB-P10 (crit. 4, 6, r3 F1)"
+      ],
+      "final": "KILLED 6/87"
+     },
+     {
+      "id": "P02",
+      "what": "the chat asked on the first poll before the project answered",
+      "run1": "KILLED 2/87",
+      "killed_by": [
+       "WEB-P2 (r3, F7)",
+       "WEB-P3 (F7)"
+      ],
+      "final": "KILLED 2/87"
+     },
+     {
+      "id": "P03",
+      "what": "an error of a poll swallowed",
+      "run1": "SURVIVED 0/87",
+      "killed_by": [],
+      "final": "KILLED 1/88 (после правки теста WEB-P4: исключение теперь вылетает из request(), а не из подставленного fetch): WEB-P4"
+     },
+     {
+      "id": "P04",
+      "what": "the ceiling as Number() of any text",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-P5 (r3, F8)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "P05",
+      "what": "every label of a truncated message muted",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-P9 (crit. 5, r3 F4)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "P06",
+      "what": "reload: true ignored in the chat",
+      "run1": "KILLED 2/87",
+      "killed_by": [
+       "WEB-P7 (F-3)",
+       "WEB-P12 (crit. 3, 5, 9)"
+      ],
+      "final": "KILLED 2/87"
+     },
+     {
+      "id": "P07",
+      "what": "the next poll counted from the end of the previous",
+      "run1": "KILLED 1/87",
+      "killed_by": [
+       "WEB-P1 (crit. 8)"
+      ],
+      "final": "KILLED 1/87"
+     },
+     {
+      "id": "P08",
+      "what": "a second fetch( in the page",
+      "run1": "KILLED 2/93",
+      "killed_by": [
+       "WEB-14",
+       "TR-4e"
+      ],
+      "final": "KILLED 2/93"
+     },
+     {
+      "id": "T01",
+      "what": "README: the port of Pixel Office changed in its section",
+      "run1": "KILLED 1/7",
+      "killed_by": [
+       "ST-06"
+      ],
+      "final": "KILLED 1/7"
+     }
+    ]
+   }
+  ],
+  "issues": [
+   {
+    "id": "I1",
+    "kind": "defect",
+    "severity": "Medium",
+    "text": "Сбой записи (EIO) при отправке сообщения чата без движка оставляет проект «занятым» до перезапуска сервера. deliver открывает писатель ядра в процессе сервера; при сбое писатель помечается сломанным и по правилу ядра (store.js, close(): «A broken writer keeps its lock… until then the project is busy») не отпускает замок, пока жив процесс. У команды терминала процесс сразу кончается, а сервер живёт долго: каждое следующее сообщение этого проекта получает 409 «Сообщение не отправлено, повторите через несколько секунд», хотя повтор не поможет до перезапуска Sai Team (R2/Q10: текст не говорит правды). Чем подтверждено: первая версия WEB-10a (после сбоя через fault-inject второй POST чата) дала «expected: 200, actual: 409». Тест не подгонялся под это поведение: WEB-10a проверяет то, что требует критерий 10 (понятный текст без стека, журнал неизменен, следующий GET 200), а следующий POST принимает 200 или 409 с точным текстом и это записано комментарием. Что нужно: решение ORCH → CODE-DESIGNER (например, особый текст «Перезапустите Sai Team» для E_PROJECT_BUSY, когда держатель — pid сервера, или правило ядра для долгоживущего процесса) и затем тест на выбранное поведение."
+   },
+   {
+    "id": "I2",
+    "kind": "coverage",
+    "severity": "note",
+    "text": "jsdom (REQ-033, decisions/0023 D2) не установлен и не добавлялся: проект REQ-011 прямо запрещает новую зависимость (п. 0, 15 WEB-3g, 20), а package.json/package-lock.json вне write_set. Вместо него — своя модель DOM tools/test/team-web-dom.js: настоящий index.html и настоящий app.js в vm, поддельные fetch/таймеры/location. Это не браузер и не jsdom. Не получили настоящего теста страницы (остаются за DESIGN-QA-VALIDATOR, UAT-RUNNER, REQ-033): вёрстка и CSS, широкий/узкий макет (applyLayout, matchMedia), горизонтальная прокрутка (кр. 11), настоящий фокус, ловушка Tab и Escape в карточке, прокрутка чата и кнопка «Новые сообщения», aria-live, формат времени по часам компьютера, исполнение CSP браузером, настоящие события hashchange. Логика страницы по кр. 3 (потолок F8), 5 (текст, метки F4, reload F-3), 8 (период и порядок опроса F7, блок связи F10), 9 (ключ в X-Sai-Page) — покрыта WEB-P1…P12 в модели."
+   },
+   {
+    "id": "I3",
+    "kind": "process",
+    "severity": "note",
+    "text": "handoff step-12 создан TEST-DESIGNER по указанию ORCH в сообщении запуска (по handoffs.md handoff-ы создаёт только ORCH). Заголовок, context и task переписаны из сообщения; created_at, started_at и agent_run_id оставлены null — их знает только ORCH (первый файл работы, tools/test/team-web-helpers.js, создан 2026-10-10T13:06:30Z по времени файловой системы). ORCH стоит сверить context/task и при необходимости поправить отдельным полем orch_note."
+   },
+   {
+    "id": "I4",
+    "kind": "process",
+    "severity": "note",
+    "text": "Ссылка http://127.0.0.1:4781/ в tools/README.md возвращена на этом шаге по указанию ORCH (по п. 14 r3 это делал бы CODE-FIXER). Изменена одна фраза раздела «Запуск»; README — документ, не код; проверено WEB-12 и ST-06."
+   },
+   {
+    "id": "I5",
+    "kind": "tooling",
+    "severity": "Low",
+    "text": "fault-inject.js находит вызов только по точному пути, а папка нового проекта (.creating-<id>) получает случайное имя. Поэтому EIO при создании проекта (WEB-10a, второй тест) внесён node:test t.mock.method(fs, \"writeFileSync\") по имени файла events.jsonl внутри .creating-* (тот же объект fs, что патчит fault-inject; сервер в процессе теста). Предложение (вне write_set): шаблон пути в fault-inject.js."
+   },
+   {
+    "id": "I6",
+    "kind": "note",
+    "severity": "note",
+    "text": "Таймерные тесты укорочены через opts (bodyIdleMs 200/250 мс, поддельные таймеры страницы). Исключение одно — WEB-15 (б): сам критерий 15 требует ответа «не раньше 10 и не позже 12 с», а ACK_WAIT_MS канала — константа ядра (tools/src/team/engine/channel.js), поэтому этот тест реально ждёт ~10 с (как EN-58 у движка). Ещё ~1–2 с — тесты с настоящим движком (WEB-5b/5c, WEB-15, WEB-4f engine-basic)."
+   },
+   {
+    "id": "I7",
+    "kind": "note",
+    "severity": "note",
+    "text": "Мутант M01 (listen без HOST) вешал файл team-web-server.test.js: тест «listen refuses» не закрывал сервер, который под мутантом всё же привязался. Тест дополнен t.after(server.close()) — теперь мутант убивается 6 тестами без зависания. Для TEST-DESIGN-VALIDATOR: node --test без --test-timeout зависнет на любом мутанте, который оставит открытый сервер в чужом тесте; разумно запускать с --test-timeout."
+   },
+   {
+    "id": "I8",
+    "kind": "note",
+    "severity": "note",
+    "text": "Запрос без заголовка Host Node отклоняет сам (400) до обработчика — данных в ответе нет; WEB-1b это фиксирует (400 или 403, без цели фикстуры). 403 «Запрос отклонён» сервер отдаёт на любой присутствующий чужой Host."
+   }
+  ],
+  "artifacts_out": [
+   "tools/test/team-web-helpers.js",
+   "tools/test/team-web-fixtures.js",
+   "tools/test/team-web-dom.js",
+   "tools/test/team-web-server.test.js",
+   "tools/test/team-web-list.test.js",
+   "tools/test/team-web-create.test.js",
+   "tools/test/team-web-project.test.js",
+   "tools/test/team-web-chat.test.js",
+   "tools/test/team-web-links.test.js",
+   "tools/test/team-web-words.test.js",
+   "tools/test/team-web-live.test.js",
+   "tools/test/team-web-guard.test.js",
+   "tools/test/team-web-faults.test.js",
+   "tools/test/team-web-docs.test.js",
+   "tools/test/team-web-channel.test.js",
+   "tools/test/team-web-page.test.js",
+   "tools/test/traces-runtime.test.js",
+   "tools/test/pixel-office-settings.test.js",
+   "tools/README.md"
+  ]
+ }
+}

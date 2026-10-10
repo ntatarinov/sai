@@ -1,0 +1,156 @@
+{
+  "handoff_id": "step09-code-fixer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PROD-20261010-01/step-09-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-011"
+    ],
+    "rework_of": [
+      "handoffs/PROD-20261010-01/step-08-reviewer.json",
+      "handoffs/PROD-20261010-01/step-07-security-reviewer.json"
+    ],
+    "write_set": [
+      "tools/src/web/*.js (кроме main.js)",
+      "tools/src/web/public/app.js",
+      "tools/src/web/public/style.css",
+      "tools/src/web/public/index.html",
+      "handoffs/PROD-20261010-01/step-09-code-fixer.json"
+    ],
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-08-reviewer.json (F1…F11)",
+      "handoffs/PROD-20261010-01/step-07-security-reviewer.json (S-1)",
+      "docs/design/REQ-011-team-web.md (r3: п. 0, 3, 4.1, 5.3, 5.5, 7.1, 8.1, 8.2, 9, 10, 13)",
+      "decisions/0025-team-web-server.md (W8)"
+    ],
+    "parallel_work_now": "никого"
+  },
+  "task": {
+    "description": "WF-02 после FAIL шага 4 (REVIEWER): правка кода REQ-011 по F1, F4, F6, F7, F8, F9, F10 и S-1 по проекту r3; main.js не менять; README не трогать; тестов не писать."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T12:49:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты F1 (только файлы с задачей в results), F4 (поле truncated и приглушение метки по нему), F6 (E_CHANNEL_STALE/E_USAGE/E_CORRUPT, экспорт chatFailure), F7 (порядок запросов опроса), F8 (потолок числом только для десятичной записи), F9 (убрано app.link), F10 (исключение опроса → «Нет связи»), S-1 (простой чтения тела 15 с → 408). F2, F3, F5, F11 кода не требуют (принято в r3; F3 — README после сужения ST-06 на шаге 5). npm run check: падают только TR-4b и TR-4e (ожидаемо, п. 17); npm run traces — код 0.",
+    "files": [
+      "tools/src/web/display.js",
+      "tools/src/web/api.js",
+      "tools/src/web/config.js",
+      "tools/src/web/server.js",
+      "tools/src/web/public/app.js"
+    ],
+    "changes": [
+      {
+        "item": "F1",
+        "file": "tools/src/web/display.js",
+        "place": "resultRef, projectPage.results",
+        "what": "results = state.files.filter(f => f.task !== null).map(resultRef) в порядке состояния; ветка null в resultRef и неверный комментарий («движок такой файл не пишет») убраны; комментарий ссылается на п. 7.1 (6) r3 и W8."
+      },
+      {
+        "item": "F1",
+        "file": "tools/src/web/public/app.js",
+        "place": "renderProject, (6) result",
+        "what": "комментарий «decision of ORCH for this run» заменён ссылкой на design REQ-011, section 7.1 (6); защитный показ «только имя» при отсутствии link/role оставлен как был."
+      },
+      {
+        "item": "F4",
+        "file": "tools/src/web/display.js",
+        "place": "chatMessage, sentMessage",
+        "what": "поле truncated: bool в ChatMessage (= state.chat[].truncated === true; у Sent.message — event.data.truncated === true); метка labelTruncated ставится по нему же."
+      },
+      {
+        "item": "F4",
+        "file": "tools/src/web/public/app.js",
+        "place": "updateMessage",
+        "what": "метка приглушается только при m.truncated === true и только последняя (i === labels.length - 1); подсчёт по месту (own) убран."
+      },
+      {
+        "item": "F6",
+        "file": "tools/src/web/api.js",
+        "place": "CHAT_REFUSALS, chatFailure",
+        "what": "E_CHANNEL_STALE → 504 TEXT.chatUnconfirmed; E_USAGE → 400 badRequest и E_CORRUPT → 500 corrupt (уже были, теперь по п. 10 r3); chatFailure экспортируется."
+      },
+      {
+        "item": "S-1",
+        "file": "tools/src/web/config.js",
+        "place": "BODY_IDLE_MS",
+        "what": "новая константа 15_000."
+      },
+      {
+        "item": "S-1",
+        "file": "tools/src/web/server.js",
+        "place": "createWebServer (opts.bodyIdleMs), readBody",
+        "what": "таймер простоя: взводится в начале чтения тела и заново на каждой части; конец тела, 413 и обрыв клиентом его снимают; истёк — снимаются обработчики, тело дальше отбрасывается (req.resume), ответ 408 Failure {TEXT.internal, field null, reload false} с Connection: close, после отправки сокет закрывается; обработчик записи не вызывается, строки в err нет. opts.bodyIdleMs (по умолчанию BODY_IDLE_MS); main.js не передаёт. Флаг over заменён снятием обработчиков (stop)."
+      },
+      {
+        "item": "F7",
+        "file": "tools/src/web/public/app.js",
+        "place": "refreshProject",
+        "what": "первый опрос экрана (адрес чата неизвестен): проект (и карточка — в refresh) сразу, чат после ответа проекта и только если он 200; следующие опросы: проект и чат через Promise.all вместе с карточкой; при 404 проекта ответ чата отбрасывается."
+      },
+      {
+        "item": "F8",
+        "file": "tools/src/web/public/app.js",
+        "place": "const DECIMAL, submitCreate",
+        "what": "после trim и замены запятой budget_usd = Number(text) только если text совпадает с /^[0-9]+(\\.[0-9]+)?$/, иначе null."
+      },
+      {
+        "item": "F9",
+        "file": "tools/src/web/public/app.js",
+        "place": "app, setConnection",
+        "what": "поле app.link и присваивание убраны; комментарий: состояние связи только в разметке блока."
+      },
+      {
+        "item": "F10",
+        "file": "tools/src/web/public/app.js",
+        "place": "poll",
+        "what": "catch опроса ставит setConnection(\"down\") для того же поколения; finally по-прежнему ставит следующий опрос."
+      }
+    ],
+    "self_check": [
+      "Падающей команды до правки у замечаний нет (это несоответствия проекту r3, видны чтением кода); проверка после правки — проба ниже.",
+      "Проба (scripted, engine-basic, временные HOME и SAI_TEAM_HOME в scratchpad вне Sai, порт 4799; удалены после): POST /api/projects → 201 started: true; GET проекта (done) results = t-0001-1-input.md/t-0001/роль 3, t-0001-1-report.md/t-0001/3, t-0002-1-input.md/t-0002/6, t-0002-1-report.md/t-0002/6 — файлов r-…-plan-input.md и r-…-goal-input.md нет; POST чата → 200, message.truncated: false.",
+      "Проба S-1 (сырой сокет: заголовки и часть тела, ещё часть через 5 с, дальше тишина): соединение закрыто через 20 с (5 + 15 — отсчёт сбрасывается на части); ответ «HTTP/1.1 408 Request Timeout», Content-Type: application/json; charset=utf-8, Connection: close, тело {\"error_text\":\"Что-то пошло не так. Повторите позже\",\"field\":null,\"reload\":false}; журнал проекта 45 строк до и после; в stderr сервера только строка о правах папки (от запуска), строк об ошибке нет; следующий GET /api/projects → 200.",
+      "chatFailure (импорт): E_CHANNEL_STALE → 504 «Сообщение не подтверждено, проверьте чат через несколько секунд»; E_USAGE → 400 «Запрос не понят. Обновите страницу»; E_CORRUPT → 500 «Данные проекта повреждены — проект нельзя показать»; E_NOT_FOUND → 404; ctx.warn не вызван ни разу.",
+      "DECIMAL: «5», «5.5» — true; «0x10», «1e2», «+5», «.5», «5.», «0b11» — false.",
+      "Кириллица в public/app.js (grep -P '[\\x{0400}-\\x{04FF}]') — пусто. Сервер остановлен SIGINT, pgrep — процесса нет.",
+      "cd tools && npm run check: prettier — «All matched files use Prettier code style!», eslint — без вывода, traces — «файлов проверено 866, следов 0, пропущено 18»; test — «# tests 996, # pass 994, # fail 2»: not ok 922 TR-4b (web/public/app.js нет в NETWORK_FILES) и not ok 925 TR-4e (web/public/app.js 1 !== 0) — ожидаемый провал п. 17 проекта, вносит TEST-DESIGNER на шаге 5; других падений нет. Код выхода 1 только из-за них.",
+      "cd tools && npm run traces — код 0."
+    ],
+    "issues": [
+      {
+        "kind": "note",
+        "text": "F2, F5, F11 — кода не требуют (принято в r3: форма метки, m×k ≤ 0 уже в display.js, строка «Не удалось запустить сервер» в п. 2). main.js не менялся. F3 — README:395 не менялся; ссылку http://127.0.0.1:4781/ вернуть после сужения ST-06 на шаге 5 (отдельным заданием)."
+      },
+      {
+        "kind": "tests",
+        "text": "Для TEST-DESIGNER (шаг 5): новое поведение по r3 — WEB-4f (results только с задачей; на engine-basic 4 из 6 файлов), WEB-5e (ChatMessage.truncated), WEB-10e (408 через opts.bodyIdleMs), WEB-10f (chatFailure экспортирован: E_CHANNEL_STALE/E_USAGE/E_CORRUPT). Существующих тестов на изменённое поведение в tools/test/ нет (тестов team-web ещё нет)."
+      },
+      {
+        "kind": "note",
+        "text": "app.js, (6) результат: защитная ветка «только имя, если нет link или role» оставлена (по заданию правится только комментарий); при контракте r3 сервер такие строки не шлёт. Если REVIEWER сочтёт её мёртвым кодом — убрать отдельным пунктом."
+      },
+      {
+        "kind": "deviation",
+        "text": "S-1: после 408 сервер сам закрывает сокет по событию finish ответа (req.socket.end()) в дополнение к Connection: close — чтобы соединение не оставалось открытым, пока клиент шлёт остаток тела; проект говорит «соединение закрывается после отправки ответа» — это его исполнение. Таймер с unref(), чтобы не держать процесс при остановке."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/web/display.js",
+      "tools/src/web/api.js",
+      "tools/src/web/config.js",
+      "tools/src/web/server.js",
+      "tools/src/web/public/app.js",
+      "handoffs/PROD-20261010-01/step-09-code-fixer.json"
+    ]
+  }
+}

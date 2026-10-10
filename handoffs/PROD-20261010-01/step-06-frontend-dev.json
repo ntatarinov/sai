@@ -1,0 +1,122 @@
+{
+  "handoff_id": "step06-frontend-dev-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/PROD-20261010-01/step-06-frontend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": ["REQ-011"],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/web/public/index.html (замена заглушки BACKEND-DEV)",
+      "tools/src/web/public/app.js (новый)",
+      "tools/src/web/public/style.css (новый)",
+      "tools/eslint.config.js (блок src/web/public/**/*.js с globals.browser)",
+      "handoffs/PROD-20261010-01/step-06-frontend-dev.json"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого (BACKEND-DEV закончил, шаг 05 COMPLETED)",
+    "artifacts_in": [
+      "docs/design/REQ-011-ui.md (r2)",
+      "docs/design/REQ-011-team-web.md (r2: п. 4.3, 5.2–5.7, 6.2, 6.3, 9, 12, 13)",
+      "decisions/0024-team-web-location.md",
+      "decisions/0025-team-web-server.md",
+      "handoffs/PROD-20261010-01/step-05-backend-dev.json",
+      "tools/src/web/*.js",
+      "docs/quality-bar.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02/WF-04, шаг 2: страница REQ-011 в tools/src/web/public/ (index.html, app.js, style.css) по описанию интерфейса r2 и контракту п. 5; блок eslint.config.js; тесты не писать (шаг 5); npm run check — допустимы только TR-4b/TR-4e из-за app.js; npm run traces — код 0; проба на временном сервере scripted.",
+    "acceptance_criteria": [
+      "ровно одна метка <meta name=\"sai-page\">; постоянные подписи только в HTML, в JS нет кириллицы; данные только через textContent",
+      "POST с Content-Type: application/json и X-Sai-Page из метки; REFRESH_MS = 5000 от начала прошлого опроса; адреса только из Link.api",
+      "тексты отказов из Failure.error_text; reload, started:false, broken, pause_text, tail_text обработаны",
+      "результат без задачи показывается файлом без ссылок",
+      "npm run check с настоящим выводом; отступления названы"
+    ]
+  },
+  "created_at": "2026-10-10T12:12:00Z",
+  "started_at": "2026-10-10T12:12:00Z",
+  "completed_at": "2026-10-10T12:27:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Страница Sai Team построена по описанию интерфейса r2 и контракту п. 5 проекта сервера r2. index.html — все постоянные подписи, шаблоны строк (<template>), ровно одна метка <meta name=\"sai-page\" content=\"\" /> (в форме, которую оставляет prettier; сервер принимает её, отступление BACKEND-DEV). app.js — один модуль без зависимостей: единственный fetch( внутри request(path, init), const REFRESH_MS = 5000;, опрос от начала прошлого и не раньше всех ответов, смена экрана — сразу; адреса только по двум правилам п. 5.2 ('#'+api.slice(4), '/api'+hash.slice(1)); все данные через textContent/setAttribute, кириллицы нет; обновление по ключам без перерисовки неизменного. style.css — цвета, шрифты, размеры образца в rem, корень clamp(16px, min(100vw/120, 100vh/67.5), 24px); широкая раскладка от 1240×640, одна колонка ниже, телефон ниже 600.",
+    "files": [
+      "tools/src/web/public/index.html (заменён)",
+      "tools/src/web/public/app.js (новый)",
+      "tools/src/web/public/style.css (новый)",
+      "tools/eslint.config.js (изменён)"
+    ],
+    "changes": [
+      {
+        "file": "tools/src/web/public/index.html",
+        "what": "шапка (Sai Team, блок связи с тремя состояниями и «обновление раз в 5 секунд», «← Проекты»), noscript, полоса ошибки; экран списка (панель «Проекты», форма «Новый проект» с двумя полями, счётчиком, кнопкой «Создать проект»/«Создаётся…», строкой итога, ссылкой «Открыть проект», кнопкой «Обновить страницу»); экран проекта (заголовок со строками паузы и недописанной записи, шесть ответов, «Все задачи», чат со счётчиком, подсказкой Ctrl+Enter, «Новые сообщения: N ↓»); экран «Не найдено»; карточки задачи, исполнителя и «не найдено» поверх страницы; шаблоны строк. Ни одного «%», ни слов списка критерия 7 (проверено скриптом по правилу п. 6.3)",
+        "design": "описание п. 0.4, 0.5, 2–8, 9.4, 9.5; проект п. 4.3, 6.3"
+      },
+      {
+        "file": "tools/src/web/public/app.js",
+        "what": "request/post (Content-Type: application/json, X-Sai-Page из метки, читается один раз при старте); readRoute по п. 5.2; poll/refresh (REFRESH_MS, поколение опроса отбрасывает ответы старого экрана); classify: нет ответа или неразборчивый ответ — «Нет связи», 404 — «не найдено», иной отказ — полоса ошибки с error_text при «На связи»; список (broken — карточка без ссылки с id и problem_text), форма (201 started:true — переход по project.link; started:false — result_text цветом предупреждения и ссылка «Открыть проект», поля очищены; отказ — error_text, поле из field помечено aria-invalid и получает фокус, текст остаётся; reload:true — кнопка «Обновить страницу» → location.reload(); нет связи — подпись из HTML); проект (шесть ответов, пределы 5 и 10 с «и ещё N», выделение карточек (4) и (5), «Перейти к вопросам» к сообщению chat_n первого вопроса или в конец чата); результат без задачи (link/role = null) — только имя файла без строки ссылок; чат (дно ±24 px, кнопка новых сообщений, Ctrl/Cmd+Enter, «Отправляется…», 504 — цвет предупреждения, Sent.message сразу в список); карточки (Esc, ×, щелчок по затемнению → project.link, фокус на × и обратно на открывшую ссылку, Tab внутри, inert под карточкой); перестановка формы и чата для узкой раскладки, чтобы порядок Tab шёл как на экране",
+        "design": "описание п. 1.1, 2.1, 3–8, 9.1–9.5; проект п. 4.3, 5.2, 5.3, 5.5, 5.7, 9, 12, 13"
+      },
+      {
+        "file": "tools/src/web/public/style.css",
+        "what": "токены цветов образца, метки статусов по data-status (код только для цвета), пометки, полоса хода на <progress> (ширина без атрибута style, имя и aria-valuetext — progress_text), панели, карточки, чат, карточки поверх страницы, полоса ошибки; @media (min-width:1240px) and (min-height:640px) — страница не прокручивается, панели листаются внутри; ниже — одна колонка, чат 30rem; ответы: 3 колонки от 1700, 2 от 600, 1 ниже; ниже 600 — поля 8 px, кнопки ≥ 44 px, карточка во весь экран",
+        "design": "описание п. 1.0, 1.3–1.6, 9.1–9.3, 10, 11"
+      },
+      {
+        "file": "tools/eslint.config.js",
+        "what": "блок files: [\"src/web/public/**/*.js\"] с globals.browser, как у Pixel Office",
+        "design": "проект п. 1.2"
+      }
+    ],
+    "self_check": [
+      "Свои файлы: npx prettier --write src/web/public/ eslint.config.js; npx eslint --max-warnings 0 src/web/public eslint.config.js — без вывода.",
+      "Кириллица в app.js: grep -P '[\\x{0400}-\\x{04FF}]' — пусто. innerHTML|outerHTML|insertAdjacentHTML|document.write в public/ — пусто. http(s):// в public/ — пусто. fetch( в app.js — ровно 1. const REFRESH_MS = 5000; — строка 14. Метка sai-page в index.html — одна (строка 12). «%» в index.html — 0.",
+      "Видимый текст index.html по правилу п. 6.3 (текст между тегами без script/style/комментариев + title/alt/placeholder/aria-label/label/value) против слов критерия 7, кодов статусов, 10 кодов ROLE_CODES, E_… и «%»: hits [] percent false E_ false.",
+      "Поиск секретов (sk-, api key, secret, password, token, bearer, PRIVATE KEY) по public/: совпадения только «sk-» внутри «task-» (имена классов и id) — секретов нет. skip/eslint-disable/|| true — нет.",
+      "Проба вживую (браузер не запускался): сервер `env -i HOME=<врем.> SAI_TEAM_HOME=<врем.> node src/web/main.js --port 0 --executor scripted --scenario test/fixtures/team/engine-basic.json` во временной папке вне проекта; app.js исполнен в node против настоящего index.html с этого сервера на маленькой самописной модели DOM (только в рабочей папке сессии, в Sai не попадает). Итог: метка с ключом 64 hex; app.js — text/javascript, style.css — text/css; список пуст → «Проектов пока нет…», связь «На связи», опрос GET /api/projects; форма: цель «Вымышленная цель <script>alert(1)</script>», потолок «2,5» → POST, переход на #/projects/p-…; заголовок — цель буквально как текст, статус «выполнен», «2 из 2 задач», полоса 2/2 с именем «2 из 2 задач», «создан 10.10.2026, 17:22», пометка «тестовый исполнитель»; пять фраз «что происходит», «Сейчас никто не занят», срок «выполнен», «Проблем нет», «Ничего не нужно»; результаты — 6 файлов, у двух файлов без задачи строка ссылок скрыта; «Все задачи» — 2 строки со ссылками #/projects/…/tasks/t-000N; чат: «Отправлено» (зелёный), поле очищено, сообщение «Привет <b>команда</b>» видно текстом; 4001 знак — счётчик красный, «Сообщение длиннее 4000 знаков — сократите его», aria-invalid, текст на месте, фокус в поле; ключ правильного вида не этого запуска — чат и форма: текст staleKey и кнопка «Обновить страницу», текст в поле остался, нажатие → location.reload(); карточка задачи: ×-фокус, страница inert, «Готово, когда», исполнитель → #/…/roles/3, файлы задачи, «Открыть проект»; карточка исполнителя — название, описание, 1 задача; закрытие → #/projects/p-…, фокус вернулся на ссылку задачи; несуществующий проект → экран «Не найдено»; форма: «   » → «Напишите цель одной фразой» (фокус и aria-invalid у цели, текст остался), потолок 0 → текст потолка у поля потолка; узкая раскладка — форма первой, чат перед «Все задачи»; за 10,2 с — 2 опроса (раз в 5 с). Остановка сервера SIGINT во время работы страницы: через 5 с блок связи «Нет связи с сервером Sai», карточки остались, создание → подпись «Нет связи… Проект не создан…», текст цели на месте. pgrep после пробы — процесса нет. Рабочие папки владельца (~/.sai-team, ~/.sai-pixel-office) не тронуты: HOME и SAI_TEAM_HOME — временные.",
+      "cd tools && npm run check (в своём ходе): prettier — All matched files use Prettier code style!; eslint --max-warnings 0 — без вывода; traces: файлов проверено 863, следов 0, пропущено 18; # tests 996, # pass 994, # fail 2, # cancelled 0, # skipped 0, # todo 0; код выхода 1. Упали ровно: not ok 922 - TR-4b (actual + 'web/public/app.js' сверх NETWORK_FILES) и not ok 925 - TR-4e (web/public/app.js: expected 0 fetch(, actual 1). Оба вызваны появлением fetch( в app.js — названный ожидаемый провал F-8, проект п. 17.4.",
+      "cd tools && npm run traces — код 0 (файлов проверено 863, следов 0, пропущено 18)."
+    ],
+    "issues": [
+      {
+        "kind": "expected-failure",
+        "text": "TR-4b и TR-4e (tools/test/traces-runtime.test.js) падают из-за единственного fetch( в tools/src/web/public/app.js. Это ожидаемый провал шагов 2–5 (проект r2 п. 17.4, F-8; п. 1.2 и 12): TEST-DESIGNER на шаге 5 вносит 'web/public/app.js' в NETWORK_FILES (TR-4b) и правило одного fetch( для web/public/app.js в TR-4e. Новое ожидаемое поведение: в app.js ровно один fetch( — строка `res = await window.fetch(path, {` внутри `async function request(path, init)`; других fetch( в public/ нет; постоянный путь — `const API_PROJECTS = \"/api/projects\";`, остальные пути — из Link.api ответов. Задание ORCH называло допустимым только TR-4e; TR-4b падает по той же причине (проект п. 17.4 называет оба), обойти его без нарушения п. 12 (ровно один fetch( в request) нельзя."
+      },
+      {
+        "kind": "deviation",
+        "text": "Метка ключа записана как <meta name=\"sai-page\" content=\"\" /> — в форме, которую оставляет prettier (часть npm run check); сервер BACKEND-DEV принимает обе формы (его отступление в step-05). Ключ читается через meta[name=\"sai-page\"] один раз при старте страницы."
+      },
+      {
+        "kind": "deviation",
+        "text": "Метка «сообщение сокращено» окрашивается приглушённым цветом без сравнения со словом (в JS нет кириллицы): по порядку п. 5.5 метки идут «вопрос» (если question), «ждёт ответа» (если open), «сообщение сокращено»; метка с номером не меньше (question?1:0)+(open?1:0) считается этой. Если сервер изменит порядок labels_text, цвет разойдётся — тогда нужен признак truncated в ChatMessage (вопрос CODE-DESIGNER)."
+      },
+      {
+        "kind": "deviation",
+        "text": "Ввод потолка: поле type=text inputmode=decimal; запятая заменяется на точку, строка превращается в число Number(); неверная строка уходит как null (JSON NaN) — правило проверяет сервер (описание п. 4.1: страница сама не проверяет). Высота полей ввода растёт по содержимому через CSS field-sizing: content (в браузерах без него поле прокручивается внутри при rows=4/3)."
+      },
+      {
+        "kind": "deviation",
+        "text": "Для узкой раскладки форма «Новый проект» и панель чата переставляются в разметке (matchMedia той же границы 1240×640), чтобы порядок Tab совпадал с порядком на экране (описание п. 9.4); при смене раскладки список чата встаёт к низу. При переходе на другой проект поле сообщения чата очищается — чтобы текст для одного проекта не ушёл в другой."
+      },
+      {
+        "kind": "note",
+        "text": "Проверка вида глазами (снимки 1470×784, 375×812, сравнение с образцом) не делалась: настоящий браузер по заданию не запускался. Это шаг DESIGN-QA-VALIDATOR (WF-04 шаг 4 / WF-02 шаг 7)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/web/public/index.html",
+      "tools/src/web/public/app.js",
+      "tools/src/web/public/style.css",
+      "tools/eslint.config.js",
+      "handoffs/PROD-20261010-01/step-06-frontend-dev.json"
+    ]
+  }
+}

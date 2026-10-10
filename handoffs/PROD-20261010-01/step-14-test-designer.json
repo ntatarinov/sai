@@ -1,0 +1,60 @@
+{
+ "handoff_id": "step14-test-designer-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-02",
+ "step": "14",
+ "from_agent": "ORCH",
+ "to_agent": "TEST-DESIGNER",
+ "file": "handoffs/PROD-20261010-01/step-14-test-designer.json",
+ "status": "COMPLETED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": ["REQ-011"],
+  "agent_run_id": null,
+  "artifacts_in": [
+   "handoffs/PROD-20261010-01/step-13-test-design-validator.json (FAIL, F1–F5)",
+   "tools/test/team-web-guard.test.js, team-web-page.test.js, team-web-faults.test.js, team-web-create.test.js",
+   "tools/src/web/server.js, tools/src/web/public/app.js (только чтение)",
+   "docs/issues/ISS-0010, decisions/0025 (W9)"
+  ],
+  "write_set": ["tools/test/team-web-*.test.js", "tools/test/team-web-*.js (помощники)", "handoffs/PROD-20261010-01/step-14-test-designer.json"],
+  "note": "Доработка после FAIL шага 5b. Файл создан TEST-DESIGNER по прямому указанию ORCH в сообщении запуска (заранее не был создан); заголовок и context переписаны из сообщения. created_at и agent_run_id знает только ORCH."
+ },
+ "task": {
+  "description": "Закрыть замечания F1–F4 TEST-DESIGN-VALIDATOR (F5 — число тестов по факту): F1 — ключ, отличающийся только последним знаком, в WEB-9a/9g (мутант V05 должен умирать); F2 — WEB-P3 реально проверяет, что ответ чата при 404 проекта отбрасывается (V38 должен умирать); F3 — WEB-10a второй POST после сбоя диска ровно 409 с точным текстом и ссылкой на ISS-0010 / 0025 W9; F4 — WEB-3a выбирает проект с секретом по id ответа, а не dirs()[2]. Код src не трогать. npm run check дважды и npm run traces."
+ },
+ "created_at": null,
+ "started_at": null,
+ "completed_at": "2026-10-10T14:34:31Z",
+ "result": {
+  "status": "COMPLETED",
+  "summary": "Закрыты F1–F4, правка только по перечню замечаний; код src не тронут. F1: WEB-9a теперь шлёт три ключа верного вида, не равных ключу этого запуска, — отличающийся только первым, только 33-м (средним) и только последним (64-м) знаком — на оба POST (создание проекта и чат): каждый 403 с телом STALE (reload: true); после всех — снимок SAI_TEAM_HOME, хеш журнала и engines.calls неизменны (проверки были и остались после цикла). WEB-9g не менялся: там ключ другого запуска, а случай «хвост» закрыт в WEB-9a, где есть fixture с engines и снимком. F2: WEB-P3 после перехода в «не найдено» делает ещё два опроса, на которых чат реально запрашивается (проверено по page.calls): (1) чат отвечает 500 с error_text — строка ошибок скрыта, текста отказа в ней нет, экран «не найдено»; (2) чат отвечает 200 с новым сообщением — текст chat-list байт в байт прежний, нового сообщения нет. F3: WEB-10a — второй POST после EIO: ровно 409 и тело целиком {error_text: «Сообщение не отправлено, повторите через несколько секунд», field: null, reload: false}; комментарий: это наблюдаемое поведение известного дефекта docs/issues/ISS-0010 (принятый риск decisions/0025, W9), ожидание менять вместе с исправлением дефекта. F4: WEB-3a запоминает id из ответа 201 для цели с секретом; проверка читает events.jsonl именно этого проекта (и удостоверяется, что это тот журнал — в нём «Цель с ключом»), SECRET в нём нет. F5: тестов team-web — 94 (по факту: node --test test/team-web-*.test.js → # tests 94); новых тестов не добавлено, расширены существующие; всего в npm run check — 1090.",
+  "changes": [
+   {"file": "tools/test/team-web-guard.test.js", "finding": "F1", "what": "WEB-9a: вместо одного ключа с изменённым первым знаком (только чат) — три ключа (первый / средний / последний знак) × два POST, каждый 403 + STALE; проверки неизменности снимка, журнала и engines.calls — после цикла."},
+   {"file": "tools/test/team-web-page.test.js", "finding": "F2", "what": "WEB-P3: ответ чата сделан изменяемым; после 404 проекта — опрос с отказом чата 500 (строка ошибок скрыта) и опрос с новым сообщением (chat-list неизменен); на обоих проверено, что чат был запрошен."},
+   {"file": "tools/test/team-web-faults.test.js", "finding": "F3", "what": "WEB-10a: дизъюнкция [200, 409] заменена на assert.equal(409) и deepStrictEqual тела; комментарий со ссылкой на ISS-0010 и 0025 W9."},
+   {"file": "tools/test/team-web-create.test.js", "finding": "F4", "what": "WEB-3a: secretId из ответа 201; чтение журнала этого проекта вместо dirs(box.home)[2]."}
+  ],
+  "self_check": [
+   {"command": "дерево репозитория до работы (find без .git и node_modules | shasum)", "output": "снято после правок тестов перед копией: 1d49509c…5668; мутанты применялись только в копии $SCRATCH/mut/sai (rsync без .git и node_modules, npm ci); после проб diff -rq src копии и репозитория — пусто"},
+   {"command": "мутант V05 на копии: в src/web/server.js `!crypto.timingSafeEqual(Buffer.from(given, \"utf8\"), keyBytes)` → `given.slice(0, 8) !== keyBytes.toString(\"utf8\").slice(0, 8)`; node --test --test-timeout=90000 test/team-web-guard.test.js", "output": "УБИТ: # tests 7 # pass 6 # fail 1 — not ok WEB-9a (expected: 403, actual: 201); после восстановления файла: # pass 7 # fail 0"},
+   {"command": "мутант V38 на копии: в src/web/public/app.js убрана строка `if (kind === \"notfound\") return;` в refreshProject; node --test --test-timeout=90000 test/team-web-*.test.js", "output": "УБИТ: # tests 94 # pass 93 # fail 1 — not ok WEB-P3 (строка ошибок видна: expected: false, actual: true); после восстановления: team-web-page # pass 12 # fail 0"},
+   {"command": "cd tools && npm run check (1-й, 14:31:35–14:32:49Z)", "output": "All matched files use Prettier code style!; eslint --max-warnings 0 — чисто; traces: файлов проверено 888, следов 0, пропущено 18; # tests 1090 # pass 1090 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 69119; exit=0"},
+   {"command": "cd tools && npm run check (2-й, 14:32:54–14:34:09Z)", "output": "то же; # tests 1090 # pass 1090 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 69832; exit=0"},
+   {"command": "cd tools && npm run traces", "output": "traces: файлов проверено 888, следов 0, пропущено 18; exit=0"},
+   {"command": "node --test test/team-web-*.test.js", "output": "# tests 94 # pass 94"},
+   {"command": "grep -nE \"\\.skip|skip:|\\.todo|todo:|\\.only|eslint-disable|\\|\\| true\" test/team-web-*", "output": "пусто"}
+  ],
+  "issues": [
+   {"kind": "note", "text": "F5: в step-12 указано 93 теста, фактически 94 (подтверждено здесь); step-12 не правился — вне write_set этого шага."},
+   {"kind": "note", "text": "WEB-10a теперь закрепляет поведение дефекта ISS-0010 (409 до перезапуска сервера). Исправление ISS-0010 обязательно уронит этот тест — так и задумано; ожидание менять вместе с исправлением. Вопрос validator-а о праве ORCH принимать риск 0025 W9 (планка §1.3) остаётся за ORCH/владельцем."},
+   {"kind": "routing", "text": "Повторный шаг 5b (TEST-DESIGN-VALIDATOR): мутанты V05 и V38 проверить своими запусками."}
+  ],
+  "artifacts_out": [
+   "tools/test/team-web-guard.test.js",
+   "tools/test/team-web-page.test.js",
+   "tools/test/team-web-faults.test.js",
+   "tools/test/team-web-create.test.js"
+  ]
+ }
+}

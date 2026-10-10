@@ -1,0 +1,184 @@
+{
+  "handoff_id": "step08-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "08",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-08-reviewer.json",
+  "status": "FAILED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": ["REQ-011"],
+    "agent_run_id": null,
+    "write_set": [
+      "handoffs/PROD-20261010-01/step-08-reviewer.json"
+    ],
+    "before_copy": "нет (новые файлы tools/src/web/; изменённые — по git diff)",
+    "parallel_work_now": "никого (SECURITY-REVIEWER, шаг 07, — PASS 2026-10-10T12:32:40Z)",
+    "artifacts_in": [
+      "docs/design/REQ-011-team-web.md (r2)",
+      "docs/design/REQ-011-ui.md (r2)",
+      "decisions/0024-team-web-location.md",
+      "decisions/0025-team-web-server.md",
+      "docs/requirements.yaml (REQ-011)",
+      "docs/anti-patterns.md",
+      "docs/quality-bar.md",
+      "handoffs/PROD-20261010-01/step-05-backend-dev.json",
+      "handoffs/PROD-20261010-01/step-06-frontend-dev.json",
+      "handoffs/PROD-20261010-01/step-07-security-reviewer.json",
+      "tools/src/web/*.js, tools/src/web/public/*, tools/package.json, tools/eslint.config.js, tools/test/traces-runtime.test.js, tools/README.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью кода REQ-011 против проекта r2, описания интерфейса r2, решений 0024, 0025, критериев REQ-011 и журнала ошибок; костыли, расхождения, лишняя работа, мёртвый код, границы REQ-009/REQ-013/REQ-014, один механизм в соседних местах, эрозия планки; оценить каждое отступление step-05/step-06, для «метка сокращено по месту в labels_text» и «файл результата без задачи» — конкретное предложение. Падения TR-4b и TR-4e на этом шаге ожидаемы (проект п. 17.4). Код не править.",
+    "acceptance_criteria": [
+      "verdict PASS или FAIL",
+      "замечания с файлом и строкой, блокирующие отделены",
+      "каждое отступление step-05/step-06 оценено"
+    ]
+  },
+  "created_at": "2026-10-10T12:33:00Z",
+  "started_at": "2026-10-10T12:33:00Z",
+  "completed_at": "2026-10-10T12:33:31Z",
+  "result": {
+    "status": "FAILED",
+    "verdict": "FAIL",
+    "summary": "Код сервера и страницы прочитан целиком (7 модулей tools/src/web/, index.html, app.js, style.css — по смыслу, без проверки вида) и сверен с проектом r2, описанием r2, 0024, 0025 и критериями REQ-011. (1) Причина, а не симптом: ошибки ядра переводятся по коду в тексты п. 10, необработанное — 500 с общим текстом и строкой в stderr, без проглатывания; стек и message ядра на страницу не идут. (2) С записанным: порядок проверок п. 4.1, одинаковый 404 (8 путей — один хеш тела), JSON_TYPE и nosniff, 405 с Allow, 413 c field text, отказ устаревшего ключа reload:true, движки в процессе сервера (W1), файлы страницы из памяти (W6), номер роли (W5), срок по W4 — совпадают; запись только через createProject, engine.run и deliver (единственный импорт channel.js — api.js:10), сеть только server.js/app.js; tools/src/team и pixel-office не тронуты. Расхождение с контрактом: ResultRef с task = null — это не редкий край, как написал BACKEND-DEV, а обычный случай: движок пишет файлы проекта без задачи у каждого проекта (r-00001-plan-input.md, r-00006-goal-input.md на сценарии engine-basic), а п. 5.3/5.5 проекта и п. 5.8 описания знают только task: t-NNNN — блокирует до шага 5 (F1). (3) Лишнего почти нет: ветка «Не удалось запустить сервер (код)» в main.js сверх проекта (Low). (4) Планка держится: skip/todo/eslint-disable/|| true в изменённых файлах нет, команда проверки не изменена, NETWORK_FILES расширен, а не ослаблен. (5) Идиомы: обещания дожидаются, общего состояния между запросами нет, кроме карты движков; мёртвое поле app.link; молчаливый catch опроса. Отступления: метка ключа в форме prettier — принять, записать в r3; адрес в README без ссылки — принять временно, вернуть ссылку после сужения ST-06 (Low); «сообщение сокращено» по месту — принять (порядок закреплён п. 5.5), предложено поле truncated; ResultRef без задачи — код принять, контракт исправить (F1); m×k ≤ 0 — принять, записать в r3; stopAll сам вызывает requestStop — принять; потолок через Number() — Low (F8); перестановка панелей для порядка Tab и очистка поля чата при смене проекта — принять. TEST-DESIGNER стоит проверить особо: WEB-4 (6) на файлах без задачи (после r3), открытые вопросы и ChatMessage.open на одном расчёте, WEB-9b все 404 байт в байт, 413 до записи в канал, гонку «сообщение в момент завершения движка» (E_CHANNEL_TIMEOUT_GONE → 504), опрос app.js (REFRESH_MS и отсчёт от начала прошлого опроса).",
+    "findings": [
+      {
+        "id": "F1",
+        "location": "tools/src/web/display.js:266-288 (resultRef); docs/design/REQ-011-team-web.md:243, 328-332 (ResultRef.task: t-NNNN), 514; docs/design/REQ-011-ui.md:409-412 (п. 5.8); tools/src/web/public/app.js:694-696 (комментарий «decision of ORCH for this run»); handoffs/PROD-20261010-01/step-05-backend-dev.json, issues[2]",
+        "bar": "Q12 (проект), Q3 (факт в handoff-е), Q5",
+        "severity": "Medium",
+        "blocking": true,
+        "problem": "Код отдаёт файл без задачи как { name, task: null, task_text: null, role: null, link: null }, страница показывает только имя — поведение разумное. Но контракт п. 5.3/5.5 r2 и описание п. 5.8 его не знают (ResultRef.task — только t-NNNN, строка «задача: … · роль: …» всегда), а основание отступления в step-05 неверно: «Движок такой файл не пишет». Своя проба (scripted, engine-basic, временные SAI_TEAM_HOME и HOME): из 6 событий RESULT_FILE два с task: null — r-00001-plan-input.md и r-00006-goal-input.md, kind result. Значит это обычный вид страницы каждого проекта. TEST-DESIGNER на шаге 5 пишет тесты по контракту r2, и тест WEB-4 (6) либо разойдётся с кодом, либо не покроет этот случай. Комментарий в app.js ссылается на «решение ORCH для этого прогона», которого нет ни в decisions/, ни в проекте.",
+        "fix": "CODE-DESIGNER, проект r3 (кода не менять): п. 5.3 — ResultRef = { name, task: string | null, task_text: string | null, role: RoleRef | null, link: Link | null }; п. 5.5 — «все четыре поля null вместе ровно тогда, когда state.files[].task === null (файлы шагов проекта: вход плана, вход проверки цели)»; п. 7.1 (6) и п. 15 WEB-4 (6) — фикстура со сценарием, где есть файл без задачи: имена = state.files, у файлов без задачи четыре null, у остальных — задача и роль. GUI-DESIGN-ANALYST, описание r3 п. 5.8: «файл без задачи — только имя, без строки „задача · роль“». Затем CODE-FIXER: комментарий app.js:694-695 сослать на п. 5.5 проекта r3 вместо «decision of ORCH». Отдельный вопрос — в I2."
+      },
+      {
+        "id": "F2",
+        "location": "tools/src/web/server.js:46-50 (KEY_MARK); docs/design/REQ-011-team-web.md:161-163 (п. 4.3); tools/src/web/public/index.html:12",
+        "bar": "Q12 (проект)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Отступление BACKEND-DEV/FRONTEND-DEV: проект требует строку <meta name=\"sai-page\" content=\"\">, prettier переписывает её в «… content=\"\" />», сервер принимает обе формы (ровно одно вхождение). Отступление вынужденное и безопасное (проверка «ровно одна метка» сохранена, ключ 64 hex подставляется — проверено GET /). Принимается; проект об этом не говорит.",
+        "fix": "CODE-DESIGNER в r3, п. 4.3: «метка в форме, которую оставляет prettier: <meta name=\"sai-page\" content=\"\" />; сервер принимает и форму без „/“, ровно одно вхождение»."
+      },
+      {
+        "id": "F3",
+        "location": "tools/README.md:395; tools/test/pixel-office-settings.test.js:96-101 (ST-06)",
+        "bar": "Q12 (проект п. 14), Q6 (не обход)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Отступление BACKEND-DEV: вместо ссылки http://127.0.0.1:4781/ (проект п. 14) написано «`127.0.0.1:4781` (`Sai Team: http://` и этот адрес)» — потому что ST-06 требует, чтобы каждая строка http://127.0.0.1:<порт> во всём README имела порт Pixel Office. Это не ослабление проверки (ST-06 цел, свойство Pixel Office не нарушено, критерий 12 — «адрес» — выполнен), но читателю фраза неудобна, а проверка шире своего смысла.",
+        "fix": "Принять временно. TEST-DESIGNER на шаге 5: ограничить проверку портов ST-06 разделом «## Pixel Office» README (смысл теста сохраняется, проверка не слабеет); после этого CODE-FIXER возвращает в README:395 ссылку `http://127.0.0.1:4781/` по п. 14."
+      },
+      {
+        "id": "F4",
+        "location": "tools/src/web/public/app.js:810-826 (метка muted по месту); tools/src/web/display.js:344-350; docs/design/REQ-011-team-web.md:393; docs/design/REQ-011-ui.md:460, 638-639",
+        "bar": "Q12 (контракт)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Отступление FRONTEND-DEV: метка «сообщение сокращено» красится приглушённо по месту — метка с номером ≥ (question?1:0)+(open?1:0). Это опирается на записанный порядок labels_text п. 5.5 («в этом порядке»), поэтому сейчас верно; но связь скрытая: при новой метке или смене порядка цвет молча разойдётся, и ни один тест этого не поймает.",
+        "fix": "Принять. Предложение для r3: в ChatMessage служебное поле `truncated: bool` (= state.chat[].truncated === true; не (п), не показывается), display.js:344-371 ставит его рядом с question/open, sentMessage — из event.data.truncated; app.js красит приглушённо метку только при m.truncated === true и только последнюю (i === labels.length - 1); тест WEB-5e — сообщение с truncated даёт labels_text с «сообщение сокращено» и truncated: true."
+      },
+      {
+        "id": "F5",
+        "location": "tools/src/web/display.js:207; docs/design/REQ-011-team-web.md:524 (п. 7.2, шаг 5)",
+        "bar": "Q12 (проект)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Отступление BACKEND-DEV: «m × k ≤ 0 → срок пока не оценить» вместо «= 0». m < 0 возможно только при часах назад (USER/AGENT до 2 с раньше предыдущего события); «примерно через -N мин» было бы неправдой (R2). Принимается.",
+        "fix": "CODE-DESIGNER в r3, п. 7.2 шаг 5 и W4 п. 3 (запись 0025 — только если владелец записи сочтёт это изменением решения): «m × k ≤ 0»."
+      },
+      {
+        "id": "F6",
+        "location": "tools/src/web/api.js:222-247 (CHAT_REFUSALS, chatFailure); tools/src/team/engine/channel.js:532-536",
+        "bar": "Q10",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Код отказа ack E_CHANNEL_STALE после срока ожидания (channel.js:532: повтор только до deadline, дальше бросается) не в таблице и уходит в 500 «Что-то пошло не так» со строкой в stderr как внутренняя ошибка. В таблице есть E_USAGE и E_CORRUPT, которых нет в п. 10 проекта (разумные добавления, но не записаны).",
+        "fix": "CODE-DESIGNER в r3, п. 10: строку E_CHANNEL_STALE (504, «Сообщение не подтверждено, проверьте чат через несколько секунд») и строки E_USAGE (400 badRequest) и E_CORRUPT (500 corrupt) для чата; CODE-FIXER — E_CHANNEL_STALE в CHAT_REFUSALS."
+      },
+      {
+        "id": "F7",
+        "location": "tools/src/web/public/app.js:520-553 (refreshProject); docs/design/REQ-011-team-web.md:615-617 (п. 9)",
+        "bar": "Q12 (проект)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Неназванное отступление: п. 9 — «опрос — все запросы экрана сразу», а чат запрашивается только после ответа проекта, и в каждом опросе тоже (адрес чата уже известен с прошлого опроса). Период не нарушается (следующий опрос всё равно не раньше REFRESH_MS от начала), но при медленном сервере чат обновляется на время ответа проекта позже.",
+        "fix": "CODE-FIXER: когда app.chatApi уже известен, запрашивать проект и чат параллельно (Promise.all); последовательно — только на первом опросе экрана, когда адрес чата ещё не пришёл. Либо CODE-DESIGNER в r3 п. 9 записывает это исключение."
+      },
+      {
+        "id": "F8",
+        "location": "tools/src/web/public/app.js:473-477 (submitCreate, Number(budgetText))",
+        "bar": "Q12 (п. 8.1, WEB-3c — одно правило со strings CLI)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Отступление FRONTEND-DEV «потолок через Number()»: Number принимает «0x10» (16), «0b11», «1e2», «  » уже отрезано trim — страница молча превращает в число то, что человек не писал как десятичное, и что команда new (строка) отклонила бы. Сервер такие числа пропустит.",
+        "fix": "CODE-FIXER: после замены запятой отправлять Number(text) только если text совпадает с /^[0-9]+(\\.[0-9]+)?$/, иначе null (сервер ответит текстом потолка с field budget_usd)."
+      },
+      {
+        "id": "F9",
+        "location": "tools/src/web/public/app.js:213, 317 (app.link)",
+        "bar": "качество кода",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Мёртвое состояние: app.link пишется в setConnection и нигде не читается (состояние связи показывает data-state блока).",
+        "fix": "CODE-FIXER: убрать поле app.link и присваивание."
+      },
+      {
+        "id": "F10",
+        "location": "tools/src/web/public/app.js:261-262 (refresh(gen).catch(() => {}))",
+        "bar": "Q10 (ошибка не глотается молча)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Неожиданное исключение опроса проглатывается без следа: блок связи остаётся в прежнем состоянии («На связи»), хотя экран не обновился. Отрисовка обёрнута в safely(), поэтому сейчас путь почти недостижим — но если он сработает, страница соврёт о связи (R2-смысл: «На связи», а данные стоят).",
+        "fix": "CODE-FIXER: в catch ставить setConnection(\"down\") (поколение то же), а не пустой обработчик."
+      },
+      {
+        "id": "F11",
+        "location": "tools/src/web/main.js:155-158",
+        "bar": "лишняя работа (AP-019 по смыслу), Q12",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Ветка «Не удалось запустить сервер (<код ОС>)» сверх таблицы п. 2 (там только «порт занят»); без неё ошибка ушла бы в main → formatError, код 1 — тот же итог. Код ОС (EACCES и т. п.) печатается в терминал.",
+        "fix": "Либо убрать ветку (итог тот же), либо CODE-DESIGNER записывает её в п. 2 шаг 5. Не блокирует."
+      }
+    ],
+    "self_check": [
+      "Прочитано целиком: tools/src/web/{config,texts,display,engines,api,server,main}.js, public/app.js; index.html и style.css — по grep (sai-page, style=, <script>, %); git diff tools/package.json, tools/eslint.config.js, tools/test/traces-runtime.test.js, tools/README.md.",
+      "cd tools && npm run check -> код 1; All matched files use Prettier code style!; eslint без вывода; traces: файлов проверено 864, следов 0, пропущено 18; # tests 996, # pass 994, # fail 2, # skipped 0, # todo 0; упали ровно not ok 922 - TR-4b (web/public/app.js сверх NETWORK_FILES) и not ok 925 - TR-4e (fetch( в web/public/app.js) — названный ожидаемый провал п. 17.4 (F-8), оба из-за одного fetch( в app.js:40.",
+      "Эрозия: grep -rnE \"\\.skip\\(|\\.todo\\(|todo|TODO|FIXME|eslint-disable|\\|\\| true\" по изменённым файлам -> одно совпадение tools/README.md:15 (старая строка о запрете skip/todo, не из этой работы); скрипт check в package.json не изменён (\"npm run format:check && npm run lint && npm run traces && npm run test\"); diff traces-runtime — только + \"web/server.js\" в NETWORK_FILES.",
+      "Границы п. 11/12: appendFile|writeFile|createWriteStream|openSync|rename в tools/src/web -> пусто; inbox -> пусто; channel -> только tools/src/web/api.js:10 (import deliver); node:http -> только server.js; node:(https|net|tls|dgram) в web -> пусто; node:(http|…)|fetch( в tools/src/team -> пусто; child_process в web -> пусто; innerHTML|outerHTML|insertAdjacentHTML|document.write в public -> пусто; fetch( в public -> одна строка app.js:40; http(s):// в public -> пусто; кириллица в app.js -> пусто; /Users/ и /home/ в web -> пусто; git status tools/src/team tools/src/pixel-office -> пусто.",
+      "Своя проба (env -i, временные SAI_TEAM_HOME и HOME в scratchpad, --port 0 --executor scripted --scenario test/fixtures/team/engine-basic.json): ссылка «Sai Team: http://127.0.0.1:49692/»; GET / -> 200, text/html, CSP, nosniff, ключ 64 hex; Host evil.test -> 403 «Запрос отклонён»; создание -> 201 started:true; 8 путей (..%2Fx, %2Fetc%2Fpasswd, несуществующий id, t-9999, роли 01 и 11, /nope.js, /api/x) -> одно и то же тело (shasum f21a5cf9830a у всех); тело чата 70 000 байт -> 413 field text; ключ правильного вида не этого запуска -> 403 reload:true; OPTIONS -> 405 Allow: GET, POST, JSON; чат «<b>x</b>» -> 200, текст тот же; results проекта: 6 файлов, у r-00001-plan-input.md и r-00006-goal-input.md task/task_text/role/link = null (journal: RESULT_FILE seq 6 и 40 с task null, kind result); SIGINT -> процесс завершился; stderr — одна строка предупреждения ядра о правах папки.",
+      "Ядро: schema.js:277-288 RESULT_FILE — task optional; reducer.js:386-400 — файл с task null попадает в state.files; schema.js:302 — роль задачи проверяется по ROLE_CODES (roleNo неизвестного кода невозможен — замечание SECURITY-REVIEWER снято); channel.js:532 — E_CHANNEL_STALE после срока бросается; errors.js:196 — E_CHANNEL_TIMEOUT_GONE даёт код E_CHANNEL_TIMEOUT (504).",
+      "Код во время проверки не менялся; процессы пробы остановлены."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "note",
+        "text": "Сводка по отступлениям step-05/step-06: принять — метка ключа в форме prettier (F2, записать в r3), README без ссылки (F3, временно), «сообщение сокращено» по месту (F4, предложено поле truncated), m×k ≤ 0 (F5), stopAll сам вызывает requestStop, Sent.message.open = false, тип цели не строка → badRequest field null, перестановка формы и чата для порядка Tab, очистка поля чата при смене проекта, field-sizing; принять код, исправить контракт — файл без задачи (F1, блокирует); требовать правки — потолок через Number() (F8, Low)."
+      },
+      {
+        "id": "I2",
+        "kind": "question",
+        "text": "Для ORCH/CODE-DESIGNER (вне REQ-011-кода): в «Результат» попадают входные файлы исполнителя (*-input.md, kind result: вход плана, вход задачи, вход проверки цели) — 3 из 6 файлов на engine-basic. Для владельца это не результаты работы. Проект п. 5.5 велит отдавать все state.files («ровно те же имена, что в состоянии»), критерий 4 (6) — «те же, что в состоянии». Решить в r3 или в REQ-015: показывать все или только не-входные (тогда нужно правило по kind/имени в ядре, а не в странице). Содержимое файлов страница не открывает (REQ-015), поэтому утечки промта сейчас нет."
+      },
+      {
+        "id": "I3",
+        "kind": "note",
+        "text": "Факт из step-05 «Движок такой файл не пишет» опровергнут своей пробой (F1) — пример §6 п. 2 quality-bar: факт отчёта проверяется до того, как на нём строить. ORCH построил на нём критерий задания step-06 («результат без задачи показывается файлом без ссылок») без записи в проект. Предлагаю DOC-UPDATER оценить запись в docs/anti-patterns.md (родственно AP-012)."
+      },
+      {
+        "id": "I4",
+        "kind": "AP-018",
+        "text": "Ожидаемый вердикт в задании не назван; названы только ожидаемые падения TR-4b/TR-4e — это записанный в проекте п. 17.4 провал, проверен своим прогоном."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

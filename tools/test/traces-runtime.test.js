@@ -13,6 +13,8 @@ const NETWORK_FILES = [
   "pixel-office/note.js",
   "pixel-office/server.js",
   "pixel-office/public/boot.js",
+  "web/server.js",
+  "web/public/app.js",
 ];
 const CHILD_PROCESS_FILES = [
   "team/executors/claude-cli.js",
@@ -250,16 +252,22 @@ test("TR-4d the addresses of NETWORK_FILES are 127.0.0.1, localhost or HOST of c
     const args = callArgs(hook, m.index + "post".length);
     assert.equal(args[1], "config.HOST");
   }
-  // (3) listen( of the server gets HOST.
-  const server = read("pixel-office/server.js");
-  const listens = [...server.matchAll(/\.listen\(/gu)].map((m) =>
-    callArgs(server, m.index + ".listen".length),
-  );
-  assert.ok(listens.length >= 1);
-  for (const args of listens) assert.equal(args[args.length - 1], "HOST");
+  // (3) listen( of each server gets HOST (Pixel Office and the business
+  // interface of Sai Team, design REQ-011, section 12).
+  for (const rel of ["pixel-office/server.js", "web/server.js"]) {
+    const server = read(rel);
+    const listens = [...server.matchAll(/\.listen\(/gu)].map((m) =>
+      callArgs(server, m.index + ".listen".length),
+    );
+    assert.ok(listens.length >= 1, rel);
+    for (const args of listens)
+      assert.equal(args[args.length - 1], "HOST", rel);
+  }
   // (4)
   const config = await import("../src/pixel-office/config.js");
   assert.equal(config.HOST, "127.0.0.1");
+  const web = await import("../src/web/config.js");
+  assert.equal(web.HOST, "127.0.0.1");
 });
 
 test("TR-4e the page fetches only its own server, by a relative address", () => {
@@ -270,6 +278,26 @@ test("TR-4e the page fetches only its own server, by a relative address", () => 
     if (rel === "pixel-office/public/boot.js") {
       assert.equal(fetches.length, 1);
       assert.match(body, /\(url, init\) => window\.fetch\(url, init\)/u);
+    } else if (rel === "web/public/app.js") {
+      // Design REQ-011, section 12: exactly one fetch(, inside request(path,
+      // init); every address constant is a relative /api path; no other way to
+      // reach the network.
+      assert.equal(fetches.length, 1, rel);
+      const start = body.indexOf("async function request(path, init) {");
+      assert.ok(start !== -1, rel);
+      const end = body.indexOf("\n}\n", start);
+      assert.ok(fetches[0].index > start && fetches[0].index < end, rel);
+      assert.match(body.slice(start, end), /window\.fetch\(path, \{/u);
+      const consts = [
+        ...body.matchAll(/const\s+(API_[A-Z_]+)\s*=\s*"([^"]*)"/gu),
+      ];
+      assert.ok(consts.length >= 1, rel);
+      for (const m of consts) assert.match(m[2], /^\/api(\/|$)/u, m[1]);
+      assert.doesNotMatch(
+        body,
+        /XMLHttpRequest|WebSocket|EventSource|sendBeacon|new URL\(|location\.origin|importScripts/u,
+        rel,
+      );
     } else {
       assert.equal(fetches.length, 0, rel);
     }

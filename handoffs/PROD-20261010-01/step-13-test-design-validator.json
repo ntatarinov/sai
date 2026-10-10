@@ -1,0 +1,105 @@
+{
+ "handoff_id": "step13-test-design-validator-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-02",
+ "step": "13",
+ "from_agent": "ORCH",
+ "to_agent": "TEST-DESIGN-VALIDATOR",
+ "file": "handoffs/PROD-20261010-01/step-13-test-design-validator.json",
+ "status": "FAILED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": ["REQ-011"],
+  "agent_run_id": null,
+  "artifacts_in": [
+   "tools/test/team-web-*.test.js (13 файлов), team-web-helpers.js, team-web-fixtures.js, team-web-dom.js",
+   "tools/test/traces-runtime.test.js (NETWORK_FILES, TR-4d, TR-4e), tools/test/pixel-office-settings.test.js (ST-06), tools/README.md",
+   "handoffs/PROD-20261010-01/step-12-test-designer.json",
+   "docs/design/REQ-011-team-web.md r3 (п. 15, 15.1)",
+   "docs/requirements.yaml (REQ-011, 15 критериев)",
+   "decisions/0025 (W9), docs/issues/ISS-0010"
+  ],
+  "write_set": ["handoffs/PROD-20261010-01/step-13-test-design-validator.json"],
+  "note": "Файл создан TEST-DESIGN-VALIDATOR по прямому указанию ORCH в сообщении запуска (заранее не был создан); заголовок и context переписаны из сообщения. created_at и agent_run_id знает только ORCH."
+ },
+ "task": {
+  "description": "WF-02, шаг 5b, REQ-011: проверить тесты TEST-DESIGNER своими запусками — покрытие 15 критериев (11 — вне автотеста), нет skip/todo/ослаблений, содержательные проверки, независимость (порядок, часы, порт, сон), неизменность при отказах; свои мутанты на копии вне репозитория (не меньше 15); модель DOM, устойчивость WEB-15, ST-06, TR-4b/4d/4e; решение по WEB-10a и I1; npm run check дважды и npm run traces; файлы репозитория не править."
+ },
+ "created_at": null,
+ "started_at": "2026-10-10T14:07:04Z",
+ "completed_at": "2026-10-10T14:28:13Z",
+ "result": {
+  "status": "FAILED",
+  "verdict": "FAIL",
+  "fail_points": ["3 — ловят ли тесты ошибку: свой мутант V05 (сравнение ключа страницы только по первым 8 знакам) выжил; ни один тест не шлёт ключ, отличающийся только в хвосте"],
+  "summary": "Своя таблица покрытия (от критериев REQ-011, прочитаны все 13 файлов и помощники): 1 — team-web-server WEB-1a (ссылка, только 127.0.0.1, ::1 и другие адреса — отказ соединения), WEB-1b (11 чужих Host × 5 путей + POST, тело без цели и id фикстуры, снимок неизменен); 2 — team-web-list WEB-2 (3 проекта через API ядра, status_text = вывод `npm run team -- project`, прогресс из replay, флаги только где нужно, «12%» в цели без изменений, нет % вне goal), WEB-2b; 3 — team-web-create WEB-3a…3g (края 1/2000 кодовых точек, маскирование, 27 неверных тел → 400 и снимок неизменен, claude-cli без REAL_RUNS → 400 и fakeStarts = 0); 4 — team-web-project WEB-4a…4g (каждое ожидаемое значение из replay/phrasesForJournal; пример 2/4/9 → 12 мин; медиана < 0; свойства на 500/300 состояниях с зерном); 5 — team-web-chat WEB-5a…5g (а)(б)(в), хеш журнала, <script> текстом, grep innerHTML; 6 — team-web-links WEB-6 (обход всех Link.api, карточка = каталог, чужие задачи 404, prompt/tools не встречаются); 7 — team-web-words WEB-7a…7d (все статусы проекта и задачи, >200 текстов, проверка самого детектора); 8 — team-web-live WEB-8a/8b/8c; 9 — team-web-guard WEB-9a…9g; 10 — team-web-faults WEB-10a…10f; 11 — честно вне автотеста: назван в проекте п. 15 и в handoff step-12 (I2 перечисляет, что модель DOM не покрывает), закрепляется DESIGN-QA-VALIDATOR (снимки 1470×784, 375×812) и BA-ANALYST/UAT-RUNNER; 12 — WEB-12 (+ npm ci на копии без node_modules: код 0); 13 — WEB-13a; 14 — WEB-14 и TR-4b/4d/4e; 15 — team-web-channel WEB-15 (а)…(д), гонка, WEB-15e. Пропусков нет: grep skip/todo/only/eslint-disable/|| true по тестам пуст; npm run check: # skipped 0, # todo 0. Тестов team-web — 94 (1090 − 996), а не 93, как в отчёте автора. Свои мутанты на копии вне репозитория ($SCRATCH/copy/sai, rsync без .git и node_modules, npm ci), прогон всех team-web-*.test.js + traces-runtime + pixel-office-settings с --test-timeout=90000, 39 мутантов: убиты 32 — V01 Host по префиксу (WEB-1b), V02 Origin по префиксу (WEB-9a), V03 Content-Type startsWith (WEB-9f), V04 нет проверки вида ключа (WEB-9a), V06 404 с лишним заголовком (WEB-9b), V07 404 задачи другим текстом (WEB-9b, WEB-6), V08 results без input-файлов задачи (WEB-4f ×2), V09 срок при одной готовой (WEB-4c, свойство), V10 последний TASK_STARTED (свойство WEB-4c), V11 interrupted не незавершённая (свойство), V12 Math.round (WEB-4c ×2), V13 конечный только done (WEB-4c ×2), V14 truncated у вопроса (WEB-5e), V15 sentMessage.truncated=false (WEB-5e, WEB-P12), V16 регулярка потолка /^[0-9]*(\\.[0-9]*)?$/ (WEB-P5), V17 без trim (WEB-P5), V20 E_CHANNEL_STALE → 409 (WEB-10f), V21 запись чата через openWriter().say вместо deliver (7: WEB-15 а/б/в/гонка, WEB-5b, WEB-5c, WEB-9d), V22 сообщение не из ack (WEB-15 а, WEB-5b, WEB-5c), V23 период от конца опроса (WEB-P1), V24 REFRESH_MS 5001 (6), V25 setText через innerHTML (11, в т.ч. WEB-5g), V26 текст сообщения без тегов без innerHTML (WEB-P9, WEB-P12), V27 node:net в display.js (TR-4b, WEB-14), V28 listen 0.0.0.0 (TR-4d, WEB-14, WEB-1a, WEB-1h ×2), V29 абсолютный адрес API (TR-4e, WEB-14 + 5 WEB-P), V30 EventSource на странице (TR-4e), V31 вопрос проекта без правила PROJECT_WAITING (WEB-4e), V32 README: порт Pixel Office 4782 в его разделе (ST-06), V33 лишние ключи тела чата (WEB-5f), V37 ошибка опроса проглочена (WEB-P4), V39 чат на первом опросе по угаданному адресу (WEB-P2, WEB-P3). Эквивалентные (не пробел тестов, доказано пробой): V18 408 без явного Connection: close, V19/V34/V35/V36 onIdle без stop() и/или без socket.end() — Node 22.21.1 сам ставит connection: close и закрывает соединение, когда ответ отдан до конца тела; проба на копии: во всех вариантах 408, connection: close, engines.calls 0, снимок неизменен. Выжили по-настоящему: V05 (ключ сравнивается по первым 8 знакам) — проба: ключ этого запуска с изменённым последним знаком на исходном коде → 403 reload:true, под мутантом → 201 и новая папка; V38 (ответ чата не отбрасывается при 404 проекта) — WEB-P3 обещает «answer of the chat is dropped», но не проверяет это (чат-ответ 200 на скрытом экране не виден; при ответе-ошибке он попал бы в строку ошибок). Модель DOM (team-web-dom.js) не подгоняет: грузит настоящий index.html и настоящий app.js в vm, подменяет только fetch/таймеры/location/matchMedia/Date.now; innerHTML не моделируется, поэтому V25 и V26 ею ловятся (WEB-P9: textContent ровно исходный, children 0); границы модели названы в I2 step-12. Независимость: каждый из 94 тестов отдельно по --test-name-pattern — 94/94 зелёные; файлы по одному — все зелёные; все файлы в обратном порядке с --test-concurrency=1 — 94/94; порты только 0 (4780/4781 не занимаются, s.port+1 — только в заголовках); часы — T0 в прошлом, генераторы с зерном (lcg 20261010, 42), Math.random нет; Date.now только для измерения окон WEB-15 (б)/гонка и WEB-10e. WEB-15 (б): 5 прогонов подряд 10 323–10 339 мс, под нагрузкой (3 прогона канала параллельно + весь team-web) 10 596–10 687 мс — окно 10–12 с держится с запасом ≈1,3 с; сон ноутбука во время этого теста его уронит — свойство критерия 15 (реальные 10 с ack), не дефект теста. Тесты отказа сверяют неизменность (снимок путей/хешей SAI_TEAM_HOME, хеш журнала, engines.calls, inbox/ байт в байт) — проверено чтением WEB-1b, 1g, 1h, 3b, 3d, 3e, 3g, 5d, 5f, 9a, 9b, 9f, 9g, 10a, 10d, 10e, 15(в). ST-06 не ослаблен: до работы единственная ссылка http://127.0.0.1:<порт> была в разделе «## Pixel Office» (git show HEAD:tools/README.md), сужение по п. 1.2 r3 ничего прежнего не теряет, V32 убит. TR-4b/4d/4e: diff — только добавления (web/server.js, web/public/app.js в NETWORK_FILES; listen( у обоих серверов; HOST web/config.js; правило TR-4e для app.js), прежние утверждения на месте; V27–V30 убиты. Решение по I1/WEB-10a: WEB-10a соответствует критерию 10 в его букве и в п. 15 проекта (сбой EIO → понятный текст без стека, журнал неизменен, следующий GET проекта и списка — 200). Сам дефект подтверждён пробой: после EIO четыре POST чата подряд за 4,5 с — 409 «повторите через несколько секунд» (неправда, ISS-0010, принятый риск 0025 W9); это дефект кода, а не теста. Но проверка второго POST `[200, 409].includes(...)` ничего не закрепляет — замечание F3. Свои прогоны: npm run check дважды — код 0 оба (# tests 1090, # pass 1090, # fail 0, # skipped 0, # todo 0; 71,5 с и 69,7 с); npm run traces — код 0. Рабочее дерево до и после совпало (905 файлов, один и тот же shasum списка хешей) — сверено до записи этого handoff-а, он единственный новый файл.",
+  "findings": [
+   {
+    "id": "F1",
+    "place": "tools/test/team-web-guard.test.js, WEB-9a (строки 92–101) и WEB-9g",
+    "severity": "Medium",
+    "what": "Нет случая «ключ верного вида, отличающийся от ключа этого запуска только в конце». Неверный ключ в WEB-9a отличается первым знаком, в WEB-9g и WEB-P12 — случайный или 'd'×64. Мутант V05 (сравнение только первых 8 знаков вместо timingSafeEqual по всем 64) выживает во всех 107 тестах; проба: под мутантом такой ключ создаёт проект (201), на исходном коде — 403 reload:true. Защита записи (критерий 9) по ключу проверена не полностью.",
+    "fix": "В WEB-9a (или WEB-9g) добавить ключ `key.slice(0, 63) + (key[63] === 'a' ? 'b' : 'a')` (и, по желанию, с изменённым средним знаком) для POST создания и POST чата: 403, тело = STALE (reload: true), снимок и хеш журнала неизменны, engines.calls пуст. Проверка: мутант V05 должен убиваться."
+   },
+   {
+    "id": "F2",
+    "place": "tools/test/team-web-page.test.js, WEB-P3 (строки 238–282)",
+    "severity": "Low",
+    "what": "Имя теста обещает «the answer of the chat is dropped», но после 404 проекта проверяется только видимость экранов. Мутант V38 (убрать `if (kind === \"notfound\") return;` в refreshProject) выживает: ответ чата всё равно разбирается.",
+    "fix": "На позднем опросе с 404 отдавать чат с отказом (например 500 с error_text) или новым сообщением и проверить, что строка ошибок скрыта / chat-list не изменился."
+   },
+   {
+    "id": "F3",
+    "place": "tools/test/team-web-faults.test.js, WEB-10a (строки 70–88)",
+    "severity": "Low",
+    "what": "Второй POST после EIO принимается как 200 или 409: дизъюнкция не закрепляет поведение, хотя оно детерминировано (проба: 409 четыре раза подряд). Исправление ISS-0010 или новая регрессия пройдут незамеченными. Критерию 10 тест при этом соответствует (следующий GET 200 проверен).",
+    "fix": "Закрепить наблюдаемое: `assert.equal(again.status, 409)` и точный текст с комментарием «ISS-0010, 0025 W9 — поменять вместе с исправлением дефекта»."
+   },
+   {
+    "id": "F4",
+    "place": "tools/test/team-web-create.test.js, WEB-3a, строка 82",
+    "severity": "Low",
+    "what": "`dirs(box.home)[2]` — проект с секретом выбирается по отсортированному случайному id, то есть в 3 из 4 случаев проверяется не тот проект: проверка почти пустая. Маскирование при этом закрыто строкой 74 (goal = maskSecrets(goal)).",
+    "fix": "Запоминать id ответа для цели с секретом и искать SECRET в его events.jsonl."
+   },
+   {
+    "id": "F5",
+    "place": "handoffs/PROD-20261010-01/step-12-test-designer.json, result.summary и changes[0]",
+    "severity": "Note",
+    "what": "Указано 93 теста, фактически 94 (по файлам: 6+8+10+3+10+7+2+4+3+12+14+10+5; 1090 − 996 = 94).",
+    "fix": "Исправить число при следующей правке отчёта."
+   }
+  ],
+  "self_check": [
+   {"command": "find . (без node_modules, .git) | shasum -a 256 — до работы и после", "output": "905 файлов; shasum списка 3e78515c13e22eec0373f93a25e6a0d8d2729918 до и после; diff пуст («tree identical»); сверено до записи этого handoff-а"},
+   {"command": "cd tools && npm run check (1-й, 14:07:36–14:08:53Z)", "output": "All matched files use Prettier code style!; traces: файлов проверено 887, следов 0, пропущено 18; # tests 1090 # pass 1090 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 71502; exit=0"},
+   {"command": "cd tools && npm run check (2-й, 14:26:21–14:27:36Z)", "output": "то же; # tests 1090 # pass 1090 # fail 0 # skipped 0 # todo 0 # duration_ms 69689; exit=0"},
+   {"command": "cd tools && npm run traces", "output": "traces: файлов проверено 887, следов 0, пропущено 18; exit=0"},
+   {"command": "копия: rsync -a --exclude .git --exclude node_modules sai/ $SCRATCH/copy/sai/ && cd tools && npm ci", "output": "added 80 packages; exit=0; diff -r -q src и test копии с репозиторием — пусто"},
+   {"command": "node mutants.mjs <копия>/tools (каждый мутант — точная замена, ровно одно совпадение, затем node --test --test-timeout=90000 по всем team-web-*.test.js + traces-runtime + pixel-office-settings, восстановление файла)", "output": "39 мутантов: KILLED 32 (V01–V04, V06–V17, V20–V33, V37, V39), эквивалентные 5 (V18, V19, V34, V35, V36 — доказано пробой), SURVIVED 2 (V05, V38); после прогона diff -r -q копия/src == репозиторий/src"},
+   {"command": "проба 408 на копии (исходный код и V18/V35/V34/V36): POST с 10 байтами тела, пауза 500 мс, остаток", "output": "во всех вариантах: 408, connection: close, engines.calls 0, снимок неизменен"},
+   {"command": "проба V05: ключ этого запуска с изменённым последним знаком, POST /api/projects", "output": "исходный код: 403 reload:true, папок 1, calls 0; мутант V05: 201, папок 2, calls 1"},
+   {"command": "проба I1: EIO writeSync журнала при POST чата, затем 3 POST чата с паузой 1,5 с", "output": "[500, 409 «Сообщение не отправлено, повторите через несколько секунд» ×3]"},
+   {"command": "каждый из 94 тестов team-web отдельно (--test-name-pattern ^имя$)", "output": "alone: 94 tests run one by one; bad: 0"},
+   {"command": "каждый файл team-web отдельно; все файлы в обратном порядке --test-concurrency=1", "output": "13/13 файлов зелёные (6+8+10+3+10+7+2+4+3+12+14+10+5 = 94); обратный порядок: # tests 94 # pass 94 # fail 0"},
+   {"command": "team-web-channel.test.js ×5 подряд; ×3 параллельно + весь team-web", "output": "WEB-15 (б): 10335, 10339, 10330, 10323, 10337 мс; под нагрузкой 10596, 10642, 10687 мс; всё зелёное (pass 6/6 ×3, team-web 94/94)"},
+   {"command": "grep -nE \"\\.skip|skip:|\\.todo|todo:|\\.only|only:|eslint-disable|\\|\\| true\" team-web-* traces-runtime pixel-office-settings; grep 4780|4781|listen(; grep Date.now|Math.random", "output": "skip/todo/only/disable — пусто; порты — только 0 и константа в утверждении; Math.random нет; Date.now — только замер окон"},
+   {"command": "git diff tools/test/traces-runtime.test.js tools/test/pixel-office-settings.test.js; git show HEAD:tools/README.md | grep http://127.0.0.1:", "output": "TR-4b/4d/4e — только добавления; ST-06 сужен до раздела «## Pixel Office», где была единственная прежняя ссылка (строка 32, порт 4780)"}
+  ],
+  "issues": [
+   {
+    "kind": "routing",
+    "text": "F1 (Medium) и F2–F4 (Low) — к TEST-DESIGNER через ORCH; после правки — повторный шаг 5b (мутанты V05 и V38 должны убиваться)."
+   },
+   {
+    "kind": "question",
+    "text": "ISS-0010 / 0025 W9: остаток принят записью ORCH, а планка §1.3 разрешает исключения только владельцу. Если «повторите через несколько секунд», который не помогает до перезапуска, считать нарушением Q10 (понятный и правдивый текст), нужна запись владельца; решать ORCH/владельцу — на вердикт по тестам не влияет."
+   },
+   {
+    "kind": "note",
+    "text": "Гарантия «поздний остаток тела после 408 ничего не меняет» держится и на поведении Node 22.21.1 (сам закрывает соединение, если ответ отдан до конца тела): мутанты V18/V19/V34–V36 эквивалентны на этой версии. При смене версии Node WEB-10e это поймает (он проверяет итог, а не механизм)."
+   }
+  ],
+  "artifacts_out": []
+ }
+}

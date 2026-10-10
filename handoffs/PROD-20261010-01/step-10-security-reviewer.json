@@ -1,0 +1,110 @@
+{
+  "handoff_id": "step10-security-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "10",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-10-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-011"],
+    "write_set": ["handoffs/PROD-20261010-01/step-10-security-reviewer.json"],
+    "before_copy": "нет копии «до»; прошлый круг — хеши в step-07 self_check; изменения — по step-09 result.changes",
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-09-code-fixer.json",
+      "handoffs/PROD-20261010-01/step-07-security-reviewer.json",
+      "tools/src/web/display.js",
+      "tools/src/web/api.js",
+      "tools/src/web/config.js",
+      "tools/src/web/server.js",
+      "tools/src/web/public/app.js",
+      "docs/design/REQ-011-team-web.md (r3: п. 3, 4.1 шаг 4, 4.2, 7.1 (6), 8.1, 8.2, 10, 13)",
+      "decisions/0025-team-web-server.md (W8)"
+    ]
+  },
+  "task": {
+    "description": "WF-02, повторные ворота безопасности (круг 2) REQ-011 после правок CODE-FIXER (step-09): W8/results, BODY_IDLE_MS и 408, E_CHANNEL_STALE, truncated, regex потолка; живые пробы на сервере scripted."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T13:01:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "surface_map": [
+        {"file": "tools/src/web/server.js", "surfaces": ["приходит извне (тело POST: новый отсчёт простоя, 408)", "уходит в браузер (ответ 408)", "держит секрет (ключ страницы — не менялся)"], "items": ["Q7", "Q10", "защита записи"]},
+        {"file": "tools/src/web/config.js", "surfaces": ["константа предела BODY_IDLE_MS = 15000"], "items": ["Q10"]},
+        {"file": "tools/src/web/api.js", "surfaces": ["уходит в браузер (тексты отказов чата: E_CHANNEL_STALE, E_USAGE, E_CORRUPT)"], "items": ["Q7", "Q10"]},
+        {"file": "tools/src/web/display.js", "surfaces": ["уходит в браузер (results только с задачей, поле truncated)"], "items": ["Q7", "Q8 как принцип", "показ текста"]},
+        {"file": "tools/src/web/public/app.js", "surfaces": ["уходит в браузер (показ truncated/меток, опрос, потолок)"], "items": ["Q7", "показ текста (XSS)", "Q11 (адреса)"]}
+      ],
+      "items": {
+        "Q7": "применим и выполнен: поиск секретов по tools/src/web/ и по public/ пуст; ключ используется только в метке index.html и timingSafeEqual (server.js:221-229, 323) — правки его не трогали; ответ 408 и отказы чата — постоянные тексты (chatFailure с сообщением TeamError, содержащим путь и sk-… → тело без них); живая проба: ключ и приманка sk-ant-… не найдены ни в файлах SAI_TEAM_HOME/HOME, ни в stdout/stderr, приманка в чате → [скрыто]; ответ проекта не содержит путей и ключа",
+        "Q8": "применим как принцип (магазинов нет): results теперь фильтруется по f.task !== null (display.js:324-326) — сервер отдаёт меньше, не больше; задача ищется только в состоянии своего проекта; редьюсер отклоняет RESULT_FILE с задачей вне плана (reducer.js:400-402, findTask), иначе — 500 через общий try",
+        "Q9": "неприменим: SQL и хранилища запросов нет; grep SQL по tools/src/web пуст",
+        "Q10": "применим и выполнен: отсчёт простоя тела взводится до первой части и на каждой части, снимается в onEnd/413/close (server.js:342-399); живые пробы — 408 через 15,01 с для создания и чата, slowloris (части через 10 с) — 408 через 45,0 с (сброс отсчёта работает), chunked — 408, 60 параллельных медленных тел — все 408, GET во время них — 200, после — у процесса только слушающий сокет; после 408 сервер закрывает соединение даже когда клиент продолжает слать; утечки таймеров нет (в процессе: 520 взводов, 40 сработали = 40 случаев простоя, 480 сняты, живых 0 после 200 запросов пяти видов); E_CHANNEL_STALE → 504 со своим текстом без warn; неизвестный код → 500 и один warn",
+        "Q11": "неприменим: сервер сам никуда не ходит; страница — один fetch по относительному пути (app.js:42); http(s):// в public/ нет; TR-4b/4e падают ожидаемо (как в step-07, вносит TEST-DESIGNER)",
+        "R3": "неприменим: фотографий нет",
+        "R2": "неприменим как пункт Pixel Office (tools/src/pixel-office не тронут); событий в коде страницы нет; 408 ничего не пишет в журнал",
+        "write_guard": "выполнен, обход не появился: readBody (и отсчёт) вызывается только после writeAllowed (server.js:450-455); 9 вариантов (без Origin, чужой, null, text/plain, без ключа, чужой ключ, ключ в верхнем регистре, чужой Host, Host без порта) с медленным телом → 403 за 1-2 мс, до чтения тела (не 408); ни одного нового проекта; GET / с чужим Host — 403 без ключа; Content-Length > BODY_MAX → 413 сразу",
+        "408_no_journal": "выполнен: рекурсивный список путей и sha256 SAI_TEAM_HOME до и после каждой 408-пробы равен; в процессе — engines.start (бросает при вызове) не вызван, warn пуст, папка данных пуста; stderr живого сервера — только строка о правах папки",
+        "xss": "выполнен: в public/ нет innerHTML/outerHTML/insertAdjacentHTML/document.write/eval/new Function/srcdoc; новые поля (truncated, data-muted, results) идут через setText/setAttr; truncated сравнивается === true; payload <img onerror>/<script> в цели и чате возвращается строкой JSON с nosniff; CSP не менялась",
+        "budget_regex": "выполнен: /^[0-9]+(\\.[0-9]+)?$/ якорный, без вложенных квантификаторов (нет ReDoS), иначе null — сервер отклоняет"
+      }
+    },
+    "findings": [
+      {
+        "id": "S-3",
+        "place": "живой сервер, прогон 1 (scratchpad/sr10/run1)",
+        "item": "Q10",
+        "severity": "Info (не блокирует; не воспроизведено)",
+        "what": "В первом прогоне пробы процесс сервера перестал отвечать (ECONNREFUSED) примерно через 95 с от старта, между пробой 413 (Content-Length 99999) и пробой «отправка после 408»; stderr и код выхода того процесса моя проба не сохранила. Повтор: два полных прогона тех же проб (48/48, выход по SIGINT с кодом 0) и три отдельных воспроизведения (Content-Length, chunked, chunked с дальнейшей отправкой) — сервер жив. Связи с правками не доказано; причина неизвестна.",
+        "fix": "Не правка кода. TEST-RUNNER/UAT: при прогонах WEB-10e и UAT сохранять stderr и код выхода сервера; при повторе — диагноз ISSUE-FIXER."
+      }
+    ],
+    "self_check": {
+      "hashes_before": [
+        "024a20e519f9820265b857160588f8c296c56d2cbe0d5ec2490e1480ee84f41c  tools/src/web/api.js",
+        "1958eee2f68ca6d3d1eae492d0fa604475b7a5e2a71bc908ec5f83384e0d745c  tools/src/web/config.js",
+        "74d10681e096ab1592dc1239186d941e05828c9f11a5bb460e6991b3b33b76cc  tools/src/web/display.js",
+        "07fd39cafe937f5a181a6351bd51cc4825480063c9022c347422fabdc8c54d52  tools/src/web/engines.js",
+        "2d08bf3c21f2f2f9688249bcda3acc19653c698e3e0172c045b58147ad345073  tools/src/web/main.js",
+        "bc02ba2d59828568fade83ea0b7749505c444bf4196e95f2011344351f709188  tools/src/web/server.js",
+        "f52771cac381cfbd195279d516de3379f89e548f8af08a3f3fb1f4386cc2ce7a  tools/src/web/texts.js",
+        "2195a72c6f835192d33e062d842660e27ba4522c955802f04805ce4104eb4e7d  tools/src/web/public/app.js",
+        "3265ba36406701d561fb258c1070d16fef8f050cb565438050c900841b95dc79  tools/src/web/public/index.html",
+        "f5653f3bba7ea32dffe59dca9f572ddff6bc5b7f7183582cede844ee17fdaf8d  tools/src/web/public/style.css"
+      ],
+      "hashes_after": "совпадают с hashes_before (diff пуст)",
+      "hashes_equal": true,
+      "git_status": "код без изменений; за время проверки появился только чужой файл handoffs/PROD-20261010-01/step-11-reviewer.json (не мой)",
+      "commands": [
+        {"cmd": "grep -rnEi '(sk-[A-Za-z0-9_-]{16,}|AKIA…|ghp_…|xox[abp]-|-----BEGIN|password|secret|api[_-]?key|token|bearer)\\s*[:=]' tools/src/web/", "out": "(пусто)"},
+        {"cmd": "grep -rniE 'token|secret|passw|apikey|api_key' tools/src/web/public/", "out": "(пусто)"},
+        {"cmd": "grep -rnE 'innerHTML|outerHTML|insertAdjacentHTML|document\\.write|eval\\(|new Function|srcdoc' tools/src/web/public/", "out": "(пусто)"},
+        {"cmd": "grep -rnE '[a-z]+://' tools/src/web/", "out": "server.js:310-311 (Origin 127.0.0.1/localhost), main.js:185 (ссылка)"},
+        {"cmd": "grep -rnE 'appendFile|writeFile|createWriteStream|openSync|rename|mkdir|unlink|rmSync|copyFile|symlink|chmod' tools/src/web/", "out": "(пусто)"},
+        {"cmd": "grep -rnE 'node:(https|net|tls|dgram|child_process)|spawn|exec\\(' tools/src/web/", "out": "(пусто)"},
+        {"cmd": "node scratchpad/sr10/cf.mjs (chatFailure c TeamError, message с путём и sk-…)", "out": "E_CHANNEL_STALE 504 «Сообщение не подтверждено…» warns 0; E_USAGE 400 «Запрос не понят…» 0; E_CORRUPT 500 «Данные проекта повреждены…» 0; E_NOT_FOUND 404; E_WHATEVER 500 общий текст, warns 1; путей и sk- в телах нет"},
+        {"cmd": "node scratchpad/sr10/timers.mjs (createWebServer в процессе, bodyIdleMs 777, по 40 запросов: полный «{»→400, chunked 70001 Б→413, обрыв клиентом, простой→408, части с паузами 500 мс→400)", "out": "created 520, fired 40, cleared 480, live 0; warns []; папка данных пуста; engines.start не вызван"},
+        {"cmd": "node scratchpad/sr10/live.mjs (main.js --port 0 --executor scripted --scenario engine-basic.json; HOME и SAI_TEAM_HOME в scratchpad вне Sai; без SAI_TEAM_REAL_RUNS) — прогоны 3 и 4", "out": "SUMMARY 0 fail of 48 в обоих; 408 создание 15014 мс / чат 15013 мс, Connection: close, тело {\"error_text\":\"Что-то пошло не так. Повторите позже\",\"field\":null,\"reload\":false}, сокет закрыт; slowloris 45004 мс; chunked 15012 мс; 60×408, после — только LISTEN; 9 обходов → 403 за 1-2 мс; results = t-0001-1-input.md, t-0001-1-report.md, t-0002-1-input.md, t-0002-1-report.md; SIGINT → 0; stderr — только «Права папки данных сужены до 0700»"},
+        {"cmd": "node scratchpad/sr10/live.mjs — прогон 1", "out": "до пробы «отправка после 408» всё OK (24 проверки), далее ECONNREFUSED — см. S-3; stderr не сохранён"},
+        {"cmd": "node scratchpad/sr10/crash.mjs cl|chunked|chunkedmore", "out": "408 через ~15,13 с, клиент закрыт, health 200, SIGINT → 0, во всех трёх"},
+        {"cmd": "cd tools && npm run traces", "out": "файлов проверено 868, следов 0, пропущено 18"},
+        {"cmd": "cd tools && node --test test/traces-runtime.test.js", "out": "pass 4, fail 2 (TR-4b, TR-4e — ожидаемо, как в step-07/09)"},
+        {"cmd": "pgrep -fl src/web/main.js", "out": "нет процессов"}
+      ]
+    },
+    "issues": [
+      {"kind": "note", "text": "S-3: единичная необъяснённая остановка сервера в первом прогоне пробы, не воспроизвелась в 5 повторах; прошу TEST-RUNNER/UAT сохранять stderr и код выхода сервера."},
+      {"kind": "note", "text": "После 408 сервер не ставит socket.setTimeout (как в discard), а полагается на res finish → socket.end(); проба с дальнейшей отправкой после 408 показала закрытие соединения — это достаточно; для REVIEWER — согласованность с discard (AP-014) как вопрос устройства, не безопасности."},
+      {"kind": "note", "text": "За время проверки в handoffs появился step-11-reviewer.json — шаг 4 идёт параллельно с этими воротами; код не менялся (хеши равны)."},
+      {"kind": "AP-018", "text": "Ожидаемый вердикт в задании не назван."}
+    ],
+    "artifacts_out": []
+  }
+}

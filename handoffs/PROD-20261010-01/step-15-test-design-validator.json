@@ -1,0 +1,55 @@
+{
+ "handoff_id": "step15-test-design-validator-PROD-20261010-01",
+ "run_id": "PROD-20261010-01",
+ "workflow_id": "WF-02",
+ "step": "15",
+ "from_agent": "ORCH",
+ "to_agent": "TEST-DESIGN-VALIDATOR",
+ "file": "handoffs/PROD-20261010-01/step-15-test-design-validator.json",
+ "status": "COMPLETED",
+ "priority": "HIGH",
+ "context": {
+  "requirement_ids": [
+   "REQ-011"
+  ],
+  "agent_run_id": null,
+  "artifacts_in": [
+   "handoffs/PROD-20261010-01/step-13-test-design-validator.json",
+   "handoffs/PROD-20261010-01/step-14-test-designer.json",
+   "tools/test/team-web-{guard,page,faults,create}.test.js"
+  ],
+  "write_set": [
+   "handoffs/PROD-20261010-01/step-15-test-design-validator.json"
+  ],
+  "note": "Файл создан TEST-DESIGN-VALIDATOR по указанию ORCH в сообщении запуска. created_at и agent_run_id знает только ORCH."
+ },
+ "task": {
+  "description": "WF-02, шаг 5b, круг 2, REQ-011: проверить закрытие F1–F4, убиваемость V05 и V38 и не меньше 5 других мутантов на копии вне репозитория, npm run check дважды, npm run traces."
+ },
+ "created_at": null,
+ "started_at": "2026-10-10T14:36:00Z",
+ "completed_at": "2026-10-10T14:41:30Z",
+ "result": {
+  "status": "COMPLETED",
+  "verdict": "PASS",
+  "summary": "Круг 2. F1 закрыт: WEB-9a шлёт ключи верного вида, отличающиеся только 1-м, 33-м и 64-м знаком, на оба POST — 403 и STALE (reload:true), после цикла снимок, хеш журнала и engines.calls неизменны. F2 закрыт: WEB-P3 после 404 проекта делает два опроса, на которых чат реально запрошен (проверено по page.calls): ответ 500 не доходит до строки ошибок, ответ с новым сообщением не меняет chat-list. F3 закрыт: WEB-10a — ровно 409 и тело целиком, комментарий со ссылкой на ISS-0010 и 0025 W9 (привязка осознанная, допустима). F4 закрыт: WEB-3a берёт id из ответа 201 и читает events.jsonl этого проекта (проверяет, что журнал тот). F5: team-web — 94 теста по факту (node --test test/team-web-*.test.js: # tests 94). Мутанты на копии вне репозитория (rsync без .git и node_modules, npm ci; team-web-*.test.js + traces-runtime + pixel-office-settings, --test-timeout=90000): 11 из 11 убиты. V05 (ключ по первым 8 знакам) — WEB-9a; V38 (убран if (kind === 'notfound') return;) — WEB-P3; M03 Origin по префиксу — WEB-9a; M04 нет проверки вида ключа — WEB-9a; M05 404 с другим текстом — 5 тестов (WEB-5, 10f, 9b, 6, 1c); M06 results без фильтра по задаче — 4 (WEB-6, 4f ×2, 7a); M07 потолок < вместо <= — WEB-3b, 3c; M08 toFixed(7) — WEB-3e; M09 RESULTS_SHOWN 11 — WEB-P10; M10 нет проверки Content-Type — WEB-9a, 9f; M11 STALE с reload:false — WEB-9a, 9g, P12. Выживших нет. Ожидаемое по заданию (V05 и V38 должны умирать) записано, вердикт выведен из своих запусков.",
+  "findings": [
+   {
+    "place": "tools/test/team-web-faults.test.js, WEB-10a",
+    "severity": "Note",
+    "what": "Ожидание 409 закреплено на поведении дефекта ISS-0010; после его исправления тест упадёт.",
+    "fix": "Поменять ожидание вместе с исправлением ISS-0010 (комментарий в тесте это говорит)."
+   }
+  ],
+  "self_check": [
+   "npm run check, прогон 1: код 0; # tests 1090, # pass 1090, # fail 0, # skipped 0, # todo 0",
+   "npm run check, прогон 2: код 0; те же числа",
+   "npm run traces: код 0, файлов проверено 889, следов 0, пропущено 18",
+   "node --test test/team-web-*.test.js: # tests 94, # fail 0; skip/todo/only в team-web-*.js — не найдено",
+   "мутанты: скрипт на копии, каждый мутант применён к свежей копии файла и возвращён; результаты — см. summary (# fail по мутантам: V05 1, V38 1, M03 1, M04 1, M05 5, M06 4, M07 2, M08 1, M09 1, M10 2, M11 3)",
+   "хеши: список shasum 907 файлов репозитория (без .git и node_modules) до и после — совпал при сортировке по пути (до записи этого handoff-а, он единственный новый файл)"
+  ],
+  "issues": [],
+  "artifacts_out": []
+ }
+}

@@ -21,4 +21,10 @@ export default [
       globals: { ...globals.browser },
     },
   },
+  {
+    files: ["src/web/public/**/*.js"],
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+  },
 ];

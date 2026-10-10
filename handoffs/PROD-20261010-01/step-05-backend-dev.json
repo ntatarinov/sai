@@ -1,0 +1,188 @@
+{
+  "handoff_id": "step05-backend-dev-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261010-01/step-05-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "plan": "слова владельца 2026-10-06: выполнить требования по порядку каталога",
+    "requirement_ids": [
+      "REQ-011"
+    ],
+    "agent_run_id": null,
+    "write_set": [
+      "tools/src/web/*.js (config, texts, display, engines, api, server, main)",
+      "tools/src/web/public/index.html — только заглушка с <meta name=\"sai-page\">, помеченная как заглушка",
+      "tools/package.json (скрипт team-web)",
+      "tools/README.md (раздел «## Sai Team — интерфейс», п. 14 проекта)",
+      "tools/test/traces-runtime.test.js — только NETWORK_FILES, если это закрывает именно TR-4b/TR-4e",
+      "handoffs/PROD-20261010-01/step-05-backend-dev.json"
+    ],
+    "before_copy": "нет",
+    "parallel_work_now": "никого (FRONTEND-DEV — после)",
+    "artifacts_in": [
+      "docs/design/REQ-011-team-web.md (r2)",
+      "handoffs/PROD-20261010-01/step-04-code-design-validator.json (PASS)",
+      "decisions/0024-team-web-location.md",
+      "decisions/0025-team-web-server.md",
+      "docs/requirements.yaml (REQ-011)",
+      "docs/anti-patterns.md",
+      "docs/quality-bar.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 2: сервер REQ-011 по проекту r2 — модули tools/src/web/ (config, texts, display, engines, api, server, main) и npm run team-web; страницы не писать (FRONTEND-DEV), тесты не писать (TEST-DESIGNER); npm run check — ничего не сломано (допустимы только TR-4b и TR-4e, п. 17); npm run traces — код 0; короткая проба запуска на временной SAI_TEAM_HOME.",
+    "acceptance_criteria": [
+      "модули п. 1.1 проекта написаны по п. 2–12",
+      "запись — только через ядро и deliver; сеть — только server.js и 127.0.0.1; нет child_process",
+      "npm run check с настоящим выводом",
+      "отступления от проекта названы с причинами"
+    ]
+  },
+  "created_at": "2026-10-10T11:27:00Z",
+  "started_at": "2026-10-10T11:27:00Z",
+  "completed_at": "2026-10-10T12:11:22Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Сервер REQ-011 построен по проекту r2 (п. 1–14) и решениям 0024, 0025 (W1–W7). Модули tools/src/web/: config.js (п. 3), texts.js (п. 6.2, 10), display.js (п. 5.3–5.5, 7: список, страница проекта с шестью вопросами, срок по W4, ожидания по п. 7.3, чат, задача, карточка роли по номеру), engines.js (п. 8.3, W1: createEngine в процессе сервера, ожидание старта ≤ 5 с, stopAll), api.js (п. 5.1, 8.1, 8.2, 10: чтение listProjects/readProject, создание createProject, чат только deliver; коды ошибок → тексты), server.js (п. 4, 5.1, 12, W6: Host → путь → Origin/Content-Type/ключ → тело ≤ 64 КиБ; одинаковый 404; JSON_TYPE и nosniff у всех ответов API; CSP у HTML; файлы страницы из памяти), main.js (п. 2, 8.4). Скрипт team-web в package.json, раздел README. Проба запуска (scripted, временные SAI_TEAM_HOME и HOME, порт 0) — все маршруты отвечают по контракту, SIGINT/SIGTERM — код 0, проект встаёт на паузу. npm run check — код 0, 996 из 996.",
+    "files": [
+      "tools/src/web/config.js (новый)",
+      "tools/src/web/texts.js (новый)",
+      "tools/src/web/display.js (новый)",
+      "tools/src/web/engines.js (новый)",
+      "tools/src/web/api.js (новый)",
+      "tools/src/web/server.js (новый)",
+      "tools/src/web/main.js (новый)",
+      "tools/src/web/public/index.html (новый, ЗАГЛУШКА для запуска сервера — заменяет FRONTEND-DEV)",
+      "tools/package.json (изменён)",
+      "tools/README.md (изменён)",
+      "tools/test/traces-runtime.test.js (изменён: одна строка NETWORK_FILES)"
+    ],
+    "changes": [
+      {
+        "file": "tools/src/web/config.js",
+        "what": "HOST 127.0.0.1, DEFAULT_PORT 4781, BODY_MAX 65536, KEY_HEADER, KEY_BYTES, JSON_TYPE, ENGINE_START_WAIT_MS, START_POLL_MS, SHUTDOWN_WAIT_MS, LAST_PHRASES, STATIC_NAME, STATIC_TYPES",
+        "design": "п. 3"
+      },
+      {
+        "file": "tools/src/web/texts.js",
+        "what": "TEXT (все тексты для показа и отказов), WHY_NOT_STARTED, progressOf, dueIn, waitsCount, createdNotStarted",
+        "design": "п. 6.2, 10"
+      },
+      {
+        "file": "tools/src/web/display.js",
+        "what": "listItem, projectPage, chatPage, sentMessage, taskPage, roleCard, dueText, openWaits, busyRoles, roleNo, roleOfNo — чистые функции из readProject/listProjects; ссылки только Link.api с номером роли",
+        "design": "п. 5.2–5.5, 7.1–7.3, W4, W5"
+      },
+      {
+        "file": "tools/src/web/engines.js",
+        "what": "createEngines: start(id) — createEngine(mode start) и run() без ожидания конца, ожидание первой записи каждые 50 мс до 5 с, отказ печатается formatError; stopAll(waitMs) — requestStop('signal') каждому и ожидание; size()",
+        "design": "п. 8.3, 8.4, W1"
+      },
+      {
+        "file": "tools/src/web/api.js",
+        "what": "getProjects, getProject, getChat, getTask, getRole, postProject (проверки п. 8.1 шаги 1–6), postChat (единственный deliver), failure/notFoundReply; единственный импорт ../team/engine/channel.js",
+        "design": "п. 5.1, 5.4, 8.1, 8.2, 10, 11"
+      },
+      {
+        "file": "tools/src/web/server.js",
+        "what": "loadPublicFiles (W6), createWebServer: ключ crypto.randomBytes в замыкании, подстановка в meta sai-page, порядок проверок п. 4.1, ручной разбор пути, 405 с Allow, 413 с отбрасыванием остатка, listen(port, HOST)",
+        "design": "п. 4.1–4.4, 5.1, 12, W2, W6"
+      },
+      {
+        "file": "tools/src/web/main.js",
+        "what": "разбор --port/--executor/--scenario, resolveHome/readConfig, проверка сценария parseScenario, чтение public/, listen, одна строка ссылки, SIGINT/SIGTERM → close + stopAll (0/1), второй сигнал — выход 1; предупреждения ядра — каждое один раз в stderr",
+        "design": "п. 2, 8.4"
+      },
+      {
+        "file": "tools/src/web/public/index.html",
+        "what": "заглушка с единственной меткой <meta name=\"sai-page\" content=\"\" /> и комментарием «Заглушка BACKEND-DEV»",
+        "design": "п. 4.3 (нужна для шага 4 п. 2)"
+      },
+      {
+        "file": "tools/package.json",
+        "what": "\"team-web\": \"node src/web/main.js\"; зависимостей не добавлено",
+        "design": "п. 1.2"
+      },
+      {
+        "file": "tools/README.md",
+        "what": "раздел «## Sai Team — интерфейс»: запуск, параметры, SAI_TEAM_REAL_RUNS=1, безопасность, шесть вопросов, правило срока с краями W4, Ctrl-C и resume",
+        "design": "п. 14"
+      },
+      {
+        "file": "tools/test/traces-runtime.test.js",
+        "what": "NETWORK_FILES += \"web/server.js\" (только эта строка)",
+        "design": "п. 12, 17.4; разрешено заданием ORCH"
+      }
+    ],
+    "self_check": [
+      "До работы: cd tools && npm run check — exit 0, # tests 996, # pass 996, # fail 0.",
+      "После работы: cd tools && npm run check — exit 0; prettier: All matched files use Prettier code style!; eslint --max-warnings 0 — без вывода; traces: файлов проверено 860, следов 0, пропущено 18; # tests 996, # pass 996, # fail 0, # cancelled 0, # skipped 0, # todo 0.",
+      "TR-4b без строки web/server.js в NETWORK_FILES: not ok 2 - TR-4b …, # fail 1; со строкой — ok 1…6, # pass 6 (TR-4d проходит и для web/server.js). TR-4e не падает: public/app.js ещё нет (появится у FRONTEND-DEV).",
+      "grep п. 11: appendFile|writeFile|createWriteStream|openSync|rename — пусто; inbox — пусто; channel — только api.js:10 (import deliver); node:http — только server.js; node:(https|net|tls|dgram) в web — пусто; node:http… и fetch( в team — пусто; child_process в web — пусто; /Users/ и /home/ в web — пусто.",
+      "Поиск секретов (sk-, api key, secret, password, token, bearer, PRIVATE KEY) по изменённым файлам — совпадений нет. skip/todo/eslint-disable/|| true в web — нет.",
+      "Проба (scripted, env -i с временными SAI_TEAM_HOME и HOME, --port 0): ссылка «Sai Team: http://127.0.0.1:<порт>/»; GET / — 200, CSP, nosniff, ключ 64 hex; чужой Host — 403 «Запрос отклонён»; POST без Origin — 403 reload:false; ключ правильного вида не этого запуска — 403 reload:true; Content-Type «Application/JSON ;charset=utf-8» принят, «application/jsonx» — 403; потолок 0.0000001 — 400 field budget_usd; цель «  » — 400 field goal; создание — 201 started:true, PROJECT_STARTED; чат при движке — 200 «Отправлено», событие с msg (через движок); пустой — 400 field text; 40000 знаков «я» (>64 КиБ) — 413 field text; 4001 знак — 400; лишний ключ — 400; ..%2Fx, %2Fetc%2Fpasswd, ../x, несуществующий id, ..%2Ft-0001, t-9999, роли 0/11/01, %E0%A4%A — один и тот же 404 байт в байт; OPTIONS — 405 Allow: GET, POST, JSON; страница проекта: waits.count 2 с note_text, waiting_text, failed с reason_text; чат: open:true у открытых вопросов, task.link; SIGINT — выход 0, PROJECT_PAUSED; после перезапуска pause_text есть, чат без движка — 200 (запись ядром); claude-cli без SAI_TEAM_REAL_RUNS — 400, новой папки нет; занятый порт — код 1 с текстом; --port x и scripted без --scenario — код 2; нет файла сценария — код 1; SAI_TEAM_HOME относительный — E_HOME, код 2; SIGTERM — код 0. Все процессы сервера остановлены (pgrep — none)."
+    ],
+    "issues": [
+      {
+        "kind": "deviation",
+        "text": "Метка ключа (п. 4.3). Проект требует строку <meta name=\"sai-page\" content=\"\">, но prettier (часть npm run check) переписывает её в <meta name=\"sai-page\" content=\"\" />, иначе format:check падает. Поэтому сервер принимает обе формы (регулярное выражение, ровно одно вхождение), а ключ вписывает в content той же метки. Странице и тестам это не мешает: ключ читается через meta[name=\"sai-page\"]. FRONTEND-DEV пишет метку в виде, который оставит prettier."
+      },
+      {
+        "kind": "deviation",
+        "text": "README (п. 14): адрес записан как `127.0.0.1:4781`, а не как ссылка http://127.0.0.1:4781/. Причина: существующий тест ST-06 (pixel-office-settings.test.js) требует, чтобы каждая строка http://127.0.0.1:<порт> в README имела порт Pixel Office 4780; с буквальной ссылкой 4781 ST-06 падал (проверено прогоном: 4781 !== 4780). Тест — файл TEST-DESIGNER; если ссылку нужно вернуть, ST-06 надо ограничить разделом Pixel Office."
+      },
+      {
+        "kind": "deviation",
+        "text": "ResultRef для файла без задачи. Ядро допускает RESULT_FILE с task = null (schema: task optional), а проект п. 5.5 даёт ResultRef.task только как t-NNNN. Движок такой файл не пишет, но чтобы не выбрасывать имя (правило «ровно те же имена, что в состоянии») и не падать, такой файл отдаётся как { name, task: null, task_text: null, role: null, link: null }. Вопрос CODE-DESIGNER — закрепить это в контракте или запретить."
+      },
+      {
+        "kind": "note",
+        "text": "Sent.message: событие отправки — сообщение пользователя (kind message, task null), поэтому question и open — по правилам, а open всегда false (это не вопрос движка); повторного чтения журнала после отправки нет, чтобы успешная отправка не превращалась в отказ при сбое чтения."
+      },
+      {
+        "kind": "note",
+        "text": "engines.stopAll сам вызывает requestStop('signal') каждому движку и затем ждёт (п. 8.4 описывает это двумя шагами main; результат тот же)."
+      },
+      {
+        "kind": "note",
+        "text": "Срок (п. 7.2, шаг 5): при m × k ≤ 0 — «срок пока не оценить» (проект говорит «= 0»; «< 0» возможно только при часах назад, тогда «примерно через -N мин» было бы неправдой)."
+      },
+      {
+        "kind": "note",
+        "text": "Тип цели не строка — 400 badRequest field null (п. 5.4); потолок любого неверного вида, в том числе строка и null, — текст потолка с field budget_usd (п. 8.1, шаг 3)."
+      },
+      {
+        "kind": "note",
+        "text": "Ожидаемый провал п. 17 сейчас не наблюдается: TR-4b закрыт строкой web/server.js в NETWORK_FILES (разрешено ORCH); TR-4e покраснеет, когда FRONTEND-DEV добавит public/app.js с fetch(, — его и web/public/app.js в NETWORK_FILES, а также правило TR-4d для listen( web/server.js вносит TEST-DESIGNER на шаге 5."
+      },
+      {
+        "kind": "for-frontend-dev",
+        "text": "Осталось FRONTEND-DEV: tools/src/web/public/ целиком (index.html заменить, app.js, style.css и прочее по REQ-011-ui.md r2), блок eslint.config.js для src/web/public/**/*.js с globals.browser; в index.html — одна метка sai-page (см. первое отступление); POST — Content-Type: application/json и X-Sai-Page; формы ответов — п. 5.3/5.5; сервер отдаёт только файлы корня public/ с расширениями .html/.js/.css/.svg и именем по STATIC_NAME (подпапки не отдаются)."
+      },
+      {
+        "kind": "for-test-designer",
+        "text": "Шаг 5: тесты team-web-*.test.js по п. 15; в traces-runtime — web/public/app.js в NETWORK_FILES и правило TR-4e, проверка listen( для web/server.js (TR-4d (3)); ST-06 — см. второе отступление."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/web/config.js",
+      "tools/src/web/texts.js",
+      "tools/src/web/display.js",
+      "tools/src/web/engines.js",
+      "tools/src/web/api.js",
+      "tools/src/web/server.js",
+      "tools/src/web/main.js",
+      "tools/src/web/public/index.html",
+      "tools/package.json",
+      "tools/README.md",
+      "tools/test/traces-runtime.test.js",
+      "handoffs/PROD-20261010-01/step-05-backend-dev.json"
+    ]
+  }
+}

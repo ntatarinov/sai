@@ -1,0 +1,509 @@
+<!doctype html>
+<!--
+  Sai Team — страница для бизнеса (REQ-011; описание интерфейса
+  docs/design/REQ-011-ui.md r2, контракт полей docs/design/REQ-011-team-web.md п. 5).
+  Все постоянные подписи страницы лежат здесь; app.js подставляет в них только
+  данные из ответов своего сервера и только как текст.
+-->
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="sai-page" content="" />
+    <title>Sai Team</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header id="top" class="top">
+      <h1 class="top-title"><a href="#/" class="top-home">Sai Team</a></h1>
+      <div id="link" class="link" data-state="loading" aria-live="polite">
+        <span class="link-dot"></span>
+        <span class="link-lines">
+          <span class="link-status">
+            <span data-when="loading">Загрузка…</span>
+            <span data-when="live" hidden>На связи</span>
+            <span data-when="down" hidden>Нет связи с сервером Sai</span>
+          </span>
+          <span class="link-note">обновление раз в 5 секунд</span>
+        </span>
+      </div>
+      <a id="back" class="back" href="#/" hidden>← Проекты</a>
+    </header>
+
+    <noscript>
+      <p class="noscript">Для страницы нужен JavaScript.</p>
+    </noscript>
+
+    <div id="error-bar" class="error-bar" aria-live="polite" hidden>
+      <p id="error-text"></p>
+    </div>
+
+    <!-- Экран списка: проекты и форма «Новый проект» (#/) -->
+    <main id="screen-list" class="screen screen-list">
+      <section
+        id="projects-panel"
+        class="panel panel-projects"
+        aria-labelledby="projects-title"
+      >
+        <div class="panel-head">
+          <h2 id="projects-title">Проекты</h2>
+          <span id="projects-count" class="panel-count" hidden></span>
+        </div>
+        <div class="panel-body panel-scroll" tabindex="0">
+          <p id="projects-loading" class="quiet center">Загрузка…</p>
+          <p id="projects-down" class="fail center" hidden>
+            Нет связи с сервером Sai. Страница повторит попытку сама.
+          </p>
+          <p id="projects-empty" class="empty-big center" hidden>
+            Проектов пока нет. Опишите цель одной фразой — и команда возьмётся
+            за работу.
+          </p>
+          <ul id="projects" class="projects"></ul>
+        </div>
+      </section>
+
+      <section
+        id="create-panel"
+        class="panel panel-create"
+        aria-labelledby="create-title"
+      >
+        <div class="panel-head">
+          <h2 id="create-title">Новый проект</h2>
+        </div>
+        <form id="create-form" class="panel-body form" novalidate>
+          <label class="field-label" for="goal">Цель — одной фразой</label>
+          <textarea
+            id="goal"
+            class="input area area-goal"
+            rows="4"
+            placeholder="Например: подготовить план открытия кофейни"
+          ></textarea>
+          <p class="counter counter-right">
+            <span id="goal-count" class="count"
+              ><span data-slot="n">0</span> из 2000 знаков</span
+            >
+          </p>
+          <label class="field-label field-gap" for="budget"
+            >Потолок расходов, долларов</label
+          >
+          <input
+            id="budget"
+            class="input input-budget"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="Например: 20"
+          />
+          <p class="hint">
+            Команда остановится и спросит вас, если расходы дойдут до потолка.
+          </p>
+          <button id="create" class="btn btn-main btn-create" type="submit">
+            <span data-when="idle">Создать проект</span>
+            <span data-when="busy" hidden>Создаётся…</span>
+          </button>
+          <p
+            id="create-result"
+            class="result"
+            data-tone="none"
+            aria-live="assertive"
+          >
+            <span data-msg="server" hidden></span>
+            <span data-msg="offline" hidden
+              >Нет связи с сервером Sai. Проект не создан — повторите, когда
+              связь вернётся.</span
+            >
+          </p>
+          <a id="create-open" class="result-link" hidden>Открыть проект</a>
+          <button
+            id="create-reload"
+            class="btn btn-soft btn-reload"
+            type="button"
+            hidden
+          >
+            Обновить страницу
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <!-- Экран проекта (#/projects/…): заголовок, шесть ответов, все задачи, чат -->
+    <main id="screen-project" class="screen screen-project" hidden>
+      <section
+        id="project-panel"
+        class="panel panel-project"
+        aria-labelledby="project-goal"
+      >
+        <div id="project-body" class="project-body panel-scroll" tabindex="0">
+          <p id="project-down" class="fail project-state" hidden>
+            Нет связи с сервером Sai. Страница повторит попытку сама.
+          </p>
+          <div id="project-head" class="project-head">
+            <p class="quiet" data-loading>Загрузка…</p>
+            <div data-body hidden>
+              <h2 id="project-goal" class="project-goal" tabindex="-1"></h2>
+              <div class="project-line">
+                <span id="project-status" class="status"></span>
+                <span id="project-progress" class="progress-text"></span>
+                <progress
+                  id="project-bar"
+                  class="bar bar-head"
+                  max="1"
+                  value="0"
+                ></progress>
+                <span class="created"
+                  >создан <time id="project-created"></time
+                ></span>
+              </div>
+              <p class="marks">
+                <span
+                  id="project-decision"
+                  class="mark mark-decision"
+                  hidden
+                ></span>
+                <span id="project-test" class="mark mark-test" hidden></span>
+              </p>
+              <p id="project-pause" class="pause-line" hidden></p>
+              <p id="project-tail" class="tail-line" hidden></p>
+            </div>
+          </div>
+
+          <div class="answers">
+            <article class="answer" aria-labelledby="q1">
+              <h3 id="q1">Что происходит</h3>
+              <p class="quiet" data-loading>Загрузка…</p>
+              <div data-body hidden>
+                <ul id="happening" class="phrases"></ul>
+                <p id="happening-empty" class="quiet" hidden>
+                  Пока ничего не произошло
+                </p>
+              </div>
+            </article>
+
+            <article class="answer" aria-labelledby="q2">
+              <h3 id="q2">Кто занимается</h3>
+              <p class="quiet" data-loading>Загрузка…</p>
+              <div data-body hidden>
+                <ul id="busy" class="busy"></ul>
+                <p id="busy-empty" class="quiet" hidden>
+                  Сейчас никто не занят
+                </p>
+              </div>
+            </article>
+
+            <article class="answer" aria-labelledby="q3">
+              <h3 id="q3">Когда будет готово</h3>
+              <p class="quiet" data-loading>Загрузка…</p>
+              <div data-body hidden>
+                <p id="due" class="due"></p>
+              </div>
+            </article>
+
+            <article
+              id="answer-problems"
+              class="answer"
+              data-alert="none"
+              aria-labelledby="q4"
+            >
+              <h3 id="q4">Есть ли проблема</h3>
+              <p class="quiet" data-loading>Загрузка…</p>
+              <div data-body hidden>
+                <p id="waiting-text" class="waiting-text" hidden></p>
+                <ul id="failed" class="failed"></ul>
+                <p id="failed-more" class="more" hidden>
+                  и ещё <span data-slot="n"></span>
+                </p>
+                <p id="problems-none" class="good" hidden>Проблем нет</p>
+              </div>
+            </article>
+
+            <article
+              id="answer-waits"
+              class="answer"
+              data-alert="none"
+              aria-labelledby="q5"
+            >
+              <h3 id="q5">Нужно ли что-то от меня</h3>
+              <p class="quiet" data-loading>Загрузка…</p>
+              <div data-body hidden>
+                <p id="waits-count" class="waits-count" data-some="false"></p>
+                <button
+                  id="to-questions"
+                  class="btn btn-soft btn-questions"
+                  type="button"
+                  hidden
+                >
+                  Перейти к вопросам
+                </button>
+                <p id="waits-note" class="note" hidden></p>
+              </div>
+            </article>
+
+            <article class="answer" aria-labelledby="q6">
+              <h3 id="q6">Результат</h3>
+              <p class="quiet" data-loading>Загрузка…</p>
+              <div data-body hidden>
+                <ul id="results" class="results"></ul>
+                <p id="results-more" class="more" hidden>
+                  и ещё <span data-slot="n"></span>
+                </p>
+                <p id="results-empty" class="quiet" hidden>
+                  Файлов результата пока нет
+                </p>
+              </div>
+            </article>
+          </div>
+
+          <section
+            id="tasks-section"
+            class="tasks-section"
+            aria-labelledby="tasks-title"
+          >
+            <h3 id="tasks-title" class="section-title">Все задачи</h3>
+            <p class="quiet" data-loading>Загрузка…</p>
+            <div data-body hidden>
+              <ul id="tasks" class="task-rows"></ul>
+              <p id="tasks-empty" class="quiet" hidden></p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section
+        id="chat-panel"
+        class="panel panel-chat"
+        aria-labelledby="chat-title"
+      >
+        <div class="panel-head">
+          <h2 id="chat-title">Чат проекта</h2>
+        </div>
+        <div class="chat-list-wrap">
+          <ul
+            id="chat-list"
+            class="chat-list"
+            tabindex="0"
+            aria-labelledby="chat-title"
+            aria-live="polite"
+            aria-relevant="additions"
+          ></ul>
+          <p id="chat-loading" class="quiet chat-state">Загрузка…</p>
+          <p id="chat-down" class="fail chat-state" hidden>
+            Нет связи с сервером Sai. Страница повторит попытку сама.
+          </p>
+          <p id="chat-empty" class="quiet chat-state" hidden>
+            Сообщений пока нет. Напишите команде — сообщение увидят в работе.
+          </p>
+          <button id="chat-new" class="chat-new" type="button" hidden>
+            Новые сообщения: <span data-slot="n"></span> ↓
+          </button>
+        </div>
+        <form id="chat-form" class="chat-form" novalidate>
+          <textarea
+            id="chat-text"
+            class="input area area-chat"
+            rows="3"
+            aria-label="Сообщение команде"
+            placeholder="Напишите сообщение"
+          ></textarea>
+          <div class="chat-row">
+            <p class="counter">
+              <span id="chat-count" class="count"
+                ><span data-slot="n">0</span> из 4000 знаков</span
+              >
+              <span class="chat-hint">Ctrl+Enter — отправить</span>
+            </p>
+            <button id="chat-send" class="btn btn-main btn-send" type="submit">
+              <span data-when="idle">Отправить</span>
+              <span data-when="busy" hidden>Отправляется…</span>
+            </button>
+          </div>
+          <p
+            id="chat-result"
+            class="result"
+            data-tone="none"
+            aria-live="assertive"
+          >
+            <span data-msg="sending" hidden>Отправляется…</span>
+            <span data-msg="server" hidden></span>
+            <span data-msg="offline" hidden
+              >Нет связи с сервером Sai. Сообщение не отправлено.</span
+            >
+          </p>
+          <button
+            id="chat-reload"
+            class="btn btn-soft btn-reload"
+            type="button"
+            hidden
+          >
+            Обновить страницу
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <!-- Не найдено -->
+    <main id="screen-notfound" class="screen screen-notfound" hidden>
+      <section class="panel notfound" aria-labelledby="notfound-title">
+        <h2 id="notfound-title" class="notfound-title" tabindex="-1">
+          Не найдено
+        </h2>
+        <p class="notfound-text">Такого проекта или задачи нет.</p>
+        <a href="#/">К списку проектов</a>
+      </section>
+    </main>
+
+    <!-- Карточки задачи и исполнителя поверх страницы проекта -->
+    <div id="overlay" class="overlay" hidden>
+      <div
+        id="card"
+        class="card"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="card-task-title"
+      >
+        <button
+          id="card-close"
+          class="card-close"
+          type="button"
+          aria-label="Закрыть карточку"
+        >
+          ×
+        </button>
+        <p id="card-loading" class="quiet">Загрузка…</p>
+        <p id="card-down" class="fail" hidden>
+          Нет связи с сервером Sai. Страница повторит попытку сама.
+        </p>
+
+        <div id="card-task" hidden>
+          <p class="card-kicker">Задача</p>
+          <h2 id="card-task-title" class="card-title"></h2>
+          <p class="card-status">
+            <span id="card-task-status" class="status"></span>
+          </p>
+          <p id="card-task-reason" class="card-reason" hidden></p>
+          <h3 class="card-section">Готово, когда</h3>
+          <p id="card-task-done" class="card-text"></p>
+          <h3 class="card-section">Исполнитель</h3>
+          <p class="card-text"><a id="card-task-role"></a></p>
+          <h3 class="card-section">Файлы результата</h3>
+          <ul id="card-task-files" class="card-files"></ul>
+          <p id="card-task-nofiles" class="card-text" hidden>Нет</p>
+          <h3 class="card-section">Проект</h3>
+          <p class="card-text"><a id="card-task-project">Открыть проект</a></p>
+          <p id="card-task-goal" class="card-goal"></p>
+        </div>
+
+        <div id="card-role" hidden>
+          <p class="card-kicker">Исполнитель</p>
+          <h2 id="card-role-title" class="card-title card-title-role"></h2>
+          <p id="card-role-description" class="card-text"></p>
+          <h3 class="card-section">Задачи в этом проекте</h3>
+          <ul id="card-role-tasks" class="task-rows"></ul>
+          <p id="card-role-notasks" class="card-text" hidden>Задач нет</p>
+          <h3 class="card-section">Проект</h3>
+          <p class="card-text"><a id="card-role-project">Открыть проект</a></p>
+          <p id="card-role-goal" class="card-goal"></p>
+        </div>
+
+        <div id="card-notfound" hidden>
+          <h2 id="card-notfound-title" class="card-title">Не найдено</h2>
+          <p class="notfound-text">Такого проекта или задачи нет.</p>
+          <p class="card-text">
+            <a id="card-notfound-project">Открыть проект</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Шаблоны строк: тексты в них — постоянные подписи, данные ставит app.js -->
+    <template id="tpl-project">
+      <li>
+        <a class="pcard">
+          <span class="pcard-goal" data-slot="goal"></span>
+          <span class="pcard-line">
+            <span class="status" data-slot="status"></span>
+            <span class="progress-text" data-slot="progress"></span>
+          </span>
+          <progress class="bar" data-slot="bar" max="1" value="0"></progress>
+          <span class="marks" data-slot="marks">
+            <span class="mark mark-decision" data-slot="decision" hidden></span>
+            <span class="mark mark-test" data-slot="test" hidden></span>
+          </span>
+          <span class="created">создан <time data-slot="created"></time></span>
+        </a>
+      </li>
+    </template>
+
+    <template id="tpl-project-broken">
+      <li>
+        <div class="pcard pcard-broken">
+          <span class="pcard-id" data-slot="id"></span>
+          <span class="pcard-problem" data-slot="problem"></span>
+        </div>
+      </li>
+    </template>
+
+    <template id="tpl-phrase">
+      <li class="phrase">
+        <time class="phrase-time" data-slot="at"></time>
+        <span class="phrase-text" data-slot="text"></span>
+      </li>
+    </template>
+
+    <template id="tpl-busy">
+      <li><a data-slot="role"></a></li>
+    </template>
+
+    <template id="tpl-failed">
+      <li class="frow">
+        <a class="frow-link" data-slot="link"
+          ><span data-slot="role"></span> — <span data-slot="text"></span
+        ></a>
+        <span class="frow-reason" data-slot="reason"></span>
+      </li>
+    </template>
+
+    <template id="tpl-result">
+      <li class="rrow">
+        <span class="rrow-name" data-slot="name"></span>
+        <span class="rrow-meta" data-slot="meta"
+          >задача: <a class="rrow-task" data-slot="task"></a> · роль:
+          <a data-slot="role"></a
+        ></span>
+      </li>
+    </template>
+
+    <template id="tpl-task">
+      <li>
+        <a class="trow">
+          <span class="trow-head">
+            <span class="trow-role" data-slot="role"></span>
+            <span class="status" data-slot="status"></span>
+          </span>
+          <span class="trow-text" data-slot="text"></span>
+          <span class="trow-reason" data-slot="reason"></span>
+        </a>
+      </li>
+    </template>
+
+    <template id="tpl-message">
+      <li class="msg" tabindex="-1">
+        <p class="msg-head">
+          <span class="msg-author" data-slot="author"></span> ·
+          <time class="msg-time" data-slot="at"></time>
+          <span class="msg-labels" data-slot="labels"></span>
+        </p>
+        <p class="msg-text" data-slot="text"></p>
+        <a class="msg-task" data-slot="task"
+          >Задача: <span data-slot="task-role"></span> —
+          <span data-slot="task-text"></span
+        ></a>
+      </li>
+    </template>
+
+    <template id="tpl-file">
+      <li data-slot="name"></li>
+    </template>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

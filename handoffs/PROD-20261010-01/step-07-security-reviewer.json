@@ -1,0 +1,323 @@
+{
+  "handoff_id": "step07-security-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "07",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-07-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-011"
+    ],
+    "write_set": [
+      "handoffs/PROD-20261010-01/step-07-security-reviewer.json"
+    ],
+    "before_copy": "нет (новые файлы tools/src/web/; для изменённых — git diff против HEAD 818b672)",
+    "artifacts_in": [
+      "tools/src/web/*.js",
+      "tools/src/web/public/{index.html,app.js,style.css}",
+      "tools/package.json",
+      "tools/eslint.config.js",
+      "tools/test/traces-runtime.test.js",
+      "tools/README.md",
+      "docs/design/REQ-011-team-web.md (r2)",
+      "decisions/0024-team-web-location.md",
+      "decisions/0025-team-web-server.md",
+      "handoffs/PROD-20261010-01/step-05-backend-dev.json",
+      "handoffs/PROD-20261010-01/step-06-frontend-dev.json",
+      "docs/quality-bar.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 3: проверка безопасности REQ-011 (сервер и страница Sai Team), Q7–Q11, R3; живая попытка обойти защиту записи на сервере scripted."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T12:32:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "surface_map": [
+        {
+          "file": "tools/src/web/server.js",
+          "surfaces": [
+            "приходит извне (HTTP)",
+            "уходит в браузер (заголовки, файлы страницы, JSON)",
+            "держит секрет (ключ страницы в памяти)"
+          ],
+          "items": [
+            "Q7",
+            "Q10",
+            "Q8 как принцип",
+            "проверка ввода"
+          ]
+        },
+        {
+          "file": "tools/src/web/api.js",
+          "surfaces": [
+            "приходит извне (тела POST)",
+            "пишет файлы — только через ядро (createProject, deliver)",
+            "уходит в браузер (Reply)"
+          ],
+          "items": [
+            "Q7",
+            "Q8 как принцип",
+            "Q10"
+          ]
+        },
+        {
+          "file": "tools/src/web/display.js",
+          "surfaces": [
+            "уходит в браузер (какие поля отдаёт сервер)"
+          ],
+          "items": [
+            "Q7",
+            "Q8 как принцип"
+          ]
+        },
+        {
+          "file": "tools/src/web/engines.js",
+          "surfaces": [
+            "пишет файлы — через движок ядра в процессе сервера (W1)"
+          ],
+          "items": [
+            "Q10"
+          ]
+        },
+        {
+          "file": "tools/src/web/main.js",
+          "surfaces": [
+            "приходит извне (аргументы команды, окружение)",
+            "логи (stdout/stderr)"
+          ],
+          "items": [
+            "Q7",
+            "Q10"
+          ]
+        },
+        {
+          "file": "tools/src/web/config.js",
+          "surfaces": [
+            "константы адреса и пределов (HOST, BODY_MAX)"
+          ],
+          "items": [
+            "Q10"
+          ]
+        },
+        {
+          "file": "tools/src/web/texts.js",
+          "surfaces": [
+            "уходит в браузер (постоянные тексты)"
+          ],
+          "items": [
+            "Q7 (нет путей и кодов)"
+          ]
+        },
+        {
+          "file": "tools/src/web/public/index.html",
+          "surfaces": [
+            "уходит в браузер; метка ключа"
+          ],
+          "items": [
+            "Q7",
+            "показ текста"
+          ]
+        },
+        {
+          "file": "tools/src/web/public/app.js",
+          "surfaces": [
+            "уходит в браузер; показывает данные ответов; единственный fetch"
+          ],
+          "items": [
+            "Q7",
+            "показ текста (XSS)",
+            "Q11 (адреса)"
+          ]
+        },
+        {
+          "file": "tools/src/web/public/style.css",
+          "surfaces": [
+            "уходит в браузер"
+          ],
+          "items": [
+            "Q7 (поиск)"
+          ]
+        },
+        {
+          "file": "tools/package.json",
+          "surfaces": [
+            "нет поверхности: добавлен скрипт team-web, зависимостей не добавлено"
+          ],
+          "items": []
+        },
+        {
+          "file": "tools/eslint.config.js",
+          "surfaces": [
+            "нет поверхности: globals браузера для src/web/public"
+          ],
+          "items": []
+        },
+        {
+          "file": "tools/test/traces-runtime.test.js",
+          "surfaces": [
+            "нет поверхности (тест): web/server.js внесён в NETWORK_FILES — расширение проверки, не ослабление"
+          ],
+          "items": []
+        },
+        {
+          "file": "tools/README.md",
+          "surfaces": [
+            "нет поверхности (документация): адрес 127.0.0.1, без секретов"
+          ],
+          "items": [
+            "Q7 (поиск)"
+          ]
+        }
+      ],
+      "items": {
+        "Q7": "применим и выполнен: поиск секретов по изменению и по public/ пуст; ключ страницы — randomBytes(32) в замыкании (server.js:217), используется только в метке index.html и timingSafeEqual (server.js:225, 319); живая проверка: ключа нет ни в stdout/stderr, ни в одном файле данных и HOME, ни в app.js, ни в ответах отказов; Referrer-Policy: no-referrer у всех ответов; приманка sk-… в цели и 12 сообщениях чата — в журнале и ответах [скрыто], в файлах нет. Остаточный риск «любой процесс этого компьютера читает GET /» принят в 0025 W2",
+        "Q8": "применим как принцип (магазинов нет): задача и роль ищутся только в состоянии своего проекта (display.js:430-457); 27 путей (../, %2F, %00, абсолютный, absolute-form, двойные слэши, роли 0/01/11/99, чужая задача, несуществующий id, символическая ссылка на папку проекта) дают 404 с одним телом байт в байт и одинаковыми заголовками; поля ответа выбирает сервер — кода роли, исполнителя, стоимости, путей, pid в ответе нет (проверено)",
+        "Q9": "неприменим: SQL и хранилища запросов нет; поиск по tools/src/web на SQL — пусто",
+        "Q10": "применим и выполнен: каждый обработчик в try и возвращает Reply (api.js), сервер — internalError без стека; req/res с обработчиками error; живые проверки — 50 МБ по Content-Length и 200 КБ chunked → 413, ложный Content-Length, плохой UTF-8, __proto__, лишнее поле executor → 400; 12 параллельных сообщений чата и 4 параллельных создания — все ответы корректны, сервер жив; SIGINT — выход с кодом 0. Внешних вызовов нет",
+        "Q11": "неприменим: сервер не ходит по адресам пользователя; страница — один fetch по относительному пути, начинающемуся с /api (app.js:40, 239); http(s):// в public/ нет; href всегда '#…' (app.js:96-101)",
+        "R3": "неприменим: фотографий нет",
+        "R2": "неприменим как пункт Pixel Office: изменение не трогает tools/src/pixel-office (только импорт maskSecrets ядром); событий в коде страницы нет — данные только из журнала ядра",
+        "write_guard": "выполнен: Host — 9 подмен (чужое имя, другой порт, без порта, LOCALHOST, localhost., @, [::1], 0.0.0.0, без Host, двойной Host) → 403 без данных, GET / с чужим Host не отдаёт ключ (DNS rebinding); POST — без Origin, чужой, null, другой порт, https, со слэшем; text/plain, urlencoded, multipart, без типа, список типов, jsonx; без ключа, пустой, верхний регистр, короче, длиннее → 403 reload:false; чужой ключ правильного вида → 403 reload:true; OPTIONS → 405 без Access-Control-*; ни одного проекта от отказанных запросов",
+        "listen": "выполнен: server.listen(port, HOST) (server.js:456), HOST=127.0.0.1; на 192.168.0.12 и ::1 — ECONNREFUSED",
+        "write_places": "выполнен: в tools/src/web нет appendFile/writeFile/createWriteStream/openSync/rename/mkdir/unlink; fs — только чтение public/ (O_NOFOLLOW) и сценария; inbox нет; channel — только импорт deliver (api.js:10); node:http только server.js; https/net/tls/dgram нет; child_process/spawn/exec нет; живая проба — в ROOT появились только data/, home/ (пустая) и мой scenario.json",
+        "xss": "выполнен: в public/ нет innerHTML/outerHTML/insertAdjacentHTML/document.write/eval; данные — через setText (textContent) и setAttr для title/aria/data-*; href только '#'+api; CSP script-src 'self', X-Frame-Options DENY; полезная нагрузка <img onerror>/<script> в цели, тексте задачи, done_when, сводке и чате возвращается строкой JSON с application/json + nosniff; имена файлов результата ограничены PATTERNS.name ядра и тоже идут через textContent; сами файлы результата сервер не отдаёт"
+      }
+    },
+    "findings": [
+      {
+        "id": "S-1",
+        "place": "tools/src/web/server.js:326-372",
+        "item": "Q10",
+        "severity": "Low (не блокирует)",
+        "what": "У чтения тела POST нет своего таймаута простоя: медленная отправка держит соединение до requestTimeout Node (300 с в Node 22) / headersTimeout (60 с). Сервер только на 127.0.0.1, отказы других запросов это не вызывает (проверено параллельными запросами).",
+        "fix": "По желанию: socket.setTimeout на время чтения тела (как DRAIN_IDLE_MS) или server.requestTimeout короче; можно оставить — риск локальный."
+      },
+      {
+        "id": "S-2",
+        "place": "decisions/0025-team-web-server.md (W2); tools/src/web/server.js:216-228",
+        "item": "Q7",
+        "severity": "Info",
+        "what": "Принятый остаточный риск: любой локальный процесс (в том числе другого пользователя ОС) может прочесть ключ через GET / и писать через API. Записан в 0025 и README; не находка, напоминание для REQ-018.",
+        "fix": "Нет в рамках REQ-011."
+      }
+    ],
+    "self_check": {
+      "hashes_before": [
+        "2980727f6765b5dba79ee9476805253d873ce51fc9b7b42b83891f35314da79e  tools/package.json",
+        "5888485d5f812fae13cf7532543fd4b9113b3419c78a6e94f791b6bb9aec8027  tools/eslint.config.js",
+        "7c3563d9e73db8924c676687223bcbc344948e88833c6d29035ffa57d5265d6a  tools/test/traces-runtime.test.js",
+        "07fd39cafe937f5a181a6351bd51cc4825480063c9022c347422fabdc8c54d52  tools/src/web/engines.js",
+        "afa71b8b5a92c83a33699c0a668817fa3bf341ad87d3805b8e3dda24b7537857  tools/src/web/display.js",
+        "39348a82f453af1d8ac29670bf88526c12318f4465100cde5e9832ab5a67cc79  tools/src/web/server.js",
+        "c892d935c0c57427d181bed4d3963226a19fa62d5cfe4d6031f00a3054dc353e  tools/src/web/config.js",
+        "2d08bf3c21f2f2f9688249bcda3acc19653c698e3e0172c045b58147ad345073  tools/src/web/main.js",
+        "73d0cd13dad10d9acc20ed41df8eb6a03d51cb8f748567d7185decfdab7ff0cc  tools/src/web/api.js",
+        "f52771cac381cfbd195279d516de3379f89e548f8af08a3f3fb1f4386cc2ce7a  tools/src/web/texts.js",
+        "3265ba36406701d561fb258c1070d16fef8f050cb565438050c900841b95dc79  tools/src/web/public/index.html",
+        "f5653f3bba7ea32dffe59dca9f572ddff6bc5b7f7183582cede844ee17fdaf8d  tools/src/web/public/style.css",
+        "193980a08be11908f31ca8c914a7516f832c7e4df9e9ba5bb12cbd3ba403d837  tools/src/web/public/app.js"
+      ],
+      "hashes_after": [
+        "2980727f6765b5dba79ee9476805253d873ce51fc9b7b42b83891f35314da79e  tools/package.json",
+        "5888485d5f812fae13cf7532543fd4b9113b3419c78a6e94f791b6bb9aec8027  tools/eslint.config.js",
+        "7c3563d9e73db8924c676687223bcbc344948e88833c6d29035ffa57d5265d6a  tools/test/traces-runtime.test.js",
+        "07fd39cafe937f5a181a6351bd51cc4825480063c9022c347422fabdc8c54d52  tools/src/web/engines.js",
+        "afa71b8b5a92c83a33699c0a668817fa3bf341ad87d3805b8e3dda24b7537857  tools/src/web/display.js",
+        "39348a82f453af1d8ac29670bf88526c12318f4465100cde5e9832ab5a67cc79  tools/src/web/server.js",
+        "c892d935c0c57427d181bed4d3963226a19fa62d5cfe4d6031f00a3054dc353e  tools/src/web/config.js",
+        "2d08bf3c21f2f2f9688249bcda3acc19653c698e3e0172c045b58147ad345073  tools/src/web/main.js",
+        "73d0cd13dad10d9acc20ed41df8eb6a03d51cb8f748567d7185decfdab7ff0cc  tools/src/web/api.js",
+        "f52771cac381cfbd195279d516de3379f89e548f8af08a3f3fb1f4386cc2ce7a  tools/src/web/texts.js",
+        "3265ba36406701d561fb258c1070d16fef8f050cb565438050c900841b95dc79  tools/src/web/public/index.html",
+        "f5653f3bba7ea32dffe59dca9f572ddff6bc5b7f7183582cede844ee17fdaf8d  tools/src/web/public/style.css",
+        "193980a08be11908f31ca8c914a7516f832c7e4df9e9ba5bb12cbd3ba403d837  tools/src/web/public/app.js"
+      ],
+      "hashes_equal": true,
+      "git_status_equal": true,
+      "readme_sha256": "53497e6a63707e8ff4ca3cca4b5778facd8a43a286f4ba2a8a9fd5cb47bbf284",
+      "commands": [
+        {
+          "cmd": "grep -rnE 'appendFile|writeFile|createWriteStream|openSync|rename|mkdir|unlink|rmSync|copyFile|symlink|chmod' tools/src/web/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rn 'inbox' tools/src/web/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rn 'channel' tools/src/web/",
+          "out": "src/web/api.js:10:import { deliver } from \"../team/engine/channel.js\";"
+        },
+        {
+          "cmd": "grep -rl 'node:http' tools/src/web/",
+          "out": "src/web/server.js"
+        },
+        {
+          "cmd": "grep -rlE 'node:(https|net|tls|dgram)' tools/src/web/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rnE 'child_process|spawn|exec\\(|execFile|fork\\(|worker_threads' tools/src/web/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rnE '[a-z]+://' tools/src/web/",
+          "out": "server.js:306 http://${HOST}:${actualPort}; server.js:307 http://localhost:${actualPort}; main.js:185 http://${HOST}:${bound.port}/"
+        },
+        {
+          "cmd": "grep -rnE 'innerHTML|outerHTML|insertAdjacentHTML|document\\.write|eval\\(|new Function' tools/src/web/public/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rnE -i '(sk-[A-Za-z0-9_-]{16,}|AKIA[A-Z0-9]{16}|ghp_…|xox[abp]-|-----BEGIN|password\\s*[:=]|secret\\s*[:=]|api[_-]?key\\s*[:=]|token\\s*[:=]|bearer …)' tools/src/web/ tools/package.json tools/eslint.config.js tools/test/traces-runtime.test.js",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rniE 'token|secret|passw|apikey|api_key' tools/src/web/public/",
+          "out": "(пусто)"
+        },
+        {
+          "cmd": "grep -rn fetch tools/src/web/public/",
+          "out": "app.js:11 (комментарий); app.js:40 res = await window.fetch(path, {"
+        },
+        {
+          "cmd": "node --test test/traces-runtime.test.js",
+          "out": "ok TR-4a, not ok TR-4b, ok TR-4c, ok TR-4d, not ok TR-4e, ok TR-4f; pass 4 fail 2 (TR-4b/4e — ожидаемый провал до шага 5, step-06 issues)"
+        },
+        {
+          "cmd": "node scratchpad/attack.mjs <scratchpad/runs> — сервер main.js --port 0 --executor scripted, HOME и SAI_TEAM_HOME во временной папке scratchpad вне проекта, без SAI_TEAM_REAL_RUNS; два прогона",
+          "out": "FAILED: 0 из ~110 проверок в каждом прогоне; ECONNREFUSED на 192.168.0.12 и ::1; Host-подмены 403; 19 вариантов POST 403 с верным reload; 413 на 50 МБ и 200 КБ chunked; 404 одинаковы на 27 путях (status 404, тело {\"error_text\":\"Не найдено\",\"field\":null,\"reload\":false}, заголовки application/json; charset=utf-8|nosniff|64|no-store); сырой NUL — 400; симлинк папки проекта — 404; OPTIONS 405 без Access-Control-*; гонка 12 сообщений — 12×200, каждый текст в events.jsonl ровно 1 раз; 4 параллельных создания — 201, разные id; приманка и ключ не найдены ни в файлах, ни в stdout/stderr; stderr пуст; SIGINT → код 0; pgrep src/web/main.js — процессов нет"
+        }
+      ]
+    },
+    "issues": [
+      {
+        "kind": "note",
+        "text": "TR-4b и TR-4e в traces-runtime сейчас падают (единственный fetch( в web/public/app.js) — ожидаемо по step-06, вносит TEST-DESIGNER на шаге 5. Проверено отдельно: fetch один, путь относительный (/api…)."
+      },
+      {
+        "kind": "note",
+        "text": "Настоящий Claude не запускался: только scripted, SAI_TEAM_REAL_RUNS не задан. jsdom в node_modules нет — показ текста в браузере проверен чтением кода (textContent везде, sinks не найдены) и CSP, не рендером; DESIGN-QA/тесты WEB-* могут дополнить."
+      },
+      {
+        "kind": "note",
+        "text": "Для REVIEWER (не безопасность): display.js:368 и :57 — roleNo(неизвестный код) = 0 → ROLES[-1] → publicRole(undefined); при испорченной роли задачи это 500 «Что-то пошло не так», а не понятный текст. Ядро такую роль, видимо, не пропускает — проверить."
+      },
+      {
+        "kind": "AP-018",
+        "text": "Ожидаемый вердикт в задании не назван."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
