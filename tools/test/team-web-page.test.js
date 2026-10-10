@@ -988,6 +988,7 @@ test("WEB-P13 (F-1, 8.1) the first load of a project without connection: the cha
 
 test("WEB-P14 (F-2, 8.1) the first load of a project refused with a text (500, a broken project): the error bar with error_text, no empty frame, the chat says «Чат недоступен» without the form and no «Загрузка…»; after the project answers 200 all is shown as usual", async () => {
   let broken = true;
+  let chatGate = null;
   const page = loadPage({
     publicDir: PUBLIC_DIR,
     hash: `#/projects/${ID}`,
@@ -1003,7 +1004,10 @@ test("WEB-P14 (F-2, 8.1) the first load of a project refused with a text (500, a
               },
             }
           : { status: 200, body: projectBody() },
-      [`${API}/chat`]: { status: 200, body: chatBody([message(9)]) },
+      [`${API}/chat`]: async () => {
+        if (chatGate !== null) await chatGate.promise;
+        return { status: 200, body: chatBody([message(9)]) };
+      },
     }),
   });
   await page.settle();
@@ -1034,18 +1038,116 @@ test("WEB-P14 (F-2, 8.1) the first load of a project refused with a text (500, a
   assert.equal(v.chatOff, true);
 
   broken = false;
+  chatGate = deferred();
   const n = page.calls.length;
   await page.advance(5000);
   assert.deepStrictEqual(
     page.calls.slice(n).map((c) => c.path),
     [API, `${API}/chat`],
   );
+  // the project answered 200, the chat has not answered yet: the frame is back and
+  // no old «Чат недоступен» stays without the form (8.1a).
+  v = projectView(page);
+  assert.equal(v.frameShown, 3);
+  assert.equal(v.chatDown, false);
+  assert.equal(
+    v.chatOff,
+    false,
+    "the old caption is gone before the chat answers",
+  );
+  assert.equal(v.chatForm, true, "the form is shown before the chat answers");
+  assert.equal(v.loadingShown, 1, "the chat says «Загрузка…» while it pends");
+  chatGate.resolve();
+  await page.settle();
   v = projectView(page);
   assert.equal(v.errorBar, false);
   assert.equal(v.frameShown, 3);
   assert.equal(v.loadingShown, 0);
   assert.equal(v.chatOff, false);
   assert.equal(v.chatForm, true);
+  assert.ok(page.byId("chat-list").textContent.includes("Сообщение 9"));
+  assert.equal(page.timers.size, 1, "the polling goes on");
+});
+
+test("WEB-P15 (8.1, 8.1a) the project has not answered yet (the first request pends): the frame is shown with «Загрузка…» in the cards, no failure text, the chat is not asked and says «Загрузка…» with its form; when the project answers all is filled", async () => {
+  const gate = deferred();
+  const page = loadPage({
+    publicDir: PUBLIC_DIR,
+    hash: `#/projects/${ID}`,
+    fetch: router({
+      [API]: async () => {
+        await gate.promise;
+        return { status: 200, body: projectBody() };
+      },
+      [`${API}/chat`]: { status: 200, body: chatBody([message(3)]) },
+    }),
+  });
+  await page.settle();
+  assert.deepStrictEqual(
+    page.calls.map((c) => c.path),
+    [API],
+  );
+  let v = projectView(page);
+  assert.equal(v.frameCount, 3);
+  assert.equal(v.frameShown, 3, "the frame is shown while loading");
+  assert.ok(v.loadingShown > 1, "the cards say «Загрузка…»");
+  assert.equal(visible(page.byId("chat-loading")), true);
+  assert.equal(v.projectDown, false);
+  assert.equal(v.chatDown, false);
+  assert.equal(v.chatOff, false);
+  assert.equal(v.errorBar, false);
+  assert.equal(v.chatForm, true);
+
+  gate.resolve();
+  await page.settle();
+  v = projectView(page);
+  assert.equal(v.frameShown, 3);
+  assert.equal(v.loadingShown, 0);
+  assert.equal(page.byId("project-goal").textContent, "Вымышленная цель");
+  assert.ok(page.byId("chat-list").textContent.includes("Сообщение 3"));
+});
+
+test("WEB-P16 (R1, ISS-0011, 8.1a) the project answers 200 but the chat refuses with a text: the chat says «Чат недоступен» without the form, no «Загрузка…» stays; when the chat answers 200 all is as usual", async () => {
+  let chatBroken = true;
+  const page = loadPage({
+    publicDir: PUBLIC_DIR,
+    hash: `#/projects/${ID}`,
+    fetch: router({
+      [API]: () => ({ status: 200, body: projectBody() }),
+      [`${API}/chat`]: () =>
+        chatBroken
+          ? {
+              status: 500,
+              body: {
+                error_text: "Чат проекта повреждён",
+                field: null,
+                reload: false,
+              },
+            }
+          : { status: 200, body: chatBody([message(9)]) },
+    }),
+  });
+  await page.settle();
+  let v = projectView(page);
+  assert.equal(v.frameShown, 3);
+  assert.equal(v.chatOff, true);
+  assert.equal(page.byId("chat-off").textContent.trim(), "Чат недоступен");
+  assert.equal(v.chatForm, false, "no field to type into an unavailable chat");
+  assert.equal(v.chatDown, false);
+  assert.equal(v.loadingShown, 0, "no «Загрузка…» stays");
+  assert.equal(page.timers.size, 1, "the polling goes on");
+
+  await page.advance(5000);
+  v = projectView(page);
+  assert.equal(v.chatOff, true);
+  assert.equal(v.chatForm, false);
+
+  chatBroken = false;
+  await page.advance(5000);
+  v = projectView(page);
+  assert.equal(v.chatOff, false);
+  assert.equal(v.chatForm, true);
+  assert.equal(v.loadingShown, 0);
   assert.ok(page.byId("chat-list").textContent.includes("Сообщение 9"));
   assert.equal(page.timers.size, 1, "the polling goes on");
 });

@@ -1,5 +1,5 @@
 // Sai Team: the business page (description of the interface docs/design/REQ-011-ui.md
-// r3.1; contract of the fields docs/design/REQ-011-team-web.md, sections 5.2-5.7, 6.3, 9).
+// r3.2; contract of the fields docs/design/REQ-011-team-web.md, sections 5.2-5.7, 6.3, 9).
 //
 // Rules this file keeps:
 // - every constant caption lives in index.html; this file has no letters of the
@@ -546,6 +546,9 @@ async function refreshProject(gen, route, outcome) {
       app.chatApi = reply.body.links.chat.api;
       app.chatOff = false;
       renderProject();
+      // the project answered 200: the chat is redrawn at once, so an old
+      // «unavailable» caption does not stay until the chat answers (8.1a).
+      renderChat(false);
     });
   } else if (kind === "notfound") {
     app.projectState = "notfound";
@@ -578,6 +581,11 @@ async function refreshProject(gen, route, outcome) {
     });
   } else if (chatKind === "down" && app.chat === null) {
     app.chatDown = true;
+    renderChat(false);
+  } else if (chatKind === "error" && app.chat === null) {
+    // the project is loaded, the chat refused with a text: «unavailable», not the
+    // loading caption for ever (description 8.1a).
+    app.chatOff = true;
     renderChat(false);
   }
 }

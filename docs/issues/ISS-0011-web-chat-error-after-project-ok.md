@@ -1,6 +1,6 @@
 # ISS-0011 — Чат остаётся на «Загрузка…», если проект ответил, а чат отказал с текстом
 
-Серьёзность: LOW. Статус: open. Найдено: CODE-FIXER и REVIEWER прогона `PROD-20261010-01` (`handoffs/PROD-20261010-01/step-19-code-fixer.json`, `step-21-reviewer.json`, R1). Пункт планки: Q10 (отказ виден человеку). Родственный случай: AP-014.
+Серьёзность: LOW. Статус: closed, 2026-10-10. Найдено: CODE-FIXER и REVIEWER прогона `PROD-20261010-01` (`handoffs/PROD-20261010-01/step-19-code-fixer.json`, `step-21-reviewer.json`, R1). Пункт планки: Q10 (отказ виден человеку). Родственный случай: AP-014.
 
 ## Что не так
 
@@ -9,3 +9,10 @@
 ## Как исправить
 
 Предложение REVIEWER: в `refreshProject` при `chatKind === "error"` и пустом чате ставить `app.chatOff = true` и вызывать `renderChat(false)`; в ветке `ok` сбрасывать `app.chatOff = false`; дописать случай в п. 8.1a описания экранов, добавить тест WEB-P15 по образцу WEB-P14; заодно поправить ссылку на редакцию в шапке `style.css` (r2 → r3.1).
+
+## Итог
+
+Исправлено CODE-FIXER, `handoffs/PROD-20261010-01/step-25-code-fixer.json`: в `refreshProject` при `chatKind === "error"`
+и пустом чате ставится `app.chatOff = true` и вызывается `renderChat(false)`; в ветке `ok` после `renderProject()`
+добавлен `renderChat(false)` (иначе старое «Чат недоступен» оставалось до ответа чата); описание
+`REQ-011-ui.md` — r3.2 (п. 8.1, 8.1a); тест WEB-P16 и усиленный WEB-P14; ссылка в шапке `style.css` — r3.2.
