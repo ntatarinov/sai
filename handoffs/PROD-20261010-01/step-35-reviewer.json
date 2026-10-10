@@ -1,0 +1,92 @@
+{
+  "handoff_id": "step35-reviewer-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-03",
+  "step": "35",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261010-01/step-35-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "issue_id": "ISS-0010",
+    "requirement_ids": ["REQ-011", "REQ-009", "REQ-013"],
+    "write_set": ["handoffs/PROD-20261010-01/step-35-reviewer.json"],
+    "before_copy": "git diff 5fa9d16 3699438 -- tools; правки — step-33-code-fixer.json",
+    "artifacts_in": [
+      "docs/design/ISS-0010-web-chat-write-recovery.md (r3)",
+      "decisions/0026-team-core-reclaim-own-broken-lock.md, 0017, 0025",
+      "handoffs/PROD-20261010-01/step-33-code-fixer.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context записан по тексту поручения ORCH. Новые тесты TM-73…77, WEB-10g/h пишет TEST-DESIGNER параллельно — по поручению не оценивались."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T16:34:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Прочитан весь diff 5fa9d16..3699438 по tools (9 файлов). 1) Причина, а не симптом: свой замок, оставленный закрытым сломанным писателем, снимается штатным путём acquireLock с LOCK_STALE_REMOVED {pid} и recover по журналу; сервер замок не трогает и файлов не пишет; ошибки не глотаются (единственный catch-all — noteOrphanedLock, по проекту п. 4.1 «не бросает никогда»). 2) С проектом r3 и 0026 код сходится построчно: lock.js — HELD/ORPHANED с ключом path.resolve, holdsLive — единственное место R2, noteOrphanedLock с двумя условиями (билет по ссылке и байты файла ≤4096), lockHolder и шаг «занят» acquireLock через holdsLive, билет Object.freeze, HELD.set/ORPHANED.delete только при успешном linkSync; store.js — ticket в приватное поле, close() сломанного → noteOrphanedLock без касания файла, recover/markBroken/#commit не тронуты; channel.js — одна замена в цикле ожидания (М7), isAlive оставлен для removableLeftover; texts.js и api.js — тексты дословно по п. 5.1, ветка rollback:failed по п. 5.2 до таблицы. Решения 0002 (Node, ES-модули, без зависимостей; package.json не менялся), 0004, 0017/0025 в редакции 0026 соблюдены. 3) Лишнего нет: список файлов = write_set; единственная деталь сверх проекта — проверка ticket undefined/null (I5), см. N1. 4) Планка держится: .skip/.only/todo/eslint-disable/|| true в изменённых файлах нет; изменены ровно 10 названных проектом тестов, варианты в дочернем процессе (TM-13, TM-47, TM-66 (1)) и TM-66 (4) не тронуты; в каждом изменённом тесте убрана только проверка E_PROJECT_BUSY своего pid (это и есть исправляемое поведение), байты замка до/после close() и снимок папки там, где они были на close(), сохранены (TM-47 теперь сверяет снимок с before — строже), добавлены точные проверки событий журнала, last_seq, записи после открытия и снятия замка здоровым close(); 22 удалённых строки assert против 38 добавленных. 5) Единый механизм: все проверки живости класса «замок писателя» идут через holdsLive — прямо (lock.js lockHolder, acquireLock; channel.js ожидание М7) или через lockHolder().alive (store.js openWriter шаг 2; channel.js engineHolder и вход sendToEngine; engine.js openRetrying и open()). Вне класса, согласен: traces/add.js pidAlive — отдельный замок следов (traces), не writer.lock ядра; executors/proc.js groupAlive — живость группы процессов исполнителя, не замок; lock.js cleanLockLeftovers и channel.js removableLeftover — временные файлы с pid в имени, не замок (как в проекте п. 2). Пять мест записи REQ-009 те же (diff списка grep до/после пуст), в tools/src/web записи нет; engine.js, runner.js, single-run.js, server.js и прочее REQ-013/014 не менялись. npm run check — код 0, 1094/1094. TEST-DESIGNER стоит проверить особо: TM-75 (г)/(д) — две половины условия noteOrphanedLock; R5-путь, когда сбой случился после renameSync своего замка (замка нет, ключ в ORPHANED остаётся — безвреден, но не покрыт); второй прогон WEB-10a с ENOSPC (I3 CODE-FIXER); сверку префикса журнала байт-в-байт в WEB-10a (N3).",
+    "findings": [
+      {
+        "id": "N1",
+        "location": "tools/src/team/lock.js:81",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Защита от пустого билета (I5 CODE-FIXER) в коде продукта недостижима: единственный вызывающий — Writer.close(), а билет туда всегда приходит из acquireLock (замороженный объект). И как защита экспортируемой функции она поведенчески избыточна: без неё при отсутствии ключа в HELD undefined === undefined проходит, но дальше lstat (нет файла) или ticket.bytes (TypeError) уходят в catch → false; при ключе в HELD сравнение по ссылке даёт false. Итог тот же, мутант «убрать строку» выжить обязан. Не костыль и не расхождение с проектом (контракт «билет — LockTicket, не бросает, иначе false» она только делает явным, не полагаясь на перехват TypeError), но это эквивалентный код.",
+        "fix": "Не блокирует. Оставить можно (явность лучше, чем опора на catch программной ошибки); тогда TEST-DESIGNER не должен засчитывать её мутант как непойманный. Либо убрать при следующей правке lock.js. Мёртвым кодом в смысле AP не считаю."
+      },
+      {
+        "id": "N2",
+        "location": "tools/src/team/engine/engine.js:924-926 (refuse) → tools/src/team/engine/channel.js:533 → tools/src/web/api.js:249",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Соседнее место того же рода, что М6 (честность текста при неудачном откате), не названо проектом п. 2: если чат идёт в канал к движку и у движка запись CHAT падает с rollback:\"failed\", refuse() отдаёт в ack только code и message, details теряются, sendToEngine бросает TeamError(code, message) без details, и chatFailure отвечает chatDisk «сообщение не сохранено», хотя строка могла сохраниться. Код исправления в этом не виноват (по проекту и правильно не тронул — AP-019), но устройство данных допускает состояние, которое К3 запрещает.",
+        "fix": "Не блокирует эту работу. ORCH: завести дефект или вопрос к CODE-DESIGNER — передавать признак отката через ack (например, поле rollback в ответе отказа) и учитывать его в sendToEngine/chatFailure; либо записать в проекте ISS-0010 п. 11, почему это вне работы."
+      },
+      {
+        "id": "N3",
+        "location": "tools/test/team-web-faults.test.js:84",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "WEB-10a после второго POST сверяет только хвост журнала (journal(p).slice(lines)); прежние строки байт-в-байт не сверяются. Ослаблением это не является (раньше здесь сверялся хеш, потому что ответ был 409 и запись не шла), но проект К1 говорит «после прежних строк ровно…».",
+        "fix": "Не блокирует. TEST-DESIGNER (шаг 6) при добавлении второго прогона ENOSPC: сравнить первые байты events.jsonl после второго POST с содержимым до него (или хеш префикса)."
+      },
+      {
+        "id": "N4",
+        "location": "tools/test/team-writer.test.js:148-176 (reopenAfterBroken)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "Помощник сверяет байты замка до/после close(), но не снимок папки до/после close() (как TM-47 и TM-66 (2), (3)). Прежние TM-13/TM-14 снимали snapshot после close() — для проверки, что отказ E_PROJECT_BUSY ничего не меняет; отказа больше нет, так что ослабления нет, но и сверки «close() не меняет папку» в TM-13/TM-14 нет.",
+        "fix": "Не блокирует. По желанию TEST-DESIGNER: snapshot(p.dir) до и после p.writer.close() в reopenAfterBroken."
+      }
+    ],
+    "self_check": [
+      "git status --short; git diff --stat 3699438 -- tools → пусто: рабочее дерево tools совпадает с коммитом 3699438, проверялось оно",
+      "git diff --stat 5fa9d16 3699438 -- tools → 9 файлов (channel.js, lock.js, store.js, api.js, texts.js, 4 теста), 256+/96-; совпадает с write_set step-33; package.json, package-lock.json, eslint.config.js — без изменений",
+      "cd tools && npm run check → exit 0: «All matched files use Prettier code style!», eslint без вывода, «traces: файлов проверено 912, следов 0, пропущено 26», # tests 1094 # pass 1094 # fail 0 # cancelled 0 # skipped 0 # todo 0 (лог <scratch>/check.log)",
+      "эрозия: grep -nE '\\.skip\\(|\\.only\\(|eslint-disable|\\|\\| true|TODO' по 9 изменённым файлам → rc=1 (ничего); git diff 5fa9d16 3699438 -- tools | grep '^\\+' с теми же признаками и todo/FIXME/--no-verify → rc=1",
+      "сверка тестов: git diff 5fa9d16 3699438 -- tools/test | grep -c '^-.*assert' → 22, '^\\+.*assert' → 38; удалены только проверки E_PROJECT_BUSY своего pid и связанные snapshot после отказа; изменены ровно TM-13 в процессе (×3 через WRITE_FAULTS), TM-14 ×2, TM-47 в процессе, TM-66 (2), (3), WEB-10a (EIO), WEB-10f",
+      "пять мест записи: git archive 5fa9d16 и 3699438 tools/src в <scratch>/w-*; grep -rnE 'writeFile|appendFile|createWriteStream' tools/src/team/ без номеров строк → diff пуст (files.js, store.js ×2, lock.js, channel.js); grep -rnE 'appendFile|writeFile|createWriteStream|openSync' tools/src/web/ → rc=1 на обоих",
+      "единый механизм: grep -rnE 'isAlive|holdsLive|\\.alive\\b|process\\.kill\\([^)]*, *0' tools/src (без pixel-office) → lock.js 42/44 (isAlive), 68-70 (holdsLive), 142 (lockHolder), 211 (acquireLock), 277 (cleanLockLeftovers, вне класса); store.js 654 (lockHolder.alive); engine.js 203, 222 (lockHolder.alive); channel.js 79 (removableLeftover, вне класса), 339, 489 (lockHolder.alive), 540 (holdsLive); traces/add.js 164 (pidAlive — замок следов, вне класса); executors/proc.js 26 (groupAlive — группа процессов, вне класса)",
+      "grep -rn 'new Writer|noteOrphanedLock|acquireLock|holdsLive' tools/src tools/test → new Writer только в store.js:682 (openWriter), noteOrphanedLock только store.js:493, acquireLock только store.js:663; тесты новые функции напрямую не вызывают",
+      "N2: grep -n 'rollback' tools/src/team/*.js tools/src/web/*.js и чтение engine.js:916-926 — refuse() отдаёт {ok:false, code, message} без details",
+      "код и записи decisions/ во время проверки не менялись; записан только этот handoff"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "ORCH: файла step-35 заранее не было — создан по тексту поручения; created_at и started_at — null, сверить."
+      },
+      {
+        "kind": "DEFECT-CANDIDATE",
+        "text": "N2: при чате через канал движка неудачный откат записи CHAT у движка приходит серверу без details.rollback, и сервер говорит «сообщение не сохранено». Устройство данных допускает состояние, которое К3 ISS-0010 запрещает; решить ORCH — отдельный дефект или запись в п. 11 проекта ISS-0010."
+      },
+      {
+        "kind": "NOTE",
+        "text": "TEST-DESIGNER (шаг 6): N3 и N4 — по желанию; N1 — мутант «убрать проверку пустого билета» эквивалентен, не считать его непойманным. Ответ ORCH на вопрос: traces/add.js и executors/proc.js — вне класса, согласен (другой замок и группа процессов, не writer.lock ядра)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

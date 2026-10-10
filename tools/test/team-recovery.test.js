@@ -3,13 +3,16 @@
 // and the engine of REQ-013 after a crash, one engine per project (EN-61,
 // EN-65 ... EN-68).
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { TeamError } from "../src/team/errors.js";
+import { lockHolder } from "../src/team/lock.js";
 import { reduce } from "../src/team/reducer.js";
 import { openWriter, readProject } from "../src/team/store.js";
 import { withFaults } from "./fault-inject.js";
+import { deliver, engineHolder } from "../src/team/engine/channel.js";
 import { createEngine } from "../src/team/engine/engine.js";
 import { scanFacts } from "../src/team/engine/facts.js";
 import { replay } from "../src/team/reducer.js";
@@ -42,12 +45,15 @@ import {
   assertRefusal,
   assertDead,
   assertStatusChanges,
+  CHILD_TIMEOUT_MS,
+  childEnv,
   countJournalCalls,
   crashWriter,
   deadPid,
   describeRun,
   endRun,
   eng,
+  HELPERS_URL,
   journalOf,
   lockOf,
   loseLockAfterAppend,
