@@ -62,7 +62,9 @@ F1 (отметка только писателем, который ещё дер
 (`lockHolder` — М4), 162 (`acquireLock` — М3), 228 (`cleanLockLeftovers` — вне класса: имена `.new`/`.stale-` своего pid
 `acquireLock` убирает сам, п. 4.1); `store.js` 637 (`openWriter` шаг 2 — М3); `channel.js` 79 (`removableLeftover` — вне
 класса: временный файл отправителя, а не замок; свой временный файл — идущая сейчас публикация), 339 (`engineHolder` — М4),
-489 (`sendToEngine` вход — М2), 538 (ожидание — М7); `engine.js` 203, 222 (`openRetrying`, `open()` — М4). Других мест нет.
+489 (`sendToEngine` вход — М2), 538 (ожидание — М7); `engine.js` 203, 222 (`openRetrying`, `open()` — М4). Других мест в `tools/src/team` нет.
+
+За пределами `tools/src/team` в `tools/src` есть ещё две проверки живости pid, обе вне класса (поправка при учёте, по замечанию N1 шага 32): `tools/src/traces/add.js` 164 (`pidAlive`) — замок команды `traces add`, а не замок записи ядра `writer.lock`; `tools/src/team/executors/proc.js` 26 (`groupAlive`) — группа процессов исполнителя, а не замок писателя.
 
 Связанное место честности текста (тот же сбой записи, другой исход): М6 — `E_DISK` с `details.rollback:"failed"` (Ф6) —
 отдельный правдивый текст (п. 5).
@@ -79,7 +81,7 @@ F1 (отметка только писателем, который ещё дер
 | `tools/src/team/engine/channel.js` | CODE-FIXER | (r3, М7) одна проверка в цикле ожидания подтверждения `sendToEngine`: `isAlive(enginePid)` → `holdsLive(enginePid, projectDir)` (п. 4.3) |
 | `tools/src/web/texts.js` | CODE-FIXER | `TEXT.chatDisk` — новый текст; новый `TEXT.chatDiskUnsure` |
 | `tools/src/web/api.js` | CODE-FIXER | `chatFailure`: `E_DISK` с `details.rollback === "failed"` → `chatDiskUnsure` |
-| `tools/test/team-recovery.test.js`, `team-writer.test.js`, `team-faults.test.js`, `team-web-faults.test.js` | TEST-DESIGNER (шаг 6) | новые ожидания и тесты (п. 8) |
+| `tools/test/team-recovery.test.js`, `team-writer.test.js`, `team-faults.test.js`, `team-web-faults.test.js`, `team-channel.test.js` (TM-77, К10; добавлен при учёте, замечание N2 шага 32) | TEST-DESIGNER (шаг 6) | новые ожидания и тесты (п. 8) |
 | `decisions/0017`, `0025`, `decisions/README.md`, `docs/design/REQ-009-team-core.md`, `docs/design/REQ-011-team-web.md`, `docs/design/REQ-013-team-engine.md`, `tools/README.md`, `docs/issues/ISS-0010-…`, `STATE.md` | ORCH (принятие 0026) и DOC-UPDATER (шаг 10) | п. 10 |
 
 Порядок: сначала общий контракт ядра (`lock.js`, `store.js`), затем его второй потребитель (`channel.js`), затем сторона

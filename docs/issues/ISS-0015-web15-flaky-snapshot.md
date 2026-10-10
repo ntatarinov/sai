@@ -17,3 +17,5 @@
 - Нагрузка: 3 одновременных `npm run check` (1109/1109, код 0 у каждого) и файл в цикле 15 раз — 15 из 15 код 0.
 - Мутант (копия вне репозитория, `npm ci`): сервер дописывает байт в журнал при отзыве сообщения — падают WEB-15 (б) («the server wrote nothing») и WEB-15 (race), 2 из 6; без мутанта 6 из 6.
 - `npm run check` дважды — код 0, 1109/1109; `npm run traces` — следов 0.
+
+Подтверждено при закрытии прогона: TEST-DESIGN-VALIDATOR `step-48` (PASS, мутанты, нагрузка), TEST-RUNNER `step-49` (PASS, 3 × 1109 из 1109, код 0), RELEASE-VALIDATOR `step-50`, `step-51` (`cd tools && npm run check` — код 0, 1109 из 1109). Учёт — DOC-UPDATER, `step-52`.

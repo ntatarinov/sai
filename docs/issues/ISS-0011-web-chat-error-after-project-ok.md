@@ -10,7 +10,9 @@
 
 Предложение REVIEWER: в `refreshProject` при `chatKind === "error"` и пустом чате ставить `app.chatOff = true` и вызывать `renderChat(false)`; в ветке `ok` сбрасывать `app.chatOff = false`; дописать случай в п. 8.1a описания экранов, добавить тест WEB-P15 по образцу WEB-P14; заодно поправить ссылку на редакцию в шапке `style.css` (r2 → r3.1).
 
-## Итог
+## Закрыто
+
+2026-10-10, прогон `PROD-20261010-01`, маршрут: CODE-FIXER → SECURITY-REVIEWER (`step-26`) → REVIEWER (`step-27`) → TEST-RUNNER → RELEASE-VALIDATOR (закрытие подтверждено в `step-50` и `step-51`: критерий 11, сценарий «проект 200, чат без связи / отказ с текстом» выполнен на настоящих `index.html` и `app.js`, `cd tools && npm run check` — код 0, 1109 из 1109). Подтверждено DOC-UPDATER, `step-52`.
 
 Исправлено CODE-FIXER, `handoffs/PROD-20261010-01/step-25-code-fixer.json`: в `refreshProject` при `chatKind === "error"`
 и пустом чате ставится `app.chatOff = true` и вызывается `renderChat(false)`; в ветке `ok` после `renderProject()`
