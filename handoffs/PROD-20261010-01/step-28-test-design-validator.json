@@ -1,0 +1,57 @@
+{
+  "handoff_id": "step28-test-design-validator-PROD-20261010-01",
+  "run_id": "PROD-20261010-01",
+  "workflow_id": "WF-02",
+  "step": "28",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261010-01/step-28-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-011"
+    ],
+    "artifacts_in": [
+      "handoffs/PROD-20261010-01/step-23-test-design-validator.json",
+      "handoffs/PROD-20261010-01/step-24-test-designer.json",
+      "handoffs/PROD-20261010-01/step-25-code-fixer.json",
+      "tools/test/team-web-page.test.js (WEB-P13..P16)",
+      "tools/src/web/public/app.js"
+    ],
+    "write_set": [
+      "handoffs/PROD-20261010-01/step-28-test-design-validator.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 5b, круг 3, REQ-011: повторная проверка после FAIL шага 23 (выживший мутант chatOff, мутант каркаса при loading)."
+  },
+  "created_at": null,
+  "started_at": null,
+  "completed_at": "2026-10-10T15:29:50Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Пункты 1-4 и свой прогон закрыты. Покрытие (своя таблица): F-1 нет связи на первой загрузке - WEB-P13; F-2 отказ с текстом и возврат - WEB-P14 (ответ чата управляем, до ответа чата проверены chatOff=false, форма видна, «Загрузка…»=1); п. 8.1 «Загрузка» (проект не ответил) - WEB-P15 (каркас 3 из 3, «Загрузка…» в карточках и чате, чат не запрошен); п. 8.1a «проект 200, чат отказал с текстом» - WEB-P16 (чат-off без формы, затем 200 - обычный вид, опрос идёт). Проверки сверяют значения (тексты, число видимых частей каркаса, список вызовов, таймеры), не «не упало»; отказ не меняет состояние (опрос повторяется, вызовы без лишних). У каждого теста своя страница, часы и сеть заданы тестом; порядка, случайности и секретов нет; модель DOM не подгонялась (shown = нет hidden у элемента и предков). Мутанты на копии вне репозитория (<scratch>/cp28, rsync без .git и node_modules, npm ci код 0, node --test --test-timeout=90000 test/team-web-page.test.js; база 16/16 зелёная), все 8 убиты: (1) не сбрасывать chatOff при 200 - fail 1 (WEB-P14); (2) убрать renderChat(false) в ветке ok - fail 1 (WEB-P14); (3a) убрать error -> chatOff при провале проекта - fail 1 (WEB-P14); (3b) убрать ветку error -> chatOff для чата при 200 проекта - fail 1 (WEB-P16); (4) setHidden(el, loading) для каркаса - fail 1 (WEB-P15); (5) убрать скрытие формы чата - fail 2 (WEB-P14, WEB-P16); (6) убрать переключение в «нет связи» - fail 1 (WEB-P13); (7) чат запрашивается до ответа проекта - fail 5 (WEB-P13, P14, P15, P2, P3). Выживших нет. Оба замечания шага 23 закрыты. Прогон: npm run check дважды - код 0, tests 1094, pass 1094, fail 0, skipped 0, todo 0; npm run traces - файлов 903, следов 0, пропущено 26 (двоичные).",
+    "findings": [
+      {
+        "place": "рабочее дерево",
+        "severity": "Low",
+        "what": "За время проверки в дереве появились файлы, не мои: docs/design/REQ-011-ui.md изменён, добавлены step-26-security-reviewer.json и step-27-reviewer.json (параллельная работа ORCH/других ролей). Тесты и app.js по хешам не менялись.",
+        "fix": "ничего не требуется; ORCH учесть при сверке дерева"
+      }
+    ],
+    "self_check": [
+      "rsync в <scratch>/cp28 без .git и node_modules; cd <scratch>/cp28/tools && npm ci - код 0",
+      "база: node --test --test-timeout=90000 test/team-web-page.test.js - tests 16, pass 16, fail 0",
+      "мутанты 1..7 (8 вариантов): fail соответственно 1,1,1,1,1,2,1,5; после проб app.js возвращён из оригинала, копия вне репозитория",
+      "cd tools && npm run check, прогон 1: код 0, tests 1094, pass 1094, fail 0, skipped 0, todo 0",
+      "cd tools && npm run check, прогон 2: код 0, те же числа",
+      "cd tools && npm run traces: файлов 903, следов 0, пропущено 26, код 0",
+      "хеши (shasum, 927 файлов) до и после: совпадают для tools/ и всех файлов, которые я трогал; расхождение только в чужих файлах (REQ-011-ui.md, step-26, step-27), см. находку",
+      "в репозитории изменён только этот файл"
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}
