@@ -1,5 +1,7 @@
 // Sai Team: the business page (description of the interface docs/design/REQ-011-ui.md
-// r3.2; contract of the fields docs/design/REQ-011-team-web.md, sections 5.2-5.7, 6.3, 9).
+// r3.2; contract of the fields docs/design/REQ-011-team-web.md, sections 5.2-5.7, 6.3, 9;
+// the buttons of control REQ-035: docs/design/REQ-035-ui.md r2 and the contract
+// docs/design/REQ-035-team-web-control.md r4, sections 3.2, 4, 9).
 //
 // Rules this file keeps:
 // - every constant caption lives in index.html; this file has no letters of the
@@ -230,6 +232,14 @@ const app = {
   opener: null,
   creating: false,
   sending: false,
+  // Control of the project (contract REQ-035, 9.2): the address of the POST of
+  // control of the project on the screen (ControlSet.api of the last answer), the
+  // number of the last request of control, the requests going on now (address of
+  // control -> number of its request; one per project) and the open confirmation.
+  controlApi: null,
+  controlSeq: 0,
+  controlBusy: new Map(),
+  confirming: false,
 };
 
 // Address of the page -> screen (section 5.2): "/api" + hash.slice(1), only for an
@@ -603,6 +613,13 @@ function resetProject() {
   setResult(byId("chat-result"), null, null, null);
   setHidden(byId("chat-reload"), true);
   markInvalid(byId("chat-text"), false);
+  // controlBusy stays: a request of another project goes on, and only its own
+  // answer removes its record (contract REQ-035, 9.2).
+  app.controlApi = null;
+  app.confirming = false;
+  setHidden(byId("stop-confirm"), true);
+  setResult(byId("control-result"), null, null, null);
+  setHidden(byId("control-reload"), true);
 }
 
 const makePhrase = maker("tpl-phrase");
@@ -653,9 +670,150 @@ function renderHead(p) {
   const pause = byId("project-pause");
   setHidden(pause, p.pause_text === null);
   setText(pause, p.pause_text);
+  const stopped = byId("project-stopped");
+  const stoppedText = p.stopped_text ?? null;
+  setHidden(stopped, stoppedText === null);
+  setText(stopped, stoppedText);
   const tail = byId("project-tail");
   setHidden(tail, p.tail_text === null);
   setText(tail, p.tail_text);
+  renderControls(p);
+}
+
+// ---- control of the project (REQ-035) -----------------------------------------------
+
+// The buttons of the row and the field of ControlSet that shows each.
+const CONTROL_BUTTONS = [
+  ["pause", "ctl-pause"],
+  ["resume", "ctl-resume"],
+  ["stop", "ctl-stop"],
+];
+
+function controlSetOf(p) {
+  const c = p?.controls;
+  return c !== null && typeof c === "object" && !Array.isArray(c) ? c : null;
+}
+
+function isOff(button) {
+  return button.getAttribute("aria-disabled") === "true";
+}
+
+function controlBusyHere() {
+  return app.controlApi !== null && app.controlBusy.has(app.controlApi);
+}
+
+function isVisible(el) {
+  return el.getClientRects().length > 0;
+}
+
+// Which buttons show comes only from ProjectPage.controls of the last answer
+// (contract 9.3); the page decides nothing about them.
+function renderControls(p) {
+  const c = controlSetOf(p);
+  app.controlApi = c !== null && typeof c.api === "string" ? c.api : null;
+  const active = document.activeElement;
+  for (const [key, id] of CONTROL_BUTTONS) {
+    setHidden(byId(id), !(c !== null && c[key] === true));
+  }
+  // The project was stopped or finished elsewhere: the confirmation closes with no
+  // request (description 5.2).
+  if (app.confirming && byId("ctl-stop").hidden) {
+    closeConfirm(byId("stop-confirm").contains(active));
+  }
+  // The pressed button went away with this answer: the focus goes to the goal of
+  // the project (description 16.1); a button that stays keeps it.
+  if (CONTROL_BUTTONS.some(([, id]) => byId(id) === active) && active.hidden) {
+    byId("project-goal").focus();
+  }
+  updateControls();
+}
+
+// Availability (only aria-disabled, never disabled: description 4.3), the line
+// «sending» of a project whose request still goes on, and the block itself.
+function updateControls() {
+  const busy = controlBusyHere();
+  for (const [key, id] of CONTROL_BUTTONS) {
+    const off = busy || (key !== "stop" && app.confirming);
+    setAttr(byId(id), "aria-disabled", off ? "true" : null);
+  }
+  const result = byId("control-result");
+  if (busy && result.getAttribute("data-tone") === "none") {
+    setResult(result, "sending", null, "muted");
+  }
+  const anyButton = CONTROL_BUTTONS.some(([, id]) => !byId(id).hidden);
+  setHidden(
+    byId("controls"),
+    !anyButton &&
+      !app.confirming &&
+      result.getAttribute("data-tone") === "none",
+  );
+}
+
+// A click on «stop» of the row: only the confirmation, no request (contract 9.3).
+function openConfirm() {
+  const button = byId("ctl-stop");
+  if (isOff(button) || app.confirming || controlBusyHere()) return;
+  app.confirming = true;
+  setHidden(byId("stop-confirm"), false);
+  updateControls();
+  byId("stop-no").focus();
+}
+
+// Closes the confirmation with no request. moveFocus: the focus goes to «stop» of
+// the row when it is seen, else to the goal of the project.
+function closeConfirm(moveFocus) {
+  if (!app.confirming) return;
+  app.confirming = false;
+  setHidden(byId("stop-confirm"), true);
+  updateControls();
+  if (!moveFocus) return;
+  const stop = byId("ctl-stop");
+  if (isVisible(stop)) stop.focus();
+  else byId("project-goal").focus();
+}
+
+function onControlClick(event) {
+  const button = event.currentTarget;
+  if (isOff(button)) return;
+  if (button === byId("ctl-pause")) submitControl("pause");
+  else if (button === byId("ctl-resume")) submitControl("resume");
+}
+
+// The only write of control: the body of the contract 3.2 to ControlSet.api by the
+// one function post of the page. The guard against a second click is the check
+// below, made at once and before any wait, not the look of the button.
+async function submitControl(action) {
+  const api = app.controlApi;
+  if (api === null || app.controlBusy.has(api)) return;
+  if (action !== "stop" && app.confirming) return;
+  app.controlSeq += 1;
+  const n = app.controlSeq;
+  app.controlBusy.set(api, n);
+  const result = byId("control-result");
+  setHidden(byId("control-reload"), true);
+  setResult(result, "sending", null, "muted");
+  updateControls();
+  const reply = await post(
+    api,
+    action === "stop" ? { action, confirmed: true } : { action },
+  );
+  if (app.controlBusy.get(api) === n) app.controlBusy.delete(api);
+  // The page shows another project now: its answer is not shown here.
+  if (app.controlApi !== api) return;
+  if (isOk(reply)) {
+    setResult(result, "server", reply.body.result_text, "ok");
+  } else {
+    const text = errorTextOf(reply);
+    if (reply === null || text === null) {
+      setResult(result, "offline", null, "err");
+    } else {
+      setResult(result, "server", text, reply.status === 504 ? "warn" : "err");
+      if (reply.body.reload === true) setHidden(byId("control-reload"), false);
+    }
+  }
+  updateControls();
+  // The state and the buttons come from the journal, not from this answer (R2).
+  poll();
 }
 
 function renderAnswers(p) {
@@ -1083,7 +1241,13 @@ function onRoute() {
   app.route = next;
   const projectChanged =
     next.kind !== prev.kind || next.project !== prev.project;
+  // Any change of the address closes the confirmation with no request
+  // (description 5.2); the focus moves only if it was inside it and the project
+  // stays on the screen.
+  closeConfirm(byId("stop-confirm").contains(active) && !projectChanged);
   if (projectChanged && next.kind === "project") resetProject();
+  // The list shows no project: an answer of control that comes now is not shown.
+  if (next.kind !== "project") app.controlApi = null;
   if (next.card !== prev.card || projectChanged) {
     app.card = null;
     app.cardState = "loading";
@@ -1189,8 +1353,27 @@ function start() {
   byId("overlay").addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeCard();
   });
+  byId("ctl-pause").addEventListener("click", onControlClick);
+  byId("ctl-resume").addEventListener("click", onControlClick);
+  byId("ctl-stop").addEventListener("click", openConfirm);
+  byId("stop-no").addEventListener("click", () => closeConfirm(true));
+  byId("stop-yes").addEventListener("click", () => {
+    if (!app.confirming) return;
+    closeConfirm(true);
+    submitControl("stop");
+  });
+  byId("control-reload").addEventListener("click", () =>
+    window.location.reload(),
+  );
   document.addEventListener("keydown", (e) => {
-    if (byId("overlay").hidden) return;
+    if (byId("overlay").hidden) {
+      // Esc closes the confirmation while no card is open (description 5.2).
+      if (e.key === "Escape" && app.confirming) {
+        e.preventDefault();
+        closeConfirm(true);
+      }
+      return;
+    }
     if (e.key === "Escape") {
       e.preventDefault();
       closeCard();

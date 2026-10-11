@@ -1,0 +1,99 @@
+{
+  "handoff_id": "step15-frontend-dev-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "15",
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/PROD-20261011-01/step-15-frontend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "docs/design/REQ-035-ui.md (r2)",
+      "docs/design/REQ-011-ui.md (r3.2)",
+      "docs/design/REQ-035-team-web-control.md (r4)",
+      "handoffs/PROD-20261011-01/step-09-backend-dev.json (сервер готов)",
+      "handoffs/PROD-20261011-01/step-14-code-design-validator.json"
+    ],
+    "write_set": [
+      "tools/src/web/public/index.html",
+      "tools/src/web/public/app.js",
+      "tools/src/web/public/style.css",
+      "handoffs/PROD-20261011-01/step-15-frontend-dev.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было; поля верхнего уровня записаны FRONTEND-DEV по сообщению ORCH."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T06:20:26Z",
+  "started_at": "2026-10-11T06:20:26Z",
+  "completed_at": "2026-10-11T06:24:53Z",
+  "task": {
+    "description": "WF-02/WF-04, шаг 2: кнопки «Пауза», «Продолжить», «Остановить», подтверждение остановки, строка итога и «Обновить страницу» на странице проекта по описанию REQ-035-ui r2 и контракту REQ-035 r4 (п. 4, 5, 6.4, 9)."
+  },
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Страница проекта получила блок управления #controls (роль group, «Управление проектом») в конце заголовка проекта: ряд #ctl-pause/#ctl-resume/#ctl-stop, подтверждение #stop-confirm (обычный блок role=alertdialog, не <dialog>), строку итога #control-result (aria-live assertive, дети data-msg sending/server/offline) и #control-reload; строку #project-stopped под #project-pause.",
+      "Видимость кнопок — только ProjectPage.controls.pause|resume|stop последнего ответа; адрес записи — только ControlSet.api; тела — {action:pause}, {action:resume}, {action:stop, confirmed:true} через единственную функцию post страницы (Content-Type: application/json, X-Sai-Page). Состояние — только из опроса: после любого ответа сразу poll() (REFRESH_MS = 5000 не менялся).",
+      "Недоступность — только aria-disabled=\"true\" + выход обработчика; атрибута disabled у кнопок управления нет; фокус остаётся на нажатой кнопке, исчезла — на #project-goal. controlBusy — Map «адрес управления → номер запроса», сброс только своим ответом (n сверяется).",
+      "npm run check: 1109 тестов, 1107 прошли, 2 упали — WEB-4g и WEB-9d (оба ожидаемые до шага 5, вызваны серверной частью шага 9, не страницей). npm run traces — код 0."
+    ],
+    "changes": [
+      {
+        "file": "tools/src/web/public/index.html",
+        "what": "#project-stopped (класс stopped-line) между #project-pause и #project-tail; блок #controls (role=group, aria-label «Управление проектом», hidden): .ctl-row с тремя кнопками type=button (hidden по умолчанию), #stop-confirm (role=alertdialog, aria-labelledby=stop-confirm-text, hidden) с текстом подтверждения и кнопками #stop-no «Не останавливать», #stop-yes «Остановить»; #control-result с «Отправляется…», пустым server и текстом «Нет связи с сервером Sai. Проверьте состояние проекта, когда связь вернётся.»; #control-reload «Обновить страницу». Комментарий-шапка ссылается на REQ-035. Метка sai-page по-прежнему одна, знака процента и атрибута style нет.",
+        "design": "описание п. 2, 3.1, 5.1, 7, 12; контракт п. 9.1"
+      },
+      {
+        "file": "tools/src/web/public/app.js",
+        "what": "Поля app.controlApi, controlSeq, controlBusy (Map), confirming. renderHead показывает stopped_text и вызывает renderControls(p): видимость по ControlSet, controlApi = ControlSet.api (строка) или null; при открытом подтверждении и stop=false — закрыть без запроса; нажатая кнопка стала hidden — фокус на #project-goal. updateControls: aria-disabled у всех трёх при запросе по этому проекту, у «Пауза»/«Продолжить» при confirming; «Отправляется…», если запрос по проекту идёт, а строка пуста; #controls скрыт без кнопок и без строки итога. openConfirm (без запроса, фокус на #stop-no), closeConfirm(moveFocus) (фокус на #ctl-stop, если виден, иначе #project-goal), submitControl(action): синхронная проверка controlApi/controlBusy до первого await, запись api→n, тело п. 3.2, после ответа — удаление записи только при совпадении n, показ только если controlApi === api: 2xx — result_text (ok), отказ — error_text (warn у 504, err иначе), reload:true — #control-reload, нет ответа — offline (err); затем poll(). resetProject: controlApi=null, подтверждение закрыто, строка итога и reload скрыты, controlBusy не трогается. onRoute: любая смена адреса закрывает подтверждение без запроса; на списке controlApi=null. Esc закрывает подтверждение, когда карточка не открыта. Кириллицы в файле нет; тексты сервера — через textContent (setText).",
+        "design": "описание п. 4.1, 4.3, 5.2–5.4, 7, 8, 11; контракт п. 3.2, 9.2–9.4"
+      },
+      {
+        "file": "tools/src/web/public/style.css",
+        "what": ".stopped-line (13 px, #dbe4f0); .ctl-row (gap 8 px, отступ 14 px, перенос); .ctl (min-height 34 px, отступы 14 px, 13 px/650, фон #1c2738, рамка #5aa9ff, текст #dbe4f0); .ctl-resume (фон #5aa9ff, текст #07101c); .ctl-stop (рамка и текст #ef6b5e); .ctl-yes (фон и рамка #ef6b5e, текст #07101c); .ctl[aria-disabled=\"true\"] — непрозрачность 0,5, указатель обычный (не .btn:disabled); .stop-confirm (фон #1c2738, рамка #ef6b5e, скругление 7 px, отступы 12/14 px, ширина по содержимому до 36 rem, отступ 12 px); .stop-row (flex-wrap, gap 8 px, отступ 10 px); .control-result (перенос где угодно). Уже 600: .ctl min-height 44 px, кнопки ряда делят ширину поровну, подтверждение во всю ширину, кнопки подтверждения с переносом.",
+        "design": "описание п. 4.2, 5.1, 6, 7.1, 7.3, 9, 13"
+      }
+    ],
+    "self_check": [
+      "cd tools && npx prettier --write src/web/public/{index.html,app.js,style.css} (index.html переформатирован), затем npx eslint src/web/public/app.js — без вывода.",
+      "cd tools && npm run check → код 1: prettier --check — «All matched files use Prettier code style!»; eslint --max-warnings 0 — без вывода; traces — без ошибок; тесты: «# tests 1109 # pass 1107 # fail 2 # skipped 0 # todo 0». Упали только «not ok 909 - WEB-9d tools/src/web/ writes no file past the API of the core…» и «not ok 951 - WEB-4g pause_text after the engine of the server is stopped by a signal…» — оба названы ожидаемыми (step-09, I1 и I2); их вызывает код шага 9 (api.js, texts.js), страница тут ни при чём. Те же два теста и те же 1109/1107 были в отчёте step-09 до правок страницы. Тесты страницы (team-web-page, WEB-7b, WEB-7c) проходят.",
+      "cd tools && npm run traces → код 0.",
+      "grep -nP '[\\x{0400}-\\x{04FF}]' tools/src/web/public/app.js → пусто; grep -c 'sai-page' tools/src/web/public/index.html → 1; grep -n '%' tools/src/web/public/index.html → пусто; grep -n 'fetch(' tools/src/web/public/app.js → одна строка (44, request); атрибут disabled в app.js только у прежних createButton/sendButton и в селекторе карточки.",
+      "Поиск секретов (secret|token|password|api_key|/Users/|/home/|http(s)://) по tools/src/web/public/ → пусто. Поиск .only|skip(|eslint-disable|«|| true» в app.js → пусто.",
+      "Живая проверка (не замена шага 7): сервер «cd tools && SAI_TEAM_HOME=<scratch>/live/home node src/web/main.js --port 47835 --executor scripted --scenario <scratch>/live/scenario.json» (сценарий — копия test/fixtures/team/engine-basic.json без record_input, у work шаг delay_ms 25000); Chromium из ms-playwright (chromium-1243), playwright-core из внешней копии вне Sai; скрипт <scratch>/live-scripts/probe.mjs; проект создан со страницы. Итоги: в работе — видны «Пауза» и «Остановить», строка итога скрыта; щелчок «Пауза» с задержанным ответом — у «Пауза» и «Остановить» aria-disabled, DISABLED нет, фокус ctl-pause, строка «Отправляется…»; Enter, пробел и ещё щелчок — POST по-прежнему 1; после ответа «Отправлено» (ok), опрос — «на паузе», #project-pause, видны «Продолжить» и «Остановить», фокус ушёл на project-goal (кнопка исчезла); «Продолжить» → «Отправлено», снова «в работе»; щелчок «Остановить» — подтверждение, фокус stop-no, «Пауза» aria-disabled; Tab → stop-yes; Shift+Tab ×2 → ctl-stop; Esc — подтверждение скрыто, фокус ctl-stop, POST не прибавилось; «Не останавливать» — то же; пауза из «второй вкладки» (fetch со страницы), затем «Пауза» → err «Проект уже на паузе»; обрыв запроса (route.abort) → err «Нет связи с сервером Sai. Проверьте состояние проекта, когда связь вернётся.», фокус на кнопке; чужой ключ в X-Sai-Page → err «Sai Team был перезапущен, и эта страница устарела. Обновите страницу и повторите» и видна #control-reload; «Остановить» → «Остановить» в подтверждении → «Отправлено», опрос — «остановлен», #project-stopped, кнопок нет, строка итога осталась. Тела POST: {\"action\":\"pause\"}, {\"action\":\"resume\"}, {\"action\":\"stop\",\"confirmed\":true}. Горизонтальной прокрутки нет ни в одном состоянии в 1470×784 и 375×812 (scrollWidth ≤ clientWidth). Снимки заголовка — только в <scratch>/live/shots (в docs/design/samples ничего не писалось; снимки приёмки делает DESIGN-QA-VALIDATOR). Сервер остановлен SIGINT, pgrep — процессов нет; настоящий Claude не запускался; в Sai ничего не ставилось.",
+      "git status: изменены только tools/src/web/public/{app.js,index.html,style.css} и добавлен этот handoff (чужой неотслеженный handoffs/REQ-20261011-01/step-12-req-validator.json был до работы)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_FAILURE",
+        "text": "WEB-4g (team-web-project.test.js, прежний текст pause_text) и WEB-9d (team-web-guard.test.js, строка импорта channel.js и число вызовов deliver( в api.js) падают из-за кода шага 9 (BACKEND-DEV, step-09 I1, I2); правит TEST-DESIGNER на шаге 5. Других падений нет."
+      },
+      {
+        "id": "I2",
+        "kind": "DEVIATION",
+        "text": "closeConfirm при смене адреса (контракт п. 9.3: «фокус на #ctl-stop, если он виден, иначе на #project-goal») переносит фокус только если он был внутри #stop-confirm и проект на экране тот же; так же при закрытии опросом (stop=false). Причина: иначе опрос или переход в карточку/другой проект забирали бы фокус у того, что человек сейчас делает (поле чата, кнопка закрытия карточки, которую onRoute фокусирует после), а при смене проекта фокус попадал бы на скрытую кнопку старого проекта. По кнопке «Не останавливать», Esc и «Остановить» в подтверждении фокус переносится всегда, как в контракте."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Для TEST-DESIGNER (шаг 5): в модели DOM team-web-dom.js нет метода click() и обработчики клавиш у кнопок не эмулируются; страница слушает только событие click у кнопок (в браузере Enter и пробел на кнопке дают click), поэтому в CTL-8f «Enter и пробел» на модели — это dispatchEvent(event(\"click\")) или keydown, который страница не обрабатывает (запросов не прибавится в обоих случаях). Отдельного обработчика keydown на кнопках нет намеренно — иначе в браузере было бы два нажатия. Тела projectBody тестов страницы можно дополнить controls и stopped_text; страница терпит их отсутствие (stopped_text ?? null, controls не объект — кнопок нет)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Playwright считает кнопку с aria-disabled=\"true\" «не enabled» и по умолчанию не щёлкает её (ждёт до таймаута) — DESIGN-QA-VALIDATOR и UAT-RUNNER должны использовать click({ force: true }) или клавиатуру для проверки «нажатие на недоступной не действует»."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/web/public/index.html",
+      "tools/src/web/public/app.js",
+      "tools/src/web/public/style.css",
+      "handoffs/PROD-20261011-01/step-15-frontend-dev.json"
+    ]
+  }
+}
