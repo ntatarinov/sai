@@ -1,6 +1,6 @@
 # ISS-0020 — Текст паузы обещает больше, чем происходит, у проекта, ждавшего решения по потолку
 
-Серьёзность: LOW. Статус: open. Найдено: BA-ANALYST прогона `PROD-20261011-01` (`docs/uat/REQ-035.md`, сценарий 39; `handoffs/PROD-20261011-01/step-25-ba-analyst.json`); проверит UAT-RUNNER. Пункт планки: Q10 (текст для человека правдив).
+Серьёзность: LOW. Статус: closed, 2026-10-11, остаток — ISS-0022. Найдено: BA-ANALYST прогона `PROD-20261011-01` (`docs/uat/REQ-035.md`, сценарий 39; `handoffs/PROD-20261011-01/step-25-ba-analyst.json`); проверит UAT-RUNNER. Пункт планки: Q10 (текст для человека правдив).
 
 ## Что не так
 
@@ -9,3 +9,11 @@
 ## Как исправить
 
 Отдельный текст паузы для проекта, ждавшего решения («Проект на паузе. Он ждал вашего решения: после «Продолжить» он снова спросит об этом»); контракт (поле `pause_text`, таблица п. 5), тест и строка README; решение CODE-DESIGNER и ORCH (WF-03).
+
+## Закрыто
+
+2026-10-11T10:30:40Z (по часам), прогон `PROD-20261011-01`. Маршрут: CODE-DESIGNER (`step-27`, `step-29`) → CODE-DESIGN-VALIDATOR (`step-28`, `step-30`) → BACKEND-DEV (`step-31`) → SECURITY-REVIEWER (`step-32`) → REVIEWER (`step-33`) → TEST-DESIGNER (`step-34`) → CODE-FIXER (`step-35`) → TEST-DESIGN-VALIDATOR (`step-36`) → TEST-RUNNER (`step-37`) → UAT-RUNNER (`step-39`) → BA-ANALYST (`step-40`) → RELEASE-VALIDATOR (`step-41`, `step-43`) → DOC-UPDATER (`step-44`).
+
+- **Итог:** четыре текста паузы по причине ожидания работают: сервер выбирает текст по журналу, а не обещает «чтобы работа пошла дальше» всем подряд. Проверено на запущенной системе: UAT-RUNNER, `handoffs/PROD-20261011-01/step-39-uat-runner.json`; RELEASE-VALIDATOR, `step-41-release-validator.json` и `step-43-release-validator.json` (`cd tools && npm run check` — код 0, 1164 из 1164).
+- **Исправление:** `tools/src/web/display.js` (`pauseText`), `tools/src/web/texts.js`; контракт — поле `pause_text`, `docs/design/REQ-035-*.md`. Тесты — файлы `team-web-control*.test.js` в `tools/test/`.
+- **Остаток, не исправлен — ISS-0022 (LOW):** пауза без ожидания при исчерпанном потолке. Строка по-прежнему говорит «Нажмите «Продолжить», чтобы работа пошла дальше», хотя после нажатия проект сразу ждёт решения по потолку (step-41, L1). Этот текст дословно требует критерий 1 REQ-035; править его — решение владельца (WF-01).
