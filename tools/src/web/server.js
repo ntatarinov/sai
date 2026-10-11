@@ -17,11 +17,13 @@ import {
   getTask,
   notFoundReply,
   postChat,
+  postControl,
   postProject,
 } from "./api.js";
 import {
   BODY_IDLE_MS,
   BODY_MAX,
+  CONTROL_BODY_MAX,
   HOST,
   JSON_TYPE,
   KEY_BYTES,
@@ -151,8 +153,11 @@ function pathParts(pathname) {
   }
 }
 
-// The route of a path: { get?, post?, field } or null (section 5.1). field — the
-// field of the form a too big body belongs to.
+// The route of a path: { get?, post?, field, bodyMax?, overBody?, staleText? } or
+// null (section 5.1). field — the field of the form a too big body belongs to;
+// bodyMax, overBody — the limit of the body and the answer over it (BODY_MAX and
+// 413 by default); staleText — the text for a key of another start (design
+// REQ-035, section 3.4).
 function routeOf(parts) {
   if (parts.length < 2 || parts[0] !== "api" || parts[1] !== "projects") {
     return null;
@@ -168,6 +173,15 @@ function routeOf(parts) {
   if (!PATTERNS.project.test(id)) return null;
   if (parts.length === 3) {
     return { get: (ctx) => getProject(ctx, id), field: null };
+  }
+  if (parts.length === 4 && parts[3] === "control") {
+    return {
+      post: (ctx, body) => postControl(ctx, id, body),
+      field: null,
+      bodyMax: CONTROL_BODY_MAX,
+      overBody: failure(400, TEXT.badRequest),
+      staleText: TEXT.staleKeyControl,
+    };
   }
   if (parts.length === 4 && parts[3] === "chat") {
     return {
@@ -190,7 +204,10 @@ function routeOf(parts) {
 }
 
 function allowOf(route) {
-  return route.post === undefined ? "GET" : "GET, POST";
+  const methods = [];
+  if (route.get !== undefined) methods.push("GET");
+  if (route.post !== undefined) methods.push("POST");
+  return methods.join(", ");
 }
 
 // opts = { home, env, config, executor, scenarioBytes, port, publicFiles, engines,
@@ -215,6 +232,9 @@ export function createWebServer(opts) {
     scenarioBytes: opts.scenarioBytes ?? null,
     engines: opts.engines,
     warn,
+    // The ids of the projects this server runs a command of control for now
+    // (decisions/0032, C5).
+    controlling: new Set(),
   };
 
   // The key of this start: in memory only, never written, printed or answered.
@@ -304,7 +324,7 @@ export function createWebServer(opts) {
   }
 
   // Section 4.1, step 3: before the body is read.
-  function writeAllowed(req) {
+  function writeAllowed(req, route) {
     const origin = req.headers.origin;
     const origins = [
       `http://${HOST}:${actualPort}`,
@@ -321,20 +341,22 @@ export function createWebServer(opts) {
       return failure(403, TEXT.refused);
     }
     if (!crypto.timingSafeEqual(Buffer.from(given, "utf8"), keyBytes)) {
-      return failure(403, TEXT.staleKey, null, true);
+      return failure(403, route.staleText ?? TEXT.staleKey, null, true);
     }
     return null;
   }
 
-  // Section 4.1, step 4: at most BODY_MAX bytes, UTF-8, JSON, an object; at most
-  // bodyIdleMs of pause from the start of the read and from each next part.
+  // Section 4.1, step 4: at most the limit of the route (BODY_MAX by default)
+  // bytes, UTF-8, JSON, an object; at most bodyIdleMs of pause from the start of
+  // the read and from each next part.
   function readBody(req, res, route) {
-    const tooBig = failure(413, TEXT.tooBig, route.field);
+    const limit = route.bodyMax ?? BODY_MAX;
+    const tooBig = route.overBody ?? failure(413, TEXT.tooBig, route.field);
     const declared = req.headers["content-length"];
     if (
       declared !== undefined &&
       isDigits(declared) &&
-      Number(declared) > BODY_MAX
+      Number(declared) > limit
     ) {
       refuse(req, res, tooBig);
       return;
@@ -367,7 +389,7 @@ export function createWebServer(opts) {
     const onData = (chunk) => {
       arm();
       total += chunk.length;
-      if (total > BODY_MAX) {
+      if (total > limit) {
         stop();
         chunks.length = 0;
         refuse(req, res, tooBig);
@@ -437,7 +459,7 @@ export function createWebServer(opts) {
       refuse(req, res, notFoundReply());
       return;
     }
-    if (req.method === "GET") {
+    if (req.method === "GET" && route.get !== undefined) {
       run(res, () => route.get(ctx));
       return;
     }
@@ -448,7 +470,7 @@ export function createWebServer(opts) {
       return;
     }
     // 3. Origin, type and key; 4. the body.
-    const refused = writeAllowed(req);
+    const refused = writeAllowed(req, route);
     if (refused !== null) {
       refuse(req, res, refused);
       return;

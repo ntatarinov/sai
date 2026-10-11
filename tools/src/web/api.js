@@ -4,15 +4,20 @@
 // server and, for the chat, only deliver of the engine — the one entry that gives
 // a message to a running engine or, without one, writes it through the core.
 //
+// The control of a project (design REQ-035, section 6): pause and stop only through
+// deliver; resume through deliver to a live engine, otherwise through an engine of
+// the server in the mode "resume" (decisions/0030, section 2; 0032, C3).
+//
 // Every handler returns a Reply = { status, body } (or a promise of one) and never
 // throws: a refusal is a Failure with a text of texts.js, never the message of an
 // error of the core (it may hold codes of the system, pids or commands).
-import { deliver } from "../team/engine/channel.js";
+import { deliver, engineHolder } from "../team/engine/channel.js";
 import { TeamError, formatError } from "../team/errors.js";
 import { LIMITS } from "../team/schema.js";
 import { createProject, listProjects, readProject } from "../team/store.js";
 import {
   chatPage,
+  controlRefusal,
   listItem,
   projectPage,
   roleCard,
@@ -25,6 +30,7 @@ import {
   WHY_NOT_STARTED,
   WHY_OTHER,
   createdNotStarted,
+  resumeFailed,
 } from "./texts.js";
 
 // ---- replies ------------------------------------------------------------------------
@@ -274,6 +280,155 @@ export async function postChat(ctx, id, body) {
     const event = r.via === "engine" ? (r.ack?.event ?? null) : r.event;
     if (r.via !== "engine") sayAll(ctx, r.notices);
     return ok(200, { result_text: TEXT.sent, message: sentMessage(id, event) });
+  } catch (err) {
+    return internal(ctx, err);
+  }
+}
+
+// ---- the control of a project (design REQ-035, section 6) ---------------------------
+
+// The action of a body of the form of section 3.2, or null.
+function controlAction(body) {
+  if (
+    hasExactKeys(body, ["action"]) &&
+    (body.action === "pause" || body.action === "resume")
+  ) {
+    return body.action;
+  }
+  if (
+    hasExactKeys(body, ["action", "confirmed"]) &&
+    body.action === "stop" &&
+    body.confirmed === true
+  ) {
+    return "stop";
+  }
+  return null;
+}
+
+// The refusals of a command, by code: [status, text] (section 6.4).
+const CONTROL_REFUSALS = Object.freeze({
+  E_DISK: [500, TEXT.ctlDisk],
+  E_PROJECT_BUSY: [409, TEXT.ctlBusy],
+  E_CHANNEL_FULL: [409, TEXT.ctlBusy],
+  E_CHANNEL_DROPPED: [409, TEXT.ctlBusy],
+  E_ENGINE_STOPPING: [409, TEXT.ctlStopping],
+  E_CHANNEL_TIMEOUT: [504, TEXT.ctlUnconfirmed],
+  E_CHANNEL_UNCONFIRMED: [504, TEXT.ctlUnconfirmed],
+  E_CHANNEL_STALE: [504, TEXT.ctlUnconfirmed],
+  E_CHANNEL: [500, TEXT.chatLinkDown],
+  E_CHANNEL_BAD: [500, TEXT.chatLinkDown],
+  E_USAGE: [400, TEXT.badRequest],
+});
+
+// The refusals of the engine about the state of the project: the text is chosen
+// by the state read anew.
+const STATE_CODES = Object.freeze([
+  "E_PAUSE_STATE",
+  "E_STOPPED",
+  "E_FINISHED",
+  "E_ALREADY_RUNNING",
+  "E_NOT_STARTED",
+  "E_OPEN_QUESTION",
+  "E_BUDGET_NEEDED",
+  "E_TRANSITION",
+]);
+
+// The checks of the executor before the engine "resume" opens.
+const PREFLIGHT_CODES = Object.freeze([
+  "E_SCENARIO",
+  "E_CONFIG",
+  "E_WORK_DIR",
+  "E_NO_BUDGET",
+  "E_REAL_RUNS_OFF",
+  "E_EXECUTOR",
+  "E_EXECUTOR_NOT_FOUND",
+]);
+
+// Exported for the tests of the refusals of the control (design REQ-035, section
+// 6.4, CTL-7c). The message of the error never goes to the page.
+export function controlFailure(ctx, id, action, err) {
+  const code = codeOf(err);
+  if (code === "E_NOT_FOUND") return notFoundReply();
+  if (code === "E_CORRUPT") return failure(500, TEXT.corrupt);
+  if (code === "E_DISK" && err?.details?.rollback === "failed") {
+    return failure(500, TEXT.ctlDiskUnsure);
+  }
+  if (code !== null && Object.hasOwn(CONTROL_REFUSALS, code)) {
+    const [status, text] = CONTROL_REFUSALS[code];
+    return failure(status, text);
+  }
+  if (STATE_CODES.includes(code)) {
+    // A read without the lock: it only chooses the text and allows nothing.
+    let read;
+    try {
+      read = readProject(id, { home: ctx.home });
+    } catch (readErr) {
+      return readFailure(ctx, readErr);
+    }
+    const text = controlRefusal(action, read.state, read.events);
+    return failure(409, text ?? TEXT.ctlBusy);
+  }
+  if (PREFLIGHT_CODES.includes(code)) {
+    return failure(409, resumeFailed(whyNotStarted(err)));
+  }
+  return internal(ctx, err);
+}
+
+// A live engine leads the project: an engine of this server, or the lock is alive
+// and its holder is an engine of another process.
+function engineLive(ctx, id) {
+  return ctx.engines.has(id) || engineHolder(id, { home: ctx.home }) !== null;
+}
+
+// Section 6.3, step 2: no live engine — the engine of the project in the process
+// of the server, in the mode "resume".
+async function resumeHere(ctx, id) {
+  const r = await ctx.engines.resume(id);
+  if (r.resumed) {
+    return r.error === null
+      ? ok(200, { result_text: TEXT.sent })
+      : failure(500, TEXT.ctlResumedBroken);
+  }
+  if (r.error !== null) return controlFailure(ctx, id, "resume", r.error);
+  return failure(504, TEXT.ctlUnconfirmed);
+}
+
+async function control(ctx, id, action) {
+  let read;
+  try {
+    read = readOne(ctx, id);
+  } catch (err) {
+    return readFailure(ctx, err);
+  }
+  const refusal = controlRefusal(action, read.state, read.events);
+  if (refusal !== null) return failure(409, refusal);
+  try {
+    if (action === "resume" && !engineLive(ctx, id)) {
+      return await resumeHere(ctx, id);
+    }
+    const args = action === "resume" ? { parallel: null } : {};
+    const r = await deliver(id, { kind: action, args }, { home: ctx.home });
+    if (r.via !== "engine") sayAll(ctx, r.notices);
+    return ok(200, { result_text: TEXT.sent });
+  } catch (err) {
+    return controlFailure(ctx, id, action, err);
+  }
+}
+
+// body: the parsed JSON object of the request; id: checked against the pattern
+// of a project by the route. One command per project at a time in this server
+// (decisions/0032, C5).
+export async function postControl(ctx, id, body) {
+  try {
+    const action = controlAction(body);
+    if (action === null) return failure(400, TEXT.badRequest);
+    if (ctx.controlling.has(id)) return failure(409, TEXT.ctlBusy);
+    ctx.controlling.add(id);
+    try {
+      return await control(ctx, id, action);
+    } finally {
+      ctx.controlling.delete(id);
+    }
   } catch (err) {
     return internal(ctx, err);
   }

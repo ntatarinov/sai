@@ -279,6 +279,87 @@ function resultRef(ctx, file) {
   };
 }
 
+// ---- the control of a project (design REQ-035, sections 4 and 5) --------------------
+
+// The address of the POST of control: a string, not a Link — it is never opened by
+// GET (decisions/0032, C6).
+function controlApi(id) {
+  return `${projectApi(id)}/control`;
+}
+
+const CAN_PAUSE = Object.freeze(["planning", "running", "waiting_user"]);
+const CAN_STOP = Object.freeze([
+  "planning",
+  "running",
+  "paused",
+  "waiting_user",
+]);
+
+// Which buttons the page shows for a status (section 5.1).
+export function controlsFor(status) {
+  return {
+    pause: CAN_PAUSE.includes(status),
+    resume: status === "paused",
+    stop: CAN_STOP.includes(status),
+  };
+}
+
+function taskQuestionOpen(state, events) {
+  return openQuestions(state, scanFacts(events)).some((q) => q.task !== null);
+}
+
+// The ceiling was raised after the project began to wait: a BUDGET_SET after
+// the last PROJECT_WAITING.
+function budgetRaised(events) {
+  let lastWaiting = 0;
+  let lastSet = 0;
+  for (const e of events) {
+    if (e.type === "PROJECT_WAITING") lastWaiting = e.seq;
+    else if (e.type === "BUDGET_SET") lastSet = e.seq;
+  }
+  return lastSet > lastWaiting;
+}
+
+function waitingRefusal(state, events) {
+  if (state.waiting !== null && state.waiting.reason === "budget") {
+    return budgetRaised(events) ? TEXT.ctlDecision : TEXT.ctlBudget;
+  }
+  if (taskQuestionOpen(state, events)) return TEXT.ctlTaskDecision;
+  return TEXT.ctlDecision;
+}
+
+// The refusal of an action before it is sent (section 5.2): null — the action
+// goes on; a string — the text of the refusal 409. action: "pause" | "resume" |
+// "stop".
+export function controlRefusal(action, state, events) {
+  switch (state.status) {
+    case "created":
+      return TEXT.ctlNotStarted;
+    case "planning":
+    case "running":
+      return action === "resume" ? TEXT.ctlAlreadyRunning : null;
+    case "waiting_user":
+      return action === "resume" ? waitingRefusal(state, events) : null;
+    case "paused":
+      if (action === "pause") {
+        return state.paused_by === "recovery"
+          ? TEXT.ctlPausedAfterFailure
+          : TEXT.ctlAlreadyPaused;
+      }
+      if (action === "resume" && taskQuestionOpen(state, events)) {
+        return TEXT.ctlTaskDecision;
+      }
+      return null;
+    case "stopped":
+      return action === "resume" ? TEXT.stoppedFinal : TEXT.ctlAlreadyStopped;
+    case "done":
+    case "failed":
+      return TEXT.ctlFinished;
+    default:
+      return TEXT.internal;
+  }
+}
+
 // read = readProject of the core: { state, tail, events }.
 export function projectPage(read) {
   const ctx = context(read);
@@ -304,6 +385,8 @@ export function projectPage(read) {
       progress(state),
     ),
     pause_text: state.status === "paused" ? TEXT.paused : null,
+    stopped_text: state.status === "stopped" ? TEXT.stoppedFinal : null,
+    controls: { ...controlsFor(state.status), api: controlApi(id) },
     tail_text: read.tail ? TEXT.tail : null,
     happening: happening(ctx),
     busy: busyRoles(state),

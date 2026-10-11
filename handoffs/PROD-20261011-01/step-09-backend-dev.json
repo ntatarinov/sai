@@ -1,0 +1,131 @@
+{
+  "handoff_id": "step09-backend-dev-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/PROD-20261011-01/step-09-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "docs/design/REQ-035-team-web-control.md (r3)",
+      "handoffs/PROD-20261011-01/step-08-code-design-validator.json (PASS)",
+      "decisions/0032-req035-web-control.md",
+      "decisions/0030-req035-037-open-points.md",
+      "decisions/0025-team-web-server.md",
+      "decisions/0026",
+      "decisions/0020",
+      "docs/requirements.yaml (REQ-035)",
+      "docs/anti-patterns.md"
+    ],
+    "write_set": [
+      "tools/src/web/api.js",
+      "tools/src/web/server.js",
+      "tools/src/web/display.js",
+      "tools/src/web/engines.js",
+      "tools/src/web/texts.js",
+      "tools/src/web/config.js",
+      "tools/README.md",
+      "handoffs/PROD-20261011-01/step-09-backend-dev.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было; поля верхнего уровня записаны BACKEND-DEV по сообщению ORCH."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T06:04:53Z",
+  "started_at": "2026-10-11T06:04:53Z",
+  "completed_at": "2026-10-11T06:11:46Z",
+  "task": {
+    "description": "WF-02, шаг 2: сервер REQ-035 по проекту r3 — маршрут POST /api/projects/<id>/control, поля controls/stopped_text/pause_text, тексты, engines.resume/has, предел тела маршрута, README."
+  },
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Сервер построен по проекту r3 (п. 2–8, 10–13). Страницы (tools/src/web/public/*), тесты, main.js, tools/src/team и места записи REQ-009 не менялись.",
+      "Маршрут POST /api/projects/<id>/control: форма тела п. 3.2, набор ctx.controlling (одна команда на проект, C5), controlRefusal до отправки, пауза и остановка — только deliver, «Продолжить» — deliver при живом движке (engines.has или engineHolder), иначе engines.resume (режим resume, движок в процессе сервера, без child_process). Ошибки — controlFailure по таблице п. 6.4.",
+      "npm run check: 1109 тестов, 1107 прошли, 2 упали — WEB-4g (ожидаемый по п. 18) и WEB-9d (не названный проектом; см. issues I1)."
+    ],
+    "changes": [
+      {
+        "file": "tools/src/web/config.js",
+        "what": "CONTROL_BODY_MAX = 4_096; комментарий ENGINE_START_WAIT_MS охватывает и продолжение",
+        "design": "п. 2"
+      },
+      {
+        "file": "tools/src/web/texts.js",
+        "what": "TEXT.paused — новый текст; stoppedFinal, ctlAlreadyPaused, ctlPausedAfterFailure, ctlResumedBroken, ctlAlreadyRunning, ctlAlreadyStopped, ctlFinished, ctlNotStarted, ctlTaskDecision, ctlBudget, ctlDecision, ctlStopping, ctlBusy, ctlUnconfirmed, ctlDisk, ctlDiskUnsure, staleKeyControl; функция resumeFailed(why)",
+        "design": "п. 8"
+      },
+      {
+        "file": "tools/src/web/display.js",
+        "what": "controlsFor(status), controlRefusal(action, state, events) (чистые, экспортируются); в projectPage — stopped_text и controls {pause, resume, stop, api} (api — строка /api/projects/<id>/control, не Link)",
+        "design": "п. 4, 5.1, 5.2"
+      },
+      {
+        "file": "tools/src/web/engines.js",
+        "what": "общая launch(id, mode); resume(id) — запись в карте → E_ALREADY_RUNNING без второго create; первая проверка синхронно сразу после run(), до первого await; порядок «возобновление → отказ → конец без признака (E_INTERNAL) → срок (late)»; has(id); параметр create (по умолчанию createEngine). start, stopAll, size — прежнее поведение",
+        "design": "п. 7"
+      },
+      {
+        "file": "tools/src/web/api.js",
+        "what": "postControl, controlFailure (экспорт), controlAction, engineLive, resumeHere; импорт engineHolder из channel.js; перечитывание в строке «состояние» — readProject без замка и без ctx.warn",
+        "design": "п. 6.1–6.4"
+      },
+      {
+        "file": "tools/src/web/server.js",
+        "what": "ветка routeOf «control» (только post, bodyMax CONTROL_BODY_MAX, overBody 400 badRequest, staleText staleKeyControl); allowOf даёт GET / GET, POST / POST; GET при маршруте без get → 405 Allow: POST; writeAllowed(req, route) — route.staleText ?? TEXT.staleKey; readBody — route.bodyMax ?? BODY_MAX и route.overBody ?? 413 tooBig; ctx.controlling = new Set()",
+        "design": "п. 3.1, 3.4, 12"
+      },
+      {
+        "file": "tools/README.md",
+        "what": "раздел «## Sai Team — интерфейс»: в «Остановка» прежняя фраза «командой resume» заменена новым pause_text и кнопкой «Продолжить» после перезапуска, строка npm run team -- resume оставлена; новый подраздел «### Кнопки проекта» — три кнопки и когда видны, подтверждение, «Остановка необратима», ждущий проект продолжается ответом (budget из терминала), правдивая строка о паузе во время ожидания (потолок — сразу снова ждёт без запусков; план или проверка цели — возможен новый платный запуск в пределах потолка), страница пишет только через движок; в «Безопасность» — кнопки проекта тоже только со своей страницы",
+        "design": "п. 13"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check → код 1: prettier --check — «All matched files use Prettier code style!»; eslint --max-warnings 0 — без вывода; traces — код 0; тесты: «# tests 1109 # pass 1107 # fail 2 # cancelled 0 # skipped 0 # todo 0». Упали: «not ok 951 - WEB-4g …» (team-web-project.test.js:804, expected 'Проект приостановлен, продолжите его командой resume', actual 'Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше') и «not ok 909 - WEB-9d …» (team-web-guard.test.js:271, см. I1).",
+      "cd tools && npm run traces → код 0.",
+      "grep -rnE 'appendFile|writeFile|createWriteStream|openSync|rename' tools/src/web/ → пусто; grep -rn 'inbox' tools/src/web/ → пусто; grep -rn 'child_process' tools/src/web/ → пусто; grep -rlE 'node:(https|net|tls|dgram)' tools/src/web/ → пусто; grep -rn 'командой resume' tools/src/web/ → пусто; grep -n 'resume' tools/src/web/engines.js → строки 20, 32, 87 … (launch(id, \"resume\")).",
+      "Критерий 12/13 (awk по разделу README | grep -c): Продолжить 3, необратима 1, Пауза 2, Остановить 1, resume 4.",
+      "Поиск секретов (secret|token|password|api_key|/Users/|/home/) по tools/src/web/*.js — пусто; в README совпадения только в прежних разделах Pixel Office (описание правил маскирования), новый текст их не содержит.",
+      "Проба (scripted, настоящие движки сервера в процессе) — копия tools в <scratch>/copy/tools, файл <scratch>/copy/tools/test/zz-probe-ctl.test.js, запуск «cd <scratch>/copy/tools && node --test test/zz-probe-ctl.test.js»: «# pass 2 # fail 0». Вывод: controls running {pause:true,resume:false,stop:true,api:…/control}; GET адреса управления 405 Allow POST «Запрос не понят…»; {\"action\":\"stop\"}, confirmed:false, confirmed у паузы, неизвестное действие, [1], не JSON, 8192, 4097 и 70000 байт верного тела — 400 «Запрос не понят. Обновите страницу»; чужой ключ — 403 reload:true «Sai Team был перезапущен, и эта страница устарела. Обновите страницу и повторите»; resume у running — 409 «Проект уже работает»; pause телом ровно 4096 байт — 200 «Отправлено», новые события «PROJECT_PAUSED/USER», замок тот же pid и holder engine; повтор — 409 «Проект уже на паузе»; GET — «на паузе», controls {pause:false,resume:true,stop:true}, новый pause_text; stopAll → замок null; resume без движка — 200, has true, «PROJECT_RESUMED/USER TASK_STARTED/ENGINE …», замок holder engine с pid процесса; две паузы одновременно — 200 и 409 «Команда не выполнена…»; resume через живой движок — 200; stop confirmed — 200, последнее событие PROJECT_STOPPED/USER, задачи TASK_INTERRUPTED; GET — «остановлен», controls все false, stopped_text «Проект остановлен. Продолжить его нельзя»; на остановленном resume — 409 «Проект остановлен. Продолжить его нельзя», pause и stop — 409 «Проект уже остановлен»; несуществующий p-20990101-a1b2c3 и ..%2Fx — 404 «Не найдено» одинаково; созданный проект stop — 409 «Проект ещё не начал работу…»; чат 70000 байт — 413 «Сообщение слишком большое», field text (прежнее); warnings сервера — [].",
+      "Проба engines.resume с поддельной фабрикой (тот же файл): «открывается на следующем макрошаге, run() отклоняется E_DISK»: S=running → resumed true, E_DISK; S=paused → resumed false, E_DISK; S=stopped → resumed false, E_DISK; фабрика вызвана один раз с mode resume. state() сразу running: ответ {resumed:true,error:null,late:false}, отметка setTimeout 0 к ответу не стоит (первая проверка синхронная); второй resume при живой записи — E_ALREADY_RUNNING, фабрика не вызвана второй раз.",
+      "Изменены только файлы write_set (git status: tools/README.md и шесть файлов tools/src/web/*.js, кроме public/; плюс этот handoff). Коммита нет."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DESIGN_GAP",
+        "text": "Проект п. 18 называет ожидаемым провалом только WEB-4g, но обязательный по п. 6.3 и 11 код ломает и WEB-9d (tools/test/team-web-guard.test.js:252–275): тест требует, чтобы единственная строка api.js со словом channel была ровно 'import { deliver } from \"../team/engine/channel.js\";' и чтобы вызов deliver( в api.js был ровно один. Проект же велит импортировать engineHolder из channel.js (п. 6.3, шаг 1) и вызывать deliver в postChat и postControl (п. 11: «grep -rn 'deliver' находит api.js (импорт и вызовы в postChat, postControl)»). Вывод теста: «+ 'import { deliver, engineHolder } from \"../team/engine/channel.js\";' - 'import { deliver } from \"../team/engine/channel.js\";'». Тест я не правил (проект не называет изменение этого ожидания). Обходить его (многострочный импорт, перенос engineHolder в другой модуль) не стал — это подгонка под тест. Что нужно: TEST-DESIGNER на шаге 5 обновляет WEB-9d — разрешённая строка импорта 'import { deliver, engineHolder } from \"../team/engine/channel.js\";' и два вызова deliver( (postChat, postControl); остальные проверки WEB-9d (нет appendFile/writeFile/…, inbox, child_process; channel только в api.js) мой код выполняет. Решение — ORCH (может понадобиться строка в проекте п. 18)."
+      },
+      {
+        "id": "I2",
+        "kind": "EXPECTED_FAILURE",
+        "text": "WEB-4g (team-web-project.test.js:806) падает по прежнему тексту pause_text — ожидаемый провал по п. 12 и 18 проекта; новый ожидаемый текст «Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше» вносит TEST-DESIGNER на шаге 5."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Выборы на месте, не меняющие контракт: (а) в controlFailure «прочие коды предпроверки» — E_SCENARIO, E_CONFIG, E_WORK_DIR, E_NO_BUDGET, E_REAL_RUNS_OFF, E_EXECUTOR, E_EXECUTOR_NOT_FOUND (коды executor.check, кроме E_BUDGET_EXHAUSTED, который движок не считает отказом); текст — resumeFailed(WHY_NOT_STARTED[code] или WHY_OTHER). (б) controlRefusal для статуса вне списка схемы возвращает TEXT.internal (недостижимо). (в) Ответ engines.resume без resumed, без error и без late (контрактом не бывает) обработчик даёт как late — 504 ctlUnconfirmed. (г) Перечитывание в строке «состояние» п. 6.4 — readProject без вывода предупреждений в ctx.warn, чтобы warn вызывался только у последней строки таблицы (CTL-7c)."
+      },
+      {
+        "id": "I4",
+        "kind": "HANDOVER",
+        "text": "Осталось FRONTEND-DEV (tools/src/web/public/index.html, app.js, style.css): кнопки #ctl-pause/#ctl-resume/#ctl-stop, подтверждение #stop-confirm, строка итога #control-result, #control-reload, #project-stopped, состояние controlApi/controlSeq/controlBusy/confirming по п. 9. Сервер готов: адрес — ProjectPage.controls.api, тела п. 3.2, ответы Controlled {result_text} и Failure {error_text, field:null, reload}. TEST-DESIGNER (шаг 5): WEB-4g, WEB-9d (I1), DISPLAY_KEYS + stopped_text, fakeEngines + resume/has, projectBody + controls, новые team-web-control*.test.js и fixtures/team/no-ack.js."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/web/config.js",
+      "tools/src/web/texts.js",
+      "tools/src/web/display.js",
+      "tools/src/web/engines.js",
+      "tools/src/web/api.js",
+      "tools/src/web/server.js",
+      "tools/README.md",
+      "handoffs/PROD-20261011-01/step-09-backend-dev.json"
+    ]
+  }
+}

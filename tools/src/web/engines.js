@@ -1,17 +1,24 @@
 // The engines of REQ-013 in the process of the server (design REQ-011, section
-// 8.3; decisions/0025, W1). The right to write a project is the lock of the core
-// with holder "engine" and the pid of the server; the server starts no process.
+// 8.3; design REQ-035, section 7; decisions/0025, W1, and 0030, section 2). The
+// right to write a project is the lock of the core with holder "engine" and the
+// pid of the server; the server starts no process.
 import { createEngine } from "../team/engine/engine.js";
-import { formatError } from "../team/errors.js";
+import { TeamError, engineError, formatError } from "../team/errors.js";
 import { ENGINE_START_WAIT_MS, START_POLL_MS } from "./config.js";
 
 function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// opts = { home, env, warn }; warn gets one line for stderr.
-// Engines = { start(id), stopAll(waitMs), size() }
-export function createEngines({ home, env, warn }) {
+// The statuses a paused project reaches only by PROJECT_RESUMED (design REQ-035,
+// section 7, step 1).
+const RESUMED = Object.freeze(["planning", "running", "waiting_user", "done"]);
+
+// opts = { home, env, warn, create? }; warn gets one line for stderr; create — the
+// factory of an engine (createEngine of the engine by default; only the tests give
+// another one).
+// Engines = { start(id), resume(id), has(id), stopAll(waitMs), size() }
+export function createEngines({ home, env, warn, create = createEngine }) {
   const running = new Map(); // id -> { engine, done, settled, error }
 
   function report(id, err) {
@@ -22,17 +29,15 @@ export function createEngines({ home, env, warn }) {
     }
   }
 
-  // { started, error }: started — the engine wrote its start (the project is no
-  // longer "created"), or it is still opening when the wait is over; error — the
-  // refusal of the engine (a TeamError) when it ended before.
-  async function start(id) {
-    if (running.has(id)) return { started: true, error: null };
+  // The engine of a project in this process, in the mode "start" or "resume":
+  // { entry } — it runs (the end is not awaited), or { error } — it was not made.
+  function launch(id, mode) {
     let engine;
     try {
-      engine = createEngine(id, { home, env, mode: "start" });
+      engine = create(id, { home, env, mode });
     } catch (err) {
       report(id, err);
-      return { started: false, error: err };
+      return { entry: null, error: err };
     }
     const entry = { engine, done: null, settled: false, error: null };
     running.set(id, entry);
@@ -53,6 +58,17 @@ export function createEngines({ home, env, warn }) {
       entry.settled = true;
       if (running.get(id) === entry) running.delete(id);
     });
+    return { entry, error: null };
+  }
+
+  // { started, error }: started — the engine wrote its start (the project is no
+  // longer "created"), or it is still opening when the wait is over; error — the
+  // refusal of the engine (a TeamError) when it ended before.
+  async function start(id) {
+    if (running.has(id)) return { started: true, error: null };
+    const { entry, error } = launch(id, "start");
+    if (entry === null) return { started: false, error };
+    const { engine } = entry;
 
     const deadline = Date.now() + ENGINE_START_WAIT_MS;
     for (;;) {
@@ -66,6 +82,54 @@ export function createEngines({ home, env, warn }) {
       }
       await pause(START_POLL_MS);
     }
+  }
+
+  // { resumed, error, late } (design REQ-035, section 7): resumed — the engine
+  // wrote the resumption (error is then its failure if it already ended); error
+  // alone — the refusal of the engine; late — neither within the wait. The first
+  // look is made at once, before the first await.
+  async function resume(id) {
+    if (running.has(id)) {
+      return {
+        resumed: false,
+        error: engineError("E_ALREADY_RUNNING"),
+        late: false,
+      };
+    }
+    const deadline = Date.now() + ENGINE_START_WAIT_MS;
+    const { entry, error } = launch(id, "resume");
+    if (entry === null) return { resumed: false, error, late: false };
+    const { engine } = entry;
+
+    for (;;) {
+      const s = engine.state();
+      if (s !== null && RESUMED.includes(s.status)) {
+        return { resumed: true, error: entry.error, late: false };
+      }
+      if (entry.error !== null) {
+        return { resumed: false, error: entry.error, late: false };
+      }
+      if (entry.settled) {
+        return {
+          resumed: false,
+          error: new TeamError(
+            "E_INTERNAL",
+            "Внутренняя ошибка ядра Sai Team (resume)",
+          ),
+          late: false,
+        };
+      }
+      if (Date.now() >= deadline) {
+        return { resumed: false, error: null, late: true };
+      }
+      await pause(START_POLL_MS);
+    }
+  }
+
+  // An engine of this server leads the project now.
+  function has(id) {
+    const entry = running.get(id);
+    return entry !== undefined && !entry.settled;
   }
 
   // The first signal of the server: every engine pauses its project (as Ctrl-C of
@@ -95,6 +159,8 @@ export function createEngines({ home, env, warn }) {
 
   return {
     start,
+    resume,
+    has,
     stopAll,
     size: () => running.size,
   };
