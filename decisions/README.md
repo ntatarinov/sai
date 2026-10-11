@@ -44,3 +44,5 @@
 | [0036](0036-handoffs-check-base.md) | База handoffs-check (REQ-038): коммит метки `base/REQ038-20261011-01`, строка «База handoffs-check: <коммит>» | Принято (ORCH; владелец может отменить) |
 | [0037](0037-handoffs-check-design.md) | Проверка учёта прогонов (REQ-038): модуль `tools/src/handoffs/`, вызовы git в одном файле, база исключений со сверкой с коммитом | Принято (ORCH; владелец может отменить) |
 | [0038](0038-handoffs-git-history-child-process.md) | Третье место `child_process` в `tools/src/`: `tools/src/handoffs/git-history.js` (поправка к `0021` D1 и критерию 4 REQ-014) | Принято (ORCH; владелец может отменить) |
+| [0039](0039-handoff-command-design.md) | Команда `npm run handoff` (REQ-039): жёсткая ссылка для `new`, подмена двух значений в тексте для `close`, русские тексты отказов | Принято (ORCH; владелец может отменить) |
+| [0040](0040-handoffs-git-tag-lookup.md) | Шестой вызов git в `tools/src/handoffs/git-history.js`: поиск метки `base/<RUN-ID>` (поправка к `0038`) | Принято (ORCH; владелец может отменить) |

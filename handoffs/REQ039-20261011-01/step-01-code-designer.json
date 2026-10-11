@@ -1,0 +1,164 @@
+{
+  "handoff_id": "step01-REQ039-20261011-01",
+  "run_id": "REQ039-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/REQ039-20261011-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-039"
+    ],
+    "base_tag": "base/REQ039-20261011-01",
+    "artifacts_in": [
+      "docs/requirements.yaml (блок REQ-039, читать по id; блок REQ-038 — для правил H1–H11)",
+      "handoffs/REQ-20261011-02/step-06-req-validator.json",
+      "docs/design/REQ-038-handoffs-check.md",
+      "decisions/0004-write-phase-rename-and-hardlink-rollback.md",
+      "decisions/0031-run-base-tag.md",
+      "decisions/0037-handoffs-check-design.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "docs/workflows/handoffs.md",
+      "docs/workflows/WF-02-development.md (шаги 1, 1b)",
+      ".claude/agents/orchestrator.md",
+      "tools/src/handoffs/",
+      "tools/package.json",
+      "docs/anti-patterns.md"
+    ],
+    "route": "CODE-DESIGNER (this) -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER (шаги 7 и 8 не нужны: нет интерфейса по образцу и нет запущенной системы с пользователем-страницей)",
+    "write_set": "docs/design/REQ-039-handoff-command.md; decisions/ — только предложения новых записей, номера с 0039",
+    "parallel_work_now": "никто",
+    "base_commit": "35ee90520f388311da5c95afc1d95802ac98ff61 (чистое дерево, метка base/REQ039-20261011-01)",
+    "orch_numbers": "решения — свободные с 0039; ISS — с ISS-0034; AP — с AP-071",
+    "orch_rulings": {
+      "Q1": "Открытый вопрос 1 требования: отказ без метки base/<RUN-ID> — только для WF-02, как в тексте требования; для остальных процессов поле base_tag не пишется. Не расширять.",
+      "Q2": "Открытый вопрос 2: подкоманда start — вне области этого требования (отдельная работа позже).",
+      "close_and_REQ038": "close проверяет закрытый файл правилами REQ-038 (H1–H11 для одного файла): используй код tools/src/handoffs/ (checkFile/rules.js и т.д.) без копирования; если для этого нужна небольшая правка экспортов модуля REQ-038 — это правка существующих файлов REQ-038 внутри закрытого перечня требования? Перечень требования называет «код — tools/src/handoffs/ (общая папка с REQ-038)»: правки модуля допустимы только добавлением, существующие тесты handoffs-*.test.js и поведение handoffs-check не должны измениться (выведи это в проекте как отдельное ограничение и проверку).",
+      "child_process": "Новых мест с child_process быть не должно (решение 0038, TR-4c): для проверки метки base/<RUN-ID> и корня репозитория используй git-history.js (добавлением функции с фиксированными аргументами) либо проверку без вызова git (чтение .git/refs и packed-refs) — выбор и причина в проекте; если нужен новый вызов git, это правка git-history.js, и тест HC-RT-1 должен её охватывать."
+    },
+    "orch_note": "Требование большое (создание, закрытие, метка базы, исключительная запись, коды выхода). Опирайся на текст дословно; числа в нём (37 ролей) перепроверь запуском. С этого момента ORCH будет создавать КАЖДЫЙ handoff этой командой — проект должен дать ORCH удобный вызов (например, один --task-file или чтение текста задания из файла, если длинный текст в аргументе небезопасен; реши в проекте и не добавляй ключей сверх закреплённых требованием без записи решения и согласования: если нужен ключ сверх списка — вынеси вопросом в result.issues)."
+  },
+  "task": {
+    "description": "WF-02, шаг 1. Напиши проект REQ-039 в docs/design/REQ-039-handoff-command.md: интерфейсы и формы данных (подкоманды new и close, разбор аргументов, порядок полей файла, форма ошибок), все коды выхода 0/1/2 и тексты отказов, какие файлы читаются и пишутся, каждый путь отказа (что видит человек и что остаётся неизменным), защита в той же операции (исключительное создание; запись через временный файл; проверка закрытого файла правилами REQ-038 ДО записи), выбор способа фиксации в new (жёсткая ссылка с отказом при занятом имени или замок) с причиной и записью решения (Q12), чтение списка ролей из .claude/agents/*.md, определение метки base/<RUN-ID> (см. orch_rulings.child_process), таблица «критерий → тест» для КАЖДОГО критерия, перечень файлов write_set для BACKEND-DEV, TEST-DESIGNER и DOC-UPDATER, существующие тесты, чьё ожидание меняется намеренно (если есть, например тесты состава scripts или запрещённых слов в tools/src), раздел о планке по Q1–Q14, R1–R3, открытые вопросы списком. Утверждения о текущем поведении (расположение checkFile/правил, git-history.js, как проверяется TR-4c, scripts.check, как handoffs-check читает файл) проверь своим запуском на копии вне проекта и приложи вывод. Кода реализации не писать. Времена и поля примера — по docs/workflows/handoffs.md.",
+    "acceptance_criteria": [
+      "Каждый критерий REQ-039 имеет строку «критерий → тест» и элемент проекта",
+      "Способ фиксации new выбран с причиной; запись решения предложена",
+      "Нет новых мест child_process либо проект явно расширяет git-history.js и HC-RT-1",
+      "Раздел о планке полный; открытые вопросы списком; кода реализации нет",
+      "Изменены только файлы write_set; status handoff строго COMPLETED"
+    ]
+  },
+  "created_at": "2026-10-11T18:41:11Z",
+  "started_at": "2026-10-11T18:41:11Z",
+  "completed_at": "2026-10-11T18:57:48Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Спроектирована команда `npm run handoff` (docs/design/REQ-039-handoff-command.md): `new` создаёт handoff по handoffs.md с одним чтением часов, метка base/<RUN-ID> обязательна только для WF-02 (tagExists — шестой вызов git в git-history.js, новых мест child_process нет), роли читаются из .claude/agents/*.md (37, перепроверено), фиксация — жёсткая ссылка с отказом EEXIST (замка нет) и повторным поиском handoff_id; `close` меняет в тексте только значения status и completed_at, проверяет новый текст готовым кодом REQ-038 (checkFile/checkHomePaths/formatReport, одно слово export в check.js) до записи и пишет через общий writeAllOrNothing. Описаны все коды выхода 0/1/2 и тексты, пути отказа, таблица «критерий → тест» для 8 критериев (тесты HO-*), мутанты, раздел о планке по Q1–Q14 и R1–R3, открытые вопросы. Кода реализации нет. Предложены записи 0039 и 0040.",
+    "changes": [
+      "docs/design/REQ-039-handoff-command.md — новый: п. 0 (сводка решений), п. 1 (факты Ф1–Ф16 с запусками), п. 2 (состав изменений и кто какие файлы пишет), п. 3 (вызов, ключи, справка, коды выхода и ошибок, вызов для ORCH), п. 4 (new), п. 5 (close), п. 6 (использование кода REQ-038, tagExists), п. 7 (пути отказа), п. 8 (защита в той же операции), п. 9 (документы и package.json), п. 10 (критерий → тест, существующие тесты с меняющимся ожиданием, мутанты), п. 11 (планка Q1–Q14, R1–R3), п. 12 (открытые вопросы), п. 13 (предложения записей), п. 14 (порядок работы)",
+      "decisions/0039-handoff-command-design.md — новый, статус «предложено»: выбор способа фиксации new (жёсткая ссылка против замка и других вариантов) с причиной, подмена токенов в close, остаточные риски",
+      "decisions/0040-handoffs-git-tag-lookup.md — новый, статус «предложено»: шестой вызов git tagExists, поправка к 0038, изменение HC-RT-1"
+    ],
+    "self_check": [
+      "Факт «37 ролей»: `grep -h '^name:' .claude/agents/*.md | wc -l` -> 37; `ls .claude/agents | wc -l` -> 37; строк name: без скобок -> 0; 37 различных кодов (sed по скобкам, uniq -c -> 37 строк со счётом 1). Подтверждено.",
+      "Копия вне проекта: `git clone` проекта в <scratch>/copy. `cd tools && node src/handoffs/cli.js` -> `handoffs-check: файлов проверено 634, нарушений 0, исключений использовано 114 из 114`, код 0.",
+      "Базовый набор: `cd tools && node --test \"test/**/*.test.js\"` на копии -> `# tests 1315`, `# pass 1315`, `# fail 0` (85 с).",
+      "Добавочные изменения на копии (скрипт handoff в package.json, два новых файла в src/handoffs без child_process, по строке в handoffs.md, orchestrator.md, tools/README.md): тот же набор -> `# tests 1315`, `# pass 1315`, `# fail 0`.",
+      "Шестой вызов git в git-history.js на копии: `node --test test/handoffs-runtime.test.js` -> not ok у HC-RT-1b, HC-RT-1c, HC-RT-1d (`# pass 6`, `# fail 3`); `node --test test/traces-runtime.test.js` -> `# pass 6`, `# fail 0`.",
+      "Файл src/handoffs/probe.js с `import { execFileSync } from \"node:child_process\"`: `node --test test/traces-runtime.test.js` -> `not ok 3 - TR-4c …`, строка `+   'handoffs/probe.js'`; handoffs-runtime: not ok у HC-RT-1a, 1b, 1d, 1e. Файл удалён, копия возвращена (`git status --short` пуст).",
+      "`grep -c 'execFileSync(' tools/src/handoffs/git-history.js` -> 5; массив CHILD_PROCESS_FILES (traces-runtime.test.js, строки 19–23): handoffs/git-history.js, team/executors/claude-cli.js, traces/git-files.js.",
+      "Прототип проверки одного текста готовым кодом (скрипт в <scratch>, вне проекта): закрытая копия этого handoff-а -> [] ; result.issues[0].at на час позже часов -> `…step-01-code-designer.json:64 — H6: result.issues[0].at: 2026-10-11T19:50:33Z позже часов (2026-10-11T18:50:33Z)`; result.status FAILED при status COMPLETED -> `… — H4: result.status: result.status (FAILED) не равен status (COMPLETED)`. Формат строк берётся из formatReport без правки.",
+      "Жёсткая ссылка (node на файлах в <scratch>): второй linkSync на занятое имя -> EEXIST, содержимое прежнее; renameSync на занятое имя -> содержимое заменено.",
+      "`node -e` по tools/package.json: scripts.handoff -> undefined; `grep -c 'npm run handoff -- ' docs/workflows/handoffs.md` -> 0; `grep -c 'handoff -- new' .claude/agents/orchestrator.md` -> 0; `grep -c 'npm run handoff' tools/README.md` -> 2 (уже на базе); `grep -c 'handoffs-check' tools/package.json` -> 2.",
+      "Состав данных: `ls handoffs | grep -vE '^[A-Z][A-Z0-9]*(-[0-9]{3,4})?-[0-9]{8}-[0-9]{2}$'` -> пусто (27 папок); context.write_set: массив 430, строка 52, нет 153; поле round между step и from_agent у 431 файла; `getconf ARG_MAX` -> 1048576.",
+      "`cd tools && npm run traces` -> `traces: файлов проверено 1112, следов 0, пропущено 36`, код 0 (с новым проектом и записями).",
+      "Проверка пунктов проекта: у каждого из 8 критериев есть строка «критерий → тест» (п. 10); раздел о планке называет Q1–Q14 и R1–R3 (п. 11, 17 пунктов); кода реализации в проекте нет — только сигнатуры, формы, таблицы; путей этого компьютера и временных папок нет (поиск по проекту и записям пуст, кроме названия строки `/home` в перечне запрещённых слов HC-4f)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "О1: context.write_set пишется всегда списком (в 430 из 482 живых файлов с полем список; повторяемый ключ даёт список); пример в handoffs.md показывает строку и меняется в п. 9.3 проекта. Если нужна строка при одном значении — слово ORCH."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "О2/Q5: подсчёт критерия 7 `grep -c 'npm run handoff' tools/README.md` не меньше 2 уже выполнен на базе (=2 из-за `npm run handoffs-check`), критерий слаб; проект закрывает его строгими тестами HO-50…HO-53. Текст критерия не менялся."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "О3: последняя часть критерия 8 (handoff-ы прогона созданы и закрыты командой) автотестом не доказывается — команда не оставляет следа и ключей сверх списка нельзя; доказательство — вывод команд в self_check/orch_check (HO-92…HO-94). Прошу ворота подтвердить допустимость."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "О4: дополнения сверх текста требования ради защиты: (а) правила REQ-038 применяются и к новому тексту в new; (б) повторный поиск handoff_id после создания ссылки с удалением своей ссылки; (в) значение, начинающееся с `--`, считается отсутствующим; (г) REQ-NNN ровно 3 цифры; (д) --rework-of проверяется по форме, не по существованию; (е) уточнение не длиннее 40 знаков. Лишнее — слово ORCH."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "О5/О9 (ответ на orch_note): ключа --root и ключа --task-file нет (вне списка ключей требования); длинный текст передаётся `--task \"$(cat <scratch>/task.txt)\"` без нового ключа (п. 3.6), тесты запускают команду с рабочей папкой во временном репозитории. Нужен ключ — изменение требования."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "О6: 75 строк о completed_at в 25 файлах ролей и WF-06/WF-07 вне закрытого перечня и продолжают описывать ручную запись; нужна отдельная работа (роли используют close)."
+      },
+      {
+        "id": "I7",
+        "kind": "QUESTION",
+        "text": "О7: сообщения общего писателя writeAllOrNothing английские; в строке E_HO_WRITE русская только рамка (перевод затронул бы apply-verdict и prepare-run)."
+      },
+      {
+        "id": "I8",
+        "kind": "QUESTION",
+        "text": "О8: close не применяет базу исключений tools/handoffs/exceptions.tsv: старый handoff с нарушением, снятым базой, командой не закрывается (перенос старых handoff-ов вне области)."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "О10: единственная правка файла REQ-038 в check.js — слово export у versionReader (нужен close для H7); альтернатива — копия 20 строк, отклонена. Ограничение «только добавлением» проверяется HO-91 и HO-93 (счёт строк `-` в git diff: 1 для check.js, 0 для git-history.js)."
+      },
+      {
+        "id": "I10",
+        "kind": "QUESTION",
+        "text": "О11–О13: CANCELLED, not_agent_attested и orch_note командой не пишутся; календарная правильность даты RUN-ID не проверяется; файловая система без жёстких ссылок — new отказывает кодом 2 без запасного пути."
+      },
+      {
+        "id": "I11",
+        "kind": "DECISION_PROPOSAL",
+        "text": "decisions/0039-handoff-command-design.md (способ фиксации new — жёсткая ссылка, а не замок; подмена токенов и writeAllOrNothing для close; принятые остаточные риски) — статус «предложено», принимает ORCH."
+      },
+      {
+        "id": "I12",
+        "kind": "DECISION_PROPOSAL",
+        "text": "decisions/0040-handoffs-git-tag-lookup.md (шестой вызов git tagExists в git-history.js, расширение 0038; HC-RT-1b/1c/1d получают шестую запись) — статус «предложено», принимает ORCH."
+      },
+      {
+        "id": "I13",
+        "kind": "AP_PROPOSAL",
+        "text": "Для ORCH/DOC-UPDATER, номер от ORCH (с AP-071): критерий, проверяемый подсчётом подстроки, может быть выполнен до работы (`grep -c 'npm run handoff' tools/README.md` = 2 на базе из-за `npm run handoffs-check`) — такой критерий ничего не доказывает; брать полное слово или строку с `--`."
+      },
+      {
+        "id": "I14",
+        "kind": "EXPECTED_TEST_CHANGES",
+        "text": "Существующие тесты с намеренно меняющимся ожиданием (п. 10.1): только HC-RT-1b, HC-RT-1c, HC-RT-1d в tools/test/handoffs-runtime.test.js (шестой вызов git — шестая запись EXPECTED_CALLS перед cat-file; число вызовов 6; мутант «a sixth call» становится «a seventh call»). Запуск на копии: pass 6 / fail 3 из 9; TR-4c зелёный без правки. Остальной набор без правки (1315 из 1315 на копии с добавочными изменениями). Красны только между шагами 2 и 5; правит TEST-DESIGNER."
+      },
+      {
+        "id": "I15",
+        "kind": "NOTE",
+        "text": "Новые файлы tools/src/handoffs/ не должны содержать слов child_process, execFileSync, execSync, spawn, shell, fork(, require(, import( и строк с именем домашнего каталога/traces-исключений даже в комментариях (HC-RT-1, HC-4f, HC-10a) — выведено запуском (Ф5, Ф13)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-039-handoff-command.md",
+      "decisions/0039-handoff-command-design.md",
+      "decisions/0040-handoffs-git-tag-lookup.md"
+    ]
+  }
+}

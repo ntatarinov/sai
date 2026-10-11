@@ -1,0 +1,129 @@
+{
+  "handoff_id": "step10-REQ039-20261011-01",
+  "run_id": "REQ039-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/REQ039-20261011-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-039"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ039-20261011-01/ (все step-*.json; особенно step-09-release-validator.json, step-06-test-runner.json, step-05b-test-design-validator.json, step-04-reviewer.json, step-03-security-reviewer.json, step-01b-code-design-validator.json и -r1, -r2)",
+      "docs/design/REQ-039-handoff-command.md",
+      "decisions/0039-handoff-command-design.md",
+      "decisions/0040-handoffs-git-tag-lookup.md",
+      "docs/requirements.yaml (шапка — правила статусов; блок REQ-039)",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/design/REQ-038-handoffs-check.md",
+      "docs/workflows/WF-02-development.md (шаг 10)"
+    ],
+    "route": "RELEASE-VALIDATOR (PASS) -> DOC-UPDATER (этот) -> проверка учёта ORCH -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/requirements.yaml (только статус и комментарий блока REQ-039)",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/design/REQ-038-handoffs-check.md (одна строка-обновление)",
+      "новые docs/issues/ISS-0034-*.md, ISS-0035-*.md, ISS-0036-*.md"
+    ],
+    "base_tag": "base/REQ039-20261011-01",
+    "orch_check": {
+      "at": "2026-10-11T21:26:51Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "docs/requirements.yaml: изменён статус REQ-039 (done) и комментарий; остальные блоки и разделы не тронуты (git diff -U0)",
+        "docs/anti-patterns.md: AP-071 и AP-072 на месте",
+        "docs/issues/ISS-0034…ISS-0036 заведены (LOW, open)",
+        "docs/design/REQ-038-handoffs-check.md: число вызовов git пять -> шесть (три места и строка таблицы)",
+        "STATE.md: верхний раздел про REQ-039",
+        "cd tools && npm run traces: следов 0; handoffs-check: код 0",
+        "handoff step-09 и step-10 созданы командой handoff new (вид файлов проверен: порядок полей, created_at равен started_at, write_set списком)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 10. ИСТИНА о результате: REQ-039 принято RELEASE-VALIDATOR (step-09 PASS): 8 критериев выполнены, npm ci && npm run check на чистой копии — код 0, 1389 тестов; команда `npm run handoff -- new/close` работает; handoff-ы step-09, step-10, step-11 прогона созданы командой new. Зависимость REQ-038 — done, исключения нет. (1) docs/requirements.yaml: status REQ-039 -> done с комментарием (дата с часов, прогон REQ039-20261011-01, PASS step-09); блок REQ-038 и остальные не менять. (2) docs/anti-patterns.md: AP-071 — критерий-подсчёт, который уже выполнен до работы (grep -c 'npm run handoff' tools/README.md равно 2 на базе из-за совпадения с npm run handoffs-check): такие критерии не доказывают работы, закрывать нужно строгим тестом (HO-50…HO-53); урок для REQ-ANALYST/REQ-VALIDATOR: считать значение «до» на базовом коммите и требовать, чтобы критерий на нём не выполнялся. AP-072 — проект команды трижды возвращали с ворот проекта: пути отказа очистки при гонке и частичном сбое (временный файл при EEXIST, mkdir в несозданную папку, сбой повторного поиска) и перечень файлов учёта в тесте границ критерия 8 (N1) были пропущены в первой редакции; урок: при проекте команды, которая пишет файлы, сразу перечислять исходы каждого шага записи (успех, EEXIST, ошибка диска) и файлы учёта прогона в проверке границ (дополняет AP-068). Формат по соседним записям; факты — из handoff-ов прогона (step-01b, step-01b-r1, step-01b-r2). (3) Заведи дефекты (формат WF-03 «Как выглядит дефект»; факты и ссылки — из handoff-ов): ISS-0034 (LOW) — мелкие недочёты кода и документа команды handoff: регулярка RUN-ID дублируется в args.js и git-history.js, функции hasControl и byBytes повторены в args.js, close.js, create.js, one-file.js, в close.js строка side(...) собирается дважды, фраза «заранее handoff не создаётся» в docs/workflows/handoffs.md, раздел «Время», читается как противоречие рядом с «Если handoff создан заранее…», слово --help в любом месте вызова печатает справку (step-04-reviewer F1…F4); ISS-0035 (LOW) — безопасность команды handoff: окно доли миллисекунды в close между повторным чтением и переименованием (при параллельной подмене 12 из 25 закрытий прошли), значение --task пишется дословно (токен, длина не ограничена, юникод-обманка U+202E), гонка замены папки на ссылку между проверкой и записью временного файла не воспроизводилась (step-03-security-reviewer F1…F3); ISS-0036 (LOW) — пробелы тестов команды handoff: H8 командой недостижим (E_HO_CLOCK срабатывает раньше), HO-35 держит 43 случая в одном тесте, HO-46 и HO-47 дублируют вложенным запуском тесты, которые npm run test уже выполняет, допущения среды (жёсткие ссылки во временной папке, sh, git и npm в PATH), название HO-38 не называет H5 (step-05b-test-design-validator F1…F6). (4) docs/design/REQ-038-handoffs-check.md: строка-обновление — число вызовов git в git-history.js: пять -> шесть (решение 0040), описание HC-RT-1 тоже; остальное не менять. (5) STATE.md: новый верхний раздел «На 2026-10-11 — REQ-039 сделана (done)…» в формате соседних разделов: что работает и чем проверено (числа: 1389 тестов, 74 новых; команда handoff; step-09 PASS), плотность тестов по правилу decisions/0023 (посчитай той же командой, что в соседнем разделе), что НЕ сделано (подкоманда start — вне области; H11 не по всему репозиторию), открытые дефекты (ISS-0024…ISS-0036), следующие свободные номера (ISS-0037, решение 0041, AP-073), решения 0039–0040 приняты ORCH (владелец может отменить), следующая работа по PLAN (ISS-0002, затем ISS-0031…), ждёт владельца: новый потолок и разрешение на настоящий запуск после ISS-0031; вопрос по ISS-0028; предыдущие разделы не удалять. Время — с часов; статус записей — только то, что есть в handoff-ах. Перед сдачей запусти cd tools && npm run handoffs-check и cd tools && npm run traces — оба код 0; свой handoff закрой командой cd tools && npm run handoff -- close handoffs/REQ039-20261011-01/step-10-doc-updater.json --status COMPLETED после записи result; без буквальных путей временных папок.",
+    "acceptance_criteria": [
+      "status REQ-039 = done с комментарием; блок REQ-038 не тронут",
+      "AP-071, AP-072 добавлены; ISS-0034, ISS-0035, ISS-0036 заведены с фактами из handoff-ов",
+      "STATE.md обновлён с честным перечнем невыполненного; плотность тестов посчитана командой",
+      "docs/design/REQ-038-handoffs-check.md: пять вызовов git -> шесть",
+      "handoffs-check и traces — код 0"
+    ]
+  },
+  "created_at": "2026-10-11T21:24:45Z",
+  "started_at": "2026-10-11T21:24:45Z",
+  "completed_at": "2026-10-11T21:26:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-039 переведено в done по PASS RELEASE-VALIDATOR (step-09). Записаны AP-071 и AP-072, заведены ISS-0034, ISS-0035, ISS-0036, в проекте REQ-038 число вызовов git стало шесть, в STATE.md добавлен верхний раздел о REQ-039 с честным перечнем невыполненного. handoffs-check и traces дают код 0.",
+    "changes": [
+      {
+        "file": "docs/requirements.yaml",
+        "change": "блок REQ-039: статус in_progress -> done с комментарием (прогон REQ039-20261011-01, PASS step-09, 1389 тестов, зависимость REQ-038 done); остальное не менялось"
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "change": "добавлены AP-071 и AP-072 (следующий номер после AP-070); прежние записи не тронуты"
+      },
+      {
+        "file": "docs/issues/ISS-0034-handoff-command-minor-code-and-doc.md",
+        "change": "новый файл, LOW, факты step-04-reviewer F1…F4 и step-03 I2"
+      },
+      {
+        "file": "docs/issues/ISS-0035-handoff-command-security-limits.md",
+        "change": "новый файл, LOW, факты step-03-security-reviewer F1…F3"
+      },
+      {
+        "file": "docs/issues/ISS-0036-handoff-command-test-gaps.md",
+        "change": "новый файл, LOW, факты step-05b-test-design-validator F1…F6"
+      },
+      {
+        "file": "docs/design/REQ-038-handoffs-check.md",
+        "change": "п. 7: число вызовов git пять -> шесть (решение 0040), добавлена строка 6 таблицы вызовов (tagExists), описание HC-RT-1 в таблице критериев и строка решений п. 12 обновлены"
+      },
+      {
+        "file": "STATE.md",
+        "change": "новый верхний раздел «На 2026-10-11 — REQ-039 ... сделана (done)»: работает/проверено, плотность 44,3 (1389 x 1000 / 31 377), решено, НЕ сделано, дефекты, уроки, следующие номера ISS-0037/0041/AP-073, ждёт владельца; прежние разделы не тронуты"
+      }
+    ],
+    "self_check": {
+      "time": "date -u: 2026-10-11T21:25:18Z (начало правок)",
+      "requirements_block": "git diff -U0 docs/requirements.yaml: одна пара строк status (в рабочем дереве относительно коммита: pending -> done), блок REQ-038 не затронут",
+      "density": "find tools/src -type f ( -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.mjs' ) -exec cat {} + | wc -l = 31377; 1389*1000/31377 = 44,3",
+      "ap_numbers": "grep -c '^### AP-' docs/anti-patterns.md = 73; последние AP-071, AP-072",
+      "handoffs_check": "cd tools && npm run -s handoffs-check: код 0 (648 файлов, нарушений 0, исключений 114 из 114)",
+      "traces": "cd tools && npm run -s traces: код 0"
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Хеш остальной части docs/requirements.yaml до и после не снимался отдельной командой; проверено по git diff -U0 — изменена одна строка статуса блока REQ-039."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Критерий о handoff-ах step-10 и step-11, созданных командой, RELEASE-VALIDATOR проверил только для step-09; форма step-10 и step-11 — на проверке ORCH и RELEASE-FINALIZER."
+      },
+      {
+        "kind": "NOTE",
+        "text": "В проекте REQ-038 строки таблицы вызовов: у вызова 5 (cat-file) в тексте про stdio осталась прежняя нумерация; tagExists стоит строкой 6 в таблице, а в файле перед readBlobs (решение 0040)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml",
+      "docs/anti-patterns.md",
+      "docs/issues/ISS-0034-handoff-command-minor-code-and-doc.md",
+      "docs/issues/ISS-0035-handoff-command-security-limits.md",
+      "docs/issues/ISS-0036-handoff-command-test-gaps.md",
+      "docs/design/REQ-038-handoffs-check.md",
+      "STATE.md"
+    ]
+  }
+}

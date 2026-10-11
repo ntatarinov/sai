@@ -196,6 +196,39 @@ export function fileHistory(root, timeoutMs = TIMEOUT_MS) {
   return history;
 }
 
+// The run identifier as the command `handoff` writes it; a name of a tag is built only
+// from a value that fits (design REQ-039, 6.3).
+const RUN_ID = /^[A-Z][A-Z0-9]*(-[0-9]{3,4})?-[0-9]{8}-[0-9]{2}$/u;
+
+// Whether the tag base/<RUN-ID> exists and points at a commit (light or annotated).
+// Status 1 of `rev-parse --verify --quiet` is the answer "no" (also for a branch of the
+// same name: the reference is refs/tags/...).
+export function tagExists(root, runId, timeoutMs = TIMEOUT_MS) {
+  if (typeof runId !== "string" || !RUN_ID.test(runId))
+    throw new TraceError(
+      "E_HO_BASE_TAG",
+      "RUN-ID: ожидается <МЕТКА>-<ГГГГММДД>-<NN>",
+    );
+  const ref = "refs/tags/base/" + runId + "^{commit}";
+  try {
+    execFileSync(
+      "git",
+      ["-c", "core.fsmonitor=false", "rev-parse", "--verify", "--quiet", ref],
+      {
+        cwd: root,
+        timeout: timeoutMs,
+        maxBuffer: MAX_BUFFER,
+        stdio: ["ignore", "pipe", "pipe"],
+        encoding: "buffer",
+      },
+    );
+  } catch (err) {
+    if (err?.status === 1) return false;
+    throw gitFailure(err);
+  }
+  return true;
+}
+
 // The answer of `cat-file --batch` for `count` requests: a Buffer for a blob, null for
 // anything else (a missing object, a folder).
 function parseBatch(out, count) {

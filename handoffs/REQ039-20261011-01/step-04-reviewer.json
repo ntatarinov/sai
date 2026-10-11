@@ -1,0 +1,115 @@
+{
+  "handoff_id": "step04-REQ039-20261011-01",
+  "run_id": "REQ039-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ039-20261011-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-039"
+    ],
+    "base_tag": "base/REQ039-20261011-01",
+    "artifacts_in": [
+      "handoffs/REQ039-20261011-01/step-02-backend-dev.json",
+      "handoffs/REQ039-20261011-01/step-03-security-reviewer.json",
+      "docs/design/REQ-039-handoff-command.md",
+      "docs/requirements.yaml (блок REQ-039, 8 критериев)",
+      "decisions/0039-handoff-command-design.md",
+      "decisions/0040-handoffs-git-tag-lookup.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "decisions/0004-write-phase-rename-and-hardlink-rollback.md",
+      "docs/workflows/WF-02-development.md (шаг 4)",
+      "docs/quality-bar.md",
+      "docs/workflows/handoffs.md",
+      ".claude/agents/orchestrator.md"
+    ],
+    "route": "SECURITY-REVIEWER (PASS) -> REVIEWER (this) -> TEST-DESIGNER",
+    "write_set": "нет: пишет только status (COMPLETED или FAILED), completed_at, result. Пробы — на копиях вне проекта",
+    "before_copy": "git: метка base/REQ039-20261011-01",
+    "changed_files": [
+      "tools/src/handoffs/handoff.js",
+      "tools/src/handoffs/errors.js",
+      "tools/src/handoffs/args.js",
+      "tools/src/handoffs/roles.js",
+      "tools/src/handoffs/build.js",
+      "tools/src/handoffs/one-file.js",
+      "tools/src/handoffs/create.js",
+      "tools/src/handoffs/close.js",
+      "tools/src/handoffs/git-history.js",
+      "tools/src/handoffs/check.js",
+      "tools/package.json",
+      "tools/README.md",
+      "docs/workflows/handoffs.md",
+      ".claude/agents/orchestrator.md"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью REQ-039 после PASS безопасности. Сам: настоящее решение или костыль; идиомы стека (Node 22, без зависимостей, стиль соседнего кода tools/src/handoffs/ и traces/); лишняя работа, мёртвый код, дублирование (регулярка RUN-ID дублируется в args.js и git-history.js — оцени); расхождения с проектом (r3) и записанными решениями 0004, 0031, 0038, 0039, 0040; эрозия планки (Q6: scripts.check не менялся, нет || true, нет отключённых правил; новый код не ослабляет handoffs-check); соответствие 8 критериям REQ-039 по поведению — запусти команду сам на копии вне проекта: new (WF-02 с меткой и без, WF-01 без метки, отказы), close (COMPLETED, FAILED, отказы), коды выхода 0/1/2, тексты отказов, порядок полей и вид файла по docs/workflows/handoffs.md (отступ 2, кириллица без экранирования, перевод строки в конце), --help печатает обе подкоманды и все ключи, round при суффиксе rN; созданный файл проходит `cd tools && npm run handoffs-check`; документы (tools/README.md, docs/workflows/handoffs.md, .claude/agents/orchestrator.md) соответствуют проекту п. 9, пример в «Поля» не изменён, разделы вне перечня не тронуты, новые строки не противоречат остальному протоколу; в git-history.js добавлена только tagExists (удалённых строк 0), в check.js — только слово export. Проверь отсутствие путей компьютера и названий других проектов. Полный `npm run check` запусти с выводом в файл вне проекта; ожидаемы красными только HC-RT-1b/c/d (шестой вызов git, п. 10.1) — любой другой красный назови поимённо и повтори (AP-070). FAIL при Critical/High/Medium.",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков/чтения кода, вывод приложен",
+      "Каждое замечание с местом и исправлением",
+      "8 критериев REQ-039 названы с результатом по поведению",
+      "Файлы проекта не изменены (хеши до/после)"
+    ]
+  },
+  "created_at": "2026-10-11T19:45:17Z",
+  "started_at": "2026-10-11T19:45:17Z",
+  "completed_at": "2026-10-11T19:49:56Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Q1 причина: ошибки не глотаются, симптомы не прячутся; отказ — одна строка handoff: <код>: <текст> без значений аргументов и стека, коды 1/2 как в проекте; проверка правилами REQ-038 до записи стоит в той же операции (new — checkText перед preflight, close — перед writeAllOrNothing); костылей не найдено. Q2 с записанным: Node 22, ES-модули, зависимостей нет (в package.json добавлена одна строка handoff, scripts.check не менялся); close пишет через общий writeAllOrNothing (0004); new — жёсткая ссылка (0039); метка base/<RUN-ID>, отказ только у WF-02, base_tag при любой найденной метке (0031); новых мест child_process нет, добавлен один вызов git (0038/0040); check.js — только слово export (1 строка +/-), git-history.js — только добавление (33 строки, 0 удалений); документы — по п. 9 проекта, пример в «Поля» не тронут, правки handoffs.md только в «Кто что пишет» и «Время». Q3 лишнего: файлы изменения совпадают с закрытым перечнем; сверх требования только дополнения О4 проекта (проверка нового файла правилами, повторный поиск handoff_id, форма REQ-NNN), они записаны в проекте. Q4 планка: поиск skip/todo/eslint-disable/|| true/only по новым файлам и package.json — пусто; scripts.check не менялся; пути компьютера и названия других проектов в изменении не найдены. Q5 стиль: как соседний код tools/src/handoffs (английские комментарии, ошибки с кодами, fs через общий объект fs). Регулярка RUN-ID в args.js и git-history.js — дубль, оценён как Low: git-history.js строит имя метки git и намеренно не зависит от args.js, расхождение дало бы отказ, а не открытую дыру. Полный npm run check на копии вне проекта: format:check, lint, traces, handoffs-check — зелёные; из 1315 тестов красных три — HC-RT-1b, HC-RT-1c, HC-RT-1d (ожидаемые: шестой вызов git, п. 10.1 проекта; HC-RT-1c: expected 5, actual 6); других красных нет. Критерии REQ-039 по моим запускам: 1 создание — OK; 2 метка базы — OK; 3 отказы создания — OK; 4 закрытие — OK; 5 отказы закрытия — OK; 6 только handoffs/ и без мусора — OK по чтению кода и запускам, внедрение сбоев (fault-inject) не прогонялось — на TEST-DESIGNER; 7 документы — OK; 8 место записи и проверка — OK, кроме части «npm ci на копии без node_modules» и «handoff-ы прогона созданы командой» — на RELEASE-VALIDATOR. Файлы проекта не менялись (хеш списка 1164 файлов до и после совпал, кроме этого handoff-а). TEST-DESIGNER особо: обновить HC-RT-1b/c/d под шестой вызов tagExists (5 → 6); сбои фиксации в new (linkSync EEXIST/EPERM, unlink временного файла, повторный поиск handoff_id) и переименования в close (внедрение, остатки .sai-tmp/.sai-old); гонка двух new (в моём запуске 6 процессов: один код 0, пять E_HO_BUSY, один файл, остатка нет); close для вложенных ключей status/completed_at (проверено: трогаются только верхние); started_at позже часов; значение, начинающееся с --.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/handoffs/git-history.js:201 и tools/src/handoffs/args.js:5",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Регулярка RUN-ID записана дважды.",
+        "fix": "Не блокирует. При следующей правке git-history.js импортировать RUN_ID из args.js или вынести в одно место; пока править не нужно (AP-014: расхождение сузит, а не расширит допустимое)."
+      },
+      {
+        "id": "F2",
+        "place": "tools/src/handoffs/args.js (hasControl) и close.js (hasControl); create.js, one-file.js (byBytes)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Небольшие функции hasControl и byBytes повторены в нескольких файлах; в close.js строка side(...) собирается дважды.",
+        "fix": "Не блокирует; при случае вынести в общий файл рядом."
+      },
+      {
+        "id": "F3",
+        "place": "docs/workflows/handoffs.md, раздел «Время», пункт про created_at/started_at",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Новая фраза «заранее handoff не создаётся» стоит в одной длинной строке рядом с прежним «Если handoff создан заранее (PENDING), а агент запускается позже…»; читается как противоречие.",
+        "fix": "Не блокирует. Дать второй фразе вводное «Если всё же создан заранее» и перенести строку; правит DOC-UPDATER/BACKEND-DEV без изменения смысла."
+      },
+      {
+        "id": "F4",
+        "place": "tools/src/handoffs/args.js, parseArgv: argv.includes('--help')",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Слово --help в любом месте вызова печатает справку и даёт код 0, даже если это значение ключа.",
+        "fix": "Не блокирует; значение, начинающееся с --, и так считается отсутствующим ключом (проект п. 3), поведение предсказуемо."
+      }
+    ],
+    "self_check": [
+      "хеш файлов проекта до/после (1164 файла, shasum списка a49aff9e…): совпал, различий diff нет",
+      "cd <scratch>/rv/copy/tools && npm run check -> код 1: format:check, lint, traces, handoffs-check зелёные; тестов 1315, прошло 1312, красных 3: HC-RT-1b, HC-RT-1c (expected 5, actual 6), HC-RT-1d; вывод в <scratch>/rv/check.out",
+      "node src/handoffs/handoff.js new (критерий 1: WF-02 с меткой) -> код 0, файл step-05b-test-design-validator-req999-r1.json, порядок полей, round 1, base_tag, created_at=started_at, отступ 2, кириллица без экранирования, перевод строки в конце",
+      "new WF-02 без метки -> E_HO_BASE код 1, папки нет; WF-01 без метки -> код 0, base_tag нет",
+      "new отказы (повтор файла, handoff_id в другом файле, run prod-/2099-12-31-/-1, step 5b/100, роль NOT-A-ROLE, уточнение «Req 1», суффикс r0/x1, WF-9, пустой task, неизвестный ключ, ключ без значения, путь домашней папки в task) -> коды 1/2, одна строка stderr, состояние (git status, хеши handoffs/, скрытые файлы) прежнее",
+      "6 параллельных new одного имени -> один код 0, пять E_HO_BUSY, один файл, временного нет",
+      "close: COMPLETED и FAILED -> код 0, diff только status и completed_at; повторный close, completed_at записан, result null, result.status не равен --status, status COMPLETED, остановка IN_PROGRESS, started_at позже часов, H6 +1 час, не JSON, ссылка, ../, абсолютный, вне handoffs/, нет файла, --status DONE (код 2), нет пути (код 2) -> файл прежний; вложенные status/completed_at не тронуты; npm run handoffs-check после закрытия -> код 0",
+      "grep -nE 'skip|todo|eslint-disable|\\|\\| true|only' по новым файлам и package.json -> пусто; пути компьютера и названия других проектов -> пусто",
+      "git diff base/REQ039-20261011-01: check.js 1 строка (export), git-history.js 33 добавления, 0 удалений; package.json +1 строка handoff"
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}

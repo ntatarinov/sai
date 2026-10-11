@@ -90,7 +90,7 @@ function byBytes(a, b) {
 
 // The versions of a file in the history, parsed on demand and only once; null for a
 // version that is not a JSON object.
-function versionReader(commits, versions) {
+export function versionReader(commits, versions) {
   const docs = new Array(commits.length);
   return (segments, value) => {
     for (let i = 0; i < commits.length; i++) {

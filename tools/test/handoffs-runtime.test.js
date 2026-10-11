@@ -51,14 +51,16 @@ function callArgs(body, open) {
   throw new Error("unclosed call");
 }
 
-// An array literal of string literals and the one allowed name `sha` (the checked hash
-// of a commit), alone or followed by a string literal: `sha + "^{commit}"`.
+// An array literal of string literals and the two allowed names: `sha` (the checked hash
+// of a commit), alone or followed by a string literal: `sha + "^{commit}"`, and `ref`
+// (the name of the tag base/<RUN-ID>, built in tagExists from a checked RUN-ID).
 function arrayItems(literal) {
   assert.match(literal, /^\[[\s\S]*\]$/u, literal);
   return callArgs(`(${literal.slice(1, -1)})`, 0).map((item) => {
     const plain = /^"([^"\\]*)"$/u.exec(item);
     if (plain !== null) return plain[1];
     if (item === "sha") return "<коммит>";
+    if (item === "ref") return "<метка>";
     const joined = /^sha\s*\+\s*"([^"\\]*)"$/u.exec(item);
     assert.ok(joined !== null, `not a literal: ${item}`);
     return `<коммит>${joined[1]}`;
@@ -84,6 +86,7 @@ const EXPECTED_CALLS = [
     "--",
     "handoffs",
   ],
+  [...GIT, "rev-parse", "--verify", "--quiet", "<метка>"],
   [...GIT, "cat-file", "--batch"],
 ];
 
@@ -115,6 +118,15 @@ function findings(files, gitFile = "git-history.js") {
     out.push(`import of ${imports[0][1]}`);
   if (FORBIDDEN_IN_GIT_FILE.test(body))
     out.push("forbidden form in the git file");
+  // tagExists (REQ-039, decisions/0040): the name of the tag is built from a RUN-ID that
+  // was checked by the pattern before; a name that was not checked never reaches git.
+  const refAt = body.search(
+    /const ref = "refs\/tags\/base\/" \+ runId \+ "\^\{commit\}";/u,
+  );
+  const guardAt = body.search(/!RUN_ID\.test\(runId\)/u);
+  if (refAt < 0) out.push("tagExists: the tag name is not built from runId");
+  else if (guardAt < 0 || guardAt > refAt)
+    out.push("tagExists: runId is not checked before the call");
   const calls = [...body.matchAll(/execFileSync\(/gu)].map((m) => ({
     args: callArgs(body, m.index + "execFileSync".length),
     at: m.index,
@@ -169,16 +181,16 @@ test('HC-RT-1c every call of execFileSync starts with "git" and the lists of arg
   const calls = [...body.matchAll(/execFileSync\(/gu)].map((m) =>
     callArgs(body, m.index + "execFileSync".length),
   );
-  assert.equal(calls.length, 5);
+  assert.equal(calls.length, 6);
   for (const args of calls) assert.equal(args[0], '"git"');
   assert.deepEqual(
     calls.map((args) => arrayItems(args[1])),
     EXPECTED_CALLS,
   );
   // The call that feeds git through its standard input: input is set, stdin is a pipe.
-  assert.match(calls[4][2], /\binput:/u);
-  assert.match(calls[4][2], /stdio:\s*\["pipe"/u);
-  for (const args of calls.slice(0, 4))
+  assert.match(calls[5][2], /\binput:/u);
+  assert.match(calls[5][2], /stdio:\s*\["pipe"/u);
+  for (const args of calls.slice(0, 5))
     assert.match(args[2], /stdio:\s*\["ignore"/u);
   for (const args of calls) {
     assert.match(args[2], /\btimeout:/u);
@@ -243,10 +255,37 @@ test("HC-RT-1d the check itself refuses what it is meant to refuse (the mutants 
       ),
     ],
     [
-      "a sixth call",
+      "a seventh call",
       with_(
         "git-history.js",
         `${git}\nexecFileSync("git", ["status"], { cwd: "." });\n`,
+      ),
+    ],
+    [
+      "tagExists without --quiet",
+      with_(
+        "git-history.js",
+        git.replace('"--verify", "--quiet", ref', '"--verify", ref'),
+      ),
+    ],
+    [
+      "tagExists without the check of RUN-ID",
+      with_(
+        "git-history.js",
+        git.replace(
+          'typeof runId !== "string" || !RUN_ID.test(runId)',
+          "false",
+        ),
+      ),
+    ],
+    [
+      "tagExists with a tag name built from the raw argument",
+      with_(
+        "git-history.js",
+        git.replace(
+          '"refs/tags/base/" + runId + "^{commit}"',
+          '"refs/tags/base/" + String(runId)',
+        ),
       ),
     ],
     [

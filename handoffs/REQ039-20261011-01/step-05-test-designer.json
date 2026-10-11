@@ -1,0 +1,198 @@
+{
+  "handoff_id": "step05-REQ039-20261011-01",
+  "run_id": "REQ039-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/REQ039-20261011-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-039"
+    ],
+    "base_tag": "base/REQ039-20261011-01",
+    "artifacts_in": [
+      "docs/design/REQ-039-handoff-command.md (r3; п. 10 «критерий → тест» HO-*, п. 10.1 тесты с меняющимся ожиданием, п. 10.2 мутанты M1…M24)",
+      "docs/requirements.yaml (блок REQ-039, 8 критериев)",
+      "handoffs/REQ039-20261011-01/step-02-backend-dev.json (result.issues: I1 новые ожидания, I3 непроверенные ветки сбоев)",
+      "handoffs/REQ039-20261011-01/step-03-security-reviewer.json",
+      "handoffs/REQ039-20261011-01/step-04-reviewer.json (что проверить особо)",
+      "docs/workflows/WF-02-development.md (шаги 5, 5b)",
+      "docs/quality-bar.md",
+      "tools/test/handoffs-helpers.js и тесты handoffs-*.test.js (образец и помощники REQ-038)",
+      "tools/test/fixtures/"
+    ],
+    "route": "SECURITY-REVIEWER (PASS) -> REVIEWER (PASS) -> TEST-DESIGNER (this) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER",
+    "write_set": "tools/test/handoffs-cmd-*.test.js (новые); tools/test/handoffs-runtime.test.js (только правка HC-RT-1b, HC-RT-1c, HC-RT-1d по п. 10.1); tools/test/handoffs-helpers.js (только добавление помощников команды); tools/test/fixtures/handoffs/ (при необходимости). Код tools/src/ и остальные тесты не менять.",
+    "before_copy": "git: метка base/REQ039-20261011-01",
+    "orch_note": "1) Ветки сбоев (linkSync EEXIST/EPERM, удаление временного файла, повторный поиск handoff_id — F4, переименование в close, остатки .sai-tmp/.sai-old, «записано, но резервный файл не удалён») нужно внедрять через подмену на уровне модуля/fs по образцу HC-8e2 в REQ-038, а не chmod; спроси проект п. 10 о способе. 2) Гонка двух new: параллельные процессы (4–40 повторов), ровно один файл. 3) Значение ключа, начинающееся с --; вложенные status/completed_at в close не тронуты; close побайтово не меняет остальное; BOM. 4) HC-RT-1b/c/d: пять вызовов -> шесть, мутант «a sixth call» -> «a seventh call». 5) Полный прогон — с выводом в файл вне проекта; имена любых красных (AP-070). 6) Тесты не опираются на часы, кроме явно оговорённых; независимы; временные репозитории свои. 7) Твой собственный handoff закрой командой `cd tools && npm run handoff -- close <путь> --status COMPLETED|FAILED` после записи result."
+  },
+  "task": {
+    "description": "WF-02, шаг 5. Напиши тесты REQ-039 по таблице «критерий → тест» проекта (п. 10, HO-*), кроме HO-92…HO-94 (команды RELEASE-VALIDATOR): создание (порядок полей, round, base_tag, время, формат файла), метка базы (WF-02 с меткой/без, WF-01/WF-03 с меткой и без), отказы создания (ничего не записано: git status и хеши до и после), закрытие, отказы закрытия (файл побайтово прежний), только handoffs/ и без мусора, внедрённые сбои, гонки, справка и документы (grep-проверки, HO-50…HO-53), место записи (HO-90, HO-91), правка HC-RT-1b/c/d. Для новой логики — мутанты M1…M24 из проекта и свои: применять во временной копии вне проекта; хеши tools/ до и после совпадают; для каждого — какие тесты падают. Покажи, что новые тесты падают на копии base (код команды там отсутствует: ERR_MODULE_NOT_FOUND или отсутствие скрипта) — кроме тестов существующего. В конце: `cd tools && npm run check` целиком (вывод в файл вне проекта; код 0, число тестов, красные поимённо), `cd tools && npm run handoffs-check` — код 0.",
+    "acceptance_criteria": [
+      "Каждому из 8 критериев соответствует запускаемый тест (сопоставление в result), HO-92…HO-94 отмечены как команды RELEASE-VALIDATOR",
+      "Тесты внедрённых сбоев (F2, F3, F4, N2) есть",
+      "Мутанты: перечень с падающими тестами; ни один не остался в дереве",
+      "npm run check — код 0; handoffs-check — код 0",
+      "Нет skip/todo/only, нет путей компьютера, нет секретов"
+    ]
+  },
+  "created_at": "2026-10-11T19:50:35Z",
+  "started_at": "2026-10-11T19:50:35Z",
+  "completed_at": "2026-10-11T20:54:45Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Написаны 74 теста REQ-039 в 8 новых файлах tools/test/handoffs-cmd-*.test.js (каждый тест с собственным временным git-репозиторием, настоящие часы читаются до и после запуска, команда запускается дочерним процессом с рабочей папкой во временном репозитории; сбои диска — fault-inject.js в режиме --import и подмена функций fs в самом процессе теста) и исправлены три теста HC-RT-1b, HC-RT-1c, HC-RT-1d в handoffs-runtime.test.js по п. 10.1 проекта (пять вызовов git -> шесть, «a sixth call» -> «a seventh call», два новых мутанта tagExists и новая проверка: имя метки собирается только после проверки RUN-ID; число вызовов и точные списки аргументов остаются закреплёнными). В handoffs-helpers.js добавлены только помощники команды. Таблица «критерий -> тест» (зачем): К1 Создание — HO-01 (вызов критерия дословно: путь, handoff_id, порядок ключей верхнего уровня и context, round, base_tag, created_at = started_at и в границах часов, две строки вывода, код 0); HO-01b (текст задачи и списки пишутся как есть, порядок ввода); HO-02 (форма текста: 2 пробела, перевод строки, кириллица без \\u, без BOM, режим 0644); HO-03 (минимум ключей, run2/v3 без round, все необязательные ключи — порядок); HO-04 (разбор аргументов, списки, справка называет все ключи); HO-05 (имена по таблице сочетаний и для каждого кода роли из папки); HO-06 (список ролей читается из файлов: число равно независимому подсчёту, вымышленные роли, кривые файлы, нет папки — код 2); HO-07 (созданный файл проходит handoffs-check); HO-08 (WF-01…WF-07 принимаются, WF-00/08/1/wf-01 нет); HO-09 (вне git — код 2). К2 Метка базы — HO-10 (WF-02 без метки: код 1, decisions/0031, папки нет, дерево прежнее); HO-11, HO-11b, HO-15 (без метки у остальных процессов нет base_tag, с меткой он у всех WF-01…07); HO-12 (лёгкая и аннотированная метка; метка другого прогона, соседний номер, ветка, метка на дерево — отказ); HO-13, HO-13b (нет git, не репозиторий, git отвечает кодом 3 — код 2 без стека); HO-14 (tagExists: плохое имя до вызова git). К3 Отказы создания — HO-20 (таблица из 36 отказов: код, одна строка, stdout пуст, git status и хеш дерева прежние), HO-20b (папка прогона не появляется), HO-20c (проверки повтора раньше любой записи: при отказе всех mkdir/записи/ссылки повтор остаётся кодом 1), HO-21 и HO-74 (значения аргументов и ключ-подобная строка не попадают в вывод отказов), HO-22 и HO-22b (20 повторов по два параллельных процесса в ещё не созданной папке и 4 процесса: один код 0, остальные E_HO_EXISTS/E_HO_BUSY, один файл, без .sai-tmp), HO-23, 23a, 23b, 23c, 23d (подмена linkSync/mkdirSync/unlinkSync/writeFileSync: F2, F3), HO-24, 24b, 24c (гонка handoff_id и F4: повторный поиск не удался), HO-25 (остаток .sai-tmp: E_HO_BUSY), HO-26 (путь домашней и временной папки: E_HO_RULES, строки H10/H11, файла нет), HO-27 (handoffs или папка прогона — ссылка или файл), HO-28. К4 Закрытие — HO-30 (COMPLETED: разбор до/после равен во всём, кроме status и completed_at, порядок ключей, время в границах часов, handoffs-check чистый), HO-31 и HO-31b (побайтово: 7 форм файла — CRLF, табы, одна строка, пробелы у двоеточий, без перевода строки, значения-ловушки в строках; вложенные status/completed_at в context/result не тронуты; порядок ключей), HO-32 (FAILED из PENDING и IN_PROGRESS, COMPLETED из PENDING), HO-33 (spliceTopLevel: начало/середина/конец, повтор ключа, нет ключа), HO-34 (две строки вывода), HO-37 (повторное close — отказ), HO-38 (H2, H3, H5, H9, H10, H11 на записанном получателем). К5 Отказы закрытия — HO-35 (таблица из 43 отказов: файл побайтово и дерево прежние, нет .sai-tmp/.sai-old, одна строка; в таблице и HO-75: не-объект, глубина, BOM, двоичный, не UTF-8, больше 16 МиБ, ссылки, путь, остановка, CANCELLED, started_at позже часов, повтор ключа), HO-35a (время из будущего: строка H6), HO-36 (строки нарушений равны строкам handoffs-check), HO-35b (F9: файл изменён между чтением и записью), HO-39 (close не читает чужие файлы и tools/). К6 Только handoffs/ и без мусора — HO-40, HO-41a…g (сбои link EPERM/EXDEV/ENOSPC, запись временного файла, mkdir, N2 удаление временного после ссылки, kill, F2, F4), HO-42, 42b, 42c (rename/запись/резерв, «записано, но резервный файл не удалён», сбой отката), HO-43 (код: один writeFileSync, нет rename, linkSync, writeAllOrNothing), HO-44 (враждебные значения), HO-45 (дерево вне handoffs/ прежнее), HO-46 и HO-47 (HC-RT-1 и TR-4c зелёные), HO-76. К7 Документы и справка — HO-50 (оба вида вызова в разделах «Время» и «Кто что пишет»), HO-51, HO-52 (раздел README по строкам и ключам, не по подстроке), HO-53 (--help: код 0, ключи, по-русски, stderr пуст, и через npm run -s), HO-54. К8 Место записи и проверка — HO-90 (git diff против метки пуст, одна запись ?? handoffs/<RUN-ID>/, старые handoff-ы прежние), HO-91 (handoffs-check на handoff-ах старого вида даёт записанный текст — правка check.js поведение не меняет); HO-92, HO-93, HO-94 — команды RELEASE-VALIDATOR и TEST-RUNNER (п. 10, О3), автотестов нет. Пункты планки: Q3 — все числа ниже из настоящих запусков; Q5 — тест на каждый критерий и отказы с проверкой неизменного состояния (HO-20, 35, 41, 42); Q6 — нет skip/todo/only, правил линтера и || true (HC-10a зелёный); Q7 — секретов нет, значение-«ключ» собрано из частей, пути домашних и временных папок собраны из частей, в тестах и выводе путей компьютера нет (HO-21, HO-74); Q8 — неприменим: данных бизнеса и клиентов в изменении нет; Q10 — внешний вызов здесь git: HO-13, HO-13b (нет git, не репозиторий, неожиданный код), сбои диска HO-41/42; Q11 — неприменим: адресов и сети нет; R3 — неприменим: продукт снят решением 0033.",
+    "changes": [
+      {
+        "file": "tools/test/handoffs-cmd-new.test.js",
+        "what": "HO-01, 01b, 02, 03, 04, 05, 06, 07, 08, 09: создание (К1), 10 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-base.test.js",
+        "what": "HO-10, 11, 11b, 12, 13, 13b, 14, 15: метка базы и сбои git (К2), 8 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-refuse.test.js",
+        "what": "HO-20, 20b, 20c, 21, 74, 25, 26, 27, 28: отказы создания (К3), 9 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-race.test.js",
+        "what": "HO-22, 22b, 23, 23a, 23b, 23c, 23d, 24, 24b, 24c: гонки и внедрённые сбои F2, F3, F4 (К3, К6), 10 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-close.test.js",
+        "what": "HO-30, 31, 31b, 32, 33, 34, 37, 38: закрытие (К4), 8 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-close-refuse.test.js",
+        "what": "HO-35 (43 случая, в них HO-75), 35a, 35b, 36, 39: отказы закрытия (К5), 5 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-write.test.js",
+        "what": "HO-40, 41a…g, 42, 42b, 42c, 43, 44, 45, 76: место записи, сбои диска, мусор (К6), 15 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-docs.test.js",
+        "what": "HO-46, 47, 50, 51, 52, 53, 54, 90, 91: документы, справка, место записи (К7, К8), 9 тестов"
+      },
+      {
+        "file": "tools/test/handoffs-runtime.test.js",
+        "what": "только HC-RT-1b, HC-RT-1c, HC-RT-1d по п. 10.1: EXPECTED_CALLS получил шестую запись на пятое место, arrayItems знает имя ref, findings проверяет, что имя метки собирается после проверки RUN-ID, HC-RT-1c: 6 вызовов, stdin у calls[5], HC-RT-1d: «a seventh call» и мутанты «tagExists без --quiet», «без проверки RUN-ID», «имя из сырого аргумента»; ожидание строже прежнего"
+      },
+      {
+        "file": "tools/test/handoffs-helpers.js",
+        "what": "только добавление: HANDOFF, FAULT_MODULE, AGENTS_DIR, FAKE_*, CANON, newArgs, canonArgs, runHandoff, startHandoff, newCmdRepo, baseTag, assertRefusal, listTree, fileHashes, recipientWrites; единственная правка существующей строки — import { spawn, spawnSync }"
+      }
+    ],
+    "self_check": {
+      "npm_run_check": "cd tools && npm run check (вывод в <scratch>/check-final.out), код 0: format:check и lint без замечаний, traces: файлов проверено 1137, следов 0; handoffs-check: файлов проверено 644, нарушений 0; npm run test: # tests 1389, # pass 1389, # fail 0, # skipped 0, # todo 0 (до работы 1315; новых 74). Красных нет.",
+      "handoffs_check": "cd tools && npm run handoffs-check — код 0: «handoffs-check: файлов проверено 644, нарушений 0, исключений использовано 114 из 114».",
+      "pre_work_run": "первый полный check после написания тестов: код 0, 1389 из 1389 (вывод в <scratch>/check.out); до правки HC-RT-1b/c/d они были красными, как и записано в I1 шага 2.",
+      "base_copy": "копия base/REQ039-20261011-01 (git archive в <scratch>/base) + новые тесты и правленый handoffs-runtime.test.js: node --test test/handoffs-cmd-*.test.js test/handoffs-runtime.test.js -> # tests 33, # pass 8, # fail 25 (вывод в <scratch>/base-run.txt). Шесть файлов (base, close-refuse, close, new, race, write — 56 тестов) не загружаются: ERR_MODULE_NOT_FOUND (нет tools/src/handoffs/close.js и др.); в двух загружающихся файлах красны все тесты команды (HO-50…HO-54, HO-46, HO-90, HO-20…HO-28, HO-74); HC-RT-1b, HC-RT-1c, HC-RT-1d красны (на базе пять вызовов git, а ожидание — шесть). Зелёные на базе только тесты существующего поведения: HO-47 (TR-4c), HO-91 (handoffs-check на старом виде) и нетронутые HC-RT-1a/1e, HC-4f, HC-4g, HC-5c, HC-8k.",
+      "mutants_method": "Мутанты применялись во временной копии проекта вне проекта (<scratch>/mutrun, rsync без .git и node_modules), по одному: правка файла кода, запуск node --test на 8 файлах handoffs-cmd-*.test.js и handoffs-runtime.test.js (83 теста), возврат файла. Рабочее дерево не менялось: после проб diff -r tools/ рабочего дерева и копии пуст, tools/src совпадает с состоянием после ревью. Всего 52 мутанта, ни один не выжил; M1…M24 из проекта (с вариантами a/b/c/d) и свои X1…X20. Сводка ниже: мутант: сколько тестов упало — какие.",
+      "mutants": [
+        "M1 linkSync->renameSync: упало 9 — HO-23, HO-23a, HO-23c, HO-23b, HO-41a, HO-41d, HO-41e, HO-41f, HO-43",
+        "M2a no preflight call: упало 2 — HO-20c, HO-41g",
+        "M2b no existing-file check in preflight: упало 1 — HO-20",
+        "M2c no first handoff_id search: упало 2 — HO-20c, HO-41g",
+        "M2d no leftover check in preflight: упало 1 — HO-20c",
+        "M3 no second handoff_id search: упало 3 — HO-24, HO-24b, HO-41g",
+        "M4a refuse without tag for all processes: упало 14 — HO-11, HO-15, HO-13b, HO-30, HO-32, HO-34, HO-37, HO-38, HO-03, HO-06, HO-22, HO-22b, HO-24c, HO-44",
+        "M4b base_tag only for WF-02: упало 3 — HO-11b, HO-03, HO-08",
+        "M4c no refusal for WF-02: упало 5 — HO-10, HO-12, HO-15, HO-21, HO-74",
+        "M5a tag looked up among branches: упало 33 — HO-11b, HO-12, HO-14, HO-13b, HO-46, HO-90, HO-01, HO-02, HO-03, HO-07, HO-08, HO-01b, HO-20, HO-20c, HO-25, HO-26, HO-27, HO-28, HO-40, HO-41a, HO-41b, HO-41c, HO-41d, HO-41e, HO-41f, HO-41g, HO-42, HO-42b, HO-42c, HO-45, HO-76, HC-RT-1b, HC-RT-1d",
+        "M5b no ^{commit} in tag lookup: упало 4 — HO-12, HO-46, HC-RT-1b, HC-RT-1d",
+        "M6 started_at one second later: упало 41 — HO-11, HO-11b, HO-12, HO-15, HO-13b, HO-30, HO-32, HO-34, HO-37, HO-38, HO-90, HO-01, HO-02, HO-03, HO-06, HO-07, HO-08, HO-01b, HO-22, HO-22b, HO-24c, HO-20, HO-20c, HO-25, HO-26, HO-27, HO-28, HO-40, HO-41a, HO-41b, HO-41c, HO-41d, HO-41e, HO-41f, HO-41g, HO-42, HO-42b, HO-42c, HO-44, HO-45, HO-76",
+        "M7 close rewrites the whole document: упало 1 — HO-31",
+        "M8 close changes result.status instead of status: упало 6 — HO-30, HO-31, HO-31b, HO-32, HO-37, HO-42b",
+        "M9 close does not check completed_at null: упало 1 — HO-35",
+        "M10 close skips the rules of REQ-038: упало 3 — HO-35a, HO-36, HO-38",
+        "M11 close checks the rules after the write: упало 2 — HO-35a, HO-38",
+        "M12 close skips started_at after the clock: упало 1 — HO-35",
+        "M13a own temporary file is not removed on failure: упало 6 — HO-23b, HO-24, HO-24b, HO-41a, HO-41b, HO-41g",
+        "M13b own temporary file is not removed at EEXIST of link: упало 4 — HO-23, HO-23a, HO-23c, HO-41f",
+        "M14 folder of the run made before the checks: упало 12 — HO-10, HO-12, HO-13b, HO-20c, HO-20b, HO-26, HO-27, HO-41a, HO-41b, HO-41f, HO-41g, HO-44",
+        "M15 list of roles in the code: упало 1 — HO-06",
+        "M16 value of the argument in the refusal: упало 5 — HO-35, HO-21, HO-74, HO-26, HO-42",
+        "M17 code 1 for a wrong call: упало 3 — HO-35, HO-04, HO-20",
+        "M18 write_set as a string for one value: упало 1 — HO-01",
+        "M19 round after the rest of the fields: упало 2 — HO-01, HO-03",
+        "M20 writeFileSync for the final name: упало 8 — HO-23, HO-23a, HO-23c, HO-23b, HO-41a, HO-41e, HO-41f, HO-43",
+        "M21a close allows CANCELLED: упало 1 — HO-35",
+        "M21b close allows a stop: упало 1 — HO-35",
+        "M22 tagExists without the check of RUN-ID: упало 4 — HO-14, HO-46, HC-RT-1b, HC-RT-1d",
+        "M23 F4: file stays after a failed second search: упало 2 — HO-24b, HO-41g",
+        "M24 N2: leftover temporary file is not an error: упало 1 — HO-41d",
+        "X1 close writes with writeFileSync: упало 4 — HO-42, HO-42b, HO-42c, HO-43",
+        "X2 close skips the second reading: упало 1 — HO-35b",
+        "X3 new file with mode 0600: упало 1 — HO-02",
+        "X4 flag w instead of wx for the temporary file: упало 2 — HO-22, HO-43",
+        "X5 close accepts a path outside of handoffs/: упало 1 — HO-35",
+        "X6 close follows a link on the path: упало 1 — HO-35",
+        "X7 base_tag written without a tag: упало 3 — HO-11, HO-15, HO-03",
+        "X8 task is trimmed: упало 1 — HO-01b",
+        "X9 criteria in reverse order: упало 2 — HO-01, HO-01b",
+        "X10 run in small letters accepted: упало 1 — HO-20",
+        "X11 step of one digit accepted: упало 4 — HO-20, HO-20b, HO-21, HO-74",
+        "X12 role not checked: упало 6 — HO-06, HO-20, HO-20b, HO-21, HO-74, HO-44",
+        "X13 close ignores result.status: упало 1 — HO-35",
+        "X14 temporary file of new not flushed and named wrongly (no dot): упало 9 — HO-23c, HO-23d, HO-20c, HO-25, HO-41a, HO-41b, HO-41d, HO-41e, HO-41f",
+        "X15 tagExists answers true on status 1: упало 8 — HO-10, HO-11, HO-12, HO-14, HO-15, HO-03, HO-21, HO-74",
+        "X16 new does not check the rules of REQ-038: упало 1 — HO-26",
+        "X17 close ignores leftover .sai-old: упало 1 — HO-35",
+        "X18 --help ignored: упало 2 — HO-53, HO-04",
+        "X19 handoff_id without the qualifier: упало 5 — HO-01, HO-05, HO-28, HO-41d, HO-41e",
+        "X20 priority default LOW: упало 2 — HO-01, HO-03"
+      ],
+      "mutants_notes": "M2a…M2d (предварительные проверки new) по исходу работы эквивалентны защите внутри createExclusive (занятое имя даёт тот же отказ), поэтому изначально их ловил только HO-41g (случайно: счёт вызова lstat); добавлен HO-20c (все mkdir/запись/ссылка падают, повтор остаётся кодом 1) — теперь M2a, M2c, M2d ловит он. M6 роняет 41 тест, потому что started_at позже часов нарушает H6 в проверке нового текста; первым в списке HO-01. HO-12 ловит и M5a, и M5b: ветку и метку на дерево."
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "HO-92, HO-93, HO-94 — команды RELEASE-VALIDATOR и TEST-RUNNER (п. 10, О3), автотестов нет: npm ci на копии без node_modules, закрытый перечень изменённых файлов, сверка двух handoff-ов прогона с тем, что дала бы команда new. Критерий 8 в части «handoff-ы прогона созданы и закрыты командой» проверяется по context.orch_check."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Правка кода не понадобилась: ни один новый тест не поймал ошибку кода, код tools/src/ не тронут (diff -r с копией после мутантов пуст)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "HO-38: правило H8 (completed_at раньше started_at) получить командой нельзя — раньше срабатывает E_HO_CLOCK; HO-35 проверяет E_HO_CLOCK, HO-38 — H2, H3, H5, H9, H10, H11. Правило H6 проверено в HO-35a/HO-36 на result.issues[0].at."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Допущения среды у тестов: файловая система временной папки умеет жёсткие ссылки (иначе new отказывает по О13); в PATH есть npm (HO-53), sh и git (HO-13b). Подмена функций fs в самом процессе (HO-23*, HO-24*, HO-35b) идёт через t.mock.method на общем объекте fs и снимается в конце теста; файлы тестов выполняются по одному процессу на файл, тесты в файле — по очереди."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "HO-46 и HO-47 запускают node --test для handoffs-runtime.test.js и traces-runtime.test.js внутри теста (как HC-RT-1e) и поэтому повторяют существующие тесты; HO-53 фиксирует поведение «--help в любом месте вызова даёт справку и код 0» (замечание F4 REVIEWER, Low; проект п. 3.3)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Замечания Low ревью (дубль регулярки RUN-ID в args.js и git-history.js, дубли hasControl/byBytes, фраза в handoffs.md) тестами не покрывались и не правились: вне задания."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/handoffs-cmd-new.test.js",
+      "tools/test/handoffs-cmd-base.test.js",
+      "tools/test/handoffs-cmd-refuse.test.js",
+      "tools/test/handoffs-cmd-race.test.js",
+      "tools/test/handoffs-cmd-close.test.js",
+      "tools/test/handoffs-cmd-close-refuse.test.js",
+      "tools/test/handoffs-cmd-write.test.js",
+      "tools/test/handoffs-cmd-docs.test.js",
+      "tools/test/handoffs-runtime.test.js",
+      "tools/test/handoffs-helpers.js"
+    ]
+  }
+}

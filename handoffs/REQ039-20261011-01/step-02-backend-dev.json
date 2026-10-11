@@ -1,0 +1,159 @@
+{
+  "handoff_id": "step02-REQ039-20261011-01",
+  "run_id": "REQ039-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/REQ039-20261011-01/step-02-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-039"
+    ],
+    "base_tag": "base/REQ039-20261011-01",
+    "artifacts_in": [
+      "docs/design/REQ-039-handoff-command.md (r3 после доработок; весь: п. 2 и 2.1 — состав, п. 3–8 — контракт и пути отказа, п. 9 — документы, п. 10 — тесты и мутанты)",
+      "docs/requirements.yaml (блок REQ-039, 8 критериев — читать по id)",
+      "decisions/0039-handoff-command-design.md",
+      "decisions/0040-handoffs-git-tag-lookup.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "decisions/0031-run-base-tag.md",
+      "decisions/0004-write-phase-rename-and-hardlink-rollback.md",
+      "handoffs/REQ039-20261011-01/step-01b-code-design-validator-r2.json (PASS и неблокирующие замечания)",
+      "docs/workflows/WF-02-development.md (шаг 2)",
+      "docs/workflows/handoffs.md",
+      ".claude/agents/orchestrator.md",
+      "tools/src/handoffs/",
+      "docs/anti-patterns.md"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR (PASS r2) -> BACKEND-DEV (this) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": "tools/src/handoffs/handoff.js; tools/src/handoffs/errors.js; tools/src/handoffs/args.js; tools/src/handoffs/roles.js; tools/src/handoffs/build.js; tools/src/handoffs/one-file.js; tools/src/handoffs/create.js; tools/src/handoffs/close.js; tools/src/handoffs/git-history.js (только добавление tagExists); tools/src/handoffs/check.js (только слово export перед function versionReader); tools/package.json (скрипт handoff сразу после handoffs-check; scripts.check не менять); tools/README.md (раздел «Команда handoff» по п. 9); docs/workflows/handoffs.md (разделы «Время» и «Кто что пишет» по п. 9; пример в «Поля» не править); .claude/agents/orchestrator.md (один пункт по п. 9)",
+    "not_in_write_set": "Тесты (tools/test/handoffs-cmd-*.test.js, правка HC-RT-1b/c/d, handoffs-helpers.js, fixtures) пишет TEST-DESIGNER после ворот безопасности и ревью (AP-063) — не писать. decisions/README.md — ORCH. docs/design/REQ-038-handoffs-check.md — DOC-UPDATER.",
+    "parallel_work_now": "никто",
+    "orch_note": "1) HC-RT-1b, HC-RT-1c и HC-RT-1d в tools/test/handoffs-runtime.test.js после твоей правки станут красными (шестой вызов git) — это «ожидаемый по проекту» провал, допустимый между шагами 2 и 5 (п. 10.1): назови эти три теста в result.issues с разделом проекта и новым ожиданием, не правь тесты. Любой ДРУГОЙ красный тест — назови поимённо и докажи причину (повторы на копии метки base). 2) Новые файлы модуля не должны содержать слов child_process, spawn, shell, require(, import(, строк Users, /home даже в комментариях (иначе краснеют HC-RT-1, HC-4f, HC-10a). 3) Вывод `npm run check` пиши в файл вне проекта и сохрани имена красных тестов. 4) Статусы в твоём handoff — строго COMPLETED/FAILED; пути временных папок в handoff только как <scratch>/…; перед сдачей `cd tools && npm run handoffs-check` — код 0. 5) Не коммитить."
+  },
+  "task": {
+    "description": "WF-02, шаг 2. Реализуй REQ-039 строго по проекту docs/design/REQ-039-handoff-command.md: подкоманды `npm run handoff -- new` и `npm run handoff -- close` (создание — жёсткая ссылка, исключительно; закрытие — подмена двух значений в тексте, перечитывание перед записью, проверка правилами REQ-038 до записи, writeAllOrNothing), все коды выхода и русские тексты отказов, поиск метки base/<RUN-ID> шестым вызовом git в git-history.js (tagExists, фиксированные аргументы, таймаут), документы по п. 9. Только по проекту; отступление — стоп и вопрос через result.issues. Команда не пишет вне handoffs/<RUN-ID>/; никаких зависимостей. Самопроверка по планке (Q7, Q9, Q10, R2…). В конце: `cd tools && npm run check` (вывод в файл вне проекта; ожидаются красными только три теста HC-RT-1b/c/d), затем без них: `cd tools && node --test` по остальным handoffs-*.test.js и traces-*.test.js — зелёные; `cd tools && npm run handoffs-check` и `npm run traces` — код 0; живой прогон команды на копии репозитория вне проекта: new (WF-02 с меткой и без, WF-01 без метки, отказы), close (COMPLETED, отказы) — выводы приложи.",
+    "acceptance_criteria": [
+      "Изменены только файлы write_set (git status приложен)",
+      "Живой прогон new/close на копии: коды выхода и тексты совпадают с проектом",
+      "npm run check: красны только ожидаемые три теста (поимённо); handoffs-check и traces — код 0",
+      "В diff нет skip/todo/отключённых правил, нет путей этого компьютера",
+      "В git-history.js добавлена только tagExists; в check.js — только слово export"
+    ]
+  },
+  "created_at": "2026-10-11T19:25:44Z",
+  "started_at": "2026-10-11T19:25:44Z",
+  "completed_at": "2026-10-11T19:33:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Команда npm run handoff (new, close) реализована строго по docs/design/REQ-039-handoff-command.md: восемь новых файлов в tools/src/handoffs/, tagExists в git-history.js (шестой вызов git), слово export у versionReader в check.js, скрипт handoff в package.json, документы по п. 9. Без зависимостей, без новых мест child_process. npm run check: 1315 тестов, 1312 прошло, 3 красных — ровно HC-RT-1b, HC-RT-1c, HC-RT-1d (ожидаемые по проекту, п. 10.1). Живой прогон new/close на клоне репозитория вне проекта дал коды выхода и тексты по проекту.",
+    "changes": [
+      {
+        "file": "tools/src/handoffs/errors.js",
+        "what": "HandoffError(code, message, exit, lines), osCodeOf (п. 3.5)"
+      },
+      {
+        "file": "tools/src/handoffs/args.js",
+        "what": "таблица ключей, parseArgv, проверки значений в фиксированном порядке, текст справки (п. 3.2–3.4)"
+      },
+      {
+        "file": "tools/src/handoffs/roles.js",
+        "what": "readRoles: коды ролей из .claude/agents/*.md (п. 4.2)"
+      },
+      {
+        "file": "tools/src/handoffs/build.js",
+        "what": "handoffNames, buildDocument, serialize: имена, handoff_id, порядок полей, round, base_tag (п. 4.3–4.4)"
+      },
+      {
+        "file": "tools/src/handoffs/one-file.js",
+        "what": "checkText, historyReader, violationLines поверх rules.js/check.js (п. 6.1–6.2)"
+      },
+      {
+        "file": "tools/src/handoffs/create.js",
+        "what": "findHandoffId, preflight, createExclusive: временный файл wx, жёсткая ссылка, повторный поиск handoff_id, очистка (п. 4.5–4.6, 7)"
+      },
+      {
+        "file": "tools/src/handoffs/close.js",
+        "what": "closeHandoff: путь, условия С1–С7, spliceTopLevel с самопроверкой, checkText до записи, перечитывание, writeAllOrNothing, русский E_HO_WRITE (п. 5)"
+      },
+      {
+        "file": "tools/src/handoffs/handoff.js",
+        "what": "вход: разбор, одно чтение часов в new, метка base, печать, коды выхода (п. 3.1, 3.5, 4.1, 4.7)"
+      },
+      {
+        "file": "tools/src/handoffs/git-history.js",
+        "what": "добавлена только tagExists (и константа RUN_ID для неё) перед readBlobs; пять прежних функций не тронуты (п. 6.3)"
+      },
+      {
+        "file": "tools/src/handoffs/check.js",
+        "what": "только слово export перед function versionReader (п. 6.2)"
+      },
+      {
+        "file": "tools/package.json",
+        "what": "скрипт handoff после handoffs-check; scripts.check не менялся (п. 9.1)"
+      },
+      {
+        "file": "tools/README.md",
+        "what": "раздел «Команда handoff» (п. 9.2)"
+      },
+      {
+        "file": "docs/workflows/handoffs.md",
+        "what": "разделы «Время» и «Кто что пишет»: команды new и close, write_set списком; пример в «Поля» не правился (п. 9.3)"
+      },
+      {
+        "file": ".claude/agents/orchestrator.md",
+        "what": "один пункт о создании handoff-а командой new в момент запуска агента (п. 9.4)"
+      }
+    ],
+    "self_check": {
+      "npm_run_check": "cd tools && npm run check (вывод в <scratch>/check.out): format:check и lint без ошибок, npm run traces код 0, npm run handoffs-check код 0 (641 файл, нарушений 0), npm run test: # tests 1315, # pass 1312, # fail 3; красные: «not ok 322 - HC-RT-1b», «not ok 323 - HC-RT-1c», «not ok 324 - HC-RT-1d» (сообщение: calls: 6 вместо 5). Итог npm run check — код 1 только из-за этих трёх.",
+      "node_test_handoffs_traces": "cd tools && node --test test/handoffs-*.test.js test/traces-*.test.js: # tests 173, # pass 170, # fail 3 (те же HC-RT-1b/c/d); остальные handoffs-* и traces-* зелёные",
+      "handoffs_check": "cd tools && npm run -s handoffs-check: «handoffs-check: файлов проверено 641, нарушений 0, исключений использовано 114 из 114», код 0",
+      "traces": "cd tools && npm run -s traces: «traces: файлов проверено 1126, следов 0, пропущено 36», код 0",
+      "prettier": "npx prettier --check . — код 0; npx eslint src/handoffs — без вывода, код 0",
+      "secrets_Q7": "поиск секретных образцов по изменённым файлам: совпадения только в старых строках tools/README.md (раздел Pixel Office, описание правил маскирования), в моих файлах совпадений нет",
+      "forbidden_words": "в новых файлах нет child_process, spawn, shell, require(, import(, Users, /home; renameSync, .rename(, copyFileSync нет во всём tools/src/handoffs/; writeFileSync в tools/src/handoffs/ один раз (create.js, флаг wx)",
+      "diff_limits": "git diff base/REQ039-20261011-01 -- check.js git-history.js: одна удалённая строка (versionReader → export versionReader), в git-history.js удалённых строк 0, добавлена только tagExists",
+      "live_run": "клон репозитория вне проекта (<scratch>/live/copy), метки base/DEMO-20991231-01 поставлена, 02 нет. new: полный вызов WF-02 с меткой (код 0, 2 строки, файл по п. 4.4, порядок ключей, round 1, base_tag); повтор того же — код 1 E_HO_EXISTS; WF-02 без метки — код 1 E_HO_BASE, папки не создано; WF-01 без метки — код 0, base_tag нет; WF-01 с меткой — код 0, base_tag есть; --run demo — код 1 E_HO_INPUT; роль NOT-A-ROLE — код 1; нет --task — код 2 E_HO_USAGE; --task дважды, ключ без значения, нет подкоманды, неизвестная подкоманда — код 2; путь домашней папки в --task — код 1 E_HO_RULES со строкой H10 в stdout; остаток .sai-tmp — код 1 E_HO_BUSY; 4 параллельных new одного имени — один файл, без остатков; --help — код 0. close: PENDING с result COMPLETED — код 0, diff только status/completed_at; повтор — код 1 E_HO_STATE; FAILED из PENDING — код 0; --status DONE и без --status — код 2; ../x.json, абсолютный, docs/x.json — код 1 E_HO_PATH; файла нет, не JSON — код 1 E_HO_FILE; result null, result.status не равен, остановка IN_PROGRESS — код 1 E_HO_STATE; время из будущего в result.issues[0].at — код 1 E_HO_RULES со строкой H6; started_at из будущего — код 1 E_HO_CLOCK; ссылка на пути — код 1 E_HO_PATH; остаток .sai-old — код 1 E_HO_BUSY; папка без права записи — код 2 E_HO_WRITE «файл прежний», после снятия запрета close проходит; npm run handoffs-check на копии после закрытия — нарушений только у моих намеренно испорченных проб.",
+      "git_status": "изменены только файлы write_set (git status --short: M orchestrator.md, handoffs.md, tools/README.md, tools/package.json, check.js, git-history.js; ?? args.js build.js close.js create.js errors.js handoff.js one-file.js roles.js); остальные записи в статусе — учёт ORCH и проект (decisions/README.md, docs/requirements.yaml, decisions/0039–0040, docs/design/REQ-039, handoffs/REQ039-20261011-01/), не мои"
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED_TEST",
+        "at": "2026-10-11T19:32:50Z",
+        "text": "Три теста tools/test/handoffs-runtime.test.js красны намеренно по проекту п. 10.1 (шестой вызов git, tagExists): HC-RT-1b (findings: calls: 6 вместо 5; EXPECTED_CALLS получает шестую запись [...GIT, rev-parse, --verify, --quiet, <метка>] на пятое место перед cat-file; arrayItems допускает имя ref), HC-RT-1c (calls.length 6, calls[5] — stdin, slice(0, 5) без stdin; список аргументов равен новому EXPECTED_CALLS), HC-RT-1d (мутант «шестой вызов» становится «седьмым»; новые мутанты: tagExists без --quiet, tagExists без проверки RUN-ID). Правит TEST-DESIGNER на шаге 5. Других красных тестов нет."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Отступлений от проекта нет. Уточнения реализации внутри проекта: (а) close сверяет побайтно, что strict-UTF-8 текст из readText возвращается в те же байты (иначе BOM был бы молча отброшен записью) — отказ E_HO_FILE «не текст UTF-8»; (б) ошибка ОС вне обработанных мест (например, realpath корня) выводится как «handoff: E_HO_IO: сбой операционной системы (КОД)» с кодом 2, не стеком; (в) код ОС во фразе повторного поиска handoff_id берётся из текста внутренней ошибки E_HO_IO."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Не проверено мной (внедрение сбоев — работа TEST-DESIGNER, HO-41, HO-42, HO-23, HO-24): сбои linkSync/unlinkSync/mkdirSync/rename в процессе команды, ветки F4 и «записано, но резервный файл не удалён». Код этих веток написан по п. 4.6 и 5.5, но не исполнялся; проверены только EEXIST ссылки (через параллельный запуск) и отказ записи по правам папки."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/handoffs/handoff.js",
+      "tools/src/handoffs/errors.js",
+      "tools/src/handoffs/args.js",
+      "tools/src/handoffs/roles.js",
+      "tools/src/handoffs/build.js",
+      "tools/src/handoffs/one-file.js",
+      "tools/src/handoffs/create.js",
+      "tools/src/handoffs/close.js",
+      "tools/src/handoffs/git-history.js",
+      "tools/src/handoffs/check.js",
+      "tools/package.json",
+      "tools/README.md",
+      "docs/workflows/handoffs.md",
+      ".claude/agents/orchestrator.md"
+    ]
+  }
+}

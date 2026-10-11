@@ -5,7 +5,7 @@
 // The paths of home folders are put together from parts, so that this file is not a
 // trace itself.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -221,4 +221,156 @@ export function assertStop(r, code, textPart) {
   if (textPart !== undefined)
     assert.ok(lines[0].includes(textPart), `stderr: ${r.stderr}`);
   assertNoStack(r.stderr);
+}
+
+// ---- helpers of the tests of `npm run handoff` (design REQ-039, 10) -------------------
+// The command is started as a child process with the working folder of a temporary
+// repository (it has no key --root), the project's `.claude/agents/` is copied into the
+// repository, and the clock is the real one: a test reads it before and after.
+
+export const HANDOFF = path.join(TOOLS, "src", "handoffs", "handoff.js");
+export const FAULT_MODULE = path.join(TOOLS, "test", "fault-inject.js");
+export const AGENTS_DIR = path.join(SAI, ".claude", "agents");
+export const FAKE_RUN = "PROD-20991231-01";
+export const FAKE_REL = `handoffs/${FAKE_RUN}/step-05b-test-design-validator-req999-r1.json`;
+export const FAKE_ID = `step05b-req999-r1-${FAKE_RUN}`;
+
+// The call of the requirement, word for word (invented data).
+export const CANON = {
+  run: FAKE_RUN,
+  step: "05b",
+  role: "TEST-DESIGN-VALIDATOR",
+  workflow: "WF-02",
+  task: "Проверить тесты REQ-999",
+  qualifier: "req999",
+  suffix: "r1",
+};
+
+// `{ run: "X", criterion: ["a", "b"] }` -> ["new", "--run", "X", "--criterion", "a", ...].
+// An undefined value drops the key; an array repeats it.
+export function newArgs(opts = {}) {
+  const out = ["new"];
+  for (const [key, value] of Object.entries(opts)) {
+    if (value === undefined) continue;
+    for (const item of [].concat(value)) out.push(`--${key}`, item);
+  }
+  return out;
+}
+
+export const canonArgs = (over = {}) => newArgs({ ...CANON, ...over });
+
+// The run of the command in `cwd`: { status, stdout, stderr }. `faults` is a list for
+// fault-inject.js (the --import mode); `env` replaces the environment of the process.
+export function runHandoff(args, { cwd, env, faults } = {}) {
+  const pre = [];
+  const full = { ...env };
+  if (faults !== undefined) {
+    pre.push("--import", FAULT_MODULE);
+    full.SAI_TEST_FAULTS = JSON.stringify(faults);
+  }
+  const r = spawnSync(process.execPath, [...pre, HANDOFF, ...args], {
+    cwd,
+    env: full,
+    input: "",
+    encoding: "utf8",
+    timeout: 60_000,
+  });
+  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+}
+
+// A temporary repository of Sai with the roles of the project in `.claude/agents/`,
+// everything committed (a clean tree). `sai.cmd(args, { faults, env })` runs the command
+// in it; `sai.tag(name)` puts a light tag (`annotated: true` - an annotated one).
+export function newCmdRepo(t) {
+  const sai = newSai(t);
+  fs.cpSync(AGENTS_DIR, path.join(sai.root, ".claude", "agents"), {
+    recursive: true,
+  });
+  sai.commit("2025-01-02T00:00:00Z", { message: "agents" });
+  sai.cmd = (args, { faults, env } = {}) =>
+    runHandoff(args, {
+      cwd: sai.root,
+      env: { ...sai.env, ...env },
+      faults,
+    });
+  sai.tag = (name, { annotated = false } = {}) => {
+    if (annotated) sai.git("tag", "-a", "-m", "base", name);
+    else sai.git("tag", name);
+  };
+  sai.status = () => sai.git("status", "--porcelain");
+  sai.json = (rel) => JSON.parse(sai.read(rel).toString("utf8"));
+  return sai;
+}
+
+// The tag of the base of a run.
+export const baseTag = (run) => `base/${run}`;
+
+// The refusal of a run of the command: code, empty stdout (unless `stdout` is true),
+// exactly one stderr line `handoff: <CODE>: ...` without a stack.
+export function assertRefusal(r, exit, code, { stdout = false } = {}) {
+  assert.equal(r.status, exit, describe(r));
+  if (!stdout) assert.equal(r.stdout, "", describe(r));
+  const lines = r.stderr.split("\n").filter((l) => l !== "");
+  assert.equal(lines.length, 1, describe(r));
+  assert.ok(lines[0].startsWith(`handoff: ${code}: `), describe(r));
+  assertNoStack(r.stderr);
+  return lines[0];
+}
+
+// All files and empty folders of a tree below `dir`, without `.git`: sorted relative
+// paths, a folder ends with "/".
+export function listTree(dir) {
+  const out = [];
+  const walk = (abs, rel) => {
+    for (const name of fs.readdirSync(abs).sort()) {
+      if (rel === "" && name === ".git") continue;
+      const p = path.join(abs, name);
+      const r = rel === "" ? name : `${rel}/${name}`;
+      const st = fs.lstatSync(p);
+      if (st.isDirectory() && !st.isSymbolicLink()) {
+        out.push(`${r}/`);
+        walk(p, r);
+      } else out.push(r);
+    }
+  };
+  walk(dir, "");
+  return out;
+}
+
+// The hashes of the files of a tree below `dir` (not `.git`), { rel: sha256 }.
+export function fileHashes(dir) {
+  const out = {};
+  for (const rel of listTree(dir)) {
+    if (rel.endsWith("/")) continue;
+    const abs = path.join(dir, rel);
+    out[rel] = fs.lstatSync(abs).isSymbolicLink()
+      ? `link ${fs.readlinkSync(abs)}`
+      : sha256(fs.readFileSync(abs));
+  }
+  return out;
+}
+
+// The handoff that a recipient hands in: the file `rel` of `sai` read, `over` put over
+// its fields and written back with two spaces. Returns the new document.
+export function recipientWrites(sai, rel, over) {
+  const d = { ...sai.json(rel), ...over };
+  sai.write(rel, `${JSON.stringify(d, null, 2)}\n`);
+  return d;
+}
+
+// The same run, started without waiting: a promise of { status, stdout, stderr }.
+export function startHandoff(args, { cwd, env } = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [HANDOFF, ...args], {
+      cwd,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.setEncoding("utf8").on("data", (d) => (stdout += d));
+    child.stderr.setEncoding("utf8").on("data", (d) => (stderr += d));
+    child.on("error", reject);
+    child.on("close", (status) => resolve({ status, stdout, stderr }));
+  });
 }

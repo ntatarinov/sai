@@ -1,0 +1,153 @@
+{
+  "handoff_id": "step05b-REQ039-20261011-01",
+  "run_id": "REQ039-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "05b",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/REQ039-20261011-01/step-05b-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-039"
+    ],
+    "base_tag": "base/REQ039-20261011-01",
+    "artifacts_in": [
+      "handoffs/REQ039-20261011-01/step-05-test-designer.json",
+      "docs/design/REQ-039-handoff-command.md (п. 10, 10.1, 10.2)",
+      "docs/requirements.yaml (блок REQ-039, 8 критериев)",
+      "tools/test/handoffs-cmd-*.test.js",
+      "tools/test/handoffs-runtime.test.js",
+      "tools/test/handoffs-helpers.js",
+      "handoffs/REQ039-20261011-01/step-04-reviewer.json",
+      "handoffs/REQ039-20261011-01/step-03-security-reviewer.json",
+      "docs/workflows/WF-02-development.md (шаг 5b)",
+      "docs/quality-bar.md"
+    ],
+    "route": "TEST-DESIGNER -> TEST-DESIGN-VALIDATOR (this) -> TEST-RUNNER",
+    "write_set": "нет: пишет только status (COMPLETED или FAILED), completed_at, result. Пробы и мутанты — только во временной копии вне проекта",
+    "before_copy": "git: метка base/REQ039-20261011-01"
+  },
+  "task": {
+    "description": "WF-02, шаг 5b. Сам прочитай и запусти тесты REQ-039: у каждого из 8 критериев есть настоящий тест (сверь с текстом критерия, а не с таблицей автора); ничего не пропущено (нет skip/todo/only); проверки содержательны (значения, коды выхода, неизменность файла/дерева в тестах отказа, не «тест без утверждений»); тесты независимы (порядок, часы, общие временные каталоги, сеть); внедрение сбоев (fault-inject, подмена fs) действительно создаёт условие, а не имитирует его проверкой строки; нет путей компьютера и секретов. Для новой логики применяй мутанты САМ: не менее шести по разным частям (например: new перезаписывает существующий файл вместо отказа; повторный поиск handoff_id после ссылки убран; close меняет не только status и completed_at; close без проверки правилами REQ-038 перед записью; временный файл не удаляется при EEXIST; base_tag не пишется для WF-01 при найденной метке; отказ без метки и для WF-01; created_at != started_at; ключ со значением -- принят; tagExists без проверки RUN-ID; новая запись child_process в другом файле), во временной копии; рабочее дерево не менять (список хешей файлов tools/ до и после совпадает) — для каждого скажи, какие тесты падают; тесты после проб зелёные. Проверь заявленное автором «НЕ покрыт H8» (раньше срабатывает E_HO_CLOCK) — достижимо ли H8 командой. Запусти `cd tools && npm run check` дважды, вывод в файл вне проекта, имена любых красных (AP-070). Оцени допущения среды (жёсткие ссылки, npm/sh/git в PATH) и хрупкость тестов гонки. PASS или FAIL (Critical/High/Medium блокируют).",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков, выводы приложены",
+      "Не менее шести мутантов применены лично и пойманы",
+      "Хеши до/после совпадают; после проб npm run check — код 0",
+      "Все 8 критериев названы с тестами"
+    ]
+  },
+  "created_at": "2026-10-11T20:55:13Z",
+  "started_at": "2026-10-11T20:55:13Z",
+  "completed_at": "2026-10-11T21:14:18Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Все четыре вопроса и свой прогон закрыты своими запусками. (1) Покрытие: свою таблицу строил от текста 8 критериев requirements.yaml, а не от таблицы автора. К1 Создание — HO-01 (путь, handoff_id, порядок ключей, round, base_tag, created_at = started_at в границах часов, две строки вывода, код 0), HO-01b, HO-02, HO-03, HO-04, HO-05, HO-06, HO-07, HO-08, HO-09. К2 Метка базы — HO-10 (WF-02 без метки: код 1, decisions/0031, папки нет, дерево прежнее), HO-11, HO-11b, HO-12, HO-13, HO-13b, HO-14, HO-15 (WF-01 без метки: файл создан, base_tag нет). К3 Отказы создания — HO-20 (36 случаев: код, одна строка stderr, stdout пуст, git status и хеш дерева прежние; в нём все перечисленные критерием: файл есть, handoff_id в другом файле, RUN-ID трёх видов, шаг 5b и 100, NOT-A-ROLE с указанием списка ролей, «Req 1», r0 и x1, WF-9, пустой task, неизвестный ключ и ключ без значения — код 2), HO-20b, HO-20c, HO-21, HO-74, HO-22 и HO-22b (параллельные процессы: один файл, один код 0, остальные E_HO_EXISTS/E_HO_BUSY), HO-23*, HO-24*, HO-25, HO-26, HO-27, HO-28. К4 Закрытие — HO-30 (разбор до/после равен кроме status и completed_at, порядок ключей, время в границах часов, handoffs-check без нарушений), HO-31 (7 форм файла побайтово), HO-31b, HO-32, HO-33, HO-34, HO-37, HO-38. К5 Отказы закрытия — HO-35 (43 случая: все из критерия — completed_at записан, result null, result.status не равен --status, status уже COMPLETED, --status DONE код 2, пути ../, абсолютный, вне handoffs/, ссылка за корень, не JSON, started_at позже часов; файл побайтово и дерево прежние, .sai-tmp/.sai-old нет), HO-35a (час вперёд в result.issues[0].at: строка «— H6: …» формата REQ-038), HO-35b, HO-36, HO-39. К6 Только handoffs/ и без мусора — HO-40, HO-41a…g, HO-42, 42b, 42c (сбои link и rename внедрены fault-inject.js в процесс команды), HO-43 (код: один writeFileSync — временный файл create.js, wx, нет rename, linkSync, writeAllOrNothing), HO-44, HO-45, HO-76. К7 Документы — HO-50, HO-51, HO-52 (по строкам и разделам, не по подстроке), HO-53 (--help, код 0, и через npm run), HO-54 (+HO-46, HO-47). К8 Место записи и проверка — HO-90, HO-91 (автотесты); часть «npm ci, закрытый перечень, handoff-ы прогона созданы командой» (HO-92…HO-94) по проекту п. 10, О3 не автотест, это команды RELEASE-VALIDATOR; npm run check — мой прогон ниже. Пропусков нет: grep по .skip/.todo/.only/skip:/todo: в handoffs-cmd-*.test.js и handoffs-helpers.js пуст, в прогоне skipped 0, todo 0. Тесты Q8, Q11, R3 неприменимы (данных бизнеса и адресов нет, продукт снят), причина записана TEST-DESIGNER, мной проверена: команда работает только с файлами handoffs/ и git. Q10 — сбои git (HO-13, HO-13b) и диска (HO-41, HO-42) покрыты. (2) Содержательность: прочитал все 8 файлов тестов. Проверки сверяют значения, коды выхода, тексты строк, побайтовое равенство; тесты отказов проверяют неизменность файла, хешей, listTree и git status. Имена теста называют случай и итог. Пустых тестов нет. (3) Мутанты: применил лично 32 мутанта (минимум 6) в копии проекта вне проекта (<scratch>/mut/sai), по одному, каждый запуск — 9 файлов (83 теста); пойманы все 32, выживших нет (список в self_check). Свои числа: 32 из 32 пойманы, самый слабый — один падающий тест (V2, V9, V10, V15, V16, V18, V22, V23, V25, V27, V28, V29). После проб копия совпадает с проектом (diff -r пуст), 83 из 83 зелёные. Заявленное «НЕ покрыт H8» проверено: H8 командой недостижим — completed_at берётся с часов того же чтения, что и проверка started_at > nowSec, поэтому E_HO_CLOCK срабатывает раньше; при мутанте V28 (проверка снята) тест HO-35 падает; замечание автора верно, пробела в покрытии нет (H8 покрывают тесты REQ-038). (4) Обстановка: у каждого теста свой временной git-репозиторий; часы настоящие, но тесты сверяют только вилку «до — после» и смещения относительно часов, абсолютных дат нет; гонки: 6 одновременных прогонов race-файла (по 12 дочерних процессов) — 6 из 6 зелёные, 20 повторов HO-22 внутри; единичные запуски HO-35, HO-41e, HO-24b, HO-38, HO-53, HO-20c, HO-23d по имени — зелёные; секретов и путей компьютера в тестах нет (поиск путей домашней и временной папок, sk-, ghp_ — пусто; пути домашней и временной папок собраны из частей). (5) Свой прогон: cd tools && npm run check дважды — код 0 оба раза, # tests 1389, # pass 1389, # fail 0, # skipped 0, # todo 0, строк not ok — 0; format:check, lint, traces и handoffs-check без замечаний. Красных нет (AP-070). Хеши файлов tools/ (257 файлов, без node_modules) и git status до и после совпали. Замечания (Low, не блокируют) — в findings.",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "blocks": false,
+        "where": "tools/test/handoffs-cmd-new.test.js, HO-01",
+        "what": "Автор пишет, что вызов критерия 1 взят «дословно», но значения другие: task «Проверить тесты REQ-999» вместо «Проверить тесты», критерии «Первый пункт»/«Второй пункт», artifact-in и requirement свои. Структура вызова, путь и handoff_id совпадают с критерием, поэтому критерий закрыт по существу.",
+        "fix": "Не обязательно; при случае заменить значения на дословные из критерия или убрать слово «дословно» из описания."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "blocks": false,
+        "where": "tools/test/handoffs-cmd-close.test.js, HO-38",
+        "what": "В названии перечислены H2, H3, H9, H10 и H11, а в таблице случаев есть ещё H5; H8 командой недостижим (E_HO_CLOCK срабатывает раньше), что в тесте нигде не записано.",
+        "fix": "Добавить H5 в название теста и одну строку-комментарий о недостижимости H8 командой."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "blocks": false,
+        "where": "tools/test/handoffs-cmd-close-refuse.test.js, HO-35",
+        "what": "43 случая в одном тесте: первое же падение прячет остальные (имя случая добавляется к сообщению, так что причина видна, но дальше цикл не идёт). Мутанты V13, V15, V16, V22, V25, V28, V29 ловит один этот тест.",
+        "fix": "Не обязательно: развернуть таблицу в отдельные тесты через цикл test(...) по CASES."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "blocks": false,
+        "where": "tools/test/handoffs-cmd-docs.test.js, HO-46, HO-47",
+        "what": "Запускают node --test для handoffs-runtime.test.js и traces-runtime.test.js внутри теста: повторяют те же файлы, которые npm run test и так запускает (лишние ~секунды и вложенный запуск); при падении тот же сбой виден дважды.",
+        "fix": "Не обязательно; оставить как есть или убрать после принятия решения владельцем о дублях."
+      },
+      {
+        "id": "F5",
+        "severity": "Low",
+        "blocks": false,
+        "where": "допущения среды: HO-13b, HO-53, HO-23*, HO-41a",
+        "what": "Тесты требуют: файловая система временной папки умеет жёсткие ссылки; в PATH есть sh, git и npm (HO-53 вызывает npm run -s handoff); HO-13b подставляет скрипт git на sh. Без этого тесты красные, но с понятным сообщением (ничего не молчит как зелёное). Права вне временной папки не меняются, сети и ссылок наружу нет (AP-020: замечание не требуется).",
+        "fix": "Записать допущения в tools/README.md одной строкой, если владелец захочет."
+      },
+      {
+        "id": "F6",
+        "severity": "Low",
+        "blocks": false,
+        "where": "HO-92…HO-94 (критерий 8)",
+        "what": "Часть критерия 8 (npm ci на копии без node_modules, закрытый перечень файлов, handoff-ы прогона созданы командой) не имеет автотеста по проекту п. 10, О3. Это проверка RELEASE-VALIDATOR и TEST-RUNNER, на шаге 5b не проверяется.",
+        "fix": "RELEASE-VALIDATOR запускает команды HO-92, HO-93, HO-94 сам; в handoff-ах прогона нужны context.orch_check."
+      }
+    ],
+    "self_check": [
+      "Хеши до проб: find tools -path tools/node_modules -prune -o -type f | sort | xargs shasum -a 256 -> 257 файлов, список в <scratch>/v/hash-before.txt. После всех запусков и проб: diff hash-before hash-after -> пусто (HASH_SAME); git status --short до и после совпал (STATUS_SAME).",
+      "cd tools && npm run check (1-й раз, вывод в <scratch>/v/check1.out): код 0; # tests 1389, # pass 1389, # fail 0, # cancelled 0, # skipped 0, # todo 0; grep -c '^not ok' = 0. traces: файлов проверено 1138 (в первом прогоне автора 1137: добавился мой handoff), handoffs-check: нарушений 0.",
+      "cd tools && npm run check (2-й раз, <scratch>/v/check2.out): код 0; # tests 1389, # pass 1389, # fail 0, # skipped 0, # todo 0; not ok — 0; handoffs-check: файлов проверено 645, нарушений 0, исключений использовано 114 из 114.",
+      "Копия: rsync проекта без node_modules в <scratch>/mut/sai (свой .git с метками), node_modules — ссылкой. Базовый прогон в копии: node --test test/handoffs-cmd-*.test.js test/handoffs-runtime.test.js -> tests 83, pass 83, fail 0, skipped 0, todo 0 (около 16 секунд).",
+      "Мутанты (по одному: правка кода в копии, запуск 9 файлов, возврат файла; скрипт <scratch>/mutrun.mjs, определения <scratch>/muts.json и m2.json; вывод <scratch>/v/mut1.out, mut2.out):",
+      "V1 new overwrites: link->rename: упало 9 верхнего уровня — HO-23, HO-23a, HO-23c, HO-23b, HO-41a, HO-41d, HO-41e, HO-41f, HO-43",
+      "V2 preflight: existing-file refusal removed: упало 1 верхнего уровня — HO-20",
+      "V3 second handoff_id search removed: упало 3 верхнего уровня — HO-24, HO-24b, HO-41g",
+      "V4 close rewrites document (4-space JSON): упало 2 верхнего уровня — HO-31, HO-31b",
+      "V5 close without REQ-038 check: упало 3 верхнего уровня — HO-35a, HO-36, HO-38",
+      "V6 own tmp not removed at link EEXIST: упало 4 верхнего уровня — HO-23, HO-23a, HO-23c, HO-41f",
+      "V7 base_tag only for WF-02 even with tag: упало 3 верхнего уровня — HO-11b, HO-03, HO-08",
+      "V8 refuse without tag for all workflows: упало 14 верхнего уровня — HO-11, HO-15, HO-13b, HO-30, HO-32, HO-34, HO-37, HO-38, HO-03, HO-06, HO-22, HO-22b, HO-24c, HO-44 и др.",
+      "V9 created_at one second before started_at: упало 1 верхнего уровня — HO-01",
+      "V10 key value starting with -- accepted: упало 1 верхнего уровня — HO-20",
+      "V11 tagExists without RUN-ID check: упало 4 верхнего уровня — HO-14, HO-46, HC-RT-1b, HC-RT-1d",
+      "V12 new child_process call in create.js: упало 6 верхнего уровня — HO-46, HC-RT-1a, HC-RT-1b, HC-RT-1d, HC-RT-1e, TR-4c, HO-47",
+      "V13 close: status check (PENDING/IN_PROGRESS) removed: упало 2 верхнего уровня — HO-35, HO-37",
+      "V14 find: unreadable file skipped as no: упало 2 верхнего уровня — HO-24b, HO-41g",
+      "V15 close: .sai-old leftover ignored: упало 1 верхнего уровня — HO-35",
+      "V16 close: symlink check removed: упало 1 верхнего уровня — HO-35",
+      "V17 folders made not removed on failure: упало 6 верхнего уровня — HO-23a, HO-41a, HO-41b, HO-41c, HO-41f, HO-41g",
+      "V18 preflight busyCheck removed: упало 1 верхнего уровня — HO-20c",
+      "V19 new: BOM at start of text: упало 41 верхнего уровня — HO-11, HO-11b, HO-12, HO-15, HO-13b, HO-30, HO-32, HO-34, HO-37, HO-38, HO-90, HO-01, HO-02, HO-03 и др.",
+      "V20 close: completed_at stamp from wrong clock (+1h): упало 17 верхнего уровня — HO-35, HO-35a, HO-36, HO-35b, HO-39, HO-30, HO-31, HO-31b, HO-32, HO-34, HO-37, HO-90, HO-40, HO-42 и др.",
+      "V21 handoff_id without step part order (step after tail): упало 6 верхнего уровня — HO-01, HO-03, HO-05, HO-28, HO-41d, HO-41e",
+      "V22 close: completed_at null check removed: упало 1 верхнего уровня — HO-35",
+      "V23 close: second read (race guard) compares nothing: упало 1 верхнего уровня — HO-35b",
+      "V24 new: priority default HIGH: упало 2 верхнего уровня — HO-01, HO-03",
+      "V25 close: tmp leftover check removed: упало 1 верхнего уровня — HO-35",
+      "V26 new: skip role check: упало 6 верхнего уровня — HO-06, HO-20, HO-20b, HO-21, HO-74, HO-44",
+      "V27 tmp file mode 0o600: упало 1 верхнего уровня — HO-02",
+      "V28 close: started_at later than clock check removed: упало 1 верхнего уровня — HO-35",
+      "V29 close: result.status vs --status check removed: упало 1 верхнего уровня — HO-35",
+      "V30 new: round written for any suffix: упало 2 верхнего уровня — HO-03, HO-05",
+      "V31 new: exit code 2 for exists (instead of 1): упало 5 верхнего уровня — HO-22, HO-22b, HO-20, HO-20c, HO-41d",
+      "V32 close: stack printed (rethrow HandoffError): упало 23 верхнего уровня — HO-10, HO-12, HO-15, HO-35, HO-35a, HO-37, HO-38, HO-20, HO-20c, HO-20b, HO-25, HO-26, HO-27, HO-41a и др.",
+      "Итог по мутантам: 32 применено лично, 32 поймано, выживших 0. Части кода: create.js (V1, V2, V3, V6, V12, V14, V17, V18, V27), close.js (V4, V5, V13, V15, V16, V20, V22, V23, V25, V28, V29), handoff.js (V7, V8, V26, V32), build.js (V9, V19, V21, V24, V30), args.js (V10), git-history.js (V11). Из перечня задания применены: new перезаписывает существующий (V1), второй поиск handoff_id убран (V3), close меняет не только status и completed_at (V4), close без проверки правилами REQ-038 (V5), временный файл не удаляется при EEXIST (V6), base_tag не пишется при найденной метке для не-WF-02 (V7), отказ без метки для всех процессов (V8), created_at != started_at (V9), ключ со значением -- принят (V10), tagExists без проверки RUN-ID (V11), новая запись child_process в другом файле (V12).",
+      "После проб: diff -rq tools проекта и копии (без node_modules) -> пусто (COPY_EQUALS_PROJECT); node --test тех же 9 файлов в копии -> tests 83, pass 83, fail 0.",
+      "H8: код close.js — nowSec = floor(now()/1000); stamp = formatUtc(nowSec); started > nowSec -> E_HO_CLOCK до записи; значит completed_at (= nowSec) не бывает раньше started_at, H8 командой недостижим. Мутант V28 (проверка снята) -> падает HO-35.",
+      "Устойчивость: 6 одновременных запусков node --test test/handoffs-cmd-race.test.js -> у каждого # pass 10, # fail 0 (выводы <scratch>/v/race1.out … race6.out). Единичные запуски по --test-name-pattern (HO-35, HO-41e, HO-24b, HO-38, HO-53, HO-20c, HO-23d) -> fail 0.",
+      "Поиск: grep -nE '\\.(skip|todo|only)\\b|skip:|todo:' в handoffs-cmd-*.test.js и handoffs-helpers.js -> пусто; поиск путей домашней и временной папок компьютера в handoffs-cmd-*.test.js -> пусто; Math.random/setTimeout/fetch/http — нет; Date.now только для вилки «до — после» и смещений.",
+      "Проверка правок существующих тестов: git diff base/REQ039-20261011-01 -- tools/test/handoffs-runtime.test.js — только HC-RT-1b/c/d по п. 10.1 (ожидание строже: шесть вызовов git, новая проверка имени метки, три новых мутанта); git diff ... -- check.js | grep -c '^-[^-]' -> 1, git-history.js -> 0; в handoffs-helpers.js удалена одна строка (import spawnSync -> spawn, spawnSync), остальное добавление."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Блокирующих замечаний нет. Для TEST-RUNNER: следующий шаг может идти; HO-92…HO-94 (npm ci на копии, закрытый перечень, сверка handoff-ов прогона с выводом new) остаются командами RELEASE-VALIDATOR и TEST-RUNNER (проект п. 10, О3). Ожидаемый вердикт в задании не назван; вердикт выведен из своих запусков (AP-018)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
