@@ -1,0 +1,59 @@
+{
+  "handoff_id": "step06-REQ-20261011-02",
+  "run_id": "REQ-20261011-02",
+  "workflow_id": "WF-01",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-VALIDATOR",
+  "file": "handoffs/REQ-20261011-02/step-06-req-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-038", "REQ-041"],
+    "artifacts_in": ["docs/requirements.yaml", "handoffs/REQ-20261011-02/step-04-req-validator.json", "handoffs/REQ-20261011-02/step-05-req-analyst.json"],
+    "before_copy": "не назван ORCH; сверка с git (HEAD~1)",
+    "note_by_agent": "Файла handoff-а не было; поля верхнего уровня записаны REQ-VALIDATOR по сообщению ORCH."
+  },
+  "task": {
+    "description": "WF-01, шаг 2 (круг 3): узкая сверка REQ-038 и REQ-041 после правок N1–N7.",
+    "acceptance_criteria": ["вердикт по REQ-038 и REQ-041", "cd tools && npm run traces — код 0"]
+  },
+  "created_at": "2026-10-11T12:22:23Z",
+  "started_at": "2026-10-11T12:22:23Z",
+  "completed_at": "2026-10-11T12:23:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "verdict_by_requirement": {"REQ-038": "PASS", "REQ-041": "PASS"},
+    "summary": {
+      "N1": "Закрыт. Абзац H11 и критерий 4 совпадают: заглушка — любые знаки кроме < и >, пробелы допустимы; «<вне проекта>/var/folders/z» и «<корень репозитория Sai>/tmp/w» — не нарушение. Пример step-03-req-analyst.json, result.changes[4] есть в файле (проверено чтением). Свой разбор handoffs/**: по новому правилу файлов с H11 — 6 (по старому 8, разница — step-03 и step-05 этого прогона), ориентир «6 старых файлов» верен.",
+      "N2": "Закрыт. Старшинство одной фразой: tools/test/** всегда «Тесты», даже *.md; «Документы» = *.md вне tools/ и tools/README.md. Пересечений нет: tools/test/README.md → Тесты; *.md в tools/src (пример NOTES.md) → Код; прочие *.md в tools/ вне test и README → «всё остальное» = Код. Примеры в критерии 3 добавлены.",
+      "N3": "Закрыт: 0035; в decisions последний 0034.",
+      "N4_N5": "Закрыты в критерии 5: поиск по тексту раздела с tr; проверка перечня шаблонов командой (≥ 6). Замечание Low, не блокирует: grep ищет только 6 токенов, слова token/secret/password не проверяются, а «sk-» совпадёт и внутри слов (task-…).",
+      "N6": "Закрыт: 6 старых файлов, at_note — проверенный 0 (согласуется с моим прогоном круга 2).",
+      "N7": "Закрыт: путь поля назван для каждого условия H4, хеш — по этому пути.",
+      "объём правки": "git diff HEAD~1 -U0 -- docs/requirements.yaml: все куски внутри REQ-038 (4894–5391) и REQ-041 (5392+); первые 4893 строки до и после — один sha1. Новых противоречий не найдено; пункты (а)–(е) остальным текстом не затронуты и остаются пройденными."
+    },
+    "findings": [
+      {
+        "id": "N9",
+        "requirement": "REQ-041",
+        "item": "(а)",
+        "blocking": false,
+        "what": "Критерий 5: перечень проверяется шестью токенами; word-шаблоны token/secret/password и «sk-» внутри слов не различаются.",
+        "needed": "По желанию автора: добавить токены присваивания в проверку или оставить проверку чтением."
+      }
+    ],
+    "self_check": [
+      "git diff HEAD~1 -U0 -- docs/requirements.yaml → куски только в блоках REQ-038 и REQ-041",
+      "git show HEAD~1:docs/requirements.yaml | head -4893 | shasum и head -4893 docs/requirements.yaml | shasum → 6039942436fcfaaa36961035e250662aa6964619 оба",
+      "shasum docs/requirements.yaml до и после → 8528d63ead24c4956428511a4c073b72ed64ca96 (не менялся)",
+      "python3 -I скрипт H11 по handoffs/**: старое правило 8 файлов, новое 6",
+      "cd tools && npm run traces → код 0"
+    ],
+    "issues": [
+      {"id": "I1", "kind": "INFO", "text": "Копии «до» нет (AP-023); сверка с git. Опечаток для правки не найдено, файлы проекта не менялись."}
+    ],
+    "artifacts_out": []
+  }
+}
