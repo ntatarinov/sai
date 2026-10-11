@@ -1,0 +1,76 @@
+{
+  "handoff_id": "step43-release-validator-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "43",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/PROD-20261011-01/step-43-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-035"
+    ],
+    "issue_ids": [
+      "ISS-0020"
+    ],
+    "base_tag": "base/PROD-20261011-01",
+    "head": "ede25ed",
+    "write_set": [
+      "handoffs/PROD-20261011-01/step-43-release-validator.json"
+    ],
+    "note_by_agent": "Файла handoff-а не было; поля верхнего уровня записаны RELEASE-VALIDATOR по сообщению ORCH. started_at — первое чтение часов (date -u). Рабочее дерево до записи этого файла: git status --short пуст."
+  },
+  "started_at": "2026-10-11T10:25:56Z",
+  "completed_at": "2026-10-11T10:29:19Z",
+  "task": {
+    "description": "WF-02, шаг 9, круг 3: узкая сверка учёта REQ-035 после замены at_note в step-08 и step-20 (F2 из step-42). Остальное из step-41 в силе."
+  },
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": [
+      "Итог простыми словами: учёт прогона сходится с часами и коммитами, времён из будущего нет, команда проверки зелёная. Всё остальное из step-41 (13 критериев выполнены, ISS-0020 работает, пересъёмка DESIGN-QA не нужна, ворота AP-049) остаётся в силе и здесь не перепроверялось.",
+      "Времена: скрипт <scratch>/scan.js прочёл все 42 файла handoffs/PROD-20261011-01/*.json (текущие версии, включая orch_correction/orch_note и новые поля) и сравнил каждое значение вида ГГГГ-ММ-ДДTчч:мм с часами (date -u) и с последним коммитом файла (git log --follow --format=%cI). Значений позже часов или позже последнего коммита файла — 0. Новый at_note в step-08 и step-20 числового значения не содержит.",
+      "JSON: все 42 файла читаются. Статус верхнего уровня только COMPLETED или FAILED (COMPLETED 38 (включая step-17) + FAILED 4). Известное расхождение L3 из step-41: у step-17 status COMPLETED при result.status FAILED — остаётся Low для DOC-UPDATER, не блокирует.",
+      "git diff HEAD~1..HEAD --name-status: M step-08-code-design-validator.json, M step-20-reviewer.json, A step-42-release-validator.json. Правки чужого содержимого — только эти две строки at_note; step-42 — добавленный отчёт прошлого круга (в коммите 1b289aa его не было, он вошёл в ede25ed), другие файлы не затронуты.",
+      "Команда проверки (Q4): node -v → v22.21.1; cd tools && npm run check → код 0 (дважды: tests 1164, pass 1164, fail 0, skipped 0, строк not ok нет; traces: файлов 1013, следов 0, пропущено 36). cd tools && npm run traces → код 0.",
+      "Планка: Q14 теперь PASS (F1 и F2 закрыты: времена с часов, поправки помечены). Q13 по-прежнему не закрыт до шага 10 (условие C3). Остальные пункты Q1–Q12 и R1–R3 — как в step-41 (PASS или неприменимы с причинами); код и тесты после fe0c60b не менялись (в HEAD~1..HEAD только handoff-ы)."
+    ],
+    "findings": [
+      {
+        "id": "L3",
+        "severity": "Low",
+        "item": "Q14",
+        "where": "step-17-reviewer.json (status COMPLETED, result.status FAILED)",
+        "evidence": "node-проверка status != result.status даёт только step-17.",
+        "fix": "Пометка ORCH о согласовании статуса или запись в журнал ошибок.",
+        "return_to": "ORCH / DOC-UPDATER, шаг 10"
+      }
+    ],
+    "conditions_for_doc_updater": [
+      "C1. Статус REQ-035 → done только после PASS повторного шага 9 (после исправления F1) и только с пометкой «по исключению 0029» (зависимости REQ-013, REQ-002 in_progress).",
+      "C2. Не выполнено и называется прямо: R-1 и R-2 с настоящим Claude Code — нет согласия владельца; сценарии 04 и 20 (часть «не удалось») — состояние недостижимо; 24Б (откат записи не удался) — нечем воспроизвести без подмены кода (покрыто только тестом). Поведение на настоящем исполнителе не проверено.",
+      "C3. Q13: в docs/anti-patterns.md — повтор AP-056 (времена из будущего: step-08, step-20 без пометки; step-25, step-35 с пометкой ORCH), повтор AP-050/AP-052 (путь в handoff-е step-24 и step-37, из-за которого упал сценарий 37), L3 (TEST-DESIGNER начат до ворот безопасности и ревью).",
+      "C4. ISS-0020 — закрыть с итогом «четыре текста паузы по причине ожидания работают (step-41)» и с названным остатком L1 (или новый LOW-дефект); ISS-0019 — дописать воспроизведение L2; ISS-0014, ISS-0018, ISS-0021 остаются открытыми (критерии REQ-035 не нарушают: ISS-0014 — текст движка, ISS-0018 — сервер deliver для resume без движка не вызывает, ISS-0021 — отступ пустого ряда).",
+      "C5. STATE.md: что работает (чем проверено — step-41 и повтор), остатки L1/L2, решения 0029–0032 «владелец может отменить», остаток 0032 C4 (два нажатия «Пауза» → «Продолжить» у ждущего проекта)."
+    ],
+    "self_check": [
+      "date -u → 2026-10-11T10:25:56Z (начало); git log -3 → ede25ed 2026-10-11T15:25:53+05:00, 1b289aa 15:23:05+05:00, fe0c60b 15:05:17+05:00.",
+      "cd tools && npm run check → CHECK_EXIT=0; «# tests 1164 # pass 1164 # fail 0 # skipped 0»; «traces: файлов проверено 1013, следов 0, пропущено 36».",
+      "cd tools && npm run traces → TRACES_EXIT=0.",
+      "Сверка времён <scratch>/scan.js → «files 42 … problems 0».",
+      "git diff HEAD~1..HEAD --name-status → M step-08, M step-20, A step-42; строки diff: только at_note заменён на «…не позже момента коммита, в который вошла эта пометка (git log по файлу); числового значения не приводится.»",
+      "git status --short перед записью этого файла — пусто."
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "to": "ORCH",
+        "text": "Статус REQ-035 не ставлен (дело DOC-UPDATER). C1: только с пометкой «по исключению 0029». Мерж — за владельцем (R1)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
