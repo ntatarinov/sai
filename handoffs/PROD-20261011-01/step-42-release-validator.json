@@ -1,0 +1,66 @@
+{
+  "handoff_id": "step42-release-validator-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "42",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/PROD-20261011-01/step-42-release-validator.json",
+  "status": "FAILED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "issue_ids": ["ISS-0020"],
+    "base_tag": "base/PROD-20261011-01",
+    "head": "1b289aa",
+    "write_set": ["handoffs/PROD-20261011-01/step-42-release-validator.json"],
+    "note_by_agent": "Круг 2, узкая сверка учёта после FAIL step-41 (F1). Файла handoff-а не было; поля верхнего уровня записаны RELEASE-VALIDATOR по сообщению ORCH. Проверки с записью не нужны; рабочее дерево Sai до записи этого файла: git status --short пуст."
+  },
+  "started_at": "2026-10-11T10:22:50Z",
+  "completed_at": "2026-10-11T10:25:30Z",
+  "task": {
+    "description": "WF-02, шаг 9, круг 2: сверить исправление F1 из step-41 (времена из будущего в step-08 и step-20), честность orch_correction, статусы и чтение JSON, неизменность кода и тестов (fe0c60b..HEAD), cd tools && npm run check и npm run traces."
+  },
+  "result": {
+    "status": "FAILED",
+    "verdict": "FAIL",
+    "summary": [
+      "Итог простыми словами: исправление почти готово. Времена completed_at в step-08 и step-20 теперь не позже коммитов, в которые файлы впервые вошли, код и тесты не менялись, команда проверки зелёная. Но в самих пометках orch_correction написано «не позже 2026-10-11T10:25:00Z (чтение часов при записи этой пометки)» — это время позже коммита с пометкой (1b289aa, 10:23:05Z) и позже часов на момент моей проверки (10:23:42Z): часы такого значения в момент записи дать не могли. Это тот же род ошибки (время из будущего, AP-056), только в пометке. Правка в одну строку у ORCH; повторять нужно только сверку учёта.",
+      "completed_at всех handoff-ов прогона (41 файл, все версии по git log --follow, сравнение в секундах с %ct коммита): позже коммита только две первые версии — step-08 (ee18a45: 06:05:00Z при коммите 06:04:50Z) и step-20 (00e80d1: 06:34:00Z при коммите 06:33:30Z). Это те самые значения из F1; прошлые коммиты не переписываются, текущие версии исправлены: step-08 completed_at 06:04:50Z (равно коммиту — не позже), step-20 06:33:01Z (совпадает с его self_check «date -u → 06:33:01Z (перед записью)», не позже 00e80d1). Остальные версии всех файлов, включая step-41 (10:22:20Z при коммите 1b289aa 10:23:05Z), не позже своих коммитов; null-значений и неразбираемых форматов нет.",
+      "orch_correction (step-08, step-20): поля completed_at/previous/reason/by/fields на месте, previous равны прежним значениям (06:05:00Z и 06:34:00Z), причина верна и однозначна, at: null. Содержательно файлы не менялись: jq -S без completed_at и orch_correction — fe0c60b и HEAD совпадают (diff пуст) для обоих. НЕ ВЕРНО at_note: «не позже 2026-10-11T10:25:00Z (чтение часов при записи этой пометки)» — в коммите 1b289aa (10:23:05Z), то есть это значение из будущего и не показание часов.",
+      "Статусы: у 41 handoff-а прогона status и result.status только COMPLETED или FAILED (37 COMPLETED/COMPLETED, 3 FAILED/FAILED, step-17 COMPLETED/FAILED — это прежняя запись ворот с FAIL, оба значения допустимые). jq . читает все 41 файл без ошибок.",
+      "git diff --name-only fe0c60b HEAD: только handoffs/PROD-20261011-01/step-08-code-design-validator.json, step-20-reviewer.json, step-41-release-validator.json. Код (tools/), тесты, docs/, STATE.md не менялись.",
+      "Команда проверки (Q4): node -v → v22.21.1; cd tools && npm run check → код 0, tests 1164, pass 1164, fail 0, skipped 0, todo 0; traces «файлов проверено 1012, следов 0, пропущено 36»; cd tools && npm run traces отдельно → код 0, следов 0. Падений нет.",
+      "Остальное из step-41 в силе: код и тесты те же (diff пуст), поэтому 13 критериев REQ-035 — выполнены (как в step-41; части, не проверяемые без согласия владельца, названы там же), ISS-0020 работает, пересъёмка DESIGN-QA не нужна (ни страница, ни стили не менялись), ворота WF-02/WF-04 и AP-049, Q1–Q14 и R1–R3 — отметки step-41 остаются; единственная дыра — Q14 по at_note выше. Заново запущенных живых проверок критериев в этом круге нет — подтверждение основано на неизменности кода и тестов и на зелёном check.",
+      "Условия C1–C5 для DOC-UPDATER не выдаются: PASS не вынесен; после исправления at_note и короткого повтора они остаются теми же, что в step-41."
+    ],
+    "findings": [
+      {
+        "id": "F2",
+        "severity": "Low",
+        "item": "Q14; quality-bar §6 п. 8 (время с часов); повтор AP-056 в пометке исправления",
+        "where": "handoffs/PROD-20261011-01/step-08-code-design-validator.json и step-20-reviewer.json, orch_correction.at_note",
+        "evidence": "at_note: «не позже 2026-10-11T10:25:00Z (чтение часов при записи этой пометки)». Коммит с пометкой 1b289aa — 2026-10-11T15:23:05+05:00 = 10:23:05Z; date -u в моём запуске показал 10:23:42Z до этого значения. Время позже коммита, в который оно вошло, и позже часов — показанием часов быть не могло.",
+        "fix": "ORCH: в обоих файлах заменить at_note на значение, подтверждённое часами или коммитом, например «Время правки неизвестно; не позже 2026-10-11T10:23:05Z (время коммита 1b289aa, в который пометка вошла)» — либо реальное чтение date -u перед записью, если правка ещё не закоммичена. Новое значение сверить с git log -1 --format=%cI. Проверять, что ни одно время в файле не позже коммита.",
+        "return_to": "ORCH (учёт handoff-ов), затем RELEASE-VALIDATOR, шаг 9 (только сверка учёта)"
+      }
+    ],
+    "self_check": [
+      "date -u → 2026-10-11T10:22:50Z (начало), 10:23:08Z, 10:23:28Z, 10:23:42Z, 10:25:07Z (конец); git log -3: 1b289aa 2026-10-11T15:23:05+05:00, fe0c60b 15:05:17+05:00, 1fb13ac 15:01:36+05:00; git status --short до записи — пусто.",
+      "Для каждого файла handoffs/PROD-20261011-01/*.json и каждого коммита из git log --follow: completed_at (git show <коммит>:<файл> | jq) переведён в секунды и сравнён с git show -s --format=%ct. Вывод: FUTURE step-08 ee18a45 ct=06:04:50Z ca=06:05:00Z; FUTURE step-20 00e80d1 ct=06:33:30Z ca=06:34:00Z; «checked» — других нет.",
+      "jq -r '[.status,.result.status]' по 41 файлу: 37 «COMPLETED COMPLETED», 3 «FAILED FAILED», 1 «COMPLETED FAILED» (step-17); jq -e . — ошибок чтения нет.",
+      "diff <(git show fe0c60b:<файл> | jq -S 'del(.completed_at)') <(jq -S 'del(.completed_at,.orch_correction)' <файл>) для step-08 и step-20 → «semantic same» оба.",
+      "git diff --name-only fe0c60b HEAD → три файла в handoffs/PROD-20261011-01/ (step-08, step-20, step-41).",
+      "node -v → v22.21.1; cd tools && npm run check → exit 0; «# tests 1164 # pass 1164 # fail 0 # skipped 0 # todo 0»; «traces: файлов проверено 1012, следов 0, пропущено 36»; cd tools && npm run traces → exit 0 (следов 0)."
+    ],
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "to": "ORCH",
+        "text": "F2: исправить at_note в step-08 и step-20 (время не позже коммита с пометкой) и запустить короткий повтор шага 9 только по учёту."
+      }
+    ],
+    "conditions_for_doc_updater": [],
+    "artifacts_out": []
+  }
+}
