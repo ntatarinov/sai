@@ -1,0 +1,85 @@
+{
+  "handoff_id": "step08-ISS-0023-20261011-01",
+  "run_id": "ISS-0023-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "08",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-RUNNER",
+  "file": "handoffs/ISS-0023-20261011-01/step-08-test-runner.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "issue_id": "ISS-0023",
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "artifacts_in": [
+      "handoffs/ISS-0023-20261011-01/step-06-test-designer.json",
+      "handoffs/ISS-0023-20261011-01/step-07-test-design-validator.json",
+      "docs/workflows/WF-03-defect.md (шаг 8)",
+      "docs/workflows/WF-02-development.md (шаг 6)"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR (PASS) -> TEST-RUNNER (this) -> RELEASE-VALIDATOR",
+    "write_set": "нет: пишет только status, completed_at, result",
+    "orch_note": "Прогони `cd tools && npm run check` целиком ДВА раза подряд (в первом полном прогоне REVIEWER видел один неназванный красный тест; прошлые прогоны — 1198 из 1198). Если любой тест красный — имя, сообщение, и свидетельство по quality-bar §6 п. 4 (повтор без работы на коммите 7121b99 / работа не задела тест / внешняя причина); без свидетельства падение остаётся за работой. Затем `cd tools && npm run traces` отдельно. Дополнительно: прогон нового файла в чистой копии (git archive HEAD + твои рабочие файлы или npm ci в копии вне проекта) не требуется, если проверка на чистой копии выполнена RELEASE-VALIDATOR на шаге 9."
+  },
+  "task": {
+    "description": "WF-03, шаг 8, WF-02 шаг 6. Запусти одну команду проверки целиком и докладывай PASS/FAIL с настоящим выводом: `cd tools && npm run check` (дважды подряд), затем `cd tools && npm run traces`. Для каждого падения — доказательство причины. Рабочее дерево не менять.",
+    "acceptance_criteria": [
+      "Приведён настоящий вывод: код выхода, число тестов, красные поимённо",
+      "PASS только при коде 0 или падениях, доказанно не из-за этой работы (§6 п. 4)",
+      "Рабочее дерево не изменено (git status до/после)"
+    ]
+  },
+  "created_at": "2026-10-11T14:35:26Z",
+  "started_at": "2026-10-11T14:35:26Z",
+  "completed_at": "2026-10-11T14:38:41Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Команда проверки cd tools && npm run check (format:check, lint, traces, test) прошла целиком дважды подряд, оба раза код выхода 0: 1198 тестов, 1198 прошли, 0 упали, 0 пропущено, 0 todo. Красных тестов нет ни в одном прогоне, поэтому разбирать чьё-то падение не пришлось. Отдельный npm run traces: код 0, файлов проверено 1047, следов 0, пропущено 36 (двоичные файлы). Рабочее дерево не изменено.",
+    "findings": [],
+    "self_check": {
+      "environment": "node -v -> v22.21.1 (engines: Node 22); коммит HEAD 7121b99",
+      "command": "cd tools && npm run check (= npm run format:check && npm run lint && npm run traces && npm run test), в первом плане, с ожиданием конца",
+      "run_1": {
+        "started": "2026-10-11T14:35:37Z",
+        "exit_code": 0,
+        "wall_seconds": 82,
+        "tests": 1198,
+        "suites": 0,
+        "pass": 1198,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 76154.03,
+        "not_ok_blocks": 0
+      },
+      "run_2": {
+        "started": "2026-10-11T14:36:59Z",
+        "exit_code": 0,
+        "wall_seconds": 82,
+        "tests": 1198,
+        "suites": 0,
+        "pass": 1198,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "duration_ms": 76379.23,
+        "not_ok_blocks": 0
+      },
+      "stages": "format:check (prettier --check .) -> прошла; lint (eslint . --max-warnings 0) -> прошла; traces -> прошла; test -> прошла (оба прогона)",
+      "traces_separate": "cd tools && npm run traces -> exit 0; 'traces: файлов проверено 1047, следов 0, пропущено 36'",
+      "working_tree": "git status --short до и после прогонов совпадает (12 строк, diff пуст); git diff --stat: 6 files changed, 106 insertions(+), 4 deletions(-) - правки самой работы, мной не менялись",
+      "note_on_orch_question": "Неназванный красный тест из первого прогона REVIEWER в двух моих полных прогонах не воспроизвёлся (0 'not ok' в обоих выводах). Это не доказывает его отсутствие: если он был нестабильным, два зелёных прогона его не исключают. Свидетельств по §6 п. 4 не требуется, поскольку падений нет.",
+      "outputs_saved": "вывод прогонов сохранён вне проекта (scratchpad): run1.log, run2.log, traces.log",
+      "quality_bar": "Q3 (настоящий вывод), Q4 (одна команда целиком), Q6 (skipped 0, todo 0, шаги на месте) - выполнены"
+    },
+    "issues": [],
+    "artifacts_out": []
+  }
+}

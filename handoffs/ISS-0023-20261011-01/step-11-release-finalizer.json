@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step11-ISS-0023-20261011-01",
+  "run_id": "ISS-0023-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "11",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-FINALIZER",
+  "file": "handoffs/ISS-0023-20261011-01/step-11-release-finalizer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "issue_id": "ISS-0023",
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "artifacts_in": [
+      "handoffs/ISS-0023-20261011-01/ (все step-*.json, parallel-runs.jsonl)",
+      "docs/workflows/WF-02-development.md (шаг 11)",
+      "docs/workflows/WF-03-defect.md (шаг 11)",
+      "docs/quality-bar.md (R1)",
+      "STATE.md (запись слов владельца о разрешении отправлять коммиты в main после PASS RELEASE-VALIDATOR)"
+    ],
+    "route": "DOC-UPDATER -> проверка учёта ORCH (PASS) -> RELEASE-FINALIZER (this)",
+    "write_set": "docs/releases/ISS-0023-20261011-01.md; git-коммит ровно файлов прогона (список ниже)",
+    "files_of_run": [
+      "PLAN.md",
+      "STATE.md",
+      "decisions/0035-reviewer-sees-accepted-files.md",
+      "decisions/README.md",
+      "docs/anti-patterns.md",
+      "docs/design/ISS-0023-reviewer-sees-result-file.md",
+      "docs/design/REQ-010-agent-executors.md",
+      "docs/design/REQ-013-team-engine.md",
+      "docs/issues/ISS-0023-reviewer-cannot-see-result-file.md",
+      "docs/issues/ISS-0024-deps-of-takes-files-of-all-attempts.md",
+      "docs/issues/ISS-0025-parallel-tasks-same-file-name-collide.md",
+      "docs/issues/ISS-0026-prompt-max-exceeded-with-many-deps.md",
+      "docs/issues/ISS-0027-executors-write-false-file-created-to-memory.md",
+      "docs/issues/ISS-0028-criterion-with-folder-vs-accepted-basename.md",
+      "docs/issues/ISS-0029-unreadable-file-in-files-no-direct-test.md",
+      "docs/issues/ISS-0030-redo-attempt-does-not-get-own-accepted-file.md",
+      "docs/issues/ISS-0031-second-round-task-without-depends-on-cannot-edit-file.md",
+      "docs/requirements.yaml",
+      "handoffs/ISS-0023-20261011-01/ (вся папка)",
+      "docs/releases/ISS-0023-20261011-01.md",
+      "tools/README.md",
+      "tools/src/team/engine/review.js",
+      "tools/src/team/executor.js",
+      "tools/test/fixtures/team/README.md",
+      "tools/test/fixtures/team/fake-claude-reads.js",
+      "tools/test/team-engine-reads-files.test.js",
+      "tools/test/team-engine-reads-helpers.js"
+    ],
+    "owner_words": "Слова владельца 2026-10-11 (дословно, из начала сессии ORCH): «Я, владелец, разрешаю: отправлять коммиты в main после PASS RELEASE-VALIDATOR; лёгкий маршрут REQ-041; повторный запуск настоящего Claude после исправления ISS-0023 с потолком проекта 1. Решения 0027–0034 подтверждаю.» PASS RELEASE-VALIDATOR по этому прогону: step-09. Это разрешение на отправку коммитов в ветку main этого репозитория (origin/main), без отдельного мержа; в ветки других репозиториев и в другие проекты оно не распространяется.",
+    "commit_message_requirements": "Первая строка называет дефект и требования: «ISS-0023: проверяющий видит принятые файлы (REQ-013 критерий 14); ISS-0024…0031 заведены». В конце сообщения строка: Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>"
+  },
+  "task": {
+    "description": "WF-03/WF-02, шаг 11. (1) Перед коммитом обнови ветку от основной (git fetch; сравни с origin/main; конфликт или расхождение истории — остановка и вопрос ORCH, ничего не перезаписывать силой, force-push запрещён). (2) Убедись, что `git status` показывает ровно files_of_run (и нет ничего лишнего: секретов, node_modules, временных файлов); перед коммитом запусти `cd tools && npm run check` целиком и приложи код и числа. (3) Напиши отчёт о выпуске docs/releases/ISS-0023-20261011-01.md по образцу соседних: что сделано, какие проверки (со ссылками на handoff-ы: step-01…step-10, step-09b), честно что НЕ сделано (критерий 13 REQ-013 и 14 REQ-010; ISS-0031 найден; ISS-0024…0030 новые), коммиты, остаточный риск; без путей этого компьютера. (4) Коммит: добавляй файлы ПОИМЁННО (каждый путь из files_of_run, для папки handoffs — её путь), «git add -A/.» запрещены; сообщение по commit_message_requirements. (5) Отправка в main (`git push origin main`) — разрешена только в пределах owner_words, и только если PASS step-09 есть в handoff-е; отчёт о выпуске должен ссылаться на это разрешение. Если пуш невозможен (права, сеть, неразрешимое расхождение) — остановись, ничего не обходи, запиши BLOCKED по handoffs.md. После пуша проверь `git log origin/main -1` и `git status`. Укажи хеш коммита.",
+    "acceptance_criteria": [
+      "В коммите ровно файлы из files_of_run (git show --stat приложен)",
+      "Перед коммитом npm run check — код 0, числа приложены",
+      "Отчёт docs/releases/ISS-0023-20261011-01.md написан и совпадает с handoff-ами, называет невыполненное",
+      "Пуш в origin/main выполнен без force и только в границах разрешения владельца; хеш и git log origin/main приложены"
+    ]
+  },
+  "created_at": "2026-10-11T15:02:42Z",
+  "started_at": "2026-10-11T15:02:42Z",
+  "completed_at": "2026-10-11T15:06:27Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Выпуск ISS-0023: один коммит файлов прогона в main и пуш в origin/main без force, в границах слов владельца 2026-10-11 (PASS step-09 есть, сверка ORCH после шага 10 — PASS). Хеш коммита и git log origin/main — в отчёте RELEASE-FINALIZER ORCH (хеш нельзя записать в файл внутри того же коммита). Мержа нет, отдельного подтверждения не требуется. Ждёт владельца: слово о потолке для повторного настоящего запуска после исправления ISS-0031; критерии 13 REQ-013 и 14 REQ-010 не выполнены.",
+    "changes": [
+      {
+        "file": "docs/releases/ISS-0023-20261011-01.md",
+        "change": "отчёт о выпуске: что сделано, проверки со ссылками на step-01…step-10 и step-09b, что не сделано, разрешение владельца, коммит"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git fetch origin; git rev-list --left-right --count main...origin/main",
+        "output": "0 0 до коммита; основная ветка не ушла вперёд, конфликтов нет"
+      },
+      {
+        "command": "cd tools && npm run check",
+        "output": "код 0; tests 1198, pass 1198, fail 0, cancelled 0, skipped 0, todo 0 (2026-10-11 перед коммитом, дважды)"
+      },
+      {
+        "command": "git status --short -uall до add",
+        "output": "26 записей верхнего уровня = files_of_run без отчёта (папка handoffs — одной записью); лишнего нет; tools/node_modules в .gitignore"
+      },
+      {
+        "command": "поиск секретов по файлам прогона",
+        "output": "только вымышленная приманка ghp_FAKE… в tools/test/team-engine-reads-helpers.js и упоминания шаблонов поиска в requirements.yaml и step-05; путей этого компьютера в отчёте нет"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "git show --stat коммита и git log origin/main приведены в итоговом отчёте ORCH после пуша; правка handoff-а после коммита не делалась, чтобы дерево осталось чистым."
+      }
+    ],
+    "artifacts_out": [
+      "docs/releases/ISS-0023-20261011-01.md"
+    ]
+  }
+}

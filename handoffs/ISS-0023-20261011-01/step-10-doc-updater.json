@@ -1,0 +1,155 @@
+{
+  "handoff_id": "step10-ISS-0023-20261011-01",
+  "run_id": "ISS-0023-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/ISS-0023-20261011-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "issue_id": "ISS-0023",
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "artifacts_in": [
+      "docs/issues/ISS-0023-reviewer-cannot-see-result-file.md",
+      "handoffs/ISS-0023-20261011-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0023-20261011-01/step-02b-req-validator-r1.json",
+      "handoffs/ISS-0023-20261011-01/step-03b-code-design-validator-r1.json",
+      "handoffs/ISS-0023-20261011-01/step-05-security-reviewer.json",
+      "handoffs/ISS-0023-20261011-01/step-05-reviewer.json",
+      "handoffs/ISS-0023-20261011-01/step-06-test-designer.json",
+      "handoffs/ISS-0023-20261011-01/step-07-test-design-validator.json",
+      "handoffs/ISS-0023-20261011-01/step-08-test-runner.json",
+      "handoffs/ISS-0023-20261011-01/step-09-release-validator.json",
+      "handoffs/ISS-0023-20261011-01/step-09b-orch-real-run.json",
+      "docs/workflows/WF-03-defect.md (шаг 10)",
+      "docs/design/ISS-0023-reviewer-sees-result-file.md",
+      "decisions/0035-reviewer-sees-accepted-files.md",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/requirements.yaml (шапка: правила статусов)"
+    ],
+    "route": "RELEASE-VALIDATOR (PASS) + наблюдение ORCH (настоящий запуск) -> DOC-UPDATER (this) -> проверка учёта ORCH -> RELEASE-FINALIZER",
+    "write_set": "docs/issues/ISS-0023-reviewer-cannot-see-result-file.md; новые docs/issues/ISS-0024…ISS-0031 (имена файлов — по образцу docs/issues/); docs/anti-patterns.md (AP-066, AP-067); STATE.md; docs/design/REQ-013-team-engine.md (одна строка-ссылка в п. 7.2); docs/design/REQ-010-agent-executors.md (одна строка-ссылка в п. 3.4)",
+    "orch_numbers": "дефекты ISS-0024…ISS-0031 выданы ORCH этому прогону (следующий свободный после — ISS-0032); журнал ошибок: AP-066 и AP-067 (следующий — AP-068); решение 0035 уже принято (следующее свободное — 0036)",
+    "orch_note": "Время — только с часов. ИСТИНА о результате: ошибка ISS-0023 (проверяющий не видит принятый файл) устранена и проверена на настоящем Claude (проверки задач t-0001…t-0005 — passed:true; проверка цели видела файл); регрессионные тесты RF-01…RF-14 (34 теста), весь набор 1198 из 1198, RELEASE-VALIDATOR PASS. НО проект на настоящем Claude не дошёл до «выполнен» из-за другого дефекта (ISS-0031) и потолка 1 USD; критерий 13 REQ-013 и критерий 14 REQ-010 НЕ выполнены, статус REQ-013 и REQ-010 остаётся in_progress. Не писать «настоящий запуск прошёл» — писать то, что было.",
+    "orch_check": {
+      "at": "2026-10-11T15:02:06Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git status: изменены ровно файлы write_set DOC-UPDATER плюс файлы шагов 3–6; docs/requirements.yaml: +52 строки критерия 14, 0 удалённых, статусы не менялись",
+        "ISS-0023: статус closed, 2026-10-11; ISS-0024…ISS-0031 — 8 файлов на месте",
+        "AP-066 и AP-067 в docs/anti-patterns.md (строки 1006, 1020)",
+        "STATE.md: верхний раздел «ISS-0023 закрыт…», следующие номера ISS-0032/0036/AP-068",
+        "cd tools && npm run traces: следов 0 (1058 файлов)",
+        "у всех handoff-ов прогона completed_at не раньше started_at; step-04 с status DONE исправлен пометкой orch_correction, остальные COMPLETED",
+        "поиск /Users/ в файлах прогона даёт только упоминания шаблона поиска, не пути"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 10. (1) Закрой docs/issues/ISS-0023-*.md: строка статуса `closed, 2026-10-11` (время с часов в разделе «Закрыто»), раздел «Закрыто»: прогон ISS-0023-20261011-01, что сделано (вариант Б, решение 0035: executor.js acceptedFilesText/buildPrompt, engine/review.js SAVED_AS_RULE, tools/README.md), где регрессионные тесты (tools/test/team-engine-reads-files.test.js RF-01…RF-14, fake-claude-reads.js), чем проверено (RELEASE-VALIDATOR step-09; настоящий запуск step-09b — что подтвердилось и что нет), остаточный риск, поправка к первоначальной «причине» (проверяющему содержимое передавалось, не хватало соответствия имён). Сам файл дефекта отметь: критерий 14 REQ-013 добавлен этим дефектом. (2) Заведи новые дефекты (формат WF-03 «Как выглядит дефект»; факты и доказательства бери из указанных handoff-ов, не выдумывай): ISS-0024 MEDIUM — depsOf берёт файлы всех попыток задачи, а не последней (проверяющий получил шесть версий; RF-05b фиксирует текущее); ISS-0025 MEDIUM — две параллельные задачи без зависимости с одним именем файла сталкиваются в общей work/ (вторая TASK_FAILED result_file; есть и до исправления; step-06 I1); ISS-0026 LOW — PROMPT_MAX нарушается при многих зависимостях, старый (step-05 F1 обоих ворот); ISS-0027 LOW — исполнители пишут в память проекта «файл создан и подтверждён», когда файла нет (step-01); ISS-0028 LOW — критерий «сохранён в out/memo.md» с папкой не совпадает с basename принятого имени, поведение не определено, нужно решение (RF-14 фиксирует факт; step-06 I2, step-05 reviewer F3); ISS-0029 LOW — путь «файл в files/ нечитаем» без прямого теста (step-06); ISS-0030 LOW — при повторной попытке (переделке) задачи исполнитель не получает свой прежний принятый файл, work/ пуст (step-01, место 3); ISS-0031 HIGH — второй круг плана: задача, которая должна править файл прежнего круга, создана без depends_on, исполнитель не получает файл и не может работать, проверяющий ставит passed:false (step-09b, I1; события журнала настоящего запуска: RUN_FINISHED r-00014, REVIEW_RESULT t-0006). Пункт планки и «Как исправить» — по смыслу, маршрут — WF-03. (3) docs/anti-patterns.md: AP-066 — движок проверяли только исполнителем scripted/поддельным claude, которые не читают файлы, поэтому условия настоящей проверки не создавались (quality-bar §6 п. 1; родственна AP-065); AP-067 — REVIEWER при первом полном прогоне видел один красный тест и не записал его имя и не повторил (quality-bar §6 п. 4): red без имени = неразобранное. Формат — по соседним записям. (4) STATE.md: новый верхний раздел «На 2026-10-11 — ISS-0023 закрыт…» в формате соседних: что работает и чем проверено, что НЕ подтверждено (критерий 13/14 не выполнены, проект на настоящем Claude дошёл до 5 из 10 задач и упёрся в ISS-0031 и потолок), число тестов 1198 и плотность тестов по правилу decisions/0023 (посчитай той же командой, что в соседнем разделе), открытые дефекты, следующие свободные номера (ISS-0032, решение 0036, AP-068), что ждёт владельца (новый потолок и разрешение на следующий настоящий запуск после ISS-0031; подтверждение мержа — по слову владельца отправка в main после PASS RELEASE-VALIDATOR разрешена, см. ниже). Слова владельца 2026-10-11 дословно: «Я, владелец, разрешаю: отправлять коммиты в main после PASS RELEASE-VALIDATOR; лёгкий маршрут REQ-041; повторный запуск настоящего Claude после исправления ISS-0023 с потолком проекта 1. Решения 0027–0034 подтверждаю.» — запиши это в STATE.md как слова владельца (перенос слов) и, как следствие, в «Ждёт владельца» убери вопрос про отправку в main и подтверждение 0027–0034 (но не удаляй историю в разделах прошлых дат); решение о R1 в quality-bar не менять. (5) В docs/design/REQ-013-team-engine.md п. 7.2 и docs/design/REQ-010-agent-executors.md п. 3.4 — по одной строке-ссылке «пояснение и соответствие имён — ISS-0023-reviewer-sees-result-file.md, п. 4». Статусы REQ-013/REQ-010 не менять (in_progress). Время во всех записях — с часов; пути этого компьютера не писать.",
+    "acceptance_criteria": [
+      "ISS-0023 закрыт строкой `closed, <дата>` и разделом «Закрыто» без обещаний сверх сделанного, с честным итогом настоящего запуска",
+      "Созданы ISS-0024…ISS-0031 с проверяемыми фактами и ссылками на handoff-ы",
+      "AP-066 и AP-067 добавлены",
+      "STATE.md обновлён, номера 0036/ISS-0032/AP-068, слова владельца перенесены дословно",
+      "Две ссылки в docs/design/ добавлены, остальной текст этих файлов не изменён",
+      "Статусы требований не менялись; нет путей компьютера; результат — в artifacts_out"
+    ]
+  },
+  "created_at": "2026-10-11T14:59:16Z",
+  "started_at": "2026-10-11T14:59:16Z",
+  "completed_at": "2026-10-11T15:01:29Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "ISS-0023 закрыт (closed, 2026-10-11) с честным итогом: причина устранена и проверена на настоящем Claude для проверок задач (5 из 5) и цели, но проект до «выполнен» не дошёл (ISS-0031 и потолок 1 USD), критерии 13 REQ-013 и 14 REQ-010 не выполнены, статусы REQ-013 и REQ-010 не менялись. Заведены ISS-0024…ISS-0031, записаны AP-066 и AP-067, в STATE.md добавлен раздел на 2026-10-11 (слова владельца дословно, плотность 41,7, следующие номера ISS-0032 / 0036 / AP-068), в два проекта добавлена строка-ссылка.",
+    "changes": [
+      {
+        "file": "docs/issues/ISS-0023-reviewer-cannot-see-result-file.md",
+        "change": "строка статуса «closed, 2026-10-11»; в шапке — критерий 14 REQ-013 добавлен этим дефектом; разделы «Поправка к «Причине»» и «Закрыто» (время 2026-10-11 с часов, прогон, что сделано, тесты RF-01…RF-14, проверка, итог настоящего запуска, остаточный риск)"
+      },
+      {
+        "file": "docs/issues/ISS-0024…ISS-0031 (8 новых файлов)",
+        "change": "новые дефекты по формату WF-03, факты и ссылки на handoff-ы прогона: 0024 MEDIUM, 0025 MEDIUM, 0026 LOW, 0027 LOW, 0028 LOW, 0029 LOW, 0030 LOW, 0031 HIGH"
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "change": "добавлены AP-066 (движок проверяли исполнителем, который не читает файлы) и AP-067 (красный тест без имени); прежние записи не тронуты"
+      },
+      {
+        "file": "STATE.md",
+        "change": "новый верхний раздел «На 2026-10-11 — ISS-0023 закрыт…»; разделы прошлых дат, «Решение владельца о старте» и блок WF-06 не тронуты"
+      },
+      {
+        "file": "docs/design/REQ-013-team-engine.md",
+        "change": "одна строка-ссылка после таблицы п. 7.2"
+      },
+      {
+        "file": "docs/design/REQ-010-agent-executors.md",
+        "change": "одна строка-ссылка в конце п. 3.4"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum docs/requirements.yaml (до и после работы)",
+        "output": "69c307a92a9773afdc5edd551d52ecb355ae6c3a в обоих случаях — файл мной не менялся (его правки до моего шага сделали другие роли)"
+      },
+      {
+        "command": "grep -n \"^### AP-06[5-9]\" docs/anti-patterns.md",
+        "output": "AP-065, AP-066, AP-067 подряд; следующий AP-068"
+      },
+      {
+        "command": "git diff --stat docs/design",
+        "output": "REQ-010-agent-executors.md 2 вставки, REQ-013-team-engine.md 2 вставки, удалений нет"
+      },
+      {
+        "command": "find tools/src -type f ( -name *.js -o -name *.html -o -name *.css -o -name *.mjs ) -exec cat {} + | wc -l",
+        "output": "28737 строк; 1198 × 1000 ÷ 28737 = 41,7 на 1000 строк"
+      },
+      {
+        "command": "cd tools && npm run traces",
+        "output": "файлов проверено 1058, следов 0, пропущено 36 (код 0)"
+      },
+      {
+        "command": "grep -rn \"/Users/\" по изменённым файлам (кроме прежней строки-примера в anti-patterns.md:835)",
+        "output": "путей этого компьютера нет"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "docs/requirements.yaml в рабочем дереве изменён до моего шага (критерий 14 REQ-013 добавлен REQ-ANALYST); я его не трогал и статусы не менял."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Решение о R1 в docs/quality-bar.md не менялось; в STATE.md слова владельца о мерже перенесены дословно, вопрос о подтверждении мержа и решений 0027–0034 убран из «Ждёт владельца» нового раздела; старые разделы не правились."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Предложений по повышению планки нет. Новый вопрос владельцу: ISS-0028 (как считать критерий «сохранён в out/memo.md»)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0023-reviewer-cannot-see-result-file.md",
+      "docs/issues/ISS-0024-deps-of-takes-files-of-all-attempts.md",
+      "docs/issues/ISS-0025-parallel-tasks-same-file-name-collide.md",
+      "docs/issues/ISS-0026-prompt-max-exceeded-with-many-deps.md",
+      "docs/issues/ISS-0027-executors-write-false-file-created-to-memory.md",
+      "docs/issues/ISS-0028-criterion-with-folder-vs-accepted-basename.md",
+      "docs/issues/ISS-0029-unreadable-file-in-files-no-direct-test.md",
+      "docs/issues/ISS-0030-redo-attempt-does-not-get-own-accepted-file.md",
+      "docs/issues/ISS-0031-second-round-task-without-depends-on-cannot-edit-file.md",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/design/REQ-013-team-engine.md",
+      "docs/design/REQ-010-agent-executors.md"
+    ]
+  }
+}

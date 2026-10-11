@@ -1,0 +1,150 @@
+{
+  "handoff_id": "step03-r1-ISS-0023-20261011-01",
+  "run_id": "ISS-0023-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "03",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0023-20261011-01/step-03-code-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "issue_id": "ISS-0023",
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "rework_of": "handoffs/ISS-0023-20261011-01/step-03-code-designer.json",
+    "artifacts_in": [
+      "handoffs/ISS-0023-20261011-01/step-03b-code-design-validator.json",
+      "docs/design/ISS-0023-reviewer-sees-result-file.md",
+      "decisions/0035-reviewer-sees-accepted-files.md",
+      "tools/test/helpers (помощники engineProject и др.)"
+    ],
+    "route": "CODE-DESIGNER (this, доработка 1) -> CODE-DESIGN-VALIDATOR (step-03b-...-r1)",
+    "write_set": "docs/design/ISS-0023-reviewer-sees-result-file.md; decisions/0035-reviewer-sees-accepted-files.md (только если замечание этого требует)",
+    "pre_fix_copy": "<scratch>/pre_fix_ISS-0023/tools (коммит 7121b99)"
+  },
+  "task": {
+    "description": "Доработка ТОЛЬКО по перечню замечаний CODE-DESIGN-VALIDATOR (step-03b, result.findings). Блокирующие: F1 — правило извлечения имени файла из критерия у поддельного claude не разбирает фразу цели RF-02 («… сохранить в memo_research.md», результат null по прогону выражения): запиши дословные цели и критерии для RF-01…RF-04, ОДНО правило извлечения имени (формы «сохранён/сохранена/сохранить», хвостовые знаки), поведение fake при ненайденном имени и проверку этого в RF-12; прогони выражение на всех фразах и приложи вывод. F2 — назови конкретную сборку проекта и движка с исполнителем claude-cli на поддельном бинарнике для RF-01…RF-04 (помощник engineProject создаёт только scripted): какие вызовы существующих помощников/модулей, какие переменные окружения (под охраной AP-025), и подтверди запуском заготовки на pre_fix_copy в своей копии вне проекта (запуск приложи); если нужен новый помощник — внеси его в перечень файлов для TEST-DESIGNER. F3 — поиск связи «исходное имя ↔ принятое имя» ограничить участком между заголовком раздела зависимостей и первой строкой «### t-», добавить в RF-12 приманку: тело принятого файла с строкой «## Замечания»/«## Правила», дающей ложную связь. Неблокирующие по возможности: F4 (единое название пяти мест записи), F5 (RF-10: входы, где name/content не строка), F6 (RF-01 не закрепляет by=prompt, если правило общее для А и Б — оставь проверку по правилу, а выбор варианта фиксирует отдельный тест). Остальное в проекте не менять.",
+    "acceptance_criteria": [
+      "F1, F2, F3 закрыты; приложены выводы запусков",
+      "В result.changes у каждой правки номер замечания",
+      "Изменены только файлы write_set; кода реализации нет"
+    ]
+  },
+  "created_at": "2026-10-11T13:41:45Z",
+  "started_at": "2026-10-11T13:41:45Z",
+  "completed_at": "2026-10-11T13:52:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка проекта ISS-0023 (редакция r2) по замечаниям F1–F6 CODE-DESIGN-VALIDATOR. F1: одно правило извлечения имени, дословные цели и критерии RF-01…RF-04, поведение fake при ненайденном имени. F2: названа сборка проекта и движка на claude-cli с поддельным бинарником, проверена запуском заготовки на копии «до». F3: область связи ограничена участком между заголовком раздела зависимостей и первой строкой «### t-» / «## », приманка в RF-12. F4–F6 закрыты. Остальное не менялось. Кода реализации нет.",
+    "changes": [
+      {
+        "section": "п. 6 (поддельный claude)",
+        "finding": "F1",
+        "text": "Правило извлечения X: выражение /сохран(?:ён|ен|ена|ено|ить)\\s+в\\s+(\\S+)/u в разделе «Критерий готовности» (проверка задачи) или «Цель проекта» (проверка цели), снятие знаков « \" ' ( [ в начале и . , ; : ! ? » \" ' ) ] в конце; X не найден -> passed:false, notes «в критерии нет имени файла (fake)», X:null, by:none. Поле плана review_task:\"yes\" только для RF-02 (иначе проверка задачи падала бы раньше проверки цели)."
+      },
+      {
+        "section": "п. 6 (область связи)",
+        "finding": "F3",
+        "text": "Связь ищется только между заголовком «## Результаты задач, от которых зависит эта» и первой строкой «### t-» или «## »; тела файлов, «## Замечания», «## Правила» связью не считаются, в том числе при строке-имитации внутри тела файла. Определение «тела файлов до строки ## Замечания» убрано."
+      },
+      {
+        "section": "п. 6 (правило, F6)",
+        "finding": "F6",
+        "text": "Фраза: правило общее для А и Б, вариант фиксирует RF-01 (by=prompt; при пересмотре на А меняется только эта проверка, обе ветки правила проверяет RF-12). Журнал fake: by принимает folder|prompt|plan|none."
+      },
+      {
+        "section": "п. 7.0 (новый)",
+        "finding": "F2",
+        "text": "Сборка для RF-01…RF-04: новый помощник readsProject в tools/test/team-engine-reads-helpers.js (makeSandbox, execEnv с SAI_TEAM_CLAUDE_BIN, assertSafeEnv до любого запуска и создания проекта, план в $HOME/fake-claude-reads/plan.json, createProject executor claude-cli, startEngine, until + pauseAndExit вместо runToEnd, assertDoneAfterGoal в t.after). Формулировка «пока не станет ясно» убрана."
+      },
+      {
+        "section": "п. 7.0 (таблица)",
+        "finding": "F1",
+        "text": "Дословные цели и критерии RF-01…RF-04 и имя по правилу; проверка в RF-01…RF-04, что в журнале fake X равно memo_research.md."
+      },
+      {
+        "section": "п. 7, RF-01, RF-02",
+        "finding": "F1, F6",
+        "text": "RF-01: проверка X и by=prompt с пояснением про вариант Б; RF-02: цель и review_task, проверка goal_check X и by."
+      },
+      {
+        "section": "п. 7, RF-04",
+        "finding": "F1",
+        "text": "Добавлена проверка X === memo_research.md в журнале fake."
+      },
+      {
+        "section": "п. 7, RF-12",
+        "finding": "F1, F3",
+        "text": "Добавлены: приманка F3 (тело принятого файла с «## Правила»/«## Замечания» и связью -> нет), связь только в «## Замечания»/«## Правила» -> нет, четыре случая извлечения, «имя не найдено», stdin без заголовка раздела. Мутанты M12, M13 (п. 7.2)."
+      },
+      {
+        "section": "п. 7, RF-10; п. 4.1, пункт 3",
+        "finding": "F5",
+        "text": "Перечислены входы: name/task не строка, content не строка, элемент deps не объект, deps не массив; обещание «не бросает» сужено до acceptedFilesText."
+      },
+      {
+        "section": "п. 2, Ф3; decisions/0035, таблица вариантов",
+        "finding": "F4",
+        "text": "Единые названия пяти мест записи по критерию 2 REQ-009 (журнал, файл результата, файл-замок, производный файл = файл сценария, файл канала), в Ф3 ссылка на формулировку критерия."
+      },
+      {
+        "section": "п. 2, Ф7–Ф9",
+        "finding": "F1, F2, F3",
+        "text": "Новые проверенные факты с командами и выводом."
+      },
+      {
+        "section": "п. 8, п. 10, п. 13, заголовок",
+        "finding": "F1, F2, F3",
+        "text": "Ссылки приведены к новой версии (AP-005): п. 8 — область связи; п. 10 — новый файл team-engine-reads-helpers.js; п. 13 — Ф1–Ф9; редакция r2."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node f7.mjs (в копии вне проекта: выражение и снятие знаков на всех дословных фразах)",
+        "output": "RF-01/RF-03/RF-04: «Файл сохранён в memo_research.md.» => memo_research.md; RF-02: «Собрать три совета владельцу кофейни и сохранить в memo_research.md» => memo_research.md; «Список сохранён в «memo_research.md», коротко» => memo_research.md; «Таблица сохранена в prices.csv;» => prices.csv; «Есть итог» => не найден; прежнее выражение на цели RF-02: null"
+      },
+      {
+        "command": "cd <scratch>/val_cdr1/tools && node --test test/zz-proto.test.js (копия кода «до», прототип fake и пробный тест только в этой копии, не сдаются)",
+        "output": "# pass 3 # fail 0. RF-01-сборка: plan, work, review X=memo_research.md by=none passed=false x3, reassign; журнал: TASK_REVIEW, REVIEW_RESULT, TASK_WAITING_USER, PROJECT_WAITING. RF-02-сборка (review_task yes): TASK_DONE, GOAL_CHECK_RESULT; журнал fake review X=null by=plan passed=true, goal_check X=memo_research.md by=none passed=false. RF-04-сборка: как RF-01. Первая попытка с runToEnd зависла (движок ждёт пользователя) — отсюда startEngine + until"
+      },
+      {
+        "command": "node rf12.mjs (прототип fake, девять входов)",
+        "output": "а) связь в списке: true/prompt; б) файл в папке: true/folder; в) только ### t-: false/none; г) связь в теле файла с «## Правила»/«## Замечания»: false/none; д) X без t-: false; е) t-…-X без слова X: false; ж) цель «сохранить в…»: true/prompt; з) имя не найдено: false/none X=null; и) связь только в «## Замечания»: false"
+      },
+      {
+        "command": "grep по проекту и 0035: пути компьютера (/Users/, /private/, /var/folders); устаревшие формулировки (сохранён\\[а-я\\], вне тел, Пока не станет, журнал и сценарий)",
+        "output": "путей нет; устаревших формулировок нет (строка с прежним выражением осталась только в Ф7 как контрпример)"
+      },
+      {
+        "command": "git status --short",
+        "output": "изменены только docs/design/ISS-0023-reviewer-sees-result-file.md и decisions/0035-reviewer-sees-accepted-files.md (оба не отслеживались), плюс handoff; прочее — прежнее"
+      }
+    ],
+    "issues": [
+      {
+        "id": "D1",
+        "kind": "NOTE",
+        "text": "Проверено только на прототипе fake (post-fix кода нет): ветка by=prompt на движке с исправленным buildPrompt не прогонялась; ее проверяют RF-12 (прямой запуск fake) и RF-01/RF-02 после исправления. Прототип fake лежит в копии вне проекта и не сдаётся: настоящий fake пишет TEST-DESIGNER."
+      },
+      {
+        "id": "D2",
+        "kind": "NOTE",
+        "text": "Побочное наблюдение сборки: после неудачи проверки цели движок идёт на новые раунды плана (fake отвечает тем же планом); RF-02 поэтому ждёт первое GOAL_CHECK_RESULT, а не конец проекта."
+      },
+      {
+        "id": "D3",
+        "kind": "QUESTION",
+        "text": "Решение 0035 по-прежнему «предложено»; единственная правка в нём — единые названия мест записи (F4), решение не меняется. Принимает ORCH после PASS повторных ворот. F7 (предел PROMPT_MAX) по замечанию не требовался и не менялся."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/ISS-0023-reviewer-sees-result-file.md",
+      "decisions/0035-reviewer-sees-accepted-files.md"
+    ]
+  }
+}

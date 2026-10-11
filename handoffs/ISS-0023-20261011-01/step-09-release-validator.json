@@ -1,0 +1,74 @@
+{
+  "handoff_id": "step09-ISS-0023-20261011-01",
+  "run_id": "ISS-0023-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/ISS-0023-20261011-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "issue_id": "ISS-0023",
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "artifacts_in": [
+      "docs/issues/ISS-0023-reviewer-cannot-see-result-file.md",
+      "docs/requirements.yaml (REQ-013 критерий 14)",
+      "docs/design/ISS-0023-reviewer-sees-result-file.md",
+      "decisions/0035-reviewer-sees-accepted-files.md",
+      "docs/quality-bar.md",
+      "docs/workflows/WF-03-defect.md (шаг 9)",
+      "docs/workflows/WF-02-development.md (шаг 9)"
+    ],
+    "route": "TEST-RUNNER (PASS) -> RELEASE-VALIDATOR (this) -> DOC-UPDATER",
+    "write_set": "нет: пишет только status, completed_at, result. Пробы — на копиях вне проекта",
+    "pre_fix_copy": "<scratch>/pre_fix_ISS-0023/tools (коммит 7121b99)"
+  },
+  "task": {
+    "description": "WF-03, шаг 9. Последние ворота перед закрытием ISS-0023. Не доверяй отчётам: сам (1) на чистой копии рабочего дерева (git archive HEAD + изменения рабочего дерева, либо копия каталога без node_modules и npm ci) запусти `cd tools && npm run check` и приведи код и числа; (2) воспроизведи исходную ошибку сам: на pre_fix_copy проверяющий (запуск claude-cli на поддельном claude, читающем рабочую папку и подсказку) отвечает passed:false «файл … отсутствует в текущей рабочей папке», а на текущем дереве ту же постановку — проходит; (3) проверь критерий 14 REQ-013 по пунктам (а)–(г) на текущих файлах и запущенной системе (не по отчётам); (4) пройди применимые пункты планки Q1–Q14, R1–R3 по файлам: в частности Q3 (нет «должно работать»), Q5 (тест на критерий), Q6 (нет skip, линтер/правила не отключены, шаги npm run check на месте — сравни package.json с коммитом 7121b99), Q7 (поиск секретов в изменённых и новых файлах, поиск путей компьютера /Users/), Q12 (решение 0035 принято и записано в decisions/README.md), Q13/Q14 — только отметь, что учёт ещё впереди (шаг 10); (5) убедись, что изменены только ожидаемые файлы (git status + diff) и что критерий 13 REQ-013 (настоящий claude) остаётся не выполненным — этот прогон его не закрывает. Вердикт PASS означает: ISS-0023 можно закрыть как «причина устранена, есть регрессионный тест» в части, проверяемой без настоящего Claude; остаточный риск (следует ли настоящая модель пояснению) назови отдельно. Статус REQ-013 не меняется (остаётся in_progress).",
+    "acceptance_criteria": [
+      "Собственный запуск проверки на чистой копии: код и числа",
+      "Исходная ошибка воспроизведена на копии «до» и отсутствует на текущем дереве — оба вывода",
+      "Критерий 14 (а)–(г) подтверждён на текущих файлах",
+      "Каждый применимый пункт Q/R назван с результатом"
+    ]
+  },
+  "created_at": "2026-10-11T14:38:57Z",
+  "started_at": "2026-10-11T14:38:57Z",
+  "completed_at": "2026-10-11T14:42:24Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: ISS-0023 можно закрыть как «причина устранена, есть регрессионный тест» в части, проверяемой без настоящего Claude. Критерий 13 REQ-013 (настоящий claude) этим прогоном НЕ закрыт и остаётся не выполненным (нет согласия владельца на расход лимита); статус REQ-013 остаётся in_progress.\n\nКритерии задания: (1) чистая копия, cd tools && npm run check — код 0, 1198 из 1198, skipped 0, todo 0 — выполнен. (2) Ошибка воспроизведена на коде «до» и отсутствует на текущем дереве — выполнен. (3) Критерий 14 REQ-013: (а) RF-01 ok, (б) RF-02 ok, (в) RF-03 ok, (г) RF-04, RF-04b, RF-04c ok — выполнен. (4) Планка пройдена по пунктам ниже — выполнен.\n\nПланка: Q1 PASS (критерий 14 в REQ-013 со способом проверки; правка requirements.yaml — только добавление, ни одной удалённой строки). Q2 PASS (свои запуски в этом ходе). Q3 PASS (выводы приложены). Q4 PASS (npm run check на чистой копии, код 0). Q5 PASS (тесты RF-01..RF-14 на критерий 14 (а)-(г); отказ (г) проверяет и журнал, и число запусков). Q6 PASS (package.json, package-lock.json, eslint.config.js, .prettierignore идентичны коммиту 7121b99; в изменённых и новых файлах нет skip/todo/eslint-disable/prettier-ignore/|| true; skipped 0, todo 0; все шаги format:check, lint, traces, test прошли). Q7 PASS (поиск секретов по изменённым и новым файлам: единственное значение вида ghp_ — вымышленная приманка ghp_FAKE… в tools/test/team-engine-reads-helpers.js, прямо помеченная как приманка; тест RF-03 доказывает, что приманки нет в work/, папке проекта и stdin проверяющего). Q8 неприменим (нет данных клиентов и пространств бизнеса: служебный код движка). Q9 неприменим (нет SQL). Q10 PASS (acceptedFilesText не бросает исключений, пропускает только строку, которую не может составить — RF-10; предел строк и длины — RF-07, RF-07b). Q11 неприменим (адресов нет). Q12 PASS (decisions/0035 принято, строка есть в decisions/README.md; код не расходится: вариант Б, копии в work/ нет, исходник по-прежнему удаляется). Q13 и Q14 — учёт ещё впереди (шаг 10, DOC-UPDATER): статусы, STATE.md и запись об ошибке процесса пока не сделаны, это не FAIL. R1 учтено (мерж только после подтверждения владельца). R2 неприменим (Pixel Office не затронут). R3 неприменим (продукт снят решением 0033).\n\nОстаточный риск, отдельно: тесты проверяют ядро и поддельный claude, который судит по правилу из критерия; следует ли настоящая модель пояснению SAVED_AS_RULE и построчному соответствию имён — не проверено (критерий 13, нужно согласие владельца). Решение 0035 само предусматривает пересмотр, если настоящий запуск не подтвердит.\n\nПростыми словами: проверяющий теперь получает в задании пояснение, что принятые файлы лежат под именами t-NNNN-N-<имя>, и список «исходное имя → принятое имя»; на поддельном проверяющем, который судит по тому же правилу, прежняя ошибка («файл отсутствует в текущей рабочей папке») исчезла, а защита секретов не ослаблена.",
+    "findings": [],
+    "self_check": {
+      "environment": "node -v -> v22.21.1; коммит HEAD 7121b99; копии для проб — вне проекта (<вне проекта>)",
+      "clean_copy_run": {
+        "how": "rsync рабочего дерева sai без node_modules и .git в <вне проекта>, git init + commit (traces проверяет файлы под git), cd tools && npm ci (found 0 vulnerabilities), HOME=<временный каталог> npm run check, в первом плане, с ожиданием конца",
+        "note": "первая попытка без git дала код 2 на шаге traces (E_TRACE_NOT_GIT: копия не репозиторий) — сбой моей копии, не работы; после git init повтор",
+        "exit_code": 0,
+        "output": "format: All matched files use Prettier code style!; lint: eslint . --max-warnings 0 без замечаний; traces прошла; test: # tests 1198, # pass 1198, # fail 0, # cancelled 0, # skipped 0, # todo 0, строк 'not ok' — 0; после прогона во временном HOME только .npm, .sai-pixel-office нет"
+      },
+      "reproduction_before": {
+        "how": "копия коммита HEAD (код «до», src идентичен pre_fix_copy: diff -rq пуст) + только новые файлы теста (fake-claude-reads.js, team-engine-reads-*.js); node --test test/team-engine-reads-files.test.js",
+        "output": "# tests 34, # pass 20, # fail 14. not ok 1 - RF-01 criterion 14 (a); check said: «файл memo_research.md отсутствует в текущей рабочей папке; содержимое под принятым именем есть, но связи с X нет» (3 раза, по числу попыток); not ok 2 - RF-02 criterion 14 (b): {round:0, passed:false, notes: «файл memo_research.md отсутствует в текущей рабочей папке…»}. Остальные 12 красных — тесты чистых функций и текста (RF-04c, RF-05..RF-11, RF-14), которых до исправления нет"
+      },
+      "reproduction_after": {
+        "how": "тот же файл теста на текущем дереве (чистая копия)",
+        "output": "# ok 1..34 в просмотренной части: ok 1 RF-01 (а), ok 2 RF-02 (б), ok 3 RF-03 (в), ok 4 RF-04 (г), ok 5..16, ok 17..30 (RF-12 поддельный claude); не ok нет"
+      },
+      "criterion_14": "(а) RF-01 ok, (б) RF-02 ok, (в) RF-03 ok (приманка не найдена, исходника в work/ нет, режимы без изменений), (г) RF-04/RF-04b/RF-04c ok (проверка passed:false, нет TASK_DONE и TASK_FAILED result_file, число REVIEW_RESULT равно числу запусков). Система «запущенная» здесь — настоящее ядро движка и executor с поддельным claude, как задаёт критерий; настоящий claude — критерий 13, не выполнялся",
+      "scope": "git status --short — 12 строк до и после моих проб (рабочее дерево не менялось); изменены ровно: decisions/README.md, docs/requirements.yaml (только +52 строки), tools/README.md, tools/src/team/engine/review.js, tools/src/team/executor.js, tools/test/fixtures/team/README.md; новые: decisions/0035-*.md, docs/design/ISS-0023-*.md, handoffs/ISS-0023-20261011-01/, tools/test/fixtures/team/fake-claude-reads.js, tools/test/team-engine-reads-files.test.js, tools/test/team-engine-reads-helpers.js. package.json не тронут. Путей компьютера в изменённых файлах нет (поиск путей этого компьютера и временных папок — пусто)",
+      "git_diff_stat": "6 files changed, 106 insertions(+), 4 deletions(-)"
+    },
+    "issues": [
+      "Наблюдение (не FAIL): npm run traces требует git-репозиторий, поэтому проверка «на копии без .git» даёт код 2 (E_TRACE_NOT_GIT); для чистой копии нужен git init. Стоит записать это в описание проверки на чистой копии, если ещё не записано.",
+      "Остаточный риск: следование настоящей модели пояснению не проверено — критерий 13, нужно письменное согласие владельца и потолок расходов; REQ-013 остаётся in_progress."
+    ],
+    "artifacts_out": []
+  }
+}

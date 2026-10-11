@@ -1,0 +1,112 @@
+{
+  "handoff_id": "step04-ISS-0023-20261011-01",
+  "run_id": "ISS-0023-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/ISS-0023-20261011-01/step-04-code-fixer.json",
+  "status": "DONE",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "issue_id": "ISS-0023",
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "artifacts_in": [
+      "docs/design/ISS-0023-reviewer-sees-result-file.md",
+      "decisions/0035-reviewer-sees-accepted-files.md",
+      "docs/requirements.yaml (REQ-013 критерий 14)",
+      "handoffs/ISS-0023-20261011-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0023-20261011-01/step-03b-code-design-validator-r1.json",
+      "docs/workflows/WF-03-defect.md",
+      "docs/anti-patterns.md"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR (PASS r1) -> CODE-FIXER (this) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER",
+    "write_set": "tools/src/team/executor.js; tools/src/team/engine/review.js; tools/README.md (только фраза в «Файлы результата», без копирования текстов подсказок: EX-37)",
+    "pre_fix_copy": "<scratch>/pre_fix_ISS-0023/tools (коммит 7121b99)",
+    "parallel_work_now": "никто",
+    "orch_note": "Решение 0035 принято ORCH. Тесты RF-* и поддельный claude пишет TEST-DESIGNER на шаге 6 после ворот безопасности и ревью — их не писать (AP-063). Новые низкие замечания N1–N3 валидатора проекта: N1 относится к тесту (приманка полной длины) и передаётся TEST-DESIGNER."
+  },
+  "task": {
+    "description": "WF-03, шаг 4. Реализуй исправление ISS-0023 строго по проекту docs/design/ISS-0023-reviewer-sees-result-file.md (вариант Б, решение 0035): в executor.js — acceptedFilesText, ACCEPTED_FILES_INTRO, ACCEPTED_LINES_MAX и вставка в buildPrompt с учётом PROMPT_MAX; в engine/review.js — SAVED_AS_RULE и его добавление к note в reviewContext и goalContext; в tools/README.md — одна фраза словами. Только в файлах write_set. Не менять runner.js, store.js, files.js, single-run.js, engine.js, package*.json, eslint.config.js. Защита в той же операции и пути отказа — как в проекте (неразбираемое имя, предел длины, зависимости без файлов — задание прежнее). Не добавлять мест записи (TM-04 — пять). Затем запусти одну команду проверки `cd tools && npm run check` дождавшись конца в своём ходе и приложи вывод. Упасть может только тест, проверяющий намеренно изменённое поведение (по проекту таких нет): если упал любой — назови в result.issues с разделом проекта, не правь и не подгоняй тест. Не начинай писать тесты и поддельного claude.",
+    "acceptance_criteria": [
+      "Изменены только файлы write_set (список артефактов и git status)",
+      "Каждый пункт п. 4 проекта реализован; пути отказа реализованы",
+      "Приложен полный вывод npm run check и код выхода",
+      "Нет skip, отключённых правил линтера, || true",
+      "Нет путей этого компьютера в файлах"
+    ]
+  },
+  "created_at": "2026-10-11T13:55:32Z",
+  "started_at": "2026-10-11T13:55:32Z",
+  "completed_at": "2026-10-11T13:57:42Z",
+  "result": {
+    "status": "DONE",
+    "summary": "ISS-0023 исправлен по проекту (вариант Б, решение 0035): задание с зависимостями теперь содержит пояснение и построчное соответствие «исходное имя → принятое имя»; правило оценки критерия с именем файла добавлено в note проверки задачи и проверки цели; в README одна фраза. Тесты и поддельный claude не писались (шаг 6).",
+    "changes": [
+      {
+        "item": "п. 4.1 проекта, место 3 и 4",
+        "file": "tools/src/team/executor.js",
+        "place": "acceptedFilesText, ACCEPTED_FILES_INTRO, ACCEPTED_LINES_MAX (перед buildPrompt)",
+        "change": "Новая чистая функция: пустая строка при пустых или не массиве deps; иначе пояснение и строки соответствия (разбор имени по префиксу задачи и номеру попытки, неразбираемое имя пропускается без ошибки, предел 50 строк и «и ещё K файлов»); не читает content"
+      },
+      {
+        "item": "п. 4.1, PROMPT_MAX",
+        "file": "tools/src/team/executor.js",
+        "place": "buildPrompt, раздел зависимостей",
+        "change": "Раздел = заголовок + пояснение + пустая строка + части ###; длина пояснения вычитается из room до обрезки содержимого; без deps задание прежнее"
+      },
+      {
+        "item": "п. 4.2, место 1",
+        "file": "tools/src/team/engine/review.js",
+        "place": "SAVED_AS_RULE (экспорт), reviewContext",
+        "change": "note = прежняя фраза + пробел + SAVED_AS_RULE; deps не менялись"
+      },
+      {
+        "item": "п. 4.2, место 2",
+        "file": "tools/src/team/engine/review.js",
+        "place": "goalContext, первый абзац note",
+        "change": "То же правило добавлено в первый абзац; список задач и deps прежние"
+      },
+      {
+        "item": "п. 10",
+        "file": "tools/README.md",
+        "place": "«Файлы результата»",
+        "change": "Одна фраза словами: проверяющий и зависимые задачи получают соответствие «исходное имя → принятое имя», исходник по-прежнему удаляется; текстов подсказок нет (EX-37)"
+      }
+    ],
+    "self_check": [
+      "Поиск мест того же рода: grep -rn \"HEADERS.deps\\|depsOf(\\|Результаты задач\" tools/src — только executor.js (строит раздел), runner.js (depsOf, defaultContext), engine/review.js (оба вызова); других мест нет.",
+      "Мест записи в src/team: grep -rnE \"writeFile|appendFile|createWriteStream\" tools/src/team — 5 (было 5).",
+      "Проверка вручную: acceptedFilesText на одной разбираемой и одной неразбираемой зависимости даёт абзац и одну строку «— memo_research.md → t-0001-1-memo_research.md (задача t-0001, попытка 1)»; null и [] дают пустую строку.",
+      "cd tools && npm run check: код выхода 0; format:check — All matched files use Prettier code style; lint (eslint --max-warnings 0) — без вывода ошибок; traces — прошла; test: # tests 1164, # pass 1164, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 75979.68. Ни один существующий тест не упал (по проекту п. 7.1 таких нет)."
+    ],
+    "issues": [
+      {
+        "kind": "INFO",
+        "note": "Новых тестов нет: RF-01…RF-13 и fake-claude-reads пишет TEST-DESIGNER на шаге 6 (AP-063). N1 валидатора (приманка полной длины) — ему же."
+      },
+      {
+        "kind": "INFO",
+        "note": "Тесты, проверяющие намеренно изменённое поведение: нет (проект п. 7.1)."
+      },
+      {
+        "kind": "INFO",
+        "note": "Места того же рода вне write_set: нет. Остаточный риск (настоящая модель не последует пояснению) — по решению 0035, проверяется критерием 13 REQ-013 с согласия владельца."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/executor.js",
+      "tools/src/team/engine/review.js",
+      "tools/README.md"
+    ]
+  },
+  "orch_correction": {
+    "at": "2026-10-11T13:58:21Z",
+    "by": "ORCH",
+    "reason": "агент записал status и result.status как DONE; протокол handoffs.md знает COMPLETED. Поле агента не переписано; читать как COMPLETED."
+  }
+}

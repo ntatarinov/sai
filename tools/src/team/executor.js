@@ -230,6 +230,46 @@ function cut(s, max) {
   return s.slice(0, end);
 }
 
+export const ACCEPTED_LINES_MAX = 50;
+
+export const ACCEPTED_FILES_INTRO =
+  "Ниже — файлы, которые ядро уже приняло. Принятый файл хранится под именем t-NNNN-N-<имя>: t-NNNN — задача, N — номер попытки, <имя> — имя, под которым исполнитель сохранил файл (без папок). Исходный файл после приёма удалён, поэтому в текущей папке этих файлов нет, и это не недостаток.";
+
+// "t-0001-1-memo.md" of task "t-0001" -> { original: "memo.md", attempt: "1" };
+// null when the name does not follow the pattern of the core.
+function parseAccepted(dep) {
+  if (dep === null || typeof dep !== "object") return null;
+  const { task, name } = dep;
+  if (typeof task !== "string" || typeof name !== "string") return null;
+  const prefix = `${task}-`;
+  if (!name.startsWith(prefix)) return null;
+  const m = /^([0-9]+)-(.+)$/.exec(name.slice(prefix.length));
+  return m === null ? null : { original: m[2], attempt: m[1] };
+}
+
+// The explanation and the line-by-line map "original name -> accepted name" put
+// before the accepted files in the task text. Pure, never throws; the names are
+// made by the core (PATTERNS.name), so no text of a user gets into the lines.
+export function acceptedFilesText(deps) {
+  if (!Array.isArray(deps) || deps.length === 0) return "";
+  const lines = [];
+  for (const dep of deps) {
+    const parsed = parseAccepted(dep);
+    if (parsed === null) continue;
+    lines.push(
+      `— ${parsed.original} → ${dep.name} (задача ${dep.task}, попытка ${parsed.attempt})`,
+    );
+  }
+  if (lines.length === 0) return ACCEPTED_FILES_INTRO;
+  const shown = lines.slice(0, ACCEPTED_LINES_MAX);
+  if (lines.length > ACCEPTED_LINES_MAX) {
+    shown.push(
+      `— и ещё ${lines.length - ACCEPTED_LINES_MAX} файлов (их имена — в заголовках ниже)`,
+    );
+  }
+  return `${ACCEPTED_FILES_INTRO}\n\nСоответствие имён:\n${shown.join("\n")}`;
+}
+
 export function buildPrompt(request) {
   const { role, task, context } = request;
   const head = [];
@@ -258,6 +298,8 @@ export function buildPrompt(request) {
   let room = PROMPT_MAX - fixed - HEADERS.deps.length - 4;
   let depsText = null;
   if (deps.length > 0) {
+    const accepted = acceptedFilesText(deps);
+    room -= accepted.length + 2;
     const parts = [];
     for (const dep of deps) {
       const title = `### ${dep.name}\n`;
@@ -272,7 +314,7 @@ export function buildPrompt(request) {
         room = Math.max(0, room - kept.length - CUT_MARK.length - 1);
       }
     }
-    depsText = `${HEADERS.deps}\n${parts.join("\n\n")}`;
+    depsText = `${HEADERS.deps}\n${accepted}\n\n${parts.join("\n\n")}`;
   }
   const sections = [...head];
   if (depsText !== null) sections.push(depsText);

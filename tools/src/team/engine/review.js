@@ -41,13 +41,19 @@ function title(code) {
   return role === null ? "" : publicRole(role).title;
 }
 
+// The rule of judging a criterion that names a file ("saved in X"): the core
+// removes the source after the accept, so the accepted files of the task text
+// are the place to look (ISS-0023, decisions/0035).
+export const SAVED_AS_RULE =
+  "Если критерий требует файл с некоторым именем («сохранён в X»), он выполнен, когда файл с исходным именем X назван среди принятых файлов раздела «Результаты задач, от которых зависит эта» — в списке соответствия имён или в заголовке «### t-NNNN-N-X» — и его содержимое подходит. То, что в текущей папке такого файла нет, критерием не является. Если среди принятых файлов такого имени нет (или раздела нет совсем — принятых файлов нет), критерий не выполнен: скажи об этом в notes.";
+
 // The run of the reviewer for one task: the files of this task as `deps`, the
 // text and the criterion of the task in its section "Задача" (buildPrompt).
 export function reviewContext(writer, task) {
   return {
     ...defaultContext(writer, task),
     deps: depsOf(writer, { depends_on: [task.id] }),
-    note: "Проверь результат задачи строго по критерию готовности. Ответ: passed — true, если критерий выполнен полностью; notes — замечания по пунктам.",
+    note: `Проверь результат задачи строго по критерию готовности. Ответ: passed — true, если критерий выполнен полностью; notes — замечания по пунктам. ${SAVED_AS_RULE}`,
   };
 }
 
@@ -65,7 +71,7 @@ export function goalContext(writer) {
     memory: defaultContext(writer, { depends_on: [] }).memory,
     deps: depsOf(writer, { depends_on: done.map((t) => t.id) }),
     note: [
-      "Сверь результаты задач с целью проекта. Ответ: passed — true, если цель достигнута; notes — что не хватает или почему цель достигнута.",
+      `Сверь результаты задач с целью проекта. Ответ: passed — true, если цель достигнута; notes — что не хватает или почему цель достигнута. ${SAVED_AS_RULE}`,
       `Задачи проекта:\n${lines.join("\n")}`,
     ].join("\n\n"),
   };

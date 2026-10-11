@@ -1,0 +1,123 @@
+{
+  "handoff_id": "step03b-r1-ISS-0023-20261011-01",
+  "run_id": "ISS-0023-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "03b",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0023-20261011-01/step-03b-code-design-validator-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "issue_id": "ISS-0023",
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "rework_of": "handoffs/ISS-0023-20261011-01/step-03-code-designer-r1.json",
+    "artifacts_in": [
+      "docs/design/ISS-0023-reviewer-sees-result-file.md",
+      "decisions/0035-reviewer-sees-accepted-files.md",
+      "handoffs/ISS-0023-20261011-01/step-03b-code-design-validator.json",
+      "handoffs/ISS-0023-20261011-01/step-03-code-designer-r1.json",
+      "docs/workflows/WF-03-defect.md"
+    ],
+    "route": "CODE-DESIGNER (r1) -> CODE-DESIGN-VALIDATOR (this, повтор) -> CODE-FIXER",
+    "write_set": "нет: пишет только status, completed_at, result",
+    "pre_fix_copy": "<scratch>/pre_fix_ISS-0023/tools (коммит 7121b99)"
+  },
+  "task": {
+    "description": "Повторные ворота проекта ISS-0023 после доработки. Сам проверь, что замечания F1, F2, F3 закрыты: F1 — прогони выражение извлечения имени на всех дословных целях/критериях RF-01…RF-04 и на прежней фразе; F2 — построй заготовку RF-01/RF-02 по п. 7.0 на своей копии pre_fix_copy (вне проекта) с поддельным claude, который следует правилам проекта, и увидь падение до исправления (by=none) для задачи и цели; F3 — на входах приманки RF-12 проверь ограничение участка. Проверь, что F4–F6 не внесли новых противоречий, а общий проект (п. 6, 7, 10) согласован между собой: каждый тест RF-* есть в таблице «критерий → тест», каждый файл есть в перечне для TEST-DESIGNER/CODE-FIXER, мутанты M1–M13 привязаны к тестам. Прежние пройденные проверки (план, пути отказа, планка, решение 0035) перепроверь выборочно: не менее двух утверждений о коде до исправления повтори. Решение 0035 (статус «предложено») — нет ли препятствий к принятию. Новых замечаний сверх закрытия перечня и согласованности не выдумывай, но реальные находи. PASS или FAIL (Critical/High/Medium блокируют).",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков; выводы приложены",
+      "F1, F2, F3 каждое названо с результатом",
+      "Файлы проекта не изменены (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-11T13:52:53Z",
+  "started_at": "2026-10-11T13:52:53Z",
+  "completed_at": "2026-10-11T13:54:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "ВЕРДИКТ PASS. Задание не называет ожидаемый вердикт; он выведен из собственных запусков. Блокирующих замечаний нет.\nF1 закрыто: выражение /сохран(?:ён|ен|ена|ено|ить)\\s+в\\s+(\\S+)/u и снятие знаков прогнаны на всех дословных фразах: критерий RF-01/03/04 -> memo_research.md; цель RF-02 -> memo_research.md; «Три совета владельцу кофейни» -> не найдено; «Есть итог» -> не найдено; кавычки «» и хвост ',' -> memo_research.md; 'prices.csv;' -> prices.csv; прежнее выражение на цели RF-02 -> null. Не найдено -> passed:false, X:null, by:none (подтверждено на fake).\nF2 закрыто: по п. 7.0 на своей копии «до» построена заготовка (проект claude-cli, createProject, startEngine, until+pauseAndExit, своё fake-claude-reads по правилам п. 6). До исправления: RF-01 — задача не done, TASK_REVIEW/REVIEW_RESULT x3, затем TASK_WAITING_USER, журнал fake review X=memo_research.md by=none passed=false x3, нет TASK_DONE; RF-02 — TASK_DONE (review_task yes), GOAL_CHECK_RESULT passed:false «файл memo_research.md отсутствует в текущей рабочей папке», goal_check X=memo_research.md by=none; ожидаемые после исправления by=prompt не выполняются, т.е. тесты краснеют до исправления. RF-04 (other.md) — три отказа by=none, как до, так и после. RF-03 (приманка с полным видом ghp_ + 36 знаков) — в stdin проверки приманки нет, work/ пуст. Сборка рабочая, догадок не потребовала; runToEnd не нужен (подтверждено: движок ждёт пользователя).\nF3 закрыто: на 12 входах fake: связь в списке -> true/prompt; файл в папке -> true/folder; только ### t- -> false/none; приманка (тело файла с '## Правила' и '## Замечания' и строкой связи) -> false/none; '## Правила' сразу после заголовка раздела -> false; строка связи после первого ### -> false; нет заголовка раздела -> false; X внутри x-memo_research.md -> false; цель RF-02 -> true/prompt.\nF4–F6: новых противоречий нет — названия пяти мест записи единые (TM-04 ok, pass 27 fail 0, пять writeFile на копии «до»), RF-10 перечисляет входы, RF-01 фиксирует by=prompt с пояснением про вариант А.\nСогласованность п. 6, 7, 10: RF-01…RF-13 есть в таблице «критерий -> тест» (а–г -> RF-01…04, устройство -> RF-05…13); каждый файл п. 10 назван (fake, README fixtures, reads-helpers, тест, executor.js, review.js, README tools, две ссылки в design); мутанты M1…M13 (и M6a) привязаны к тестам. Раздел о планке называет Q1–Q14 и R1–R3.\nПовторено утверждений о коде «до»: 5 мест записи + TM-04 ok; depsOf/buildPrompt/reviewContext/goalContext — единственные места раздела зависимостей (executor.js 212/258/275, runner.js 116/145, review.js 49/66); note в review.js:50,68 без правила; room вычитает HEADERS.deps.length (executor.js:258); копия «до» = текущий tools (diff -rq пуст).\nРешение 0035: оформлено по decisions/README (вопрос, варианты, решение, почему, остаточный риск), строка в таблице README есть, расхождений с 0017/0018/REQ-010/критерием 2 REQ-009 нет; препятствий к принятию нет — ORCH принимает после этого PASS.\nНеизменность: проект и 0035 не менялись (sha1 до и после совпали).",
+    "findings": [
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocks": false,
+        "point": "В.7",
+        "place": "п. 7, RF-03 и п. 7.0 (приманка «ghp_FAKE…»)",
+        "what": "Приманка записана с многоточием, длина не названа. Мой запуск: короткая приманка ghp_FAKE123 маскированием не закрывается и попадает в stdin проверки (1 совпадение); приманка ghp_FAKE + 36 знаков — не попадает (0).",
+        "need": "Для TEST-DESIGNER: приманка должна совпадать с шаблоном маскирования (вымышленная, полной длины); желательно назвать длину в п. 7.0."
+      },
+      {
+        "id": "N2",
+        "severity": "Low",
+        "blocks": false,
+        "point": "Б.5",
+        "place": "п. 6, правило ответа для проверки цели",
+        "what": "Проверка цели отличается от проверки задачи отсутствием строки '## Задача'; цель проекта с такой строкой (пользовательский текст) перепутает fake. На тесты проекта не влияет.",
+        "need": "Не требуется для PASS; можно одной фразой назвать допущение."
+      },
+      {
+        "id": "N3",
+        "severity": "Low",
+        "blocks": false,
+        "point": "Б.3",
+        "place": "п. 4.1/О10",
+        "what": "Прежнее наблюдение F7 (PROMPT_MAX при очень длинном head+tail) осталось неназванным в п. 11; новым дефектом не является.",
+        "need": "Не требуется."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum docs/design/ISS-0023-reviewer-sees-result-file.md decisions/0035-reviewer-sees-accepted-files.md (до и после)",
+        "output": "f8294075ba0939ad8ff749be44a2d5d615b5e030 и 5c226a5b5b27fddff672eed65b2f2d92a12a34d8 — совпали"
+      },
+      {
+        "command": "diff -rq tools <копия «до»>/tools -x node_modules; git log -1",
+        "output": "различий нет; 7121b99"
+      },
+      {
+        "command": "(копия val_cdr2 вне проекта) node f1.mjs",
+        "output": "см. F1 в summary; старое выражение на цели RF-02: null"
+      },
+      {
+        "command": "node --test test/zz-v.test.js (RF-01, RF-02, RF-04 по п. 7.0 с моим fake-claude-reads)",
+        "output": "RF-01: types ... TASK_REVIEW,REVIEW_RESULT x3,TASK_WAITING_USER; журнал fake [{n:3,review,X:memo_research.md,by:none,passed:false} x3]; assert TASK_DONE — падение до исправления. RF-02: GOAL_CHECK_RESULT {passed:false,notes:'файл memo_research.md отсутствует в текущей рабочей папке'}, goal_check by=none. RF-04: [[memo_research.md,none,false] x3] ok"
+      },
+      {
+        "command": "node rf12.mjs (fake напрямую, 13 входов)",
+        "output": "а true/prompt; б true/folder; в false/none; приманка F3 false/none; прочие приманки false/none; не найдено false/none X=null; нет заголовка false; prices.csv true/prompt; «quoted» true/prompt; x-memo_research.md false; цель RF-02 true/prompt"
+      },
+      {
+        "command": "node --test test/team-state.test.js; grep writeFile|appendFile|createWriteStream src/team",
+        "output": "TM-04 ok, pass 27, fail 0; пять мест: store.js:610, store.js:616, files.js:100, channel.js:178, lock.js:182"
+      },
+      {
+        "command": "grep HEADERS.deps|depsOf(|Результаты задач src",
+        "output": "executor.js:212, 258, 275; runner.js:116, 145; review.js:49, 66"
+      },
+      {
+        "command": "RF-03-lite: проект с приманкой ghp_FAKE+36 знаков, до REVIEW_RESULT, grep по stdin-*.bin и ls work/",
+        "output": "stdin with bait: 0; work files: []"
+      }
+    ],
+    "issues": [
+      {
+        "id": "V1",
+        "kind": "NOTE",
+        "text": "Задание не называет ожидаемый вердикт (AP-018 не применим). Запуски делались только на копии «до» вне проекта; код после исправления не проверялся (его ещё нет) — ветка by=prompt на движке с исправленным buildPrompt остаётся за RF-01/RF-02 после исправления."
+      },
+      {
+        "id": "V2",
+        "kind": "NOTE",
+        "text": "Решение 0035 можно принимать (ORCH): препятствий нет. Нужна ссылка на этот PASS."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
