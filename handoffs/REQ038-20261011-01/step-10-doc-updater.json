@@ -1,0 +1,133 @@
+{
+  "handoff_id": "step10-REQ038-20261011-01",
+  "run_id": "REQ038-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/REQ038-20261011-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-038"
+    ],
+    "base_tag": "base/REQ038-20261011-01",
+    "artifacts_in": [
+      "handoffs/REQ038-20261011-01/ (все step-*.json, особенно step-09-release-validator.json, step-06-test-runner.json, step-05b-test-design-validator-r1.json, step-04-reviewer.json, step-03-security-reviewer.json и -r1, step-01b-code-design-validator.json и -r1)",
+      "docs/design/REQ-038-handoffs-check.md",
+      "decisions/0034-req038-before-req014-done.md",
+      "decisions/0036-handoffs-check-base.md",
+      "decisions/0037-handoffs-check-design.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "docs/requirements.yaml (шапка — правила статусов; блоки REQ-038, REQ-014)",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/design/REQ-014-traces.md",
+      "docs/workflows/WF-02-development.md (шаг 10)"
+    ],
+    "route": "RELEASE-VALIDATOR (PASS) -> DOC-UPDATER (this) -> проверка учёта ORCH -> RELEASE-FINALIZER",
+    "write_set": "docs/requirements.yaml (только поле status блока REQ-038 и комментарий к нему; блок REQ-014 не менять); docs/anti-patterns.md (AP-068, AP-069, AP-070); STATE.md; docs/design/REQ-014-traces.md (описание TR-4c: два файла -> три, по строке-обновлению проекта REQ-038 п. 2); новые docs/issues/ISS-0032-*.md и docs/issues/ISS-0033-*.md",
+    "orch_numbers": "дефекты ISS-0032 и ISS-0033 выданы ORCH этому прогону (следующий свободный после — ISS-0034); журнал ошибок: AP-068, AP-069, AP-070 (следующий — AP-071); решения: свободное 0039",
+    "orch_note": "ИСТИНА о результате: REQ-038 принято RELEASE-VALIDATOR (step-09 PASS): 11 критериев выполнены, npm ci && npm run check на чистой копии — код 0, 1315 из 1315; handoffs-check на репозитории код 0, нарушений 0, исключений 114 из 114; база 114 записей снята на коммите 7760e4b. Статус REQ-038 -> done по правилу шапки docs/requirements.yaml (только после PASS RELEASE-VALIDATOR), с комментарием: дата, прогон REQ038-20261011-01, зависимость REQ-014 остаётся in_progress по исключению decisions/0034 (владелец может отменить; тогда REQ-038 перестаёт быть done до done у REQ-014). REQ-014 не менять.",
+    "orch_check": {
+      "at": "2026-10-11T18:37:17Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "docs/requirements.yaml: status REQ-038 done с комментарием и добавленные ворота-правки критериев; блок REQ-014 изменён только фразой критерия 4 (шаг 00c)",
+        "docs/anti-patterns.md: AP-068, AP-069, AP-070 на месте",
+        "docs/issues/ISS-0032 и ISS-0033 заведены (LOW, open)",
+        "docs/design/REQ-014-traces.md: одна строка TR-4c (3 файла)",
+        "STATE.md: верхний раздел про REQ-038",
+        "cd tools && npm run traces: следов 0; cd tools && npm run handoffs-check: код 0, нарушений 0, исключений 114 из 114",
+        "orch_correction в задании step-10 (фрагмент пути заменён)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 10. (1) docs/requirements.yaml: status REQ-038 -> done с комментарием (дата с часов, прогон, исключение 0034); ничего больше. (2) docs/anti-patterns.md: AP-068 — закрытый перечень файлов требования не учёл охранный тест соседнего требования (TR-4c: child_process в tools/src ровно в двух файлах), из-за чего проект остановился (B1) и потребовалась правка требования и записи 0038 посреди прогона; урок для REQ-ANALYST/REQ-VALIDATOR: при закрытом перечне искать охранные тесты, считающие файлы/слова в tools/src, и называть их в перечне. AP-069 — в отчётах агентов (self_check, issues) попадали буквальные фрагменты путей временных папок (`<литерал: путь временной папки>`) и статус DONE вместо COMPLETED; новая команда handoffs-check нашла это (3 нарушения H11 у SECURITY-REVIEWER r1, DONE у step-00c) только после готовности; урок: с этого момента агент перед сдачей запускает `cd tools && npm run handoffs-check` (правило записано в docs/workflows/handoffs.md), ORCH включает это в каждое задание. AP-070 — неназванный красный тест в первом полном прогоне REVIEWER (дважды: ISS-0023 и REQ-038) без имени и повтора: вывод обрезан; урок: при полном прогоне вывод идёт в файл вне проекта, имя красного тестового случая записывается до любого повтора (дополняет AP-067). Формат по соседним записям; факты — из handoff-ов (ссылки). (3) Заведи docs/issues/ISS-0032 (LOW) — пробелы тестов handoffs-check, найденные TEST-DESIGN-VALIDATOR r1 и RELEASE-VALIDATOR: выживший мутант H8 с допуском в 1 секунду (HC-2i: нет случая «completed_at на 1 секунду раньше started_at»), хрупкость порога «не менее 7 файлов» в HC-RT-1a и числа записей 114 в HC-7c, HC-7a и HC-5b читают живое рабочее дерево, набору нужна полная история git (записать в tools/README.md? — нет: только в дефекте; README правит BACKEND-DEV в следующем прогоне), и ISS-0033 (LOW) — мелкие недочёты кода handoffs-check: четыре лишних export (BASE_REL, EMIT_REASON, readDecisionCommit, REQUIRED_FIELDS), каждый handoff читается дважды (для H10), порции readBlobs делятся по 1000 спеков, а не по размеру ответа (безопасный отказ при >256 МиБ), комментарий в git-history.js обещает тест, у COMPLETED/FAILED с completed_at null одно поле считается нарушением и по H4, и по H5, у ключей JSON вне грамматики путь поля печатается как «?» (F2 безопасности), файл базы и decisions/ читаются без предела размера (F3 безопасности, Low). Факты — из step-04, step-03 и -r1, step-05b-r1, step-09. (4) docs/design/REQ-014-traces.md: в описании TR-4c заменить «два файла» на три с оговоркой про HC-RT-1 (пп. из проекта REQ-038 п. 2, строка для DOC-UPDATER), остальное не менять. (5) STATE.md: новый верхний раздел «На 2026-10-11 — REQ-038 сделана (done, исключение 0034)…» в формате соседних разделов: что работает и чем проверено (числа: 1315 тестов, команда handoffs-check, 114 записей базы), плотность тестов по правилу decisions/0023 (посчитай той же командой, что в соседнем разделе), что НЕ сделано, открытые дефекты (ISS-0024…ISS-0033), следующие свободные номера (ISS-0034, решение 0039, AP-071), решения 0036–0038 приняты ORCH (владелец может отменить), следующая работа по PLAN (REQ-039 — с этого момента ORCH создаёт каждый handoff командой), ждёт владельца: новый потолок и разрешение на настоящий запуск после ISS-0031; вопрос по ISS-0028; предыдущий раздел 2026-10-11 про ISS-0023 не удалять. Время — с часов; статус записей — только то, что есть в handoff-ах. Перед сдачей запусти `cd tools && npm run handoffs-check` и `cd tools && npm run traces` — оба код 0; свой handoff: статус строго COMPLETED, без буквальных путей временных папок.",
+    "acceptance_criteria": [
+      "status REQ-038 = done с комментарием; блок REQ-014 не тронут",
+      "AP-068, AP-069, AP-070 добавлены; ISS-0032 и ISS-0033 заведены с фактами из handoff-ов",
+      "STATE.md обновлён с честным перечнем невыполненного, плотность тестов посчитана командой",
+      "docs/design/REQ-014-traces.md: TR-4c — три файла",
+      "handoffs-check и traces — код 0"
+    ]
+  },
+  "created_at": "2026-10-11T18:34:34Z",
+  "started_at": "2026-10-11T18:34:34Z",
+  "completed_at": "2026-10-11T18:36:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-038 переведено в done (PASS RELEASE-VALIDATOR step-09, исключение 0034, REQ-014 не тронуто). В журнал ошибок добавлены AP-068, AP-069, AP-070; заведены ISS-0032 и ISS-0033 (оба LOW); в описании TR-4c REQ-014-traces.md два файла заменены тремя; в STATE.md новый верхний раздел с проверенным, плотностью тестов 43,6, невыполненным, открытыми дефектами и следующими номерами (ISS-0034, решение 0039, AP-071).",
+    "changes": [
+      {
+        "file": "docs/requirements.yaml",
+        "what": "блок REQ-038: поле status in_progress -> done и комментарий к нему (дата, прогон, PASS step-09, исключение 0034); остальное не менялось"
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "what": "добавлены AP-068, AP-069, AP-070 после AP-067; прежние записи не тронуты"
+      },
+      {
+        "file": "docs/issues/ISS-0032-handoffs-check-test-gaps.md",
+        "what": "новый дефект LOW: пробелы тестов handoffs-check"
+      },
+      {
+        "file": "docs/issues/ISS-0033-handoffs-check-minor-code-issues.md",
+        "what": "новый дефект LOW: мелкие недочёты кода handoffs-check (7 пунктов)"
+      },
+      {
+        "file": "docs/design/REQ-014-traces.md",
+        "what": "описание TR-4c: «только в двух файлах» -> три файла (добавлен handoffs/git-history.js, решение 0038, оговорка про HC-RT-1)"
+      },
+      {
+        "file": "STATE.md",
+        "what": "новый верхний раздел «На 2026-10-11 — REQ-038 … сделана»; раздел про ISS-0023, раздел владельца и блок WF-06 не тронуты"
+      }
+    ],
+    "self_check": [
+      "diff блока: единственная изменённая строка docs/requirements.yaml — status блока REQ-038 (diff копии до правки и файла после: одна строка 4950); блок REQ-014 не менялся",
+      "grep -n '^### AP-0' docs/anti-patterns.md | tail -4: AP-067, AP-068, AP-069, AP-070 подряд, повторов номеров нет",
+      "ls docs/issues | tail -2: ISS-0032, ISS-0033",
+      "плотность: find tools/src -type f ( -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.mjs' ) -exec cat {} + | wc -l = 30170; 1315*1000/30170 = 43,6",
+      "cd tools && npm run traces: код 0, следов 0 (файлов 1105)",
+      "cd tools && npm run handoffs-check: одно нарушение — H11 в task.description этого handoff-а (текст задания ORCH содержит фрагмент пути временной папки); поля result и мои файлы чистые; после правки ORCH поля task.description — код 0 (до моей записи было 0 нарушений, 114 из 114)"
+    ],
+    "issues": [
+      {
+        "kind": "FOR_ORCH",
+        "at": "2026-10-11T18:36:35Z",
+        "text": "handoffs-check даёт код 1: H11 в task.description этого handoff-а (строка 36) — в тексте задания ORCH буквальный фрагмент пути временной папки. Я правлю только status, completed_at и result, поэтому не исправил. ORCH нужно заменить фрагмент на <scratch>/… и перезапустить npm run handoffs-check."
+      },
+      {
+        "kind": "NOTE",
+        "at": "2026-10-11T18:36:35Z",
+        "text": "Текст ISS-0033 по пунктам 3 и 5 взят из задания ORCH и отчётов step-04, step-03-r1, step-05b-r1, step-09; пункт 3 (порции readBlobs по 1000 спеков) прямо в этих handoff-ах не найден, только в задании — RELEASE-VALIDATOR/CODE-FIXER пусть проверят при исправлении."
+      },
+      {
+        "kind": "NOTE",
+        "at": "2026-10-11T18:36:35Z",
+        "text": "PLAN.md не менялся (вне write_set): итерация 8 по-прежнему перечисляет REQ-038 первой; ORCH решает, отмечать ли её сделанной."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml",
+      "docs/anti-patterns.md",
+      "docs/issues/ISS-0032-handoffs-check-test-gaps.md",
+      "docs/issues/ISS-0033-handoffs-check-minor-code-issues.md",
+      "docs/design/REQ-014-traces.md",
+      "STATE.md"
+    ]
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-10-11T18:36:55Z",
+    "reason": "в тексте задания (task.description) ORCH записал буквальный фрагмент пути временной папки; команда handoffs-check нашла H11 (сообщил DOC-UPDATER). Фрагмент заменён описательным текстом; смысл задания не менялся (1 замена).",
+    "was": {
+      "note": "прежний текст содержал фрагмент примера пути временной папки в описании AP-069"
+    }
+  }
+}

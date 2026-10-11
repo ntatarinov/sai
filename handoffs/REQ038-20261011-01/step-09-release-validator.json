@@ -1,0 +1,80 @@
+{
+  "handoff_id": "step09-REQ038-20261011-01",
+  "run_id": "REQ038-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/REQ038-20261011-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-038"
+    ],
+    "base_tag": "base/REQ038-20261011-01",
+    "artifacts_in": [
+      "docs/requirements.yaml (блок REQ-038, 11 критериев — читать по id)",
+      "docs/design/REQ-038-handoffs-check.md (r2)",
+      "decisions/0034-req038-before-req014-done.md",
+      "decisions/0036-handoffs-check-base.md",
+      "decisions/0037-handoffs-check-design.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "docs/quality-bar.md",
+      "docs/workflows/WF-02-development.md (шаг 9)",
+      "handoffs/REQ038-20261011-01/"
+    ],
+    "route": "TEST-RUNNER (PASS) -> RELEASE-VALIDATOR (this) -> DOC-UPDATER -> RELEASE-FINALIZER (шаги 7 и 8 не нужны: нет интерфейса по образцу и нет запущенной системы с пользователем-страницей)",
+    "write_set": "нет: пишет только status (COMPLETED или FAILED), completed_at, result. Пробы — на копиях вне проекта",
+    "before_copy": "git: метка base/REQ038-20261011-01"
+  },
+  "task": {
+    "description": "WF-02, шаг 9. Последние ворота перед статусом done. Не доверяй отчётам. Сам: (1) пройди КАЖДЫЙ из 11 критериев REQ-038 по тексту требования, выполняя его команды дословно (diff к метке base, grep -c, перечни файлов закрытого списка, «git diff --name-only base … -- handoffs/ | grep -v ^handoffs/REQ038-20261011-01/» пусто и т.д.) и приведи вывод; (2) на копии Sai без node_modules во временной папке вне проекта (клон/копия рабочего дерева со .git) выполни `cd tools && npm ci && npm run check` — код и числа; повтор критерия 8 — с пустой базой код 1 «нарушений 114», с готовой — код 0 «114 из 114»; (3) собственный независимый подсчёт нарушений на коммите базы (свой скрипт по тексту правил) — совпадает с 114 записями базы и с выводом команды с пустой базой; (4) проверь запись ORCH: в decisions/ строка «База handoffs-check: <40 hex>» = шапка базы = коммит метки base; (5) пройди пункты планки Q1–Q14, R1–R3 по файлам: Q3 (нет «должно работать»), Q5 (тест на критерий), Q6 (нет skip/todo, линтер/правила не отключены, шаг handoffs-check в scripts.check перед test, нет || true; package.json — diff к базе), Q7 (поиск секретов и путей компьютера в изменённых и новых файлах — настоящие, а не упоминания шаблона), Q10, Q12 (решения 0036, 0037, 0038 в decisions/README.md), Q13/Q14 — учёт впереди (шаг 10); (6) проверь, что изменены только ожидаемые файлы (git status + diff к метке) и ни один старый handoff других прогонов не тронут; (7) зависимость REQ-014 — исключение 0034: статус REQ-014 остался in_progress, критерий 4 REQ-014 согласован с тремя местами child_process; (8) документы: tools/README.md и docs/workflows/handoffs.md совпадают с поведением. Вердикт PASS означает: REQ-038 можно перевести в done по исключению 0034 (REQ-014 остаётся in_progress). Назови остаточные риски отдельно. Красные тесты в полных прогонах — имена.",
+    "acceptance_criteria": [
+      "Все 11 критериев выполнены дословно, команды и выводы приложены",
+      "Чистая копия: npm ci && npm run check — код и числа; повтор с пустой базой",
+      "Независимый подсчёт нарушений совпал с базой",
+      "Каждый применимый пункт Q/R назван с результатом"
+    ]
+  },
+  "created_at": "2026-10-11T18:28:08Z",
+  "started_at": "2026-10-11T18:28:08Z",
+  "completed_at": "2026-10-11T18:33:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": [
+      "Критерий 1 (команда и место): ВЫПОЛНЕН. `npm run handoffs-check -- --help` — справка по-русски, код 0. `grep -c handoffs-check tools/package.json` = 2; scripts.check = format:check && lint && traces && handoffs-check && test, «||» нет; diff package.json к метке base — только две эти строки. TC-20 и проверка team-web-control — в полном прогоне зелёные, файлы тестов не правились (diff к базе пуст).",
+      "Критерий 2 (H1–H6, H8 на фикстурах): ВЫПОЛНЕН — полный прогон 1315/1315, тесты handoffs-rules/handoffs-cli на месте и зелёные; на настоящих данных с пустой базой H4 (DONE, PENDING в коммите, result.status≠status), H2, H5, H9, H11 найдены (см. критерий 7).",
+      "Критерий 3 (H7 по истории): ВЫПОЛНЕН — handoffs-history зелёный; на настоящих данных H7 найден для step-24-test-designer result.issues[0].at (15:30:00Z позже коммита 65bb4cb, 15:25:47Z), а completed_at у step-04-code-designer-r2 и step-44-code-designer-iss0010 — нет.",
+      "Критерий 4 (H10, H11): ВЫПОЛНЕН. grep hasHomePath и readExceptions в tools/src/handoffs/ не пусто (rules.js:6, check.js:9); grep -rnE 'Users|/home|traces/exceptions' tools/src/handoffs/ пусто; hasTempPath — export в tools/src/traces/rules.js:27. Тесты handoffs-paths зелёные.",
+      "Критерий 5 (traces не ослаблены): ВЫПОЛНЕН. diff к base по traces-check/faults/readme и tools/traces/ — 0 байт; traces-runtime.test.js: строк «+» 1 (`\"handoffs/git-history.js\",`), «-» 0; из tools/src/traces/ изменён только rules.js, строк «-» 0; `npm run traces` — код 0, следов 0 (файлов 1102).",
+      "Критерий 6 (вызовы git): ВЫПОЛНЕН. child_process только в git-history.js; `node --test test/traces-runtime.test.js test/handoffs-*.test.js` — 123 прошло, 0 упало, код 0. Мутанты на копии: слово child_process в locate.js — падают HC-RT-1a, 1b, 1d, 1e и TR-4c; shell: true в вызове git — падают HC-RT-1b, 1c, 1d.",
+      "Критерий 7 (база и счёт): ВЫПОЛНЕН. Рабочее дерево: `npm run handoffs-check` — код 0, «файлов проверено 632, нарушений 0, исключений использовано 114 из 114» (K=L). Хеш базы одинаков в decisions/0036 («База handoffs-check: 7760e4b0…»), в шапке «база:» tools/handoffs/exceptions.tsv и в `git rev-parse` метки base/REQ038-20261011-01; коммит — предок HEAD. Копия с пустой базой (только шапка): код 1, «нарушений 114, исключений использовано 0 из 0», строк-нарушений 114 = `grep -vc '^#'` базы = 114. Есть H4 для PO-20261005-01/step-07-design-qa-validator (DONE), WF06-20260926-01/step-10-orch (PENDING в коммите), PROD-20261011-01/step-17-reviewer (result.status), H7 для PROD-20261010-01/step-24-test-designer result.issues[0].at; строк о WF06-20260925-01/step-10-orch и step-13-req-analyst (CANCELLED) — 0; H7 completed_at для двух названных файлов — 0.",
+      "Критерий 8 (вывод, коды, сбои): ВЫПОЛНЕН. Вне git — код 2, «E_TRACE_NOT_GIT: это не git-репозиторий…», stdout пуст; PATH без git — код 2, «git не найден»; файл с правами 000 — код 2, «E_HC_READ: файл не читается (EACCES)»; стека во всех трёх случаях нет. Хеши handoffs/ и tools/handoffs/ (без файлов этого прогона) до и после запуска совпали. Время `npm run handoffs-check` на репозитории — 0.81 с (лимит 20 с). Порядок строк и последняя строка — тесты handoffs-cli зелёные.",
+      "Критерий 9 (документы): ВЫПОЛНЕН. В «## Проверка учёта» handoffs-check=1, orch_correction=1, <scratch>/=1; в «## Время» at_note=1, previous=1; tools/README.md: handoffs-check=5, «База handoffs-check»=1. Тест handoffs-docs зелёный.",
+      "Критерий 10 (место записи, границы): ВЫПОЛНЕН. `git diff --name-only base/REQ038-20261011-01` + `git status --porcelain` = decisions/README.md, docs/requirements.yaml, docs/workflows/handoffs.md, tools/README.md, tools/package.json, tools/src/traces/rules.js, tools/test/traces-runtime.test.js; новые: decisions/0036–0038, docs/design/REQ-038-handoffs-check.md, tools/handoffs/, tools/src/handoffs/, tools/test/handoffs-*.js, handoffs/REQ038-20261011-01/. Старых handoff-ов вне этого прогона не тронуто (команда с grep -v вывела пусто). В requirements.yaml изменены только блоки REQ-014 (критерий 4: третье место child_process) и REQ-038. Чистая копия без node_modules: `npm ci` — код 0, `npm run check` — код 0, 1315 из 1315, skip 0, todo 0, fail 0, ни одного «not ok» (node -v v22.21.1). skip/todo/eslint-disable/|| true в новом коде и тестах не найдено (единственное совпадение — название теста HC-10a).",
+      "Критерий 11 (дословный пункт «в тексте нет путей компьютера и названий других проектов»): ВЫПОЛНЕН. В 29 изменённых и новых файлах вне handoffs/ путей домашнего каталога и временных папок машины нет; совпадения со служебной папкой — только тестовые входы H11 (tools/test/handoffs-*.test.js, requirements.yaml: условные строки, не пути этого компьютера); поиск названий других проектов по списку traces пуст. Поиск секретов (ключи sk-/ghp_/AKIA, закрытые ключи, токены бота) — пуст. В handoff-ах прогона путей этого компьютера нет — handoffs-check (H10, H11) на них код 0.",
+      "Независимый подсчёт (п. 3 задания): свой скрипт на Python по тексту правил H1–H11 на коммите базы (все handoffs/**/*.json в дереве метки) дал 118 нарушений: H2 57, H4 22, H5 13, H7 1, H9 14, H11 7 и H10 4. H10 4 — ровно записи tools/traces/exceptions.tsv (сняты базой traces), без них 114 — совпало с 114 записями базы и с выводом команды с пустой базой. По множеству (файл, правило, поле) совпадение полное, кроме 7 записей H9, где мой скрипт назвал поле at_note, а команда at («нет поля at», как в проекте, раздел 5): число и файлы те же, объекты orch_note/orch_correction в этих файлах не содержат at.",
+      "Q1 PASS: REQ-038, 11 критериев, у каждого способ проверки. Q2 PASS: собственные запуски в этом ходе (полная проверка на копии, пустая база, мутанты, сбои, независимый подсчёт). Q3 PASS: все выводы получены сейчас. Q4 PASS: npm ci && npm run check на чистой копии, код 0. Q5 PASS: тесты handoffs-* (123) закрывают критерии; мутанты ловятся. Q6 PASS: шаг handoffs-check в check перед test, нет skip/todo/disable/|| true, правила и тесты traces не ослаблены (diff). Q7 PASS: секретов и путей компьютера в изменённых и новых файлах нет; команда печатает только коды, пути полей и пути handoff-ов. Q8, Q9, Q11, R3: неприменимы (нет данных бизнеса, SQL, внешних адресов, фото). Q10 PASS: нет git, нечитаемый файл, битый JSON — код 2/1 без стека (проверено сейчас). Q12 PASS: решения 0036, 0037, 0038 есть в decisions/README.md (строки 44–46); код согласован с ними; исключение 0034 соблюдено. Q13: в этой работе новых ошибок процесса не найдено — для DOC-UPDATER; Q14: учёт (статус REQ-038, STATE.md, handoff-ы) впереди на шаге 10 — требование сейчас in_progress, REQ-014 остаётся in_progress, этого шагу 9 достаточно. R1: мерж — за владельцем, шаг 9 его не делает. R2: Pixel Office не затронут, события не писались.",
+      "Зависимость REQ-014 (исключение 0034): статус REQ-014 остался in_progress; критерий 4 REQ-014 дополнен третьим местом child_process (tools/src/handoffs/git-history.js, решение 0038) и согласован с тестом TR-4c (он проходит). Красных тестов в полных прогонах нет.",
+      "Итог простыми словами: команда `npm run handoffs-check` работает, входит в общую проверку, на чистой копии всё зелёно (1315 из 1315), на пустой базе ловит ровно 114 старых нарушений, которые совпали с моим независимым подсчётом. REQ-038 можно переводить в done по исключению 0034 (REQ-014 остаётся in_progress).",
+      "Остаточные риски (не блокируют): (1) двойной подсчёт H4/H5 по completed_at при COMPLETED с null — решение проекта, на текущих данных не встречается; (2) H11 применяется только к handoff-ам, не ко всему репозиторию (открытый вопрос 2 требования); (3) у handoff-а этого шага (step-09) status PENDING, пока не закоммичен — это допустимый случай (б), после записи COMPLETED проверка снова должна дать код 0; (4) число 114 фиксировано на коммите базы — новые нарушения базой не снимаются, это задумано."
+    ],
+    "findings": [],
+    "self_check": [
+      "node -v: v22.21.1",
+      "Копия рабочего дерева со .git в <scratch>/rv/sai (без node_modules): `cd tools && npm ci` — код 0; `npm run check` — код 0; строки: «traces: файлов проверено 1102, следов 0, пропущено 36»; «handoffs-check: файлов проверено 632, нарушений 0, исключений использовано 114 из 114»; «# tests 1315 / # pass 1315 / # fail 0 / # skipped 0 / # todo 0».",
+      "Рабочее дерево: `npm run handoffs-check` — «handoffs-check: файлов проверено 632, нарушений 0, исключений использовано 114 из 114», код 0; `npm run traces` — «traces: файлов проверено 1102, следов 0, пропущено 36»; время 0.81 с.",
+      "Копия <scratch>/rv/sai2 с базой из одной шапки: `node src/handoffs/cli.js` — код 1, «handoffs-check: файлов проверено 632, нарушений 114, исключений использовано 0 из 0»; коды правил в базе: H11 7, H2 57, H4 22, H5 13, H7 1, H9 14.",
+      "`grep -h 'База handoffs-check:' decisions/*.md` — 7760e4b09a3d0e98843c2258593c71c7ec0a3e3f; `grep 'база:' tools/handoffs/exceptions.tsv` — тот же; `git rev-parse base/REQ038-20261011-01^{commit}` — тот же; `git merge-base --is-ancestor` — предок HEAD.",
+      "Независимый подсчёт: скрипт <scratch>/rv/ind/count.py на коммите базы → «118 {H10: 4, H11: 7, H2: 57, H4: 22, H5: 13, H7: 1, H9: 14}»; H10 4 = tools/traces/exceptions.tsv; 118 − 4 = 114.",
+      "Мутанты на копии: child_process в locate.js → «not ok» HC-RT-1a, 1b, 1d, 1e, TR-4c (pass 10, fail 5); shell: true в вызове git → «not ok» HC-RT-1b, 1c, 1d (pass 6, fail 3); чистая копия `node --test test/traces-runtime.test.js test/handoffs-*.test.js` — pass 123, fail 0.",
+      "Сбои: вне git — код 2, E_TRACE_NOT_GIT; PATH без git — код 2, E_TRACE_GIT «git не найден»; файл с правами 000 — код 2, E_HC_READ (EACCES); во всех случаях stderr без стека; хеши файлов handoffs/ и tools/handoffs/ до и после запуска совпали.",
+      "git diff к метке base: traces-check/faults/readme и tools/traces/ — 0 байт; traces-runtime.test.js +1/−0; tools/src/traces/ — только rules.js, строк «−» 0; handoffs/ вне прогона — пусто."
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}

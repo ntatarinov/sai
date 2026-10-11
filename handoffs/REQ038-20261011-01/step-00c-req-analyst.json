@@ -1,0 +1,74 @@
+{
+  "handoff_id": "step00c-REQ038-20261011-01",
+  "run_id": "REQ038-20261011-01",
+  "workflow_id": "WF-01",
+  "step": "00c",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/REQ038-20261011-01/step-00c-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-014",
+      "REQ-038"
+    ],
+    "base_tag": "base/REQ038-20261011-01",
+    "artifacts_in": [
+      "docs/requirements.yaml (блок REQ-014, критерий 4; читать по id)",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "decisions/0021-traces-check.md (D1)",
+      "decisions/0025-team-web-server.md (прецедент поправки формулировки)",
+      "handoffs/REQ038-20261011-01/step-00b-req-validator.json (замечание F1)",
+      "docs/workflows/WF-01-requirement.md"
+    ],
+    "route": "REQ-VALIDATOR (FAIL F1) -> REQ-ANALYST (this) -> REQ-VALIDATOR -> CODE-DESIGNER (продолжение)",
+    "write_set": "docs/requirements.yaml",
+    "edit_scope": "только текст критерия 4 в блоке REQ-014 (одна фраза про child_process); остальное байт в байт (хеш файла без этой фразы до и после)",
+    "parallel_work_now": "никто",
+    "orch_note": "Решение 0038 принято ORCH (владелец может отменить). Статус REQ-014 не менять (in_progress)."
+  },
+  "task": {
+    "description": "WF-01, правка формулировки. В критерии 4 блока REQ-014 фраза «child_process — только в исполнителе claude-cli REQ-010 и в tools/src/traces/git-files.js, а в последнем тест проверяет, что вызовов git ровно два…» должна учесть решение 0038: третье место child_process — tools/src/handoffs/git-history.js (REQ-038), для которого тест REQ-038 (HC-RT-1) проверяет свои ограничения; тест TR-4c (tools/test/traces-runtime.test.js) сверяет список из трёх файлов. Больше ничего в REQ-014 не менять (в том числе число вызовов git в git-files.js — два). Формулировка короткая, способ проверки сохранён. Проверь факт: сейчас в tools/src слово child_process только в двух файлах.",
+    "acceptance_criteria": [
+      "Изменена только эта фраза критерия 4 REQ-014; хеш остальной части файла до/после совпадает",
+      "Формулировка называет git-history.js и ссылается на решение 0038",
+      "YAML разбирается (команда приложена); статус REQ-014 не менялся"
+    ]
+  },
+  "created_at": "2026-10-11T15:45:12Z",
+  "started_at": "2026-10-11T15:45:12Z",
+  "completed_at": "2026-10-11T15:45:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "REQ-014, критерий 4: фраза про child_process приведена в соответствие с решением 0038. Третье место — tools/src/handoffs/git-history.js (ограничения проверяет тест REQ-038, HC-RT-1); TR-4c сверяет список из трёх файлов. Число вызовов git в git-files.js (два) и способ проверки не менялись.",
+    "changes": [
+      "docs/requirements.yaml, REQ-014, критерий 4: «child_process — только в исполнителе claude-cli REQ-010, в tools/src/traces/git-files.js и (решение 0038) в tools/src/handoffs/git-history.js, чьи ограничения проверяет тест REQ-038 (HC-RT-1), а тест TR-4c сверяет список из этих трёх файлов; в git-files.js тест проверяет, что вызовов git ровно два…». Остальное — без изменений; статус REQ-014 — in_progress."
+    ],
+    "self_check": [
+      "Факт: grep -rln child_process tools/src -> tools/src/traces/git-files.js, tools/src/team/executors/claude-cli.js (два файла, подтверждено)",
+      "Хеш файла без изменённой фразы до: 9a8c42b2daae3fcf0d65338220816633375f1f8341d4898d0b5dbeb0fcc77df5; после: 9a8c42b2daae3fcf0d65338220816633375f1f8341d4898d0b5dbeb0fcc77df5 (совпал; копия «до» снята вне проекта, context.before_copy в задании не было)",
+      "YAML: ruby -ryaml загрузил файл, 41 требование; REQ-014 status=in_progress, 6 критериев; критерий 4 содержит «0038» (1 критерий)",
+      "Команда критерия 4 (cd tools && node --test test/traces-runtime.test.js test/handoffs-*.test.js) не запускалась: проверяет код REQ-038, которого ещё нет; TR-4c с тремя файлами сверяет работа REQ-038"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "Решение 0038 принято ORCH, а не владельцем; владелец может его отменить — тогда фразу вернуть. Нужен новый проход REQ-VALIDATOR по REQ-014 (шаг 2, WF-01)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-10-11T15:46:06Z",
+    "reason": "агент записал status и result.status как DONE; протокол handoffs.md знает COMPLETED. ORCH привёл поле status к протокольному значению, result не менял. Поле result.status тоже было DONE; ORCH привёл его к COMPLETED (найдено новой командой handoffs-check), остальной result не менял.",
+    "was": {
+      "status": "DONE",
+      "result_status": "DONE"
+    }
+  }
+}

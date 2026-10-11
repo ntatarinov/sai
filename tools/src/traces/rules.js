@@ -15,6 +15,35 @@ export function hasHomePath(line) {
   return HOME_PATH.test(line) || HOME_ENCODED.test(line);
 }
 
+// (b) A root of a temporary folder with a name after it (design REQ-038, 5.5): the
+// first "/" of the root stands at the start or after a character outside
+// [A-Za-z0-9._-], and at least one character of [A-Za-z0-9._-] follows the root and "/".
+const TEMP_ROOT =
+  /\/(?:private\/tmp|private\/var\/folders|var\/folders|tmp)\/(?=[A-Za-z0-9._-])/gu;
+
+// Not a trace: the root stands right after a placeholder in angle brackets. One pass:
+// the last "<" and the last ">" before the closing ">" are remembered while the matches
+// are walked in order, so the time is linear in the length of the text.
+export function hasTempPath(text) {
+  let scanned = 0;
+  let lastLt = -1;
+  let lastGt = -1;
+  for (const m of text.matchAll(TEMP_ROOT)) {
+    if (m.index === 0) return true;
+    const before = text[m.index - 1];
+    if (/[A-Za-z0-9._-]/u.test(before)) continue;
+    if (before === ">") {
+      for (; scanned < m.index - 1; scanned += 1) {
+        if (text[scanned] === "<") lastLt = scanned;
+        else if (text[scanned] === ">") lastGt = scanned;
+      }
+      if (lastLt >= 0 && m.index - 1 - lastLt >= 2 && lastGt < lastLt) continue;
+    }
+    return true;
+  }
+  return false;
+}
+
 export function isMarkdown(rel) {
   return rel.toLowerCase().endsWith(".md");
 }

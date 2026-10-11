@@ -17,6 +17,7 @@ const NETWORK_FILES = [
   "web/public/app.js",
 ];
 const CHILD_PROCESS_FILES = [
+  "handoffs/git-history.js",
   "team/executors/claude-cli.js",
   "traces/git-files.js",
 ];

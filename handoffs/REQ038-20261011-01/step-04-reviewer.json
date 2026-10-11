@@ -1,0 +1,127 @@
+{
+  "handoff_id": "step04-REQ038-20261011-01",
+  "run_id": "REQ038-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ038-20261011-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-038"
+    ],
+    "base_tag": "base/REQ038-20261011-01",
+    "artifacts_in": [
+      "handoffs/REQ038-20261011-01/step-02-backend-dev.json",
+      "handoffs/REQ038-20261011-01/step-02-code-fixer-r1.json",
+      "handoffs/REQ038-20261011-01/step-03-security-reviewer.json",
+      "handoffs/REQ038-20261011-01/step-03-security-reviewer-r1.json",
+      "docs/design/REQ-038-handoffs-check.md (r2)",
+      "docs/requirements.yaml (блок REQ-038, 11 критериев)",
+      "decisions/0021-traces-check.md",
+      "decisions/0036-handoffs-check-base.md",
+      "decisions/0037-handoffs-check-design.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "docs/workflows/WF-02-development.md (шаг 4)",
+      "docs/quality-bar.md"
+    ],
+    "route": "SECURITY-REVIEWER (PASS r1) -> REVIEWER (this) -> TEST-DESIGNER",
+    "write_set": "нет: пишет только status (COMPLETED или FAILED), completed_at, result. Пробы — на копиях вне проекта",
+    "before_copy": "git: метка base/REQ038-20261011-01",
+    "changed_files": [
+      "tools/src/handoffs/cli.js",
+      "tools/src/handoffs/check.js",
+      "tools/src/handoffs/rules.js",
+      "tools/src/handoffs/times.js",
+      "tools/src/handoffs/locate.js",
+      "tools/src/handoffs/exceptions.js",
+      "tools/src/handoffs/git-history.js",
+      "tools/src/traces/rules.js",
+      "tools/handoffs/exceptions.tsv",
+      "tools/package.json",
+      "tools/README.md",
+      "docs/workflows/handoffs.md",
+      "tools/test/traces-runtime.test.js"
+    ]
+  },
+  "task": {
+    "description": "WF-02, шаг 4: ревью REQ-038 после PASS безопасности. Сам: настоящее ли это решение или костыль; идиомы стека (Node 22, без зависимостей, стиль соседнего кода tools/src/traces/); лишняя работа и мёртвый код; расхождения с проектом (r2) и записанными решениями 0021, 0031, 0034, 0036, 0037, 0038; эрозия планки (Q6: шаг handoffs-check в scripts.check перед npm run test, нет || true, не отключены правила линтера; база исключений не используется для сокрытия новых нарушений); соответствие каждому из 11 критериев REQ-038 по тексту и поведению (запусти npm run handoffs-check, --help, коды выхода 0/1/2, вывод и порядок строк, итоговая строка; пустая база даёт 114 нарушений на копии; правила H1–H11 на нескольких собственных входах вне базы — по одному случаю на правило, включая H9, H11, H10 и поправки ORCH); документы tools/README.md и docs/workflows/handoffs.md соответствуют проекту п. 11 и требованию (правила протокола, которых там не было); новые строки в handoffs.md не противоречат остальному тексту протокола. Проверь, что нет путей этого компьютера и названий других проектов. Проверь изменения traces/rules.js (+ только добавление) и traces-runtime.test.js (+1 строка в начало массива). FAIL при Critical/High/Medium.",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков/чтения кода, вывод приложен",
+      "Каждое замечание с местом и исправлением",
+      "11 критериев REQ-038 названы с результатом по поведению",
+      "Файлы проекта не изменены (хеши до/после)"
+    ]
+  },
+  "created_at": "2026-10-11T16:32:58Z",
+  "started_at": "2026-10-11T16:32:58Z",
+  "completed_at": "2026-10-11T16:45:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Q1 причина: ошибки не глотаются (сбой git, чтения, базы дают код 2 и одну строку в stderr, stdout пуст; неполная проверка не бывает зелёной), правила H1-H11 реализованы как правила, а не как подавление; база исключений не прячет новое: каждая запись сверяется с файлом в коммите базы и с записью decisions/ (проба: подмена хеша, чужая запись, чужой коммит в шапке дали код 2). Q2 сходится с проектом r2 и записями 0021/0031/0034/0036/0037/0038: вызовы git и слово child_process только в git-history.js (execFileSync, фиксированные аргументы, core.fsmonitor=false, таймаут 30 с), без зависимостей, Node 22, ES-модули, стиль traces; документы handoffs.md и tools/README.md совпадают с кодом и требованием. Q3 лишнего нет: файлы изменения = closed-перечень, traces/rules.js только добавляет hasTempPath (0 удалённых строк), traces-runtime.test.js +1 строка, 0 удалений. Q4 эрозии нет: grep skip/todo/eslint-disable/|| true по изменённым файлам пуст, шаг handoffs-check стоит в check перед test, правила линтера и тесты traces не тронуты. Q5 идиомы: одно место для git, ошибки TraceError как у traces. ЕДИНСТВЕННОЕ БЛОКИРУЮЩЕЕ ДЛЯ ШАГА 6 (не код): handoffs/REQ038-20261011-01/step-03-security-reviewer-r1.json, строки 81-83 (result.self_check.f1_timing_direct, f1_timing_cli, equivalence), содержат фрагменты вида фрагмент «>» перед корнем tmp и фрагмент «<a>» перед корнем tmp без заглушки - H11 справедливо краснеет, поэтому `npm run handoffs-check` и `npm run check` сейчас дают код 1 на настоящем репозитории (3 нарушения). После переписывания этих трёх строк с заглушкой <scratch>/ (проверено на копии: 0 нарушений, 114 из 114, `npm ci && npm run check` код 0, 1198 тестов) команда зелёная. Это правка чужого handoff-а того же прогона, код не меняется, повторное ревью кода не нужно; ORCH должен поручить её до шага 6. Для TEST-DESIGNER: (1) ещё нет ни одного tools/test/handoffs-*.test.js - нужны все случаи критериев 2-9 и HC-RT-1 (в git-history.js комментарий обещает тест, который сравнивает тексты ошибок с traces/git-files.js); (2) H7 по времени коммиттера при другом времени автора и случай «значение появилось позже первого коммита файла»; (3) H9: время в кавычках в at_note нарушает, was/previous нет, at null без at_note; (4) H11: границы заглушки (фрагмент «<a b>» перед корнем tmp, «>» без «<» перед корнем tmp, «<>» перед корнем tmp), корень tmp без имени, команда с «|»; (5) H4: остановка IN_PROGRESS с BLOCKED, без него, PENDING в коммите и новым файлом, CANCELLED; (6) база: запись для нового значения, изменённое значение (исключение не использовано), шапка не совпала с decisions/, коммит не предок HEAD, shallow; (7) цикл H3 по handoff_id, управляющий знак в имени, ссылка за корень, файл больше 16 МиБ, BOM; (8) порядок вывода по байтам пути, затем строка, затем путь поля, затем номер правила; (9) --emit-exceptions не пишет и не выводит H10; (10) время ≤ 20 с и неизменность хешей файлов (сейчас 0,7 с).",
+    "findings": [
+      {
+        "location": "handoffs/REQ038-20261011-01/step-03-security-reviewer-r1.json:81-83",
+        "severity": "Medium",
+        "blocking": "Для шага 6, не для кода: делает красным handoffs-check и check на настоящем репозитории (критерий 7 и 10 REQ-038 сейчас не выполнены).",
+        "what": "result.self_check.f1_timing_direct, f1_timing_cli, equivalence содержат условные пути фрагмент «>» перед корнем tmp, фрагмент «<a>» перед корнем tmp без заглушки перед корнем: H11 их находит (3 нарушения, код 1).",
+        "fix": "SECURITY-REVIEWER (через ORCH) переписывает эти три поля, записывая вход как «<scratch>/x» или словами, не буквальным путём; затем `cd tools && npm run handoffs-check` даёт нарушений 0, исключений 114 из 114. Код не меняется, повторное ревью не нужно. Нужно также, чтобы этот handoff и следующие шаги прогона не содержали буквальных путей временной папки."
+      },
+      {
+        "location": "tools/src/handoffs/git-history.js:4-5",
+        "severity": "Low",
+        "blocking": "Нет",
+        "what": "Комментарий говорит «a test compares the two files», а теста пока нет; тексты ошибок продублированы из traces/git-files.js (там не экспортируются).",
+        "fix": "TEST-DESIGNER пишет этот тест (HC-RT-1); иначе при правке текстов в traces копия разойдётся."
+      },
+      {
+        "location": "tools/src/handoffs/exceptions.js:15,16,150; rules.js:15",
+        "severity": "Low",
+        "blocking": "Нет",
+        "what": "BASE_REL, EMIT_REASON, readDecisionCommit, REQUIRED_FIELDS экспортированы, но снаружи файла не используются (тестов ещё нет).",
+        "fix": "Оставить, если тесты их импортируют; иначе убрать export."
+      },
+      {
+        "location": "tools/src/handoffs/check.js:131-185",
+        "severity": "Low",
+        "blocking": "Нет",
+        "what": "Каждый handoff читается дважды (readHandoff и readText из traces) для H10; на 626 файлах это 0,7 с, не мешает.",
+        "fix": "Не требуется."
+      }
+    ],
+    "self_check": [
+      "date -u: старт 2026-10-11T16:33:27Z.",
+      "cd tools && npm run handoffs-check (проект): 3 строки H11 в step-03-security-reviewer-r1.json:81,82,83; итог «файлов проверено 626, нарушений 3, исключений использовано 114 из 114»; код 1 (подтверждён через пустую базу ниже).",
+      "--help: русская справка, код 0; --bogus: «handoffs-check: E_HC_USAGE…», код 2; --root без значения: код 2; --root несуществующей папки: код 2; запуск вне git: «E_TRACE_NOT_GIT: это не git-репозиторий…», код 2; PATH без git: «E_TRACE_GIT: git не найден», код 2; файл без права чтения: «E_HC_READ … (EACCES)», код 2; стека нигде нет; stdout при коде 2 пуст (0 байт).",
+      "Копия с пустой базой (только шапка): итог «нарушений 117, исключений использовано 0 из 0» = 114 записей базы + 3 новых; по правилам H11:10, H2:57, H4:22, H5:13, H7:1, H9:14.",
+      "Копия с зависимостями: после перезаписи трёх строк с H11 заглушкой <scratch>/ - `handoffs-check`: нарушений 0, 114 из 114, код 0; `npm ci && npm run check` код 0, 1198 тестов, 0 ошибок (traces: следов 0).",
+      "Пробы правил на 29 собственных handoff-ах во временной копии (по одному случаю на правило): H1 (обрезанный) - строка :1; H2 (нет task) - одна; H2 (пустой объект) - 14 строк; H3 file/run_id/повтор handoff_id - три; H4 DONE, result.status не равен status, CANCELLED без orch_cancellation, PENDING в коммите (нарушение), PENDING новым файлом (нет), IN_PROGRESS с BLOCKED (нет) и без (есть); H5 формат, null при COMPLETED, «неизвестно…» (нет); H6 2099 год; H7 (коммит 10:00, значение 12:00 - нарушение; значение, появившееся позже в коммите 11:30, - нет); H8; H9 пустой by, at null без at_note, время 2099 в at_note (нарушение), в was/previous (нет), at_note 12:30 при коммите 10:00 - H9; H10 - в выводе только путь поля, не сам путь; H11: абсолютный путь временной папки с именем - нарушение, <scratch>абсолютный путь временной папки с именем и grep -rnE \"/tmp|/private/tmp\" - нет, корень tmp без имени и фрагмент «<a b>» перед корнем tmp - нет.",
+      "База: подмена хеша строки - код 2 «строка 6: значение не совпало с коммитом базы»; запись для файла вне коммита базы - код 2 «строка 120: файла нет в коммите базы»; шапка не совпала с decisions/ - код 2; исправленное нарушение H4 - «исключение не использовано: tools/handoffs/exceptions.tsv:32», код не меняется.",
+      "Критерий 1: grep -c handoffs-check tools/package.json = 2; scripts.check = format:check && lint && traces && handoffs-check && test, без «||»; TC-20 и team-web-control проходят (полный прогон).",
+      "Критерий 5: git diff base -- traces-check/faults/readme тестов и tools/traces/ - пусто (0 байт); traces-runtime.test.js: +1 строка (handoffs/git-history.js), 0 удалённых; tools/src/traces/ - только rules.js, 0 удалённых строк.",
+      "Критерий 7: хеш в decisions/0036 и шапка базы оба 7760e4b09a3d0e98843c2258593c71c7ec0a3e3f = метка base; записей 114.",
+      "Критерий 8: время `handoffs-check` 0,7 с (лимит 20 с); хеши sha256 всех изменённых и новых файлов проекта вне handoffs/ до и после - совпали (19 файлов).",
+      "Критерий 9: awk-проверки handoffs.md: «Проверка учёта» - handoffs-check 1, orch_correction 1, <scratch>/ 1; «Время» - at_note 1, previous 1; tools/README.md: handoffs-check 5, «База handoffs-check» 1. Новые строки не противоречат разделам «Поля», «result» (остановка IN_PROGRESS) и «Время» (PENDING допустим до коммита).",
+      "Критерий 10: git diff --name-only base и git status - только файлы закрытого перечня плюс decisions/README.md, docs/requirements.yaml (записи ORCH); старые handoff-ы не тронуты (пусто).",
+      "grep -nE \"\\.skip\\(|todo|eslint-disable|\\|\\| true|TODO|FIXME|\\.only\\(\" по tools/src/handoffs/*.js, tools/src/traces/rules.js, tools/package.json, tools/test/traces-runtime.test.js: пусто. grep путей компьютера и названий других проектов по tools/src/handoffs, exceptions.tsv, проекту, 0036-0038: пусто.",
+      "npm run format:check и lint - чисто; npm run traces - код 0. Полный `node --test`: 1198 тестов; 1-й прогон - 1 красный тест (имя не удалось снять: вывод был обрезан tail), повторы 5 раз подряд - 1198 из 1198, 0 красных; предположительно нагрузка параллельной сессии, но это не установлено и записано как неразобранное: TEST-RUNNER обратить внимание."
+    ],
+    "issues": [
+      {
+        "kind": "ORCH",
+        "at": "2026-10-11T16:45:37Z",
+        "text": "До шага 6 нужно переписать три поля step-03-security-reviewer-r1.json (строки 81-83) без буквальных путей временной папки; иначе npm run check красный. Критерии REQ-038 1-6 и 8-9 выполнены по поведению, 7 и 10 выполнятся после этой правки."
+      },
+      {
+        "kind": "FLAKY_UNRESOLVED",
+        "at": "2026-10-11T16:45:37Z",
+        "text": "Один красный тест в первом полном прогоне node --test (имя не снято), 5 повторов зелёные. Не установлено, чьё падение (quality-bar §6, п. 4); TEST-RUNNER следит за повтором."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

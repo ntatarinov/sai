@@ -1,0 +1,96 @@
+{
+  "handoff_id": "step01-r1-REQ038-20261011-01",
+  "run_id": "REQ038-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/REQ038-20261011-01/step-01-code-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "agent_run_id": null,
+    "requirement_ids": [
+      "REQ-038"
+    ],
+    "base_tag": "base/REQ038-20261011-01",
+    "rework_of": "handoffs/REQ038-20261011-01/step-01-code-designer.json",
+    "artifacts_in": [
+      "handoffs/REQ038-20261011-01/step-01b-code-design-validator.json (result.findings F1–F4, N1–N6)",
+      "docs/design/REQ-038-handoffs-check.md",
+      "decisions/0037-handoffs-check-design.md"
+    ],
+    "route": "CODE-DESIGNER (this, доработка 1) -> CODE-DESIGN-VALIDATOR (step-01b-...-r1)",
+    "write_set": "docs/design/REQ-038-handoffs-check.md; decisions/0037-handoffs-check-design.md",
+    "orch_rulings": {
+      "O3": "Ключ --emit-exceptions разрешён: команда по-прежнему ничего не пишет, снимает базу в stdout; в этом режиме stdout — только записи базы (без итоговой строки и без шапки), stderr пуст при успехе; порядок: путь файла (байты UTF-8), затем код правила (H1…H11 по числовому номеру), затем путь поля.",
+      "O5": "Файл handoff-а, удалённый без коммита, — код 2 (принято как в проекте).",
+      "O8": "completed_at вида «неизвестно…» у COMPLETED/FAILED допустимо (handoffs.md, «Время»): принято как в проекте.",
+      "F2_hint": "Копия для снятия базы: клон/рабочее дерево Sai на коммите базы (с .git, чтобы работали H7 и сверка), поверх — файлы будущей работы, которых в базовом коммите нет (код команды, decisions/0036), без коммита; проект называет точный порядок команд и что делать с H7 для значений, у которых «самый ранний коммит» — коммит базы."
+    },
+    "orch_note": "Доработка только по перечню замечаний REQ-VALIDATOR-подобных ворот (AP-019). Блокирующие F1–F4; N1–N6 исправь, если это правки текста проекта без нового проектирования, иначе внеси в открытые вопросы."
+  },
+  "task": {
+    "description": "Доработка проекта REQ-038 ТОЛЬКО по перечню замечаний CODE-DESIGN-VALIDATOR (step-01b, result.findings). F1 (блокирует): общие параметры п. 7 задают stdio[0]=\"ignore\", а вызов 5 (git cat-file --batch) передаёт список через input; запуском проверено: при ignore вывод пуст; при stdio[0]=\"pipe\" верно; строка input при encoding buffer даёт ERR_UNKNOWN_ENCODING, нужен Buffer — запиши для вызова 5 stdio[0]=\"pipe\" и input как Buffer; перепроверь остальные четыре вызова и приложи пробы. F2 (блокирует): назови точный состав копии для снятия базы (см. F2_hint) и порядок команд; то же для повтора RELEASE-VALIDATOR с пустой базой (критерий 8); проверь запуском на копии вне проекта. F3 (блокирует): определи stdout при --emit-exceptions (orch_rulings.O3) и порядок записей; согласуй п. 3.2, 3.4 и 6.5. F4 (блокирует): однозначно запиши, что H3 для отсутствующих полей (file, run_id, handoff_id) не применяется; число 114 сохраняется. Неблокирующие N1 (п. 14: 11 критериев, не 10), N2 (BOM: TextDecoder с ignoreBOM:true или явная оговорка — decodeUtf8 из traces BOM отбрасывает; реши, не меняя traces), N3 (мутант M3: добавь случай равного времени в тест), N4 (HC-03 и HC-8e: что и как проверяется, способ отказа чтения), N5 (gitFailure/E_TRACE_NOT_GIT: «те же тексты» достигаются копированием строк — запиши явно, traces не менять кроме hasTempPath), N6 (строка 0037 в decisions/README.md — это делает ORCH при принятии, не ты). Остальное в проекте не менять. Приложи пробы запусков.",
+    "acceptance_criteria": [
+      "F1–F4 закрыты, пробы запусков приложены",
+      "В result.changes у каждой правки номер замечания",
+      "Изменены только файлы write_set",
+      "status и result.status — строго COMPLETED"
+    ]
+  },
+  "created_at": "2026-10-11T15:58:35Z",
+  "started_at": "2026-10-11T15:58:35Z",
+  "completed_at": "2026-10-11T16:00:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка проекта REQ-038 (r2) только по перечню F1–F4, N1–N6. F1–F4 закрыты правкой текста и пробами запусков; N1–N5 исправлены, N6 — действие ORCH при принятии 0037. Число записей базы остаётся 114.",
+    "changes": [
+      "F1: п. 7 — вызов 5 (cat-file --batch) имеет stdio [\"pipe\",\"pipe\",\"pipe\"] и input как Buffer, вызовы 1–4 — stdio[0] \"ignore\"; оговорено, что stdio/input не часть массива аргументов, а HC-RT-1 проверяет input и stdio[0] вызова 5; новая строка Ф12 с пробой",
+      "F2: п. 11.4 переписан — состав копии (клон на коммите базы, HEAD остаётся базой, поверх без коммита: tools/src/handoffs/, traces/rules.js, package.json, decisions/0036; файл базы создаётся в копии), команда сверки копии с рабочим деревом, порядок команд снятия базы, повтор пустой базой для критерия 8, правило H7 для значений коммита базы (обычная граница, отдельного исключения нет); строка Ф13 с пробой",
+      "F3: п. 3.1, 3.2, 6.5 — в режиме --emit-exceptions stdout только записи (без строк п. 3.4, шапки, итога), stderr пуст, всегда код 0 при успехе, порядок: путь (байты), номер правила числом, путь поля (байты); как HC-6h отличает режим; ответ ORCH на O3 записан",
+      "F4: п. 5.1 H3 — для отсутствующих ключей file, run_id, handoff_id H3 не применяется (только H2); null/иной тип ключ «задаёт»; HC-2c дополнен случаем файла без трёх ключей (три H2, ни одной H3); 114 сохранено",
+      "N1: п. 14, Q1 — 11 критериев",
+      "N2: п. 5.1 H1 — свой TextDecoder с fatal и ignoreBOM: true (не decodeUtf8); строка Ф14 с пробой",
+      "N3: п. 12 — HC-3a2 (completed_at равно времени коммита — не нарушение); мутант M3 привязан к HC-3a2",
+      "N4: п. 12 — HC-03 проверяет package.json теми же свойствами, неизменность двух тестовых файлов вынесена в команду ворот RELEASE-VALIDATOR без метки в тесте; HC-8e — tracked-файл заменён каталогом (E_HC_READ, работает под root), HC-8e2 — fault-inject openSync на уровне модуля",
+      "N5: п. 7 — тексты gitFailure копируются строками в git-history.js (traces/git-files.js не меняется), новый тест HC-8k сверяет четыре строки с git-files.js",
+      "N6: изменений в проекте нет — строку 0037 в decisions/README.md добавляет ORCH при принятии",
+      "O3, O5, O8: в п. 15 помечены закрытыми по orch_rulings; decisions/0037 — ссылка на ответ по O3"
+    ],
+    "self_check": [
+      {
+        "cmd": "node <scratch>/r038/probe1.mjs <корень Sai>",
+        "out": "cat-file stdio[0]=ignore bytes=0 \"\"; cat-file stdio[0]=pipe bytes=8434 \"dc4b81a1… blob 8314…\"; string input + encoding buffer: ERR_UNKNOWN_ENCODING; rev-parse shallow: false; commitExists: 7760e4b0…; is-ancestor exit 0; log bytes>0: true; missing commit status: 1 (вызовы 1–4 работают при stdio[0]=\"ignore\")"
+      },
+      {
+        "cmd": "git clone --no-hardlinks <корень Sai> <scratch>/r038/clone; git -C … checkout -q 7760e4b0…; cp decisions/0036-… и файл базы с шапкой; git -C … status --porcelain; node <scratch>/r038/count.mjs <scratch>/r038/clone <scratch>/r038/clone/.git 7760e4b0…",
+        "out": "HEAD копии 7760e4b0…; в копии нет файлов REQ038; status: ?? decisions/0036-handoffs-check-base.md, ?? tools/handoffs/; {\"files\":613,\"total\":114,\"byRule\":{\"H9\":14,\"H5\":13,\"H4\":22,\"H11\":7,\"H2\":57,\"H7\":1},\"h10Lines\":0}"
+      },
+      {
+        "cmd": "node -e (TextDecoder fatal без и с ignoreBOM, JSON.parse) -> <scratch>/r038/probe-bom.txt",
+        "out": "default decoder keeps BOM? 4 (BOM снят); ignoreBOM:true -> JSON.parse throws SyntaxError"
+      },
+      {
+        "cmd": "для F4: скрипт подсчёта (count.mjs) применяет «нет ключа — только H2»",
+        "out": "H3 = 0, total 114 (у step-44 три записи H2: handoff_id, run_id, file)"
+      },
+      {
+        "cmd": "cd tools && npm run traces",
+        "out": "код 0, следов нет; путей компьютера в проекте нет"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Проба состава копии (F2) проверена на прототипе правил (count.mjs), а не на самой команде: кода команды ещё нет; полную проверку шагов 3–5 п. 11.4 выполнит BACKEND-DEV. Остальные открытые вопросы (O1, O2, O4, O6, O7) без изменений; O3, O5, O8 закрыты ответами ORCH."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-038-handoffs-check.md",
+      "decisions/0037-handoffs-check-design.md"
+    ]
+  }
+}
