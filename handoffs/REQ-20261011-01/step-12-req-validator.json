@@ -1,0 +1,73 @@
+{
+  "handoff_id": "step12-req-validator-REQ-20261011-01",
+  "run_id": "REQ-20261011-01",
+  "workflow_id": "WF-01",
+  "step": "12",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REQ-VALIDATOR",
+  "file": "handoffs/REQ-20261011-01/step-12-req-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "rework_of": "handoffs/REQ-20261011-01/step-11-req-analyst.json",
+    "source": "handoffs/PROD-20261011-01/step-01-code-designer.json (I1, I2, I4)",
+    "before_copy": "<scratch>/req.before-r5.yaml (в этой проверке роль сравнивала с git show HEAD~1:docs/requirements.yaml)",
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0030-req035-037-open-points.md",
+      "decisions/0032-req035-web-control.md",
+      "docs/issues/ISS-0018-deliver-resume-without-engine-internal-error.md"
+    ]
+  },
+  "task": {
+    "description": "WF-01, шаг 2: узкая сверка поправки блока REQ-035 (критерии 2 и 6, описание про deliver) по (а)–(е)."
+  },
+  "created_at": "2026-10-11T05:23:30Z",
+  "started_at": "2026-10-11T05:23:43Z",
+  "completed_at": "2026-10-11T05:25:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "what_changed": "git diff HEAD~1 -- docs/requirements.yaml: 12 вставок, 7 удалений, три места, все внутри блока REQ-035 (строки 4221–4350 диффа: описание про deliver, критерий 2, критерий 6). Разбор YAML обоих файлов: из 37 требований отличается только REQ-035; верхние поля файла без блока requirements равны; критериев у REQ-035 13, статус in_progress.",
+      "a_proveryaemost": "Критерий 2 проверяем: шаг 9 читает журнал и проверяет порядок событий — есть PROJECT_PAUSED и фраза «Проект на паузе»; после неё нет TASK_STARTED (счёт через 5 с равен счёту в момент события); у задачи 1 есть RUN_FINISHED; ответ проекта через 5 с содержит статус «на паузе» и кнопки «Продолжить», «Остановить». Это то, что измерено проектировщиком (Ф7, probe3), и то, как написан CTL-2 в проекте (docs/design/REQ-035-team-web-control.md, п. 15 строка 2). С остальными критериями не конфликтует: «ровно одно PROJECT_PAUSED», «замок цел» и «ответ после паузы» выполнимы вместе. Размытых слов в новой формулировке нет; критерий 6: тело «одно действие из трёх (pause, resume, stop) и признак confirmed для stop» проверяется по тестам тела (лишнее поле, неизвестное действие, не JSON, 8 КиБ).",
+      "b_soglasovannost": "Описание про deliver сверено: ISS-0018 (файл есть, LOW, open) говорит то же — E_INTERNAL, ничего не пишет, channel.js:587 передаёт config: null (grep -n в tools/src/team/engine/channel.js подтверждает); 0030 п. 2 — сервер сам запускает движок в режиме resume, child_process запрещён — совпадает с «на сервер не влияет, потому что сервер запускает движок сам». Критерий 6 совпадает с 0032 (C1: адрес и тело, вариант 1 принят, confirmed только у остановки) и с проектом п. 3.2 (ControlBody = {action: pause|resume} | {action: stop, confirmed: true}). Критерий 2 против проекта: CTL-2 строже (проверяет и «последняя фраза о проекте»), но не противоречит.",
+      "v_zavisimosti": "depends_on не менялся: [REQ-011, REQ-013, REQ-002] — прежний итог (step-08), пройден.",
+      "g_razmer": "13 критериев, число и содержание блока по размеру не менялись; пройден.",
+      "d_planka": "Правка планку не касается: слов о понижении нет, критерии Q10/Q11 и другие в блоке не менялись; пройден.",
+      "e_slova_vladeltsa": "original_request в диффе не затронут (строки diff не попадают в 4139–4160); пройден по прежней сверке step-08.",
+      "scope": "Правка только в блоке REQ-035; 36 других блоков и шапка равны по разбору YAML."
+    },
+    "findings": [
+      {
+        "number": 1,
+        "requirement": "REQ-035",
+        "item": "а (информационно)",
+        "text": "Проект docs/design/REQ-035-team-web-control.md (строка CTL-2, п. 0 Ф7, п. 20 «Открытые вопросы» 1) всё ещё говорит, что критерий 2 «буквально не выполним» и «ждёт решения ORCH». После поправки это устарело. Нужно: при следующей правке проекта (CODE-DESIGNER) снять пометку и привести CTL-2 к редакции критерия.",
+        "blocks": false
+      },
+      {
+        "number": 2,
+        "requirement": "REQ-035",
+        "item": "учёт (информационно)",
+        "text": "STATE.md:34 и 306 ещё называют ISS-0018 следующим свободным номером, хотя ISS-0018 занят; ведёт учёт DOC-UPDATER/ORCH, не REQ-ANALYST.",
+        "blocks": false
+      }
+    ],
+    "self_check": [
+      "хеш docs/requirements.yaml в начале и в конце: b0bd432141732fab6a3026f159d32cfa781549b2e5e3e0691b87826908037d6a — совпадает",
+      "git diff HEAD~1 --stat -- docs/requirements.yaml → 12 insertions(+), 7 deletions(-)",
+      "ruby -ryaml: требований 37 и 37; отличающиеся блоки: [\"REQ-035\"]; критериев 13; status in_progress; прочие верхние ключи равны: true",
+      "grep по блоку REQ-035: «только пишет», «трёх полей», «последняя фраза через 5 с» старой формулировки нет (остаётся одно допустимое упоминание в новом критерии 2)",
+      "cd tools && npm run traces → «traces: файлов проверено 957, следов 0, пропущено 26», код 0",
+      "Команды критериев 2 и 6 требуют ещё не написанного кода (тесты CTL-2, CTL-6) — не запускались, записано как есть"
+    ],
+    "issues": [
+      "Вопрос ORCH: давать ли замечания 1 и 2 в доработку — они не блокируют и не относятся к тексту требования."
+    ],
+    "artifacts_out": []
+  }
+}
