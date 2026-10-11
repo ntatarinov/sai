@@ -1,0 +1,94 @@
+{
+  "handoff_id": "step27-code-designer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "27",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261011-01/step-27-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-035"
+    ],
+    "issue_id": "ISS-0020",
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "docs/issues/ISS-0020-pause-text-promises-more-for-waiting-project.md",
+      "handoffs/PROD-20261011-01/step-26-uat-runner.json",
+      "docs/design/REQ-035-team-web-control.md (r5)",
+      "docs/design/REQ-035-ui.md (r2)"
+    ],
+    "write_set": [
+      "docs/design/ISS-0020-pause-text-for-waiting.md",
+      "docs/design/REQ-035-team-web-control.md",
+      "docs/design/REQ-035-ui.md",
+      "handoffs/PROD-20261011-01/step-27-code-designer.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было; поля верхнего уровня записаны CODE-DESIGNER по сообщению ORCH. pre_fix_copy не передан: факты проверены на копии tools/ в <scratch>/r6 (код базы, без правок)."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T08:29:26Z",
+  "started_at": "2026-10-11T08:29:26Z",
+  "completed_at": "2026-10-11T08:34:28Z",
+  "task": {
+    "description": "Проект исправления ISS-0020 (текст паузы у проекта, ждавшего решения, и при вопросе по задаче) и согласование контракта REQ-035 (r6) и описания интерфейса (r3); по сообщению ORCH."
+  },
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Спроектирован pause_text по причине паузы: функция pauseText(state, events) в display.js выбирает один из пяти текстов (обычный, потолок не поднят, план не составлен, проверка цели не прошла, открытый вопрос по задаче). Новых полей ответа нет: причина читается из state.waiting и журнала. Кнопка «Продолжить» при вопросе по задаче остаётся видимой (критерий 1 требования); честность — в строке паузы. Тот же род: отказ «Пауза» у проекта после сбоя при открытом вопросе больше не зовёт нажать «Продолжить»."
+    ],
+    "changes": [
+      "docs/design/ISS-0020-pause-text-for-waiting.md — новый файл: места того же рода, факты Ф18–Ф23, правила pauseText, тексты, файлы по разработчикам, пути отказа, критерий→тест (CTL-14a…14f), мутанты M29–M36, планка Q1–Q14 и R1–R3, вопросы I1–I3.",
+      "docs/design/REQ-035-team-web-control.md: шапка (r6), таблица файлов, п. 4 (pause_text), п. 5.1 (пояснение), п. 5.2 (строка и правило «Пауза» у paused+recovery, последний абзац), п. 8 (четыре новых текста), п. 10 (строка ожидания), п. 12 (общие места), п. 13 (README), п. 15 (строки критериев 1, 7, 9, 13; новый п. 15.2), п. 15.1 (M29–M36), п. 16 (Q3, Q10, Q12, Q13), п. 18 (п. 3a: одно ожидаемое падение — CTL-3d), п. 20.2 (вопрос 8).",
+      "docs/design/REQ-035-ui.md: шапка (r3), строка п. 1 про pause_text, таблица п. 5 (#project-pause), пауза после сбоя в п. 5, ссылки на контракт r6."
+    ],
+    "self_check": [
+      "Запуск на копии tools/ в <scratch>/r6 (node --test test/zz-probe-r6.test.js, фикстуры richProject/project/withPlan): TASKQ — paused, waiting review_failed, controls.resume true, resume_refusal «Проект ждёт вашего решения по задаче…», pause_text прежний; BUDGET — waiting budget, resume_refusal null, pause_text прежний; PLAIN — pause_text прежний. Утверждение подтверждено.",
+      "grep -n decisionsLater tools/src/web/texts.js → 13-14: «…Сообщение в чате вопрос не закрывает.» — предложенное заданием «ответьте в чате» не принято.",
+      "grep -n pause_text tools/src/web/public/app.js → 671-672: страница выводит строку как есть; public/ не меняется.",
+      "grep -rln 'Нажмите «Продолжить»' docs tools decisions — перечень мест того же рода в п. 1 проекта.",
+      "cd tools && npm run traces → код 0 (файлов 996, следов 0, пропущено 36).",
+      "grep путей компьютера (/Users, /private/tmp) в трёх изменённых docs/design/*.md → пусто."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "Требование REQ-035 (описание и критерий 1) и сценарии 11, 39, 23Б в docs/uat/REQ-035.md называют одну строку паузы. Исправление сохраняет её для паузы без ожидания и без вопроса, у остальных пауз текст по причине. Нужна ли правка формулировки критерия 1 (WF-01) и сценариев? Скрывать или отключать «Продолжить» при вопросе по задаче проект не предлагает — это нарушило бы критерий 1; такое решение — только правкой критерия."
+      },
+      {
+        "id": "I2",
+        "kind": "DECISION_PROPOSAL",
+        "text": "Дополнить decisions/0032-req035-web-control.md пунктом C7: текст паузы зависит от причины паузы; правила кнопок не меняются (Q12)."
+      },
+      {
+        "id": "I3",
+        "kind": "PROCESS_ERROR",
+        "text": "Предложение записи ошибки процесса (Q13): один текст на состояние с несколькими исходами; правдивость строки на сочетаниях «пауза + ожидание» и «пауза + вопрос» не была ни критерием, ни тестом; нашла приёмка (UAT, сценарии 39, 23Б)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Текст «Сначала ответьте на вопрос в чате» из задания не принят: ответ в чате вопрос по задаче не закрывает (TEXT.decisionsLater). Вместо него — «ответить на странице пока нельзя — это появится позже», как в отказе ctlTaskDecision."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Сверх задания (тот же род, AP-014): отказ «Пауза» у paused с paused_by=recovery при открытом вопросе по задаче больше не возвращает ctlPausedAfterFailure («Нажмите «Продолжить»…»), а возвращает ctlAlreadyPaused. Если ORCH не согласен — убрать правило п. 5.2 и CTL-14d (вторая часть), M34."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "tools/README.md не правился (работа BACKEND-DEV/CODE-FIXER по п. 8 проекта); docs/uat/REQ-035.md и docs/requirements.yaml не правились (I1). В п. 15 контракта подраздел 15.2 стоит перед 15.1."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/ISS-0020-pause-text-for-waiting.md",
+      "docs/design/REQ-035-team-web-control.md",
+      "docs/design/REQ-035-ui.md"
+    ]
+  }
+}
