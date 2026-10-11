@@ -1,0 +1,110 @@
+{
+  "handoff_id": "step01-code-designer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261011-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "docs/requirements.yaml (REQ-035)",
+      "handoffs/REQ-20261011-01/step-08-req-validator.json",
+      "decisions/0020-team-engine-channel.md",
+      "decisions/0024-team-web-location.md",
+      "decisions/0025-team-web-server.md",
+      "decisions/0026-team-core-reclaim-own-broken-lock.md",
+      "decisions/0030-req035-037-open-points.md",
+      "tools/src/web/ (api.js, server.js, display.js, engines.js, texts.js, config.js, main.js, public/)",
+      "tools/src/team/engine/commands.js",
+      "tools/src/team/engine/engine.js",
+      "docs/quality-bar.md"
+    ],
+    "write_set": [
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0032-*.md (статус «предложено ORCH», только если нужны)",
+      "handoffs/PROD-20261011-01/step-01-code-designer.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было (ls handoffs/PROD-20261011-01 — пусто). Поля верхнего уровня, context и task записаны CODE-DESIGNER дословно по сообщению ORCH, чтобы было куда сдать result; ORCH может их сверить и поправить своим полем (orch_correction). result — только агента."
+  },
+  "task": {
+    "description": "WF-02, шаг 1, прогон PROD-20261011-01, требование REQ-035 «Управление проектом на странице» (docs/requirements.yaml, 13 критериев; ворота требований: handoffs/REQ-20261011-01/step-08-req-validator.json — REQ-035 прошёл (а)–(е)). Репозиторий Sai, метка base/PROD-20261011-01. Написать проект в docs/design/REQ-035-team-web-control.md (и решения в decisions/NNNN-*.md, следующий номер 0032, статус «предложено ORCH», только если нужны): расширение сервера tools/src/web (api.js, server.js, display.js, engines.js, texts.js, config.js) и страницы tools/src/web/public: кнопки «Пауза», «Продолжить», «Остановить» — запись только через команды движка REQ-013 и канал (решения 0020, 0024, 0025, 0026, 0030), защита записи как у чата (Host, Origin, Content-Type, ключ страницы, предел тела 4 КиБ), подтверждение «Остановить» с текстом из 0030 п. 1, таблица состояний/кнопок/отказов (критерий 7), «Продолжить» с паузы после перезапуска сервера = режим resume у движка вместо start (0030 п. 2: правка engines.js; проверить по коду, что resume у движка есть и как его вызвать в процессе сервера без child_process), новый контракт данных ответа проекта (поля для кнопок: какие доступны, тексты отказов, pause_text — единая таблица «ответ → поле → тип → откуда», имена так, чтобы описание экранов ссылалось на неё), прерванная остановкой сервера задача запускается не более 2 раз, тело 8 КиБ → «Запрос не понят» (readBody общий, предел 65 536; уточнить фразу про «Сообщение слишком большое»), пути отказа, таблица «критерий → тест», мутанты (≥12), раздел о планке со всеми 17 пунктами (Q1–Q14, R1–R3), проверка в настоящем браузере (AP-060, критерий 10). Решить конкретно по коду: гонки «Пауза» во время подтверждения чата, двойной клик, два окна страницы, ошибка движка при паузе, опрос 5 с и кнопки. Строить на текущем коде tools/src/web (прочитать целиком) и tools/src/team/engine/commands.js, engine.js. Кода реализации не писать. Без названий компании/образца и путей компьютера. Handoff: COMPLETED/FAILED, время UTC не позже часов машины; context.base_tag = base/PROD-20261011-01; пути как <scratch>/…, команды «cd tools && …».",
+    "acceptance_criteria": [
+      "каждый из 13 критериев REQ-035 покрыт строкой «критерий → тест» и пунктом проекта",
+      "нет кода реализации",
+      "единая таблица полей ответа проекта для описания интерфейса",
+      "мутантов не меньше 12",
+      "17 пунктов планки названы",
+      "гонки (чат, двойной щелчок, два окна, ошибка движка, опрос) решены по коду"
+    ]
+  },
+  "created_at": "неизвестно: файла не было; папка прогона создана 2026-10-11T05:05:03Z (время изменения папки), коммит метки базы — 2026-10-11T05:10:17Z",
+  "started_at": "неизвестно: первое чтение часов агентом — 2026-10-11T05:12:49Z",
+  "completed_at": "2026-10-11T05:20:49Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проект до кода REQ-035: маршрут POST /api/projects/<id>/control с телом {action} или {action:\"stop\",confirmed:true}; защита как у чата в том же месте server.js плюс предел тела маршрута 4096 → 400 «Запрос не понят» (413 «Сообщение слишком большое» остаётся только у чата и создания, тело >64 КиБ к управлению — тоже 400); 405 для GET адреса управления; новые поля ответа проекта controls {pause, resume, stop, api}, stopped_text, новый текст pause_text — единая таблица п. 4; единая таблица «статус → кнопки → отказы» (п. 5) с правилами строже движка; postControl: пауза и остановка только через deliver, «Продолжить» — живой движок → deliver, иначе engines.resume (createEngine mode resume в процессе сервера, без child_process; 0030 п. 2); перевод всех кодов в тексты (п. 6.4); engines.resume/has; страница: идентификаторы, подтверждение обычным элементом, синхронный флаг от двойного щелчка, опрос сразу после ответа; гонки п. 9.4; пути отказа; критерий → тест CTL-1a…CTL-13 в трёх новых файлах; 22 мутанта; план проверки в настоящем браузере; планка 17 пунктов. Решения — decisions/0032 (предложено ORCH, C1–C6). Найдены два расхождения с требованием (Ф4, Ф7) — в issues I1, I2.",
+    "changes": [
+      "docs/design/REQ-035-team-web-control.md: п. 0 — 13 проверенных фактов своими запусками; п. 1 — файлы и роли, порядок «контракт, затем стороны»; п. 2 — CONTROL_BODY_MAX",
+      "п. 3 — маршрут, тело, ответы, порядок проверок (уточнение про «Сообщение слишком большое»); п. 4 — таблица «ответ → поле → тип → откуда»",
+      "п. 5 — кнопки по статусам и отказы до отправки (критерии 1, 7), остаточный риск правил строже движка; п. 6 — postControl, deliver, порядок «Продолжить», controlFailure",
+      "п. 7 — engines.resume/has (0030 п. 2); п. 8 — тексты; п. 9 — страница: элементы, состояние, поведение, таблица гонок",
+      "п. 10–14 — пути отказа, места записи и сеть, общие функции и места их использования, README, проверка в браузере",
+      "п. 15 — критерий → тест (13 строк, CTL-*), 22 мутанта; п. 16 — планка Q1–Q14, R1–R3; п. 17–20 — безопасность, раунды и ожидаемый провал WEB-4g, решение, открытые вопросы",
+      "decisions/0032-req035-web-control.md (новое, «предложено ORCH»): C1 адрес и тело, C2 предел маршрута, C3 порядок «Продолжить», C4 правила строже движка до отправки (остаточный риск), C5 одна команда на проект, C6 адрес — строка, не Link"
+    ],
+    "self_check": [
+      "<scratch>/req035/probe.mjs (импорт настоящих tools/src, временная SAI_TEAM_HOME в <scratch>): node probe.mjs <tools/src> <scratch>/sai-team-data → '1 holder before pause: {\"pid\":50199} own pid 50199', '1 deliver pause via: engine event: PROJECT_PAUSED USER', '1 status after pause: paused holder: {\"pid\":50199}', '1 pause again: THROW E_PAUSE_STATE', '2 after signal status: paused holder: null', '3 deliver resume without engine: THROW E_INTERNAL: Внутренняя ошибка ядра Sai Team (resume)', '3 status: paused', '4 resume-mode status: running holder: {\"pid\":50199}', '5 second resume engine: THROW E_ALREADY_RUNNING', '5 final status: done', '6 created pause: THROW E_PAUSE_STATE', '6 created stop: self stopped', '6 stopped resume-mode engine: THROW E_STOPPED', '6 stopped stop again: THROW E_STOPPED'",
+      "<scratch>/req035/probe2.mjs (сигнал во время задачи 2, затем движок resume) → 'after signal: paused [[\"t-0001\",\"done\",1],[\"t-0002\",\"interrupted\",1],[\"t-0003\",\"waiting\",0]]', 'final: done work runs: {\"t-0001\":1,\"t-0002\":2,\"t-0003\":1} done: {\"t-0001\":1,\"t-0002\":1,\"t-0003\":1}'",
+      "<scratch>/req035/probe3.mjs (задачи по 3 с, пауза через 0,5 с, projectPage через 5 с) → 'after pause events: PROJECT_PAUSED/USER RUN_FINISHED/ENGINE BUDGET_SPENT/ENGINE TASK_REVIEW/ENGINE', 'status: на паузе | happening: [... \"Проект на паузе\", \"Исследователь: попытка завершена — тестовый исполнитель\", \"Учтены расходы на работу команды\", \"Результат передан на проверку — тестовый исполнитель\"]', 'tasks: [[\"t-0001\",\"review\"],...]'",
+      "<scratch>/req035/probe4.mjs (остановка через канал во время задачи) → 'stop via engine PROJECT_STOPPED ms 115', 'after ... events: PROJECT_STOPPED/USER', последняя фраза 'Проект остановлен', 'tasks: [[\"t-0001\",\"interrupted\"],...]', 'engine ended'",
+      "grep -n по коду: engines.js:32 createEngine(id, { home, env, mode: \"start\" }); config.js:11 BODY_MAX = 65_536; server.js:331 readBody; server.js:440-442 GET вызывает route.get без проверки; grep -rn 'командой resume' tools/src/web/ → texts.js:15; grep -n 'resume' tools/src/web/engines.js → пусто",
+      "grep по решениям (критерии 11, 13): grep -n 'tools/src/web/engines.js' decisions/0030-*.md → строка 8; grep -c resume → 2; grep -c 0025 → 2; grep -n 0030 decisions/README.md → строка 38 «Принято»; grep -n 'нельзя отменить' decisions/0030-*.md → строка 7",
+      "grep -n по tools/test: team-web-project.test.js:806 прежний текст pause_text; team-web-docs.test.js:53 'npm run team -- resume'; team-web-links.test.js:24-34 linksIn по {to, api}; team-web-dom.js — showModal нет, disabled (144), dispatchEvent (270)",
+      "проверки проекта: grep путей этого компьютера (домашняя папка, временные папки) в проекте и 0032 → пусто (код 1); блоки ``` — только сигнатуры и формы (ControlBody, Controlled, Failure, postControl, controlFailure, Engines); строк критериев в п. 15 — 13; строк планки в п. 16 — 17 (Q1–Q14, R1–R3); мутантов — 22",
+      "cd tools && npm run traces (после записи проекта, решения и handoff-а) → 'traces: файлов проверено 955, следов 0, пропущено 26', код 0; первый прогон с handoff-ом нашёл след «путь домашнего каталога» в строке self_check (заглушка временной папки) — заглушка переименована, повтор чистый"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "REQUIREMENT_QUESTION",
+        "severity": "блокирует тест CTL-2 до решения ORCH",
+        "text": "Критерий 2 буквально не выполним на текущем движке (Ф7, probe3): через 5 с после «Пауза», нажатой во время 3-секундной задачи, последняя фраза «Что происходит» — «Результат передан на проверку…», а не «Проект на паузе»: идущий запуск доводится до итога и пишет RUN_FINISHED, BUDGET_SPENT, TASK_REVIEW после PROJECT_PAUSED; задача 1 остаётся «на проверке» (проверка на паузе не начинается), «итог» у неё — завершённый запуск. Предложение для WF-01: «фраза «Проект на паузе» есть среди фраз «Что происходит», после неё нет фраз о старте задачи»; «запуск задачи 1 доходит до итога (RUN_FINISHED)». CTL-2 в проекте написан под это чтение. Предложение записи в docs/anti-patterns.md: «критерий с точным текстом показа не сверен запуском движка»."
+      },
+      {
+        "id": "I2",
+        "kind": "FACT_MISMATCH",
+        "text": "Описание REQ-035 утверждает: «deliver для resume без движка только пишет событие». Измерено (Ф4, probe): deliver(id,{kind:\"resume\"}) без движка бросает E_INTERNAL «(resume)» и ничего не пишет — channel.js передаёт applyCommand config: null, а commands.js требует config для resume. На проект не влияет (сервер так не вызывает, п. 6.3), вывод требования (нужен движок resume) только сильнее. Возможный дефект REQ-013: команда без движка через deliver не может продолжить проект никогда — на усмотрение ORCH (ISS по WF-03)."
+      },
+      {
+        "id": "I3",
+        "kind": "DECISION",
+        "text": "decisions/0032-req035-web-control.md записано со статусом «предложено ORCH» (C1–C6); строку в decisions/README.md не добавлял (по образцу 0020 её добавляет ORCH). Главное к принятию: C4 — правила «строже движка» проверяются на чтении журнала перед отправкой, не в одной операции с записью; остаточный риск — гонка с одновременной командой терминала (миллисекунды). Альтернатива — условие в команде движка, изменение REQ-013."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "Критерий 6: «запрос из трёх полей — действие, признак подтверждения» — проект читает как «одно действие из трёх и признак подтверждения»; у паузы и продолжения тело из одного поля, у остановки — из двух (п. 3.2). Если ORCH читает иначе — новая редакция п. 3.2."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Для GUI-DESIGN-ANALYST: имена полей — п. 4 (ProjectPage.controls.*, stopped_text, pause_text, Controlled.result_text, Failure), идентификаторы элементов — п. 9.1, постоянные подписи — только в index.html. Для TEST-DESIGNER: ожидаемый провал между шагами 2 и 5 — только WEB-4g (п. 18); нужна предзагрузка tools/test/fixtures/team/no-ack.js (CTL-8b)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Файла handoff-а не было; создан агентом с полями ORCH из текста задания (context.note_by_agent), created_at/started_at — «неизвестно» с тем, что известно. ORCH может сверить своим полем."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0032-req035-web-control.md"
+    ]
+  }
+}
