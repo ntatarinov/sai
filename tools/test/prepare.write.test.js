@@ -1,4 +1,4 @@
-// P01-P18 (design REQ-002 §9.5, ISS-0002): prepare-run creates the run folder all or
+// P01-P21 (design REQ-002 §9.5, §13.5, ISS-0002): prepare-run creates the run folder all or
 // nothing - it is built under a temporary name and appears with one rename. Every row
 // builds its own project in a temporary folder (makeProject(): `runs/` exists unless the
 // row removes it), puts one obstacle or one injected failure in the way, runs the real CLI
@@ -510,4 +510,66 @@ test("P18 control, in this process: fsyncSync is called once per written file, a
     assert.ok(lastSync < firstRename, "an fsyncSync call follows the rename"),
   );
   c.done();
+});
+
+// ---- a foreign temporary folder, a program error with a code, a read-only root -----------
+
+test("P19 another process makes runs/.<RUN-ID>.sai-tmp first: the command refuses naming it, the foreign folder and its file are untouched", () => {
+  const root = makeProject();
+  const foreign = "held by another process\n";
+  const held = tempOf(runDirOf(root));
+  refusal({
+    root,
+    setup: () => removeAfter(held),
+    run: () =>
+      runPrepareCli(root, {
+        faults: [{ fn: "mkdirSync", paths: [held], effect: "preempt" }],
+      }),
+    lines: [leftoverLine(RUN_REL, tempOf(RUN_REL))],
+    // the listing as before plus the other process's folder with its file, as written;
+    // there is no run folder
+    delta: () => ({
+      added: folderSpecs(
+        tempOf(RUN_REL),
+        { "held.txt": foreign },
+        newDirMode(root),
+        newFileMode(root),
+      ),
+    }),
+    converge: () => assertPrepareConverges(root),
+  });
+});
+
+test("P20 a program error with a code but no syscall in the check 'something is at the run folder path' is not taken for 'nothing is there'", () => {
+  const root = makeProject();
+  refusal({
+    root,
+    crash: "code",
+    run: () =>
+      runPrepareCli(root, {
+        faults: [
+          { fn: "lstatSync", paths: [runDirOf(root)], effect: "bug-code" },
+        ],
+      }),
+    converge: () => assertPrepareConverges(root),
+  });
+});
+
+test("P21 the root with mode 555 and no runs/: the temporary folder .runs.sai-tmp cannot be created", () => {
+  const root = makeProject();
+  refusal({
+    root,
+    setup: () => {
+      fs.rmdirSync(path.join(root, "runs"));
+      return lock(root, 0o555);
+    },
+    run: () => runPrepareCli(root),
+    lines: [
+      writeLine(
+        "runs",
+        `cannot create the temporary folder ${tempOf("runs")} (EACCES); ${NOTHING}`,
+      ),
+    ],
+    converge: () => assertPrepareConverges(root),
+  });
 });

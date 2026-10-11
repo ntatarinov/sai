@@ -1,0 +1,173 @@
+{
+  "handoff_id": "step03b-ISS-0002-20261011-01",
+  "run_id": "ISS-0002-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "03b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0002-20261011-01/step-03b-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-002-idea-verdict.md (§5, §6, §9.7, §12, §13)",
+      "handoffs/ISS-0002-20261011-01/step-03-code-designer.json",
+      "handoffs/ISS-0002-20261011-01/step-01-issue-fixer.json",
+      "decisions/0041-iss0002-pre-fix-reconstruction.md",
+      "decisions/0004-write-phase-rename-and-hardlink-rollback.md",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/requirements.yaml (REQ-002, критерий 11)",
+      "docs/workflows/WF-03-defect.md (шаг 3)",
+      "docs/workflows/WF-02-development.md (шаг 1b)",
+      "tools/src/apply.js",
+      "tools/src/prepare.js",
+      "tools/src/util.js",
+      "tools/test/apply.write.test.js",
+      "tools/test/prepare.write.test.js",
+      "tools/test/fault-inject.js",
+      "tools/test/helpers.js"
+    ],
+    "route": "CODE-DESIGNER -> CODE-DESIGN-VALIDATOR (этот) -> SECURITY-REVIEWER (код без изменений) -> REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы и копии — вне проекта"
+    ],
+    "base_tag": "base/ISS-0002-20261011-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 3 (ворота) и WF-02, шаг 1b. Сам проверь проект доделки ISS-0002 (docs/design/REQ-002-idea-verdict.md, разделы §5.1, §5.3 (W4), §5.7, §5.8, §6, §9.7, §12, §13). Проверяющий сам повторяет НЕ МЕНЕЕ ДВУХ утверждений о поведении кода (на копии вне проекта): обязательно (а) что на HEAD ошибка из файла дефекта не воспроизводится (apply-verdict: цель папка / только для чтения / папка прогона 555; prepare-run: runs — файл / 555 / корень 555) и что список файлов (tree с папками и ссылками) не меняется; (б) что реконструкция «до» по решению 0041 (двухфайловая правка apply.js и prepare.js) даёт описанный в проекте исход: на ней из 82 существующих строк проходят 19, падают 63, а пять новых сценариев W55–W57, P19, P20 и новый P21 на ней дают код 0 (сбой не срабатывает) — собери реконструкцию САМ по рецепту §13 и сравни; (в) что код на HEAD совпадает с дизайном §5.3, §5.6, §5.7 (порядок записи, STATE.md последним, откат, коды E_WRITE); (г) что в tools/test/helpers.js функция tree видит папки, ссылки и права. Проверь: каждый критерий (критерий 11 REQ-002 и случаи файла дефекта, включая «корень только для чтения, runs/ нет» — P21) ведёт к элементу проекта и к тесту; сигнатуры и расширение fault-inject.js (preempt для linkSync и mkdirSync, эффект bug-code) описаны полностью и без изменения существующего поведения общего помощника (им пользуются 18 других файлов тестов); рецепт реконструкции воспроизводим; мутанты (§9.7 M1–M29 и новый M30) конкретны; раздел о планке полный; нет кода реализации и тестов в проекте; нет противоречия с decisions/ (0004, 0041). Рулинги ORCH: P21 принят; устаревшие счётчики в заголовке дизайна и §9.1, §9.2, §9.4, §9.5 поправит DOC-UPDATER на шаге 10 (учёт) — для этих ворот §13 главнее, но проверь, что устаревшие места не вводят в заблуждение TEST-DESIGNER (если вводят — это замечание). Решений 0042+ не предложено. PASS или FAIL (любой непройденный пункт — FAIL).",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков, выводы приложены",
+      "Не менее двух утверждений о коде повторены (в т.ч. сборка реконструкции «до» самим проверяющим)",
+      "Каждый случай файла дефекта и критерий 11 ведёт к тесту; P21 принят",
+      "Файлы проекта не изменены (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-11T21:56:38Z",
+  "started_at": "2026-10-11T21:56:38Z",
+  "completed_at": "2026-10-11T22:05:39Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Вердикт PASS выведен из моих запусков и чтения файлов; пересказ автора не использован. В задании ожидаемый вердикт не назван (AP-018). Проверен проект доделки ISS-0002 (docs/design/REQ-002-idea-verdict.md: §5.1, §5.3, §5.7, §5.8, §6, §9.7, §12, §13) при хеше файла 2faf784e9e38e766beb13650181f911a7e3353205982ae8bed1e197de7bc8b35 до и после. Блокирующих замечаний нет; низких — 5 (ниже). Факты задания проверены: метка base/ISS-0002-20261011-01 = коммит 87b1511, `tools/` на метке равен рабочему дереву (`diff -rq` пуст); Node 22.21.1; в дереве изменены только дизайн и decisions/README.md, добавлены 0041 и папка прогона.\n\nПО ЗАПРОСУ ЗАДАНИЯ (а)–(г), всё на копиях вне проекта:\n(а) Ошибка на HEAD не воспроизводится. apply-verdict на RR: `proposed-actions.json` — папка, `apply-report.json` — папка, `apply-report.json` 444, папка прогона 555 (RR и RF) — каждый раз код 1, stdout пуст, одна строка E_WRITE, строк трассировки 0, строгий список `tree()` до и после равен. prepare-run: `runs` — файл (E_WRITE `runs: is not a folder (ENOTDIR)`), `runs` 555 (E_WRITE, `cannot create the temporary folder runs/.<RUN-ID>.sai-tmp (EACCES)`), корень 555 без `runs` (E_WRITE `runs: cannot create the temporary folder .runs.sai-tmp (EACCES); nothing was changed`), папка прогона уже есть — E_USAGE, код 2; трассировки нет, список равен. 82 существующие строки на копии HEAD: 82 pass, 0 fail. `cd tools && npm run check` на полной копии `sai/` вне проекта: код 0, 1389 тестов, 0 падений, 0 пропусков (база Q4 дизайна подтверждена).\n(б) Реконструкция «до» собрана мной по рецепту §13.6 (по тексту рецепта, не по образцу автора): в `apply.js` цикл записи на месте в порядке STATE.md, proposed-actions.json, apply-report.json (`existsSync`/`readFileSync`/`writeFileSync` без flag и flush), в `prepare.js` `occupied` = `existsSync` и `mkdirSync(recursive)` + `writeFileSync`; `util.js` не тронут (sha256 463d9b4f… как на HEAD); `grep -c` writeAllOrNothing в apply.js и createFolderAllOrNothing в prepare.js = 0. Три файла тестов на ней: 82 строки, 19 pass, 63 fail — как в §13.6. Pass — ровно W01–W05, W18, W22, W27, P01, P02, L01–L09. Я сверил по каждой падающей строке набор упавших проверок с таблицей §13.6 (A3–A5; A1–A3,A5; A1–A3,A5,A6; A1–A3; A3,A4; A3–A6; K2–K4; A1–A6 у W49, W54, P15–P17; W51 — ETIMEDOUT за 10 с, A1,A3,A5; P12 — A1,A3,A4; W53/P18 — счёт fsync/rename/порядок): совпало полностью. Новые сценарии W55, W56, W57, P19, P20 (мой подмен fs через --import, отдельный от проекта, так как `fault-inject.js` ещё без нужных эффектов) на реконструкции дают код 0 («сбой не срабатывает»); P21 на реконструкции — код 1 с трассировкой (8 строк) вместо E_WRITE, список не меняется — как в §13.5. На HEAD те же сценарии дают описанное в §13.5: W55 — одна строка `applied, but … (EIO)`, остался только `.proposed-actions.json.sai-old`; W56 — `leftover .STATE.md.sai-old … (EEXIST)`, чужой файл с текстом `held by another process\\n` цел, временные файлы и ссылки двух других целей убраны; W57 — код 1, `code: 'ERR_INJECTED_BUG'`, 10 строк трассировки, E_WRITE нет, список как до; P19 — `leftover runs/.<RUN-ID>.sai-tmp (EEXIST)`, чужая папка и `held.txt` целы, папки прогона нет; P20 — код 1, ERR_INJECTED_BUG, трассировка, список как до; P21 — точная строка из §13.5, список как до, после возврата прав prepare-run проходит.\n(в) Код HEAD против §5.3, §5.6, §5.7 сверен чтением `util.js` (inspect, stage, commit, undo, writeAllOrNothing, createFolderAllOrNothing, isOsError, refused), `apply.js:109–112`, `prepare.js:29–38, :52, :157`: порядок целей proposed-actions, apply-report, STATE.md (последняя — точка фиксации); `wx` + `flush: true` без `encoding`; chmod до link; откат в обратном порядке, уборка W4 в прямом порядке без остановки на неудаче; только ошибки с `code` и `syscall` становятся E_WRITE; тексты причин и коды §5.6 совпадают; расхождений нет (§5.8 верен). Проверено и запусками: порядок и откат (мутант M1 даёт те же упавшие строки, что названы в §13.7).\n(г) `tree()` в `helpers.js` видит папки, ссылки и права: проба — добавление пустой папки, вложенных папок, смена прав файла и папки, битая ссылка, смена текста ссылки, смена только времени файла — каждый раз снимок различается; ссылка и права видны в строке. `listing.test.js` L01–L09 — 9 pass на HEAD.\n\nПО ПУНКТАМ ПРОВЕРКИ:\nА1 (правда о Sai): повторено 7 утверждений проекта (список выше + 1389 тестов + 82/19/63 + мутанты ниже). А2 (общий механизм, AP-014): поиск `fs.writeFileSync|mkdirSync|renameSync|linkSync|unlinkSync|rmSync|chmodSync|…` по `tools/src` вне `util.js`; места использования `writeAllOrNothing`/`createFolderAllOrNothing` — apply.js, prepare.js, handoffs/close.js:353, traces/add.js:265 (§13.2 п. 7 называет и их); единственная голая запись команды `tools/` вне помощника — `cli.js:145` (snapshot), названа и отдана ISS-0003 (§5.1 D6, §13.8); остальные записи — собственные протоколы team/, pixel-office/, handoffs/create.js, traces/add.js, не часть этого дефекта. Пункт выполнен.\nБ3–Б6 (хватит разработчику): сигнатуры `writeAllOrNothing`, `createFolderAllOrNothing`, `isOsError`, формы целей, коды выхода, файлы читаются/пишутся (§5.7, §6, §7) — полно. Для тестового кода достройки (§13.5): `preempt` для linkSync (файл по `to` с текстом, `to` обязателен) и mkdirSync (папка + `held.txt`), эффект `bug-code` (Error с `code` ERR_INJECTED_BUG, без syscall/errno/path), подготовка чужой записи сохранёнными методами, правка `refusal` — описаны, выбора у исполнителя нет. Существующее поведение общего модуля не меняется: добавляются эффекты и допуски; в тестах нет проверки, что `preempt` допустим только для writeFileSync (grep по `test/`); `fault-inject.js` подключают 18 других файлов (19 вхождений за вычетом самого модуля) — число верно. Пути отказа: что видит пользователь и что остаётся неизменным — в §5.2, §5.4, §5.6 и таблицах W/P. Кода реализации и текста тестов в проекте нет (поиск ограждённых блоков в §13 — пусто; `git status tools` пуст). Пункты выполнены.\nВ7 (тесты и приёмка): критерий 11 REQ-002 разобран по частям в §9.1 и §13.4; каждая часть и каждый случай файла ISS-0002 (цели × папка/444/555, §13.4) ведёт к строкам: apply-verdict W06–W09 (папка), W20/W21/W19 (444), W24–W29 (555), STATE.md-папка — `cli.test.js` «STATE.md that is a folder» (есть, строка 190) и W18; prepare-run P03, P05, P12, «E_USAGE: bad RUN-ID and existing folder» (есть) и новая P21 (корень 555, `runs/` нет) — единственный пробел, он закрыт. P21 принят по ruling ORCH; я проверил, что без неё случай файла дефекта «корень 555» без теста (P05 — `runs/` есть, P02/P08 — корень записываемый), а при её появлении ловится мутант M30. Строк «потом решим» нет. Пункт выполнен.\nГ8 (планка): §12 и §13.9 называют Q1–Q14 и R1–R3 с объяснением; Q4: база 1389 тестов подтверждена, ожидание 1395 (+6 строк) согласовано. Г9 (защита в той же операции): §5.3 «Охрана — в самой операции» (wx, rename, EEXIST у link/mkdir), проверки W1/P1 названы ранними правилами — выполнено. Г10 (decisions): 0004 (стратегия записи, жёсткие ссылки) и 0041 (реконструкция) не противоречат §13: 0004 не говорит о порядке уборки, 0041 — вариант 3 исполнен как есть (реконструкция вне проекта, diff, перепроверка); новых оспоримых выборов доделка не вводит, предложений 0042+ нет — верно. Пункты выполнены.\n\nМУТАНТЫ (§9.7, §13.7), применены мной к копиям HEAD по одной правке в `util.js`/`apply.js`: M1 (STATE.md первой) — на 82 строках упали W23, W45, W47, W48, W53 — ровно как в §13.7. M26 (цикл W4 прерывается), M27 (EEXIST у link не остаток), M28 (isOsError только по code), M29 (EEXIST у mkdir не остаток), M30 (ошибка mkdir временной папки при вершине `runs` бросается как есть): на 82 существующих строках у каждого pass 82, fail 0 (как заявлено); на новых сценариях каждый отличается от HEAD: M26 — остаются три `.sai-old`, а не один (W55); M27 — `cannot keep the old version as .STATE.md.sai-old (EEXIST)` вместо `leftover` (W56); M28 — W57 даёт E_WRITE `cannot be replaced (ERR_INJECTED_BUG)` вместо трассировки, P20 — код 0 `prepared` (W57, P20); M29 — `cannot create the temporary folder … (EEXIST)` вместо `leftover` (P19); M30 — P21 даёт трассировку 9 строк вместо E_WRITE. То есть шесть новых строк действительно недостающие, а M26–M30 конкретны и ловятся. Остальные мутанты (M2–M11, M14, M15, M17, M19–M25) я не применял: их таблицу «упали у меня» сверяет TEST-DESIGN-VALIDATOR.\n\nУСТАРЕВШИЕ СЧЁТЧИКИ (рулинг ORCH): в заголовке дизайна, §9 (строка критерия 11), §9.1, §9.2, §9.4, §9.5 остались P01–P20 и т. п.; §12 (Q5), §13.1, §13.10 В1 и §13.5 прямо говорят, что §13 главнее и P21 новая. TEST-DESIGNER с ними не введён в заблуждение (в §13.5 указано, что заголовочные комментарии и счётчики в именах обновить). Отмечено как низкое замечание F3.",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "blocks": false,
+        "place": "docs/design/REQ-002-idea-verdict.md, шапка (строки 1–79) и §9, §9.1, §9.2, §9.4, §9.5",
+        "text": "Счётчики и статусы описывают состояние до раунда 9: шапка — «Версия 4», раунд 8 «не проверен», статус тестов «FAIL (узкий)»; §9/§9.2/§9.5 — P01–P20; §9.1 (B26, строка «Проверка») не называет P21.",
+        "needed": "DOC-UPDATER на шаге 10 (рулинг ORCH): записать раунд 9, статус этих ворот, P01–P21 и 88 строк; в §9.1 добавить P21 к B26 и к строке про «каждую цель обеих команд». До тех пор §13 главнее — это сказано в §12 (Q5) и §13.10."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "blocks": false,
+        "place": "docs/design/REQ-002-idea-verdict.md, §13.9 (Q2)",
+        "text": "Написано «три из пяти исходов новых строк на HEAD», хотя §13.5 даёт шесть строк с исходом «проверено мной»; я воспроизвёл все шесть (W55–W57, P19–P21).",
+        "needed": "При ближайшей правке привести число к шести."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "blocks": false,
+        "place": "docs/design/REQ-002-idea-verdict.md, §9.2, таблица «Подмена fs»",
+        "text": "Контракт перечисляет восемь `fn` и шесть эффектов; фактический `tools/test/fault-inject.js` уже имеет `openSync`, `writeSync`, `fsyncSync`, `ftruncateSync` и режим библиотеки (REQ-009 §15.3). §13.5 «дополняет» контракт, но разночтения не называет.",
+        "needed": "TEST-DESIGNER опирается на файл модуля и §13.5; при учёте добавить в §9.2 одну строку «полный контракт — заголовок модуля»."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "blocks": false,
+        "place": "docs/design/REQ-002-idea-verdict.md, §13.7, строка M30",
+        "text": "M30 — точечная правка (при вершине `runs` ошибка mkdir временной папки не превращается в E_WRITE); место правки названо только как «функция в util.js». Мутант ловится только P21 (проверено), но естественным дефектом не выглядит.",
+        "needed": "Не блокирует. Валидатору тестов дать место правки словами: «в createFolderAllOrNothing, обработчик ошибки mkdir временной папки, при вершине runs» — как применил я."
+      },
+      {
+        "id": "F5",
+        "severity": "Low",
+        "blocks": false,
+        "place": "docs/design/REQ-002-idea-verdict.md, §13.5, строка P21",
+        "text": "Не сказано словами, что тест перед завершением возвращает права корня (иначе временную папку фикстуры не удалить). Общая фраза §9.2 «Права, изменённые строкой, восстанавливаются в finally» это покрывает.",
+        "needed": "Не требуется; для ясности назвать P21 среди строк с `lock`."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git rev-parse base/ISS-0002-20261011-01; git archive <метка> tools | tar -x в <scratch>/cdv/head; diff -rq tools <scratch>/cdv/head/tools -x node_modules",
+        "output": "87b151101208785cf128f32360d75817f8c240d9; diff пуст (копия HEAD = рабочее дерево)"
+      },
+      {
+        "command": "cd <scratch>/cdv/head/tools && node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js",
+        "output": "tests 82, pass 82, fail 0"
+      },
+      {
+        "command": "node <scratch>/cdv/probes/probe-head.mjs <scratch>/cdv/head/tools (apply: цель-папка ×2, 444, папка прогона 555 RR/RF; prepare: runs файл, runs 555, корень 555, папка прогона есть)",
+        "output": "apply: пять запусков — status=1, stdout пуст, 1 строка E_WRITE, трассировка 0, список равен; prepare: runs файл → E_WRITE ENOTDIR; runs 555 → E_WRITE EACCES; корень 555 → `E_WRITE runs: cannot create the temporary folder .runs.sai-tmp (EACCES); nothing was changed`; папка есть → status=2 E_USAGE; список равен во всех"
+      },
+      {
+        "command": "node <scratch>/cdv/probes/probe-tree.mjs <scratch>/cdv/head/tools",
+        "output": "пустая папка, вложенные папки, права файла 444, права папки 555, битая ссылка, смена текста ссылки, смена времени файла: differs=true в каждом случае"
+      },
+      {
+        "command": "node <scratch>/cdv/probes/mkrecon.mjs <scratch>/cdv/recon/tools (рецепт §13.6 по тексту); diff -u head/recon; grep -c writeAllOrNothing recon/tools/src/apply.js; grep -c createFolderAllOrNothing recon/tools/src/prepare.js; shasum -a 256 util.js head/recon",
+        "output": "правка двух файлов (apply.js, prepare.js); счётчики 0 и 0; util.js sha256 463d9b4f4ed891c7… в обоих"
+      },
+      {
+        "command": "cd <scratch>/cdv/recon/tools && node --test --test-reporter=tap test/apply.write.test.js test/prepare.write.test.js test/listing.test.js; разбор «failed checks» по строкам",
+        "output": "tests 82, pass 19, fail 63. Pass: W01–W05, W18, W22, W27, P01, P02, L01–L09. Группы проверок: A3,A4,A5 — W06–W10, W16, W17, W20, W21, W24, W25, W31–W33, W39, W40, W45, W52; A1,A2,A3,A5 — P04, W11, W35, W46; A1,A2,A3,A5,A6 — P06, P10, W12–W14, W26, W28, W29, W36–W38, W50; A1,A2,A3 — W15; A3,A4 — P03, P05, W19, W23, W41–W43; A3–A6 — P07–P09, P11, W30, W34, W44; K2,K3,K4 — P13, P14, W47, W48; A1–A6 — P15–P17, W49, W54; A1,A3,A5 — W51 (ETIMEDOUT 10 с); A1,A3,A4 — P12; счёт fsync/rename/порядок — W53, P18. Совпало с §13.6"
+      },
+      {
+        "command": "node <scratch>/cdv/probes/probe-new.mjs <tools> <scratch>/cdv/probes/faults-preload.mjs — на head и на recon (мой подмен fs: unlink throw EIO, link preempt, rename bug-code, mkdir preempt, lstat bug-code; P21 без сбоя)",
+        "output": "HEAD: W55 status=1, 1 строка `E_WRITE …/.proposed-actions.json.sai-old: applied, but this backup of the old version could not be removed (EIO); delete it by hand`, остаток один; W56 status=1, `E_WRITE STATE.md: leftover .STATE.md.sai-old from an interrupted or concurrent run (EEXIST); nothing was changed; if no other command is running, delete and re-run`, чужой файл `held by another process\\n` цел; W57 status=1, code 'ERR_INJECTED_BUG', 10 строк трассировки, E_WRITE 0, список равен; P19 status=1, `leftover runs/.<RUN-ID>.sai-tmp (EEXIST)`, held.txt цел, папки прогона нет; P20 status=1, ERR_INJECTED_BUG, 9 строк трассировки, список равен; P21 status=1, 1 строка E_WRITE (текст как в §13.5), список равен, после возврата прав `prepared`. RECON: W55–W57, P19, P20 — status=0 (`applied recommend` / `prepared`), сбой не сработал; P21 — status=1, 8 строк трассировки, E_WRITE 0, список равен"
+      },
+      {
+        "command": "мутанты на копиях HEAD (mutate.mjs): M1; M26; M27(X2); M28; M29(X3); M30 — по 82 строкам и по probe-new.mjs",
+        "output": "M1: pass 77, fail 5 = W23 W45 W47 W48 W53. M26, M27, M28, M29, M30: pass 82, fail 0 на 82 строках; на probe-new различаются: M26 три остатка .sai-old; M27 `cannot keep the old version … (EEXIST)`; M28 W57 → E_WRITE `cannot be replaced (ERR_INJECTED_BUG)` и P20 → status 0 `prepared`; M29 `cannot create the temporary folder … (EEXIST)`; M30 P21 → трассировка вместо E_WRITE"
+      },
+      {
+        "command": "cp полного sai/ (с .git, без node_modules) в <scratch>/cdv/full; cd tools && npm run check",
+        "output": "код 0; tests 1389, pass 1389, fail 0, skipped 0"
+      },
+      {
+        "command": "grep по fs-записям в tools/src вне util.js; grep writeAllOrNothing|createFolderAllOrNothing; grep fault-inject test/*.js; grep preempt|bug-code test/; grep «STATE.md that is a folder» / «bad RUN-ID and existing folder»",
+        "output": "голая запись команды — только cli.js:145; помощники ещё в close.js:353, traces/add.js:265; fault-inject в 19 файлах (18 кроме модуля); preempt вне модуля — только apply.write.test.js:715 (writeFileSync); тесты cli.test.js:190 и prepare.test.js:75 есть"
+      },
+      {
+        "command": "grep по docs/design/REQ-002-idea-verdict.md и decisions/0041 на пути этого компьютера и фрагменты путей временных папок; поиск ограждённых блоков кода в §13",
+        "output": "совпадений нет"
+      },
+      {
+        "command": "shasum -a 256 по всем файлам tools/ (без node_modules), docs/design/REQ-002-idea-verdict.md, docs/requirements.yaml, файлу ISS-0002, decisions/*.md — до и после",
+        "output": "хеш списка до и после одинаков: 8af91dc3ada24f08e10110da456a0a0d374193acb7522fa00d46fc544c8dbc5b (301 файл); хеш дизайна 2faf784e9e38e766beb13650181f911a7e3353205982ae8bed1e197de7bc8b35 до и после; `cmp` — SAME"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Рулинги ORCH учтены: P21 принят; устаревшие счётчики в шапке и §9, §9.1, §9.2, §9.4, §9.5 поправит DOC-UPDATER (шаг 10). Замечание F1 перечисляет места, включая §9.1 (B26 и строка «Проверка»), которых нет в перечне §13.10 В1."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Для шага 6 (TEST-DESIGNER): мои пробы подмены fs лежат только в копиях вне проекта и в проект не входят; расширение `tools/test/fault-inject.js` делает он по §13.5. После правки общего модуля — полный `cd tools && npm run check` (база 1389, ожидание 1395)."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "Раунд 8 (W55–W57, P19, P20, M26–M29) шапка называла непроверенным; эти ворота проверили его тексты запусками (см. summary). Шапку по этому поводу обновит DOC-UPDATER."
+      },
+      {
+        "id": "I4",
+        "kind": "FINDING",
+        "text": "Утверждение задания и диагноза «M1–M58» не подтвердилось (в §9.7 M1–M29, плюс M30 из §13.7) — дизайн это уже исправил (§9.7, §13.3 п. 4); отмечаю как факт для ORCH (AP-012)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -15,6 +15,7 @@ import {
 } from "../src/contract.js";
 import { prepareRun } from "../src/prepare.js";
 import { sha256, stableJson } from "../src/util.js";
+import { BUG_CODE } from "./fault-inject.js";
 
 export const RUN_ID = "WF06-20260925-01";
 export const IDS = ["01-alpha", "02-beta"];
@@ -976,7 +977,9 @@ export function checks() {
 // A command that is refused or fails (checks A1-A6): `setup` puts the obstacle in the way
 // and returns the function that takes it away; `run` runs the command; `lines` are the
 // exact lines of stderr, or `crash` says the command died of a program error and has
-// to show the exception with its trace. `delta(before)` replaces A5 ("equal") by
+// to show the exception with its trace: `crash: true` waits for the TypeError of the
+// effect "bug", `crash: "code"` for the Error with a code and no `syscall` of the effect
+// "bug-code" (design §13.5). `delta(before)` replaces A5 ("equal") by
 // "equal except for the entries it names" (design §9.4, rows with "A5 заменяется").
 // `converge` is A6, run after the obstacle and the named leftovers are gone. `list` takes
 // the strict listing (listingInChild for a row with a pipe in the root).
@@ -1004,7 +1007,15 @@ export function refusal({
     );
     if (crash) {
       c.run("A3 a program error, not E_WRITE", () => {
-        assert.match(r.stderr, /TypeError: injected bug/);
+        if (crash === "code") {
+          // the way Node prints an uncaught error that has a `code`
+          assert.ok(
+            r.stderr.includes(`code: '${BUG_CODE}'`),
+            `stderr must show code: '${BUG_CODE}'`,
+          );
+        } else {
+          assert.match(r.stderr, /TypeError: injected bug/);
+        }
         assert.doesNotMatch(r.stderr, /^E_WRITE /m);
       });
       c.run("A4 the stack trace is kept", () =>

@@ -1,0 +1,154 @@
+{
+  "handoff_id": "step03-ISS-0002-20261011-01",
+  "run_id": "ISS-0002-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0002-20261011-01/step-03-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0002-20261011-01/step-01-issue-fixer.json",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/design/REQ-002-idea-verdict.md (§5, §6, §9, §12)",
+      "decisions/0041-iss0002-pre-fix-reconstruction.md",
+      "docs/requirements.yaml (REQ-002, критерий 11)",
+      "docs/workflows/WF-03-defect.md (шаги 3, 6, 7)",
+      "tools/src/apply.js",
+      "tools/src/prepare.js",
+      "tools/src/util.js",
+      "tools/test/apply.write.test.js",
+      "tools/test/prepare.write.test.js",
+      "tools/test/fault-inject.js",
+      "tools/test/helpers.js",
+      "handoffs/ISS-0002-20260930-01/ (прошлая попытка — история)"
+    ],
+    "route": "ISSUE-FIXER (PASS) -> CODE-DESIGNER (этот) -> CODE-DESIGN-VALIDATOR -> (код без изменений) SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/design/REQ-002-idea-verdict.md (только §5, §6, §9.7, §12 и новый раздел проекта доделки)",
+      "decisions/0042-*.md и далее — только предложения новых записей"
+    ],
+    "base_tag": "base/ISS-0002-20261011-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 3. Проект «исправления» ISS-0002. Диагноз ISSUE-FIXER (step-01, result.summary и issues) установил: на HEAD исправление уже стоит в коде (writeAllOrNothing и createFolderAllOrNothing в tools/src/util.js; порядок записи proposed-actions.json, apply-report.json, STATE.md последним — точка фиксации — в tools/src/apply.js; сборка папки прогона под временным именем и один rename в tools/src/prepare.js; код E_WRITE в дизайне §6), ошибка не воспроизводится; не хватает тестов W55, W56, W57 (apply) и P19, P20 (prepare) из дизайна, механизмов в tools/test/fault-inject.js (preempt для linkSync и mkdirSync, эффект bug-code), подтверждения мутантов M1–M58 (дизайн §9.7), падения тестов на копии «до» и формального закрытия (ISS-0002 open, REQ-002 in_progress). Решение 0041 принято ORCH: копия «до» — реконструкция, собирает TEST-DESIGNER (apply.js — запись по очереди на месте; prepare.js — папка прогона на месте без временной папки), проверяет TEST-DESIGN-VALIDATOR. Твоя задача (проект, не код и не тесты): (1) Сам проверь каждое утверждение диагноза о коде на HEAD (приложи свой запуск), в том числе соответствие кода дизайну §5 (порядок, точка фиксации, откат) и §6; расхождения между дизайном и кодом (номер версии дизайна, число тестов 58/20 против 55/18, W13b) — перечисли; (2) если код соответствует — проект исправления это ЗАПИСЬ «код на месте, поведение менять не нужно» плюс перечень изменений ТОЛЬКО для тестов и помощника: точные строки W55–W57, P19, P20 (что внедряется, ожидаемый код выхода/сообщение/состояние), спецификация расширения fault-inject.js (preempt для linkSync/mkdirSync, bug-code: что делает и как охраняется), способ сборки реконструкции «до» (по 0041; какие именно изменения в apply.js и prepare.js, как собрать воспроизводимо) и ожидаемый исход на ней для каждого теста; перечень мутантов M1–M58, которые TEST-DESIGN-VALIDATOR обязан применить хотя бы выборочно (не менее десяти по разным частям) и как; (3) таблица «критерий → тест» для критерия 11 REQ-002 и для случаев файла дефекта (цели apply: STATE.md, proposed-actions.json, apply-report.json; виды сбоя: папка, файл только для чтения, папка только для чтения; prepare-run: runs — файл, runs 555, корень 555, папка уже есть); список файлов в tree() с папками (замечание REVIEWER O2) — проверь, есть ли оно в tools/test/helpers.js; (4) раздел о планке (Q1–Q14, R1–R3); (5) что НЕ входит: ISS-0003 (голая запись в cli.js snapshot и др.) — только перечисли; (6) обнови в docs/design/REQ-002-idea-verdict.md только разделы, затронутые ISS-0002 (§5, §6, §9.7, §12) так, чтобы они описывали состояние на HEAD и недоделанное (без переписывания остального); кода реализации и тестов не пиши. Запись решений — если нужен выбор между вариантами, предложи (номера с 0042).",
+    "acceptance_criteria": [
+      "Утверждения диагноза о коде на HEAD повторены своим запуском; расхождения дизайна и кода перечислены",
+      "Строки W55–W57, P19, P20, расширение fault-inject.js и способ сборки реконструкции «до» описаны так, что TEST-DESIGNER строит без догадок",
+      "Таблица «критерий → тест» для критерия 11 REQ-002 и случаев файла дефекта; проверка tree() с папками",
+      "Раздел о планке полный; ISS-0003 только перечислен; кода реализации и тестов нет",
+      "Изменены только разрешённые разделы дизайна и новые записи решений"
+    ]
+  },
+  "created_at": "2026-10-11T21:36:35Z",
+  "started_at": "2026-10-11T21:36:35Z",
+  "completed_at": "2026-10-11T21:56:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проект доделки ISS-0002 (WF-03, шаг 3). Диагноз ISSUE-FIXER подтверждён моими запусками: на HEAD (base/ISS-0002-20261011-01) исправление в коде стоит, ошибка не воспроизводится, код соответствует дизайну §5.3, §5.6, §5.7 (расходятся только номера строк). Проект исправления = запись «код на месте, поведение менять не нужно» (CODE-FIXER в tools/src ничего не пишет) + перечень изменений только для тестов и помощника: расширение tools/test/fault-inject.js (preempt для linkSync и mkdirSync, эффект bug-code), правка refusal в tools/test/helpers.js (второй вид «ошибки программы»), строки W55, W56, W57 (apply.write.test.js), P19, P20 и новая P21 (prepare.write.test.js). P21 нужна: случай файла дефекта «корень 555, runs/ нет» в тестах не покрыт (проверено). Реконструкция «до» по 0041: рецепт из двух файлов, проверена запуском: 82 существующие строки — 19 pass (ровно «фиксация»), 63 fail, исходы совпадают со столбцом «До исправления»; пять новых строк на реконструкции дают код 0 (сбой не срабатывает). Мутанты: в дизайне M1–M29, а не M1–M58; я применил M1–M11, M14, M15, M17, M19–M21, M23–M29 и новый M30; M26–M30 проходят все 82 существующие строки и ловятся только новыми. tree() уже видит папки (helpers.js:412, :466; L01–L09 зелёные). Обновлены §5 (5.1, 5.3, 5.7, новый 5.8), §6, §9.7, §12 и добавлен §13 в docs/design/REQ-002-idea-verdict.md. Расхождения дизайна, тестов и учёта перечислены (§13.3).",
+    "changes": [
+      "docs/design/REQ-002-idea-verdict.md §5.1: во введении и в строке D6 номера строк помечены как «до исправления», даны номера на HEAD (apply.js:109–112, prepare.js:29–38, :52, :157)",
+      "docs/design/REQ-002-idea-verdict.md §5.3, W4: порядок уборки после фиксации (прямой, по целям), цикл не останавливается на неудаче; ссылки на W46 и W55",
+      "docs/design/REQ-002-idea-verdict.md §5.7: в таблице файлов строки apply.js и prepare.js — «до исправления» и «на HEAD сделано»",
+      "docs/design/REQ-002-idea-verdict.md новый §5.8: сверка кода HEAD с §5.3, §5.6, §5.7 по пунктам (10 строк), расхождений с кодом нет",
+      "docs/design/REQ-002-idea-verdict.md §6: абзац «Сверка §6 с кодом HEAD» (код E_WRITE и тексты подтверждены запусками; ISS-0003 не включён; P21)",
+      "docs/design/REQ-002-idea-verdict.md §9.7: «До исправления» переписано по решению 0041 (реконструкция вместо копии ORCH); абзац «Состояние на HEAD» (мутантов 29, не 58; что применено; M26–M29 проходят все 82 строки)",
+      "docs/design/REQ-002-idea-verdict.md §12: строки Q1, Q2, Q3, Q5, Q12, Q13, Q14 дополнены прогоном 20261011-01",
+      "docs/design/REQ-002-idea-verdict.md новый §13: 13.1 итог; 13.2 проверка диагноза (10 утверждений); 13.3 расхождения (8); 13.4 критерий 11 → тест и матрица случаев файла дефекта; 13.5 расширение fault-inject.js, правка helpers.js, строки W55–W57, P19–P21 с исходами на HEAD и на реконструкции; 13.6 рецепт реконструкции и исходы 82 строк; 13.7 мутанты (выборка не менее десяти, как применять); 13.8 ISS-0003 и учёт для DOC-UPDATER; 13.9 планка Q1–Q14, R1–R3; 13.10 открытые вопросы; 13.11 порядок работы",
+      "decisions/: ничего не создано (0042 не нужен)"
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && git rev-parse base/ISS-0002-20261011-01; diff -rq . <scratch>/pre_fix_ISS-0002/tools -x node_modules; git status --short .",
+        "output": "87b151101208785cf128f32360d75817f8c240d9; diff пуст; git status по tools пуст — код = pre_fix_copy, дерево чистое"
+      },
+      {
+        "command": "git log --format=%h -- tools/src/apply.js tools/src/prepare.js tools/src/util.js",
+        "output": "7591fc0 (один коммит, уже с writeAllOrNothing и createFolderAllOrNothing) — коммита до исправления нет, реконструкция по 0041 нужна"
+      },
+      {
+        "command": "cd <scratch>/cd04/tools (копия HEAD) && node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js",
+        "output": "tests 82, pass 82, fail 0, skipped 0"
+      },
+      {
+        "command": "grep -nE 'W55|W56|W57|P19|P20|ERR_INJECTED_BUG|held\\.txt|bug-code' tools/test/*.js; grep -n preempt tools/test/fault-inject.js",
+        "output": "совпадений по строкам нет; preempt допустим только для writeFileSync (fault-inject.js:78)"
+      },
+      {
+        "command": "node <scratch>/repro.mjs <scratch>/cd04/tools  (HEAD: apply-verdict цель-папка proposed/report, report 444, папка прогона 555 RR и RF; prepare-run: папка уже есть, runs файл, runs 555, корень 555 без runs)",
+        "output": "apply: код 1, одна строка E_WRITE, трассировки 0, список не изменился (все 5); prepare: код 2 (папка уже есть), 1 E_WRITE runs: is not a folder (ENOTDIR), 1 E_WRITE ... temporary folder runs/.WF06-20260925-01.sai-tmp (EACCES), 1 E_WRITE runs: cannot create the temporary folder .runs.sai-tmp (EACCES); список не изменился"
+      },
+      {
+        "command": "то же на реконструкции <scratch>/cd04old/tools (apply.js: запись на месте STATE.md, proposed, report; prepare.js: existsSync и запись папки на месте)",
+        "output": "apply цель-папка: код 1, 8 строк трассировки, список изменён; report 444: трассировка, STATE.md и proposed перезаписаны; папка прогона 555 при записываемых целях: код 0; prepare: runs файл, runs 555, корень 555 — трассировка mkdir"
+      },
+      {
+        "command": "node --test трёх файлов на реконструкции cd04old",
+        "output": "tests 82, pass 19 (W01–W05, W18, W22, W27, P01, P02, L01–L09), fail 63; исходы совпадают со столбцом «До исправления» §9.4, §9.5 (сгруппированы в §13.6); W51 — ETIMEDOUT за 10 с"
+      },
+      {
+        "command": "сценарии W55, W56, W57, P19, P20 через CLI на HEAD с расширенным fault-inject (копия <scratch>/cd04x) и на реконструкции",
+        "output": "HEAD: W55 код 1, одна строка E_WRITE .proposed-actions.json.sai-old applied, but ... (EIO); W56 код 1, leftover .STATE.md.sai-old, добавлен только чужой файл 24 байта; W57 код 1, code: 'ERR_INJECTED_BUG', 10 строк трассировки, список без изменений; P19 код 1, leftover runs/.WF06-20260925-01.sai-tmp, чужая папка с held.txt цела, папки прогона нет; P20 код 1, code: 'ERR_INJECTED_BUG', трассировка, список без изменений. Реконструкция: все пять — код 0, сбой не срабатывает"
+      },
+      {
+        "command": "мутанты M1–M11, M14, M15, M17, M19–M21, M23–M30 по одной правке в копии HEAD (<scratch>/cdm), node --test трёх файлов",
+        "output": "M1 W23,W45,W47,W48,W53; M2 W40–43,W45,W49; M3 W28–34,W36–45,W49; M4 W15,W47,W48; M5 W19–21,W23; M6 W10–12; M7 W13,W13b (M7p: P04); M8 W49,W54,P15–17; M9 W05,W36; M10 49 строк (W04,W22,W27 среди них); M11 W38; M14 P07–11,P15; M15 все W; M17 W50; M19 W13b; M20 P15; M21 P16; M23 W53; M24 P18; M25 W54. M26, M27 (X2, Y1), M28, M29 (X3, Y2, Y3), M30: ни одна из 82 строк не падает; в сценариях W55, W56, W57, P20, P19, B4 исход отличается от исправленного кода (строка cannot keep the old version (EEXIST); два чужих .sai-old остались; E_WRITE вместо трассировки; код 0 и held.txt в новой папке; трассировка вместо E_WRITE)"
+      },
+      {
+        "command": "cd tools && npm run check",
+        "output": "код 0; tests 1389, pass 1389, fail 0 (до моих правок; правки только в docs/design/REQ-002-idea-verdict.md)"
+      },
+      {
+        "command": "grep -nE 'Users|private/tmp|scratchpad|/var/folders|/tmp/' docs/design/REQ-002-idea-verdict.md handoffs/ISS-0002-20261011-01/step-03-code-designer.json",
+        "output": "пусто"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "ORCH: write_set шага не включает заголовок дизайна и §9, §9.1, §9.2, §9.4, §9.5, а доделка меняет счётчики в них (P01–P20 → P01–P21, всего 88). Я их не правил: §12 (Q5) и §13.10 фиксируют, что §13 главнее. Нужно либо разрешить правку этих мест (доработка или DOC-UPDATER), либо принять. Заголовок дизайна («Версия 4», статус раунда 8 «не проверен», статус тестов «FAIL (узкий)») тоже устарел — предлагаю записать «Версия 4, раунд 9»."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "ORCH: строка P21 (корень 555, runs/ нет) сверх пяти строк диагноза. Случай есть в файле дефекта и в критерии 11 («каждая цель обеих команд»), тестов на него нет (P05 — runs/ существует, P02/P08 — корень записываемый). Рекомендую принять; без неё критерий 11 в этой части недоказан."
+      },
+      {
+        "id": "I3",
+        "kind": "FINDING",
+        "text": "AP-012: утверждение «мутанты M1–M58 (§9.7)» в задании и диагнозе не подтвердилось — в §9.7 M1–M29; M30–M58 — другие работы. Ввёл M30 (под P21). Выборка для TEST-DESIGN-VALIDATOR — §13.7."
+      },
+      {
+        "id": "I4",
+        "kind": "FINDING",
+        "text": "Тексты строк раунда 8 (W55–W57, P19, P20, M26–M29) CODE-DESIGN-VALIDATOR не проверял; по моим запускам они верны на HEAD (§13.5), реконструкция даёт для них код 0. Валидатору проверять по §13.5, а не по пересказу."
+      },
+      {
+        "id": "I5",
+        "kind": "FINDING",
+        "text": "Учёт описывает «до исправления»: файл ISS-0002 (номера apply.js:100-107, helpers.js:350 → сейчас apply.js:109–112, helpers.js:412/:466), заголовок дизайна, статус REQ-002 in_progress, ISS-0002 open. Правит DOC-UPDATER после PASS RELEASE-VALIDATOR (§13.8). Предложение записи в anti-patterns.md — от ISSUE-FIXER (код исправления в снимке раньше тестов и учёта), от меня добавлений нет."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "text": "Предложений записей decisions/ нет (0042 не нужен): реконструкция — 0041, стратегия записи — 0004. ISS-0003 (snapshot cli.js:145 b и g1, d, g2, c, f) только перечислен в §13.8; на HEAD повторены d, g1, b — трассировка Node."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "fault-inject.js общий для 18 других файлов тестов: расширение обязано не менять существующие эффекты и проверки; после правки обязателен полный npm run check (база 1389 тестов, ожидается 1395)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-002-idea-verdict.md"
+    ]
+  }
+}

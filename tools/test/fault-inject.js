@@ -43,10 +43,20 @@
 //                         descriptor and the same start, then throw
 //           kill          SIGKILL to this process before the call
 //           partial-kill  the same half of the data, then SIGKILL
-//           preempt       (writeFileSync) first create the file with the text
-//                         "held by another process\n", then call the real method (its
-//                         EEXIST is then real)
+//           preempt       "another process was first": (writeFileSync) first create the
+//                         file with the text "held by another process\n", then call the
+//                         real method (its EEXIST is then real); (linkSync) the same for
+//                         the file named by the second argument, which the fault must
+//                         name with "to"; (mkdirSync) first create the folder named by
+//                         the first argument, with a file held.txt of the same text in
+//                         it, then call the real method (without `recursive` its EEXIST
+//                         is then real). The foreign entry is made with the saved real
+//                         methods, never with ones another fault has replaced
 //           bug           throw TypeError("injected bug"): no `code`, no `syscall`
+//           bug-code      throw Error("injected bug with a code") with the field `code`
+//                         BUG_CODE and no `syscall`, `errno` or `path`: a program error
+//                         that carries a code, like the ERR_* errors of Node. Any fn;
+//                         a "code" in the fault itself is not allowed
 //   code    OS code for `throw` and `partial`. The error is an Error with the message
 //           "<code>: injected fault, <syscall> '<path>'" and the fields `code`, `errno`
 //           (a negative number), `syscall` (the method name without "Sync") and `path`
@@ -71,15 +81,30 @@ const SINGLE_PATH = [
 ];
 const TWO_PATHS = ["renameSync", "linkSync"];
 const BY_FD = ["writeSync", "fsyncSync", "ftruncateSync"];
-const EFFECTS = ["throw", "partial", "kill", "partial-kill", "preempt", "bug"];
+const EFFECTS = [
+  "throw",
+  "partial",
+  "kill",
+  "partial-kill",
+  "preempt",
+  "bug",
+  "bug-code",
+];
 const ONLY_FOR_WRITE = {
   partial: ["writeFileSync", "writeSync"],
   "partial-kill": ["writeFileSync", "writeSync"],
-  preempt: ["writeFileSync"],
+  preempt: ["writeFileSync", "linkSync", "mkdirSync"],
 };
 const NEEDS_CODE = ["throw", "partial"];
 const KEYS = ["fn", "paths", "from", "to", "nth", "effect", "code"];
 const FOREIGN_TEXT = "held by another process\n";
+// The code of the error of effect "bug-code"; the tests that look for it in stderr import
+// this constant.
+export const BUG_CODE = "ERR_INJECTED_BUG";
+// The real methods, saved when the module loads and before any fault is installed: a
+// foreign entry is made with these, so that a fault on the same method cannot eat it.
+const REAL_WRITE_FILE = fs.writeFileSync;
+const REAL_MKDIR = fs.mkdirSync;
 
 function invalid(index, message) {
   return new Error(`fault-inject: fault ${index}: ${message}`);
@@ -106,11 +131,21 @@ function parseList(list) {
     if (onlyFor !== undefined && !onlyFor.includes(fault.fn)) {
       throw invalid(
         i,
-        `effect "${fault.effect}" is for ${onlyFor.join(" and ")} only`,
+        `effect "${fault.effect}" is for ${onlyFor.join(onlyFor.length === 2 ? " and " : ", ")} only`,
       );
     }
     if (NEEDS_CODE.includes(fault.effect) && typeof fault.code !== "string") {
       throw invalid(i, `effect "${fault.effect}" needs a string "code"`);
+    }
+    if (fault.effect === "bug-code" && fault.code !== undefined) {
+      throw invalid(i, `effect "bug-code" has a fixed code, drop "code"`);
+    }
+    if (
+      fault.effect === "preempt" &&
+      fault.fn === "linkSync" &&
+      fault.to === undefined
+    ) {
+      throw invalid(i, `effect "preempt" on linkSync needs "to"`);
     }
     if (TWO_PATHS.includes(fault.fn)) {
       if (fault.paths !== undefined) throw invalid(i, `use from/to, not paths`);
@@ -250,6 +285,11 @@ function install(faults) {
             throw osError(fault, targetOf(fn, args));
           case "bug":
             throw new TypeError("injected bug");
+          case "bug-code": {
+            const err = new Error("injected bug with a code");
+            err.code = BUG_CODE;
+            throw err;
+          }
           case "kill":
             return killSelf();
           case "partial":
@@ -261,7 +301,18 @@ function install(faults) {
             else real.call(fs, args[0], firstHalf(args[1]), ...args.slice(2));
             return killSelf();
           case "preempt":
-            real.call(fs, args[0], FOREIGN_TEXT);
+            if (fn === "linkSync") {
+              REAL_WRITE_FILE.call(fs, args[1], FOREIGN_TEXT);
+            } else if (fn === "mkdirSync") {
+              REAL_MKDIR.call(fs, args[0]);
+              REAL_WRITE_FILE.call(
+                fs,
+                path.join(String(args[0]), "held.txt"),
+                FOREIGN_TEXT,
+              );
+            } else {
+              real.call(fs, args[0], FOREIGN_TEXT);
+            }
             return real.apply(fs, args);
           default:
             throw invalid(-1, `unreachable effect "${fault.effect}"`);

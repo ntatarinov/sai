@@ -1,0 +1,140 @@
+{
+  "handoff_id": "step10-ISS-0002-20261011-01",
+  "run_id": "ISS-0002-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/ISS-0002-20261011-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0002-20261011-01/ (все step-*.json; особенно step-09-release-validator.json, step-08-test-runner.json, step-07-test-design-validator.json, step-06-test-designer.json, step-05-reviewer.json, step-05-security-reviewer-security.json, step-03b-code-design-validator.json, step-03-code-designer.json, step-01-issue-fixer.json)",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/design/REQ-002-idea-verdict.md",
+      "decisions/0041-iss0002-pre-fix-reconstruction.md",
+      "decisions/0042-iss0002-residual-race-risk.md",
+      "docs/requirements.yaml (шапка — правила статусов; блок REQ-002)",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/workflows/WF-03-defect.md (шаг 10)"
+    ],
+    "route": "RELEASE-VALIDATOR (PASS) -> DOC-UPDATER (этот) -> проверка учёта ORCH -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/requirements.yaml (только статус и комментарий блока REQ-002)",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/design/REQ-002-idea-verdict.md (только устаревшие места, перечисленные в задании)",
+      "новые docs/issues/ISS-0037-*.md, ISS-0038-*.md, ISS-0039-*.md"
+    ],
+    "base_tag": "base/ISS-0002-20261011-01",
+    "orch_check": {
+      "at": "2026-10-11T22:55:22Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "docs/requirements.yaml: изменены статус REQ-002 (done, комментарий) и ничего другого сверх статусов прогона",
+        "docs/issues/ISS-0002: статус closed, раздел «Закрыто» прямо говорит, что код исправления вошёл в снимок раньше этого прогона",
+        "docs/issues/ISS-0037…ISS-0039 заведены (LOW, open); AP-073 на месте",
+        "git diff -- tools/src пуст: код не менялся",
+        "STATE.md: верхний раздел про ISS-0002",
+        "cd tools && npm run traces: следов 0; handoffs-check: код 0"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 10. ИСТИНА о результате: причина ISS-0002 (apply-verdict и prepare-run могли оставить наполовину применённое состояние) устранена кодом, который уже стоял в снимке репозитория на старте прогона (из прошлой незавершённой попытки ISS-0002-20260930-01: writeAllOrNothing и createFolderAllOrNothing в tools/src/util.js, порядок записи в apply.js, сборка папки в prepare.js); в этом прогоне tools/src НЕ менялся. Сделано в этом прогоне: диагноз (на HEAD ошибка не воспроизводится), проект доделки, ворота безопасности и ревью на существующем коде (оба PASS), регрессионные тесты W55–W61, P19–P21 с расширением fault-inject.js и helpers.js, доказательство падения на реконструкции «до» (решение 0041; 19 проходят, 73 падают из 92), 35 мутантов, RELEASE-VALIDATOR PASS (step-09: npm ci && npm run check — 1399 из 1399; все критерии REQ-002 подтверждены заново). (1) docs/issues/ISS-0002-apply-verdict-partial-write.md: статус `closed, 2026-10-11` (время с часов), раздел «Закрыто»: прогон ISS-0002-20261011-01, что было сделано и чем проверено, ПРЯМО: исправление кода вошло в снимок раньше этого прогона (не авторство этого прогона), где регрессионные тесты (apply.write.test.js, prepare.write.test.js, строки W55–W61, P19–P21 и прежние), как показано падение «до» (реконструкция по 0041), остаточные риски (решение 0042; чтение источников по ссылке — ISS-0037; ошибка программы во время отката — ISS-0038); обнови в файле дефекта устаревшие ссылки на строки кода (apply.js:100-107 → фактические, helpers.js:350 → фактические) пометкой «состояние до исправления» в разделе «Что не так» без переписывания истории. (2) docs/requirements.yaml: статус REQ-002 in_progress -> done с комментарием (дата, прогон ISS-0002-20261011-01, PASS RELEASE-VALIDATOR step-09 заново подтвердил все критерии, критерий 11 выполнен, дефект ISS-0002 закрыт); больше ничего в файле не менять. (3) Заведи дефекты (формат WF-03 «Как выглядит дефект»; факты и ссылки — из handoff-ов прогона): ISS-0037 (LOW) — prepare-run читает ideas/<id>.md и файл из --context по символической ссылке и копирует внешний файл в sources (step-05-security-reviewer-security F1, step-05-reviewer R1; решение 0042 говорит, что для него нужен отдельный дефект; предложение исправления — отказ через lstat с кодом E_SOURCE_PATH); ISS-0038 (LOW) — ошибка программы (не ошибка ОС) во время отката или уборки в util.js (undo(), цикл уборки W4 и P4) обрывает остальные шаги: сбой фиксации STATE.md плюс ошибка программы при откате proposed-actions.json дают код 1 и трассировку, строка E_WRITE потеряна, остаются .STATE.md.sai-old, .STATE.md.sai-tmp и .proposed-actions.json.sai-old (step-06-test-designer I3, step-07-test-design-validator F1; дизайн §5.3 требует выполнять каждый шаг уборки); ISS-0039 (LOW) — не закрыты ячейки матрицы «цель × вид сбоя» критерия 11: вид «ссылка» не проверен для proposed-actions.json, вид «не обычный файл» для STATE.md в трёх файлах команды (тест «STATE.md — папка» лежит в cli.test.js) (step-07-test-design-validator F2). (4) docs/anti-patterns.md: AP-073 — исправление кода вошло в снимок репозитория раньше, чем закрыты тесты и учёт дефекта (прогон ISS-0002-20260930-01 остановился на среде), поэтому файл дефекта и дизайн месяцами описывали состояние «до», а копии «до» в истории нет — потребовалось решение 0041; урок: при остановке прогона сразу записывать в файл дефекта, что код уже в дереве, и список недоделанного; код не коммитить без записи об этом в STATE.md (дополняет AP-013, AP-062). Формат по соседним записям. (5) docs/design/REQ-002-idea-verdict.md: приведи устаревшие места к фактам (заголовок и статус раунда, счётчики P01–P21 и 92 строки в §9, §9.1, §9.2, §9.4, §9.5, §13.10: 1399 тестов = 1389 + 6 по проекту + 4 сверх проекта W58–W61; описание W58–W61; §13.9 число исходов шесть; §9.2 строка «полный контракт fault-inject — заголовок модуля»; M2 в §9.7 различает ветки возврата и удаления созданных; M30 — место правки: createFolderAllOrNothing, обработчик ошибки mkdir временной папки, когда вершина runs); больше ничего. (6) STATE.md: новый верхний раздел «На 2026-10-11 — ISS-0002 закрыт…» в формате соседних разделов: что работает и чем проверено (числа: 1399 тестов, +10 новых строк), плотность тестов по правилу decisions/0023 (посчитай той же командой, что в соседнем разделе), что НЕ сделано, открытые дефекты (ISS-0003, ISS-0024…ISS-0039; ISS-0002 закрыт), следующие свободные номера (ISS-0040, решение 0043, AP-074), решения 0041–0042 приняты ORCH (владелец может отменить), следующая работа по PLAN (REQ-030; ISS-0031 стоит как пункт 3а) и что ждёт владельца: новый потолок и разрешение на настоящий запуск после ISS-0031; вопрос по ISS-0028; прежние разделы не удалять. Время — с часов; статус записей — только то, что есть в handoff-ах. Перед сдачей запусти cd tools && npm run handoffs-check и cd tools && npm run traces — оба код 0.",
+    "acceptance_criteria": [
+      "ISS-0002 закрыт строкой closed с честным разделом «Закрыто» (код вошёл в снимок раньше этого прогона)",
+      "Статус REQ-002 = done с комментарием; остальные блоки не тронуты",
+      "ISS-0037, ISS-0038, ISS-0039 и AP-073 заведены с фактами из handoff-ов",
+      "Дизайн REQ-002 приведён к фактам (92 строки, 1399 тестов, W58–W61); STATE.md обновлён; плотность тестов посчитана командой",
+      "handoffs-check и traces — код 0"
+    ]
+  },
+  "created_at": "2026-10-11T22:51:38Z",
+  "started_at": "2026-10-11T22:51:38Z",
+  "completed_at": "2026-10-11T22:55:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "ISS-0002 закрыт строкой closed, 2026-10-11 с честным разделом «Закрыто» (исправление кода вошло в снимок раньше этого прогона, tools/src в нём не менялся). REQ-002 переведён in_progress -> done по PASS RELEASE-VALIDATOR (step-09). Заведены ISS-0037, ISS-0038, ISS-0039 (все LOW) и запись AP-073. Дизайн REQ-002 приведён к фактам (92 строки, 1399 тестов, W58–W61), в STATE.md добавлен верхний раздел с плотностью 44,6. handoffs-check и traces — код 0.",
+    "changes": [
+      {
+        "file": "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+        "change": "статус open -> closed, 2026-10-11; в «Что не так» и «Как исправить» устаревшие ссылки (apply.js:100-107, 103, 105; helpers.js:350) помечены «состояние до исправления» с указанием нынешних мест (apply.js:111-112, helpers.js:467), текст не переписан; новый раздел «Закрыто» (время с часов, прогон, что сделано, где тесты, падение «до» по решению 0041, остаточные риски 0042, ISS-0037…0039)"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "change": "блок REQ-002: поле status in_progress -> done, комментарий (2026-10-11, прогон ISS-0002-20261011-01, PASS step-09 заново подтвердил критерии 1–11, критерий 11 выполнен, ISS-0002 закрыт); остальное не менялось"
+      },
+      {
+        "file": "docs/issues/ISS-0037-prepare-run-reads-sources-through-symlink.md",
+        "change": "новый файл, LOW; факты step-05-security-reviewer-security F1 и step-05-reviewer R1"
+      },
+      {
+        "file": "docs/issues/ISS-0038-program-error-during-rollback-aborts-cleanup.md",
+        "change": "новый файл, LOW; факты step-06-test-designer I3 и step-07-test-design-validator F1"
+      },
+      {
+        "file": "docs/issues/ISS-0039-write-failure-matrix-cells-not-covered.md",
+        "change": "новый файл, LOW; факты step-07-test-design-validator F2"
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "change": "добавлена AP-073 (следующий номер после AP-072) со всеми полями; прежние записи не тронуты"
+      },
+      {
+        "file": "docs/design/REQ-002-idea-verdict.md",
+        "change": "только устаревшие места: заголовок (раунд 9, статусы ворот); §9 строка критерия 11, §9.1 B20, §9.2 (файлы, указание «полный контракт — заголовок fault-inject.js»), §9.4 (W01–W61 и W13b, 62; описание W58–W61), §9.5 (P01–P21, строка P21), §9.7 (M2/M2b/M2c различены, M30 — место правки createFolderAllOrNothing), §13.1, §13.9 (шесть исходов, 1399 = 1389 + 6 + 4, 92 строки), §13.10, §13.11"
+      },
+      {
+        "file": "STATE.md",
+        "change": "новый верхний раздел «На 2026-10-11 — ISS-0002 закрыт…»: работает/проверено, честно о коде из снимка, плотность 44,6, решено 0041–0042, НЕ сделано, открытые дефекты, AP-073, следующие номера ISS-0040/0043/AP-074, следующая работа, ждёт владельца; прежние разделы не тронуты"
+      }
+    ],
+    "self_check": {
+      "time": "date -u: 2026-10-11T22:52:41Z (запись дела), раздел STATE.md с часов в момент записи",
+      "requirements_block": "cp до правки + diff остальной части файла без строки статуса REQ-002 до/после: совпадает (same-rest); git diff --stat docs/requirements.yaml: 1 вставка, 1 удаление",
+      "density": "find tools/src -type f ( -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.mjs' ) -exec cat {} + | wc -l = 31377; 1399*1000/31377 = 44,6",
+      "ap_numbers": "новая запись AP-073 следует за AP-072",
+      "paths": "в добавленных строках нет путей этого компьютера и временных папок (grep по /Users/, /private/, /tmp/ пуст)",
+      "handoffs_check": "cd tools && npm run handoffs-check: нарушений 0 (659 файлов, исключений 114 из 114)",
+      "traces": "cd tools && npm run traces: следов 0 (1162 файла)"
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "PLAN.md не менялся (вне write_set): пункт 3 «ISS-0002 (HIGH)» там остаётся в виде очереди; ORCH решает, отметить ли его сделанным."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Зависимые от REQ-002 требования (REQ-001, REQ-009, REQ-010 и далее) свои статусы не меняли; комментарии в их блоках «REQ-002 ещё in_progress» устарели, но блоки вне write_set — правка за теми, кто ставит им статус."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Состав W58–W61 в §9.4 описан по именам тестов и summary step-06-test-designer; полные тексты строк — в tools/test/apply.write.test.js."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Статусы воротов в заголовке дизайна (раунд 9) взяты из handoff-ов step-03b, step-05, step-07, step-09; «35 мутантов» и «19 проходят, 73 падают из 92» — из задания и step-09."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/requirements.yaml",
+      "docs/issues/ISS-0037-prepare-run-reads-sources-through-symlink.md",
+      "docs/issues/ISS-0038-program-error-during-rollback-aborts-cleanup.md",
+      "docs/issues/ISS-0039-write-failure-matrix-cells-not-covered.md",
+      "docs/anti-patterns.md",
+      "docs/design/REQ-002-idea-verdict.md",
+      "STATE.md"
+    ]
+  }
+}

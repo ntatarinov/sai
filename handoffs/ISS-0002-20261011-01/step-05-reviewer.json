@@ -1,0 +1,153 @@
+{
+  "handoff_id": "step05-ISS-0002-20261011-01",
+  "run_id": "ISS-0002-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/ISS-0002-20261011-01/step-05-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0002-20261011-01/step-05-security-reviewer-security.json",
+      "handoffs/ISS-0002-20261011-01/step-03-code-designer.json",
+      "handoffs/ISS-0002-20261011-01/step-03b-code-design-validator.json",
+      "docs/design/REQ-002-idea-verdict.md (§5, §6, §13)",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "decisions/0004-write-phase-rename-and-hardlink-rollback.md",
+      "decisions/0041-iss0002-pre-fix-reconstruction.md",
+      "docs/requirements.yaml (REQ-002, критерий 11)",
+      "docs/workflows/WF-03-defect.md (шаг 5)",
+      "docs/workflows/WF-02-development.md (шаг 4)",
+      "docs/quality-bar.md",
+      "tools/src/util.js",
+      "tools/src/apply.js",
+      "tools/src/prepare.js",
+      "tools/src/cli.js"
+    ],
+    "route": "SECURITY-REVIEWER (PASS) -> REVIEWER (этот) -> TEST-DESIGNER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы — на копиях вне проекта"
+    ],
+    "base_tag": "base/ISS-0002-20261011-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 5: ревью ISS-0002 после PASS безопасности. Шаг 4 (CODE-FIXER) не проводился: исправление уже в коде на HEAD (диагноз step-01, проект step-03 и PASS step-03b). Сам, на существующем коде tools/src/util.js (writeAllOrNothing, createFolderAllOrNothing), tools/src/apply.js, tools/src/prepare.js и вызовах в tools/src/cli.js: настоящее ли это решение или костыль; идиомы стека (Node 22 без зависимостей, стиль соседнего кода); лишняя работа и мёртвый код; расхождения с проектом (docs/design/REQ-002-idea-verdict.md §5, §6, §13) и записанными решениями (0004, 0041); эрозия планки (Q6: ошибки не глотаются, прочие проброшены, тесты не ослаблены); соответствие критерию 11 REQ-002; единый механизм во всех соседних местах (AP-014: перечисли места записи нескольких файлов подряд в tools/src и скажи, где механизм общий, где нет — ISS-0003 и cli.js:145 snapshot вне этого дефекта). Главный вопрос: устранена ли причина (нет наполовину применённого состояния ни при каком виде сбоя), а не симптом. Запусти сам: тесты apply.write, prepare.write, cli и полный npm run check (вывод в файл вне проекта; имена красных поимённо, AP-070); повтори на копии вне проекта четыре случая из файла дефекта. Отдельно оцени находки SECURITY-REVIEWER Low F1 (prepare-run читает ideas/<id>.md по ссылке и копирует внешний файл в sources) и F2 (остаточная гонка подмены папки ссылкой) — решить ли ISS-0002 расширить нельзя (quality-bar §6 п. 6), скажи, заводить ли отдельный дефект или записать остаточный риск в decisions/0004 (это решит ORCH), и E_USAGE из resolveRunDir печатает абсолютный путь корня на stderr владельцу (оцени: допустимо или правка). FAIL при Critical/High/Medium.",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков/чтения кода, вывод приложен",
+      "Каждое замечание с местом и исправлением",
+      "Места записи нескольких файлов подряд перечислены (AP-014)",
+      "Файлы проекта не изменены (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-11T22:10:29Z",
+  "started_at": "2026-10-11T22:10:29Z",
+  "completed_at": "2026-10-11T22:15:23Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: Critical, High и Medium нет. Q1 причина: исправление настоящее, не костыль. Запись идёт через временный файл .sai-tmp рядом с целью (wx, flush), старая версия — жёсткая ссылка .sai-old, rename по порядку (proposed-actions.json, apply-report.json, STATE.md последней), откат из ссылок; prepare-run собирает папку прогона под временным именем и фиксирует одним rename. Перехватываются только ошибки ОС (isOsError: code и syscall — строки); ошибка программы после отката и уборки идёт дальше без изменений. Ни одной ошибки не проглочено, условий не обойдено, пустота вместо ответа не возвращается. Мои запуски: четыре случая файла дефекта на свежих копиях (цель-папка у proposed-actions.json и у apply-report.json, папка прогона 555, apply-report.json 444) дают код 1, stdout пуст, одна строка E_WRITE, без трассировки, строгий список до/после совпал, повтор после устранения причины — applied recommend, затем unchanged. Моя инъекция сбоев: отказ rename STATE.md (точка фиксации) — откат, список тот же; ENOSPC при частичной записи временного файла — список тот же; ошибка программы (TypeError) в точке фиксации — откат и пробрасывание, список тот же; двойной сбой (откат тоже EIO) — две строки E_WRITE, называющие остаток .sai-old. Q2 сходится с проектом §5.1-§5.8 и критерием 11 REQ-002 (части критерия закрыты дизайном §9.1/§13.4; код совпадает с §5.3, номера строк в §5.8 верны). Q3: лишнего нет — меняются util.js (общие помощники), apply.js (порядок целей), prepare.js (occupied через lstat, createFolderAllOrNothing); cli.js, validate.js, snapshot.js не тронуты, как решено. Q4 планка: поиск skip/todo/eslint-disable/|| true/only по изменённым файлам и тестам пуст; полный npm run check — код 0, 1389 тестов, 1389 pass, 0 fail, 0 skipped, 0 todo; красных имён нет; шаги команды check все на месте (package.json). Q5: идиомы стека (Node 22, ES-модули, без зависимостей, fs через объект по умолчанию, стиль как у соседних модулей). AP-014: места записи нескольких файлов подряд в tools/src — только apply.js (три файла) и prepare.js (папка с файлами); оба идут через общие writeAllOrNothing/createFolderAllOrNothing. Остальные места записи (cli.js:145 snapshot; traces/add.js и handoffs/close.js — один файл через тот же writeAllOrNothing; handoffs/create.js, team/store.js, team/files.js, team/lock.js, team/engine/channel.js, pixel-office/state-dir.js — свои механизмы, по одному файлу или папке через rename) многофайловой записи на месте не делают; cli.js:145 — ISS-0003. TEST-DESIGNER стоит проверить особо: порядок отката при сбое на каждом k (особенно STATE.md как k-й), двойной сбой, W4 (сбой уборки после фиксации: цели новые, код 1), остаток .sai-tmp рядом с неизменной целью, ошибку программы на каждом шаге stage/commit (откат и пробрасывание), SIGKILL между rename, prepare-run: корень 555 при отсутствующей runs/ (P21 в §13.5).",
+    "findings": [
+      {
+        "id": "R1",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/src/prepare.js:81-92, 108-112 (existsSync/readTextFile по ссылке); tools/src/util.js readTextFile",
+        "text": "SECURITY F1: prepare-run копирует в runs/<id>/sources файл, на который указывает ideas/<id>.md или файл из --context, если это ссылка на внешний файл. Подтвердил своей пробой: ссылка на внешний файл, код 0, текст внешнего файла скопирован. Запись за пределы корня не происходит, ссылку кладёт сам владелец. Это чтение по ссылке — тот же класс, что принятое в decisions/0004 чтение папки прогона, но источники там не названы. К фазе записи (ISS-0002) не относится, расширять ISS-0002 нельзя (quality-bar §6 п. 6).",
+        "fix": "Рекомендация: отдельный дефект (ORCH) — отказать на ссылке в источниках через lstat (E_SOURCE_PATH) с тестом; либо одной строкой в 0004 записать «чтение источников по ссылке принято». Мое предпочтение — дефект, потому что в источниках лежит содержимое, которое попадает в копии и в вердикт."
+      },
+      {
+        "id": "R2",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/src/util.js inspect() (247) -> stage() (296); пути лексические",
+        "text": "SECURITY F2: остаточная гонка — между проверкой ссылок на пути (W1.1) и созданием временного файла папку на пути может подменить ссылкой процесс того же пользователя. Известное свойство выбранного решения (дизайн §5.3, абзац «Охрана — в самой операции»: худший исход — временный файл в чужой папке, обрезанной цели и наполовину применённого набора это не даёт). Не воспроизводил (требует гонки).",
+        "fix": "Записать остаточный риск строкой в decisions/0004 (раздел «Граница»), без правки кода; отдельный дефект не нужен: закрыть можно только openat/O_NOFOLLOW по каталогам, а это за пределами Node 22 fs без зависимостей."
+      },
+      {
+        "id": "R3",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/src/cli.js:41-45 (resolveRunDir: «run folder must be directly inside <абсолютный путь>», «run folder not found: <путь>»)",
+        "text": "E_USAGE печатает абсолютный путь корня на stderr владельцу. Оценка: допустимо. Это терминал владельца на его же машине, путь — не секрет (Q7 о секретах), в файлы проекта, handoff-ы и логи сообщение само не пишется; E_WRITE-строки относительные. Правка не нужна. Если вывод когда-то начнут сохранять в handoff-ы, подставлять <root> (в этом ревью так и сделано).",
+        "fix": "Без правки кода. Не вводить абсолютные пути в новые сообщения."
+      },
+      {
+        "id": "R4",
+        "severity": "Low",
+        "blocks": false,
+        "place": "docs/issues/ISS-0002-apply-verdict-partial-write.md (ссылки apply.js:100-107, helpers.js:350); заголовок docs/design/REQ-002-idea-verdict.md (версия 4, раунд 8, статус тестов «FAIL (узкий)»)",
+        "text": "Учёт ещё не догнал код: файл дефекта ссылается на старые строки, заголовок дизайна не называет раунд 9 (дизайн §13.3, п. 1 и 7, сам это отмечает). Код с этим не расходится.",
+        "fix": "DOC-UPDATER при закрытии (дизайн §13.8); не блокирует."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && npm run check > <scratch>/check.out 2>&1",
+        "output": "код 0, 1:47; # tests 1389, # pass 1389, # fail 0, # cancelled 0, # skipped 0, # todo 0; красных записей нет (grep «^not ok» пуст)"
+      },
+      {
+        "command": "node --test test/apply.write.test.js; test/prepare.write.test.js; test/cli.test.js; test/listing.test.js (по отдельности)",
+        "output": "55/55, 18/18, 13/13, 9/9 pass, skipped 0, todo 0"
+      },
+      {
+        "command": "grep -nE \"\\.skip\\(|\\.todo\\(|todo|eslint-disable|\\|\\| true|\\.only\\(|xit\\(|TODO|FIXME\" src/util.js src/apply.js src/prepare.js src/cli.js test/apply.write.test.js test/prepare.write.test.js test/fault-inject.js test/listing.test.js test/helpers.js test/cli.test.js",
+        "output": "одно совпадение: test/helpers.js:669 — «process.exit(0)» в строке сервера-заглушки, шаблон «xit\\(» совпал с «exit(»; skip, todo, eslint-disable, || true, only нет"
+      },
+      {
+        "command": "grep -nE \"writeFileSync|renameSync|mkdirSync|linkSync|rmSync|unlinkSync|openSync|writeSync\" -r src (кроме util.js) — перечень мест записи (AP-014)",
+        "output": "73 строки; многофайловая запись на месте — только apply.js и prepare.js (оба через util.js); одиночные: cli.js:145, traces/add.js:265 и handoffs/close.js:353 (writeAllOrNothing), handoffs/create.js, team/*, pixel-office/state-dir.js — свои механизмы"
+      },
+      {
+        "command": "<scratch>/probe.mjs: четыре случая файла дефекта на свежих копиях (helpers validRun/runApplyCli, listing до/после)",
+        "output": "1 proposed-actions.json=папка: exit 1, trace=false, listingSame=true, «E_WRITE …/proposed-actions.json: is a folder (EISDIR); nothing was changed»; 2 apply-report.json=папка: то же; 3 папка прогона 555: «cannot write the temporary file … (EACCES); nothing was changed»; 4 apply-report.json 444: «is read-only and must change (EACCES); nothing was changed». Во всех четырёх повтор: exit 0 «applied recommend», затем «unchanged»"
+      },
+      {
+        "command": "<scratch>/probe2.mjs: внедрение сбоев в fs (STATE.md с устаревшей строкой в блоке, обе другие цели устарели)",
+        "output": "A rename STATE.md EIO: issues «cannot be replaced (EIO); nothing was changed», listingSame=true. B ENOSPC при частичной записи .apply-report.json.sai-tmp: «nothing was changed», listingSame=true. C TypeError в точке фиксации: брошено TypeError:bug, listingSame=true. D откат тоже EIO: «rollback incomplete; see the next lines» + «rollback failed (EIO); it holds the new content, the old content is in …/.proposed-actions.json.sai-old»"
+      },
+      {
+        "command": "F1: prepare-run на корне, где ideas/01-alpha.md — ссылка на внешний файл",
+        "output": "issues пусто, sources/ideas/01-alpha.md содержит «# external secret» (внешнее чтение по ссылке подтверждено)"
+      },
+      {
+        "command": "хеши всех файлов sai/ кроме tools/node_modules до и после (shasum, sort) и git status --short",
+        "output": "3631 файл, diff пуст; git status без изменений (M decisions/README.md, M docs/design/REQ-002-idea-verdict.md, ?? decisions/0041…, ?? handoffs/ISS-0002-20261011-01/ — те же, что до)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Совпадение grep test/helpers.js:669 — ложное («exit(» по шаблону «xit\\(»); признаков эрозии в изменённых и связанных файлах нет."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Для ORCH: R1 (SECURITY F1) — предлагаю завести отдельный дефект (источники prepare-run по ссылке); R2 (F2) — записать остаточный риск строкой в decisions/0004; решает ORCH. R3 (абсолютный путь в E_USAGE) — допустимо, правка не нужна."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "Q12: код не расходится с decisions/0004 (вариант 4, граница) и 0041 (копия «до» — реконструкция; тест должен падать на ней — это проверит TEST-DESIGNER/TEST-DESIGN-VALIDATOR, я копию «до» не проверял). Новых записей не требуется, кроме строки об F2, если ORCH так решит."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "Состояние, которое устройство допускает, а требование запрещает: нет новых. Известное и записанное в дизайне §5.2: если STATE.md заменять не нужно, после SIGKILL между rename другая цель может быть старой — так было и до запуска."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "Q10 — E_WRITE на реалистичные сбои ОС, процесс не падает; внешних вызовов и адресов в изменении нет (Q11 неприменим); Q8 и R3 неприменимы (служебный код, нет данных клиентов и фото); Q7 — секретов нет, пути в выводах заменены на <root>/<scratch>. AP-018: ожидаемый вердикт в задании не назван, вердикт выведен из моих запусков."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "handoff_id": "step05-security-ISS-0002-20261011-01",
+  "run_id": "ISS-0002-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/ISS-0002-20261011-01/step-05-security-reviewer-security.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0002-20261011-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0002-20261011-01/step-03-code-designer.json",
+      "handoffs/ISS-0002-20261011-01/step-03b-code-design-validator.json",
+      "docs/design/REQ-002-idea-verdict.md (§5, §6, §13)",
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/issues/ISS-0003-unguarded-fs-calls.md",
+      "decisions/0004-write-phase-rename-and-hardlink-rollback.md",
+      "decisions/0041-iss0002-pre-fix-reconstruction.md",
+      "docs/workflows/WF-03-defect.md (шаг 5)",
+      "docs/workflows/WF-02-development.md (шаг 3)",
+      "docs/quality-bar.md",
+      "tools/src/util.js",
+      "tools/src/apply.js",
+      "tools/src/prepare.js",
+      "tools/src/cli.js"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR (PASS) -> SECURITY-REVIEWER (этот) -> REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы — на копиях вне проекта"
+    ],
+    "base_tag": "base/ISS-0002-20261011-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 5: ворота безопасности для ISS-0002. Контекст: шаг 4 (CODE-FIXER) не проводился — диагноз (step-01) и проект (step-03, PASS step-03b) установили, что исправление уже стоит в коде на HEAD и поведение менять не нужно; код исправления прежде НЕ проходил SECURITY-REVIEWER в этой цепочке, поэтому ворота проходят на существующем коде. Область: tools/src/util.js (writeAllOrNothing, createFolderAllOrNothing), tools/src/apply.js (порядок записи, STATE.md последним), tools/src/prepare.js (сборка папки под временным именем, один rename), tools/src/cli.js (вызовы). Запускаешься всегда; затронута ли область, решаешь сам. Главный вопрос WF-03: устранена ли причина или симптом спрятан (Q6) — не проглатывает ли код ошибку и не оставляет ли наполовину применённое состояние. Сам, пробами на копиях вне проекта, проверь: (1) запись только внутри разрешённых мест: пути целей строятся из проверенных RUN-ID/имён; ссылка-подмена (runs/ или папка прогона — симлинк наружу; цель — симлинк) не выводит запись за корень; временные имена (.sai-tmp, .sai-old или как в коде) предсказуемы ли и можно ли их заранее занять (гонка/подмена между проверкой и записью — оцени, не воспроизводя вне копии); (2) откат: при сбое на втором/третьем файле прежнее содержимое STATE.md, proposed-actions.json и apply-report.json байт в байт сохраняется; временные файлы и папки не остаются; права файлов (0644/0755 — не шире прежних); (3) сообщения E_WRITE — без стека и без абсолютных путей компьютера, без содержимого файлов (в STATE.md могут быть решения владельца); (4) Q7: секретов нет; Q10: каждая реальная ошибка записи (EISDIR, EACCES, ENOSPC-подобная, ENOTDIR, EEXIST) даёт понятную строку и код 1, процесс не падает; (5) повторный запуск после устранения препятствия сходится (идемпотентность: applied затем unchanged); (6) чтение целей перед записью (сравнение) не следует за ссылками наружу. Для каждого пункта Q7–Q11 и R3 (и R2) — «выполнен (чем проверено)» или «неприменим (почему)». Найденное вне этой работы (ISS-0003: голая запись cli.js snapshot) — только перечисли в issues. FAIL при Critical/High/Medium.",
+    "acceptance_criteria": [
+      "Каждый пункт Q7–Q11 и R3 (и R2) назван: выполнен (чем проверено) или неприменим (почему)",
+      "Вердикт из собственных запусков и проб, вывод приложен",
+      "Откат и отсутствие остатков подтверждены пробами; записи вне разрешённых мест нет",
+      "Рабочее дерево проекта не изменено (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-11T22:06:14Z",
+  "started_at": "2026-10-11T22:06:14Z",
+  "completed_at": "2026-10-11T22:10:03Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Вердикт PASS выведен из моих запусков и проб на копиях вне проекта; пересказ автора не использован. Ожидаемый вердикт в задании не назван (AP-018). Блокирующих находок нет (Critical/High/Medium: 0); Low — 2, не блокируют. Рабочее дерево проекта не менялось: хеши 97 файлов (tools/src, tools/package.json, STATE.md) и `git status` до и после совпали. Код на HEAD (метка base/ISS-0002-20261011-01), шаг 4 не проводился; проверен существующий код как есть.\n\nКАРТА ПОВЕРХНОСТЕЙ (изменённых файлов нет; область задана заданием, четыре файла разобраны по строкам):\n- tools/src/util.js (writeAllOrNothing, createFolderAllOrNothing) — «пишет файлы» (путь в своей папке, Q10);\n- tools/src/apply.js — «пишет файлы» (порядок записи, STATE.md последним), «приходит извне» (аргумент команды);\n- tools/src/prepare.js — «пишет файлы», «приходит извне» (RUN-ID, списки из аргументов);\n- tools/src/cli.js — «приходит извне» (аргументы команд), вызовы записи.\nНе затронуты: «уходит в браузер» (в четырёх файлах нет HTTP, страницы, разметки), «держит секрет», «сервер ходит сам» (нет сети, процессов, внешних вызовов), «данные клиентов» (нет хранилища продукта), «фото людей».\n\nПУНКТЫ:\n- Q7 — выполнен. Поиск по четырём файлам (api key|secret|token|passw|bearer|authorization|sk-|ghp_|AKIA|PRIVATE KEY|process.env) — 0 совпадений; фикстуры тестов без значений-секретов. Файлов страницы в области нет (поверхность «уходит в браузер» не задета). Сообщения E_WRITE построены из фиксированных причин, пути от корня и кода ОС; err.message и содержимое файлов в них не входят (проверено выводом проб).\n- Q8 — неприменим: нет данных клиентов, пространств бизнеса и API (служебный код конвейера на файлах проекта).\n- Q9 — неприменим: SQL и хранилищ в четырёх файлах нет (поиск SELECT/INSERT/UPDATE…SET — 0).\n- Q10 — выполнен. Реальные ошибки EISDIR, EACCES (папка прогона 555, корень 555, цель 444), ENOTDIR (runs — файл), EEXIST (занятые временные имена), EINVAL (FIFO), ELOOP (ссылки), ошибки ОС, внесённые в rename/write/link/mkdir (ENOSPC, EIO, EDQUOT, EPERM, EACCES) — каждая даёт строку E_WRITE и код 1, процесс не падает, трассировки нет. Внешних вызовов и сети нет, таймаут неприменим.\n- Q11 — неприменим: адресов (URL) и сетевых запросов в области нет (поиск http/fetch/node:http/net/dns/child_process — 0).\n- R3 — неприменим: продукт с фото снят решением 0033; изменение фото людей не вводит.\n- R2 — неприменим: Pixel Office (журнал событий, хук, сервер) в области не затронут.\n- Запись внутри своей папки (проверка сверх пунктов) — выполнена, см. пробы 1–2 ниже. «Уходит в браузер» — не задето.\n- AP-014 (общий механизм в соседях): другие места записи файлов в tools/src (cli.js snapshot, team/*, pixel-office/state-dir.js, handoffs/create.js) — свои механизмы, вне области задания; перечислены в issues, не оценивались.\n\nПРОБЫ (все на копиях вне проекта, вывод в self_check):\n1. Ссылки: `runs` — ссылка наружу; папка прогона — ссылка наружу; apply-report.json, proposed-actions.json (в том числе висячая) и STATE.md — ссылки; временное имя .STATE.md.sai-tmp и .sai-old заранее занято ссылкой на внешний файл; временная папка при prepare-run занята ссылкой/папкой. Везде код 1, E_WRITE по имени, корень и внешняя папка до и после байт в байт равны (внешний файл не открыт на запись и не прочитан: сравнение цели отклоняет ссылку до чтения).\n2. Предсказуемые временные имена: имена .<имя>.sai-tmp/.sai-old предсказуемы, но создаются эксклюзивно (wx / link / mkdir без recursive); занятое имя — отказ EEXIST без записи через него (нет записи по чужой ссылке), т.е. заранее занять имя можно только ради отказа (DoS своего же запуска, остаток называется по имени, ручное удаление). Гонку между проверкой и записью воспроизводить вне копии нельзя; оценка — в F2.\n3. Откат: сбой rename на 1-м, 2-м, 3-м файле (proposed-actions.json, apply-report.json, STATE.md), сбой записи временного файла, сбой linkSync — список файлов, режимы и хеши до и после равны; для сбоя на STATE.md (после двух удачных rename) дополнительно равны inode, режим, mtime и размер всех трёх целей (возвращён тот же файл). Остатков .sai-tmp/.sai-old нет. Права: цели 600 и 640 после успешной замены остались 600 и 640; цель 444, которую нужно менять, — отказ «is read-only and must change» без записи.\n4. prepare-run: сбой записи run.json, файла источника, mkdir, rename папки — при `runs` есть и нет: корень до и после равен, остатков нет; сбой удаления временной папки (EBUSY) даёт две строки E_WRITE с именем остатка, код 1.\n5. Сходимость: после снятия препятствия (занятое .STATE.md.sai-tmp) — «applied recommend» (код 0), затем «unchanged» (код 0), остатков нет.\n6. Чтение целей: сравнение выполняется только после lstat-проверки (ссылка/папка/FIFO отклоняются раньше чтения) — проба с STATE.md-ссылкой: код 1, внешний файл не тронут.\nСуществующие тесты записи: test/apply.write.test.js, test/prepare.write.test.js, test/cli.test.js — 86 pass, 0 fail (мой запуск; это справка, не основание вердикта).",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "blocks": false,
+        "item": "запись/чтение путей (проверка ввода)",
+        "place": "tools/src/prepare.js:~88 (readTextFile(path.join(root, p)) для ideas/<id>.md и context), tools/src/util.js readTextFile (statSync идёт по ссылкам)",
+        "text": "prepare-run читает файл идеи или источника по ссылке: если ideas/<id>.md — символьная ссылка на файл вне проекта, его содержимое копируется в runs/<RUN-ID>/sources/. Проба: ссылка ideas/01-kviz-zayavki.md -> внешний файл; prepare-run вышел с кодом 0, текст внешнего файла найден в sources/. Запись за пределы корня при этом не происходит, а ссылку должен положить сам владелец в свой проект; решение 0004 принимает чтение по ссылке только для папки прогона, источники в нём не названы.",
+        "fix": "Либо записать в решении 0004 (или новым), что чтение источников по ссылке принято, как для папки прогона; либо читать источники через lstat с отказом на ссылке. Отдельный дефект по поручению ORCH; текущую работу не расширять."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "blocks": false,
+        "item": "запись внутри своей папки (гонка проверка-запись)",
+        "place": "tools/src/util.js inspect() -> stage(): проверка ссылок на пути (W1.1) и создание временного файла (W2) разделены по времени; пути лексические, без realpath",
+        "text": "Если между проверкой и записью другой процесс того же пользователя заменит папку на пути (runs или runs/<id>) символьной ссылкой, wx-создание временного файла пойдёт по ссылке в чужую папку (rename цели саму ссылку-цель не пересекает, цель-ссылка заменяется записью, а не следуется). Не воспроизводилось (требует гонки; вне копии проверять нельзя); окно мало, нужен локальный процесс с правом записи в проект, т.е. уже тот же пользователь. Известное свойство выбранного решения (дизайн §5, пути лексические), не новое.",
+        "fix": "Принять как остаточный риск одного пользователя (записать в 0004 одной строкой) либо в будущем открывать папку по дескриптору/O_NOFOLLOW; сейчас не требуется."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "хеши до/после: find tools/src tools/package.json STATE.md -type f | sort | xargs shasum -a 256 (97 файлов); git status --short до/после",
+        "output": "diff пуст в обоих случаях (HASH_SAME, STATUS_SAME) — проект не менялся"
+      },
+      {
+        "command": "копия sai/ без .git и node_modules в <scratch>/cp; мини-корни <scratch>/p*/pr*/pa*: STATE.md, ideas, runs/WF06-20260926-01 с устаревшими целями; node <scratch>/cp/tools/src/cli.js apply-verdict --root …",
+        "output": "applied recommend, затем unchanged (код 0)"
+      },
+      {
+        "command": "внедрение сбоев предзагрузкой (node --import <scratch>/inject.mjs; патч fs.renameSync/writeFileSync/linkSync/mkdirSync, код ОС задаётся) — rename proposed-actions.json ENOSPC; rename apply-report.json EACCES; rename STATE.md EIO; запись tmp apply-report ENOSPC; link STATE.md EPERM; список файлов до/после (режим, хеш, ссылки, скрытые)",
+        "output": "каждый раз: 'E_WRITE …: cannot be replaced (ENOSPC|EACCES|EIO) / cannot write the temporary file … / cannot keep the old version as .STATE.md.sai-old (EPERM); nothing was changed', exit=1, 'STATE IDENTICAL, no leftovers'"
+      },
+      {
+        "command": "сбой rename STATE.md (EIO) при цели 600/640: stat -f '%i %Lp %m %z' до/после",
+        "output": "diff пуст: inode, режим, mtime, размер всех трёх целей прежние; остатков нет"
+      },
+      {
+        "command": "цель apply-report.json 444 (нужно менять)",
+        "output": "E_WRITE runs/WF06-20260926-01/apply-report.json: is read-only and must change (EACCES); nothing was changed; список равен"
+      },
+      {
+        "command": "успешная запись при STATE.md 600, proposed-actions.json 640; stat режимов; повторный запуск",
+        "output": "режимы 600 и 640 сохранены, новые inode; повтор — 'unchanged'; .sai-* нет"
+      },
+      {
+        "command": "препятствия apply-verdict: runs-ссылка наружу; папка прогона-ссылка; apply-report/proposed(висячая)/STATE.md — ссылки; .STATE.md.sai-tmp и .apply-report.json.sai-old — ссылки на внешний файл; .proposed-actions.json.sai-tmp рядом с неизменной целью; папка прогона 555; корень 555; apply-report.json — папка; proposed-actions.json — FIFO; STATE.md — папка",
+        "output": "все: exit=1; сообщения вида 'folder runs is a symbolic link (ELOOP)', 'is a symbolic link (ELOOP)', 'leftover … from an interrupted or concurrent run (EEXIST); … delete and re-run', 'cannot write the temporary file … (EACCES)', 'is a folder (EISDIR)', 'is not a regular file (EINVAL)' (STATE.md-папка — E_STATE_ANCHOR до записи); 'root unchanged' и 'outside unchanged' в каждой пробе"
+      },
+      {
+        "command": "prepare-run: нормально (runs нет/есть); runs-ссылка наружу; runs — файл; RUN-ID — висячая ссылка; временная папка занята ссылкой/папкой; runs 555; корень 555; RUN-ID '../evil'",
+        "output": "успех: права 644/755, остатков нет; остальные: E_WRITE 'runs: is a symbolic link (ELOOP)', 'runs: is not a folder (ENOTDIR)', 'leftover … (EEXIST)', 'cannot create the temporary folder … (EACCES)' — код 1; 'run folder already exists' и 'RUN-ID must match' — E_USAGE, код 2; внешняя папка не менялась"
+      },
+      {
+        "command": "prepare-run со сбоем: writeFileSync run.json ENOSPC; rename временной папки EIO; mkdirSync sources EACCES; writeFileSync 02-sai.md EDQUOT — runs нет и есть",
+        "output": "8 запусков: exit=1, 'nothing was changed', 'UNCHANGED, no leftovers'"
+      },
+      {
+        "command": "prepare-run: сбой записи run.json и сбой rmSync (EBUSY)",
+        "output": "'E_WRITE runs/WF06-20261012-06/run.json: cannot write (EIO); no target was changed; leftovers are listed next' и 'E_WRITE .runs.sai-tmp: could not remove this temporary folder (EBUSY); delete it by hand'"
+      },
+      {
+        "command": "проба F1: ideas/01-kviz-zayavki.md — ссылка на внешний файл; prepare-run; grep по корню",
+        "output": "exit 0; текст внешнего файла найден в runs/…/sources/ideas/01-kviz-zayavki.md"
+      },
+      {
+        "command": "cd tools && grep -nEi '(api[_-]?key|secret|token|passw|bearer|authorization|sk-|ghp_|AKIA|BEGIN .*PRIVATE|process\\.env)' src/util.js src/apply.js src/prepare.js src/cli.js",
+        "output": "none"
+      },
+      {
+        "command": "grep -nEi 'https?:|fetch\\(|node:(http|https|net|dns|child_process)|exec\\(|spawn|SELECT |INSERT |eval\\(|new Function' в тех же четырёх файлах",
+        "output": "none"
+      },
+      {
+        "command": "cd tools && node --test test/apply.write.test.js test/prepare.write.test.js test/cli.test.js",
+        "output": "tests 86, pass 86, fail 0, skipped 0 (справка; вердикт — по пробам выше)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "ISS-0003 (вне работы): tools/src/cli.js:145 snapshot — голый fs.writeFileSync без обработки ошибки ОС (трассировка вместо кода). Не оценивалось как часть ISS-0002, только перечислено, как просило задание."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Для REVIEWER (не вердикт безопасности): в cli.js resolveRunDir сообщение E_USAGE 'run folder must be directly inside <абсолютный путь>' печатает абсолютный путь корня на stderr владельцу; в E_WRITE абсолютных путей нет. Поверхность: терминал владельца, секретов нет."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "AP-014: прочие места записи файлов в tools/src (team/store.js, team/files.js, team/lock.js, team/engine/channel.js, pixel-office/state-dir.js, handoffs/create.js) устроены отдельно и в область этого шага не входят; если ORCH хочет единой проверки ссылок/временных имён, это отдельное поручение."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "Findings F1, F2 — Low, не блокируют; F1 предлагаю завести дефектом по поручению ORCH (quality-bar §6, п. 6), F2 — одной строкой в решение 0004."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "Q6 по главному вопросу WF-03: код не проглатывает ошибку (только ошибки ОС с code+syscall превращаются в E_WRITE, прочие пробрасываются с трассировкой после отката) и не оставляет наполовину применённого состояния — подтверждено пробами 3–5."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

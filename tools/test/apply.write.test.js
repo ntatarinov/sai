@@ -1,4 +1,4 @@
-// W01-W54 and W13b (design REQ-002 §9.4, ISS-0002): the write phase of apply-verdict is
+// W01-W61 and W13b (design REQ-002 §9.4, §13.5, ISS-0002): the write phase of apply-verdict is
 // all or nothing. Every row builds its own fixture (a state of §9.2 in a temporary
 // folder, never the real project), puts one obstacle or one injected failure in the way,
 // runs the real CLI as a separate process with a time limit and checks A1-A6 of §9.3;
@@ -1107,6 +1107,162 @@ test("W54 RR: a program error (TypeError) in the check of STATE.md is not turned
     run: () =>
       runApplyCli(fx.root, fx.runDir, {
         faults: [{ fn: "lstatSync", paths: [fx.state], effect: "bug" }],
+      }),
+    converge: () => assertApplyConverges(fx, cleanTargets("RF")),
+  });
+});
+
+// ---- the cleanup after the commit, a foreign hard-link name, a program error with a code --
+
+test("W55 RR: everything is applied, then .proposed-actions.json.sai-old cannot be removed, EIO (the first of three cleanups): the command fails, names it, the two other backups are gone", () => {
+  const fx = stateRR();
+  const clean = cleanTargets("RF");
+  refusal({
+    root: fx.root,
+    setup: () => removeAfter(oldOf(fx.proposed)),
+    run: () =>
+      runApplyCli(fx.root, fx.runDir, {
+        faults: [
+          {
+            fn: "unlinkSync",
+            paths: [oldOf(fx.proposed)],
+            effect: "throw",
+            code: "EIO",
+          },
+        ],
+      }),
+    lines: [
+      writeLine(
+        oldOf(PA),
+        "applied, but this backup of the old version could not be removed (EIO); delete it by hand",
+      ),
+    ],
+    // the three targets are new; the one leftover is the old proposed-actions.json itself
+    // (every field), the backups of the two other targets are removed
+    delta: (before) => ({
+      replaced: replacedBy(clean, before, ST, PA, AR),
+      added: { [oldOf(PA)]: { ...before.get(PA), path: oldOf(PA) } },
+    }),
+    converge: () => assertApplyConverges(fx, clean, { alreadyNew: true }),
+  });
+});
+
+test("W56 RR: another process makes .STATE.md.sai-old first: the command refuses naming it, the foreign file is neither overwritten nor removed", () => {
+  const fx = stateRR();
+  const foreign = "held by another process\n";
+  refusal({
+    root: fx.root,
+    setup: () => removeAfter(oldOf(fx.state)),
+    run: () =>
+      runApplyCli(fx.root, fx.runDir, {
+        faults: [
+          {
+            fn: "linkSync",
+            from: fx.state,
+            to: oldOf(fx.state),
+            effect: "preempt",
+          },
+        ],
+      }),
+    lines: [leftoverLine(ST, oldOf(ST))],
+    // the listing as before plus the other process's file, as it was written; the
+    // temporary files and backups of the two other targets are gone
+    delta: () => ({
+      added: {
+        [oldOf(ST)]: {
+          type: "f",
+          mode: newFileMode(fx.root),
+          size: Buffer.byteLength(foreign),
+          sha: sha256(foreign),
+        },
+      },
+    }),
+    converge: () => assertApplyConverges(fx, cleanTargets("RF")),
+  });
+});
+
+test("W57 RR: a program error with a code but no syscall at the commit of STATE.md is not turned into E_WRITE; rollback is done", () => {
+  const fx = stateRR();
+  refusal({
+    root: fx.root,
+    crash: "code",
+    run: () =>
+      runApplyCli(fx.root, fx.runDir, {
+        faults: [
+          {
+            fn: "renameSync",
+            from: tempOf(fx.state),
+            to: fx.state,
+            effect: "bug-code",
+          },
+        ],
+      }),
+    converge: () => assertApplyConverges(fx, cleanTargets("RF")),
+  });
+});
+
+// ---- added by TEST-DESIGNER (ISS-0002-20261011-01, step 6) for the gaps REVIEWER named -----
+// W58: a leftover temporary file beside a target that does not change. W59-W61: a program
+// error at each step of the preparation (W2) is not turned into E_WRITE, as W49 does for
+// the commit and W54 for the check.
+
+test("W58 RR, only STATE.md is stale: a leftover .apply-report.json.sai-tmp beside the unchanged apply-report.json makes the command refuse", () => {
+  const fx = stateRR({ stale: ["state"] });
+  refusal({
+    root: fx.root,
+    setup: () => {
+      fs.writeFileSync(tempOf(fx.report), "left by an interrupted run");
+      return removeAfter(tempOf(fx.report));
+    },
+    run: () => runApplyCli(fx.root, fx.runDir),
+    lines: [leftoverLine(AR, tempOf(AR))],
+    converge: () => assertApplyConverges(fx, cleanTargets("RF")),
+  });
+});
+
+test("W59 RR: a program error (TypeError) when the new bytes of STATE.md are written to its temporary file is not turned into E_WRITE; the earlier temporary files and backups are removed", () => {
+  const fx = stateRR();
+  refusal({
+    root: fx.root,
+    crash: true,
+    run: () =>
+      runApplyCli(fx.root, fx.runDir, {
+        faults: [
+          { fn: "writeFileSync", paths: [tempOf(fx.state)], effect: "bug" },
+        ],
+      }),
+    converge: () => assertApplyConverges(fx, cleanTargets("RF")),
+  });
+});
+
+test("W60 RR: a program error (TypeError) when the permissions are copied to .STATE.md.sai-tmp is not turned into E_WRITE; the temporary files and backups are removed", () => {
+  const fx = stateRR();
+  refusal({
+    root: fx.root,
+    crash: true,
+    run: () =>
+      runApplyCli(fx.root, fx.runDir, {
+        faults: [{ fn: "chmodSync", paths: [tempOf(fx.state)], effect: "bug" }],
+      }),
+    converge: () => assertApplyConverges(fx, cleanTargets("RF")),
+  });
+});
+
+test("W61 RR: a program error with a code but no syscall when the hard link .STATE.md.sai-old is made is not turned into E_WRITE; the temporary files and backups are removed", () => {
+  const fx = stateRR();
+  refusal({
+    root: fx.root,
+    crash: "code",
+    run: () =>
+      runApplyCli(fx.root, fx.runDir, {
+        faults: [
+          {
+            fn: "linkSync",
+            from: fx.state,
+            to: oldOf(fx.state),
+            effect: "bug-code",
+          },
+        ],
       }),
     converge: () => assertApplyConverges(fx, cleanTargets("RF")),
   });

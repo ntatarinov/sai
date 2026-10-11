@@ -1,0 +1,120 @@
+{
+  "handoff_id": "step01-ISS-0002-20261011-01",
+  "run_id": "ISS-0002-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "ISSUE-FIXER",
+  "file": "handoffs/ISS-0002-20261011-01/step-01-issue-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/issues/ISS-0003-unguarded-fs-calls.md",
+      "docs/workflows/WF-03-defect.md",
+      "docs/requirements.yaml (REQ-002, критерий 11; REQ-004)",
+      "docs/design/REQ-002-idea-verdict.md",
+      "tools/src/apply.js",
+      "tools/src/prepare.js",
+      "tools/src/util.js",
+      "tools/test/apply.write.test.js",
+      "tools/test/prepare.write.test.js",
+      "tools/test/helpers.js",
+      "handoffs/ISS-0002-20260930-01/ (прошлая попытка — как история)",
+      "docs/anti-patterns.md"
+    ],
+    "route": "ISSUE-FIXER (этот) -> CODE-DESIGNER -> CODE-DESIGN-VALIDATOR -> CODE-FIXER -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "нет: ISSUE-FIXER проект не меняет, пишет только result своего handoff-а"
+    ],
+    "base_tag": "base/ISS-0002-20261011-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 1. Диагноз ISS-0002 (HIGH): apply-verdict (и тот же пробел в prepare-run) может оставить наполовину применённое состояние при сбое записи. Файл дефекта — гипотеза, не факт (AP-012). ВАЖНО об истории: в handoffs/ISS-0002-20260930-01/ лежит прошлая незавершённая попытка (CODE-DESIGNER r2…r8, BACKEND-DEV r2, REVIEWER, TEST-DESIGNER r2 остановился на среде: Node был недоступен); по PLAN.md (итерация 8, пункт 3) и урокам AP-062/AP-013 этот прогон начинается ЗАНОВО с диагноза. На HEAD в tools/src/apply.js уже стоит вызов writeAllOrNothing (из tools/src/util.js), и есть тесты tools/test/apply.write.test.js и prepare.write.test.js — выясни, что из этого реально на HEAD сделано и доведено, что нет. Сделай сам, на копии до (pre_fix_copy, коммит HEAD, каталог tools) и своих временных копиях вне проекта: (1) воспроизведи четыре случая из файла дефекта (цель — папка; цель — папка у apply-report.json; папка прогона с правами 555; apply-report.json с правами 444) для apply-verdict И для prepare-run и приложи настоящий вывод; если ошибка НЕ воспроизводится на HEAD — скажи прямо, какой механизм её убрал (функция, строка), и чего по факту не хватает для закрытия (критерий REQ-002 п. 11, тесты на каждую цель и вид сбоя, проект в docs/design/REQ-002-idea-verdict.md §5/§6, список файлов с папками в tree()); (2) найди все места того же рода поиском (запись нескольких файлов подряд без фазы проверки/«всё или ничего»: tools/src/*.js, ISS-0003 — незащищённые вызовы fs; отметь пересечение с ISS-0003, но не расширяй этот дефект); (3) механизм: какая функция и строка, какое правило нарушено (критерий 11 REQ-002, дизайн §5), почему существующие тесты этого не поймали (или поймают ли теперь); (4) для проекта исправления (шаг 3): что должно измениться (поведение и файлы) либо что исправление уже на месте и нужны только закрытие и проверки; есть ли ожидаемое поведение в требовании (REQ-002 критерий 11) или тесте — если нет, нужен шаг 2 WF-03; (5) воспроизведение для регрессионного теста: команда и вывод до исправления; (6) предложение серьёзности и записи в журнал ошибок, если причина в процессе. Ничего не исправляй и не меняй файлы проекта. Настоящий claude не запускай. Копия до: <scratch>/pre_fix_ISS-0002/tools (git archive HEAD).",
+    "acceptance_criteria": [
+      "Ошибка воспроизведена своим запуском (или чётко сказано, что на HEAD её нет, и какой механизм её убрал), вывод приложен",
+      "Названы функция/строка, нарушенное правило и причина, почему тесты не поймали",
+      "Перечислены все места того же рода, каждое с воспроизведением или причиной, почему оно не того рода",
+      "Названо, что должно измениться (или что уже на месте), и есть ли ожидаемое поведение в требовании/тесте (нужен ли шаг 2 WF-03)",
+      "Ни один файл проекта не изменён; artifacts_out пуст"
+    ]
+  },
+  "created_at": "2026-10-11T21:32:50Z",
+  "started_at": "2026-10-11T21:32:50Z",
+  "completed_at": "2026-10-11T21:35:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "ДИАГНОЗ ISS-0002 (WF-03, шаг 1). На HEAD ошибка НЕ воспроизводится: исправление кода уже стоит на месте и работает; не доведены тесты (5 строк из 63 по дизайну) и учёт. Нужны закрытие и проверки, не новое исправление.\n\n1. ПЕРВОНАЧАЛЬНАЯ ПРИЧИНА (по файлу дефекта; в проекте нет коммита до исправления, поэтому «до» восстановлено, см. self_check): apply-verdict писал STATE.md, proposed-actions.json, apply-report.json по очереди и на месте, без фазы проверки (дизайн REQ-002 §5, «сначала вся проверка, потом все записи»), а ошибка fs на 2-м или 3-м файле давала трассировку Node и наполовину применённое состояние; у prepare-run так же — mkdir/запись папки прогона без отката (ISS-0003, случай e). Нарушены критерий 11 REQ-002, дизайн §5 и Q10. Тесты не ловили, потому что ни одного теста на сбой записи не было (строгий список tree() не видел папок, ISS-0002 замечание O2).\n\n2. ЧТО РЕАЛЬНО НА HEAD (проверено своим запуском):\n- tools/src/util.js: writeAllOrNothing (проверка W1 inspect() для всех целей, временный файл .<имя>.sai-tmp с fsync, жёсткая ссылка .sai-old, rename в порядке фиксации, откат undo(), уборка W4) и createFolderAllOrNothing (папка прогона собирается под временным именем и ставится одним rename). Только ошибки ОС (isOsError: string code и syscall) становятся строками E_WRITE; ошибка программы пробрасывается после отката.\n- tools/src/apply.js:109-112 (targets = proposed, report, state; STATE.md последней — точка фиксации; вызов writeAllOrNothing). tools/src/prepare.js:157 (createFolderAllOrNothing). В §6 дизайна код E_WRITE есть (строка таблицы кодов).\n- Те же функции уже используют handoffs/close.js:353 и traces/add.js:265, то есть механизм общий.\n- Тесты на HEAD: apply.write.test.js 55 тестов (W01-W54 и W13b), prepare.write.test.js 18 (P01-P18), listing.test.js 9 (L01-L09); прогон трёх файлов на копии до: 82 теста, 82 pass, 0 fail.\n- Дерево чистое (git status), код = pre_fix_copy (diff -rq пуст).\n\n3. ЧЕГО НЕ ХВАТАЕТ ДЛЯ ЗАКРЫТИЯ (критерий 11 REQ-002 ссылается на дизайн §9.4/§9.5, статус REQ-002 in_progress, ISS-0002 open):\n(а) нет пяти строк дизайна: W55 (сбой уборки .sai-old первой из трёх — проверяет, что цикл уборки не останавливается после неудачи), W56 (чужой .STATE.md.sai-old: замок на жёсткую ссылку), W57 (ошибка с code ERR_INJECTED_BUG без syscall — отличие ошибки программы от ошибки ОС по syscall), P19 (чужая .sai-tmp-папка, созданная между проверкой P1 и mkdir — единственный замок prepare-run), P20 (двойник P16 с bug-code). grep по tools/test даёт ноль совпадений для W55-W57, P19, P20, ERR_INJECTED_BUG, held.txt.\n(б) под W56, P19, W57, P20 в tools/test/fault-inject.js нет механизма: preempt допустим только для writeFileSync (строка EFFECTS/таблица допустимых fn), эффекта bug-code нет; в дизайне §9.2 они описаны, значит надо доработать помощник.\n(в) мутанты M1-M58 (дизайн §9.7) и «падает до исправления» (TEST-DESIGNER запускает новые тесты на pre_fix_copy из прошлой попытки) на HEAD нигде не подтверждены: прошлая попытка (handoffs/ISS-0002-20260930-01) остановилась на step-06-test-designer-r2 из-за недоступного Node (BLOCKED, статус IN_PROGRESS) — нового теста на проверку силы строк нет. Это работа TEST-DESIGNER (шаг 6) и TEST-DESIGN-VALIDATOR (шаг 7), не CODE-FIXER.\n(г) учёт: ISS-0002 открыт, REQ-002 in_progress; закрыть может только DOC-UPDATER после PASS RELEASE-VALIDATOR.\n\n4. ПРИЧИНА, ПОЧЕМУ ЭТО НЕ ЗАМЕЧЕНО РАНЬШЕ: код исправления и 82 теста вошли в единственный снимок репозитория (Initial snapshot) при том, что прогон по ISS-0002 не завершён (шаги 6-7 неполные, Node был недоступен), а файл дефекта и дизайн по-прежнему описывают поведение «до исправления». Любой, кто читает ISS-0002 как есть, решит, что исправления нет.\n\n5. ЧТО ДОЛЖНО ИЗМЕНИТЬСЯ (для шага 3 CODE-DESIGNER): поведение кода не меняется. Проект исправления сводится к проверке, что код соответствует §5 (с ссылкой на уже готовые функции), и к уточнению, что доделывается в tests: fault-inject.js (preempt для linkSync и mkdirSync, эффект bug-code), строки W55-W57, P19, P20 в apply.write.test.js и prepare.write.test.js, затем мутанты. Ожидаемое поведение уже есть в требовании (критерий 11 REQ-002) и в тестах/дизайне, шаг 2 WF-03 (новый критерий) НЕ нужен. Если ORCH сочтёт, что код исправления одобрен прошлой попыткой (SECURITY-REVIEWER и REVIEWER шаг 5 есть, ревью по HEAD кода — step-05-reviewer.json в старом прогоне), шаги 3-5 можно сократить до проверки соответствия, но решать это ORCH (по AP-062/AP-013 ничего из старых handoff-ов в зачёт не идёт).\n\n6. ПЕРЕСЕЧЕНИЕ С ISS-0003 (не расширяю): случаи a и e файла ISS-0003 (STATE.md 444 при записи; runs — файл) на HEAD уже закрыты (A4 и B2 ниже). Остались b и g1 (snapshot, cli.js:145, голый fs.writeFileSync: опечатка в папке <out-file> и <out-file> — папка) и d, g2, c, f: воспроизведено 2 случая (трассировка Node). Их причина другая (чтение и один файл), в ISS-0002 не входят.\n\n7. СЕРЬЁЗНОСТЬ: оставить HIGH до закрытия по причине отсутствия тестов силы и открытого критерия 11; фактический риск на HEAD ниже (код защищает), после закрытия двух хвостов — просто закрыть. Не ниже MEDIUM по правилу «повтор»: прошлого закрытого дефекта с той же причиной в docs/issues/ нет (ISS-0001 — другой дефект, стек Node), повтора нет.\n",
+    "self_check": [
+      {
+        "command": "diff -rq tools <scratch>/pre_fix_ISS-0002/tools -x node_modules; git status --short",
+        "output": "diff пуст; из изменений только ?? handoffs/ISS-0002-20261011-01/ — копия до = HEAD, код исправления в дереве закоммичен"
+      },
+      {
+        "command": "cd <scratch>/diag02/tools && node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js  (diag02 = копия pre_fix_ISS-0002/tools)",
+        "output": "tests 82, pass 82, fail 0, cancelled 0, skipped 0; duration_ms 6657"
+      },
+      {
+        "command": "grep -c '^test(' test/apply.write.test.js test/prepare.write.test.js test/listing.test.js; grep -n 'W55|W56|W57|P19|P20|ERR_INJECTED_BUG|held.txt' test/*.js",
+        "output": "55, 18, 9; для W55-W57, P19, P20, ERR_INJECTED_BUG, held.txt — нет совпадений. fault-inject.js: preempt допустим только для writeFileSync, эффекта bug-code нет"
+      },
+      {
+        "command": "node <scratch>/repro.mjs <scratch>/diag02/tools   (HEAD; apply-verdict на фикстуре RR/RF, prepare-run на фикстуре makeProject; сравнение tree() до и после)",
+        "output": "apply A1 proposed-actions.json — папка: exit=1, 'E_WRITE runs/WF06-20260925-01/proposed-actions.json: is a folder (EISDIR); nothing was changed', stackLines=0, listing changed: false\napply A2 apply-report.json — папка: exit=1, 'E_WRITE .../apply-report.json: is a folder (EISDIR); nothing was changed', stackLines=0, listing changed: false\napply A3 папка прогона 555 (RR и RF): exit=1, 'E_WRITE .../proposed-actions.json: cannot write the temporary file .../.proposed-actions.json.sai-tmp (EACCES); nothing was changed', stackLines=0, listing changed: false\napply A4 apply-report.json 444: exit=1, 'E_WRITE .../apply-report.json: is read-only and must change (EACCES); nothing was changed', stackLines=0, listing changed: false\nprepare B1 runs/<RUN-ID> — папка: exit=2, 'E_USAGE: run folder already exists: runs/WF06-20260925-01', listing changed: false\nprepare B2 runs — файл: exit=1, 'E_WRITE runs: is not a folder (ENOTDIR); nothing was changed', listing changed: false\nprepare B3 runs 555: exit=1, 'E_WRITE runs/WF06-20260925-01: cannot create the temporary folder runs/.WF06-20260925-01.sai-tmp (EACCES); nothing was changed', listing changed: false\nprepare B4 корень 555, runs нет: exit=1, 'E_WRITE runs: cannot create the temporary folder .runs.sai-tmp (EACCES); nothing was changed', listing changed: false"
+      },
+      {
+        "command": "node <scratch>/repro.mjs <scratch>/diag02old/tools   (diag02old = та же копия, но блок записи apply.js:109-112 заменён на реконструкцию старой записи: по очереди на месте; prepare.js не менялся, поэтому B1-B4 те же, что на HEAD — у prepare-run реконструкции «до» нет)",
+        "output": "A1 папка: exit=1, 'node:fs:441 ... readFileUtf8', stackLines=8, listing changed: true (STATE.md перезаписан)\nA2 папка у apply-report.json: exit=1, трассировка, stackLines=8, listing changed: true (STATE.md и proposed-actions.json перезаписаны)\nA3 папка прогона 555 (RR, цели записываемы): exit=0 'applied recommend' — запись на месте мимо прав папки, listing changed: true\nA3b папка 555, выходных файлов нет (RF): exit=1, 'node:fs:2425 writeFileUtf8', stackLines=8, STATE.md перезаписан\nA4 apply-report.json 444: exit=1, трассировка, stackLines=8, STATE.md и proposed-actions.json перезаписаны — это и есть механизм ISS-0002; воспроизводит картину из файла дефекта (реконструкция, а не настоящий старый коммит: в репозитории он не сохранился)"
+      },
+      {
+        "command": "node tools/src/cli.js snapshot <нет такой папки>/x.txt --root <проект> ;  ... snapshot <папка> --root <проект>  (на HEAD-копии, случаи g1 и b из ISS-0003)",
+        "output": "оба: трассировка Node 'node:fs:2425 binding.writeFileUtf8(' (cli.js:145 без защиты) — ISS-0003 b и g1 открыты, к ISS-0002 не относятся"
+      },
+      {
+        "command": "поиск записей fs по tools/src (writeFile|appendFile|mkdir|rename|link|unlink|rm|chmod|truncate|open|write)",
+        "output": "Многофайловой записи без all-or-nothing не найдено. Через writeAllOrNothing: apply.js:112, handoffs/close.js:353, traces/add.js:265. Через createFolderAllOrNothing: prepare.js:157. Остальное — однофайловые или с собственным протоколом: handoffs/create.js (временный файл + linkSync), team/store.js:605-628 (папка проекта под временным именем + renameSync), team/files.js:100-116 (partial + linkSync), team/journal.js (append с откатом ftruncate), pixel-office/state-dir.js:280-296 (tmp + rename), traces/add.js замок. Голый вызов только cli.js:145 (snapshot, один файл, ISS-0003)"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "FINDING",
+        "same_kind_places": "Места того же рода (запись нескольких файлов без фазы проверки): только apply.js (было) и prepare.js (было) — оба исправлены на HEAD, воспроизведение выше. Остальные многофайловые записи уже идут через writeAllOrNothing (handoffs/close.js:353, traces/add.js:265) или собирают папку под временным именем и ставят одним rename (team/store.js:605-628). Однофайловый голый вызов: cli.js:145 snapshot — ISS-0003 (b, g1), воспроизведено, не расширяю."
+      },
+      {
+        "kind": "FINDING",
+        "text": "Расхождение с заданием/файлом дефекта (AP-012): файл ISS-0002 и ISS-0003 описывают поведение до исправления, на HEAD оно уже другое (случаи 1-4 дефекта, a и e ISS-0003 закрыты кодом). Файл ISS-0002 не отмечает, что код исправления в дереве. Поправить при закрытии (DOC-UPDATER)."
+      },
+      {
+        "kind": "FINDING",
+        "text": "Дизайн §9.4/§9.5 обещает 58 строк W и 20 строк P, в тестах 55 и 18; нет W55, W56, W57, P19, P20; в fault-inject.js нет preempt для linkSync и mkdirSync и эффекта bug-code. Критерий 11 REQ-002 при этом ссылается на «тесты на каждый вид и вариант»."
+      },
+      {
+        "kind": "FINDING",
+        "text": "Не подтверждено ни одним запуском: мутанты M1-M58 (§9.7), падение новых тестов на pre_fix_copy (до исправления на HEAD ничего не падает, потому что копия до = HEAD; шаг 6 TEST-DESIGNER должен брать как «до» код без writeAllOrNothing в apply.js — реконструкцию, как здесь, или старый снимок; ORCH решает, где его взять: настоящего коммита до исправления нет)."
+      },
+      {
+        "kind": "QUESTION",
+        "text": "ORCH: pre_fix_copy равна HEAD, значит условие WF-03 «регрессионный тест падает на копии до исправления» для кода ISS-0002 невыполнимо буквально. Вариант: считать копией «до» реконструкцию (apply.js с записью по очереди на месте, prepare.js до createFolderAllOrNothing) и записать это в решение/handoff TEST-DESIGNER."
+      },
+      {
+        "kind": "SEVERITY_PROPOSAL",
+        "text": "HIGH остаётся до закрытия критерия 11 (код защищён, не хватает тестов силы и учёта); повтора прошлого дефекта нет. После закрытия тестов — закрыть дефект как исправленный."
+      },
+      {
+        "kind": "AP_PROPOSAL",
+        "text": "Предложение записи в docs/anti-patterns.md (Q13): «Код исправления вошёл в снимок репозитория раньше, чем закрыты тесты и учёт дефекта» — прогон остановился на среде (Node недоступен), недоделанное осталось в дереве, а ISS-0002 и дизайн описывают состояние «до»; следующий прогон по тексту дефекта решил бы, что исправления нет. Мера: при остановке прогона DOC-UPDATER/ORCH сразу пишут в файл дефекта строку «код исправления в дереве, не закрыто: ...», а в handoff — список недоделанных строк тестов. Связано с AP-062 и AP-013."
+      },
+      {
+        "kind": "INFO",
+        "text": "Воспроизведение для регрессионного теста: apply-verdict RR, run-папка 555 (RF) и apply-report.json 444 (RR) — на реконструкции «до» дают трассировку и изменённый STATE.md, на HEAD — E_WRITE и неизменный tree(). Существующие W19-W21, W24-W26 уже кодируют это; новое для теста — только W55-W57, P19, P20."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

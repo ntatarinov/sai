@@ -1,0 +1,117 @@
+{
+  "handoff_id": "step09-ISS-0002-20261011-01",
+  "run_id": "ISS-0002-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/ISS-0002-20261011-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-002",
+      "REQ-004"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/issues/ISS-0002-apply-verdict-partial-write.md",
+      "docs/requirements.yaml (REQ-002 — все критерии; REQ-004)",
+      "docs/design/REQ-002-idea-verdict.md (§5, §13)",
+      "decisions/0041-iss0002-pre-fix-reconstruction.md",
+      "decisions/0042-iss0002-residual-race-risk.md",
+      "handoffs/ISS-0002-20261011-01/ (все step-*.json)",
+      "docs/workflows/WF-03-defect.md (шаг 9)",
+      "docs/workflows/WF-02-development.md (шаг 9)",
+      "docs/quality-bar.md"
+    ],
+    "route": "TEST-RUNNER (PASS) -> RELEASE-VALIDATOR (этот) -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы и копии — вне проекта"
+    ],
+    "base_tag": "base/ISS-0002-20261011-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 9. Последние ворота перед закрытием ISS-0002. Не доверяй отчётам. Сам: (1) на чистой копии рабочего дерева (копия вне проекта со .git, без node_modules) выполни cd tools && npm ci && npm run check — код и числа; (2) воспроизведи исходную ошибку САМ: на реконструкции «до» по решению 0041 (собери по рецепту дизайна §13.6) четыре случая из файла дефекта docs/issues/ISS-0002-apply-verdict-partial-write.md (цель — папка для proposed-actions.json и для apply-report.json; папка прогона 555; apply-report.json 444) дают трассировку и наполовину применённое состояние (STATE.md перезаписан), а на текущем дереве — код 1, одна строка E_WRITE, состояние (tree с папками и ссылками, режимы, хеши) не изменилось; то же для prepare-run (runs — файл; runs 555; корень 555 без runs); повторный запуск после устранения препятствия: applied recommend, затем unchanged; (3) критерий 11 REQ-002 в docs/requirements.yaml: перечитай по тексту и выполни его команды дословно; REQ-002 сейчас in_progress с критерием 11, добавленным дефектом ISS-0002 — по WF-03 шаг 9 RELEASE-VALIDATOR заново подтверждает ВСЕ критерии REQ-002 (не только 11): пройди критерии 1–N REQ-002 по тексту и выполни команды дословно, зависимости REQ-002 и состояние (REQ-004 зависит от REQ-002 — скажи, какие критерии REQ-004 затронуты записью); (4) пункты планки Q1–Q14, R1–R3 по файлам: Q3, Q5 (тест на критерий), Q6 (нет skip/todo, линтер не отключён, шаги check на месте, package.json diff к базе пуст), Q7 (секреты и пути компьютера в изменённых файлах — настоящие), Q10, Q12 (решения 0041 и 0042 в decisions/README.md), Q13/Q14 учёт впереди (шаг 10); (5) изменены только ожидаемые файлы (git status и diff к метке base/ISS-0002-20261011-01: только tools/test/fault-inject.js, helpers.js, apply.write.test.js, prepare.write.test.js, decisions/0041, 0042 и README решений, файлы прогона handoffs/ISS-0002-20261011-01/, parallel-runs; код tools/src НЕ менялся — diff пуст); (6) независимый подсчёт: число строк тестов W/P — 55+3+4=62 apply? проверь собственным пересчётом и скажи фактические числа. Вердикт PASS означает: ISS-0002 можно закрыть как «причина устранена, есть регрессионный тест» (причина устранена кодом из прошлой попытки, зафиксированным в снимке до этого прогона — скажи это прямо), а требование REQ-002 после PASS можно вернуть в done (его переводит DOC-UPDATER). Остаточные риски (решение 0042; чтение источников по ссылке; undo при ошибке программы) назови отдельно. Красные тесты — имена.",
+    "acceptance_criteria": [
+      "Чистая копия: npm ci && npm run check — код и числа",
+      "Исходная ошибка воспроизведена на реконструкции «до» и отсутствует на текущем дереве — оба вывода",
+      "Все критерии REQ-002 подтверждены заново по тексту, команды выполнены",
+      "Каждый применимый пункт Q/R назван с результатом; код tools/src не менялся"
+    ]
+  },
+  "created_at": "2026-10-11T22:45:30Z",
+  "started_at": "2026-10-11T22:45:30Z",
+  "completed_at": "2026-10-11T22:50:56Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Выведен только из моих запусков в этом ходе; ожидаемый вердикт в задании не назван в виде готового итога (AP-018) — вердикт выведен сам. Причина ISS-0002 устранена кодом из прошлой попытки (writeAllOrNothing и createFolderAllOrNothing в tools/src/util.js, порядок записи в apply.js, сборка папки в prepare.js), он уже входил в снимок base/ISS-0002-20261011-01; в этом прогоне tools/src не менялся (diff к метке пуст), добавлены регрессионные тесты, помощник и решения 0041, 0042. Чистая копия: npm ci и npm run check — код 0, 1399 tests, 1399 pass, 0 fail, 0 skipped, 0 todo; красных тестов нет, поэтому имён красных записей нет (AP-070). Реконструкция «до» собрана мной по §13.6 дизайна (apply.js и prepare.js; в них 0 вхождений writeAllOrNothing и createFolderAllOrNothing), остальное — как на метке. Воспроизведение на реконструкции (моя копия настоящего прогона WF06-20260926-01, в блок WF-06 вставлена устаревшая строка): цель proposed-actions.json — папка: код 1, трассировка (19 строк stderr), STATE.md перезаписан; apply-report.json — папка: код 1, трассировка, STATE.md и proposed-actions.json изменены; папка прогона 555: код 1, трассировка, STATE.md перезаписан; apply-report.json 444: код 1, трассировка, STATE.md и proposed-actions.json изменены. prepare-run на реконструкции: runs — файл, runs 555 и корень 555 без runs — код 1, трассировка mkdir. На текущем дереве те же семь случаев: код 1, stdout пуст, одна строка E_WRITE (EISDIR, EISDIR, EACCES, EACCES, ENOTDIR, EACCES, EACCES), трассировки нет, строгий список (папки, ссылки, режимы, хеши, время изменения файлов) не изменился. После устранения препятствия: applied recommend, затем unchanged (apply-verdict), prepared и затем код 2 для существующей папки (prepare-run). Те же тесты на реконструкции: 92 строки, 19 pass, 73 fail (в дизайне для 82 прежних строк — 63 fail, плюс 10 новых строк, на реконструкции красные все 10; фактическое число упавших 73 мой запуск, а не пересказ); на текущем дереве 92 pass. Изменены только ожидаемые файлы: tools/test/fault-inject.js, helpers.js, apply.write.test.js, prepare.write.test.js, decisions/0041, 0042 и README решений, handoffs/ISS-0002-20261011-01/, а также docs/design/REQ-002-idea-verdict.md (в задании не перечислен, но это проект CODE-DESIGNER шага 3 — ожидаемая правка). Критерии REQ-002 заново: 1–11 выполнены (подробно в findings нет, ниже по пунктам). 1 (decisions/0002, разделы и подтверждение владельца): выполнен — test/repo.test.js 4 pass; в файле есть разделы Вопрос, Варианты, Решение, Почему, Граница, Основание и строка «Да, подтверждаю». 2 (engines Node 22, package-lock, чистая копия, npm ci && npm run check): выполнен — engines \">=22 <23\", package-lock.json есть; на чистой копии (rsync без node_modules и с .git, rsync включает правки и новые файлы рабочего дерева) npm ci — 0 уязвимостей, npm run check — код 0, prettier/eslint/traces/handoffs-check/test все пройдены, 1399 tests, 1399 pass, 0 fail, 0 skipped, 0 todo. 3 (коды ошибок дизайна §6 с тестом на код): выполнен — validate.*.test.js и prepare.test.js в полном прогоне зелёные; prepare.test.js 12 pass. 4 (код 2 для отсутствующей/внешней/существующей папки, E_JSON без трассировки): выполнен — cli.test.js 13 pass, prepare.test.js 12 pass; плюс мой прогон: повторный prepare-run в существующую папку — код 2. 5 (очищенные копии по §4.2): выполнен — prepare.test.js и clean-тесты в полном прогоне зелёные. 6 (apply-verdict отказ, список путей и хешей не меняется): выполнен — apply.reject.test.js 3 pass, apply.state.test.js 5 pass; сверх этого мои случаи отказа записи (ниже) сравнивают строгий список до/после. 7 (E_STATE_ANCHOR, E_STATE_MARKERS, E_OWNER_SECTION без изменений): выполнен — apply.state.test.js 5 pass. 8 (ACCEPT пишет блок, proposed-actions.json, apply-report.json; раздел владельца не меняется; повтор — ни одного байта): выполнен — apply.accept.test.js 3 pass; на моей копии настоящего прогона WF06-20260926-01 вторая команда подряд дала «unchanged». 9 (после третьего REJECT — эскалация без proposed-actions.json): выполнен — apply.escalate.test.js 1 pass. 10 (snapshot-diff код 1/0): выполнен — snapshot.test.js 4 pass. 11 (сбой записи, ISS-0002): выполнен. Команда критерия дословно: cd tools && node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js — код 0, 92 tests, 92 pass, 0 fail, 0 skipped, 0 todo (apply.write 62 строк, prepare.write 21, listing 9; свой пересчёт `^test(` по файлам и список идентификаторов W01–W61 с W13b, P01–P21, L01–L09). Есть тесты на папку, ссылку, не обычный файл, ссылку на пути, невозможность прочитать, только для чтения, остаток, ошибки ОС (ENOSPC/EFBIG/EIO), оба исключения (двойной сбой, сбой уборки), SIGKILL (W47, W48, P13, P14) и битую ссылку по пути папки прогона (P12, E_USAGE код 2). Мои собственные воспроизведения — ниже. REQ-004 зависит от REQ-002 (через REQ-003). Затронуты критерии 1, 3 и 4 записью apply-verdict/prepare-run; прогон WF06-20260926-01 и STATE.md в этой работе не менялись (git status: runs/ без изменений, tools/src без изменений). Проверено мной на настоящих файлах: `npm run validate -- ../runs/WF06-20260926-01` — «OK WF06-20260926-01 (stage review)», код 0 (критерий 1); в STATE.md ровно одно вхождение «Решение принимает владелец», proposed-actions.json содержит задачи только для BA-ANALYST, ORCH, REQ-ANALYST, apply-report.json на месте (критерий 3). Критерии 2 и 4 зависят от handoff-ов и снимков прошлого прогона и от этой работы не зависят — не перепроверялись, отметка «не затронуты». ПЛАНКА: Q1 — выполнен: дефект ISS-0002 привязан к REQ-002 (критерий 11), у каждого критерия назван способ проверки. Q2 — выполнен: все выводы ниже — из моих запусков в этом ходе (чистая копия, реконструкция, сценарии). Q3 — выполнен: приложены коды выхода и числа; не заявлено ничего без запуска. Не заявляется отключение питания (§5.2). Q4 — выполнен: npm run check на чистой копии, код 0, 1399/1399. Q5 — выполнен: критерии 1–11 закрыты тестами (карта выше); тесты отказа сравнивают строгий список до/после; мои сценарии это подтвердили независимо; на реконструкции «до» те же тесты краснеют (73 из 92). Q6 — выполнен: поиск по изменённым файлам тестов, решений и дизайна — skip/todo/only/eslint-disable/prettier-ignore/|| true — 0 совпадений; skipped 0, todo 0; в diff к метке не удалено ни одного test(; шаги check на месте (format:check, lint, traces, handoffs-check, test); diff к base/ISS-0002-20261011-01 по tools/package.json, package-lock.json, eslint.config.js и tools/src пуст. Q7 — выполнен: поиск ключей/токенов/паролей и путей этого компьютера (/Users/, /private/, /var/folders, имя пользователя) в изменённых файлах и решениях — 0 совпадений. В handoff-е step-03 есть строка с самой командой поиска (слова в кавычках), это не путь; handoffs-check проходит. Q8, Q9, Q11 — неприменимы: нет данных клиентов, SQL и сетевых адресов в изменённом (только тесты и документы; tools/src не менялся); подтверждает и SECURITY-REVIEWER шага 5. Q10 — выполнен: мои сценарии дают код 1 и одну строку E_WRITE без трассировки при EISDIR, EACCES, ENOTDIR. Q12 — выполнен: решения 0041 и 0042 существуют, обе строки есть в decisions/README.md (diff к метке: +2 строки); код не расходится с ними — реконструкция собрана по 0041, остаточный риск 0042 назван ниже. Q13 — учёт впереди (шаг 10, DOC-UPDATER): записи в docs/anti-patterns.md по этому прогону на момент проверки нет — это не FAIL шага 9. Q14 — учёт впереди (шаг 10): статус REQ-002 остаётся in_progress до PASS; STATE.md, статус дефекта и requirements обновит DOC-UPDATER. У доработок этого прогона handoff-ы есть (step-01 … step-08; AP-013 не нарушен). R1 — выполнен: мерж не делался; PASS — разрешение на учёт, мерж подтверждает владелец. R2 — неприменим: Pixel Office и его журнал не затронуты, события не писались. R3 — неприменим: продукт снят решением 0033, фото людей в работе нет. ОСТАТОЧНЫЕ РИСКИ (называю отдельно, это не FAIL): (1) решение 0042 — запись по ссылке, подставленной локальным процессом того же пользователя между проверкой пути и созданием временного файла; полностью не закрывается без openat. (2) Чтение источников по ссылке в prepare-run (F1 SECURITY-REVIEWER, R1 REVIEWER) — по 0042 для него нужен отдельный дефект; в этой работе не исправлено. (3) Ошибка программы (не ошибка ОС) во время записи: откат и уборка могут оставить остаток, который называет следующий запуск (дизайн §5.3); отключение питания не заявляется. Итог простыми словами: сбой записи больше не оставляет наполовину применённое состояние ни у apply-verdict, ни у prepare-run — одна понятная строка и ничего не изменено; это доказано моим воспроизведением «до» и «после» и полным прогоном проверки. ISS-0002 можно закрыть как «причина устранена, есть регрессионный тест», REQ-002 после этого PASS можно вернуть в done (переводит DOC-UPDATER); мерж — за владельцем.",
+    "findings": [],
+    "self_check": {
+      "node": "v22.21.1",
+      "commands": [
+        {
+          "command": "rsync -a --exclude node_modules ./ <scratch>/clean/sai/ ; cd <scratch>/clean/sai/tools && npm ci && npm run check",
+          "exit_code": 0,
+          "log": "<scratch>/check.log",
+          "output": "npm ci: found 0 vulnerabilities; format:check: All matched files use Prettier code style!; lint, traces, handoffs-check, test без ошибок; # tests 1399, # pass 1399, # fail 0, # cancelled 0, # skipped 0, # todo 0"
+        },
+        {
+          "command": "cd tools && node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js (чистая копия)",
+          "exit_code": 0,
+          "output": "# tests 92 # pass 92 # fail 0 # skipped 0 # todo 0; строк: apply.write 62, prepare.write 21, listing 9"
+        },
+        {
+          "command": "те же три файла тестов на реконструкции «до» (<scratch>/recon, по §13.6)",
+          "exit_code": 1,
+          "log": "<scratch>/recon-run.log",
+          "output": "# tests 92 # pass 19 # fail 73; упали W06–W17, W19–W21, W23–W26, W28–W61 (кроме прошедших «фиксаций»), P03–P21 — полный список в логе; прошли 19 строк «фиксации»"
+        },
+        {
+          "command": "python3 <scratch>/drv/scen.py <scratch> before / after — семь случаев на копиях настоящего прогона",
+          "exit_code": 0,
+          "log": "<scratch>/scen.log",
+          "output": "before: apply A1–A4 код 1, трассировка (19–20 строк), STATE.md изменён; prepare P1–P3 код 1, трассировка mkdir. after: A1 «E_WRITE runs/WF06-20260926-01/proposed-actions.json: is a folder (EISDIR); nothing was changed»; A2 то же для apply-report.json; A3 «cannot write the temporary file … (EACCES); nothing was changed»; A4 «apply-report.json: is read-only and must change (EACCES)»; P1 «E_WRITE runs: is not a folder (ENOTDIR)»; P2 «cannot create the temporary folder runs/.WF06-20260927-01.sai-tmp (EACCES)»; P3 «cannot create the temporary folder .runs.sai-tmp (EACCES)»; везде код 1, stdout пуст, 1 строка stderr, список без изменений; после починки applied recommend / unchanged и prepared / код 2"
+        },
+        {
+          "command": "cd tools && npm run validate -- ../runs/WF06-20260926-01 (чистая копия)",
+          "exit_code": 0,
+          "output": "OK WF06-20260926-01 (stage review)"
+        },
+        {
+          "command": "git diff --stat base/ISS-0002-20261011-01 -- tools/src tools/package.json tools/package-lock.json tools/eslint.config.js",
+          "exit_code": 0,
+          "output": "пусто"
+        },
+        {
+          "command": "git status --short (проект, до и после проб)",
+          "exit_code": 0,
+          "output": "9 записей, те же: 6 изменённых (README решений, дизайн, 4 файла tools/test) и 3 новых (0041, 0042, папка прогона)"
+        }
+      ],
+      "note": "Рабочее дерево не менялось: все записи — в <scratch>. Один раз я по ошибке начал команду apply-verdict на рабочем дереве; система её отклонила, она не выполнялась. Дальше все запуски шли на копиях."
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "OBSERVATION",
+        "severity": "LOW",
+        "text": "Не относится к ISS-0002 и не блокирует. apply-verdict на копии рабочего дерева при уже применённом прогоне WF06-20260926-01 в первый раз ответил «applied recommend», а не «unchanged»: apply-report.json содержит sha256 записанного STATE.md целиком, а STATE.md после применения правился другими работами (пометка DOC-UPDATER от 2026-10-11 вне блока). Поэтому повторный запуск на нынешнем STATE.md даст другой хеш в отчёте. Вывод кода — прежнее поведение (tools/src не менялся). ORCH: решить, нужен ли отдельный дефект/пометка; для критерия 8 REQ-002 это не нарушение, потому что он проверяет повтор без промежуточных правок (и тест apply.accept это проверяет)."
+      },
+      {
+        "id": "I2",
+        "kind": "RESIDUAL_RISK",
+        "severity": "LOW",
+        "text": "Остаточные риски: решение 0042 (гонка со ссылкой), чтение источников по ссылке в prepare-run (нужен отдельный дефект по 0042 — завести ORCH), ошибка программы при откате/уборке оставляет названный остаток (§5.3)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "severity": "INFO",
+        "text": "Задание предполагало 55+3+4=62 строк apply; фактически: apply.write.test.js 62 строки, prepare.write.test.js 21, listing.test.js 9, всего 92; всего в check 1399 (прежде 1389 + 10 новых). Q13/Q14 — шаг 10 (DOC-UPDATER): AP-запись и статусы."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
