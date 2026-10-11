@@ -1,0 +1,93 @@
+{
+  "handoff_id": "step05-code-designer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261011-01/step-05-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-035"
+    ],
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "handoffs/PROD-20261011-01/step-04-code-design-validator.json",
+      "docs/design/REQ-035-team-web-control.md (редакция r1, коммит 62335ef)",
+      "decisions/0032-req035-web-control.md",
+      "docs/requirements.yaml (REQ-035, редакция 4662844)",
+      "tools/src/web/engines.js, tools/src/team/engine/engine.js, tools/src/team/engine/commands.js, tools/src/team/engine/schedule.js, tools/src/team/executors/claude-cli.js"
+    ],
+    "write_set": [
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0032-req035-web-control.md (статус «принято» сохраняется)",
+      "handoffs/PROD-20261011-01/step-05-code-designer.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было. Поля верхнего уровня, context и task записаны CODE-DESIGNER по сообщению ORCH; ORCH может их сверить своим полем."
+  },
+  "task": {
+    "description": "Доработка проекта REQ-035 (r2) после FAIL ворот круга 2 (step-04: F3 Medium, F4 Medium, N1, N2) по решениям ORCH: F3 — вариант 1 («Продолжить» у паузы как движок; снять правило L5/CTL-7d/M25, строки таблицы и README; обход «Пауза → Продолжить» принят, поведение движка проверить запуском на копии вне репозитория и записать в 0032 как остаток; после перезапуска сервера такой проект продолжается со страницы; таблица критерия 7 не требует «строже движка» для paused); F4 — момент первой проверки resume(id) как у start (синхронно, до первого await), поддельная фабрика CTL-3c (i), тест и мутант; N2 — controlBusy по проекту или принятый остаток; N1 — C4 подтверждено ORCH. Кода не писать; cd tools && npm run traces — код 0."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T05:49:36Z",
+  "started_at": "2026-10-11T05:49:36Z",
+  "completed_at": "2026-10-11T05:54:55Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "F3 (вариант 1 ORCH): «Продолжить» у paused делает то же, что движок. Правило r1 снято: строки paused с ожиданием (budget/поднят/прочее) убраны из п. 5.2; остаются «paused, вопрос по задаче» → ctlTaskDecision (это правило движка, E_OPEN_QUESTION, не строже; без строки перечитывание дало бы неправдивое ctlBusy) и «paused_by recovery». Таблица критерия 7 строк paused не содержит — проверено по редакции 4662844; мест «строже движка» два, как в требовании.",
+      "Поведение движка проверено запуском на копии вне Sai (Ф16): пауза ждущего по потолку проекта (сигналом = Ctrl-C сервера, кнопкой через deliver, кнопкой и потом сигналом) и затем resume без поднятого потолка → PROJECT_RESUMED (after: command), сразу PROJECT_WAITING budget и тот же вопрос о потолке; запусков и расходов нет. Предположение задания об E_NO_BUDGET не подтвердилось: E_NO_BUDGET — предпроверка claude для проекта без потолка, а без потолка ожидания по потолку не бывает (запуск D). Решение по проекту (план не составлен): resume — новое планирование с расходами, снова ожидание. Записано в 0032 C4 как принятый остаток и в п. 9.4.",
+      "Новый тест CTL-3d (критерий 3, описание о перезапуске сервера): ждущий по потолку проект, SIGINT серверу, второй сервер, POST resume → 200, одно PROJECT_RESUMED, затем PROJECT_WAITING budget, без RUN_STARTED, controls «ждёт решения»; вариант с паузой кнопкой. M25 переопределён: «правило r1 не снято» — ловит CTL-3d. CTL-7d удалён; строки paused добавлены в таблицу CTL-7a.",
+      "F4: п. 7 — первая проверка resume(id) синхронно, сразу после run(), до первого await (как start, Ф17); отказ run() первая проверка не видит. CTL-3c (i) — фабрика «открывается на следующем макрошаге» (state() null до setTimeout 0, затем S; run() отклоняется E_DISK в том же таймере): S=running → ровно {resumed:true, error:E_DISK}, M26 → resumed:false — детерминированно. Новый CTL-3c (iii) и мутант M27 (первая проверка после ожидания).",
+      "N2: controlBusy — Map адрес проекта → номер запроса; сброс записи только своим ответом; показ ответа — только если страница показывает тот же проект; при возврате в проект с идущим запросом — кнопки disabled и «Отправляется…». CTL-8h расширен (возврат в A), мутант M28 (один признак на страницу).",
+      "N1: дополнение C4 подтверждено ORCH и в r2 заменено новым текстом (решение по F3), статус 0032 «принято»."
+    ],
+    "changes": [
+      "Шапка: абзац «Редакция r2» (F3, F4, N1, N2).",
+      "п. 0: Ф16 (F3, запуск), Ф17 (F4, start в engines.js).",
+      "п. 5.1 (F3): абзац r1 L5 заменён — «Продолжить» у паузы как движок, два места «строже движка», принятый обход.",
+      "п. 5.2 (F3): строки paused с ожиданием сняты; строка «paused, вопрос по задаче» помечена как правило движка; «прочее» включает waiting !== null; порядок столбцов paused; абзац о закрытом пути заменён принятым остатком с поведением движка.",
+      "п. 7 (F4): момент первой проверки, проверки 3 и 4 на первом шаге.",
+      "п. 9.2, 9.3 (N2): controlBusy — Map по адресу проекта; правило сброса; показ ответа; «Отправляется…» при возврате.",
+      "п. 9.4: строка A/B переписана (N2); новая строка о паузе ждущего проекта и «Продолжить» (F3).",
+      "п. 12: строка controlRefusal (F3). п. 13 README: убрано «в том числе если его перед этим поставили на паузу», добавлено, что без поднятого потолка проект снова ждёт решения (F3).",
+      "п. 15: CTL-3c (i) новая фабрика и (iii) (F4); CTL-3d (F3); CTL-7d удалён, строки paused в CTL-7a (F3); CTL-8h (N2).",
+      "п. 15.1: M24 уточнён (N2), M25 переопределён (F3), M26 уточнён (F4), M27 (F4), M28 (N2) — всего 28.",
+      "п. 16 Q3, Q12; п. 19 (N1, F3); п. 20: вопрос 7 r1 закрыт (20.1, п. 5), открытые перенумерованы 6–7.",
+      "decisions/0032 C4: дополнение r1 заменено дополнением r2 (подтверждено ORCH, F3 вариант 1, принятый остаток с поведением движка); «Последствия»: CTL-7d → CTL-3d."
+    ],
+    "self_check": [
+      "Хеш до (2026-10-11T05:50:45Z): проект ef79a7dd07380eaa856cb5aef8794d991fae961148c0382b557f6849a2d88593, 0032 54f7a786f44ae069a5f471de548e53f178d48e70bccc6117d9b4f35744e858de (совпадает с r1); после (05:54:14Z): 205dcebd85ba5e0b8e2b2a19caa17cc45cdbf8cea292b5a1e99e4458bd95e4b1 и aeea929123e28db32686a6e27b1bbe72e39c3f39ddfa2e21dec9a92a32131a5c",
+      "Ф16: rsync -a --exclude node_modules <sai>/tools <scratch>/r2/; cd <scratch>/r2/tools && node --test test/zz-probe-r2.mjs → A: 'signal new PROJECT_PAUSED/USER', 'status paused paused_by user waiting {\"reason\":\"budget\",\"task\":null} spent 0.2 budget 0.2', 'resume-engine err null state \"waiting_user\"', 'new PROJECT_RESUMED/USER:command PROJECT_WAITING/ENGINE:budget CHAT/ENGINE', вопрос 'Достигнут потолок расходов. Поднимите потолок, чтобы продолжить, или остановите проект'; B: 'pause via engine new PROJECT_PAUSED/USER', 'resume via engine new PROJECT_RESUMED/USER:command PROJECT_WAITING/ENGINE:budget CHAT/ENGINE'; C — как A; D (потолок 0): '... PROJECT_DONE/ENGINE ; status done'; E (план не составлен): 'new PROJECT_RESUMED/USER:command PLANNING_STARTED/ENGINE RUN_STARTED/ENGINE ... PROJECT_WAITING/ENGINE:plan_failed CHAT/ENGINE', spent 0.02 → 0.04; tests 5 pass",
+      "Код: commands.js checkResume — E_OPEN_QUESTION до ветки paused, у paused без вопроса 'command'; schedule.js slotBudget — null без потолка; claude-cli.js:113 E_NO_BUDGET при budget_usd не > 0; engines.js start — первая проверка до первого await (Ф17)",
+      "Критерий 7 REQ-035 (редакция 4662844): строк paused нет, «строже движка» — только ждёт решения по потолку (поднят) и создан",
+      "grep -cE '^\\| (1[0-3]|[1-9])\\. ' → 13; пунктов планки → 17; мутантов → 28; строк ``` → 4 (2 блока: формы и сигнатуры)",
+      "grep -nE '/Users|/private|/tmp|whooch' по проекту и 0032 → код 1 (пусто)",
+      "grep 'L5|CTL-7d|controlBusy = |n !== controlSeq' по проекту → пусто; waiting !== null — только в п. 5.1/5.2 (правило снято) и M25",
+      "cd tools && npm run traces → 'traces: файлов проверено 961, следов 0, пропущено 26', код 0 (до записи handoff-а)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Утверждение задания «работа упрётся в отказ исполнителя E_NO_BUDGET/«потолок исчерпан»» не подтвердилось запуском (Ф16): при исчерпанном и не поднятом потолке движок пишет PROJECT_RESUMED и сразу снова «ждёт решения» с вопросом о потолке, без запусков и расходов; E_NO_BUDGET бывает только у проекта claude без потолка, а у него нет ожидания по потолку. В проект и 0032 записано проверенное поведение."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Обход «Пауза → Продолжить» у проекта, ждущего решения по проекту (план не составлен), тратит деньги: движок заново составляет план (запуск E: расход 0.02 → 0.04). Это поведение терминала (pause + resume), принято решением ORCH (0032 C4); владелец может закрыть его правкой требования или условием в команде движка."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Строка «paused, вопрос по задаче → ctlTaskDecision» оставлена: это правило движка (E_OPEN_QUESTION), не третье место «строже движка»; без неё отказ движка после перечитывания дал бы неправдивое «Команда не выполнена, повторите»."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0032-req035-web-control.md"
+    ]
+  }
+}
