@@ -1,0 +1,133 @@
+{
+  "handoff_id": "step17-reviewer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "17",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PROD-20261011-01/step-17-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "git diff base/PROD-20261011-01 HEAD -- tools docs/design/REQ-035*",
+      "docs/design/REQ-035-team-web-control.md (r4)",
+      "docs/design/REQ-035-ui.md (r2)",
+      "decisions/0032-req035-web-control.md",
+      "decisions/0030-req035-037-open-points.md",
+      "decisions/0025, 0026, 0020",
+      "handoffs/PROD-20261011-01/step-09-backend-dev.json",
+      "handoffs/PROD-20261011-01/step-15-frontend-dev.json",
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md"
+    ],
+    "write_set": ["handoffs/PROD-20261011-01/step-17-reviewer.json"],
+    "note_by_agent": "Файла handoff-а на момент работы не было; поля верхнего уровня записаны REVIEWER по сообщению ORCH."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T06:27:31Z",
+  "started_at": "2026-10-11T06:27:31Z",
+  "completed_at": "2026-10-11T06:31:12Z",
+  "task": {
+    "description": "WF-02, шаг 4: ревью кода REQ-035 (сервер шага 9, страница шага 15) против проекта r4, описания интерфейса r2 и решений 0032, 0030, 0025, 0026, 0020; оценка отступлений I1–I4 разработчиков; указания TEST-DESIGNER по WEB-4g и WEB-9d."
+  },
+  "result": {
+    "status": "FAILED",
+    "verdict": "FAIL",
+    "summary": [
+      "Код принимается как есть: правок кода не требуется. FAIL — из-за двух расхождений документа проекта r4 с кодом и с действительностью (Medium, блокирующие до шага 5, правит CODE-DESIGNER новой редакцией r5, не CODE-FIXER): F1 — п. 9.3 «closeConfirm … любая смена адреса … фокус на #ctl-stop» расходится с кодом и с описанием интерфейса r2 (п. 5.2, 11); F2 — п. 18 (п. 3) «краснеет только WEB-4g» неверен: обязательный по п. 6.3 и 11 код ломает и WEB-9d. Без r5 TEST-DESIGNER напишет тесты по устаревшему тексту.",
+      "1. Причина, а не симптом: да. Ошибки не глотаются: каждый отказ — controlFailure по таблице п. 6.4; перечитывание в строке «состояние» только выбирает текст; запрос без ответа на странице — строка offline, не тишина. Обходов проверок нет.",
+      "2. Сходство с записанным: сервер — строго по п. 2–8, 10–13 проекта: маршрут control без get, 405 Allow: POST, bodyMax 4096 → 400, staleKeyControl, ctx.controlling (0032 C5), пауза и остановка — только deliver (0020, 0024, 0025), «Продолжить» — deliver при engines.has || engineHolder, иначе engines.resume в режиме resume (0030 п. 2, 0032 C3), адрес — строка controls.api, не Link (C6). engines.resume — первая проверка синхронно, порядок «возобновление → отказ → конец → срок» (п. 7, F4, L6). Решение 0002 (Node 22, ES-модули, без зависимостей) соблюдено. Страница — по описанию r2: только aria-disabled, controlBusy — Map адрес → номер, сброс только своим ответом, фокус остаётся на нажатой кнопке. Расхождения только документные (F1, F2).",
+      "3. Лишнего нет: изменены ровно файлы write_set шагов 9 и 15; tools/src/team, tools/test, package.json, настройки eslint/prettier не тронуты (git diff пуст). Общие правки server.js (allowOf, readBody, writeAllowed) — те, что названы в п. 12, прежние маршруты получают прежние значения по умолчанию.",
+      "4. Планка держится: в изменённых файлах нет skip/only/todo/eslint-disable/«|| true»; шаги команды check те же (format:check, lint, traces, test); тесты не изменены и не ослаблены; WEB-4g и WEB-9d красные — ожидаемо до шага 5, их чинит TEST-DESIGNER по указаниям ниже (issues I3), не код.",
+      "5. Идиомы: единый механизм — deliver один на все три действия управления (api.js:410) плюс чат (api.js:272), жизнь движка — engineHolder ядра (внутри holdsLive из lock.js), своей проверки pid в web нет; controlRefusal один на postControl и controlFailure; логика кнопок только на сервере (controlsFor), страница читает ControlSet и сама решает лишь «недоступна, пока идёт запрос/открыто подтверждение» — это правило п. 9.3, не дублирование controlsFor. Тексты страницы — в texts.js и index.html, кириллицы в app.js нет. Обещания: submitControl и poll не роняют страницу (post возвращает null при обрыве, poll ловит). Таймауты: ack ≤ 10 с (движок), ожидание resume ≤ 5 с.",
+      "Отступления разработчиков: step-09 I1 (WEB-9d) — принимаю, это пробел проекта, не кода; обход (многострочный импорт, перенос engineHolder) был бы подгонкой — разработчик верно его не сделал. step-15 I2 (фокус при закрытии подтверждения сменой адреса и опросом) — принимаю поведение кода: оно совпадает с описанием интерфейса r2 (п. 5.2: при смене адреса и опросе «подтверждение скрыто без запроса», без переноса фокуса; п. 11: перенос фокуса только при закрытии кнопкой, Esc, «Остановить»), не крадёт фокус у чата и карточки, не ставит фокус на скрытую кнопку прежнего проекта. Требую не правку кода, а строку в контракте (F1). Остаток — Low L1. I3, I4 — верные заметки для TEST-DESIGNER, DESIGN-QA-VALIDATOR и UAT-RUNNER.",
+      "TEST-DESIGNER особо: CTL-8f/8h на модели DOM (фокус, aria-disabled, нет disabled, число POST), фокус при закрытии подтверждения по F1 (после r5), CTL-3c (i) и (iii) — синхронная первая проверка resume, CTL-8g (late → 504), CTL-6c граница 4096/4097 верным телом, CTL-7c — warn ровно раз (и см. L2: на пути engines.resume с отказом run() строк в warn две), чужой ответ не снимает controlBusy другого проекта."
+    ],
+    "findings": [
+      {
+        "id": "F1",
+        "place": "docs/design/REQ-035-team-web-control.md:439-441 (п. 9.3, closeConfirm) против tools/src/web/public/app.js:721 и :1247; описание docs/design/REQ-035-ui.md п. 5.2 (строки «Любая смена адреса», «Опрос принёс stop=false») и п. 11",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "Контракт r4 велит при закрытии подтверждения любой сменой адреса (и, через closeConfirm, опросом с stop=false) переносить фокус на #ctl-stop или #project-goal. Код (и описание интерфейса r2) переносит фокус только если он был внутри #stop-confirm и проект на экране тот же (onRoute), при опросе — только если фокус был внутри подтверждения. Документ проекта не совпадает с кодом; тесты шага 5 пишутся по контракту.",
+        "fix": "Код не менять. CODE-DESIGNER (через ORCH) — редакция r5, п. 9.3: «closeConfirm(moveFocus) — #stop-no, Escape и «Остановить» в подтверждении: фокус на #ctl-stop, если он виден, иначе на #project-goal. Смена адреса страницы и опрос с controls.stop === false закрывают подтверждение без запроса; фокус переносится, только если он был внутри #stop-confirm: при том же проекте — по тому же правилу; при смене проекта и в списке — см. L1». Сослаться на описание r2 п. 5.2, 11 и step-15 I2; CODE-DESIGN-VALIDATOR проверяет точечно."
+      },
+      {
+        "id": "F2",
+        "place": "docs/design/REQ-035-team-web-control.md:654-659 (п. 18, п. 3) против п. 6.3 (шаг 1), п. 11 и tools/test/team-web-guard.test.js:268-274 (WEB-9d)",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "Проект утверждает, что после шага 2 краснеет только WEB-4g, и не называет правку WEB-9d, хотя сам требует импорт engineHolder из channel.js и второй вызов deliver( в api.js — WEB-9d при этом падает обязательно (мой прогон: «+ 'import { deliver, engineHolder } from \"../team/engine/channel.js\";' - 'import { deliver } from \"../team/engine/channel.js\";'»). Неверный факт в проекте; без строки в проекте правка WEB-9d на шаге 5 выглядит как ослабление проверки без основания.",
+        "fix": "CODE-DESIGNER, r5, п. 18 (п. 3) и п. 15 (CTL-5a): назвать WEB-9d вторым ожидаемым провалом и записать новое ожидание точно, как в issues I3 ниже (не мягче прежнего)."
+      },
+      {
+        "id": "L1",
+        "place": "tools/src/web/public/app.js:1247-1248",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Если фокус был внутри #stop-confirm и адрес сменился на другой проект или список (например, «назад» браузера с клавиатуры), closeConfirm(false) фокус не переносит, а resetProject/renderScreens прячут элемент с фокусом — фокус теряется (уходит на body).",
+        "fix": "При r5 (F1) решить явно; предложение: если фокус был внутри подтверждения и экран — проект, фокус на #project-goal; если список — по правилу REQ-011-ui для перехода в список. Правка — CODE-FIXER только после r5; не блокирует."
+      },
+      {
+        "id": "L2",
+        "place": "tools/src/web/api.js:392 (resumeHere → controlFailure → internal, api.js:374) и tools/src/web/engines.js:24-30 (report)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Когда run() движка resume отклонён ошибкой с кодом не из таблицы п. 6.4 (E_INTERNAL, не TeamError), строка об ошибке попадает в warn дважды: report движков («проект <id>: …») и internal() обработчика. Для resumed:true проект (L6) это явно запрещает, для resumed:false — нет; так проект и написан, код ему следует. В ответ страницы ничего не утекает.",
+        "fix": "Не блокирует. Либо принять (две строки с разным контекстом), либо в r5 п. 6.3 записать «строку в warn уже записал engines.js — controlFailure для этого пути вторую не пишет». TEST-DESIGNER: в CTL-7c проверять «ровно раз» на вызове controlFailure напрямую, как и задумано, а не на пути engines.resume."
+      },
+      {
+        "id": "L3",
+        "place": "tools/src/web/engines.js:113-118",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Текст «Внутренняя ошибка ядра Sai Team (resume)» записан литералом в web/engines.js — повтор шаблона ядра (errors.js, engine.js:74, commands.js:230). На страницу не идёт (только warn через formatError), с правилом «тексты страницы в texts.js» не спорит; это повтор строки, не нарушение.",
+        "fix": "Не блокирует. При следующей правке ядра — общий помощник internalError(what) в team/errors.js; сейчас tools/src/team не трогать (вне области REQ-035)."
+      }
+    ],
+    "self_check": [
+      "date -u → 2026-10-11T06:27:31Z (начало), 2026-10-11T06:29:46Z (перед записью).",
+      "git diff --stat base/PROD-20261011-01 HEAD -- tools docs/design/REQ-035* → 12 файлов: README, api.js, config.js, display.js, engines.js, public/app.js, public/index.html, public/style.css, server.js, texts.js, REQ-035-team-web-control.md, REQ-035-ui.md. Прочитаны целиком в разнице: все tools/src/web/*.js, public/*, README.",
+      "git diff --stat base/PROD-20261011-01 HEAD -- tools/src/team → пусто; git diff --stat HEAD -- tools/src/team → пусто; git diff --stat base/PROD-20261011-01 HEAD -- tools/test tools/package.json tools/eslint.config.js → пусто. «check» в package.json до и после: \"npm run format:check && npm run lint && npm run traces && npm run test\".",
+      "cd tools && npm run check → код 1: «All matched files use Prettier code style!»; eslint --max-warnings 0 без вывода; traces без ошибок; «# tests 1109 # pass 1107 # fail 2 # cancelled 0 # skipped 0 # todo 0». Упали: «not ok 909 - WEB-9d …» (team-web-guard.test.js:271, actual 'import { deliver, engineHolder } from \"../team/engine/channel.js\";', expected 'import { deliver } from \"../team/engine/channel.js\";') и «not ok 951 - WEB-4g …» (team-web-project.test.js:806, прежний pause_text). Вывод — <scratch>/check.log.",
+      "grep -nE \"\\.skip\\(|\\.only\\(|todo|TODO|FIXME|eslint-disable|\\|\\| true|prettier-ignore\" по 10 изменённым файлам tools → одно совпадение: tools/README.md:15 (прежняя строка о том, что skip/todo запрещены), в изменении нет.",
+      "grep -rnE 'appendFile|writeFile|createWriteStream|openSync|rename' tools/src/web/ → пусто; grep -rn 'inbox' tools/src/web/ → пусто; grep -rn 'child_process' tools/src/web/ → пусто; grep -rlE 'node:(https|net|tls|dgram)' tools/src/web/ → пусто; grep -rnE 'node:(http|https|net|tls|dgram)|fetch[(]' tools/src/team/ → пусто; grep -rn 'командой resume' tools/src/web/ → пусто.",
+      "grep -c 'deliver(' tools/src/web/api.js → 2 (строки 272 postChat, 410 control); engineHolder — только api.js (импорт и engineLive); grep -rn holdsLive tools/src/ → только team/lock.js и team/engine/channel.js (в web своей проверки жизни нет).",
+      "grep -nP '[\\x{0400}-\\x{04FF}]' tools/src/web/public/app.js → пусто. grep -n disabled app.js → у кнопок управления только aria-disabled (строки 698, 737); disabled — прежние createButton/sendButton и селектор карточки.",
+      "grep -n 'resume' tools/src/web/engines.js → launch(id, \"resume\") (строка 100) — критерий 11.",
+      "Модель DOM tools/test/team-web-dom.js: getClientRects (строка 243) есть — isVisible в closeConfirm на модели работает.",
+      "Код и записи decisions/ во время ревью не менялись; записан только этот handoff."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "TO_ORCH",
+        "text": "FAIL только по документу проекта (F1, F2): маршрут — CODE-DESIGNER r5 (точечно п. 9.3, 15 CTL-5a, 18) → CODE-DESIGN-VALIDATOR → повтор шага 4 (код не менялся — повторное ревью сводится к сверке r5 с кодом). CODE-FIXER не нужен. Если ORCH вместо r5 решит вернуть поведение фокуса к букве контракта r4 — это расхождение с описанием интерфейса r2 (п. 5.2, 11), которое проверял CODE-DESIGN-VALIDATOR; я такой вариант не рекомендую."
+      },
+      {
+        "id": "I2",
+        "kind": "AP-018",
+        "text": "В задании ORCH ожидаемого вердикта нет; вердикт выведен из своего чтения."
+      },
+      {
+        "id": "I3",
+        "kind": "TO_TEST_DESIGNER",
+        "text": "Как обновить, не ослабляя. WEB-9d (team-web-guard.test.js:252-275): все прежние проверки оставить как есть (нет appendFile|writeFile|createWriteStream|openSync|rename, inbox, child_process ни в одном файле tools/src/web/; слово channel — только в api.js); строки api.js со словом channel — ровно ['import { deliver, engineHolder } from \"../team/engine/channel.js\";'] (deepStrictEqual, одна строка); число вызовов /\\bdeliver\\(/ — ровно 2 (было 1: новый вызов — postControl); добавить, не убирая: число /\\bengineHolder\\(/ в api.js — ровно 1, и слово engineHolder не встречается в других файлах tools/src/web/. Обновить название теста под новое ожидание. WEB-4g (team-web-project.test.js:803-807): заменить только ожидаемую строку на литерал «Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше» (литералом, не импортом из texts.js — иначе тест перестанет ловить смену текста, мутант M3); остальные проверки теста не трогать; добавить, не убирая: у paused stopped_text === null и controls deepEqual {pause:false, resume:true, stop:true, api:`/api/projects/${id}/control`}, у running — pause_text === null и controls {pause:true, resume:false, stop:true, api:…}. Обе правки — с основанием «проект r5 п. 18» после F2."
+      },
+      {
+        "id": "I5",
+        "kind": "TO_ORCH",
+        "text": "Во время ревью в рабочей копии появились чужие правки тестов, которых нет в коммите HEAD: git status в 06:30:56Z — изменены tools/test/fixtures/team/README.md, team-web-dom.js, team-web-guard.test.js, team-web-helpers.js, team-web-page.test.js, team-web-project.test.js, team-web-words.test.js, новый tools/test/fixtures/team/no-ack.js (время изменения файлов 06:29:41Z–06:30:04Z). Мой npm run check шёл 06:27:31Z–06:28:48Z, до этих правок (WEB-9d в выводе — прежнее ожидание), то есть на коде HEAD без них. Эти правки я не ревьюировал и их не трогал; если это TEST-DESIGNER, он начал шаг 5 до вердикта шага 4 и до r5 (F2) — проверить по I3, что WEB-9d и WEB-4g не ослаблены."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Для DESIGN-QA-VALIDATOR и UAT-RUNNER (повтор step-15 I4): Playwright не щёлкает кнопку с aria-disabled=\"true\" без click({ force: true }); проверка «нажатие на недоступной не действует» — force или клавиатурой, иначе тест ждёт до таймаута и ложно краснеет."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

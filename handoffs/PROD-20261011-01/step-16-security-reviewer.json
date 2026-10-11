@@ -1,0 +1,110 @@
+{
+  "handoff_id": "step16-security-reviewer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "16",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PROD-20261011-01/step-16-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-035"
+    ],
+    "write_set": [
+      "handoffs/PROD-20261011-01/step-16-security-reviewer.json"
+    ],
+    "before_copy": "git diff base/PROD-20261011-01 HEAD -- tools (HEAD = a977db1)",
+    "artifacts_in": [
+      "docs/design/REQ-035-team-web-control.md (r4)",
+      "decisions/0032, 0030, 0025, 0026",
+      "handoffs/PROD-20261011-01/step-09-backend-dev.json",
+      "handoffs/PROD-20261011-01/step-15-frontend-dev.json"
+    ],
+    "note": "файл handoff-а ORCH заранее не создал; context записан по тексту поручения"
+  },
+  "completed_at": "2026-10-11T06:31:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Карта поверхностей (base/PROD-20261011-01..a977db1, 10 файлов tools):\n- tools/src/web/api.js — «приходит извне» (тело POST control), «сервер ходит сам» (deliver, движок resume в процессе сервера), «уходит в браузер» (тексты отказов).\n- tools/src/web/server.js — «приходит извне» (маршрут control, Host/Origin/тип/ключ, предел тела 4096), «уходит в браузер» (заголовки ответов), «держит секрет» (ключ страницы, staleText).\n- tools/src/web/engines.js — «пишет файлы» опосредованно (движок resume пишет журнал только через openWriter ядра под замком), «сервер ходит сам» (запуски исполнителя в пределах потолка).\n- tools/src/web/display.js — «уходит в браузер» (controls, stopped_text, тексты отказа).\n- tools/src/web/texts.js — «уходит в браузер» (постоянные тексты).\n- tools/src/web/config.js — «приходит извне» (CONTROL_BODY_MAX).\n- tools/src/web/public/app.js, index.html — «уходит в браузер» (вывод, ключ в заголовке POST).\n- tools/src/web/public/style.css — нет поверхности (только оформление, без url()/import внешних источников).\n- tools/README.md — нет поверхности (документ; секретов и путей машины нет).\nДанные магазинов, фото покупателей — в изменении отсутствуют.\n\nПункты:\n- Q7 применим, выполнен: поиск секретов по разнице и по public/ пуст; ключ страницы не попал ни в один ответ (сканер утечек по всем ответам части B: пусто), ни в stdout/stderr запущенного main.js (grep -c ключа = 0/0); тексты отказов только из texts.js, сообщение ошибки ядра уходит лишь в warn (stderr); pid/пути/коды E_ в ответах не найдены; CSP connect-src 'self' не даёт увести ключ на чужой адрес.\n- Q8 неприменим: данных магазинов и арендаторов нет; изоляция проектов — по id с проверкой шаблона, ответ на чужой/несуществующий/испорченный id — один и тот же 404 (10 вариантов, одно тело, 0.3–0.7 мс), без ключа — 403 до любого чтения, оракула существования нет.\n- Q9 неприменим: SQL/сырых запросов нет (хранилище — журнал ядра).\n- Q10 применим, выполнен: каждый путь control возвращает Reply и не бросает (postControl try/catch, controlFailure по кодам → тексты); у ожидания resume срок ENGINE_START_WAIT_MS (5 с) → 504; тело — предел 4096 и простой 15 с (408); C5 — одна команда на проект (controlling, finally); ошибка одного запроса не ломает другие (гонки ниже); один писатель — замок ядра (проверено гонкой с CLI в обе стороны).\n- Q11 неприменим: исходящих HTTP-запросов сервер не делает.\n- R3 неприменим: фото покупателей в изменении нет.\n- R2 (по аналогии, страница Sai Team) применим, выполнен: сервер слушает 127.0.0.1, Host проверяется первым; запись — только со своей страницы (Origin, application/json, ключ 64 hex сравнением timingSafeEqual); страница сама ничего не пишет — состояние и кнопки только из журнала (poll после ответа); заранее написанных событий нет, все записи идут через deliver/движок.\nСверх пунктов: «пишет файлы» — в разнице нет fs/writeFile/spawn/child_process; движок resume открывает журнал только через openWriter ядра (lock); «уходит в браузер» — app.js не использует innerHTML/outerHTML/insertAdjacentHTML/eval, все тексты через textContent (setText/setResult), цель с <script> в данных выводится как текст; controls.api строит сервер из проверенного id.\nAP-014: общий механизм (routeOf/allowOf/writeAllowed/readBody) — соседние маршруты сохраняют BODY_MAX/413 и прежние тексты; team-web-guard/server/chat/create на копии: 35 тестов, 34 pass, 1 fail — WEB-9d (ожидает импорт только deliver; появился engineHolder — только чтение замка, предусмотрено проектом r4 п. 6/таблица п. 520). Это не нарушение безопасности, а тест к обновлению (issues).\nВердикт: PASS, блокирующих находок нет.",
+    "findings": [],
+    "self_check": {
+      "copy": "<scratch>/sr16/tools-copy — rsync tools/ из рабочего дерева на HEAD a977db1; все атаки на копии, SAI_TEAM_HOME/HOME — mkdtemp в os.tmpdir() вне проекта, порт 0, исполнитель scripted; Node v22.21.1",
+      "commands": [
+        {
+          "cmd": "cd tools && node --test test/zz-sr16-a.test.js (в <scratch>/sr16/tools-copy)",
+          "out": "Host чужой/без порта 403; Origin нет/null/чужой/https/со слэшем 403; Content-Type нет/text/plain/form 403, 'Application/JSON ; charset' принят; ключ нет/63/65 знаков/верхний регистр 403 refused; чужой/последний знак/ключ другого запуска 403 staleKeyControl reload:true; тело 4096 → проходит (409 ctlNotStarted), 4097/8192/70000 → 400 «Запрос не понят»; chunked 5000 → 400, chunked 4096 → проходит; ложный Content-Length 20 при 5000 байт → 400 (парсер), объявлен 5000 → 400 сразу; CL+TE → 400; CL -1 → 400; медленная отправка → 408; лишнее поле/неизвестное action/action число/'Pause'/stop без confirmed/confirmed false,\"true\",1/pause+confirmed/__proto__ (обе формы)/[]/null/битый UTF-8 → 400; GET/OPTIONS/PUT/DELETE/PATCH/HEAD → 405 Allow: POST; 404 для ../, %2f, %00 (в id и после control), чужой и несуществующий id, control/, control/x, Control — одно тело на все 10, 0.28–0.74 мс; все ответы application/json; charset=utf-8 + nosniff + no-store; warnings []"
+        },
+        {
+          "cmd": "cd tools && node --test test/zz-sr16-b.test.js (копия)",
+          "out": "двойной pause: 200 + 409 ctlBusy, PROJECT_PAUSED 1; повтор pause 409 «уже на паузе»; двойной resume (две вкладки): 200 + 409, PROJECT_RESUMED 1; pause во время чата: оба 200; после перезапуска сервера resume с сайта против CLI resume одновременно: сайт 200, CLI E_ALREADY_RUNNING, замок у pid сервера, один движок; тройной stop/stop/pause: 200 + 409 + 409, PROJECT_STOPPED 1; resume после stop 409 stoppedFinal; страница: controls все false; потолок исчерпан: resume при waiting_user 409 ctlBudget; pause → resume (живой движок и после перезапуска — движок resume сервера): снова waiting_user, RUN_STARTED 3→3, spent 0.15→0.15; утечки (ключ, home, pid, E_, /Users/, /tmp) в ответах: []"
+        },
+        {
+          "cmd": "cd tools && node --test test/zz-sr16-c.test.js (копия)",
+          "out": "CLI resume держит замок (pid CLI): resume с сайта 409 «Проект уже работает», engines.has false — второй движок не запущен; pause с сайта доставлена движку CLI (200, paused), resume с сайта при живом движке CLI → deliver 200, сервер своего движка не открыл; stop с сайта 200, CLI вышел 0 со status stopped"
+        },
+        {
+          "cmd": "cd tools && node src/web/main.js --port 0 --executor scripted --scenario <scratch>/sr16/run/scen.json (env -i, HOME/SAI_TEAM_HOME в <scratch>/sr16/run)",
+          "out": "POST control чужого id через 127.0.0.1 → 404 с заголовками no-store, nosniff, no-referrer, application/json; через localhost stop без confirmed → 400; stderr пуст; ключ в stdout/stderr: 0/0"
+        },
+        {
+          "cmd": "cd tools && node --test test/team-web-guard.test.js test/team-web-server.test.js test/team-web-chat.test.js test/team-web-create.test.js (копия)",
+          "out": "tests 35, pass 34, fail 1 — WEB-9d: actual 'import { deliver, engineHolder } from \"../team/engine/channel.js\";' vs expected только deliver"
+        },
+        {
+          "cmd": "git diff base/PROD-20261011-01 HEAD -- tools | grep -inE '^\\+.*(secret|token|api[_-]?key|password|bearer|sk-…|ghp_|AKIA|[0-9a-f]{32,})'; grep -rnoE тот же набор tools/src/web/public/",
+          "out": "пусто / пусто"
+        },
+        {
+          "cmd": "git diff base/PROD-20261011-01 HEAD -- tools/src/web | grep -nE '^\\+.*(writeFile|appendFile|fs\\.|child_process|spawn|exec\\(|openWriter|\\.append\\(|console\\.|\\.pid)'",
+          "out": "пусто"
+        },
+        {
+          "cmd": "grep -n 'innerHTML|outerHTML|insertAdjacentHTML|document.write|eval(|new Function|srcdoc' tools/src/web/public/app.js",
+          "out": "пусто"
+        },
+        {
+          "cmd": "grep -rln child_process tools/src",
+          "out": "traces/git-files.js, team/executors/claude-cli.js — в разнице нет; сервер процессов не порождает, запуски исполнителя — прежний механизм движка"
+        }
+      ],
+      "hashes": {
+        "before": "sha256 списка хешей tools/src + tools/README.md: d96f334ffab6cfd1fc5b148c2975969a0da15dd35b231d7a70e76b14a37dad00",
+        "after": "d96f334ffab6cfd1fc5b148c2975969a0da15dd35b231d7a70e76b14a37dad00 — совпали",
+        "files": {
+          "tools/README.md": "82432dea28fbd6286cbe3a07a5e4512041fb176dfff08fc66f85662ce778b46c",
+          "tools/src/web/api.js": "26c435448b01c0cb15f4273baadd8116b960bd207b346cbec818526611b425e8",
+          "tools/src/web/config.js": "29fc329e61b3bc82f255b32589c78c6571e5f0b7bc8f910477e147e2587b1b36",
+          "tools/src/web/display.js": "5c2794756bd65fa41f614ef3b396e8f741a90e41f09ab0eec8059156b4502bb7",
+          "tools/src/web/engines.js": "81ba72a796696cf20ed1321a5ecc0185667a22eb6406446ddc4ad1022575127c",
+          "tools/src/web/public/app.js": "03ef4223c3ed7a510198e8c91eefc7346a57cb2929140f22a227978a3157c6ed",
+          "tools/src/web/public/index.html": "52e10e2b78a25b86aa93eb45b82192db76ab0c35febf40da0d52ac725b90cbc9",
+          "tools/src/web/public/style.css": "e2f61379bc14f897166a5941ffbdf7fb77c0c21e72dff0d918f2919b74a2f3aa",
+          "tools/src/web/server.js": "28991659a8e312222855d169ef48850d5a2dcd2d3e601e84aea18f67f0672a2b",
+          "tools/src/web/texts.js": "72277f331ad76ca3edfef6cd0bea8d63ba3a5bde039364562d9bb7e8198af182"
+        }
+      }
+    },
+    "issues": [
+      {
+        "kind": "INFO",
+        "text": "Во время проверки в рабочем дереве менялись тесты (не мной): tools/test/team-web-{dom,guard.test,helpers,page.test,project.test,words.test}.js, tools/test/fixtures/team/README.md, новый tools/test/fixtures/team/no-ack.js. Проверяемый код (tools/src, tools/README.md) не менялся — хеши до и после совпали. Вердикт относится к коммиту a977db1."
+      },
+      {
+        "kind": "INFO",
+        "text": "WEB-9d (tools/test/team-web-guard.test.js:252) на HEAD падает: ожидает из channel.js только deliver, а api.js:13 импортирует ещё engineHolder (только чтение writer.lock через lockHolder). Проект r4 это предусматривает; тест нужно обновить на шаге 5 (возможно, это уже делается — guard.test.js изменён в рабочем дереве)."
+      },
+      {
+        "kind": "INFO",
+        "text": "Вне разницы (ядро движка, не REQ-035): в сценарии с потолком 0.1 и стоимостью запуска 0.05 итог spent_usd = 0.15 (план, работа, проверка) до ожидания по потолку. Возможно, это принятое поведение (проверка задачи как часть начатой работы); если нет — отдельный дефект. Кнопка «Продолжить» в этом состоянии новых запусков не делает (RUN_STARTED 3→3)."
+      },
+      {
+        "kind": "INFO",
+        "text": "Не замечание: дублирующийся ключ в JSON ({\"action\":\"stop\",\"confirmed\":false,\"confirmed\":true}) принимается как confirmed:true (JSON.parse — последний выигрывает); BOM в начале тела снимается декодером. Обхода подтверждения нет: клиент со своим ключом явно прислал true."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
