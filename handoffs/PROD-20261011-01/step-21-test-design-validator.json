@@ -1,0 +1,106 @@
+{
+  "handoff_id": "step21-test-design-validator-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "21",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261011-01/step-21-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "handoffs/PROD-20261011-01/step-18-test-designer.json",
+      "docs/design/REQ-035-team-web-control.md (r5: п. 15, 15.1 — 28 мутантов, п. 16–18)",
+      "docs/design/REQ-035-ui.md (r2)",
+      "docs/requirements.yaml (REQ-035, 13 критериев)",
+      "tools/test/team-web-control.test.js, team-web-control-page.test.js, team-web-control-engine.test.js, fixtures/team/no-ack.js",
+      "tools/test/team-web-helpers.js, team-web-dom.js, team-web-project.test.js, team-web-guard.test.js, team-web-words.test.js, team-web-page.test.js",
+      "docs/quality-bar.md"
+    ],
+    "write_set": ["handoffs/PROD-20261011-01/step-21-test-design-validator.json"],
+    "note_by_agent": "Файла handoff-а на момент работы не было; поля верхнего уровня записаны TEST-DESIGN-VALIDATOR по сообщению ORCH. HEAD 83bb7a1. Ожидаемого вердикта в задании нет."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T07:03:41Z",
+  "started_at": "2026-10-11T07:03:41Z",
+  "completed_at": "2026-10-11T07:27:00Z",
+  "task": {
+    "description": "WF-02, шаг 5b: проверка тестов REQ-035 — покрытие 13 критериев, содержательность проверок, неизменность состояния в тестах отказа, независимость и устойчивость, модель DOM, WEB-9d/WEB-4g; не меньше 14 из 28 мутантов проекта (обязательно M20–M28) и 3 своих на копии вне репозитория; npm run check дважды и npm run traces."
+  },
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": [
+      "Покрытие (своя таблица от критериев REQ-035): 1 — CTL-1a (controls/pause_text/stopped_text по всем 8 статусам схемы через GET и чистую controlsFor), CTL-1b (настоящие index.html/app.js в модели DOM за настоящим сервером, видимы ровно кнопки таблицы, 0 записей), CTL-1c (нет «командой resume»); 2 — CTL-2 (engine-файл: одно PROJECT_PAUSED USER, замок тот же, счёт TASK_STARTED через 5 с, RUN_FINISHED задачи 1 после паузы с outcome ok, GET «на паузе» + controls + фраза); 3 — CTL-3a (в том же тесте), CTL-3b (SIGINT, второй spawnWeb, замок с pid нового сервера, запуски 1/1/≤2, TASK_DONE по одному), CTL-3c (i)–(iv), CTL-3, CTL-3d и вариант; 4 — CTL-4a (+вариант M22, тела запросов), CTL-4b, CTL-4c, CTL-4d; 5 — CTL-5a, CTL-5b, CTL-5b′, CTL-5c; 6 — CTL-6a…CTL-6f; 7 — CTL-7a (22 строки + свойство), CTL-7b (в процессе и engine-файл), CTL-7c; 8 — CTL-8a (а), CTL-8b (б), CTL-8c и CTL-8c′ (в), CTL-8d (г), CTL-8e (д), CTL-8f ×2, CTL-8g, CTL-8h, CTL-8 (C5); 9 — CTL-9 + DISPLAY_KEYS расширен; 10 — не автотест, назван и закреплён: критерий 10, проект п. 14 и строка 10 п. 15, описание REQ-035-ui.md (стр. 8 и 136–144: DESIGN-QA-VALIDATOR, 10 снимков 1470×784 и 375×812), сценарий BA-ANALYST/UAT-RUNNER; 11 — CTL-11 + CTL-3b; 12 — CTL-12, CTL-4a, CTL-4d; 13 — CTL-13 + свой прогон. 13 из 13; skip/only/todo нет (grep пусто). Новых тестов 48 (38 в control+page, 10 в engine) — совпадает с отчётом автора; всего 1157.",
+      "Тесты отказа сверяют неизменность сами: stateOf (sha256 журнала, байты writer.lock, список файлов inbox/) — CTL-3c(ii), CTL-3, CTL-4c, CTL-4d, CTL-5c, CTL-6a/b/c, CTL-7a (после каждой из 22 строк + inbox пуст), CTL-7b, CTL-8e, CTL-8g, CTL-8; снимок путей и хешей SAI_TEAM_HOME — CTL-6d, CTL-6f; хеш журнала — CTL-8a (после stableHash), CTL-8c′ (второе нажатие), CTL-4a (Не останавливать, Escape). Проверки содержательные: deepStrictEqual всего тела ответа, пары [тип, источник] новых событий, счётчики вызовов поддельных движков.",
+      "WEB-9d не ослаблен (git diff base/PROD-20261011-01 HEAD -- tools/test/team-web-guard.test.js): прежние запреты (appendFile|writeFile|createWriteStream|openSync|rename, inbox, child_process во всех файлах web/, channel только в api.js) на месте; строка импорта — ровно одна с { deliver, engineHolder }; deliver( ровно 2 и позиционно в postChat и control; engineHolder( — 1; добавлен запрет импорта fs в api.js. Не перенесено одно ожидание п. 18 r5: «engineHolder в других файлах web/ нет» — L2. WEB-4g: pause_text заменён на текст критерия 1; ожидания п. 18 r5 о stopped_text и controls в WEB-4g не добавлены — L3 (те же значения проверяют CTL-1a, CTL-3d).",
+      "Модель DOM не подгоняет результат: Element.click() шлёт click и молчит только при атрибуте/свойстве disabled (как браузер); на aria-disabled кнопке click доходит до обработчика — поэтому мутант M21c2 (обработчик без выхода) ловится. pressKey: keydown элементу и документу, затем click у button на Enter/пробел, если не preventDefault — упрощение (в браузере пробел активирует на keyup), названо в шапке page-файла; на вывод тестов не влияет.",
+      "Мутанты (свои, на копии <scratch>/mut/sai вне репозитория, node --test --test-timeout=90000; числа — упавшие/всего в control+page, для engine-файла — по --test-name-pattern): M1 2/38; M2 2/38; M3 4/38; M4 4/38 + CTL-3b 1/1; M5 2/38 + CTL-3b 1/1; M6 1/38 (CTL-4c); M7 2/38; M8a 1/38; M8b 1/38 (CTL-4a); M9 1/38; M10 1/38 (CTL-6c); M11 2/38; M12a 2/38; M12b 2/38; M13 1/38 (CTL-6f); M14 2/38; M15 1/38 (CTL-7a); M16 2/38 (CTL-5b′, CTL-7c); M17 1/38 + CTL-8a 1/1; M18 2/38 (CTL-7b, CTL-7c); M19 3/38 (CTL-8d, 8f, 8h); M20 1/38 (CTL-8g); M21a (нет updateControls после ответа) 1/38; M21b (атрибут disabled) 1/38; M21c2 (обработчик и submitControl без выхода) 3/38; M21d (фокус уводится всегда) 1/38 — все CTL-8f; M22 1/38 (CTL-4a вариант); M23 3/38 + CTL-8c′ 1/1; M24a (очищается вся) 1/38 (CTL-8h); M25 1/38 (CTL-7a) + CTL-3d 2/2; M26 1/38 (CTL-3c (i)); M27 1/38 (CTL-3c (iii)); M28 1/38 (CTL-8h). Итого 28 из 28 пунктов п. 15.1 убиты. Эквивалентные (выжили, 0/38): M24b «удаляется своя запись без сверки номера» — как записано в проекте (r3, N3); M21c в узком виде «убран только if (isOff) в onControlClick» — эквивалентен: submitControl сам выходит по controlBusy и app.confirming.",
+      "Свои мутанты: X1 (stop без проверки confirmed === true, ключ confirmed остаётся) — 1/38, CTL-4c; X2 (проверка Origin пропущена только у маршрута control) — 1/38, CTL-6a; X3b (resume без синхронной защиты running.has → второй движок) — 1/38, CTL-3c (iii); X3c (ctx.controlling не ставится — одна команда на проект) — 1/38, CTL-8. X3a (первая проверка resume после await pause(0), а не синхронно) — ВЫЖИЛ 0/38: CTL-3c (iii) ставит свой таймер 0 после вызова resume, а таймер мутанта поставлен раньше и срабатывает первым. С настоящим движком исход тот же (state() до открытия писателя всегда null, Ф17), поэтому мутант почти эквивалентен — L1; исправление проверено на копии: таймер-отметка до вызова resume — исходный код 4/4 зелёный, X3a и M27 падают.",
+      "Независимость и устойчивость: каждый из 38 тестов control+page отдельно (--test-name-pattern) — 38/38 pass; каждый из 10 тестов engine-файла отдельно — 10/10. Порты — 0, свои SAI_TEAM_HOME, часы — mock.timers в CTL-3c (iv), сброс тест-областью. Под двойной нагрузкой (полный npm test копии и параллельно engine-файл) — 1157/1157 и 10/10. Окна времени: CTL-7b — 3 с (KILL_GRACE_MS, src/team/config.js:11) на один локальный POST после requestStop; CTL-2 — запас ≈2,7 с до конца задачи 1 (3 с); CTL-8a — ответ в [10; 12] с. Сон ноутбука внутри этих окон даст ложное красное — это свойство окон критериев, не тестов; при повторе зелёный (I2). Длительность: engine-файл 81–83 с последовательно и стал самым долгим файлом; общий check 116,7–117,1 с против ≈73 с до работы (I3 — предложение).",
+      "Свой прогон: cd tools && npm run check дважды подряд без других нагрузок — код 0 оба раза, 1157/1157, 0 fail/skip/todo; cd tools && npm run traces — код 0. Рабочее дерево до и после совпадает (список sha256 1009 файлов, хеш списка 6c5f8ed4…5620 до и после)."
+    ],
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "where": "tools/test/team-web-control.test.js, CTL-3c (iii), строки 463–469",
+        "what": "Тест не доказывает «первая проверка resume синхронна, до первого await» (проект п. 7, r2 F4): мутант X3a (await pause(0) перед первой проверкой) проходит, потому что таймер-отметка ставится после вызова resume и срабатывает позже таймера мутанта. Почти эквивалентен для настоящего движка (state() до открытия писателя null), поэтому не блокирует.",
+        "fix": "Поставить setTimeout(() => { marked = true; }, 0) до вызова engines.resume(...). Проверено на копии: исходный код — CTL-3c 4/4 pass; X3a и M27 — CTL-3c (iii) падает."
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "where": "tools/test/team-web-guard.test.js, WEB-9d",
+        "what": "Из ожиданий п. 18 r5 (F2) не перенесено «слова engineHolder в других файлах tools/src/web/ нет». Ослабления нет: прежние запреты на месте, добавлен запрет fs в api.js; косвенно держит «channel только в api.js».",
+        "fix": "В цикле по файлам web/ добавить assert.doesNotMatch(body, /engineHolder/, rel) для всех файлов, кроме api.js."
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "where": "tools/test/team-web-project.test.js, WEB-4g",
+        "what": "По п. 18 r5 WEB-4g должен был получить ещё stopped_text === null и controls ({pause:false,resume:true,stop:true,api} у paused, {pause:true,resume:false,stop:true,api} у planning/running); изменён только pause_text. Покрытие этих значений есть в CTL-1a (все статусы) и CTL-3d (пауза после остановки сервера), пробела в критериях нет.",
+        "fix": "Добавить в WEB-4g три assert: paused.stopped_text === null, paused.controls и running.controls по таблице п. 5.1."
+      }
+    ],
+    "self_check": [
+      "Хеши до: cd <Sai> && git ls-files -co --exclude-standard -z | xargs -0 shasum -a 256 > <scratch>/tree-before.txt — 1009 строк, sha256 списка 6c5f8ed4c4c146d0b21389ca336d7ee5799c2c7bd56ca16da075f234160d5620 (07:04:52Z). После всех проб — тот же список, тот же хеш, diff пуст («tree unchanged», 07:25:16Z). git status: только чужой неотслеженный handoffs/REQ-20261011-01/step-12-req-validator.json — был до начала.",
+      "cd tools && npm run check (запуск 1, 07:04:58Z → 07:07:00Z): exit=0; «All matched files use Prettier code style!»; «traces: файлов проверено 983, следов 0, пропущено 26»; «# tests 1157 # pass 1157 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 117147.215667».",
+      "cd tools && npm run check (запуск 2, 07:07:04Z → 07:09:06Z): exit=0; «# tests 1157 # pass 1157 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 116676.911542».",
+      "cd tools && npm run traces: exit=0, «traces: файлов проверено 983, следов 0, пропущено 26».",
+      "git diff base/PROD-20261011-01 HEAD -- tools/test/team-web-guard.test.js tools/test/team-web-project.test.js tools/test/team-web-words.test.js tools/test/team-web-page.test.js tools/test/team-web-helpers.js tools/test/team-web-dom.js tools/test/fixtures/team/ — прочитан целиком (WEB-9d: +28/−2 строки; WEB-4g: только ожидаемый pause_text; DISPLAY_KEYS +stopped_text; fakeEngines +resume/has; dom +click()/pressKey).",
+      "Копия: rsync -a --exclude .git --exclude node_modules <Sai>/ <scratch>/mut/sai/; cd <scratch>/mut/sai/tools && npm ci — «found 0 vulnerabilities»; sha256 файлов src копии = src репозитория («copy src == repo src»). База на копии: node --test --test-timeout=90000 test/team-web-control.test.js test/team-web-control-page.test.js — 38/38 (8,9 с); test/team-web-control-engine.test.js — 10/10 (81,3 с).",
+      "Мутанты: node <scratch>/mutants.mjs <scratch>/mut/sai/tools — скрипт меняет ровно одно место (проверка «найдено 1 раз», иначе ERROR: так M18 первым вариантом нашёлся дважды и был переписан на return failure(500, TEXT.ctlDiskUnsure) → TEXT.ctlDisk), запускает node --test --test-timeout=90000 --test-reporter=tap по control+page и по engine-файлу с --test-name-pattern (M4, M5: CTL-3b; M17: CTL-8a; M23: CTL-8c′; M25: CTL-3d), восстанавливает файл в finally. Вывод: см. summary (числа по каждому мутанту).",
+      "Проверка исправления L1 на копии: таймер-отметка перенесена до вызова resume — node --test --test-name-pattern=CTL-3c test/team-web-control.test.js: «# tests 4 # pass 4 # fail 0»; затем X3a — 1/38 (CTL-3c (iii)), M27 — 1/38; файл теста копии возвращён, diff -rq <scratch>/mut/sai/tools/test <Sai>/tools/test пуст.",
+      "После проб: sha256 src копии = до проб («copy src restored»); control+page на копии — 38/38.",
+      "Независимость: каждый тест control+page отдельно по --test-name-pattern (первые 25 символов имени) — 38 запусков, каждый «# pass 1 # fail 0»; каждый тест engine-файла отдельно — 10 запусков, каждый «# pass 1 # fail 0».",
+      "Нагрузка: на копии npm test в фоне и одновременно node --test test/team-web-control-engine.test.js — engine: exit=0, 10/10, duration_ms 82657; полный: 1157/1157, duration_ms 116307.",
+      "grep -rn 'skip|.only|todo(' tools/test/team-web-control*.test.js tools/test/fixtures/team/no-ack.js — пусто."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Числа мутантов автора и мои местами расходятся из-за формы мутанта (у автора M21c — 4/7, у меня узкий M21c — эквивалентный 0/38, полный M21c2 — 3/38; M4 у меня 4/38 + CTL-3b). Это не расхождение тестов: в отчёт идут мои числа."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Окна времени, которые задают критерии (CTL-8a 10–12 с, CTL-7b 3 с KILL_GRACE_MS, CTL-2 запас ≈2,7 с), чувствительны к сну ноутбука и сильному торможению машины: ложное красное возможно, повтор — зелёный. В трёх полных прогонах и под двойной нагрузкой падений не было. В t.after CTL-7b и CTL-8a SIGCONT шлётся по pid, который мог уже завершиться, — безвредно (SIGCONT не останавливает и не убивает), отмечено для полноты."
+      },
+      {
+        "id": "I3",
+        "kind": "PROPOSAL",
+        "text": "Длительность check: engine-файл ≈81–83 с последовательно стал самым долгим файлом, check вырос с ≈73 до ≈117 с (+60 %). Окна критериев сократить нельзя. Предложение без правки тестов: разделить team-web-control-engine.test.js на 2–3 файла (например, CTL-2/3a/3b; CTL-3d ×2/4b/7b; CTL-8a/8b/8c/8c′) — node --test запускает файлы параллельно (10 ядер), время check вернётся примерно к самому долгому из прежних файлов. Не предлагаю concurrency внутри файла: усилит нагрузку на окна I2. Решает ORCH; на вердикт не влияет."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Для DESIGN-QA-VALIDATOR (не тесты): критерий 10 приводит в пример состояния «ошибка» текст «Команда не подтверждена…» (504, тон warn), а описание REQ-035-ui.md п. 3.4 снимает «ошибку» на «Проект уже на паузе» (409, красный). Оба допустимы словом «например»; стоит снять и 504, чтобы проверить оба тона."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

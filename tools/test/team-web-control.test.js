@@ -461,10 +461,11 @@ test("CTL-3c (iii) (crit. 3; section 7, r2 F4) an engine whose state is running 
   });
   t.after(() => engines.stopAll(1000));
   let marked = false;
-  const pending = engines.resume("p-20990101-a1b2c3");
+  // the timer is set BEFORE the call: it is queued ahead of any wait inside resume
   setTimeout(() => {
     marked = true;
   }, 0);
+  const pending = engines.resume("p-20990101-a1b2c3");
   const r = await pending;
   assert.equal(marked, false, "the answer came before the first wait");
   assert.deepStrictEqual(outcome(r), {
@@ -1696,6 +1697,8 @@ test("CTL-13 (crit. 13) tools/README.md, the section «## Sai Team — инте�
     .filter((n) => /^team-web-control.*\.test\.js$/.test(n))
     .sort();
   assert.deepStrictEqual(mine, [
+    "team-web-control-engine-3b.test.js",
+    "team-web-control-engine-rest.test.js",
     "team-web-control-engine.test.js",
     "team-web-control-page.test.js",
     "team-web-control.test.js",

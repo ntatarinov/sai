@@ -264,6 +264,8 @@ test("WEB-9d tools/src/web/ writes no file past the API of the core: no appendFi
     assert.doesNotMatch(body, /inbox/, rel);
     assert.doesNotMatch(body, /child_process/, rel);
     if (/channel/.test(body)) channel.push(rel);
+    // (REQ-035, design section 18 r5) engineHolder lives only in api.js
+    if (rel !== "api.js") assert.doesNotMatch(body, /engineHolder/, rel);
   }
   assert.deepStrictEqual(channel, ["api.js"]);
   const api = fs.readFileSync(path.join(WEB_SRC, "api.js"), "utf8");

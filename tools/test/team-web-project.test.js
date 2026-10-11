@@ -794,6 +794,13 @@ test("WEB-4g pause_text after the engine of the server is stopped by a signal; t
   const running = (await s.get(`/api/projects/${id}`)).json;
   assert.equal(running.status, "planning");
   assert.equal(running.pause_text, null);
+  assert.equal(running.stopped_text, null);
+  assert.deepStrictEqual(running.controls, {
+    pause: true,
+    resume: false,
+    stop: true,
+    api: `/api/projects/${id}/control`,
+  });
   assert.equal(
     running.tasks_empty_text,
     "Плана пока нет — команда его составляет",
@@ -808,6 +815,13 @@ test("WEB-4g pause_text after the engine of the server is stopped by a signal; t
     "Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше",
   );
   assert.equal(paused.tail_text, null);
+  assert.equal(paused.stopped_text, null);
+  assert.deepStrictEqual(paused.controls, {
+    pause: false,
+    resume: true,
+    stop: true,
+    api: `/api/projects/${id}/control`,
+  });
   assert.equal(paused.tasks_empty_text, "Задач нет");
 
   const created = project(t, box);

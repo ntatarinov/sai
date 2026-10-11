@@ -1,0 +1,89 @@
+{
+  "handoff_id": "step22-test-designer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "22",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PROD-20261011-01/step-22-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "MEDIUM",
+  "context": {
+    "requirement_ids": [
+      "REQ-035"
+    ],
+    "artifacts_in": [
+      "handoffs/PROD-20261011-01/step-21-test-design-validator.json (L1, L2, L3, I3)",
+      "docs/design/REQ-035-team-web-control.md (r5, п. 18)"
+    ],
+    "write_set": [
+      "tools/test/team-web-*.test.js",
+      "tools/test/team-web-control-engine-kit.js"
+    ],
+    "note_by_agent": "Файла handoff-а не было; поля верхнего уровня записаны TEST-DESIGNER по сообщению ORCH. Код src не тронут."
+  },
+  "completed_at": "2026-10-11T07:43:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "L1: в CTL-3c (iii) (team-web-control.test.js) setTimeout(mark, 0) теперь ставится ДО вызова engines.resume. Проверено на копии вне репозитория (<scratch>/l1/sai: rsync без .git и node_modules, npm ci, --test-timeout=90000, --test-name-pattern=CTL-3c): исходный код 4/4 pass; X3a (await pause(0) перед первой проверкой) — падает CTL-3c (iii), 1 из 4; M27 (pause(START_POLL_MS) в начале цикла) — падают CTL-3c (iii) и (iv), 2 из 4. После проб src копии совпадает с рабочим деревом (diff -rq пуст).",
+      "L2: WEB-9d (team-web-guard.test.js) — в цикле по файлам tools/src/web/ для каждого файла кроме api.js добавлено doesNotMatch(/engineHolder/).",
+      "L3: WEB-4g (team-web-project.test.js) — у running (planning): stopped_text === null и controls = {pause:true, resume:false, stop:true, api:'/api/projects/<id>/control'}; у paused: stopped_text === null и controls = {pause:false, resume:true, stop:true, api}.",
+      "I3: team-web-control-engine.test.js (10 тестов, ≈81 с) разбит на три файла, тесты и их независимость не менялись, окна времени (CTL-7b 3 с, CTL-8a 10–12 с) не тронуты: team-web-control-engine-3b.test.js (CTL-3b, ≈31 с), team-web-control-engine.test.js (CTL-2, CTL-3d ×2, CTL-8a, ≈31 с), team-web-control-engine-rest.test.js (CTL-4b, CTL-7b, CTL-8b, CTL-8c, CTL-8c′, ≈19 с); общие помощники вынесены без изменений в team-web-control-engine-kit.js (не тест, не запускается сам). Все три файла вместе: 10 pass, 31 с по часам вместо ≈81 с. Общий npm run check ускорился слабо: 75,6–77,1 с (real) против 78,4–81,2 с до разбиения — остальное время набегают другие файлы и число ядер.",
+      "Побочная правка: CTL-13 (team-web-control.test.js) сверяет перечень файлов team-web-control*.test.js — в ожидаемый список добавлены два новых файла (иначе проверка падала); смысл проверки (файлы в прогоне npm test) прежний.",
+      "Число тестов прежнее: 1157."
+    ],
+    "changes": [
+      {
+        "file": "tools/test/team-web-control.test.js",
+        "what": "L1: порядок таймера в CTL-3c (iii); CTL-13: перечень файлов (+2)"
+      },
+      {
+        "file": "tools/test/team-web-guard.test.js",
+        "what": "L2: WEB-9d — engineHolder только в api.js"
+      },
+      {
+        "file": "tools/test/team-web-project.test.js",
+        "what": "L3: WEB-4g — stopped_text и controls у running и paused"
+      },
+      {
+        "file": "tools/test/team-web-control-engine.test.js",
+        "what": "I3: оставлены CTL-2, CTL-3d ×2, CTL-8a; помощники вынесены в kit"
+      },
+      {
+        "file": "tools/test/team-web-control-engine-3b.test.js",
+        "what": "I3: новый, CTL-3b"
+      },
+      {
+        "file": "tools/test/team-web-control-engine-rest.test.js",
+        "what": "I3: новый, CTL-4b, CTL-7b, CTL-8b, CTL-8c, CTL-8c′"
+      },
+      {
+        "file": "tools/test/team-web-control-engine-kit.js",
+        "what": "I3: новый, общие помощники (export), без изменения тела"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check — три прогона подряд: код 0, 0, 0; tests 1157, pass 1157, fail 0, skipped 0, todo 0; duration_ms 70847 / 71360 / 71105; real 76,0 / 76,8 / 76,5 с. До разбиения (с исправлением L1–L3): real 78,4 / 80,3 / 81,2 с.",
+      "cd tools && npm run traces — «файлов проверено 987, следов 0, пропущено 26».",
+      "cd tools && node --test team-web-control-engine*.test.js — 10 pass, 0 fail, 31,1 с.",
+      "Мутанты L1 — см. summary (X3a: 1/4, M27: 2/4 в CTL-3c); рабочее дерево мутантами не менялось."
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "at": "2026-10-11T07:43:30Z",
+        "what": "Выигрыш в общем времени npm run check мал (≈3–4 с из ≈79): прогон ограничен другими файлами и числом ядер; самый длинный файл теперь ≈31 с вместо ≈81 с."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-web-control.test.js",
+      "tools/test/team-web-guard.test.js",
+      "tools/test/team-web-project.test.js",
+      "tools/test/team-web-control-engine.test.js",
+      "tools/test/team-web-control-engine-3b.test.js",
+      "tools/test/team-web-control-engine-rest.test.js",
+      "tools/test/team-web-control-engine-kit.js"
+    ]
+  }
+}
