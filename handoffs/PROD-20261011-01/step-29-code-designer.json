@@ -1,0 +1,91 @@
+{
+  "handoff_id": "step29-code-designer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "29",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261011-01/step-29-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-035"
+    ],
+    "issue_id": "ISS-0020",
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "handoffs/PROD-20261011-01/step-28-code-design-validator.json",
+      "docs/design/ISS-0020-pause-text-for-waiting.md",
+      "docs/design/REQ-035-team-web-control.md (r6)",
+      "docs/design/REQ-035-ui.md (r3)",
+      "decisions/0032-req035-web-control.md (C7)"
+    ],
+    "write_set": [
+      "docs/design/ISS-0020-pause-text-for-waiting.md",
+      "docs/design/REQ-035-team-web-control.md",
+      "docs/design/REQ-035-ui.md",
+      "decisions/0032-req035-web-control.md",
+      "handoffs/PROD-20261011-01/step-29-code-designer.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было; поля верхнего уровня записаны CODE-DESIGNER по сообщению ORCH."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T08:43:01Z",
+  "started_at": "2026-10-11T08:43:01Z",
+  "completed_at": "2026-10-11T08:48:14Z",
+  "task": {
+    "description": "Доработка r2 проекта исправления ISS-0020 после FAIL ворот шага 28 (F1, F2 блокируют; N1–N5) по решению ORCH: тексты паузы условные, правила зависят только от причины ожидания."
+  },
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Правила pauseText сведены к шести и зависят только от причины ожидания и открытого вопроса по задаче (budgetRaised и остаток потолка не используются). Тексты pausedBudget, pausedPlan, pausedGoalCheck заменены на условные (текст ORCH), правдивость проверена по пробам RAISED-TINY, PLAN-SPENT, GOAL-NO-RUN, BUDGET-NOT-RAISED, PLAN0/1. Добавлен тест CTL-14g, переформулирован CTL-14b, мутанты M29–M36 пересмотрены."
+    ],
+    "changes": [
+      "ISS-0020-pause-text-for-waiting.md (r2): п. 1 (что нашли ворота), п. 2 (Ф24–Ф27, F1, F2), п. 3 (правила 1–6 без budgetRaised; тексты; таблица правдивости по пробам; N1 — порядок совпадает со столбцом «Продолжить» у paused п. 5.2, а не с waitingRefusal), п. 5, п. 7 (пути отказа без прогноза), п. 8 (README, N3), п. 9 (К-6; CTL-14a совпадает с п. 15.2 контракта — N2; CTL-14b — свойство «текст не обещает исхода»; CTL-14d на настоящей фикстуре — N4; CTL-14f — новые слова — N3; новый CTL-14g), п. 9.1 (M31 «текст обещает исход» вместо budgetRaised; M35 ловит только CTL-14c — N5), п. 10 (Q2, Q3, Q5, Q10, Q12, Q13, Q14), п. 11, п. 12 (I2 обновлён; новые I4, I5).",
+      "REQ-035-team-web-control.md (r7): шапка, п. 4 (pause_text), п. 5.1 (пояснение), п. 5.2 (порядок правил, путь «Пауза» → «Продолжить»), п. 8 (три текста, строка о правдивости), п. 9.4 (строка r2, F3), п. 12, п. 13, п. 15 (критерии 1, 7, 9, 13), п. 15.2 (CTL-14a…14g), п. 15.1 (M29–M36), п. 16 (Q3, Q10, Q13), п. 18 (3a), п. 20.2 (вопрос 9).",
+      "REQ-035-ui.md (r4): шапка, ссылки на контракт r7, строка pause_text в п. 1, таблица п. 5 (#project-pause), абзац о паузе после сбоя.",
+      "decisions/0032-req035-web-control.md: C7 переписан под правила по причине ожидания без обещания исхода; принятый остаток (пауза без ожидания при исчерпанном потолке) назван."
+    ],
+    "self_check": [
+      "cd tools && npm run traces → код 0 («файлов проверено 998, следов 0, пропущено 36»).",
+      "Чтение кода базы: tools/src/team/engine/schedule.js 27–36 (slotBudget, enough: reserve >= MIN_RUN_USD), 225–250 (projectRun, wait goal_check_failed при !anyDone и round >= ROUNDS_MAX, budgetWait), tools/src/team/engine/commands.js 144–180 (checkResume: у paused потолок не проверяется) — подтверждают факты ворот Ф24–Ф27.",
+      "Повторный запуск проб ворот (копия <scratch>/v28) в этой сессии не делался: каталога нет; факты Ф24–Ф27 взяты из шага 28 и сверены с кодом; в проекте это сказано прямо (п. 2).",
+      "grep путей компьютера (/Users, /private) в трёх docs/design/*.md → пусто; grep «budgetRaised» в проекте — только пояснения «не используется»."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "Нужна ли правка критерия 1 REQ-035 и сценариев 11, 39, 23Б (WF-01)? Без изменений с r1."
+      },
+      {
+        "id": "I2",
+        "kind": "DECISION_PROPOSAL",
+        "text": "decisions/0032 C7 обновлён (текст паузы по причине ожидания, исход не обещается). Нужно подтверждение ORCH."
+      },
+      {
+        "id": "I3",
+        "kind": "DECISION_PROPOSAL",
+        "text": "Запись в docs/anti-patterns.md: «один текст на состояние с несколькими исходами; исход предсказан по состоянию, а не по правилу движка» (r6 повторил ошибку первой редакции). Делает DOC-UPDATER."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "Пауза без ожидания при исчерпанном потолке: текст paused («чтобы работа пошла дальше») неправдив, checkResume у paused потолок не проверяет. По решению ORCH остаток не угадывается; смягчить paused — правка критерия 1 (WF-01)."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "Причины task_failed, review_failed, approval без открытого вопроса по задаче получают paused; достижимость такого состояния не проверялась."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/ISS-0020-pause-text-for-waiting.md",
+      "docs/design/REQ-035-team-web-control.md",
+      "docs/design/REQ-035-ui.md",
+      "decisions/0032-req035-web-control.md"
+    ]
+  }
+}

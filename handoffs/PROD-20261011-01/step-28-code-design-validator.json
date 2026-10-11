@@ -1,0 +1,131 @@
+{
+  "handoff_id": "step28-code-design-validator-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "28",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261011-01/step-28-code-design-validator.json",
+  "status": "FAILED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-035"
+    ],
+    "issue_id": "ISS-0020",
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "docs/design/ISS-0020-pause-text-for-waiting.md",
+      "docs/design/REQ-035-team-web-control.md (r6)",
+      "docs/design/REQ-035-ui.md (r3)",
+      "decisions/0032-req035-web-control.md (C7)",
+      "docs/issues/ISS-0020-pause-text-promises-more-for-waiting-project.md",
+      "handoffs/PROD-20261011-01/step-26-uat-runner.json",
+      "handoffs/PROD-20261011-01/step-27-code-designer.json"
+    ],
+    "write_set": [
+      "handoffs/PROD-20261011-01/step-28-code-design-validator.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было (в папке прогона step-01…27). Поля верхнего уровня, context и task записаны CODE-DESIGN-VALIDATOR по сообщению ORCH; ORCH может их сверить своим полем."
+  },
+  "task": {
+    "description": "WF-03, шаг 3: ворота проекта исправления ISS-0020 (текст паузы у ждавшего проекта). Своими запусками на копии вне репозитория: факты Ф18–Ф23; полнота правил pauseText 1–7 по всем сочетаниям; честность текстов pausedBudget, pausedPlan, pausedGoalCheck, pausedTaskQuestion; правило «Пауза» у recovery при вопросе по задаче; критерии REQ-035 (1, 3, 12), таблица кнопок, README п. 13; CTL-14a…f, M29–M36, регрессионные падают до исправления; 17 пунктов планки; кода нет; пять мест записи REQ-009, границы REQ-013/014; строить без догадок. Файлы проекта не править; cd tools && npm run traces — код 0."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T08:35:25Z",
+  "started_at": "2026-10-11T08:35:25Z",
+  "completed_at": "2026-10-11T08:42:27Z",
+  "result": {
+    "status": "FAILED",
+    "verdict": "FAIL",
+    "summary": [
+      "Проход А.1 (факты): Ф18–Ф20 повторены своим пробным тестом на копии кода базы <scratch>/v28/base/tools (test/zz-v28-probe.test.js, projectPage/controlRefusal на фикстурах через API ядра): PLAIN, BUDGET, TASKQ дают прежний текст паузы, waiting сохранён, у TASKQ resume_refusal = ctlTaskDecision — подтверждено. Ф21 (decisionsLater), Ф23 (app.js:671–672, кириллицы в public/*.js нет — 0 знаков) — подтверждено. Ф22/Ф16 (потолок не поднят → сразу снова budget, без запусков) — подтверждено nextActions после PROJECT_RESUMED (BUDGET-NOT-RAISED → wait:budget) и полным прогоном (CTL-3d на базе проходит).",
+      "Проход А.2 (все места того же рода): шесть мест п. 1 сверены grep-ом; дополнительно найдены два места того же рода, которых проект не называет — F1, F2 (тексты обещают запуск или работу там, где движок сразу снова спрашивает).",
+      "Пункт 2 задания (полнота правил 1–7): НЕ выполнен. Порядок правил не противоречит столбцу «Продолжить» у paused в п. 5.2 (вопрос по задаче → отказ при любом waiting) — проверено пробой. Но правила 4–7 решают по waiting.reason и budgetRaised, а исход «Продолжить» у движка зависит от остатка потолка (checkResume/nextActions: budget_usd − spent_usd < MIN_RUN_USD → сразу ожидание budget) и, для goal_check_failed, от того, была ли проверка вообще (schedule.js:236–239) — F1, F2.",
+      "Пункт 3 (честность текстов): pausedBudget и pausedTaskQuestion верны (пробы BUDGET-NOT-RAISED, TASKQ; ctlTaskDecision тот же смысл); pausedPlan верен при остатке потолка (PLAN0, PLAN1 → plan), неверен при исчерпанном потолке (PLAN-SPENT → wait:budget) — F2; pausedGoalCheck неверен для ожидания без проверки цели (GOAL-NO-RUN → сразу wait:goal_check_failed, без запуска и расхода) — F1. Запрещённых слов, «%», кодов нет: тексты внесены в копию, CTL-9 и WEB-7 на полном прогоне проходят. Правило «Пауза» у recovery с вопросом по задаче → ctlAlreadyPaused верно: на базе (RECOVERY+Q, настоящая пауза ядра после сбоя с открытым вопросом) отказ звал «Нажмите «Продолжить»», а resume отказал бы.",
+      "Пункт 4 (критерии REQ-035, кнопки, README): критерий 1 проверяется фикстурой паузы без ожидания (projectsInEveryStatus) — текст сохранён; критерий 3 и 12 не затронуты; controlsFor не меняется (правка в копии: полный прогон 1157 тестов, падает ровно CTL-3d — утверждение п. 9/18 о единственном ожидаемом падении подтверждено). README п. 13 и проект п. 8 согласованы между собой; README:343 сам говорит «пока потолка всё ещё не хватает, resume отвечает отказом», README:438 — «может сделать новый платный запуск» — строже, чем новые тексты (F1, F2). I1 (формулировка критерия 1) — законный вопрос ORCH, не нарушение.",
+      "Пункт 5 (тесты и мутанты): у каждого К-1…К-5 есть тест; CTL-14a, b, c, d, f падают на базе (14d подтверждено пробой RECOVERY+Q; 14f — только словом «снова спросит», см. N3). M29–M34, M36 ловятся названными тестами; M35 ловит CTL-14c, CTL-1a — нет (N5). Для F1, F2 нет ни строки теста, ни мутанта.",
+      "Раздел о планке: названы все 17 пунктов (Q1–Q14, R1–R3) с объяснением; Q3 и Q10 отмечены выполненными, но опровергаются F1, F2; Q12 — 0032 C7 есть в decisions/0032 (стр. 103). Кода реализации нет (только сигнатура, таблицы). tools/src/team/ проект не трогает — пять мест записи REQ-009 и границы REQ-013 не затронуты; путей этого компьютера в проекте нет (REQ-014). Строить без догадок по п. 3–8 можно, но строится неверное поведение в случаях F1, F2."
+    ],
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Medium",
+        "blocking": true,
+        "where": "ISS-0020 п. 3 (правило 6, текст pausedGoalCheck), п. 7 (строка plan_failed/goal_check_failed); контракт r6 п. 4, п. 8 (pausedGoalCheck), п. 9.4 строка (r2, F3)",
+        "what": "goal_check_failed бывает без проверки цели: schedule.js:236–239 — раунд ROUNDS_MAX, все задачи закрыты, ни одной готовой → ожидание goal_check_failed без запуска. Своя проба (<scratch>/v28/sai/tools/test/zz-v28-probe2.test.js, GOAL-NO-RUN): до ожидания nextActions → [wait:goal_check_failed]; на паузе pause_text = pausedGoalCheck («проверка цели не прошла. «Продолжить» запустит проверку заново — это тратит деньги…»); после PROJECT_RESUMED nextActions → [wait:goal_check_failed] — проверки нет, расхода нет, проект сразу снова спрашивает. Строка обещает больше, чем будет, — тот же род, что ISS-0020 (AP-014). README:438 говорит «может сделать», текст страницы — «запустит».",
+        "needed": "Проект называет оба источника goal_check_failed (после проверки цели и без неё) и что делает «Продолжить» в каждом; строка паузы правдива в обоих (по признаку из журнала/состояния или общей формулировкой без обещания запуска); в п. 7 и CTL-14a/14b — фикстура «раунд 2, все задачи закрыты»; мутант, который этот случай ловит."
+      },
+      {
+        "id": "F2",
+        "severity": "Medium",
+        "blocking": true,
+        "where": "ISS-0020 п. 3 (правила 3, 4, 7; «budget с поднятым потолком → paused»), п. 7 (строка А′), п. 9 CTL-14b (третье свойство); контракт r6 п. 4, 5.1 пояснение («ожидание по потолку с поднятым потолком» — работа идёт)",
+        "what": "Правила решают по budgetRaised (был ли BUDGET_SET после PROJECT_WAITING), а движок — по остатку потолка: checkResume и nextActions ждут budget, если budget_usd − spent_usd < MIN_RUN_USD (0,01). Проба RAISED-TINY: потрачено 1, потолок поднят до 1,005 (команда budget это принимает: b > spent) → pause_text = TEXT.paused «…чтобы работа пошла дальше», после PROJECT_RESUMED nextActions → [wait:budget]. Проба PLAN-SPENT: план не составился, потолок исчерпан → pausedPlan обещает «запустит составление плана заново — это тратит деньги», после PROJECT_RESUMED → [wait:budget]. То же у goal_check_failed и у паузы без ожидания при исчерпанном потолке. README:343 сам говорит «пока потолка всё ещё не хватает». CTL-14b закрепило бы ошибку («pause_text === paused, если потолок поднят»).",
+        "needed": "Признак «хватит ли потолка на запуск» в правилах тот же, что у движка (остаток против MIN_RUN_USD), а не «был ли подъём»; тексты для «потолка не хватает» и для план/проверка цели при исчерпанном потолке говорят правду; п. 7 и CTL-14a/14b — фикстуры «поднят, но мало» и «план не составился при исчерпанном потолке»; мутант на возврат к budgetRaised."
+      },
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocking": false,
+        "where": "ISS-0020 п. 3, абзац после правил («Порядок … тот же, что у waitingRefusal»)",
+        "what": "Неверно: waitingRefusal сначала проверяет budget, потом вопрос по задаче (display.js:323–327; контракт п. 5.2 «Порядок строк waiting_user: сначала причина budget»). С правилами pauseText совпадает столбец «Продолжить» у paused, а не waitingRefusal.",
+        "needed": "Ссылка на тот порядок, с которым правила действительно совпадают (п. 5.2, paused)."
+      },
+      {
+        "id": "N2",
+        "severity": "Low",
+        "blocking": false,
+        "where": "ISS-0020 п. 9, строка CTL-14a; п. 9.1 M30",
+        "what": "В CTL-14a проекта нет случаев «вопрос по задаче» и «вопрос по задаче при ожидании по потолку», а M30 ссылается на них; в контракте r6 п. 15.2 они есть. Файлы расходятся (по правилу проекта верен контракт).",
+        "needed": "Строка CTL-14a в проекте совпадает с п. 15.2 контракта."
+      },
+      {
+        "id": "N3",
+        "severity": "Low",
+        "blocking": false,
+        "where": "ISS-0020 п. 9 CTL-14f; контракт п. 15.2",
+        "what": "В разделе README уже на базе есть «новый платный запуск» и «вопрос» в абзаце про паузу ждавшего проекта (tools/README.md:438: «…продолжается ответом на вопрос…», «…новый платный запуск…»). Две из трёх проверок проходят до исправления; новая фраза о вопросе по задаче ничем не закреплена.",
+        "needed": "CTL-14f проверяет слова, которых до исправления в разделе нет (новая фраза о вопросе по задаче)."
+      },
+      {
+        "id": "N4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "ISS-0020 п. 9 CTL-14d («на копии состояния paused_by: recovery»)",
+        "what": "Пауза ядра после сбоя с открытым вопросом по задаче достижима настоящей фикстурой через API ядра (проба RECOVERY+Q: проваленная задача, вторая задача в работе с открытым запуском, писатель переоткрыт → paused_by recovery, вопрос открыт); общее правило п. 9 — фикстуры через API ядра.",
+        "needed": "CTL-14d на настоящей фикстуре, а не на правленой копии состояния (или причина, почему копия)."
+      },
+      {
+        "id": "N5",
+        "severity": "Low",
+        "blocking": false,
+        "where": "ISS-0020 п. 9.1 M35; контракт п. 15.1 M35",
+        "what": "CTL-1a мутант M35 не ловит: у его фикстуры паузы нет вопроса по задаче, а у waiting_user «Продолжить» скрыта и без мутанта. Ловит только CTL-14c.",
+        "needed": "В столбце «кто убивает» — только тесты, которые его ловят."
+      }
+    ],
+    "self_check": [
+      "Хеш до (2026-10-11T08:35:25Z) и после (08:41:26Z), shasum -a 256: docs/design/ISS-0020-pause-text-for-waiting.md de71a1fa7feac44a0aafe66967ec3ec2f3edd09cd8c3f18e889a3a9f27ee837e; docs/design/REQ-035-team-web-control.md 290d17bb25452d65ee8f5842bb6d13634c6910e1e935236e21f4786202bcefde; docs/design/REQ-035-ui.md 5c84d8c3c60ee53a268a8574c0dbbd681d8316a3658dc4264b7e1ca8ce2dbf2e — совпадают; git status репозитория пуст до и после.",
+      "Копии вне репозитория: rsync -a --exclude .git --exclude node_modules <sai>/ <scratch>/v28/base/ и <scratch>/v28/sai/; в каждой cd tools && npm ci (Node v22.21.1).",
+      "База, <scratch>/v28/base/tools: node --test test/zz-v28-probe.test.js → PLAIN {st:paused, waiting:null, pause_text:«Проект на паузе. Нажмите «Продолжить»…», resume_refusal:null}; BUDGET {waiting:{reason:budget}, тот же текст, resume_refusal:null}; TASKQ {waiting:{reason:review_failed, task:t-0006}, тот же текст, resume_refusal: ctlTaskDecision}; RECOVERY+Q {by:recovery, resume_refusal: ctlTaskDecision, pause_refusal: «Проект уже на паузе: работа прервалась из-за сбоя. Нажмите «Продолжить»…»}.",
+      "Проект применён в копии <scratch>/v28/sai/tools (texts.js — четыре ключа п. 3 дословно; display.js — pauseText по правилам 1–7 и правило «Пауза» п. 4): node --test \"test/**/*.test.js\" → tests 1157, pass 1156, fail 1 — ровно CTL-3d (team-web-control-engine.test.js).",
+      "Там же node --test test/zz-v28-probe2.test.js: RAISED-TINY (потрачено 1, BUDGET_SET 1.005) pause_text = TEXT.paused, checkResume → command, nextActions после PROJECT_RESUMED → [wait:budget]; GOAL-NO-RUN (раунд 2, все задачи закрыты) nextActions → [wait:goal_check_failed], pause_text = pausedGoalCheck, после PROJECT_RESUMED → [wait:goal_check_failed]; PLAN0, PLAN1 после PROJECT_RESUMED → [plan]; BUDGET-NOT-RAISED → pausedBudget, после PROJECT_RESUMED → [wait:budget]; PLAN-SPENT (план не составился, потрачено 1 из 1) → pausedPlan, после PROJECT_RESUMED → [wait:budget].",
+      "grep -n \"pause_text\" tools/src/web/public/app.js → 671 setHidden, 672 setText; кириллица в tools/src/web/public/*.js — 0 знаков (python, диапазон U+0400–U+04FF).",
+      "cd tools && npm run traces (в репозитории) → код 0: «файлов проверено 997, следов 0, пропущено 36»."
+    ],
+    "issues": [
+      {
+        "id": "Q1",
+        "kind": "NOTE",
+        "text": "F1 и F2 — того же рода, что ISS-0020 (строка обещает то, чего движок не сделает); README:343 и :438 уже точнее новых текстов. Возврат CODE-DESIGNER на доработку п. 3, 7, 9 проекта и п. 4, 8, 15 контракта."
+      },
+      {
+        "id": "Q2",
+        "kind": "NOTE",
+        "text": "Утверждение контракта п. 9.4, строка (r2, F3): «goal_check_failed — новая проверка цели: новый платный запуск» неполно (F1); вошло ещё в ворота шага 6 (F5). Исправлять вместе с F1."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
