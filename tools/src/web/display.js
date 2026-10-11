@@ -342,7 +342,8 @@ export function controlRefusal(action, state, events) {
       return action === "resume" ? waitingRefusal(state, events) : null;
     case "paused":
       if (action === "pause") {
-        return state.paused_by === "recovery"
+        return state.paused_by === "recovery" &&
+          !taskQuestionOpen(state, events)
           ? TEXT.ctlPausedAfterFailure
           : TEXT.ctlAlreadyPaused;
       }
@@ -358,6 +359,18 @@ export function controlRefusal(action, state, events) {
     default:
       return TEXT.internal;
   }
+}
+
+// The text of the pause line (ISS-0020): decided only by the reason the project
+// waited for and by an open question about a task.
+export function pauseText(state, events) {
+  if (state.status !== "paused") return null;
+  if (taskQuestionOpen(state, events)) return TEXT.pausedTaskQuestion;
+  const reason = state.waiting?.reason;
+  if (reason === "budget") return TEXT.pausedBudget;
+  if (reason === "plan_failed") return TEXT.pausedPlan;
+  if (reason === "goal_check_failed") return TEXT.pausedGoalCheck;
+  return TEXT.paused;
 }
 
 // read = readProject of the core: { state, tail, events }.
@@ -384,7 +397,7 @@ export function projectPage(read) {
       state.executor,
       progress(state),
     ),
-    pause_text: state.status === "paused" ? TEXT.paused : null,
+    pause_text: pauseText(state, events),
     stopped_text: state.status === "stopped" ? TEXT.stoppedFinal : null,
     controls: { ...controlsFor(state.status), api: controlApi(id) },
     tail_text: read.tail ? TEXT.tail : null,
