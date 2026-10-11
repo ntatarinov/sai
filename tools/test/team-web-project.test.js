@@ -801,9 +801,11 @@ test("WEB-4g pause_text after the engine of the server is stopped by a signal; t
   assert.equal(await s.engines.stopAll(15_000), true);
   const paused = (await s.get(`/api/projects/${id}`)).json;
   assert.equal(paused.status, "paused");
+  // (REQ-035, criterion 1; design REQ-035, sections 4, 8) the text with the button
+  // «Продолжить» replaces the former one «…командой resume».
   assert.equal(
     paused.pause_text,
-    "Проект приостановлен, продолжите его командой resume",
+    "Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше",
   );
   assert.equal(paused.tail_text, null);
   assert.equal(paused.tasks_empty_text, "Задач нет");

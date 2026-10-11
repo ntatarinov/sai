@@ -49,6 +49,15 @@ function projectBody(over = {}) {
   return {
     ...item(),
     pause_text: null,
+    // (REQ-035, design section 4) the fields of the control of a project: a
+    // project «в работе» shows «Пауза» and «Остановить».
+    stopped_text: null,
+    controls: {
+      pause: true,
+      resume: false,
+      stop: true,
+      api: `${API}/control`,
+    },
     tail_text: null,
     happening: [
       {

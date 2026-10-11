@@ -50,6 +50,9 @@ const DISPLAY_KEYS = new Set([
   "test_executor_text",
   "problem_text",
   "pause_text",
+  // (REQ-035, design section 4) the line of a stopped project; the list is
+  // extended, never cut (criterion 9 of REQ-035).
+  "stopped_text",
   "tail_text",
   "due_text",
   "waiting_text",

@@ -55,14 +55,30 @@ export function webSandbox(t, over = {}) {
 // ---- engines ------------------------------------------------------------------------
 
 // Engines that start nothing: the calls are counted; `result` is the answer of
-// start().
-export function fakeEngines(result = { started: true, error: null }) {
+// start(). (REQ-035, design section 7) `resume` is the answer of resume(id) — its
+// calls go to `resumes`; `has` is the answer of has(id) — its calls go to `asked`.
+export function fakeEngines(
+  result = { started: true, error: null },
+  { resume = { resumed: true, error: null, late: false }, has = false } = {},
+) {
   const calls = [];
+  const resumes = [];
+  const asked = [];
   return {
     calls,
+    resumes,
+    asked,
     start: async (id) => {
       calls.push(id);
       return result;
+    },
+    resume: async (id) => {
+      resumes.push(id);
+      return resume;
+    },
+    has: (id) => {
+      asked.push(id);
+      return has;
     },
     stopAll: async () => true,
     size: () => 0,

@@ -273,6 +273,14 @@ class Element extends Node {
     for (const fn of [...(this.listeners.get(event.type) ?? [])]) fn(event);
     return !event.defaultPrevented;
   }
+
+  // (REQ-035) As HTMLElement.click() of a browser: one event «click» on the
+  // element; on a form control with the attribute disabled nothing happens (a
+  // browser fires no click there). No bubbling, like dispatchEvent of this model.
+  click() {
+    if (this.hasAttribute("disabled") || this.disabled === true) return;
+    this.dispatchEvent(event("click"));
+  }
 }
 
 class Anchor extends Element {}
@@ -449,6 +457,24 @@ export function event(type, over = {}) {
     },
     ...over,
   };
+}
+
+// (REQ-035) A key pressed while `el` has the focus, as a browser does it: the
+// event «keydown» goes to the element and then to the document (the model has no
+// bubbling, so both get it by hand); on a button, Enter and the space then
+// activate it — one «click» (the default action of a browser, unless the keydown
+// was prevented). Not modelled: keyup, the order of focus, a real focus ring.
+export function pressKey(doc, el, key) {
+  const down = event("keydown", { key, target: el });
+  el.dispatchEvent(down);
+  doc.dispatchEvent(down);
+  if (
+    !down.defaultPrevented &&
+    el.localName === "button" &&
+    (key === "Enter" || key === " ")
+  ) {
+    el.click();
+  }
 }
 
 // ---- the page --------------------------------------------------------------------------------

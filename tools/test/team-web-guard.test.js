@@ -268,10 +268,34 @@ test("WEB-9d tools/src/web/ writes no file past the API of the core: no appendFi
   assert.deepStrictEqual(channel, ["api.js"]);
   const api = fs.readFileSync(path.join(WEB_SRC, "api.js"), "utf8");
   const lines = api.split("\n").filter((l) => /channel/.test(l));
+  // (REQ-035, design sections 6.3, 11) the channel gives the server exactly two
+  // names: deliver — the one entry of a write — and engineHolder, which only reads
+  // the lock (is a live engine of another process there?).
   assert.deepStrictEqual(lines, [
-    'import { deliver } from "../team/engine/channel.js";',
+    'import { deliver, engineHolder } from "../team/engine/channel.js";',
   ]);
-  assert.equal([...api.matchAll(/\bdeliver\(/g)].length, 1);
+  assert.doesNotMatch(api, /from "node:fs"|from "fs"/, "api.js reads no file");
+  // exactly two calls of deliver: one in postChat (the chat of REQ-011) and one in
+  // the control of a project (REQ-035, section 6.2–6.3); nowhere else
+  const calls = [...api.matchAll(/\bdeliver\(/g)].map((m) => m.index);
+  assert.equal(calls.length, 2, "deliver( is called twice in api.js");
+  const chatStart = api.indexOf("export async function postChat(");
+  const chatEnd = api.indexOf("\n}\n", chatStart);
+  const controlStart = api.indexOf("async function control(");
+  const controlEnd = api.indexOf("\n}\n", controlStart);
+  assert.ok(chatStart !== -1 && controlStart !== -1);
+  assert.deepStrictEqual(
+    calls.map((at) =>
+      at > chatStart && at < chatEnd
+        ? "postChat"
+        : at > controlStart && at < controlEnd
+          ? "control"
+          : `elsewhere at ${at}`,
+    ),
+    ["postChat", "control"],
+  );
+  // engineHolder only reads: one call, in the check «a live engine leads the project»
+  assert.equal([...api.matchAll(/\bengineHolder\(/g)].length, 1);
 });
 
 test("WEB-9e every answer of the API and every refusal (200, 201, 400, 403, 404, 405, 408, 409, 413, 500) has Content-Type application/json; charset=utf-8 and nosniff", async (t) => {
