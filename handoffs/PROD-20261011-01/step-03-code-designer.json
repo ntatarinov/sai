@@ -1,0 +1,105 @@
+{
+  "handoff_id": "step03-code-designer-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PROD-20261011-01/step-03-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "handoffs/PROD-20261011-01/step-02-code-design-validator.json",
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0032-req035-web-control.md",
+      "docs/requirements.yaml (REQ-035, редакция коммита 4662844)",
+      "tools/src/team/store.js (recover), tools/src/team/reducer.js, tools/src/team/engine/engine.js, tools/src/team/engine/commands.js",
+      "tools/src/web/engines.js",
+      "tools/test/team-web-helpers.js, tools/test/team-web-fixtures.js"
+    ],
+    "write_set": [
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0032-req035-web-control.md (статус «принято» сохраняется)",
+      "handoffs/PROD-20261011-01/step-03-code-designer.json"
+    ],
+    "note_by_agent": "Файла handoff-а на момент работы не было. Поля верхнего уровня, context и task записаны CODE-DESIGNER по сообщению ORCH, чтобы было куда сдать result; ORCH может их сверить своим полем (orch_correction)."
+  },
+  "task": {
+    "description": "Доработка проекта REQ-035 (r1) после FAIL ворот step-02 (F1 High, F2 Medium, L1–L6, I1, I2) по решениям ORCH: F1 — исправить п. 9.4, CTL-8c, CTL-5b по проверенному факту (SIGKILL во время задачи → восстановление ядра, E_PAUSE_STATE, без PROJECT_PAUSED; нечего прерывать → LOCK_STALE_REMOVED и одно PROJECT_PAUSED), назвать состояние фикстуры и ожидаемое для обоих случаев, в первом — честный текст «уже приостановлен после сбоя», не противореча критерию 8(в); F2 — учесть поправку ORCH 4662844 (CTL-2, Ф7, п. 20); L1 — 0032 «принято»; L2 — M20 к месту, где ловится; L3 — сброс controlBusy только своим запросом, правило и тест; L4 — слова критериев 1 и 5; L5 — «Пауза» не предлагается проекту «ждёт решения» (обход «Продолжить» двумя нажатиями), таблица п. 5 и тест; L6 — порядок проверок resume(id). Кода не писать; cd tools && npm run traces — код 0."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T05:31:11Z",
+  "started_at": "2026-10-11T05:31:11Z",
+  "completed_at": "2026-10-11T05:40:29Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проект REQ-035 доработан (редакция r1) строго по перечню F1, F2, L1–L6. F1: п. 9.4 и CTL-5b/CTL-8c переписаны по запуску (Ф14): пауза при мёртвом замке — либо LOCK_STALE_REMOVED и одно PROJECT_PAUSED (прерывать нечего; фикстуры: CTL-5b — «в работе» без запусков и задач в работе, CTL-8c — «ждёт решения» по потолку, движок отдельным процессом убит SIGKILL), либо восстановление ядра и отказ E_PAUSE_STATE без PROJECT_PAUSED (CTL-5b′, CTL-8c′) — тогда страница получает 409 с новым текстом TEXT.ctlPausedAfterFailure «Проект уже на паузе: работа прервалась из-за сбоя. Нажмите «Продолжить», чтобы работа пошла дальше» (controlRefusal по paused_by === \"recovery\"). Критерию 8(в) это не противоречит: он не говорит «во время задачи», фикстура CTL-8c его слова выполняет; чтение вынесено вопросом. F2: CTL-2 — проверка по порядку событий журнала по редакции 4662844; Ф4, Ф7, п. 3.2 и п. 20 ссылаются на решение ORCH и ISS-0018; вопросы 1–4 перенесены в «закрыты». L5 сделан иначе, чем сформулировал ORCH: убрать «Пауза» у «ждёт решения» нельзя без правки требования (описание и критерий 1 её требуют), поэтому обход закрыт отказом «Продолжить» у паузы, поставленной во время ожидания (state.waiting сохраняется паузой — Ф14), — вопрос ORCH в issues.",
+    "changes": [
+      "Шапка: редакция r1, ссылка на ворота step-02 и требование 4662844; 0032 — «принято» (L1)",
+      "п. 0: Ф4, Ф7 — ссылки на правку требования 4662844 и ISS-0018 вместо «result.issues I1/I2» (F2); новые Ф14 (пауза при мёртвом замке: два исхода, сохранение waiting паузой; свой запуск) и Ф15 (из paused в planning/running/waiting_user/done ведёт только PROJECT_RESUMED; движок resume открывает писателя до проверок) (F1, L6)",
+      "п. 3.2: формулировка критерия 6 из редакции 4662844 вместо ссылки на I4 (F2)",
+      "п. 5.1: «Пауза» у waiting_user остаётся по критерию 1; обход «Пауза» → «Продолжить» закрыт (L5)",
+      "п. 5.2: строки paused с waiting (потолок не поднят / поднят / вопрос по задаче / вопрос проекта) и paused_by recovery → TEXT.ctlPausedAfterFailure; порядок строк paused; связь со строкой критерия 7 «Проект уже на паузе»; абзац о C4 — путь «Пауза» → «Продолжить» (F1, L5)",
+      "п. 6.3: исход resumed:true + error → 500 TEXT.ctlResumedBroken (L6); п. 6.4, строка «состояние» — пауза после восстановления даёт ctlPausedAfterFailure (F1)",
+      "п. 7: createEngines получает необязательный create (фабрика движка, main.js не передаёт); порядок проверок resume(id): сначала признак возобновления (статус planning/running/waiting_user/done), потом отказ done, потом конец без признака, потом время (L6)",
+      "п. 8: тексты ctlPausedAfterFailure, ctlResumedBroken (F1, L6)",
+      "п. 9.2–9.3: controlSeq, controlBusy = {api, n}; сброс только ответом своего запроса; показ итога только своего последнего запроса (L3)",
+      "п. 9.4: строка «Ошибка движка при паузе» — два исхода SIGKILL по Ф14 с ответами страницы; новая строка гонки A/B для controlBusy; последняя строка — новый текст (F1, L3)",
+      "п. 10: строка ctlResumedBroken; п. 12: createEngines.create, controlRefusal в двух местах; п. 13: README — пауза ждущего проекта не продолжается кнопкой; п. 1: engines.js — create (L5, L6)",
+      "п. 15: CTL-1b перенесён в team-web-control.test.js по словам критерия 1; CTL-5c — почему openWriter, а не процесс say (L4); CTL-2 — по порядку событий журнала, без «ждёт решения ORCH» (F2); CTL-3c (L6); CTL-5b, CTL-5b′ (F1); CTL-7d (L5); CTL-8c, CTL-8c′ (F1); CTL-8g (L2); CTL-8h (L3)",
+      "п. 15.1: M20 привязан к postControl и CTL-8g (L2); новые M23 (F1), M24 (L3), M25 (L5), M26 (L6) — всего 26",
+      "п. 16: Q3, Q12 (0032 принято), Q13 (F1 как AP-012); п. 19: статус 0032 «принято» (L1, F2)",
+      "п. 20: закрытые 1, 2, 4 (и 3 — риск C4 принят в 0032) со ссылками; открытые 5, 6 (чтение 8(в)), 7 (L5 против слов ORCH) (F2, F1, L5)",
+      "decisions/0032: C4 — дополнение о пути «Пауза» → «Продолжить» (L5), Последствия — CTL-7d; статус «принято» не менялся"
+    ],
+    "self_check": [
+      "Хеш до (2026-10-11T05:33:14Z): docs/design/REQ-035-team-web-control.md 6b80785b17309988f348a299783b9f086ca676964fa17c3e02cc4809a033c2a7, decisions/0032-req035-web-control.md a042b404dac9223cdd7ce6a60923b0b6985d4ede58c8498a1215d9faf95bb09c (совпадает с хешем ворот); после — ef79a7dd07380eaa856cb5aef8794d991fae961148c0382b557f6849a2d88593 и 54f7a786f44ae069a5f471de548e53f178d48e70bccc6117d9b4f35744e858de",
+      "Ф14 своим запуском: rsync -a --exclude node_modules <sai>/tools <scratch>/r1/; cd <scratch>/r1/tools && node --test test/zz-probe-r1.mjs (фикстуры через team-web-helpers.js, замок deadPid() с holder engine, deliver pause) → '# A running-no-runs ok self'; '# A running-no-runs new LOCK_STALE_REMOVED/ENGINE PROJECT_PAUSED/USER status paused paused_by user waiting null'; '# B running-task-in-work THROW E_PAUSE_STATE'; '# B running-task-in-work new LOCK_STALE_REMOVED/ENGINE RUN_FINISHED/ENGINE TASK_INTERRUPTED/ENGINE PROJECT_RECOVERED/ENGINE status paused paused_by recovery waiting null'; '# C waiting-budget-pause ok self'; '# C waiting-budget-pause new PROJECT_PAUSED/USER status paused paused_by user waiting {\"reason\":\"budget\",\"task\":null}'; '# D2 again THROW E_PAUSE_STATE', '# D2 again new  status paused paused_by recovery'",
+      "Ф15 по коду: grep -n по reducer.js (PROJECT_LIVE 189; PROJECT_STOPPED 294–299; PROJECT_FAILED 320–325; PROJECT_RESUMED 258–276; paused_by recovery 292) и engine.js (open 228–262; state: () => (writer === null ? null : writer.state) 1044); store.js recover — шаги 8.4–8.6 (pauses только при planning/running и прерванной работе)",
+      "cli.js: say → openWriter(id, { env }) (строка 299) — основание для CTL-5c (L4)",
+      "Критерии: grep -cE '^\\| (1[0-3]|[1-9])\\. ' по проекту → 13 строк; пунктов планки (Q1–Q14, R1–R3) → 17; мутантов → 26; блоков ``` — 4 строки (2 блока, только формы и сигнатуры)",
+      "grep -nE '/Users|/private|/tmp|whooch' по проекту и 0032 → код 1 (пусто)",
+      "grep 'I1|I2|I4|ждёт решения ORCH|предложено' по проекту → одна строка (Q13, история шага 1, как и должно быть); 0032 строка 3 — «принято»",
+      "cd tools && npm run traces → 'traces: файлов проверено 959, следов 0, пропущено 26', код 0 (до записи handoff-а; повтор после записи handoff-а: файлов 960, следов 0, код 0)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "L5: решение ORCH «Пауза не предлагается проекту в состоянии «ждёт решения»» противоречит описанию REQ-035 («Пауза» — «планирование», «в работе» или «ждёт решения пользователя») и критерию 1 («ждёт решения пользователя» — «Пауза» и «Остановить»). Требование проект не меняет: «Пауза» оставлена, обход закрыт отказом «Продолжить» у паузы с непустым state.waiting (п. 5.1, 5.2, CTL-7d, M25; 0032 C4, дополнение). Если ORCH хочет именно убрать «Пауза» — нужна правка критерия 1 и описания в WF-01, затем новая редакция проекта."
+      },
+      {
+        "id": "I2",
+        "kind": "REQUIREMENT_QUESTION",
+        "text": "F1: критерий 8(в) прочитан как «движок убит, когда прерывать нечего» — фикстура CTL-8c («ждёт решения» по потолку) выполняет его слова (одно PROJECT_PAUSED, LOCK_STALE_REMOVED). Случай «убит во время задачи» проект задаёт отдельно (CTL-8c′: 409 «Проект уже на паузе: работа прервалась из-за сбоя…», без PROJECT_PAUSED). Противоречия с текстом критерия нет; если ORCH читает 8(в) как «во время задачи», нужна правка WF-01."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Новые тексты TEXT.ctlPausedAfterFailure и TEXT.ctlResumedBroken не перечислены в критерии 7 (там «на паузе, «Пауза» → «Проект уже на паузе»» — фикстура с паузой по команде; новый текст начинается теми же словами). Критерий 9 их проверяет (CTL-9 — все строки TEXT). Если ORCH хочет их в перечне критерия 7 — правка WF-01."
+      },
+      {
+        "id": "I4",
+        "kind": "AP_PROPOSAL",
+        "text": "Q13: утверждение прежней редакции проекта о паузе при убитом движке (п. 9.4) не было проверено запуском и противоречило последней строке той же таблицы — род AP-012 (непроверенный факт в проекте). Предложение: в проверке перед сдачей CODE-DESIGNER — у каждой строки таблицы гонок, где назван исход ядра, свой запуск в п. 0. Запись — кому поручит ORCH."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Сверх перечня не правлено (AP-019): ворота в summary заметили, что окно гонки C4 для «Продолжить» без движка шире «миллисекунд» (предпроверка исполнителя до замка). Слова «окно — миллисекунды» в п. 5.2 и 0032 C4 оставлены; если ORCH считает это замечанием — отдельный пункт доработки."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Вопрос 3 п. 20 (гонка C4) перенесён в «закрыты» вместе с 1, 2, 4: в 0032 строка статуса уже говорит «Остаточный риск C4 … принят»; оставить его открытым значило бы ссылку на прежнее состояние (AP-005)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-035-team-web-control.md",
+      "decisions/0032-req035-web-control.md"
+    ]
+  }
+}
