@@ -4891,3 +4891,551 @@ requirements:
         Sai без node_modules во временной папке `cd tools && npm ci && npm run check` —
         код 0, вывод приложен; `cd tools && npm run traces` — код 0; в тексте нет путей
         компьютера и названий других проектов"
+  - id: REQ-038
+    title: Автоматическая проверка учёта прогонов — команда `npm run handoffs-check` (входит в `npm run check`) проверяет каждый handoffs/**/*.json — читается, статус, времена с часов и не позже коммита, поправки ORCH, пути этого компьютера; старые нарушения — в базе исключений с хешами
+    owner: BACKEND-DEV   # команда, правила и база исключений в tools/; абзац в docs/workflows/handoffs.md и раздел tools/README.md — в том же прогоне (DOC-UPDATER на шаге 10 или BACKEND-DEV по проекту)
+    status: pending
+    depends_on: []   # переиспользует hasHomePath (tools/src/traces/rules.js), repoRoot (tools/src/traces/git-files.js) и tools/traces/exceptions.tsv из REQ-014 (in_progress): эта часть построена и принята (каталог, строка REQ-014: критерии 1–6 выполнены), а незаконченная часть REQ-014 (зависимости, повтор шага 9) здесь не нужна. Если REQ-VALIDATOR сочтёт это зависимостью — нужна запись исключения по образцу decisions/0029 (открытый вопрос 3)
+    original_request: >
+      «Сформируй требования которые ты считаешь полезными для sonnet, после этого я запущу
+      это все твое на sonnet» — слова владельца, 2026-10-11, сообщение в сессии Claude Code;
+      ORCH передал их дословно в задании прогона REQ-20261011-02 (в файлах Sai — поле
+      context.owner_words в handoffs/REQ-20261011-02/step-01-req-analyst.json). Основание
+      выбора этой работы — аудит ORCH 2026-10-11: одни и те же ошибки учёта повторяются из
+      прогона в прогон, и каждый раз их находит RELEASE-VALIDATOR вручную, тратя круг
+      итоговой проверки: пути этого компьютера в handoff-ах — AP-050, AP-052, AP-062; времена
+      не с часов и из будущего — AP-056, AP-061 (docs/anti-patterns.md). Дальше работу ведут
+      агенты на модели Sonnet: ошибка учёта должна ловиться командой у автора шага, а не
+      кругом итоговой проверки.
+    description: >
+      Что получает владелец. Сегодня правила docs/workflows/handoffs.md (статус, время с
+      часов, пути) проверяют глазами. В прогоне PROD-20261011-01 RELEASE-VALIDATOR потратил
+      два лишних круга на времена из будущего (step-41, F1: completed_at позже коммита;
+      step-42, F2: время в самой пометке исправления позже коммита), а путь домашнего
+      каталога в handoff-ах step-24 и step-37 уронил `npm run check` и сценарий приёмки
+      (AP-062). После этой работы `cd tools && npm run handoffs-check` находит такие ошибки
+      за секунды, а `cd tools && npm run check` красный, пока ошибка есть: агент видит её сам
+      до сдачи шага.
+
+      Что проверяется. Каждый файл handoffs/**/*.json, который отслеживает git или который
+      лежит в рабочем дереве новым (тот же перечень файлов, что у traces: git-files.js).
+      Другие файлы папки handoffs/ (parallel-runs.jsonl, orch-notes.md, snapshot-before.txt)
+      эта команда не читает — их пути и так проверяет traces. Правила (код правила — для
+      вывода и для базы исключений):
+      - H1 JSON. Файл читается как JSON в UTF-8, верхний уровень — объект.
+      - H2 Поля. Есть поля верхнего уровня handoff_id, run_id, workflow_id, step, from_agent,
+        to_agent, file, status, context, task, created_at, started_at, completed_at, result
+        (docs/workflows/handoffs.md, «Поля»); значение может быть null там, где это
+        допускают H4 и H5.
+      - H3 Совпадения. file равен пути файла от корня Sai; run_id равен имени папки
+        прогона; handoff_id не повторяется во всём handoffs/.
+      - H4 Статус. COMPLETED или FAILED — result объект, result.status равен status,
+        completed_at — время по H5. CANCELLED — есть orch_cancellation с полями at (по H5) и
+        reason («Проверка учёта» в handoffs.md). IN_PROGRESS — в двух случаях: (а) остановка
+        по правилу роли (handoffs.md, раздел «result»): completed_at null, result.status
+        IN_PROGRESS, первая запись result.issues с kind «BLOCKED» и полем at по H5; (б) файл
+        ещё не в коммите или изменён относительно HEAD — идёт работа (например, свой
+        handoff TEST-RUNNER, пока тот запускает `npm run check`). PENDING — только в случае
+        (б). Любое другое значение (например, DONE) — нарушение. Иными словами: в коммите
+        лежат только законченные handoff-ы, а ORCH не создаёт handoff-ы заранее (AP-058).
+      - H5 Формат времени. created_at, started_at, completed_at и каждое поле с именем at или
+        с окончанием _at на любой глубине (на 2026-10-11 встречаются
+        context.interruptions[].at, resumed_at, checked_by_orch_at, result.issues[].at,
+        context.task_check.at, context.orch_check.at, orch_correction.at,
+        orch_cancellation.at, not_agent_attested.at, orch_note.written_at) — строка вида
+        ГГГГ-ММ-ДДTчч:мм:ссZ (ровно то, что печатает `date -u +%Y-%m-%dT%H:%M:%SZ`), или null,
+        или строка, которая начинается со слова «неизвестно» (handoffs.md, «Время»: если
+        время неизвестно, пишется «неизвестно» и то, что известно). completed_at null
+        допустим только при статусе IN_PROGRESS или PENDING.
+      - H6 Не позже часов. Каждое время по H5 не позже часов в момент проверки.
+      - H7 Не позже коммита. Для каждого времени по H5 находится самый ранний коммит, в
+        версии файла которого уже есть эта же строка значения; время не позже времени этого
+        коммита (сравнение в секундах, UTC). Если значения нет ни в одном коммите (файл новый
+        или изменён) — граница одна: часы (H6). Почему граница — коммит, где появилось
+        значение, а не первый коммит файла: handoff иногда входит в коммит раньше, чем
+        записан completed_at, а поправка ORCH дописывается позже и сверяется со своим
+        коммитом. На 2026-10-11 так у двух файлов: completed_at в
+        handoffs/PROD-20261006-01/step-04-code-designer-r2.json и в
+        handoffs/PROD-20261010-01/step-44-code-designer-iss0010.json позже первого коммита
+        файла, но не позже коммита, в котором значение появилось, — это не нарушение.
+      - H8 Порядок. completed_at не раньше started_at, если оба — время по H5.
+      - H9 Поправки ORCH. orch_correction и orch_note — объект или список объектов; у
+        каждого by (непустая строка) и at — время по H5–H7 или null; при at null есть
+        at_note — непустая строка. В at_note каждое время вида ГГГГ-ММ-ДДTчч:мм[:сс]Z вне
+        кавычек «…» подчиняется H6 и H7 (так поймана была бы ошибка step-42, F2: «не позже
+        2026-10-11T10:25:00Z» при коммите 10:23:05Z); время в кавычках «…» — цитата прежнего
+        значения и не проверяется (так в at_note handoffs/PROD-20261010-01/
+        step-24-test-designer.json цитируется прежнее «2026-10-10T18:30:00Z»). Поля was и
+        previous — тоже цитаты прежних значений: H5–H7 к ним не применяются.
+      - H10 Путь домашнего каталога. Та же функция hasHomePath из tools/src/traces/rules.js
+        и те же исключения tools/traces/exceptions.tsv: правило не копируется, а
+        импортируется; своего регулярного выражения для домашних каталогов в коде команды
+        нет.
+      - H11 Путь временной папки машины: /private/tmp/<…>, /private/var/folders/<…>,
+        /var/folders/<…>, /tmp/<…>. Правило устроено как hasHomePath: перед первой «/» —
+        начало строки или знак вне [A-Za-z0-9._-], после корня — хотя бы один знак
+        [A-Za-z0-9._-]. Функция записывается в tools/src/traces/rules.js рядом с
+        hasHomePath (одно место для правил путей) и экспортируется; поведение `npm run
+        traces` не меняется (применять ли H11 ко всему репозиторию — открытый вопрос 2).
+        Примеры: «<scratch>/l1/sai» и «<вне проекта>/…» — не нарушение; команда из AP-052
+        «grep -rnE '/Users/|/private/tmp|/var/folders' handoffs/» — не нарушение (после
+        корня идёт «|» или «'»); путь временной папки с именем папки после корня —
+        нарушение.
+
+      База исключений (старые нарушения). Handoff-ы только дописываются (quality-bar §6,
+      п. 8), поэтому старые нарушения не исправляются переписыванием, а записываются в базу
+      по образцу tools/traces/exceptions.tsv. Файл — tools/handoffs/exceptions.tsv:
+      - строки «#» — комментарии; первая строка-комментарий шапки содержит
+        «база: <40 hex коммита>» — коммит, на котором база снята;
+      - запись — `<путь от корня>`, `<код правила H1–H9 или H11>`, `<sha256 всего файла, 64
+        hex>`, `<причина, 1–300 знаков>` через табуляцию;
+      - запись снимает только нарушения этого правила в этом файле и только пока sha256
+        файла совпадает; файл изменился (например, ORCH дописал поправку) — нарушения
+        видны снова, и их либо исправляют по handoffs.md (дописыванием поправки), либо
+        обновляют запись с новой причиной;
+      - запись для файла, которого нет в коммите базы, — ошибка ввода (код 2): новые
+        handoff-ы исключений не получают;
+      - неиспользованная запись печатается строкой «handoffs-check: исключение не
+        использовано: tools/handoffs/exceptions.tsv:<N>» — код выхода она не меняет, как у
+        traces;
+      - H10 в этой базе не записывается: для путей домашнего каталога действует база traces.
+      База снимается один раз в этом прогоне по всем нарушениям H1–H9, H11 текущих
+      файлов. Что найдено скриптом REQ-ANALYST на 2026-10-11 (588 файлов; CODE-DESIGNER
+      перепроверяет своим запуском, числа — ориентир, а не критерий): JSON не читается — 0;
+      нет created_at — 22 файла, нет started_at — 9; статус DONE — 1
+      (handoffs/PO-20261005-01/step-07-design-qa-validator.json), PENDING в коммите — 3
+      (handoffs/WF06-20260926-01/step-10…step-12), IN_PROGRESS без записи «BLOCKED» — 1
+      (handoffs/ISS-0002-20260930-01/step-06-test-designer-r2.json: в issues severity
+      «BLOCKING», а не kind «BLOCKED»), CANCELLED с orch_cancellation — 2 (не нарушение);
+      result.status не равен status — 16 (например, handoffs/PROD-20261011-01/
+      step-17-reviewer.json: COMPLETED и FAILED; в PO-20261002-01 — «DONE»); время без
+      секунд «2026-10-03T18:00Z» в orch_note.at — 1; время позже коммита своего значения —
+      handoffs/PROD-20261010-01/step-24-test-designer.json, result.issues[0].at
+      2026-10-10T15:30:00Z при коммите 15:25:47Z; пути временной папки — 7 файлов; без
+      handoff_id, run_id и file — 1 (handoffs/PROD-20261010-01/
+      step-44-code-designer-iss0010.json); пути домашнего каталога — 3 файла, все уже в
+      tools/traces/exceptions.tsv.
+
+      Вывод и коды выхода — как у traces (tools/src/traces/cli.js). Одна строка на
+      нарушение: «<путь>:<строка> — <код правила>: <что не так>»; номер строки — строка
+      файла, где стоит поле или значение; для отсутствующего поля и для всего файла — 1.
+      Порядок — по пути (байты UTF-8), затем по строке. Последняя строка — «handoffs-check:
+      файлов проверено <N>, нарушений <M>, исключений использовано <K> из <L>». Найденный
+      путь компьютера в вывод не попадает — только «путь домашнего каталога» или «путь
+      временной папки» (иначе вывод, вставленный в self_check, принесёт путь обратно);
+      времена и статусы печатаются. Коды: 0 — нарушений нет (исключённые не считаются); 1 —
+      есть нарушение; 2 — ошибка окружения или ввода: git не найден, папка не git-репозиторий
+      (те же тексты, что у traces; repoRoot переиспользуется), файл не читается с диска,
+      tools/handoffs/exceptions.tsv сломан или в нём запись для файла не из коммита базы.
+      Ошибка — одна строка stderr «handoffs-check: <код>: <текст>», без стека. git
+      вызывается без командного интерпретатора, с фиксированными аргументами и
+      core.fsmonitor=false, как в git-files.js. Клон без полной истории (shallow): граница
+      H7 — по доступной истории, и печатается строка «handoffs-check: история git неполная —
+      сверка с коммитами по доступной истории»; код выхода она не меняет. Команда ничего не
+      пишет.
+
+      Место в команде проверки. В tools/package.json — скрипт handoffs-check и шаг `npm run
+      handoffs-check` в scripts.check перед `npm run test`: тест TC-20
+      (tools/test/traces-check.test.js) требует traces до test и отсутствие «||», а тест в
+      tools/test/team-web-control.test.js — что check кончается на `npm run test`.
+
+      Точные места записи (перечень закрытый). Код — tools/src/handoffs/ (новая папка;
+      имена файлов — проект CODE-DESIGNER), в tools/src/traces/rules.js — только новая
+      функция пути временной папки и её экспорт (hasHomePath не меняется); данные —
+      tools/handoffs/exceptions.tsv (новый); tools/package.json (два места выше); тесты —
+      tools/test/handoffs-*.test.js и фикстуры tools/test/fixtures/handoffs/ (временные
+      git-репозитории тесты создают во временной папке, как тесты traces); документы —
+      tools/README.md (новый раздел о команде), docs/workflows/handoffs.md (раздел
+      «Проверка учёта»: перед сдачей handoff-а `cd tools && npm run handoffs-check` — код 0).
+      Файлы учёта прогона — handoffs/<RUN-ID>/, docs/design/REQ-038*.md, decisions/NNNN-*.md
+      и строка новой записи в decisions/README.md, PLAN.md (только строка текущего
+      прогона), STATE.md, docs/requirements.yaml (только status), docs/issues/,
+      docs/anti-patterns.md, docs/product/*, docs/releases/. Не меняются: ни один
+      существующий файл handoffs/ других прогонов, tools/traces/exceptions.tsv,
+      tools/src/traces/check.js и вывод `npm run traces`.
+
+      Безопасность и сбои. Q7: секретов команда не печатает (печатает только коды правил,
+      времена, статусы и пути handoff-ов). Q10: битый JSON, нечитаемый файл, отсутствие git
+      — понятная строка и код, процесс не падает со стеком. Q8, Q9, Q11, R3 неприменимы
+      (данных бизнеса, SQL, внешних адресов, фото нет). R2: Pixel Office не затрагивается.
+
+      Вне области: переписывание старых handoff-ов; проверка смысла task и result
+      (верность отчёта — дело проверяющих ролей); файлы handoffs/ не в формате JSON;
+      заготовка и закрытие handoff-а командой — REQ-039; сверка README.md и STATE.md с
+      фактами — REQ-040; применение H11 ко всему репозиторию.
+
+      Открытые вопросы (ответ — слово ORCH или владельца; до ответа действует написанное):
+      1. В задании ORCH сказано «status только COMPLETED|FAILED (и IN_PROGRESS с BLOCKED)».
+         Протокол (handoffs.md) ещё знает CANCELLED с orch_cancellation и рабочие PENDING и
+         IN_PROGRESS — требование допускает их, как сказано в H4; строже — только
+         правкой handoffs.md.
+      2. Применять ли H11 ко всему репозиторию в `npm run traces` (документы приводят
+         примеры путей) — отдельной работой.
+      3. Формальная зависимость от REQ-014 (in_progress) — см. комментарий depends_on.
+      4. Проверяющая роль с вердиктом FAIL пишет status COMPLETED или FAILED — handoffs.md
+         этого не говорит (на 2026-10-11 встречаются оба: step-17 и step-28 прогона
+         PROD-20261011-01); H4 требует только, чтобы status и result.status совпадали.
+    acceptance_criteria:
+      - "Команда и место в проверке. `cd tools && npm run handoffs-check -- --help` печатает справку по-русски, код 0. В tools/package.json: `grep -c 'handoffs-check' tools/package.json` не меньше 2 (скрипт и шаг check); в scripts.check шаг `npm run handoffs-check` стоит перед `npm run test`, «||» нет. Тест TC-20 (tools/test/traces-check.test.js) и проверка «check кончается на npm run test» в tools/test/team-web-control.test.js проходят без правки"
+      - "Правила H1–H6, H8 на фикстурах (тест во временном git-репозитории; по одному случаю, вход → ожидаемое): (а) обрезанный JSON → строка «<путь>:<строка> — H1: …», код 1; (б) нет created_at → «…:1 — H2: …»; (в) file не равен пути, run_id не равен папке, два файла с одним handoff_id → три строки H3; (г) в коммите status DONE → H4; PENDING в коммите → H4; тот же PENDING новым незакоммиченным файлом → нарушения нет; (д) IN_PROGRESS в коммите с первой записью issues kind «BLOCKED», at по часам и completed_at null → нарушения нет; то же без kind «BLOCKED» → H4; (е) COMPLETED и result.status FAILED → H4; CANCELLED без orch_cancellation → H4; (ж) completed_at «2026-10-03T18:00Z» → H5; «неизвестно: файла не было» в created_at → нарушения нет; completed_at null при COMPLETED → H5; (з) completed_at на 1 час позже часов → H6; (и) completed_at раньше started_at → H8. Каждый отказ: код 1, файлы фикстуры не изменены (хеши до и после)"
+      - "Правило H7 по истории git (тест во временном репозитории с заданными временами коммитов): (а) completed_at 06:05:00Z, файл с этим значением впервые в коммите 06:04:50Z → «— H7: completed_at 2026-10-11T06:05:00Z позже коммита <краткий хеш> (2026-10-11T06:04:50Z), в который вошло значение»; (б) файл вошёл в коммит в 06:00:00Z без completed_at, значение 06:10:00Z появилось в коммите 06:20:00Z → нарушения нет; (в) orch_correction.at 10:25:00Z дописан в коммите 10:23:05Z → H7; (г) orch_correction.at null и at_note «не позже 2026-10-11T10:25:00Z (чтение часов)» в коммите 10:23:05Z → H9; та же at_note с временем в кавычках «2026-10-11T10:25:00Z» и словами «прежнее значение» → нарушения нет; (д) поля was и previous со временем позже коммита → нарушения нет; (е) orch_note строкой, а не объектом → H9; orch_correction без by → H9"
+      - "Пути (H10, H11). Тест: строка handoff-а с путём домашнего каталога → «— H10: путь домашнего каталога», в выводе нет самого пути; та же строка, записанная в tools/traces/exceptions.tsv фикстуры, → нарушения нет; путь временной папки машины с именем после корня → «— H11: путь временной папки», без самого пути; «<scratch>/l1/sai» и команда «grep -rnE '/Users/|/private/tmp|/var/folders' handoffs/» → нарушения нет. По коду: `grep -rn 'hasHomePath' tools/src/handoffs/` не пусто (импорт), `grep -rnE 'Users|/home' tools/src/handoffs/` пусто (своего правила нет); новая функция H11 — в tools/src/traces/rules.js; тесты traces-* проходят без правки, вывод `cd tools && npm run traces` на репозитории тот же, что до работы (строки сравнить)"
+      - "База исключений. Тест: (а) запись «путь, H4, sha256 файла, причина» → нарушение H4 этого файла снято и посчитано в «исключений использовано»; нарушение H5 того же файла видно; (б) файл фикстуры изменён на один байт → запись не действует, H4 снова виден; (в) запись для файла, которого нет в коммите из строки «база:» → stderr «handoffs-check: <код>: …», код 2; (г) запись без причины, с хешем не из 64 hex или с кодом H10 → код 2 и номер строки tools/handoffs/exceptions.tsv; (д) лишняя запись → строка «исключение не использовано: tools/handoffs/exceptions.tsv:<N>», код выхода тот же. На репозитории: в tools/handoffs/exceptions.tsv строка «база:» с коммитом, на котором снята база; `grep -vc '^#' tools/handoffs/exceptions.tsv` равно числу нарушений, которое печатает команда на копии с пустой базой (вывод обоих запусков приложен)"
+      - "Настоящий репозиторий. После работы `cd tools && npm run handoffs-check` — код 0, итоговая строка с числом файлов (на 2026-10-11 — 588 плюс файлы новых прогонов). На копии вне проекта с пустой базой (только шапка) — код 1, и в выводе есть строки: H4 для handoffs/PO-20261005-01/step-07-design-qa-validator.json (DONE), H4 для handoffs/WF06-20260926-01/step-10-orch.json (PENDING в коммите), H4 для handoffs/PROD-20261011-01/step-17-reviewer.json (status и result.status), H7 для result.issues[0].at в handoffs/PROD-20261010-01/step-24-test-designer.json; строк H7 о completed_at файлов handoffs/PROD-20261006-01/step-04-code-designer-r2.json и handoffs/PROD-20261010-01/step-44-code-designer-iss0010.json нет (значение не позже своего коммита)"
+      - "Вывод, коды и сбои. Тест: порядок строк — по пути, затем по строке; последняя строка — «handoffs-check: файлов проверено …»; запуск вне git-репозитория → код 2 и тот же текст, что у traces («это не git-репозиторий…»); git не найден (PATH без git) → код 2; файл без права чтения → код 2; ни в одном случае нет стека в stderr. Команда ничего не пишет: хеши всех файлов handoffs/ и tools/handoffs/ до и после запуска совпадают. На репозитории `time (cd tools && npm run handoffs-check)` — не больше 20 секунд (вывод приложен)"
+      - "Документы. docs/workflows/handoffs.md, раздел «## Проверка учёта», называет `cd tools && npm run handoffs-check` и код 0 перед сдачей handoff-а: `awk '/^## Проверка учёта/{f=1;next} /^## /{f=0} f' docs/workflows/handoffs.md | grep -c 'handoffs-check'` не меньше 1 (сейчас 0). tools/README.md описывает команду, правила H1–H11, базу исключений и коды выхода: `grep -c 'handoffs-check' tools/README.md` не меньше 2"
+      - "Место записи и границы. База — метка `base/<RUN-ID>` (decisions/0031). `git diff --name-only base/<RUN-ID>` плюс `git status --porcelain` перечисляют только файлы закрытого перечня описания; `git diff --name-only base/<RUN-ID> -- handoffs/ | grep -v '^handoffs/<RUN-ID>/'` пусто (старые handoff-ы не тронуты); `git diff base/<RUN-ID> -- tools/traces/exceptions.tsv tools/src/traces/check.js` пусто; в tools/src/traces/rules.js изменение только добавляет функцию и экспорт (`git diff base/<RUN-ID> -- tools/src/traces/rules.js | grep -c '^-[^-]'` равно 0)"
+      - "Проверка целиком (Q4, Q6). `cd tools && npm run check` — код 0; на копии Sai без node_modules во временной папке `cd tools && npm ci && npm run check` — код 0, вывод приложен; `cd tools && npm run traces` — код 0; в изменении нет skip, todo и отключённых правил линтера; в тексте нет путей компьютера и названий других проектов"
+  - id: REQ-039
+    title: Заготовка handoff-а командой — `npm run handoff -- new` создаёт файл по docs/workflows/handoffs.md со временем с часов и меткой base/<RUN-ID>, `npm run handoff -- close` ставит статус и completed_at с часов; ничего не перезаписывает и пишет только в handoffs/
+    owner: BACKEND-DEV   # команда и тесты в tools/; строки в docs/workflows/handoffs.md, .claude/agents/orchestrator.md и tools/README.md — в том же прогоне
+    status: pending
+    depends_on: [REQ-038]   # close проверяет закрытый файл правилами H1–H11 из REQ-038 и использует их код; без REQ-038 команде нечем проверять
+    original_request: >
+      «Сформируй требования которые ты считаешь полезными для sonnet, после этого я запущу
+      это все твое на sonnet» — слова владельца, 2026-10-11, сообщение в сессии Claude Code
+      (дословно — в поле context.owner_words handoffs/REQ-20261011-02/
+      step-01-req-analyst.json). Основание — аудит ORCH 2026-10-11: времена в handoff-ах
+      записаны не с часов (AP-056, AP-061), handoff-ы созданы заранее без своего started_at
+      (AP-058), часть handoff-ов написали сами агенты, потому что файла не было (в
+      handoffs/PROD-20261011-01/step-22-test-designer.json и step-43-release-validator.json
+      поле context.note_by_agent: «Файла handoff-а не было; поля верхнего уровня записаны …
+      по сообщению ORCH»); на 2026-10-11 в 22 handoff-ах нет поля created_at. Набор JSON и
+      времени руками — лишняя работа и источник ошибок для агентов на модели Sonnet.
+    description: >
+      Что получает владелец. ORCH и агенты не набирают поля handoff-а и время руками:
+      команда пишет файл по протоколу, время берёт с часов и проверяет закрытый файл
+      правилами REQ-038. Время из будущего в полях, которые пишет команда, получить нельзя.
+
+      Создание. `cd tools && npm run handoff -- new --run <RUN-ID> --step <ШАГ> --role <КОД
+      РОЛИ> --workflow <WF-NN> --task "<что сделать>" [--criterion "<пункт>"]…
+      [--requirement <REQ-NNN>]… [--artifact-in <путь от корня>]… [--write-set "<текст>"]…
+      [--route "<текст>"] [--qualifier <уточнение>] [--suffix <rN|runN|vN>] [--priority
+      HIGH|NORMAL|LOW] [--rework-of <путь handoff-а>]`. Повторяемые ключи дают списки в
+      порядке ввода. Имена ключей закреплены этим требованием. Проверки входа:
+      - RUN-ID — `<МЕТКА>-<ГГГГММДД>-<NN>` (handoffs.md): метка из заглавных латинских
+        букв и цифр, у дефекта и аудита — с номером (`ISS-0002`, `AUD-001`); примеры —
+        PROD-20261011-01, ISS-0002-20260930-01, AUD-001-20261012-01 принимаются;
+        prod-20261011-01, PROD-2026-10-11-01, PROD-20261011-1 отклоняются;
+      - ШАГ — две цифры и, может быть, одна строчная буква: 00, 01, 05b; «5b», «100»
+        отклоняются;
+      - КОД РОЛИ — один из кодов в скобках в строках `name:` файлов .claude/agents/*.md (на
+        2026-10-11 их 37: `grep -h '^name:' .claude/agents/*.md | wc -l`); неизвестный код
+        отклоняется с подсказкой, где список;
+      - уточнение — строчные латинские буквы и цифры через дефис (`market`, `req001`);
+        суффикс — r, run или v с номером от 1 (`r1`, `run2`, `v3`); workflow — WF-01…WF-07;
+        task — непустой текст; requirement — REQ-NNN.
+      Что пишется. Файл handoffs/<RUN-ID>/step-<ШАГ>-<роль строчными через
+      дефис>[-<уточнение>][-<суффикс>].json; handoff_id —
+      step<ШАГ>[-<уточнение>][-<суффикс>]-<RUN-ID> (пример handoffs.md:
+      step06-r2-ISS-0002-20260930-01). Поля и порядок — как в примере handoffs.md:
+      handoff_id, run_id, workflow_id, step, from_agent «ORCH», to_agent, file, status
+      «PENDING», priority (по умолчанию NORMAL), context (requirement_ids, agent_run_id null,
+      artifacts_in, затем route, write_set, base_tag, rework_of — если заданы), task
+      (description, acceptance_criteria), created_at, started_at, completed_at null, result
+      null; при суффиксе rN — поле round со значением N. created_at и started_at — одно
+      чтение часов, вид ГГГГ-ММ-ДДTчч:мм:ссZ (то же, что `date -u +%Y-%m-%dT%H:%M:%SZ`).
+      JSON с отступом 2 пробела, UTF-8 без экранирования кириллицы, перевод строки в конце.
+      Команда печатает путь созданного файла и handoff_id.
+      Метка базы (decisions/0031). Если в репозитории есть метка git `base/<RUN-ID>` —
+      context.base_tag «base/<RUN-ID>». Если её нет: для WF-02 — отказ «метки base/<RUN-ID>
+      нет: поставьте её до первого изменения прогона (decisions/0031)», файл не создаётся;
+      для остальных процессов поле не пишется (выбор этого требования: 0031 говорит только о
+      WF-02; открытый вопрос 1).
+      Ничего не перезаписывается. Файл уже есть — отказ «файл уже есть: <путь>; handoff-ы не
+      перезаписываются», файл байт в байт прежний; такой handoff_id уже есть в другом файле
+      handoffs/ — отказ. Создание исключительное: два одновременных `new` с одним именем —
+      ровно один файл и один отказ. Папка handoffs/<RUN-ID>/ создаётся, если её нет; при
+      отказе она не создаётся.
+
+      Закрытие. `cd tools && npm run handoff -- close <путь handoff-а от корня> --status
+      COMPLETED|FAILED`. Условия: путь внутри handoffs/ (без «..», не абсолютный, не ссылка
+      за корень — как readText у traces); файл — JSON; status сейчас PENDING или
+      IN_PROGRESS; completed_at сейчас null (уже записанное не перезаписывается); result —
+      объект, и result.status равен значению --status (result пишет получатель до закрытия,
+      handoffs.md). Команда ставит status и completed_at с часов; completed_at не раньше
+      started_at (started_at позже часов — отказ «started_at позже часов»). Перед записью
+      новый текст файла проверяется правилами REQ-038 (H1–H11 для одного файла): нарушение
+      — отказ, строки нарушений в формате REQ-038, файл не изменён. Меняются только
+      значения status и completed_at: остальные поля, их порядок и значения прежние.
+      Остановка по правилу роли (IN_PROGRESS и «BLOCKED») командой close не делается —
+      это не закрытие.
+
+      Запись. Только в handoffs/<RUN-ID>/: временный файл в той же папке и переименование
+      (как в служебном коде по decisions/0004); при сбое временный файл не остаётся.
+      Коды выхода: 0 — сделано; 1 — отказ по правилам (файл есть, нарушение REQ-038, не тот
+      статус); 2 — ошибка вызова или окружения (неизвестный ключ, нет значения ключа, git не
+      найден, папка не git-репозиторий, диск). Ошибка — одна строка stderr «handoff:
+      <код>: <текст>» по-русски, без стека. `--help` печатает обе подкоманды и все ключи.
+
+      Точные места записи (перечень закрытый). Код — tools/src/handoffs/ (общая папка с
+      REQ-038); tools/package.json — скрипт handoff; тесты — tools/test/handoffs-*.test.js,
+      фикстуры tools/test/fixtures/handoffs/; документы — docs/workflows/handoffs.md (разделы
+      «Время» и «Кто что пишет»: создавать и закрывать командой), .claude/agents/
+      orchestrator.md (один пункт: handoff создаётся командой `new` в момент запуска агента,
+      не заранее), tools/README.md (раздел о команде). Файлы учёта прогона — как в REQ-038.
+
+      Безопасность и сбои. Q7: команда не печатает и не пишет ничего, кроме полей handoff-а
+      из аргументов; секрет в аргументе остаётся на совести вызывающего — `npm run
+      handoffs-check` и traces проверяют результат. Q10: занятое имя, битый файл, отказ диска
+      — понятная строка, файл не испорчен. Q8, Q9, Q11, R3 неприменимы. R2: Pixel Office не
+      затрагивается.
+
+      Вне области: правка полей context и task после создания; запись result за агента;
+      пометки not_agent_attested и поправки ORCH (пишутся по handoffs.md руками);
+      подкоманда «start» (перевод в IN_PROGRESS) — открытый вопрос 2; перенос старых
+      handoff-ов.
+
+      Открытые вопросы:
+      1. Отказывать ли без метки base/<RUN-ID> и для WF-03 (дефект): 0031 говорит только о
+         WF-02.
+      2. Нужна ли подкоманда «start» (PENDING → IN_PROGRESS получателем, handoffs.md,
+         «Как работает получатель», п. 4) — сейчас статус меняют руками.
+    acceptance_criteria:
+      - "Создание (вход → ожидаемое; тест во временном git-репозитории с копией .claude/agents/). `new --run PROD-20991231-01 --step 05b --role TEST-DESIGN-VALIDATOR --workflow WF-02 --task «Проверить тесты» --criterion «у каждого критерия есть тест» --requirement REQ-999 --artifact-in docs/design/x.md --qualifier req999 --suffix r1` при метке base/PROD-20991231-01 → файл handoffs/PROD-20991231-01/step-05b-test-design-validator-req999-r1.json; handoff_id «step05b-req999-r1-PROD-20991231-01»; from_agent ORCH, to_agent TEST-DESIGN-VALIDATOR, status PENDING, round 1, context.base_tag «base/PROD-20991231-01», agent_run_id null, completed_at null, result null; порядок ключей — как в примере handoffs.md; created_at равно started_at, вид ГГГГ-ММ-ДДTчч:мм:ссZ, не раньше чтения часов тестом до запуска и не позже чтения после; код 0"
+      - "Метка базы. Тот же вызов без метки и --workflow WF-02 → отказ с текстом про decisions/0031, код 1, папки handoffs/PROD-20991231-01/ нет; --workflow WF-01 без метки → файл создан, поля base_tag нет"
+      - "Отказы создания, ничего не записано (`git status --porcelain` и хеши handoffs/ до и после равны): файл уже есть (байты прежние); handoff_id уже есть в другом файле; RUN-ID prod-20991231-01, PROD-2099-12-31-01, PROD-20991231-1; шаг 5b и 100; роль NOT-A-ROLE (в тексте — где список ролей); уточнение «Req 1»; суффикс r0 и x1; workflow WF-9; пустой --task; неизвестный ключ и ключ без значения (код 2). Для каждого — одна строка stderr «handoff: …», без стека. Два одновременных `new` с одним именем → один файл, один отказ"
+      - "Закрытие. Файл из первого критерия, получатель записал result {status COMPLETED, …} и status IN_PROGRESS → `close <путь> --status COMPLETED` → status COMPLETED, completed_at с часов (не раньше started_at, вид по H5), разбор JSON до и после равен во всём, кроме status и completed_at, порядок ключей прежний; `cd tools && npm run handoffs-check` на этом репозитории — без нарушений для файла; код 0"
+      - "Отказы закрытия, файл байт в байт прежний: completed_at уже записан; result null; result.status FAILED при --status COMPLETED; status уже COMPLETED; --status DONE (код 2); путь ../x.json, абсолютный путь, путь вне handoffs/, ссылка за корень; файл не JSON; в result.issues[0].at время на час позже часов → отказ со строкой «— H6: …» в формате REQ-038; started_at позже часов → «started_at позже часов»"
+      - "Только handoffs/ и без мусора. Тест: список файлов временного репозитория до и после `new` и `close` отличается только созданным handoff-ом; при сбое переименования (внедрение сбоя, как tools/test/fault-inject.js) файл не создан или прежний, временного файла в папке нет. По коду: запись только через временный файл и переименование (`grep -rn 'writeFileSync' tools/src/handoffs/` — только запись временного файла, проверка — чтением кода проекта CODE-DESIGNER)"
+      - "Документы. docs/workflows/handoffs.md называет обе подкоманды: `grep -c 'npm run handoff -- ' docs/workflows/handoffs.md` не меньше 2 (сейчас 0); .claude/agents/orchestrator.md — пункт «создавать handoff командой new в момент запуска агента, не заранее»: `grep -c 'handoff -- new' .claude/agents/orchestrator.md` не меньше 1, тест DC-02 (tools/test/pixel-office-docs.test.js) проходит без правки; tools/README.md: `grep -c 'npm run handoff' tools/README.md` не меньше 2; `cd tools && npm run handoff -- --help` печатает new, close и все ключи"
+      - "Место записи и проверка. `git diff --name-only base/<RUN-ID>` плюс `git status --porcelain` — только файлы закрытого перечня; старые handoff-ы не тронуты (`git diff --name-only base/<RUN-ID> -- handoffs/ | grep -v '^handoffs/<RUN-ID>/'` пусто). Handoff-ы самого прогона созданы и закрыты этой командой, начиная с первого шага после её PASS на шаге 6 (проверка — по выводу команд в self_check). `cd tools && npm run check` — код 0; на копии без node_modules `cd tools && npm ci && npm run check` — код 0; `cd tools && npm run traces` — код 0"
+  - id: REQ-040
+    title: Сверка живых документов с фактами — машинные метки чисел в README.md (раздел «Что ещё не готово») и STATE.md (верхний раздел) и команда в `npm run check`, которая сверяет их с docs/requirements.yaml, docs/issues/, decisions/ и docs/anti-patterns.md и пишет понятную ошибку
+    owner: BACKEND-DEV   # команда, разбор меток и тесты в tools/; метки в README.md и STATE.md ставит DOC-UPDATER в том же прогоне по проекту
+    status: pending
+    depends_on: []   # нужны только существующие файлы; от REQ-038 и REQ-039 не зависит
+    original_request: >
+      «Сформируй требования которые ты считаешь полезными для sonnet, после этого я запущу
+      это все твое на sonnet» — слова владельца, 2026-10-11, сообщение в сессии Claude Code
+      (дословно — в поле context.owner_words handoffs/REQ-20261011-02/
+      step-01-req-analyst.json). Основание — аудит ORCH 2026-10-11: README.md, CLAUDE.md и
+      STATE.md отставали от фактов, и это находили только люди и итоговая проверка.
+      Пример того же дня: README.md, раздел «Что ещё не готово», пишет «из 37 — 6 в статусе
+      done, 8 — in_progress, 23 — pending»; это верно до записи этого прогона, а после
+      добавления REQ-038…REQ-041 требований 41 и pending 27 — текст отстал в тот же час.
+    description: >
+      Что получает владелец. Числа в README.md и STATE.md всегда сходятся с файлами, из
+      которых они взяты: если DOC-UPDATER (или любой агент) забыл обновить число,
+      `cd tools && npm run check` красный и печатает, что и где разошлось, например
+      «README.md:146 — требований всего: в тексте 37, в docs/requirements.yaml 41».
+
+      Метки вместо разбора прозы. Число в тексте окружается меткой:
+      `<!-- fact:<ключ> -->ЗНАЧЕНИЕ<!-- /fact -->` — в одну строку, без пробелов внутри
+      значения. В показанном Markdown видно только значение, текст читается как прежде.
+      Пример: «из <!-- fact:req-total -->41<!-- /fact --> — <!-- fact:req-done -->6<!--
+      /fact --> в статусе done». Ключи — закрытый перечень, источник каждого — ниже:
+      - req-total — число блоков `  - id: REQ-NNN` в docs/requirements.yaml;
+      - req-done, req-in_progress, req-pending, req-blocked, req-cancelled — число блоков с
+        этим значением поля status (комментарий после «#» не учитывается);
+      - iss-open — число файлов docs/issues/ISS-NNNN-*.md, у которых первое «Статус:» в
+        файле — open (вид строки на 2026-10-11: «Серьёзность: LOW. Статус: open. …»;
+        закрытый: «Статус: closed, 2026-10-11, …»);
+      - iss-next — «ISS-» и наибольший номер файла docs/issues/ плюс один, четыре цифры;
+      - dec-next — наибольший номер NNNN среди файлов decisions/NNNN-*.md и строк таблицы
+        decisions/README.md плюс один, четыре цифры;
+      - ap-next — «AP-» и наибольший номер заголовка `### AP-NNN` в docs/anti-patterns.md
+        плюс один, три цифры;
+      - tests — число тестов (см. ниже).
+      Значения на 2026-10-11 до записи этого прогона (сверено REQ-ANALYST командами grep и
+      ls; CODE-DESIGNER перепроверяет): req-total 37, req-done 6, req-in_progress 8,
+      req-pending 23; iss-open 17; iss-next ISS-0023; dec-next 0034; ap-next AP-066; tests
+      1164 (STATE.md). После этого прогона: req-total 41, req-pending 27.
+
+      Где метки обязательны. README.md, раздел «## Что ещё не готово»: req-total, req-done,
+      req-in_progress, req-pending, iss-open. STATE.md, верхний раздел (от первой строки
+      «## » до следующей «## »): req-done, req-in_progress, req-pending, iss-open, iss-next,
+      dec-next, ap-next, tests. Метки в прежних разделах STATE.md — история и не
+      сверяются; новый верхний раздел DOC-UPDATER пишет с метками. Обязательной метки нет —
+      ошибка; неизвестный ключ, незакрытая метка, значение не того вида — ошибка; ключ
+      может стоять в разделе несколько раз — сверяется каждый.
+
+      Число тестов. Изнутри `npm run check` число тестов того же прогона не узнать, поэтому
+      метка tests без ключа ниже сверяется только по виду (целое число), и печатается
+      строка «facts: число тестов не сверено — нужен --tests-from». С ключом
+      `--tests-from <файл>` команда читает сохранённый вывод `cd tools && npm test` (итог
+      «# tests N» отчёта TAP или «ℹ tests N» отчёта spec) и сверяет N с меткой tests. Этот
+      запуск делают DOC-UPDATER перед записью STATE.md и RELEASE-VALIDATOR на шаге 9 (строка
+      в файлах их ролей).
+
+      Команда. `cd tools && npm run facts` — входит в `npm run check` перед `npm run test`
+      (как traces и handoffs-check: TC-20 и проверка «check кончается на npm run test»
+      проходят без правки); задание называло это «тестом в npm run check» — сделано
+      командой, чтобы ошибка печаталась строкой, а число тестов сверялось ключом. Вывод:
+      строка на расхождение «<файл>:<строка> — <что>: в тексте <X>, по <источник> <Y>»
+      (например, «STATE.md:46 — следующий номер дефекта: в тексте ISS-0022, по docs/issues/
+      ISS-0023»); все расхождения, а не первое; итог «facts: меток проверено <N>,
+      расхождений <M>». Коды — как у traces: 0 — расхождений нет; 1 — есть расхождение или
+      ошибка метки; 2 — источник не читается, файл --tests-from без итоговой строки, ошибка
+      вызова. Ошибка — одна строка stderr «facts: <код>: <текст>», без стека. Команда
+      ничего не пишет и не правит документы сама: исправляет DOC-UPDATER.
+
+      Точные места записи (перечень закрытый). Код — tools/src/facts/ (новая папка);
+      tools/package.json — скрипт facts и шаг check; тесты — tools/test/facts-*.test.js и
+      фикстуры tools/test/fixtures/facts/; README.md и STATE.md — только метки вокруг уже
+      стоящих чисел и исправление чисел, которые к моменту работы разошлись с файлами
+      (каждое — в result.changes с командой-источником); tools/README.md — раздел о команде;
+      .claude/agents/doc-updater.md и .claude/agents/release-validator.md — по одному пункту:
+      запуск `npm run facts -- --tests-from <файл>`. Файлы учёта прогона — как в REQ-038.
+
+      Безопасность и сбои. Q7 — команда читает только документы Sai и печатает числа и
+      номера; Q10 — битая метка или нечитаемый источник дают понятную строку, а не стек.
+      Q8, Q9, Q11, R3 неприменимы; R2 не затрагивается.
+
+      Вне области: проверка прозы без меток; CLAUDE.md (аудит назвал его отставшим, но
+      чисел о требованиях и дефектах в нём нет — открытый вопрос 1); docs/product/
+      requirements-catalog.md (столбец статусов — проза); PLAN.md; прежние разделы STATE.md.
+
+      Открытые вопросы:
+      1. Нужны ли метки в CLAUDE.md и в каталоге требований — и какие факты там сверять.
+      2. Сверять ли iss-open по серьёзности (сейчас README пишет «из них ISS-0002 — HIGH») —
+         можно добавить ключи iss-open-high и т. п. отдельной работой.
+    acceptance_criteria:
+      - "Метки поставлены. `awk '/^## Что ещё не готово/{f=1;next} /^## /{f=0} f' README.md | grep -oE 'fact:[a-z_-]+' | sort -u` даёт ровно req-done, req-in_progress, req-pending, req-total, iss-open; `awk '/^## /{n++} n==1' STATE.md | grep -oE 'fact:[a-z_-]+' | sort -u` даёт ровно ap-next, dec-next, iss-next, iss-open, req-done, req-in_progress, req-pending, tests. Текст без меток (`sed -E 's/<!-- \\/?fact[^>]*-->//g'`) совпадает с текстом до работы, кроме чисел, которые разошлись с файлами; каждое такое число — в result.changes с командой-источником"
+      - "Команда и место в проверке. `cd tools && npm run facts -- --help` — справка по-русски, код 0; в scripts.check tools/package.json шаг `npm run facts` перед `npm run test`, «||» нет; TC-20 и проверка «check кончается на npm run test» проходят без правки"
+      - "Подсчёт по источникам (тест на фикстурах, вход → ожидаемое): requirements.yaml из трёх блоков со status done, pending и «pending   # комментарий» → req-total 3, req-done 1, req-pending 2, req-blocked 0; issues с «Серьёзность: LOW. Статус: open.» и «Статус: closed, 2026-10-11, остаток — ISS-0022» и наибольшим файлом ISS-0022 → iss-open 1, iss-next ISS-0023; decisions с файлами 0031, 0033 и строкой таблицы 0001 → dec-next 0034; anti-patterns с заголовком «### AP-065 — …» последним → ap-next AP-066"
+      - "Расхождения (тест, вход → ожидаемое): README с fact:req-total 37 при 41 блоке → строка «README.md:<строка> — требований всего: в тексте 37, в docs/requirements.yaml 41», код 1; STATE с fact:iss-next ISS-0022 при файле ISS-0022 → «… следующий номер дефекта: в тексте ISS-0022, по docs/issues/ ISS-0023»; три расхождения сразу → три строки; метка req-done в прежнем разделе STATE.md с устаревшим числом → расхождения нет. Нет обязательной метки в верхнем разделе STATE.md → «STATE.md — в верхнем разделе нет метки fact:<ключ>», код 1; ключ fact:req-wip → «неизвестный ключ»; метка без «<!-- /fact -->» → «метка не закрыта»; значение «шесть» у req-done → «значение не число». Документы при этом не изменены (хеши до и после)"
+      - "Число тестов. Без ключа: метка tests 1164 → строка «facts: число тестов не сверено — нужен --tests-from», код 0 (если других расхождений нет); метка «много» → код 1. С `--tests-from` файлом вывода с «# tests 1164» → совпадает; с «ℹ tests 1170» → «STATE.md:<строка> — число тестов: в тексте 1164, по выводу npm test 1170», код 1; файл без итоговой строки → код 2. Файлы ролей: `grep -c 'npm run facts -- --tests-from' .claude/agents/doc-updater.md .claude/agents/release-validator.md` — по 1"
+      - "Настоящий репозиторий. После работы `cd tools && npm run facts` — код 0. На копии вне проекта, где в README.md значение fact:req-pending уменьшено на 1, — код 1 и одна строка расхождения с номером строки README.md; на копии, где docs/issues/ISS-0023-x.md добавлен со «Статус: open», — две строки (iss-open и iss-next в STATE.md) и строка iss-open в README.md. Команда ничего не пишет (хеши README.md, STATE.md и источников до и после равны); время работы — не больше 2 секунд"
+      - "Сбои. Тест: нет docs/requirements.yaml или нет прав на чтение docs/issues/ → stderr «facts: …», код 2, без стека; README.md без раздела «Что ещё не готово» → строка «README.md — нет раздела «Что ещё не готово»», код 1"
+      - "Документы, место записи и проверка. tools/README.md описывает метки, ключи, источники и `--tests-from`: `grep -c 'fact:' tools/README.md` не меньше 3. `git diff --name-only base/<RUN-ID>` плюс `git status --porcelain` — только файлы закрытого перечня; в README.md и STATE.md изменения только в метках и числах (`git diff -U0 base/<RUN-ID> -- README.md STATE.md` — каждая изменённая строка содержит «fact:»). `cd tools && npm run check` — код 0; на копии без node_modules `cd tools && npm ci && npm run check` — код 0; `cd tools && npm run traces` — код 0"
+  - id: REQ-041
+    title: Лёгкий маршрут WF-02 для малых правок — классы изменений (документы; тесты; тексты интерфейса; код) и обязательный набор ворот для каждого класса без понижения планки, кто определяет класс, смешанная правка, проверка на эталонных примерах прогона PROD-20261011-01; до правки — запись решения владельца (quality-bar §5)
+    owner: DOC-UPDATER   # правка документов процесса (WF-02, handoffs.md, файлы ролей ORCH и RELEASE-VALIDATOR, quality-bar §5 — одна ссылка); запись решения — ORCH по словам владельца до начала WF-02
+    status: pending
+    depends_on: [REQ-038, REQ-040]   # класс «документы» опирается на автоматическую проверку учёта (REQ-038) и фактов (REQ-040) внутри `npm run check`; без них ворота класса держатся только на чтении глазами — так ошибки и прошли в PROD-20261011-01
+    original_request: >
+      «Сформируй требования которые ты считаешь полезными для sonnet, после этого я запущу
+      это все твое на sonnet» — слова владельца, 2026-10-11, сообщение в сессии Claude Code
+      (дословно — в поле context.owner_words handoffs/REQ-20261011-02/
+      step-01-req-analyst.json). Основание — аудит ORCH 2026-10-11: процесс тяжёлый, на одно
+      требование уходит 40–50 шагов агентов (в handoffs/PROD-20261011-01/ — 44 handoff-а на
+      REQ-035 и ISS-0020), а правки одного README или одного теста идут тем же длинным
+      маршрутом или, наоборот, мимо ворот (AP-058). Для агентов на модели Sonnet маршрут
+      должен быть короче там, где это не ослабляет проверку.
+    description: >
+      Что получает владелец. Малая правка проходит только те ворота, которые ловят ошибки
+      её рода, и ни одних меньше: правка документа не ждёт проекта кода и ворот
+      безопасности, правка теста не ждёт проекта, а любая правка кода идёт полным WF-02.
+      Шагов и денег меньше, а правило «где шаг не нужен, это записывается с причиной»
+      (WF-02, вступление) выполняется классом изменения, записанным в handoff.
+
+      Решение до правки (quality-bar §5, Q12). Планка говорит: «Если процесс начинает весить
+      больше самой работы, можно предложить упрощение — только через решение владельца, при
+      котором каждый пункт §2 остаётся проверяемым». Поэтому до правки WF-02 ORCH записывает
+      decisions/NNNN-*.md (следующий свободный номер, на 2026-10-11 — 0034) со словами
+      владельца дословно и с датой; без этой записи работа не начинается. Меняет ли лёгкий
+      маршрут планку — открытый вопрос 1 владельцу; если владелец скажет «да», запись
+      оформляется как исключение по quality-bar §1, п. 3 (с причиной и сроком).
+
+      Классы изменений. Класс считается по перечню изменённых файлов прогона: `git diff
+      --name-only base/<RUN-ID>` плюс `git status --porcelain` (decisions/0031). Классы по
+      возрастанию веса:
+      1. «Документы» — меняются только: *.md вне tools/src/ (в том числе README.md,
+         STATE.md, PLAN.md, CLAUDE.md, tools/README.md, docs/**/*.md, decisions/*.md,
+         .claude/agents/*.md), handoffs/**, а в docs/requirements.yaml — только поле status
+         (правка текста требования — WF-01, не этот маршрут).
+      2. «Тесты» — кроме документов меняются только файлы tools/test/** (тесты, помощники,
+         фикстуры); ожидание теста меняется только по уже проверенному критерию, а не под
+         код (Q6).
+      3. «Тексты интерфейса» — кроме документов и тестов меняются только строковые значения
+         в словарях текстов tools/src/web/texts.js и tools/src/pixel-office/public/texts.js
+         (оба — только константы; tools/src/team/language.js строит фразы кодом и к классу
+         не относится). Новый ключ, функция, импорт или любое изменение вне строкового
+         значения — класс «код».
+      4. «Код» — всё остальное, в том числе tools/package.json, package-lock.json,
+         настройки линтера и форматирования, данные проверок (tools/traces/*,
+         tools/handoffs/exceptions.tsv из REQ-038: они меняют то, что проверка пропускает).
+
+      Ворота каждого класса (номера шагов — WF-02; шаг 0, учёт шага 10 и шаг 11 с
+      подтверждением мержа владельцем (R1) — во всех классах):
+      - «Документы»: автор (роль по виду документа; для учётных файлов — DOC-UPDATER или
+        ORCH) сам запускает `cd tools && npm run check` (в нём traces, handoffs-check
+        REQ-038, facts REQ-040) и прикладывает вывод → шаг 9 RELEASE-VALIDATOR: свой запуск
+        `npm run check`, каждое изменённое утверждение о поведении, числе или файле сверено
+        с кодом, тестом или файлом, учёт. Не нужны: 1, 1b, 2, 3, 4, 5, 5b, 6, 7, 8 —
+        причина: нет кода и тестов, а тесты, которые читают документы, запускает шаг 9.
+      - «Тесты»: шаг 5 TEST-DESIGNER → 5b TEST-DESIGN-VALIDATOR (сам запускает тесты; для
+        новой проверки — мутант) → 6 TEST-RUNNER → 9. Не нужны: 1, 1b, 2, 3, 4, 7, 8 —
+        причина: код не меняется.
+      - «Тексты интерфейса»: шаг 2 (FRONTEND-DEV или CODE-FIXER) → 3 SECURITY-REVIEWER → 4
+        REVIEWER (правдив ли текст при каждом исходе, которого страница не знает, — AP-064)
+        → 5 и 5b, если тесты ждут прежний текст (`grep -rn '<прежний текст>' tools/test/` не
+        пусто) → 6 → 7, если интерфейс по образцу → 8, если текст показывается в
+        состоянии, достижимом на запущенной системе (так ISS-0020 нашёл BA-ANALYST, step-25)
+        → 9. Не нужны: 1, 1b — причина: устройство кода не меняется.
+      - «Код»: полный WF-02 без изменений.
+      «Короткий путь» WF-02 (один файл, ORCH) остаётся как есть; лёгкий маршрут — между ним и
+      полным WF-02.
+
+      Кто определяет класс и что при смешанной правке. ORCH на шаге 0 по плану файлов пишет
+      в context каждого handoff-а поле change_class: класс, перечень файлов, причина. Класс
+      смешанной правки — самый тяжёлый из входящих; ворота — ворота этого класса, плюс 5 и
+      5b, если меняются тесты. Роль, которой нужно изменить файл вне класса, не правит его,
+      а останавливается и пишет об этом в result.issues; ORCH поднимает класс новым
+      handoff-ом и проводит недостающие ворота. RELEASE-VALIDATOR на шаге 9 сам считает
+      класс по фактическому перечню файлов: фактический тяжелее записанного — FAIL с
+      возвратом к первому недостающему шагу.
+
+      Планка не понижается (таблица «пункт → где проверяется» в WF-02): Q1 — правка
+      привязана к REQ или ISS с проверенными критериями, лёгкий маршрут критериев не
+      создаёт; Q2 — в каждом классе есть проверяющий не автор (RELEASE-VALIDATOR, TEST-
+      DESIGN-VALIDATOR, SECURITY-REVIEWER и REVIEWER); Q3, Q4 — шаг 9 запускает `npm run
+      check` сам; Q5 — новые тесты проходят 5b; Q6 — 5b и 9; Q7 — traces и шаг 9, для
+      текстов — шаг 3; Q8–Q11, R2 — касаются только кода, а код идёт полным WF-02; Q12,
+      Q13 — как в WF-02; Q14 — handoffs-check (REQ-038) и шаг 10; R1 — шаг 11; R3 —
+      неприменим.
+
+      Эталонные примеры (прогон PROD-20261011-01; WF-02 получает таблицу: правка, файлы,
+      класс, шаги лёгкого маршрута, шаги полного WF-02 той же правки отдельным прогоном,
+      ошибки, найденные тогда, и какие ворота лёгкого маршрута их ловят):
+      (а) step-35 — CODE-FIXER изменил только tools/README.md (result.artifacts_out) →
+          «Документы»: 0, автор, 9, 10, 11 — 5 шагов против 13 полного маршрута (0, 1, 1b,
+          2, 3, 4, 5, 5b, 6, 8, 9, 10, 11). Ошибку прежнего текста README нашёл тест CTL-14f
+          (step-34); в лёгком маршруте этот тест запускает `npm run check` автора и шага 9.
+      (б) step-22 — TEST-DESIGNER изменил только тесты (L1–L3 из step-21; 7 файлов в
+          result.artifacts_out) → «Тесты»: 0, 5, 5b, 6, 9, 10, 11 — 7 шагов против 13.
+          Тогда после step-22 сразу шёл TEST-RUNNER (step-23) без повторного TEST-DESIGN-
+          VALIDATOR — лёгкий маршрут требует 5b, то есть не пропускает того, что прошло
+          тогда (AP-058).
+      (в) step-41 → step-42 → step-43 — исправление учёта (времена в handoff-ах step-08 и
+          step-20, поправки orch_correction) → «Документы». Тогда понадобилось три круга
+          RELEASE-VALIDATOR: F1 в step-41 (completed_at позже коммита) и F2 в step-42 (время
+          в at_note позже коммита). В лёгком маршруте обе ошибки ловит `npm run
+          handoffs-check` автора (REQ-038, правила H7 и H9) до шага 9.
+      Задание ORCH называло step-42 «правкой теста»; по файлу это RELEASE-VALIDATOR, круг 2,
+      сверка правки учёта (handoffs/PROD-20261011-01/step-42-release-validator.json, task) —
+      поэтому пример (в) — класс «Документы».
+
+      Точные места записи (перечень закрытый): docs/workflows/WF-02-development.md (новый
+      раздел «## Лёгкий маршрут» после «## Короткий путь»; в «## Ворота» — одно предложение
+      со ссылкой; разделы «Короткий путь» и шаги 1–11 не меняются), docs/workflows/
+      handoffs.md (поле context.change_class в «Частых необязательных полях»),
+      .claude/agents/orchestrator.md (шаг 0: определить и записать класс),
+      .claude/agents/release-validator.md (шаг 9: пересчитать класс), docs/quality-bar.md
+      (§5, одно предложение-ссылка на «Лёгкий маршрут» рядом со ссылкой на «Короткий путь»;
+      пункты §2 и §3 не меняются), decisions/NNNN-*.md и строка в decisions/README.md.
+      Файлы учёта прогона — handoffs/<RUN-ID>/, STATE.md, docs/requirements.yaml (только
+      status), docs/anti-patterns.md, docs/product/*, docs/releases/. Кода и тестов работа
+      не меняет.
+
+      Вне области: WF-01 (требования), WF-03 (дефекты), WF-04 — открытый вопрос 2; новые
+      роли; изменение ворот класса «код»; команда, которая сама считает класс по перечню
+      файлов (возможна позже как подкоманда REQ-039 — открытый вопрос 3).
+
+      Открытые вопросы владельцу:
+      1. Меняет ли лёгкий маршрут планку? Мнение REQ-ANALYST: нет — каждый пункт §2
+         остаётся проверяемым, и у каждого класса есть проверяющий не автор; но quality-bar
+         §5 требует решения владельца в любом случае, а при ответе «да» нужна запись
+         исключения по §1, п. 3 (причина и срок). Без записи работа не начинается.
+      2. Нужен ли такой же лёгкий маршрут в WF-03 (дефекты).
+      3. Нужна ли команда, которая считает класс по `git diff` (сейчас считают ORCH и
+         RELEASE-VALIDATOR по правилам из раздела).
+    acceptance_criteria:
+      - "Решение до правки (Q12, quality-bar §5). До шага 0 WF-02: `ls decisions/` находит новую запись (номер — следующий свободный), в ней слова владельца дословно с датой и ответ на открытый вопрос 1; `grep -n '<номер>' decisions/README.md` находит строку со статусом, принятым владельцем; если ответ «меняет планку» — в записи причина и срок (quality-bar §1, п. 3). Записи нет — требование в WF-02 не идёт (проверяет ORCH на шаге 0 и RELEASE-VALIDATOR на шаге 9)"
+      - "Раздел и классы. `awk '/^## Лёгкий маршрут/{f=1;next} /^## /{f=0} f' docs/workflows/WF-02-development.md` не пусто и содержит четыре класса («Документы», «Тесты», «Тексты интерфейса», «Код»), для каждого — правило по путям файлов, ворота номерами шагов WF-02 и причину для каждого ненужного шага; раздел стоит после «## Короткий путь»; `git diff base/<RUN-ID> -- docs/workflows/WF-02-development.md` не меняет строк разделов «Короткий путь» и «Шаги» (проверка — чтением diff)"
+      - "Класс по файлам (вход → класс; RELEASE-VALIDATOR применяет правила раздела сам): [docs/anti-patterns.md, STATE.md] → «Документы»; [tools/README.md] → «Документы»; [docs/requirements.yaml со сменой только status] → «Документы»; [docs/requirements.yaml с правкой критерия] → не лёгкий маршрут, WF-01; [tools/test/team-web-control.test.js, docs/design/x.md] → «Тесты»; [tools/src/web/texts.js, изменено только значение строки] → «Тексты интерфейса»; [tools/src/web/texts.js с новым ключом] → «Код»; [tools/src/team/language.js] → «Код»; [tools/package.json] → «Код»; [tools/handoffs/exceptions.tsv] → «Код»; [tools/src/web/texts.js (строка), tools/test/team-web-control.test.js] → «Тексты интерфейса» с шагами 5 и 5b. Каждый пример есть в разделе: `grep -c` по именам файлов примеров в разделе — не меньше 1 на каждый"
+      - "Кто определяет класс. В разделе: ORCH на шаге 0 пишет context.change_class (класс, файлы, причина); роль, которой нужен файл вне класса, останавливается и пишет в result.issues; RELEASE-VALIDATOR на шаге 9 пересчитывает класс по `git diff --name-only base/<RUN-ID>` и `git status --porcelain` и при более тяжёлом фактическом классе выносит FAIL с возвратом к первому недостающему шагу. `grep -c 'change_class' docs/workflows/handoffs.md .claude/agents/orchestrator.md .claude/agents/release-validator.md` — не меньше 1 в каждом; тесты документов (tools/test/*-docs.test.js, в том числе DC-02) проходят без правки"
+      - "Планка не понижается. В разделе таблица «пункт → где проверяется» с каждым пунктом Q1–Q14 и R1–R3 (`grep -oE '\\b(Q1[0-4]|Q[1-9]|R[1-3])\\b'` по разделу даёт все 17); в разделе нет слов понижения планки из quality-bar §1, п. 4 («допишем потом», «пропустим», «проверим завтра» и т. п.); docs/quality-bar.md: изменено только одно предложение §5 (ссылка на «Лёгкий маршрут»), `git diff -U0 base/<RUN-ID> -- docs/quality-bar.md | grep -c '^+[^+]'` равно 1"
+      - "Эталонные примеры. В разделе таблица из трёх примеров прогона PROD-20261011-01 — step-35 (tools/README.md), step-22 (7 файлов тестов), step-41…step-43 (исправление времён в step-08 и step-20): у каждого — файлы (совпадают с result.artifacts_out step-35 и step-22 и с findings F1 step-41, F2 step-42), класс, число шагов лёгкого маршрута и полного WF-02 (лёгкий меньше в каждом примере), найденные тогда ошибки и ворота лёгкого маршрута, которые их ловят (CTL-14f — `npm run check`; F1 и F2 — правила H7 и H9 REQ-038; отсутствие повторного 5b после step-22 — шаг 5b класса «Тесты»). RELEASE-VALIDATOR сверяет таблицу с этими handoff-ами сам: ни одна ошибка, найденная тогда, не проходит мимо ворот лёгкого маршрута"
+      - "Место записи и проверка. `git diff --name-only base/<RUN-ID>` плюс `git status --porcelain` — только файлы закрытого перечня описания; кода и тестов нет в перечне изменённых (`git diff --name-only base/<RUN-ID> -- tools/` пусто); `cd tools && npm run check` — код 0; `cd tools && npm run traces` — код 0; в тексте нет путей компьютера и названий других проектов"
