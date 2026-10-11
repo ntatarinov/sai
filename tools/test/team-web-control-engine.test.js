@@ -120,7 +120,7 @@ test(
 );
 
 test(
-  "CTL-3d (crit. 3; r2 F3, Ф16) a project «ждёт решения» because of the ceiling, the server (the command) stopped by SIGINT — the project is paused with its wait; after a restart the page shows «на паузе», the text of the pause and «Продолжить»; the press → «Отправлено»; the new events are exactly one PROJECT_RESUMED of USER (after command), PROJECT_WAITING budget and the question about the ceiling; no run, nothing spent; the answer says «ждёт решения пользователя» with «Пауза» and «Остановить»",
+  "CTL-3d (crit. 3; r2 F3, Ф16) a project «ждёт решения» because of the ceiling, the server (the command) stopped by SIGINT — the project is paused with its wait; after a restart the page shows «на паузе», the text of the pause of a project that waited for the ceiling (ISS-0020: pausedBudget) and «Продолжить»; the press → «Отправлено»; the new events are exactly one PROJECT_RESUMED of USER (after command), PROJECT_WAITING budget and the question about the ceiling; no run, nothing spent; the answer says «ждёт решения пользователя» with «Пауза» and «Остановить»",
   { timeout: 150_000 },
   async (t) => {
     const box = webSandbox(t);
@@ -153,9 +153,11 @@ test(
     const second = await webCommand(t, box, scenario);
     const page = (await second.get(`/api/projects/${p.id}`)).json;
     assert.equal(page.status_text, "на паузе");
+    // ISS-0020: the project waited for the ceiling — the line says so and does
+    // not promise that the work goes on (design ISS-0020 r2, section 9)
     assert.equal(
       page.pause_text,
-      "Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше",
+      "Проект на паузе. Он ждал вашего решения о потолке расходов. Если потолка по-прежнему не хватает, после «Продолжить» он снова спросит об этом",
     );
     assert.deepStrictEqual(page.controls, {
       pause: false,

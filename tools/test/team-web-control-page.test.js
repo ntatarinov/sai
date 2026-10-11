@@ -4,7 +4,7 @@
 // app.js in the model of the DOM of team-web-dom.js, with a fake fetch that counts
 // the requests of writing — answers given by the test, or the real server behind
 // it (CTL-4a, CTL-8d). Criteria 4 and 8 for the logic of the page (CTL-4a, CTL-8d,
-// CTL-8f, CTL-8h).
+// CTL-8f, CTL-8h); ISS-0020: the line of a pause in the page (CTL-14c).
 //
 // What the model does NOT cover (it is not a browser): the layout, the sizes and
 // the colours, a real order of Tab and a real focus ring, the activation of a
@@ -15,6 +15,17 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { test } from "node:test";
 import { journal, sha256 } from "./exec-helpers.js";
+import { openWriter } from "../src/team/store.js";
+import {
+  LINE,
+  budgetPaused,
+  coreCommand,
+  goalPaused,
+  plainPaused,
+  planPaused,
+  taskQuestionBudgetPaused,
+  taskQuestionPaused,
+} from "./team-web-control-pause-kit.js";
 import { loadPage, event, pressKey } from "./team-web-dom.js";
 import {
   PUBLIC_DIR,
@@ -570,4 +581,72 @@ test("CTL-8h (crit. 8; section 9.2, 9.4, r1 L3, r2 N2) the request of A is not a
   await page.go(`#/projects/${A}`);
   assert.deepStrictEqual(ariaOff(page), [false, false, false]);
   assert.equal(posts(page).length, 2);
+});
+
+// ---- ISS-0020: the line of a pause by the reason of the wait (CTL-14c) -----------------
+
+test("CTL-14c (ISS-0020 К-2, К-3; crit. 1) the real index.html and app.js in front of the real server on the projects of CTL-14a: #project-pause is shown with exactly the line of its reason; with a question about a task «Продолжить» is shown and has no aria-disabled (criterion 1), «Остановить» is shown, «Пауза» is not; the next poll after the project is resumed (status running) hides the line; showing writes nothing", async (t) => {
+  const box = webSandbox(t);
+  const cases = [
+    ["budget", budgetPaused(t, box, { raise: 10 }), LINE.budget],
+    ["plan", planPaused(t, box), LINE.plan],
+    ["goal", goalPaused(t, box), LINE.goal],
+    ["task question", taskQuestionPaused(t, box), LINE.taskQuestion],
+    [
+      "task question, budget",
+      taskQuestionBudgetPaused(t, box),
+      LINE.taskQuestion,
+    ],
+    ["no wait", plainPaused(t, box), LINE.paused],
+  ];
+  const s = await startServer(t, box);
+  const key = await s.key();
+  const net = serverFetch(s.port);
+  const page = loadPage({ publicDir: PUBLIC_DIR, key, fetch: net.fetch });
+  await page.settle();
+  for (const [name, p, line] of cases) {
+    await page.go(`#/projects/${p.id}`);
+    await waitFor(
+      () => page.eval("app.project !== null && app.project.id") === p.id,
+      name,
+    );
+    await page.settle();
+    const pause = page.byId("project-pause");
+    assert.equal(pause.shown, true, name);
+    assert.equal(norm(pause.textContent), line, name);
+    assert.deepStrictEqual(
+      THREE.map((id) => btn(page, id).shown),
+      [false, true, true],
+      name,
+    );
+    assert.equal(
+      btn(page, "ctl-resume").hasAttribute("aria-disabled"),
+      false,
+      name,
+    );
+    assert.equal(anyDisabled(page), false, name);
+  }
+  // the first project is resumed by the command of the core: the next poll hides
+  // the line
+  const [, first] = cases[0];
+  await page.go(`#/projects/${first.id}`);
+  await waitFor(
+    () => page.byId("project-pause").textContent === LINE.budget,
+    "the line of the first project",
+  );
+  const w = openWriter(first.id, { home: box.home });
+  coreCommand(box, first, w, "resume");
+  w.close();
+  for (
+    let i = 0;
+    i < 20 && page.eval("app.project.status") !== "running";
+    i += 1
+  ) {
+    await page.advance(5000);
+    await new Promise((r) => setTimeout(r, 50));
+    await page.settle();
+  }
+  assert.equal(page.eval("app.project.status"), "running");
+  assert.equal(page.byId("project-pause").shown, false);
+  assert.deepStrictEqual(net.writes, [], "showing writes nothing");
 });

@@ -8,7 +8,9 @@
 // hash of the journal, the lock, the files of inbox/ and the calls of the engines.
 // CTL-1b runs the real index.html and app.js in the model of the DOM
 // (team-web-dom.js — not a browser: what it does not cover is said there and in
-// team-web-control-page.test.js).
+// team-web-control-page.test.js). ISS-0020 (design
+// docs/design/ISS-0020-pause-text-for-waiting.md r2, section 9): CTL-14a, 14b, 14d,
+// 14e, 14f, 14g at the end of the file (fixtures: team-web-control-pause-kit.js).
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -54,6 +56,23 @@ import {
 } from "./team-engine-helpers.js";
 import { deadPid, holdWriter } from "./team-helpers.js";
 import { loadPage } from "./team-web-dom.js";
+import {
+  LINE,
+  OUTCOME_CASES,
+  TASK_DECISION,
+  approvalAnsweredPaused,
+  budgetPaused,
+  goalNoRunPaused,
+  goalPaused,
+  plainPaused,
+  planPaused,
+  promiseWords,
+  recoveryWithQuestion,
+  resumeOutcome,
+  taskQuestionBudgetPaused,
+  taskQuestionOpen,
+  taskQuestionPaused,
+} from "./team-web-control-pause-kit.js";
 import {
   ROLE_NUMBERS,
   projectsInEveryStatus,
@@ -1703,4 +1722,400 @@ test("CTL-13 (crit. 13) tools/README.md, the section «## Sai Team — инте�
     "team-web-control-page.test.js",
     "team-web-control.test.js",
   ]);
+});
+
+// ---- ISS-0020: the line of a pause by the reason of the wait (CTL-14a…14g) ------------
+// Design docs/design/ISS-0020-pause-text-for-waiting.md r2, section 9; contract r7,
+// section 15.2. Fixtures — team-web-control-pause-kit.js (only the API of the core).
+
+// The cases of CTL-14a: [name, build, the expected line (null — no line)].
+const PAUSE_CASES = [
+  [
+    "(i) ждал по потолку, потолок не поднят",
+    (t, box) => budgetPaused(t, box),
+    LINE.budget,
+  ],
+  [
+    "(ii) потолок поднят с запасом",
+    (t, box) => budgetPaused(t, box, { raise: 10 }),
+    LINE.budget,
+  ],
+  [
+    "(ii′) RAISED-TINY",
+    (t, box) => budgetPaused(t, box, { raise: 1.005 }),
+    LINE.budget,
+  ],
+  ["(iii) plan_failed", (t, box) => planPaused(t, box), LINE.plan],
+  [
+    "(iii′) PLAN-SPENT",
+    (t, box) => planPaused(t, box, { spent: true }),
+    LINE.plan,
+  ],
+  ["(iv) goal_check_failed", (t, box) => goalPaused(t, box), LINE.goal],
+  ["(iv′) GOAL-NO-RUN", (t, box) => goalNoRunPaused(t, box), LINE.goal],
+  [
+    "(v) вопрос по задаче",
+    (t, box) => taskQuestionPaused(t, box),
+    LINE.taskQuestion,
+  ],
+  [
+    "(vi) вопрос по задаче при ожидании по потолку",
+    (t, box) => taskQuestionBudgetPaused(t, box),
+    LINE.taskQuestion,
+  ],
+  ["(vii) без ожидания", (t, box) => plainPaused(t, box), LINE.paused],
+  [
+    "(viii) approval без вопроса",
+    (t, box) => approvalAnsweredPaused(t, box),
+    LINE.paused,
+  ],
+  [
+    "waiting_user по потолку (не пауза)",
+    (t, box) => waitingBudget(t, box),
+    null,
+  ],
+  ["running", (t, box) => running(t, box), null],
+];
+
+// What each fixture of CTL-14a is (guards the fixtures themselves).
+const PAUSE_STATES = {
+  "(i) ждал по потолку, потолок не поднят": ["paused", "budget", false],
+  "(ii) потолок поднят с запасом": ["paused", "budget", false],
+  "(ii′) RAISED-TINY": ["paused", "budget", false],
+  "(iii) plan_failed": ["paused", "plan_failed", false],
+  "(iii′) PLAN-SPENT": ["paused", "plan_failed", false],
+  "(iv) goal_check_failed": ["paused", "goal_check_failed", false],
+  "(iv′) GOAL-NO-RUN": ["paused", "goal_check_failed", false],
+  "(v) вопрос по задаче": ["paused", "review_failed", true],
+  "(vi) вопрос по задаче при ожидании по потолку": ["paused", "budget", true],
+  "(vii) без ожидания": ["paused", null, false],
+  "(viii) approval без вопроса": ["paused", "approval", false],
+  "waiting_user по потолку (не пауза)": ["waiting_user", "budget", false],
+  running: ["running", null, false],
+};
+
+test("CTL-14a (ISS-0020 К-1; crit. 1) GET of a paused project: the line of the pause by the reason of the wait — the ceiling (not raised, raised with a reserve, RAISED-TINY) → pausedBudget; plan_failed and PLAN-SPENT → pausedPlan; goal_check_failed and GOAL-NO-RUN → pausedGoalCheck; a question about a task (also while waiting for the ceiling) → pausedTaskQuestion; no wait and approval without a question → paused; waiting_user and running → null; the journal, the lock and inbox/ the same after GET", async (t) => {
+  const box = webSandbox(t);
+  const made = PAUSE_CASES.map(([name, build, line]) => [
+    name,
+    build(t, box),
+    line,
+  ]);
+  const s = await startServer(t, box);
+  for (const [name, p, line] of made) {
+    const read = readOf(box, p.id);
+    const [status, reason, question] = PAUSE_STATES[name];
+    assert.equal(read.state.status, status, name);
+    assert.equal(read.state.waiting?.reason ?? null, reason, name);
+    assert.equal(taskQuestionOpen(read), question, name);
+    const before = stateOf(p);
+    const r = await s.get(`/api/projects/${p.id}`);
+    assert.equal(r.status, 200, name);
+    assert.equal(r.json.pause_text, line, name);
+    assert.deepStrictEqual(stateOf(p), before, `${name}: GET writes nothing`);
+  }
+  assert.deepStrictEqual(s.engines.calls, []);
+});
+
+test("CTL-14b (ISS-0020 К-1, К-2; crit. 1, 7) property «the line does not promise an outcome» on the fixtures of CTL-14a, CTL-14g and every status: (а) a wait for the ceiling, the plan or the goal check without a question about a task — no «чтобы работа пошла дальше», no «Нажмите «Продолжить»», none of the whole words «запустит», «сразу», «пойдёт», «продолжит» (\\p{L} with the flag u, N1), but «снова спросит», and «запустить» only after «может»; (б) when «Продолжить» is refused, no «Нажмите «Продолжить»», and (д) the line says «не сработает»; (в) the line paused only without a wait of the three reasons and without a question about a task; (г) the fixtures of one reason that differ only by a raise or by the rest give one line", async (t) => {
+  // the checker of whole words (N1): it finds the promises and does not find the
+  // right texts
+  for (const bad of [
+    "план запустит заново",
+    "Работа пойдёт дальше",
+    "он сразу снова спросит",
+    "проект продолжит работу",
+    "Сразу спросит",
+  ])
+    assert.notDeepStrictEqual(promiseWords(bad), [], bad);
+  for (const good of [
+    "«Продолжить» может запустить новую работу",
+    "Нажмите «Продолжить»",
+    "сразуже",
+    "запустить",
+  ])
+    assert.deepStrictEqual(promiseWords(good), [], good);
+  assert.equal(
+    /\bзапустит\b/.test("план запустит заново"),
+    false,
+    "\\b of JS does not see Cyrillic: it is not used",
+  );
+
+  const box = webSandbox(t);
+  const made = [
+    ...PAUSE_CASES.map(([name, build]) => [name, build(t, box)]),
+    ...OUTCOME_CASES.map(([name, build]) => [name, build(t, box)]),
+    ...everyStatus(t, box).map(([status, p]) => [`status ${status}`, p]),
+    ["paused by recovery", pausedByRecovery(t, box)],
+    ["paused by recovery with a question", recoveryWithQuestion(t, box)],
+  ];
+  const s = await startServer(t, box);
+  const lines = new Map();
+  let promised = 0;
+  let refused = 0;
+  for (const [name, p] of made) {
+    const read = readOf(box, p.id);
+    const line = (await s.get(`/api/projects/${p.id}`)).json.pause_text;
+    lines.set(name, line);
+    const paused = read.state.status === "paused";
+    assert.equal(line === null, !paused, `${name}: a line only when paused`);
+    if (!paused) continue;
+    const reason = read.state.waiting?.reason ?? null;
+    const question = taskQuestionOpen(read);
+    const three = ["budget", "plan_failed", "goal_check_failed"].includes(
+      reason,
+    );
+    // (а)
+    if (three && !question) {
+      promised += 1;
+      assert.equal(line.includes("чтобы работа пошла дальше"), false, name);
+      assert.equal(line.includes("Нажмите «Продолжить»"), false, name);
+      assert.deepStrictEqual(promiseWords(line), [], name);
+      assert.ok(line.includes("снова спросит"), `${name}: «снова спросит»`);
+      for (const m of line.matchAll(/запустить/gu))
+        assert.equal(line.slice(m.index - 6, m.index), "может ", name);
+    }
+    // (б), (д)
+    const refusal = controlRefusal("resume", read.state, read.events);
+    if (typeof refusal === "string") {
+      refused += 1;
+      assert.equal(line.includes("Нажмите «Продолжить»"), false, name);
+      assert.ok(
+        line.includes("«Продолжить» не сработает"),
+        `${name}: the line warns of the refusal`,
+      );
+    }
+    // (в)
+    if (line === LINE.paused) {
+      assert.equal(three, false, name);
+      assert.equal(question, false, name);
+    }
+  }
+  assert.ok(promised >= 14, `cases of (а): ${promised}`);
+  assert.ok(refused >= 3, `cases of (б): ${refused}`);
+  // (г) one reason — one line, whatever the raise and the rest
+  for (const group of [
+    [
+      "(i) ждал по потолку, потолок не поднят",
+      "(ii) потолок поднят с запасом",
+      "(ii′) RAISED-TINY",
+      "BUDGET-NOT-RAISED",
+      "RAISED-TINY",
+      "RAISED-AMPLE",
+    ],
+    ["(iii) plan_failed", "(iii′) PLAN-SPENT", "PLAN0", "PLAN-SPENT"],
+    [
+      "(iv) goal_check_failed",
+      "(iv′) GOAL-NO-RUN",
+      "GOAL-AFTER-CHECK",
+      "GOAL-SPENT",
+      "GOAL-NO-RUN",
+    ],
+  ]) {
+    const seen = new Set(group.map((name) => lines.get(name)));
+    assert.equal(seen.size, 1, group.join(", "));
+    assert.notEqual([...seen][0], LINE.paused, group[0]);
+  }
+});
+
+test("CTL-14d (ISS-0020 К-2; crit. 7) a paused project with a question about a task: «Продолжить» → 409 «Проект ждёт вашего решения по задаче…»; the real pause of the core after a failure with a question open (a failed task, a second task in work with its run open, the writer reopened → paused_by recovery): «Пауза» → 409 «Проект уже на паузе», «Продолжить» → the refusal of the task; the real pause after a failure without a question (CTL-5b′) → «Проект уже на паузе: работа прервалась из-за сбоя…» as before; the journal, the lock and inbox/ unchanged after each; no engine called", async (t) => {
+  const box = webSandbox(t);
+  const question = taskQuestionPaused(t, box);
+  const recq = recoveryWithQuestion(t, box);
+  const rec = pausedByRecovery(t, box);
+  assert.equal(taskQuestionOpen(readOf(box, rec.id)), false, "no question");
+  // the pure rule of the server on the same states
+  const r1 = readOf(box, recq.id);
+  assert.equal(controlRefusal("pause", r1.state, r1.events), T7.alreadyPaused);
+  const r2 = readOf(box, rec.id);
+  assert.equal(controlRefusal("pause", r2.state, r2.events), T7.afterFailure);
+  const engines = fakeEngines();
+  const s = await startServer(t, box, { engines });
+  const rows = [
+    [
+      "на паузе с вопросом по задаче, «Продолжить»",
+      question,
+      { action: "resume" },
+      TASK_DECISION,
+    ],
+    [
+      "на паузе с вопросом по задаче, «Пауза»",
+      question,
+      { action: "pause" },
+      T7.alreadyPaused,
+    ],
+    [
+      "пауза после сбоя с вопросом, «Пауза»",
+      recq,
+      { action: "pause" },
+      T7.alreadyPaused,
+    ],
+    [
+      "пауза после сбоя с вопросом, «Продолжить»",
+      recq,
+      { action: "resume" },
+      TASK_DECISION,
+    ],
+    [
+      "пауза после сбоя без вопроса, «Пауза»",
+      rec,
+      { action: "pause" },
+      T7.afterFailure,
+    ],
+  ];
+  for (const [name, p, body, text] of rows) {
+    const before = stateOf(p);
+    const r = await ctl(s, p.id, body);
+    assert.equal(r.status, 409, `${name}: ${r.text}`);
+    assert.deepStrictEqual(r.json, fail(text), name);
+    assert.deepStrictEqual(stateOf(p), before, name);
+    assert.deepStrictEqual(inboxFiles(p), [], `${name}: inbox/ empty`);
+    assert.doesNotMatch(r.text, NO_STACK, name);
+  }
+  // the page of the paused project with a question still shows «Продолжить»
+  const page = (await s.get(`/api/projects/${recq.id}`)).json;
+  assert.equal(page.pause_text, LINE.taskQuestion);
+  assert.equal(page.controls.resume, true);
+  assert.deepStrictEqual(engines.calls, []);
+  assert.deepStrictEqual(engines.resumes, []);
+  assert.deepStrictEqual(s.warnings, []);
+});
+
+test("CTL-14e (ISS-0020 К-4; crit. 9) the texts of the pause — TEXT.paused, pausedBudget, pausedPlan, pausedGoalCheck, pausedTaskQuestion — and every pause_text of CTL-14a: no technical word, no code, no %, no «процент», none of resume, pause, stop, движок, канал, очередь, ack, замок, inbox; public/*.js have no Cyrillic; DISPLAY_KEYS of team-web-words.test.js is not cut", async (t) => {
+  for (const key of [
+    "paused",
+    "pausedBudget",
+    "pausedPlan",
+    "pausedGoalCheck",
+    "pausedTaskQuestion",
+  ])
+    assert.equal(typeof TEXT[key], "string", key);
+  const texts = Object.entries(TEXT)
+    .filter(([k]) => /^paused/.test(k))
+    .map(([, v]) => v);
+  const box = webSandbox(t);
+  const made = PAUSE_CASES.map(([, build]) => build(t, box));
+  const s = await startServer(t, box);
+  for (const p of made) {
+    const line = (await s.get(`/api/projects/${p.id}`)).json.pause_text;
+    if (line !== null) texts.push(line);
+  }
+  assert.ok(texts.length >= 16, String(texts.length));
+  for (const text of texts) {
+    assert.deepStrictEqual(problems(text), [], text);
+    assert.equal(text.includes("%"), false, text);
+    assert.equal(/процент/iu.test(text), false, text);
+  }
+  for (const name of fs
+    .readdirSync(PUBLIC_DIR)
+    .filter((n) => n.endsWith(".js"))) {
+    const src = fs.readFileSync(path.join(PUBLIC_DIR, name), "utf8");
+    assert.equal(/\p{Script=Cyrillic}/u.test(src), false, name);
+  }
+  const words = fs.readFileSync(
+    path.join(TOOLS_DIR, "test", "team-web-words.test.js"),
+    "utf8",
+  );
+  const set = words.match(/const DISPLAY_KEYS = new Set\(\[([\s\S]*?)\]\);/);
+  assert.ok(set, "DISPLAY_KEYS");
+  const keys = [...set[1].matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+  for (const k of [
+    "status_text",
+    "progress_text",
+    "needs_decision_text",
+    "test_executor_text",
+    "problem_text",
+    "pause_text",
+    "stopped_text",
+    "tail_text",
+    "due_text",
+    "waiting_text",
+    "count_text",
+    "note_text",
+    "tasks_empty_text",
+    "reason_text",
+    "error_text",
+    "result_text",
+    "author_text",
+    "role_title",
+    "title",
+    "description",
+  ])
+    assert.ok(keys.includes(k), k);
+});
+
+// The section «## Sai Team — интерфейс» of tools/README.md, as lines.
+function readmeSection() {
+  const readme = fs.readFileSync(path.join(TOOLS_DIR, "README.md"), "utf8");
+  const section = [];
+  let inside = false;
+  for (const line of readme.split("\n")) {
+    if (/^## Sai Team — интерфейс/.test(line)) {
+      inside = true;
+      continue;
+    }
+    if (/^## /.test(line)) inside = false;
+    if (inside) section.push(line);
+  }
+  return section;
+}
+
+test("CTL-14f (ISS-0020 К-5; crit. 13) README, the section «## Sai Team — интерфейс», agrees with the texts of the pause: it has the words that were not there before the fix — «может запустить», «по-прежнему не хватает», «не сработает, пока вопрос без ответа», «строка паузы говорит об этом заранее»; the paragraph about the pause of a waiting project says «вопрос не закрывает» (N2: the phrase is checked in that paragraph, the section had it before only elsewhere); the former words «новый платный запуск» and «снова» and the words of criterion 12 stay", () => {
+  const section = readmeSection();
+  const text = section.join("\n");
+  for (const w of [
+    "может запустить",
+    "по-прежнему не хватает",
+    "не сработает, пока вопрос без ответа",
+    "строка паузы говорит об этом заранее",
+    "новый платный запуск",
+    "снова",
+  ])
+    assert.ok(text.includes(w), w);
+  const paragraph = section.filter((l) =>
+    l.includes("Если проект поставили на паузу, пока он ждал решения"),
+  );
+  assert.equal(
+    paragraph.length,
+    1,
+    "the paragraph about the pause of a waiting project",
+  );
+  assert.ok(
+    paragraph[0].includes("вопрос не закрывает"),
+    "«вопрос не закрывает» in the paragraph",
+  );
+  const count = (w) => section.filter((l) => l.includes(w)).length;
+  for (const w of ["Продолжить", "необратима", "Пауза", "Остановить"])
+    assert.ok(count(w) >= 1, w);
+  assert.ok(count("resume") >= 2, "resume");
+});
+
+test("CTL-14g (ISS-0020 К-6; crit. 1, 7) the line is true at every outcome of «Продолжить» (Ф24–Ф26, N4): BUDGET-NOT-RAISED, RAISED-TINY, RAISED-AMPLE, PLAN0, PLAN-SPENT, GOAL-AFTER-CHECK, GOAL-SPENT, GOAL-NO-RUN — GET gives exactly the literal of its reason; on a second project made the same way the command resume of the core writes PROJECT_RESUMED (after command) and the schedule of the engine (nextActions) gives the class of the outcome — the project asks again (wait) or a paid run (plan, goal, work, review); the line allows that outcome: asks again → «снова спросит»; a run of the plan or the goal check → «может запустить»; a run after the ceiling → the condition «Если потолка по-прежнему не хватает»; no promise; both classes are seen", async (t) => {
+  const box = webSandbox(t);
+  const made = OUTCOME_CASES.map(([name, build, line, cls]) => [
+    name,
+    build(t, box),
+    build(t, box),
+    LINE[line],
+    line,
+    cls,
+  ]);
+  const s = await startServer(t, box);
+  const classes = new Set();
+  for (const [name, shown, copy, expected, reason, cls] of made) {
+    const before = stateOf(shown);
+    const line = (await s.get(`/api/projects/${shown.id}`)).json.pause_text;
+    assert.equal(line, expected, name);
+    assert.deepStrictEqual(stateOf(shown), before, name);
+    const out = resumeOutcome(box, copy);
+    assert.equal(out.cls, cls, `${name}: ${out.kinds.join(",")}`);
+    classes.add(out.cls);
+    assert.deepStrictEqual(promiseWords(line), [], name);
+    assert.equal(line.includes("чтобы работа пошла дальше"), false, name);
+    if (out.cls === "ask") assert.ok(line.includes("снова спросит"), name);
+    else if (reason === "budget")
+      assert.ok(line.includes("Если потолка по-прежнему не хватает"), name);
+    else assert.ok(line.includes("может запустить"), name);
+  }
+  assert.deepStrictEqual([...classes].sort(), ["ask", "run"], "both outcomes");
 });
