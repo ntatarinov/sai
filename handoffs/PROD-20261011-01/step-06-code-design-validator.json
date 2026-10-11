@@ -1,0 +1,99 @@
+{
+  "handoff_id": "step06-code-design-validator-PROD-20261011-01",
+  "run_id": "PROD-20261011-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/PROD-20261011-01/step-06-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-035"],
+    "agent_run_id": null,
+    "base_tag": "base/PROD-20261011-01",
+    "artifacts_in": [
+      "docs/design/REQ-035-team-web-control.md (редакция r2, коммит 030d0a0)",
+      "decisions/0032-req035-web-control.md",
+      "handoffs/PROD-20261011-01/step-04-code-design-validator.json",
+      "handoffs/PROD-20261011-01/step-05-code-designer.json",
+      "docs/requirements.yaml (REQ-035, редакция 4662844)",
+      "tools/src/web/engines.js, tools/src/team/ (reducer.js, engine/commands.js, engine/engine.js, engine/schedule.js, engine/channel.js, executors/claude-cli.js)"
+    ],
+    "write_set": ["handoffs/PROD-20261011-01/step-06-code-design-validator.json"],
+    "note_by_agent": "Файла handoff-а на момент работы не было (в папке прогона step-01…05). Поля верхнего уровня, context и task записаны CODE-DESIGN-VALIDATOR по сообщению ORCH; ORCH может их сверить своим полем."
+  },
+  "task": {
+    "description": "WF-02, шаг 1b, круг 3: повтор ворот проекта REQ-035 после доработки r2 (F3, F4, N1, N2). Своими запусками на копии вне репозитория: F3 — ждущий проект, Ctrl-C сервера, перезапуск, «Продолжить» → одно PROJECT_RESUMED и снова «ждёт решения» без запусков и расходов; честность описания принятого остатка «Пауза → Продолжить» в 0032 C4 (в том числе расход при решении по плану; нужен ли отказ или предупреждение, Q10); F4 — первая проверка resume(id) синхронно, поддельная фабрика CTL-3c (i), (iii), различимость M26/M27 моделью; N2 — controlBusy по адресу, CTL-8h, M28; 28 мутантов, 13 критериев, 17 пунктов планки, нет кода, пять мест записи REQ-009, границы REQ-013/014, защита записи, строить без догадок. Файлы проекта не править; cd tools && npm run traces — код 0."
+  },
+  "created_at": "неизвестно: файла не было; первое чтение часов агентом — 2026-10-11T05:55:27Z",
+  "started_at": "2026-10-11T05:55:27Z",
+  "completed_at": "2026-10-11T06:02:02Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": [
+      "Хеш проекта и 0032 до (05:55:27Z) и после (06:00:36Z, 06:02Z) совпадает: 205dcebd…e4b1 и aeea9291…131a5c (= «после» step-05). Проект и код не менялись. Задание ORCH называет ожидаемые исходы (200, одно PROJECT_RESUMED, «снова ждёт решения») — записано; вердикт выведен по своим запускам (AP-018). Факты задания проверены: коммит 030d0a0, файлы step-04/05, хеши r2 совпадают с step-05.",
+      "F3 (проход А) — подтверждён настоящим сервером: копия <scratch>/v035r3/tools, проба test/zz-gate3-probe.test.js. spawnWeb (scripted, потолок 0,2, запуски по 0,05), проект создан POST /api/projects (201), до PROJECT_WAITING budget; SIGINT серверу → код 0, новое событие ровно PROJECT_PAUSED/USER, состояние paused, paused_by user, waiting {budget}; второй сервер на той же SAI_TEAM_HOME, GET — «на паузе»; engineHolder → null (значит, п. 6.3 идёт по шагу 2); движок resume в процессе (то, что п. 7 делает в процессе сервера) → новые события PROJECT_RESUMED/USER:command, PROJECT_WAITING/ENGINE:budget, CHAT (вопрос о потолке); PROJECT_RESUMED — 1, новых RUN_STARTED — 0, spent 0.2 → 0.2, статус waiting_user, замок — pid процесса движка. Вариант «Пауза кнопкой (deliver к движку сервера) → Ctrl-C → перезапуск → resume» — то же. Ф16 верен; CTL-3d задаёт именно это. Сам маршрут control ещё не написан, поэтому «200» проверено как исход п. 6.3 (resumed:true, error:null) по поведению движка, а не HTTP-ответом.",
+      "F3: п. 5.1/5.2/9.4 согласованы — у paused «Продолжить» зависит только от вопроса по задаче (как checkResume: E_OPEN_QUESTION до ветки paused, затем \"command\"/\"recovery\"); строк paused в критерии 7 нет (проверено по requirements.yaml); M25 переопределён и ловится CTL-3d. Описание требования «после перезапуска кнопка «Продолжить» ведёт их дальше» и pause_text теперь правдивы для паузы по потолку.",
+      "Честность принятого остатка (0032 C4, п. 5.2, 9.4, 13) — неполна (F5). Свои запуски: причин ожидания проекта три (answers.js PROJECT_QUESTIONS: budget, plan_failed, goal_check_failed), проект и 0032 называют две. plan_failed: пауза → resume → PLANNING_STARTED, RUN_STARTED, …, снова PROJECT_WAITING plan_failed, spent 0.02 → 0.04 (Ф16 E верен). goal_check_failed (в проекте не назван): пауза → resume → RUN_STARTED, GOAL_CHECK_STARTED, GOAL_CHECK_RESULT, снова PROJECT_WAITING goal_check_failed, spent 0.12 → 0.13 — новый платный запуск. А текст README п. 13 «если он ждал решения, когда его поставили на паузу, — без поднятого потолка он сразу снова будет ждать решения» для этих двух причин неверен: движок не ждёт сразу, а делает новый платный запуск (и при удаче работа идёт дальше).",
+      "Нужен ли отказ (оценка по заданию): нет — ни критерии, ни планка его не требуют. Q10 — про сбои (понятный текст, процесс не падает); здесь сбоя нет. Критерий 1 (нет «Продолжить» у «ждёт решения») выполнен, строк paused в критерии 7 нет. Обход даёт ровно то, что терминал: свой запуск — deliver resume к живому движку прямо из waiting_user (без паузы) у plan_failed и goal_check_failed даёт PROJECT_RESUMED:decision и тот же платный запуск (0.02 → 0.04, 0.12 → 0.13). Расход ограничен потолком: настоящий исполнитель claude без потолка не запускается (claude-cli.js:113, E_NO_BUDGET), каждый запуск — в пределах slotBudget. Отказ на странице был бы третьим местом «строже движка» — правка требования (WF-01), решение владельца. Предупреждение нужно: правдивая строка README (и полный перечень причин в 0032 C4/п. 5.2/9.4) — это F5.",
+      "F4 (проход Б) — закрыт. Ф17 верен: в tools/src/web/engines.js start проверяет до первого await (for(;;) {…; await pause(START_POLL_MS)}). Модель <scratch>/v035r3probe/model.mjs: resume по п. 7, варианты design, M26 (отказ раньше признака), M27 (первая проверка после await pause); фабрики CTL-3c (i) и (iii) ровно как в п. 15. (i) design: S=running → {resumed:true, error:E_DISK, late:false}; S=paused и S=stopped → {resumed:false, error:E_DISK}; фабрика вызвана 1 раз, mode resume. M26: S=running → resumed:false (различим). 200 повторов (i): расхождений 0 — детерминированно. (iii) design: {resumed:true, error:null}, отметка таймера 0 к ответу — нет; M27: отметка есть (различим); M26 и design в (iii) не различаются, и не должны. Проверки 3 и 4 на первом шаге не срабатывают — так в модели.",
+      "N2 (п. 9.2–9.4, CTL-8h, M28) — правило однозначно. Прошёл последовательность CTL-8h по правилам п. 9.2/9.3: запросы 1 (A), 2 (B), возврат в A — disabled и «Отправляется…», щелчок — по-прежнему 2; ответ A при показе B не трогает B; щелчок в B — 2; ответ B — текст B; A доступна. M28 (одно значение на страницу) — возврат в A даёт 3-й запрос: ловится. M24 «очищается вся» — после ответа A кнопки B доступны, щелчок даёт 3-й запрос: ловится. Но вариант M24 «удаляется своя запись без сверки номера» — эквивалентный мутант: запись api ставится только при !has(api) и снимается только ответом своего запроса, поэтому controlBusy.get(api) === n в момент ответа всегда истинно; ни CTL-8h, ни другой тест его не убьёт (N3, не блокирует).",
+      "Проход В: строк критериев 13 (= 13 критериев требования), у каждого тест; мутантов 28 (M1…M28 без пропусков), у каждого назван ловящий тест; M25–M28 проверены выше; M24 — N3. Строк «потом решим»/TODO нет; открытые вопросы 6–7 п. 20.2 — не пробелы таблицы.",
+      "Проход Г: 17 пунктов планки (Q1–Q14, R1–R3), у каждого «как выполняется» или причина неприменимости. Защита записи — server.js до чтения тела (п. 3.4, 17); правила движка — applyCommand под замком в одной операции с записью; «строже движка» — чтение перед отправкой, принятый риск C4. Пять мест записи REQ-009 не затронуты: п. 1 не меняет tools/src/team/ (0023 D3); граница REQ-013 — createEngine, deliver, engineHolder только вызываются (п. 12); путей этого компьютера в проекте и 0032 нет (grep код 1). Кода реализации нет: 4 строки ``` (2 блока — формы и сигнатуры). 0032 «Принято» (decisions/README.md:40); N1 закрыт: дополнение C4 r2 помечено «подтверждено ORCH».",
+      "Итог: F3, F4, N1, N2 закрыты. Блокирует F5 — описание принятого остатка неполно (goal_check_failed) и строка README п. 13 неправдива для ожидания решения по проекту (новый платный запуск, а не «сразу снова ждёт»). Неблокирующие: N3 (M24 — эквивалентный вариант), N4 (слова «третьего места «строже движка» нет» против строки waiting_user «прочее» → ctlDecision)."
+    ],
+    "findings": [
+      {
+        "id": "F5",
+        "severity": "Medium",
+        "blocking": true,
+        "where": "п. 13 (README: «и если он ждал решения, когда его поставили на паузу, — без поднятого потолка он сразу снова будет ждать решения»); п. 0 Ф16; п. 5.2 (абзац «(r2, F3) Путь «Пауза» → «Продолжить»…»); п. 9.4 строка (r2, F3); decisions/0032 C4, «Принятый остаток»",
+        "what": "Принятый остаток «Пауза → Продолжить» у ждущего проекта описан для двух причин ожидания проекта (потолок; решение по плану), а их три — budget, plan_failed, goal_check_failed (answers.js, PROJECT_QUESTIONS). Свой запуск: goal_check_failed, пауза, движок resume → новая проверка цели (RUN_STARTED, GOAL_CHECK_RESULT), снова ожидание, spent 0.12 → 0.13. Текст README, который проект поручает BACKEND-DEV, говорит владельцу, что после паузы ждущий проект «без поднятого потолка сразу снова будет ждать решения» — для plan_failed и goal_check_failed это неправда: движок делает новый платный запуск (plan_failed 0.02 → 0.04) и при удаче продолжает работу (AP-014: проверено одно место того же рода).",
+        "needed": "Проект и 0032 C4 называют все три причины ожидания проекта и что делает движок у каждой (потолок — сразу снова ждёт, без запусков; план не составлен и проверка цели не прошла — новая попытка с расходами в пределах потолка, при неудаче снова ждёт; вопрос по задаче — отказ); строка README п. 13 говорит владельцу правду о расходах у ожидания решения по проекту, а не только о потолке. Отказ на странице не требуется (критерии и Q10 его не требуют; это решение владельца через WF-01)."
+      },
+      {
+        "id": "N3",
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 15.1, M24; п. 9.2 «Правило сброса»",
+        "what": "В r2 controlBusy — Map по адресу: запись ставится только при !has(api) и снимается только ответом своего запроса, поэтому сверка controlBusy.get(api) === n всегда истинна. Вариант M24 «запись удаляется после любого ответа без сверки номера» эквивалентен проекту — его не убьёт ни CTL-8h, ни другой тест; TEST-DESIGN-VALIDATOR не сможет его применить с результатом «убит». Вариант «очищается вся» CTL-8h ловит.",
+        "needed": "M24 определён так, чтобы он отличался от проекта (например, «очищается вся» или «удаляется запись показанного проекта, а не своего»), или вариант без сверки назван эквивалентным."
+      },
+      {
+        "id": "N4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "п. 5.1, абзац (r2, F3): «Третьего места «строже движка» нет»; п. 5.2 строка «waiting_user, прочее (вопрос проекта)» → ctlDecision",
+        "what": "Движок принимает resume у waiting_user с plan_failed и goal_check_failed (checkResume → \"decision\"; свой запуск: deliver resume → PROJECT_RESUMED:decision и новый запуск). Строка п. 5.2 отказывает в этом прямому запросу — это строже движка, и это не одно из двух мест описания требования (созданный проект, поднятый потолок). Правило кнопок требования («Продолжить» — только на паузе) это покрывает, проект п. 5.1 (строки 190–191) это признаёт, но фраза «третьего места нет» неточна; строки для неё в критерии 7 нет.",
+        "needed": "Вопрос ORCH: уточнить фразу проекта или слова требования «в двух местах» (WF-01 не обязателен, если ORCH сочтёт это следствием правила кнопок)."
+      }
+    ],
+    "self_check": [
+      "Хеш до (2026-10-11T05:55:27Z): shasum -a 256 docs/design/REQ-035-team-web-control.md → 205dcebd85ba5e0b8e2b2a19caa17cc45cdbf8cea292b5a1e99e4458bd95e4b1; decisions/0032-req035-web-control.md → aeea929123e28db32686a6e27b1bbe72e39c3f39ddfa2e21dec9a92a32131a5c (= «после» step-05). Хеш после (2026-10-11T06:00:36Z и 06:01:55Z) — те же значения.",
+      "Копия вне репозитория: rsync -a --exclude node_modules <sai>/tools <scratch>/v035r3/; проба <scratch>/v035r3/tools/test/zz-gate3-probe.test.js (настоящие модули копии, SAI_TEAM_HOME во временной папке makeSandbox, scripted; сервер — spawnWeb настоящего main.js); cd <scratch>/v035r3/tools && node --test test/zz-gate3-probe.test.js → pass 4, fail 0.",
+      "F3 ctrlc: 'create 201'; 'waiting budget seen true {\"status\":\"waiting_user\",\"paused_by\":null,\"waiting\":{\"reason\":\"budget\",\"task\":null},\"spent\":0.2,\"budget\":0.2}'; 'server1 exit 0 null new PROJECT_PAUSED/USER {\"status\":\"paused\",\"paused_by\":\"user\",\"waiting\":{\"reason\":\"budget\",\"task\":null},…}'; 'GET after restart на паузе'; 'engineHolder before resume null'; 'resume new PROJECT_RESUMED/USER:command PROJECT_WAITING/ENGINE:budget CHAT/ENGINE'; 'RESUMED count 1 RUN_STARTED new 0 spent 0.2 -> 0.2'; 'question … Достигнут потолок расходов. Поднимите потолок, чтобы продолжить, или остановите проект'; 'engine state waiting_user lock {…\"holder\":\"engine\"} (pid = процесс пробы)'.",
+      "F3 button-then-ctrlc: 'pause via engine new PROJECT_PAUSED/USER'; 'server1 exit 0 null new' (пусто: проект уже на паузе); далее те же строки: 'resume new PROJECT_RESUMED/USER:command PROJECT_WAITING/ENGINE:budget CHAT/ENGINE', 'RESUMED count 1 RUN_STARTED new 0 spent 0.2 -> 0.2'.",
+      "plan_failed: 'pause+resume … after pause+exit paused user {\"reason\":\"plan_failed\",\"task\":null}'; 'new PROJECT_RESUMED/USER:command PLANNING_STARTED/ENGINE RUN_STARTED/ENGINE RUN_FINISHED/ENGINE BUDGET_SPENT/ENGINE PROJECT_WAITING/ENGINE:plan_failed CHAT/ENGINE'; 'RUN_STARTED new 1 spent 0.02 -> 0.04'; без паузы: 'deliver resume to live engine from waiting_user: engine new PROJECT_RESUMED/USER:decision PLANNING_STARTED … PROJECT_WAITING/ENGINE:plan_failed'; 'spent 0.02 -> 0.04'.",
+      "goal_check_failed: 'pause+resume new PROJECT_RESUMED/USER:command RUN_STARTED/ENGINE GOAL_CHECK_STARTED/ENGINE RUN_FINISHED/ENGINE BUDGET_SPENT/ENGINE GOAL_CHECK_RESULT/ENGINE PROJECT_WAITING/ENGINE:goal_check_failed CHAT/ENGINE'; 'RUN_STARTED new 1 spent 0.12 -> 0.13 status waiting_user'; без паузы: 'PROJECT_RESUMED/USER:decision RUN_STARTED … PROJECT_WAITING/ENGINE:goal_check_failed'; 'spent 0.12 -> 0.13' — основание F5 и N4.",
+      "Модель F4: node <scratch>/v035r3probe/model.mjs → '(i) design S=running: {\"resumed\":true,\"error\":\"E_DISK\",\"late\":false} calls=1 modes=resume'; '(i) design S=paused: {\"resumed\":false,\"error\":\"E_DISK\",…}'; '(i) design S=stopped: {\"resumed\":false,\"error\":\"E_DISK\",…}'; '(iii) design: {\"resumed\":true,\"error\":null,\"late\":false} mark-at-answer=false'; '(i) M26 S=running: {\"resumed\":false,\"error\":\"E_DISK\",…}'; '(iii) M27: {\"resumed\":true,…} mark-at-answer=true'; '(i) 200 repeats … : 0'.",
+      "Код: engines.js start — первая проверка до await (for(;;){ if (entry.error…) …; await pause(START_POLL_MS); }); commands.js checkResume — E_OPEN_QUESTION до ветки paused, paused → \"command\"/\"recovery\", waiting_user не budget → \"decision\"; answers.js:39 PROJECT_QUESTIONS = [\"budget\", \"plan_failed\", \"goal_check_failed\"]; claude-cli.js:113 E_NO_BUDGET при budget_usd не > 0; schedule.js:27 slotBudget; reducer.js PROJECT_PAUSED не трогает waiting, PROJECT_RESUMED обнуляет.",
+      "Проект: grep -cE '^\\| (1[0-3]|[1-9])\\. ' → 13 (критериев в requirements.yaml REQ-035 — 13); мутантов → 28, номера 1…28 без пропусков; пунктов планки → 17; grep -c '^```' → 4; grep -nE '/Users|/private|/tmp|whooch' по проекту и 0032 → код 1; grep 'потом решим|ждёт решения ORCH|TODO|TBD' → код 1; decisions/README.md:40 — 0032 «Принято»; git diff 62335ef 030d0a0 — правки r2 только в проекте, 0032 и handoff-ах.",
+      "cd tools && npm run traces (после записи handoff-а) → 'traces: файлов проверено 963, следов 0, пропущено 26', код 0."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "Для владельца (через ORCH): у проекта, ждущего решения по плану или после непрошедшей проверки цели, «Пауза» → «Продолжить» запускает новую платную попытку (запуски: 0.02 → 0.04, 0.12 → 0.13), а прямой запрос «Продолжить» страница отклоняет словами «продолжить с этой страницы пока нельзя». Терминал делает то же (resume прямо из ожидания), расход ограничен потолком. Если владелец захочет закрыть обход — третье место «строже движка» (WF-01) или условие в команде движка (0032, вариант 2). Для этих ворот достаточно правдивого описания (F5)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Задание назвало ожидаемые исходы проверки F3 — записано; вердикт выведен по своим запускам (AP-018). HTTP-ответ 200 маршрута управления проверить нельзя — маршрута ещё нет; проверен исход п. 6.3 по поведению движка resume после настоящего Ctrl-C и перезапуска сервера."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
