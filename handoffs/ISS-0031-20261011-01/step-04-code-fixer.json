@@ -1,0 +1,106 @@
+{
+  "handoff_id": "step04-ISS-0031-20261011-01",
+  "run_id": "ISS-0031-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/ISS-0031-20261011-01/step-04-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/ISS-0031-second-round-file-dependency.md",
+      "decisions/0043-iss0031-core-completes-file-dependency.md",
+      "docs/requirements.yaml (REQ-013, критерий 15)",
+      "handoffs/ISS-0031-20261011-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0031-20261011-01/step-03b-code-design-validator-r1.json",
+      "docs/workflows/WF-03-defect.md (шаг 4)",
+      "docs/anti-patterns.md",
+      "tools/src/team/engine/plan.js",
+      "tools/src/team/executor.js",
+      "tools/src/team/runner.js",
+      "tools/README.md"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR (PASS r1) -> CODE-FIXER (этот) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "tools/src/team/engine/plan.js",
+      "tools/src/team/executor.js (только слово export у parseAccepted)",
+      "tools/README.md (раздел «Sai Team — движок», фраза словами)"
+    ],
+    "base_tag": "base/ISS-0031-20261011-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 4. Реализуй исправление ISS-0031 строго по проекту docs/design/ISS-0031-second-round-file-dependency.md (после доработки r1, PASS ворот) и решению 0043 (вариант Г): в tools/src/team/engine/plan.js — acceptedFiles(state) (единый источник: порядок по номеру задачи, внутри — по номеру попытки; файлы задач «готово»), namesFile (правило критерия 15: поля text и done_when; граница слева — начало строки или знак вне [A-Za-z0-9._/-]; справа — конец или знак вне [A-Za-z0-9_-], точка в конце предложения допустима), missingSources, проверка 6 в validatePlan (ключи плана переводятся в номера ДО достройки, достройка добавляет только номера существующих задач, больше 40 зависимостей → существующий reason too_many с PLAN_DETAIL.too_many_deps), блок «Принятые файлы проекта» в planNote (исходное имя, задача-источник, принятое имя; не больше 50 строк; маскирование; правило для планировщика — писать в тексте исходное имя); в tools/src/team/executor.js — только слово export у parseAccepted; в tools/README.md, раздел «Sai Team — движок», — фраза словами (строки, которых требует тест EN-75, остаются, в том числе «только тех задач, от которых она зависит»; тексты подсказок в README не копировать — тест EX-37). Только в файлах write_set. Не менять depsOf, buildPrompt, расписание, ядро и формат журнала. Защита в той же операции: между validatePlan и append(PLAN_RECEIVED) нет await — сохранить. Затем одна команда проверки: cd tools && npm run check (вывод в файл вне проекта, дождись конца): ожидаемых по проекту падений НЕТ (п. 7.3 проекта) — любой красный тест назови поимённо и докажи, что он не из-за этой работы (повтор на копии метки base), не правь тесты. Тесты SF-* и сценарий поддельного claude пишет TEST-DESIGNER после ворот безопасности и ревью (AP-063) — их не писать.",
+    "acceptance_criteria": [
+      "Изменены только файлы write_set (git status приложен)",
+      "Каждый пункт проекта реализован; пути отказа реализованы; depsOf, buildPrompt, расписание, формат журнала не изменены",
+      "npm run check — код 0 или каждый красный поимённо с доказательством; вывод приложен",
+      "Нет skip/todo/отключённых правил, нет путей компьютера"
+    ]
+  },
+  "created_at": "2026-10-11T23:39:11Z",
+  "started_at": "2026-10-11T23:39:11Z",
+  "completed_at": "2026-10-11T23:42:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправление ISS-0031 по проекту (после r1) и решению 0043, вариант Г: в plan.js добавлены acceptedFiles, namesFile, missingSources, проверка 6 в validatePlan (ключи переводятся в id до достройки, больше 40 зависимостей — too_many с PLAN_DETAIL.too_many_deps) и блок «Принятые файлы проекта» в planNote (маскирование по строкам, не больше 50 строк, первая строка «— и ещё N более ранних файлов»); в executor.js только слово export у parseAccepted; в README фраза словами. depsOf, buildPrompt, расписание, ядро и формат журнала не тронуты. npm run check — код 0, 1399 тестов, 0 красных.",
+    "changes": [
+      {
+        "file": "tools/src/team/engine/plan.js",
+        "what": "Пункт проекта 4.3: acceptedFiles(state) — единый источник, задачи «готово» по номеру задачи, внутри по порядку task.files, разбор через parseAccepted, мусор пропускается без исключения"
+      },
+      {
+        "file": "tools/src/team/engine/plan.js",
+        "what": "Пункт 4.3: namesFile(text, original) — правило критерия 15 одним выражением с экранированием имени; слева начало строки или знак вне [A-Za-z0-9._/-], справа конец, знак вне [A-Za-z0-9_.-] или точка перед концом/знаком вне [A-Za-z0-9_-]"
+      },
+      {
+        "file": "tools/src/team/engine/plan.js",
+        "what": "Пункт 4.3: missingSources(item, accepted) — id задач-источников без повторов, поля text и done_when, уже стоящие в переведённом depends_on не добавляются"
+      },
+      {
+        "file": "tools/src/team/engine/plan.js",
+        "what": "Пункт 4.3, validatePlan, проверка 6 после цикла: перевод ключей в id, затем достройка в конец списка; без повторов; больше 40 — reject too_many с PLAN_DETAIL.too_many_deps(key); PLAN_DETAIL.too_many_deps добавлена"
+      },
+      {
+        "file": "tools/src/team/engine/plan.js",
+        "what": "Пункт 4.4, planNote: блок «Принятые файлы проекта» между «Задачи проекта» и «Закрытые задачи…»; строки через maskSecrets; последние ACCEPTED_LINES_MAX (импорт из executor.js); правило для планировщика дословно по проекту; без файлов блока нет"
+      },
+      {
+        "file": "tools/src/team/executor.js",
+        "what": "Пункт 4.2: слово export у parseAccepted, больше ничего"
+      },
+      {
+        "file": "tools/README.md",
+        "what": "Раздел «Sai Team — движок»: в «Как цель становится планом» абзац словами о принятых файлах и достройке зависимости; в «Контекст задачи» в скобках оговорка о достройке, строка «только тех задач, от которых она зависит» сохранена (EN-75); текстов подсказок не копировано (EX-37)"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check (вывод в файл вне проекта): сначала format:check — «[warn] src/team/engine/plan.js», код 1; после npx prettier --write src/team/engine/plan.js повтор: format:check, lint, traces, handoffs-check, test — всё зелёное; итог тестов: tests 1399, pass 1399, fail 0, cancelled 0, skipped 0, todo 0; exit 0. Ожидаемых по проекту падений нет (п. 7.3), красных тестов нет.",
+      "Проба на текущем коде (node -e вне файлов проекта): таблица namesFile из п. 7.1 — все 16 строк как ожидалось; состояние t-0001 «готово» с файлом t-0001-1-one_pager.md, план b «правь one_pager.md» с пустым depends_on — validatePlan ok: true, depends_on [\"t-0001\"] (до правки по проекту, Ф2, было []).",
+      "git status --short (tools): изменены только tools/README.md, tools/src/team/engine/plan.js, tools/src/team/executor.js; остальное в списке (decisions/README.md, docs/requirements.yaml, docs/design и decisions/0043, handoffs) — прежние изменения других шагов."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Тесты SF-* и сценарий поддельного claude не писались (AP-063): их пишет TEST-DESIGNER после ворот безопасности и ревью."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "parseAccepted возвращает attempt строкой (прежнее поведение, не менялось); acceptedFiles приводит её к числу по форме AcceptedFile проекта."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/team/engine/plan.js",
+      "tools/src/team/executor.js",
+      "tools/README.md"
+    ]
+  }
+}

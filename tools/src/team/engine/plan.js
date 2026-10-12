@@ -4,7 +4,8 @@
 //
 // The values of an answer are data: no field of a plan changes the executor, the
 // ceiling, the flags or the fields of the project (Q7).
-import { checkAnswer } from "../executor.js";
+import { maskSecrets } from "../../pixel-office/mask.js";
+import { ACCEPTED_LINES_MAX, checkAnswer, parseAccepted } from "../executor.js";
 import { taskIdFor } from "../reducer.js";
 import { ROLES, ROLE_CODES, publicRole } from "../roles.js";
 import { LIMITS, TASK_STATUS_TEXT } from "../schema.js";
@@ -72,7 +73,72 @@ export const PLAN_DETAIL = Object.freeze({
   unknown_role: (key) => `Роль задачи ${key} не из каталога`,
   bad_dependency: (key) => `Задача ${key} ссылается на несуществующую задачу`,
   cycle: () => "В зависимостях плана есть цикл",
+  too_many_deps: (key) =>
+    `Задача ${key} получила бы больше ${LIMITS.PLAN_TASKS_MAX} зависимостей`,
 });
+
+// ---- the accepted files of the project (design ISS-0031, sections 4.3, 4.4) --------
+
+// The only calculation of "the accepted files of the project": the files of the
+// tasks in the status "done", in the order of the number of the task and, inside a
+// task, of the number of the attempt (the order of task.files); never by the order
+// of the events. Pure, never throws, does not change the state.
+export function acceptedFiles(state) {
+  const out = [];
+  const tasks = Array.isArray(state?.tasks) ? state.tasks : [];
+  for (const task of tasks) {
+    if (task === null || typeof task !== "object" || task.status !== "done") {
+      continue;
+    }
+    if (!Array.isArray(task.files)) continue;
+    for (const name of task.files) {
+      const parsed = parseAccepted({ task: task.id, name });
+      if (parsed === null) continue;
+      out.push({
+        task: task.id,
+        name,
+        original: parsed.original,
+        attempt: Number(parsed.attempt),
+      });
+    }
+  }
+  return out;
+}
+
+function escapeRegExp(text) {
+  return text.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+}
+
+// The only place of the rule "a text names a file" (criterion 15 of REQ-013): the
+// original name as a whole, with the extension, case-sensitive; on the left the
+// start of the text or a character outside [A-Za-z0-9._/-]; on the right the end,
+// a character outside [A-Za-z0-9_.-], or a dot followed by the end or a character
+// outside [A-Za-z0-9_-]. The text is data: it is only compared, never used as a path.
+export function namesFile(text, original) {
+  if (typeof text !== "string" || typeof original !== "string") return false;
+  if (original === "") return false;
+  const rule = new RegExp(
+    `(?<![A-Za-z0-9._/-])${escapeRegExp(original)}(?:(?![A-Za-z0-9_.-])|\\.(?![A-Za-z0-9_-]))`,
+  );
+  return rule.test(text);
+}
+
+// The tasks (ids, in the order of first appearance in `accepted`) whose accepted
+// file is named by the text or the done_when of the item and which are not yet in
+// its depends_on (a list of ids already).
+export function missingSources(item, accepted) {
+  const out = [];
+  for (const a of accepted) {
+    if (out.includes(a.task) || item.depends_on.includes(a.task)) continue;
+    if (
+      namesFile(item.text, a.original) ||
+      namesFile(item.done_when, a.original)
+    ) {
+      out.push(a.task);
+    }
+  }
+  return out;
+}
 
 // "$.tasks[3].done_when" -> "tasks.3.done_when"; the path names only fields of the
 // schema and numbers.
@@ -171,14 +237,31 @@ export function validatePlan(answer, state) {
   ordered.forEach((item, i) => {
     idOf.set(item.key, taskIdFor(state.tasks.length + i + 1));
   });
-  const tasks = ordered.map((item) => ({
-    id: idOf.get(item.key),
-    role: item.role,
-    text: item.text,
-    done_when: item.done_when,
-    depends_on: item.depends_on.map((d) => (idOf.has(d) ? idOf.get(d) : d)),
-    critical: item.critical,
-  }));
+  // 6. A task that names an accepted file of the project gets the task that gave it
+  // (the keys are turned into ids first; the added ids are ids of existing tasks).
+  const accepted = acceptedFiles(state);
+  const tasks = [];
+  for (const item of ordered) {
+    const translated = item.depends_on.map((d) =>
+      idOf.has(d) ? idOf.get(d) : d,
+    );
+    const added = missingSources(
+      { text: item.text, done_when: item.done_when, depends_on: translated },
+      accepted,
+    );
+    const depends_on = [...new Set([...translated, ...added])];
+    if (depends_on.length > LIMITS.PLAN_TASKS_MAX) {
+      return reject("too_many", PLAN_DETAIL.too_many_deps(item.key));
+    }
+    tasks.push({
+      id: idOf.get(item.key),
+      role: item.role,
+      text: item.text,
+      done_when: item.done_when,
+      depends_on,
+      critical: item.critical,
+    });
+  }
   return { ok: true, tasks };
 }
 
@@ -220,6 +303,21 @@ function closedLine(t) {
   return `— ${t.id}: ${t.text} — ${how}${text}`;
 }
 
+const ACCEPTED_RULE =
+  "Если text или done_when задачи называет такой файл, пиши в тексте именно исходное имя (первое в строке, не принятое), и укажи в её depends_on номер задачи, которая его сдала: файл получит только задача с такой зависимостью. Если не укажешь, ядро добавит эту зависимость само.";
+
+// The block of the accepted files: the names only (never the content), masked line
+// by line, the last ACCEPTED_LINES_MAX in the order of acceptedFiles.
+function acceptedBlock(accepted) {
+  const lines = accepted.map((a) =>
+    maskSecrets(`— ${a.original} (задача ${a.task}, принят как ${a.name})`),
+  );
+  const cut = Math.max(0, lines.length - ACCEPTED_LINES_MAX);
+  const shown = lines.slice(cut);
+  if (cut > 0) shown.unshift(`— и ещё ${cut} более ранних файлов`);
+  return `Принятые файлы проекта:\n${shown.join("\n")}\n${ACCEPTED_RULE}`;
+}
+
 // The note of a run of the planner: constant headers, data as it is (masked by the
 // core). rejection: the detail of the rejected first attempt, or null.
 export function planNote(state, facts, rejection = null) {
@@ -236,6 +334,8 @@ export function planNote(state, facts, rejection = null) {
   if (state.tasks.length > 0) {
     parts.push(`Задачи проекта:\n${state.tasks.map(taskLine).join("\n")}`);
   }
+  const accepted = acceptedFiles(state);
+  if (accepted.length > 0) parts.push(acceptedBlock(accepted));
   const closed = closedTasks(state)
     .filter((id) => facts.closedSincePlan.includes(id))
     .map((id) => state.tasks.find((t) => t.id === id));

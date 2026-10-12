@@ -1,0 +1,158 @@
+{
+  "handoff_id": "step10-ISS-0031-20261011-01",
+  "run_id": "ISS-0031-20261011-01",
+  "workflow_id": "WF-03",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/ISS-0031-20261011-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-013",
+      "REQ-010"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0031-20261011-01/ (все step-*.json; особенно step-09-release-validator.json, step-08-test-runner.json, step-07-test-design-validator.json, step-06-test-designer.json, step-05-reviewer.json, step-05-security-reviewer-security.json, step-03b-code-design-validator.json и -r1, step-03-code-designer.json и -r1, step-02b-req-validator.json и -r1, step-01-issue-fixer.json)",
+      "docs/issues/ISS-0031-second-round-task-without-depends-on-cannot-edit-file.md",
+      "docs/design/ISS-0031-second-round-file-dependency.md",
+      "decisions/0043-iss0031-core-completes-file-dependency.md",
+      "docs/requirements.yaml (REQ-013, критерий 15 — статусы не менять)",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/design/REQ-013-team-engine.md",
+      "docs/workflows/WF-03-defect.md (шаг 10)"
+    ],
+    "route": "RELEASE-VALIDATOR (PASS) -> DOC-UPDATER (этот) -> проверка учёта ORCH -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/issues/ISS-0031-second-round-task-without-depends-on-cannot-edit-file.md",
+      "новые docs/issues/ISS-0040-*.md … ISS-0047-*.md",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/design/REQ-013-team-engine.md (две строки-ссылки)"
+    ],
+    "base_tag": "base/ISS-0031-20261011-01",
+    "orch_check": {
+      "at": "2026-10-12T00:28:03Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "docs/requirements.yaml: изменён только блок REQ-013 (критерий 15), статусы REQ-013 и REQ-010 прежние (in_progress)",
+        "docs/issues/ISS-0031: статус closed, раздел «Закрыто» говорит прямо, что настоящая модель не проверена, критерий 13 открыт",
+        "docs/issues/ISS-0040…ISS-0047 заведены; AP-074 и AP-075 на месте",
+        "git diff -- tools/src: plan.js и executor.js (слово export) — ожидаемо",
+        "STATE.md: верхний раздел про ISS-0031",
+        "cd tools && npm run traces: следов 0; handoffs-check: код 0"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 10. ИСТИНА о результате: причина ISS-0031 (задача второго круга, называющая принятый файл прежнего круга, не получала его: планировщик не знал принятых файлов, проверка плана не требовала зависимости) устранена в ядре — вариант Г, решение 0043: Руководитель проекта получает блок «Принятые файлы проекта», validatePlan достраивает depends_on задачами-источниками файлов, названных в text или done_when (правило критерия 15 REQ-013, новый критерий добавлен этим дефектом, step-02). Проверено: 55 новых запусков (SF-01…SF-15), падают на копии «до» (44 красных из 55), 23 мутанта пойманы, RELEASE-VALIDATOR PASS (step-09): npm ci && npm run check — 1454 из 1454. НЕ проверено: поведение настоящей модели с новым блоком и достройкой — критерий 13 REQ-013 и критерий 14 REQ-010 НЕ выполнены, настоящий запуск ждёт согласия владельца и потолка (прошлый потолок 1 исчерпан); статусы REQ-013 и REQ-010 остаются in_progress. (1) docs/issues/ISS-0031-second-round-task-without-depends-on-cannot-edit-file.md: статус `closed, 2026-10-12` (время с часов); раздел «Закрыто»: прогон ISS-0031-20261011-01, что сделано (plan.js: acceptedFiles, namesFile, missingSources, проверка 6, блок в planNote; executor.js — слово export; tools/README.md), где регрессионные тесты (tools/test/team-planner-files.test.js, team-engine-rounds.test.js, расширения fixtures/team/fake-claude-reads.js и helpers), падение «до», остаточные риски ПРЯМО: поведение настоящей модели не проверено; L1/L2/нет отметки «добавлено ядром»; критерий 13 открыт. Добавь в шапку файла дефекта пометку, что критерий 15 REQ-013 добавлен этим дефектом. (2) Заведи дефекты (формат WF-03 «Как выглядит дефект»; факты и ссылки — из handoff-ов прогона): ISS-0040 (MEDIUM) — reviewContext даёт проверяющему только файлы самой задачи, а не файлы её зависимостей: проверяющий правки не видит исходник (step-01-issue-fixer, место 3; воспроизведено); ISS-0041 (LOW) — задача, называющая файл задачи ТОГО ЖЕ круга плана (первый круг, параллельные независимые задачи), файла не получает; критерий 15 это вынес в «не входит» (step-02a-r1, step-03); ISS-0042 (LOW) — задача, созданная командой пользователя (cli.js → addTask), зависимость ставит сам пользователь, достройки нет (step-03-code-designer-r1, п. 11); ISS-0043 (LOW) — принятое имя t-NNNN-N-… в тексте задачи не распознаётся правилом критерия 15 (слева стоит «-»): «правь t-0005-1-one_pager.md» файла не даст (step-03-code-designer вопрос В1, step-03b-r1 V3); ISS-0044 (LOW) — RegExp в namesFile/missingSources собирается заново для каждой пары «задача × файл × поле»: 5,4 с синхронно на предельном проекте (40 задач, 8 000 принятых файлов), линейно; исправление — проверка text.includes(original) перед сборкой или кэш (step-05-security-reviewer-security L1, step-05-reviewer R1); ISS-0045 (LOW) — общий maskSecrets не скрывает имя вида preghp_… (буквы перед ghp_), а acceptedFilesText и заголовки «### имя» имена не маскируют вовсе; править в одном месте для всех (step-05-security-reviewer-security L2, step-05-reviewer R2); ISS-0046 (LOW) — у достроенной ядром зависимости нет отметки «добавлено ядром» ни в журнале, ни в проекции (формат журнала не менялся), при настоящем запуске не понять, поставила ли модель зависимость сама (step-03b N3, решение 0043); ISS-0047 (LOW) — пробелы тестов ISS-0031: EN-76 сверяет по списку имён (локальный помощник с таким именем даёт ложное красное, с другим не ловится), путь отказа «больше 40 зависимостей» на движке (PLAN_RETRY → ожидание) проверен только чистой функцией SF-06, SF-07 закрепляет текст ACCEPTED_RULE дословно, а SF-02…SF-08 строят состояние литералом (step-07-test-design-validator F1, F3, F4). (3) docs/anti-patterns.md: AP-074 — копия «до» через git archive не несёт .git и handoffs, поэтому на ней три теста (HC-7a, HC-7c, HC-5b) краснеют по среде; урок: копии «до» делать со .git (клон на метке), иначе свидетельство «чьё падение» не получить (quality-bar §6 п. 4); AP-075 — запись решения 0043 в первой редакции цитировала решение 0020, в котором нужного текста нет, и описывала события журнала по памяти (TASK_CREATED — фраза проекции, а не событие), оформление не по decisions/README.md (раздел «Причины» вместо «Почему», без «Границы» и «Основания») — ворота проекта вернули с FAIL; урок: ссылка на решение — с проверкой цитаты по тексту (Q3), запись решения — по шаблону decisions/README.md. Формат по соседним записям. (4) docs/design/REQ-013-team-engine.md: строки-ссылки по проекту ISS-0031: п. 5.3, строка 6 (проверка плана) и п. 7.2, строка plan — ссылка «достройка зависимости и блок принятых файлов — ISS-0031-second-round-file-dependency.md». (5) STATE.md: новый верхний раздел «На 2026-10-12 — ISS-0031 закрыт…» в формате соседних разделов: что работает и чем проверено (1454 теста, +55; блок и достройка), плотность тестов по правилу decisions/0023 (посчитай той же командой, что в соседнем разделе), что НЕ сделано (настоящая модель не проверена; критерий 13 REQ-013 и 14 REQ-010 открыты), открытые дефекты (ISS-0003, ISS-0024…ISS-0030, ISS-0032…ISS-0039, ISS-0040…ISS-0047; ISS-0031 закрыт), следующие свободные номера (ISS-0048, решение 0044, AP-076), решение 0043 принято ORCH (владелец может отменить), следующая работа по PLAN (REQ-030; затем шаг WF-01 по REQ-007 и REQ-036 …) и что ждёт владельца: новый потолок и разрешение на настоящий запуск после ISS-0031 (теперь есть что проверять: ISS-0023 + ISS-0031); вопрос по ISS-0028; прежние разделы не удалять. Время — с часов; статус записей — только то, что есть в handoff-ах. Перед сдачей запусти cd tools && npm run handoffs-check и cd tools && npm run traces — оба код 0.",
+    "acceptance_criteria": [
+      "ISS-0031 закрыт строкой closed с честным разделом «Закрыто»: настоящая модель не проверена, критерий 13 открыт",
+      "ISS-0040…ISS-0047 заведены с фактами из handoff-ов; AP-074, AP-075 добавлены",
+      "Статусы REQ-013 и REQ-010 не менялись (in_progress)",
+      "STATE.md обновлён; плотность тестов посчитана командой; ссылки в docs/design/REQ-013-team-engine.md добавлены",
+      "handoffs-check и traces — код 0"
+    ]
+  },
+  "created_at": "2026-10-12T00:25:47Z",
+  "started_at": "2026-10-12T00:25:47Z",
+  "completed_at": "2026-10-12T00:27:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "ISS-0031 закрыт строкой closed, 2026-10-12 с честным разделом «Закрыто»: поведение настоящей модели не проверено, критерий 13 REQ-013 и критерий 14 REQ-010 открыты, статусы REQ-013 и REQ-010 не менялись (in_progress). В шапку ISS-0031 добавлена пометка, что критерий 15 REQ-013 добавлен этим дефектом. Заведены ISS-0040 (MEDIUM) и ISS-0041…ISS-0047 (LOW) с фактами из handoff-ов, записи AP-074 и AP-075, две строки-ссылки в дизайне REQ-013, верхний раздел STATE.md с плотностью тестов 46,2. handoffs-check и traces — код 0.",
+    "changes": [
+      {
+        "file": "docs/issues/ISS-0031-second-round-task-without-depends-on-cannot-edit-file.md",
+        "change": "статус open -> closed, 2026-10-12; в шапку — «критерий 15 добавлен этим дефектом»; новый раздел «Закрыто» (время с часов, прогон, что сделано, регрессионные тесты и падение «до» 44 из 55, 1454 из 1454, что НЕ проверено, остаточные риски)"
+      },
+      {
+        "file": "docs/issues/ISS-0040-review-context-lacks-dependency-files.md",
+        "change": "новый файл, MEDIUM; step-01-issue-fixer, место 3"
+      },
+      {
+        "file": "docs/issues/ISS-0041-same-round-file-not-delivered.md",
+        "change": "новый файл, LOW; step-02a-req-analyst-r1, step-03"
+      },
+      {
+        "file": "docs/issues/ISS-0042-user-added-task-no-dependency-completion.md",
+        "change": "новый файл, LOW; step-03-code-designer-r1 п. 11"
+      },
+      {
+        "file": "docs/issues/ISS-0043-accepted-name-not-recognized-in-text.md",
+        "change": "новый файл, LOW; step-03-code-designer В1, step-03b-r1 V3"
+      },
+      {
+        "file": "docs/issues/ISS-0044-regexp-built-per-pair-in-plan-check.md",
+        "change": "новый файл, LOW; step-05-security-reviewer-security L1, step-05-reviewer R1 (5,4 с на предельном проекте)"
+      },
+      {
+        "file": "docs/issues/ISS-0045-file-name-masking-gaps.md",
+        "change": "новый файл, LOW; step-05-security-reviewer-security L2, step-05-reviewer R2"
+      },
+      {
+        "file": "docs/issues/ISS-0046-core-added-dependency-not-marked.md",
+        "change": "новый файл, LOW; step-03b N3, решение 0043"
+      },
+      {
+        "file": "docs/issues/ISS-0047-iss0031-test-gaps.md",
+        "change": "новый файл, LOW; step-07-test-design-validator F1, F3, F4"
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "change": "добавлены AP-074 (копия «до» через git archive без .git и handoffs) и AP-075 (запись решения 0043: ссылка без нужного текста, события журнала по памяти, не по шаблону); прежние записи не тронуты"
+      },
+      {
+        "file": "docs/design/REQ-013-team-engine.md",
+        "change": "две строки-ссылки на docs/design/ISS-0031-second-round-file-dependency.md: п. 5.3 (строка 6 таблицы проверок) и п. 7.2 (строка plan)"
+      },
+      {
+        "file": "STATE.md",
+        "change": "новый верхний раздел «На 2026-10-12 — ISS-0031 закрыт…»; плотность 1454×1000÷31 477 = 46,2; прежние разделы, раздел владельца и рекомендация WF-06 не тронуты"
+      }
+    ],
+    "self_check": [
+      "date -u +%Y-%m-%dT%H:%M:%SZ -> 2026-10-12T00:26:40Z (время закрытия и учёта)",
+      "find tools/src -type f \\( -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.mjs' \\) -exec cat {} + | wc -l -> 31477; 1454*1000/31477 = 46,2",
+      "cd tools && npm run handoffs-check -> код 0; cd tools && npm run traces -> код 0",
+      "git diff base/ISS-0031-20261011-01 --stat -- docs/requirements.yaml -> 76 вставок (критерий 15 от шага 2); этим шагом requirements.yaml не менялся, статусы REQ-013 и REQ-010 прежние",
+      "grep -n '^### AP-0' docs/anti-patterns.md | tail -3 -> AP-073, AP-074, AP-075 подряд, прежние записи не менялись",
+      "grep -rn '/Users/\\|/private/' по STATE.md, ISS-0031, ISS-0040…0047 -> пусто"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "В п. 5.3 дизайна REQ-013 таблица проверок имела 5 строк; добавлена строка 6 как ссылка (reason и detail — «см. там»). Саму проверку 6 (too_many_deps) описывает дизайн ISS-0031, п. 5.3 по существу не переписан."
+      },
+      {
+        "kind": "NOTE",
+        "text": "decisions/README.md (строка 0043) уже была добавлена в прогоне до этого шага; не трогалась."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Критерий 13 REQ-013 и критерий 14 REQ-010 открыты: настоящий запуск ждёт согласия владельца и нового потолка (прошлый 1 исчерпан). Рекомендую до запуска закрыть ISS-0046 (отметка «добавлено ядром»), иначе итог запуска трудно прочитать."
+      },
+      {
+        "kind": "NOTE",
+        "text": "requirements.yaml сверку по хешу остальной части с «до» этим шагом не требовал: файл не менялся."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0031-second-round-task-without-depends-on-cannot-edit-file.md",
+      "docs/issues/ISS-0040-review-context-lacks-dependency-files.md",
+      "docs/issues/ISS-0041-same-round-file-not-delivered.md",
+      "docs/issues/ISS-0042-user-added-task-no-dependency-completion.md",
+      "docs/issues/ISS-0043-accepted-name-not-recognized-in-text.md",
+      "docs/issues/ISS-0044-regexp-built-per-pair-in-plan-check.md",
+      "docs/issues/ISS-0045-file-name-masking-gaps.md",
+      "docs/issues/ISS-0046-core-added-dependency-not-marked.md",
+      "docs/issues/ISS-0047-iss0031-test-gaps.md",
+      "docs/anti-patterns.md",
+      "docs/design/REQ-013-team-engine.md",
+      "STATE.md"
+    ]
+  }
+}

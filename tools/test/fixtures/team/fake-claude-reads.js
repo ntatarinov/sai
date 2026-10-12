@@ -9,7 +9,17 @@
 // The plan is $HOME/fake-claude-reads/plan.json:
 //   { plan: { tasks: [...] },                       the answer of the plan run
 //     work: [ { when?, files: [{ path, content }], answer?: [path, ...] } ],
-//     reassign_role: string, review_task?: "yes" }
+//     reassign_role: string, review_task?: "yes",
+//     plans?: [ {tasks: [...]}, ... ],               ISS-0031, optional keys:
+//     goal_script?: [ {passed, notes}, ... ],        without them nothing changes
+//     probes?: [ string, ... ] }
+// plans: the n-th run of the planner (n = the plan runs before it in the log)
+// answers plans[min(n, last)]; without the key every run answers `plan`.
+// goal_script: the n-th check of the goal answers goal_script[min(n, last)] (by:
+// "script"); without the key the goal check judges by the text of the goal.
+// probes: only with the key, the log line of every run also has `deps_header` (the
+// header of the accepted files is in the stdin) and `probes` ({ string: is it in
+// the stdin }).
 // A work entry is chosen by `when` (a text found in the stdin) or, without it, by
 // the number of the work run.
 //
@@ -174,13 +184,27 @@ async function main() {
   const entry = { n };
   if (required.includes("tasks")) {
     entry.purpose = "plan";
-    answer = plan.plan;
+    if (Array.isArray(plan.plans) && plan.plans.length > 0) {
+      const before = logLines().filter((l) => l.purpose === "plan").length;
+      answer = plan.plans[Math.min(before, plan.plans.length - 1)];
+    } else {
+      answer = plan.plan;
+    }
   } else if (required.includes("passed")) {
     const cwdFiles = fs.readdirSync(process.cwd());
     const j = judge(stdin, cwdFiles);
     entry.purpose = j.isTask ? "review" : "goal_check";
     entry.cwd_files = cwdFiles;
-    if (j.isTask && plan.review_task === "yes") {
+    const script = Array.isArray(plan.goal_script) ? plan.goal_script : [];
+    if (!j.isTask && script.length > 0) {
+      const before = logLines().filter(
+        (l) => l.purpose === "goal_check",
+      ).length;
+      const step = script[Math.min(before, script.length - 1)];
+      entry.X = j.X;
+      entry.by = "script";
+      answer = { passed: step.passed, notes: step.notes };
+    } else if (j.isTask && plan.review_task === "yes") {
       entry.X = j.X;
       entry.by = "plan";
       answer = { passed: true, notes: "по плану теста" };
@@ -212,6 +236,12 @@ async function main() {
       summary: "Готово по вымышленным данным",
       files: named.map((p) => ({ path: p, kind: "result" })),
     };
+  }
+  if (Array.isArray(plan.probes)) {
+    entry.deps_header = stdin.split("\n").includes(DEPS_HEADER);
+    entry.probes = Object.fromEntries(
+      plan.probes.map((s) => [s, stdin.includes(s)]),
+    );
   }
   fs.appendFileSync(logFile, `${JSON.stringify(entry)}\n`);
   const sid = "00000000-0000-4000-8000-000000000003";

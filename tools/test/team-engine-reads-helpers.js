@@ -45,7 +45,10 @@ function readLines(file) {
 }
 
 // spec = { goal, tasks: [plan item], work: [{ when?, files, answer? }],
-//          reviewTask?: true, over?: env }
+//          reviewTask?: true, over?: env,
+//          plans?: [plan answer], goalScript?: [{ passed, notes }],
+//          probes?: [string] }   (ISS-0031: the three optional fields are written
+//                                 to plan.json as plans, goal_script, probes)
 // -> { sb, env, id, dir, events, fakeDir, log(), stdins() }
 export function readsProject(t, spec) {
   const sb = makeSandbox(t);
@@ -57,11 +60,14 @@ export function readsProject(t, spec) {
   const fakeDir = path.join(sb.user, "fake-claude-reads");
   fs.mkdirSync(fakeDir, { recursive: true, mode: 0o700 });
   const plan = {
-    plan: { tasks: spec.tasks },
+    plan: { tasks: spec.tasks ?? spec.plans?.[0]?.tasks },
     work: spec.work,
     reassign_role: "researcher",
   };
   if (spec.reviewTask === true) plan.review_task = "yes";
+  if (spec.plans !== undefined) plan.plans = spec.plans;
+  if (spec.goalScript !== undefined) plan.goal_script = spec.goalScript;
+  if (spec.probes !== undefined) plan.probes = spec.probes;
   fs.writeFileSync(path.join(fakeDir, "plan.json"), JSON.stringify(plan));
   const { id } = createProject(
     { goal: spec.goal, budget_usd: 5, executor: "claude-cli" },

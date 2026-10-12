@@ -237,7 +237,7 @@ export const ACCEPTED_FILES_INTRO =
 
 // "t-0001-1-memo.md" of task "t-0001" -> { original: "memo.md", attempt: "1" };
 // null when the name does not follow the pattern of the core.
-function parseAccepted(dep) {
+export function parseAccepted(dep) {
   if (dep === null || typeof dep !== "object") return null;
   const { task, name } = dep;
   if (typeof task !== "string" || typeof name !== "string") return null;
