@@ -1,0 +1,94 @@
+{
+  "handoff_id": "step05-r1-REQ042-20261013-01",
+  "run_id": "REQ042-20261013-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/REQ042-20261013-01/step-05-test-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-042"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ042-20261013-01/step-05b-test-design-validator.json",
+      "handoffs/REQ042-20261013-01/step-05-test-designer.json",
+      "tools/test/"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR FAIL -> TEST-DESIGNER r1 -> TEST-DESIGN-VALIDATOR (повтор)",
+    "write_set": [
+      "tools/test/pixel-office-*.test.js",
+      "tools/test/pixel-office-helpers.js",
+      "tools/test/fixtures/pixel-office/"
+    ],
+    "base_tag": "base/REQ042-20261013-01",
+    "rework_of": "handoffs/REQ042-20261013-01/step-05b-test-design-validator.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-13T12:46:14Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED; правки только tools/test/** (git status); код tools/src не менялся",
+        "добавлены FS-11 (мета окна истории), FS-07 (возврат), FS-05/FS-07 (журнал до/после порога) по result; повтор мутантов W1/V22/X1 проверит валидатор сам"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка r1 по FAIL ворот 5b (handoffs/REQ042-20261013-01/step-05b-test-design-validator.json — прочти result целиком: F1–F5, мутанты W1, V22, X1, результаты проверок). Исправь ТОЛЬКО перечисленное, код tools/src НЕ менять, другие тесты не ослаблять: (F1) мета окна «Просмотр истории»: открыть окно от строки основной сессии в состояниях stale, restarted и unrecorded и сверить слово состояния в мете с литералом из WORDS (FS-11 или рядом с PG-27); мутанты W1 (stale показан как «в работе») и V22 (restarted показан как stale) должны падать; (F2) pixel-office-office.test.js: в FS-07 после момента «нет свежих данных» добавить PostToolUse той же сессии и проверить возврат: персонаж, экран, легенду и столбец доски (REQ-007 критерии 2 и 13); то же для restarted (возвращается повторным SubagentStart того же агента по правилам проекта); (F3) в FS-05 (плановый тик) и/или FS-07 сравнить model.journal.length и показанный журнал до и после порога (критерий 2(г): переход в stale не даёт строки в журнале); мутант X1 (переход задачи в stale добавляет строку в model.journal) должен падать. (F4) исправь в result точные числа (FS-05 и FS-12 — сколько test() на самом деле). После правок: повтори мутанты W1, V22, X1 во временной копии вне проекта и убедись, что они падают, а исходное дерево зелёное; рабочее дерево подтверди хешами до/после; cd tools && npm run check под caffeinate -i — настоящий вывод, число тестов; число test( и assert. в десяти файлах не упало относительно base/REQ042-20261013-01. Время — date -u. Пути компьютера не писать. Запрещены git checkout/reset/stash/clean. Закрой через close.",
+    "acceptance_criteria": [
+      "F1–F3 закрыты тестами; мутанты W1, V22, X1 падают",
+      "npm run check зелёный; число test( и assert. не упало"
+    ]
+  },
+  "created_at": "2026-10-13T12:40:20Z",
+  "started_at": "2026-10-13T12:40:20Z",
+  "completed_at": "2026-10-13T12:45:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 по FAIL ворот 5b закрыта: F1–F4. Код tools/src не менялся. F1 — новый тест FS-11 (pixel-office-panels.test.js): окно «Просмотр истории», открытое от строки основной сессии (и от строки журнала), в мете (history-state) показывает слово состояния запроса, равное литералу из WORDS, для in_progress, stale, restarted, completed, unrecorded (data-state тоже). F2 — два новых теста FS-07 (pixel-office-office.test.js): после момента «нет свежих данных» PostToolUse той же сессии с «сейчас» возвращает персонажей в «работает», экран светится, sessions_running = 1, столбец роли на доске снова есть, на странице то же по легенде, кадру и доске; для restarted PostToolUse состояние не меняет (персонаж свободен, экран тёмный, задача restarted), повторный SubagentStart того же агента возвращает работу (экран, столбец, одна и та же задача). F3 — в FS-05 (плановый тик, page.test.js) до и после порога сравниваются model.journal (число и содержимое), строки показанного журнала и journal-meta; в FS-07 (модель и страница) model.journal до/после момента «нет свежих данных» равен, на странице строки журнала те же, после PostToolUse строк на одну больше (только настоящая). F4 — точные числа: FS-05 — 5 тестов, FS-12 — 2; исправлено и в result.issues I4 шага 05.",
+    "changes": [
+      {
+        "file": "tools/test/pixel-office-panels.test.js",
+        "change": "F1: новый test FS-11 (мета окна истории, 5 состояний, открытие от строки основной сессии и от строки журнала)"
+      },
+      {
+        "file": "tools/test/pixel-office-office.test.js",
+        "change": "F2: два новых test FS-07 (возврат после stale; restarted: PostToolUse без изменений, повторный SubagentStart возвращает); F3: в первом FS-07 сравнение model.journal до/после"
+      },
+      {
+        "file": "tools/test/pixel-office-page.test.js",
+        "change": "F3: в FS-05 (плановый тик) сравнение model.journal, показанных строк журнала и journal-meta до/после порога"
+      },
+      {
+        "file": "handoffs/REQ042-20261013-01/step-05-test-designer.json",
+        "change": "F4: поправлены числа одноимённых тестов в result.issues I4 (только текст)"
+      }
+    ],
+    "self_check": [
+      "date -u начало 2026-10-13T12:40:34Z",
+      "мутанты на копии вне проекта (rsync без node_modules и .git; копия до мутантов: node --test test/pixel-office-*.test.js -> tests 334, pass 334, fail 0), после каждого файл возвращался",
+      "W1 (мета окна: stale показан как «в работе», app.js historyMeta): упал 1 из 334 — FS-11 (мета окна). До доработки выживал на 331",
+      "V22 (мета окна: restarted показан как stale): упал 1 из 334 — FS-11 (мета окна). До доработки выживал",
+      "X1 (переход задачи в stale добавляет строку в model.journal): упали 21 из 334 (в том числе новые проверки FS-05 плановый тик и 3 теста FS-07; прочие — из-за строки с index -1); мягкий вариант X1b (при stale в model.journal дублируется первая строка, всё остальное работает): упали ровно 4 — FS-05 (плановый тик) и три FS-07 (модель, возврат, страница). До доработки X1 выживал",
+      "diff -r tools/src рабочего дерева и копии после мутантов — пуст (SRC_IDENTICAL); хеш (find tools/src tools/README.md | shasum) до npm run check и после: 2d15bf9efb4a22586da855600ee65c0e62c71120 — одинаков; git checkout/reset/stash/clean не использовались",
+      "числа test(/assert. (база -> сейчас): docs 2/14 -> 3/25, hook 41/205 -> 41/205, layout 19/210 -> 19/210, note 7/103 -> 7/103, office 51/425 -> 58/534, page 63/407 -> 81/605, panels 23/390 -> 35/624, scale 6/38 -> 6/38, server 71/333 -> 71/333, settings 7/25 -> 7/25 — ни одно не упало",
+      "node --test test/pixel-office-*.test.js -> tests 334, pass 334, fail 0, skipped 0, todo 0",
+      "cd tools && caffeinate -i npm run check (12:43Z-12:45Z) -> код 0: prettier «All matched files use Prettier code style!», eslint --max-warnings 0 без вывода, traces, handoffs-check «нарушений 0», node --test: tests 1516, pass 1516, fail 0, cancelled 0, skipped 0, todo 0 (до доработки 1513)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "OBSERVATION",
+        "text": "EN-57 (1, 2) из шага 05 в этом прогоне не повторился; наблюдение 5b (шаги часов назад на компьютере) остаётся за ORCH. Вопросов по требованию нет, правок кода не нужно."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/pixel-office-panels.test.js",
+      "tools/test/pixel-office-office.test.js",
+      "tools/test/pixel-office-page.test.js"
+    ]
+  }
+}

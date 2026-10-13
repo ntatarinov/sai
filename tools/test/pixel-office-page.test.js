@@ -38,8 +38,12 @@ import {
   withText,
 } from "./pixel-office-helpers.js";
 import { buildHistory } from "../src/pixel-office/public/history.js";
-import { fmtTimeSec } from "../src/pixel-office/public/format.js";
-import { buildOffice } from "../src/pixel-office/public/office-model.js";
+import { ageText, fmtTimeSec } from "../src/pixel-office/public/format.js";
+import {
+  buildCard,
+  buildOffice,
+} from "../src/pixel-office/public/office-model.js";
+import { nowLine, taskPanel } from "../src/pixel-office/public/panels.js";
 import * as TX from "../src/pixel-office/public/texts.js";
 import {
   HISTORY_NOTE_TEXT,
@@ -352,10 +356,13 @@ test("PG-12b: an end without a start makes no task; the line is in the journal",
   assert.equal(m.journal.length, 1);
 });
 
-test("PG-12c1: a server start after the start of a task makes it 'окончание не записано'", () => {
+test("PG-12c1: a server start after the start of a task makes it 'сервер перезапускался…' (REQ-042 criterion 6), not 'окончание не записано'", () => {
   const j = journal();
   j.subStart("S1", "a1", "r");
-  assert.equal(model(j.entries, [startAt(1)]).tasks[0].state, "unrecorded");
+  const after = model(j.entries, [startAt(1)]).tasks[0];
+  assert.equal(after.state, "restarted");
+  assert.equal(after.closed_by, "server_start");
+  assert.equal(after.ended_at ?? null, null);
   assert.equal(model(j.entries, [startAt(0)]).tasks[0].state, "in_progress");
 });
 
@@ -404,13 +411,15 @@ test("PG-12c5: next to 'в работе' the page shows the start time and the t
   assert.equal(last.textContent, fmtTime(j.entries[2].time));
 });
 
-test("PG-12c6: an end that came after the server start returns the task to 'завершена'", () => {
+test("PG-12c6: an end that came after the server start makes the task 'закончила работу, итог не записан' (REQ-042 criterion 6)", () => {
   const j = journal();
   j.subStart("S1", "a1", "r");
   const starts = [startAt(1)];
-  assert.equal(model(j.entries, starts).tasks[0].state, "unrecorded");
+  assert.equal(model(j.entries, starts).tasks[0].state, "restarted");
   j.subStop("S1", "a1", "r");
-  assert.equal(model(j.entries, starts).tasks[0].state, "completed");
+  const done = model(j.entries, starts).tasks[0];
+  assert.equal(done.state, "completed");
+  assert.equal(done.closed_by, "stop");
 });
 
 test("PG-12c7: a start record with journal_lines above the number of lines is ignored", () => {
@@ -483,7 +492,10 @@ test("PG-12d5: the text of a request is nowhere in the row", () => {
   const j = journal();
   j.prompt("S1", { prompt_kind: "owner", prompt_text: unique });
   const row = model(j.entries).mainRows[0];
+  // REQ-042 design 11: the ten keys of before plus age_ms and
+  // session_last_event_at (the age is the model's, not the page's).
   assert.deepEqual(Object.keys(row).sort(), [
+    "age_ms",
     "closed_by",
     "end_index",
     "ended_at",
@@ -491,6 +503,7 @@ test("PG-12d5: the text of a request is nowhere in the row", () => {
     "kind",
     "prompt_kind",
     "session_id",
+    "session_last_event_at",
     "start_index",
     "started_at",
     "state",
@@ -505,12 +518,12 @@ function main1(entries, starts = []) {
   return model(entries, starts).mainRows;
 }
 
-test("PG-12d6 (1): request, server start after it, then Stop of the same session - 'окончание не записано', then 'завершена' (the named scenario)", () => {
+test("PG-12d6 (1): request, server start after it, then Stop of the same session - 'сервер перезапускался…', then 'закончила работу' (the named scenario)", () => {
   const j = journal();
   j.prompt("S1");
   let rows = main1(j.entries, [startAt(1)]);
   assert.equal(rows.length, 1);
-  assert.equal(rows[0].state, "unrecorded");
+  assert.equal(rows[0].state, "restarted");
   assert.equal(rows[0].closed_by, "server_start");
   assert.equal(rows[0].ended_at, null);
   const stop = j.stop("S1");
@@ -542,7 +555,7 @@ test("PG-12d6 (3): Stop of another session does not close the row, before or aft
   let rows = main1(j.entries, [startAt(0)]);
   assert.equal(rows[0].state, "in_progress");
   rows = main1(j.entries, [startAt(2)]);
-  assert.equal(rows[0].state, "unrecorded");
+  assert.equal(rows[0].state, "restarted");
   assert.equal(rows[0].closed_by, "server_start");
   assert.equal(rows[0].end_index, null);
 });
@@ -611,12 +624,12 @@ test("PG-12d6 (9a): a request of another session does not close the row - both a
   );
 });
 
-test("PG-12d6 (9b): with a server start between the requests the first row is 'окончание не записано' by the server start, the second is in progress", () => {
+test("PG-12d6 (9b): with a server start between the requests the first row is 'сервер перезапускался…' by the server start, the second is in progress", () => {
   const j = journal();
   j.prompt("S1");
   j.prompt("S2");
   const rows = main1(j.entries, [startAt(1)]);
-  assert.equal(rows[0].state, "unrecorded");
+  assert.equal(rows[0].state, "restarted");
   assert.equal(rows[0].closed_by, "server_start");
   assert.equal(rows[1].state, "in_progress");
 });
@@ -1961,4 +1974,1169 @@ test("PG-28: binding of the records of the orchestrator and the borders of the w
       0,
     );
   }
+});
+
+// ===================================================================
+// REQ-042: state honesty (design 10: FS-01 ... FS-19). "Now" is a number given
+// by the test; the real clock is never read.
+// ===================================================================
+import { ageOf, ITEM_STATES } from "../src/pixel-office/public/model.js";
+import {
+  STALE_AFTER_MS,
+  checkLine,
+} from "../src/pixel-office/public/schema.js";
+import {
+  FIXTURES,
+  WORDS,
+  iso,
+  lineAt,
+  readFixture,
+  startRec,
+} from "./pixel-office-helpers.js";
+
+// 70 minutes after T0: everything that happened at T0 is "no fresh data".
+const FAR = T0 + STALE_AFTER_MS + 600_000;
+const sub = (session, id, ms, type = "Explore") =>
+  lineAt("SubagentStart", session, ms, { agent_id: id, agent_type: type });
+const subEnd = (session, id, ms, type = "Explore") =>
+  lineAt("SubagentStop", session, ms, { agent_id: id, agent_type: type });
+const tool = (session, ms, id = "tu-x") =>
+  lineAt("PostToolUse", session, ms, {
+    tool_use_id: id,
+    launched_agent_id: "nobody",
+  });
+const taskOf = (m, key = "a1") => m.tasks.find((t) => t.key === key);
+
+// The table of design 3.2: the reason of closing goes with the state.
+function assertInvariant(m, where = "") {
+  const rule = {
+    in_progress: { task: null, row: [null] },
+    stale: { task: null, row: [null] },
+    restarted: { task: "server_start", row: ["server_start"] },
+    completed: { task: "stop", row: ["stop"] },
+    unrecorded: { task: "session_end", row: ["next_prompt", "session_end"] },
+  };
+  for (const t of m.tasks) {
+    assert.ok(ITEM_STATES.includes(t.state), `${where}: state ${t.state}`);
+    assert.equal(t.closed_by, rule[t.state].task, `${where}: ${t.key}`);
+    assert.equal(
+      t.ended_at !== null,
+      t.state === "completed",
+      `${where}: ended_at of ${t.key}`,
+    );
+  }
+  for (const r of m.mainRows) {
+    assert.ok(ITEM_STATES.includes(r.state), `${where}: state ${r.state}`);
+    assert.ok(rule[r.state].row.includes(r.closed_by), `${where}: ${r.key}`);
+    assert.equal(
+      r.ended_at !== null,
+      r.state === "completed",
+      `${where}: ended_at of ${r.key}`,
+    );
+  }
+  for (const item of m.list) {
+    if (item.state === "in_progress") {
+      assert.ok(
+        item.age_ms !== null && item.age_ms <= STALE_AFTER_MS,
+        `${where}: ${item.key} in progress with age ${item.age_ms}`,
+      );
+    }
+    if (item.state === "stale") {
+      assert.ok(
+        item.age_ms === null || item.age_ms > STALE_AFTER_MS,
+        `${where}: ${item.key} stale with age ${item.age_ms}`,
+      );
+    }
+  }
+}
+
+// The same lines on the page itself: the item with the key and its word.
+async function onPage(entries, starts, now) {
+  const page = await loaded(entries, starts, { now });
+  const found = new Map();
+  for (const item of page.items()) {
+    found.set(item.dataset.key, {
+      state: item.dataset.state,
+      word: item.byClass("item-state")[0].textContent,
+    });
+  }
+  return { page, found };
+}
+
+// ------------------------------------------------------------------ FS-01
+
+test("FS-01: only trusted lines of the hook decide - a line of the orchestrator and a line of another source with the time 'now' change neither the state, nor the word of the session, nor the time and age of its last event, nor N; a REAL line does", async () => {
+  const now = FAR;
+  const old = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "a1", T0 + 1000),
+    lineAt("PostToolUse", "S1", T0 + 2000, {
+      tool_use_id: "tu1",
+      launched_agent_id: "a1",
+      subagent_type: "Explore",
+      description: "old work",
+    }),
+  ];
+  const page = await loaded(old, [], { now });
+  const snapshot = () => ({
+    items: page.items().map((i) => i.textContent),
+    states: page.items().map((i) => i.dataset.state),
+    cards: page
+      .el("tasks")
+      .byClass("session-card")
+      .map((c) => ({
+        word: c.dataset.word,
+        text: c.textContent,
+      })),
+    now: page.text("now-text"),
+    title: page.el("now").title,
+    last: page.app.getModel().sessions.map((s) => [s.last_event_at, s.age_ms]),
+    n: page.app.getModel().unconfirmed.count,
+  });
+  const before = snapshot();
+  assert.deepEqual(before.states, ["stale"]);
+  assert.equal(before.cards[0].word, "stale");
+  assert.equal(before.n, 1);
+  assert.equal(
+    before.now,
+    "Сейчас: в работе ничего нет · без свежих данных: 1",
+  );
+
+  // a record of the orchestrator for the same session, the time is "now"
+  page.server.entries.push(
+    noteEntry(iso(now), { session_id: "S1", note_text: "как понял: пример" }),
+  );
+  await page.tick(2000);
+  // a line of another source, not REAL, the time is "now"
+  page.server.entries.push({
+    ...tool("S1", page.clock.now(), "tu-sim"),
+    source: "SIMULATION",
+  });
+  await page.tick(2000);
+  // the page clock moved by 4 s: the age is allowed to grow, nothing else is
+  const after = snapshot();
+  assert.equal(page.app.getModel().entries.length, old.length + 2);
+  assert.deepEqual(after.states, before.states);
+  assert.deepEqual(
+    after.cards.map((c) => c.word),
+    ["stale"],
+  );
+  assert.deepEqual(
+    after.last.map((x) => x[0]),
+    before.last.map((x) => x[0]),
+  );
+  assert.equal(after.n, 1);
+  assert.equal(after.now, before.now);
+  assert.equal(after.items.length, before.items.length);
+  const model = page.app.getModel();
+  assert.equal(model.sessions[0].last_event_at, iso(T0 + 2000));
+  assert.equal(model.sessions[0].word, "stale");
+  assert.equal(model.unconfirmed.oldest_stale_age_ms, model.tasks[0].age_ms);
+
+  // a line of the hook, REAL, the same session, the time "now"
+  page.server.entries.push(tool("S1", page.clock.now(), "tu-real"));
+  await page.tick(2000);
+  assert.deepEqual(
+    page.items().map((i) => i.dataset.state),
+    ["in_progress"],
+  );
+  const card = page.el("tasks").byClass("session-card")[0];
+  assert.equal(card.dataset.word, "running");
+  assert.equal(card.byClass("age")[0].textContent, "меньше минуты назад");
+  assert.equal(page.app.getModel().unconfirmed.count, 0);
+});
+
+// ------------------------------------------------------------------ FS-02
+
+const BASE_TASK = [
+  lineAt("SessionStart", "S1", T0),
+  sub("S1", "a1", T0 + 1000),
+];
+
+// [name, lines after the base, records of server starts, the page clock,
+//  the expected {state, closed_by}]
+const TASK_SCENARIOS = [
+  ["no fresh data: only the base", [], [], FAR, "stale", null],
+  [
+    "no fresh data, then PostToolUse of the session - in progress",
+    [tool("S1", FAR - 1000)],
+    [],
+    FAR,
+    "in_progress",
+    null,
+  ],
+  [
+    "no fresh data, then SessionEnd after the start - 'окончание не записано'",
+    [lineAt("SessionEnd", "S1", FAR - 1000)],
+    [],
+    FAR,
+    "unrecorded",
+    "session_end",
+  ],
+  [
+    "no fresh data, then SubagentStop - the word of the one who finished",
+    [subEnd("S1", "a1", FAR - 1000)],
+    [],
+    FAR,
+    "completed",
+    "stop",
+  ],
+  [
+    "no fresh data, then a repeated SubagentStart - in progress again",
+    [sub("S1", "a1", FAR - 1000)],
+    [],
+    FAR,
+    "in_progress",
+    null,
+  ],
+  [
+    "server restarted: the word is kept at the very start",
+    [],
+    [startRec(2)],
+    FAR,
+    "restarted",
+    "server_start",
+  ],
+  [
+    "server restarted, then PostToolUse of the session - the state is as before (a fresh event does not revive it)",
+    [tool("S1", FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    "restarted",
+    "server_start",
+  ],
+  [
+    "server restarted, then a repeated SubagentStart of the same agent_id - in progress",
+    [sub("S1", "a1", FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    "in_progress",
+    null,
+  ],
+  [
+    "server restarted, then SubagentStop - the word of the one who finished",
+    [subEnd("S1", "a1", FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    "completed",
+    "stop",
+  ],
+  [
+    "server restarted, then SessionEnd after the start - 'окончание не записано'",
+    [lineAt("SessionEnd", "S1", FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    "unrecorded",
+    "session_end",
+  ],
+  [
+    "SessionEnd BEFORE the server start (item 2 before item 3) - 'окончание не записано', not the word about the restart",
+    [lineAt("SessionEnd", "S1", T0 + 2000)],
+    [startRec(3)],
+    FAR,
+    "unrecorded",
+    "session_end",
+  ],
+  [
+    "'окончание не записано' (SessionEnd), then PostToolUse - as before",
+    [lineAt("SessionEnd", "S1", T0 + 2000), tool("S1", FAR - 1000)],
+    [],
+    FAR,
+    "unrecorded",
+    "session_end",
+  ],
+  [
+    "'окончание не записано' (SessionEnd), then SubagentStop - the word of the one who finished",
+    [lineAt("SessionEnd", "S1", T0 + 2000), subEnd("S1", "a1", FAR - 1000)],
+    [],
+    FAR,
+    "completed",
+    "stop",
+  ],
+  [
+    "the restarted word does not age: a year later it is the same",
+    [],
+    [startRec(2)],
+    FAR + 365 * 24 * 3600 * 1000,
+    "restarted",
+    "server_start",
+  ],
+];
+
+test("FS-02: the transitions of a task - the five scenarios of criterion 2 and the table of design 4.4, on the model and on the page; the reason of closing goes with the state", async () => {
+  for (const [name, after, starts, now, state, closedBy] of TASK_SCENARIOS) {
+    const entries = [...BASE_TASK, ...after];
+    const m = buildModel(entries, starts, now);
+    assertInvariant(m, name);
+    const t = taskOf(m);
+    assert.equal(t.state, state, name);
+    assert.equal(t.closed_by, closedBy, name);
+    // the same on the page: the word of the item is the word of the state
+    const { found } = await onPage(entries, starts, now);
+    assert.deepEqual(found.get("a1"), { state, word: WORDS[state] }, name);
+  }
+});
+
+// ------------------------------------------------------------------ FS-03
+
+const BASE_ROW = [
+  lineAt("SessionStart", "S1", T0),
+  lineAt("UserPromptSubmit", "S1", T0 + 1000),
+];
+const prompt = (ms, session = "S1") => lineAt("UserPromptSubmit", session, ms);
+const stopAt = (ms, session = "S1") => lineAt("Stop", session, ms);
+
+// [name, lines after the base, starts, now, expected rows as
+//  [state, closed_by] in the order of the file]
+const ROW_SCENARIOS = [
+  ["no fresh data", [], [], FAR, [["stale", null]]],
+  [
+    "no fresh data, then the next request - the old row 'окончание не записано', a new one in progress",
+    [prompt(FAR - 1000)],
+    [],
+    FAR,
+    [
+      ["unrecorded", "next_prompt"],
+      ["in_progress", null],
+    ],
+  ],
+  [
+    "no fresh data, then SessionEnd - 'окончание не записано'",
+    [lineAt("SessionEnd", "S1", FAR - 1000)],
+    [],
+    FAR,
+    [["unrecorded", "session_end"]],
+  ],
+  [
+    "no fresh data, then Stop - the word of the one who finished",
+    [stopAt(FAR - 1000)],
+    [],
+    FAR,
+    [["completed", "stop"]],
+  ],
+  [
+    "no fresh data, then PostToolUse of the session - in progress, still one row",
+    [tool("S1", FAR - 1000)],
+    [],
+    FAR,
+    [["in_progress", null]],
+  ],
+  [
+    "no fresh data, then Stop of ANOTHER session - nothing changes",
+    [stopAt(FAR - 1000, "S2")],
+    [],
+    FAR,
+    [["stale", null]],
+  ],
+  [
+    "request, a record of a server start, Stop - the word of the one who finished",
+    [stopAt(FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    [["completed", "stop"]],
+  ],
+  [
+    "request, a record of a server start, no Stop - the word about the restart",
+    [],
+    [startRec(2)],
+    FAR,
+    [["restarted", "server_start"]],
+  ],
+  [
+    "request, a record of a server start, the next request - the old row 'окончание не записано'",
+    [prompt(FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    [
+      ["unrecorded", "next_prompt"],
+      ["in_progress", null],
+    ],
+  ],
+  [
+    "request, a record of a server start, SessionEnd - 'окончание не записано', not the word about the restart",
+    [lineAt("SessionEnd", "S1", FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    [["unrecorded", "session_end"]],
+  ],
+  [
+    "the row closed by the restart, then PostToolUse - as before",
+    [tool("S1", FAR - 1000)],
+    [startRec(2)],
+    FAR,
+    [["restarted", "server_start"]],
+  ],
+  [
+    "a row closed by the next request, then Stop - the old row as it was, the Stop closes the new one, no third row",
+    [prompt(T0 + 2000), stopAt(FAR - 1000)],
+    [],
+    FAR,
+    [
+      ["unrecorded", "next_prompt"],
+      ["completed", "stop"],
+    ],
+  ],
+  [
+    "a row closed by SessionEnd, then Stop - the row as it was, no new row",
+    [lineAt("SessionEnd", "S1", T0 + 2000), stopAt(FAR - 1000)],
+    [],
+    FAR,
+    [["unrecorded", "session_end"]],
+  ],
+  [
+    "a second Stop after the first - nothing changes, no row appears",
+    [stopAt(T0 + 2000), stopAt(FAR - 1000)],
+    [],
+    FAR,
+    [["completed", "stop"]],
+  ],
+];
+
+test("FS-03: the transitions of a row of the main session - the seven scenarios of criterion 2 and the table of design 4.4; a Stop invents no row", async () => {
+  for (const [name, after, starts, now, rows] of ROW_SCENARIOS) {
+    const entries = [...BASE_ROW, ...after];
+    const m = buildModel(entries, starts, now);
+    assertInvariant(m, name);
+    assert.deepEqual(
+      m.mainRows.map((r) => [r.state, r.closed_by]),
+      rows,
+      name,
+    );
+    // the same on the page: the items of the main session and their words
+    const page = await loaded(entries, starts, { now });
+    const shown = new Map(
+      page
+        .items()
+        .filter((i) => i.dataset.kind === "main")
+        .map((i) => [
+          i.dataset.key,
+          [i.dataset.state, i.byClass("item-state")[0].textContent],
+        ]),
+    );
+    assert.equal(shown.size, m.mainRows.length, name);
+    for (const r of m.mainRows) {
+      assert.deepEqual(shown.get(r.key), [r.state, WORDS[r.state]], name);
+    }
+  }
+});
+
+// ------------------------------------------------------------------ FS-04
+
+// Lines of every file of public/ that match; like `grep -rn`.
+function grepPublic(re) {
+  const out = [];
+  for (const name of fs.readdirSync(PUBLIC).sort()) {
+    const file = path.join(PUBLIC, name);
+    if (!fs.statSync(file).isFile()) continue;
+    fs.readFileSync(file, "utf8")
+      .split("\n")
+      .forEach((text, i) => {
+        if (re.test(text)) out.push({ name, line: i + 1, text });
+      });
+  }
+  return out;
+}
+
+const THRESHOLD_LITERAL = /3600000|3_600_000|60 \* 60 \* 1000/;
+
+test("FS-04: STALE_AFTER_MS is 3600000 and is the only place of the number - one 'export const', one line with the literal, none in format.js", () => {
+  assert.equal(STALE_AFTER_MS, 3600000);
+  const defs = grepPublic(/STALE_AFTER_MS/).filter((l) =>
+    l.text.includes("export const"),
+  );
+  assert.equal(defs.length, 1, "one 'export const STALE_AFTER_MS'");
+  const literals = grepPublic(THRESHOLD_LITERAL);
+  assert.equal(literals.length, 1, JSON.stringify(literals));
+  assert.equal(literals[0].name, "schema.js");
+  assert.ok(literals[0].text.includes("export const STALE_AFTER_MS"));
+  assert.equal(
+    literals.some((l) => l.name === "format.js"),
+    false,
+    "the age format takes its units from its own constants",
+  );
+  // the expressions themselves: a duplicated number or constant is seen
+  const two = "export const A = 3600000;\nconst b = 60 * 60 * 1000;";
+  assert.equal(
+    two.split("\n").filter((l) => THRESHOLD_LITERAL.test(l)).length,
+    2,
+  );
+  assert.equal(THRESHOLD_LITERAL.test("const c = MS_PER_MINUTE * 60;"), false);
+});
+
+// ------------------------------------------------------------------ FS-05
+
+test("FS-05: the border - exactly STALE_AFTER_MS is 'в работе', one millisecond more is 'нет свежих данных' (task, row, session), one millisecond less is 'в работе'; a negative age is zero; the age counts from the last event of the session, not from the start", () => {
+  const lines = [
+    lineAt("SessionStart", "S1", T0),
+    lineAt("UserPromptSubmit", "S1", T0 + 500),
+    sub("S1", "a1", T0 + 1000),
+  ];
+  const last = T0 + 1000;
+  const at_ = (now) => {
+    const m = buildModel(lines, [], now);
+    return {
+      m,
+      task: taskOf(m).state,
+      row: m.mainRows[0].state,
+      word: m.sessions[0].word,
+    };
+  };
+  for (const [delta, want] of [
+    [-1, "in_progress"],
+    [0, "in_progress"],
+    [1, "stale"],
+    [2, "stale"],
+  ]) {
+    const r = at_(last + STALE_AFTER_MS + delta);
+    assert.equal(r.task, want, `task at +${delta}`);
+    assert.equal(r.row, want, `row at +${delta}`);
+    assert.equal(r.word, want === "stale" ? "stale" : "running", `${delta}`);
+    assert.equal(r.m.sessions[0].running, want !== "stale");
+  }
+  assert.equal(at_(last + STALE_AFTER_MS).m.tasks[0].age_ms, STALE_AFTER_MS);
+  // the age is a function of two numbers
+  assert.equal(ageOf(iso(T0), T0 + 5), 5);
+  assert.equal(ageOf(iso(T0), T0 - 5), 0, "a negative age is zero");
+  assert.equal(ageOf("not a time", T0), null);
+  assert.equal(ageOf(iso(T0), Number.NaN), null);
+});
+
+test("FS-05: a negative age (the clock went back) is zero - 'в работе', 'Идёт', 'меньше минуты назад'; the order of the items is as it was", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    lineAt("UserPromptSubmit", "S1", T0 + 1000),
+    sub("S1", "a1", T0 + 2000),
+  ];
+  const now = T0 - 30_000;
+  const m = buildModel(entries, [], now);
+  assert.equal(taskOf(m).age_ms, 0);
+  assert.equal(taskOf(m).state, "in_progress");
+  assert.equal(m.mainRows[0].age_ms, 0);
+  assert.equal(m.sessions[0].age_ms, 0);
+  assert.deepEqual(
+    m.list.map((i) => i.key),
+    ["a1", "main:1"],
+  );
+  const page = await loaded(entries, [], { now });
+  const card = page.el("tasks").byClass("session-card")[0];
+  assert.equal(card.dataset.word, "running");
+  assert.equal(card.byClass("age")[0].textContent, "меньше минуты назад");
+  assert.ok(!page.text("tasks").includes("NaN"));
+});
+
+test("FS-05: a trusted line from the future (README limit 9) counts as fresh with age zero; the real lines after it are the ones marked 'не из хуков'; when the clock reaches it plus the threshold, the session is 'нет свежих данных'", async () => {
+  const now = T0 + 1800 * 1000;
+  const ahead = now + 2 * 3600 * 1000;
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "a1", T0 + 1000),
+    tool("S1", ahead, "tu-future"),
+    tool("S1", now - 1000, "tu-real"),
+  ];
+  const m = buildModel(entries, [], now);
+  assert.equal(m.marks[2], null, "the future line is not marked");
+  assert.notEqual(m.marks[3], null, "the real line after it is marked");
+  assert.equal(taskOf(m).state, "in_progress");
+  assert.equal(taskOf(m).age_ms, 0);
+  assert.equal(m.sessions[0].word, "running");
+  const page = await loaded(entries, [], { now });
+  const card = page.el("tasks").byClass("session-card")[0];
+  assert.equal(card.byClass("age")[0].textContent, "меньше минуты назад");
+  // the clock reaches the line and passes the threshold
+  const later = buildModel(entries, [], ahead + STALE_AFTER_MS + 1);
+  assert.equal(taskOf(later).state, "stale");
+});
+
+test("FS-05: a long task - two hours since its start, but an event of its session 5 minutes ago - is 'в работе'; the same for a row of the main session, then Stop; the age is not counted from the start", () => {
+  const nowMs = T0 + 2 * 3600 * 1000;
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    lineAt("UserPromptSubmit", "S1", T0 + 500),
+    sub("S1", "a1", T0 + 1000),
+    tool("S1", nowMs - 5 * 60 * 1000, "tu-late"),
+  ];
+  const m = buildModel(entries, [], nowMs);
+  assert.equal(taskOf(m).state, "in_progress");
+  assert.equal(taskOf(m).age_ms, 5 * 60 * 1000);
+  assert.equal(m.mainRows[0].state, "in_progress");
+  assert.equal(m.mainRows[0].age_ms, 5 * 60 * 1000);
+  const stopped = [...entries, stopAt(nowMs - 1000)];
+  assert.equal(buildModel(stopped, [], nowMs).mainRows[0].state, "completed");
+  // without the late event the same two hours are 'нет свежих данных'
+  const silent = buildModel(entries.slice(0, 3), [], nowMs);
+  assert.equal(taskOf(silent).state, "stale");
+  assert.equal(silent.mainRows[0].state, "stale");
+});
+
+test("FS-05: a planned tick of the page clock without new lines changes the word; then PostToolUse of the session returns 'в работе', then SubagentStop gives the word of the one who finished; the journal is not touched", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    lineAt("UserPromptSubmit", "S1", T0 + 500),
+    sub("S1", "a1", T0 + 1000),
+  ];
+  const page = await loaded(entries, [], {
+    now: T0 + 1000 + STALE_AFTER_MS - 3000,
+  });
+  const states = () =>
+    Object.fromEntries(
+      page.items().map((i) => [i.dataset.key, i.dataset.state]),
+    );
+  assert.deepEqual(states(), { a1: "in_progress", "main:1": "in_progress" });
+  const array = page.app.getModel().entries;
+  // REQ-042 criterion 2(g): a move into 'нет свежих данных' is not an event of
+  // the journal - the journal of the model and the shown one stay as they were
+  const journalBefore = JSON.stringify(page.app.getModel().journal);
+  const rowsBefore = page.rows().map((r) => r.textContent);
+  const metaBefore = page.text("journal-meta");
+  assert.equal(page.app.getModel().journal.length, entries.length);
+  const calls = page.server.calls.length;
+  // 10 s later (REFRESH_MS): the threshold has been crossed, no line came
+  await page.tick(10_000);
+  assert.ok(page.server.calls.length > calls, "the page polled");
+  assert.equal(page.server.entries.length, entries.length, "no new lines");
+  assert.equal(page.app.getModel().entries, array);
+  assert.deepEqual(states(), { a1: "stale", "main:1": "stale" });
+  assert.equal(
+    page.el("tasks").byClass("session-card")[0].dataset.word,
+    "stale",
+  );
+  assert.equal(page.app.getModel().journal.length, entries.length);
+  assert.equal(JSON.stringify(page.app.getModel().journal), journalBefore);
+  assert.deepEqual(
+    page.rows().map((r) => r.textContent),
+    rowsBefore,
+    "the shown journal has the same rows",
+  );
+  assert.equal(page.text("journal-meta"), metaBefore);
+  // PostToolUse of the same session
+  page.server.entries.push(tool("S1", page.clock.now(), "tu-back"));
+  await page.tick(2000);
+  assert.deepEqual(states(), { a1: "in_progress", "main:1": "in_progress" });
+  // SubagentStop, then Stop
+  page.server.entries.push(subEnd("S1", "a1", page.clock.now()));
+  page.server.entries.push(stopAt(page.clock.now()));
+  await page.tick(2000);
+  assert.deepEqual(states(), { a1: "completed", "main:1": "completed" });
+  // and 'нет свежих данных' again does not touch a finished one
+  await page.tick(STALE_AFTER_MS + 20_000);
+  assert.deepEqual(states(), { a1: "completed", "main:1": "completed" });
+});
+
+// ------------------------------------------------------------------ FS-06
+
+const SHAPES = /NaN|undefined|Invalid/;
+
+test("FS-06: a time of the last event that cannot be read - 'нет свежих данных' without age, no NaN anywhere, no exception; the rest of the journal is as it was", () => {
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    { ...lineAt("UserPromptSubmit", "S1", T0 + 500), time: "not a time" },
+    { ...sub("S1", "a1", T0 + 1000), time: "yesterday" },
+    // a second session, fine and fresh, must not be touched
+    lineAt("SessionStart", "S2", T0 + 2000),
+    sub("S2", "b1", T0 + 3000, "Plan"),
+  ];
+  const copy = JSON.parse(JSON.stringify(entries));
+  const now = T0 + 4000;
+  const m = buildModel(entries, [], now);
+  assert.deepEqual(entries, copy, "the input is not changed");
+  assertInvariant(m, "unreadable time");
+  assert.equal(taskOf(m, "a1").state, "stale");
+  assert.equal(taskOf(m, "a1").age_ms, null);
+  assert.equal(m.mainRows[0].state, "stale");
+  assert.equal(m.mainRows[0].age_ms, null);
+  const s1 = m.sessions.find((s) => s.session_id === "S1");
+  assert.equal(s1.word, "stale");
+  assert.equal(s1.age_ms, null);
+  assert.equal(s1.running, false);
+  assert.equal(taskOf(m, "b1").state, "in_progress");
+  assert.equal(m.unconfirmed.count, 2);
+  assert.equal(m.unconfirmed.oldest_stale_age_ms, null);
+  // every text that the panels build from this model
+  const office = buildOffice(m);
+  const texts = [
+    nowLine(m).text,
+    nowLine(m).title,
+    JSON.stringify(taskPanel(m)),
+    JSON.stringify(buildCard(m, office, "role:Explore")),
+  ];
+  for (const text of texts) {
+    assert.doesNotMatch(text, SHAPES, text);
+  }
+  assert.equal(
+    nowLine(m).title.includes("У самого старого"),
+    false,
+    "no age to name",
+  );
+  assert.equal(ageText(null), "");
+  assert.equal(ageText(Number.NaN), "");
+});
+
+test("FS-06: a clock that cannot be read (NaN, undefined, Infinity, a string) makes every would-be 'в работе' a 'нет свежих данных'; finished, unrecorded and restarted stay", () => {
+  const entries = [
+    lineAt("SessionStart", "R", T0),
+    sub("R", "run", T0 + 1000),
+    sub("D", "done", T0 + 2000),
+    subEnd("D", "done", T0 + 3000),
+    sub("U", "unrec", T0 + 4000),
+    lineAt("SessionEnd", "U", T0 + 5000),
+    sub("X", "restart", T0 + 6000),
+    lineAt("UserPromptSubmit", "R", T0 + 7000),
+  ];
+  const starts = [startRec(entries.length, T0 + 8000)];
+  // the start record comes after all the lines: everything that was open is
+  // 'restarted'; use a second journal for the fresh case below
+  for (const bad of [Number.NaN, undefined, Infinity, "abc"]) {
+    const m = buildModel(entries, starts, bad);
+    assertInvariant(m, String(bad));
+    assert.equal(taskOf(m, "done").state, "completed");
+    assert.equal(taskOf(m, "unrec").state, "unrecorded");
+    assert.equal(taskOf(m, "restart").state, "restarted");
+    assert.equal(taskOf(m, "run").state, "restarted");
+    const open = buildModel(entries, [], bad);
+    assert.equal(taskOf(open, "run").state, "stale", String(bad));
+    assert.equal(taskOf(open, "run").age_ms, null);
+    assert.equal(open.mainRows[0].state, "stale");
+    assert.equal(
+      open.sessions.every((s) => s.running === false),
+      true,
+    );
+    assert.equal(open.unconfirmed.oldest_stale_age_ms, null);
+    assert.doesNotMatch(
+      JSON.stringify(nowLine(open)) + JSON.stringify(taskPanel(open)),
+      /NaN|undefined/,
+    );
+  }
+});
+
+test("FS-06: no connection (mode 'fail') - the header says so, the page keeps the data, and by the clock the items still become 'нет свежих данных'; the journal array and the number of starts are not touched", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "a1", T0 + 1000),
+  ];
+  const page = await loaded(entries, [startRec(0, T0 - 1000)], {
+    now: T0 + 1000 + STALE_AFTER_MS - 5000,
+  });
+  const keep = page.app.getModel().entries;
+  const snapshot = JSON.stringify(keep);
+  const starts = page.app.getModel().serverStarts.length;
+  assert.equal(page.items()[0].dataset.state, "in_progress");
+  page.server.mode = "fail";
+  await page.tick(2000);
+  assert.equal(page.el("link").dataset.state, "down");
+  assert.equal(page.items()[0].dataset.state, "in_progress");
+  await page.tick(10_000);
+  assert.equal(page.el("link").dataset.state, "down");
+  assert.equal(page.items()[0].dataset.state, "stale");
+  assert.equal(
+    page.items()[0].byClass("item-state")[0].textContent,
+    WORDS.stale,
+  );
+  assert.equal(page.app.getModel().entries, keep);
+  assert.equal(JSON.stringify(keep), snapshot);
+  assert.equal(page.app.getModel().serverStarts.length, starts);
+  assert.ok(!page.text("tasks").includes("NaN"));
+});
+
+// ------------------------------------------------------------------ FS-12
+
+// An independent statement of the rules of criteria 1, 2 and 6, written from
+// their text (not from the code): lines in the order of the file, every line
+// is a trusted one of a hook.
+function oracle(entries, starts, now) {
+  const count = entries.length;
+  const usable = starts.filter(
+    (s) => Number.isInteger(s.journal_lines) && s.journal_lines <= count,
+  );
+  const latest = Math.max(-1, ...usable.map((s) => s.journal_lines));
+  const lastStart = usable.length === 0 ? 0 : usable.at(-1).journal_lines;
+  const lastAt = new Map();
+  const lastIdx = new Map();
+  const lastKind = new Map();
+  const sessionEnd = new Map();
+  const tasks = new Map();
+  const open = new Map();
+  const rows = [];
+  entries.forEach((e, i) => {
+    const s = e.session_id;
+    lastAt.set(s, Date.parse(e.time));
+    lastIdx.set(s, i);
+    lastKind.set(s, e.hook_event_name);
+    if (e.hook_event_name === "SessionEnd") sessionEnd.set(s, i);
+    if (e.hook_event_name === "SubagentStart") {
+      tasks.set(e.agent_id, { session: s, start: i, stopped: false });
+    }
+    if (e.hook_event_name === "SubagentStop" && tasks.has(e.agent_id)) {
+      tasks.get(e.agent_id).stopped = true;
+    }
+    if (["UserPromptSubmit", "SessionEnd"].includes(e.hook_event_name)) {
+      if (open.has(s)) {
+        open.get(s).state = "unrecorded";
+        open.delete(s);
+      }
+    }
+    if (e.hook_event_name === "UserPromptSubmit") {
+      const row = { key: `main:${i}`, session: s, start: i, state: null };
+      rows.push(row);
+      open.set(s, row);
+    }
+    if (e.hook_event_name === "Stop" && open.has(s)) {
+      open.get(s).state = "completed";
+      open.delete(s);
+    }
+  });
+  const fresh = (s) => Math.max(0, now - lastAt.get(s)) <= STALE_AFTER_MS;
+  const out = { tasks: {}, rows: {}, words: {} };
+  for (const [key, t] of tasks) {
+    let state = "in_progress";
+    if (t.stopped) state = "completed";
+    else if (sessionEnd.get(t.session) > t.start) state = "unrecorded";
+    else if (latest > t.start) state = "restarted";
+    else if (!fresh(t.session)) state = "stale";
+    out.tasks[key] = state;
+  }
+  for (const r of rows) {
+    out.rows[r.key] =
+      r.state ??
+      (latest > r.start
+        ? "restarted"
+        : fresh(r.session)
+          ? "in_progress"
+          : "stale");
+  }
+  for (const [s, kind] of lastKind) {
+    if (kind === "SessionEnd") out.words[s] = null;
+    else if (!fresh(s)) out.words[s] = "stale";
+    else out.words[s] = lastIdx.get(s) >= lastStart ? "running" : null;
+  }
+  return out;
+}
+
+test("FS-12: the restart is named directly - the seven cases of criterion 6 (and the SessionEnd BEFORE the start); the table of the reasons of closing holds on all of them", () => {
+  const startOf = (...more) => [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "a1", T0 + 1000),
+    ...more,
+  ];
+  // (1) a start of a subagent, then a record of a server start
+  let m = buildModel(startOf(), [startRec(2)], FAR);
+  assert.equal(taskOf(m).state, "restarted");
+  assertInvariant(m, "1");
+  // (2) the same and SessionEnd of the session after the start
+  m = buildModel(
+    startOf(lineAt("SessionEnd", "S1", T0 + 2000)),
+    [startRec(2)],
+    FAR,
+  );
+  assert.equal(taskOf(m).state, "unrecorded");
+  m = buildModel(
+    startOf(lineAt("SessionEnd", "S1", T0 + 2000)),
+    [startRec(3)],
+    FAR,
+  );
+  assert.equal(taskOf(m).state, "unrecorded", "SessionEnd before the start");
+  assertInvariant(m, "2");
+  // (3) a request of the main session, a record of a server start, then Stop
+  const asked = [lineAt("SessionStart", "S1", T0), prompt(T0 + 1000)];
+  m = buildModel(asked, [startRec(2)], FAR);
+  assert.equal(m.mainRows[0].state, "restarted");
+  assert.equal(m.mainRows[0].closed_by, "server_start");
+  m = buildModel([...asked, stopAt(FAR - 1000)], [startRec(2)], FAR);
+  assert.equal(m.mainRows[0].state, "completed");
+  assert.equal(m.mainRows[0].closed_by, "stop");
+  assertInvariant(m, "3");
+  // (4) a start of a subagent AFTER the record: in progress
+  m = buildModel(
+    [lineAt("SessionStart", "S1", T0), sub("S1", "a1", T0 + 1000)],
+    [startRec(1)],
+    T0 + 2000,
+  );
+  assert.equal(taskOf(m).state, "in_progress");
+  assertInvariant(m, "4");
+  // (4a) request, record, next request: the old row is 'окончание не записано'
+  m = buildModel([...asked, prompt(T0 + 2000)], [startRec(2)], T0 + 3000);
+  assert.deepEqual(
+    m.mainRows.map((r) => [r.state, r.closed_by]),
+    [
+      ["unrecorded", "next_prompt"],
+      ["in_progress", null],
+    ],
+  );
+  // (4b) start, record, SubagentStop: the word of the one who finished
+  m = buildModel(
+    startOf(subEnd("S1", "a1", T0 + 2000)),
+    [startRec(2)],
+    T0 + 3000,
+  );
+  assert.equal(taskOf(m).state, "completed");
+  assertInvariant(m, "4b");
+  // a stale record (journal_lines above the number of lines) does not count
+  m = buildModel(startOf(), [startRec(50)], T0 + 3000);
+  assert.equal(taskOf(m).state, "in_progress");
+  // the word is not a statement that the agent has stopped
+  assert.doesNotMatch(WORDS.restarted, /остановлен|завис|упал/);
+});
+
+test("FS-12: 400 random journals against an independent statement of the rules - states of tasks and rows, the word of the session, the table of reasons, the age against the threshold", () => {
+  const rand = rng(4242);
+  const pick = (list) => list[Math.floor(rand() * list.length)];
+  const kinds = [
+    "SessionStart",
+    "UserPromptSubmit",
+    "Stop",
+    "SubagentStart",
+    "SubagentStart",
+    "SubagentStop",
+    "SessionEnd",
+    "PostToolUse",
+  ];
+  for (let round = 0; round < 400; round++) {
+    const entries = [];
+    let t = T0;
+    const size = 3 + Math.floor(rand() * 14);
+    for (let i = 0; i < size; i++) {
+      t += 1000 + Math.floor(rand() * 2_400_000);
+      const kind = pick(kinds);
+      const session = pick(["S1", "S2"]);
+      const agent = pick(["a1", "a2", "a3"]);
+      if (kind === "SubagentStart") entries.push(sub(session, agent, t));
+      else if (kind === "SubagentStop") entries.push(subEnd(session, agent, t));
+      else if (kind === "PostToolUse") entries.push(tool(session, t, `tu${i}`));
+      else entries.push(lineAt(kind, session, t));
+    }
+    const starts = [];
+    for (let k = Math.floor(rand() * 3); k > 0; k--) {
+      starts.push(startRec(Math.floor(rand() * (size + 3)), t));
+    }
+    const now = t - 30_000 + Math.floor(rand() * 8_000_000);
+    const want = oracle(entries, starts, now);
+    const m = buildModel(entries, starts, now);
+    const where = `round ${round}`;
+    assertInvariant(m, where);
+    assert.deepEqual(
+      Object.fromEntries(m.tasks.map((x) => [x.key, x.state])),
+      want.tasks,
+      where,
+    );
+    assert.deepEqual(
+      Object.fromEntries(m.mainRows.map((x) => [x.key, x.state])),
+      want.rows,
+      where,
+    );
+    assert.deepEqual(
+      Object.fromEntries(m.sessions.map((x) => [x.session_id, x.word])),
+      want.words,
+      where,
+    );
+  }
+});
+
+// ------------------------------------------------------------------ FS-14
+
+const SAMPLES = [
+  "events-stale.jsonl",
+  "events-restart.jsonl",
+  "events-fresh.jsonl",
+];
+const CLOCK_STALE = Date.parse("2026-09-20T12:35:00.000Z");
+const CLOCK_SHORT = Date.parse("2026-09-20T10:04:00.000Z");
+const RESTART_RECORD = { time: "2026-09-20T10:01:00.000Z", journal_lines: 2 };
+
+test("FS-14: the sample files are invented and valid - 'sample-' in every line, no prompt_text, every description begins with 'Образец', every line passes checkLine in the canonical form, no records of server starts, the folder holds nothing else", () => {
+  assert.deepEqual(
+    fs.readdirSync(FIXTURES).sort(),
+    [...SAMPLES].sort(),
+    "only the three sample files",
+  );
+  const counts = {
+    "events-stale.jsonl": 9,
+    "events-restart.jsonl": 3,
+    "events-fresh.jsonl": 3,
+  };
+  for (const name of SAMPLES) {
+    const { text, lines, entries } = readFixture(name);
+    assert.ok(text.endsWith("\n"), `${name}: ends with a newline`);
+    assert.equal(lines.length, counts[name], name);
+    // grep -vc 'sample-' -> 0; grep -c prompt_text -> 0
+    assert.equal(lines.filter((l) => !l.includes("sample-")).length, 0, name);
+    assert.equal(
+      lines.filter((l) => l.includes("prompt_text")).length,
+      0,
+      name,
+    );
+    // the two counts of descriptions are equal
+    const described = lines.filter((l) => /"description": ?"/.test(l)).length;
+    const sampled = lines.filter((l) =>
+      /"description": ?"Образец/.test(l),
+    ).length;
+    assert.equal(described, sampled, name);
+    assert.ok(described >= 1, `${name}: has a description`);
+    let previous = 0;
+    entries.forEach((e, i) => {
+      const checked = checkLine(e, true);
+      assert.equal(checked.ok, true, `${name} line ${i}: ${checked.reason}`);
+      assert.equal(
+        JSON.stringify(checked.line),
+        lines[i],
+        `${name}: canonical`,
+      );
+      assert.equal(e.source, "REAL");
+      assert.ok(e.session_id.startsWith("sample-"), name);
+      if (e.agent_id !== undefined) assert.ok(e.agent_id.startsWith("sample-"));
+      if (e.launched_agent_id !== undefined) {
+        assert.ok(e.launched_agent_id.startsWith("sample-"));
+        assert.ok(e.tool_use_id.startsWith("sample-tu"));
+      }
+      assert.equal(Object.hasOwn(e, "journal_lines"), false, "no start record");
+      const ms = Date.parse(e.time);
+      assert.ok(ms >= previous, `${name}: times do not go back`);
+      previous = ms;
+    });
+  }
+  // the expressions themselves: a line from a real journal is seen
+  assert.equal(
+    ['{"session_id":"S1"}'].filter((l) => !l.includes("sample-")).length,
+    1,
+  );
+});
+
+test("FS-14: the sample reproduces D1-D3 and D5 on the page with the clock and the start record given by the test, and the control stays 'в работе'", async () => {
+  // D1, D2, D3: two sessions, one silent
+  const stale = readFixture("events-stale.jsonl").entries;
+  const page = await loaded(stale, [], { now: CLOCK_STALE });
+  const m = page.app.getModel();
+  assert.equal(taskOf(m, "sample-a1").state, "stale");
+  assert.equal(taskOf(m, "sample-a1").age_ms, 2 * 3600000 + 34 * 60000 + 48000);
+  assert.equal(taskOf(m, "sample-a2").state, "in_progress");
+  assert.equal(taskOf(m, "sample-a3").state, "in_progress");
+  const words = Object.fromEntries(
+    m.sessions.map((s) => [s.session_id, s.word]),
+  );
+  assert.deepEqual(words, { "sample-s1": "stale", "sample-s2": "running" });
+  assert.equal(m.sessions.filter((s) => s.running).length, 1);
+  const states = Object.fromEntries(
+    page.items().map((i) => [i.dataset.key, i.dataset.state]),
+  );
+  assert.equal(states["sample-a1"], "stale");
+  const a1 = page.items().find((i) => i.dataset.key === "sample-a1");
+  assert.equal(a1.byClass("age")[0].textContent, "2 ч 34 мин назад");
+  // the Explore character (only sample-a1) is free; the others work
+  const office = page.app.getOffice();
+  const by = (key) => office.characters.find((c) => c.key === key);
+  assert.equal(by("role:Explore").working, false);
+  assert.equal(by("role:Plan").working, true);
+  assert.equal(by("role:general-purpose").working, true);
+  // D3: no bar and no 'n/m' on the cards
+  const cards = page.el("tasks").byClass("session-card");
+  assert.equal(cards.length, 2);
+  for (const card of cards) {
+    assert.equal(card.all((e) => e.tagName === "PROGRESS").length, 0);
+    assert.doesNotMatch(card.textContent, /задач|ролей|\d+\/\d+/);
+  }
+
+  // D5: an agent started, then a record of a server start, a fresh event
+  const restart = readFixture("events-restart.jsonl").entries;
+  const p5 = await loaded(restart, [RESTART_RECORD], { now: CLOCK_SHORT });
+  const m5 = p5.app.getModel();
+  assert.equal(taskOf(m5, "sample-a4").state, "restarted");
+  assert.equal(m5.sessions[0].running, true, "the session has a fresh event");
+  assert.equal(m5.unconfirmed.count, 1);
+  assert.equal(
+    p5.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 1",
+  );
+  assert.ok(p5.el("now").title.includes(fmtDateTime(RESTART_RECORD.time)));
+  assert.match(p5.el("now").title, /Сервер перезапускался/);
+  assert.doesNotMatch(p5.el("now").title, /Нет свежих данных/);
+  const item = p5.items().find((i) => i.dataset.key === "sample-a4");
+  assert.equal(item.byClass("item-state")[0].textContent, WORDS.restarted);
+  assert.notEqual(item.dataset.state, "unrecorded");
+
+  // the control: fresh events, no restart
+  const fresh = readFixture("events-fresh.jsonl").entries;
+  const pc = await loaded(fresh, [], { now: CLOCK_SHORT });
+  assert.equal(taskOf(pc.app.getModel(), "sample-a5").state, "in_progress");
+  assert.equal(pc.app.getModel().unconfirmed.count, 0);
+  assert.ok(
+    pc.text("now-text").startsWith("Сейчас: Plan"),
+    pc.text("now-text"),
+  );
+});
+
+// ------------------------------------------------------------------ FS-15
+
+test("FS-15: only truth - no 'завис', 'остановлен', 'упал' in texts.js; the page sends only GET; text from the journal on 'нет свежих данных' and 'сервер перезапускался' is text, never an element", async () => {
+  const texts = fs.readFileSync(path.join(PUBLIC, "texts.js"), "utf8");
+  assert.deepEqual(
+    texts.split("\n").filter((l) => /завис|остановлен|упал/.test(l)),
+    [],
+  );
+  assert.equal(grepPublic(/method *: *['"](POST|PUT|PATCH|DELETE)/).length, 0);
+  // the hostile text is the role and the description of both unconfirmed kinds
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    lineAt("PostToolUse", "S1", T0 + 500, {
+      tool_use_id: "tu1",
+      launched_agent_id: "a1",
+      subagent_type: IMG,
+      description: IMG,
+    }),
+    sub("S1", "a1", T0 + 1000, IMG),
+    lineAt("SessionStart", "S2", T0 + 2000),
+    lineAt("PostToolUse", "S2", T0 + 2500, {
+      tool_use_id: "tu2",
+      launched_agent_id: "a2",
+      subagent_type: IMG,
+      description: IMG,
+    }),
+    sub("S2", "a2", T0 + 3000, IMG),
+  ];
+  // the record stands after the first three lines: a1 is restarted, a2 is
+  // started later and is only silent
+  const page = await loaded(entries, [startRec(3, T0 + 1500)], { now: FAR });
+  const states = Object.fromEntries(
+    page.items().map((i) => [i.dataset.key, i.dataset.state]),
+  );
+  assert.equal(states.a1, "restarted");
+  assert.equal(states.a2, "stale");
+  assert.equal(page.created("img").length, 0, "no element was made");
+  assert.equal(page.doc.htmlWrites, 0);
+  assert.ok(withText(page.el("tasks"), IMG).length >= 2);
+  assert.equal(page.el("tasks").all((e) => e.tagName === "IMG").length, 0);
+  // the explanation line and the title carry no text of the journal
+  assert.ok(!page.el("now").title.includes("img"));
+  assert.ok(!page.text("now-text").includes("img"));
+  // only GET went out
+  assert.ok(page.server.calls.length >= 1);
+  for (const c of page.server.calls) assert.equal(c.init.method, "GET");
+});
+
+// ------------------------------------------------------------------ FS-18
+
+test("FS-18: the page clock is the only source of 'now' - no read of the real clock in model.js, panels.js, office-model.js, history.js, format.js, texts.js, schema.js, app.js", () => {
+  const CLOCK = /Date\.now|new Date\(\)|performance\.now/;
+  for (const name of [
+    "model.js",
+    "panels.js",
+    "office-model.js",
+    "history.js",
+    "format.js",
+    "texts.js",
+    "schema.js",
+    "app.js",
+  ]) {
+    const lines = fs
+      .readFileSync(path.join(PUBLIC, name), "utf8")
+      .split("\n")
+      .filter((l) => CLOCK.test(l));
+    assert.deepEqual(lines, [], name);
+  }
+  // the expression sees the clock and lets a dated copy pass
+  assert.equal(CLOCK.test("const t = Date.now();"), true);
+  assert.equal(CLOCK.test("const d = new Date();"), true);
+  assert.equal(CLOCK.test("new Date(t).toISOString()"), false);
+  // the only clocks that remain are in boot.js (the page) and the default
+  // parameter of the report command
+  assert.ok(
+    /Date\.now/.test(fs.readFileSync(path.join(PUBLIC, "boot.js"), "utf8")),
+  );
 });

@@ -32,7 +32,11 @@ export const REPORT_JS = path.join(PUBLIC, "office-report.js");
 // Fixed moments: the tests never read the real clock where the design says to
 // substitute it (10.1).
 export const T0 = Date.parse("2026-09-20T10:00:00.000Z");
-export const NOW = T0 + 3600 * 1000;
+// Half an hour after T0: inside the staleness threshold with a margin (REQ-042
+// design 14.3). T0 + STALE_AFTER_MS would sit exactly on the threshold, and a
+// test that moves the page clock would silently cross it. The border itself is
+// tested by FS-05 with its own numbers.
+export const NOW = T0 + 1800 * 1000;
 
 export function iso(ms) {
   return new Date(ms).toISOString();
@@ -1733,3 +1737,35 @@ export function cssDecls(rules, selector, media = null) {
   }
   return merged;
 }
+
+// ------------------------------------------------------ REQ-042: state honesty
+
+// The five words of the states, written here as literals of the criteria (not
+// read from the constants under test).
+export const WORDS = Object.freeze({
+  in_progress: "в работе",
+  stale: "нет свежих данных",
+  restarted: "сервер перезапускался, события не записывались",
+  completed: "закончила работу, итог не записан",
+  unrecorded: "окончание не записано",
+});
+
+// The invented sample of the journal (design 9): events-*.jsonl.
+export const FIXTURES = path.join(TOOLS, "test", "fixtures", "pixel-office");
+
+export function readFixture(name) {
+  const text = fs.readFileSync(path.join(FIXTURES, name), "utf8");
+  const lines = text.split("\n").filter((l) => l !== "");
+  return { text, lines, entries: lines.map((l) => JSON.parse(l)) };
+}
+
+// A line of the journal at an absolute moment (milliseconds), by the same
+// constructor as the other tests.
+export const lineAt = (kind, session, ms, extra = {}) =>
+  entryOf(kind, session, iso(ms), extra);
+
+// A record of a server start: the time and the number of lines before it.
+export const startRec = (lines, ms = T0) => ({
+  time: iso(ms),
+  journal_lines: lines,
+});

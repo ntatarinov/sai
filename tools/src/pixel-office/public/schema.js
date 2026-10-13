@@ -71,6 +71,10 @@ export const READ_CONFLICT_MS = 120000;
 // The last line of the journal is marked when it is later than the clock of
 // the reader by more than this (design 4.1, rule c).
 export const LAST_LINE_FUTURE_MS = 60000;
+// A task or a row of the main session with no trusted event of its session for
+// longer than this (60 minutes) is "no fresh data", not "in progress"
+// (REQ-042, decision 0049). The one place where the number is written.
+export const STALE_AFTER_MS = 3600000;
 
 // Longest stored task description, in code points.
 export const DESCRIPTION_MAX = 100;

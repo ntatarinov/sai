@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { mock, test } from "node:test";
 import { buildModel } from "../src/pixel-office/public/model.js";
+import { STALE_AFTER_MS } from "../src/pixel-office/public/schema.js";
 import {
   ROLE_PALETTE,
   bubblesAt,
@@ -281,6 +282,25 @@ test("OF-04: running sessions - one has no badge; two give sessions_running = 2;
     charOf(mk(quiet.entries, [{ time: at(9), journal_lines: 1 }]).o, "main")
       .sessions_running,
     0,
+  );
+  // REQ-042 (REQ-007 criterion 1): a session runs only while its last event is
+  // not older than STALE_AFTER_MS; the clock is a number given by the test
+  const aged = journal();
+  aged.sessionStart("OLD"); // at(1)
+  aged.time(1800);
+  aged.sessionStart("NEW"); // at(1801)
+  const old = Date.parse(at(1));
+  const fresh = Date.parse(at(1801));
+  const running = (now) =>
+    charOf(mk(aged.entries, [], now).o, "main").sessions_running;
+  assert.equal(running(old + STALE_AFTER_MS), 2, "on the threshold both run");
+  assert.equal(running(old + STALE_AFTER_MS + 1), 1, "the old one stopped");
+  assert.equal(running(fresh + STALE_AFTER_MS), 1);
+  assert.equal(running(fresh + STALE_AFTER_MS + 1), 0, "both are stale");
+  assert.equal(
+    badges(mk(aged.entries, [], old + STALE_AFTER_MS + 1).o),
+    0,
+    "one running session - no badge",
   );
 });
 
@@ -787,13 +807,22 @@ test("OF-13: office-report.js on a fixed journal of two sessions - one role, des
     ],
   );
   assert.equal(rep.main.present, true);
-  // the whole journal: the server start makes the task of S2 unrecorded
+  // the whole journal: the server start makes the task of S2 'сервер
+  // перезапускался…' (REQ-042 criterion 6). The child process reads the real
+  // clock (a journal of 2026 is stale today), so it is compared only on what
+  // the clock does not change: the state 'restarted' outranks 'stale'.
   const all = JSON.parse(runReportChild(["--journal", file]).stdout);
   assert.equal(all.session, null);
   assert.equal(all.roles.length, 2);
   const explore = all.roles.find((x) => x.role === "Explore");
   assert.equal(explore.working, false);
-  assert.equal(explore.counts.unrecorded, 1);
+  assert.deepEqual(explore.counts, {
+    in_progress: 0,
+    stale: 0,
+    restarted: 1,
+    completed: 0,
+    unrecorded: 0,
+  });
   assert.equal(sha256File(file), before);
 });
 
@@ -1328,11 +1357,14 @@ test("OF-25: office-report - with --session the counters, working and routes fol
   const box = sandbox(t);
   const j = twoSessions();
   const file = writeJournal(box, j.entries);
+  // the clock is a parameter (REQ-042 design P9): the journal of 2026 is read
+  // at a fixed moment, not at today's date
+  const clock = () => NOW;
   const io = reportIo();
-  assert.equal(runReport(["--journal", file, "--session", "S2"], io), 0);
+  assert.equal(runReport(["--journal", file, "--session", "S2"], io, clock), 0);
   const s2 = JSON.parse(io.out);
   const io2 = reportIo();
-  assert.equal(runReport(["--journal", file], io2), 0);
+  assert.equal(runReport(["--journal", file], io2, clock), 0);
   const all = JSON.parse(io2.out);
   const roleS2 = s2.roles.find((r) => r.role === "Explore");
   const roleAll = all.roles.find((r) => r.role === "Explore");
@@ -1504,7 +1536,24 @@ test("OF-27: the screen of a laptop - the colour of the role at a working desk, 
 // ----------------------------------------------------------------- OF-28
 
 test("OF-28: bubbles - the four phrases over the right character at the moment of the event and at 10 s, none at 10 001 ms or before the event; a line received 30 s late gives none; no bubble for the listed events; the later event wins; all texts are the four constants; pause and speed change nothing", async () => {
-  const texts = new Set(Object.values(BUBBLE_TEXTS));
+  // REQ-042 criterion 8: the event of an end proves the end of work, not its
+  // success - the phrases are written here as literals, not read from the
+  // constants being tested.
+  assert.deepEqual(
+    { ...BUBBLE_TEXTS },
+    {
+      got_task: "Только что получил задачу",
+      done: "Закончил работу",
+      got_request: "Получил запрос",
+      answer_ready: "Вернул ответ",
+    },
+  );
+  const texts = new Set([
+    "Только что получил задачу",
+    "Закончил работу",
+    "Получил запрос",
+    "Вернул ответ",
+  ]);
   const seen = new Set();
   const look = (o, ms, key) => {
     const b = bubblesAt(o, ms).get(key);
@@ -1529,8 +1578,8 @@ test("OF-28: bubbles - the four phrases over the right character at the moment o
   const cases = [
     [prompt, "main", BUBBLE_TEXTS.got_request],
     [start, "role:Explore", BUBBLE_TEXTS.got_task],
-    [stop, "main", BUBBLE_TEXTS.answer_ready],
-    [subStop, "role:Explore", BUBBLE_TEXTS.done],
+    [stop, "main", "Вернул ответ"],
+    [subStop, "role:Explore", "Закончил работу"],
   ];
   for (const [index, key, text] of cases) {
     const when = t(index);
@@ -1547,10 +1596,7 @@ test("OF-28: bubbles - the four phrases over the right character at the moment o
   two.prompt("S1");
   two.time(503);
   two.stop("S1");
-  assert.equal(
-    look(mk(two.entries).o, T0 + 504_000, "main"),
-    BUBBLE_TEXTS.answer_ready,
-  );
+  assert.equal(look(mk(two.entries).o, T0 + 504_000, "main"), "Вернул ответ");
   // no bubble: Stop without an open row, an end without a start, SessionEnd, PostToolUse, a marked line
   const n = journal();
   n.sessionStart("S1");
@@ -1717,19 +1763,36 @@ test("OF-31: the board - columns only for roles of a running session, in the ord
     o.board.columns.map((c) => c.key),
     ["role:Explore", "role:Plan"],
   );
+  // REQ-042: the counts have the five states
   assert.deepEqual(o.board.columns[0].counts, {
     in_progress: 1,
+    stale: 0,
+    restarted: 0,
     completed: 0,
     unrecorded: 0,
   });
   assert.deepEqual(o.board.columns[1].counts, {
     in_progress: 0,
+    stale: 0,
+    restarted: 0,
     completed: 1,
     unrecorded: 0,
   });
   assert.equal(o.board.more, 0);
   const unrec = mk(j.entries, [{ time: at(99), journal_lines: 7 }]);
   assert.equal(unrec.o.board.columns.length, 0, "no running session");
+  // a session older than STALE_AFTER_MS is not running: no columns (REQ-007
+  // criterion 1 as changed by REQ-042); exactly on the threshold it still runs
+  const lastA = Date.parse(at(7));
+  assert.equal(
+    mk(j.entries, [], lastA + STALE_AFTER_MS).o.board.columns.length,
+    2,
+  );
+  assert.equal(
+    mk(j.entries, [], lastA + STALE_AFTER_MS + 1).o.board.columns.length,
+    0,
+    "no running session: its last event is older than the threshold",
+  );
   // five roles
   const f = journal();
   f.sessionStart("A");
@@ -2035,7 +2098,8 @@ test("OF-34b: a bubble is never wider than 139 for any text; the text is narrowe
   for (const text of [
     "",
     "x",
-    "Готово",
+    BUBBLE_TEXTS.done,
+    BUBBLE_TEXTS.answer_ready,
     "w".repeat(20),
     "w".repeat(21),
     "Ж".repeat(300),
@@ -2286,7 +2350,7 @@ test("OF-38: the canvas fonts do not depend on the cell - the same font strings 
     drawOffice(ctx, o, {
       positions: [{ key: "main", x: seat[0], y: seat[1], state: "seated" }],
       selectedKey: null,
-      bubbles: new Map([["main", { text: "Готово", event_index: 1 }]]),
+      bubbles: new Map([["main", { text: BUBBLE_TEXTS.done, event_index: 1 }]]),
       cellPx,
     });
     return ctx;
@@ -2603,4 +2667,473 @@ test("OF-42: the plate under a caption - labelPlate by the numbers of the design
   assert.equal(charOf(o, `role:${LEGEND_ROLES[13]}`).label, "CODE-FIXER");
   assert.equal(charOf(o, `role:${LEGEND_ROLES[7]}`).label, "FRONTEND-DEV");
   assert.equal(charOf(o, "main").label, "Основная сессия");
+});
+
+// ===================================================================
+// REQ-042: state honesty (design 10: FS-07, FS-13, FS-19). "Now" is a number
+// given by the test; the real clock is never read.
+// ===================================================================
+import { lineAt, startRec } from "./pixel-office-helpers.js";
+
+const LAST = T0 + 1500;
+// One sequence: a session, a request of the main session, a launch of Explore.
+function sequence(extra = []) {
+  return [
+    lineAt("SessionStart", "S1", T0),
+    lineAt("UserPromptSubmit", "S1", T0 + 500),
+    lineAt("PostToolUse", "S1", T0 + 900, {
+      tool_use_id: "tu1",
+      launched_agent_id: "a1",
+      subagent_type: "Explore",
+      description: "check",
+    }),
+    lineAt("SubagentStart", "S1", T0 + 1000, {
+      agent_id: "a1",
+      agent_type: "Explore",
+    }),
+    lineAt("PostToolUse", "S1", LAST, {
+      tool_use_id: "tu2",
+      launched_agent_id: "nobody",
+    }),
+    ...extra,
+  ];
+}
+
+function viewOf(entries, starts, now) {
+  const m = buildModel(entries, starts, now);
+  const o = buildOffice(m);
+  const ctx = frameOf(o);
+  const explore = charOf(o, "role:Explore");
+  return {
+    m,
+    o,
+    main: charOf(o, "main").working,
+    explore: explore.working,
+    screenMain: screenColor(ctx, o, 0),
+    screenExplore: screenColor(ctx, o, explore.desk_index),
+    running: charOf(o, "main").sessions_running,
+    columns: o.board.columns.map((c) => c.key),
+    bubbles: bubblesAt(o, now).size,
+  };
+}
+
+test("FS-07: 'нет свежих данных', 'сервер перезапускался…' and 'окончание не записано' do not show work - one sequence at two moments: the character works, the screen lights, a session runs, the board has a column - then the character is free, the screen is dark, no session runs, no column; the routes and bubbles are the same", () => {
+  const entries = sequence();
+  const before = viewOf(entries, [], LAST + STALE_AFTER_MS);
+  assert.equal(before.main, true);
+  assert.equal(before.explore, true);
+  assert.equal(before.screenMain, PALETTE[0]);
+  assert.equal(before.screenExplore, PALETTE[1]);
+  assert.equal(before.running, 1);
+  assert.deepEqual(before.columns, ["role:Explore"]);
+
+  const after = viewOf(entries, [], LAST + STALE_AFTER_MS + 1);
+  assert.equal(after.main, false);
+  assert.equal(after.explore, false);
+  assert.equal(after.screenMain, "#111d2e");
+  assert.equal(after.screenExplore, "#111d2e");
+  assert.equal(after.running, 0);
+  assert.deepEqual(after.columns, []);
+  assert.equal(
+    after.bubbles,
+    0,
+    "the move into 'нет свежих данных' is no bubble",
+  );
+  assert.equal(charOf(after.o, "role:Explore").working_count, 0);
+  // not a route and not a bubble more: the office differs only by the states
+  assert.deepEqual(after.o.routes, before.o.routes);
+  assert.deepEqual(after.o.bubble_events, before.o.bubble_events);
+  // criterion 2(g): no line of the journal is born from the move either
+  assert.equal(before.m.journal.length, entries.length);
+  assert.deepEqual(after.m.journal, before.m.journal);
+  assert.equal(after.o.routes.length, 1, "the handoff of the launch only");
+
+  // the word about the restart
+  const restarted = viewOf(
+    entries,
+    [startRec(entries.length, T0 + 2000)],
+    LAST + 1000,
+  );
+  assert.equal(restarted.main, false);
+  assert.equal(restarted.explore, false);
+  assert.equal(restarted.screenMain, "#111d2e");
+  assert.equal(restarted.screenExplore, "#111d2e");
+  assert.equal(restarted.running, 0, "the last event is before the start");
+  assert.deepEqual(restarted.columns, []);
+  assert.deepEqual(restarted.o.routes, before.o.routes);
+
+  // 'окончание не записано'
+  const ended = viewOf(
+    sequence([lineAt("SessionEnd", "S1", T0 + 2000)]),
+    [],
+    T0 + 3000,
+  );
+  assert.equal(ended.main, false);
+  assert.equal(ended.explore, false);
+  assert.equal(ended.screenExplore, "#111d2e");
+  assert.equal(ended.running, 0);
+  assert.deepEqual(ended.columns, []);
+});
+
+test("FS-07: on the page - the legend says 'работает' before the border and 'свободен' / 'свободна' after the planned recalculation, no walker is added, the sim has the same routes", async () => {
+  const entries = sequence();
+  const page = makePage({
+    entries: [...entries],
+    now: LAST + STALE_AFTER_MS - 4000,
+  });
+  await page.start();
+  const legend = () =>
+    Object.fromEntries(
+      page
+        .legend()
+        .map((b) => [b.dataset.key, b.byClass("state")[0].textContent]),
+    );
+  assert.deepEqual(legend(), { main: "работает", "role:Explore": "работает" });
+  const routes = page.app.getOffice().routes.length;
+  const queued = () =>
+    page.app
+      .getSim()
+      .positions()
+      .reduce((n, p) => n + p.queued, 0);
+  const walking = queued();
+  // 10 s of the page clock, no new line: the planned recalculation
+  await page.tick(10_000);
+  assert.deepEqual(legend(), { main: "свободна", "role:Explore": "свободен" });
+  assert.equal(page.server.entries.length, entries.length);
+  assert.equal(page.app.getOffice().routes.length, routes);
+  assert.equal(queued(), walking, "nobody was sent walking");
+  assert.equal(bubblesAt(page.app.getOffice(), page.clock.now()).size, 0);
+  assert.equal(page.app.getOffice().board.columns.length, 0);
+  // the screen of the desk by the drawing calls
+  page.frames.step();
+  const o = page.app.getOffice();
+  const ctx = page.ctx;
+  assert.equal(
+    screenColor(ctx, o, charOf(o, "role:Explore").desk_index),
+    "#111d2e",
+  );
+});
+
+// ------------------------------------------------------------------ FS-13
+
+const SUCCESS = /заверш|готов|выполнен|успешн/i;
+
+test("FS-13: the code of the page has no words of success - заверш|готов|выполнен|успешн in public/ find only the caption of the time of the last Stop (HISTORY_META_FINISHED); the bubbles are 'Закончил работу' and 'Вернул ответ' and no other phrase", () => {
+  const hits = [];
+  for (const name of fs.readdirSync(PUBLIC).sort()) {
+    const file = path.join(PUBLIC, name);
+    if (!fs.statSync(file).isFile()) continue;
+    fs.readFileSync(file, "utf8")
+      .split("\n")
+      .forEach((text, i) => {
+        if (SUCCESS.test(text) && !text.includes("HISTORY_META_FINISHED")) {
+          hits.push(`${name}:${i + 1}: ${text.trim()}`);
+        }
+      });
+  }
+  assert.deepEqual(hits, []);
+  // the exception is real and named: the caption is a time label, not a state
+  const texts = fs.readFileSync(path.join(PUBLIC, "texts.js"), "utf8");
+  assert.ok(/HISTORY_META_FINISHED\s*=\s*"завершён"/.test(texts));
+  // the expression: it sees the words, and a line with the name of the caption passes
+  assert.equal(SUCCESS.test("done: Готово"), true);
+  assert.equal(SUCCESS.test("Недавно завершены"), true);
+  assert.equal(SUCCESS.test("const x = HISTORY_META_FINISHED;"), false);
+  // the phrases of the bubbles, as literals
+  assert.equal(BUBBLE_TEXTS.done, "Закончил работу");
+  assert.equal(BUBBLE_TEXTS.answer_ready, "Вернул ответ");
+  const phrases = Object.values(BUBBLE_TEXTS).sort();
+  assert.deepEqual(
+    phrases,
+    [
+      "Вернул ответ",
+      "Закончил работу",
+      "Получил запрос",
+      "Только что получил задачу",
+    ].sort(),
+  );
+  for (const p of phrases) assert.doesNotMatch(p, SUCCESS);
+});
+
+// ------------------------------------------------------------------ FS-19
+
+const FIVE = {
+  in_progress: 0,
+  stale: 0,
+  restarted: 0,
+  completed: 0,
+  unrecorded: 0,
+};
+
+test("FS-19: the report command takes the clock as a parameter - five counters per role, 'нет свежих данных' and 'сервер перезапускался…' do not make a role work, the output does not depend on today's date; the journal is not changed", (t) => {
+  const box = sandbox(t);
+  const entries = [
+    // Explore: one running, one silent (old session), one restarted
+    lineAt("SessionStart", "R", T0),
+    lineAt("SubagentStart", "R", T0 + 100, {
+      agent_id: "boot",
+      agent_type: "Explore",
+    }),
+    // the server restarts here (journal_lines 2)
+    lineAt("SessionStart", "O", T0 + 1000),
+    lineAt("SubagentStart", "O", T0 + 1100, {
+      agent_id: "old",
+      agent_type: "Explore",
+    }),
+    lineAt("SessionStart", "F", T0 + 2 * 3600 * 1000),
+    lineAt("SubagentStart", "F", T0 + 2 * 3600 * 1000 + 100, {
+      agent_id: "fresh",
+      agent_type: "Explore",
+    }),
+    // Plan: finished, and one that ended with the session
+    lineAt("SubagentStart", "F", T0 + 2 * 3600 * 1000 + 200, {
+      agent_id: "done",
+      agent_type: "Plan",
+    }),
+    lineAt("SubagentStop", "F", T0 + 2 * 3600 * 1000 + 300, {
+      agent_id: "done",
+      agent_type: "Plan",
+    }),
+    lineAt("SubagentStart", "E", T0 + 2 * 3600 * 1000 + 400, {
+      agent_id: "ended",
+      agent_type: "Plan",
+    }),
+    lineAt("SessionEnd", "E", T0 + 2 * 3600 * 1000 + 500),
+  ];
+  const file = writeJournal(box, entries, [startRec(2, T0 + 500)]);
+  const hash = sha256File(file);
+  const nowMs = T0 + 2 * 3600 * 1000 + 1000;
+  const run = (clock, argv = ["--journal", file]) => {
+    const io = reportIo();
+    assert.equal(runReport(argv, io, clock), 0, io.err);
+    return JSON.parse(io.out);
+  };
+  const rep = run(() => nowMs);
+  const explore = rep.roles.find((r) => r.role === "Explore");
+  const plan = rep.roles.find((r) => r.role === "Plan");
+  assert.deepEqual(explore.counts, {
+    ...FIVE,
+    in_progress: 1,
+    stale: 1,
+    restarted: 1,
+  });
+  assert.equal(explore.working, true);
+  assert.equal(explore.working_count, 1, "only the one 'в работе'");
+  assert.deepEqual(plan.counts, { ...FIVE, completed: 1, unrecorded: 1 });
+  assert.equal(plan.working, false);
+  for (const r of rep.roles) {
+    for (const key of Object.keys(FIVE)) {
+      assert.ok(Number.isInteger(r.counts[key]), `${r.role}.${key}`);
+    }
+    assert.deepEqual(Object.keys(r.counts).sort(), Object.keys(FIVE).sort());
+  }
+  // later by an hour: the fresh one is silent too - the role stops working
+  const later = run(() => nowMs + 2 * 3600 * 1000);
+  const exploreLater = later.roles.find((r) => r.role === "Explore");
+  assert.deepEqual(exploreLater.counts, {
+    ...FIVE,
+    stale: 2,
+    restarted: 1,
+  });
+  assert.equal(exploreLater.working, false);
+  assert.equal(exploreLater.working_count, 0);
+  assert.equal(later.main.working, false);
+  // the same clock - the same report, today's date is not read
+  assert.deepEqual(
+    run(() => nowMs),
+    rep,
+  );
+  // with --session the counters follow that session only
+  const one = run(() => nowMs, ["--journal", file, "--session", "O"]);
+  assert.deepEqual(one.roles[0].counts, { ...FIVE, stale: 1 });
+  assert.equal(one.roles[0].working, false);
+  // the command only reads
+  assert.equal(sha256File(file), hash);
+  // a wrong use is refused and the clock is not asked
+  let asked = 0;
+  assert.equal(
+    runReport(["--journal", file, "--journal", file], reportIo(), () => {
+      asked += 1;
+      return nowMs;
+    }),
+    2,
+  );
+  assert.equal(asked, 0);
+  assert.equal(sha256File(file), hash);
+});
+
+test("FS-07: the board of the meeting room has four plaques in a column - 'в работе', 'закончила работу', 'окончание не записано' and the fourth for 'сервер перезапускался…' - each with its own number, 9 px apart", () => {
+  const e = [];
+  let ms = T0;
+  const add = (line) => {
+    e.push(line);
+    ms += 100;
+  };
+  const start = (id) =>
+    lineAt("SubagentStart", "S", ms, { agent_id: id, agent_type: "Explore" });
+  add(lineAt("SessionStart", "S", ms));
+  for (let i = 0; i < 4; i++) add(start(`u${i}`)); // will be unrecorded
+  add(lineAt("SessionEnd", "S", ms));
+  add(lineAt("SessionStart", "S", ms)); // the same session resumes
+  for (let i = 0; i < 5; i++) add(start(`r${i}`)); // will be restarted
+  const cut = e.length; // the server restarts here
+  for (let i = 0; i < 3; i++) {
+    add(start(`c${i}`));
+    add(
+      lineAt("SubagentStop", "S", ms, {
+        agent_id: `c${i}`,
+        agent_type: "Explore",
+      }),
+    );
+  }
+  for (let i = 0; i < 2; i++) add(start(`p${i}`)); // in progress
+  add(
+    lineAt("PostToolUse", "S", ms, {
+      tool_use_id: "tu",
+      launched_agent_id: "nobody",
+    }),
+  );
+  const { m, o } = mk(e, [startRec(cut, T0 + 750)], ms + 1000);
+  assert.deepEqual(o.board.columns[0].counts, {
+    in_progress: 2,
+    stale: 0,
+    restarted: 5,
+    completed: 3,
+    unrecorded: 4,
+  });
+  assert.equal(m.sessions[0].running, true);
+  const ctx = frameOf(o);
+  const numbers = ctx.calls.filter(
+    (c) =>
+      c.op === "fillText" &&
+      c.font === "bold 8px system-ui" &&
+      /^\d+$/.test(String(c.args[0])),
+  );
+  assert.deepEqual(
+    numbers.map((c) => c.args[0]),
+    ["2", "3", "4", "5"],
+    "in progress, finished, unrecorded, restarted",
+  );
+  const ys = numbers.map((c) => c.args[2]);
+  assert.deepEqual(
+    ys.map((y) => y - ys[0]),
+    [0, 9, 18, 27],
+  );
+  // the four plaques sit above the caption of the role, inside the board
+  const label = ctx.calls.find(
+    (c) => c.op === "fillText" && c.args[0] === "Explore" && c.args[3] === 37,
+  );
+  assert.ok(
+    ys[3] < label.args[2] - 7,
+    "the fourth plaque is above the caption",
+  );
+});
+
+test("FS-07: a new event of the session returns 'работает' - after 'нет свежих данных' the character works, the screen lights, the session runs and the column of the board is back; after 'сервер перезапускался…' PostToolUse changes nothing and a repeated start of the same agent returns the work", () => {
+  const entries = sequence();
+  const nowStale = LAST + STALE_AFTER_MS + 1;
+  const silent = viewOf(entries, [], nowStale);
+  assert.equal(silent.explore, false);
+  assert.deepEqual(silent.columns, []);
+  // a line of the hook of the same session, time "now"
+  const back = viewOf(
+    [
+      ...entries,
+      lineAt("PostToolUse", "S1", nowStale, {
+        tool_use_id: "tu3",
+        launched_agent_id: "nobody",
+      }),
+    ],
+    [],
+    nowStale,
+  );
+  assert.equal(back.main, true);
+  assert.equal(back.explore, true);
+  assert.equal(back.screenMain, PALETTE[0]);
+  assert.equal(back.screenExplore, PALETTE[1]);
+  assert.equal(back.running, 1);
+  assert.deepEqual(back.columns, ["role:Explore"]);
+  assert.equal(charOf(back.o, "role:Explore").working_count, 1);
+  // the return is one line of the journal more - and no more
+  assert.equal(back.m.journal.length, silent.m.journal.length + 1);
+
+  // the word about the restart: it does not return by itself
+  const starts = [startRec(entries.length, T0 + 2000)];
+  const restarted = viewOf(entries, starts, LAST + 1000);
+  assert.equal(restarted.explore, false);
+  const withPost = [
+    ...entries,
+    lineAt("PostToolUse", "S1", LAST + 2000, {
+      tool_use_id: "tu4",
+      launched_agent_id: "nobody",
+    }),
+  ];
+  const same = viewOf(withPost, starts, LAST + 3000);
+  assert.equal(same.explore, false, "PostToolUse does not revive it");
+  assert.equal(same.screenExplore, "#111d2e");
+  assert.equal(same.m.tasks[0].state, "restarted");
+  // a repeated start of the same agent returns the work
+  const again = viewOf(
+    [
+      ...withPost,
+      lineAt("SubagentStart", "S1", LAST + 3000, {
+        agent_id: "a1",
+        agent_type: "Explore",
+      }),
+    ],
+    starts,
+    LAST + 4000,
+  );
+  assert.equal(again.explore, true);
+  assert.equal(again.screenExplore, PALETTE[1]);
+  assert.equal(again.running, 1);
+  assert.deepEqual(again.columns, ["role:Explore"]);
+  assert.equal(again.m.tasks.length, 1, "the same task, not a new one");
+});
+
+test("FS-07: on the page - after the planned move into 'нет свежих данных' the journal keeps its rows, and a PostToolUse of the session brings back the legend, the screen and the column of the board", async () => {
+  const entries = sequence();
+  const page = makePage({
+    entries: [...entries],
+    now: LAST + STALE_AFTER_MS - 4000,
+  });
+  await page.start();
+  const rows = () => page.rows().map((r) => r.textContent);
+  const rowsBefore = rows();
+  const metaBefore = page.text("journal-meta");
+  await page.tick(10_000);
+  assert.equal(
+    page.legend().every((b) => b.dataset.state === "idle"),
+    true,
+  );
+  assert.deepEqual(rows(), rowsBefore, "no row of the journal is born");
+  assert.equal(page.text("journal-meta"), metaBefore);
+  assert.equal(page.app.getModel().journal.length, entries.length);
+  // a line of the hook of the same session, at the clock of the page
+  page.server.entries.push(
+    lineAt("PostToolUse", "S1", page.clock.now(), {
+      tool_use_id: "tu5",
+      launched_agent_id: "nobody",
+    }),
+  );
+  await page.tick(2000);
+  const states = Object.fromEntries(
+    page
+      .legend()
+      .map((b) => [b.dataset.key, b.byClass("state")[0].textContent]),
+  );
+  assert.deepEqual(states, { main: "работает", "role:Explore": "работает" });
+  assert.equal(rows().length, rowsBefore.length + 1, "one row: the real line");
+  const o = page.app.getOffice();
+  assert.deepEqual(
+    o.board.columns.map((c) => c.key),
+    ["role:Explore"],
+  );
+  assert.equal(charOf(o, "main").sessions_running, 1);
+  page.frames.step();
+  assert.equal(
+    screenColor(page.ctx, o, charOf(o, "role:Explore").desk_index),
+    PALETTE[1],
+  );
+  assert.equal(screenColor(page.ctx, o, 0), PALETTE[0]);
 });

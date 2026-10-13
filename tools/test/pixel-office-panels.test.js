@@ -5,7 +5,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildModel } from "../src/pixel-office/public/model.js";
 import { buildLayout } from "../src/pixel-office/public/layout.js";
-import { fmtDateTime } from "../src/pixel-office/public/format.js";
+import { STALE_AFTER_MS } from "../src/pixel-office/public/schema.js";
+import {
+  ageText,
+  fmtDateTime,
+  fmtTime,
+} from "../src/pixel-office/public/format.js";
 import {
   EMPTY_HINT,
   EVENT_LABELS,
@@ -38,6 +43,7 @@ import {
   makePage,
   runWithTz,
   sandbox,
+  settle,
   withText,
 } from "./pixel-office-helpers.js";
 import fs from "node:fs";
@@ -549,6 +555,11 @@ test("PN-09: the task panel - 'Текущие' hold what is in progress, 'Ист
     orch.byClass("item-state")[0].textContent,
     STATE_LABELS.completed,
   );
+  // REQ-042 criterion 5: the word is the one of the criterion, not "завершена"
+  assert.equal(
+    orch.byClass("item-state")[0].textContent,
+    "закончила работу, итог не записан",
+  );
   assert.equal(orch.byClass("item-role")[0].dataset.color, "1");
   assert.equal(orch.byClass("ended").length, 1);
   assert.equal(history[0].byClass("item-desc").length, 0);
@@ -588,15 +599,19 @@ test("PN-09: the task panel - 'Текущие' hold what is in progress, 'Ист
 // ------------------------------------------------------------------ PN-10
 
 const cardsOf = (page) => page.el("tasks").byClass("session-card");
-const statsOf = (card) => ({
+// REQ-042 criterion 3: a card has the word, the 8 characters, the first and
+// the last event and the age; no bar and no counters.
+const cardOf = (card) => ({
   id: card.byClass("session-id")[0].textContent,
-  stats: card.byClass("session-stats")[0].textContent,
-  value: card.byClass("session-progress")[0].value,
-  max: card.byClass("session-progress")[0].max,
   running: card.dataset.running,
+  word: card.dataset.word,
+  badge: card.byClass("session-badge")[0]?.textContent ?? null,
+  first: card.byClass("first-event")[0]?.textContent ?? null,
+  last: card.byClass("last-event")[0]?.textContent ?? null,
+  age: card.byClass("age")[0]?.textContent ?? null,
 });
 
-test("PN-10: session summaries - one per running session above 'Текущие', new ones on top, 8 characters, a progress bar and 'задач n/m · ролей k'; a resumed task and two tasks of one role are counted per 4.11; a finished session's summary sits in 'История' above its topmost shown item without '• Идёт'; numbers and places change after an event", async () => {
+test("PN-10: session cards - one per running session above 'Текущие', new ones on top, 8 characters, the word, the first and the last event and the age; no bar and no 'задач n/m · ролей k'; a resumed task and two tasks of one role make no counters; a finished session's card sits in 'История' above its topmost shown item without '• Идёт'; the times change after an event", async () => {
   const j = journal();
   j.sessionStart("aaaaaaaa-1");
   j.sessionStart("bbbbbbbb-2");
@@ -604,30 +619,45 @@ test("PN-10: session summaries - one per running session above 'Текущие',
   launch(j, "aaaaaaaa-1", "t2", "Explore");
   launch(j, "aaaaaaaa-1", "t3", "Plan");
   j.subStop("aaaaaaaa-1", "t1", "Explore");
-  // a task resumed in another session counts there
+  // a task resumed in another session belongs to it
   j.subStart("bbbbbbbb-2", "t3", "Plan");
   j.subStop("bbbbbbbb-2", "t3", "Plan");
   launch(j, "cccccccc-3", "t4", "Explore");
   j.sessionEnd("cccccccc-3");
   const page = await loaded(j.entries);
-  const cards = cardsOf(page).map(statsOf);
+  const eventsOf = (sid) =>
+    j.entries.filter((e) => e.session_id === sid).map((e) => e.time);
+  const cards = cardsOf(page).map(cardOf);
   const running = cards.filter((c) => c.running === "true");
   assert.deepEqual(
     running.map((c) => c.id),
     ["bbbbbbbb", "aaaaaaaa"],
     "new ones on top",
   );
-  const a = running.find((c) => c.id === "aaaaaaaa");
-  const b = running.find((c) => c.id === "bbbbbbbb");
-  assert.deepEqual([a.value, a.max, a.stats], [1, 2, "задач 1/2 · ролей 1"]);
-  assert.deepEqual([b.value, b.max, b.stats], [1, 1, "задач 1/1 · ролей 1"]);
-  // the finished session's summary is in the history, above its topmost item, no badge
+  for (const c of running) {
+    assert.equal(c.word, "running");
+    assert.equal(c.badge, "• Идёт");
+    const times = eventsOf(`${c.id}-${c.id === "aaaaaaaa" ? 1 : 2}`);
+    assert.equal(c.first, fmtTime(times[0]));
+    assert.equal(c.last, fmtTime(times[times.length - 1]));
+    assert.match(c.age, /назад$/);
+  }
+  // no bar and no counters anywhere in the panel
+  for (const card of cardsOf(page)) {
+    assert.equal(card.all((e) => e.tagName === "PROGRESS").length, 0);
+    assert.equal(card.byClass("session-progress").length, 0);
+    assert.equal(card.byClass("session-stats").length, 0);
+    assert.doesNotMatch(card.textContent, /задач|ролей|\d+\/\d+/);
+  }
+  // the finished session's card is in the history, above its topmost item, no badge
   const children = page.el("tasks").children;
   const finished = cardsOf(page).find((c) => c.dataset.running === "false");
   assert.ok(finished !== undefined);
   assert.equal(finished.byClass("session-badge").length, 0);
+  assert.equal(finished.dataset.word, undefined, "SessionEnd: no word");
   assert.equal(finished.dataset.session, "cccccccc");
-  // a running session has no second summary in the history
+  assert.equal(cardOf(finished).first, fmtTime(eventsOf("cccccccc-3")[0]));
+  // a running session has no second card in the history
   const notRunning = cardsOf(page)
     .filter((c) => c.dataset.running === "false")
     .map((c) => c.dataset.session);
@@ -643,14 +673,21 @@ test("PN-10: session summaries - one per running session above 'Текущие',
     );
     assert.equal(c.byClass("session-badge").length, 1);
   }
-  // after an event the numbers change
+  // after an event the last time and the age change
+  const before = cardOf(
+    cardsOf(page).find((c) => c.dataset.session === "aaaaaaaa"),
+  );
+  j.time(j.now() + 300); // five minutes later: the shown time has minutes
   j.subStop("aaaaaaaa-1", "t2", "Explore");
   await page.push(j.entries[j.entries.length - 1]);
-  const a2 = cardsOf(page)
-    .map(statsOf)
-    .find((c) => c.id === "aaaaaaaa");
-  assert.deepEqual([a2.value, a2.stats], [2, "задач 2/2 · ролей 1"]);
-  // an unrecorded task is not counted in n
+  const after = cardOf(
+    cardsOf(page).find((c) => c.dataset.session === "aaaaaaaa"),
+  );
+  assert.equal(after.first, before.first);
+  assert.equal(after.last, fmtTime(j.entries[j.entries.length - 1].time));
+  assert.notEqual(after.last, before.last);
+  // after a server start the session has no word: it is not running, its card
+  // moves to the history (it has tasks) and says nothing about "• Идёт"
   const u = journal();
   u.sessionStart("uuuuuuuu-1");
   launch(u, "uuuuuuuu-1", "u1", "Explore");
@@ -659,17 +696,20 @@ test("PN-10: session summaries - one per running session above 'Текущие',
   const unrec = await loaded(u.entries, [
     { time: at(99), journal_lines: u.entries.length },
   ]);
-  assert.equal(statsOf(cardsOf(unrec)[0]).stats, "задач 1/2 · ролей 2");
-  assert.equal(statsOf(cardsOf(unrec)[0]).value, 1);
-  // a session without tasks still has a summary while it runs
+  const uc = cardsOf(unrec);
+  assert.equal(uc.length, 1);
+  assert.equal(uc[0].dataset.running, "false");
+  assert.equal(uc[0].dataset.word, undefined);
+  assert.equal(uc[0].byClass("session-badge").length, 0);
+  // a session without tasks still has a card while it runs
   const empty = await loaded([entryOf("SessionStart", "sess-empty-1", at(1))]);
-  assert.equal(statsOf(cardsOf(empty)[0]).stats, "задач 0/0 · ролей 0");
-  assert.equal(statsOf(cardsOf(empty)[0]).max, 1);
+  assert.equal(cardOf(cardsOf(empty)[0]).word, "running");
+  assert.equal(cardOf(cardsOf(empty)[0]).first, fmtTime(at(1)));
 });
 
 // ------------------------------------------------------------------ PN-11
 
-test("PN-11: the limit of summaries - 400 finished sessions with one task: 300 items in 'История', exactly as many summaries as sessions among the shown items, none for a session without a shown item, 'показано 300 из 400'; the cases of the criterion: 301 tasks of one session, a resumed task A -> B", async () => {
+test("PN-11: the limit of cards - 400 finished sessions with one task: 300 items in 'История', exactly as many session cards as sessions among the shown items, none for a session without a shown item, 'показано 300 из 400'; the cases of the criterion: 301 tasks of one session, a resumed task A -> B", async () => {
   const j = journal();
   for (let i = 0; i < 400; i++) {
     const s = `${String(i).padStart(4, "0")}-session`;
@@ -685,15 +725,18 @@ test("PN-11: the limit of summaries - 400 finished sessions with one task: 300 i
     page.items().map((i) => i.byClass("session")[0].textContent),
   );
   assert.equal(sessionsOfItems.size, 300);
-  for (const c of cards)
+  for (const c of cards) {
     assert.ok(sessionsOfItems.has(c.byClass("session-id")[0].textContent));
+    assert.ok(c.byClass("first-event")[0].textContent !== "");
+    assert.ok(c.byClass("last-event")[0].textContent !== "");
+  }
   assert.equal(
     page.el("tasks").byClass("tasks-note")[0].textContent,
     "показано 300 из 400",
   );
   // 400 sessions with one task each are 400 tasks: the first shown are the newest
   assert.equal(page.items()[0].dataset.key, "t399");
-  // 301 tasks of one finished session: 300 items, M = 301
+  // 301 tasks of one finished session: 300 items, one card with its times
   const k = journal();
   for (let i = 0; i < 301; i++) {
     launch(k, "big-session", `x${i}`, "Explore");
@@ -702,9 +745,11 @@ test("PN-11: the limit of summaries - 400 finished sessions with one task: 300 i
   k.sessionEnd("big-session");
   const big = await loaded(k.entries);
   assert.equal(big.items().length, 300);
-  const card = cardsOf(big).map(statsOf)[0];
-  assert.equal(card.stats, "задач 301/301 · ролей 1");
-  assert.equal(card.max, 301);
+  assert.equal(cardsOf(big).length, 1);
+  const card = cardOf(cardsOf(big)[0]);
+  assert.equal(card.id, "big-sess");
+  assert.equal(card.first, fmtTime(k.entries[0].time));
+  assert.equal(card.last, fmtTime(k.entries[k.entries.length - 1].time));
   assert.equal(
     big.el("tasks").byClass("tasks-note")[0].textContent,
     "показано 300 из 301",
@@ -717,12 +762,10 @@ test("PN-11: the limit of summaries - 400 finished sessions with one task: 300 i
   r.subStart("B-session-2", "X", "Explore");
   r.subStop("B-session-2", "X", "Explore");
   const m = buildModel(r.entries, [], NOW);
-  const cardsR = cardsOf(await loaded(r.entries)).map(statsOf);
-  const ca = cardsR.find((c) => c.id === "A-sessio");
-  const cb = cardsR.find((c) => c.id === "B-sessio");
-  assert.equal(ca.stats, "задач 0/0 · ролей 0");
-  assert.deepEqual([cb.value, cb.max, cb.stats], [1, 1, "задач 1/1 · ролей 1"]);
+  const cardsR = cardsOf(await loaded(r.entries)).map(cardOf);
+  assert.deepEqual(cardsR.map((c) => c.id).sort(), ["A-sessio", "B-sessio"]);
   assert.equal(m.tasks.length, 1);
+  assert.equal(m.tasks[0].session_id, "B-session-2");
 });
 
 // ------------------------------------------------------------------ PN-12
@@ -829,6 +872,40 @@ test("PN-14: one stream - after one event every view (Сейчас, journal and 
     page.el("card").byClass("card-working")[0].textContent,
     "в работе: 1",
   );
+  // REQ-042: the explanation of what the journal does not confirm is rebuilt
+  // in the same build, from the same model, by a tick of the clock alone
+  page.clock.set(page.clock.now() + STALE_AFTER_MS + 60_000);
+  page.clock.fire();
+  await settle();
+  const model = page.app.getModel();
+  assert.equal(model.entries, ref, "still the same array");
+  const unconfirmed = model.list.filter((i) => i.state === "stale");
+  assert.ok(unconfirmed.length >= 2);
+  assert.equal(model.unconfirmed.count, unconfirmed.length);
+  assert.equal(
+    page.text("now-text"),
+    `Сейчас: в работе ничего нет · без свежих данных: ${unconfirmed.length}`,
+  );
+  const note = page.el("tasks").byClass("unconfirmed-note");
+  assert.equal(note.length, 1);
+  assert.equal(
+    page.el("now").title,
+    note[0].textContent,
+    "one text, two places",
+  );
+  assert.equal(
+    page.legend().find((b) => b.dataset.key === "role:Plan").dataset.state,
+    "idle",
+  );
+  assert.equal(page.app.getOffice().board.columns.length, 0);
+  assert.equal(
+    page.el("card").byClass("card-working")[0].textContent,
+    "в работе: 0",
+  );
+  const cardStale = page
+    .el("card")
+    .all((e) => e.dataset.list === "unconfirmed")[0];
+  assert.ok(cardStale.byClass("item").length >= 1);
 });
 
 // ------------------------------------------------------------------ PN-15
@@ -1628,4 +1705,918 @@ test("PN-22: the contract of the CSS of the window - the height is bound in vh, 
     const ox = rule.decls.get("overflow-x");
     if (ox !== undefined) assert.equal(ox, "hidden");
   }
+});
+
+// ===================================================================
+// REQ-042: state honesty (design 10: FS-05 ... FS-20). "Now" is a number
+// given by the test; the real clock is never read.
+// ===================================================================
+import { ITEM_STATES } from "../src/pixel-office/public/model.js";
+import { checkLine } from "../src/pixel-office/public/schema.js";
+import {
+  bubblesAt,
+  buildCard,
+  buildOffice,
+} from "../src/pixel-office/public/office-model.js";
+import {
+  nowLine,
+  taskPanel,
+  unconfirmedNote,
+} from "../src/pixel-office/public/panels.js";
+import {
+  WORDS,
+  lineAt,
+  readFixture,
+  startRec,
+} from "./pixel-office-helpers.js";
+
+const sub = (session, id, ms, type = "Explore") =>
+  lineAt("SubagentStart", session, ms, { agent_id: id, agent_type: type });
+const subEnd = (session, id, ms, type = "Explore") =>
+  lineAt("SubagentStop", session, ms, { agent_id: id, agent_type: type });
+const tool = (session, ms, id = "tu-x") =>
+  lineAt("PostToolUse", session, ms, {
+    tool_use_id: id,
+    launched_agent_id: "nobody",
+  });
+const HOUR = 3600 * 1000;
+const sectionOf = (page, item) => {
+  let section = null;
+  for (const c of page.el("tasks").children) {
+    if (c.classes.has("section-title")) section = c.dataset.section;
+    if (c === item) return section;
+  }
+  return null;
+};
+const itemsIn = (page, name) =>
+  page.items().filter((i) => sectionOf(page, i) === name);
+const keysIn = (page, name) => itemsIn(page, name).map((i) => i.dataset.key);
+const wordOf = (item) => item.byClass("item-state")[0].textContent;
+const legendState = (page, key) =>
+  page
+    .legend()
+    .find((b) => b.dataset.key === key)
+    .byClass("state")[0].textContent;
+// ------------------------------------------------------------------ FS-08
+
+test("FS-08: the panels at two moments of one sequence - on the border the item is in 'Текущие' and in 'Сейчас', one millisecond later it stands in 'История' with its word, 'Сейчас' counts it, no session runs; the same for 'сервер перезапускался…'; 'окончание не записано' is not counted", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    lineAt("UserPromptSubmit", "S1", T0 + 500),
+    sub("S1", "a1", T0 + 1000),
+  ];
+  const last = T0 + 1000;
+  const page = await loaded(entries, [], { now: last + STALE_AFTER_MS });
+  assert.deepEqual(keysIn(page, "current"), ["a1", "main:1"]);
+  assert.deepEqual(keysIn(page, "history"), []);
+  assert.equal(page.text("now-text"), "Сейчас: Explore · и ещё 1 в работе");
+  assert.equal(page.el("now").dataset.busy, "true");
+  assert.equal(page.el("now").dataset.unconfirmed, "false");
+  assert.equal(
+    cardsOf(page).filter((c) => c.dataset.running === "true").length,
+    1,
+  );
+  assert.equal(page.el("tasks").byClass("unconfirmed-note").length, 0);
+
+  // the same journal one millisecond later (a page opened at that moment; the
+  // planned recalculation itself is tested by FS-05 and FS-10)
+  const later = await loaded(entries, [], {
+    now: last + STALE_AFTER_MS + 1,
+  });
+  assert.deepEqual(keysIn(later, "current"), []);
+  assert.deepEqual(keysIn(later, "history"), ["a1", "main:1"]);
+  for (const item of itemsIn(later, "history")) {
+    assert.equal(wordOf(item), WORDS.stale);
+  }
+  assert.equal(
+    later.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 2",
+  );
+  assert.equal(later.el("now").dataset.busy, "false");
+  assert.equal(later.el("now").dataset.unconfirmed, "true");
+  assert.equal(
+    cardsOf(later).filter((c) => c.dataset.running === "true").length,
+    0,
+    "no session runs",
+  );
+  assert.equal(later.el("tasks").byClass("unconfirmed-note").length, 1);
+  // the first section holds the empty line
+  assert.equal(
+    later.el("tasks").byClass("section-empty")[0].textContent,
+    "в работе ничего нет",
+  );
+  assert.equal(legendState(later, "role:Explore"), "свободен");
+  assert.equal(legendState(later, "main"), "свободна");
+  // the word about the restart: the same placement, the same N
+  const restarted = await loaded(entries, [startRec(3, T0 + 2000)], {
+    now: last + 1000,
+  });
+  assert.deepEqual(keysIn(restarted, "current"), []);
+  assert.deepEqual(keysIn(restarted, "history"), ["a1", "main:1"]);
+  for (const item of itemsIn(restarted, "history")) {
+    assert.equal(wordOf(item), WORDS.restarted);
+  }
+  assert.equal(
+    restarted.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 2",
+  );
+  assert.equal(legendState(restarted, "role:Explore"), "свободен");
+
+  // 'окончание не записано' stands in the history and is not in N
+  const ended = await loaded(
+    [...entries, lineAt("SessionEnd", "S1", T0 + 2000)],
+    [],
+    { now: last + 1000 },
+  );
+  assert.deepEqual(keysIn(ended, "current"), []);
+  for (const item of itemsIn(ended, "history")) {
+    assert.equal(wordOf(item), WORDS.unrecorded);
+  }
+  assert.equal(ended.text("now-text"), "Сейчас: в работе ничего нет");
+  assert.equal(ended.el("tasks").byClass("unconfirmed-note").length, 0);
+  assert.equal(legendState(ended, "role:Explore"), "свободен");
+});
+
+// ------------------------------------------------------------------ FS-09
+
+test("FS-09: a session 'Идёт' only with fresh data - fresh and old sessions, SessionEnd (also older than the threshold), a fresh session whose last event is before the server start; no bar and no 'n/m' on any card, nowhere in the code", async () => {
+  const entries = [
+    // S1: the last event is inside the threshold
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "a1", T0 + 1000),
+    // S2: silent for longer than the threshold
+    lineAt("SessionStart", "S2", T0 + 2000),
+    sub("S2", "b1", T0 + 3000, "Plan"),
+    // S3: ended by SessionEnd long ago
+    lineAt("SessionStart", "S3", T0 + 4000),
+    sub("S3", "c1", T0 + 5000, "Explore"),
+    lineAt("SessionEnd", "S3", T0 + 6000),
+  ];
+  // S1 gets a later event so that it stays fresh
+  const now = T0 + 2 * HOUR;
+  entries.push(tool("S1", now - 5 * 60 * 1000));
+  const page = await loaded(entries, [], { now });
+  const cards = cardsOf(page);
+  const m = page.app.getModel();
+  const word = (sid) => m.sessions.find((s) => s.session_id === sid).word;
+  assert.equal(word("S1"), "running");
+  assert.equal(word("S2"), "stale");
+  assert.equal(
+    word("S3"),
+    null,
+    "SessionEnd older than the threshold: no word",
+  );
+  assert.equal(m.sessions.filter((s) => s.running).length, 1);
+  // on the page
+  assert.equal(cards.filter((c) => c.dataset.running === "true").length, 1);
+  const running = cards.find((c) => c.dataset.running === "true");
+  assert.equal(running.byClass("session-badge")[0].textContent, "• Идёт");
+  const stale = cards.filter((c) => c.dataset.word === "stale");
+  assert.equal(stale.length, 1);
+  assert.equal(
+    stale[0].byClass("session-badge")[0].textContent,
+    "нет свежих данных",
+  );
+  assert.equal(stale[0].dataset.running, "false");
+  const ended = cards.filter((c) => c.dataset.word === undefined);
+  assert.equal(ended.length, 1);
+  assert.equal(ended[0].byClass("session-badge").length, 0);
+  assert.equal(ended[0].textContent.includes("Идёт"), false);
+  assert.equal(ended[0].textContent.includes("нет свежих данных"), false);
+  // a fresh session whose last event is before the last start of the server
+  const quiet = [lineAt("SessionStart", "Q", T0), sub("Q", "q1", T0 + 1000)];
+  const q = await loaded(quiet, [startRec(2, T0 + 2000)], { now: T0 + 5000 });
+  const qm = q.app.getModel();
+  assert.equal(qm.sessions[0].word, null);
+  assert.equal(qm.sessions[0].running, false);
+  assert.equal(qm.sessions[0].age_ms < STALE_AFTER_MS, true);
+  const qc = cardsOf(q);
+  assert.equal(qc.length, 1);
+  assert.equal(qc[0].dataset.running, "false");
+  assert.equal(qc[0].byClass("session-badge").length, 0);
+  // the same session, but the clock is far away: before the start of the
+  // server and older than the threshold - the word is 'нет свежих данных'
+  const far = await loaded(quiet, [startRec(2, T0 + 2000)], {
+    now: T0 + 2 * HOUR,
+  });
+  assert.equal(far.app.getModel().sessions[0].word, "stale");
+  assert.equal(far.app.getModel().sessions[0].running, false);
+  const fc = cardsOf(far);
+  assert.equal(fc.length, 1);
+  assert.equal(fc[0].dataset.word, "stale");
+  assert.equal(
+    fc[0].byClass("session-badge")[0].textContent,
+    "нет свежих данных",
+  );
+  // no bar and no 'n/m' on any card
+  for (const card of [...cards, ...qc, ...fc]) {
+    assert.equal(card.all((e) => e.tagName === "PROGRESS").length, 0);
+    assert.doesNotMatch(card.textContent, /задач|ролей/);
+  }
+  // nowhere in the code of Pixel Office
+  const OLD =
+    /SESSION_STATS|sessionStats|session-progress|session-stats|"progress"/;
+  const hits = [];
+  const walk = (dir) => {
+    for (const name of fs.readdirSync(dir)) {
+      const file = path.join(dir, name);
+      if (fs.statSync(file).isDirectory()) walk(file);
+      else if (OLD.test(fs.readFileSync(file, "utf8"))) hits.push(file);
+    }
+  };
+  walk(path.join(PUBLIC, ".."));
+  assert.deepEqual(hits, []);
+  assert.equal(
+    OLD.test('const p = "progress";'),
+    true,
+    "the expression sees it",
+  );
+});
+
+// ------------------------------------------------------------------ FS-10
+
+const MIN = 60 * 1000;
+
+test("FS-10: the format of the age - the nine rows of the criterion (literals), minutes rounded down, nothing else in the text; no age for the one who finished or for the restart; the age grows without new lines", async () => {
+  const table = [
+    [0, "меньше минуты назад"],
+    [59_999, "меньше минуты назад"],
+    [60_000, "1 мин назад"],
+    [59 * MIN + 59_000, "59 мин назад"],
+    [60 * MIN, "1 ч назад"],
+    [61 * MIN, "1 ч 1 мин назад"],
+    [23 * HOUR + 59 * MIN, "23 ч 59 мин назад"],
+    [24 * HOUR, "1 сут назад"],
+    [50 * HOUR + 30 * MIN, "2 сут 2 ч назад"],
+  ];
+  for (const [ms, text] of table) assert.equal(ageText(ms), text, `${ms} ms`);
+  // rounding down: a second before the next minute, hour and day
+  assert.equal(ageText(2 * MIN - 1), "1 мин назад");
+  assert.equal(ageText(HOUR + 2 * MIN - 1), "1 ч 1 мин назад");
+  assert.equal(ageText(24 * HOUR + HOUR - 1), "1 сут назад");
+  assert.equal(ageText(47 * HOUR + 59 * MIN), "1 сут 23 ч назад");
+  // what cannot be said is not said
+  assert.equal(ageText(Number.NaN), "");
+  assert.equal(ageText(undefined), "");
+  assert.equal(ageText(-5000), "меньше минуты назад", "negative is zero");
+  assert.doesNotMatch(ageText(-5000), /NaN|-/);
+
+  // on the page: the age is next to the last event of 'в работе' and of
+  // 'нет свежих данных', not next to the one who finished or the restart
+  // S3 starts first and the server restarts after it (the record stands
+  // between the lines); the rest starts later
+  const now = T0 + 5 * HOUR;
+  const ordered = [
+    lineAt("SessionStart", "S3", T0),
+    sub("S3", "boot", T0 + 1000),
+    lineAt("SessionStart", "S4", T0 + 2000),
+    sub("S4", "old", T0 + 3000),
+    lineAt("SessionStart", "S1", T0 + 4000),
+    sub("S1", "run", T0 + 5000),
+    lineAt("SessionStart", "S2", T0 + 6000),
+    sub("S2", "done", T0 + 7000),
+    subEnd("S2", "done", T0 + 8000),
+    // S1 keeps working: its last event is 5 minutes ago
+    tool("S1", now - 5 * MIN, "tu-keep"),
+  ];
+  // the record stands after the first two lines; S4 is silent since long
+  const starts = [startRec(2, T0 + 1500)];
+  const page = await loaded(ordered, starts, { now });
+  const by = (key) => page.items().find((i) => i.dataset.key === key);
+  assert.equal(by("run").dataset.state, "in_progress");
+  assert.equal(by("run").byClass("age")[0].textContent, "5 мин назад");
+  assert.equal(by("old").dataset.state, "stale");
+  assert.equal(by("old").byClass("age")[0].textContent, "4 ч 59 мин назад");
+  assert.equal(by("done").dataset.state, "completed");
+  assert.equal(by("done").byClass("age").length, 0);
+  assert.equal(by("boot").dataset.state, "restarted");
+  assert.equal(by("boot").byClass("age").length, 0);
+  // next to the time of the last event, nothing but the text of the age
+  for (const key of ["run", "old"]) {
+    const age = by(key).byClass("age")[0];
+    assert.equal(age.children.length, 0);
+    assert.match(age.textContent, /^[0-9а-я ]+ назад$/);
+  }
+  assert.doesNotMatch(page.text("tasks"), /NaN/);
+
+  // the age grows by itself: 60 s of the page clock, no new lines
+  const calls = page.server.entries.length;
+  await page.tick(60_000);
+  assert.equal(page.server.entries.length, calls);
+  assert.equal(by("run").byClass("age")[0].textContent, "6 мин назад");
+  assert.equal(by("old").byClass("age")[0].textContent, "5 ч назад");
+  // and on the card of the session
+  const card = cardsOf(page).find((c) => c.dataset.word === "running");
+  assert.equal(card.byClass("age")[0].textContent, "6 мин назад");
+});
+
+// ------------------------------------------------------------------ FS-11
+
+const own = (session, ms, text) =>
+  lineAt("UserPromptSubmit", session, ms, {
+    prompt_kind: "owner",
+    prompt_text: text,
+  });
+
+// One task of the role Explore in each of the five states.
+function fiveStates() {
+  const now = T0 + 5 * HOUR;
+  const entries = [
+    // a5: started, then the server restarted
+    lineAt("SessionStart", "S5", T0),
+    own("S5", T0 + 500, "Образец запроса пять"),
+    sub("S5", "a5", T0 + 1000),
+    // (the record of the server start stands here: journal_lines 3)
+    // a2: the session is silent for hours
+    lineAt("SessionStart", "S2", T0 + 2000),
+    own("S2", T0 + 2500, "Образец запроса два"),
+    sub("S2", "a2", T0 + 3000),
+    // a4: the session ended
+    lineAt("SessionStart", "S4", T0 + 4000),
+    own("S4", T0 + 4500, "Образец запроса четыре"),
+    sub("S4", "a4", T0 + 5000),
+    lineAt("SessionEnd", "S4", T0 + 6000),
+    // a1 works, a3 has finished: a fresh session
+    lineAt("SessionStart", "S1", now - 5 * MIN),
+    own("S1", now - 5 * MIN + 500, "Образец запроса один"),
+    sub("S1", "a1", now - 5 * MIN + 1000),
+    sub("S1", "a3", now - 5 * MIN + 2000),
+    subEnd("S1", "a3", now - 5 * MIN + 3000),
+  ];
+  return { entries, starts: [startRec(3, T0 + 1500)], now };
+}
+
+test("FS-11: the five words - in the panel, in the card of the agent (in the sections of the states; 'окончание не записано' only in its own section) and in the window of history each equals the literal of the criterion", async () => {
+  const { entries, starts, now } = fiveStates();
+  const page = await loaded(entries, starts, { now });
+  const want = {
+    a1: "in_progress",
+    a2: "stale",
+    a3: "completed",
+    a4: "unrecorded",
+    a5: "restarted",
+  };
+  // the model first: the five states, one task each
+  const m = page.app.getModel();
+  for (const [key, state] of Object.entries(want)) {
+    assert.equal(m.tasks.find((t) => t.key === key).state, state, key);
+  }
+  assert.deepEqual(
+    [...new Set(Object.values(want))].sort(),
+    [...ITEM_STATES].sort(),
+  );
+  // the panel
+  for (const [key, state] of Object.entries(want)) {
+    const item = page.items().find((i) => i.dataset.key === key);
+    assert.equal(item.dataset.state, state, key);
+    assert.equal(wordOf(item), WORDS[state], `panel ${key}`);
+  }
+  // the card of the agent: sections and words
+  page
+    .legend()
+    .find((b) => b.dataset.key === "role:Explore")
+    .click();
+  const section = (name) =>
+    page.el("card").all((e) => e.dataset.list === name)[0];
+  const inSection = (name) =>
+    section(name)
+      .byClass("item")
+      .map((i) => [i.dataset.key, wordOf(i)]);
+  assert.deepEqual(inSection("in-progress"), [["a1", WORDS.in_progress]]);
+  // the order of the list: the newer start on top
+  assert.deepEqual(inSection("unconfirmed"), [
+    ["a2", WORDS.stale],
+    ["a5", WORDS.restarted],
+  ]);
+  assert.deepEqual(inSection("recent-completed"), [["a3", WORDS.completed]]);
+  assert.deepEqual(inSection("unrecorded"), [["a4", WORDS.unrecorded]]);
+  assert.equal(
+    section("unrecorded").byClass("tasks-note").length,
+    0,
+    "nothing is cut: no note",
+  );
+  // the headings of the sections are words of the page, not of success
+  assert.deepEqual(
+    ["in-progress", "unconfirmed", "recent-completed", "unrecorded"].map(
+      (n) => section(n).children[0].textContent,
+    ),
+    [
+      "Сейчас в работе",
+      "Нет подтверждения работы",
+      "Недавно закончили работу",
+      "Окончание не записано",
+    ],
+  );
+  // the window of history: the word of the task in its table
+  for (const [key, state] of Object.entries(want)) {
+    const item = page.items().find((i) => i.dataset.key === key);
+    item.byClass("history-open")[0].click();
+    const dom = historyDom(page);
+    assert.equal(dom.isOpen(), true, key);
+    const row = dom.body.find(
+      (e) => e.tagName === "TR" && e.dataset.key === key,
+    );
+    assert.equal(
+      row.byClass("history-state")[0].textContent,
+      WORDS[state],
+      key,
+    );
+    assert.equal(row.dataset.state, state);
+    dom.close.click();
+    assert.equal(dom.isOpen(), false);
+  }
+});
+
+test("FS-11: the card of the agent cuts the sections 'Нет подтверждения работы' at 10 and 'Окончание не записано' at 5 and says 'показано n из N' under each; the number of all is the true one", async () => {
+  const entries = [lineAt("SessionStart", "OLD", T0)];
+  for (let i = 0; i < 12; i++) entries.push(sub("OLD", `s${i}`, T0 + 100 + i));
+  entries.push(lineAt("SessionStart", "END", T0 + 1000));
+  for (let i = 0; i < 7; i++) entries.push(sub("END", `u${i}`, T0 + 1100 + i));
+  entries.push(lineAt("SessionEnd", "END", T0 + 2000));
+  const page = await loaded(entries, [], { now: T0 + 3 * HOUR });
+  const m = page.app.getModel();
+  const card = buildCard(m, buildOffice(m), "role:Explore");
+  assert.equal(card.unconfirmed.length, 10);
+  assert.equal(card.unconfirmed_total, 12);
+  assert.equal(card.unrecorded.length, 5);
+  assert.equal(card.unrecorded_total, 7);
+  page
+    .legend()
+    .find((b) => b.dataset.key === "role:Explore")
+    .click();
+  const section = (name) =>
+    page.el("card").all((e) => e.dataset.list === name)[0];
+  assert.equal(section("unconfirmed").byClass("item").length, 10);
+  assert.equal(
+    section("unconfirmed").byClass("tasks-note")[0].textContent,
+    "показано 10 из 12",
+  );
+  assert.equal(section("unrecorded").byClass("item").length, 5);
+  assert.equal(
+    section("unrecorded").byClass("tasks-note")[0].textContent,
+    "показано 5 из 7",
+  );
+  assert.equal(section("in-progress").byClass("tasks-note").length, 0);
+  assert.equal(section("recent-completed").byClass("tasks-note").length, 0);
+  // 'окончание не записано' is not in the family of 'нет подтверждения'
+  assert.equal(
+    section("unconfirmed")
+      .byClass("item")
+      .every((i) => i.dataset.state === "stale"),
+    true,
+  );
+  assert.equal(
+    section("unrecorded")
+      .byClass("item")
+      .every((i) => i.dataset.state === "unrecorded"),
+    true,
+  );
+});
+
+// ------------------------------------------------------------------ FS-13
+
+const SUCCESS_WORDS = /заверш|готов|выполнен|успешн/i;
+
+test("FS-13: no words of success on the page - in a scenario with all five states the card, the legend, the panel, the journal, the line 'Сейчас', the board and the bubbles do not match заверш|готов|выполнен|успешн; the bubbles are the two literals of the criterion", async () => {
+  const { entries, starts, now } = fiveStates();
+  // the fresh session also answers: Stop of the main session
+  const stopMs = now - 5 * MIN + 4000;
+  const all = [...entries, lineAt("Stop", "S1", stopMs)];
+  const page = await loaded(all, starts, { now: stopMs + 1000 });
+  const bubbles = [...bubblesAtOf(page).values()].map((b) => b.text);
+  assert.deepEqual(bubbles.sort(), ["Вернул ответ", "Закончил работу"].sort());
+  const seen = [];
+  const take = (label, text) => seen.push([label, text]);
+  take("now", page.text("now-text"));
+  take("title", page.el("now").title);
+  take("tasks", page.text("tasks"));
+  take("journal", page.text("journal"));
+  take("legend", page.text("legend"));
+  for (const key of ["role:Explore", "main"]) {
+    page
+      .legend()
+      .find((b) => b.dataset.key === key)
+      .click();
+    take(`card ${key}`, page.text("card"));
+  }
+  page.ctx.clear();
+  page.frames.step();
+  for (const c of page.ctx.lastFrame()) {
+    if (c.op === "fillText") take("canvas", String(c.args[0]));
+  }
+  // the texts of the canvas include the board plaques and the bubbles
+  const canvas = seen.filter(([l]) => l === "canvas").map(([, t]) => t);
+  assert.ok(canvas.includes("Вернул ответ"));
+  assert.ok(canvas.includes("Закончил работу"));
+  for (const [label, text] of seen) {
+    assert.doesNotMatch(text, SUCCESS_WORDS, label);
+  }
+  // the window of history: the only exception is the caption of the time of
+  // the last Stop (HISTORY_META_FINISHED)
+  const done = page.items().find((i) => i.dataset.key === "a3");
+  done.byClass("history-open")[0].click();
+  const dom = historyDom(page);
+  const without = dom.body
+    .all((e) => e.children.length === 0 && !e.classes.has("history-finished"))
+    .map((e) => e.textContent)
+    .join(" ");
+  assert.doesNotMatch(without, SUCCESS_WORDS);
+  const named = dom.body.byClass("history-finished");
+  assert.ok(named.length <= 1);
+  for (const e of named) assert.match(e.textContent, /^завершён /);
+  // the expression: the old words are seen, the new ones are not
+  for (const old of [
+    "завершена",
+    "Недавно завершены",
+    "Готово",
+    "Ответ готов",
+  ]) {
+    assert.match(old, SUCCESS_WORDS, old);
+  }
+  for (const word of Object.values(WORDS))
+    assert.doesNotMatch(word, SUCCESS_WORDS);
+});
+
+function bubblesAtOf(page) {
+  return bubblesAt(page.app.getOffice(), page.clock.now());
+}
+
+// ------------------------------------------------------------------ FS-14
+
+const SAMPLE_STALE_NOW = Date.parse("2026-09-20T12:35:00.000Z");
+const SAMPLE_SHORT_NOW = Date.parse("2026-09-20T10:04:00.000Z");
+const SAMPLE_RESTART = { time: "2026-09-20T10:01:00.000Z", journal_lines: 2 };
+
+test("FS-14: the panels on the sample - D1 (the silent task is not in 'Сейчас', 'Текущие' or on the desk), D2 (one session of two runs), D3 (no bar, no 'n/m'), D5 ('Сейчас: в работе ничего нет · без свежих данных: 1', the reason named), and the control", async () => {
+  const sample = (name) => readFixture(name).entries;
+  for (const name of [
+    "events-stale.jsonl",
+    "events-restart.jsonl",
+    "events-fresh.jsonl",
+  ]) {
+    for (const e of sample(name)) assert.equal(checkLine(e, true).ok, true);
+  }
+
+  // D1, D2, D3
+  const page = await loaded(sample("events-stale.jsonl"), [], {
+    now: SAMPLE_STALE_NOW,
+  });
+  assert.deepEqual(keysIn(page, "current"), [
+    "sample-a3",
+    "sample-a2",
+    "main:5",
+  ]);
+  assert.deepEqual(keysIn(page, "history"), ["sample-a1", "main:1"]);
+  assert.ok(!page.text("now-text").includes("Explore"), "not in 'Сейчас'");
+  assert.equal(
+    page.text("now-text"),
+    "Сейчас: general-purpose · и ещё 2 в работе",
+  );
+  assert.equal(legendState(page, "role:Explore"), "свободен");
+  assert.equal(legendState(page, "role:Plan"), "работает");
+  assert.equal(legendState(page, "role:general-purpose"), "работает");
+  assert.equal(
+    page.app.getOffice().board.columns.some((c) => c.key === "role:Explore"),
+    false,
+  );
+  const cards = cardsOf(page);
+  assert.equal(cards.filter((c) => c.dataset.running === "true").length, 1);
+  const silent = cards.find((c) => c.dataset.word === "stale");
+  assert.equal(silent.byClass("age")[0].textContent, "2 ч 34 мин назад");
+  for (const card of cards) {
+    assert.equal(card.all((e) => e.tagName === "PROGRESS").length, 0);
+    assert.doesNotMatch(card.textContent, /задач|ролей|\d+\/\d+/);
+  }
+  // the panel carries the explanation next to the line 'Сейчас' only if
+  // nothing is in progress: here something is
+  assert.equal(page.el("tasks").byClass("unconfirmed-note").length, 0);
+
+  // D5: the agent started, the server restarted, the session has a fresh event
+  const p5 = await loaded(sample("events-restart.jsonl"), [SAMPLE_RESTART], {
+    now: SAMPLE_SHORT_NOW,
+  });
+  assert.equal(
+    p5.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 1",
+  );
+  assert.ok(p5.el("now").title.includes(fmtDateTime(SAMPLE_RESTART.time)));
+  const note = p5.el("tasks").byClass("unconfirmed-note");
+  assert.equal(note.length, 1);
+  assert.equal(note[0].textContent, p5.el("now").title);
+  assert.equal(wordOf(p5.items()[0]), WORDS.restarted);
+  assert.deepEqual(keysIn(p5, "current"), []);
+  assert.equal(legendState(p5, "role:Explore"), "свободен");
+  assert.equal(
+    cardsOf(p5).filter((c) => c.dataset.running === "true").length,
+    1,
+    "the session itself has a fresh event",
+  );
+
+  // the control: fresh events, no restart
+  const pc = await loaded(sample("events-fresh.jsonl"), [], {
+    now: SAMPLE_SHORT_NOW,
+  });
+  assert.deepEqual(keysIn(pc, "current"), ["sample-a5"]);
+  assert.equal(wordOf(pc.items()[0]), WORDS.in_progress);
+  assert.equal(
+    pc.text("now-text"),
+    "Сейчас: Plan — Образец: контрольная задача",
+  );
+  assert.equal(pc.el("tasks").byClass("unconfirmed-note").length, 0);
+  assert.equal(legendState(pc, "role:Plan"), "работает");
+});
+
+// ------------------------------------------------------------------ FS-17
+
+const LEAD =
+  "Журнал не подтверждает, что эти задачи и строки основной сессии идут. Это не конец работы и не ошибка.";
+
+test("FS-17: the line 'Сейчас' without confirmation - empty, two silent items (the age of the older one in the title), one restart (the time of the start), one of each (both reasons), 'окончание не записано' (nothing), 301 items (N = 301), a return of an item, 'в работе' beside 'нет свежих данных' (no second part); the text of the second part and the title are one", async () => {
+  const nowMs = T0 + 4 * HOUR;
+  // 1. nothing: no second part
+  const empty = await loaded([lineAt("SessionStart", "S0", nowMs - MIN)], [], {
+    now: nowMs,
+  });
+  assert.equal(empty.text("now-text"), "Сейчас: в работе ничего нет");
+  assert.equal(empty.el("now").title, "Сейчас: в работе ничего нет");
+  assert.equal(empty.el("now").dataset.unconfirmed, "false");
+  assert.equal(empty.el("tasks").byClass("unconfirmed-note").length, 0);
+  assert.equal(unconfirmedNote(empty.app.getModel()), null);
+
+  // 2. two silent items in two sessions: the older age is named
+  const two = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "a1", T0 + 1000),
+    lineAt("SessionStart", "S2", T0 + HOUR),
+    sub("S2", "a2", T0 + HOUR + 1000, "Plan"),
+  ];
+  const p2 = await loaded(two, [], { now: T0 + 3 * HOUR + 2000 });
+  assert.equal(
+    p2.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 2",
+  );
+  assert.equal(
+    p2.el("now").title,
+    `${LEAD} Нет свежих данных: 2. У самого старого последнее событие было 3 ч назад.`,
+  );
+  assert.equal(p2.el("now").dataset.unconfirmed, "true");
+  assert.equal(
+    p2.el("tasks").byClass("unconfirmed-note")[0].textContent,
+    p2.el("now").title,
+  );
+  // the note stands over the history and below 'Текущие'
+  const kids = p2.el("tasks").children;
+  const noteAt = kids.findIndex((c) => c.classes.has("unconfirmed-note"));
+  assert.ok(kids[noteAt - 1].classList.contains("section-empty"));
+  assert.equal(kids[noteAt + 1].dataset.section, "history");
+
+  // 3. one restart: N = 1, the time of the last start of the server
+  const restartRec = startRec(2, T0 + 1500);
+  const p3 = await loaded(two.slice(0, 2), [restartRec], { now: T0 + 2000 });
+  assert.equal(
+    p3.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 1",
+  );
+  assert.equal(
+    p3.el("now").title,
+    `${LEAD} Сервер перезапускался, события не записывались: 1. Последний запуск сервера: ${fmtDateTime(restartRec.time)}.`,
+  );
+
+  // 4. one of each: N = 2, both reasons; the restart record stands between
+  const both = [
+    two[0],
+    two[1],
+    two[2],
+    sub("S2", "a2", T0 + HOUR + 1000, "Plan"),
+  ];
+  const p4 = await loaded(both, [startRec(2, T0 + 1500)], {
+    now: T0 + 3 * HOUR + 1000,
+  });
+  assert.equal(
+    p4.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 2",
+  );
+  assert.equal(
+    p4.el("now").title,
+    `${LEAD} Нет свежих данных: 1. У самого старого последнее событие было 2 ч назад. Сервер перезапускался, события не записывались: 1. Последний запуск сервера: ${fmtDateTime(restartRec.time)}.`,
+  );
+
+  // 5. one 'окончание не записано': no second part, no reason
+  const ended = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "a1", T0 + 1000),
+    lineAt("SessionEnd", "S1", T0 + 2000),
+  ];
+  const p5 = await loaded(ended, [], { now: T0 + 3000 });
+  assert.equal(p5.text("now-text"), "Сейчас: в работе ничего нет");
+  assert.equal(p5.el("now").dataset.unconfirmed, "false");
+  assert.equal(p5.el("tasks").byClass("unconfirmed-note").length, 0);
+  assert.equal(p5.app.getModel().unconfirmed.count, 0);
+
+  // 7. a new trusted line of the session of a silent item: N falls, the item
+  // returns, the second part is gone when none is left
+  const p7 = await loaded(two, [], { now: T0 + 3 * HOUR + 2000 });
+  p7.server.entries.push(tool("S1", p7.clock.now(), "tu-back"));
+  await p7.tick(2000);
+  assert.equal(p7.app.getModel().unconfirmed.count, 1);
+  assert.equal(
+    p7.items().find((i) => i.dataset.key === "a1").dataset.state,
+    "in_progress",
+  );
+  assert.ok(
+    p7.text("now-text").startsWith("Сейчас: Explore"),
+    p7.text("now-text"),
+  );
+  assert.ok(!p7.text("now-text").includes("без свежих данных"));
+  // 8. an item in progress beside an item without fresh data: no second part
+  assert.equal(p7.el("tasks").byClass("unconfirmed-note").length, 0);
+  assert.equal(p7.el("now").dataset.unconfirmed, "false");
+  assert.equal(p7.el("now").title, p7.text("now-text"));
+  assert.equal(p7.app.getModel().unconfirmed.stale, 1, "the model still knows");
+  p7.server.entries.push(tool("S2", p7.clock.now(), "tu-back2"));
+  await p7.tick(2000);
+  assert.equal(p7.app.getModel().unconfirmed.count, 0);
+  assert.equal(p7.el("tasks").byClass("unconfirmed-note").length, 0);
+  assert.equal(unconfirmedNote(p7.app.getModel()), null);
+
+  // 9. the texts are constants of texts.js
+  assert.equal(TX.NOW_UNCONFIRMED, " · без свежих данных: {n}");
+  assert.equal(TX.UNCONFIRMED_LEAD, LEAD);
+  assert.equal(TX.UNCONFIRMED_STALE, "Нет свежих данных: {n}.");
+  assert.equal(
+    TX.UNCONFIRMED_STALE_AGE,
+    "У самого старого последнее событие было {age}.",
+  );
+  assert.equal(
+    TX.UNCONFIRMED_RESTART,
+    "Сервер перезапускался, события не записывались: {n}. Последний запуск сервера: {time}.",
+  );
+});
+
+test("FS-17: 301 items of both kinds - N = 301, not the 300 that the panel shows; the panel says 'показано 300 из 301'", async () => {
+  const entries = [lineAt("SessionStart", "R", T0)];
+  for (let i = 0; i < 151; i++) entries.push(sub("R", `r${i}`, T0 + 10 + i));
+  const cut = entries.length;
+  entries.push(lineAt("SessionStart", "O", T0 + 1000));
+  for (let i = 0; i < 150; i++) entries.push(sub("O", `o${i}`, T0 + 1100 + i));
+  const page = await loaded(entries, [startRec(cut, T0 + 900)], {
+    now: T0 + 5 * HOUR,
+  });
+  const m = page.app.getModel();
+  assert.equal(m.unconfirmed.restarted, 151);
+  assert.equal(m.unconfirmed.stale, 150);
+  assert.equal(m.unconfirmed.count, 301);
+  assert.equal(page.items().length, 300, "the panel shows 300");
+  assert.equal(
+    page.text("now-text"),
+    "Сейчас: в работе ничего нет · без свежих данных: 301",
+  );
+  assert.equal(
+    page.el("tasks").byClass("tasks-note")[0].textContent,
+    "показано 300 из 301",
+  );
+  assert.match(page.el("now").title, /Нет свежих данных: 150\./);
+  assert.match(
+    page.el("now").title,
+    /Сервер перезапускался, события не записывались: 151\./,
+  );
+});
+
+test("FS-17: stale items without a readable age - the explanation names the count and no age, no 'undefined', one sentence; a restart without a readable time of the start names no time", () => {
+  const bad = [
+    lineAt("SessionStart", "S1", T0),
+    { ...sub("S1", "a1", T0 + 1000), time: "garbled" },
+  ];
+  const m = buildModel(bad, [], T0 + 2000);
+  assert.equal(m.unconfirmed.stale, 1);
+  assert.equal(m.unconfirmed.oldest_stale_age_ms, null);
+  const note = unconfirmedNote(m);
+  assert.equal(note.text, `${LEAD} Нет свежих данных: 1.`);
+  assert.equal(
+    nowLine(m).text,
+    "Сейчас: в работе ничего нет · без свежих данных: 1",
+  );
+  assert.equal(nowLine(m).title, note.text);
+  // a record of the start whose time cannot be read: no phrase with the time
+  const ok = [lineAt("SessionStart", "S1", T0), sub("S1", "a1", T0 + 1000)];
+  const m2 = buildModel(ok, [{ time: "never", journal_lines: 2 }], T0 + 2000);
+  assert.equal(m2.unconfirmed.restarted, 1);
+  assert.doesNotMatch(unconfirmedNote(m2).text, /undefined|NaN|Invalid/);
+  assert.equal(taskPanel(m2).unconfirmed_note.restarted, 1);
+});
+
+// ------------------------------------------------------------------ FS-20
+
+// WCAG 2.x contrast ratio of two colours given as #rrggbb, with the second
+// possibly a rgba() over a base colour.
+function lum([r, g, b]) {
+  const f = (v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function rgbOf(text, tokens, base = null) {
+  let t = text.trim();
+  const v = /^var\((--[a-z0-9-]+)\)$/.exec(t);
+  if (v) t = tokens.get(v[1]);
+  let m = /^#([0-9a-f]{6})$/i.exec(t);
+  if (m) {
+    return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  }
+  m = /^rgba\((\d+), (\d+), (\d+), ([0-9.]+)\)$/.exec(t);
+  assert.ok(m, `colour ${text}`);
+  const a = Number(m[4]);
+  return [1, 2, 3].map((i, k) =>
+    Math.round(Number(m[i]) * a + base[k] * (1 - a)),
+  );
+}
+const ratio = (a, b) => {
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+test("FS-20: the grey labels of the new states are readable - the text of the label of a session, of an item and of the window of history against its background is at least 4.5:1 by the WCAG formula, on the tokens of style.css (this is a computed property of the colours, not a search for a word)", () => {
+  const css = fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8");
+  const rules = parseCss(css);
+  const tokens = new Map(
+    [...cssDecls(rules, ":root")].filter(([k]) => k.startsWith("--")),
+  );
+  assert.ok(
+    tokens.get("--text") && tokens.get("--idle") && tokens.get("--panel"),
+  );
+  const cases = [
+    // [selector, the surfaces under it]
+    [`.session-badge[data-state="stale"]`, [null]],
+    [`.item[data-state="stale"] .item-state`, ["--panel", "--panel-2"]],
+    [`.item[data-state="restarted"] .item-state`, ["--panel", "--panel-2"]],
+    [`.history-state[data-state="stale"]`, ["--panel", "--panel-2"]],
+    [`.history-state[data-state="restarted"]`, ["--panel", "--panel-2"]],
+  ];
+  for (const [selector, surfaces] of cases) {
+    const d = cssDecls(rules, selector);
+    assert.ok(d.get("color"), `${selector}: color`);
+    const bg = d.get("background");
+    assert.ok(bg, `${selector}: background`);
+    for (const surface of surfaces) {
+      const base = surface === null ? null : rgbOf(`var(${surface})`, tokens);
+      const back = rgbOf(bg, tokens, base);
+      const front = rgbOf(d.get("color"), tokens);
+      const r = ratio(front, back);
+      assert.ok(r >= 4.5, `${selector} on ${surface}: ${r.toFixed(2)}:1`);
+    }
+  }
+  // the formula itself: black on white is 21:1, the grey of the old label was not enough
+  assert.ok(Math.abs(ratio([0, 0, 0], [255, 255, 255]) - 21) < 1e-9);
+  const old = ratio(
+    rgbOf("var(--on-fill)", tokens),
+    rgbOf("var(--idle)", tokens),
+  );
+  assert.ok(old < 4.5, "the former pair (--on-fill on --idle) would fail");
+});
+
+// F1 of the review of step 5b: the word in the caption (meta) of the window of
+// history is the state of the request - the state of the last row of the main
+// session in it (REQ-008 criterion 10, REQ-042 criterion 5).
+test("FS-11: the word in the meta of the window of history, opened from a row of the main session, is the literal of the state - 'в работе', 'нет свежих данных', 'сервер перезапускался…', 'закончила работу…', 'окончание не записано'", async () => {
+  const ask = lineAt("UserPromptSubmit", "S1", T0 + 500, {
+    prompt_kind: "owner",
+    prompt_text: "Образец запроса",
+  });
+  const start = lineAt("SessionStart", "S1", T0);
+  const cases = [
+    ["in_progress", [start, ask], [], T0 + 2000],
+    ["stale", [start, ask], [], T0 + 2 * HOUR],
+    ["restarted", [start, ask], [startRec(2, T0 + 1000)], T0 + 2000],
+    ["completed", [start, ask, lineAt("Stop", "S1", T0 + 900)], [], T0 + 2000],
+    [
+      "unrecorded",
+      [start, ask, lineAt("SessionEnd", "S1", T0 + 900)],
+      [],
+      T0 + 2000,
+    ],
+  ];
+  for (const [state, entries, starts, now] of cases) {
+    const page = await loaded(entries, starts, { now });
+    const row = page
+      .items()
+      .find((i) => i.dataset.kind === "main" && i.dataset.state === state);
+    assert.ok(row !== undefined, `the row of the main session is ${state}`);
+    row.byClass("history-open")[0].click();
+    const dom = historyDom(page);
+    assert.equal(dom.isOpen(), true, state);
+    const word = dom.meta().byClass("history-state")[0];
+    assert.equal(word.textContent, WORDS[state], `meta: ${state}`);
+    assert.equal(word.dataset.state, state);
+    dom.close.click();
+    assert.equal(dom.isOpen(), false);
+  }
+  // opened from the row of the journal, too (the same request)
+  const page = await loaded([start, ask], [], { now: T0 + 2 * HOUR });
+  const opener = page.rows().find((r) => r.classes.has("opens-history"));
+  opener.click();
+  assert.equal(
+    historyDom(page).meta().byClass("history-state")[0].textContent,
+    "нет свежих данных",
+  );
 });

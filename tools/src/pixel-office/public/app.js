@@ -10,7 +10,7 @@
 // can replace all of it.
 
 import { MASK_LABEL, POLL_MS, POLL_TIMEOUT_MS, parseLine } from "./schema.js";
-import { buildModel } from "./model.js";
+import { UNCONFIRMED_STATES, buildModel } from "./model.js";
 import { buildHistory } from "./history.js";
 import {
   bubblesAt,
@@ -35,7 +35,13 @@ import {
   nowLine,
   taskPanel,
 } from "./panels.js";
-import { fmtDateTime, fmtTime, fmtTimeSec, tzLabel } from "./format.js";
+import {
+  ageText,
+  fmtDateTime,
+  fmtTime,
+  fmtTimeSec,
+  tzLabel,
+} from "./format.js";
 import {
   CANVAS_UNSUPPORTED,
   CARD_CLOSE,
@@ -75,6 +81,7 @@ import {
   JOURNAL_TITLE,
   JOURNAL_ZONE,
   LABEL_ENDED,
+  LABEL_FIRST_EVENT,
   LABEL_LAST_EVENT,
   LABEL_STARTED,
   LEGEND_IDLE,
@@ -94,7 +101,7 @@ import {
   SECTION_HISTORY,
   SECTION_STARTS,
   SESSION_RUNNING,
-  SESSION_STATS,
+  SESSION_STALE,
   SESSION_WORD,
   SHOWN_NOTE,
   SPEED_LABELS,
@@ -116,6 +123,12 @@ const WIDE_MIN_HEIGHT = 640;
 // A list that is not further than this from its bottom stays at the bottom.
 const BOTTOM_SLACK = 24;
 const SPEED_IDS = Object.freeze([1, 2, 4]);
+
+// An item that has a last event of its session to show: in progress or one of
+// the states the journal does not confirm (stale, restarted).
+function hasSessionEvent(state) {
+  return state === "in_progress" || UNCONFIRMED_STATES.includes(state);
+}
 
 function shortId(id) {
   return Array.from(typeof id === "string" ? id : "")
@@ -452,8 +465,9 @@ export function createApp(env) {
     }
     const line = nowLine(model);
     if (els.nowText) els.nowText.textContent = line.text;
-    els.now.title = line.text;
+    els.now.title = line.title;
     setData(els.now, "busy", line.busy ? "true" : "false");
+    setData(els.now, "unconfirmed", line.unconfirmed >= 1 ? "true" : "false");
     els.now.hidden = false;
   }
 
@@ -674,12 +688,10 @@ export function createApp(env) {
     return span;
   }
 
-  function lastEventOf(item) {
-    if (item.kind === "task") return item.session_last_event_at;
-    const session = model.sessions.find(
-      (s) => s.session_id === item.session_id,
-    );
-    return session === undefined ? null : session.last_event_at;
+  // The age of the last event as a separate span; none if it is unknown.
+  function ageSpan(ms) {
+    const text = ageText(ms);
+    return text === "" ? null : make("span", "age", text);
   }
 
   // The contents of an item of the list (a task or a row of the main
@@ -711,10 +723,15 @@ export function createApp(env) {
     }
     const time = make("div", "item-time");
     time.appendChild(timeSpan("started", LABEL_STARTED, item.started_at));
-    if (item.state === "in_progress") {
+    if (hasSessionEvent(item.state)) {
       time.appendChild(
-        timeSpan("last-event", LABEL_LAST_EVENT, lastEventOf(item)),
+        timeSpan("last-event", LABEL_LAST_EVENT, item.session_last_event_at),
       );
+      // After a restart the age says nothing about the work, so none is shown.
+      if (item.state !== "restarted") {
+        const age = ageSpan(item.age_ms);
+        if (age !== null) time.appendChild(age);
+      }
     } else if (item.state === "completed") {
       time.appendChild(timeSpan("ended", LABEL_ENDED, item.ended_at));
     }
@@ -727,24 +744,30 @@ export function createApp(env) {
     const div = make("div", "session-card");
     setData(div, "session", shortId(card.session_id));
     setData(div, "running", card.running ? "true" : "false");
-    if (card.running) {
-      div.appendChild(make("span", "session-badge", SESSION_RUNNING));
+    if (card.word !== null) {
+      setData(div, "word", card.word);
+      const badge = make(
+        "span",
+        "session-badge",
+        card.word === "running" ? SESSION_RUNNING : SESSION_STALE,
+      );
+      setData(badge, "state", card.word);
+      div.appendChild(badge);
     }
     const line = make("span", "session-line");
     line.appendChild(make("span", "session-word", SESSION_WORD));
     line.appendChild(make("span", "session-id", shortId(card.session_id)));
     div.appendChild(line);
-    const bar = make("progress", "session-progress");
-    bar.max = Math.max(card.m, 1);
-    bar.value = card.n;
-    div.appendChild(bar);
-    div.appendChild(
-      make(
-        "span",
-        "session-stats",
-        fill(SESSION_STATS, { n: card.n, m: card.m, k: card.k }),
-      ),
+    const times = make("div", "session-times");
+    times.appendChild(
+      timeSpan("first-event", LABEL_FIRST_EVENT, card.first_event_at),
     );
+    times.appendChild(
+      timeSpan("last-event", LABEL_LAST_EVENT, card.last_event_at),
+    );
+    const age = ageSpan(card.age_ms);
+    if (age !== null) times.appendChild(age);
+    div.appendChild(times);
     return div;
   }
 
@@ -796,6 +819,11 @@ export function createApp(env) {
       out.push(make("p", "section-empty", NOW_EMPTY));
     }
     for (const item of panel.current) out.push(panelItem(item));
+    if (panel.unconfirmed_note !== null) {
+      const note = make("p", "unconfirmed-note", panel.unconfirmed_note.text);
+      setData(note, "section", "unconfirmed");
+      out.push(note);
+    }
     out.push(sectionTitle("history", SECTION_HISTORY));
     if (panel.history.length === 0) {
       out.push(make("p", "section-empty", NO_DATA));
@@ -830,7 +858,9 @@ export function createApp(env) {
 
   // ------------------------------------------------------------ card
 
-  function cardSection(name, heading, items) {
+  // total: how many items the section has before its limit; when it is more
+  // than shown, the note "показано n из N" stands under the list.
+  function cardSection(name, heading, items, total = items.length) {
     const section = make("section", "card-section");
     setData(section, "list", name);
     section.appendChild(make("h4", undefined, heading));
@@ -838,6 +868,15 @@ export function createApp(env) {
     if (items.length === 0) ul.appendChild(make("li", "empty", CARD_EMPTY));
     for (const item of items) ul.appendChild(item);
     section.appendChild(ul);
+    if (total > items.length) {
+      section.appendChild(
+        make(
+          "p",
+          "tasks-note",
+          fill(SHOWN_NOTE, { n: items.length, N: total }),
+        ),
+      );
+    }
     return section;
   }
 
@@ -893,9 +932,21 @@ export function createApp(env) {
         card.in_progress.map((item) => itemInto(make("li", "item"), item)),
       ),
       cardSection(
+        "unconfirmed",
+        CARD_HEADINGS.unconfirmed,
+        card.unconfirmed.map((item) => itemInto(make("li", "item"), item)),
+        card.unconfirmed_total,
+      ),
+      cardSection(
         "recent-completed",
         CARD_HEADINGS.recent_completed,
         card.recent_completed.map((item) => itemInto(make("li", "item"), item)),
+      ),
+      cardSection(
+        "unrecorded",
+        CARD_HEADINGS.unrecorded,
+        card.unrecorded.map((item) => itemInto(make("li", "item"), item)),
+        card.unrecorded_total,
       ),
       cardSection(
         "recent-events",
@@ -1061,7 +1112,7 @@ export function createApp(env) {
     let text = `${LABEL_STARTED} ${fmtTime(task.started_at)}`;
     if (task.state === "completed") {
       text += ` · ${LABEL_ENDED} ${fmtTime(task.ended_at)}`;
-    } else if (task.state === "in_progress") {
+    } else if (hasSessionEvent(task.state)) {
       text += ` · ${LABEL_LAST_EVENT} ${fmtTime(task.session_last_event_at)}`;
     }
     return text;

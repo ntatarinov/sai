@@ -13,6 +13,16 @@ export const NO_CONNECTION = "Нет связи с сервером Pixel Office
 export const NOW_PREFIX = "Сейчас: ";
 export const NOW_EMPTY = "в работе ничего нет";
 export const NOW_MORE = " · и ещё {n} в работе";
+// The second part of the line when nothing is in progress but the journal does
+// not confirm some items (REQ-042, criterion 13).
+export const NOW_UNCONFIRMED = " · без свежих данных: {n}";
+export const UNCONFIRMED_LEAD =
+  "Журнал не подтверждает, что эти задачи и строки основной сессии идут. Это не конец работы и не ошибка.";
+export const UNCONFIRMED_STALE = "Нет свежих данных: {n}.";
+export const UNCONFIRMED_STALE_AGE =
+  "У самого старого последнее событие было {age}.";
+export const UNCONFIRMED_RESTART =
+  "Сервер перезапускался, события не записывались: {n}. Последний запуск сервера: {time}.";
 export const PAUSE = "Пауза";
 export const RESUME = "Продолжить";
 
@@ -47,7 +57,9 @@ export const ROLE_UNKNOWN = "(роль не указана)";
 
 export const STATE_LABELS = Object.freeze({
   in_progress: "в работе",
-  completed: "завершена",
+  stale: "нет свежих данных",
+  restarted: "сервер перезапускался, события не записывались",
+  completed: "закончила работу, итог не записан",
   unrecorded: "окончание не записано",
 });
 
@@ -67,12 +79,21 @@ export const SECTION_STARTS = "Запуски сервера";
 export const SHOWN_NOTE = "показано {n} из {N}";
 export const SESSION_WORD = "Сессия";
 export const SESSION_RUNNING = "• Идёт";
-export const SESSION_STATS = "задач {n}/{m} · ролей {k}";
+export const SESSION_STALE = STATE_LABELS.stale;
 
 // Small captions next to the times of an item of the task list.
 export const LABEL_STARTED = "начало";
+export const LABEL_FIRST_EVENT = "первое событие";
 export const LABEL_LAST_EVENT = "последнее событие сессии";
 export const LABEL_ENDED = "конец";
+
+// The age of the last event: {n}, {h}, {m} and {d} are whole numbers.
+export const AGE_LESS_THAN_MINUTE = "меньше минуты назад";
+export const AGE_MINUTES = "{n} мин назад";
+export const AGE_HOURS_MINUTES = "{h} ч {m} мин назад";
+export const AGE_HOURS = "{h} ч назад";
+export const AGE_DAYS_HOURS = "{d} сут {h} ч назад";
+export const AGE_DAYS = "{d} сут назад";
 
 // ------------------------------------------------------ office and legend
 
@@ -92,7 +113,9 @@ export const CARD_SESSIONS = "идущих сессий: ";
 
 export const CARD_HEADINGS = Object.freeze({
   in_progress: "Сейчас в работе",
-  recent_completed: "Недавно завершены",
+  unconfirmed: "Нет подтверждения работы",
+  recent_completed: "Недавно закончили работу",
+  unrecorded: "Окончание не записано",
   recent_events: "Последние события",
 });
 
@@ -104,9 +127,9 @@ export const CARD_CLOSE = "Закрыть карточку";
 // The only phrases of the bubbles: each is tied to one kind of event.
 export const BUBBLE_TEXTS = Object.freeze({
   got_task: "Только что получил задачу",
-  done: "Готово",
+  done: "Закончил работу",
   got_request: "Получил запрос",
-  answer_ready: "Ответ готов",
+  answer_ready: "Вернул ответ",
 });
 
 export const ROOM_LABELS = Object.freeze({

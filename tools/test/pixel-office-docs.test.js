@@ -94,3 +94,72 @@ test("DC-02: the role of the orchestrator passes G1-G4 of criterion 16; the same
   const bare = checks("pixel-office-note --text x, --session не передаётся");
   assert.equal(bare.g4, 1);
 });
+
+// ------------------------------------------------------------------ FS-16
+// REQ-042 criterion 11: the README tells the new words. The four checks of the
+// criterion are `awk` + `grep` commands; here they are written in JS so that the
+// test needs no tools, and run on invented text too, to show that they accept
+// and reject as intended.
+
+// awk '/START/{f=1;next} /^## /{f=0} f' : the lines after a line that starts a
+// part, up to the next heading of level 2 (a repeated start begins again).
+function awkPart(text, start) {
+  const out = [];
+  let f = false;
+  for (const line of text.split("\n")) {
+    if (start.test(line)) {
+      f = true;
+      continue;
+    }
+    if (/^## /.test(line)) f = false;
+    if (f) out.push(line);
+  }
+  return out;
+}
+// grep -c : the number of lines that match
+const grepC = (lines, re) => lines.filter((l) => re.test(l)).length;
+
+const LIMITS = /^### Ограничения/;
+const PIXEL = /^## Pixel Office/;
+
+test("FS-16: the README tells the new words - 'нет свежих данных' in the limits and in the section, 'сервер перезапускался' in the section, no 'задач n/', 'полоса хода' or «завершена» there; the four checks of criterion 11, run on the file and on invented text", () => {
+  const limits = awkPart(README, LIMITS);
+  const pixel = awkPart(README, PIXEL);
+  assert.ok(
+    grepC(limits, /нет свежих данных/) >= 1,
+    "limits: нет свежих данных",
+  );
+  assert.ok(
+    grepC(pixel, /нет свежих данных/) >= 1,
+    "section: нет свежих данных",
+  );
+  assert.ok(
+    grepC(pixel, /сервер перезапускался/) >= 1,
+    "section: сервер перезапускался",
+  );
+  assert.equal(grepC(pixel, /задач [0-9n]+\/|полоса хода|«завершена»/), 0);
+  // the threshold and the constant are named in the section
+  assert.ok(pixel.join("\n").includes("STALE_AFTER_MS"));
+  assert.ok(/60 минут/.test(pixel.join("\n")));
+  // the trusted lines (criterion 7) and the old words are not in the limits
+  assert.equal(grepC(limits, /«завершена»/), 0);
+
+  // the checks themselves, on invented text
+  const sample = [
+    "# Doc",
+    "## Pixel Office",
+    "Текст.",
+    "### Ограничения",
+    "1. Задача не остаётся «в работе»: нет свежих данных.",
+    "## Другое",
+    "нет свежих данных тут не считается",
+  ].join("\n");
+  assert.equal(grepC(awkPart(sample, LIMITS), /нет свежих данных/), 1);
+  assert.equal(grepC(awkPart(sample, PIXEL), /нет свежих данных/), 1);
+  assert.equal(grepC(awkPart(sample, PIXEL), /сервер перезапускался/), 0);
+  const old = "## Pixel Office\nзадач 3/5 · полоса хода · «завершена»";
+  assert.equal(
+    grepC(awkPart(old, PIXEL), /задач [0-9n]+\/|полоса хода|«завершена»/),
+    1,
+  );
+});

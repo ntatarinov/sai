@@ -82,8 +82,9 @@ const BOARD = Object.freeze({
   height: 52,
   plaques: Object.freeze([
     ["in_progress", 2, "#e8b64c"],
-    ["completed", 14, "#48c98a"],
-    ["unrecorded", 26, "#ef6b5e"],
+    ["completed", 11, "#48c98a"],
+    ["unrecorded", 20, "#ef6b5e"],
+    ["restarted", 29, "#8296b1"],
   ]),
   more: [854, 40],
 });
@@ -281,10 +282,10 @@ function drawBoard(ctx, board) {
     rect(ctx, ROLE_PALETTE[column.color], x, y, BOARD.width, BOARD.height);
     ctx.font = "bold 8px system-ui";
     for (const [state, dy, color] of BOARD.plaques) {
-      rect(ctx, "#0f1520", x + 1, y + dy - 1, 37, 12);
-      rect(ctx, color, x + 2, y + dy, 35, 10);
+      rect(ctx, "#0f1520", x + 1, y + dy - 1, 37, 10);
+      rect(ctx, color, x + 2, y + dy, 35, 8);
       ctx.fillStyle = DARK_TEXT;
-      ctx.fillText(countText(column.counts[state], 999), x + 19.5, y + dy + 8);
+      ctx.fillText(countText(column.counts[state], 999), x + 19.5, y + dy + 7);
     }
     rect(ctx, "rgba(7, 16, 28, 0.75)", x, y + 38, 39, 14);
     ctx.font = "bold 7px system-ui";

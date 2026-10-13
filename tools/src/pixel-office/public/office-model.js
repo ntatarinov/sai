@@ -10,6 +10,7 @@
 // bubble is the time written in the journal line).
 
 import { buildLayout } from "./layout.js";
+import { ITEM_STATES, UNCONFIRMED_STATES } from "./model.js";
 import { BUBBLE_TEXTS, MAIN_LABEL, ROLE_UNKNOWN } from "./texts.js";
 
 export const MAIN_KEY = "main";
@@ -51,6 +52,8 @@ export const BOARD_COLUMNS = 4;
 
 const LABEL_MAX = 16;
 const CARD_COMPLETED_MAX = 5;
+const CARD_UNCONFIRMED_MAX = 10;
+const CARD_UNRECORDED_MAX = 5;
 const CARD_EVENTS_MAX = 10;
 
 // The short caption of a role for the canvas (decision D13). If the role ends
@@ -73,9 +76,15 @@ export function roleLabel(role) {
   return text;
 }
 
-function countStates(items) {
-  const counts = { in_progress: 0, completed: 0, unrecorded: 0 };
-  for (const item of items) counts[item.state] += 1;
+// A count for each of the five states. A state that is not one of them is
+// not counted (only the model gives states, so it cannot happen), so a count
+// is never NaN.
+export function countStates(items) {
+  const counts = {};
+  for (const state of ITEM_STATES) counts[state] = 0;
+  for (const item of items) {
+    if (Object.hasOwn(counts, item.state)) counts[item.state] += 1;
+  }
   return counts;
 }
 
@@ -331,6 +340,12 @@ export function buildCard(model, office, key) {
     isMain ? item.kind === "main" : item.kind === "task" && item.role === role,
   );
   const inProgress = mine.filter((item) => item.state === "in_progress");
+  // "No fresh data" and "server restarted" in the order of the list; the
+  // total is counted before the limit.
+  const unconfirmedAll = mine.filter((item) =>
+    UNCONFIRMED_STATES.includes(item.state),
+  );
+  const unrecordedAll = mine.filter((item) => item.state === "unrecorded");
   const completed = mine
     .filter((item) => item.state === "completed")
     .sort((a, b) => b.end_index - a.end_index)
@@ -357,7 +372,11 @@ export function buildCard(model, office, key) {
     color: character.color,
     working_count: character.working_count,
     in_progress: inProgress,
+    unconfirmed: unconfirmedAll.slice(0, CARD_UNCONFIRMED_MAX),
+    unconfirmed_total: unconfirmedAll.length,
     recent_completed: completed,
+    unrecorded: unrecordedAll.slice(0, CARD_UNRECORDED_MAX),
+    unrecorded_total: unrecordedAll.length,
     recent_events: events,
   };
   if (isMain) card.sessions_running = character.sessions_running;

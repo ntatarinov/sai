@@ -17,7 +17,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildModel } from "./model.js";
-import { MAIN_KEY, buildOffice } from "./office-model.js";
+import { MAIN_KEY, buildOffice, countStates } from "./office-model.js";
 import { parseLine } from "./schema.js";
 
 const STARTS_FILE = "server-starts.jsonl";
@@ -111,12 +111,6 @@ function parseJson(text) {
 
 // ------------------------------------------------------------------ report
 
-function countStates(tasks) {
-  const counts = { in_progress: 0, unrecorded: 0, completed: 0 };
-  for (const task of tasks) counts[task.state] += 1;
-  return counts;
-}
-
 // Builds the report object from the lines of the journal (null for the lines
 // that are not valid), the records of server starts and the clock. session:
 // null for the whole journal.
@@ -191,8 +185,9 @@ export function buildReport(entries, starts, nowMs, session) {
 }
 
 // Runs the command. argv: the arguments after the name of the program; io:
-// {stdout, stderr} with the method write. Returns the exit code.
-export function runReport(argv, io = process) {
+// {stdout, stderr} with the method write; nowFn: the clock (milliseconds), the
+// real one by default. Returns the exit code.
+export function runReport(argv, io = process, nowFn = Date.now) {
   const out = (text) => io.stdout.write(text);
   const err = (text) => io.stderr.write(`${text}\n`);
   try {
@@ -256,7 +251,7 @@ export function runReport(argv, io = process) {
       );
     }
 
-    const report = buildReport(entries, starts, Date.now(), args.session);
+    const report = buildReport(entries, starts, nowFn(), args.session);
     out(`${JSON.stringify(report, null, 2)}\n`);
     return 0;
   } catch (e) {

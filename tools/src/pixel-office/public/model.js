@@ -13,10 +13,39 @@ import {
   PROMPT_KINDS,
   READ_CONFLICT_MS,
   SOURCE_REAL,
+  STALE_AFTER_MS,
 } from "./schema.js";
 import { ROLE_UNKNOWN } from "./texts.js";
 
 const CONFLICT_MS = READ_CONFLICT_MS;
+
+// The five states of a task and of a row of the main session, in the order of
+// showing, and the two that mean "the journal does not confirm that the work
+// goes on" (REQ-042, decision 0051).
+export const ITEM_STATES = Object.freeze([
+  "in_progress",
+  "stale",
+  "restarted",
+  "completed",
+  "unrecorded",
+]);
+export const UNCONFIRMED_STATES = Object.freeze(["stale", "restarted"]);
+
+// The age of a time written as text against the clock of the page: null if
+// either is not readable, otherwise not below zero (a clock that went back
+// gives 0).
+export function ageOf(iso, nowMs) {
+  if (typeof iso !== "string" || !Number.isFinite(nowMs)) return null;
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return null;
+  return Math.max(0, nowMs - ms);
+}
+
+// Fresh data: the age is known and not above the threshold (the border is
+// strict: exactly the threshold is still fresh).
+function isFresh(age) {
+  return age !== null && age <= STALE_AFTER_MS;
+}
 
 // A usable element: an object with the two keys every rule reads. Elements
 // that are not usable take part in nothing and are marked with nothing.
@@ -162,6 +191,7 @@ export function readRule(entries, nowMs) {
 // Records of server starts that the rules may use: journal_lines is a whole
 // number from 0 to the number of lines of the journal. A record with more is a
 // trace of a deleted or truncated journal (design 3.4, E33) and is dropped.
+// The records are returned whole, in the order of the file.
 function usableStarts(serverStarts, lineCount) {
   if (!Array.isArray(serverStarts)) return [];
   const out = [];
@@ -169,7 +199,7 @@ function usableStarts(serverStarts, lineCount) {
     if (s === null || typeof s !== "object") continue;
     const lines = s.journal_lines;
     if (!Number.isInteger(lines) || lines < 0 || lines > lineCount) continue;
-    out.push(lines);
+    out.push(s);
   }
   return out;
 }
@@ -263,12 +293,15 @@ export function buildModel(entries, serverStarts, nowMs) {
     trusted[i] = isLine(entries[i]) && marks[i] === null;
   }
 
-  const startLines = usableStarts(serverStarts, count);
+  const startRecords = usableStarts(serverStarts, count);
   // A server start is "after line i" if journal_lines > i (design D5).
   let latestStart = -1;
-  for (const lines of startLines) if (lines > latestStart) latestStart = lines;
-  const lastStart =
-    startLines.length > 0 ? startLines[startLines.length - 1] : 0;
+  for (const s of startRecords) {
+    if (s.journal_lines > latestStart) latestStart = s.journal_lines;
+  }
+  const lastRecord =
+    startRecords.length > 0 ? startRecords[startRecords.length - 1] : null;
+  const lastStart = lastRecord === null ? 0 : lastRecord.journal_lines;
 
   const sessionMap = new Map();
   const taskMap = new Map();
@@ -292,6 +325,7 @@ export function buildModel(entries, serverStarts, nowMs) {
       session = {
         session_id: sid,
         first_index: i,
+        first_event_at: e.time,
         last_index: i,
         last_event_at: e.time,
         last_kind: kind,
@@ -383,45 +417,88 @@ export function buildModel(entries, serverStarts, nowMs) {
     }
   }
 
-  // Rows that no event closed: a server start after the request closes them as
-  // "not recorded"; a late Stop would already have closed them above.
+  // The age of the last trusted event of each session, against the clock of
+  // the page (REQ-042). Task and row take the age of their session.
+  const sessionAge = new Map();
+  for (const [sid, s] of sessionMap)
+    sessionAge.set(sid, ageOf(s.last_event_at, nowMs));
+  const lastEventOf = (sid) => {
+    const session = sessionMap.get(sid);
+    return session === undefined ? null : session.last_event_at;
+  };
+
+  // Rows that no event closed (rows closed by an event are done above; a late
+  // Stop would already have closed the others): a server start after the
+  // request names the restart; otherwise the age decides.
   for (const row of mainRows) {
-    if (row.state === "in_progress" && latestStart > row.start_index) {
-      row.state = "unrecorded";
+    row.session_last_event_at = lastEventOf(row.session_id);
+    row.age_ms = sessionAge.has(row.session_id)
+      ? sessionAge.get(row.session_id)
+      : null;
+    if (row.state !== "in_progress") continue;
+    if (latestStart > row.start_index) {
+      row.state = "restarted";
       row.closed_by = "server_start";
+    } else if (!isFresh(row.age_ms)) {
+      row.state = "stale";
     }
   }
 
   const sessions = [];
   for (const s of sessionMap.values()) {
+    const age = sessionAge.get(s.session_id);
+    const open = s.last_kind !== "SessionEnd";
+    let word = null;
+    if (open && isFresh(age)) {
+      if (s.last_index >= lastStart) word = "running";
+    } else if (open) {
+      word = "stale";
+    }
     sessions.push({
       session_id: s.session_id,
       first_index: s.first_index,
+      first_event_at: s.first_event_at,
       last_index: s.last_index,
       last_event_at: s.last_event_at,
-      running: s.last_index >= lastStart && s.last_kind !== "SessionEnd",
+      age_ms: age,
+      word,
+      running: word === "running",
     });
   }
 
   const tasks = taskDrafts.map((t) => {
+    const lastEventAt = lastEventOf(t.session_id);
+    const age = sessionAge.has(t.session_id)
+      ? sessionAge.get(t.session_id)
+      : null;
+    const endOfSession = lastEnd.get(t.session_id);
     let state;
+    let closedBy = null;
     if (t.last_is_stop) {
       state = "completed";
+      closedBy = "stop";
+    } else if (
+      endOfSession !== undefined &&
+      endOfSession > t.last_start_index
+    ) {
+      state = "unrecorded";
+      closedBy = "session_end";
+    } else if (latestStart > t.last_start_index) {
+      state = "restarted";
+      closedBy = "server_start";
+    } else if (!isFresh(age)) {
+      state = "stale";
     } else {
-      const endOfSession = lastEnd.get(t.session_id);
-      state =
-        latestStart > t.last_start_index ||
-        (endOfSession !== undefined && endOfSession > t.last_start_index)
-          ? "unrecorded"
-          : "in_progress";
+      state = "in_progress";
     }
     const link = linkOf(posts.get(t.key), entries);
-    const session = sessionMap.get(t.session_id);
     return {
       key: t.key,
       role: t.role,
       session_id: t.session_id,
       state,
+      closed_by: closedBy,
+      age_ms: age,
       description: link === null ? null : link.description,
       subagent_type: link === null ? null : link.subagent_type,
       launched_by: link === null ? null : link.launched_by,
@@ -435,8 +512,7 @@ export function buildModel(entries, serverStarts, nowMs) {
           ? t.stop_indices[t.stop_indices.length - 1]
           : null,
       stop_indices: t.stop_indices,
-      session_last_event_at:
-        session === undefined ? null : session.last_event_at,
+      session_last_event_at: lastEventAt,
     };
   });
 
@@ -453,6 +529,30 @@ export function buildModel(entries, serverStarts, nowMs) {
     return rankA - rankB || position(b) - position(a);
   });
 
+  // How many items of the whole list the journal does not confirm (no limit
+  // of the panel applies here).
+  const unconfirmed = {
+    stale: 0,
+    restarted: 0,
+    count: 0,
+    oldest_stale_age_ms: null,
+  };
+  for (const item of list) {
+    if (item.state === "stale") {
+      unconfirmed.stale += 1;
+      if (
+        item.age_ms !== null &&
+        (unconfirmed.oldest_stale_age_ms === null ||
+          item.age_ms > unconfirmed.oldest_stale_age_ms)
+      ) {
+        unconfirmed.oldest_stale_age_ms = item.age_ms;
+      }
+    } else if (item.state === "restarted") {
+      unconfirmed.restarted += 1;
+    }
+  }
+  unconfirmed.count = unconfirmed.stale + unconfirmed.restarted;
+
   return {
     entries,
     marks,
@@ -463,5 +563,11 @@ export function buildModel(entries, serverStarts, nowMs) {
     list,
     journal,
     serverStarts: Array.isArray(serverStarts) ? serverStarts : [],
+    now_ms: nowMs,
+    last_start:
+      lastRecord === null
+        ? null
+        : { time: lastRecord.time, journal_lines: lastRecord.journal_lines },
+    unconfirmed,
   };
 }

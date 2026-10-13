@@ -82,7 +82,7 @@ test("ST-06: the README has the 14 lines of criterion 13 and the link; its port 
     "при копии обработчиков",
     "https://code.claude.com/docs/en/hooks",
     "### Ограничения",
-    "остаться «в работе»",
+    "нет свежих данных",
     "учётная запись",
     "одной вписанной строки",
     "навсегда",

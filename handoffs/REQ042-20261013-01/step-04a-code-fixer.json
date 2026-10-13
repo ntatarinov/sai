@@ -1,0 +1,138 @@
+{
+  "handoff_id": "step04a-REQ042-20261013-01",
+  "run_id": "REQ042-20261013-01",
+  "workflow_id": "WF-02",
+  "step": "04a",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/REQ042-20261013-01/step-04a-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-042"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ042-20261013-01/step-04-reviewer.json",
+      "tools/src/pixel-office/public/",
+      "tools/README.md",
+      "docs/design/REQ-042-state-honesty.md"
+    ],
+    "route": "REVIEWER FAIL -> CODE-FIXER (этот) -> SECURITY-REVIEWER -> REVIEWER",
+    "write_set": [
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/panels.js",
+      "tools/src/pixel-office/public/texts.js",
+      "tools/README.md (только раздел Pixel Office, ограничение 9)"
+    ],
+    "base_tag": "base/REQ042-20261013-01",
+    "rework_of": "handoffs/REQ042-20261013-01/step-04-reviewer.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-13T11:38:08Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git status: правки только в style.css, app.js, panels.js, texts.js, tools/README.md (write_set); tools/test и проект не тронуты",
+        "красные те же 12 (список и ошибки совпали до/после, по result); контраст пересчитан автором: 7,01 / 9,14 / 10,07",
+        "дальше шаги 3 и 4 заново (WF-02)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, CODE-FIXER после FAIL шага 4 (handoffs/REQ042-20261013-01/step-04-reviewer.json — прочти result целиком). Правь ТОЛЬКО перечисленное, другой код не трогай и не «улучшай»: (F1, Medium) tools/src/pixel-office/public/style.css около строк 586–589: метка «нет свежих данных» на карточке сессии — фон var(--idle) оставить, цвет текста заменить на var(--text) (7,01:1 по расчёту ревьюера); пересчитай контраст формулой WCAG по токенам :root и запиши число в result.changes. (F2, Medium) style.css около 669–673 (.item[data-state=stale|restarted] .item-state) и 967–971 (.history-state[data-state=stale|restarted]): цвет var(--muted) заменить на var(--text) на той же подложке (9,12:1 по расчёту ревьюера); пересчитай. (F3, Low) app.js около 721–723 и 1114–1116: один перечень «in_progress, stale, restarted» записан двумя литералами — заменить общей проверкой на основе UNCONFIRMED_STATES/ITEM_STATES из model.js (без изменения поведения). (F4, Low) panels.js около строки 71: фраза режется подстрокой «. » — разделить константу UNCONFIRMED_STALE в texts.js на две (первая фраза и пояснение) и убрать slice/indexOf, текст результата тот же. (F5, Low) tools/README.md, раздел «Pixel Office», «Ограничения», п. 9 (около строки 133): одно предложение — доверенная строка хука со временем в будущем считается свежей (отрицательный возраст равен нулю, критерий 1 REQ-042); писать в журнал может только держатель секрета записи. F6 НЕ править (вне требования). Тесты (tools/test/**) НЕ менять; красными остаются те же 11 + PN-02 (намеренные по проекту), других красных появиться не должно: проверь node --test test/pixel-office-*.test.js, назови красные по именам. Затем cd tools && npm run lint && npm run format:check (чисто). Проектный документ docs/design/REQ-042-state-honesty.md не править: раздел 5.11 приведёт DOC-UPDATER на шаге 10 (запиши это в result.issues). Время — только date -u. Пути компьютера не писать. Запрещены git checkout/reset/stash/clean. Закрой через close.",
+    "acceptance_criteria": [
+      "F1 и F2: контраст текста статуса не ниже 4,5:1, расчёт в result.changes",
+      "F3–F5 исправлены; красными только 11 + PN-02; lint и format:check чистые"
+    ]
+  },
+  "created_at": "2026-10-13T11:33:47Z",
+  "started_at": "2026-10-13T11:33:47Z",
+  "completed_at": "2026-10-13T11:37:44Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты F1-F5; F6 не правился по заданию. Контраст текста обеих серых меток поднят выше 4,5:1 (7,01:1; 9,14:1 и 10,07:1), перечень «в работе / нет свежих данных / сервер перезапускался» в app.js проверяется одной функцией на основе UNCONFIRMED_STATES, фраза «нет свежих данных» разделена на две константы без разбора подстроки, в README записана доверенная строка из будущего. Красными остались ровно те же 12 тестов (11 + PN-02), других нет; lint и format:check чистые.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".session-badge[data-state=\"stale\"]",
+        "what": "color: var(--on-fill) -> var(--text); фон var(--idle) оставлен. Контраст по формуле WCAG 2.x (относительная яркость по токенам :root): было #07101c на #3d4a5d = 2,12:1, стало #dbe4f0 на #3d4a5d = 7,01:1 (норма 4,5:1)."
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".item[data-state=\"stale\"|\"restarted\"] .item-state",
+        "what": "color: var(--muted) -> var(--text); подложка rgba(130,150,177,0.16) оставлена. Контраст на var(--panel-2) (карточка): было 3,88:1, стало 9,14:1. (расчёт ревьюера 3,87 и 9,12 — различие в сотых от округления подложки.)"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".history-state[data-state=\"stale\"|\"restarted\"]",
+        "what": "color: var(--muted) -> var(--text); подложка оставлена. Контраст на var(--panel) (окно истории): было 4,27:1, стало 10,07:1."
+      },
+      {
+        "finding": "F3",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "импорт из model.js; новая функция hasSessionEvent перед shortId; itemInto и resultOf",
+        "what": "Оба литерала «in_progress, stale, restarted» заменены вызовом hasSessionEvent(state) = state === \"in_progress\" || UNCONFIRMED_STATES.includes(state); UNCONFIRMED_STATES импортируется из model.js. Поведение то же."
+      },
+      {
+        "finding": "F4",
+        "file": "tools/src/pixel-office/public/texts.js",
+        "where": "UNCONFIRMED_STALE",
+        "what": "Константа разделена: UNCONFIRMED_STALE = «Нет свежих данных: {n}.» и новая UNCONFIRMED_STALE_AGE = «У самого старого последнее событие было {age}.»."
+      },
+      {
+        "finding": "F4",
+        "file": "tools/src/pixel-office/public/panels.js",
+        "where": "unconfirmedNote",
+        "what": "slice/indexOf убраны: к первой фразе через пробел добавляется UNCONFIRMED_STALE_AGE, если возраст самого старого известен; текст результата тот же (проверено: изменений в выводе тестов нет)."
+      },
+      {
+        "finding": "F5",
+        "file": "tools/README.md",
+        "where": "Pixel Office, Ограничения, п. 9",
+        "what": "Дописано предложение: доверенная строка хука со временем в будущем (часы ушли вперёд и вернулись) считается свежей, отрицательный возраст равен нулю (критерий 1 REQ-042), сессия остаётся «Идёт», а задача «в работе», пока часы не дойдут до этого времени, настоящие строки после неё помечены «не из хуков»; писать в журнал может только держатель секрета записи."
+      }
+    ],
+    "self_check": [
+      "date -u начало: 2026-10-13T11:33:52Z",
+      "до правки: node --test test/pixel-office-*.test.js -> tests 296, pass 284, fail 12: OF-13, OF-25, OF-31, PG-12c1, PG-12c6, PG-12d5, PG-12d6 (1), PG-12d6 (3), PG-12d6 (9b), PN-02, PN-10, PN-11",
+      "после правки: тот же запуск -> tests 296, pass 284, fail 12; список not ok тот же (diff пуст), тексты ошибок тех же тестов не изменились",
+      "контраст: скрипт по формуле WCAG 2.x с токенами :root — F1 2,12 -> 7,01; F2 (panel-2) 3,88 -> 9,14; F2 (panel) 4,27 -> 10,07",
+      "cd tools && npm run lint -> eslint . --max-warnings 0, без вывода ошибок",
+      "cd tools && npm run format:check -> All matched files use Prettier code style!",
+      "cd tools && npm run check -> tests 1478, pass 1466, fail 12 (те же 11 + PN-02: OF-13, OF-25, OF-31, PG-12c1, PG-12c6, PG-12d5, PG-12d6 (1), PG-12d6 (3), PG-12d6 (9b), PN-02, PN-10, PN-11); lint и format:check внутри check чистые"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "TESTS_CHANGED_BY_DESIGN",
+        "text": "Красные 12 тестов те же, что до моей правки, и красны по проекту REQ-042 (раздел 11 и F17), а не из-за этой работы: OF-13, OF-25, OF-31, PG-12c1, PG-12c6, PG-12d5, PG-12d6 (1), PG-12d6 (3), PG-12d6 (9b), PN-10, PN-11 (11) и PN-02. Их правит TEST-DESIGNER на шаге 5; новых красных от F1-F5 нет."
+      },
+      {
+        "id": "I2",
+        "kind": "DESIGN_DEFECT",
+        "text": "Раздел 5.11 проекта docs/design/REQ-042-state-honesty.md не правился (по заданию): он предписывает пары var(--idle)/var(--on-fill) для метки «нет свежих данных» и var(--muted) на подложке для слов состояний «нет свежих данных»/«сервер перезапускался»; код теперь использует var(--text) в этих трёх правилах. Привести раздел в соответствие должен DOC-UPDATER на шаге 10 (AP-005)."
+      },
+      {
+        "id": "I3",
+        "kind": "OBSERVATION",
+        "text": "F6 не правился по заданию: .session-times (var(--muted), 4,44:1) и метка «окончание не записано» (var(--err) на подложке, 4,01:1) остаются ниже 4,5:1; вне требования REQ-042, предложение — отдельная работа о читаемости."
+      },
+      {
+        "id": "I4",
+        "kind": "OBSERVATION",
+        "text": "Тестов на тексты UNCONFIRMED_STALE/UNCONFIRMED_STALE_AGE и на hasSessionEvent по отдельности нет; поведение проверяют существующие тесты панелей, они зелёные там, где были зелёными. Проверка в настоящем браузере (новые цвета меток) — шаг 7 (DESIGN-QA-VALIDATOR), здесь не проводилась."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/style.css",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/panels.js",
+      "tools/src/pixel-office/public/texts.js",
+      "tools/README.md"
+    ]
+  }
+}

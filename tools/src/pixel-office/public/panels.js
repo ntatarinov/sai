@@ -4,6 +4,7 @@
 // functions return; the tests call the same functions. Pure ES module: no DOM
 // and no Node API, no clock.
 
+import { ageText, fmtDateTime } from "./format.js";
 import { roleLabel } from "./office-model.js";
 import {
   EVENT_LABELS,
@@ -12,7 +13,12 @@ import {
   NOW_EMPTY,
   NOW_MORE,
   NOW_PREFIX,
+  NOW_UNCONFIRMED,
   ROLE_UNKNOWN,
+  UNCONFIRMED_LEAD,
+  UNCONFIRMED_RESTART,
+  UNCONFIRMED_STALE,
+  UNCONFIRMED_STALE_AGE,
 } from "./texts.js";
 
 // The journal shows the last 200 rows that pass the filter, the panel of
@@ -51,14 +57,55 @@ export const TONES = Object.freeze({
 
 // ------------------------------------------------------------- "Сейчас"
 
+// The explanation of the items that the journal does not confirm: one text for
+// the line "Сейчас" (as its title) and the note over the history. Null if there
+// is no such item. The age and the time come from the model; the page has no
+// clock here.
+export function unconfirmedNote(model) {
+  const u = model.unconfirmed;
+  if (u.count === 0) return null;
+  const parts = [UNCONFIRMED_LEAD];
+  if (u.stale >= 1) {
+    let part = UNCONFIRMED_STALE.replace("{n}", String(u.stale));
+    // The age of the oldest one may be unknown: then only the first sentence.
+    if (u.oldest_stale_age_ms !== null) {
+      part += ` ${UNCONFIRMED_STALE_AGE.replace(
+        "{age}",
+        ageText(u.oldest_stale_age_ms),
+      )}`;
+    }
+    parts.push(part);
+  }
+  if (u.restarted >= 1 && model.last_start !== null) {
+    const time = fmtDateTime(model.last_start.time);
+    if (time !== "") {
+      parts.push(
+        UNCONFIRMED_RESTART.replace("{n}", String(u.restarted)).replace(
+          "{time}",
+          time,
+        ),
+      );
+    }
+  }
+  return { text: parts.join(" "), stale: u.stale, restarted: u.restarted };
+}
+
 // The line of the header: the first item of "Текущие" (the list is already in
 // the order of rule d: the ones in progress first, the new ones on top) and
-// how many more items are in progress.
+// how many more items are in progress. With nothing in progress and some
+// items without confirmation, the number of them and, as the title, the reason.
 export function nowLine(model) {
   const current = model.list.filter((item) => item.state === "in_progress");
   let text = NOW_PREFIX;
+  let unconfirmed = 0;
+  let title = null;
   if (current.length === 0) {
     text += NOW_EMPTY;
+    unconfirmed = model.unconfirmed.count;
+    if (unconfirmed >= 1) {
+      text += NOW_UNCONFIRMED.replace("{n}", String(unconfirmed));
+      title = unconfirmedNote(model).text;
+    }
   } else {
     const first = current[0];
     if (first.kind === "main") {
@@ -73,7 +120,13 @@ export function nowLine(model) {
       text += NOW_MORE.replace("{n}", String(current.length - 1));
     }
   }
-  return { text, busy: current.length > 0, count: current.length };
+  return {
+    text,
+    busy: current.length > 0,
+    count: current.length,
+    unconfirmed,
+    title: title === null ? text : title,
+  };
 }
 
 // -------------------------------------------------------------- journal
@@ -140,55 +193,32 @@ export function filterJournal(rows, filter, limit = JOURNAL_LIMIT) {
 
 // ---------------------------------------------------------------- tasks
 
-// For every session: m tasks whose session is this one (the session of the
-// last start, so a task resumed in another session counts there), n of them
-// completed, k different roles among them. Counted over all tasks, before
-// the limit of the list.
-export function sessionStats(model) {
-  const stats = new Map();
-  const roles = new Map();
-  for (const s of model.sessions) {
-    stats.set(s.session_id, { n: 0, m: 0, k: 0 });
-    roles.set(s.session_id, new Set());
-  }
-  for (const task of model.tasks) {
-    let entry = stats.get(task.session_id);
-    if (entry === undefined) {
-      entry = { n: 0, m: 0, k: 0 };
-      stats.set(task.session_id, entry);
-      roles.set(task.session_id, new Set());
-    }
-    entry.m += 1;
-    if (task.state === "completed") entry.n += 1;
-    roles.get(task.session_id).add(task.role);
-  }
-  for (const [id, entry] of stats) entry.k = roles.get(id).size;
-  return stats;
-}
-
-function sessionCard(sessionId, running, stats) {
-  const s = stats.get(sessionId) ?? { n: 0, m: 0, k: 0 };
+// The card of a session: the word (running, stale or none), the first and the
+// last trusted event and the age of the last one. No count of tasks and no
+// progress: the journal does not know how much of the work is left.
+function sessionCard(session, running) {
   return {
     kind: "session",
-    session_id: sessionId,
+    session_id: session.session_id,
     running,
-    n: s.n,
-    m: s.m,
-    k: s.k,
+    word: session.word,
+    first_event_at: session.first_event_at,
+    last_event_at: session.last_event_at,
+    age_ms: session.age_ms,
   };
 }
 
 // The body of the panel of tasks (design 4.11).
 export function taskPanel(model, limit = LIST_LIMIT) {
-  const stats = sessionStats(model);
+  const sessionById = new Map(model.sessions.map((s) => [s.session_id, s]));
+  // The sessions that have tasks, over all tasks, before the limit.
+  const hasTasks = new Set(model.tasks.map((t) => t.session_id));
   const runningIds = new Set();
   const runningSessions = model.sessions
     .filter((s) => s.running)
     .sort((a, b) => b.first_index - a.first_index);
   for (const s of runningSessions) runningIds.add(s.session_id);
-  const running = runningSessions.map((s) =>
-    sessionCard(s.session_id, true, stats),
-  );
+  const running = runningSessions.map((s) => sessionCard(s, true));
 
   const max = Number.isSafeInteger(limit) && limit >= 0 ? limit : LIST_LIMIT;
   const shownItems = model.list.slice(0, max);
@@ -203,8 +233,10 @@ export function taskPanel(model, limit = LIST_LIMIT) {
     const sid = item.session_id;
     if (!runningIds.has(sid) && !summarized.has(sid)) {
       summarized.add(sid);
-      const card = sessionCard(sid, false, stats);
-      if (card.m >= 1) history.push(card);
+      const session = sessionById.get(sid);
+      if (session !== undefined && hasTasks.has(sid)) {
+        history.push(sessionCard(session, false));
+      }
     }
     history.push(item);
   }
@@ -216,5 +248,10 @@ export function taskPanel(model, limit = LIST_LIMIT) {
     shown: shownItems.length,
     total: model.list.length,
     starts: [...model.serverStarts].reverse(),
+    // The note stands with the second part of the line "Сейчас": only when
+    // nothing is in progress.
+    unconfirmed_note: model.list.some((item) => item.state === "in_progress")
+      ? null
+      : unconfirmedNote(model),
   };
 }
