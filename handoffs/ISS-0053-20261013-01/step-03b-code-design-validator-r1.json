@@ -1,0 +1,141 @@
+{
+  "handoff_id": "step03b-r1-ISS-0053-20261013-01",
+  "run_id": "ISS-0053-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "03b",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0053-20261013-01/step-03b-code-design-validator-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-038",
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/ISS-0053-readblobs-epipe.md",
+      "decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+      "handoffs/ISS-0053-20261013-01/step-03b-code-design-validator.json (прошлый FAIL)",
+      "handoffs/ISS-0053-20261013-01/step-03-code-designer-r1.json",
+      "decisions/README.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "decisions/0040-handoffs-git-tag-lookup.md",
+      "docs/design/REQ-030-github-check.md (п. 7.4)",
+      "docs/workflows/WF-03-defect.md (шаг 3)"
+    ],
+    "route": "CODE-DESIGNER (r1) -> CODE-DESIGN-VALIDATOR (этот, повтор) -> CODE-FIXER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы — на копиях вне проекта"
+    ],
+    "base_tag": "base/ISS-0053-20261013-01",
+    "rework_of": "handoffs/ISS-0053-20261013-01/step-03-code-designer-r1.json"
+  },
+  "task": {
+    "description": "WF-03, шаг 3 (ворота), повтор после доработки (step-03-code-designer-r1). Сам проверь только то, что менялось, и целостность проекта: F1 — в decisions/0047-iss0053-git-exit-zero-with-failed-input.md есть раздел «Граница» (перед «Условием пересмотра»), и запись теперь содержит все разделы decisions/README.md (Вопрос, Варианты, Решение, Почему, Граница, Основание) в этом порядке; содержимое «Границы» верно (проверь по решениям 0038, 0040, коду traces/git-files.js, HK-12b и HK-31); N1 — пять шагов проверки на GitHub после отправки в п. 10 проекта выполнимы и однозначны, согласованы с критерием 2 REQ-030 и с проектом REQ-030 (п. 7.4); N2 — GH-7 и GH-7b: по одному test() с таблицей случаев (3 и 2 случая), ожидаемое число 1476 + 2 = 1478, пояснение про 1481 прототипа верно (проверь число test() в прототипе или по описанию). Перечитай проект целиком на новые противоречия от правки. Повтори не менее одного утверждения о коде на копии до (readBlobs с большим вводом и подставным git exit 0 → «(код 0)»). Решение 0047 — теперь можно принимать? PASS или FAIL (любой непройденный пункт — FAIL).",
+    "acceptance_criteria": [
+      "F1, N1, N2 каждое названо с результатом; запись 0047 содержит все разделы по формату README",
+      "Новых противоречий нет либо перечислены; одно утверждение о коде повторено",
+      "Файлы проекта не изменены (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-13T02:24:35Z",
+  "started_at": "2026-10-13T02:24:35Z",
+  "completed_at": "2026-10-13T02:32:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "итог": "PASS. Три пункта перечня прошлых ворот (F1, N1, N2) закрыты; новых противоречий в проекте нет; одно новое неблокирующее замечание (N3, Low). Решение 0047 можно принимать: ORCH вносит строку 0047 в decisions/README.md (проект, п. 9). Ожидаемый вердикт в задании не назван; вердикт выведен самим (AP-018).",
+      "Факты задания (AP-012)": "Метка и копия «до» проверены: diff -rq копии «до» (<scratch>/pre_fix_ISS-0053/tools) с tools проекта (без node_modules) — различий нет (SAME). Файлы проекта на момент проверки: проект и 0047 с теми хешами, что до чтения; git status — те же неотслеженные пути (0047, проект, файл дефекта, папка прогона).",
+      "F1 — PASS": "Заголовки 0047 по порядку: Вопрос, Варианты, Решение, Почему, Что теряется, Граница, Условие пересмотра, Основание. Порядок разделов README (Вопрос, Варианты, Решение, Почему, Граница, Основание) соблюдён, «Граница» стоит перед «Условием пересмотра»; «Что теряется» и «Условие пересмотра» — добавочные разделы, порядок обязательных не нарушают. Содержание «Границы» сверено: (1) шесть вызовов git, stdio, input, таймаут, единственное место child_process в модуле — по 0038 и 0040: grep 'execFileSync(' в git-history.js — 6 вызовов, 'stdio: [\"ignore\"' — 5 вызовов, 'input:' — одна строка (readBlobs, 274); 0040 прямо называет шестой вызов и закрепляет число; (2) traces/git-files.js: два вызова, stdio[0] ignore, свой gitFailure без ветки ENOBUFS, 0038 «не меняет код git-files.js» — верно; (3) git, убитый сигналом (статус null) — отдельный дефект LOW (О1 проекта, М10): верно, ветка 5a сравнивает строго с 0; (4) HK-12b (525–545) и HK-31 (853–876) в tools/test/pixel-office-hook.test.js пишут child.stdin.end(input) без обработчика 'error' — подтверждено чтением; обработчик есть в claude-cli.js:353 и pixel-office-helpers.js:377; (5) критерий «Вывод, коды и сбои» REQ-038 есть в docs/requirements.yaml (строка 5276); (6) grep child_process в tools/src — ровно три файла (git-files.js, claude-cli.js, git-history.js). Противоречий с 0038 и 0040 нет. В таблице decisions/README.md строки 0047 ещё нет — по проекту (п. 9) её вносит ORCH после PASS ворот; к вердикту не относится.",
+      "N1 — PASS (с замечанием N3 Low)": "Пять шагов п. 10 прочитаны. Шаг 1 — команда `gh run list --workflow check.yml --branch main --limit 1 --json databaseId,status,conclusion,headSha,url` (критерий 2 REQ-030, docs/requirements.yaml: `--json conclusion,headSha`; поля шире, но включают оба) и `git rev-parse origin/main`: сравнение headSha и условие success совпадают с критерием и с П-2 в п. 7.4 REQ-030. Шаг 2 — строки `ok` GH-6, GH-7, GH-7b и итог `# tests 1478`, `# fail 0`, `# skipped 0`: формат проверен по журналу запуска 38331440082 (<scratch>/gh-run-38331440082.log): строки вида `ok 342 - GH-4 …`, `not ok 344 - GH-6 …`, `# tests 1476`, `# fail 1`, `# skipped` — так же выглядит и зелёный запуск; названия тестов начинаются с «GH-7»/«GH-7b» по п. 4.3. Шаги 3–5 — повторный запуск только после согласия ORCH, красная ветка только с отдельного согласия владельца (не дано), условие пересмотра 0047 — согласованы с 0047 («Условие пересмотра») и с П-3 п. 7.4 (красная ветка — согласие владельца). Исполнитель — RELEASE-VALIDATOR после отправки, как у П-2. Противоречий нет; мелкие пробелы — в N3.",
+      "N2 — PASS": "П. 4.3: «GH-7 и GH-7b — по одному test() с таблицей случаев внутри» (3 и 2 случая), каждый случай со своим fakeGit; 1476 + 2 = 1478, TEST-DESIGNER сверяет по факту. Число 1476 повторено мной: полный набор на копии текущего Sai (`node --test \"test/**/*.test.js\"` в tools) — `# tests 1476`, `# pass 1476`, `# fail 0`, `# skipped 0`. Пояснение про 1481: в тестах прототипа (<scratch>/d53/design/proto/tools/test/handoffs-git.test.js) GH-7 — цикл по трём телам (3 test()) плюс два отдельных test() для `exit 3` и `exit 128`, то есть 8 прежних + 5 = 13 в файле («13 из 13» в Ф9) и 1476 + 5 = 1481 (full-after.txt прототипа: `# tests 1481`); в проекте по одному test() на GH-7 и GH-7b, поэтому 1478 — пояснение верно. Согласовано: п. 4.3, Ф10, п. 10 (шаг CODE-FIXER ждёт 1476, TEST-DESIGNER и GitHub — 1478).",
+      "Перечитывание проекта целиком (новые противоречия) — PASS": "Прочитаны все 12 пунктов. Ф9 («13 из 13 в файле») описывает прототип с пятью отдельными test() и пояснена в Ф10; в проекте файл будет содержать 10 test() — несовпадения нет, так как Ф9 названа пробной сборкой. Ветка 5a в таблице п. 4.1 стоит после 5 (128) и до 6; п. 5, п. 7.1 (К1–К7), 7.3 (M1–M6) и п. 11 (Q1–Q14, R1–R3 названы все, с объяснением) согласованы с п. 4. Пути отказа (п. 5) — состояние неизменно. Кода реализации нет (формы, таблицы, тексты). «Решение 0047 — предложение» одинаково в проекте и в записи. Условие пересмотра 0047 («красный GH-6 или GH-7 … с иным текстом») и шаг 5 п. 10 согласованы по смыслу.",
+      "Повторенные утверждения о коде (А.1)": "На копии «до» (<scratch>/pre_fix_ISS-0053/tools, равна tools проекта) своим пробником (<scratch>/v53/probe.mjs, не пробник автора): readBlobs с одним запросом в 4 МиБ и подставным git, который ввод не читает, 10 запусков на тело и оболочку: `exit 0`, `echo 'not an object header'`, `printf '%s blob 100\\n' …` — 10 из 10 «git не смог выполнить команду (код 0)» под /bin/sh и 10 из 10 под /bin/dash; `exit 3` — «(код 3)» 10 из 10; `exit 128` — E_TRACE_NOT_GIT 10 из 10. Это воспроизводит дефект (ложный «код 0»). Далее на копии «до» с одной добавленной веткой `err.status === 0` → «вывод git не разобран» перед веткой «число» (<scratch>/v53/fixed): те же три тела — «вывод git не разобран» 10 из 10 под обеими оболочками; `exit 3` и `exit 128` не затронуты (код 3, E_TRACE_NOT_GIT). Подставные git GH-6 с `while read -r _; do :; done;` перед ответом — «вывод git не разобран» 10 из 10 под sh и dash, на «до» и на «после», при вводе 1 знак и 4 МиБ (то есть правка тестов GH-6 из п. 4.3 работает и не зависит от гонки). Состояние: папка repo подставной песочницы после каждого вызова пуста (проверка в пробнике, флага «REPO-NOT-EMPTY» нет).",
+      "Что не измерено": "Поведение записи на ввод на Linux (код ошибки, вместимость сокета) — не измерено и здесь (Linux нет); выводов про Linux не делается; подтверждение — только запуск check.yml на GitHub после отправки (R1), шаги п. 10; совпадает с О2 проекта."
+    },
+    "findings": [
+      {
+        "id": "N3",
+        "severity": "Low",
+        "blocks": false,
+        "point": "Б.5 (однозначность), согласованность N1 с REQ-030 п. 7.4",
+        "place": "docs/design/ISS-0053-readblobs-epipe.md, п. 10, шаги 1–3 после отправки",
+        "what": "Шаги короче П-2 из п. 7.4 REQ-030: нет `git fetch origin` перед `git rev-parse origin/main` (при устаревшей локальной ссылке сравнение headSha даст ложный отказ); не сказано, что делать, если `status` ещё не `completed` (П-2 — повторять раз в минуту, не дольше 15 минут); шаг 2 не называет команду чтения журнала (например `gh run view <databaseId> --log`; П-3 п. 7.4 REQ-030 называет `gh run view`); у шага 3 не сказано, зачем нужен повторный запуск (при каком исходе шага 1–2).",
+        "need": "При ближайшей правке проекта (например, у DOC-UPDATER или при следующей доработке) сослаться на П-2 п. 7.4 REQ-030 целиком (с `git fetch origin` и ожиданием до 15 минут) и назвать команду чтения журнала шага «Run the check»; сказать, что повторный запуск — только при красном шаге 1–2 и по согласию ORCH. Не блокирует: цель шагов и ожидаемые строки названы, исполнитель (RELEASE-VALIDATOR) читает П-2 в REQ-030 в том же шаге."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd <Sai> && shasum -a 256 docs/design/ISS-0053-readblobs-epipe.md decisions/0047-iss0053-git-exit-zero-with-failed-input.md; плюс хеш-список (git ls-files docs decisions tools/src tools/test tools/package.json) и трёх файлов ISS-0053 — до чтения и после всех проб",
+        "output": "до: проект 2b49c6b62bce5b0db93d46ebc9342e07d3d9fa21c46111656672933b81f55b25, решение 0047 1bc98eb7d900f04f4b1eef539bd7d9257e742ddfcce68430d54ba9bca067fe1a, список из 446 хешей; после: те же значения, `cmp` списков «до» и «после» — SAME-ALL. Все пробы шли в <scratch>/v53/ (копия Sai, копия кода «до» с одной веткой)."
+      },
+      {
+        "command": "diff -rq <scratch>/pre_fix_ISS-0053/tools tools -x node_modules && echo SAME",
+        "output": "SAME"
+      },
+      {
+        "command": "node <scratch>/v53/probe.mjs <scratch>/pre_fix_ISS-0053/tools /bin/sh 4194304 (и /bin/dash): по 10 запусков на тело",
+        "output": "exit 0: «git не смог выполнить команду (код 0)» 10 из 10; echo 'not an object header': то же 10 из 10; printf '%s blob 100\\n' aaaa…: то же 10 из 10; exit 3: «(код 3)» 10 из 10; exit 128: E_TRACE_NOT_GIT 10 из 10; под /bin/dash то же"
+      },
+      {
+        "command": "то же на <scratch>/v53/fixed (копия «до» + ветка `err.status === 0` → E_TRACE_GIT «вывод git не разобран» перед веткой «число»)",
+        "output": "exit 0, echo, printf: «вывод git не разобран» 10 из 10 под sh и dash; exit 3: «(код 3)» 10 из 10; exit 128: E_TRACE_NOT_GIT 10 из 10"
+      },
+      {
+        "command": "node <scratch>/v53/probe2.mjs <копия> <оболочка> <1 | 4194304> — подставные git с `while read -r _; do :; done;` перед `echo`/`printf`, на «до» и на «после», sh и dash",
+        "output": "во всех 8 сочетаниях «вывод git не разобран» 10 из 10 (читающие подставные git GH-6 не зависят от гонки и от кода правки)"
+      },
+      {
+        "command": "cd <scratch>/v53/sai/tools && node --test \"test/**/*.test.js\" (копия текущего Sai, ~103 с, дождался)",
+        "output": "# tests 1476 / # pass 1476 / # fail 0 / # cancelled 0 / # skipped 0"
+      },
+      {
+        "command": "grep -n '^test(\\|GH-7' <scratch>/d53/design/proto/tools/test/handoffs-git.test.js; grep -h '^# tests' <scratch>/d53/design/full-after.txt; grep -c '^test(' tools/test/handoffs-git.test.js",
+        "output": "в прототипе GH-7 — цикл по 3 телам и два отдельных test() (exit 3, exit 128): 5 дополнительных test(); `# tests 1481`; в проекте файл тестов — 8 test()"
+      },
+      {
+        "command": "grep -n '^## ' decisions/0047-iss0053-git-exit-zero-with-failed-input.md; sed -n 1,10p decisions/README.md",
+        "output": "Вопрос, Варианты, Решение, Почему, Что теряется, Граница, Условие пересмотра, Основание; README: «Вопрос», «Варианты», «Решение», «Почему», «Граница», «Основание»"
+      },
+      {
+        "command": "grep -n 'execFileSync\\|input:\\|stdio' tools/src/handoffs/git-history.js; grep -rl child_process tools/src; grep -n 'stdin' tools/src/team/executors/claude-cli.js tools/test/pixel-office-helpers.js; grep -n 'stdin.end' tools/test/pixel-office-hook.test.js",
+        "output": "6 вызовов execFileSync, 5 с stdio ignore, одна строка input (274); child_process в трёх файлах (git-files.js, claude-cli.js, git-history.js); обработчик 'error' у stdin есть в claude-cli.js:353 и pixel-office-helpers.js:377; stdin.end без обработчика — pixel-office-hook.test.js:538 и :866 (HK-12b, HK-31)"
+      },
+      {
+        "command": "grep -n 'Run the check\\|^# tests\\|^# fail\\|GH-6' <scratch>/gh-run-38331440082.log",
+        "output": "Шаг «Run the check»; `not ok 344 - GH-6 …`; `# tests 1476`; `# fail 1` — формат строк для шага 2 п. 10 подтверждён"
+      },
+      {
+        "command": "cd tools && npm run handoffs-check",
+        "output": "handoffs-check: файлов проверено 703, нарушений 0, исключений использовано 114 из 114; код 0 (до закрытия handoff-а)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "V1",
+        "kind": "NOTE",
+        "text": "Ожидаемый вердикт в задании не назван; вердикт выведен самим (AP-018). Факты задания проверены запусками: копия «до» равна tools проекта (SAME), число тестов 1476 подтверждено полным прогоном копии."
+      },
+      {
+        "id": "V2",
+        "kind": "NOTE",
+        "text": "Ответ на вопрос задания «0047 — теперь можно принимать?»: да. Запись содержит все разделы по README в нужном порядке, «Граница» верна по 0038, 0040, коду и HK-12b/HK-31; ORCH вносит строку 0047 (статус «Принято (ORCH; владелец может отменить)») в decisions/README.md и меняет статус в записи с «предложено»."
+      },
+      {
+        "id": "V3",
+        "kind": "NOTE",
+        "text": "Не измерено и в этой проверке: поведение записи в ввод на Linux. Выводы про Linux не делаются; подтверждение — только запуск check.yml на GitHub после отправки (R1) по шагам п. 10 (с учётом N3)."
+      },
+      {
+        "id": "V4",
+        "kind": "NOTE",
+        "text": "Предложений поднять планку нет. Заметка для следующих ворот: заголовочный комментарий git-history.js говорит «five calls», вызовов шесть (0040) — устаревший комментарий вне этого дефекта (AP-019); при правке комментария над gitFailure CODE-FIXER может это не трогать, о нём можно завести отдельную мелкую запись у DOC-UPDATER."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

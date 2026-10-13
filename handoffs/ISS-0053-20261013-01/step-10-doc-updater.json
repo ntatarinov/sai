@@ -1,0 +1,140 @@
+{
+  "handoff_id": "step10-ISS-0053-20261013-01",
+  "run_id": "ISS-0053-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/ISS-0053-20261013-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-038",
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0053-20261013-01/ (все step-*.json; особенно step-01-issue-fixer, step-03-code-designer и -r1, step-03b и -r1, step-04-code-fixer, step-05-reviewer, step-05-security-reviewer-security, step-06-test-designer, step-07-test-design-validator, step-08-test-runner, step-09-release-validator)",
+      "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+      "docs/design/ISS-0053-readblobs-epipe.md",
+      "decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+      "docs/design/REQ-038-handoffs-check.md",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "docs/workflows/WF-03-defect.md (шаг 10)"
+    ],
+    "route": "RELEASE-VALIDATOR (PASS) -> DOC-UPDATER (этот) -> проверка учёта ORCH -> RELEASE-FINALIZER -> шаг 12 (проверка на GitHub)",
+    "write_set": [
+      "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+      "docs/design/REQ-038-handoffs-check.md (одна фраза в п. 7)",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "новые docs/issues/ISS-0054-*.md … ISS-0056-*.md"
+    ],
+    "base_tag": "base/ISS-0053-20261013-01",
+    "orch_check": {
+      "at": "2026-10-13T03:23:56Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git diff -- tools/src: только git-history.js (3 строки ветки + комментарий); docs/requirements.yaml и README.md не менялись",
+        "docs/issues/ISS-0053: статус open, факты исправлены по диагнозу; ISS-0054…ISS-0056 заведены (LOW, open)",
+        "AP-078 на месте",
+        "STATE.md: верхний раздел про ISS-0053",
+        "cd tools && npm run handoffs-check: код 0"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 10 (учёт ДО отправки). ИСТИНА о результате: причина ISS-0053 — не разница оболочек (первая редакция файла дефекта ошибочна, AP-012), а гонка записи на stdin подставного git: readBlobs пишет запросы в stdin git cat-file --batch; подставной git в GH-6 (случаи echo и printf) отвечает и выходит с кодом 0, не читая ввод; если он вышел раньше записи, execFileSync даёт EPIPE со status 0, а gitFailure писал «git не смог выполнить команду (код 0)» вместо ожидаемого теста «вывод git не разобран»; на Linux-раннере GitHub гонку проиграли (1475 из 1476; упал случай 2 GH-6, строка 243). Исправление (решение 0047): в gitFailure добавлена ветка — ошибка вызова со статусом строго 0 → E_TRACE_GIT «вывод git не разобран» (после ENOENT, ETIMEDOUT, ENOBUFS, 128; до «любое число»); подставные git в GH-6 читают ввод (while read -r _; do :; done;); новые детерминированные тесты GH-7 (exit 0/echo/printf, ввод 4 МиБ) и GH-7b (exit 3 → «(код 3)», exit 128 → E_TRACE_NOT_GIT). Проверено: ворота проекта (после доработки), безопасность PASS, ревью PASS, ворота тестов PASS (мутанты, GH-7 красный «до» под sh и dash), TEST-RUNNER 1478 из 1478, RELEASE-VALIDATOR PASS (step-09). НЕ проверено: поведение на Linux — Linux на машине нет; ISS-0053 подтверждается ТОЛЬКО зелёным запуском check.yml на GitHub после отправки (шаг 12, отдельно). Статус ISS-0053 остаётся open. (1) docs/issues/ISS-0053-gh6-fails-on-linux.md: исправь неверные факты (F1 RELEASE-VALIDATOR, I5 REVIEWER): упала НЕ isShallow с printf '\\377\\376', а случай 2 GH-6 (readBlobs с printf '%s blob 100…', строка 243); причина — гонка записи на stdin подставного git (EPIPE со status 0 → «код 0»), а не dash; добавь раздел «Диагноз» (ссылка на step-01) и «Исправление (в работе)»: код git-history.js, тесты GH-6/GH-7/GH-7b, решение 0047; статус остаётся `open` с пометкой «исправление в коде, подтверждение — зелёный запуск check.yml на GitHub после отправки» (закрывает DOC-UPDATER отдельным шагом после проверки на GitHub). (2) docs/design/REQ-038-handoffs-check.md, п. 7: добавь фразу про статус 0 (ошибка записи ввода → «вывод git не разобран») со ссылкой на решение 0047 и ISS-0053; больше ничего. (3) Заведи дефекты (формат WF-03; факты и ссылки — из handoff-ов): ISS-0054 (LOW) — git, убитый сигналом (status null), даёт из gitFailure не TraceError, а необработанный Error (ввод 10 байт) либо вводящее в заблуждение «git не запустился (EPIPE)» (ввод 4 МиБ); первый вызов CLI в traces/git-files.js при том же сбое даёт стек и код 1; мутант «0 или null» выживает (step-03-code-designer О1, step-05-security-reviewer-security I2, step-07-test-design-validator M7); ISS-0055 (LOW) — тесты HK-12b и HK-31 (tools/test/pixel-office-hook.test.js) пишут в stdin hook.sh без обработчика child.stdin.on('error'): тот же класс гонки, что ISS-0053 (step-01-issue-fixer, место того же рода; step-05-reviewer I4); ISS-0056 (LOW) — комментарий в начале tools/src/handoffs/git-history.js говорит «five calls», вызовов шесть (решение 0040) (step-03b-r1, step-05-security-reviewer-security I4, step-09 F2). (4) docs/anti-patterns.md: AP-078 — подставной процесс в тестах не читал свой ввод и тесты ни разу не шли на целевой платформе (Linux раннера): гонка записи на stdin проигрывалась только на GitHub (остаточный риск 6 проекта REQ-030 сбылся); плюс описание дефекта называло неверную причину и неверный упавший тест (AP-012); уроки: подставной процесс читает ввод, прежде чем отвечать; размер ввода в тесте заведомо больше буфера; ветка по статусу, а не по коду платформы; факт в файле дефекта проверяется воспроизведением. Формат по соседним записям. (5) STATE.md: новый верхний раздел «На 2026-10-13 — ISS-0053: первый запуск check.yml на GitHub выявил красный тест; исправление в коде, подтверждение ждёт запуска на GitHub» в формате соседних разделов: что произошло (запуск 02ff306 красный: 1475 из 1476, GH-6), диагноз, исправление, проверки (1478 тестов), плотность тестов по правилу decisions/0023 (посчитай той же командой), что НЕ сделано (подтверждение на Linux; REQ-030 остаётся in_progress, критерий 2 не выполнен до зелёного запуска, критерий 3 ждёт согласия владельца), открытые дефекты (ISS-0003, ISS-0024…ISS-0030, ISS-0032…ISS-0056, ISS-0053 open), следующие свободные номера (ISS-0057, решение 0048, AP-079), решение 0047 принято ORCH, что ждёт владельца (прежний перечень: публичность репозитория; согласие на красную ветку; защита main; потолок для настоящего запуска; ISS-0028). Прежние разделы не удалять. Время — с часов. Перед сдачей cd tools && npm run handoffs-check и traces — код 0. README и docs/requirements.yaml НЕ править.",
+    "acceptance_criteria": [
+      "ISS-0053 исправлен по фактам (причина, упавший случай), статус open с оговоркой; REQ-038 п. 7 дополнен",
+      "ISS-0054, ISS-0055, ISS-0056 заведены; AP-078 добавлен; STATE.md обновлён",
+      "README и requirements.yaml не менялись; handoffs-check и traces — код 0"
+    ]
+  },
+  "created_at": "2026-10-13T03:18:26Z",
+  "started_at": "2026-10-13T03:18:26Z",
+  "completed_at": "2026-10-13T03:23:34Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Учёт ISS-0053 записан по истине о результате. Файл дефекта исправлен: причина — гонка записи на стандартный ввод подставного git (EPIPE со статусом 0 → «код 0»), а не разница оболочек; упал случай 2 GH-6 (readBlobs, строка 243), а не isShallow с printf; добавлены разделы «Диагноз» и «Исправление (в работе)» (код git-history.js, тесты GH-6/GH-7/GH-7b, решение 0047); статус остаётся open с оговоркой: подтверждение — только зелёный запуск check.yml на GitHub после отправки (шаг 12), закроет DOC-UPDATER отдельным шагом. В REQ-038, п. 7, добавлена одна фраза про статус 0. Заведены ISS-0054, ISS-0055, ISS-0056 (все LOW). Добавлена запись AP-078. В STATE.md — новый верхний раздел про ISS-0053. Поведение на Linux не проверено и записано как НЕ сделано; REQ-030 остаётся in_progress (статус не менялся), README и docs/requirements.yaml не тронуты.",
+    "changes": [
+      {
+        "file": "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+        "what": "Заголовок и вторая строка: причина — гонка записи ввода подставному git; статус «open — исправление в коде, подтверждение — зелёный запуск check.yml на GitHub после отправки». Раздел «Что не так»: упал случай 2 GH-6 (readBlobs, printf '%s blob 100…', строка 243), случай isShallow/printf не падал. Добавлена поправка к первой редакции (AP-012). Раздел «Доказательство» дополнен воспроизведением механизма и оговоркой, что гонка на Linux не воспроизведена. Новые разделы «Диагноз» (ссылка на step-01) и «Исправление (в работе)» (git-history.js, GH-6/GH-7/GH-7b, решение 0047, проверки, не проверено — Linux, ссылки на ISS-0054…0056). Разделы «Как исправить» и «Маршрут» сохранены (дополнены)."
+      },
+      {
+        "file": "docs/design/REQ-038-handoffs-check.md",
+        "what": "П. 7, абзац «Таймаут и другие отказы git»: в перечень добавлена фраза — ошибка вызова со статусом 0 (git вышел успешно, запись ему запросов не удалась) → E_TRACE_GIT «вывод git не разобран», а не «(код 0)», со ссылкой на решение 0047 и ISS-0053. Больше ничего в файле (1 строка изменена)."
+      },
+      {
+        "file": "docs/issues/ISS-0054-git-killed-by-signal-not-trace-error.md",
+        "what": "Новый файл. LOW, open. Git, убитый сигналом (status null): из gitFailure необработанный Error (ввод 10 байт) либо «git не запустился (EPIPE)» (ввод 4 МиБ); первый вызов CLI в traces/git-files.js даёт стек и код 1; мутант «0 или null» выживает. Источники: step-03-code-designer (I6), step-05-security-reviewer-security (I2), step-05-reviewer (I2), step-07-test-design-validator (I2, M7)."
+      },
+      {
+        "file": "docs/issues/ISS-0055-pixel-office-hook-tests-stdin-race.md",
+        "what": "Новый файл. LOW, open. HK-12b (строка 525) и HK-31 (строка 853) в tools/test/pixel-office-hook.test.js пишут в stdin hook.sh без child.stdin.on('error'): тот же класс гонки, что ISS-0053; не воспроизведено, риск. Источники: step-01-issue-fixer, step-05-reviewer (I4), step-09-release-validator (R4, I5)."
+      },
+      {
+        "file": "docs/issues/ISS-0056-git-history-comment-five-calls.md",
+        "what": "Новый файл. LOW, open. Комментарий в начале tools/src/handoffs/git-history.js говорит «five calls», вызовов execFileSync шесть (решение 0040). Источники: step-03b-code-design-validator-r1 (V4), step-05-security-reviewer-security (I4), step-09-release-validator (F2)."
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "what": "Дописана запись AP-078 в конец файла (прежние записи не тронуты: первые 1162 строки совпадают с прежним файлом побайтно): подставной процесс не читал ввод и тесты не шли на Linux, гонка проигралась только на GitHub; описание дефекта называло неверную причину (AP-012). Уроки: подставной процесс читает ввод до ответа; ввод в тесте больше буфера с запасом; ветка по статусу, а не по коду платформы; факт в файле дефекта проверяется воспроизведением; без Linux подтверждение — только check.yml на GitHub."
+      },
+      {
+        "file": "STATE.md",
+        "what": "Новый верхний раздел «На 2026-10-13 — ISS-0053: первый запуск check.yml на GitHub выявил красный тест; исправление в коде, подтверждение ждёт запуска на GitHub» (перед разделом REQ-030): что произошло, диагноз, исправление, чем проверено (1478 из 1478), плотность тестов 46,9 (1478×1000÷31 480), статус (ISS-0053 open; REQ-030 in_progress, критерий 2 не выполнен, критерий 3 ждёт согласия), НЕ сделано (Linux, отправка, красная ветка), открытые дефекты до ISS-0056, урок AP-078, решение 0047 (принято ORCH), следующие номера ISS-0057 / решение 0048 / AP-079, следующая работа, что ждёт владельца. Прежние разделы не тронуты (удалённых строк в diff — 0)."
+      }
+    ],
+    "self_check": [
+      "date -u +%Y-%m-%dT%H:%M:%SZ -> 2026-10-13T03:20:53Z (время записи учёта в STATE.md, с часов); начало работы 2026-10-13T03:18:34Z",
+      "shasum docs/requirements.yaml README.md -> e4c5169e1c3046b81581ed302b18489d81a1451a / 52622a474adb417ad1aedd4f00285a9b99123d36 до и после правок (не менялись; git status их не показывает)",
+      "head -n 1162 docs/anti-patterns.md | cmp - <копия до правок> -> совпало (AP_PREFIX_SAME); grep -c '^### AP-078' docs/anti-patterns.md -> 1; предыдущий самый большой номер AP-077",
+      "git diff --numstat -- docs/design/REQ-038-handoffs-check.md -> 1 1 (одна строка заменена); git diff -- STATE.md: удалённых строк 0, разделов «## На» -> 10",
+      "grep -n 'Users\\|private/tmp\\|whooch' по STATE.md, ISS-0053…0056, anti-patterns.md, REQ-038 -> только прежние упоминания слов Users/private/tmp в описании правил H10/H11 и AP-074 (не пути компьютера); новых нет; адреса и имени владельца репозитория GitHub в новых текстах нет",
+      "find tools/src -type f ( -name '*.js' -o -name '*.html' -o -name '*.css' -o -name '*.mjs' ) -exec cat {} + | wc -l -> 31480; 1478 × 1000 ÷ 31480 = 46,9",
+      "cd tools && npm run handoffs-check -> код 0 (файлов проверено 711, нарушений 0); npm run traces -> код 0 (следов 0); npm run check -> код 0, # tests 1478, # pass 1478, # fail 0",
+      "git status --short: изменены STATE.md, docs/anti-patterns.md, docs/design/REQ-038-handoffs-check.md; новые docs/issues/ISS-0054…0056; остальное (decisions/README.md, tools/src, tools/test, решение 0047, дизайн ISS-0053, файл ISS-0053) — не мои правки или уже были до шага. Коммитов и отправок на GitHub не делал."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "ISS-0053 оставлен open по заданию: Linux на машине нет, подтверждение — только зелёный check.yml на GitHub после отправки (шаг 12). Статус REQ-030 не менялся (in_progress): критерий 2 не выполнен, критерий 3 ждёт согласия владельца. Закрытие ISS-0053 и учёт критерия 2 — отдельным handoff-ом DOC-UPDATER после шага 12."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Из задания взяты без перезапуска мной: «GH-7 красный до под sh и dash» (step-07-test-design-validator) и 1478 из 1478 (я сам запустил npm run check после правок: 1478 из 1478, код 0). Достаточность ввода 4 МиБ для Linux не измерена (step-09, R2)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Вне write_set и не правилось: строка README «Автоматической проверки на GitHub (CI) нет…» и пункт 4 итерации 8 в PLAN.md (прежние замечания STATE.md к REQ-030, п. 5 «НЕ сделано») — остаются до шага 12; STATE.md, раздел REQ-030, часть «Следующие свободные номера: ISS-0053…» — историческая запись на 2026-10-13T01:12:39Z, не переписывалась (актуальные номера — в новом разделе: ISS-0057, решение 0048, AP-079). decisions/README.md (строка 0047) внёс ORCH, я его не трогал."
+      },
+      {
+        "id": "I4",
+        "kind": "FOLLOW_UP",
+        "text": "ISS-0054: исправление для traces/git-files.js потребует нового решения ORCH — решение 0038 запрещает менять этот файл. ISS-0056 (одно слово в комментарии) разумно делать вместе с ISS-0054, тот же файл git-history.js. ISS-0055 нужно сначала воспроизвести (в проверках не падало)."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Предложений поднять планку (quality-bar §3) нет; запись в §3 не делалась. Урок про platform-only тесты записан как AP-078; повторять Q-пункт не требуется."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+      "docs/design/REQ-038-handoffs-check.md",
+      "docs/issues/ISS-0054-git-killed-by-signal-not-trace-error.md",
+      "docs/issues/ISS-0055-pixel-office-hook-tests-stdin-race.md",
+      "docs/issues/ISS-0056-git-history-comment-five-calls.md",
+      "docs/anti-patterns.md",
+      "STATE.md"
+    ]
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "handoff_id": "step04-ISS-0053-20261013-01",
+  "run_id": "ISS-0053-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/ISS-0053-20261013-01/step-04-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-038",
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/ISS-0053-readblobs-epipe.md",
+      "decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+      "handoffs/ISS-0053-20261013-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0053-20261013-01/step-03b-code-design-validator-r1.json",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "decisions/0040-handoffs-git-tag-lookup.md",
+      "docs/workflows/WF-03-defect.md (шаг 4)",
+      "docs/anti-patterns.md",
+      "tools/src/handoffs/git-history.js"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR (PASS r1) -> CODE-FIXER (этот) -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "tools/src/handoffs/git-history.js"
+    ],
+    "base_tag": "base/ISS-0053-20261013-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 4. Реализуй исправление ISS-0053 строго по проекту docs/design/ISS-0053-readblobs-epipe.md (после доработки r1, PASS ворот) и решению 0047: в tools/src/handoffs/git-history.js, функция gitFailure, добавляется ОДНА ветка — ошибка вызова со статусом строго 0 (execFileSync упал на записи в ввод) даёт E_TRACE_GIT «вывод git не разобран»; ветка стоит после ENOENT, ETIMEDOUT, ENOBUFS и статуса 128 и до ветки «любое число» (где «код N»); статусы 128 и «код N» не меняются; число вызовов git (шесть) и места child_process не меняются (решения 0038, 0040); в тексте файла, включая комментарии, нельзя слова shell, exec(, execSync, spawn, fork, execFile(, require( — иначе красный HC-RT-1b. Только tools/src/handoffs/git-history.js; комментарий в начале файла «five calls» (вызовов шесть) — не трогать (вне дефекта, AP-019). Затем одна команда проверки: cd tools && caffeinate -i npm run check (вывод в файл вне проекта, дождись конца): ожидаемых по проекту падений нет (п. 7 проекта) — любой красный назови поимённо и докажи, что он не из-за этой работы; не правь тесты. Регрессионные тесты GH-7, GH-7b и правку GH-6 пишет TEST-DESIGNER после ворот безопасности и ревью (AP-063) — не писать. Проверь вручную на копии вне проекта: readBlobs с большим вводом и подставным git exit 0 → E_TRACE_GIT «вывод git не разобран»; exit 3 → «(код 3)»; exit 128 → E_TRACE_NOT_GIT.",
+    "acceptance_criteria": [
+      "Изменён только git-history.js (git status приложен); добавлена одна ветка в нужном месте",
+      "npm run check — код 0 или каждый красный поимённо с доказательством; вывод приложен",
+      "Ручная проверка трёх случаев на копии (exit 0 → вывод git не разобран; exit 3; exit 128) приложена",
+      "Нет skip/todo/отключённых правил, нет путей компьютера; слов, красящих HC-RT-1b, в файле нет"
+    ]
+  },
+  "created_at": "2026-10-13T02:32:38Z",
+  "started_at": "2026-10-13T02:32:38Z",
+  "completed_at": "2026-10-13T02:35:49Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправление ISS-0053 по проекту docs/design/ISS-0053-readblobs-epipe.md (после r1) и решению 0047: в функцию gitFailure файла tools/src/handoffs/git-history.js добавлена одна ветка 5a. Ошибка вызова со статусом строго 0 (git вышел, не приняв запросы на ввод) даёт E_TRACE_GIT «вывод git не разобран»; ветка стоит после ENOENT, ETIMEDOUT, ENOBUFS и статуса 128 и до ветки «любое число» (код N). Статусы 128 и N не менялись, число вызовов git (шесть) и место child_process не менялись. Ручная проверка на 4 МиБ ввода: «до» exit 0 и мусорный ответ давали «(код 0)», «после» — «вывод git не разобран»; exit 3 — «(код 3)», exit 128 — E_TRACE_NOT_GIT. npm run check — код 0, 1476 тестов, 0 красных; ожидаемых по проекту падений нет (п. 6 и 7.2 проекта).",
+    "changes": [
+      {
+        "item": "ветка 5a, п. 4.1 проекта; дефект ISS-0053 (ложное «код 0»)",
+        "file": "tools/src/handoffs/git-history.js",
+        "where": "функция gitFailure, после строки со статусом 128 и до ветки typeof err.status === \"number\"",
+        "what": "добавлено условие err.status === 0 (строгое) -> new TraceError(\"E_TRACE_GIT\", \"вывод git не разобран\") — текст и код побайтно как у parseBatch, commitSeconds и fileHistory; err.code не проверяется (расхождение Р2 проекта)"
+      },
+      {
+        "item": "комментарий, п. 4.1 проекта (допустим одной английской фразой)",
+        "file": "tools/src/handoffs/git-history.js",
+        "where": "комментарий над gitFailure",
+        "what": "добавлена одна строка: «A failed call with status 0 means git exited without taking its input: no exit code.» — без слов из списка HC-RT-1b"
+      }
+    ],
+    "self_check": [
+      "До правки (код «до», readBlobs с одним запросом \"HEAD:\" + 4 МиБ знаков x, подставной git под /bin/dash, пробник на базе <scratch>/d53/probe/repro2.mjs с размером 4*1024*1024): `exit 0` -> TraceError E_TRACE_GIT | git не смог выполнить команду (код 0); `echo 'not an object header'` -> то же (код 0); `exit 3` -> E_TRACE_GIT | git не смог выполнить команду (код 3); `exit 128` -> E_TRACE_NOT_GIT | это не git-репозиторий: команда проверяет файлы, которые отслеживает git; запустите её в клоне Sai.",
+      "После правки, тот же пробник, оболочки /bin/dash и /bin/sh (результат одинаков): `exit 0` -> E_TRACE_GIT | вывод git не разобран; `echo 'not an object header'` -> E_TRACE_GIT | вывод git не разобран; `exit 3` -> E_TRACE_GIT | git не смог выполнить команду (код 3); `exit 128` -> E_TRACE_NOT_GIT | это не git-репозиторий: …. Три случая задания (exit 0, exit 3, exit 128) выполнены.",
+      "cd tools && npx prettier --check src/handoffs/git-history.js -> All matched files use Prettier code style!; npx eslint src/handoffs/git-history.js --max-warnings 0 -> код 0.",
+      "grep -nE 'shell|exec\\(|execSync|spawn|fork|execFile\\(|require\\(' tools/src/handoffs/git-history.js -> пусто (код 1).",
+      "cd tools && caffeinate -i npm run check (вывод в файл вне проекта, дождался в своём ходе) -> код 0. Шаги format:check, lint, traces, handoffs-check, test все зелёные. Итог тестов: `# tests 1476`, `# pass 1476`, `# fail 0`, `# cancelled 0`, `# skipped 0`, `# todo 0`; `grep -c '^not ok'` вывода — 0. Красных нет, доказывать «не из-за этой работы» нечего.",
+      "git status --short после работы: из изменённых отслеживаемых файлов — tools/src/handoffs/git-history.js (мой) и decisions/README.md (строка 0047, внесена ORCH до моего запуска: она в списке до начала работы); `git diff -- tools/src/handoffs/git-history.js` — три добавленные строки (одна строка комментария и две строки ветки), удалений нет. Остальное — неотслеживаемое: decisions/0047-…, docs/design/ISS-0053-…, docs/issues/ISS-0053-…, handoffs/ISS-0053-20261013-01/."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Тесты GH-6 (правка подставных git), GH-7 и GH-7b не писались и не правились (AP-063; шаг 6, TEST-DESIGNER после ворот безопасности и ревью). Тестов, проверяющих намеренно изменённое поведение, среди существующих нет: с прежними тестами проверка зелёная (1476 из 1476), как и предсказано в п. 6 и 7.2 проекта. После шага 6 ожидается 1478 (по факту сверяет TEST-DESIGNER)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Комментарий в начале файла («five calls», вызовов шесть) не тронут — вне дефекта (AP-019); найденное попутно, для ORCH."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Места того же рода (AP-014): запись на ввод дочернего процесса есть только у readBlobs; у остальных пяти вызовов git-history.js и у двух вызовов traces/git-files.js stdio[0] — \"ignore\", ветка 5a для них недостижима. Проверено командами `grep -c 'stdio: \\[\"ignore\", \"pipe\", \"pipe\"\\]' tools/src/handoffs/git-history.js` (5) и `grep -n 'input:' tools/src/handoffs/git-history.js` (одна строка, readBlobs). Правок вне входа нет; HK-12b, HK-31 и git, убитый сигналом (О1 проекта), — отдельные дефекты, не здесь."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Поведение на Linux не измерено (Linux на машине нет): ветка поставлена по статусу 0, а не по коду EPIPE, именно поэтому (Р2 проекта). Подтверждение — запуск check.yml на GitHub после отправки владельцем (О2, R1); я ничего не отправлял и не коммитил."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/handoffs/git-history.js"
+    ]
+  }
+}

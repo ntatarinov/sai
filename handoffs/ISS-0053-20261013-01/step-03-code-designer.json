@@ -1,0 +1,117 @@
+{
+  "handoff_id": "step03-ISS-0053-20261013-01",
+  "run_id": "ISS-0053-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0053-20261013-01/step-03-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-038",
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0053-20261013-01/step-01-issue-fixer.json",
+      "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+      "docs/design/REQ-038-handoffs-check.md",
+      "decisions/0037-handoffs-check-design.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "decisions/0040-handoffs-git-tag-lookup.md",
+      "docs/requirements.yaml (REQ-038, критерий «Вывод, коды и сбои»)",
+      "docs/workflows/WF-03-defect.md (шаги 3, 6, 7)",
+      "docs/workflows/WF-02-development.md (шаги 1, 1b)",
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md",
+      "tools/src/handoffs/git-history.js",
+      "tools/test/handoffs-git.test.js"
+    ],
+    "route": "ISSUE-FIXER (PASS) -> CODE-DESIGNER (этот) -> CODE-DESIGN-VALIDATOR -> CODE-FIXER -> SECURITY-REVIEWER -> REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "docs/design/ISS-0053-readblobs-epipe.md",
+      "decisions/0047-*.md и далее — только предложения новых записей"
+    ],
+    "base_tag": "base/ISS-0053-20261013-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 3. Проект исправления ISS-0053 (docs/design/ISS-0053-readblobs-epipe.md). Основа — диагноз ISSUE-FIXER (step-01, result.summary и issues): readBlobs (tools/src/handoffs/git-history.js, строки около 260–284) — единственный вызов execFileSync с input (запросы на stdin git cat-file --batch); подставной git в тесте GH-6 (tools/test/handoffs-git.test.js, случаи 1 и 2: echo и printf '%s blob 100\\n') отвечает и выходит с кодом 0, не читая ввод; если процесс успел выйти раньше записи 7 байт (HEAD:x\\n), запись даёт EPIPE: err.code='EPIPE', err.status=0, gitFailure (строки 18–35) видит число 0 и пишет «git не смог выполнить команду (код 0)». Какая ветка сработает, решает гонка; на Linux-раннере GitHub гонку проиграли (1475 из 1476; упал случай 2 GH-6, строка 243 — не isShallow, как в первой редакции файла дефекта, факты которого неверны, AP-012). Что должно измениться: (1) КОД git-history.js: EPIPE при статусе 0 даёт E_TRACE_GIT с текстом «вывод git не разобран» (текст из GH-6), а не «код 0»; статус не 0 остаётся как сейчас (exit 3 → «код 3», exit 128 → E_TRACE_NOT_GIT) — спроектируй точную проверку (err.code === 'EPIPE' и status 0/null?), как она вписывается в gitFailure, остальные пять функций git-history.js (isShallow, commitExists, isAncestorOfHead, fileHistory, tagExists) вводом не пользуются — проверь; решение 0038/0040 (число вызовов git, child_process только в git-history.js) не меняется; (2) ТЕСТЫ: регрессионный детерминированный тест (один запрос в 200 000 знаков и подставной git exit 0 → до исправления «(код 0)», после E_TRACE_GIT «вывод git не разобран»; контроли: exit 3 с тем же входом → «код 3», exit 128 → E_TRACE_NOT_GIT); подставные git в GH-6 (случаи 1 и 2) читают ввод до ответа встроенным `while read -r _; do :; done;` (не внешним cat — на macOS зависал), чтобы тест проверял разбор, а не исход гонки; ожидание «вывод git не разобран» и сам тест не удаляются (Q6); (3) проверь утверждения диагноза своим запуском на копии вне проекта (readBlobs с входом 200 000 знаков и exit 0/echo/printf даёт «(код 0)» — 40 из 40; exit 3, exit 128); (4) таблица «критерий → тест»: критерий REQ-038 «Вывод, коды и сбои» (Q10) и тест GH-6, новый регрессионный тест (имена на усмотрение: GH-7?); (5) тесты с намеренно меняющимся ожиданием (GH-6 меняет подставные git, ожидание то же); (6) раздел о планке Q1–Q14, R1–R3; (7) перечни файлов write_set для CODE-FIXER и TEST-DESIGNER; (8) что не входит: HK-12b и HK-31 (pixel-office-hook.test.js) без child.stdin.on('error') — отдельный дефект LOW; прочее по диагнозу. Проект — документ в docs/design/, РЕШЕНИЕ записывай в decisions/ (номера с 0047) только если есть выбор между вариантами (например, код EPIPE → E_TRACE_GIT против отдельного кода); иначе укажи, что записи не нужно. Кода реализации и тестов не пиши. После PASS ворот проекта ORCH принимает записи.",
+    "acceptance_criteria": [
+      "Каждое место из диагноза: изменение, путь отказа, защита в той же операции",
+      "Таблица «критерий → тест» для регрессионного теста и контролей; тесты, меняющие ожидание, названы",
+      "Утверждения диагноза о коде повторены своим запуском; раздел о планке полный; кода и тестов нет",
+      "Изменены только файлы write_set; status handoff строго COMPLETED"
+    ]
+  },
+  "created_at": "2026-10-13T01:52:40Z",
+  "started_at": "2026-10-13T01:52:40Z",
+  "completed_at": "2026-10-13T02:10:23Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Проект исправления ISS-0053 написан: docs/design/ISS-0053-readblobs-epipe.md. Выбор (предложение decisions/0047, вариант А): в gitFailure (tools/src/handoffs/git-history.js) добавляется одна ветка — ошибка вызова со статусом выхода, строго равным 0, после веток ENOENT/ETIMEDOUT/ENOBUFS/128 и до ветки «любое число», даёт E_TRACE_GIT «вывод git не разобран» (тот же код и текст, что ждёт GH-6); статусы 128 и N остаются (E_TRACE_NOT_GIT, «код N»). Условие по статусу, а не по err.code==='EPIPE' из диагноза: EPIPE измерен только на macOS, код записи на Linux не измерен (расхождение Р2). Остальные пять функций git-history.js вводом не пользуются (stdio[0]='ignore', 5 из 6 вызовов; единственный input — readBlobs, строка 274), число вызовов git (6) и место child_process (0038, 0040) не меняются. Тесты (только tools/test/handoffs-git.test.js): подставные git GH-6 случаев 1 и 2 читают ввод встроенным `while read -r _; do :; done;` (ожидание то же, тест не удаляется); новые GH-7 (git exit 0 / echo / printf не читает запрос в 4 МиБ → E_TRACE_GIT «вывод git не разобран», не «код 0»; состояние не изменилось) и GH-7b (контроли: exit 3 → «код 3», exit 128 → E_TRACE_NOT_GIT, тот же ввод). Размер ввода 4 МиБ вместо 200 000 знаков из задания: на Linux сокет ввода может вместить 200 000 (не измерено), на macOS вместимость между 64 КиБ и 128 КиБ (расхождение Р1). Утверждения диагноза повторены своим запуском на копии «до» (40 из 40 «(код 0)» для exit 0, echo, printf; exit 3 → «код 3», exit 128 → E_TRACE_NOT_GIT); прототип исправления на копии вне проекта: GH-7 красный на «до» и зелёный на «после» (sh и dash), мутанты ловятся, весь набор 1476/1476 с одной правкой кода и 1481/1481 с тестами прототипа. Тестов с изменяющимся ожиданием нет. Кода и тестов в проект не писал. Проверка на Linux — только запуском check.yml на GitHub (О2).",
+    "changes": [
+      {
+        "file": "docs/design/ISS-0053-readblobs-epipe.md",
+        "what": "новый проект: п. 1 выбор; п. 2 факты Ф1–Ф13 и расхождения Р1, Р2; п. 3 места того же рода М1–М10; п. 4 изменения (4.1 таблица веток gitFailure с новой веткой 5a, 4.2 что не меняется, 4.3 тесты GH-6, GH-7, GH-7b); п. 5 пути отказа; п. 6 порядок и файлы ролей; п. 7 «критерий → тест» К1–К7, тесты с меняющимся ожиданием (нет), мутанты M1–M6; п. 8 что не входит; п. 9 что нужно от других ролей; п. 10 как проверять; п. 11 планка Q1–Q14, R1–R3; п. 12 открытые вопросы О1–О3"
+      },
+      {
+        "file": "decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+        "what": "новая запись (статус «предложено»): вопрос, варианты А–Д, выбор А, причины, что теряется, условие пересмотра"
+      }
+    ],
+    "self_check": "Время начала 2026-10-13T01:52:40Z; среда: Node v22.21.1, macOS, /bin/sh = bash 3.2, /bin/dash есть, Linux нет; пробы и прототип — в <scratch>/d53/design и <scratch>/d53/probe, в проект не попали.\n\n$ diff -rq <scratch>/pre_fix_ISS-0053/tools tools -x node_modules && echo SAME  ->  SAME\n\n-- Утверждения диагноза о коде «до» (запуск сам), один запрос в 200 000 знаков, подставной git не читает ввод; по 20 запусков на оболочку /bin/sh и /bin/dash (<scratch>/d53/probe/repro2.mjs, PRE_FIX=<scratch>/pre_fix_ISS-0053/tools):\n  exit 0                          -> 40 из 40: E_TRACE_GIT | git не смог выполнить команду (код 0)\n  echo 'not an object header'     -> 40 из 40: E_TRACE_GIT | git не смог выполнить команду (код 0)\n  printf '%s blob 100\\n' aaaa…    -> 40 из 40: E_TRACE_GIT | git не смог выполнить команду (код 0)\n  exit 3                          -> 40 из 40: E_TRACE_GIT | git не смог выполнить команду (код 3)\n  exit 128                        -> 40 из 40: E_TRACE_NOT_GIT | это не git-репозиторий: команда проверяет файлы, которые отслеживает git; запустите её в клоне Sai\n\n-- Что лежит в ошибке execFileSync (<scratch>/d53/design/props.mjs, ввод 200000):\n  exit 0 -> {code:EPIPE,status:0,signal:null}; echo hello -> то же, stdout 'hello\\n'; exit 3 -> {EPIPE,3}; exit 128 -> {EPIPE,128}; kill -9 $$ -> {EPIPE,null,SIGKILL}; exec /bin/sleep 5 (таймаут) -> {ETIMEDOUT,null,SIGTERM}; 7 байт и exit 0 -> ошибки нет\n\n-- Ввод дочернего процесса — сокет; вместимость macOS (<scratch>/d53/design/cap.mjs): isSocket -> socket; 1–64 КиБ принято; 128 КиБ, 200000, 256 КиБ … 4 МиБ -> error EPIPE (status 0); sysctl net.local.stream.sendspace -> 8192\n\n-- Места вызова: grep -c 'stdio: \\[\"ignore\", \"pipe\", \"pipe\"\\]' git-history.js -> 5; grep -c 'stdio: \\[\"pipe\", \"pipe\", \"pipe\"\\]' -> 1; grep -n 'input:' -> одна строка (274); grep -c 'gitFailure(' -> 7; в traces/git-files.js stdio[0]='ignore' (строка 13).\n\n-- Git, убитый сигналом (<scratch>/d53/design/sig.mjs 'kill -9 $$' blobs|shallow на копии «до»): Error undefined | Command failed: git -c core.fsmonitor=false … (не TraceError); cli.js строка 68: if (!(err instanceof TraceError)) throw err  -> вопрос О1.\n\n-- Прототип исправления (копия вне проекта <scratch>/d53/design/proto и полная копия Sai <scratch>/d53/design/sai-proto; одна ветка в gitFailure, GH-6 с читающими git, GH-7 в пяти случаях):\n  код «до» + GH-7: not ok GH-7 exit 0 / echo / printf (Error: git не смог выполнить команду (код 0)); ok exit 3, exit 128  — под /bin/sh и под /bin/dash\n  код «после»: GH-6 + GH-7: # pass 13 / # fail 0 (sh и dash)\n  GH-6 с читающими git на коде «до», 10 повторов -> 10 раз # pass 1 # fail 0\n  мутанты: «любое число» -> # fail 2 (GH-4, GH-7 exit 3); ветка за веткой «любое число» -> # fail 3 (GH-7); текст «код 0» -> # fail 3; ветка до проверки 128 -> # fail 0 (эквивалентен); условие «0 или null» -> # fail 0 (выживает, О1)\n  npx prettier --check src/handoffs/git-history.js -> All matched files use Prettier code style!; npx eslint src/handoffs/git-history.js --max-warnings 0 -> код 0\n  node --test \"test/**/*.test.js\" на sai-proto: код «после» + прежние тесты -> # tests 1476 / # pass 1476 / # fail 0 / # skipped 0; код «после» + тесты прототипа -> # tests 1481 / # pass 1481 / # fail 0\n  CLI (подставной git exit 0 на cat-file, остальное настоящему git): handoffs-check: E_TRACE_GIT: вывод git не разобран, код 2 (ввод 42 КБ уместился в буфер, «(код 0)» на «до» на уровне CLI не получено — только на уровне функции)\n\n-- Планка и чистота: npm run traces -> traces: файлов проверено 1235, следов 0, пропущено 36 (код 0); поиск путей компьютера и временных папок в проекте и в решении -> пусто; git status --short: только новые файлы docs/design/ISS-0053-readblobs-epipe.md, decisions/0047-iss0053-git-exit-zero-with-failed-input.md и файлы прогона (docs/issues/ISS-0053-…md, handoffs/ISS-0053-20261013-01/), файлов проекта (tools/) не менял.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "PROPOSAL",
+        "text": "decisions/0047-iss0053-git-exit-zero-with-failed-input.md (статус «предложено»): выбор варианта А. Предложение ORCH: принять после PASS CODE-DESIGN-VALIDATOR и добавить строку в decisions/README.md: «| [0047](0047-iss0053-git-exit-zero-with-failed-input.md) | Git вышел с кодом 0, а запись запросов ему не удалась (ISS-0053): ошибка E_TRACE_GIT «вывод git не разобран» по одному статусу 0, а не «код 0» и не по коду EPIPE | Принято (ORCH; владелец может отменить) |»."
+      },
+      {
+        "id": "I2",
+        "kind": "FINDING",
+        "text": "Р2 (расхождение с диагнозом, quality-bar §6 п. 2): диагноз называет условие err.code==='EPIPE' при статусе 0 и считает EPIPE единственным кандидатом. Измерено только на macOS. Что даёт запись на сокет ввода, когда git вышел с непрочитанным вводом, на Linux, не измерено (Linux нет). Проект ставит условие по статусу 0 (после ENOENT, ETIMEDOUT, ENOBUFS, 128), чтобы не зависеть от кода платформы. Остальное в диагнозе подтверждено запуском."
+      },
+      {
+        "id": "I3",
+        "kind": "FINDING",
+        "text": "Р1 (расхождение с заданием): запрос в 200 000 знаков из задания взят на macOS как достаточный (вместимость между 64 КиБ и 128 КиБ, cap.mjs), но ввод дочернего процесса — сокет, а размер его буфера на Linux не измерен (по документации ядра порядка 200 КиБ) и может вместить 200 000. Проект берёт 4 МиБ для GH-7 и GH-7b (проверен на macOS). Если ворота сочтут это чрезмерным, не меньше 1 МиБ (вопрос О3)."
+      },
+      {
+        "id": "I4",
+        "kind": "TESTS_CHANGING",
+        "text": "Тестов с намеренно меняющимся ожиданием нет (п. 7.2 проекта). Меняется только вход GH-6 (tools/test/handoffs-git.test.js): подставные git случаев 1 и 2 читают ввод встроенным `while read -r _; do :; done;` до ответа; ожидание «вывод git не разобран», E_TRACE_GIT прежнее; на коде «до» и «после» GH-6 зелёный. Новые тесты: GH-7, GH-7b (красные на «до»: GH-7). С одной правкой кода и прежними тестами весь набор зелёный (1476/1476): красных «по проекту» между шагами 4 и 6 нет."
+      },
+      {
+        "id": "I5",
+        "kind": "WRITE_SET",
+        "text": "Файлы для CODE-FIXER (шаг 4): только tools/src/handoffs/git-history.js (gitFailure, проект п. 4.1; в тексте файла, включая комментарии, не должно быть слов shell, exec(, execSync, spawn, fork, execFile(, require( — иначе красный HC-RT-1b). Файлы для TEST-DESIGNER (шаг 6): только tools/test/handoffs-git.test.js (GH-6, GH-7, GH-7b, проект п. 4.3; мутанты — п. 7.3). Файлы для DOC-UPDATER (шаг 10, не мои): docs/issues/ISS-0053-gh6-fails-on-linux.md (поправить факты по диагнозу I1 и закрыть), docs/design/REQ-038-handoffs-check.md п. 7 (одна фраза про статус 0 и ссылка на 0047), docs/anti-patterns.md (AP-078 по диагнозу I9 с дополнениями из I7 ниже), STATE.md; ORCH — decisions/README.md."
+      },
+      {
+        "id": "I6",
+        "kind": "FINDING",
+        "text": "О1, найдено попутно, не чинится здесь (LOW, предлагаю отдельный дефект; quality-bar §6 п. 6): git, убитый сигналом (статус null), даёт из gitFailure не TraceError (Error «Command failed: git …»), и cli.js строка 68 пробрасывает его дальше, то есть команда падает со стеком (Q10). С оборванной записью (EPIPE + сигнал) — «git не запустился (EPIPE)». Воспроизведено на уровне функций (sig.mjs, props.mjs), на уровне CLI не прогонялось. Затрагивает все шесть функций git-history.js; мутант «ветка 5a ловит и null» поэтому выживает."
+      },
+      {
+        "id": "I7",
+        "kind": "AP_PROPOSAL",
+        "text": "Дополнения к AP-078 диагноза (I9), для DOC-UPDATER (Q13): (а) ветка текста сбоя, написанная по коду ошибки платформы, измеренному на одной платформе (EPIPE на macOS), может не сработать на другой; условие надо писать по тому, что известно на всех (статус выхода), и называть измеренное и неизмеренное; (б) размер ввода в тесте «процесс не читает ввод» выбирают с запасом по вместимости сокета целевой платформы (стандартный ввод дочернего процесса у Node — сокет, не FIFO), а не по замеру на своей."
+      },
+      {
+        "id": "I8",
+        "kind": "FINDING",
+        "text": "Не входит в работу (напоминание ORCH): HK-12b и HK-31 (tools/test/pixel-office-hook.test.js, запись в ввод hook.sh без child.stdin.on('error')) — отдельный дефект LOW по диагнозу I6; запуск check.yml на GitHub и любая отправка (R1) — подтверждение владельца; окончательное подтверждение исправления на Linux возможно только этим запуском (О2). Если после него GH-6 или GH-7 снова красные, открывается условие пересмотра 0047."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "Вопросов к ORCH по требованию нет: критерий REQ-038 «Вывод, коды и сбои» выполнен и при «(код 0)» и не расширяется (диагноз, п. 6), текст ветки закреплён тестом GH-7 и GH-6, а не критерием; если ORCH захочет закрепить текст критерием, это отдельное решение (WF-01). Открытые вопросы проекта: О1 (сигнал), О2 (Linux только через check.yml), О3 (размер ввода 4 МиБ)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/ISS-0053-readblobs-epipe.md",
+      "decisions/0047-iss0053-git-exit-zero-with-failed-input.md"
+    ]
+  }
+}

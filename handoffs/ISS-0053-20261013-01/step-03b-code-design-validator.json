@@ -1,0 +1,187 @@
+{
+  "handoff_id": "step03b-ISS-0053-20261013-01",
+  "run_id": "ISS-0053-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "03b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0053-20261013-01/step-03b-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-038",
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/ISS-0053-readblobs-epipe.md",
+      "decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+      "handoffs/ISS-0053-20261013-01/step-03-code-designer.json",
+      "handoffs/ISS-0053-20261013-01/step-01-issue-fixer.json",
+      "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+      "decisions/0037-handoffs-check-design.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "decisions/0040-handoffs-git-tag-lookup.md",
+      "docs/requirements.yaml (REQ-038)",
+      "docs/workflows/WF-03-defect.md (шаг 3)",
+      "docs/workflows/WF-02-development.md (шаг 1b)",
+      "tools/src/handoffs/git-history.js",
+      "tools/test/handoffs-git.test.js",
+      "tools/test/handoffs-runtime.test.js"
+    ],
+    "route": "CODE-DESIGNER -> CODE-DESIGN-VALIDATOR (этот) -> CODE-FIXER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы — на копиях вне проекта"
+    ],
+    "base_tag": "base/ISS-0053-20261013-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 3 (ворота) и WF-02, шаг 1b. Сам проверь проект исправления ISS-0053 (docs/design/ISS-0053-readblobs-epipe.md, решение decisions/0047-iss0053-git-exit-zero-with-failed-input.md в статусе «предложено»). Повтори САМ не менее ДВУХ утверждений о коде на копии до (pre_fix_ISS-0053/tools или свежий git archive метки base/ISS-0053-20261013-01) и своих временных копиях: (а) readBlobs с входом больше буфера сокета и подставным git exit 0 / echo / printf даёт «git не смог выполнить команду (код 0)» (40 из 40), exit 3 даёт «(код 3)», exit 128 даёт E_TRACE_NOT_GIT; (б) прототип ветки gitFailure (статус строго 0 → E_TRACE_GIT «вывод git не разобран», после ENOENT, ETIMEDOUT, ENOBUFS и 128, до «любое число») делает регрессионный GH-7 красным «до» и зелёным «после», контроли GH-7b зелёны; (в) число вызовов git и места child_process не меняются; в тексте git-history.js после правки нет слов, красящих HC-RT-1b (shell, exec(, execSync, spawn, fork, execFile(, require( — даже в комментариях). Особо оцени: (1) выбор условия «статус строго 0» вместо «EPIPE»: проект говорит, что EPIPE измерен только на macOS, а на Linux код неизвестен — достаточно ли условия по статусу, не маскирует ли оно настоящую ошибку (git вышел кодом 0, но вывод не разобран — это и есть исход «вывод git не разобран»; нет ли случая, когда статус 0 и ошибка не про ввод: например maxBuffer ENOBUFS — порядок веток), что делать со статусом null (убит сигналом — О1, отдельный дефект); (2) размер ввода 4 МиБ в тестах (О3): сокет stdin Node на Linux: достаточно ли, нет ли риска замедления/зависания тестов (замерь время GH-7 на macOS), допустимо ли ≥ 1 МиБ; (3) изменение GH-6 (подставные git читают ввод встроенным while read; ожидание то же; тест не удаляется — Q6); (4) таблица «критерий → тест» (Q10 REQ-038, GH-6, GH-7, GH-7b), раздел о планке полный, нет кода и тестов в проекте; (5) решение 0047 оформлено по decisions/README.md (Вопрос, Варианты, Решение, Почему, Граница, Основание), не спорит с 0037/0038/0040 — можно ли принимать. Явно скажи: достаточно ли локальной проверки или исправление можно подтвердить только запуском на GitHub после отправки (да, О2) — какие шаги проверки после отправки нужны. PASS или FAIL (любой непройденный пункт — FAIL).",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков, выводы приложены",
+      "Не менее двух утверждений о коде до исправления повторены; прототип ветки и GH-7/GH-7b проверены",
+      "Условие «статус 0» против EPIPE и размер ввода оценены; можно ли принимать 0047",
+      "Файлы проекта не изменены (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-13T02:11:02Z",
+  "started_at": "2026-10-13T02:11:02Z",
+  "completed_at": "2026-10-13T02:22:59Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": {
+      "итог": "FAIL по одному пункту: решение 0047 оформлено не по decisions/README.md (нет раздела «Граница»). Остальное — PASS: проект правдив о сегодняшнем коде, хватает разработчику и тестам, раздел о планке полный, условие «статус 0» подтверждено запусками. Ожидаемый вердикт в задании не назван; вердикт выведен самим (AP-018).",
+      "А.1 правда ли проект о сегодняшнем Sai — PASS": "Повторены на копии «до» (git archive метки base/ISS-0053-20261013-01, diff -rq с tools проекта и с pre_fix_ISS-0053/tools — различий нет) шесть утверждений, больше двух: (Ф2) readBlobs с входом 200000 знаков и подставным git: exit 0, echo, printf дают «git не смог выполнить команду (код 0)» — 20 из 20 под /bin/sh и 20 из 20 под /bin/dash, итого 40 из 40 на тело; exit 3 — «(код 3)» 40 из 40; exit 128 — E_TRACE_NOT_GIT 40 из 40. (Ф4) вместимость стандартного ввода на macOS: 64 КиБ принято, 96 КиБ и больше — EPIPE, статус 0; sysctl net.local.stream.sendspace — 8192. (Ф3/Ф5) ошибка execFileSync: EPIPE+статус 0 при exit 0 и 4 МиБ непрочитанного ввода; EPIPE+статус 1 при exit 1; ENOBUFS и ETIMEDOUT дают статус null, а не 0. (Ф5, Ф6) grep: gitFailure( — 7, stdio ignore — 5, stdio pipe — 1, execFileSync( — 6. (Ф8) git, убитый сигналом: ошибка не TraceError («Command failed…») при малом вводе и «git не запустился (EPIPE)» при 4 МиБ. (Ф13/О1 не повторялась.) Запуск в CI: журнал запуска 38331440082 (<scratch>/gh-run-iss0053.log) — «(код 0)» из assert.throws строки 243 (readBlobs, случай printf), 1475 из 1476 — совпадает с проектом.",
+      "А.2 все места того же рода (AP-014) — PASS": "grep по tools/src и tools/test на input:, stdin, stdio pipe, execFileSync, spawn, «(код ${»: ввод у вызовов git — только readBlobs; второй gitFailure в traces/git-files.js с тем же текстом «(код N)» имеет оба вызова со stdio ignore (недостижим); claude-cli.js и тесты pixel-office-hook — не git, проект называет их (М9) и выносит. Полный список проекта (М1–М10) совпал с моим поиском; пропущенных мест нет.",
+      "Б.3–Б.6 хватит ли разработчику — PASS": "Таблица веток gitFailure 1–8 с новой 5a однозначна (порядок после ENOENT/ETIMEDOUT/ENOBUFS/128, до «любого числа», строгое === 0, null и undefined не попадают); текст и код заданы побайтно; пути отказа — таблица п. 5 (что видит человек, код выхода 2, состояние неизменно); файлы CODE-FIXER и TEST-DESIGNER не пересекаются; кода реализации нет (только условия, таблицы и тексты; цикл `while read -r _; do :; done;` — данные для подставного git). Прототип ветки по таблице собран мной с нуля без чтения прототипа проекта и вышел в 3 добавленные строки. Запись замечаний о неоднозначности: N2 (Low).",
+      "В.7 таблица «критерий → тест» (Q5) — PASS": "К1–К7: каждому критерию элемент проекта и тест; К7 (критерий 2 REQ-030) закрыт не тестом, а командой самого требования `gh run list --workflow check.yml …` после отправки — способ проверки назван в REQ-030, «потом решим» нет; тесты отказа GH-7 и GH-7b проверяют, что состояние не изменилось; каждый случай — свой fakeGit. Критерий «Вывод, коды и сбои» есть в REQ-038 (строка 254 блока).",
+      "Г.8 раздел о планке — PASS": "Таблица п. 11 называет Q1–Q14 и R1–R3 (17 строк), у каждой применимость и объяснение; неприменимые (Q8, Q9, Q11, R2, R3) с причиной.",
+      "Г.9 защита в той же операции — PASS": "Ветка 5a живёт внутри gitFailure, который вызывается в том же catch вокруг execFileSync (throw gitFailure(err)); отдельной «проверки потом» нет.",
+      "Г.10 решения (Q12) — FAIL (F1)": "Проект не спорит с 0037, 0038, 0040, 0002, 0004 (число вызовов git — 6, место child_process — одно, тексты HC-8k не тронуты; на прототипе вся проверка зелёная). Но сама запись 0047 не по decisions/README.md: разделы — Вопрос, Варианты, Решение, Почему, Что теряется, Условие пересмотра, Основание; раздела «Граница» нет (сравнено с 0038, 0040, 0044–0046, у которых он есть; у 0043 есть оба набора).",
+      "Особо (1) «статус строго 0» вместо EPIPE — принимается": "Статус 0 при ошибке execFileSync появляется только при сбое записи в ввод после чистого выхода git: ENOENT, ETIMEDOUT, ENOBUFS и убитый сигналом дают status null (мои запуски), поэтому порядок веток ради них не нужен, но проект держит его правильно. Реальный git (2.50.1) с вводом 10 / 200000 / 4 МиБ ошибки не даёт — читает всё и отвечает [null]; ветка 5a реальному git недостижима и настоящую ошибку не маскирует. Условие по EPIPE хуже: мутант M7 (статус 0 и code EPIPE) на macOS неотличим, а на Linux код записи не измерен (в CI-журнале виден только статус 0). Статус null (убит сигналом) — отдельный дефект О1, проект его правильно не лечит; мутант M6 выживает, как проект и пишет.",
+      "Особо (2) размер ввода 4 МиБ — принимается": "Время: GH-7 + GH-7b, пять случаев по ~0,2 с, ~1,1 с в сумме; файл handoffs-git.test.js целиком ~4,5 с и на «до», и на «после» — замедления нет. Зависание невозможно, пока подставной git выходит (exit, echo, printf), запись обрывается его выходом. Линукс не измерен; размер ≥ 1 МиБ допустим (вместимость сокета macOS — меньше 96 КиБ, Linux по умолчанию порядка 200 КиБ — не измерено); 4 МиБ допустим. Если ввод всё же уместится, GH-7 не станет ложно красным (исход «после» тот же текст), но потеряет силу — риск назван в проекте (Р1).",
+      "Особо (3) изменение GH-6 — принимается": "Подставные git случаев 1 и 2 читают ввод встроенным `while read -r _; do :; done;`; на прототипе GH-6 зелёный под /bin/sh и /bin/dash, на «до» и «после», 10 из 10 повторов; ожидание то же, тест не удалён и не пропущен (Q6). Изменение оправдано: после ветки 5a непрочитанный GH-6 тоже был бы зелёным, но мутация parseBatch краснила бы его только при выигранной гонке.",
+      "Особо (4) регресс и мутанты — PASS": "Ветка прототипа (статус === 0, после 128, до «любого числа») + GH-7 (3 случая), GH-7b (exit 3, exit 128) собраны мной. На «до»: GH-7 три случая красные «git не смог выполнить команду (код 0)», GH-7b и GH-6 зелёные — и под /bin/sh, и под /bin/dash. На «после»: 13 из 13 в файле под обеими оболочками. Полный набор на клоне репозитория (локальный git clone, ничего не отправлено): до — 1476 из 1476, 0 красных; после (с моими GH-7/GH-7b как пять отдельных тестов) — 1481 из 1481, 0 красных, 0 пропусков. Мутанты: M1 (ветка удалена) — красные три случая GH-7; M2 («любое число») — красные GH-4 и GH-7b exit 3; M3 (за веткой «любое число») — три GH-7; M4 (текст «код 0») — три GH-7; M5 (до 128) и M8 (до ENOENT) — эквивалентны, красных нет; M6 («0 или null») и M7 («0 и EPIPE») — выживают, красных нет, как и предсказано проектом.",
+      "Особо (5) (в) число вызовов и HC-RT-1b — PASS": "В прототипе execFileSync( — 6, child_process — в git-history.js и git-files.js (прежние два места), grep -nE 'shell|exec\\(|execSync|spawn|fork|execFile\\(|require\\(' по git-history.js — пусто (в моём комментарии слов нет), prettier --check и eslint --max-warnings 0 по src/handoffs/git-history.js — код 0; HC-RT-1a…e и HC-8k зелёные в полном наборе.",
+      "Особо (6) достаточно ли локальной проверки — НЕТ": "Локально проверено всё, что можно на macOS (sh и dash): код ветки, GH-6, GH-7, GH-7b, мутанты, весь набор. Linux на машине нет; как Linux завершает запись в ввод без чтения (код ошибки, момент) не измерено. Подтвердить исправление можно только запуском check.yml на GitHub после отправки, которую подтверждает владелец (R1). Нужные шаги после отправки: (а) `gh run list --workflow check.yml --branch main --limit 1 --json conclusion,headSha` — conclusion success и headSha равен `git rev-parse origin/main` (критерий 2 REQ-030); (б) в журнале шага «Run the check» строки `ok` у GH-6, GH-7 (три случая), GH-7b и итог `# tests 1478` (по проекту п. 10), `# fail 0`, `# skipped 0`; (в) повторный запуск (`gh run rerun`) хотя бы раз для сравнения; (г) по желанию и с согласия владельца — отдельная ветка без исправления кода и с новыми тестами: GH-7 должен покраснеть на Linux с «(код 0)», тогда регрессионный тест доказан и там; (д) если GH-6 или GH-7 красные с другим текстом — условие пересмотра 0047.",
+      "Особо (7) можно ли принимать 0047": "Не сейчас: сначала доработка записи (F1), затем повторные ворота; по существу вариант А принимается — подтверждён запусками."
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "High",
+        "blocks": true,
+        "point": "Г.10 (Q12), задание п. 5",
+        "place": "decisions/0047-iss0053-git-exit-zero-with-failed-input.md, разделы (строки 5–41)",
+        "what": "Запись не по decisions/README.md: нет раздела «Граница» (чего решение не касается). Есть «Что теряется» и «Условие пересмотра», но они не заменяют границу; у принятых 0038, 0040, 0044–0046 раздел есть.",
+        "need": "Добавить раздел «Граница»: чего решение не касается (другие вызовы git и места child_process, traces/git-files.js, git, убитый сигналом, HK-12b и HK-31, текст критерия REQ-038, общая константа текста) — по п. 8 проекта. После правки — повторные ворота (-r1) и только потом строка 0047 в decisions/README.md."
+      },
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocks": false,
+        "point": "Б.5",
+        "place": "проект п. 10 и О2",
+        "what": "Шаги проверки на GitHub после отправки не расписаны (команда и ожидаемые строки), названо лишь «запуск check.yml».",
+        "need": "При правке сослаться на команду критерия 2 REQ-030 и перечислить ожидаемые строки журнала (GH-6, GH-7, GH-7b, итог 1478)."
+      },
+      {
+        "id": "N2",
+        "severity": "Low",
+        "blocks": false,
+        "point": "Б.5",
+        "place": "проект п. 4.3, п. 10 (1478) и Ф10 (1481)",
+        "what": "Не сказано прямо, один `test()` на GH-7 (три случая внутри) или три; п. 10 ждёт 1478 (по одному тесту), а прототип в Ф10 даёт 1481 (пять отдельных). Разработчику приходится выбирать, а ожидаемое число зависит от выбора.",
+        "need": "Сказать, что GH-7 и GH-7b — по одному `test()` с таблицей случаев (тогда 1478), или изменить число."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "shasum -a 256 docs/design/ISS-0053-readblobs-epipe.md decisions/0047-iss0053-git-exit-zero-with-failed-input.md; плюс общий хеш (shasum) списка git ls-files -s tools/src tools/test и всех файлов tools/src и tools/test — до чтения и после всех проб",
+        "output": "до: проект 944a397da7bb6b35c4be82d8671e6b4a3c9aaf4e859f5ec5ec6bb2cc639f0ff3, решение 551ab587b3c4c7cab3ba05c3daac6467608bc41ee6d87d389586c3f2ac563842, tools/src+tools/test 4e67c30fc766daa2e4201662b9633826001c7989ad12295b4742ebc4dfcdd5f6; после: те же значения (diff пуст, «HASH_SAME»); git status --short — те же четыре неотслеживаемых пути, tools не изменён"
+      },
+      {
+        "command": "git archive base/ISS-0053-20261013-01 | tar -x -C <scratch>/cdv/base; diff -rq <scratch>/cdv/base/tools tools -x node_modules; diff -rq <scratch>/pre_fix_ISS-0053/tools <scratch>/cdv/base/tools -x node_modules",
+        "output": "SAMEWITHPROJECT, SAME_PREFIX (различий нет)"
+      },
+      {
+        "command": "node <scratch>/cdv/repro.mjs <scratch>/cdv/base/tools <оболочка> '<тело>' 20 200000 для /bin/sh и /bin/dash и тел exit 0 / echo 'not an object header' / printf '%s blob 100\\n' aaaa… / exit 3 / exit 128",
+        "output": "exit 0, echo, printf: по 20x E_TRACE_GIT «git не смог выполнить команду (код 0)» под каждой оболочкой (40 из 40 на тело); exit 3: 20x «(код 3)» под каждой (40 из 40); exit 128: 20x E_TRACE_NOT_GIT под каждой (40 из 40)"
+      },
+      {
+        "command": "node <scratch>/cdv/cap.mjs (spawnSync, ввод N байт, ребёнок sleep 0.4 без чтения); sysctl net.local.stream.sendspace",
+        "output": "1024, 32768, 65536 — accepted 0; 98304, 131072, 200000, 1048576, 4194304 — EPIPE 0; net.local.stream.sendspace: 8192"
+      },
+      {
+        "command": "node <scratch>/cdv/props.mjs (execFileSync, ввод 4 МиБ)",
+        "output": "exit 0 → {code:EPIPE,status:0}; exit 0 после sleep 0,3 → то же; exit 1 после echo → {EPIPE,status:1}; SIGKILL себя → {EPIPE,status:null,signal:SIGKILL}; ENOBUFS → {ENOBUFS,status:null,SIGTERM}; ETIMEDOUT → {ETIMEDOUT,status:null,SIGTERM}; ENOENT → {ENOENT,status:null}"
+      },
+      {
+        "command": "прототип ветки: в копии <scratch>/cdv/sai-proto/tools/src/handoffs/git-history.js после ветки status === 128 добавлено `if (err.status === 0) return new TraceError(\"E_TRACE_GIT\", \"вывод git не разобран\");` + английский комментарий; тесты: <scratch>/cdv/gh-test-new.js (GH-6 читающий, GH-7 ×3, GH-7b ×2); node --test test/handoffs-git.test.js на копии «до» с этими тестами и на копии «после», затем те же под /bin/dash (подмена #!/bin/sh)",
+        "output": "до, sh: tests 13, pass 10, fail 3 (GH-7 case 0/1/2: «Error: git не смог выполнить команду (код 0)»), GH-6, GH-7b ok; после, sh: tests 13, pass 13, fail 0; до, dash: те же 3 красных GH-7; после, dash: 13 из 13; GH-7 + GH-7b ×5 случаев: ~0,2 с каждый, ~1,1 с; весь файл ~4,5 с и до, и после"
+      },
+      {
+        "command": "git clone --no-hardlinks <корень Sai> <scratch>/cdv/clonebase (и копия cloneproto с прототипом); cd tools && node --test \"test/**/*.test.js\" в обоих",
+        "output": "clonebase: # tests 1476, pass 1476, fail 0, skipped 0; cloneproto: # tests 1481, pass 1481, fail 0, skipped 0 (HC-RT-1a…e, HC-8k, TR-4c зелёные). Красные (AP-070): в первой, не клонированной копии (без истории git) краснели HC-7a и HC-7c — причина внешняя: тесты handoffs-real читают настоящий репозиторий; в клоне оба зелёные на «до» и на «после»; на работу не записываются"
+      },
+      {
+        "command": "cd <scratch>/cdv/sai-proto/tools && npx prettier --check src/handoffs/git-history.js; npx eslint src/handoffs/git-history.js --max-warnings 0; grep -nE 'shell|exec\\(|execSync|spawn|fork|execFile\\(|require\\(' src/handoffs/git-history.js; grep -c 'execFileSync(' src/handoffs/git-history.js",
+        "output": "All matched files use Prettier code style!; eslint код 0; grep пусто; 6"
+      },
+      {
+        "command": "python3 <scratch>/cdv/mut.py (мутанты M1–M8 на копии прототипа, node --test handoffs-git + handoffs-runtime, 22 теста)",
+        "output": "M1: fail 3 (GH-7 ×3); M2: fail 2 (GH-4, GH-7b exit 3); M3: fail 3 (GH-7 ×3); M4: fail 3 (GH-7 ×3); M5: fail 0 (эквивалентен); M6: fail 0 (выживает, О1); M7 (статус 0 и EPIPE): fail 0 (на macOS неотличим); M8 (до ENOENT): fail 0 (эквивалентен)"
+      },
+      {
+        "command": "node <scratch>/cdv/real.mjs <scratch>/cdv/sai-proto/tools <временный репозиторий> (настоящий git 2.50.1, readBlobs с запросом HEAD:x…, 10 / 200000 / 4 МиБ)",
+        "output": "во всех трёх случаях [null], без ошибки: настоящий git читает весь ввод; ветка 5a ему недостижима"
+      },
+      {
+        "command": "node <scratch>/cdv/repro.mjs <scratch>/cdv/base/tools /bin/sh 'kill -9 $$' 5 5 и 5 4194304; node <scratch>/cdv/sig.mjs <scratch>/cdv/base/tools",
+        "output": "ввод 5 знаков: 5x «undefined | Command failed: git -c core.fsmonitor=false cat-file --batch» (не TraceError); 4 МиБ: 5x E_TRACE_GIT «git не запустился (EPIPE)»; isShallow и readBlobs (малый ввод) — Error, не TraceError (подтверждает Ф8 и О1)"
+      },
+      {
+        "command": "grep -rnE 'input:|stdin\\.(write|end)|stdio: *\\[ *\"pipe\"' tools/src tools/test; grep -rnE 'execFileSync|spawnSync|execSync|spawn\\(' tools/src; grep -rn '(код \\${' tools/src; grep -c 'gitFailure(' …/git-history.js; grep -rln 'git не смог выполнить команду (код 0)' docs decisions tools/README.md",
+        "output": "ввод у вызовов git — одна строка git-history.js:273–274; прочие записи в stdin — claude-cli.js и тесты pixel-office (не git); (код ${ — две строки: git-history.js:30 и traces/git-files.js:31 (stdio ignore); gitFailure( — 7; текст «(код 0)» в docs/decisions — только файл дефекта, проект и 0047, как пишет проект"
+      },
+      {
+        "command": "grep -E '^## ' decisions/00{36..46}*.md и decisions/0047-…md",
+        "output": "0038, 0040, 0044–0046: Вопрос/Варианты/Решение/Почему/Граница/Основание; 0043 с Что теряется, Условие пересмотра и Граница; 0047: Вопрос/Варианты/Решение/Почему/Что теряется/Условие пересмотра/Основание (без Границы)"
+      },
+      {
+        "command": "grep -nE '/Users/|/private/|/var/folders|github.com' docs/design/ISS-0053-readblobs-epipe.md decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+        "output": "пусто (пути — <scratch>/…)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "V1",
+        "kind": "NOTE",
+        "text": "Ожидаемый вердикт в задании не назван; вердикт выведен самим (AP-018). Факты задания проверены запусками: метка base/ISS-0053-20261013-01 есть (02ff306), копия «до» равна tools проекта, 1476 тестов на «до»."
+      },
+      {
+        "id": "V2",
+        "kind": "NOTE",
+        "text": "Предложение: после доработки 0047 (F1) — повторные ворота -r1 только по записи и N1/N2; сам код ветки, мутанты и прогон я подтвердил, повторять их не нужно, если файл проекта не изменится в частях п. 4–7."
+      },
+      {
+        "id": "V3",
+        "kind": "NOTE",
+        "text": "Не измерено и в этой проверке: поведение записи в ввод на Linux (код ошибки, нужен ли размер 4 МиБ). Выводы про Linux не делаются; подтверждение — только запуск check.yml на GitHub после отправки (R1) по шагам из Особо (6). Совпадает с О2 проекта."
+      },
+      {
+        "id": "V4",
+        "kind": "NOTE",
+        "text": "О1 (git, убитый сигналом, не TraceError) подтверждён моим запуском; заведение отдельного дефекта LOW поддерживаю, в ISS-0053 не входит (AP-019). HK-12b/HK-31 тоже отдельно."
+      },
+      {
+        "id": "V5",
+        "kind": "NOTE",
+        "text": "Строка 0047 в decisions/README.md ещё не добавлена; это делает ORCH после PASS ворот, не сейчас."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

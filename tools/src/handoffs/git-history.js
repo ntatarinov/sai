@@ -15,6 +15,7 @@ const NOT_GIT =
   "это не git-репозиторий: команда проверяет файлы, которые отслеживает git; запустите её в клоне Sai";
 
 // A failed call of git into the error of the command; a program error passes through.
+// A failed call with status 0 means git exited without taking its input: no exit code.
 function gitFailure(err) {
   if (err === null || typeof err !== "object") return err;
   if (err.code === "ENOENT")
@@ -24,6 +25,8 @@ function gitFailure(err) {
   if (err.code === "ENOBUFS")
     return new TraceError("E_TRACE_GIT", "вывод git слишком велик");
   if (err.status === 128) return new TraceError("E_TRACE_NOT_GIT", NOT_GIT);
+  if (err.status === 0)
+    return new TraceError("E_TRACE_GIT", "вывод git не разобран");
   if (typeof err.status === "number")
     return new TraceError(
       "E_TRACE_GIT",

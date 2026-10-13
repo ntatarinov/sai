@@ -231,14 +231,18 @@ test("GH-5 status 1 of git is the answer 'no' of commitExists and isAncestorOfHe
 });
 
 test("GH-6 an answer of git that cannot be read is E_TRACE_GIT, not a wrong result", (t) => {
-  const bad = fakeGit(t, "echo 'not an object header'");
+  // The fake git reads its input (the shell builtin, not an external program) before it
+  // answers: the test checks the parsing of the answer, not the outcome of a race
+  // between the write of the request and the exit of git (ISS-0053).
+  const READ_INPUT = "while read -r _; do :; done;";
+  const bad = fakeGit(t, `${READ_INPUT} echo 'not an object header'`);
   assert.throws(
     () => readBlobs(bad.repo, ["HEAD:x"]),
     failure("E_TRACE_GIT", "вывод git не разобран"),
   );
   const short = fakeGit(
     t,
-    "printf '%s blob 100\\n' aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    `${READ_INPUT} printf '%s blob 100\\n' aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
   );
   assert.throws(
     () => readBlobs(short.repo, ["HEAD:x"]),
@@ -254,4 +258,76 @@ test("GH-6 an answer of git that cannot be read is E_TRACE_GIT, not a wrong resu
     () => fileHistory(badLog.repo),
     failure("E_TRACE_GIT", "вывод git не разобран"),
   );
+});
+
+// ISS-0053: a git that exits without reading the requests it was sent. The request is
+// 4 MiB, far more than the buffer of the pipe or socket of the input on any platform, so
+// the write to git always fails once git is gone, whatever the order of events: the
+// outcome does not depend on a race. The error of the call then carries the exit status
+// of git, and the status decides the text.
+const BIG_REQUEST = "HEAD:" + "x".repeat(4 * 1024 * 1024);
+
+// The error a call throws, so that a failed check shows its text.
+function thrown(call) {
+  try {
+    call();
+  } catch (err) {
+    return err;
+  }
+  assert.fail("the call did not throw");
+}
+
+// The state is the same after a refusal: the repository folder is empty and the sandbox
+// holds only its three folders.
+function assertUntouched(fake, label) {
+  assert.deepEqual(fs.readdirSync(fake.repo), [], label);
+  assert.deepEqual(
+    fs.readdirSync(fake.dir).sort(),
+    ["bin", "home", "repo"],
+    label,
+  );
+}
+
+test("GH-7 readBlobs: git that answers (nothing, garbage or a short header) and exits with code 0 without reading a request of 4 MiB is E_TRACE_GIT 'вывод git не разобран', not 'код 0'; nothing is written", (t) => {
+  const cases = [
+    ["exit 0", "exit 0"],
+    ["echo", "echo 'not an object header'"],
+    [
+      "printf",
+      "printf '%s blob 100\\n' aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    ],
+  ];
+  for (const [label, body] of cases) {
+    const fake = fakeGit(t, body);
+    const started = Date.now();
+    const err = thrown(() => readBlobs(fake.repo, [BIG_REQUEST]));
+    assert.ok(err instanceof TraceError, `${label}: ${err}`);
+    assert.equal(err.code, "E_TRACE_GIT", label);
+    assert.equal(err.message, "вывод git не разобран", label);
+    assert.ok(Date.now() - started < 10_000, `${label} took too long`);
+    assertUntouched(fake, label);
+  }
+});
+
+test("GH-7b readBlobs: the status of git is not lost when the request is not read: exit 3 is 'код 3', exit 128 is E_TRACE_NOT_GIT; nothing is written", (t) => {
+  const cases = [
+    [
+      "exit 3",
+      "exit 3",
+      "E_TRACE_GIT",
+      "git не смог выполнить команду (код 3)",
+    ],
+    ["exit 128", "exit 128", "E_TRACE_NOT_GIT", "это не git-репозиторий"],
+  ];
+  for (const [label, body, code, message] of cases) {
+    const fake = fakeGit(t, body);
+    const started = Date.now();
+    assert.throws(
+      () => readBlobs(fake.repo, [BIG_REQUEST]),
+      failure(code, message),
+      label,
+    );
+    assert.ok(Date.now() - started < 10_000, `${label} took too long`);
+    assertUntouched(fake, label);
+  }
 });

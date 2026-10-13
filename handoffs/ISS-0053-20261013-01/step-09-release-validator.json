@@ -1,0 +1,120 @@
+{
+  "handoff_id": "step09-ISS-0053-20261013-01",
+  "run_id": "ISS-0053-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/ISS-0053-20261013-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [
+      "REQ-038",
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+      "docs/design/ISS-0053-readblobs-epipe.md",
+      "decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+      "docs/requirements.yaml (REQ-038)",
+      "handoffs/ISS-0053-20261013-01/ (все step-*.json)",
+      "docs/workflows/WF-03-defect.md (шаг 9)",
+      "docs/workflows/WF-02-development.md (шаг 9)",
+      "docs/quality-bar.md",
+      "tools/src/handoffs/git-history.js",
+      "tools/test/handoffs-git.test.js"
+    ],
+    "route": "TEST-RUNNER (PASS) -> RELEASE-VALIDATOR (этот) -> DOC-UPDATER -> RELEASE-FINALIZER -> шаг 12: проверка на GitHub после отправки",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы и копии — вне проекта; на GitHub только чтение"
+    ],
+    "base_tag": "base/ISS-0053-20261013-01"
+  },
+  "task": {
+    "description": "WF-03, шаг 9. Последние ворота ПЕРЕД ОТПРАВКОЙ для ISS-0053. Не доверяй отчётам. Сам: (1) на чистой копии рабочего дерева (копия вне проекта со .git, без node_modules) выполни cd tools && npm ci && caffeinate -i npm run check — код и числа (ожидаемое число не подсказывается); (2) воспроизведи исходную ошибку САМ: на копии метки base/ISS-0053-20261013-01 (без исправления) readBlobs с вводом 4 МиБ и подставным git, не читающим ввод (exit 0, echo, printf), даёт «git не смог выполнить команду (код 0)» (под sh и dash), а на текущем дереве — E_TRACE_GIT «вывод git не разобран»; exit 3 → «(код 3)», exit 128 → E_TRACE_NOT_GIT; новые тесты GH-7 красный «до» и зелёный «после»; (3) критерий REQ-038 «Вывод, коды и сбои» (docs/requirements.yaml): выполни его команды дословно — код 2, одна строка stderr, без стека, при сбое git; (4) пункты планки Q1–Q14, R1–R3 по файлам: Q3, Q5, Q6 (GH-6 не ослаблен — diff к метке: заменены две строки подставных git, ожидания и сам тест на месте; нет skip/todo, package.json не менялся), Q7 (секреты/пути компьютера/адрес GitHub в изменённых файлах), Q10, Q12 (решение 0047 в decisions/README.md), Q13/Q14 — учёт впереди (шаг 10); R1: отправка в main — только после твоего PASS, в границах слов владельца; (5) изменены только ожидаемые файлы: git status и diff к метке base/ISS-0053-20261013-01 — tools/src/handoffs/git-history.js (3 строки + комментарий), tools/test/handoffs-git.test.js, docs/design/ISS-0053-readblobs-epipe.md, decisions/0047 и README решений, docs/issues/ISS-0053-gh6-fails-on-linux.md, handoffs/ISS-0053-20261013-01/, parallel-runs; (6) независимый пересчёт: тестов 1478 (было 1476 → +2). ВАЖНО: поведение на Linux ЛОКАЛЬНО не проверяется (Linux на машине нет): дефект подтверждается только запуском check.yml на GitHub после отправки — шаг 12 (отдельный RELEASE-VALIDATOR после отправки); PASS этого шага означает: исправление можно коммитить и отправлять в main (RELEASE-FINALIZER), ISS-0053 остаётся open до зелёного запуска. Остаточные риски назови отдельно (Linux не измерен; размер ввода 4 МиБ; git, убитый сигналом — О1; HK-12b и HK-31; комментарий «five calls»). Красные тесты — имена (AP-070).",
+    "acceptance_criteria": [
+      "Чистая копия: npm ci && npm run check — код и числа",
+      "Исходная ошибка воспроизведена на копии «до» и отсутствует на текущем дереве — оба вывода",
+      "Критерий REQ-038 «Вывод, коды и сбои» выполнен дословно; каждый применимый пункт Q/R назван",
+      "Остаточные риски названы отдельно; подтверждение на Linux вынесено в шаг после отправки"
+    ]
+  },
+  "created_at": "2026-10-13T03:10:08Z",
+  "started_at": "2026-10-13T03:10:08Z",
+  "completed_at": "2026-10-13T03:17:46Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "where": "docs/issues/ISS-0053-gh6-fails-on-linux.md, раздел «Что не так» и «Доказательство»",
+        "evidence": "Текст дефекта называет упавшей проверку isShallow с printf '\\377\\376' и ожидание «не в UTF-8»; измерено ISSUE-FIXER и подтверждено моим зондом: упавший случай — readBlobs с подставным git printf '%s blob 100\\n' (строка 243 теста, ожидание «вывод git не разобран»), гипотеза о dash/printf опровергнута.",
+        "fix": "Шаг 10, DOC-UPDATER: при закрытии поправить причину и место в файле дефекта по диагнозу (не блокирует).",
+        "return_to": "шаг 10, DOC-UPDATER"
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "where": "tools/src/handoffs/git-history.js, строка 2 (комментарий «five calls»)",
+        "evidence": "grep -c 'execFileSync(' tools/src/handoffs/git-history.js → 6; в комментарии «five calls». Это было до работы и в её границы (решение 0047) не входит.",
+        "fix": "Отдельный дефект LOW через ORCH (quality-bar §6 п. 6); в этой работе не править.",
+        "return_to": "ORCH (завести ISS)"
+      }
+    ],
+    "summary": "PASS: исправление ISS-0053 можно коммитить и отправлять в main (RELEASE-FINALIZER, мерж и отправка — только с подтверждения владельца, R1). Ожидаемый вердикт в задании не называлось; вердикт выведен из собственных запусков. ISS-0053 остаётся open до зелёного check.yml на GitHub (шаг 12), Linux на машине нет и локально не измерен.\n\nКритерии задания:\n1. Чистая копия: выполнено. Копия рабочего дерева вне проекта со .git, без node_modules; node -v v22.21.1; npm ci — код 0, 0 уязвимостей; caffeinate -i npm run check, один раз, целиком, в моём ходе — код 0 (снят отдельно), тестов 1478, pass 1478, fail 0, cancelled 0, skipped 0, todo 0, около 104 с. Пять ступеней check на месте: format:check, lint --max-warnings 0, traces, handoffs-check, test. 1478 = 1476 + 2 (GH-7 и GH-7b), пересчёт независимый. Красных записей нет, имён красных нет (AP-070).\n2. Исходная ошибка: выполнено. Метка base/ISS-0053-20261013-01 совпадает с HEAD; копия «до» = HEAD с откатом tools/ и decisions/README.md. Зонд (readBlobs, ввод 4 МиБ, подставной git вне проекта, 5 повторов каждого случая, единообразные 5 из 5): ДО — exit 0, echo, printf под /bin/sh и /bin/dash → E_TRACE_GIT «git не смог выполнить команду (код 0)»; exit 3 → «(код 3)», exit 128 → E_TRACE_NOT_GIT. ПОСЛЕ (текущее дерево) — те же три случая под sh и dash → E_TRACE_GIT «вывод git не разобран»; exit 3 → «(код 3)», exit 128 → E_TRACE_NOT_GIT (то же, что до). Новые тесты на копии «до» (новый файл тестов + старый код): GH-7 красный («код 0»), GH-7b зелёный (контроль, должен быть зелёным до и после), остальные 8 зелёные; на текущем дереве 10 из 10, и 25 повторов файла подряд — 0 красных. Замечание: старый GH-6 на macOS не краснел и до исправления (гонка записи и выхода git проявляется на Linux), поэтому «красный до» для него здесь недостижим; красный до — GH-7.\n3. Критерий REQ-038 «Вывод, коды и сбои»: выполнен дословно на копии. Порядок строк и последняя строка-итог — тесты HC-8a, HC-8a2, HC-8a3, HC-8a4, HC-8b зелёные в моём прогоне; вне git — код 2, stdout 0 байт, stderr одна строка «handoffs-check: E_TRACE_NOT_GIT: это не git-репозиторий…» — тот же текст, что у traces; PATH без git — код 2, одна строка «E_TRACE_GIT: git не найден», stdout пуст; файл handoffs/…/step-01-issue-fixer.json с правами 000 (на копии) — код 2, «E_HC_READ: файл не читается (EACCES)», stdout пуст; стека нигде нет; хеши 721 файла handoffs/ и tools/handoffs/ до и после запуска совпадают (cmp); npm run handoffs-check на репозитории — код 0, «файлов проверено 710, нарушений 0, исключений использовано 114 из 114», 0.79 с (лимит 20 с). Для ветки ISS-0053 (git вышел с кодом 0, не приняв ввод) — одна строка, код 2 у команды через TraceError, как в зонде выше; GH-7 держит это тестом.\n4. Остаточные риски названы отдельно в issues (R1–R6); подтверждение на Linux вынесено в шаг 12.\n\nПланка (по файлам и запускам):\nQ1 PASS: работа привязана к REQ-038 (критерий «Вывод, коды и сбои») и REQ-030 (критерий 2); у критериев есть способ проверки. Q2 PASS: все числа выше — из моих запусков. Q3 PASS: вывод приложен, «должно работать» нет. Q4 PASS: npm ci && npm run check на чистой копии, код 0. Q5 PASS: ветка status 0 закрыта GH-7 (три случая), контроль статусов 3 и 128 — GH-7b, состояние после отказа проверяется (assertUntouched), GH-6 ожидания на месте; тесты независимы (sandbox на каждый). Q6 PASS: diff к метке — в тестах удалены ровно две строки (тела подставных git GH-6 случаев 1 и 2 заменены строками с чтением ввода), ожидания GH-6 («вывод git не разобран», «не в UTF-8») и сам тест на месте; skip/todo/only/eslint-disable/|| true в изменённых файлах не найдены (grep); package.json, package-lock.json, eslint.config.js, .github, .githooks не менялись (git diff к метке пуст); 5 ступеней check на месте; в src изменены 3 строки (условие + комментарий). Q7 PASS: поиск по изменённым и новым файлам (git-history.js, тесты, 0047, проект, дефект, handoff-ы прогона) — секретов, путей этого компьютера, адреса и имени владельца GitHub нет (совпадения только слово token в разборе и тексты самих команд поиска в handoff-ах); handoffs-check (в нём правило путей) — 0 нарушений. Q8 неприменим (данные клиентов не затронуты, продукта нет), Q9 неприменим (SQL нет), Q11 неприменим (адреса не обрабатываются). Q10 PASS: сбой git — понятная строка и код, процесс не падает; ложный текст «(код 0)» убран; каждая из шести команд с execFileSync по-прежнему идёт через gitFailure. Q12 PASS: решение 0047 в decisions/README.md (строка добавлена), код соответствует варианту А (ветка по status===0 после ENOENT, ETIMEDOUT, ENOBUFS, 128), число вызовов git и место child_process не менялись (0038, 0040). Q13 и Q14: учёт впереди (шаг 10, DOC-UPDATER): статус дефекта open, requirements.yaml и STATE.md не менялись — это правильно до PASS; к шагу 10 нужны пункты в issues (I2, I3). У каждой правки есть свой handoff (step-03-code-designer-r1, step-04, step-06; AP-013 не нарушен); исправление кода (02:33Z) прошло шаг 5 (security 02:39Z, reviewer 02:46Z), после шага 5 менялись только тесты шагом 6 с воротами 7 и 8; в снимок репозитория исправление не попало (HEAD по-прежнему 02ff306, AP-073 не повторён). R1: отправки и мержа нет, жду подтверждения владельца. R2 неприменим (Pixel Office не затронут). R3 неприменим (снят решением 0033).\n\nИзменены только ожидаемые файлы: git status — decisions/README.md, tools/src/handoffs/git-history.js, tools/test/handoffs-git.test.js (изменены), решение 0047, проект docs/design/ISS-0053-readblobs-epipe.md, дефект docs/issues/ISS-0053-gh6-fails-on-linux.md и handoffs/ISS-0053-20261013-01/ (новые). Рабочее дерево проекта этой проверкой не менялось: все пробы на копиях вне проекта; на GitHub ничего не читалось и не писалось.\n\nПростыми словами: падавший на Linux тест GH-6 теперь не зависит от гонки (подставные git читают ввод), а настоящая причина — ложное сообщение «код 0», когда git вышел, не приняв запросы, — исправлена: теперь «вывод git не разобран»; статусы 3 и 128 по-прежнему различаются. На этой машине всё зелёное, но Linux не измерен: убедимся только запуском check.yml на GitHub после отправки.",
+    "self_check": [
+      "node -v -> v22.21.1 (engines >=22 <23).",
+      "Копии вне проекта: <scratch>/rv/after (rsync рабочего дерева со .git, без node_modules), <scratch>/rv/before (то же, затем git checkout -- tools decisions/README.md; HEAD=02ff306 равен метке base/ISS-0053-20261013-01), <scratch>/rv/before-newtests (before + новый файл тестов).",
+      "cd <scratch>/rv/after/tools && npm ci -> exit 0, 'found 0 vulnerabilities'.",
+      "cd <scratch>/rv/after/tools && caffeinate -i npm run check > <scratch>/rv/check-after.log -> exit 0; '# tests 1478 # pass 1478 # fail 0 # cancelled 0 # skipped 0 # todo 0', duration_ms 104050; 'not ok' в журнале нет; ok 344 GH-6, ok 345 GH-7, ok 346 GH-7b.",
+      "Зонд <scratch>/rv/probe/probe.mjs (readBlobs, ввод 'HEAD:'+4 МиБ 'x', PATH = папка с подставным git, 5 повторов): before sh/dash: exit 0, echo, printf -> 5 из 5 'E_TRACE_GIT | git не смог выполнить команду (код 0)'; exit 3 -> '(код 3)'; exit 128 -> E_TRACE_NOT_GIT. after sh/dash: exit 0, echo, printf -> 5 из 5 'E_TRACE_GIT | вывод git не разобран'; exit 3 -> '(код 3)'; exit 128 -> E_TRACE_NOT_GIT.",
+      "node --test test/handoffs-git.test.js на before-newtests (старый код, новые тесты): exit 1; '# tests 10 # pass 9 # fail 1'; красный: 'GH-7 readBlobs: git that answers (nothing, garbage or a short header) and exits with code 0 without reading a request of 4 MiB is E_TRACE_GIT ...'; actual: 'git не смог выполнить команду (код 0)'. На after: exit 0, 10 из 10; 25 повторов файла подряд -> 0 красных прогонов.",
+      "REQ-038: npm run handoffs-check в репозитории -> 'handoffs-check: файлов проверено 710, нарушений 0, исключений использовано 114 из 114', 0.786 total, exit 0, stderr 0 байт; shasum 721 файла handoffs/ и tools/handoffs/ до и после -> cmp без различий; вне git -> exit 2, stdout 0 байт, stderr 'handoffs-check: E_TRACE_NOT_GIT: это не git-репозиторий: команда проверяет файлы, которые отслеживает git; запустите её в клоне Sai' (тот же текст у traces); PATH=нет git -> exit 2, 'handoffs-check: E_TRACE_GIT: git не найден'; chmod 000 на файле handoff-а (копия) -> exit 2, 'handoffs-check: E_HC_READ: файл не читается (EACCES)'; HC-8a, HC-8a2, HC-8a3, HC-8a4, HC-8b, HC-8c, HC-8d — ok в check-after.log.",
+      "Q6: git diff base/ISS-0053-20261013-01 -- tools/test/handoffs-git.test.js | grep -E '^-[^-]' -> две строки (тела подставных git GH-6); grep -nE '\\.skip|\\.todo|\\.only|eslint-disable|\\|\\| true|prettier-ignore' в git-history.js и handoffs-git.test.js -> пусто; git diff к метке по tools/package.json, package-lock.json, eslint.config.js, .github, .githooks -> пусто; git diff --stat: 3 файла, 82 вставки, 2 удаления.",
+      "Q7: grep -rnEi по изменённым и новым файлам на пути компьютера, имя и адрес владельца GitHub, ключи, токены, пароли -> совпадений в изменённом коде и документах нет, кроме слова token в разборе git-history.js и текстов команд поиска в handoff-ах прогона.",
+      "git status проекта после проверки: те же 7 строк, что в начале (M decisions/README.md, M git-history.js, M handoffs-git.test.js, 4 новых пути); перед закрытием: cd tools && npm run handoffs-check -> код 0 (см. ниже)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "R1 (остаточный риск): Linux не измерен. Код ошибки записи на Linux при выходе git неизвестен; ветка опирается на status===0, а не на код платформы (решение 0047, вариант А). Подтверждение — только check.yml на GitHub после отправки, шаг 12 (отдельный RELEASE-VALIDATOR); если GH-6 или GH-7 снова красные — вопрос открывается заново (условие пересмотра 0047)."
+      },
+      {
+        "id": "I2",
+        "kind": "FOLLOW_UP",
+        "text": "Для шага 10 (DOC-UPDATER): поправить файл дефекта по диагнозу (см. findings F1); добавить в docs/design/REQ-038-handoffs-check.md, п. 7, абзац «Таймаут и другие отказы git» фразу о статусе 0 со ссылкой на 0047 (проект ISS-0053, п. об учёте); закрыть дефект с итогом «ISS-0053 остаётся open до зелёного check.yml», статус REQ-030 критерий 2 — не done до шага 12; Q13: запись об ошибке процесса в docs/anti-patterns.md, если ORCH её выделит (гипотеза дефекта о dash/printf была неверна, AP-012)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "R2 (остаточный риск): размер ввода теста GH-7 — 4 МиБ; он больше буфера канала на macOS и, по документированным значениям, на Linux (64 КиБ по умолчанию), но на Linux не измерен. Если буфер где-то больше, запись удалась бы и ветка не сработала бы — тест GH-7 стал бы красным по смыслу, а не из-за гонки (тогда увидим в шаге 12)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "R3 (остаточный риск, О1 проекта): git, убитый сигналом (status null), по-прежнему даёт старый исход (непойманная ошибка или «git не запустился (EPIPE)»); вынесено в отдельный дефект LOW, решением 0047 не затронуто. Заводит ORCH."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "R4 (остаточный риск): HK-12b и HK-31 (tools/test/pixel-office-hook.test.js) пишут в ввод hook.sh без обработчика 'error' — того же класса гонка; в первом запуске check.yml на Linux они прошли (1475 из 1476), но это не доказывает отсутствия гонки. Отдельный дефект LOW, в эту работу не входит (quality-bar §6 п. 6). Заводит ORCH."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "R5: комментарий «five calls» в начале git-history.js расходится с числом execFileSync (6) — F2, до работы; отдельный дефект LOW. R6: старый GH-6 на macOS не краснеет и до исправления, поэтому регрессию против гонки на этой машине доказывает только GH-7 (красный «до»); что GH-6 перестал зависеть от гонки на Linux, подтвердит только шаг 12."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Ожидаемое число тестов (1478) названо в задании; я пересчитал сам по '# tests' из своего прогона, вердикт выведен из своих запусков (AP-018). Предложений поднять планку нет."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
