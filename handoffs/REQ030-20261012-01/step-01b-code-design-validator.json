@@ -1,0 +1,143 @@
+{
+  "handoff_id": "step01b-REQ030-20261012-01",
+  "run_id": "REQ030-20261012-01",
+  "workflow_id": "WF-02",
+  "step": "01b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/REQ030-20261012-01/step-01b-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-030-github-check.md",
+      "handoffs/REQ030-20261012-01/step-01-code-designer.json",
+      "docs/requirements.yaml (блок REQ-030)",
+      "decisions/0023-parity-frame-fixes.md",
+      "decisions/0044-req030-before-req014-done.md",
+      "decisions/0037-handoffs-check-design.md",
+      "decisions/0038-handoffs-git-history-child-process.md",
+      "docs/workflows/WF-02-development.md (шаг 1b)",
+      "docs/quality-bar.md",
+      "README.md",
+      "tools/package.json",
+      "tools/test/repo.test.js",
+      "tools/test/traces-readme.test.js"
+    ],
+    "route": "CODE-DESIGNER -> CODE-DESIGN-VALIDATOR (этот) -> BACKEND-DEV",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы и копии — вне проекта; на GitHub только чтение (gh api GET)"
+    ],
+    "base_tag": "base/REQ030-20261012-01"
+  },
+  "task": {
+    "description": "WF-02, шаг 1b. Сам проверь проект REQ-030 (docs/design/REQ-030-github-check.md). Каждый из 5 критериев ведёт к элементу проекта и к тесту/шагу проверки (критерии 2 и 3 — шаги после отправки П-2, П-3, П-3b: решение ORCH — они выполняются после отправки в main и не как автотесты; для П-3 нужно отдельное согласие владельца); буквальный YAML check.yml в проекте полон и непротиворечив; хук pre-push (алгоритм H1–H8, пропуск отправок только с удалениями, коды выхода); раздел README (после раздела «Как открыть на другом компьютере», отдельным ##, без ://, чтобы тесты TD-3 и traces не краснели); раздел о планке полный; кода реализации нет; нет противоречия с decisions (0023 D1, 0044, 0002, 0037/0038 — handoffs-check в неполной истории). Обязательно сам повтори НЕ МЕНЕЕ ДВУХ утверждений проекта о поведении на копии вне проекта: (а) git clone --depth 1 этого репозитория: npm run check красный на handoffs-check (E_HC_BASE_COMMIT), а на полном клоне без меток base/* зелёный (1454); (б) теги и коммиты действий actions/checkout v7.0.1 и actions/setup-node v7.0.0 существуют и совпадают с SHA проекта (gh api GET: 3d3c42e5aac5ba805825da76410c181273ba90b1, 820762786026740c76f36085b0efc47a31fe5020; коммиты в самих репозиториях действий, не в форках); (в) состава тестов: нет тестов, считающих файлы корня/README/.github (сделай подмену трёх файлов и раздела README на копии и прогони npm run check — 1454 зелёные); (г) git вызывает хук pre-push на отправку с удалением ветки (прототип во временном репозитории с локальным удалённым). Особо оцени: выбор fetch-depth: 0 против записи 0037 и 0038 (handoffs-check в неполной истории — код 2 с текстом; не лучше ли чинить на стороне проверки?) — выбор в проекте допустим или это обход Q6 (шаг не убирается, история целая); permissions contents: read, persist-credentials: false, concurrency с cancel-in-progress (V3) против критерия 2 (headSha последнего запуска), триггеры push на все ветки (метки не запускают), отсутствие кэша, образ ubuntu-24.04, timeout-minutes 15; остаточные риски (хук ≈ 2 мин; минуты Actions на приватном репозитории ≈ 3–5 мин на запуск, лимит 2000 в месяц не проверен) названы честно. Проект предлагает запись 0045 (SHA, полная история, без кэша, пропуск удалений в хуке) — нет ли препятствий к принятию. PASS или FAIL (любой непройденный пункт — FAIL).",
+    "acceptance_criteria": [
+      "Вердикт из собственных запусков, выводы приложены",
+      "Не менее двух утверждений проекта повторены своим запуском (в т.ч. клон с глубиной 1 и проверка SHA действий через gh api)",
+      "Выбор fetch-depth: 0 оценён против записей 0037/0038 и планки Q6",
+      "Файлы проекта не изменены (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-12T00:47:27Z",
+  "started_at": "2026-10-12T00:47:27Z",
+  "completed_at": "2026-10-12T03:37:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Вердикт FAIL: два блокирующих замечания (F1 — Medium, F2 — High), остальное проходит. Ожидаемый вердикт в задании не называл, вердикт выведен из своих запусков. Проход А (правда о Sai): повторены четыре утверждения — Ф9 (клон глубины 1: npm run check код 2, handoffs-check E_HC_BASE_COMMIT «в неполной истории нет коммита базы»), Ф10 (полный клон без меток, без глобальной личности git, env -i: 96 коммитов, 0 меток, не неполный, 1454 из 1454, код 0), Ф8 (три файла проекта буквально + раздел README после «Как открыть на другом компьютере», git add: 1454 из 1454, traces следов 0, формат чисто), Ф11 (git вызывает pre-push и на удаление ветки и метки, строка stdin «(delete) 000… ref sha», код хука 1 отклоняет удаление; в pre-push нет GIT_DIR/GIT_INDEX_FILE), и Ф12–Ф14 через gh api GET (оба тега — прямо commit с SHA проекта, коммиты в самих actions/checkout и actions/setup-node, не форки, подписаны, релизы не черновики; compare identical; v7.0.1 — последний из своей ветки, у setup-node есть v7.1.0 от 2026-10-08, моложе двух недель — выбор v7.0.0 обоснован). Также: Ф3 (gh run list пуст, workflows 0, allowed_actions all), Ф15 (action.yml: node24, package-manager-cache по умолчанию true, persist-credentials есть, fetch-depth есть), Ф16 (Ubuntu2404-Readme.md есть), коммит базы из 0036 есть в origin и предок origin/main; YAML check.yml разбирается без ошибок. Совпадающих мест того же рода (AP-014): общего механизма проект не чинит; тестов, считающих файлы корня, README или .github, нет — grep и прогон подтвердили. Проход Б (разработчик): п.2 YAML полон и однозначен; п.3 алгоритм H1–H8 однозначен, кроме H7 (F1); п.8 — путь П-3 (F2). Кода реализации нет (YAML и алгоритм — конфигурация и таблица). Проход В: каждый из 5 критериев ведёт к элементу и к тесту или шагу (п. 7.5); критерии 2 и 3 — шаги после отправки по решению ORCH, «потом решим» нет; обход P-3 см. F2. Проход Г: раздел о планке называет все 17 пунктов Q1–Q14, R1–R3 с объяснением; защита в той же операции (хук останавливает именно отправку); противоречий с 0023 D1, 0044, 0002, 0037/0038 нет; запись 0045 предложена, препятствий к её принятию нет (следующий номер после 0044 свободен). Оценка fetch-depth: 0 против 0037/0038 и Q6: выбор допустим и не обход — handoffs-check в неполной истории по задумке 0037 (закреплённый коммит базы должен быть в истории) останавливается кодом 2 с текстом, и это правильно; «чинить на стороне проверки» значило бы пропускать сверку базы при неполной истории, то есть убрать шаг (Q6); на стороне Actions история целая, шаг на месте, метки не нужны (подтверждено клоном с --no-tags). Остальное из особой оценки: permissions contents: read, persist-credentials: false, отсутствие кэша (package-manager-cache: false), ubuntu-24.04, timeout-minutes 15, триггеры push на все ветки (метки не запускают при заданном branches) и concurrency — допустимы; V3 против критерия 2 (headSha сравнивается с origin/main) честно названа; остаточные риски (хук около 2 минут, минуты Actions, лимит 2000 не проверен) названы честно. Первый полный прогон в минимальной среде (env -i, HOME внутри временной папки, машина уснула на час) дал четыре красных — EX-38, HC-6d3, HO-46, HK-17; причина воспроизведена и снята повтором: HOME внутри временной папки (EX-38, HK-17) и таймаут git 30 с из-за сна машины (HC-6d3, HO-46); повтор в тех же условиях с настоящим HOME и без сна — 1454 из 1454, код 0. К проекту они не относятся.",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Medium",
+        "blocking": true,
+        "item": "Проход Б, п. 5",
+        "place": "п. 3.2, шаг H7 (и таблица тестов PH-3)",
+        "problem": "H7 требует выполнить npm run check «в if !-ветке, без ||» и напечатать «(код N)». В if !-ветке код выхода npm потерян: $? там равен 0 (проверено: sh -c 'if ! sh -c \"exit 7\"; then echo code $?; fi' печатает «code 0», а присвоение кода сразу после команды печатает 7). Разработчику придётся выбрать самому: убрать N из сообщения, напечатать неверное «код 0» или сохранить код в переменную другим способом.",
+        "needed": "Назвать в H7 однозначную форму без ||: код сохраняется сразу после запуска npm и по нему принимается решение; сообщение печатает сохранённый код; кода выхода хука (1) это не меняет. Либо убрать «(код N)» из текста сообщения. Добавить к PH-3 проверку текста сообщения, чтобы ошибка не вернулась."
+      },
+      {
+        "id": "F2",
+        "severity": "High",
+        "blocking": true,
+        "item": "Проход В/Б, п. 5 и 8",
+        "place": "п. 7.4, шаги П-3 и П-3b",
+        "problem": "П-3 берёт клон командой «git clone <корень Sai> <scratch>/red». Такой клон имеет origin = локальная папка Sai, а не GitHub (проверено: клон из локального пути ставит origin на этот путь). git push origin <ветка> тогда создаст ветку в самом репозитории проекта, на GitHub ничего не придёт, gh run list покажет пусто, а git push origin --delete и git ls-remote --heads origin в П-3b вернут пусто для неверного репозитория — «ветка удалена» окажется ложным подтверждением. Шаг, который пишет в .git проекта, к тому же нарушает границу «пробы вне проекта».",
+        "needed": "В П-3 и П-3b назвать, что адрес origin копии заменяется на адрес GitHub проекта (брать из git remote get-url origin проекта, в файл адрес не писать), и добавить проверку перед отправкой: git remote get-url origin в копии совпадает с адресом GitHub; после шага — git branch -a в проекте не получила ветки check-red-…. Ожидаемый результат П-3 дополнить: упал именно шаг «Run the check» (gh run view --json jobs), а не шаг установки."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "blocking": false,
+        "place": "п. 3.4 и README R-7",
+        "problem": "Среди «чего хук не может» не названо: хук запускает npm run check на рабочей папке (с неотправленными правками и неотслеживаемыми файлами), а не на коммите, который уходит; отправка другой ветки или чистого коммита проверяется по чужому состоянию.",
+        "needed": "Добавить это ограничение в п. 3.4 и одним предложением в раздел README (слово «обход» остаётся)."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "blocking": false,
+        "place": "п. 6, остаточные риски",
+        "problem": "Проверка проходила только на macOS (Ф7, Ф10, и мои повторы); раннер на Ubuntu 24.04 (sh — dash, регистр имён файлов, git без личности) здесь не проверен: docker в этой среде нет. Я повторил без глобальной личности git и в минимальной среде — зелёное, но это не Linux. Первый запуск П-2 может оказаться красным по причине платформы, и риск не назван.",
+        "needed": "Добавить пятым остаточным риском «тесты ни разу не запускались на Linux; красный первый запуск чинится правкой причины, а не проверки (Q6)»."
+      },
+      {
+        "id": "F5",
+        "severity": "Low",
+        "blocking": false,
+        "place": "п. 7.4, П-2 / п. 6",
+        "problem": "Отправка файла в .github/workflows требует у учётных данных git права workflow. У gh-токена права есть (gist, read:org, repo, workflow), но git push идёт через osxkeychain, и права этого токена не проверены; отказ GitHub при первой отправке не описан.",
+        "needed": "Назвать в рисках или шагах перед П-2: при отказе «workflow scope» исправляет владелец (вход заново), проект ничего не обходит."
+      },
+      {
+        "id": "F6",
+        "severity": "Low",
+        "blocking": false,
+        "place": "п. 7.2, PH-7",
+        "problem": "Как строится PATH «только с git и системными командами sh», не сказано; если каталог с git содержит и npm (бывает на Linux), тест не создаст условия отказа.",
+        "needed": "Назвать способ: временный каталог со ссылками только на git и sh, проверка перед запуском, что npm по этому PATH не находится."
+      }
+    ],
+    "self_check": [
+      "хеш до и после (sha256 docs/design/REQ-030-github-check.md): c3dff007cb5330f1c6f8682722e9ba1598d66c1ada614b3db024a0dbffe7cc69 — совпал; tools/package.json, tools/test/repo.test.js, README.md, docs/requirements.yaml и git status проекта до и после совпали; HEAD проекта 936ccaf5eb60090b54b9a75697f3f3281ab160a6 не менялся",
+      "git clone --depth 1 <корень Sai> <scratch>/shallow; --is-shallow-repository -> true; rev-list --count HEAD -> 1; cd tools && npm ci -> код 0; npm run check -> код 2, вывод кончается: «handoffs-check: E_HC_BASE_COMMIT: в неполной истории нет коммита базы»; traces перед ним: файлов проверено 1196, следов 0",
+      "git clone --no-tags <корень Sai> <scratch>/full (rev-list --count HEAD -> 96; git tag | wc -l -> 0; --is-shallow-repository -> false); env -i с PATH, HOME, GIT_CONFIG_GLOBAL=/dev/null, GIT_CONFIG_NOSYSTEM=1, CI=true, TZ=UTC; git config --global user.name -> код 1 (личности нет); npm run check -> код 0; # tests 1454, # pass 1454, # fail 0, # cancelled 0, # skipped 0, duration_ms 120089",
+      "первый прогон того же клона в среде с HOME внутри временной папки и сном машины на час: # tests 1454, # pass 1450, # fail 4; красные: EX-38 (HOME и папка данных должны быть временными — мой HOME сам был во временной папке), HK-17 (то же), HC-6d3 («E_TRACE_GIT: git не ответил за 30 с» — сон машины), HO-46 (вложенный HC-RT-1e, код 7 — то же); причина воспроизведена повтором выше (1454 из 1454 с настоящим HOME и без сна) — к проекту не относятся",
+      "на копии full: добавлены три файла проекта буквально (check.yml из п. 2.2, исполняемый pre-push, раздел README «Проверка на GitHub и перед отправкой» перед «Где что лежит»), git add; git ls-files -s .githooks/pre-push -> 100755; npm run check -> код 0, # tests 1454, # pass 1454, # fail 0; format:check -> All matched files use Prettier code style!; traces -> файлов проверено 1198, следов 0, пропущено 36; ruby YAML.load_file check.yml разбирает без ошибки (ключ on читается как true — особенность YAML 1.1, GitHub её принимает)",
+      "gh api repos/actions/checkout/git/ref/tags/v7.0.1 -> commit 3d3c42e5aac5ba805825da76410c181273ba90b1; repos/actions/setup-node/git/ref/tags/v7.0.0 -> commit 820762786026740c76f36085b0efc47a31fe5020; .../commits/<sha> -> даты 2026-07-17T18:45:11Z и 2026-07-14T02:38:27Z, verified true; releases/tags -> draft false, prerelease false; repos/actions/checkout и repos/actions/setup-node -> fork false; compare <sha>...<tag> -> identical, ahead 0, behind 0; releases?per_page=3: checkout v7.0.1 последний из v7, setup-node v7.1.0 от 2026-10-08, v7.0.0 от 2026-07-14",
+      "gh api .../contents/action.yml?ref=<sha>: setup-node — using node24, package-manager-cache default true; checkout — persist-credentials, fetch-depth есть; gh api repos/actions/runner-images/contents/images/ubuntu -> есть Ubuntu2404-Readme.md; gh run list --limit 3 -> пусто, код 0; gh api repos/<владелец>/sai/actions/permissions -> enabled true, allowed_actions all, sha_pinning_required false; gh api .../actions/workflows --jq .total_count -> 0; gh auth status -> Token scopes: gist, read:org, repo, workflow",
+      "коммит базы 7760e4b09a3d0e98843c2258593c71c7ec0a3e3f из decisions/0036: gh api repos/<владелец>/sai/commits/<sha> -> есть; git merge-base --is-ancestor с origin/main -> да; gh api repos/<владелец>/sai/commits/main --jq .sha -> 936ccaf5eb60090b54b9a75697f3f3281ab160a6 (= локальный HEAD)",
+      "прототип хука во временном репозитории (<scratch>/cdv30) с локальным удалённым репозиторием: git push origin main при хуке с кодом 1 -> «error: failed to push some refs», код 1, на удалённой стороне ничего не создано; при --no-verify ветки создаются; git push origin --delete b1 -> хук вызван, строка stdin «(delete) 0000000000000000000000000000000000000000 refs/heads/b1 <sha>», код 1, ветка осталась; git push origin --delete t1 (метка) -> то же со строкой refs/tags/t1; env в хуке: только GIT_EDITOR, GIT_PREFIX, GIT_EXEC_PATH (GIT_DIR нет)",
+      "sh -c 'if ! sh -c \"exit 7\"; then echo \"code $?\"; fi' -> code 0; sh -c 'sh -c \"exit 7\"; c=$?; echo \"plain $c\"' -> plain 7 (основание F1)",
+      "grep по tools/test и tools/src на darwin, process.platform, chflags, lsof, /usr/bin/: платформенных привязок кроме /usr/bin/git в мутанте handoffs-runtime.test.js нет (путь есть и на Ubuntu); tagExists вызывает только tools/src/handoffs/handoff.js (команда handoff new)",
+      "пробы писали только в <scratch>; на GitHub — только gh api GET и gh run list; ничего не создано и не отправлено; в проекте ничего не изменено"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "Для ORCH: после доработки проекта (F1, F2) нужна повторная проверка шага 1b. Остальное (F3–F6, Low) можно закрыть в той же редакции."
+      },
+      {
+        "id": "I2",
+        "kind": "FINDING",
+        "text": "Не относится к проекту: при долгом прогоне npm run check машина уснула — тесты с таймаутом git 30 с краснеют (HC-6d3, HO-46). Прогоны для проверки лучше вести под caffeinate -i или повторять; тест ни в чём не виноват."
+      },
+      {
+        "id": "I3",
+        "kind": "FINDING",
+        "text": "Для информации: format:check запускается из tools/ и не охватывает ни README.md корня, ни .github/, ни .githooks/ — формат этих файлов тестами не держится (проект этого и не утверждает)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Задание названного ожидаемого вердикта не содержало; фактов задания, расходящихся с проверкой, нет (Ф9, Ф10, SHA и теги, состав тестов — подтверждены)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

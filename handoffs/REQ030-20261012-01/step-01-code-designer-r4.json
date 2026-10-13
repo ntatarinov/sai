@@ -1,0 +1,71 @@
+{
+  "handoff_id": "step01-r4-REQ030-20261012-01",
+  "run_id": "REQ030-20261012-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "round": 4,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/REQ030-20261012-01/step-01-code-designer-r4.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ030-20261012-01/step-01b-code-design-validator-r3.json (result.findings F7, N5–N7)",
+      "docs/design/REQ-030-github-check.md (r3)",
+      "decisions/0046-req030-rework-limit-exceeded.md",
+      "tools/test/handoffs-runtime.test.js",
+      "tools/test/handoffs-cmd-docs.test.js",
+      "tools/package.json"
+    ],
+    "route": "CODE-DESIGNER (этот, доработка 4 по 0046) -> CODE-DESIGN-VALIDATOR (step-01b-…-r4)",
+    "write_set": [
+      "docs/design/REQ-030-github-check.md"
+    ],
+    "base_tag": "base/REQ030-20261012-01",
+    "rework_of": "handoffs/REQ030-20261012-01/step-01-code-designer-r3.json"
+  },
+  "task": {
+    "description": "Доработка 4 (дополнительная, исключение по слову владельца: decisions/0046) проекта REQ-030 ТОЛЬКО по перечню CODE-DESIGN-VALIDATOR (step-01b-r3, result.findings; AP-019). F7 (Medium, п. 7.2, около строки 226): проект предписывает запускать падающий или проходящий тест в тестовом репозитории командой `node --test test/`; на Node v22.21.1 эта команда падает с MODULE_NOT_FOUND даже на зелёном тесте (код 1) — рабочая форма `node --test \"test/**/*.test.js\"`, как в tools/package.json. И вторая ловушка: если проверка запускается из теста под идущим `npm test`, вложенный `node --test` наследует NODE_TEST_CONTEXT и возвращает 0 даже на падающем тесте (проба валидатора: зелёный и красный дали 0, с удалённой переменной красный дал 1); из-за этого PH-3 и красная часть PH-5 краснеют без вины хука. Назови в п. 7.2 рабочий способ получить НАСТОЯЩИЙ красный и зелёный тест внутри идущего npm test: форма вызова node --test \"test/**/*.test.js\" и удаление NODE_TEST_CONTEXT из окружения (в tools/test уже есть такой приём: delete env.NODE_TEST_CONTEXT в handoffs-runtime.test.js около строки 340 и в handoffs-cmd-docs.test.js около строки 162 — сошлись на них). Добавь предусловие в духе PH-7: тест сам прогоняет проверку тестового репозитория и убеждается, что красный даёт код не 0, а зелёный — 0 (иначе PH-3 и PH-5 краснеют по причине среды, а не хука). Проверь рабочий способ на копии вне проекта запуском внутри идущего npm test (приложи вывод). Низкие N5–N7 (правками текста): N5 — README, раздел «Что ещё не готово» (строки около 149–150) содержит «Автоматической проверки на GitHub (CI) нет» — после вставки раздела README противоречит сам себе: поручи правку этой строки DOC-UPDATER после успешного П-2 (добавь в перечень файлов DOC-UPDATER и в порядок п. 7.4); N6 — в Ф8 заявлено, что grep по tools/test и tools/src находит строку в комментарии REQ-014; на деле совпадение core.hooksPath лежит в docs/design/REQ-014-traces.md около строки 315 — поправь; N7 — файл красной ветки в П-3 должен быть отформатирован (prettier) и проходить lint, иначе шаг «Run the check» упадёт раньше теста и критерий 3 докажет красный запуск, а не красный тест: допиши в П-3 требование и проверку (форматирование и lint файла до отправки). Остальное в проекте не менять.",
+    "acceptance_criteria": [
+      "F7 закрыт: рабочая форма запуска и удаление NODE_TEST_CONTEXT проверены запуском внутри npm test; предусловие добавлено",
+      "N5–N7 закрыты правками текста; в result.changes у каждой правки номер замечания",
+      "Изменены только файлы write_set; status handoff строго COMPLETED"
+    ]
+  },
+  "created_at": "2026-10-12T23:28:13Z",
+  "started_at": "2026-10-12T23:28:13Z",
+  "completed_at": "2026-10-12T23:29:33Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Дополнительная доработка 4 проекта REQ-030 (редакция r4, решение 0046) только по F7 и N5–N7. В п. 7.2 назван рабочий способ получить настоящий красный и зелёный тест внутри идущего npm test, способ проверен запуском; N5–N7 закрыты правками текста. Прежние handoff-ы не тронуты.",
+    "changes": [
+      "F7: п. 7.2, вводный абзац — скрипт check в fixture ровно node --test \"test/**/*.test.js\" (форма scripts.test проекта), форма node --test test/ запрещена; окружение запуска fixture-проверки и хука — копия process.env без NODE_TEST_CONTEXT (приём из handoffs-runtime.test.js около строки 340 и handoffs-cmd-docs.test.js около строки 162); предусловие в духе PH-7 для PH-3, PH-4, PH-5: до запуска хука тест сам прогоняет fixture-проверку и убеждается, что красный даёт код не 0, зелёный — 0, иначе тест красный «условие не создано». Добавлен факт Ф18 (п. 1)",
+      "N5: п. 5.1 — новая строка DOC-UPDATER: правка строки README «Автоматической проверки на GitHub (CI) нет…» в «Что ещё не готово» не раньше успешного П-2; BACKEND-DEV её не правит, REVIEWER не принимает её за дефект BACKEND-DEV; п. 7.4 (абзац после таблицы) — порядок после отправки: П-2, правка DOC-UPDATER, П-3, П-3b, done",
+      "N6: п. 1, Ф8 — grep по tools/test и tools/src находит 0 строк; единственное совпадение core.hooksPath — строка 315 документа docs/design/REQ-014-traces.md",
+      "N7: п. 7.4, П-3 — красный файл отформатирован prettier и проходит eslint; до отправки в копии npm run format:check, lint, traces, handoffs-check дают код 0, а npm test — код не 0; ожидаемый результат дополнен: в журнале упавшего шага (gh run view --log-failed) виден not ok теста, иначе критерий не доказан",
+      "Шапка — редакция r4; ссылки Ф1–Ф17 заменены на Ф1–Ф18"
+    ],
+    "self_check": [
+      "Проба Ф18 в копии вне проекта <scratch>/r30: временный тест внутри идущего node --test (NODE_TEST_CONTEXT задана: true), fixture — папка с package.json (скрипт check) и одним .test.js, Node v22.21.1; код npm run check, зелёный/красный: 'node --test test/' с NODE_TEST_CONTEXT -> 0/0, без неё -> 1/1; 'node --test \"test/**/*.test.js\"' с NODE_TEST_CONTEXT -> 0/0 (красный ложно 0), без неё -> 0/1 (настоящие результаты). Вывод теста: # pass 1, # fail 0",
+      "Проверка N6: grep -rnE \"\\.github|\\.githooks|hooksPath\" tools/test tools/src | wc -l -> 0; в docs/design/REQ-014-traces.md строка 315 содержит core.hooksPath; README.md строка 149: «Автоматической проверки на GitHub (CI) нет…»",
+      "Копия вне проекта + новый файл проекта: npm run traces -> файлов проверено 1202, следов 0, пропущено 36 (временный файл пробы из копии удалён)",
+      "grep файла проекта на пути компьютера, адрес и имя владельца репозитория GitHub, фрагменты временных папок -> 0 совпадений; GitHub в этой доработке не вызывался",
+      "cd tools && npm run handoffs-check -> код 0 (запуск перед закрытием)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Открытые вопросы без изменений: намеренность открытия репозитория, настройка «Require approval for first-time contributors», V2 для DOC-UPDATER; запись 0045 пишет ORCH по п. 10. ORCH включает в задание DOC-UPDATER правку строки README «Автоматической проверки на GitHub (CI) нет…» после успешного П-2 (N5)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-030-github-check.md"
+    ]
+  }
+}

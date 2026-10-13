@@ -1,0 +1,136 @@
+{
+  "handoff_id": "step01b-r2-REQ030-20261012-01",
+  "run_id": "REQ030-20261012-01",
+  "workflow_id": "WF-02",
+  "step": "01b",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/REQ030-20261012-01/step-01b-code-design-validator-r2.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-030-github-check.md (r2)",
+      "handoffs/REQ030-20261012-01/step-01b-code-design-validator-r1.json (прошлый FAIL)",
+      "handoffs/REQ030-20261012-01/step-01-code-designer-r2.json",
+      "docs/requirements.yaml (блок REQ-030)",
+      "decisions/0023-parity-frame-fixes.md",
+      "decisions/0044-req030-before-req014-done.md",
+      "docs/workflows/WF-02-development.md (шаг 1b)",
+      "README.md",
+      "tools/test/repo.test.js",
+      "tools/test/traces-readme.test.js"
+    ],
+    "route": "CODE-DESIGNER (r2) -> CODE-DESIGN-VALIDATOR (этот, повтор 2) -> BACKEND-DEV",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы — на копиях вне проекта; на GitHub только чтение"
+    ],
+    "base_tag": "base/REQ030-20261012-01",
+    "rework_of": "handoffs/REQ030-20261012-01/step-01-code-designer-r2.json"
+  },
+  "task": {
+    "description": "WF-02, шаг 1b, повтор 2 после доработки (step-01-code-designer-r2). Сам проверь, что F1–F5 прошлого FAIL закрыты, а не заявлены: F1 — Ф3 заменён свежим фактом о видимости (перепроверь сам gh api GET: private/visibility, анонимный запрос, 404 «Branch not protected»), в проекте, README (R-3, RD-4: слова «приватн», «публичн», «403» в разделе README запрещены тестом), рисках 2 и 4 и Q7 нет утверждения о приватности; анализ запуска от форков (permissions contents: read, pull_request, не pull_request_target, нет секретов, кэш выключен, первый вкладчик требует одобрения по approval_policy — проверь gh api actions/permissions и workflow, READ ONLY) верен; F2 — команда П-3 отдаёт status и databaseId, gh-команды выполняются в рабочем репозитории, ожидание не дольше 15 минут с повтором раз в минуту: выполни команды gh run list/view в режиме чтения на существующих запусках (если в репозитории их нет — проверь только форму JSON-полей по документации gh, не создавая ничего); F3 — PH-6 покрывает все четыре пути отказа хука (красная проверка, нет tools, нет npm, вне git) снимком до и после, мутант «хук пишет файл» на каждом пути — собери прототип хука по H1–H8 на копии вне проекта и убедись, что снимок ловит запись на каждом пути; F4, F5 приняты. Перечитай проект целиком на новые противоречия от правок (таблица «критерий → тест», перечень файлов write_set, нумерация, тесты PH-*, RD-*, CI-*, остаточные риски, Q7), повтори не менее двух утверждений о текущем коде на копии base (нет .github и .githooks; git config core.hooksPath пуст; scripts.check; TD-3). НИЧЕГО не создавай и не отправляй на GitHub. Решение 0045 (пишет ORCH по п. 10 проекта) — нет ли препятствий. PASS или FAIL (любой непройденный пункт — FAIL).",
+    "acceptance_criteria": [
+      "F1–F5 каждое названо с результатом, подтверждённым запуском; GitHub только чтение",
+      "Новых противоречий нет либо перечислены; не менее двух утверждений о коде повторены",
+      "Файлы проекта не изменены (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-12T15:54:02Z",
+  "started_at": "2026-10-12T15:54:02Z",
+  "completed_at": "2026-10-12T16:05:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Вердикт FAIL: одно блокирующее замечание (F6, High) и четыре неблокирующих. Ожидаемый вердикт в задании не назван; вердикт выведен из своих запусков. F1 ЗАКРЫТ НЕ ПОЛНОСТЬЮ. Факты о видимости перепроверены сам: gh api репозитория -> private false, visibility public; запрос без токена -> 200; защита main -> 404 «Branch not protected»; actions/permissions -> enabled true, allowed_actions all, sha_pinning_required false; workflow -> default_workflow_permissions read, can_approve_pull_request_reviews false; fork-pr-contributor-approval -> approval_policy first_time_contributors; секретов и переменных Actions в репозитории 0 (actions/secrets и variables -> total_count 0); gh run list -> пусто, код 0, запусков 0. Ф3, риски 2 и 4, Q7 приватность больше не утверждают, анализ запуска от форков верен (contents: read, pull_request а не pull_request_target, секретов нет, кэш выключен, одобрение первого вклада). НО п. 4, строка R-3, велит написать в README, что «это решение основано на том, что репозиторий приватный» — это утверждение о приватности (ложное на сегодня) и слово «приватн», которое RD-4 запрещает в разделе; та же строка двумя фразами позже говорит, что текст не утверждает видимость. Разработчик, выполнив R-3 буквально, краснит RD-4 (см. F6). Заявление автора доработки «README больше не утверждает приватность» не подтвердилось. F2 ЗАКРЫТ. П-2 и П-3 берут поля conclusion,headSha,status,url,databaseId; gh run list --json без полей печатает список полей, в нём есть databaseId, status, conclusion, headSha, url (gh 2.95.0); на чужом публичном репозитории (только чтение) gh run list --workflow --branch --limit 1 --json conclusion,headSha,status,url,databaseId отдаёт все пять полей, а gh run view <databaseId> --json jobs --jq '.jobs[].steps[] | [.name,.conclusion] | @tsv' отдаёт построчно имя и итог шагов (вместе с Set up job, Post, Complete job). Команды gh в проекте выполняются в рабочем репозитории (gh run list там работает, код 0); ожидание не дольше 15 минут с повтором раз в минуту стоит в П-2 и П-3, П-3b удаляет ветку и после предела. F3 ЗАКРЫТ. Собран прототип хука по H1–H8 (без ||, один exit 0) на копии вне проекта; стенд создаёт временный репозиторий на каждый путь отказа (красная проверка с кодом 7, нет tools, нет npm в PATH из ссылок только на git и sh, вне git), снимает хеши всех файлов папки вместе с .git и git status --porcelain до и после запуска. Исходный хук: на всех четырёх путях код 1, нужное сообщение, адрес удалённого в выводе нет, снимок и status не изменились; мутант «хук пишет hook.log» на каждом из четырёх путей: снимок меняется (hook.log), на путях с репозиторием меняется и status. Повтор в /bin/dash — то же. «Служебные счётчики git» в .git за запуск не менялись. Реальный git push в локальный bare-репозиторий: красная проверка -> push отклонён, ветки на удалённой стороне нет; зелёная -> прошёл; удаление ветки при красной проверке -> прошло (хук вызван, «только удаления»). PH-5 по прототипу: только удаления + красная проверка -> код 0, маркера нет; удаление+обычная и пустой stdin -> проверка запущена (маркер есть, код 7 в сообщении). F4 и F5 приняты: вводная фраза П-1/П-2/П-3/П-3b и исполнитель названы; Ф8 описывает проектную форму раздела — повторил на полном клоне: файл проверки по п. 2.2 (буквально), хук, раздел README между «Как открыть на другом компьютере» и «Где что лежит», git add: npm test 1454/1454, format:check чисто, npm run traces следов 0, режим 100755; добавленный в пробе тест с адресом вида ssh://user:pw-example@host.example/x.git traces, prettier и eslint принимают. Новые противоречия от правок: найден только F6; нумерация CI-1…8, PH-1…8, RD-1…5, таблица 7.5, п. 8 (17 пунктов), состав файлов 5.1 и требование REQ-030 (пять критериев, четыре файла) согласованы. Решение 0045: препятствий нет — файла и строки 0045 в decisions/ нет (последняя 0044), текст п. 10 не противоречит 0023 (D1, защита не включается), 0044, 0002; в ORCH-у ниже две оговорки (I2). Применимые пункты: Q1 ок, Q2 ок (Ф1–Ф17 воспроизводимы, повторено 11 из 17), Q3 ок (замечание N4), Q5 ок (PH-3/PH-6/PH-7), Q12 ок, раздел о планке называет все 17 пунктов.",
+    "findings": [
+      {
+        "id": "F6",
+        "severity": "High",
+        "blocking": true,
+        "item": "Проход Б, п. 5 (однозначность); возврат F1 прошлого круга; Проход Г, п. 8",
+        "place": "п. 4, строка R-3 (строка 163 файла проекта), против RD-4 (п. 7.3) и против той же строки R-3 («не утверждает видимость репозитория»)",
+        "problem": "R-3 задаёт текст README: «это решение основано на том, что репозиторий приватный, и подлежит пересмотру…». Это утверждение о приватности репозитория, ложное на сегодня (Ф3: public), и в нём слово «приватн», которое RD-4 запрещает в разделе README. Две фразы R-3 несовместимы; разработчик, написавший по R-3, получает красный RD-4, а написавший по RD-4 — отступает от R-3 и должен сам придумать, что сказать о причине (README критерия 5 требует «почему защиты ветки нет (решение 0023, D1)»). Автор доработки заявил, что R-3 больше не утверждает приватность — это не так.",
+        "needed": "Переписать R-3 так, чтобы текст раздела README не содержал ни утверждения о приватности, ни слов «приватн», «публичн», «403»: причина отсутствия защиты — ссылка на решение 0023, D1 и то, что включение — по слову владельца и решение подлежит пересмотру владельцем, если видимость или тариф изменились (без указания, какая видимость сейчас). Сверить R-3, RD-2 и RD-4: набор точных слов и запрещённых слов не должен противоречить пересказу R-3. Блокирует."
+      },
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocking": false,
+        "item": "Проход Б, п. 5",
+        "place": "п. 7.4, вводная фраза («отдельным шагом 12») и п. 11 (O1)",
+        "problem": "В WF-02 маршрут 0–11, шага 12 нет; «шаг 12» — название автора проекта, а рулинг O1 говорит «отдельный шаг после отправки в main».",
+        "needed": "Назвать это шагом после отправки по рулингу O1 (без номера 12) либо оставить ORCH определить нумерацию."
+      },
+      {
+        "id": "N2",
+        "severity": "Low",
+        "blocking": false,
+        "item": "Проход Б, п. 5",
+        "place": "п. 7.2, PH-6 («кроме служебных счётчиков git»)",
+        "problem": "Не сказано, что исключается из снимка. В моих запусках (macOS, git status до и после) в .git за запуск хука ничего не менялось, исключать нечего.",
+        "needed": "Сказать «ничего не исключается» или назвать исключаемые файлы."
+      },
+      {
+        "id": "N3",
+        "severity": "Low",
+        "blocking": false,
+        "item": "Проход В, п. 7",
+        "place": "п. 4, R-3 и RD-2",
+        "problem": "R-3 начинается с «Защиты ветки нет», RD-2 ищет слова `защиты ветки нет` со строчной буквы; при поиске с учётом регистра предложение с заглавной не найдётся.",
+        "needed": "Указать, что точные слова стоят в тексте в этом регистре (или тест без учёта регистра)."
+      },
+      {
+        "id": "N4",
+        "severity": "Low",
+        "blocking": false,
+        "item": "Q3",
+        "place": "п. 1, Ф3 («неверно или устарело»); п. 6, риск 2",
+        "problem": "Ф3 не знает, было ли «приватный» неверным или устаревшим; риск 2 утверждает, что запуски в публичном репозитории не расходуют лимит минут, без пометки «по документации GitHub, не проверено», как сделано для 2 000 минут.",
+        "needed": "Заменить «или» на известный факт или убрать; пометить утверждение о минутах публичного репозитория как не проверенное запуском."
+      }
+    ],
+    "self_check": [
+      "хеш проекта и учёта до и после совпали: docs/design/REQ-030-github-check.md 68098639d4af7006…; README.md a6600fdafe199a60…, docs/requirements.yaml 736232a702445421…, tools/package.json bbbe318497f43fc9…, tools/test/repo.test.js 129b3e7ab0006f9a…, tools/test/traces-readme.test.js 3b53e4ae8dea219f…, decisions/0044 d153ac65e41cf82c…, decisions/0023 0dc7b081e03ee8a6…; git status проекта и HEAD 936ccaf5eb60090b54b9a75697f3f3281ab160a6 до и после одинаковы; пробы — только в <scratch>; на GitHub только gh api GET и gh run list/view, git push в GitHub не выполнялся (push — только в локальный bare-репозиторий в <scratch>)",
+      "F1, gh api (GET) репозитория: {allow_forking:true, default_branch:main, fork:false, private:false, updated_at:2026-10-12T04:15:33Z, visibility:public}; curl без токена к API репозитория -> 200; gh api …/branches/main/protection -> «Branch not protected» (HTTP 404); …/actions/permissions -> {enabled:true, allowed_actions:all, sha_pinning_required:false}; …/actions/permissions/workflow -> {default_workflow_permissions:read, can_approve_pull_request_reviews:false}; …/fork-pr-contributor-approval -> {approval_policy:first_time_contributors}; …/actions/secrets и …/actions/variables -> total_count 0; gh run list --limit 5 -> пусто, код 0; …/actions/runs total_count 0; git ls-remote --heads origin и git rev-parse origin/main HEAD -> один и тот же хеш 936ccaf5…",
+      "F1, поиск слов в проекте: grep «приватн|публичн|403» -> строка 163 (R-3: «основано на том, что репозиторий приватный») — замечание F6; остальные совпадения — Ф3, риск 2, Q7 о публичности как факте на дату и 403 в примечании о расходе минут (допустимо)",
+      "F2, gh 2.95.0: `gh run list --json` -> список полей включает attempt, conclusion, createdAt, databaseId, displayTitle, event, headBranch, headSha, name, number, startedAt, status, updatedAt, url; `gh run list -R <чужой публичный репозиторий> --workflow --branch main --limit 1 --json conclusion,headSha,status,url,databaseId` -> JSON с пятью полями (conclusion action_required, status completed — запуск от одобрения первого вклада тоже виден); `gh run view <databaseId> -R … --json jobs --jq '.jobs[].steps[] | [.name,.conclusion] | @tsv'` -> строки «Set up job success», «Checkout success», … «Complete job success»",
+      "F3, прототип хука по H1–H8 и стенд в <scratch>, `node harness.mjs`: red orig rc=1 msg «(код 7)» changed [] statusSame true; red mutant changed [hook.log]; notools orig rc=1 changed [], mutant [hook.log]; nonpm (PATH из ссылок только на git и sh, `command -v npm` по нему — код 1) orig rc=1 «не найден npm» changed [], mutant [hook.log]; nogit orig rc=1 «не git-репозиторий» changed [], mutant [hook.log]; адрес ssh://user:pw-example@host.example/x.git в выводе нет; тот же набор через /bin/dash — те же результаты; реальный git push в локальный bare-репозиторий: красная -> `failed to push some refs`, веток 0; зелёная -> `[new branch] b1`, веток 1; `push --delete` при красной проверке -> «только удаления», `[deleted] b1`, веток 0; PH-5: удаление при красной проверке -> rc 0, маркера нет; удаление+обычная строка и пустой stdin -> маркер есть, «(код 7)»; grep -c '||' по прототипу -> 0, grep -c 'exit 0' -> 1",
+      "Утверждения о коде на копии base (git archive метки base/REQ030-20261012-01 в <scratch>): метка и HEAD — 936ccaf5…; ls .github .githooks -> No such file or directory (оба); git check-ignore -v .github .githooks -> код 1; git config core.hooksPath -> код 1 (пусто); tools/package.json: engines.node `>=22 <23`, scripts.check `npm run format:check && npm run lint && npm run traces && npm run handoffs-check && npm run test`; tools/test/repo.test.js — 110 строк, 4 теста (REQ-002 AC1, REQ-003 AC1, AC2, AC3); tools/test/traces-readme.test.js: TD-1 ×5, TD-2, TD-3 (раздел читается до следующей строки `## `, TD-3 запрещает `://`, `git@`, «копию папки»); README.md: разделы «Как открыть на другом компьютере» (строка 71) и «Где что лежит» (122) соседние",
+      "Ф9 (клон `git clone --depth 1`, npm ci код 0): `npm run check` -> код 2, `handoffs-check: E_HC_BASE_COMMIT: в неполной истории нет коммита базы`. Ф10 (полный клон без меток: rev-list --count HEAD 96, меток 0, --is-shallow-repository false): npm ci код 0, `npm run check` код 0, `# tests 1454`, `# pass 1454`, `# fail 0`, `# skipped 0`, около 1:54; красных записей нет (полный вывод — в файл вне проекта)",
+      "Ф8 (полный клон + файлы по п. 2.2, хук, раздел README по п. 4, git add): npm run format:check -> «All matched files use Prettier code style!»; npm test -> 1454/1454/0; npm run traces -> следов 0; npm run handoffs-check -> нарушений 0; git ls-files -s .githooks/pre-push -> 100755; дополнительно тест с адресом вида ssh://user:pw-example@host.example/x.git: traces следов 0, prettier чисто, eslint без предупреждений",
+      "Ф12–Ф16 (gh api GET): теги v7.0.1 (checkout) и v7.0.0 (setup-node) -> type commit, 3d3c42e5aac5ba805825da76410c181273ba90b1 и 820762786026740c76f36085b0efc47a31fe5020; коммиты в самих репозиториях, verified true, даты 2026-07-17T18:45:11Z и 2026-07-14T02:38:27Z; action.yml setup-node на закреплённом коммите: using node24, package-manager-cache default true, token по умолчанию github.token; action.yml checkout: persist-credentials default true, fetch-depth default 1, using node24; образ Ubuntu2404-Readme.md есть",
+      "Решения: ls decisions -> последний файл 0044, файла 0045 нет; grep «0045» в decisions/, requirements.yaml, PLAN.md — только ISS-0045 в STATE.md (дефект, не решение); тексты decisions/0023 (D1) и 0044 прочитаны, п. 10 проекта им не противоречит",
+      "Ожидаемый вердикт в задании не назван; вердикт выведен заново из запусков"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "FINDING",
+        "severity": "Medium",
+        "text": "Для ORCH и владельца, вне проекта: репозиторий Sai на GitHub сейчас публичный (подтверждено заново), поэтому условие решения 0023, D1 («если владелец… сделает репозиторий публичным, защита включается отдельной поправкой») уже наступило; защита main доступна без платного тарифа (ответ 404, не 403). Решение 0023 и описание REQ-030 в docs/requirements.yaml всё ещё называют причину «приватный репозиторий, 403». Проект REQ-030 правильно защиту не включает (R1, вне области), но владельцу нужно решить: подтвердить ли открытие репозитория, включать ли защиту, менять ли «Require approval for first-time contributors» (сейчас first_time_contributors). Это не блокирует проект, кроме F6."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Запись 0045 (п. 10 проекта) препятствий не имеет: номер свободен, текст согласован с 0023, 0044, 0002. При записи: в «Основании» и «Границе» не ссылаться на приватность репозитория; «шаг 12» из п. 7.4 в WF-02 не существует (N1) — ORCH определяет, как называется шаг после отправки."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "После исправления F6 нужна повторная проверка шага 1b (правка локальная: п. 4, R-3, при необходимости RD-2/RD-4; остальные F1–F5 прошлого круга я считаю закрытыми и перепроверять их заново в следующем круге достаточно по строкам правки и хешу)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Живой запуск Actions на Linux ещё не измерен (остаточные риски 6 и 7 проекта верны); пробы шага П-3 не выполнялись: на GitHub ничего не создавалось и не отправлялось."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

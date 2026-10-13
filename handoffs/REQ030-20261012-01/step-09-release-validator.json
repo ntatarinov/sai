@@ -1,0 +1,93 @@
+{
+  "handoff_id": "step09-REQ030-20261012-01",
+  "run_id": "REQ030-20261012-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/REQ030-20261012-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml (блок REQ-030)",
+      "docs/design/REQ-030-github-check.md (r4)",
+      "decisions/0044-req030-before-req014-done.md",
+      "decisions/0045-github-check-pins-history-hook.md",
+      "decisions/0046-req030-rework-limit-exceeded.md",
+      "decisions/0023-parity-frame-fixes.md",
+      "handoffs/REQ030-20261012-01/ (все step-*.json)",
+      "docs/workflows/WF-02-development.md (шаг 9)",
+      "docs/quality-bar.md",
+      ".github/workflows/check.yml",
+      ".githooks/pre-push",
+      "README.md",
+      "tools/test/repo.test.js"
+    ],
+    "route": "TEST-RUNNER (PASS) -> RELEASE-VALIDATOR (этот) -> DOC-UPDATER -> RELEASE-FINALIZER -> проверка на GitHub после отправки",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы и копии — вне проекта; на GitHub только чтение"
+    ],
+    "base_tag": "base/REQ030-20261012-01"
+  },
+  "task": {
+    "description": "WF-02, шаг 9. Последние ворота ПЕРЕД ОТПРАВКОЙ для REQ-030. Не доверяй отчётам. Сам: (1) на чистой копии рабочего дерева (копия вне проекта со .git, без node_modules) выполни cd tools && npm ci && npm run check под caffeinate -i — код и числа (ожидаемое число не подсказывается); (2) пройди критерии 1, 4 и 5 REQ-030 (docs/requirements.yaml, блок REQ-030) по тексту, выполняя их команды дословно в той части, где это возможно ДО отправки: критерий 1 (CI-1…CI-8 и ручное чтение check.yml), критерий 4 (PH-*: запуск хука на копии с падающим тестом — код не 0; README описывает git config core.hooksPath .githooks и что мерж подтверждает владелец), критерий 5 (раздел README, npm run check локально — код 0); критерии 2 (запуск на GitHub на последнем коммите main) и 3 (красная ветка) ЕЩЁ НЕ выполнимы — они проверяются отдельным шагом ПОСЛЕ отправки в main (решение ORCH O1; для критерия 3 нужно отдельное согласие владельца, оно пока НЕ дано) — отметь их как «не проверялись в этом шаге»; статус REQ-030 остаётся in_progress; (3) пункты планки Q1–Q14, R1–R3 по файлам: Q3, Q5 (критерии 2 и 3 без автотестов — принято проектом, п. 7.4), Q6 (нет || true, continue-on-error, пропуска шагов; scripts.check и package.json не менялись — diff к метке base пуст; tools/src не менялся), Q7 (секреты/пути компьютера/адреса GitHub в изменённых файлах — настоящие), Q10 (сбои хука), Q12 (решения 0044, 0045, 0046 в decisions/README.md), Q13/Q14 учёт впереди (шаг 10); R1: отправка в main — только после твоего PASS, в границах слов владельца (push в main после PASS RELEASE-VALIDATOR), красная ветка вне разрешения; (4) изменены только ожидаемые файлы: git status и diff к метке base/REQ030-20261012-01 — .github/workflows/check.yml, .githooks/pre-push (режим +x), README.md (новый раздел; строка «Автоматической проверки на GitHub (CI) нет…» НЕ тронута — её правит DOC-UPDATER после П-2), tools/test/repo.test.js (только добавления), docs/design/REQ-030-github-check.md, decisions/0044…0046 и README решений, docs/requirements.yaml (только статус и комментарий REQ-030), handoffs/REQ030-20261012-01/, PLAN.md; (5) независимый пересчёт: тестов 1476 (было 1454 → +22). Вердикт PASS означает: файлы REQ-030 можно коммитить и отправлять в main (RELEASE-FINALIZER), после чего выполняются П-2 и (с согласия владельца) П-3. Остаточные риски назови отдельно (workflow на Linux-раннере не запускался; тесты только на macOS; публичный репозиторий и запуски от форков; хук ≈ 2 минуты; строка README «CI нет» временно противоречит). Красные тесты — имена.",
+    "acceptance_criteria": [
+      "Чистая копия: npm ci && npm run check — код и числа",
+      "Критерии 1, 4, 5 REQ-030 выполнены дословно; критерии 2 и 3 помечены как не проверявшиеся в этом шаге",
+      "Каждый применимый пункт Q/R назван с результатом; tools/src и package.json не менялись"
+    ]
+  },
+  "created_at": "2026-10-13T00:57:14Z",
+  "started_at": "2026-10-13T00:57:14Z",
+  "completed_at": "2026-10-13T01:09:45Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: можно коммитить и отправлять файлы REQ-030 в main (RELEASE-FINALIZER) в границах слов владельца; мерж и красная ветка в этот PASS не входят. Чистая копия рабочего дерева со .git, без node_modules: node v22.21.1, npm ci код 0 (found 0 vulnerabilities), npm run check код 0 — format:check, lint, traces, handoffs-check (файлов 695, нарушений 0), тестов 1476, прошло 1476, упало 0, пропущено 0, todo 0, отменено 0; красных тестов нет, разбор «чьё падение» не понадобился. +22 к прежним: в выводе ровно 22 теста с именем REQ-030, в diff repo.test.js к метке base удалённых строк 0 (число 1454 «до» отдельным запуском не снималось — выведено вычитанием). Критерий 1 — выполнен: check.yml прочитан целиком; push на все ветки и pull_request; node-version \"22\"; шаги checkout, setup-node, npm ci, npm run check, оба в tools/; grep по check.yml и pre-push на --no-verify, || true, continue-on-error, secrets. — пусто; ровно два действия (checkout, setup-node), закреплены по 40-значному SHA; SHA сверены чтением GitHub (gh api repos/actions/*/tags, только чтение): 3d3c42e5… = v7.0.1 checkout, 82076278… = v7.0.0 setup-node; входы package-manager-cache, fetch-depth, persist-credentials существуют в action.yml этих коммитов; CI-1…CI-8 зелёные в полном прогоне; свои мутанты на копии: continue-on-error (CI-7 и CI-8 красные), тег вместо SHA (CI-5, CI-8), node 20 (CI-3, CI-8). Критерий 4 — выполнен: pre-push существует, режим -rwxr-xr-x, содержит npm run check, нет --no-verify и || true; запуск хука на копии с добавленным падающим тестом (zz-red) — код 1, тестов 1477, упал 1 (zz-red: deliberately failing test), сообщение хука «проверка не прошла (код 1)»; на зелёной копии код 0; push только удалений — код 0 без проверки; вне git-репозитория — код 1 с сообщением; README содержит строку git config core.hooksPath .githooks и «мерж подтверждает владелец»; мутанты хука (exit 0 при красном) — PH-2, PH-3, PH-5, PH-6 красные; мутант README без строки hooksPath — RD-2, RD-3, RD-1..RD-4 красные. Критерий 5 — выполнен: раздел «Проверка на GitHub и перед отправкой» в README: что запускается, почему защиты ветки нет (решение 0023, D1), npm run check локально — код 0 (вывод выше). Критерии 2 и 3 — не проверялись в этом шаге (нужна отправка в main; критерий 3 — отдельное согласие владельца, не дано); статус REQ-030 остаётся in_progress. Дополнительная проба (не критерий): копия закоммичена, клонирована без меток (--no-local --no-tags), npm ci и npm run check — код 0, тестов 1476, handoffs-check нарушений 0: проверка не зависит от локальных меток base/*. Планка: Q1 PASS (REQ-030, у каждого критерия способ проверки в блоке); Q2 PASS (собственные запуски выше); Q3 PASS (выводы приложены; критерии 2 и 3 не названы выполненными); Q4 PASS (npm run check на чистой копии, код 0); Q5 PASS для критериев 1, 4, 5 — 22 теста REQ-030 (CI-1…8, PH-1…8, RD-1…4 с «не слепыми» повреждёнными копиями), мутанты убиты; критерии 2 и 3 без автотестов — принято проектом (п. 7.4), это внешние действия на GitHub; Q6 PASS (в diff нет skip, || true, continue-on-error; scripts.check в tools/package.json и package-lock.json не менялись — git diff пуст; tools/src не менялся — git diff пуст; все пять шагов check на месте в выводе; в repo.test.js удалённых строк 0); Q7 PASS (поиск по изменённым и новым файлам: токенов и ключей нет, имени владельца репозитория, путей компьютера и временных папок в изменённых файлах нет — совпадения только в старых строках docs/requirements.yaml и PLAN.md вне diff и в тексте поиска step-02); Q8, Q9, Q11 неприменимы (нет данных клиентов, SQL, адресов от пользователя; в хуке и check.yml адресов нет); Q10 PASS (сбои хука: нет tools/, нет npm, нет git-репозитория, нельзя войти в tools — сообщение и код не 0; проверено тестами PH-7 и мной вне git: код 1); Q12 PASS (решения 0044, 0045, 0046 есть, строки в decisions/README.md есть; код не расходится: SHA, fetch-depth 0, без кэша, хук пропускает только удаления); Q13 неприменим на этом шаге (записи об ошибках процесса — за DOC-UPDATER, шаг 10, если ORCH их назовёт); Q14 — учёт впереди (шаг 10): статус in_progress, строка README «Автоматической проверки на GitHub (CI) нет…» не тронута и временно противоречит новому разделу; у каждой доработки проекта r1–r4 свой handoff; R1 PASS (отправка в main только после этого PASS, красная ветка, видимость репозитория и защита main вне разрешения; core.hooksPath в рабочем репозитории не включён — вывод пуст, код 1); R2 неприменим (Pixel Office не затронут); R3 неприменим (продукт снят решением 0033). Изменены только ожидаемые файлы: tracked — PLAN.md, README.md (только добавления), decisions/README.md, docs/requirements.yaml (одна строка статуса REQ-030), tools/test/repo.test.js (только добавления: +1179, −0); новые — .github/workflows/check.yml, .githooks/pre-push (режим 755), docs/design/REQ-030-github-check.md, decisions/0044…0046, handoffs/REQ030-20261012-01/. Рабочее дерево этим шагом не менялось (git status до и после один). Простыми словами: файл проверки на GitHub и хук перед отправкой сделаны как записано, полная проверка зелёная, красный тест хук действительно останавливает; настоящий запуск на GitHub ещё не был, он проверяется после отправки.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": ".githooks/pre-push, цикл while read -r (строки 5-12)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Последняя строка stdin без перевода строки не попадает в тело цикла: если перед ней были одни удаления, хук пропустит проверку. Git всегда завершает строки, на настоящей отправке этого не бывает (так же записано в step-04 как L1).",
+        "evidence": "Чтение хука; граница известна ревью (step-04, L1); защита через || запрещена тестом PH-2.",
+        "fix": "Не чинить в этой работе; при желании — отдельное требование. К шагу возврата не ведёт."
+      }
+    ],
+    "self_check": [
+      "Время старта 2026-10-13T00:57:23Z (date -u). node -v: v22.21.1. Копия: rsync -a --exclude node_modules корня Sai в <scratch>/rv/sai (со .git, 695 файлов handoff-ов в проверке).",
+      "cd <scratch>/rv/sai/tools && caffeinate -i npm ci → код 0, found 0 vulnerabilities; caffeinate -i npm run check > <scratch>/rv/check.log → CHECK EXIT 0; хвост: # tests 1476, # suites 0, # pass 1476, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 105622; grep '^not ok' — пусто; grep -c 'ok .* - REQ-030' — 22; строка handoffs-check: файлов проверено 695, нарушений 0, исключений использовано 114 из 114.",
+      "Хук на копии с падающим тестом: в <scratch>/rv/red добавлен tools/test/zz-red.test.js (assert.equal(1, 2)), prettier --check чист; echo 'refs/heads/x <HEAD> refs/heads/x 000…0' | .githooks/pre-push origin url → 'not ok 1477 - zz-red: deliberately failing test', # tests 1477, # pass 1476, # fail 1, 'pre-push: проверка не прошла (код 1) — отправка остановлена', HOOK EXIT 1. Зелёная копия: 'pre-push: проверка прошла', HOOK EXIT 0. Только удаления: 'отправляются только удаления…', код 0. Запуск вне git-репозитория: 'pre-push: это не git-репозиторий', код 1.",
+      "Мутанты на копии (node --test test/repo.test.js; исходно # pass 26, # fail 0): continue-on-error в check.yml → fail 2 (CI-7, CI-8); хук с exit 0 после красной проверки → fail 4 (PH-2, PH-3, PH-5, PH-6); README без строки git config core.hooksPath → fail 3 (RD-2, RD-3, RD-1..RD-4); тег @v7 вместо SHA → fail 2 (CI-5, CI-8); node-version \"20\" → fail 2 (CI-3, CI-8); после возврата файлов # pass 26, # fail 0.",
+      "GitHub, только чтение: gh api repos/actions/checkout/tags и repos/actions/setup-node/tags — v7.0.1 = 3d3c42e5aac5ba805825da76410c181273ba90b1, v7.0.0 = 820762786026740c76f36085b0efc47a31fe5020 (совпадают с check.yml); action.yml этих коммитов содержит package-manager-cache, fetch-depth, persist-credentials, using node24. gh run list и отправки не выполнялись; git ls-remote --heads origin — одна ветка main на 936ccaf (HEAD), меток на удалённом 0.",
+      "Проба чистого клона: копия закоммичена (только в копии), git clone --no-local --no-tags → меток 0, коммитов 97; cd tools && npm ci → 0; npm run check → SIM CHECK EXIT 0, # tests 1476, # pass 1476, # fail 0, handoffs-check нарушений 0. Первая попытка дала H4 (мой handoff в статусе PENDING внутри коммита) — ожидаемо до закрытия; на копии handoff закрыт командой close, повтор зелёный.",
+      "Поиск в изменённых и новых файлах (.github, .githooks, README.md, tools/test/repo.test.js, docs/design/REQ-030-*, decisions/0044…0046 и README, handoffs/REQ030-*, PLAN.md, docs/requirements.yaml): токены (gh*_, AKIA, BEGIN, xox, sk-) — совпадений в изменениях нет; имя владельца репозитория — в изменениях нет; пути домашнего каталога, временные папки — только старые строки вне diff и текст шаблона поиска; адресов github.com в изменённых файлах нет.",
+      "git diff к метке base/REQ030-20261012-01 --stat: 5 файлов, +1212/−2 (PLAN.md 1, README.md +28, decisions/README.md +3, docs/requirements.yaml 1, tools/test/repo.test.js +1179); git diff -- tools/src tools/package.json tools/package-lock.json — пусто; stat .githooks/pre-push: -rwxr-xr-x; git config core.hooksPath в рабочем репозитории — вывода нет, код 1; git status рабочего репозитория до и после — один и тот же.",
+      "Время закрытия берётся командой close с часов; cd tools && npm run handoffs-check после записи result — код 0 (повтор ниже, в issues I1)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "В задании названо ожидаемое число тестов (1476, было 1454); вердикт выведен из собственных запусков (AP-018): 1476 получено в моём прогоне, 1454 «до» не запускалось, +22 подтверждено числом тестов REQ-030 и отсутствием удалённых строк."
+      },
+      {
+        "id": "I2",
+        "kind": "RISK",
+        "text": "Остаточные риски, не снятые этим шагом: (1) workflow на Linux-раннере не запускался — проверка идёт только на macOS; клон без меток на macOS зелёный, но Linux может дать расхождения; критерий 2 покажет это после отправки. (2) Репозиторий публичный (PLAN.md): запуски от форков и pull request возможны; в workflow права только contents: read, секретов и внешних действий нет, но решение 0023 D1 владелец ещё не пересмотрел. (3) Хук ≈ 2 минуты на каждую отправку (в моём прогоне 107–120 секунд) и проверяет рабочую папку, а не отправляемый коммит; обход флагом git запрещён только правилами. (4) Хук не включён в рабочем репозитории (core.hooksPath пуст) — включает владелец по README. (5) Строка README «Автоматической проверки на GitHub (CI) нет…» временно противоречит новому разделу до правки DOC-UPDATER после запуска на GitHub. (6) Критерий 3 (красная ветка) требует отдельного согласия владельца."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Следующие шаги вне этого: отправка в main (RELEASE-FINALIZER) только в границах слов владельца и после этого PASS; затем проверка критерия 2 на GitHub; статус REQ-030 остаётся in_progress до критериев 2 и 3 и до done у REQ-014 (решение 0044)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

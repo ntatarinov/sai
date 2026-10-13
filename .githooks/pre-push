@@ -1,0 +1,48 @@
+#!/bin/sh
+# pre-push hook (REQ-030): runs the one check command of tools/ before a push.
+# A push of only deletions carries no code and skips the check.
+
+seen=0
+code_pushed=0
+while read -r local_ref local_hash remote_ref remote_hash; do
+  seen=1
+  case "$local_hash" in
+    *[!0]*) code_pushed=1 ;;
+    "") code_pushed=1 ;;
+  esac
+done
+
+if [ "$seen" -eq 1 ] && [ "$code_pushed" -eq 0 ]; then
+  echo "pre-push: отправляются только удаления, кода нет — проверка не нужна"
+  exit 0
+fi
+
+root=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$root" ]; then
+  echo "pre-push: это не git-репозиторий" >&2
+  exit 1
+fi
+
+if [ ! -d "$root/tools" ]; then
+  echo "pre-push: нет папки tools — проверять нечем" >&2
+  exit 1
+fi
+
+if ! command -v npm >/dev/null 2>&1; then
+  echo "pre-push: не найден npm (нужен Node 22)" >&2
+  exit 1
+fi
+
+echo "pre-push: запускаю cd tools && npm run check (около 2 минут)"
+if ! cd "$root/tools"; then
+  echo "pre-push: не удалось перейти в папку tools" >&2
+  exit 1
+fi
+npm run check
+code=$?
+if [ "$code" -ne 0 ]; then
+  echo "pre-push: проверка не прошла (код $code) — отправка остановлена; исправьте и повторите" >&2
+  exit 1
+fi
+
+echo "pre-push: проверка прошла"

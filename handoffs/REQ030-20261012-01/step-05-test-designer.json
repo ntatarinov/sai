@@ -1,0 +1,168 @@
+{
+  "handoff_id": "step05-REQ030-20261012-01",
+  "run_id": "REQ030-20261012-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/REQ030-20261012-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-030-github-check.md (r4; п. 2, 3, 4, 7)",
+      "decisions/0045-github-check-pins-history-hook.md",
+      "docs/requirements.yaml (блок REQ-030)",
+      "handoffs/REQ030-20261012-01/step-02-backend-dev.json",
+      "handoffs/REQ030-20261012-01/step-03-security-reviewer.json",
+      "handoffs/REQ030-20261012-01/step-04-reviewer.json",
+      "docs/workflows/WF-02-development.md (шаги 5, 5b)",
+      "docs/quality-bar.md",
+      ".github/workflows/check.yml",
+      ".githooks/pre-push",
+      "README.md",
+      "tools/test/repo.test.js",
+      "tools/test/handoffs-runtime.test.js",
+      "tools/test/handoffs-cmd-docs.test.js",
+      "tools/test/traces-readme.test.js",
+      "tools/package.json"
+    ],
+    "route": "REVIEWER (PASS) -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER",
+    "write_set": [
+      "tools/test/repo.test.js (новые тесты; старые четыре не менять)",
+      "код, workflow, хук, README и tools/src не менять"
+    ],
+    "base_tag": "base/REQ030-20261012-01"
+  },
+  "task": {
+    "description": "WF-02, шаг 5. Напиши тесты REQ-030 в tools/test/repo.test.js (старые четыре теста не менять) по таблице «критерий → тест» проекта docs/design/REQ-030-github-check.md (r4; п. 7.1–7.3): CI-1…CI-8 (критерий 1: check.yml запускается на push и pull_request, Node 22, npm ci и npm run check в tools/, нет `|| true`, continue-on-error, secrets., действий кроме получения кода и установки Node, действия закреплены полными SHA, fetch-depth 0, permissions, нет кэша), PH-1…PH-8 (критерий 4: хук существует, исполняем (режим), содержит npm run check, не содержит --no-verify и `||`; запуск хука во временном репозитории с поддельным tools/ и настоящими падающим и проходящим тестом — код не 0 / 0; текст «(код 7)»; пропуск отправок только с удалениями; пути отказа без tools / без npm / вне git: код 1, сообщение, неизменность состояния — снимок хешей файлов без .git и git status --porcelain до и после, мутант «хук пишет файл» на каждом пути), RD-1…RD-5 (критерий 5 и часть 4: раздел README «## Проверка на GitHub и перед отправкой» один, стоит после «Как открыть на другом компьютере», нет ://, git@ и путей; 13 точных слов, «защиты ветки нет» со строчной; команда git config core.hooksPath .githooks в блоке кода; запрещённые слова «приватн», «публичн», «403», «ветка защищена»; npm run check локально код 0 не вкладывать в тест — это команда ворот). Критерии 2 и 3 — НЕ автотесты (шаги после отправки на GitHub). Обязательно по проекту п. 7.2 и замечаниям ревью: (1) скрипт check в тестовом репозитории ровно `node --test \"test/**/*.test.js\"`, окружение вложенного запуска и хука — копия process.env БЕЗ NODE_TEST_CONTEXT (ссылки: handoffs-runtime.test.js около строки 340, handoffs-cmd-docs.test.js около строки 162); предусловие PH-3/PH-4/PH-5: тест сам убеждается, что красный fixture даёт код не 0, а зелёный — 0 (иначе красный «условие не создано»); для PH-3 (код 7) и PH-5 (маркер) нужен свой скрипт или маркер, предусловный прогон не должен оставлять маркер перед запуском хука; (2) строки stdin хука в тестах завершать переводом строки (замечание ревью L1: цикл read теряет последнюю строку без завершающего перевода); (3) в хуке слова cd tools стоят только в сообщении H6, настоящий переход — `cd \"$root/tools\"` внутри `if !`; npm run check в тексте хука встречается один раз; мутант «код теряется» меняет строку code=$?; PH-2 на cd-переход учитывает форму `if ! cd`; (4) способ построения PATH в PH-7 — каталог с символическими ссылками только на git и sh; перед запуском тест проверяет, что npm по этому PATH не находится. Тесты независимы, каждый во временном репозитории; тесты отказа проверяют, что состояние не изменилось; хук и workflow читаются из рабочего дерева проекта; не включай core.hooksPath в рабочем репозитории. Мутанты: перечень проекта и свои — применять во временной копии вне проекта, для каждого записать, какие тесты падают; рабочее дерево без мутантов (хеши tools/ и .github/.githooks до и после). Покажи, что новые тесты ПАДАЮТ на копии base (метка base/REQ030-20261012-01, без .github/.githooks/раздела README) и проходят на рабочем дереве. В конце cd tools && npm run check под caffeinate -i (вывод в файл вне проекта; код 0, число тестов, красные поимённо — AP-070). Без skip/todo/only, без путей компьютера и адресов GitHub.",
+    "acceptance_criteria": [
+      "Критериям 1, 4, 5 соответствуют запускаемые тесты (сопоставление в result); критерии 2 и 3 помечены как шаги после отправки",
+      "Тесты падают на копии base и проходят на рабочем дереве — оба вывода приложены",
+      "Мутанты применены, перечень с падающими тестами приложен; рабочее дерево без мутантов (хеши до и после)",
+      "npm run check — код 0, число тестов, красные поимённо; нет skip/todo/only, путей компьютера и адресов GitHub"
+    ]
+  },
+  "created_at": "2026-10-13T00:09:54Z",
+  "started_at": "2026-10-13T00:09:54Z",
+  "completed_at": "2026-10-13T00:32:50Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Тесты REQ-030 добавлены в tools/test/repo.test.js (22 новых теста; старые четыре не изменены — в git diff только добавления, 0 удалённых строк; добавлены только import). Код, workflow, хук, README и tools/src не тронуты. Критерии 2 и 3 — шаги после отправки на GitHub (П-2, П-3, П-3b проекта п. 7.4), автотестов у них нет по проекту.\n\nТаблица «критерий → тест» (Q5):\n- Критерий 1 (файл проверки): CI-1 (форма файла: UTF-8, LF, без табуляций, пять ключей верхнего уровня), CI-2 (триггеры: push на все ветки и pull_request, ничего другого), CI-3 (node-version \"22\" и мажор в engines.node tools/package.json), CI-4 (четыре шага по порядку, оба run в tools/, значения run), CI-5 (ровно два действия actions/checkout и actions/setup-node, полный SHA из 40 знаков с комментарием версии), CI-6 (fetch-depth 0, persist-credentials false, package-manager-cache false, любых других строк с cache нет), CI-7 (нет || , continue-on-error, secrets., if:, env:, token:, GITHUB_TOKEN, set +e, exit 0, curl, wget, адресов, прав записи; ${{ только в concurrency), CI-8 (правила не слепы: на настоящем файле нарушений нет, на испорченных копиях у каждой ожидаемое нарушение с нужным номером CI-n).\n- Критерий 4 (проверка перед отправкой): PH-1 (файл обычный, не ссылка, X_OK, #!/bin/sh, без CR), PH-2 (npm run check отдельной исполняемой строкой, переход в tools в том числе в форме `if ! cd`, нет --no-verify, ||, set +e, eval, curl, wget, ://, exit 0 не больше одного; 12 испорченных текстов), PH-3 (красный настоящий тест — код хука не 0; скрипт check с кодом 7 — код хука 1 и в выводе «(код 7)»; три мутанта в самом тесте), PH-4 (зелёный тест — код 0, проверка реально шла: `# pass 1`; мутант «всегда стоп»), PH-5 (только удаления, в том числе с хешами из 64 нулей, — код 0 и маркер check не записан; удаление+отправка, отправка метки, строка без хеша, пустой stdin — проверка запускается; два мутанта пропуска), PH-6 (неизменность состояния на четырёх путях отказа: красная проверка, нет tools, нет npm в PATH, вне git — снимок хешей файлов без .git, режимов и git status --porcelain до и после; и на каждом пути хук, пишущий файл, виден снимку), PH-7 (нет tools / нет npm / вне git: код не 0, сообщение, проверка не запускалась, состояние не изменилось; отдельный тест: tools закрыта chmod 000 — сообщение «не удалось перейти», код 1, состояние неизменно), PH-8 (адрес удалённого во втором аргументе не попадает в вывод на зелёном, красном и пути без tools; мутант печатает $2). RD-2 и RD-3 покрывают и README-часть критерия 4 (слова про core.hooksPath, мерж; команда в блоке кода).\n- Критерий 5 (документация и проверка): RD-1 (один заголовок раздела, он сразу после «Как открыть на другом компьютере», без ://, git@ и путей домашней папки), RD-2 (13 точных слов, «защиты ветки нет» строчными), RD-3 (git config core.hooksPath .githooks отдельной строкой в блоке кода), RD-4 (нет «ветка защищена», «защита включена», «обязательная проверка», «приватн», «публичн», «403»), отдельный тест «правила не слепы» для README (испорченные копии раздела). RD-5 — старые TD-1…TD-3 проходят в общем прогоне (отдельного теста нет, как в проекте). Сам `cd tools && npm run check` — команда ворот, в тест не вложена.\n\nПункты планки: Q5 — таблица выше; тесты отказа PH-6/PH-7 сравнивают состояние до и после. Q6 — нет skip, todo, only, отключённых правил. Q7 — секретов нет; адрес с «паролем» в PH-8 вымышленный и собран из частей. Q8 — неприменим (нет данных клиентов и пространств бизнеса). Q10 — применим: хук при сбоях (красная проверка, нет tools, нет npm, вне git, tools не открыть) печатает сообщение, выходит с кодом 1 и ничего не пишет — PH-3, PH-6, PH-7; внешних вызовов у хука нет. Q11 — неприменим (адресов от пользователя нет; хук не использует адрес удалённого — PH-8). R3 — неприменим (решение 0033).\n\nОбстановка: каждый тест создаёт свои временные папки (удаляются в t.after), порядок и часы не важны, случайности нет. Скрипт check в тестовом репозитории ровно `node --test \"test/**/*.test.js\"`; окружение вложенных запусков — копия process.env без NODE_TEST_CONTEXT (и сверх проекта без INIT_CWD, переменных npm_* и GIT_*, чтобы вложенные npm и git работали на тестовом репозитории, а не на проекте; GIT_CONFIG_GLOBAL — пустое устройство). Предусловие PH-3/PH-4/PH-5: тест сам прогоняет `npm run check` в отдельной папке — красный даёт код не 0, зелёный 0, скрипт кода 7 даёт 7, маркер пишется только скриптом с маркером; иначе «condition not created». Строки stdin заканчиваются переводом строки (замечание ревью L1). PH-7 для «нет npm»: каталог с символическими ссылками только на git и sh, перед запуском проверено, что npm по этому PATH не находится.",
+    "changes": [
+      {
+        "file": "tools/test/repo.test.js",
+        "what": "добавлены import (child_process, crypto, os) и 22 теста REQ-030 в конец файла: CI-1…CI-8, PH-1…PH-8 (PH-7 в двух тестах), RD-1…RD-4 и «правила не слепы» для README; старые четыре теста не менялись",
+        "design": "п. 7.1–7.3 проекта r4"
+      }
+    ],
+    "self_check": [
+      "cd tools && caffeinate -i npm run check > <scratch>/check-full.txt (2026-10-13T00:25:08Z — 00:27:12Z): код 0; format:check «All matched files use Prettier code style!», lint чисто, traces «файлов проверено 1217, следов 0, пропущено 36», handoffs-check «файлов проверено 692, нарушений 0, исключений использовано 114 из 114», тесты: # tests 1476, # pass 1476, # fail 0, # cancelled 0, # skipped 0, # todo 0; строк «not ok» 0 (красных нет; 1454 прежних + 22 новых). Только файл: node --test test/repo.test.js — 26 тестов, 26 зелёных, около 8 секунд.",
+      "Копия base (git archive метки base/REQ030-20261012-01 в <scratch>/base, без .github, .githooks и раздела README; в неё положен repo.test.js рабочего дерева): cd <scratch>/base/tools && node --test test/repo.test.js → код 1, # tests 26, # pass 4, # fail 22, # skipped 0. Зелёные — только 4 старых теста; красные — все 22 новых (CI-1…CI-8, PH-1, PH-2, PH-3, PH-4, PH-5, PH-6, PH-7, PH-7 с закрытой tools, PH-8, RD-1, RD-2, RD-3, RD-4, RD-1..RD-4 «правила не слепы»); причина — нет файла (ENOENT) или нет раздела README. Рабочее дерево: те же 26 тестов, код 0, # pass 26, # fail 0. Первая версия имела дыру: на base RD-2, RD-3, RD-4 проходили вхолостую (при отсутствии раздела правило возвращало пусто); исправлено: без раздела все RD-2…RD-4 краснеют; повторный прогон на base — 22 красных из 22.",
+      "Мутанты применялись во временной копии рабочего дерева (<scratch>/mut-src → 4 рабочие копии, перед каждым мутантом файл возвращается из оригинала), запуск node --test test/repo.test.js в копии. Рабочее дерево: хеш всех файлов tools/ (без node_modules), .github/, .githooks/, README.md и режима хука до — a18b19907a6a9be9e2d0bcce8b3add5f433c577519d90ef86efe2d01dabacd33, после — a18b19907a6a9be9e2d0bcce8b3add5f433c577519d90ef86efe2d01dabacd33 (совпали); git status --short до и после совпали; git config core.hooksPath в проекте не задан (код 1). 58 мутантов, пропущенных (все тесты зелёные) — 0; наименьшее число упавших — 1. После пробы файлы копии, куда применялись мутанты, побайтно совпали с рабочим деревом (cmp), и repo.test.js в ней снова зелёный: # tests 26, # pass 26, # fail 0.",
+      "Мутант H01 executable bit removed: падают 1 — PH-1",
+      "Мутант H02 npm run check line replaced by true: падают 5 — PH-2,PH-3,PH-4,PH-5,PH-6",
+      "Мутант H03 code lost: a command between npm run check and code=$?: падают 4 — PH-2,PH-3,PH-5,PH-6",
+      "Мутант H04 check does not decide (&& false): падают 3 — PH-3,PH-5,PH-6",
+      "Мутант H05 printed code lost ($? instead of $code): падают 1 — PH-3",
+      "Мутант H06 hook always stops after a green check: падают 1 — PH-4",
+      "Мутант H07 no skip of deletions (if false): падают 1 — PH-5",
+      "Мутант H08 skip of everything seen: падают 7 — PH-3,PH-4,PH-5,PH-6,PH-7,PH-7 (tools/ that cannot be entered),PH-8",
+      "Мутант H09 hook writes a file on the red-check path: падают 1 — PH-6",
+      "Мутант H10 hook writes a file on the no-tools path: падают 2 — PH-6,PH-7",
+      "Мутант H11 hook writes a file on the no-npm path: падают 2 — PH-6,PH-7",
+      "Мутант H12 hook writes a file on the not-a-repository path: падают 2 — PH-6,PH-7",
+      "Мутант H13 hook prints the address ($2): падают 2 — PH-4,PH-8",
+      "Мутант H14 --no-verify in a comment: падают 1 — PH-2",
+      "Мутант H15 || true after npm run check: падают 4 — PH-2,PH-3,PH-5,PH-6",
+      "Мутант H16 no-tools check skipped: падают 2 — PH-6,PH-7",
+      "Мутант H17 no-npm check skipped: падают 2 — PH-6,PH-7",
+      "Мутант H18 not-a-repository check skipped: падают 2 — PH-6,PH-7",
+      "Мутант H19 shebang changed to bash: падают 2 — PH-1,PH-2",
+      "Мутант H20 hook file removed: падают 9 — PH-1,PH-2,PH-3,PH-4,PH-5,PH-6,PH-7,PH-7 (tools/ that cannot be entered),PH-8",
+      "Мутант H21 cd into tools removed: падают 6 — PH-2,PH-3,PH-4,PH-5,PH-7 (tools/ that cannot be entered),PH-8",
+      "Мутант H22 empty input treated as only deletions: падают 1 — PH-5",
+      "Мутант H23 second exit 0 added: падают 1 — PH-2",
+      "Мутант H24 hook writes a file on the cd-failure path: падают 1 — PH-7 (tools/ that cannot be entered)",
+      "Мутант R01 heading of the third level: падают 5 — RD-1,RD-2,RD-3,RD-4,RD-1..RD-4",
+      "Мутант R02 section moved before the one it follows: падают 2 — RD-1,RD-1..RD-4",
+      "Мутант R03 защиты ветки нет removed: падают 2 — RD-2,RD-1..RD-4",
+      "Мутант R04 command only in a paragraph: падают 2 — RD-3,RD-1..RD-4",
+      "Мутант R05 приватный added: падают 2 — RD-4,RD-1..RD-4",
+      "Мутант R06 an address added: падают 2 — RD-1,RD-1..RD-4",
+      "Мутант R07 decisions/0023 removed: падают 2 — RD-2,RD-1..RD-4",
+      "Мутант R08 heading twice: падают 5 — RD-1,RD-2,RD-3,RD-4,RD-1..RD-4",
+      "Мутант R09 ветка защищена added: падают 2 — RD-4,RD-1..RD-4",
+      "Мутант R10 мерж подтверждает владелец removed: падают 2 — RD-2,RD-1..RD-4",
+      "Мутант R11 рабочей папке removed: падают 2 — RD-2,RD-1..RD-4",
+      "Мутант R12 около 2 минут removed: падают 2 — RD-2,RD-1..RD-4",
+      "Мутант W01 pull_request removed: падают 2 — CI-2,CI-8",
+      "Мутант W02 push removed: падают 2 — CI-2,CI-8",
+      "Мутант W03 schedule added: падают 3 — CI-2,CI-7,CI-8",
+      "Мутант W04 node-version \"20\": падают 2 — CI-3,CI-8",
+      "Мутант W05 node-version \"23\": падают 2 — CI-3,CI-8",
+      "Мутант W06 engines.node changed to >=22 <24: падают 2 — CI-3,CI-8",
+      "Мутант W07 npm run test instead of npm run check: падают 2 — CI-4,CI-8",
+      "Мутант W08 checkout by tag @v7: падают 2 — CI-5,CI-8",
+      "Мутант W09 third action added: падают 3 — CI-4,CI-5,CI-8",
+      "Мутант W10 fetch-depth removed: падают 2 — CI-6,CI-8",
+      "Мутант W11 persist-credentials removed: падают 2 — CI-6,CI-8",
+      "Мутант W12 package-manager-cache removed: падают 2 — CI-6,CI-8",
+      "Мутант W13 cache: npm added: падают 2 — CI-6,CI-8",
+      "Мутант W14 || true after npm run check: падают 3 — CI-4,CI-7,CI-8",
+      "Мутант W15 continue-on-error added: падают 2 — CI-7,CI-8",
+      "Мутант W16 contents: write: падают 2 — CI-7,CI-8",
+      "Мутант W17 working-directory removed from the last step: падают 2 — CI-4,CI-8",
+      "Мутант W18 checkout commit of 39 characters: падают 2 — CI-5,CI-8",
+      "Мутант W19 CRLF line ending: падают 2 — CI-1,CI-8",
+      "Мутант W20 workflow file removed: падают 8 — CI-1,CI-2,CI-3,CI-4,CI-5,CI-6,CI-7,CI-8",
+      "Мутант W21 setup-node step removed: падают 5 — CI-3,CI-4,CI-5,CI-6,CI-8",
+      "Мутант W22 pull_request_target instead of pull_request: падают 3 — CI-2,CI-7,CI-8",
+      "Нет skip, todo, only, eslint-disable в тестах; поиск по repo.test.js на пути домашней и временных папок, github.com, ghp_ — 0 совпадений (пути и адрес в тестах собираются из частей). cd tools && npm run handoffs-check до закрытия: код 0, «файлов проверено 692, нарушений 0, исключений использовано 114 из 114»."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Критерии 2 и 3 — не автотесты по проекту (п. 7.4): П-2, П-3, П-3b выполняются после отправки в main, критерий 3 — только с согласия владельца. Режим файла 100755 в индексе (П-1) тоже шаг RELEASE-FINALIZER; тест PH-1 проверяет право X_OK в рабочей папке."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Тесты PH-3/PH-4/PH-5/PH-8 и мутанты внутри тестов (PH-2…PH-8) опираются на точный текст хука: строки `code=$?`, `(код $code)`, `if [ \"$code\" -ne 0 ]; then`, `if [ \"$seen\" -eq 1 ] && [ \"$code_pushed\" -eq 0 ]; then`, сообщение «проверка прошла», `if ! cd \"$root/tools\"; then`. Переименование этих мест в хуке потребует правки тестов; тест при этом краснеет громко («the change did not apply»), а не молча. На правку хука это не влияет."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Закреплено тестом PH-5: строка stdin без хеша (`HEAD` без полей) — не удаление, проверка запускается (так хук и реализован; проект H1 про пустое поле прямо не говорит). Мутант «пустое поле считается удалением» (H22) падает на PH-5."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Граница L1 ревью (последняя строка stdin без завершающего перевода строки теряется циклом read) тестом не закреплена: git всегда завершает строки, а тест, который требовал бы обратного, зафиксировал бы дефект; все stdin тестов оканчиваются переводом строки."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Тесты запускались только на macOS (остаточный риск 6 проекта). На Linux раннера: sh — dash (проверен лишь прототипом проекта), PATH для PH-7 строится из найденных git и sh; при отсутствии git или sh в PATH тест краснеет с «condition not created». Первый запуск П-2 может показать расхождение платформы — чинить причину, не тесты вслепую."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Вложенные запуски в тестах (хук, npm run check в тестовом репозитории) добавляют около 8 секунд к repo.test.js; общий прогон 1476 тестов — около 2 минут, как и раньше. Правка кода для тестов не понадобилась; новый тест ошибок кода не поймал."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Сверх задания: тест PH-7 «tools закрыта» меняет права только своей временной папки tools по именованному пути (chmod 000 и возврат в finally; AP-020), требует пользователя не root; и PH-2 требует, чтобы `npm run check` стоял отдельной исполняемой строкой (слова в сообщении H6 не считаются)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/repo.test.js"
+    ]
+  }
+}

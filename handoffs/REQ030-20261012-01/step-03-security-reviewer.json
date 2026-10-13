@@ -1,0 +1,122 @@
+{
+  "handoff_id": "step03-REQ030-20261012-01",
+  "run_id": "REQ030-20261012-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/REQ030-20261012-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ030-20261012-01/step-02-backend-dev.json",
+      "docs/design/REQ-030-github-check.md (r4)",
+      "decisions/0045-github-check-pins-history-hook.md",
+      "decisions/0023-parity-frame-fixes.md",
+      "docs/requirements.yaml (блок REQ-030)",
+      "docs/workflows/WF-02-development.md (шаг 3)",
+      "docs/quality-bar.md",
+      ".github/workflows/check.yml",
+      ".githooks/pre-push",
+      "README.md"
+    ],
+    "route": "BACKEND-DEV -> SECURITY-REVIEWER (этот) -> REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; пробы — на копиях вне проекта; на GitHub только чтение"
+    ],
+    "base_tag": "base/REQ030-20261012-01"
+  },
+  "task": {
+    "description": "WF-02, шаг 3: ворота безопасности для REQ-030. Запускаешься всегда; затронута ли область, решаешь сам. Сам просмотри git diff и новые файлы: .github/workflows/check.yml, .githooks/pre-push, раздел README, и по каждому пункту Q7–Q11 и R3 (для Pixel Office — R2) вынеси «выполнен (чем проверено)» или «неприменим (почему)». Особо проверь пробами на копиях вне проекта: (1) workflow: нет секретов и переменных (secrets., vars.), триггеры push и pull_request (не pull_request_target — иначе чужой код получил бы права), permissions: contents: read, persist-credentials: false, действия закреплены полными SHA (проверь gh api GET: SHA принадлежат тегам v7.0.1 и v7.0.0 в самих репозиториях actions/checkout и actions/setup-node), нет `run:` с подстановкой недоверенных значений (${{ github.* }} в командах — инъекция: допускается только в concurrency.group, не в run), нет скачивания и запуска чужих скриптов, нет cache с внешними ключами; запуск от форков публичного репозитория (репозиторий публичный: gh api GET repos/.../ → private false; actions/permissions/workflow read-only, approval_policy first_time_contributors) — оцени риск: что может сделать чужой PR в этом workflow (запустить npm ci и npm run check от своего кода: исполнение чужого кода на раннере GitHub без секретов — приемлемо? записать остаточный риск и рекомендацию «Require approval for first-time contributors» владельцу); (2) хук pre-push: нет eval, нет подстановки аргументов git (имя удалённого, адрес, ссылки) в команды; значения из stdin хука (refs, sha) — не выполняются; отказ при `cd tools` без `||` (отклонение от буквы проекта, пояснено) — оцени; режим 755; хук не делает записей и сетевых вызовов; сообщения не печатают адрес удалённого и секреты; попытка обхода (--no-verify — это решение пользователя git, хук не может и не должен его запрещать); (3) README: нет адресов, путей, секретов; (4) нет новых мест записи/внешних вызовов в tools/src (diff пуст). Q10: реалистичные сбои хука (нет npm, нет tools, вне git) — понятное сообщение, процесс не падает, состояние не меняется — подтверди своими запусками. FAIL при Critical/High/Medium. Репозиторий на GitHub НЕ изменять: только чтение.",
+    "acceptance_criteria": [
+      "Каждый пункт Q7–Q11 и R3 (и R2) назван: выполнен (чем проверено) или неприменим (почему)",
+      "Вердикт из собственных запусков и проб; анализ запуска от форков публичного репозитория; GitHub только чтение",
+      "Рабочее дерево проекта не изменено (хеши до и после)"
+    ]
+  },
+  "created_at": "2026-10-12T23:48:34Z",
+  "started_at": "2026-10-12T23:48:34Z",
+  "completed_at": "2026-10-12T23:56:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Карта поверхностей. .github/workflows/check.yml — «приходит извне» (запуск от push и pull_request, в том числе от форков публичного репозитория) и «сервер ходит сам» (раннер GitHub скачивает действия и пакеты npm); секретов и данных клиентов нет. .githooks/pre-push — «приходит извне» (stdin и аргументы git) и «запуск кода» (npm run check в своей рабочей папке); записей, сети и секретов нет. README.md (+28 строк) — «нет поверхности» (документ): адресов, путей, секретов, имён нет, проверено поиском. PLAN.md, decisions/README.md, docs/requirements.yaml, decisions/0044–0046, docs/design/REQ-030-github-check.md, handoffs/ — «нет поверхности» (документы учёта; ссылки и путей компьютера нет). tools/src и tools/test — diff с base/REQ030-20261012-01 пуст, неотслеживаемых файлов в tools нет: новых мест записи, внешних вызовов, страниц и ответов сервера нет. Область затронута (workflow и хук), поэтому «вне области» не ставится.\nПункты. Q7 — применим, выполнен: поиск секретов (ghp_, ghs_, github_pat, AKIA, sk-, api key, password, secret, token, BEGIN PRIVATE, bearer, authorization, путь домашней папки, схема адреса, git@) по check.yml и pre-push — 0 совпадений; по добавленным строкам README и по diff PLAN/decisions/requirements — 0; по файлам страницы tools/src/pixel-office/public и tools/src/web — одно совпадение, комментарий про маску секрета в schema.js (не секрет); в репозитории на GitHub секретов 0 и переменных 0 (GET); в workflow нет secrets., vars., env:, token:; GITHUB_TOKEN не передаётся шагам run (checkout с persist-credentials: false), токен только contents: read. Q8 — неприменим: нет данных клиентов, пространств бизнеса и путей к данным (diff tools пуст). Q9 — неприменим: поиск SELECT/INSERT/UPDATE…SET/DELETE FROM по .github и .githooks — 0, SQL в изменении нет. Q10 — применим, выполнен: хук при сбоях (нет tools, нет npm, вне git, tools недоступна, красная проверка, пустой stdin) печатает понятное сообщение, выходит с кодом 1, состояние (хеши файлов, git status, ветки удалённого) неизменно; внешних вызовов хука нет; у workflow есть timeout-minutes 15, сбой установки — красный запуск, а не падение чего-либо. Q11 — неприменим: адресов, задаваемых клиентом или пользователем, и обращений сервера Sai по ним нет (хук не читает и не печатает адрес удалённого; действия и npm берутся из закреплённого файла и lock с registry.npmjs.org). R3 — неприменим (решение 0033, фото людей нет). R2 — неприменим: Pixel Office, его хуки Claude Code и журнал не затронуты (tools/src не менялся), pre-push не пишет событий.\nОсобые проверки задания. (1) Workflow: триггеры push (все ветки) и pull_request, не pull_request_target и не workflow_run; permissions: contents: read; persist-credentials: false; действия по полным SHA, проверено GET: actions/checkout 3d3c42e5… = тег v7.0.1 (commit), actions/setup-node 82076278… = тег v7.0.0 (commit); входы package-manager-cache и persist-credentials существуют в action.yml этих SHA; ${{ }} только в concurrency.group (github.ref, не в run); нет curl/wget, чужих скриптов, cache (package-manager-cache: false); lock — только registry.npmjs.org, hasInstallScript 0. Запуск от форков: репозиторий публичный (private false), workflow read-only, can_approve false, approval_policy first_time_contributors. Чужой PR выполняет npm ci и npm run check от своего кода (и может изменить сам check.yml) на раннере GitHub без секретов, с токеном только на чтение, не передаваемым в run, на 15 минут; кэша для отравления нет. Остаточный риск — расход минут и сторонние вычисления на раннере GitHub, Low, приемлем; рекомендация владельцу — F1. (2) Хук: нет eval, нет подстановки $1/$2 и значений stdin в команды (значения только в case-сравнении); проба с метасимволами в refs, hash и аргументах — файлы-маркеры не созданы; адрес с паролем во втором аргументе в выводе хука — 0 совпадений; запись и сеть хука — нет (только git rev-parse и npm run check); режим 755; --no-verify git пропускает хук (проба: красная проверка не остановила), это решение пользователя, хук запретить не может; отказ при cd без || оформлен через if ! cd (проба chmod 000 tools — код 1 с сообщением); отклонение от буквы проекта безопасно. (3) README: адресов, путей, секретов нет. (4) tools/src: diff пуст. Свои запуски: настоящий хук на клоне проекта вне проекта — зелёная проверка код 0, 1454 теста, 107 с; красная — код 1, «(код 1)», состояние неизменно. Рабочее дерево проекта не менялось: хеши и git status до и после совпали; core.hooksPath в проекте не включён; на GitHub только GET.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "настройка Actions репозитория на GitHub (approval_policy) + .github/workflows/check.yml (триггер pull_request)",
+        "item": "Q10 / риск запуска от форков (остаточный)",
+        "severity": "Low",
+        "what": "Репозиторий публичный; чужой PR после первого одобрения запускает npm ci и npm run check от своего кода (и может править сам check.yml) на раннере GitHub. Секретов и переменных в репозитории нет, токен contents: read, в шаги run не передаётся, кэша нет, таймаут 15 минут — ущерб ограничен расходом вычислений и сторонним кодом на раннере. approval_policy сейчас first_time_contributors: после первого принятого вклада чужой автор запускает проверки без одобрения.",
+        "fix": "Владельцу: в настройках Actions выбрать «Require approval for all external contributors» (approval_policy all_external_contributors) вместо first_time_contributors; не добавлять в репозиторий секреты и не переходить на pull_request_target. Не блокирует."
+      },
+      {
+        "id": "F2",
+        "place": "decisions/0023-parity-frame-fixes.md D1; README.md (абзац «защиты ветки нет»); docs/requirements.yaml REQ-030 (описание)",
+        "item": "расхождение с фактом, не пункт планки",
+        "severity": "Low",
+        "what": "Основание отказа от защиты ветки (приватный репозиторий, ответ 403) не совпадает с фактом: репозиторий публичный (GET: private false), запрос защиты main отвечает 404 «Branch not protected», то есть защита доступна. README верно отсылает к пересмотру решения при смене видимости. Это не нарушение Q7–Q11.",
+        "fix": "Владельцу через ORCH: пересмотреть 0023 D1 отдельной поправкой (включить защиту main с обязательной проверкой check или подтвердить, что остаётся процесс); включение — только по слову владельца (R1). Не блокирует."
+      },
+      {
+        "id": "F3",
+        "place": ".githooks/pre-push (файл не в индексе git)",
+        "item": "режим исполняемого файла",
+        "severity": "Low",
+        "what": "На диске режим 755, но файл не добавлен в индекс; без режима 100755 в коммите хук у клона не запустится (git сообщит и пропустит).",
+        "fix": "RELEASE-FINALIZER: после git add проверить git ls-files -s .githooks/pre-push — режим 100755. Не блокирует."
+      },
+      {
+        "id": "F4",
+        "place": "настройка Actions репозитория на GitHub (sha_pinning_required)",
+        "item": "закрепление действий",
+        "severity": "Low",
+        "what": "sha_pinning_required: false — репозиторий не принуждает закрепление действий по SHA; сейчас workflow закреплён, но будущая правка может ослабить.",
+        "fix": "Необязательно: включить sha_pinning_required; тест TEST-DESIGNER на полные SHA (CI-*) уже запланирован проектом. Не блокирует."
+      }
+    ],
+    "self_check": [
+      "Снимок до/после: shasum -a 256 по git ls-files -m -o --exclude-standard (кроме этого handoff-а), 22 файла, + git status --short: diff до/после пуст (HASH-SAME, STATUS-SAME); git config --get core.hooksPath в проекте — пусто (код 1). Хеши: .githooks/pre-push f3beca92…2687aa, check.yml 70ce1721…fbfd9e, README.md 9306e8d3…9147d8.",
+      "git diff --name-only base/REQ030-20261012-01 -- tools: пусто; git ls-files --others --exclude-standard tools: пусто; git diff --stat: PLAN.md, README.md (+28), decisions/README.md, docs/requirements.yaml.",
+      "gh api GET: repos/…: private false, visibility public, fork false; actions/permissions: enabled, allowed_actions all, sha_pinning_required false; actions/permissions/workflow: default_workflow_permissions read, can_approve_pull_request_reviews false; fork-pr-contributor-approval: first_time_contributors; actions/secrets: total_count 0; actions/variables: 0; branches/main/protection: 404 «Branch not protected». Ничего на GitHub не создавалось и не менялось.",
+      "gh api GET repos/actions/checkout/git/ref/tags/v7.0.1 -> commit 3d3c42e5aac5ba805825da76410c181273ba90b1 (совпадает с check.yml); v7.0.0 -> 9c091bb2…; repos/actions/setup-node/git/ref/tags/v7.0.0 -> commit 820762786026740c76f36085b0efc47a31fe5020 (совпадает с check.yml); GET commits: checkout 2026-07-17 «prep v7.0.1 release», setup-node 2026-07-14. action.yml по этим SHA: есть persist-credentials, fetch-depth, package-manager-cache; using node24.",
+      "YAML check.yml разобран ruby YAML (копия в <scratch>/sec): триггеры push.branches ** и pull_request, permissions contents read, concurrency.group check-${{ github.ref }}, 4 шага. grep по копии: secrets., vars., pull_request_target, workflow_run, github.event/head_ref/actor, continue-on-error, || true, curl, wget, env:, if:, token, http — только два uses:, два run: и одно ${{ в concurrency.group; ни одного совпадения запрещённого. actionlint, zizmor, shellcheck на машине нет — не запускались.",
+      "tools/package-lock.json: все resolved — registry.npmjs.org; hasInstallScript — 0; .npmrc нет; в package.json только devDependencies с точными версиями.",
+      "Поиск секретов (регистр не важен) по check.yml и pre-push: ghp_|ghs_|gho_|github_pat|AKIA|sk-…|api key|password|secret|token|BEGIN PRIVATE|bearer|authorization|путь домашней папки|схема адреса|git@|имя владельца — rc=1, совпадений 0. По добавленным строкам README (git diff -U0 | grep '^+'): секреты, пути, ://, git@, e-mail-подобное, адрес GitHub, IP, «приватн/публичн/403» — 0. По diff PLAN.md, decisions/README.md, requirements.yaml — 0. По docs/design/REQ-030-github-check.md и decisions/0044–0046: совпадения только описания правил (слова «://», «git@» как запрещённые в README) — не секреты. По tools/src/pixel-office/public и tools/src/web: единственное совпадение — комментарий в schema.js:53 про маску секрета. innerHTML/outerHTML/insertAdjacentHTML/document.write в public — 0 (страница не менялась).",
+      "SQL: grep SELECT |INSERT |UPDATE … SET|DELETE FROM по .github и .githooks — 0.",
+      "Пробы хука на копии <scratch>/sec/probe (временный репозиторий + локальный bare-remote; check = node -e process.exit(RC)): P1 метасимволы $(touch PWNED1), `touch PWNED2`, ;touch PWNED3 в stdin и PWNED4, PWNED5 в аргументах, RC=0 — код 0, ls PWNED* — файлов нет (подстановки нет). P1b то же с удалением (хеш из нулей) — «только удаления», код 0, файлов нет. P2 RC=7 с адресом ssh://u:SECRETPW@h/x во втором аргументе — код 1, «проверка не прошла (код 7)», grep -c SECRETPW в выводе = 0, хеш состояния (файлы+status+ветки удалённого) до/после 7f4204a5c1e6 = 7f4204a5c1e6.",
+      "Пути отказа (код 1, сообщение, состояние неизменно по хешу): нет tools — «нет папки tools — проверять нечем»; PATH только git+sh — «не найден npm (нужен Node 22)»; вне git — «это не git-репозиторий»; tools с chmod 000 — «не удалось перейти в папку tools»; пустой stdin — проверка запускается и проходит; запуск из подпапки tools — корень находит, код 0.",
+      "Настоящий git push на локальный bare-remote с core.hooksPath в копии: красная (RC=3) — «(код 3) — отправка остановлена», «failed to push some refs», веток на удалённом не прибавилось; зелёная — «проверка прошла», ветка создана; git push --no-verify при красной — хук пропущен, ветка ушла (решение пользователя, как заявлено в README); git push --delete — «только удаления, кода нет», [deleted]; смесь удаления и кода при красной — проверка запускается и останавливает.",
+      "Настоящий хук на клоне проекта вне проекта (git clone --local + файлы рабочего дерева + node_modules, под caffeinate -i, вывод в <scratch>/sec/copy-green.out): зелёная — # tests 1454, # pass 1454, # fail 0, # skipped 0, duration 107 с, «pre-push: проверка прошла», rc=0. Красная (добавлен файл теста, падающий проверкой форматирования): «проверка не прошла (код 1) — отправка остановлена», rc=1, git status до/после одинаков. Красных тестов в зелёном прогоне нет.",
+      "Режим: stat — 755 у .githooks/pre-push; в индексе файл ещё не лежит (F3). Наличие eval, curl, wget, ://, --no-verify, set +e, || в хуке: поиск — совпадает только единственный exit 0 (строка 17, ветка «только удаления»)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Вердикт выведен из собственных запусков и проб; в задании ожидаемый вердикт назван условием «FAIL при Critical/High/Medium» — находок такого уровня нет."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Для ORCH/владельца: F1 и F2 — решения владельца на GitHub (подтверждение для всех внешних авторов; защита main в публичном репозитории). Я их не менял и не предлагаю менять без слова владельца (R1)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Для REVIEWER (вне вердикта): README верно называет границы хука; строка «Автоматической проверки на GitHub (CI) нет…» в разделе «Что ещё не готово» пока противоречит новому разделу — по заданию её правит DOC-UPDATER. Требование REQ-030 в описании говорит «приватный репозиторий», факт — публичный (F2)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Запуск workflow на настоящих раннерах GitHub не проверялся (ничего не отправлялось); поведение Actions проверено чтением action.yml по SHA и настроек репозитория GET. Критерии 2 и 3 (живой запуск) остаются за шагом после отправки."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
