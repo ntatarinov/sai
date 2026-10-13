@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step07-ISS-0062-20261013-01",
+  "run_id": "ISS-0062-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "07",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0062-20261013-01/step-07-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-042"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0062-20261013-01/step-06-test-designer.json",
+      "tools/test/pixel-office-panels.test.js",
+      "tools/src/pixel-office/public/style.css",
+      "docs/design/ISS-0062-item-head-wrap.md",
+      "docs/requirements.yaml (REQ-042 критерий 14)"
+    ],
+    "route": "TEST-DESIGNER -> TEST-DESIGN-VALIDATOR (этот) -> TEST-RUNNER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/ISS-0062-20261013-01",
+    "pre_fix_copy": "клон метки base/ISS-0062-20261013-01 вне проекта",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-13T16:13:08Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "PASS: PN-23 красный на клоне метки (335/336), зелёный на рабочем дереве (336/336); 13 мутантов убиты PN-23; check на чистой копии 1518/1518; рабочее дерево не менялось (477 файлов)",
+        "Low F1 (@supports/@layer/@container не видны parseCss), F2 (inline-size и др. свойства), F3 (.item-role не смотрится), F4 (!important краснит) — границы способа 1; в журнал/дефекты — DOC-UPDATER (LOW), доказательство вида — приёмка"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 7 — ворота тестов для регрессионного теста PN-23 (tools/test/pixel-office-panels.test.js, два test(); handoffs/ISS-0062-20261013-01/step-06-test-designer.json для справки). Читай тест САМ. Как WF-02 шаг 5b и ещё: (1) САМ запусти PN-23 на клоне метки base/ISS-0062-20261013-01 вне проекта (клон с .git — git clone/worktree; не копия одного tools/ — на ней 43 теста красные по среде) и убедись, что PN-23 ПАДАЕТ; на рабочем дереве (исправленный style.css) — ПРОХОДИТ; (2) САМ примени не меньше трёх мутантов во временной копии вне проекта (минимум: убрать flex-wrap у .item-head; убрать max-width у .item-state; вернуть более специфичный селектор .card-section .item-head { flex-wrap: nowrap }; собственное правило .item-state { min-width: 20rem } ) и убедись, что тесты падают, а на исходной копии зелёные; рабочее дерево не менять (хеши tools/src, tools/test до/после); (3) тест не слабее проекта п. 7.2 и не ложно краснеет на безвредных вариантах M12–M14 (gap 0.5rem, убрать overflow-wrap у .item, flex: 0 1 auto — согласен ли ты с объяснением проекта, что они не ловятся намеренно); (4) число test( и assert. в десяти файлах pixel-office-*.test.js не меньше метки (пересчитай); другие тесты не ослаблены (git diff base/ISS-0062-20261013-01 -- tools/test: только добавление PN-23); тесты независимы, без часов, секретов и браузера; (5) полный cd tools && npm run check на чистой копии вне проекта (с .git) под caffeinate -i: код 0, число тестов (ожидается 1518 = 1516 + 2); (6) критерий 14 REQ-042: каждое свойство (а)–(г) закрыто тестом PN-23 или замером в приёмке (которого ещё нет — шаг 8/9 прогона; скажи, что остаётся приёмке). Вердикт PASS/FAIL (Medium блокирует; Low записывается). Код и тесты не менять. Запрещены git checkout/reset/stash/clean на рабочем дереве. Пути компьютера не писать. Перед close — handoffs-check.",
+    "acceptance_criteria": [
+      "PN-23 красный на клоне метки и зелёный на рабочем дереве (сам запустил)",
+      "Не меньше трёх мутантов применены самим, рабочее дерево не изменено; check на чистой копии зелёный",
+      "Вердикт PASS или FAIL"
+    ]
+  },
+  "created_at": "2026-10-13T16:06:43Z",
+  "started_at": "2026-10-13T16:06:43Z",
+  "completed_at": "2026-10-13T16:12:27Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "ВЕРДИКТ PASS. Регрессионный тест PN-23 (два test() в pixel-office-panels.test.js) красный на клоне метки и зелёный на рабочем дереве; все четыре обязательных мутанта и ещё девять падают; безвредные варианты M12–M14 не ловятся, и я согласен с проектом (замерил в Chrome); полный check на чистой копии с .git — код 0, 1518 тестов; рабочее дерево не менялось. Блокирующих находок нет, четыре Low. (1) Клон метки base/ISS-0062-20261013-01 вне проекта (git clone с .git, HEAD равен метке) + файл pixel-office-panels.test.js из рабочего дерева, прежний style.css: PN-23 первый test() ПАДАЕТ с сообщением ['.item-head flex-wrap: undefined', '.item-state max-width: undefined']; второй test() (проверка самого проверяющего на фиксированном образце CSS) зелёный — так и задумано (он не читает style.css). На рабочем дереве оба test() зелёные, отдельным запуском (--test-name-pattern ^PN-23) тоже. (2) Мутанты на копии вне проекта (каждый от свежей копии; запускался весь pixel-office-panels.test.js, 37 тестов; исходная копия 336/336 по всем десяти файлам Pixel Office): все падают одним PN-23 (первым test()), прочие тесты зелёные. Обязательные: убрать flex-wrap у .item-head (A1), убрать max-width у .item-state (A2), .card-section .item-head { flex-wrap: nowrap } (A3), собственное правило .item-state { min-width: 20rem } (A4) и то же внутри существующего правила (A4b). Дополнительные: flex-wrap: nowrap (A5), @media .item-head nowrap (A6), white-space: nowrap у .item-state (A7) и в варианте restarted (A8), min-width у .history-state (A9), max-width 50% (A10), display: block у .item-head (A11), #tasks .item .item-head nowrap (A12), .item-head > .item-state { width: 20rem } (A13). (3) Не слабее проекта п. 7.2: части А–Е покрыты — display/flex-wrap у .item-head и любые другие правила, оканчивающиеся на .item-head (любой предок, @media, псевдокласс; flex-flow), max-width 100% и запрет nowrap/pre у .item-state, у .history-state только display: inline-block, ни одно правило вариантов [data-state=…] и ни одно правило в @media не задаёт раскладочных свойств, счётчик найденных правил не меньше 8 (пустой поиск не проходит молча, Q6); добавлены свойства flex-grow, flex-flow, word-wrap, text-wrap и проверка на пустой поиск сверх проекта. Безвредные M12 (gap: 0.5rem), M13 (без overflow-wrap у .item), M14 (flex: 0 1 auto) на живом style.css тест не краснит (мои H1, H2, H3: 0 упавших). Согласен с объяснением проекта и проверил замером: Chrome headless, статическая страница с настоящим style.css (метка, исправленный, H1–H3), ширины шапки 332, 319 и 264 px, слово «сервер перезапускался, события не записывались»: метка — название основной сессии 12×644 px, Plan 9×78, Explore 8×137 (числа диагноза повторены); исправленный — 281×20, 28×20, 49×20, плашка 300×18 при 332, 297×34 при 319, 242×34 при 264, правый край плашки внутри строки; H2 и H3 дают те же числа до пикселя; H1 отличается только высотой строки на 6 px (59→65, 75→81, 95→101), что укладывается в допуск критерия 14 (в) (высота плашки плюс отступ), поэтому замер приёмки, а не тест, должен держать это число. (4) Числа test( / assert. относительно метки (база -> сейчас): docs 2/14->3/25 (прежняя доработка REQ-042, к ISS-0062 не относится; относительно метки ISS-0062: 3/25->3/25), hook 41/205->41/205, layout 19/210->19/210, note 7/103->7/103, office 58/534->58/534, page 81/605->81/605, panels 35/624->37/640, scale 6/38->6/38, server 71/333->71/333, settings 7/25->7/25; ни одно не упало. git diff метки по tools/test — только добавление PN-23 (318 строк добавлено, 0 удалено в тестах), по tools/src — только style.css (+3 строки, 1 заменена: flex-wrap: wrap, gap: 0.125rem 0.5rem, max-width: 100%). В тесте нет часов, случайности, сети, браузера, секретов и путей компьютера; тест читает style.css и ничего не пишет; оба test() независимы (второй — на встроенном образце CSS). (5) Полный cd tools && caffeinate -i npm run check на чистой копии проекта с .git вне проекта: код 0, prettier «All matched files use Prettier code style!», eslint без вывода, traces, handoffs-check «нарушений 0», node --test: tests 1518, pass 1518, fail 0, cancelled 0, skipped 0, todo 0 (1516 + 2). E_TIME в выводе нет, EN-57 не падал. (6) Критерий 14 REQ-042 по способу 1 (тест в tools/test, без браузера, читает style.css, правила мест 1 и 2 со всеми вариантами [data-state=…], падает на метке и проходит после, в названии сказано «проверяет правило CSS, не вид») выполнен. Свойства (а)–(г) теста держит только как правило CSS (flex-wrap: wrap у .item-head — (а), (в); max-width: 100% и отсутствие nowrap — (б), (г)); сам вид — способ 2, замер в браузере, остаётся приёмке (шаги 8–9 прогона, BA-ANALYST дополняет сценарии 16 и 37, UAT-RUNNER и RELEASE-VALIDATOR меряют на стенде СТ-3 до и после перезапуска в окнах 1470×784 и 375×812): (а) название роли целиком — части по одному прямоугольнику, правый край не правее .item, для основной сессии и Plan, в панели и карточке агента; (б) слово не рвётся по буквам, высота плашки не больше N·h, где h для места 2 берётся по п. 8.2 проекта (подпись окна «Просмотр истории» — оба вывода .history-state); (в) рост строки до/после одного и того же элемента не больше высоты плашки плюс отступ (сравнение по неокруглённым значениям с допуском 1 px — запас у Plan в окне 375 всего 1 px); (г) scrollWidth не больше innerWidth. Моим замером на статической странице (см. выше) предварительно подтверждено, что правило из PN-23 даёт нужную раскладку, но это не замена приёмки.",
+    "findings": [
+      {
+        "id": "F1",
+        "where": "tools/test/pixel-office-helpers.js, parseCss (используется PN-23)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "parseCss обходит только @media; правила внутри @supports, @layer и @container тест не видит. Мой мутант P1 (@supports (display: flex) { .item-head { flex-wrap: nowrap } }) проходит PN-23 зелёным. В style.css сегодня таких блоков нет (только два @media), поэтому не блокирует.",
+        "fix": "По желанию TEST-DESIGNER: в PN-23 добавить проверку, что в style.css нет других at-правил с блоками, кроме @media (assert на список голов), либо научить parseCss обходить @supports и @layer."
+      },
+      {
+        "id": "F2",
+        "where": "tools/test/pixel-office-panels.test.js, LAYOUT_PROPS (PN-23)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Перечень раскладочных свойств совпадает с перечнем критерия 14 плюс несколько лишних, но не содержит логических и новых синонимов: min-inline-size / max-inline-size / inline-size, text-wrap-mode, white-space-collapse, flex-direction, order. Мои мутанты P2 (.item-state { min-inline-size: 20rem }) и P4 (.item-state { text-wrap-mode: nowrap }) не ловятся. Критерий этих имён не называет.",
+        "fix": "По желанию: добавить в LAYOUT_PROPS min-inline-size, max-inline-size, inline-size, text-wrap-mode, white-space-collapse, flex-direction."
+      },
+      {
+        "id": "F3",
+        "where": "tools/test/pixel-office-panels.test.js, PN-23 (правила .item-role)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Правила самого .item-role тест не смотрит. Мутант P5 (.item-role { flex: none; white-space: nowrap }) делает длинную роль выходящей за строку (критерий (г)) и проходит PN-23. Проект такого ограничения не ставит (п. 4.3), поэтому не недочёт теста, а граница способа 1; такой случай ловит замер приёмки (г).",
+        "fix": "Не требуется; для сведения BA-ANALYST — длинную роль в 60 знаков без пробелов включить в замер (г)."
+      },
+      {
+        "id": "F4",
+        "where": "tools/test/pixel-office-panels.test.js, PN-23, часть Б",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Сравнение flex-wrap строгое: «wrap !important» (безвредное по смыслу) краснит тест (мой P3). Это безопасная сторона (ложное срабатывание, а не пропуск).",
+        "fix": "Не требуется."
+      }
+    ],
+    "self_check": [
+      "date -u начало 2026-10-13T16:06:53Z. Списки хешей tools/src, tools/test, tools/README.md, tools/package.json, docs, decisions (477 файлов) до и после: diff пуст (HASH_SAME, сумма списка e61d452fdc4c), git status --short совпал; рабочее дерево не менялось; git checkout/reset/stash/clean на рабочем дереве не использовались (в клоне вне проекта был checkout метки).",
+      "Клон метки вне проекта: git clone с .git, HEAD 130a46d0eff = метка base/ISS-0062-20261013-01; поверх положен pixel-office-panels.test.js рабочего дерева: node --test --test-name-pattern ^PN-23 -> tests 2, pass 1, fail 1; упал первый PN-23 с actual ['.item-head flex-wrap: undefined', '.item-state max-width: undefined'] против []. Весь Pixel Office на этом клоне: tests 336, pass 335, fail 1 (только PN-23).",
+      "Рабочее дерево (копия вне проекта): PN-23 отдельно -> tests 2, pass 2, fail 0. node --test test/pixel-office-*.test.js -> tests 336, pass 336, fail 0, skipped 0, todo 0.",
+      "Мутанты style.css на копиях вне проекта (запуск pixel-office-panels.test.js, 37 тестов): A1…A13 — каждый упал 1 из 37, падает PN-23 «the CSS rule of the row…»; H1, H2, H3 (безвредные) — упало 0; P1 (@supports), P2 (min-inline-size), P4 (text-wrap-mode), P5 (.item-role nowrap) — упало 0 (F1–F3); P3 (wrap !important) — упал PN-23 (F4).",
+      "Chrome headless, статическая страница с настоящим style.css метки / исправленным / H1 / H2 / H3, ширины 332, 319, 264, слово «сервер перезапускался, события не записывались»: метка main role 12x644, Plan 9x78, Explore 8x137, state 300x18, правый край плашки правее строки на 12 px (319) и 67 px (264); исправленный: main 281x20 (242x39 при 264), Plan 28x20, Explore 49x20, плашка 300x18 / 297x34 / 242x34, правый край внутри (-21…-11); H2 и H3 — те же числа; H1 — высота строки на 6 px больше (59→65, 75→81, 95→101).",
+      "Числа test( / assert. посчитаны мной (git show метки против рабочих файлов): docs 3/25, hook 41/205, layout 19/210, note 7/103, office 58/534, page 81/605, panels 35/624 -> 37/640, scale 6/38, server 71/333, settings 7/25 — на метке и сейчас, кроме panels (+2/+16). git diff метки по tools/test: +318/-0 только PN-23; по tools/src: только style.css.",
+      "Полный cd tools && caffeinate -i npm run check на чистой копии с .git (16:09:24Z-16:11:18Z) -> exit 0, prettier OK, eslint без вывода, traces, handoffs-check «нарушений 0», tests 1518, pass 1518, fail 0, cancelled 0, skipped 0, todo 0; E_TIME 0 вхождений. Копия tools/src и tools/test равна рабочему дереву."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "OBSERVATION",
+        "text": "Для приёмки (шаги 8–9 прогона): способ 2 критерия 14 ещё не выполнен; предварительный замер на статической странице подтверждает числа проекта, но вид на настоящей странице (СТ-3, до и после перезапуска, 1470×784 и 375×812), место 2 (оба вывода .history-state), пара до/после для (в) и scrollWidth остаются за BA-ANALYST, UAT-RUNNER и RELEASE-VALIDATOR. Числовые пороги 24 px и 120 px — ориентир по п. 8.1 проекта."
+      },
+      {
+        "id": "I2",
+        "kind": "OBSERVATION",
+        "text": "Ожидаемый вердикт в задании не назван; вердикт выведен из моих запусков (AP-018). Q8, Q10 (внешние сервисы), Q11 и R3 неприменимы (CSS страницы); AP-020 не обнаружено: тест только читает style.css."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

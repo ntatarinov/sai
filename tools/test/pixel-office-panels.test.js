@@ -2620,3 +2620,321 @@ test("FS-11: the word in the meta of the window of history, opened from a row of
     "нет свежих данных",
   );
 });
+
+// ------------------------------------------------------------------ PN-23
+// ISS-0062, REQ-042 criterion 14 (design docs/design/ISS-0062-item-head-wrap.md,
+// 4.3 and 7.2). This checks the RULE of the CSS, not the view: the view (no
+// squeezed role name, no letters in a column, no sideways scroll) is measured
+// in a browser in the acceptance. A browser is not run here: its absence would
+// turn into a skip (Q6).
+
+// The layout properties of criterion 14 (and the ones that act the same way).
+const LAYOUT_PROPS = new Set([
+  "display",
+  "position",
+  "flex",
+  "flex-grow",
+  "flex-shrink",
+  "flex-basis",
+  "flex-wrap",
+  "flex-flow",
+  "white-space",
+  "width",
+  "min-width",
+  "max-width",
+  "overflow-wrap",
+  "word-wrap",
+  "word-break",
+  "text-wrap",
+]);
+
+// The last compound of a selector: ".card-section .item-head:hover" gives
+// ".item-head:hover" (combinators inside [] and () do not split).
+function lastCompound(selector) {
+  let depth = 0;
+  let token = "";
+  let last = "";
+  for (const ch of selector.trim()) {
+    if (ch === "[" || ch === "(") depth += 1;
+    if (ch === "]" || ch === ")") depth -= 1;
+    if (depth === 0 && /[\s>+~]/.test(ch)) {
+      if (token !== "") last = token;
+      token = "";
+    } else {
+      token += ch;
+    }
+  }
+  return token !== "" ? token : last;
+}
+
+const hasClass = (compound, name) =>
+  new RegExp(`\\.${name}(?![\\w-])`).test(compound) ||
+  new RegExp(`\\[class[~|^$*]?=["']?[^\\]]*${name}`).test(compound);
+
+// Every rule with a selector whose last compound is the class, in any media,
+// with any ancestors, attributes or pseudo-classes and pseudo-elements.
+function rulesOf(rules, name) {
+  return rules
+    .map((rule) => ({
+      rule,
+      tails: rule.selectors.filter((s) => hasClass(lastCompound(s), name)),
+    }))
+    .filter((x) => x.tails.length > 0);
+}
+
+// The problems of the CSS text in the rules of the head of an item and of the
+// word of a state; an empty list is a pass.
+function itemCssProblems(css) {
+  const out = [];
+  const rules = parseCss(css);
+  const head = cssDecls(rules, ".item-head");
+  if (head.get("display") !== "flex") {
+    out.push(`.item-head display: ${head.get("display")}`);
+  }
+  if (head.get("flex-wrap") !== "wrap") {
+    out.push(`.item-head flex-wrap: ${head.get("flex-wrap")}`);
+  }
+  // no other rule that ends in .item-head (a more specific selector, a media
+  // block, a pseudo-class) takes the wrap or the flex back
+  for (const { rule, tails } of rulesOf(rules, "item-head")) {
+    const where = `${rule.media ?? "-"} ${tails.join(", ")}`;
+    if (rule.decls.has("flex-wrap") && rule.decls.get("flex-wrap") !== "wrap") {
+      out.push(`${where}: flex-wrap ${rule.decls.get("flex-wrap")}`);
+    }
+    if (rule.decls.has("display") && rule.decls.get("display") !== "flex") {
+      out.push(`${where}: display ${rule.decls.get("display")}`);
+    }
+    if (
+      rule.decls.has("flex-flow") &&
+      !/(^|\s)wrap(\s|$)/.test(rule.decls.get("flex-flow"))
+    ) {
+      out.push(`${where}: flex-flow ${rule.decls.get("flex-flow")}`);
+    }
+  }
+  // the word of the state of an item: its own rule has a cap of 100% and may
+  // set only that and `flex`; nothing else (any selector, any media) sets a
+  // layout property
+  const state = cssDecls(rules, ".item-state");
+  if (state.get("max-width") !== "100%") {
+    out.push(`.item-state max-width: ${state.get("max-width")}`);
+  }
+  if (/nowrap|pre/.test(state.get("white-space") ?? "")) {
+    out.push(`.item-state white-space: ${state.get("white-space")}`);
+  }
+  const allowedBase = new Set(["flex", "max-width"]);
+  for (const { rule, tails } of rulesOf(rules, "item-state")) {
+    const base = rule.media === null && tails.every((s) => s === ".item-state");
+    for (const name of rule.decls.keys()) {
+      if (LAYOUT_PROPS.has(name) && !(base && allowedBase.has(name))) {
+        out.push(`${rule.media ?? "-"} ${tails.join(", ")}: ${name}`);
+      }
+    }
+  }
+  // the word of the state in the window of history: its own rule sets only
+  // `display: inline-block`; nothing else sets a layout property
+  const word = cssDecls(rules, ".history-state");
+  if (word.get("display") !== "inline-block") {
+    out.push(`.history-state display: ${word.get("display")}`);
+  }
+  for (const { rule, tails } of rulesOf(rules, "history-state")) {
+    const base =
+      rule.media === null && tails.every((s) => s === ".history-state");
+    for (const name of rule.decls.keys()) {
+      if (LAYOUT_PROPS.has(name) && !(base && name === "display")) {
+        out.push(`${rule.media ?? "-"} ${tails.join(", ")}: ${name}`);
+      }
+    }
+  }
+  return out;
+}
+
+test("PN-23: the CSS rule of the row (ISS-0062, REQ-042 criterion 14) - the head of an item may wrap, the word of the state may not outgrow the row, the layout properties of the word do not depend on its state or its place; this checks the rule of the CSS, not the view (the view is measured in the acceptance)", () => {
+  const css = fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8");
+  assert.deepEqual(itemCssProblems(css), []);
+  const rules = parseCss(css);
+  // the search found what it looks for (an empty search must not pass, Q6)
+  const variantSelectors = (name) =>
+    rulesOf(rules, name)
+      .flatMap((x) => x.tails)
+      .filter((s) => /\[data-state=/.test(s)).length;
+  assert.ok(
+    variantSelectors("item-state") + variantSelectors("history-state") >= 8,
+    "at least 8 selectors of the variants [data-state=...]",
+  );
+  assert.ok(variantSelectors("item-state") >= 4);
+  assert.ok(variantSelectors("history-state") >= 4);
+  assert.ok(rulesOf(rules, "item-head").length >= 1);
+  assert.ok(rulesOf(rules, "item-state").length >= 5);
+  assert.ok(rulesOf(rules, "history-state").length >= 5);
+  // the pieces of the rule, spelled out
+  const head = cssDecls(rules, ".item-head");
+  assert.equal(head.get("display"), "flex");
+  assert.equal(head.get("flex-wrap"), "wrap");
+  assert.equal(cssDecls(rules, ".item-state").get("max-width"), "100%");
+  assert.equal(
+    cssDecls(rules, ".history-state").get("display"),
+    "inline-block",
+  );
+});
+
+const SAMPLE_CSS = `
+.item {
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+
+.item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.125rem 0.5rem;
+}
+
+.item-state {
+  flex: none;
+  max-width: 100%;
+  padding: 0.0625rem 0.4375rem;
+  font-weight: 700;
+}
+
+.item[data-state="in_progress"] .item-state {
+  color: var(--warn);
+}
+
+.item[data-state="completed"] .item-state {
+  color: var(--ok);
+}
+
+.item[data-state="unrecorded"] .item-state {
+  color: var(--err);
+}
+
+.item[data-state="stale"] .item-state,
+.item[data-state="restarted"] .item-state {
+  color: var(--text);
+}
+
+.history-state {
+  display: inline-block;
+  padding: 0.0625rem 0.4375rem;
+}
+
+.history-state[data-state="in_progress"] {
+  color: var(--warn);
+}
+
+.history-state[data-state="completed"] {
+  color: var(--ok);
+}
+
+.history-state[data-state="unrecorded"] {
+  color: var(--err);
+}
+
+.history-state[data-state="stale"],
+.history-state[data-state="restarted"] {
+  color: var(--text);
+}
+
+@media (max-width: 599px) {
+  .top {
+    padding: 0.5rem;
+  }
+}
+`;
+
+test("PN-23: the same check on a fixed sample of the rules with a deliberate breakage - the 11 mutants of the design and the ones of the review (a more specific selector, a media block, own layout properties of the word, a pseudo-class or a pseudo-element) are seen; three changes that do not break the criterion are not", () => {
+  // a fixed sample of the right rules, not the live file: the checks of the
+  // checker must not move when the page changes
+  const css = SAMPLE_CSS;
+  assert.deepEqual(itemCssProblems(css), []);
+  const HEAD = ".item-head {\n  display: flex;\n  flex-wrap: wrap;\n";
+  const STATE = ".item-state {\n  flex: none;\n  max-width: 100%;\n";
+  const swap = (from, to) => {
+    assert.equal(css.split(from).length, 2, `one place for: ${from}`);
+    return css.replace(from, to);
+  };
+  const append = (extra) => `${css}\n${extra}\n`;
+  const broken = {
+    "M1 no flex-wrap": swap(HEAD, ".item-head {\n  display: flex;\n"),
+    "M2 no max-width": swap(STATE, ".item-state {\n  flex: none;\n"),
+    "M3 flex-wrap nowrap": swap(HEAD, HEAD.replace("wrap;", "nowrap;")),
+    "M4 white-space nowrap on .item-state": swap(
+      STATE,
+      `${STATE}  white-space: nowrap;\n`,
+    ),
+    "M5 nowrap in a variant of .item-state": swap(
+      '.item[data-state="restarted"] .item-state {\n',
+      '.item[data-state="restarted"] .item-state {\n  white-space: nowrap;\n',
+    ),
+    "M6 min-width on .history-state": swap(
+      ".history-state {\n  display: inline-block;\n",
+      ".history-state {\n  display: inline-block;\n  min-width: 20rem;\n",
+    ),
+    "M7 flex none in a variant of .history-state": swap(
+      '.history-state[data-state="completed"] {\n',
+      '.history-state[data-state="completed"] {\n  flex: none;\n',
+    ),
+    "M8 media block takes the wrap back": append(
+      "@media (max-width: 40rem) {\n  .item-head {\n    flex-wrap: nowrap;\n  }\n}",
+    ),
+    "M9 max-width 50%": swap(STATE, STATE.replace("100%", "50%")),
+    "M10 display block": swap(
+      ".item-head {\n  display: flex;",
+      ".item-head {\n  display: block;",
+    ),
+    "M11 wrap-reverse": swap(HEAD, HEAD.replace("wrap;", "wrap-reverse;")),
+    "F1a more specific selector (.card-section .item-head)": append(
+      ".card-section .item-head {\n  flex-wrap: nowrap;\n}",
+    ),
+    "F1b more specific selector (#tasks .item .item-head)": append(
+      "#tasks .item .item-head {\n  flex-wrap: nowrap;\n}",
+    ),
+    "F1c flex-flow nowrap on .item-head": append(
+      ".item-head {\n  flex-flow: row nowrap;\n}",
+    ),
+    "F1d own min-width of .item-state": append(
+      ".item-state {\n  min-width: 20rem;\n}",
+    ),
+    "F1e own width of .item-state": append(".item-state {\n  width: 20rem;\n}"),
+    "F1f word-break keep-all on .item-state": append(
+      ".item-state {\n  word-break: keep-all;\n}",
+    ),
+    "F1g overflow-wrap normal on .item-state": append(
+      ".item-state {\n  overflow-wrap: normal;\n}",
+    ),
+    "F1h pseudo-class .item-state:hover": append(
+      ".item-state:hover {\n  white-space: nowrap;\n}",
+    ),
+    "F1i pseudo-element .item-state::before": append(
+      ".item-state::before {\n  min-width: 20rem;\n}",
+    ),
+    "F1j .item-state in a media block": append(
+      "@media (max-width: 40rem) {\n  .item-state {\n    flex: none;\n    width: 20rem;\n  }\n}",
+    ),
+    "F1k .history-state with an ancestor": append(
+      ".history-meta .history-state {\n  white-space: nowrap;\n}",
+    ),
+  };
+  for (const [name, text] of Object.entries(broken)) {
+    assert.notDeepEqual(itemCssProblems(text), [], `${name} must be seen`);
+  }
+  // these do not break the criterion (the design: M12-M14), and are not seen
+  const harmless = {
+    "M12 gap 0.5rem": swap("gap: 0.125rem 0.5rem;", "gap: 0.5rem;"),
+    "M13 no overflow-wrap anywhere on .item": css.replace(
+      /(\.item \{[^}]*?)\n {2}overflow-wrap: anywhere;/,
+      "$1",
+    ),
+    "M14 flex 0 1 auto on .item-state": swap(
+      ".item-state {\n  flex: none;",
+      ".item-state {\n  flex: 0 1 auto;",
+    ),
+  };
+  assert.notEqual(harmless["M13 no overflow-wrap anywhere on .item"], css);
+  for (const [name, text] of Object.entries(harmless)) {
+    assert.deepEqual(itemCssProblems(text), [], `${name} is not a breakage`);
+  }
+});

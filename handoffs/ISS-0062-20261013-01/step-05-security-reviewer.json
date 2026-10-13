@@ -1,0 +1,68 @@
+{
+  "handoff_id": "step05-ISS-0062-20261013-01",
+  "run_id": "ISS-0062-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/ISS-0062-20261013-01/step-05-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-042"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "tools/src/pixel-office/public/style.css",
+      "docs/design/ISS-0062-item-head-wrap.md",
+      "handoffs/ISS-0062-20261013-01/step-04-code-fixer.json",
+      "docs/quality-bar.md"
+    ],
+    "route": "CODE-FIXER -> SECURITY-REVIEWER (этот) -> REVIEWER -> TEST-DESIGNER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/ISS-0062-20261013-01",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-13T15:43:26Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "PASS: поверхность одна (style.css +3/−1), внешних ресурсов нет, причина устранена, не симптом; защитные проверки не ослаблены",
+        "I1 (очень узкое окно: длинная плашка многострочная) — REVIEWER"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 5 — ворота безопасности для исправления ISS-0062: изменён только tools/src/pixel-office/public/style.css (git diff base/ISS-0062-20261013-01 -- tools/src; изменения не закоммичены): .item-head получил flex-wrap: wrap и gap: 0.125rem 0.5rem; .item-state получил max-width: 100%. Проект docs/design/ISS-0062-item-head-wrap.md; handoff исправления step-04-code-fixer.json. Тебе решать, затронута ли твоя область. Проверь: только CSS, поведения/данных/запросов не добавлено (diff целиком); нет url(), @import, внешних ресурсов, expression; Q7, Q10, R2 — неприменимы или выполнены со своей проверкой; исправление устраняет причину, а не прячет симптом (Q6): правило перенесено, а не скрыт overflow/обрезка; не ослаблена защитная проверка. Код не менять. Пробы вне проекта. Запрещены git checkout/reset/stash/clean на рабочем дереве. Пути компьютера не писать. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": [
+      "Q7, Q10, R2, Q6 названы со своей проверкой; вердикт PASS или FAIL"
+    ]
+  },
+  "created_at": "2026-10-13T15:41:49Z",
+  "started_at": "2026-10-13T15:41:49Z",
+  "completed_at": "2026-10-13T15:43:03Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Ожидаемый вердикт в задании не назван; вердикт выведен из карты и проверок. Карта поверхностей: изменён один файл кода, tools/src/pixel-office/public/style.css (git diff base/ISS-0062-20261013-01 -- tools: +3/-1 строка, два правила). Поверхность — «уходит в браузер» (файл отдаётся страницей Pixel Office), но правки только раскладка: flex-wrap: wrap и gap: 0.125rem 0.5rem у .item-head, max-width: 100% у .item-state. Нет скрипта, запроса, чтения или записи данных, нового пути, ввода из сети, файлов и секретов. Остальные изменения рабочего дерева (decisions/README.md, docs/requirements.yaml, decisions/0053, docs/design/ISS-0062-item-head-wrap.md, handoff-ы) — документы: «нет поверхности», документы не исполняются. Таблица пунктов: Q7 — применим к файлам страницы, выполнен (поиск секретов по изменению и по public/ пуст, единственное совпадение — комментарий о маскировке в schema.js, не секрет). Q8 — неприменим (нет данных клиентов, пространств, API). Q9 — неприменим (нет запросов к хранилищу). Q10 — неприменим (нет внешнего вызова, ввода из сети, обработки данных; CSS не вводит путь отказа). Q11 — неприменим (нет исходящих запросов сервера). R3 — неприменим (фото людей нет, решение 0033). R2 — применим к Pixel Office и выполнен: CSS не создаёт, не пишет и не подставляет событий; слово состояния по-прежнему строит страница из событий (STATE_LABELS[item.state] через textContent). Q6 — выполнен: исправление убирает причину (правило: сосед .item-head не мог перейти на вторую строку, плашка flex: none забирала ширину и сжимала название), а не прячет симптом: добавлен перенос строки, нового overflow: hidden, text-overflow, clip, height/max-height в изменении нет; длинное слово не обрезается, а переносится внутри плашки (overflow-wrap: anywhere наследуется от .item); защитная проверка не ослаблена — изменений в test/, package.json, eslint-конфигурации нет (0 строк diff), skip, отключённых правил и «|| true» нет. Две проверки сверх пунктов: «пишет файлы» — не задета; «уходит в браузер» — текст страница ставит как текст (make() в app.js: el.textContent), innerHTML/insertAdjacentHTML/outerHTML/document.write в public/ не найдены; app.js не менялся. Общий механизм (AP-014): правило .item-head общее для панели «Задачи» и карточки агента (одна функция itemInto), в соседних местах раскладка по замыслу проекта одинакова; замер карточки агента и 320 px — работа UAT-RUNNER (I1 шага 4), к безопасности отношения не имеет.",
+    "findings": [],
+    "self_check": {
+      "diff": "git diff base/ISS-0062-20261013-01 -- tools/src -> style.css, строки +flex-wrap: wrap; -gap: 0.5rem; +gap: 0.125rem 0.5rem; +max-width: 100%. git diff base/ISS-0062-20261013-01 --name-only -- tools -> только style.css; git diff test/, package.json, package-lock.json, eslint.config.js -> 0 строк.",
+      "css_forbidden": "grep -nE 'url\\(|@import|expression|javascript:|behavior|-moz-binding|https?://' style.css -> пусто (код 1): внешних ресурсов, @import, expression, ссылок нет. grep overflow/text-overflow/clip по style.css: все совпадения уже были в базе, в diff их нет.",
+      "q7_secrets": "grep -rniE '(secret|token|api[_-]?key|password|bearer)' tools/src/pixel-office/public/ -> одно совпадение: комментарий в schema.js:53 «masked secret» (описание маскировки, не секрет). Поиск присваиваний ключ=значение по public/ -> пусто.",
+      "xss": "grep -rnE 'innerHTML|insertAdjacentHTML|outerHTML|document\\.write' tools/src/pixel-office/public/ -> пусто; make(): el.textContent = text.",
+      "prettier": "npx prettier --check src/pixel-office/public/style.css -> All matched files use Prettier code style!",
+      "tests": "node --test test/pixel-office-*.test.js -> tests 334, pass 334, fail 0, skipped 0.",
+      "handoffs_check": "npm run handoffs-check -> файлов проверено 763, нарушений 0, исключений использовано 114 из 114.",
+      "hashes": "style.css до и после проверки: 970818b81ed6c6406036578601b18857dc3ed01d666e15bffde24588b3b08a1a (совпали). Хеш всего каталога public/ (sha256 от списка sha256 файлов) после прогона тестов: a857cea85fa818bcfd5ead262b474cca83e829bcbba6b5c592fa63cdaf7d20c0; файлы проекта я не менял.",
+      "not_done": "Замеры раскладки в браузере я не повторял: это не вопрос безопасности, они в step-04 и в приёмке UAT-RUNNER; Q6 проверен по тексту diff и механизму правил."
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Вне безопасности, для REVIEWER: правила .item-state max-width: 100% и overflow-wrap: anywhere (наследуется) переносят слишком длинное слово внутри плашки; при очень узком окне плашка станет многострочной с радиусом 62.4375rem — вид, не безопасность."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
