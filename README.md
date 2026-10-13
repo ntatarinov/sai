@@ -174,8 +174,10 @@ git config core.hooksPath .githooks
 - **Требования:** из 41 — 6 в статусе `done`, 8 — `in_progress`, 27 — `pending`
   (`docs/requirements.yaml`; порядок работ — `docs/product/requirements-catalog.md`).
   Проверки спроса на «виртуальную команду» не было — принятый риск (`decisions/0015`).
-- **Автоматической проверки на GitHub (CI) нет:** проверка запускается вручную,
-  `cd tools && npm run check`.
+- **Проверка на GitHub есть** (`.github/workflows/check.yml`, раздел «Проверка на GitHub и
+  перед отправкой» выше): первый зелёный запуск — на коммите 226547d после исправления
+  ISS-0053. Красная проверка на GitHub (ветка с падающим тестом) ещё не проверялась; защиты
+  ветки `main` нет.
 - **Открытые дефекты — 17** (`docs/issues/`, «Статус: open»), из них ISS-0002 — HIGH
   (`apply-verdict` может оставить `STATE.md` обрезанным; тесты не дописаны), ISS-0005 —
   MEDIUM под наблюдением, остальные — LOW.

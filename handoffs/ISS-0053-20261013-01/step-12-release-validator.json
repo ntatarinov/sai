@@ -1,0 +1,109 @@
+{
+  "handoff_id": "step12-ISS-0053-20261013-01",
+  "run_id": "ISS-0053-20261013-01",
+  "workflow_id": "WF-03",
+  "step": "12",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/ISS-0053-20261013-01/step-12-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-030", "REQ-038"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml (блок REQ-030, критерии 2 и 3)",
+      "docs/design/REQ-030-github-check.md (п. 7.4, П-2)",
+      "docs/issues/ISS-0053-gh6-fails-on-linux.md",
+      "decisions/0047-iss0053-git-exit-zero-with-failed-input.md",
+      "handoffs/ISS-0053-20261013-01/step-11-release-finalizer.json",
+      "handoffs/REQ030-20261012-01/step-11-release-finalizer.json",
+      ".github/workflows/check.yml"
+    ],
+    "route": "RELEASE-FINALIZER (отправка 226547d) -> RELEASE-VALIDATOR (этот, шаг 12) -> DOC-UPDATER (закрытие ISS-0053, строка README) -> RELEASE-FINALIZER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; на GitHub только чтение"
+    ],
+    "base_tag": "base/ISS-0053-20261013-01"
+  },
+  "task": {
+    "description": "Шаг 12 (расширение прогонов REQ030-20261012-01 и ISS-0053-20261013-01: проверка на GitHub ПОСЛЕ отправки; в WF-02/WF-03 такого шага нет). ТОЛЬКО ЧТЕНИЕ GitHub и локальные команды; ничего не отправлять, не создавать, не перезапускать запуски (gh run rerun не выполнять — нужно согласие). Сам, своими командами: (1) критерий 2 REQ-030 дословно: `gh run list --workflow check.yml --branch main --limit 1 --json conclusion,headSha` (выполнять в рабочем репозитории проекта; перед этим git fetch origin): conclusion success, headSha равен `git rev-parse origin/main` (ожидаемый последний коммит main на момент проверки — запиши факт сам); приложи вывод и ссылку на запуск (поле url из `gh run list --json url`, ссылка допустима в handoff? — в файлы адрес и имя владельца репозитория НЕ писать: запиши только числовой databaseId запуска и скажи, что полная ссылка получается командой gh run view <databaseId> --json url); (2) журнал успешного запуска: `gh run view <databaseId> --log` (или --log для шага «Run the check»): шаги «Get the code», «Install Node 22», «Install dependencies», «Run the check» — success; в журнале строки `ok` у GH-6, GH-7, GH-7b (handoffs-git.test.js); итоговые строки `# tests 1478`, `# pass 1478`, `# fail 0`, `# skipped 0`; время запуска; (3) сравнение с первым запуском на коммите 02ff306 (databaseId 38331440082, failure: 1475 из 1476, упал GH-6): в журнале того запуска упал GH-6, в новом — зелёный; (4) статус критериев REQ-030: критерий 2 выполнен для данного последнего коммита main (НО: после этой проверки в main будет ещё коммит учёта — критерий 2 привязан к последнему коммиту main, поэтому ПОВТОРИТСЯ после него), критерий 3 (красная ветка) НЕ выполнен и не проверяется: согласия владельца нет; (5) напомни остаточный риск: один зелёный запуск — не доказательство отсутствия гонки; тест GH-7 детерминирован (ввод 4 МиБ больше любого буфера), но повторный запуск того же коммита не делался; (6) вывод: ISS-0053 можно закрыть как «причина устранена, есть регрессионный тест; подтверждено зелёным запуском на GitHub (Linux)»? Скажи PASS/FAIL по этому вопросу и по критерию 2. Оговорка по честности: Linux-раннер ubuntu-24.04, Node 22 — как в check.yml.",
+    "acceptance_criteria": [
+      "Критерий 2 REQ-030 проверен командой дословно: success и headSha = origin/main; вывод приложен без адреса и имени владельца",
+      "Журнал запуска: шаги и тесты GH-6/GH-7/GH-7b ok, итоги 1478/1478 — приложены",
+      "Сравнение с первым красным запуском; критерий 3 назван не выполненным; ничего не отправлено и не перезапущено"
+    ]
+  },
+  "created_at": "2026-10-13T03:31:34Z",
+  "started_at": "2026-10-13T03:31:34Z",
+  "completed_at": "2026-10-13T03:35:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "where": "README.md, строка 177 («Автоматической проверки на GitHub (CI) нет…»); docs/design/REQ-030-github-check.md, п. 5.1 и 7.4",
+        "evidence": "Строка README всё ещё говорит, что проверки на GitHub нет, а запуск check.yml на GitHub есть и зелёный (databaseId 38341830947). По проекту строка правится не раньше успешного П-2 — теперь П-2 успешен.",
+        "fix": "DOC-UPDATER после этого PASS: заменить строку утверждением, что проверка на GitHub есть (со ссылкой на раздел README о проверке). Не блокирует; я файл не правил.",
+        "return_to": "DOC-UPDATER (закрытие ISS-0053)"
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "where": ".claude/agents/release-finalizer.md (слова о приватном репозитории)",
+        "evidence": "gh repo view --json visibility -> PUBLIC (мой запуск); то же сообщил RELEASE-FINALIZER в step-11, issues I1.",
+        "fix": "ORCH поручает DOC-UPDATER поправить слова о приватности там, где они остались; решение 0023 (D1) предусматривает поправку при публичном репозитории. Не блокирует.",
+        "return_to": "ORCH -> DOC-UPDATER"
+      }
+    ],
+    "summary": "PASS по двум вопросам задания: (1) критерий 2 REQ-030 выполнен для последнего коммита main на момент проверки; (2) ISS-0053 можно закрыть словами «причина устранена, есть регрессионный тест; подтверждено зелёным запуском на GitHub (Linux)» — с оговоркой об одном запуске (ниже). Ожидаемый вердикт в задании не назван; вердикт выведен из собственных запусков. Критерий 2 REQ-030: после git fetch origin команда дословно `gh run list --workflow check.yml --branch main --limit 1 --json conclusion,headSha` напечатала conclusion success и headSha 226547d3cdc2fd04373cd26557da86b457279d15; `git rev-parse origin/main` напечатала то же значение (и HEAD того же). Запуск: databaseId 38341830947, событие push, попытка 1, runner ubuntu-24.04, Node v22.23.3, начат 2026-10-13T03:27:57Z, закончен 03:31:03Z (около 3 минут). Это единственный запуск на этом коммите. Критерий выполнен. Журнал успешного запуска (gh run view 38341830947 --log): шаги «Get the code», «Install Node 22», «Install dependencies», «Run the check» — success; в журнале `ok 344 GH-6`, `ok 345 GH-7`, `ok 346 GH-7b` (handoffs-git.test.js); итоги `# tests 1478`, `# pass 1478`, `# fail 0`, `# skipped 0` (также cancelled 0, todo 0); строк `not ok` в журнале 0; в начале проверки traces: следов 0, handoffs-check: нарушений 0. Мой собственный запуск на чистой копии коммита 226547d вне проекта (macOS, не Linux): `npm ci` и `npm run check` — код 0, 1478 из 1478, те же ok у GH-6/GH-7/GH-7b. Сравнение с первым запуском на 02ff306 (databaseId 38331440082): failure, `# tests 1476`, `# pass 1475`, `# fail 1`; упал `not ok 344 GH-6` (handoffs-git.test.js:233) с ошибкой «git не смог выполнить команду (код 0)»; в новом запуске тот же тест 344 зелёный; тестов на два больше (GH-7, GH-7b — новые). Между 02ff306 и 226547d в tools/src и .github изменён только tools/src/handoffs/git-history.js (+3 строки), check.yml не менялся. Рабочее дерево равно HEAD (кроме моего handoff-а). Критерий 3 REQ-030 (красная ветка) НЕ выполнен и не проверялся: согласия владельца на отправку ветки с падающим тестом нет; REQ-030 остаётся in_progress. Критерий 2 привязан к последнему коммиту main: после коммита учёта (DOC-UPDATER, этот handoff) последний коммит main станет другим, и проверку критерия 2 надо повторить для него. Остаточный риск: один зелёный запуск не доказывает отсутствия гонки на Linux. Тест GH-7 детерминирован по построению (ввод 4 МиБ больше любого буфера канала), но повторный запуск того же коммита не делался (gh run rerun не выполнялся: нужно согласие). Раннер — ubuntu-24.04, Node 22, как в check.yml; другие раннеры и версии не проверялись. Запросы к GitHub — только чтение (fetch, run list, run view, repo view); ничего не отправлено, не создано, не перезапущено.",
+    "self_check": [
+      "node -v -> v22.21.1 (локально; в запуске на GitHub Node v22.23.3).",
+      "git fetch origin -> код 0. git rev-parse origin/main HEAD -> 226547d3cdc2fd04373cd26557da86b457279d15 и 226547d3cdc2fd04373cd26557da86b457279d15.",
+      "gh run list --workflow check.yml --branch main --limit 1 --json conclusion,headSha -> [{\"conclusion\":\"success\",\"headSha\":\"226547d3cdc2fd04373cd26557da86b457279d15\"}]",
+      "gh run list --workflow check.yml --branch main --limit 5 --json databaseId,conclusion,headSha,status,event,startedAt,updatedAt -> 38341830947 success completed push 226547d startedAt 2026-10-13T03:27:57Z updatedAt 2026-10-13T03:31:03Z; 38331440082 failure completed push 02ff3069e86750d1789babc08a38a6a7f4306f53 startedAt 2026-10-13T01:17:45Z updatedAt 2026-10-13T01:20:22Z. Полная ссылка на запуск получается командой gh run view <databaseId> --json url (в файл не записана).",
+      "gh run list --commit 226547d3cdc2fd04373cd26557da86b457279d15 -> один запуск: attempt 1, success, push, databaseId 38341830947 (повторных попыток нет).",
+      "gh run view 38341830947 --json jobs -> задание check success 03:28:00Z–03:31:02Z; шаги: 2 Get the code success; 3 Install Node 22 success; 4 Install dependencies success; 5 Run the check success; 9, 10, 11 (Post, Complete job) success. Журнал: Image ubuntu-24.04; node: v22.23.3.",
+      "gh run view 38341830947 --log (в файл вне проекта): `ok 344 - GH-6 an answer of git that cannot be read is E_TRACE_GIT, not a wrong result`; `ok 345 - GH-7 readBlobs: …`; `ok 346 - GH-7b readBlobs: …`; `# tests 1478`, `# suites 0`, `# pass 1478`, `# fail 0`, `# cancelled 0`, `# skipped 0`, `# todo 0`, `# duration_ms 158776`; `traces: файлов проверено 1251, следов 0, пропущено 36`; `handoffs-check: файлов проверено 712, нарушений 0, исключений использовано 114 из 114`. Подсчёт: строк `ok N` — 1478; `not ok` — 0; `# SKIP/# TODO` — 0; `ELIFECYCLE`/`npm error`/`##[error]` — не найдено.",
+      "gh run view 38331440082 --log: `not ok 344 - GH-6 an answer of git that cannot be read is E_TRACE_GIT, not a wrong result` (handoffs-git.test.js:233), `Error: git не смог выполнить команду (код 0)`, `code: 'ERR_ASSERTION'`; итоги `# tests 1476`, `# pass 1475`, `# fail 1`, `# skipped 0`; GH-7 и GH-7b в журнале нет (тестов не было).",
+      "git diff --stat 02ff306 226547d -- .github tools/src tools/package.json tools/package-lock.json -> tools/src/handoffs/git-history.js | 3 +++ (1 file changed, 3 insertions); git diff HEAD вне моего handoff-а пуст (рабочее дерево = HEAD).",
+      "Чистая копия вне проекта: git clone, git checkout 226547d3cdc2fd04373cd26557da86b457279d15; cd tools && npm ci (found 0 vulnerabilities); npm run check -> exit=0; # tests 1478, # pass 1478, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 104018; ok 344 GH-6, ok 345 GH-7, ok 346 GH-7b. macOS, не Linux.",
+      "gh repo view --json visibility -> PUBLIC."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Критерий 2 REQ-030 по проекту (п. 7.4, П-2) выполнен для коммита 226547d. Он привязан к последнему коммиту main: после коммита учёта (закрытие ISS-0053, строка README, этот handoff) нужен ещё один запуск и повторная проверка критерия 2 для нового последнего коммита — тем же шагом, только чтение. Состояние на момент проверки: origin/main = 226547d."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Критерий 3 REQ-030 (красная ветка: отправка ветки с намеренно падающим тестом, failure, удаление ветки) не выполнен и не проверялся: согласия владельца нет. REQ-030 остаётся in_progress (done — после П-2 и П-3, по O1 проекта). Нужно согласие владельца через ORCH."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Остаточный риск (Linux): один зелёный запуск не доказывает отсутствия гонки; GH-7 детерминирован (ввод 4 МиБ больше любого буфера), но повторный запуск того же коммита не делался — gh run rerun требует согласия владельца. Дальнейшие зелёные запуски на следующих коммитах (после коммита учёта) дадут ещё свидетельства без перезапусков. Условие пересмотра решения 0047: если GH-6 или GH-7 снова красные на Linux — вопрос открывается заново."
+      },
+      {
+        "id": "I4",
+        "kind": "FOLLOW_UP",
+        "text": "Для DOC-UPDATER (после этого PASS): закрыть ISS-0053 с итогом «причина устранена, есть регрессионный тест; подтверждено зелёным запуском на GitHub (Linux, ubuntu-24.04, Node 22), databaseId 38341830947; один запуск»; поправить строку README об отсутствии CI (F1); STATE.md и строку README о ISS-0053 — по факту. REQ-030 в done не ставить."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Расхождение документации с фактом: репозиторий публичный (gh repo view -> PUBLIC), а файл роли RELEASE-FINALIZER называет его приватным (F2). Это же замечал RELEASE-FINALIZER в step-11, I1."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Объём моей проверки: это шаг 12 — расширение прогонов REQ030-20261012-01 и ISS-0053-20261013-01 (проверка на GitHub после отправки; в WF-02/WF-03 такого шага нет). Пункты планки Q1–Q14, R1–R3 для всей работы прошёл шаг 9 того же прогона; здесь отмечены применимые к этому шагу: Q2 — свои запуски (выполнено, вывод выше); Q3 — вывод приложен, домыслов нет, остаточный риск назван; Q4 — одна команда проверки прошла на GitHub и на чистой копии, код 0; Q6 — шагов не убрано, check.yml между коммитами не менялся, skipped 0; Q7 — в файлы шага адрес и имя владельца репозитория, полные ссылки на запуски и пути компьютера не записаны (только databaseId); Q14 — учёт отстаёт ожидаемо (F1, I4), правит DOC-UPDATER; R1 — мерж/отправка не выполнялись мной, только чтение GitHub. Q5, Q8–Q11, R2, R3 — неприменимы к этому шагу (нового кода и путей к данным нет); Q12 — решение 0047 не нарушено (критерий условия пересмотра проверен: GH-6/GH-7 зелёные); Q1, Q13 — вне шага (Q13: урок про Linux записан раньше)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
