@@ -95,7 +95,7 @@
 | Приёмка | BA-ANALYST пишет сценарии и подписывает итог; UAT-RUNNER прогоняет их на запущенной системе | RELEASE-VALIDATOR |
 | Интерфейс | FRONTEND-DEV по описанию интерфейса | DESIGN-QA-VALIDATOR — снимок страницы против утверждённого образца |
 | Итоговая проверка | — | RELEASE-VALIDATOR — сам перепроверяет каждый критерий и планку |
-| Учёт и выпуск | DOC-UPDATER — статусы, `STATE.md`, журнал ошибок; RELEASE-FINALIZER — коммит и отчёт о выпуске (у Sai свой приватный репозиторий на GitHub, `PLAN.md`, шаг 2f; порядок — WF-02, шаг 11) | ORCH сверяет файлы и поля; мерж — только с подтверждения владельца (R1) |
+| Учёт и выпуск | DOC-UPDATER — статусы, `STATE.md`, журнал ошибок; RELEASE-FINALIZER — коммит и отчёт о выпуске (у Sai свой репозиторий на GitHub (открыт намеренно, `decisions/0048`), `PLAN.md`, шаг 2f; порядок — WF-02, шаг 11) | ORCH сверяет файлы и поля; мерж — только с подтверждения владельца (R1) |
 | Дефекты | ISSUE-FIXER — диагноз причины | CODE-DESIGN-VALIDATOR (проект исправления), TEST-DESIGN-VALIDATOR (тест падает до исправления) |
 | Аудит | AUDIT-SCOUT → AUDIT-PLANNER → аудиторы SECURITY-AUDITOR, DEPENDENCY-AUDITOR, ARCHITECTURE-AUDITOR, COVERAGE-AUDITOR, DOC-AUDITOR и RELEASE-VALIDATOR (перепроверка требований в статусе `done`) → AUDIT-COMPILER → AUDIT-TRIAGE (заводит дефекты) → DOC-UPDATER (учёт) | AUDIT-COMPILER перепроверяет находки Critical и High; сводку, снятые находки, дефекты и учёт сверяет ORCH |
 | Выбор идеи | IDEA-ANALYST ×3 → IDEA-JUDGE | аналитики проверяют друг друга; VERDICT-EXECUTOR перепроверяет вердикт |

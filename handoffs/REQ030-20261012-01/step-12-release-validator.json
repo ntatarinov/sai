@@ -1,0 +1,96 @@
+{
+  "handoff_id": "step12-REQ030-20261012-01",
+  "run_id": "REQ030-20261012-01",
+  "workflow_id": "WF-02",
+  "step": "12",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/REQ030-20261012-01/step-12-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-030"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-030-github-check.md (r4; п. 7.4)",
+      "docs/requirements.yaml (блок REQ-030, критерии 2 и 3)",
+      "decisions/0048-owner-delegates-open-points-repo-public.md",
+      "decisions/0045-github-check-pins-history-hook.md",
+      ".github/workflows/check.yml",
+      "handoffs/REQ030-20261012-01/step-09-release-validator.json",
+      "docs/quality-bar.md"
+    ],
+    "route": "RELEASE-VALIDATOR (этот, шаг 12 REQ-030) -> DOC-UPDATER (REQ-030 done, README) -> RELEASE-FINALIZER",
+    "write_set": [
+      "нет: пишет только result своего handoff-а; копия и красный файл — вне проекта; на GitHub: ТОЛЬКО ветка check-red-REQ030-20261012 (создать и удалить)"
+    ],
+    "base_tag": "base/REQ030-20261012-01"
+  },
+  "task": {
+    "description": "Шаг 12 прогона REQ030-20261012-01 (расширение: проверка критерия 3 после отправки). РАЗРЕШЕНИЕ ВЛАДЕЛЬЦА: слова 2026-10-13 дословно: «Репозиторий в GitHub я специально открыл. А все остальное сам реши, пожалуйста. Два три четыре пять пункт. Я тебе доверяю.» и решение decisions/0048 (граница: временная ветка создаётся, проверяется и УДАЛЯЕТСЯ в том же шаге; больше ничего на GitHub не создавать; других веток и меток не отправлять; настройки репозитория не менять; ветка защищена? — защита ТОЛЬКО main; именно ветка check-red-… не защищена). Выполни шаги П-3 и П-3b проекта docs/design/REQ-030-github-check.md п. 7.4 в редакции r4 ТОЧНО: (1) подготовка в рабочем репозитории (только чтение): git remote get-url origin (адрес в файлы не писать), git fetch origin, git rev-parse origin/main (ожидается последний коммит main), gh run list --workflow check.yml --branch main --limit 1 --json conclusion,headSha,status,databaseId — критерий 2 для последнего коммита main зелёный (если уже есть новые коммиты — отметь); (2) копия: git clone рабочего репозитория (локальная папка) в <scratch>/red вне проекта, затем в копии git remote set-url origin на адрес из рабочего репозитория, проверь совпадение адресов ПЕРЕД отправкой (иначе стоп); core.hooksPath в копии не задан; (3) красный файл: добавь в копии ТЕСТ, который намеренно падает (например tools/test/zz-red-req030.test.js с одним падающим test()), отформатированный prettier и проходящий lint (cd tools && npm ci в копии при необходимости; format:check, lint, traces и handoffs-check в копии — код 0, npm test — код не 0; handoffs-check требует полной истории — копия полная); ветка check-red-REQ030-20261012 от текущего main, один коммит (git commit в копии), personal git identity не нужна — задай локально в копии; (4) git push origin check-red-REQ030-20261012 ТОЛЬКО эту ветку; (5) жди запуск: gh run list --workflow check.yml --branch check-red-REQ030-20261012 --limit 1 --json databaseId,status,conclusion,headSha (повторяй раз в минуту не дольше 15 минут): conclusion failure; gh run view <databaseId> --json jobs: шаги «Get the code», «Install Node 22», «Install dependencies» — success, «Run the check» — failure; gh run view <databaseId> --log-failed: в журнале `not ok` у zz-red-req030 (упал именно тест, не установка); запиши databaseId (без полной ссылки и без адреса); (6) П-3b: из копии git push origin --delete check-red-REQ030-20261012, затем В ПРОЕКТЕ git ls-remote --heads origin check-red-REQ030-20261012 — вывод пуст; git branch -a в проекте без check-red-…; (7) убедись, что на main ничего не изменилось (git rev-parse origin/main прежний), список веток удалённого — только main; метки не отправлялись; (8) копию и файлы оставь вне проекта (в scratch). Если что-то не вышло (адрес не совпал, установка упала, ветка не удалилась) — остановись, запиши причину; ветку, если она создана, удали обязательно; ничего не обходи. В handoff — result: критерий 3 выполнен/не выполнен с выводами. Пути компьютера, адрес и имя владельца репозитория GitHub и полные ссылки в файлы не писать.",
+    "acceptance_criteria": [
+      "Критерий 3: ветка с падающим тестом отправлена, запуск failure, упал шаг «Run the check» с not ok теста, ветка удалена (ls-remote из проекта пуст)",
+      "Адрес origin копии совпал с адресом проекта до отправки; main не изменён; других веток и меток нет",
+      "Критерий 2 для последнего коммита main подтверждён командой"
+    ]
+  },
+  "created_at": "2026-10-13T08:03:52Z",
+  "started_at": "2026-10-13T08:03:52Z",
+  "completed_at": "2026-10-13T08:11:45Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "ВЕРДИКТ: PASS по шагу 12 (критерии 2 и 3 REQ-030). Всё выведено из моих собственных запусков в этом ходе; ожидаемого вердикта в задании не было (AP-018 не применяется).\n\nКритерий 2 (проверка проходит на GitHub): ВЫПОЛНЕН. git fetch origin; git rev-parse origin/main = 46d269e88bcca4b15f8d7602a34b51a2aa047d32 (это же HEAD рабочего репозитория, новых коммитов на main нет). gh run list --workflow check.yml --branch main --limit 1: conclusion success, status completed, headSha = тот же хеш, databaseId 38343012705. Шаги запуска (gh run view --json jobs): Get the code, Install Node 22, Install dependencies, Run the check — все success. Запуск шёл около 3 минут (03:43:00 -> 03:45:53 UTC). Критерий 2 для последнего коммита main (после коммита учёта 46d269e) подтверждён, а не только для 226547d.\n\nКритерий 3 (красная проверка видна): ВЫПОЛНЕН. Копия: git clone рабочего репозитория в <scratch>/red, origin копии заменён на адрес origin проекта; адреса совпали (сравнение строк = ADDR_MATCH) перед отправкой и ещё раз перед удалением; core.hooksPath в копии не задан (пусто), копия полная (is-shallow false, 99 коммитов). Ветка check-red-REQ030-20261012 от main (46d269e), один коммит 2aa6d53, один новый файл tools/test/zz-red-req030.test.js с одним тестом, который падает (assert.fail). До отправки в копии: npm ci (0 уязвимостей), format:check -> 0, lint -> 0, traces -> 0 (файлов 1255, следов 0), handoffs-check -> 0 (файлов 715, нарушений 0, исключений 114 из 114), npm test -> код 1 (тестов 1479, прошло 1478, упал 1: именно zz-red-req030). Отправлено только git push origin check-red-REQ030-20261012. Красный запуск: databaseId 38367101878, headSha 2aa6d53cb5602789d146dcfbde2c797b99ff5e6a = коммит ветки, status completed, conclusion failure. Шаги: Get the code success, Install Node 22 success, Install dependencies success, Run the check FAILURE (Post Install Node 22 skipped — следствие падения). В журнале упавшего шага (gh run view --log-failed): `not ok 1479 - zz-red-req030: ...`, `# tests 1479`, `# pass 1478`, `# fail 1`, `Process completed with exit code 1`. То есть упал именно тест, а не установка, форматирование или lint. Ветка удалена: git push origin --delete check-red-REQ030-20261012 -> [deleted]; в проекте git ls-remote --heads origin check-red-REQ030-20261012 -> пусто; git ls-remote --heads origin -> только main (46d269e); меток на удалённом 0; git branch -a в проекте без check-red-...; git for-each-ref refs/heads | grep -c check-red -> 0; после git fetch --prune origin/main прежний (46d269e); gh api списка веток -> main.\n\nПланка (проход по пунктам, насколько они касаются этого шага): Q1 PASS — работа привязана к REQ-030, у критериев 2 и 3 записан способ проверки (команды), выполнены как записаны. Q2 PASS — все команды запущены мной, не пересказ шага 11 и предыдущих. Q3 PASS — приложены настоящие выводы, без «должно работать». Q4 PASS — шаги команды check (format:check, lint, traces, handoffs-check, test) выполнены мной по одному на копии main+1 файл: всё 0, кроме намеренного красного теста; и на GitHub полная команда npm run check на main 46d269e — success (databaseId 38343012705). Q5 неприменим к этому шагу: критерии 2 и 3 по проекту п. 7.4 — шаги после отправки, не автотесты. Q6 PASS — красный тест существовал только на временной ветке, не в main и не в рабочем дереве; ни skip, ни || true, ни отключений не добавлялось; check.yml не менялся (красной сделана настоящая проверка, не обходом). Q7 PASS — секретов не записано; адрес, имя владельца репозитория, полные ссылки и пути компьютера в handoff не записаны (только числовые databaseId). Q8, Q9, Q10, Q11, R3 неприменимы: данные клиентов, SQL, внешние вызовы клиентских адресов и фото людей не затронуты. Q12 PASS — сделано в границах decisions/0048 (одна временная ветка, создана и удалена в шаге, настройки репозитория не менялись, других веток и меток нет) и решений 0045, 0023; расхождений нет. Q13 PASS — новых ошибок процесса не найдено. Q14 — не моя запись: статус REQ-030 и README меняет DOC-UPDATER после моего PASS; в работе: рабочее дерево проекта не менялось (git status: те же M decisions/README.md и два нетронутых мной новых файла до моего handoff-а), это handoff шага 12. R1 PASS — ничего не слито и не отправлено в main; отправлялась и удалялась только временная ветка. R2 неприменим — события Pixel Office не затрагивались.\n\nПростыми словами: на последнем коммите main проверка на GitHub зелёная; намеренно сломанный тест на временной ветке сделал запуск красным именно на шаге «Run the check» (в журнале not ok теста), после чего ветка удалена, main и список веток прежние.",
+    "findings": [],
+    "self_check": [
+      "date -u: старт 2026-10-13T08:04:09Z; node -v -> v22.21.1",
+      "git fetch origin; git rev-parse HEAD -> 46d269e88bcca4b15f8d7602a34b51a2aa047d32; git rev-parse origin/main -> тот же хеш; git branch -a -> main, remotes/origin/HEAD, remotes/origin/main; git ls-remote --heads origin -> только refs/heads/main (тот же хеш); git ls-remote --tags origin | wc -l -> 0",
+      "gh run list --workflow check.yml --branch main --limit 3 --json conclusion,headSha,status,databaseId -> [{success, 38343012705, headSha 46d269e88bcca4b15f8d7602a34b51a2aa047d32, completed}, {success, 38341830947, 226547d3cdc2fd04373cd26557da86b457279d15}, {failure, 38331440082, 02ff3069e86750d1789babc08a38a6a7f4306f53 — прежний красный запуск до исправления ISS-0053}]",
+      "gh run view 38343012705 --json jobs -> шаги Set up job, Get the code, Install Node 22, Install dependencies, Run the check, Post Install Node 22, Post Get the code, Complete job — все success",
+      "git clone <корень Sai> <scratch>/red; git -C <scratch>/red remote set-url origin \"$(git remote get-url origin)\" (внутренняя команда в проекте); сравнение адресов -> ADDR_MATCH; git config --get core.hooksPath в копии -> пусто; git rev-parse --is-shallow-repository -> false; git log --oneline | wc -l -> 99",
+      "<scratch>/red: git checkout -b check-red-REQ030-20261012; создан tools/test/zz-red-req030.test.js (один test с assert.fail); git add этого файла; локально git config user.name/user.email в копии",
+      "cd <scratch>/red/tools && caffeinate -i npm ci -> found 0 vulnerabilities",
+      "caffeinate -i npm run format:check -> код 0 (All matched files use Prettier code style!); npm run lint -> код 0; npm run traces -> код 0 (traces: файлов проверено 1255, следов 0, пропущено 36); npm run handoffs-check -> код 0 (handoffs-check: файлов проверено 715, нарушений 0, исключений использовано 114 из 114)",
+      "caffeinate -i npm test -> код 1; `not ok 1479 - zz-red-req030: intentionally failing test for the CI red-check proof`; `# tests 1479`, `# pass 1478`, `# fail 1`",
+      "git commit -> 2aa6d53cb5602789d146dcfbde2c797b99ff5e6a (один коммит, рабочее дерево копии чистое); сравнение адреса origin копии с адресом проекта перед отправкой -> ADDR_MATCH_BEFORE_PUSH",
+      "08:07:03Z-08:07:06Z: git push origin check-red-REQ030-20261012 -> `[new branch] check-red-REQ030-20261012 -> check-red-REQ030-20261012` (отправлена только эта ветка)",
+      "gh run list --workflow check.yml --branch check-red-REQ030-20261012 --limit 1 --json databaseId,status,conclusion,headSha (раз в минуту): 08:07:10 queued; 08:08:11 in_progress; 08:09:13 in_progress; 08:10:14 -> {conclusion failure, databaseId 38367101878, headSha 2aa6d53cb5602789d146dcfbde2c797b99ff5e6a, status completed}; ожидание около 3 минут из 15",
+      "gh run view 38367101878 --json jobs --jq '.jobs[].steps[] | [.name,.conclusion] | @tsv' -> Set up job success; Get the code success; Install Node 22 success; Install dependencies success; Run the check failure; Post Install Node 22 skipped; Post Get the code success; Complete job success",
+      "gh run view 38367101878 --log-failed | grep -n 'not ok|zz-red|# fail|# pass|# tests|Process completed' -> `not ok 1479 - zz-red-req030: intentionally failing test for the CI red-check proof`; location tools/test/zz-red-req030.test.js:4:1 на раннере; `# tests 1479`; `# pass 1478`; `# fail 1`; `##[error]Process completed with exit code 1.`",
+      "сравнение адреса origin копии с адресом проекта перед удалением -> ADDR_MATCH_BEFORE_DELETE; git push origin --delete check-red-REQ030-20261012 -> `- [deleted] check-red-REQ030-20261012`",
+      "в проекте: git ls-remote --heads origin check-red-REQ030-20261012 -> пусто; git ls-remote --heads origin -> `46d269e88bcca4b15f8d7602a34b51a2aa047d32 refs/heads/main` (одна строка); git ls-remote --tags origin | wc -l -> 0; git branch -a -> main, remotes/origin/HEAD, remotes/origin/main; git for-each-ref refs/heads | grep -c check-red -> 0; git fetch origin --prune; git rev-parse origin/main -> 46d269e88bcca4b15f8d7602a34b51a2aa047d32 (прежний); gh api repos/:owner/:repo/branches --jq '.[].name' -> main",
+      "git status --short в проекте после шага -> ` M decisions/README.md`, `?? decisions/0048-owner-delegates-open-points-repo-public.md`, `?? handoffs/REQ030-20261012-01/step-12-release-validator.json` (то же, что до шага; мной файлы проекта не менялись); ls tools/test | grep -c zz-red -> 0 в проекте",
+      "копия и вывод команд оставлены вне проекта в <scratch> (red/, out-*.txt); после записи result: cd tools && npm run handoffs-check -> код 0 (handoffs-check: файлов проверено 716, нарушений 0, исключений использовано 114 из 114); затем handoff закрыт командой close"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Имя красного файла — tools/test/zz-red-req030.test.js (по заданию), а в п. 7.4 проекта стоит zz-red.test.js; на смысл проверки не влияет (в журнале `not ok` теста zz-red-req030). ORCH может поправить пример в п. 7.4 при случае."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Красный запуск 38367101878 остаётся в истории запусков GitHub (удаление ветки запись запуска не стирает; удалять запуск я не вправе — граница задания и 0048). Красный запуск мог послать владельцу письмо GitHub о падении (V1 проекта); ORCH стоит сказать об этом владельцу вместе с итогом."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "Клон взят из рабочего репозитория, то есть из закоммиченного состояния (HEAD 46d269e): неотправленные файлы рабочего дерева (decisions/0048, правка decisions/README.md, этот handoff) в красную ветку не попали и на запуск не влияли. Критерий 2 относится к коммиту 46d269e; если ORCH сделает новый коммит учёта в main, повторить `gh run list --workflow check.yml --branch main --limit 1` для него (запись в requirements.yaml уже говорит об этом)."
+      },
+      {
+        "id": "I4",
+        "kind": "RISK",
+        "text": "Остаточное: ни зелёный, ни красный запуск не проверяют обязательность проверки перед мержем (защита main — отдельный пункт 0048, этим шагом не затрагивалась; список веток на удалённом: только main)."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Время запусков GitHub: зелёный main 03:43:00 -> 03:45:53Z (около 3 мин), красный 08:07:10 -> 08:10:00Z (около 3 мин) — для остаточного риска 2 проекта."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
