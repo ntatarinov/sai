@@ -491,3 +491,66 @@ export function hitTest(positions, px, py) {
   });
   return best;
 }
+
+// The width of the caption of every character, measured with the font of the
+// canvas at the moment of a click (design D8). A character whose caption
+// cannot be measured is left out: its caption is not hit. Never throws.
+export function labelWidths(ctx, office) {
+  const out = new Map();
+  if (ctx === null || ctx === undefined) return out;
+  try {
+    ctx.font = LABEL_FONT;
+  } catch {
+    // A context that refuses the font measures nothing.
+    return out;
+  }
+  for (const c of office.characters) {
+    let width;
+    try {
+      width = ctx.measureText(c.label).width;
+    } catch {
+      continue;
+    }
+    if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) {
+      continue;
+    }
+    out.set(c.key, Math.min(width, LABEL_MAX_WIDTH));
+  }
+  return out;
+}
+
+// What a click opens (REQ-044, criterion 1): 1) a character (drawn on top of
+// everything); 2) the caption of a character, drawn at the character (of
+// several the one drawn last, on top); 3) a cell of a desk — the 2 x 2 block
+// with the laptop or the seat — gives the character of that desk. The cell of
+// approach is floor. Else null.
+export function hitOffice(office, positions, px, py, widths) {
+  if (typeof px !== "number" || typeof py !== "number") return null;
+  if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
+  const character = hitTest(positions, px, py);
+  if (character !== null) return character;
+  let caption = null;
+  for (const p of positions) {
+    const w = widths instanceof Map ? widths.get(p.key) : undefined;
+    if (typeof w !== "number" || !(w > 0)) continue;
+    const X = Math.round(p.x * CELL);
+    const Y = Math.round(p.y * CELL);
+    const left = X + 12 - w / 2 - LABEL_PLATE_PAD;
+    const right = X + 12 + w / 2 + LABEL_PLATE_PAD;
+    const top = Y + 31 - LABEL_ASCENT;
+    const bottom = Y + 31 + LABEL_DESCENT;
+    if (px >= left && px < right && py >= top && py < bottom) caption = p.key;
+  }
+  if (caption !== null) return caption;
+  const cx = Math.floor(px / CELL);
+  const cy = Math.floor(py / CELL);
+  for (const desk of office.desks) {
+    const spot = office.layout.desks[desk.index];
+    if (spot === undefined) continue;
+    const [bx, by] = spot.block;
+    const inBlock = cx >= bx && cx <= bx + 1 && cy >= by && cy <= by + 1;
+    const onSeat = cx === spot.seat[0] && cy === spot.seat[1];
+    if (inBlock || onSeat) return desk.key;
+  }
+  return null;
+}

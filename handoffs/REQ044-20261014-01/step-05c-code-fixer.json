@@ -1,0 +1,144 @@
+{
+  "handoff_id": "step05c-REQ044-20261014-01",
+  "run_id": "REQ044-20261014-01",
+  "workflow_id": "WF-02",
+  "step": "05c",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/REQ044-20261014-01/step-05c-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-036", "REQ-045", "REQ-044"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-036-044-045-interactive.md (п. 3.13, 8.2)",
+      "handoffs/REQ044-20261014-01/step-01c-code-design-validator-r2.json",
+      "handoffs/REQ044-20261014-01/step-04-reviewer.json",
+      "decisions/0056-pixel-office-mask-all-text-fields.md",
+      "tools/src/pixel-office/"
+    ],
+    "route": "TEST-DESIGNER (шаг 5, открыт) -> CODE-FIXER 5c (этот) -> SECURITY-REVIEWER (повтор) -> REVIEWER (повтор) -> TEST-DESIGNER (дописывает NM-06, MK-01…05) -> 5b -> 6",
+    "write_set": [
+      "tools/src/pixel-office/protocol.js",
+      "tools/src/pixel-office/public/texts.js",
+      "tools/src/pixel-office/public/model.js",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/instance-card.js",
+      "tools/src/pixel-office/public/style.css"
+    ],
+    "base_tag": "base/REQ044-20261014-01",
+    "parallel_work_now": "TEST-DESIGNER (шаг 5) держит handoff открытым, файлы тестов сейчас не правит",
+    "orch_check": {
+      "at": "2026-10-14T15:39:59Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "пункты (1)–(5) сделаны (по result); изменены protocol.js, texts.js, model.js, app.js, instance-card.js, style.css — в write_set; тесты не тронуты",
+        "check 1546/1546 код 0 по result; F3 замерен в браузере (749 px при крае 755); одна замена сверх ревью того же рода (itemInto → showsAge) — на оценку повторного ревью"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5c — CODE-FIXER по проекту docs/design/REQ-036-044-045-interactive.md, п. 8.2 (прошёл ворота: handoffs/REQ044-20261014-01/step-01c-code-design-validator-r2.json) и находкам ревью F1–F3 (handoffs/REQ044-20261014-01/step-04-reviewer.json). Сделай ровно это: (1) удалить устаревшие экспорты EVENT_LABELS и CARD_WORKING из tools/src/pixel-office/public/texts.js (страница их не использует; тесты больше не импортируют — проверь grep по tools/); (2) D14 / п. 3.13: маскирование description, subagent_type, agent_type через maskSecrets в tools/src/pixel-office/protocol.js — в buildWriteBody (хук; описание через prepareText(…, PROMPT_SCAN_MAX, 100), роли через новую maskField(value, 128) после прежней проверки длины исходного значения) и в validateWriteBody (сервер; maskField для всех трёх полей); сначала маскировать, потом резать до предела схемы; идентификаторы не маскировать; server.js, hook.js, mask.js, schema.js не менять; (3) F1: общие функции showsSessionEvent и showsAge в public/model.js вместо повторов в app.js (около 176, 1386) и instance-card.js (около 80–82) — поведение то же; (4) F2: убрать лишний аргумент в трёх вызовах openCard (app.js около 628, 1848, 2323); (5) F3: margin-top у .card-unknown 0,75 rem → 0,375 rem (style.css); замер худшего случая в окне 1470×784 в браузере на стенде вне проекта: фраза «Ошибки и ожидание человека…» не обрезана. Больше ничего не менять. Тесты (tools/test/**) не трогать — дописывать будет TEST-DESIGNER. После: npm run lint, npm run format:check (чисто), npm run check под caffeinate -i — настоящий вывод; ожидание: зелёно (если краснеет тест хука/сервера из-за маскирования — назови с разделом проекта; проект утверждает, что красных не будет). В result.changes — каждая правка с номером пункта. Время — date -u. Пути компьютера и названия чужих проектов не писать. Запрещены git checkout/reset/stash/clean. Закрой через close.",
+    "acceptance_criteria": [
+      "Пункты (1)–(5) сделаны ровно по проекту; ничего сверх",
+      "lint, format:check чистые; npm run check — настоящий вывод; F3 замерен в браузере"
+    ]
+  },
+  "created_at": "2026-10-14T15:34:26Z",
+  "started_at": "2026-10-14T15:34:26Z",
+  "completed_at": "2026-10-14T15:39:21Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Пункты (1)–(5) сделаны по проекту (п. 3.13, 8.2) и находкам ревью F1–F3, больше ничего не менялось. Устаревшие EVENT_LABELS и CARD_WORKING удалены. Описание и роли теперь маскируются в хуке и на сервере (D14, maskField), идентификаторы — нет. Проверки состояний вынесены в showsSessionEvent и showsAge в model.js. Лишние аргументы openCard убраны. Отступ .card-unknown уменьшен до 0,375 rem. Замер на стенде, окно 1470×784, худший случай: нижний край фразы «Ошибки и ожидание человека…» был 761,3 px, стал 749,3 px при крае тела карточки 755 px. lint и format:check чистые. npm run check под caffeinate -i: код 0, 1546 тестов, все зелёные.",
+    "changes": [
+      {
+        "item": "1",
+        "file": "tools/src/pixel-office/public/texts.js",
+        "where": "экспорт EVENT_LABELS (перед EVENT_TABLE) и CARD_WORKING (раздел card)",
+        "what": "Оба экспорта удалены вместе с комментариями «Obsolete». grep -rn 'EVENT_LABELS\\|CARD_WORKING' tools/src/pixel-office/ tools/test/ -> пусто (код 1). Поиск семи старых слов критерия 1 REQ-045 по public/ -> пусто (код 1)."
+      },
+      {
+        "item": "2 (D14, п. 3.13)",
+        "file": "tools/src/pixel-office/protocol.js",
+        "where": "новая export function maskField(value, limit); buildWriteBody; новая константа MASKED_FIELDS и цикл в validateWriteBody; импорт DESCRIPTION_MAX вместо truncateDescription",
+        "what": "maskField = firstCodePoints(maskSecrets(value), limit). В хуке agent_type и subagent_type маскируются через maskField(…, ID_MAX) после прежней проверки takeString на исходном значении (длиннее 128 — событие отбрасывается, как раньше). Описание идёт через prepareText(input.description, PROMPT_SCAN_MAX, DESCRIPTION_MAX).text: сначала маскирование, потом обрезка; пустое или из одних пробелов — ключа нет. На сервере description, subagent_type и agent_type проходят maskField с пределом схемы после checkLine. Идентификаторы и prompt_text не тронуты. server.js, hook.js, mask.js и schema.js не менялись."
+      },
+      {
+        "item": "3 (F1)",
+        "file": "tools/src/pixel-office/public/model.js",
+        "where": "после UNCONFIRMED_STATES",
+        "what": "Добавлены export function showsSessionEvent(state) (in_progress или UNCONFIRMED_STATES) и export function showsAge(state) (in_progress или stale)."
+      },
+      {
+        "item": "3 (F1)",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "импорт из model.js; удалена локальная hasSessionEvent; itemInto, taskBasis, resultOf",
+        "what": "hasSessionEvent удалена, её два вызова (itemInto, resultOf) заменены на showsSessionEvent. Литерал in_progress || stale в taskBasis заменён на showsAge. Ещё одно место того же рода в itemInto — проверка item.state !== \"restarted\" внутри ветки showsSessionEvent — заменено на showsAge(item.state): в этой ветке условия равносильны (AP-014). Импорт UNCONFIRMED_STATES из app.js убран (больше не нужен). Поведение не изменилось."
+      },
+      {
+        "item": "3 (F1)",
+        "file": "tools/src/pixel-office/public/instance-card.js",
+        "where": "instanceItem (withSession, withAge); импорт",
+        "what": "withSession = showsSessionEvent(item.state), withAge = showsAge(item.state); UNCONFIRMED_STATES больше не импортируется. grep -n 'hasSessionEvent\\|=== \"stale\"' app.js instance-card.js -> пусто (код 1)."
+      },
+      {
+        "item": "4 (F2)",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "кнопка легенды (openCard(c.key, c.key)), selectCharacter и onCanvasClick (openCard(key, null))",
+        "what": "Во всех трёх вызовах убран второй аргумент, сигнатура openCard(key)."
+      },
+      {
+        "item": "5 (F3)",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".card-unknown",
+        "what": "margin-top: 0.75rem -> 0.375rem, шрифт не менялся. Замер в браузере: таблица в self_check."
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-14T15:34:31Z, перед записью result 2026-10-14T15:38:46Z",
+      "grep -rn 'EVENT_LABELS\\|CARD_WORKING' tools/src/pixel-office/ tools/test/ -> пусто, код 1",
+      "grep -rnE 'субагент запущен|субагент закончил|вызов субагента|запрос отправлен|ответ закончен|сессия началась|сессия закончилась' tools/src/pixel-office/public/ -> пусто, код 1",
+      "grep -n 'hasSessionEvent\\|=== \"stale\"' tools/src/pixel-office/public/app.js tools/src/pixel-office/public/instance-card.js -> пусто, код 1",
+      "проба п. 3.13 (скрипт вне проекта; buildWriteBody/validateWriteBody из protocol.js). Хук, PostToolUse с секретом во всех трёх полях: agent_type «Plan [скрыто]», subagent_type «Plan password=[скрыто]», description «ключ [скрыто] password=[скрыто]»; идентификаторы s1/t1/a1 без изменений. Сервер, тело в обход хука: agent_type «x password=[скрыто]», subagent_type «Plan [скрыто]», description «ключ [скрыто] password=[скрыто]», source REAL. Сервер, тело после хука: без изменений (двойное маскирование безвредно). Роль 124 знака, которую маскирование удлиняет: срезана до 128 кодовых точек, событие не отброшено. Описание из одних пробелов: ключа нет. Поиск sk-ant-abc|primer42|=ab\" в выводе -> false",
+      "cd tools && npm run lint -> eslint . --max-warnings 0, код 0, без замечаний",
+      "cd tools && npm run format:check -> All matched files use Prettier code style!, код 0",
+      "cd tools && caffeinate -i npm run check -> format:check чисто; lint чисто; traces: файлов проверено 1379, следов 0, пропущено 36; handoffs-check: файлов проверено 799, нарушений 0, исключений использовано 114 из 114; test: # tests 1546 # pass 1546 # fail 0 # skipped 0 # todo 0; код 0",
+      "F3, стенд вне проекта: копия tools/src и package.json, свой каталог состояния 0700, порт 4811. Сервер запущен на пустом журнале, затем дописаны 7 строк REAL со временем 25 ч назад: SessionStart; три запуска с описанием 100 знаков — PLAN-VALIDATOR (1 экземпляр), SECURITY-REVIEWER (2 экземпляра). Все задачи «нет свежих данных», возраст «1 сут … назад». Браузер: chrome-headless-shell по CDP, окно 1470×784, карточка открыта кнопкой легенды, прокрутка тела 0",
+      "F3, замер. Две колонки (SECURITY-REVIEWER, худший случай): при 0,75 rem (прежнее, проверено на копии) нижний край второй фразы 761,3 px — обрезана, как у ревьюера; при 0,375 rem — 749,3 px, первая фраза 693,8–726,8 px; нижний край тела .card-body 755 px — фраза видна целиком (снимок проверен глазами). Одна колонка (PLAN-VALIDATOR): 661,5 px при крае 755 px",
+      "стенд остановлен: порт 4811 не слушается (lsof код 1), процессов браузера с профилем стенда нет (pgrep код 1)",
+      "git status --short: тесты (tools/test/**) и файлы вне write_set этим шагом не менялись; изменения в tools/test — работа TEST-DESIGNER на шаге 5"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "OBSERVATION",
+        "text": "F3: после правки вторая фраза кончается на 749,3 px, это внутри нижнего отступа тела карточки (24 px) и на 5,7 px выше его края. Видна целиком, но запаса почти нет: если в худший случай добавится ещё одна строка левой колонки (длиннее слово возраста, третий экземпляр не влияет), фраза снова уйдёт за край. Описание интерфейса, п. 7.5, приводит GUI-DESIGN-ANALYST (вопрос О17); DESIGN-QA-VALIDATOR и UAT-RUNNER меряют этот же худший случай."
+      },
+      {
+        "id": "I2",
+        "kind": "OBSERVATION",
+        "text": "D14 меняет поведение хука и для описания из одних пробелов: раньше оно записывалось как есть, теперь ключа нет (prepareText, «пусто или одни пробелы → ключа нет» по п. 3.13). Принятые тесты зелёные (HK-05 и тесты маскирования prompt_text). Тесты на новое поведение (часть NM-06 с секретом, MK-01…MK-05) дописывает TEST-DESIGNER после повторов шагов 3–4."
+      },
+      {
+        "id": "I3",
+        "kind": "OBSERVATION",
+        "text": "F1: кроме мест, которые назвало ревью, общая функция стоит ещё в одном месте того же рода в app.js — itemInto, item.state !== \"restarted\" внутри ветки showsSessionEvent → showsAge(item.state). Внутри этой ветки условия равносильны, поведение не изменилось. Другие сравнения с одним состоянием (app.js, ветка restarted в taskBasis; instance-card.js, server_start_at; panels.js, in_progress) — не перечень, а одно состояние; не менялись."
+      },
+      {
+        "id": "I4",
+        "kind": "OBSERVATION",
+        "text": "Документы с описанием удалённых EVENT_LABELS и CARD_WORKING (docs/design/REQ-001-pixel-office.md, REQ-008-history-view.md, REQ-008-history.md) — работа DOC-UPDATER до шага 9 (п. 8.2, раздел 12 проекта). Здесь не правились."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/protocol.js",
+      "tools/src/pixel-office/public/texts.js",
+      "tools/src/pixel-office/public/model.js",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/instance-card.js",
+      "tools/src/pixel-office/public/style.css"
+    ]
+  }
+}

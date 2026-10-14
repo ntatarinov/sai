@@ -31,6 +31,18 @@ export const ITEM_STATES = Object.freeze([
 ]);
 export const UNCONFIRMED_STATES = Object.freeze(["stale", "restarted"]);
 
+// An item that shows the last event of its session: in progress or one of the
+// states the journal does not confirm (stale, restarted).
+export function showsSessionEvent(state) {
+  return state === "in_progress" || UNCONFIRMED_STATES.includes(state);
+}
+
+// An item that shows the age of that event: in progress or stale. After a
+// server start the age says nothing about the work, so restarted has none.
+export function showsAge(state) {
+  return state === "in_progress" || state === "stale";
+}
+
 // The age of a time written as text against the clock of the page: null if
 // either is not readable, otherwise not below zero (a clock that went back
 // gives 0).

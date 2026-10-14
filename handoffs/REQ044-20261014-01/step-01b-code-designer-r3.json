@@ -1,0 +1,139 @@
+{
+  "handoff_id": "step01b-r3-REQ044-20261014-01",
+  "run_id": "REQ044-20261014-01",
+  "workflow_id": "WF-02",
+  "step": "01b",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/REQ044-20261014-01/step-01b-code-designer-r3.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-036"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ044-20261014-01/step-05-test-designer.json",
+      "docs/design/REQ-036-044-045-interactive.md",
+      "docs/requirements.yaml (REQ-036 критерий 6)",
+      "tools/src/pixel-office/protocol.js",
+      "tools/src/pixel-office/server.js",
+      "tools/src/pixel-office/mask.js",
+      "handoffs/REQ044-20261014-01/step-04-reviewer.json"
+    ],
+    "route": "TEST-DESIGNER BLOCKED -> CODE-DESIGNER r3 (этот) -> CODE-DESIGN-VALIDATOR -> 5c CODE-FIXER -> 3, 4 -> 5 (TEST-DESIGNER дописывает) -> 5b -> 6",
+    "write_set": ["docs/design/REQ-036-044-045-interactive.md"],
+    "base_tag": "base/REQ044-20261014-01",
+    "rework_of": "handoffs/REQ044-20261014-01/step-05-test-designer.json",
+    "parallel_work_now": "TEST-DESIGNER (шаг 5) держит handoff открытым до правки кода; файлы тестов не трогаются сейчас",
+    "orch_check": {
+      "at": "2026-10-14T15:29:42Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "дополнение D14 / п. 3.13: маскирование description и ролей в хуке и на сервере, меняется только protocol.js; тесты MK-01…MK-05, NM-06; ловушки 24–27; шаг 5c расписан (по result)",
+        "О18 принято как decisions/0056; О15 — ISS-0058 поднимается до MEDIUM и идёт следующим дефектом (запишет DOC-UPDATER); О16 — граница в 0056; О17 — описание интерфейса правится на шаге 10; О19 — WF-01 после прогона"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 1, дополнение r3 к проекту (после шага 5 вскрылся пробел). TEST-DESIGNER (handoffs/REQ044-20261014-01/step-05-test-designer.json, result.issues BLOCKED) подтвердил пробой: критерий 6 REQ-036 требует, чтобы секрет (вымышленный ключ вида sk-… и пара password=…) в описании задачи и в роли НЕ попадал в файл журнала, ответ сервера и страницу (на его месте «[скрыто]»), а код маскирует только prompt_text (protocol.js buildWriteBody; server.js validateWriteBody); description и subagent_type/agent_type идут как есть. Проект (D1) считал хук и сервер неизменными — это пробел проекта. Допиши в docs/design/REQ-036-044-045-interactive.md новый раздел (например, D-последний + п. в разделе 8): маскирование maskSecrets (mask.js) для description, subagent_type и agent_type — где именно (хук перед отправкой — buildWriteBody; сервер — validateWriteBody как вторая линия? — обоснуй: одна ли функция, нет ли двойного маскирования и расхождений с проверкой длины полей схемы 1…128 после маскирования; запись ORCH note — уже маскируется?), какие поля, что видит пользователь («[скрыто]» внутри описания), пути отказа, влияние на ISS-0058 (правило M7 может скрыть хост из трёх частей — это известный LOW), тесты: NM-06 (полный путь хук → сервер → страница), тесты хука/сервера (pixel-office-hook.test.js, pixel-office-server.test.js — новые идентификаторы, свободные), мутанты (маскирование убрано на хуке; убрано на сервере; применено не к тому полю), исполнитель — CODE-FIXER на шаге 5c (вместе с удалением устаревших экспортов и находками ревью F1–F3: одна общая проверка «в работе или без подтверждения», лишний аргумент openCard, фраза «Ошибки и ожидание человека…» обрезана на 6 px в худшем случае), затем повтор шагов 3 и 4, затем TEST-DESIGNER дописывает NM-06 и тесты хука/сервера, затем 5b, 6. Раздел о планке: Q7, R2, Q12 для этого изменения. Проверь утверждения о коде сам (строки protocol.js, server.js, mask.js). Кода реализации нет. Время — date -u. Пути компьютера и названия чужих проектов не писать. Запрещены git checkout/reset/stash/clean. Закрой через close.",
+    "acceptance_criteria": [
+      "Проект дополнен: маскирование description, subagent_type, agent_type — где, как, пути отказа, тесты, мутанты, исполнитель 5c",
+      "Утверждения о коде проверены; кода реализации нет"
+    ]
+  },
+  "created_at": "2026-10-14T15:24:44Z",
+  "started_at": "2026-10-14T15:24:44Z",
+  "completed_at": "2026-10-14T15:28:54Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Дополнение r3: пробел проекта по критерию 6 REQ-036 закрыт проектом D14 и новым п. 3.13. Подтвердил сам: хук (protocol.js buildWriteBody) и сервер (validateWriteBody) маскируют только prompt_text, description/subagent_type/agent_type идут как есть (ф25, проба). Решение: эти три поля маскирует та же maskSecrets (mask.js) в двух линиях, как prompt_text: хук — описание через prepareText(…, PROMPT_SCAN_MAX, DESCRIPTION_MAX), роли — новая maskField(value, ID_MAX) после прежней проверки длины исходного значения; сервер — maskField для всех трёх. Порядок «маскировать, потом резать до предела схемы» (метка может удлинить поле: password=ab → +6; отказ отбросил бы событие и задачу). Двойное маскирование безвредно (метка не маскируется повторно, проверено). Идентификаторы не маскируются (M10 склеил бы задачи). Запись оркестратора уже маскируется. Меняется только protocol.js; server.js, hook.js, mask.js, schema.js — нет. Пути отказа, тесты MK-01…MK-05 (свободны) и дописывание NM-06, мутанты 24–27, следствие для ISS-0058 (M7 прячет имена файлов из трёх частей в описаниях — проба), раздел 8.2: шаг 5c CODE-FIXER — удаление устаревших экспортов, D14, находки ревью F1 (общие showsSessionEvent/showsAge в model.js), F2 (лишний аргумент openCard — три вызова), F3 (margin-top .card-unknown 0,75 → 0,375 rem с целью-замером), затем повтор 3 и 4, затем TEST-DESIGNER дописывает, затем 5b и 6. Планка: Q7, R2, Q12 дополнены; вопросы О15–О19.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-036-044-045-interactive.md",
+        "where": "раздел 1, ф25",
+        "what": "факт с файлами и строками: маскируется только prompt_text и запись оркестратора; проба"
+      },
+      {
+        "file": "docs/design/REQ-036-044-045-interactive.md",
+        "where": "раздел 2: D1 уточнён, D14 новый; раздел 0, п. 4",
+        "what": "protocol.js меняется по D14, model.js — общей проверкой состояний на 5c"
+      },
+      {
+        "file": "docs/design/REQ-036-044-045-interactive.md",
+        "where": "новый п. 3.13",
+        "what": "маскирование description, subagent_type, agent_type: где (хук и сервер), какая функция (maskSecrets, новая maskField), порядок и длина, двойное маскирование, идентификаторы, запись оркестратора, что видит человек, ложные срабатывания (ISS-0058, M10), старые строки, пути отказа, тесты MK-01…MK-05 и NM-06"
+      },
+      {
+        "file": "docs/design/REQ-036-044-045-interactive.md",
+        "where": "п. 8 (вводный абзац), 8.2",
+        "what": "шаг 5c расширен (а)–(д), повтор 3 и 4, продолжение шага 5, 5b с мутантами 24–27"
+      },
+      {
+        "file": "docs/design/REQ-036-044-045-interactive.md",
+        "where": "п. 9.1 кр. 6, раздел 11 (24–27), раздел 13 (Q7, R2, Q12), раздел 14 (О15–О19)",
+        "what": "тесты, ловушки, планка, вопросы"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "node: buildWriteBody(PostToolUse c ключом sk-ant-… и password=\"…\" в description, subagent_type, agent_type) и validateWriteBody(…)",
+        "out": "все три поля как есть; сервер добавляет source REAL и не маскирует — ф25 подтверждён"
+      },
+      {
+        "cmd": "node: maskSecrets на 10 образцах",
+        "out": "«… pixel-office-panels.test.js» → «… [скрыто]» (−19); «проверка app.js и panels.js» — без изменений; секрет-описание → «ключ [скрыто] password=[скрыто]»; «Sai Security Reviewer (SECURITY-REVIEWER)», general-purpose — без изменений; password=ab → password=[скрыто] (+6); my-very-long-agent-name-version2x → [скрыто]; повторное маскирование «ключ [скрыто]» — без изменений"
+      },
+      {
+        "cmd": "grep -n в protocol.js, server.js, note.js, hook.js, schema.js",
+        "out": "buildWriteBody 129–181 (agent_type 144–146, subagent_type 162–164, description 165–168), addPromptFields 83–94, validateWriteBody 191–211 (maskSecrets 200–208); server.js processEvent 321–331, processNote 351–355; note.js 108–112; hook.js 81 вызывает buildWriteBody; DESCRIPTION_MAX 100, ID_MAX 128"
+      },
+      {
+        "cmd": "grep -n 'openCard(' tools/src/pixel-office/public/app.js; grep -n 'card-unknown' style.css; grep hasSessionEvent/UNCONFIRMED_STATES в app.js и instance-card.js",
+        "out": "вызовы с лишним аргументом: 628, 1848, 2323; .card-unknown margin-top 0.75rem; общая проверка повторена в app.js 176–177, 1386 и instance-card.js 81–82"
+      },
+      {
+        "cmd": "grep -o '^test(\"[A-Z]*-' в pixel-office-hook.test.js и pixel-office-server.test.js; grep -rn '\"MK-' tools/test/",
+        "out": "HK-01…HK-31, SV-01…SV-67; MK- свободен"
+      },
+      {
+        "cmd": "список латинских слов с заглавной в проекте; поиск путей компьютера; cd tools && npm run traces",
+        "out": "названий других проектов нет; путей нет; traces: файлов проверено 1376, следов 0"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "О15: после D14 правила M7 (ISS-0058) и M10 прячут в описаниях задач имена файлов из трёх частей («pixel-office-panels.test.js» → «[скрыто]», проба) и длинные роли из букв и цифр. Ошибка безопасная, но описания теряют смысл. Предложение ORCH: дописать в ISS-0058 и поднять приоритет."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "О16: строки журнала, записанные до шага 5c, не переписываются (журнал только дописывается); описание с секретом, если оно уже есть в журнале владельца, будет показано как есть. Третья линия маскирования на странице потребовала бы переноса mask.js в public/ — не предлагается без решения ORCH."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "О17 (находка ревью F3): проект на 5c уменьшает margin-top у .card-unknown до 0,375 rem; описание интерфейса п. 7.5 (0,75 rem) приводит GUI-DESIGN-ANALYST — решение ORCH."
+      },
+      {
+        "id": "I4",
+        "kind": "PROPOSAL_DECISION",
+        "text": "О18: запись в decisions/ — секреты маскируются во всех текстовых полях строки журнала, кроме идентификаторов, в двух линиях (хук и сервер), «маскировать, потом резать до предела схемы»."
+      },
+      {
+        "id": "I5",
+        "kind": "FINDING",
+        "text": "О19 для WF-01 после прогона: описание REQ-036 утверждало, что секрет в описании уже маскируется при записи (hook.js, mask.js) — до шага 5c это неверно (ф25)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Ревью F2 назвало два вызова openCard с лишним аргументом; их три (app.js 628 — c.key, 1848 и 2323 — null). В 5c названы все три."
+      }
+    ],
+    "artifacts_out": ["docs/design/REQ-036-044-045-interactive.md"]
+  }
+}

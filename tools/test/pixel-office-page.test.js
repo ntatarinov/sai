@@ -1222,7 +1222,10 @@ const mapOf = (items) => items.map((i) => [i.who, i.what]);
 async function openWindow(page, key) {
   const row = historyRowOf(page, key);
   assert.ok(row !== null, `no row for ${key}`);
-  row.click();
+  // REQ-045: the window opens from the separate button of the row
+  const button = row.byClass("history-open")[0];
+  assert.ok(button !== undefined, `no button in the row of ${key}`);
+  button.click();
   const dom = historyDom(page);
   assert.equal(dom.isOpen(), true);
   return dom;
@@ -1420,7 +1423,7 @@ function withoutIndexes(list) {
   });
 }
 
-test("PG-26: records of the orchestrator change neither the tasks, the rows of the main session, the marks, the sessions nor the office; on the page the panels and the characters stay as they were", async () => {
+test("PG-26: records of the orchestrator change neither the tasks, the rows of the main session, the marks, the sessions nor the office; on the page the panels and the characters stay as they were, the journal gets the row of the record", async () => {
   const fx = historyFixture();
   const base = fx.entries.filter((e) => e.source !== "ORCH");
   const t = base[base.length - 1].time;
@@ -1471,11 +1474,30 @@ test("PG-26: records of the orchestrator change neither the tasks, the rows of t
   });
   const before = snap();
   await page.push(
-    noteEntry(t, { request_time: base[1].time, note_text: "ещё запись" }),
+    noteEntry(t, {
+      request_time: base[1].time,
+      note_text: "ещё запись",
+      req_id: "REQ-008",
+    }),
   );
   assert.equal(page.app.getModel().entries.length, base.length + 1);
-  assert.deepEqual(snap(), before);
-  assert.equal(page.rows().length, before.rows.length);
+  // REQ-045: the tasks, the legend, "Сейчас" and the characters stay; the
+  // journal gets one row - the record, at its place, in plain words
+  const after = snap();
+  for (const k of ["tasks", "legend", "now", "characters"]) {
+    assert.deepEqual(after[k], before[k], k);
+  }
+  assert.equal(after.rows.length, before.rows.length + 1);
+  assert.deepEqual(after.rows.slice(0, before.rows.length), before.rows);
+  const last = page.rows()[page.rows().length - 1];
+  assert.equal(last.dataset.index, String(base.length));
+  assert.equal(last.dataset.kind, "note");
+  assert.equal(
+    last.byClass("event")[0].textContent,
+    "Оркестратор записал, как понял запрос",
+  );
+  assert.equal(last.byClass("who")[0].textContent, "Оркестратор");
+  assert.equal(last.textContent.includes("ещё запись"), false);
 });
 
 test("PG-27: the criterion fixture - title, meta, text with paragraphs, table with ordinals, states and a dash, timeline with the note signed 'Оркестратор записал'; the rules of title, status, truncation and a request without tasks or with many", async () => {
@@ -1499,13 +1521,14 @@ test("PG-27: the criterion fixture - title, meta, text with paragraphs, table wi
     ],
   );
   assert.deepEqual(mapOf(r.timeline), [
-    [TX.MAIN_LABEL, TX.EVENT_LABELS.UserPromptSubmit],
+    // REQ-045: the words of the cases 3, 10, 7, 9 and 4, written as literals
+    [TX.MAIN_LABEL, "Владелец отправил запрос"],
     [TX.HISTORY_WHO_ORCH, TX.HISTORY_NOTE_BY],
-    [TX.MAIN_LABEL, TX.EVENT_LABELS.PostToolUse],
-    ["Plan", TX.EVENT_LABELS.SubagentStart],
-    ["Explore", TX.EVENT_LABELS.SubagentStart],
-    ["Plan", TX.EVENT_LABELS.SubagentStop],
-    [TX.MAIN_LABEL, TX.HISTORY_SERVICE],
+    [TX.MAIN_LABEL, "Задание передано агенту «Plan»"],
+    ["Plan", "Агент «Plan» получил задание и начал работу"],
+    ["Explore", "Агент «Explore» получил задание и начал работу"],
+    ["Plan", "Агент «Plan» закончил работу и вернул ответ"],
+    [TX.MAIN_LABEL, "В сессию пришло служебное сообщение"],
   ]);
   assert.equal(r.timeline[1].detail, HISTORY_NOTE_TEXT);
   assert.equal(r.timeline[0].detail, null);
@@ -3139,4 +3162,1270 @@ test("FS-18: the page clock is the only source of 'now' - no read of the real cl
   assert.ok(
     /Date\.now/.test(fs.readFileSync(path.join(PUBLIC, "boot.js"), "utf8")),
   );
+});
+
+// ===================================================================
+// REQ-036, REQ-045, REQ-044 (design docs/design/REQ-036-044-045-interactive.md,
+// table 9): the journal in plain words, the details of an event, the card of
+// one instance of an agent. Literals of the criteria are written here.
+// ===================================================================
+import { mock } from "node:test";
+import { tzLabel } from "../src/pixel-office/public/format.js";
+import { eventDetails } from "../src/pixel-office/public/event-details.js";
+import { buildInstanceCard } from "../src/pixel-office/public/instance-card.js";
+import { roleName } from "../src/pixel-office/public/words.js";
+import {
+  cssDecls,
+  parseCss,
+  runHook,
+  settle,
+  startServer,
+} from "./pixel-office-helpers.js";
+
+const SERVICE = /undefined|null|NaN|\[object/;
+const S = (n) => T0 + n * 1000;
+const ORCH_ROLE = "Sai Orchestrator (ORCH)";
+
+// A press of a key on an element, as a browser does it (the helper activates
+// a button or a summary on Enter and Space unless a listener prevents it).
+const press = (el, key, extra = {}) => el.fire("keydown", { key, ...extra });
+const focused = (page) => page.doc.focused;
+const rowAt = (page, index) =>
+  page.rows().find((r) => r.dataset.index === String(index));
+const toggleAt = (page, index) => rowAt(page, index).byClass("row-toggle")[0];
+const detailsAt = (page, index) =>
+  rowAt(page, index)?.byClass("event-details")[0] ?? null;
+const field = (box, name) => box.find((e) => e.dataset.field === name);
+const valueOf = (box, name) =>
+  field(box, name)?.byClass("detail-value")[0]?.textContent ?? null;
+
+// A click on a point of the canvas given in logical pixels of the office (with
+// min_x), as the office test does it.
+function clickPoint(page, px, py) {
+  const office = page.app.getOffice();
+  page.canvas.rect = {
+    left: 0,
+    top: 0,
+    width: office.layout.width * 24,
+    height: office.layout.height * 24,
+  };
+  page.canvas.click({
+    clientX: px - office.layout.min_x * 24,
+    clientY: py,
+  });
+}
+const deskOf = (page, key) => {
+  const o = page.app.getOffice();
+  const c = o.characters.find((x) => x.key === key);
+  return o.layout.desks[c.desk_index];
+};
+const legendOf = (page, key) =>
+  page.legend().find((b) => b.dataset.key === key);
+const cardEl = (page) => page.el("card");
+const cardOpen = (page) => page.el("card-overlay").hidden === false;
+const cardId = (page) => cardEl(page).byClass("card-id")[0]?.textContent;
+
+// ------------------------------------------------------------------ NM-06
+
+test("NM-06: what reaches the block 'Сейчас' through the real path hook -> server -> page is text - a description with <script> is shown literally and makes no element; the code of the page has no way to markup", async (t) => {
+  const srv = await startServer(t);
+  const description = "<script>alert(1)</script> и обычные слова";
+  const input = {
+    session_id: "nm06-session",
+    hook_event_name: "PostToolUse",
+    tool_name: "Agent",
+    tool_use_id: "toolu_nm06",
+    tool_input: { subagent_type: "Plan", description, prompt: "не нужен" },
+    tool_response: { agentId: "agent-nm06" },
+  };
+  const start = {
+    session_id: "nm06-session",
+    hook_event_name: "SubagentStart",
+    agent_id: "agent-nm06",
+    agent_type: "Plan",
+  };
+  for (const [event, body] of [
+    ["PostToolUse", input],
+    ["SubagentStart", start],
+  ]) {
+    const r = await runHook(srv.box, body, { event });
+    assert.equal(r.code, 0, r.stderr);
+  }
+  const answer = await srv.get("/api/events?after=0");
+  const body = JSON.parse(answer.body);
+  assert.equal(body.events.length, 2);
+  const page = makePage({
+    entries: body.events,
+    now: Date.parse(body.events[1].time) + 1000,
+  });
+  await page.start();
+  const rows = page.el("now").all((e) => e.classes.has("now-row"));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].textContent, `Plan — ${description}`);
+  assert.equal(page.created("script").length, 0);
+  assert.equal(page.doc.htmlWrites, 0);
+  const sinks = /innerHTML|outerHTML|insertAdjacentHTML|document\.write/;
+  for (const name of fs.readdirSync(PUBLIC)) {
+    const text = fs.readFileSync(path.join(PUBLIC, name), "utf8");
+    assert.equal(sinks.test(text), false, name);
+  }
+});
+
+test("NM-06: a secret in the description and the role goes the real path hook -> server -> page and is nowhere - not in the file of the journal, not in the answer of the server, not in the text of 'Сейчас', the journal, the details and the card; '[скрыто]' stands in its place", async (t) => {
+  // invented secrets, put together at run time
+  const key = ["sk", "ant", "NM06fakeKEY0123456789abcdefQ"].join("-");
+  const pass = ["nm06", "pass", "VALUE42zz"].join("");
+  const leaks = (text, secret) => {
+    for (let i = 0; i + 8 <= secret.length; i++) {
+      if (text.includes(secret.slice(i, i + 8))) return secret.slice(i, i + 8);
+    }
+    return null;
+  };
+  const srv = await startServer(t);
+  const role = `Plan ${key}`;
+  const inputs = [
+    [
+      "PostToolUse",
+      {
+        session_id: "nm06-secret",
+        hook_event_name: "PostToolUse",
+        tool_name: "Agent",
+        tool_use_id: "toolu_nm06s",
+        tool_input: {
+          subagent_type: role,
+          description: `ключ ${key} и password="${pass}"`,
+        },
+        tool_response: { agentId: "agent-nm06s" },
+      },
+    ],
+    [
+      "SubagentStart",
+      {
+        session_id: "nm06-secret",
+        hook_event_name: "SubagentStart",
+        agent_id: "agent-nm06s",
+        agent_type: role,
+      },
+    ],
+  ];
+  for (const [event, body] of inputs) {
+    const r = await runHook(srv.box, body, { event });
+    assert.equal(r.code, 0, r.stderr);
+  }
+  const file = fs.readFileSync(srv.eventsFile, "utf8");
+  const answer = (await srv.get("/api/events?after=0")).body;
+  for (const [where, text] of [
+    ["file", file],
+    ["answer", answer],
+  ]) {
+    assert.equal(leaks(text, key), null, `${where}: ${leaks(text, key)}`);
+    assert.equal(leaks(text, pass), null, `${where}: ${leaks(text, pass)}`);
+    assert.ok(text.includes("[скрыто]"), where);
+  }
+  const events = JSON.parse(answer).events;
+  assert.equal(events.length, 2);
+  const page = makePage({
+    entries: events,
+    now: Date.parse(events[1].time) + 1000,
+  });
+  await page.start();
+  const texts = [page.text("now"), page.el("now").title, page.text("journal")];
+  for (let i = 0; i < events.length; i++) {
+    toggleAt(page, i).click();
+    const box = detailsAt(page, i);
+    for (const part of box.all((e) => e.tagName === "DETAILS"))
+      part.open = true;
+    texts.push(box.textContent);
+  }
+  legendOf(page, "role:Plan [скрыто]").click();
+  for (const part of cardEl(page).all((e) => e.tagName === "DETAILS")) {
+    part.open = true;
+  }
+  texts.push(cardEl(page).textContent);
+  for (const text of texts) {
+    assert.equal(leaks(text, key), null, text);
+    assert.equal(leaks(text, pass), null, text);
+  }
+  const row = page.el("now").all((e) => e.classes.has("now-row"))[0];
+  assert.equal(
+    row.textContent,
+    "Plan [скрыто] — ключ [скрыто] и password=[скрыто]",
+  );
+  assert.ok(cardEl(page).textContent.includes("[скрыто]"));
+});
+
+// ------------------------------------------------------------------ JR-03
+
+// One line of each case with the tasks and rows they name (design 4.2).
+function detailsJournal() {
+  const plan = "Plan";
+  const entries = [
+    lineAt("SessionStart", "S1", S(1)), // 0
+    lineAt("UserPromptSubmit", "S1", S(2), {
+      prompt_kind: "owner",
+      prompt_text: "СКРЫТЫЙ-ТЕКСТ-JR03",
+    }), // 1
+    lineAt("UserPromptSubmit", "S1", S(3), { prompt_kind: "service" }), // 2
+    lineAt("UserPromptSubmit", "S1", S(4)), // 3
+    lineAt("PostToolUse", "S1", S(5), {
+      tool_use_id: "tu1",
+      launched_agent_id: "agent-a1-long",
+      subagent_type: plan,
+      description: "проект",
+    }), // 4
+    sub("S1", "agent-a1-long", S(6), plan), // 5
+    subEnd("S1", "agent-a1-long", S(7), plan), // 6
+    sub("S1", "agent-a1-long", S(8), plan), // 7
+    {
+      time: iso(S(9)),
+      source: "ORCH",
+      session_id: "S1",
+      req_id: "REQ-045",
+      request_time: iso(S(2)),
+      note_text: "как понял: образец",
+    }, // 8
+    lineAt("Stop", "S1", S(10)), // 9
+    lineAt("PostToolUse", "S1", S(11), {
+      tool_use_id: "tu2",
+      launched_agent_id: "nobody-here",
+      subagent_type: plan,
+    }), // 10
+    subEnd("S1", "ghost-agent", S(12), plan), // 11
+    lineAt("Stop", "S3", S(13)), // 12: no row of S3
+    { ...lineAt("Stop", "S1", S(14)), source: "SIMULATION" }, // 13
+    lineAt("SessionEnd", "S5", S(15)), // 14
+  ];
+  return entries;
+}
+
+test("JR-03: the details of a row - the fields of each case (when, source, session, agent, the task as it is now, what happened, what it does not prove, the mark, the technical fields without prompt_text); Enter and Space open, Escape and 'Закрыть' close with the focus on the row; the button of the window opens the window and gets the focus back; after a new line the details, their open part and the focus stay", async () => {
+  const entries = detailsJournal();
+  const page = await loaded(entries, [], { now: S(20) });
+  const m = page.app.getModel();
+  const h = buildHistory(m);
+  // the model of the details, case by case (design 3.4, 4.2)
+  const d = (i) => eventDetails(m, h, i);
+  const tasks = (i) => [d(i).task.text, d(i).task.state];
+  assert.deepEqual(tasks(0), ["к задаче не относится", null]);
+  assert.deepEqual(tasks(1), ["Основная сессия", "unrecorded"]);
+  assert.deepEqual(tasks(2), ["Основная сессия", "unrecorded"]);
+  assert.deepEqual(tasks(3), ["Основная сессия", "completed"]);
+  assert.deepEqual(
+    tasks(4),
+    ["Plan · agent-a1", "in_progress"],
+    "the task of the launched one",
+  );
+  assert.deepEqual(tasks(5), ["Plan · agent-a1", "in_progress"]);
+  assert.deepEqual(tasks(6), ["Plan · agent-a1", "in_progress"]);
+  assert.deepEqual(
+    tasks(8),
+    ["Основная сессия", "unrecorded"],
+    "the row of its request",
+  );
+  assert.deepEqual(tasks(9), ["Основная сессия", "completed"]);
+  assert.deepEqual(tasks(10), [
+    "задача не найдена: её начало не записано",
+    null,
+  ]);
+  assert.deepEqual(tasks(11), [
+    "задача не найдена: её начало не записано",
+    null,
+  ]);
+  assert.deepEqual(tasks(12), [
+    "строка основной сессии не найдена: запрос этой сессии не записан",
+    null,
+  ]);
+  assert.deepEqual(tasks(13), ["к задаче не относится", null], "a marked line");
+  assert.deepEqual(tasks(14), ["к задаче не относится", null]);
+  assert.equal(d(0).source, "хук Claude Code");
+  assert.equal(d(8).source, "запись оркестратора");
+  assert.equal(d(13).source, "другой источник: SIMULATION");
+  assert.equal(d(0).agent, "основная сессия: у этого события агента нет");
+  assert.equal(d(4).agent, "основная сессия: у этого события агента нет");
+  assert.equal(d(5).agent, "Plan · agent-a1");
+  assert.equal(d(8).agent, "оркестратор");
+  assert.equal(d(0).when, `${fmtDateTime(iso(S(1)))} · ${tzLabel()}`);
+  assert.deepEqual(d(0).session, { short: "S1", full: "S1" });
+  assert.equal(d(7).words, "Агент «Plan» продолжил работу");
+  assert.equal(d(13).meaning, TX.EVENT_TABLE.marked.meaning);
+  assert.equal(
+    d(13).mark,
+    "не из хуков: источник строки — не хук Claude Code: SIMULATION",
+  );
+  assert.deepEqual(d(8).note, {
+    text: "как понял: образец",
+    req_id: "REQ-045",
+    request_time: iso(S(2)),
+    auto: false,
+  });
+  // prompt_text never shows, not even among the technical fields
+  assert.deepEqual(
+    d(1).tech.map(([k]) => k),
+    ["time", "source", "hook_event_name", "session_id", "prompt_kind"],
+  );
+  for (let i = 0; i < entries.length; i++) {
+    assert.equal(JSON.stringify(d(i)).includes("СКРЫТЫЙ-ТЕКСТ-JR03"), false, i);
+  }
+
+  // the page: Enter opens, the focus stays on the row
+  const toggle = toggleAt(page, 5);
+  assert.equal(toggle.tagName, "BUTTON");
+  assert.equal(toggle.getAttribute("type"), "button");
+  assert.equal(toggle.getAttribute("aria-expanded"), "false");
+  assert.equal(toggle.getAttribute("aria-controls"), "event-5");
+  toggle.focus();
+  press(toggle, "Enter");
+  let box = detailsAt(page, 5);
+  assert.ok(box !== null);
+  assert.equal(box.getAttribute("id"), "event-5");
+  assert.equal(toggleAt(page, 5).getAttribute("aria-expanded"), "true");
+  assert.ok(focused(page) === toggleAt(page, 5));
+  assert.equal(valueOf(box, "agent"), "Plan · agent-a1");
+  assert.equal(
+    field(box, "task").byClass("state-badge")[0].textContent,
+    "в работе",
+  );
+  assert.ok(valueOf(box, "task") === "Plan · agent-a1 · сейчас: в работе");
+  assert.equal(
+    valueOf(box, "not_proved"),
+    TX.EVENT_TABLE.agent_start.not_proved,
+  );
+  // Escape inside the row closes, the focus is on the toggle
+  press(rowAt(page, 5), "Escape");
+  assert.equal(detailsAt(page, 5), null);
+  assert.ok(focused(page) === toggleAt(page, 5));
+  // Escape with the focus inside the details (on their technical fields):
+  // closed, the focus goes to the toggle of the row
+  press(toggleAt(page, 5), "Enter");
+  const inner = detailsAt(page, 5).find((e) => e.dataset.part === "tech")
+    .children[0];
+  inner.focus();
+  press(rowAt(page, 5), "Escape");
+  assert.equal(detailsAt(page, 5), null);
+  assert.ok(focused(page) === toggleAt(page, 5));
+  // Space opens; "Закрыть" closes with the same focus
+  press(toggleAt(page, 5), " ");
+  box = detailsAt(page, 5);
+  box.byClass("details-close")[0].click();
+  assert.equal(detailsAt(page, 5), null);
+  assert.ok(focused(page) === toggleAt(page, 5));
+  // only one row is open at a time
+  toggleAt(page, 1).click();
+  toggleAt(page, 4).click();
+  assert.equal(page.el("journal").byClass("event-details").length, 1);
+  assert.ok(detailsAt(page, 4) !== null);
+  // the request of the owner: no text anywhere in the details
+  toggleAt(page, 1).click();
+  box = detailsAt(page, 1);
+  assert.equal(box.textContent.includes("СКРЫТЫЙ-ТЕКСТ-JR03"), false);
+  assert.equal(page.text("journal").includes("СКРЫТЫЙ-ТЕКСТ-JR03"), false);
+  // the button of the window: a press and Enter open it; the focus comes back
+  const opener = () => rowAt(page, 1).byClass("history-open")[0];
+  opener().click();
+  const dom = historyDom(page);
+  assert.equal(dom.isOpen(), true);
+  dom.close.click();
+  assert.ok(focused(page) === opener());
+  press(opener(), "Enter");
+  assert.equal(dom.isOpen(), true);
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  assert.ok(focused(page) === opener());
+  // open the details, open the technical fields, put the focus on them; a
+  // new line and the planned recalculation keep all three
+  toggleAt(page, 7).click();
+  const tech = () => detailsAt(page, 7).find((e) => e.dataset.part === "tech");
+  const summary = tech().children[0];
+  assert.equal(summary.tagName, "SUMMARY");
+  summary.click();
+  assert.equal(tech().open, true);
+  summary.focus();
+  page.server.entries.push(lineAt("Stop", "S9", S(21)));
+  await page.tick(2000);
+  await page.tick(10_000);
+  assert.ok(detailsAt(page, 7) !== null, "the details stay open");
+  assert.equal(tech().open, true, "the technical fields stay open");
+  assert.ok(
+    focused(page) === tech().children[0],
+    "the same element has the focus",
+  );
+  assert.equal(
+    tech()
+      .byClass("tech-key")
+      .map((e) => e.textContent)
+      .join(""),
+    "time: source: hook_event_name: session_id: agent_id: agent_type: ",
+  );
+});
+
+// ------------------------------------------------------------------ JR-05
+
+test("JR-05: a hostile text is text in the row and in the details - an <img onerror> and a <script> in the role, the description, the identifiers, the text of a record and the technical fields create no element and run nothing; '$&' in the role and the source stays literal; only GET", async () => {
+  const IMGX = "<img src=x onerror=alert(1)>";
+  const SCRIPT = "<script>window.__x=1</script>";
+  const entries = [
+    lineAt("SessionStart", IMGX, S(1)),
+    lineAt("PostToolUse", IMGX, S(2), {
+      tool_use_id: SCRIPT,
+      launched_agent_id: IMGX,
+      subagent_type: SCRIPT,
+      description: IMGX,
+    }),
+    sub(IMGX, IMGX, S(3), SCRIPT),
+    sub(IMGX, "x$&", S(4), "$&"),
+    {
+      time: iso(S(5)),
+      source: "ORCH",
+      req_id: "REQ-045",
+      note_text: `${SCRIPT} ${IMGX}`,
+    },
+    { ...lineAt("Stop", "S1", S(6)), source: "$&" },
+  ];
+  const page = await loaded(entries, [], { now: S(10) });
+  assert.equal(page.rows().length, entries.length);
+  // every row opened, its technical fields too, one after the other
+  for (let i = 0; i < entries.length; i++) {
+    toggleAt(page, i).click();
+    const tech = detailsAt(page, i).find((e) => e.dataset.part === "tech");
+    tech.children[0].click();
+    assert.equal(tech.open, true);
+    assert.equal(page.created("img").length, 0, `row ${i}`);
+    assert.equal(page.created("script").length, 0, `row ${i}`);
+    toggleAt(page, i).click();
+  }
+  assert.equal(page.created("img").length, 0);
+  assert.equal(page.created("script").length, 0);
+  assert.equal(page.doc.htmlWrites, 0);
+  assert.equal(globalThis.__x, undefined);
+  assert.equal(
+    rowAt(page, 2).byClass("event")[0].textContent,
+    `Агент «${SCRIPT}» получил задание и начал работу`,
+  );
+  assert.equal(
+    rowAt(page, 3).byClass("event")[0].textContent,
+    "Агент «$&» получил задание и начал работу",
+  );
+  assert.equal(rowAt(page, 1).byClass("row-desc")[0].textContent, IMGX);
+  toggleAt(page, 5).click();
+  assert.equal(
+    valueOf(detailsAt(page, 5), "mark"),
+    "не из хуков: источник строки — не хук Claude Code: $&",
+  );
+  toggleAt(page, 4).click();
+  assert.equal(valueOf(detailsAt(page, 4), "note_text"), `${SCRIPT} ${IMGX}`);
+  toggleAt(page, 2).click();
+  assert.ok(
+    detailsAt(page, 2)
+      .byClass("tech-value")
+      .some((e) => e.textContent === IMGX),
+  );
+  for (const c of page.server.calls) assert.equal(c.init.method, "GET");
+});
+
+// ------------------------------------------------------------------ JR-06
+
+test("JR-06: bad data does not break the journal - an empty journal keeps its texts; a row of the main session has who 'Основная сессия'; an empty role is '(роль не указана)'; an unreadable time is 'время не записано'; an agent without a task, a record without a session and a time of request, identifiers of 128 characters, a lost link with open details - no exception, no service word", async () => {
+  const errors = mock.method(console, "error", () => {});
+  try {
+    const empty = await loaded([], [], { now: S(10) });
+    assert.equal(
+      empty.text("journal").includes("Событий от хуков пока нет"),
+      true,
+    );
+    const long = "z".repeat(128);
+    const entries = [
+      lineAt("SessionStart", "S1", S(1)),
+      lineAt("UserPromptSubmit", "S1", S(2)),
+      lineAt("SubagentStart", "S1", S(3), {
+        agent_id: "noroll",
+        agent_type: "",
+      }),
+      // no subagent_type at all (an empty one is not a valid line)
+      lineAt("PostToolUse", "S1", S(4), {
+        tool_use_id: "tu",
+        launched_agent_id: "x",
+      }),
+      subEnd("S1", "ghost", S(5), "Plan"),
+      {
+        time: iso(S(6)),
+        source: "ORCH",
+        req_id: "REQ-045",
+        note_text: "без сессии",
+      },
+      sub(long, long, S(7), "Plan"),
+    ];
+    const page = await loaded(entries, [], { now: S(10) });
+    const who = (i) => rowAt(page, i).byClass("who")[0].textContent;
+    assert.equal(who(1), "Основная сессия");
+    assert.equal(who(2), "(роль не указана)");
+    assert.equal(
+      rowAt(page, 2).byClass("event")[0].textContent,
+      "Агент «(роль не указана)» получил задание и начал работу",
+    );
+    assert.equal(
+      rowAt(page, 3).byClass("event")[0].textContent,
+      "Задание передано агенту «(роль не указана)»",
+    );
+    assert.equal(
+      rowAt(page, 5).byClass("session")[0].textContent,
+      "сессия не указана",
+    );
+    assert.equal(
+      rowAt(page, 6).byClass("session")[0].textContent,
+      "z".repeat(8),
+    );
+    for (let i = 0; i < entries.length; i++) toggleAt(page, i).click();
+    toggleAt(page, 5).click();
+    assert.equal(field(detailsAt(page, 5), "request_time"), null);
+    assert.equal(valueOf(detailsAt(page, 5), "session"), "сессия не указана");
+    toggleAt(page, 4).click();
+    assert.equal(
+      field(detailsAt(page, 4), "task").textContent.includes(
+        "задача не найдена",
+      ),
+      true,
+    );
+    toggleAt(page, 6).click();
+    assert.equal(
+      detailsAt(page, 6)
+        .find((e) => e.dataset.part === "session")
+        .byClass("full-id")[0].textContent,
+      long,
+    );
+    // the link is lost while the details are open
+    page.server.mode = "fail";
+    await page.tick(2000);
+    await page.tick(10_000);
+    assert.ok(detailsAt(page, 6) !== null);
+    assert.doesNotMatch(page.text("journal"), SERVICE);
+    // an unreadable time: the row and "Когда" say so (the reading of the page
+    // drops such a line, the model of the details is checked directly)
+    const bad = [{ ...lineAt("SessionStart", "S1", S(1)), time: "не время" }];
+    const mb = buildModel(bad, [], S(10));
+    assert.equal(
+      eventDetails(mb, buildHistory(mb), 0).when,
+      "время не записано",
+    );
+    assert.equal(fmtTimeSec("не время"), "");
+    assert.equal(errors.mock.calls.length, 0, "reportOnce was not called");
+  } finally {
+    errors.mock.restore();
+  }
+});
+
+// ------------------------------------------------------------------ AC-02
+
+test("AC-02: a press on the middle of the desk of a role with two instances opens the instance first in the list (the one in work, started earlier), the same as a press on the character; the desk of the main session opens the card of the main session; the title is the name in plain words", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", S(1)),
+    sub("S1", "A1-first-in-work", S(2), ORCH_ROLE),
+    sub("S1", "A2-later-finished", S(3), ORCH_ROLE),
+    subEnd("S1", "A2-later-finished", S(4), ORCH_ROLE),
+  ];
+  const page = await loaded(entries, [], { now: S(10) });
+  const desk = deskOf(page, `role:${ORCH_ROLE}`);
+  const [bx, by] = desk.block;
+  // the middle of the 2 x 2 block of the desk
+  clickPoint(page, (bx + 1) * 24, (by + 1) * 24);
+  assert.equal(cardOpen(page), true);
+  assert.equal(cardId(page), "A1-first");
+  assert.equal(
+    cardEl(page).byClass("card-title")[0].textContent,
+    roleName(ORCH_ROLE),
+  );
+  assert.equal(roleName(ORCH_ROLE), "Оркестратор");
+  assert.equal(cardEl(page).dataset.kind, "instance");
+  cardEl(page).byClass("card-close")[0].click();
+  // the character itself
+  const pos = page.app
+    .getSim()
+    .positions()
+    .find((p) => p.key === `role:${ORCH_ROLE}`);
+  clickPoint(page, (pos.x + 0.5) * 24, (pos.y + 0.5) * 24);
+  assert.equal(cardId(page), "A1-first");
+  cardEl(page).byClass("card-close")[0].click();
+  // the desk of the main session: the card of the main session as before
+  const main = deskOf(page, "main");
+  clickPoint(page, (main.block[0] + 1) * 24, (main.block[1] + 1) * 24);
+  assert.equal(cardEl(page).dataset.kind, "main");
+  assert.equal(
+    cardEl(page).byClass("card-working")[0].textContent,
+    "идущих сессий: 1",
+  );
+  // the default instance is the first of the list (rule d), not the last
+  assert.equal(
+    buildInstanceCard(
+      page.app.getModel(),
+      page.app.getOffice(),
+      "A1-first-in-work",
+    ).instances.shown[0].key,
+    "A1-first-in-work",
+  );
+});
+
+// ------------------------------------------------------------------ AC-03
+
+test("AC-03: the keyboard - Enter and Space on a legend button open the card; Escape gives the focus to the legend button of that role (also after a press on the canvas); Tab and Shift+Tab go round the controls of the card and skip the inside of a closed <details>; after a link to role B Escape gives the focus to the legend button of B; with no legend button the focus goes to the area of the office; the focus rings are in the CSS", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", S(1)),
+    lineAt("PostToolUse", "S1", S(2), {
+      tool_use_id: "tuA",
+      launched_agent_id: "agentA",
+      subagent_type: "Plan",
+    }),
+    sub("S1", "agentA", S(3), "Plan"),
+    lineAt("PostToolUse", "S1", S(4), {
+      tool_use_id: "tuB",
+      launched_agent_id: "agentB",
+      subagent_type: "Explore",
+      agent_id: "agentA",
+      agent_type: "Plan",
+    }),
+    sub("S1", "agentB", S(5), "Explore"),
+  ];
+  const page = await loaded(entries, [], { now: S(10) });
+  const plan = () => legendOf(page, "role:Plan");
+  press(plan(), "Enter");
+  assert.equal(cardOpen(page), true);
+  assert.equal(cardId(page), "agentA");
+  assert.ok(focused(page) === cardEl(page).byClass("card-close")[0]);
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  assert.equal(cardOpen(page), false);
+  assert.ok(focused(page) === plan(), "the legend button of the role");
+  press(plan(), " ");
+  assert.equal(cardOpen(page), true);
+  // Tab goes round: the controls in the order of the tree, a closed details
+  // gives only its summary
+  const controls = () =>
+    cardEl(page).all(
+      (e) =>
+        (e.tagName === "BUTTON" || e.tagName === "SUMMARY") &&
+        !e.ancestorsClosed,
+    );
+  const visible = [];
+  const walk = (node) => {
+    for (const child of node.children) {
+      if (child.tagName === "BUTTON" || child.tagName === "SUMMARY") {
+        visible.push(child);
+        continue;
+      }
+      if (child.tagName === "DETAILS" && child.open !== true) {
+        visible.push(child.children.find((c) => c.tagName === "SUMMARY"));
+        continue;
+      }
+      walk(child);
+    }
+  };
+  walk(cardEl(page));
+  assert.ok(visible.length >= 6);
+  assert.ok(controls().length > visible.length, "closed details hide buttons");
+  const tab = (shiftKey = false) =>
+    page.doc.fire("keydown", { key: "Tab", shiftKey, preventDefault() {} });
+  assert.ok(focused(page) === visible[0], "the cross first");
+  for (let i = 1; i < visible.length; i++) {
+    tab();
+    assert.ok(focused(page) === visible[i], `Tab ${i}`);
+  }
+  tab();
+  assert.ok(focused(page) === visible[0], "round to the cross");
+  tab(true);
+  assert.ok(
+    focused(page) === visible[visible.length - 1],
+    "Shift+Tab: the last",
+  );
+  // the link to B (in "Кого запустил"), then Escape: the legend button of B
+  const launched = cardEl(page).find((e) => e.dataset.part === "launched");
+  launched.children[0].click();
+  assert.equal(launched.open, true);
+  cardEl(page)
+    .find((e) => e.dataset.part === "launched")
+    .find((e) => e.dataset.focus === "launched:agentB")
+    .click();
+  assert.equal(cardId(page), "agentB");
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  assert.ok(focused(page) === legendOf(page, "role:Explore"));
+  // opened from the canvas: Escape gives the focus to the legend button too
+  const pos = page.app
+    .getSim()
+    .positions()
+    .find((p) => p.key === "role:Plan");
+  clickPoint(page, (pos.x + 0.5) * 24, (pos.y + 0.5) * 24);
+  assert.equal(cardId(page), "agentA");
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  assert.ok(focused(page) === plan());
+  // no legend button: the focus goes to the area of the office
+  const bare = makePage({ entries: [...entries], now: S(10) });
+  const legend = bare.doc.getElementById("legend");
+  legend.parentNode.children.splice(
+    legend.parentNode.children.indexOf(legend),
+    1,
+  );
+  await bare.start();
+  const p = bare.app
+    .getSim()
+    .positions()
+    .find((x) => x.key === "role:Plan");
+  clickPoint(bare, (p.x + 0.5) * 24, (p.y + 0.5) * 24);
+  assert.equal(cardOpen(bare), true);
+  bare.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  assert.ok(focused(bare) === bare.el("office-scroll"));
+  // the rings of the focus
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  assert.match(
+    cssDecls(rules, "summary:focus-visible").get("outline"),
+    /^2px solid/,
+  );
+  assert.match(
+    cssDecls(rules, "button:focus-visible").get("outline"),
+    /^2px solid/,
+  );
+  assert.equal(
+    cssDecls(rules, ".instance:focus-visible").get("outline-offset"),
+    "-0.125rem",
+  );
+});
+
+// ------------------------------------------------------------------ AC-04
+
+test("AC-04: the head of the card and copying - a role of the table, out of the table, without a role; the code only when it differs; an id of 128 characters is 8 in the head and whole in the details; a fake clipboard: success calls writeText once with the whole value and says 'скопировано'; no clipboard, a refusal, an exception say 'не удалось скопировать', the value stays; the caption lives through a rebuild; seven instances - five items, 'показано 5 из 7', two under 'Остальные экземпляры'; the age of the items in work and without fresh data; choosing the second", async () => {
+  const long = "L".repeat(128);
+  const sessionLong = "s".repeat(128);
+  const roles = [
+    [ORCH_ROLE, "Оркестратор", ORCH_ROLE],
+    ["Explore", "Explore", null],
+  ];
+  for (const [role, title, code] of roles) {
+    const page = await loaded(
+      [lineAt("SessionStart", "S1", S(1)), sub("S1", "k1", S(2), role)],
+      [],
+      { now: S(10) },
+    );
+    legendOf(page, `role:${role}`).click();
+    assert.equal(cardEl(page).byClass("card-title")[0].textContent, title);
+    const c = cardEl(page).byClass("card-code");
+    if (code === null) assert.equal(c.length, 0);
+    else assert.equal(c[0].textContent, code);
+  }
+  // no role: the card names it as the panel does
+  const none = await loaded(
+    [
+      lineAt("SessionStart", "S1", S(1)),
+      lineAt("SubagentStart", "S1", S(2), { agent_id: "k1" }),
+    ],
+    [],
+    { now: S(10) },
+  );
+  legendOf(none, `role:${TX.ROLE_UNKNOWN}`).click();
+  assert.equal(
+    cardEl(none).byClass("card-title")[0].textContent,
+    "(роль не указана)",
+  );
+  assert.equal(cardEl(none).byClass("card-code").length, 0);
+
+  // copying, with the ids of 128 characters
+  const calls = [];
+  let reads = 0;
+  const clip = {
+    writeText: async (text) => {
+      calls.push(text);
+    },
+    // copying never reads the clipboard
+    readText: async () => {
+      reads += 1;
+      return "";
+    },
+  };
+  const entries = [
+    lineAt("SessionStart", sessionLong, S(1)),
+    sub(sessionLong, long, S(2), "Plan"),
+  ];
+  const page = await loaded(entries, [], { now: S(10), clipboard: clip });
+  legendOf(page, "role:Plan").click();
+  assert.deepEqual(
+    cardEl(page)
+      .byClass("card-id")
+      .map((e) => e.textContent),
+    ["L".repeat(8), "s".repeat(8)],
+  );
+  const ids = cardEl(page).find((e) => e.dataset.part === "ids");
+  assert.deepEqual(
+    ids.byClass("full-id").map((e) => e.textContent),
+    [long, sessionLong],
+  );
+  const copy = (target) =>
+    cardEl(page).find((e) => e.dataset.focus === `copy-${target}`);
+  assert.equal(
+    copy("agent").getAttribute("aria-label"),
+    "Скопировать номер экземпляра",
+  );
+  assert.equal(
+    copy("session").getAttribute("aria-label"),
+    "Скопировать номер сессии",
+  );
+  copy("agent").click();
+  await settle();
+  assert.deepEqual(calls, [long], "once, the whole value");
+  const result = () =>
+    cardEl(page)
+      .byClass("copy-result")
+      .map((e) => [e.textContent, e.dataset.ok]);
+  assert.deepEqual(result(), [["скопировано", "true"]]);
+  // the caption lives through the planned recalculation
+  await page.tick(12_000);
+  assert.deepEqual(result(), [["скопировано", "true"]]);
+  copy("session").click();
+  await settle();
+  assert.deepEqual(calls, [long, sessionLong]);
+  assert.deepEqual(
+    result(),
+    [["скопировано", "true"]],
+    "only the last caption",
+  );
+  assert.equal(reads, 0, "the clipboard is never read");
+  // failures: no clipboard, a refusal, an exception
+  const failures = [
+    { clipboard: null },
+    { clipboard: { writeText: () => Promise.reject(new Error("no")) } },
+    {
+      clipboard: {
+        writeText: () => {
+          throw new Error("no");
+        },
+      },
+    },
+    {
+      clipboardFn: () => {
+        throw new Error("no");
+      },
+    },
+    { clipboard: { other: 1 } },
+  ];
+  const errors = mock.method(console, "error", () => {});
+  try {
+    for (const env of failures) {
+      const p = await loaded(entries, [], { now: S(10), ...env });
+      legendOf(p, "role:Plan").click();
+      cardEl(p)
+        .find((e) => e.dataset.focus === "copy-agent")
+        .click();
+      await settle();
+      assert.deepEqual(
+        cardEl(p)
+          .byClass("copy-result")
+          .map((e) => e.textContent),
+        ["не удалось скопировать — выделите значение вручную"],
+      );
+      assert.ok(
+        cardEl(p)
+          .byClass("full-id")
+          .some((e) => e.textContent === long),
+      );
+    }
+    assert.equal(errors.mock.calls.length, 0);
+  } finally {
+    errors.mock.restore();
+  }
+
+  // seven instances of one role: five shown, the note, two in "more"
+  const seven = [
+    lineAt("SessionStart", "S1", S(1)),
+    lineAt("SessionStart", "S2", S(2)),
+  ];
+  for (let i = 0; i < 7; i++) {
+    seven.push(sub(i < 3 ? "S1" : "S2", `inst-${i}`, S(3 + i), "Plan"));
+  }
+  seven.push(subEnd("S2", "inst-6", S(20), "Plan"));
+  seven.push(tool("S1", T0 + 2 * 3600 * 1000 - 60_000, "tu-fresh"));
+  const sp = await loaded(seven, [], { now: T0 + 2 * 3600 * 1000 });
+  legendOf(sp, "role:Plan").click();
+  const box = cardEl(sp);
+  assert.equal(box.dataset.columns, "2");
+  const list = box.find((e) => e.classes.has("card-instances"));
+  assert.equal(
+    list.byClass("card-count")[0].textContent,
+    "экземпляров роли: 7",
+  );
+  const more = list.find((e) => e.dataset.part === "more");
+  const shown = list
+    .byClass("instance")
+    .filter((b) => !more.all((x) => x === b).length);
+  assert.equal(shown.length, 5);
+  assert.equal(more.byClass("instance").length, 2);
+  assert.equal(list.byClass("tasks-note")[0].textContent, "показано 5 из 7");
+  const item = (key) => list.find((e) => e.dataset.key === key);
+  const timeOf = (key) => item(key).byClass("instance-time")[0].textContent;
+  assert.match(timeOf("inst-0"), /назад$/, "in work: an age");
+  assert.equal(
+    item("inst-0").byClass("state-badge")[0].textContent,
+    "в работе",
+  );
+  assert.match(timeOf("inst-3"), /назад$/, "no fresh data: an age");
+  assert.equal(
+    item("inst-3").byClass("state-badge")[0].textContent,
+    "нет свежих данных",
+  );
+  assert.doesNotMatch(timeOf("inst-6"), /назад/, "finished: no age");
+  // the current one is marked; choosing another changes the head and the rows
+  const current = () =>
+    cardEl(sp).all(
+      (e) =>
+        e.classes.has("instance") && e.getAttribute("aria-current") === "true",
+    );
+  assert.equal(current().length, 1);
+  assert.ok(current()[0].dataset.key.startsWith(cardId(sp)));
+  const first = cardId(sp);
+  const second = shown
+    .map((b) => b.dataset.key)
+    .find((k) => !k.startsWith(first));
+  item(second).click();
+  assert.equal(cardId(sp), second.slice(0, 8));
+  assert.equal(
+    cardEl(sp)
+      .find((e) => e.dataset.key === second && e.classes.has("instance"))
+      .getAttribute("aria-current"),
+    "true",
+  );
+  assert.equal(
+    cardEl(sp).all(
+      (e) =>
+        e.classes.has("instance") && e.getAttribute("aria-current") === "true",
+    ).length,
+    1,
+  );
+  assert.ok(
+    focused(sp) ===
+      cardEl(sp).find((e) => e.dataset.focus === `instance:${second}`),
+  );
+});
+
+// ------------------------------------------------------------------ AC-08
+
+test("AC-08: what the card shows at once is not hidden in a closed <details>; all parts are closed when the card opens; a planned recalculation with a new line keeps the open part, the instance, the element with the focus and the scroll of the body; in 'Вся роль' a task without fresh data has its age; no 'в работе: N' in the code of the page", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", S(1)),
+    lineAt("PostToolUse", "S1", S(2), {
+      tool_use_id: "tu1",
+      launched_agent_id: "k1",
+      subagent_type: "Plan",
+      description: "дело",
+    }),
+    sub("S1", "k1", S(3), "Plan"),
+    lineAt("SessionStart", "S2", S(4)),
+    sub("S2", "k2", S(5), "Plan"),
+    tool("S1", T0 + 2 * 3600 * 1000 - 60_000, "tu-fresh"),
+  ];
+  const page = await loaded(entries, [], { now: T0 + 2 * 3600 * 1000 });
+  legendOf(page, "role:Plan").click();
+  const box = () => cardEl(page);
+  const insideClosed = (el) => {
+    for (let p = el.parentNode; p !== null; p = p.parentNode) {
+      if (p.tagName === "DETAILS" && p.open !== true) return true;
+    }
+    return false;
+  };
+  for (const el of [
+    box().byClass("card-title")[0],
+    box().byClass("card-ids")[0],
+    ...box().all((e) => e.classes.has("state-row")),
+    box().byClass("task-desc")[0],
+    box().byClass("card-launcher")[0],
+  ]) {
+    assert.ok(el !== undefined);
+    assert.equal(insideClosed(el), false, el.className);
+  }
+  const parts = () => box().all((e) => e.tagName === "DETAILS");
+  assert.deepEqual(
+    parts().map((d) => d.dataset.part),
+    ["ids", "given", "starts", "returns", "launched", "role"],
+  );
+  assert.equal(
+    parts().some((d) => d.open === true),
+    false,
+    "all closed",
+  );
+  // open "Начала работы" and "Полные идентификаторы", focus the copy button,
+  // scroll the body
+  for (const part of ["starts", "ids"]) {
+    box()
+      .find((e) => e.dataset.part === part)
+      .children[0].click();
+  }
+  box()
+    .find((e) => e.dataset.focus === "copy-session")
+    .focus();
+  box().byClass("card-body")[0].scrollTop = 40;
+  const id = cardId(page);
+  page.server.entries.push(tool("S1", page.clock.now(), "tu-new"));
+  await page.tick(2000);
+  await page.tick(10_000);
+  assert.equal(cardId(page), id, "the same instance");
+  assert.deepEqual(
+    parts()
+      .filter((d) => d.open === true)
+      .map((d) => d.dataset.part),
+    ["ids", "starts"],
+  );
+  assert.ok(
+    focused(page) === box().find((e) => e.dataset.focus === "copy-session"),
+  );
+  assert.equal(box().byClass("card-body")[0].scrollTop, 40);
+  assert.ok(box().byClass("card-body")[0] !== undefined);
+  // "Вся роль": a task without fresh data has its age, as in the panel
+  const role = box().find((e) => e.dataset.part === "role");
+  const stale = role.all(
+    (e) => e.classes.has("item") && e.dataset.state === "stale",
+  );
+  assert.equal(stale.length, 1);
+  assert.match(stale[0].byClass("age")[0].textContent, /назад$/);
+  // the old line of the card is in no module of the page (the export itself is
+  // removed from texts.js at step 5c)
+  const name = ["CARD", "WORKING"].join("_");
+  for (const file of fs.readdirSync(PUBLIC)) {
+    if (file === "texts.js") continue;
+    assert.equal(
+      fs.readFileSync(path.join(PUBLIC, file), "utf8").includes(name),
+      false,
+      file,
+    );
+  }
+  assert.equal(page.text("card").includes("в работе: "), false);
+  // the window of history never opens from a card (decision 0014): no button
+  // of a window and no toggle of a row in the card of the instance and of the
+  // main session (its last events hold the request of the owner)
+  const ask = await loaded(
+    [
+      lineAt("SessionStart", "S1", S(1)),
+      lineAt("UserPromptSubmit", "S1", S(2), {
+        prompt_kind: "owner",
+        prompt_text: "Образец",
+      }),
+      sub("S1", "k1", S(3), "Plan"),
+    ],
+    [],
+    { now: S(10) },
+  );
+  for (const key of ["main", "role:Plan"]) {
+    legendOf(ask, key).click();
+    for (const part of cardEl(ask).all((e) => e.tagName === "DETAILS")) {
+      part.open = true;
+    }
+    assert.equal(cardEl(ask).byClass("history-open").length, 0, key);
+    assert.equal(cardEl(ask).byClass("row-toggle").length, 0, key);
+    assert.ok(cardEl(ask).byClass("row").length >= 1, `${key}: rows of events`);
+  }
+});
+
+// ------------------------------------------------------------------ AC-09
+
+test("AC-09: the card on bad data - no description, no handoff, launched by an agent whose start is not recorded, no role, ids of 128 characters, an empty journal, the link lost with an open card (the contents stay, 'Нет связи' in the head), the instance gone (the card closes), an unreadable time - no exception, no service word", async () => {
+  const errors = mock.method(console, "error", () => {});
+  try {
+    const long = "Q".repeat(128);
+    const entries = [
+      lineAt("SessionStart", "S1", S(1)),
+      sub("S1", "nodesc", S(2), "Plan"),
+      lineAt("PostToolUse", "S1", S(3), {
+        tool_use_id: "tu-x",
+        launched_agent_id: "child",
+        subagent_type: "Explore",
+        agent_id: "parent-not-recorded",
+        agent_type: "Plan",
+      }),
+      sub("S1", "child", S(4), "Explore"),
+      lineAt("SubagentStart", "S1", S(5), { agent_id: long }),
+    ];
+    const page = await loaded(entries, [], { now: S(10) });
+    legendOf(page, "role:Plan").click();
+    assert.equal(
+      cardEl(page).byClass("task-none")[0].textContent,
+      "описание не записано: записи о передаче задания нет",
+    );
+    assert.equal(
+      cardEl(page).byClass("card-launcher")[0].textContent,
+      "не установлено: записи о передаче задания нет",
+    );
+    legendOf(page, "role:Explore").click();
+    assert.equal(
+      cardEl(page).byClass("card-launcher")[0].textContent,
+      "Plan · parent-n — начало этого агента не записано",
+    );
+    assert.equal(
+      cardEl(page).byClass("task-none")[0].textContent,
+      "описание не записано",
+    );
+    legendOf(page, `role:${TX.ROLE_UNKNOWN}`).click();
+    assert.equal(cardId(page), "Q".repeat(8));
+    assert.equal(
+      cardEl(page).byClass("card-title")[0].textContent,
+      "(роль не указана)",
+    );
+    for (const key of [
+      "role:Plan",
+      "role:Explore",
+      `role:${TX.ROLE_UNKNOWN}`,
+    ]) {
+      legendOf(page, key).click();
+      assert.doesNotMatch(cardEl(page).textContent, SERVICE, key);
+    }
+    // the link is lost while the card is open: the contents stay
+    legendOf(page, "role:Plan").click();
+    const before = cardEl(page).byClass("card-columns")[0].textContent;
+    page.server.mode = "fail";
+    await page.tick(2000);
+    await page.tick(10_000);
+    assert.equal(cardOpen(page), true);
+    assert.equal(
+      cardEl(page).byClass("card-offline")[0].textContent,
+      "Нет связи с сервером Pixel Office",
+    );
+    assert.equal(cardEl(page).byClass("card-columns")[0].textContent, before);
+    // the journal is replaced and the instance is gone: the card closes
+    page.server.mode = "ok";
+    page.server.entries.splice(
+      0,
+      page.server.entries.length,
+      lineAt("SessionStart", "S9", S(11)),
+    );
+    page.server.respond = () => ({
+      app: "sai-pixel-office",
+      lines: 1,
+      from: 0,
+      events: page.server.entries,
+      server_starts: [],
+    });
+    legendOf(page, "role:Plan").focus();
+    cardEl(page).byClass("card-close")[0].focus();
+    await page.tick(2000);
+    assert.equal(cardOpen(page), false, "the instance is gone");
+    assert.equal(cardEl(page).children.length, 0);
+    // the focus was in the card: it goes to the area of the office (the
+    // character and its legend button are gone too)
+    assert.equal(legendOf(page, "role:Plan"), undefined);
+    assert.ok(focused(page) === page.el("office-scroll"));
+    // an empty journal: no character, nothing to open
+    const empty = await loaded([], [], { now: S(10) });
+    assert.equal(empty.legend().length, 0);
+    assert.equal(cardOpen(empty), false);
+    // an unreadable time: the card says so (the model of the card directly)
+    const bad = [
+      lineAt("SessionStart", "S1", S(1)),
+      { ...sub("S1", "t1", S(2), "Plan"), time: "не время" },
+    ];
+    const mb = buildModel(bad, [], S(10));
+    const cb = buildInstanceCard(mb, buildOffice(mb), "t1");
+    assert.equal(cb.task_state.state, "stale");
+    assert.equal(cb.task_state.age_ms, null);
+    assert.equal(fmtDateTime("не время"), "");
+    assert.equal(errors.mock.calls.length, 0, "reportOnce was not called");
+  } finally {
+    errors.mock.restore();
+  }
+});
+
+// ------------------------------------------------------------------ AC-10
+
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const channel = (v) => {
+  const c = v / 255;
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+};
+const luminance = ([r, g, b]) =>
+  0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+const contrast = (a, b) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+test("AC-10: a hostile role, description and agent_id are text in the card, no element; writeText gets only the value; no word of success, no way to markup, only GET in the code; the badges of the five states and the grey captions are readable (WCAG 4.5:1 on the tokens of style.css, the property of the colours, not a search for a word)", async () => {
+  const IMGX = "<img src=x onerror=alert(1)>";
+  const calls = [];
+  const entries = [
+    lineAt("SessionStart", "S1", S(1)),
+    lineAt("PostToolUse", "S1", S(2), {
+      tool_use_id: "tu1",
+      launched_agent_id: IMGX,
+      subagent_type: IMGX,
+      description: IMGX,
+    }),
+    sub("S1", IMGX, S(3), IMGX),
+  ];
+  const page = await loaded(entries, [], {
+    now: S(10),
+    clipboard: { writeText: async (t) => calls.push(t) },
+  });
+  legendOf(page, `role:${IMGX}`).click();
+  assert.equal(cardEl(page).byClass("card-title")[0].textContent, IMGX);
+  assert.equal(cardEl(page).byClass("task-desc")[0].textContent, IMGX);
+  cardEl(page)
+    .find((e) => e.dataset.part === "ids")
+    .children[0].click();
+  cardEl(page)
+    .find((e) => e.dataset.focus === "copy-agent")
+    .click();
+  await settle();
+  assert.deepEqual(calls, [IMGX]);
+  assert.equal(page.created("img").length, 0);
+  assert.equal(page.doc.htmlWrites, 0);
+  // the code of the page
+  for (const name of fs.readdirSync(PUBLIC)) {
+    const text = fs.readFileSync(path.join(PUBLIC, name), "utf8");
+    assert.equal(
+      /innerHTML|outerHTML|insertAdjacentHTML|document\.write/.test(text),
+      false,
+      name,
+    );
+    assert.equal(
+      /method *: *['"](POST|PUT|PATCH|DELETE)/.test(text),
+      false,
+      name,
+    );
+    for (const line of text.split("\n")) {
+      if (line.includes("HISTORY_META_FINISHED")) continue;
+      assert.doesNotMatch(line, /заверш|готов|выполнен|успешн/i, name);
+    }
+  }
+  // the contrast of the badges and of the grey captions
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  const tokens = cssDecls(rules, ":root");
+  const color = (value, base) => {
+    const v = /^var\((--[a-z0-9-]+)\)$/.exec(value);
+    if (v) return hex(tokens.get(v[1]));
+    const m = /^rgba\((\d+), (\d+), (\d+), ([0-9.]+)\)$/.exec(value);
+    assert.ok(m, value);
+    const a = Number(m[4]);
+    return [1, 2, 3].map((i, k) =>
+      Math.round(Number(m[i]) * a + base[k] * (1 - a)),
+    );
+  };
+  for (const surface of ["--panel", "--panel-2"]) {
+    const base = hex(tokens.get(surface));
+    for (const state of [
+      "in_progress",
+      "completed",
+      "stale",
+      "restarted",
+      "unrecorded",
+    ]) {
+      const d = cssDecls(rules, `.state-badge[data-state="${state}"]`);
+      const r = contrast(
+        color(d.get("color"), base),
+        color(d.get("background"), base),
+      );
+      assert.ok(r >= 4.5, `${state} on ${surface}: ${r.toFixed(2)}:1`);
+    }
+    const muted = contrast(hex(tokens.get("--muted")), base);
+    assert.ok(muted >= 4.5, `--muted on ${surface}: ${muted.toFixed(2)}:1`);
+  }
+  // the formula fails a pair that is too pale (the red word on its own shade)
+  const err = cssDecls(rules, '.state-badge[data-state="unrecorded"]').get(
+    "background",
+  );
+  const pale = contrast(
+    hex(tokens.get("--err")),
+    color(err, hex(tokens.get("--panel-2"))),
+  );
+  assert.ok(pale < 4.5, `--err on its shade: ${pale.toFixed(2)}:1`);
 });

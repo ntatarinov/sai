@@ -70,7 +70,8 @@ button {
 }
 
 button:focus-visible,
-[tabindex]:focus-visible {
+[tabindex]:focus-visible,
+summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -155,27 +156,88 @@ button:focus-visible,
 
 .now {
   display: flex;
-  flex: 0 1 auto;
-  align-items: center;
+  flex: 1 1 auto;
+  align-items: flex-start;
   gap: 0.5rem;
   min-width: 10rem;
-  height: 2.125rem;
-  padding: 0 0.875rem 0 0.75rem;
+  min-height: 2.125rem;
+  padding: 0.25rem 0.875rem 0.25rem 0.75rem;
   overflow: hidden;
   border: 1px solid var(--now-line);
   border-radius: 0.5rem;
   background: var(--panel-2);
 }
 
+/* The dot stands opposite the first row (one row is 1.3 x 0.8125rem). */
+.now .now-dot {
+  margin-top: 0.28125rem;
+}
+
 .now[data-busy="true"] .now-dot {
   background: var(--ok);
 }
 
+/* The label "Сейчас:" and the list of rows, one row per agent at work
+   (REQ-036): the rows wrap and are never cut; more rows than fit scroll
+   inside the list. */
 .now-text {
-  overflow: hidden;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 0.375rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+.now-label {
+  flex: none;
+  color: var(--text);
+  font-size: 0.8125rem;
   font-weight: 600;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+}
+
+.now-empty {
+  font-weight: 600;
+  overflow-wrap: break-word;
+}
+
+/* The shadows at the edges show that more rows are above or below: covers
+   of the background colour scroll with the rows, the shadows stay. */
+.now-list {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 5.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  white-space: normal;
+  background:
+    linear-gradient(var(--panel-2), transparent) top / 100% 0.5rem no-repeat,
+    linear-gradient(transparent, var(--panel-2)) bottom / 100% 0.5rem no-repeat,
+    linear-gradient(var(--bg), transparent) top / 100% 0.5rem no-repeat,
+    linear-gradient(transparent, var(--bg)) bottom / 100% 0.5rem no-repeat;
+  background-color: var(--panel-2);
+  background-attachment: local, local, scroll, scroll;
+}
+
+.now-list:focus-visible {
+  outline-offset: -0.125rem;
+}
+
+.now-row {
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.now-role {
+  font-weight: 650;
+}
+
+.now-sep,
+.now-desc {
+  font-weight: 400;
 }
 
 .controls {
@@ -247,6 +309,16 @@ button:focus-visible,
     flex-wrap: nowrap;
     height: 3.75rem;
     padding: 0 1rem;
+  }
+
+  /* "Сейчас" keeps the header at 3.75rem: two rows are seen, the rest
+     scroll inside the list. */
+  .now {
+    height: 2.75rem;
+  }
+
+  .now-list {
+    max-height: 2.125rem;
   }
 
   .layout {
@@ -446,7 +518,8 @@ canvas {
   border-left-color: var(--ok);
 }
 
-.row[data-tone="handoff"] {
+.row[data-tone="handoff"],
+.row[data-tone="note"] {
   border-left-color: var(--violet);
 }
 
@@ -462,10 +535,43 @@ canvas {
   font-variant-numeric: tabular-nums;
 }
 
+.row-meta .who::before,
 .row-meta .session::before,
 .row-meta .source::before,
 .row-meta .mark::before {
   content: " · ";
+}
+
+.row-meta .who {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.row-icon {
+  float: right;
+  margin-left: 0.5rem;
+  color: var(--muted);
+}
+
+/* The row of the journal is a button: it opens and closes the details of the
+   event under it (REQ-045). The journal scrolls, so the ring of the focus is
+   drawn inside. */
+.row-toggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row-toggle[aria-expanded="true"] {
+  background: var(--panel-2);
+}
+
+.row-toggle:focus-visible {
+  outline-offset: -0.125rem;
 }
 
 .row-meta .source,
@@ -482,8 +588,9 @@ canvas {
   font-weight: 650;
 }
 
-.event::before {
-  content: " — ";
+.event {
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .row-desc {
@@ -491,6 +598,114 @@ canvas {
   margin-top: 0.125rem;
   color: var(--muted);
   font-size: 0.71875rem;
+}
+
+/* The details of an event under its row (REQ-045, design 5.2). */
+.event-details {
+  margin-top: 0.375rem;
+  padding: 0.5rem 0.875rem 0.625rem 0.6875rem;
+  background: var(--panel-2);
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: 0 0.5rem;
+  margin-bottom: 0.375rem;
+}
+
+.detail-label {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.detail-value {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.75rem;
+  overflow-wrap: break-word;
+}
+
+.detail-words,
+.detail-meaning {
+  display: block;
+}
+
+.detail-words {
+  font-weight: 600;
+}
+
+.detail-meaning {
+  margin-top: 0.125rem;
+}
+
+.detail[data-field="mark"] .detail-value {
+  color: var(--warn);
+}
+
+.detail-more > summary {
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.detail-more > summary:focus-visible {
+  outline-offset: -0.125rem;
+}
+
+.full-id,
+.tech-value {
+  overflow-wrap: anywhere;
+}
+
+.detail-tech li {
+  font-size: 0.6875rem;
+}
+
+.tech-key {
+  color: var(--muted);
+}
+
+.details-close {
+  display: block;
+  margin: 0.5rem 0 0 auto;
+}
+
+.details-close:focus-visible {
+  outline-offset: -0.125rem;
+}
+
+/* The badge of a state in the details of an event and in the card. */
+.state-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 62.4375rem;
+  font-size: 0.65625rem;
+  font-weight: 700;
+}
+
+.state-badge[data-state="in_progress"] {
+  background: rgba(232, 182, 76, 0.16);
+  color: var(--warn);
+}
+
+.state-badge[data-state="completed"] {
+  background: rgba(72, 201, 138, 0.16);
+  color: var(--ok);
+}
+
+.state-badge[data-state="stale"],
+.state-badge[data-state="restarted"] {
+  background: rgba(130, 150, 177, 0.16);
+  color: var(--text);
+}
+
+.state-badge[data-state="unrecorded"] {
+  background: rgba(239, 107, 94, 0.16);
+  color: var(--text);
 }
 
 .journal-empty {
@@ -724,18 +939,38 @@ canvas {
   inset: 0;
   z-index: 10;
   padding: 1.75rem 1rem;
-  overflow-y: auto;
+  overflow: hidden;
   background: rgba(6, 11, 18, 0.78);
 }
 
+/* The card of an instance (REQ-044): a window in the middle; the body
+   scrolls, "×" stays. Two columns when the role has more than one instance
+   and the body is wide enough (the grid of .card-columns, no own media rule). */
 .card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 40rem;
   max-width: 100%;
+  max-height: calc(100vh - 3.5rem);
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 0;
+  overflow: hidden;
   border-radius: 0.75rem;
   background: var(--panel);
+}
+
+.card[data-columns="2"] {
+  width: min(55rem, 100%);
+}
+
+.card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 1.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-wrap: break-word;
 }
 
 /* One line of 1 pixel for the frame of the card and of the window of history,
@@ -744,7 +979,8 @@ canvas {
 .card,
 .history,
 .history-table tr,
-.history-timeline {
+.history-timeline,
+.instance {
   border: 1px solid var(--line);
 }
 
@@ -752,6 +988,7 @@ canvas {
   position: absolute;
   top: 0.75rem;
   right: 0.875rem;
+  z-index: 1;
   width: 2rem;
   height: 2rem;
   padding: 0;
@@ -765,9 +1002,17 @@ canvas {
 
 .card-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  padding-right: 2rem;
+  gap: 0.25rem 0.5rem;
+  padding-right: 2.5rem;
+}
+
+.card-head > .card-code,
+.card-head > .card-ids,
+.card-head > .card-more,
+.card-head > .card-offline {
+  flex: 1 1 100%;
 }
 
 .card-swatch {
@@ -779,9 +1024,227 @@ canvas {
 }
 
 .card-title {
+  flex: 1 1 0;
+  min-width: 0;
   font-size: 1.1875rem;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+.card-code,
+.card-ids {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.card-id {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.card-offline {
+  color: var(--err);
+  font-size: 0.75rem;
+}
+
+.card-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: 1.5rem;
+}
+
+.card-block {
+  margin: 1.25rem 0 0.5rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.card-instance > .card-block:first-child,
+.card-instances > .card-block:first-child {
+  margin-top: 1rem;
+}
+
+.card-count {
+  margin-left: 0.5rem;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.task-desc,
+.card-launcher {
+  font-size: 0.8125rem;
+}
+
+.task-none {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.task-note,
+.card-unknown,
+.entry-note {
+  color: var(--muted);
+  font-size: 0.6875rem;
+}
+
+.card-unknown {
+  margin-top: 0.375rem;
+}
+
+.state-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 0.625rem;
+}
+
+.state-label {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.state-value {
+  max-width: 100%;
+  font-size: 0.8125rem;
+}
+
+.state-basis {
+  color: var(--muted);
+  font-size: 0.71875rem;
+}
+
+.card-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card-link:hover {
+  text-decoration: underline;
+}
+
+.instance {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 0.375rem;
+  padding: 0.4375rem 0.5625rem;
+  border-radius: 0.4375rem;
+  background: var(--panel-2);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.instance[aria-current="true"] {
+  border-color: var(--accent);
+  box-shadow: inset 0.1875rem 0 0 var(--accent);
+}
+
+.instance:focus-visible,
+.card-more > summary:focus-visible {
+  outline-offset: -0.125rem;
+}
+
+.instance-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+}
+
+.instance-id {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.instance-time {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.instance-desc {
+  font-size: 0.71875rem;
+}
+
+.card-more {
+  margin-top: 1rem;
+}
+
+.card-more > summary {
+  min-height: 1.75rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.75rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.card-more > :not(summary) {
+  margin-top: 0.5rem;
+}
+
+.copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+.copy-label {
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.copy-row .full-id {
+  flex: 1 1 12rem;
+  min-width: 0;
+  font-size: 0.75rem;
+}
+
+.copy-result {
+  font-size: 0.75rem;
+}
+
+.copy-result[data-ok="true"] {
+  color: var(--ok);
+}
+
+.copy-result[data-ok="false"] {
+  color: var(--warn);
+}
+
+.card-entry {
+  display: flex;
+  flex-direction: column;
+}
+
+.entry-line,
+.entry-desc {
+  font-size: 0.75rem;
+}
+
+.card-empty {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 
 .card-working {
@@ -817,15 +1280,6 @@ body[data-modal] {
   overflow: hidden;
 }
 
-.row.opens-history {
-  cursor: pointer;
-}
-
-/* The journal scrolls: an outer outline would be cut at the sides. */
-.row.opens-history:focus-visible {
-  outline-offset: -0.125rem;
-}
-
 .history-open,
 .history-service {
   display: block;
@@ -840,7 +1294,8 @@ body[data-modal] {
   color: var(--muted);
 }
 
-.item .history-open {
+.item .history-open,
+.row .history-open {
   width: 100%;
   margin-top: 0.125rem;
   padding: 0;
@@ -850,7 +1305,8 @@ body[data-modal] {
   cursor: pointer;
 }
 
-.item .history-open:hover {
+.item .history-open:hover,
+.row .history-open:hover {
   text-decoration: underline;
 }
 
@@ -1187,10 +1643,13 @@ body[data-modal] {
   }
 
   .now-text {
-    display: -webkit-box;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* The caption of a field of the details stands over its value. */
+  .detail {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .controls {
@@ -1220,8 +1679,36 @@ body[data-modal] {
 
   .card {
     width: 100%;
+    height: 100%;
     min-height: 100%;
+    max-height: none;
+    border-style: none;
     border-radius: 0;
+  }
+
+  .card[data-columns="2"] {
+    width: 100%;
+  }
+
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-close {
+    top: 0;
+    right: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    line-height: 2.75rem;
+  }
+
+  .card-close:focus-visible {
+    outline-offset: -0.125rem;
+  }
+
+  .card-more > summary {
+    min-height: 2.75rem;
+    line-height: 2.75rem;
   }
 
   .history {

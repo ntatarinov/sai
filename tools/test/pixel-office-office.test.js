@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { mock, test } from "node:test";
 import { buildModel } from "../src/pixel-office/public/model.js";
+import { roleName } from "../src/pixel-office/public/words.js";
 import { STALE_AFTER_MS } from "../src/pixel-office/public/schema.js";
 import {
   ROLE_PALETTE,
@@ -47,7 +48,6 @@ import {
   BUBBLE_TEXTS,
   CANVAS_UNSUPPORTED,
   CARD_SESSIONS,
-  CARD_WORKING,
   LEGEND_IDLE,
   LEGEND_IDLE_MAIN,
   LEGEND_WORKING,
@@ -616,7 +616,7 @@ function clickCharacter(page, key) {
   });
 }
 
-test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up to 10 trusted events; the title is the full name; a click selects and opens it; one more event changes the views together", async () => {
+test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up to 10 trusted events; the title is the name of the role in plain words, the code beside it; a click selects and opens it; one more event changes the views together", async () => {
   const role = "Sai Orchestrator (ORCH)";
   const j = journal();
   j.sessionStart("S1");
@@ -658,7 +658,13 @@ test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up t
   }
   clickCharacter(page, `role:${role}`);
   assert.equal(page.el("card-overlay").hidden, false);
-  assert.equal(page.el("card").byClass("card-title")[0].textContent, role);
+  // REQ-044: the title is the name of the role in plain words, the code of
+  // the role beside it
+  assert.equal(
+    page.el("card").byClass("card-title")[0].textContent,
+    "Оркестратор",
+  );
+  assert.equal(page.el("card").byClass("card-code")[0].textContent, role);
   const pressed = page.legend().find((b) => b.dataset.key === `role:${role}`);
   assert.equal(pressed.getAttribute("aria-pressed"), "true");
   page.ctx.clear();
@@ -681,11 +687,17 @@ test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up t
     2,
   );
   assert.ok(page.el("card").byClass("item").length > before.items - 1);
-  assert.equal(
-    page.el("card").byClass("card-working")[0].textContent,
-    `${CARD_WORKING}2`,
-  );
+  assert.equal(page.el("card").byClass("card-working").length, 0);
+  assert.equal(workplaceOf(page), "работает — у этой роли задач «в работе»: 2");
 });
+
+// The line "Рабочее место" of the card of an instance (REQ-044).
+function workplaceOf(page) {
+  return page
+    .el("card")
+    .find((e) => e.dataset.row === "workplace")
+    .byClass("state-value")[0].textContent;
+}
 
 // ------------------------------------------------------------------ OF-11
 
@@ -1322,7 +1334,7 @@ test("OF-21: data-drawn - absent before the first drawing, the number of charact
 
 // ----------------------------------------------------------------- OF-23/24
 
-test("OF-23: the card of the main session says the number of running sessions and no 'в работе'; the card of a role says 'в работе: M'", async () => {
+test("OF-23: the card of the main session says the number of running sessions and no 'в работе'; the card of an instance has no 'в работе: M', its workplace row names the number", async () => {
   const j = journal();
   j.sessionStart("S1");
   j.sessionStart("S2");
@@ -1332,12 +1344,13 @@ test("OF-23: the card of the main session says the number of running sessions an
   page.legend()[0].click();
   const main = page.el("card").byClass("card-working")[0].textContent;
   assert.equal(main, `${CARD_SESSIONS}2`);
-  assert.equal(main.includes(CARD_WORKING), false);
+  assert.equal(main.includes("в работе"), false);
   page.legend()[1].click();
-  assert.equal(
-    page.el("card").byClass("card-working")[0].textContent,
-    `${CARD_WORKING}1`,
-  );
+  // REQ-044: the card of an instance has no "в работе: M"; its workplace
+  // line names the number
+  assert.equal(page.el("card").byClass("card-working").length, 0);
+  assert.equal(page.el("card").textContent.includes("в работе: "), false);
+  assert.equal(workplaceOf(page), "работает — у этой роли задач «в работе»: 1");
 });
 
 test("OF-24: Sim.positions carries desk_index of every character, in the order of the desks", () => {
@@ -2543,11 +2556,17 @@ test("OF-40: 40 desks in a stand of 1022 x 670 - the cell stays 27 and the canva
       clientY: seat[1] * 27 + 13.5,
     });
     assert.equal(page.el("card-overlay").hidden, false, `desk ${desk}`);
+    // REQ-044: the title is the name in plain words, the code beside it
+    // only when it differs
+    const name = roleName(character.full);
     assert.equal(
       page.el("card").byClass("card-title")[0].textContent,
-      character.full,
+      name,
       `desk ${desk}`,
     );
+    const code = page.el("card").byClass("card-code");
+    if (name === character.full) assert.equal(code.length, 0);
+    else assert.equal(code[0].textContent, character.full, `desk ${desk}`);
     page.el("card-overlay").hidden = true;
   }
 });
@@ -3136,4 +3155,158 @@ test("FS-07: on the page - after the planned move into 'нет свежих да
     PALETTE[1],
   );
   assert.equal(screenColor(page.ctx, o, 0), PALETTE[0]);
+});
+
+// ===================================================================
+// REQ-044 (design docs/design/REQ-036-044-045-interactive.md, 3.6, AC-01):
+// what a press on the office opens.
+// ===================================================================
+import {
+  hitOffice,
+  labelWidths,
+} from "../src/pixel-office/public/office-view.js";
+
+test("AC-01: what a press opens - every cell of every desk (the 2 x 2 block and the seat) gives the character of that desk; a floor cell and the cell of approach give nothing; a character is older than a desk and its caption, a caption than a desk; the caption is measured with the font of the canvas; a walking caption over a foreign desk gives its own character; NaN gives nothing", () => {
+  const A = "Sai Security Reviewer (SECURITY-REVIEWER)";
+  const B = "Sai Test Design Validator (TEST-DESIGN-VALIDATOR)";
+  const j = journal();
+  j.sessionStart("S1");
+  launch(j, "S1", "a1", A);
+  launch(j, "S1", "b1", B);
+  launch(j, "S1", "c1", "Plan");
+  const { o } = mk(j.entries);
+  const C = 24;
+  const mid = (cx, cy) => [(cx + 0.5) * C, (cy + 0.5) * C];
+  const none = new Map();
+  const deskCells = new Map();
+  for (const desk of o.desks) {
+    const spot = o.layout.desks[desk.index];
+    const [bx, by] = spot.block;
+    const cells = [
+      [bx, by],
+      [bx + 1, by],
+      [bx, by + 1],
+      [bx + 1, by + 1],
+      spot.seat,
+    ];
+    for (const [cx, cy] of cells) {
+      deskCells.set(`${cx},${cy}`, desk.key);
+      assert.equal(
+        hitOffice(o, [], ...mid(cx, cy), none),
+        desk.key,
+        `${desk.key} ${cx},${cy}`,
+      );
+    }
+  }
+  assert.equal(o.desks.length, 4, "the main session and three roles");
+  // the cell of approach and a floor cell are no desk
+  for (const desk of o.desks) {
+    const [ax, ay] = o.layout.desks[desk.index].approach;
+    if (deskCells.has(`${ax},${ay}`)) continue;
+    assert.equal(
+      hitOffice(o, [], ...mid(ax, ay), none),
+      null,
+      `approach of ${desk.key}`,
+    );
+  }
+  let floor = null;
+  for (let y = 0; y < o.layout.height && floor === null; y++) {
+    for (let x = o.layout.min_x; x < o.layout.min_x + o.layout.width; x++) {
+      if (!deskCells.has(`${x},${y}`) && cellKind(o.layout, x, y) === "floor") {
+        floor = [x, y];
+        break;
+      }
+    }
+  }
+  assert.ok(floor !== null);
+  assert.equal(hitOffice(o, [], ...mid(...floor), none), null);
+  // the character of A walking: a cell of its desk is still its own
+  const keyA = `role:${A}`;
+  const keyB = `role:${B}`;
+  const spotA = o.layout.desks[o.desks.find((d) => d.key === keyA).index];
+  const walking = [{ key: keyA, x: floor[0], y: floor[1], state: "walking" }];
+  assert.equal(hitOffice(o, walking, ...mid(...spotA.block), none), keyA);
+  // B stands on the cell of approach of A's desk
+  const [ax, ay] = spotA.approach;
+  const onApproach = [{ key: keyB, x: ax, y: ay, state: "walking" }];
+  const [bxA, byA] = spotA.block;
+  // a point in B's hit and in a cell of A's desk: the point of a cell of A's
+  // desk nearest to the middle of B
+  const [cxB, cyB] = mid(ax, ay);
+  let both = null;
+  for (const [key, owner] of deskCells) {
+    if (owner !== keyA) continue;
+    const [cx, cy] = key.split(",").map(Number);
+    const px = Math.min(Math.max(cxB, cx * C + 0.5), (cx + 1) * C - 0.5);
+    const py = Math.min(Math.max(cyB, cy * C + 0.5), (cy + 1) * C - 0.5);
+    if (Math.abs(px - cxB) < 0.9 * C && Math.abs(py - cyB) < 1.1 * C) {
+      both = [px, py];
+      break;
+    }
+  }
+  assert.ok(both !== null, "the cell of approach touches the desk");
+  assert.equal(
+    hitOffice(o, [], ...both, none),
+    keyA,
+    "the point is on A's desk",
+  );
+  assert.equal(hitOffice(o, onApproach, ...both, none), keyB, "B is older");
+  // a point of A's desk away from B: A
+  assert.equal(
+    hitOffice(o, onApproach, (bxA + 0.1) * C, (byA + 0.1) * C, none),
+    keyA,
+  );
+  // the caption of a seated character, measured with the font of the canvas
+  const ctx = makeCtx();
+  const widths = labelWidths(ctx, o);
+  assert.equal(ctx.font, LABEL_FONT);
+  const w = widths.get(keyA);
+  assert.equal(w, 0.6 * 9 * Array.from(roleLabel(A)).length);
+  const [sx, sy] = spotA.seat;
+  const seated = [{ key: keyA, x: sx, y: sy, state: "seated" }];
+  const X = Math.round(sx * C);
+  const Y = Math.round(sy * C);
+  const right = X + 12 + w / 2 + 2;
+  // inside the plate, away from the character (more than 0.9 cell sideways)
+  const inside = [right - 0.5, Y + 31];
+  assert.ok(Math.abs(inside[0] - (sx + 0.5) * C) >= 0.9 * C);
+  assert.equal(hitOffice(o, seated, ...inside, widths), keyA);
+  // one pixel beyond the edge of the plate (and off any desk): nothing
+  const beyond = [right + 1, Y + 31];
+  assert.equal(
+    deskCells.has(`${Math.floor(beyond[0] / C)},${Math.floor(beyond[1] / C)}`),
+    false,
+  );
+  assert.equal(hitOffice(o, seated, ...beyond, widths), null);
+  // without a measured width the caption is not hit
+  assert.equal(hitOffice(o, seated, ...inside, none), null);
+  // the caption of B walking over a cell of A's desk: B
+  const over = [{ key: keyB, x: bxA - 1, y: byA - 0.5, state: "walking" }];
+  const wB = widths.get(keyB);
+  const pt = [bxA * C + 10, byA * C + 20];
+  const Xb = Math.round((bxA - 1) * C);
+  assert.ok(pt[0] < Xb + 12 + wB / 2 + 2, "inside B's caption");
+  assert.equal(
+    hitOffice(o, over, ...pt, none),
+    keyA,
+    "without the caption: A's desk",
+  );
+  assert.equal(
+    hitOffice(o, over, ...pt, widths),
+    keyB,
+    "the caption is older than a desk",
+  );
+  // a point that is not a number
+  assert.equal(hitOffice(o, seated, Number.NaN, 10, widths), null);
+  assert.equal(hitOffice(o, seated, 10, undefined, widths), null);
+  // a measure that throws: the caption is not hit, the desk still is
+  const broken = makeCtx();
+  broken.measureText = () => {
+    throw new Error("no fonts");
+  };
+  assert.deepEqual([...labelWidths(broken, o).keys()], []);
+  assert.equal(
+    hitOffice(o, [], ...mid(...spotA.block), labelWidths(broken, o)),
+    keyA,
+  );
 });

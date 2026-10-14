@@ -1940,3 +1940,72 @@ test("SV-67: the server makes no outgoing requests (grep of server.js is empty) 
   assert.equal(run.out.stderr.includes(needle), false);
   assert.equal(run.out.stdout.includes(secret), false);
 });
+
+// ===================================================================
+// REQ-036 criterion 6, D14 (design REQ-036-044-045 3.13): the server masks
+// the description and the roles itself, also when a signed body came around
+// the hook. The secrets are invented.
+// ===================================================================
+import { validateWriteBody } from "../src/pixel-office/protocol.js";
+import { MASK_LABEL } from "../src/pixel-office/public/schema.js";
+
+test("MK-02: the server masks the description, subagent_type and agent_type of a signed body that did not pass the hook - not in the file of the journal, not in the answer of GET /api/events, '[скрыто]' in their place; a body masked by the hook is written as it is", async (t) => {
+  // invented secrets, put together at run time
+  const key = ["sk", "ant", "MK02fakeKEY9876543210zyxwvu"].join("-");
+  const pass = ["mk02", "pass", "VALUE77qq"].join("");
+  const srv = await startServer(t, { now: fixedNow });
+  const raw = writeBody("PostToolUse", "mk-session", iso(T0), {
+    tool_use_id: "toolu_mk02",
+    launched_agent_id: "agent-mk02",
+    subagent_type: `Plan ${key}`,
+    agent_id: "agent-parent",
+    agent_type: `Explore password="${pass}"`,
+    description: `ключ ${key} и password="${pass}"`,
+  });
+  const direct = validateWriteBody(raw, T0);
+  assert.equal(direct.ok, true, direct.reason);
+  for (const f of ["description", "subagent_type", "agent_type"]) {
+    assert.ok(direct.line[f].includes(MASK_LABEL), f);
+  }
+  assert.equal(direct.line.agent_id, "agent-parent");
+  assert.equal(direct.line.launched_agent_id, "agent-mk02");
+  const res = await srv.post(raw);
+  assert.equal(res.status, 204);
+  const file = fs.readFileSync(srv.eventsFile, "utf8");
+  const answer = (await srv.get("/api/events?after=0")).body;
+  for (const text of [file, answer]) {
+    for (const secret of [key, pass]) {
+      for (let i = 0; i + 8 <= secret.length; i++) {
+        assert.equal(
+          text.includes(secret.slice(i, i + 8)),
+          false,
+          secret.slice(i, i + 8),
+        );
+      }
+    }
+    assert.ok(text.includes(MASK_LABEL));
+  }
+  const line = JSON.parse(file.trim().split("\n").at(-1));
+  assert.equal(line.subagent_type, `Plan ${MASK_LABEL}`);
+  // a body already masked by the hook: written without a change
+  const masked = buildWriteBody(
+    {
+      session_id: "mk-session",
+      hook_event_name: "PostToolUse",
+      tool_name: "Agent",
+      tool_use_id: "toolu_mk02b",
+      tool_input: { subagent_type: `Plan ${key}`, description: `ключ ${key}` },
+      tool_response: { agentId: "agent-mk02b" },
+    },
+    iso(T0),
+  );
+  const again = validateWriteBody(masked, T0);
+  assert.equal(again.line.description, masked.description);
+  assert.equal(again.line.subagent_type, masked.subagent_type);
+  assert.equal((await srv.post(masked)).status, 204);
+  const last = JSON.parse(
+    fs.readFileSync(srv.eventsFile, "utf8").trim().split("\n").at(-1),
+  );
+  assert.equal(last.description, masked.description);
+  assert.equal(last.subagent_type, masked.subagent_type);
+});

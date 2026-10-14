@@ -256,3 +256,48 @@ test("SC-06: the scale is not set by a script or an attribute - no style= in ind
     /innerWidth/.test(fs.readFileSync(path.join(PUBLIC, "boot.js"), "utf8")),
   );
 });
+
+// ------------------------------------------------------------------ NM-07
+// REQ-036 criterion 7: the block "Сейчас" and its rows are sized in rem, no
+// height in px; the numbers of px lines and @media stay (SC-03, SC-05 as they
+// were). The view at the named windows is measured by DESIGN-QA-VALIDATOR.
+
+test("NM-07: the rule of the CSS of 'Сейчас' (the view is measured in a browser at step 7) - every rule of the block is in rem, no px but the line of 1 px; the wide header keeps 3.75rem with two rows seen (2.75rem, list 2.125rem), elsewhere five rows (5.5rem); the font of a row is not smaller than the words of a journal row; still exactly two @media", () => {
+  const ofBlock = PARSED.rules.filter((r) =>
+    r.selector
+      .split(",")
+      .some((s) => /(^|[\s>+~])\.now([-\w]*)/.test(s.trim())),
+  );
+  assert.ok(ofBlock.length >= 10, `rules of the block: ${ofBlock.length}`);
+  for (const rule of ofBlock) {
+    for (const [prop, value] of rule.decls) {
+      if (!/px/.test(value)) continue;
+      assert.match(
+        `${prop}: ${value}`,
+        /^border: 1px solid var\(--[a-z-]+\)$/,
+        `${rule.media ?? "-"} ${rule.selector}`,
+      );
+    }
+    for (const [prop, value] of rule.decls) {
+      if (!/^(min-|max-)?height$/.test(prop)) continue;
+      assert.match(
+        value,
+        /^(auto|\d+(\.\d+)?rem)$/,
+        `${rule.selector} ${prop}`,
+      );
+    }
+  }
+  assert.equal(declOf(".now", "height", WIDE), "2.75rem");
+  assert.equal(declOf(".now-list", "max-height", WIDE), "2.125rem");
+  assert.equal(declOf(".now-list", "max-height"), "5.5rem");
+  assert.equal(declOf(".now-list", "overflow-y"), "auto");
+  assert.equal(declOf(".top", "height", WIDE), "3.75rem");
+  const rem = (v) => Number(/^([\d.]+)rem$/.exec(v)[1]);
+  assert.ok(
+    rem(declOf(".now-row", "font-size")) >= rem(declOf(".event", "font-size")),
+  );
+  assert.deepEqual(
+    PARSED.media.filter((m, i, a) => a.indexOf(m) === i).sort(),
+    [NARROW, WIDE].sort(),
+  );
+});

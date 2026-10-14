@@ -1,0 +1,123 @@
+{
+  "handoff_id": "step04-r1-REQ044-20261014-01",
+  "run_id": "REQ044-20261014-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ044-20261014-01/step-04-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-036", "REQ-045", "REQ-044"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ044-20261014-01/step-05c-code-fixer.json",
+      "handoffs/REQ044-20261014-01/step-03-security-reviewer-r1.json",
+      "handoffs/REQ044-20261014-01/step-04-reviewer.json",
+      "docs/design/REQ-036-044-045-interactive.md (D14)",
+      "tools/src/pixel-office/"
+    ],
+    "route": "SECURITY-REVIEWER (повтор) -> REVIEWER (повтор, этот) -> TEST-DESIGNER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ044-20261014-01",
+    "rework_of": "handoffs/REQ044-20261014-01/step-05c-code-fixer.json",
+    "parallel_work_now": "TEST-DESIGNER (шаг 5) держит handoff открытым, файлы тестов сейчас не правит",
+    "orch_check": {
+      "at": "2026-10-14T15:48:31Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "PASS повтора: изменены ровно шесть файлов 5c; maskField без дублирования, пределы хука и сервера совпадают; F1–F3 закрыты (F3 перемерен: 749,25 при крае 755); check на копии 1546/1546",
+        "N1 (пробельное описание: хук отбрасывает, обход хука сохраняет) и N2 (truncateDescription больше не вызывается кодом, держит только PG-22) — LOW-дефекты на шаге 10; F4–F8 первого ревью — WF-01 во втором прогоне"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор после шага 5c (handoffs/REQ044-20261014-01/step-05c-code-fixer.json) и PASS повторной безопасности (step-03-security-reviewer-r1.json). Твой прежний PASS — step-04-reviewer.json; он в силе для файлов, которые не менялись. Проверь САМ изменения 5c: protocol.js (maskField; D14, п. 3.13; decisions/0056) — настоящее решение, без дублирования, идиомы, нет ли расхождения между хуком и сервером в порядке «маскировать → резать» и в пределах; texts.js (удалены EVENT_LABELS, CARD_WORKING — нигде не упоминаются в tools/); model.js (showsSessionEvent, showsAge) и их применение в app.js и instance-card.js — находка F1 закрыта, а замена в itemInto (сверх названного ревью, item.state !== \"restarted\" → showsAge) равносильна? (проверь по веткам); F2 — три вызова openCard без лишнего аргумента; F3 — .card-unknown 0,375 rem, замер 749 при крае 755 (повтори в браузере на стенде, худший случай: нет свежих данных, описание 100 знаков, возраст в сутках, окно 1470×784). I1 безопасности (описание из пробелов: хук отбрасывает, обход хука сохраняет как есть — так было и до 5c) — оцени: правка сейчас или LOW-дефект. Красные тесты: на копии вне проекта npm run check — код 0 (тесты ещё не дописаны; NM-06 и MK-01…MK-05 допишет TEST-DESIGNER). Важность: Critical/High/Medium — FAIL. Код и проект не менять. Запрещены git checkout/reset/stash/clean. Пути компьютера и названия чужих проектов не писать. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": [
+      "Правки 5c проверены самим; F1–F3 закрыты; маскирование без расхождений хука и сервера",
+      "Вердикт PASS или FAIL"
+    ]
+  },
+  "created_at": "2026-10-14T15:43:45Z",
+  "started_at": "2026-10-14T15:43:45Z",
+  "completed_at": "2026-10-14T15:48:04Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: правки шага 5c проверены, находок Critical, High и Medium нет; F1–F3 прежнего ревью закрыты; две новые Low (N1, N2). Изменение 5c сверено с копией, снятой мной до шага 5c на первом ревью: ровно шесть файлов — protocol.js, texts.js, model.js, app.js, instance-card.js, style.css; остальные файлы страницы и README те же; server.js, hook.js, mask.js, schema.js не менялись. Маскирование (D14, п. 3.13, решение 0056) — настоящее решение без дублирования: одна функция maskField = firstCodePoints(maskSecrets(value), limit) для ролей в хуке и для трёх полей на сервере; описание в хуке идёт через существующую prepareText (тот же порядок «маскировать → резать», плюс срез длинного входа и отказ от пустого), обе линии — в той же операции, что запись. Пробой на копии: хук и сервер дают одинаковый результат при одинаковых пределах (100 знаков у описания, 128 у ролей) для коротких секретов, ключа на краю обрезки, 100 знаков без секрета, описания с пробелами по краям и ложного срабатывания на имени файла; двойное маскирование не меняет значение; идентификаторы не тронуты. Единственное расхождение двух линий — описание из одних пробелов (N1). texts.js: EVENT_LABELS и CARD_WORKING удалены, по tools/src/pixel-office и tools/test не упоминаются; семи старых слов в странице нет. F1 закрыта: showsSessionEvent и showsAge в model.js рядом с UNCONFIRMED_STATES, app.js и instance-card.js берут их, литералов не осталось. Замена в itemInto сверх названного равносильна: внутри ветки showsSessionEvent (in_progress, stale, restarted) условие state !== \"restarted\" истинно ровно для in_progress и stale, то есть равно showsAge. F2 закрыта: все три вызова — openCard(key) (app.js:622, 1842, 2317), включая третий, найденный исправлением. F3 закрыта: замер на свежем стенде вне проекта (код рабочего дерева, худший случай — «нет свежих данных», описание 100 знаков, возраст около суток, окно 1470×784, прокрутка 0) — нижний край второй фразы 749,25 px при нижнем крае видимого тела 755 px; фраза видна целиком (снимок), запас 5,75 px. I1 безопасности: правка сейчас не нужна, только LOW-дефект (N1). Проверка: на копии вне проекта (с .git, чтобы работали traces и handoffs-check) cd tools && npm run check — код 0, tests 1546, pass 1546, fail 0, skipped 0, todo 0. Прежние наблюдения F4–F8 (место раскрытия журнала, слово «хук» без пояснения, три имени роли, скрытые строки «Сейчас», повтор «служебное сообщение») шагом 5c не затрагивались и остаются вопросами к ORCH через WF-01 и описание интерфейса.",
+    "findings": [
+      {
+        "id": "F1",
+        "where": "tools/src/pixel-office/public/model.js (showsSessionEvent, showsAge), app.js itemInto/taskBasis/resultOf, instance-card.js instanceItem",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: общие функции в model.js; grep 'hasSessionEvent|=== \"stale\"|UNCONFIRMED_STATES' по app.js и instance-card.js — пусто. Замена item.state !== \"restarted\" на showsAge(item.state) внутри ветки showsSessionEvent равносильна.",
+        "fix": "-"
+      },
+      {
+        "id": "F2",
+        "where": "tools/src/pixel-office/public/app.js:622, 1842, 2317",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: все вызовы openCard(key), сигнатура app.js:1754 — openCard(key).",
+        "fix": "-"
+      },
+      {
+        "id": "F3",
+        "where": "tools/src/pixel-office/public/style.css .card-unknown (margin-top 0,375 rem)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: худший случай 1470×784 — фразы незнания кончаются на 726,75 и 749,25 px при крае видимого тела 755 px; было 761. Запас 5,75 px — малый: ещё одна строка левой колонки снова уведёт фразу за край.",
+        "fix": "Описание интерфейса п. 7.5 (вопрос О17) и замеры DESIGN-QA-VALIDATOR и UAT-RUNNER на этом же худшем случае."
+      },
+      {
+        "id": "N1",
+        "where": "tools/src/pixel-office/protocol.js: хук — buildWriteBody, описание через prepareText (строки 177–182, пустое и пробельное → ключа нет); сервер — validateWriteBody, MASKED_FIELDS (строки 222–224, maskField без такой проверки)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Две линии расходятся только в одном случае: описание из одних пробелов хук отбрасывает (так стало на шаге 5c, по п. 3.13 проекта; до 5c хук его хранил), а подписанный запрос в обход хука сервер сохраняет как есть («     »). Проверено пробой. На безопасность не влияет (секрета нет, писать в обход хука может только держатель секрета записи); на странице это пустое описание. Правила записи двух линий разные — род AP-014.",
+        "fix": "Не править сейчас: завести LOW-дефект (по поручению ORCH) — сервер отбрасывает пустое или пробельное описание тем же правилом, что хук (или проект явно записывает, что это допустимо), и тест на путь в обход хука."
+      },
+      {
+        "id": "N2",
+        "where": "tools/src/pixel-office/public/schema.js:169 (truncateDescription)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "После 5c функция truncateDescription в коде больше не вызывается (протокол перешёл на prepareText); её держит только тест PG-22. Мёртвый экспорт схемы.",
+        "fix": "Решение ORCH: удалить вместе с заменой проверки PG-22 (через TEST-DESIGNER, без ослабления) или оставить как утилиту схемы с пометкой."
+      }
+    ],
+    "self_check": [
+      "date -u -> 2026-10-14T15:43:51Z (начало)",
+      "diff -ru копия кода до шага 5c (снята мной на первом ревью, вне проекта) против рабочего дерева по tools/src/pixel-office/protocol.js и public/ -> изменения только в protocol.js, app.js, instance-card.js, model.js, style.css, texts.js; README тот же; git diff --stat по server.js, hook.js, mask.js, public/schema.js — пусто",
+      "grep -rn 'EVENT_LABELS|CARD_WORKING' tools/src/pixel-office/ tools/test/ -> пусто, код 1; семь старых слов журнала по public/ -> пусто, код 1; заверш|готов|выполнен|успешн без HISTORY_META_FINISHED -> пусто, код 1",
+      "grep -n 'openCard(' app.js -> 622 openCard(c.key), 1754 function openCard(key), 1842 openCard(key), 2317 openCard(key); grep 'hasSessionEvent|=== \"stale\"|UNCONFIRMED_STATES' app.js instance-card.js -> пусто, код 1",
+      "grep -rn truncateDescription tools/src/ -> только определение public/schema.js:169 (N2)",
+      "проба protocol.js на копии (buildWriteBody → validateWriteBody против validateWriteBody в обход хука, роль «Sai Reviewer password=…» и описания): short — оба «Образец: password=[скрыто]»; edge98 — оба 100 знаков, хвост «password=[ск»; plain100 — оба без изменений; lead — пробелы по краям сохранены в обеих линиях; file3 — оба «Шаг 5: тесты [скрыто]» (ISS-0058); spaces — хук: ключа нет, обход: «     » (N1); роль в обеих линиях «Sai Reviewer password=[скрыто]»; утечек секрета 0; повторное маскирование — без изменений; идентификатор из 40 букв и цифр не изменён",
+      "копия проекта вне папки Sai с .git и node_modules: cd tools && caffeinate -i npm run check -> format:check «All matched files use Prettier code style!», lint без ошибок, traces: файлов 1381, следов 0, handoffs-check: файлов 801, нарушений 0, tests 1546, pass 1546, fail 0, skipped 0, todo 0, код 0",
+      "стенд вне проекта (свой каталог 0700, порт 4796, код копии рабочего дерева, журнал с временем сутки назад: роль PLAN-VALIDATOR, два экземпляра «нет свежих данных», описание 100 знаков), headless Chromium по CDP, окно 1470×784, карточка через Enter на кнопке легенды: край тела 755, отступ тела 24 px, фразы незнания 726,75 и 749,25, прокрутка 0, «Агент: … 1 сут назад»; окно 1920×950 — край 921, фраза 749; снимок просмотрен — фраза видна целиком",
+      "стенд и браузер остановлены (порт 4796 не слушается, chrome-headless-shell 0); код и проект не менялись"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DEFECT_PROPOSAL",
+        "text": "N1 (описание из одних пробелов: хук отбрасывает, сервер в обход хука хранит) — предлагаю LOW-дефект по поручению ORCH, не правку на этом шаге: критериев не нарушает, на безопасность не влияет."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION_TO_ORCH",
+        "text": "N2: truncateDescription стал мёртвым кодом схемы, держит его только PG-22 — решить, удалять ли (с заменой проверки теста) или оставить."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "Для TEST-DESIGNER (MK-01…MK-05, NM-06): случаи пробы этого ревью годятся как данные — ключ на краю обрезки (хвост «[скры»), описание 98 знаков с password=ab (100 знаков, хвост «[ск»), роль-секрет одинакова в трёх полях, пробельное описание в двух линиях (N1)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

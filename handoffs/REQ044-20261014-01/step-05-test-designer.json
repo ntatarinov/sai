@@ -1,0 +1,198 @@
+{
+  "handoff_id": "step05-REQ044-20261014-01",
+  "run_id": "REQ044-20261014-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/REQ044-20261014-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-036", "REQ-045", "REQ-044"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-036-044-045-interactive.md",
+      "docs/design/REQ-044-instance-card.md",
+      "docs/design/REQ-045-journal-words.md",
+      "docs/requirements.yaml (REQ-036, REQ-044, REQ-045)",
+      "handoffs/REQ044-20261014-01/step-04-reviewer.json",
+      "tools/test/",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "REVIEWER PASS -> TEST-DESIGNER (этот) -> 5c CODE-FIXER -> 3, 4 -> 5b -> 6 -> 8 -> 9",
+    "write_set": [
+      "tools/test/pixel-office-*.test.js",
+      "tools/test/pixel-office-helpers.js",
+      "tools/test/fixtures/pixel-office/"
+    ],
+    "base_tag": "base/REQ044-20261014-01",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-14T15:56:37Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff закрыт; 28 тестов по критериям + NM-06 с секретом + MK-01…MK-05; 20 тестов исправлены по парам; BLOCKED снят записью после 5c",
+        "изменены только tools/test/** (git status); проверит TEST-DESIGN-VALIDATOR сам (мутанты, числа, check)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5 — тесты прогона REQ044-20261014-01 (REQ-036, REQ-045, REQ-044). Код прошёл шаги 3 и 4 (handoffs/REQ044-20261014-01/step-03-security-reviewer.json, step-04-reviewer.json — прочти result). Проект: docs/design/REQ-036-044-045-interactive.md (таблица «критерий → тест» для 30 критериев: NM-* для REQ-036, JR-* для REQ-045, AC-* для REQ-044; раздел 10.1–10.3 и файлы docs/design/REQ-044-instance-card.md, REQ-045-journal-words.md — пары «прежняя проверка → новая»; раздел 11 — ловушки для мутантов, плюс мутант ловушки kind/event (вид события брать из view.event, а не view.kind — ожидается красный JR-03); п. 8, 8.1). Сделай: (1) новые тесты на каждый критерий трёх требований (имена из таблицы проекта), тесты отказа проверяют неизменность состояния; без реальных часов и сети; строки «Сейчас» проверять по .now-row и title, а не по склеенному textContent; записи оркестратора в тестах — с req_id вида REQ-NNN (иначе схема их отбрасывает); поддельный DOM в pixel-office-helpers.js научить нажимать button/summary с клавиатуры, открывать details, подставлять поддельный буфер обмена (env.clipboardFn) — по проекту; (2) правка 20 красных тестов по парам «прежняя → новая» (OF-10, OF-23, OF-40, PG-24…PG-28 и PG-27b, PN-02, PN-06, PN-09, PN-14, PN-19…PN-22, FS-08, FS-11, FS-14) — по сути, не ослабляя; (3) тесты больше НЕ импортируют EVENT_LABELS и CARD_WORKING (они удаляются на шаге 5c CODE-FIXER); (4) мутанты для новой логики — по разделу 11 (не меньше 15, включая kind/event, repeatedStarts с помеченным первым началом, связи не по равенству идентификаторов, персонаж/подпись/клетка стола в порядке попадания, Tab выходит из карточки, Escape не возвращает фокус, окно истории открывается из карточки, prompt_text в технических полях, роль чужая выдаётся за Sai, копирование читает буфер) — во временной копии вне проекта; для каждого — какие тесты падают; рабочее дерево не менять (хеши); (5) число test( и assert. в pixel-office-*.test.js не падает относительно base/REQ044-20261014-01 (критерий REQ-036 9 (б) и подобные). Шаг сдаётся с ПРОХОДЯЩЕЙ проверкой: cd tools && caffeinate -i npm run check — код 0 (EVENT_LABELS и CARD_WORKING пока остаются в texts.js — это нормально). Код tools/src НЕ менять; если тесту нужна правка кода — в result.issues. Только tools/test/**. Время — date -u. Пути компьютера и названия чужих проектов не писать. Запрещены git checkout/reset/stash/clean на рабочем дереве. Закрой через close.",
+    "acceptance_criteria": [
+      "На каждый из 30 критериев есть запускаемый тест; 20 красных исправлены по сути; тесты не импортируют EVENT_LABELS и CARD_WORKING",
+      "Мутанты (не меньше 15) с перечнем падающих тестов; число test( и assert. не упало",
+      "npm run check зелёный (настоящий вывод)"
+    ]
+  },
+  "created_at": "2026-10-14T14:52:56Z",
+  "started_at": "2026-10-14T14:52:56Z",
+  "completed_at": "2026-10-14T15:55:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Работа шага сделана вся, кроме одной части критерия 6 REQ-036, которую нельзя проверить зелёным тестом без правки кода вне public/ (ниже BLOCKED). Написано: 28 новых тестов по таблице 9 проекта — NM-01…NM-07, NM-09 (REQ-036), JR-01…JR-09 (REQ-045), AC-01…AC-11 (REQ-044); исправлены по парам раздела 10 все 20 красных тестов (OF-10, OF-23, OF-40, PG-24…PG-28, PG-27b, PN-02, PN-06, PN-09, PN-14, PN-19…PN-22, FS-08, FS-11, FS-14) — ожидания заменены на не более слабые, заголовки PN-19, PN-21, PG-26, OF-10, OF-23 изменены, как названо в 10.2–10.3; тесты больше не импортируют EVENT_LABELS и CARD_WORKING (поиск по tools/test/ пусто; JR-01 сам проверяет, что ни модуль страницы, ни тест их не упоминают). Помощник: поддельный DOM нажимает BUTTON/SUMMARY по Enter и Space без preventDefault, щелчок по SUMMARY открывает/закрывает DETAILS, makePage принимает clipboard и clipboardFn (п. 8.3). Строки «Сейчас» проверяются по .now-row и title; записи оркестратора — с req_id REQ-NNN. Таблица «критерий → тест»: REQ-036 кр.1 NM-01; кр.2 NM-02 (+PN-02); кр.3 NM-03; кр.4 NM-04; кр.5 NM-05; кр.6 NM-06 — ТОЛЬКО часть «<script> — текст, элемента нет, приёмников разметки нет» по настоящему пути хук→сервер→страница; часть «секрет sk-…/password=… в описании и роли заменён «[скрыто]»» не выполнима (BLOCKED); кр.7 NM-07 (правило CSS; замеры — DESIGN-QA-VALIDATOR); кр.8 — шаги 1b и 8; кр.9 — команды RELEASE-VALIDATOR (числа ниже); кр.10 NM-09. REQ-045 кр.1 JR-01; кр.2 JR-02; кр.3 JR-03; кр.4 JR-04; кр.5 JR-01 (+ поиск слов успеха в AC-10); кр.6 JR-05; кр.7 JR-06; кр.8 JR-09 (правило CSS; стенд — шаг 8); кр.9 JR-07; JR-08 — подстановка и repeatedStarts на 300 случайных журналах. REQ-044 кр.1 AC-01, AC-02; кр.2 AC-03; кр.3 AC-04; кр.4 AC-05; кр.5 AC-06; кр.6 AC-07; кр.7 AC-08; кр.8 AC-09; кр.9 AC-10 (контраст пяти плашек и --muted на --panel/--panel-2 по формуле WCAG на токенах — вычисляемое свойство, формула сама валит пару --err на своём оттенке); кр.10 — стенд шага 8; кр.11 AC-11. Тесты отказа проверяют неизменность: JR-04 (модель, офис, «Сейчас» те же, что без записей), JR-06/AC-09 (связь потеряна — раскрытие/карточка прежние, reportOnce не вызван), AC-04 (отказ буфера — значение видно, исключения нет), PG-26. Q8, Q11, R3 неприменимы (проект, раздел 13: данных клиентов, адресов, фото нет); Q10 — сбои своего окружения (нет буфера, отказ, бросок, обрыв связи, нечитаемое время, бросающий measureText) покрыты AC-04, AC-09, JR-06, AC-01; Q7 — секретов в тестах нет (вымышленный ключ — только в пробе, в тесты не записан). ДОПОЛНЕНИЕ после шага 5c (код D14, повторные шаги 3 и 4 пройдены): дописана часть NM-06 с секретом — отдельным test() в pixel-office-page.test.js, настоящий путь hook.sh → сервер → страница: вымышленные sk-…/password=… в описании и роли не встречаются ни одним куском из 8 знаков в файле журнала, ответе GET /api/events, textContent «Сейчас», title, журнала, раскрытий (все части открыты) и карточки (все части открыты); на их месте «[скрыто]»; строка «Сейчас» — «Plan [скрыто] — ключ [скрыто] и password=[скрыто]». Добавлены MK-01, MK-03, MK-05 (pixel-office-hook.test.js), MK-02 (pixel-office-server.test.js), MK-04 (pixel-office-panels.test.js) по п. 3.13: MK-03 — роль С ПРОБЕЛАМИ (замечание L2: одно длинное слово правило M10 прячет целиком), длина после маскирования 100/128, событие не отбрасывается, ключ на 95-й позиции описания из 150 знаков не оставляет куска; MK-05 — 40-значный случайный agent_id через хук, validateWriteBody и настоящий сервер не изменён (а сам по себе maskSecrets его прячет — проверено в тесте); MK-04 — одна роль «Plan [скрыто]» во всех строках, одна задача и один персонаж, описание по связи z; ложное срабатывание ISS-0058 записано литералом («Шаг 5: тесты [скрыто]»). EVENT_LABELS и CARD_WORKING удалены шагом 5c; тесты на них не ссылаются (grep по tools/src/pixel-office и tools/test — пусто). BLOCKED снят (запись ниже).",
+    "changes": [
+      {
+        "file": "tools/test/pixel-office-helpers.js",
+        "change": "FakeElement.fire: родная активация BUTTON/SUMMARY по Enter/Space без preventDefault, возвращает признак preventDefault; click по SUMMARY переключает open у DETAILS; makePage: clipboard / clipboardFn → env.clipboardFn"
+      },
+      {
+        "file": "tools/test/pixel-office-panels.test.js",
+        "change": "PN-02, PN-06, PN-09, PN-14, PN-19 (заголовок), PN-20, PN-21 (заголовок), PN-22, FS-08, FS-11, FS-14 — по 10.1–10.3; убран импорт EVENT_LABELS; новые NM-01…NM-05, JR-01, JR-02, JR-04, JR-08, JR-09, AC-05, AC-06, AC-07"
+      },
+      {
+        "file": "tools/test/pixel-office-page.test.js",
+        "change": "помощник openWindow нажимает .history-open; PG-26 (заголовок), PG-27 (литералы слов вместо TX.EVENT_LABELS); новые NM-06 (частично, см. BLOCKED), JR-03, JR-05, JR-06, AC-02, AC-03, AC-04, AC-08, AC-09, AC-10"
+      },
+      {
+        "file": "tools/test/pixel-office-office.test.js",
+        "change": "OF-10 (заголовок), OF-23 (заголовок), OF-40 — по 10.3; убран импорт CARD_WORKING; новый AC-01"
+      },
+      {
+        "file": "tools/test/pixel-office-scale.test.js",
+        "change": "новый NM-07"
+      },
+      {
+        "file": "tools/test/pixel-office-docs.test.js",
+        "change": "новые NM-09, JR-07, AC-11"
+      },
+      {
+        "file": "tools/test/pixel-office-page.test.js",
+        "change": "дополнение: test() NM-06 с секретом (полный путь хук → сервер → страница)"
+      },
+      {
+        "file": "tools/test/pixel-office-hook.test.js",
+        "change": "новые MK-01, MK-03, MK-05"
+      },
+      {
+        "file": "tools/test/pixel-office-server.test.js",
+        "change": "новый MK-02 (подписанное тело в обход хука; уже маскированное — без изменений)"
+      },
+      {
+        "file": "tools/test/pixel-office-panels.test.js",
+        "change": "новый MK-04"
+      }
+    ],
+    "self_check": [
+      "date -u начало 2026-10-14T14:53:03Z",
+      "до работы: node --test test/pixel-office-*.test.js -> tests 336, pass 316, fail 20 (ровно 20 из п. 8.1/10.0)",
+      "после: node --test test/pixel-office-*.test.js -> tests 364, pass 364, fail 0, skipped 0, todo 0",
+      "cd tools && caffeinate -i npm run check (15:20Z–15:22Z) -> код 0: prettier «All matched files use Prettier code style!», eslint --max-warnings 0 без вывода, traces, handoffs-check «нарушений 0», node --test: tests 1546, pass 1546, fail 0, cancelled 0, skipped 0, todo 0",
+      "числа ^test(/assert. (метка base/REQ044-20261014-01 -> сейчас): docs 3/25->6/32, hook 41/205->41/205, layout 19/210->19/210, note 7/103->7/103, office 58/534->59/564, page 81/605->91/824, panels 37/640->50/881, scale 6/38->7/48, server 71/333->71/333, settings 7/25->7/25 — ни одно не упало",
+      "grep 'EVENT_LABELS\\|CARD_WORKING' по tools/test/ — пусто; по public/ — только устаревшие экспорты texts.js (удаляет 5c)",
+      "мутанты: временная копия проекта вне проекта (rsync без node_modules и .git), мутируется один файл кода, после каждого возвращён; копия до мутантов 364/364; рабочее tools/src и README равны копии после всех мутантов (diff -r пуст), хеш tools/src+README 17b1f9c6cd15c2fb7196cf2fcbf288d6837b9e89 до и после npm run check",
+      "T01 kind/event (кнопка окна по view.kind): 10 — PG-24, PG-25, PG-27, PG-27b, PG-28, JR-03, PN-19, PN-20, PN-21, FS-11",
+      "T02 repeatedStarts по любому источнику (поддельное первое начало): 2 — JR-02, JR-08",
+      "T03 карточка берёт вид начала по first_start_index, а не repeatedStarts: 1 — JR-02 (общий случай с карточкой)",
+      "T04 связь не по равенству ид. (PostToolUse той же сессии в ту же секунду): 1 — AC-07",
+      "T05 стол раньше персонажа: 1 — AC-01",
+      "T06 подпись не попадает: 1 — AC-01",
+      "T07 подпись всегда 130: 1 — AC-01",
+      "T08 клетка подхода — стол: 1 — AC-01",
+      "T09 Tab выходит из карточки: 1 — AC-03",
+      "T10 Tab заходит в закрытый details: 1 — AC-03",
+      "T11 Escape не возвращает фокус: 2 — AC-03, PN-18",
+      "T12 окно истории открывается из карточки (строки карточки с кнопками): 1 — AC-08",
+      "T13 prompt_text в технических полях: 1 — JR-03",
+      "T14 чужая роль с кодом Sai выдаётся за Sai: 1 — NM-01",
+      "T15 копирование читает буфер: 1 — AC-04",
+      "T16 writeText получает 8 знаков: 2 — AC-04, AC-10",
+      "T17 writeText дважды: 2 — AC-04, AC-10",
+      "T18 основание «в работе» — начало, а не событие сессии: 1 — AC-05",
+      "T19 строка «передачи» входит в последнее действие агента: 1 — AC-06",
+      "T20 экземпляр по умолчанию — последний: 3 — AC-02, AC-05, AC-08",
+      "T21 пересборка закрывает раскрытия карточки: 1 — AC-08",
+      "T22 плашка «окончание не записано» цветом --err: 1 — AC-10",
+      "T23 «Сейчас» — только первый элемент: 8 — PN-02, FS-08, FS-14, NM-01…NM-05",
+      "T24 «Сейчас» по времени начала, а не по списку: 5 — PN-02, FS-08, FS-14, NM-02, NM-05",
+      "T25 -webkit-line-clamp снова в узком @media: 1 — NM-03",
+      "T26 роль PostToolUse из задачи запущенного: 1 — JR-02 (первый прогон 0 — проверки не было; добавлен случай «строка Plan, запущенный Explore», повтор — красный)",
+      "T27 запись оркестратора в «Работе»: 1 — JR-04",
+      "T28 подстановка через String.replace: 2 — JR-05, JR-08",
+      "T29 «Задача» PostToolUse — задача передавшего: 1 — JR-03",
+      "T30 Escape в раскрытии вызывает closeEvent(false): 0 — эквивалентный мутант: renderJournal сам возвращает фокус на .row-toggle той же строки, если элемента с фокусом больше нет (проверено добавленной частью JR-03: фокус внутри раскрытия, Escape — фокус на строке; на коде и на мутанте одинаково)",
+      "T31 старое слово журнала (случай 1): 3 — PN-06, JR-01, JR-02",
+      "T32 карточка снова «в работе: N»: 5 — OF-10, OF-23, PN-14, AC-05, AC-08",
+      "проба дефекта (BLOCKED): node -e c buildWriteBody и validateWriteBody (tools/src/pixel-office/protocol.js) на PostToolUse с description «ключ sk-ant-… password=\"…\"» и subagent_type с sk-ant-… -> тело хука и строка сервера содержат секрет как есть (вывод в BLOCKED)",
+      "дополнение: date -u начало 2026-10-14T15:48:40Z",
+      "до дополнения: node --test test/pixel-office-*.test.js -> tests 364, pass 364 (после 5c, без правок тестов)",
+      "после: node --test test/pixel-office-*.test.js -> tests 370, pass 370, fail 0",
+      "cd tools && caffeinate -i npm run check (15:53Z–15:55Z) -> код 0: prettier «All matched files use Prettier code style!», eslint без вывода, traces, handoffs-check «нарушений 0», node --test: tests 1552, pass 1552, fail 0, cancelled 0, skipped 0, todo 0",
+      "числа ^test(/assert. (метка base/REQ044-20261014-01 -> сейчас): docs 3/25->6/32, hook 41/205->44/244, layout 19/210->19/210, note 7/103->7/103, office 58/534->59/564, page 81/605->92/833, panels 37/640->51/890, scale 6/38->7/48, server 71/333->72/346, settings 7/25->7/25 — ни одно не упало",
+      "grep 'EVENT_LABELS\\|CARD_WORKING' по tools/src/pixel-office/ и tools/test/ — пусто",
+      "мутанты ловушек 24–27 (временная копия проекта вне проекта, мутируется только tools/src/pixel-office/protocol.js, после каждого возвращён; копия до мутантов 370/370; diff -r рабочего tools/src с копией после мутантов пуст; хеш tools/src+README a8a00cb1c9129d1b988c386fe5f745858df86982 до и после npm run check)",
+      "M24 маскирование убрано в хуке: 3 — MK-01, MK-03, MK-02 (NM-06 зелёный: вторая линия — сервер — маскирует сама; это и есть защита в двух местах)",
+      "M25 маскирование убрано на сервере: 2 — MK-02, MK-03",
+      "M24+25 убрано в обоих местах: 5 — MK-01, MK-02, MK-03, MK-04, NM-06 (секрет доходит до страницы)",
+      "M26a сервер маскирует agent_id вместо agent_type: 2 — MK-02, MK-05",
+      "M26b хук маскирует только описание, роли нет: 3 — MK-01, MK-02, MK-03",
+      "M26c хук маскирует и agent_id: 2 — MK-01, MK-05",
+      "M27a обрезка до маскирования (maskField): 1 — MK-03",
+      "M27b обрезка описания до маскирования в хуке: 1 — MK-03",
+      "M27c отказ вместо обрезки (без обрезки после маскирования): 1 — MK-03"
+    ],
+    "issues": [
+      {
+        "kind": "BLOCKED",
+        "at": "2026-10-14T15:22:52Z",
+        "text": "Критерий 6 REQ-036 (NM-06): «образец секрета из pixel-office-hook.test.js (sk-… и password=…) в описании и роли → в файле журнала, ответе сервера и textContent страницы образца нет, на его месте «[скрыто]»». Код этого не делает: хук (protocol.js, buildWriteBody) и сервер (validateWriteBody) маскируют только prompt_text; description и subagent_type/agent_type идут в журнал как есть. Подтверждено пробой: buildWriteBody(PostToolUse с description 'ключ sk-ant-abcdefghij1234567890 password=\"primer42secretvalue\"' и subagent_type 'Plan sk-ant-abcdefghij1234567890') -> {..., subagent_type:'Plan sk-ant-abcdefghij1234567890', description:'ключ sk-ant-abcdefghij1234567890 password=\"primer42secretvalue\"'}; validateWriteBody -> та же строка с source REAL. Утверждение требования «секрет, попавший в описание, уже заменён «[скрыто]» при записи (hook.js, mask.js)» неверно, а проект (D1) считает хук и сервер неизменными. Зелёный тест этой части написать нельзя без правки кода вне public/ (Q6: ослабить или пропустить нельзя). Нужно: решение ORCH — CODE-FIXER (например, на шаге 5c) маскирует description и роль (maskSecrets) в хуке и/или на сервере по проекту, который дополнит CODE-DESIGNER, либо REQ-ANALYST правит критерий. После правки кода TEST-DESIGNER дописывает в NM-06 часть с секретом (тот же настоящий путь хук → сервер → страница, уже в тесте). Остальная часть шага готова и зелёная."
+      },
+      {
+        "id": "I1",
+        "kind": "OBSERVATION",
+        "text": "Критерий 1 REQ-045 (поиск семи старых слов по public/ — пусто) и критерий 7 REQ-044 (CARD_WORKING нет в public/) выполняются только после шага 5c: JR-01 и AC-08 проверяют, что старые слова и имя CARD_WORKING есть лишь в устаревших экспортах texts.js и ни один модуль страницы и ни один тест их не использует; после 5c проверки остаются верными без правки."
+      },
+      {
+        "id": "I2",
+        "kind": "OBSERVATION",
+        "text": "Строку с нечитаемым временем страница отбрасывает при чтении (parseLine), поэтому «время не записано» в строке журнала и в «Когда» и в карточке проверено на модели (eventDetails, buildInstanceCard) и через fmtTimeSec/fmtDateTime, а не через DOM страницы."
+      },
+      {
+        "id": "I3",
+        "kind": "OBSERVATION",
+        "text": "Пустой subagent_type не проходит схему (checkLine требует 1…128), поэтому случай «пустой subagent_type → (роль не указана)» проверен строкой PostToolUse без поля subagent_type."
+      },
+      {
+        "kind": "UNBLOCKED",
+        "at": "2026-10-14T15:55:58Z",
+        "text": "снято: BLOCKED от 2026-10-14T15:22:52Z (критерий 6 REQ-036). Шаг 5c (handoffs/REQ044-20261014-01/step-05c-code-fixer.json) добавил маскирование описания и ролей в хуке и на сервере (D14, п. 3.13), повторные шаги 3 и 4 пройдены; часть NM-06 с секретом и MK-01…MK-05 написаны и зелёные, мутанты 24–27 краснят их."
+      },
+      {
+        "id": "I4",
+        "kind": "OBSERVATION",
+        "text": "Ловушка 24 (маскирование убрано только в хуке) по таблице проекта должна краснить и NM-06; на деле NM-06 зелёный, потому что сервер маскирует сам (вторая линия D14). Хук без маскирования ловят MK-01, MK-02, MK-03; NM-06 краснеет, когда маскирования нет в обеих линиях (мутант M24+25). Это свойство проекта (защита в двух местах), не пробел теста."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/pixel-office-docs.test.js",
+      "tools/test/pixel-office-helpers.js",
+      "tools/test/pixel-office-hook.test.js",
+      "tools/test/pixel-office-office.test.js",
+      "tools/test/pixel-office-page.test.js",
+      "tools/test/pixel-office-panels.test.js",
+      "tools/test/pixel-office-scale.test.js",
+      "tools/test/pixel-office-server.test.js"
+    ]
+  }
+}

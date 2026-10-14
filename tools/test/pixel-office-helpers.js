@@ -830,14 +830,44 @@ export class FakeElement {
     this.listeners.set(type, list);
   }
 
-  // The test calls the listeners itself.
+  // The test calls the listeners itself. As in a browser (design 8.3 of
+  // REQ-036/044/045): a keydown of Enter or Space that no listener prevented
+  // activates a BUTTON or a SUMMARY (a click), and a click on a SUMMARY opens
+  // or closes its DETAILS. Returns true if a listener called preventDefault.
   fire(type, event = {}) {
-    const e = { target: this, type, ...event };
+    let prevented = false;
+    const own = event.preventDefault;
+    const e = {
+      target: this,
+      type,
+      ...event,
+      preventDefault: () => {
+        prevented = true;
+        if (typeof own === "function") own();
+      },
+    };
     for (const fn of this.listeners.get(type) ?? []) fn(e);
+    if (
+      type === "keydown" &&
+      !prevented &&
+      (e.key === "Enter" || e.key === " " || e.key === "Space") &&
+      (this.tagName === "BUTTON" || this.tagName === "SUMMARY")
+    ) {
+      this.click();
+    }
+    return prevented;
   }
 
   click(event = {}) {
-    this.fire("click", event);
+    const prevented = this.fire("click", event);
+    if (
+      !prevented &&
+      this.tagName === "SUMMARY" &&
+      this.parentNode !== null &&
+      this.parentNode.tagName === "DETAILS"
+    ) {
+      this.parentNode.open = this.parentNode.open !== true;
+    }
   }
 
   focus() {
@@ -1199,8 +1229,14 @@ export function makePage(o = {}) {
   journalEl.clientHeight = 200;
   const resizeListeners = [];
   const viewport = o.viewport ?? { width: 1920, height: 1080 };
+  // The clipboard of the page (REQ-044): o.clipboardFn as given, or a function
+  // that returns o.clipboard (an object with writeText, null, anything).
+  let clipboardFn;
+  if (typeof o.clipboardFn === "function") clipboardFn = o.clipboardFn;
+  else if (Object.hasOwn(o, "clipboard")) clipboardFn = () => o.clipboard;
   const app = createApp({
     document: doc,
+    clipboardFn,
     fetchFn: (url, init) => server.fetchFn(url, init),
     nowFn: clock.now,
     setIntervalFn: clock.setIntervalFn,

@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { BODY_MAX, ENV_STORE_TEXT, PROMPT_SCAN_MAX } from "./config.js";
 import { maskSecrets, prepareText } from "./mask.js";
 import {
+  DESCRIPTION_MAX,
   HOOK_EVENTS,
   ID_MAX,
   PROMPT_MAX,
@@ -18,7 +19,6 @@ import {
   firstCodePoints,
   isCanonicalTime,
   safeKeyName,
-  truncateDescription,
 } from "./public/schema.js";
 
 // Header with the signature of the request body.
@@ -66,6 +66,13 @@ function takeString(value, min) {
   const n = codePointLength(value, ID_MAX);
   if (n > ID_MAX) return TOO_LONG;
   return n < min ? ABSENT : value;
+}
+
+// A text field of a line other than an identifier (design 3.13, decision
+// 0056): masked first, then cut to the limit of the schema, so that the label
+// that makes a value longer never drops the event.
+export function maskField(value, limit) {
+  return firstCodePoints(maskSecrets(value), limit);
 }
 
 // Storage of message texts (REQ-008 2.4): on only when the variable is
@@ -143,7 +150,9 @@ export function buildWriteBody(hookInput, nowIso, options = {}) {
 
   const agentType = takeString(hookInput.agent_type, 0);
   if (agentType === TOO_LONG) return null;
-  if (typeof agentType === "string") body.agent_type = agentType;
+  if (typeof agentType === "string") {
+    body.agent_type = maskField(agentType, ID_MAX);
+  }
 
   if (event === "PostToolUse") {
     if (hookInput.tool_name !== "Agent") return null;
@@ -161,11 +170,15 @@ export function buildWriteBody(hookInput, nowIso, options = {}) {
     if (isPlainObject(input)) {
       const subagentType = takeString(input.subagent_type, 1);
       if (subagentType === TOO_LONG) return null;
-      if (typeof subagentType === "string") body.subagent_type = subagentType;
-      if (typeof input.description === "string") {
-        const description = truncateDescription(input.description);
-        if (description !== "") body.description = description;
+      if (typeof subagentType === "string") {
+        body.subagent_type = maskField(subagentType, ID_MAX);
       }
+      const description = prepareText(
+        input.description,
+        PROMPT_SCAN_MAX,
+        DESCRIPTION_MAX,
+      ).text;
+      if (description !== "") body.description = description;
     }
   }
 
@@ -180,6 +193,14 @@ export function buildWriteBody(hookInput, nowIso, options = {}) {
   return fitted.ok ? fitted.line : null;
 }
 
+// The text fields of a hook line that the server masks again, with the limit
+// of the schema of each (design 3.13).
+const MASKED_FIELDS = Object.freeze([
+  ["description", DESCRIPTION_MAX],
+  ["subagent_type", ID_MAX],
+  ["agent_type", ID_MAX],
+]);
+
 // Server-side check of a request body (the second line of data minimisation).
 // Returns {ok: true, line} - the journal line with "source": "REAL" added - or
 // {ok: false, reason}. Reasons: not_object, has_source, unknown_key:<name>,
@@ -187,7 +208,8 @@ export function buildWriteBody(hookInput, nowIso, options = {}) {
 // time_skew (the time differs from nowMs by more than 60 seconds),
 // text_storage_off (prompt_text while options.storeText is not true).
 // prompt_text is masked again; longer than PROMPT_MAX after that, it is cut
-// and gets prompt_truncated.
+// and gets prompt_truncated. description, subagent_type and agent_type are
+// masked and cut to the limit of the schema (design 3.13); identifiers are not.
 export function validateWriteBody(value, nowMs, options = {}) {
   const storeText = options !== null && options.storeText === true;
   const checked = checkLine(value, false);
@@ -197,6 +219,9 @@ export function validateWriteBody(value, nowMs, options = {}) {
     return { ok: false, reason: "time_skew" };
   }
   const { time, ...rest } = checked.line;
+  for (const [key, limit] of MASKED_FIELDS) {
+    if (Object.hasOwn(rest, key)) rest[key] = maskField(rest[key], limit);
+  }
   if (Object.hasOwn(rest, "prompt_text")) {
     if (!storeText) return { ok: false, reason: "text_storage_off" };
     const masked = maskSecrets(rest.prompt_text);

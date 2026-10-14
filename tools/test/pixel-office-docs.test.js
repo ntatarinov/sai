@@ -163,3 +163,38 @@ test("FS-16: the README tells the new words - 'нет свежих данных'
     1,
   );
 });
+
+// ------------------------------------------------------- REQ-036, 045, 044
+// The README tells the new behaviour (REQ-036 criterion 10, REQ-045 criterion
+// 9, REQ-044 criterion 11): the awk + grep -c of the criteria, in JS (awkPart
+// and grepC above), also on invented text.
+
+test("NM-09: the section Pixel Office of the README says 'строка на агента' (REQ-036 criterion 10)", () => {
+  const pixel = awkPart(README, PIXEL);
+  assert.ok(grepC(pixel, /строка на агента/) >= 1);
+  assert.equal(
+    grepC(
+      awkPart("## Pixel Office\nодна строка «Сейчас»", PIXEL),
+      /строка на агента/,
+    ),
+    0,
+  );
+});
+
+test("JR-07: the section Pixel Office of the README has the column 'Чего это не доказывает' and the row 'Оркестратор записал, как понял запрос' (REQ-045 criterion 9)", () => {
+  const pixel = awkPart(README, PIXEL);
+  assert.ok(grepC(pixel, /Чего это не доказывает/) >= 1);
+  assert.ok(grepC(pixel, /Оркестратор записал, как понял запрос/) >= 1);
+  // and they stand in the section, not elsewhere
+  const rest = README.split("\n").filter((l) => !pixel.includes(l));
+  assert.equal(grepC(rest, /Чего это не доказывает/), 0);
+});
+
+test("AC-11: the section Pixel Office of the README names the card of an 'экземпляр' (REQ-044 criterion 11)", () => {
+  const pixel = awkPart(README, PIXEL);
+  assert.ok(grepC(pixel, /экземпляр/) >= 1);
+  assert.equal(
+    grepC(awkPart("## Pixel Office\nкарточка роли", PIXEL), /экземпляр/),
+    0,
+  );
+});

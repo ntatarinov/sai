@@ -16,6 +16,8 @@ const app = createApp({
   AbortControllerCtor: window.AbortController,
   viewportFn: () => ({ width: window.innerWidth, height: window.innerHeight }),
   addResizeListener: (fn) => window.addEventListener("resize", fn),
+  // The clipboard of the browser for "Скопировать", or null (REQ-044).
+  clipboardFn: () => window.navigator?.clipboard ?? null,
 });
 
 app.start().catch((err) => {

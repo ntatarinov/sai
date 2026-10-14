@@ -526,8 +526,9 @@ windowOfMainRow: Map<mainKey, requestKey>}` — чистая функция, б�
 7. **Хронология** — строка сообщения, все доверенные строки сессии `S` в `(i, j)` и записи ORCH запроса; порядок —
    `Date.parse(time)`, при равенстве — индекс (запись ORCH — после строки с тем же временем). `who`: основная сессия —
    `MAIN_LABEL`, событие субагента — роль (`ROLE_UNKNOWN`, если пусто), `PostToolUse` — роль вызвавшего или
-   `MAIN_LABEL`, запись ORCH — `HISTORY_WHO_ORCH`. `what`: `EVENT_LABELS[вид]`, служебное `UserPromptSubmit` —
-   `HISTORY_SERVICE`, запись ORCH — `HISTORY_NOTE_BY`. `detail`: описание у `PostToolUse` и у старта задачи с
+   `MAIN_LABEL`, запись ORCH — `HISTORY_WHO_ORCH`. `what`: слова таблицы `EVENT_TABLE` по случаю события (`eventWords(eventCase(…))`, REQ-045), служебное
+   `UserPromptSubmit` — слова случая 4, запись ORCH — `HISTORY_NOTE_BY` (без изменений). **Устарело после REQ-036/044/045 (прогон `REQ044-20261014-01`, правка DOC-UPDATER 2026-10-14): см. `docs/design/REQ-036-044-045-interactive.md`, п. 3.5.** (Прежде: `EVENT_LABELS[вид]`,
+   служебное — `HISTORY_SERVICE`.) `detail`: описание у `PostToolUse` и у старта задачи с
    описанием, `note_text` у записи ORCH, иначе `null` (у сообщения — `null`: текст в «Исходном запросе»).
 8. **Открытие** (ответ на вопрос I1 описания): строка журнала `UserPromptSubmit` owner → своё окно; кнопка «открыть
    историю запроса» карточки задачи панели «Задачи» → `windowOfTask`; та же кнопка карточки строки основной сессии →
@@ -550,9 +551,9 @@ windowOfMainRow: Map<mainKey, requestKey>}` — чистая функция, б�
 
   | Место | Разметка | Что открывает |
   |---|---|---|
-  | строка журнала `UserPromptSubmit` owner (REQ-007 п. 5.4) | сам `li` строки: `tabindex="0"`, класс `opens-history`, `data-request="<key запроса>"`; 3-я строка — `span.history-open` с `HISTORY_OPEN` (текст, **не** кнопка); других интерактивных элементов в строке нет | щелчок по строке, Enter, пробел на строке |
+  | строка журнала `UserPromptSubmit` owner (REQ-007 п. 5.4) | `li` (класс `opens-history`, `data-request="<key запроса>"`): строка — `button.row-toggle` (раскрывает событие), окно открывает отдельная `button.history-open[data-request]` с `HISTORY_OPEN`. Устарело после REQ-045 (прогон `REQ044-20261014-01`, 2026-10-14): см. `docs/design/REQ-036-044-045-interactive.md`, п. 5.1. Прежде: сам `li` с `tabindex="0"`, `span.history-open` — текст, не кнопка | кнопка `history-open` (щелчок, Enter, пробел); щелчок по строке раскрывает событие, окно не открывает |
   | карточка задачи и карточка строки основной сессии панели «Задачи» (REQ-007 п. 6.5) | карточка остаётся как сейчас — `div.item` **без** обработчиков, фокуса и роли (не кнопка); последним ребёнком добавляется **отдельная** `button.history-open` (`type="button"`, текст `HISTORY_OPEN`, `data-request="<key запроса>"`) | только эта кнопка (щелчок, Enter, пробел — поведение кнопки); щелчок по остальной карточке ничего не делает (как сейчас) |
-  | служебное `UserPromptSubmit` | `li` без `tabindex` и без класса `opens-history`; 3-я строка `span` с `HISTORY_SERVICE` | ничего |
+  | служебное `UserPromptSubmit` | `li` без класса `opens-history`; метка `span.history-service` (`HISTORY_SERVICE`) внутри `.row-toggle` (проект REQ-036/044/045, п. 5.1; прежде — `span` в 3-й строке) | раскрытие события; окна нет |
   | карточка агента (`#card`, REQ-007 п. 7) | без изменений: кнопки истории в ней **нет** | ничего |
 
   Кнопку добавляет `renderTasks` **после** `itemInto` (а не `itemInto`), потому что `itemInto` строит и содержимое

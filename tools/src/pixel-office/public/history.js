@@ -12,15 +12,14 @@
 import { fmtDateTime } from "./format.js";
 import { firstLine, isNoteLine } from "./schema.js";
 import {
-  EVENT_LABELS,
   HISTORY_NOTE_AUTO,
   HISTORY_NOTE_BY,
-  HISTORY_SERVICE,
   HISTORY_TITLE_NO_TEXT,
   HISTORY_WHO_ORCH,
   MAIN_LABEL,
   ROLE_UNKNOWN,
 } from "./texts.js";
+import { eventCase, eventWords, repeatedStarts } from "./words.js";
 
 // The first line of a text in the title is at most this long (code points).
 export const TITLE_MAX = 120;
@@ -57,11 +56,13 @@ function laterNote(a, b) {
   return a.index > b.index;
 }
 
-// Who and what of one trusted hook line of the timeline (rule 7).
-function eventView(e, index, taskByKey) {
+// Who and what of one trusted hook line of the timeline (rule 7). The words
+// are those of the journal (REQ-045): the same table, the same rule of a
+// repeated start.
+function eventView(e, index, taskByKey, repeated) {
   const kind = e.hook_event_name;
   let who;
-  let what = EVENT_LABELS[kind] ?? kind;
+  const what = eventWords(eventCase(e, repeated), e);
   let detail = null;
   if (kind === "PostToolUse") {
     who = nonEmpty(e.agent_id)
@@ -72,9 +73,6 @@ function eventView(e, index, taskByKey) {
     if (nonEmpty(e.description)) detail = e.description;
   } else if (MAIN_EVENTS.has(kind)) {
     who = MAIN_LABEL;
-    if (kind === "UserPromptSubmit" && e.prompt_kind === "service") {
-      what = HISTORY_SERVICE;
-    }
   } else {
     who = nonEmpty(e.agent_type) ? e.agent_type : ROLE_UNKNOWN;
     if (kind === "SubagentStart") {
@@ -116,6 +114,7 @@ function byTime(a, b) {
 export function buildHistory(model) {
   const { entries, marks } = model;
   const count = entries.length;
+  const repeated = repeatedStarts(entries);
 
   // Rule 1: the messages of the owner, by session, in the order of the file.
   const owners = [];
@@ -246,7 +245,7 @@ export function buildHistory(model) {
         time: e.time,
         index: i,
         who: MAIN_LABEL,
-        what: EVENT_LABELS.UserPromptSubmit,
+        what: eventWords("prompt_owner", e),
         detail: null,
         kind: "event",
       },
@@ -254,7 +253,7 @@ export function buildHistory(model) {
     for (let k = i + 1; k < j; k++) {
       const line = entries[k];
       if (model.trusted[k] !== true || line.session_id !== sid) continue;
-      timeline.push(eventView(line, k, taskByKey));
+      timeline.push(eventView(line, k, taskByKey, repeated.has(k)));
       if (line.hook_event_name === "Stop" && !nonEmpty(line.agent_id)) {
         finishedAt = line.time;
       }

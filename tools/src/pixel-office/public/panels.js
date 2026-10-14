@@ -5,21 +5,24 @@
 // and no Node API, no clock.
 
 import { ageText, fmtDateTime } from "./format.js";
-import { roleLabel } from "./office-model.js";
 import {
-  EVENT_LABELS,
-  MAIN_LABEL,
   MAIN_ROW,
   NOW_EMPTY,
-  NOW_MORE,
   NOW_PREFIX,
   NOW_UNCONFIRMED,
-  ROLE_UNKNOWN,
   UNCONFIRMED_LEAD,
   UNCONFIRMED_RESTART,
   UNCONFIRMED_STALE,
   UNCONFIRMED_STALE_AGE,
 } from "./texts.js";
+import { isNoteLine } from "./schema.js";
+import {
+  eventCase,
+  eventWords,
+  repeatedStarts,
+  roleName,
+  whoOf,
+} from "./words.js";
 
 // The journal shows the last 200 rows that pass the filter, the panel of
 // tasks 300 items of the list. This limits only the drawing: the rules, the
@@ -34,13 +37,6 @@ export const WORK_EVENTS = Object.freeze([
   "PostToolUse",
   "SubagentStart",
   "SubagentStop",
-]);
-
-const MAIN_EVENTS = new Set([
-  "SessionStart",
-  "SessionEnd",
-  "UserPromptSubmit",
-  "Stop",
 ]);
 
 // The colour group of each kind of event: the stripe of a journal row and the
@@ -90,56 +86,80 @@ export function unconfirmedNote(model) {
   return { text: parts.join(" "), stale: u.stale, restarted: u.restarted };
 }
 
-// The line of the header: the first item of "Текущие" (the list is already in
-// the order of rule d: the ones in progress first, the new ones on top) and
-// how many more items are in progress. With nothing in progress and some
-// items without confirmation, the number of them and, as the title, the reason.
+// One row of "Сейчас" for an item in progress: the main row is MAIN_ROW; a
+// task is the name of its role in plain words and, if there is one, " — " and
+// its description. Only the role and the description of the journal.
+function nowRow(item) {
+  if (item.kind === "main") {
+    return {
+      key: item.key,
+      kind: "main",
+      role: null,
+      description: null,
+      text: MAIN_ROW,
+    };
+  }
+  const role = roleName(item.role);
+  const description =
+    typeof item.description === "string" && item.description !== ""
+      ? item.description
+      : null;
+  return {
+    key: item.key,
+    kind: "task",
+    role,
+    description,
+    text: description === null ? role : `${role} — ${description}`,
+  };
+}
+
+// The block "Сейчас" of the header (REQ-036): one row for every item in
+// progress, in the order of the list (rule d: the same order as "Текущие").
+// With nothing in progress — "в работе ничего нет" and, if some items are not
+// confirmed, their number and, as the title, the reason (REQ-042).
 export function nowLine(model) {
   const current = model.list.filter((item) => item.state === "in_progress");
+  const rows = current.map(nowRow);
   let text = NOW_PREFIX;
+  let title;
   let unconfirmed = 0;
-  let title = null;
-  if (current.length === 0) {
+  if (rows.length === 0) {
     text += NOW_EMPTY;
+    title = null;
     unconfirmed = model.unconfirmed.count;
     if (unconfirmed >= 1) {
       text += NOW_UNCONFIRMED.replace("{n}", String(unconfirmed));
       title = unconfirmedNote(model).text;
     }
+    if (title === null) title = text;
   } else {
-    const first = current[0];
-    if (first.kind === "main") {
-      text += MAIN_ROW;
-    } else {
-      text += roleLabel(first.role);
-      if (typeof first.description === "string" && first.description !== "") {
-        text += ` — ${first.description}`;
-      }
-    }
-    if (current.length > 1) {
-      text += NOW_MORE.replace("{n}", String(current.length - 1));
-    }
+    text += rows.map((row) => row.text).join("");
+    title = NOW_PREFIX + rows.map((row) => row.text).join("\n");
   }
   return {
     text,
-    busy: current.length > 0,
-    count: current.length,
+    busy: rows.length > 0,
+    count: rows.length,
     unconfirmed,
-    title: title === null ? text : title,
+    rows,
+    title,
   };
 }
 
 // -------------------------------------------------------------- journal
 
-// One view per non-empty line of the file, the marked ones too, in the order
-// of the file (design 4.10).
+// One view per line of the journal in the order of the file (design 4.10,
+// REQ-045): every hook line, the marked ones too, and every record of the
+// orchestrator. The words and "who" come from the line itself and the lines
+// before it (words.js); the description of a start or a stop of an agent comes
+// through the link of identifiers (rule z) and may appear later.
 export function journalRows(model, office) {
   const taskByKey = new Map(model.tasks.map((t) => [t.key, t]));
   const officeLines = new Set(office.routes.map((r) => r.event_index));
-  return model.journal.map((row) => {
+  const repeated = repeatedStarts(model.entries);
+  const hookView = (row) => {
+    const entry = model.entries[row.index];
     const kind = row.event;
-    let who = row.role;
-    if (who === "") who = MAIN_EVENTS.has(kind) ? MAIN_LABEL : ROLE_UNKNOWN;
     // The description only through the link of identifiers: never guessed.
     let description = "";
     if (kind === "PostToolUse") {
@@ -148,7 +168,7 @@ export function journalRows(model, office) {
       !row.marked &&
       (kind === "SubagentStart" || kind === "SubagentStop")
     ) {
-      const task = taskByKey.get(model.entries[row.index].agent_id);
+      const task = taskByKey.get(entry.agent_id);
       if (
         task !== undefined &&
         typeof task.description === "string" &&
@@ -157,16 +177,20 @@ export function journalRows(model, office) {
         description = task.description;
       }
     }
+    const caseKey = eventCase(entry, repeated.has(row.index));
     return {
       index: row.index,
+      kind: "hook",
+      event: kind,
+      case: caseKey,
       time: row.time,
       session_id: row.session_id,
       source: row.source,
       marked: row.marked,
-      kind,
+      reason: row.reason,
       tone: TONES[kind] ?? "session",
-      who,
-      event: EVENT_LABELS[kind] ?? kind,
+      who: whoOf(entry),
+      words: eventWords(caseKey, entry),
       description,
       work: WORK_EVENTS.includes(kind),
       office: officeLines.has(row.index),
@@ -174,7 +198,43 @@ export function journalRows(model, office) {
       // (REQ-008, design 7.5).
       prompt_kind: row.prompt_kind,
     };
+  };
+  const noteView = (entry, index) => ({
+    index,
+    kind: "note",
+    event: null,
+    case: "orch_note",
+    time: entry.time,
+    session_id:
+      typeof entry.session_id === "string" && entry.session_id !== ""
+        ? entry.session_id
+        : null,
+    source: entry.source,
+    marked: false,
+    reason: null,
+    tone: "note",
+    who: whoOf(entry),
+    words: eventWords("orch_note", entry),
+    description: "",
+    work: false,
+    office: false,
+    prompt_kind: null,
   });
+  // model.journal is in the order of the file; the records are merged in by
+  // their line.
+  const out = [];
+  let k = 0;
+  const journal = model.journal;
+  for (let i = 0; i < model.entries.length; i++) {
+    const entry = model.entries[i];
+    if (k < journal.length && journal[k].index === i) {
+      out.push(hookView(journal[k]));
+      k += 1;
+    } else if (isNoteLine(entry)) {
+      out.push(noteView(entry, i));
+    }
+  }
+  return out;
 }
 
 // The rows of a filter: matching is how many rows pass it, rows the last

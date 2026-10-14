@@ -13,7 +13,6 @@ import {
 } from "../src/pixel-office/public/format.js";
 import {
   EMPTY_HINT,
-  EVENT_LABELS,
   FILTER_LABELS,
   HEADER_BADGE,
   JOURNAL_TITLE,
@@ -162,6 +161,18 @@ test("PN-01: the link block - none before the first poll, live after a good one,
 // ------------------------------------------------------------------ PN-02
 
 const nowText = (page) => page.text("now-text");
+// REQ-036: the block "Сейчас" is a list of rows, one per item in progress; the
+// rows are read one by one, not from the joined text.
+const nowRows = (page) =>
+  page
+    .el("now")
+    .all((e) => e.classes.has("now-row"))
+    .map((r) => r.textContent);
+const nowKinds = (page) =>
+  page
+    .el("now")
+    .all((e) => e.classes.has("now-row"))
+    .map((r) => r.dataset.kind);
 
 test("PN-02: the line 'Сейчас' - hidden before the first answer; a task with a description, without one, only the main row, several items, empty; data-busy and title; it changes after a new event; it keeps the last data when the link is lost", async () => {
   const j = journal();
@@ -183,13 +194,17 @@ test("PN-02: the line 'Сейчас' - hidden before the first answer; a task wi
   });
   j.subStart("S1", "a1", "Sai Orchestrator (ORCH)");
   await page.push(...j.entries.slice(-2));
-  assert.equal(nowText(page), "Сейчас: ORCH — check it");
+  assert.deepEqual(nowRows(page), ["Оркестратор — check it"]);
+  assert.equal(nowText(page), "Сейчас: Оркестратор — check it");
   assert.equal(page.el("now").dataset.busy, "true");
-  assert.equal(page.el("now").title, "Сейчас: ORCH — check it");
+  assert.equal(page.el("now").title, nowText(page));
   // without a description
   j.subStart("S1", "a2", "Explore");
   await page.push(j.entries[j.entries.length - 1]);
-  assert.equal(nowText(page), "Сейчас: Explore · и ещё 1 в работе");
+  // REQ-036: a row per agent in the order of "Текущие", no "и ещё"
+  assert.deepEqual(nowRows(page), ["Explore", "Оркестратор — check it"]);
+  assert.equal(nowText(page).includes("и ещё"), false);
+  assert.equal(page.el("now").title, "Сейчас: Explore\nОркестратор — check it");
   j.subStop("S1", "a2", "Explore");
   j.subStop("S1", "a1", "Sai Orchestrator (ORCH)");
   await page.push(...j.entries.slice(-2));
@@ -198,17 +213,22 @@ test("PN-02: the line 'Сейчас' - hidden before the first answer; a task wi
   j.prompt("S1");
   await page.push(j.entries[j.entries.length - 1]);
   assert.equal(nowText(page), `Сейчас: ${MAIN_ROW}`);
+  assert.deepEqual(nowKinds(page), ["main"]);
   // three items in progress: the first text and 'и ещё 2 в работе'
   j.subStart("S1", "b1", "Plan");
   j.subStart("S1", "b2", "Explore");
   await page.push(...j.entries.slice(-2));
-  assert.ok(nowText(page).startsWith("Сейчас: Explore"), nowText(page));
-  assert.ok(nowText(page).endsWith(" · и ещё 2 в работе"));
-  // the link is lost: the last loaded text stays
+  // three rows by rule d (new ones on top), no "и ещё"
+  assert.deepEqual(nowRows(page), ["Explore", "Plan", MAIN_ROW]);
+  assert.deepEqual(nowKinds(page), ["task", "task", "main"]);
+  assert.equal(nowText(page).includes("и ещё"), false);
+  // the link is lost: the last loaded rows and text stay
   const kept = nowText(page);
+  const keptRows = nowRows(page);
   page.server.mode = "fail";
   await page.tick(2000);
   assert.equal(nowText(page), kept);
+  assert.deepEqual(nowRows(page), keptRows);
   assert.equal(page.el("now").hidden, false);
 });
 
@@ -393,13 +413,18 @@ test("PN-06: a journal row - time HH:MM:SS, 8 characters of the session, who, th
   assert.match(cell(rows[0], "time"), /^\d\d:\d\d:\d\d$/);
   assert.equal(cell(rows[0], "session"), "session-");
   assert.equal(cell(rows[0], "who"), "Основная сессия");
-  assert.equal(cell(rows[0], "event"), EVENT_LABELS.SessionStart);
+  assert.equal(cell(rows[0], "event"), "Сессия Claude Code открыта");
   assert.equal(rows[0].dataset.tone, "session");
-  assert.equal(cell(rows[1], "who"), "Explore");
-  assert.equal(cell(rows[1], "event"), EVENT_LABELS.PostToolUse);
+  // REQ-045: "who" of a handoff is the one who handed over (here the main
+  // session); the role is in the words
+  assert.equal(cell(rows[1], "who"), "Основная сессия");
+  assert.equal(cell(rows[1], "event"), "Задание передано агенту «Explore»");
   assert.equal(cell(rows[1], "row-desc"), "linked task");
   assert.equal(rows[1].dataset.tone, "handoff");
-  assert.equal(cell(rows[2], "event"), EVENT_LABELS.SubagentStart);
+  assert.equal(
+    cell(rows[2], "event"),
+    "Агент «Explore» получил задание и начал работу",
+  );
   assert.equal(cell(rows[2], "row-desc"), "linked task");
   assert.equal(rows[2].dataset.tone, "start");
   assert.equal(cell(rows[3], "who"), ROLE_UNKNOWN);
@@ -519,6 +544,10 @@ test("PN-09: the task panel - 'Текущие' hold what is in progress, 'Ист
   launch(j, "B", "b1", "Plan");
   j.sessionEnd("B");
   const page = await loaded(j.entries);
+  const before = await loaded(j.entries.slice(0, 4));
+  const running = before.items().find((i) => i.dataset.key === "a1");
+  assert.equal(running.dataset.state, "in_progress");
+  assert.equal(running.byClass("item-role")[0].textContent, "Оркестратор");
   const children = page.el("tasks").children;
   const sectionOf = (item) => {
     let section = null;
@@ -545,7 +574,9 @@ test("PN-09: the task panel - 'Текущие' hold what is in progress, 'Ист
     ["b1", "a1"],
   );
   const orch = history[1];
-  assert.equal(orch.byClass("item-role")[0].textContent, "ORCH");
+  // REQ-036: the name of the role in plain words, the same text in the
+  // "История" (here) and in "Текущие" before the SubagentStop (below)
+  assert.equal(orch.byClass("item-role")[0].textContent, "Оркестратор");
   assert.equal(
     orch.byClass("item-full")[0].textContent,
     "Sai Orchestrator (ORCH)",
@@ -868,10 +899,15 @@ test("PN-14: one stream - after one event every view (Сейчас, journal and 
     "on the board",
   );
   assert.equal(page.el("card-overlay").hidden, false);
-  assert.equal(
-    page.el("card").byClass("card-working")[0].textContent,
-    "в работе: 1",
-  );
+  // REQ-044: the card of an instance names the workplace of its role, no
+  // "в работе: N"
+  const workplace = () =>
+    page
+      .el("card")
+      .find((e) => e.dataset.row === "workplace")
+      .byClass("state-value")[0].textContent;
+  assert.equal(workplace(), "работает — у этой роли задач «в работе»: 1");
+  assert.equal(page.el("card").byClass("card-working").length, 0);
   // REQ-042: the explanation of what the journal does not confirm is rebuilt
   // in the same build, from the same model, by a tick of the clock alone
   page.clock.set(page.clock.now() + STALE_AFTER_MS + 60_000);
@@ -899,9 +935,10 @@ test("PN-14: one stream - after one event every view (Сейчас, journal and 
   );
   assert.equal(page.app.getOffice().board.columns.length, 0);
   assert.equal(
-    page.el("card").byClass("card-working")[0].textContent,
-    "в работе: 0",
+    workplace(),
+    "свободен — по журналу у этой роли нет задачи «в работе»; это вывод по событиям, а не событие",
   );
+  assert.equal(page.el("card").byClass("card-working").length, 0);
   const cardStale = page
     .el("card")
     .all((e) => e.dataset.list === "unconfirmed")[0];
@@ -1161,7 +1198,7 @@ const itemOf = (page, key) =>
   page.items().find((i) => i.dataset.key === key) ?? null;
 const buttonOf = (page, key) => itemOf(page, key)?.byClass("history-open")[0];
 
-test("PN-19: opening - from a row of the journal and from the button of a card of a task or of the main session, not from the card itself or from the card of an agent; a service message only says so; a row without a window is as it was; the order of the sections", async () => {
+test("PN-19: opening - from the button of a row of the journal (the row itself opens its details) and from the button of a card of a task or of the main session, not from the card itself or from the card of an agent; a service message only says so; a row without a window is as it was; the order of the sections", async () => {
   const fx = twoRequests();
   const page = await loaded(fx.j.entries);
   const h = buildHistory(page.app.getModel());
@@ -1169,22 +1206,23 @@ test("PN-19: opening - from a row of the journal and from the button of a card o
   const k2 = `req:${fx.o2}`;
   assert.deepEqual([...h.byKey.keys()], [k1, k2]);
 
-  // rows of the journal
+  // rows of the journal (REQ-045, design 5.1): every row is a button that
+  // opens its details; a request of the owner with a window has a second,
+  // separate button that opens the window
   assert.deepEqual(
     historyRows(page).map((r) => r.dataset.request),
     [k1, k2],
   );
   for (const row of historyRows(page)) {
-    assert.equal(row.getAttribute("tabindex"), "0");
-    const last = row.children[row.children.length - 1];
-    assert.equal(last.tagName, "SPAN");
-    assert.ok(last.classes.has("history-open"));
-    assert.equal(last.textContent, TX.HISTORY_OPEN);
-    assert.equal(
-      interactive(row).filter((e) => e !== row).length,
-      0,
-      "no interactive element inside the row",
-    );
+    assert.equal(row.hasAttribute("tabindex"), false);
+    const controls = interactive(row);
+    assert.equal(controls.length, 2, "exactly two controls in the row");
+    assert.equal(controls[0].tagName, "BUTTON");
+    assert.ok(controls[0].classes.has("row-toggle"));
+    assert.equal(controls[1].tagName, "BUTTON");
+    assert.ok(controls[1].classes.has("history-open"));
+    assert.equal(controls[1].dataset.request, row.dataset.request);
+    assert.equal(controls[1].textContent, TX.HISTORY_OPEN);
   }
   const svcRow = page
     .rows()
@@ -1200,18 +1238,28 @@ test("PN-19: opening - from a row of the journal and from the button of a card o
   const plain = page
     .rows()
     .filter((r) => !r.classes.has("opens-history") && r !== svcRow);
-  for (const row of plain) {
+  for (const row of [...plain, svcRow]) {
     assert.equal(row.hasAttribute("tabindex"), false);
+    assert.equal(row.byClass("row-toggle").length, 1);
+    assert.equal(interactive(row).length, 1, "only the toggle");
     assert.equal(row.byClass("history-open").length, 0);
+  }
+  for (const row of plain) {
     assert.equal(row.byClass("history-service").length, 0);
   }
-  // a click on the service row and on a row without a window opens nothing
-  svcRow.click();
-  for (const row of plain) row.click();
+  // a press on the toggle of any row opens its details, never the window
   const dom = historyDom(page);
+  const toggleOf = (row) => row.byClass("row-toggle")[0];
+  toggleOf(svcRow).click();
+  for (const row of plain)
+    toggleOf(
+      page.rows().find((r) => r.dataset.index === row.dataset.index),
+    ).click();
+  for (const key of [k1, k2]) toggleOf(historyRowOf(page, key)).click();
   assert.equal(dom.isOpen(), false);
-  // the row of the first request opens the first window, the second the second
-  historyRowOf(page, k1).click();
+  assert.equal(page.el("journal").byClass("event-details").length, 1);
+  // the button of the first request opens the first window, the second the second
+  historyRowOf(page, k1).byClass("history-open")[0].click();
   assert.equal(dom.isOpen(), true);
   assert.equal(dom.title().textContent, "первый запрос");
   // the order of the sections, top to bottom
@@ -1221,7 +1269,7 @@ test("PN-19: opening - from a row of the journal and from the button of a card o
     ["request", "understood", "work", "timeline"],
   );
   dom.close.click();
-  historyRowOf(page, k2).click();
+  historyRowOf(page, k2).byClass("history-open")[0].click();
   assert.equal(dom.title().textContent, "второй запрос");
   dom.close.click();
   assert.equal(dom.isOpen(), false);
@@ -1331,7 +1379,7 @@ test("PN-20: text from the journal is text - <script>, <img onerror>, &lt;b&gt;,
   j.subStart("__proto__", "h2", "__proto__");
   const page = await loaded(j.entries);
   assert.equal(historyRowOf(page, `req:${o}`) !== null, true);
-  historyRowOf(page, `req:${o}`).click();
+  historyRowOf(page, `req:${o}`).byClass("history-open")[0].click();
   const dom = historyDom(page);
   assert.equal(dom.isOpen(), true);
 
@@ -1433,7 +1481,7 @@ function pressKey(target, key, extra = {}) {
   return prevented;
 }
 
-test("PN-21: the keyboard and the focus - Enter and Space open from the row, Escape, the cross and the overlay close, the focus returns to the opener, Tab goes round, data-modal on the body; Escape closes only the top window; a card of an agent that is open closes when the window opens", async () => {
+test("PN-21: the keyboard and the focus - Enter and Space open from the button of the row, Escape, the cross and the overlay close, the focus returns to the opener, Tab goes round, data-modal on the body; Escape closes only the top window; a card of an agent that is open closes when the window opens", async () => {
   const fx = twoRequests();
   const page = await loaded(fx.j.entries);
   const k1 = `req:${fx.o1}`;
@@ -1442,19 +1490,24 @@ test("PN-21: the keyboard and the focus - Enter and Space open from the row, Esc
   const modal = () => bodyEl().getAttribute("data-modal");
   const esc = () =>
     page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
-  const row = () => historyRowOf(page, k1);
+  // REQ-045: the window opens from the separate button of the row; the row
+  // itself (its toggle) opens the details of the event
+  const row = () => historyRowOf(page, k1).byClass("history-open")[0];
+  const toggle = () => historyRowOf(page, k1).byClass("row-toggle")[0];
   const focusedIs = (el, why) => assert.ok(page.doc.focused === el, why);
   assert.equal(modal(), null);
 
-  // Enter and Space open; other keys do not
+  // Enter on the toggle of the row opens the details, not the window
+  pressKey(toggle(), "Enter");
+  assert.equal(dom.isOpen(), false);
+  assert.equal(historyRowOf(page, k1).byClass("event-details").length, 1);
+  pressKey(toggle(), "Enter");
+  assert.equal(historyRowOf(page, k1).byClass("event-details").length, 0);
+  // Enter and Space on the button open; other keys do not
   pressKey(row(), "a");
   pressKey(row(), "Tab");
   assert.equal(dom.isOpen(), false);
-  assert.equal(
-    pressKey(row(), "Enter") > 0,
-    true,
-    "the key does not scroll the page",
-  );
+  pressKey(row(), "Enter");
   assert.equal(dom.isOpen(), true);
   focusedIs(dom.close, "focus is on the cross");
   assert.equal(modal(), "history");
@@ -1515,7 +1568,7 @@ test("PN-21: the keyboard and the focus - Enter and Space open from the row, Esc
 
   // the open window follows the journal and keeps the scroll and the focus
   const k2 = `req:${fx.o2}`;
-  historyRowOf(page, k2).click();
+  historyRowOf(page, k2).byClass("history-open")[0].click();
   const count = () => dom.section("timeline").byClass("history-event").length;
   const before = count();
   dom.body.scrollTop = 7;
@@ -1654,12 +1707,15 @@ test("PN-22: the contract of the CSS of the window - the height is bound in vh, 
     top(".history-quote").get("border-radius"),
     "0 0.4375rem 0.4375rem 0",
   );
-  // the focus outline of a row that opens: inside the scrolling list
+  // the focus outline of a row (its toggle, REQ-045): inside the scrolling
+  // list; the button that opens the window has the ring of every button
   assert.equal(
-    top(".row.opens-history:focus-visible").get("outline-offset"),
+    top(".row-toggle:focus-visible").get("outline-offset"),
     "-0.125rem",
   );
-  assert.equal(top(".row.opens-history").get("cursor"), "pointer");
+  assert.equal(top(".row-toggle").get("cursor"), "pointer");
+  assert.match(top("button:focus-visible").get("outline"), /^2px solid/);
+  assert.equal(top("button:focus-visible").get("outline-offset"), "2px");
 
   // a narrow window: the whole screen, a bigger cross
   const narrow = "@media (max-width: 599px)";
@@ -1769,7 +1825,12 @@ test("FS-08: the panels at two moments of one sequence - on the border the item 
   const page = await loaded(entries, [], { now: last + STALE_AFTER_MS });
   assert.deepEqual(keysIn(page, "current"), ["a1", "main:1"]);
   assert.deepEqual(keysIn(page, "history"), []);
-  assert.equal(page.text("now-text"), "Сейчас: Explore · и ещё 1 в работе");
+  // REQ-036: one row per item in the order of "Текущие"
+  assert.deepEqual(nowRows(page), [
+    "Explore",
+    "Основная сессия — обрабатывает запрос",
+  ]);
+  assert.deepEqual(nowKinds(page), ["task", "main"]);
   assert.equal(page.el("now").dataset.busy, "true");
   assert.equal(page.el("now").dataset.unconfirmed, "false");
   assert.equal(
@@ -2268,10 +2329,19 @@ test("FS-14: the panels on the sample - D1 (the silent task is not in 'Сейч�
   ]);
   assert.deepEqual(keysIn(page, "history"), ["sample-a1", "main:1"]);
   assert.ok(!page.text("now-text").includes("Explore"), "not in 'Сейчас'");
-  assert.equal(
-    page.text("now-text"),
-    "Сейчас: general-purpose · и ещё 2 в работе",
+  // REQ-036: three rows in the order of "Текущие", Explore not among them
+  assert.deepEqual(
+    page
+      .el("now")
+      .all((e) => e.classes.has("now-row"))
+      .map((r) => r.dataset.key),
+    ["sample-a3", "sample-a2", "main:5"],
   );
+  assert.deepEqual(nowRows(page), [
+    "general-purpose",
+    "Plan — Образец: план работ",
+    "Основная сессия — обрабатывает запрос",
+  ]);
   assert.equal(legendState(page, "role:Explore"), "свободен");
   assert.equal(legendState(page, "role:Plan"), "работает");
   assert.equal(legendState(page, "role:general-purpose"), "работает");
@@ -2611,10 +2681,10 @@ test("FS-11: the word in the meta of the window of history, opened from a row of
     dom.close.click();
     assert.equal(dom.isOpen(), false);
   }
-  // opened from the row of the journal, too (the same request)
+  // opened from the button of the row of the journal, too (the same request)
   const page = await loaded([start, ask], [], { now: T0 + 2 * HOUR });
   const opener = page.rows().find((r) => r.classes.has("opens-history"));
-  opener.click();
+  opener.byClass("history-open")[0].click();
   assert.equal(
     historyDom(page).meta().byClass("history-state")[0].textContent,
     "нет свежих данных",
@@ -2937,4 +3007,1486 @@ test("PN-23: the same check on a fixed sample of the rules with a deliberate bre
   for (const [name, text] of Object.entries(harmless)) {
     assert.deepEqual(itemCssProblems(text), [], `${name} is not a breakage`);
   }
+});
+
+// ===================================================================
+// REQ-036, REQ-045, REQ-044 (design docs/design/REQ-036-044-045-interactive.md,
+// table 9). The words of the criteria are literals here, not read from the
+// constants under test.
+// ===================================================================
+import { roleLabel } from "../src/pixel-office/public/office-model.js";
+import {
+  eventCase,
+  eventWords,
+  markReason,
+  repeatedStarts,
+  roleName,
+} from "../src/pixel-office/public/words.js";
+import { journalRows } from "../src/pixel-office/public/panels.js";
+import { buildInstanceCard } from "../src/pixel-office/public/instance-card.js";
+import { eventDetails } from "../src/pixel-office/public/event-details.js";
+import { agentNames, iso, rng } from "./pixel-office-helpers.js";
+
+// Words that must never appear in a text of the page.
+const SERVICE_WORDS = /undefined|null|NaN|\[object/;
+const nowRowEls = (page) => page.el("now").all((e) => e.classes.has("now-row"));
+
+// ------------------------------------------------------------------ NM-01
+
+test("NM-01: the names of the roles in plain words - one per code of .claude/agents/*.md, 1-40 characters, no Latin letters and no words of success, all different; a role of Sai is named so in 'Сейчас' and in the panel before and after its end; the canvas keeps the short caption; any other role is shown as it came", async () => {
+  const codes = agentNames().map((n) => {
+    const m = /\(([A-Z][A-Z0-9-]*)\)$/.exec(n);
+    assert.ok(m, `no code in ${n}`);
+    return m[1];
+  });
+  assert.equal(codes.length, agentNames().length);
+  assert.deepEqual(Object.keys(TX.ROLE_NAMES).sort(), [...codes].sort());
+  const names = Object.values(TX.ROLE_NAMES);
+  assert.equal(new Set(names).size, names.length, "all names differ");
+  for (const [code, name] of Object.entries(TX.ROLE_NAMES)) {
+    const n = Array.from(name).length;
+    assert.ok(n >= 1 && n <= 40, `${code}: ${n} characters`);
+    assert.doesNotMatch(name, /[A-Za-z]/, code);
+    assert.doesNotMatch(
+      name,
+      /заверш|готов|выполнен|успешн|завис|остановлен|упал/i,
+      code,
+    );
+    assert.notEqual(name, TX.MAIN_LABEL);
+    assert.notEqual(name, TX.ROLE_UNKNOWN);
+  }
+  // the examples of the requirement, written as literals
+  assert.equal(TX.ROLE_NAMES["SECURITY-REVIEWER"], "Проверка безопасности");
+  assert.equal(TX.ROLE_NAMES.REVIEWER, "Ревью кода");
+  assert.equal(TX.ROLE_NAMES["TEST-RUNNER"], "Запуск проверки");
+  assert.equal(TX.ROLE_NAMES["BACKEND-DEV"], "Серверная часть");
+  assert.equal(TX.ROLE_NAMES.ORCH, "Оркестратор");
+  // every real name of a role of Sai gets the name of its code
+  for (const full of agentNames()) {
+    const code = /\(([A-Z][A-Z0-9-]*)\)$/.exec(full)[1];
+    assert.equal(roleName(full), TX.ROLE_NAMES[code], full);
+  }
+  // any other role is shown whole, as it came
+  const long = "Роль из шестидесяти знаков ".repeat(3).slice(0, 60);
+  for (const role of [
+    "Explore",
+    "general-purpose",
+    long,
+    "Demo Reviewer (REVIEWER)",
+    "Sai Unknown Role (NOT-A-CODE)",
+    "Sai Security Reviewer (SECURITY-REVIEWER) copy",
+    "(REVIEWER)",
+  ]) {
+    assert.equal(roleName(role), role);
+  }
+  assert.equal(roleName(""), TX.ROLE_UNKNOWN);
+  assert.equal(roleName(undefined), TX.ROLE_UNKNOWN);
+  assert.equal(roleName(42), TX.ROLE_UNKNOWN);
+  assert.equal(roleName("__proto__"), "__proto__");
+  assert.equal(roleName("Sai X (constructor)"), "Sai X (constructor)");
+
+  // on the page
+  const role = "Sai Security Reviewer (SECURITY-REVIEWER)";
+  const j = journal();
+  j.sessionStart("S1");
+  launch(j, "S1", "sr1", role, { description: "проверка входа" });
+  launch(j, "S1", "x1", "Demo Reviewer (REVIEWER)");
+  const page = await loaded(j.entries);
+  const rows = nowRowEls(page).map((r) => r.textContent);
+  assert.ok(rows.includes("Проверка безопасности — проверка входа"), rows);
+  assert.ok(rows.includes("Demo Reviewer (REVIEWER)"), rows);
+  const item = () => page.items().find((i) => i.dataset.key === "sr1");
+  assert.equal(item().dataset.state, "in_progress");
+  assert.equal(
+    item().byClass("item-role")[0].textContent,
+    "Проверка безопасности",
+  );
+  j.subStop("S1", "sr1", role);
+  await page.push(j.entries[j.entries.length - 1]);
+  assert.equal(item().dataset.state, "completed");
+  assert.equal(
+    item().byClass("item-role")[0].textContent,
+    "Проверка безопасности",
+  );
+  // the short caption of the canvas is nowhere in the block and the panel
+  // (the panel shows the full role beside the name, as before)
+  for (const id of ["now", "tasks"]) {
+    assert.equal(page.text(id).includes("SECURITY-REVIEW…"), false, id);
+    assert.equal(page.text(id).includes("Ревью кода"), false, id);
+  }
+  assert.equal(page.text("now").includes("SECURITY-REVIEWER"), false);
+  // the canvas and the legend keep the short caption (design D13)
+  page.ctx.clear();
+  page.frames.step();
+  const drawn = page.ctx
+    .lastFrame()
+    .filter((c) => c.op === "fillText")
+    .map((c) => c.args[0]);
+  assert.ok(drawn.includes(roleLabel(role)), drawn.join(" | "));
+  assert.equal(roleLabel(role), "SECURITY-REVIEW…");
+});
+
+// ------------------------------------------------------------------ NM-02
+
+test("NM-02: one row of 'Сейчас' per item in progress, in the order of 'Текущие' - 1, 5 (three roles, two of them twice, with their own descriptions), the main session and two; a row goes after SubagentStop; nothing in progress - 'в работе ничего нет'; no 'и ещё' anywhere in the code", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  launch(j, "S1", "p1", "Plan", { description: "план один" });
+  let page = await loaded(j.entries);
+  assert.deepEqual(
+    nowRowEls(page).map((r) => r.textContent),
+    ["Plan — план один"],
+  );
+  launch(j, "S1", "p2", "Plan", { description: "план два" });
+  launch(j, "S1", "e1", "Explore", { description: "поиск" });
+  launch(j, "S1", "e2", "Explore");
+  launch(j, "S1", "o1", "Sai Orchestrator (ORCH)", { description: "маршрут" });
+  page = await loaded(j.entries);
+  const keys = () => nowRowEls(page).map((r) => r.dataset.key);
+  const current = () =>
+    page
+      .items()
+      .filter((i) => i.dataset.state === "in_progress")
+      .map((i) => i.dataset.key);
+  assert.deepEqual(
+    nowRowEls(page).map((r) => r.textContent),
+    [
+      "Оркестратор — маршрут",
+      "Explore",
+      "Explore — поиск",
+      "Plan — план два",
+      "Plan — план один",
+    ],
+  );
+  assert.deepEqual(keys(), current(), "the order of 'Текущие'");
+  // a row with no description: the name only, no separator
+  const e2 = nowRowEls(page).find((r) => r.dataset.key === "e2");
+  assert.equal(e2.byClass("now-sep").length, 0);
+  assert.equal(e2.byClass("now-desc").length, 0);
+  // the main session and two agents: three rows, by the order of the panel
+  const m = journal();
+  m.sessionStart("S1");
+  launch(m, "S1", "a", "Plan");
+  m.prompt("S1");
+  launch(m, "S1", "b", "Explore");
+  const mp = await loaded(m.entries);
+  const model = mp.app.getModel();
+  const want = taskPanel(model).current.map((i) => i.key);
+  assert.deepEqual(
+    nowLine(model).rows.map((r) => r.key),
+    want,
+  );
+  assert.deepEqual(
+    nowRowEls(mp).map((r) => r.dataset.key),
+    want,
+  );
+  assert.equal(nowRowEls(mp).length, 3);
+  assert.equal(nowRowEls(mp)[1].dataset.kind, "main");
+  assert.equal(nowRowEls(mp)[1].textContent, MAIN_ROW);
+  // an end takes the row away at the next poll
+  m.subStop("S1", "b", "Explore");
+  await mp.push(m.entries[m.entries.length - 1]);
+  assert.deepEqual(
+    nowRowEls(mp).map((r) => r.dataset.key),
+    want.filter((k) => k !== "b"),
+  );
+  // nothing in progress
+  m.subStop("S1", "a", "Plan");
+  m.stop("S1");
+  await mp.push(...m.entries.slice(-2));
+  assert.equal(nowRowEls(mp).length, 0);
+  assert.equal(mp.text("now-text"), "Сейчас: в работе ничего нет");
+  // no tail "and N more" and no constant for it in the code of Pixel Office;
+  // the name and the words are put together here, so this file does not hold
+  // them itself (criterion 9 (c) of REQ-036 greps tools/test/ too)
+  const oldName = ["NOW", "MORE"].join("_");
+  const oldTail = new RegExp(`${oldName}|· и ${"ещё"}`);
+  const hits = [];
+  const walk = (dir) => {
+    for (const name of fs.readdirSync(dir)) {
+      const file = path.join(dir, name);
+      if (fs.statSync(file).isDirectory()) walk(file);
+      else if (oldTail.test(fs.readFileSync(file, "utf8"))) {
+        hits.push(file);
+      }
+    }
+  };
+  walk(path.join(PUBLIC, ".."));
+  assert.deepEqual(hits, []);
+  assert.equal(Object.hasOwn(TX, oldName), false);
+  // the expression itself sees both
+  assert.equal(oldTail.test(`Сейчас: Plan · и ${"ещё"} 2 в работе`), true);
+  assert.equal(oldTail.test(`import { ${oldName} }`), true);
+});
+
+// ------------------------------------------------------------------ NM-03
+
+const NOW_SELECTORS = [
+  "now",
+  "now-label",
+  "now-text",
+  "now-list",
+  "now-row",
+  "now-role",
+  "now-sep",
+  "now-desc",
+];
+
+test("NM-03: nothing of a row of 'Сейчас' is cut - a description of 100 wide characters, a role of 60, a word without spaces are whole, with no '…'; no rule of the eight classes of the block sets text-overflow, -webkit-line-clamp or white-space: nowrap, in any media", async () => {
+  const wide = "Ｗ".repeat(100);
+  const role = "Роль-без-пробелов-".repeat(4).slice(0, 60);
+  const j = journal();
+  j.sessionStart("S1");
+  launch(j, "S1", "w1", role, { description: wide });
+  launch(j, "S1", "w2", "Plan", { description: "слово".repeat(20) });
+  const page = await loaded(j.entries);
+  const texts = nowRowEls(page).map((r) => r.textContent);
+  assert.ok(texts.includes(`${role} — ${wide}`), texts.join(" | "));
+  assert.ok(texts.includes(`Plan — ${"слово".repeat(20)}`));
+  assert.equal(page.text("now").includes("…"), false);
+  // the rules of the stylesheet
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  let seen = 0;
+  for (const rule of rules) {
+    const mine = rule.selectors.filter((s) =>
+      NOW_SELECTORS.some((name) => hasClass(lastCompound(s), name)),
+    );
+    if (mine.length === 0) continue;
+    seen += 1;
+    const where = `${rule.media ?? "-"} ${mine.join(", ")}`;
+    assert.equal(rule.decls.has("text-overflow"), false, where);
+    assert.equal(rule.decls.has("-webkit-line-clamp"), false, where);
+    assert.doesNotMatch(rule.decls.get("white-space") ?? "", /nowrap/, where);
+  }
+  assert.ok(seen >= 8, `rules of the block found: ${seen}`);
+  // the narrow media block holds rules of the block too (it was cut there)
+  assert.ok(
+    rules.some(
+      (r) =>
+        r.media === "@media (max-width: 599px)" &&
+        r.selectors.some((s) => /\.now/.test(s)),
+    ),
+  );
+});
+
+// ------------------------------------------------------------------ NM-04
+
+test("NM-04: twelve agents give twelve rows and no 'и ещё'; the list of 'Сейчас' scrolls inside (overflow-y: auto)", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  for (let i = 0; i < 12; i++) {
+    launch(j, "S1", `r${i}`, `Роль ${i}`, { description: `дело ${i}` });
+  }
+  const page = await loaded(j.entries);
+  assert.equal(nowRowEls(page).length, 12);
+  assert.equal(page.text("now").includes("и ещё"), false);
+  const list = page.el("now-list");
+  assert.ok(list !== null);
+  assert.equal(list.getAttribute("role"), "list");
+  assert.equal(list.getAttribute("tabindex"), "0");
+  assert.equal(list.getAttribute("aria-label"), "Сейчас — работающие агенты");
+  for (const row of nowRowEls(page)) {
+    assert.equal(row.getAttribute("role"), "listitem");
+  }
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  assert.equal(cssDecls(rules, ".now-list").get("overflow-y"), "auto");
+  // the list keeps its scroll between rebuilds
+  list.scrollTop = 33;
+  j.subStart("S1", "late", "Plan");
+  await page.push(j.entries[j.entries.length - 1]);
+  assert.equal(page.el("now-list").scrollTop, 33);
+  assert.equal(nowRowEls(page).length, 13);
+});
+
+// ------------------------------------------------------------------ NM-05
+
+test("NM-05: the rows of 'Сейчас' come only from agent_type and description - a request of the owner and a record of the orchestrator with req_id and note_text are not in the block; the page sends only GET; the link lost - the block stays", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  j.ownerPrompt("S1", "ТЕКСТ-ЗАПРОСА-NM05");
+  j.note({
+    session_id: "S1",
+    req_id: "REQ-044",
+    note_text: "ТЕКСТ-ЗАПИСИ-NM05",
+  });
+  launch(j, "S1", "a1", "Plan", { description: "дело" });
+  const page = await loaded(j.entries);
+  const shown = page.text("now") + page.el("now").title;
+  for (const word of ["ТЕКСТ-ЗАПРОСА-NM05", "ТЕКСТ-ЗАПИСИ-NM05", "REQ-044"]) {
+    assert.equal(shown.includes(word), false, word);
+  }
+  // the record is in the journal (so the test is not empty)
+  assert.ok(page.text("journal").includes("Оркестратор записал"));
+  assert.deepEqual(
+    nowRowEls(page).map((r) => r.textContent),
+    ["Plan — дело", MAIN_ROW],
+  );
+  for (const row of nowLine(page.app.getModel()).rows) {
+    assert.deepEqual(Object.keys(row).sort(), [
+      "description",
+      "key",
+      "kind",
+      "role",
+      "text",
+    ]);
+  }
+  // only GET in the code and on the wire
+  const methods = [];
+  for (const name of fs.readdirSync(PUBLIC)) {
+    const text = fs.readFileSync(path.join(PUBLIC, name), "utf8");
+    if (/method *: *['"](POST|PUT|PATCH|DELETE)/.test(text)) methods.push(name);
+  }
+  assert.deepEqual(methods, []);
+  for (const c of page.server.calls) assert.equal(c.init.method, "GET");
+  // the link is lost: the rows stay
+  const kept = page.text("now");
+  page.server.mode = "fail";
+  await page.tick(2000);
+  assert.equal(page.el("link").dataset.state, "down");
+  assert.equal(page.text("now"), kept);
+});
+
+// ------------------------------------------------------------------ JR-01
+
+// The table of the 12 cases of the journal, written here as literals of the
+// description of the interface (REQ-045 criterion 1); EVENT_TABLE must equal it.
+const EVENT_TABLE_LITERAL = {
+  session_start: {
+    words: "Сессия Claude Code открыта",
+    meaning:
+      "В Claude Code началась сессия или продолжена прежняя: при продолжении номер сессии тот же. Что именно произошло, хук сейчас не передаёт.",
+    not_proved: "Не доказывает, что началась работа или пришёл запрос.",
+  },
+  session_end: {
+    words: "Сессия Claude Code закрыта",
+    meaning:
+      "Сессия закончилась: окно закрыли, сессию очистили или переключили. Причину хук сейчас не передаёт.",
+    not_proved:
+      "Не доказывает, что работа доведена до конца: агенты этой сессии могли не закончить.",
+  },
+  prompt_owner: {
+    words: "Владелец отправил запрос",
+    meaning:
+      "Человек отправил сообщение в основную сессию; с него начинается строка «Основная сессия — обрабатывает запрос». Текст — в окне «Просмотр истории», если хранение текста включено.",
+    not_proved: "Не доказывает, что запрос понят или сделан.",
+  },
+  prompt_service: {
+    words: "В сессию пришло служебное сообщение",
+    meaning:
+      "Сообщение от системы, а не от человека: напоминание, уведомление о фоновой задаче, сообщение другой сессии Claude Code или пометка о продолжении прежнего разговора. Его текст не хранится.",
+    not_proved: "Не доказывает, что его написал человек.",
+  },
+  prompt_unknown: {
+    words: "В сессию пришло сообщение",
+    meaning:
+      "Сообщение в основную сессию. Кто его написал — человек или система, — в этой строке не записано.",
+    not_proved: "Не доказывает, что его написал человек.",
+  },
+  stop: {
+    words: "Основная сессия вернула ответ",
+    meaning:
+      "Основная сессия закончила очередной ответ и ждёт следующего сообщения.",
+    not_proved:
+      "Не доказывает, что вся работа закончена или удалась: агенты в фоне могут ещё работать, и сессия может продолжить сама, когда они вернутся. При прерывании человеком и при ошибке этого события нет.",
+  },
+  agent_start: {
+    words: "Агент «{role}» получил задание и начал работу",
+    act: "получил задание и начал работу",
+    meaning:
+      "Claude Code запустил агента этой роли; его номер — в технических полях.",
+    not_proved:
+      "Не доказывает, какое задание и кто его дал: это видно только по связанной записи «Задание передано агенту».",
+  },
+  agent_resume: {
+    words: "Агент «{role}» продолжил работу",
+    act: "продолжил работу",
+    meaning:
+      "Тот же агент, с тем же номером, снова начал работу над той же задачей.",
+    not_proved:
+      "Не доказывает, что прежняя работа удалась или что задание новое.",
+  },
+  agent_stop: {
+    words: "Агент «{role}» закончил работу и вернул ответ",
+    act: "закончил работу и вернул ответ",
+    meaning:
+      "Агент закончил свой ход и вернул ответ тому, кто его запустил. Текст ответа Pixel Office не хранит: итог не записан. Такое событие приходит и от внутренних агентов Claude Code — у них начала в журнале нет, а роль совпадает с ролью сессии или пуста.",
+    not_proved:
+      "Не доказывает, что задание сделано, что проверки прошли и что ответ верен. Агента могут продолжить.",
+  },
+  handoff: {
+    words: "Задание передано агенту «{role}»",
+    meaning:
+      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). У фоновых агентов эта запись приходит сразу при запуске, у остальных — после окончания их работы.",
+    not_proved:
+      "Не доказывает, что агент закончил работу или что задание сделано. Время записи — не время начала работы агента.",
+  },
+  orch_note: {
+    words: "Оркестратор записал, как понял запрос",
+    meaning:
+      "Запись оркестратора, сделанная командой pixel-office-note; это не событие хука. К запросу она привязана по времени запроса, если оно записано.",
+    not_proved:
+      "Не доказывает, что работа идёт или сделана так, как записано: это слова оркестратора.",
+  },
+  marked: {
+    meaning:
+      "Строка есть в журнале, но правило чтения не признало её событием хука.",
+    not_proved:
+      "Не доказывает, что событие было; на задачи, офис и состояния строка не влияет.",
+    reasons: {
+      source: "источник строки — не хук Claude Code: {source}",
+      conflict:
+        "время строки расходится с порядком строк в журнале больше чем на 2 минуты",
+      future:
+        "время последней строки позже часов этого компьютера больше чем на минуту",
+    },
+  },
+};
+
+const plain = (v) => JSON.parse(JSON.stringify(v));
+// The two obsolete exports of texts.js (removed at step 5c): no test and no
+// module of the page imports them.
+const OLD_LABELS = ["EVENT", "LABELS"].join("_");
+const OLD_WORKING = ["CARD", "WORKING"].join("_");
+const SEVEN_OLD_WORDS = [
+  "сессия началась",
+  "сессия закончилась",
+  "запрос отправлен",
+  "ответ закончен",
+  "субагент запущен",
+  "субагент закончил",
+  "вызов субагента",
+];
+
+// A journal with every kind of line: the three kinds of a request, a repeated
+// start, a record of the orchestrator and the three marks (design 9.2, JR-01).
+function allKindsJournal() {
+  const s = (n) => T0 + n * 1000;
+  const orch = "Sai Orchestrator (ORCH)";
+  const entries = [
+    lineAt("SessionStart", "S1", s(1)),
+    lineAt("UserPromptSubmit", "S1", s(2), {
+      prompt_kind: "owner",
+      prompt_text: "Образец запроса",
+    }),
+    lineAt("UserPromptSubmit", "S1", s(3), { prompt_kind: "service" }),
+    lineAt("UserPromptSubmit", "S1", s(4)),
+    lineAt("PostToolUse", "S1", s(5), {
+      tool_use_id: "tu1",
+      launched_agent_id: "a1",
+      subagent_type: orch,
+      description: "маршрут",
+    }),
+    lineAt("SubagentStart", "S1", s(6), { agent_id: "a1", agent_type: orch }),
+    lineAt("SubagentStop", "S1", s(7), { agent_id: "a1", agent_type: orch }),
+    lineAt("SubagentStart", "S1", s(8), { agent_id: "a1", agent_type: orch }),
+    {
+      time: iso(s(9)),
+      source: "ORCH",
+      session_id: "S1",
+      note_text: "как понял: образец",
+      req_id: "REQ-045",
+    },
+    lineAt("Stop", "S1", s(10)),
+    { ...lineAt("SessionStart", "S2", s(11)), source: "SIMULATION" },
+    // earlier than the lines before it by much more than 2 minutes: conflict
+    lineAt("SubagentStart", "S1", s(12) - 400_000, {
+      agent_id: "a2",
+      agent_type: "Plan",
+    }),
+    lineAt("SessionEnd", "S1", s(13)),
+    // the last line, ten minutes after the clock of the page: future
+    lineAt("Stop", "S9", NOW + 600_000),
+  ];
+  const words = [
+    "Сессия Claude Code открыта",
+    "Владелец отправил запрос",
+    "В сессию пришло служебное сообщение",
+    "В сессию пришло сообщение",
+    "Задание передано агенту «Оркестратор»",
+    "Агент «Оркестратор» получил задание и начал работу",
+    "Агент «Оркестратор» закончил работу и вернул ответ",
+    "Агент «Оркестратор» продолжил работу",
+    "Оркестратор записал, как понял запрос",
+    "Основная сессия вернула ответ",
+    "Сессия Claude Code открыта",
+    "Агент «Plan» получил задание и начал работу",
+    "Сессия Claude Code закрыта",
+    "Основная сессия вернула ответ",
+  ];
+  return { entries, words };
+}
+
+test("JR-01: one table of 12 cases - EVENT_TABLE equals the literals of the criterion, the short words of the card are the end of the words of the cases 7-9; on a journal with every kind the words of each row are its case with its own role, the same in the timeline of the window; the old seven words are gone from the page", async () => {
+  assert.deepEqual(plain(TX.EVENT_TABLE), EVENT_TABLE_LITERAL);
+  assert.equal(Object.keys(TX.EVENT_TABLE).length, 12);
+  for (const key of ["agent_start", "agent_resume", "agent_stop"]) {
+    const row = TX.EVENT_TABLE[key];
+    assert.equal(row.words, `Агент «{role}» ${row.act}`, key);
+  }
+  for (const [key, row] of Object.entries(TX.EVENT_TABLE)) {
+    assert.ok(row.not_proved.startsWith("Не доказывает"), key);
+    assert.doesNotMatch(
+      JSON.stringify(row),
+      /заверш|готов|выполнен|успешн/i,
+      key,
+    );
+  }
+  const { entries, words } = allKindsJournal();
+  const page = await loaded(entries);
+  const shown = page.rows().map((r) => r.byClass("event")[0].textContent);
+  assert.deepEqual(shown, words);
+  const marks = page.rows().map((r) => r.dataset.marked);
+  assert.deepEqual(
+    marks.map((m, i) => (m === "true" ? i : null)).filter((i) => i !== null),
+    [10, 11, 13],
+  );
+  const reasons = journalRows(page.app.getModel(), page.app.getOffice()).map(
+    (r) => r.reason,
+  );
+  assert.equal(reasons[10], "source");
+  assert.equal(reasons[11], "conflict");
+  assert.equal(reasons[13], "future");
+  // the timeline of the window: the same words, the record by its own caption
+  const h = buildHistory(page.app.getModel());
+  assert.equal(h.requests.length, 1);
+  let checked = 0;
+  for (const item of h.requests[0].timeline) {
+    if (item.kind === "note") {
+      assert.equal(item.what, TX.HISTORY_NOTE_BY);
+    } else {
+      assert.equal(item.what, words[item.index], `line ${item.index}`);
+    }
+    checked += 1;
+  }
+  assert.ok(checked >= 8);
+  // the old words: not on the page; in the code only in the obsolete export of
+  // texts.js, which nothing of the page or of the tests imports (it is removed
+  // at step 5c, after which the criterion's grep over public/ is empty)
+  for (const old of SEVEN_OLD_WORDS) {
+    assert.equal(page.text("journal").includes(old), false, old);
+  }
+  for (const name of fs.readdirSync(PUBLIC)) {
+    const text = fs.readFileSync(path.join(PUBLIC, name), "utf8");
+    if (name === "texts.js") {
+      const block = new RegExp(
+        `export const ${OLD_LABELS} = Object\\.freeze\\(\\{[^}]*\\}\\);`,
+      );
+      const rest = text.replace(block, "");
+      for (const old of SEVEN_OLD_WORDS) {
+        assert.equal(rest.includes(old), false, `${name}: ${old}`);
+      }
+      continue;
+    }
+    for (const old of SEVEN_OLD_WORDS) {
+      assert.equal(text.includes(old), false, `${name}: ${old}`);
+    }
+    assert.equal(
+      text.includes(OLD_LABELS),
+      false,
+      `${name} uses the old table`,
+    );
+  }
+  for (const name of fs.readdirSync(
+    path.join(PUBLIC, "..", "..", "..", "test"),
+  )) {
+    if (!name.startsWith("pixel-office-")) continue;
+    const text = fs.readFileSync(
+      path.join(PUBLIC, "..", "..", "..", "test", name),
+      "utf8",
+    );
+    // the names are put together here, so this file does not name them
+    assert.equal(text.includes(OLD_LABELS), false, name);
+    assert.equal(text.includes(OLD_WORKING), false, name);
+  }
+});
+
+// ------------------------------------------------------------------ JR-02
+
+// The fields of a row that never change once the row is there.
+const fixed = (r) => ({
+  index: r.index,
+  time: r.time,
+  who: r.who,
+  words: r.words,
+  session_id: r.session_id,
+  source: r.source,
+  agent_id: r.agent_id,
+});
+
+function rowsOf(entries, now) {
+  const m = buildModel(entries, [], now);
+  return journalRows(m, buildOffice(m)).map((r) => ({
+    ...r,
+    agent_id: m.entries[r.index]?.agent_id,
+  }));
+}
+
+test("JR-02: the words of a row do not depend on later lines or on the clock - for every beginning of the journal of both orders (handoff first, handoff last) and for the clock before and after STALE_AFTER_MS the time, who, words, session, agent and source equal the full ones; the description comes later; a mark 'future' gives the texts of case 12 and goes with the next line; no word of a state in a row; a forged line does not make a real start a resume", async () => {
+  const orch = "Sai Orchestrator (ORCH)";
+  const s = (n) => T0 + n * 1000;
+  const post = (n) =>
+    lineAt("PostToolUse", "S1", s(n), {
+      tool_use_id: "tu1",
+      launched_agent_id: "a1",
+      subagent_type: orch,
+      description: "маршрут",
+    });
+  const start = (n) =>
+    lineAt("SubagentStart", "S1", s(n), { agent_id: "a1", agent_type: orch });
+  const stop = (n) =>
+    lineAt("SubagentStop", "S1", s(n), { agent_id: "a1", agent_type: orch });
+  const orders = {
+    background: [
+      lineAt("SessionStart", "S1", s(1)),
+      post(2),
+      start(3),
+      stop(4),
+    ],
+    foreground: [
+      lineAt("SessionStart", "S1", s(1)),
+      start(2),
+      stop(3),
+      post(4),
+    ],
+  };
+  for (const [name, all] of Object.entries(orders)) {
+    for (const now of [s(10), s(10) + STALE_AFTER_MS + 1]) {
+      const full = rowsOf(all, now).map(fixed);
+      for (let n = 1; n <= all.length; n++) {
+        const part = rowsOf(all.slice(0, n), now).map(fixed);
+        assert.deepEqual(part, full.slice(0, n), `${name}, ${n} lines`);
+      }
+      for (const r of rowsOf(all, now)) {
+        for (const word of Object.values(TX.STATE_LABELS)) {
+          assert.equal(r.words.includes(word), false, `${name}: ${word}`);
+        }
+      }
+    }
+  }
+  // the words of a handoff are the same before and after its start arrives
+  const bg = orders.background;
+  assert.equal(
+    rowsOf(bg.slice(0, 2), s(10))[1].words,
+    rowsOf(bg, s(10))[1].words,
+  );
+  assert.equal(
+    rowsOf(bg, s(10))[1].words,
+    "Задание передано агенту «Оркестратор»",
+  );
+  // the role of a handoff is the one of its own line, not of the task it
+  // started (here the line says Plan, the started agent says Explore)
+  const other = [
+    lineAt("SessionStart", "S1", s(1)),
+    lineAt("PostToolUse", "S1", s(2), {
+      tool_use_id: "tu9",
+      launched_agent_id: "x9",
+      subagent_type: "Plan",
+    }),
+  ];
+  const otherFull = [
+    ...other,
+    lineAt("SubagentStart", "S1", s(3), {
+      agent_id: "x9",
+      agent_type: "Explore",
+    }),
+  ];
+  assert.equal(rowsOf(other, s(10))[1].words, "Задание передано агенту «Plan»");
+  assert.equal(
+    rowsOf(otherFull, s(10))[1].words,
+    "Задание передано агенту «Plan»",
+  );
+  // in the foreground order the description of the start comes only with the
+  // handoff (rule z): it changes later, the words do not
+  const fg = orders.foreground;
+  assert.equal(rowsOf(fg.slice(0, 3), s(10))[1].description, "");
+  assert.equal(rowsOf(fg, s(10))[1].description, "маршрут");
+  // the last line from the future: case 12 in the details, with the reason;
+  // after the next line it is a line of its own case, the words stay
+  const late = [
+    lineAt("SessionStart", "S1", s(1)),
+    lineAt("Stop", "S1", s(10) + 600_000),
+  ];
+  const one = buildModel(late, [], s(10));
+  assert.equal(one.marks[1], "future");
+  const d1 = eventDetails(one, buildHistory(one), 1);
+  assert.equal(d1.meaning, EVENT_TABLE_LITERAL.marked.meaning);
+  assert.equal(
+    d1.mark,
+    "не из хуков: время последней строки позже часов этого компьютера больше чем на минуту",
+  );
+  const later = [...late, lineAt("Stop", "S1", s(10) + 601_000)];
+  const two = buildModel(later, [], s(10) + 700_000);
+  assert.equal(two.marks[1], null);
+  const d2 = eventDetails(two, buildHistory(two), 1);
+  assert.equal(d2.meaning, EVENT_TABLE_LITERAL.stop.meaning);
+  assert.equal(d2.mark, null);
+  assert.equal(d1.words, d2.words);
+  // a forged line of another source before the real first start does not make
+  // the real start a resume (decision 0055, item 2)
+  const forged = [
+    lineAt("SessionStart", "S1", s(1)),
+    { ...start(2), source: "SIMULATION" },
+    start(3),
+    start(4),
+  ];
+  assert.deepEqual(
+    rowsOf(forged, s(10)).map((r) => r.words),
+    [
+      "Сессия Claude Code открыта",
+      "Агент «Оркестратор» получил задание и начал работу",
+      "Агент «Оркестратор» получил задание и начал работу",
+      "Агент «Оркестратор» продолжил работу",
+    ],
+  );
+  // the case shared with the card (F2): the first REAL start is marked by a
+  // conflict of time; the next trusted start of the same agent is a resume -
+  // in the journal and in the card alike
+  const shared = [
+    lineAt("SessionStart", "S1", s(300)),
+    lineAt("SubagentStart", "S1", s(1), { agent_id: "a1", agent_type: orch }),
+    lineAt("SubagentStart", "S1", s(301), { agent_id: "a1", agent_type: orch }),
+  ];
+  const page = await loaded(shared, [], { now: s(302) });
+  const m = page.app.getModel();
+  assert.equal(m.marks[1], "conflict");
+  assert.equal(m.marks[2], null);
+  assert.equal(
+    page.rows()[2].byClass("event")[0].textContent,
+    "Агент «Оркестратор» продолжил работу",
+  );
+  const card = buildInstanceCard(m, page.app.getOffice(), "a1");
+  assert.deepEqual(
+    card.starts.map((x) => x.kind),
+    ["resume"],
+  );
+  assert.equal(card.agent_event.kind, "resume");
+  assert.equal(card.task_state.last_start.kind, "resume");
+  page
+    .legend()
+    .find((b) => b.dataset.key === `role:${orch}`)
+    .click();
+  const box = page.el("card");
+  const starts = box.find((e) => e.dataset.part === "starts");
+  assert.ok(
+    starts
+      .byClass("entry-line")[0]
+      .textContent.startsWith("продолжил работу · "),
+  );
+  const row = (name) => box.find((e) => e.dataset.row === name);
+  assert.ok(
+    row("agent")
+      .byClass("state-value")[0]
+      .textContent.startsWith("продолжил работу · "),
+  );
+  assert.ok(
+    row("task")
+      .byClass("state-basis")[1]
+      .textContent.startsWith("продолжил работу · "),
+  );
+  assert.equal(box.textContent.includes("получил задание"), false);
+});
+
+// ------------------------------------------------------------------ JR-04
+
+test("JR-04: records of the orchestrator are rows of the journal at their place - 'Оркестратор записал, как понял запрос', who 'Оркестратор', 'сессия не указана' when there is none; their text and requirement are only in the details; 'Работа' and 'Офис' are as without them; the counter of 'Всё' counts them; the model, the office and 'Сейчас' are as without them", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  j.ownerPrompt("S1", "Образец запроса");
+  launch(j, "S1", "a1", "Plan", { description: "дело" });
+  const base = [...j.entries];
+  const withNotes = [
+    ...base.slice(0, 2),
+    {
+      time: at(2),
+      source: "ORCH",
+      session_id: "S1",
+      req_id: "REQ-045",
+      request_time: base[1].time,
+      note_text: "понял так: ключ [скрыто] и дальше",
+    },
+    ...base.slice(2),
+    {
+      time: at(9),
+      source: "ORCH",
+      req_id: "REQ-046",
+      note_text: "вторая запись без сессии",
+    },
+  ];
+  const page = await loaded(withNotes);
+  const plainPage = await loaded(base);
+  const rows = page.rows();
+  assert.equal(rows.length, base.length + 2);
+  const notes = rows.filter((r) => r.dataset.kind === "note");
+  assert.deepEqual(
+    notes.map((r) => r.dataset.index),
+    ["2", String(withNotes.length - 1)],
+  );
+  for (const r of notes) {
+    assert.equal(
+      r.byClass("event")[0].textContent,
+      "Оркестратор записал, как понял запрос",
+    );
+    assert.equal(r.byClass("who")[0].textContent, "Оркестратор");
+    assert.equal(r.dataset.tone, "note");
+    for (const hidden of ["понял так", "вторая запись", "REQ-045", "REQ-046"]) {
+      assert.equal(r.textContent.includes(hidden), false, hidden);
+    }
+  }
+  assert.equal(notes[0].byClass("session")[0].textContent, "S1");
+  assert.equal(notes[1].byClass("session")[0].textContent, "сессия не указана");
+  // the details carry the text, with every "[скрыто]" in its own element
+  notes[0].byClass("row-toggle")[0].click();
+  const open = page.rows().find((r) => r.dataset.index === "2");
+  const details = open.byClass("event-details")[0];
+  const field = (name) => details.find((e) => e.dataset.field === name);
+  assert.equal(
+    field("note_text").byClass("detail-value")[0].textContent,
+    "понял так: ключ [скрыто] и дальше",
+  );
+  assert.equal(
+    field("note_text")
+      .byClass("history-masked")
+      .map((e) => e.textContent)
+      .join(""),
+    "[скрыто]",
+  );
+  assert.equal(field("req").byClass("detail-value")[0].textContent, "REQ-045");
+  assert.ok(field("request_time") !== null);
+  // the filters: "Работа" and "Офис" are as without the records
+  const filtered = async (p, name) => {
+    p.el(`filter-${name}`).click();
+    await settle();
+    return p.rows().map((r) => r.dataset.index);
+  };
+  const shift = (list) =>
+    list.map((i) => String(Number(i) + (Number(i) >= 2 ? 1 : 0)));
+  assert.deepEqual(
+    await filtered(page, "work"),
+    shift(await filtered(plainPage, "work")),
+  );
+  assert.deepEqual(
+    await filtered(page, "office"),
+    shift(await filtered(plainPage, "office")),
+  );
+  await filtered(page, "all");
+  assert.ok(
+    page
+      .text("journal-meta")
+      .endsWith(` · ${withNotes.length} из ${withNotes.length}`),
+  );
+  // the model, the office and "Сейчас" are as without the records
+  const strip = (m) =>
+    JSON.stringify({
+      tasks: m.tasks.map((t) => [t.key, t.state, t.description]),
+      rows: m.mainRows.map((r) => [r.state, r.session_id]),
+      sessions: m.sessions.map((x) => [x.session_id, x.word]),
+    });
+  assert.equal(strip(page.app.getModel()), strip(plainPage.app.getModel()));
+  assert.deepEqual(
+    page.app.getOffice().characters.map((c) => [c.key, c.working]),
+    plainPage.app.getOffice().characters.map((c) => [c.key, c.working]),
+  );
+  assert.equal(page.text("now"), plainPage.text("now"));
+});
+
+// ------------------------------------------------------------------ JR-08
+
+test("JR-08: the role and the source go into the templates whole - '$&' and \"$'\" stay literal; the repeated starts equal the direct definition on 300 random journals (the marks and other sources are not read)", () => {
+  for (const role of ["$&", "$'", "$`", "$$", "a$1b"]) {
+    const e = {
+      hook_event_name: "SubagentStart",
+      agent_id: "x",
+      agent_type: role,
+      session_id: "S",
+      source: "REAL",
+      time: at(1),
+    };
+    assert.equal(
+      eventWords(eventCase(e, false), e),
+      `Агент «${role}» получил задание и начал работу`,
+    );
+    const p = {
+      hook_event_name: "PostToolUse",
+      subagent_type: role,
+      session_id: "S",
+      source: "REAL",
+      time: at(1),
+    };
+    assert.equal(eventWords("handoff", p), `Задание передано агенту «${role}»`);
+    assert.equal(
+      markReason("source", { source: role }),
+      `источник строки — не хук Claude Code: ${role}`,
+    );
+  }
+  // the direct definition: a start is repeated if an earlier line of the file
+  // is a start of the same agent_id with the source REAL
+  const direct = (entries) => {
+    const out = new Set();
+    entries.forEach((e, i) => {
+      if (e === null || e.hook_event_name !== "SubagentStart") return;
+      if (typeof e.agent_id !== "string") return;
+      for (let k = 0; k < i; k++) {
+        const p = entries[k];
+        if (
+          p !== null &&
+          p.hook_event_name === "SubagentStart" &&
+          p.agent_id === e.agent_id &&
+          p.source === "REAL"
+        ) {
+          out.add(i);
+          break;
+        }
+      }
+    });
+    return out;
+  };
+  const rand = rng(4545);
+  const pick = (list) => list[Math.floor(rand() * list.length)];
+  for (let round = 0; round < 300; round++) {
+    const entries = [];
+    const size = 1 + Math.floor(rand() * 12);
+    for (let i = 0; i < size; i++) {
+      if (rand() < 0.08) {
+        entries.push(null);
+        continue;
+      }
+      const e = {
+        time: at(Math.floor(rand() * 600) - 300),
+        source: pick(["REAL", "REAL", "REAL", "SIMULATION", "ORCH"]),
+        hook_event_name: pick([
+          "SubagentStart",
+          "SubagentStart",
+          "SubagentStop",
+          "PostToolUse",
+        ]),
+        session_id: pick(["S1", "S2"]),
+      };
+      if (rand() < 0.9) e.agent_id = pick(["a1", "a2", "a3"]);
+      entries.push(e);
+    }
+    assert.deepEqual(
+      [...repeatedStarts(entries)].sort((a, b) => a - b),
+      [...direct(entries)].sort((a, b) => a - b),
+      `round ${round}`,
+    );
+    // the marks of the reading rule do not change it
+    const m = buildModel(entries, [], T0);
+    assert.deepEqual(repeatedStarts(m.entries), repeatedStarts(entries));
+  }
+});
+
+// ------------------------------------------------------------------ JR-09
+
+test("JR-09: the rule of the CSS of a row of the journal (the view is checked in the acceptance) - the focus ring of the toggle is drawn inside, the toggle and the words of the event never forbid a wrap, in any media", () => {
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  assert.equal(
+    cssDecls(rules, ".row-toggle:focus-visible").get("outline-offset"),
+    "-0.125rem",
+  );
+  let seen = 0;
+  for (const rule of rules) {
+    const mine = rule.selectors.filter(
+      (sel) =>
+        hasClass(lastCompound(sel), "row-toggle") ||
+        hasClass(lastCompound(sel), "event"),
+    );
+    if (mine.length === 0) continue;
+    seen += 1;
+    assert.doesNotMatch(
+      rule.decls.get("white-space") ?? "",
+      /nowrap|pre/,
+      `${rule.media ?? "-"} ${mine.join(", ")}`,
+    );
+    assert.equal(rule.decls.has("text-overflow"), false);
+  }
+  assert.ok(seen >= 2);
+});
+
+// ------------------------------------------------------------------ AC-05
+
+const MIN5 = 5 * 60 * 1000;
+// The three lines of "Состояние" of the open card: value and basis lines.
+function stateRows(page) {
+  const out = {};
+  for (const row of page.el("card").all((e) => e.classes.has("state-row"))) {
+    out[row.dataset.row] = {
+      label: row.byClass("state-label")[0].textContent,
+      value: row.byClass("state-value")[0].textContent,
+      basis: row.byClass("state-basis").map((e) => e.textContent),
+    };
+  }
+  return out;
+}
+const openRole = (page, role) =>
+  page
+    .legend()
+    .find((b) => b.dataset.key === `role:${role}`)
+    .click();
+const pickInstance = (page, key) =>
+  page
+    .el("card")
+    .find((e) => e.dataset.focus === `instance:${key}`)
+    .click();
+const dt = (ms) => fmtDateTime(iso(ms));
+
+test("AC-05: three lines of state of an instance with a fake clock - the task, the agent and the workplace; the basis of 'в работе' is the last event of the session (5 minutes ago), not the start (3 hours ago); a repeated start is 'продолжил работу'; 'нет свежих данных' beside another instance in work is a free task at a working place; restarted, finished and unrecorded name their own moment; a role with nothing in work is free", async () => {
+  const now = T0 + 3 * HOUR;
+  const s1start = T0 + 1000;
+  const s2start = T0 + 2000;
+  const entries = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "i1", s1start, "Plan"),
+    lineAt("SessionStart", "S2", T0 + 1500),
+    sub("S2", "i2", s2start, "Plan"),
+    tool("S1", now - MIN5, "tu-late"),
+  ];
+  const page = await loaded(entries, [], { now });
+  openRole(page, "Plan");
+  let rows = stateRows(page);
+  assert.deepEqual(
+    Object.values(rows).map((r) => r.label),
+    ["Задача", "Агент", "Рабочее место"],
+  );
+  assert.equal(rows.task.value, "в работе");
+  assert.deepEqual(rows.task.basis, [
+    `последнее событие сессии ${dt(now - MIN5)} · 5 мин назад · порог свежести — 60 минут`,
+    `получил задание и начал работу · ${dt(s1start)}`,
+  ]);
+  assert.equal(
+    rows.agent.value,
+    `получил задание и начал работу · ${dt(s1start)} · 2 ч 59 мин назад`,
+  );
+  assert.deepEqual(rows.agent.basis, [
+    "другие действия агента — чтение файлов, команды, правки — хук не записывает",
+  ]);
+  assert.equal(
+    rows.workplace.value,
+    "работает — у этой роли задач «в работе»: 1",
+  );
+  assert.deepEqual(rows.workplace.basis, [
+    "Стол на холсте — изображение роли, общее для всех её экземпляров, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.",
+  ]);
+  // the other instance: no fresh data, at a working place - the rows differ
+  pickInstance(page, "i2");
+  rows = stateRows(page);
+  assert.equal(rows.task.value, "нет свежих данных");
+  assert.equal(
+    rows.task.basis[0],
+    `последнее событие сессии ${dt(s2start)} · 2 ч 59 мин назад · порог свежести — 60 минут`,
+  );
+  assert.equal(
+    rows.workplace.value,
+    "работает — у этой роли задач «в работе»: 1",
+  );
+  assert.notEqual(rows.task.value, rows.workplace.value);
+  // the templates are constants; the workplace starts with the word of the legend
+  assert.ok(TX.WORKPLACE_WORKING.startsWith(TX.LEGEND_WORKING));
+  assert.ok(TX.WORKPLACE_IDLE.startsWith(TX.LEGEND_IDLE));
+  assert.equal(TX.FRESH_LIMIT, "порог свежести — {m} минут");
+  assert.equal(
+    TX.SERVER_STARTED,
+    "сервер запущен {time} — после последнего начала этого агента",
+  );
+
+  // a repeated start: "продолжил работу" with the time of the second start
+  const again = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "r1", T0 + 1000, "Plan"),
+    subEnd("S1", "r1", T0 + 2000, "Plan"),
+    sub("S1", "r1", now - 10 * 60 * 1000, "Plan"),
+  ];
+  const pa = await loaded(again, [], { now });
+  openRole(pa, "Plan");
+  rows = stateRows(pa);
+  assert.equal(rows.task.value, "в работе");
+  assert.equal(
+    rows.task.basis[1],
+    `продолжил работу · ${dt(now - 10 * 60 * 1000)}`,
+  );
+  assert.equal(
+    rows.agent.value,
+    `продолжил работу · ${dt(now - 10 * 60 * 1000)} · 10 мин назад`,
+  );
+
+  // restarted: the earliest server start after the last start, no age
+  const boot = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "b1", T0 + 1000, "Plan"),
+  ];
+  const pb = await loaded(
+    boot,
+    [startRec(0, T0 + 500), startRec(2, T0 + 3000), startRec(2, T0 + 9000)],
+    { now },
+  );
+  openRole(pb, "Plan");
+  rows = stateRows(pb);
+  assert.equal(
+    rows.task.value,
+    "сервер перезапускался, события не записывались",
+  );
+  assert.deepEqual(rows.task.basis, [
+    `сервер запущен ${dt(T0 + 3000)} — после последнего начала этого агента`,
+  ]);
+  assert.equal(rows.task.basis[0].includes("назад"), false);
+  assert.equal(
+    rows.workplace.value,
+    "свободен — по журналу у этой роли нет задачи «в работе»; это вывод по событиям, а не событие",
+  );
+
+  // finished: the time of the last SubagentStop
+  const done = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "d1", T0 + 1000, "Plan"),
+    subEnd("S1", "d1", T0 + 4000, "Plan"),
+  ];
+  const pd = await loaded(done, [], { now });
+  openRole(pd, "Plan");
+  rows = stateRows(pd);
+  assert.equal(rows.task.value, "закончила работу, итог не записан");
+  assert.deepEqual(rows.task.basis, [
+    `закончил работу и вернул ответ · ${dt(T0 + 4000)}`,
+  ]);
+  assert.equal(
+    rows.agent.value,
+    `закончил работу и вернул ответ · ${dt(T0 + 4000)} · 2 ч 59 мин назад`,
+  );
+  assert.ok(rows.workplace.value.startsWith("свободен"));
+
+  // unrecorded: the time of the SessionEnd after the start
+  const ended = [
+    lineAt("SessionStart", "S1", T0),
+    sub("S1", "u1", T0 + 1000, "Plan"),
+    lineAt("SessionEnd", "S1", T0 + 5000),
+  ];
+  const pu = await loaded(ended, [], { now });
+  openRole(pu, "Plan");
+  rows = stateRows(pu);
+  assert.equal(rows.task.value, "окончание не записано");
+  assert.deepEqual(rows.task.basis, [
+    `Сессия Claude Code закрыта · ${dt(T0 + 5000)}`,
+  ]);
+  for (const p of [page, pa, pb, pd, pu]) {
+    assert.doesNotMatch(p.text("card"), SERVICE_WORDS);
+  }
+});
+
+// ------------------------------------------------------------------ AC-06
+
+test("AC-06: the lines of the handoff of an instance by rule z - the foreground order (start, stop, handoff), two starts and two stops, no handoff, a handoff without a description, two handoffs of different calls, two lines of one call; a marked line changes nothing; on 300 random journals the current task and the launcher equal the description and the launcher of the model", async () => {
+  const s = (n) => T0 + n * 1000;
+  const card = (entries, key = "a1") => {
+    const m = buildModel(entries, [], s(100));
+    return buildInstanceCard(m, buildOffice(m), key);
+  };
+  const handoff = (n, id, extra = {}) =>
+    lineAt("PostToolUse", "S1", s(n), {
+      tool_use_id: id,
+      launched_agent_id: "a1",
+      subagent_type: "Plan",
+      ...extra,
+    });
+  // the foreground order: start, stop, then the handoff
+  const fg = [
+    lineAt("SessionStart", "S1", s(1)),
+    sub("S1", "a1", s(2), "Plan"),
+    subEnd("S1", "a1", s(3), "Plan"),
+    handoff(4, "tu1", { description: "план" }),
+  ];
+  let c = card(fg);
+  assert.equal(
+    c.agent_event.kind,
+    "stop",
+    "the handoff is not an act of the agent",
+  );
+  assert.equal(c.agent_event.at, iso(s(3)));
+  assert.equal(c.given.length, 1);
+  assert.equal(c.given[0].description, "план");
+  assert.deepEqual(c.given[0].by, { kind: "main" });
+  assert.deepEqual(c.current_task, { kind: "described", text: "план" });
+  assert.equal(c.task_state.state, "completed");
+  // two starts and two stops
+  const twice = [
+    ...fg.slice(0, 3),
+    sub("S1", "a1", s(5), "Plan"),
+    subEnd("S1", "a1", s(6), "Plan"),
+  ];
+  c = card(twice);
+  assert.deepEqual(
+    c.starts.map((x) => x.kind),
+    ["start", "resume"],
+  );
+  assert.equal(c.returns.length, 2);
+  // no handoff at all
+  c = card(fg.slice(0, 3));
+  assert.deepEqual(c.current_task, { kind: "no_link" });
+  assert.deepEqual(c.launcher, { kind: "none", reason: "no_link" });
+  // a handoff without a description
+  c = card([...fg.slice(0, 3), handoff(4, "tu1")]);
+  assert.deepEqual(c.current_task, { kind: "no_description" });
+  assert.deepEqual(c.launcher, { kind: "main" });
+  // two handoffs of different calls: not established
+  c = card([...fg, handoff(5, "tu2", { description: "другое" })]);
+  assert.deepEqual(c.current_task, { kind: "several" });
+  assert.deepEqual(c.launcher, { kind: "none", reason: "several" });
+  assert.equal(c.given.length, 2);
+  // two lines of one call: one handoff
+  c = card([...fg, handoff(5, "tu1", { description: "план" })]);
+  assert.equal(c.given.length, 1);
+  assert.deepEqual(c.current_task, { kind: "described", text: "план" });
+  // a marked line with the same agent_id changes nothing
+  const before = card(twice);
+  const after = card([
+    ...twice,
+    { ...subEnd("S1", "a1", s(7), "Plan"), source: "SIMULATION" },
+    { ...handoff(8, "tu9", { description: "подделка" }), source: "SIMULATION" },
+  ]);
+  for (const k of [
+    "current_task",
+    "launcher",
+    "given",
+    "starts",
+    "returns",
+    "agent_event",
+    "task_state",
+  ]) {
+    assert.deepEqual(after[k], before[k], k);
+  }
+  // the constants of what the card cannot know, on the page
+  const page = await loaded(fg, [], { now: s(100) });
+  openRole(page, "Plan");
+  assert.deepEqual(
+    page
+      .el("card")
+      .byClass("card-unknown")
+      .map((e) => e.textContent),
+    [
+      "Сообщения между агентами хук не записывает: записаны только передачи задания и окончания работы",
+      "Ошибки и ожидание человека хук сейчас не сообщает",
+    ],
+  );
+  const given = page.el("card").find((e) => e.dataset.part === "given");
+  assert.equal(
+    given.byClass("entry-note")[0].textContent,
+    "Эту запись пишет тот, кто передал задание. У агентов переднего плана она приходит после окончания их работы, у фоновых — сразу при запуске; это не действие самого агента",
+  );
+  // 300 random journals: the card says what the model says (rule z)
+  const rand = rng(4646);
+  const pick = (list) => list[Math.floor(rand() * list.length)];
+  for (let round = 0; round < 300; round++) {
+    const e = [lineAt("SessionStart", "S1", s(0))];
+    const size = 2 + Math.floor(rand() * 10);
+    for (let i = 1; i <= size; i++) {
+      const kind = pick(["start", "start", "stop", "post", "post", "forged"]);
+      const agent = pick(["a1", "a2"]);
+      if (kind === "start")
+        e.push(sub("S1", agent, s(i), pick(["Plan", "Explore"])));
+      else if (kind === "stop") e.push(subEnd("S1", agent, s(i), "Plan"));
+      else {
+        const line = lineAt("PostToolUse", "S1", s(i), {
+          tool_use_id: pick(["t1", "t2", "t3"]),
+          launched_agent_id: agent,
+          ...(rand() < 0.6 ? { description: pick(["одно", "другое"]) } : {}),
+          ...(rand() < 0.4
+            ? { agent_id: pick(["a1", "a2"]), agent_type: "Plan" }
+            : {}),
+        });
+        e.push(kind === "forged" ? { ...line, source: "SIMULATION" } : line);
+      }
+    }
+    const m = buildModel(e, [], s(100));
+    const o = buildOffice(m);
+    for (const task of m.tasks) {
+      const data = buildInstanceCard(m, o, task.key);
+      const where = `round ${round}, ${task.key}`;
+      if (typeof task.description === "string" && task.description !== "") {
+        assert.deepEqual(
+          data.current_task,
+          { kind: "described", text: task.description },
+          where,
+        );
+      } else {
+        assert.notEqual(data.current_task.kind, "described", where);
+      }
+      if (task.launched_by === null) {
+        assert.equal(data.launcher.kind, "none", where);
+      } else if (task.launched_by.kind === "main") {
+        assert.equal(data.launcher.kind, "main", where);
+      } else {
+        assert.equal(data.launcher.kind, "subagent", where);
+        assert.equal(data.launcher.key, task.launched_by.agent_id, where);
+      }
+    }
+  }
+});
+
+// ------------------------------------------------------------------ AC-07
+
+test("AC-07: links only by equal identifiers - in the chain main session -> A -> B the card of B names A as its launcher (a button), the card of A names B among the launched and the main session as its launcher (no button); a handoff of the same session in the same second to another agent links nothing; a launched agent without a task is an item without a button; the button of B in the card of A opens the card of B with the focus on the cross", async () => {
+  const s = (n) => T0 + n * 1000;
+  const entries = [
+    lineAt("SessionStart", "S1", s(1)),
+    lineAt("PostToolUse", "S1", s(2), {
+      tool_use_id: "tuA",
+      launched_agent_id: "agentA",
+      subagent_type: "Plan",
+      description: "дело A",
+    }),
+    sub("S1", "agentA", s(3), "Plan"),
+    lineAt("PostToolUse", "S1", s(4), {
+      tool_use_id: "tuB",
+      launched_agent_id: "agentB",
+      subagent_type: "Explore",
+      description: "дело B",
+      agent_id: "agentA",
+      agent_type: "Plan",
+    }),
+    // the same session and the same second, another agent: no link
+    lineAt("PostToolUse", "S1", s(4), {
+      tool_use_id: "tuZ",
+      launched_agent_id: "nobody-at-all",
+      subagent_type: "Explore",
+    }),
+    sub("S1", "agentB", s(4), "Explore"),
+    // A launches an agent whose start is not in the journal
+    lineAt("PostToolUse", "S1", s(5), {
+      tool_use_id: "tuG",
+      launched_agent_id: "ghost-agent",
+      subagent_type: "Explore",
+      agent_id: "agentA",
+      agent_type: "Plan",
+    }),
+  ];
+  const page = await loaded(entries, [], { now: s(10) });
+  const m = page.app.getModel();
+  const o = page.app.getOffice();
+  const a = buildInstanceCard(m, o, "agentA");
+  const b = buildInstanceCard(m, o, "agentB");
+  assert.deepEqual(a.launcher, { kind: "main" });
+  assert.equal(b.launcher.kind, "subagent");
+  assert.equal(b.launcher.key, "agentA");
+  assert.equal(b.launcher.has_task, true);
+  assert.deepEqual(
+    a.launched.map((x) => [x.key, x.has_task]),
+    [
+      ["agentB", true],
+      ["ghost-agent", false],
+    ],
+  );
+  assert.deepEqual(b.launched, []);
+  // the page: the card of A
+  openRole(page, "Plan");
+  const box = page.el("card");
+  assert.equal(box.byClass("card-launcher")[0].textContent, "Основная сессия");
+  assert.equal(box.byClass("card-link").length, 0);
+  const launched = box.find((e) => e.dataset.part === "launched");
+  const toB = launched.find((e) => e.dataset.focus === "launched:agentB");
+  assert.equal(toB.tagName, "BUTTON");
+  assert.equal(
+    launched.all((e) => e.dataset.focus === "launched:ghost-agent").length,
+    0,
+  );
+  assert.ok(launched.textContent.includes("Explore · ghost-ag"));
+  // the button of B opens the card of B, the focus is on the cross
+  toB.click();
+  assert.equal(page.el("card").byClass("card-id")[0].textContent, "agentB");
+  assert.equal(page.el("card").byClass("card-title")[0].textContent, "Explore");
+  assert.ok(page.doc.focused === page.el("card").byClass("card-close")[0]);
+  const link = page.el("card").byClass("card-link")[0];
+  assert.equal(link.dataset.key, "agentA");
+  assert.equal(link.textContent, "Plan · agentA");
+  // and back by the button of the launcher
+  link.click();
+  assert.equal(page.el("card").byClass("card-id")[0].textContent, "agentA");
+});
+
+// ------------------------------------------------------------------ MK-04
+
+import {
+  buildWriteBody,
+  validateWriteBody,
+} from "../src/pixel-office/protocol.js";
+
+test("MK-04: one role with a secret in SubagentStart, SubagentStop and the subagent_type of the handoff is masked the same way everywhere - one task, one role, one character, the description comes by rule z; the known false alarm of ISS-0058 is written down as literals (recorded, not approved)", () => {
+  // an invented key, put together at run time
+  const key = ["sk", "ant", "MK04fakeKEY5555555555aaaaaa"].join("-");
+  const role = `Plan ${key}`;
+  const now = Date.parse("2026-10-05T12:00:30.000Z");
+  const t = (s) => `2026-10-05T12:00:${String(s).padStart(2, "0")}.000Z`;
+  const through = (input, time) => {
+    const body = buildWriteBody(input, time, { storeText: true });
+    const checked = validateWriteBody(body, Date.parse(time));
+    assert.equal(checked.ok, true, checked.reason);
+    return checked.line;
+  };
+  const entries = [
+    through({ session_id: "mk", hook_event_name: "SessionStart" }, t(1)),
+    through(
+      {
+        session_id: "mk",
+        hook_event_name: "PostToolUse",
+        tool_name: "Agent",
+        tool_use_id: "toolu_mk04",
+        tool_input: { subagent_type: role, description: "проверить вход" },
+        tool_response: { agentId: "agent-mk04" },
+      },
+      t(2),
+    ),
+    through(
+      {
+        session_id: "mk",
+        hook_event_name: "SubagentStart",
+        agent_id: "agent-mk04",
+        agent_type: role,
+      },
+      t(3),
+    ),
+    through(
+      {
+        session_id: "mk",
+        hook_event_name: "SubagentStop",
+        agent_id: "agent-mk04",
+        agent_type: role,
+      },
+      t(4),
+    ),
+  ];
+  const roles = new Set(
+    entries
+      .flatMap((e) => [e.agent_type, e.subagent_type])
+      .filter((r) => r !== undefined),
+  );
+  assert.deepEqual([...roles], ["Plan [скрыто]"]);
+  const m = buildModel(entries, [], now);
+  assert.equal(m.tasks.length, 1);
+  assert.equal(m.tasks[0].role, "Plan [скрыто]");
+  assert.equal(m.tasks[0].description, "проверить вход");
+  const o = buildOffice(m);
+  assert.deepEqual(
+    o.characters.filter((c) => c.kind === "role").map((c) => c.full),
+    ["Plan [скрыто]"],
+  );
+  assert.equal(JSON.stringify(m).includes("MK04fake"), false);
+  // ISS-0058: a name of a file of three parts in a description is hidden too
+  const file = through(
+    {
+      session_id: "mk",
+      hook_event_name: "PostToolUse",
+      tool_name: "Agent",
+      tool_use_id: "toolu_mk04b",
+      tool_input: {
+        subagent_type: "Plan",
+        description: "Шаг 5: тесты pixel-office-panels.test.js",
+      },
+      tool_response: { agentId: "agent-mk04b" },
+    },
+    t(5),
+  );
+  assert.equal(file.description, "Шаг 5: тесты [скрыто]");
+  assert.equal(roleName(role), role, "a masked role is not a role of Sai");
 });

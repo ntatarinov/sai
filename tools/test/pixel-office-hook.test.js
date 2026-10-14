@@ -1206,3 +1206,190 @@ test("HK-28: with proxy variables in the environment the signed body still goes 
   assert.equal(connections, 0, "the proxy got a connection");
   assert.equal(JSON.parse(cap.requests[0].body).prompt_text, "сделай X");
 });
+
+// ===================================================================
+// REQ-036 criterion 6, design REQ-036-044-045 3.13 (D14): the description and
+// the roles are masked in the hook and on the server, the identifiers are not.
+// The secrets below are invented.
+// ===================================================================
+import { validateWriteBody } from "../src/pixel-office/protocol.js";
+
+// Invented secrets, put together at run time (not a key in the text).
+const MK_KEY = ["sk", "ant", "MK01fakeKEY0123456789abcdefXYZ"].join("-");
+const MK_PASS = ["mk01", "pass", "VALUE42zz"].join("");
+// No piece of 8 characters of a secret is in the text.
+function leaks(text, secret) {
+  for (let i = 0; i + 8 <= secret.length; i++) {
+    if (text.includes(secret.slice(i, i + 8))) return secret.slice(i, i + 8);
+  }
+  return null;
+}
+const MK_TIME = "2026-10-05T12:00:00.000Z";
+const ID40 = (seed) => {
+  const r = rng(seed);
+  const abc = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let s = "";
+  for (let i = 0; i < 40; i++) s += abc[Math.floor(r() * abc.length)];
+  return s;
+};
+const postInput = (o = {}) => ({
+  session_id: "mk-session",
+  hook_event_name: "PostToolUse",
+  tool_name: "Agent",
+  tool_use_id: o.toolUseId ?? "toolu_mk",
+  ...(o.agentId === undefined
+    ? {}
+    : { agent_id: o.agentId, agent_type: o.agentType }),
+  tool_input: { subagent_type: o.role ?? "Plan", description: o.description },
+  tool_response: { agentId: o.launched ?? "agent-mk" },
+});
+
+test("MK-01: the hook masks the description, subagent_type and agent_type of a handoff and agent_type of a start; the identifiers of 40 letters and digits stay as they were", () => {
+  const ids = { agentId: ID40(1), toolUseId: ID40(2), launched: ID40(3) };
+  const body = buildWriteBody(
+    postInput({
+      ...ids,
+      agentType: `Explore ${MK_KEY}`,
+      role: `Plan ${MK_KEY}`,
+      description: `ключ ${MK_KEY} password="${MK_PASS}"`,
+    }),
+    MK_TIME,
+    { storeText: true },
+  );
+  assert.ok(body !== null);
+  for (const field of ["description", "subagent_type", "agent_type"]) {
+    assert.ok(body[field].includes(MASK_LABEL), `${field}: ${body[field]}`);
+  }
+  assert.equal(body.subagent_type, `Plan ${MASK_LABEL}`);
+  assert.equal(body.agent_type, `Explore ${MASK_LABEL}`);
+  assert.equal(leaks(JSON.stringify(body), MK_KEY), null);
+  assert.equal(leaks(JSON.stringify(body), MK_PASS), null);
+  assert.equal(body.agent_id, ids.agentId);
+  assert.equal(body.tool_use_id, ids.toolUseId);
+  assert.equal(body.launched_agent_id, ids.launched);
+  // the start of an agent with a role that holds a secret
+  const start = buildWriteBody(
+    {
+      session_id: "mk-session",
+      hook_event_name: "SubagentStart",
+      agent_id: ids.launched,
+      agent_type: `Plan ${MK_KEY}`,
+    },
+    MK_TIME,
+  );
+  assert.equal(start.agent_type, `Plan ${MASK_LABEL}`);
+  assert.equal(start.agent_id, ids.launched);
+  // a role without a secret is not touched
+  const plain = buildWriteBody(
+    postInput({
+      role: "Sai Security Reviewer (SECURITY-REVIEWER)",
+      description: "проверка входа",
+    }),
+    MK_TIME,
+  );
+  assert.equal(
+    plain.subagent_type,
+    "Sai Security Reviewer (SECURITY-REVIEWER)",
+  );
+  assert.equal(plain.description, "проверка входа");
+});
+
+test("MK-03: mask first, then cut - a description of 98 characters ending in password=ab is 100 and the event is kept; a role of 127 characters (with spaces) ending in password=ab is 128; a key at the 95th character of a description of 150 leaves no piece of itself; 100 characters without a secret are as they were", () => {
+  const d98 = `${"а".repeat(87)}password=ab`;
+  assert.equal(Array.from(d98).length, 98);
+  let body = buildWriteBody(postInput({ description: d98 }), MK_TIME);
+  assert.ok(body !== null, "the event is not dropped");
+  assert.equal(Array.from(body.description).length, 100);
+  assert.ok(body.description.startsWith(`${"а".repeat(87)}password=[`));
+  assert.equal(body.description.includes("password=ab"), false);
+  // a role with spaces (a role of one long word is hidden whole by rule M10)
+  const role = `${"Роль с пробелами ".repeat(8).slice(0, 116)}password=ab`;
+  assert.equal(Array.from(role).length, 127);
+  body = buildWriteBody(postInput({ role, description: "x" }), MK_TIME);
+  assert.ok(body !== null, "the event is not dropped");
+  assert.equal(Array.from(body.subagent_type).length, 128);
+  assert.ok(body.subagent_type.startsWith(role.slice(0, 116)));
+  assert.equal(body.subagent_type.includes("password=ab"), false);
+  // the key across the border of 100: masked before the cut
+  const head = "слово ".repeat(16).slice(0, 94);
+  const d150 = `${head} ${MK_KEY} ${"еще ".repeat(20)}`.slice(0, 150);
+  assert.equal(d150.indexOf(MK_KEY), 95);
+  assert.equal(Array.from(d150).length, 150);
+  body = buildWriteBody(postInput({ description: d150 }), MK_TIME);
+  assert.equal(Array.from(body.description).length, 100);
+  assert.equal(leaks(body.description, MK_KEY), null);
+  assert.equal(body.description.includes("sk-"), false);
+  // 100 characters without a secret: unchanged (as HK-05)
+  const hundred = "ж".repeat(100);
+  assert.equal(
+    buildWriteBody(postInput({ description: hundred }), MK_TIME).description,
+    hundred,
+  );
+  // the server does the same with what came around the hook
+  const raw = {
+    time: MK_TIME,
+    hook_event_name: "PostToolUse",
+    session_id: "mk-session",
+    tool_use_id: "toolu_mk",
+    launched_agent_id: "agent-mk",
+    subagent_type: role,
+    description: d98,
+  };
+  const line = validateWriteBody(raw, Date.parse(MK_TIME));
+  assert.equal(line.ok, true, line.reason);
+  assert.equal(Array.from(line.line.description).length, 100);
+  assert.equal(Array.from(line.line.subagent_type).length, 128);
+});
+
+test("MK-05: identifiers are never masked - a long random agent_id (40 letters of both cases and digits) of SubagentStart, SubagentStop and launched_agent_id of PostToolUse equal the original after the hook and after the server", async (t) => {
+  const id = ID40(5);
+  assert.match(id, /^[A-Za-z0-9]{40}$/);
+  assert.equal(maskSecrets(id), MASK_LABEL, "rule M10 would hide it as a text");
+  const srv = await startServer(t);
+  const inputs = [
+    [
+      "SubagentStart",
+      {
+        session_id: "mk-session",
+        hook_event_name: "SubagentStart",
+        agent_id: id,
+        agent_type: "Plan",
+      },
+    ],
+    [
+      "PostToolUse",
+      postInput({ launched: id, toolUseId: ID40(6), description: "дело" }),
+    ],
+    [
+      "SubagentStop",
+      {
+        session_id: "mk-session",
+        hook_event_name: "SubagentStop",
+        agent_id: id,
+        agent_type: "Plan",
+      },
+    ],
+  ];
+  for (const [event, input] of inputs) {
+    const body = buildWriteBody(input, MK_TIME);
+    const own =
+      event === "PostToolUse" ? body.launched_agent_id : body.agent_id;
+    assert.equal(own, id, `${event}: the hook`);
+    const line = validateWriteBody(body, Date.parse(MK_TIME)).line;
+    assert.equal(
+      event === "PostToolUse" ? line.launched_agent_id : line.agent_id,
+      id,
+      `${event}: the server`,
+    );
+    const r = await runHook(srv.box, input, { event });
+    assert.equal(r.code, 0, r.stderr);
+  }
+  const lines = srv.lines().map((l) => JSON.parse(l));
+  assert.equal(lines.length, 3);
+  assert.deepEqual(
+    lines.map((l) =>
+      l.hook_event_name === "PostToolUse" ? l.launched_agent_id : l.agent_id,
+    ),
+    [id, id, id],
+  );
+});
