@@ -18,29 +18,29 @@ import {
 } from "./schema.js";
 import { ageOf, buildModel, showsAge, showsSessionEvent } from "./model.js";
 import { buildHistory } from "./history.js";
-import {
-  MAIN_KEY,
-  bubblesAt,
-  buildCard,
-  buildOffice,
-  roleKey,
-} from "./office-model.js";
+import { MAIN_KEY, bubblesAt, buildOffice, roleKey } from "./office-model.js";
 import { buildInstanceCard, defaultInstance } from "./instance-card.js";
+import { buildMainCard, defaultMainSel, mainChoiceOpens } from "./main-card.js";
 import { createSim } from "./office-sim.js";
 import { eventDetails } from "./event-details.js";
-import { roleName, shortId } from "./words.js";
+import { roleCode, roleName, shortId } from "./words.js";
 import {
   MIN_CELL_PX,
   canvasPoint,
   drawOffice,
   fitCanvas,
   hitOffice,
+  labelLines,
   labelWidths,
 } from "./office-view.js";
 import {
   FILTERS,
   TONES,
-  filterJournal,
+  JOURNAL_LIMIT,
+  LIST_LIMIT,
+  journalOptions,
+  journalQuery,
+  taskOfRow,
   journalRows,
   nowLine,
   taskPanel,
@@ -82,7 +82,6 @@ import {
   HISTORY_SECTION_TIMELINE,
   HISTORY_SECTION_UNDERSTOOD,
   HISTORY_SECTION_WORK,
-  HISTORY_SERVICE,
   HISTORY_TASK_N,
   HISTORY_TEXT_DISABLED,
   HISTORY_TRUNCATED,
@@ -101,6 +100,12 @@ import {
   NOT_FROM_HOOKS,
   NOW_EMPTY,
   NOW_LIST_LABEL,
+  NOW_ALL_LABEL,
+  NOW_COUNT,
+  NOW_HIDE,
+  NOW_SHOW_ALL,
+  ROW_LESS,
+  ROW_MORE,
   NOW_PREFIX,
   NO_CONNECTION,
   NO_DATA,
@@ -117,6 +122,28 @@ import {
   SHOWN_NOTE,
   SPEED_LABELS,
   STATE_LABELS,
+  GO_CARD_EVENTS,
+  GO_ITEM_AGENT,
+  GO_PANEL,
+  MAIN_CARD,
+  AGENT_NOT_FOUND,
+  FILTERS_BUTTON,
+  FILTERS_CHOSEN,
+  FILTERS_EMPTY,
+  FILTERS_RESET,
+  FILTER_AGENT_LABEL,
+  FILTER_ALL,
+  FILTER_SESSION_LABEL,
+  FILTER_TYPE_LABEL,
+  GO_TO,
+  NOT_IN_PANEL,
+  NO_WINDOW,
+  SEARCH_LABEL,
+  SHOW_EARLIER,
+  TASK_MARK,
+  TASK_MARK_CLEAR,
+  TASK_MARK_MAIN,
+  ROLE_CODE_TITLE,
   AGENT_NOT_RECORDED,
   CARD_BLOCKS,
   CARD_INSTANCE,
@@ -251,13 +278,38 @@ export function createApp(env) {
   // The character whose legend button gets the focus when the card closes
   // (the role of the card shown last).
   let cardReturnKey = null;
+  // What opened the first card of a chain of cards (design D13): {kind:
+  // "legend" | "journal" | "panel", key?, index?, focus?} or null.
+  let cardOpener = null;
   // The caption after "Скопировать": {key, target, ok} or null.
   let copied = null;
   let journalShown = false;
   // The line of the row of the journal whose details are open, or null.
   let journalOpen = null;
+  // The navigation of the journal (REQ-046): the filters besides "Всё /
+  // Работа / Офис", the search and how many rows are shown.
+  const journalQueryState = {
+    session: null,
+    agent: null,
+    type: null,
+    task: null,
+    search: "",
+    shown: JOURNAL_LIMIT,
+  };
+  let filtersOpen = false;
+  // The variants of the lists as drawn last (they are rebuilt only when they
+  // change, so an open list is not replaced under the mouse).
+  let filterOptionsKey = null;
+  // The button "Показать более ранние" as drawn last, or null.
+  let earlierButton = null;
+  // The item of the panel "Задачи" a transition led to (data-target), or null.
+  let panelTarget = null;
+  // The items of the panel by their key, as drawn last.
+  const panelItems = new Map();
   // The list of the rows of "Сейчас" now on the page, or null.
   let nowList = null;
+  // The full list of "Сейчас" over the page is open (REQ-049).
+  let nowAllOpen = false;
   // The window of history: the key of the open request (null: closed), the
   // time and session of that request (a key that later names another line is
   // an error, not another request), and what opened it: {kind: "journal",
@@ -268,6 +320,8 @@ export function createApp(env) {
   // The buttons "открыть историю запроса" of the panel of tasks by the key of
   // their item, as drawn last.
   const taskButtons = new Map();
+  // The buttons "агент" of the panel of tasks by the key of their item.
+  const agentButtons = new Map();
   // The legend buttons by the key of the character and the rows of the journal
   // as drawn last: the page finds its own elements without searching the DOM.
   const legendButtons = new Map();
@@ -518,6 +572,73 @@ export function createApp(env) {
     return el;
   }
 
+  // "в работе: N", the button "Показать всех (N)" / "Скрыть" and the open full
+  // list (REQ-049, criterion 1). The numbers are the count of the model.
+  function renderNowSide(line) {
+    const n = line.count;
+    if (els.nowCount) {
+      els.nowCount.textContent = n >= 1 ? fill(NOW_COUNT, { n }) : "";
+      els.nowCount.hidden = n === 0;
+    }
+    if (n === 0 && nowAllOpen) {
+      // The work is over while the list is open: it closes, the focus goes to
+      // "Пауза" if it was in the list or on its button.
+      const focused = focusedElement();
+      const inside =
+        focused !== null &&
+        (focused === els.nowAll ||
+          focused === els.nowShowAll ||
+          els.nowAll?.contains?.(focused) === true);
+      closeNowAll(false);
+      if (inside) els.pause?.focus();
+    }
+    if (nowAllOpen && els.nowAll) {
+      els.nowAll.replaceChildren(...line.rows.map(nowRowEl));
+    }
+    updateShowAll(n);
+  }
+
+  // The button is seen when the rows do not fit in the block (or the list is
+  // open, to close it).
+  function updateShowAll(count = nowLine(model).count) {
+    const button = els.nowShowAll;
+    if (!button) return;
+    const overflow =
+      nowList !== null && nowList.scrollHeight > nowList.clientHeight;
+    button.hidden = !(count >= 1 && (nowAllOpen || overflow));
+    button.textContent = nowAllOpen
+      ? NOW_HIDE
+      : fill(NOW_SHOW_ALL, { n: count });
+    button.setAttribute("aria-expanded", nowAllOpen ? "true" : "false");
+  }
+
+  function openNowAll() {
+    if (!els.nowAll) return;
+    const line = nowLine(model);
+    if (line.count === 0) return;
+    nowAllOpen = true;
+    els.nowAll.replaceChildren(...line.rows.map(nowRowEl));
+    els.nowAll.scrollTop = 0;
+    els.nowAll.hidden = false;
+    if (els.nowAllCatcher) els.nowAllCatcher.hidden = false;
+    updateShowAll(line.count);
+  }
+
+  // Closes the full list; focusButton: the focus goes back to the button.
+  function closeNowAll(focusButton) {
+    if (!nowAllOpen) return;
+    nowAllOpen = false;
+    if (els.nowAll) {
+      els.nowAll.hidden = true;
+      els.nowAll.replaceChildren();
+    }
+    if (els.nowAllCatcher) els.nowAllCatcher.hidden = true;
+    updateShowAll();
+    if (focusButton && els.nowShowAll && !els.nowShowAll.hidden) {
+      els.nowShowAll.focus();
+    }
+  }
+
   function renderNow() {
     if (!els.now) return;
     if (!loaded) {
@@ -554,6 +675,8 @@ export function createApp(env) {
     setData(els.now, "busy", line.busy ? "true" : "false");
     setData(els.now, "unconfirmed", line.unconfirmed >= 1 ? "true" : "false");
     els.now.hidden = false;
+    // Measured after the block is shown: a hidden list has no height.
+    renderNowSide(line);
   }
 
   function renderControls() {
@@ -617,9 +740,16 @@ export function createApp(env) {
       if (c.working) state = LEGEND_WORKING;
       else if (c.kind === "main") state = LEGEND_IDLE_MAIN;
       button.appendChild(swatch);
-      button.appendChild(make("span", "name", c.full));
+      // One name of the role everywhere (REQ-048): the code only in the
+      // tooltip, when it differs from the name.
+      const name = make("span", "name", c.label);
+      const code = c.kind === "main" ? null : roleCode(c.full);
+      if (code !== null) name.setAttribute("title", codeTitle(code));
+      button.appendChild(name);
       button.appendChild(make("span", "state", state));
-      button.addEventListener("click", () => openCard(c.key));
+      button.addEventListener("click", () =>
+        openCard(c.key, { kind: "legend", key: c.key }),
+      );
       li.appendChild(button);
       legendButtons.set(c.key, button);
       return li;
@@ -633,7 +763,13 @@ export function createApp(env) {
   // The parts of a row of the journal, the same in the journal and in the
   // card: the line of time, "who" and session (and the mark), the words of the
   // event, the description and the caption of a service message. All as text.
-  function rowParts(view, into, icon) {
+  // "код роли: <code>": put together by split and join, not String.replace
+  // (the code comes from the journal).
+  function codeTitle(code) {
+    return ROLE_CODE_TITLE.split("{code}").join(code);
+  }
+
+  function rowParts(view, into, open) {
     const meta = make("span", "row-meta");
     const time = fmtTimeSec(view.time);
     meta.appendChild(make("span", "time", time === "" ? TIME_UNKNOWN : time));
@@ -645,14 +781,16 @@ export function createApp(env) {
         view.session_id === null ? SESSION_UNKNOWN : shortId(view.session_id),
       ),
     );
-    if (view.marked) {
-      meta.appendChild(make("span", "source", view.source));
-      meta.appendChild(make("span", "mark", NOT_FROM_HOOKS));
-    }
-    if (icon !== null) {
-      const mark = make("span", "row-icon", icon);
-      mark.setAttribute("aria-hidden", "true");
-      meta.appendChild(mark);
+    // The value of source is shown only in the technical fields (REQ-048).
+    if (view.marked) meta.appendChild(make("span", "mark", NOT_FROM_HOOKS));
+    // The word "подробнее" / "свернуть" and the arrow (only a decoration) of a
+    // row with details (REQ-049, criterion 2).
+    if (open !== null) {
+      const more = make("span", "row-more", open ? ROW_LESS : ROW_MORE);
+      const arrow = make("span", "row-arrow", open ? " ▾" : " ▸");
+      arrow.setAttribute("aria-hidden", "true");
+      more.appendChild(arrow);
+      meta.appendChild(more);
     }
     into.appendChild(meta);
     const main = make("span", "row-main");
@@ -660,9 +798,6 @@ export function createApp(env) {
     into.appendChild(main);
     if (view.description !== "") {
       into.appendChild(make("span", "row-desc", view.description));
-    }
-    if (view.event === "UserPromptSubmit" && view.prompt_kind === "service") {
-      into.appendChild(make("span", "history-service", HISTORY_SERVICE));
     }
   }
 
@@ -712,6 +847,13 @@ export function createApp(env) {
     box.setAttribute("id", `event-${index}`);
     const d = eventDetails(model, history, index);
     if (d === null) return box;
+    // The main first (REQ-049, criterion 2): what happened and what it does not
+    // prove, each caption over its value; then the other fields.
+    const what = detailField(box, "what", DETAIL_LABELS.what);
+    what.appendChild(make("span", "detail-words", d.words));
+    what.appendChild(make("span", "detail-meaning", d.meaning));
+    detailField(box, "not_proved", DETAIL_LABELS.not_proved).textContent =
+      d.not_proved;
     detailField(box, "when", DETAIL_LABELS.when).textContent = d.when;
     detailField(box, "source", DETAIL_LABELS.source).textContent = d.source;
     const session = detailField(box, "session", DETAIL_LABELS.session);
@@ -724,6 +866,11 @@ export function createApp(env) {
       session.appendChild(more);
     }
     detailField(box, "agent", DETAIL_LABELS.agent).textContent = d.agent;
+    const agentLinks = linksRow(index, "agent", d.links.agent, focus);
+    if (d.links.notes.agent === "missing") {
+      agentLinks.appendChild(make("span", "detail-note", AGENT_NOT_FOUND));
+    }
+    if (agentLinks.children.length > 0) box.appendChild(agentLinks);
     const task = detailField(box, "task", DETAIL_LABELS.task);
     if (d.task.state === null) {
       task.textContent = d.task.text;
@@ -739,6 +886,27 @@ export function createApp(env) {
       setData(badge, "state", d.task.state);
       task.appendChild(badge);
     }
+    // The transitions of the task: a row of its own after the field, not in
+    // its value (design D9).
+    const taskLinks = linksRow(index, "task", [], focus);
+    const go = (link) => taskLinks.appendChild(linkButton(index, link, focus));
+    const to = d.links.task.find((l) => l.go === "card-instance");
+    if (to !== undefined) go(to);
+    const panelLink = d.links.task.find((l) => l.go === "panel");
+    if (panelLink !== undefined) go(panelLink);
+    else if (d.links.notes.panel === "missing") {
+      taskLinks.appendChild(
+        make("span", "detail-note", fill(NOT_IN_PANEL, { n: LIST_LIMIT })),
+      );
+    }
+    const events = d.links.task.find((l) => l.go === "task-events");
+    if (events !== undefined) go(events);
+    const windowLink = d.links.task.find((l) => l.go === "history");
+    if (windowLink !== undefined) go(windowLink);
+    else if (d.links.notes.window === "missing") {
+      taskLinks.appendChild(make("span", "detail-note", NO_WINDOW));
+    }
+    if (taskLinks.children.length > 0) box.appendChild(taskLinks);
     if (d.note !== null) {
       maskedInto(
         detailField(box, "note_text", DETAIL_LABELS.note_text),
@@ -758,11 +926,6 @@ export function createApp(env) {
         if (d.note.auto) value.appendChild(historyAutoMark());
       }
     }
-    const what = detailField(box, "what", DETAIL_LABELS.what);
-    what.appendChild(make("span", "detail-words", d.words));
-    what.appendChild(make("span", "detail-meaning", d.meaning));
-    detailField(box, "not_proved", DETAIL_LABELS.not_proved).textContent =
-      d.not_proved;
     if (d.mark !== null) {
       detailField(box, "mark", DETAIL_LABELS.mark).textContent = d.mark;
     }
@@ -786,6 +949,41 @@ export function createApp(env) {
     return box;
   }
 
+  // One transition of the details of an event (design 4.3): a button that
+  // looks like a link. The focus name is "go:<go>"; "кому" is "go:to".
+  function linkButton(index, link, focus) {
+    const name = link.label === GO_TO ? "go:to" : `go:${link.go}`;
+    const button = make("button", "detail-link", link.label);
+    button.setAttribute("type", "button");
+    setData(button, "focus", name);
+    setData(button, "go", link.go);
+    focus.set(name, button);
+    button.addEventListener("click", () => follow(index, link, name));
+    return button;
+  }
+
+  function linksRow(index, field, links, focus) {
+    const row = make("div", "detail-links");
+    setData(row, "for", field);
+    for (const link of links) row.appendChild(linkButton(index, link, focus));
+    return row;
+  }
+
+  function follow(index, link, name) {
+    const opener = { kind: "journal", index, focus: name };
+    if (link.go === "card-instance") {
+      openInstance(link.target, "link", opener);
+    } else if (link.go === "card-main") {
+      openMain(link.target, "link", opener);
+    } else if (link.go === "panel") {
+      goPanel(link.target);
+    } else if (link.go === "task-events") {
+      goTaskEvents(link.target, index);
+    } else if (link.go === "history") {
+      openHistory(link.target, { kind: "journal", index, focus: name });
+    }
+  }
+
   // A row of the journal panel (REQ-045, design 5.1): the row itself is a
   // button that opens and closes the details of the event under it; a message
   // of the owner with a window has a separate button that opens the window
@@ -800,7 +998,7 @@ export function createApp(env) {
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
     toggle.setAttribute("aria-controls", `event-${view.index}`);
     setData(toggle, "focus", "toggle");
-    rowParts(view, toggle, open ? "▾" : "▸");
+    rowParts(view, toggle, open);
     toggle.addEventListener("click", () => toggleEvent(view.index));
     li.appendChild(toggle);
     focus.set("toggle", toggle);
@@ -821,16 +1019,21 @@ export function createApp(env) {
       li.appendChild(button);
       focus.set("history", button);
     }
-    if (open) li.appendChild(detailsOf(view.index, focus, parts));
+    const details = open ? detailsOf(view.index, focus, parts) : null;
+    if (details !== null) li.appendChild(details);
     li.addEventListener("keydown", (event) => {
       if (event.key !== "Escape" || journalOpen !== view.index) return;
       if (typeof event.preventDefault === "function") event.preventDefault();
       if (typeof event.stopPropagation === "function") {
         event.stopPropagation();
       }
-      closeEvent(true);
+      // The order of Escape (design 3.10): the open list "Показать всех"
+      // closes before the details of a row; the focus stays on the row, so
+      // the next Escape closes the details.
+      if (nowAllOpen) closeNowAll(false);
+      else closeEvent(true);
     });
-    return { index: view.index, li, focus, parts };
+    return { index: view.index, li, focus, parts, details };
   }
 
   function journalNote(reason) {
@@ -839,6 +1042,13 @@ export function createApp(env) {
     if (reason === "empty") {
       li.appendChild(make("span", "empty-title", EMPTY_JOURNAL));
       li.appendChild(make("span", "empty-hint", EMPTY_HINT));
+    } else if (reason === "filtered") {
+      // One text for any empty choice, the former "Работа" / "Офис" too (D10).
+      li.appendChild(make("span", "empty-title", FILTERS_EMPTY));
+      const reset = make("button", "filter", FILTERS_RESET);
+      reset.setAttribute("type", "button");
+      reset.addEventListener("click", () => resetFilters(true));
+      li.appendChild(reset);
     } else {
       li.textContent = reason === "no-connection" ? NO_CONNECTION : NO_DATA;
     }
@@ -876,6 +1086,9 @@ export function createApp(env) {
     const zone = fill(JOURNAL_ZONE, { tz: tzLabel() });
     const list = els.journal;
     if (!loaded) {
+      // Before the first answer the search and the filters are there with
+      // only "все …" (description, section 11).
+      guarded("фильтры журнала", renderJournalTools);
       if (els.journalMeta) els.journalMeta.textContent = zone;
       if (list) {
         list.replaceChildren(
@@ -885,7 +1098,12 @@ export function createApp(env) {
       journalItems = [];
       return;
     }
-    const picked = filterJournal(rows, filter);
+    guarded("фильтры журнала", renderJournalTools);
+    const picked = journalQuery(
+      rows,
+      { base: filter, ...journalQueryState },
+      { model, history },
+    );
     if (els.journalMeta) {
       els.journalMeta.textContent =
         zone +
@@ -909,6 +1127,8 @@ export function createApp(env) {
     // The rows are replaced: the element with the focus and the open parts of
     // the details are given back to the new rows.
     const focus = journalFocus();
+    const earlierFocused =
+      earlierButton !== null && earlierButton === focusedElement();
     const openParts = new Map();
     for (const item of journalItems) {
       if (item.index !== journalOpen) continue;
@@ -923,6 +1143,16 @@ export function createApp(env) {
       }
     }
     let items = journalItems.map((item) => item.li);
+    earlierButton = null;
+    if (picked.matching > picked.rows.length) {
+      // "Показать более ранние" stands first, over the earliest shown row.
+      const li = make("li", "journal-earlier");
+      earlierButton = make("button", "ctl", SHOW_EARLIER);
+      earlierButton.setAttribute("type", "button");
+      earlierButton.addEventListener("click", () => showEarlier());
+      li.appendChild(earlierButton);
+      items = [li, ...items];
+    }
     if (rows.length === 0) items = [journalNote("empty")];
     else if (picked.rows.length === 0) items = [journalNote("filtered")];
     list.replaceChildren(...items);
@@ -938,21 +1168,32 @@ export function createApp(env) {
       list.scrollTop =
         same === undefined ? 0 : same.li.offsetTop - anchor.offset;
     }
+    // After the details open (REQ-049, criterion 2): if the row with its
+    // details is not seen whole, the top of the details goes to the top of the
+    // visible part of the list.
     if (reveal && now !== undefined) {
       const top = now.li.offsetTop;
       const bottom = top + now.li.offsetHeight;
-      if (bottom > list.scrollTop + list.clientHeight) {
-        list.scrollTop = Math.min(top, bottom - list.clientHeight);
-      } else if (top < list.scrollTop) {
-        list.scrollTop = top;
+      const seen =
+        top >= list.scrollTop && bottom <= list.scrollTop + list.clientHeight;
+      if (!seen) {
+        list.scrollTop = now.details !== null ? now.details.offsetTop : top;
       }
     }
     journalShown = true;
+    if (earlierFocused) {
+      // The focus stays on the button; when all is shown, on the first row.
+      if (earlierButton !== null) earlierButton.focus({ preventScroll: true });
+      else {
+        journalItems[0]?.focus.get("toggle")?.focus({ preventScroll: true });
+      }
+    }
     if (focus !== null) {
       const item = journalItems.find((it) => it.index === focus.index);
       const el = item?.focus.get(focus.name) ?? item?.focus.get("toggle");
-      if (el !== undefined) el.focus();
-      else list.focus();
+      // The scroll was set above; the focus must not move it.
+      if (el !== undefined) el.focus({ preventScroll: true });
+      else list.focus({ preventScroll: true });
     }
   }
 
@@ -964,7 +1205,7 @@ export function createApp(env) {
     journalItems
       .find((item) => item.index === index)
       ?.focus.get("toggle")
-      ?.focus();
+      ?.focus({ preventScroll: true });
   }
 
   // Closes the open details; focusRow: the focus goes to its row.
@@ -997,8 +1238,223 @@ export function createApp(env) {
 
   function setFilter(name) {
     filter = FILTERS.includes(name) ? name : "all";
+    journalQueryState.shown = JOURNAL_LIMIT;
     guarded("фильтры", renderFilters);
     guarded("журнал", () => renderJournal(true));
+  }
+
+  // The search, the lists of the filters, "Сбросить фильтры" and the mark
+  // "Задача" (REQ-046, design 3.10). A chosen variant that is no longer in the
+  // journal falls back to "все …". Before the first answer the lists have only
+  // "все …" (description, section 11).
+  function renderJournalTools() {
+    const q = journalQueryState;
+    const options = loaded
+      ? journalOptions(rows, model, office)
+      : { sessions: [], agents: [], types: [] };
+    const lists = [
+      [
+        "session",
+        els.filterSession,
+        FILTER_ALL.session,
+        options.sessions.map((o) => [o.id, o.label]),
+      ],
+      [
+        "agent",
+        els.filterAgent,
+        FILTER_ALL.agent,
+        options.agents.map((o) => [o.value, o.label]),
+      ],
+      [
+        "type",
+        els.filterType,
+        FILTER_ALL.type,
+        options.types.map((o) => [o.value, o.label]),
+      ],
+    ];
+    const key = JSON.stringify(lists.map((l) => l[3]));
+    for (const [name, select, all, variants] of lists) {
+      if (q[name] !== null && !variants.some(([value]) => value === q[name])) {
+        q[name] = null;
+        q.shown = JOURNAL_LIMIT;
+      }
+      if (!select) continue;
+      if (key !== filterOptionsKey) {
+        const first = make("option", undefined, all);
+        first.setAttribute("value", "");
+        first.value = "";
+        const opts = [first];
+        for (const [value, label] of variants) {
+          const option = make("option", undefined, label);
+          option.setAttribute("value", value);
+          option.value = value;
+          opts.push(option);
+        }
+        select.replaceChildren(...opts);
+      }
+      select.value = q[name] ?? "";
+    }
+    filterOptionsKey = key;
+    if (q.task !== null && !taskExists(q.task)) {
+      q.task = null;
+      q.shown = JOURNAL_LIMIT;
+    }
+    const chosen = q.session !== null || q.agent !== null || q.type !== null;
+    const any = chosen || q.task !== null || q.search.trim() !== "";
+    if (els.journalFilters) {
+      els.journalFilters.textContent =
+        !filtersOpen && chosen ? FILTERS_CHOSEN : FILTERS_BUTTON;
+      els.journalFilters.setAttribute(
+        "aria-expanded",
+        filtersOpen ? "true" : "false",
+      );
+      setData(els.journalFilters, "chosen", chosen ? "true" : "false");
+    }
+    if (els.journalFilterLine) els.journalFilterLine.hidden = !filtersOpen;
+    if (els.journalReset) els.journalReset.hidden = !any;
+    if (els.journalTaskMark) {
+      if (q.task === null) {
+        els.journalTaskMark.hidden = true;
+        els.journalTaskMark.replaceChildren();
+      } else {
+        const focusedClear =
+          focusedElement() !== null &&
+          focusedElement() === els.journalTaskMark.lastChild;
+        const text = make("span", "task-mark-text", taskMarkText(q.task));
+        const clear = make("button", "task-mark-clear", "×");
+        clear.setAttribute("type", "button");
+        clear.setAttribute("aria-label", TASK_MARK_CLEAR);
+        clear.title = TASK_MARK_CLEAR;
+        clear.addEventListener("click", () => {
+          journalQueryState.task = null;
+          journalQueryState.shown = JOURNAL_LIMIT;
+          guarded("журнал", () => renderJournal(true));
+          els.journalSearch?.focus();
+        });
+        els.journalTaskMark.replaceChildren(text, clear);
+        els.journalTaskMark.hidden = false;
+        if (focusedClear) clear.focus();
+      }
+    }
+  }
+
+  function taskExists(ref) {
+    if (ref.kind === "task") return model.tasks.some((t) => t.key === ref.key);
+    return model.mainRows.some((r) => r.key === ref.key);
+  }
+
+  // "Задача: <название роли> <8 знаков>" or "Задача: Основная сессия"; the
+  // template is put together by split and join (the role comes from the
+  // journal).
+  function taskMarkText(ref) {
+    if (ref.kind !== "task") return TASK_MARK_MAIN;
+    const task = model.tasks.find((t) => t.key === ref.key);
+    return TASK_MARK.split("{role}")
+      .join(roleName(task === undefined ? "" : task.role))
+      .split("{id}")
+      .join(shortId(ref.key));
+  }
+
+  // Any change of a filter or of the search shows the last JOURNAL_LIMIT rows
+  // again.
+  function changeQuery(name, value) {
+    journalQueryState[name] = value;
+    journalQueryState.shown = JOURNAL_LIMIT;
+    guarded("журнал", () => renderJournal(true));
+  }
+
+  // "Сбросить фильтры": every filter, the mark "Задача" and the search go,
+  // "Всё / Работа / Офис" becomes "Всё".
+  function resetFilters(focusSearch) {
+    const q = journalQueryState;
+    q.session = null;
+    q.agent = null;
+    q.type = null;
+    q.task = null;
+    q.search = "";
+    q.shown = JOURNAL_LIMIT;
+    if (els.journalSearch) els.journalSearch.value = "";
+    filter = "all";
+    guarded("фильтры", renderFilters);
+    guarded("журнал", () => renderJournal(true));
+    if (focusSearch) els.journalSearch?.focus();
+  }
+
+  // "Показать более ранние": JOURNAL_LIMIT more rows above; the rows on the
+  // screen keep their place.
+  function showEarlier() {
+    const list = els.journal;
+    const anchor = list ? anchorOf(list) : null;
+    journalQueryState.shown += JOURNAL_LIMIT;
+    guarded("журнал", () =>
+      renderJournal(false, anchor === null ? null : anchor.index),
+    );
+  }
+
+  // "события этой задачи" (design 4.3): the filter "Задача", the other filters
+  // and the search go, "Всё"; the open details stay open and keep the focus if
+  // their row is in the task, else the focus goes to the mark.
+  function goTaskEvents(ref, fromIndex = null, openLast = false) {
+    const q = journalQueryState;
+    q.session = null;
+    q.agent = null;
+    q.type = null;
+    q.search = "";
+    q.task = ref;
+    q.shown = JOURNAL_LIMIT;
+    if (els.journalSearch) els.journalSearch.value = "";
+    filter = "all";
+    guarded("фильтры", renderFilters);
+    const inTask =
+      fromIndex !== null &&
+      taskOfRow(model, history, fromIndex).some(
+        (r) => r.kind === ref.kind && r.key === ref.key,
+      );
+    if (!inTask && fromIndex !== null && journalOpen === fromIndex) {
+      journalOpen = null;
+    }
+    guarded("журнал", () =>
+      renderJournal(false, inTask ? fromIndex : null, inTask),
+    );
+    if (openLast && journalItems.length > 0) {
+      // From a card: the last row of the task is open and its row has the
+      // focus (REQ-047, criterion 2 (б)).
+      const last = journalItems[journalItems.length - 1].index;
+      journalOpen = last;
+      guarded("журнал", () => renderJournal(false, last, true));
+      journalItems
+        .find((item) => item.index === last)
+        ?.focus.get("toggle")
+        ?.focus({ preventScroll: true });
+    } else if (inTask) {
+      journalItems
+        .find((item) => item.index === fromIndex)
+        ?.focus.get("go:task-events")
+        ?.focus({ preventScroll: true });
+    } else {
+      els.journalTaskMark?.lastChild?.focus?.();
+    }
+  }
+
+  // "к задаче в панели" (design 4.3, description 6.2): the item gets the mark
+  // data-target, the body of the panel scrolls so that it is seen whole and
+  // the item gets the focus.
+  function goPanel(key) {
+    if (card !== null) closeCard();
+    panelTarget = key;
+    guarded("задачи", renderTasks);
+    const el = panelItems.get(key);
+    const body = els.tasks;
+    if (el === undefined) return;
+    if (body) {
+      const top = el.offsetTop;
+      const bottom = top + el.offsetHeight;
+      if (top < body.scrollTop) body.scrollTop = top;
+      else if (bottom > body.scrollTop + body.clientHeight) {
+        body.scrollTop = Math.min(top, bottom - body.clientHeight);
+      }
+    }
+    el.focus({ preventScroll: true });
   }
 
   // ------------------------------------------------------------ tasks
@@ -1030,6 +1486,8 @@ export function createApp(env) {
       const character = characterOf(roleKey(item.role));
       role = make("span", "item-role", roleName(item.role));
       setData(role, "color", character === undefined ? 0 : character.color);
+      const code = roleCode(item.role);
+      if (code !== null) role.setAttribute("title", codeTitle(code));
     }
     head.appendChild(role);
     head.appendChild(
@@ -1037,7 +1495,6 @@ export function createApp(env) {
     );
     el.appendChild(head);
     if (item.kind === "task") {
-      el.appendChild(make("span", "item-full", item.role));
       if (typeof item.description === "string" && item.description !== "") {
         el.appendChild(make("span", "item-desc", item.description));
       }
@@ -1104,6 +1561,24 @@ export function createApp(env) {
   // (REQ-008, design 7.5).
   function panelItem(item) {
     const el = itemInto(make("div", "item"), item);
+    panelItems.set(item.key, el);
+    if (item.key === panelTarget) {
+      setData(el, "target", "true");
+      el.setAttribute("tabindex", "-1");
+    }
+    // "агент": the card of this instance or of the main session on this row
+    // (REQ-047, criterion 3 (е)).
+    const agent = make("button", "item-agent", GO_ITEM_AGENT);
+    agent.setAttribute("type", "button");
+    const opener = { kind: "panel", key: item.key };
+    agent.addEventListener("click", () => {
+      if (item.kind === "task") openInstance(item.key, "link", opener);
+      else {
+        openMain({ row: item.key, session: item.session_id }, "link", opener);
+      }
+    });
+    el.appendChild(agent);
+    agentButtons.set(item.key, agent);
     const key =
       item.kind === "task"
         ? history.windowOfTask.get(item.key)
@@ -1112,8 +1587,8 @@ export function createApp(env) {
     const button = make("button", "history-open", HISTORY_OPEN);
     button.setAttribute("type", "button");
     setData(button, "request", key);
-    const opener = { kind: "task", key: item.key };
-    button.addEventListener("click", () => openHistory(key, opener));
+    const historyOpenerOf = { kind: "task", key: item.key };
+    button.addEventListener("click", () => openHistory(key, historyOpenerOf));
     el.appendChild(button);
     taskButtons.set(item.key, button);
     return el;
@@ -1125,10 +1600,16 @@ export function createApp(env) {
     // The buttons are replaced: the button with the focus gets it back.
     const focused = focusedElement();
     let focusKey = null;
+    let agentFocusKey = null;
     for (const [key, button] of taskButtons) {
       if (button === focused) focusKey = key;
     }
+    for (const [key, button] of agentButtons) {
+      if (button === focused) agentFocusKey = key;
+    }
     taskButtons.clear();
+    agentButtons.clear();
+    panelItems.clear();
     if (!loaded) {
       body.replaceChildren();
       return;
@@ -1175,6 +1656,7 @@ export function createApp(env) {
     }
     body.replaceChildren(...out);
     if (focusKey !== null) taskButtons.get(focusKey)?.focus();
+    if (agentFocusKey !== null) agentButtons.get(agentFocusKey)?.focus();
   }
 
   // ------------------------------------------------------------ card
@@ -1343,8 +1825,6 @@ export function createApp(env) {
     title.setAttribute("id", "card-title");
     head.appendChild(swatch);
     head.appendChild(title);
-    if (data.code !== null)
-      head.appendChild(make("span", "card-code", data.code));
     const idsLine = make("p", "card-ids");
     idsLine.appendChild(make("span", undefined, `${CARD_INSTANCE} `));
     idsLine.appendChild(make("b", "card-id", data.agent.short));
@@ -1354,6 +1834,9 @@ export function createApp(env) {
     const more = cardMore("ids", CARD_BLOCKS.ids);
     more.appendChild(copyRow(data, "agent"));
     more.appendChild(copyRow(data, "session"));
+    if (data.code !== null) {
+      more.appendChild(make("p", "code-row", codeTitle(data.code)));
+    }
     head.appendChild(more);
     if (link === "down")
       head.appendChild(make("p", "card-offline", NO_CONNECTION));
@@ -1477,6 +1960,16 @@ export function createApp(env) {
       );
       setData(button, "key", l.key);
       section.appendChild(button);
+    } else if (l.kind === "main" && data.links.main_row !== null) {
+      // "Основная сессия": the card of the main session on the row of the
+      // request in whose window the task began (REQ-047, criterion 2 (г)).
+      const line = make("p", "card-launcher");
+      line.appendChild(
+        cardButton("card-link", MAIN_LABEL, "launcher", () =>
+          openMain(data.links.main_row, "link"),
+        ),
+      );
+      section.appendChild(line);
     } else {
       let text = MAIN_LABEL;
       if (l.kind === "subagent")
@@ -1486,6 +1979,13 @@ export function createApp(env) {
       }
       section.appendChild(make("p", "card-launcher", text));
     }
+    // The transitions stand right after "Кто запустил", before the phrases of
+    // what is not known, so they are seen at once whatever the clock makes of
+    // the lines above (decisions/0060). The phrases are not focusable: the
+    // order of Tab stays "Кто запустил" -> the transitions.
+    section.appendChild(
+      cardLinks(data.links.panel, data.key, { kind: "task", key: data.key }),
+    );
     section.appendChild(make("p", "card-unknown", UNKNOWN_MESSAGES));
     section.appendChild(make("p", "card-unknown", UNKNOWN_ERRORS));
     return section;
@@ -1613,6 +2113,214 @@ export function createApp(env) {
     return [given, starts, returns, launched, role];
   }
 
+  // The line of transitions of a card (REQ-047, criterion 2): "к задаче в
+  // панели" (or the text about the limit of the panel) and "события в
+  // журнале". Both close the card. No button of the card opens the window of
+  // history (decision 0014).
+  function cardLinks(inPanel, key, ref) {
+    const line = make("div", "card-links");
+    if (inPanel) {
+      line.appendChild(
+        cardButton("ctl", GO_PANEL, "go:panel", () => goPanel(key)),
+      );
+    } else {
+      line.appendChild(
+        make("p", "card-note", fill(NOT_IN_PANEL, { n: LIST_LIMIT })),
+      );
+    }
+    line.appendChild(
+      cardButton("ctl", GO_CARD_EVENTS, "go:events", () => {
+        closeCard();
+        goTaskEvents(ref, null, true);
+      }),
+    );
+    return line;
+  }
+
+  // The lines of the basis of "Задача" of the card of the main session
+  // (design 4.7).
+  function mainBasis(row) {
+    const b = row.basis;
+    const words = (c) => EVENT_TABLE[c]?.words ?? "";
+    if (row.state === "in_progress" || row.state === "stale") {
+      const minutes = String(STALE_AFTER_MS / 60000);
+      return [
+        `${LABEL_LAST_EVENT} ${whenAge(b.session_last_event_at, true)} · ${FRESH_LIMIT.split("{m}").join(minutes)}`,
+        `${words(b.start.case)} · ${whenAge(b.start.at, false)}`,
+      ];
+    }
+    if (row.state === "completed") {
+      return [`${EVENT_TABLE.stop.words} · ${whenAge(b.stop_at, false)}`];
+    }
+    if (row.state === "unrecorded") {
+      return b.closed === null
+        ? []
+        : [`${words(b.closed.case)} · ${whenAge(b.closed.at, false)}`];
+    }
+    if (row.state === "restarted") {
+      return [
+        MAIN_CARD.server_started
+          .split("{time}")
+          .join(whenAge(b.server_start_at, false)),
+      ];
+    }
+    return [];
+  }
+
+  // The card of the main session (REQ-047, criterion 1; description 8).
+  function mainCardTree(data, body) {
+    const head = make("div", "card-head");
+    const swatch = make("span", "card-swatch");
+    setData(swatch, "color", 0);
+    const title = make("h3", "card-title", MAIN_LABEL);
+    title.setAttribute("id", "card-title");
+    head.appendChild(swatch);
+    head.appendChild(title);
+    const idsLine = make("p", "card-ids");
+    idsLine.appendChild(make("span", undefined, `${CARD_SESSION} `));
+    idsLine.appendChild(make("b", "card-id", data.session.short));
+    head.appendChild(idsLine);
+    const more = cardMore("ids", MAIN_CARD.full_session);
+    more.appendChild(
+      copyRow(
+        { key: data.key, agent: data.session, session: data.session },
+        "session",
+      ),
+    );
+    head.appendChild(more);
+    if (link === "down") {
+      head.appendChild(make("p", "card-offline", NO_CONNECTION));
+    }
+    body.appendChild(head);
+    const parts = [];
+    if (data.row === null) {
+      body.appendChild(make("p", "task-none", MAIN_CARD.no_requests));
+    } else {
+      const section = make("section", "card-instance");
+      section.appendChild(blockTitle(CARD_BLOCKS.state));
+      section.appendChild(
+        stateRow("task", stateBadge(data.row.state), mainBasis(data.row)),
+      );
+      section.appendChild(
+        make("p", "card-history-note", MAIN_CARD[data.history_note]),
+      );
+      section.appendChild(
+        stateRow(
+          "workplace",
+          data.workplace.working
+            ? MAIN_CARD.workplace_working
+                .split("{n}")
+                .join(String(data.workplace.count))
+            : MAIN_CARD.workplace_idle,
+          [MAIN_CARD.desk],
+        ),
+      );
+      section.appendChild(
+        cardLinks(data.links.panel, data.row.key, {
+          kind: "main",
+          key: data.row.key,
+        }),
+      );
+      body.appendChild(section);
+      const launched = cardMore("launched", MAIN_CARD.launched);
+      if (data.launched.length === 0) launched.appendChild(emptyLine());
+      for (const item of data.launched) {
+        const button = cardButton(
+          "instance",
+          undefined,
+          `launched:${item.key}`,
+          () => openInstance(item.key, "link"),
+        );
+        setData(button, "key", item.key);
+        const line = make("span", "instance-head");
+        line.appendChild(
+          make("span", "instance-id", `${item.name} · ${item.short}`),
+        );
+        line.appendChild(stateBadge(item.state));
+        button.appendChild(line);
+        launched.appendChild(button);
+      }
+      parts.push(launched);
+      const rowsPart = cardMore("rows", MAIN_CARD.other_rows);
+      if (data.other_rows.total === 0) rowsPart.appendChild(emptyLine());
+      for (const r of data.other_rows.shown) {
+        const name = `row:${r.key}`;
+        const button = cardButton("instance", undefined, name, () =>
+          openMain(
+            { row: r.key, session: data.session.full },
+            "switch",
+            null,
+            name,
+          ),
+        );
+        setData(button, "key", r.key);
+        const line = make("span", "instance-head");
+        line.appendChild(
+          make(
+            "span",
+            "instance-id",
+            `${EVENT_TABLE[r.case]?.words ?? ""} · ${whenAge(r.at, false)}`,
+          ),
+        );
+        line.appendChild(stateBadge(r.state));
+        button.appendChild(line);
+        rowsPart.appendChild(button);
+      }
+      if (data.other_rows.total > data.other_rows.shown.length) {
+        rowsPart.appendChild(
+          make(
+            "p",
+            "tasks-note",
+            fill(SHOWN_NOTE, {
+              n: data.other_rows.shown.length,
+              N: data.other_rows.total,
+            }),
+          ),
+        );
+      }
+      parts.push(rowsPart);
+    }
+    const sessionsPart = cardMore("sessions", MAIN_CARD.other_sessions);
+    if (data.sessions.length === 0) sessionsPart.appendChild(emptyLine());
+    for (const other of data.sessions) {
+      const name = `session:${other.id}`;
+      const button = cardButton("instance", undefined, name, () => {
+        const first = model.list.find(
+          (item) => item.kind === "main" && item.session_id === other.id,
+        );
+        openMain(
+          { row: first === undefined ? null : first.key, session: other.id },
+          "switch",
+          null,
+          name,
+        );
+      });
+      const line = make("span", "instance-head");
+      line.appendChild(make("span", "instance-id", other.label));
+      if (other.running) {
+        line.appendChild(make("span", "session-running", SESSION_RUNNING));
+      }
+      button.appendChild(line);
+      sessionsPart.appendChild(button);
+    }
+    parts.push(sessionsPart);
+    const all = cardMore("role", MAIN_CARD.all);
+    if (data.role_card !== null) {
+      all.appendChild(
+        make(
+          "span",
+          "card-working",
+          `${CARD_SESSIONS}${data.role_card.sessions_running}`,
+        ),
+      );
+      for (const section of roleSections(data.role_card)) {
+        all.appendChild(section);
+      }
+    }
+    parts.push(all);
+    for (const part of parts) body.appendChild(part);
+  }
+
   // The new contents of the card, built whole before anything is replaced; null
   // when what the card showed is gone from the model.
   function buildCardTree() {
@@ -1624,27 +2332,12 @@ export function createApp(env) {
     close.addEventListener("click", () => closeCard());
     const body = make("div", "card-body");
     if (card.kind === "main") {
-      const data = buildCard(model, office, MAIN_KEY);
+      const data = buildMainCard(model, office, history, card.sel);
       if (data === null) return null;
-      const head = make("div", "card-head");
-      const swatch = make("span", "card-swatch");
-      setData(swatch, "color", data.color);
-      const title = make("h3", "card-title", data.full);
-      title.setAttribute("id", "card-title");
-      head.appendChild(swatch);
-      head.appendChild(title);
-      body.appendChild(head);
-      body.appendChild(
-        make(
-          "span",
-          "card-working",
-          `${CARD_SESSIONS}${data.sessions_running}`,
-        ),
-      );
-      for (const section of roleSections(data)) body.appendChild(section);
+      mainCardTree(data, body);
       return { close, body, kind: "main", columns: "1" };
     }
-    const data = buildInstanceCard(model, office, card.key);
+    const data = buildInstanceCard(model, office, card.key, history);
     if (data === null) return null;
     body.appendChild(cardHead(data));
     const columns = make("div", "card-columns");
@@ -1739,11 +2432,29 @@ export function createApp(env) {
     if (historyKey === null) pageBody()?.removeAttribute("data-modal");
   }
 
-  // The focus after the card closes: the legend button of the role of the
-  // card shown last, else the scrolling area of the office.
+  // The focus after the card closes (design D13, decision 0059, point 2): the
+  // button that opened the first card of the chain — a legend button, a button
+  // of the details of an event, the button "агент" of the panel; a press on the
+  // canvas counts as the legend button of the role of that first card. If the
+  // button is gone, the legend button of the role of the card shown last; else
+  // the scrolling area of the office.
   function returnFocus() {
-    const button = cardReturnKey === null ? null : legendButton(cardReturnKey);
-    if (button !== null) button.focus();
+    const opener = cardOpener;
+    let target = null;
+    if (opener !== null && opener.kind === "journal") {
+      target =
+        journalItems
+          .find((item) => item.index === opener.index)
+          ?.focus.get(opener.focus) ?? null;
+    } else if (opener !== null && opener.kind === "panel") {
+      target = agentButtons.get(opener.key) ?? null;
+    } else if (opener !== null && opener.kind === "legend") {
+      target = legendButton(opener.key);
+    }
+    if (target === null && cardReturnKey !== null) {
+      target = legendButton(cardReturnKey);
+    }
+    if (target !== null) target.focus();
     else els.officeScroll?.focus();
   }
 
@@ -1751,12 +2462,15 @@ export function createApp(env) {
   // and opens its card: the card of the main session or of the default
   // instance of the role. A key without a character or without an instance
   // closes the card and drops the choice.
-  function openCard(key) {
+  function openCard(key, opener = null) {
     resolveEls();
+    closeNowAll(false);
     let next = null;
     if (key !== null && key !== undefined && characterOf(key) !== undefined) {
-      if (key === MAIN_KEY) next = { kind: "main" };
-      else {
+      if (key === MAIN_KEY) {
+        const choice = defaultMainSel(model);
+        if (choice !== null) next = { kind: "main", sel: choice };
+      } else {
         const instance = defaultInstance(model, key);
         if (instance !== null) next = { kind: "instance", key: instance };
       }
@@ -1770,10 +2484,14 @@ export function createApp(env) {
       guarded("карточка", () => renderCard());
       if (wasOpen) releaseModal();
       cardReturnKey = null;
+      cardOpener = null;
       return;
     }
     selectedKey = key;
     cardReturnKey = key;
+    // A press on the canvas returns the focus to the legend button of the
+    // role, as the legend does.
+    cardOpener = opener ?? { kind: "legend", key };
     card = next;
     cardParts = new Map();
     setModal();
@@ -1786,9 +2504,16 @@ export function createApp(env) {
   // Shows another instance in the open card (design 6.4): "switch" from the
   // list of the instances of the role keeps the open parts of the role and the
   // focus on the pressed item; "link" is like a new opening.
-  function openInstance(taskKey, how) {
+  function openInstance(taskKey, how, opener = null) {
+    closeNowAll(false);
     const task = model.tasks.find((t) => t.key === taskKey);
     if (task === undefined) return;
+    if (card === null) {
+      // The first card of a chain: what opened it gets the focus back.
+      cardOpener = opener;
+      cardParts = new Map();
+      setModal();
+    }
     const roleChanged = selectedKey !== roleKey(task.role);
     selectedKey = roleKey(task.role);
     cardReturnKey = selectedKey;
@@ -1808,15 +2533,58 @@ export function createApp(env) {
     );
   }
 
+  // The card of the main session on a row (or a session without rows):
+  // "link" is like a new opening, "switch" (another row or session in the same
+  // card) closes only "кого запустила в этом запросе" and keeps the focus on
+  // the pressed item if it is still there. It opens only where the one rule
+  // mainChoiceOpens allows (the same rule decides the transitions of linksOf).
+  function openMain(choice, how, opener = null, focusName = null) {
+    resolveEls();
+    closeNowAll(false);
+    if (!mainChoiceOpens(model, choice)) return;
+    if (card === null) {
+      cardOpener = opener;
+      cardParts = new Map();
+      setModal();
+    }
+    const roleChanged = selectedKey !== MAIN_KEY;
+    selectedKey = MAIN_KEY;
+    cardReturnKey = MAIN_KEY;
+    card = { kind: "main", sel: choice };
+    copied = null;
+    if (roleChanged) guarded("легенда", renderLegend);
+    guarded("карточка", () =>
+      renderCard(
+        how === "switch"
+          ? {
+              parts: new Set(["launched"]),
+              focus: focusName ?? "close",
+              scrollTop: 0,
+            }
+          : { parts: null, focus: "close", scrollTop: 0 },
+      ),
+    );
+  }
+
   // Copies the full identifier of the instance (design 6.4): only the value,
   // one call of writeText; no clipboard, a refusal or an exception is a
   // failure, and the value stays on the screen.
   async function copyId(target) {
-    if (card === null || card.kind !== "instance") return;
-    const key = card.key;
-    const data = buildInstanceCard(model, office, key);
-    if (data === null) return;
-    const value = target === "agent" ? data.agent.full : data.session.full;
+    if (card === null) return;
+    const shown = card;
+    let key;
+    let value;
+    if (shown.kind === "main") {
+      const data = buildMainCard(model, office, history, shown.sel);
+      if (data === null) return;
+      key = data.key;
+      value = data.session.full;
+    } else {
+      key = shown.key;
+      const data = buildInstanceCard(model, office, key, history);
+      if (data === null) return;
+      value = target === "agent" ? data.agent.full : data.session.full;
+    }
     let ok = false;
     try {
       const clip = typeof clipboardFn === "function" ? clipboardFn() : null;
@@ -1833,9 +2601,7 @@ export function createApp(env) {
       ok = false;
     }
     copied = { key, target, ok };
-    if (card !== null && card.kind === "instance" && card.key === key) {
-      guarded("карточка", () => renderCard());
-    }
+    if (card === shown) guarded("карточка", () => renderCard());
   }
 
   function selectCharacter(key) {
@@ -1854,6 +2620,7 @@ export function createApp(env) {
     releaseModal();
     returnFocus();
     cardReturnKey = null;
+    cardOpener = null;
   }
 
   // The controls of the card for Tab (design 6.3): every button and summary in
@@ -2045,7 +2812,7 @@ export function createApp(env) {
       );
       first.appendChild(historyState(task.state));
       tr.appendChild(first);
-      tr.appendChild(historyCell(HISTORY_COL_AGENT, task.role, "history-role"));
+      tr.appendChild(historyCell(HISTORY_COL_AGENT, task.name, "history-role"));
       tr.appendChild(
         task.description === null
           ? historyCell(HISTORY_COL_DOES, HISTORY_EMPTY_CELL, "history-empty")
@@ -2152,12 +2919,14 @@ export function createApp(env) {
   function openHistory(key, opener) {
     resolveEls();
     if (!els.historyOverlay || !els.historyBody) return;
+    closeNowAll(false);
     const request = history.byKey.get(key);
     if (request === undefined) return;
     if (card !== null) {
       card = null;
       copied = null;
       cardReturnKey = null;
+      cardOpener = null;
       guarded("карточка", () => renderCard());
     }
     historyKey = key;
@@ -2176,7 +2945,7 @@ export function createApp(env) {
     const opener = historyOpener;
     if (opener !== null && opener.kind === "journal") {
       const row = journalItems.find((item) => item.index === opener.index);
-      const button = row?.focus.get("history");
+      const button = row?.focus.get(opener.focus ?? "history");
       if (button !== undefined) return button;
     } else if (opener !== null && opener.kind === "task") {
       const button = taskButtons.get(opener.key);
@@ -2313,6 +3082,7 @@ export function createApp(env) {
       point.px,
       point.py,
       labelWidths(ctx, office),
+      labelLines(ctx, office),
     );
     openCard(key);
   }
@@ -2353,7 +3123,13 @@ export function createApp(env) {
       }
       return;
     }
-    if (card === null) return;
+    if (card === null) {
+      if (event.key === "Escape" && nowAllOpen) {
+        if (typeof event.preventDefault === "function") event.preventDefault();
+        closeNowAll(true);
+      }
+      return;
+    }
     if (event.key === "Escape") {
       if (typeof event.preventDefault === "function") event.preventDefault();
       closeCard();
@@ -2372,6 +3148,8 @@ export function createApp(env) {
     els.badge = byId("source-badge");
     els.now = byId("now");
     els.nowText = byId("now-text");
+    els.nowAll = byId("now-all");
+    els.nowAllCatcher = byId("now-all-catcher");
     els.pause = byId("pause");
     els.speeds = {};
     for (const m of SPEED_IDS) els.speeds[m] = byId(`speed-${m}`);
@@ -2385,6 +3163,14 @@ export function createApp(env) {
     els.filters = {};
     for (const name of FILTERS) els.filters[name] = byId(`filter-${name}`);
     els.journalMeta = byId("journal-meta");
+    els.journalSearch = byId("journal-search");
+    els.journalFilters = byId("journal-filters");
+    els.journalFilterLine = byId("journal-filter-line");
+    els.filterSession = byId("filter-session");
+    els.filterAgent = byId("filter-agent");
+    els.filterType = byId("filter-type");
+    els.journalReset = byId("journal-reset");
+    els.journalTaskMark = byId("journal-task-mark");
     els.journal = byId("journal");
     els.tasksTitle = byId("tasks-title");
     els.tasks = byId("tasks");
@@ -2449,6 +3235,67 @@ export function createApp(env) {
       }
       if (supported) els.office.addEventListener("click", onCanvasClick);
     }
+    // "в работе: N" and "Показать всех (N)": made once, next to #now-text, so
+    // the text of #now-text stays what it was (design D7).
+    if (els.now && !els.nowSide) {
+      const side = make("span", "now-side");
+      const count = make("span", "now-count");
+      count.hidden = true;
+      const button = make("button", "now-show-all");
+      button.setAttribute("type", "button");
+      button.setAttribute("aria-controls", "now-all");
+      button.setAttribute("aria-expanded", "false");
+      button.hidden = true;
+      button.addEventListener("click", () => {
+        if (nowAllOpen) closeNowAll(true);
+        else openNowAll();
+      });
+      side.appendChild(count);
+      side.appendChild(button);
+      els.now.appendChild(side);
+      els.nowSide = side;
+      els.nowCount = count;
+      els.nowShowAll = button;
+    }
+    if (els.nowAll) els.nowAll.setAttribute("aria-label", NOW_ALL_LABEL);
+    // The navigation of the journal (REQ-046).
+    if (els.journalSearch) {
+      els.journalSearch.setAttribute("aria-label", SEARCH_LABEL);
+      els.journalSearch.setAttribute("placeholder", SEARCH_LABEL);
+      els.journalSearch.addEventListener("input", () => {
+        changeQuery("search", String(els.journalSearch.value ?? ""));
+      });
+    }
+    if (els.journalFilters) {
+      els.journalFilters.textContent = FILTERS_BUTTON;
+      els.journalFilters.addEventListener("click", () => {
+        filtersOpen = !filtersOpen;
+        guarded("фильтры журнала", renderJournalTools);
+      });
+    }
+    for (const [select, name, label] of [
+      [els.filterSession, "session", FILTER_SESSION_LABEL],
+      [els.filterAgent, "agent", FILTER_AGENT_LABEL],
+      [els.filterType, "type", FILTER_TYPE_LABEL],
+    ]) {
+      if (!select) continue;
+      select.setAttribute("aria-label", label);
+      select.addEventListener("change", () => {
+        const value = String(select.value ?? "");
+        changeQuery(name, value === "" ? null : value);
+      });
+    }
+    if (els.journalReset) {
+      els.journalReset.textContent = FILTERS_RESET;
+      els.journalReset.addEventListener("click", () => resetFilters(true));
+    }
+    if (els.nowAllCatcher) {
+      // A press outside the list only closes it (nothing under it opens).
+      els.nowAllCatcher.addEventListener("click", (event) => {
+        if (typeof event?.preventDefault === "function") event.preventDefault();
+        closeNowAll(true);
+      });
+    }
     guarded("кнопки", renderControls);
     guarded("фильтры", renderFilters);
   }
@@ -2463,7 +3310,10 @@ export function createApp(env) {
     document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("keydown", onKey);
     if (typeof addResizeListener === "function") {
-      addResizeListener(() => guarded("холст", fit));
+      addResizeListener(() => {
+        guarded("холст", fit);
+        guarded("строка «Сейчас»", () => updateShowAll());
+      });
     }
     renderAll();
     guarded("холст", fit);

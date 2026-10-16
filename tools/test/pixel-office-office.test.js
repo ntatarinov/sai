@@ -616,7 +616,7 @@ function clickCharacter(page, key) {
   });
 }
 
-test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up to 10 trusted events; the title is the name of the role in plain words, the code beside it; a click selects and opens it; one more event changes the views together", async () => {
+test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up to 10 trusted events; the title is the name of the role in plain words, the code is only in the details; a click selects and opens it; one more event changes the views together", async () => {
   const role = "Sai Orchestrator (ORCH)";
   const j = journal();
   j.sessionStart("S1");
@@ -639,7 +639,8 @@ test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up t
   const o = page.app.getOffice();
   const card = buildCard(page.app.getModel(), o, `role:${role}`);
   assert.equal(card.full, role);
-  assert.equal(card.label, "ORCH");
+  // REQ-048: one name of the role everywhere (roleLabel builds no caption)
+  assert.equal(card.label, "Оркестратор");
   assert.equal(card.in_progress.length, 1);
   assert.equal(card.recent_completed.length, 5);
   assert.ok(card.recent_events.length <= 10 && card.recent_events.length > 0);
@@ -658,13 +659,20 @@ test("OF-10: the card - the role, its tasks in progress, up to 5 completed, up t
   }
   clickCharacter(page, `role:${role}`);
   assert.equal(page.el("card-overlay").hidden, false);
-  // REQ-044: the title is the name of the role in plain words, the code of
-  // the role beside it
+  // REQ-044, REQ-048: the title is the name of the role in plain words; the
+  // code of the role is only in the details of the head
   assert.equal(
     page.el("card").byClass("card-title")[0].textContent,
     "Оркестратор",
   );
-  assert.equal(page.el("card").byClass("card-code")[0].textContent, role);
+  assert.equal(page.el("card").byClass("card-code").length, 0);
+  assert.deepEqual(
+    page
+      .el("card")
+      .byClass("code-row")
+      .map((e) => e.textContent),
+    [`код роли: ${role}`],
+  );
   const pressed = page.legend().find((b) => b.dataset.key === `role:${role}`);
   assert.equal(pressed.getAttribute("aria-pressed"), "true");
   page.ctx.clear();
@@ -885,7 +893,7 @@ test("OF-15: history is not replayed - on the first load the queue is empty and 
 
 // ----------------------------------------------------------------- OF-16
 
-test("OF-16: the legend - a button per character in the order of the desks; the full name and the state; data-color only on the working ones, equal to the colour; the state changes at once", async () => {
+test("OF-16: the legend - a button per character in the order of the desks; the name in plain words and the state; data-color only on the working ones, equal to the colour; the state changes at once", async () => {
   const j = journal();
   j.sessionStart("S1");
   launch(j, "S1", "a1", "Sai Orchestrator (ORCH)");
@@ -901,7 +909,8 @@ test("OF-16: the legend - a button per character in the order of the desks; the 
     }));
   assert.deepEqual(read(), [
     { name: "Основная сессия", state: LEGEND_IDLE_MAIN, color: undefined },
-    { name: "Sai Orchestrator (ORCH)", state: LEGEND_WORKING, color: "1" },
+    // REQ-048: the name in plain words
+    { name: "Оркестратор", state: LEGEND_WORKING, color: "1" },
     { name: "Explore", state: LEGEND_IDLE, color: undefined },
   ]);
   j.prompt("S1");
@@ -914,7 +923,7 @@ test("OF-16: the legend - a button per character in the order of the desks; the 
   j.subStop("S1", "a1", "Sai Orchestrator (ORCH)");
   await page.push(j.entries[j.entries.length - 1]);
   assert.deepEqual(read()[1], {
-    name: "Sai Orchestrator (ORCH)",
+    name: "Оркестратор",
     state: LEGEND_IDLE,
     color: undefined,
   });
@@ -1168,7 +1177,7 @@ test("OF-18: Sim.sync - a walker in the middle of a route stays; a character wit
 
 // ----------------------------------------------------------------- OF-19
 
-test("OF-19: captions - at most 16 code points on real agent_type and the three built-in types; the examples; brackets; one caption for two roles of different folders; the call fillText(label, X + 12, Y + 31, 130) with centered text", () => {
+test("OF-19: captions - the rule roleLabel (at most 16 code points on real agent_type and the three built-in types; the examples; brackets; one caption for two roles of different folders); the caption of the frame is the name at the desk, fillText(name, X + 12, Y + 31) with centered text", () => {
   for (const name of [...agentNames(), "general-purpose", "Explore", "Plan"]) {
     assert.ok(Array.from(roleLabel(name)).length <= 16, name);
   }
@@ -1200,15 +1209,23 @@ test("OF-19: captions - at most 16 code points on real agent_type and the three 
     bubbles: new Map(),
     cellPx: 24,
   });
+  // REQ-048: the caption of the frame is the name of the role at its desk; a
+  // line not wider than 130 is drawn without maxWidth
   const call = ctx.calls.find(
-    (c) => c.op === "fillText" && c.args[0] === "ORCH" && c.args[3] === 130,
+    (c) =>
+      c.op === "fillText" &&
+      c.args[0] === "Оркестратор" &&
+      c.font === LABEL_FONT,
   );
   assert.deepEqual(call.args, [
-    "ORCH",
+    "Оркестратор",
     seat[0] * 24 + 12,
     seat[1] * 24 + 31,
-    130,
   ]);
+  assert.equal(
+    ctx.calls.some((c) => c.op === "fillText" && c.args[0] === "ORCH"),
+    false,
+  );
   assert.equal(call.textAlign, "center");
   assert.equal(call.font, LABEL_FONT);
 });
@@ -1467,9 +1484,9 @@ test("OF-26: colours - colorOfDesk(0) = 0 and 1 + ((d - 1) mod 11); the palette 
         c.op === "fillRect" &&
         c.fillStyle === color &&
         c.args[0] === 676 &&
-        c.args[2] === 39,
+        c.args[2] === 54,
     ),
-    "board column",
+    "board column (REQ-048: 54 wide)",
   );
   const css = fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8");
   for (let n = 0; n <= 11; n++) {
@@ -1762,7 +1779,7 @@ test("OF-30: speeds - the same path (there, standing, back) takes half and a qua
 
 // ----------------------------------------------------------------- OF-31
 
-test("OF-31: the board - columns only for roles of a running session, in the order of the desks, with the counts; five roles give 4 columns and '+N'; no running session - no columns; it changes at once", () => {
+test("OF-31: the board - columns only for roles of a running session, in the order of the desks, with the counts; seven roles give 3 columns and '+N'; no running session - no columns; it changes at once", () => {
   const j = journal();
   j.sessionStart("A");
   j.sessionStart("B");
@@ -1811,11 +1828,12 @@ test("OF-31: the board - columns only for roles of a running session, in the ord
   f.sessionStart("A");
   for (let i = 0; i < 7; i++) launch(f, "A", `r${i}`, `Role ${i}`);
   o = mk(f.entries).o;
-  assert.equal(o.board.columns.length, 4);
-  assert.equal(o.board.more, 3);
+  // REQ-048: three columns of the names (D4), the rest counted in "+N"
+  assert.equal(o.board.columns.length, 3);
+  assert.equal(o.board.more, 4);
   const ctx = frameOf(o);
-  const plus = ctx.calls.find((c) => c.op === "fillText" && c.args[0] === "+3");
-  assert.deepEqual(plus.args.slice(1), [854, 40]);
+  const plus = ctx.calls.find((c) => c.op === "fillText" && c.args[0] === "+4");
+  assert.deepEqual(plus.args.slice(1), [852, 40, 16]);
   // after the end of the last running session
   f.sessionEnd("A");
   o = mk(f.entries).o;
@@ -2468,11 +2486,15 @@ test("OF-39: 19 desks at the smallest cell - the figure is at least 20 px and th
     assert.equal(has(bx + 21, by + 16, 20, 3), 1, `${c.key}: base`);
     assert.equal(has(sx + 4, sy + 6, 16, 18), 1, `${c.key}: chair`);
     // the caption: the size of its font on the screen
+    // REQ-048: the caption at the desk, in the font of the captions; its
+    // first line is the beginning of the name (a long name has two lines)
     const caption = calls.find(
       (x) =>
         x.op === "fillText" &&
-        x.args[0] === c.label &&
-        x.args[3] === 130 &&
+        x.font === LABEL_FONT &&
+        typeof x.args[0] === "string" &&
+        x.args[0] !== "" &&
+        c.label.startsWith(x.args[0]) &&
         x.args[1] === sx + 12 &&
         x.args[2] === sy + 31,
     );
@@ -2556,17 +2578,24 @@ test("OF-40: 40 desks in a stand of 1022 x 670 - the cell stays 27 and the canva
       clientY: seat[1] * 27 + 13.5,
     });
     assert.equal(page.el("card-overlay").hidden, false, `desk ${desk}`);
-    // REQ-044: the title is the name in plain words, the code beside it
-    // only when it differs
+    // REQ-044, REQ-048: the title is the name in plain words; the code is
+    // only a line in the details of the head, when it differs
     const name = roleName(character.full);
     assert.equal(
       page.el("card").byClass("card-title")[0].textContent,
       name,
       `desk ${desk}`,
     );
-    const code = page.el("card").byClass("card-code");
+    assert.equal(page.el("card").byClass("card-code").length, 0);
+    const code = page.el("card").byClass("code-row");
     if (name === character.full) assert.equal(code.length, 0);
-    else assert.equal(code[0].textContent, character.full, `desk ${desk}`);
+    else {
+      assert.deepEqual(
+        code.map((e) => e.textContent),
+        [`код роли: ${character.full}`],
+        `desk ${desk}`,
+      );
+    }
     page.el("card-overlay").hidden = true;
   }
 });
@@ -2608,7 +2637,7 @@ test("OF-41: the legend is a strip of two lines - the rule .legend with max-heig
   assert.equal(free.canvas.width, 35 * 29);
 });
 
-test("OF-42: the plate under a caption - labelPlate by the numbers of the design (the edges 72 / 72.5 and 94 / 95, an undrawn line, the passage row, the lower wall, the extra column); in a frame of 19 desks exactly three plates, at the desks 5, 11 and 18, each right before its caption", () => {
+test("OF-42: the plate under a caption - labelPlate by the numbers of the design (the edges 72 / 72.5 and 94 / 95, an undrawn line, the passage row, the lower wall, the extra column); in a frame of 19 desks the plates are under the captions that touch a line, a caption of two lines has a plate of two lines", () => {
   const l19 = buildLayout(19);
   const place = (layout, d) => layout.desks[d].seat.map((v) => v * 24);
   assert.deepEqual(place(l19, 2), [504, 48]);
@@ -2646,31 +2675,47 @@ test("OF-42: the plate under a caption - labelPlate by the numbers of the design
   const plates = calls
     .map((c, i) => [c, i])
     .filter(([c]) => c.op === "fillRect" && c.fillStyle === LABEL_PLATE_COLOR);
-  assert.equal(plates.length, 3);
-  const captions = calls
+  // REQ-048: every caption is the name of the role at its desk, in one or two
+  // lines of the font of the captions
+  const lines = calls
     .map((c, i) => [c, i])
-    .filter(
-      ([c]) => c.op === "fillText" && c.args.length === 4 && c.args[3] === 130,
-    );
-  assert.equal(captions.length, 19);
-  const firstCaption = captions[0][1];
+    .filter(([c]) => c.op === "fillText" && c.font === LABEL_FONT);
+  const firstLine = lines[0][1];
   for (const [, i] of plates)
-    assert.ok(i > firstCaption, "a plate before the captions");
+    assert.ok(i > firstLine - 1, "a plate is drawn with the captions");
   const plated = [];
+  let total = 0;
   for (const c of o.characters) {
     const spot = o.layout.desks[c.desk_index];
     const cx = spot.seat[0] * 24 + 12;
     const b = spot.seat[1] * 24 + 31;
-    const hit = captions.find(([x]) => x.args[1] === cx && x.args[2] === b);
-    assert.ok(hit !== undefined, `${c.key}: caption`);
-    assert.equal(hit[0].args[0], c.label);
-    const before = calls[hit[1] - 1];
+    const mine = lines.filter(
+      ([x]) =>
+        x.args[1] === cx &&
+        (x.args[2] === b || x.args[2] === b + 10) &&
+        x.textAlign === "center",
+    );
+    assert.ok(mine.length === 1 || mine.length === 2, `${c.key}: caption`);
+    assert.equal(mine[0][0].args[2], b, `${c.key}: the first line`);
+    total += mine.length;
+    const text = mine.map(([x]) => x.args[0]);
+    const joined =
+      text.length === 1
+        ? text[0]
+        : text[0].endsWith("-")
+          ? text[0] + text[1]
+          : `${text[0]} ${text[1]}`;
+    assert.equal(joined, c.label, `${c.key}: the lines make the name`);
+    const before = calls[mine[0][1] - 1];
     const isPlate =
       before.op === "fillRect" && before.fillStyle === LABEL_PLATE_COLOR;
     if (!isPlate) continue;
     plated.push(c.desk_index);
-    const w = Math.min(5.4 * Array.from(c.label).length, 130);
-    const want = [cx - w / 2 - 2, b - 8, w + 4, 11];
+    const w = Math.min(
+      Math.max(...text.map((t) => 5.4 * Array.from(t).length)),
+      130,
+    );
+    const want = [cx - w / 2 - 2, b - 8, w + 4, 11 + 10 * (text.length - 1)];
     want.forEach((v, n) =>
       assert.ok(
         Math.abs(before.args[n] - v) < 1e-9,
@@ -2678,13 +2723,21 @@ test("OF-42: the plate under a caption - labelPlate by the numbers of the design
       ),
     );
   }
-  assert.deepEqual(plated, [5, 11, 18]);
-  // the labels of the plated ones and of the free ones named by the design
-  assert.equal(charOf(o, `role:${LEGEND_ROLES[4]}`).label, "GUI-DESIGN-ANAL…");
-  assert.equal(charOf(o, `role:${LEGEND_ROLES[10]}`).label, "TEST-DESIGN-VAL…");
-  assert.equal(charOf(o, `role:${LEGEND_ROLES[17]}`).label, "BACKEND-DEV");
-  assert.equal(charOf(o, `role:${LEGEND_ROLES[13]}`).label, "CODE-FIXER");
-  assert.equal(charOf(o, `role:${LEGEND_ROLES[7]}`).label, "FRONTEND-DEV");
+  assert.equal(total, 20, "one caption of the 19 is two lines");
+  assert.deepEqual(plated, [4, 5, 7, 9, 11, 12, 14, 15, 16, 18]);
+  assert.equal(plates.length, plated.length);
+  // the names of the captions, as the design names them
+  assert.equal(
+    charOf(o, `role:${LEGEND_ROLES[4]}`).label,
+    "Описание интерфейса",
+  );
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[10]}`).label, "Проверка тестов");
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[17]}`).label, "Серверная часть");
+  assert.equal(charOf(o, `role:${LEGEND_ROLES[13]}`).label, "Исправление кода");
+  assert.equal(
+    charOf(o, `role:${LEGEND_ROLES[7]}`).label,
+    "Страницы и интерфейс",
+  );
   assert.equal(charOf(o, "main").label, "Основная сессия");
 });
 
@@ -2981,7 +3034,7 @@ test("FS-19: the report command takes the clock as a parameter - five counters p
   assert.equal(sha256File(file), hash);
 });
 
-test("FS-07: the board of the meeting room has four plaques in a column - 'в работе', 'закончила работу', 'окончание не записано' and the fourth for 'сервер перезапускался…' - each with its own number, 9 px apart", () => {
+test("FS-07: the board of the meeting room has four plaques in two rows of two - 'в работе', 'закончила работу', 'окончание не записано' and the fourth for 'сервер перезапускался…' - each with its own number", () => {
   const e = [];
   let ms = T0;
   const add = (line) => {
@@ -3033,14 +3086,20 @@ test("FS-07: the board of the meeting room has four plaques in a column - 'в р
     ["2", "3", "4", "5"],
     "in progress, finished, unrecorded, restarted",
   );
+  // REQ-048 (design D4): the plaques stand 2 x 2 - two rows of two
   const ys = numbers.map((c) => c.args[2]);
+  const xs = numbers.map((c) => c.args[1]);
   assert.deepEqual(
     ys.map((y) => y - ys[0]),
-    [0, 9, 18, 27],
+    [0, 0, 10, 10],
+  );
+  assert.deepEqual(
+    xs.map((x) => x - xs[0]),
+    [0, 27, 0, 27],
   );
   // the four plaques sit above the caption of the role, inside the board
   const label = ctx.calls.find(
-    (c) => c.op === "fillText" && c.args[0] === "Explore" && c.args[3] === 37,
+    (c) => c.op === "fillText" && c.args[0] === "Explore" && c.args[3] === 52,
   );
   assert.ok(
     ys[3] < label.args[2] - 7,
@@ -3166,7 +3225,7 @@ import {
   labelWidths,
 } from "../src/pixel-office/public/office-view.js";
 
-test("AC-01: what a press opens - every cell of every desk (the 2 x 2 block and the seat) gives the character of that desk; a floor cell and the cell of approach give nothing; a character is older than a desk and its caption, a caption than a desk; the caption is measured with the font of the canvas; a walking caption over a foreign desk gives its own character; NaN gives nothing", () => {
+test("AC-01: what a press opens - every cell of every desk (the 2 x 2 block and the seat) gives the character of that desk; a floor cell and the cell of approach give nothing; a character is older than a desk and its caption, a caption than a desk; the caption is measured with the font of the canvas; the caption stays at the desk, a walking character has none; NaN gives nothing", () => {
   const A = "Sai Security Reviewer (SECURITY-REVIEWER)";
   const B = "Sai Test Design Validator (TEST-DESIGN-VALIDATOR)";
   const j = journal();
@@ -3261,7 +3320,8 @@ test("AC-01: what a press opens - every cell of every desk (the 2 x 2 block and 
   const widths = labelWidths(ctx, o);
   assert.equal(ctx.font, LABEL_FONT);
   const w = widths.get(keyA);
-  assert.equal(w, 0.6 * 9 * Array.from(roleLabel(A)).length);
+  // REQ-048: the caption is the name in plain words
+  assert.equal(w, 0.6 * 9 * Array.from(roleName(A)).length);
   const [sx, sy] = spotA.seat;
   const seated = [{ key: keyA, x: sx, y: sy, state: "seated" }];
   const X = Math.round(sx * C);
@@ -3280,21 +3340,28 @@ test("AC-01: what a press opens - every cell of every desk (the 2 x 2 block and 
   assert.equal(hitOffice(o, seated, ...beyond, widths), null);
   // without a measured width the caption is not hit
   assert.equal(hitOffice(o, seated, ...inside, none), null);
-  // the caption of B walking over a cell of A's desk: B
+  // REQ-048: the caption stays at the desk - A away from it, the caption at
+  // its desk is still A's
+  const away = [{ key: keyA, x: floor[0], y: floor[1], state: "walking" }];
+  assert.equal(hitOffice(o, away, ...inside, widths), keyA);
+  assert.equal(
+    hitOffice(o, [], ...inside, widths),
+    keyA,
+    "even with no one there",
+  );
+  // a walking character carries no caption: B walking over a cell of A's
+  // desk, a point where its caption would have been - A's desk
   const over = [{ key: keyB, x: bxA - 1, y: byA - 0.5, state: "walking" }];
-  const wB = widths.get(keyB);
   const pt = [bxA * C + 10, byA * C + 20];
-  const Xb = Math.round((bxA - 1) * C);
-  assert.ok(pt[0] < Xb + 12 + wB / 2 + 2, "inside B's caption");
   assert.equal(
     hitOffice(o, over, ...pt, none),
     keyA,
-    "without the caption: A's desk",
+    "without widths: A's desk",
   );
   assert.equal(
     hitOffice(o, over, ...pt, widths),
-    keyB,
-    "the caption is older than a desk",
+    keyA,
+    "a walking character has no caption",
   );
   // a point that is not a number
   assert.equal(hitOffice(o, seated, Number.NaN, 10, widths), null);
@@ -3309,4 +3376,310 @@ test("AC-01: what a press opens - every cell of every desk (the 2 x 2 block and 
     hitOffice(o, [], ...mid(...spotA.block), labelWidths(broken, o)),
     keyA,
   );
+});
+
+// ===================================================================
+// REQ-048 (design docs/design/REQ-048-049-046-047-interactive.md, 7.1): one
+// name of a role on the canvas and on the board; the caption at the desk.
+// ===================================================================
+import {
+  boardLines,
+  captionLines,
+} from "../src/pixel-office/public/office-view.js";
+import { ROLE_NAMES, ROLE_UNKNOWN } from "../src/pixel-office/public/texts.js";
+
+// The lines of the caption of a desk in a frame, by the place of the seat.
+function captionAt(calls, o, key) {
+  const c = charOf(o, key);
+  const [sx, sy] = o.layout.desks[c.desk_index].seat;
+  return calls
+    .filter(
+      (x) =>
+        x.op === "fillText" &&
+        x.font === LABEL_FONT &&
+        x.args[1] === sx * 24 + 12 &&
+        (x.args[2] === sy * 24 + 31 || x.args[2] === sy * 24 + 41),
+    )
+    .sort((a, b) => a.args[2] - b.args[2]);
+}
+const joinLines = (lines) =>
+  lines.length < 2
+    ? (lines[0] ?? "")
+    : lines[0].endsWith("-")
+      ? lines[0] + lines[1]
+      : `${lines[0]} ${lines[1]}`;
+// The lines of the name of a column of the board (bold 7px, maxWidth 52).
+function boardColumnLines(calls) {
+  return calls.filter(
+    (x) => x.op === "fillText" && x.font === "bold 7px system-ui",
+  );
+}
+
+test("LW-01: one name of a role on the canvas and on the board - 'Sai Security Reviewer (SECURITY-REVIEWER)', 'Explore' and a task without a role give 'Проверка безопасности', 'Explore' and '(роль не указана)' at the desk and on the board; roleLabel builds no caption in the code of the page", () => {
+  const roles = [
+    ["Sai Security Reviewer (SECURITY-REVIEWER)", "Проверка безопасности"],
+    ["Explore", "Explore"],
+    [undefined, "(роль не указана)"],
+  ];
+  const j = journal();
+  j.sessionStart("S1");
+  roles.forEach(([role], i) => j.subStart("S1", `a${i}`, role));
+  const { o } = mk(j.entries);
+  const ctx = makeCtx();
+  drawOffice(ctx, o, seatedFrame(o, 24));
+  const calls = ctx.lastFrame();
+  for (const [role, name] of roles) {
+    const key = `role:${role ?? ROLE_UNKNOWN}`;
+    assert.equal(charOf(o, key).label, name, key);
+    const lines = captionAt(calls, o, key).map((x) => x.args[0]);
+    assert.equal(joinLines(lines), name, `${key}: the caption at the desk`);
+  }
+  // the board: the names of the three columns
+  const board = boardColumnLines(calls);
+  for (const [, name] of roles) {
+    const mine = board.filter((x) => name.startsWith(x.args[0]));
+    assert.ok(mine.length >= 1, `${name} on the board`);
+  }
+  assert.deepEqual(
+    o.board.columns.map((c) => c.label),
+    roles.map(([, name]) => name),
+  );
+  // the short caption of roleLabel is drawn nowhere
+  const drawn = calls.filter((x) => x.op === "fillText").map((x) => x.args[0]);
+  assert.equal(drawn.includes("SECURITY-REVIEW…"), false);
+  // roleLabel( is called nowhere in the page but its own definition
+  const calls_ = [];
+  for (const name of fs.readdirSync(PUBLIC)) {
+    fs.readFileSync(path.join(PUBLIC, name), "utf8")
+      .split("\n")
+      .forEach((line, i) => {
+        if (line.includes("roleLabel(") && !line.includes("export function")) {
+          calls_.push(`${name}:${i + 1}`);
+        }
+      });
+  }
+  assert.deepEqual(calls_, []);
+});
+
+test("LW-03: the caption and the board name whole, without '…' and without overlap - every name of ROLE_NAMES and a role of 128 characters: at most two lines that make the name, the second from a whole word; a word wider than 130 is a line by itself; 19 desks with the 18 longest names - no two captions overlap, also with B at the desk of A and two walking side by side; the board lines make the name and are narrowed to 3/4 at most; '+N' does not touch the third column or the frame", () => {
+  const ctx = makeCtx();
+  ctx.font = LABEL_FONT;
+  const width = (t) => 0.6 * 9 * Array.from(t).length;
+  const long = "Z".repeat(128);
+  for (const name of [...Object.values(ROLE_NAMES), long]) {
+    const lines = captionLines(ctx, name, 130);
+    assert.ok(lines.length >= 1 && lines.length <= 2, name);
+    assert.equal(joinLines(lines), name, name);
+    for (const line of lines) assert.equal(line.includes("…"), false);
+    if (lines.length === 2 && !lines[0].endsWith("-")) {
+      // the first line is the longest beginning of whole words that fits
+      const words = name.split(" ");
+      const firstWords = lines[0].split(" ").length;
+      assert.equal(lines[1], words.slice(firstWords).join(" "), name);
+      if (firstWords < words.length && width(lines[0]) <= 130) {
+        const more = words.slice(0, firstWords + 1).join(" ");
+        assert.ok(width(more) > 130, `${name}: one more word would fit`);
+      }
+    }
+  }
+  // design D3 (L1): a first word wider than 130 is a line by itself
+  const wide = `${"Ш".repeat(40)} Образец`;
+  assert.deepEqual(captionLines(ctx, wide, 130), ["Ш".repeat(40), "Образец"]);
+  // the 18 longest names at 19 desks: no overlap
+  const byName = new Map(
+    agentNames().map((full) => [
+      ROLE_NAMES[/\(([A-Z][A-Z0-9-]*)\)$/.exec(full)[1]],
+      full,
+    ]),
+  );
+  const longest = [...byName.keys()]
+    .sort((a, b) => width(b) - width(a))
+    .slice(0, 18);
+  const j = journal();
+  j.sessionStart("S1");
+  longest.forEach((name, i) => j.subStart("S1", `r${i}`, byName.get(name)));
+  const { o } = mk(j.entries);
+  assert.equal(o.characters.length, 19);
+  const boxes = (calls) =>
+    calls
+      .filter(
+        (x) =>
+          x.op === "fillText" &&
+          x.font === LABEL_FONT &&
+          o.layout.desks.some(
+            (d) =>
+              x.args[1] === d.seat[0] * 24 + 12 &&
+              (x.args[2] === d.seat[1] * 24 + 31 ||
+                x.args[2] === d.seat[1] * 24 + 41),
+          ),
+      )
+      .map((x) => {
+        const w = Math.min(width(x.args[0]), x.args[3] ?? Infinity);
+        return {
+          text: x.args[0],
+          l: x.args[1] - w / 2,
+          r: x.args[1] + w / 2,
+          t: x.args[2] - 8,
+          b: x.args[2] + 3,
+        };
+      });
+  const overlap = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+  // the two lines of one caption (same centre, 10 apart) make one box
+  const captions = (calls) => {
+    const list = boxes(calls).sort((a, b) => a.t - b.t);
+    const out = [];
+    for (const box of list) {
+      const prev = out.find(
+        (c) => c.x === (box.l + box.r) / 2 && c.lastT === box.t - 10,
+      );
+      if (prev === undefined) {
+        out.push({ ...box, x: (box.l + box.r) / 2, lastT: box.t });
+      } else {
+        prev.text = `${prev.text} / ${box.text}`;
+        prev.l = Math.min(prev.l, box.l);
+        prev.r = Math.max(prev.r, box.r);
+        prev.b = box.b;
+        prev.lastT = box.t;
+      }
+    }
+    return out;
+  };
+  const checkNoOverlap = (calls, why) => {
+    const list = captions(calls);
+    for (let i = 0; i < list.length; i++) {
+      for (let k = i + 1; k < list.length; k++) {
+        assert.equal(
+          overlap(list[i], list[k]),
+          false,
+          `${why}: '${list[i].text}' and '${list[k].text}'`,
+        );
+      }
+    }
+    return list;
+  };
+  const seated = makeCtx();
+  drawOffice(seated, o, seatedFrame(o, 24));
+  const seatedBoxes = checkNoOverlap(seated.lastFrame(), "seated");
+  for (const name of longest) {
+    const lines = captionAt(seated.lastFrame(), o, `role:${byName.get(name)}`);
+    assert.equal(joinLines(lines.map((x) => x.args[0])), name);
+    assert.ok(lines.length <= 2);
+  }
+  assert.equal(seatedBoxes.length, 19);
+  // roles out of the table whose second line is wider than 130: it is drawn
+  // narrowed to 130 (fillText maxWidth), and the captions still do not meet
+  const jw = journal();
+  jw.sessionStart("S1");
+  for (let i = 0; i < 18; i++) {
+    const letter = String.fromCharCode(1040 + i);
+    jw.subStart(
+      "S1",
+      `w${i}`,
+      `Образец ${letter.repeat(30)} ${letter.repeat(30)}`,
+    );
+  }
+  const ow = mk(jw.entries).o;
+  const wideCtx = makeCtx();
+  drawOffice(wideCtx, ow, seatedFrame(ow, 24));
+  const wideCalls = wideCtx
+    .lastFrame()
+    .filter((x) => x.op === "fillText" && x.font === LABEL_FONT);
+  let narrowed = 0;
+  for (const x of wideCalls) {
+    if (width(x.args[0]) > 130) {
+      assert.equal(x.args[3], 130, `'${x.args[0]}' is narrowed to 130`);
+      narrowed += 1;
+    }
+  }
+  assert.ok(narrowed >= 18);
+  {
+    const list = wideCalls
+      .filter((x) =>
+        ow.layout.desks.some(
+          (d) =>
+            x.args[1] === d.seat[0] * 24 + 12 &&
+            (x.args[2] === d.seat[1] * 24 + 31 ||
+              x.args[2] === d.seat[1] * 24 + 41),
+        ),
+      )
+      .map((x) => {
+        const w = Math.min(width(x.args[0]), x.args[3] ?? Infinity);
+        return {
+          text: x.args[0],
+          l: x.args[1] - w / 2,
+          r: x.args[1] + w / 2,
+          t: x.args[2] - 8,
+          b: x.args[2] + 2,
+        };
+      });
+    for (let i = 0; i < list.length; i++) {
+      for (let k = i + 1; k < list.length; k++) {
+        assert.equal(
+          overlap(list[i], list[k]),
+          false,
+          `'${list[i].text}' and '${list[k].text}'`,
+        );
+      }
+    }
+  }
+  // B on the cell of approach of A's desk and walking near it; two walking side
+  // by side: captions stay at the desks, none at the walkers
+  const keyA = `role:${byName.get(longest[0])}`;
+  const keyB = `role:${byName.get(longest[1])}`;
+  const spotA = o.layout.desks[charOf(o, keyA).desk_index];
+  for (const [bx, by] of [
+    spotA.approach,
+    [spotA.approach[0] + 1, spotA.approach[1]],
+  ]) {
+    const frame = seatedFrame(o, 24);
+    frame.positions = frame.positions.map((p) =>
+      p.key === keyB ? { ...p, x: bx, y: by, state: "walking" } : p,
+    );
+    const c = makeCtx();
+    drawOffice(c, o, frame);
+    const list = checkNoOverlap(c.lastFrame(), `B at ${bx},${by}`);
+    assert.equal(list.length, seatedBoxes.length, "no caption at a walker");
+  }
+  const two = seatedFrame(o, 24);
+  two.positions = two.positions.map((p, i) =>
+    i === 1 || i === 2 ? { ...p, x: 10 + i, y: 9, state: "walking" } : p,
+  );
+  const c2 = makeCtx();
+  drawOffice(c2, o, two);
+  assert.equal(
+    checkNoOverlap(c2.lastFrame(), "two walking").length,
+    seatedBoxes.length,
+  );
+  // the board: lines make the name, narrowed to 3/4 at most
+  const boardCtx = makeCtx();
+  boardCtx.font = "bold 7px system-ui";
+  for (const name of Object.values(ROLE_NAMES)) {
+    const lines = boardLines(boardCtx, name, 52);
+    assert.ok(lines.length >= 1 && lines.length <= 3, name);
+    assert.equal(lines.join(" "), name);
+    for (const line of lines) {
+      const measured = 0.6 * 7 * Array.from(line).length;
+      assert.ok(
+        Math.min(52, measured) / measured >= 0.75,
+        `${name}: '${line}'`,
+      );
+    }
+  }
+  const drawnBoard = boardColumnLines(seated.lastFrame());
+  assert.ok(drawnBoard.length >= 3);
+  for (const x of drawnBoard) {
+    assert.equal(x.args[3], 52);
+    const measured = 0.6 * 7 * Array.from(x.args[0]).length;
+    assert.ok(52 / measured >= 0.75 || measured <= 52, x.args[0]);
+  }
+  // "+N": centre 852, maxWidth 16 - between the third column (ends 842) and
+  // the frame (862)
+  const plus = seated
+    .lastFrame()
+    .find((x) => x.op === "fillText" && /^\+\d+$/.test(x.args[0]));
+  assert.ok(plus !== undefined);
+  assert.deepEqual(plus.args.slice(1), [852, 40, 16]);
+  const half = Math.min(16, 0.6 * 8 * plus.args[0].length) / 2;
+  assert.ok(852 - half >= 842 && 852 + half <= 862);
+  assert.equal(o.board.columns.length, 3);
 });

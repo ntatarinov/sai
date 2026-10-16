@@ -6,7 +6,14 @@
 // made only by equal identifiers. Pure ES module: no DOM, no Node API, no
 // clock.
 
-import { ageOf, showsAge, showsSessionEvent } from "./model.js";
+import { mainRowOfTask } from "./main-card.js";
+import {
+  UNCONFIRMED_STATES,
+  ageOf,
+  showsAge,
+  showsSessionEvent,
+} from "./model.js";
+import { shownInPanel } from "./panels.js";
 import { MAIN_KEY, buildCard, roleKey } from "./office-model.js";
 import { ROLE_UNKNOWN } from "./texts.js";
 import { repeatedStarts, roleName, shortId } from "./words.js";
@@ -37,10 +44,28 @@ export function roleInstances(model, role) {
 // the order of the list; null for the main session and an unknown key.
 export function defaultInstance(model, characterKey) {
   if (characterKey === MAIN_KEY) return null;
-  const first = model.list.find(
+  const tasks = model.list.filter(
     (item) => item.kind === "task" && roleKey(item.role) === characterKey,
   );
-  return first === undefined ? null : first.key;
+  if (tasks.length === 0) return null;
+  // (1) in progress — the first of them in the order of the list.
+  const working = tasks.find((t) => t.state === "in_progress");
+  if (working !== undefined) return working.key;
+  // (2) the ones that need attention, else (3) all: the one with the latest
+  // own event (REQ-047, criterion 8; design 4.5).
+  const attention = tasks.filter((t) => UNCONFIRMED_STATES.includes(t.state));
+  const pool = attention.length > 0 ? attention : tasks;
+  let best = pool[0];
+  for (const t of pool) if (ownEvent(t) > ownEvent(best)) best = t;
+  return best.key;
+}
+
+// The line of the latest own event of a task: its last start or its last stop
+// (trusted lines of the model); a handoff and a record do not count.
+function ownEvent(task) {
+  const stops = task.stop_indices;
+  const lastStop = stops.length === 0 ? -1 : stops[stops.length - 1];
+  return Math.max(task.last_start_index, lastStop);
 }
 
 // The trusted PostToolUse lines with a given field equal to key; lines of one
@@ -94,7 +119,7 @@ function instanceItem(item, entries, current) {
 
 // The data of the card of the instance with this key, or null if the model
 // has no such task.
-export function buildInstanceCard(model, office, taskKey) {
+export function buildInstanceCard(model, office, taskKey, history = null) {
   const task = model.tasks.find((t) => t.key === taskKey);
   if (task === undefined) return null;
   const role = task.role;
@@ -246,5 +271,13 @@ export function buildInstanceCard(model, office, taskKey) {
       rest: all.slice(INSTANCES_SHOWN),
     },
     role_card: buildCard(model, office, characterKey),
+    // The transitions of the card (REQ-047, criterion 2): is the task among
+    // the items shown in the panel; the row of the main session for
+    // "Основная сессия" of "Кто запустил" (design 4.6).
+    links: {
+      panel: shownInPanel(model).has(taskKey),
+      main_row:
+        history === null ? null : mainRowOfTask(model, history, taskKey),
+    },
   };
 }

@@ -1,0 +1,116 @@
+{
+  "handoff_id": "step04-r1-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ048-20261015-01/step-04-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-046", "REQ-049", "REQ-047"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-04a-code-fixer.json",
+      "handoffs/REQ048-20261015-01/step-04-reviewer.json",
+      "handoffs/REQ048-20261015-01/step-03-security-reviewer-r1.json",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "SECURITY (повтор) -> REVIEWER (повтор, этот) -> TEST-DESIGNER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ048-20261015-01",
+    "rework_of": "handoffs/REQ048-20261015-01/step-04a-code-fixer.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-15T15:40:17Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1, F2, F3, F5 закрыты; проверены в браузере и на копии (370 тестов, те же 31 красных)",
+        "N1 (Low, имена AGENT_MAIN/AGENT_ORCH в panels.js совпадают с texts.js) — в учёт дефектов на шаге 10, правка при следующем касании файла",
+        "I1: текст для D11 и п. 3.5 — DOC-UPDATER шаг 10; JN-01 и VW-01 — в задании TEST-DESIGNER; I2 (F4, F6) — в очереди ORCH"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор после CODE-FIXER 04a (handoffs/REQ048-20261015-01/step-04a-code-fixer.json) и PASS повтора безопасности (step-03-security-reviewer-r1.json). Изменены app.js, panels.js, event-details.js, instance-card.js, main-card.js. Проверь САМ: закрыты ли твои F1, F2, F3, F5 из step-04-reviewer.json настоящим решением, а не обходом; нет ли нового дублирования или лишней работы; отступление F3 от D11 проекта (значение фильтра role:<сырая роль>) — приемлемо ли как решение и что именно DOC-UPDATER должен записать в D11; F5 (порядок Escape) согласован с decisions/0059 и проектом. Код не менять. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL с перечнем.",
+    "acceptance_criteria": [
+      "F1, F2, F3, F5 проверены на текущих файлах; вердикт"
+    ]
+  },
+  "created_at": "2026-10-15T15:37:47Z",
+  "started_at": "2026-10-15T15:37:47Z",
+  "completed_at": "2026-10-15T15:39:34Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: F1, F2, F3, F5 закрыты настоящим решением; одна новая Low (N1, имена констант). Правка 04a сверена с копией кода, снятой мной на первом ревью: изменены ровно app.js (обработчик Escape строки журнала и комментарий), panels.js, event-details.js, instance-card.js, main-card.js; README и tools/test не менялись. F1 — прежний комментарий удалён, новый описывает поведение 0059 п. 2. F2 — правило «первые LIST_LIMIT элементов» записано один раз (panelItems), его берут taskPanel и новая shownInPanel; три копии в event-details.js, instance-card.js, main-card.js заменены вызовом shownInPanel; других вызовов taskPanel ради числа не осталось (единственный — сама панель, app.js:1612). Лишней работы нет. F3 — значения фильтра «Агент»: «main», «orch» и «role:<сырая роль>» в journalOptions и rowAgent; journalQuery сравнивает их строгим равенством и не менялся. Проверено в браузере: роль «main» — отдельный вариант «role:main» с подписью «main» (1 из 1), «Основная сессия» — только события основной сессии (24 из 24). Как решение приемлемо: подпись прежняя (roleName), меняется только внутреннее значение. Для DOC-UPDATER — D11 проекта (docs/design/REQ-048-049-046-047-interactive.md, раздел 2) и п. 3.5 (rowAgent) записать так: «значение фильтра «Агент» — «main» (основная сессия), «orch» (оркестратор) или «role:<agent_type как в журнале>» для роли; подпись варианта — roleName; приставка «role:» нужна, чтобы роль с именем «main» или «orch» не сливалась со служебными вариантами»; тип rowAgent → «main» | «orch» | «role:<строка>». F5 — проверено в браузере: при открытом «Показать всех» и фокусе на открытой строке журнала первый Escape закрыл список (раскрытие осталось, фокус на строке), второй — раскрытие. Это и есть порядок проекта п. 3.10 (окно → карточка → список → раскрытие); с decisions/0059 (фокус после карточки) правка не пересекается; при фокусе вне строки прежний onKey закрывает список и возвращает фокус на кнопку. Красные на копии вне проекта: 370 тестов, 31 красный — те же имена, что на первом ревью (сравнение списков — совпадают); lint и format:check чистые.",
+    "findings": [
+      {
+        "id": "F1",
+        "where": "tools/src/pixel-office/public/app.js (комментарий над returnFocus)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: один комментарий, по 0059 п. 2.",
+        "fix": "-"
+      },
+      {
+        "id": "F2",
+        "where": "tools/src/pixel-office/public/panels.js (panelItems, shownInPanel); event-details.js, instance-card.js, main-card.js",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: одно правило, три вызова shownInPanel; панель ради числа не строится.",
+        "fix": "-"
+      },
+      {
+        "id": "F3",
+        "where": "tools/src/pixel-office/public/panels.js:361-404 (journalOptions, agentOfRole, rowAgent)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: пространства значений разведены; проверено в браузере ролью «main». Отступление от текста D11 проекта — по поручению ORCH; текст D11 приводит DOC-UPDATER (в summary).",
+        "fix": "-"
+      },
+      {
+        "id": "F5",
+        "where": "tools/src/pixel-office/public/app.js:1022-1034 (keydown строки журнала)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: Escape сначала закрывает список «Показать всех», затем раскрытие; проверено в браузере.",
+        "fix": "-"
+      },
+      {
+        "id": "N1",
+        "where": "tools/src/pixel-office/public/panels.js:381-382 (const AGENT_MAIN = \"main\", AGENT_ORCH = \"orch\") против texts.js AGENT_MAIN, AGENT_ORCH (тексты поля «Агент» раскрытия, их импортирует event-details.js:11-12)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Новые внутренние константы значений фильтра названы так же, как экспорты texts.js с другим смыслом (строки экрана «основная сессия: у этого события агента нет», «оркестратор»). Ошибки нет (panels.js их из texts.js не импортирует), но одинаковые имена с разным смыслом в соседних модулях легко перепутать при следующей правке.",
+        "fix": "Переименовать внутренние константы panels.js (например, AGENT_VALUE_MAIN, AGENT_VALUE_ORCH) — при следующей правке файла; отдельной работы не требует."
+      }
+    ],
+    "self_check": [
+      "date -u -> 2026-10-15T15:38:00Z (начало)",
+      "diff -ru копия кода первого ревью (вне проекта) против рабочего дерева по tools/src/pixel-office/public -> изменены только app.js, event-details.js, instance-card.js, main-card.js, panels.js; README.md и tools/test без изменений",
+      "grep -rn 'taskPanel(model)' public/*.js -> только app.js:1612 (сама панель); grep AGENT_MAIN|AGENT_ORCH -> panels.js:381-382 свои константы, texts.js-экспорты в event-details.js:11-12 (N1)",
+      "cd tools && npm run lint -> без ошибок; npm run format:check -> All matched files use Prettier code style!",
+      "копия проекта вне папки Sai: node --test test/pixel-office-*.test.js -> tests 370, pass 339, fail 31, skipped 0, todo 0; список имён совпадает с первым ревью (diff списков пуст): AC-01…AC-07, FS-07, JR-01, JR-02, JR-03, JR-05, JR-06, JR-08, NM-01, OF-10, OF-16, OF-19, OF-26, OF-31, OF-39, OF-40, OF-42, PG-01, PG-03, PG-12g, PN-06, PN-08, PN-09, PN-14, PN-19",
+      "стенд вне проекта (свой каталог 0700, порт 4798, журнал прежнего стенда 356 строк + SubagentStart с ролью «main» через настоящий hook.sh), headless Chromium по CDP, 1470×784: варианты «Агент» — «все агенты», «main»→«Основная сессия», «orch»→«Оркестратор», «role:main»→«main»; фильтр «main» -> 24 из 24, «кто» только «Основная сессия»; «role:main» -> 1 из 1, «кто» «main»",
+      "Escape: список «Показать всех» открыт, раскрытие открыто, фокус на строке -> первый Escape: список закрыт, раскрытие открыто, фокус на строке; второй: раскрытие закрыто, фокус на строке",
+      "стенд и браузер остановлены (порт 4798 не слушается); код и проект не менялись"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DOC",
+        "text": "D11 и п. 3.5 проекта привести к коду (текст — в summary): значения «main», «orch», «role:<agent_type>», подпись — roleName; TEST-DESIGNER пишет JN-01 с этими значениями и тест на роль «main»; VW-01 — с порядком Escape «список, затем раскрытие»."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "F4 (правило mainRowOfEvent для PostToolUse в п. 3.8) и F6 (одно слово «разговор»/«сессия») первого ревью этой правкой не затрагивались и остаются вопросами к ORCH и DOC-UPDATER."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

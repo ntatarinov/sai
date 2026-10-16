@@ -1,0 +1,109 @@
+{
+  "handoff_id": "step05-r2-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/REQ048-20261015-01/step-05-test-designer-r2.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-047", "REQ-046", "REQ-049"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-07a-code-fixer.json",
+      "handoffs/REQ048-20261015-01/step-04b-code-fixer.json",
+      "handoffs/REQ048-20261015-01/step-07-design-qa-validator.json",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "REVIEWER r3 -> TEST-DESIGNER r2 (этот) -> TEST-DESIGN-VALIDATOR r2 -> TEST-RUNNER r1 -> DESIGN-QA r1",
+    "write_set": [
+      "tools/test/pixel-office-*.test.js и tools/test/pixel-office-helpers.js"
+    ],
+    "base_tag": "base/REQ048-20261015-01",
+    "rework_of": "handoffs/REQ048-20261015-01/step-04-reviewer-r3.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-16T17:23:17Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "DQ-01…DQ-03 добавлены; помощник CSS (cssCascade, cssValue) учитывает порядок и border; 14 мутантов пойманы",
+        "npm run check код 0, 1579; src не тронут; старые тесты не правлены",
+        "I1 (специфичность и поддержка anchor не проверяются тестом) — на DESIGN-QA r1"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка r2: тесты к правкам кода CODE-FIXER 07a (по FAIL DESIGN-QA, handoffs/REQ048-20261015-01/step-07a-code-fixer.json) и 04b (по FAIL ревью r2, step-04b-code-fixer.json); обе прошли безопасность (step-03-security-reviewer-r3.json) и ревью (step-04-reviewer-r3.json). Прочитай их result и находки DESIGN-QA (step-07-design-qa-validator.json). Добавь тесты (поддельный DOM и разбор style.css, как в существующих тестах):\n— M1: для помеченной строки неизвестной сессии links.agent пуст; для помеченной строки известной сессии — переход к карточке основной сессии есть (проект 4.3); mainChoiceOpens на null, undefined, пустом объекте и неизвестной сессии — false, на известной — true; на странице у помеченной строки неизвестной сессии нет кнопки «открыть агента».\n— F10: до первого ответа сервера «Фильтры» открывает линию с вариантами «все сессии», «все агенты», «все типы».\n— CSS: F1 (в узком окне .journal-select не сжимается: flex: none и высота 2,25 rem), F3/F4 (цвет рамки #now-all — --now-line, .task-mark — --accent, с учётом порядка правил: действующее значение — последнее подходящее; помощник cssDecls сейчас такую ошибку не видит — доработай помощник или проверку), F5 (.journal-empty[data-reason=\"filtered\"] .empty-title — 0,75 rem, --muted), F12 (кольцо фокуса .now-show-all внутрь), N1 (content разделителя с пустым доступным текстом), N3 (в узком окне у #now-all запасное max-height и значение с якорем, запасное — первым), F8 (.tasks .item в строку с переносом), I2 (перенос линии фильтров и min-width списков).\nДля каждой новой проверки — мутант на копии вне проекта, который она ловит (в т. ч. возврат порядка правил F3/F4 и возврат cardOpens-подобного поведения в linksOf); запиши мутант → тест → красный.\nСуществующие тесты не ослаблять. Код продукта не менять. Запрещены git checkout/reset/stash/clean. Перед close: cd tools && npm run check — код 0; в result — точные числа test(/assert. по файлам.",
+    "acceptance_criteria": [
+      "Тесты на M1, F10 и правила CSS F1, F3/F4, F5, F8, F12, N1, N3, I2",
+      "Каждая новая проверка ловит свой мутант",
+      "npm run check код 0; точные числа"
+    ]
+  },
+  "created_at": "2026-10-16T17:13:35Z",
+  "started_at": "2026-10-16T17:13:35Z",
+  "completed_at": "2026-10-16T17:22:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r2: тесты к правкам кода 07a (по FAIL DESIGN-QA) и 04b (по FAIL ревью r2), только по перечню задания. Код продукта не менялся: хеши tools/src до и после доработки совпадают. Существующие тесты не менялись и не ослаблены.\nНовые тесты (3, pixel-office-page.test.js):\n— DQ-01 (M1, REQ-047, проект 4.3): у помеченной строки неизвестной сессии links.agent пуст и на странице нет кнопки «открыть агента»; у помеченной строки известной сессии переход card-main есть и открывает карточку основной сессии; mainChoiceOpens: null, undefined, {} и неизвестная сессия — false, известная — true.\n— DQ-02 (F10, REQ-046): до первого ответа сервера «Фильтры» открывает линию; варианты — только «все сессии», «все агенты», «все типы»; «Сбросить фильтры» скрыта; журнал пуст.\n— DQ-03 (CSS, REQ-049/REQ-046/REQ-047): F1 — в узком окне .journal-select: flex none, высота 2.25rem; F3/F4 — действующий цвет рамки #now-all var(--now-line), .task-mark var(--accent) (также в узком окне); F5 — .journal-empty[data-reason=\"filtered\"] .empty-title: 0.75rem, var(--muted), 400; F8 — .tasks .item: flex-flow row wrap, у шапки, описания и времени flex-basis 100%; F12 — outline-offset кнопки «Показать всех» отрицательный; N1 — content « · », затем « · » / \"\"; N3 — у #now-all в узком окне и вне его два max-height: первое без anchor, второе с anchor-size(--top height); I2 — .journal-filter-line flex-wrap wrap, у .journal-select min-width 6.5rem.\nПомощник (pixel-office-helpers.js): parseCss сохраняет у правила ещё и list — все объявления по порядку, повторы тоже (прежнее поле decls не тронуто). Новые cssCascade(rules, selector, media) — объявления селектора в порядке листа, и cssValue(list, property) — действующее значение (последнее), где сокращение border задаёт border-color. Прежний cssDecls смотрел только прямое border-color и не видел, что общее правило border ниже возвращает цвет. DQ-03 проверяет помощник на выдуманном листе.\nПланка: Q7, Q8, Q11 и R3 этих правок не касаются (тексты не меняются, данных клиентов и адресов от пользователя нет, decisions/0033). Q10 — DQ-01 и DQ-02 (неизвестная сессия, до первого ответа сервера).\nТочные числа ^test( / assert. (метка base/REQ048-20261015-01 -> сейчас): docs 6/32 -> 8/36; hook 44/244 -> 44/244; layout 19/210 -> 19/210; note 7/103 -> 7/103; office 59/564 -> 61/602; page 92/833 -> 111/1185; panels 51/892 -> 55/1016; scale 7/48 -> 7/48; server 72/346 -> 72/346; settings 7/25 -> 7/25.\nИтог: тестов pixel-office 397 (было 394), весь npm run check — 1579, красных 0.",
+    "changes": [
+      {
+        "finding": "M1",
+        "file": "tools/test/pixel-office-page.test.js",
+        "what": "новый DQ-01"
+      },
+      {
+        "finding": "F10",
+        "file": "tools/test/pixel-office-page.test.js",
+        "what": "новый DQ-02"
+      },
+      {
+        "finding": "F1, F3/F4, F5, F8, F12, N1, N3, I2",
+        "file": "tools/test/pixel-office-page.test.js",
+        "what": "новый DQ-03"
+      },
+      {
+        "finding": "F3/F4",
+        "file": "tools/test/pixel-office-helpers.js",
+        "what": "parseCss: поле list; новые cssCascade и cssValue (порядок правил, сокращение border)"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-16T17:13:52Z, конец 2026-10-16T17:21:58Z",
+      "node --test --test-name-pattern='^DQ-' test/pixel-office-page.test.js -> pass 3, fail 0",
+      "cd tools && caffeinate -i npm run check -> код 0; handoffs-check: нарушений 0; # tests 1579, # pass 1579, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "копия проекта вне проекта обновлена с рабочего дерева (код после 07a и 04b); на ней по одному изменению кода с возвратом; после проб diff -r tools/src рабочего дерева и копии пуст; хеши tools/src рабочего дерева до и после доработки совпадают",
+      "мутант R2-M1a (linksOf добавляет переход card-main без mainChoiceOpens (как прежняя cardOpens)) во временной копии -> красных 1 из 397: DQ-01",
+      "мутант R2-M1b (mainChoiceOpens не смотрит сессии модели) во временной копии -> красных 1 из 397: DQ-01",
+      "мутант R2-M1c (mainChoiceOpens даёт true для пустого объекта) во временной копии -> красных 1 из 397: DQ-01",
+      "мутант R2-F10 (ранний выход renderJournalTools до первого ответа вернулся) во временной копии -> красных 1 из 397: DQ-02",
+      "мутант R2-F1 (в узком окне у .journal-select нет flex: none) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-F34 (правила цвета рамки после общего правила удалены) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-F34b (прежний порядок правил: border-color в первых правилах #now-all и .task-mark, общее правило border ниже) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-F5 (размер текста пустого результата 0,8125 rem) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-F12 (кольцо фокуса .now-show-all снаружи (+0,125 rem)) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-N1 (нет второго content с пустым доступным текстом) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-N3 (в узком окне значение с anchor-size первым, запасное вторым) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-F8 (.tasks .item в столбец) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-I2 (min-width: 0 у .journal-select) во временной копии -> красных 1 из 397: DQ-03",
+      "мутант R2-I2b (.journal-filter-line без переноса) во временной копии -> красных 1 из 397: DQ-03",
+      "первый вариант мутанта R2-F34b оставлял и нижнее правило цвета — он равнозначен коду и не ловится; заменён на настоящий возврат прежнего порядка (выше)",
+      "числа test(/assert. сняты grep -c '^test(' и grep -o 'assert[.]' | wc -l по рабочим файлам и git show base/REQ048-20261015-01:<файл>"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Проверки CSS — по тексту style.css: порядок правил и действующее значение при одинаковом селекторе. Специфичность разных селекторов и поддержку anchor()/anchor-size() браузером тест не считает; что видно глазами, проверяет DESIGN-QA r1."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/pixel-office-page.test.js",
+      "tools/test/pixel-office-helpers.js"
+    ]
+  }
+}

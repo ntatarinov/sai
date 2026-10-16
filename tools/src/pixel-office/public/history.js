@@ -17,9 +17,8 @@ import {
   HISTORY_TITLE_NO_TEXT,
   HISTORY_WHO_ORCH,
   MAIN_LABEL,
-  ROLE_UNKNOWN,
 } from "./texts.js";
-import { eventCase, eventWords, repeatedStarts } from "./words.js";
+import { eventCase, eventWords, repeatedStarts, roleName } from "./words.js";
 
 // The first line of a text in the title is at most this long (code points).
 export const TITLE_MAX = 120;
@@ -65,16 +64,12 @@ function eventView(e, index, taskByKey, repeated) {
   const what = eventWords(eventCase(e, repeated), e);
   let detail = null;
   if (kind === "PostToolUse") {
-    who = nonEmpty(e.agent_id)
-      ? nonEmpty(e.agent_type)
-        ? e.agent_type
-        : ROLE_UNKNOWN
-      : MAIN_LABEL;
+    who = nonEmpty(e.agent_id) ? roleName(e.agent_type) : MAIN_LABEL;
     if (nonEmpty(e.description)) detail = e.description;
   } else if (MAIN_EVENTS.has(kind)) {
     who = MAIN_LABEL;
   } else {
-    who = nonEmpty(e.agent_type) ? e.agent_type : ROLE_UNKNOWN;
+    who = roleName(e.agent_type);
     if (kind === "SubagentStart") {
       const task = taskByKey.get(e.agent_id);
       if (task !== undefined && nonEmpty(task.description)) {
@@ -265,6 +260,9 @@ export function buildHistory(model) {
       ordinal: k + 1,
       key: task.key,
       role: task.role,
+      // The name of the role in plain words, as everywhere (REQ-048); the raw
+      // role stays in the data.
+      name: roleName(task.role),
       description: nonEmpty(task.description) ? task.description : null,
       state: task.state,
       started_at: task.started_at,

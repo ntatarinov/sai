@@ -1,0 +1,86 @@
+{
+  "handoff_id": "step05-r1-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/REQ048-20261015-01/step-05-test-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-047", "REQ-046", "REQ-044"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-05b-test-design-validator.json",
+      "tools/test/pixel-office-page.test.js"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR FAIL -> TEST-DESIGNER r1 (этот) -> TEST-DESIGN-VALIDATOR r1",
+    "write_set": [
+      "tools/test/pixel-office-page.test.js; tools/test/pixel-office-panels.test.js (только если JN-05 там)"
+    ],
+    "base_tag": "base/REQ048-20261015-01",
+    "rework_of": "handoffs/REQ048-20261015-01/step-05b-test-design-validator.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-16T15:49:13Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1–F4 сделаны по перечню; мутанты VCANVAS (AC-03) и VTYPE0 (JN-05) пойманы",
+        "Полный npm run check после prettier файла результата не перезапускался — его делает TEST-DESIGN-VALIDATOR r1 своим запуском",
+        "Текст проверки критерия 5 REQ-046 («JN-05 не смотрит «Тип события»») теперь неточен — выравнивание через WF-01 после 5b r1"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5, доработка r1 по FAIL TEST-DESIGN-VALIDATOR (handoffs/REQ048-20261015-01/step-05b-test-design-validator.json). Сделай:\nF1 (Medium): в AC-03 (tools/test/pixel-office-page.test.js) после части «открыто с холста» — нажатие на холст на столе Plan → карточка агента A → «Кого запустил» → launched:agentB → Escape; проверка: фокус на кнопке легенды роли Plan (plan()), а не на кнопке легенды Explore (decisions/0059, п. 2). На копии вне проекта примени мутант VCANVAS (в app.js openCard: «cardOpener = opener ?? { kind: \"legend\", key }» → «cardOpener = opener ?? null») — AC-03 должен стать красным; запиши в self_check.\nF2 (Low): в JN-05 одна проверка, что в пустом журнале «Тип события» содержит все варианты критерия 1 (все 12 значений, литералами); мутант VTYPE0 (вариантов «Тип события» нет только при пустом журнале) — JN-05 красный.\nF4 (Low): в JR-03 проверки вида assert.equal(<элемент>, null) (около строк 3508, 3517, 3523) заменить на форму, которая не печатает поддельный элемент целиком (assert.ok(x === null, «…»)), без ослабления.\nF3: в result укажи точные числа test(/assert. по файлам (метка → сейчас).\nНичего другого не менять. Код продукта не менять. Запрещены git checkout/reset/stash/clean. Перед close — cd tools && npm run check код 0.",
+    "acceptance_criteria": [
+      "F1: AC-03 ловит мутант VCANVAS",
+      "F2: JN-05 ловит мутант VTYPE0",
+      "F4: форма проверок null в JR-03 без ослабления",
+      "npm run check код 0; точные числа test(/assert."
+    ]
+  },
+  "created_at": "2026-10-16T15:44:44Z",
+  "started_at": "2026-10-16T15:44:44Z",
+  "completed_at": "2026-10-16T15:48:31Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 по FAIL TEST-DESIGN-VALIDATOR (step-05b), только по перечню F1–F4; код продукта не менялся (хеши tools/src до и после совпадают).\nF1: AC-03 дополнен цепочкой с холста — нажатие на стол Plan -> карточка agentA -> «Кого запустил» -> launched:agentB -> Escape: карточка закрыта, фокус на кнопке легенды Plan, не Explore (decisions/0059, п. 2). Мутант VCANVAS -> AC-03 красный.\nF2: JN-05 — в пустом журнале «Тип события» содержит все 12 значений критерия 1 (литералами: «все типы» и 11 вариантов с ключами). Мутант VTYPE0 -> JN-05 красный.\nF4: JR-03 — три проверки assert.equal(detailsAt(page, 5), null) заменены на assert.ok(detailsAt(page, 5) === null, «the details of row 5 are closed»): условие то же, поддельный элемент при падении не печатается.\nF3: точные числа ^test( / assert. по файлам (метка base/REQ048-20261015-01 -> сейчас): docs 6/32 -> 8/36; hook 44/244 -> 44/244; layout 19/210 -> 19/210; note 7/103 -> 7/103; office 59/564 -> 61/602; page 92/833 -> 108/1142; panels 51/892 -> 55/1016; scale 7/48 -> 7/48; server 72/346 -> 72/346; settings 7/25 -> 7/25. В result шага 5 числа office (61/634) и panels (55/1014) были указаны неточно; верные — эти.\nЧисло тестов не изменилось: pixel-office 394, весь npm run check 1576; красных 0.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/test/pixel-office-page.test.js",
+        "what": "AC-03: цепочка с холста (стол Plan -> A -> B -> Escape), фокус на plan(), не на легенде Explore; +4 assert"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/test/pixel-office-page.test.js",
+        "what": "JN-05: варианты «Тип события» пустого журнала — 12 литералов значений и подписей; +1 assert"
+      },
+      {
+        "finding": "F4",
+        "file": "tools/test/pixel-office-page.test.js",
+        "what": "JR-03: три проверки null в форме assert.ok(x === null, сообщение) без ослабления"
+      },
+      {
+        "finding": "F3",
+        "file": "handoffs/REQ048-20261015-01/step-05-test-designer-r1.json",
+        "what": "точные числа test(/assert. по файлам — в summary"
+      }
+    ],
+    "self_check": [
+      "date -u: начало доработки 2026-10-16T15:45:05Z",
+      "node --test --test-name-pattern='^(AC-03|JN-05|JR-03)' test/pixel-office-page.test.js -> pass 3, fail 0",
+      "мутант VCANVAS (app.js, openCard: «cardOpener = opener ?? { kind: \"legend\", key }» -> «cardOpener = opener ?? null») во временной копии вне проекта -> красных 1 из 394: AC-03",
+      "мутант VTYPE0 (panels.js, journalOptions: варианты «Тип события» пусты при пустом журнале) во временной копии -> красных 1 из 394: JN-05",
+      "после проб diff -r tools/src рабочего дерева и копии пуст; хеши tools/src рабочего дерева совпадают с записанными до шага 5",
+      "cd tools && caffeinate -i npm run check -> код 0; handoffs-check: нарушений 0; # tests 1576, # pass 1576, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "числа test(/assert. сняты командами grep -c '^test(' и grep -o 'assert[.]' | wc -l по рабочим файлам и git show base/REQ048-20261015-01:<файл>"
+    ],
+    "issues": [],
+    "artifacts_out": ["tools/test/pixel-office-page.test.js"]
+  }
+}

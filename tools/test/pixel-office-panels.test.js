@@ -391,7 +391,7 @@ test("PN-05: the caption and the counter - under TZ=Asia/Almaty it starts with '
 
 // ------------------------------------------------------------------ PN-06
 
-test("PN-06: a journal row - time HH:MM:SS, 8 characters of the session, who, the event, the description only of a linked launch, tone, the mark with source and 'не из хуков'; texts from events are text", async () => {
+test("PN-06: a journal row - time HH:MM:SS, 8 characters of the session, who, the event, the description only of a linked launch, tone, the mark 'не подтверждена' without the source; texts from events are text", async () => {
   const j = journal();
   j.sessionStart("session-0001-long");
   j.post("session-0001-long", "tu1", "a1", {
@@ -413,7 +413,7 @@ test("PN-06: a journal row - time HH:MM:SS, 8 characters of the session, who, th
   assert.match(cell(rows[0], "time"), /^\d\d:\d\d:\d\d$/);
   assert.equal(cell(rows[0], "session"), "session-");
   assert.equal(cell(rows[0], "who"), "Основная сессия");
-  assert.equal(cell(rows[0], "event"), "Сессия Claude Code открыта");
+  assert.equal(cell(rows[0], "event"), "Открыт разговор с Claude Code");
   assert.equal(rows[0].dataset.tone, "session");
   // REQ-045: "who" of a handoff is the one who handed over (here the main
   // session); the role is in the words
@@ -437,7 +437,10 @@ test("PN-06: a journal row - time HH:MM:SS, 8 characters of the session, who, th
   assert.equal(rows[4].dataset.marked, "false");
   const marked = rows[5];
   assert.equal(marked.dataset.marked, "true");
-  assert.equal(cell(marked, "source"), "SIMULATION");
+  // REQ-048, row 5: the mark without the source
+  assert.equal(marked.byClass("source").length, 0);
+  assert.equal(marked.textContent.includes("SIMULATION"), false);
+  assert.equal(cell(marked, "mark"), "не подтверждена");
   assert.equal(cell(marked, "mark"), NOT_FROM_HOOKS);
   assert.equal(marked.dataset.tone, "end");
   const text = page.el("journal").textContent;
@@ -511,7 +514,7 @@ test("PN-08: empty states of the journal list - before the answer nothing; a fai
   assert.equal(empty.dataset.reason, "empty");
   assert.equal(
     empty.byClass("empty-title")[0].textContent,
-    "Событий от хуков пока нет",
+    "Событий от Claude Code пока нет",
   );
   assert.equal(empty.byClass("empty-hint")[0].textContent, EMPTY_HINT);
   assert.ok(page.text("journal-meta").endsWith(" · 0 из 0"));
@@ -523,8 +526,25 @@ test("PN-08: empty states of the journal list - before the answer nothing; a fai
   filled.app.setFilter("office");
   const none = filled.el("journal").byClass("journal-empty")[0];
   assert.equal(none.dataset.reason, "filtered");
-  assert.equal(none.textContent, NO_DATA);
+  // REQ-046 (design D10): one text for every empty choice and a button that
+  // takes all filters away
+  assert.equal(
+    none.byClass("empty-title")[0].textContent,
+    "Под выбранные фильтры не подходит ни одно событие",
+  );
+  assert.equal(none.textContent.includes(NO_DATA), false);
+  const reset = none.all((e) => e.tagName === "BUTTON");
+  assert.equal(reset.length, 1);
+  assert.equal(reset[0].textContent, "Сбросить фильтры");
   assert.equal(filled.el("filter-work").hidden, false);
+  reset[0].click();
+  await settle();
+  assert.equal(filled.el("filter-all").getAttribute("aria-pressed"), "true");
+  assert.equal(
+    filled.el("filter-office").getAttribute("aria-pressed"),
+    "false",
+  );
+  assert.equal(filled.rows().length, 1);
 });
 
 function nowOf(page) {
@@ -577,9 +597,11 @@ test("PN-09: the task panel - 'Текущие' hold what is in progress, 'Ист
   // REQ-036: the name of the role in plain words, the same text in the
   // "История" (here) and in "Текущие" before the SubagentStop (below)
   assert.equal(orch.byClass("item-role")[0].textContent, "Оркестратор");
+  // REQ-048: no code of the role on view; it is in the title of the name
+  assert.equal(orch.byClass("item-full").length, 0);
   assert.equal(
-    orch.byClass("item-full")[0].textContent,
-    "Sai Orchestrator (ORCH)",
+    orch.byClass("item-role")[0].getAttribute("title"),
+    "код роли: Sai Orchestrator (ORCH)",
   );
   assert.equal(orch.byClass("item-desc")[0].textContent, "first");
   assert.equal(
@@ -894,7 +916,7 @@ test("PN-14: one stream - after one event every view (Сейчас, journal and 
     page.ctx
       .lastFrame()
       .some(
-        (c) => c.op === "fillText" && c.args[0] === "Plan" && c.args[3] === 37,
+        (c) => c.op === "fillText" && c.args[0] === "Plan" && c.args[3] === 52,
       ),
     "on the board",
   );
@@ -1231,10 +1253,9 @@ test("PN-19: opening - from the button of a row of the journal (the row itself o
   assert.equal(svcRow.classes.has("opens-history"), false);
   assert.equal(svcRow.hasAttribute("tabindex"), false);
   assert.equal(svcRow.hasAttribute("data-request"), false);
-  assert.equal(
-    svcRow.byClass("history-service")[0].textContent,
-    TX.HISTORY_SERVICE,
-  );
+  // REQ-048, row 16: no second caption; the words of case 4 hold it once
+  assert.equal(svcRow.byClass("history-service").length, 0);
+  assert.equal(svcRow.textContent.split(TX.HISTORY_SERVICE).length - 1, 1);
   const plain = page
     .rows()
     .filter((r) => !r.classes.has("opens-history") && r !== svcRow);
@@ -1295,9 +1316,14 @@ test("PN-19: opening - from the button of a row of the journal (the row itself o
     );
     assert.equal(item.hasAttribute("role"), false, `${key}: no role`);
     assert.equal(item.listeners.size, 0, `${key}: no handlers on the card`);
+    // REQ-047: every item has the button "агент" to its card
+    const agentButtons = item.byClass("item-agent");
+    assert.equal(agentButtons.length, 1, `${key}: the button "агент"`);
+    assert.equal(agentButtons[0].tagName, "BUTTON");
+    assert.equal(agentButtons[0].textContent, "агент");
     if (!expected.has(key)) {
       assert.equal(buttons.length, 0, `${key}: no window, no button`);
-      assert.equal(interactive(item).length, 0);
+      assert.equal(interactive(item).length, 1, `${key}: only "агент"`);
       continue;
     }
     assert.equal(buttons.length, 1, key);
@@ -1312,8 +1338,8 @@ test("PN-19: opening - from the button of a row of the journal (the row itself o
     assert.equal(b.dataset.request, expected.get(key));
     assert.equal(
       interactive(item).length,
-      1,
-      "the button is the only interactive element",
+      2,
+      "the button of the window and the button of the agent",
     );
   }
   assert.equal(
@@ -3033,7 +3059,7 @@ const nowRowEls = (page) => page.el("now").all((e) => e.classes.has("now-row"));
 
 // ------------------------------------------------------------------ NM-01
 
-test("NM-01: the names of the roles in plain words - one per code of .claude/agents/*.md, 1-40 characters, no Latin letters and no words of success, all different; a role of Sai is named so in 'Сейчас' and in the panel before and after its end; the canvas keeps the short caption; any other role is shown as it came", async () => {
+test("NM-01: the names of the roles in plain words - one per code of .claude/agents/*.md, 1-40 characters, no Latin letters and no words of success, all different; a role of Sai is named so in 'Сейчас' and in the panel before and after its end; the canvas shows the same name; any other role is shown as it came", async () => {
   const codes = agentNames().map((n) => {
     const m = /\(([A-Z][A-Z0-9-]*)\)$/.exec(n);
     assert.ok(m, `no code in ${n}`);
@@ -3115,15 +3141,16 @@ test("NM-01: the names of the roles in plain words - one per code of .claude/age
     assert.equal(page.text(id).includes("Ревью кода"), false, id);
   }
   assert.equal(page.text("now").includes("SECURITY-REVIEWER"), false);
-  // the canvas and the legend keep the short caption (design D13)
+  // REQ-048: the canvas shows the same name; the short caption is gone
   page.ctx.clear();
   page.frames.step();
   const drawn = page.ctx
     .lastFrame()
     .filter((c) => c.op === "fillText")
     .map((c) => c.args[0]);
-  assert.ok(drawn.includes(roleLabel(role)), drawn.join(" | "));
-  assert.equal(roleLabel(role), "SECURITY-REVIEW…");
+  assert.ok(drawn.includes("Проверка безопасности"), drawn.join(" | "));
+  assert.equal(roleLabel(role), "SECURITY-REVIEW…", "the rule itself is kept");
+  assert.equal(drawn.includes(roleLabel(role)), false);
 });
 
 // ------------------------------------------------------------------ NM-02
@@ -3354,17 +3381,19 @@ test("NM-05: the rows of 'Сейчас' come only from agent_type and descriptio
 
 // The table of the 12 cases of the journal, written here as literals of the
 // description of the interface (REQ-045 criterion 1); EVENT_TABLE must equal it.
+// REQ-045 in its new wording (REQ-048, rows 8-15): every value below is
+// written verbatim in the block REQ-045 of docs/requirements.yaml.
 const EVENT_TABLE_LITERAL = {
   session_start: {
-    words: "Сессия Claude Code открыта",
+    words: "Открыт разговор с Claude Code",
     meaning:
-      "В Claude Code началась сессия или продолжена прежняя: при продолжении номер сессии тот же. Что именно произошло, хук сейчас не передаёт.",
+      "В Claude Code начат новый разговор (сессия) или продолжен прежний: при продолжении номер сессии тот же. Что именно произошло, Claude Code сейчас не сообщает.",
     not_proved: "Не доказывает, что началась работа или пришёл запрос.",
   },
   session_end: {
-    words: "Сессия Claude Code закрыта",
+    words: "Закрыт разговор с Claude Code",
     meaning:
-      "Сессия закончилась: окно закрыли, сессию очистили или переключили. Причину хук сейчас не передаёт.",
+      "Разговор (сессия) закончился: окно закрыли, разговор очистили или переключили. Причину Claude Code сейчас не сообщает.",
     not_proved:
       "Не доказывает, что работа доведена до конца: агенты этой сессии могли не закончить.",
   },
@@ -3377,7 +3406,7 @@ const EVENT_TABLE_LITERAL = {
   prompt_service: {
     words: "В сессию пришло служебное сообщение",
     meaning:
-      "Сообщение от системы, а не от человека: напоминание, уведомление о фоновой задаче, сообщение другой сессии Claude Code или пометка о продолжении прежнего разговора. Его текст не хранится.",
+      "Сообщение от системы, а не от человека: напоминание, уведомление о задаче, которая шла параллельно, сообщение из другого разговора с Claude Code или пометка о продолжении прежнего разговора. Его текст не хранится.",
     not_proved: "Не доказывает, что его написал человек.",
   },
   prompt_unknown: {
@@ -3391,7 +3420,7 @@ const EVENT_TABLE_LITERAL = {
     meaning:
       "Основная сессия закончила очередной ответ и ждёт следующего сообщения.",
     not_proved:
-      "Не доказывает, что вся работа закончена или удалась: агенты в фоне могут ещё работать, и сессия может продолжить сама, когда они вернутся. При прерывании человеком и при ошибке этого события нет.",
+      "Не доказывает, что вся работа закончена или удалась: агенты, запущенные параллельно, могут ещё работать, и сессия может продолжить сама, когда они вернутся. При прерывании человеком и при ошибке этого события нет.",
   },
   agent_start: {
     words: "Агент «{role}» получил задание и начал работу",
@@ -3413,31 +3442,31 @@ const EVENT_TABLE_LITERAL = {
     words: "Агент «{role}» закончил работу и вернул ответ",
     act: "закончил работу и вернул ответ",
     meaning:
-      "Агент закончил свой ход и вернул ответ тому, кто его запустил. Текст ответа Pixel Office не хранит: итог не записан. Такое событие приходит и от внутренних агентов Claude Code — у них начала в журнале нет, а роль совпадает с ролью сессии или пуста.",
+      "Агент закончил свой ход и вернул ответ тому, кто его запустил. Текст ответа Pixel Office не хранит: итог не записан. Такое событие присылают и служебные помощники самого Claude Code — их начала в журнале нет, а роль совпадает с ролью разговора или пуста.",
     not_proved:
       "Не доказывает, что задание сделано, что проверки прошли и что ответ верен. Агента могут продолжить.",
   },
   handoff: {
     words: "Задание передано агенту «{role}»",
     meaning:
-      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). У фоновых агентов эта запись приходит сразу при запуске, у остальных — после окончания их работы.",
+      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). Если агент работает параллельно с тем, кто его запустил, эта запись приходит сразу при запуске; если запустивший ждёт его ответа — после окончания работы агента.",
     not_proved:
       "Не доказывает, что агент закончил работу или что задание сделано. Время записи — не время начала работы агента.",
   },
   orch_note: {
     words: "Оркестратор записал, как понял запрос",
     meaning:
-      "Запись оркестратора, сделанная командой pixel-office-note; это не событие хука. К запросу она привязана по времени запроса, если оно записано.",
+      "Запись, которую оркестратор сделал сам; это не событие от Claude Code. К запросу она привязана по времени запроса, если оно записано.",
     not_proved:
       "Не доказывает, что работа идёт или сделана так, как записано: это слова оркестратора.",
   },
   marked: {
     meaning:
-      "Строка есть в журнале, но правило чтения не признало её событием хука.",
+      "Строка есть в журнале, но Pixel Office не признал её настоящим событием от Claude Code.",
     not_proved:
       "Не доказывает, что событие было; на задачи, офис и состояния строка не влияет.",
     reasons: {
-      source: "источник строки — не хук Claude Code: {source}",
+      source: "строку записал не Claude Code",
       conflict:
         "время строки расходится с порядком строк в журнале больше чем на 2 минуты",
       future:
@@ -3502,7 +3531,7 @@ function allKindsJournal() {
     lineAt("Stop", "S9", NOW + 600_000),
   ];
   const words = [
-    "Сессия Claude Code открыта",
+    "Открыт разговор с Claude Code",
     "Владелец отправил запрос",
     "В сессию пришло служебное сообщение",
     "В сессию пришло сообщение",
@@ -3512,9 +3541,9 @@ function allKindsJournal() {
     "Агент «Оркестратор» продолжил работу",
     "Оркестратор записал, как понял запрос",
     "Основная сессия вернула ответ",
-    "Сессия Claude Code открыта",
+    "Открыт разговор с Claude Code",
     "Агент «Plan» получил задание и начал работу",
-    "Сессия Claude Code закрыта",
+    "Закрыт разговор с Claude Code",
     "Основная сессия вернула ответ",
   ];
   return { entries, words };
@@ -3716,7 +3745,7 @@ test("JR-02: the words of a row do not depend on later lines or on the clock - f
   assert.equal(d1.meaning, EVENT_TABLE_LITERAL.marked.meaning);
   assert.equal(
     d1.mark,
-    "не из хуков: время последней строки позже часов этого компьютера больше чем на минуту",
+    "не подтверждена: время последней строки позже часов этого компьютера больше чем на минуту",
   );
   const later = [...late, lineAt("Stop", "S1", s(10) + 601_000)];
   const two = buildModel(later, [], s(10) + 700_000);
@@ -3736,7 +3765,7 @@ test("JR-02: the words of a row do not depend on later lines or on the clock - f
   assert.deepEqual(
     rowsOf(forged, s(10)).map((r) => r.words),
     [
-      "Сессия Claude Code открыта",
+      "Открыт разговор с Claude Code",
       "Агент «Оркестратор» получил задание и начал работу",
       "Агент «Оркестратор» получил задание и начал работу",
       "Агент «Оркестратор» продолжил работу",
@@ -3917,9 +3946,10 @@ test("JR-08: the role and the source go into the templates whole - '$&' and \"$'
       time: at(1),
     };
     assert.equal(eventWords("handoff", p), `Задание передано агенту «${role}»`);
+    // REQ-048, row 15: the reason names no source value at all
     assert.equal(
       markReason("source", { source: role }),
-      `источник строки — не хук Claude Code: ${role}`,
+      "строку записал не Claude Code",
     );
   }
   // the direct definition: a start is repeated if an earlier line of the file
@@ -4055,7 +4085,7 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
   );
   assert.equal(rows.task.value, "в работе");
   assert.deepEqual(rows.task.basis, [
-    `последнее событие сессии ${dt(now - MIN5)} · 5 мин назад · порог свежести — 60 минут`,
+    `последнее событие сессии ${dt(now - MIN5)} · 5 мин назад · если событий нет дольше 60 минут, пишется «нет свежих данных»`,
     `получил задание и начал работу · ${dt(s1start)}`,
   ]);
   assert.equal(
@@ -4063,14 +4093,14 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
     `получил задание и начал работу · ${dt(s1start)} · 2 ч 59 мин назад`,
   );
   assert.deepEqual(rows.agent.basis, [
-    "другие действия агента — чтение файлов, команды, правки — хук не записывает",
+    "о других действиях агента — чтении файлов, командах, правках — Claude Code не сообщает",
   ]);
   assert.equal(
     rows.workplace.value,
     "работает — у этой роли задач «в работе»: 1",
   );
   assert.deepEqual(rows.workplace.basis, [
-    "Стол на холсте — изображение роли, общее для всех её экземпляров, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.",
+    "Стол на холсте — изображение роли, общее для всех её запусков, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.",
   ]);
   // the other instance: no fresh data, at a working place - the rows differ
   pickInstance(page, "i2");
@@ -4078,7 +4108,7 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
   assert.equal(rows.task.value, "нет свежих данных");
   assert.equal(
     rows.task.basis[0],
-    `последнее событие сессии ${dt(s2start)} · 2 ч 59 мин назад · порог свежести — 60 минут`,
+    `последнее событие сессии ${dt(s2start)} · 2 ч 59 мин назад · если событий нет дольше 60 минут, пишется «нет свежих данных»`,
   );
   assert.equal(
     rows.workplace.value,
@@ -4088,7 +4118,10 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
   // the templates are constants; the workplace starts with the word of the legend
   assert.ok(TX.WORKPLACE_WORKING.startsWith(TX.LEGEND_WORKING));
   assert.ok(TX.WORKPLACE_IDLE.startsWith(TX.LEGEND_IDLE));
-  assert.equal(TX.FRESH_LIMIT, "порог свежести — {m} минут");
+  assert.equal(
+    TX.FRESH_LIMIT,
+    "если событий нет дольше {m} минут, пишется «нет свежих данных»",
+  );
   assert.equal(
     TX.SERVER_STARTED,
     "сервер запущен {time} — после последнего начала этого агента",
@@ -4169,7 +4202,7 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
   rows = stateRows(pu);
   assert.equal(rows.task.value, "окончание не записано");
   assert.deepEqual(rows.task.basis, [
-    `Сессия Claude Code закрыта · ${dt(T0 + 5000)}`,
+    `Закрыт разговор с Claude Code · ${dt(T0 + 5000)}`,
   ]);
   for (const p of [page, pa, pb, pd, pu]) {
     assert.doesNotMatch(p.text("card"), SERVICE_WORDS);
@@ -4266,14 +4299,14 @@ test("AC-06: the lines of the handoff of an instance by rule z - the foreground 
       .byClass("card-unknown")
       .map((e) => e.textContent),
     [
-      "Сообщения между агентами хук не записывает: записаны только передачи задания и окончания работы",
-      "Ошибки и ожидание человека хук сейчас не сообщает",
+      "О сообщениях между агентами Claude Code не сообщает: известны только передачи задания и окончания работы",
+      "Об ошибках и о том, что агент ждёт человека, Claude Code сейчас не сообщает",
     ],
   );
   const given = page.el("card").find((e) => e.dataset.part === "given");
   assert.equal(
     given.byClass("entry-note")[0].textContent,
-    "Эту запись пишет тот, кто передал задание. У агентов переднего плана она приходит после окончания их работы, у фоновых — сразу при запуске; это не действие самого агента",
+    "Эту запись пишет тот, кто передал задание. Если он ждёт ответа агента, запись приходит после окончания работы агента; если агент работает параллельно — сразу при запуске. Это не действие самого агента",
   );
   // 300 random journals: the card says what the model says (rule z)
   const rand = rng(4646);
@@ -4327,7 +4360,7 @@ test("AC-06: the lines of the handoff of an instance by rule z - the foreground 
 
 // ------------------------------------------------------------------ AC-07
 
-test("AC-07: links only by equal identifiers - in the chain main session -> A -> B the card of B names A as its launcher (a button), the card of A names B among the launched and the main session as its launcher (no button); a handoff of the same session in the same second to another agent links nothing; a launched agent without a task is an item without a button; the button of B in the card of A opens the card of B with the focus on the cross", async () => {
+test("AC-07: links only by equal identifiers - in the chain main session -> A -> B the card of B names A as its launcher (a button), the card of A names B among the launched and the main session as its launcher (a button to the card of the main session); a handoff of the same session in the same second to another agent links nothing; a launched agent without a task is an item without a button; the button of B in the card of A opens the card of B with the focus on the cross", async () => {
   const s = (n) => T0 + n * 1000;
   const entries = [
     lineAt("SessionStart", "S1", s(1)),
@@ -4383,7 +4416,15 @@ test("AC-07: links only by equal identifiers - in the chain main session -> A ->
   openRole(page, "Plan");
   const box = page.el("card");
   assert.equal(box.byClass("card-launcher")[0].textContent, "Основная сессия");
-  assert.equal(box.byClass("card-link").length, 0);
+  // REQ-047, criterion 2 (d): one link - a button "Основная сессия" inside the
+  // line of the launcher, to the card of the main session
+  const links = box.byClass("card-link");
+  assert.equal(links.length, 1);
+  assert.equal(links[0].tagName, "BUTTON");
+  assert.equal(links[0].textContent, "Основная сессия");
+  assert.ok(
+    box.byClass("card-launcher")[0].all((e) => e === links[0]).length === 1,
+  );
   const launched = box.find((e) => e.dataset.part === "launched");
   const toB = launched.find((e) => e.dataset.focus === "launched:agentB");
   assert.equal(toB.tagName, "BUTTON");
@@ -4489,4 +4530,796 @@ test("MK-04: one role with a secret in SubagentStart, SubagentStop and the subag
   );
   assert.equal(file.description, "Шаг 5: тесты [скрыто]");
   assert.equal(roleName(role), role, "a masked role is not a role of Sai");
+});
+
+// ===================================================================
+// REQ-048, REQ-046, REQ-047 (design docs/design/REQ-048-049-046-047-interactive.md,
+// table 7): the words of the screen, the filters and the search of the journal,
+// the card of the main session. The words of the criteria are literals here.
+// ===================================================================
+import {
+  filterJournal,
+  journalOptions,
+  journalQuery,
+  rowAgent,
+  searchText,
+  taskOfRow,
+} from "../src/pixel-office/public/panels.js";
+import { buildMainCard } from "../src/pixel-office/public/main-card.js";
+import { ageOf } from "../src/pixel-office/public/model.js";
+
+const t48 = (n) => T0 + n * 1000;
+const DESIGNER = "Sai Code Designer (CODE-DESIGNER)";
+const SECURITY = "Sai Security Reviewer (SECURITY-REVIEWER)";
+const shownIndexes = (page) => page.rows().map((r) => Number(r.dataset.index));
+const countOf = (page) => {
+  const m = / · (\d+) из (\d+)$/.exec(page.text("journal-meta"));
+  return m === null ? null : [Number(m[1]), Number(m[2])];
+};
+// A choice in a list of a filter, as a browser does it: the value, then
+// "change".
+function choose(page, id, value) {
+  const select = page.el(id);
+  select.value = value;
+  select.fire("change");
+}
+function typeIn(page, text) {
+  const input = page.el("journal-search");
+  input.value = text;
+  input.fire("input");
+}
+const optionsOf = (page, id) =>
+  page.el(id).children.map((o) => [o.value, o.textContent]);
+const toggleOf = (page, index) =>
+  page
+    .rows()
+    .find((r) => r.dataset.index === String(index))
+    .byClass("row-toggle")[0];
+const linkOf = (page, index, focus) =>
+  page
+    .rows()
+    .find((r) => r.dataset.index === String(index))
+    ?.find((e) => e.dataset.focus === focus) ?? null;
+
+// Two sessions, three roles, the main session and a record of the orchestrator
+// (criterion 1 REQ-046); roles named "main" and "orch" stay roles.
+function filtersJournal() {
+  const owner = (s, n) =>
+    lineAt("UserPromptSubmit", s, t48(n), { prompt_kind: "owner" });
+  const post = (s, n, launched, role, by = null) =>
+    lineAt("PostToolUse", s, t48(n), {
+      tool_use_id: `tu-${launched}`,
+      launched_agent_id: launched,
+      subagent_type: role,
+      description: `Образец ${launched}`,
+      ...(by === null ? {} : { agent_id: by.id, agent_type: by.role }),
+    });
+  const start = (s, n, id, role) =>
+    lineAt("SubagentStart", s, t48(n), { agent_id: id, agent_type: role });
+  const stop = (s, n, id, role) =>
+    lineAt("SubagentStop", s, t48(n), { agent_id: id, agent_type: role });
+  return [
+    lineAt("SessionStart", "S1", t48(1)), // 0
+    owner("S1", 2), // 1: main:1
+    post("S1", 3, "a1", DESIGNER), // 2: main -> a1
+    start("S1", 4, "a1", DESIGNER), // 3
+    post("S1", 5, "b1", "Explore", { id: "a1", role: DESIGNER }), // 4: a1 -> b1
+    start("S1", 6, "b1", "Explore"), // 5
+    stop("S1", 7, "b1", "Explore"), // 6
+    start("S1", 8, "a1", DESIGNER), // 7: a repeated start
+    {
+      time: iso(t48(9)),
+      source: "ORCH",
+      session_id: "S1",
+      request_time: iso(t48(2)),
+      note_text: "как понял: образец фильтров",
+    }, // 8
+    stop("S1", 10, "a1", DESIGNER), // 9
+    lineAt("Stop", "S1", t48(11)), // 10: closes main:1
+    lineAt("SessionStart", "S2", t48(12)), // 11
+    owner("S2", 13), // 12: main:12
+    post("S2", 14, "c1", "Plan"), // 13
+    start("S2", 15, "c1", "Plan"), // 14
+    post("S2", 16, "a2", DESIGNER), // 15: main -> a2 (to A, not by A)
+    start("S2", 17, "a2", DESIGNER), // 16
+    stop("S2", 18, "a2", DESIGNER), // 17
+    stop("S2", 19, "c1", "Plan"), // 18
+    start("S2", 20, "x1", "main"), // 19: a role named "main"
+    start("S2", 21, "x2", "orch"), // 20: a role named "orch"
+  ];
+}
+
+test("JN-01: the filters of the journal - every filter alone and 'Сессия' + 'Агент' + 'Тип события' together give exactly their rows and the count 'N из M'; 'Агент' = A gives the starts, repeats and ends of A and the handoffs made by A, not the handoffs to A from others; 'Задача' of A1 and of a row of the main session; the variants come only from the journal, roles named 'main' and 'orch' are roles of their own; the literals of 'Тип события'; the choice survives a new line; 'Работа' and 'Офис' are as before; an empty choice says so and 'Сбросить фильтры' resets", async () => {
+  const entries = filtersJournal();
+  const page = await loaded(entries, [], { now: t48(60) });
+  const all = entries.map((_, i) => i);
+  assert.deepEqual(shownIndexes(page), all);
+  assert.deepEqual(countOf(page), [21, 21]);
+  // the variants: the sessions of the journal, the agents, the 11 types
+  assert.deepEqual(optionsOf(page, "filter-session"), [
+    ["", "все сессии"],
+    ["S1", `Сессия S1 · с ${fmtDateTime(iso(t48(1)))}`],
+    ["S2", `Сессия S2 · с ${fmtDateTime(iso(t48(12)))}`],
+  ]);
+  const agents = optionsOf(page, "filter-agent");
+  assert.deepEqual(agents.slice(0, 3), [
+    ["", "все агенты"],
+    ["main", "Основная сессия"],
+    ["orch", "Оркестратор"],
+  ]);
+  assert.deepEqual(
+    agents
+      .slice(3)
+      .map(([v, l]) => `${v}=${l}`)
+      .sort(),
+    [
+      `role:${DESIGNER}=${roleName(DESIGNER)}`,
+      "role:Explore=Explore",
+      "role:Plan=Plan",
+      "role:main=main",
+      "role:orch=orch",
+    ].sort(),
+  );
+  assert.deepEqual(optionsOf(page, "filter-type"), [
+    ["", "все типы"],
+    ["session_start", "Открыт разговор с Claude Code"],
+    ["session_end", "Закрыт разговор с Claude Code"],
+    ["prompt_owner", "Владелец отправил запрос"],
+    ["prompt_service", "В сессию пришло служебное сообщение"],
+    ["prompt_unknown", "В сессию пришло сообщение"],
+    ["stop", "Основная сессия вернула ответ"],
+    ["agent_start", "Агент получил задание и начал работу"],
+    ["agent_resume", "Агент продолжил работу"],
+    ["agent_stop", "Агент закончил работу и вернул ответ"],
+    ["handoff", "Задание передано агенту"],
+    ["orch_note", "Оркестратор записал, как понял запрос"],
+  ]);
+  const only = async (id, value, expected) => {
+    choose(page, id, value);
+    assert.deepEqual(shownIndexes(page), expected, `${id}=${value}`);
+    assert.deepEqual(countOf(page), [expected.length, expected.length]);
+    choose(page, id, "");
+    assert.deepEqual(shownIndexes(page), all);
+  };
+  await only("filter-session", "S2", [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+  // A: its starts (7 is a repeat), its ends and the handoff made by a1 (4);
+  // not the handoffs to A from the main session (2, 15)
+  await only("filter-agent", `role:${DESIGNER}`, [3, 4, 7, 9, 16, 17]);
+  await only("filter-agent", "main", [0, 1, 2, 10, 11, 12, 13, 15]);
+  await only("filter-agent", "orch", [8]);
+  // a role named "main" or "orch" is not the main session or the orchestrator
+  await only("filter-agent", "role:main", [19]);
+  await only("filter-agent", "role:orch", [20]);
+  await only("filter-type", "agent_start", [3, 5, 14, 16, 19, 20]);
+  await only("filter-type", "agent_resume", [7]);
+  await only("filter-type", "handoff", [2, 4, 13, 15]);
+  // together (AND)
+  choose(page, "filter-session", "S2");
+  choose(page, "filter-agent", `role:${DESIGNER}`);
+  choose(page, "filter-type", "agent_start");
+  assert.deepEqual(shownIndexes(page), [16]);
+  assert.deepEqual(countOf(page), [1, 1]);
+  assert.equal(page.text("journal-filters"), "Фильтры: выбраны");
+  // a new line keeps the choice
+  await page.push(
+    lineAt("SubagentStart", "S2", t48(22), {
+      agent_id: "a3",
+      agent_type: DESIGNER,
+    }),
+  );
+  assert.equal(page.el("filter-session").value, "S2");
+  assert.equal(page.el("filter-agent").value, `role:${DESIGNER}`);
+  assert.equal(page.el("filter-type").value, "agent_start");
+  assert.deepEqual(shownIndexes(page), [16, 21]);
+  assert.deepEqual(countOf(page), [2, 2]);
+  // nothing matches: the text and "Сбросить фильтры"
+  choose(page, "filter-type", "session_end");
+  assert.deepEqual(shownIndexes(page), []);
+  const empty = page.el("journal").byClass("journal-empty")[0];
+  assert.equal(empty.dataset.reason, "filtered");
+  assert.equal(
+    empty.byClass("empty-title")[0].textContent,
+    "Под выбранные фильтры не подходит ни одно событие",
+  );
+  const reset = empty.all((e) => e.tagName === "BUTTON");
+  assert.deepEqual(
+    reset.map((b) => b.textContent),
+    ["Сбросить фильтры"],
+  );
+  reset[0].click();
+  assert.equal(shownIndexes(page).length, 22);
+  for (const id of ["filter-session", "filter-agent", "filter-type"]) {
+    assert.equal(page.el(id).value, "", id);
+  }
+  assert.equal(page.text("journal-filters"), "Фильтры");
+  // "Задача" of a1: its start, repeat, end, the handoff to it and the one made
+  // by it - set by "события этой задачи" in the details of its start
+  toggleOf(page, 3).click();
+  linkOf(page, 3, "go:task-events").click();
+  assert.deepEqual(shownIndexes(page), [2, 3, 4, 7, 9]);
+  assert.deepEqual(countOf(page), [5, 5]);
+  assert.equal(
+    page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
+    `Задача: ${roleName(DESIGNER)} a1`,
+  );
+  // the mark is cleared by its button
+  page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
+  assert.equal(page.el("journal-task-mark").hidden, true);
+  assert.equal(shownIndexes(page).length, 22);
+  // "Задача" of a row of the main session: its request, its Stop and its
+  // record
+  toggleOf(page, 1).click();
+  linkOf(page, 1, "go:task-events").click();
+  assert.deepEqual(shownIndexes(page), [1, 8, 10]);
+  assert.equal(
+    page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
+    "Задача: Основная сессия",
+  );
+  // "Работа" and "Офис" give the rows of before (filterJournal)
+  page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
+  const m = page.app.getModel();
+  const rows = journalRows(m, page.app.getOffice());
+  for (const name of ["work", "office"]) {
+    page.el(`filter-${name}`).click();
+    assert.deepEqual(
+      shownIndexes(page),
+      filterJournal(rows, name).rows.map((r) => r.index),
+      name,
+    );
+  }
+  page.el("filter-all").click();
+  // the pure functions agree with the page
+  const h = buildHistory(m);
+  const q = (over) =>
+    journalQuery(
+      rows,
+      {
+        base: "all",
+        session: null,
+        agent: null,
+        type: null,
+        task: null,
+        search: "",
+        shown: 200,
+        ...over,
+      },
+      { model: m, history: h },
+    ).rows.map((r) => r.index);
+  assert.deepEqual(q({ agent: "main", session: "S1" }), [0, 1, 2, 10]);
+  assert.deepEqual(q({ task: { kind: "task", key: "b1" } }), [4, 5, 6]);
+  assert.deepEqual(
+    rows.map((r) => rowAgent(r, m.entries[r.index])).slice(0, 5),
+    ["main", "main", "main", `role:${DESIGNER}`, `role:${DESIGNER}`],
+  );
+  assert.deepEqual(taskOfRow(m, h, 4), [
+    { kind: "task", key: "a1" },
+    { kind: "task", key: "b1" },
+  ]);
+  const opts = journalOptions(rows, m, page.app.getOffice());
+  assert.deepEqual(
+    opts.sessions.map((s) => s.id),
+    ["S1", "S2"],
+  );
+});
+
+// 450 lines: the request with a text, two tasks with descriptions, a record
+// of the orchestrator, then pairs of requests and answers.
+function longJournal() {
+  const j = journal();
+  j.sessionStart("S1"); // 0
+  j.ownerPrompt("S1", "Тайная-фраза-JN02"); // 1
+  j.post("S1", "tu-a", "agent-jn02-a", {
+    subagentType: SECURITY,
+    description: "Образец Неповторимый-Фрагмент",
+  }); // 2
+  j.subStart("S1", "agent-jn02-a", SECURITY); // 3
+  j.subStart("S1", "agent-jn02-cd", DESIGNER); // 4
+  j.post("S1", "tu-b", "agent-jn02-b", {
+    subagentType: "Explore",
+    description: "Образец другой задачи",
+    byId: "agent-jn02-cd",
+    byType: DESIGNER,
+  }); // 5
+  j.subStart("S1", "agent-jn02-b", "Explore"); // 6
+  j.subStop("S1", "agent-jn02-b", "Explore"); // 7
+  j.subStop("S1", "agent-jn02-a", SECURITY); // 8
+  j.note({
+    session_id: "S1",
+    request_time: j.entries[1].time,
+    note_text: "как понял: Особая-Запись-JN02",
+  }); // 9
+  j.stop("S1"); // 10
+  j.sessionStart("S2"); // 11
+  while (j.entries.length < 450) {
+    if (j.entries.length % 2 === 0) j.prompt("S2");
+    else j.stop("S2");
+  }
+  return j.entries;
+}
+
+test("JN-02: the search and the earlier rows - 450 rows: '200 из 450', 'Показать более ранние' gives '400 из 450' (a new line keeps it: '400 из 451'), then all and no button; a change of the search shows the last 200 again; the search finds the rows of a task by a piece of its description, by a full agent_id, in another case, by the text of a record; the text of prompt_text finds nothing; the code of the role of the receiver does not find the handoff, the code of the giver does", async () => {
+  const entries = longJournal();
+  assert.equal(entries.length, 450);
+  const page = await loaded(entries, [], { now: T0 + 1000 * 1000 });
+  const earlier = () =>
+    page
+      .el("journal")
+      .byClass("journal-earlier")
+      .flatMap((li) => li.all((e) => e.tagName === "BUTTON"));
+  assert.deepEqual(countOf(page), [200, 450]);
+  assert.deepEqual(
+    earlier().map((b) => b.textContent),
+    ["Показать более ранние"],
+  );
+  // the button stands first, over the earliest shown row
+  assert.ok(page.el("journal").children[0].classes.has("journal-earlier"));
+  assert.equal(shownIndexes(page)[0], 250);
+  earlier()[0].click();
+  assert.deepEqual(countOf(page), [400, 450]);
+  assert.equal(shownIndexes(page)[0], 50);
+  // a new line keeps what is shown (the limit changes only with a filter or
+  // the search)
+  await page.push(lineAt("UserPromptSubmit", "S2", T0 + 900 * 1000));
+  assert.deepEqual(countOf(page), [400, 451]);
+  assert.equal(shownIndexes(page)[0], 51);
+  earlier()[0].click();
+  assert.deepEqual(countOf(page), [451, 451]);
+  assert.equal(shownIndexes(page)[0], 0);
+  assert.deepEqual(earlier(), []);
+  const found = (text) => {
+    typeIn(page, text);
+    return shownIndexes(page);
+  };
+  assert.deepEqual(found("Неповторимый-Фрагмент"), [2, 3, 8]);
+  assert.deepEqual(countOf(page), [3, 3]);
+  assert.deepEqual(found("неповторимый-фрагмент"), [2, 3, 8], "case");
+  assert.deepEqual(found("  agent-jn02-a  "), [2, 3, 8], "trimmed id");
+  assert.deepEqual(found("AGENT-JN02-B"), [5, 6, 7]);
+  assert.deepEqual(found("особая-запись-jn02"), [9]);
+  // prompt_text is not looked in
+  assert.deepEqual(found("Тайная-фраза-JN02"), []);
+  assert.equal(
+    page.el("journal").byClass("empty-title")[0].textContent,
+    "Под выбранные фильтры не подходит ни одно событие",
+  );
+  // L2: the code of the receiver does not find its handoff (only the start
+  // and the end of the agent); the code of the giver finds the handoff
+  assert.deepEqual(found("SECURITY-REVIEWER"), [3, 8]);
+  assert.deepEqual(found("CODE-DESIGNER"), [4, 5]);
+  // an empty search does nothing; the show is the last 200 again
+  assert.deepEqual(found(""), shownIndexes(page));
+  assert.deepEqual(countOf(page), [200, 451]);
+  // the pure search text
+  const m = page.app.getModel();
+  const rows = journalRows(m, page.app.getOffice());
+  const textOf = (i) =>
+    searchText(
+      rows.find((r) => r.index === i),
+      m.entries[i],
+    );
+  assert.equal(textOf(1).includes("тайная-фраза"), false);
+  assert.equal(textOf(2).includes("security-reviewer"), false);
+  assert.ok(textOf(5).includes("code-designer"));
+  assert.ok(textOf(5).includes("agent-jn02-cd"));
+});
+
+// Two sessions: in the first two requests of the owner and a service message;
+// in the second only SessionStart; a third session with a task of its own.
+function mainCardJournal() {
+  const owner = (s, n) =>
+    lineAt("UserPromptSubmit", s, t48(n), {
+      prompt_kind: "owner",
+      prompt_text: "Образец запроса",
+    });
+  const post = (s, n, id, role) =>
+    lineAt("PostToolUse", s, t48(n), {
+      tool_use_id: `tu-${id}`,
+      launched_agent_id: id,
+      subagent_type: role,
+      description: `Образец ${id}`,
+    });
+  const start = (s, n, id, role) =>
+    lineAt("SubagentStart", s, t48(n), { agent_id: id, agent_type: role });
+  return [
+    lineAt("SessionStart", "S1", t48(1)), // 0
+    owner("S1", 2), // 1: main:1
+    post("S1", 3, "a1", "Plan"), // 2
+    start("S1", 4, "a1", "Plan"), // 3
+    lineAt("SubagentStop", "S1", t48(5), {
+      agent_id: "a1",
+      agent_type: "Plan",
+    }), // 4
+    lineAt("Stop", "S1", t48(6)), // 5: main:1 completed
+    owner("S1", 7), // 6: main:6
+    post("S1", 8, "a2", "Explore"), // 7
+    start("S1", 9, "a2", "Explore"), // 8
+    lineAt("UserPromptSubmit", "S1", t48(10), { prompt_kind: "service" }), // 9: main:9
+    lineAt("SessionStart", "S2", t48(11)), // 10: only SessionStart
+    owner("S3", 12), // 11: main:11
+    post("S3", 13, "a3", "Plan"), // 12
+    start("S3", 14, "a3", "Plan"), // 13
+  ];
+}
+
+test("MC-01: the card of the main session - two sessions (two requests and a service message; only SessionStart): the basis and the time of each row in each state, the age of 'в работе' and 'нет свежих данных', 'кого запустила в этом запросе' without the tasks of the second request and of other sessions, the switch of rows and sessions, 'запросов в этой сессии не записано'; 'разговоров идёт: N' only inside 'Вся основная сессия'", async () => {
+  const entries = mainCardJournal();
+  const lastAt = iso(t48(14));
+  const card = (page) => page.el("card");
+  const rowsOf = (page) => {
+    const out = {};
+    for (const row of card(page).all((e) => e.classes.has("state-row"))) {
+      out[row.dataset.row] = {
+        value: row.byClass("state-value")[0].textContent,
+        basis: row.byClass("state-basis").map((e) => e.textContent),
+      };
+    }
+    return out;
+  };
+  const press = (page, focus) =>
+    card(page)
+      .find((e) => e.dataset.focus === focus)
+      .click();
+  const openPart = (page, part) =>
+    card(page)
+      .find((e) => e.dataset.part === part)
+      .children[0].click();
+  const fresh = "если событий нет дольше 60 минут, пишется «нет свежих данных»";
+
+  // in work: the last request (the service message) of S1; S1 last event at 9
+  let now = t48(30);
+  let page = await loaded(entries, [], { now });
+  page
+    .legend()
+    .find((b) => b.dataset.key === "main")
+    .click();
+  assert.equal(card(page).dataset.kind, "main");
+  assert.equal(
+    card(page).byClass("card-title")[0].textContent,
+    "Основная сессия",
+  );
+  // the first row of the main session in the order of the list (rule d)
+  const m = page.app.getModel();
+  const first = m.list.find((item) => item.kind === "main");
+  assert.equal(card(page).byClass("card-id")[0].textContent, first.session_id);
+  // the card shows that row: the other rows of its session are the rest
+  const others = card(page)
+    .all((e) => /^row:/.test(e.dataset.focus ?? ""))
+    .map((e) => e.dataset.focus.slice(4));
+  assert.deepEqual(
+    [first.key, ...others].sort(),
+    m.mainRows
+      .filter((r) => r.session_id === first.session_id)
+      .map((r) => r.key)
+      .sort(),
+  );
+  // go to main:9 of S1 by the list of the other rows (or it is the first)
+  const toRow = (p, key) => {
+    const button = card(p).find((e) => e.dataset.focus === `row:${key}`);
+    if (button !== null) {
+      openPart(p, "rows");
+      card(p)
+        .find((e) => e.dataset.focus === `row:${key}`)
+        .click();
+    }
+  };
+  const ageAt = (at, clock) => ageText(ageOf(at, clock));
+  const s1Last = iso(t48(10));
+  // S1 rows by their state at this clock
+  const h = buildHistory(m);
+  const o = page.app.getOffice();
+  const data = (row, session = "S1") =>
+    buildMainCard(m, o, h, { row, session });
+  assert.equal(data("main:1").row.state, "completed");
+  assert.equal(data("main:6").row.state, "unrecorded");
+  assert.equal(data("main:9").row.state, "in_progress");
+  // the card on main:9: in work, the basis with the age, the request
+  if (first.key !== "main:9") {
+    page
+      .legend()
+      .find((b) => b.dataset.key === "main")
+      .click();
+  }
+  const onRow = async (p, key) => {
+    if (card(p).byClass("card-id")[0].textContent !== "S1") {
+      openPart(p, "sessions");
+      press(p, "session:S1");
+    }
+    toRow(p, key);
+  };
+  await onRow(page, "main:9");
+  let st = rowsOf(page);
+  assert.equal(st.task.value, "в работе");
+  assert.deepEqual(st.task.basis, [
+    `последнее событие сессии ${fmtDateTime(s1Last)} · ${ageAt(s1Last, now)} · ${fresh}`,
+    `В сессию пришло служебное сообщение · ${fmtDateTime(iso(t48(10)))}`,
+  ]);
+  assert.ok(ageAt(s1Last, now) !== "");
+  // main:1: finished - "Основная сессия вернула ответ" and the time of Stop
+  await onRow(page, "main:1");
+  st = rowsOf(page);
+  assert.equal(st.task.value, "закончила работу, итог не записан");
+  assert.deepEqual(st.task.basis, [
+    `Основная сессия вернула ответ · ${fmtDateTime(iso(t48(6)))}`,
+  ]);
+  assert.equal(
+    card(page).byClass("card-history-note")[0].textContent,
+    "историю запроса открывает её строка в панели «Задачи» или в журнале",
+  );
+  // "кого запустила в этом запросе": a1 only (not a2 of the second request,
+  // not a3 of another session)
+  openPart(page, "launched");
+  const launched = card(page)
+    .find((e) => e.dataset.part === "launched")
+    .all((e) => e.classes.has("instance"))
+    .map((b) => b.dataset.key);
+  assert.deepEqual(launched, ["a1"]);
+  // main:6: the end not recorded - the next request closed it
+  await onRow(page, "main:6");
+  st = rowsOf(page);
+  assert.equal(st.task.value, "окончание не записано");
+  assert.deepEqual(st.task.basis, [
+    `В сессию пришло служебное сообщение · ${fmtDateTime(iso(t48(10)))}`,
+  ]);
+  openPart(page, "launched");
+  assert.deepEqual(
+    card(page)
+      .find((e) => e.dataset.part === "launched")
+      .all((e) => e.classes.has("instance"))
+      .map((b) => b.dataset.key),
+    ["a2"],
+  );
+  // the other sessions: S2 and S3 with their first time; S2 has no requests
+  openPart(page, "sessions");
+  const labels = card(page)
+    .find((e) => e.dataset.part === "sessions")
+    .byClass("instance-id")
+    .map((e) => e.textContent)
+    .sort();
+  assert.deepEqual(labels, [
+    `Сессия S2 · с ${fmtDateTime(iso(t48(11)))}`,
+    `Сессия S3 · с ${fmtDateTime(iso(t48(12)))}`,
+  ]);
+  press(page, "session:S2");
+  assert.equal(card(page).byClass("card-id")[0].textContent, "S2");
+  assert.deepEqual(
+    card(page)
+      .byClass("task-none")
+      .map((e) => e.textContent),
+    ["запросов в этой сессии не записано"],
+  );
+  assert.equal(card(page).byClass("state-row").length, 0);
+  // "Вся основная сессия": the former sections and "разговоров идёт: N"
+  assert.equal(
+    card(page)
+      .all((e) => e.classes.has("card-working"))
+      .map((e) => e.parentNode.dataset.part)
+      .join(),
+    "role",
+  );
+  assert.match(
+    card(page).byClass("card-working")[0].textContent,
+    /^разговоров идёт: \d+$/,
+  );
+  // no stale words, no service words in the card
+  assert.equal(SERVICE_WORDS.test(card(page).textContent), false);
+
+  // the same journal later: S1 has no event for more than 60 minutes
+  now = t48(14) + STALE_AFTER_MS + 60_000;
+  page = await loaded(entries, [], { now });
+  page
+    .legend()
+    .find((b) => b.dataset.key === "main")
+    .click();
+  await onRow(page, "main:9");
+  st = rowsOf(page);
+  assert.equal(st.task.value, "нет свежих данных");
+  assert.equal(
+    st.task.basis[0],
+    `последнее событие сессии ${fmtDateTime(s1Last)} · ${ageAt(s1Last, now)} · ${fresh}`,
+  );
+  assert.ok(ageAt(s1Last, now) !== "");
+
+  // a record of a server start after the request: restarted, no age
+  now = t48(30);
+  const restart = { time: iso(t48(12)), journal_lines: 11 };
+  page = await loaded(entries, [restart], { now });
+  page
+    .legend()
+    .find((b) => b.dataset.key === "main")
+    .click();
+  await onRow(page, "main:9");
+  st = rowsOf(page);
+  assert.equal(st.task.value, "сервер перезапускался, события не записывались");
+  assert.deepEqual(st.task.basis, [
+    `сервер запущен ${fmtDateTime(iso(t48(12)))} — после начала этого запроса`,
+  ]);
+  assert.equal(lastAt, iso(t48(14)));
+});
+
+test("LW-04: the words of the screen - the literals of rows 1-27 of the table are the constants; on a journal with all 12 cases, a SIMULATION line and a record with request_time_auto the text of the journal, the details, the header, the card of an instance, the card of the main session and the window has none of the old words outside 'Технические поля'; a service message says 'служебное сообщение' once; the old words are in no string literal of the page and not in index.html", async () => {
+  // rows 1-27 of the table "было → стало" (REQ-048), literally
+  const rows = [
+    [TX.HEADER_BADGE, "Источник событий — Claude Code"],
+    [TX.LIVE, "на связи"],
+    [TX.EMPTY_JOURNAL, "Событий от Claude Code пока нет"],
+    [
+      TX.EMPTY_HINT,
+      "Видны только разговоры с Claude Code, запущенные в папке sai/: там Claude Code настроен присылать события Pixel Office. Разговоры из другой папки видны, только если в её настройках есть такая же настройка.",
+    ],
+    [TX.NOT_FROM_HOOKS, "не подтверждена"],
+    [TX.MARK_PREFIX, "не подтверждена: "],
+    [TX.SOURCE_WORDS.REAL, "Claude Code"],
+    [TX.SOURCE_WORDS.other, "не Claude Code"],
+    [TX.SOURCE_WORDS.ORCH, "запись оркестратора"],
+    [TX.EVENT_TABLE.session_start.words, "Открыт разговор с Claude Code"],
+    [
+      TX.EVENT_TABLE.session_start.meaning,
+      "В Claude Code начат новый разговор (сессия) или продолжен прежний: при продолжении номер сессии тот же. Что именно произошло, Claude Code сейчас не сообщает.",
+    ],
+    [TX.EVENT_TABLE.session_end.words, "Закрыт разговор с Claude Code"],
+    [
+      TX.EVENT_TABLE.session_end.meaning,
+      "Разговор (сессия) закончился: окно закрыли, разговор очистили или переключили. Причину Claude Code сейчас не сообщает.",
+    ],
+    [
+      TX.EVENT_TABLE.prompt_service.meaning,
+      "Сообщение от системы, а не от человека: напоминание, уведомление о задаче, которая шла параллельно, сообщение из другого разговора с Claude Code или пометка о продолжении прежнего разговора. Его текст не хранится.",
+    ],
+    [
+      TX.EVENT_TABLE.stop.not_proved,
+      "Не доказывает, что вся работа закончена или удалась: агенты, запущенные параллельно, могут ещё работать, и сессия может продолжить сама, когда они вернутся. При прерывании человеком и при ошибке этого события нет.",
+    ],
+    [
+      TX.EVENT_TABLE.agent_stop.meaning,
+      "Агент закончил свой ход и вернул ответ тому, кто его запустил. Текст ответа Pixel Office не хранит: итог не записан. Такое событие присылают и служебные помощники самого Claude Code — их начала в журнале нет, а роль совпадает с ролью разговора или пуста.",
+    ],
+    [
+      TX.EVENT_TABLE.handoff.meaning,
+      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). Если агент работает параллельно с тем, кто его запустил, эта запись приходит сразу при запуске; если запустивший ждёт его ответа — после окончания работы агента.",
+    ],
+    [
+      TX.EVENT_TABLE.orch_note.meaning,
+      "Запись, которую оркестратор сделал сам; это не событие от Claude Code. К запросу она привязана по времени запроса, если оно записано.",
+    ],
+    [
+      TX.EVENT_TABLE.marked.meaning,
+      "Строка есть в журнале, но Pixel Office не признал её настоящим событием от Claude Code.",
+    ],
+    [TX.EVENT_TABLE.marked.reasons.source, "строку записал не Claude Code"],
+    [TX.CARD_INSTANCE, "запуск"],
+    [TX.CARD_BLOCKS.ids, "Полные номера и код роли"],
+    [TX.CARD_BLOCKS.instances, "Все запуски этой роли"],
+    [TX.CARD_BLOCKS.more, "Остальные запуски"],
+    [TX.INSTANCES_COUNT, "запусков этой роли: {N}"],
+    [TX.COPY_LABEL_AGENT, "Скопировать номер запуска"],
+    [
+      TX.WORKPLACE_DESK,
+      "Стол на холсте — изображение роли, общее для всех её запусков, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.",
+    ],
+    [
+      TX.FRESH_LIMIT,
+      "если событий нет дольше {m} минут, пишется «нет свежих данных»",
+    ],
+    [
+      TX.AGENT_NOT_RECORDED,
+      "о других действиях агента — чтении файлов, командах, правках — Claude Code не сообщает",
+    ],
+    [
+      TX.UNKNOWN_MESSAGES,
+      "О сообщениях между агентами Claude Code не сообщает: известны только передачи задания и окончания работы",
+    ],
+    [
+      TX.UNKNOWN_ERRORS,
+      "Об ошибках и о том, что агент ждёт человека, Claude Code сейчас не сообщает",
+    ],
+    [
+      TX.GIVEN_NOTE,
+      "Эту запись пишет тот, кто передал задание. Если он ждёт ответа агента, запись приходит после окончания работы агента; если агент работает параллельно — сразу при запуске. Это не действие самого агента",
+    ],
+    [
+      TX.HISTORY_NOTE_AUTO,
+      "оркестратор не указал запрос — запись отнесена к последнему запросу владельца",
+    ],
+    [TX.CARD_SESSIONS, "разговоров идёт: "],
+  ];
+  rows.forEach(([value, literal], i) => assert.equal(value, literal, `#${i}`));
+  // the text of the badge in index.html
+  const html = fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8");
+  assert.ok(html.includes("Источник событий — Claude Code"));
+  assert.equal(html.includes("REAL — события хуков"), false);
+
+  // a journal with all 12 cases, a SIMULATION line and a record whose request
+  // was chosen automatically
+  const base = allKindsJournal().entries;
+  const auto = {
+    time: iso(T0 + 13_500),
+    source: "ORCH",
+    session_id: "S1",
+    request_time: iso(T0 + 2000),
+    request_time_auto: true,
+    note_text: "как понял: образец автопривязки",
+  };
+  const entries = [...base.slice(0, -1), auto, base[base.length - 1]];
+  const page = await loaded(entries);
+  const OLD =
+    /хук|LIVE|REAL|SIMULATION|экземпляр|переднего плана|фонов|pixel-office-note|правило чтения|привязано автоматически|идущих сессий|порог свежести/i;
+  // the text that is seen: no hidden element, no "Технические поля"
+  const seen = (el) => {
+    if (el.hidden === true || el.dataset.part === "tech") return "";
+    if (["SCRIPT", "STYLE", "NOSCRIPT"].includes(el.tagName)) return "";
+    if (el.children.length === 0) return el.textContent;
+    return el.children.map(seen).join(" ");
+  };
+  const check = (where) => {
+    const text = seen(page.doc.root);
+    const m = OLD.exec(text);
+    assert.equal(m, null, `${where}: '${m?.[0]}'`);
+  };
+  check("the page");
+  const indexes = page.rows().map((r) => r.dataset.index);
+  assert.equal(indexes.length, entries.length);
+  for (const index of indexes) {
+    const toggle = () =>
+      page
+        .rows()
+        .find((r) => r.dataset.index === index)
+        .byClass("row-toggle")[0];
+    toggle().click();
+    const box = page
+      .rows()
+      .find((r) => r.dataset.index === index)
+      .byClass("event-details")[0];
+    assert.ok(box !== undefined, index);
+    check(`the details of ${index}`);
+    toggle().click();
+  }
+  // the marked SIMULATION line: "не подтверждена", the source in plain words
+  const sim = page.rows().find((r) => r.dataset.index === "10");
+  assert.equal(sim.dataset.marked, "true");
+  assert.equal(sim.byClass("mark")[0].textContent, "не подтверждена");
+  // the service message: "служебное сообщение" once in its row
+  const service = page.rows().find((r) => r.dataset.index === "2");
+  assert.equal(service.textContent.split("служебное сообщение").length - 1, 1);
+  // the card of an instance with its parts open
+  page
+    .legend()
+    .find((b) => b.dataset.key === "role:Sai Orchestrator (ORCH)")
+    .click();
+  for (const d of page.el("card").all((e) => e.tagName === "DETAILS")) {
+    d.open = true;
+  }
+  check("the card of an instance");
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  // the card of the main session with "Вся основная сессия" open
+  page
+    .legend()
+    .find((b) => b.dataset.key === "main")
+    .click();
+  for (const d of page.el("card").all((e) => e.tagName === "DETAILS")) {
+    d.open = true;
+  }
+  check("the card of the main session");
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  // the window of the request
+  page
+    .rows()
+    .find((r) => r.dataset.index === "1")
+    .byClass("history-open")[0]
+    .click();
+  assert.equal(historyDom(page).isOpen(), true);
+  check("the window of history");
+  assert.ok(page.text("history-body").includes(TX.HISTORY_SERVICE));
+  // the old words in the string literals of the page (comments do not count)
+  const OLD_LITERAL =
+    /"[^"]*(хук|LIVE|REAL —|экземпляр|переднего плана|фонов|в фоне|pixel-office-note|правило чтения|привязано автоматически|идущих сессий|порог свежести|сессии Claude Code|Сессия Claude Code)[^"]*"/;
+  const found = [];
+  for (const name of fs.readdirSync(PUBLIC).filter((f) => f.endsWith(".js"))) {
+    fs.readFileSync(path.join(PUBLIC, name), "utf8")
+      .split("\n")
+      .forEach((line, i) => {
+        if (/^\s*\/\//.test(line)) return;
+        if (OLD_LITERAL.test(line)) found.push(`${name}:${i + 1}`);
+      });
+  }
+  assert.deepEqual(found, []);
 });

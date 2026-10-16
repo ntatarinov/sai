@@ -12,6 +12,7 @@
 import { buildLayout } from "./layout.js";
 import { ITEM_STATES, UNCONFIRMED_STATES } from "./model.js";
 import { BUBBLE_TEXTS, MAIN_LABEL, ROLE_UNKNOWN } from "./texts.js";
+import { roleName } from "./words.js";
 
 export const MAIN_KEY = "main";
 
@@ -48,7 +49,7 @@ export function colorOfDesk(d) {
 // A bubble is seen from the time of its event to 10 seconds after it.
 export const BUBBLE_WINDOW_MS = 10000;
 // Columns of the board; the roles that do not fit are counted in "+N".
-export const BOARD_COLUMNS = 4;
+export const BOARD_COLUMNS = 3;
 
 const LABEL_MAX = 16;
 const CARD_COMPLETED_MAX = 5;
@@ -56,7 +57,10 @@ const CARD_UNCONFIRMED_MAX = 10;
 const CARD_UNRECORDED_MAX = 5;
 const CARD_EVENTS_MAX = 10;
 
-// The short caption of a role for the canvas (decision D13). If the role ends
+// The former short caption of a role (decision D13). It is kept as a rule and
+// an export, but no caption is built with it any more: the canvas, the board
+// and the legend show the name of the role in plain words (REQ-048,
+// decision 0058). If the role ends
 // with brackets that hold something and are simple (no other bracket between
 // the last "(" and the final ")"), the text of that pair is taken; otherwise
 // the whole role. A result longer than 16 code points is cut to the first 15
@@ -161,7 +165,7 @@ export function buildOffice(model) {
       key: roleKey(role),
       kind: "role",
       full: role,
-      label: roleLabel(role),
+      label: roleName(role),
       desk_index: desk,
       color: colorOfDesk(desk),
       working: counts.in_progress > 0,

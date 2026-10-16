@@ -1,0 +1,66 @@
+{
+  "handoff_id": "step04-r5-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 5,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ048-20261015-01/step-04-reviewer-r5.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-047", "REQ-044"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-08g-code-fixer.json",
+      "handoffs/REQ048-20261015-01/step-08f-issue-fixer.json",
+      "decisions/0060-card-links-after-launcher.md",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "SECURITY r5 -> REVIEWER r5 (этот) -> TEST-DESIGNER r4",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ048-20261015-01",
+    "rework_of": "handoffs/REQ048-20261015-01/step-08g-code-fixer.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-16T22:16:38Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "Правка 08g — решение причины по 0060; своя проба в браузере в 3 состояниях; других карточек с тем же порядком нет"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор после CODE-FIXER 08g (handoffs/REQ048-20261015-01/step-08g-code-fixer.json; диагноз step-08f-issue-fixer.json; decisions/0060) и PASS безопасности r5. В app.js, instanceColumn, cardLinks стоит сразу после «Кто запустил», до фраз .card-unknown. Проверь САМ: решение причины, а не обход; согласовано с 0060 и описанием (п. 7.2 будет приведён DOC-UPDATER); нет ли других карточек (основной сессии, экземпляра) с тем же порядком «фразы → кнопки», где кнопки так же уходят за край в 1470×784; лишней работы нет. Код не менять. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": [
+      "Правка 08g оценена, другие карточки проверены; вердикт"
+    ]
+  },
+  "created_at": "2026-10-16T22:11:55Z",
+  "started_at": "2026-10-16T22:11:55Z",
+  "completed_at": "2026-10-16T22:16:12Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: правка 08g — решение причины по decisions/0060, находок нет. Сверено с копией кода ревью r4: изменён только app.js, в instanceColumn вызов cardLinks перенесён выше двух фраз .card-unknown, добавлен комментарий со ссылкой на 0060; тексты, классы, обработчики и аргументы прежние, лишней работы нет. Причина по диагнозу 08f — кнопки переходов стояли после переменных по высоте строк и двух фраз и уходили за низ тела карточки; перестановка ставит их сразу после «Кто запустил», что и выбрано вариантом 1 решения 0060 (роль вне таблицы с очень длинным названием — прокрутка, допущено тем же решением). Проверено в браузере (headless Chromium по CDP, свой стенд: роль «Проверка исследования и плана» с 15 запусками, карточка в две колонки, окно 1470×784): «в работе», «меньше минуты назад» — низ кнопок 706 при крае тела 755; «нет свежих данных», «1 ч 1 мин назад» — 708; часы страницы +2 сут — 708; порядок столбца — card-launcher, card-links, card-unknown, card-unknown; порядок Tab — ids → launcher → «к задаче в панели» → «события в журнале» → запуски → раскрытия (фразы не фокусируются, как и прежде). Других карточек с порядком «фразы → кнопки» нет: cardLinks вызывается в двух местах — instanceColumn (карточка запуска, в одну и в две колонки — один код) и карточка основной сессии, где фраз о незнании нет и кнопки стоят последними в разделе после «Рабочего места» (раньше измерено: верх кнопок около 411 px в 1470×784). Описание п. 7.2 и таблицу окон приводит DOC-UPDATER (0060, «Граница»). npm run check на копии вне проекта — код 0, 1580 тестов, 0 падений.",
+    "findings": [],
+    "self_check": [
+      "date -u -> 2026-10-16T22:12:26Z (начало)",
+      "diff -rq копия кода ревью r4 (вне проекта) против tools/src -> отличается только app.js; diff -u -> перестановка cardLinks выше двух make('p', 'card-unknown', …) и комментарий",
+      "grep -n 'cardLinks(' app.js -> 1987 (instanceColumn), 2120 (определение), 2219 (карточка основной сессии, последняя в разделе, без фраз о незнании)",
+      "стенд вне проекта (свой каталог 0700, порт 4802, 32 события sample- через hook.sh, 15 запусков одной роли), headless Chromium по CDP, 1470×784: часы как есть — задача «в работе», низ кнопок 706 при крае тела 755; часы +61 мин — «нет свежих данных», 708; часы +2 сут — 708; порядок детей section.card-instance — …, card-launcher, card-links, card-unknown, card-unknown; Tab: ids > launcher > go:panel > go:events > instance:… > more > given > starts > returns > launched",
+      "копия проекта вне папки Sai с .git и node_modules: cd tools && caffeinate -i npm run check -> All matched files use Prettier code style!; traces: файлов 1493, следов 0; handoffs-check: файлов 879, нарушений 0; tests 1580, pass 1580, fail 0, skipped 0, todo 0; exit 0",
+      "стенд и браузер остановлены; код и проект не менялись"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DOC",
+        "text": "По 0060 и I2 08g: описание п. 7.2 («после «Кто запустил» и фраз о незнании») и строку 1470 таблицы окон приводит DOC-UPDATER; ISS-0071 обновить там же. Тест порядка (card-links сразу после «Кто запустил», до первой .card-unknown; мутант — вернуть после фраз) — TEST-DESIGNER (I1 08g)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

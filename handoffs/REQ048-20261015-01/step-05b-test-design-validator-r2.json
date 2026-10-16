@@ -1,0 +1,110 @@
+{
+  "handoff_id": "step05b-r2-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "05b",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/REQ048-20261015-01/step-05b-test-design-validator-r2.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-047", "REQ-046", "REQ-049"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-05-test-designer-r2.json",
+      "handoffs/REQ048-20261015-01/step-05b-test-design-validator-r1.json",
+      "tools/test/"
+    ],
+    "route": "TEST-DESIGNER r2 -> TEST-DESIGN-VALIDATOR r2 (этот) -> TEST-RUNNER r1 -> DESIGN-QA r1",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ048-20261015-01",
+    "rework_of": "handoffs/REQ048-20261015-01/step-05-test-designer-r2.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-16T17:31:37Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "PASS; 10 из 11 своих мутантов пойманы; R3 (проверка в openMain) недостижима со страницы — принято, F-L1 в учёт дефектов Low на шаге 10",
+        "F-L2 (пределы помощника CSS) и F-L3 (F6, F7, overscroll без тестов) — в учёт Low; вид проверяет DESIGN-QA r1",
+        "Свой npm run check код 0, 1579"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5b, повтор после доработки TEST-DESIGNER r2 (handoffs/REQ048-20261015-01/step-05-test-designer-r2.json) — тесты к правкам кода 07a и 04b (step-07a-code-fixer.json, step-04b-code-fixer.json). САМ проверь: DQ-01 (M1, mainChoiceOpens, помеченная строка), DQ-02 (F10), DQ-03 (правила CSS F1, F3/F4, F5, F8, F12, N1, N3, I2) — содержательны и ловят поломку; новый помощник разбора CSS (parseCss.list, cssCascade, cssValue) не подгоняет результат и проверен сам; старые тесты не ослаблены (изменения только добавления — сравни с состоянием на твоих воротах r1). Свои мутанты на копии вне проекта (кода после 07a и 04b): не меньше 4, включая возврат прежнего порядка правил F3/F4 и переход к основной сессии без mainChoiceOpens. Свой полный npm run check под caffeinate -i. Файлы не менять, кроме result своего handoff-а. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": [
+      "DQ-01…DQ-03 содержательны; свои мутанты пойманы",
+      "npm run check код 0 своим запуском; вердикт"
+    ]
+  },
+  "created_at": "2026-10-16T17:23:18Z",
+  "started_at": "2026-10-16T17:23:18Z",
+  "completed_at": "2026-10-16T17:31:05Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: тесты r2 к правкам кода 07a и 04b содержательны и ловят поломку; помощник разбора CSS проверен сам и не подгоняет результат; старые тесты не тронуты. Три замечания Low, не блокируют.\n\nЧто изменилось с моих ворот r1 (сравнение хешей рабочего дерева со списком r1): код tools/src — app.js, event-details.js, main-card.js, style.css (07a, 04b); тесты — tools/test/pixel-office-helpers.js и pixel-office-page.test.js; requirements.yaml и handoff-ы шагов 01e/01f r3, 03 r2/r3, 04 r2/r3, 04b, 05 r2, 06, 07, 07a. diff тестов с их состоянием на воротах r1: только добавления (в помощнике — declList и поле list у parseCss, cssCascade, cssValue; в page — блок DQ-01…DQ-03 в конце файла); ни одна прежняя строка не удалена и не изменена, прежние parseCss.decls и cssDecls не тронуты.\n\nDQ-01 (M1): проверяет и чистое правило (mainChoiceOpens: null, undefined, {}, неизвестная сессия — false; известная — true), и eventDetails(...).links.agent у помеченной строки неизвестной сессии (пусто) и известной (card-main «открыть агента»), и страницу (у неизвестной кнопки и строки переходов поля «Агент» нет; у известной кнопка открывает карточку основной сессии S1). DQ-02 (F10): до первого ответа (сервер «висит», link=none) «Фильтры» открывает и закрывает линию, aria-expanded, в списках ровно «все сессии», «все агенты», «все типы», «Сбросить фильтры» скрыта, строк нет. DQ-03 (CSS): действующее значение по порядку листа для F1, F3/F4 (и в узком окне), F5, F8, F12, N1, N3 (пара max-height в обоих местах, запасное первым), I2; помощник проверяется в самом тесте на выдуманном листе (позднее сокращение border возвращает цвет).\n\nПомощник: cssCascade берёт правила вне @media и правила названного блока в порядке листа, cssValue — последнее значение, сокращение border даёт цвет рамки. Мои мутанты помощника (R8: cssValue не видит сокращение border; R9: порядок правил перевёрнут) делают DQ-03 красным — проверка помощника работает. Ограничения (F-L2, Low): специфичность разных селекторов не считается, именованный цвет в border читается как currentcolor, !important не учитывается (в style.css одно !important — display: none, к проверкам не относится); TEST-DESIGNER назвал это сам (его I1).\n\nМои мутанты на копии кода после 07a и 04b (вне проекта, по одному с возвратом): 11 штук, пойманы 10 — R1 (прежний порядок правил F3/F4: цвет в первых правилах #now-all и .task-mark, общее правило border ниже) -> DQ-03; R1b (только #now-all) -> DQ-03; R2 (linksOf добавляет card-main без mainChoiceOpens, как до 04b) -> DQ-01; R4 (mainChoiceOpens не смотрит сессии модели) -> DQ-01; R5 (ранний выход renderJournalTools до первого ответа) -> DQ-02; R6 (N3: запасное max-height вторым) -> DQ-03; R7 (F1: нет flex: none в узком окне) -> DQ-03; R8, R9 (помощник) -> DQ-03; R10 (F5: цвет --text) -> DQ-03. Не пойман R3 (openMain без mainChoiceOpens, только проверка null) — F-L1, Low: все вызовы openMain строят выбор из текущей модели (follow — из linksOf, где уже стоит правило; «агент» панели, «Основная сессия», «Другие запросы», «Другие сессии» — из перерисованных данных), так что до этой проверки страница с неизвестной сессией не доходит; это защитная проверка без пути к ней, мутант почти равнозначен коду.\n\nНезависимость: DQ-01, DQ-02, DQ-03 по отдельности — зелёные; часы поддельные (S(n), now), реальных часов, случайности и путей нет. Числа ^test( / assert. (метка -> сейчас): docs 6/32 -> 8/36, office 59/564 -> 61/602, page 92/833 -> 111/1185, panels 51/892 -> 55/1016, остальные pixel-office без изменений — совпадают с отчётом TEST-DESIGNER r2.\n\nСвой прогон: cd tools && caffeinate -i npm run check — код 0, tests 1579, pass 1579, fail 0, skipped 0, todo 0. Хеши рабочего дерева до и после этой проверки совпали.",
+    "findings": [
+      {
+        "id": "F-L1",
+        "severity": "Low",
+        "where": "tools/src/pixel-office/public/app.js, openMain: if (!mainChoiceOpens(model, choice)) return;",
+        "problem": "Мутант R3 (только проверка null вместо mainChoiceOpens) не ловится ни одним тестом. Пути к этой проверке со страницы нет: выбор всегда строится из текущей модели, а у переходов журнала правило уже применено в linksOf (DQ-01 ловит R2).",
+        "fix": "Не обязательно. Если нужно закрепить, — вынести проверку в одно место (например, вызов buildMainCard и выход при null) или проверить openMain через отсоединённую кнопку после замены журнала; решение — ORCH/REVIEWER."
+      },
+      {
+        "id": "F-L2",
+        "severity": "Low",
+        "where": "tools/test/pixel-office-helpers.js, cssCascade и cssValue",
+        "problem": "Помощник считает только порядок правил с тем же селектором: специфичность разных селекторов, именованные цвета в border и !important не учитываются. Для проверок DQ-03 этого хватает (мои мутанты помощника R8, R9 ловятся), но для других случаев он может ошибаться.",
+        "fix": "Записать ограничение в комментарии помощника при следующей правке; видимый результат проверяет DESIGN-QA r1."
+      },
+      {
+        "id": "F-L3",
+        "severity": "Low",
+        "where": "tools/test/pixel-office-page.test.js, DQ-03; правки 07a F6 (left/right: anchor(--now …), anchor-name у .top и .now), F7 (.now-text { flex: 1 1 0 } в узком окне), overscroll-behavior: contain у #now-all",
+        "problem": "Эти правила кода 07a тестами не закреплены (в задании TEST-DESIGNER r2 их не было; F2 закреплён частично — через пару max-height в N3).",
+        "fix": "Решение ORCH: оставить DESIGN-QA r1 (вид) или добавить строки в DQ-03 тем же помощником."
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-16T17:23:29Z",
+      "хеши рабочего дерева (без step-05b*) против списка ворот r1: изменены tools/src/pixel-office/public/app.js, event-details.js, main-card.js, style.css, tools/test/pixel-office-helpers.js, tools/test/pixel-office-page.test.js, docs/requirements.yaml; добавлены handoff-ы 01e-r3, 01f-r3, 03-r2, 03-r3, 04-r2, 04-r3, 04b, 05-r2, 06, 07, 07a",
+      "diff тестов копии ворот r1 и рабочих файлов: helpers — 1750a…, 1771a…, 1789a…, 1791a… (только добавления); page — 5775a5776,5902 (DQ-01…DQ-03)",
+      "копия Sai вне проекта обновлена rsync с рабочего дерева; diff -r tools/src и tools/test пуст; node --test test/pixel-office-*.test.js -> tests 397, pass 397",
+      "R1 -> tests 397 fail 1: DQ-03",
+      "R1b -> fail 1: DQ-03",
+      "R2 -> fail 1: DQ-01",
+      "R3 -> fail 0 (F-L1)",
+      "R4 -> fail 1: DQ-01",
+      "R5 -> fail 1: DQ-02",
+      "R6 -> fail 1: DQ-03",
+      "R7 -> fail 1: DQ-03",
+      "R8 (помощник: cssValue без сокращения border) -> fail 1: DQ-03",
+      "R9 (помощник: cssCascade в обратном порядке) -> fail 1: DQ-03",
+      "R10 (F5: color var(--text)) -> fail 1: DQ-03",
+      "набор мутантов 17:25:01–17:27:38; после него хеши tools/src и tools/test копии совпали с исходными («copy restored»)",
+      "node --test --test-name-pattern='^DQ-0n: ' test/pixel-office-page.test.js -> DQ-01, DQ-02, DQ-03: pass 1, fail 0 каждый",
+      "числа (git show base/REQ048-20261015-01:<файл> | grep -c '^test(' / grep -o 'assert\\.' | wc -l против рабочих): page 111/1185, office 61/602, panels 55/1016, docs 8/36, прочие без изменений",
+      "cd tools && caffeinate -i npm run check (17:28:23Z–17:30:16Z) -> exit 0; # tests 1579 # pass 1579 # fail 0 # cancelled 0 # skipped 0 # todo 0",
+      "хеши рабочего дерева после проверки = до («tree equal»)",
+      "cd tools && npm run handoffs-check -> перед close"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "AP-018: ожидаемого вердикта в задании нет. Факт задания «изменения тестов — только добавления» проверен diff с состоянием на воротах r1 — верен."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "F-L1 и F-L3 (Low) — на решение ORCH: защитная проверка openMain без пути к ней и правила F6, F7, overscroll-behavior без тестов (их видимый результат — DESIGN-QA r1)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

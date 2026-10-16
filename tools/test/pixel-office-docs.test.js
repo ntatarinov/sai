@@ -198,3 +198,35 @@ test("AC-11: the section Pixel Office of the README names the card of an 'экз
     0,
   );
 });
+
+test("DC-03: the section Pixel Office of the README has the phrases of criterion 8 REQ-048 ('код роли'), 6 REQ-049 ('Показать всех'), 7 REQ-046 ('Показать более ранние', 'Поиск в журнале') - each at least once, as awk … | grep -c counts them, and not only outside the section", () => {
+  const pixel = awkPart(README, PIXEL);
+  for (const phrase of [
+    /код роли/,
+    /Показать всех/,
+    /Показать более ранние/,
+    /Поиск в журнале/,
+  ]) {
+    assert.ok(grepC(pixel, phrase) >= 1, String(phrase));
+    // the count is of the section: a text without it gives 0
+    assert.equal(
+      grepC(
+        awkPart(`## Pixel Office\nдругое\n## Дальше\n${phrase.source}`, PIXEL),
+        phrase,
+      ),
+      0,
+    );
+  }
+});
+
+test("MC-07: the section Pixel Office of the README names the 'карточка основной сессии' (REQ-047 criterion 7)", () => {
+  const pixel = awkPart(README, PIXEL);
+  assert.ok(grepC(pixel, /карточка основной сессии/) >= 1);
+  assert.equal(
+    grepC(
+      awkPart("## Pixel Office\nкарточка роли", PIXEL),
+      /карточка основной сессии/,
+    ),
+    0,
+  );
+});

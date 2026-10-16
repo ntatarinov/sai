@@ -1,0 +1,136 @@
+{
+  "handoff_id": "step04a-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "04a",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/REQ048-20261015-01/step-04a-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-046", "REQ-049", "REQ-047"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-04-reviewer.json",
+      "handoffs/REQ048-20261015-01/step-03-security-reviewer.json",
+      "docs/design/REQ-048-049-046-047-interactive.md (п. 3.10)",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "REVIEWER PASS (Low) -> CODE-FIXER 04a (этот) -> SECURITY (повтор) -> REVIEWER (повтор) -> TEST-DESIGNER",
+    "write_set": [
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/panels.js",
+      "tools/src/pixel-office/public/event-details.js",
+      "tools/src/pixel-office/public/instance-card.js",
+      "tools/src/pixel-office/public/main-card.js"
+    ],
+    "base_tag": "base/REQ048-20261015-01",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-15T15:35:00Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1, F2, F3, F5 исправлены по result; красные те же 31 (названия и тексты ошибок совпали); F3 и F5 проверены в браузере с сравнением с прежним кодом",
+        "I2: D11 проекта (значение фильтра — сырая роль) приводит DOC-UPDATER на шаге 10; I3 принято"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, CODE-FIXER после ревью (handoffs/REQ048-20261015-01/step-04-reviewer.json: F1, F2, F3, F5) — по решению ORCH в orch_check того handoff-а. Правь ТОЛЬКО это: (F1) app.js около 2422–2423 — устаревший комментарий над returnFocus привести к поведению (0059 п. 2); (F2) проверка «элемент показан в панели» — одна общая функция вместо трёх копий (event-details.js ~146, instance-card.js ~279, main-card.js ~146), без построения всей панели трижды, поведение то же; (F3) фильтр «Агент» (panels.js ~336–378: journalOptions, rowAgent, journalQuery): развести пространства значений — служебные «основная сессия» / «оркестратор» и роли (например, префикс role:<agent_type>), чтобы агент с ролью «main» или «orch» не сливался с основной сессией или оркестратором; (F5) app.js ~1022–1030 и ~3113–3119: при открытом списке «Показать всех» первый Escape закрывает список (проект п. 3.10), даже если фокус на раскрытой строке журнала; раскрытие строки закрывает следующий Escape. Больше ничего. Тесты (tools/test/**) не трогать — красными остаются те же 31 из п. 6 проекта; другие красные не допускаются (если какой-то тест проверяет прежнее поведение F3/F5 — назови в result.issues с основанием). После: npm run lint, npm run format:check (чисто), npm run check под caffeinate -i (настоящий вывод); F3 и F5 проверь в браузере на стенде вне проекта (пустой каталог, свой порт и секрет, выдуманные sample-; агент с ролью «main» — отдельный вариант фильтра). В result.changes — правки с номерами находок. Время — date -u. Пути компьютера и названия чужих проектов не писать. Запрещены git checkout/reset/stash/clean. Закрой через close.",
+    "acceptance_criteria": [
+      "F1, F2, F3, F5 исправлены; ничего сверх",
+      "Красные — те же 31; lint, format:check чистые; F3 и F5 проверены в браузере"
+    ]
+  },
+  "created_at": "2026-10-15T15:28:44Z",
+  "started_at": "2026-10-15T15:28:44Z",
+  "completed_at": "2026-10-15T15:34:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Находки F1, F2, F3 и F5 исправлены, больше ничего не менялось. F1: комментарий над returnFocus описывает поведение по 0059, п. 2. F2: одна функция shownInPanel в panels.js вместо трёх копий. F3: у ролей в фильтре «Агент» значения role:<сырая роль>, они больше не сливаются с main/orch. F5: при открытом списке «Показать всех» первый Escape на раскрытой строке журнала закрывает список, следующий — раскрытие. Красные — те же 31 по именам и по тексту ошибок, других нет. lint и format:check чистые. F3 и F5 проверены в браузере на стенде; на копии прежнего кода оба дефекта воспроизведены.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "комментарий над returnFocus",
+        "what": "Прежний комментарий («the legend button of the role of the card shown last…») удалён. Новый описывает поведение по 0059, п. 2: фокус возвращается на кнопку, открывшую первую карточку цепочки; нажатие на холст считается кнопкой легенды роли первой карточки; если кнопки нет — на кнопку легенды роли последней карточки, иначе на область офиса. Код не менялся."
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/pixel-office/public/panels.js",
+        "where": "новые panelItems(model, limit) (внутренняя) и export shownInPanel(model, limit = LIST_LIMIT) перед taskPanel; taskPanel",
+        "what": "Правило «первые limit элементов списка» записано один раз (panelItems), его берут и taskPanel, и shownInPanel. shownInPanel возвращает Set ключей показанных элементов, всю панель не строит."
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/pixel-office/public/event-details.js",
+        "where": "linksOf; импорт",
+        "what": "new Set(model.list.slice(0, taskPanel(model).shown)…) -> shownInPanel(model); импорт taskPanel -> shownInPanel."
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/pixel-office/public/main-card.js",
+        "where": "построение карточки (shown); импорт",
+        "what": "То же: shownInPanel(model)."
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/pixel-office/public/instance-card.js",
+        "where": "links.panel; импорт",
+        "what": "model.list.slice(…).some(item.key === taskKey) -> shownInPanel(model).has(taskKey)."
+      },
+      {
+        "finding": "F3",
+        "file": "tools/src/pixel-office/public/panels.js",
+        "where": "journalOptions, rowAgent, новые AGENT_MAIN/AGENT_ORCH и agentOfRole",
+        "what": "Служебные значения остаются main (основная сессия) и orch (оркестратор). Значение роли — role:<сырая роль> (agentOfRole) и в вариантах списка, и в категории строки. journalQuery сравнивает rowAgent со значением фильтра и не менялся: пространства разведены в обеих сторонах сравнения. Подписи вариантов прежние (roleName)."
+      },
+      {
+        "finding": "F5",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "journalPanelRow, обработчик keydown строки журнала",
+        "what": "Если открыт список «Показать всех», Escape на раскрытой строке закрывает список (closeNowAll(false)), фокус остаётся на строке; иначе — прежнее closeEvent(true). Следующий Escape закрывает раскрытие. onKey не менялся: при фокусе вне строки он, как раньше, закрывает список и ставит фокус на кнопку."
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-15T15:28:48Z, перед записью result 2026-10-15T15:33:58Z",
+      "до правки: caffeinate -i node --test test/pixel-office-*.test.js -> tests 370, pass 339, fail 31",
+      "cd tools && npm run lint -> код 0; npm run format:check -> All matched files use Prettier code style!",
+      "cd tools && caffeinate -i npm run check -> format:check и lint чисто; traces: файлов проверено 1443, следов 0, пропущено 56; handoffs-check: файлов проверено 840, нарушений 0, исключений использовано 114 из 114; test: # tests 1552 # pass 1521 # fail 31 # skipped 0 # todo 0; код 1 (только из-за 31 красного)",
+      "красные после правки — те же 31, что до неё (diff заголовков not ok пуст; diff строк error/expected/actual пуст): OF-10, OF-16, OF-19, OF-26, OF-31, OF-39, OF-40, OF-42, FS-07, AC-01, PG-01, PG-03, PG-12g, JR-03, JR-05, JR-06, AC-02, AC-03, AC-04, PN-06, PN-08, PN-09, PN-14, PN-19, NM-01, JR-01, JR-02, JR-08, AC-05, AC-06, AC-07",
+      "grep -n taskPanel public/*.js -> только app.js (панель) и определение в panels.js; в event-details.js, main-card.js, instance-card.js — shownInPanel",
+      "стенд вне проекта: копия tools/src и package.json, пустой каталог состояния 0700, порт 4823, свой секрет (создал сервер). 22 события sample- через настоящий POST /api/events с подписью (buildWriteBody + signBody): SessionStart, UserPromptSubmit, 10 передач и стартов агентов, в том числе с ролями «main» и «orch». Запись оркестратора — через note.js («записано; привязано к сообщению владельца»). Браузер: chrome-headless-shell по CDP, окно 1470×784",
+      "F3 в браузере: варианты #filter-agent: '' все агенты; main Основная сессия; orch Оркестратор; role:main main; role:orch orch; role:Sai Reviewer (REVIEWER) Ревью кода; … (13 вариантов). Выбор main — 12 строк, все «Основная сессия». role:main — 1 строка (Агент «main» получил задание…). orch — 1 строка (Оркестратор записал, как понял запрос). role:orch — 1 строка (Агент «orch» получил задание…)",
+      "F3, контроль на копии прежнего кода: значения ['', main, orch, main, orch, …] — два одинаковых main и orch; выбор main дал 13 строк (12 основной сессии + старт агента с ролью main) — дефект воспроизведён",
+      "F5 в браузере: открыта строка журнала (aria-expanded true), нажата «Показать всех (11)» -> #now-all открыт, затем фокус на кнопке раскрытой строки. Escape (CDP Input) №1 -> #now-all скрыт, раскрытие на месте, фокус на строке. Escape №2 -> раскрытие закрыто (aria-expanded false), фокус на строке",
+      "F5, контроль на копии прежнего кода: Escape №1 закрыл раскрытие, список остался открыт; список закрылся только Escape №2 — дефект воспроизведён. После контроля копия вновь совпадает с проектом (diff -r пуст)",
+      "стенд остановлен: порт 4823 не слушается (lsof код 1), процессов браузера стенда нет (pgrep код 1)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "TESTS_CHANGED_BY_DESIGN",
+        "text": "Красные — те же 31 из п. 6 проекта, правка их не меняла: OF-10, OF-16, OF-19, OF-26, OF-31, OF-39, OF-40, OF-42, FS-07, AC-01, PG-01, PG-03, PG-12g, JR-03, JR-05, JR-06, AC-02, AC-03, AC-04, PN-06, PN-08, PN-09, PN-14, PN-19, NM-01, JR-01, JR-02, JR-08, AC-05, AC-06, AC-07. Тестов, которые проверяют прежнее поведение F3 или F5, в tools/test нет: grep по journalQuery, rowAgent, journalOptions и filter-agent пуст. Новые проверки — тест на роль «main» в JN-01 и порядок Escape в VW-01 (предложения ревью) — пишет TEST-DESIGNER."
+      },
+      {
+        "id": "I2",
+        "kind": "DESIGN_DEFECT",
+        "text": "F3 отступает от записи D11 проекта docs/design/REQ-048-049-046-047-interactive.md («значение фильтра «Агент» — main, orch или сырая роль»): теперь роль — role:<сырая роль>, по решению ORCH в этом handoff-е. Ревью (F3) предлагало отложить это в LOW-дефект, задание велит править сейчас — сделано по заданию. D11 должен привести CODE-DESIGNER или DOC-UPDATER (AP-005); TEST-DESIGNER должен писать JN-01 с этими значениями."
+      },
+      {
+        "id": "I3",
+        "kind": "OBSERVATION",
+        "text": "F5: при Escape на раскрытой строке фокус после закрытия списка остаётся на строке и не уходит на кнопку «Показать всех». Иначе следующий Escape не дошёл бы до строки, а задание требует, чтобы её закрывал именно он. Когда фокус в списке или на кнопке, прежнее правило «Escape — закрыт, фокус на кнопке» (VW-01 п. 1) не менялось. Если нужно иное, это решение ORCH и проекта п. 3.10."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/panels.js",
+      "tools/src/pixel-office/public/event-details.js",
+      "tools/src/pixel-office/public/instance-card.js",
+      "tools/src/pixel-office/public/main-card.js"
+    ]
+  }
+}

@@ -29,6 +29,13 @@ export function roleName(role) {
   return role;
 }
 
+// The code of a role, shown only where it is asked for (a tooltip, the
+// details of the card): the role itself when its name differs from it, else
+// null (REQ-048, criterion 1).
+export function roleCode(role) {
+  return typeof role === "string" && roleName(role) !== role ? role : null;
+}
+
 // The first 8 code points of an identifier; not a string gives "".
 export function shortId(id) {
   return Array.from(typeof id === "string" ? id : "")

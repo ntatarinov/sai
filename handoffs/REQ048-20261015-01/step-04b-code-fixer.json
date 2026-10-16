@@ -1,0 +1,136 @@
+{
+  "handoff_id": "step04b-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "04b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/REQ048-20261015-01/step-04b-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-047", "REQ-049"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-04-reviewer-r2.json",
+      "handoffs/REQ048-20261015-01/step-07a-code-fixer.json",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "REVIEWER r2 FAIL -> CODE-FIXER 04b (этот) -> SECURITY r3 -> REVIEWER r3 -> TEST-DESIGNER r2 -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA r1",
+    "write_set": [
+      "tools/src/pixel-office/public/event-details.js, app.js, main-card.js, style.css"
+    ],
+    "base_tag": "base/REQ048-20261015-01",
+    "rework_of": "handoffs/REQ048-20261015-01/step-04-reviewer-r2.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-16T17:06:39Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "M1: mainChoiceOpens в main-card.js берут linksOf, openMain, buildMainCard; cardOpens убрана; N1–N3 проверены в браузере (N3 с якорями и без)",
+        "npm run check код 0, 1576; изменены 4 файла из write_set",
+        "I1 — новые тесты TEST-DESIGNER r2; I2 (запасные 17 rem) — проект 3.12, DOC-UPDATER шаг 10"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02 после FAIL REVIEWER r2 (handoffs/REQ048-20261015-01/step-04-reviewer-r2.json; прочитай result целиком). Исправь:\nM1 (Medium): одно правило «откроется ли карточка основной сессии». В linksOf (event-details.js) переход к карточке основной сессии добавляется только если сессия есть в модели — одной общей функцией, которую берут и linksOf, и openMain (например, вынести её из main-card.js или из app.js в чистый модуль). Из app.js убрать filter(cardOpens) и саму cardOpens. Поведение страницы не меняется: у помеченной строки неизвестной сессии кнопки «открыть агента» нет, у известной — открывает её карточку (правило 4.3 проекта).\nN1 (Low): разделитель « · » через ::before не попадает в доступное имя кнопки (content: \" · \" / \"\";) — проверь в браузере доступное имя.\nN2 (Low): комментарий openMain — над openMain.\nN3 (Low): в узком окне (до 599 px) запасное значение max-height полного списка «Показать всех» для браузеров без якорей CSS, чтобы последняя строка была видна в 390×844 и 320×568; значение с якорем остаётся вторым и действует где поддерживается. Проверь оба случая (с якорем — как сейчас; без — подменой правила на копии).\nПроверь в headless Chrome на своём стенде вне проекта (пустой каталог, hook.sh, id sample-), до и после. Журнал владельца не трогать. Тесты не менять; если тест падает — назови в result.issues. Запрещены git checkout/reset/stash/clean. Перед close: cd tools && npm run check — код 0.",
+    "acceptance_criteria": [
+      "M1: одно правило для linksOf и openMain, cardOpens убрана, поведение страницы прежнее",
+      "N1–N3 исправлены и проверены в браузере",
+      "npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-16T16:56:13Z",
+  "started_at": "2026-10-16T16:56:13Z",
+  "completed_at": "2026-10-16T17:06:05Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты M1, N1, N2 и N3 ревью r2. M1: правило «откроется ли карточка основной сессии» теперь одно — чистая mainChoiceOpens(model, choice) в main-card.js; её берут linksOf (event-details.js: переход card-main добавляется, только если карточка откроется), openMain (app.js) и buildMainCard. Функция cardOpens и фильтр в app.js убраны. Поведение страницы прежнее: у помеченной строки неизвестной сессии кнопки «открыть агента» нет, у помеченной строки известной сессии и у доверенных строк кнопка есть и открывает карточку (проект 4.3). N1: разделитель « · » больше не входит в доступное имя кнопки. N2: комментарий openMain стоит над openMain. N3: в узком окне появилось запасное max-height для браузера без якорей CSS. Всё проверено в headless Chrome на своих стендах вне проекта, до и после; случай без якорей — на копии кода вне проекта, где строки с anchor()/anchor-size() удалены. cd tools && npm run check — код 0, 1576 тестов, 0 падений; тесты не менялись.",
+    "changes": [
+      {
+        "finding": "M1",
+        "file": "tools/src/pixel-office/public/main-card.js",
+        "where": "новый экспорт mainChoiceOpens(model, choice) над defaultMainSel; buildMainCard начинается с этой проверки",
+        "what": "Одно чистое правило: карточка основной сессии открывается, если choice не null и не undefined и model.sessions содержит choice.session. buildMainCard отвечает null ровно тогда, когда правило говорит «нет»."
+      },
+      {
+        "finding": "M1",
+        "file": "tools/src/pixel-office/public/event-details.js",
+        "where": "linksOf: импорт mainChoiceOpens; новая внутренняя toMain(label) для двух переходов card-main поля «Агент» (PostToolUse без agent_id — «кто передал»; события основной сессии — «открыть агента»)",
+        "what": "Переход card-main добавляется, только если mainChoiceOpens(model, mainRowOfEvent(model, index)). У card-instance остался прежний hasTask. notes.agent не трогается: текста вместо кнопки описание не задаёт."
+      },
+      {
+        "finding": "M1",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "detailsOf (кнопки поля «Агент»), функция cardOpens, локальная mainChoiceOpens, openMain, импорт из main-card.js",
+        "what": "Убраны d.links.agent.filter(cardOpens), сама cardOpens и локальная mainChoiceOpens. openMain проверяет mainChoiceOpens(model, choice) из main-card.js. Кнопки поля «Агент» строятся прямо из d.links.agent."
+      },
+      {
+        "finding": "N1",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".item .item-agent + .history-open::before",
+        "what": "Вторым объявлением добавлено content: \" · \" / \"\": пустой замещающий текст убирает разделитель из доступного имени, а первое content: \" · \" остаётся для браузера без такого синтаксиса. Дерево доступности Chromium: было « · открыть историю запроса» у всех 16 кнопок, стало «открыть историю запроса». Разделитель виден, кнопки в одной линии."
+      },
+      {
+        "finding": "N2",
+        "file": "tools/src/pixel-office/public/app.js",
+        "where": "комментарий над openMain",
+        "what": "Комментарий openMain снова стоит над openMain (локальной mainChoiceOpens больше нет). В него добавлена строка, что openMain открывает карточку только там, где позволяет то же правило mainChoiceOpens, что и у linksOf."
+      },
+      {
+        "finding": "N3",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": "@media (max-width: 599px), #now-all: max-height: calc(100vh - 17rem - 1.25rem), затем max-height: calc(100vh - anchor-size(--top height) - 1.25rem)",
+        "what": "Запасное значение в узком окне рассчитано на шапку около 17 rem (замер 267 px при «Сейчас» в пять линий и кнопке). Значение с якорем стоит вторым и действует там, где якоря есть. Без якорей (копия): 390×844 — было 271…861, последняя строка 856 за краем окна 844; стало 271…823, последняя 818. 320×568 — было 271…763, последняя 758; стало 271…547, последняя 542. С якорями без изменений: 271…828, последняя 823 (390×844); 271…552, последняя 547 (320×568)."
+      }
+    ],
+    "self_check": [
+      "Время с часов (date -u): начало 2026-10-16T16:56:31Z; стенды 16:57–17:02Z; npm run check 17:03:09Z–17:05:02Z; остановка 17:05:16Z.",
+      "Стенды вне проекта, каталоги новые и пустые (<вне проекта>/fx04b):",
+      "— standB, порт 4841, код из tools/;",
+      "— standF, порт 4842: одна строка SIMULATION сессии sample-5-sim положена в пустой журнал до запуска, потом через хук sample-6-live — начало, запрос, начало агента;",
+      "— копия без якорей, порт 4843: копия src/pixel-office вне проекта, в её style.css удалены строки с anchor(--now и anchor-size(--top; diff с рабочим style.css без этих строк пуст. Каталог standC для «до», новый пустой standC2 для «после» (на старом каталоге перезапуск сервера переводил «в работе» в «сервер перезапускался»).",
+      "События стендов B и C — feedB.sh через sh src/pixel-office/hook.sh (15 «в работе», 480 строк). Все номера sample-.",
+      "Браузер: Chrome 155 --headless=new, свой профиль, порт отладки 9335; сценарий m.mjs: Accessibility.getFullAXTree, getBoundingClientRect, mouseWheel deltaY 3000.",
+      "ДО (node m.mjs before): N1 — 16 кнопок «открыть историю запроса», имя « · открыть историю запроса». N3 без якорей — 390×844: 271…861, maxHeight 768px, последняя строка 856, не видна; 320×568: 271…763, последняя 758, не видна. С якорями — 828/823 и 552/547, видна. Страница M1 (код уже без cardOpens, linksOf уже по новому правилу): у помеченной строки кнопок нет, у доверенной «открыть агента» открывает «Основная сессия».",
+      "M1 «до» на модулях — проба ревью r2: links.agent помеченного SessionStart неизвестной сессии = [{go: card-main, «открыть агента»}].",
+      "ПОСЛЕ (node m.mjs after): N1 — 16 кнопок, имя «открыть историю запроса», ::before \" · \" / \"\", кнопки в одной линии. N3 без якорей — 390×844: 271…823, maxHeight 552px, после колеса scrollY 0, listScroll 38, последняя строка 818 видна; 320×568: 271…547, maxHeight 276px, listScroll 347, последняя 542 видна. С якорями без изменений: 390×844 271…828 (557.109px), 320×568 271…552, 1470×784 338…1249 = «Сейчас». M1 на странице: у помеченной строки ссылок и заметок нет, у доверенной «открыть агента» открывает «Основная сессия». Ошибок консоли 0.",
+      "M1 на модулях (probe.mjs; buildModel, buildHistory, eventDetails из tools/src, журнал стенда F):",
+      "— 0 SIMULATION SessionStart sample-5-sim: agent [], notes.agent null, opens false;",
+      "— 1 REAL SessionStart sample-6-live: agent [card-main «открыть агента»];",
+      "— 2 REAL UserPromptSubmit: agent [card-main];",
+      "— 3 REAL SubagentStart: agent [card-instance];",
+      "— 4 помеченный SIMULATION SessionStart известной сессии sample-6-live: agent [card-main «открыть агента»], opens true;",
+      "— mainChoiceOpens(model, null) и (model, undefined) — false.",
+      "grep cardOpens по public/ — пусто; mainChoiceOpens: экспорт в main-card.js; вызовы — main-card.js (buildMainCard), event-details.js (linksOf), app.js (openMain).",
+      "cd tools && caffeinate -i npm run check → код 0:",
+      "— format:check — All matched files use Prettier code style!; lint — чисто;",
+      "— traces: файлов проверено 1459, следов 0, пропущено 56;",
+      "— handoffs-check: файлов проверено 856, нарушений 0, исключений использовано 114 из 114;",
+      "— test: # tests 1576 # pass 1576 # fail 0 # skipped 0.",
+      "Журнал владельца (только чтение): в начале шага 4078 строк, sample- 0; в конце 4078 и 0. Рост с 4066 (07a) до 4078 случился до начала шага, это работающая сессия владельца, а не стенды: строк sample- 0. Порты 4780 и 4790 не трогались.",
+      "Остановка: kill 4841, 4842, 4843 и Chrome 9335; lsof по этим портам пусто.",
+      "Изменены только файлы из write_set; тесты, сервер, хук не трогались; git checkout/reset/stash/clean и коммиты не делались."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "TESTS_SUGGESTED",
+        "text": "Для TEST-DESIGNER r2: (1) eventDetails помеченной строки неизвестной сессии даёт links.agent = [], помеченной строки известной сессии — [card-main] (проект 4.3); (2) mainChoiceOpens(model, null | undefined | {session: неизвестная}) — false, у известной сессии — true; (3) правило CSS N1 — у .item .item-agent + .history-open::before есть content с «/ \"\"»; (4) N3 — в узком @media у #now-all два max-height, первое без anchor-size, второе с ним. Существующие тесты не упали: 1576 из 1576."
+      },
+      {
+        "id": "I2",
+        "kind": "DOC",
+        "text": "Для записи I1 ревью r2 (проект 3.12, описание п. 4.2): в узком окне запасное max-height полного списка теперь calc(100vh - 17rem - 1.25rem) — рассчитано на шапку около 17 rem. Если шапка в узком окне вырастет (новые элементы шапки), это число нужно пересмотреть. Там, где якоря работают, действует значение с anchor-size."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/main-card.js",
+      "tools/src/pixel-office/public/event-details.js",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/style.css"
+    ]
+  }
+}

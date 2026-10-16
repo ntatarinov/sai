@@ -1,0 +1,113 @@
+{
+  "handoff_id": "step04-r2-REQ048-20261015-01",
+  "run_id": "REQ048-20261015-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ048-20261015-01/step-04-reviewer-r2.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-049", "REQ-046", "REQ-047"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ048-20261015-01/step-07a-code-fixer.json",
+      "handoffs/REQ048-20261015-01/step-07-design-qa-validator.json",
+      "handoffs/REQ048-20261015-01/step-03-security-reviewer-r2.json",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "SECURITY r2 -> REVIEWER r2 (этот) -> TEST-DESIGNER r2 -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> DESIGN-QA r1",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ048-20261015-01",
+    "rework_of": "handoffs/REQ048-20261015-01/step-07a-code-fixer.json",
+    "parallel_work_now": "никто; один прогон",
+    "orch_check": {
+      "at": "2026-10-16T16:56:13Z",
+      "by": "ORCH",
+      "verdict": "FAIL принят",
+      "checked": [
+        "Якоря CSS и .tasks .item приняты ревьюером со своей проверкой; тексты для проекта 3.12 и п. 4.2 (I1, I2) — DOC-UPDATER шаг 10",
+        "M1 (Medium): решение «показывать ли переход к основной сессии» в двух местах — CODE-FIXER 04b, write_set расширен на event-details.js и main-card.js",
+        "N1, N2, N3 — в ту же правку; N3: запасное max-height в узком окне для браузеров без якорей"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор после CODE-FIXER 07a (handoffs/REQ048-20261015-01/step-07a-code-fixer.json; находки DESIGN-QA — step-07-design-qa-validator.json) и PASS безопасности (step-03-security-reviewer-r2.json). Изменены только style.css и app.js. Проверь САМ — настоящее ли решение или костыль, лишняя работа, расхождения с проектом docs/design/REQ-048-049-046-047-interactive.md и решениями:\n1) I1 07a: F2 и F6 сделаны якорями CSS (anchor-name, anchor(), anchor-size()); в браузерах без них — прежнее поведение. Стиль из скрипта запрещён (D16; SC-06, NM-07). Есть ли решение без якорей в рамках разметки и правил проекта (например, положение #now-all относительно блока «Сейчас» обычным CSS)? Если якоря — приемлемы, что записать в проект 3.12 и описание п. 4.2; если нет — что именно переделать.\n2) I2 07a: новое правило .tasks .item при «.item не меняется» в проекте 3.12 — приемлемо ли.\n3) I3 07a: проверка F9 (cardOpens, mainChoiceOpens) в app.js, а естественное место — linksOf в event-details.js; нет ли двух правил «откроется ли карточка» (в openMain и в новой проверке) вместо одного.\n4) Порядок правил в style.css (F3/F4): нет ли других мест, где общее правило ниже перебивает частное.\nКод не менять. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL с перечнем; для каждого FAIL — что именно сделать и в каких файлах.",
+    "acceptance_criteria": [
+      "Пункты 1–4 оценены на текущих файлах; вердикт с перечнем"
+    ]
+  },
+  "created_at": "2026-10-16T16:49:21Z",
+  "started_at": "2026-10-16T16:49:21Z",
+  "completed_at": "2026-10-16T16:55:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "FAIL из-за одной находки Medium (M1: правило «есть ли переход к карточке» разнесено между чистым модулем и страницей); остальное по правке 07a — настоящее решение; три Low. Правка 07a сверена с копией кода прошлого повтора: изменены только app.js и style.css; npm run check на копии вне проекта — код 0, 1576 тестов, 0 падений. (1) Якоря CSS (F2, F6) — приемлемы. Решения без якорей в рамках правил проекта нет: стиль из скрипта запрещён (D16, SC-06, NM-07); ширину блока «Сейчас» обычным CSS можно было бы взять, только положив список внутрь .now, но у .now overflow: hidden (проект 3.12) и список стоит после шапки (3.11); высоту шапки в узком окне (266 px) без якорей CSS не узнать. Сделано как запасной путь: в каждой паре первое значение — прежнее, второе — с якорем, так что браузер без якорей получает прежний вид. Проверено в браузере (headless Chromium по CDP, свой стенд с 15 агентами «в работе»): 1470×784 — список 337…1248 = блок «Сейчас» 337…1248, низ последней строки 399; 390×844 — список 8…382, 270…828, последняя строка 822 ≤ 844; 320×568 — 270…552, последняя 546; колесо над списком страницу не листает (scrollY 0 → 0); рамка --now-line. Что записать — I1. (2) .tasks .item — приемлемо: правила .item, .item-head, .item-role, .item-state не тронуты (PN-23 проходит), новое правило действует только в панели «Задачи» и только раскладывает части строками, чтобы «агент · открыть историю запроса» стояли в одной линии без обёртки в разметке (PN-19 требует кнопку окна последним ребёнком). В проект 3.12 — строка из I2. Попутная Low N1: разделитель « · » через ::before попал в доступное имя кнопки. (3) F9 — M1: для карточки основной сессии правило одно (mainChoiceOpens берут и openMain, и новая проверка), но решение «показывать ли переход» теперь в двух слоях: чистая eventDetails (linksOf) по-прежнему возвращает «открыть агента» для помеченной строки неизвестной сессии, а страница прячет её фильтром cardOpens. Проверено пробой на модулях: SessionStart с источником SIMULATION в неизвестной сессии → links.agent = [{go: card-main, label: «открыть агента»}], notes.agent = null; у неизвестного агента тот же случай решает linksOf (ссылки нет, notes.agent = «missing», на странице текст «агент не найден…»). Это два правила одной вещи (AP-014) и неверный контракт чистого модуля: тесты на eventDetails подтвердят переход, которого на странице нет. (4) Порядок правил CSS: разбор style.css (пары одинаковых селекторов, одно свойство или его сокращение, тот же контекст) — общее правило ниже частного больше нигде не перебивает: все 61 найденное переопределение — намеренные правила @media; у элементов общего правила рамок (.card, .history, .instance, .now-show-all, #now-all, .journal-search, .journal-select, .task-mark) свои цвета рамок стоят ниже (#now-all, .task-mark) или точнее (.instance[aria-current], .now-show-all[aria-expanded]); в браузере рамка #now-all — rgb(59, 104, 156) (--now-line). Остальные правки 07a (F1, F3, F4, F5, F7, F8, F10, F12, I2 шага 07) — по описанию, лишней работы нет.",
+    "findings": [
+      {
+        "id": "M1",
+        "where": "tools/src/pixel-office/public/event-details.js:185-200 (linksOf, переходы «card-main» поля «Агент») и app.js:866-873, 970-979 (фильтр d.links.agent.filter(cardOpens), функция cardOpens)",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "Решение «есть ли переход к карточке» стоит в двух местах: linksOf отдаёт ссылку «открыть агента» для помеченной строки сессии, которой нет в модели, а страница её отбрасывает. Чистый модуль сообщает переход, которого нет на странице; у неизвестного агента тот же вопрос решён в linksOf (ссылки нет), у неизвестной сессии — на странице. CODE-FIXER сам назвал linksOf естественным местом и не сделал там только из-за write_set.",
+        "fix": "CODE-FIXER, файлы event-details.js и app.js (ORCH расширяет write_set): в linksOf добавлять go: \"card-main\" только если model.sessions содержит сессию цели (то же условие, что mainChoiceOpens; одна общая функция — например, экспорт из main-card.js, которую берут и linksOf, и openMain); у card-instance оставить прежний hasTask; из app.js убрать filter(cardOpens) и cardOpens, openMain оставить с той же общей проверкой. Поведение страницы то же; тест — у TEST-DESIGNER: eventDetails помеченной строки неизвестной сессии даёт links.agent = []. Затем снова шаги 3 и 4."
+      },
+      {
+        "id": "N1",
+        "where": "tools/src/pixel-office/public/style.css:1630-1634 (.item .item-agent + .history-open::before { content: \" · \" })",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Сгенерированный разделитель входит в доступное имя кнопки: дерево доступности Chromium дало имя « · открыть историю запроса» у всех кнопок окна истории в панели — экранный диктор прочтёт точку.",
+        "fix": "content: \" · \" / \"\" (пустой замещающий текст для доступности) — одна строка в style.css."
+      },
+      {
+        "id": "N2",
+        "where": "tools/src/pixel-office/public/app.js:2548-2553",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Комментарий openMain («link is like a new opening, switch …») оказался над новой функцией mainChoiceOpens, а над openMain комментария нет.",
+        "fix": "Переставить: комментарий mainChoiceOpens — над ней, комментарий openMain — над openMain."
+      },
+      {
+        "id": "N3",
+        "where": "tools/src/pixel-office/public/style.css:285-296 (#now-all, первые значения пар)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Запасной путь без якорей в узком окне — прежний дефект F2: max-height считает шапку 3,75 rem, а в 390×844 она 266 px, последние строки за краем. В проверенном Chromium якоря работают; запасной путь нужен другим браузерам.",
+        "fix": "По желанию ORCH: в @media (max-width: 599px) первое значение max-height ближе к настоящей шапке (около 17 rem) и запись ограничения в README; иначе — только запись ограничения (I1)."
+      }
+    ],
+    "self_check": [
+      "date -u -> 2026-10-16T16:50:00Z (начало)",
+      "diff -u копия кода прошлого повтора (вне проекта) против рабочего дерева -> изменены только app.js (cardOpens, mainChoiceOpens, renderJournalTools до первого ответа) и style.css; остальные файлы src и README — без изменений",
+      "копия проекта вне папки Sai с .git и node_modules: cd tools && caffeinate -i npm run check -> All matched files use Prettier code style!; traces: файлов 1458, следов 0; handoffs-check: файлов 855, нарушений 0; tests 1576, pass 1576, fail 0, skipped 0, todo 0; exit 0",
+      "проба модулей рабочего дерева (buildModel, buildHistory, eventDetails): SessionStart source SIMULATION неизвестной сессии -> links.agent [{go: card-main, target {row: null, session: sample-ghost}, label: «открыть агента»}], notes.agent null; SubagentStart неизвестного агента -> links.agent [], notes.agent «missing»; model.sessions — только доверенная сессия (M1)",
+      "разбор style.css (своим скриптом: правила верхнего уровня и @media, одинаковые селекторы, свойство и сокращения border/background/font/margin/padding/flex/flex-flow/overflow/inset/outline/gap) -> 61 переопределение, все — правила @media того же селектора; ни одной пары «общее ниже частного» в одном контексте",
+      "стенд вне проекта (свой каталог 0700, порт 4799, 32 события sample- через настоящий hook.sh, 15 агентов «в работе»), headless Chromium по CDP: CSS.supports('left', 'anchor(--now left)') = true; #now-all и блок «Сейчас»: 1470×784 — [337,1248] и [337,1248], низ 404, последняя строка 399; 390×844 — [8,382] и [8,382], 270…828, последняя 822 при окне 844; 320×568 — 270…552, последняя 546; overscroll-behavior contain; колесо над списком: scrollY 0 -> 0 во всех окнах; рамка rgb(59, 104, 156)",
+      "дерево доступности (Accessibility.getFullAXTree): кнопки окна истории в панели — имя « · открыть историю запроса» (N1)",
+      "стенд и браузер остановлены (порт 4799 не слушается); код и проект не менялись"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DOC",
+        "text": "Якоря CSS приняты. Записать в проект 3.12 и описание п. 4.2: «#now-all: left и right — anchor(--now left / right) (anchor-name: --now у .now), max-height — calc(100vh − anchor-size(--top height) − 1,25rem) (anchor-name: --top у .top), overscroll-behavior: contain; в каждой паре первым стоит запасное значение (left/right 1 rem, max-height от шапки 3,75 rem) для браузера без якорей CSS — там список во всю ширину страницы, а в узком окне последние строки могут оказаться за краем; в узком окне (до 599 px) left/right — 0,5 rem». Проверено в Chromium; поддержку других браузеров записать по их документации и, если владелец открывает Pixel Office не в Chromium, — строкой в «Ограничения» README."
+      },
+      {
+        "id": "I2",
+        "kind": "DOC",
+        "text": "Строка в проект 3.12: «В панели «Задачи» .tasks .item раскладывает части строками (flex-flow: row wrap; .item-head, .item-desc, .item-time — во всю ширину), чтобы «агент · открыть историю запроса» стояли в одной последней линии с разделителем ::before; правила .item, .item-head, .item-role, .item-state прежние (PN-23, decisions/0053); обёртки в разметке нет — кнопка окна истории остаётся последним ребёнком (PN-19)»."
+      },
+      {
+        "id": "I3",
+        "kind": "ROUTE",
+        "text": "Для M1 ORCH расширяет write_set CODE-FIXER на event-details.js (и при выносе общей проверки — main-card.js). N1 и N2 можно сделать той же правкой. После неё — повтор шагов 3 и 4."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

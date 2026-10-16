@@ -7,13 +7,19 @@
 
 // ------------------------------------------------------------------ header
 
-export const HEADER_BADGE = "REAL — события хуков Claude Code";
-export const LIVE = "LIVE";
+export const HEADER_BADGE = "Источник событий — Claude Code";
+export const LIVE = "на связи";
 export const NO_CONNECTION = "Нет связи с сервером Pixel Office";
 export const NOW_PREFIX = "Сейчас: ";
 export const NOW_EMPTY = "в работе ничего нет";
 // The name of the list of the rows of "Сейчас" for a screen reader.
 export const NOW_LIST_LABEL = "Сейчас — работающие агенты";
+// The number of the items in progress and the button that shows all of them
+// over the page (REQ-049, criterion 1).
+export const NOW_COUNT = "в работе: {n}";
+export const NOW_SHOW_ALL = "Показать всех ({n})";
+export const NOW_HIDE = "Скрыть";
+export const NOW_ALL_LABEL = "Сейчас — все работающие агенты";
 // The second part of the line when nothing is in progress but the journal does
 // not confirm some items (REQ-042, criterion 13).
 export const NOW_UNCONFIRMED = " · без свежих данных: {n}";
@@ -46,15 +52,70 @@ export const FILTER_LABELS = Object.freeze({
 
 export const JOURNAL_ZONE = "время — {tz}";
 export const JOURNAL_COUNT = " · {n} из {N}";
+
+// The navigation of the journal (REQ-046): search, filters, the mark of the
+// filter "Задача", "Показать более ранние", the empty result.
+export const SEARCH_LABEL = "Поиск в журнале";
+export const FILTERS_BUTTON = "Фильтры";
+export const FILTERS_CHOSEN = "Фильтры: выбраны";
+export const FILTER_SESSION_LABEL = "Сессия";
+export const FILTER_AGENT_LABEL = "Агент";
+export const FILTER_TYPE_LABEL = "Тип события";
+export const FILTER_ALL = Object.freeze({
+  session: "все сессии",
+  agent: "все агенты",
+  type: "все типы",
+});
+export const FILTER_SESSION_OPTION = "Сессия {id} · с {time}";
+// The variants of "Тип события": the cases 1-11 of EVENT_TABLE, the cases
+// 7-10 without the role.
+export const TYPE_OPTIONS = Object.freeze({
+  session_start: "Открыт разговор с Claude Code",
+  session_end: "Закрыт разговор с Claude Code",
+  prompt_owner: "Владелец отправил запрос",
+  prompt_service: "В сессию пришло служебное сообщение",
+  prompt_unknown: "В сессию пришло сообщение",
+  stop: "Основная сессия вернула ответ",
+  agent_start: "Агент получил задание и начал работу",
+  agent_resume: "Агент продолжил работу",
+  agent_stop: "Агент закончил работу и вернул ответ",
+  handoff: "Задание передано агенту",
+  orch_note: "Оркестратор записал, как понял запрос",
+});
+export const TASK_MARK = "Задача: {role} {id}";
+export const TASK_MARK_MAIN = "Задача: Основная сессия";
+export const TASK_MARK_CLEAR = "Снять фильтр «Задача»";
+export const FILTERS_EMPTY =
+  "Под выбранные фильтры не подходит ни одно событие";
+export const FILTERS_RESET = "Сбросить фильтры";
+export const SHOW_EARLIER = "Показать более ранние";
+// The transitions from an event, a card and an item of the panel (REQ-046,
+// criterion 3; REQ-047, criteria 2, 3).
+export const GO_PANEL = "к задаче в панели";
+export const GO_TASK_EVENTS = "события этой задачи";
+export const GO_CARD_EVENTS = "события в журнале";
+export const GO_AGENT = "открыть агента";
+export const GO_FROM = "кто передал";
+export const GO_TO = "кому";
+export const GO_ITEM_AGENT = "агент";
+export const NOT_IN_PANEL =
+  "задача не показана в панели: там последние {n} элементов";
+export const NO_WINDOW =
+  "запрос не определён: событие вне окна запроса владельца";
+export const AGENT_NOT_FOUND =
+  "агент не найден среди задач: его начало не записано";
 export const TASKS_TITLE = "Задачи";
-export const EMPTY_JOURNAL = "Событий от хуков пока нет";
+export const EMPTY_JOURNAL = "Событий от Claude Code пока нет";
 export const EMPTY_HINT =
-  "Видны только сессии Claude Code, в настройках которых есть обработчики Pixel Office: запущенные в папке sai/, а сессии другой папки — только если в её настройках проекта есть копия обработчиков.";
+  "Видны только разговоры с Claude Code, запущенные в папке sai/: там Claude Code настроен присылать события Pixel Office. Разговоры из другой папки видны, только если в её настройках есть такая же настройка.";
 export const NO_DATA = "Нет данных";
 export const MAIN_ROW = "Основная сессия — обрабатывает запрос";
 export const MAIN_LABEL = "Основная сессия";
-export const NOT_FROM_HOOKS = "не из хуков";
+export const NOT_FROM_HOOKS = "не подтверждена";
 export const ROLE_UNKNOWN = "(роль не указана)";
+// The code of a role in the tooltip of its name, when the code differs from
+// the name (REQ-048, criterion 1).
+export const ROLE_CODE_TITLE = "код роли: {code}";
 
 // The roles of Sai in plain words, by the code in the brackets of the name of
 // the role ("Sai Security Reviewer (SECURITY-REVIEWER)"): one entry for every
@@ -116,15 +177,15 @@ export const STATE_LABELS = Object.freeze({
 // gives only its meaning, what it does not prove and the reasons of the mark.
 export const EVENT_TABLE = Object.freeze({
   session_start: Object.freeze({
-    words: "Сессия Claude Code открыта",
+    words: "Открыт разговор с Claude Code",
     meaning:
-      "В Claude Code началась сессия или продолжена прежняя: при продолжении номер сессии тот же. Что именно произошло, хук сейчас не передаёт.",
+      "В Claude Code начат новый разговор (сессия) или продолжен прежний: при продолжении номер сессии тот же. Что именно произошло, Claude Code сейчас не сообщает.",
     not_proved: "Не доказывает, что началась работа или пришёл запрос.",
   }),
   session_end: Object.freeze({
-    words: "Сессия Claude Code закрыта",
+    words: "Закрыт разговор с Claude Code",
     meaning:
-      "Сессия закончилась: окно закрыли, сессию очистили или переключили. Причину хук сейчас не передаёт.",
+      "Разговор (сессия) закончился: окно закрыли, разговор очистили или переключили. Причину Claude Code сейчас не сообщает.",
     not_proved:
       "Не доказывает, что работа доведена до конца: агенты этой сессии могли не закончить.",
   }),
@@ -137,7 +198,7 @@ export const EVENT_TABLE = Object.freeze({
   prompt_service: Object.freeze({
     words: "В сессию пришло служебное сообщение",
     meaning:
-      "Сообщение от системы, а не от человека: напоминание, уведомление о фоновой задаче, сообщение другой сессии Claude Code или пометка о продолжении прежнего разговора. Его текст не хранится.",
+      "Сообщение от системы, а не от человека: напоминание, уведомление о задаче, которая шла параллельно, сообщение из другого разговора с Claude Code или пометка о продолжении прежнего разговора. Его текст не хранится.",
     not_proved: "Не доказывает, что его написал человек.",
   }),
   prompt_unknown: Object.freeze({
@@ -151,7 +212,7 @@ export const EVENT_TABLE = Object.freeze({
     meaning:
       "Основная сессия закончила очередной ответ и ждёт следующего сообщения.",
     not_proved:
-      "Не доказывает, что вся работа закончена или удалась: агенты в фоне могут ещё работать, и сессия может продолжить сама, когда они вернутся. При прерывании человеком и при ошибке этого события нет.",
+      "Не доказывает, что вся работа закончена или удалась: агенты, запущенные параллельно, могут ещё работать, и сессия может продолжить сама, когда они вернутся. При прерывании человеком и при ошибке этого события нет.",
   }),
   agent_start: Object.freeze({
     words: "Агент «{role}» получил задание и начал работу",
@@ -173,31 +234,31 @@ export const EVENT_TABLE = Object.freeze({
     words: "Агент «{role}» закончил работу и вернул ответ",
     act: "закончил работу и вернул ответ",
     meaning:
-      "Агент закончил свой ход и вернул ответ тому, кто его запустил. Текст ответа Pixel Office не хранит: итог не записан. Такое событие приходит и от внутренних агентов Claude Code — у них начала в журнале нет, а роль совпадает с ролью сессии или пуста.",
+      "Агент закончил свой ход и вернул ответ тому, кто его запустил. Текст ответа Pixel Office не хранит: итог не записан. Такое событие присылают и служебные помощники самого Claude Code — их начала в журнале нет, а роль совпадает с ролью разговора или пуста.",
     not_proved:
       "Не доказывает, что задание сделано, что проверки прошли и что ответ верен. Агента могут продолжить.",
   }),
   handoff: Object.freeze({
     words: "Задание передано агенту «{role}»",
     meaning:
-      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). У фоновых агентов эта запись приходит сразу при запуске, у остальных — после окончания их работы.",
+      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). Если агент работает параллельно с тем, кто его запустил, эта запись приходит сразу при запуске; если запустивший ждёт его ответа — после окончания работы агента.",
     not_proved:
       "Не доказывает, что агент закончил работу или что задание сделано. Время записи — не время начала работы агента.",
   }),
   orch_note: Object.freeze({
     words: "Оркестратор записал, как понял запрос",
     meaning:
-      "Запись оркестратора, сделанная командой pixel-office-note; это не событие хука. К запросу она привязана по времени запроса, если оно записано.",
+      "Запись, которую оркестратор сделал сам; это не событие от Claude Code. К запросу она привязана по времени запроса, если оно записано.",
     not_proved:
       "Не доказывает, что работа идёт или сделана так, как записано: это слова оркестратора.",
   }),
   marked: Object.freeze({
     meaning:
-      "Строка есть в журнале, но правило чтения не признало её событием хука.",
+      "Строка есть в журнале, но Pixel Office не признал её настоящим событием от Claude Code.",
     not_proved:
       "Не доказывает, что событие было; на задачи, офис и состояния строка не влияет.",
     reasons: Object.freeze({
-      source: "источник строки — не хук Claude Code: {source}",
+      source: "строку записал не Claude Code",
       conflict:
         "время строки расходится с порядком строк в журнале больше чем на 2 минуты",
       future:
@@ -207,6 +268,10 @@ export const EVENT_TABLE = Object.freeze({
 });
 
 // The row of the journal and its details (REQ-045, criteria 2-4).
+// The word at the right of a row of the journal: closed and open details
+// (REQ-049, criterion 2).
+export const ROW_MORE = "подробнее";
+export const ROW_LESS = "свернуть";
 export const TIME_UNKNOWN = "время не записано";
 export const SESSION_UNKNOWN = "сессия не указана";
 export const DETAIL_LABELS = Object.freeze({
@@ -224,9 +289,9 @@ export const DETAIL_LABELS = Object.freeze({
   tech: "Технические поля",
 });
 export const SOURCE_WORDS = Object.freeze({
-  REAL: "хук Claude Code",
+  REAL: "Claude Code",
   ORCH: "запись оркестратора",
-  other: "другой источник: {source}",
+  other: "не Claude Code",
 });
 export const SESSION_FULL = "полностью";
 export const AGENT_MAIN = "основная сессия: у этого события агента нет";
@@ -236,7 +301,7 @@ export const TASK_NOT_RELATED = "к задаче не относится";
 export const TASK_NOT_FOUND = "задача не найдена: её начало не записано";
 export const TASK_MAIN_NOT_FOUND =
   "строка основной сессии не найдена: запрос этой сессии не записан";
-export const MARK_PREFIX = "не из хуков: ";
+export const MARK_PREFIX = "не подтверждена: ";
 export const DETAILS_CLOSE = "Закрыть";
 export const SECTION_CURRENT = "Текущие";
 export const SECTION_HISTORY = "История";
@@ -273,7 +338,7 @@ export const NOSCRIPT = "Для страницы нужен JavaScript.";
 
 // ------------------------------------------------------------------- card
 
-export const CARD_SESSIONS = "идущих сессий: ";
+export const CARD_SESSIONS = "разговоров идёт: ";
 
 export const CARD_HEADINGS = Object.freeze({
   in_progress: "Сейчас в работе",
@@ -288,15 +353,15 @@ export const CARD_CLOSE = "Закрыть карточку";
 
 // The card of one instance of an agent (REQ-044). {n}, {N}, {m} are numbers,
 // {time} a date and time.
-export const CARD_INSTANCE = "экземпляр";
+export const CARD_INSTANCE = "запуск";
 export const CARD_SESSION = "сессия";
 export const CARD_BLOCKS = Object.freeze({
-  ids: "Полные идентификаторы",
+  ids: "Полные номера и код роли",
   task: "Текущая задача",
   state: "Состояние",
   launcher: "Кто запустил",
-  instances: "Экземпляры этой роли",
-  more: "Остальные экземпляры",
+  instances: "Все запуски этой роли",
+  more: "Остальные запуски",
   given: "Задание передано",
   starts: "Начала работы",
   returns: "Возвраты",
@@ -316,31 +381,51 @@ export const TASK_SEVERAL =
   "не установлено: записей о передаче задания несколько";
 export const LAUNCHER_NO_LINK = "не установлено: записи о передаче задания нет";
 export const LAUNCHER_NOT_RECORDED = "начало этого агента не записано";
-export const FRESH_LIMIT = "порог свежести — {m} минут";
+export const FRESH_LIMIT =
+  "если событий нет дольше {m} минут, пишется «нет свежих данных»";
 export const SERVER_STARTED =
   "сервер запущен {time} — после последнего начала этого агента";
 export const AGENT_NOT_RECORDED =
-  "другие действия агента — чтение файлов, команды, правки — хук не записывает";
+  "о других действиях агента — чтении файлов, командах, правках — Claude Code не сообщает";
 export const WORKPLACE_WORKING = "работает — у этой роли задач «в работе»: {n}";
 export const WORKPLACE_IDLE =
   "свободен — по журналу у этой роли нет задачи «в работе»; это вывод по событиям, а не событие";
 export const WORKPLACE_DESK =
-  "Стол на холсте — изображение роли, общее для всех её экземпляров, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.";
+  "Стол на холсте — изображение роли, общее для всех её запусков, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.";
 export const UNKNOWN_MESSAGES =
-  "Сообщения между агентами хук не записывает: записаны только передачи задания и окончания работы";
+  "О сообщениях между агентами Claude Code не сообщает: известны только передачи задания и окончания работы";
 export const UNKNOWN_ERRORS =
-  "Ошибки и ожидание человека хук сейчас не сообщает";
-export const INSTANCES_COUNT = "экземпляров роли: {N}";
+  "Об ошибках и о том, что агент ждёт человека, Claude Code сейчас не сообщает";
+export const INSTANCES_COUNT = "запусков этой роли: {N}";
 export const LAST_START = "последнее начало";
 export const GIVEN_BY = "передал: ";
 export const GIVEN_NOTE =
-  "Эту запись пишет тот, кто передал задание. У агентов переднего плана она приходит после окончания их работы, у фоновых — сразу при запуске; это не действие самого агента";
+  "Эту запись пишет тот, кто передал задание. Если он ждёт ответа агента, запись приходит после окончания работы агента; если агент работает параллельно — сразу при запуске. Это не действие самого агента";
 export const RETURN_NOTE = ", итог не записан";
 export const COPY = "Скопировать";
 export const COPY_OK = "скопировано";
 export const COPY_FAIL = "не удалось скопировать — выделите значение вручную";
-export const COPY_LABEL_AGENT = "Скопировать номер экземпляра";
+export const COPY_LABEL_AGENT = "Скопировать номер запуска";
 export const COPY_LABEL_SESSION = "Скопировать номер сессии";
+
+// The card of the main session (REQ-047, criterion 1): {time} is a date and
+// time, {n} a number.
+export const MAIN_CARD = Object.freeze({
+  full_session: "Полный номер сессии",
+  has_window:
+    "историю запроса открывает её строка в панели «Задачи» или в журнале",
+  no_window: "у этой строки нет окна запроса владельца",
+  no_requests: "запросов в этой сессии не записано",
+  launched: "кого запустила в этом запросе",
+  other_rows: "Другие запросы этой сессии",
+  other_sessions: "Другие сессии",
+  all: "Вся основная сессия",
+  server_started: "сервер запущен {time} — после начала этого запроса",
+  workplace_working: "работает — у основной сессии строк «в работе»: {n}",
+  workplace_idle:
+    "свободна — по журналу у основной сессии нет строки «в работе»; это вывод по событиям, а не событие",
+  desk: "Стол на холсте — изображение основной сессии, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.",
+});
 
 // ----------------------------------------------------------------- canvas
 
@@ -376,7 +461,8 @@ export const HISTORY_SECTION_TIMELINE = "Хронология";
 export const HISTORY_TRUNCATED = "обрезано: показаны первые {n} знаков";
 export const HISTORY_TEXT_DISABLED = "текст не сохраняется";
 export const HISTORY_NOTE_BY = "Оркестратор записал";
-export const HISTORY_NOTE_AUTO = "привязано автоматически";
+export const HISTORY_NOTE_AUTO =
+  "оркестратор не указал запрос — запись отнесена к последнему запросу владельца";
 export const HISTORY_NOTE_MISSING = "оркестратор не записал, как понял";
 export const HISTORY_COL_TASK = "Задача";
 export const HISTORY_COL_AGENT = "Агент";

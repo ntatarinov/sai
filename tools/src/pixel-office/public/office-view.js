@@ -71,23 +71,35 @@ const BUBBLE_TEXT = "#dbe4f0";
 // 139 px).
 const BUBBLE_TEXT_MAX = 125;
 
-// The board on the wall of the meeting room (design 4.5, step 2).
+// The board on the wall of the meeting room (design 4.5, step 2; REQ-048,
+// design D4): three columns 54 wide with a step of 56; the four plaques of a
+// column in two rows of two (column of the plaque, row of the plaque); the
+// name of the role under them in up to three lines; "+N" in the middle at 852,
+// not wider than 16, so it touches neither the third column nor the frame.
 const BOARD = Object.freeze({
   frame: [672, 6, 192, 60],
   back: [674, 8, 188, 56],
   left: 676,
-  step: 43,
+  step: 56,
   top: 10,
-  width: 39,
+  width: 54,
   height: 52,
   plaques: Object.freeze([
-    ["in_progress", 2, "#e8b64c"],
-    ["completed", 11, "#48c98a"],
-    ["unrecorded", 20, "#ef6b5e"],
-    ["restarted", 29, "#8296b1"],
+    ["in_progress", 0, 0, "#e8b64c"],
+    ["completed", 1, 0, "#48c98a"],
+    ["unrecorded", 0, 1, "#ef6b5e"],
+    ["restarted", 1, 1, "#8296b1"],
   ]),
-  more: [854, 40],
+  plaqueStepX: 27,
+  plaqueStepY: 10,
+  nameWidth: 52,
+  more: [852, 40],
+  moreWidth: 16,
 });
+// A line of the name on the board is narrowed by fillText at most to 3/4.
+const BOARD_SQUEEZE = 0.75;
+// The second line of a caption stands this far below the first.
+export const CAPTION_LINE_STEP = 10;
 
 // "ПЕРЕГОВОРНАЯ" starts 4 px right of the wall of the meeting room (x = 576),
 // so that its end does not reach the frame of the board (x = 672).
@@ -137,14 +149,18 @@ function overlaps(a1, a2, b1, b2, c1, c2, d1, d2) {
 // The plate under the caption of a character standing at (X, Y) (logical px)
 // whose text is w px wide, or null: a plate is drawn only when the box of the
 // caption overlaps a wall cell or a drawn partition line (design 4.5, step 8).
-export function labelPlate(layout, X, Y, w) {
+export function labelPlate(layout, X, Y, w, lines = 1) {
   if (!Number.isFinite(w) || w <= 0) return null;
+  const extra =
+    Number.isSafeInteger(lines) && lines > 1
+      ? CAPTION_LINE_STEP * (lines - 1)
+      : 0;
   const cx = X + 12;
   const b = Y + 31;
   const l = cx - w / 2;
   const r = cx + w / 2;
   const t = b - LABEL_ASCENT;
-  const u = b + LABEL_DESCENT;
+  const u = b + LABEL_DESCENT + extra;
   let touches = false;
   for (
     let y = Math.floor(t / CELL);
@@ -171,7 +187,7 @@ export function labelPlate(layout, X, Y, w) {
     x: l - LABEL_PLATE_PAD,
     y: t,
     w: w + 2 * LABEL_PLATE_PAD,
-    h: LABEL_ASCENT + LABEL_DESCENT,
+    h: LABEL_ASCENT + LABEL_DESCENT + extra,
   };
 }
 
@@ -268,6 +284,84 @@ export function drawStatic(ctx, layout) {
   }
 }
 
+// The width of a text in the current font; 0 if it cannot be measured.
+function measure(ctx, text) {
+  try {
+    const w = ctx.measureText(text).width;
+    return typeof w === "number" && Number.isFinite(w) ? w : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// The lines of a caption, measuring with ctx (may throw).
+function captionLinesStrict(ctx, text, max) {
+  if (typeof text !== "string" || text === "") return [];
+  const width = (t) => ctx.measureText(t).width;
+  if (width(text) <= max) return [text];
+  const words = text.split(" ");
+  // The largest beginning of whole words that fits.
+  let k = 0;
+  while (k < words.length && width(words.slice(0, k + 1).join(" ")) <= max) {
+    k += 1;
+  }
+  if (k > 0) {
+    return [words.slice(0, k).join(" "), words.slice(k).join(" ")];
+  }
+  // The first word alone is wider than the line.
+  const first = words[0];
+  const rest = words.slice(1).join(" ");
+  let cut = -1;
+  for (let i = first.indexOf("-"); i >= 0; i = first.indexOf("-", i + 1)) {
+    if (i === first.length - 1) break;
+    if (cut === -1 || width(first.slice(0, i + 1)) <= max) cut = i;
+    else break;
+  }
+  if (cut >= 0) {
+    const tail = first.slice(cut + 1);
+    return [first.slice(0, cut + 1), rest === "" ? tail : `${tail} ${rest}`];
+  }
+  return rest === "" ? [first] : [first, rest];
+}
+
+// The caption of a role at its desk in one or two lines (REQ-048, criterion
+// 2; design D3): one line if it fits in max; otherwise the first line is the
+// largest beginning of whole words that fits (the space goes), the second the
+// rest. A word that alone is wider than max is broken only at a hyphen (the
+// hyphen stays at the end of the first line); without a hyphen it is the first
+// line by itself. A line wider than max is drawn narrowed. An empty text gives
+// no lines; a failure of measureText gives the text as one line.
+export function captionLines(ctx, text, max) {
+  try {
+    return captionLinesStrict(ctx, text, max);
+  } catch {
+    return typeof text === "string" && text !== "" ? [text] : [];
+  }
+}
+
+// The name of a role on the board in up to three lines by words (design D4):
+// a line takes words while it is not wider than width / 0.75 (fillText narrows
+// it to width at most to 3/4); what does not fit in three lines goes into the
+// third one.
+export function boardLines(ctx, text, width) {
+  if (typeof text !== "string" || text === "") return [];
+  const limit = width / BOARD_SQUEEZE;
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+  for (const word of words) {
+    const next = line === "" ? word : `${line} ${word}`;
+    if (line === "" || measure(ctx, next) <= limit || lines.length === 2) {
+      line = next;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line !== "") lines.push(line);
+  return lines;
+}
+
 function countText(n, max) {
   return n > max ? `${max}+` : String(n);
 }
@@ -281,21 +375,25 @@ function drawBoard(ctx, board) {
     const y = BOARD.top;
     rect(ctx, ROLE_PALETTE[column.color], x, y, BOARD.width, BOARD.height);
     ctx.font = "bold 8px system-ui";
-    for (const [state, dy, color] of BOARD.plaques) {
-      rect(ctx, "#0f1520", x + 1, y + dy - 1, 37, 10);
-      rect(ctx, color, x + 2, y + dy, 35, 8);
+    for (const [state, col, row, color] of BOARD.plaques) {
+      const px = x + 1 + BOARD.plaqueStepX * col;
+      const py = y + 2 + BOARD.plaqueStepY * row;
+      rect(ctx, "#0f1520", px - 1, py - 1, 27, 10);
+      rect(ctx, color, px, py, 25, 8);
       ctx.fillStyle = DARK_TEXT;
-      ctx.fillText(countText(column.counts[state], 999), x + 19.5, y + dy + 7);
+      ctx.fillText(countText(column.counts[state], 999), px + 12.5, py + 7);
     }
-    rect(ctx, "rgba(7, 16, 28, 0.75)", x, y + 38, 39, 14);
+    rect(ctx, "rgba(7, 16, 28, 0.75)", x, y + 20, BOARD.width, 32);
     ctx.font = "bold 7px system-ui";
     ctx.fillStyle = "#f2f6fb";
-    ctx.fillText(column.label, x + 19.5, 58, 37);
+    boardLines(ctx, column.label, BOARD.nameWidth).forEach((line, k) => {
+      ctx.fillText(line, x + 27, y + 28 + 8 * k, BOARD.nameWidth);
+    });
   });
   if (board.more > 0) {
     ctx.font = "bold 8px system-ui";
     ctx.fillStyle = "#5b6b85";
-    ctx.fillText(`+${board.more}`, ...BOARD.more);
+    ctx.fillText(`+${board.more}`, ...BOARD.more, BOARD.moreWidth);
   }
 }
 
@@ -390,19 +488,34 @@ export function drawOffice(ctx, office, frame) {
     }
   }
 
-  // 8. Captions, each on a plate if it touches a wall or a partition line;
-  // 9. badges.
+  // 8. Captions at the desks (REQ-048, decision 0058): the name of the role in
+  // one or two lines under the seat of its desk, wherever the character is; a
+  // walking character carries none. Each on a plate if it touches a wall or a
+  // partition line. 9. badges.
   ctx.font = LABEL_FONT;
   ctx.textAlign = "center";
-  for (const d of drawn) {
-    const label = d.character.label;
-    const w = Math.min(ctx.measureText(label).width, LABEL_MAX_WIDTH);
-    const plate = labelPlate(layout, d.x, d.y, w);
+  for (const c of office.characters) {
+    const spot = layout.desks[c.desk_index];
+    if (spot === undefined) continue;
+    const X = spot.seat[0] * CELL;
+    const Y = spot.seat[1] * CELL;
+    const lines = captionLines(ctx, c.label, LABEL_MAX_WIDTH);
+    if (lines.length === 0) continue;
+    const widths = lines.map((line) => measure(ctx, line));
+    const w = Math.min(Math.max(...widths), LABEL_MAX_WIDTH);
+    const plate = labelPlate(layout, X, Y, w, lines.length);
     if (plate !== null) {
       rect(ctx, LABEL_PLATE_COLOR, plate.x, plate.y, plate.w, plate.h);
     }
     ctx.fillStyle = LABEL_COLOR;
-    ctx.fillText(label, d.x + 12, d.y + 31, LABEL_MAX_WIDTH);
+    lines.forEach((line, k) => {
+      const by = Y + 31 + CAPTION_LINE_STEP * k;
+      if (widths[k] > LABEL_MAX_WIDTH) {
+        ctx.fillText(line, X + 12, by, LABEL_MAX_WIDTH);
+      } else {
+        ctx.fillText(line, X + 12, by);
+      }
+    });
   }
   for (const d of drawn) {
     if (d.character.working_count > 1) {
@@ -496,50 +609,71 @@ export function hitTest(positions, px, py) {
 // canvas at the moment of a click (design D8). A character whose caption
 // cannot be measured is left out: its caption is not hit. Never throws.
 export function labelWidths(ctx, office) {
-  const out = new Map();
-  if (ctx === null || ctx === undefined) return out;
+  return captionMeasures(ctx, office).widths;
+}
+
+// The number of lines (1 or 2) of the caption at the desk of every character;
+// a character whose caption cannot be measured is left out. Never throws.
+export function labelLines(ctx, office) {
+  return captionMeasures(ctx, office).lines;
+}
+
+function captionMeasures(ctx, office) {
+  const widths = new Map();
+  const lines = new Map();
+  if (ctx === null || ctx === undefined) return { widths, lines };
   try {
     ctx.font = LABEL_FONT;
   } catch {
     // A context that refuses the font measures nothing.
-    return out;
+    return { widths, lines };
   }
   for (const c of office.characters) {
-    let width;
+    let width = 0;
+    let parts;
     try {
-      width = ctx.measureText(c.label).width;
+      parts = captionLinesStrict(ctx, c.label, LABEL_MAX_WIDTH);
+      for (const line of parts) {
+        width = Math.max(width, ctx.measureText(line).width);
+      }
     } catch {
       continue;
     }
     if (typeof width !== "number" || !Number.isFinite(width) || width <= 0) {
       continue;
     }
-    out.set(c.key, Math.min(width, LABEL_MAX_WIDTH));
+    widths.set(c.key, Math.min(width, LABEL_MAX_WIDTH));
+    lines.set(c.key, parts.length > 1 ? 2 : 1);
   }
-  return out;
+  return { widths, lines };
 }
 
-// What a click opens (REQ-044, criterion 1): 1) a character (drawn on top of
-// everything); 2) the caption of a character, drawn at the character (of
-// several the one drawn last, on top); 3) a cell of a desk — the 2 x 2 block
-// with the laptop or the seat — gives the character of that desk. The cell of
-// approach is floor. Else null.
-export function hitOffice(office, positions, px, py, widths) {
+// What a click opens (REQ-044, criterion 1; REQ-048): 1) a character (drawn on
+// top of everything); 2) the caption at the desk of a character, wherever the
+// character is (of several the one drawn last); 3) a cell of a desk — the
+// 2 x 2 block with the laptop or the seat — gives the character of that desk.
+// The cell of approach is floor. Else null.
+export function hitOffice(office, positions, px, py, widths, lines = null) {
   if (typeof px !== "number" || typeof py !== "number") return null;
   if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
   const character = hitTest(positions, px, py);
   if (character !== null) return character;
   let caption = null;
-  for (const p of positions) {
-    const w = widths instanceof Map ? widths.get(p.key) : undefined;
+  for (const desk of office.desks) {
+    const spot = office.layout.desks[desk.index];
+    if (spot === undefined) continue;
+    const w = widths instanceof Map ? widths.get(desk.key) : undefined;
     if (typeof w !== "number" || !(w > 0)) continue;
-    const X = Math.round(p.x * CELL);
-    const Y = Math.round(p.y * CELL);
+    const n = lines instanceof Map && lines.get(desk.key) === 2 ? 2 : 1;
+    const X = spot.seat[0] * CELL;
+    const Y = spot.seat[1] * CELL;
     const left = X + 12 - w / 2 - LABEL_PLATE_PAD;
     const right = X + 12 + w / 2 + LABEL_PLATE_PAD;
     const top = Y + 31 - LABEL_ASCENT;
-    const bottom = Y + 31 + LABEL_DESCENT;
-    if (px >= left && px < right && py >= top && py < bottom) caption = p.key;
+    const bottom = Y + 31 + CAPTION_LINE_STEP * (n - 1) + LABEL_DESCENT;
+    if (px >= left && px < right && py >= top && py < bottom) {
+      caption = desk.key;
+    }
   }
   if (caption !== null) return caption;
   const cx = Math.floor(px / CELL);

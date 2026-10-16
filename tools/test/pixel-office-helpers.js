@@ -707,8 +707,10 @@ export class FakeElement {
     this.listeners = new Map();
     this.classes = new Set();
     this._text = "";
-    this.title = "";
-    this.value = 0;
+    // a form field holds text; other elements keep the old number (progress)
+    this.value = ["INPUT", "SELECT", "TEXTAREA"].includes(this.tagName)
+      ? ""
+      : 0;
     this.max = 1;
     this.scrollHeight = 0;
     this.clientWidth = 0;
@@ -727,6 +729,15 @@ export class FakeElement {
     };
   }
 
+  // title is the attribute, as in a browser (the page sets either)
+  get title() {
+    return this.attrs.get("title") ?? "";
+  }
+
+  set title(v) {
+    this.attrs.set("title", String(v));
+  }
+
   get className() {
     return [...this.classes].join(" ");
   }
@@ -735,9 +746,11 @@ export class FakeElement {
     return this.attrs.get("id") ?? "";
   }
 
+  // As in a browser, a text set before children were appended stays the first
+  // text node (REQ-049: "подробнее" and its arrow).
   get textContent() {
     if (this.children.length === 0) return this._text;
-    return this.children.map((c) => c.textContent).join("");
+    return this._text + this.children.map((c) => c.textContent).join("");
   }
 
   set textContent(v) {
@@ -808,7 +821,6 @@ export class FakeElement {
   appendChild(child) {
     child.parentNode = this;
     this.children.push(child);
-    this._text = "";
     this._layout();
     return child;
   }
@@ -983,6 +995,9 @@ export class FakeDocument {
   createElement(tag) {
     const el = new FakeElement(this, tag);
     this.created.push(el);
+    // A test may give new elements sizes (rowHeight, clientHeight) to stand
+    // for the layout of a browser (REQ-049: the list of "Сейчас" overflows).
+    if (typeof this.onCreate === "function") this.onCreate(el);
     return el;
   }
 
@@ -1734,6 +1749,21 @@ export function parseCss(css) {
     }
     return map;
   };
+  const declList = (inner) => {
+    const list = [];
+    for (const part of inner.split(";")) {
+      const c = part.indexOf(":");
+      if (c < 0) continue;
+      list.push([
+        part.slice(0, c).trim(),
+        part
+          .slice(c + 1)
+          .trim()
+          .replace(/\s+/g, " "),
+      ]);
+    }
+    return list;
+  };
   const walk = (text, media) => {
     let pos = 0;
     while (pos < text.length) {
@@ -1754,6 +1784,9 @@ export function parseCss(css) {
           media,
           selectors: head.split(",").map((s) => s.trim().replace(/\s+/g, " ")),
           decls: decls(inner),
+          // every declaration in its order, repeated ones too (a fallback
+          // value before the one a browser may drop)
+          list: declList(inner),
         });
       }
       pos = k;
@@ -1772,6 +1805,36 @@ export function cssDecls(rules, selector, media = null) {
     for (const [name, value] of rule.decls) merged.set(name, value);
   }
   return merged;
+}
+
+// The declarations of one selector in the order of the sheet: the rules outside
+// any @media and, when `media` is given, the rules of that block, as a browser
+// meets them (a later rule of the same selector wins).
+export function cssCascade(rules, selector, media = null) {
+  const out = [];
+  for (const rule of rules) {
+    if (rule.media !== null && rule.media !== media) continue;
+    if (!rule.selectors.includes(selector)) continue;
+    out.push(...rule.list);
+  }
+  return out;
+}
+
+// The value of a property that acts last in such a list: the shorthand
+// "border" sets "border-color" too (its colour part), so a later shorthand
+// takes the colour back (REQ-048, DESIGN-QA F3/F4).
+export function cssValue(list, property) {
+  let value;
+  for (const [name, v] of list) {
+    if (name === property) value = v;
+    else if (property === "border-color" && name === "border") {
+      const color = v
+        .split(/\s+(?![^(]*\))/)
+        .find((t) => /^(var\(|#|rgb|hsl)/.test(t));
+      value = color ?? "currentcolor";
+    }
+  }
+  return value;
 }
 
 // ------------------------------------------------------ REQ-042: state honesty

@@ -71,7 +71,7 @@ const startAt = (lines, sec = 0) => ({ time: at(sec), journal_lines: lines });
 
 // ------------------------------------------------------ reading rule, 4.1
 
-test("PG-01: the badge 'REAL - события хуков Claude Code' is in the header in all three states of the link block", async () => {
+test("PG-01: the badge 'Источник событий — Claude Code' is in the header in all three states of the link block", async () => {
   const page = makePage({ entries: [] });
   page.server.mode = "hang";
   await page.start();
@@ -86,7 +86,8 @@ test("PG-01: the badge 'REAL - события хуков Claude Code' is in the 
   await page.tick(2000);
   assert.equal(page.el("link").dataset.state, "down");
   assert.equal(page.text("source-badge"), HEADER_BADGE);
-  assert.equal(HEADER_BADGE, "REAL — события хуков Claude Code");
+  // REQ-048, row 1: the badge names the source of the events
+  assert.equal(HEADER_BADGE, "Источник событий — Claude Code");
 });
 
 function acceptedLog(n, seed) {
@@ -112,7 +113,7 @@ test("PG-02: a journal of accepted lines only (each within 59 s of its arrival) 
   assert.deepEqual(marks, new Array(500).fill(null));
 });
 
-test("PG-03: a SIMULATION line is the only one marked; the journal shows its source and 'не из хуков'", async () => {
+test("PG-03: a SIMULATION line is the only one marked; the journal says 'не подтверждена', its source is only in the technical fields", async () => {
   const j = journal();
   j.sessionStart("S1");
   j.raw({ ...entryOf("UserPromptSubmit", "S1", at(5)), source: "SIMULATION" });
@@ -122,8 +123,20 @@ test("PG-03: a SIMULATION line is the only one marked; the journal shows its sou
   const page = await loaded(j.entries);
   const marked = page.rows().filter((r) => r.dataset.marked === "true");
   assert.equal(marked.length, 1);
-  assert.equal(marked[0].byClass("source")[0].textContent, "SIMULATION");
-  assert.equal(marked[0].byClass("mark")[0].textContent, NOT_FROM_HOOKS);
+  // REQ-048, row 5: the row says "не подтверждена"; its source is only in
+  // the technical fields
+  assert.equal(marked[0].byClass("source").length, 0);
+  assert.equal(marked[0].textContent.includes("SIMULATION"), false);
+  assert.equal(marked[0].byClass("mark")[0].textContent, "не подтверждена");
+  assert.equal(NOT_FROM_HOOKS, "не подтверждена");
+  marked[0].byClass("row-toggle")[0].click();
+  const tech = page
+    .rows()
+    .find((r) => r.dataset.marked === "true")
+    .find((e) => e.dataset.part === "tech");
+  assert.ok(
+    tech.byClass("tech-value").some((e) => e.textContent === "SIMULATION"),
+  );
 });
 
 test("PG-04: a REAL line written 10 minutes earlier after real lines is the only one marked, also behind just two real lines", () => {
@@ -691,21 +704,22 @@ test("PG-12f: under TZ=Asia/Almaty 2026-09-20T04:00:00Z is shown as 09:00 with t
   assert.deepEqual(JSON.parse(out), ["09:00", "Asia/Almaty"]);
 });
 
-test("PG-12g: an empty journal shows 'Событий от хуков пока нет' and the hint, word for word", async () => {
+test("PG-12g: an empty journal shows 'Событий от Claude Code пока нет' and the hint, word for word", async () => {
   const page = await loaded([]);
   const note = page.el("journal").byClass("journal-empty")[0];
   assert.equal(note.dataset.reason, "empty");
+  // REQ-048, rows 3 and 4
   assert.equal(
     note.byClass("empty-title")[0].textContent,
-    "Событий от хуков пока нет",
+    "Событий от Claude Code пока нет",
   );
   const hint = note.byClass("empty-hint")[0].textContent;
   const expected =
-    "Видны только сессии Claude Code, в настройках которых есть обработчики Pixel Office: запущенные в папке sai/, а сессии другой папки — только если в её настройках проекта есть копия обработчиков.";
+    "Видны только разговоры с Claude Code, запущенные в папке sai/: там Claude Code настроен присылать события Pixel Office. Разговоры из другой папки видны, только если в её настройках есть такая же настройка.";
   assert.equal(hint, expected);
   assert.equal(hint.includes("запущенные в каталоге sai/"), false);
   assert.equal(EMPTY_HINT, expected);
-  assert.equal(EMPTY_JOURNAL, "Событий от хуков пока нет");
+  assert.equal(EMPTY_JOURNAL, "Событий от Claude Code пока нет");
 });
 
 test("PG-12h: the description is shown only when identifiers link it; never a guessed one", () => {
@@ -3437,9 +3451,11 @@ test("JR-03: the details of a row - the fields of each case (when, source, sessi
   ]);
   assert.deepEqual(tasks(13), ["к задаче не относится", null], "a marked line");
   assert.deepEqual(tasks(14), ["к задаче не относится", null]);
-  assert.equal(d(0).source, "хук Claude Code");
+  // REQ-048, rows 6, 7, 15: the source in plain words, its value only in the
+  // technical fields
+  assert.equal(d(0).source, "Claude Code");
   assert.equal(d(8).source, "запись оркестратора");
-  assert.equal(d(13).source, "другой источник: SIMULATION");
+  assert.equal(d(13).source, "не Claude Code");
   assert.equal(d(0).agent, "основная сессия: у этого события агента нет");
   assert.equal(d(4).agent, "основная сессия: у этого события агента нет");
   assert.equal(d(5).agent, "Plan · agent-a1");
@@ -3448,10 +3464,7 @@ test("JR-03: the details of a row - the fields of each case (when, source, sessi
   assert.deepEqual(d(0).session, { short: "S1", full: "S1" });
   assert.equal(d(7).words, "Агент «Plan» продолжил работу");
   assert.equal(d(13).meaning, TX.EVENT_TABLE.marked.meaning);
-  assert.equal(
-    d(13).mark,
-    "не из хуков: источник строки — не хук Claude Code: SIMULATION",
-  );
+  assert.equal(d(13).mark, "не подтверждена: строку записал не Claude Code");
   assert.deepEqual(d(8).note, {
     text: "как понял: образец",
     req_id: "REQ-045",
@@ -3492,7 +3505,7 @@ test("JR-03: the details of a row - the fields of each case (when, source, sessi
   );
   // Escape inside the row closes, the focus is on the toggle
   press(rowAt(page, 5), "Escape");
-  assert.equal(detailsAt(page, 5), null);
+  assert.ok(detailsAt(page, 5) === null, "the details of row 5 are closed");
   assert.ok(focused(page) === toggleAt(page, 5));
   // Escape with the focus inside the details (on their technical fields):
   // closed, the focus goes to the toggle of the row
@@ -3501,13 +3514,13 @@ test("JR-03: the details of a row - the fields of each case (when, source, sessi
     .children[0];
   inner.focus();
   press(rowAt(page, 5), "Escape");
-  assert.equal(detailsAt(page, 5), null);
+  assert.ok(detailsAt(page, 5) === null, "the details of row 5 are closed");
   assert.ok(focused(page) === toggleAt(page, 5));
   // Space opens; "Закрыть" closes with the same focus
   press(toggleAt(page, 5), " ");
   box = detailsAt(page, 5);
   box.byClass("details-close")[0].click();
-  assert.equal(detailsAt(page, 5), null);
+  assert.ok(detailsAt(page, 5) === null, "the details of row 5 are closed");
   assert.ok(focused(page) === toggleAt(page, 5));
   // only one row is open at a time
   toggleAt(page, 1).click();
@@ -3608,7 +3621,7 @@ test("JR-05: a hostile text is text in the row and in the details - an <img oner
   toggleAt(page, 5).click();
   assert.equal(
     valueOf(detailsAt(page, 5), "mark"),
-    "не из хуков: источник строки — не хук Claude Code: $&",
+    "не подтверждена: строку записал не Claude Code",
   );
   toggleAt(page, 4).click();
   assert.equal(valueOf(detailsAt(page, 4), "note_text"), `${SCRIPT} ${IMGX}`);
@@ -3628,7 +3641,7 @@ test("JR-06: bad data does not break the journal - an empty journal keeps its te
   try {
     const empty = await loaded([], [], { now: S(10) });
     assert.equal(
-      empty.text("journal").includes("Событий от хуков пока нет"),
+      empty.text("journal").includes("Событий от Claude Code пока нет"),
       true,
     );
     const long = "z".repeat(128);
@@ -3749,7 +3762,7 @@ test("AC-02: a press on the middle of the desk of a role with two instances open
   assert.equal(cardEl(page).dataset.kind, "main");
   assert.equal(
     cardEl(page).byClass("card-working")[0].textContent,
-    "идущих сессий: 1",
+    "разговоров идёт: 1",
   );
   // the default instance is the first of the list (rule d), not the last
   assert.equal(
@@ -3764,7 +3777,7 @@ test("AC-02: a press on the middle of the desk of a role with two instances open
 
 // ------------------------------------------------------------------ AC-03
 
-test("AC-03: the keyboard - Enter and Space on a legend button open the card; Escape gives the focus to the legend button of that role (also after a press on the canvas); Tab and Shift+Tab go round the controls of the card and skip the inside of a closed <details>; after a link to role B Escape gives the focus to the legend button of B; with no legend button the focus goes to the area of the office; the focus rings are in the CSS", async () => {
+test("AC-03: the keyboard - Enter and Space on a legend button open the card; Escape gives the focus to the legend button of that role (also after a press on the canvas); Tab and Shift+Tab go round the controls of the card and skip the inside of a closed <details>; after a link to role B Escape gives the focus to the button that opened the first card of the chain; with no legend button the focus goes to the area of the office; the focus rings are in the CSS", async () => {
   const entries = [
     lineAt("SessionStart", "S1", S(1)),
     lineAt("PostToolUse", "S1", S(2), {
@@ -3842,7 +3855,10 @@ test("AC-03: the keyboard - Enter and Space on a legend button open the card; Es
     .click();
   assert.equal(cardId(page), "agentB");
   page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
-  assert.ok(focused(page) === legendOf(page, "role:Explore"));
+  // decisions/0059, item 2: the focus goes back to the button that opened the
+  // first card of the chain (the legend button of A), not to the one of B
+  assert.ok(focused(page) === plan(), "the button that opened the chain");
+  assert.ok(focused(page) !== legendOf(page, "role:Explore"));
   // opened from the canvas: Escape gives the focus to the legend button too
   const pos = page.app
     .getSim()
@@ -3852,6 +3868,23 @@ test("AC-03: the keyboard - Enter and Space on a legend button open the card; Es
   assert.equal(cardId(page), "agentA");
   page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
   assert.ok(focused(page) === plan());
+  // a chain begun on the canvas (the desk of Plan) -> A -> "Кого запустил" ->
+  // B -> Escape: the press on the canvas counts as the legend button of Plan,
+  // the role of the first card (decisions/0059, item 2), not the one of B
+  const planDesk = deskOf(page, "role:Plan");
+  clickPoint(page, (planDesk.block[0] + 1) * 24, (planDesk.block[1] + 1) * 24);
+  assert.equal(cardId(page), "agentA");
+  cardEl(page)
+    .find((e) => e.dataset.part === "launched")
+    .children[0].click();
+  cardEl(page)
+    .find((e) => e.dataset.focus === "launched:agentB")
+    .click();
+  assert.equal(cardId(page), "agentB");
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+  assert.equal(cardOpen(page), false);
+  assert.ok(focused(page) === plan(), "the canvas chain: the legend of Plan");
+  assert.ok(focused(page) !== legendOf(page, "role:Explore"));
   // no legend button: the focus goes to the area of the office
   const bare = makePage({ entries: [...entries], now: S(10) });
   const legend = bare.doc.getElementById("legend");
@@ -3903,9 +3936,16 @@ test("AC-04: the head of the card and copying - a role of the table, out of the 
     );
     legendOf(page, `role:${role}`).click();
     assert.equal(cardEl(page).byClass("card-title")[0].textContent, title);
-    const c = cardEl(page).byClass("card-code");
+    // REQ-048: no code under the title; a line "код роли: …" in the details
+    // when the code differs from the name
+    assert.equal(cardEl(page).byClass("card-code").length, 0);
+    const c = cardEl(page).byClass("code-row");
     if (code === null) assert.equal(c.length, 0);
-    else assert.equal(c[0].textContent, code);
+    else
+      assert.deepEqual(
+        c.map((e) => e.textContent),
+        [`код роли: ${code}`],
+      );
   }
   // no role: the card names it as the panel does
   const none = await loaded(
@@ -3922,6 +3962,7 @@ test("AC-04: the head of the card and copying - a role of the table, out of the 
     "(роль не указана)",
   );
   assert.equal(cardEl(none).byClass("card-code").length, 0);
+  assert.equal(cardEl(none).byClass("code-row").length, 0);
 
   // copying, with the ids of 128 characters
   const calls = [];
@@ -3957,7 +3998,7 @@ test("AC-04: the head of the card and copying - a role of the table, out of the 
     cardEl(page).find((e) => e.dataset.focus === `copy-${target}`);
   assert.equal(
     copy("agent").getAttribute("aria-label"),
-    "Скопировать номер экземпляра",
+    "Скопировать номер запуска",
   );
   assert.equal(
     copy("session").getAttribute("aria-label"),
@@ -4044,7 +4085,7 @@ test("AC-04: the head of the card and copying - a role of the table, out of the 
   const list = box.find((e) => e.classes.has("card-instances"));
   assert.equal(
     list.byClass("card-count")[0].textContent,
-    "экземпляров роли: 7",
+    "запусков этой роли: 7",
   );
   const more = list.find((e) => e.dataset.part === "more");
   const shown = list
@@ -4428,4 +4469,1539 @@ test("AC-10: a hostile role, description and agent_id are text in the card, no e
     color(err, hex(tokens.get("--panel-2"))),
   );
   assert.ok(pale < 4.5, `--err on its shade: ${pale.toFixed(2)}:1`);
+});
+
+// ===================================================================
+// REQ-048, REQ-049, REQ-046, REQ-047 (design
+// docs/design/REQ-048-049-046-047-interactive.md, table 7): one name of a
+// role, the block "Сейчас" and the details of a row, the transitions of the
+// journal, the card of the main session and the transitions of the cards.
+// The words of the criteria are literals here.
+// ===================================================================
+import { rolesJournal } from "./pixel-office-helpers.js";
+import { shownInPanel } from "../src/pixel-office/public/panels.js";
+import { defaultInstance } from "../src/pixel-office/public/instance-card.js";
+
+const SEC_ROLE = "Sai Security Reviewer (SECURITY-REVIEWER)";
+const DES_ROLE = "Sai Code Designer (CODE-DESIGNER)";
+const NOT_IN_PANEL_TEXT =
+  "задача не показана в панели: там последние 300 элементов";
+const NO_WINDOW_TEXT =
+  "запрос не определён: событие вне окна запроса владельца";
+const escapeKey = (page) =>
+  page.doc.fire("keydown", { key: "Escape", preventDefault() {} });
+const goIn = (page, index, name) =>
+  detailsAt(page, index)?.find((e) => e.dataset.focus === name) ?? null;
+const cardGo = (page, name) =>
+  cardEl(page).find((e) => e.dataset.focus === name);
+const itemOf48 = (page, key) =>
+  page.items().find((i) => i.dataset.key === key) ?? null;
+const shown48 = (page) => page.rows().map((r) => Number(r.dataset.index));
+const count48 = (page) => {
+  const m = / · (\d+) из (\d+)$/.exec(page.text("journal-meta"));
+  return m === null ? null : [Number(m[1]), Number(m[2])];
+};
+function search48(page, text) {
+  const input = page.el("journal-search");
+  input.value = text;
+  input.fire("input");
+}
+// The code of the page: no way to markup, no word of success, only GET.
+function codeChecks48() {
+  for (const name of fs.readdirSync(PUBLIC)) {
+    const text = fs.readFileSync(path.join(PUBLIC, name), "utf8");
+    assert.equal(
+      /innerHTML|outerHTML|insertAdjacentHTML|document[.]write/.test(text),
+      false,
+      name,
+    );
+    assert.equal(/method *: *['"](POST|PUT|PATCH|DELETE)/.test(text), false);
+    for (const line of text.split("\n")) {
+      if (line.includes("HISTORY_META_FINISHED")) continue;
+      assert.doesNotMatch(line, /заверш|готов|выполнен|успешн/i, name);
+    }
+  }
+}
+// The visible text of an element: no hidden element, no technical fields.
+function seen48(el) {
+  if (el.hidden === true || el.dataset.part === "tech") return "";
+  if (["SCRIPT", "STYLE", "NOSCRIPT"].includes(el.tagName)) return "";
+  if (el.children.length === 0) return el.textContent;
+  return el.children.map(seen48).join(" ");
+}
+
+// ------------------------------------------------------------------ LW-02
+
+test("LW-02: one name of a role on the page - 'Sai Security Reviewer (SECURITY-REVIEWER)', 'Explore' and an empty role: the legend button, the item of the panel (no code in it), the column 'Агент' and 'кто' of the timeline of the window, the title of the card are roleName; the tooltip 'код роли: …' of the legend and the panel only when the code differs; 'код роли: …' in the details of the card", async () => {
+  const j = journal();
+  j.sessionStart("S1"); // 0
+  j.ownerPrompt("S1", "Образец"); // 1
+  const roles = [
+    [SEC_ROLE, "sec-0001", "Проверка безопасности", true],
+    ["Explore", "exp-0001", "Explore", false],
+    [undefined, "unk-0001", "(роль не указана)", false],
+  ];
+  for (const [role, id] of roles) {
+    j.post("S1", `tu-${id}`, id, {
+      subagentType: role,
+      description: `Образец ${id}`,
+    });
+    j.subStart("S1", id, role);
+  }
+  const page = await loaded(j.entries);
+  for (const [role, id, name, coded] of roles) {
+    const key = `role:${role ?? TX.ROLE_UNKNOWN}`;
+    const nameEl = legendOf(page, key).byClass("name")[0];
+    assert.equal(nameEl.textContent, name, key);
+    assert.equal(roleName(role ?? ""), name);
+    assert.equal(
+      nameEl.getAttribute("title"),
+      coded ? `код роли: ${role}` : null,
+    );
+    const item = itemOf48(page, id);
+    const roleEl = item.byClass("item-role")[0];
+    assert.equal(roleEl.textContent, name);
+    assert.equal(
+      roleEl.getAttribute("title"),
+      coded ? `код роли: ${role}` : null,
+    );
+    assert.equal(item.textContent.includes("SECURITY-REVIEWER"), false);
+    assert.equal(item.byClass("item-full").length, 0);
+    // the card: the title is the name; the code only in "Полные номера и
+    // код роли"
+    legendOf(page, key).click();
+    assert.equal(cardEl(page).byClass("card-title")[0].textContent, name);
+    const ids = cardEl(page).find((e) => e.dataset.part === "ids");
+    assert.deepEqual(
+      ids.byClass("code-row").map((e) => e.textContent),
+      coded ? [`код роли: ${role}`] : [],
+    );
+    const textBut = (el) =>
+      el === ids
+        ? ""
+        : el.children.length === 0
+          ? el.textContent
+          : el.children.map(textBut).join(" ");
+    const outside = textBut(cardEl(page));
+    assert.equal(outside.includes("SECURITY-REVIEWER"), false, key);
+    escapeKey(page);
+  }
+  // the window of the request: "Агент" and "кто" are the names
+  itemOf48(page, "sec-0001").byClass("history-open")[0].click();
+  const dom = historyDom(page);
+  assert.equal(dom.isOpen(), true);
+  assert.deepEqual(
+    dom.body.byClass("history-role").map((e) => e.textContent),
+    roles.map(([, , name]) => name),
+  );
+  const who = dom.body.byClass("who").map((e) => e.textContent);
+  for (const [, , name] of roles) assert.ok(who.includes(name), name);
+  assert.equal(dom.body.textContent.includes("SECURITY-REVIEWER"), false);
+});
+
+// ------------------------------------------------------------------ LW-05
+
+test("LW-05: bad conditions do not break the page - a role of 128 characters without spaces, a role of very long words, an empty role, a role <img>, an empty journal, the link lost with an open card and with open details: no exception, no service word, the contents stay", async () => {
+  const errors = mock.method(console, "error", () => {});
+  try {
+    const long = "Q".repeat(128);
+    const words = ["Ж".repeat(40), "Ш".repeat(40), "Щ".repeat(40)].join(" ");
+    const roles = [long, words, undefined, IMG];
+    const j = journal();
+    j.sessionStart("S1");
+    roles.forEach((role, i) => j.subStart("S1", `bad-${i}`, role));
+    const page = await loaded(j.entries);
+    for (const role of roles) {
+      const key = `role:${role ?? TX.ROLE_UNKNOWN}`;
+      assert.equal(
+        legendOf(page, key).byClass("name")[0].textContent,
+        role ?? "(роль не указана)",
+      );
+    }
+    // the canvas: each caption is drawn, at most two lines, no "…"
+    page.frames.step();
+    const frame = page.ctx.lastFrame();
+    const labels = frame
+      .filter((c) => c.op === "fillText")
+      .map((c) => c.args[0]);
+    assert.ok(labels.includes(long));
+    assert.ok(labels.includes("Ж".repeat(40)));
+    // two lines of one caption are drawn one after the other
+    assert.ok(
+      labels.some((t, i) => t === IMG || `${t} ${labels[i + 1]}` === IMG),
+    );
+    assert.equal(
+      labels.some((t) => t.includes("…")),
+      false,
+    );
+    // the card of the long role and the details of a row; then the link goes
+    legendOf(page, `role:${long}`).click();
+    assert.equal(cardEl(page).byClass("card-title")[0].textContent, long);
+    const cardText = cardEl(page).textContent;
+    toggleAt(page, 1).click();
+    const details = detailsAt(page, 1).textContent;
+    page.server.mode = "fail";
+    await page.tick(2000);
+    await page.tick(10_000);
+    assert.equal(page.el("link").dataset.state, "down");
+    assert.equal(cardOpen(page), true);
+    assert.equal(cardEl(page).byClass("card-title")[0].textContent, long);
+    assert.ok(cardEl(page).textContent.includes(cardText.slice(0, 40)));
+    assert.equal(detailsAt(page, 1).textContent, details);
+    assert.doesNotMatch(seen48(page.doc.root), SERVICE);
+    assert.equal(page.created("img").length, 0);
+    // an empty journal: its two texts
+    const empty = await loaded([]);
+    assert.equal(
+      empty.el("journal").byClass("empty-title")[0].textContent,
+      "Событий от Claude Code пока нет",
+    );
+    assert.equal(
+      empty.el("journal").byClass("empty-hint")[0].textContent,
+      TX.EMPTY_HINT,
+    );
+    assert.doesNotMatch(seen48(empty.doc.root), SERVICE);
+    assert.equal(errors.mock.calls.length, 0, "reportOnce was not called");
+  } finally {
+    errors.mock.restore();
+  }
+});
+
+// ------------------------------------------------------------------ LW-06
+
+test("LW-06: a role <img src=x onerror=alert(1)> is text in the legend, the panel, the card, the window of history and the tooltip; no element img; no way to markup and no word of success in the code; only GET", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  j.ownerPrompt("S1", "Образец");
+  j.post("S1", "tu-img", "img-0001", { subagentType: IMG, description: IMG });
+  j.subStart("S1", "img-0001", IMG);
+  const page = await loaded(j.entries);
+  const key = `role:${IMG}`;
+  const name = legendOf(page, key).byClass("name")[0];
+  assert.equal(name.textContent, IMG);
+  // the code equals the name: no tooltip (the text is not a code of Sai)
+  assert.ok(name.getAttribute("title") === null);
+  const item = itemOf48(page, "img-0001");
+  assert.equal(item.byClass("item-role")[0].textContent, IMG);
+  assert.equal(item.byClass("item-desc")[0].textContent, IMG);
+  legendOf(page, key).click();
+  assert.equal(cardEl(page).byClass("card-title")[0].textContent, IMG);
+  escapeKey(page);
+  item.byClass("history-open")[0].click();
+  assert.ok(
+    historyDom(page)
+      .body.byClass("history-role")
+      .some((e) => e.textContent === IMG),
+  );
+  // a tooltip of a code with markup in it is text too
+  const coded = "Sai <img src=x onerror=prompt> (SECURITY-REVIEWER)";
+  const j2 = journal();
+  j2.sessionStart("S1");
+  j2.subStart("S1", "img-0002", coded);
+  const page2 = await loaded(j2.entries);
+  const legend2 = legendOf(page2, `role:${coded}`).byClass("name")[0];
+  assert.equal(legend2.textContent, "Проверка безопасности");
+  assert.equal(legend2.getAttribute("title"), `код роли: ${coded}`);
+  for (const p of [page, page2]) {
+    assert.equal(p.created("img").length, 0);
+    assert.equal(p.doc.htmlWrites, 0);
+    for (const c of p.server.calls) assert.equal(c.init.method, "GET");
+  }
+  codeChecks48();
+});
+
+// ------------------------------------------------------------------ VW-01
+
+// The rows of "Сейчас" overflow when there are more than two (the sizes of a
+// browser are given to every new span).
+function nowSized(entries, now = NOW) {
+  const page = makePage({ entries: [...entries], now });
+  page.doc.onCreate = (el) => {
+    if (el.tagName === "SPAN") {
+      el.rowHeight = 18;
+      el.clientHeight = 36;
+    }
+  };
+  return page;
+}
+const nowParts = (page) => ({
+  count: page.el("now").byClass("now-count")[0],
+  button: page.el("now").byClass("now-show-all")[0],
+  all: page.el("now-all"),
+  catcher: page.el("now-all-catcher"),
+  list: page.el("now-text").byClass("now-list")[0] ?? null,
+});
+const rowTexts = (el) => el.byClass("now-row").map((r) => r.textContent);
+
+test("VW-01: the line 'Сейчас' - 1, 2 and 8 in work say 'в работе: 1/2/8'; when the rows do not fit, 'Показать всех (8)'; a press shows the 8 rows in the order of the block and 'Скрыть'; Escape closes with the focus on the button; a press beside the list closes it and opens nothing; a new event updates the open list (9 rows); with nothing in work no caption and no button; with the list open and an open row of the journal, Escape closes the list first, then the details", async () => {
+  for (const [roles, n, overflow] of [
+    [0, 1, false],
+    [1, 2, false],
+  ]) {
+    const page = nowSized(rolesJournal(roles).entries);
+    await page.start();
+    const p = nowParts(page);
+    assert.equal(p.count.hidden, false);
+    assert.equal(p.count.textContent, `в работе: ${n}`);
+    assert.equal(p.button.hidden, !overflow, `${n}`);
+  }
+  const j = rolesJournal(7);
+  const page = nowSized(j.entries);
+  await page.start();
+  let p = nowParts(page);
+  assert.equal(p.count.textContent, "в работе: 8");
+  assert.equal(p.button.hidden, false);
+  assert.equal(p.button.textContent, "Показать всех (8)");
+  assert.equal(p.button.getAttribute("aria-expanded"), "false");
+  assert.equal(p.all.hidden, true);
+  p.button.click();
+  assert.equal(p.all.hidden, false);
+  assert.equal(p.catcher.hidden, false);
+  assert.deepEqual(rowTexts(p.all), rowTexts(nowParts(page).list));
+  assert.equal(rowTexts(p.all).length, 8);
+  assert.equal(p.button.textContent, "Скрыть");
+  assert.equal(p.button.getAttribute("aria-expanded"), "true");
+  // Escape: closed, the focus on the button
+  escapeKey(page);
+  assert.equal(p.all.hidden, true);
+  assert.equal(p.catcher.hidden, true);
+  assert.ok(focused(page) === p.button);
+  assert.equal(p.button.textContent, "Показать всех (8)");
+  // Enter opens; a press beside the list closes it, no card opens
+  press(p.button, "Enter");
+  assert.equal(p.all.hidden, false);
+  p.catcher.click();
+  assert.equal(p.all.hidden, true);
+  assert.equal(cardOpen(page), false);
+  assert.ok(focused(page) === p.button);
+  // "Скрыть" closes too
+  p.button.click();
+  p.button.click();
+  assert.equal(p.all.hidden, true);
+  // a new event while it is open: 9 rows
+  p.button.click();
+  await page.push(
+    entryOf("SubagentStart", "S0", at(400), {
+      agent_id: "agent-new",
+      agent_type: "Explore",
+    }),
+  );
+  p = nowParts(page);
+  assert.equal(p.all.hidden, false);
+  assert.equal(rowTexts(p.all).length, 9);
+  assert.deepEqual(rowTexts(p.all), rowTexts(p.list));
+  assert.equal(p.count.textContent, "в работе: 9");
+  assert.equal(p.button.textContent, "Скрыть");
+  // the order of Escape: the list first (the details stay, the focus on the
+  // row), then the details
+  const index = page.rows()[page.rows().length - 1].dataset.index;
+  toggleAt(page, index).click();
+  assert.ok(detailsAt(page, index) !== null);
+  assert.equal(p.all.hidden, false);
+  toggleAt(page, index).focus();
+  press(rowAt(page, index), "Escape");
+  assert.equal(nowParts(page).all.hidden, true, "the list closed first");
+  assert.ok(detailsAt(page, index) !== null, "the details stay");
+  assert.ok(focused(page) === toggleAt(page, index));
+  press(rowAt(page, index), "Escape");
+  assert.ok(detailsAt(page, index) === null);
+  assert.ok(focused(page) === toggleAt(page, index));
+  // nothing in work: no caption, no button
+  const idle = nowSized(
+    [...rolesJournal(3, { stopped: true }).entries].concat([
+      entryOf("Stop", "S0", at(300)),
+    ]),
+  );
+  await idle.start();
+  const q = nowParts(idle);
+  assert.equal(idle.text("now-text"), "Сейчас: в работе ничего нет");
+  assert.equal(q.count.hidden, true);
+  assert.equal(q.count.textContent, "");
+  assert.equal(q.button.hidden, true);
+});
+
+// ------------------------------------------------------------------ VW-02
+
+test("VW-02: the details of a row begin with the main - 'подробнее' / 'свернуть' and aria-expanded; the fields in the order what, not proved, when, source, session, agent, task, mark, technical fields; a row in the middle of a long journal: the top of the details goes to the top of the list; a row seen whole keeps the scroll; the last row opens too", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  for (let i = 0; i < 48; i++) j.prompt("S1");
+  j.raw({ ...entryOf("Stop", "S1", at(60)), source: "SIMULATION" }); // 49
+  const page = makePage({ entries: [...j.entries] });
+  // the details of a row stand 20 px under the top of their row
+  page.doc.onCreate = (el) => {
+    if (el.tagName !== "DIV") return;
+    Object.defineProperty(el, "offsetTop", {
+      get() {
+        return el.parentNode !== null && el.parentNode.tagName === "LI"
+          ? el.parentNode.offsetTop + 20
+          : 0;
+      },
+      set() {},
+    });
+  };
+  await page.start();
+  const list = page.el("journal");
+  // the words of a closed row
+  const more = (i) => rowAt(page, i).byClass("row-more")[0];
+  assert.equal(more(25).children[0].getAttribute("aria-hidden"), "true");
+  assert.ok(more(25).textContent.startsWith("подробнее"));
+  assert.equal(toggleAt(page, 25).getAttribute("aria-expanded"), "false");
+  // the middle row, not seen: the top of the details at the top of the list
+  list.scrollTop = 0;
+  toggleAt(page, 25).click();
+  const box = detailsAt(page, 25);
+  assert.ok(box !== null);
+  assert.equal(box.offsetTop, rowAt(page, 25).offsetTop + 20);
+  assert.equal(list.scrollTop, box.offsetTop);
+  assert.ok(more(25).textContent.startsWith("свернуть"));
+  assert.equal(toggleAt(page, 25).getAttribute("aria-expanded"), "true");
+  // the order of the fields (the row of transitions after its field)
+  assert.deepEqual(
+    box.children.map(
+      (e) => e.dataset.field ?? e.dataset.part ?? `links:${e.dataset.for}`,
+    ),
+    [
+      "what",
+      "not_proved",
+      "when",
+      "source",
+      "session",
+      "agent",
+      "links:agent",
+      "task",
+      "links:task",
+      "tech",
+      "links:undefined",
+    ],
+  );
+  assert.ok(box.children[box.children.length - 1].classes.has("details-close"));
+  // a row seen whole: the scroll stays
+  toggleAt(page, 25).click();
+  list.scrollTop = 400;
+  toggleAt(page, 22).click();
+  assert.ok(detailsAt(page, 22) !== null);
+  assert.equal(list.scrollTop, 400);
+  // the marked last row: the mark before the technical fields; it opens
+  toggleAt(page, 49).click();
+  const last = detailsAt(page, 49);
+  const order = last.children
+    .map((e) => e.dataset.field ?? e.dataset.part)
+    .filter((x) => x !== undefined);
+  assert.deepEqual(order.slice(0, 2), ["what", "not_proved"]);
+  assert.ok(order.indexOf("mark") < order.indexOf("tech"));
+  assert.ok(order.indexOf("task") < order.indexOf("mark"));
+  assert.ok(list.scrollTop <= list.scrollHeight - list.clientHeight);
+});
+
+// ------------------------------------------------------------------ VW-03
+
+test("VW-03: bad conditions of 'Сейчас' and of the details - 1 and 13 in work (13: the open list scrolls inside itself, the page does not), the details of the last row and of the longest 'Чего это не доказывает' (case 6), the link lost with the open list and open details (the contents stay), the work over while the list is open (closed, the focus on 'Пауза'): no exception, no service word", async () => {
+  const errors = mock.method(console, "error", () => {});
+  try {
+    const one = nowSized(rolesJournal(0).entries);
+    await one.start();
+    assert.equal(nowParts(one).count.textContent, "в работе: 1");
+    assert.doesNotMatch(seen48(one.doc.root), SERVICE);
+    const j = rolesJournal(11);
+    j.stop("S0"); // case 6: the main session answered
+    j.subStart("S0", "agent-last", "Explore");
+    const page = nowSized(j.entries);
+    await page.start();
+    let p = nowParts(page);
+    assert.equal(p.count.textContent, "в работе: 12");
+    p.button.click();
+    assert.equal(rowTexts(p.all).length, 12);
+    // the list scrolls inside itself (CSS), the page under it does not
+    const rules = parseCss(
+      fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+    );
+    const decls = cssDecls(rules, "#now-all");
+    assert.equal(decls.get("overflow-y"), "auto");
+    assert.match(decls.get("max-height"), /100vh/);
+    assert.equal(decls.get("position"), "fixed");
+    // 13 in work
+    await page.push(
+      entryOf("SubagentStart", "S0", at(500), {
+        agent_id: "agent-13",
+        agent_type: "Plan",
+      }),
+    );
+    p = nowParts(page);
+    assert.equal(p.count.textContent, "в работе: 13");
+    assert.equal(rowTexts(p.all).length, 13);
+    // the details of the Stop (case 6) and of the last row
+    const stopIndex = j.entries.findIndex((e) => e.hook_event_name === "Stop");
+    search48(page, "");
+    toggleAt(page, stopIndex).click();
+    assert.equal(
+      valueOf(detailsAt(page, stopIndex), "not_proved"),
+      "Не доказывает, что вся работа закончена или удалась: агенты, запущенные параллельно, могут ещё работать, и сессия может продолжить сама, когда они вернутся. При прерывании человеком и при ошибке этого события нет.",
+    );
+    const last = page.rows()[page.rows().length - 1].dataset.index;
+    toggleAt(page, last).click();
+    assert.ok(detailsAt(page, last) !== null);
+    const details = detailsAt(page, last).textContent;
+    const list = rowTexts(nowParts(page).all);
+    // the link is lost: the list and the details stay
+    page.server.mode = "fail";
+    await page.tick(2000);
+    await page.tick(10_000);
+    assert.equal(page.el("link").dataset.state, "down");
+    assert.equal(nowParts(page).all.hidden, false);
+    assert.deepEqual(rowTexts(nowParts(page).all), list);
+    assert.equal(detailsAt(page, last).textContent, details);
+    assert.doesNotMatch(seen48(page.doc.root), SERVICE);
+    // the work is over while the list is open: closed, the focus on "Пауза"
+    page.server.mode = "ok";
+    await page.tick(2000);
+    nowParts(page).button.focus();
+    const ends = [];
+    let sec = 600;
+    for (const e of page.server.entries) {
+      if (e.hook_event_name === "SubagentStart") {
+        ends.push(
+          entryOf("SubagentStop", "S0", at(sec++), {
+            agent_id: e.agent_id,
+            agent_type: e.agent_type,
+          }),
+        );
+      }
+    }
+    ends.push(entryOf("Stop", "S0", at(sec++)));
+    await page.push(...ends);
+    p = nowParts(page);
+    assert.equal(p.all.hidden, true);
+    assert.equal(p.button.hidden, true);
+    assert.equal(p.count.hidden, true);
+    assert.ok(focused(page) === page.el("pause"));
+    assert.equal(errors.mock.calls.length, 0, "reportOnce was not called");
+  } finally {
+    errors.mock.restore();
+  }
+});
+
+// ------------------------------------------------------------------ VW-04
+
+test("VW-04: the truth of 'Сейчас' - the numbers 'в работе: N' and 'Показать всех (N)' are the count of the model; the rows of the open list are the rows of the block in the same order; a description <img> in the open list is text and makes no element; no way to markup, no word of success, only GET", async () => {
+  const j = rolesJournal(6);
+  j.post("S0", "tu-img", "agent-img", {
+    subagentType: "Plan",
+    description: IMG,
+  });
+  j.subStart("S0", "agent-img", "Plan");
+  const page = nowSized(j.entries);
+  await page.start();
+  const n = nowLine(page.app.getModel()).count;
+  assert.equal(n, 8);
+  const p = nowParts(page);
+  assert.equal(p.count.textContent, `в работе: ${n}`);
+  assert.equal(p.button.textContent, `Показать всех (${n})`);
+  p.button.click();
+  const open = p.all.byClass("now-row");
+  const block = p.list.byClass("now-row");
+  assert.equal(open.length, n);
+  assert.deepEqual(
+    open.map((r) => [r.dataset.key, r.textContent]),
+    block.map((r) => [r.dataset.key, r.textContent]),
+  );
+  assert.ok(open.some((r) => r.textContent.includes(IMG)));
+  assert.equal(page.created("img").length, 0);
+  assert.equal(page.doc.htmlWrites, 0);
+  for (const c of page.server.calls) assert.equal(c.init.method, "GET");
+  codeChecks48();
+});
+
+// ------------------------------------------------------------------ JN-03
+
+// A task begun before any request of the owner, a request with A1 that hands
+// a task to B, a handoff to an agent that never started.
+function transitionsJournal() {
+  const j = journal();
+  j.sessionStart("S1"); // 0
+  j.subStart("S1", "early-01", "Plan"); // 1: outside any window
+  j.ownerPrompt("S1", "Образец"); // 2: req:2
+  j.post("S1", "tu-a1", "a1-00001", {
+    subagentType: DES_ROLE,
+    description: "Образец проекта",
+  }); // 3
+  j.subStart("S1", "a1-00001", DES_ROLE); // 4
+  j.post("S1", "tu-b1", "b1-00001", {
+    subagentType: "Explore",
+    description: "Образец поиска",
+    byId: "a1-00001",
+    byType: DES_ROLE,
+  }); // 5
+  j.subStart("S1", "b1-00001", "Explore"); // 6
+  j.post("S1", "tu-gh", "ghost-01", { subagentType: "Plan" }); // 7
+  j.subStop("S1", "b1-00001", "Explore"); // 8
+  j.stop("S1"); // 9
+  j.subStop("S1", "nobody-1", "Plan"); // 10: an agent_id without a task
+  return j.entries;
+}
+
+// The oldest task is the 301st item of the panel.
+function crowdedJournal() {
+  const j = journal();
+  j.sessionStart("S1");
+  j.subStart("S1", "old-task", "Plan");
+  j.subStop("S1", "old-task", "Plan");
+  for (let i = 0; i < 300; i++) {
+    j.subStart("S1", `t-${String(i).padStart(4, "0")}`, "Explore");
+  }
+  return j.entries;
+}
+
+test("JN-03: the transitions of an event - at the start of A1 in the window of a request each of the three leads to its element; at the handoff A1 -> B 'к задаче в панели' leads to B and 'события этой задачи' sets 'Задача' B; a handoff to an agent without a task has none; the 301st task gives a text instead of the button; an event outside the window gives a text; after the window the focus is on its button; SessionStart has none", async () => {
+  const page = await loaded(transitionsJournal());
+  const name = roleName(DES_ROLE);
+  // the start of A1: three transitions
+  toggleAt(page, 4).click();
+  const taskLinks = () =>
+    detailsAt(page, 4)
+      .find((e) => e.dataset.for === "task")
+      .all((e) => e.tagName === "BUTTON")
+      .map((b) => b.textContent);
+  assert.deepEqual(taskLinks(), [
+    "к задаче в панели",
+    "события этой задачи",
+    "открыть историю запроса",
+  ]);
+  goIn(page, 4, "go:panel").click();
+  const item = itemOf48(page, "a1-00001");
+  assert.equal(item.dataset.target, "true");
+  assert.equal(item.getAttribute("tabindex"), "-1");
+  assert.ok(focused(page) === item);
+  assert.equal(cardOpen(page), false);
+  goIn(page, 4, "go:task-events").click();
+  assert.deepEqual(shown48(page), [3, 4, 5]);
+  assert.deepEqual(count48(page), [3, 3]);
+  assert.equal(
+    page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
+    `Задача: ${name} a1-00001`,
+  );
+  // the row is in the task: its details stay open and keep the focus
+  assert.ok(detailsAt(page, 4) !== null);
+  assert.ok(focused(page) === goIn(page, 4, "go:task-events"));
+  // the window of the request; after it the focus is on its button
+  goIn(page, 4, "go:history").click();
+  const dom = historyDom(page);
+  assert.equal(dom.isOpen(), true);
+  assert.ok(focused(page) === dom.close);
+  escapeKey(page);
+  assert.equal(dom.isOpen(), false);
+  assert.ok(focused(page) === goIn(page, 4, "go:history"));
+  page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
+  // the handoff A1 -> B: the task of the launched one
+  toggleAt(page, 5).click();
+  assert.deepEqual(
+    detailsAt(page, 5)
+      .find((e) => e.dataset.for === "task")
+      .all((e) => e.tagName === "BUTTON")
+      .map((b) => b.textContent),
+    [
+      "кому",
+      "к задаче в панели",
+      "события этой задачи",
+      "открыть историю запроса",
+    ],
+  );
+  goIn(page, 5, "go:panel").click();
+  assert.equal(itemOf48(page, "b1-00001").dataset.target, "true");
+  assert.notEqual(itemOf48(page, "a1-00001").dataset.target, "true");
+  assert.ok(focused(page) === itemOf48(page, "b1-00001"));
+  goIn(page, 5, "go:task-events").click();
+  assert.deepEqual(shown48(page), [5, 6, 8]);
+  assert.equal(
+    page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
+    "Задача: Explore b1-00001",
+  );
+  page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
+  // a handoff to an agent that never started: no transition, the text
+  toggleAt(page, 7).click();
+  assert.equal(
+    valueOf(detailsAt(page, 7), "task"),
+    "задача не найдена: её начало не записано",
+  );
+  assert.ok(detailsAt(page, 7).find((e) => e.dataset.for === "task") === null);
+  // a task outside the window of a request: the text instead of the button
+  toggleAt(page, 1).click();
+  const early = detailsAt(page, 1).find((e) => e.dataset.for === "task");
+  assert.ok(goIn(page, 1, "go:history") === null);
+  assert.ok(goIn(page, 1, "go:panel") !== null);
+  assert.deepEqual(
+    early.byClass("detail-note").map((e) => e.textContent),
+    [NO_WINDOW_TEXT],
+  );
+  // SessionStart: no transition to a task or a window
+  toggleAt(page, 0).click();
+  assert.equal(valueOf(detailsAt(page, 0), "task"), "к задаче не относится");
+  assert.ok(detailsAt(page, 0).find((e) => e.dataset.for === "task") === null);
+  // the 301st task: not in the panel, the text instead of the button
+  const crowd = await loaded(crowdedJournal());
+  assert.equal(shownInPanel(crowd.app.getModel()).has("old-task"), false);
+  search48(crowd, "old-task");
+  assert.deepEqual(shown48(crowd), [1, 2]);
+  toggleAt(crowd, 1).click();
+  assert.ok(goIn(crowd, 1, "go:panel") === null);
+  assert.ok(goIn(crowd, 1, "go:task-events") !== null);
+  assert.ok(
+    detailsAt(crowd, 1)
+      .byClass("detail-note")
+      .some((e) => e.textContent === NOT_IN_PANEL_TEXT),
+  );
+});
+
+// ------------------------------------------------------------------ JN-04
+
+test("JN-04: hostile text in the navigation is text - a role, a description, identifiers and the text of a record <img onerror> in the variants of the filters, in the mark 'Задача' and in the found rows; a search for '<img' does not break the page; no element img; no way to markup; only GET", async () => {
+  const j = journal();
+  j.sessionStart(IMG); // 0
+  j.ownerPrompt(IMG, "Образец"); // 1
+  j.post(IMG, "tu-x", IMG, { subagentType: IMG, description: IMG }); // 2
+  j.subStart(IMG, IMG, IMG); // 3
+  j.note({ session_id: IMG, request_time: j.entries[1].time, note_text: IMG }); // 4
+  const page = await loaded(j.entries);
+  const options = (id) => page.el(id).children.map((o) => o.textContent);
+  assert.ok(
+    options("filter-session").some((t) => t.startsWith("Сессия <img src · с ")),
+  );
+  assert.ok(page.el("filter-session").children.some((o) => o.value === IMG));
+  assert.ok(options("filter-agent").includes(IMG));
+  assert.ok(
+    page.el("filter-agent").children.some((o) => o.value === `role:${IMG}`),
+  );
+  toggleAt(page, 3).click();
+  goIn(page, 3, "go:task-events").click();
+  assert.equal(
+    page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
+    `Задача: ${IMG} <img src`,
+  );
+  page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
+  search48(page, "<img");
+  assert.deepEqual(shown48(page), [0, 1, 2, 3, 4]);
+  assert.ok(page.text("journal").includes(IMG));
+  choose48(page, "filter-agent", `role:${IMG}`);
+  assert.deepEqual(shown48(page), [3]);
+  assert.equal(page.created("img").length, 0);
+  assert.equal(page.doc.htmlWrites, 0);
+  for (const c of page.server.calls) assert.equal(c.init.method, "GET");
+  codeChecks48();
+});
+
+function choose48(page, id, value) {
+  const select = page.el(id);
+  select.value = value;
+  select.fire("change");
+}
+
+// ------------------------------------------------------------------ JN-05
+
+test("JN-05: bad conditions of the navigation - an empty journal (one variant of the sessions, no role, the texts of the empty journal), a filter by a session and a task that are gone after the journal is replaced (back to 'все …', the mark gone), a search without matches, identifiers of 128 characters, the link lost with chosen filters: no exception, no service word", async () => {
+  const errors = mock.method(console, "error", () => {});
+  try {
+    const empty = await loaded([]);
+    const values = (p, id) => p.el(id).children.map((o) => o.value);
+    assert.deepEqual(values(empty, "filter-session"), [""]);
+    assert.deepEqual(values(empty, "filter-agent"), ["", "main", "orch"]);
+    // "Тип события" keeps all the variants of criterion 1, the journal empty
+    assert.deepEqual(
+      empty.el("filter-type").children.map((o) => [o.value, o.textContent]),
+      [
+        ["", "все типы"],
+        ["session_start", "Открыт разговор с Claude Code"],
+        ["session_end", "Закрыт разговор с Claude Code"],
+        ["prompt_owner", "Владелец отправил запрос"],
+        ["prompt_service", "В сессию пришло служебное сообщение"],
+        ["prompt_unknown", "В сессию пришло сообщение"],
+        ["stop", "Основная сессия вернула ответ"],
+        ["agent_start", "Агент получил задание и начал работу"],
+        ["agent_resume", "Агент продолжил работу"],
+        ["agent_stop", "Агент закончил работу и вернул ответ"],
+        ["handoff", "Задание передано агенту"],
+        ["orch_note", "Оркестратор записал, как понял запрос"],
+      ],
+    );
+    assert.equal(
+      empty.el("journal").byClass("empty-title")[0].textContent,
+      "Событий от Claude Code пока нет",
+    );
+    // identifiers of 128 characters
+    const longS = `S${"s".repeat(127)}`;
+    const longA = `A${"a".repeat(127)}`;
+    const j = journal();
+    j.sessionStart("S1"); // 0
+    j.subStart("S1", "keep-001", "Plan"); // 1
+    j.sessionStart(longS); // 2
+    j.subStart(longS, longA, "Explore"); // 3
+    const page = await loaded(j.entries);
+    assert.ok(
+      page
+        .el("filter-session")
+        .children.some((o) =>
+          o.textContent.startsWith(`Сессия ${longS.slice(0, 8)} · с `),
+        ),
+    );
+    choose48(page, "filter-session", longS);
+    toggleAt(page, 3).click();
+    goIn(page, 3, "go:task-events").click();
+    assert.equal(
+      page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
+      `Задача: Explore ${longA.slice(0, 8)}`,
+    );
+    choose48(page, "filter-session", longS);
+    choose48(page, "filter-type", "agent_start");
+    // the link is lost: the choice and the rows stay
+    const before = [shown48(page), page.text("journal-meta")];
+    page.server.mode = "fail";
+    await page.tick(2000);
+    await page.tick(10_000);
+    assert.deepEqual([shown48(page), page.text("journal-meta")], before);
+    assert.equal(page.el("filter-session").value, longS);
+    assert.equal(page.el("journal-task-mark").hidden, false);
+    // the journal is replaced by a shorter one without that session and task
+    page.server.mode = "ok";
+    page.server.entries = [j.entries[0], j.entries[1]];
+    await page.tick(2000);
+    assert.equal(page.el("filter-session").value, "");
+    assert.equal(page.el("journal-task-mark").hidden, true);
+    assert.equal(page.el("filter-type").value, "agent_start");
+    assert.deepEqual(shown48(page), [1]);
+    // a search without matches
+    search48(page, "нет-такого-текста");
+    assert.equal(
+      page.el("journal").byClass("empty-title")[0].textContent,
+      "Под выбранные фильтры не подходит ни одно событие",
+    );
+    const reset = page
+      .el("journal")
+      .byClass("journal-empty")[0]
+      .all((e) => e.tagName === "BUTTON");
+    assert.deepEqual(
+      reset.map((b) => b.textContent),
+      ["Сбросить фильтры"],
+    );
+    reset[0].click();
+    assert.equal(page.el("journal-search").value, "");
+    assert.deepEqual(shown48(page), [0, 1]);
+    for (const p of [empty, page]) {
+      assert.doesNotMatch(seen48(p.doc.root), SERVICE);
+      for (const id of ["filter-session", "filter-agent", "filter-type"]) {
+        assert.doesNotMatch(p.el(id).textContent, SERVICE);
+      }
+    }
+    assert.equal(errors.mock.calls.length, 0, "reportOnce was not called");
+  } finally {
+    errors.mock.restore();
+  }
+});
+
+// ----------------------------------------------------------- MC-02 … MC-08
+
+// Two requests of the owner in S1 (A1 hands a task to B in the first), a task
+// of S2 begun before the request of S2 (no window).
+function cardsJournal() {
+  const j = journal();
+  j.sessionStart("S1"); // 0
+  j.ownerPrompt("S1", "Образец первый"); // 1: main:1
+  j.post("S1", "tu-a1", "a1-00001", {
+    subagentType: DES_ROLE,
+    description: "Образец проекта",
+  }); // 2
+  j.subStart("S1", "a1-00001", DES_ROLE); // 3
+  j.post("S1", "tu-b1", "b1-00001", {
+    subagentType: "Explore",
+    description: "Образец поиска",
+    byId: "a1-00001",
+    byType: DES_ROLE,
+  }); // 4
+  j.subStart("S1", "b1-00001", "Explore"); // 5
+  j.subStop("S1", "b1-00001", "Explore"); // 6
+  j.note({ session_id: "S1", request_time: j.entries[1].time }); // 7
+  j.stop("S1"); // 8: closes main:1
+  j.ownerPrompt("S1", "Образец второй"); // 9: main:9
+  j.post("S1", "tu-a2", "a2-00001", { subagentType: "Plan" }); // 10
+  j.subStart("S1", "a2-00001", "Plan"); // 11
+  j.sessionStart("S2"); // 12
+  j.post("S2", "tu-a3", "a3-00001", { subagentType: "general-purpose" }); // 13
+  j.subStart("S2", "a3-00001", "general-purpose"); // 14
+  j.ownerPrompt("S2", "Образец третий"); // 15: main:15
+  return j.entries;
+}
+// The row the card of the main session shows: the row of its session that is
+// not among "Другие запросы этой сессии".
+function mainRowShown(page) {
+  const card = cardEl(page);
+  if (card.dataset.kind !== "main") return null;
+  const short = cardId(page);
+  const others = new Set(
+    card
+      .all((e) => /^row:/.test(e.dataset.focus ?? ""))
+      .map((e) => e.dataset.focus.slice(4)),
+  );
+  const rows = page.app
+    .getModel()
+    .mainRows.filter((r) => r.session_id.slice(0, 8) === short)
+    .map((r) => r.key)
+    .filter((k) => !others.has(k));
+  return rows.length === 1 ? rows[0] : rows;
+}
+
+test("MC-02: a press on the desk or the character of the main session and Enter on its legend button open the card of the main session on the first row of the main session in the order of the list", async () => {
+  const page = await loaded(cardsJournal());
+  const first = page.app.getModel().list.find((i) => i.kind === "main");
+  const main = deskOf(page, "main");
+  clickPoint(page, (main.block[0] + 1) * 24, (main.block[1] + 1) * 24);
+  assert.equal(cardOpen(page), true);
+  assert.equal(cardEl(page).dataset.kind, "main");
+  assert.equal(
+    cardEl(page).byClass("card-title")[0].textContent,
+    "Основная сессия",
+  );
+  assert.equal(mainRowShown(page), first.key);
+  escapeKey(page);
+  const pos = page.app
+    .getSim()
+    .positions()
+    .find((p) => p.key === "main");
+  clickPoint(page, (pos.x + 0.5) * 24, (pos.y + 0.5) * 24);
+  assert.equal(cardEl(page).dataset.kind, "main");
+  assert.equal(mainRowShown(page), first.key);
+  escapeKey(page);
+  press(legendOf(page, "main"), "Enter");
+  assert.equal(cardEl(page).dataset.kind, "main");
+  assert.equal(mainRowShown(page), first.key);
+  assert.ok(
+    ["has_window", "no_window"]
+      .map((k) => TX.MAIN_CARD[k])
+      .includes(cardEl(page).byClass("card-history-note")[0].textContent),
+  );
+});
+
+test("MC-03: the transitions of a card - (а) 'к задаче в панели' closes the card, keeps the choice, the item gets the mark and the focus, and the 301st task has the text instead; (б) 'события в журнале' closes the card, sets 'Задача', the count is the rows of the task, its last row is open and in focus; (в) no element with data-request or history-open in the cards and no press inside them opens the window; (г) 'Основная сессия' of 'Кто запустил' opens the card of the main session on the row of the window of the first start, or the first row of the session", async () => {
+  const page = await loaded(cardsJournal());
+  const des = `role:${DES_ROLE}`;
+  // (а)
+  legendOf(page, des).click();
+  assert.equal(cardId(page), "a1-00001");
+  cardGo(page, "go:panel").click();
+  assert.equal(cardOpen(page), false);
+  assert.equal(legendOf(page, des).getAttribute("aria-pressed"), "true");
+  const item = itemOf48(page, "a1-00001");
+  assert.equal(item.dataset.target, "true");
+  assert.ok(focused(page) === item);
+  // (б)
+  legendOf(page, des).click();
+  cardGo(page, "go:events").click();
+  assert.equal(cardOpen(page), false);
+  assert.equal(
+    page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
+    `Задача: ${roleName(DES_ROLE)} a1-00001`,
+  );
+  assert.deepEqual(shown48(page), [2, 3, 4]);
+  assert.deepEqual(count48(page), [3, 3]);
+  assert.ok(detailsAt(page, 4) !== null, "the last row of the task is open");
+  assert.ok(focused(page) === toggleAt(page, 4));
+  page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
+  // (в) the card of an instance and of the main session: no way to the
+  // window
+  const dom = historyDom(page);
+  for (const open of [
+    () => legendOf(page, des).click(),
+    () => legendOf(page, "main").click(),
+  ]) {
+    open();
+    assert.ok(
+      cardEl(page).find((e) => e.hasAttribute("data-request")) === null,
+    );
+    assert.equal(cardEl(page).byClass("history-open").length, 0);
+    const names = cardEl(page)
+      .all((e) => e.dataset.focus !== undefined)
+      .map((e) => e.dataset.focus);
+    assert.ok(names.length >= 4);
+    for (const name of names) {
+      if (!cardOpen(page)) open();
+      const el = cardEl(page).find((e) => e.dataset.focus === name);
+      if (el === null) continue;
+      el.click();
+      assert.equal(dom.isOpen(), false, name);
+    }
+    if (cardOpen(page)) escapeKey(page);
+  }
+  // (г) the launcher of A1 is the main session: its row of the window
+  legendOf(page, des).click();
+  const launcher = cardEl(page).byClass("card-link");
+  assert.deepEqual(
+    launcher.map((b) => b.textContent),
+    ["Основная сессия"],
+  );
+  launcher[0].click();
+  assert.equal(cardEl(page).dataset.kind, "main");
+  assert.equal(mainRowShown(page), "main:1");
+  escapeKey(page);
+  // a task begun outside a window: the first row of its session
+  legendOf(page, "role:general-purpose").click();
+  cardEl(page).byClass("card-link")[0].click();
+  assert.equal(cardEl(page).dataset.kind, "main");
+  assert.equal(cardId(page), "S2");
+  assert.equal(mainRowShown(page), "main:15");
+  escapeKey(page);
+  // (а) the 301st task: the text, no button
+  const crowd = await loaded(crowdedJournal());
+  legendOf(crowd, "role:Plan").click();
+  assert.equal(cardId(crowd), "old-task");
+  assert.ok(cardGo(crowd, "go:panel") === null);
+  assert.ok(
+    cardEl(crowd)
+      .byClass("card-note")
+      .some((e) => e.textContent === NOT_IN_PANEL_TEXT),
+  );
+  assert.ok(cardGo(crowd, "go:events") !== null);
+});
+
+test("MC-04: the transitions into a card - a handoff has two buttons to two cards ('кто передал', 'кому'); a handoff of the main session leads to its card; a Stop opens the row it closed; an agent_id without a task has the text instead of the button; 'агент' of an item of the panel opens its card", async () => {
+  const page = await loaded(cardsJournal());
+  toggleAt(page, 4).click();
+  assert.equal(goIn(page, 4, "go:card-instance").textContent, "кто передал");
+  assert.equal(goIn(page, 4, "go:to").textContent, "кому");
+  goIn(page, 4, "go:card-instance").click();
+  assert.equal(cardId(page), "a1-00001");
+  escapeKey(page);
+  goIn(page, 4, "go:to").click();
+  assert.equal(cardId(page), "b1-00001");
+  escapeKey(page);
+  // the handoff of the main session: its card on the open row
+  toggleAt(page, 2).click();
+  assert.equal(goIn(page, 2, "go:card-main").textContent, "кто передал");
+  goIn(page, 2, "go:card-main").click();
+  assert.equal(mainRowShown(page), "main:1");
+  escapeKey(page);
+  // the Stop: the row it closed
+  toggleAt(page, 8).click();
+  assert.equal(goIn(page, 8, "go:card-main").textContent, "открыть агента");
+  goIn(page, 8, "go:card-main").click();
+  assert.equal(mainRowShown(page), "main:1");
+  escapeKey(page);
+  // the request of the second window: its own row
+  toggleAt(page, 9).click();
+  goIn(page, 9, "go:card-main").click();
+  assert.equal(mainRowShown(page), "main:9");
+  escapeKey(page);
+  // the record of the orchestrator: no button to a card
+  toggleAt(page, 7).click();
+  assert.ok(detailsAt(page, 7).find((e) => e.dataset.for === "agent") === null);
+  // an agent_id without a task
+  const other = await loaded(transitionsJournal());
+  toggleAt(other, 10).click();
+  assert.ok(goIn(other, 10, "go:card-instance") === null);
+  assert.deepEqual(
+    detailsAt(other, 10)
+      .byClass("detail-note")
+      .map((e) => e.textContent),
+    ["агент не найден среди задач: его начало не записано"],
+  );
+  // "агент" of the panel: the card of the instance, the card of the row
+  const agentOf = (key) => itemOf48(page, key).byClass("item-agent")[0];
+  assert.equal(agentOf("b1-00001").textContent, "агент");
+  agentOf("b1-00001").click();
+  assert.equal(cardId(page), "b1-00001");
+  escapeKey(page);
+  agentOf("main:9").click();
+  assert.equal(mainRowShown(page), "main:9");
+});
+
+test("MC-05: the window and the focus - (i) the card -> 'к задаче в панели' -> the focus on the item; its 'открыть историю запроса' opens the window, Escape gives the focus to that button and no card; (ii) with a card open, the button of an item of the panel and of a request in the journal close the card and open the window, the focus in it and then back on the button; (iii) a card opened from the journal or the panel gives the focus back to the button that opened it, also after a link to another card; the transitions are reached by Tab and have a focus ring", async () => {
+  const page = await loaded(cardsJournal());
+  const des = `role:${DES_ROLE}`;
+  const dom = historyDom(page);
+  const windowButton = () =>
+    itemOf48(page, "a1-00001").byClass("history-open")[0];
+  // (i)
+  legendOf(page, des).click();
+  cardGo(page, "go:panel").click();
+  assert.ok(focused(page) === itemOf48(page, "a1-00001"));
+  windowButton().click();
+  assert.equal(dom.isOpen(), true);
+  escapeKey(page);
+  assert.equal(dom.isOpen(), false);
+  assert.ok(focused(page) === windowButton());
+  assert.equal(cardOpen(page), false);
+  // (ii) the panel: the click goes straight to the button
+  legendOf(page, des).click();
+  assert.equal(cardOpen(page), true);
+  windowButton().click();
+  assert.equal(cardOpen(page), false);
+  assert.equal(page.el("card-overlay").hidden, true);
+  assert.equal(dom.isOpen(), true);
+  assert.ok(focused(page) === dom.close);
+  escapeKey(page);
+  assert.ok(focused(page) === windowButton());
+  assert.equal(cardOpen(page), false);
+  // (ii) the request of the owner in the journal
+  legendOf(page, "main").click();
+  const rowButton = () => rowAt(page, 1).byClass("history-open")[0];
+  rowButton().click();
+  assert.equal(cardOpen(page), false);
+  assert.equal(dom.isOpen(), true);
+  escapeKey(page);
+  assert.ok(focused(page) === rowButton());
+  assert.equal(cardOpen(page), false);
+  // (iii) the journal -> "открыть агента" -> Escape
+  toggleAt(page, 3).click();
+  const open = () => goIn(page, 3, "go:card-instance");
+  assert.equal(open().textContent, "открыть агента");
+  open().click();
+  assert.equal(cardId(page), "a1-00001");
+  escapeKey(page);
+  assert.ok(focused(page) === open());
+  // the chain: the journal -> A1 -> B (launched by A1) -> Escape: the button
+  // that opened the first card (decision 0059, point 2)
+  open().click();
+  const launched = cardEl(page).find((e) => e.dataset.part === "launched");
+  launched.children[0].click();
+  cardEl(page)
+    .find((e) => e.dataset.focus === "launched:b1-00001")
+    .click();
+  assert.equal(cardId(page), "b1-00001");
+  escapeKey(page);
+  assert.ok(focused(page) === open());
+  // the panel -> "агент" -> Escape
+  const agent = () => itemOf48(page, "a2-00001").byClass("item-agent")[0];
+  agent().click();
+  assert.equal(cardId(page), "a2-00001");
+  escapeKey(page);
+  assert.ok(focused(page) === agent());
+  // Tab reaches the transitions of the card
+  legendOf(page, des).click();
+  const reached = new Set();
+  for (let i = 0; i < 40; i++) {
+    page.doc.fire("keydown", { key: "Tab", preventDefault() {} });
+    reached.add(focused(page)?.dataset.focus);
+  }
+  for (const name of ["go:panel", "go:events", "launcher", "close"]) {
+    assert.ok(reached.has(name), name);
+  }
+  escapeKey(page);
+  // the focus ring of buttons, fields and lists
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  for (const selector of [
+    "button:focus-visible",
+    "[tabindex]:focus-visible",
+    "input:focus-visible",
+    "select:focus-visible",
+  ]) {
+    assert.match(cssDecls(rules, selector).get("outline") ?? "", /solid/);
+  }
+  for (const rule of rules) {
+    if (
+      rule.selectors.some((s) =>
+        /detail-link|item-agent|card-link|now-show-all|journal-/.test(s),
+      )
+    ) {
+      const outline = new Map(rule.decls).get("outline") ?? "";
+      assert.notEqual(outline, "none", rule.selectors.join());
+      assert.notEqual(outline, "0", rule.selectors.join());
+    }
+  }
+});
+
+test("MC-06: bad conditions and truth of the cards - a session without requests, a task outside the window of a request (not among the launched of the request, no window button in the panel), an agent_id without a task, a Stop without an open row (the first row of its session), a session_id of 128 characters, the link lost with an open card: named by text, no exception, no service word; links only by identifiers and windows", async () => {
+  const errors = mock.method(console, "error", () => {});
+  try {
+    const longS = `L${"l".repeat(127)}`;
+    const entries = [
+      ...cardsJournal(),
+      lineAt("SessionStart", "S9", S(100)), // 16: no request
+      lineAt("SessionStart", "S4", S(101)), // 17
+      lineAt("UserPromptSubmit", "S4", S(102), { prompt_kind: "owner" }), // 18
+      lineAt("Stop", "S4", S(103)), // 19
+      lineAt("Stop", "S4", S(104)), // 20: no open row
+      lineAt("SessionStart", longS, S(105)), // 21
+      lineAt("UserPromptSubmit", longS, S(106), { prompt_kind: "owner" }), // 22
+    ];
+    const page = await loaded(entries, [], { now: S(120) });
+    // a task outside the window: not launched in the request of S2, no window
+    // button of its item
+    assert.equal(itemOf48(page, "a3-00001").byClass("history-open").length, 0);
+    legendOf(page, "role:general-purpose").click();
+    cardEl(page).byClass("card-link")[0].click();
+    assert.equal(mainRowShown(page), "main:15");
+    cardEl(page)
+      .find((e) => e.dataset.part === "launched")
+      .children[0].click();
+    assert.deepEqual(
+      cardEl(page)
+        .find((e) => e.dataset.part === "launched")
+        .all((e) => e.classes.has("instance"))
+        .map((b) => b.dataset.key),
+      [],
+    );
+    assert.ok(
+      cardEl(page)
+        .find((e) => e.dataset.part === "launched")
+        .textContent.includes(TX.CARD_EMPTY),
+    );
+    // a session without requests
+    cardEl(page)
+      .find((e) => e.dataset.part === "sessions")
+      .children[0].click();
+    cardGo(page, "session:S9").click();
+    assert.equal(cardId(page), "S9");
+    assert.deepEqual(
+      cardEl(page)
+        .byClass("task-none")
+        .map((e) => e.textContent),
+      ["запросов в этой сессии не записано"],
+    );
+    escapeKey(page);
+    // a Stop without an open row: the first row of its session
+    toggleAt(page, 20).click();
+    goIn(page, 20, "go:card-main").click();
+    assert.equal(mainRowShown(page), "main:18");
+    escapeKey(page);
+    // a session_id of 128 characters: 8 in the head, whole in the details
+    toggleAt(page, 22).click();
+    goIn(page, 22, "go:card-main").click();
+    assert.equal(cardId(page), longS.slice(0, 8));
+    assert.equal(
+      cardEl(page)
+        .find((e) => e.dataset.part === "ids")
+        .byClass("full-id")[0].textContent,
+      longS,
+    );
+    // the link is lost with the card open: the contents stay, "Нет связи"
+    const text = cardEl(page).byClass("card-title")[0].textContent;
+    page.server.mode = "fail";
+    await page.tick(2000);
+    await page.tick(10_000);
+    assert.equal(cardOpen(page), true);
+    assert.equal(cardEl(page).byClass("card-title")[0].textContent, text);
+    assert.equal(
+      cardEl(page).byClass("card-offline")[0].textContent,
+      TX.NO_CONNECTION,
+    );
+    assert.doesNotMatch(seen48(cardEl(page)), SERVICE);
+    escapeKey(page);
+    // an agent_id without a task
+    const other = await loaded(transitionsJournal());
+    toggleAt(other, 10).click();
+    assert.ok(
+      detailsAt(other, 10).textContent.includes(
+        "агент не найден среди задач: его начало не записано",
+      ),
+    );
+    assert.doesNotMatch(seen48(page.doc.root), SERVICE);
+    assert.equal(errors.mock.calls.length, 0, "reportOnce was not called");
+    codeChecks48();
+  } finally {
+    errors.mock.restore();
+  }
+});
+
+test("MC-08: the default instance of a role without one in work - (а) the latest own event, not the latest start (A1 started first and stopped last); (б) scenario 35: an instance that needs attention (restarted) before a finished one with a later own event; (в) of two that need attention (restarted, no fresh data) the one with the latest own event, before a finished one that stopped last; a handoff and a marked start after all lines change nothing; an instance in work is chosen first", async () => {
+  const role = "Plan";
+  const st = (s, id, ms) => sub(s, id, ms, role);
+  const en = (s, id, ms) => subEnd(s, id, ms, role);
+  const noise = (s, ms, other) => [
+    lineAt("PostToolUse", s, ms, {
+      tool_use_id: "tu-noise",
+      launched_agent_id: other,
+      subagent_type: role,
+    }),
+    { ...st(s, other, ms + 1000), source: "SIMULATION" },
+  ];
+  const opened = async (entries, starts, now) => {
+    const page = await loaded(entries, starts, { now });
+    legendOf(page, `role:${role}`).click();
+    const key = defaultInstance(page.app.getModel(), `role:${role}`);
+    return { page, id: cardId(page), key };
+  };
+  // (а)
+  const a = [
+    lineAt("SessionStart", "S1", S(1)),
+    st("S1", "mc08-a1", S(2)),
+    st("S1", "mc08-a2", S(3)),
+    en("S1", "mc08-a2", S(4)),
+    en("S1", "mc08-a1", S(5)),
+  ];
+  let r = await opened(a, [], S(30));
+  assert.equal(r.id, "mc08-a1");
+  assert.equal(r.key, "mc08-a1");
+  r = await opened([...a, ...noise("S1", S(6), "mc08-a2")], [], S(30));
+  assert.equal(r.id, "mc08-a1", "a handoff and a marked line change nothing");
+  // an instance in work is chosen first
+  r = await opened([...a, st("S1", "mc08-a5", S(6))], [], S(30));
+  assert.equal(r.id, "mc08-a5");
+  // (б) scenario 35
+  const b = [
+    lineAt("SessionStart", "S1", S(1)),
+    st("S1", "sample-a", S(2)),
+    st("S1", "sample-b", S(3)),
+    en("S1", "sample-b", S(4)),
+  ];
+  const restartB = { time: iso(S(5)), journal_lines: 4 };
+  r = await opened(b, [restartB], S(30));
+  const mb = r.page.app.getModel();
+  const stateOf = (m, key) => m.tasks.find((t) => t.key === key).state;
+  assert.equal(stateOf(mb, "sample-a"), "restarted");
+  assert.equal(stateOf(mb, "sample-b"), "completed");
+  assert.equal(r.id, "sample-a");
+  r = await opened([...b, ...noise("S1", S(6), "sample-b")], [restartB], S(30));
+  assert.equal(r.id, "sample-a");
+  // (в)
+  const hour = STALE_AFTER_MS;
+  const c = [
+    st("S1", "mc08-c1", S(1)), // before the record of the server start
+    st("S2", "mc08-c2", S(10)), // after it, then nothing in S2
+    st("S3", "mc08-c3", S(10) + hour + 60_000),
+    en("S3", "mc08-c3", S(10) + hour + 120_000), // the last line
+  ];
+  const restartC = { time: iso(S(5)), journal_lines: 1 };
+  const nowC = S(10) + hour + 180_000;
+  r = await opened(c, [restartC], nowC);
+  const mc = r.page.app.getModel();
+  assert.equal(stateOf(mc, "mc08-c1"), "restarted");
+  assert.equal(stateOf(mc, "mc08-c2"), "stale");
+  assert.equal(stateOf(mc, "mc08-c3"), "completed");
+  assert.equal(r.id, "mc08-c2");
+  r = await opened(
+    [...c, ...noise("S3", S(10) + hour + 130_000, "mc08-c1")],
+    [restartC],
+    nowC,
+  );
+  assert.equal(r.id, "mc08-c2");
+});
+
+// ===================================================================
+// REQ-048 run, the fixes after DESIGN-QA (07a) and the review (04b): one rule
+// for "the card of the main session opens", the filters before the first
+// answer, the rules of style.css found by DESIGN-QA.
+// ===================================================================
+import { cssCascade, cssValue } from "./pixel-office-helpers.js";
+import { mainChoiceOpens } from "../src/pixel-office/public/main-card.js";
+
+test("DQ-01: a marked line of a session the model does not know has no transition to the card of the main session; a marked line of a known session has it and it opens (design 4.3); mainChoiceOpens is false for null, undefined, an empty object and an unknown session, true for a known one", async () => {
+  const entries = [
+    lineAt("SessionStart", "S1", S(1)),
+    lineAt("UserPromptSubmit", "S1", S(2), { prompt_kind: "owner" }),
+    { ...lineAt("SessionStart", "S9", S(3)), source: "SIMULATION" }, // 2
+    { ...lineAt("SessionStart", "S1", S(4)), source: "SIMULATION" }, // 3
+  ];
+  const page = await loaded(entries, [], { now: S(10) });
+  const m = page.app.getModel();
+  const h = buildHistory(m);
+  assert.deepEqual(m.marks[2] !== null && m.marks[3] !== null, true);
+  assert.deepEqual(eventDetails(m, h, 2).links.agent, []);
+  assert.deepEqual(
+    eventDetails(m, h, 3).links.agent.map((l) => [l.go, l.label]),
+    [["card-main", "открыть агента"]],
+  );
+  for (const choice of [null, undefined, {}, { row: null, session: "S9" }]) {
+    assert.equal(mainChoiceOpens(m, choice), false, JSON.stringify(choice));
+  }
+  assert.equal(mainChoiceOpens(m, { row: null, session: "S1" }), true);
+  assert.equal(mainChoiceOpens(m, { row: "main:1", session: "S1" }), true);
+  // the page: no button at the unknown session, a working one at the known
+  toggleAt(page, 2).click();
+  assert.ok(goIn(page, 2, "go:card-main") === null);
+  assert.ok(detailsAt(page, 2).find((e) => e.dataset.for === "agent") === null);
+  toggleAt(page, 3).click();
+  goIn(page, 3, "go:card-main").click();
+  assert.equal(cardOpen(page), true);
+  assert.equal(cardEl(page).dataset.kind, "main");
+  assert.equal(cardId(page), "S1");
+});
+
+test("DQ-02: before the first answer of the server 'Фильтры' opens the line of the lists with 'все сессии', 'все агенты', 'все типы'; 'Сбросить фильтры' is hidden and the journal is empty", async () => {
+  const page = makePage({ entries: [] });
+  page.server.mode = "hang";
+  await page.start();
+  assert.equal(page.el("link").dataset.state, "none");
+  const button = page.el("journal-filters");
+  assert.equal(button.textContent, "Фильтры");
+  assert.equal(page.el("journal-filter-line").hidden, true);
+  button.click();
+  assert.equal(button.getAttribute("aria-expanded"), "true");
+  assert.equal(page.el("journal-filter-line").hidden, false);
+  const variants = (id) =>
+    page.el(id).children.map((o) => [o.value, o.textContent]);
+  assert.deepEqual(variants("filter-session"), [["", "все сессии"]]);
+  assert.deepEqual(variants("filter-agent"), [["", "все агенты"]]);
+  assert.deepEqual(variants("filter-type"), [["", "все типы"]]);
+  assert.equal(page.el("journal-reset").hidden, true);
+  assert.equal(page.rows().length, 0);
+  button.click();
+  assert.equal(page.el("journal-filter-line").hidden, true);
+});
+
+test("DQ-03: the rules of style.css after DESIGN-QA, by the order of the sheet (the value that acts is the last one met, a later 'border' takes the colour back) - F1 the lists keep 2.25rem in a narrow window; F3/F4 the frames of #now-all and of the mark 'Задача'; F5 the text of an empty result; F8 the item of the panel in lines; F12 the ring of 'Показать всех' inside; N1 the separator out of the accessible name; N3 the fallback max-height first; I2 the line of the filters wraps, a list is at least 6.5rem", () => {
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  const NARROW = "@media (max-width: 599px)";
+  const value = (selector, property, media = null) =>
+    cssValue(cssCascade(rules, selector, media), property);
+  // the helper itself: a later shorthand takes the colour back
+  const probe = parseCss(
+    "#a { border-color: var(--x); }\n#a, .b { border: 1px solid var(--line); }",
+  );
+  assert.equal(
+    cssValue(cssCascade(probe, "#a"), "border-color"),
+    "var(--line)",
+  );
+  // F1
+  assert.equal(value(".journal-select", "flex", NARROW), "none");
+  assert.equal(value(".journal-select", "height", NARROW), "2.25rem");
+  assert.equal(
+    value(".journal-filter-line", "flex-direction", NARROW),
+    "column",
+  );
+  assert.equal(value(".journal-filter-line", "flex-wrap", NARROW), "nowrap");
+  // F3, F4
+  assert.equal(value("#now-all", "border-color"), "var(--now-line)");
+  assert.equal(value(".task-mark", "border-color"), "var(--accent)");
+  assert.equal(value("#now-all", "border-color", NARROW), "var(--now-line)");
+  // F5
+  const empty = '.journal-empty[data-reason="filtered"] .empty-title';
+  assert.equal(value(empty, "font-size"), "0.75rem");
+  assert.equal(value(empty, "color"), "var(--muted)");
+  assert.equal(value(empty, "font-weight"), "400");
+  // F8
+  assert.equal(value(".tasks .item", "flex-flow"), "row wrap");
+  for (const part of [".item-head", ".item-desc", ".item-time"]) {
+    assert.equal(value(`.tasks .item > ${part}`, "flex-basis"), "100%", part);
+  }
+  // F12
+  assert.match(value(".now-show-all:focus-visible", "outline-offset"), /^-/);
+  // N1: the visible separator first, then the same with an empty text for
+  // the accessible name
+  const before = cssCascade(rules, ".item .item-agent + .history-open::before")
+    .filter(([name]) => name === "content")
+    .map(([, v]) => v);
+  assert.deepEqual(before, ['" · "', '" · " / ""']);
+  // N3: in the narrow window the fallback without an anchor first, the value
+  // with anchor-size last; the same pair outside the narrow window
+  const heights = (media) =>
+    rules
+      .filter((r) => r.media === media && r.selectors.includes("#now-all"))
+      .flatMap((r) => r.list)
+      .filter(([name]) => name === "max-height")
+      .map(([, v]) => v);
+  for (const media of [null, NARROW]) {
+    const pair = heights(media);
+    assert.equal(pair.length, 2, String(media));
+    assert.equal(pair[0].includes("anchor"), false, String(media));
+    assert.match(pair[1], /anchor-size\(--top height\)/);
+  }
+  assert.match(value("#now-all", "max-height", NARROW), /anchor-size/);
+  // I2
+  assert.equal(value(".journal-filter-line", "flex-wrap"), "wrap");
+  assert.equal(value(".journal-select", "min-width"), "6.5rem");
+});
+
+// LW-05 (criterion 4 REQ-048) checks the text of a long role in the legend and
+// the card; the fake DOM has no layout, so whether the name wraps is checked
+// here, by the rules of style.css (fix 08e after UAT, diagnosis 08d).
+test("DQ-04: a long role name wraps - .legend-item, .card-link and .instance-id have overflow-wrap: anywhere as the value that acts, outside and inside every @media; no rule (in an @media too) gives them or their parts white-space: nowrap, overflow-wrap: normal or break-word, or word-break: keep-all", () => {
+  const rules = parseCss(
+    fs.readFileSync(path.join(PUBLIC, "style.css"), "utf8"),
+  );
+  const medias = [null, ...new Set(rules.map((r) => r.media).filter(Boolean))];
+  assert.ok(medias.includes("@media (max-width: 599px)"));
+  const targets = ["legend-item", "card-link", "instance-id"];
+  for (const name of targets) {
+    for (const media of medias) {
+      assert.equal(
+        cssValue(cssCascade(rules, `.${name}`, media), "overflow-wrap"),
+        "anywhere",
+        `.${name} in ${media}`,
+      );
+    }
+  }
+  const touches = (selector) =>
+    targets.some((name) => new RegExp(`\\.${name}(?![\\w-])`).test(selector)) ||
+    selector === "button";
+  const bad = [];
+  let seen = 0;
+  for (const rule of rules) {
+    const hit = rule.selectors.filter(touches);
+    if (hit.length === 0) continue;
+    seen += 1;
+    for (const [prop, value] of rule.list) {
+      const wrong =
+        (prop === "white-space" && /nowrap/.test(value)) ||
+        (prop === "overflow-wrap" && /^(normal|break-word)$/.test(value)) ||
+        (prop === "word-wrap" && /^(normal|break-word)$/.test(value)) ||
+        (prop === "word-break" && value === "keep-all");
+      if (wrong)
+        bad.push(`${rule.media ?? ""} ${hit.join(", ")} { ${prop}: ${value} }`);
+    }
+  }
+  assert.ok(seen >= 6, `${seen} rules looked at`);
+  assert.deepEqual(bad, []);
+});
+
+// decisions/0060 (fix 08g): the transitions of the card of an instance stand
+// right after "Кто запустил", before the phrases of what is not known.
+test("DQ-05: in the card of an instance '.card-links' stands right after the line of 'Кто запустил' and before the first '.card-unknown' - in a card of one column and of two columns, with the launcher the main session, an agent with a task, and no record; both phrases '.card-unknown' stay after it", async () => {
+  const j = journal();
+  j.sessionStart("S1"); // 0
+  j.ownerPrompt("S1", "Образец"); // 1
+  j.post("S1", "tu-p1", "p1-00001", { subagentType: "Plan" }); // 2
+  j.subStart("S1", "p1-00001", "Plan"); // 3
+  j.post("S1", "tu-p2", "p2-00001", {
+    subagentType: "Plan",
+    byId: "p1-00001",
+    byType: "Plan",
+  }); // 4
+  j.subStart("S1", "p2-00001", "Plan"); // 5
+  j.subStart("S1", "e1-00001", "Explore"); // 6: no handoff recorded
+  const page = await loaded(j.entries);
+  const order = () => {
+    const section = cardEl(page).byClass("card-instance")[0];
+    const kids = section.children;
+    const title = kids.findIndex(
+      (e) => e.tagName === "H4" && e.textContent === "Кто запустил",
+    );
+    assert.ok(title >= 0);
+    const links = kids.findIndex((e) => e.classes.has("card-links"));
+    const unknown = kids
+      .map((e, i) => (e.classes.has("card-unknown") ? i : -1))
+      .filter((i) => i >= 0);
+    return { kids, title, links, unknown };
+  };
+  const check = (why, launcherClass) => {
+    const { kids, title, links, unknown } = order();
+    assert.ok(kids[title + 1].classes.has(launcherClass), `${why}: launcher`);
+    assert.equal(links, title + 2, `${why}: the transitions right after it`);
+    assert.deepEqual(unknown, [links + 1, links + 2], why);
+    assert.deepEqual(
+      unknown.map((i) => kids[i].textContent),
+      [TX.UNKNOWN_MESSAGES, TX.UNKNOWN_ERRORS],
+    );
+    assert.ok(
+      kids[links].find((e) => e.dataset.focus === "go:events") !== null,
+    );
+  };
+  // two columns (two instances of Plan): p1 launched by the main session
+  legendOf(page, "role:Plan").click();
+  cardEl(page)
+    .find((e) => e.dataset.focus === "instance:p1-00001")
+    .click();
+  assert.equal(cardId(page), "p1-00001");
+  assert.equal(cardEl(page).dataset.columns, "2");
+  check("main session, two columns", "card-launcher");
+  // p2 launched by an agent with a task: the launcher is a button
+  cardEl(page)
+    .find((e) => e.dataset.focus === "instance:p2-00001")
+    .click();
+  assert.equal(cardId(page), "p2-00001");
+  check("an agent, two columns", "card-link");
+  escapeKey(page);
+  // one column, no record of the handoff
+  legendOf(page, "role:Explore").click();
+  assert.equal(cardEl(page).dataset.columns, "1");
+  check("no record, one column", "card-launcher");
 });
