@@ -1,0 +1,141 @@
+{
+  "handoff_id": "step09-DOCSEN-20261017-01",
+  "run_id": "DOCSEN-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/DOCSEN-20261017-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "README.en.md",
+      "docs/agents.en.md",
+      ".claude/agents/",
+      "STATE.md",
+      "docs/requirements.yaml"
+    ],
+    "route": "DOC-UPDATER r1 -> RELEASE-VALIDATOR (этот) -> RELEASE-FINALIZER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/DOCSEN-20261017-01",
+    "parallel_work_now": "параллельно: GUIDE-20261017-01 (REQ-VALIDATOR, только чтение docs/requirements.yaml)",
+    "orch_check": {
+      "at": "2026-10-17T03:15:13Z",
+      "by": "ORCH",
+      "verdict": "FAIL принят",
+      "checked": [
+        "Подтверждено ORCH: репозиторий на GitHub сейчас private, защиты main нет — утверждение README.en.md о защите неверно",
+        "Доработка DOC-UPDATER r2: пункты 1–5 (ORCH включает и Low 3–5)",
+        "I1 — вопрос владельцу (видимость изменена не ORCH; ORCH видимость не меняет); запись AP — при следующем учёте",
+        "2026-10-17T03:17:06Z: ORCH заменил названия других проектов в команде self_check на «<названия других проектов>» (traces; повтор AP-095)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Сверка фактов перед отправкой в main (прогон DOCSEN-20261017-01): новые README.en.md и docs/agents.en.md (DOC-UPDATER, step-01-doc-updater.json и r1) и одна строка ссылки в README.md. Читатель — человек вне проекта на публичном GitHub. САМ, не доверяя отчёту: 1) каждое утверждение README.en.md о том, что работает, что не готово, числа (требования — пересчитай по docs/requirements.yaml; дефекты — по docs/issues/; тесты — свой запуск cd tools && npm run check; реальный запуск Claude — по STATE.md), команды запуска (выполни те, что безопасны: npm ci на копии вне проекта, npm run check) — подтверждено файлами репозитория; нет преувеличений; 2) docs/agents.en.md — все 37 ролей, каждая по своему файлу .claude/agents/*.md (выборочно не меньше 10 ролей построчно: что делает, когда, что получает и отдаёт, границы), переводы названий соответствуют ROLE_NAMES; 3) нет путей этого компьютера, названий компании владельца и других проектов, полных адресов GitHub, секретов (traces); ссылки относительные и ведут на существующие файлы; 4) README.md изменён только строкой ссылки. Файлы не менять, кроме result своего handoff-а. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL с перечнем неверных утверждений (строка, что не так, чем подтверждено).",
+    "acceptance_criteria": [
+      "Каждое утверждение README.en.md подтверждено файлами или своим запуском",
+      "agents.en.md соответствует файлам ролей; следов нет; вердикт"
+    ]
+  },
+  "created_at": "2026-10-17T03:03:18Z",
+  "started_at": "2026-10-17T03:03:18Z",
+  "completed_at": "2026-10-17T03:14:34Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": [
+      "Итог простыми словами: README.en.md и docs/agents.en.md почти везде верны, но два утверждения не совпадают с проверенным сегодня: (1) README.en.md говорит, что ветка main на GitHub защищена, — живой запрос к GitHub показывает, что репозиторий сейчас приватный и защиты у main нет; (2) docs/agents.en.md говорит, что все роли WF-06 читают только файлы прогона, — VERDICT-EXECUTOR по своему файлу читает STATE.md. Это FAIL; правка — три места текста (findings F1–F2, плюс Low F3–F5), возврат к DOC-UPDATER (step 01, доработка r2).",
+      "Критерий 1 «каждое утверждение README.en.md подтверждено» — НЕ выполнен (F1). Подтверждено своими запусками и чтением: счёт требований 53 = 21 done / 4 in_progress (REQ-001, 007, 008, 014) / 28 pending, REQ-050…053 pending (подсчёт по docs/requirements.yaml в 03:13Z); открытых дефектов 62 (7 MEDIUM, включая ISS-0005 со строкой серьёзности «MEDIUM (если повторится)», 55 LOW, HIGH/CRITICAL нет; 12 closed, всего 74); 1581 тест — свой npm run check (рабочее дерево и чистая копия); реальный запуск 2026-10-13 (6 из 6, 14 запусков, 8 минут, 0,922915 из 3 USD, только из командной строки, второго круга плана не было) — STATE.md стр. 92–93 и docs/uat/REAL-RUN-20261013.md стр. 15, 43, 200–212; что не проверено на настоящей модели — те же места; выпуск 2026-10-16 c 1581 тестом — docs/releases/REQ048-20261015-01.md и коммит d545742 (2026-10-16T23:41:35Z); check.yml на GitHub для d545742 и 804fc96 — success (gh run list); check.yml: Node 22, npm ci, npm run check, push в любую ветку и pull_request; .githooks/pre-push есть; docs/audits нет; файла лицензии нет; оба сервера слушают только 127.0.0.1 (config.js HOST и свой запуск); порты 4780/4781, --port, SAI_TEAM_REAL_RUNS=1, ~/.sai-pixel-office — tools/README.md; функции Pixel Office (Сейчас, в работе: N, Показать всех, карточки, раскрытие журнала, фильтры, поиск, «Показать более ранние», панель «Задачи», пять состояний, 60 минут) — tools/README.md стр. 19–117; Sai Team (десять ролей, движок, параллельность 2, проверка отдельным запуском, черновик у критических задач, потолки, сверка цели, команды, страница с шестью вопросами и кнопками) — tools/README.md стр. 210–515; определение продукта — decisions/0033 п. 1, уточняет 0015; спрос не проверен — 0015 стр. 16–17; короткий путь ORCH — WF-02 стр. 320–334; лимит трёх доработок — orchestrator.md стр. 117–119; структура репозитория — все названные пути существуют. Команды запуска выполнены на копии вне проекта: npm ci, npm run check, npm run team -- projects (пустой список), pixel-office и team-web на временных папках (обе ссылки 127.0.0.1, ответ 200).",
+      "Критерий 2 «agents.en.md соответствует файлам ролей; следов нет» — НЕ выполнен (F2). 37 разделов ролей = 37 кодов из name: (сравнение списков true). Переводы названий: все 37 соответствуют ROLE_NAMES (texts.js стр. 124–162); CODE-DESIGN-VALIDATOR «Code design review» и ISSUE-FIXER «Defect root cause» — вольный, но верный по смыслу перевод. Построчно сам проверил 14 ролей: ORCH, DOC-UPDATER, REQ-ANALYST, REQ-VALIDATOR, CODE-DESIGN-VALIDATOR, SECURITY-REVIEWER, TEST-DESIGNER, BA-ANALYST, UAT-RUNNER, RELEASE-VALIDATOR, RELEASE-FINALIZER, VERDICT-EXECUTOR, AUDIT-SCOUT, CODE-FIXER — расхождений нет. Остальные 23 роли сверили три вспомогательных агента только на чтение (это карта, а не моё доказательство); их две находки я перепроверил сам по файлам ролей: F2 подтверждена (verdict-executor.md стр. 45), F3 подтверждена как неточность (security-auditor.md стр. 60–62). Следы: npm run traces — 0 на 1515 файлах, оба новых файла в перечне (git ls-files --others), не игнорируются; grep путей, адресов, названий проектов и секретов — пусто; все относительные ссылки README.en.md, docs/agents.en.md, README.md ведут на существующие файлы внутри репозитория.",
+      "Пункт задачи 4 «README.md изменён только строкой ссылки» — выполнен: git diff base/DOCSEN-20261017-01 -- README.md — добавлены строка «English: [README.en.md](README.en.md)» и пустая строка после неё (нужна для Markdown), больше ничего; base = HEAD = 804fc96.",
+      "Планка: Q1 — у прогона нет REQ-id (requirement_ids пуст; основание — просьба владельца docs/owner-requests/2026-10-17-guide-and-english.md): вынесено вопросом ORCH (I2), FAIL этим не обоснован; Q2 — свои запуски ниже; Q3 — вывод приложен; Q4 — npm run check код 0 в рабочем дереве и на чистой копии после npm ci, 1581/1581; Q5 — исполняемой логики нет (только документы), README.md держат тесты repo.test.js в составе check — прошли; Q6 — тесты и правила не менялись, skip/todo 0; Q7 — секретов в новых файлах нет (grep, traces); Q8–Q11 — неприменимы: кода нет; Q12 — новых выборов между вариантами в документах нет; Q13 — найденная ошибка процесса (учёт и документы утверждают защиту main, которой сейчас нет) вынесена ORCH для записи (I1); Q14 — НЕ выполнен по сути: STATE.md (раздел 2026-10-13, стр. 118–132) и README.en.md говорят «защита main включена», живой GitHub — нет (F1, I1); R1 — мержа и отправки нет; R2 — событий Pixel Office не писал, свой сервер — на временной папке, рабочий сервер владельца на 4780 не тронут; R3 — неприменим (решение 0033)."
+    ],
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "High",
+        "where": "README.en.md, строки 138–143 (раздел «What already works», пункт «Checks»)",
+        "text": "Утверждение «The main branch is protected since 2026-10-13: the check job must pass, force-push and deletion are forbidden … One section of the Russian README still says the branch has no protection; this is a known open defect (ISS-0057)» сегодня неверно.",
+        "evidence": "gh api repos/ntatarinov/sai --jq '{private, visibility}' → {\"private\":true,\"visibility\":\"private\"}; gh api repos/ntatarinov/sai/branches/main --jq '{protected, protection}' → {\"protected\":false,\"protection\":{\"enabled\":false,\"required_status_checks\":{\"checks\":[],\"contexts\":[],\"enforcement_level\":\"off\"}}}; gh api …/branches/main/protection → HTTP 403 «Upgrade to GitHub Pro or make this repository public to enable this feature». Значит, сейчас репозиторий приватный и защиты main нет; слова русского README «защиты ветки нет» сейчас верны, а ссылка на ISS-0057 как на «известный дефект README» вводит в заблуждение.",
+        "fix": "Убрать утверждение о защите main (и фразу про ISS-0057) или написать по факту, что сейчас защиты нет; формулировку о видимости репозитория — по решению владельца (I1).",
+        "return_to": "WF-02 step 01, DOC-UPDATER, доработка r2 (только README.en.md)"
+      },
+      {
+        "id": "F2",
+        "severity": "Medium",
+        "where": "docs/agents.en.md, строки 491–494 (вступление раздела «Idea selection (WF-06)»)",
+        "text": "«The roles of this process read only the files of the run, not the rest of the project, so that the choice is not circular» — неверно для VERDICT-EXECUTOR и преувеличено для остальных.",
+        "evidence": ".claude/agents/verdict-executor.md стр. 45: «6. `STATE.md` — в него применяется вердикт…» (и стр. 39–46: handoffs.md, design §4.9/§5, anti-patterns.md). Ограничение чтения есть только у IDEA-ANALYST (idea-analyst.md стр. 49–56) и IDEA-JUDGE (idea-judge.md стр. 46–50), и даже им разрешены quality-bar.md, свой handoff, файл роли, WF-06 и docs/design/REQ-002-idea-verdict.md §4; запрещены именно ideas/, ideas/README.md, STATE.md, docs/requirements.yaml, decisions/.",
+        "fix": "Написать, что аналитики и судья читают только файлы прогона (плюс планку, WF-06 и контракты §4) и не читают ideas/, STATE.md, requirements.yaml, decisions/, чтобы выбор не был круговым; VERDICT-EXECUTOR читает и STATE.md.",
+        "return_to": "WF-02 step 01, DOC-UPDATER, доработка r2 (только docs/agents.en.md)"
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "where": "docs/agents.en.md, строки 405–407 (SECURITY-AUDITOR)",
+        "text": "«for the product also items Q8, Q9, Q11 and R3 … photos of people» — R3 в шагах роли сейчас неприменим.",
+        "evidence": ".claude/agents/security-auditor.md стр. 60–62: «…(Q11); R3 — сейчас не применим (решение 0033)»; quality-bar.md стр. 90. Описание роли (стр. 3) R3 называет, поэтому это неточность, а не выдумка.",
+        "fix": "Добавить «R3 (photos of people) is currently not applicable — decision 0033».",
+        "return_to": "та же доработка r2, по желанию ORCH"
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "where": "README.en.md, строки 89–90",
+        "text": "«The page is built only from events that Claude Code hooks send» — журнал страницы показывает и записи оркестратора (pixel-office-note), которые не события хуков; на задачи, состояния и офис они не влияют.",
+        "evidence": "tools/README.md стр. 88 и 91 (строка «запись оркестратора», «не событие от Claude Code»); стр. 19 того же файла говорит так же, как README.en.md.",
+        "fix": "Уточнить: задачи, состояния и офис строятся только из событий хуков; журнал показывает ещё записи оркестратора с пометкой источника.",
+        "return_to": "та же доработка r2, по желанию ORCH"
+      },
+      {
+        "id": "F5",
+        "severity": "Low",
+        "where": "README.en.md, строки 251–252 («The Russian README, which this file follows»)",
+        "text": "Русский README.md в нескольких местах устарел (41 требование 6/8/27, 17 дефектов с HIGH ISS-0002, «настоящий Claude ни разу не запускался»), а README.en.md пишет по фактам; читатель, открывший оба, увидит противоречия, о которых README.en.md не предупреждает (кроме защиты ветки).",
+        "evidence": "Расхождения перечислены в handoff-е step-01-doc-updater.json, issues I1; README.md стр. 131 и соседние разделы.",
+        "fix": "Сказать, что русский README частично устарел и сверяется отдельной работой (REQ-040), а при расхождении верны STATE.md и этот файл.",
+        "return_to": "та же доработка r2, по желанию ORCH"
+      }
+    ],
+    "self_check": [
+      "date -u → 2026-10-17T03:03:23Z (начало), 2026-10-17T03:13:23Z (перед записью результата)",
+      "cd tools && node -v && npm -v → v22.21.1, 10.9.4",
+      "cd tools && npm run check (рабочее дерево, в своём ходе, 03:03:54Z–03:05:46Z) → exit=0; «All matched files use Prettier code style!»; eslint без вывода; «traces: файлов проверено 1515, следов 0, пропущено 56»; «handoffs-check: файлов проверено 893, нарушений 0, исключений использовано 114 из 114»; «# tests 1581 # pass 1581 # fail 0 # cancelled 0 # skipped 0 # todo 0»",
+      "git clone репозитория во временную папку вне проекта + поверх README.en.md, README.md, docs/agents.en.md из рабочего дерева; cd tools && npm ci → «found 0 vulnerabilities», ci_exit=0; npm run check → check_exit=0, «traces: файлов проверено 1508, следов 0», «handoffs-check: файлов проверено 888, нарушений 0», «# tests 1581 # pass 1581 # fail 0»",
+      "на той же копии: SAI_TEAM_HOME=<врем.> npm run -s team -- projects → {\"projects\":[],\"warnings\":[]} exit=0; node src/pixel-office/main.js --port 0 --dir <врем.> → «Pixel Office: http://127.0.0.1:63380/», curl 200; node src/web/main.js --port 0 → «Sai Team: http://127.0.0.1:63381/», curl 200; lsof: оба слушают 127.0.0.1; оба процесса остановлены",
+      "подсчёт требований по docs/requirements.yaml (03:13Z): 53 блока; status: 21 done, 4 in_progress, 28 pending; in_progress = REQ-001 REQ-007 REQ-008 REQ-014; REQ-050…053 = pending",
+      "дефекты: ls docs/issues | wc -l → 74; строки «Статус: open» → 62; по серьёзности открытых: 55 LOW, 7 MEDIUM (ISS-0005 — «MEDIUM (если повторится)» на отдельной строке), HIGH/CRITICAL 0; closed 12",
+      "git rev-parse base/DOCSEN-20261017-01 HEAD → 804fc96… оба; git diff base/DOCSEN-20261017-01 -- README.md → +«English: [README.en.md](README.en.md)» и +пустая строка",
+      "node: заголовки ### в docs/agents.en.md против name: (...) в .claude/agents/*.md → 37 37 true",
+      "node: все относительные ссылки ](…) в README.en.md, docs/agents.en.md, README.md → MISSING 0, OUTSIDE 0",
+      "grep -iE 'github\\.com|https?://|/Users/|/home/|~/|<названия других проектов>|token|password|api[_-]?key|sk-' README.en.md docs/agents.en.md → только слова «tokens», «secrets», «write secret» в обычном тексте, адресов и путей нет",
+      "git check-ignore -v README.en.md docs/agents.en.md → exit 1 (не игнорируются); git ls-files --others --exclude-standard → оба в перечне traces; npx prettier --check ../README.en.md ../docs/agents.en.md → «All matched files use Prettier code style!»",
+      "gh run list --commit d545742… → [{\"conclusion\":\"success\",\"headSha\":\"d5457426…\",\"workflowName\":\"check\"}]; gh run list --limit 3 → 804fc96 success, d545742 success, 6481d97 success",
+      "gh api repos/ntatarinov/sai --jq '{private, visibility, default_branch}' → {\"default_branch\":\"main\",\"private\":true,\"visibility\":\"private\"}",
+      "gh api repos/ntatarinov/sai/branches/main --jq '{protected, protection}' → {\"protected\":false,\"protection\":{\"enabled\":false,\"required_status_checks\":{\"checks\":[],\"contexts\":[],\"enforcement_level\":\"off\"}}}; gh api …/branches/main/protection и …/rulesets → HTTP 403 «Upgrade to GitHub Pro or make this repository public to enable this feature»",
+      "git status --short до и после работы — тот же набор (README.md, decisions/README.md, docs/requirements.yaml, README.en.md, decisions/0061…, docs/agents.en.md, docs/owner-requests/…, handoffs/DOCSEN-20261017-01/, handoffs/GUIDE-20261017-01/); мною в проекте изменён только result этого handoff-а"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "Репозиторий Sai на GitHub сейчас приватный, защиты main нет (gh api, см. self_check). Решение 0048 (2026-10-13) говорит «репозиторий публичен намеренно», STATE.md (раздел 2026-10-13) — «защита main включена», ISS-0057 строится на том, что защита есть, а задание этого прогона — на читателе «на публичном GitHub». Кто и когда сделал репозиторий приватным, в файлах Sai не записано. Для владельца через ORCH: намеренно ли это; от ответа зависят текст README.en.md (F1), судьба ISS-0057 и запись в STATE.md/decisions. Предлагаю ORCH завести запись журнала ошибок (Q13): учёт утверждал настройку GitHub, которую никто не перепроверял после её изменения."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "Q1: у прогона DOCSEN-20261017-01 нет требования (context.requirement_ids пуст), основание — просьба владельца в docs/owner-requests/2026-10-17-guide-and-english.md. Это решение ORCH о маршруте; я его не оценивал как FAIL, но пункт Q1 формально не закрыт — ORCH решает, нужна ли запись в decisions/ или требование."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Счёт требований (53: 21/4/28) верен на 03:13Z; параллельный прогон GUIDE-20261017-01 может ещё менять docs/requirements.yaml — после его записи число нужно сверить снова перед коммитом. Сверка 23 ролей из 37 сделана вспомогательными агентами только на чтение; их находки F2 и F3 перепроверены мной по файлам ролей, остальные их «OK» — карта, а не моё доказательство (сам построчно проверил 14 ролей, требование задачи — не меньше 10)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
