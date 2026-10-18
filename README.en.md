@@ -171,7 +171,10 @@ As of 2026-10-17, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
   critical.
 - **No health audit yet.** The first WF-05 audit has not run; the folder `docs/audits/` will
   appear with it.
-- **No license file** is in the repository.
+
+## License
+
+License: proprietary, all rights reserved (see [LICENSE](LICENSE)).
 
 ## How to run
 
