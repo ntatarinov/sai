@@ -1,0 +1,133 @@
+{
+  "handoff_id": "step02c-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "02c",
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/REQ050-20261017-01/step-02c-frontend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-052"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-050-053-guide.md",
+      "docs/design/REQ-050-053-guide-ui.md"
+    ],
+    "route": "FRONTEND-DEV 2c (этот) -> 2d",
+    "write_set": [
+      "tools/src/pixel-office/public/ — файлы подшага 2c по проекту (tour.js, boot.js одна строка, app.js, index.html, texts.js, style.css)"
+    ],
+    "base_tag": "base/REQ050-20261017-01",
+    "orch_check": {
+      "at": "2026-10-17T14:54:32Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "2c: приглашение и тур; красный ровно PG-20; хранилище только tour.js в try/catch; шапка +75 px в 390 (предел 80)",
+        "Проверено: страница при туре нажимается, «Не сейчас» запоминается, без хранилища работает"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 2, подшаг 2c (REQ-052 — приглашение в шапке и немодальный тур; хранилище только по decisions/0061 п. 3, boot.js передаёт storageFn) по проекту docs/design/REQ-050-053-guide.md (раздел 6 и разделы файлов для 2c) и описанию docs/design/REQ-050-053-guide-ui.md; решения decisions/0061 с дополнением.\nРешения ORCH по замечаниям ворот проекта (step-01c-code-design-validator.json, N1–N6) — действуют во всех подшагах: N1 — правило правды сравнивает цитату и значение константы после снятия с обоих краёв пробелов и разделителя « · »; N2 — подсказка .hint-tip: position: fixed с якорем к своей кнопке «?» (как #now-all), не обрезается overflow родителя; N3 — у текста и двух кнопок приглашения свои id (#tour-invite-text, #tour-invite-show, #tour-invite-later), модуль тура находит их по id; N4 — узкое правило скрытия текста — только для кнопки справки в шапке (свой класс), текст кнопки справки в пустом журнале виден всегда; N5 — при скрытии приглашения кнопка «Показать всех (N)» пересчитывается сразу; N6 — счётчик шага и «×» в одной строке шапки подписи тура, вне сетки прокручивается только текст шага.\nДелай только подшаг 2c. Проверка: cd tools && npm run format:check && npm run lint && npm run traces && npm run handoffs-check — код 0; npm test — тестов 399 (тесты не меняешь), красных — ровно по проекту для 2c: 1 (PG-20 из-за localStorage в boot.js). Вид — в headless Chrome на стенде вне проекта (пустой каталог, hook.sh, id sample-; журнал владельца не трогать) в окнах 1470×784 и 390×844: приглашение в шапке ничего не перекрывает; тур идёт по 6 шагам, страница во время тура нажимается, Escape закрывает; «Не сейчас» запоминается (перезагрузка — приглашения нет); при недоступном хранилище страница работает. Сервер, хук, schema.js не трогать. Запрещены git checkout/reset/stash/clean. Тест, упавший не по проекту, — в result.issues с причиной.",
+    "acceptance_criteria": [
+      "Подшаг 2c по проекту; проверки код 0; красный ровно PG-20"
+    ]
+  },
+  "created_at": "2026-10-17T14:45:57Z",
+  "started_at": "2026-10-17T14:45:57Z",
+  "completed_at": "2026-10-17T14:53:57Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Подшаг 2c (REQ-052: приглашение в шапке и немодальный тур) сделан по проекту docs/design/REQ-050-053-guide.md (D9–D12, D16, 3.4, 3.8, 4.3, 4.4, раздел 6) и описанию docs/design/REQ-050-053-guide-ui.md (разделы 5, 6). Сервер, хук, schema.js, тесты, README, package*.json не менялись; экспорты не удалялись.",
+      "Тур сам не открывается: после первого результата связи (ответ или неудача) в шапке появляется приглашение, если в хранилище нет «closed». Хранилище трогает только tour.js: один вызов storageFn(), getItem(TOUR_KEY) и setItem(TOUR_KEY, TOUR_CLOSED), каждый в try/catch; boot.js передаёт storageFn одной строкой.",
+      "Решения ORCH: N3 — у текста и кнопок приглашения свои id (#tour-invite-text, #tour-invite-show, #tour-invite-later), tour.js находит их по id; N5 — после показа и скрытия приглашения кнопка «Показать всех (N)» пересчитывается сразу (onLayout → updateShowAll); N6 — у подписи тура сетка: счётчик и «×» в верхней строке, кнопки в нижней, вне сетки прокручивается только текст шага.",
+      "Красный ровно один, как в проекте: PG-20 («boot.js: /localStorage/»); его заменяет TEST-DESIGNER по разделу 8 (TU-09)."
+    ],
+    "changes": [
+      {
+        "file": "tools/src/pixel-office/public/texts.js",
+        "what": "TOUR_INVITE_LABEL, TOUR_INVITE, TOUR_INVITE_SHOW, TOUR_INVITE_LATER, TOUR_STEP, TOUR_NEXT, TOUR_BACK, TOUR_SKIP, TOUR_LAST, TOUR_CLOSE, GUIDE_TOUR_START, KEYS_TOUR, TOUR_STEPS (6 шагов, fallback у шагов 1 и 6 — null); тексты вынуты скриптом из таблицы Т3",
+        "by": "проект 3.1"
+      },
+      {
+        "file": "tools/src/pixel-office/public/guide-model.js",
+        "what": "tourStepView(step, facts) по таблице 3.2 (цели, запасной текст, наборы кнопок); KEYS_TOUR добавлен в список раздела «Клавиши» сразу после «Escape — …»",
+        "by": "проект 3.2, D11"
+      },
+      {
+        "file": "tools/src/pixel-office/public/tour.js",
+        "what": "новый модуль: createTour — mount (приглашение и подпись: «×», div.tour-live с aria-live, кнопки Назад/Пропустить/Далее/Закрыть тур), offer (один раз за загрузку), open, close (запись «closed»), dismissInvite, refresh (без прокрутки той же цели), isOpen/step/holds/inviteShown/inviteHolds; пометка data-tour-target, scrollIntoView({block: \"nearest\"}); правило фокуса после «Далее»/«Назад»",
+        "by": "проект 3.4, D9–D12, 4.3, 4.4"
+      },
+      {
+        "file": "tools/src/pixel-office/public/guide.js",
+        "what": "кнопка «Показать тур по странице» (ctl guide-tour-start) после вводной, до оглавления; клик — onTourStart()",
+        "by": "проект 3.3"
+      },
+      {
+        "file": "tools/src/pixel-office/public/index.html",
+        "what": "div#tour-invite (role region, aria-label, hidden; span#tour-invite-text, button#tour-invite-show.ctl.ctl-primary, button#tour-invite-later.ctl) перед #guide-open; div#tour.tour (hidden) после aside#guide",
+        "by": "проект 3.7; N3"
+      },
+      {
+        "file": "tools/src/pixel-office/public/boot.js",
+        "what": "одна строка storageFn: () => window.localStorage (и комментарий без этого слова)",
+        "by": "проект 3.8, D16"
+      },
+      {
+        "file": "tools/src/pixel-office/public/app.js",
+        "what": "env.storageFn передаётся в createTour как есть; создание tour (facts, targets, focusAfter, onLayout); справка при открытии закрывает тур, onTourStart — закрыть справку и открыть тур; setLink — tour.offer при первом уходе из \"none\"; renderAll — tour.refresh; escapeStep — пункты tour и invite; resolveEls и decorate — tour.mount",
+        "by": "проект 3.6, 4.1, 4.2"
+      },
+      {
+        "file": "tools/src/pixel-office/public/style.css",
+        "what": ".ctl-primary, .guide-tour-start, .tour-invite (в узком @media — своя линия, order), подпись .tour у нижнего края без @media (сетка count/close/title/text/buttons, max-height 50vh), места #tour[data-step=1…6] в широком @media (20 rem, якорь --now у шага 3), [data-tour-target] — рамка-тень 0,1875 rem --warn. Строк с px 15, @media 2, переходов нет",
+        "by": "проект 3.9, D15; описание 5.2, 5.3, 6.1–6.4; N6"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 14:46Z, проверки 14:51:05Z",
+      "cd tools && npm run format:check → код 0; npm run lint → код 0; npm run traces → код 0 («файлов проверено 1544, следов 0»); npm run handoffs-check → код 0 («файлов проверено 913, нарушений 0»)",
+      "node --test \"test/pixel-office-*.test.js\" → # tests 399 # pass 398 # fail 1 # skipped 0 # todo 0; единственный красный — not ok 199 PG-20, сообщение «boot.js: /localStorage/» — ровно названный проектом для 2c",
+      "npm test → # tests 1581 # pass 1580 # fail 1 (тот же PG-20) # skipped 0 # todo 0",
+      "Правило хранилища: grep localStorage по public/ → одна строка boot.js:22 «storageFn: () => window.localStorage,»; grep 'storageFn(|getItem(|setItem(|removeItem|sessionStorage|indexedDB|cookie' → только tour.js: storageFn() (57), getItem(TOUR_KEY) (67), setItem(TOUR_KEY, TOUR_CLOSED) (80), каждый внутри try с catch",
+      "grep слов успеха, innerHTML|outerHTML|insertAdjacentHTML|document.write, https?:// по public/ → пусто; git diff сервера, хука, schema.js, package*.json, test/, README.md → пусто",
+      "Поддельный DOM (свой скрипт вне проекта): пустое хранилище — приглашение после первого ответа, тура нет; «Не сейчас» — приглашения нет, записано closed; новый запуск с тем же хранилищем — приглашения нет; без storageFn, storageFn бросает, возвращает null, getItem/setItem бросают, первая попытка связи неудачна — приглашение есть, «Показать» — шаг 1, фокус на «Далее»; наборы кнопок по шагам: 1 skip,next; 2–5 back,skip,next; 6 back,last; пометки: шаги 4 и 5 — панели журнала и «Задач», 6 — #guide-open, шаги 2 и 3 без пометки при пустом журнале; Escape — тур закрыт, фокус на #guide-open, пометок 0; тур из справки — справка закрыта, приглашение убрано; «Как пользоваться» при открытом туре — тур закрыт",
+      "Стенд вне проекта: новый пустой каталог состояния, свой сервер на порту 4861, события только через hook.sh (сессия sample-0-main, запрос «Образец: …», три роли из ROLE_NAMES — две в работе, одна закончила). Журнал владельца и его страница не трогались; хранилище — только у адреса стенда; сервер и Chrome после проверки остановлены",
+      "headless Chrome 1470×784: приглашение в шапке x 939,5–1292,3, y 7,5–51,5, шапка 60 px, не пересекает «Сейчас» и офис; горизонтальной прокрутки нет. Тур 6 шагов: счётчик «Шаг N из 6», заголовки Т3; места подписи (left, top, right, bottom): 1 — 575, 277,5, 895, 506,5 (центр окна); 2 — 1076, 74 (цель офис 14–1062); 3 — 337,8, 64 (под «Сейчас», низ блока 52); 4 — 744–1064 (журнал от 1076); 5 — 744–1064, низ 770 (Задачи от 1076); 6 — 1134–1454, top 64 (кнопка 15–45); подпись и цель не пересекаются ни на одном шаге; фокус после «Далее» на «Далее», на шаге 6 — «Закрыть тур». Нажатие на фильтр «Работа» на шаге 3 — фильтр сменился, тур открыт, шаг 3. Escape — тур закрыт, фокус на #guide-open, хранилище «closed», пометок 0; перезагрузка — приглашения нет. После очистки хранилища: «Не сейчас» — приглашение убрано, «closed»; перезагрузка — приглашения нет",
+      "headless Chrome 390×844: приглашение — своя линия шапки под строкой «Пауза 1× 2× 4× ?» (8–382, y 192,6–259,6); шапка 268,6 px с приглашением и 193,6 px без него — рост 75 px (4,6875 rem, не больше 5 rem); подпись у нижнего края (y от 629,5–649 до 844), верх цели каждого шага выше подписи; фильтр «Работа» во время тура нажимается, тур открыт; Escape, перезагрузка и «Не сейчас» — как в 1470×784",
+      "Хранилище недоступно (в вкладке стенда геттер window.localStorage бросает исключение): приглашение есть, «Показать» — шаг 1, Escape — тур закрыт и приглашение убрано, перезагрузка — приглашение снова есть; связь live; ошибок в консоли и исключений 0"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "info",
+        "text": "Ожидаемый красный PG-20 (pixel-office-page.test.js, «boot.js: /localStorage/») — замена по разделу 8 проекта (PG-20 без /localStorage/, правило хранилища — новый TU-09), правит TEST-DESIGNER на шаге 5. Других красных нет."
+      },
+      {
+        "id": "I2",
+        "kind": "info",
+        "text": "beforeOpen тура в 2c ничего не делает: закрытие подсказки «?» (hints.close) появится в 2d вместе с hints.js; флаг hint в escapeStep до 2d — false."
+      },
+      {
+        "id": "I3",
+        "kind": "info",
+        "text": "«×» подписи тура виден на всех шагах; в tourStepView он назван как \"close\" и отдельным свойством hidden не управляется. Место шага 1 в сетке задано transform: translate(-50%, -50%) — без атрибута style."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/texts.js",
+      "tools/src/pixel-office/public/guide-model.js",
+      "tools/src/pixel-office/public/tour.js",
+      "tools/src/pixel-office/public/guide.js",
+      "tools/src/pixel-office/public/index.html",
+      "tools/src/pixel-office/public/boot.js",
+      "tools/src/pixel-office/public/app.js",
+      "tools/src/pixel-office/public/style.css"
+    ]
+  }
+}

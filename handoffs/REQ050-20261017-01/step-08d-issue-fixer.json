@@ -1,0 +1,78 @@
+{
+  "handoff_id": "step08d-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "08d",
+  "from_agent": "ORCH",
+  "to_agent": "ISSUE-FIXER",
+  "file": "handoffs/REQ050-20261017-01/step-08d-issue-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-053"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/step-08b-uat-runner.json",
+      "tools/src/pixel-office/public/hints.js"
+    ],
+    "route": "UAT Ф2 -> ISSUE-FIXER (этот) -> CODE-FIXER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "orch_check": {
+      "at": "2026-10-17T18:13:10Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "Причина Ф2: подсказка по наведению ложится поверх кнопки на телефоне; доказано записью событий",
+        "Решение ORCH: в правку кода — .hint-tip pointer-events:none везде + наведение только для мыши; попутная находка 768×1024 (подсказки выходят за край) — тоже в эту правку (критерий «целиком в окне»); HIGH; AP — шаг 10"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02 после провала сценария 26 приёмки (handoffs/REQ050-20261017-01/step-08b-uat-runner.json, Ф2, БЛОК): на телефоне (390×844, 320×568) касание «?», стоящей внизу экрана (у «Журнал», «Задачи», «Офис и доска» на свежей странице), не показывает подсказку; та же кнопка в середине экрана работает. Гипотеза UAT: подсказка открывается по наведению при касании, ложится поверх своей кнопки и сразу закрывается. САМ воспроизведи в headless Chrome с эмуляцией касаний (Input.dispatchTouchEvent / Emulation.setTouchEmulationEnabled) на стенде вне проекта (пустой каталог, hook.sh, id sample-; журнал владельца не трогать), найди причину с доказательством (файл:строка, последовательность событий), все места того же рода (другие подсказки, кнопки справки/тура на касаниях), предложи исправление и тест (поддельный DOM: последовательность pointerenter/pointerdown/click при касании). Ничего не исправляй. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check.",
+    "acceptance_criteria": [
+      "Причина Ф2 с доказательством; места того же рода; исправление и тест"
+    ]
+  },
+  "created_at": "2026-10-17T18:00:43Z",
+  "started_at": "2026-10-17T18:00:43Z",
+  "completed_at": "2026-10-17T18:12:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Диагноз Ф2 (сценарий 26). Причина найдена и воспроизведена своим запуском в Chrome без окна с эмуляцией касаний (Emulation.setTouchEmulationEnabled, Input.dispatchTouchEvent). Исправление проверено пробой: правило добавлялось только в браузере. Файлы проекта не менялись.\n\nПРИЧИНА. Подсказка открывается «наведением», а на телефоне ложится поверх своей кнопки. (1) tools/src/pixel-office/public/hints.js:67–69: mouseenter открывает подсказку незакреплённой; :73–74 и :64–66: mouseleave и blur закрывают незакреплённую. При касании Chrome после touchend шлёт совместимые события мыши — mouseover, mouseenter, mousemove, mousedown, mouseup, click — и перед каждым заново определяет элемент под точкой. (2) style.css, @media (max-width: 599px), правило #hint-now, #hint-journal, #hint-tasks, #hint-office (около строк 2736–2745): подсказка position: fixed (.hint-tip, около 778) прижата к низу окна во всю ширину, bottom 0,5rem. В 390×844 она занимает 724..836 («Офис и доска» — 671,8..836), в 320×568 — 430,6..560 (378,4..560). Если «?» стоит в этой полосе, открытая подсказка закрывает точку касания.\n\nЗаписанная последовательность для «?» у «Журнал», верх кнопки 798,5 в 390×844: touchend@кнопка → mouseover@кнопка → mouseenter (open=hint-journal, незакреплена) → mousemove → mouseout@кнопка → mouseleave (закрыта: точка теперь над подсказкой) → mouseover@подсказка → mousedown@подсказка → mouseout → mouseover@кнопка → mouseenter (открыта) → mouseup@кнопка → mouseleave (закрыта) → click@div.panel-head-row. mousedown и mouseup пришли на разные элементы, поэтому click ушёл их общему предку. Обработчик click кнопки (hints.js:75–78), который закрепляет подсказку, не вызывается. Итог: подсказка скрыта, data-pinned=false, на каждом касании. В середине экрана подсказка точку не закрывает: mousedown, mouseup и click приходят на кнопку, и подсказка закрепляется.\n\nПочему тесты не поймали: HN-01 (tools/test/pixel-office-guide.test.js:2524) на поддельном DOM вызывает mouseenter, mouseleave и click по отдельности. Определения элемента под точкой и совместимых событий касания в нём нет. DESIGN-QA касания не эмулировал.\n\nВОСПРОИЗВЕДЕНИЕ (свой стенд СТ-Б вне проекта; окна 390×844 и 320×568, mobile, касания). Для «Журнал», «Задачи» и «Офис и доска» в 10 px от низа (верх 798,5 и 522): подсказка скрыта после первого и после второго касания. Те же кнопки в середине экрана (верх 422,5 и 284): закреплена, второе касание закрывает. «Сейчас» (верх 60): работает. На свежей странице этого стенда «?» трёх частей ниже окна (1105 и далее), поэтому я ставил их прокруткой — как в рецепте приёмки «в 10 px от нижнего края».\n\nИСПРАВЛЕНИЕ (для CODE-DESIGNER и CODE-FIXER). Основное: подсказка не принимает касания — .hint-tip { pointer-events: none } во всех окнах, style.css, правило .hint-tip. В подсказке нет ничего нажимаемого: в ней только текст p.hint-text и p.hint-close. Проба этого правила в браузере: в 390 и 320 «?» у нижнего края — подсказка открыта и закреплена (data-pinned=true), второе касание приходит на кнопку и закрывает, касание в другом месте закрывает. Середина экрана — без изменений. 1470×784 мышью — наведение открывает, уход закрывает, нажатие закрепляет, второе нажатие закрывает: так же, как без правила. Дополнительно, по желанию: открывать по наведению только для мыши — pointerenter и pointerleave с event.pointerType === \"mouse\" вместо mouseenter и mouseleave (hints.js:67–69, 73). Сам по себе такой вариант не помогает. Проба с отключёнными совместимыми mouseenter и mouseleave от касания показала: подсказка открывается фокусом (hints.js:70–72) незакреплённой и ложится на кнопку, второе касание снова приходит на неё. Поэтому без pointer-events: none не обойтись.",
+    "self_check": "Среда: Node v22.21.1, macOS, Chrome 155 без окна (свой порт 9461, свой профиль). Протокол DevTools: Emulation.setDeviceMetricsOverride mobile:true, Emulation.setTouchEmulationEnabled, Input.dispatchTouchEvent touchStart/touchEnd. Всё вне проекта: <вне проекта>/iss048. Стенд СТ-Б (рецепт приёмки lib/st-b.sh) — новый пустой каталог, порт 4876, 9 строк; события через настоящий hook.sh, номера sample-. Правило исправления добавлялось только в браузере (style с обходом CSP); имитация варианта «только мышь» — слушатель на window в фазе захвата. Чужие серверы на 4790, 4793 и 4794 не трогались. Файлы проекта не менялись: git status 37 строк до и после.\n\n$ wc -l < $HOME/.sai-pixel-office/events.jsonl; grep -c '\"session_id\":\"sample-' …\n4297 / 0 (до, 18:01:32 UTC) и 4297 / 0 (после, 18:11:44 UTC)\n\n$ node t1.mjs http://127.0.0.1:4876/ 390x844   (18:02:09 UTC)\n390x844 journal low    btnTop=798.5 -> hidden=true pinned=false | when open: tip 724..836 covers button=true\n  … touchend@btn:hint-journal | mouseover@btn | mouseenter(btn) open=hint-journal | mousemove@btn | mouseout@btn | mouseleave(btn) open=- | mouseover@tip:hint-journal | mousedown@tip:hint-journal | mouseout@tip | mouseover@btn | mouseenter(btn) open=hint-journal | mouseup@btn | mouseout@btn | mouseleave(btn) open=- | mouseover@div.panel-head-row | click@div.panel-head-row open=-\n390x844 journal middle btnTop=422.5 -> hidden=false pinned=true | … mousedown@btn | focusin@btn | mouseup@btn | click@btn\n390x844 tasks   low    btnTop=798.5 -> hidden=true pinned=false (click@div.panel-head)\n390x844 office  low    btnTop=798.5 -> hidden=true pinned=false | tip 671.8..836 covers button=true (click@office-hint)\n390x844 now     btnTop=60 -> hidden=false pinned=true\n\n$ node t1.mjs … 320x568,768x1024\n320x568 journal/tasks low btnTop=522 -> hidden=true; office low -> hidden=true (tip 378.4..560); middle (284) -> pinned=true\n768x1024: все случаи pinned=true; подсказка не закрывает кнопку (см. I3: в 768 она выходит за низ окна)\n\n$ node t2.mjs http://127.0.0.1:4876/ 390x844,320x568 \"\"   (18:04:45 UTC, второе касание и касание в другом месте)\njournal/tasks/office low: hidden=true; second tap -> hidden=true [mouseenter | mouseleave | mouseenter | mouseleave | click@div.panel-head-row]\n$ node t2.mjs … \".hint-tip{pointer-events:none}\"\n390x844 journal/tasks/office low (798.5) -> hidden=false pinned=true; second tap -> hidden=true [click@btn:hint-…]; tap, then tap elsewhere -> hidden=true\n320x568 journal/tasks/office low (522) -> hidden=false pinned=true; second tap -> hidden=true; elsewhere -> hidden=true\nmiddle — без изменений (pinned=true, второе касание закрывает)\n\n$ node t3.mjs http://127.0.0.1:4876/ [\"\"|\".hint-tip{pointer-events:none}\"]   (1470×784, мышь)\nnow/journal/tasks/office: hover {\"hidden\":false,\"pinned\":\"false\"} | away {\"hidden\":true} | press+away {\"hidden\":false,\"pinned\":\"true\"} | 2nd press {\"hidden\":true} — одинаково с правилом и без\n\n$ F2=1 node t4.mjs … 390x844 \"\"   (совместимые mouseenter и mouseleave от касания отключены, 18:09:34 UTC)\njournal/tasks/office low -> hidden=false pinned=false (открыла фокусом, hints.js:70; подсказка на кнопке)\n$ F2=1 node t4.mjs … \".hint-tip{pointer-events:none}\" -> low: pinned=true; second tap -> hidden=true\n\nСтенд и Chrome остановлены. Выводы — <вне проекта>/iss048/res-t1.txt; скрипты t1–t4.mjs.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "SAME_KIND",
+        "text": "Места того же рода — элементы, которые открываются наведением или фокусом и могут лечь на свою кнопку при касании. (а) Названное: «?» у «Журнал», «Задачи», «Офис и доска», у нижнего края в окнах до 599 px. Полоса отказа — нижние 120 px окна 390 (у «Офиса» — 172 px) и 138 / 190 px окна 320. (б) Та же кнопка «Сейчас»: она вверху (верх 60), поэтому не отказывает, но механизм тот же. (в) Открытие фокусом (hints.js:70–72): при касании mousedown фокусирует кнопку, подсказка открывается незакреплённой — второй путь того же рода, его показала проба варианта «только мышь». (г) Открытая закреплённая подсказка у низа закрывает касаниям всё, что под ней, — другие «?», строки журнала, элементы панели. Касание по ней остаётся внутри (обработчик document click, hints.js:85–91), и до элемента под ней не добраться. pointer-events: none снимает и это. Других открытий по наведению или фокусу в public/*.js нет: grep mouseenter, mouseover, pointerenter и focus нашёл только hints.js:67–74. Тур и справка открываются нажатием и не того рода."
+      },
+      {
+        "id": "I2",
+        "kind": "REGRESSION_TEST",
+        "text": "Для TEST-DESIGNER. (1) Тест правила CSS (parseCss и cssDecls из pixel-office-helpers.js): у .hint-tip стоит pointer-events: none, и ни одно правило, в том числе в @media (max-width: 599px), не возвращает auto для .hint-tip и #hint-*. Сейчас тест красный. Оговорка: это проверка правила, а не вида. (2) Поддельный DOM (pixel-office-guide.test.js, рядом с HN-01): последовательность касания по кнопке у края, как в браузере, с правилом, что под точкой кнопка, потому что подсказка касаний не принимает. pointerenter(pointerType touch) → mouseenter → mousedown → focus → mouseup → click — всё на кнопке. Итог: подсказка открыта и закреплена; повтор той же последовательности закрывает. Если введут вариант «только мышь»: pointerenter(touch) не открывает, pointerenter(mouse) открывает, mouseenter без pointerType ничего не делает. На поддельном DOM без определения элемента под точкой провал не воспроизводится, поэтому (2) проверяет логику, а не вид. (3) Регрессия в браузере — повтор сценария 26 моей пробой t2. Окна 390×844 и 320×568 с эмуляцией касаний, «?» трёх частей в 10 px от низа. После касания #hint-<ключ> не hidden и data-pinned=true, после второго — hidden; на 1470×784 мышь ведёт себя как прежде. До исправления: hidden=true, click@div.panel-head-row."
+      },
+      {
+        "id": "I3",
+        "kind": "FINDING",
+        "text": "Попутно, другой механизм, по границе задачи — ORCH может завести отдельно. В окне 768×1024 (правило для узких окон не действует) подсказки «Журнал» и «Задачи» стоят под кнопкой и выходят за низ окна: 922,7..1052,1 и 1020,2..1149,6 при высоте 1024, если кнопка внизу. Там подсказка не целиком в окне, а прокрутка страницы её не сдвигает (position: fixed)."
+      },
+      {
+        "id": "I4",
+        "kind": "SIMILAR",
+        "text": "Похожие закрытые дефекты: касаний и наведения в docs/issues нет. Ближайший класс — раскладка поверх своей кнопки: прошлые диагнозы этого журнала (линия переходов и перенос в легенде) другого механизма. Это не возврат прежней причины."
+      },
+      {
+        "id": "I5",
+        "kind": "SEVERITY",
+        "text": "Предложение серьёзности: HIGH. На телефоне подсказка у нижнего края не открывается совсем — сценарий БЛОК по документу сценариев. Данные и защита не затронуты, страница не падает."
+      },
+      {
+        "id": "I6",
+        "kind": "ANTI_PATTERN",
+        "text": "Предложение записи в docs/anti-patterns.md (Q13): «Открытие по наведению проверили на поддельном DOM отдельными событиями; на касании браузер шлёт mouseenter до click и заново определяет элемент под точкой, а подсказка position: fixed ложилась на свою кнопку». Как правильно: элемент поверх страницы без нажимаемого содержимого получает pointer-events: none; открытие по наведению — только для pointerType mouse; приёмка и DESIGN-QA проверяют касание кнопки в той части окна, где появляется то, что она открывает."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

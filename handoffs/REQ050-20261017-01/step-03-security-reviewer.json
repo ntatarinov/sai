@@ -1,0 +1,64 @@
+{
+  "handoff_id": "step03-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/REQ050-20261017-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-050", "REQ-051", "REQ-052", "REQ-053"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/",
+      "docs/design/REQ-050-053-guide.md",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "FRONTEND-DEV 2e -> SECURITY (этот) -> REVIEWER -> TEST-DESIGNER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "orch_check": {
+      "at": "2026-10-17T15:15:50Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "Q7, Q10, R2, Q12 выполнены со своими пробами; хранилище строго по 0061 п. 3",
+        "I1 («Показать всех (0)» в тексте пустого «Сейчас») — проверить REVIEWER"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 3 — ворота безопасности после кода гайда (подшаги 2a–2e: handoffs/REQ050-20261017-01/step-02a…02e-frontend-dev.json; проект docs/design/REQ-050-053-guide.md, раздел 11 — планка). Изменены tools/src/pixel-office/public/ (новые guide-model.js, guide.js, tour.js, hints.js; app.js, boot.js, index.html, texts.js, style.css) и tools/README.md. САМ по каждому пункту Q7–Q12 и R2–R3: «выполнен» или «неприменим» со своей проверкой. Особо: Q7 — тексты и роли выводятся только как текст (роль-ловушка <img…> в разделе ролей, в подписи тура, в подсказках); нет innerHTML и подобного; нет внешних загрузок; страница шлёт только GET; хранилище — только по decisions/0061 п. 3 (tour.js: getItem/setItem, ключ pixel-office-tour, значение closed, try/catch; boot.js — только ссылка; sessionStorage, indexedDB, cookie, другие ключи — нигде); значение из хранилища, отличное от closed, не ломает страницу и не исполняется; Q10 — хранилище бросает исключение, пустой журнал, пустая модель, до первого ответа сервера — без исключений и слов undefined/null/NaN/[object]; R2 — гайд ничего не добавляет в журнал, «Сейчас», панель и офис. Проба на стенде вне проекта (пустой каталог, hook.sh, id sample-; журнал владельца не трогать). Код не менять. В self_check не писать названий других проектов. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": ["Q7–Q12, R2–R3 со своей проверкой; вердикт"]
+  },
+  "created_at": "2026-10-17T15:11:55Z",
+  "started_at": "2026-10-17T15:11:55Z",
+  "completed_at": "2026-10-17T15:15:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Область задета: «уходит в браузер» (справка, тур, подсказки, пустые состояния), «держит данные в браузере» (впервые localStorage) и R2. Блокирующих находок нет.\n\nКарта поверхностей:\n- guide-model.js, guide.js, tour.js, hints.js (новые), app.js, index.html, texts.js, style.css — «уходит в браузер». Пункты Q7, Q10, R2.\n- tour.js и boot.js — хранилище браузера, решение 0061, п. 3.\n- tools/README.md — документ: секретов и путей компьютера нет.\n- Сервер, хук, protocol.js, mask.js, schema.js, model.js и tools/test не менялись (git diff base/REQ050-20261017-01 по ним пуст). «Пишет файлы», «сервер ходит сам», «данные клиентов», «фото людей» не затронуты.\n\nПункты:\n- Q7 — выполнен.\n  (а) Приёмников разметки нет. Поиск по public/*.js — innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function, srcdoc, DOMParser, cssText, style, on*, javascript:, new RegExp — код 1. Новые модули строят элементы через createElement и textContent. setAttribute ставит только data-*, role и aria-*, значения — константы.\n  (б) Тексты справки, тура и подсказок — константы texts.js. Справка строит раздел ролей из ROLE_NAMES, а не из журнала. Новые модули журнал не читают: импортируют только texts.js и guide-model.js; тур получает от app.js только числа (персонажи, строки, элементы, виден ли блок «Сейчас»). String.replace — только с константами (HINT_NAMES) и числами шага.\n  (в) Роль-ловушка «<img…>» из журнала стенда в справку, тур и подсказки не попадает, а в журнале, «Сейчас» и карточках выводится текстом (img 0, window.__x не задан).\n  (г) Внешних загрузок нет: в добавленных строках index.html, style.css и README нет url(, @import, image-set, http(s)://, <script, <link. Страница шлёт только GET, адреса — только свои файлы и /api/events.\n  (д) Хранилище — строго по 0061, п. 3:\n  - boot.js передаёт storageFn: () => window.localStorage и сам методов не вызывает;\n  - обращения есть только в tour.js: getItem и setItem с ключом pixel-office-tour и значением closed; получение хранилища и каждый вызов — внутри try/catch (tour.js:54-83);\n  - на стенде записаны вызовы ровно local.getItem(pixel-office-tour) и local.setItem(pixel-office-tour,closed). К sessionStorage, indexedDB и cookie страница не обращалась; поиск в public/*.js тоже пуст.\n  (е) Значение, отличное от closed, только сравнивается строгим равенством. Ловушка «<img src=x onerror=…>» в ключе не исполнилась: приглашение тура показано, после закрытия значение заменено на closed.\n- Q8, Q9, Q11, R3 — неприменимы: данных клиентов, SQL, внешних адресов и фото нет.\n- Q10 — выполнен. Стенд, каждый сценарий — без исключений, без сообщений в консоли, без «undefined/null/NaN/[object»:\n  - хранилище бросает в getItem и setItem — приглашение показано, тур проходит 6 шагов и закрывается;\n  - window.localStorage — геттер, который бросает SecurityError, — то же;\n  - пустой журнал — «Событий от Claude Code пока нет», тур с запасными текстами шагов;\n  - до первого ответа сервера (запрос задержан) — приглашения тура нет, справка открывается и закрывается;\n  - после закрытия тура и перезагрузки — приглашения нет.\n  Пробы guide-model на копии: tourStepView при шагах -1…8 и facts null, 5, NaN, строки; guideSections с пустой и чужой таблицей ролей; roleTableProblems на null — 39 проверок, 0 проблем.\n- R2 — выполнен. Гайд ничего не добавляет в журнал, «Сейчас», панель и офис: новые модули не импортируют модель и журнал, не пишут в них, событий не создают. Тур только помечает элементы атрибутом data-tour-target. Тексты справки описывают поведение и не утверждают событий.\n- Q12 — выполнен. Защитные проверки и маскирование не тронуты. Хранилище — по записанному решению 0061, п. 3; прежний запрет PG-20 заменён им, остальной запрет (sessionStorage, indexedDB, cookie, другие ключи) соблюдён.\n\nСтенд вне проекта: пустой каталог, порт 4785, свой секрет. События с sample-идентификаторами — через hook.sh, 460 строк — подписанным POST, запись — через pixel-office-note. Ловушки — в роли, описании и записи. Headless Chromium по CDP, перехват хранилища, cookie и indexedDB; сценарии: обычный, повторная загрузка, ловушка в значении, «closed», бросающее хранилище, бросающий геттер. Сервер и браузер стенда остановлены, журнал владельца не тронут.",
+    "findings": [],
+    "self_check": [
+      "Хеши sha256 файлов tools/src, tools/test, tools/README.md, tools/package.json и git status до и после проверки совпали; проект не менялся. Первые 16 знаков: app.js 3b352c6ca4e1debc, boot.js d1edbe47b8fa52a4, index.html 2fc6ff71a353255f, texts.js aa6a356c8bfe6e39, guide-model.js 0e940053530feafe, guide.js ce3ff7a5181f77be, tour.js 06ef6400261d573d, hints.js 5a85e78ddc6e826f, style.css db3b210910a64576, tools/README.md 8017e4078f9f7360.",
+      "git diff base/REQ050-20261017-01 --stat -- tools/: README, app.js, boot.js, index.html, style.css, texts.js; новые guide-model.js, guide.js, tour.js, hints.js. По tools/src/pixel-office/*.js, *.sh, tools/test, .claude — пусто.",
+      "grep по public/*.js: приёмники разметки и new RegExp — код 1. Хранилище: storageFn в boot.js:22 и app.js:258, 387 (передача); getItem и setItem — только tour.js:67 и 80; sessionStorage, indexedDB, cookie — нет. Сеть — fetchFn с method GET (app.js:456-457). replace в новых модулях — hints.js:54 (HINT_NAMES), tour.js:130 (номер шага).",
+      "grep добавленных строк README, index.html, style.css на url(, @import, image-set, http(s)://, <script, <link, секреты, пути компьютера — пусто (код 1).",
+      "Стенд, пустой журнал, первый /api/events задержан (held 1): до ответа — invite false, справка открылась (13743 знака) и закрылась, bad 0. После ответа — invite true; 4 подсказки, 4 текста; тур: шаги 1–6 («Шаг 1 из 6 | Это Pixel Office» … «Шаг 6 из 6 | Справка — здесь»), затем скрыт. Вызовы хранилища: getItem(pixel-office-tour), setItem(pixel-office-tour,closed). badApi пусто, img 0, x undefined, bad 0, только GET, исключений и консоли 0.",
+      "Стенд, повторная загрузка: invite false, вызов только getItem(pixel-office-tour), исключений 0.",
+      "Стенд с журналом (ловушки): trap — invite true, шагов 6, getItem затем setItem closed, x undefined, img 0, bad 0, в справке роли-ловушки нет; closed — invite false, только getItem; throw — invite true, шагов 6, исключений 0; getter — вызовы геттера 2 (оба брошены, перехвачены), invite true, шагов 6, исключений 0. Во всех сценариях методы только GET, сообщений в консоли 0, badApi пусто.",
+      "guide-model на копии: «checked 39 problems 0».",
+      "Сервер и браузер стенда остановлены (процессов 0)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Для REVIEWER, не безопасность: на пустом журнале textContent блока «Сейчас» содержит «Показать всех (0)». Возможно, кнопка скрыта стилем; на экране не проверял."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

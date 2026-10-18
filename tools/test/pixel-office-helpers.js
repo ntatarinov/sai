@@ -1249,9 +1249,13 @@ export function makePage(o = {}) {
   let clipboardFn;
   if (typeof o.clipboardFn === "function") clipboardFn = o.clipboardFn;
   else if (Object.hasOwn(o, "clipboard")) clipboardFn = () => o.clipboard;
+  // The memory of the browser for the tour (REQ-052): o.storageFn as given;
+  // without it the page has no storage (the invitation shows each time).
+  const storageFn = Object.hasOwn(o, "storageFn") ? o.storageFn : undefined;
   const app = createApp({
     document: doc,
     clipboardFn,
+    storageFn,
     fetchFn: (url, init) => server.fetchFn(url, init),
     nowFn: clock.now,
     setIntervalFn: clock.setIntervalFn,
@@ -1298,6 +1302,33 @@ export function makePage(o = {}) {
       doc.created.filter((e) => e.tagName === tag.toUpperCase()),
   };
   return page;
+}
+
+// A fake storage of the browser (REQ-052): the values by key, every call in
+// order; failGet / failSet make getItem / setItem throw.
+export function fakeStorage(initial = {}) {
+  const values = new Map(Object.entries(initial));
+  const st = {
+    values,
+    calls: [],
+    failGet: false,
+    failSet: false,
+    getItem(key) {
+      st.calls.push(["getItem", key]);
+      if (st.failGet) throw new Error("storage is not allowed");
+      return values.has(key) ? values.get(key) : null;
+    },
+    setItem(key, value) {
+      st.calls.push(["setItem", key, value]);
+      if (st.failSet) throw new Error("storage is full");
+      values.set(key, String(value));
+    },
+    removeItem(key) {
+      st.calls.push(["removeItem", key]);
+      values.delete(key);
+    },
+  };
+  return st;
 }
 
 // Elements of a page whose text is exactly `text`.

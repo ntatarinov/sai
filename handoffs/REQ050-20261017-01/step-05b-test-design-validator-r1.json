@@ -1,0 +1,69 @@
+{
+  "handoff_id": "step05b-r1-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "05b",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/REQ050-20261017-01/step-05b-test-design-validator-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-050", "REQ-052"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/step-05-test-designer-r1.json",
+      "tools/test/pixel-office-guide.test.js"
+    ],
+    "route": "TEST-DESIGNER r1 -> TEST-DESIGN-VALIDATOR r1 (этот) -> TEST-RUNNER",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "rework_of": "handoffs/REQ050-20261017-01/step-05-test-designer-r1.json",
+    "orch_check": {
+      "at": "2026-10-17T16:22:05Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": ["F1, F2 закрыты; свой npm run check код 0, 1615"]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5b, повтор после TEST-DESIGNER r1 (handoffs/REQ050-20261017-01/step-05-test-designer-r1.json) по твоему FAIL. САМ проверь: F1 — GD-02 и TU-04 ловят твои GTRAP и GTRAP2 (помощник keyFrom честно моделирует всплытие, не подгоняет); F2 — TU-01 ловит G09c; изменения только в pixel-office-guide.test.js и только по перечню; свой полный npm run check под caffeinate -i. Файлы не менять, кроме result. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": [
+      "F1, F2 закрыты своими мутантами; npm run check код 0; вердикт"
+    ]
+  },
+  "created_at": "2026-10-17T16:17:10Z",
+  "started_at": "2026-10-17T16:17:10Z",
+  "completed_at": "2026-10-17T16:21:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: F1 и F2 прошлых ворот (step-05b-test-design-validator.json) закрыты; проверено своими запусками.\n\nЧто изменилось с прошлых ворот (хеши рабочего дерева против моего списка в начале прошлых ворот): из тестов и кода — только tools/test/pixel-office-guide.test.js; ещё docs/requirements.yaml и handoff-ы step-01e, step-01f (параллельный шаг WF-01, уже отмеченный в прошлых воротах) и step-05-test-designer-r1. tools/src не менялся. diff pixel-office-guide.test.js с моей копией прошлых ворот: помощник keyFrom (новый), три вызова keyFrom в GD-02, два в TU-04, случай «other» в TU-01; убраны две строки key(page, \"Tab\", {shiftKey: true}) в GD-02 и TU-04 — они не потеряны: keyFrom после цепочки предков тоже подаёт событие на document, так что Shift+Tab по-прежнему проверяется и от документа, а теперь ещё и от «Закрыть», заголовка и «×»; key(page, \"Tab\") от документа оставлен. Ослабления нет.\n\nkeyFrom моделирует всплытие честно: target — элемент в фокусе, обработчики keydown каждого предка по цепочке parentNode, затем обработчики документа; stopPropagation останавливает; preventDefault общий для всех. Ничего не подгоняет: на текущем коде preventDefault никто не зовёт, а с моими ловушками зовут.\n\nF1 закрыт: мой мутант GTRAP (keydown Tab на самой справке) -> GD-02 красный; GTRAP2 (keydown Tab на окне тура) -> TU-04 красный. F2 закрыт: G09c (любое записанное значение считается «closed») -> TU-01 красный. Контроль: G09a -> GD-01, TU-01, TU-06, TU-09; G11 -> GD-01, TU-01, TU-06.\n\nЧисла ^test( / assert. (метка -> сейчас): guide — нет -> 32/519, docs 9/38, page 114/1215, panels 55/1017, прочие без изменений — совпадают с отчётом TEST-DESIGNER r1.\n\nСвой прогон: cd tools && caffeinate -i npm run check — код 0, tests 1615, pass 1615, fail 0, skipped 0, todo 0. Хеши рабочего дерева до и после этой проверки совпали.",
+    "findings": [],
+    "self_check": [
+      "date -u: начало 2026-10-17T16:17:30Z",
+      "хеши рабочего дерева (без step-05b*) против списка начала прошлых ворот: изменены tools/test/pixel-office-guide.test.js, docs/requirements.yaml, handoffs/REQ050-20261017-01/step-01e-req-analyst.json; добавлены step-01f-req-validator.json и step-05-test-designer-r1.json; tools/src без изменений",
+      "diff pixel-office-guide.test.js (копия прошлых ворот -> рабочий): 632a633,661 (keyFrom); 941a971,975 и 943d976 (GD-02); 1928a1962,1966 (TU-01, «other»); 2243a2282,2284 и 2245d2285 (TU-04)",
+      "копия Sai вне проекта обновлена rsync; diff -r tools/src и tools/test пуст",
+      "GTRAP (guide.js: keydown Tab на справке — preventDefault и фокус на заголовок) -> tests 433 fail 1: GD-02",
+      "GTRAP2 (tour.js: keydown Tab на окне тура — preventDefault) -> fail 1: TU-04",
+      "G09c (tour.js: readClosed «!== null» вместо «=== TOUR_CLOSED») -> fail 1: TU-01",
+      "G09a (getItem с другим ключом) -> fail 4: GD-01, TU-01, TU-06, TU-09",
+      "G11 (приглашение и при «closed») -> fail 3: GD-01, TU-01, TU-06",
+      "после набора хеши tools/src и tools/test копии совпали с исходными («copy restored»)",
+      "числа: grep -c '^test(' / grep -o 'assert\\.' | wc -l -> guide 32/519",
+      "cd tools && caffeinate -i npm run check (16:19:15Z–16:21:09Z) -> exit 0; # tests 1615 # pass 1615 # fail 0 # cancelled 0 # skipped 0 # todo 0",
+      "хеши рабочего дерева после проверки = до («tree equal»)",
+      "cd tools && npm run handoffs-check -> перед close"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "AP-018: ожидаемого вердикта в задании нет. Факт «изменения только в pixel-office-guide.test.js и только по перечню» проверен diff — верен."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

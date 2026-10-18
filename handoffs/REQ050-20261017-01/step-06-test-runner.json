@@ -1,0 +1,146 @@
+{
+  "handoff_id": "step06-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-RUNNER",
+  "file": "handoffs/REQ050-20261017-01/step-06-test-runner.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-050", "REQ-051", "REQ-052", "REQ-053"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/step-05b-test-design-validator-r1.json",
+      "tools/"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR -> TEST-RUNNER (этот) -> DESIGN-QA",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "orch_check": {
+      "at": "2026-10-17T16:27:56Z",
+      "by": "ORCH",
+      "verdict": "FAIL по критерию «код 0» принят",
+      "checked": [
+        "Падение EN-62 (team-channel) — гонка в тесте, общих файлов с работой 0; pixel-office 433 дважды зелёные",
+        "Решение ORCH: дефект ISS-0075 (нестабильный EN-62) заводит DOC-UPDATER на шаге 10, исправление — WF-03 в очереди; шаг 6 повторяется (r1) — нужен зелёный полный прогон"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 6 (гайд Pixel Office; тесты PASS — step-05b-test-design-validator-r1.json). Запусти cd tools && caffeinate -i npm run check. Ожидаемо: код 0; format:check, lint, traces, handoffs-check без нарушений; тестов 1615, fail 0, skipped 0, todo 0. Падения разбери с доказательством — ничего не правь. Тесты pixel-office отдельно дважды — сравни число и список. В result — настоящий вывод. Файлы не менять, кроме result. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": [
+      "npm run check код 0 с настоящим выводом; pixel-office дважды без расхождений"
+    ]
+  },
+  "created_at": "2026-10-17T16:22:05Z",
+  "started_at": "2026-10-17T16:22:05Z",
+  "completed_at": "2026-10-17T16:27:25Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Команда проверки cd tools && caffeinate -i npm run check дошла до конца, но с кодом 1: форматирование, линтер, traces и handoffs-check без нарушений; тестов 1615, прошло 1614, упал 1, пропущенных 0, todo 0. Упал EN-62 «inbox/ as a link or with mode 0755…» в tools/test/team-channel.test.js — гонка во вспомогательной функции теста inboxNames (readdir, затем lstat временного файла, который отправитель успел переименовать: ENOENT на inbox/.tmp-…). Доказано, что падение не из-за этой работы: ни файл теста, ни 36 файлов его импортов (вместе с запускаемым src/team/cli.js) не пересекаются с файлами работы. Отдельно тест проходит: 6 из 6 запусков EN-62 и весь team-channel.test.js (31 из 31) — значит, он нестабилен под нагрузкой полного прогона; нужен дефект (I1). Тесты pixel-office (11 файлов) прогнаны отдельно два раза подряд: оба раза 433 теста, все прошли, список имён одинаковый — нестабильных нет. Вердикт PASS по правилу роли (упавший тест доказанно не из-за этой работы, форматирование и линтер прошли); критерий задания «код 0» буквально не выполнен — решение за ORCH (I2).",
+    "findings": [
+      {
+        "id": "F1",
+        "location": "tools/test/team-channel.test.js:984 (тест), падение в inboxNames — tools/test/team-channel.test.js:81, вызов из :1028 через waitUntil (tools/test/exec-helpers.js:584)",
+        "test": "EN-62 inbox/ as a link or with mode 0755: the sender refuses E_CHANNEL and writes nothing; a planted ack that is not trusted is neither taken nor removed",
+        "severity": "Medium",
+        "kind": "нестабильный тест, не из-за этой работы",
+        "output": "not ok 935 - EN-62 inbox/ as a link or with mode 0755: the sender refuses E_CHANNEL and writes nothing; a planted ack that is not trusted is neither taken nor removed\n  ---\n  duration_ms: 2503.445833\n  type: 'test'\n  location: 'tools/test/team-channel.test.js:984:1'\n  failureType: 'testCodeFailure'\n  error: \"ENOENT: no such file or directory, lstat '<вне проекта>/sai-exec-test-DI4ZZu/team/p-20261017-dd340e/inbox/.tmp-11614-bc029e8077ac21a7'\"\n  code: 'ENOENT'\n  stack: |-\n    Object.lstatSync (node:fs:1715:25)\n    walk (tools/test/team-channel.test.js:81:14)\n    inboxNames (tools/test/team-channel.test.js:85:3)\n    tools/test/team-channel.test.js:1028:27\n    waitUntil (tools/test/exec-helpers.js:584:15)\n    async TestContext.<anonymous> (tools/test/team-channel.test.js:1028:5)\n    async Test.run (node:internal/test_runner/test:1054:7)\n    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)\n  ...",
+        "evidence": "Свидетельство «работа не задела тест» (quality-bar §6, п. 4): файлы работы — git diff --name-only base/REQ050-20261017-01 плюс git ls-files --others --exclude-standard (46 файлов; в tools/ — только README.md, src/pixel-office/public/{app,boot,guide-model,guide,hints,texts,tour}.js, index.html, style.css и test/pixel-office-{docs,guide,page,panels}.test.js, test/pixel-office-helpers.js). Замыкание относительных import от tools/test/team-channel.test.js и запускаемого тестом tools/src/team/cli.js — 37 файлов (src/team/**, src/pixel-office/mask.js, src/pixel-office/public/schema.js, test/exec-helpers.js, test/fault-inject.js, test/team-engine-helpers.js, test/team-helpers.js); comm -12 замыкания и файлов работы — 0 общих. Повтор: node --test --test-name-pattern='^EN-62 ' test/team-channel.test.js — 6 запусков подряд, все код 0 (tests 2, pass 2); node --test test/team-channel.test.js — код 0, tests 31, pass 31.",
+        "fix": "Не правилось (граница роли). Причина по коду: inboxNames делает readdirSync, затем lstatSync каждого имени, а отправитель в это время переименовывает свой временный файл .tmp-… — lstat получает ENOENT. Чинить тест (TEST-FIXER/ISSUE-FIXER по дефекту): в inboxNames пропускать имя, исчезнувшее между readdir и lstat (ENOENT), или читать readdirSync с withFileTypes."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node -v",
+        "exit_code": 0,
+        "output": "v22.21.1 (engines в tools/package.json: >=22 <23)"
+      },
+      {
+        "command": "cd tools && caffeinate -i npm run check (вывод целиком сохранён вне проекта: <scratch>/req050/check.log, 9799 строк)",
+        "started_at": "2026-10-17T16:22:18Z",
+        "finished_at": "2026-10-17T16:24:11Z",
+        "exit_code": 1,
+        "stopped_stage": "test (последняя ступень; все ступени до неё прошли)",
+        "stages": {
+          "format:check": "Checking formatting...\nAll matched files use Prettier code style!",
+          "lint": "eslint . --max-warnings 0 — без вывода, код 0",
+          "traces": "traces: файлов проверено 1557, следов 0, пропущено 56 (пропуски — строки «пропущен: двоичный файл», изображения образцов, не тесты)",
+          "handoffs-check": "handoffs-check: файлов проверено 924, нарушений 0, исключений использовано 114 из 114",
+          "test": "1..1615\n# tests 1615\n# suites 0\n# pass 1614\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 105458.23575"
+        },
+        "counts": {
+          "tests": 1615,
+          "pass": 1614,
+          "fail": 1,
+          "cancelled": 0,
+          "skipped": 0,
+          "todo": 0,
+          "duration_ms": 105458.23575
+        },
+        "extra": "grep -c '^not ok' по выводу — 1 (EN-62, not ok 935); grep '# SKIP|# TODO' — 0 совпадений"
+      },
+      {
+        "command": "cd tools && caffeinate -i node --test --test-name-pattern='^EN-62 ' test/team-channel.test.js — 6 раз подряд (<scratch>/req050/en62-N.log)",
+        "started_at": "2026-10-17T16:24:56Z",
+        "finished_at": "2026-10-17T16:25:13Z",
+        "exit_code": 0,
+        "output": "run1..run6: exit=0, # tests 2 # pass 2 # fail 0 (оба теста EN-62, в том числе упавший «inbox/ as a link or with mode 0755…»)"
+      },
+      {
+        "command": "cd tools && caffeinate -i node --test test/team-channel.test.js (<scratch>/req050/tc.log)",
+        "started_at": "2026-10-17T16:25:22Z",
+        "finished_at": "2026-10-17T16:25:55Z",
+        "exit_code": 0,
+        "output": "# tests 31\n# pass 31\n# fail 0\n# skipped 0"
+      },
+      {
+        "command": "файлы работы против замыкания импортов теста: git diff --name-only base/REQ050-20261017-01 + git ls-files --others --exclude-standard | sort -u; замыкание относительных import от test/team-channel.test.js и src/team/cli.js; comm -12",
+        "exit_code": 0,
+        "output": "файлов работы 46; файлов в замыкании 37; общих 0"
+      },
+      {
+        "command": "cd tools && caffeinate -i node --test test/pixel-office-*.test.js (прогон 1; 11 файлов; <scratch>/req050/po-1.log)",
+        "started_at": "2026-10-17T16:25:55Z",
+        "finished_at": "2026-10-17T16:26:10Z",
+        "exit_code": 0,
+        "output": "1..433\n# tests 433\n# suites 0\n# pass 433\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 14625.515709"
+      },
+      {
+        "command": "cd tools && caffeinate -i node --test test/pixel-office-*.test.js (прогон 2, сразу после первого; <scratch>/req050/po-2.log)",
+        "started_at": "2026-10-17T16:26:10Z",
+        "finished_at": "2026-10-17T16:26:24Z",
+        "exit_code": 0,
+        "output": "1..433\n# tests 433\n# suites 0\n# pass 433\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 14318.530166"
+      },
+      {
+        "command": "сравнение прогонов pixel-office: grep -E '^(not )?ok ' po-N.log, номер теста убран, сортировка, diff; shasum обоих списков",
+        "exit_code": 0,
+        "output": "433 и 433 строк; diff пуст — «lists identical»; not ok: 0 и 0; уникальных имён 433; shasum обоих списков 6f287dfeba5beed42d31b9402e066561434e2ed0"
+      },
+      {
+        "command": "git status --short до проверки и после всех прогонов, diff двух снимков",
+        "exit_code": 0,
+        "output": "diff пуст — «git status unchanged by runs»: прогоны ничего в проекте не создали и не изменили; TEST-RUNNER ничего не менял, кроме result этого handoff-а"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "defect-needed",
+        "severity": "Medium",
+        "text": "Нестабильный тест EN-62 «inbox/ as a link or with mode 0755…» (tools/test/team-channel.test.js:984): в полном прогоне упал с ENOENT в inboxNames (:81) — lstat временного файла inbox/.tmp-…, который отправитель переименовал между readdir и lstat; отдельно проходит 6 из 6 и в файле целиком 31 из 31. Не из-за этой работы (общих файлов с замыканием импортов 0, F1). Нужен дефект с номером от ORCH; похожих записей в docs/issues и docs/anti-patterns.md не найдено (ISS-0008 упоминает EN-62 по другому поводу)."
+      },
+      {
+        "id": "I2",
+        "kind": "task-discrepancy",
+        "severity": "Medium",
+        "text": "Критерий задания «npm run check код 0» буквально не выполнен: код 1 из-за I1. Вердикт PASS вынесен по правилу роли TEST-RUNNER (форматирование и линтер прошли, упавший тест доказанно не из-за этой работы). Если для шага нужен именно зелёный полный прогон — решение за ORCH (сначала исправить дефект I1, затем повтор)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

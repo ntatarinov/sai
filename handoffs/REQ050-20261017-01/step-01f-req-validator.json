@@ -1,0 +1,80 @@
+{
+  "handoff_id": "step01f-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-01",
+  "step": "01f",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-VALIDATOR",
+  "file": "handoffs/REQ050-20261017-01/step-01f-req-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-052"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/step-01e-req-analyst.json",
+      "docs/requirements.yaml"
+    ],
+    "route": "REQ-ANALYST -> REQ-VALIDATOR (этот)",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "orch_check": {
+      "at": "2026-10-17T16:02:26Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "Критерий 3 REQ-052 PASS; строка 7.3 проекта — DOC-UPDATER шаг 10"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-01, ворота после правки REQ-ANALYST (handoffs/REQ050-20261017-01/step-01e-req-analyst.json): изменена одна фраза проверки TU-03 в критерии 3 REQ-052 (шаг 3 тура на пустом журнале до и после первого ответа). САМ проверь по (а)–(е) только эту правку: совпадает с таблицей Т3 REQ-052, проектом docs/design/REQ-050-053-guide.md (3.2, 7.3), кодом (guide-model.js tourStepView) и тестом TU-03 (tools/test/pixel-office-guide.test.js — запусти); не ослаблена; других изменений нет (копия до — путь сообщит ORCH). Файлы не менять, кроме result. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": ["Правка проверена по (а)–(е); вердикт"]
+  },
+  "created_at": "2026-10-17T16:00:53Z",
+  "started_at": "2026-10-17T16:00:53Z",
+  "completed_at": "2026-10-17T16:02:08Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "verdict_by_requirement": {
+      "REQ-052": "PASS"
+    },
+    "summary": "Ворота правки одной фразы проверки TU-03 в критерии 3 REQ-052 — PASS. Целость: diff с копией «до» (вне проекта; хеш копии 5898628d…c78f = конец ворот GUIDEB r1) — два куска: 7069a7070 (строка-комментарий r: время, прогон, основание I1 TEST-DESIGNER, было → стало) и 7072c7073 (критерий 3); первые 7069 строк совпадают побайтно, остальное без изменений; хеш файла в начале (16:01:21Z) и в конце (16:01:49Z) — b5a49975…b608; YAML: 53 требования, у REQ-052 10 критериев. По словам изменилось только: «до первого ответа и после него» → «до первого ответа», и добавлен случай «на пустом журнале после первого ответа (блок #now виден, «в работе ничего нет»): шаг 2 без пометки с запасным текстом, шаг 3 — помечен #now и основной текст, шаги 4 и 5 с пометкой и запасным текстом». (а) проверяемо — TU-03 (запущен мной: pass 1, fail 0). (б) совпадает с Т3 REQ-052 (шаг 3: запасной текст, «когда он скрыт (ответа сервера ещё не было)»), с самим критерием 3 («шаг 3 — #now скрыт (без подсветки)»), с проектом 3.2 (tourStepView: «Шаг 3: nowShown → цель now, иначе … fallback»), с кодом (guide-model.js:142–144: step 3 — target now при nowShown, иначе fallback; app.js:390 nowShown: els.now?.hidden === false) и с тестом TU-03 (после ответа на пустом журнале: шаг 2 null/fallback, 3 now/основной, 4 journal/fallback, 5 tasks/fallback). Прежняя фраза противоречила Т3 — правка устраняет противоречие. Не ослаблено: случай «до первого ответа» остался целиком, добавлен случай «после ответа» с более строгим ожиданием (пометка #now). (в)–(е) не затронуты. Ожидаемого вердикта задание не называло (AP-018).",
+    "findings": [],
+    "self_check": [
+      {
+        "command": "date -u; shasum requirements.yaml; shasum копии",
+        "output": "2026-10-17T16:01:21Z; b5a49975…b608; копия 5898628d…c78f"
+      },
+      {
+        "command": "diff копия файл | grep ^[0-9]; head -n 7069 | shasum (файл и копия)",
+        "output": "7069a7070, 7072c7073; 0a58d15f… оба"
+      },
+      {
+        "command": "python difflib по строке критерия 3",
+        "output": "удалено «и после него»; вставлен случай после первого ответа (шаг 2 fallback, шаг 3 #now и основной текст, 4–5 пометка и fallback)"
+      },
+      {
+        "command": "grep tourStepView guide-model.js; grep nowShown app.js; design 3.2",
+        "output": "step 3: if (f.nowShown === true) target = \"now\"; else fallback = true; nowShown: els.now?.hidden === false; проект 3.2 — то же"
+      },
+      {
+        "command": "cd tools && node --test --test-name-pattern=TU-03 test/pixel-office-guide.test.js",
+        "output": "tests 1 pass 1 fail 0 skipped 0"
+      },
+      {
+        "command": "date -u; shasum (конец)",
+        "output": "2026-10-17T16:01:49Z; b5a49975…b608 — файл не менялся"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "note",
+        "text": "В проекте docs/design/REQ-050-053-guide.md, таблица 7.3, строка критерия 3, осталась прежняя формулировка «пустой журнал до и после ответа: шаги 2, 3 без пометки с запасным текстом» — она расходится с 3.2 проекта, кодом, тестом и исправленным критерием. Это файл CODE-DESIGNER; правка — по поручению ORCH, на вердикт по требованию не влияет."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

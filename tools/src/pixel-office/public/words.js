@@ -8,8 +8,10 @@
 import { SOURCE_REAL, isNoteLine } from "./schema.js";
 import {
   EVENT_TABLE,
+  GUIDE_ROLE_ABOUT,
   HISTORY_WHO_ORCH,
   MAIN_LABEL,
+  ROLE_ABOUT_UNKNOWN,
   ROLE_NAMES,
   ROLE_UNKNOWN,
 } from "./texts.js";
@@ -27,6 +29,23 @@ export function roleName(role) {
     return ROLE_NAMES[match[1]];
   }
   return role;
+}
+
+// What a role does in plain words, under the title of its card (REQ-051,
+// criterion 8): a role of Sai with a code of ROLE_NAMES and of the
+// descriptions of the guide gets its description; any other role, an empty
+// one or not a string gets ROLE_ABOUT_UNKNOWN. Never throws.
+export function roleAbout(role) {
+  if (typeof role !== "string") return ROLE_ABOUT_UNKNOWN;
+  const match = SAI_ROLE.exec(role);
+  if (
+    match !== null &&
+    Object.hasOwn(ROLE_NAMES, match[1]) &&
+    Object.hasOwn(GUIDE_ROLE_ABOUT, match[1])
+  ) {
+    return GUIDE_ROLE_ABOUT[match[1]];
+  }
+  return ROLE_ABOUT_UNKNOWN;
 }
 
 // The code of a role, shown only where it is asked for (a tooltip, the

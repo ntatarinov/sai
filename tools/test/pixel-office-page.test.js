@@ -1087,7 +1087,8 @@ test("PG-20: analysis of the files of public/ - no dangerous calls, no storage, 
     /javascript:/i,
     /http:\/\//,
     /https:\/\//,
-    /localStorage/,
+    // REQ-052 (design REQ-050-053, section 8): the storage of the tour is
+    // allowed by the rule of decision 0061, item 3, checked whole by TU-09
     /sessionStorage/,
     /indexedDB/,
     /document\.cookie/,
@@ -1126,6 +1127,86 @@ test("PG-20: analysis of the files of public/ - no dangerous calls, no storage, 
     assert.match(tag, /\ssrc=/);
     assert.match(tag, /type="module"/);
   }
+});
+
+// REQ-052, criterion 1 (design REQ-050-053, sections 7.3 and 8): the rule of
+// decision 0061, item 3 in place of the ban of the storage in PG-20.
+// Whether a call at `at` stands inside a block of try that has a catch.
+function insideTry(code, at) {
+  let depth = 0;
+  for (let i = at; i >= 0; i--) {
+    if (code[i] === "}") depth += 1;
+    else if (code[i] === "{") {
+      if (depth > 0) {
+        depth -= 1;
+        continue;
+      }
+      if (!/\btry\s*$/.test(code.slice(0, i))) continue;
+      // the end of the try block, then "catch"
+      let d = 0;
+      for (let k = i; k < code.length; k++) {
+        if (code[k] === "{") d += 1;
+        else if (code[k] === "}") {
+          d -= 1;
+          if (d === 0) return /^\s*catch\b/.test(code.slice(k + 1));
+        }
+      }
+      return false;
+    }
+  }
+  return false;
+}
+
+test("TU-09: the storage of the browser by decision 0061, item 3 - (а) 'localStorage' only in boot.js, one line, the field storageFn, no method called on it; (б) getItem( and setItem( only in tour.js, with the key constant 'pixel-office-tour' and, for setItem, the value 'closed', each call and the call of storageFn inside try with catch; app.js passes storageFn on and never calls it; (в) sessionStorage, indexedDB, document.cookie, removeItem( nowhere", () => {
+  const files = fs.readdirSync(PUBLIC).filter((f) => /\.(js|html)$/.test(f));
+  const read = (f) => fs.readFileSync(path.join(PUBLIC, f), "utf8");
+  const where = (re) =>
+    files.flatMap((f) =>
+      read(f)
+        .split("\n")
+        .map((line, i) => [f, i + 1, line])
+        .filter(([, , line]) => re.test(line)),
+    );
+  // (а)
+  const local = where(/localStorage/);
+  assert.equal(local.length, 1, JSON.stringify(local));
+  assert.equal(local[0][0], "boot.js");
+  assert.match(local[0][2], /^\s*storageFn: \(\) => window\.localStorage,\s*$/);
+  assert.equal(/localStorage\s*[.[]/.test(read("boot.js")), false);
+  // (б)
+  assert.deepEqual(
+    where(/getItem\(|setItem\(/).map(([f]) => f),
+    ["tour.js", "tour.js"],
+  );
+  const tour = stripComments(read("tour.js"));
+  assert.match(tour, /\bconst TOUR_KEY = "pixel-office-tour";/);
+  assert.match(tour, /\bconst TOUR_CLOSED = "closed";/);
+  const calls = [
+    ...tour.matchAll(
+      /\.getItem\(([^)]*)\)|\.setItem\(([^)]*)\)|\bstorageFn\(\)/g,
+    ),
+  ];
+  assert.equal(calls.length, 3, calls.map((m) => m[0]).join());
+  for (const m of calls) {
+    assert.ok(insideTry(tour, m.index), `${m[0]} inside try with catch`);
+    if (m[0].startsWith(".getItem")) assert.equal(m[1], "TOUR_KEY");
+    if (m[0].startsWith(".setItem"))
+      assert.equal(m[2], "TOUR_KEY, TOUR_CLOSED");
+  }
+  assert.equal(/storageFn\s*\(/.test(stripComments(read("app.js"))), false);
+  // (в)
+  for (const re of [
+    /sessionStorage/,
+    /indexedDB/,
+    /document\.cookie/,
+    /removeItem\(/,
+  ]) {
+    assert.deepEqual(where(re), [], String(re));
+  }
+  // the check itself on invented code
+  assert.equal(insideTry("try { a.getItem(k); } catch { }", 8), true);
+  assert.equal(insideTry("a.getItem(k); try { } catch { }", 2), false);
+  assert.equal(insideTry("try { a.getItem(k); } finally { }", 8), false);
 });
 
 test("PG-21: App.getModel().entries is one array that the journal, the list, the office and the card are built from", async () => {
@@ -5078,7 +5159,7 @@ test("JN-03: the transitions of an event - at the start of A1 in the window of a
   assert.deepEqual(count48(page), [3, 3]);
   assert.equal(
     page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
-    `Задача: ${name} a1-00001`,
+    `Задача: ${name} номер a1-00001`,
   );
   // the row is in the task: its details stay open and keep the focus
   assert.ok(detailsAt(page, 4) !== null);
@@ -5114,7 +5195,7 @@ test("JN-03: the transitions of an event - at the start of A1 in the window of a
   assert.deepEqual(shown48(page), [5, 6, 8]);
   assert.equal(
     page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
-    "Задача: Explore b1-00001",
+    "Задача: Explore номер b1-00001",
   );
   page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
   // a handoff to an agent that never started: no transition, the text
@@ -5164,7 +5245,9 @@ test("JN-04: hostile text in the navigation is text - a role, a description, ide
   const page = await loaded(j.entries);
   const options = (id) => page.el(id).children.map((o) => o.textContent);
   assert.ok(
-    options("filter-session").some((t) => t.startsWith("Сессия <img src · с ")),
+    options("filter-session").some((t) =>
+      t.startsWith("Сессия номер <img src · с "),
+    ),
   );
   assert.ok(page.el("filter-session").children.some((o) => o.value === IMG));
   assert.ok(options("filter-agent").includes(IMG));
@@ -5175,7 +5258,7 @@ test("JN-04: hostile text in the navigation is text - a role, a description, ide
   goIn(page, 3, "go:task-events").click();
   assert.equal(
     page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
-    `Задача: ${IMG} <img src`,
+    `Задача: ${IMG} номер <img src`,
   );
   page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
   search48(page, "<img");
@@ -5239,7 +5322,7 @@ test("JN-05: bad conditions of the navigation - an empty journal (one variant of
       page
         .el("filter-session")
         .children.some((o) =>
-          o.textContent.startsWith(`Сессия ${longS.slice(0, 8)} · с `),
+          o.textContent.startsWith(`Сессия номер ${longS.slice(0, 8)} · с `),
         ),
     );
     choose48(page, "filter-session", longS);
@@ -5247,7 +5330,7 @@ test("JN-05: bad conditions of the navigation - an empty journal (one variant of
     goIn(page, 3, "go:task-events").click();
     assert.equal(
       page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
-      `Задача: Explore ${longA.slice(0, 8)}`,
+      `Задача: Explore номер ${longA.slice(0, 8)}`,
     );
     choose48(page, "filter-session", longS);
     choose48(page, "filter-type", "agent_start");
@@ -5396,7 +5479,7 @@ test("MC-03: the transitions of a card - (а) 'к задаче в панели' 
   assert.equal(cardOpen(page), false);
   assert.equal(
     page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
-    `Задача: ${roleName(DES_ROLE)} a1-00001`,
+    `Задача: ${roleName(DES_ROLE)} номер a1-00001`,
   );
   assert.deepEqual(shown48(page), [2, 3, 4]);
   assert.deepEqual(count48(page), [3, 3]);

@@ -1,0 +1,71 @@
+{
+  "handoff_id": "step05-r1-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/REQ050-20261017-01/step-05-test-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-050", "REQ-052"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/step-05b-test-design-validator.json",
+      "tools/test/"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR FAIL -> TEST-DESIGNER r1 (этот) -> TEST-DESIGN-VALIDATOR r1",
+    "write_set": [
+      "tools/test/pixel-office-guide.test.js, tools/test/pixel-office-helpers.js"
+    ],
+    "base_tag": "base/REQ050-20261017-01",
+    "rework_of": "handoffs/REQ050-20261017-01/step-05b-test-design-validator.json",
+    "orch_check": {
+      "at": "2026-10-17T16:17:10Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1, F2: мутанты GTRAP, GTRAP2, G09c краснеют; npm run check код 0, 1615; только guide.test.js"
+      ]
+    }
+  },
+  "task": {
+    "description": "Доработка r1 по FAIL TEST-DESIGN-VALIDATOR (handoffs/REQ050-20261017-01/step-05b-test-design-validator.json; прочитай result). F1: в GD-02 и TU-04 Tab отправлять от элемента в фокусе вверх по родителям (как всплытие в браузере; при необходимости доработай поддельный DOM — всплытие keydown, не подгоняя результат) и проверять, что preventDefault не вызван; мутанты GTRAP (keydown-ловушка на #guide) и GTRAP2 (на окне тура) должны краснеть. F2: в TU-01 случай fakeStorage({\"pixel-office-tour\": \"other\"}) — приглашение показано, тур не открыт; мутант G09c (!== null вместо === \"closed\") краснеет. Только это; старые тесты не ослаблять; если доработка поддельного DOM меняет поведение других тестов — все должны остаться зелёными. Код продукта не менять. Запрещены git checkout/reset/stash/clean. Перед close: cd tools && npm run check — код 0; точные числа test(/assert.",
+    "acceptance_criteria": [
+      "F1 и F2: мутанты GTRAP, GTRAP2, G09c краснеют; npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-17T16:12:13Z",
+  "started_at": "2026-10-17T16:12:13Z",
+  "completed_at": "2026-10-17T16:16:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 по FAIL TEST-DESIGN-VALIDATOR (step-05b), только F1 и F2. Код продукта не менялся: хеши tools/src те же, что до шага 5. Общий поддельный DOM не менялся, поэтому другие тесты не затронуты.\nF1: в pixel-office-guide.test.js добавлен помощник keyFrom. Он посылает keydown от элемента в фокусе вверх по родителям до документа, как всплытие в браузере: target — сам элемент, stopPropagation останавливает. Возвращает, вызвал ли кто-нибудь preventDefault.\n— GD-02: Tab с последнего элемента справки, Shift+Tab с «Закрыть» и с заголовка — preventDefault не вызван.\n— TU-04: Tab с последней кнопки шага 3 («Далее») и Shift+Tab с «×» — preventDefault не вызван.\nПрежняя проверка от документа оставлена.\nF2: в TU-01 добавлен случай fakeStorage({\"pixel-office-tour\": \"other\"}): приглашение показано, тур не открыт.\nТочные числа ^test( / assert. (метка base/REQ050-20261017-01 -> сейчас): docs 8/36 -> 9/38; guide — файла на метке нет -> 32/519; hook 44/244 -> 44/244; layout 19/210 -> 19/210; note 7/103 -> 7/103; office 61/602 -> 61/602; page 113/1199 -> 114/1215; panels 55/1016 -> 55/1017; scale 7/48 -> 7/48; server 72/346 -> 72/346; settings 7/25 -> 7/25.\nИтог: тестов pixel-office 433, весь npm run check — 1615, красных 0.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/test/pixel-office-guide.test.js",
+        "what": "помощник keyFrom (всплытие keydown от элемента); GD-02 и TU-04: Tab и Shift+Tab от элемента в фокусе, preventDefault не вызван"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/test/pixel-office-guide.test.js",
+        "what": "TU-01: значение «other» под ключом — приглашение показано, тур не открыт"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-17T16:12:46Z, конец 2026-10-17T16:16:09Z",
+      "node --test test/pixel-office-guide.test.js -> pass 32, fail 0",
+      "cd tools && caffeinate -i npm run check -> код 0; handoffs-check: нарушений 0; # tests 1615, # pass 1615, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "мутант GTRAP (guide.js, mount: слушатель keydown на #guide вызывает preventDefault у Tab) во временной копии вне проекта -> красных 1 из 433: GD-02",
+      "мутант GTRAP2 (tour.js, mount: такой же слушатель на окне тура) -> красных 1 из 433: TU-04",
+      "мутант G09c (tour.js, readClosed: getItem(TOUR_KEY) !== null вместо === \"closed\") -> красных 1 из 433: TU-01",
+      "после проб diff -r tools/src рабочего дерева и копии пуст",
+      "числа test(/assert. сняты grep -c '^test(' и grep -o 'assert[.]' | wc -l по рабочим файлам и git show base/REQ050-20261017-01:<файл>"
+    ],
+    "issues": [],
+    "artifacts_out": ["tools/test/pixel-office-guide.test.js"]
+  }
+}

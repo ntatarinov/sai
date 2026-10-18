@@ -1,0 +1,76 @@
+{
+  "handoff_id": "step01e-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-01",
+  "step": "01e",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/REQ050-20261017-01/step-01e-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-052"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/step-05-test-designer.json",
+      "docs/requirements.yaml",
+      "docs/design/REQ-050-053-guide.md"
+    ],
+    "route": "TEST-DESIGNER I1 -> REQ-ANALYST (этот) -> REQ-VALIDATOR",
+    "write_set": [
+      "docs/requirements.yaml (только критерий 3 REQ-052 и комментарий)"
+    ],
+    "base_tag": "base/REQ050-20261017-01",
+    "before_copy": "<вне проекта>/req-before-050e.yaml (путь сообщит ORCH)",
+    "parallel_work_now": "параллельно: TEST-DESIGN-VALIDATOR 5b (только чтение тестов)",
+    "orch_check": {
+      "at": "2026-10-17T16:00:53Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "Изменена только фраза проверки TU-03 в критерии 3 REQ-052 и комментарий; совпадает с кодом"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-01 в прогоне REQ050-20261017-01 по вопросу I1 TEST-DESIGNER (handoffs/REQ050-20261017-01/step-05-test-designer.json). Критерий 3 REQ-052 (и описание проверки TU-03) говорит, что на пустом журнале «до первого ответа и после него» шаг 3 тура показывает запасной текст без пометки. Но после первого ответа блок «Сейчас» виден, и по таблице Т3 того же требования и проекту docs/design/REQ-050-053-guide.md (3.2, 7.3) шаг 3 показывает основной текст с пометкой; код и тест TU-03 делают: до первого ответа — запасной текст, после — основной. САМ сверь по коду (tour.js, guide-model.js tourStepView), проекту и Т3; поправь только эту фразу критерия 3 (и проверки), чтобы совпадала с Т3 и поведением. Над блоком — строка-комментарий (date -u, прогон, основание, было → стало). Только docs/requirements.yaml. Копия до — context.before_copy. Запрещены git checkout/reset/stash/clean. Перед close — cd tools && npm run traces && npm run format:check && npm run handoffs-check.",
+    "acceptance_criteria": [
+      "Критерий 3 REQ-052 совпадает с Т3, проектом и кодом"
+    ]
+  },
+  "created_at": "2026-10-17T15:59:20Z",
+  "started_at": "2026-10-17T15:59:20Z",
+  "completed_at": "2026-10-17T16:00:31Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Критерий 3 REQ-052, описание проверки TU-03: исправлена одна фраза — шаг 3 тура на пустом журнале показывает запасной текст без пометки только до первого ответа сервера; после первого ответа блок #now виден, и шаг 3 — пометка #now и основной текст. Сверено с Т3 блока, проектом docs/design/REQ-050-053-guide.md (3.2, 7.3) и кодом. Добавлена строка-комментарий над критериями REQ-052. Другое не менялось.",
+    "changes": [
+      {
+        "file": "docs/requirements.yaml",
+        "where": "REQ-052, критерий 3, «Проверка: тест TU-03»",
+        "what": "было «на пустом журнале до первого ответа и после него: шаги 2 и 3 без помеченного элемента и с запасным текстом, шаги 4 и 5 с пометкой и запасным текстом;» → стало «на пустом журнале до первого ответа: шаги 2 и 3 без помеченного элемента и с запасным текстом, шаги 4 и 5 с пометкой и запасным текстом; на пустом журнале после первого ответа (блок #now виден, «в работе ничего нет»): шаг 2 без помеченного элемента и с запасным текстом, шаг 3 — помечен #now и основной текст, шаги 4 и 5 с пометкой и запасным текстом;»"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "where": "REQ-052, над критериями",
+        "what": "строка-комментарий (время с часов, прогон REQ050-20261017-01, основание I1, было → стало)"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "sed -n 132,152p tools/src/pixel-office/public/guide-model.js; grep nowShown",
+        "output": "tourStepView: шаг 3 — target now, если facts.nowShown, иначе fallback; nowShown = els.now.hidden === false (app.js:390); шаг 2 — fallback при characters 0; шаги 4 и 5 — target всегда, fallback при rows 0 / items 0"
+      },
+      {
+        "command": "diff <вне проекта>/req-before-050e.yaml docs/requirements.yaml | grep -c '^[<>]'",
+        "output": "3 — одна заменённая строка критерия (две стороны) и одна добавленная строка-комментарий"
+      },
+      {
+        "command": "ruby YAML.load_file",
+        "output": "53 требования; REQ-052 — 10 критериев, статус не менялся"
+      }
+    ],
+    "issues": [],
+    "artifacts_out": ["docs/requirements.yaml"]
+  }
+}

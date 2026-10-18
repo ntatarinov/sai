@@ -1,0 +1,85 @@
+{
+  "handoff_id": "step02g-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "02g",
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/REQ050-20261017-01/step-02g-frontend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-053"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-050-053-guide.md",
+      "handoffs/REQ050-20261017-01/step-08d-issue-fixer.json"
+    ],
+    "route": "FRONTEND-DEV 2g (этот) -> SECURITY r1",
+    "write_set": ["tools/src/pixel-office/public/hints.js, style.css"],
+    "base_tag": "base/REQ050-20261017-01",
+    "orch_check": {
+      "at": "2026-10-17T19:17:54Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "2g: касание у низа экрана работает, 768×1024 в окне, мышь как прежде; красные те же 17",
+        "Отступление flip-inline принято ORCH (критерий 2 REQ-053 «целиком в окне»); D23 проекта приводит DOC-UPDATER на шаге 10"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, подшаг 2g по проекту docs/design/REQ-050-053-guide.md, раздел 13 (и диагнозу handoffs/REQ050-20261017-01/step-08d-issue-fixer.json): hints.js — открытие наведением только для мыши (pointerType); .hint-tip — pointer-events: none во всех окнах; position-try-fallbacks: flip-block (подсказка над кнопкой, если внизу нет места; в узких — none). Только 2g. Проверка: format:check, lint, traces, handoffs-check — код 0; npm test — 433, красных ровно те же 17. Вид — headless Chrome с эмуляцией касаний на стенде вне проекта (журнал владельца не трогать): 390×844 и 320×568 — касание «?» у низа экрана открывает и закрепляет подсказку, второе касание закрывает; 768×1024 — подсказки «Журнал» и «Задачи» у низа целиком в окне; 1470×784 мышью — как прежде. Запрещены git checkout/reset/stash/clean.",
+    "acceptance_criteria": [
+      "2g по проекту; касание и 768×1024 проверены; красные ровно 17"
+    ]
+  },
+  "created_at": "2026-10-17T19:10:04Z",
+  "started_at": "2026-10-17T19:10:04Z",
+  "completed_at": "2026-10-17T19:17:19Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "Подшаг 2g сделан по проекту docs/design/REQ-050-053-guide.md, раздел 13 (D21–D23) и диагнозу step-08d-issue-fixer.json (Ф2, I3): наведение открывает и закрывает подсказку только мышью; подсказка не принимает касаний (pointer-events: none); без места под кнопкой встаёт над ней, в узких окнах — у низа окна без других мест. Изменены только hints.js и style.css.",
+      "Красных ровно те же 17: GD-04, GR-01, GR-02, GR-03, TU-02, TU-03, HN-01, JN-03, JN-04, JN-05, MC-03, JR-01, AC-05, AC-06, JN-01, MC-01, LW-04.",
+      "Сверх буквы D23 добавлены варианты flip-inline (см. issues I1): в 768 × 1024 подсказка «Сейчас» выходила за правый край окна (508–796 при ширине 768); с ними — 244–532, целиком в окне."
+    ],
+    "changes": [
+      {
+        "file": "tools/src/pixel-office/public/hints.js",
+        "what": "у каждой кнопки — запомненный pointerType последних pointerenter/pointerdown; mouseenter и mouseleave действуют, только если тип не известен или \"mouse\"; focus, blur, click и нажатие вне закреплённой — прежние",
+        "by": "D21"
+      },
+      {
+        "file": "tools/src/pixel-office/public/style.css",
+        "what": ".hint-tip — pointer-events: none и position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline; узкое правило #hint-now…#hint-office — position-try-fallbacks: none. Строк с px 15, @media 2",
+        "by": "D22, D23"
+      }
+    ],
+    "self_check": [
+      "date -u: проверки 19:14:25Z",
+      "cd tools && npm run format:check → код 0; npm run lint → код 0; npm run traces → код 0 («файлов проверено 1587, следов 0»); npm run handoffs-check → код 0 («файлов проверено 943, нарушений 0»)",
+      "node --test \"test/pixel-office-*.test.js\" → # tests 433 # pass 416 # fail 17 # skipped 0 # todo 0; красные: GD-04, GR-01, GR-02, GR-03, TU-02, TU-03, HN-01, JN-03, JN-04, JN-05, MC-03, JR-01, AC-05, AC-06, JN-01, MC-01, LW-04 — те же, что после 2f; npm test → # tests 1615 # pass 1598 # fail 17",
+      "Стенд вне проекта: пустой каталог состояния, свой сервер на порту 4861, события только через hook.sh (сессия sample-0-main, три роли). Журнал владельца и его страница не трогались; сервер и Chrome остановлены",
+      "headless Chrome, эмуляция касаний (Emulation.setTouchEmulationEnabled, Input.dispatchTouchEvent), кнопка «?» прокручена к низу экрана: 390×844 — «Журнал», «Задачи», «Офис и доска», «Сейчас»: первое касание — открыта и закреплена (data-pinned true), целиком в окне (8–382, низ 836), pointer-events none, elementFromPoint в центре кнопки — сама кнопка; второе касание — закрыта; касание в другом месте (поле страницы, MAIN) — закреплённая закрыта. 320×568 — то же для всех четырёх (8–312, низ 560)",
+      "headless Chrome 768×1024, мышь, кнопки у низа экрана: «Журнал» (кнопка 878,7–902,7) — подсказка 90,706–378,873 над кнопкой; «Задачи» (1000,2–1024,2) — 84,810–372,994 над кнопкой; «Офис и доска» — 27,590–315,792; «Сейчас» — 244,105–532,272; все целиком в окне",
+      "headless Chrome 1470×784, мышь: для всех четырёх наведение открывает (в окне), уход закрывает, нажатие закрепляет и уход не закрывает, второе нажатие закрывает — как прежде; места прежние; ошибок в консоли 0"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "question",
+        "text": "D23 называет только flip-block. В 768 × 1024 подсказка «Сейчас» (кнопка у x 508–532) шириной 18 rem выходила за правый край окна (до 796 при ширине 768) — нарушение «целиком в окне» (кр. 2 REQ-053), того же рода, что I3 диагноза. Добавил в тот же список flip-inline и flip-block flip-inline: подсказка тогда кончается у правого края своей кнопки (244–532). Прошу CODE-DESIGNER подтвердить или вернуть к одному flip-block (тогда вопрос о месте «Сейчас» в 768 × 1024 остаётся открытым)."
+      },
+      {
+        "id": "I2",
+        "kind": "info",
+        "text": "Ожидаемые 17 красных — замены по разделу 8 «Доработка r2», правит TEST-DESIGNER. Новых красных 2g не дал."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/pixel-office/public/hints.js",
+      "tools/src/pixel-office/public/style.css"
+    ]
+  }
+}

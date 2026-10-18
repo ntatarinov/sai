@@ -23,6 +23,10 @@ import { buildInstanceCard, defaultInstance } from "./instance-card.js";
 import { buildMainCard, defaultMainSel, mainChoiceOpens } from "./main-card.js";
 import { createSim } from "./office-sim.js";
 import { eventDetails } from "./event-details.js";
+import { createGuide } from "./guide.js";
+import { createTour } from "./tour.js";
+import { createHints } from "./hints.js";
+import { escapeTarget, guideSections, within } from "./guide-model.js";
 import { roleCode, roleName, shortId } from "./words.js";
 import {
   MIN_CELL_PX,
@@ -181,6 +185,13 @@ import {
   TASK_NOW,
   TIME_UNKNOWN,
   TASKS_TITLE,
+  EMPTY_STEPS,
+  EMPTY_STEPS_TITLE,
+  MAIN_ABOUT,
+  GUIDE_MARK,
+  GUIDE_OPEN,
+  OFFICE_EMPTY,
+  TASKS_EMPTY,
 } from "./texts.js";
 
 const API_EVENTS = "/api/events";
@@ -245,6 +256,7 @@ export function createApp(env) {
     viewportFn,
     addResizeListener,
     clipboardFn,
+    storageFn,
   } = env;
 
   // The one array of journal lines: element i is line i of the file, null for
@@ -337,6 +349,65 @@ export function createApp(env) {
   const reported = new Set();
   const els = {};
   let elsReady = false;
+  // The guide "Как пользоваться" next to the page (REQ-050): it opens only
+  // when no card and no window of history is open, closes the full list of
+  // "Сейчас" when it opens, and the canvas is fitted again after it opens and
+  // closes (the office gets narrower or wider).
+  const guide = createGuide({
+    document,
+    sections: () => guideSections(),
+    canOpen: () => card === null && historyKey === null,
+    beforeOpen: () => {
+      closeNowAll(false);
+      tour.close();
+    },
+    onLayout: () => guarded("холст", fit),
+    onTourStart: () => {
+      guide.close();
+      tour.open();
+    },
+    // The button of the empty journal that opened the guide, if it is still
+    // in the journal (the journal is drawn again); else the button of the
+    // header.
+    openerElement: (opener) =>
+      opener?.kind === "empty" &&
+      emptyGuideButton !== null &&
+      within(emptyGuideButton, els.journal)
+        ? emptyGuideButton
+        : (els.guideOpen ?? null),
+  });
+  // The button "Как пользоваться" of the empty journal drawn last, or null.
+  let emptyGuideButton = null;
+  // The buttons "?" and their hints (REQ-053).
+  const hints = createHints({ document });
+  // The invitation in the header and the tour (REQ-052): the facts of the
+  // page choose the text of a step, the targets are the panels themselves.
+  // storageFn is given to the tour as it is; this module never calls it.
+  const tour = createTour({
+    document,
+    storageFn,
+    facts: () => ({
+      characters: office.characters.length,
+      nowShown: els.now?.hidden === false,
+      rows: rows.length,
+      items: model.list.length,
+    }),
+    targets: () => ({
+      office: els.officePanel ?? null,
+      now: els.now ?? null,
+      journal: els.journal?.parentNode ?? null,
+      tasks: els.tasks?.parentNode ?? null,
+      guide: els.guideOpen ?? null,
+    }),
+    focusAfter: () => els.guideOpen ?? null,
+    beforeOpen: () => hints.close(),
+    // The line about the tour after "Не сейчас" goes away by itself.
+    setTimeoutFn,
+    clearTimeoutFn,
+    // The header got wider or narrower: the button "Показать всех (N)"
+    // follows the rows that fit now.
+    onLayout: () => guarded("строка «Сейчас»", () => updateShowAll()),
+  });
 
   // ------------------------------------------------------------ helpers
 
@@ -409,12 +480,16 @@ export function createApp(env) {
 
   function setLink(state) {
     if (link === state) return;
+    const first = link === "none";
     link = state;
     guarded("шапка", renderLink);
     // Before the first answer the list of the journal tells about the link.
     if (!loaded) guarded("журнал", renderJournal);
     // The open window of history tells about a lost link.
     if (historyKey !== null) guarded("история", renderHistory);
+    // The first result of the link, an answer or a failure: the invitation to
+    // the tour is offered (REQ-052).
+    if (first) guarded("тур", () => tour.offer());
   }
 
   // Applies a consistent answer. from = 0: the array is replaced; from =
@@ -541,6 +616,18 @@ export function createApp(env) {
     guarded("задачи", renderTasks);
     guarded("карточка", renderCard);
     guarded("история", renderHistory);
+    guarded("офис", renderOfficeNote);
+    guarded("тур", () => tour.refresh());
+  }
+
+  // The empty office (REQ-053, criterion 4): after an answer, with a canvas
+  // and no characters, the note under the canvas tells when they come. Without
+  // a canvas the note keeps the text of decorate.
+  function renderOfficeNote() {
+    if (!els.officeNote || !ctx) return;
+    const empty = loaded && office.characters.length === 0;
+    els.officeNote.textContent = empty ? OFFICE_EMPTY : "";
+    els.officeNote.hidden = !empty;
   }
 
   // ------------------------------------------------------------ header
@@ -1027,11 +1114,10 @@ export function createApp(env) {
       if (typeof event.stopPropagation === "function") {
         event.stopPropagation();
       }
-      // The order of Escape (design 3.10): the open list "Показать всех"
-      // closes before the details of a row; the focus stays on the row, so
-      // the next Escape closes the details.
-      if (nowAllOpen) closeNowAll(false);
-      else closeEvent(true);
+      // The one order of Escape of the page (design REQ-050-053 4.1): the
+      // open list "Показать всех" closes before the details of a row; the
+      // focus stays on the row, so the next Escape closes the details.
+      escapeStep("row");
     });
     return { index: view.index, li, focus, parts, details };
   }
@@ -1042,6 +1128,23 @@ export function createApp(env) {
     if (reason === "empty") {
       li.appendChild(make("span", "empty-title", EMPTY_JOURNAL));
       li.appendChild(make("span", "empty-hint", EMPTY_HINT));
+      // What to do for the first events, and the way to the guide (REQ-053,
+      // criterion 3).
+      li.appendChild(make("p", "empty-steps-title", EMPTY_STEPS_TITLE));
+      const steps = make("ol", "empty-steps");
+      for (const text of EMPTY_STEPS) steps.appendChild(make("li", "", text));
+      li.appendChild(steps);
+      const button = make("button", "guide-open-empty");
+      button.classList.add("ctl");
+      button.setAttribute("type", "button");
+      button.setAttribute("aria-label", GUIDE_OPEN);
+      const mark = make("span", "guide-mark", GUIDE_MARK);
+      mark.setAttribute("aria-hidden", "true");
+      button.appendChild(mark);
+      button.appendChild(make("span", "guide-open-text", GUIDE_OPEN));
+      button.addEventListener("click", () => guide.open({ kind: "empty" }));
+      li.appendChild(button);
+      emptyGuideButton = button;
     } else if (reason === "filtered") {
       // One text for any empty choice, the former "Работа" / "Офис" too (D10).
       li.appendChild(make("span", "empty-title", FILTERS_EMPTY));
@@ -1127,6 +1230,8 @@ export function createApp(env) {
     // The rows are replaced: the element with the focus and the open parts of
     // the details are given back to the new rows.
     const focus = journalFocus();
+    const emptyFocused =
+      emptyGuideButton !== null && emptyGuideButton === focusedElement();
     const earlierFocused =
       earlierButton !== null && earlierButton === focusedElement();
     const openParts = new Map();
@@ -1154,8 +1259,18 @@ export function createApp(env) {
       items = [li, ...items];
     }
     if (rows.length === 0) items = [journalNote("empty")];
-    else if (picked.rows.length === 0) items = [journalNote("filtered")];
+    else {
+      emptyGuideButton = null;
+      if (picked.rows.length === 0) items = [journalNote("filtered")];
+    }
     list.replaceChildren(...items);
+    // The button of the empty journal had the focus: the new one gets it, or
+    // the list when the journal is no longer empty.
+    if (emptyFocused) {
+      if (emptyGuideButton !== null) {
+        emptyGuideButton.focus({ preventScroll: true });
+      } else list.focus({ preventScroll: true });
+    }
     const now = journalItems.find((item) => item.index === keepIndex);
     if (!journalShown || toBottom) {
       list.scrollTop = list.scrollHeight;
@@ -1168,6 +1283,8 @@ export function createApp(env) {
       list.scrollTop =
         same === undefined ? 0 : same.li.offsetTop - anchor.offset;
     }
+    // The empty journal is read from its top (description REQ-050-053 8.1).
+    if (rows.length === 0) list.scrollTop = 0;
     // After the details open (REQ-049, criterion 2): if the row with its
     // details is not seen whole, the top of the details goes to the top of the
     // visible part of the list.
@@ -1618,7 +1735,10 @@ export function createApp(env) {
     const out = panel.running.map(sessionCard);
     out.push(sectionTitle("current", SECTION_CURRENT));
     if (panel.current.length === 0) {
-      out.push(make("p", "section-empty", NOW_EMPTY));
+      // No task and no line of the main session at all (REQ-053, criterion
+      // 5): the text tells when the first element comes.
+      const text = model.list.length === 0 ? TASKS_EMPTY : NOW_EMPTY;
+      out.push(make("p", "section-empty", text));
     }
     for (const item of panel.current) out.push(panelItem(item));
     if (panel.unconfirmed_note !== null) {
@@ -1825,6 +1945,8 @@ export function createApp(env) {
     title.setAttribute("id", "card-title");
     head.appendChild(swatch);
     head.appendChild(title);
+    // What the role does, right under its name (REQ-051, criterion 8).
+    head.appendChild(make("p", "card-about", data.about));
     const idsLine = make("p", "card-ids");
     idsLine.appendChild(make("span", undefined, `${CARD_INSTANCE} `));
     idsLine.appendChild(make("b", "card-id", data.agent.short));
@@ -2176,6 +2298,7 @@ export function createApp(env) {
     title.setAttribute("id", "card-title");
     head.appendChild(swatch);
     head.appendChild(title);
+    head.appendChild(make("p", "card-about", MAIN_ABOUT));
     const idsLine = make("p", "card-ids");
     idsLine.appendChild(make("span", undefined, `${CARD_SESSION} `));
     idsLine.appendChild(make("b", "card-id", data.session.short));
@@ -3102,9 +3225,45 @@ export function createApp(env) {
     if (document.visibilityState === "visible") poll();
   }
 
+  // One press of Escape closes one thing: the first open one in the one order
+  // of the page (design REQ-050-053 4.1, escapeTarget). origin is "document"
+  // or "row" (the handler of the open row of the journal). Returns whether
+  // there was something to close.
+  function escapeStep(origin) {
+    const active = focusedElement();
+    const openRow =
+      journalOpen === null
+        ? null
+        : (journalItems.find((item) => item.index === journalOpen)?.li ?? null);
+    const target = escapeTarget({
+      history: historyKey !== null,
+      card: card !== null,
+      hint: hints.isOpen(),
+      tour: tour.isOpen(),
+      nowAll: nowAllOpen,
+      guide: guide.isOpen(),
+      focusInGuide: guide.holds(active),
+      invite: tour.inviteShown(),
+      focusInInvite: tour.inviteHolds(active),
+      row: journalOpen !== null,
+      focusInRow: origin === "row" || within(active, openRow),
+    });
+    if (target === "history") closeHistory();
+    else if (target === "card") closeCard();
+    else if (target === "hint") hints.close();
+    else if (target === "tour") tour.close();
+    else if (target === "nowAll") closeNowAll(origin === "document");
+    else if (target === "guide") guide.close();
+    else if (target === "invite") tour.dismissInvite();
+    else if (target === "row") closeEvent(true);
+    return target !== null;
+  }
+
   // One handler of the keys of the page. While the window of history is open
   // it takes the keys: Esc closes only it, Tab and Shift+Tab go round "×" and
-  // the body of the window. Otherwise Esc closes the card of an agent.
+  // the body of the window. While a card is open, Esc closes it and Tab goes
+  // round the card. Otherwise Esc follows the one order of the page; Tab is
+  // never taken (the guide traps no focus).
   function onKey(event) {
     if (historyKey !== null) {
       const prevent = () => {
@@ -3124,9 +3283,8 @@ export function createApp(env) {
       return;
     }
     if (card === null) {
-      if (event.key === "Escape" && nowAllOpen) {
+      if (event.key === "Escape" && escapeStep("document")) {
         if (typeof event.preventDefault === "function") event.preventDefault();
-        closeNowAll(true);
       }
       return;
     }
@@ -3180,6 +3338,12 @@ export function createApp(env) {
     els.history = byId("history");
     els.historyClose = byId("history-close");
     els.historyBody = byId("history-body");
+    els.guideOpen = byId("guide-open");
+    els.guide = byId("guide");
+    els.tourInvite = byId("tour-invite");
+    els.tour = byId("tour");
+    els.tourLater = byId("tour-later");
+    els.officeHint = byId("office-hint");
   }
 
   // The constant captions are set once more from texts.js, the listeners are
@@ -3296,6 +3460,47 @@ export function createApp(env) {
         closeNowAll(true);
       });
     }
+    if (els.guide) {
+      guide.mount({
+        button: els.guideOpen,
+        aside: els.guide,
+        page: pageBody(),
+      });
+    }
+    tour.mount({
+      invite: els.tourInvite,
+      box: els.tour,
+      later: els.tourLater,
+    });
+    // The buttons "?" (design D4): in "Сейчас" last (after .now-side), in the
+    // line of the heading of the journal right after the heading, in the head
+    // of "Задачи" after its heading, in the block before the legend.
+    hints.mount({
+      now: (button, tip) => {
+        if (!els.now) return;
+        els.now.appendChild(button);
+        els.now.appendChild(tip);
+      },
+      journal: (button, tip) => {
+        const row = els.journalTitle?.parentNode;
+        if (!row) return;
+        const rest = Array.from(row.children).filter(
+          (child) => child !== els.journalTitle,
+        );
+        row.replaceChildren(els.journalTitle, button, tip, ...rest);
+      },
+      tasks: (button, tip) => {
+        const head = els.tasksTitle?.parentNode;
+        if (!head) return;
+        head.appendChild(button);
+        head.appendChild(tip);
+      },
+      office: (button, tip) => {
+        if (!els.officeHint) return;
+        els.officeHint.appendChild(button);
+        els.officeHint.appendChild(tip);
+      },
+    });
     guarded("кнопки", renderControls);
     guarded("фильтры", renderFilters);
   }

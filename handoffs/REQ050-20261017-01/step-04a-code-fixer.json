@@ -1,0 +1,93 @@
+{
+  "handoff_id": "step04a-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "04a",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/REQ050-20261017-01/step-04a-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-052"],
+    "agent_run_id": null,
+    "artifacts_in": ["handoffs/REQ050-20261017-01/step-04-reviewer-r1.json"],
+    "route": "REVIEWER r1 L1 -> CODE-FIXER 04a (этот) -> SECURITY r2 -> REVIEWER r2 -> TEST-DESIGNER r2",
+    "write_set": [
+      "tools/src/pixel-office/public/style.css, tour.js (если нужно)"
+    ],
+    "base_tag": "base/REQ050-20261017-01",
+    "rework_of": "handoffs/REQ050-20261017-01/step-04-reviewer-r1.json",
+    "orch_check": {
+      "at": "2026-10-17T19:30:45Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "Живая область в дереве доступности до текста; вид прежний до сотых; только style.css; красные те же 17"
+      ]
+    }
+  },
+  "task": {
+    "description": "Правка по L1 ревью r1 (handoffs/REQ050-20261017-01/step-04-reviewer-r1.json): строка о туре #tour-later с aria-live=\"polite\" скрыта правилом .tour-later:empty { display: none } — экранный диктор может не прочитать текст, появляющийся одновременно с показом. Сделай так, чтобы живая область была в дереве доступности до появления текста (пустая строка скрыта визуально без display:none/visibility:hidden — например, нулевая высота/поля без рамки и фона, или показ контейнера отдельно от записи текста), а для зрячего вид прежний (пустая строка не занимает места в шапке, шапка 60 px в широких). Проверь в Chrome без окна по дереву доступности (Accessibility.getFullAXTree): у пустой строки есть узел live region; после «Не сейчас» текст в нём. Без новых px и @media. Тесты не менять (если тест падает от правки — назови). Запрещены git checkout/reset/stash/clean. Перед close: cd tools && npm run check — код 0 кроме ожидаемых 17 красных по 13.6 (назови их числом).",
+    "acceptance_criteria": [
+      "Живая область доступна до текста; вид прежний; ожидаемые 17 красных"
+    ]
+  },
+  "created_at": "2026-10-17T19:25:42Z",
+  "started_at": "2026-10-17T19:25:42Z",
+  "completed_at": "2026-10-17T19:30:18Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "L1 ревью r1 закрыт. В style.css правило .tour-later:empty больше не прячет строку о туре через display: none. Пустая строка вынесена из линии шапки (position: absolute) и не имеет размера, полей, рамки и фона (width/height 0, padding 0, overflow hidden, border-width 0, background none). Поэтому живая область aria-live=\"polite\" есть в дереве доступности до появления текста, а для зрячего вид прежний: размеры шапки и место «Сейчас» совпали до и после правки во всех окнах и состояниях. tour.js не менялся. npm run check: формат, линтер, traces и handoffs-check чисто; тесты — 1615, из них 1598 прошли и 17 упали. Это ровно 17 ожидаемых красных по 13.6, названных в step-02g; новых красных правка не дала.",
+    "changes": [
+      {
+        "finding": "L1",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".tour-later:empty (было { display: none })",
+        "what": "position: absolute; width: 0; height: 0; padding: 0; overflow: hidden; border-width: 0; background: none — и комментарий о причине. Строки с px и @media не добавлены. Правило узкого окна .tour-later слабее по точности (0,1,0 против 0,2,0) и пустую строку не раскрывает."
+      }
+    ],
+    "self_check": [
+      "Время (date -u): начало 2026-10-17T19:25:58Z; check 19:27:29Z–19:29:21Z.",
+      "Стенд вне проекта: <вне проекта>/fx50a/stand, новый пустой каталог, порт 4901. События через hook.sh: сессия sample-1-main, запрос, начало агента sample-a-rev. Chrome 155 headless, свой профиль, порт отладки 9464; localStorage страницы стенда очищен, чтобы появилось приглашение. Замер — Accessibility.getFullAXTree (узел #tour-later по backendDOMNodeId) и getBoundingClientRect/getComputedStyle в 1470×784, 1920×1080, 390×844.",
+      "ДО, все три окна:",
+      "— пустая строка: display none, узла в дереве доступности нет (inTree false);",
+      "— после «Не сейчас»: узел generic, live polite, relevant \"additions text\", текст и кнопка «Скрыть подсказку о туре»;",
+      "— после «×»: снова нет в дереве;",
+      "— шапка: 60 / 60 / 60 px в 1470×784 (пусто / строка / после «×»), 60 / 60 / 60 в 1920×1080, 270,78 / 249,78 / 195,78 в 390×844;",
+      "— правый край «Сейчас» в 1470×784: 720,31 / 823,11 / 1087,11.",
+      "ПОСЛЕ, все три окна:",
+      "— пустая строка: в дереве (inTree true, ignored false, role generic, live polite, relevant \"additions text\"), размер 0×0, position absolute;",
+      "— после «Не сейчас»: тот же узел с текстом и кнопкой, 250×44 (1470), 374×46 (390);",
+      "— после «×»: снова пустая живая область в дереве;",
+      "— высота шапки и края «Сейчас» совпали с замером ДО до сотых во всех окнах и состояниях: в широких 60 px, пустая строка места не занимает.",
+      "Ошибок консоли 0.",
+      "cd tools && caffeinate -i npm run check → код 1, только из-за тестов:",
+      "— format:check — All matched files use Prettier code style!; lint — чисто;",
+      "— traces: файлов проверено 1590, следов 0, пропущено 56;",
+      "— handoffs-check: файлов проверено 946, нарушений 0, исключений использовано 114 из 114;",
+      "— test: # tests 1615 # pass 1598 # fail 17 # skipped 0.",
+      "17 красных — GD-04, GR-01, GR-02, GR-03, TU-02, TU-03, HN-01, JN-03, JN-04, JN-05, MC-03, JR-01, AC-05, AC-06, JN-01, MC-01, LW-04. Все 17 названы в step-02g как ожидаемые замены по 13.6 (раздел 8 «Доработка r2»); слов tour-later и TOUR_LATER в выводе падений нет.",
+      "Журнал владельца (только чтение): 4297 строк и 0 строк sample- до и после. Стенд и Chrome остановлены (lsof по 4901 и 9464 пусто).",
+      "Изменён только style.css; git checkout/reset/stash/clean и коммиты не делались."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "TESTS_EXPECTED",
+        "text": "17 ожидаемых красных по 13.6 — те же, что в step-02g; правит TEST-DESIGNER r2. Новых красных нет."
+      },
+      {
+        "id": "I2",
+        "kind": "TESTS_SUGGESTED",
+        "text": "Для TEST-DESIGNER r2: правило CSS — у .tour-later:empty нет display: none и visibility: hidden (ни в одном @media), есть position: absolute и нулевые размеры. Поведение в браузере (узел live region в дереве доступности до текста) проверено здесь через Accessibility.getFullAXTree."
+      },
+      {
+        "id": "I3",
+        "kind": "DOC",
+        "text": "D20 проекта говорит, что пустая строка скрыта; при приведении документов (шаг 10) записать «скрыта визуально, в дереве доступности остаётся»."
+      }
+    ],
+    "artifacts_out": ["tools/src/pixel-office/public/style.css"]
+  }
+}

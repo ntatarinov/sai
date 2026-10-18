@@ -1,0 +1,73 @@
+{
+  "handoff_id": "step04-r1-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ050-20261017-01/step-04-reviewer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-050", "REQ-051", "REQ-052", "REQ-053"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/REQ050-20261017-01/step-02f-frontend-dev.json",
+      "handoffs/REQ050-20261017-01/step-02g-frontend-dev.json",
+      "tools/src/pixel-office/public/"
+    ],
+    "route": "SECURITY r1 -> REVIEWER r1 (этот) -> TEST-DESIGNER r2",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "rework_of": "handoffs/REQ050-20261017-01/step-03-security-reviewer-r1.json",
+    "orch_check": {
+      "at": "2026-10-17T19:25:42Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "2f/2g по проекту; Ф2 решена по причине; flip-inline уместен (D23 — DOC-UPDATER)",
+        "L1 (aria-live при display:none у пустой строки) — исправить сейчас CODE-FIXER 04a, затем короткий повтор 3 и 4 (REQ-052 требует озвучивания)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор после подшагов 2f и 2g (handoffs/REQ050-20261017-01/step-02f-frontend-dev.json, step-02g-frontend-dev.json) и PASS безопасности r1. САМ проверь против проекта docs/design/REQ-050-053-guide.md (раздел 13) и решений 0060, 0061: настоящее решение, а не обход; GIVEN_NOTE — одна строка (ссылка); roleAbout и описание в карточках без дублирования; строка о туре — правила D20 (таймер, open(), фокус); наведение только мышью и pointer-events — решение причины Ф2; отступление разработчика flip-inline (принято ORCH) — уместно; лишней работы нет. Код не менять. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": ["Ревью 2f/2g; вердикт"]
+  },
+  "created_at": "2026-10-17T19:20:35Z",
+  "started_at": "2026-10-17T19:20:35Z",
+  "completed_at": "2026-10-17T19:25:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: подшаги 2f и 2g — по проекту, раздел 13 (D18–D26); находок Critical, High и Medium нет, одна Low. Сверено с копией кода первого ревью: изменены texts.js, words.js, instance-card.js, app.js, tour.js, hints.js, index.html, style.css и README; лишней работы нет. GIVEN_NOTE — одна строка-ссылка на EVENT_TABLE.handoff.meaning (texts.js:410), значения равны всегда (D19). roleAbout (words.js) берёт тот же шаблон SAI_ROLE, что roleName, и таблицу GUIDE_ROLE_ABOUT справки; instance-card.js кладёт about = roleAbout(role), карточка основной сессии — MAIN_ABOUT; второй таблицы описаний нет. Строка о туре — по D20: статичный div#tour-later перед приглашением, наполняется только если приглашение было видно, фокус на «Как пользоваться», таймер 10 000 мс через env.setTimeoutFn (app.js передаёт setTimeoutFn/clearTimeoutFn из env), новое dismissInvite гасит прежний таймер, open() очищает строку вместе с таймером, при очистке по таймеру фокус с её «×» уходит на #guide-open. Ф2 решена по причине: касание посылает mouseenter до click, и подсказка ложилась на свою кнопку — теперь наведение действует только для мыши (pointerType последних pointerenter/pointerdown; неизвестный тип — как мышь), а .hint-tip { pointer-events: none } — касание проходит под подсказку. flip-inline сверх буквы D23 уместно: это тот же род «целиком в окне» (критерий 2 REQ-053), правило одно, в узких окнах — none. Проверено в браузере (headless Chromium по CDP, стенд вне проекта): «Не сейчас» — строка «Тур можно открыть позже…» и «×», приглашение скрыто, фокус #guide-open; через 10,6 с строка пуста (display none), фокус с её «×» — на #guide-open; карточка роли с 15 запусками в 1470×784 — описание под названием, «номер запуска … · номер разговора …», низ линии переходов 716 при крае тела 755; pointer-events подсказки — none; 768×1024 — подсказки «Сейчас», «Журнал», «Офис и доска» целиком в окне («Задачи» — у кнопки ниже края прокрутки, то есть там, где её видно после прокрутки к кнопке); 390×844 с эмуляцией касаний — касание «?» «Офис и доска» у низа открывает и закрепляет подсказку (686…836 при окне 844), второе касание закрывает. npm run check на копии вне проекта: format:check, lint, traces, handoffs-check — чисто; тестов 1615, красных 17 — ровно список 13.6 (GD-04, GR-01, GR-02, GR-03, TU-02, TU-03, HN-01, JN-03, JN-04, JN-05, MC-03, JR-01, AC-05, AC-06, JN-01, MC-01, LW-04): литералы r2 правит TEST-DESIGNER.",
+    "findings": [
+      {
+        "id": "L1",
+        "where": "tools/src/pixel-office/public/style.css (.tour-later:empty { display: none }) при div#tour-later aria-live=\"polite\" (index.html)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Живая область скрыта display: none, пока пуста, и показывается в тот же миг, когда в неё кладут текст. Экранные дикторы часто не объявляют содержимое области, которой не было в дереве доступности до изменения, — фраза «Тур можно открыть позже…» может не прозвучать. Так задано D20 проекта; для зрячего поведение верное.",
+        "fix": "При следующей правке: держать область в дереве доступности и пустой — скрывать визуально без display: none (например, нулевой высотой и без рамки у :empty), либо принять как есть по решению ORCH."
+      }
+    ],
+    "self_check": [
+      "date -u -> 2026-10-17T19:21:08Z (начало)",
+      "diff копия кода первого ревью (вне проекта) против tools/src -> изменены app.js, hints.js, index.html, instance-card.js, style.css, texts.js, tour.js, words.js; diff -u просмотрен построчно",
+      "grep GIVEN_NOTE public/*.js -> texts.js:410 «= EVENT_TABLE.handoff.meaning», app.js:163 импорт, app.js:2176 вывод",
+      "копия проекта вне папки Sai с .git и node_modules: cd tools && caffeinate -i npm run check -> All matched files use Prettier code style!; traces: файлов 1589, следов 0; handoffs-check: файлов 945, нарушений 0; tests 1615, pass 1598, fail 17 (список 13.6), skipped 0, todo 0",
+      "стенд вне проекта (свой каталог 0700, порт 4804, 32 события sample- через hook.sh), headless Chromium по CDP: строка о туре — текст и «×», display flex, фокус #guide-open; через 10,6 с — пусто, display none, фокус #guide-open; карточка — card-about «Сам открывает источники и проверяет каждое число исследования или плана.», ids «номер запуска … · номер разговора …», низ .card-links 716 при крае 755",
+      "подсказки: pointer-events none; 768×1024 — «Сейчас» [449,124…737,291], «Журнал» [90,724…378,891], «Офис и доска» [27,627…315,829] в окне 768×1024; 390×844 с Emulation.setTouchEmulationEnabled — касание открыло и закрепило «Офис и доска» (686…836), второе касание закрыло",
+      "стенд и браузер остановлены; код и проект не менялись"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "flip-inline сверх буквы D23 (I1 2g) подтверждаю как уместное — CODE-DESIGNER или DOC-UPDATER дописывает его в D23. Литералы r2 в 17 тестах — TEST-DESIGNER по разделу 8 «Доработка r2»."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

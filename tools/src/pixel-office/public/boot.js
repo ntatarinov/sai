@@ -18,6 +18,8 @@ const app = createApp({
   addResizeListener: (fn) => window.addEventListener("resize", fn),
   // The clipboard of the browser for "Скопировать", or null (REQ-044).
   clipboardFn: () => window.navigator?.clipboard ?? null,
+  // The memory of the browser for the tour, read only by tour.js (REQ-052).
+  storageFn: () => window.localStorage,
 });
 
 app.start().catch((err) => {

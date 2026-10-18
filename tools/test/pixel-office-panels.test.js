@@ -646,7 +646,22 @@ test("PN-09: the task panel - 'Текущие' hold what is in progress, 'Ист
     .el("tasks")
     .byClass("section-empty")
     .map((p) => p.textContent);
-  assert.deepEqual(empties.slice(0, 2), [NOW_EMPTY, NO_DATA]);
+  // REQ-053, criterion 5 (design REQ-050-053, section 8): no task and no row
+  // of the main session at all - the text of the empty panel
+  assert.deepEqual(empties.slice(0, 2), [
+    "Задач пока нет. Элемент появится, когда основная сессия получит запрос или агенту передадут задание.",
+    NO_DATA,
+  ]);
+  // a row of the main session that finished: "Текущие" are empty as before
+  const done = await loaded([
+    entryOf("SessionStart", "S", at(1)),
+    entryOf("UserPromptSubmit", "S", at(2)),
+    entryOf("Stop", "S", at(3)),
+  ]);
+  assert.equal(
+    done.el("tasks").byClass("section-empty")[0].textContent,
+    NOW_EMPTY,
+  );
 });
 
 // ------------------------------------------------------------------ PN-10
@@ -3449,7 +3464,7 @@ const EVENT_TABLE_LITERAL = {
   handoff: {
     words: "Задание передано агенту «{role}»",
     meaning:
-      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). Если агент работает параллельно с тем, кто его запустил, эта запись приходит сразу при запуске; если запустивший ждёт его ответа — после окончания работы агента.",
+      "Агент может поручить часть работы другой роли. Эта строка — такое поручение: основная сессия или агент запустили агента этой роли. Описание написал тот, кто поручил (до 100 знаков). Если запустивший ждёт ответа, строка приходит после конца работы агента; если нет — сразу при запуске.",
     not_proved:
       "Не доказывает, что агент закончил работу или что задание сделано. Время записи — не время начала работы агента.",
   },
@@ -4085,7 +4100,7 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
   );
   assert.equal(rows.task.value, "в работе");
   assert.deepEqual(rows.task.basis, [
-    `последнее событие сессии ${dt(now - MIN5)} · 5 мин назад · если событий нет дольше 60 минут, пишется «нет свежих данных»`,
+    `последнее событие сессии ${dt(now - MIN5)} · 5 мин назад · если событий нет дольше 60 минут, страница пишет «нет свежих данных»: работа могла идти, но подтверждений нет`,
     `получил задание и начал работу · ${dt(s1start)}`,
   ]);
   assert.equal(
@@ -4093,14 +4108,14 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
     `получил задание и начал работу · ${dt(s1start)} · 2 ч 59 мин назад`,
   );
   assert.deepEqual(rows.agent.basis, [
-    "о других действиях агента — чтении файлов, командах, правках — Claude Code не сообщает",
+    "Что агент делает внутри — читает файлы, запускает команды, вносит правки, — Claude Code не сообщает.",
   ]);
   assert.equal(
     rows.workplace.value,
     "работает — у этой роли задач «в работе»: 1",
   );
   assert.deepEqual(rows.workplace.basis, [
-    "Стол на холсте — изображение роли, общее для всех её запусков, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.",
+    "Стол в офисе — просто место роли на рисунке. Настоящих компьютеров страница не показывает.",
   ]);
   // the other instance: no fresh data, at a working place - the rows differ
   pickInstance(page, "i2");
@@ -4108,7 +4123,7 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
   assert.equal(rows.task.value, "нет свежих данных");
   assert.equal(
     rows.task.basis[0],
-    `последнее событие сессии ${dt(s2start)} · 2 ч 59 мин назад · если событий нет дольше 60 минут, пишется «нет свежих данных»`,
+    `последнее событие сессии ${dt(s2start)} · 2 ч 59 мин назад · если событий нет дольше 60 минут, страница пишет «нет свежих данных»: работа могла идти, но подтверждений нет`,
   );
   assert.equal(
     rows.workplace.value,
@@ -4120,7 +4135,7 @@ test("AC-05: three lines of state of an instance with a fake clock - the task, t
   assert.ok(TX.WORKPLACE_IDLE.startsWith(TX.LEGEND_IDLE));
   assert.equal(
     TX.FRESH_LIMIT,
-    "если событий нет дольше {m} минут, пишется «нет свежих данных»",
+    "если событий нет дольше {m} минут, страница пишет «нет свежих данных»: работа могла идти, но подтверждений нет",
   );
   assert.equal(
     TX.SERVER_STARTED,
@@ -4306,7 +4321,7 @@ test("AC-06: the lines of the handoff of an instance by rule z - the foreground 
   const given = page.el("card").find((e) => e.dataset.part === "given");
   assert.equal(
     given.byClass("entry-note")[0].textContent,
-    "Эту запись пишет тот, кто передал задание. Если он ждёт ответа агента, запись приходит после окончания работы агента; если агент работает параллельно — сразу при запуске. Это не действие самого агента",
+    "Агент может поручить часть работы другой роли. Эта строка — такое поручение: основная сессия или агент запустили агента этой роли. Описание написал тот, кто поручил (до 100 знаков). Если запустивший ждёт ответа, строка приходит после конца работы агента; если нет — сразу при запуске.",
   );
   // 300 random journals: the card says what the model says (rule z)
   const rand = rng(4646);
@@ -4638,8 +4653,8 @@ test("JN-01: the filters of the journal - every filter alone and 'Сессия' 
   // the variants: the sessions of the journal, the agents, the 11 types
   assert.deepEqual(optionsOf(page, "filter-session"), [
     ["", "все сессии"],
-    ["S1", `Сессия S1 · с ${fmtDateTime(iso(t48(1)))}`],
-    ["S2", `Сессия S2 · с ${fmtDateTime(iso(t48(12)))}`],
+    ["S1", `Сессия номер S1 · с ${fmtDateTime(iso(t48(1)))}`],
+    ["S2", `Сессия номер S2 · с ${fmtDateTime(iso(t48(12)))}`],
   ]);
   const agents = optionsOf(page, "filter-agent");
   assert.deepEqual(agents.slice(0, 3), [
@@ -4740,7 +4755,7 @@ test("JN-01: the filters of the journal - every filter alone and 'Сессия' 
   assert.deepEqual(countOf(page), [5, 5]);
   assert.equal(
     page.el("journal-task-mark").byClass("task-mark-text")[0].textContent,
-    `Задача: ${roleName(DESIGNER)} a1`,
+    `Задача: ${roleName(DESIGNER)} номер a1`,
   );
   // the mark is cleared by its button
   page.el("journal-task-mark").byClass("task-mark-clear")[0].click();
@@ -4963,7 +4978,8 @@ test("MC-01: the card of the main session - two sessions (two requests and a ser
     card(page)
       .find((e) => e.dataset.part === part)
       .children[0].click();
-  const fresh = "если событий нет дольше 60 минут, пишется «нет свежих данных»";
+  const fresh =
+    "если событий нет дольше 60 минут, страница пишет «нет свежих данных»: работа могла идти, но подтверждений нет";
 
   // in work: the last request (the service message) of S1; S1 last event at 9
   let now = t48(30);
@@ -5076,8 +5092,8 @@ test("MC-01: the card of the main session - two sessions (two requests and a ser
     .map((e) => e.textContent)
     .sort();
   assert.deepEqual(labels, [
-    `Сессия S2 · с ${fmtDateTime(iso(t48(11)))}`,
-    `Сессия S3 · с ${fmtDateTime(iso(t48(12)))}`,
+    `Сессия номер S2 · с ${fmtDateTime(iso(t48(11)))}`,
+    `Сессия номер S3 · с ${fmtDateTime(iso(t48(12)))}`,
   ]);
   press(page, "session:S2");
   assert.equal(card(page).byClass("card-id")[0].textContent, "S2");
@@ -5175,7 +5191,7 @@ test("LW-04: the words of the screen - the literals of rows 1-27 of the table ar
     ],
     [
       TX.EVENT_TABLE.handoff.meaning,
-      "Тот, кто передал задание (основная сессия или другой агент), запустил агента, и Claude Code вернул номер запущенного агента. Описание — то, что написал передавший (до 100 знаков). Если агент работает параллельно с тем, кто его запустил, эта запись приходит сразу при запуске; если запустивший ждёт его ответа — после окончания работы агента.",
+      "Агент может поручить часть работы другой роли. Эта строка — такое поручение: основная сессия или агент запустили агента этой роли. Описание написал тот, кто поручил (до 100 знаков). Если запустивший ждёт ответа, строка приходит после конца работы агента; если нет — сразу при запуске.",
     ],
     [
       TX.EVENT_TABLE.orch_note.meaning,
@@ -5186,7 +5202,7 @@ test("LW-04: the words of the screen - the literals of rows 1-27 of the table ar
       "Строка есть в журнале, но Pixel Office не признал её настоящим событием от Claude Code.",
     ],
     [TX.EVENT_TABLE.marked.reasons.source, "строку записал не Claude Code"],
-    [TX.CARD_INSTANCE, "запуск"],
+    [TX.CARD_INSTANCE, "номер запуска"],
     [TX.CARD_BLOCKS.ids, "Полные номера и код роли"],
     [TX.CARD_BLOCKS.instances, "Все запуски этой роли"],
     [TX.CARD_BLOCKS.more, "Остальные запуски"],
@@ -5194,15 +5210,15 @@ test("LW-04: the words of the screen - the literals of rows 1-27 of the table ar
     [TX.COPY_LABEL_AGENT, "Скопировать номер запуска"],
     [
       TX.WORKPLACE_DESK,
-      "Стол на холсте — изображение роли, общее для всех её запусков, а не компьютер. О компьютере и операционной системе Pixel Office ничего не знает.",
+      "Стол в офисе — просто место роли на рисунке. Настоящих компьютеров страница не показывает.",
     ],
     [
       TX.FRESH_LIMIT,
-      "если событий нет дольше {m} минут, пишется «нет свежих данных»",
+      "если событий нет дольше {m} минут, страница пишет «нет свежих данных»: работа могла идти, но подтверждений нет",
     ],
     [
       TX.AGENT_NOT_RECORDED,
-      "о других действиях агента — чтении файлов, командах, правках — Claude Code не сообщает",
+      "Что агент делает внутри — читает файлы, запускает команды, вносит правки, — Claude Code не сообщает.",
     ],
     [
       TX.UNKNOWN_MESSAGES,
@@ -5214,7 +5230,7 @@ test("LW-04: the words of the screen - the literals of rows 1-27 of the table ar
     ],
     [
       TX.GIVEN_NOTE,
-      "Эту запись пишет тот, кто передал задание. Если он ждёт ответа агента, запись приходит после окончания работы агента; если агент работает параллельно — сразу при запуске. Это не действие самого агента",
+      "Агент может поручить часть работы другой роли. Эта строка — такое поручение: основная сессия или агент запустили агента этой роли. Описание написал тот, кто поручил (до 100 знаков). Если запустивший ждёт ответа, строка приходит после конца работы агента; если нет — сразу при запуске.",
     ],
     [
       TX.HISTORY_NOTE_AUTO,

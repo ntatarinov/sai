@@ -1,0 +1,70 @@
+{
+  "handoff_id": "step04-r4-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 4,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ050-20261017-01/step-04-reviewer-r4.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-053"],
+    "agent_run_id": null,
+    "artifacts_in": ["handoffs/REQ050-20261017-01/step-08h-code-fixer.json"],
+    "route": "SECURITY r4 -> REVIEWER r4 (этот) -> TEST-DESIGNER r3",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "rework_of": "handoffs/REQ050-20261017-01/step-03-security-reviewer-r4.json",
+    "orch_check": {
+      "at": "2026-10-17T20:51:08Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "M1, L1 закрыты; легенда мышью и касание по подсказке проверены в браузере"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор после CODE-FIXER 08h (handoffs/REQ050-20261017-01/step-08h-code-fixer.json) по твоему FAIL r3 и PASS безопасности r4. САМ проверь M1 (у всех .hint-tip действующее pointer-events none; auto — только у кнопки «?» офиса), L1 (один комментарий), нажатия по легенде мышью и касание по закреплённой подсказке офиса в браузере. Код не менять. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": ["M1, L1 закрыты; вердикт"]
+  },
+  "created_at": "2026-10-17T20:48:46Z",
+  "started_at": "2026-10-17T20:48:46Z",
+  "completed_at": "2026-10-17T20:50:44Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: M1 и L1 ревью r3 закрыты, находок нет. Правка 08h — только style.css: запасное правило сужено до кнопки (.office-hint > .hint-btn { pointer-events: auto }), два комментария слиты в один. Проверено в браузере (headless Chromium по CDP, стенд вне проекта): у всех четырёх подсказок действующее pointer-events — none, у кнопки «?» офиса — auto, у блока — none, в 1470×784, 1920×1080, 390×844, 320×568; нажатия мышью по первым 6 кнопкам легенды — карточка открыта 6/6 в каждом окне; касание (эмуляция) «?» офиса в 390 и 320 открывает и закрепляет подсказку, в её середине elementFromPoint — кнопка легенды под ней, касание по подсказке проходит сквозь неё: открывается карточка роли, подсказка закрывается. format:check и lint чистые; тесты Pixel Office на копии вне проекта — 439, 0 падений.",
+    "findings": [
+      {
+        "id": "M1",
+        "where": "tools/src/pixel-office/public/style.css (.office-hint > .hint-btn)",
+        "severity": "Medium",
+        "blocking": false,
+        "what": "Закрыта: подсказка офиса снова pointer-events: none.",
+        "fix": "-"
+      },
+      {
+        "id": "L1",
+        "where": "tools/src/pixel-office/public/style.css (комментарий над .office-hint)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Закрыта: один комментарий.",
+        "fix": "-"
+      }
+    ],
+    "self_check": [
+      "date -u -> 2026-10-17T20:49:28Z (начало)",
+      "diff -rq копия кода ревью r3 против tools/src -> только style.css; diff -u -> слитый комментарий и .office-hint > * → .office-hint > .hint-btn",
+      "стенд вне проекта (каталог 0700, порт 4807, 195 событий через hook.sh), headless Chromium по CDP: computed pointer-events — hint-now, hint-office, hint-journal, hint-tasks: none; кнопка «?» офиса auto; #office-hint none (4 окна)",
+      "нажатия мышью (Input.dispatchMouseEvent) по 6 кнопкам легенды: 6/6 в 1470×784, 1920×1080, 390×844, 320×568",
+      "касание (Emulation.setTouchEmulationEnabled, Input.dispatchTouchEvent): «?» офиса — открыта и закреплена; elementFromPoint в середине подсказки — BUTTON.legend-item (390) и SPAN.name кнопки легенды (320); касание туда — карточка открыта, подсказка закрыта",
+      "cd tools && npm run format:check -> All matched files use Prettier code style!; npm run lint -> без ошибок; копия вне проекта: node --test test/pixel-office-*.test.js -> tests 439, fail 0",
+      "стенд и браузер остановлены; код и проект не менялись"
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}

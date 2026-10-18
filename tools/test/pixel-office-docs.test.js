@@ -230,3 +230,22 @@ test("MC-07: the section Pixel Office of the README names the 'карточка 
     0,
   );
 });
+
+test("DC-04: the section Pixel Office of the README has the phrases of criterion 9 REQ-050 ('Как пользоваться'), 7 REQ-051 ('Роли команды'), 10 REQ-052 ('pixel-office-tour') and 8 REQ-053 ('Чтобы здесь появились события') - each at least once in the section", () => {
+  const pixel = awkPart(README, PIXEL);
+  for (const phrase of [
+    /Как пользоваться/,
+    /Роли команды/,
+    /pixel-office-tour/,
+    /Чтобы здесь появились события/,
+  ]) {
+    assert.ok(grepC(pixel, phrase) >= 1, String(phrase));
+    assert.equal(
+      grepC(
+        awkPart(`## Pixel Office\nдругое\n## Дальше\n${phrase.source}`, PIXEL),
+        phrase,
+      ),
+      0,
+    );
+  }
+});

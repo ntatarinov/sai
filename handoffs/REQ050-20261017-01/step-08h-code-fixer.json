@@ -1,0 +1,89 @@
+{
+  "handoff_id": "step08h-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "08h",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/REQ050-20261017-01/step-08h-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-053"],
+    "agent_run_id": null,
+    "artifacts_in": ["handoffs/REQ050-20261017-01/step-04-reviewer-r3.json"],
+    "route": "REVIEWER r3 FAIL -> CODE-FIXER 08h (этот) -> SECURITY r4 -> REVIEWER r4",
+    "write_set": ["tools/src/pixel-office/public/style.css"],
+    "base_tag": "base/REQ050-20261017-01",
+    "rework_of": "handoffs/REQ050-20261017-01/step-04-reviewer-r3.json",
+    "orch_check": {
+      "at": "2026-10-17T20:47:46Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "pointer-events none у всех 4 подсказок; легенда 8/8 мышью; npm run check код 0, 1621"
+      ]
+    }
+  },
+  "task": {
+    "description": "Правка по FAIL ревью r3 (handoffs/REQ050-20261017-01/step-04-reviewer-r3.json): M1 — правило .office-hint > * { pointer-events: auto } задевает подсказку «Офис и доска»; сузь до кнопки (.office-hint > .hint-btn или точный класс кнопки) так, чтобы у всех четырёх .hint-tip действующее pointer-events было none; L1 — слей два комментария над .office-hint в один. Проверь в Chrome без окна (стенд вне проекта, журнал владельца не трогать): у подсказки офиса pointer-events none в 4 окнах; в 320×568 касание в середине закреплённой подсказки офиса доходит до того, что под ней; нажатия мышью по всем кнопкам легенды открывают карточку; кнопка «?» офиса нажимается. Только style.css. Запрещены git checkout/reset/stash/clean. Перед close: cd tools && npm run check — код 0.",
+    "acceptance_criteria": [
+      "У всех подсказок pointer-events none; легенда нажимается; npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-17T20:41:03Z",
+  "started_at": "2026-10-17T20:41:03Z",
+  "completed_at": "2026-10-17T20:47:23Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Замечания M1 и L1 ревью r3 исправлены; менялся только style.css. M1: правило .office-hint > * { pointer-events: auto } сужено до .office-hint > .hint-btn. Теперь нажатия получает только кнопка «?», а подсказка «Офис и доска», как все подсказки, остаётся с pointer-events: none. L1: два комментария над .office-hint слиты в один. Проверено в Chrome без окна в четырёх окнах:\n— у всех четырёх подсказок действующее pointer-events — none;\n— середина закреплённой подсказки офиса пропускает нажатие к тому, что под ней;\n— кнопка «?» офиса нажимается;\n— все 8 кнопок легенды открывают карточку мышью.\nnpm run check — код 0, 1621 тест, 0 падений; тесты не менялись.",
+    "changes": [
+      {
+        "finding": "M1 (ревью r3)",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": ".office-hint > * → .office-hint > .hint-btn",
+        "what": "pointer-events: auto остаётся только у кнопки «?» офиса. Подсказка #hint-office (div.hint-tip, тоже прямой ребёнок блока) снова получает pointer-events: none из правила .hint-tip."
+      },
+      {
+        "finding": "L1 (ревью r3)",
+        "file": "tools/src/pixel-office/public/style.css",
+        "where": "комментарий над .office-hint",
+        "what": "Два комментария слиты в один: место блока и отрицательное поле, ширина по кнопке (08f), запас pointer-events. Добавлено, что подсказка остаётся с pointer-events: none (D22)."
+      }
+    ],
+    "self_check": [
+      "Время (date -u): начало 2026-10-17T20:41:23Z; check 20:44:56Z–20:46:49Z.",
+      "Стенд вне проекта: <вне проекта>/fx50h/stand, новый пустой каталог, порт 4921. События через hook.sh: sample-1-main, запрос, 7 ролей Sai в работе. Chrome 155 headless, свой профиль, порт отладки 9466. Окна 1470×784, 1920×1080, 390×844, 320×568.",
+      "Сценарий m.mjs:",
+      "— getComputedStyle(.hint-tip).pointerEvents у всех четырёх подсказок;",
+      "— нажатие мышью (Input.dispatchMouseEvent) по «?» офиса, затем elementFromPoint в середине закреплённой подсказки офиса;",
+      "— нажатие мышью по центру каждой кнопки легенды и проверка, открылась ли карточка.",
+      "ДО (все четыре окна):",
+      "— подсказки: hint-now none, hint-office auto, hint-journal none, hint-tasks none;",
+      "— середина закреплённой подсказки офиса попадает в саму подсказку (.hint-text, inTip true);",
+      "— «?» офиса нажимается, подсказка показывается;",
+      "— легенда 8/8.",
+      "ПОСЛЕ (все четыре окна):",
+      "— подсказки: hint-now none, hint-office none, hint-journal none, hint-tasks none;",
+      "— середина закреплённой подсказки офиса доходит до того, что под ней: #office (холст) в 1470×784 и 1920×1080, #journal-search в 390×844, кнопка легенды в 320×568 (inTip false);",
+      "— «?» офиса: elementFromPoint даёт кнопку, нажатие мышью показывает подсказку;",
+      "— легенда 8/8 открывают карточку мышью;",
+      "— ошибок консоли 0.",
+      "cd tools && caffeinate -i npm run check → код 0:",
+      "— format:check — All matched files use Prettier code style!; lint — чисто;",
+      "— traces: файлов проверено 1602, следов 0, пропущено 56;",
+      "— handoffs-check: файлов проверено 958, нарушений 0, исключений использовано 114 из 114;",
+      "— test: # tests 1621 # pass 1621 # fail 0 # skipped 0.",
+      "Журнал владельца (только чтение): 4297 строк и 0 строк sample- до и после. Стенд и Chrome остановлены (lsof по 4921 и 9466 пусто).",
+      "Изменён только style.css; git checkout/reset/stash/clean и коммиты не делались."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "TESTS_SUGGESTED",
+        "text": "Для TEST-DESIGNER r3: ни одно правило (в том числе в @media) не ставит pointer-events, кроме none, селектору, который подходит к .hint-tip, в частности .office-hint > *; у .office-hint > .hint-btn — auto. Мутант «вернуть .office-hint > *» — красный."
+      }
+    ],
+    "artifacts_out": ["tools/src/pixel-office/public/style.css"]
+  }
+}

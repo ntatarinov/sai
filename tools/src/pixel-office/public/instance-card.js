@@ -16,7 +16,7 @@ import {
 import { shownInPanel } from "./panels.js";
 import { MAIN_KEY, buildCard, roleKey } from "./office-model.js";
 import { ROLE_UNKNOWN } from "./texts.js";
-import { repeatedStarts, roleName, shortId } from "./words.js";
+import { repeatedStarts, roleAbout, roleName, shortId } from "./words.js";
 
 // The instances shown in the list before "Остальные экземпляры".
 export const INSTANCES_SHOWN = 5;
@@ -238,6 +238,8 @@ export function buildInstanceCard(model, office, taskKey, history = null) {
     character_key: characterKey,
     color: character === undefined ? 0 : character.color,
     title,
+    // What the role does, under the title (REQ-051, criterion 8).
+    about: roleAbout(role),
     code: role !== title && role !== ROLE_UNKNOWN ? role : null,
     agent: ids(taskKey),
     session: ids(task.session_id),

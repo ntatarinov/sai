@@ -1,0 +1,77 @@
+{
+  "handoff_id": "step04-r3-REQ050-20261017-01",
+  "run_id": "REQ050-20261017-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "round": 3,
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/REQ050-20261017-01/step-04-reviewer-r3.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-053", "REQ-044"],
+    "agent_run_id": null,
+    "artifacts_in": ["handoffs/REQ050-20261017-01/step-08g-code-fixer.json"],
+    "route": "SECURITY r3 -> REVIEWER r3 (этот) -> TEST-DESIGNER r3",
+    "write_set": ["нет: только result своего handoff-а"],
+    "base_tag": "base/REQ050-20261017-01",
+    "rework_of": "handoffs/REQ050-20261017-01/step-03-security-reviewer-r3.json",
+    "orch_check": {
+      "at": "2026-10-17T20:41:03Z",
+      "by": "ORCH",
+      "verdict": "FAIL принят",
+      "checked": [
+        "M1: .office-hint > * возвращает pointer-events подсказке офиса — сузить до .hint-btn; L1 — слить комментарии; CODE-FIXER 08h"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4, повтор после CODE-FIXER 08g (handoffs/REQ050-20261017-01/step-08g-code-fixer.json; диагноз step-08f-issue-fixer.json) и PASS безопасности r3. САМ проверь: .office-hint align-self: flex-start убирает наложение (решение причины), pointer-events — запас; строка о туре 17 rem — по замеру; правки только эти; нажатия мышью по легенде в браузере. Код не менять. Запрещены git checkout/reset/stash/clean. Перед close — handoffs-check. Вердикт PASS/FAIL.",
+    "acceptance_criteria": ["08g оценён; вердикт"]
+  },
+  "created_at": "2026-10-17T20:38:16Z",
+  "started_at": "2026-10-17T20:38:16Z",
+  "completed_at": "2026-10-17T20:40:39Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "FAIL из-за одной находки Medium (M1): запасное правило .office-hint > * { pointer-events: auto } стоит в style.css ниже .hint-tip { pointer-events: none } той же точности и возвращает подсказке «Офис и доска» перехват нажатий — отмена D22 для одной из четырёх подсказок. Остальное по правке 08g — решение причины: у .office-hint align-self: flex-start вместо stretch — блок шириной со свою кнопку (27…51 px в 1470×784 и 1920×1080, 19…55 в 390×844 и 320×568), и легенда больше не лежит под ним; проверено настоящими нажатиями мыши (Input.dispatchMouseEvent) и elementFromPoint: первые 6 кнопок легенды открывают карточку в 1470×784, 1920×1080, 390×844, 320×568 — 6 из 6 в каждом окне; кнопка «?» офиса нажимается. Строка о туре — 17 rem по замеру: текст 272×28 (две строки) в блоке 330×44, шапка 60 px в 1470×784. Правки только в style.css, два правила и комментарии. Пробу вёл на стенде вне проекта (свой каталог 0700, свой порт, 195 событий sample- через hook.sh, 19 ролей).",
+    "findings": [
+      {
+        "id": "M1",
+        "where": "tools/src/pixel-office/public/style.css:943 (.office-hint > * { pointer-events: auto }) против :846 (.hint-tip { pointer-events: none })",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "Подсказка «Офис и доска» (#hint-office) — ребёнок #office-hint, поэтому правило «> *», стоящее ниже по файлу с той же точностью (0,1,0), перебивает pointer-events: none подсказки. В браузере: computed pointer-events у #hint-office — auto во всех окнах (у трёх других подсказок — none). В 320×568 закреплённая подсказка офиса (358…560) перехватывает нажатие: elementFromPoint в её середине — p.hint-text; нажатие по подсказке её не закрывает (обработчик документа считает его нажатием внутри), и то, что под ней, недоступно — это симптом Ф2 (I1 (г) диагноза 08d), который D22 закрывал «во всех окнах».",
+        "fix": "CODE-FIXER, style.css: сузить запасное правило до кнопки — .office-hint > .hint-btn { pointer-events: auto } (или .office-hint .hint-btn), чтобы .hint-tip осталась none; проверить computed pointer-events у #hint-office = none и нажатия по легенде мышью. Тест правил CSS (TEST-DESIGNER): у каждой .hint-tip итоговое pointer-events — none, ни одно правило ниже его не перебивает."
+      },
+      {
+        "id": "L1",
+        "where": "tools/src/pixel-office/public/style.css:920-929",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Над .office-hint стоят два комментария подряд: прежний («its negative bottom margin lifts the legend…») и новый; прежний не противоречит, но вдвоём читаются как один устаревший текст.",
+        "fix": "Слить в один комментарий той же правкой."
+      }
+    ],
+    "self_check": [
+      "date -u -> 2026-10-17T20:38:50Z (начало)",
+      "diff -rq копия кода ревью r2 (вне проекта) против tools/src -> отличается только style.css; diff -u -> .tour-later-text max-width 12rem → 17rem; .office-hint align-self stretch → flex-start, pointer-events none; новое .office-hint > * { pointer-events: auto }; комментарии",
+      "grep -n '^.hint-tip {|^.office-hint > \\*' style.css -> 846 и 943",
+      "стенд вне проекта (каталог 0700, порт 4807, 195 событий через hook.sh), headless Chromium по CDP: #office-hint [27,51] (1470, 1920), [19,55] (390, 320); нажатия мышью по первым 6 кнопкам легенды — карточка открыта 6/6 в каждом окне, elementFromPoint в центре — сама кнопка; кнопка «?» офиса нажимается",
+      "computed pointer-events: #office-hint none, его .hint-btn auto, #hint-office auto (M1) — во всех четырёх окнах",
+      "320×568: закреплённая подсказка офиса 358…560, elementFromPoint в её середине — P.hint-text (M1)",
+      "строка о туре 1470×784 после «Не сейчас»: текст 272×28, блок 330×44, шапка 60 px",
+      "стенд и браузер остановлены; код и проект не менялись"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "ROUTE",
+        "text": "M1 и L1 — одна маленькая правка CODE-FIXER в style.css; затем повтор шагов 3 и 4. Описание п. 5.5 (12 rem → 17 rem) — DOC-UPDATER, как в I1 08g."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
