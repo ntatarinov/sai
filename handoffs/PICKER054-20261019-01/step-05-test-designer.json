@@ -1,0 +1,189 @@
+{
+  "handoff_id": "step05-PICKER054-20261019-01",
+  "run_id": "PICKER054-20261019-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PICKER054-20261019-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-054"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-054-picker-tenant.md",
+      "docs/requirements.yaml",
+      "handoffs/PICKER054-20261019-01/",
+      "tools/src/picker/"
+    ],
+    "route": "REVIEWER -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER",
+    "write_set": [
+      "tools/test/picker-*.test.js, tools/test/picker-samples/ (образцы п. 10)"
+    ],
+    "base_tag": "base/PICKER054-20261019-01",
+    "orch_check": {
+      "at": "2026-10-19T18:33:39Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "58 новых тестов, 44 образца; 25 мутантов + 40 дополнительных пойманы; npm run check код 0, 1680; src не тронут",
+        "I1 (ошибка программы даёт код 1 как «найдены ошибки») — в проект REQ-056/дефект Low; I2, I3 приняты"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5 — тесты REQ-054 после PASS безопасности (step-03-security-reviewer.json) и ревью (step-04-reviewer.json). Проект docs/design/REQ-054-picker-tenant.md: раздел 10 — 44 файла-образца с точным выводом команды (образцы, не разбираемые как JSON или не в UTF-8, — с расширением .txt, иначе format:check краснеет; .json-образцы разбираемы и отформатированы prettier), раздел 11 — подшаги, раздел 12 — «критерий → элемент → тест» (PK-1…PK-8 для восьми критериев плюс PK-P, PK-L, PK-R для рисков), раздел 13 — ловушки (13.1) и 25 мутантов (13.2) — мутант на копии вне проекта для каждого, запись «мутант → тест → красный». Требование — docs/requirements.yaml, блок REQ-054 (критерии и их проверки — буквально); решения decisions/0065, 0066. Файлы: tools/test/picker-*.test.js (по логике — как соседние tools/test/*.test.js) и образцы по п. 10 (место — по проекту). Тесты запускают cli.js процессом (не импортом: он сразу исполняет команду — замечание ревью L2); граничные размеры файла 524288 и 524289 байт; BOM; позиции для не-UTF-8; повтор ключа; глубина 20 и 21; порядок строк по месту в файле и предел в 100 строк; вымышленные арендаторы — оба проходят check с кодом 0, id и тексты не пересекаются, три набора ответов у каждого только со своими вопросами и вариантами; поиски критериев 6–8 (нет child_process, сети, записи; node:* только в load.js; отсутствие skip/todo); свойство: случайно испорченные объекты и файлы не дают исключений и английских слов разборщика. Критерий 3 — одна строка E_ORDER на цикл (0066 п. 3). В self_check и тестах: названия, пути и тексты проекта-образца и пути компьютера не писать (traces). Код продукта (tools/src/picker/, кроме образцов) не менять. Старые тесты не ослаблять; числа test(/assert. по файлам не меньше метки. Запрещены git checkout/reset/stash/clean (в копиях — только свежий git clone). Перед close: cd tools && npm run check — код 0; в result — точные числа и таблица мутантов.",
+    "acceptance_criteria": [
+      "Тест на каждый критерий REQ-054 по разделу 12; 44 образца по разделу 10",
+      "25 мутантов и ловушки — пойманы",
+      "npm run check код 0; точные числа"
+    ]
+  },
+  "created_at": "2026-10-19T17:55:20Z",
+  "started_at": "2026-10-19T17:55:20Z",
+  "completed_at": "2026-10-19T18:32:55Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Шаг 5 прогона PICKER054-20261019-01 (REQ-054): тесты и 44 образца. Код продукта (tools/src/picker/) не менялся: хеши tools/src, tools/package.json и tools/README.md до и после шага совпадают. Ни один существующий файл тестов не менялся.\n\nЧто написано:\n— tools/test/fixtures/picker/ — 44 образца раздела 10: 4 принимаемых, 35 с ошибками (.json, отформатированы prettier), 5 неразбираемых (.txt; e-json-utf8.txt создан записью байтов). Сделаны скриптом из основы ok-minimal; stdout команды на каждом образце сверен со столбцом «Вывод» таблицы построчно: расхождений 0.\n— tools/test/picker-helpers.js: запуск команды процессом (напрямую и через npm run -s), временные папки, дайджест файла (sha256, mtime, список папки), зерновой генератор, оракул видимости вопросов (независимый от src/), проверки формы строк, таблица EXPECTED с точным выводом 44 образцов.\n— picker-config.test.js (35 тестов): PK-1a…1f, PK-2a…2b, PK-3a…3d, PK-4a…4f, PK-5a…5c, PK-6a…6f, PK-7a…7c, PK-8a…8e.\n— picker-fields.test.js (7 тестов): PK-2c (границы каждого поля: id арендатора 2/3/32/33, внутренний id 40/41, все тексты и списки, баллы -11/-10/10/11/0/дробь/2^53, result, leads, повтор способа связи), PK-3e (условия по шагам У1-У8), PK-5d (правило текста во всех 21 полях), порядок проверок одного места.\n— picker-parse.test.js (6): PK-P1…P6. picker-load.test.js (5): PK-L1…L3. picker-robust.test.js (5): PK-R1…R4.\n\nКритерий -> тест (Q5): 1 -> PK-1a…1f; 2 -> PK-2a, 2b, 2c; 3 -> PK-3a…3e; 4 -> PK-4a…4f; 5 -> PK-5a…5d; 6 -> PK-6a…6f (6a: 12 неверных вызовов с точными строками; 6b: sha256, mtime и список папки не меняются при кодах 0, 1, 2; 6c: ссылка, канал без зависания, 524288 байт читается, 524289 отказ, npm и node дают одинаковый вывод; 6d: справка; 6e: нет слов записи в коде); 7 -> PK-7a…7c; 8 -> PK-8a…8e. Риски: PK-P1…P6 (читатель JSON против JSON.parse: 102 текста и 20000 случайных, UTF-8 против строгого декодера: 33 последовательности и 20000 случайных, BOM, правило текста), PK-L1…L3 (baseDir, сбои ОС через fault-inject, закрытие дескриптора), PK-R1…R4 (5000 испорченных объектов, 3000 испорченных файлов, враждебные файлы до 512 КБ за миллисекунды, неизменность входа).\nОграничение: cli.js не импортируется ни одним тестом (замечание L2 ревью).\n\nДополнительно к таблице: PK-1f пересчитывает баллы трёх наборов ответов каждого арендатора своим кодом теста и сверяет с таблицей 9.4 раздела 9 (все шесть исходов совпали); PK-6f проверяет, что введённое человеком в отказе показано без пробелов, обрезано до 40 знаков и скрывает слова «ты».\n\nПланка: Q7 — секретов нет, адрес в образцах только example.invalid; Q8 — PK-8a…8c, PK-L1; Q10 — PK-6a, PK-L2, PK-R1…R3; Q11 — PK-7a; R3 не применим. Q6 — нет пропусков и недописанных тестов (PK-8d), нет путей этого компьютера в новых файлах.\n\nИтог: новых тестов 58 (tests 1622 -> 1680), весь npm run check — код 0, красных 0, skipped 0, todo 0. Все 25 мутантов раздела 13.2 пойманы, а также ловушки Л1-Л8, Л10 и ещё 40 мутантов (таблица в self_check).\nТочные числа ^test( / assert. по файлам (метка base/PICKER054-20261019-01 -> сейчас): новые файлы — picker-config 35/128, picker-fields 7/39, picker-load 5/51, picker-parse 6/97, picker-robust 5/24 (на метке этих файлов нет); остальные файлы tools/test/*.test.js не изменены, их числа равны метке.",
+    "changes": [
+      {
+        "file": "tools/test/fixtures/picker/ (44 файла)",
+        "what": "образцы раздела 10"
+      },
+      {
+        "file": "tools/test/picker-helpers.js",
+        "what": "помощники и таблица EXPECTED"
+      },
+      {
+        "file": "tools/test/picker-config.test.js",
+        "what": "PK-1…PK-8 (35 тестов)"
+      },
+      {
+        "file": "tools/test/picker-fields.test.js",
+        "what": "PK-2c, PK-3e, PK-5d (7 тестов)"
+      },
+      {
+        "file": "tools/test/picker-parse.test.js",
+        "what": "PK-P1…P6"
+      },
+      {
+        "file": "tools/test/picker-load.test.js",
+        "what": "PK-L1…L3"
+      },
+      {
+        "file": "tools/test/picker-robust.test.js",
+        "what": "PK-R1…R4"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-19T17:55:40Z, конец 2026-10-19T18:33Z",
+      "stdout команды на 44 образцах против таблицы раздела 10 (разобрана скриптом из проекта; e-many-errors-150 построен по шаблону): расхождений 0",
+      "node --test test/picker-*.test.js -> tests 58, pass 58, fail 0",
+      "cd tools && caffeinate -i npm run check -> код 0; traces: следов 0; handoffs-check: нарушений 0; # tests 1680, # pass 1680, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "мутанты: во временной копии tools/ вне проекта (без node_modules), по одному изменению файла с возвратом, запуск node --test всех picker-*.test.js; после проб diff -r tools/src рабочего дерева и копии пуст; хеши tools/src, package.json и README.md рабочего дерева до и после шага совпадают:",
+      "мутант M1 (words limit 19) -> красных 4 из 58: PK-5a PK-5c PK-5d PK-P6",
+      "мутант M2 (phrase cut at any dot) -> красных 2 из 58: PK-5c PK-P6",
+      "мутант M3 (dash counts as a word) -> красных 2 из 58: PK-5b PK-P6",
+      "мутант M4 (ty as a substring) -> красных 27 из 58: PK-1a PK-1e PK-2a PK-2b PK-2c PK-3a PK-3b PK-3c PK-3d PK-3e PK-4a PK-4b PK-4c PK-5a PK-5b PK-5c PK-5d PK-6b PK-8a PK-8b PK-L2 PK-P6 PK-R4",
+      "мутант M5 (length in UTF-16 units) -> красных 2 из 58: PK-5b PK-P6",
+      "мутант M6 (length without trim) -> красных 3 из 58: PK-2c PK-5b PK-P6",
+      "мутант M7 (ty case sensitive) -> красных 4 из 58: PK-5c PK-5d PK-P6 PK-R1",
+      "мутант M8 (E_ORDER only if strictly later) -> красных 2 из 58: PK-3b PK-3e",
+      "мутант M9 (order of finding) -> красных 1 из 58: PK-4b",
+      "мутант M10 (limit 101 lines) -> красных 2 из 58: PK-4c PK-R3",
+      "мутант M11 (negative points make reachable) -> красных 4 из 58: PK-2c PK-3d PK-4b PK-4f",
+      "мутант M12 (no repeat check of rule ids) -> красных 2 из 58: PK-2a PK-2c",
+      "мутант M13 (points 11 allowed) -> красных 2 из 58: PK-2a PK-2c",
+      "мутант M14 (points -10 refused) -> красных 3 из 58: PK-2a PK-2b PK-2c",
+      "мутант M15 (retention 365 refused) -> красных 4 из 58: PK-2a PK-2b PK-4a PK-4b",
+      "мутант M16 (8 options refused) -> красных 2 из 58: PK-2a PK-2b",
+      "мутант M17 (30 questions refused) -> красных 2 из 58: PK-2a PK-2b",
+      "мутант M18 (title 200 refused) -> красных 3 из 58: PK-2a PK-2b PK-5b",
+      "мутант M19 (id not compared with file name) -> красных 4 из 58: PK-1e PK-2a PK-2c PK-8b",
+      "мутант M20 (kind not checked against type) -> красных 2 из 58: PK-3c PK-3e",
+      "мутант M21 (E_ORDER on a look back too) -> красных 26 из 58: PK-1a PK-1e PK-2a PK-2b PK-2c PK-3a PK-3b PK-3c PK-3d PK-3e PK-4a PK-4b PK-4c PK-5a PK-5b PK-5c PK-5d PK-6b PK-8a PK-8b PK-L2 PK-R4",
+      "мутант M22 (no E_LIMIT for text length) -> красных 6 из 58: PK-2a PK-2c PK-5d",
+      "мутант M23a (extra fields allowed (objects)) -> красных 4 из 58: PK-2a PK-2c",
+      "мутант M23b (extra fields allowed (question)) -> красных 3 из 58: PK-2a PK-2c PK-4a",
+      "мутант M24 (UTF-8 not checked) -> красных 3 из 58: PK-4d PK-P2 PK-P5",
+      "мутант M25 (repeated key allowed) -> красных 3 из 58: PK-4d PK-P2 PK-P3",
+      "мутант X1 (show cuts at 400) -> красных 3 из 58: PK-2c PK-6f PK-L1",
+      "мутант X2 (help returns code 1) -> красных 1 из 58: PK-6d",
+      "мутант X3 (size border >=) -> красных 1 из 58: PK-6c",
+      "мутант X3b (size border total >=) -> красных 1 из 58: PK-6c",
+      "мутант X3c (size border off by one up) -> красных 3 из 58: PK-6b PK-6c PK-L3",
+      "мутант X4 (descriptor not closed) -> красных 1 из 58: PK-L3",
+      "мутант X5 (step link not refused) -> красных 1 из 58: PK-L1",
+      "мутант X6 (BOM not dropped) -> красных 1 из 58: PK-P5",
+      "мутант X7 (utf8 lead C0 allowed) -> красных 1 из 58: PK-P4",
+      "мутант X7b (utf8 surrogates allowed) -> красных 1 из 58: PK-P4",
+      "мутант X7c (utf8 F4 range) -> красных 1 из 58: PK-P4",
+      "мутант X8 (depth 21 allowed) -> красных 1 из 58: PK-P3",
+      "мутант X8b (depth 20 refused (array)) -> красных 2 из 58: PK-P2 PK-P3",
+      "мутант X9 (objects with prototype) -> красных 1 из 58: PK-P3",
+      "мутант X10 (contact repeat allowed) -> красных 1 из 58: PK-2c",
+      "мутант X11 (isInteger instead of safe) -> красных 1 из 58: PK-2c",
+      "мутант X12 (tenant id 2 signs) -> красных 1 из 58: PK-2c",
+      "мутант X13 (inner id 41) -> красных 1 из 58: PK-2c",
+      "мутант X14 (CR counted in column) -> красных 1 из 58: PK-P2",
+      "мутант X15 (lines counted from 0) -> красных 4 из 58: PK-4d PK-P2 PK-P3 PK-P5",
+      "мутант X16 (success line wrong count) -> красных 4 из 58: PK-1a PK-2b PK-5b PK-8a",
+      "мутант X17 (unreachable ignores order of file) -> красных 3 из 58: PK-2c PK-3d PK-4b",
+      "мутант X18 (walk of the symlink not caught at the last step) -> красных 2 из 58: PK-6c PK-L1",
+      "мутант X19 (command table with plain object) -> красных 2 из 58: PK-4e PK-6a",
+      "мутант X20 (show not applied to the name in unknown command) -> красных 1 из 58: PK-6f",
+      "мутант X21 (points 0 allowed) -> красных 4 из 58: PK-2a PK-2c PK-4a PK-4c",
+      "мутант X22 (min==max of a question allowed) -> красных 1 из 58: PK-2c",
+      "мутант X23 (range min>max allowed) -> красных 1 из 58: PK-3e",
+      "мутант L1 (script picker between handoffs-check and handoff) -> красных 1 из 58: PK-7b",
+      "мутант L1b (a dependencies key) -> красных 1 из 58: PK-7b",
+      "мутант L1c (another version of a development package) -> красных 1 из 58: PK-7b",
+      "мутант L1d (script picker changed) -> красных 3 из 58: PK-1a PK-6c PK-7b",
+      "мутант L2 (child_process in a comment) -> красных 1 из 58: PK-7a",
+      "мутант L4a (fetch( in a comment) -> красных 1 из 58: PK-7a",
+      "мутант L4b (Math.random in a comment) -> красных 1 из 58: PK-7a",
+      "мутант L4c (node:net in a comment) -> красных 2 из 58: PK-7a PK-7c",
+      "мутант L5 (mkdir in a comment of check.js) -> красных 1 из 58: PK-6e",
+      "мутант L6 (fs functions copied at the start) -> красных 1 из 58: PK-L2",
+      "мутант N1 (a node: import in a pure module) -> красных 1 из 58: PK-7c",
+      "мутант N2 (readdir in check.js) -> красных 1 из 58: PK-8c",
+      "мутант N3 (Math.random in validate) -> красных 1 из 58: PK-7a",
+      "мутант W1 (writes the result file) -> красных 2 из 58: PK-6b PK-6e",
+      "мутант W2 (an ordinary mistake of the program turned into a refusal) -> красных 2 из 58: PK-L2",
+      "мутант W3 (a refusal of the system always the general line) -> красных 5 из 58: PK-6a PK-L1 PK-L2",
+      "мутант W4 (outside check removed) -> красных 1 из 58: PK-L1",
+      "мутант W5 (the folder itself is accepted) -> красных 1 из 58: PK-L1",
+      "мутант W6 (prefix test instead of steps) -> красных 1 из 58: PK-L1",
+      "мутант X24 (items of the lists not checked) -> красных 3 из 58: PK-2c PK-5a PK-5d",
+      "первый вариант мутанта X24 (пустая замена) ничего не менял — заменён настоящим (пункты списков не проверяются правилом текста); пойман PK-2c, PK-5a, PK-5d",
+      "числа test(/assert. сняты grep -c '^test(' и grep -o 'assert[.]' | wc -l по рабочим файлам; существующие файлы сверены с git show base/PICKER054-20261019-01:tools/test/<файл> (число test( не изменилось ни в одном)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Для REQ-056: ошибка программы (не PickerError и не ошибка ОС) завершает процесс кодом 1 — это код Node для необработанного исключения, он совпадает с кодом 1 «найдены ошибки». Различить можно по пустому stdout и стеку в stderr (PK-L2 это проверяет). Если нужно различать по коду выхода — решение CODE-DESIGNER."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Ловушки Л3 (неразбираемый .json-образец краснит format:check) и Л1/Л2 (HO-54, TR-4c) проверены мутантами на копии: Л1 пойман PK-7b, Л2 — PK-7a; красный format:check для Л3 даёт шаг npm run check, а не тест."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "Образец e-many-errors-150 в таблице раздела 10 дан с многоточием; ожидаемые 100 строк и «И ещё ошибок: 50.» построены в picker-helpers.js по шаблону строки."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-helpers.js",
+      "tools/test/picker-config.test.js",
+      "tools/test/picker-fields.test.js",
+      "tools/test/picker-parse.test.js",
+      "tools/test/picker-load.test.js",
+      "tools/test/picker-robust.test.js",
+      "tools/test/fixtures/picker/"
+    ]
+  }
+}

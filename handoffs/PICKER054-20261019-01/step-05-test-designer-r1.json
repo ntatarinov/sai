@@ -1,0 +1,68 @@
+{
+  "handoff_id": "step05-r1-PICKER054-20261019-01",
+  "run_id": "PICKER054-20261019-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "round": 1,
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PICKER054-20261019-01/step-05-test-designer-r1.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-054"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PICKER054-20261019-01/step-05b-test-design-validator.json"
+    ],
+    "route": "5b FAIL -> TEST-DESIGNER r1 (этот) -> 5b r1",
+    "write_set": ["tools/test/picker-*.test.js, tools/test/fixtures/picker/"],
+    "base_tag": "base/PICKER054-20261019-01",
+    "rework_of": "handoffs/PICKER054-20261019-01/step-05b-test-design-validator.json",
+    "orch_check": {
+      "at": "2026-10-19T18:48:09Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1: 8 случаев; F2: PK-4b; мутанты CYC, M9b, M9 краснеют; npm run check код 0, 1681"
+      ]
+    }
+  },
+  "task": {
+    "description": "Доработка r1 по FAIL ворот 5b (handoffs/PICKER054-20261019-01/step-05b-test-design-validator.json; прочитай result). F1: в PK-3e (таблица «order») добавь случаи: (а) первое условие show_if {question: count, any_of: [x]} с count — вопросом типа number ниже — ровно одна строка E_ORDER и ни одной E_COND; (б) {question: extras, min: 1} с extras (multiple) ниже — то же; (в) {question: extras, any_of: [no-such-option]} — одна E_ORDER, нет E_REF по варианту. Мутант CYC (убрать return после E_ORDER в conditions.js) должен краснеть — проверь на свежем git clone вне проекта. F2: тест порядка строк для мест на одной позиции (файл без name и без intro: name раньше intro; порядок обнаружения сохраняется); мутант M9b (обратный порядок) краснеет. F3 не требуется. Только tools/test/picker-*.test.js и образцы (если нужны). Код продукта не менять. Старые тесты не ослаблять. Запрещены git checkout/reset/stash/clean (в копиях — только свежий git clone). Перед close: cd tools && npm run check — код 0; точные числа.",
+    "acceptance_criteria": [
+      "F1, F2: мутанты CYC и M9b краснеют; npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-19T18:43:56Z",
+  "started_at": "2026-10-19T18:43:56Z",
+  "completed_at": "2026-10-19T18:47:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка r1 по FAIL ворот 5b, только F1 и F2 (F3 не требуется). Код продукта не менялся: хеши tools/src, package.json и README.md те же. Правки только в tools/test/picker-fields.test.js.\nF1 (PK-3e, таблица «order»): условие, ссылающееся вперёд или на себя, останавливается после E_ORDER — добавлено 7 случаев, каждый даёт ровно одну строку E_ORDER у .question: {count, any_of: [x]} (count — number ниже), {extras, min: 1} (extras — multiple ниже), {extras, any_of: [no-such-option]}, {extras, none_of: [no-such-option]}, на себя {kind, min: 1} и {kind, any_of: [no-such-option]}; восьмой случай — два вида условия при ссылке вперёд: E_COND на условии, затем E_ORDER (вид проверяется раньше порядка, по У4).\nF2 (новый тест PK-4b в том же файле, через checkBytes, то есть через упорядочивание report.js): отсутствующие поля на одной позиции идут в порядке обнаружения — name, затем intro; schema, name, intro, result вместе с ошибкой дальше по файлу; points и text одного правила; и порядок по месту при смеси.\nТочные числа ^test( / assert. (метка base/PICKER054-20261019-01 -> сейчас): picker-config 35/128, picker-fields 8/43, picker-load 5/51, picker-parse 6/97, picker-robust 5/24 (на метке этих файлов нет); остальные файлы тестов не изменены.\nИтог: новых тестов в прогоне 59 (tests 1622 -> 1681), npm run check — код 0, красных 0.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/test/picker-fields.test.js",
+        "what": "PK-3e: 8 случаев о стоп после E_ORDER"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/test/picker-fields.test.js",
+        "what": "новый PK-4b: порядок мест на одной позиции"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-19T18:44:21Z, конец 2026-10-19T18:47:25Z",
+      "node --test test/picker-fields.test.js -> pass 8, fail 0",
+      "cd tools && caffeinate -i npm run check -> код 0; traces: следов 0; handoffs-check: нарушений 0; # tests 1681, # pass 1681, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "мутант CYC (conditions.js: убран return после E_ORDER) на свежей копии tools вне проекта -> красных 1 из 59: PK-3e",
+      "мутант M9b (report.js: равные места в обратном порядке обнаружения) -> красных 1 из 59: PK-4b",
+      "мутант M9 (порядок обнаружения вместо порядка по месту) -> красных 1 из 59: PK-4b",
+      "после проб diff -r tools/src рабочего дерева и копии пуст; хеши tools/src, package.json, README.md до и после совпадают",
+      "числа test(/assert. сняты grep -c '^test(' и grep -o 'assert[.]' | wc -l по рабочим файлам"
+    ],
+    "issues": [],
+    "artifacts_out": ["tools/test/picker-fields.test.js"]
+  }
+}
