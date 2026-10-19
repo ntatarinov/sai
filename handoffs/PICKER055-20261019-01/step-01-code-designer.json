@@ -1,0 +1,229 @@
+{
+  "handoff_id": "step01-PICKER055-20261019-01",
+  "run_id": "PICKER055-20261019-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PICKER055-20261019-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-055"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "docs/design/REQ-054-picker-tenant.md",
+      "decisions/0065-solution-picker-stack-and-choices.md",
+      "decisions/0066-picker-tenant-check-conventions.md",
+      "tools/src/picker/",
+      "docs/quality-bar.md"
+    ],
+    "route": "CODE-DESIGNER (этот) -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV -> SECURITY -> REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> FINALIZER",
+    "write_set": ["docs/design/REQ-055-picker-engine.md (новый)"],
+    "base_tag": "base/PICKER055-20261019-01",
+    "orch_check": {
+      "at": "2026-10-19T20:17:05Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "Проект REQ-055: один файл engine.js без import, 3 подшага, формула баллов, 46 мутантов; прототип: 6 исходов совпали с REQ-054 п. 9.4, 1000 наборов — 0 расхождений",
+        "О1–О5 приняты решением 0067; расхождение (вычисления условий в src/ нет) — запись в анти-паттерны на шаге 10"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 1 — проект кода REQ-055 (сайт подбора решения, часть 2: движок — чистый, без ИИ, детерминированный: какие вопросы видны, баллы решений по правилам, лучшие 1–3 с пометкой «явный лидер», гипотезы о проблеме, объяснение каждого балла). Требование — docs/requirements.yaml, блок REQ-055 (прочитай целиком, все 8 критериев и их проверки); REQ-054 уже сделан: формат файла арендатора, проверка, демо-арендаторы и по три набора ответов (leader, close, none) — tools/src/picker/ (conditions.js — условия показа, validate.js, load.js и др.), проект docs/design/REQ-054-picker-tenant.md (формат, п. 4; формы, п. 5–6; наборы ответов, п. 9; интерфейс для REQ-055/056/059/060 — п. 6), решения decisions/0065 (п. 6 — границы 30/20/200, баллы −10…10; п. 7 — «явный лидер» по разрыву баллов; п. 8 — result.top не меньше 2), 0066; просьба владельца — docs/owner-requests/2026-10-19-solution-picker-site.md; планка — docs/quality-bar.md. Образцы кода Sai: tools/src/picker/ (стиль, чистые функции, без node:* вне load.js), tools/test/picker-*.test.js. Пиши docs/design/REQ-055-picker-engine.md по образцу docs/design/REQ-054-picker-tenant.md (факты о коде с командами проверки, решения D1…, формы данных и функции по файлам, правила (точная формула баллов, ничьи, порядок, «явный лидер»), пути отказа, подшаги разработки с ожидаемыми красными тестами — проверь прототипом на свежем git clone вне проекта, таблица «критерий → элемент → тест», ловушки и мутанты для TEST-DESIGNER, что устаревает, раздел о планке Q1–Q14, R1–R3). Исходы трёх наборов ответов каждого демо-арендатора (leader, close, none) движок обязан давать именно такими, как записано в п. 9.4 проекта REQ-054 (проверь своими расчётами). Свойство: одинаковые ответы дают побайтно одинаковый результат (1000 наборов, критерий требования); ни одно число не берётся из времени, случайности, окружения. Движок не читает файлы и не обращается к сети; вход — проверенный объект арендатора и ответы; выход — результат с объяснением (каждый балл прослеживается до ответа и правила). Не пиши ничего про сервер, страницы, заявки (REQ-056…060). Название и пути проекта-образца в файлы не писать (traces). Кода реализации не пиши. Время — date -u. Запрещены git checkout/reset/stash/clean (и в копиях вне проекта — только свежий git clone). Перед close — cd tools && npm run traces && npm run format:check && npm run handoffs-check.",
+    "acceptance_criteria": [
+      "Проект покрывает каждый критерий REQ-055; кода реализации нет",
+      "Подшаги с ожидаемыми красными тестами проверены прототипом; формула баллов точна; исходы наборов совпадают с REQ-054 п. 9.4"
+    ]
+  },
+  "created_at": "2026-10-19T19:43:03Z",
+  "started_at": "2026-10-19T19:43:03Z",
+  "completed_at": "2026-10-19T20:16:06Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Спроектирован код REQ-055 в docs/design/REQ-055-picker-engine.md. Движок — один чистый файл tools/src/picker/engine.js без единого import (экспорты ANSWER_REASONS, visibleQuestions, resolveAnswers, computeResult). Два прохода по вопросам в порядке файла: мягкий (видимость) и строгий (ответы); ошибка одна, {code:E_ANSWER, question, reason} с девятью словами-причинами; ответ на скрытый вопрос полностью игнорируется. Формула: балл решения — сумма points сработавших правил; порядок — баллы по убыванию, при равенстве место в solutions; рекомендованные — первые top с баллом не меньше min_score; «явный лидер» — рекомендовано одно или разрыв первого и второго не меньше clear_lead_gap (пометка clear_leader: true/false/null — не слово, потому что строки результата берутся только из файла арендатора); объяснение — rules с because на каждое условие. Исходы шести наборов ответов (leader/close/none обоих арендаторов) совпали с п. 9.4 проекта REQ-054 на прототипе, две строки перепроверены вручную. Прототип на свежем клоне метки: 1000 наборов на арендатора против независимого второго вычисления — расхождений 0; 10000 случайных JSON вместо ответов — 0 исключений; 46 мутантов убиты. Подшаги 3a–3c: на каждом красен ровно один существующий тест — PK-6e (список файлов tools/src/picker закрытый, engine.js — двенадцатый); чинит TEST-DESIGNER двумя правками в тестах REQ-054 (проверено). Кода реализации в проекте нет; менялся один файл write_set.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "0, 1",
+        "what": "кратко; 19 проверенных фактов с командами и выводом (метка, отсутствие модуля, основа 1681 из 1681, расхождение с заданием о conditions.js, объекты без прототипа, закрытый список файлов в PK-6e/PK-7c и ловушки по словам в тексте, поиски критериев 6 и 8, шесть исходов, свойство 1000 наборов, устойчивость, скорость, мутанты)"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "2",
+        "what": "решения D1–D16: один файл без импортов, своё вычисление условий, скрытые ответы игнорируются, форма ошибки, нормализация ответов, clear_leader, числа в результате, ranking, тексты решений, объяснение, вход без повторной проверки, чтение только questions, порядок и ничьи, слова в тексте файла, зависимости, устаревающие тесты REQ-054"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "3",
+        "what": "состав изменений и кто какие файлы пишет (BACKEND-DEV — engine.js и README; TEST-DESIGNER — тесты, помощники и две правки тестов REQ-054; DOC-UPDATER — учёт)"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "4–5",
+        "what": "формы данных: вход, AnswerError (9 причин), Result/Recommended/Because, Resolved; функции модуля, контрольные вызовы, что нужно от движка следующим требованиям"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "6",
+        "what": "правила: условие, проход по вопросам, нормализация, порядок ошибок, точная формула баллов, порядок и ничьи, рекомендованные, пометка лидера, гипотезы, объяснение, тексты результата"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "7–8",
+        "what": "пути отказа (Q10) и шесть исходов наборов ответов с ручной сверкой двух из них"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "9",
+        "what": "малый файл арендатора pico (8 вопросов, 4 решения, 13 правил, 2 гипотезы) и таблицы: 20 комбинаций видимости, 17 наборов баллов, настройки на копиях, 15 случаев ошибок"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "10",
+        "what": "подшаги 3a–3c с ожидаемым красным PK-6e, проверенные прототипом по очереди, и текст раздела README"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "11–12",
+        "what": "таблица «критерий → элемент → тест» (PE-0, PE-1…PE-8), тесты рисков PE-R1…R4, помощники тестов; ловушки Л1–Л15; 46 мутантов X1–X46"
+      },
+      {
+        "file": "docs/design/REQ-055-picker-engine.md",
+        "section": "13–16",
+        "what": "что устаревает; планка Q1–Q14 и R1–R3; порядок работы и ворота; открытые вопросы О1–О5 и предложение записи decisions/0067"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "git rev-parse HEAD; git rev-parse base/PICKER055-20261019-01; git status --short (до работы)",
+        "out": "0766859297af0b4e654070b036f23bebb36ce70c; 0766859297af0b4e654070b036f23bebb36ce70c; ?? handoffs/PICKER055-20261019-01/"
+      },
+      {
+        "cmd": "ls tools/src/picker/engine.js; ls tools/test | grep picker-engine (факт задания: модуля и тестов нет)",
+        "out": "No such file or directory; пусто — подтверждено"
+      },
+      {
+        "cmd": "git clone -q --no-hardlinks <корень Sai> <scratch>/p055/work; cd <scratch>/p055/work/tools && npm run check (свежий клон, переходов между версиями не было)",
+        "out": "код 0; # tests 1681, # pass 1681, # fail 0, # skipped 0, # todo 0; 1 мин 47 с"
+      },
+      {
+        "cmd": "grep -n \"^export\" tools/src/picker/conditions.js (факт задания: conditions.js — условия показа)",
+        "out": "17:export function checkCondition(ctx, path, value, ownIndex) — проверка формы условия; вычисления условий в src/ нет — расхождение с заданием, I1"
+      },
+      {
+        "cmd": "node -e checkFile('src/picker/demo-tenants/<id>.json') и Object.getPrototypeOf на клоне",
+        "out": "uchet-pro 0 exitCode,stdout,stderr,tenant; proto of tenant: null question: null — у объекта арендатора нет прототипа (hasOwnProperty бросит)"
+      },
+      {
+        "cmd": "прототип engine.js (около 170 строк, вне проекта): шесть наборов ответов обоих арендаторов, tenant из checkFile и из JSON.parse",
+        "out": "uchet-pro leader 15/8/1/0/-2 → sheet-start,shop-kit, clear true; close 11/9/2/0/-4 → chain-control,shop-kit, clear false; none 7/4/2/0/0 → пусто, null; svet-marketing leader 12/8/3/0/-4 → quick-start,content-month, true, g-invisible; close 13/11/3/3/2 → content-month,guest-return, false, g-weak-pages; none 6/0/0/0/-1 → пусто, null — совпало с п. 9.4 проекта REQ-054; same 6 of 6"
+      },
+      {
+        "cmd": "ручной расчёт uchet-pro leader и svet-marketing close по правилам файлов",
+        "out": "sheet-start 4+2+2+2+2+3=15, shop-kit 4+2+2=8, order-check 1, chain-control -2; content-month 3+2+3+2+3=13, guest-return 2+1+5+3=11, ads-launch 1+2=3, site-booking 1+2=3, quick-start 2 — совпало с прототипом"
+      },
+      {
+        "cmd": "node <scratch>/p055/scripts/prop.mjs <scratch>/p055/work (1000 наборов на арендатора, зерно; независимое второе вычисление; повтор, перемешанные ключи и списки)",
+        "out": "расхождений 0; uchet-pro: пусто 53, лидер 532, близкие 415, 1/2/3 рекомендованных 360/473/114, гипотезы 802, минус в объяснении 129, ничья 465; svet-marketing: 152, 619, 229, 532/284/32, 815, 107, 490"
+      },
+      {
+        "cmd": "node <scratch>/p055/scripts/fuzz.mjs <scratch>/p055/work (10000 случайных JSON вместо ответов)",
+        "out": "{ ok: 379, bad: 9621, thrown: 0 }; все девять причин встретились"
+      },
+      {
+        "cmd": "node <scratch>/p055/scripts/perf.mjs <scratch>/p055/work (враждебный ввод, скорость)",
+        "out": "10^6 лишних ключей — ошибка за 130 мс; список 10^6 элементов — ошибка на втором; вложенность 10^5 — wrong_kind; 20000 вызовов uchet-pro — 97 мс; 5000 вызовов на файле максимальных размеров — 222 мс"
+      },
+      {
+        "cmd": "python3 <scratch>/p055/scripts/mutants3.py <scratch>/p055 (46 мутантов прототипа против прототипа тестов, 10 проверок)",
+        "out": "ни одного SURVIVED и NOT-APPLIED; три слабых места (ничья по буквам id, in вместо Object.hasOwn, подмена полей текста) убиты после добавления условий п. 9 и 11 проекта"
+      },
+      {
+        "cmd": "добавление engine.js в клон по подшагам 3a, 3b, 3c: format:check, lint, traces, handoffs-check, npm test",
+        "out": "четыре шага — код 0 на каждом; npm test: # tests 1681, # pass 1680, # fail 1 (not ok 448 - PK-6e), # skipped 0, # todo 0; traces 1715 файлов, следов 0"
+      },
+      {
+        "cmd": "в клоне: engine.js + \"engine.js\" в CORE_MODULES (picker-helpers.js), затем 10 → 11 в PK-7c; node --test test/picker-*.test.js",
+        "out": "после первой правки not ok 30 - PK-7c, # pass 58, # fail 1; после обеих # pass 59, # fail 0"
+      },
+      {
+        "cmd": "в клоне: слово в первой строке engine.js (node:util, global, truncate, Math.random, fetch(, child_process, Date.now, process.env, new Date, performance.now, src/team/); node --test test/picker-config.test.js test/traces-runtime.test.js",
+        "out": "node: → PK-7c; global → PK-8c; truncate → PK-6e; Math.random, fetch( → PK-7a (и TR-4b), child_process → PK-7a, TR-4c; Date.now, process.env, new Date, performance.now красят только уже красный PK-6e — их ловит лишь новый тест критерия 6"
+      },
+      {
+        "cmd": "grep -nE 'new Date|Date[.]now|Math[.]random|performance[.]now|process[.]env' и grep -nE 'node:fs|node:net|node:http|child_process|src/team/|fetch[(]' tools/src/picker/engine.js на прототипе; grep -c '^import'",
+        "out": "пусто (код 1); пусто (код 1); 0"
+      },
+      {
+        "cmd": "cd tools && npm run traces && npm run format:check && npm run handoffs-check (на проекте с файлом REQ-055)",
+        "out": "traces: файлов проверено 1716, следов 0, пропущено 57; format:check: All matched files use Prettier code style!; handoffs-check: файлов проверено 993, нарушений 0, исключений использовано 114 из 114"
+      },
+      {
+        "cmd": "git status --short (после работы)",
+        "out": "?? docs/design/REQ-055-picker-engine.md; ?? handoffs/PICKER055-20261019-01/ — вне write_set ничего не менялось"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Задание называет conditions.js «условиями показа». В нём одна функция checkCondition — проверка формы условия в файле арендатора; вычисления условий при ответах в src/ нет, единственный вычислитель видимости — оракул тестов visibleQuestionIds (tools/test/picker-helpers.js). Движок пишет своё вычисление (D2), оракул остаётся независимым. Запись о таком расхождении в docs/anti-patterns.md — на усмотрение ORCH/DOC-UPDATER (Q13)."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "О1. Критерий 7: «чисел, кроме баллов, в результате нет», а объяснение должно содержать «выбранные ответы» — для вопроса number это число посетителя. В проекте оно возвращается как because[k].value, тест PE-7b разрешает числа по трём путям (score, points, because[].value). Подтвердить или уточнить критерий."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "О2. Добавление tools/src/picker/engine.js красит существующий PK-6e (закрытый список файлов, проверено: один красный из 1681); BACKEND-DEV тесты не правит. Можно ли закрывать подшаги 3a–3c с этим одним названным красным и чинить его в шаге TEST-DESIGNER (две правки: CORE_MODULES в picker-helpers.js, 10 → 11 в PK-7c), или нужен отдельный маленький handoff TEST-DESIGNER до BACKEND-DEV."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "О3. Ответ на скрытый вопрос игнорируется полностью, в том числе неверной формы (буквальное чтение «ошибкой не считается»). Альтернатива — проверять форму и скрытых ответов. Подтвердить."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "О4. В результате есть ranking с баллами всех решений, включая нерекомендованные (нужен для проверки порядка и ничьих; требование о нём молчит). Что из этого отдаётся посетителю — решает проект REQ-056. Подтвердить."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "О5. Движок возвращает первую ошибку ответов, а не список. Подтвердить или потребовать список (поле errors, предел числа)."
+      },
+      {
+        "id": "I7",
+        "kind": "PROPOSAL",
+        "text": "Предложение записи decisions/0067-picker-engine-contract.md (текст — п. 16.2 проекта): одна ошибка {code, question, reason}; скрытый ответ игнорируется; clear_leader true/false/null; число посетителя только в because[].value; ranking; один файл без импортов; варианты в порядке options. Номер назначает ORCH; ответы на О1–О5 вносятся в запись."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Слабые места набора тестов, которые выживают без условий проекта: тексты малого файла должны быть различны (иначе подмена name/summary и title/explanation не видна); id решений малого файла не по алфавиту (иначе ничья по буквам id не отличается от ничьи по месту); в наборе нужен арендатор с вопросом constructor (иначе in вместо Object.hasOwn не виден). Записано в п. 9, 11.1 и 12.3 проекта."
+      },
+      {
+        "id": "I9",
+        "kind": "NOTE",
+        "text": "Слова Date.now, new Date, process.env, performance.now в комментарии engine.js существующие тесты не краснят — их ловит только новый PE-6b; слова node:, global, запись (truncate, rename…) краснят PK-7c, PK-8c, PK-6e. Записано как ловушки Л2–Л6."
+      },
+      {
+        "id": "I10",
+        "kind": "NOTE",
+        "text": "Объекты арендатора из REQ-054 созданы без прототипа: вызов tenant.hasOwnProperty бросит исключение; в проекте — только Object.hasOwn (ловушка Л7, проверка PE-3c на checkFile(...).tenant)."
+      }
+    ],
+    "artifacts_out": ["docs/design/REQ-055-picker-engine.md"],
+    "prototype": {
+      "where": "<scratch>/p055/work (свежий клон метки base/PICKER055-20261019-01, вне проекта) и <scratch>/p055/scripts; в проект не входит и не сохраняется",
+      "what": "engine.js около 170 строк; прототип тестов — 10 проверок (видимость, ошибки, баллы, настройки, объяснение и форма, скрытые ответы, детерминированность, исходы демо-арендаторов, вопрос constructor, поля текста); скрипты свойства, устойчивости, скорости, мутантов",
+      "result": "шесть исходов п. 9.4 REQ-054 совпали; 1000 наборов на арендатора без расхождений; 0 исключений на 10000 случайных значений; 46 из 46 мутантов убиты; единственный красный существующий тест при добавлении engine.js — PK-6e"
+    }
+  }
+}

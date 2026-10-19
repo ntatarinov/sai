@@ -1,0 +1,156 @@
+{
+  "handoff_id": "step05c-PICKER055-20261019-01",
+  "run_id": "PICKER055-20261019-01",
+  "workflow_id": "WF-02",
+  "step": "05c",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PICKER055-20261019-01/step-05c-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-055"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PICKER055-20261019-01/step-05b-test-design-validator.json",
+      "docs/design/REQ-055-picker-engine.md",
+      "tools/test/picker-engine.test.js",
+      "tools/test/picker-engine-property.test.js",
+      "tools/test/picker-engine-helpers.js"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR FAIL -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR",
+    "write_set": [
+      "tools/test/picker-engine*.test.js, tools/test/picker-engine-helpers.js"
+    ],
+    "base_tag": "base/PICKER055-20261019-01",
+    "orch_check": {
+      "at": "2026-10-19T22:05:38Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "ORCH сам запустил npm run check: код 0, 1720 тестов, 0 упавших; src не менялся",
+        "F1–F4 закрыты; N23, N24, N35, N40 красны; передаётся на повторные ворота 5b (доработка 1 из 3)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5c — доработка 1 из 3 по FAIL ворот 5b (handoffs/PICKER055-20261019-01/step-05b-test-design-validator.json, находки F1–F4; прочитай result и self_check — там мутанты N23, N24, N35, N40). Только тесты, код продукта не менять. F1 (Medium): добавь случаи повтора не рядом — b:[b1,b2,b1] и b:[b1,b2,b3,b2] с причиной duplicate_option (во всех функциях, где ошибка проверяется: в оракуле/явных случаях, не только на соседних). F2 (Medium): проверка «унаследованное свойство — не ответ» на неизвестных вопросах: Object.assign(Object.create({zz:1}), OK) даёт ok:true и тот же JSON, что обычные OK, во всех трёх функциях. F3 (Low): порядок ключей resolveAnswers().answers — порядок вопросов файла, не присланных ответов: побайтное сравнение при переставленных ключах и списках и Object.keys по порядку вопросов. F4 (Low): на pico порядок правил в объяснении должен отличаться от порядка по id, чтобы X43/X44 красил PE-3a — подстрой набор/случай, а не арендатора проекта (раздел 9 проекта не менять без записи; если нужен другой набор — отдельный малый арендатор в helpers). Каждый из четырёх выживших мутантов N23, N24, N35, N40 повтори на копии вне проекта (свежий git clone) — должен стать красным; X1–X46 по-прежнему убиты. Запрещены git checkout/reset/stash/clean в проекте. В self_check не писать названий проекта-образца и путей компьютера. Перед close — cd tools && npm run check, код 0; в result — числа до/после и таблица четырёх мутантов. Нестабильный EN-62 не трогать (ISS-0075).",
+    "acceptance_criteria": [
+      "Мутанты N23, N24, N35, N40 убиты тестами",
+      "X1–X46 по-прежнему убиты",
+      "npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-19T21:47:46Z",
+  "started_at": "2026-10-19T21:47:46Z",
+  "completed_at": "2026-10-19T22:03:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка 1 из 3 по FAIL ворот 5b, находки F1-F4. Только тесты: хеши tools/src, package.json и README.md до и после те же, diff -r tools/src рабочего дерева и копии пуст.\nF1 (Medium): повтор не рядом. В PE-2a добавлены случаи E3b b:[b1,b2,b1] и E3c b:[b1,b2,b3,b2] - причина duplicate_option, question b, на обычном арендаторе и на арендаторе без прототипа, а resolveAnswers даёт ту же ошибку (проверяется в том же цикле). В PE-R1 для каждого демо-арендатора явно построены [o0,o1,o0] и [o0,o1,o2,o1] (повтор не первого к соседу и не только к первому).\nF2 (Medium): унаследованное свойство. Новый PE-2e: Object.assign(Object.create({zz:1}), OK) и два других (унаследованные a:\"a9\", constructor:5; цепочка двух прототипов) - ok true и тот же JSON, что у обычных OK, для visibleQuestions, resolveAnswers, computeResult, на обеих формах арендатора.\nF3 (Low): порядок ключей resolveAnswers().answers. Новый PE-7d: ответы присланы в обратном порядке с переставленным списком и ответом на скрытый вопрос; Object.keys равен [a,b,c,d,g], побайтный JSON равен JSON от канонического порядка. В PE-6a на 1000 наборов на арендатора: JSON resolveAnswers при переставленных ключах и списках равен, и Object.keys(answers) равен видимым вопросам файла, на которые есть ответ (независимое второе вычисление).\nF4 (Low): порядок правил в объяснении. Раздел 9 проекта не менялся; в picker-engine-helpers.js добавлена picoReversedRules() (pico с правилами в обратном порядке: порядок файла не равен ни порядку id, ни порядку баллов). Новый PE-3a: набор a1,b[b1,b3],c30,d1,g1 даёт sol-m 4 и правила [r-g1 1, r-b3-neg -3, r-b1 2, r-a1 4]; набор a2,b[b1],c15,d1 даёт sol-k 9 и [r-three 5, r-a2 4]; рейтинги литералами; на обычной форме и без прототипа. Теперь X43 и X44 краснит и PE-3a, а не только свойство PE-5.\nЧисла до -> после: тестов picker-* 95 -> 98 (picker-engine.test.js 24 -> 27, picker-engine-property.test.js 12 -> 12); test( / assert. : picker-engine.test.js 24/187 -> 27/199, picker-engine-property.test.js 12/85 -> 12/87, picker-config.test.js 35/128 без изменений, picker-helpers.js 0/0 без изменений, picker-engine-helpers.js 0/0. npm run check: # tests 1717 -> 1720, pass 1720, fail 0, skipped 0, todo 0.\nЧетыре выживших мутанта (свежий git clone вне проекта, сверху скопированы файлы работы, по одному, файл восстанавливался):\nN23 (повтор в списке только рядом): до - красных 0 из 71; после - красных 2 из 74: PE-2a, PE-R1.\nN24 (неизвестные ключи читаются for-in, с унаследованными): до - 0 из 71; после - 1 из 74: PE-2e.\nN35 (повтор только к первому элементу): до - 0 из 71; после - 2 из 74: PE-2a, PE-R1.\nN40 (resolveAnswers в порядке присланных ответов, а не файла): до - 0 из 71; после - 2 из 74: PE-6a, PE-7d.\nX1-X46 по-прежнему убиты (50 строк с X24a/b и X31a-d), все 50 красные; мои E1-E20 - 19 красных, E12 эквивалентен.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/test/picker-engine.test.js",
+        "what": "PE-2a: случаи E3b и E3c (повтор не рядом) со всеми проверками цикла, включая resolveAnswers"
+      },
+      {
+        "finding": "F1",
+        "file": "tools/test/picker-engine-property.test.js",
+        "what": "PE-R1: явно построенные повторы [o0,o1,o0] и [o0,o1,o2,o1] на каждом демо-арендаторе"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/test/picker-engine.test.js",
+        "what": "новый PE-2e о унаследованном свойстве ответов: тот же JSON во всех трёх функциях"
+      },
+      {
+        "finding": "F3",
+        "file": "tools/test/picker-engine.test.js",
+        "what": "новый PE-7d: порядок ключей resolveAnswers().answers по вопросам файла"
+      },
+      {
+        "finding": "F3",
+        "file": "tools/test/picker-engine-property.test.js",
+        "what": "PE-6a: resolveAnswers при перемешанных ключах и списках - тот же JSON и порядок вопросов файла, на 1000 наборах"
+      },
+      {
+        "finding": "F4",
+        "file": "tools/test/picker-engine-helpers.js",
+        "what": "picoReversedRules(): pico с правилами в обратном порядке"
+      },
+      {
+        "finding": "F4",
+        "file": "tools/test/picker-engine.test.js",
+        "what": "новый PE-3a: порядок правил в объяснении равен порядку файла (X43, X44 краснит PE-3a)"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-19T21:47:46Z, конец 2026-10-19T22:02:41Z",
+      "node --test test/picker-*.test.js -> # tests 98, # pass 98, # fail 0, # skipped 0, # todo 0",
+      "cd tools && caffeinate -i npm run check -> код 0; prettier --check: все файлы в стиле; eslint --max-warnings 0 чисто; traces: файлов проверено 1728, следов 0; handoffs-check: нарушений 0; # tests 1720, # pass 1720, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "числа grep -c '^test(' и grep -o 'assert[.]' | wc -l (до -> после): picker-engine.test.js 24/187 -> 27/199; picker-engine-property.test.js 12/85 -> 12/87; picker-config.test.js 35/128 -> 35/128; picker-helpers.js 0/0 -> 0/0; picker-engine-helpers.js 0/0 -> 0/0",
+      "мутанты на свежем git clone вне проекта (клон каталога sai в scratchpad, поверх скопирован tools без node_modules), по одной замене текста engine.js, файл восстанавливался; тесты picker-engine.test.js, picker-engine-property.test.js, picker-config.test.js (слова-ловушки ещё traces-runtime.test.js)",
+      "до правки тестов четыре мутанта выжили: N23 0 из 71, N24 0 из 71, N35 0 из 71, N40 0 из 71",
+      "после правки: N23 красных 2 из 74 (PE-2a, PE-R1); N24 красных 1 из 74 (PE-2e); N35 красных 2 из 74 (PE-2a, PE-R1); N40 красных 2 из 74 (PE-6a, PE-7d); X43 красных 2 из 74 (PE-3a, PE-5); X44 красных 2 из 74 (PE-3a, PE-5)",
+      "полный повторный прогон мутантов X1-X46 (50 строк):",
+      "X1 (show_if true if any): красных 5 из 74: PE-1a PE-1b PE-2c PE-5 PE-6a",
+      "X2 (none_of true when unanswered): красных 3 из 74: PE-1a PE-1b PE-R2",
+      "X3 (condition min exclusive): красных 9 из 74: PE-1a PE-3a PE-4b PE-5 PE-6a PE-7b PE-7d",
+      "X4 (condition max exclusive): красных 4 из 74: PE-1a PE-3a PE-5 PE-6a",
+      "X5 (hidden answers enter the state): красных 5 из 74: PE-1a PE-1b PE-2c PE-3a PE-5",
+      "X6 (required checked for hidden too): красных 12 из 74: PE-2c PE-3a PE-3c PE-4a PE-5 PE-6a PE-7a/b PE-7b PE-7c PE-R1 PE-R3 PE-R4",
+      "X7 (garbage in a hidden answer is an error): красных 1 из 74: PE-2c",
+      "X8 (optional visible unanswered is an error): красных 23 из 74: PE-2a PE-2c PE-2e PE-3a PE-3b PE-3c PE-4a PE-4b PE-5 PE-6a PE-7a/b PE-7b PE-7c PE-7d PE-R1 PE-R2 PE-R3 PE-R4",
+      "X9 (required not checked): красных 5 из 74: PE-2a PE-2d PE-2e PE-R1 PE-R2",
+      "X10 (non-integer accepted): красных 2 из 74: PE-2a PE-R1",
+      "X11 (question min exclusive): красных 14 из 74: PE-2c PE-3a PE-3b PE-4a PE-4b PE-5 PE-6a PE-7a/b PE-7b PE-7c PE-7d PE-R3 PE-R4",
+      "X12 (question max exclusive): красных 10 из 74: PE-3a PE-4a PE-4b PE-5 PE-6a PE-7a/b PE-7b PE-7c PE-R3 PE-R4",
+      "X13 (repeat in list accepted): красных 4 из 74: PE-2a PE-2d PE-R1 PE-R2",
+      "X14 (empty list accepted): красных 3 из 74: PE-2a PE-2d PE-R1",
+      "X15 (negative points not counted): красных 6 из 74: PE-3a PE-3b PE-3c PE-4a PE-5",
+      "X16 (rule fires on one true condition): красных 9 из 74: PE-2c PE-3a PE-3b PE-3c PE-4a PE-4b PE-5",
+      "X17 (tie in reverse place order): красных 6 из 74: PE-2c PE-3a PE-3c PE-4b PE-5",
+      "X18 (min_score exclusive): красных 9 из 74: PE-3a PE-3b PE-3c PE-4a PE-4b PE-5 PE-7d PE-R3",
+      "X19 (top ignored (always 3)): красных 1 из 74: PE-3b",
+      "X20 (gap must be strictly more): красных 4 из 74: PE-3a PE-4a PE-4b PE-5",
+      "X21 (gap against the last recommended): красных 3 из 74: PE-3a PE-4b PE-5",
+      "X22 (one recommended is close): красных 5 из 74: PE-3a PE-3b PE-4a PE-5 PE-R3",
+      "X23 (empty list gives false): красных 5 из 74: PE-3a PE-3b PE-3c PE-4a PE-5",
+      "X24a (no_match_text always): красных 3 из 74: PE-3a PE-3c PE-5",
+      "X24b (no_match_text never): красных 4 из 74: PE-3a PE-3b PE-3c PE-5",
+      "X25 (hypothesis true on one condition): красных 3 из 74: PE-3a PE-3c PE-5",
+      "X26 (only positive rules in explanation): красных 4 из 74: PE-3a PE-5 PE-R3",
+      "X27 (because has only the first condition): красных 6 из 74: PE-3a PE-5 PE-7b PE-7c PE-7d",
+      "X28 (selected in the order of the list sent): красных 4 из 74: PE-5 PE-6a PE-7d",
+      "X29 (first unknown key, not the smallest): красных 3 из 74: PE-2a PE-2d PE-8a",
+      "X30 (price_text and duration_text always there): красных 4 из 74: PE-7a/b PE-7c PE-7d PE-R4",
+      "X31a (includes shared with the file): красных 1 из 74: PE-7d",
+      "X31b (needs_from_you shared): красных 1 из 74: PE-7d",
+      "X31c (next_steps shared): красных 1 из 74: PE-7d",
+      "X31d (not_suitable_when shared): красных 1 из 74: PE-7d",
+      "X32 (-0 not normalized): красных 1 из 74: PE-7b",
+      "X33 (a list taken for the object of answers): красных 1 из 74: PE-2a",
+      "X34 (answers sorted in place): красных 4 из 74: PE-2a PE-2b PE-2d PE-R1",
+      "X35 (in instead of Object.hasOwn): красных 2 из 74: PE-2e PE-R2",
+      "X36 (hypotheses reversed): красных 2 из 74: PE-3a PE-5",
+      "X37 (all points go to the first solution): красных 14 из 74: PE-2c PE-3a PE-3b PE-3c PE-4a PE-4b PE-5 PE-7b PE-7c PE-7d PE-R3",
+      "X38 (clear_lead_gap replaced by 2): красных 4 из 74: PE-3c PE-4a PE-4b PE-5",
+      "X39 (tie by letters of id): красных 4 из 74: PE-3a PE-3c PE-5",
+      "X40 (unknown option of single accepted): красных 4 из 74: PE-2a PE-2d PE-2e PE-R1",
+      "X41 (numeric string taken as number): красных 1 из 74: PE-2a",
+      "X42 (result next to the error): красных 4 из 74: PE-2a PE-8a PE-R1 PE-R2",
+      "X43 (rules ordered by id): красных 2 из 74: PE-3a PE-5",
+      "X44 (rules ordered by points): красных 2 из 74: PE-3a PE-5",
+      "X45 (hypothesis title from explanation): красных 1 из 74: PE-7c",
+      "X46 (solution name from summary): красных 1 из 74: PE-7c",
+      "остальные мутанты и ловушки на тех же тестах (E1-E20, W, L): все красные, кроме E12 (given[id] ?? undefined) - эквивалентный, поведение не меняет",
+      "после проб: diff -r tools/src рабочего дерева и клона пуст, shasum tools/src, package.json, README.md равны значениям до начала; команд git checkout, reset, stash, clean в проекте не было"
+    ],
+    "issues": [],
+    "artifacts_out": [
+      "tools/test/picker-engine.test.js",
+      "tools/test/picker-engine-property.test.js",
+      "tools/test/picker-engine-helpers.js"
+    ]
+  }
+}

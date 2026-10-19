@@ -1,0 +1,193 @@
+{
+  "handoff_id": "step05-PICKER055-20261019-01",
+  "run_id": "PICKER055-20261019-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PICKER055-20261019-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-055"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-055-picker-engine.md",
+      "docs/requirements.yaml",
+      "handoffs/PICKER055-20261019-01/",
+      "tools/src/picker/engine.js"
+    ],
+    "route": "REVIEWER, SECURITY -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER",
+    "write_set": [
+      "tools/test/picker-engine*.test.js, tools/test/picker-helpers.js, tools/test/picker-config.test.js (только PK-7c)"
+    ],
+    "base_tag": "base/PICKER055-20261019-01",
+    "orch_check": {
+      "at": "2026-10-19T21:18:39Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "ORCH сам запустил npm run check: код 0, 1717 тестов, 0 упавших; PK-6e и PK-7c починены",
+        "picker-engine-helpers.js (не .test.js) принят как помощник проекта п. 11.3 — write_set расширен этим решением ORCH; src не менялся (git status: только engine.js новый)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5 — тесты REQ-055 (движок tools/src/picker/engine.js) после PASS безопасности (step-03-security-reviewer.json) и ревью (step-04-reviewer.json). Проект docs/design/REQ-055-picker-engine.md: раздел 9 — малый тестовый арендатор pico (20 комбинаций видимости V1–V20, 17 наборов баллов C1–C17, 15 случаев ошибок E1–E15), раздел 8 — исходы шести наборов демо-арендаторов, раздел 11 — «критерий → элемент → тест» (PE-0, PE-1…PE-8, риски PE-R1…R4, помощники), раздел 12 — ловушки Л1–Л15 и 46 мутантов X1–X46 — мутант на свежем git clone вне проекта для каждого, запись «мутант → тест → красный». Требование — docs/requirements.yaml, блок REQ-055 (критерии и проверки буквально); решения decisions/0065, 0066, 0067. ПЕРВЫМ ДЕЛОМ почини ожидаемый красный PK-6e по решению 0067 п. 2: добавь \"engine.js\" в CORE_MODULES (tools/test/picker-helpers.js) и замени 10 на 11 в PK-7c (tools/test/picker-config.test.js) — без ослабления (после правок picker-* 59/59 с учётом новых). Файлы: tools/test/picker-engine*.test.js и помощники (оракул видимости visibleQuestionIds — независимый от src, уже есть в picker-helpers.js — расширь по проекту). Замечания: PE-R1 — не требуй всех девяти причин на случайных значениях, строй испорченные ответы явно (duplicate_option и редкие причины — детерминированно по E1–E15; ворота N1); оракул возвращает Array.from в PE-1b (N2); числа времени и охвата в проекте справочные, пороги PE-R3 — контракт (N3). Свойство повторяемости: 1000 наборов на арендатора (критерий 3 требования); фаззинг: 10000 случайных JSON вместо ответов — 0 исключений, вход заморожен и не меняется, форма ошибки верна; числа в результате — только по путям score, points, because[].value (0067 п. 1); исходы шести наборов — как в п. 8 проекта. В self_check и тестах названия, пути и тексты проекта-образца и пути компьютера не писать (traces). Код продукта (tools/src/picker/) не менять. Старые тесты не ослаблять; числа test(/assert. по файлам не меньше метки base/PICKER055-<дата>-01. Запрещены git checkout/reset/stash/clean (в копиях — только свежий git clone). Перед close: cd tools && npm run check — код 0 (всё зелёное, в т. ч. PK-6e и PK-7c); в result — точные числа и таблица мутантов.",
+    "acceptance_criteria": [
+      "PK-6e и PK-7c починены без ослабления; тест на каждый критерий REQ-055 по разделу 11",
+      "46 мутантов и ловушки — пойманы",
+      "npm run check код 0; точные числа"
+    ]
+  },
+  "created_at": "2026-10-19T20:44:00Z",
+  "started_at": "2026-10-19T20:44:00Z",
+  "completed_at": "2026-10-19T21:16:03Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Тесты движка подбора REQ-055 (tools/src/picker/engine.js). Код продукта не менялся: хеши всех файлов tools/src, package.json и README.md до и после совпадают; diff -r tools/src рабочего дерева и копии после проб пуст.\nПЕРВЫМ ДЕЛОМ починены PK-6e и PK-7c по решению 0067 п. 2 без ослабления: 'engine.js' добавлен в CORE_MODULES (picker-helpers.js, теперь 11 модулей, ALL_MODULES 12 с load.js), в PK-7c число 10 заменено на 11. После правок picker-* зелёные.\nНовые файлы: tools/test/picker-engine.test.js (24 теста), tools/test/picker-engine-property.test.js (12 тестов), tools/test/picker-engine-helpers.js (малый арендатор pico, генератор наборов с зерном, независимое второе вычисление, глубокое замораживание, перемешивание).\nТаблица «критерий -> тест»:\nКритерий 1 (видимость): PE-0 (pico и копии с настройками проходят проверку файла, девять причин ANSWER_REASONS заморожены, тексты pico все различны), PE-1a (V1-V20 литералами, на обычном арендаторе и на арендаторе без прототипа), PE-1b (оракул через Array.from; visibleQuestions({questions}) равно вызову с полным файлом; null и ответ неверной формы не бросают).\nКритерий 2 (ошибки ответов): PE-2a (E1-E15, 30 случаев; ok false, E_ANSWER, question, reason, ключа result нет; resolveAnswers даёт ту же ошибку; все девять причин), PE-2b (вход не изменён: сравнение с копией и вызов всех трёх функций на глубоко замороженных арендаторе и ответах), PE-2c (ответ на скрытый вопрос, в том числе мусор, не ошибка; результат побайтно равен), PE-2d (порядок ошибок), PE-2e (арендатор с вопросом constructor; только собственные ключи).\nКритерий 3 (баллы и порядок, исходы демо): PE-3a (C1-C17 строка в строку, сумма points равна score, объяснение первых наборов), PE-3b (top, min_score, текст «нет решения» на копиях), PE-3c (шесть наборов демо-арендаторов по п. 8 проекта: арендатор через checkFile(...).tenant без прототипа и через JSON.parse), PE-5 (свойство, 1000 наборов на арендатора: рейтинг, рекомендованные, пометка, гипотезы, правила и because сверены с независимым вторым вычислением).\nКритерий 4 (явный лидер): PE-4a (граница разрыва, одно рекомендованное, пусто даёт null), PE-4b (ничья; разрыв первого и второго, а не последнего).\nКритерий 6 (детерминированность): PE-6a (1000 наборов на арендатора: повторный вызов, ключи ответов в другом порядке, списки в другом порядке, оба вместе - JSON.stringify равен), PE-6b (текст engine.js не содержит часов, случайности, среды; читается как grep, комментарии считаются).\nКритерий 7 (тексты только из файла): PE-7a/b на pico и шести наборах (PE-7a, PE-7b), PE-7c (поля по именам, нет price_text/duration_text без поля), PE-7d (порядок ключей, копии массивов, порядок вариантов по options, отдельные списки selected), PE-7a/b на 1000 наборах на арендатора в property-файле.\nКритерий 8 (без ИИ, файлов, сети; один арендатор): PE-8a (набор leader чужого арендатора: ad-budget и budget), PE-8b (нет node:fs, node:net, node:http, child_process, src/team/, fetch( и нет строки import), PE-8d (список файлов picker равен ALL_MODULES, с engine.js), PE-8e (вызовы по очереди на двух арендаторах).\nРиски: PE-R1 (10000 случайных JSON на каждом демо-арендаторе, вход заморожен: 0 исключений, вход не изменён, форма ошибки верна, нет result; все девять причин строятся явно и детерминированно на каждом демо-арендаторе, не из случайных значений - замечание N1), PE-R2 (10^6 лишних ключей, список из 10^6 элементов, вложенность 10^5, предел 30 с на тест; __proto__ из JSON.parse, constructor, ответы без прототипа, унаследованное свойство), PE-R3 (охват 1000 наборов, пороги проекта без снижения), PE-R4 (арендатор без hypotheses и без цены и срока).\nПункты планки: Q8 (пространство бизнеса A не видит и не меняет данные B) - не затронут: движок чистая функция без хранилища и без состояния, одно арендаторское содержимое на вызов; проверено PE-8a и PE-8e (чужие ответы - ошибка, вызовы по очереди не оставляют следа). Q10 - внешних вызовов у движка нет (PE-8b); любой JSON вместо ответов - ошибка E_ANSWER, а не исключение (PE-2a, PE-R1, PE-R2). Q11 - адрес от клиента не принимается и не используется: не затронут. R3 - фото не обрабатываются: не применим (решение 0033). Q7 - секретов в тестах нет.\nЧисла охвата PE-R3 на 1000 наборах (измерено; пороги проекта: пусто >=10, по 1/2/3 >=10, true и false >=100, гипотезы >=100, правило с минусом >=50, ничья >=100): uchet-pro - пусто 47, рекомендовано 1/2/3: 358/486/109, true 529, false 424, гипотезы 765, минус 130, ничья 440; svet-marketing - пусто 152, 1/2/3: 547/279/22, true 633, false 215, гипотезы 843, минус 127, ничья 505. Генератор подстроен, пороги не менялись.",
+    "changes": [
+      {
+        "file": "tools/test/picker-helpers.js",
+        "what": "engine.js добавлен в CORE_MODULES (11 модулей) - ожидаемый красный PK-6e, решение 0067 п. 2"
+      },
+      {
+        "file": "tools/test/picker-config.test.js",
+        "what": "PK-7c: число модулей 10 заменено на 11; других правок нет"
+      },
+      {
+        "file": "tools/test/picker-engine-helpers.js",
+        "what": "новый: малый арендатор pico, копии с настройками, арендатор без прототипа, генератор наборов с зерном, второе вычисление результата, глубокое замораживание, перемешивание"
+      },
+      {
+        "file": "tools/test/picker-engine.test.js",
+        "what": "новый: PE-0, PE-1a/b, PE-2a-e, PE-3a-c, PE-4a/b, PE-7a-d, PE-8a/b/d/e (24 теста)"
+      },
+      {
+        "file": "tools/test/picker-engine-property.test.js",
+        "what": "новый: PE-5, PE-6a/b, PE-7a/b на 1000 наборах, PE-R1, PE-R2, PE-R3, PE-R4 (12 тестов)"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-19T20:44:00Z, конец 2026-10-19T21:15:19Z",
+      "cd tools && caffeinate -i npm run check -> код 0; prettier --check: все файлы в стиле; eslint --max-warnings 0 чисто; traces: следов 0; handoffs-check: нарушений 0; # tests 1717, # pass 1717, # fail 0, # cancelled 0, # skipped 0, # todo 0 (в том числе PK-6e и PK-7c)",
+      "node --test test/picker-*.test.js -> # tests 95, # pass 95, # fail 0, # skipped 0, # todo 0 (59 прежних + 24 + 12 новых)",
+      "числа grep -c '^test(' и grep -o 'assert[.]' | wc -l по файлам (метка base/PICKER055-20261019-01 -> теперь): picker-config.test.js 35/128 -> 35/128 (не ниже); picker-helpers.js 0/0 -> 0/0 (в файле только помощники); picker-engine.test.js 0/0 (нет в метке) -> 24/187; picker-engine-property.test.js 0/0 (нет в метке) -> 12/85; picker-engine-helpers.js 0/0 -> 0/0",
+      "мутанты применялись к engine.js в копии tools вне проекта (rsync без node_modules, каталог в scratchpad), по одному, с восстановлением файла после каждой пробы; прогон picker-engine.test.js, picker-engine-property.test.js и picker-config.test.js (для слов-ловушек ещё и traces-runtime.test.js)",
+      "мутанты X1-X46 проекта (50 строк, считая X24a/b и X31a-d), все убиты:",
+      "X1 (show_if true if any): красных 4 из 71: PE-1a PE-1b PE-2c PE-5",
+      "X2 (none_of true when unanswered): красных 3 из 71: PE-1a PE-1b PE-R2",
+      "X3 (condition min exclusive): красных 8 из 71: PE-1a PE-3a PE-4b PE-5 PE-7b PE-7d",
+      "X4 (condition max exclusive): красных 3 из 71: PE-1a PE-3a PE-5",
+      "X5 (hidden answers enter the state): красных 5 из 71: PE-1a PE-1b PE-2c PE-3a PE-5",
+      "X6 (required checked for hidden too): красных 11 из 71: PE-2c PE-3a PE-3c PE-4a PE-5 PE-7a/b PE-7b PE-7c PE-R1 PE-R3 PE-R4",
+      "X7 (garbage in a hidden answer is an error): красных 1 из 71: PE-2c",
+      "X8 (optional visible unanswered is an error): красных 20 из 71: PE-2a PE-2c PE-2e PE-3a PE-3b PE-3c PE-4a PE-4b PE-5 PE-7a/b PE-7b PE-7c PE-7d PE-R1 PE-R2 PE-R3 PE-R4",
+      "X9 (required not checked): красных 5 из 71: PE-2a PE-2d PE-2e PE-R1 PE-R2",
+      "X10 (non-integer accepted): красных 2 из 71: PE-2a PE-R1",
+      "X11 (question min exclusive): красных 13 из 71: PE-2c PE-3a PE-3b PE-4a PE-4b PE-5 PE-7a/b PE-7b PE-7c PE-7d PE-R3 PE-R4",
+      "X12 (question max exclusive): красных 9 из 71: PE-3a PE-4a PE-4b PE-5 PE-7a/b PE-7b PE-7c PE-R3 PE-R4",
+      "X13 (repeat in list accepted): красных 4 из 71: PE-2a PE-2d PE-R1 PE-R2",
+      "X14 (empty list accepted): красных 3 из 71: PE-2a PE-2d PE-R1",
+      "X15 (negative points not counted): красных 5 из 71: PE-3a PE-3b PE-3c PE-4a PE-5",
+      "X16 (rule fires on one true condition): красных 8 из 71: PE-2c PE-3a PE-3b PE-3c PE-4a PE-4b PE-5",
+      "X17 (tie in reverse place order): красных 5 из 71: PE-2c PE-3a PE-3c PE-4b PE-5",
+      "X18 (min_score exclusive): красных 9 из 71: PE-3a PE-3b PE-3c PE-4a PE-4b PE-5 PE-7d PE-R3",
+      "X19 (top ignored (always 3)): красных 1 из 71: PE-3b",
+      "X20 (gap must be strictly more): красных 4 из 71: PE-3a PE-4a PE-4b PE-5",
+      "X21 (gap against the last recommended): красных 3 из 71: PE-3a PE-4b PE-5",
+      "X22 (one recommended is close): красных 5 из 71: PE-3a PE-3b PE-4a PE-5 PE-R3",
+      "X23 (empty list gives false): красных 5 из 71: PE-3a PE-3b PE-3c PE-4a PE-5",
+      "X24a (no_match_text always): красных 3 из 71: PE-3a PE-3c PE-5",
+      "X24b (no_match_text never): красных 4 из 71: PE-3a PE-3b PE-3c PE-5",
+      "X25 (hypothesis true on one condition): красных 3 из 71: PE-3a PE-3c PE-5",
+      "X26 (only positive rules in explanation): красных 3 из 71: PE-3a PE-5 PE-R3",
+      "X27 (because has only the first condition): красных 6 из 71: PE-3a PE-5 PE-7b PE-7c PE-7d",
+      "X28 (selected in the order of the list sent): красных 3 из 71: PE-5 PE-6a PE-7d",
+      "X29 (first unknown key, not the smallest): красных 3 из 71: PE-2a PE-2d PE-8a",
+      "X30 (price_text and duration_text always there): красных 4 из 71: PE-7a/b PE-7c PE-7d PE-R4",
+      "X31a (includes shared with the file): красных 1 из 71: PE-7d",
+      "X31b (needs_from_you shared): красных 1 из 71: PE-7d",
+      "X31c (next_steps shared): красных 1 из 71: PE-7d",
+      "X31d (not_suitable_when shared): красных 1 из 71: PE-7d",
+      "X32 (-0 not normalized): красных 1 из 71: PE-7b",
+      "X33 (a list taken for the object of answers): красных 1 из 71: PE-2a",
+      "X34 (answers sorted in place): красных 4 из 71: PE-2a PE-2b PE-2d PE-R1",
+      "X35 (in instead of Object.hasOwn): красных 2 из 71: PE-2e PE-R2",
+      "X36 (hypotheses reversed): красных 2 из 71: PE-3a PE-5",
+      "X37 (all points go to the first solution): красных 13 из 71: PE-2c PE-3a PE-3b PE-3c PE-4a PE-4b PE-5 PE-7b PE-7c PE-7d PE-R3",
+      "X38 (clear_lead_gap replaced by 2): красных 4 из 71: PE-3c PE-4a PE-4b PE-5",
+      "X39 (tie by letters of id): красных 3 из 71: PE-3a PE-3c PE-5",
+      "X40 (unknown option of single accepted): красных 4 из 71: PE-2a PE-2d PE-2e PE-R1",
+      "X41 (numeric string taken as number): красных 1 из 71: PE-2a",
+      "X42 (result next to the error): красных 4 из 71: PE-2a PE-8a PE-R1 PE-R2",
+      "X43 (rules ordered by id): красных 1 из 71: PE-5",
+      "X44 (rules ordered by points): красных 1 из 71: PE-5",
+      "X45 (hypothesis title from explanation): красных 1 из 71: PE-7c",
+      "X46 (solution name from summary): красных 1 из 71: PE-7c",
+      "свои мутанты сверх проекта:",
+      "E1 (because selected shares the state list): красных 1 из 71: PE-7d",
+      "E2 (none_of as any_of): красных 15 из 71: PE-1a PE-2c PE-2e PE-3a PE-3c PE-4a PE-4b PE-5 PE-7a/b PE-7b PE-7c PE-7d PE-R1 PE-R3 PE-R4",
+      "E3 (largest unknown key): красных 4 из 71: PE-2a PE-2d PE-8a PE-R2",
+      "E4 (ranking loses the last): красных 5 из 71: PE-2c PE-3a PE-3b PE-3c PE-5",
+      "E5 (unknown key checked after the questions): красных 5 из 71: PE-2a PE-2d PE-2e PE-8a PE-R2",
+      "E6 (non-string item of a list is an unknown option): красных 2 из 71: PE-2a PE-R2",
+      "E7 (resolved answers keep unanswered visible ones): красных 1 из 71: PE-7d",
+      "E8 (negative points as absolute in explanation): красных 3 из 71: PE-3a PE-5 PE-R3",
+      "E9 (number of single option compared loosely (include by index)): красных 1 из 71: PE-2a",
+      "E10 (order of keys in a result: score before id): красных 1 из 71: PE-7d",
+      "E11 (any_of checks only the first option): красных 8 из 71: PE-1a PE-3a PE-3b PE-3c PE-4b PE-5 PE-7d",
+      "E12 (state keeps the first answer of a repeated question (hasOwn on hidden by proto)): красных 0 из 71: ",
+      "E13 (missing_required for number answered 0 (falsy test)): красных 12 из 71: PE-2c PE-3a PE-3b PE-4a PE-4b PE-5 PE-7a/b PE-7b PE-7c PE-7d PE-R4",
+      "E14 (clear_leader gap uses ranking after top sliced by min_score off): красных 6 из 71: PE-3a PE-3c PE-4a PE-4b PE-5 PE-R3",
+      "E15 (price text taken from summary): красных 1 из 71: PE-7c",
+      "E16 (duration text swapped): красных 1 из 71: PE-7c",
+      "E17 (rule text from id): красных 2 из 71: PE-5 PE-7c",
+      "E18 (hypothesis id from title): красных 4 из 71: PE-3a PE-3c PE-5 PE-7c",
+      "E19 (visibleQuestions drops non-hasOwn show_if (shows all)): красных 16 из 71: PE-1a PE-1b PE-2c PE-2e PE-3a PE-3c PE-4a PE-5 PE-7a/b PE-7b PE-7c PE-7d PE-R1 PE-R2 PE-R3 PE-R4",
+      "E20 (ranking solution from name): красных 6 из 71: PE-2c PE-3a PE-3b PE-3c PE-4b PE-5",
+      "ловушки-слова в комментарии engine.js (Л2-Л6) и import (Л1):",
+      "W2 (node: in a comment): красных 2 из 77: PE-8b PK-7c",
+      "W3 (global in a comment): красных 1 из 77: PK-8c",
+      "W4a (mkdir in a comment): красных 1 из 77: PK-6e",
+      "W4b (truncate in a comment): красных 1 из 77: PK-6e",
+      "W4c (rename in a comment): красных 1 из 77: PK-6e",
+      "W4d (chmod in a comment): красных 1 из 77: PK-6e",
+      "W5a (Math.random in a comment): красных 2 из 77: PE-6b PK-7a",
+      "W5b (fetch( in a comment): красных 3 из 77: PE-8b PK-7a TR-4b",
+      "W5c (child_process in a comment): красных 3 из 77: PE-8b PK-7a TR-4c",
+      "W6a (Date.now in a comment): красных 1 из 77: PE-6b",
+      "W6b (new Date in a comment): красных 1 из 77: PE-6b",
+      "W6c (process.env in a comment): красных 1 из 77: PE-6b",
+      "W6d (performance.now in a comment): красных 1 из 77: PE-6b",
+      "W8 (import line): красных 1 из 77: PE-8b",
+      "ловушки Л7, Л8, Л15:",
+      "L7a (tenant object .hasOwnProperty on condition): красных 18 из 77: PE-1a PE-2a PE-2b PE-2e PE-3a PE-3c PE-5 PE-6a PE-7a PE-7a/b PE-7b PE-7c PE-8e PE-R1 PE-R2 PE-R3 PE-R4",
+      "L7b (question.hasOwnProperty): красных 18 из 77: PE-1a PE-2a PE-2b PE-2e PE-3a PE-3c PE-5 PE-6a PE-7a PE-7a/b PE-7b PE-7c PE-8e PE-R1 PE-R2 PE-R3 PE-R4",
+      "L7c (tenant.hasOwnProperty): красных 15 из 77: PE-2b PE-2e PE-3a PE-3c PE-5 PE-6a PE-7a PE-7a/b PE-7b PE-7c PE-8e PE-R1 PE-R2 PE-R3 PE-R4",
+      "L7d (solution.hasOwnProperty): красных 15 из 77: PE-2b PE-2e PE-3a PE-3c PE-5 PE-6a PE-7a PE-7a/b PE-7b PE-7c PE-8e PE-R1 PE-R2 PE-R3 PE-R4",
+      "L8 (answers[id] read without hasOwn): красных 2 из 77: PE-2e PE-R2",
+      "L15 (file not by prettier): prettier --check code 1",
+      "E12 выжил и признан эквивалентным: given[id] ?? undefined не меняет поведения, так как ключ читается только при Object.hasOwn",
+      "Л9 (сортировка рейтинга без явного места) эквивалентна: сортировка в Node устойчива и входной список уже в порядке места, поэтому ловится только вариант с ничьёй по буквам id (X39) и обратный порядок места (X17); оба убиты",
+      "после всех проб: хеши tools/src, package.json, README.md те же, что до начала (shasum), diff -r tools/src рабочего дерева и копии пуст"
+    ],
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "text": "Файл tools/test/picker-engine-helpers.js (п. 11.3 проекта называет его, строка файлов проекта: TEST-DESIGNER) не попадает под маску write_set 'tools/test/picker-engine*.test.js': маска требует суффикс .test.js. Файл создан, потому что без него тесты не строятся; прошу ORCH подтвердить или расширить write_set."
+      },
+      {
+        "kind": "INFO",
+        "text": "README.md в tools изменён не мной (разработчик) и в моё время не трогался; у файла tools/src/picker/engine.js статус ?? (не в метке base), как и ожидается до коммита."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-helpers.js",
+      "tools/test/picker-config.test.js",
+      "tools/test/picker-engine-helpers.js",
+      "tools/test/picker-engine.test.js",
+      "tools/test/picker-engine-property.test.js"
+    ]
+  }
+}

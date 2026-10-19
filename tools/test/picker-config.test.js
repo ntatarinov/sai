@@ -783,7 +783,7 @@ test("PK-7c: only load.js imports a node: module", () => {
     const imports = /node:/u.test(text);
     assert.equal(imports, file === "load.js", file);
   }
-  assert.equal(CORE_MODULES.length, 10);
+  assert.equal(CORE_MODULES.length, 11);
   const load = fs.readFileSync(path.join(PICKER, "load.js"), "utf8");
   const wanted = [...load.matchAll(/from "(node:[a-z]+)"/gu)]
     .map((m) => m[1])

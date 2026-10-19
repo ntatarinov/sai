@@ -31,6 +31,7 @@ export const CORE_MODULES = [
   "report.js",
   "check.js",
   "cli.js",
+  "engine.js",
 ];
 export const ALL_MODULES = [...CORE_MODULES, "load.js"];
 
