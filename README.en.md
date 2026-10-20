@@ -174,7 +174,7 @@ As of 2026-10-17, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
 
 ## License
 
-License: proprietary, all rights reserved (see [LICENSE](LICENSE)).
+License: proprietary, all rights reserved; copyright holder N. Tatarinov (GitHub: ntatarinov) (see [LICENSE](LICENSE)).
 
 ## How to run
 
