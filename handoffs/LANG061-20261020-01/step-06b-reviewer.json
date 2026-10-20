@@ -1,0 +1,81 @@
+{
+  "handoff_id": "step06b-LANG061-20261020-01",
+  "run_id": "LANG061-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "06b",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/LANG061-20261020-01/step-06b-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-061"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/LANG061-20261020-01/step-05-code-fixer.json",
+      "handoffs/LANG061-20261020-01/step-04b-reviewer.json",
+      "tools/src/picker/",
+      "decisions/0070-picker-languages-conventions.md"
+    ],
+    "route": "CODE-FIXER -> SECURITY-REVIEWER + REVIEWER (этот) -> TEST-DESIGNER",
+    "write_set": ["handoffs/LANG061-20261020-01/step-06b-reviewer.json"],
+    "base_tag": "base/LANG061-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T12:46:18Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1–F6 закрыты; расхождений движка по языкам 0 на 2000 наборов; красные ровно пять; для TEST-DESIGNER: тест на isFormatV2; для DOC-UPDATER: ссылка на охранный тест в README и два дефекта (копия ru в kk/en проходит check; опечатка в schema даёт до 100 строк)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 6b — повторное ревью после исправлений шага 05 (handoffs/LANG061-20261020-01/step-05-code-fixer.json) замечаний F2–F6 твоего ревью (handoffs/LANG061-20261020-01/step-04b-reviewer.json). Проверь сам: каждое F2–F6 действительно исправлено (не формально): isFormatV2 одна, нет второго места с тем же правилом (поиск по schema === FORMAT_V2 и подобному), нет цикла импортов; FORMAL_LANGUAGE; перечень языков строится из LANGUAGES, тексты ошибок побайтно прежние (сравни вывод до/после на 44 образцах и 55 порченых копиях); комментарий F4; README (фразы ≤ 18 слов, «до 100 ошибок», «примерно вдвое»); F1 закрыт — decisions/0070 п. 12 и проект п. 9.5 теперь говорят одно («0,125» = 125). Снова: git diff base/LANG061-20261020-01 по неизменяемым файлам пуст (engine.js, places.js, conditions.js, report.js, load.js, check.js, cli.js, json.js, utf8.js, demo-answers, package.json); красных ровно пять (PK-1b, PK-1c, PK-2a, PK-6e, PE-8d); независимая сверка 1000 наборов ответов на ru, kk, en против копии /1 — расхождений 0. Вердикт PASS/FAIL; код и тесты не менять; git checkout/reset/stash/clean — только свежий git clone вне проекта; в result без названий других проектов и путей компьютера. Перед close — cd tools && npm run handoffs-check && npm run traces.",
+    "acceptance_criteria": [
+      "F1–F6 закрыты по существу",
+      "Неизменяемые файлы не тронуты; расхождений движка по языкам 0",
+      "Вердикт PASS/FAIL"
+    ]
+  },
+  "created_at": "2026-10-20T12:43:49Z",
+  "started_at": "2026-10-20T12:43:49Z",
+  "completed_at": "2026-10-20T12:45:46Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Вердикт PASS, выведен из своего чтения (в задании ожидаемый итог не назван, AP-018). F1–F6 закрыты по существу, новых находок Critical, High и Medium нет. Читал файлы целиком, сравнивал с копией «до» (мои файлы первого ревью) построчно и запусками на свежих клонах метки base/LANG061-20261020-01 вне проекта.\n\nF1. decisions/0070, п. 12, теперь: «0,125» читается как 125, «40.000» — как 40 (п. 9.5, Ф20); проект п. 9.5 говорит то же. Записи совпадают.\nF2. Правило «файл — /2» одно: isFormatV2 в lang-check.js. Её зовут validate.js (выбор режима) и view.js (fileLanguages, tenantInLanguage). Поиск по `.schema` и `\"schema\"` в src/picker: сравнение с FORMAT_V2 осталось только в lang-check.js; в validate.js остаётся поле schema в таблице полей и сообщение (там FORMAT_V1 и FORMAT_V2 нужны для текста). Цикла импортов нет: lang-check → limits → public/texts и places; view → lang-check, limits. Поведение то же: массив и не-объект дают /1, как раньше.\nF3. validate.js: константа FORMAL_LANGUAGE = \"ru\"; запрет «ты» привязан к ней. DEFAULT_LANGUAGE остаётся только там, где нужен язык по умолчанию (operator_name, privacy_contact, /1).\nF4. view.js: комментарий над isTextInLanguages говорит, что текст узнаётся по форме, верно для файла после checkBytes, и что новое поле не должно быть объектом ровно с ключами ru, kk, en. Код не менялся.\nF5. lang-check.js: LANGUAGE_LIST строится из LANGUAGES; два сообщения используют его. Слово «трёх» осталось (заказано проектом дословно). Тексты побайтно прежние.\nF6. README: «примерно вдвое больше», «до 100 ошибок», ссылка на несуществующий охранный тест убрана; изменённые фразы короткие, обращение на «вы», путей компьютера нет.\n\nПоведение. Вывод picker check до и после правки побайтно равен: 938 строк по 27 моим порченым образцам и 44 образцам fixtures/picker (e-field-schema.json в обоих клонах со значением /3, как по таблице замен). Мой разведчик ключей на лишнем языке (10 значений) — вывод тот же. Не менялись: engine.js, places.js, conditions.js, report.js, load.js, check.js, cli.js, json.js, utf8.js, demo-answers, package.json, тесты (git diff по метке — 0 байт); limits.js, text-rules.js, texts.js, демо-файлы после первого ревью не менялись.\nПланка. Красных ровно пять: PK-1b, PK-1c, PK-2a, PK-6e, PE-8d (tests 98, pass 93, fail 5, skipped 0, todo 0). format:check, lint, traces на клоне — код 0. Нет skip, todo, eslint-disable, || true, закомментированного кода.\nСверка движка: 2000 моих наборов (счёт 2 × 1000, исходы leader 1035, close 560, none 239, E_ANSWER 166) — по виду ru результат равен движку по копии /1 строкой JSON, kk и en совпадают с независимой сборкой вида; расхождений 0. Таблица выбора языка п. 7 — 33 из 33; замена каждого из 152 мест текста строкой даёт ровно одну верную строку; 3000 порч файла /2 — исключений 0.\nПрошлые Low и замечания для следующих шагов остаются в силе (issues прошлого ревью I2, I3: допустимые данными, но запрещённые требованием состояния — копия ru в kk/en и шум после опечатки в schema; их заводит ORCH).",
+    "findings": [
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/src/picker/lang-check.js:7 (LANGUAGE_LIST) и :28, :37",
+        "what": "Слово «трёх» в первом сообщении по-прежнему буквально, а список языков строится из LANGUAGES. Принято проектом (п. 6.1, текст заказан дословно); при четвёртом языке тест образцов покажет расхождение.",
+        "fix": "Ничего не менять; при добавлении языка поправить сообщение вместе с константой."
+      }
+    ],
+    "self_check": [
+      "diff файлов первого ревью и рабочей копии: изменены только lang-check.js, view.js, validate.js, tools/README.md; limits.js, text-rules.js, public/texts.js без изменений",
+      "grep -n '.schema|\"schema\"' tools/src/picker/*.js -> lang-check.js:16–17 (правило) и validate.js:474 (поле таблицы); других сравнений с FORMAT_V2 нет",
+      "git diff base/LANG061-20261020-01 -- engine.js places.js conditions.js report.js load.js check.js cli.js json.js utf8.js demo-answers tools/package.json tools/test | wc -c -> 0",
+      "свежий клон метки + файлы работы: npm run format:check, lint, traces -> код 0; node --test 'test/picker-*.test.js' -> tests 98, pass 93, fail 5 (PK-1b, PK-1c, PK-2a, PK-6e, PE-8d)",
+      "вывод picker check по 27 образцам и 44 образцам до/после правки -> cmp IDENTICAL, 938 строк; ключи на лишнем языке до/после — тот же вывод",
+      "свои 2000 наборов ответов на ru, kk, en против копии /1 -> sets 2000 diffs 0; 33 строки выбора языка -> bad 0; 152 места текста -> bad 0; 3000 порч -> throws 0, коды {0: 43, 1: 2957}",
+      "grep todo|skip|eslint-disable|\\|\\| true по lang-check.js view.js validate.js -> пусто; поиск путей компьютера -> пусто",
+      "cd tools && npm run handoffs-check -> «файлов проверено 1023, нарушений 0», код 0; npm run traces -> «файлов проверено 1763, следов 0, пропущено 57», код 0"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "В README ссылка на охранный тест таблицы texts.js убрана; вернуть её после шага 5 — DOC-UPDATER (как записал ORCH)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "TEST-DESIGNER: isFormatV2 экспортируется из lang-check.js — добавить тест на неё (массив, null, строка, объект без своего schema, schema /2 с другим регистром); список файлов каталога picker не изменился (новых файлов нет)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

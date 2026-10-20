@@ -13,7 +13,7 @@ import {
   ALL_MODULES,
   CORE_MODULES,
   DEMO_ANSWERS,
-  DEMO_TENANTS,
+  LEGACY_TENANTS,
   ERROR_CODES,
   EXPECTED,
   FIXTURES,
@@ -32,7 +32,7 @@ import {
 } from "./picker-helpers.js";
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
-const tenantPath = (id) => path.join(DEMO_TENANTS, `${id}.json`);
+const tenantPath = (id) => path.join(LEGACY_TENANTS, `${id}.json`);
 const IDS = ["uchet-pro", "svet-marketing"];
 const SIZES = { "uchet-pro": [12, 5, 39], "svet-marketing": [11, 5, 37] };
 
@@ -67,7 +67,7 @@ test("PK-1a: both fictional tenants pass the check through npm and directly - co
     ];
     assert.deepEqual([q, s, r], SIZES[id], id);
     const want = `Файл арендатора ${id} в порядке: вопросов ${q}, решений ${s}, правил ${r}.`;
-    const rel = path.join("src", "picker", "demo-tenants", `${id}.json`);
+    const rel = path.join("test", "fixtures", "picker-legacy", `${id}.json`);
     for (const viaNpm of [true, false]) {
       const run = runPicker(["check", rel], { cwd: TOOLS, viaNpm });
       assert.equal(run.code, 0, `${id} npm=${viaNpm}`);
@@ -783,7 +783,7 @@ test("PK-7c: only load.js imports a node: module", () => {
     const imports = /node:/u.test(text);
     assert.equal(imports, file === "load.js", file);
   }
-  assert.equal(CORE_MODULES.length, 11);
+  assert.equal(CORE_MODULES.length, 13);
   const load = fs.readFileSync(path.join(PICKER, "load.js"), "utf8");
   const wanted = [...load.matchAll(/from "(node:[a-z]+)"/gu)]
     .map((m) => m[1])

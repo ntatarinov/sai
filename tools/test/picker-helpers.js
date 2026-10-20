@@ -17,6 +17,12 @@ export const PICKER = path.join(TOOLS, "src", "picker");
 export const CLI = path.join(PICKER, "cli.js");
 export const FIXTURES = path.join(TOOLS, "test", "fixtures", "picker");
 export const DEMO_TENANTS = path.join(PICKER, "demo-tenants");
+export const LEGACY_TENANTS = path.join(
+  TOOLS,
+  "test",
+  "fixtures",
+  "picker-legacy",
+);
 export const DEMO_ANSWERS = path.join(PICKER, "demo-answers");
 
 // All the modules of the picker, the one that touches the disk and the paths last.
@@ -27,9 +33,11 @@ export const CORE_MODULES = [
   "text-rules.js",
   "places.js",
   "conditions.js",
+  "lang-check.js",
   "validate.js",
   "report.js",
   "check.js",
+  "view.js",
   "cli.js",
   "engine.js",
 ];
@@ -285,7 +293,7 @@ export const EXPECTED = {
   "e-field-schema.json": {
     code: 1,
     lines: [
-      "e-field-schema.json: schema: E_FIELD: Допустимо только: sai-picker-tenant/1. Исправьте значение.",
+      "e-field-schema.json: schema: E_FIELD: Допустимо только: sai-picker-tenant/1 или sai-picker-tenant/2. Исправьте значение.",
     ],
   },
   "e-id-capital.json": {

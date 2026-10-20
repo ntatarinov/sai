@@ -30,12 +30,17 @@ export function hasSecondPerson(text) {
   return wordsOf(text).some((w) => SECOND_PERSON.has(w));
 }
 
-// null, or { kind: "formal" }, or { kind: "long", words }. The address is looked at first.
-export function textProblem(text) {
-  if (hasSecondPerson(text)) return { kind: "formal" };
+// null, or { kind: "long", words } for the first phrase longer than MAX_WORDS.
+export function wordsProblem(text) {
   for (const phrase of phrasesOf(text)) {
     const words = wordCount(phrase);
     if (words > MAX_WORDS) return { kind: "long", words };
   }
   return null;
+}
+
+// null, or { kind: "formal" }, or { kind: "long", words }. The address is looked at first.
+export function textProblem(text) {
+  if (hasSecondPerson(text)) return { kind: "formal" };
+  return wordsProblem(text);
 }

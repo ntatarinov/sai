@@ -8,7 +8,7 @@ import { parseJson } from "../src/picker/json.js";
 import { pathText } from "../src/picker/places.js";
 import { validateTenant } from "../src/picker/validate.js";
 import {
-  DEMO_TENANTS,
+  LEGACY_TENANTS,
   ERROR_CODES,
   fixtureBytes,
   lineProblems,
@@ -18,7 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const demo = (id) =>
-  JSON.parse(fs.readFileSync(path.join(DEMO_TENANTS, `${id}.json`), "utf8"));
+  JSON.parse(fs.readFileSync(path.join(LEGACY_TENANTS, `${id}.json`), "utf8"));
 const SEEDS = [demo("uchet-pro"), demo("svet-marketing")];
 const SAMPLES = [
   "ok-minimal.json",
@@ -242,7 +242,7 @@ test("PK-R2: checkBytes on 3000 files with spoiled bytes - code 0 or 1, no throw
   for (const id of ["uchet-pro", "svet-marketing"])
     sources.push([
       `${id}.json`,
-      fs.readFileSync(path.join(DEMO_TENANTS, `${id}.json`)),
+      fs.readFileSync(path.join(LEGACY_TENANTS, `${id}.json`)),
     ]);
   const exits = new Set();
   for (let i = 0; i < 3000; i++) {

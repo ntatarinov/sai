@@ -18,3 +18,9 @@
 ## Маршрут
 
 TEST-DESIGNER → TEST-DESIGN-VALIDATOR → TEST-RUNNER → RELEASE-VALIDATOR → DOC-UPDATER → RELEASE-FINALIZER; вместе с ближайшей работой над `tools/test/picker-engine*.test.js` (REQ-056/058) или по WF-03 — решает ORCH.
+
+## Обновление 2026-10-20 (DOC-UPDATER, прогон `LANG061-20261020-01`, шаг 12): ещё одно замечание к тестам — повтор блока LG-1c2 в `picker-lang.test.js`
+
+Дефект остаётся `open`, `LOW`. Замечание F4 ворот 7d (`handoffs/LANG061-20261020-01/step-07d-test-design-validator.json`): последний блок теста `LG-1c2` («an object in place of name does not hide the line about schema») в `tools/test/picker-lang.test.js` повторяет проверку первой строки на теле, где `name` и так объект (тело `/2`): отдельного случая он не добавляет. Мутант P1 убивается первым блоком, защита цела; на корректность не влияет.
+
+7. **Как исправить:** убрать последний блок `LG-1c2` либо заменить его случаем, где `name` — строка, а объект стоит в другом месте. Проверку не ослаблять (Q6): число `test(` в файле не должно уменьшиться, а число проверок внутри `LG-1c2` — тоже. Маршрут тот же, вместе с ближайшей работой над `tools/test/picker-lang*.test.js` (REQ-056 и дальше) или по WF-03 — решает ORCH.

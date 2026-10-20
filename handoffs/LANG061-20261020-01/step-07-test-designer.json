@@ -1,0 +1,246 @@
+{
+  "handoff_id": "step07-LANG061-20261020-01",
+  "run_id": "LANG061-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "07",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/LANG061-20261020-01/step-07-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-061"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-061-picker-languages.md",
+      "docs/requirements.yaml",
+      "decisions/0070-picker-languages-conventions.md",
+      "handoffs/LANG061-20261020-01/",
+      "tools/src/picker/"
+    ],
+    "route": "REVIEWER, SECURITY -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER",
+    "write_set": [
+      "tools/test/picker-lang*.test.js, tools/test/picker-texts.test.js, tools/test/picker-lang-helpers.js, tools/test/fixtures/picker-lang/*.json, tools/test/fixtures/picker/e-field-schema.json, tools/test/picker-config.test.js, tools/test/picker-helpers.js, tools/test/picker-engine.test.js, tools/test/picker-engine-property.test.js, tools/test/picker-engine-helpers.js"
+    ],
+    "base_tag": "base/LANG061-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T13:38:11Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "ORCH сам запустил npm run check: код 0, 1777 тестов, 0 упавших; пять красных починены; src не менялся",
+        "picker-robust.test.js (З9–З11) принят в write_set решением ORCH; LG-1h, LG-1i, LG-10d сверх проекта — приняты"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 7 — тесты REQ-061 (три языка: код tools/src/picker/lang-check.js, view.js, public/texts.js, limits.js, text-rules.js, validate.js; демо-арендаторы в /2; копии /1 в tools/test/fixtures/picker-legacy/) после PASS безопасности (step-04, step-06) и ревью (step-04b, step-06b). Проект docs/design/REQ-061-picker-languages.md: раздел 11 — таблица замен З1–З15 прежних тестов (ПЕРВЫМ ДЕЛОМ: чини пять красных PK-1b, PK-1c, PK-2a, PK-6e, PE-8d по таблице, без ослабления; тесты движка picker-engine* читают копии /1 по Ф16; образец e-field-schema.json: значение /3 и новая строка в EXPECTED по п. 11 и критерию 1), раздел 10 — образцы (10.1 файл из JSON, 10.3 образцы ошибок: каталог tools/test/fixtures/picker-lang/ — 39 образцов), раздел 13 — «критерий → элемент → тест» (LG-, LP-, TX-; LG-1…LG-10 и LP-5…, TX-6, LG-10c охраняет public/texts.js — обязателен), раздел 14–15 — ловушки и 76 мутантов (на свежем git clone вне проекта; каждый мутант — запись «мутант → тест → красный»; 56 из них были убиты на прототипе проекта — теперь на настоящем коде), раздел 12 (красные подшагов). Файлы: tools/test/picker-lang.test.js, picker-lang-property.test.js, picker-texts.test.js, picker-lang-helpers.js (помощники — принять), fixtures/picker-lang/*.json, правки старых тестов только по таблице замен. Требование — docs/requirements.yaml, блок REQ-061 (критерии буквально); решения 0069, 0070. Уточнения ORCH после ворот: (а) правило чисел — «0,125» = 125 (запятая перед тремя цифрами — разделитель разрядов), «40.000» = 40, 29 примеров п. 9.5 — таблица литералов; оракул чисел свой, по описанию, а не импорт из src; (б) сравнение ru-вида с копией /1 — без поля schema (в /2 ru-виде schema остаётся /2 по D6 проекта) — закрепи это тестом; (в) isFormatV2 экспортируется — тест на массив, null, строку, объект без своего schema, schema /2 с другим регистром, /1; (г) N1 ворот проекта: запрет слова import в texts.js — одно определение, регулярные выражения выписаны в самом тесте (слова целиком; export … from и import.meta ловятся; слово import внутри строки перевода — нет); (д) N2: тесты отказа берут на место текста число, null, список, пустой список и true с ожидаемой строкой «Нужен текст на трёх языках…»; привязку мутанта М23 поправь; (е) N3: chooseLanguage на любом значении, кроме объекта (null, число, список, строка, Symbol, BigInt), возвращает ru и не бросает — строки в LG-4a/LG-4b; (ж) F4 ревью: вид «по форме» — мутанты на view.js: ключи __proto__ и constructor в тексте, объект с ровно ключами ru, kk, en на месте не-текста; (з) образец с неверной schema у файла /2: первая строка про schema; (и) тесты отказа проверяют неизменность файла образца (sha256 и mtime до и после, как в REQ-054, критерий 6); (к) PK-6e, PK-7a и PK-8c читают только верхний уровень tools/src/picker — public/texts.js охраняет LG-10c; (л) защиты перевода в тесте демо-файлов (0070 п. 6): kk и en не равны ru у текстов от 3 слов, у kk-текстов от 6 слов есть казахская буква, цифры только ASCII, в en нет кириллицы, тексты двух арендаторов не пересекаются в каждом языке, id не пересекаются; числа в ru, kk, en одно множество для каждого текста (кроме operator_name и privacy_contact); (м) 1000 наборов ответов на арендатора (зерно 61001): результат по виду ru, kk, en равен результату по копии /1 в баллах, порядке, ranking, clear_leader, because, id гипотез; тексты результата — строки файла на нужном языке. Код продукта (tools/src/) не менять. Старые тесты не ослаблять; числа test(/assert. по файлам не меньше метки base/LANG061-20261020-01. Запрещены git checkout/reset/stash/clean (в копиях — только свежий git clone). В self_check и тестах — без названий проектов-образцов и путей компьютера (traces). Перед close: cd tools && npm run check — код 0 (всё зелёное, включая пять починенных); в result — точные числа, таблица мутантов, 76 строк.",
+    "acceptance_criteria": [
+      "Пять красных починены по таблице замен без ослабления; тест на каждый критерий REQ-061 по разделу 13",
+      "76 мутантов и ловушки пойманы (запись мутант → тест → красный)",
+      "npm run check код 0; точные числа"
+    ]
+  },
+  "created_at": "2026-10-20T12:49:47Z",
+  "started_at": "2026-10-20T12:49:47Z",
+  "completed_at": "2026-10-20T13:35:19Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Тесты REQ-061 (три языка сайта подбора). Код продукта (tools/src) не менялся: shasum всех файлов tools/src, package.json и README.md до и после совпадает; git diff с меткой по engine.js, json.js, utf8.js, places.js, conditions.js, report.js, load.js, check.js, cli.js, package.json, eslint.config.js пуст.\nПЕРВЫМ ДЕЛОМ чинится пять красных по таблице замен З1-З15 без ослабления. До правки (код и копии /1 поверх тестов метки): 93 из 98 зелёных, красные PK-1b, PK-1c, PK-2a, PK-6e, PE-8d. После правки: 98 из 98. Правки: LEGACY_TENANTS в picker-helpers.js (З1); lang-check.js и view.js в CORE_MODULES, 13 имён, ALL_MODULES 14 (З2); новая строка EXPECTED для e-field-schema.json (З3); значение schema образца /3 (З4); tenantPath, импорт, путь команды PK-1a, число 13 в PK-7c в picker-config.test.js (З5-З8); picker-robust.test.js (З9-З11); picker-engine-helpers.js (З12-З14); число 14 в PE-8d (З15). Число test( в каждом прежнем файле то же, что на метке.\nНовые файлы: tools/test/picker-lang.test.js (43 теста), picker-lang-property.test.js (7), picker-texts.test.js (7), picker-lang-helpers.js (оракулы мест текстов, фраз и чисел, 33 строки выбора языка, LANG_EXPECTED, поиск по тексту texts.js), 39 образцов tools/test/fixtures/picker-lang/ (сделаны скриптом вне проекта, отформатированы prettier; суммарный вывод каждого проверен чтением против таблицы п. 10.3).\nТаблица «критерий -> тест»:\nКритерий 1 (формат /2 принимается, /1 как раньше): LG-1a (демо /2 через npm и напрямую, 12/5/39 и 11/5/37), LG-1b (копии /1), LG-1c (значения schema /3, /, /20, '/2 ', ' /2', верхний регистр, /12, пусто -> одна строка; число, null, true, список, объект -> 'Ожидается строка'; нет поля -> 'Нет поля schema'), LG-1d (версии не смешиваются), LG-1e (sha256 копий и demo-answers литералами), LG-1f (вид ru равен копии /1 строкой JSON и deepStrictEqual, schema остаётся /2 - уточнение ORCH б; скелеты kk и en равны), LG-1g (fileLanguages, tenantInLanguage на de, undefined, null, 5, __proto__), LG-1h (isFormatV2: массив, null, строка, объект без своего schema, другой регистр, /1, унаследованный schema - уточнение в), LG-1i (вид строится по форме: объект ровно из ru, kk, en заменяется, где бы ни стоял; __proto__ и constructor как собственные ключи; прототип сохраняется - замечание F4 ревью, уточнение ж).\nКритерий 2 (перевод обязателен): LG-2a (9 образцов 'строка вместо текста'), LG-2b (12 образцов 'нет перевода'), LG-2c (лишний язык; de вместо en - две строки в порядке), LG-2d (объект на месте числа, id, текста /1, operator_name, privacy_contact), LG-2e (пустой язык, 201 знак, 200 знаков, пробелы, смайлы как знаки), LG-2f (три образца без ошибок), LG-2g (форма строк, код языка в строке), LG-2h (в памяти: чужие ключи через show - ты, 'd e', 60 знаков, RU, __proto__ обычным объектом и из читателя, constructor; неверные значения языка; пустой объект - три строки; на месте текста число, null, список, пустой список, true, строка - 'Нужен текст на трёх языках' - уточнение д), LG-2i (папка образцов равна таблице, 39; копий два). Каждый образец прогоняется процессом, неизменность файла проверяется sha256, временем изменения и составом папки до и после (уточнение и).\nКритерий 3 (правило понятности по языкам): LG-3a (десять полей критерия x ru, kk, en: 19 слов - одна E_TEXT, 18 - нет), LG-3b (остальные места; unit по длине, 'Ты тут' только в ru), LG-3c (три фразы по 10 слов; тире не слово; точка в 1.5 не режет), LG-3d (восемь слов обращения, три регистра, только ru; 'вы получите', 'цветы', 'тыква' - нет), LG-3e (kk с казахскими буквами 18 и 19 слов), LG-3f (operator_name и privacy_contact в /2 и /1), LG-3g (семь строк в порядке файла; порядок en, kk, ru - по файлу; повтор ключа kk - одна строка E_JSON с позицией, посчитанной по тексту файла).\nКритерий 4 (выбор языка): LG-4a (31 строка таблицы п. 7 и вызов без аргументов, заголовок запроса не читается; для значений, кроме объекта - null, число, список, строка, Symbol, BigInt, true, функция - ru без исключения, уточнение е; ловушка-геттер), LG-4b (чистота: замороженный вход, два вызова, 400 случайных вызовов против правила, написанного заново), LG-4c (текст texts.js без import, require, node:, process как слов; загрузка динамическим импортом).\nКритерий 5 (результат не зависит от языка): LP-5a (2 x 1000 наборов, зерно 61001, ru, kk, en, арендатор из проверки и из JSON.parse: видимые, ranking, баллы, порядок, пометка, правила с points и because, гипотезы равны результату по копии /1), LP-5b (строки результата - строки файла /2 на нужном языке по id), LP-5c (ru - те же байты), LP-5d (/1 с kk - тот же объект), LP-5e (сумма баллов), LP-5f (замороженный файл), LP-R1 (500 допустимых правок текстов).\nКритерий 6 (таблица текстов): TX-6a (экспорты, значения литералами; Қазақша с кириллической Қ), TX-6b (настоящая таблица), TX-6c (15 копий с одной порчей, 11 из п. 8.3 и ещё четыре - функция проверки красная; настоящая зелёная), TX-6d (запрет слов; выражения выписаны в тесте и сами проверены на образцах 'должно найти' и 'не должно' - уточнение г: import как инструкция, вызов, import.meta, export ... from; слово import внутри строки перевода не ловится), TX-6e (заморозка), TX-6f (limits.js отдаёт тот же LANGUAGES), TX-R1 (1000 случайных значений).\nКритерий 7 (демо-арендаторы): LG-7a (152 и 145 мест, объект ровно из ru, kk, en; ru побайтно; остальное равно копии), LG-7b (оракул чисел на 29 строках таблицы п. 9.5 - '0,125' это 125, '40.000' это 40 - уточнение а; множества чисел в трёх языках равны; в файлах только 40000 и 150000), LG-7c, LG-7d, LG-7e, LG-7f (152 + 145 = 297), LG-7g (шесть наборов на каждом языке).\nКритерий 8: шаг читателя, не тест (механически закрыт LG-7f). Критерий 9: прежние запреты не ослаблены - PK-6e, PK-7a, PK-7c, PK-8c, PK-8d, PK-8e, PE-8b, PE-8d, TR-4b/c/e/f зелёные; число test( не уменьшено.\nКритерий 10: LG-10a (соседние файлы), LG-10b (500 вариантов + 40 процессами, зерно 61010), LG-10c (public/ без адресов и сетевых слов), LG-10d (сверх проекта: в новых модулях нет слов часов, случайности, среды), LG-R1 (3000 порч, зерно 61020), LG-R2, LG-R3 (19 видов мест, каждое место строкой даёт одну строку), LG-R4 (файл около 400 КБ; больше 512 КБ - код 2).\nПункты планки: Q7 - секретов и адресов нет (LG-10c, PK-8d, traces); Q8 - файлы читаются по одному, вид строится по одному объекту (LG-10a, LP-5); Q10 - кривой перевод даёт строки, а не падение (LG-10b, LG-R1, LG-R2, LG-4a, LG-1g); Q11 и R3 - не применимы (язык из трёх значений, адресов в public/ нет, фото нет, решение 0033); Q9 - SQL нет.\nЧисла: npm run check код 0, # tests 1720 (метка) -> 1777, pass 1777, fail 0, skipped 0, todo 0; picker-* 98 -> 155 (с traces-runtime 161).",
+    "changes": [
+      {
+        "file": "tools/test/picker-helpers.js",
+        "what": "З1 LEGACY_TENANTS; З2 lang-check.js и view.js в CORE_MODULES; З3 новая строка EXPECTED для e-field-schema.json"
+      },
+      {
+        "file": "tools/test/fixtures/picker/e-field-schema.json",
+        "what": "З4 значение schema /2 -> /3 (единственное изменение содержимого образцов)"
+      },
+      {
+        "file": "tools/test/picker-config.test.js",
+        "what": "З5-З8: LEGACY_TENANTS вместо DEMO_TENANTS, путь команды PK-1a, число 13 в PK-7c"
+      },
+      {
+        "file": "tools/test/picker-robust.test.js",
+        "what": "З9-З11: LEGACY_TENANTS (три места); файл назван в таблице замен, но не стоял в write_set - см. issues"
+      },
+      {
+        "file": "tools/test/picker-engine-helpers.js",
+        "what": "З12-З14: demoTenant и demoPlain читают копии /1"
+      },
+      {
+        "file": "tools/test/picker-engine.test.js",
+        "what": "З15: число 14 в PE-8d"
+      },
+      {
+        "file": "tools/test/picker-lang-helpers.js",
+        "what": "новый: оракулы мест текстов, фраз, слов, чисел, строка и столбец, ожидаемые строки 39 образцов, таблица выбора языка, поиск запретных слов texts.js"
+      },
+      {
+        "file": "tools/test/picker-lang.test.js",
+        "what": "новый: LG-1a-1i, LG-2a-2i, LG-3a-3g, LG-4a-4c, LG-7a-7g, LG-10a-10d, LG-R1-R4 (43 теста)"
+      },
+      {
+        "file": "tools/test/picker-lang-property.test.js",
+        "what": "новый: LP-5a-5f, LP-R1 (7 тестов)"
+      },
+      {
+        "file": "tools/test/picker-texts.test.js",
+        "what": "новый: TX-6a-6f, TX-R1 (7 тестов)"
+      },
+      {
+        "file": "tools/test/fixtures/picker-lang/",
+        "what": "39 новых образцов: 3 без ошибок, 36 с ошибками"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-20T12:49:47Z, конец 2026-10-20T13:36:00Z (по часам: проверка 13:34:03Z)",
+      "cd tools && caffeinate -i npm run check -> код 0; prettier --check: все файлы в стиле; eslint --max-warnings 0 чисто; traces: файлов проверено 1807, следов 0; handoffs-check: нарушений 0; # tests 1777, # pass 1777, # fail 0, # cancelled 0, # skipped 0, # todo 0 (в том числе PK-1b, PK-1c, PK-2a, PK-6e, PE-8d)",
+      "пять красных до правки: на свежем git clone метки (HEAD равен метке) поверх скопирован tools/src и копии /1, тесты метки -> # tests 98, # pass 93, # fail 5: PK-1b, PK-1c, PK-2a, PK-6e, PE-8d; после таблицы замен node --test picker-*.test.js -> 98 из 98",
+      "числа grep -c '^test(' / grep -o 'assert[.]' | wc -l (метка -> теперь): picker-config.test.js 35/128 -> 35/128; picker-engine.test.js 27/199 -> 27/199; picker-engine-property.test.js 12/87 -> 12/87; picker-fields.test.js 8/43 -> 8/43; picker-load.test.js 5/51 -> 5/51; picker-parse.test.js 6/97 -> 6/97; picker-robust.test.js 5/24 -> 5/24; новые: picker-lang.test.js 0/0 -> 43/280, picker-lang-property.test.js 0/0 -> 7/31, picker-texts.test.js 0/0 -> 7/46; picker-helpers.js, picker-engine-helpers.js, picker-lang-helpers.js - 0/0",
+      "мутанты на свежих git clone вне проекта (три копии, поверх скопирован tools без node_modules), по одной замене текста с проверкой, что искомый кусок встречается ровно один раз, файл восстанавливался после каждой пробы; тесты picker-*.test.js и traces-runtime.test.js; итоги: 109 из 109 красных (76 мутантов проекта М1-М76, 14 своих Э1-Э14, 19 ловушек Л1-Л19)",
+      "76 мутантов проекта (мутант -> тест -> красный):",
+      "М1 (only /2 accepted): красных 45 из 144: LG-1b LG-1c LG-1d LG-2d LG-3f PE-0 PE-2e PE-3a PE-3b PE-3c PE-7a PE-7b PE-7c PE-8a PE-8e PK-1a PK-1e PK-2a PK-2b PK-2c PK-3a PK-3b PK-3c PK-3d PK-3e PK-4a PK-4b PK-4c PK-5a PK-5b PK-5c PK-5d PK-6b PK-8a PK-8b PK-L2 PK-R2 PK-R4 test/picker-engine-property.test.js test/picker-lang-property.test.js",
+      "М2 (only /1 accepted): красных 29 из 161: LG-10a LG-1a LG-1c LG-1d LG-1f LG-1i LG-2a LG-2b LG-2c LG-2d LG-2e LG-2f LG-2g LG-2h LG-3a LG-3b LG-3c LG-3d LG-3e LG-3f LG-3g LG-7g LG-R2 LG-R3 LP-5a LP-5b LP-5c LP-5e LP-R1",
+      "М3 (message names /1 only): красных 2 из 161: LG-1c PK-2a",
+      "М4 (mode /2 by the start of the string): красных 2 из 161: LG-1c LG-1h",
+      "М5 (mode /2 without case and spaces): красных 2 из 161: LG-1c LG-1h",
+      "М6 (/2 accepts strings in place of objects): красных 6 из 161: LG-10b LG-1d LG-2a LG-2g LG-2h LG-R3",
+      "М7 (/1 accepts objects): красных 3 из 161: LG-1d LG-2d LG-2g",
+      "М8 (unknown schema read by the rules of /2): красных 3 из 161: LG-1c PK-2a PK-2c",
+      "М9 (ты is checked in kk and en): красных 3 из 161: LG-2f LG-3b LG-3d",
+      "М10 (ты is not checked in ru): красных 6 из 161: LG-3b LG-3d LG-3f LG-3g PK-5c PK-5d",
+      "М11 (phrase length is not checked in kk and en): красных 6 из 161: LG-3a LG-3b LG-3c LG-3d LG-3e LG-3g",
+      "М12 (operator_name has no address rule): красных 2 из 161: LG-3f PK-5d",
+      "М13 (privacy_contact has no address rule): красных 2 из 161: LG-3f PK-5d",
+      "М14 (operator_name accepted as an object): красных 3 из 161: LG-2d LG-2g LG-3f",
+      "М15 (only ru is needed): красных 13 из 161: LG-10a LG-10b LG-2b LG-2c LG-2e LG-2g LG-2h LG-3a LG-3b LG-3c LG-3d LG-3e LG-3g",
+      "М16 (an extra language is not noticed): красных 3 из 161: LG-2c LG-2g LG-2h",
+      "М17 (languages in the order en, kk, ru): красных 1 из 161: LG-2h",
+      "М18 (place of a missing language is the text): красных 5 из 161: LG-10a LG-2b LG-2c LG-2h LG-3g",
+      "М19 (a missing language is E_LIMIT): красных 5 из 161: LG-10a LG-2b LG-2c LG-2h LG-3g",
+      "М20 (extra key is not passed through show()): красных 1 из 161: LG-2h",
+      "М21 (language keys without case): красных 1 из 161: LG-2h",
+      "М22 (a string gives three lines 'no translation'): красных 4 из 161: LG-1d LG-2a LG-2h LG-R3",
+      "М23 (a list is taken for an object): красных 1 из 161: LG-2h",
+      "М24 (everything is checked as ru): красных 3 из 161: LG-2f LG-3b LG-3d",
+      "М25 (everything is checked as kk): красных 3 из 161: LG-3b LG-3d LG-3g",
+      "М26 (empty kk and en are allowed): красных 3 из 161: LG-2e LG-2g LG-3g",
+      "М27 (border of en one more): красных 3 из 161: LG-2e LG-2g LG-3g",
+      "М28 (phrase limit 19): красных 12 из 161: LG-2g LG-3a LG-3b LG-3c LG-3d LG-3e LG-3f LG-3g PK-5a PK-5c PK-5d PK-P6",
+      "М29 (phrase limit 17): красных 9 из 161: LG-2f LG-3a LG-3b LG-3c LG-3e LG-3f PK-5b PK-5d PK-P6",
+      "М30 (the dash counts as a word): красных 4 из 161: LG-2f LG-3c PK-5b PK-P6",
+      "М31 (Kazakh letters are no letters): красных 1 из 161: LG-3e",
+      "М32 (view does not walk lists): красных 7 из 161: LG-1f LG-1i LG-7g LP-5b LP-5c LP-5f LP-R1",
+      "М33 (view is always ru): красных 5 из 161: LG-1f LG-1g LG-1i LG-7g LP-5b",
+      "М34 (view for de gives undefined): красных 1 из 161: LG-1g",
+      "М35 (view of /1 is a copy): красных 2 из 161: LG-1g LP-5d",
+      "М36 (view sorts the keys): красных 2 из 161: LG-1f LG-1i",
+      "М37 (view changes its input): красных 4 из 161: LG-1f LG-R2 LP-5f LP-R1",
+      "М38 (fileLanguages gives the shared list): красных 1 из 161: LG-1g",
+      "М39 (fileLanguages of /1 gives three languages): красных 2 из 161: LG-1g LG-1h",
+      "М40 (choice without case): красных 2 из 161: LG-4a LG-4b",
+      "М41 (choice by the start of the value): красных 2 из 161: LG-4a LG-4b",
+      "М42 (stored is stronger than the address): красных 2 из 161: LG-4a LG-4b",
+      "М43 (a wrong address gives ru at once): красных 2 из 161: LG-4a LG-4b",
+      "М44 (a language missing in the file: stored is taken): красных 1 из 161: LG-4a",
+      "М45 (the empty string is a right value): красных 2 из 161: LG-4a LG-4b",
+      "М46 (a list is turned to a string): красных 2 из 161: LG-4a LG-4b",
+      "М47 (languages of the file are not looked at): красных 2 из 161: LG-4a LG-4b",
+      "М48 (no guard for a list of languages): красных 2 из 161: LG-4a LG-4b",
+      "М49 (Kazakh name with a Latin letter): красных 1 из 161: TX-6a",
+      "М50 (an extra export): красных 1 из 161: TX-6a",
+      "М51 (the table is not frozen): красных 1 из 161: TX-6e",
+      "М52 (a constant with no kk): красных 3 из 161: TX-6a TX-6b TX-6c",
+      "М53 (an import in texts.js): красных 2 из 161: LG-4c TX-6d",
+      "М54 (de in LANGUAGES): красных 34 из 161: LG-10a LG-1a LG-1c LG-1d LG-1f LG-1g LG-1i LG-2a LG-2b LG-2c LG-2d LG-2e LG-2f LG-2g LG-2h LG-3a LG-3b LG-3c LG-3d LG-3e LG-3f LG-3g LG-4a LG-4b LG-7g LG-R2 LG-R3 LP-5a LP-5b LP-5c LP-5e LP-R1 TX-6a TX-6e",
+      "М55 (default language kk): красных 9 из 161: LG-1g LG-1h LG-3f LG-4a LG-4b PK-5c PK-5d TX-6a TX-6d",
+      "М56 (own list of languages in limits.js): красных 1 из 161: TX-6f",
+      "М57 (a phrase of 19 words in en): красных 3 из 161: TX-6a TX-6b TX-6c",
+      "М58 (a placeholder in ru and en, none in kk): красных 3 из 161: TX-6a TX-6b TX-6c",
+      "М59 (a space at the ends): красных 3 из 161: TX-6a TX-6b TX-6c",
+      "М60 (ты in ru): красных 3 из 161: TX-6a TX-6b TX-6c",
+      "М61 (a text of a demo file has no kk): красных 15 из 161: LG-10a LG-1a LG-1c LG-1f LG-7a LG-7b LG-7c LG-7f LG-7g LG-R2 LP-5a LP-5b LP-5c LP-5e LP-R1",
+      "М62 (a ru text changed by one sign): красных 2 из 161: LG-1f LG-7a",
+      "М63 (a number in en changed): красных 1 из 161: LG-7b",
+      "М64 (a number in kk written as words): красных 1 из 161: LG-7b",
+      "М65 (Cyrillic letters left in en): красных 1 из 161: LG-7c",
+      "М66 (kk copied from ru): красных 1 из 161: LG-7c",
+      "М67 (one en text in both tenants): красных 1 из 161: LG-7d",
+      "М68 (points of a demo file changed): красных 6 из 161: LG-1f LG-7a LG-7g LP-5a LP-5c LP-R1",
+      "М69 (answers of the demo changed): красных 4 из 161: LG-1e LG-7g PE-3c PK-1f",
+      "М70 (the copy /1 changed by one sign): красных 3 из 161: LG-1e LG-1f LG-7a",
+      "М71 (view.js imports node:fs): красных 1 из 161: PK-7c",
+      "М72 (readdir in lang-check.js): красных 1 из 161: PK-8c",
+      "М73 (fetch( in view.js): красных 2 из 161: PK-7a TR-4b",
+      "М74 (engine.js has an import): красных 1 из 161: PE-8b",
+      "М75 (https:// in texts.js): красных 2 из 161: LG-10c TR-4f",
+      "М76 (process.env in texts.js): красных 3 из 161: LG-10d LG-4c TX-6d",
+      "14 своих мутантов сверх проекта (вид по форме, форма файла, длина в знаках, заморозка, второй аргумент textProblem):",
+      "Э1 (view sets keys by assignment): красных 1 из 161: LG-1i",
+      "Э2 (view makes plain objects): красных 1 из 161: LG-1i",
+      "Э3 (view takes any object that has ru): красных 1 из 161: LG-1i",
+      "Э4 (view takes only objects of strings): красных 1 из 161: LG-1i",
+      "Э5 (the form by an inherited schema): красных 1 из 161: LG-1h",
+      "Э6 (the form of null throws): красных 3 из 161: LG-1h PK-2c PK-R1",
+      "Э7 (choice without catch): красных 1 из 161: LG-4a",
+      "Э8 (lengths are not cut of spaces): красных 4 из 161: LG-2e PK-2c PK-5b PK-P6",
+      "Э9 (lengths in UTF-16 units): красных 4 из 161: LG-2e LG-2f PK-5b PK-P6",
+      "Э10 (phrase cut at any point): красных 3 из 161: LG-3c PK-5c PK-P6",
+      "Э11 (LANGUAGE_NAMES not frozen): красных 1 из 161: TX-6e",
+      "Э12 (LANGUAGES not frozen): красных 1 из 161: TX-6e",
+      "Э13 (constant of TEXTS not frozen): красных 1 из 161: TX-6e",
+      "Э14 (textProblem needs a second argument): красных 73 из 144: LG-10a LG-10b LG-1a LG-1b LG-1c LG-1d LG-1f LG-1i LG-2a LG-2b LG-2c LG-2d LG-2e LG-2f LG-2g LG-2h LG-3a LG-3b LG-3c LG-3d LG-3e LG-3f LG-3g LG-7g LG-R1 LG-R2 LG-R3 LG-R4 PE-0 PE-2e PE-3a PE-3b PE-3c PE-7a PE-7b PE-7c PE-8a PE-8e PK-1a PK-1e PK-2a PK-2b PK-2c PK-3a PK-3b PK-3c PK-3d PK-3e PK-4a PK-4b PK-4c PK-4f PK-5a PK-5b PK-5c PK-5d PK-6b PK-8a PK-8b PK-L2 PK-P5 PK-P6 PK-R1 PK-R2 PK-R3 PK-R4 test/picker-engine-property.test.js test/picker-lang-property.test.js",
+      "ловушки (слова в комментарии новых модулей, пропуск в списке модулей):",
+      "Л1 (word in a comment: renamed in lang-check.js): красных 1 из 161: PK-6e",
+      "Л2 (word in a comment: truncated in view.js): красных 1 из 161: PK-6e",
+      "Л3 (word in a comment: global in lang-check.js): красных 1 из 161: PK-8c",
+      "Л4 (word in a comment: readdir in view.js): красных 1 из 161: PK-8c",
+      "Л5 (word in a comment: node:path in lang-check.js): красных 1 из 161: PK-7c",
+      "Л6 (word in a comment: child_process in view.js): красных 2 из 161: PK-7a TR-4c",
+      "Л7 (word in a comment: fetch(x) in lang-check.js): красных 2 из 161: PK-7a TR-4b",
+      "Л8 (word in a comment: Math.random in view.js): красных 2 из 161: LG-10d PK-7a",
+      "Л9 (word in a comment: Date.now in lang-check.js): красных 1 из 161: LG-10d",
+      "Л10 (word in a comment: new Date in view.js): красных 1 из 161: LG-10d",
+      "Л11 (word in a comment: process.env in lang-check.js): красных 1 из 161: LG-10d",
+      "Л12 (word in a comment: XMLHttpRequest in public/texts.js): красных 1 из 161: LG-10c",
+      "Л13 (word in a comment: WebSocket in public/texts.js): красных 1 из 161: LG-10c",
+      "Л14 (word in a comment: fetch( in public/texts.js): красных 3 из 161: LG-10c TR-4b TR-4e",
+      "Л15 (word in a comment: node:fs in public/texts.js): красных 2 из 161: LG-4c TX-6d",
+      "Л16 (word in a comment: require(x) in public/texts.js): красных 2 из 161: LG-4c TX-6d",
+      "Л17 (word in a comment: import.meta in public/texts.js): красных 2 из 161: LG-4c TX-6d",
+      "Л18 (a new module missing from the list of the tests): красных 3 из 161: PE-8d PK-6e PK-7c",
+      "Л19 (a new module missing from the list of the tests (view)): красных 3 из 161: PE-8d PK-6e PK-7c",
+      "до добавления LG-10d три мутанта Л9 (Date.now), Л10 (new Date), Л11 (process.env) в комментарии новых модулей выживали - ни один тест их не ловил; добавлен LG-10d, после чего все три красные; весь набор мутантов затем прогнан заново на итоговых тестах",
+      "прежние мутанты М17 и М23 красит один LG-2h (не парный тест из таблицы проекта): привязка М23 поправлена по уточнению N2 (LG-2h, список и пустой список на месте текста); М48 красит строка 28 таблицы выбора языка (строка вместо списка), потому что функция выбора сама перехватывает исключение",
+      "после проб: diff -r tools/src и tools/test рабочего дерева и каждой копии пуст; shasum tools/src, package.json, README.md до и после совпадают; команд git checkout, reset, stash, clean не было"
+    ],
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "text": "Таблица замен З9-З11 называет tools/test/picker-robust.test.js, а write_set задания этот файл не перечисляет (в нём picker-lang*, picker-texts, picker-config, picker-helpers, picker-engine*). Без правки эти тесты молча читали бы демо-файлы /2 (Ф16). Три строки правлены по таблице; прошу подтвердить или расширить write_set."
+      },
+      {
+        "kind": "INFO",
+        "text": "Сверх проекта добавлены LG-1h (isFormatV2, уточнение в), LG-1i (вид по форме, F4 ревью, уточнение ж) и LG-10d (слова часов, случайности и среды в новых модулях): без LG-10d комментарий с Date.now, new Date или process.env в lang-check.js и view.js не краснил ни один тест. PE-6b охраняет только engine.js."
+      },
+      {
+        "kind": "INFO",
+        "text": "Ошибок в коде продукта не найдено: на настоящем коде все 43+7+7 новых тестов зелёные с первого прогона, кроме одной моей ошибки в помощнике (позиция повторного ключа), исправленной в тесте."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-helpers.js",
+      "tools/test/picker-config.test.js",
+      "tools/test/picker-robust.test.js",
+      "tools/test/picker-engine-helpers.js",
+      "tools/test/picker-engine.test.js",
+      "tools/test/picker-lang-helpers.js",
+      "tools/test/picker-lang.test.js",
+      "tools/test/picker-lang-property.test.js",
+      "tools/test/picker-texts.test.js",
+      "tools/test/fixtures/picker/e-field-schema.json",
+      "tools/test/fixtures/picker-lang/"
+    ]
+  }
+}

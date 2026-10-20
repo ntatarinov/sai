@@ -1,0 +1,252 @@
+{
+  "handoff_id": "step01-LANG061-20261020-01",
+  "run_id": "LANG061-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/LANG061-20261020-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-061"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "decisions/0069-picker-languages-and-ai-choices.md",
+      "docs/design/REQ-054-picker-tenant.md",
+      "docs/design/REQ-055-picker-engine.md",
+      "tools/src/picker/"
+    ],
+    "route": "ORCH -> CODE-DESIGNER (этот) -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV",
+    "write_set": [
+      "docs/design/REQ-061-picker-languages.md, handoffs/LANG061-20261020-01/step-01-code-designer.json"
+    ],
+    "base_tag": "base/LANG061-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T11:27:04Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "проект REQ-061 написан (19 разделов, 76 мутантов, таблица замен 15 строк); ответы на О1–О11 — decisions/0070; на ворота CODE-DESIGN-VALIDATOR"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 1 — проект кода REQ-061 (сайт подбора, три языка ru/kk/en: формат файла арендатора sai-picker-tenant/2, проверка, выбор языка, таблица текстов сайта texts.js, переводы двух демо-арендаторов). Требование — docs/requirements.yaml блок REQ-061 (критерии и проверки буквально, 10 критериев; прочитай и REQ-056 — раздел «Охранные тесты прежних требований» — как рамку для будущего сервера), решения 0065–0069 (0069 — форма /2, исключение для образца e-field-schema.json, выбор языка, texts.js, правило чисел), docs/design/REQ-054-picker-tenant.md и REQ-055-picker-engine.md (то, что уже выпущено), готовый код tools/src/picker/ и тесты tools/test/picker-*. Напиши docs/design/REQ-061-picker-languages.md: интерфейсы и форма данных (схема /2: объекты {ru,kk,en}, операторные поля одной строкой), изменения validate/conditions/places/text-rules/report/load/check (что меняется в каждом файле, что не трогается — engine.js не меняется ни на знак), правило E_TEXT для каждого языка (механический счёт слов; запрет «ты» только ru; правило чисел с разделителями), порядок и места ошибок (путь до языка, например questions[2].title.kk), модуль texts.js (структура таблицы, охранный тест на все константы), выбор языка (?lang= → сохранённый → ru — только данные и функция выбора, сервера ещё нет), переписывание демо-арендаторов в /2 «на месте» (русские тексты байт в байт прежние) и копий /1 в tools/test/fixtures/picker-legacy/ (какие тесты на какие файлы указывают), перевод kk и en (кто и как: список строк, правило терминов; смысловая проверка — отдельный читатель по критериям 7–8), образец e-field-schema.json: значение /3 и новая строка в EXPECTED (таблица замен для старых тестов — файл, строка, было → стало; ни один запрет не ослабляется; PK-6e, PK-7c и PE-8d: какие новые файлы в перечне и как меняются эти тесты), таблицу «критерий → элемент → тест» с идентификаторами, ловушки и список мутантов (минимум 40), план шагов для BACKEND-DEV (подшаги по риску: схема → проверка → texts.js → переводы), разделы о планке Q7–Q12, R2/R3 и «что меняется в README tools». В проекте нет кода реализации (только интерфейсы, формы, таблицы, псевдокод ≤ 5 строк). В файлы Sai не писать названий других проектов и путей компьютера (traces). Запреты: код и тесты не менять; git checkout/reset/stash/clean — только свежий git clone вне проекта для проб. Перед close — cd tools && npm run check, код 0; в result — вопросы к ORCH (выборы, которых нет в требовании).",
+    "acceptance_criteria": [
+      "Каждый критерий REQ-061 и пункт планки покрыты в docs/design/REQ-061-picker-languages.md",
+      "Таблица замен старых тестов и перечней; мутанты ≥ 40",
+      "Нет кода реализации; npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-20T10:38:08Z",
+  "started_at": "2026-10-20T10:38:08Z",
+  "completed_at": "2026-10-20T11:26:11Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Спроектирован код REQ-061 в docs/design/REQ-061-picker-languages.md (790 строк). Формат sai-picker-tenant/2: каждый текст для посетителя — объект {ru, kk, en}, operator_name и privacy_contact — одна строка. Проверка остаётся одной: режим /1 или /2 выбирает значение schema; новых кодов ошибок нет, место ошибки доходит до языка (questions[2].title.kk). Три новых файла: lang-check.js (проверка трёх языков), view.js (fileLanguages, tenantInLanguage — вид файла на одном языке) и public/texts.js (языки, названия, таблица текстов сайта, chooseLanguage); меняются limits.js, text-rules.js (wordsProblem, textProblem прежний), validate.js; engine.js, json.js, utf8.js, places.js, conditions.js, report.js, load.js, check.js, cli.js не меняются. Демо-арендаторы: копии /1 байт в байт в tools/test/fixtures/picker-legacy/, перепись в /2 на месте (297 текстов на язык), правило чисел, перевод двумя отдельными запусками и читатель. Таблица замен прежних тестов — 15 строк, ни один запрет не ослаблен; образец e-field-schema.json получает значение /3. Таблица «критерий → тест», 39 образцов с ожидаемыми строками, 76 мутантов (56 применены к прототипу и убиты), 11 вопросов ORCH и предложение decisions/0070.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "0, 1",
+        "what": "кратко; 23 проверенных факта с командами и выводом (метка, основа 1720 из 1720, образцы 41/1/2, читатели демо-файлов, закрытые перечни PK-6e/PK-7c/PE-8d и отсутствие перечня у PK-7a/PK-8c, ловушки слов в комментарии, 152 и 145 текстов, суммы, красные тесты по подшагам 0 → 3 → 5, таблица замен даёт 98 из 98, размер файлов)"
+      },
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "2, 3",
+        "what": "19 решений проекта и состав файлов с владельцами (BACKEND-DEV — код, данные, копии /1, README; TEST-DESIGNER — тесты, образцы, правки прежних тестов)"
+      },
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "4, 5",
+        "what": "формат /2 (19 мест текстов с границами, правила Я1–Я7), контракты limits.js, text-rules.js, lang-check.js, validate.js, view.js, texts.js; что не меняется; интерфейс для REQ-056…059, 063; пути отказа"
+      },
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "6, 7, 8",
+        "what": "тексты новых ошибок и порядок строк (измерено на прототипе); выбор языка — правило и таблица из 33 литеральных строк; texts.js — экспорты, правила констант, охранный тест с мутантами, поиск запретных слов целиком"
+      },
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "9, 10",
+        "what": "копии /1, перепись в /2, счёт текстов по видам, процесс перевода (список пар, словарь, правила, самопроверка, читатель), правило чисел с примерами, 39 образцов picker-lang/ с ожидаемыми строками"
+      },
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "11",
+        "what": "таблица замен З1–З15 (файл:строка, было → стало), какие тесты на какие файлы указывают, что не меняется в PK-6e, PK-7a, PK-7b, PK-7c, PK-8c, PK-8d, PK-8e, PE-8b, PE-8d, TR-4*"
+      },
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "12, 13, 14",
+        "what": "подшаги 61a–61e с красными тестами (проверено прототипом); таблица «критерий → элемент → тест» для 10 критериев, тесты свойств и помощники"
+      },
+      {
+        "file": "docs/design/REQ-061-picker-languages.md",
+        "section": "15, 16, 17, 18, 19",
+        "what": "20 ловушек, 76 мутантов, что устаревает вне проекта (README tools, REQ-054/055 пометки, requirements.yaml), планка Q1–Q14 и R1–R3, порядок ворот, вопросы О1–О11 и предложение decisions/0070"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "git rev-parse HEAD; git rev-parse base/LANG061-20261020-01; git status --short (до работы)",
+        "out": "a5dda40674dd22aa2d9695bc29ff112559c43342; a5dda40674dd22aa2d9695bc29ff112559c43342; ?? handoffs/LANG061-20261020-01/"
+      },
+      {
+        "cmd": "<scratch>/p061/work (свежий клон метки): cd tools && npm run check",
+        "out": "код 0; # tests 1720, # pass 1720, # fail 0, # skipped 0, # todo 0; traces: файлов проверено 1745, следов 0, пропущено 58; 1 мин 56 с"
+      },
+      {
+        "cmd": "ls tools/test/fixtures/picker | wc -l; grep -la 'sai-picker-tenant/1' tools/test/fixtures/picker/* | wc -l; grep -l 'sai-picker-tenant/2' …; grep -La 'sai-picker-tenant/' …",
+        "out": "44; 41; fixtures/picker/e-field-schema.json; e-json-empty.txt, e-json-utf8.txt"
+      },
+      {
+        "cmd": "sed -n 285,290p tools/test/picker-helpers.js; grep -rn 'Допустимо только' tools/test",
+        "out": "запись e-field-schema.json — строки 285–290, текст в строке 288; поиск находит только picker-helpers.js:288"
+      },
+      {
+        "cmd": "grep -rn 'DEMO_TENANTS|demo-tenants|tenantPath' tools/test tools/src",
+        "out": "читают демо-файлы: picker-config.test.js:35 и :70, picker-robust.test.js:21 и :245, picker-engine-helpers.js:164 и :170; определение picker-helpers.js:19"
+      },
+      {
+        "cmd": "grep -rn 'ALL_MODULES|CORE_MODULES' tools/test; grep -n 'pickerSources()' tools/test/picker-config.test.js",
+        "out": "перечни: PK-6e (742), PK-7c (786), PE-8d (1372); pickerSources() в строках 741, 759, 782, 834 — у PK-7a и PK-8c перечня нет (расхождение с описанием требования)"
+      },
+      {
+        "cmd": "прототип в свежих копиях метки: подшаг 61a (texts.js, limits.js, text-rules.js) → format:check, lint, traces, handoffs-check, npm test",
+        "out": "код 0; # tests 1720 # pass 1720 # fail 0; traces 1746 файлов"
+      },
+      {
+        "cmd": "прототип: + lang-check.js, validate.js, view.js (61b)",
+        "out": "# pass 1717 # fail 3: PK-2a, PK-6e, PE-8d; traces 1748"
+      },
+      {
+        "cmd": "прототип: + копии /1 и демо /2 (61d); повтор с kk, en не равными ru",
+        "out": "# pass 1715 # fail 5: PK-1b, PK-1c, PK-2a, PK-6e, PE-8d; повтор picker-*: те же пять"
+      },
+      {
+        "cmd": "прототип: таблица замен З1–З15; node --test test/picker-*.test.js; npm run check",
+        "out": "# tests 98 # pass 98 # fail 0; npm run check — код 0, # tests 1720, # pass 1720, # fail 0, traces 1750 файлов"
+      },
+      {
+        "cmd": "прототип: комментарий в view.js со словами renamed, truncated, global, readdir, node:path, child_process, fetch(x), Math.random → node --test picker-config picker-engine traces-runtime",
+        "out": "renamed, truncated — PK-6e; global, readdir — PK-8c; node:path — PK-7c; child_process — PK-7a и TR-4c; fetch(x) — PK-7a и TR-4b; Math.random — PK-7a"
+      },
+      {
+        "cmd": "прототип view.js + неизменённый engine.js: 2 арендатора × 1000 наборов (зерно 61001), вид ru против копии /1, kk и en против копии без строк",
+        "out": "sets 2000 diffs 0"
+      },
+      {
+        "cmd": "прототип: 37 образцов picker-lang/ через check и lineProblems; набор проб battery.mjs",
+        "out": "36 файлов с ошибками, строк с замечаниями lineProblems 0; 320 строк результатов проб, исключений 0"
+      },
+      {
+        "cmd": "прототип: 56 мутантов по одному (замена куска текста) против набора проб",
+        "out": "killed 56 of 56; survived: []"
+      },
+      {
+        "cmd": "прототип: правило чисел на 29 примерах",
+        "out": "значения совпали с примерами п. 9.5"
+      },
+      {
+        "cmd": "shasum -a 256 demo-tenants/*.json demo-answers/*.json engine.js; git show base/…:…/uchet-pro.json | shasum -a 256",
+        "out": "uchet-pro 2f6c3437…41eb (равна сумме файла на метке), svet-marketing 46d3a519…c1; demo-answers c412d398…, 8d3be981…; engine.js a8263757…ef1fe"
+      },
+      {
+        "cmd": "cd tools && npm run traces (после проекта)",
+        "out": "traces: файлов проверено 1747, следов 0, пропущено 57"
+      },
+      {
+        "cmd": "cd tools && npm run check (в проекте, код и тесты не менялись)",
+        "out": "код 0; # tests 1720, # pass 1720, # fail 0, # skipped 0, # todo 0; handoffs-check: файлов проверено 1013, нарушений 0"
+      },
+      {
+        "cmd": "git status --short (после работы)",
+        "out": "?? docs/design/REQ-061-picker-languages.md; ?? handoffs/LANG061-20261020-01/ — код, тесты и образцы проекта не менялись"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "О1. operator_name и privacy_contact у uchet-pro в демо-файле — русские фразы («Учёт-Про, вымышленная фирма для примера», «По вопросам о данных пишите на privacy@uchet-pro.example.»), а по требованию в /2 они остаются одной строкой на все языки и равны копии /1 (критерий 7). Посетитель на kk или en увидит русскую фразу. До ответа: значения не меняются, как их показывать — решает REQ-059. Другой ответ: править требование (оставить в демо только имя и адрес либо сделать поля текстами на трёх языках)."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "О2. Выбор языка: язык адреса верный, но его нет в файле, а сохранённый есть. Требование: «заменяется на ru». До ответа: сразу ru, сохранённый не пробуется (строка 19 таблицы п. 7). Другой ответ — пробовать сохранённый."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "О3. Неизвестное значение schema: остальное читается как /1 (так образец со значением /3 даёт ровно одну строку, критерий 1). Файл /2 с schema /3 даст ту же строку и сотню строк «Ожидается строка». Другой ответ — остановиться после ошибки schema."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "О4. Кто и когда делает байтовые копии /1: до ответа — BACKEND-DEV, подшаг 61d, до переписывания; при ответе «TEST-DESIGNER» между шагами 2 и 5 красных станет больше."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "О5. Критерий 8 требует шага BA-ANALYST (WF-02 шаг 8), а запущенной системы нет. До ответа: шаг идёт как «читатель» без системы, по таблице пар из файлов, как шаги 7–8 пропущены в REQ-054. Другой ответ — вынести критерий 8 в отдельное требование (запасной разрез из текста требования)."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "О6. Механические защиты перевода (kk и en не равны ru у текстов от 3 слов; в kk у текстов от 6 слов есть буква из ә ғ қ ң ө ұ ү һ і; цифры только ASCII) — добавка проекта сверх требования. До ответа включены (LG-7c). Можно убрать."
+      },
+      {
+        "id": "I7",
+        "kind": "DISCREPANCY",
+        "text": "О7. Описание требования (критерий 9) говорит, что PK-7a и PK-8c «получают новые модули в свой перечень». Перечня у них нет: оба перебирают каталог сами (pickerSources(), picker-config.test.js, строки 759 и 834) — правок не требуют, новые модули проверяются автоматически (измерено на прототипе: слова global и Math.random в комментарии нового файла краснят PK-8c и PK-7a). Остальные факты задания подтверждены (44 образца, 41 со /1, один со /2, два без schema; строки EXPECTED 285–290, строка текста 288; число 12 в PE-8d)."
+      },
+      {
+        "id": "I8",
+        "kind": "QUESTION",
+        "text": "О8. Критерии 4 и 6 запрещают в texts.js «import, require, node:, process». До ответа: слова целиком (регулярные выражения п. 8.4), иначе английские «Required», «Important», «Processing» в строках REQ-056…REQ-059 краснили бы тест."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "О9. Порядок строк внутри одного текста, если ключи записаны не в порядке ru, kk, en: по месту в файле (образец e-lang-key-order). Требование «внутри одного текста — ru, kk, en» верно для файла с ключами в этом порядке."
+      },
+      {
+        "id": "I10",
+        "kind": "QUESTION",
+        "text": "О10. Критерий 8 охватывает только демо-арендаторов; константы texts.js (сейчас одна, language_switcher_label) читателю не предъявляются. До ответа: каждое требование, которое добавляет ключи, предъявляет их пары читателю в своём шаге приёмки."
+      },
+      {
+        "id": "I11",
+        "kind": "QUESTION",
+        "text": "О11. Предел файла 512 КБ (decisions/0066) задан для одного языка. Демо-файлы /2 — 54–57 КБ, но файл со всеми местами, заполненными до максимума на трёх языках, ушёл бы за предел (около 575 тысяч знаков, до 1,1 МБ). До ответа предел не меняется (load.js не меняется), слишком большой файл — прежний отказ кода 2."
+      },
+      {
+        "id": "I12",
+        "kind": "PROPOSAL_DECISION",
+        "text": "Предложение записи decisions/0070-picker-languages-conventions.md (номер назначает ORCH), п. 19.2 проекта: чтение неизвестной schema как /1; выбор языка (ru сразу); вид файла — обход значения; одна константа LANGUAGES в public/texts.js, limits.js её переэкспортирует; закрытый список экспортов texts.js; operator_name и privacy_contact — одна строка; порядок строк по файлу; запретные слова texts.js — слова целиком; механические защиты перевода; копии /1 делает BACKEND-DEV. Ответы ORCH на О1–О11 вносятся в запись."
+      },
+      {
+        "id": "I13",
+        "kind": "PROPOSAL_AP",
+        "text": "Кандидат в docs/anti-patterns.md (Q13), решает DOC-UPDATER или ORCH: «требование называет перечень охранных тестов, не сверив его с кодом тестов» (I7); продолжает AP-112."
+      },
+      {
+        "id": "I14",
+        "kind": "NOTE",
+        "text": "Переводы kk делает и проверяет агент, не носитель казахского (decisions/0069, п. 6): список пар kk с оговорками читателя нужно показать владельцу перед публикацией; в проект не входит."
+      },
+      {
+        "id": "I15",
+        "kind": "NOTE",
+        "text": "Красные существующие тесты между шагами 2 и 5 названы заранее (п. 12): после 61b — PK-2a, PK-6e, PE-8d; после 61d добавляются PK-1b, PK-1c. Правит их TEST-DESIGNER по таблице замен п. 11 (15 строк); после неё picker-* — 98 из 98."
+      }
+    ],
+    "artifacts_out": ["docs/design/REQ-061-picker-languages.md"],
+    "prototype": {
+      "where": "<scratch>/p061 (свежие клоны метки base/LANG061-20261020-01 вне проекта: work, sA, sB, sC; скрипты fx/gen.mjs, fx/battery.mjs, fx/mut.mjs, fx/nums.mjs)",
+      "what": "около 120 строк: public/texts.js, lang-check.js, view.js, правки limits.js, text-rules.js, validate.js; демо-файлы /2 с подставными kk и en (для проб тестов); в проект не входит и не сохраняется"
+    }
+  }
+}

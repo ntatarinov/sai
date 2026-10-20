@@ -2,9 +2,19 @@
 // pure function: it does not change its input, does not read the clock, the environment
 // or the disk, and does not throw on any value that comes from JSON.
 import { checkCondition } from "./conditions.js";
-import { CONTACT_FIELDS, FORMAT_ID, QUESTION_TYPES } from "./limits.js";
+import { checkLanguageText, isFormatV2 } from "./lang-check.js";
+import {
+  CONTACT_FIELDS,
+  DEFAULT_LANGUAGE,
+  FORMAT_V1,
+  FORMAT_V2,
+  QUESTION_TYPES,
+} from "./limits.js";
 import { pathText, show } from "./places.js";
-import { textProblem, trimmedLength } from "./text-rules.js";
+import { textProblem, trimmedLength, wordsProblem } from "./text-rules.js";
+
+// The language whose texts are written in the form "вы": the address "ты" is forbidden here only.
+const FORMAL_LANGUAGE = "ru";
 
 const TENANT_ID = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 const INNER_ID = /^[a-z0-9-]{1,40}$/;
@@ -50,8 +60,9 @@ function knownType(question) {
 }
 
 // The context of one check: the issues (one per place, the first found wins), the
-// rules of type, size and range, and the tables for the references.
-function makeContext() {
+// rules of type, size and range, and the tables for the references. `mode` is "/1"
+// (texts for the visitor are strings) or "/2" (each is an object with ru, kk and en).
+function makeContext(mode) {
   const issues = [];
   const places = new Set();
   const ctx = {
@@ -103,8 +114,14 @@ function makeContext() {
     bool(path, v) {
       if (typeof v !== "boolean") ctx.wrong(path, "bool");
     },
-    // A text for the visitor: type, length, then the rule of understandable text.
+    // A text for the visitor: a string in /1, an object with three languages in /2.
     text(path, v, min, max) {
+      if (mode === "/2") checkLanguageText(ctx, path, v, min, max);
+      else ctx.line(path, v, min, max, DEFAULT_LANGUAGE);
+    },
+    // A text in one language: type, length, then the rule of understandable text. The
+    // address "ты" is forbidden in ru only.
+    line(path, v, min, max, language) {
       if (typeof v !== "string") {
         ctx.wrong(path, "string");
         return;
@@ -118,7 +135,8 @@ function makeContext() {
         );
         return;
       }
-      const problem = textProblem(v);
+      const problem =
+        language === FORMAL_LANGUAGE ? textProblem(v) : wordsProblem(v);
       if (problem === null) return;
       ctx.add(
         "E_TEXT",
@@ -357,9 +375,13 @@ function checkLeads(ctx, path, value) {
   checkObject(ctx, path, value, [
     field("enabled", true, (p, v) => ctx.bool(p, v)),
     field("contact_fields", true, (p, v) => checkContactFields(ctx, p, v)),
-    field("operator_name", true, (p, v) => ctx.text(p, v, 1, 100)),
+    field("operator_name", true, (p, v) =>
+      ctx.line(p, v, 1, 100, DEFAULT_LANGUAGE),
+    ),
     field("consent_text", true, (p, v) => ctx.text(p, v, 1, 600)),
-    field("privacy_contact", true, (p, v) => ctx.text(p, v, 1, 200)),
+    field("privacy_contact", true, (p, v) =>
+      ctx.line(p, v, 1, 200, DEFAULT_LANGUAGE),
+    ),
     field("retention_days", true, (p, v) => ctx.int(p, v, 1, 365)),
   ]);
 }
@@ -433,7 +455,7 @@ function checkReachable(ctx, doc) {
 
 // validateTenant(doc, { fileName }) -> [{ code, path, text }] in the order of finding.
 export function validateTenant(doc, options = {}) {
-  const ctx = makeContext();
+  const ctx = makeContext(isFormatV2(doc) ? "/2" : "/1");
   if (!isObject(doc)) {
     ctx.add(
       "E_FIELD",
@@ -451,11 +473,11 @@ export function validateTenant(doc, options = {}) {
   checkObject(ctx, [], doc, [
     field("schema", true, (p, v) => {
       if (typeof v !== "string") ctx.wrong(p, "string");
-      else if (v !== FORMAT_ID)
+      else if (v !== FORMAT_V1 && v !== FORMAT_V2)
         ctx.add(
           "E_FIELD",
           p,
-          `Допустимо только: ${FORMAT_ID}. Исправьте значение.`,
+          `Допустимо только: ${FORMAT_V1} или ${FORMAT_V2}. Исправьте значение.`,
         );
     }),
     field("id", true, (p, v) => checkTenantId(ctx, p, v, fileName)),

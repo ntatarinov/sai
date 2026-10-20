@@ -9,7 +9,7 @@ import { checkFile } from "../src/picker/check.js";
 import { parseJson } from "../src/picker/json.js";
 import {
   DEMO_ANSWERS,
-  DEMO_TENANTS,
+  LEGACY_TENANTS,
   makeRng,
   visibleQuestionIds,
 } from "./picker-helpers.js";
@@ -161,13 +161,13 @@ export function noProto(tenant) {
 
 // The tenant as the check of the file gives it (no prototype), and the plain one.
 export function demoTenant(id) {
-  const checked = checkFile(path.join(DEMO_TENANTS, `${id}.json`));
+  const checked = checkFile(path.join(LEGACY_TENANTS, `${id}.json`));
   if (checked.exitCode !== 0)
     throw new Error(`${id}: ${checked.stdout.join()}`);
   return checked.tenant;
 }
 export const demoPlain = (id) =>
-  JSON.parse(fs.readFileSync(path.join(DEMO_TENANTS, `${id}.json`), "utf8"));
+  JSON.parse(fs.readFileSync(path.join(LEGACY_TENANTS, `${id}.json`), "utf8"));
 export const demoAnswers = (id) =>
   JSON.parse(fs.readFileSync(path.join(DEMO_ANSWERS, `${id}.json`), "utf8"));
 export const DEMO_IDS = ["uchet-pro", "svet-marketing"];

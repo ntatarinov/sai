@@ -1,0 +1,142 @@
+{
+  "handoff_id": "step09-LANG061-20261020-01",
+  "run_id": "LANG061-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/LANG061-20261020-01/step-09-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-061"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-061-picker-languages.md",
+      "tools/src/picker/demo-tenants/uchet-pro.json",
+      "tools/src/picker/demo-tenants/svet-marketing.json",
+      "handoffs/LANG061-20261020-01/step-02b-backend-dev.json",
+      "handoffs/LANG061-20261020-01/step-02c-backend-dev.json"
+    ],
+    "route": "ЧИТАТЕЛИ (kk, en) -> BACKEND-DEV (этот) -> ЧИТАТЕЛИ заново -> BA-ANALYST",
+    "write_set": [
+      "tools/src/picker/demo-tenants/uchet-pro.json, tools/src/picker/demo-tenants/svet-marketing.json, handoffs/LANG061-20261020-01/step-09-backend-dev.json"
+    ],
+    "base_tag": "base/LANG061-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T15:08:02Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "33 строки исправлены (21 kk, 12 en); npm run check код 0, 1780; ru байт в байт; перепроверка читателями новыми запусками по исправленным строкам"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 9 — исправления переводов демо-арендаторов по замечаниям читателей (критерий 8 REQ-061, п. 9.4 п. 6 проекта docs/design/REQ-061-picker-languages.md). Читатель казахского нашёл 21 строку с хотя бы одним «нет» (2 смысловые: 160 — смысл обратный, 139 — «бос бюджет» двусмысленно; 4 пропуск/добавление: 105, 221, 203, 152; 14 неестественно: 19, 41, 55, 68, 248, 121, 141, 145, 197, 220, 288, 210, 273, 287; 1 обращение: 268 — «Сіздің» с прописной). Читатель английского — 12 строк, только естественность: 56, 70, 81, 91, 102 («Submit a request for a match» → естественнее «…for a recommendation»; проведи единообразно по словарю: если меняешь термин «подбор» в одном месте — проверь все места термина и no_match_text), 152 (согласие — одна фраза), 221 («already ready»), 249 («hall»), 259 (что кончается), 270, 283, 295. Номера строк — по спискам пар, лежащим вне проекта в каталоге читателей (путь в сообщении ORCH; в handoff и файлы проекта путь не писать — называй «каталог читателей»): файлы pairs-kk.txt, pairs-en.txt (номер|файл|путь поля|русский|перевод) и answers-kk.tsv, answers-en.tsv (номер, о1…о5, комментарий). Что сделать: для каждой отмеченной строки примени вариант читателя или свой лучший вариант (укажи в result, какой), соблюдая правила п. 9.4/9.5: смысл тот же, ничего не добавлено и не пропущено, вежливое «Сіз»/«you», числа теми же, фраза ≤ 18 слов, границы знаков из п. 4.3 (особенно unit), ни один текст одного файла не совпадает с текстом другого файла в том же языке, kk-текст от 6 слов — с казахской буквой, kk и en не равны ru у текстов от 3 слов, нет переносов и табуляций. Править только поля kk и en в tools/src/picker/demo-tenants/uchet-pro.json и svet-marketing.json по путям из спискa (путь поля + файл); ru, id, числа, баллы, порядок — не менять. Если по дороге нашёл другую очевидную ошибку перевода — не правь, запиши в result.issues. Контроль: npm run -s picker -- check на обоих — код 0 и «вопросов 12, решений 5, правил 39.» / «вопросов 11, решений 5, правил 37.»; ru-вид побайтно равен копиям /1 (tenantInLanguage(…, 'ru') без поля schema); число мест 152 и 145. Тесты и код не менять. Запреты: git checkout/reset/stash/clean; пробы на свежем git clone вне проекта; без названий других проектов и путей компьютера в файлах и result. Перед close: cd tools && npm run check — код 0 (все 1780 тестов зелёные); в result — таблица «строка → было → стало → источник (читатель/свой)» по 33 строкам.",
+    "acceptance_criteria": [
+      "33 отмеченные строки исправлены (21 kk, 12 en); таблица «было → стало» в result",
+      "picker check код 0, числа верные; ru байт в байт",
+      "npm run check код 0, 1780 из 1780"
+    ]
+  },
+  "created_at": "2026-10-20T14:58:48Z",
+  "started_at": "2026-10-20T14:58:48Z",
+  "completed_at": "2026-10-20T15:05:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправлены 33 строки перевода по замечаниям читателей: 21 kk и 12 en, только поля kk и en в двух демо-файлах. Варианты читателя применены в 30 строках; в 3 строках (en 152, 221, 249) и в одной букве kk 268 — свой вариант (причины в таблице). Термин «подбор» в en: «a match» -> «a recommendation» во всех 5 местах (других мест термина нет; no_match_text его не содержит, словарь обновлён). Таблица «строка -> было -> стало -> источник» — в changes[0].table (номера — по спискам пар каталога читателей).",
+    "changes": [
+      {
+        "file": "tools/src/picker/demo-tenants/uchet-pro.json",
+        "section": "9.4 п. 6 проекта (исправление по читателям)",
+        "what": "kk: 105, 121, 139, 141, 145, 152, 19, 41, 55, 68; en: 56, 70, 81, 91, 102, 152. ru, id, числа, баллы, порядок не менялись"
+      },
+      {
+        "file": "tools/src/picker/demo-tenants/svet-marketing.json",
+        "section": "9.4 п. 6 проекта (исправление по читателям)",
+        "what": "kk: 160, 197, 203, 210, 220, 221, 248, 268, 273, 287, 288; en: 221, 249, 259, 270, 283, 295. ru, id, числа, баллы, порядок не менялись"
+      },
+      {
+        "file": "handoffs/LANG061-20261020-01/step-09-backend-dev.json",
+        "section": "handoff",
+        "what": "status, completed_at, result",
+        "table": [
+          "kk 19 (uchet-pro, questions[4].title): было «Қазір Сізге не көбірек кедергі келтіреді?» -> стало «Қазір Сізге ең көп не кедергі келтіреді?» [читатель]",
+          "kk 41 (uchet-pro, questions[9].options[1].label): было «Жоқ, таза парақтан бастаймыз» -> стало «Жоқ, нөлден бастаймыз» [читатель]",
+          "kk 55 (uchet-pro, solutions[0].needs_from_you[0]): было «Тауарлар тізімі және ағымдағы қалдықтар» -> стало «Ағымдағы қалдықтары көрсетілген тауарлар тізімі» [читатель]",
+          "kk 68 (uchet-pro, solutions[1].needs_from_you[0]): было «Бағасы бар тауарлар тізімі» -> стало «Бағалары көрсетілген тауарлар тізімі» [читатель]",
+          "kk 105 (uchet-pro, solutions[4].not_suitable_when[0]): было «Сізде есепке алу сәйкессіздіксіз жүргізіліп жатыр» -> стало «Сізде есепке алу қазірдің өзінде сәйкессіздіксіз жүргізіледі» [читатель]",
+          "kk 121 (uchet-pro, rules[15].text): было «Қалдықтардың сөреге сәйкес келмеуін ең жақсы түгендеу жояды.» -> стало «Қалдықтардың сөреге сәйкес келмеуін түгендеу ең жақсы жояды.» [читатель]",
+          "kk 139 (uchet-pro, rules[33].text): было «Бос бюджет ортақ есепке алуды бірден жолға қоюға мүмкіндік береді.» -> стало «Еркін бюджет ортақ есепке алуды бірден жолға қоюға мүмкіндік береді.» [читатель]",
+          "kk 141 (uchet-pro, rules[35].text): было «Нүктелердің бірыңғай есепке алуы тауардың әр бірлігін қадағалауға көмектеседі.» -> стало «Нүктелерді бірыңғай есепке алу тауардың әр бірлігін қадағалауға көмектеседі.» [читатель]",
+          "kk 145 (uchet-pro, hypotheses[0].title): было «Қалдықтар қолмен енгізуден сәйкес келмейді» -> стало «Қалдықтар қолмен енгізу салдарынан сәйкес келмейді» [читатель]",
+          "kk 152 (uchet-pro, leads.consent_text): было «Мен өтінім бойынша байланысу үшін компанияның менің атымды және байланыс деректерімді сақтайтынымен келісемін.» -> стало «Компания өтінім бойынша менімен байланысу үшін менің атым мен байланыс деректерімді сақтайтынына келісемін.» [читатель]",
+          "kk 160 (svet-marketing, questions[1].help): было «Жұмсауға қимайтын соманы атаңыз.» -> стало «Жұмсауға өкінбейтін соманы атаңыз.» [читатель]",
+          "kk 197 (svet-marketing, questions[10].options[2].label): было «Жеке адам бар» -> стало «Арнайы адам бар» [читатель]",
+          "kk 203 (svet-marketing, solutions[0].needs_from_you[0]): было «Мекеменің мекенжайы мен жұмыс уақыты» -> стало «Мекенжай және жұмыс уақыты» [читатель]",
+          "kk 210 (svet-marketing, solutions[1].summary): было «Біз бір ай алға фотосуреттер мен жарияланымдар дайындаймыз. Сіз дайын жоспар мен мәтіндерді аласыз.» -> стало «Біз фотосуреттер мен жарияланымдарды бір айға алдын ала дайындаймыз. Сіз дайын жоспар мен мәтіндерді аласыз.» [читатель]",
+          "kk 220 (svet-marketing, solutions[1].not_suitable_when[0]): было «Әлеуметтік желілер бойынша жеке маман бұрыннан бар» -> стало «Әлеуметтік желілер бойынша арнайы маман бұрыннан бар» [читатель]",
+          "kk 221 (svet-marketing, solutions[1].not_suitable_when[1]): было «Кәсіби фотосуреттер дайын» -> стало «Кәсіби фотосуреттер бұрыннан дайын» [читатель]",
+          "kk 248 (svet-marketing, solutions[4].needs_from_you[0]): было «Бағалары бар қызметтер тізімі» -> стало «Бағалары көрсетілген қызметтер тізімі» [читатель]",
+          "kk 268 (svet-marketing, rules[14].text): было «Жаңа қонақтарға алдымен сіздің бар екеніңізді айту керек.» -> стало «Жаңа қонақтарға алдымен Сіздің бар екеніңізді айту керек.» [читатель (исправлена одна буква)]",
+          "kk 273 (svet-marketing, rules[19].text): было «Жақсы фотосуреттерсіз жарнама қонақтарды дерлік әкелмейді.» -> стало «Жақсы фотосуреттерсіз жарнама қонақты іс жүзінде әкелмейді.» [читатель]",
+          "kk 287 (svet-marketing, rules[33].text): было «Әлеуметтік желілерді Сіз өзіңіз жүргізесіз, сондықтан біздің команда жұмыстың бір бөлігін алады.» -> стало «Әлеуметтік желілерді Сіз өзіңіз жүргізесіз, сондықтан біздің команда жұмыстың бір бөлігін өз мойнына алады.» [читатель]",
+          "kk 288 (svet-marketing, rules[34].text): было «Әлеуметтік желілер бойынша жеке маман бұрыннан бар, контент азырақ қажет.» -> стало «Әлеуметтік желілер бойынша арнайы маман бұрыннан бар, контент азырақ қажет.» [читатель]",
+          "en 56 (uchet-pro, solutions[0].next_steps[0]): было «Submit a request for a match» -> стало «Submit a request for a recommendation» [читатель]",
+          "en 70 (uchet-pro, solutions[1].next_steps[0]): было «Submit a request for a match» -> стало «Submit a request for a recommendation» [читатель]",
+          "en 81 (uchet-pro, solutions[2].next_steps[0]): было «Submit a request for a match» -> стало «Submit a request for a recommendation» [читатель]",
+          "en 91 (uchet-pro, solutions[3].next_steps[0]): было «Submit a request for a match» -> стало «Submit a request for a recommendation» [читатель]",
+          "en 102 (uchet-pro, solutions[4].next_steps[0]): было «Submit a request for a match» -> стало «Submit a request for a recommendation» [читатель]",
+          "en 152 (uchet-pro, leads.consent_text): было «I agree that the company will save my name and contact details. This is so that it can contact me about the request.» -> стало «I agree that the company will keep my name and contact details to reach me about my request.» [свой (вариант читателя 21 слово, предел 18)]",
+          "en 221 (svet-marketing, solutions[1].not_suitable_when[1]): было «Professional photos are already ready» -> стало «Professional photos have already been taken» [свой (читатель предлагал «already exist»)]",
+          "en 249 (svet-marketing, solutions[4].needs_from_you[1]): было «Work schedule of the stylists or the hall» -> стало «Work schedule of the stylists or the venue» [свой (читатель предлагал «hall staff»)]",
+          "en 259 (svet-marketing, rules[5].text): было «Paid advertising runs out quickly on a small budget.» -> стало «On a small budget, the money for paid advertising runs out quickly.» [читатель]",
+          "en 270 (svet-marketing, rules[16].text): было «Fame in the city is built on regular posts.» -> стало «Name recognition in the city is built on regular posts.» [читатель]",
+          "en 283 (svet-marketing, rules[29].text): было «It is safer to start your first experience with a small launch.» -> стало «For a first try, it is safer to start with a small launch.» [читатель]",
+          "en 295 (svet-marketing, hypotheses[2].title): было «Some bookings are lost by phone» -> стало «Some bookings are lost over the phone» [читатель]"
+        ]
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "cd tools && npm run -s picker -- check src/picker/demo-tenants/uchet-pro.json; ... svet-marketing.json",
+        "out": "код 0 и 0; «Файл арендатора uchet-pro в порядке: вопросов 12, решений 5, правил 39.»; «Файл арендатора svet-marketing в порядке: вопросов 11, решений 5, правил 37.»"
+      },
+      {
+        "cmd": "tenantInLanguage(файл, \"ru\") без поля schema против файлов /1 базового коммита (свежий клон вне проекта); grep -o '\"ru\":' / '\"kk\":' / '\"en\":' | wc -l",
+        "out": "ru-вид побайтно равен копиям /1 у обоих файлов; мест 152 (uchet-pro) и 145 (svet-marketing) на каждом из трёх языков"
+      },
+      {
+        "cmd": "скрипт вне проекта по всем текстам обоих файлов",
+        "out": "замечаний 0: нет пробелов по краям, табуляций и переносов; в en нет кириллицы; kk и en не равны ru у текстов от 3 слов; в kk у текстов от 6 слов есть казахская буква; фраз длиннее 18 слов нет (picker check тоже); unit в пределе; текстов, общих у двух файлов, нет ни на ru, ни на kk, ни на en"
+      },
+      {
+        "cmd": "cd tools && npm run check",
+        "out": "код 0; # tests 1780, # pass 1780, # fail 0, # skipped 0; format:check, lint, traces, handoffs-check — без ошибок"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DOUBTFUL_TRANSLATION",
+        "text": "Для повторного чтения: en 152 — вариант читателя (21 слово) длиннее предела 18 слов, поэтому согласие переписано одной фразой в 18 слов: «I agree that the company will keep my name and contact details to reach me about my request.» («чтобы связаться со мной по заявке» -> «to reach me about my request»). en 249 — «зала» (ru) теперь «the venue» (слово «venue» уже стоит в этих текстах как «заведение»), а не «hall staff», чтобы не добавлять «staff». en 221 — «Professional photos have already been taken» (читатель предлагал «already exist»; «готовы» = уже сделаны)."
+      },
+      {
+        "id": "I2",
+        "kind": "DOUBTFUL_TRANSLATION",
+        "text": "kk, для носителя (владелец, decisions/0069 п. 6): 121 «…түгендеу ең жақсы жояды» и 273 «…қонақты іс жүзінде әкелмейді» взяты у читателя дословно; читатель не носитель казахского, поэтому оба порядка слов и «арнайы маман/адам» (197, 220, 288, вместо «жеке») стоит показать владельцу. kk 268 — исправлена только прописная буква «Сіздің»."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Иных очевидных ошибок перевода по дороге не замечено (пары вне отмеченных 33 не перечитывались построчно: читатель отметил их «да»). Тесты и код не менялись; существующие тесты эти тексты не закрепляют и остались зелёными."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/picker/demo-tenants/uchet-pro.json",
+      "tools/src/picker/demo-tenants/svet-marketing.json",
+      "handoffs/LANG061-20261020-01/step-09-backend-dev.json"
+    ]
+  }
+}

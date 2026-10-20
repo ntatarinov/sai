@@ -1,7 +1,11 @@
 // The named limits of the tenant file check (design REQ-054, 5.1). Nothing here
 // reads the disk, the clock or the environment.
 
-export const FORMAT_ID = "sai-picker-tenant/1";
+// The one place where the core depends on a file of public/ (design REQ-061, 5.1).
+export { DEFAULT_LANGUAGE, LANGUAGES } from "./public/texts.js";
+
+export const FORMAT_V1 = "sai-picker-tenant/1";
+export const FORMAT_V2 = "sai-picker-tenant/2";
 export const MAX_FILE_BYTES = 524288;
 export const MAX_DEPTH = 20;
 export const MAX_LINES = 100;

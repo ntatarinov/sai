@@ -1,0 +1,144 @@
+{
+  "handoff_id": "step05-LANG061-20261020-01",
+  "run_id": "LANG061-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/LANG061-20261020-01/step-05-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-061"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/LANG061-20261020-01/step-04b-reviewer.json",
+      "docs/design/REQ-061-picker-languages.md",
+      "tools/src/picker/",
+      "tools/README.md"
+    ],
+    "route": "REVIEWER FAIL -> CODE-FIXER (этот) -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "tools/src/picker/validate.js, tools/src/picker/view.js, tools/src/picker/lang-check.js, tools/src/picker/limits.js, tools/README.md, handoffs/LANG061-20261020-01/step-05-code-fixer.json"
+    ],
+    "base_tag": "base/LANG061-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T12:43:48Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F2–F6 исправлены; вывод до/после побайтно равен (649 строк); красные ровно прежние пять; format/lint/traces/handoffs-check код 0",
+        "повторные ворота безопасности и ревью по изменениям шага 05; F4 (новое поле файла не должно быть объектом с ровно ключами ru, kk, en) — в задания REQ-056…063; ссылку на охранный тест в README вернёт DOC-UPDATER"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5 — исправления по ревью кода REQ-061 (handoffs/LANG061-20261020-01/step-04b-reviewer.json, result: F2–F6; F1 исправил ORCH — decisions/0070 п. 12 теперь «0,125» = 125 как в проекте п. 9.5; код правил чисел в src не живёт, его пишет тест). Исправь только код и README, ничего больше: F2 (AP-014) — правило «файл — формат /2» записано дважды (validate.js около строки 456 и view.js около 34–40): сделай одну общую функцию в одном месте (например в limits.js или lang-check.js — по проекту, п. 5; импорты не должны создавать цикл; engine.js не трогать) и вызывай её в обоих местах, поведение не меняется; F3 — validate.js около 135–136: запрет «ты» сравнивай с литералом/константой ru, а не с DEFAULT_LANGUAGE; F4 — view.js около 6–10 и 24–27: добавь в комментарий, что текст на языке узнаётся по форме (ровно ключи ru, kk, en) и функция вызывается только на файле, проверенном checkBytes; поведение не меняется; F5 — lang-check.js около 14 и 23: перечень языков в сообщениях строится из LANGUAGES, а не пишется буквами — тексты ошибок при этом остаются побайтно прежними (все 14 строк и 15 образцов проекта п. 10.3/6 — строки те же; проверь на свежем git clone вне проекта сравнением вывода до/после); F6 — tools/README.md: убери ссылку на охранный тест, которого ещё нет (около 632; допиши «появится на шаге тестов» нельзя — просто убери ссылку на несуществующее), «все ошибки» → «до 100 ошибок» (около 628), «втрое больше» → «примерно вдвое больше» (около 620). Не менять: engine.js, places.js, conditions.js, report.js, load.js, check.js, cli.js, json.js, utf8.js, demo-answers, demo-tenants, тесты и образцы. Красные тесты после правок — ровно прежние PK-1b, PK-1c, PK-2a, PK-6e, PE-8d (названы проектом); иные — остановись и доложи. В файлы и result без названий других проектов и путей компьютера. Запреты: git checkout/reset/stash/clean; пробы только на свежем git clone вне проекта. Перед close: cd tools && npm run format:check && npm run lint && npm run traces && npm run handoffs-check (код 0), затем npm test.",
+    "acceptance_criteria": [
+      "F2–F6 исправлены; поведение и тексты ошибок не меняются",
+      "Красные ровно прежние пять",
+      "format/lint/traces/handoffs-check код 0"
+    ]
+  },
+  "created_at": "2026-10-20T12:38:54Z",
+  "started_at": "2026-10-20T12:38:54Z",
+  "completed_at": "2026-10-20T12:42:59Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Закрыты замечания F2–F6 ревью кода REQ-061 (F1 исправил ORCH, код правил чисел в src не живёт). Правило «файл — формат /2» теперь одна функция isFormatV2 в lang-check.js, её зовут и проверка, и вид файла. Запрет «ты» привязан к языку ru, а не к языку по умолчанию. В view.js записано, что текст на языке узнаётся по форме и функция зовётся только на проверенном файле. Перечень языков в двух сообщениях lang-check.js строится из LANGUAGES. В README убраны три утверждения, опережавшие факты. Поведение и тексты ошибок не изменились: вывод 649 строк на свежем клоне (проверка 55 порченых копий демо-файла, 44 образца, виды файла) до и после правки побайтно равен. Красных тестов ровно пять прежних.",
+    "changes": [
+      {
+        "finding": "F2",
+        "file": "tools/src/picker/lang-check.js",
+        "place": "новая экспортируемая функция isFormatV2(doc), после импортов",
+        "what": "правило «у корня собственное поле schema равно FORMAT_V2» записано один раз; импорт FORMAT_V2 из limits.js; цикла импортов нет (lang-check.js импортирует limits.js и places.js)"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/picker/validate.js",
+        "place": "validateTenant, выбор режима; импорт из lang-check.js",
+        "what": "условие из трёх частей заменено вызовом isFormatV2(doc); FORMAT_V2 остаётся в импорте для сообщения о schema"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/src/picker/view.js",
+        "place": "бывшая isTrilingual, fileLanguages, tenantInLanguage",
+        "what": "локальная isTrilingual удалена, оба места зовут isFormatV2 из lang-check.js; импорт FORMAT_V2 убран"
+      },
+      {
+        "finding": "F3",
+        "file": "tools/src/picker/validate.js",
+        "place": "константа FORMAL_LANGUAGE перед TENANT_ID; ctx.line, выбор правила",
+        "what": "условие language === DEFAULT_LANGUAGE заменено на language === FORMAL_LANGUAGE (константа \"ru\" — язык с формой «вы»); запрет «ты» больше не зависит от языка по умолчанию"
+      },
+      {
+        "finding": "F4",
+        "file": "tools/src/picker/view.js",
+        "place": "комментарий над isTextInLanguages (используется в pick)",
+        "what": "добавлено: текст на языке узнаётся по форме (ровно ключи ru, kk, en), это верно только для файла, прошедшего checkBytes, pick зовётся только на таком файле, новое поле файла не должно быть объектом ровно с этими тремя ключами; поведение прежнее"
+      },
+      {
+        "finding": "F5",
+        "file": "tools/src/picker/lang-check.js",
+        "place": "константа LANGUAGE_LIST; два сообщения в checkLanguageText",
+        "what": "«ru, kk и en» строится из LANGUAGES (все, кроме последнего, через «, », затем « и » и последний); тексты обоих сообщений побайтно прежние. Слово «трёх» в первом сообщении осталось: это число языков, текст заказан проектом дословно (п. 6.1)"
+      },
+      {
+        "finding": "F6",
+        "file": "tools/README.md",
+        "place": "раздел о двух видах файла арендатора",
+        "what": "«Файл /2 втрое больше файла /1» -> «примерно вдвое больше»"
+      },
+      {
+        "finding": "F6",
+        "file": "tools/README.md",
+        "place": "раздел «Сайт подбора решения: три языка», про команду check",
+        "what": "«покажет все ошибки перевода по месту» -> «покажет до 100 ошибок перевода по месту»"
+      },
+      {
+        "finding": "F6",
+        "file": "tools/README.md",
+        "place": "раздел «Сайт подбора решения: три языка», про таблицу texts.js",
+        "what": "убрано предложение об охранном тесте таблицы (теста ещё нет)"
+      }
+    ],
+    "self_check": [
+      "до правки (свежий клон, в него скопированы файлы работы): скрипт проверки вне проекта прогнал checkBytes и validateTenant по 55 порченым копиям uchet-pro (5 мест текста x 17 видов порчи, 5 значений schema, нет schema, копия /1, список и число на месте корня), по всем 44 образцам fixtures/picker, и fileLanguages/tenantInLanguage -> 649 строк вывода, среди них 21 строка «Нужен текст на трёх языках»",
+      "после правки (другой свежий клон + файлы работы): тот же скрипт -> cmp до/после: IDENTICAL, 649 строк",
+      "cd tools && npm run format:check -> All matched files use Prettier code style!, код 0",
+      "cd tools && npm run lint -> eslint . --max-warnings 0, код 0",
+      "cd tools && npm run traces -> traces: файлов проверено 1761, следов 0, пропущено 57, код 0",
+      "cd tools && npm run handoffs-check -> handoffs-check: файлов проверено 1021, нарушений 0, исключений использовано 114 из 114, код 0",
+      "cd tools && npm test -> # tests 1720, # pass 1715, # fail 5, # skipped 0, # todo 0; красные: PK-1b, PK-1c, PK-2a, PK-6e, PE-8d (те же пять, названные проектом)",
+      "engine.js, places.js, conditions.js, report.js, load.js, check.js, cli.js, json.js, utf8.js, demo-answers, demo-tenants, тесты и образцы не менялись (список файлов, изменённых этим шагом, ниже)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Красные PK-1b, PK-1c, PK-2a, PK-6e, PE-8d остаются: их проверяют намеренно изменённое поведение (файлы арендаторов формата /2, значение schema у образца, состав модулей); правит TEST-DESIGNER по таблице замен п. 11 проекта, не этот шаг."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Новых файлов эта правка не добавила (isFormatV2 лежит в существующем lang-check.js), поэтому состав модулей каталога picker прежний, как после шагов 2–3."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "F4: пункт «в задания REQ-056…REQ-063 записать: новые объекты с ключами ru, kk, en в файл арендатора не вводить» вне write_set этого шага; нужен ORCH или DOC-UPDATER."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "F6: ссылку на охранный тест таблицы текстов (picker-texts.test.js) нужно вернуть в README после шага тестов, в DOC-UPDATER (шаг 10)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/picker/lang-check.js",
+      "tools/src/picker/validate.js",
+      "tools/src/picker/view.js",
+      "tools/README.md"
+    ]
+  }
+}
