@@ -9,6 +9,7 @@ import {
   FORMAT_V1,
   FORMAT_V2,
   QUESTION_TYPES,
+  TENANT_ID,
 } from "./limits.js";
 import { pathText, show } from "./places.js";
 import { textProblem, trimmedLength, wordsProblem } from "./text-rules.js";
@@ -16,7 +17,6 @@ import { textProblem, trimmedLength, wordsProblem } from "./text-rules.js";
 // The language whose texts are written in the form "вы": the address "ты" is forbidden here only.
 const FORMAL_LANGUAGE = "ru";
 
-const TENANT_ID = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 const INNER_ID = /^[a-z0-9-]{1,40}$/;
 
 const WRONG_TYPE = new Map([

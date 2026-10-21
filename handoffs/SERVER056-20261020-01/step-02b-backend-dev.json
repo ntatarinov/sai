@@ -1,0 +1,131 @@
+{
+  "handoff_id": "step02b-SERVER056-20261020-01",
+  "run_id": "SERVER056-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/SERVER056-20261020-01/step-02b-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-056"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-056-picker-server.md",
+      "decisions/0071-picker-server-conventions.md",
+      "tools/src/picker/",
+      "handoffs/SERVER056-20261020-01/step-02a-backend-dev.json"
+    ],
+    "route": "BACKEND-DEV (56a, 56b) -> BACKEND-DEV (56c) -> BACKEND-DEV (56d, 56e)",
+    "write_set": [
+      "tools/src/picker/server.js, handoffs/SERVER056-20261020-01/step-02b-backend-dev.json"
+    ],
+    "base_tag": "base/SERVER056-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T19:18:17Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "server.js готов; красные ровно PK-6e, PK-7c, PK-8c, PE-8d, TR-4b; контрольные запуски С3, С5, С6, сырые Ф20/Ф23 — по проекту; заметки: конвейер запросов и clientError (SF-6c/SP-4 — TEST-DESIGNER), файл страницы читается раньше проверки метода (по таблице проекта п. 5.6)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 2b — подшаг 56c проекта docs/design/REQ-056-picker-server.md (разд. 5.6–5.9, 5.11, п. 8, строка 56c таблицы): tools/src/picker/server.js — маршруты, 15 шагов проверок запроса в закреплённом порядке (Host первым, до чтения данных; путь не раскодируется), один готовый ответ на неизвестный путь, неизвестного арендатора и файл с ошибками, анкета по белому списку, результат через publicResult, обработчик ошибок разбора запроса (D28: слово вместо метода, мусор, управляющий знак, Content-Length: abc → 400; заголовок > 16 КБ → 431; медленные заголовки → 408; закрытый ответ с заголовками безопасности и телом из TEXTS, без текста исключения; HTTP/1.1 без Host → наш 403), размеры и времена, заголовки безопасности и CSP, createPickerServer, журнал без текста исключения (D26), checkBody (единственное место проверки «объект», D29), подстановка show(field) в ответе при чужом поле (подшаг 56a оставил её серверу: checkBody возвращает field как записан в теле). Использует готовые модули 56a/56b (config, messages, public-data, request, fingerprint, tenants, assets, places, limits, public/texts.js); их без нужды не меняй (если без правки нельзя — остановись и доложи с причиной). Не пиши serve.js, cli.js (56d), README (56e), тесты. Контрольный запуск разработчика — строка 56c таблицы 8 (скрипт вне проекта: loadTenants + createPickerServer({ registry, port: 0 }) + listen(); запросы curl из п. 6.3 С3, С5, С6 и сырые запросы Ф20/Ф23; close()). Красных существующих тестов после 56c — 5 (+TR-4b: server.js не в перечне сетевых файлов) — названы проектом; каждый назови в result.issues с разделом проекта; иной красный — остановись и доложи. Не добавляй зависимостей; engine.js и неизменяемые файлы не трогай. Перед close: cd tools && npm run format:check && npm run lint && npm run traces && npm run handoffs-check (код 0), затем node --test test/picker-*.test.js test/traces-runtime.test.js — красные только названные. Запреты: git checkout/reset/stash/clean; пробы на свежем git clone вне проекта; без названий других проектов и путей компьютера в файлах и result (traces, handoffs-check).",
+    "acceptance_criteria": [
+      "server.js по проекту: маршруты, 15 шагов проверок, обработчик ошибок разбора, заголовки безопасности",
+      "format:check, lint, traces, handoffs-check — код 0; красные ровно названные (5)",
+      "engine.js и неизменяемые не тронуты"
+    ]
+  },
+  "created_at": "2026-10-20T19:08:01Z",
+  "started_at": "2026-10-20T19:08:01Z",
+  "completed_at": "2026-10-20T19:17:25Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Подшаг 56c проекта REQ-056 сделан: tools/src/picker/server.js — createPickerServer({ registry, port, publicDir, warn, bodyIdleMs, headersTimeoutMs, requestTimeoutMs }) → { listen(), close(), port() }. Пять видов маршрутов, 15 шагов проверок запроса в закреплённом порядке (Host первым, до чтения данных и без разбора пути), один готовый ответ неизвестного пути (одна функция notFound, готовые байты, число 404 в тексте — одно), анкета — готовые байты из реестра, результат — computeResult на виде файла арендатора и publicResult, тело POST — строгий UTF-8 (BOM допускается), JSON, checkBody (подстановка show(field) для server_extra_field — здесь, как оставил подшаг 56a), question в answers_invalid — только id вопроса этого арендатора, иначе null. Размеры и времена из config.js (тело 16384, пауза 15 с — 408 и Connection: close, сброс остатка не больше 8 МиБ и пока данные идут не реже раза в 5 с, заголовки 16 КиБ, requireHostHeader: false, connectionsCheckingInterval). Обработчик clientError (D28): 400 (431 для HPE_HEADER_OVERFLOW, 408 для ERR_HTTP_REQUEST_TIMEOUT), закрытый ответ одной записью с заголовками безопасности, Content-Type JSON, верным Content-Length, Connection: close и телом из TEXTS на трёх языках; сокет с ошибкой системы или закрытый уничтожается без ответа. Журнал (D26) — одна строка на ошибку обработчика: «Сайт подбора: ошибка обработчика запроса: <вид> <код ошибки системы>», без текста исключения. Файл страницы читается с диска на каждый запрос через readAsset. Остальные модули не менялись. Красных существующих тестов ровно 5, как названо проектом: PK-6e, PK-7c, PK-8c, PE-8d, TR-4b.",
+    "changes": [
+      {
+        "file": "tools/src/picker/server.js",
+        "section": "5.6 (маршруты, порядок проверок, обработчик ошибок разбора), 5.7 (заголовки, Host, Origin, размеры и времена), 5.8 (изоляция: И1–И7), 5.9 (пути отказа), 5.11 (сигнатура), D4, D5, D14–D19, D26, D28, D29 (56c)",
+        "what": "новый файл (около 480 строк): createPickerServer; шаги 1–15 в handle() и readBody()/answerResult(); send() — единственное место записи ответа (общие заголовки, точный Content-Length, сброс остатка тела, если запрос не дочитан); notFound() — единственный путь ответа неизвестному (готовое тело, без языка и метода); sendError() — тело по errorBody на языке запроса или на трёх языках; refuseParse() — обработчик clientError; describeError() — вид исключения и код ошибки системы для журнала. Заголовки запроса читаются только четыре: host, origin, content-type, content-length. Один вызов поиска арендатора на запрос — с id из пути. Нет изменяемых переменных уровня модуля. Импорты: node:http, assets, config, engine, messages, places, public-data, request"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "cd tools && npm run format:check; npm run lint; npm run traces; npm run handoffs-check (в проекте, после последней правки server.js)",
+        "out": "format:check exit=0 «All matched files use Prettier code style!»; lint exit=0 (eslint . --max-warnings 0, без замечаний); traces exit=0 «traces: файлов проверено 1841, следов 0, пропущено 57»; handoffs-check exit=0 «handoffs-check: файлов проверено 1044, нарушений 0, исключений использовано 114 из 114»"
+      },
+      {
+        "cmd": "cd tools && node --test test/picker-*.test.js test/traces-runtime.test.js",
+        "out": "# tests 164, # pass 159, # fail 5, # skipped 0, # todo 0; красные: «not ok 27 - PK-6e», «not ok 30 - PK-7c», «not ok 33 - PK-8c», «not ok 73 - PE-8d», «not ok 160 - TR-4b» — ровно названные проектом (п. 8, строка 56c). Причины сверены по выводу: TR-4b — в разнице списков только «picker/server.js»; PK-8c — файл tenants.js"
+      },
+      {
+        "cmd": "контрольный запуск 56c (скрипт вне проекта): loadTenants(demo-tenants) + createPickerServer({ registry, port: 0 }) + listen(); curl п. 6.3 С3, С5, С6; сырой сокет Ф20/Ф23; close() дважды",
+        "out": "listen: address 127.0.0.1; С3 — 18 результатов (2 арендатора × 3 языка × leader, close, none) все 200, анкеты и страницы получены, в результатах ключи clear_leader, recommended, no_match_text, hypotheses и нет «\"ranking\"»; С5 — десять запросов и POST на неизвестного арендатора дают один и тот же хеш (c12b535b8acf), ответ 404 с телом «Страница не найдена. / Бет табылмады. / Page not found.»; С6 — «В запросе лишнее поле tenant. Удалите его.», ответы svet-marketing на uchet-pro — 400 answers_invalid с question null, cmp анкет с ?tenant=, X-Tenant, ?lang=kk&tenant=, Accept-Language — равны (0, 0, 0, 0); сырые запросы: слово FOO, мусор, управляющий знак, Content-Length: abc — 400 с заголовками безопасности, Connection: close и телом на трёх языках; заголовок 20000 знаков — 431; медленные заголовки (headersTimeoutMs 1000) — 408; HTTP/1.1 без Host, чужой Host, HTTP/1.0 без Host — наш 403, Content-Length: 0; пауза в теле (bodyIdleMs 300) — 408 и Connection: close; следующий запрос 200, журнал пуст; close() дважды — без ошибки"
+      },
+      {
+        "cmd": "дополнительные пробы (скрипт вне проекта): Origin нет, null, чужой; text/plain; порядок 403 → 415 → 413 → 400; 16384 и 16385 байт; не JSON, массив, не UTF-8, BOM; лишний ключ длиной 15000 и с «$&»; нет answers; методы PUT, HEAD, GET на результат, POST на переадресацию и файл страницы; 308; поток 40 МиБ chunked; 100 оборванных соединений; сбой openSync (EIO) для index.html",
+        "out": "коды 403, 415, 403 (чужой Origin раньше типа), 413, 400 bad_request на 16384 байт мусора, 413 на 16385; BOM принят (дошло до движка: answers_invalid); имя лишнего ключа обрезано до 40 знаков с «…», «$&» осталось буквами; 405 с текстом на языке запроса (для файла страницы и переадресации — на трёх языках); 308 Location /t/<id>/ без строки запроса; поток 40 МиБ — 413 виден клиенту, соединение закрыто после 8585216 принятых байт; после 100 оборванных соединений — 200 и пустой журнал; при EIO — 500 с языковым текстом, в журнале ровно «Сайт подбора: ошибка обработчика запроса: Error EIO» (текста исключения нет), следующий запрос 200"
+      },
+      {
+        "cmd": "поиск по server.js слов записи PK-6e, регулярных выражений PK-7a и PK-8c, «node:», «://», «host:», «host,», «.listen(», «.ids()/.values()/.entries()/.keys()», let уровня модуля, «accept-language», чтения заголовков, секретов и путей компьютера (Q7)",
+        "out": "слов записи и сетевых слов нет; «node:» — одно вхождение, импорт node:http; «://» — только две строки http://${HOST}: и http://localhost:; «host:» и «host,» нет; .listen( — один, последний аргумент HOST; обходов реестра, let уровня модуля, accept-language нет; число 404 вне комментариев — одно (в notFound); registry.get( — одно, с found.id; читаются заголовки host, origin, content-type, content-length; секретов и путей компьютера нет"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "PK-6e (tools/test/picker-config.test.js:741–742): список файлов каталога picker не равен ALL_MODULES — добавился server.js (и ранее config.js, messages.js, public-data.js, request.js, fingerprint.js, tenants.js, assets.js). Проект: п. 7.1, З1 (списки CORE_MODULES, READ_MODULES, WRITE_MODULES, ALL_MODULES в picker-helpers.js) и З6 (строка `if (WRITE_MODULES.includes(file)) continue;`). Слова записи в server.js проверены вручную — пусто (сверка списка идёт раньше проверки слов, поэтому тест не показывает слова сам). Правит TEST-DESIGNER, шаг 5."
+      },
+      {
+        "id": "I2",
+        "kind": "EXPECTED_RED",
+        "text": "PK-7c (picker-config.test.js:782–786): «node:» теперь есть и в server.js (node:http), кроме fingerprint.js, assets.js, tenants.js и load.js. Проект: п. 7.1, З7 (таблица NODE_IMPORTS «модуль → точный набор node:-модулей»: server.js — node:http; число вхождений «node:» равно числу импортов — в server.js одно). Правит TEST-DESIGNER."
+      },
+      {
+        "id": "I3",
+        "kind": "EXPECTED_RED",
+        "text": "PK-8c (picker-config.test.js:833–837): tenants.js содержит readdirSync( (красный с 56b; server.js причины не добавил — слов readdir, opendir, glob в нём нет). Проект: п. 7.1, З8 (LISTING_MODULES = [tenants.js]). Правит TEST-DESIGNER."
+      },
+      {
+        "id": "I4",
+        "kind": "EXPECTED_RED",
+        "text": "PE-8d (picker-engine.test.js:1369–1372): каталог содержит 22 файла .js вместо 14. Проект: п. 7.1, З1 и З9 (ALL_MODULES.length — 23 после 56d, когда добавится serve.js). Правит TEST-DESIGNER."
+      },
+      {
+        "id": "I5",
+        "kind": "EXPECTED_RED",
+        "text": "TR-4b (tools/test/traces-runtime.test.js:72, перечень NETWORK_FILES :10–18): найденные файлы с node:http получили picker/server.js, которого нет в перечне; в разнице списков только эта строка. Проект: п. 7.1, З10 (+ \"picker/server.js\" первой строкой), а также З11 и З12 для TR-4d (сейчас зелёный: server.js в его перечень не входит; после З10 он проверится — адреса и .listen( в server.js подготовлены: «://» только http://${HOST}: и http://localhost:, последний аргумент listen — HOST, HOST импортируется из ./config.js). Правит TEST-DESIGNER."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Проект (п. 5.6, строка 3 порядка проверок, и 5.9) пишет, что файл страницы читается «на каждый запрос»; у не-GET на существующий файл страницы ответ — 405, а на несуществующий — 404 (файл читается раньше проверки метода, как в таблице). Из этого следует: POST на /assets/index.html при сбое чтения диска даёт 500, а не 405. Так и записано в проекте; говорю, чтобы SF-6h не ждал иного."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "HEAD и OPTIONS на неизвестный путь получают тот же готовый 404 (Node не пишет тело ответа на HEAD, заголовки те же, включая Content-Length тела); на известный маршрут — 405 с Allow (D17). Для запросов с абсолютным адресом в строке запроса и для «*» путь не начинается с «/», ответ — 404 (Ф20)."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Обработчик clientError отвечает на любую ошибку разбора, если сокет ещё пишет, и не отличает «ошибка пришла на соединении, где предыдущий ответ ещё пишется» (возможно только при конвейере запросов). Выбрано так, чтобы не использовать закрытые поля Node (socket._httpMessage); для ошибки системы (ECONNRESET и т. п. — есть syscall) ответа нет, сокет уничтожается. Если CODE-DESIGNER нужна иная граница — вопрос через ORCH до шага 5 (SF-6c, SP-4)."
+      },
+      {
+        "id": "I9",
+        "kind": "NOTE",
+        "text": "headersTimeout передаётся в http.createServer как меньшее из headersTimeoutMs и requestTimeoutMs: Node отказывает, если время заголовков больше времени запроса, и тест, давший только короткое requestTimeoutMs, получил бы исключение при создании сервера. Значения по умолчанию из config.js (10 с и 30 с) этим не меняются."
+      },
+      {
+        "id": "I10",
+        "kind": "INFO",
+        "text": "Контрольные запуски выполнены на рабочем дереве проекта скриптами вне проекта (файлов проекта они не пишут); красные существующие тесты сверены с названными проектом по выводу в рабочем дереве, где лежат только файлы 56a–56c. Свежий клон метки для этого шага не делался: список красных совпал с проектом ровно, расхождений, требующих доказательства, нет."
+      }
+    ],
+    "artifacts_out": ["tools/src/picker/server.js"]
+  }
+}

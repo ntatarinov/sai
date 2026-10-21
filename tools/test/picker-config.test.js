@@ -14,12 +14,15 @@ import {
   CORE_MODULES,
   DEMO_ANSWERS,
   LEGACY_TENANTS,
+  LISTING_MODULES,
+  NODE_IMPORTS,
   ERROR_CODES,
   EXPECTED,
   FIXTURES,
   PICKER,
   SAMPLE_NAMES,
   TOOLS,
+  WRITE_MODULES,
   fileDigest,
   fixture,
   fixtureBytes,
@@ -539,24 +542,27 @@ test("PK-6a: a wrong call or a file that cannot be read - code 2, stdout empty, 
   fs.mkdirSync(path.join(dir, "folder"));
   const SEE = "Справка: npm run picker -- --help";
   const cases = [
-    [[], `picker: Не указана команда. Доступна: check. ${SEE}`],
+    [[], `picker: Не указана команда. Доступны: check, serve. ${SEE}`],
     [
       ["no-such-command"],
-      `picker: Неизвестная команда no-such-command. Доступна: check. ${SEE}`,
+      `picker: Неизвестная команда no-such-command. Доступны: check, serve. ${SEE}`,
     ],
     [
       ["toString"],
-      `picker: Неизвестная команда toString. Доступна: check. ${SEE}`,
+      `picker: Неизвестная команда toString. Доступны: check, serve. ${SEE}`,
     ],
     [
       ["constructor"],
-      `picker: Неизвестная команда constructor. Доступна: check. ${SEE}`,
+      `picker: Неизвестная команда constructor. Доступны: check, serve. ${SEE}`,
     ],
     [
       ["__proto__"],
-      `picker: Неизвестная команда __proto__. Доступна: check. ${SEE}`,
+      `picker: Неизвестная команда __proto__. Доступны: check, serve. ${SEE}`,
     ],
-    [["--x"], `picker: Неизвестная команда --x. Доступна: check. ${SEE}`],
+    [
+      ["--x"],
+      `picker: Неизвестная команда --x. Доступны: check, serve. ${SEE}`,
+    ],
     [
       ["check"],
       "picker: Не указан файл. Пример: npm run picker -- check <файл>",
@@ -591,11 +597,17 @@ test("PK-6a: a wrong call or a file that cannot be read - code 2, stdout empty, 
 test("PK-6f: what the person typed is shown tamed in a refusal - spaces and controls become '_', a long word is cut to 40 signs with '…', a word of the form 'ты' is hidden", () => {
   const SEE = "Справка: npm run picker -- --help";
   const cases = [
-    [["a b"], `picker: Неизвестная команда a_b. Доступна: check. ${SEE}`],
-    [["ты"], `picker: Неизвестная команда (скрыто). Доступна: check. ${SEE}`],
+    [
+      ["a b"],
+      `picker: Неизвестная команда a_b. Доступны: check, serve. ${SEE}`,
+    ],
+    [
+      ["ты"],
+      `picker: Неизвестная команда (скрыто). Доступны: check, serve. ${SEE}`,
+    ],
     [
       ["x".repeat(60)],
-      `picker: Неизвестная команда ${"x".repeat(40)}…. Доступна: check. ${SEE}`,
+      `picker: Неизвестная команда ${"x".repeat(40)}…. Доступны: check, serve. ${SEE}`,
     ],
     [["check", "--k l"], `picker: Неизвестный ключ --k_l. ${SEE}`],
     [
@@ -700,7 +712,10 @@ test("PK-6d: --help gives code 0 and the help of design 7.3, also with other arg
     "Использование: npm run picker -- <команда> [аргументы]",
     "Команды:",
     "  check <файл>   проверить файл арендатора; файл только читается",
+    "  serve --tenants <папка> [--home <папка>] [--port N]   запустить сайт подбора на этом компьютере (127.0.0.1)",
     "Коды выхода check: 0 — в порядке; 1 — найдены ошибки; 2 — неверный вызов или файл нельзя прочитать.",
+    "Коды выхода serve: 0 — остановлен; 1 — нет исправных арендаторов или порт занят; 2 — неверный вызов или папку нельзя прочитать.",
+    "Ошибка программы: код 3, подробности в stderr.",
   ];
   for (const args of [
     ["--help"],
@@ -741,6 +756,7 @@ test("PK-6e: no call or word of writing in the code of the picker (comments coun
   const files = pickerSources();
   assert.deepEqual(files.map(([f]) => f).sort(), [...ALL_MODULES].sort());
   for (const [file, text] of files) {
+    if (WRITE_MODULES.includes(file)) continue;
     for (const word of WRITING) {
       assert.equal(
         new RegExp(`\\b${word}`, "u").test(text),
@@ -778,17 +794,21 @@ test("PK-7b: package.json - the script picker right after handoff, check as it w
   });
 });
 
-test("PK-7c: only load.js imports a node: module", () => {
-  for (const [file, text] of pickerSources()) {
-    const imports = /node:/u.test(text);
-    assert.equal(imports, file === "load.js", file);
+test("PK-7c: each module imports exactly the node: modules of its row and holds the word node: nowhere else (comments count)", () => {
+  const files = pickerSources();
+  assert.deepEqual(
+    Object.keys(NODE_IMPORTS).sort(),
+    files.map(([f]) => f).sort(),
+  );
+  for (const [file, text] of files) {
+    const imported = [...text.matchAll(/from "(node:[a-z]+)"/gu)]
+      .map((m) => m[1])
+      .sort();
+    assert.deepEqual(imported, [...NODE_IMPORTS[file]].sort(), file);
+    const words = (text.match(/node:/gu) ?? []).length;
+    assert.equal(words, imported.length, `${file}: the word node: elsewhere`);
   }
-  assert.equal(CORE_MODULES.length, 13);
-  const load = fs.readFileSync(path.join(PICKER, "load.js"), "utf8");
-  const wanted = [...load.matchAll(/from "(node:[a-z]+)"/gu)]
-    .map((m) => m[1])
-    .sort();
-  assert.deepEqual(wanted, ["node:fs", "node:path"]);
+  assert.equal(CORE_MODULES.length, 18);
 });
 
 // ---------------------------------------------------------------------- PK-8
@@ -830,9 +850,14 @@ test("PK-8b: the id is compared with the name of the file only, not with its nei
   assert.deepEqual(r.out, EXPECTED["e-id-file-mismatch.json"].lines);
 });
 
-test("PK-8c: the code never lists a folder", () => {
+test("PK-8c: only the modules of LISTING_MODULES list a folder (and only with readdirSync); no other module has readdir, opendir or glob", () => {
   for (const [file, text] of pickerSources()) {
-    assert.doesNotMatch(text, /readdir|opendir|glob/u, file);
+    if (LISTING_MODULES.includes(file)) {
+      assert.match(text, /readdirSync\(/u, file);
+      assert.doesNotMatch(text, /opendir|glob/u, file);
+    } else {
+      assert.doesNotMatch(text, /readdir|opendir|glob/u, file);
+    }
   }
 });
 

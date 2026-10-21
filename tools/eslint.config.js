@@ -27,4 +27,10 @@ export default [
       globals: { ...globals.browser },
     },
   },
+  {
+    files: ["src/picker/public/**/*.js"],
+    languageOptions: {
+      globals: { ...globals.browser },
+    },
+  },
 ];

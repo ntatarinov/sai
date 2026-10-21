@@ -29,15 +29,19 @@ function mustHide(shown) {
   return FORBIDDEN_SPELLINGS.some((w) => shown.includes(w));
 }
 
-// A value for a message: no space or control signs, at most SHOWN_CHARS code points,
-// and no word that the messages must not contain.
-export function show(value) {
+// A name for a message: no space or control signs (each becomes "_") and at most
+// SHOWN_CHARS code points. No word is hidden here (design REQ-056, D21).
+export function tame(value) {
   const chars = [];
   for (const ch of String(value)) chars.push(isSpaceOrControl(ch) ? "_" : ch);
-  const shown =
-    chars.length > SHOWN_CHARS
-      ? `${chars.slice(0, SHOWN_CHARS).join("")}…`
-      : chars.join("");
+  return chars.length > SHOWN_CHARS
+    ? `${chars.slice(0, SHOWN_CHARS).join("")}…`
+    : chars.join("");
+}
+
+// A value for a message: tame(), and no word that the messages must not contain.
+export function show(value) {
+  const shown = tame(value);
   return mustHide(shown) ? HIDDEN : shown;
 }
 

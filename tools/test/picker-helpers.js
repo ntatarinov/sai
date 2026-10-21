@@ -40,8 +40,34 @@ export const CORE_MODULES = [
   "view.js",
   "cli.js",
   "engine.js",
+  "config.js",
+  "messages.js",
+  "public-data.js",
+  "request.js",
+  "serve.js",
 ];
-export const ALL_MODULES = [...CORE_MODULES, "load.js"];
+// The modules that read the disk or the network, and the modules that write (none yet).
+export const READ_MODULES = [
+  ...CORE_MODULES,
+  "load.js",
+  "fingerprint.js",
+  "tenants.js",
+  "assets.js",
+  "server.js",
+];
+export const WRITE_MODULES = [];
+export const ALL_MODULES = [...READ_MODULES, ...WRITE_MODULES];
+// The exact set of node: modules that each module imports (design REQ-056, 7.1).
+export const NODE_IMPORTS = Object.fromEntries([
+  ...CORE_MODULES.map((name) => [name, []]),
+  ["load.js", ["node:fs", "node:path"]],
+  ["tenants.js", ["node:fs", "node:path"]],
+  ["assets.js", ["node:fs", "node:path"]],
+  ["fingerprint.js", ["node:crypto"]],
+  ["server.js", ["node:http"]],
+]);
+// The modules that may list a folder.
+export const LISTING_MODULES = ["tenants.js"];
 
 export const ERROR_CODES = [
   "E_JSON",

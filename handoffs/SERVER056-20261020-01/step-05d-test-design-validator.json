@@ -1,0 +1,145 @@
+{
+  "handoff_id": "step05d-SERVER056-20261020-01",
+  "run_id": "SERVER056-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "05d",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/SERVER056-20261020-01/step-05d-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-056"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/SERVER056-20261020-01/step-05c-test-designer.json",
+      "handoffs/SERVER056-20261020-01/step-05b-test-design-validator.json",
+      "docs/design/REQ-056-picker-server.md",
+      "tools/test/picker-server.test.js",
+      "tools/test/picker-server-faults.test.js",
+      "tools/test/picker-server-helpers.js"
+    ],
+    "route": "TEST-DESIGNER (5c) -> TEST-DESIGN-VALIDATOR (этот) -> TEST-RUNNER",
+    "write_set": [
+      "handoffs/SERVER056-20261020-01/step-05d-test-design-validator.json"
+    ],
+    "base_tag": "base/SERVER056-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T23:51:37Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1–F5 закрыты; серия 62/62 и под нагрузкой 40/40 без красных; 59 из 59 мутантов красные; npm run check код 0, 1856; F6 (D16) справочно"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5d — повторные ворота после доработки 5c (handoffs/SERVER056-20261020-01/step-05c-test-designer.json; прошлые ворота — step-05b-test-design-validator.json, F1–F5, мутанты M56, M120, H9). Проверь сам: F1 — SF-6b устойчив: запусти не менее 60 прогонов подряд четырёх файлов сервера отдельными процессами И SF-6b отдельно ×40 на двух нагрузках (одновременно с нагрузкой на процессор — например параллельный npm test) — красных 0; мутанты M14, M15, M16 остаются красными; F2 — M56 красный (ответ 413 при потоке на языке запроса, проверь kk и en); F3 — startPickerClosing закрывает сервер при красной проверке (M96, M75 без зависания); F4 — M120 красный; F5 — H9 красный, новый SF-6e3; повтори выборочно не менее 25 прежних мутантов и добавь 6 новых вокруг изменённых мест (порог written, язык текста 413, закрытие сервера после красной проверки, имена *.json.bak в папке арендаторов, литерал правила id); числа test(/assert. старых файлов не ниже метки base/SERVER056-20261020-01 и не ниже шага 05; серверы закрываются, процессов не остаётся; с занятым портом 4782 тесты не краснеют из-за среды. Известные нестабильные EN-62, EX-42, HC-6a (ISS-0075) — не находки. Вердикт PASS/FAIL с перечнем замечаний; код и тесты не менять; git checkout/reset/stash/clean в проекте запрещены (пробы — свежий git clone вне проекта); без названий проектов-образцов и путей компьютера в result. Перед close — cd tools && npm run check.",
+    "acceptance_criteria": [
+      "F1–F5 закрыты по существу; серия устойчивости 60 без красных",
+      "M56, M120, H9, M96, M75 красные; 25 прежних и 6 новых мутантов красные",
+      "npm run check код 0; вердикт PASS/FAIL"
+    ]
+  },
+  "created_at": "2026-10-20T23:13:47Z",
+  "started_at": "2026-10-20T23:13:47Z",
+  "completed_at": "2026-10-20T23:50:50Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Вердикт PASS. Находки 5b F1-F5 закрыты по существу, мутанты M56, M120, H9, M96, M75 красные без зависания, серия устойчивости без красных, свой прогон npm run check - код 0, 1856 из 1856. Блокирующих находок нет.\n\nF1 (Medium) закрыт: SF-6b теперь проверяет serverClosed и written < 30 МиБ (сервер, читающий всё, принял бы 40 МиБ), лишняя проверка времени убрана. Серия устойчивости (мои запуски): 62 прогона подряд четырёх файлов сервера отдельными процессами (по 76 тестов) - красных 0 из 62 (на 5b было 3 красных из 44); SF-6b отдельно x40 при параллельном npm test в цикле - 0 из 40; SF-6b отдельно x40 при двенадцати процессорных циклах и двух параллельных npm test в цикле (средняя загрузка до 86) - 0 из 40; при той же нагрузке шесть прогонов четырёх файлов - 76 из 76 каждый. Мутанты M14, M15, M16 красные (SF-6b); D32 (предел сброса остатка 32 МиБ вместо 8) красный (SF-6b, SU-13); D16 (16 МиБ) красит только SU-13 (значение константы), поведением от 8 МиБ не отличается в пределах запаса - допустимо.\nF2 (Medium) закрыт: SF-6b проверяет текст 413 на kk и en для объявленной длины без тела, chunked-потока в 16385 байт и потока 3 МиБ. M56: красных 1 из 204 (SF-6b), M56b (второе место): красных 2 (SF-6b, SF-6g), L3: красных 2. Оба места ветки 413 теперь по языку запроса.\nF3 (Low) закрыт: помощник startPickerClosing(t, ...) закрывает сервер в t.after, если он всё же запустился; им заменены вызовы startPicker в тестах отказа (SV-1c2, SV-1g, SF-6f). M96 и M75 красные, наборы завершаются (мой прогон 59 мутантов без единого зависания).\nF4 (Low) закрыт: SV-4e запрещает во всех файлах каталога, кроме limits.js, литерал правила id (середина a-z0-9-]{1,30} и начало [a-z0-9][a-z0-9-]) и требует его целиком в limits.js. M120: красных 1 из 204 (SV-4e), H12 (литерал в validate.js) и H12b (начало правила в server.js): красных 1 из 204 (SV-4e).\nF5 (Low) закрыт: новый SF-6e3 кладёт в папку арендаторов uchet-pro.json.bak, x.json.bak, notes.json.txt, a.json.b.json.old, json, x.JSON - они не читаются, stderr пуст, их адреса неизвестны, 120 файлов *.json.bak не идут в счёт предела 100. H9: красных 1 из 204 (SF-6e3), H9b (имя оканчивается на json без точки) и H9d (окончание без учёта регистра): красных 1.\n\nМутанты (свежий git clone метки вне проекта, три рабочие копии, поверх метки скопированы файлы работы; одна замена текста с проверкой, что кусок встречается ровно один раз; после каждой пробы файл восстанавливался, в конце diff копий с исходным пуст; тесты в запуске: четыре файла сервера, picker-config, picker-engine, picker-fields, picker-texts, picker-lang, traces-runtime, 204 теста). Всего 59 программ: убито 59, выживших нет. Прежних (из 5b) 50: M56, M120, H9, M96, M75, L3, M14, M15, M16, M1, M4, M5, M6, M9, M10, M11, M12, M13, M17b, M20, M21, M25, M26, M27, M49, M53, M62, M64, M65, M63, N1, N2, M87, M88, M92, M93, M45, M46, M102, M104, T1, N5, N6, M55, M72, M76, L1, L5, L8, H3 (Host до данных, Origin обязателен, тип тела, пределы 16384/16385, чужой ключ в error.question, арендатор только из пути, ответ на неизвестное, ranking, версия sha256, clientError, пустое тело, BOM, недопустимый байт, __proto__, код 3, SIGTERM/SIGINT, язык текстов). Новых вокруг изменённых мест 9, все красные: M56b (язык 413, второе место), H9b, H9d (имена *.json), H12, H12b (литерал правила id), D16, D32 (предел сброса остатка тела), R1 (пустая папка арендаторов принята startPicker), R2 (порт 1.5 принят startPicker). Ни один мутант не убит только таймаутом (ошибок вида timeout у красных нет).\n\nЧисла test( и assert. (метка -> шаг 05 -> теперь): picker-server.test.js 40/295 -> 40/298; picker-server-faults.test.js 17/134 -> 18/138; picker-server-units.test.js 14/174 и picker-server-property.test.js 4/18 без изменений (побайтно равны шагу 05); старые файлы: picker-config.test.js 35/128 -> 35/131, traces-runtime.test.js 6/51 -> 6/56, остальные равны метке, picker-config, traces-runtime, picker-engine, picker-helpers побайтно равны шагу 05. Код tools/src побайтно равен шагу 05; git diff метки по package.json, engine.js, demo-tenants, demo-answers, fixtures пуст; поиск критерия 8 пуст (код 1).\n\nУстойчивость к обстановке: с занятым портом 4782 (держал другой процесс) четыре файла сервера 76 из 76; каждый из 76 тестов по отдельности (по имени, в своём файле): pass 1, fail 0; после всех прогонов процессов serve и node --test не осталось, порт 4782 свободен; серверы закрываются в t.after.\n\nСвой прогон: cd tools && npm run check - код 0: prettier чисто, eslint чисто, traces нарушений 0, handoffs-check нарушений 0, # tests 1856, # pass 1856, # fail 0, # cancelled 0, # skipped 0, # todo 0. Нестабильные EN-62, EX-42, HC-6a (ISS-0075) не краснели и находкой не считаются.",
+    "findings": [
+      {
+        "id": "F6",
+        "where": "tools/test/picker-server-faults.test.js: SF-6b",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Порог written < 30 МиБ оставляет мутанту 'предел сброса остатка тела 16 МиБ вместо 8' (D16) только константный тест SU-13: поведением его не различить. Это допустимо (предел 8 МиБ закреплён значением в SU-13 и мутантом D32), замечание справочное.",
+        "fix": "При случае ничего не менять; либо считать байты, принятые сервером, и сверять их с 8 МиБ плюс запас."
+      }
+    ],
+    "self_check": [
+      "date -u: начало проверки 2026-10-20T23:14:05Z, конец 2026-10-20T23:50:50Z",
+      "Хеши до: git ls-files -co --exclude-standard (без этого handoff-а), сортировка, shasum по каждому файлу: 1909 файлов; shasum списка afa656bd22353378d7e0f02052ff9480e7a799af. После мутантов, серий и npm run check: diff списков пуст, shasum тот же. Мутанты применялись только в копиях свежего git clone в каталоге временных файлов; на проекте команд git checkout, reset, stash, clean не было; код и тесты проекта не менялись.",
+      "Копия с файлами работы до мутантов: node --test (четыре файла сервера, picker-config, picker-engine, picker-fields, picker-texts, picker-lang, traces-runtime) -> без красных; в проекте: четыре файла сервера 76 тестов.",
+      "Серия устойчивости (F1): 62 прогона подряд node --test --test-reporter=tap test/picker-server*.test.js четырёх файлов (по 76 тестов), каждый прогон - свой процесс, без пауз: красных прогонов 0 из 62. SF-6b отдельно (--test-name-pattern '^SF-6b: ') x40 при параллельном npm test в цикле: красных 0 из 40. SF-6b отдельно x40 при 12 процессорных циклах и двух npm test в цикле (средняя загрузка до 86): красных 0 из 40; под той же нагрузкой 6 прогонов четырёх файлов: pass 76 fail 0 каждый.",
+      "Занятый порт: другой процесс слушал 127.0.0.1:4782 -> четыре файла сервера # tests 76 # pass 76 # fail 0; порт освобождён. ps после всех прогонов: процессов 'cli.js serve' и 'node --test' нет.",
+      "Каждый из 76 тестов по отдельности (--test-name-pattern по первым 60 знакам имени в своём файле): везде # pass 1, # fail 0.",
+      "Числа test( и assert. (метка -> теперь): picker-config.test.js 35/128 -> 35/131; picker-engine.test.js 27/199 -> 27/199; traces-runtime.test.js 6/51 -> 6/56; остальные старые равны метке; picker-server.test.js 40/298, picker-server-faults.test.js 18/138, picker-server-units.test.js 14/174, picker-server-property.test.js 4/18. Сравнение с шагом 05: изменены только picker-server.test.js, picker-server-faults.test.js, picker-server-helpers.js.",
+      "cd tools && npm run check -> код 0; prettier --check: все файлы в стиле; eslint --max-warnings 0 чисто; traces: файлов проверено 1854, следов 0; handoffs-check: нарушений 0; # tests 1856, # pass 1856, # fail 0, # cancelled 0, # skipped 0, # todo 0.",
+      "Итоги мутантов (свой скрипт вне проекта; строка: мутант, описание, итог, красных из 204, имена красных тестов).",
+      "M56 (text of 413 always ru): убит, красных 1 из 204: SF-6b",
+      "M75 (listens on all addresses): убит, красных 6 из 204: SV-1a SV-1b SV-1c2 SV-1g SV-1h TR-4d",
+      "H9 (any name that holds .json is taken): убит, красных 1 из 204: SF-6e3",
+      "H12 (the id rule literal in validate.js): убит, красных 1 из 204: SV-4e",
+      "D32 (drain limit 32 MiB instead of 8): убит, красных 2 из 204: SF-6b SU-13",
+      "M14 (stream of the body not limited): убит, красных 1 из 204: SF-6b",
+      "M1 (Host check skipped): убит, красных 3 из 204: SF-6c2 SV-7a SV-7e",
+      "M6 (no Origin allowed): убит, красных 2 из 204: SV-5a SV-7b",
+      "M11 (limit 16385): убит, красных 2 из 204: SF-6b SU-13",
+      "M17b (413 of the stream answers 400): убит, красных 1 из 204: SF-6b",
+      "M25 (unknown tenant has its own body): убит, красных 8 из 204: SF-6e3 SP-2 SV-1h SV-3a SV-3b SV-3d SV-3e",
+      "M49 (ranking stays): убит, красных 5 из 204: SF-6m SU-14 SV-4c SV-4f SV-5a",
+      "M64 (UTF-8 read loosely): убит, красных 1 из 204: SF-6a",
+      "N1 (__proto__ key vanishes (body copied by Object.assign)): убит, красных 2 из 204: SF-6a SV-4a",
+      "M88 (clientError not connected): убит, красных 2 из 204: SF-6c2 SF-6c3",
+      "M45 (version depends on the language): убит, красных 2 из 204: SV-2a SV-2d",
+      "M104 (TENANT_ID defined again in config.js): убит, красных 2 из 204: SU-13 SV-4e",
+      "N6 (SIGINT not handled): убит, красных 1 из 204: SV-1a",
+      "M76 (405 without Allow): убит, красных 2 из 204: SF-6c SV-3c",
+      "L8 (text of answers_invalid always ru): убит, красных 2 из 204: SF-6g SV-4b",
+      "M120 (id rule written again in request.js): убит, красных 1 из 204: SV-4e",
+      "L3 (text of 413 (declared length) always ru): убит, красных 2 из 204: SF-6b SF-6g",
+      "H9b (a name that ends with json (no point) is taken): убит, красных 1 из 204: SF-6e3",
+      "H12b (start of the id rule in server.js): убит, красных 1 из 204: SV-4e",
+      "R1 (empty tenants string accepted): убит, красных 1 из 204: SV-1c2",
+      "M15 (rest of the body not discarded): убит, красных 1 из 204: SF-6b",
+      "M4 (registry read before the Host check): убит, красных 2 из 204: SV-4e SV-7a",
+      "M9 (body type not checked): убит, красных 5 из 204: SF-6g SV-4e SV-7c SV-7d SV-7e",
+      "M12 (limit 16383): убит, красных 2 из 204: SF-6b SU-13",
+      "M20 (tenant from the query): убит, красных 4 из 204: SV-4c SV-4d SV-4e SV-5a",
+      "M26 (unknown file has its own body): убит, красных 5 из 204: SF-6o SP-2 SV-3a SV-3e SV-5a",
+      "M53 (error gives the key of the visitor): убит, красных 3 из 204: SF-6l SV-4b SV-5a",
+      "M65 (BOM refused): убит, красных 1 из 204: SF-6a",
+      "N2 (empty body taken as answers {}): убит, красных 1 из 204: SF-6a",
+      "M92 (no Connection: close in the refusal): убит, красных 2 из 204: SF-6c2 SF-6c3",
+      "M46 (version of rewritten JSON): убит, красных 4 из 204: SU-9 SV-2a SV-2d SV-4e",
+      "T1 (text of no --tenants changed): убит, красных 3 из 204: SU-1 SV-1c SV-1c2",
+      "M55 (texts of errors always in ru): убит, красных 11 из 204: SF-6a SF-6b SF-6c SF-6g SF-6h SF-6i SF-6l",
+      "L1 (text of 408 (body pause) always ru): убит, красных 2 из 204: SF-6g SF-6i",
+      "H3 (no X-Frame-Options on the page): убит, красных 1 из 204: SV-7e",
+      "M96 (startPicker takes an unknown option): убит, красных 1 из 204: SV-1c2",
+      "M56b (text of 413 by the declared length always ru (second place)): убит, красных 2 из 204: SF-6b SF-6g",
+      "H9d (the ending .json without case): убит, красных 1 из 204: SF-6e3",
+      "D16 (drain limit 16 MiB instead of 8): убит, красных 1 из 204: SU-13",
+      "R2 (a port 1.5 accepted): убит, красных 1 из 204: SV-1c2",
+      "M16 (discard limit removed): убит, красных 1 из 204: SF-6b",
+      "M5 (Origin check skipped): убит, красных 6 из 204: SF-6g SV-4e SV-5a SV-7b SV-7d SV-7e",
+      "M10 (type: any string with json): убит, красных 1 из 204: SV-7c",
+      "M13 (declared length not checked): убит, красных 1 из 204: SF-6b",
+      "M21 (tenant from a header): убит, красных 3 из 204: SV-4c SV-4e SV-5a",
+      "M27 (404 depends on Accept-Language): убит, красных 2 из 204: SV-3a SV-4e",
+      "M62 (500 not in the language of the request): убит, красных 2 из 204: SF-6g SF-6h",
+      "M63 (a body that is no JSON drops the handler): убит, красных 6 из 204: SF-6a SF-6b SF-6g SP-3 SV-7d SV-7e",
+      "M87 (program error gives code 1): убит, красных 1 из 204: SF-6n",
+      "M93 (requireHostHeader left on): убит, красных 2 из 204: SF-6c2 SV-7a",
+      "M102 (fingerprint of other bytes): убит, красных 4 из 204: SU-9 SV-2a SV-2d SV-4e",
+      "N5 (SIGTERM not handled): убит, красных 2 из 204: SV-1a SV-1h",
+      "M72 (404 without common headers): убит, красных 2 из 204: SV-3e SV-7e",
+      "L5 (text of 405 always ru): убит, красных 2 из 204: SF-6c SF-6g"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Для CODE-FIXER ничего: ошибок в коде продукта не найдено."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Ожидаемый вердикт в задании не назван; вердикт выведен из своих запусков (AP-018). Нестабильные EN-62, EX-42, HC-6a (ISS-0075) не краснели."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

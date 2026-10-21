@@ -1369,7 +1369,7 @@ test("PE-8d: the list of the files of the picker is the one that the tests of RE
     [...ALL_MODULES].sort(),
   );
   assert.ok(ALL_MODULES.includes("engine.js"));
-  assert.equal(ALL_MODULES.length, 14);
+  assert.equal(ALL_MODULES.length, 23);
 });
 
 test("PE-8e: calls in turn on two tenants give what each gives alone - the engine keeps nothing between calls", () => {

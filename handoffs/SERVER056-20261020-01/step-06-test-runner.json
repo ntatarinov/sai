@@ -1,0 +1,176 @@
+{
+  "handoff_id": "step06-SERVER056-20261020-01",
+  "run_id": "SERVER056-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-RUNNER",
+  "file": "handoffs/SERVER056-20261020-01/step-06-test-runner.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-056"],
+    "agent_run_id": null,
+    "artifacts_in": ["handoffs/SERVER056-20261020-01/"],
+    "route": "TEST-DESIGN-VALIDATOR -> TEST-RUNNER (этот) -> BA-ANALYST (читатели) -> RELEASE-VALIDATOR",
+    "write_set": ["handoffs/SERVER056-20261020-01/step-06-test-runner.json"],
+    "base_tag": "base/SERVER056-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T23:56:54Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "npm run check код 0, 1856 из 1856; стенд С1–С7 дословно; поиски критериев 7, 8 чисты; F1 (устаревшая фраза критерия 7) — DOC-UPDATER; F2 (--include без кавычек в zsh) — DOC-UPDATER; браузерная часть критерия 5 — шаг 8 (UAT-RUNNER)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 6 — прогон проверки REQ-056. Запусти ОДНУ команду целиком: cd tools && npm run check (под caffeinate -i), доложи PASS или FAIL с настоящим выводом: числа тестов (ожидается 1856 из 1856), prettier, eslint, traces, handoffs-check. Любое падение разбери с доказательством (файл, тест, причина); известные нестабильные EN-62 (tools/test/team-channel.test.js), EX-42 (tools/test/exec-workdir.test.js), HC-6a (ISS-0075) при единичном падении перезапусти ту же команду целиком и опиши оба вывода. Запусти также: npm run picker -- check для обоих демо-арендаторов (tools/src/picker/demo-tenants/*.json) и обеих копий /1 (tools/test/fixtures/picker-legacy/*.json) — код 0 и строки «вопросов 12, решений 5, правил 39.» / «вопросов 11, решений 5, правил 37.»; стенд С1–С7 из docs/design/REQ-056-picker-server.md п. 6.3 дословно (сервер на порту 0 или 4782, остановить за собой); поиски критериев 7 и 8 из REQ-056 в docs/requirements.yaml и приведи их вывод (для pipe-команд считай строки вывода, а не код конвейера). После всего ps: процессов serve и node --test не остаётся. Код и тесты не менять; git checkout/reset/stash/clean запрещены. В result без названий проектов-образцов и путей компьютера.",
+    "acceptance_criteria": [
+      "npm run check код 0 целиком",
+      "Демо и копии /1 проходят picker check; стенд С1–С7 дословно",
+      "Вердикт PASS/FAIL с настоящим выводом; процессов не остаётся"
+    ]
+  },
+  "created_at": "2026-10-20T23:51:37Z",
+  "started_at": "2026-10-20T23:51:37Z",
+  "completed_at": "2026-10-20T23:56:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Полный запуск cd tools && caffeinate -i npm run check прошёл целиком, код 0, за 2 минуты 1 секунду: prettier и eslint (ноль предупреждений) чистые, traces — файлов 1856, следов 0, handoffs-check — нарушений 0, тестов 1856, все 1856 прошли, упавших 0, отменённых 0, пропущенных 0, todo 0. Число 1856 совпало с ожидаемым. Нестабильные EN-62, EX-42 и HC-6a не упали, перезапуск не понадобился (запуск один). Оба демо-арендатора и обе копии /1 проходят picker check кодом 0 с ожидаемыми строками («вопросов 12, решений 5, правил 39.» и «вопросов 11, решений 5, правил 37.»). Стенд С1–С7 пройден: С1 пять строк и две ссылки с одним портом, serve.err пуст; С3 тридцать файлов, везде 200; С4 поиск чужих названий и id — пусто, код 1 в обе стороны, контроль находит (1 для leader и close, 0 для none), ключа ranking нет (код 1), контроль на искусственном файле находит (код 0); С5 один хеш у всех десяти ответов и у POST; С6 тексты и cmp как в проекте; С7 процесс остановлен, соединение отклонено (curl код 7). Поиски критериев 7 и 8 пусты. Ограничение: часть С2 «открыть в браузере и снять снимки» не выполнялась — у TEST-RUNNER нет браузера; вместо неё curl: шесть адресов страницы дали 200, stub.js и texts.js — 200. Эту часть проходит UAT-RUNNER. Процессов serve и node --test после прогона нет. Файлы проекта этим шагом не менялись (git status до и после: 33 строки, те же).",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "place": "docs/requirements.yaml, REQ-056, критерий 7, последнее предложение",
+        "kind": "устаревший текст, не падение",
+        "text": "Критерий 7 кончается словами «Сейчас каталога нет — проверяется после стройки.», но каталог tools/src/picker/public/ есть (index.html, stub.js, texts.js), и поиск по нему сейчас проходит. Текст устарел; блокирующего влияния нет.",
+        "fix": "DOC-UPDATER на шаге 10 убирает фразу, как это сделано для REQ-055."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "place": "docs/requirements.yaml, REQ-056, критерий 8, команда поиска с --include=*.js",
+        "kind": "команда зависит от оболочки",
+        "text": "В zsh неэкранированное --include=*.js даёт «no matches found», команда не доходит до grep, а число строк вывода 0 получается ложно (измерено в этом прогоне). В bash команда работает: вывод пуст, PIPESTATUS=1 1.",
+        "fix": "Писать --include='*.js' в кавычках или выполнять критерий под bash; тот, кто проверяет критерий, считает строки вывода именно под bash или с кавычками."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node -v",
+        "exit_code": 0,
+        "output": "v22.21.1 (engines в tools/package.json: >=22 <23)"
+      },
+      {
+        "command": "cd tools && caffeinate -i npm run check (вывод целиком вне проекта: <scratch>/check1.out, 11233 строки)",
+        "started_at": "2026-10-20T23:52:00Z",
+        "finished_at": "2026-10-20T23:54:01Z",
+        "exit_code": 0,
+        "time": "121 секунда по часам оболочки",
+        "stages": {
+          "format:check": "Checking formatting... All matched files use Prettier code style!",
+          "lint": "eslint . --max-warnings 0 — без вывода, код 0",
+          "traces": "traces: файлов проверено 1856, следов 0, пропущено 57",
+          "handoffs-check": "handoffs-check: файлов проверено 1053, нарушений 0, исключений использовано 114 из 114",
+          "test": "# tests 1856 / # suites 0 / # pass 1856 / # fail 0 / # cancelled 0 / # skipped 0 / # todo 0 / # duration_ms 112121.756833; блоков «not ok» в выводе: 0"
+        }
+      },
+      {
+        "command": "cd tools && npm run -s picker -- check src/picker/demo-tenants/uchet-pro.json",
+        "exit_code": 0,
+        "output": "Файл арендатора uchet-pro в порядке: вопросов 12, решений 5, правил 39."
+      },
+      {
+        "command": "cd tools && npm run -s picker -- check src/picker/demo-tenants/svet-marketing.json",
+        "exit_code": 0,
+        "output": "Файл арендатора svet-marketing в порядке: вопросов 11, решений 5, правил 37."
+      },
+      {
+        "command": "cd tools && npm run -s picker -- check test/fixtures/picker-legacy/uchet-pro.json",
+        "exit_code": 0,
+        "output": "Файл арендатора uchet-pro в порядке: вопросов 12, решений 5, правил 39."
+      },
+      {
+        "command": "cd tools && npm run -s picker -- check test/fixtures/picker-legacy/svet-marketing.json",
+        "exit_code": 0,
+        "output": "Файл арендатора svet-marketing в порядке: вопросов 11, решений 5, правил 37."
+      },
+      {
+        "step": "С1",
+        "command": "npm run -s picker -- serve --tenants src/picker/demo-tenants --home <scratch>/stand/home --port 0 > serve.out 2> serve.err & (дословно из п. 6.3)",
+        "output": "serve.out: «Сайт подбора запущен. Откройте ссылки:» / http://127.0.0.1:<порт>/t/svet-marketing/ / http://127.0.0.1:<порт>/t/uchet-pro/ / «Изменения файлов арендаторов применяются после перезапуска.» / «Остановить сайт: Ctrl+C.» — пять строк, порт один; serve.err — 0 байт"
+      },
+      {
+        "step": "С2",
+        "command": "curl -s -o … -w '%{http_code}' для /t/uchet-pro/, ?lang=kk, ?lang=en, /t/svet-marketing/, ?lang=kk, ?lang=en; /assets/stub.js; /assets/texts.js",
+        "output": "все восемь ответов 200; страница — index.html со скриптом /assets/stub.js, текст заглушки на языке подставляет stub.js в браузере. Браузер и снимки не выполнялись (нет браузера у TEST-RUNNER) — часть UAT-RUNNER."
+      },
+      {
+        "step": "С3",
+        "command": "цикл С3 из п. 6.3 дословно (2 арендатора × 3 языка × (анкета, страница, 3 результата))",
+        "output": "создано файлов арендаторов в папке вывода: 30; коды ответов отдельным проходом: у всех 6 пар анкета 200, страница 200, leader 200, close 200, none 200"
+      },
+      {
+        "step": "С4",
+        "command": "списки строк (по 20 строк на арендатора: id и названия на трёх языках), grep -F -f, grep -c, поиск \"ranking\", контроль — дословно",
+        "output": "grep -F -f uchet-pro-terms по svet-marketing-*: пусто, код 1; grep -F -f svet-marketing-terms по uchet-pro-*: пусто, код 1; контроль grep -c: у каждого арендатора по 3 файла leader и close — 1, по 3 файла none — 0 (18 файлов); grep -F '\"ranking\"' по *-result-*.json: пусто, код 1; контроль на {\"ranking\":[]}: найдено, код 0"
+      },
+      {
+        "step": "С5",
+        "command": "цикл С5 из п. 6.3 дословно (десять запросов, --path-as-is) | sort | uniq -c; затем POST на /t/net-takogo/api/result",
+        "output": "«10 ea65cc094cf7» — один хеш у десяти ответов; POST на неизвестного арендатора — ea65cc094cf7, тот же. Ответ: 404 Not Found, {\"error\":\"not_found\",\"message\":\"Страница не найдена. / Бет табылмады. / Page not found.\"}"
+      },
+      {
+        "step": "С6",
+        "command": "запросы С6 из п. 6.3 дословно",
+        "output": "POST с полем tenant: {\"error\":\"bad_request\",\"message\":\"В запросе лишнее поле tenant. Удалите его.\"}; POST с чужими ответами: {\"error\":\"answers_invalid\",\"message\":\"Ответы не подходят к этой анкете. Пройдите анкету ещё раз.\",\"question\":null} (слов svet-marketing нет); cmp с ?tenant=, с X-Tenant, с ?lang=kk&tenant=, с Accept-Language: kk — все четыре молчат, код 0; POST без Origin — 403"
+      },
+      {
+        "step": "С7",
+        "command": "kill <pid процесса node>; curl по порту; отдельный запуск того же serve в этой же оболочке: kill, wait",
+        "output": "после kill процессов serve нет, curl: код 7 (соединение отклонено); serve.err пуст; отдельный запуск: kill, wait → exit=0, stderr пуст. Код выхода стенда из С1 сам не наблюдался (запущен в фоне подоболочкой), поэтому код 0 снят на втором запуске той же команды."
+      },
+      {
+        "step": "критерий 7",
+        "command": "grep -rnE 'https?://' tools/src/picker/public/",
+        "exit_code": 1,
+        "output": "пусто"
+      },
+      {
+        "step": "критерий 8",
+        "command": "bash: grep -rnE 'fetch[(]|https?[.]request|https?[.]get[(]|node:net|node:dgram' tools/src/picker/ --include=*.js | grep -v '/public/' | wc -l; тот же поиск прямо по public/",
+        "output": "0 строк; PIPESTATUS=1 1 (код конвейера 1 — это grep -v без строк, строки считаются, а не код); поиск по public/ — пусто. В zsh без кавычек вокруг --include=*.js команда не запускается (см. F2)"
+      },
+      {
+        "step": "критерий 8",
+        "command": "git diff base/SERVER056-20261020-01 -- tools/package.json | wc -c",
+        "output": "0 — пусто"
+      },
+      {
+        "command": "ps -axo command | grep -E 'cli.js serve|node --test|npm run picker' | grep -v grep | wc -l (после всего)",
+        "output": "0 — процессов serve и node --test не осталось"
+      },
+      {
+        "command": "git status --short до и после прогона",
+        "output": "33 строки до и после, набор тот же; код, тесты и настройки не менялись"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "severity": "Low",
+        "text": "Падений тестов нет, поэтому дефекты по падениям не нужны. Перезапуск не потребовался: EN-62, EX-42 и HC-6a в этом запуске зелёные. Находки F1 и F2 — Low и не блокируют: F1 исправит DOC-UPDATER на шаге 10; F2 — предложение к тексту критерия 8 (кавычки вокруг --include='*.js'), правит REQ-ANALYST через WF-01 только если ORCH сочтёт нужным."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "severity": "Low",
+        "text": "Часть С2 (браузер, снимки на трёх языках) в этот шаг не входила и не проверялась: текст заглушки на kk и en появляется в браузере через stub.js. Проверку выполнит UAT-RUNNER на шаге 8; здесь есть только ответы 200 по curl."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

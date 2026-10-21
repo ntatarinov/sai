@@ -8,6 +8,7 @@ import { TOOLS, makeRepo } from "./fixtures/traces/helpers.js";
 
 const SRC = path.join(TOOLS, "src");
 const NETWORK_FILES = [
+  "picker/server.js",
   "pixel-office/hook.js",
   "pixel-office/main.js",
   "pixel-office/note.js",
@@ -255,7 +256,11 @@ test("TR-4d the addresses of NETWORK_FILES are 127.0.0.1, localhost or HOST of c
   }
   // (3) listen( of each server gets HOST (Pixel Office and the business
   // interface of Sai Team, design REQ-011, section 12).
-  for (const rel of ["pixel-office/server.js", "web/server.js"]) {
+  for (const rel of [
+    "pixel-office/server.js",
+    "web/server.js",
+    "picker/server.js",
+  ]) {
     const server = read(rel);
     const listens = [...server.matchAll(/\.listen\(/gu)].map((m) =>
       callArgs(server, m.index + ".listen".length),
@@ -269,14 +274,53 @@ test("TR-4d the addresses of NETWORK_FILES are 127.0.0.1, localhost or HOST of c
   assert.equal(config.HOST, "127.0.0.1");
   const web = await import("../src/web/config.js");
   assert.equal(web.HOST, "127.0.0.1");
+  const picker = await import("../src/picker/config.js");
+  assert.equal(picker.HOST, "127.0.0.1");
 });
+
+// The problems of a page of the picker site that is in NETWORK_FILES (design REQ-056, 7.1):
+// exactly one fetch( and it inside `async function request(path, init) {`; every API_
+// constant is a relative address without a scheme and without "//"; no other way out.
+function pickerPageProblems(body) {
+  const out = [];
+  const fetches = [...body.matchAll(/\bfetch\(/gu)];
+  const start = body.indexOf("async function request(path, init) {");
+  const end = start === -1 ? -1 : body.indexOf("\n}\n", start);
+  if (fetches.length !== 1) out.push("not exactly one fetch(");
+  else if (
+    start === -1 ||
+    !(fetches[0].index > start && fetches[0].index < end)
+  )
+    out.push("fetch( outside request(path, init)");
+  for (const m of body.matchAll(/const\s+(API_[A-Z_]+)\s*=\s*"([^"]*)"/gu)) {
+    if (/^[a-z][a-z0-9+.-]*:/iu.test(m[2]) || m[2].startsWith("//"))
+      out.push(`${m[1]} has a scheme or //`);
+  }
+  if (
+    /XMLHttpRequest|WebSocket|EventSource|sendBeacon|new URL\(|location\.origin|importScripts/u.test(
+      body,
+    )
+  )
+    out.push("another way to the network");
+  return out;
+}
+
+const GOOD_PICKER_PAGE = [
+  'const API_QUESTIONNAIRE = "api/questionnaire";',
+  "async function request(path, init) {",
+  "  return window.fetch(path, init);",
+  "}",
+  "",
+].join("\n");
 
 test("TR-4e the page fetches only its own server, by a relative address", () => {
   const pub = srcFiles(".js").filter((rel) => rel.includes("/public/"));
   for (const rel of pub) {
     const body = read(rel);
     const fetches = [...body.matchAll(/\bfetch\(/gu)];
-    if (rel === "pixel-office/public/boot.js") {
+    if (NETWORK_FILES.includes(rel) && rel.startsWith("picker/public/")) {
+      assert.deepEqual(pickerPageProblems(body), [], rel);
+    } else if (rel === "pixel-office/public/boot.js") {
       assert.equal(fetches.length, 1);
       assert.match(body, /\(url, init\) => window\.fetch\(url, init\)/u);
     } else if (rel === "web/public/app.js") {
@@ -326,6 +370,29 @@ test("TR-4e the page fetches only its own server, by a relative address", () => 
   const inside = [...app.slice(start, end).matchAll(/\bfetchFn\(/gu)].length;
   assert.ok(inside >= 1);
   assert.equal([...app.matchAll(/\bfetchFn\(/gu)].length, inside);
+  // The check of a page of the picker site finds what it must (one right page, seven wrong).
+  assert.deepEqual(pickerPageProblems(GOOD_PICKER_PAGE), []);
+  const wrong = [
+    GOOD_PICKER_PAGE.replace("window.fetch(", "window.get("),
+    GOOD_PICKER_PAGE.replace(
+      "  return window.fetch(path, init);",
+      "  window.fetch(path, init);\n  return window.fetch(path, init);",
+    ),
+    GOOD_PICKER_PAGE.replace('"api/questionnaire"', '"https://x.example/api"'),
+    GOOD_PICKER_PAGE.replace('"api/questionnaire"', '"//x.example/api"'),
+    GOOD_PICKER_PAGE.replace(
+      "return window.fetch(path, init);",
+      "return new XMLHttpRequest();",
+    ),
+    GOOD_PICKER_PAGE.replace(
+      "return window.fetch(path, init);",
+      "return new WebSocket(path);",
+    ),
+    `fetch(API_QUESTIONNAIRE);\n${GOOD_PICKER_PAGE.replace("window.fetch(", "window.get(")}`,
+  ];
+  assert.equal(wrong.length, 7);
+  for (const page of wrong)
+    assert.ok(pickerPageProblems(page).length >= 1, page);
 });
 
 test("TR-4f the files of public/ have no http:// or https:// except 127.0.0.1 and localhost", () => {

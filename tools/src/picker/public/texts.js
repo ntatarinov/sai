@@ -20,6 +20,66 @@ export const TEXTS = Object.freeze({
     kk: "Тіл",
     en: "Language",
   }),
+  server_not_found: Object.freeze({
+    ru: "Страница не найдена.",
+    kk: "Бет табылмады.",
+    en: "Page not found.",
+  }),
+  server_forbidden: Object.freeze({
+    ru: "Запрос отклонён.",
+    kk: "Сұрау қабылданбады.",
+    en: "Request denied.",
+  }),
+  server_method: Object.freeze({
+    ru: "Так обращаться к этой странице нельзя.",
+    kk: "Бұл бетке бұлай жүгінуге болмайды.",
+    en: "This page cannot be accessed that way.",
+  }),
+  server_wrong_type: Object.freeze({
+    ru: "Запрос не принят: неверный тип данных.",
+    kk: "Сұрау қабылданбады: деректер түрі дұрыс емес.",
+    en: "Request not accepted: unsupported data type.",
+  }),
+  server_too_large: Object.freeze({
+    ru: "Запрос слишком большой. Сократите ответы и попробуйте ещё раз.",
+    kk: "Сұрау тым үлкен. Жауаптарды қысқартып, қайталап көріңіз.",
+    en: "The request is too large. Shorten the answers and try again.",
+  }),
+  server_slow: Object.freeze({
+    ru: "Запрос пришёл слишком поздно. Отправьте его ещё раз.",
+    kk: "Сұрау тым кеш келді. Оны қайта жіберіңіз.",
+    en: "The request took too long to arrive. Send it again.",
+  }),
+  server_bad_request: Object.freeze({
+    ru: "Запрос не удалось прочитать. Отправьте ответы ещё раз.",
+    kk: "Сұрауды оқу мүмкін болмады. Жауаптарды қайта жіберіңіз.",
+    en: "The request could not be read. Send the answers again.",
+  }),
+  server_extra_field: Object.freeze({
+    ru: "В запросе лишнее поле {field}. Удалите его.",
+    kk: "Сұрауда артық {field} өрісі бар. Оны алып тастаңыз.",
+    en: "The request has an extra field {field}. Remove it.",
+  }),
+  server_no_answers: Object.freeze({
+    ru: "В запросе нет ответов. Отправьте их ещё раз.",
+    kk: "Сұрауда жауаптар жоқ. Оларды қайта жіберіңіз.",
+    en: "The request has no answers. Send them again.",
+  }),
+  server_answers_invalid: Object.freeze({
+    ru: "Ответы не подходят к этой анкете. Пройдите анкету ещё раз.",
+    kk: "Жауаптар бұл сауалнамаға сәйкес келмейді. Сауалнаманы қайта толтырыңыз.",
+    en: "The answers do not fit this questionnaire. Go through it again.",
+  }),
+  server_internal: Object.freeze({
+    ru: "Что-то пошло не так. Попробуйте ещё раз позже.",
+    kk: "Бірдеңе дұрыс болмады. Кейінірек қайталап көріңіз.",
+    en: "Something went wrong. Please try again later.",
+  }),
+  page_stub_notice: Object.freeze({
+    ru: "Страница с вопросами скоро появится.",
+    kk: "Сұрақтар беті жақында пайда болады.",
+    en: "The questions page will be available soon.",
+  }),
 });
 
 // A value is right when it is exactly one of LANGUAGES.

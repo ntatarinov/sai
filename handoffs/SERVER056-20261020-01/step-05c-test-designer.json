@@ -1,0 +1,112 @@
+{
+  "handoff_id": "step05c-SERVER056-20261020-01",
+  "run_id": "SERVER056-20261020-01",
+  "workflow_id": "WF-02",
+  "step": "05c",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/SERVER056-20261020-01/step-05c-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-056"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/SERVER056-20261020-01/step-05b-test-design-validator.json",
+      "docs/design/REQ-056-picker-server.md",
+      "tools/test/picker-server.test.js",
+      "tools/test/picker-server-faults.test.js",
+      "tools/test/picker-server-units.test.js",
+      "tools/test/picker-server-helpers.js"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR FAIL -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR",
+    "write_set": [
+      "tools/test/picker-server*.test.js, tools/test/picker-server-helpers.js, tools/test/fixtures/picker-server/*, handoffs/SERVER056-20261020-01/step-05c-test-designer.json"
+    ],
+    "base_tag": "base/SERVER056-20261020-01",
+    "orch_check": {
+      "at": "2026-10-20T23:13:47Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "F1–F5 исправлены: порог SF-6b устойчив (серия 64/64 и 50/50), M56/M120/H9/M96/M75 красные без зависаний; 167 из 169 мутантов красные; на повторные ворота 05d (доработка 1 из 3)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5c — доработка 1 из 3 по FAIL ворот 5b (handoffs/SERVER056-20261020-01/step-05b-test-design-validator.json: result, findings F1–F5, выжившие M56, M120, H9). Только тесты и образцы, код продукта не менять. F1 (Medium, блокирует): SF-6b нестабилен — порог forty.written < 12 МиБ не выдерживает разброса буферов сокетов (на 44 прогонах 3 красных: written 13107200 и 12582912); замени порог на устойчивую проверку (например serverClosed и written ниже ~24 МиБ, либо считай байты, принятые сервером); мутанты M14, M15, M16 должны остаться красными; доказательство устойчивости — не менее 60 прогонов четырёх файлов сервера подряд без красных (серия, не один запуск) и SF-6b отдельно ×50. F2 (Medium, блокирует): M56 выжил — текст 413 при превышении предела потоком (chunked или длина больше объявленной) проверен только на ru: добавь запросы потоком с ?lang=kk и ?lang=en в SF-6b или SF-6g (ответ на языке запроса); M56 должен стать красным. F3 (Low): если startPicker по ошибке запускает сервер при неверном параметре (M96), красная проверка SV-1c2 не закрывает его и файл тестов не завершается (то же после красных проверок M75) — закрой сервер в t.after даже при падении проверки (или проверяй значение до обращения к серверу), чтобы красный не вешал прогон. F4 (Low): M120 (правило id второй раз литералом в request.js) выжил, SV-4e видит только присваивание TENANT_ID = — расширь структурную проверку на второй литерал правила id. F5 (Low): H9 (берётся любое имя со словом .json) выжил — добавь тест на x.json.bak (и подобные) в папке арендаторов: не обслуживается и не считается арендатором. Повтори мутанты M56, M120, H9, M96, M75 на свежем git clone вне проекта — красные и без зависания; повтори выборочно 25 прежних (из таблицы шага 05) — красные. Тесты не ослаблять; числа test(/assert. старых файлов не ниже метки base/SERVER056-20261020-01 и не ниже шага 05. Ни один мутант не убит только таймаутом. В self_check и тестах — без названий проектов-образцов и путей компьютера (traces). Запрещены git checkout/reset/stash/clean. Перед close: cd tools && npm run check — код 0; в result — числа до/после, таблица мутантов M56, M120, H9, M96, M75, серия устойчивости.",
+    "acceptance_criteria": [
+      "SF-6b устойчив: серия 60 прогонов без красных; M56, M120, H9, M96, M75 красные",
+      "Прежние мутанты красные",
+      "npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-20T22:25:47Z",
+  "started_at": "2026-10-20T22:25:47Z",
+  "completed_at": "2026-10-20T23:13:03Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Доработка 1 из 3 по FAIL ворот 5b, находки F1-F5. Только тесты (код продукта не менялся: shasum tools/src, package.json, README.md, eslint.config.js до и после совпадает; diff -r tools/src и tools/test с каждой из трёх копий для мутантов пуст).\nF1 (Medium, блокировал) - SF-6b нестабилен. Причина: порог «written < 12 МиБ» не учитывал буферы сокетов двух сторон (на разных прогонах 12-13 МиБ). Теперь после потока 40 МиБ проверяется serverClosed и written < 30 МиБ (сервер, читающий всё, принял бы 40 МиБ - мутанты M15 и M16 красные); убрана лишняя проверка времени «ответ раньше 1500 мс» (ответ 413 и так проверяется по статусу). Серия устойчивости: 64 прогона четырёх файлов сервера подряд (по 76 тестов) - красных 0; SF-6b отдельно ×50 - красных 0.\nF2 (Medium, блокировал) - M56 (текст 413 при потоке всегда на ru). В SF-6b добавлены запросы с ?lang=kk и ?lang=en: объявленная длина без тела, chunked-поток 16385 байт и поток 3 МиБ по 64 КиБ - текст 413 на языке запроса. Мутанты M56 и M56b (оба места 413) красные.\nF3 (Low) - зависание файла тестов после красной проверки (M96, M75). Добавлен помощник startPickerClosing(t, …): сервер, если он всё же запустился при проверке «отказа», закрывается в t.after; им заменены все вызовы startPicker в тестах отказа (SV-1c2, SV-1g, SF-6f). M96 и M75 красные и файлы завершаются за 29-30 с (самый долгий прогон набора - 36 с).\nF4 (Low) - M120 (правило id литералом второй раз). В SV-4e добавлена проверка: ни один файл каталога, кроме limits.js, не содержит литерал правила id (середина «a-z0-9-]{1,30}» и начало «[a-z0-9][a-z0-9-]»), а limits.js его содержит. M120 и мой H12 (литерал в validate.js) красные.\nF5 (Low) - H9 (берётся любое имя со словом .json). Новый SF-6e3: uchet-pro.json.bak, x.json.bak, notes.json.txt, a.json.b.json.old, json, x.JSON лежат в папке арендаторов - не читаются, ничего не печатают в stderr, их адреса неизвестны, ещё 120 файлов *.json.bak не идут в счёт предела 100. H9 и H9b (имя, оканчивающееся на json без точки) красные.\nЧисла до -> после: тестов в picker-server-faults.test.js 17 -> 18 (assert. 134 -> 138), picker-server.test.js 40/295 -> 40/298, units 14/174 и property 4/18 без изменений; picker-* и traces-runtime 239 -> 240; npm run check # tests 1855 -> 1856, pass 1856, fail 0, skipped 0, todo 0, код 0. Старые файлы (config 35/131, engine 27/199, traces-runtime 6/56 и остальные) не ниже метки и не ниже шага 05.",
+    "changes": [
+      {
+        "finding": "F1",
+        "file": "tools/test/picker-server-faults.test.js",
+        "what": "SF-6b: порог written < 30 МиБ вместо 12 и без проверки времени; серия устойчивости 64 и 50 прогонов"
+      },
+      {
+        "finding": "F2",
+        "file": "tools/test/picker-server-faults.test.js",
+        "what": "SF-6b: 413 на kk и en при объявленной длине, chunked и потоке 3 МиБ"
+      },
+      {
+        "finding": "F3",
+        "file": "tools/test/picker-server-helpers.js",
+        "what": "startPickerClosing(t, …): сервер закрывается в t.after даже при красной проверке"
+      },
+      {
+        "finding": "F3",
+        "file": "tools/test/picker-server.test.js",
+        "what": "SV-1c2 и SV-1g через startPickerClosing"
+      },
+      {
+        "finding": "F3",
+        "file": "tools/test/picker-server-faults.test.js",
+        "what": "SF-6f через startPickerClosing"
+      },
+      {
+        "finding": "F4",
+        "file": "tools/test/picker-server.test.js",
+        "what": "SV-4e: правило id не записано литералом нигде, кроме limits.js"
+      },
+      {
+        "finding": "F5",
+        "file": "tools/test/picker-server-faults.test.js",
+        "what": "новый SF-6e3: имена, не оканчивающиеся на .json, не читаются и не считаются"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-20T22:25:47Z, конец 2026-10-20T23:13:00Z (проверка по часам 23:12:40Z)",
+      "cd tools && caffeinate -i npm run check -> код 0; prettier --check: все файлы в стиле; eslint --max-warnings 0 чисто; traces: файлов проверено 1853, следов 0; handoffs-check: нарушений 0; # tests 1856, # pass 1856, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "СЕРИЯ УСТОЙЧИВОСТИ (F1): 64 прогона подряд node --test четырёх файлов picker-server*.test.js (76 теста в прогоне) - красных прогонов 0 из 64; SF-6b отдельно (--test-name-pattern 'SF-6b:') 50 прогонов - красных 0 из 50; каждый прогон - свой процесс, подряд, без пауз",
+      "таблица мутантов по задания (свежий git clone вне проекта, три копии; одна правка текста с проверкой числа вхождений; тесты picker-*.test.js и traces-runtime.test.js, 240 тестов; после красной проверки процесс не зависает - время набора на мутант 23-36 с):",
+      "М56 (text of 413 always in ru): красных 2 из 240: SF-6b SF-6g",
+      "М56b (text of 413 by the declared length always in ru): красных 2 из 240: SF-6b SF-6g",
+      "М120 (the id rule written again in request.js): красных 1 из 240: SV-4e",
+      "H12 (the id rule literal in validate.js): красных 1 из 240: SV-4e",
+      "H9 (any name that holds .json is taken): красных 1 из 240: SF-6e3",
+      "H9b (a name that ends with json (no point) is taken): красных 1 из 240: SF-6e3",
+      "М96 (startPicker takes an unknown option): красных 1 из 240: SV-1c2",
+      "М75 (listens on all addresses): красных 6 из 240: SV-1a SV-1b SV-1c2 SV-1g SV-1h TR-4d",
+      "выборочно 27 прежних мутантов из таблицы шага 05 (все красные): М1 (Host check skipped): красных 3 из 240: SF-6c2 SV-7a SV-7e; М5 (Origin check skipped): красных 6 из 240: SF-6g SV-4e SV-5a SV-7b SV-7d SV-7e; М9 (type of the body not checked): красных 5 из 240: SF-6g SV-4e SV-7c SV-7d SV-7e; М11 (body limit 16385): красных 2 из 240: SF-6b SU-13; М13 (declared length not checked): красных 1 из 240: SF-6b; М14 (stream of the body not limited): красных 1 из 240: SF-6b; М15 (rest of the body not discarded): красных 1 из 240: SF-6b; М16 (discard limit removed): красных 1 из 240: SF-6b; М17 (413 answers 400): красных 5 из 240: SF-6b SF-6b2 SF-6g SV-7d SV-7e; М19 (pause in the body not tracked): красных 3 из 240: SF-6g SF-6i SV-7e; М20 (tenant from the query): красных 4 из 240: SV-4c SV-4d SV-4e SV-5a; М22 (extra field accepted): красных 7 из 240: SF-6g SF-6l SU-10 SU-4 SV-4a SV-5a SV-7d; М25 (unknown tenant own body): красных 8 из 240: SF-6e3 SP-2 SV-1h SV-3a SV-3b SV-3d SV-3e SV-5a; М29 (Origin before the tenant): красных 5 из 240: SF-6c SF-6g SV-3a SV-7b SV-7d; М32 (id rule allows capitals): красных 8 из 240: PK-2a PK-2c SP-1 SU-2 SV-3a SV-3c SV-4e SV-5a; М45 (version depends on the language): красных 2 из 240: SV-2a SV-2d; М49 (ranking stays): красных 5 из 240: SF-6m SU-14 SV-4c SV-4f SV-5a; М53 (error gives the key of the visitor): красных 3 из 240: SF-6l SV-4b SV-5a; М55 (texts always in ru): красных 11 из 240: SF-6a SF-6b SF-6c SF-6g SF-6h SF-6i SF-6l SV-4a SV-4b SV-7b SV-7c; М59 (no guard around the handler): красных 3 из 240: SF-6g SF-6h SV-7e; М63 (body that is no JSON drops the handler): красных 6 из 240: SF-6a SF-6b SF-6g SP-3 SV-7d SV-7e; М64 (UTF-8 read loosely): красных 1 из 240: SF-6a; М88 (handler of parse errors not connected): красных 2 из 240: SF-6c2 SF-6c3; М93 (requireHostHeader not switched off): красных 2 из 240: SF-6c2 SV-7a; М98 (tenantInLanguage on a broken file): красных 1 из 240: SV-4e; М28 (the list of tenants at /): красных 3 из 240: SV-3a SV-4e SV-5a; М60 (500 holds the stack): красных 2 из 240: SF-6g SF-6h",
+      "полный повторный прогон: 169 запусков (М1-М119 и М120 проекта и ворот, 22 своих Э1-Э21 и H9, H9b, H12, М56b, 24 ловушки Л1-Л24): красных 167; выжили те же два своих, что на шаге 05 - Э13 (таймер сброса остатка тела снят: молчащего клиента закрывает keep-alive Node за те же 5 с, равносилен) и Э20 (запись на закрытый сокет при отказе разборщика, различия нет)",
+      "ни один мутант не убит только таймаутом: красные - проверки значений и статусов; время набора на мутант не больше 36 с",
+      "после проб: diff -r tools/src и tools/test рабочего дерева и каждой копии пуст; команд git checkout, reset, stash, clean не было; серверы тестов на порту 0, закрываются в t.after"
+    ],
+    "issues": [],
+    "artifacts_out": [
+      "tools/test/picker-server.test.js",
+      "tools/test/picker-server-faults.test.js",
+      "tools/test/picker-server-helpers.js"
+    ]
+  }
+}

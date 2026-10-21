@@ -12,6 +12,10 @@ export const MAX_LINES = 100;
 export const MAX_WORDS = 18;
 export const SHOWN_CHARS = 40;
 
+// The id of a tenant (design REQ-054, 5.3): also the name of its file and its part of the
+// address of the site. The check of the file and the server both read this one rule.
+export const TENANT_ID = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
+
 // Exactly ten codes, in this order.
 export const ERROR_CODES = Object.freeze([
   "E_JSON",
