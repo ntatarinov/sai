@@ -1,0 +1,171 @@
+{
+  "handoff_id": "step05-TEXT068-20261021-01",
+  "run_id": "TEXT068-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/TEXT068-20261021-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-068"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-068-picker-text-charset.md",
+      "docs/requirements.yaml",
+      "decisions/0076-tenant-text-charset.md",
+      "handoffs/TEXT068-20261021-01/",
+      "tools/src/picker/text-rules.js"
+    ],
+    "route": "REVIEWER, SECURITY, CODE-FIXER -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER",
+    "write_set": [
+      "tools/test/picker-text.test.js, tools/test/picker-text-helpers.js, tools/test/fixtures/picker-text/*, tools/test/picker-server-faults.test.js, tools/test/picker-server-units.test.js"
+    ],
+    "base_tag": "base/TEXT068-20261021-01",
+    "orch_check": {
+      "at": "2026-10-21T10:37:56Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "ORCH сам запустил npm run check: код 0, 1898 тестов; SF-6k починен тремя тестами; 37 образцов; 61 из 68 мутантов красные (проектные 54 и ловушки; Э5, Э7 равносильны); src не менялся"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 5 — тесты REQ-068 (запрет управляющих и невидимых знаков в текстах арендатора: tools/src/picker/text-rules.js forbiddenSign, validate.js, places.js, абзац README) после PASS безопасности (step-03) и ревью (step-03b). Проект docs/design/REQ-068-picker-text-charset.md: разд. 9 — таблица замен З1 (SF-6k в tools/test/picker-server-faults.test.js около 937 → три теста а/б/в, по тексту проекта; прежние четыре проверки не теряются) и З2 (SU-8 — шесть проверок), ПЕРВЫМ ДЕЛОМ почини красный SF-6k по З1 без ослабления; разд. 10 — образцы 37 поимённо в tools/test/fixtures/picker-text/ (с измеренным выводом; сырые байты NUL и ED A0 80 уже дают E_JSON — это образцы E_JSON, не E_TEXT), разд. 11 — «критерий → элемент → тест» (TT-1…TT-10, включая TT-3f с двумя образцами: glue-nomatch — знак заменяется пробелом, ty-intro — знак УДАЛЯЕТСЯ; TT-4f — знак в хвосте длинного текста: consent_text ru и kk 600 знаков, позиции 599, 550, 299; intro.en 400 знаков, позиции 399, 299), мутанты (54) и ловушки; новые файлы: tools/test/picker-text.test.js и помощники picker-text-helpers.js (принять). Требование — REQ-068 в docs/requirements.yaml (10 критериев буквально, актуальная редакция после микроправок: критерий 1 — 232 знака + 127 пар + 2048 единиц, знак по краям текста запрещён; критерий 7 — единственный файл перечня text-rules.js), решения 0076 (пп. 1–15). Уточнения ORCH после ворот: (а) оракул знаков — свой, НЕ выражение из кода: диапазоны Cc, перечень Cf литералами из требования (или из справочника другого языка не требуется — литералы из требования), обход кодовых единиц руками; (б) закрепи версию Юникода: тест «17.0» (Node 22.21.1, ICU 78.1) без пропуска и условного выхода (0076 п. 10; находка безопасности F3) — как именно получить версию (process.versions.unicode) и сообщение красного: «обновите перечень и числа»; (в) U+3164, U+2800, U+034F, U+115F, U+1160, U+FFA0, U+17B4–U+17B5 — допустимы сегодня (остаточный риск ISS-0085): закрепи тестом «допустимо» с пометкой, что при расширении запрета тест заменяется; (г) абзац README: проверка TT-10a/TT-10b — читай абзац из tools/README.md (раздел о запрещённых знаках): нет слов второго лица, фразы ≤ 18 слов, нужные слова-метки на месте (E_TEXT, U+200B, U+202E, U+00A0, U+202F, эмодзи) — абзац уже правлен CODE-FIXER; (д) тесты не должны зависеть от числа «прежних» мест таблицы: числа 1192 места × 22 знака = 26 224 случая; (е) красных тестов после таблицы замен — ноль; 1864 из 1864 было на прототипе проекта (точное число — по итогу); (ж) 127 запрещённых пар: называются кодом знака (например U+E0001), обратный порядок пары даёт две одиночные единицы (называется младшая); (з) ровно одна ошибка E_TEXT на место, независимость трёх языков, 150 мест со знаком → 100 строк и «И ещё ошибок: 50.»; (и) вывод не содержит сам запрещённый знак и U+FFFD (проверка через процесс npm run picker -- check и serve на папке с образцами показа); (к) сервер на папке с файлом со знаком: файл не обслуживается, ответ неотличим от неизвестного арендатора (SF-6k(б)); (л) ReDoS: 1 МБ «почти запрещённых» знаков за секунды (порог справочный, контракт — завершение без таймаута теста); (м) критерий 7: поиск перечня по tools/src/picker/ — единственный файл text-rules.js (тест читает файлы и ищет выражения); мутанты: вторая копия в validate.js или places.js. Код продукта (tools/src/) не менять. Старые тесты не ослаблять; числа test(/assert. по файлам не меньше метки base/TEXT068-20261021-01. Запрещены git checkout/reset/stash/clean (мутанты — на свежем git clone; рабочая папка сессии — в сообщении ORCH, путь в файлы проекта и result не писать). В self_check и тестах — без названий проектов-образцов и путей компьютера (traces). Все серверы в тестах на порту 0, закрывать в t.after. Демо-сервер на порту 4782 не останавливать. Перед close: cd tools && npm run check — код 0 (всё зелёное, включая починенный SF-6k); в result — точные числа, таблица мутантов «мутант → тест → красный» по всем строкам проекта.",
+    "acceptance_criteria": [
+      "SF-6k починен по таблице замен без ослабления; тест на каждый из 10 критериев REQ-068",
+      "54 мутанта и ловушки пойманы (мутант → тест → красный)",
+      "npm run check код 0; точные числа"
+    ]
+  },
+  "created_at": "2026-10-21T09:48:51Z",
+  "started_at": "2026-10-21T09:48:51Z",
+  "completed_at": "2026-10-21T10:33:36Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Тесты REQ-068 (запрет управляющих и невидимых знаков в текстах арендатора). Код продукта (tools/src) не менялся: после проб diff -r tools/src, tools/test, README.md и package.json рабочей папки с четырьмя копиями для мутантов пуст.\nПЕРВЫМ ДЕЛОМ SF-6k починен по З1. До правки (свежий clone метки base/TEXT068-20261021-01, поверх новый код): 32 теста picker-server-faults и picker-server-units, 31 зелёный, красный ровно SF-6k. Теперь он заменён тремя тестами без потери проверок: SF-6k(a) - допустимая «трудная» строка (U+00A0, U+202F, U+2003, пара смайла, ё, қ, ү, кавычка, обратная косая, <, &) в name на трёх языках: 200, нет байта ниже 0x20, кавычка и косая экранированы в сыром теле, name после JSON.parse равно строке; SF-6k(b) - файл с прежней строкой (U+0000, U+0007, U+202E, U+2028, одиночный суррогат) рядом с исправным uchet-pro.json: обслуживается только uchet-pro, в stderr блок «не обслуживается» и строка E_TEXT, адрес такого арендатора отвечает 404 байт в байт как неизвестный (кроме Date); SF-6k(c) - анкета, собранная в памяти в обход проверки файла (checkBytes -> tenantInLanguage -> копия с прежней строкой -> publicQuestionnaire -> JSON.stringify), на каждом языке: нет байта ниже 0x20, \\u0000, \\u0007, \\ud800 записаны escape-ами, U+202E сам знак, name равно строке. SU-8 получил шесть проверок З2 (a_b, show, пара, __, x_, _x). Число test( в picker-server-faults 18 -> 20, picker-server-units 14 -> 14 (assert. 174 -> 180).\nНовые файлы: tools/test/picker-text.test.js (34 теста: TT-1…TT-10, TT-R1…R3 и TP-9a…9c; файла picker-text-property.test.js нет - write_set его не называет, поэтому свойства TP-9 лежат в picker-text.test.js), tools/test/picker-text-helpers.js (оракул знаков - литералы из требования, Cc 60 + Cf 170 + 2 = 232, Юникод 17.0; таблица TEXT_EXPECTED из 37 образцов; строки З и П), tools/test/fixtures/picker-text/ (37 образцов поимённо: 24 + 4 с запрещённым знаком, 2 показа, 2 ответа E_JSON, 5 принимаемых; выводы сверены с таблицей п. 8 проекта).\nТаблица «критерий -> тест»: 1 - TT-1a (версия Юникода 17.0 без пропуска; сообщение красного: обновите перечень и числа), TT-1b (перебор 1 112 064 значений, «а» знак «б», знак в начале и в конце: ровно 232 запрещены, код равен знаку; список Cf равен \\p{Cf} движка, иначе тест называет разошедшиеся знаки), TT-1c (2048 одиночных единиц), TT-1d (1024 x 1024 пар: допустимо 1 048 449, запрещено 127, код - код знака), TT-1e (обратный порядок: называется младшая), TT-1f (первый знак слева); 2 - TT-2a (1192 места × 14 знаков = 16 688 случаев; ровно одна E_TEXT на место, остальные языки без ошибок), TT-2b (допустимые знаки, 1192 × 8), TT-2c (59 файлов процессом и один через npm); 3 - TT-3a…3f (37 образцов, glue-nomatch: знак заменён пробелом - 40 слов, ty-intro: знак удалён - «Ты тут»); 4 - TT-4a…4f (порядок проверок, 150 мест: 100 строк и «И ещё ошибок: 50.», десять кодов, знак в хвосте длинного текста: consent_text 599/550/299, intro.en 399/299); 5 - TT-5a, TT-5b (допустимое, в том числе остаток U+3164, U+2800, U+034F, U+115F, U+1160, U+FFA0, U+17B4-U+17B5 - закреплён с пометкой ISS-0085: при расширении запрета тест заменяется); 6 - SU-8, TT-6a, TT-6b; 7 - TT-7a (перечень только в text-rules.js, вторая копия в validate.js, places.js, check.js краснеет); 8 - SF-6k(a), (b), (c); 9 - TP-9a (1000 файлов, зерно 68001, каждый пятый с порчей байта, 40 процессом), TP-9b, TP-9c (npm run traces код 0); 10 - TT-10a, TT-10b (абзац README: пять слов-меток и смайл, фразы не длиннее 18 слов, нет «ты»), TT-4e. Риски: TT-R1 (tame на всех значениях равен прежнему правилу), TT-R2 (10 000 случайных строк; ReDoS: миллион «почти запрещённых» знаков каждого вида за доли секунды), TT-R3 (замороженный файл).\nЧисла: npm run check код 0; # tests 1862 -> 1898, pass 1898, fail 0, skipped 0, todo 0; prettier, eslint, traces (0 следов) и handoffs-check (0 нарушений) чисто.",
+    "changes": [
+      {
+        "file": "tools/test/picker-server-faults.test.js",
+        "what": "З1: SF-6k -> SF-6k(a), SF-6k(b), SF-6k(c); число test( 18 -> 20"
+      },
+      {
+        "file": "tools/test/picker-server-units.test.js",
+        "what": "З2: SU-8 - шесть проверок tame и show"
+      },
+      {
+        "file": "tools/test/picker-text-helpers.js",
+        "what": "новый: оракул знаков, TEXT_EXPECTED, строки З и П"
+      },
+      {
+        "file": "tools/test/picker-text.test.js",
+        "what": "новый: TT-1…TT-10, TT-R1…R3, TP-9a…9c (34 теста)"
+      },
+      {
+        "file": "tools/test/fixtures/picker-text/",
+        "what": "37 образцов поимённо"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-21T09:48:51Z, конец 2026-10-21T10:35:00Z (проверка по часам 10:32:25Z)",
+      "cd tools && caffeinate -i npm run check -> код 0; prettier --check: все файлы в стиле; eslint --max-warnings 0 чисто; traces: файлов проверено 1942, следов 0; handoffs-check: нарушений 0; # tests 1898, # pass 1898, # fail 0, # cancelled 0, # skipped 0, # todo 0",
+      "числа grep -c '^test(' / grep -o 'assert[.]' | wc -l (метка -> теперь): picker-server-faults.test.js 18/138 -> 20/150; picker-server-units.test.js 14/174 -> 14/180; новые: picker-text.test.js 0/0 -> 34/175; picker-text-helpers.js - 0/0",
+      "SF-6k до правки: clone метки + новый код -> picker-server-faults и picker-server-units: # tests 32, # pass 31, # fail 1 (SF-6k); после: 34 из 34",
+      "мутанты на свежих git clone вне проекта (четыре копии, поверх скопирован tools без node_modules), по одной правке текста с проверкой числа вхождений, файл восстанавливался, новый файл удалялся; запуск picker-text, picker-server-faults, picker-server-units, picker-config, picker-engine, picker-robust, picker-parse, picker-lang, picker-texts, traces-runtime (199 тестов); итого 68 запусков: 54 мутанта проекта, 7 своих (Э1-Э7), 7 ловушек (слова в комментариях); красных 66, выжили два своих (Э5, Э7, равносильные - ниже)",
+      "54 мутанта проекта (мутант -> тест -> красный):",
+      "М1 (no Cc): красных 11 из 199: SF-6k(b) SF-6l SU-8 TP-9b TT-1b TT-1f TT-2a TT-3b TT-7a TT-R1 TT-R3",
+      "М2 (no Cf): красных 15 из 199: SU-8 TT-1b TT-1d TT-1f TT-2a TT-2c TT-3b TT-4a TT-4b TT-4c TT-4f TT-7a TT-R1 TT-R2 TT-R3",
+      "М3 (no U+2028): красных 5 из 199: TT-1b TT-2a TT-3b TT-7a TT-R3",
+      "М4 (no U+2029): красных 5 из 199: TT-1b TT-2a TT-3b TT-7a TT-R3",
+      "М5 (no single halves): красных 13 из 199: SU-8 TP-9a TT-1c TT-1e TT-1f TT-2a TT-3b TT-3e TT-4f TT-6a TT-7a TT-R2 TT-R3",
+      "М6 (the five white signs not excepted): красных 6 из 199: TT-1b TT-1f TT-2b TT-3c TT-5b TT-R2",
+      "М7 (only tab and line feed excepted): красных 3 из 199: TT-1b TT-3c TT-R2",
+      "М8 (U+0009-U+001F excepted): красных 4 из 199: TT-1b TT-2a TT-R1 TT-R3",
+      "М9 (U+200D excepted): красных 3 из 199: TT-1b TT-3b TT-R1",
+      "М10 (Co forbidden): красных 4 из 199: TT-1b TT-1d TT-5b TT-R1",
+      "М11 (Cn forbidden): красных 4 из 199: TT-1b TT-1d TT-5b TT-R1",
+      "М12 (Mn forbidden): красных 5 из 199: TT-1b TT-1d TT-3c TT-5b TT-R1",
+      "М13 (Zs forbidden): красных 93 из 199: LG-10a LG-1a LG-1b LG-1c LG-1c2 LG-1f LG-1i LG-2a LG-2b LG-2c LG-2d LG-2e LG-2f LG-2g LG-2h LG-3a LG-3b LG-3c LG-3d LG-3e LG-3f LG-3g LG-7g LG-R2 LG-R3 PE-0 PE-2e PE-3a PE-3b PE-3c PE-7a PE-7b PE-7c PE-8a PE-8e PK-1a PK-1e PK-2a PK-2b PK-3a PK-3b PK-3c PK-3d PK-4a PK-4b PK-4c PK-5a PK-5b PK-5c PK-6b PK-8a PK-8b PK-R2 PK-R4 SF-6a SF-6b SF-6b2 SF-6c SF-6c2 SF-6c3 SF-6e SF-6e2 SF-6e3 SF-6f SF-6g SF-6h SF-6i SF-6k(a) SF-6k(b) SF-6k(c) SF-6l SF-6m SF-6o SU-9 TP-9a TP-9b TT-1b TT-2a TT-2b TT-2c TT-3b TT-3c TT-3e TT-3f TT-4a TT-4b TT-4c TT-4f TT-5a TT-5b TT-6a TT-6b TT-R2",
+      "М14 (U+FFFD forbidden): красных 5 из 199: TT-1b TT-5b TT-6b TT-R1 TT-R2",
+      "М15 (U+3164 forbidden): красных 4 из 199: TT-1b TT-5b TT-R1 TT-R2",
+      "М16 (only single high halves): красных 9 из 199: SU-8 TT-1c TT-1e TT-1f TT-2a TT-3b TT-6a TT-7a TT-R3",
+      "М17 (only single low halves): красных 13 из 199: SU-8 TP-9a TT-1c TT-1e TT-1f TT-2a TT-3b TT-3e TT-4f TT-6a TT-7a TT-R2 TT-R3",
+      "М18 (the code is the unit, not the sign): красных 3 из 199: TT-1b TT-1d TT-1f",
+      "М19 (half for everything from U+D800): красных 7 из 199: TT-1b TT-1d TT-1f TT-2a TT-3b TT-4f TT-R3",
+      "М20 (half always false): красных 8 из 199: TT-1c TT-1e TT-1f TT-2a TT-3b TT-4f TT-R2 TT-R3",
+      "М21 (half only from U+DC00): красных 8 из 199: TT-1c TT-1e TT-1f TT-2a TT-3b TT-4f TT-R2 TT-R3",
+      "М22 (the check on trim()): красных 3 из 199: TT-1b TT-1f TT-4f",
+      "М23 (the last sign is named): красных 4 из 199: SF-6k(b) TT-1e TT-1f TT-3b",
+      "М24 (only the first 100 signs): красных 4 из 199: TT-3b TT-4b TT-4f TT-R2",
+      "М25 (only the first 150 signs): красных 2 из 199: TT-4f TT-R2",
+      "М26 (only the first 599 signs): красных 2 из 199: TT-4f TT-R2",
+      "М-V1 (the sign after the length): красных 3 из 199: TT-3b TT-4b TT-R2",
+      "М-V2 (the sign only in ru): красных 6 из 199: TT-2a TT-2c TT-3b TT-4c TT-4f TT-R3",
+      "М-V3 (no sign check in operator_name and privacy_contact): красных 4 из 199: TT-2a TT-2c TT-3b TT-R3",
+      "М-V4 (one text for a half): красных 4 из 199: TT-2a TT-3b TT-4f TT-R3",
+      "М-V5 (the code in lower case): красных 9 из 199: TT-2a TT-2c TT-3b TT-4a TT-4b TT-4c TT-4f TT-R2 TT-R3",
+      "М-V6 (the code in two digits): красных 5 из 199: SF-6k(b) TP-9b TT-2a TT-3b TT-R3",
+      "М-V7 (the sign itself in the line): красных 11 из 199: SF-6k(b) TP-9b TT-2a TT-2c TT-3b TT-4a TT-4b TT-4c TT-4f TT-R2 TT-R3",
+      "М-V8 (the code E_LIMIT): красных 10 из 199: SF-6k(b) TP-9b TT-2a TT-2c TT-3b TT-4a TT-4b TT-4c TT-4f TT-R3",
+      "М-V9 (the sign after 'ты' and 18 words): красных 2 из 199: TT-3b TT-4a",
+      "М-V10 (the half text without the code): красных 4 из 199: TT-2a TT-3b TT-4f TT-R3",
+      "М-P1 (tame does not change single halves): красных 5 из 199: SU-8 TP-9a TT-3b TT-3e TT-6a",
+      "М-P2 (tame changes to ?): красных 10 из 199: LG-2h PK-6f SF-6e2 SF-6l SU-1 SU-8 TT-3b TT-3e TT-6a TT-R1",
+      "М-P3 (tame cuts a pair): красных 3 из 199: SU-8 TT-6a TT-R1",
+      "М-P4 (tame does not change Cf): красных 3 из 199: SU-8 TT-7a TT-R1",
+      "М-P5 (tame changes U+FFFD): красных 2 из 199: TT-6b TT-R1",
+      "М-P6 (tame does not change spaces): красных 9 из 199: LG-2h PK-6f PK-R1 PK-R2 SF-6e2 SF-6l SU-1 SU-8 TT-R1",
+      "М-S1 (the list copied into places.js): красных 1 из 199: TT-7a",
+      "М-S2 (the list moved to a new module): красных 4 из 199: PE-8d PK-6e PK-7c TT-7a",
+      "М-S3 (check.js got its own check of a sign): красных 1 из 199: TT-7a",
+      "М-S4 (SF-6k(a) with the forbidden U+200B): красных 1 из 199: SF-6k(a)",
+      "М-S5 (the answer builder cuts controls): красных 1 из 199: SF-6k(c)",
+      "М-S6 (a refused tenant is served): красных 4 из 199: SF-6e SF-6e2 SF-6f SF-6k(b)",
+      "М-S7 (eleven codes of errors): красных 1 из 199: TT-4e",
+      "М-S8 (a demo file got a forbidden sign): красных 31 из 199: LG-10a LG-1a LG-1c LG-1f LG-7a LG-7g LG-R2 SF-6a SF-6b SF-6b2 SF-6c SF-6c2 SF-6c3 SF-6e SF-6e2 SF-6e3 SF-6g SF-6h SF-6i SF-6k(b) SF-6l SF-6m SF-6o SU-9 TP-9b TT-2a TT-2b TT-2c TT-5a TT-5b TT-6a",
+      "М-S9 (the raw null sample now gives E_TEXT): красных 2 из 199: TT-3b TT-3d",
+      "М-S10 (forbiddenSign throws on a million signs): красных 1 из 199: TT-R2",
+      "М-S11 (README paragraph without U+202E): красных 1 из 199: TT-10a",
+      "М-S12 (package.json got a dependency): красных 2 из 199: PK-7b TR-4a",
+      "свои мутанты сверх проекта:",
+      "Э1 (expression with the g flag): красных 13 из 199: SU-8 TT-1b TT-1c TT-1d TT-1e TT-1f TT-2a TT-3b TT-4c TT-6a TT-R1 TT-R2 TT-R3",
+      "Э2 (a pair of halves is taken as one half): красных 6 из 199: TT-1c TT-1e TT-1f TT-2a TT-3b TT-R3",
+      "Э3 (validate: the sign is checked on the trimmed text): красных 1 из 199: TT-4f",
+      "Э4 (validate: the code of a half as the pair): красных 4 из 199: TT-2a TT-3b TT-4f TT-R3",
+      "Э5 (validate: the sign is not told at all (no return)): ВЫЖИЛ (красных 0 из 199)",
+      "Э6 (tame: single halves not changed at the start): красных 5 из 199: SU-8 TP-9a TT-3b TT-3e TT-6a",
+      "Э7 (the list in the helper: forbiddenSign of a half with U+DC00 start ok): ВЫЖИЛ (красных 0 из 199)",
+      "ловушки (слова в комментариях кода):",
+      "Л1 (word in a comment: renamed in text-rules.js): красных 1 из 199: PK-6e",
+      "Л2 (word in a comment: truncated in validate.js): красных 1 из 199: PK-6e",
+      "Л3 (word in a comment: global in places.js): красных 1 из 199: PK-8c",
+      "Л4 (word in a comment: readdir in text-rules.js): красных 1 из 199: PK-8c",
+      "Л5 (word in a comment: node: in text-rules.js): красных 1 из 199: PK-7c",
+      "Л6 (word in a comment: fetch(x) in validate.js): красных 2 из 199: PK-7a TR-4b",
+      "Л7 (word in a comment: Math.random in places.js): красных 1 из 199: PK-7a",
+      "Э5 (после ошибки про знак нет return) выжил и равносилен: ctx.add оставляет одну ошибку на место, вторая отбрасывается; Э7 (защита от не строки в forbiddenSign) равносилен: в функцию всегда приходит строка",
+      "ловушки Л2 (явные \\x00-\\x08 вместо \\p{Cc}) и Л3 (сырой U+200B в коде) краснят lint (no-control-regex, no-irregular-whitespace), а не тест: проверено в проекте, в тестах знаки записаны escape-ами \\uXXXX",
+      "остаток невидимых знаков (U+3164, U+2800, U+034F, U+115F, U+1160, U+FFA0, U+17B4-U+17B5) закреплён как «допустимо» в TT-5b; при расширении запрета (ISS-0085) эти строки переносятся в запрещённые",
+      "после проб: diff -r tools/src, tools/test, README.md, package.json рабочей папки и каждой копии пуст; команд git checkout, reset, stash, clean в проекте не было; серверы тестов на порту 0, закрываются в t.after; демо-сервер на порту 4782 не останавливался"
+    ],
+    "issues": [
+      {
+        "kind": "INFO",
+        "text": "Файл picker-text-property.test.js из проекта (п. 3, D9) не создан: write_set его не называет, свойства TP-9a-9c лежат в picker-text.test.js. Если нужен отдельный файл, его переносят без изменения тестов."
+      },
+      {
+        "kind": "INFO",
+        "text": "Ошибок в коде продукта не найдено: все новые тесты прошли на настоящем коде с первого прогона, кроме трёх моих ошибок в самих тестах (проверка формы строки на строке успеха, миллион знаков, оборванный посредине суррогат), исправленных в тестах."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-server-faults.test.js",
+      "tools/test/picker-server-units.test.js",
+      "tools/test/picker-text-helpers.js",
+      "tools/test/picker-text.test.js",
+      "tools/test/fixtures/picker-text/"
+    ]
+  }
+}

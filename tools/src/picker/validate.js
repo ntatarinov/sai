@@ -12,7 +12,12 @@ import {
   TENANT_ID,
 } from "./limits.js";
 import { pathText, show } from "./places.js";
-import { textProblem, trimmedLength, wordsProblem } from "./text-rules.js";
+import {
+  forbiddenSign,
+  textProblem,
+  trimmedLength,
+  wordsProblem,
+} from "./text-rules.js";
 
 // The language whose texts are written in the form "вы": the address "ты" is forbidden here only.
 const FORMAL_LANGUAGE = "ru";
@@ -119,11 +124,23 @@ function makeContext(mode) {
       if (mode === "/2") checkLanguageText(ctx, path, v, min, max);
       else ctx.line(path, v, min, max, DEFAULT_LANGUAGE);
     },
-    // A text in one language: type, length, then the rule of understandable text. The
-    // address "ты" is forbidden in ru only.
+    // A text in one language: type, forbidden sign, length, then the rule of
+    // understandable text. The address "ты" is forbidden in ru only.
     line(path, v, min, max, language) {
       if (typeof v !== "string") {
         ctx.wrong(path, "string");
+        return;
+      }
+      const sign = forbiddenSign(v);
+      if (sign !== null) {
+        const code = `U+${sign.unit.toString(16).toUpperCase().padStart(4, "0")}`;
+        ctx.add(
+          "E_TEXT",
+          path,
+          sign.half
+            ? `Непарная половина знака ${code}. Удалите её из текста.`
+            : `Недопустимый знак ${code} (невидимый или управляющий). Удалите его из текста.`,
+        );
         return;
       }
       const length = trimmedLength(v);

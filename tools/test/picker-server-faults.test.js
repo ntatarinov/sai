@@ -9,6 +9,9 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
+import { checkBytes } from "../src/picker/check.js";
+import { publicQuestionnaire } from "../src/picker/public-data.js";
+import { fileLanguages, tenantInLanguage } from "../src/picker/view.js";
 import { installFaults } from "./fault-inject.js";
 import {
   EXPECTED,
@@ -36,12 +39,14 @@ import {
   rawSend,
   request,
   resultRequest,
+  signature,
   sourceOf,
   startForTest,
   startPickerClosing,
   streamBody,
   textFor,
 } from "./picker-server-helpers.js";
+import { textLine } from "./picker-text-helpers.js";
 
 const FAULT_PATH = path.join(TOOLS, "test", "fault-inject.js");
 const good = (name = "leader") => demoAnswerSets("uchet-pro")[name];
@@ -934,24 +939,24 @@ test("SF-6i: a pause in the body longer than bodyIdleMs is 408 with Connection: 
 
 // ---------------------------------------------------------------------- SF-6k
 
-test("SF-6k: a tenant whose texts hold a null sign, a bell, U+202E, U+2028 and a single surrogate is served as data of JSON - 200, a body that is right JSON with no byte below 0x20, the single surrogate written as \\ud800, and the values after JSON.parse equal to the file", async (t) => {
-  const odd = "A\u0000B\u0007C‮D E\ud800F";
-  const tenant = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        TOOLS,
-        "test",
-        "fixtures",
-        "picker-lang",
-        "ok-lang-minimal.json",
-      ),
-      "utf8",
-    ),
-  );
+const LANG_FILE = path.join(
+  TOOLS,
+  "test",
+  "fixtures",
+  "picker-lang",
+  "ok-lang-minimal.json",
+);
+const langTenant = () => JSON.parse(fs.readFileSync(LANG_FILE, "utf8"));
+// The text that the file check used to let in and now refuses (design REQ-068, 9.1, Z1).
+const REFUSED = "A\u0000B\u0007C\u202eD\u2028E\ud800F";
+
+test("SF-6k(a): a tenant whose name holds hard but allowed signs - no-break spaces, a pair of the smiley, letters, a quote, a backslash, < and & - is served as data of JSON: 200, a body that is right JSON with no byte below 0x20, the quote and the backslash escaped in the raw body, and the name after JSON.parse equal to the file", async (t) => {
+  const odd = 'A\u00a0B\u202fC\u2003D\ud83d\ude00\u0451\u049b\u04af"\\<&';
+  const tenant = langTenant();
   for (const lang of LANGS) tenant.name[lang] = `${odd}-${lang}`;
-  const text = JSON.stringify(tenant);
-  assert.ok(text.includes("\\u0000") && text.includes("\\ud800"));
-  const dir = makeTenantDir(t, { "ok-lang-minimal.json": text });
+  const dir = makeTenantDir(t, {
+    "ok-lang-minimal.json": JSON.stringify(tenant),
+  });
   const s = await startForTest(t, dir);
   assert.deepEqual(s.ids, ["ok-lang-minimal"], s.err.join("\n"));
   for (const lang of LANGS) {
@@ -962,11 +967,66 @@ test("SF-6k: a tenant whose texts hold a null sign, a bell, U+202E, U+2028 and a
     for (const byte of res.body)
       assert.ok(byte >= 0x20, "a byte below 0x20 in the body");
     const raw = res.body.toString("utf8");
-    assert.ok(raw.includes("\\u0000"));
-    assert.ok(raw.includes("\\u0007"));
-    assert.ok(raw.includes("\\ud800"));
-    assert.ok(raw.includes("‮"));
+    assert.ok(raw.includes('\\"'), "the quote is escaped");
+    assert.ok(raw.includes("\\\\"), "the backslash is escaped");
     assert.equal(JSON.parse(raw).name, `${odd}-${lang}`);
+  }
+});
+
+test("SF-6k(b): a tenant whose name holds the signs the check refuses (a null sign, a bell, U+202E, U+2028, a single half) is not served - beside a right tenant the ids are only the right one, the server tells the block and the line of E_TEXT, and its address answers 404 byte for byte as an unknown tenant", async (t) => {
+  const tenant = langTenant();
+  tenant.name.ru = `${REFUSED}-ru`;
+  const dir = makeTenantDir(t, {
+    "uchet-pro.json": demoBytes("uchet-pro"),
+    "ok-lang-minimal.json": JSON.stringify(tenant),
+  });
+  const before = listingDigest(dir);
+  const s = await startForTest(t, dir);
+  assert.deepEqual(s.ids, ["uchet-pro"]);
+  assert.deepEqual(s.err, [
+    "Арендатор ok-lang-minimal.json не обслуживается:",
+    textLine("ok-lang-minimal.json", "name.ru", 0x0000),
+  ]);
+  const refused = await request(s.port, { path: "/t/ok-lang-minimal/" });
+  const unknown = await request(s.port, { path: "/t/net-takogo/" });
+  assert.equal(refused.status, 404);
+  assert.equal(signature(refused), signature(unknown));
+  assert.equal(refused.text, NOT_FOUND_BODY);
+  const asked = await request(s.port, {
+    path: "/t/ok-lang-minimal/api/questionnaire?lang=kk",
+  });
+  assert.equal(
+    signature(asked),
+    signature(
+      await request(s.port, {
+        path: "/t/net-takogo/api/questionnaire?lang=kk",
+      }),
+    ),
+  );
+  assert.equal((await request(s.port, { path: "/t/uchet-pro/" })).status, 200);
+  assert.deepEqual(listingDigest(dir), before);
+});
+
+test("SF-6k(c): the second line of defence - a questionnaire built from a tenant in memory, past the check of the file, with the refused signs in the name, is still right JSON in each language: no byte below 0x20, the null sign, the bell and the single half written as escapes, U+202E as it is, and the name after JSON.parse equal to the text", () => {
+  const bytes = Buffer.from(fs.readFileSync(LANG_FILE));
+  const checked = checkBytes(bytes, "ok-lang-minimal.json");
+  assert.equal(checked.exitCode, 0);
+  const languages = fileLanguages(checked.tenant);
+  for (const lang of LANGS) {
+    const view = {
+      ...tenantInLanguage(checked.tenant, lang),
+      name: `${REFUSED}-${lang}`,
+    };
+    const json = JSON.stringify(
+      publicQuestionnaire(view, { version: "v", lang, languages }),
+    );
+    for (const byte of Buffer.from(json, "utf8"))
+      assert.ok(byte >= 0x20, "a byte below 0x20");
+    assert.ok(json.includes("\\u0000"));
+    assert.ok(json.includes("\\u0007"));
+    assert.ok(json.includes("\\ud800"));
+    assert.ok(json.includes("\u202e"));
+    assert.equal(JSON.parse(json).name, `${REFUSED}-${lang}`);
   }
 });
 

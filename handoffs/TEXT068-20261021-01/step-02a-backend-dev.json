@@ -1,0 +1,124 @@
+{
+  "handoff_id": "step02a-TEXT068-20261021-01",
+  "run_id": "TEXT068-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "02a",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/TEXT068-20261021-01/step-02a-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-068"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-068-picker-text-charset.md",
+      "docs/requirements.yaml",
+      "decisions/0076-tenant-text-charset.md",
+      "tools/src/picker/"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR -> BACKEND-DEV -> SECURITY-REVIEWER + REVIEWER",
+    "write_set": [
+      "tools/src/picker/text-rules.js, tools/src/picker/validate.js, tools/src/picker/places.js, tools/README.md, handoffs/TEXT068-20261021-01/step-02a-backend-dev.json"
+    ],
+    "base_tag": "base/TEXT068-20261021-01",
+    "orch_check": {
+      "at": "2026-10-21T09:31:33Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "forbiddenSign в text-rules.js; validate.js и places.js его вызывают; перебор Юникода 232/1 111 832/2048, пары 127/1 048 449; demo 12/5/39 и 11/5/37; красный только SF-6k; format/lint/traces/handoffs-check код 0"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 2 — подшаг 68a проекта docs/design/REQ-068-picker-text-charset.md (разделы 4–8, 14 README, п. 12 подшаги; REQ-068 в docs/requirements.yaml — актуальная редакция после микроправок; решения 0076 с дополнениями пп. 5–15, 0066 п. 7). Реализуй: tools/src/picker/text-rules.js — функция forbiddenSign(text) с одним регулярным выражением (перечень: \\p{Cc} кроме U+0009–U+000D, \\p{Cf}, U+2028, U+2029, одиночные суррогаты; проверка на целом тексте, не на trim(); возвращает первый запрещённый знак слева направо или null — форма результата и формат кода U+XXXX строго по проекту: для знака вне BMP — код знака, для одиночной единицы — кодовая единица); tools/src/picker/validate.js — вызывает forbiddenSign в ctx.line после проверки типа и до проверки длины, две строки ошибки (знак с кодом: «Недопустимый знак U+XXXX (невидимый или управляющий). Удалите его из текста.»; одиночная единица: «Непарная половина знака U+XXXX. Удалите её из текста.»), место до поля и языка, одна ошибка на место, действует для /1 и /2 и для operator_name и privacy_contact; tools/src/picker/places.js — show()/tame() заменяют одиночный суррогат на «_» через forbiddenSign/тот же перечень, старая проверка \\p{Cf} в places.js убирается (одно место — AP-014: перечень только в text-rules.js); tools/README.md — абзац по черновику п. 14 проекта (простые слова, фразы ≤ 18 слов, на «вы»). Не пиши тесты и образцы (их пишет TEST-DESIGNER на шаге 5); не создавай новых модулей; engine.js, json.js, utf8.js, demo-tenants, demo-answers, package.json не трогай. Контрольные запуски разработчика — по проекту (перебор Юникода: 232 запрещённых знака вне суррогатов, 127 запрещённых пар, 1 048 449 допустимых пар, 2048 одиночных единиц; npm run picker -- check на обоих демо и на двух копиях /1 — 12/5/39 и 11/5/37; несколько файлов со знаками). Красных существующих тестов после правила — ровно один: SF-6k (picker-server-faults.test.js около 937) — назови в result.issues с разделом проекта; иной красный — остановись и доложи (вопрос CODE-DESIGNER через ORCH). Не добавляй зависимостей. Перед close: cd tools && npm run format:check && npm run lint && npm run traces && npm run handoffs-check (код 0), затем node --test test/picker-*.test.js test/traces-runtime.test.js — красный только SF-6k. Запреты: git checkout/reset/stash/clean; пробы на свежем git clone вне проекта (рабочая папка сессии — в сообщении ORCH, путь в файлы проекта не писать); без названий проектов-образцов и путей компьютера в файлах и result. Демо-сервер на порту 4782 не останавливать.",
+    "acceptance_criteria": [
+      "forbiddenSign в text-rules.js; validate.js и places.js его вызывают; старая проверка убрана",
+      "format:check, lint, traces, handoffs-check — код 0; красный только SF-6k",
+      "engine.js и неизменяемые не тронуты; нового модуля нет"
+    ]
+  },
+  "created_at": "2026-10-21T09:28:22Z",
+  "started_at": "2026-10-21T09:28:22Z",
+  "completed_at": "2026-10-21T09:30:48Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Подшаг 68a проекта REQ-068 сделан. В text-rules.js — forbiddenSign(text) с одним выражением /(?![\\t-\\r])[\\p{Cc}\\p{Cf}\\u2028\\u2029]|\\p{Cs}/u (целый текст, без trim; null или { unit, half }; unit — код знака, для одиночной половины пары — кодовая единица). В validate.js ctx.line вызывает её после проверки типа и до длины: одна ошибка E_TEXT на место, две строки (п. 6.1), код U+XXXX прописными, не меньше четырёх цифр; самого знака в строке нет. В places.js isSpaceOrControl = \\s или forbiddenSign(ch) !== null, старая проверка \\p{Cf} и пределов 0x20, 0x7F–0x9F убрана — перечень только в text-rules.js. В tools/README.md — абзац п. 14 (текст проекта, слова не менял). Тестов и образцов не писал, нового модуля нет, зависимостей нет.",
+    "changes": [
+      {
+        "file": "tools/src/picker/text-rules.js",
+        "section": "2 (D1–D4), 5.1",
+        "what": "константа FORBIDDEN (не экспортируется) и экспорт forbiddenSign(text); выражение без флага g, без явных диапазонов Cc; комментарии без сырых невидимых знаков"
+      },
+      {
+        "file": "tools/src/picker/validate.js",
+        "section": "2 (D5, D6), 5.2, 6.1",
+        "what": "импорт forbiddenSign; в ctx.line вызов между проверкой типа и длины; тексты «Недопустимый знак U+XXXX (невидимый или управляющий). Удалите его из текста.» и «Непарная половина знака U+XXXX. Удалите её из текста.»; комментарий метода обновлён"
+      },
+      {
+        "file": "tools/src/picker/places.js",
+        "section": "2 (D8), 5.3, 7",
+        "what": "импорт forbiddenSign; isSpaceOrControl(ch) = /\\s/u.test(ch) || forbiddenSign(ch) !== null; одиночная половина пары в tame()/show() теперь «_»"
+      },
+      {
+        "file": "tools/README.md",
+        "section": "13.1, 14",
+        "what": "абзац о запрещённых знаках после абзаца «Команда check проверяет оба вида…» и перед абзацем о вымышленных арендаторах; текст п. 14 без изменений (prettier проходит)"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "cd tools && npm run format:check; npm run lint; npm run traces; npm run handoffs-check",
+        "out": "коды 0, 0, 0, 0; format:check «All matched files use Prettier code style!»; lint без замечаний (--max-warnings 0); traces «файлов проверено 1901, следов 0, пропущено 57»; handoffs-check «файлов проверено 1081, нарушений 0, исключений использовано 114 из 114»"
+      },
+      {
+        "cmd": "node --test test/picker-*.test.js test/traces-runtime.test.js",
+        "out": "# tests 240, # pass 239, # fail 1, # skipped 0; красный один: not ok 166 SF-6k"
+      },
+      {
+        "cmd": "перебор Юникода по forbiddenSign (скрипт вне проекта)",
+        "out": "запрещено 232 знака вне суррогатов (unit равен коду знака, half ложь), допустимо 1111832, одиночных единиц запрещено 2048 (unit равен единице, half истина); пар «старшая + младшая» допустимо 1048449, запрещено 127"
+      },
+      {
+        "cmd": "контрольные вызовы п. 5.1",
+        "out": "«а»+U+200B+U+0007+«б» -> {unit: 8203, half: false}; U+E0001 внутри -> {unit: 917505, half: false}; «😀»+U+D83D -> {unit: 55357, half: true}; U+DE00+U+D83D -> {unit: 56832, half: true}; «😀», «а\\tб\\nв», пустая строка -> null; U+FEFF в начале -> {unit: 65279, half: false}"
+      },
+      {
+        "cmd": "tame по всем 1112064 значениям вне суррогатов, сравнение с прежней проверкой",
+        "out": "отличий 0; tame(\"a\\ud800b\") = a_b, tame(\"😀\") = 😀, tame(\"\\ude00\\ud83d\") = __, tame(\"x\\ud83d\") = x_, tame(\"a\\u0001b\\u202ec\") = a_b_c"
+      },
+      {
+        "cmd": "npm run -s picker -- check на демо-арендаторах и двух копиях /1 (test/fixtures/picker-legacy)",
+        "out": "uchet-pro: вопросов 12, решений 5, правил 39; svet-marketing: вопросов 11, решений 5, правил 37; обе копии /1 — те же числа; во всех четырёх код 0"
+      },
+      {
+        "cmd": "файлы со знаками во временной папке вне проекта",
+        "out": "uchet-pro с U+200B в name.ru -> код 1, строка «uchet-pro.json: name.ru: E_TEXT: Недопустимый знак U+200B (невидимый или управляющий). Удалите его из текста.»; файл с одиночной U+D800 в intro.en, U+FEFF в начале questions[0].title.kk, U+202E в leads.operator_name и U+E0001 в leads.privacy_contact -> четыре строки E_TEXT, по одной на место (U+D800 — «Непарная половина знака U+D800. Удалите её из текста.»); копия /1 с U+0007 в name -> E_TEXT, код U+0007"
+      },
+      {
+        "cmd": "поиск секретов по изменённым строкам",
+        "out": "совпадений нет; сетевых и файловых вызовов в правке нет"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "SF-6k (tools/test/picker-server-faults.test.js, около 937): «a tenant whose texts hold a null sign, a bell, U+202E, U+2028 and a single surrogate is served …» — красный, потому что арендатор с такими знаками теперь отвергается проверкой файла и не обслуживается. Проект: п. 9, З1 и п. 10 (три теста а, б, в; тест (в) строит анкету через publicQuestionnaire по виду файла в памяти). Правит TEST-DESIGNER на шаге 5. Иных красных нет: из 240 тестов picker-* и traces-runtime 239 зелёные."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Расхождений с проектом нет. Прочие потребители tame/show (conditions.js, lang-check.js, tenants.js, serve.js, check.js, cli.js) не менялись; одиночная половина пары в их сообщениях теперь «_», а не U+FFFD (п. 7)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/picker/text-rules.js",
+      "tools/src/picker/validate.js",
+      "tools/src/picker/places.js",
+      "tools/README.md",
+      "handoffs/TEXT068-20261021-01/step-02a-backend-dev.json"
+    ]
+  }
+}

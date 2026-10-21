@@ -482,6 +482,13 @@ test("SU-8: tame keeps a name (also with the word token), turns spaces and contr
   assert.equal(tame("x".repeat(40)), "x".repeat(40));
   assert.equal(tame("x".repeat(41)), `${"x".repeat(40)}…`);
   assert.equal(tame("😀".repeat(41)), `${"😀".repeat(40)}…`);
+  // a single half of a pair is an underscore (design REQ-068, 9.1, Z2); a pair stays
+  assert.equal(tame("a\ud800b"), "a_b");
+  assert.equal(show("a\ud800b"), "a_b");
+  assert.equal(tame("😀"), "😀");
+  assert.equal(tame("\ude00\ud83d"), "__");
+  assert.equal(tame("x\ud83d"), "x_");
+  assert.equal(tame("\udc00x"), "_x");
   assert.equal(tame("ты"), "ты");
   assert.equal(tame("null"), "null");
   assert.equal(tame(5), "5");

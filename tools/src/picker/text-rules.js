@@ -5,6 +5,21 @@ import { MAX_WORDS, SECOND_PERSON_WORDS } from "./limits.js";
 const SECOND_PERSON = new Set(SECOND_PERSON_WORDS);
 const WORD_PARTS = /[\p{L}\p{N}]+/gu;
 
+// The signs a text for the visitor may not hold (decision 0076): control signs (Cc)
+// except U+0009-U+000D, format signs (Cf), the line and paragraph separators, and a
+// single half of a surrogate pair. This is the only place that lists them.
+const FORBIDDEN = /(?![\t-\r])[\p{Cc}\p{Cf}\u2028\u2029]|\p{Cs}/u;
+
+// null, or { unit, half } for the first forbidden sign from the left. The whole text is
+// looked at (no trim). unit is the code point of the sign; for a single half of a pair it
+// is the code unit, and half is true.
+export function forbiddenSign(text) {
+  const found = FORBIDDEN.exec(text);
+  if (found === null) return null;
+  const unit = found[0].codePointAt(0);
+  return { unit, half: unit >= 0xd800 && unit <= 0xdfff };
+}
+
 // The length in code points after the spaces at both ends are cut off.
 export function trimmedLength(s) {
   return [...s.trim()].length;

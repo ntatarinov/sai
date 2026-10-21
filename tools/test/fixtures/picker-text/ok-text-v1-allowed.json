@@ -1,0 +1,169 @@
+{
+  "schema": "sai-picker-tenant/1",
+  "id": "ok-text-v1-allowed",
+  "name": "Пример-Лавка",
+  "intro": "Цена 50\u00a0000\u202fтенге 😀 ё ү",
+  "questions": [
+    {
+      "id": "kind",
+      "title": "Что вы продаёте?",
+      "type": "single",
+      "required": true,
+      "options": [
+        {
+          "id": "fruit",
+          "label": "Фрукты"
+        },
+        {
+          "id": "bread",
+          "label": "Хлеб"
+        }
+      ]
+    },
+    {
+      "id": "extras",
+      "title": "Что ещё вам нужно?",
+      "help": "Отметьте всё нужное.",
+      "type": "multiple",
+      "required": false,
+      "show_if": [
+        {
+          "question": "kind",
+          "any_of": ["fruit"]
+        }
+      ],
+      "options": [
+        {
+          "id": "bags",
+          "label": "Пакеты"
+        },
+        {
+          "id": "boxes",
+          "label": "Коробки"
+        }
+      ]
+    },
+    {
+      "id": "count",
+      "title": "Сколько покупателей приходит в день?",
+      "type": "number",
+      "required": true,
+      "min": 1,
+      "max": 1000,
+      "unit": "человек"
+    },
+    {
+      "id": "rush",
+      "title": "Бывают ли очереди?",
+      "type": "single",
+      "required": true,
+      "show_if": [
+        {
+          "question": "count",
+          "min": 50
+        },
+        {
+          "question": "kind",
+          "none_of": ["bread"]
+        }
+      ],
+      "options": [
+        {
+          "id": "queue-yes",
+          "label": "Да, бывают"
+        },
+        {
+          "id": "queue-no",
+          "label": "Нет, не бывают"
+        }
+      ]
+    }
+  ],
+  "solutions": [
+    {
+      "id": "stall",
+      "name": "Прилавок",
+      "summary": "Небольшой прилавок у дома.",
+      "includes": ["Стол и навес"],
+      "needs_from_you": [],
+      "next_steps": ["Выберите место"],
+      "not_suitable_when": []
+    },
+    {
+      "id": "van",
+      "name": "Фургон",
+      "summary": "Фургон для большого потока покупателей.",
+      "includes": ["Фургон с холодильником"],
+      "needs_from_you": ["Права на вождение"],
+      "next_steps": ["Выберите маршрут"],
+      "price_text": "от 100 000 тенге",
+      "duration_text": "две недели",
+      "not_suitable_when": ["Покупателей мало"]
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule-a",
+      "when": [
+        {
+          "question": "kind",
+          "any_of": ["fruit"]
+        }
+      ],
+      "solution": "stall",
+      "points": 3,
+      "text": "Фрукты удобно продавать с прилавка."
+    },
+    {
+      "id": "rule-b",
+      "when": [
+        {
+          "question": "count",
+          "min": 50
+        }
+      ],
+      "solution": "van",
+      "points": 4,
+      "text": "Для большого потока нужен фургон."
+    },
+    {
+      "id": "rule-c",
+      "when": [
+        {
+          "question": "count",
+          "max": 49
+        }
+      ],
+      "solution": "stall",
+      "points": 2,
+      "text": "Небольшому потоку хватает прилавка."
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "hyp-a",
+      "title": "Очереди отпугивают покупателей",
+      "explanation": "Когда покупатели ждут долго, часть из них уходит.",
+      "when": [
+        {
+          "question": "rush",
+          "any_of": ["queue-yes"]
+        }
+      ]
+    }
+  ],
+  "result": {
+    "top": 2,
+    "min_score": 2,
+    "clear_lead_gap": 2,
+    "no_match_text": "Мы не нашли подходящего решения."
+  },
+  "leads": {
+    "enabled": false,
+    "contact_fields": ["email"],
+    "operator_name": "Пример-Лавка, вымышленная фирма",
+    "consent_text": "Я согласен на хранение моей заявки.",
+    "privacy_contact": "Напишите на privacy@example.invalid.",
+    "retention_days": 30
+  }
+}

@@ -1,7 +1,7 @@
 // Places and shown values (design REQ-054, 5.5). Everything that comes from the file
 // and is put into a message passes through show().
 import { SHOWN_CHARS } from "./limits.js";
-import { hasSecondPerson, wordsOf } from "./text-rules.js";
+import { forbiddenSign, hasSecondPerson, wordsOf } from "./text-rules.js";
 
 export const ROOT_PLACE = "весь файл";
 
@@ -17,10 +17,9 @@ const FORBIDDEN_WORDS = new Set([
 const FORBIDDEN_SPELLINGS = ["Unexpected", "token", "undefined", "null", "NaN"];
 const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
+// A space sign, or a sign a text may not hold (a single half of a pair included).
 function isSpaceOrControl(ch) {
-  const code = ch.codePointAt(0);
-  if (code < 0x20 || (code >= 0x7f && code <= 0x9f)) return true;
-  return /[\s\p{Cf}]/u.test(ch);
+  return /\s/u.test(ch) || forbiddenSign(ch) !== null;
 }
 
 function mustHide(shown) {
