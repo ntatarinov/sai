@@ -48,3 +48,16 @@ BACKEND-DEV / CODE-FIXER → SECURITY-REVIEWER → REVIEWER → TEST-DESIGNER �
 ## Доказательство (обновление 2026-10-21)
 
 Файлы и пункты — в списке источников выше. Проверить пункт 9: `sed -n 70,85p tools/src/picker/public-data.js` (перебор ключей с пропуском `ranking`) и сравнить с п. 5.8 и п. 5.11 проекта `docs/design/REQ-056-picker-server.md`; пункт 10: `grep -n "STATIC_NAME" tools/src/picker/request.js tools/src/picker/assets.js`.
+
+## Обновление 2026-10-21 (DOC-UPDATER, прогон `PICKERCARD-20261021-01`, шаг 3): замечания ворот к REQ-057, REQ-065, REQ-066 и условие для строителей
+
+Дефект остаётся `open`. Это не дефекты выпущенного кода, а условия, которые обязан учесть тот, кто будет строить требования REQ-057 и REQ-064…REQ-067. Источники: `handoffs/PICKERCARD-20261021-01/step-02b-req-validator.json` (N1–N3, все Low, не блокируют), `decisions/0074`, п. 6.
+
+13. **N1 (REQ-065): одно определение «32 знака 0-9a-f».** Id заявки (REQ-059, аргументы `leads`, REQ-064 `status`) и код ссылки (REQ-065) используют одно определение правила — из `tools/src/picker/limits.js`. Строитель REQ-065 при необходимости переводит на него модули заявок и `status-read.js`, а не пишет своё выражение. Критерий 8 REQ-065 (`grep -rnE '[[]0-9a-f[]][{]32[}]' tools/src/picker/*.js`) ограничить именем константы в `limits.js` — иначе поиск найдёт больше одного определения.
+14. **N2 (REQ-057): «все места с `/assets/stub.js`», а не «сбои чтения».** В описании REQ-057 фразу «сбои чтения файла в `picker-server-faults.test.js`» читать как «все места с `/assets/stub.js`»: в `picker-server-faults.test.js` это SF-6o (неизвестное имя, строка 268), SF-6c (таблица `ALLOW` с путём файла, строка 295) и SF-6h (сбой чтения, строки 882–888); в остальных файлах перечень полон (SU-10, SU-11, SV-1f, SV-7a, SV-7e, SP-1, SP-2, `SERVER_TEXTS` в `picker-server-helpers.js:92`). Проект REQ-057 обязан найти все места поиском заново (`grep -rn "stub.js" tools/test/ tools/src/picker/`), а не по этому перечню.
+15. **N3 (REQ-066): критерий «Только просмотр» ищет прописные подстроки `POST`, `PUT`, `PATCH`, `DELETE`.** Они совпадут и с обычными словами в коде (`INPUT`, `OUTPUT`, `DISPATCH`). Построитель REQ-066 лечит это переименованием или сужением поиска до границ слов (метод запроса — значение `method:` не `GET`), а не ослаблением проверки (Q6).
+16. **Условие для строителей REQ-057, 058, 059, 063, 064, 065, 066 (`decisions/0074`, п. 6): в комментариях файлов `tools/src/picker/public/` не писать `REQ-NNN`, `handoff`, `ORCH`, `decisions`.** Эти файлы получает посетитель сайта. Сегодня номер требования стоит в первой строке `tools/src/picker/public/texts.js` и в `tools/src/picker/public/stub.js`: `stub.js` уходит при стройке REQ-057, строку `texts.js` убирает та же стройка. Это пишется в задание каждому из строителей; REQ-067 проверяет `grep -rnE 'REQ-[0-9]|ISS-[0-9]|WF-[0-9]|AP-[0-9]' tools/src/picker/public/` (пусто, код 1).
+
+## Доказательство (обновление 2026-10-21)
+
+`handoffs/PICKERCARD-20261021-01/step-02b-req-validator.json` (N1, N2, N3), `decisions/0074` (п. 6). Проверить пункт 16: `grep -rnE 'REQ-[0-9]|ISS-[0-9]|WF-[0-9]|AP-[0-9]' tools/src/picker/public/` — до стройки REQ-057 находит `texts.js` (строка 1) и `stub.js`; пункт 14: `grep -rn "stub.js" tools/test/ tools/src/picker/`.
