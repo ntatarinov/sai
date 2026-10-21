@@ -1,0 +1,123 @@
+{
+  "handoff_id": "step02-ISS-0075-20261021-01",
+  "run_id": "ISS-0075-20261021-01",
+  "workflow_id": "WF-03",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0075-20261021-01/step-02-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json",
+      "docs/issues/ISS-0075-team-channel-en62-flaky-inbox-race.md",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-helpers.js",
+      "tools/test/fixtures/traces/helpers.js"
+    ],
+    "route": "ISSUE-FIXER -> TEST-DESIGNER (этот) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER",
+    "write_set": [
+      "tools/test/team-channel.test.js, tools/test/team-helpers.js, tools/test/team-web-channel.test.js, tools/test/team-web-control.test.js, tools/test/fixtures/traces/helpers.js, tools/test/flaky-regression.test.js, handoffs/ISS-0075-20261021-01/step-02-test-designer.json"
+    ],
+    "base_tag": "base/ISS-0075-20261021-01",
+    "orch_check": {
+      "at": "2026-10-21T05:57:08Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "EN-62 (общая функция listFilesLive вместо трёх копий) и HC-6a (пять ключей среды песочницы) исправлены; FR-1…FR-5: 5 красных до правки из 6; устойчивость: EN-62 0/200 и 0/102, HC-6a 0/60 (было 49/60); 23 мутанта красные; npm run check код 0, 1862"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 2 — исправление тестов EN-62 и HC-6a по диагнозу (handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json: result, self_check — рецепты воспроизведения; docs/issues/ISS-0075-team-channel-en62-flaky-inbox-race.md). Только tools/test (код продукта tools/src не менять; требования не менять). EN-62: функция inboxNames (tools/test/team-channel.test.js около строк 76–87) делает readdirSync и lstatSync на каждое имя; писатель-процесс (временный файл inbox/.tmp-… и переименование) исчезает между вызовами → ENOENT. Исправление: имя, исчезнувшее между readdir и lstat, пропускается (ENOENT у lstat — пропустить; ENOENT у readdir вложенного каталога — пустой список; другие ошибки пробрасываются); ОДНА общая функция в tools/test/team-helpers.js вместо копий (AP-014) — найди все копии обхода каталога с живым писателем: inboxNames и вызов в EN-62, строку около 838, inboxFiles в tools/test/team-web-channel.test.js и tools/test/team-web-control.test.js — переведи на общую функцию, поведение тестов и проверки прежние (число test( и assert. не уменьшается). Регрессионный тест (падает ДО правки): детерминированный — подмена fs.readdirSync так, что имя удаляется сразу после перечня; ожидание: список без исчезнувшего имени, без исключения; на старой реализации — ENOENT (доказать запуском на копии до правки). HC-6a: в песочнице тестов handoffs (tools/test/fixtures/traces/helpers.js, функция sandbox()) git 2.55+ после коммита запускает фоновую уборку (git maintenance run --auto --detach), берущую .git/objects/maintenance.lock; хеш дерева видит замок «до» и не видит «после». Исправление: в env песочницы добавить GIT_CONFIG_COUNT=2, GIT_CONFIG_KEY_0=maintenance.auto, GIT_CONFIG_VALUE_0=false, GIT_CONFIG_KEY_1=gc.auto, GIT_CONFIG_VALUE_1=0 (как в диагнозе); проверка «команда дерево не меняет» и treeHash остаются как есть (не ослаблять!). Регрессионный тест: sandbox() выдаёт среду с этими пятью ключами; git, запущенный в песочнице, видит maintenance.auto=false и gc.auto=0 (git config --get в песочнице) — падает до правки. Все тесты, использующие sandbox(), и 11 файлов handoffs-* остаются зелёными; проверь, что другие вызовы git в тестах (не через sandbox) не затронуты. Не трогай EX-42 (отдельный прогон после решения по ISS-0065). Доказательство устойчивости — сам, на свежем git clone вне проекта (рабочая папка сессии — в сообщении ORCH, путь в файлы проекта не писать): EN-62 — 200 запусков файла в обычном режиме и 100 под нагрузкой (несколько параллельных процессов), 0 красных; HC-6a — если в среде есть git 2.55 (или собранный по рецепту диагноза), стенд из диагноза: 12 параллельных запусков handoffs-base × 5 кругов под нагрузкой — 0 красных из 60 (было 54 из 60); иначе скажи прямо, что на другой версии git доказана только структурная часть (регрессионный тест). Мутанты: убрать пропуск ENOENT в общей функции; вернуть старую копию в одном из файлов; убрать один из пяти ключей env; вернуть GIT_CONFIG_COUNT=1; замени maintenance.auto=false на true — все ловятся регрессионными тестами; запись «мутант → тест → красный». Старые тесты не ослаблять; числа test(/assert. по файлам не ниже метки base/ISS-0075-20261021-01. Запреты: git checkout/reset/stash/clean в проекте; пробы только на свежем git clone вне проекта; в тестах и result без названий проектов-образцов и путей компьютера (traces). Перед close: cd tools && npm run check — код 0 (все 1856+ тестов зелёные; при единичном падении по времени под нагрузкой — повтор и опиши); в result — точные числа и таблица мутантов.",
+    "acceptance_criteria": [
+      "EN-62 и HC-6a починены без ослабления проверок; общая функция обхода вместо копий",
+      "Регрессионные тесты падают до правки и проходят после; мутанты пойманы",
+      "Устойчивость доказана запусками; npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-21T05:30:37Z",
+  "started_at": "2026-10-21T05:30:37Z",
+  "completed_at": "2026-10-21T05:56:24Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправление EN-62 и HC-6a по диагнозу шага 01 (ISS-0075). Только tools/test; код продукта и EX-42 не тронуты; демо-сервер на порту 4782 не останавливался.\nEN-62: в tools/test/team-helpers.js добавлена ОДНА общая функция listFilesLive(dir): обход папки с отсортированными именами на каждом уровне; имя, исчезнувшее между readdir и lstat (ENOENT у lstat), пропускается; исчезнувшая или отсутствующая папка (ENOENT у readdir) - пустой список; любая другая ошибка пробрасывается. Три копии обхода заменены ею: inboxNames в team-channel.test.js (все вызовы, в том числе строка около 838 и EN-62, остались как были - меняется только тело функции), inboxFiles в team-web-channel.test.js и team-web-control.test.js. Проверки этих тестов не менялись; число test( и assert. по трём файлам то же, что на метке (31/203, 6/52, 37/275).\nHC-6a: в sandbox() (tools/test/fixtures/traces/helpers.js) в env добавлены пять ключей GIT_CONFIG_COUNT=2, GIT_CONFIG_KEY_0=maintenance.auto, GIT_CONFIG_VALUE_0=false, GIT_CONFIG_KEY_1=gc.auto, GIT_CONFIG_VALUE_1=0; treeHash и проверка «команда дерево не меняет» не тронуты. Другие вызовы git в тестах вне sandbox не затронуты (ключи в окружении процесса теста не появляются - проверяет FR-5).\nРегрессионные тесты - новый tools/test/flaky-regression.test.js (6 тестов, 23 assert.): FR-1 (подмена fs.readdirSync удаляет временное имя сразу после перечня: список без него, без исключения), FR-2 (исчезнувшая вложенная папка и отсутствующая папка - пусто), FR-3 (EACCES у lstat, EIO у readdir вложенной папки, ENOTDIR - пробрасываются; обычный случай отсортирован), FR-3b (три файла берут общую функцию, в их inboxNames/inboxFiles нет readdirSync, lstatSync, existsSync), FR-4 (пять ключей с точными значениями, других ключей GIT_CONFIG_ нет), FR-5 (git в песочнице: config --get maintenance.auto = false и gc.auto = 0, после коммита замка уборки нет).\nПадают ДО правки: на свежем git clone метки base/ISS-0075-20261021-01 с новым файлом тестов и с общей функцией в её старом виде (копия прежнего обхода) - 5 красных из 6: FR-1 и FR-2 с ENOENT lstat, FR-3b, FR-4, FR-5; FR-3 (защита «прочие ошибки пробрасываются») проходит и до и после - так и задумано. После правки 6 из 6.\nЧисла: npm run check код 0, # tests 1856 -> 1862, pass 1862, fail 0, skipped 0, todo 0; prettier, eslint, traces (0 следов) и handoffs-check (0 нарушений) чисто.",
+    "changes": [
+      {
+        "file": "tools/test/team-helpers.js",
+        "what": "новая общая функция listFilesLive (обход папки с живым писателем)"
+      },
+      {
+        "file": "tools/test/team-channel.test.js",
+        "what": "inboxNames берёт listFilesLive; импорт"
+      },
+      {
+        "file": "tools/test/team-web-channel.test.js",
+        "what": "inboxFiles берёт listFilesLive; импорт"
+      },
+      {
+        "file": "tools/test/team-web-control.test.js",
+        "what": "inboxFiles берёт listFilesLive; импорт"
+      },
+      {
+        "file": "tools/test/fixtures/traces/helpers.js",
+        "what": "sandbox(): пять ключей GIT_CONFIG_* в env (уборка git отключена)"
+      },
+      {
+        "file": "tools/test/flaky-regression.test.js",
+        "what": "новый: FR-1…FR-5 (6 тестов)"
+      }
+    ],
+    "self_check": [
+      "date -u: начало 2026-10-21T05:30:37Z, конец 2026-10-21T05:56:00Z (проверка по часам 05:55:33Z)",
+      "cd tools && caffeinate -i npm run check -> код 0; prettier --check: все файлы в стиле; eslint --max-warnings 0 чисто; traces: файлов проверено 1877, следов 0; handoffs-check: нарушений 0; # tests 1862, # pass 1862, # fail 0, # cancelled 0, # skipped 0, # todo 0 (единичных падений по времени не было)",
+      "числа grep -c '^test(' / grep -o 'assert[.]' | wc -l (метка -> теперь): team-channel.test.js 31/203 -> 31/203; team-web-channel.test.js 6/52 -> 6/52; team-web-control.test.js 37/275 -> 37/275; новые: flaky-regression.test.js 0/0 -> 6/23; team-helpers.js и fixtures/traces/helpers.js - 0/0",
+      "ДО правки (свежий git clone метки, HEAD равен метке): flaky-regression.test.js + общая функция в старом виде -> # tests 6, # pass 1 (FR-3), # fail 5 (FR-1, FR-2: ENOENT lstat на исчезнувшем имени и папке; FR-3b; FR-4; FR-5)",
+      "УСТОЙЧИВОСТЬ EN-62 (свежий git clone вне проекта, поверх скопирован tools; команда node --test --test-name-pattern=EN-62 test/team-channel.test.js, 2 теста в запуске): обычный режим 200 запусков подряд - красных 0 из 200; под нагрузкой (3 параллельных процесса × 34 запуска = 102, плюс 8 циклов nice yes и 3 параллельных полных прогона файла) - красных 0 из 102",
+      "УСТОЙЧИВОСТЬ HC-6a: на машине есть git 2.55.0 (собран по рецепту диагноза вне проекта; системный git 2.50.1). Стенд из диагноза: 12 параллельных запусков handoffs-base.test.js × 5 кругов, 16 циклов nice yes, PATH с git 2.55.0: ПОСЛЕ правки красных 0 из 60; на метке (без правки) тот же стенд - красных 49 из 60 (в диагнозе было 54 из 60)",
+      "мутанты (одна замена; файл восстанавливался; запуск flaky-regression.test.js и handoffs-base.test.js, 25 тестов; свежий git clone вне проекта) - мутант -> тест -> красный:",
+      "A1 (нет пропуска исчезнувшего имени у lstat) -> FR-1, FR-2: красных 2",
+      "A2 (нет пустого списка для исчезнувшей папки у readdir) -> FR-2: красных 1",
+      "A3 (любая ошибка lstat проглатывается) -> FR-3: красных 1",
+      "A4 (любая ошибка readdir проглатывается) -> FR-3: красных 1",
+      "A5 (список не отсортирован) -> FR-1, FR-2, FR-3: красных 3",
+      "B1 (в team-channel.test.js вернулась старая копия обхода) -> FR-3b: красных 1",
+      "B2 (то же в team-web-channel.test.js) -> FR-3b: красных 1",
+      "B3 (то же в team-web-control.test.js) -> FR-3b: красных 1",
+      "C1 (убран ключ GIT_CONFIG_COUNT) -> FR-4, FR-5: красных 2",
+      "C2 (убран GIT_CONFIG_KEY_0) -> FR-4, FR-5 и HC-6a…HC-7d: красных 21",
+      "C3 (убран GIT_CONFIG_VALUE_0) -> FR-4, FR-5 и HC-6a…HC-7d: красных 21",
+      "C4 (убран GIT_CONFIG_KEY_1) -> FR-4, FR-5 и HC-6a…HC-7d: красных 21",
+      "C5 (убран GIT_CONFIG_VALUE_1) -> FR-4, FR-5 и HC-6a…HC-7d: красных 21",
+      "C6 (GIT_CONFIG_COUNT=1) -> FR-4, FR-5: красных 2",
+      "C7 (maintenance.auto=true вместо false) -> FR-4, FR-5: красных 2",
+      "C8 (gc.auto=1 вместо 0) -> FR-4, FR-5: красных 2",
+      "C9 (GIT_CONFIG_COUNT=3) -> FR-4, FR-5 и HC-6a…HC-7d: красных 21",
+      "C10 (первый ключ gc.auto вместо maintenance.auto) -> FR-4, FR-5: красных 2",
+      "все 23 мутанта красные; ни один не убит только таймаутом",
+      "после проб: git status проекта - только правки tools/test (пять изменённых файлов и новый flaky-regression.test.js); git checkout, reset, stash, clean в проекте не запускались; EX-42 и tools/src не менялись"
+    ],
+    "issues": [
+      {
+        "kind": "INFO",
+        "text": "Другие копии обхода каталога с lstat остались там, где каталог не меняется во время обхода (поиск приманки в проекте после остановки отправителя в team-channel.test.js и team-web-*.test.js, статические обходы исходников); в задание они не входили и в write_set не перечислены."
+      },
+      {
+        "kind": "INFO",
+        "text": "EX-42 не тронут (ждёт решения по ISS-0065). Прочие красные при параллельных полных прогонах из диагноза (PG-08, EN-60, TM-67, HC-7a) не относились к заданию; одиночные полные прогоны check зелёные."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-helpers.js",
+      "tools/test/team-channel.test.js",
+      "tools/test/team-web-channel.test.js",
+      "tools/test/team-web-control.test.js",
+      "tools/test/fixtures/traces/helpers.js",
+      "tools/test/flaky-regression.test.js"
+    ]
+  }
+}

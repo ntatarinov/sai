@@ -66,6 +66,15 @@ export function sandbox(t) {
     GIT_CONFIG_NOSYSTEM: "1",
     GIT_CEILING_DIRECTORIES: dir,
     LANG: "C.UTF-8",
+    // A recent git starts a background clean-up after a commit (git maintenance run
+    // --auto --detach) that holds a lock file inside .git for a moment; a test that hashes
+    // the whole tree would see the lock before and not after. The clean-up is switched off
+    // for every git of the sandbox (design ISS-0075).
+    GIT_CONFIG_COUNT: "2",
+    GIT_CONFIG_KEY_0: "maintenance.auto",
+    GIT_CONFIG_VALUE_0: "false",
+    GIT_CONFIG_KEY_1: "gc.auto",
+    GIT_CONFIG_VALUE_1: "0",
   };
   return { dir, env };
 }

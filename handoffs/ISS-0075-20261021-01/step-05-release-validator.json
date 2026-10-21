@@ -1,0 +1,131 @@
+{
+  "handoff_id": "step05-ISS-0075-20261021-01",
+  "run_id": "ISS-0075-20261021-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/ISS-0075-20261021-01/step-05-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/issues/ISS-0075-team-channel-en62-flaky-inbox-race.md",
+      "handoffs/ISS-0075-20261021-01/",
+      "tools/test/flaky-regression.test.js",
+      "tools/test/team-helpers.js",
+      "tools/test/fixtures/traces/helpers.js"
+    ],
+    "route": "TEST-RUNNER -> RELEASE-VALIDATOR (этот) -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "handoffs/ISS-0075-20261021-01/step-05-release-validator.json"
+    ],
+    "base_tag": "base/ISS-0075-20261021-01",
+    "orch_check": {
+      "at": "2026-10-21T07:19:32Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "PASS: EN-62 и HC-6a исправлены (регрессия FR-1…FR-5), три check подряд зелёные; ISS-0075 закрывается с итогом «EN-62 и HC-6a исправлены; EX-42 передан ISS-0065»; I1 (вписать EX-42 в ISS-0065) — DOC-UPDATER; I2 — decisions/0075 записан ORCH"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, шаг 5 — последние ворота перед закрытием дефекта ISS-0075 (docs/issues/ISS-0075-team-channel-en62-flaky-inbox-race.md — прочитай целиком, диагноз handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json, исправление step-02-test-designer.json, ворота step-03-test-design-validator.json, прогон step-04-test-runner.json). Сам заново проверь на текущих файлах: (1) EN-62 исправлен: общая функция listFilesLive в tools/test/team-helpers.js вместо трёх копий, проверки тестов прежние (git diff base/ISS-0075-20261021-01 -- tools/test: число test( и assert. не уменьшено, удалено только тело обхода), регрессионный FR-1/FR-2 падает на старой реализации (собери свежий git clone метки, положи туда новые тесты и старую функцию — красные) и проходит на новой; устойчивость: EN-62 100 запусков файла в обычном режиме + 60 под нагрузкой — 0 красных; (2) HC-6a исправлен: sandbox() содержит пять ключей env, treeHash и проверка «команда дерево не меняет» не ослаблены; если в среде есть git 2.55 (собранный по рецепту из step-01 self_check; системный 2.50.1) — стенд из диагноза 12 параллельных запусков handoffs-base × 5 кругов — 0 красных из 60, на метке без правки красные есть; иначе скажи прямо; FR-4/FR-5 проходят; (3) три полных cd tools && npm run check подряд — код 0, 1862 из 1862; (4) мутанты: повтори 6 любых из step-03 (A1, B1, C1, C4, C7, N8) — красные; (5) закрытие дефекта: ISS-0075 касался трёх тестов — EN-62 и HC-6a этим прогоном исправлены; EX-42 НЕ исправлен (причина — шаг стенных часов, ISS-0065; чинится отдельным прогоном после решения по ISS-0065). Скажи прямо: можно ли закрыть ISS-0075 с итогом «EN-62 и HC-6a исправлены; EX-42 передан ISS-0065» (DOC-UPDATER закроет с тем итогом, что действительно получен), или оставить open; (6) планка Q4–Q6 (проходит на чистой копии, нет пропусков, проверки не ослаблены), Q7, Q10, Q12; решения записаны (нужна ли запись decisions/ о способе: общая функция + ключи git в песочнице — реши сам и скажи). Известные записи для DOC-UPDATER (не твои находки): F1–F3 ворот 3 (три оставшихся обхода папки проекта без живого писателя около team-channel.test.js 963, team-web-channel.test.js 109, team-web-control.test.js 976; EPERM в FR-3; сортировка не закреплена); кандидаты в новые дефекты, найденные диагнозом: PG-08, EN-60, HC-7a, TM-67 краснеют при 3–5 параллельных полных прогонах (в одиночном — нет), прочие нагрузочные падения HK-26, HK-27; повышение серьёзности ISS-0075 до MEDIUM; поправка к описанию дефекта (HC-6a — git ≥ 2.55, а не «медленная машина GitHub»; EX-42 — ISS-0065, а не «новый» тест); запись в anti-patterns: вывод нестабильного красного не сохранён; среда теста не защищена от фоновой уборки git новой версии; повтор AP-014 — функция обхода в трёх файлах. Если что-то блокирует — скажи прямо. Код продукта tools/src и тесты не менять; git checkout/reset/stash/clean в проекте запрещены (пробы — свежий git clone вне проекта; рабочая папка сессии — в сообщении ORCH, путь в result не писать). Демо-сервер на порту 4782 не останавливать. В result без названий проектов-образцов и путей компьютера. Вердикт PASS/FAIL по каждому пункту; перед close — cd tools && npm run check.",
+    "acceptance_criteria": [
+      "EN-62 и HC-6a исправлены и проверены заново; проверки не ослаблены",
+      "Устойчивость подтверждена своими запусками; три полных check подряд зелёные",
+      "Скажено прямо, можно ли закрыть ISS-0075 и с каким итогом"
+    ]
+  },
+  "created_at": "2026-10-21T06:32:04Z",
+  "started_at": "2026-10-21T06:32:04Z",
+  "completed_at": "2026-10-21T07:18:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. ISS-0075 можно закрыть с итогом «EN-62 и HC-6a исправлены; EX-42 не исправлен, передан ISS-0065» - при двух условиях учёта (см. issues I1, I2). Всё ниже получено моими запусками в этом ходе на текущих файлах и на свежих клонах метки base/ISS-0075-20261021-01 вне проекта; отчёты шагов 01-04 я использовал как карту, не как доказательство.\n(1) EN-62 - PASS. Общая функция listFilesLive стоит в tools/test/team-helpers.js; три копии обхода (inboxNames в team-channel.test.js, inboxFiles в team-web-channel.test.js и в team-web-control.test.js) заменены вызовом, все вызовы inboxNames остались. git diff метки по tools/test: удалены только тела трёх функций обхода и одна строка импорта; число test( и assert. не изменилось (31/203, 6/52, 37/275, team-helpers 0/18, fixtures/traces/helpers 0/4), tools/src не тронут. Регрессионные тесты: на клоне метки с новым файлом flaky-regression.test.js и старым обходом в listFilesLive - 6 тестов, 1 зелёный (FR-3, так задумано), 5 красных (FR-1 и FR-2 с ENOENT lstat, FR-3b, FR-4, FR-5); на новой реализации 6 из 6. Мой стенд (отдельный процесс-писатель создаёт .tmp, переименовывает, удаляет 30000 раз, опрос в цикле): старый обход - 9194 ENOENT из 215400 опросов, listFilesLive - 0 из 215000. Устойчивость: EN-62 100 запусков файла подряд в обычном режиме - красных 0 из 100; под нагрузкой (3 потока по 20 запусков, 10 циклов nice yes, 3 параллельных полных прогона team-channel.test.js) - красных 0 из 60, во всех 60 прошло 2 теста из 2.\n(2) HC-6a - PASS. sandbox() в tools/test/fixtures/traces/helpers.js получил ровно пять ключей env (GIT_CONFIG_COUNT 2, maintenance.auto false, gc.auto 0); treeHash и проверка «команда дерево не меняет» в diff не тронуты; все тесты handoffs берут env из sandbox. git 2.55.0 в среде есть (собран автором диагноза, git --version -> git version 2.55.0; системный 2.50.1). Стенд из диагноза (12 параллельных запусков handoffs-base.test.js x 5 кругов, 16 циклов nice yes, git 2.55.0 в PATH): на новой реализации красных запусков 0 из 60 (19 тестов в каждом); на метке без правки красных 45 из 60 (70 красных тестов; 48 с «the command changed the tree», остальные - ENOENT lstat на .git/objects/maintenance.lock). FR-4 и FR-5 проходят. Предел доказательства: воспроизведение - на macOS с собранным git 2.55.0; на Linux-раннере GitHub я не запускал (там нет моего окружения); совпадение версии git, теста, строки и сообщения с красными GitHub установлено диагнозом (шаг 01).\n(3) Три полных cd tools && npm run check подряд на проекте - код 0 все три, # tests 1862, # pass 1862, # fail 0, # cancelled 0, # skipped 0, # todo 0; prettier, eslint (--max-warnings 0), traces (следов 0), handoffs-check (нарушений 0) чисто. Четвёртый полный check - на свежем клоне метки с файлами работы и git 2.55.0 в PATH - код 0, 1862 из 1862 (чистая копия, Q4). Единичных падений по времени (PG-08, EN-60, TM-67, HC-7a, EX-42) не было.\n(4) Мутанты - PASS, 6 из 6 красные (временная копия, тесты flaky-regression + затронутый файл, git 2.55.0; каждая замена - ровно одно вхождение; после проб тесты зелёные, файлы копии равны исходным): A1 (нет пропуска ENOENT у lstat) - красных 2 (FR-1, FR-2); B1 (старая копия обхода в team-channel.test.js) - 1 (FR-3b); C1 (убран GIT_CONFIG_COUNT) - 2 (FR-4, FR-5); C4 (убран GIT_CONFIG_KEY_1) - 21 (FR-4, FR-5, HC-6a и соседние); C7 (maintenance.auto true) - 2 (FR-4, FR-5); N8 (старая копия обхода в team-web-channel.test.js) - 1 (FR-3b). Дополнительно сам подтвердил два выживших мутанта шага 03: EPERM у lstat глотается и обход без сортировки - красных 0 (F2, F3 ворот 3, Low).\n(5) Закрытие ISS-0075 - можно, с итогом «closed, <дата>: EN-62 и HC-6a исправлены (регрессионные тесты FR-1..FR-5 в tools/test/flaky-regression.test.js); EX-42 не исправлен - причина (шаг стенных часов назад и строгая проверка времени ENGINE) та же, что у открытого ISS-0065, EX-42 передан ему». EX-42 в этом прогоне не менялся (exec-workdir.test.js в diff нет). Честная граница: для EX-42 механизм подтверждён эмуляцией шага часов (шаг 01), но то единственное красное, что видели в воротах, не повторено и его вывод не сохранён - закрытие не должно писать, что причина EX-42 доказана или что тест исправлен. Условия закрытия: I1 (EX-42 надо вписать в ISS-0065 до закрытия, иначе остаток потеряется) и I2 (запись decisions/). Рядом с формой итога из WF-03 (шаг 10) эта форма - вариант третьего пункта («причина не устранена, продолжение - ISS-NNNN»), но с существующим, а не новым дефектом.\n(6) Планка. Q1 - неприменим: прогон по дефекту, requirement_ids пусты; привязка - ISS-0075 и тест EN-62 каналов команд. Q2 - PASS: все числа выше - мои запуски. Q3 - PASS: везде приложен вывод. Q4 - PASS: одна команда, три прохода на проекте и один на чистом клоне. Q5 - PASS с замечаниями Low (F2, F3): критерий «EN-62/HC-6a не краснеют» закрыт EN-62/HC-6a без изменений проверок плюс FR-1..FR-5; FR-5 не зависит от версии git; тесты независимы (моки снимаются, у каждого свой временный каталог). Q6 - PASS: в diff нет skip/only/todo/отключённых правил, проверки не ослаблены (числа test(/assert. те же, treeHash не тронут, ключи git добавляют изоляцию, а не убирают проверку); единственное поведенческое изменение - отсутствующая папка inbox читается как пустой список (раньше исключение); на метке ни один тест такого случая не задевал (метка зелёная), так что проверка не слабее. Q7 - PASS: поиск секретов и путей по diff, новому тесту и handoff-ам прогона - совпадений нет. Q8, Q9, Q11 - неприменимы (меняются только тесты, код продукта tools/src не менялся, данных клиентов, SQL и внешних адресов нет). Q10 - неприменим (нет нового внешнего вызова; сбои listFilesLive проверены FR-3: EACCES, EIO, ENOTDIR пробрасываются). Q12 - PASS с условием: код не расходится ни с одной записью decisions/; но выбор нетривиален (общая функция вместо трёх копий; отключить уборку git в sandbox, а не исключать .git/objects/maintenance.lock из хеша - так проверка ослабла бы; EX-42 отложен до решения по ISS-0065) и записи о нём нет - нужна короткая запись decisions/0075 (ORCH, до записи DONE), см. I2. Q13 - записи в anti-patterns.md ещё не сделаны (их делает DOC-UPDATER на шаге 10): список - в I3. Q14 - STATE.md, статус ISS-0075, PLAN.md ещё не обновлены; это шаг 10 после моего PASS, не мой FAIL. R1 - соблюдён: PASS - разрешение на учёт, мерж ждёт владельца. R2 - неприменим (журнал Pixel Office не писался и не дописывался). R3 - неприменим (решение 0033).\nБлокирующих находок нет; пять Low (F1-F5). Рабочее дерево не менялось: git status --short и хеш git diff до и после моих запусков совпали; git checkout/reset/stash/clean не вызывались; демо-сервер на порту 4782 слушал до и после (тот же процесс); мои процессы (циклы yes, node --test) остановлены.",
+    "findings": [
+      {
+        "id": "F1",
+        "where": "tools/test/team-channel.test.js около 965; tools/test/team-web-channel.test.js около 111; tools/test/team-web-control.test.js около 978",
+        "severity": "Low",
+        "blocking": false,
+        "evidence": "grep lstatSync в трёх файлах: оставшиеся обходы всей папки проекта (поиск приманки секрета) в виде readdirSync + lstatSync без защиты от исчезнувшего имени; живого писателя в момент обхода нет или он закончил, красных не наблюдалось (находка F1 ворот 3, подтверждена местами)",
+        "fix": "Записать как остаточный риск в учёте дефекта; при случае перевести эти три обхода на listFilesLive (или её вариант, читающий содержимое). Вернуться: DOC-UPDATER (запись), позже TEST-DESIGNER отдельным прогоном"
+      },
+      {
+        "id": "F2",
+        "where": "tools/test/flaky-regression.test.js: FR-3",
+        "severity": "Low",
+        "blocking": false,
+        "evidence": "моя проба: мутант «EPERM у lstat глотается» (в копии вне проекта) - flaky-regression + team-channel: # fail 0",
+        "fix": "Добавить EPERM (или цикл по EACCES, EPERM, EIO, EMFILE, ENOTDIR) в FR-3. Вернуться: TEST-DESIGNER (отдельный прогон)"
+      },
+      {
+        "id": "F3",
+        "where": "tools/test/flaky-regression.test.js: FR-1/FR-3 (сортировка)",
+        "severity": "Low",
+        "blocking": false,
+        "evidence": "моя проба: мутант «без .sort()» - # fail 0 (на этой файловой системе readdir уже отсортирован)",
+        "fix": "Подменить readdirSync так, чтобы имена шли в обратном порядке, и сверить отсортированный итог. Вернуться: TEST-DESIGNER (отдельный прогон)"
+      },
+      {
+        "id": "F4",
+        "where": "tools/test/team-helpers.js строки 40-47",
+        "severity": "Low",
+        "blocking": false,
+        "evidence": "комментарий «Throws unless `home` is an absolute path ...» к assertSafeHome теперь стоит над комментарием и функцией listFilesLive, а сама assertSafeHome (строка 76) осталась без комментария; в комментариях team-helpers.js и fixtures/traces/helpers.js ссылка «(design ISS-0075)» - проекта docs/design/ISS-0075* нет; в шапке flaky-regression.test.js сказано «FR-1 ... FR-6», а тестов FR-6 нет (есть FR-1, FR-2, FR-3, FR-3b, FR-4, FR-5)",
+        "fix": "Вернуть комментарий assertSafeHome на место, заменить «design ISS-0075» ссылкой на диагноз (handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json или docs/issues/ISS-0075*), исправить шапку на FR-1 ... FR-5. Вернуться: TEST-DESIGNER (при случае; поведения не меняет)"
+      },
+      {
+        "id": "F5",
+        "where": "учёт ISS-0065",
+        "severity": "Low",
+        "blocking": false,
+        "evidence": "grep EX-42 docs/issues/ISS-0065*.md - совпадений нет: EX-42 упомянут только в ISS-0075",
+        "fix": "До закрытия ISS-0075 вписать в ISS-0065 EX-42 (exec-workdir.test.js, три теста с этим номером) и свидетельство шага 01 (эмуляция шага часов -60 мс: 16 красных из 105; EN-46, EN-35, EN-21 на неизменённом коде при реальном шаге -52,7 мс). Вернуться: DOC-UPDATER, шаг 10"
+      }
+    ],
+    "self_check": {
+      "environment": "node -v -> v22.21.1 (engines >=22 <23); системный git 2.50.1; git 2.55.0 (собранный автором диагноза): git --version -> git version 2.55.0; метка base/ISS-0075-20261021-01 -> be0570d; клоны вне проекта: «до» (метка), «после» (метка + файлы работы; diff -r с проектом по tools/test и tools/src пустой), «старая функция» (метка + новый flaky-regression.test.js + прежний обход в listFilesLive)",
+      "diff_vs_tag": "git diff base/ISS-0075-20261021-01 --stat -- tools -> 5 файлов, 48 вставок, 36 удалений (только tools/test); число test(/assert. до->после: team-channel 31/203->31/203, team-web-channel 6/52->6/52, team-web-control 37/275->37/275, team-helpers 0/18->0/18, fixtures/traces/helpers 0/4->0/4; удалено - только тела трёх функций обхода и одна строка импорта",
+      "regression_on_old_function": "cd <клон «старая функция»>/tools && node --test test/flaky-regression.test.js -> # tests 6, # pass 1, # fail 5 (not ok: FR-1 ENOENT lstat '.../.tmp-1-aaaa', FR-2 ENOENT lstat '.../taken', FR-3b, FR-4, FR-5; ok: FR-3); тот же файл в клоне «после» -> # tests 6, # pass 6, # fail 0",
+      "writer_stand": "отдельный процесс-писатель (writeFile .tmp -> rename -> unlink, 30000 раз) + опрос: {\"which\":\"old\",\"polls\":215400,\"enoent\":9194,\"other\":0}; {\"which\":\"new\",\"polls\":215000,\"enoent\":0,\"other\":0}",
+      "en62_plain": "100 раз node --test --test-name-pattern=EN-62 test/team-channel.test.js (клон «после») -> красных 0 из 100",
+      "en62_load": "3 потока x 20 запусков того же + 10 x nice yes + 3 параллельных полных node --test test/team-channel.test.js -> красных 0 из 60; в 60 из 60 журналов '# tests 2', '# fail 0'",
+      "hc6a_stand": "git 2.55.0 в PATH; 16 x nice yes; 5 кругов по 12 параллельных node --test test/handoffs-base.test.js: «после» -> 'new: red runs=0 of 60' (в каждом '# tests 19'); метка без правки -> 'old: red runs=45 of 60', 70 строк 'not ok', 48 x 'the command changed the tree', остальные 'ENOENT: no such file or directory, lstat .../.git/objects/maintenance.lock'",
+      "check_x3_project": "cd tools && npm run check -> exit=0 (2:14.53 total); повтор 2 -> exit=0; повтор 3 -> exit=0; в каждом '# tests 1862 # pass 1862 # fail 0 # cancelled 0 # skipped 0 # todo 0'; 'All matched files use Prettier code style!'; 'traces: файлов проверено 1880, следов 0, пропущено 57'; 'handoffs-check: файлов проверено 1067, нарушений 0, исключений использовано 114 из 114'",
+      "check_clone": "cd <клон «после»>/tools && PATH=<git 2.55>:$PATH npm run check -> exit=0, # tests 1862 # pass 1862 # fail 0 # skipped 0; 'traces: файлов проверено 1865, следов 0'; 'handoffs-check: ... нарушений 0'",
+      "mutants": "A1: exit 1, # tests 6 # fail 2 (FR-1, FR-2); B1: exit 1, # tests 37 # fail 1 (FR-3b); C1: exit 1, # tests 25 # fail 2 (FR-4, FR-5); C4: exit 1, # tests 25 # fail 21 (FR-4, FR-5, HC-6a ...); C7: exit 1, # tests 25 # fail 2 (FR-4, FR-5); N8: exit 1, # tests 12 # fail 1 (FR-3b); после проб 'restored exit 0 # fail 0' и diff -r с клоном «после» пуст. Дополнительно: EPERM глотается -> exit 0 # fail 0; без .sort() -> exit 0 # fail 0",
+      "q6_q7_search": "grep по добавленным строкам diff и по flaky-regression.test.js на skip|.only|todo|eslint-disable|'|| true'|sk-|token|secret|password|api key|/Users/ -> только слово 'skipped' в комментарии и в названии FR-1; по handoff-ам прогона на пути компьютера -> пусто",
+      "worktree_untouched": "до и после моих запусков: git status --short (7 строк: 5 изменённых файлов tools/test, 1 новый тест, папка handoffs/ISS-0075-20261021-01/) и shasum git diff совпали; stash пуст; lsof -iTCP:4782 -sTCP:LISTEN -> node (тот же процесс) до и после; pgrep 'nice yes|node --test' -> пусто",
+      "limits": "HC-6a воспроизведён на macOS с git 2.55.0, собранным автором диагноза (я проверил его версию и поведение: на метке без правки 45 красных из 60); Linux-раннер GitHub я не запускал. Нагрузочные стенды сильнее обычных ворот и нужны, чтобы окно гонки стало видимым"
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "CONDITION",
+        "text": "Для DOC-UPDATER (шаг 10), до закрытия ISS-0075: вписать EX-42 в ISS-0065 (там его нет, F5). Итог закрытия ISS-0075 писать так: EN-62 и HC-6a исправлены (регрессионные тесты - tools/test/flaky-regression.test.js, FR-1...FR-5); EX-42 не исправлен, передан ISS-0065; про EX-42 не писать, что причина доказана или тест исправлен (механизм подтверждён эмуляцией шага часов, единственное красное из ворот не повторено)."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION_ANSWERED",
+        "text": "Нужна ли запись decisions/: да, короткая, номер 0075 (по PLAN.md следующие номера - ISS-0083, решение 0075, AP-121). Вопрос: как чинить два нестабильных теста; варианты: для EN-62 - одна общая функция listFilesLive (выбрано) / правка трёх копий по отдельности / readdirSync с withFileTypes; для HC-6a - отключить фоновую уборку git в sandbox пятью ключами env (выбрано) / исключить .git/objects/maintenance.lock из treeHash (ослабляет проверку, Q6) / повторять тест до зелёного (Q6); EX-42 отложен до решения по ISS-0065. Граница: ключи только в sandbox, процесс теста их не получает (FR-5); отсутствующая папка inbox читается как пустой список. Пишет ORCH до записи DONE; записи нет сейчас, поэтому Q12 - PASS с условием."
+      },
+      {
+        "id": "I3",
+        "kind": "FOR_DOC_UPDATER",
+        "text": "Известные записи (не мои находки): F1-F3 ворот 3 (в F1 места теперь около team-channel.test.js 965, team-web-channel.test.js 111, team-web-control.test.js 978; F2 и F3 мной подтверждены, см. F2, F3); EPERM в FR-3; сортировка не закреплена; кандидаты в новые дефекты - PG-08, EN-60, HC-7a, TM-67 (под 3-5 параллельными полными прогонами; в одиночных зелёные - в моих трёх подряд check они не краснели), HK-26, HK-27; серьёзность ISS-0075 поднять до MEDIUM (HC-6a ломает Q4 на GitHub, EN-62 краснел в 4 из 28 прогонов диагноза); поправка к описанию: HC-6a - git 2.55 и новее (фоновая уборка после commit держит .git/objects/maintenance.lock), а не «медленная машина GitHub»; EX-42 - ISS-0065, а не «новый» тест. Записи в anti-patterns.md (Q13): (1) вывод нестабильного красного не сохранён (вывод EX-42 из ворот потерян); (2) среда теста не защищена от фоновой уборки git новой версии, версия git в check.yml не закреплена; (3) повтор AP-014 - функция обхода скопирована в трёх файлах. Мои дополнительные замечания: F4 (комментарии/шапка) - Low."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Критерий «EN-62 и HC-6a не краснеют» вероятностный; доказательство - нагрузочные стенды (EN-62: 0 из 100 + 0 из 60 + стенд писателя 0 из 215000; HC-6a: 0 из 60 против 45 из 60 без правки), а не доказательство отсутствия любого красного. Остальные тесты handoffs, хеширующие .git (14 файлов с runUnchanged/sai.tree), закрыты той же правкой sandbox, но воспроизведено красное было только в handoffs-base - это предел диагноза."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

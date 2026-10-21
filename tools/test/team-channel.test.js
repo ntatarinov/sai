@@ -53,6 +53,7 @@ import {
 import {
   deadPid,
   holdWriter,
+  listFilesLive,
   makeClock,
   makeHome,
   newProject,
@@ -73,17 +74,7 @@ function out(r) {
 }
 
 function inboxNames(p) {
-  const list = [];
-  const walk = (dir, rel) => {
-    for (const name of fs.readdirSync(dir).sort()) {
-      const abs = path.join(dir, name);
-      const r = rel === "" ? name : `${rel}/${name}`;
-      if (fs.lstatSync(abs).isDirectory()) walk(abs, r);
-      else list.push(r);
-    }
-  };
-  walk(path.join(p.dir, "inbox"), "");
-  return list;
+  return listFilesLive(path.join(p.dir, "inbox"));
 }
 
 // A message file as a sender writes it (for the cases a sender never makes).

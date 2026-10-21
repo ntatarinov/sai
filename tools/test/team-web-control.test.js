@@ -54,7 +54,7 @@ import {
   spawnEngine,
   until,
 } from "./team-engine-helpers.js";
-import { deadPid, holdWriter } from "./team-helpers.js";
+import { deadPid, holdWriter, listFilesLive } from "./team-helpers.js";
 import { loadPage } from "./team-web-dom.js";
 import {
   LINE,
@@ -112,18 +112,7 @@ const ctlPath = (id) => `/api/projects/${id}/control`;
 // ---- the state of a project that a refusal must leave as it is ----------------------
 
 function inboxFiles(p) {
-  const out = [];
-  const walk = (dir, rel) => {
-    if (!fs.existsSync(dir)) return;
-    for (const name of fs.readdirSync(dir).sort()) {
-      const abs = path.join(dir, name);
-      const r = rel === "" ? name : `${rel}/${name}`;
-      if (fs.lstatSync(abs).isDirectory()) walk(abs, r);
-      else out.push(r);
-    }
-  };
-  walk(path.join(p.dir, "inbox"), "");
-  return out;
+  return listFilesLive(path.join(p.dir, "inbox"));
 }
 
 function lockText(p) {

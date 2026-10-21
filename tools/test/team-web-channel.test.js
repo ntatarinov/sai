@@ -24,6 +24,7 @@ import {
   spawnEngine,
   until,
 } from "./team-engine-helpers.js";
+import { listFilesLive } from "./team-helpers.js";
 import { request, startServer, within } from "./team-web-helpers.js";
 
 const SECRET = "sk-ant-api03-FAKEFAKEFAKEFAKE1234567890abcd";
@@ -45,18 +46,7 @@ function liveRuns(workMs = 60_000) {
 }
 
 function inboxFiles(p) {
-  const out = [];
-  const walk = (dir, rel) => {
-    if (!fs.existsSync(dir)) return;
-    for (const name of fs.readdirSync(dir).sort()) {
-      const abs = path.join(dir, name);
-      const r = rel === "" ? name : `${rel}/${name}`;
-      if (fs.lstatSync(abs).isDirectory()) walk(abs, r);
-      else out.push(r);
-    }
-  };
-  walk(path.join(p.dir, "inbox"), "");
-  return out;
+  return listFilesLive(path.join(p.dir, "inbox"));
 }
 
 const messages = (p) => inboxFiles(p).filter((x) => MSG.test(x));

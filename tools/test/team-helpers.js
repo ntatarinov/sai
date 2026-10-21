@@ -40,6 +40,39 @@ export const T0 = Date.UTC(2026, 0, 1, 9, 0, 0);
 
 // Throws unless `home` is an absolute path that is neither ~/.sai-team nor
 // ~/.sai-pixel-office (nor inside them). Returns the resolved path.
+// The names of all the files under `dir` (folders are entered, not listed), sorted at
+// every level, as "a/b.json". For a folder in which another process works (a sender that
+// writes a temporary file and renames it): a name that is gone between the listing and the
+// look at it is skipped, a folder that is gone is empty; any other failure goes up. One
+// function for the tests that wait for a file of the inbox (design ISS-0075).
+export function listFilesLive(dir) {
+  const out = [];
+  const walk = (here, rel) => {
+    let names;
+    try {
+      names = fs.readdirSync(here).sort();
+    } catch (err) {
+      if (err?.code === "ENOENT") return;
+      throw err;
+    }
+    for (const name of names) {
+      const abs = path.join(here, name);
+      const shown = rel === "" ? name : `${rel}/${name}`;
+      let stat;
+      try {
+        stat = fs.lstatSync(abs);
+      } catch (err) {
+        if (err?.code === "ENOENT") continue;
+        throw err;
+      }
+      if (stat.isDirectory()) walk(abs, shown);
+      else out.push(shown);
+    }
+  };
+  walk(dir, "");
+  return out;
+}
+
 export function assertSafeHome(home) {
   if (typeof home !== "string" || home === "") {
     throw new Error("team test: SAI_TEAM_HOME is not set");
