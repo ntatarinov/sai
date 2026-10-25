@@ -1,0 +1,103 @@
+{
+  "handoff_id": "step01-AGENTS-20261025-01",
+  "run_id": "AGENTS-20261025-01",
+  "workflow_id": "WF-05",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-AUDITOR",
+  "file": "handoffs/AGENTS-20261025-01/step-01-doc-auditor.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      ".claude/agents/",
+      "docs/workflows/",
+      "docs/agents.en.md",
+      "README.md",
+      "README.en.md",
+      "docs/anti-patterns.md",
+      "handoffs/"
+    ],
+    "route": "ORCH -> DOC-AUDITOR (этот) -> DOC-UPDATER -> RELEASE-VALIDATOR -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/design/AGENTS-workflow-audit.md, handoffs/AGENTS-20261025-01/step-01-doc-auditor.json"
+    ],
+    "base_tag": "base/AGENTS-20261025-01",
+    "orch_check": {
+      "at": "2026-10-25T08:32:08Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "аудит: 85 находок (устарело 34, отсутствует 44, лишнее 7), 22 роли + 5 процессных файлов + CLAUDE.md, README ×2, docs/agents.en.md требуют правки; ответы на Q1–Q14 — decisions/0079 (Q3 — владельцу); npm run check код 1 из-за 11 красных тестов страницы анкеты (ожидаемо, не работа аудита)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-05 (измерение «Документация»), шаг 1 — ЧТО СТАЛО НЕТОЧНЫМ в описаниях агентов Sai, их инструкциях и workflow, и каким стал порядок шагов на деле. Просьба владельца 2026-10-25 (дословно): «обнови описание и инструкции и workflow агентов, мне нравится то как они работают, а именно их шаги, потому что я даю задачу и они сами тестируют и не только». Владелец имеет в виду агентов Sai. Задача этого шага — только аудит и план правок, файлы агентов и workflow НЕ менять. Источники правды о том, как агенты работают на деле: handoff-ы свежих прогонов в handoffs/ (LANG061-20261020-01, SERVER056-20261020-01, TEXT068-20261021-01, PAGE057-20261021-01, ISS-0075-20261021-01, PICKERCARD-20261021-01, PICKERTEXT-20261021-01, PAGEREQ057-20261021-01, PICKER054/055-20261019-01 — в каждом: шаги, роли, task, orch_check, result, self_check; отчёты docs/releases/*.md этих прогонов), журнал ошибок процесса docs/anti-patterns.md (AP-001…AP-123: что пришлось добавить в задания), решения decisions/ (0048 полномочия, 0057 «Сделай все сам», 0061/0063 читатели, 0069–0078), tools/README.md (команда handoff, traces, check). Сравни с тем, что сейчас написано: .claude/agents/*.md (39 файлов: front matter description и тело — инструкции роли), docs/workflows/WF-01…WF-07 и handoffs.md, docs/agents.en.md, README.md и README.en.md (разделы об агентах и процессах), docs/quality-bar.md, orchestrator.md. Для КАЖДОГО файла дай находки трёх видов с доказательством (файл:строка и handoff/AP, на который опираешься): (1) устарело или неверно (написано одно, делается другое), (2) отсутствует (то, что агенты делают на деле, но нигде не записано: например — мутанты и независимые оракулы у TEST-DESIGNER/TEST-DESIGN-VALIDATOR, свежий git clone вне проекта вместо git checkout, прототип проекта кода с замерами красных тестов по подшагам и таблицей замен охранных тестов (AP-068/112/113), перебор Юникода и фаззинг у ворот, приёмка в настоящем браузере Chrome без окна с матрицей окон/тем/языков и снимками, читатели переводов в 2–3 круга (решения 0063/0069/0070, AP-114), три попытки на ворота, микроправка требований через WF-01 с before_copy, base-метка git перед прогоном, orch_check в каждом шаге, коммит файлов по именам без незакрытого handoff-а (AP-091), два коммита и ожидание check.yml на GitHub, правило «пути компьютера и названия других проектов не писать» (traces), нагрузочные красные и нестабильные тесты (AP-121/122), возврат на доработку с таблицей «что исправлено, где»), (3) лишнее или противоречит друг другу (дубли между workflow, README и описаниями ролей — AP-014). Особенно выпиши ЕДИНУЮ КАРТИНУ ПОРЯДКА ШАГОВ, которая нравится владельцу — «даю задачу — они сами проектируют, строят, тестируют и проверяют»: для WF-01 (требования), WF-02 (разработка: проект → ворота проекта → код по подшагам → безопасность и ревью → тесты с мутантами → ворота тестов → прогон проверки → приёмка/читатели → ворота выпуска → учёт → коммит и проверка на GitHub), WF-03 (дефект), WF-04–WF-07 — какими они стали на самом деле (шаги, роли, кто что проверяет, лимиты доработок, что идёт параллельно). Результат: (а) docs/design/AGENTS-workflow-audit.md — таблица находок по файлам (файл → вид → что не так → доказательство → предлагаемая правка одной-двумя фразами), раздел «Единая картина шагов» (простым русским языком для владельца, 1 страница, без жаргона: фразы ≤ 18 слов, на «вы»), и раздел «Предлагаемые правки по файлам» с точными формулировками для тел и description ролей, которые стоит изменить (для остальных 39 — «без изменений»); (б) в result — число найденного по видам и список файлов, требующих правки. Важно: не предлагай правок, которых нет в практике (выдумок); для каждого утверждения укажи источник; роли, которых не видно в свежих прогонах (аудиторы WF-05, WF-06, WF-07), — отметь «не проверено на свежих прогонах, правок нет» либо сверяй с их прогонами в handoffs/ и docs/audits, docs/research, ideas/, если есть. Запреты: файлы агентов (.claude/agents), workflow, README, docs/agents.en.md, quality-bar.md и код не менять; пиши только docs/design/AGENTS-workflow-audit.md и свой handoff; git checkout/reset/stash/clean запрещены; в файлах без названий других проектов и путей компьютера (traces). Демо-сервер на порту 4782 не останавливать. Перед close — cd tools && npm run check, код 0 (при единичном падении по времени под нагрузкой — повтор, укажи).",
+    "acceptance_criteria": [
+      "Каждая находка с доказательством (файл:строка, handoff или AP)",
+      "Единая картина шагов для владельца (≤ 18 слов на фразу, на вы)",
+      "Файлы агентов и workflow не менялись; npm run check код 0"
+    ]
+  },
+  "created_at": "2026-10-25T08:03:30Z",
+  "started_at": "2026-10-25T08:03:30Z",
+  "completed_at": "2026-10-25T08:31:08Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Аудит описаний агентов, инструкций и процессов Sai против 12 свежих прогонов (2026-10-19…25), журнала ошибок AP-001…AP-123, решений и tools/README.md. Найдено 85: вид 1 «устарело или неверно» — 34, вид 2 «отсутствует» — 44, вид 3 «лишнее или противоречит» — 7. Важность: Critical 0, High 0, Medium 66, Low 19. Не проверено на свежих прогонах, правок нет: WF-05 (ни разу не запускался), WF-06, WF-07, WF-04 (последний — 2026-10-11) и 15 ролей. Файлы, требующие правки: 22 роли из 37 (orchestrator, code-designer, code-design-validator, backend-dev, frontend-dev, security-reviewer, reviewer, code-fixer, test-designer, test-design-validator, test-runner, test-fixer, issue-fixer, ba-analyst, uat-runner, design-qa-validator, release-validator, doc-updater, release-finalizer, req-analyst, req-validator, gui-design-analyst); 5 файлов docs/workflows (handoffs.md, WF-01, WF-02, WF-03, WF-04); CLAUDE.md, README.md, README.en.md, docs/agents.en.md; после ответа владельца (Q3) ещё 16 ролей со сноской про AP-018 и AP-020. Главное простыми словами: порядок шагов, который нравится владельцу, подтверждён свежими прогонами, но записан заметно беднее. Не записаны: параллельные ворота безопасности и ревью (с PICKER055), набросок вне проекта, таблица замен охранных тестов, подшаги и мутанты в проекте кода; независимые оракулы, серии прогонов и мутанты по списку в тестах; приёмка страниц в настоящем Chrome без окна (три окна, две темы, три языка); читатели переводов в 2–3 круга; метка base/<RUN-ID> и orch_check на каждом шаге; запрет git checkout/reset/stash/clean и свежий git clone; push в main после PASS и ожидание check.yml. Сто из 123 уроков журнала ошибок (AP-024…AP-123) не названы ни в одной роли и ни в одном процессе. В отчёте также: «Единая картина шагов» для владельца (130 фраз, ни одной длиннее 18 слов) и «Предлагаемые правки по файлам» с точными формулировками. К ORCH — 14 вопросов (раздел 6); главные: Q1 push в main и R1, Q2 «известный нестабильный тест» против §6 п. 4, Q3 AP-018 и AP-020, Q4 лимит доработок, Q5 правки критериев силами DOC-UPDATER.",
+    "findings": "docs/design/AGENTS-workflow-audit.md",
+    "self_check": [
+      "ls .claude/agents | wc -l → 37; grep -c '^### ' docs/agents.en.md → 37; README.md:46 и README.en.md:24 говорят 37 (в задании — 39).",
+      "node по handoffs/ (12 свежих прогонов): COMPLETED 125; context.base_tag есть у 125; context.orch_check у 120 (нет у 5 handoff-ов RELEASE-FINALIZER); в старых прогонах orch_check у 261 из 942; у 10 из 10 handoff-ов REQ-ANALYST в WF-01 с PICKERLANG context.before_copy нет, result.before_copy есть; пары SECURITY-REVIEWER и REVIEWER начаты одновременно в PICKER055, LANG061, SERVER056, TEXT068, PAGE057, по очереди — в PICKER054 и в прогонах 10-11…10-17; максимум одновременно работающих агентов с 2026-10-17 — 2.",
+      "grep -oh 'AP-[0-9]{3}' .claude/agents/*.md docs/workflows/*.md | sort -u → только AP-001…AP-023; скрипт по docs/anti-patterns.md: из AP-024…AP-123 (100 записей) роль названа в «Как правильно» у 53.",
+      "grep -rn по .claude/agents, docs/workflows, CLAUDE.md, README.md, README.en.md, docs/agents.en.md на слова checkout, Chrome, 1470, picker и «сайт подбора» → пусто; поиск слова traces по .claude/agents и docs/workflows → пусто; grep -l 'владелец ещё не принял' .claude/agents/*.md → 16 файлов.",
+      "tools/package.json: check = format:check && lint && traces && handoffs-check && test (в test-runner.md:47-51 и test-fixer.md:40-43 — три ступени).",
+      "Проверка длины фраз в разделе «Единая картина шагов»: 130 фраз, 0 длиннее 18 слов; таблицы находок — 85 строк, разбор по виду: 34 / 44 / 7.",
+      "git status --short → только два новых пути: docs/design/AGENTS-workflow-audit.md и handoffs/AGENTS-20261025-01/; git diff --name-only → 0 строк (файлы ролей, процессов, README, docs/agents.en.md, quality-bar и код не менялись); git checkout/reset/stash/clean не запускались; демо-сервер на порту 4782 не останавливался (curl к /t/uchet-pro/ в конце → 200).",
+      "cd tools && caffeinate -i npm run check (2026-10-25T08:25:30Z…08:27:36Z) → код 1: format:check — чисто; lint — чисто; traces — файлов 1978, следов 0, пропущено 59; handoffs-check — файлов 1105, нарушений 0; test — 1898 тестов, pass 1887, fail 11, skipped 0, todo 0.",
+      "Свидетельство «повтор без работы» (quality-bar §6, п. 4): свежий git clone проекта в <вне проекта> на коммите 092cd04 (без моих двух путей), node --test \"test/**/*.test.js\" → 1898 тестов, pass 1887, fail 11, те же 11 имён (сравнение отсортированных списков: диф пуст): LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e (восемь названы в сообщении коммита 092cd04 как «выпущенные тесты красные», заменяются таблицей З1…З16) и HO-46, HO-47, HC-RT-1e (проверки, которые запускают handoffs-runtime и traces-runtime, красные только из-за TR-4b и TR-4e: в клоне node --test test/traces-runtime.test.js → TR-4b, TR-4e красные; test/handoffs-runtime.test.js → HC-RT-1e красный)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "severity": "Medium",
+        "text": "Критерий задания «npm run check код 0» не выполнен: код 1 из-за 11 красных тестов. Они красные и на чистом клоне HEAD (092cd04) без работы этого шага, одним и тем же списком: это промежуточный коммит прогона PAGE057-20261021-01 «по просьбе владельца», отправленный в origin/main с красными LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e и тремя проверками-обёртками HO-46, HO-47, HC-RT-1e. Мои два пути (отчёт и handoff) красных не добавили: format:check, lint, traces и handoffs-check чисты. Решать ORCH: красное закроет продолжение PAGE057 (таблица замен З1…З16)."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "severity": "Low",
+        "text": "В задании «39 файлов» в .claude/agents/; на деле 37 (ls .claude/agents | wc -l; README.md:46; README.en.md:24; docs/agents.en.md:3)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "severity": "Low",
+        "text": "Этот аудит идёт не по WF-05: задание называет «WF-05, шаг 1» и «измерение Документация», но в WF-05-health-audit.md шаг 1 — AUDIT-SCOUT, у doc-auditor.md стоп-условие «нет плана аудита» (docs/audits/AUD-NNN/plan.json нет, папки docs/audits/ нет), отчёт по заданию — docs/design/AGENTS-workflow-audit.md, не .json. Работал по заданию handoff-а (CLAUDE.md, порядок указаний: задание выше файла роли); см. вопрос Q11 отчёта."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "severity": "Medium",
+        "text": "14 вопросов к ORCH — раздел 6 отчёта. Главные: Q1 — push в main после PASS RELEASE-VALIDATOR по словам владельца 2026-10-11 записан только в STATE.md и в «Границе» decisions/0048, отдельной записи нет, а release-finalizer.md, WF-02 шаг 11, README.md говорят «мерж ждёт владельца»; Q2 — «известный нестабильный тест, один повтор» живёт только в заданиях и расходится с quality-bar §6 п. 4; Q3 — AP-018 и AP-020 в 16 ролях «не приняты владельцем», а AP-018 соблюдается как правило; Q4 — лимит доработок («три доработки» или «три прохода» ворот); Q5 — DOC-UPDATER правит текст критериев без ворот REQ-VALIDATOR."
+      },
+      {
+        "id": "I5",
+        "kind": "NOT_VERIFIED",
+        "severity": "Low",
+        "text": "Не проверено: прогон PAGE057-20261021-01 идёт (шагов 06+ нет), практики приёмки страницы взяты из SERVER056 и заданий PAGE057 02b/02c; тела 15 ролей без правок (9 аудиторов, 3 роли WF-06, 3 роли WF-07) не читались — только описания и номера шагов; в design-qa-validator.md, gui-design-analyst.md, issue-fixer.md, code-fixer.md, test-fixer.md, req-analyst.md прочитаны разделы «Что делать» и «Частые ошибки»; WF-05, WF-06, WF-07 на свежих прогонах проверить нечем (последние запуски 2026-10-05, 2026-09-28 и ни одного)."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "severity": "Low",
+        "text": "Вне объёма, замечено попутно (RM2 отчёта): README.md:133-136 («защиты ветки нет») и :183-186 («защита main включена») противоречат друг другу и decisions/0062; :174 («Настоящий Claude ни разу не запускался») неверно после REAL-20261013-01; :178 («из 41 … 6 done») устарело. Не правилось."
+      }
+    ],
+    "artifacts_out": ["docs/design/AGENTS-workflow-audit.md"]
+  }
+}

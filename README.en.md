@@ -32,6 +32,27 @@ The repository has two layers of work:
 - **A person who runs the agents' work** and wants to see on one page which roles are working,
   what is done and where a decision is waited for.
 
+## How the work goes: you give a task, the agents design, build, test and check it themselves
+
+You give a task in your own words. After that the agents carry it on by themselves. Whoever does
+the work does not check it. Another agent checks it, and that agent re-runs everything itself. At
+most two agents work at the same time. After every step the main agent (ORCH) compares the
+agent's words with the files. If a check fails, the work goes back to its author. A check has at
+most three passes. After that ORCH stops and asks you.
+
+In development the path is this. A designer describes everything before any code and tries the
+idea on a sketch. Another agent repeats the trials on a clean copy. A developer builds in small
+parts and runs the checks after each part. The security check and the code review run at the
+same time. The first one tries to break the code itself; the second looks for hacks. A tester
+writes a test for every criterion and deliberately damages the code. This is how the tests
+themselves are checked. One command checks formatting, rules, traces and all tests. Pages are
+opened in a real Chrome: three window sizes, two themes, three languages, with screenshots.
+Separate agents read the translations in two to three rounds. The last checker runs everything
+again. Only after that is the work marked "done". The release goes to `main` and waits for a
+green check on GitHub. You get a report in plain words. The order of steps is written in
+[docs/workflows/](docs/workflows/) and in
+[decisions/0079](decisions/0079-agents-docs-practice.md).
+
 ## How it works
 
 - **The orchestrator (ORCH)** leads every piece of work. It chooses the process, writes a task
@@ -50,29 +71,42 @@ The repository has two layers of work:
 - **Gates.** Whoever produces something does not check it: every producing role has a separate
   checking role, and the checker re-runs the checks itself instead of trusting the author's
   report. Work moves to the next step only after a PASS. After a FAIL the author fixes exactly
-  the listed findings (at most three rounds at one gate in most processes), and the same check
-  runs again.
+  the listed findings, and the same check runs again. A gate has at most three passes: the
+  first and two repeats; a third FAIL stops the work and goes to the owner.
 - **Quality bar.** [docs/quality-bar.md](docs/quality-bar.md) lists the minimum for every
   change (items Q1–Q14 and R1–R3): a requirement before code, a test for every acceptance
   criterion, no secrets in files, no faking a check, decisions written down, and so on. No agent
   may lower it; it is raised only by the owner's decision, one step at a time. A merge needs the
   owner's confirmation (R1); at present the owner allows a push to `main` after the final
   independent check has passed
-  ([decisions/0048](decisions/0048-owner-delegates-open-points-repo-public.md)). Pixel Office
+  ([decisions/0048](decisions/0048-owner-delegates-open-points-repo-public.md),
+  [decisions/0079](decisions/0079-agents-docs-practice.md)). Pixel Office
   may show only real events (R2).
 - **Processes** (documents in [docs/workflows/](docs/workflows/)):
   - **WF-01, requirement** — the owner's request becomes a requirement with checkable acceptance
-    criteria in `docs/requirements.yaml`; a separate agent confirms it can be worked on.
-  - **WF-02, development** — design, design check, code, security check, code review, tests,
-    test check, a full check run, comparison with a sample (for UI), acceptance on the running
-    system, a final independent check, records, commit and release report.
+    criteria in `docs/requirements.yaml`; a separate agent confirms it can be worked on. If
+    the design or the tests show that a criterion cannot be met, a short separate run fixes only
+    that criterion, with the same gate.
+  - **WF-02, development** — a design (with a sketch outside the project, a measure of the
+    tests that will turn red at each sub-step and a table of replacements for the guard tests of
+    released requirements), a design gate, code in sub-steps, a security check and a code review
+    at the same time, tests with independent oracles and deliberate breakages (mutants), a test
+    gate, a full check run, acceptance in a real Chrome without a window (windows 1470 × 784,
+    390 × 844, 320 × 568, light and dark themes, three languages, with screenshots), readers of
+    the translations in two to three rounds, a final independent gate, records, a commit of the
+    run's files by name, a push to `main`, waiting for `check.yml` and a second commit with the
+    handoff of the last step.
   - **WF-03, defect** — find the root cause first, then a checked fix design, the fix, and a
-    regression test that fails before the fix and passes after it.
+    regression test that fails before the fix and passes after it. If only the tests are wrong,
+    the fix design and the code gates are skipped, with the reason written down.
   - **WF-04, UI by sample** — describe a screen from a screenshot so precisely that it can be
-    built without guessing, build it, then compare the built page with the sample.
+    built without guessing, build it, then compare the built page with the sample. Without a
+    sample the description is written anyway, the comparison is replaced by acceptance in a real
+    browser.
   - **WF-05, health audit** — check the whole project by dimensions (security, dependencies,
     architecture, test coverage, documentation, and re-checking requirements that are already
-    done), then open defects for the serious findings.
+    done), then open defects for the serious findings. Once in 30 days the documentation
+    dimension also compares the descriptions of roles and processes with the latest runs.
   - **WF-06, idea selection** — three analysts rate idea candidates from three points of view
     and check each other, a judge gives a verdict, a separate agent re-checks and applies it;
     the owner decides.
@@ -132,6 +166,14 @@ commands is in Russian.
   minutes, with a reported cost of 0.92 USD out of a 3 USD cap; no task became "done" without a
   separate check. Report (in Russian):
   [docs/uat/REAL-RUN-20261013.md](docs/uat/REAL-RUN-20261013.md).
+
+- **The solution picker site** (`cd tools && npm run picker`, code in `tools/src/picker/`,
+  requirements REQ-054 to REQ-068, [decisions/0065](decisions/0065-solution-picker-stack-and-choices.md)).
+  A visitor answers the questions of a questionnaire and sees which solution suits them; every
+  tenant has its own file, with texts in Russian, Kazakh and English. Part of the requirements is
+  done (the tenant file and its check, the scoring engine, the server, the three languages, the
+  check of characters in texts); the rest is in progress, the exact state is in
+  `docs/requirements.yaml` and `STATE.md`.
 
 - **Checks:**
   - `cd tools && npm run check` — one command: formatting, linter, a trace check (no paths of
@@ -245,12 +287,14 @@ only for the Pixel Office hooks and for real runs of the Sai Team executor.
 - `handoffs/` — tasks and reports of agents by run; `runs/` — files of idea-selection runs;
   `reports/` — run reports. This is history and is not rewritten.
 - `ideas/` — the ideas the project grew from and why the others were dropped.
-- `tools/` — the code of Sai Team, Pixel Office and the pipeline tools, with tests; commands are
+- `tools/` — the code of Sai Team, Pixel Office, the solution picker site and the pipeline tools, with tests; commands are
   in [tools/README.md](tools/README.md).
 - `.github/workflows/check.yml` — the check on GitHub; `.githooks/pre-push` — the local check
   before a push.
 
 Most documents are in Russian. The Russian README is [README.md](README.md); parts of it are
 out of date (for example, the counts of requirements and defects and the note about real model
-runs). This English version was checked against the repository files on 2026-10-17; where the
-two differ, this file and `STATE.md` follow the files.
+runs). This English version was checked against the repository files on 2026-10-17; the parts on
+the agent pipeline, the processes and the picker site were updated on 2026-10-25
+([decisions/0079](decisions/0079-agents-docs-practice.md)). Where the two differ, this file and
+`STATE.md` follow the files.

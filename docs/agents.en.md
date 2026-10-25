@@ -8,6 +8,25 @@ project overview is [README.en.md](../README.en.md).
 These are the roles of the **agent pipeline** — the agents that write Sai's requirements, code,
 tests and documents. They are not the ten business roles of the Sai Team product.
 
+## How the work goes: you give a task, the agents design, build, test and check it themselves
+
+You give a task in your own words. After that the agents carry it on by themselves. Whoever does
+the work does not check it. Another agent checks it, and that agent re-runs everything itself. At
+most two agents work at the same time. After every step the main agent (ORCH) compares the
+agent's words with the files. If a check fails, the work goes back to its author. A check has at
+most three passes. After that ORCH stops and asks you.
+
+In development the path is this. A designer describes everything before any code and tries the
+idea on a sketch. Another agent repeats the trials on a clean copy. A developer builds in small
+parts and runs the checks after each part. The security check and the code review run at the
+same time. The first one tries to break the code itself; the second looks for hacks. A tester
+writes a test for every criterion and deliberately damages the code. This is how the tests
+themselves are checked. One command checks formatting, rules, traces and all tests. Pages are
+opened in a real Chrome: three window sizes, two themes, three languages, with screenshots.
+Separate agents read the translations in two to three rounds. The last checker runs everything
+again. Only after that is the work marked "done". The release goes to `main` and waits for a
+green check on GitHub. You get a report in plain words.
+
 ## How the roles work together
 
 - **One agent, one role.** Every agent is started by the orchestrator (ORCH) in exactly one
@@ -29,13 +48,20 @@ tests and documents. They are not the ten business roles of the Sai Team product
   checking role — a gate. The checker reads the files and re-runs the checks itself; the
   author's report is only a hint where to look. A gate gives PASS or FAIL with a list of
   findings. Work goes to the next step only after PASS.
-- **Rework.** After a FAIL, the same producing role gets a new handoff (`-r1`, `-r2`, …) and
-  fixes exactly the listed findings, nothing more; anything else it notices goes into its
-  report as a question. Then the same gate runs again. In most processes there are at most three
-  rounds of rework at one gate; WF-05, WF-06 and WF-07 have their own limits. If the same
-  finding comes back, the next attempt must change the approach. When the limit is used up,
-  the orchestrator stops and asks the owner.
-- **The owner** makes the decisions: product, exceptions to the quality bar, and merges (R1).
+- **Rework.** After a FAIL, the same producing role gets a new handoff with the next letter of
+  the step (`05c`) and fixes exactly the listed findings, nothing more; anything else it notices
+  goes into its report as a question, and its report has a table "what was fixed, where". Then
+  the same gate runs again. A gate has at most three passes (the first and two repeats) in
+  WF-01 to WF-04; WF-05, WF-06 and WF-07 have their own limits. If the same finding comes back,
+  the next attempt must change the approach. When the limit is used up, the orchestrator stops
+  and asks the owner.
+- **Rules common to all roles** (the git tag `base/<RUN-ID>` before the first change, the
+  orchestrator's check after every step, a fresh `git clone` outside the project for trials
+  instead of `git checkout`, `handoffs-check` and `traces` before closing a handoff, a commit
+  by file names without an unclosed handoff, no computer paths and no names of other projects)
+  are written once, in [workflows/handoffs.md](workflows/handoffs.md).
+- **The owner** makes the decisions: product, exceptions to the quality bar, and merges other
+  than the push to `main` after the final check (R1).
 
 Roles are grouped below by the process they mainly belong to. Several development roles also
 work in the defect process (WF-03) and in UI by sample (WF-04); this is said in each role.
@@ -50,13 +76,18 @@ Process: [workflows/WF-01-requirement.md](workflows/WF-01-requirement.md).
   owner's words: the owner's words verbatim, a description of what parts of Sai are touched and
   what is not, and at least two acceptance criteria, each with a way to check it (a command, a
   test, or specific content in a named file).
-- **When:** WF-01, step 1 (step `00a` when WF-01 opens a bigger run); WF-03, step 2, when the
-  expected behaviour is written nowhere and a criterion must be added; rework after a FAIL of
-  REQ-VALIDATOR.
-- **Gets:** the owner's words, related requirements, which block it may edit, a copy of the
-  file "before" made by ORCH.
-- **Hands over:** its block in `docs/requirements.yaml`; in the report, hashes of the rest of
-  the file before and after, to show other blocks did not change.
+- **When:** WF-01, step 1 (WF-01 is a separate run before WF-02; step `00a` only when WF-02
+  opens at once in the same run); WF-03, step 2, when the expected behaviour is written
+  nowhere and a criterion must be added; a short separate WF-01 run when a design or a test
+  shows that a criterion cannot be met or names a file that does not exist; rework after a
+  FAIL of REQ-VALIDATOR.
+- **Gets:** the owner's words, related requirements, which block it may edit, the git tag
+  `base/<RUN-ID>` as the copy "before".
+- **Hands over:** its block in `docs/requirements.yaml`; in the report, the lines "before" of
+  every change (taken from the tag) and hashes of the rest of the file before and after, to
+  show other blocks did not change. Before writing it looks for the guard tests of earlier
+  requirements, checks a word rule on the real code, and backs "any" and "every" with a full
+  enumeration.
 - **Does not:** check its own requirement (that is REQ-VALIDATOR); describe screens or code
   design; move the status beyond `pending`; touch other blocks or change the field schema.
 
@@ -66,27 +97,37 @@ Process: [workflows/WF-01-requirement.md](workflows/WF-01-requirement.md).
   can be checked with a clear yes or no; no conflict with done requirements and recorded
   decisions; dependencies exist and are really needed first; one piece of work; the needed
   quality-bar criteria are present; the owner's words are verbatim. Runs the criteria commands
-  itself where possible.
+  itself where possible; compares the file with the git tag `base/<RUN-ID>` and finds the guard
+  tests of earlier requirements by searching `tools/test/`.
 - **When:** WF-01, step 2 (`00b` in a bigger run), after every write and every rework; WF-03,
   step 2.
-- **Gets:** the handoff, the copy of the file "before", the source of the owner's words.
+- **Gets:** the handoff, the git tag `base/<RUN-ID>` as the copy "before", the source of the
+  owner's words.
 - **Hands over:** PASS or FAIL with a numbered list of findings; changes no files.
 - **Does not:** write corrected text for the author; put the requirement into the plan (that
   is ORCH). Without its PASS no work on the requirement starts.
 
 ## Development (WF-02)
 
-Process: [workflows/WF-02-development.md](workflows/WF-02-development.md). Route: design →
-design check → code → security check → code review → tests → test check → check run →
-comparison with a sample (UI only) → acceptance on the running system → final check →
-records → commit and release report.
+Process: [workflows/WF-02-development.md](workflows/WF-02-development.md). Route: design (with
+a sketch outside the project, the tests expected to turn red at each sub-step and a table of
+replacements for the guard tests of released requirements) → answers of ORCH to the open
+questions of the design → design check → code in sub-steps → security check and code review at
+the same time → tests with independent oracles and mutants → test check → check run →
+comparison with a sample (UI by sample only) → acceptance on the running system, pages in a
+real Chrome → final check → records → commit of the run's files by name, push to `main`,
+waiting for `check.yml`, a second commit with the handoff of the last step.
 
 ### CODE-DESIGNER — Code design
 
 - **Does:** writes the design before any code, in `docs/design/`: commands and functions with
   inputs, outputs and errors; data shapes; every failure path (what the user sees, what stays
   unchanged); a "criterion → test" table; a section on every quality-bar item (Q1–Q14, R1–R3);
-  open questions as a list.
+  open questions as a list; verified facts with the date of the measure; the sub-steps of the
+  build with the tests expected to be red after each; the table of replacements for the guard
+  tests of earlier requirements (searched in `tools/test/`, "was → becomes", the ban is not
+  weakened); a list of mutants; what becomes outdated outside the design. It checks its claims
+  about today's system on a sketch outside the project (`result.prototype`).
 - **When:** WF-02, step 1; WF-03, step 3 (the fix design, from the ISSUE-FIXER diagnosis);
   rework after a FAIL of CODE-DESIGN-VALIDATOR, or when a developer reports the design cannot
   be followed.
@@ -99,8 +140,10 @@ records → commit and release report.
 ### CODE-DESIGN-VALIDATOR — Code design review
 
 - **Does:** the gate before code. Checks the design (and a UI description, if any) by reading
-  it itself: it describes today's Sai correctly (it repeats at least two claims about current
-  behaviour itself); a developer can build from it without guessing; every criterion leads to a
+  it itself: it describes today's Sai correctly (it repeats the design's probes and the claims
+  about current behaviour itself, on a fresh clone of the tag, and runs the earlier tests after
+  the replacement table and at least 10 mutants of the design); a developer can build from it
+  without guessing, and the size and order of the sub-steps are sound; every criterion leads to a
   test; the quality-bar section names every item; no conflict with recorded decisions; no
   implementation code. For a UI description: every visible part of the sample is described or
   marked "not carried over" with a reason, and all states are described.
@@ -112,9 +155,12 @@ records → commit and release report.
 
 ### BACKEND-DEV — Server side
 
-- **Does:** writes server-side code from a checked design: the pipeline tools in `tools/`, the
-  Pixel Office server and hook, and the Sai Team core, engine, executors and page server
-  (`tools/src/team/`, `tools/src/web/`).
+- **Does:** writes server-side code from a checked design, in the sub-steps of the design: the
+  pipeline tools in `tools/`, the Pixel Office server and hook, the Sai Team core, engine,
+  executors and page server (`tools/src/team/`, `tools/src/web/`), and the server and commands
+  of the solution picker site (`tools/src/picker/`). After each sub-step it runs the checks and
+  names the red tests; a red test that is not on the design's list is a stop and a report.
+  When ORCH asks, it also writes translations of data texts, one language per run.
 - **When:** WF-02, step 2 (next to FRONTEND-DEV, each in their own files); WF-03, step 4 if the
   fix adds a new module or command; a short-path fix if ORCH gives it to this role.
 - **Gets:** the checked design, the list of files it may change.
@@ -126,10 +172,13 @@ records → commit and release report.
 
 ### FRONTEND-DEV — Pages and interface
 
-- **Does:** builds what runs in the browser from a checked design and UI description: the
-  Pixel Office page (`tools/src/pixel-office/public/`) and the Sai Team page
-  (`tools/src/web/public/`). The Pixel Office page only reads events from the server and shows
-  what follows from them.
+- **Does:** builds what runs in the browser from a checked design and UI description, in the
+  sub-steps of the design: the Pixel Office page (`tools/src/pixel-office/public/`), the page of
+  the solution picker site (`tools/src/picker/public/`) and the Sai Team page
+  (`tools/src/web/public/`). After each sub-step it looks at the running page in a real Chrome
+  without a window (windows 1470 × 784, 390 × 844, 320 × 568, light and dark themes, all page
+  languages) and keeps the screenshots outside the project. The Pixel Office page only reads
+  events from the server and shows what follows from them.
 - **When:** WF-02, step 2; WF-04, step 2; WF-03, step 4 if the fix adds a page module; a
   short-path fix if ORCH gives it to this role.
 - **Gets:** the checked design and UI description, the list of files it may change.
@@ -141,14 +190,17 @@ records → commit and release report.
 
 ### SECURITY-REVIEWER — Security check
 
-- **Does:** the security gate after code. It runs for every change and decides itself whether
+- **Does:** the security gate after code, at the same time as REVIEWER. It runs for every
+  change and decides itself whether
   its area is touched: it maps each changed file to the ways harm can come in (what goes to the
   browser, what comes from outside, where files are written, where secrets are, where the
-  server makes requests, whose data it holds). For each item Q7–Q11 and R3 (and R2 for Pixel
-  Office) it says "applies and holds" (with its own check), "does not hold", or "does not
-  apply" and why.
-- **When:** WF-02, step 3; WF-03, step 5; again after every code change that had already passed
-  review (from CODE-FIXER or TEST-FIXER), before tests.
+  server makes requests, whose data it holds; this includes the tenant files and request
+  bodies of the solution picker site). For each item Q7–Q11 and R3 (and R2 for Pixel Office) it
+  says "applies and holds" (with its own check, including hostile input checked with its own
+  oracle: enumeration, fuzzing, a time check on large input, and for a page a replaced server
+  answer and storage in a real browser), "does not hold", or "does not apply" and why.
+- **When:** WF-02, step 3, together with REVIEWER; WF-03, step 5; again after every code change
+  that had already passed review (from CODE-FIXER or TEST-FIXER), before tests.
 - **Gets:** the changed code and the design.
 - **Hands over:** PASS or FAIL with findings (place, quality-bar item, severity, how to fix);
   changes no files.
@@ -157,12 +209,12 @@ records → commit and release report.
 
 ### REVIEWER — Code review
 
-- **Does:** the review gate after the security check: is this a real fix or a workaround that
+- **Does:** the review gate, at the same time as the security check: is this a real fix or a workaround that
   hides a symptom; idioms of the stack; work the requirement did not ask for; conflicts with
   recorded decisions; quiet weakening of the quality bar (a skipped test, a disabled rule, a
   hidden exit code). Weakening the bar is a FAIL even if the code works.
-- **When:** WF-02, step 4; WF-03, step 5 (after SECURITY-REVIEWER); again after every change of
-  code that already passed review.
+- **When:** WF-02, step 4, together with SECURITY-REVIEWER (both only read); WF-03, step 5, the
+  same way; again after every change of code that already passed review.
 - **Gets:** the changed code, the design, the recorded decisions, the log of process mistakes.
 - **Hands over:** PASS or FAIL with findings by severity (Critical, High and Medium block; Low
   is recorded); changes no files.
@@ -171,8 +223,8 @@ records → commit and release report.
 
 ### CODE-FIXER — Code fixes
 
-- **Does:** fixes code by a list of findings from a gate, or writes the fix of a defect from a
-  checked fix design. Every change is tied to a finding number or a place in the design.
+- **Does:** fixes code (and the README of `tools/`) by a list of findings from a gate, or writes
+  the fix of a defect from a checked fix design. Every change is tied to a finding number or a place in the design.
 - **When:** WF-02 after a FAIL at step 3, 4 or 7, or when TEST-DESIGNER needs a code change;
   WF-03, step 4; WF-04, step 5.
 - **Gets:** the list of findings with a link to the gate's handoff, or the checked fix design.
@@ -185,8 +237,11 @@ records → commit and release report.
 
 - **Does:** turns the "criterion → test" table into tests in `tools/test/`: at least one
   runnable test per acceptance criterion; failure tests that also check the state did not
-  change; "mutants" (deliberate breakages) for new logic, to prove the tests catch errors; in
-  WF-03, a regression test that fails on the copy before the fix and passes after it. If a
+  change; oracles of its own that do not import the rules from `src`, and property tests with a
+  fixed seed; "mutants" (deliberate breakages) from the design's list for new logic, to prove
+  the tests catch errors; in WF-03, a regression test that fails on the copy before the fix and
+  passes after it. First it fixes the earlier tests by the design's replacement table without
+  weakening them (the number of `test(` and `assert.` is not lower than on the tag). If a
   change has no executable logic, it says "nothing to test" with a reason.
 - **When:** WF-02, step 5 (after PASS of steps 3 and 4); WF-03, step 6; rework after a FAIL of
   TEST-DESIGN-VALIDATOR.
@@ -199,10 +254,14 @@ records → commit and release report.
 ### TEST-DESIGN-VALIDATOR — Test check
 
 - **Does:** the gate after TEST-DESIGNER. Reads and runs the tests itself: every criterion has
-  a real test, nothing is skipped, assertions mean something, tests are independent of order,
-  clock and shared data. For new logic it applies at least one mutant itself in a temporary
-  copy and sees the tests fail; in WF-03 it runs the new tests on the copy before the fix and
-  sees them fail.
+  a real test, nothing is skipped, assertions mean something, oracles are independent of the
+  code, tests are independent of order, clock and shared data. For new logic it applies at least
+  20 mutants from the design's list and some of its own around the changed places, in a
+  temporary copy, and sees the tests fail (a survivor is a finding; a mutant "the refusal did
+  not work" must not hang the run). It runs the new files three times in a row, each test
+  alone, and for stability tests a series of dozens of runs under load. It checks that the
+  replacement of earlier tests weakened nothing. In WF-03 it runs the new tests on the copy
+  before the fix and sees them fail.
 - **When:** WF-02, step 5b; WF-03, step 7; again after TEST-FIXER changed a test.
 - **Gets:** the tests, the design, the copy before the fix in WF-03.
 - **Hands over:** PASS or FAIL with findings; changes no files (the working tree is proven
@@ -211,10 +270,12 @@ records → commit and release report.
 
 ### TEST-RUNNER — Check run
 
-- **Does:** runs the one check command in full (`cd tools && npm run check`), waits for it, and
-  reports what it really said: number of tests, what failed, exit code. Each failure is
-  analysed: caused by this work or not, only with evidence. A flaky test is a defect, not a
-  rerun until green.
+- **Does:** runs the one check command in full (`cd tools && npm run check`: formatting, lint,
+  trace check, check of the handoff records and all tests), waits for it, and reports what it
+  really said: number of tests, what failed, exit code. Each failure is
+  analysed: caused by this work or not, only with evidence. A red test is not rerun until
+  green; a flaky test is a defect and ORCH tells the owner; for an unstable red it saves the
+  full output, the exact time and what ran in parallel at once.
 - **When:** WF-02, step 6; WF-03, step 8; again after a TEST-FIXER fix; whenever ORCH needs an
   honest check run.
 - **Gets:** the state of the files after the previous gates.
@@ -241,9 +302,13 @@ records → commit and release report.
   Sai owner for Pixel Office). Writes acceptance scenarios in their language in
   `docs/uat/<REQ-ID>.md`: the main path, a scenario for every failure path in the criteria,
   and bad conditions (no response, many events, a server restart). Later signs the result of
-  UAT-RUNNER: which scenarios passed on the running system.
-- **When:** WF-02, step 8 — first the scenarios, then the sign-off as a separate handoff;
-  again after a WF-03 fix if a scenario failed.
+  UAT-RUNNER: which scenarios passed on the running system. It also sums up the result of the
+  readers of translations and texts (separate fresh runs without context, two to three rounds;
+  disputed lines go to a person who knows the language): there it says plainly that only the
+  readers' part is done and lists the lines for that person.
+- **When:** WF-02, step 8 — first the scenarios, then the sign-off as a separate handoff (not
+  needed when the criterion and the design themselves describe the steps of acceptance; then
+  UAT-RUNNER writes `docs/uat/<REQ-ID>-RUN.md`); again after a WF-03 fix if a scenario failed.
 - **Gets:** the requirement; for the sign-off, the UAT-RUNNER report.
 - **Hands over:** the scenarios file and which criteria each scenario covers; the sign-off
   PASS or FAIL per scenario.
@@ -254,8 +319,11 @@ records → commit and release report.
 
 - **Does:** runs BA-ANALYST's scenarios on a real running system prepared by ORCH: real
   requests, real files and data, no stubs. For each step it asks the system again after the
-  action and compares what it sees with the expected result. A scenario it cannot run is "not
-  run" with a reason.
+  action and compares what it sees with the expected result. Pages are opened in a real Chrome
+  without a window (windows 1470 × 784, 390 × 844, 320 × 568, light and dark themes, the
+  languages of the page) with screenshots kept outside the project; with no Chrome it stops, and
+  `curl` does not replace the step. Its expectation is never wider than the criterion: an extra
+  scenario is a remark, not a failure. A scenario it cannot run is "not run" with a reason.
 - **When:** WF-02, step 8, after the scenarios are written and ORCH has confirmed the test
   server answers; again after a WF-03 fix.
 - **Gets:** the scenarios file, the address of the test server. For Pixel Office this is a
@@ -270,27 +338,39 @@ records → commit and release report.
 - **Does:** the last gate before a requirement becomes `done` or a defect is closed. In its
   own turn it runs the full check command, checks every acceptance criterion on the current
   files and the running system, and goes through every quality-bar item (PASS or "does not
-  apply" with a reason). Earlier reports are only a map. In audits it re-checks requirements
-  that are already done.
+  apply" with a reason). Where a criterion names a test file, it lists that file with `ls`; for
+  a server and pages it runs its own stability series and its own mutants, and it stops a probe
+  by the process id. For criteria a user sees it checks BA-ANALYST's signature on the running
+  system; where there is no scenario file and the criterion and design themselves describe the
+  steps, it checks UAT-RUNNER's result in `docs/uat/REQ-NNN-RUN.md` (`decisions/0079`, item 6).
+  A signature of text readers says "done in the part of the reader agent", so such a criterion
+  counts as met only in that part. Earlier reports are only a map. In audits it re-checks
+  requirements that are already done.
 - **When:** WF-02 and WF-03, step 9; WF-07, step 4; WF-05, step 3 (the "requirements"
   dimension); again after rework from its FAIL.
 - **Gets:** the requirement, the handoffs of the run, the files and the running system.
 - **Hands over:** PASS or FAIL per criterion with evidence; on FAIL, which step and role to go
   back to. In WF-05 it writes `docs/audits/AUD-NNN/requirements/REQ-NNN.json`.
 - **Does not:** change statuses, `STATE.md` or documents (that is DOC-UPDATER); fix code or
-  tests; spend the owner's money or limits without consent. Its PASS allows the records, not
-  the merge.
+  tests; spend the owner's money or limits without consent. Its PASS allows the records and the
+  release push, not any other merge.
 
 ### DOC-UPDATER — Records and documents
 
 - **Does:** keeps the records true: sets a requirement to `done` only after a PASS of
   RELEASE-VALIDATOR, as the last action of its step; closes a defect with the outcome that was
   really reached; updates `STATE.md` (what works and how it was checked, what was decided,
-  what is next); brings documents that describe changed behaviour in line; writes process
-  mistakes into `docs/anti-patterns.md`; adds quality-bar raises the owner accepted.
+  what is next) and `PLAN.md`; says honestly which part of a criterion is done; opens and
+  extends defects for what was found on the way, with numbers from ORCH; brings documents that
+  describe changed behaviour in line; writes process mistakes into `docs/anti-patterns.md`; adds
+  quality-bar raises the owner accepted. In a requirement block it changes the status and its
+  comment; a name, a link, a number or an outdated fact it may fix without changing the meaning,
+  with the lines "before" in the report; any change of the meaning of a criterion is a short
+  WF-01 run with the REQ-VALIDATOR gate.
 - **When:** WF-02 and WF-03, step 10 (in WF-03 also step 0, writing the defect file with the
   number ORCH gave); WF-05, step 7a; WF-07, step 5; WF-01, when a separate WF-01 run found a
-  process mistake.
+  process mistake (there it also records the owner's answers, `STATE.md`, `PLAN.md` and the
+  decisions they produced).
 - **Gets:** the PASS of RELEASE-VALIDATOR and the handoffs of the run, the requirement block,
   `STATE.md`, the documents to update.
 - **Hands over:** the changed record files and documents, each named in the report; ORCH checks
@@ -301,15 +381,20 @@ records → commit and release report.
 
 ### RELEASE-FINALIZER — Commit and release report
 
-- **Does:** closes a run: updates its branch from the main one, commits exactly the files of
-  the run (each named, never "add everything"), writes a release report
-  `docs/releases/<RUN-ID>.md` (what was done, which checks passed, which commits, what was not
-  done and why), prepares the merge and stops.
+- **Does:** closes a run: takes the fresh state of `main`, commits exactly the files of the run
+  (each named, never "add everything", without the handoff of its own step), pushes to `main`
+  after the PASS of RELEASE-VALIDATOR, as the owner allowed on 2026-10-11
+  ([decisions/0048](../decisions/0048-owner-delegates-open-points-repo-public.md)), waits for
+  the result of `check.yml` on GitHub, writes a release report `docs/releases/<RUN-ID>.md`
+  (what was done, which checks passed, which commits, what was not done and why), closes its
+  own handoff and hands it in as a second commit. A red `check.yml` is not fixed by it: it stops
+  and reports to ORCH.
 - **When:** WF-02 and WF-03, step 11, after the PASS of step 9 and ORCH's check of the records.
 - **Gets:** the handoffs of the run and the list of its files.
 - **Hands over:** the commit and the release report.
-- **Does not:** merge without the owner's word; rewrite history by force; commit files that are
-  not part of the run; edit code, documents or records.
+- **Does not:** merge in any other way, push other branches or tags, or change GitHub settings
+  without the owner's word (R1); rewrite history by force; commit files that are not part of the
+  run; edit code, documents or records.
 
 ## Defects (WF-03)
 
@@ -324,7 +409,9 @@ RELEASE-FINALIZER.
 - **Does:** finds the cause of a defect, not the symptom: looks for similar closed defects,
   reproduces the error with its own run, names the function and the broken rule and why the
   tests did not catch it, and finds every place of the same kind, not only the one in the
-  report. It treats the defect file as a hypothesis, even when an audit opened it.
+  report. For an unstable test it runs a series (at least 20 full runs in a row, at least 100
+  runs of the file, also under load) and keeps every red output. It treats the defect file as a
+  hypothesis, even when an audit opened it.
 - **When:** WF-03, step 1, for every defect; WF-02, step 8, when an acceptance scenario failed.
 - **Gets:** the defect file and the code it is about.
 - **Hands over:** the diagnosis in its report: cause, places, what must change, the commands
@@ -346,11 +433,14 @@ checked by CODE-DESIGN-VALIDATOR; the owner confirms the likeness to the sample 
   source of each part, every state (empty, loading, error, no connection, a lot of data),
   layout, narrow and wide screens, named colours, fonts and spacing, and which part covers
   which criterion. For Pixel Office, parts of the sample that relied on invented events are not
-  carried over.
-- **When:** WF-04, step 1; WF-02, step 1, when a requirement changes a screen by a sample;
+  carried over. When there is no sample, it describes the screen from the requirement, the
+  decisions and the finished pages of Sai, and the description itself is the measure.
+- **When:** WF-04, step 1; WF-02, step 1, when a requirement changes a screen (by a sample or
+  without one);
   rework after a FAIL of CODE-DESIGN-VALIDATOR or when DESIGN-QA-VALIDATOR finds an error in the
   description.
-- **Gets:** the sample approved by the owner, the requirement, the current page code.
+- **Gets:** the sample approved by the owner (if there is one), the requirement, the current
+  page code.
 - **Hands over:** `docs/design/REQ-NNN-<short>-ui.md`.
 - **Does not:** write code or edit page files; invent data, labels or rules that are neither
   in the sample nor in the requirement.
@@ -358,10 +448,11 @@ checked by CODE-DESIGN-VALIDATOR; the owner confirms the likeness to the sample 
 ### DESIGN-QA-VALIDATOR — Screen vs. sample check
 
 - **Does:** starts the built page separately from the owner's working copy, takes screenshots
-  of each area in each state at a phone width and a wide width, and compares them with the UI
-  description, using the sample as a map. It compares structure and meaning, not pixels. For
+  of each area in each state in the windows 1470 × 784, 390 × 844 and 320 × 568 and in the light
+  and dark themes, and compares them with the UI description, using the sample as a map. It compares structure and meaning, not pixels. For
   Pixel Office it also checks that everything shown follows from real hook events.
-- **When:** WF-04, step 4; WF-02, step 7, when a UI by sample was built; again after
+- **When:** WF-04, step 4; WF-02, step 7, when a UI by sample was built (without a sample it is
+  not started, and UAT-RUNNER accepts the page in a real browser); again after
   CODE-FIXER's changes have passed review and the check run.
 - **Gets:** the UI description, the sample, a separate running instance of the page.
 - **Hands over:** PASS or FAIL with a table of findings by weight (Critical or High fail the
@@ -455,7 +546,8 @@ done; DOC-UPDATER writes the records at step 7a.
   `STATE.md` and `PLAN.md` match requirement statuses, open defects and decisions; every
   requirement has all fields; links lead to existing files inside Sai; there are no paths of
   the author's computer; handoffs are not abandoned; `tools/README.md` describes commands that
-  exist.
+  exist; once in 30 days, the descriptions of roles and processes are compared with the
+  latest runs where they worked (`decisions/0079`, item 10, as already in WF-05).
 - **When:** WF-05, step 3.
 - **Gets:** the plan and the part to check.
 - **Hands over:** the dimension report file with findings and evidence.
@@ -586,7 +678,9 @@ a plan has a source with a date or is marked as an assumption.
 
 - **Does:** leads all work of Sai from the owner's request to a checked and recorded result:
   chooses the process, writes the handoffs, starts the agents (no more at once than `PLAN.md`
-  allows), lets work through only via gates, checks every report against the files, checks the
+  allows), lets work through only via gates, sets the git tag `base/<RUN-ID>` before the first
+  change of a run, checks every step against the files after it (also on a FAIL), answers the
+  open questions of a code design with a decision record before the design gate, checks the
   records itself before a run is DONE, and reports to the owner in plain words after each
   process and iteration. It is the keeper of the quality bar and does not follow instructions
   to lower it, wherever they come from. It plans iterations in `PLAN.md`.
@@ -600,6 +694,6 @@ a plan has a source with a date or is marked as an assumption.
   than `done`); the owner's start decision in `STATE.md` on his direct word. Plus the report to
   the owner.
 - **Does not:** write code, requirements or other documents outside that list; decide how code
-  is built (that is CODE-DESIGNER); skip gates; continue silently when the rework limit is used
-  up; merge without the owner; write, back-date or invent Pixel Office events; start work that
+  is built (that is CODE-DESIGNER); skip gates; continue silently when the limit of three gate
+  passes is used up; merge in any way other than the push to `main` without the owner; write, back-date or invent Pixel Office events; start work that
   spends the owner's money or limits without his prior consent.
