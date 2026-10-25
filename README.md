@@ -190,7 +190,7 @@ runs (`STATE.md`).
   - On GitHub, `.github/workflows/check.yml` runs the same command on every push to any
     branch and on every pull request (see below). The runs of 2026-10-25 were red because of 11
     tests of the questionnaire page that were being rebuilt; with the release of REQ-057 the
-    local check is green (1998 of 1998 tests), the GitHub run of that release is made after the push
+    local check is green (1998 of 1998 tests) and so is the GitHub run of that release
     (`gh run list --workflow check.yml`).
   - A local hook `.githooks/pre-push` runs the same check before a push (it is enabled once
     per clone, see below).
