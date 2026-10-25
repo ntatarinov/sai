@@ -46,7 +46,7 @@ test("SP-1: routeOf on 20000 random strings (seed 56001) never throws, gives nul
     "\\",
     "\u0000",
     "é",
-    "stub.js",
+    "main.js",
     "texts.js",
     ".js",
     "lead",
@@ -80,7 +80,7 @@ test("SP-2: 300 random GET paths around the real ones (seed 56002) give 200, 308
     "/t/uchet-pro/api/questionnaire",
     "/t/svet-marketing/",
     "/assets/texts.js",
-    "/assets/stub.js",
+    "/assets/main.js",
     "/t/net-takogo/",
     "/",
   ];

@@ -112,12 +112,12 @@ export const TEXTS = Object.freeze({
   }),
   card_changed: Object.freeze({
     ru: "Анкета изменилась. Начните, пожалуйста, заново.",
-    kk: "Сауалнама өзгерді. Қайтадан бастаңыз.",
+    kk: "Сауалнама өзгерді. Өтінеміз, қайтадан бастаңыз.",
     en: "The questionnaire has changed. Please start again.",
   }),
   progress_label: Object.freeze({
     ru: "Вопрос {current} из {total}",
-    kk: "{total} сұрақтың {current}-і",
+    kk: "Сұрақ {current} / {total}",
     en: "Question {current} of {total}",
   }),
   progress_name: Object.freeze({
@@ -178,7 +178,7 @@ export const TEXTS = Object.freeze({
   net_lost_unsaved: Object.freeze({
     ru: "Нет связи. Не закрывайте страницу, ответы пока только здесь. Попробуйте ещё раз.",
     kk: "Байланыс жоқ. Бетті жаппаңыз, жауаптар әзірге тек осында. Қайталап көріңіз.",
-    en: "No connection. Do not close the page, the answers are only here for now. Please try again.",
+    en: "No connection. Please don't close the page: your answers are only stored here for now. Please try again.",
   }),
   net_retry: Object.freeze({
     ru: "Повторить",

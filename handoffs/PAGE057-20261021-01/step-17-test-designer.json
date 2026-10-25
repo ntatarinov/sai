@@ -1,0 +1,80 @@
+{
+  "handoff_id": "step17-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "17",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PAGE057-20261021-01/step-17-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-16-test-design-validator.json"
+    ],
+    "route": "TEST-DESIGNER",
+    "write_set": [
+      "tools/test/picker-page.test.js",
+      "tools/test/picker-page-helpers.js",
+      "docs/design/REQ-057-picker-page.md"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T17:39:09Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "src/ diff stat shows only app.js and texts.js (steps 07, 09, 12), nothing from step 17; picker-page.test.js run by ORCH: 64 pass, 0 fail; assert count 625 -> 697",
+        "agent's single npm run check: 1997 tests, 1997 pass; 12 mutants killed (N3, N35, N37, N4, N5, N5b, N5c, N5d, G2, M24, M29a, M29b); handoffs-check 0 violations",
+        "N35 pins rule E1 through the write log only (value identical for one tab) - noted for validator pass 2"
+      ]
+    }
+  },
+  "task": {
+    "description": "Rework after FAIL of TEST-DESIGN-VALIDATOR (step 16, gate pass 1). Read its handoff result first. Close five test gaps in tools/test/picker-page.test.js (add cases to existing tests where named, or new tests with the next free ids; update the counts and tables in sections 16-17 and the M24/M29 rows of section 20 of docs/design/REQ-057-picker-page.md):\nF1 (Medium): the notice \"questionnaire changed\" must be pinned for each clause alone — answers present with the first question as the position, and a non-first position with no answers (app.js around lines 184-185 and 564-565). Add the two single-clause cases to QP-4b and QP-9f. Mutants N5, N5b, N5c, N5d must die.\nF2 (Medium): a move without a new answer must save the position: Back (app.js ~363), Next (~405), Back from the result (~462). Assert the stored current and a reload plus Continue after Next, after Back and after Back-from-result (QP-2d or QP-4a). Mutants N3, N35, N37 must die.\nF3 (Medium): reversed-order race on the result screen: press kk then en on the result screen, answer the en re-POST first, then the kk one; the page must stay on en (result, language, address, storage). Add to QP-9h or QP-9e. Mutant G2 (the ticket check after the re-POST removed) must die.\nF4 (Low): Skip must clear the field: after Skip on the last optional question with the net refused, assert the field is empty (QP-2e). Mutant N4 must die.\nF5 (Low): QP-2g — the optional number must also be tested with garbage text (\"abc\"), not only an out-of-range value; correct the section 20 table so M24 and M29 name the tests that really kill them (run the mutants yourself to see).\nThen apply N3, N4, N5, N5b, N5c, N5d, N35, N37, G2 and M24, M29 on copies outside the project and confirm each is killed; the mutants are described in the handoff of step 16 (result and self_check) — re-create them from there. Do not change code in src/. If a new test shows a real page defect, leave it red and report it. No git checkout/reset/stash/clean, no commits. Run npm run check once at the end from tools/ (computer has 16 GB RAM; nothing in parallel). Report honestly with numbers. No machine paths and no other projects' names in the handoff text.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T17:28:40Z",
+  "started_at": "2026-10-25T17:28:40Z",
+  "completed_at": "2026-10-25T17:38:33Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework of the five remarks of TEST-DESIGN-VALIDATOR (step 16, gate pass 1). All five are new cases inside existing tests of tools/test/picker-page.test.js, so the counts do not change (64 QP, 23 QM, 12 QS, 99 in all; test( in the file 64 before and after; assert. 625 before, 697 after). F1 (Medium) QP-4b and QP-9f: each clause of 'something to lose' alone. At the load (QP-4b): another version with answers {business} and the place on the first question, language kk; another version with no answers and the place 'items', language en; each gives the notice in the stored language, no 'Continue', the value cleared to the new version with the language kept, and the next load has no notice. At a change of language (QP-9f): answers with the place on the first question (uchet-pro); a place beyond the first question with no answers (a small two-language file whose first question is optional, 'Next' with no answer); and the case with nothing to lose (no notice). F2 (Medium) QP-2d: after 'Next' with no new answer the stored place is the new question, and a reload plus 'Continue' opens it; the same after 'Back' (stored place, answers, reload plus 'Continue', the chosen answer), and 'Next' over answers already given; and after 'Back' from the result screen (the write log gets exactly one more setItem, the stored place is the last question, reload plus 'Continue' opens it). F3 (Medium) QP-9h: on the result screen kk then en, the requests of the result for both held, answered in both orders; the page stays on en (screen, html lang, aria-current of three buttons, document title, result text, one replaceState, address ?lang=en, stored lang, no net block). F4 (Low) QP-2e: 'Skip' on the last optional question with the net refused, for a choice and for a number: the question stays, the net block is of kind result, the field shows nothing (no option on / empty number field), the stored answers do not hold it, and 'Try again' sends the body without it. F5 (Low) QP-2g: the optional number is refused for '11', 'abc' (badInput) and '0' alike with the message, aria-invalid, storage and request count unchanged. Table criterion -> test (unchanged ids): criterion 2 -> QP-2d, QP-2e, QP-2g; criterion 4 -> QP-4a, QP-4b, QP-2d (position at a move); criterion 9 -> QP-9f, QP-9h. Quality-bar items: Q8 (QP-6a..6d, QM-3d, QM-3e) unchanged; Q10 (QP-7a..7g, and the net-refused cases of F4); Q11 not touched (the page builds no address from user input; QP-6d, QS-4); R3 not applicable (decision 0033). N35 note: with one tab it is invisible in the stored value (the place stored when the result was reached is already the last question), so the test pins the design rule E1 ('writes') by the write log.",
+    "changes": [
+      "tools/test/picker-page.test.js - QP-4b (F1): list of two single-clause stored values and a loop of checks; QP-9f (F1): three added cases (answers only, place only, nothing to lose) and a helper site optional-first; QP-2d (F2): added walk with Next, Back, reload and Continue, and the result-screen Back with the write log; QP-2e (F4): added two Skip-with-refused-net cases (choice, number) with Try again; QP-2g (F5): the optional number is refused for 11, abc and 0 in a loop with storage and request checks; QP-9h (F3): added the two-press race on the result screen in both orders. prettier applied.",
+      "docs/design/REQ-057-picker-page.md - section 17.1 rows QP-2d, QP-2e, QP-2g, QP-4b, QP-9f, QP-9h extended (F2, F4, F5, F1, F1, F3); section 20 rows M24 (now QM-2e only, with the reason) and M29 (two forms, QM-2d and QP-2g); new section 17.5 with the table of the rework mutants and the note on N35. The counts in 17.3 and 16 are unchanged on purpose.",
+      "tools/test/picker-page-helpers.js and tools/src/ - not changed (sha256 of tools/src/picker/public before and after is the same)."
+    ],
+    "self_check": [
+      "cd tools && npm run check (one run, at the end): exit 0; 'All matched files use Prettier code style!'; lint clean; 'traces: файлов проверено 2020, следов 0, пропущено 59'; 'handoffs-check: файлов проверено 1140, нарушений 0, исключений использовано 114 из 114'; '# tests 1997 # pass 1997 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 116211' (same total of 1997 as at step 16, because the new cases are inside existing tests). No .skip/.todo/.only in picker-page*.js (grep).",
+      "node --test test/picker-page.test.js after the edits: tests 64 pass 64 fail 0. Three page files together on a copy: tests 99 fail 0.",
+      "Mutants, one at a time on a fresh copy of tools/ outside the project (<scratch>/work), the three page files run each time with --test-concurrency=1; the edit fails if the old text is not found exactly once. Table (mutant -> failed tests, count): N3 (Back: go(previous, true) -> false) -> QP-2d (1); N37 (Next: go(next, true) -> false) -> QP-2d, QP-9f (2); N35 (Back from the result: onEdit go(..., true) -> false) -> QP-2d (1); N4 (clearField(refs) removed from Skip) -> QP-2e (1); N5 (load: the clause 'answers present' of hadAny removed) -> QP-4b (1); N5c (load: the clause 'place not first' removed) -> QP-4b (1); N5b (language change: 'answers present' removed) -> QP-9f (1); N5d (language change: 'place not first' removed) -> QP-9f (1); G2 (ticket check after the re-POST removed, screen check kept) -> QP-9h (1); M24 (bodyAnswers returns { ...answers }) -> QM-2e (1) - not QM-1d and not QP-2e, the page state is already pruned, so on the page level it is equivalent (like N25 of step 16); M29a (verdict: a text that is not a number passes for an optional question) -> QM-2d, QP-2g (2); M29b (verdict: a number outside the limits passes for an optional question) -> QM-2d, QP-2g (2). All 12 killed; the control run with no mutant: tests 99 fail 0.",
+      "Working tree: sha256 of the sorted file list of tools/src/picker/public before and after all runs: a4c0182d50a24503248978bee85205f1152c882a3d5389df13178b0f9cc79c0a, the same. Every mutant lived only in the copy. No git checkout/reset/stash/clean, no commit."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "No defect of the page code was found: every new case is green on the current code and red on its mutant. No edit of src/ is needed."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "N35 (Back from the result does not write) is equivalent in the stored value for a single tab: the place at the result is already the last question, so the rewrite is the same value. The test pins the design rule E1 ('writes') by one more setItem in the write log. If the owner prefers the rule not to be pinned that way, N35 is an equivalent mutant."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "The validator's wording for F5 said M24 and M29 are killed by other tests than the section 20 table named. Checked by runs: M24 is killed only by QM-2e (the table said QM-1d, QP-2e); M29 by QM-2d and, since this rework, QP-2g. The table is corrected."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-page.test.js",
+      "docs/design/REQ-057-picker-page.md"
+    ]
+  }
+}

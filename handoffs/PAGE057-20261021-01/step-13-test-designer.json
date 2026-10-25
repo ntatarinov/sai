@@ -1,0 +1,85 @@
+{
+  "handoff_id": "step13-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "13",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PAGE057-20261021-01/step-13-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-12-code-fixer.json",
+      "handoffs/PAGE057-20261021-01/step-11-reviewer.json"
+    ],
+    "route": "TEST-DESIGNER",
+    "write_set": [
+      "tools/test/picker-page.test.js",
+      "tools/test/picker-page-helpers.js",
+      "docs/design/REQ-057-picker-page.md"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T16:56:39Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "QP-9j, QP-9k, QP-9l run by ORCH: 3 pass, 0 fail; src/ not changed by this step (git diff of app.js shows only steps 09 and 12)",
+        "agent's single npm run check: 1997 tests, 1997 pass, 0 fail; mutant 'remove the guard' kills QP-9k and QP-9l (6 of 6 cases)",
+        "design document catalogue now says 64 QP, 23 QM, 12 QS; the one remaining QP-11e mention says no such test exists"
+      ]
+    }
+  },
+  "task": {
+    "description": "Two jobs after the review of step 11 and the fix of step 12.\n\nJob 1, tests for the new guard in tools/src/picker/public/app.js changeLanguage(): a language change begun on the result screen is dropped when the visitor left the screen (Back or Start again) before the answer came — decisions/0078 item 11, design rule L4. Add tests next to QP-9j in tools/test/picker-page.test.js (use the existing helpers; independent oracles; failure-path style: check unchanged state):\n (a) the late questionnaire answer carries ANOTHER version: screen stays where Back/Start again put it, language stays the old one, address, document language, storage content and storage write log unchanged, no notice card, no new questionnaire request, header buttons keep aria-current on the old language;\n (b) the late answer is a failure (status 500 and a network error): same unchanged state AND no connection block under the header;\n (c) both for Back and for Start again if the page allows both.\nThen apply on a copy outside the project the mutant \"remove the new guard line\" and confirm (a) and (b) fail on it; also confirm the same-version case still behaves as before. Report the kill result.\n\nJob 2, documentation fix (finding R1 of step 11) in docs/design/REQ-057-picker-page.md: sections 16 and 17 must match the tests that exist: counts (62 QP in picker-page.test.js, 23 QM in picker-page-model.test.js, 12 QS), remove the name QP-11e if no such test exists, list the added tests (QP-0a, 0b, 2j, 5a2, 7g, 9f2, 9i, 9j and your new ones, QM-2e, 4d, 6a, 6b), and record the two deviations (QP-11d tested as two cards because a notice never appears together with Continue; QM-1e reinterpreted because \"1e3\" is refused by design, mutant M25). In rules L1 and L4 add one sentence: when a change began on the result screen and the visitor left it, leaving the screen wins over a new version and over a failure. Write new text in English; add no more English inside Russian table cells than the single sentence needed.\n\nRules: change only tools/test/picker-page.test.js (and picker-page-helpers.js only if a helper is missing) and docs/design/REQ-057-picker-page.md. Do not change code in src/. If a test shows another page defect, leave it red and report it. No git checkout/reset/stash/clean, no commits. Run npm run check once at the end from tools/ (nothing in parallel; 16 GB RAM computer). Report honestly with numbers. No machine paths and no other projects' names in the handoff text.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T16:49:42Z",
+  "started_at": "2026-10-25T16:49:42Z",
+  "completed_at": "2026-10-25T16:55:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Job 1: two new tests in tools/test/picker-page.test.js, QP-9k and QP-9l, next to QP-9j, pin the guard added by step 12 in changeLanguage() (decisions/0078 item 11, design rule L4): a language change begun on the result screen is dropped when the visitor left the screen (Back or Start over, both tried in each test) before the answer of the questionnaire came. Two helpers local to the test file (leaveDuringChange, assertLeftAlone); picker-page-helpers.js was not changed, nothing in it was missing. Criterion -> test: L4 late answer with another version -> QP-9k (screen stays on the question, language ru, address, document language and title, storage content and the write log (setItem and removeItem counts), requests (no new questionnaire request, no request of the result), no notice card, no block of the net, aria-current of the header buttons on ru; then the next press works and brings the new version as usual: the card, with the notice after Back and without it after Start over because that clears the answers). L4 late answer is a failure -> QP-9l (status 500 and a network error, each after Back and after Start over: the same unchanged state and no block of the net anywhere, in particular none in the slot under the header; the next press works). The same-version case is pinned by the older QP-9j and still passes. The oracles are the values taken after the visitor left, before the late answer, and the literal expectation that the old language stays; nothing is imported from the page. Each case builds its own page with its own storage and a fixed seed (57160.., 57170..); no clock, no secrets. Quality-bar items: Q8 (business space) - not touched, the change is inside one page and one tenant, QP-6a/6c keep the one-key rule; Q10 - every late failure path is tested (500, network) with the state check; Q11 - not touched, the page takes no address from the visitor in this change; R3 - not applicable now (decision 0033). Job 2: docs/design/REQ-057-picker-page.md, sections 16 and 17 now match the tests that exist: 64 QP in picker-page.test.js (the 62 asked for plus QP-9k and QP-9l), 23 QM in picker-page-model.test.js, 12 QS in picker-page-static.test.js; QP-11e removed (no such test; section 16 row 11 now ends at QP-11d); new rows for QP-0a, 0b, 2j, 5a2, 7g, 9f2, 9i, 9j, 9k, 9l and QM-2e, 4d, 6a, 6b; a new subsection 17.4 lists the added tests and records the two deviations (QP-11d tested as two cards because a notice never appears together with Continue; QM-1e reinterpreted because \"1e3\" is refused by design, mutant M25); rules L1 and L4 got one English sentence each: when a change began on the result screen and the visitor left it, leaving the screen wins over a new version and over a failure.",
+    "changes": [
+      "tools/test/picker-page.test.js - after QP-9j: a comment block, the list LEAVES (Back, Start over), helpers leaveDuringChange and assertLeftAlone, tests QP-9k and QP-9l (about 130 lines); nothing else in the file changed; prettier applied to the file.",
+      "docs/design/REQ-057-picker-page.md - L1 and L4 (one English sentence each); section 16 rows 2, 5, 7, 9, 11 and the line of the plan row Q10 (ranges QP-2a..2j, QM-2e, QP-5a2, QP-7a..7g, QM-4a..4d, QP-9a..9l, QP-11a..11d); section 17.1 new rows QP-0a, 0b, 2j, 5a2, 7g, 9f2, 9i, 9j, 9k, 9l and the row QP-11d rewritten (two cards); section 17.2 row QM-1e rewritten and new rows QM-2e, 4d, 6a, 6b; the totals line (64 QP, 23 QM, 12 QS; no QP-11e); new subsection 17.4 (added tests, two deviations).",
+      "tools/test/picker-page-helpers.js and tools/src/ - not changed."
+    ],
+    "self_check": [
+      "Evidence that the tests catch (a copy outside the project, in the session scratch folder; the working tree was not touched). The copy of src, test and package.json: node --test test/picker-page.test.js before the mutant: tests 64, pass 64, fail 0. Mutant 'remove the new guard line' (the line 'if (from === \"result\" && state.screen !== \"result\") return;' deleted from the copy of app.js): tests 64, pass 62, fail 2 - QP-9k and QP-9l fail (QP-9k: expected screen 'question', actual 'card'; QP-9l: expected 0 blocks of the net, actual 1). QP-9j (same version, guard after postResult) stays green on the mutant, so the same-version case behaves as before. A second probe on the copy that records each case instead of stopping at the first: on the mutant all 6 cases are killed (Back and Start over with another version; Back and Start over with status 500; Back and Start over with a network error); with the guard restored in the copy all 6 survive (the assertions hold). The probe edit of the test lives only in the copy.",
+      "The working tree after the probe: src/ identical to the copy with the guard (diff -r clean); the hash of the sorted list of files of src and test is a40f3d8ad9... before and after the doc edit and the run (an unsorted hash differs between runs because of the order of find, not of the files); git diff of app.js shows only the step 9 swap and the step 12 guard line.",
+      "cd tools && npm run check (one run, nothing in parallel; exit code 0): format:check, lint, traces, handoffs-check and test passed; test result: '# tests 1997 # suites 0 # pass 1997 # fail 0 # cancelled 0 # skipped 0 # todo 0', duration 115.9 s. Before this step: 1995; the 2 new tests make 1997. No skip, no todo, no disabled rule. No git checkout, reset, stash or clean; no commit."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "All of QP-9k and QP-9l are green on the current code. The tests are shown to catch the guard by the mutant (2 of 64 tests red, 6 of 6 cases killed). No other defect of the page was found by them."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Count: the task named 62 QP; the file now holds 64 because QP-9k and QP-9l were added in this step. The design says 64."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "AP-014, from step 12: inside changeLanguage() the check 'if (state.screen !== \"result\") return;' at the start of the 'from === \"result\"' branch is redundant after the new guard. It is not pinned by any test and can be removed in a later cleanup; a test cannot tell the two apart, so no mutant of it can be killed (equivalent)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "After 'Start over' the late answer with another version is dropped, and the later press of Kazakh with another version gives the card without a notice (the answers were already cleared by Start over); after 'Back' the card has the notice. QP-9k pins both."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-page.test.js",
+      "docs/design/REQ-057-picker-page.md"
+    ]
+  }
+}

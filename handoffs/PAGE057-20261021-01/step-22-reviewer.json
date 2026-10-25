@@ -1,0 +1,104 @@
+{
+  "handoff_id": "step22-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "22",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PAGE057-20261021-01/step-22-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-19-code-fixer.json",
+      "handoffs/PAGE057-20261021-01/step-20-test-designer.json"
+    ],
+    "route": "REVIEWER",
+    "write_set": [
+      "handoffs/PAGE057-20261021-01/step-22-reviewer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T18:43:11Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED, verdict PASS; F10 is a real fix reusing onAnswer's pair; assert-spy shows only QP-0c passes nodes to assert; 100 tests, peak 254 MB",
+        "Low L1-L4: hide() comment, design doc Q4 row and line 741 (DOC-UPDATER), QP-2e is one long test, duplicated clearing pair"
+      ]
+    }
+  },
+  "task": {
+    "description": "Review gate for steps 19 and 20: the F10 two-line change in tools/src/picker/public/app.js advance() Skip branch; the test-side work: tools/test/picker-page-dom.js (fields non-enumerable, custom inspect), new and extended cases in picker-page.test.js and picker-page-model.test.js, design document sections 16-17 (count now 65 QP, 23 QM, 12 QS; section 17.6). Check: is F10 a real solution reusing the existing mechanism; did hiding fields in the document model weaken any test (does every existing assertion on nodes still see the same data; run the three page files and a mutant that breaks one node field read, on a copy outside the project); are the new cases independent oracles and failure-path cases checking unchanged state; do the counts in sections 16-17 equal the tests that exist (count them yourself by script); no skip/todo/only/eslint-disable/|| true; peak memory of the three files alone (use /usr/bin/time -l); decisions 0073/0074 intact. Read only; no full npm run check (16 GB RAM computer); single test files only.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T18:38:19Z",
+  "started_at": "2026-10-25T18:38:19Z",
+  "completed_at": "2026-10-25T18:42:44Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Gate after step 19 (F10) and step 20 (test side). No Critical, High or Medium finding; four Low, none blocking.\n\nQ1 (cause, not symptom): F10 is a real fix. The Skip branch of advance() (app.js 385-389) now sets state.message = null and calls clearMessage(refs), the same pair that onAnswer uses (app.js 338-339); no new state, no new text. Other places that leave a question without a move: onAnswer (clears), redraw (app.js ~499, redraws a message only if state.message is not null), go()/showQuestion (rebuild the screen and reset state.message). No place of the same kind left (AP-014 checked). Mutants on a copy outside the project: both lines removed and clearMessage alone removed each turn exactly QP-2e red (1 fail of 100).\nQ2 (agrees with the record): design 5.2 Q4 says Skip is 'as Q2 without the check'; Q1 of the same table says the error message is cleared on a change; the code now agrees. Decisions 0073 and 0074 are unchanged in git (git status of decisions/ is empty) and their rules hold: grep for REQ-NNN, handoff, ORCH, decisions over src/picker/public/* finds nothing (0074 item 6). Code is ES modules, no runtime dependency (0002). Counts of design 16-17: by script, test( in picker-page.test.js = 65, picker-page-model.test.js = 23, picker-page-static.test.js = 12 (100); all ids unique; the ids in the catalogue tables of 17.1-17.3 and the ids in the tests are the same sets (no id on one side only). Section 17.6 says 65 / 23 / 12 / 100: equal.\nQ3 (more than ordered): src/ since the step 19 handoff: no file newer (find -newer, empty). Step 19 changed only the two lines. Step 20 files are all in its write_set; nothing in src/ touched by step 20.\nQ4 (bar): grep for skip/only/todo/eslint-disable/|| true/TODO/FIXME over test/picker-page*.js: only two non-test words ('quiz_skip' text key, a 'skip: null' data field). eslint --max-warnings 0 over the picker-page files and app.js: exit 0. prettier --check on the four test files: clean. No assertion removed or weakened: the two node-versus-null assertions became counts of the same elements ([data-part=notice] length 0), equivalent.\nQ5: hiding fields in the document model did NOT weaken an existing assertion. (a) I wrapped assert.equal/strictEqual/deepEqual/deepStrictEqual/notEqual/notStrictEqual/notDeepEqual/notDeepStrictEqual (via a preload outside the project) and ran each of the three files: the only calls with a node, a text, the document or a proxy as an operand (also nested in arrays and plain objects to depth 4) are the five in QP-0c (picker-page.test.js 245-248, 272), which is deliberate; picker-page-model and picker-page-static: none. So no deepEqual of nodes exists that could have become a comparison of tags only. (b) grep for Object.keys/entries/values/assign, for-in, JSON.stringify, structuredClone, spread on nodes in dom.js, helpers and the tests: none touches a node. (c) Mutant on a copy: Node.text returning '' -> 57 of 100 tests red (QM-6a, QP-0a, QP-0c, QP-1a ... ), so every field read by assertions is still seen. (d) Page mutants killed by name, one at a time on a copy: F10 both lines, F10 clearMessage alone, V31 (draft not cleared at Skip) -> QP-2e; X05 (Skip not guarded while sending) -> QP-7g; Z01 (limit 32769), Z02 (limit 32767) -> QM-3a; W07 (response.ok instead of status 200) -> QM-4a. Each is 1 fail of 100 with an assertion message.\nNew cases are independent oracles and check unchanged state: QP-2e F10 part uses literal expected strings ('Введите целое число от 1 до 10.', '', null) and checks the count of requests, the field, q-error text, aria-invalid, aria-describedby, the block kind, the stored answers and the body of the retry; QP-7g (Skip and Back during the request) checks the screen, title, chosen answer, storage snapshot, write count, erase count, request count and the shut fieldset before and after, then the body sent and the stored value; QP-4a (first question optional, Next, reload) checks the stored place and answers, then Continue/Restart present and Start absent; QM-3a pins 32767 / 32768 / 32769. QP-0c pins the short messages with literal strings and a 600-sign bound, and has its own mutants (I1-I4 in the handoff of step 20).\nMemory: the three files alone: 100 tests, 100 pass, 0 fail, 0 skipped, 0 todo, 3.5 s; /usr/bin/time -l maximum resident set size 254427136 bytes (254 MB), peak memory footprint 21.6 MB.\n\nFor TEST-DESIGNER / next gate: nothing blocks. Worth keeping in view: (1) the document model can no longer tell two nodes of the same tag apart by assert.deepEqual (see L1), so a future test must compare ids, text or counts; (2) QP-2e is now one test of about 200 lines with eight scenarios; a failure names the message of the line but not the scenario.",
+    "findings": [
+      {
+        "id": "L1",
+        "place": "tools/test/picker-page-dom.js:44-52 (hide) and 85-100 (Node constructor)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "After hide() every field except tag is non-enumerable, so assert.deepEqual / deepStrictEqual of two different nodes (or of two arrays of nodes) compares only the tag and the prototype, and passes for any two nodes of the same tag. No existing test does this (checked by script, see summary Q5), but the trap is silent and is not named in the comment of hide() or in the header of the file. This is the state the data layout allows and a good test practice forbids.",
+        "fix": "Add one sentence to the comment of hide(): 'deepEqual of nodes compares only the tag; compare id, text or count'. Optional: make QP-0c pin it (two different divs are not deepEqual-distinguishable, so a test author is warned)."
+      },
+      {
+        "id": "L2",
+        "place": "docs/design/REQ-057-picker-page.md:254 (row Q4 'Пропустить') and 741",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The design row Q4 lists 'answer erased, draft = null' and then 'as Q2 without the check'; it does not say that the validation message and aria-invalid are cleared (the F10 behaviour, now in the code and pinned by QP-2e, row 614 and row 754). Section 17.6 line 741 says 'The page code was not touched' while its F10 row closes a finding that needed two lines of app.js at step 19; the sentence is true for step 20 only.",
+        "fix": "In row Q4 add 'сообщение об ошибке стёрто (как в Q1)'. In 17.6 write 'The page code was not touched in this step (F10 needed two lines of app.js in step 19)'."
+      },
+      {
+        "id": "L3",
+        "place": "tools/test/picker-page.test.js:612-810 (QP-2e)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "QP-2e holds eight independent scenarios (random walk, optional last single, Next with no answer, skip clears, refused net on single and on number, F10, language change, two number questions with Back) with default assertion messages on part of them; a failure at line N does not say which scenario failed. Not a defect of the check: each scenario builds its own page, so they do not depend on each other.",
+        "fix": "Optional: split into QP-2e / QP-2k at the next rework, or give the assertions of the late scenarios a prefix (as 'late:' / 'wide:' / 'back:')."
+      },
+      {
+        "id": "L4",
+        "place": "tools/src/picker/public/app.js:338-339, 247, 386-388",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The pair state.message = null; clearMessage(refs) is now written twice (onAnswer and the Skip branch). The fix reuses the existing mechanism as the task asked and is the smaller change; a helper would be a third place to read.",
+        "fix": "None needed now. If a third place appears, move the pair into one function (clearValidation(refs))."
+      }
+    ],
+    "self_check": [
+      "cd tools && /usr/bin/time -l node --test test/picker-page.test.js test/picker-page-model.test.js test/picker-page-static.test.js -> # tests 100, # pass 100, # fail 0, # cancelled 0, # skipped 0, # todo 0, duration_ms 3504; maximum resident set size 254427136; peak memory footprint 21613712.",
+      "script (scratchpad) count of lines matching ^test(\"(QP|QM|QS)-id: in the three files -> 65, 23, 12; unique ids 65, 23, 12; the ids in the design tables | **ID** | equal the ids in the tests (both differences empty). grep -c '^\\s*test(' -> 65, 23, 12.",
+      "preload spy (outside the project) over assert.equal/strictEqual/deepEqual/deepStrictEqual/notEqual/notStrictEqual/notDeepEqual/notDeepStrictEqual run on each file: picker-page.test.js 65 pass, 5 call sites with a node operand (lines 245, 246, 247, 248, 272: QP-0c); picker-page-model.test.js 23 pass, 0; picker-page-static.test.js 12 pass, 0.",
+      "grep -nE '\\.skip\\(|\\.only\\(|\\.todo\\(|todo:|skip:|eslint-disable|\\|\\| true|TODO|FIXME|xtest|describe\\.skip' tools/test/picker-page*.js -> picker-page-helpers.js:83 (text key quiz_skip), picker-page-model.test.js:2027 (data field skip: null); no test is skipped.",
+      "npx eslint --max-warnings 0 test/picker-page*.js src/picker/public/app.js -> exit 0. npx prettier --check test/picker-page*.js -> clean (docs/design file is outside the prettier scope of tools/ and was not required).",
+      "grep -nE 'REQ-[0-9]|handoff|ORCH|decisions' tools/src/picker/public/*.js *.html *.css -> empty (0074 item 6). git status --short decisions -> empty (0073, 0074 not modified). find tools/src -newer handoffs/PAGE057-20261021-01/step-19-code-fixer.json -> empty.",
+      "Mutants on a copy under the scratchpad (cp of tools/src, tools/test, package.json, eslint.config.js), one at a time, copy restored after each, diff -r of the copy src against the project src: same. Baseline 100/100. Node.text returns '' -> 43 pass, 57 fail. F10 both lines removed -> QP-2e (99 pass, 1 fail). F10 clearMessage alone removed -> QP-2e (99/1). V31 draft guard removed -> QP-2e (99/1). X05 Skip not guarded while sending -> QP-7g (99/1). Z01 MAX_VALUE_LENGTH 32769 -> QM-3a (99/1). Z02 32767 -> QM-3a (99/1). W07 response.ok for status 200 -> QM-4a (99/1).",
+      "No full npm run check was run (16 GB RAM); only single test files. The project was not changed by this review (only this handoff)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "The stated 'F10 test is in QP-2e' is true: it kills the removal of both lines and of clearMessage alone. The variant 'only state.message = null removed' (F10b of step 20) I did not repeat; the step-20 report says it is killed through the language change in QP-2e (the range message came back in kk). Taken from the report, not measured by me."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Proposal for ORCH, no new record needed: the lesson of F3 (assert prints operands with customInspect off and depth 1000, so only non-enumerable fields keep a tree out of a message) is worth one line in docs/anti-patterns.md if it is not there yet (Q13). I did not check whether DOC-UPDATER has already recorded it."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

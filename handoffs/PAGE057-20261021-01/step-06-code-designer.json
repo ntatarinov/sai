@@ -1,0 +1,78 @@
+{
+  "handoff_id": "step06-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/PAGE057-20261021-01/step-06-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": ["REQ-057"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-057-picker-page.md",
+      "handoffs/PAGE057-20261021-01/step-05b-reviewer.json",
+      "decisions/0078-picker-page-conventions.md"
+    ],
+    "route": "ORCH -> CODE-DESIGNER (micro-update) -> TEST-DESIGNER",
+    "write_set": [
+      "docs/design/REQ-057-picker-page.md, handoffs/PAGE057-20261021-01/step-06-code-designer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T15:30:12Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "G3 written into D19, 5.2, 5.4, 4.1, 15 of the design; no code or tests touched; sections 16-17 untouched"
+      ]
+    }
+  },
+  "task": {
+    "description": "Micro-update of the project of the questionnaire page before the tests (finding G3 of the review, handoffs/PAGE057-20261021-01/step-05b-reviewer.json; the rules are already accepted in decisions/0078, items 11-14, and implemented in tools/src/picker/public/). Write them into docs/design/REQ-057-picker-page.md so that the tests QP-9 and QP-7c can be written from the project: (1) the fields of the question are closed (fieldset disabled) while the result request is in flight; (2) a press on a language button before \"Show the result\" and a press on a language on the result screen that is followed by \"Back\" or \"Start again\" are discarded (no request, no change; the language changes as usual afterwards); (3) \"Start again\" does not exist in the block of the questionnaire load failure (only \"Repeat\"); (4) the language is kept during the result request as stated in decisions/0078 item 11 (read items 11-14 and take the exact words). Put them into section 5.2 (L1, Q6, R2), decision D19 and the table of section 15, as the reviewer said. Also record in the project, as accepted differences: the lower limits of net.js (empty name, title, option and empty any_of are accepted by the page; the identifier template and the length 1-40 are not checked by the page — the server does) and the loss of focus while the fields are closed (focus returns to the button of the connection block on failure, to the heading of the result on success). Change nothing else; do not touch code or tests. Use the numbering and style of the file. In result say which sections you changed. No git checkout/reset/stash/clean, no commits. The text of the handoff and the project is in English (decisions/0080) except the existing Russian text of the file, which stays as it is.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T15:24:53Z",
+  "started_at": "2026-10-25T15:24:53Z",
+  "completed_at": "2026-10-25T15:27:27Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Micro-update of docs/design/REQ-057-picker-page.md for finding G3: the four rules of decisions/0078 items 11-12 (fields closed during the result request; discarded language presses before 'Show the result' and on the result screen followed by Back or Start again; no 'Start again' in the load-failure block; language kept during the result request) and the two accepted differences (lower limits of net.js not checked by the page; loss of focus while the fields are closed) are written into the project, so that QP-9 and QP-7c can be written from the text. Nothing else in the project, no code, no tests changed.",
+    "changes": [
+      "Section 2, D19: the row now holds the rules of 0078 items 11-12 in full (fields closed, language kept, the two discarded cases, the rejected variant).",
+      "Section 5.2, Q6: the snapshot of sent answers, ticket += 1, fieldset closed, the language of the request, fields open again on both outcomes.",
+      "Section 5.2, L1: condition points to L3; the repeat POST on the result screen only while the visitor is on that screen (L4).",
+      "Section 5.2, new rows L3 (press during the request or before 'Show the result') and L4 (press on the result screen followed by Back / Start again).",
+      "Section 5.2, R2: condition: blocks result and lang only; the load block has no 'Start again'. Paragraph after the table: fields closed, setBusy.",
+      "Section 5.4 (focus): accepted difference - loss of focus while the fields are closed; focus after the answer (button of the connection block on failure, heading of the result on success).",
+      "Section 4.1: new paragraph and table 'Принятые расхождения' (upper limits checked by the page; lower limits, id template and id length 1-40 not checked by the page, the server does); the header cell of the table of Questionnaire adjusted to point to it (stale text 'пределы длины текстов проверил сервер').",
+      "Section 8.2: the answers_invalid row says it applies only to blocks result and lang (consistency with R2).",
+      "Section 15: the row 'press of a language during the result request' extended; four new rows (late language answer before the result; language press on the result then Back/Start again; no 'Start again' in the load block; loss of focus)."
+    ],
+    "self_check": [
+      "Probe of the current behaviour outside the project: node script that mocks fetch and imports getQuestionnaire from tools/src/picker/public/net.js -> base ok; empty name ok; empty title ok; empty option label ok; empty any_of ok; id of 41 signs ok; id 'Bad Id!' ok; name of 61 signs server; any_of of 9 items server.",
+      "Read tools/src/picker/public/app.js and screens.js: send() takes the snapshot, ticket += 1, setBusy(refs, true); changeLanguage returns at 'state.sending' and drops on ticket change or screen != result; netBlock makes 'restart' only for kind != load.",
+      "cd tools && npm run handoffs-check -> 'файлов проверено 1130, нарушений 0, исключений использовано 114 из 114'; npm run traces -> 'файлов проверено 2005, следов 0, пропущено 59'; both exit 0 before close."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "The new text is in English (decisions/0080); the existing Russian text of the file is kept. Mixed sentences appear inside the D19 and L3/L4 cells; translation of the file is up to the owner's later request."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Two small consistency edits beyond the four named places: the header cell of the Questionnaire table in section 4.1 (it said that the length limits were checked by the server only, which 0078 item 13 contradicts) and the answers_invalid row of section 8.2. Sections 16-17 (the catalogue of tests, QP-7c, QP-9g/h) were not touched; TEST-DESIGNER takes the rules from D19, L3, L4, R2 and the rows of section 15."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "git status showed tools/src/picker/public/texts.js changed by another step (not mine); I did not read or touch it."
+      }
+    ],
+    "artifacts_out": ["docs/design/REQ-057-picker-page.md"]
+  }
+}

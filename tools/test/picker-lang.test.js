@@ -1605,10 +1605,11 @@ test("LG-10b: 500 variants of the /2 file with one broken text (a number, null, 
   }
 });
 
-test("LG-10c: the files of public/ have no address, no fetch, no request object, no socket and no random number (the words as written, comments count)", () => {
+test("LG-10c: the files of public/ have no address, no fetch (except the one in net.js), no request object, no socket and no random number (the words as written, comments count)", () => {
   const dir = path.join(PICKER, "public");
   const files = fs.readdirSync(dir).filter((f) => f.endsWith(".js"));
   assert.ok(files.includes("texts.js"));
+  assert.ok(files.includes("net.js"));
   const banned = [
     "http://",
     "https://",
@@ -1623,9 +1624,14 @@ test("LG-10c: the files of public/ have no address, no fetch, no request object,
   ];
   for (const file of files) {
     const text = fs.readFileSync(path.join(dir, file), "utf8");
-    for (const word of banned)
+    for (const word of banned) {
+      // the one right to the word: the call of the network in net.js, and only one
+      if (word === "fetch(" && file === "net.js") continue;
       assert.equal(text.includes(word), false, `${file}: ${word}`);
+    }
   }
+  const net = fs.readFileSync(path.join(dir, "net.js"), "utf8");
+  assert.equal(net.split("fetch(").length - 1, 1, "net.js: exactly one fetch(");
 });
 
 test("LG-10d: the new modules (lang-check.js, view.js, public/texts.js) hold no word of a clock, of a random number or of the environment - they are pure (the words as written, comments count)", () => {

@@ -1,0 +1,73 @@
+{
+  "handoff_id": "step24-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "24",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PAGE057-20261021-01/step-24-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-23-test-design-validator.json"
+    ],
+    "route": "TEST-DESIGNER",
+    "write_set": [
+      "tools/test/picker-page.test.js",
+      "docs/design/REQ-057-picker-page.md"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T19:29:46Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "src/ diff stat shows only app.js and texts.js from earlier steps; three page files run by ORCH: 100 pass, 0 fail",
+        "ORCH applied mutant R06 (onRestart: onStart) on my own copy: QP-1b fails, 64 of 65 pass; agent's single npm run check: 1998/1998, handoffs-check 0 violations",
+        "owner allowed exactly this one rework after the third FAIL; the other findings F2-F11 are not touched and go to the follow-up list; no fourth validator pass, the mutant confirmation by ORCH and the later RELEASE-VALIDATOR cover it"
+      ]
+    }
+  },
+  "task": {
+    "description": "One limited rework, allowed by the owner on 2026-10-26 after the third FAIL of the test design gate (decisions/0079 item 4; the owner allowed exactly this one change beyond the limit). Read finding F1 in the result of handoffs/PAGE057-20261021-01/step-23-test-design-validator.json and its probe P-R06 in its scratchpad folder.\n\nAdd ONE test case: the \"Start over\" button on the RESULT screen (design rule C3). Add it to QP-1b or QP-9j in tools/test/picker-page.test.js, or as one new test with the next free id if that is clearer (then update the counts in sections 16-17 of docs/design/REQ-057-picker-page.md). Walk to the result screen, press \"Start over\", and check with literal expected values: exactly one removeItem on the storage key; the key is gone; the first question is shown with nothing chosen; the next answer writes exactly one answer; a reload gives the card with the \"Take the survey\" button and no \"Continue\"; no request was sent by the button.\nMutant R06 (showResult hands onStart instead of onRestart to renderResult in app.js around line 465) must die: apply it on a copy outside the project and report the failing test. Confirm that without the mutant the three page files pass.\n\nDo ONLY this. Do not touch F2-F11 or anything else. Do not change code in src/. No git checkout/reset/stash/clean, no commits. 16 GB RAM computer: one run at a time; the full npm run check once at the end. Report numbers honestly. No machine paths and no other projects' names in the handoff text.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T19:24:50Z",
+  "started_at": "2026-10-25T19:24:50Z",
+  "completed_at": "2026-10-25T19:29:13Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "One limited rework (finding F1 of step 23, the owner allowed exactly this one change). Added the case 'Start over' on the temporary screen of the result (design rule C3) as a new part at the end of QP-1b in tools/test/picker-page.test.js (lines 352-408); no test added or removed, the counts stay 65 QP, 23 QM, 12 QS, 100 in all. The case walks to the result with the default server (fixed seed 57011, no skipped question), then presses 'Start over' and checks with literal values: exactly one removeItem of the key of the tenant (list equal to [{op: 'removeItem', key: 'sai-picker:uchet-pro'}], count 1); no new write (sets count unchanged); the key is gone; the keys of the other tenant and of a stranger are as they were; the button sent no request (requests and posts counts unchanged); the screen is 'question' with the first question and the three options all unchecked; the next answer ('wholesale') writes exactly one record (sets count +1) with answers {business: 'wholesale'}. In a second pass on a fresh page: the same path, 'Start over', reload -> screen 'card', the 'Take the survey' button with the text 'Пройти опрос', no 'Continue', no 'Start over', no notice, and the key is not in the storage. Table criterion -> test: design rule C3 (result screen) -> QP-1b, result-screen part; it catches the wrong function wired to the button (R06). Q8: the other tenant's key and a stranger key are checked unchanged in the new part. Q10: the button sends no request (checked). Q11 and R3: not touched by this change (no address, no photo). Nothing else was touched: F2-F11 are not addressed, as the task says.",
+    "changes": [
+      {
+        "file": "tools/test/picker-page.test.js",
+        "what": "F1: QP-1b gets the result-screen part (lines 352-408): helper toResult, the press of 'Start over' on the result screen with the checks above, and the reload pass. Formatted with prettier."
+      },
+      {
+        "file": "docs/design/REQ-057-picker-page.md",
+        "what": "F1: the row QP-1b of the catalogue got the sentence about the result screen; the mutant row R06 added after M82; new section 17.7 (rework, step 24) with the counts unchanged and the table of the mutant."
+      }
+    ],
+    "self_check": [
+      "Own run before the mutant: node --test --test-concurrency=1 on the three page files (picker-page, picker-page-model, picker-page-static): tests 100, pass 100, fail 0, cancelled 0, skipped 0, todo 0.",
+      "Mutant R06 (in app.js, showResult, the line 465 'onRestart,' replaced by 'onRestart: onStart,'), applied on a copy of src, test, package.json and eslint.config.js in the session scratch folder, outside the project; the working tree has no such change (diff -r of src against the copy shows only that one line). Same command on the copy: tests 100, pass 99, fail 1: QP-1b fails at the check of the removeItem list (actual [], expected [{op: 'removeItem', key: 'sai-picker:uchet-pro'}]), in the new part. One test killed. A first copy run without eslint.config.js also failed QS-12 only because the config file was missing in the copy; with the file copied the only failure is QP-1b.",
+      "cd tools && npm run check once at the end: exit 0; format:check clean; lint clean; 'traces: файлов проверено 2027, следов 0, пропущено 59'; 'handoffs-check: файлов проверено 1147, нарушений 0, исключений использовано 114 из 114'; tests 1998, pass 1998, fail 0, cancelled 0, skipped 0, todo 0 (114.9 s test time, 2:04 in all)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "No edit of src/ is needed: the new case is green on the real code and red on R06. F2-F11 of step 23 were not touched, by the task."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-page.test.js",
+      "docs/design/REQ-057-picker-page.md"
+    ]
+  }
+}

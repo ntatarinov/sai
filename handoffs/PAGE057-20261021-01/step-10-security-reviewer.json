@@ -1,0 +1,71 @@
+{
+  "handoff_id": "step10-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PAGE057-20261021-01/step-10-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-09-code-fixer.json"
+    ],
+    "route": "SECURITY-REVIEWER",
+    "write_set": [
+      "handoffs/PAGE057-20261021-01/step-10-security-reviewer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T16:40:01Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff closed COMPLETED, verdict PASS, only its own file changed (git status shows no new source change)",
+        "reviewer ran 3 page test files and 3 named tests green; findings: none new, step-05 Low items unchanged",
+        "step-07 text change had no own gate before; this run covers it"
+      ]
+    }
+  },
+  "task": {
+    "description": "Security gate after the one-line fix of step 09 (tools/src/picker/public/app.js, newVersion(): commitLanguage() now runs before makeHead()). Read the diff of that file against the tag base/PAGE057-20261021-01 plus the step-04 fix already gated, and the step-08 test files only to confirm they do not weaken a security check. Decide for each item Q7-Q11 and R3 whether it is met or not applicable, with your own check. Specifically: the address written by commitLanguage (history.replaceState) is the same as before the fix; the header built after the language is set receives only constants and the questionnaire name through textContent; nothing new reaches innerHTML; storage content unchanged. Read only; do not run the full npm run check (computer has 16 GB RAM); run single test files if needed.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T16:37:29Z",
+  "started_at": "2026-10-25T16:37:29Z",
+  "completed_at": "2026-10-25T16:39:36Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Gate after the one-line fix of step 09 (QP-9f2) and the text change of step 07, on top of the gate of step 05 (PASS) that already covered the step-04 fixes.\n\nChange captured (git diff HEAD, HEAD = state gated at step 05 plus later steps): tools/src/picker/public/app.js (1 line moved: in newVersion() commitLanguage() now runs before ui.head = makeHead()), tools/src/picker/public/texts.js (3 translation strings: card_changed kk, progress_label kk, net_lost_unsaved en - same keys and same placeholders {current} {total}), docs/design/REQ-057-picker-page.md (document), 7 files in tools/test (picker-lang, picker-server-faults/-helpers/-property/-units, picker-server, traces-runtime) and 5 new test files tools/test/picker-page*.js. The note: tools/src/picker/public/app.js is absent from the tag base/PAGE057-20261021-01 (it is a new file there), so a diff against the tag shows the whole file; I read it whole and compared it with HEAD, where only the swap differs. Other 11 files of public/ are byte-identical to HEAD (git status).\n\nMAP OF SURFACES. goes to the browser: app.js, texts.js (touched). comes from outside: app.js (the address query and fragment, the questionnaire name and languages from the server response, already checked by net.js, unchanged). customer data: app.js save() writes the key of the visitor's own storage (unchanged). Test files and the design document: no surface (they do not run in the product; tests checked below only for weakening). No file with writes files, holds a secret, or the server goes by itself.\n\nCHECKS ASKED BY ORCH. (1) The address: commitLanguage() is byte-identical to before (diff shows only the swap); it still builds location.pathname + '?' + params + location.hash; the swap does not change its input (state.lang = state.q.lang is set inside it, state.q is already the new body in newVersion). Probe: 5 hostile names of the new-version questionnaire (img onerror, script, __proto__, javascript:, bidi override) through a language change that brings another version: exactly one replaceState, url '/t/uchet-pro/?lang=kk' in all 5, state null, history length not grown. (2) The header built after the language: makeHead() passes only state.q.name (through setText = textContent / append of a string - dom.js, no markup), state.lang, state.q.languages (net.js rightLang + 1..3 unique + must include body.lang); the labels are LANGUAGE_NAMES (constants) and say('language_switcher_label') (constant); attributes only through setAttribute with a code that passed rightLang. In the probe the hostile name is shown as a text node in the page, no node was created from it. The order now sets aria-current on the button of the new language (probe: [null,true,null]). (3) innerHTML: none new; grep over public/ for innerHTML, outerHTML, insertAdjacent, document.write, createContextualFragment, eval, new Function, setTimeout/setInterval string, srcdoc, DOMParser, postMessage, window.open, XMLHttpRequest, on* attributes: no match; the only fetch( is net.js:34; localStorage only in store.js (getItem/setItem/removeItem with the key of the tenant). (4) Storage: save() unchanged and called in the same place at the same moment inside commitLanguage; writeSaved/readSaved/clearSaved and store.js are byte-identical to HEAD. In newVersion the stored value is as before: save() inside commitLanguage runs after state.answers = {} and state.current = null, as before the swap (the swap changed only the point at which makeHead runs relative to commitLanguage; commitLanguage never read ui.head).\n\nTEXTS (step 07). The three strings are plain constants in a frozen object, same keys, same placeholders ({current}, {total} in progress_label kk - the order of the two placeholders changed only inside the text); say() fills them with a function, so values stay text; they are shown through textContent. No markup, no address, no secret in them.\n\nTESTS (step 08). I read the diffs of the 7 changed old test files only to confirm no security check is weaker: LG-10c (public/ has no address, no request object, no socket, no random number) still bans every word in every file and now only lets the one fetch( in net.js and asserts exactly one fetch( there; the traces test NETWORK_FILES gains picker/public/net.js (stronger); the rest are renames stub.js -> main.js and the removal of the page_stub_notice key together with the removed placeholder page (SU-10 still checks 11 server keys and that the old key is gone; SU-11 now runs the real page). No assertion about Host, no-store, nosniff, 405, 404, tenant isolation or secrets was removed or loosened. The 5 new picker-page*.test.js files were not read line by line (they add tests only).\n\nITEMS. Q7 met: secret search over the changed files and public/ - the only match in public/ is the word 'token' in a comment of page.css:1 (colour token), none in app.js/texts.js; in the tests the matches are the word 'token'/'secret' in file-name and fixture strings of server tests (SF-6e2, SU-8, picker-server.test.js 762-844 - a test that a secret field does not leak), none is a secret. Nothing from state goes into logs or messages (no console in public/). Q8 met: the page touches only its own key sai-picker:<id> and two relative addresses under /t/<id>/; the swap does not change this; server files untouched. Q9 not applicable: no SQL/queries on this surface. Q10 met: the changed path (language change with another version) is inside changeLanguage(), which already handles failure of the request explicitly (langFailed), drops stale answers by ticket, and the single fetch has its 20 s timeout in net.js (unchanged); newVersion cannot throw on the hostile bodies of my probe. Q11 not applicable: the client sets no addresses and makes no external call; the one fetch uses the relative path of the page; redirects to outside are stopped by the CSP connect-src (finding from step 05, not changed). R2 not applicable (not Pixel Office; no pixel/events/hook in the changed files). R3 not applicable (decision 0033: no photos, no contacts).",
+    "findings": [
+      {
+        "id": "K1",
+        "place": "tools/src/picker/public/net.js (fetch redirect), screens.js/dom.js (dir=auto), store.js tenantIdOf; N1 of step 05 (no length limit of question/option ids)",
+        "item": "Q10 / Q7 (carried over)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The Low items F1, F3, F5 and N1 from step 05 are still as recorded (decision 0078 item 14 and the ISS-like record). Not changed by steps 07 and 09; the state is not worse. No new finding in this change.",
+        "fix": "As recorded in step 05; not needed for this change."
+      }
+    ],
+    "self_check": [
+      "Start and end: git ls-files -m | xargs shasum | shasum -> d87d7204749b57b110aa079c3949a1ce20735113 at the start and at the end (equal); sha1 app.js e8a41fa5f76896ffe4dfd7abe3f001319fde2392 and texts.js 30a2e6ceae0598937bfcc898135342002fbc87af at both ends. Other public/ files sha1: dom.js dc79bb3c, flow.js 380332b0, index.html 2bcf14c3, main.js b81767e5, net.js df69f01a, page.css 3f9bada3, result.js 62515e2c, rules.js 9ed587d1, say.js 07f830fc, screens.js d161c90b, store.js af19f815 (and git status: not modified against HEAD).",
+      "git diff HEAD -- tools/src/picker/public/app.js: the only hunk swaps 'ui.head = makeHead();' and 'commitLanguage();' in newVersion(); git diff HEAD -- texts.js: 3 strings (card_changed kk, progress_label kk, net_lost_unsaved en). git diff base/PAGE057-20261021-01 -- app.js shows a new file (the tag has no such file).",
+      "Search of markup receivers and code (grep -nE innerHTML|outerHTML|insertAdjacent|document.write|createContextualFragment|eval(|new Function|setTimeout(|setInterval(|srcdoc|.src =|.href =|setAttribute('on|DOMParser|postMessage|window.open|fetch(|localStorage|sessionStorage|XMLHttpRequest over public/*.js and index.html): only net.js:34 fetch( and store.js 85/125/136 localStorage get/set/remove.",
+      "Search of secrets (secret|token|api key|password|bearer|private key|sk-...|40+ base64 chars) over public/ and the changed files: one match page.css:1 'token' (colour token); in tests only the word in names/fixtures (SF-6e2, SU-8, picker-server.test.js 762/771/844).",
+      "Own probe (scratchpad probe.test.js, not in the project): 5 hostile names through a language change with another version: pass 5, fail 0; replaceState url '/t/uchet-pro/?lang=kk' in all 5, one call, aria-current [null,'true',null], the name is in the page text as text.",
+      "Single test files: node --test test/picker-page-static.test.js -> 12 pass 0 fail; picker-page.test.js -> 62 pass 0 fail 0 skipped (includes QP-9f2); picker-page-model.test.js -> 23 pass 0 fail; node --test --test-name-pattern='LG-10c|SU-11|SV-1f' on picker-lang, picker-server-units, picker-server -> 3 pass 0 fail. The full npm run check was not run (16 GB computer); the model of the document is not a real browser - I did not run Chrome this time; the swap changes no browser-only behaviour (no new receiver, same strings, same address), so a repeat of the Chrome probes of step 05 was not needed for this change."
+    ],
+    "issues": [
+      "Note for ORCH (not a finding): the change of step 07 (texts.js) came after the gate of step 05 and had no own security gate; it is covered here. The 5 new test files of step 08 were run but not read in full - they are tests, they change no product code.",
+      "Note for REVIEWER-type work: the result branch of changeLanguage() calls setHeadLanguage() by hand after commitLanguage() while newVersion() relies on makeHead(); both orders are correct now (also noted by CODE-FIXER)."
+    ],
+    "artifacts_out": []
+  }
+}

@@ -9,6 +9,7 @@ import { TOOLS, makeRepo } from "./fixtures/traces/helpers.js";
 const SRC = path.join(TOOLS, "src");
 const NETWORK_FILES = [
   "picker/server.js",
+  "picker/public/net.js",
   "pixel-office/hook.js",
   "pixel-office/main.js",
   "pixel-office/note.js",

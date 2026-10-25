@@ -383,7 +383,9 @@ export function start() {
         undefined,
       );
       state.draft = null;
+      state.message = null;
       clearField(refs);
+      clearMessage(refs);
       save();
     } else {
       const numberState =
@@ -513,6 +515,7 @@ export function start() {
     setHeadNet(ui.head, null);
     const outcome = await getQuestionnaire(lang);
     if (ticket !== state.ticket) return;
+    if (from === "result" && state.screen !== "result") return;
     if (outcome.kind !== "ok") {
       langFailed(lang, outcome);
       return;
@@ -567,8 +570,8 @@ export function start() {
     state.current = null;
     state.notice = hadAny;
     state.screen = "card";
-    ui.head = makeHead();
     commitLanguage();
+    ui.head = makeHead();
     showCard(false);
     focusNode(ui.head.langs[state.lang]);
   }

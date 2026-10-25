@@ -307,7 +307,7 @@ test("SV-1f: every file of public/ is served at /assets/<name> - 200, the type o
   assert.ok(
     names.includes("index.html") &&
       names.includes("texts.js") &&
-      names.includes("stub.js"),
+      names.includes("main.js"),
   );
   for (const name of names) {
     assert.match(name, /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/u);
@@ -1618,7 +1618,7 @@ test("SV-7a: a request with a wrong Host (a name, no port, another port, capital
     ["GET", "/t/uchet-pro/"],
     ["GET", "/t/uchet-pro/api/questionnaire"],
     ["GET", "/t/net-takogo/"],
-    ["GET", "/assets/stub.js"],
+    ["GET", "/assets/main.js"],
     [
       "POST",
       "/t/uchet-pro/api/result",
@@ -1868,7 +1868,7 @@ test("SV-7e: all 14 kinds of answer carry Cache-Control no-store, nosniff, no-re
   const answers = JSON.stringify({ answers: goodAnswers("uchet-pro") });
   const got = new Map();
   got.set("page", await request(port, { path: "/t/uchet-pro/" }));
-  got.set("asset", await request(port, { path: "/assets/stub.js" }));
+  got.set("asset", await request(port, { path: "/assets/main.js" }));
   got.set(
     "questionnaire",
     await request(port, { path: "/t/uchet-pro/api/questionnaire" }),

@@ -1,0 +1,74 @@
+{
+  "handoff_id": "step19-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "19",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PAGE057-20261021-01/step-19-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-18-test-design-validator.json"
+    ],
+    "route": "CODE-FIXER",
+    "write_set": [
+      "tools/src/picker/public/app.js"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T18:18:13Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git diff of app.js shows two lines added in the Skip branch of advance(): state.message = null and clearMessage(refs); no test changed",
+        "fixer's probe fails before and passes after; single npm run check: 1997 tests, 1997 pass, 0 fail",
+        "no test pins F10 yet: step 20 adds it; security and review gates after step 20"
+      ]
+    }
+  },
+  "task": {
+    "description": "Fix finding F10 of the test design validation (step 18). In tools/src/picker/public/app.js, advance(skipped) (Skip branch, around lines 373-387): on the last optional number question, the visitor types '11' (out of range), presses the main button (an error message and aria-invalid appear), then presses Skip with the net refused. Skip clears the field but the old range message and aria-invalid stay on the field. Skip must also clear the validation message state (state.message or its equivalent) and the aria-invalid mark of the question, the same way a successful move clears them. Find how a successful \"Next\" clears them and reuse that mechanism; add no new state and no new text. Do not change tests (the next step writes the test). Confirm with a small probe in the scratchpad using the helpers of tools/test/picker-page-helpers.js that it fails before and passes after.\n\nRules: change only tools/src/picker/public/app.js. No git checkout/reset/stash/clean, no commits. Run npm run check once at the end from tools/ (16 GB RAM computer, nothing in parallel). Report numbers honestly. No machine paths and no other projects' names in the handoff text.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T18:13:52Z",
+  "started_at": "2026-10-25T18:13:52Z",
+  "completed_at": "2026-10-25T18:17:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "F10 closed. The Skip branch of advance() in tools/src/picker/public/app.js now clears the validation message state and the message node with its aria-invalid and aria-describedby mark, the same two calls that onAnswer uses (state.message = null; clearMessage(refs)). Nothing else changed: no new state, no new text, no test touched.",
+    "changes": [
+      {
+        "item": "F10 (step 18)",
+        "file": "tools/src/picker/public/app.js",
+        "place": "advance(skipped), Skip branch, lines 385-389 (after the edit)",
+        "what": "added `state.message = null;` after `state.draft = null;` and `clearMessage(refs);` after `clearField(refs);`. clearMessage (already imported from screens.js, used in onAnswer) empties #q-error, removes q-error from aria-describedby and removes aria-invalid from the number input. A successful move clears the same state in showQuestion (state.message = null) and rebuilds the screen; Skip with a refused net stays on the screen, so it needs the explicit clear"
+      }
+    ],
+    "self_check": [
+      "Before the edit (probe in the session scratch folder, outside the project, built on loadPage/customSite/number/single and the page methods of tools/test/picker-page-helpers.js; site: single 'first' + optional number 1..10 as the last question; start, answer 'x', Next, type '11', press the main button, then net.on(POST, 'network'), press Skip). After the main button: {\"msg\":\"Введите целое число от 1 до 10.\",\"invalid\":\"true\"}. After Skip: {\"msg\":\"Введите целое число от 1 до 10.\",\"invalid\":\"true\",\"value\":\"\",\"screen\":\"question\",\"posts\":1,\"describedby\":\"q-hint q-error\"}. Probe result: AssertionError, actual 'Введите целое число от 1 до 10.', expected '' (pass 0, fail 1).",
+      "After the edit, same probe: after Skip {\"msg\":\"\",\"invalid\":null,\"value\":\"\",\"screen\":\"question\",\"posts\":1,\"describedby\":\"q-hint\"}; the probe passes (pass 1, fail 0). The empty field, the question screen and the one refused request are the same as before.",
+      "cd tools && npm run check (once, at the end, nothing in parallel), exit 0: prettier --check: 'All matched files use Prettier code style!'; eslint . --max-warnings 0: no output; traces and handoffs-check: ran, exit 0; node tests: # tests 1997, # pass 1997, # fail 0, # cancelled 0, # skipped 0, # todo 0, duration_ms 116181."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOT_PINNED",
+        "text": "F10 is not pinned by a test yet. No existing test fails because of this change (full check is green, 1997 of 1997). The test is the work of the next step (TEST-DESIGNER): in QP-2e or next to the optional number block of QP-1x (picker-page.test.js, around the 'optional-number' site), expected behaviour: last optional number question, type '11', main button (message and aria-invalid shown), POST refused with 'network', Skip: the field is empty, the q-error text is empty, aria-invalid is absent, aria-describedby no longer names q-error, the block of the net of kind result is shown, the storage holds no answer for the question."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Places of the same kind checked: the other branches that leave a question without a successful move are onAnswer (already clears) and redraw (re-shows the message only if state.message is not null). The 'required' message set in send() is cleared by go() -> showQuestion. No other place of the kind was found in app.js. The working tree of app.js holds earlier uncommitted edits of this run (steps 4-12); this step added only the two lines named above."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/picker/public/app.js"
+    ]
+  }
+}

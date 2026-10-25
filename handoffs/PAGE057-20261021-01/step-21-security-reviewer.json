@@ -1,0 +1,84 @@
+{
+  "handoff_id": "step21-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "21",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PAGE057-20261021-01/step-21-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-19-code-fixer.json",
+      "handoffs/PAGE057-20261021-01/step-20-test-designer.json"
+    ],
+    "route": "SECURITY-REVIEWER",
+    "write_set": [
+      "handoffs/PAGE057-20261021-01/step-21-security-reviewer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T18:43:11Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED, verdict PASS; only own file changed; node-field hiding does not blind security assertions (mutant innerHTML still killed by QS-3)",
+        "Low K1 carried, new Low K2: no test asserts tenant text stays out of attribute names (optional hostile-name walk)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Security gate for steps 19 and 20: the F10 change in tools/src/picker/public/app.js advance() Skip branch (state.message = null; clearMessage(refs)), and the test-side changes (tools/test/picker-page-dom.js now hides node fields from enumeration and has a custom inspect; new cases in picker-page*.test.js). Check Q7-Q11 and R3 with your own check: the page change reaches the document only through textContent / attributes already used, writes nothing new to storage, address or network; the document model change cannot hide a real security assertion (the tests that check no markup receivers, no innerHTML, textContent only still see what they must; the non-enumerable fields do not blind QS-static checks or the hostile-name tests). Read only; no full npm run check (16 GB RAM computer); single test files only.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T18:38:18Z",
+  "started_at": "2026-10-25T18:38:18Z",
+  "completed_at": "2026-10-25T18:40:49Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Gate after step 19 (F10: two lines in the Skip branch of advance()) and step 20 (test side: picker-page-dom.js hides node fields from enumeration and has a short custom inspect; new cases in picker-page.test.js and picker-page-model.test.js; design text).\n\nCHANGE CAPTURED. git diff HEAD of tools/src/picker/public/: app.js (5 lines changed in all: step 09 swap, step 12 guard, and the two lines of step 19) and texts.js (3 translation strings, gated at step 10). Step 19 adds in the Skip branch of advance() (app.js 385-389) `state.message = null;` and `clearMessage(refs);`, the same two calls as onAnswer (app.js 338-339). clearMessage (screens.js 356-361) does setText(refs.error, ''), describe(refs, false) (setAttribute/removeAttribute of aria-describedby with fixed ids) and removeAttribute('aria-invalid'). Hashes of the 11 files of src/picker/public, the 5 files test/picker-page*.js and docs/design/REQ-057-picker-page.md were taken at the start and at the end: the same.\n\nMAP OF SURFACES. goes to the browser: tools/src/picker/public/app.js (touched; the two lines write to the document only through setText -> textContent with the constant empty string, and removeAttribute / setAttribute with fixed names and fixed ids; no text from outside), texts.js (not changed since step 10). comes from outside, writes files, holds a secret, the server goes by itself, customer data (storage key of the visitor and the tenant paths), photos: not touched by the two lines (no request, no storage write beyond the existing save() that follows, no address change). tools/test/picker-page-dom.js, picker-page-helpers.js, picker-page.test.js, picker-page-model.test.js, picker-page-static.test.js and docs/design/REQ-057-picker-page.md: no surface (tests, a test model and a document; they are not run by the product); read only for weakening of the security assertions (see the third point below).\n\nITEMS. Q7 applicable and met: search for secret|token|api key|password|bearer|authorization|private key|sk-|ghp_|AKIA over src/picker/public/*.js and test/picker-page*.js: matches only 'tokens' of CSS design tokens and of the selector parser of the model (picker-page-dom.js 382-389) and of QS-8: names, not secrets; the page holds no secret and the change adds no string. Q8 applicable and met (not touched): the page stays bound to one tenant by the relative paths and the single storage key; the change adds no path to data. Q9 not applicable: no query language on this surface; no raw query. Q10 applicable and met: the change adds no call; the one fetch( (net.js:34) keeps AbortSignal.timeout; Skip with a refused net still shows the block of kind result and does not break other requests (QP-2e). Q11 not applicable: the page takes no address from the visitor; fetch( occurs once with constant relative paths; the change adds no request. R3 not applicable: no photos of people (decision 0033). R2 not applicable: not Pixel Office. Two checks beyond the items: 'writes files' - no row touched; 'goes to the browser' - grep innerHTML|outerHTML|insertAdjacentHTML|document.write|eval(|new Function|srcdoc|.href =|.src =|location.(href|assign|replace)|fetch(|localStorage|replaceState|pushState|XMLHttpRequest|WebSocket|sendBeacon|import( over src/picker/public/*.js: only replaceState app.js:482 (commitLanguage), fetch( net.js:34, localStorage get/set/remove in store.js:85/125/136, the same sinks as at step 14 (the line of replaceState moved by +2 because of the two new lines).\n\nTHE THREE POINTS OF THE TASK. (1) The page change reaches the document only through textContent and attributes already used: the two lines are the same two calls that onAnswer already makes; no new sink, no new text, no new state; the storage, the address and the network are not touched by them (save() after them is the one that was already in the branch). (2) The tests that carry security assertions still see what they must. The change of the model is only hide(): Object.defineProperty(enumerable:false) on own fields after construction; the proxy of a node reads and writes target[prop] (not enumeration), the surface lists READ_OK / WRITE_OK are unchanged, and the model has no ownKeys trap. I searched the four picker-page files for enumeration of a node (Object.keys/entries/values/assign/getOwnPropertyNames, for-in, spread, JSON.stringify, structuredClone): no use on a node or the document (the hits are on answers, bodies, TEXTS, call.init, and hide() itself). I wrapped assert.equal/strictEqual/deepEqual/deepStrictEqual/notEqual/notStrictEqual/notDeepEqual/notDeepStrictEqual (preload in the scratch folder) and ran the three page files: the only calls with a node as operand are the deliberate ones inside QP-0c (picker-page.test.js 245-248 and 272); no test compares two nodes with deepEqual, which with hidden fields would pass for any two nodes with the same tag. Own mutants on a copy outside the project: A - setText writes node.innerHTML = text: QS-3 fails and 62 of 65 page tests fail by name (QP-0c, QP-1a ...: the model throws TypeError, the markup receivers are still caught); control without a mutant: 12/12 static and 65/65 page. (3) The text of the tests: static QS-3 (the word list with innerHTML, insertAdjacentHTML, outerHTML, document.write, eval(, new Function, import(, XMLHttpRequest ...) is in the file and passes; QM-6a (markup in a text is no element) passes; QP-0a pins the markup receivers of the model.\n\nRUNS (single files, no full npm run check): node --test test/picker-page-static.test.js: tests 12, pass 12, fail 0; test/picker-page-model.test.js: tests 23, pass 23, fail 0; test/picker-page.test.js: tests 65, pass 65, fail 0. Probes: 2 mutants on a copy (A killed, D below survived), 1 control run, 1 assert-wrapping run over 100 tests.\n\nCODE DID NOT CHANGE during the check: sha256 of src/picker/public/*.js (11 files), test/picker-page*.js (5 files) and docs/design/REQ-057-picker-page.md before and after are the same (diff of the two lists is empty); git status of the project outside handoffs is the same.",
+    "findings": [
+      {
+        "id": "K1",
+        "place": "tools/src/picker/public/net.js:34 (fetch, redirect mode), carried over",
+        "item": "Q10 / Q11 (carried over from steps 05, 10, 14)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The Low item recorded at steps 05 and 10 (decision 0078 item 14) is unchanged: net.js is identical to HEAD and the change of steps 19-20 does not touch it. No new finding in this change.",
+        "fix": "As recorded in step 05; not part of this change."
+      },
+      {
+        "id": "K2",
+        "place": "tools/test/picker-page*.js (no test for it)",
+        "item": "goes to the browser (text as text); not a blocking finding",
+        "severity": "Low",
+        "blocking": false,
+        "what": "My own mutant D on a copy (dom.js el(): every string child also set as the attribute onmouseover) survived all 12 static and 65 page tests: no page test asserts that text of a tenant or of the server stays out of attributes. It is not caused by steps 19-20 (the model change does not hide it) and the page code is safe by reading: every attribute name in screens.js/app.js/result.js is a constant, the only data-driven attribute values are option.id (value) and the numeric/aria texts; nothing executes from an attribute value of those names.",
+        "fix": "Optional, for TEST-DESIGNER if the owner wants it: in a page test with hostile names (markup, quotes) assert that no attribute name outside the known set exists on any node (walk all nodes and compare the attribute names to a list)."
+      }
+    ],
+    "self_check": [
+      "cd sai && shasum -a 256 tools/src/picker/public/*.js tools/test/picker-page*.js docs/design/REQ-057-picker-page.md before and after: lists identical (app.js cbc59a5b63470b50..., picker-page-dom.js fc33b9d8182acf5..., picker-page.test.js fcfffeb2a828f42..., picker-page-model.test.js b1e00c618528e11..., picker-page-static.test.js 71995275bc439188..., design e.g. 1d04530728d9b81f...).",
+      "git diff --stat HEAD -- tools/src/picker/public: app.js 5 lines changed (+4/-1 shown as 5), texts.js 6 lines (3/3); net.js, store.js, screens.js, dom.js, flow.js, rules.js, result.js, say.js, main.js not modified.",
+      "grep -nE 'innerHTML|outerHTML|insertAdjacentHTML|document\\.write|eval\\(|new Function|srcdoc|\\.href *=|\\.src *=|location\\.(href|assign|replace)|setAttribute\\(.on|fetch\\(|localStorage|sessionStorage|replaceState|pushState|XMLHttpRequest|WebSocket|sendBeacon|import\\(' src/picker/public/*.js: app.js:482 replaceState; net.js:34 fetch(; store.js:85,125,136 localStorage; nothing else.",
+      "grep -niE 'secret|token|api.?key|password|bearer|authorization|private key|sk-|ghp_|AKIA' src/picker/public/*.js test/picker-page*.js: no match in src/picker/public; test: tokens of CSS / selector parser only (picker-page-dom.js 382-389, picker-page-static.test.js 429-465).",
+      "grep of enumeration of nodes (Object.keys|entries|values|assign|getOwnPropertyNames, for-in, spread, JSON.stringify, structuredClone) over test/picker-page*.js: no use on a node or the document.",
+      "assert-wrapping preload (scratch folder) over the three files: node operands only in picker-page.test.js 245, 246, 247, 248 (x3 each, QP-0c) and 272 (QP-0c); everything else clean.",
+      "node --test test/picker-page-static.test.js: # tests 12 # pass 12 # fail 0; test/picker-page-model.test.js: # tests 23 # pass 23 # fail 0; test/picker-page.test.js: # tests 65 # pass 65 # fail 0.",
+      "Mutant A on a copy outside the project (setText -> node.innerHTML = text): static pass 11 fail 1 (QS-3); page: QP-0c, QP-1a ... fail by name (TypeError from the model surface). Mutant D (onmouseover attribute from a text): survived (K2).",
+      "No git checkout/reset/stash/clean, no commit, no full npm run check; only single test files."
+    ],
+    "issues": [
+      "Note for REVIEWER (not a finding): the test model now hides all fields except tag from enumeration by hide() after construction; any future helper that needs to list fields of a node must read them by name. QP-0c pins the short messages.",
+      "Note: tools/src/picker/public/app.js is absent from the tag base/PAGE057-20261021-01, so the comparison was made against HEAD and against the handoffs of steps 14, 19 and 20, as at steps 10 and 14.",
+      "AP-018: the task text names no expected verdict; the verdict is derived from the checks above."
+    ],
+    "artifacts_out": []
+  }
+}

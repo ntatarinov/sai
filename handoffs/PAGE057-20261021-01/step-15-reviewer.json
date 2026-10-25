@@ -1,0 +1,76 @@
+{
+  "handoff_id": "step15-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "15",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PAGE057-20261021-01/step-15-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-12-code-fixer.json",
+      "handoffs/PAGE057-20261021-01/step-13-test-designer.json"
+    ],
+    "route": "REVIEWER",
+    "write_set": [
+      "handoffs/PAGE057-20261021-01/step-15-reviewer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T17:00:20Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED, verdict PASS; two Low notes: N1 redundant check at app.js:522 (cleanup later), N2 focus not pinned in QP-9k/QP-9l (safe by position)",
+        "mutants on copies: full removal kills both tests, partial guards kill one each; counts 64/23/12 match the design tables"
+      ]
+    }
+  },
+  "task": {
+    "description": "Review gate for the guard added in step 12 (app.js changeLanguage(), line after the stale-ticket check) and the tests QP-9k, QP-9l and the catalogue edit of docs/design/REQ-057-picker-page.md (step 13). Check: is this the right place for the guard and does it match decisions/0078 item 11 and rule L4; is the now redundant check inside the result branch harmless (note only); do QP-9k and QP-9l have independent oracles and check unchanged state, would they fail on the mutant without the guard (re-run the mutant on a copy outside the project); counts in sections 16-17 equal the tests that exist (count them yourself); no weakening of the quality bar; decisions 0073/0074 intact. Read only; no full npm run check (16 GB RAM computer); single test files only.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T16:56:39Z",
+  "started_at": "2026-10-25T16:56:39Z",
+  "completed_at": "2026-10-25T16:59:50Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Q1 (cause): the guard 'if (from === \"result\" && state.screen !== \"result\") return;' stands in tools/src/picker/public/app.js:516 right after the stale-ticket check and before both late paths (langFailed, newVersion); nothing is swallowed or hidden, no new state or text. It is the right place: the guard that existed stood only in the same-version branch (after postResult), so the two early branches were open. A change begun on another screen is not affected (from !== \"result\"); a return to the result screen through send() bumps the ticket (app.js:426), so the ticket check drops that old change. Q2 (record): matches decisions/0078 item 11 ('a change begun on the result screen is dropped if the visitor left the screen') and design rule L4; the comment above changeLanguage is still true; decisions/0073 and 0074 are untouched (no diff against the base tag), no REQ/decisions words in public/ comments (QS-6 green). The design text says in L1 and L4 that leaving the screen wins over a new version and over a failure, which is what the code does. Q3 (extra work): step 12 added one line (the swap of makeHead/commitLanguage in newVersion is the earlier step 09); step 13 touched only picker-page.test.js and the design doc; helpers file and src/ not changed. Q4 (bar): grep for skip/todo/only/eslint-disable/|| true over app.js and picker-page*.js finds nothing; no test removed (tests 64/23/12 pass, skipped 0, todo 0). Q5: idioms as in the neighbouring code; AP-014 compared: the other places of the same kind are the ticket check and the postResult guard, both consistent; the old inner check at app.js:522 is now redundant and harmless (note only, no await between it and the new guard). Tests: QP-9k and QP-9l have independent oracles (values taken from the page after the visitor left and before the late answer, literal 'ru' for the language, literal 0 blocks, a fixed foreign version string; nothing imported from the page code), check the unchanged state (screen, question, language, address search and hash, replaceState count, document title, storage content, set and remove counts, number of GET and POST, no notice, no net block anywhere and none in the header slot, aria-current of all buttons), try both exits (Back, Start over) and both failures (500, network), and then check that the next press works. Mutants on copies outside the project (own run): remove the guard line -> 62 pass, 2 fail (QP-9k expected 'question' actual 'card'; QP-9l expected 0 actual 1); guard only before the failure branch (newVersion open) -> only QP-9k fails; guard only inside the failure branch (newVersion protected, failure open) -> only QP-9l fails. So each test catches its own path and does not depend on the other. QP-9j (same version) stays green on the mutant, as before. Counts: I counted test( ids by script: picker-page.test.js 64 QP, picker-page-model.test.js 23 QM, picker-page-static.test.js 12 QS, no duplicates; the id sets equal the ids in the section 17.1-17.3 tables exactly (no missing, no extra); section 17.4 lists the 14 added ids and the two deviations; QP-11e occurs only in the sentence saying no such test exists; section 16 ranges (QP-9a..9l, QP-11a..11d) agree. For TEST-DESIGNER/TEST-RUNNER: nothing more is required for this guard; the design says the focus is not taken back by the dropped change, and QP-9j pins it for the same-version path while QP-9k/9l do not assert focus (see N2).",
+    "findings": [
+      {
+        "id": "N1",
+        "place": "tools/src/picker/public/app.js:522",
+        "severity": "Low",
+        "blocking": false,
+        "what": "'if (state.screen !== \"result\") return;' at the start of the 'from === \"result\"' branch is now redundant: the new guard at :516 runs earlier and nothing awaits between them. Harmless, no behaviour change.",
+        "fix": "Optional cleanup in a later job: remove :522. Not part of this step."
+      },
+      {
+        "id": "N2",
+        "place": "tools/test/picker-page.test.js:2475-2515 (assertLeftAlone), design 5.2 L4 focus cell",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The design says the focus is not taken back by the dropped change; QP-9j checks focus for the same-version path, but QP-9k and QP-9l do not check focus after the late answer. The guard returns before langFailed (which calls focusNode on the block button) and before newVersion (focusNode on the header), so the focus is safe by position, but it is not pinned by these two tests.",
+        "fix": "Optional: record page.active before the late answer in leaveDuringChange and assert it is the same in assertLeftAlone; the mutant already fails for other reasons, so this only tightens the check."
+      }
+    ],
+    "self_check": [
+      "node --test test/picker-page.test.js (real tree): tests 64, pass 64, fail 0, skipped 0, todo 0. Same for picker-page-model.test.js: 23/23, picker-page-static.test.js: 12/12. Full npm run check not run (16 GB RAM computer).",
+      "mutant on a copy in the session scratch folder (src, test, package.json copied; project not touched): guard line deleted -> '# tests 64 # pass 62 # fail 2': not ok 59 QP-9k (expected 'question', actual 'card'), not ok 60 QP-9l (expected 0, actual 1). Partial mutant A (guard after the failure branch) -> only QP-9l fails (63 pass, 1 fail). Partial mutant B (guard only inside the failure branch) -> only QP-9k fails (63 pass, 1 fail).",
+      "script counting test( ids vs. the design tables: QP 64 / 64 unique / 64 in doc, QM 23/23/23, QS 12/12/12, differences both ways: [] []. Six QM-1a..QM-1f present, as section 17 says.",
+      "grep -nE \"\\.skip\\(|\\.todo|todo|eslint-disable|\\|\\| true|only\\(\" test/picker-page*.js src/picker/public/app.js: no output (no erosion).",
+      "git diff base/PAGE057-20261021-01 -- decisions/0073* decisions/0074*: empty. git diff of app.js against HEAD: the step 09 swap in newVersion and the one guard line of step 12 only.",
+      "npx eslint --max-warnings 0 src/picker/public/app.js test/picker-page.test.js: no output (clean). npx prettier --check on app.js, picker-page.test.js, picker-page-helpers.js: clean; the design .md is not in the scope of format:check (tools/ only; 46 design docs fail the same way, nothing new).",
+      "No project file changed by this review; only this handoff."
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "handoff_id": "step20-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "20",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/PAGE057-20261021-01/step-20-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-18-test-design-validator.json",
+      "handoffs/PAGE057-20261021-01/step-19-code-fixer.json"
+    ],
+    "route": "TEST-DESIGNER",
+    "write_set": [
+      "tools/test/picker-page.test.js",
+      "tools/test/picker-page-helpers.js",
+      "tools/test/picker-page-dom.js",
+      "tools/test/picker-page-model.test.js",
+      "tools/test/picker-page-static.test.js",
+      "docs/design/REQ-057-picker-page.md"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T18:38:18Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "src/ diff stat shows only app.js and texts.js (steps 07, 09, 12, 19), nothing from step 20; ORCH ran the three page test files: 100 pass, 0 fail, peak memory 256 MB",
+        "agent's single npm run check: 1998 tests, 1998 pass, 0 fail; 27 mutants applied, 26 killed, 1 equivalent (D18a); V12 now fails by name in 0.3 s at 65 MB instead of 32 s and 6.7 GB",
+        "handoffs-check 0 violations; gates security and review next, then validator pass 3 (last)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Rework after the second FAIL of TEST-DESIGN-VALIDATOR (step 18, gate pass 2; the third pass is the last). Read the step 18 handoff result completely, and the step 19 handoff. Close ALL its test findings F1-F9 and add the test for F10, in tools/test/picker-page.test.js (add cases to existing tests where sensible; if a new test is clearer, take the next free ids and update the counts and tables of sections 16-17 and the mutant table in 17.5 of docs/design/REQ-057-picker-page.md):\nF3 first (it also eats memory): assertions at picker-page.test.js lines ~2748 and ~2791 compare a document-model node with null using assert.equal; on failure the message prints the node tree and one test took 6.7 GB. Find EVERY such assertion in all picker-page*.test.js files (any assert.equal, strictEqual, deepEqual, notEqual with a node or a node list as an operand) and compare booleans or short strings instead. In addition make the document model in tools/test/picker-page-dom.js safe: give nodes a short custom inspect (util.inspect.custom) printing only tag, id and class so no failure message can ever print the tree, and a test that pins this. Then run the mutant V12 (see step 18) alone on a copy and confirm QP-9k fails by name in under a second without large memory.\nF1: the hasSaved position clause (app.js ~116-123 and the k > 0 check ~190-194): first question optional, press Next with no answer, reload — Continue must be offered and open question 2 (mutants V04, V05).\nF2: Skip and Back pressed while the result request is open must do nothing (QP-7g) (mutants X05, X06).\nF4: the draft is cleared on Skip (a skipped out-of-range number must not come back after a language change) (V31).\nF5: the net block is removed while \"Try again\" is in flight (V28, X03, X13; QP-7b, QP-7f).\nF6: a stale message is not redrawn after a language change (Y14, Y20).\nF7: focus after a language change on the result screen (T12a), and in newVersion the notice rule uses the first question of the OLD file (V11).\nF8: response.ok versus status 200 in net.js, and the 32768 limit on the stored value in store.js (W07, Z01, Z02) — pin the limit at N and N+1.\nF9: both draft-leak guards removed together must be detected (D18_19).\nF10: on the last optional number question type 11, press the main button, make the POST fail, press Skip: field empty, q-error text empty, aria-invalid absent, aria-describedby without q-error, net block of kind result shown, storage holds no answer for that question.\nOptional hardening for N35: also a value-based oracle (overwrite the stored place, press Back from the result, expect the last question stored again).\nThen apply on copies outside the project, one at a time, ALL mutants named above (V04, V05, X05, X06, V12, V31, V28, X03, X13, Y14, Y20, T12a, V11, W07, Z01, Z02, D18_19, N35, and F10 as removing the two added lines) and report which test kills each; they are described in the step 18 handoff; recreate them from there. For the 15 survivors the validator judged equivalent, do nothing. Do not change code in src/. If a new test shows a real page defect, leave it red and report it. No git checkout/reset/stash/clean, no commits. The computer has 16 GB RAM: one run at a time; the full npm run check once at the end. Report honestly with numbers. No machine paths and no other projects' names in the handoff text.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T18:18:13Z",
+  "started_at": "2026-10-25T18:18:13Z",
+  "completed_at": "2026-10-25T18:37:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "All test findings F1-F9 of step 18 are closed, F10 is pinned, the optional value oracle for N35 is added, and the dangerous assertions of F3 are gone. The page code in src/ was not touched (the hash of the six-file set of tools/src/picker/public/*.js is the same before and after: ac0c31f3...). One test was added, QP-0c; everything else is new cases inside existing tests, so the counts are now 65 QP, 23 QM, 12 QS, 100 in all (tests of the whole check: 1998, was 1997). Every new case is green on the current code and red on its mutant.\n\nPer finding. F3: (a) the two assertions that compared a node with null (QP-9k and assertLeftAlone) now compare the count of the notice elements; a search of all four picker-page files (static scan of every assert.equal/strictEqual/deepEqual/notEqual/deepStrictEqual call and a run of the three files with every assert method wrapped to report a node, a text or the document as an operand, in the first two operand places) found no other place; the only node operands met are in assert.ok, which prints the source text and not the value. (b) The model had a custom inspection already, but assert prints operands with custom inspection OFF and depth 1000, so it never helped. picker-page-dom.js now makes every field of a node (except tag), of a text and of the document non-enumerable, and the custom inspection prints tag, id and classes (<div#x.a.b>). QP-0c pins it: the inspection strings, and the message of a failed equal/strictEqual/deepEqual/notEqual on a node, the node as the page sees it, a text and the document is under 600 signs, holds no text of the page and names no field that leads to the tree. (c) V12 alone: QP-9k fails by name in 0.3 s with 65 MB (before: 32 s and 6.7 GB). With the OLD node-versus-null assertions put back on a copy, the hardened model also makes V12 fail by name in 0.2 s and 65 MB. F1: QP-4a (first question optional, Next with no answer, reload: Continue offered, opens question 2, Take the survey absent) and QP-1c (a stored place that is no question of the file, one of 64 signs, and a hidden question, with no answers: no Continue). F2: QP-7g (optional last question with an answer, POST held, Skip, Back, Skip: question, chosen answer, storage snapshot, write and erase counts and the request count unchanged, the fieldset still shut; then the answer comes, the result opens, the stored and the sent answers agree). F4: QP-2e (type 11, Skip with the net refused, change of language: field empty). F5: QP-7b and QP-7f (hold the retry: no block in flight, one block again after a second failure; the case a failed change followed by a failed result leaves one block, in the slot under the buttons, none under the header). F6: QP-9d (a refused Next then a corrected answer then a language change: no message; refused Next on a number, Back to the earlier question, language change: no message, no aria-describedby; the required message and Back the same). F7: QP-9h (focus on the pressed language button after the result is drawn again, also after Try again), QP-9f (the other version renames the first question: a visitor on the old first question with no answers sees no notice and the stored value is rewritten without one; a visitor who moved on does get the notice). F8: QM-4a (201 with a right body, 204 with no body, 299 and a 201 result: outcome server with the real status), QM-3a (values of exactly 32767, 32768 and 32769 signs: the first two are read, the third is not; pinned at N and N+1). F9: QP-2e (two number questions: text outside the limits on the second field, Back to the first, the first shows its own answer '5'; Next again, the second field is empty). F10: QP-2e (last optional number question, 11, main button: message and aria-invalid and q-error in aria-describedby; POST fails, Skip: field empty, q-error text empty, aria-invalid absent, aria-describedby without q-error, net block of kind result, one request went, the storage holds no answer for the question, Try again would send the body without it). N35 value oracle: QP-2d overwrites the stored place before Back from the result and expects the last question stored again.\n\nTwo routes of the step 18 text no longer leak, and the tests use another route: since step 19 Skip clears the message by itself, and Skip always cleared the draft, so Y20 (message not cleared when the question changes) and D18_19 (both draft guards) are reached through Back, not through Skip; the Skip variants stay in QP-2e as plain checks. The mutant D18a (only the guard in screens.js removed) stays equivalent, D19a (only the clearing in showQuestion removed) is killed.\n\nTable criterion -> test (additions of this rework only; the earlier table of sections 16-17 stays): C1 start screen: QP-1c, QP-4a (F1). C2 one question, Next/Back/Skip: QP-2d (N35 value), QP-2e (F4, F9, F10), QP-7g (F2). C4 answers saved: QP-4a, QM-3a (limit 32768). C5 keyboard and focus: QP-9h (focus after the result is redrawn). C7 no net: QP-7b, QP-7f (block removed while Try again is on its way), QM-4a (only 200 is an answer). C9 language: QP-9d, QP-9f, QP-9h. Infrastructure: QP-0c (a failure cannot print the tree). Quality-bar items: Q8 (unchanged, QP-6a..6d hold; the new cases use one tenant each), Q10 (QP-7b, QP-7f, QP-7g, QM-4a: every outcome of a failing call, now also a 2xx that is not 200), Q11 (not touched: the page sends relative addresses, QS-4 and QP-6d hold), R3 (not applicable, decision 0033), Q7 (no secrets; seeds fixed, no clock, no timers, no random without a seed, no skip/todo/only in picker-page*.js).",
+    "changes": [
+      {
+        "file": "tools/test/picker-page-dom.js",
+        "what": "F3: hide() makes every field of Node (except tag), Text and Doc non-enumerable, so an assert message never prints the tree; the custom inspection of a node prints tag, id and classes instead of tag, id and data-part"
+      },
+      {
+        "file": "tools/test/picker-page.test.js",
+        "what": "F3: the two node-versus-null assertions (assertLeftAlone, QP-9k) compare the count of notice elements; new QP-0c (inspection and message pins; imports inspect from node:util). F1: QP-4a (optional first question, Continue offered and opens question 2), QP-1c (no question / 64 signs / hidden question as a place: no Continue). F2: QP-7g (Skip, Back, Skip during the request). F4, F9, F10: QP-2e (skip with a refused net on an out-of-limits number, language change after Skip, two number questions with Back). F5: QP-7b (retry held: no block; second failure: one block; third retry), QP-7f (retry held: no block under the header; failed change twice: one block; failed change then failed result: one block, under the buttons). F6: QP-9d (three cases: corrected answer, Back after a refused number, Back after the required message). F7: QP-9h (focus after the change, after Try again), QP-9f (renamed first question: no notice; moved on: notice). N35: QP-2d (the stored place overwritten before Back from the result). Added RESULT_OK to the imports."
+      },
+      {
+        "file": "tools/test/picker-page-model.test.js",
+        "what": "F8: QM-3a (rows of exactly 32767, 32768, 32769 signs and a helper sizedValue), QM-4a (201, 204, 299 with a result of 201; title now says 22 rows)"
+      },
+      {
+        "file": "docs/design/REQ-057-picker-page.md",
+        "what": "QP-0c row in 17.1; rework notes on the rows QP-1c, QP-2d, QP-2e, QP-4a, QP-7b, QP-7f, QP-7g, QP-9d, QP-9f, QP-9h, QM-3a, QM-4a; the count in 17.4 now 65 QP; new section 17.6 with the finding -> test -> mutant table"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check, once at the end, nothing in parallel: exit 0. 'All matched files use Prettier code style!'; eslint clean (--max-warnings 0); 'traces: файлов проверено 2023, следов 0, пропущено 59'; 'handoffs-check: файлов проверено 1143, нарушений 0, исключений использовано 114 из 114'; '# tests 1998 # pass 1998 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 114198'. Largest process of the whole check: 1575108608 bytes (about 1.5 GB), under the 2 GB limit. The three page files alone: tests 100, pass 100, fail 0, skipped 0, todo 0 (about 6 s, 236 MB).",
+      "Method of the mutants: each on a fresh copy of tools/ outside the project (rsync without node_modules), one exact-string edit (the edit aborts unless the old text occurs once), then node --test --test-concurrency=1 on picker-page-static, picker-page-model, picker-page tests (100 tests each run), heap capped at 1536 MB, 150 s limit, one run at a time. Control run with no mutant: 100/100. Every run: maximum resident set 233-239 MB (largest of any mutant run), none near 2 GB.",
+      "Mutant -> failing test(s) (count of failed tests), reasons read from the assertion messages: V04 (hasSaved position clause removed) -> QP-4a (1; 'Continue' is offered). V05 (k > 0 changed to k >= 0) -> QP-1c (1; 'continue' count 1, expected 0). X05 (guard removed from advance) -> QP-7g (1; the answer stays: null, expected 'y'). X06 (guard removed from onBack) -> QP-7g (1; expected 'Last', actual 'First'). V12 (newVersion shows the notice always) -> QP-9k, QP-9f (2); QP-9k alone: by name, 0.3 s, 65 MB. V31 (draft not cleared at Skip) -> QP-2e (1; expected '', actual '11'). V28 (head block kept while a language retry is on its way) -> QP-7f (1; 0 expected, 1). X03 (result block kept while its retry is on its way) -> QP-7b (1; 0 expected, 1). X13 (head block kept when the result fails after) -> QP-7f (1; 1 block expected, 2). Y14 (message state not cleared when the answer is corrected) -> QP-9d (1; the required text came back). Y20 (message state not cleared when the question changes) -> QP-9d (1; 'undefined мен undefined ...' drawn on a choice question). T12a (no focus on the language button after the result is redrawn) -> QP-9h (1; focus stays on the pressed button: false). V11 (first question of the NEW file in newVersion) -> QP-9f (1; notice 1, expected 0). W07 (response.ok for status 200) -> QM-4a (1; the 201 row). Z01 (limit 32769) -> QM-3a (1; row 'exactly 32769 signs'). Z02 (limit 32767) -> QM-3a (1; row 'exactly 32768 signs'). D18_19 (both draft guards removed) -> QP-2e (1; expected '5', actual '11'). D19a (only the clearing in showQuestion removed) -> QP-2e (1). D18a (only the guard in screens.js removed) -> survives, equivalent (the clearing in showQuestion covers it). N35 (onEdit go(..., false)) -> QP-2d (1; the write count: 8 expected, 7; the value oracle added here is a second, independent kill). F10 (state.message = null and clearMessage(refs) both removed from the Skip branch) -> QP-2e (1; q-error '' expected, range text actual). F10a (only clearMessage removed) -> QP-2e (1). F10b (only state.message = null removed) -> QP-2e (1; after the language change the range message came back in kk: expected ''). Mutants of the model for QP-0c: I1 (hide removed from Node) -> QP-0c (1; a message of 13068 signs), I2 (hide removed from Doc) -> QP-0c (1; field activeElement printed), I3 (hide removed from Text) -> QP-0c (1; field doc printed), I4 (class dropped from the inspection) -> QP-0c (1; '<div#x.a.b>' expected). Applied 27 (the 18 named in the task, F10 as three variants, D18a, D19a and I1-I4), killed 26, survived 1 (D18a, equivalent). Every kill is an assertion failure with a readable message, none is a TypeError.",
+      "Working tree: src/picker/public/*.js hash (sha256 of the sha256 list of all *.js files of that folder) before and after: ac0c31f34e893441372657e01a964fdc5b6a28b682cd41da052a5209cd941010, the same; no src file is newer than this handoff. All mutants lived in a copy under the scratch folder; the project was not changed by them. No git checkout/reset/stash/clean, no commit.",
+      "No skip, todo, only, Date, timer, Math.random, environment, permission change or link in picker-page*.js (grep). Test counts: picker-page.test.js 64 -> 65 tests, picker-page-model.test.js 23, picker-page-static.test.js 12; no assertion removed or weakened (only the two node-versus-null assertions were changed, to counts of the same elements, with the same messages)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "F3 root cause: the model already had a custom inspection, but assert prints operands with customInspect off and depth 1000, so only non-enumerable fields keep the tree out of a message. The fix is in picker-page-dom.js; QP-0c pins it. A test that compares a node with assert.equal can no longer take gigabytes, but a short plain comparison (a count or a boolean) is still better style."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Y20 and D18_19 need the route Back, not Skip: Skip clears the message (since step 19) and the draft by itself. The mutants named in step 18 are killed by Back-based cases; D18a is equivalent."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "The N-note of step 18 (kills of N5, N5b, N5c, N5d, V07 end in 'Cannot read properties of null' and not an assertion message) was not in the list of findings F1-F10 and the old assertions were left as they are (AP-019). The new cases check that the node exists before reading it. If the owner wants the old ones changed too, it is a small rework."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "No defect of the page code was found by the new tests; no edit of src/ is needed. The 15 survivors judged equivalent by the validator were not touched."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-page.test.js",
+      "tools/test/picker-page-model.test.js",
+      "tools/test/picker-page-dom.js",
+      "docs/design/REQ-057-picker-page.md"
+    ]
+  }
+}

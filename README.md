@@ -174,8 +174,10 @@ runs (`STATE.md`).
 - **The solution picker site** — a visitor answers the questions of a questionnaire and sees
   which solution suits them; every tenant has its own file, texts in Russian, Kazakh and
   English. A part of the requirements REQ-054…REQ-068 is done (the tenant file and its check,
-  the scoring engine, the server, the three languages, the check of characters in texts); the
-  rest are in progress; the exact status is in `docs/requirements.yaml` and `STATE.md`. Start
+  the scoring engine, the server, the three languages, the check of characters in texts, the
+  questionnaire page with the card of the site); the rest wait to be built, first the result
+  page (REQ-058): until then the questionnaire ends with a temporary screen and the page is
+  not for real visitors. The exact status is in `docs/requirements.yaml` and `STATE.md`. Start
   it with `cd tools && npm run picker`; how it is built — `tools/README.md`; code —
   `tools/src/picker/`; decision — `decisions/0065-solution-picker-stack-and-choices.md`.
 - **The agent pipeline** — the roles, workflows and quality bar by which the AI agents make Sai
@@ -186,7 +188,10 @@ runs (`STATE.md`).
     the author's computer, no forbidden names, no links outside the repository), a check of the
     handoff records, and all tests. It stops at the first error.
   - On GitHub, `.github/workflows/check.yml` runs the same command on every push to any
-    branch and on every pull request (see below). The last release commit passed it.
+    branch and on every pull request (see below). The runs of 2026-10-25 were red because of 11
+    tests of the questionnaire page that were being rebuilt; with the release of REQ-057 the
+    local check is green (1998 of 1998 tests), the GitHub run of that release is made after the push
+    (`gh run list --workflow check.yml`).
   - A local hook `.githooks/pre-push` runs the same check before a push (it is enabled once
     per clone, see below).
 
@@ -354,15 +359,15 @@ As of 2026-10-25, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
   not yet confirmed that the page looks like the approved sample (criterion 16 of REQ-007).
   The requirements for the core of Pixel Office (REQ-001, REQ-007, REQ-008) are still in
   progress.
-- **Requirements:** 68 in total — 30 done, 4 in progress, 34 pending (counted from
+- **Requirements:** 68 in total — 31 done, 4 in progress, 33 pending (counted from
   `docs/requirements.yaml`; the order of work is in `docs/product/requirements-catalog.md`).
   Still pending, for example: user accounts and login, workspaces and access roles, a
   decisions window, goal templates, a second interface language. The requirements for a
   built-in Pixel Office guide (help panel, first-visit tour, hints; REQ-050…REQ-053) are
-  written and wait to be built.
+  built and done since 2026-10-18.
 - **A single computer only.** Both servers listen only on `127.0.0.1`; there are no user
   accounts yet. The interface is in Russian only.
-- **Open defects: 71** in `docs/issues/` — 9 of medium severity and 62 low; none high or
+- **Open defects: 73** in `docs/issues/` — 9 of medium severity and 64 low; none high or
   critical.
 - **A merge in a way other than the push to `main` needs the owner's confirmation** (R1). The
   repository exists on GitHub and is closed by the owner on purpose (`decisions/0062`). A push

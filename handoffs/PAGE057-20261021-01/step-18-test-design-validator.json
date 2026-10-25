@@ -1,0 +1,165 @@
+{
+  "handoff_id": "step18-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "18",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/PAGE057-20261021-01/step-18-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-16-test-design-validator.json",
+      "handoffs/PAGE057-20261021-01/step-17-test-designer.json"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR",
+    "write_set": [
+      "handoffs/PAGE057-20261021-01/step-18-test-design-validator.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T18:13:45Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "validator closed COMPLETED, result verdict FAIL (gate pass 2 of up to 3); only its own file changed; project hash unchanged",
+        "F1-F5 of pass 1 closed (12 of 12 mutants killed); new: F1-F3 Medium (hasSaved position clause, Skip/Back during request, test hang from assert.equal on a document node), F4-F9 Low, F10 small page defect",
+        "routing: step 19 CODE-FIXER for F10, step 20 TEST-DESIGNER for F1-F9 and a test for F10, then security and review of the changes, then validator pass 3 (last pass)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Second pass of test design validation for REQ-057 (the first pass, step 16, was FAIL with F1-F5; step 17 reworked the tests). Read the step 16 handoff result and the step 17 handoff. Independently: (1) confirm each of F1-F5 is really closed: read the new cases, run the 12 mutants described in the step 16 and 17 handoffs (N3, N35, N37, N4, N5, N5b, N5c, N5d, G2, M24, M29 in both forms) yourself on copies outside the project, one at a time, and confirm each is killed by a test that fails for the right reason (not an incidental failure); judge the N35 note (rule E1 pinned only by the write log) - is that a sufficient oracle or a gap; (2) invent at least 12 NEW mutants not used in step 16 or 17, aimed at the areas where the first pass found gaps (saving the position and answers to storage, the notice rules, language race tickets, Skip and field clearing, optional number validation) and at the net limits and result sending; report survivors and say for each whether it is equivalent or a real gap; (3) the tests still pass alone, in reversed file order, and in a series of three; no skip/todo/only; the counts in sections 16-17 equal the tests that exist; (4) the full npm run check once. Verdict PASS only if no real gap of Medium or higher remains. Read-only for the project: change only your handoff; no git checkout/reset/stash/clean, no commits; 16 GB RAM computer: one run at a time.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T17:39:10Z",
+  "started_at": "2026-10-25T17:39:10Z",
+  "completed_at": "2026-10-25T18:13:03Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "FAIL (item 3 of the validator list: mutants that survive; items 1, 2, 4, 5, 6 and 7 are closed). F1-F5 of step 16 are really closed (all 12 mutants of steps 16 and 17 killed, each by a test that fails for the right reason), but my own new mutants show three more real gaps of Medium and thirteen of Low, all in the tests only; no defect of the page code that a test must catch was found (one small Low defect of the code is in issues). Verdict FAIL is derived from my own runs; the task named no expected verdict (AP-018).\n1. F1-F5 CLOSED. Given mutants (own runs, one at a time, on a copy outside the project, the three page files each time, concurrency 1): N3 -> QP-2d (expected 'b', actual 'd'); N37 -> QP-2d (expected 'b', actual 'a') and QP-9f (a TypeError on a null stored value, a setup effect, QP-2d is the right-reason kill); N35 -> QP-2d (expected 8 writes, actual 7); N4 -> QP-2e (expected nothing chosen, actual 'y'); N5, N5c -> QP-4b; N5b, N5d -> QP-9f (all four fail with a TypeError because the notice node is missing, which is the effect of the mutant; right reason, but the message is not an assertion message); G2 -> QP-9h (expected 'en', actual 'kk'); M24 -> QM-2e only; M29a, M29b -> QM-2d and QP-2g (QP-2g: the page moves to the next question instead of staying). Applied 12, killed 12, survived 0. The table of section 20 (M24, M29) and section 17.5 now match my runs.\nN35 NOTE (rule E1 pinned only by the write log): judged a sufficient oracle, not a gap of Medium. The oracle is independent of the code (the count of setItem calls of the test storage), it fails exactly on the mutant, and the property is invisible in the stored value with one tab. It is implementation-bound, though: a value oracle also kills N35 and is stronger. I checked on a copy: after the result screen, overwrite the stored place with another one (as a second tab could), press 'Back', expect the stored place to be the last question again; passes on the real code, fails on N35 (expected 'b', actual 'a'). Optional hardening, Low.\n2. NEW MUTANTS (not used in steps 16 and 17): 136 applied, 105 killed, 31 survived. Survivors: 15 equivalent or defensive (V10, V19, V24, W05, W30, W31, X04, X07, X14, Y02, Y09, Y12, Y18, Y19, Z12), 16 real gaps (3 Medium: V04, X05, X06; 13 Low: V05, V11, V28, V31, W07, X03, X13, Y14, Y20, Z01, Z02, T12a, D18_19). Areas: saving the position and answers (V01-V08, Z01-Z16, T20-T26), the notice rules (V07, V08, V10-V13, T20), language race tickets and the language change (V14-V29, T1, T12a, T15), Skip and field clearing (V31-V34, S1, D18_19, Y18-Y20), optional number validation (Y01-Y17, M24 and M29 of the given list), net limits (W01-W44, T9) and result sending (X01-X15, T7). Every real gap except X13 and D18_19 was confirmed by a probe written by me (copy only): the probe passes on the real code and fails on the mutant (V04, V05, V11, V28, V31, W07, X03, X05, X06, Y14, Y20, Z01, Z02, T12a, N35 value form); X13 and D18_19 are shown by the survival of the mutant only. No run hung beyond the limit of 150 s; one run is a finding (F3 below).\nSurvivors explained. Equivalent or defensive: V10 (a null saved version treated as changed: nothing to lose, same screen), V19 (notice reset in 'Start over' is unreachable, a notice card has no such button), V24 (second check of the screen in changeLanguage, no await between it and the first), W05 (AbortError is never produced, the page aborts only by timeout), W30 and W31 (implied by questions_max equals the length and questions_min equals the plain count), X04 (guard in send() is redundant with the guard in advance()), X07 (the shut fieldset gives the field no event), X14 (state.net of kind result is never read), Y02, Y09, Y12 (a browser gives value '' for a bad number and never a blank text; a draft of empty text renders the same), Y18 and Y19 (two guards against a leaked draft, each covers the other; removing both is D18_19), Z12 (a copy of a fresh parsed list).\n3. SURROUNDINGS AND SERIES. The 99 tests (64 QP, 23 QM, 12 QS; the ids in test( against sections 17.1-17.3 of the design: 64/64, 23/23, 12/12, none missing, none extra) each pass alone (99 runs by --test-name-pattern, deviations 0); the three files together in reversed order (page, static, model) on a copy: tests 99, pass 99, fail 0, skipped 0, todo 0; a series of three runs of the three files on the project: 99/99 each time; no skip, todo or only, no Date, timers, Math.random, environment, permission change, link or machine path in picker-page*.js (grep); fixed seeds; waiting is setImmediate turns. The counts in sections 16-17 (99 in all, 64 QP) equal the tests that exist. Earlier tests are not weakened: test( and assert. counts against the base tag: picker-lang 45->45 and 296->298, picker-server-units 14->14 and 180->187, picker-server-faults 20->20 and 150->150, picker-server 40->40 and 298->298, picker-server-property 4->4 and 18->18, traces-runtime 6->6 and 56->56.\n4. OWN RUN: cd tools && npm run check once: exit 0; format:check clean; lint clean; traces 'следов 0'; handoffs-check 'нарушений 0'; tests 1997, pass 1997, fail 0, cancelled 0, skipped 0, todo 0 (116.5 s test time, 2:07 in all).\n5. COVERAGE (own table, from the 11 criteria of REQ-057): C1 start screen QP-1a..1e, QP-11a: covered, except the rule 'a place beyond the first question with no answers is saved' (F1 below). C2 one question, Next/Back/Skip QP-2a..2j, QM-2c..2e: covered; Skip and Back pressed while the request is open are not (F2). C3 progress QP-3a..3e, QM-2a: covered. C4 answers saved QP-4a..4g, QM-3a..3e: covered except the position-only card rule (F1) and the exact limit of the stored value (Low). C5 keyboard and accessibility QP-5a..5c, QS-8, steps of the browser run: covered; focus after a language change on the result screen is not pinned (Low). C6 only own tenant QP-6a..6d: covered. C7 no net QP-7a..7g, QM-4a..4d: covered; the block of the net while 'Try again' is on its way is not pinned (Low). C8 texts QP-8a..8c, QM-5a, QS-11: covered. C9 language QP-9a..9l: covered, except the block of a failed change while 'Try again' is on its way and the focus on the result screen (Low). C10 guards and lint TR-4b/4d/4e/4f, LG-10c, QS-4, QS-5: covered (my mutants W41, W42 and the fetch lines are killed). C11 card QP-11a..11d, QS-1..3: covered. Q8 (QP-6a..6d, QM-3d, QM-3e), Q10 (QP-7a..7g and the refused-net cases of QP-2e), Q11 (not touched, QP-6d and QS-4 hold the address), R3 (not applicable, decision 0033): checked, the reasons recorded by TEST-DESIGNER are correct.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/test/picker-page.test.js:287 (QP-1c) and :999 (QP-4a); code tools/src/picker/public/app.js:116-123 (hasSaved, the clause 'the place is not the first question') and :190-194 (the 'k > 0' condition)",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "Design 5.1 (D5) says hasSaved = answers present OR (place is not null and not the first question). The negative side is tested (QP-1c: a stored value with only the language or the first question gives 'Take the survey') but the clause 'place beyond the first question with no answers' is pinned by no test: mutant V04 (the clause removed, hasSaved checks only the answers) passes all 99 tests. This is the same class as F1 of step 16 (a single clause of a two-clause rule). Probe (copy only): the first question is optional, press 'Next' with no answer, reload: the card must offer 'Continue' and it must open question 2; passes on the real code, fails on V04 (Continue missing). Related (Low): V05 ('k > 0' changed to 'k >= 0' when the stored place is taken) passes all tests: a stored place that is not a visible question and no answers must not offer 'Continue'; probe passes on the real code and fails on V05.",
+        "fix": "TEST-DESIGNER: in QP-1c or QP-4a add (a) the optional-first site: 'Next' with no answer, reload, 'Continue' offered and opens question 2, 'Take the survey' absent; (b) a stored value with the right version, answers {} and current 'zzz' (not a question) or a hidden question: 'Take the survey', no 'Continue'. Mutants V04 and V05 must die."
+      },
+      {
+        "id": "F2",
+        "place": "tools/test/picker-page.test.js:1836 (QP-7g); code tools/src/picker/public/app.js:362 (onBack) and :375 (advance, used by 'Skip')",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "QP-7g presses 'Show the result' again, sends the form and Enter during the request, but never 'Skip' or 'Back'; those two buttons stand outside the shut fieldset and stay live while the request is open. Mutant X05 (the guard 'if (state.sending) return' removed from advance) passes all tests: 'Skip' pressed during the request clears the answer and writes the storage while the request already carries that answer, so the stored answers and the result disagree (the second guard in send() comes too late for 'Skip'). Mutant X06 (the guard removed from onBack) passes all tests: 'Back' during the request moves the screen to the previous question while the request is on its way and the result then opens over it. Probes (copy only): on the last optional question with an answer, hold the POST, press 'Skip' and then 'Back': storage snapshot unchanged, same question, still one request; both pass on the real code and fail on the mutants (X06: expected 'Last', actual 'First').",
+        "fix": "TEST-DESIGNER: in QP-7g, with the POST held, tap 'skip' (on an optional last question with an answer) and 'back', and assert the storage snapshot, the stored answers, the question on the screen and the request count are unchanged; after the answer comes the result opens. Mutants X05 and X06 must die."
+      },
+      {
+        "id": "F3",
+        "place": "tools/test/picker-page.test.js:2748 (assertLeftAlone, 'no notice') and :2791 (QP-9k)",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "AP-116 class: assert.equal(page.part(\"notice\"), null, ...) compares a node of the document model with null. When it fails, the message tries to print the node and the run does not finish: with mutant V12 (newVersion shows the notice always) QP-9k alone ran 32 s, took about 6.7 GB of resident memory (measured with /usr/bin/time -l) and was killed by SIGKILL with no test name; in the full file the run stopped after QP-9j at 26 s with 93 of 99 tests reported (QP-9k, QP-9l, QP-11a..11d silently missing), only the exit code 1 and one other failed test told of it. On a 16 GB computer this is a risk, and the failure is not diagnosable. Replacing the second argument by a boolean (page.part(\"notice\") === null, true) makes the same mutant fail in 0.2 s with the test name (checked on a copy).",
+        "fix": "TEST-DESIGNER: at the two places compare a boolean or the count (page.all('[data-part=\"notice\"]').length, 0) instead of a node with null; look for the same pattern (assert.equal / deepEqual with a node as an argument) in picker-page-model.test.js and the helpers. The failure of QP-9k under V12 must then be reported by name in under a second."
+      },
+      {
+        "id": "F4",
+        "place": "tools/src/picker/public/app.js:385 (state.draft = null in the Skip branch); tools/test/picker-page.test.js:518 (QP-2e)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Mutant V31 (the draft not cleared at Skip) passes all tests. A number typed outside the limits and then skipped, with the net refused, comes back into the field after a change of the language (the redraw uses the draft). Probe: type '11', 'Skip', POST refused, press the other language: the field must be empty; passes on the real code, fails on V31 (actual '11'). The step 17 case for F4 clears the field but does not change the language afterwards.",
+        "fix": "TEST-DESIGNER: in QP-2e, in the number case with the refused net, type '11' (out of the limits), 'Skip', then press the other language and assert the field is empty."
+      },
+      {
+        "id": "F5",
+        "place": "tools/src/picker/public/app.js:513 (setHeadNet at the press of a language), :429 (setNetBlock at the start of send), :444 (setHeadNet on the failure of send); tools/test/picker-page.test.js:1592 (QP-7b), :1805 (QP-7f)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Design 5.2 R1 says the block is removed while the request of 'Try again' is on its way. Survivors V28 (the block of a failed language change stays while the retry is on its way) and X03 (the block of a lost net stays while the retry of the result is on its way) pass all tests; X13 (the block under the header stays when the result fails afterwards) too (survival only, no probe). Probes for V28 and X03: hold the retry request and count the blocks: expected 0; pass on the real code, fail on the mutants (actual 1).",
+        "fix": "TEST-DESIGNER: in QP-7b and QP-7f hold the request of 'Try again' and assert that no block of the net is on the screen until the answer comes; add the case 'a failed language change, then a failed result': one block."
+      },
+      {
+        "id": "F6",
+        "place": "tools/src/picker/public/app.js:338 (state.message = null in onAnswer) and :247 (in showQuestion); tools/test/picker-page.test.js:2286 (QP-9d)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Survivors Y14 and Y20: the page keeps the kind of the message in state.message and draws it again at a change of language (redraw). Y14 (not cleared when the answer is corrected) shows 'answer this question' again after the language change although the visitor answered; Y20 (not cleared when the question changes) draws a message of the former question on the new one (on a question of choice the text was 'undefined ... undefined' of the range message). Probes pass on the real code and fail on both mutants.",
+        "fix": "TEST-DESIGNER: in QP-9d (or QP-2f) add: refused 'Next', correct answer, language change: message empty; and: refused 'Next' on an optional number, 'Skip', language change on the next question: message empty."
+      },
+      {
+        "id": "F7",
+        "place": "tools/src/picker/public/app.js:539 (focus after the redrawn result), :562-566 (newVersion, hadAny); tools/test/picker-page.test.js:2492 (QP-9h), :2347 (QP-9f)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "T12a (the focus not returned to the pressed language button after the result is redrawn) passes all tests; design L1 says the focus stays on the pressed button; probe passes on the real code and fails on T12a. V11 (the first question compared with the first question of the NEW questionnaire in newVersion) passes: when the other version has another first question, a visitor on the old first question with no answers must see no notice; probe passes on the real code and fails on V11.",
+        "fix": "TEST-DESIGNER: in QP-9h assert page.active is the pressed button after the language change on the result screen; in QP-9f add a variant whose other version renames the first question."
+      },
+      {
+        "id": "F8",
+        "place": "tools/src/picker/public/net.js:189 and tools/src/picker/public/store.js:14, :89; tools/test/picker-page-model.test.js (QM-4a, QM-3a)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "W07 (response.ok instead of status 200) passes: a 201 with a right body must be a mistake of the server (net.js header: any other answer). Z01 and Z02 (the limit of the stored value 32769 / 32767 instead of 32768) pass: design 7.1 names 32 768 and the boundary is not pinned (the other limits of store.js, 64, 30, 200, 8, are pinned by QM-3a). Probes pass on the real code and fail on the mutants.",
+        "fix": "TEST-DESIGNER: in QM-4a add a 201 with a right body (outcome server); in QM-3a a value of exactly 32768 signs is read and one of 32769 is not."
+      },
+      {
+        "id": "F9",
+        "place": "tools/src/picker/public/screens.js:185 and tools/src/picker/public/app.js:246",
+        "severity": "Low",
+        "blocking": false,
+        "what": "D18_19: the two guards against a draft that moves to the next number question (draft.id equals the question in buildField, state.draft = null in showQuestion) are each covered by the other; with both removed all tests pass. No single-mutant gap, but the leak is not pinned.",
+        "fix": "Optional: a test with two number questions in a row: out-of-limits text, 'Skip', the next field is empty."
+      },
+      {
+        "id": "F10",
+        "place": "tools/src/picker/public/app.js:378-387 (Skip branch of advance); tools/test/picker-page.test.js:518",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Small defect of the code found by a probe (not by a mutant): on the last optional number question type '11', press the main button (message 'enter a whole number from 1 to 10', aria-invalid), then 'Skip' with the net refused. The field is cleared but the old message and aria-invalid stay beside the empty field (screen state: message 'Введите целое число от 1 до 10.', aria-invalid true, value empty, block of the net of kind result). The answer was skipped, so the message is stale.",
+        "fix": "CODE-FIXER (through ORCH): clear the message (clearMessage and state.message = null) in the Skip branch; TEST-DESIGNER: pin it in QP-2e."
+      },
+      {
+        "id": "N-note",
+        "place": "tools/test/picker-page.test.js:1024 (QP-4b) and :2347 (QP-9f)",
+        "severity": "Note",
+        "blocking": false,
+        "what": "N5, N5b, N5c, N5d, V07 and similar kills end with 'Cannot read properties of null (reading text)' rather than an assertion message because the notice node is read before it is checked. The kill is correct; a check that the node exists first would give a readable message. AP-020: no permission change or link in the tests; AP-018: the task named no expected verdict."
+      }
+    ],
+    "self_check": [
+      "working tree list of hashes before (sha256 of every file of tools/ without node_modules, 459 files, sorted) -> 753803177a03338ef371e10b967a221db2ab80a9a0c0c8cc3db1946af41e1857; after all mutants, probes and npm run check -> the same hash, diff of the two lists empty; git status --short before and after the same, git diff sha256 before and after the same (20078aab...). All mutants and probes lived in a copy under <scratch>/tdv18/work, restored from <scratch>/tdv18/pristine after each run (diff -rq pristine work empty at the end; pristine equal to the project tools/ tree). No git checkout/reset/stash/clean, no commit.",
+      "harness: for each mutant one exact-string edit (the edit fails unless the old text occurs once), then node --test --test-concurrency=1 test/picker-page-static.test.js test/picker-page-model.test.js test/picker-page.test.js, timeout 150 s, one run at a time. Given list: N3 KILLED QP-2d; N37 KILLED QP-2d, QP-9f; N35 KILLED QP-2d; N4 KILLED QP-2e; N5 KILLED QP-4b; N5c KILLED QP-4b; N5b KILLED QP-9f; N5d KILLED QP-9f; G2 KILLED QP-9h; M24 KILLED QM-2e; M29a KILLED QM-2d, QP-2g; M29b KILLED QM-2d, QP-2g (12/12, each run tests 99).",
+      "new mutants, survivors: V04 SURVIVED tests 99 fail 0; V05, V10, V11, V19, V24, V28, V31 (specs set 1: 31 applied, 23 killed, 8 survived); W05, W07, W30, W31, X03, X04, X05, X06, X07, X13, X14, Y02, Y09, Y12, Y14, Y18, Y19, Y20, Z01, Z02, Z12 (set 2: 92 applied, 71 killed, 21 survived); T12a, D18_19 (set 3: 13 applied, 11 killed, 2 survived). Examples of kills: V01 QP-2d, QP-4a, QP-9c, QP-9f; V03 11 tests; W01 QM-4b, QS-4, QP-7d; W41 62 tests; X01 QP-7b, QP-7g; Y05 QM-1e, QM-2d; Z03 QM-3a, QM-3e, QP-6d; S1 QP-2e.",
+      "anomaly: V12 (newVersion always shows the notice): 'tests 93 pass 92 fail 1' on the three files, duration 29.6 s; QP-9k alone: no test line, 'signal SIGKILL', 32.3 s, maximum resident set 6692388864 bytes (/usr/bin/time -l). With line 2791 of the test copy changed to compare a boolean the same mutant fails QP-9k in 0.2 s by name. This is finding F3.",
+      "probes written by me (copy only, file removed after use): P-V04, P-V05, P-V31, P-X03, P-X05, P-X06, P-V28, P-Y14, P-Y20, P-V11, P-W07, P-Z, P-T12a, P-N35: on the real code 12 of 12 (first file) pass, P-T12a and P-N35 pass; on each mutant the probe fails (e.g. X06 expected 'Last' actual 'First'; V11 expected 0 actual 1; W07 expected 'question' actual 'result'; N35 expected 'b' actual 'a'; Y20 expected '' actual a range message).",
+      "tests: node --test of the three page files together: tests 99, pass 99, fail 0, cancelled 0, skipped 0, todo 0 (copy, normal order and reversed order page-static-model); three runs on the project 99/99 each; each test alone by --test-name-pattern: 99 runs, 0 deviations. ids in test( against design 17.1-17.3: 64/64, 23/23, 12/12.",
+      "cd tools && npm run check -> exit 0; 'All matched files use Prettier code style!'; lint clean; 'traces: файлов проверено 2021, следов 0, пропущено 59'; 'handoffs-check: файлов проверено 1141, нарушений 0, исключений использовано 114 из 114'; '# tests 1997 # pass 1997 # fail 0 # cancelled 0 # skipped 0 # todo 0'.",
+      "greps: skip/todo/only/Date/timers/random/env/chmod/symlink/machine paths in picker-page*.js -> none; assert.equal with a node as the first argument -> picker-page.test.js lines 2748 and 2791 only."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "ORCH: route F1, F2, F3 (Medium, blocking) and F4-F9 (Low) to TEST-DESIGNER, then run the gate a third time (this is gate pass 2 of up to 3; a third FAIL is a stop by decisions/0079 item 4). Low findings do not block by themselves; I list them so that one rework closes them together with the blocking ones. The probes of self_check show the expected behaviour passes on the real code, so no CODE-FIXER work is needed for F1-F9."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "F10 is a small defect of the page code (a stale message and aria-invalid after 'Skip' with a refused net on an optional number question), severity Low. It goes to CODE-FIXER if ORCH wants it fixed in this run; if it is fixed, QP-2e should pin it."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "For the rerun: the new or extended tests should be shown to fail on V04, V05, X05, X06, V12 (by name, fast), V31, V28, X03, X13, Y14, Y20, T12a, V11, W07, Z01, Z02 (descriptions in summary and self_check)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

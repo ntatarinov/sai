@@ -1,12 +1,13 @@
 // SU-1 ... SU-14: the modules of the server one by one (design REQ-056, 9.2): the
 // arguments of `serve`, the routes, the language, the form of a body, the texts, the type
-// of a body, the version, tame and show, the registry of tenants, the key texts, the stub
+// of a body, the version, tame and show, the registry of tenants, the key texts, the main file
 // of the page, the files of the page, the constants and the form of a result.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
+import { pathToFileURL } from "node:url";
 import * as config from "../src/picker/config.js";
 import { fingerprintOf } from "../src/picker/fingerprint.js";
 import { tame, show } from "../src/picker/places.js";
@@ -30,6 +31,7 @@ import { inspectDirectory, loadTenants } from "../src/picker/tenants.js";
 import { installFaults } from "./fault-inject.js";
 import { deepFreeze } from "./picker-engine-helpers.js";
 import { PICKER, makeTmp } from "./picker-helpers.js";
+import { PAGE_TEXTS, demoSite, loadPage } from "./picker-page-helpers.js";
 import {
   IDS,
   LANGS,
@@ -173,7 +175,7 @@ test("SU-2: routeOf - 60 paths, every kind of route and every unknown path (a pe
       { kind: "questionnaire", id: "uchet-pro" },
     ],
     ["/t/uchet-pro/api/result", { kind: "result", id: "uchet-pro" }],
-    ["/assets/stub.js", { kind: "asset", name: "stub.js" }],
+    ["/assets/main.js", { kind: "asset", name: "main.js" }],
     ["/assets/texts.js", { kind: "asset", name: "texts.js" }],
     ["/assets/index.html", { kind: "asset", name: "index.html" }],
     ["/assets/x.exe", { kind: "asset", name: "x.exe" }],
@@ -614,23 +616,22 @@ test("SU-9: loadTenants - a folder of two, the order of ids, the files that are 
 const SOURCE_KEYS = () => {
   const keys = new Set();
   for (const file of fs.readdirSync(PICKER).filter((f) => f.endsWith(".js"))) {
-    for (const m of sourceOf(file).matchAll(
-      /"(server_[a-z_]+|page_stub_notice)"/gu,
-    ))
+    for (const m of sourceOf(file).matchAll(/"(server_[a-z_]+)"/gu))
       keys.add(m[1]);
   }
-  for (const m of sourceOf("public/stub.js").matchAll(
-    /TEXTS\.(page_stub_notice)/gu,
-  ))
-    keys.add(m[1]);
   return keys;
 };
 const word = (w) =>
   new RegExp(`(?<![\\p{L}\\p{N}])${w}(?![\\p{L}\\p{N}])`, "iu");
 
-test("SU-10: the 11 keys server_* and page_stub_notice are in TEXTS and equal the texts of the table; each is used in the code and each key used exists; the placeholders are the same in the three languages; none of the words of REQ-057 or REQ-058 is in them", () => {
+test("SU-10: the 11 keys server_* are in TEXTS and equal the texts of the table; each is used in the code and each key used exists; the key of the old placeholder page is gone; the placeholders are the same in the three languages; none of the words of REQ-057 or REQ-058 is in them", () => {
   const keys = Object.keys(SERVER_TEXTS);
   assert.equal(keys.filter((k) => k.startsWith("server_")).length, 11);
+  assert.equal(keys.length, 11);
+  assert.equal(
+    Object.hasOwn(TEXTS, ["page", "stub", "notice"].join("_")),
+    false,
+  );
   for (const key of keys) {
     assert.ok(Object.hasOwn(TEXTS, key), key);
     assert.deepEqual(
@@ -682,8 +683,9 @@ test("SU-10: the 11 keys server_* and page_stub_notice are in TEXTS and equal th
 
 // ---------------------------------------------------------------------- SU-11
 
-test("SU-11: stub.js run in Node with a location and a document that the test gives - for no query, ?lang=kk, ?lang=en, ?lang=de and ?lang=KK the language of the document and the text of #app are those of page_stub_notice", async (t) => {
-  const file = path.join(PUBLIC_DIR, "stub.js");
+test("SU-11: main.js, the main file of the page, run in Node with a location, a document (the model of the tests), a fetch and a storage that the test gives - for no query, ?lang=kk, ?lang=en, ?lang=de and ?lang=KK the language of the document is the one expected, the card holds card_gives, card_ask and the name of the tenant in that language, and the questionnaire was asked for in that language", async (t) => {
+  const file = pathToFileURL(path.join(PUBLIC_DIR, "main.js")).href;
+  const site = demoSite("uchet-pro");
   const cases = [
     ["", "ru"],
     ["?lang=kk", "kk"],
@@ -691,31 +693,23 @@ test("SU-11: stub.js run in Node with a location and a document that the test gi
     ["?lang=de", "ru"],
     ["?lang=KK", "ru"],
   ];
-  const saved = {
-    location: globalThis.location,
-    document: globalThis.document,
-  };
-  t.after(() => {
-    for (const [key, value] of Object.entries(saved)) {
-      if (value === undefined) delete globalThis[key];
-      else globalThis[key] = value;
-    }
-  });
   for (const [index, [search, lang]] of cases.entries()) {
-    const app = { textContent: "" };
-    const doc = {
-      documentElement: { lang: "" },
-      getElementById: (id) => (id === "app" ? app : null),
-    };
-    globalThis.location = { search };
-    globalThis.document = doc;
+    const page = await loadPage(t, { start: false, sites: [site], search });
     await import(`${file}?case=${index}`);
-    assert.equal(doc.documentElement.lang, lang, search);
-    assert.equal(app.textContent, TEXTS.page_stub_notice[lang], search);
-    assert.equal(
-      app.textContent,
-      SERVER_TEXTS.page_stub_notice[LANGS.indexOf(lang)],
+    await page.settle();
+    const at = LANGS.indexOf(lang);
+    assert.equal(page.lang, lang, search);
+    assert.equal(page.screen, "card", search);
+    const text = page.text;
+    assert.ok(
+      text.includes(PAGE_TEXTS.card_gives[at]),
+      `${search}: card_gives`,
     );
+    assert.ok(text.includes(PAGE_TEXTS.card_ask[at]), `${search}: card_ask`);
+    assert.ok(text.includes(site.plain.name[lang]), `${search}: the name`);
+    assert.equal(page.net.requests.length, 1, search);
+    assert.equal(page.net.requests[0].method, "GET", search);
+    assert.equal(page.net.requests[0].lang, lang, search);
   }
 });
 

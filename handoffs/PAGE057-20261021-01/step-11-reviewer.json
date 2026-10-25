@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step11-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "11",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/PAGE057-20261021-01/step-11-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-08-test-designer.json",
+      "handoffs/PAGE057-20261021-01/step-09-code-fixer.json",
+      "handoffs/PAGE057-20261021-01/step-10-security-reviewer.json"
+    ],
+    "route": "REVIEWER",
+    "write_set": [
+      "handoffs/PAGE057-20261021-01/step-11-reviewer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T16:45:40Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff closed COMPLETED, verdict PASS, three Low findings R1-R3, only its own file changed",
+        "R2 confirmed by ORCH against decisions/0078 item 11 and design rule L4 and the code of changeLanguage: the screen guard is missing before newVersion and langFailed; goes to CODE-FIXER step 12 plus test step 13",
+        "R1 (catalogue counts 54/19 vs 62/23, QP-11e, QP-11d/QM-1e wording) goes to step 13 with the tests; R3 (English in Russian cells) left for the owner decision on translating history"
+      ]
+    }
+  },
+  "task": {
+    "description": "Review gate after steps 06-09 of this run: the design document edit (step 06), three translation values in texts.js (step 07), the new and replaced tests (step 08: picker-page*.test.js, picker-page-dom.js, picker-page-helpers.js and the seven re-pointed older test files), and the one-line order fix in app.js newVersion() (step 09). Check: is the fix a real solution and not a patch; do the tests have independent oracles (not copies of the code under test), do failure-path tests check unchanged state, are the 8 replaced stub tests really covered by the replacement table in the design document (no test count or assertion loss against the base tag); any weakening of the quality bar; decisions 0073/0074 intact (nothing about development reachable from the page); design document matches the code (deviations recorded). Note from step 08 to judge: catalogue item QP-11d is unreachable (notice and Continue never appear together) and was tested as two cards; QM-1e reinterpreted for \"1e3\"; two own mutants X6 and X27 survive as claimed-equivalent. Read-only; do not run the full npm run check (16 GB RAM computer); single test files only.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T16:40:01Z",
+  "started_at": "2026-10-25T16:40:01Z",
+  "completed_at": "2026-10-25T16:44:55Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Read whole: git diff HEAD for design (step 06), texts.js (07), app.js (09) and the 7 re-pointed old test files, and in full the helpers/model/probes I needed of the 5 new test files (picker-page.test.js 62 tests, picker-page-model.test.js 23, picker-page-static.test.js 12, picker-page-dom.js, picker-page-helpers.js); compared with the tag base/PAGE057-20261021-01 for counts. Q1 (cause or patch): the step-09 fix is the cause, not a patch. In newVersion() the header was built from state.lang before commitLanguage() set it; commitLanguage() never read ui.head, so moving it before makeHead() gives the header the right language at the source. I reverted the swap on a copy outside the project: QP-9f2 fails; with the swap it passes. The same-kind search (makeHead/setHeadLanguage call sites: accept, redraw, result branch of changeLanguage, newVersion) was done by the fixer and I re-read all four: the order is right everywhere. No error is swallowed or silenced anywhere in the change. Q2 (agrees with the record): the 16 replacements Z1-Z16 of design 13.2 are applied exactly as written (I read every hunk); the 8 stub tests are replaced in place, not removed: test( counts equal to the tag in all 6 old files (45/20/4/14/40/6), assert. counts not lower (lang 296->298, units 180->187, others equal); SU-10 gained 'old key is gone' and 'table has 11 keys', SU-11 now runs the real main.js with the five cases plus the request language, LG-10c lets only the one fetch( in net.js and asserts exactly one, TR-4b adds net.js (stronger). Decisions 0073/0074 intact: no word handoff/ORCH/decisions/REQ-/design/stub/agent in public/*.js, index.html, page.css (grep empty), no development stage text, page only reads, no new address or request. The 3 text changes keep keys and placeholders. Deviations of the tests from the design catalogue (QP-11d as two cards, QM-1e for '1e3', the 12 added tests, the table PAGE_TEXTS now holding the readers' text) are recorded in step-08 result.issues I2, I4, I5 and are reasonable: QP-11d - the page cannot make a notice together with 'Continue' (accept() clears the answers when it sets the notice); QM-1e - the literal sentence cannot hold for '1e3' and the design itself says in 6.x and M25 that '1e3' is refused; the test still fails if the page refuses a plain whole number or accepts a number the engine would refuse. But the design document itself was not brought in line (finding R1, Low). Q3 (more than ordered): only tools/test, docs/design, texts.js and one line of app.js changed; this matches write_sets of steps 06-09; no extra layer or setting. The fixer did not touch the design or tests. Q4 (bar): grep for skip/todo/only/eslint-disable/|| true over all changed files and public/ is empty (the 'skip' hits are the Skip button texts); skipped 0, todo 0; the 8 reds were replaced, not weakened; QP-9f2 was left red by TEST-DESIGNER and went green only through the code fix, test unchanged. Q5 (idiom): tests have independent oracles - literals for texts, the tenant files, expectedQuestionnaire/expectedResult/resolveAnswers/validateTenant of the server side for the fake network, the tests' own progress rules; no page code is imported as an oracle except the module under test. Failure-path tests assert unchanged state (storage snapshot and write log, request counts, replaceState count, screen, position, chosen answers, address): QP-2f/2g, 4b, 7a-7g, 9g-9j, checked by reading. Globals are installed and put back once per test (t.after), no timers/clock, no fs outside reads, no chmod/links (AP-020 not applicable). Mutants re-run by me on a copy outside the project (project hash of modified files unchanged, 10 modified before and after): (a) swap reverted -> QP-9f2 red; (b) L4 guard 'state.screen !== \"result\"' removed after the repeated POST -> QP-9j red; (c) 'ticket += 1' removed from send() -> QP-9i and QP-9j red. I read X6 and X27 (claimed equivalent) in app.js: send() is reached only from advance(), which has the same 'state.sending' guard, and from the retry button, which is removed while the request runs; result.js ignores ctx.answers - the claim holds, with the REQ-058 note kept. For TEST-DESIGNER / next steps: one untested path (finding R2, Low): a late answer with ANOTHER version after the visitor left the result screen. Run alone: picker-page-static 12/12, picker-page-model 23/23, picker-page 62/62, picker-lang 45/45, traces-runtime 6/6, picker-server-units 14/14; prettier --check and eslint --max-warnings 0 clean on the changed files. Full npm run check not run (16 GB).",
+    "findings": [
+      {
+        "id": "R1",
+        "place": "docs/design/REQ-057-picker-page.md:591 (QP-11a...QP-11e), :655 (QP-11d), :324 (QM-1e), :693 (54 QP, 19 QM), section 17.1-17.2 (no entry for QP-0a, QP-0b, QP-2j, QP-5a2, QP-7g, QP-9f2, QP-9i, QP-9j, QM-2e, QM-4d, QM-6a, QM-6b)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The design catalogue and the criterion->test table (sections 16-17) do not match the tests that exist: the catalogue says 54 QP + 19 QM, there are 62 QP + 23 QM (12 added tests, named only in step-08 result); section 16 row 11 names QP-11e, which does not exist (the catalogue ends at QP-11d); QP-11d and QM-1e are described one way in the design and tested another way (recorded only in step-08 issues I2 and I5). Step 06 left sections 16-17 untouched on purpose, so the deviation is recorded, but a reader of the design alone (RELEASE-VALIDATOR, AP-005) is sent to a test that is not there.",
+        "fix": "No code change. DOC-UPDATER or CODE-DESIGNER: in 17.1-17.2 add the 12 test ids with one line each, fix the totals to 62/23, replace QP-11e by QP-11d in section 16, and reword QP-11d (two cards: notice + 'Take the survey'; saved answers + 'Continue' + 'Start over') and QM-1e (page accepts only plain whole numbers, the engine agrees on every accepted text) as the tests are. Before the release validation."
+      },
+      {
+        "id": "R2",
+        "place": "tools/src/picker/public/app.js:515-522 (changeLanguage: newVersion(body) and langFailed(...) are reached without the screen check that the same-version result branch has at :526 and :529); decisions/0078 item 11; design 5.2 L1 vs L4",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Decision 0078 item 11 and rule L4 say: a language change begun on the result screen is discarded if the visitor left that screen. The ticket is not changed by 'Back' or 'Start over', so only the same-version branch honours this. My probe (copy outside the project, helpers of the tests): result screen, press Kazakh, questionnaire request held, press 'Back', answer arrives with ANOTHER version -> the page goes to the card with the notice, language kk, the stored value is rewritten (the answers are cleared). The same applies to a failed late answer (a connection block appears for a change the visitor abandoned). The outcome is honest (the old answers belong to the old version, nothing stale is shown), so I do not block; but it is the same kind as the step-09 defect (stale reply handled in one branch of a shared function, AP-014) and no test pins it (QP-9j uses the same version only). Design L1 ('another version - as B1') and L4 do not say which rule wins.",
+        "fix": "ORCH decides, then one of: (a) write in design L4 and 0078 item 11 that a new version wins over a left screen, and add a test of that; or (b) CODE-FIXER: return before newVersion/langFailed when from === 'result' and state.screen !== 'result', plus a test in QP-9j for a new version and for a failed late answer; then gates again."
+      },
+      {
+        "id": "R3",
+        "place": "docs/design/REQ-057-picker-page.md:72 (D19), :256-258 (Q6, L1, L3, L4), :122-131, :291 (step-06 additions)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The new text of step 06 is written in English inside Russian table cells (the sentence stops mid-cell and switches language). Decision 0080 asks for English, and step 06 issue I1 names this; the result is a document that reads in two languages cell by cell.",
+        "fix": "No change now. When the owner asks for the translation of the design file, translate it whole; do not add more mixed cells."
+      }
+    ],
+    "self_check": [
+      "git diff HEAD --stat (10 files: design, app.js, texts.js, 7 old tests) and git status (5 new picker-page*.js files, handoffs); app.js hunk = the single swap of commitLanguage() and 'ui.head = makeHead()' in newVersion().",
+      "grep -nEi '\\.skip\\(|\\btodo\\b|eslint-disable|\\|\\| true|\\.only\\(|skip:|ts-ignore' over test/picker-page*.js, picker-lang/-server*/traces-runtime tests, src/picker/public/*.js -> only the words 'quiz_skip' (Skip button text) and 'skip: null' (a data key in QM); no erosion.",
+      "grep -rniE 'handoff|ORCH|decisions|REQ-0|0073|0074|WF-0|sai/|tools/|pixel|agent|ISS-|AP-|design|stub|todo' src/picker/public/*.js index.html page.css -> empty (decisions 0073/0074 item 6 hold).",
+      "test( and assert. counts, tag vs now: picker-lang 45/45 and 296->298; picker-server-faults 20/20, 150/150; picker-server-property 4/4, 18/18; picker-server-units 14/14, 180->187; picker-server 40/40, 298/298; traces-runtime 6/6, 56/56. New files: picker-page 62, picker-page-model 23, picker-page-static 12 tests.",
+      "node --test test/<file> for picker-page-static (12 pass), picker-page-model (23 pass), picker-page (62 pass), picker-lang (45 pass), traces-runtime (6 pass), picker-server-units (14 pass): fail 0, skipped 0, todo 0 each.",
+      "npx prettier --check (changed test and src files) -> clean; npx eslint --max-warnings 0 test/picker-page*.js src/picker/public -> no output.",
+      "Mutants on a copy outside the project (scratchpad mut/): swap reverted -> QP-9f2 fail 1; L4 guard removed -> QP-9j fail; 'ticket += 1' removed from send() -> QP-9i, QP-9j fail (pass 60, fail 2 of 62). Probe test for R2 (scratchpad mut/test/probe.test.js): page screen 'card', lang 'kk', stored version replaced - the late other-version answer is not dropped.",
+      "The project files were not changed by me: git status modified list is the same 10 files before and after; only this handoff is written."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "To ORCH: R2 - which rule wins when a late language answer brings another version after the visitor left the result screen (design L1 'as B1' or L4/0078 item 11 'discarded')? Low, not blocking; the answer decides whether a fix and a test go before release or a line in the design."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "To ORCH: R1 - bring design sections 16-17 in line with the 62+23+12 tests (ids, totals, QP-11e -> QP-11d, QP-11d and QM-1e wording) before RELEASE-VALIDATOR reads the design; a documentation job, no code."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "No expected verdict was named in the task; the verdict is derived from my own reading and runs. The reds HO-46, HO-47, HC-RT-1e and the 8 stub tests are green in the single files I ran (traces-runtime, picker-lang, picker-server-units); the full npm run check is for TEST-RUNNER (not run here, 16 GB)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Not a finding: the X6 and X27 mutants of TEST-DESIGNER survive as equivalent; I confirmed by reading app.js (send() guard duplicated in advance(); result.js ignores ctx.answers). REQ-058 must add a test of ctx.answers when it reads them, as step 08 already says."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

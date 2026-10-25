@@ -1,0 +1,63 @@
+{
+  "handoff_id": "step12-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "12",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PAGE057-20261021-01/step-12-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-11-reviewer.json"
+    ],
+    "route": "CODE-FIXER",
+    "write_set": [
+      "tools/src/picker/public/app.js"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T16:49:42Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git diff of app.js against HEAD shows the swap of step 09 plus one new guard line in changeLanguage after the ticket check; no test changed",
+        "fixer's single npm run check: 1995 tests, 1995 pass, 0 fail; handoffs-check 0 violations",
+        "no test pins the new guard yet (fixer's note): step 13 adds tests for both late paths and mutant check"
+      ]
+    }
+  },
+  "task": {
+    "description": "Fix review finding R2 of step 11. In tools/src/picker/public/app.js, changeLanguage(): a language change begun on the result screen must be dropped when the visitor left that screen before the answer came (decisions/0078 item 11; design rule L4 in docs/design/REQ-057-picker-page.md). Today the screen guard exists only inside the same-version result branch. When the questionnaire answer arrives with another version (newVersion) or as a failure (langFailed) after the visitor pressed Back or Start again, the page wrongly shows the card with the notice (rewrites storage) or a connection block for an abandoned change.\n\nFix: right after the stale-ticket check (ticket !== state.ticket) add the guard: if the change began on the result screen (from === \"result\") and the screen is no longer the result, return — before the failure branch and before the new-version branch. Nothing else changes: no new state, no new text. Keep the guard that already exists after postResult. Update the comment above changeLanguage only if it becomes untrue.\n\nRules: change only tools/src/picker/public/app.js. Do not edit tests (the next step writes the test). Do not use git checkout, reset, stash or clean; make no commits. Run npm run check once at the end from tools/ (nothing in parallel; the computer has 16 GB RAM). Expected: zero red. Report the numbers honestly. No machine paths and no other projects' names in the handoff text.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T16:45:40Z",
+  "started_at": "2026-10-25T16:45:40Z",
+  "completed_at": "2026-10-25T16:49:15Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Closed finding R2 of step 11. In changeLanguage() of tools/src/picker/public/app.js one guard line was added right after the stale-ticket check: a language change begun on the result screen (from === \"result\") is dropped when the screen is no longer the result, before the failure branch (langFailed) and before the new-version branch (newVersion). So an answer that comes with another version, or as a failure, after the visitor pressed Back or Start over no longer opens the card with the notice, no longer rewrites the storage and no longer shows a connection block for an abandoned change (decisions/0078 item 11, design rule L4). Nothing else changed: no new state, no new text; the guard after postResult stays; the comment above changeLanguage is still true (it already says that a press whose answer comes after the visitor left the screen of the result is dropped), so it is not changed. No test touched (the next step writes the test).",
+    "changes": [
+      "R2 - tools/src/picker/public/app.js, function changeLanguage(), new line 516 right after 'if (ticket !== state.ticket) return;': 'if (from === \"result\" && state.screen !== \"result\") return;'. It stands before 'if (outcome.kind !== \"ok\") { langFailed(...) }' and before 'if (body.version !== state.q.version) { newVersion(body) }', so both late paths (failed answer, answer with another version) are dropped when the change began on the result screen and the visitor has left it. A change begun on another screen is not affected (from !== \"result\")."
+    ],
+    "self_check": [
+      "Before the edit (probe in the session scratch folder outside the project, built on the helpers of test/picker-page-helpers.js; no project file added): result screen, press Kazakh, questionnaire request held, press the edit button (Back to the question), answer arrives with another version. With the guard line removed for the probe: 'AssertionError: Expected values to be strictly equal: actual: card, expected: question' (the page went to the card). After the edit: probe passes, screen stays 'question', language stays ru, the storage snapshot is unchanged.",
+      "The same probe with a failed late answer (status 500) passes both before and after on the three things it checks (screen question, language ru, storage unchanged); it does not look at the connection block under the header, so for the failure path the probe does not show a difference; the guard covers it by position (it is before langFailed) and the test of the next step should assert that no block appears.",
+      "cd tools && npm run check (one run, nothing in parallel): the chain format:check, lint, traces, handoffs-check, test went through; test result: '# tests 1995 # suites 0 # pass 1995 # fail 0 # cancelled 0 # skipped 0 # todo 0', duration about 115 s. Zero red.",
+      "git diff --stat for the file in this step: 1 insertion in app.js (relative to the state before this step); no skip, no disabled rule, no git checkout/reset/stash/clean, no commit."
+    ],
+    "issues": [
+      "No test fails because of this change. Not pinned by a test yet: the new guard (late answer with another version and late failed answer after Back / Start over from the result screen) - QP-9j uses the same version only; the test is the work of the next step (TEST-DESIGNER), expected behaviour: screen, language, address, storage and write log unchanged, no card with the notice, no block under the header.",
+      "Note for the same kind (AP-014): inside changeLanguage() the check 'if (state.screen !== \"result\") return;' at the start of the 'from === \"result\"' branch is now redundant, because the new guard stands before it; it was left as it is, as ordered (nothing else changes). It can be removed in a later cleanup.",
+      "Design note, outside this write_set: design 5.2 L1 ('another version - as B1') and L4 do not say which rule wins; with this fix the left screen wins. The wording of L1/L4 may be made explicit by CODE-DESIGNER or DOC-UPDATER (see R1 of step 11 for the other design-text corrections)."
+    ],
+    "artifacts_out": [
+      "tools/src/picker/public/app.js"
+    ]
+  }
+}

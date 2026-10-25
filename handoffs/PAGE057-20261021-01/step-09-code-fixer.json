@@ -1,0 +1,63 @@
+{
+  "handoff_id": "step09-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PAGE057-20261021-01/step-09-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-08-test-designer.json"
+    ],
+    "route": "CODE-FIXER",
+    "write_set": [
+      "tools/src/picker/public/app.js",
+      "docs/design/REQ-057-picker-page.md"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T16:37:28Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git diff of app.js is one line moved in newVersion(): commitLanguage() before makeHead(); no test and no other file changed",
+        "QP-9f2 run alone by ORCH: 1 pass, 0 fail; the fixer's single npm run check: 1995 tests, 1995 pass, 0 fail",
+        "other callers of makeHead/setHeadLanguage have the right order (accept, redraw, changeLanguage result branch)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Fix one defect in the questionnaire page found by test QP-9f2 (tools/test/picker-page.test.js), without changing any test.\n\nDefect: in tools/src/picker/public/app.js function newVersion(), ui.head = makeHead() runs before commitLanguage() sets state.lang to the new language. When a language switch brings another questionnaire version, aria-current stays on the old language button and the group aria-label stays in the old language while the texts are already in the new language.\n\nFix: set the language first (commitLanguage()) and then build the header (makeHead()), or call setHeadLanguage after it. Smallest change. Keep the order of the other effects (notice, card shown, focus on the button of the new language). Check the other places that call makeHead() or setHeadLanguage for the same ordering mistake and report them; fix only the same kind of mistake.\n\nRules: change only tools/src/picker/public/app.js (and, if the design document says the order, the one sentence in docs/design/REQ-057-picker-page.md). Do not edit tests. Do not use git checkout, reset, stash or clean; make no commits. Run npm run check from tools/ once at the end (one run, nothing else in parallel; the computer has little memory). Expected: zero red. Report honestly what you ran and the numbers. No machine paths and no other projects' names in the handoff text.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T16:33:48Z",
+  "started_at": "2026-10-25T16:33:48Z",
+  "completed_at": "2026-10-25T16:37:02Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fixed the one defect found by QP-9f2: in newVersion() of tools/src/picker/public/app.js the header was built (makeHead()) before commitLanguage() set state.lang to the new language, so the header was built with the old language (aria-current on the old button, group aria-label in the old language) while the texts were already new. The two calls are swapped: commitLanguage() first, then ui.head = makeHead(). One line moved, nothing else changed; the order of the other effects (notice, card shown, focus on the button of the new language) is kept. The design document says nothing about this order (B1, L1, the line about the header only say that the header is built once and changes in place), so docs/design/REQ-057-picker-page.md is not changed. No test changed. Other places with the same kind of mistake (a header built or set before the language is current): none, see issues.",
+    "changes": [
+      "QP-9f2 (defect I1 of step 08) - tools/src/picker/public/app.js, function newVersion(), the two statements 'ui.head = makeHead();' and 'commitLanguage();' (lines 570-571) swapped: now commitLanguage() (state.lang = state.q.lang, document language, address, storage) runs first and then makeHead() builds the header with the new language, so buildHead -> setHeadLanguage puts aria-current on the button of the new language and the group aria-label in the new language. showCard(false) and focusNode(ui.head.langs[state.lang]) after it are unchanged."
+    ],
+    "self_check": [
+      "Before the edit: node --test --test-name-pattern=QP-9f2 test/picker-page.test.js (from tools/) -> '# tests 1 # pass 0 # fail 1'; AssertionError (deepStrictEqual) at picker-page.test.js:2226: expected aria-current 'true' on kk (the new language), actual 'true' on ru (the old one).",
+      "After the edit: the same command -> '# tests 1 # pass 1 # fail 0'.",
+      "cd tools && npm run check (one run, exit code 0): prettier --check: 'All matched files use Prettier code style!'; eslint --max-warnings 0: no output, clean; traces: 'files checked 2012, traces 0, skipped 59'; handoffs-check: 'files checked 1132, violations 0, exceptions used 114 of 114'; tests: '# tests 1995 # suites 0 # pass 1995 # fail 0 # cancelled 0 # skipped 0 # todo 0'. Before this work the same run was 1995 tests, 1994 pass, 1 fail (QP-9f2) per step 08.",
+      "Only tools/src/picker/public/app.js changed (git diff --stat: 1 insertion, 1 deletion). No skip, no disabled rule, no test touched, no git checkout/reset/stash/clean, no commit."
+    ],
+    "issues": [
+      "Search for the same kind of ordering mistake (grep makeHead, buildHead, setHeadLanguage, 'ui.head =' in tools/src/picker/public): makeHead() is called in two places only - accept() (line 176) and newVersion(); setHeadLanguage() is called in redraw() (line 491), in the result branch of changeLanguage() (line 536) and inside buildHead (screens.js:41). In accept() the language is set (state.lang = body.lang, line 173) before makeHead(): correct. In redraw() and in the result branch, commitLanguage() runs before setHeadLanguage(): correct. So newVersion() was the only place with the wrong order; nothing else was edited and nothing is left to report in this kind.",
+      "No test checks the changed behaviour in a way that now fails: QP-9f2 is green, and the full check is green. Not a finding, a note: the result branch of changeLanguage() calls setHeadLanguage() after commitLanguage() by hand, while newVersion() now relies on makeHead(); both orders are right, they differ only in the way (rebuild vs. change in place), which matches the design line that the header changes in place for the same version and is rebuilt for a new version (B1)."
+    ],
+    "artifacts_out": [
+      "tools/src/picker/public/app.js"
+    ]
+  }
+}

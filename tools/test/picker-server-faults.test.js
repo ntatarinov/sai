@@ -270,7 +270,7 @@ test("SF-6o: with a folder of the page that holds no index.html (or a folder of 
     assert.equal(res.text, NOT_FOUND_BODY, target);
   };
   await unknown("/t/uchet-pro/");
-  await unknown("/assets/stub.js");
+  await unknown("/assets/main.js");
   await unknown("/assets/index.html");
   fs.mkdirSync(path.join(publicDir, "index.html"));
   await unknown("/t/uchet-pro/");
@@ -297,7 +297,7 @@ const ALLOW = [
   ["result", "/t/uchet-pro/api/result", "POST"],
   ["page", "/t/uchet-pro/", "GET"],
   ["redirect", "/t/uchet-pro", "GET"],
-  ["asset", "/assets/stub.js", "GET"],
+  ["asset", "/assets/main.js", "GET"],
 ];
 
 test("SF-6c: PUT, DELETE, PATCH, HEAD, OPTIONS on every kind of route, POST on the questionnaire and GET on the result are 405 with the Allow of the table; the message is in the language of the request where the tenant is known and in all languages where not", async (t) => {
@@ -841,7 +841,7 @@ test("SF-6g: for every kind of refusal and in each language the message is the t
       faults.restore();
     }
   }
-  assert.equal(Object.keys(SERVER_TEXTS).length, 12);
+  assert.equal(Object.keys(SERVER_TEXTS).length, 11);
 });
 
 // ---------------------------------------------------------------------- SF-6h
@@ -884,13 +884,13 @@ test("SF-6h: a failure to read the file of the page is 500 internal in the langu
   const faults2 = installFaults([
     {
       fn: "openSync",
-      paths: [path.join(PUBLIC_DIR, "stub.js")],
+      paths: [path.join(PUBLIC_DIR, "main.js")],
       effect: "throw",
       code: "EIO",
     },
   ]);
   try {
-    const asset = await request(s.port, { path: "/assets/stub.js" });
+    const asset = await request(s.port, { path: "/assets/main.js" });
     assert.equal(asset.status, 500);
     assert.equal(JSON.parse(asset.text).error, "internal");
   } finally {

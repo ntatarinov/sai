@@ -1,0 +1,75 @@
+{
+  "handoff_id": "step14-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "14",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/PAGE057-20261021-01/step-14-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-057"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-12-code-fixer.json",
+      "handoffs/PAGE057-20261021-01/step-13-test-designer.json"
+    ],
+    "route": "SECURITY-REVIEWER",
+    "write_set": [
+      "handoffs/PAGE057-20261021-01/step-14-security-reviewer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T17:00:20Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED, verdict PASS, only own file changed; guard writes nothing and sends nothing; no finding beyond the carried Low K1",
+        "reviewer's hostile probe 13 cases green; mutant without guard fails QP-9k, QP-9l"
+      ]
+    }
+  },
+  "task": {
+    "description": "Security gate for the added guard in tools/src/picker/public/app.js changeLanguage() (step 12: after the stale-ticket check, return if the change began on the result screen and the visitor left it) and the tests QP-9k, QP-9l (step 13). Check Q7-Q11 and R3 with your own check: nothing new reaches the document, storage, address or network; the dropped path writes nothing (storage, history.replaceState) and sends no request; the stale POST answer is not shown. Read only; no full npm run check (16 GB RAM computer); single test files only.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T16:56:39Z",
+  "started_at": "2026-10-25T16:56:39Z",
+  "completed_at": "2026-10-25T16:58:42Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Gate after step 12 (guard in changeLanguage()) and step 13 (tests QP-9k, QP-9l, design text).\n\nCHANGE CAPTURED. git diff HEAD for tools/src/picker/public/app.js shows two things only: the swap of step 09 (commitLanguage() before makeHead(), already gated at step 10 PASS) and the new line 516 of step 12: 'if (from === \"result\" && state.screen !== \"result\") return;' right after 'if (ticket !== state.ticket) return;' and before langFailed() and newVersion(). texts.js differs from HEAD only by the three translation strings already gated at step 10. I read changeLanguage(), send(), onNetAction(), newVersion(), commitLanguage() and the whole of net.js request path.\n\nMAP OF SURFACES. goes to the browser: tools/src/picker/public/app.js (touched; texts.js unchanged since step 10). comes from outside: the late answer of the questionnaire request in app.js (body already checked by net.js, unchanged). customer data (the visitor's own storage key): save()/wipe() callers in app.js (unchanged, only one path now skips them). tools/test/picker-page.test.js (QP-9k, QP-9l added), tools/test/picker-page-helpers.js (not changed by step 13), docs/design/REQ-057-picker-page.md: no surface (tests and a document; they do not run in the product; looked at only for weakening: step 13 only added two tests and two local helpers). No file with writes files, holds a secret, or the server goes by itself.\n\nITEMS. Q7 applicable and met: search over src/picker/public/ and test/picker-page*.js for secret|token|api key|password|bearer|authorization|private key|sk-|ghp_|AKIA: the only matches are 'tokens' of CSS design tokens (page.css:1) and 'tokens' of a selector parser in picker-page-dom.js and of QS-8 in picker-page-static.test.js - not secrets; the page holds no secret, the guard line adds no string. Q8 applicable and met (not touched): the page is bound to one tenant by the relative paths 'api/questionnaire' and 'api/result' (net.js, unchanged) and the one storage key of the tenant (store.js, unchanged); the guard adds no path to data. Q9 not applicable: no query language on this surface; no SQL or raw query in the changed files. Q10 applicable and met: the new return is before any use of the late answer; the late failure and the late wrong-version answer are handled (dropped) and cannot break other requests; every request of the page still goes through the single request() of net.js with AbortSignal.timeout(20000); net functions never throw. Q11 not applicable: the page takes no address from the visitor; fetch( occurs once (net.js:34) with the two constant relative paths; the guard adds no request. R3 not applicable: no photos of people (decision 0033). R2 not applicable: not Pixel Office. Two checks beyond the items: 'writes files' - no row touched (the page writes only to the browser storage of the visitor, covered below); 'goes to the browser' - grep for innerHTML|outerHTML|insertAdjacentHTML|document.write|eval(|new Function|srcdoc|setAttribute(on*)|.href=|.src=|location.href/assign/replace over public/*.js: no match; text goes through textContent (dom.js:32) and setAttribute with checked codes; the guard introduces no text.\n\nTHE FOUR POINTS OF THE TASK. (1) Nothing new reaches the document, storage, address or network: the diff adds one return and no write; all sinks in the page are replaceState (app.js:480, in commitLanguage only), localStorage get/set/remove (store.js only, through save()/wipe()), fetch (net.js:34); the new line is before every caller of commitLanguage() (lines 536, 543, 571 via newVersion) and of langFailed(). (2) The dropped path writes nothing and sends no request: after the line there is no code of the call. (3) The stale answer is not shown: no render call on that path; the only things before it are the old setHeadNet(null) at the start of the press and the ticket bump, both existing. (4) Not a hole for returning to the result: a way back to the result screen is only send(), which bumps state.ticket, so an answer of a press from before is dropped by the ticket check too.\n\nHOSTILE PROBES (own, in the scratch folder outside the project, built on the helpers of test/picker-page-helpers.js, not from the tests of step 13): 13 cases, all green on the real code. (a) 10 cases: leave the result screen by Back or by Start over (2) x late answer of 5 kinds (another version with the name '<img src=x onerror=alert(1)><script>alert(2)</script>'; a body of the wrong form with the same text; status 500 with the same text in error and message; a network error; status 429): after each the screen is 'question', the storage snapshot, the number of setItem and of removeItem, the number of requests, the replaceState count, the address search, document.title are as before the late answer, no img or script element exists, the text 'onerror' is not on the page, no block of the net. (b) 2 cases: leave by Back, answer another way, ask the result again, then the late answer comes (another version / status 500): the result stays, language ru, text, storage, requests unchanged. (c) 1 control: a change begun on the question screen is not affected by the guard (language kk, screen question). Oracle: the values taken before the late answer and literals; nothing is read from the page code. Mutant of my own on a copy outside the project: the guard line deleted: my probe (a) fails, QP-9k and QP-9l fail (3 red of 67), everything else green; with the guard restored: 64 of 64 of picker-page.test.js and 3 of 3 of the probe green. Timing check: not applicable - no new parse or loop; the guard is a constant-time comparison.\n\nRUNS (single files only, no full npm run check): node --test test/picker-page.test.js: tests 64, pass 64, fail 0 (about 2 s); node --test test/picker-page-static.test.js: tests 12, pass 12, fail 0.\n\nCODE DID NOT CHANGE: the sha256 of the 11 files of src/picker/public/, the 5 files test/picker-page*.js and docs/design/REQ-057-picker-page.md, and the hash of the sorted list of hashes of all files of src/ and of test/ are the same before and after (diff of the two lists is empty). I changed nothing except this handoff.",
+    "findings": [
+      {
+        "id": "K1",
+        "place": "tools/src/picker/public/net.js:34 (fetch redirect mode), carried over",
+        "item": "Q10 / Q11 (carried over from steps 05 and 10)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The Low items recorded at steps 05 and 10 (decision 0078 item 14) are unchanged by steps 12 and 13; the state is not worse. No new finding in this change.",
+        "fix": "As recorded in step 05; not part of this change."
+      }
+    ],
+    "self_check": [
+      "cd tools && git diff HEAD -- src/picker/public/app.js: 2 hunks - line 516 'if (from === \"result\" && state.screen !== \"result\") return;' after the ticket check, and the swap of makeHead()/commitLanguage() of step 09. git diff HEAD -- src/picker/public/texts.js: 3 translation strings (step 07).",
+      "grep -nE 'innerHTML|outerHTML|insertAdjacentHTML|document\\.write|eval\\(|new Function|setAttribute\\(\"on|srcdoc|\\.href *=|\\.src *=|location\\.(href|assign|replace)' src/picker/public/*.js: no output.",
+      "grep -rniE 'secret|token|api[_-]?key|password|bearer|authorization|BEGIN [A-Z ]*PRIVATE|sk-[A-Za-z0-9]{10,}|ghp_|AKIA' src/picker/public/ test/picker-page*.js: matches only 'tokens' of CSS and of a selector parser (page.css:1, picker-page-dom.js:367-374, picker-page-static.test.js:429-465): not secrets.",
+      "grep -nE 'fetch\\(|XMLHttpRequest|sendBeacon|WebSocket|localStorage|sessionStorage|cookie|replaceState|pushState' src/picker/public/*.js: fetch only net.js:34; replaceState only app.js:480 (commitLanguage); localStorage only store.js:85,125,136.",
+      "grep -n 'ticket' src/picker/public/*.js: the ticket is raised at app.js:426 (send) and 510 (changeLanguage) and compared at 515 and 530.",
+      "node --test test/picker-page.test.js: tests 64 pass 64 fail 0; node --test test/picker-page-static.test.js: tests 12 pass 12 fail 0.",
+      "Own probe (scratch folder, outside the project): 13 cases, node --test: tests 3 pass 3 fail 0 on the real code; on a copy with the guard line deleted: tests 67, pass 64, fail 3 (QP-9k, QP-9l, my probe a).",
+      "sha256 before and after (11 files public/, 5 files test/picker-page*.js, the design document, the hash of the sorted list of src/ and of test/): diff empty. app.js 0af5b0e0a4095b4cd725a59304c6c11dbe8cc5fe20931d2332a4bac72239809c; picker-page.test.js 3a3cbbdf0a8f9878201160ef1294c9cc9ef453928ed4a02e012ce4dd03398ee3; picker-page-helpers.js e86ee72fbedc7eee8bcdc33564e4473782b1e6c9476d29207b2007b846c13725; design document 8127fe8366da6cd981626a76b068635a4f6db75395684c724c7715437142e12a.",
+      "No git checkout/reset/stash/clean, no commit, no full npm run check."
+    ],
+    "issues": [
+      "Note for REVIEWER (not a finding): in changeLanguage() the check 'if (state.screen !== \"result\") return;' at the start of the 'from === \"result\"' branch is now unreachable after the new guard (already noted by CODE-FIXER and TEST-DESIGNER, AP-014); harmless.",
+      "Note: tools/src/picker/public/app.js is absent from the tag base/PAGE057-20261021-01, so a diff against the tag shows the whole file; the comparison was made against HEAD, as at step 10.",
+      "Note: the late-failure test QP-9l and my probe both show that a late failure leaves no block under the header; the connection block of a press that was NOT begun on the result screen is outside this change."
+    ],
+    "artifacts_out": []
+  }
+}

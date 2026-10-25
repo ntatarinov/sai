@@ -89,11 +89,6 @@ export const SERVER_TEXTS = {
     "Бірдеңе дұрыс болмады. Кейінірек қайталап көріңіз.",
     "Something went wrong. Please try again later.",
   ],
-  page_stub_notice: [
-    "Страница с вопросами скоро появится.",
-    "Сұрақтар беті жақында пайда болады.",
-    "The questions page will be available soon.",
-  ],
 };
 // The text of a key in a language, {name} replaced by the values.
 export function textFor(key, lang, values = {}) {
