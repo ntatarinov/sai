@@ -79,8 +79,10 @@ test("TM-01 (в) the decision names the code folder, the stack, the check, D-A, 
 
 test("TM-01 (г) CLAUDE.md describes the product as a virtual team and no longer says there is no product code", () => {
   const text = read("CLAUDE.md");
-  assert.ok(text.includes("виртуальная команда"));
+  assert.ok(text.includes("virtual team"));
   assert.ok(!text.includes("кода продукта нет"));
+  assert.ok(!text.includes("there is no product code"));
+  assert.ok(!text.includes("no product code"));
 });
 
 // ---- TM-50 ---------------------------------------------------------------------------
@@ -88,7 +90,7 @@ test("TM-01 (г) CLAUDE.md describes the product as a virtual team and no longer
 test("TM-50 the README has the section of the core with every point of the design", () => {
   const body = section(
     fs.readFileSync(path.join(TOOLS_DIR, "README.md"), "utf8"),
-    "## Sai Team — ядро",
+    "## Sai Team — the core",
   );
   const low = body.toLowerCase();
   const points = [
@@ -96,14 +98,14 @@ test("TM-50 the README has the section of the core with every point of the desig
     "0700",
     "0600",
     "work/",
-    "занят",
-    "восстановлен",
+    "busy",
+    "recovered",
     "прервано аварией",
-    "вручную",
-    "имена файлов результата не маскируются",
+    "by hand",
+    "the names of result files are not masked",
     "UTF-8",
-    "двоичные отклоняются",
-    "похожее на ключ",
+    "binary ones are rejected",
+    "looks like a key",
     "npm run check",
   ];
   for (const point of points)

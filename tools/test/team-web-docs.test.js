@@ -29,9 +29,9 @@ function walk(dir, out = []) {
   return out;
 }
 
-test("WEB-12 tools/README.md has the section «## Sai Team — интерфейс»: how to start, the address with the link, that only this computer is listened to, the six questions, the rule of the due time, real runs and Ctrl-C; package.json has the script team-web", () => {
+test("WEB-12 tools/README.md has the section «## Sai Team — the interface»: how to start, the address with the link, that only this computer is listened to, the six questions, the rule of the due time, real runs and Ctrl-C; package.json has the script team-web", () => {
   const readme = read(TOOLS_DIR, "README.md");
-  const s = section(readme, "## Sai Team — интерфейс");
+  const s = section(readme, "## Sai Team — the interface");
   for (const line of [
     "npm run team-web",
     "127.0.0.1",
@@ -39,19 +39,19 @@ test("WEB-12 tools/README.md has the section «## Sai Team — интерфей�
     "--port",
     "--executor scripted --scenario",
     "SAI_TEAM_REAL_RUNS=1",
-    "Сервер слушает только `127.0.0.1`",
+    "The server listens only on `127.0.0.1`",
     "Что происходит",
     "Кто занимается",
     "Когда будет готово",
     "Есть ли проблема",
     "Нужно ли что-то от меня",
     "Результат",
-    "### Правило срока",
-    "медиана",
+    "### The rule of the term",
+    "the median of durations",
     "срок пока не оценить",
     "примерно через X мин",
     "npm run team -- resume",
-    "без процентов",
+    "without percents",
   ]) {
     assert.ok(s.includes(line), `the section lacks: ${line}`);
   }

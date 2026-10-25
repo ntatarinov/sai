@@ -25,14 +25,14 @@ test("DC-01: tools/README.md has every phrase of criterion 15 (like grep -F), an
     "--text",
     "SAI_PIXEL_OFFICE_STORE_TEXT",
     "0011",
-    "### Хранение текста",
-    "остаточный риск",
+    "### Storing the text",
+    "residual risk",
     "[скрыто]",
     "/api/note",
     "--session",
-    "без --session",
-    "и у сервера, и у Claude Code (в обоих местах)",
-    "три части через точку",
+    "without --session",
+    "both for the server and for Claude Code (in both places)",
+    "three parts through a dot",
     "a.test.js",
     "22.21.1",
   ];
@@ -49,7 +49,7 @@ test("DC-01: tools/README.md has every phrase of criterion 15 (like grep -F), an
 
 // The four checks of criterion 16 as the criterion writes them.
 const G1 = /pixel-office-note/;
-const G2 = /до раздачи|до запуска агентов/;
+const G2 = /before handing out to agents|before launching agents/;
 const G3 = /pixel-office-note[^`]*--text/;
 const G4 = /pixel-office-note[^`]*/g;
 
@@ -69,7 +69,10 @@ function checks(text) {
 test("DC-02: the role of the orchestrator passes G1-G4 of criterion 16; the same expressions on invented lines accept and reject as intended", () => {
   const real = checks(ROLE);
   assert.ok(real.g1 >= 1, "G1: no line with pixel-office-note");
-  assert.ok(real.g2 >= 1, "G2: no 'до раздачи' or 'до запуска агентов'");
+  assert.ok(
+    real.g2 >= 1,
+    "G2: no 'before handing out to agents' or 'before launching agents'",
+  );
   assert.ok(real.g3 >= 1, "G3: no command with --text in one line");
   assert.equal(real.g4, 0, "G4: --session inside the command");
 
@@ -119,8 +122,15 @@ function awkPart(text, start) {
 // grep -c : the number of lines that match
 const grepC = (lines, re) => lines.filter((l) => re.test(l)).length;
 
-const LIMITS = /^### Ограничения/;
+const LIMITS = /^### Limits/;
 const PIXEL = /^## Pixel Office/;
+// The three removed screen features (a task counter "tasks n/m", a progress strip,
+// the state "completed"), each in the Russian form of the old README and in English.
+// The English README may say that the page has no progress bar, so a bar or a strip
+// counts only when it is not denied ("no", "without" right before it).
+const OLD_FACTS =
+  /задач [0-9n]+\/|полоса хода|«завершена»|tasks? [0-9n]+\/|(?<!\bno |without |without a )progress (?:bar|strip)|move strip|«completed»/i;
+const OLD_STATE = /«завершена»|«completed»/i;
 
 test("FS-16: the README tells the new words - 'нет свежих данных' in the limits and in the section, 'сервер перезапускался' in the section, no 'задач n/', 'полоса хода' or «завершена» there; the four checks of criterion 11, run on the file and on invented text", () => {
   const limits = awkPart(README, LIMITS);
@@ -137,19 +147,19 @@ test("FS-16: the README tells the new words - 'нет свежих данных'
     grepC(pixel, /сервер перезапускался/) >= 1,
     "section: сервер перезапускался",
   );
-  assert.equal(grepC(pixel, /задач [0-9n]+\/|полоса хода|«завершена»/), 0);
+  assert.equal(grepC(pixel, OLD_FACTS), 0);
   // the threshold and the constant are named in the section
   assert.ok(pixel.join("\n").includes("STALE_AFTER_MS"));
-  assert.ok(/60 минут/.test(pixel.join("\n")));
+  assert.ok(/60 minutes/.test(pixel.join("\n")));
   // the trusted lines (criterion 7) and the old words are not in the limits
-  assert.equal(grepC(limits, /«завершена»/), 0);
+  assert.equal(grepC(limits, OLD_STATE), 0);
 
   // the checks themselves, on invented text
   const sample = [
     "# Doc",
     "## Pixel Office",
     "Текст.",
-    "### Ограничения",
+    "### Limits",
     "1. Задача не остаётся «в работе»: нет свежих данных.",
     "## Другое",
     "нет свежих данных тут не считается",
@@ -158,8 +168,38 @@ test("FS-16: the README tells the new words - 'нет свежих данных'
   assert.equal(grepC(awkPart(sample, PIXEL), /нет свежих данных/), 1);
   assert.equal(grepC(awkPart(sample, PIXEL), /сервер перезапускался/), 0);
   const old = "## Pixel Office\nзадач 3/5 · полоса хода · «завершена»";
+  assert.equal(grepC(awkPart(old, PIXEL), OLD_FACTS), 1);
+  // the same three facts in English: each one alone fires the guard
+  for (const line of [
+    "The page shows a progress bar (a move strip) and a counter tasks 3/5 with the state «completed».",
+    "A progress bar for each task.",
+    "A progress strip above the cards.",
+    "A move strip above the cards.",
+    "The counter reads tasks 3/5.",
+    "The counter reads task 3/5.",
+    "A finished task has the state «completed».",
+  ]) {
+    assert.equal(
+      grepC(awkPart(`## Pixel Office\n${line}`, PIXEL), OLD_FACTS),
+      1,
+      line,
+    );
+  }
   assert.equal(
-    grepC(awkPart(old, PIXEL), /задач [0-9n]+\/|полоса хода|«завершена»/),
+    grepC(
+      awkPart("## Pixel Office\nA note says «completed» is gone", LIMITS),
+      OLD_STATE,
+    ),
+    0,
+  );
+  assert.equal(
+    grepC(
+      awkPart(
+        "## Pixel Office\n### Limits\nThe state «completed» is shown.",
+        LIMITS,
+      ),
+      OLD_STATE,
+    ),
     1,
   );
 });
@@ -169,13 +209,13 @@ test("FS-16: the README tells the new words - 'нет свежих данных'
 // 9, REQ-044 criterion 11): the awk + grep -c of the criteria, in JS (awkPart
 // and grepC above), also on invented text.
 
-test("NM-09: the section Pixel Office of the README says 'строка на агента' (REQ-036 criterion 10)", () => {
+test("NM-09: the section Pixel Office of the README says 'a row for each agent' (REQ-036 criterion 10)", () => {
   const pixel = awkPart(README, PIXEL);
-  assert.ok(grepC(pixel, /строка на агента/) >= 1);
+  assert.ok(grepC(pixel, /a row for each agent/) >= 1);
   assert.equal(
     grepC(
-      awkPart("## Pixel Office\nодна строка «Сейчас»", PIXEL),
-      /строка на агента/,
+      awkPart("## Pixel Office\none row «Сейчас»", PIXEL),
+      /a row for each agent/,
     ),
     0,
   );
@@ -219,13 +259,13 @@ test("DC-03: the section Pixel Office of the README has the phrases of criterion
   }
 });
 
-test("MC-07: the section Pixel Office of the README names the 'карточка основной сессии' (REQ-047 criterion 7)", () => {
+test("MC-07: the section Pixel Office of the README names the 'card of the main session' (REQ-047 criterion 7)", () => {
   const pixel = awkPart(README, PIXEL);
-  assert.ok(grepC(pixel, /карточка основной сессии/) >= 1);
+  assert.ok(grepC(pixel, /card of the main session/) >= 1);
   assert.equal(
     grepC(
-      awkPart("## Pixel Office\nкарточка роли", PIXEL),
-      /карточка основной сессии/,
+      awkPart("## Pixel Office\nthe card of a role", PIXEL),
+      /card of the main session/,
     ),
     0,
   );

@@ -1,0 +1,95 @@
+{
+  "handoff_id": "step05-TRANSL-20261025-01",
+  "run_id": "TRANSL-20261025-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/TRANSL-20261025-01/step-05-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": ["decisions/0080-english-instructions.md"],
+    "route": "ORCH -> DOC-UPDATER (translation) -> RELEASE-VALIDATOR -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/quality-bar.md, docs/anti-patterns.md, CLAUDE.md, README.md, README.en.md, docs/agents.en.md, tools/README.md, handoffs/TRANSL-20261025-01/step-05-doc-updater.json"
+    ],
+    "base_tag": "base/TRANSL-20261025-01",
+    "orch_check": {
+      "at": "2026-10-25T13:36:44Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "files translated in place per decisions/0080; handoffs-check and traces clean; role files keep front matter; Cyrillic left only as quoted text with gloss (to be re-checked by the gate); tests reading Russian wording go to step 06"
+      ]
+    }
+  },
+  "task": {
+    "description": "Translate the listed Sai files from Russian into English, following decisions/0080-english-instructions.md exactly (read it first, including the glossary in item 5). Rules: (1) the meaning must not change — same rules, numbers, names, order of sections; do not shorten, improve or add rules; (2) keep unchanged every file name, identifier, field name, AP-NNN, REQ-NNN, ISS-NNNN, decision number, command, role code and code block; (3) the front matter keys stay, but name: and description: are written in English (the name keeps the form \"Sai <Role> (CODE)\"); (4) text that the owner or a customer reads and tool error messages stay in the original Russian when quoted, followed by a short English gloss in parentheses; (5) plain, short English sentences, one term per concept (use the glossary); (6) no computer paths and no names of other projects in the text; (7) write the file in place with the Write tool, do not run prettier on .md outside tools/. Do not use git checkout/reset/stash/clean and do not commit. Do not stop the demo server on port 4782. Before close run: cd tools && npm run handoffs-check and npm run traces. In result list the files you translated and anything you were unsure about (issues). Files to translate: docs/quality-bar.md, docs/anti-patterns.md, CLAUDE.md, README.md, tools/README.md. Also merge README.en.md into README.md and docs/agents.en.md into the matching role files only where English text adds something the translation does not have; then delete README.en.md and docs/agents.en.md with rm (they are untracked-copy files of the same content) and fix links to them everywhere in docs/ and README.md.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T13:15:45Z",
+  "started_at": "2026-10-25T13:15:45Z",
+  "completed_at": "2026-10-25T13:34:23Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Translated from Russian into English, in place, under decisions/0080: docs/quality-bar.md, docs/anti-patterns.md (all 123 records AP-001..AP-123 kept in order, with their numbers), CLAUDE.md, README.md and tools/README.md (then formatted with prettier). Same sections in the same order, same rules and numbers; file names, identifiers, commands and code blocks are unchanged; words the page shows and tool messages are quoted in Russian with an English gloss. README.en.md was merged into README.md (the roles/handoffs/gates/workflows part, the detailed list of what works, the real-run note and the newer \"not ready\" section) and removed with rm; docs/agents.en.md was removed (its general part is in README.md, its per-role part duplicated the role files, which are other agents' files). No rule was added, removed or shortened.",
+    "changes": [
+      "docs/quality-bar.md - whole file translated; items Q1-Q14, R1-R3, sections 1-6 and the numbers unchanged; one cross-reference to the \"Short path\" section.",
+      "docs/anti-patterns.md - whole file translated; AP-001..AP-123 in the same order; the four Russian field names kept and explained under the format block; a short note added in AP-102 that README.en.md was merged and removed on 2026-10-25; references to handoffs.md sections aligned with the English headings.",
+      "CLAUDE.md - whole file translated; the placeholder <вне проекта> kept with an English gloss.",
+      "README.md - whole file translated; merged from README.en.md: sections \"How the roles and workflows work together\" and the detailed \"What already works\" (Pixel Office, Sai Team, real run, checks), and the dated \"What is not ready or not proven\" section; link to README.en.md removed; mentions of docs/agents.en.md replaced by .claude/agents/.",
+      "tools/README.md - whole file translated (13 \"## \" and 58 \"### \" headings kept in order); screen words, error messages and help lines quoted in Russian with a gloss; prettier --write applied.",
+      "README.en.md - deleted with rm (content merged into README.md).",
+      "docs/agents.en.md - deleted with rm (see issues I2)."
+    ],
+    "self_check": [
+      "cd tools && npm run handoffs-check: 'handoffs-check: файлов проверено 1117, нарушений 0, исключений использовано 114 из 114'.",
+      "cd tools && npm run traces: 'traces: файлов проверено 1991, следов 0, пропущено 61' (skipped are binary files).",
+      "cd tools && npx prettier --check README.md: 'All matched files use Prettier code style!'.",
+      "diff of the lists of '### AP-NNN' headings, original (git HEAD copy before my edit) and translation: identical; each of the four field names occurs 124 times in both (123 records plus the format block); the sets of ISS- references are identical.",
+      "grep -c '^## ' and '^### ' on tools/README.md before and after: 13 and 58 in both.",
+      "grep -rIn 'README\\.en\\|agents\\.en' README.md CLAUDE.md docs/quality-bar.md docs/workflows tools .claude: no match (matches remain only in history files, see issues I2).",
+      "node --test over 10 test files that read these documents: 45 of 77 pass, 32 fail on Russian wording (listed in issues I3); not run as a whole check."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "README.md, section \"What is not ready or not proven\": I took the text of README.en.md (checked against the files on 2026-10-17: 53 requirements, 62 open defects, one real run) instead of translating the Russian section (dated 2026-10-11: 41 requirements, 17 defects, \"real Claude never started\"), because the Russian section was stale and contradicted other parts of the same file; this is the \"merge README.en.md where it adds something\" part of the task. The numbers there are still as of 2026-10-17, not today (audit finding RM2 of AGENTS-20261025-01 already says these sections are out of date). The translated section \"Check on GitHub and before a push\" still says there is no branch protection, as the Russian text did (it is locked by the tests RD-1..RD-4 and by AP-079, AP-102); I changed no fact."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "docs/agents.en.md was NOT merged into the role files: the role files are translated in parallel by other agents and are not in my write set. Its general part (how the roles work together, gates, rework) is now in README.md, section \"How the roles and workflows work together\" (merged with the same part of README.en.md); the per-role summaries duplicated the role files and are dropped with the file. Both README.en.md and docs/agents.en.md are removed with rm. Links: none left in README.md, docs/workflows, docs/quality-bar.md, CLAUDE.md, tools/. The names README.en.md and docs/agents.en.md remain only in history files that I must not change (STATE.md, docs/design/AGENTS-workflow-audit.md, docs/releases/DOCSEN-20261017-01.md, AGENTS-20261025-01.md, LICENSE-20261018-01.md, decisions/0064, handoffs) and in the record AP-102 (I added a short note there that the file was merged and removed on 2026-10-25). A doc auditor may still report them as broken links."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Tests that read these files and compare Russian wording now fail (32 of 77 in the 10 test files I ran: pixel-office-docs DC-01, FS-16, NM-09, MC-07, ST-06, DC-02; repo.test.js RD-1..RD-4, TM-01, TM-50, EN-75, TD-1..TD-3, REQ-003; handoffs-cmd-docs HO-50..HO-52; handoffs-docs HC-9a; team-web-docs WEB-12; exec-docs EX-37). They are re-pointed in the test step, not here. Facts for that step: the README headings are now \"How to open on another computer\" and \"Check on GitHub and before a push\" (in this order, nothing between them); the words of the GitHub section are now in English: \"no branch protection\", \"the merge is confirmed by the owner\", \"about 2 minutes\", \"bypass\", \"working folder\" (the other eleven of the thirteen words are unchanged; the section has none of \"private\", \"public\", \"403\"); tools/README.md headings were translated (13 \"## \" and 58 \"### \" headings, same count and order), and quoted screen words such as «нет свежих данных», «сервер перезапускался», «строка на агента» stay in Russian inside quotes, with an English gloss next to them. HO-46 and HO-47 also failed in my run; they run other test files and are probably affected by edits of other agents, I did not check."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Russian kept on purpose (decision 0080 items 3 and 4): in tools/README.md the words the page shows, tool error messages, help and output lines are quoted in Russian with a short English gloss; code blocks (commands and their output) are unchanged, so placeholders inside code blocks stay Russian (for example <ШАГ>, <папка>) with a gloss under the block, while placeholders in inline code in the prose were written in English (<port>, <number>). In docs/anti-patterns.md the four field names of a record (Что случилось, Почему это плохо, Как правильно, Где найдено) stay in Russian, as the role file doc-updater.md quotes them; the format block keeps them and a sentence under it gives their meaning. Quoted Russian words in records (for example «рано», «да», «нет свежих данных») are kept with a gloss. References to section names of handoffs.md and the workflows were aligned with the English headings that exist now (\"Pauses and interruptions\", \"Bookkeeping check\", \"Who writes what\", \"How ORCH writes the task\", \"Where handoffs are stored and how they are named\", \"Variant: a short document with a value gate\", \"The \\\"before\\\" snapshot and parallel runs\", \"Short path\", \"Report to the owner\"); if other translators rename those headings, these references must be aligned."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Unsure points: (a) docs/anti-patterns.md has 123 records AP-001..AP-123 plus the format example; all are translated, the order and numbers are the same, the sets of AP-, REQ- and ISS- references differ from the original only by the Russian quotes I glossed twice. I could not check the meaning of every line against the history files. (b) In AP-032, AP-033, AP-036, AP-038 the Where-found references to item letters of the old tasks (5в, 5г, 4б, 4г, 5а) are kept as Cyrillic letters, because they point into Russian handoffs. (c) README.md first lines: the license line is unchanged in content. (d) I did not run npm run check as a whole; I ran handoffs-check and traces (green) and prettier --check on tools/README.md (green)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/quality-bar.md",
+      "docs/anti-patterns.md",
+      "CLAUDE.md",
+      "README.md",
+      "tools/README.md",
+      "README.en.md (deleted)",
+      "docs/agents.en.md (deleted)",
+      "handoffs/TRANSL-20261025-01/step-05-doc-updater.json"
+    ]
+  }
+}

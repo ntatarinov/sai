@@ -39,17 +39,17 @@ test("REQ-002 AC1: decisions/0002 has every section and the owner's confirmation
 test("REQ-003 AC1: WF-06 document has the required sections and steps 0-7", () => {
   const text = read("docs/workflows/WF-06-idea-selection.md");
   for (const h of [
-    "Роли",
-    "Шаги",
-    "Артефакты",
-    "Handoff-ы",
-    "Цикл доработки",
-    "Условия остановки",
+    "Roles",
+    "Steps",
+    "Artifacts",
+    "Handoffs",
+    "Rework loop",
+    "Stop conditions",
   ]) {
     assert.ok(hasHeading(text, `## ${h}`), `missing ## ${h}`);
   }
   for (let n = 0; n <= 7; n++) {
-    assert.ok(text.includes(`Шаг ${n}`), `missing Шаг ${n}`);
+    assert.ok(text.includes(`Step ${n}`), `missing Step ${n}`);
   }
 });
 
@@ -121,8 +121,8 @@ test("REQ-003 AC3: analyst and judge have a reading scope that overrides CLAUDE.
 
 const WORKFLOW_REL = ".github/workflows/check.yml";
 const HOOK_REL = ".githooks/pre-push";
-const README_HEADING = "## Проверка на GitHub и перед отправкой";
-const README_PREVIOUS = "## Как открыть на другом компьютере";
+const README_HEADING = "## Check on GitHub and before a push";
+const README_PREVIOUS = "## How to open on another computer";
 
 function same(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
@@ -1116,15 +1116,15 @@ const README_WORDS = [
   "npm run check",
   "Node 22",
   "gh run list --workflow check.yml",
-  "защиты ветки нет",
+  "there is no branch protection",
   "decisions/0023",
   "D1",
-  "мерж подтверждает владелец",
+  "the merge is confirmed by the owner",
   ".githooks/pre-push",
-  "около 2 минут",
+  "about 2 minutes",
   "git config core.hooksPath .githooks",
-  "обход",
-  "рабочей папке",
+  "bypass",
+  "working folder",
 ];
 const README_COMMAND = "git config core.hooksPath .githooks";
 const README_BANNED = [
@@ -1133,6 +1133,11 @@ const README_BANNED = [
   "обязательная проверка",
   "приватн",
   "публичн",
+  "branch is protected",
+  "protection is turned on",
+  "required check",
+  "private",
+  "public",
   "403",
 ];
 const HOME_IN_TEXT = new RegExp(
@@ -1197,11 +1202,11 @@ function readmeOwn(id) {
   );
 }
 
-test('REQ-030 AC5 RD-1: README.md has one section after "Как открыть на другом компьютере", on its own, with no address and no path', () => {
+test('REQ-030 AC5 RD-1: README.md has one section after "How to open on another computer", on its own, with no address and no path', () => {
   assert.deepEqual(readmeOwn("RD-1"), []);
 });
 
-test('REQ-030 AC4 AC5 RD-2: the section has the thirteen exact words, including "защиты ветки нет" in lower case', () => {
+test('REQ-030 AC4 AC5 RD-2: the section has the thirteen exact words, including "there is no branch protection" in lower case', () => {
   assert.equal(README_WORDS.length, 13);
   assert.deepEqual(readmeOwn("RD-2"), []);
 });
@@ -1255,11 +1260,13 @@ test("REQ-030 AC5 RD-1..RD-4: the rules are not blind: every damaged copy of the
       () => sectionText((s) => s.split(word).join("ZZ")),
     ]),
     [
-      '"защиты ветки нет" in capitals',
+      '"there is no branch protection" in capitals',
       "RD-2",
       () =>
         sectionText((s) =>
-          s.split("защиты ветки нет").join("Защиты ветки нет"),
+          s
+            .split("there is no branch protection")
+            .join("There is no branch protection"),
         ),
     ],
     [

@@ -1,0 +1,92 @@
+{
+  "handoff_id": "step08b-TRANSL-20261025-01",
+  "run_id": "TRANSL-20261025-01",
+  "workflow_id": "WF-02",
+  "step": "08b",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/TRANSL-20261025-01/step-08b-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/TRANSL-20261025-01/step-07c-release-validator.json",
+      "handoffs/TRANSL-20261025-01/step-06-test-fixer.json"
+    ],
+    "route": "ORCH -> TEST-FIXER (rework) -> RELEASE-VALIDATOR (gate pass 2)",
+    "write_set": [
+      "tools/test/*.js, handoffs/TRANSL-20261025-01/step-08b-test-fixer.json"
+    ],
+    "base_tag": "base/TRANSL-20261025-01",
+    "orch_check": {
+      "at": "2026-10-25T14:37:16Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "rework per gate findings reported done; npm run check shows only the 11 known reds; the gate pass 2 re-verifies on the files"
+      ]
+    }
+  },
+  "task": {
+    "description": "Rework of tests after the gate FAIL on step 06 (findings F1 and L4 in handoffs/TRANSL-20261025-01/step-07c-release-validator.json). 1. tools/test/pixel-office-docs.test.js FS-16 (lines about 143, 148, 163-165): the negative guard only knows the Russian phrases «задач N/», «полоса хода», «завершена», so an English line with the same facts keeps it green. Add English forms of the same three facts to both regexes and add an English \"old\" sample line; prove with a mutant on a copy of the project (fresh clone outside the project, never checkout/reset/stash/clean here) that FS-16 turns red when the English forbidden facts are added to the Pixel Office section and is green on the real text. 2. tools/test/exec-docs.test.js EX-37 (line about 68): `startsWith(title)` is looser than the old `=== title`; make it `startsWith(title + \" (\")` or an exact match that the English text satisfies. 3. tools/test/team-docs.test.js TM-01 (г): restore the negative check that the product-code claim is absent, in both languages as traces-readme TD-2 does. 4. Look for any other re-pointed test of step 06 whose negative part lost its English form and fix it the same way. A test is never weakened. Another agent edits the instruction files at the same time: do not touch .md files; if a test fails because of the English text, put it in issues with the exact place. Finish with cd tools && npm run check (only the 11 known reds may remain) and in result list each change with the mutant evidence.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T14:16:48Z",
+  "started_at": "2026-10-25T14:16:48Z",
+  "completed_at": "2026-10-25T14:27:02Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework of the tests after the gate FAIL on step 06 (F1 and L4 of step-07c). The negative guards of FS-16, EX-37, TM-01 and four more places that had lost a language form are restored and proven with mutants on a copy of the project outside the tree. TD-3 had to be re-pointed to the English placeholder that DOC-UPDATER wrote into README.md at the same time (L2 of the gate). Final npm run check: 1898 tests, 1887 pass, 11 fail - exactly the 11 known reds. No .md file was touched; no test deleted, skipped or weakened.",
+    "changes": [
+      "TEST pixel-office-docs.test.js FS-16 (lines about 126-185): the three regexes are now two named constants OLD_FACTS and OLD_STATE. OLD_FACTS keeps the Russian forms (задач n/, полоса хода, «завершена») and adds the English forms of the same three facts: tasks? n/, progress bar|strip, move strip, «completed». The English 'progress bar|strip' counts only when it is not denied (not right after 'no ', 'without ', 'without a '), because the real README says 'There is no progress bar and no task counter' - a denial is not the removed feature. The limits check uses OLD_STATE («завершена» or «completed»). The invented 'old' sample is kept and 7 English sample lines are added, each shown to fire the guard on its own, plus 2 denial lines that must give 0. Criterion: REQ-036/045/044 README criterion that the section must not describe the removed counter, strip and state (FS-16 title), decisions/0080 item 6 (a test is never weakened, only re-pointed at the same fact).",
+      "TEST exec-docs.test.js EX-37 (line about 68): the role row is found by 'cell === title || cell.startsWith(title + \" (\")' instead of the loose startsWith(title); the cells read 'Руководитель проекта (project manager)', 'Проверяющий (QA) (reviewer)'. Criterion: EX-37 / old '=== title': a title that is the start of another title must not match a wrong row (L4).",
+      "TEST team-docs.test.js TM-01 (г) (line about 82): restored the Russian negative '!text.includes(\"кода продукта нет\")' next to the two English ones (both languages, as TD-2 of traces-readme.test.js). The second English check 'no product code' is wider than the first and is kept, so nothing is dropped. Criterion: TM-01 (г) title - CLAUDE.md no longer says there is no product code (L4).",
+      "TEST pixel-office-settings.test.js ST-06 (line about 110): the list of old phrases that must be absent had lost its Russian forms; restored 'новые сверху' and 'например в соседней' beside the English ones. Same kind as F1 (neighbouring place, AP-014). Criterion: ST-06 title 'no old phrases'.",
+      "TEST repo.test.js README_BANNED (line about 1130, rule RD-4): restored the Russian words 'ветка защищена', 'защита включена', 'обязательная проверка', 'приватн', 'публичн' beside the English ones; the blind-rules test of RD-4 builds a mutant from every word of the list, so each new word is proved by the test itself. Same kind as F1. Criterion: REQ-030 AC4 AC5 (the section does not claim branch protection or a visibility).",
+      "TEST traces-readme.test.js TD-3 (line 50): re-pointed 'git clone <адрес репозитория Sai>' to 'git clone <Sai repository address>' because DOC-UPDATER (gate finding L2) changed the placeholder in README.md line 231 in the same time window; the same fact is checked (the section holds the placeholder and no address). Not a weakening: the mutant with a real address still turns it red. If DOC-UPDATER's L2 change is reverted, TD-3 must be reverted with it.",
+      "Looked at and left as they are (no lost negative): picker-text TT-10b (already extended with you/your/yours/yourself in step 06), exec-executor EX-06 (demo regex already has demo), exec-docs secret regex, handoffs-docs FORBIDDEN (code, not words), NM-09 and MC-07 (their invented 'old' texts are Russian-only on purpose - the positive phrases are English and the invented sample just has to lack them), JR-07 and AC-11 (Russian page words kept by decisions/0080 item 3)."
+    ],
+    "self_check": [
+      "FS-16 before: with the Russian-only regexes the guard stayed green on an English forbidden line (gate evidence, step-07c F1). After the edit: mutants on a copy of the project outside the tree, <scratch>/clone-08b (rsync of the project without .git, node_modules, handoffs, runs; tools/README.md changed there, the project file not touched; pristine copy restored between mutants).",
+      "FS-16 on the real text: node --test test/pixel-office-docs.test.js -> # pass 9, # fail 0 (also in the copy before any mutant).",
+      "FS-16 mutants, each line inserted right after '## Pixel Office' of tools/README.md in the copy -> 'not ok 3 - FS-16', # pass 8, # fail 1: 'The page shows a progress bar for each task.'; 'A move strip runs above the cards.'; 'Each card has a counter \"tasks 3/5\".'; 'A finished task has the state «completed».'; 'The page shows a progress strip above the cards.'; the combined line of the gate ('The page shows a progress bar (a move strip) and a counter \"tasks 3/5\" with the status «completed» for each task.'). Inserted after '### Limits' ('The state «completed» is shown for a finished task.') -> 'not ok 3 - FS-16' too. Control: a harmless line -> # pass 9, # fail 0.",
+      "EX-37 mutant in the copy: row 'Юрист (lawyer)' renamed 'Юристконсульт (lawyer)' -> 'not ok 2 - EX-37', # fail 1 (the loose startsWith(title) would have found the row 'Юристконсульт' for the title 'Юрист' only if no exact row existed; with the new rule the row is not found).",
+      "TM-01 (г) mutants appended to CLAUDE.md in the copy: 'кода продукта нет', 'there is no product code', 'Note: no product code here' -> each 'not ok 4 - TM-01 (г)', # fail 1.",
+      "ST-06 mutants appended to tools/README.md in the copy: 'новые сверху', 'например в соседней', 'the new ones at the top' -> each 'not ok 6 - ST-06', # fail 1.",
+      "RD-4: node --test test/repo.test.js -> # pass 26, # fail 0 (the blind-rules test now builds a mutant from each of the 11 banned words, Russian and English, and each fires RD-4).",
+      "TD-3 mutant in the copy: '<Sai repository address>' replaced by 'https://example.org/sai.git' in README.md -> 'not ok 7 - TD-3', # fail 1; real text: # pass 7, # fail 0.",
+      "cd tools && npx prettier --check on the edited test files -> all use Prettier code style.",
+      "First npm run check of this turn: 1898 tests, 1886 pass, 12 fail = the 11 known + TD-3 (README.md line 231 had just become '<Sai repository address>'); after the TD-3 re-point: cd tools && npm run check (foreground, own turn) -> format:check, lint, traces, handoffs-check passed, then '# tests 1898 / # pass 1887 / # fail 11 / # cancelled 0 / # skipped 0 / # todo 0', exit 1; the 11 'not ok' are exactly HO-46, HO-47, HC-RT-1e, LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e (proven in step-07c not to come from this work).",
+      "Before close: cd tools && npm run handoffs-check and cd tools && npm run traces run again (see the last entry).",
+      "The demo server on port 4782 was not touched; no git checkout, reset, stash, clean or commit; no .md file edited."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Dependency on DOC-UPDATER: tools/test/traces-readme.test.js TD-3 (line 50) now expects 'git clone <Sai repository address>' as in README.md line 231 (gate finding L2). If DOC-UPDATER restores the Russian placeholder, TD-3 turns red and the one line must go back."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Limit of the FS-16 guard: the English 'progress bar/strip' is accepted when it follows 'no ', 'without ' or 'without a ' (the README says 'There is no progress bar and no task counter'). A sentence that denies it in another way ('does not have a progress bar') would turn the test red - a loud, not a silent, failure - and the regex would then be widened by the next fixer."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "The same kind of risk exists in tests of the Pixel Office page and panels (pixel-office-page.test.js, pixel-office-panels.test.js): negative checks on Russian UI words. They read the page, whose texts stay Russian by decisions/0080 item 3, so they are not affected by the translation; not changed."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/pixel-office-docs.test.js",
+      "tools/test/exec-docs.test.js",
+      "tools/test/team-docs.test.js",
+      "tools/test/pixel-office-settings.test.js",
+      "tools/test/repo.test.js",
+      "tools/test/traces-readme.test.js",
+      "handoffs/TRANSL-20261025-01/step-08b-test-fixer.json"
+    ]
+  }
+}

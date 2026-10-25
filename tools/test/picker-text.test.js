@@ -789,7 +789,7 @@ test("TT-7a: the list of the forbidden signs stands in one file of the picker - 
 function readmeParagraph() {
   const readme = readText(path.join(TOOLS, "README.md"));
   const start = readme.indexOf(
-    "## Сайт подбора решения: проверка файла арендатора",
+    "## The solution picker site: the check of a tenant file",
   );
   assert.ok(start >= 0, "the section is there");
   const end = readme.indexOf("\n## ", start + 10);
@@ -817,7 +817,7 @@ test("TT-10b: each phrase of that paragraph is not longer than 18 words and none
   }
   assert.doesNotMatch(
     paragraph,
-    /(^|[^\p{L}\p{N}])(ты|тебя|тебе|тобой|твой|твоя|твоё|твои)(?![\p{L}\p{N}])/iu,
+    /(^|[^\p{L}\p{N}])(ты|тебя|тебе|тобой|твой|твоя|твоё|твои|you|your|yours|yourself)(?![\p{L}\p{N}])/iu,
   );
 });
 

@@ -1,201 +1,211 @@
-# WF-03 — Дефект
+# WF-03 — Defect
 
-Как в Sai исправляют ошибку в том, что уже сделано: сначала причина, а не симптом, потом
-проверенный проект исправления, само исправление и тест, который доказывает, что ошибка
-поймана. Закрытие дефекта говорит только то, что действительно сделано.
+How Sai fixes an error in what is already done: first the cause, not the symptom, then a
+checked design of the fix, the fix itself and a test that proves the error is caught. The
+closing of a defect says only what was really done.
 
-Все роли соблюдают `docs/quality-bar.md`; handoff-ы — по `docs/workflows/handoffs.md`.
-Перед работой каждая роль читает `docs/anti-patterns.md`.
+All roles follow `docs/quality-bar.md`; handoffs follow `docs/workflows/handoffs.md`.
+Before the work, every role reads `docs/anti-patterns.md`.
 
-## Когда запускается
+## When it starts
 
-- Есть открытый дефект в `docs/issues/` (`Статус: open`).
-- Упал тест, или ошибку нашли агент, проверяющий или владелец.
-- **WF-03 или WF-01:** если ожидаемое поведение уже записано в требовании или в тесте —
-  это WF-03. Если его нигде нет — сначала WF-01 дописывает критерий (так в REQ-002
-  появился критерий 11 по ISS-0002), затем WF-03 продолжается в том же прогоне.
-- Ошибка процесса, а не кода, — запись в `docs/anti-patterns.md` (Q13), а не WF-03.
+- There is an open defect in `docs/issues/` (`Статус: open` — Status: open).
+- A test failed, or an agent, a checker or the owner found an error.
+- **WF-03 or WF-01:** if the expected behavior is already written in a requirement or in a
+  test — this is WF-03. If it is nowhere — first WF-01 adds a criterion (this is how
+  criterion 11 appeared in REQ-002 for ISS-0002), then WF-03 continues in the same run.
+- An error of the process, not of the code, is a record in `docs/anti-patterns.md` (Q13), not
+  WF-03.
 
-## Как выглядит дефект
+## What a defect looks like
 
-Файл `docs/issues/ISS-NNNN-<коротко>.md`. Номер — следующий свободный; его выдаёт ORCH,
-чтобы два прогона не взяли один номер. Первая строка — `# ISS-NNNN — <название>`, вторая —
-`Серьёзность: <LOW | MEDIUM | HIGH | CRITICAL>. Статус: open. Найдено: <кто>, <когда>.
-Пункт планки: <Q/R>.` Разделы: «Что не так», «Доказательство» (как воспроизвести и что
-видно), «Как исправить», «Маршрут»; при закрытии — «Закрыто». Образец — файлы в
-`docs/issues/`.
+The file `docs/issues/ISS-NNNN-<short>.md`. The number is the next free one; ORCH gives it so
+that two runs do not take the same number. The first line is `# ISS-NNNN — <title>`, the
+second is `Серьёзность: <LOW | MEDIUM | HIGH | CRITICAL>. Статус: open. Найдено: <кто>,
+<когда>. Пункт планки: <Q/R>.` (Severity, Status, Found: who and when, Quality bar item). The
+field names and section titles of the defect file stay in Russian, as in the existing files:
+the sections «Что не так» (What is wrong), «Доказательство» (Evidence: how to reproduce and
+what is seen), «Как исправить» (How to fix), «Маршрут» (Route); when closing — «Закрыто»
+(Closed). The sample is the files in `docs/issues/`.
 
-## Роли
+## Roles
 
-| Роль | Что делает | Кто проверяет |
+| Role | What it does | Who checks |
 |---|---|---|
-| ORCH | Выдаёт номер, ведёт прогон, пишет handoff-ы и отчёт владельцу | — |
-| ISSUE-FIXER | Ищет похожие закрытые дефекты, воспроизводит ошибку, находит причину. Ничего не исправляет | проект исправления — CODE-DESIGN-VALIDATOR; падение теста до исправления — TEST-DESIGN-VALIDATOR |
-| REQ-ANALYST, REQ-VALIDATOR | Дописывают критерий, если ожидаемого поведения нигде нет (WF-01) | REQ-VALIDATOR |
-| CODE-DESIGNER | Проект исправления | CODE-DESIGN-VALIDATOR |
-| CODE-FIXER | Исправление по проверенному проекту. Если исправление добавляет новый модуль или команду — его пишет BACKEND-DEV или FRONTEND-DEV, как в WF-02 | SECURITY-REVIEWER (всегда; затронута ли его область, решает он) и REVIEWER одновременно |
-| TEST-DESIGNER | Регрессионный тест, который падает до исправления и проходит после | TEST-DESIGN-VALIDATOR |
-| TEST-RUNNER, TEST-FIXER | Прогон одной команды проверки и разбор падений | RELEASE-VALIDATOR |
-| RELEASE-VALIDATOR | Итоговая проверка | — |
-| DOC-UPDATER | Закрывает дефект, ведёт учёт | ORCH |
-| RELEASE-FINALIZER | Коммит файлов прогона, push в `main` после PASS RELEASE-VALIDATOR, ожидание `check.yml`, отчёт о выпуске (как в WF-02, шаг 11); мерж иным способом — с подтверждения владельца (R1) | ORCH |
+| ORCH | Gives the number, leads the run, writes handoffs and the report to the owner | — |
+| ISSUE-FIXER | Looks for similar closed defects, reproduces the error, finds the cause. Fixes nothing | the design of the fix — CODE-DESIGN-VALIDATOR; the failure of the test before the fix — TEST-DESIGN-VALIDATOR |
+| REQ-ANALYST, REQ-VALIDATOR | Add a criterion if the expected behavior is nowhere (WF-01) | REQ-VALIDATOR |
+| CODE-DESIGNER | The design of the fix | CODE-DESIGN-VALIDATOR |
+| CODE-FIXER | The fix by the checked design. If the fix adds a new module or command, BACKEND-DEV or FRONTEND-DEV writes it, as in WF-02 | SECURITY-REVIEWER (always; whether its area is touched is decided by it) and REVIEWER at the same time |
+| TEST-DESIGNER | The regression test that fails before the fix and passes after | TEST-DESIGN-VALIDATOR |
+| TEST-RUNNER, TEST-FIXER | A run of one check command and the analysis of failures | RELEASE-VALIDATOR |
+| RELEASE-VALIDATOR | The final check | — |
+| DOC-UPDATER | Closes the defect, does the bookkeeping | ORCH |
+| RELEASE-FINALIZER | The commit of the run files, the push to `main` after the PASS of RELEASE-VALIDATOR, waiting for `check.yml`, the release report (as in WF-02, step 11); a merge in any other way — with the owner's confirmation (R1) | ORCH |
 
-## Шаги
+## Steps
 
-**Шаг 0 — ORCH.** Проверяет, что дефект записан в `docs/issues/` (нет — выдаёт номер и
-поручает записать файл DOC-UPDATER); заводит `handoffs/ISS-NNNN-<ГГГГММДД>-NN/`; ставит
-лёгкую метку git `base/<RUN-ID>` до первого изменения (`context.base_tag`) — «до» берут из
-свежего клона метки вне проекта, и на нём потом проверяют, что новый тест падал
-(`context.pre_fix_copy` — только если копия нужна не с метки); объявляет файлы прогона
-(`context.write_set`) и сверяет их с параллельными прогонами.
+**Step 0 — ORCH.** Checks that the defect is recorded in `docs/issues/` (if not — gives a
+number and tells DOC-UPDATER to write the file); creates `handoffs/ISS-NNNN-<YYYYMMDD>-NN/`;
+sets the lightweight git tag `base/<RUN-ID>` before the first change (`context.base_tag`) —
+"before" is taken from a fresh clone of the tag outside the project, and on it it is later
+checked that the new test failed (`context.pre_fix_copy` — only if the copy is needed from
+something other than the tag); declares the files of the run (`context.write_set`) and checks
+them against the parallel runs.
 
-**Шаг 1 — ISSUE-FIXER: поиск похожего и диагноз.**
+**Step 1 — ISSUE-FIXER: the search for similar defects and the diagnosis.**
 
-1. Ищет в `docs/issues/` закрытые дефекты с теми же признаками или файлами. Если та же
-   причина вернулась, исправление прошлого раза её не убрало: серьёзность — не ниже
-   MEDIUM, и это записывается.
-2. Воспроизводит ошибку сам: запускает сценарий и читает настоящий вывод. Диагноз по
-   пересказу без воспроизведения не ставится (Q3).
-3. Находит причину, а не симптом: какая функция, какое правило нарушено, почему
-   существующие тесты этого не поймали.
-4. Ищет поиском все места того же рода — не только названное в дефекте — и перечисляет
-   их с воспроизведением (AP-014).
-5. Пишет диагноз в `result`: причина, затронутые файлы, что должно измениться. Ничего не
-   исправляет.
+1. Looks in `docs/issues/` for closed defects with the same signs or files. If the same cause
+   came back, the fix of the previous time did not remove it: the severity is not lower than
+   MEDIUM, and this is recorded.
+2. Reproduces the error itself: runs the scenario and reads the real output. A diagnosis from
+   a retelling without reproduction is not made (Q3).
+3. Finds the cause, not the symptom: which function, which rule is broken, why the existing
+   tests did not catch it.
+4. Searches for all places of the same kind — not only the one named in the defect — and
+   lists them with the reproduction (AP-014).
+5. Writes the diagnosis in `result`: the cause, the files concerned, what must change. Fixes
+   nothing.
 
-**Шаг 2 — критерий (если нужен).** Ожидаемого поведения нет ни в требовании, ни в тесте
-— REQ-ANALYST дописывает критерий, REQ-VALIDATOR проверяет (WF-01, шаги 1–2).
+**Step 2 — criterion (if needed).** The expected behavior is neither in a requirement nor in a
+test — REQ-ANALYST adds a criterion, REQ-VALIDATOR checks it (WF-01, steps 1–2).
 
-**Шаг 3 — CODE-DESIGNER и CODE-DESIGN-VALIDATOR, ворота.** Проект исправления — как в
-WF-02, шаги 1 и 1b: каждое место из диагноза, пути отказа, защита в той же операции,
-таблица «критерий → тест», раздел о планке; пробы проекта, таблица замен прежних охранных
-тестов и список мутантов — как в WF-02, шаг 1. Проверяющий сам повторяет утверждения о
-поведении кода до исправления на свежем клоне метки `base/<RUN-ID>` (WF-02, шаг 1b).
+**Step 3 — CODE-DESIGNER and CODE-DESIGN-VALIDATOR, gate.** The design of the fix is as in
+WF-02, steps 1 and 1b: every place from the diagnosis, the failure paths, protection in the
+same operation, the table "criterion → test", the section about the bar; the trials of the
+design, the table of replacements of earlier guard tests and the list of mutants are as in
+WF-02, step 1. The checker itself repeats the statements about the behavior of the code before
+the fix on a fresh clone of the tag `base/<RUN-ID>` (WF-02, step 1b).
 
-**Шаг 4 — CODE-FIXER пишет исправление** только в файлах из `context.write_set`.
-Поведение меняется — в этом смысл исправления, — но только так, как сказано в проекте.
-Затем одна команда проверки и её вывод. Упасть может только тест, который проверяет
-поведение, намеренно изменённое проектом исправления: каждый такой тест назван в
-`result.issues` с разделом проекта и новым ожидаемым поведением, его правит TEST-DESIGNER
-на шаге 6. Такой «ожидаемый по проекту» провал допустим только между шагами 4 и 6.
+**Step 4 — CODE-FIXER writes the fix** only in the files from `context.write_set`. The
+behavior changes — that is the point of the fix — but only as the design says. Then one check
+command and its output. Only a test that checks the behavior intentionally changed by the
+design of the fix may fail: each such test is named in `result.issues` with the section of the
+design and the new expected behavior, and TEST-DESIGNER fixes it at step 6. Such a failure
+"expected by the design" is allowed only between steps 4 and 6.
 
-**Шаг 5 — SECURITY-REVIEWER и REVIEWER, ворота** — как в WF-02, шаги 3 и 4, одновременно
-(оба только читают).
-SECURITY-REVIEWER запускается всегда; затронута ли его область, решает он сам, а не ORCH.
-Главный вопрос: устранена ли причина, или исправление только прячет симптом — заглушает
-проверку, ловит и проглатывает ошибку (Q6). Любая правка кода, который уже прошёл этот
-шаг (CODE-FIXER после находок, TEST-FIXER после прогона), до прогона тестов снова
-проходит шаг 5.
+**Step 5 — SECURITY-REVIEWER and REVIEWER, gate** — as in WF-02, steps 3 and 4, at the same
+time (both only read). SECURITY-REVIEWER always runs; whether its area is touched is decided
+by it, not by ORCH. The main question: is the cause removed, or does the fix only hide the
+symptom — silences a check, catches and swallows an error (Q6). Any edit of code that has
+already passed this step (CODE-FIXER after findings, TEST-FIXER after a run) passes step 5
+again before the tests are run.
 
-*Исправление только в тестах.* Если по диагнозу ошибка в самих тестах (`tools/test`),
-проект исправления, CODE-FIXER и ворота безопасности и ревью кода пропускаются, а причина
-записана в `route`: ISSUE-FIXER → TEST-DESIGNER → TEST-DESIGN-VALIDATOR → TEST-RUNNER →
-RELEASE-VALIDATOR → DOC-UPDATER → RELEASE-FINALIZER. Регрессионный тест падает до правки и
-проходит после; для гонок — серии запусков до и после; проверка не ослабляется
-(`decisions/0075`).
+*A fix only in tests.* If by the diagnosis the error is in the tests themselves
+(`tools/test`), the design of the fix, CODE-FIXER and the security and code review gates are
+skipped, and the reason is written in `route`: ISSUE-FIXER → TEST-DESIGNER →
+TEST-DESIGN-VALIDATOR → TEST-RUNNER → RELEASE-VALIDATOR → DOC-UPDATER → RELEASE-FINALIZER.
+The regression test fails before the edit and passes after; for races — series of runs before
+and after; the check is not weakened (`decisions/0075`).
 
-**Шаг 6 — TEST-DESIGNER пишет регрессионный тест.**
+**Step 6 — TEST-DESIGNER writes the regression test.**
 
-- Тест воспроизводит ошибку: на копии до исправления он **падает**, после исправления —
-  **проходит**. Оба прогона, с командами и выводом, — в `result`.
-- Если до исправления нужного кода не было вовсе, тест падает просто потому, что кода нет;
-  этого мало. Тогда добавляются мутанты: намеренно ломаются те ловушки, ради которых
-  делалось исправление, и для каждого мутанта записано, какие тесты падают.
-- Тесты, названные на шаге 4 как проверяющие намеренно изменённое поведение,
-  TEST-DESIGNER правит здесь же; шаг сдаётся с проходящей проверкой — допустимо только
-  падение, доказанно не вызванное этой работой (quality-bar §6, п. 4).
-- Остальные правила тестов — WF-02, шаг 5.
+- The test reproduces the error: on the copy before the fix it **fails**, after the fix it
+  **passes**. Both runs, with the commands and the output, are in `result`.
+- If the needed code did not exist at all before the fix, the test fails just because the code
+  is not there; that is not enough. Then mutants are added: the traps for which the fix was
+  made are broken on purpose, and for each mutant it is recorded which tests fail.
+- The tests named at step 4 as checking the intentionally changed behavior are fixed by
+  TEST-DESIGNER here; the step is handed in with a passing check — only a failure that is
+  proven not to be caused by this work is allowed (quality-bar §6, item 4).
+- The other rules of tests are in WF-02, step 5.
 
-**Шаг 7 — TEST-DESIGN-VALIDATOR, ворота.** Как в WF-02, шаг 5b, и ещё:
+**Step 7 — TEST-DESIGN-VALIDATOR, gate.** As in WF-02, step 5b, and also:
 
-- сам запускает новые тесты на копии до исправления и видит, что они падают;
-- сам применяет хотя бы один мутант из перечня и видит, что тесты его ловят;
-- мутант — временная проба: применяется во временной копии, рабочее дерево не меняется,
-  и это проверено (список хешей до и после совпадает), а тесты после пробы снова зелёные.
-  Оставленный в дереве мутант — FAIL шага.
+- itself runs the new tests on the copy before the fix and sees that they fail;
+- itself applies at least one mutant from the list and sees that the tests catch it;
+- a mutant is a temporary trial: it is applied in a temporary copy, the working tree does not
+  change, and this is checked (the list of hashes before and after is the same), and the
+  tests after the trial are green again. A mutant left in the tree is a FAIL of the step.
 
-**Шаг 8 — TEST-RUNNER, ворота; при FAIL — TEST-FIXER** — как в WF-02, шаг 6: PASS — код
-0 или каждое падение доказанно не из-за этой работы; «ожидаемых по проекту» провалов здесь
-уже нет.
+**Step 8 — TEST-RUNNER, gate; on FAIL — TEST-FIXER** — as in WF-02, step 6: PASS is code 0 or
+every failure proven not to be caused by this work; there are no failures "expected by the
+design" here any more.
 
-**Шаг 9 — RELEASE-VALIDATOR, ворота** — как в WF-02, шаг 9, и ещё: воспроизводит
-исходную ошибку сам и видит, что её больше нет. Если требование вернул в `in_progress`
-аудит (WF-05, шаг 7a) из-за этого дефекта, RELEASE-VALIDATOR заново подтверждает все
-критерии этого требования, а не только исправленный.
+**Step 9 — RELEASE-VALIDATOR, gate** — as in WF-02, step 9, and also: reproduces the original
+error itself and sees that it is gone. If an audit (WF-05, step 7a) returned the requirement
+to `in_progress` because of this defect, RELEASE-VALIDATOR confirms all the criteria of this
+requirement again, not only the fixed one.
 
-**Шаг 10 — DOC-UPDATER закрывает дефект.**
+**Step 10 — DOC-UPDATER closes the defect.**
 
-- В строке статуса дефекта — итог, который действительно получен (время — с часов):
-  - `closed, <дата>` — причина устранена, есть регрессионный тест;
-  - `closed, <дата>, дефекта нет` — разобрано и измерено, ошибки нет, ничего не меняли;
-  - `closed, <дата>, причина не устранена, продолжение — ISS-NNNN` — работа сделана, но
-    причина осталась, и для неё заведён новый дефект.
-- Раздел «Закрыто»: время с часов, прогон, что сделано, где регрессионный тест (для
-  «дефекта нет» — где диагноз). Закрытие не обещает того, чего не было: про исправление и
-  тест пишется только при их наличии.
-- Статус требования — если дефект добавлял или менял его критерий; `STATE.md`; ошибки
-  процесса — в `docs/anti-patterns.md` (Q13).
-- Требование, которое из-за этого дефекта вернул в `in_progress` аудит (WF-05, шаг 7a),
-  DOC-UPDATER снова переводит в `done` с комментарием (прогон, дефект) — только после
-  PASS шага 9, в котором RELEASE-VALIDATOR заново подтвердил все его критерии; ORCH
-  сверяет.
-- ORCH сверяет учёт своими командами (`context.orch_check`) и до записи DONE сам проходит
-  применимые пункты Q и R по файлам и полям; пропущенный пункт — доработка, а не заметка
-  на потом.
+- In the status line of the defect — the outcome that was really obtained (the time is from the
+  clock):
+  - `closed, <дата>` — the cause is removed, there is a regression test;
+  - `closed, <дата>, дефекта нет` (no defect) — analyzed and measured, there is no error,
+    nothing was changed;
+  - `closed, <дата>, причина не устранена, продолжение — ISS-NNNN` (cause not removed,
+    continuation — ISS-NNNN) — the work is done, but the cause remained, and a new defect is
+    created for it.
+- The section «Закрыто» (Closed): the time from the clock, the run, what was done, where the regression
+  test is (for «дефекта нет» — where the diagnosis is). The closing does not promise what was
+  not there: the fix and the test are mentioned only if they exist.
+- The status of the requirement — if the defect added or changed its criterion; `STATE.md`;
+  process errors — in `docs/anti-patterns.md` (Q13).
+- A requirement that an audit (WF-05, step 7a) returned to `in_progress` because of this
+  defect is moved back to `done` by DOC-UPDATER with a comment (the run, the defect) — only
+  after the PASS of step 9, in which RELEASE-VALIDATOR confirmed all its criteria again; ORCH
+  checks it.
+- ORCH checks the bookkeeping with its own commands (`context.orch_check`) and, before writing
+  DONE, itself goes through the applicable Q and R items by files and fields; a missed item is
+  a rework step, not a note for later.
 
-**Шаг 11 — RELEASE-FINALIZER** — как в WF-02, шаг 11.
+**Step 11 — RELEASE-FINALIZER** — as in WF-02, step 11.
 
-## Попутные находки
+## Findings on the way
 
-Что мешает исправить этот дефект, устраняется в этом прогоне (через ORCH и ту роль, чей
-это файл). Что не мешает, но найдено по дороге, — новый дефект с новым номером; этот
-прогон ради него не расширяется (quality-bar §6, п. 6).
+What prevents fixing this defect is removed in this run (through ORCH and the role whose file
+it is). What does not prevent it but was found on the way is a new defect with a new number;
+this run is not widened for it (quality-bar §6, item 6).
 
-## Ворота
+## Gates
 
-Шаги 2 (если есть), 3, 5, 7, 8 и 9; любая правка кода после шага 5 до прогона тестов
-снова проходит шаг 5; после каждого шага — `orch_check` ORCH; после шага 10 — проверка
-учёта; после шага 11 — результат `check.yml`.
+Steps 2 (if any), 3, 5, 7, 8 and 9; any edit of code after step 5 passes step 5 again before
+the tests are run; after every step — the `orch_check` of ORCH; after step 10 — the
+bookkeeping check; after step 11 — the result of `check.yml`.
 
-## Артефакты
+## Artifacts
 
-| Шаг | Кто | Что |
+| Step | Who | What |
 |---|---|---|
-| 0 | ORCH | номер дефекта, handoff-ы |
-| 0 | DOC-UPDATER (по поручению ORCH) | `docs/issues/ISS-NNNN-*.md`, если его ещё нет |
-| 1 | ISSUE-FIXER | диагноз — в `result` |
-| 3 | CODE-DESIGNER | проект исправления в `docs/design/` |
-| 4 | CODE-FIXER | исправленный код |
-| 6 | TEST-DESIGNER | регрессионный тест, перечень мутантов |
-| 10 | DOC-UPDATER | закрытый `docs/issues/ISS-NNNN-*.md`, статус требования, `STATE.md` |
-| 11 | RELEASE-FINALIZER | коммит, `docs/releases/<RUN-ID>.md` |
+| 0 | ORCH | the defect number, handoffs |
+| 0 | DOC-UPDATER (at ORCH's instruction) | `docs/issues/ISS-NNNN-*.md`, if it does not exist yet |
+| 1 | ISSUE-FIXER | the diagnosis — in `result` |
+| 3 | CODE-DESIGNER | the design of the fix in `docs/design/` |
+| 4 | CODE-FIXER | the fixed code |
+| 6 | TEST-DESIGNER | the regression test, the list of mutants |
+| 10 | DOC-UPDATER | the closed `docs/issues/ISS-NNNN-*.md`, the status of the requirement, `STATE.md` |
+| 11 | RELEASE-FINALIZER | the commit, `docs/releases/<RUN-ID>.md` |
 
-## Handoff-ы
+## Handoffs
 
-- `workflow_id`: `"WF-03"`; папка — `handoffs/ISS-NNNN-<ГГГГММДД>-NN/`; в `context` —
+- `workflow_id`: `"WF-03"`; the folder is `handoffs/ISS-NNNN-<YYYYMMDD>-NN/`; in `context` —
   `issue_id`.
-- Имена файлов, порядковые номера шагов и форма доработок — `docs/workflows/handoffs.md`;
-  шаг этого процесса назван первыми словами `task.description`.
+- File names, serial numbers of steps and the form of rework steps — see
+  `docs/workflows/handoffs.md`; the step of this workflow is named in the first words of
+  `task.description`.
 
-## Цикл доработки
+## Rework loop
 
-Как в WF-02: на каждых воротах не больше **трёх проходов** — первый и два повтора после FAIL
-(`decisions/0079`, п. 4), третий FAIL — остановка и доклад владельцу; та же ошибка вернулась —
-меняется подход; правка проверенного файла — новый handoff и новая проверка (доработка
-получает следующую букву шага); новый запуск после обрыва доработкой не считается.
+As in WF-02: at each gate no more than **three passes** — the first and two repeats after a
+FAIL (`decisions/0079`, item 4), the third FAIL is a stop and a report to the owner; if the
+same error came back, the approach changes; an edit of a checked file is a new handoff and a
+new check (a rework step gets the next letter of the step); a new launch after an
+interruption does not count as a rework step.
 
-## Условия остановки
+## Stop conditions
 
-- **Готово:** PASS шага 9, дефект закрыт с итогом, который действительно получен, учёт
-  сверен ORCH, выпуск сделан как в WF-02, шаг 11 (push в `main`, зелёный `check.yml`, второй
-  коммит с handoff-ом шага); мерж иным способом ждёт владельца (R1).
-- **Остановлено:** лимит проходов ворот исчерпан; исправление требует понизить планку или идти
-  против записи в `decisions/`; ошибку не удаётся воспроизвести — тогда дефект не
-  закрывается «на всякий случай», а ORCH пишет владельцу, что пробовали и что видно.
-- **Остановлено, среда:** как в WF-02.
+- **Done:** PASS of step 9, the defect is closed with the outcome that was really obtained,
+  the bookkeeping is checked by ORCH, the release is made as in WF-02, step 11 (a push to
+  `main`, a green `check.yml`, a second commit with the handoff of the step); a merge in any
+  other way waits for the owner (R1).
+- **Stopped:** the limit of gate passes is used up; the fix demands lowering the bar or going
+  against a record in `decisions/`; the error cannot be reproduced — then the defect is not
+  closed "just in case", and ORCH writes to the owner what was tried and what is seen.
+- **Stopped, environment:** as in WF-02.
 
-## Отчёт владельцу
+## Report to the owner
 
-Простыми словами: что было сломано и чем это мешало; какая причина; что исправлено и как
-это проверить самому; какой тест теперь ловит эту ошибку; что найдено попутно (номера новых
-дефектов); что нужно решить владельцу.
+In plain words: what was broken and how it got in the way; what the cause is; what was fixed
+and how to check it yourself; which test now catches this error; what was found on the way
+(the numbers of the new defects); what the owner has to decide.

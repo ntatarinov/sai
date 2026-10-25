@@ -1678,12 +1678,12 @@ test("CTL-12 (crit. 12) the stop cannot be undone: grep -n 'нельзя отм�
   );
 });
 
-test("CTL-13 (crit. 13) tools/README.md, the section «## Sai Team — интерфейс»: the lines with «Продолжить», «необратима», «Пауза», «Остановить» — at least 1 each, with resume — at least 2; the command npm run team -- resume stays; the files team-web-control*.test.js are in the run of npm test", () => {
+test("CTL-13 (crit. 13) tools/README.md, the section «## Sai Team — the interface»: the lines with «Продолжить», «irreversible», «Пауза», «Остановить» — at least 1 each, with resume — at least 2; the command npm run team -- resume stays; the files team-web-control*.test.js are in the run of npm test", () => {
   const readme = fs.readFileSync(path.join(TOOLS_DIR, "README.md"), "utf8");
   const section = [];
   let inside = false;
   for (const line of readme.split("\n")) {
-    if (/^## Sai Team — интерфейс/.test(line)) {
+    if (/^## Sai Team — the interface/.test(line)) {
       inside = true;
       continue;
     }
@@ -1691,7 +1691,7 @@ test("CTL-13 (crit. 13) tools/README.md, the section «## Sai Team — инте�
     if (inside) section.push(line);
   }
   const count = (w) => section.filter((l) => l.includes(w)).length;
-  for (const w of ["Продолжить", "необратима", "Пауза", "Остановить"])
+  for (const w of ["Продолжить", "irreversible", "Пауза", "Остановить"])
     assert.ok(count(w) >= 1, w);
   assert.ok(count("resume") >= 2, "resume");
   assert.ok(count("npm run team -- resume") >= 1);
@@ -2039,7 +2039,7 @@ function readmeSection() {
   const section = [];
   let inside = false;
   for (const line of readme.split("\n")) {
-    if (/^## Sai Team — интерфейс/.test(line)) {
+    if (/^## Sai Team — the interface/.test(line)) {
       inside = true;
       continue;
     }
@@ -2049,20 +2049,22 @@ function readmeSection() {
   return section;
 }
 
-test("CTL-14f (ISS-0020 К-5; crit. 13) README, the section «## Sai Team — интерфейс», agrees with the texts of the pause: it has the words that were not there before the fix — «может запустить», «по-прежнему не хватает», «не сработает, пока вопрос без ответа», «строка паузы говорит об этом заранее»; the paragraph about the pause of a waiting project says «вопрос не закрывает» (N2: the phrase is checked in that paragraph, the section had it before only elsewhere); the former words «новый платный запуск» and «снова» and the words of criterion 12 stay", () => {
+test("CTL-14f (ISS-0020 К-5; crit. 13) README, the section «## Sai Team — the interface», agrees with the texts of the pause: it has the words that were not there before the fix — «can start making», «is still not enough», «does not work while the question is without an answer», «the pause line says so in advance»; the paragraph about the pause of a waiting project says «does not close the question» (N2: the phrase is checked in that paragraph, the section had it before only elsewhere); the former words «a new paid run» and «asks you again» and the words of criterion 12 stay", () => {
   const section = readmeSection();
   const text = section.join("\n");
   for (const w of [
-    "может запустить",
-    "по-прежнему не хватает",
-    "не сработает, пока вопрос без ответа",
-    "строка паузы говорит об этом заранее",
-    "новый платный запуск",
-    "снова",
+    "can start making",
+    "is still not enough",
+    "does not work while the question is without an answer",
+    "the pause line says so in advance",
+    "a new paid run",
+    "asks you again",
   ])
     assert.ok(text.includes(w), w);
   const paragraph = section.filter((l) =>
-    l.includes("Если проект поставили на паузу, пока он ждал решения"),
+    l.includes(
+      "If a project was put on a pause while it waited for a decision",
+    ),
   );
   assert.equal(
     paragraph.length,
@@ -2070,11 +2072,11 @@ test("CTL-14f (ISS-0020 К-5; crit. 13) README, the section «## Sai Team — и
     "the paragraph about the pause of a waiting project",
   );
   assert.ok(
-    paragraph[0].includes("вопрос не закрывает"),
-    "«вопрос не закрывает» in the paragraph",
+    paragraph[0].includes("does not close the question"),
+    "«does not close the question» in the paragraph",
   );
   const count = (w) => section.filter((l) => l.includes(w)).length;
-  for (const w of ["Продолжить", "необратима", "Пауза", "Остановить"])
+  for (const w of ["Продолжить", "irreversible", "Пауза", "Остановить"])
     assert.ok(count(w) >= 1, w);
   assert.ok(count("resume") >= 2, "resume");
 });

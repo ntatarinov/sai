@@ -78,15 +78,15 @@ test("ST-06: the README has the 14 lines of criterion 13 and the link; its port 
     "npm run pixel-office",
     "~/.sai-pixel-office/",
     "https://code.claude.com/docs/en/settings",
-    "в настройках которых есть обработчики Pixel Office",
-    "при копии обработчиков",
+    "whose settings have the Pixel Office handlers",
+    "only if the handlers are copied into",
     "https://code.claude.com/docs/en/hooks",
-    "### Ограничения",
+    "### Limits",
     "нет свежих данных",
-    "учётная запись",
-    "одной вписанной строки",
-    "навсегда",
-    "## Проверка",
+    "**account** of this computer",
+    "**one written-in row**",
+    "**forever**",
+    "## Check",
     "npm run check",
   ];
   assert.equal(required.length, 14);
@@ -107,10 +107,15 @@ test("ST-06: the README has the 14 lines of criterion 13 and the link; its port 
   );
   assert.ok(ports.length >= 1);
   for (const p of ports) assert.equal(p, DEFAULT_PORT);
-  for (const old of ["новые сверху", "например в соседней"]) {
+  for (const old of [
+    "новые сверху",
+    "например в соседней",
+    "the new ones at the top",
+    "for example in a neighbouring",
+  ]) {
     assert.equal(readme.includes(old), false, old);
   }
-  assert.ok(readme.includes("новые внизу"));
+  assert.ok(readme.includes("the new ones at the bottom"));
 });
 
 test("ST-07: package.json has the script pixel-office to src/pixel-office/main.js and no dependencies", () => {

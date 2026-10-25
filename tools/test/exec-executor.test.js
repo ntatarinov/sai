@@ -532,7 +532,7 @@ function readmeSection() {
     path.join(TEAM_SRC, "..", "..", "README.md"),
     "utf8",
   );
-  const at = text.indexOf("## Sai Team — исполнители");
+  const at = text.indexOf("## Sai Team — executors");
   assert.ok(at >= 0);
   return text.slice(at);
 }
@@ -558,7 +558,7 @@ test("EX-06 no demo words, no scenario files and no fixtures path in the code; t
     .split("\n")
     .find((l) => l.startsWith("- `scripted`"));
   assert.ok(scriptedLine !== undefined);
-  assert.match(scriptedLine, /только для тестов/u);
+  assert.match(scriptedLine, /only for tests/u);
 });
 
 // ---- EX-08 ------------------------------------------------------------------------

@@ -216,11 +216,11 @@ test("EX-33 the README states the rule of a run without a cost", () => {
     path.join(TEAM_SRC, "..", "..", "README.md"),
     "utf8",
   );
-  const at = text.indexOf("## Sai Team — исполнители");
+  const at = text.indexOf("## Sai Team — executors");
   const section = text.slice(at);
-  assert.match(section, /по худшему случаю/u);
+  assert.match(section, /by the worst case/u);
   assert.match(section, /accounted: assumed/u);
-  assert.match(section, /не весь остаток/u);
+  assert.match(section, /not the whole remainder/u);
 });
 
 test("EX-34 the code of Sai Team has no network module and no fetch", () => {

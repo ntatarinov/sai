@@ -9,7 +9,7 @@ import { ROLES } from "../src/team/roles.js";
 import { TOOLS_DIR } from "./exec-helpers.js";
 
 const README = fs.readFileSync(path.join(TOOLS_DIR, "README.md"), "utf8");
-const HEAD = "## Sai Team — исполнители";
+const HEAD = "## Sai Team — executors";
 
 function section() {
   const at = README.indexOf(HEAD);
@@ -26,27 +26,27 @@ test("EX-37 the section names the interface, both executors, the conditions and 
     ["run", /`run\(request, io\)`/u],
     ["claude-cli", /`claude-cli`/u],
     ["scripted", /`scripted`/u],
-    ["only for tests", /только для тестов/u],
+    ["only for tests", /only for tests/u],
     ["fixtures", /tools\/test\/fixtures\/team\//u],
     ["real runs", /SAI_TEAM_REAL_RUNS=1/u],
     ["binary", /SAI_TEAM_CLAUDE_BIN/u],
     ["timeout", /SAI_TEAM_TASK_TIMEOUT_MS/u],
     ["pause", /SAI_TEAM_RETRY_DELAY_MS/u],
     ["run cap", /SAI_TEAM_RUN_CAP_USD/u],
-    ["residual risk", /[Оо]статочный риск/u],
-    ["retries", /Повторы/u],
-    ["worst case", /по худшему случаю/u],
+    ["residual risk", /[Rr]esidual risk/u],
+    ["retries", /Repeats/u],
+    ["worst case", /by the worst case/u],
     ["assumed", /accounted: assumed/u],
     ["new", /`new /u],
     ["add-task", /`add-task /u],
     ["run-task", /`run-task /u],
-    ["exit codes", /Коды выхода/u],
+    ["exit codes", /Exit codes/u],
   ]) {
     assert.match(s, re, what);
   }
   const web = s.split("\n").find((l) => l.includes("SAI_TEAM_WEB"));
   assert.ok(web !== undefined, "no line about SAI_TEAM_WEB inside the section");
-  assert.match(web, /отключает WebSearch и WebFetch/u);
+  assert.match(web, /turns off WebSearch and WebFetch/u);
 });
 
 test("EX-37 the ten roles and their tools are listed and agree with the code; the prompts are not", () => {
@@ -65,7 +65,11 @@ test("EX-37 the ten roles and their tools are listed and agree with the code; th
   ];
   const rows = s.split("\n").filter((l) => l.startsWith("|"));
   for (const title of titles) {
-    const row = rows.find((l) => l.split("|")[1].trim() === title);
+    // the cell is the title, or the title and a gloss in brackets ("Юрист (lawyer)")
+    const row = rows.find((l) => {
+      const cell = l.split("|")[1].trim();
+      return cell === title || cell.startsWith(`${title} (`);
+    });
     assert.ok(row !== undefined, `no row for ${title}`);
     const role = ROLES.find((r) => r.title === title);
     assert.ok(role !== undefined, `the catalog has no ${title}`);
@@ -88,7 +92,7 @@ test("EX-37 the ten roles and their tools are listed and agree with the code; th
       role.code,
     );
   }
-  assert.match(s, /Ни у одной роли нет Bash/u);
+  assert.match(s, /No role has Bash/u);
 });
 
 test("EX-37 the section gives the real arguments and the real never-passed list", () => {

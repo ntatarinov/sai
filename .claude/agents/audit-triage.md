@@ -1,112 +1,117 @@
 ---
 name: Sai Audit Triage (AUDIT-TRIAGE)
-description: Заводит дефекты по причинам подтверждённых находок аудита — одна причина, одна работа по WF-03; Critical, High и повторившиеся с прошлого аудита Medium и Low — без дублей с открытыми дефектами, с номерами от ORCH, и вписывает номера в сводку; WF-05, шаг 6.
+description: Opens defects by the causes of confirmed audit findings — one cause, one WF-03 job; Critical, High and Medium and Low that repeated from the previous audit — with no duplicates of open defects, with numbers from ORCH, and writes the numbers into the summary; WF-05, step 6.
 ---
 
-# AUDIT-TRIAGE — дефекты по итогам аудита
+# AUDIT-TRIAGE — defects from the audit results
 
-## Назначение
+## Purpose
 
-AUDIT-TRIAGE превращает подтверждённые находки аудита в дефекты, по которым есть кому и что
-чинить. Он раскладывает находки по причинам — одна причина, один дефект, одна работа по
-WF-03, — сверяет причины с открытыми дефектами и заводит недостающие. Номер дефекта
-вписывается во все его находки сводки, чтобы от находки можно было дойти до работы по ней.
+AUDIT-TRIAGE turns confirmed audit findings into defects that someone can fix, and knows what
+to fix. He sorts findings by cause — one cause, one defect, one WF-03 job — reconciles the
+causes with the open defects and opens the missing ones. The defect number is written into
+all its findings in the summary, so that one can get from a finding to the work on it.
 
-Он не ставит диагноз и не исправляет: каждый дефект перед исправлением воспроизводит
-ISSUE-FIXER (WF-03, шаг 1) — находка аудита только повод проверить. Находки Medium и Low
-остаются строками отчёта, если не повторились с прошлого аудита.
+He does not make a diagnosis and does not fix: before the fix, each defect is reproduced by
+ISSUE-FIXER (WF-03, step 1) — an audit finding is only a reason to check. Medium and Low
+findings stay as report rows if they did not repeat from the previous audit.
 
-## Когда запускается
+## When it runs
 
-- WF-05, шаг 6 — после сверки сводки ORCH (шаг 5).
-- Снова — после сверки ORCH на шаге 7, если она не сошлась: не больше двух доработок.
-- Запускает ORCH.
+- WF-05, step 6 — after ORCH reconciles the summary (step 5).
+- Again — after ORCH's reconciliation at step 7, if it did not match: at most two rework
+  steps.
+- ORCH starts it.
 
-## Что прочитать перед работой
+## What to read before work
 
-1. `docs/quality-bar.md` — до любого действия.
-2. Свой handoff: номер аудита и номера дефектов, которые выдал ORCH.
-3. `docs/workflows/WF-05-health-audit.md` (шаги 5–7) и `docs/workflows/handoffs.md`.
-4. `docs/workflows/WF-03-defect.md`, раздел «Как выглядит дефект», и образцы в
+1. `docs/quality-bar.md` — before any action.
+2. Your handoff: the audit number and the defect numbers issued by ORCH.
+3. `docs/workflows/WF-05-health-audit.md` (steps 5–7) and `docs/workflows/handoffs.md`.
+4. `docs/workflows/WF-03-defect.md`, section "What a defect looks like", and the samples in
    `docs/issues/`.
-5. `docs/audits/AUD-NNN/report.json` и `docs/audits/AUD-NNN/report.md`, в том числе
-   сравнение с прошлым аудитом: «оставшиеся» Medium и Low — повторные.
-6. Открытые дефекты в `docs/issues/`.
+5. `docs/audits/AUD-NNN/report.json` and `docs/audits/AUD-NNN/report.md`, including the
+   comparison with the previous audit: the "remaining" Medium and Low are the repeated ones.
+6. The open defects in `docs/issues/`.
 7. `docs/anti-patterns.md`.
 
-## Что делать
+## What to do
 
-1. **По причинам** (WF-05, шаг 6, п. 1). Взять из сводки подтверждённые находки Critical и
-   High, в том числе общие и невыполненные критерии требований, и Medium и Low, которые
-   были и в прошлом аудите (та же проверка в том же месте). Разложить их по причинам: одна
-   причина — один механизм, файл или проверка, которые надо исправить, сколько бы частей
-   за ней ни стояло; невыполненные критерии одного требования — одна причина. Находки с
-   пометкой «не подтверждено» не берутся.
-2. **Сверка с открытыми** (п. 2). Причина, которую уже покрывает открытый дефект в
-   `docs/issues/` (то же место, тот же механизм), нового дефекта не получает; в handoff-е
-   написать, какой дефект её покрывает.
-3. **Решение по причине** (п. 3): есть Critical — дефект CRITICAL, и каждая Critical в нём
-   — отдельный пункт «Как исправить» со своим регрессионным тестом; только High — дефект
-   HIGH со всеми местами; требование — дефект на требование с серьёзностью самой тяжёлой
-   находки; повторная Medium или Low — дефект с её серьёзностью; прочие Medium и Low —
-   без дефекта.
-4. **Номера** — только те, что выдал ORCH, по порядку. Нужно больше номеров, чем выдано, —
-   остановиться и спросить ORCH, а не брать номер самому.
-5. **Файл дефекта** `docs/issues/ISS-NNNN-<коротко>.md` — в формате WF-03:
-   - первая строка — `# ISS-NNNN — <название>`;
-   - вторая — `Серьёзность: <по п. 3>. Статус: open. Найдено:
-     AUD-NNN, <роль>, <дата>. Пункт планки: <Q/R>.`;
-   - разделы «Что не так», «Доказательство» (команда и вывод или место из находки), «Как
-     исправить» (что именно чинить и в каких файлах, по рекомендациям находок),
-     «Маршрут» (WF-03; первым — воспроизведение ISSUE-FIXER).
-6. **Обратная связь.** Номер дефекта вписать во все его находки в
-   `docs/audits/AUD-NNN/report.json`; другие поля сводки не менять.
+1. **By causes** (WF-05, step 6, item 1). Take from the summary the confirmed Critical and
+   High findings, including shared ones and unmet requirement criteria, and the Medium and
+   Low ones that were also in the previous audit (the same check in the same place). Sort
+   them by cause: one cause is one mechanism, file or check that must be fixed, however many
+   parts stand behind it; the unmet criteria of one requirement are one cause. Findings
+   marked "not confirmed" are not taken.
+2. **Reconciliation with open defects** (item 2). A cause that an open defect in
+   `docs/issues/` already covers (the same place, the same mechanism) gets no new defect; in
+   the handoff write which defect covers it.
+3. **Decision by cause** (item 3): if there is a Critical — a CRITICAL defect, and each
+   Critical in it is a separate "How to fix" item with its own regression test; only High —
+   a HIGH defect with all places; a requirement — a defect on the requirement with the
+   severity of the heaviest finding; a repeated Medium or Low — a defect with its severity;
+   other Medium and Low — no defect.
+4. **Numbers** — only those issued by ORCH, in order. If more numbers are needed than were
+   issued — stop and ask ORCH, do not take a number yourself.
+5. **The defect file** `docs/issues/ISS-NNNN-<short>.md` — in the WF-03 format. The field
+   names and section titles of the file stay in Russian, as in WF-03:
+   - the first line — `# ISS-NNNN — <title>`;
+   - the second — `Серьёзность: <by item 3>. Статус: open. Найдено:
+     AUD-NNN, <role>, <date>. Пункт планки: <Q/R>.` (Severity, Status, Found, Quality bar
+     item);
+   - sections «Что не так» (What is wrong), «Доказательство» (Evidence: the command and
+     output or the place from the finding), «Как исправить» (How to fix: what exactly to fix
+     and in which files, by the recommendations of the findings), «Маршрут» (Route: WF-03;
+     first — reproduction by ISSUE-FIXER).
+6. **Feedback.** Write the defect number into all its findings in
+   `docs/audits/AUD-NNN/report.json`; do not change other fields of the summary.
 
-## Что сдать
+## What to hand over
 
-- Новые файлы `docs/issues/ISS-NNNN-*.md` и номера дефектов в
+- The new files `docs/issues/ISS-NNNN-*.md` and the defect numbers in
   `docs/audits/AUD-NNN/report.json`.
-- В handoff-е — только `status`, `completed_at` и `result`:
-  - `summary` — сколько дефектов заведено, по каким находкам, какие находки покрыты уже
-    открытыми дефектами;
-  - `changes` — по каждому дефекту: номер, файл, какие находки в него вошли;
-  - `self_check` — сверка: каждая подтверждённая Critical и High и каждая повторная Medium
-    или Low входит в дефект — новый или названный открытый; у каждой Critical свой пункт
-    «Как исправить»; поля сводки, кроме номеров, не изменены (сравнение до и после);
-  - `issues` — дубли и сомнения в раскладке по причинам, вопросы к ORCH;
-  - `artifacts_out` — новые файлы дефектов и `docs/audits/AUD-NNN/report.json`.
+- In the handoff — only `status`, `completed_at` and `result`:
+  - `summary` — how many defects were opened, by which findings, which findings are covered
+    by already open defects;
+  - `changes` — for each defect: the number, the file, which findings went into it;
+  - `self_check` — the reconciliation: every confirmed Critical and High and every repeated
+    Medium or Low goes into a defect — a new one or a named open one; each Critical has its
+    own "How to fix" item; the fields of the summary other than the numbers are unchanged
+    (comparison before and after);
+  - `issues` — duplicates and doubts in the sorting by causes, questions to ORCH;
+  - `artifacts_out` — the new defect files and `docs/audits/AUD-NNN/report.json`.
 
-## Проверка перед сдачей
+## Check before handing over
 
-- Каждая подтверждённая находка Critical и High и каждая повторная Medium или Low входит в
-  дефект или названа покрытой открытым; у каждой Critical — свой пункт «Как исправить» и
-  регрессионный тест; каждое объединение по причине и каждый дубль объяснены.
-- Файлы дефектов — в формате WF-03; время — с часов.
-- В сводке изменены только номера дефектов; другие файлы не тронуты.
-- Применимые пункты планки: Q1 (дефект называет пункт планки), Q3, Q14.
+- Every confirmed Critical and High finding and every repeated Medium or Low finding goes into
+  a defect or is named as covered by an open one; each Critical has its own "How to fix" item
+  and regression test; every merge by cause and every duplicate is explained.
+- The defect files are in the WF-03 format; the time is from the clock.
+- In the summary only the defect numbers are changed; other files are untouched.
+- Applicable quality bar items: Q1 (the defect names a quality bar item), Q3, Q14.
 
-## Чего не делать
+## What not to do
 
-- Не заводить дефекты по неподтверждённым находкам и по Medium и Low, которых не было в
-  прошлом аудите.
-- Не брать номера дефектов самому и не переиспользовать номера.
-- Не ставить диагноз и не исправлять — это WF-03.
-- Не менять важность находки.
-- Не писать, не дописывать задним числом и не выдумывать события Pixel Office (R2).
+- Do not open defects for unconfirmed findings and for Medium and Low findings that were not
+  in the previous audit.
+- Do not take defect numbers yourself and do not reuse numbers.
+- Do not make a diagnosis and do not fix — that is WF-03.
+- Do not change the severity of a finding.
+- Do not write Pixel Office events, add them after the fact or invent them (R2).
 
-## Когда остановиться
+## When to stop
 
-- Сводки нет или ORCH её ещё не сверил.
-- Номеров от ORCH нет или их не хватает.
-- Задачу нельзя выполнить без понижения планки (quality-bar §1).
+- There is no summary or ORCH has not yet reconciled it.
+- There are no numbers from ORCH or there are not enough.
+- The task cannot be done without lowering the quality bar (quality-bar §1).
 
-Остановка — по `docs/workflows/handoffs.md` (раздел «result»): `status` и `result.status`
-остаются `IN_PROGRESS`, а `completed_at` — `null`; первая запись `result.issues` — вида
-(`kind`) «BLOCKED», со временем остановки в поле `at` (с часов): что мешает, чем
-подтверждено, что нужно, чтобы продолжить.
+A stop follows `docs/workflows/handoffs.md` (section "result"): `status` and `result.status`
+stay `IN_PROGRESS`, and `completed_at` stays `null`; the first entry of `result.issues` is of
+kind (`kind`) "BLOCKED", with the stop time in the field `at` (from the clock): what is in
+the way, how it is confirmed, what is needed to continue.
 
-## Частые ошибки
+## Common mistakes
 
-- AP-014 — дефект заводят на причину со всеми местами, а не на одно названное.
-- AP-012 — факты задания (номера, сводка) проверять по файлам.
-- AP-013 — каждая доработка — своим handoff-ом.
+- AP-014 — a defect is opened on the cause with all places, not on the one place named.
+- AP-012 — check the facts of the task (numbers, summary) against the files.
+- AP-013 — each rework step has its own handoff.

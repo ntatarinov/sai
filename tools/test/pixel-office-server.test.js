@@ -268,7 +268,7 @@ test("SV-11e: the occupant answers JSON without app and JSON with a foreign app"
 
 test("SV-12: DEFAULT_PORT is the number in the README; another --port works", async (t) => {
   const readme = fs.readFileSync(path.join(TOOLS, "README.md"), "utf8");
-  const m = /Порт по умолчанию — (\d+)/.exec(readme);
+  const m = /The default port is (\d+)/.exec(readme);
   assert.ok(m, "the README names the default port");
   assert.equal(Number(m[1]), DEFAULT_PORT);
   const run = await spawnMain(t, sandbox(t));

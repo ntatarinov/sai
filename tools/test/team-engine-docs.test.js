@@ -6,7 +6,7 @@ import path from "node:path";
 import { test } from "node:test";
 import { TOOLS_DIR } from "./exec-helpers.js";
 
-const HEAD = "## Sai Team — движок";
+const HEAD = "## Sai Team — the engine";
 
 function section() {
   const text = fs.readFileSync(path.join(TOOLS_DIR, "README.md"), "utf8");
@@ -21,33 +21,33 @@ function section() {
 test("EN-75 the README has the section of the engine with every subsection of the design and its key lines", () => {
   const body = section();
   for (const heading of [
-    "### Как цель становится планом",
-    "### Параллельность",
-    "### Контекст задачи",
-    "### Проверка результата",
-    "### Согласования",
-    "### Потолок расходов",
-    "### Завершение",
-    "### Пауза, возобновление, остановка, Ctrl-C",
-    "### Восстановление после падения",
-    "### Канал команд",
-    "### Команды движка",
-    "### Остаточные риски",
+    "### How a goal becomes a plan",
+    "### Parallelism",
+    "### The context of a task",
+    "### The check of a result",
+    "### Approvals",
+    "### The spending ceiling",
+    "### Completion",
+    "### Pause, resume, stop, Ctrl-C",
+    "### Recovery after a crash",
+    "### The channel of commands",
+    "### Engine commands",
+    "### Residual risks",
   ]) {
     assert.ok(body.includes(`\n${heading}\n`), heading);
   }
   for (const line of [
-    "одну повторную попытку",
+    "**one repeat attempt**",
     "--parallel 1",
-    "только** тех задач, от которых она зависит",
-    "отдельный запуск",
-    "действие вовне движок не выполняет",
-    "резервируют",
-    "не больше двух раундов",
+    "**only** of the tasks it depends on",
+    "a separate run",
+    "the engine does not perform the action outside",
+    "**reserve**",
+    "no more than two rounds",
     "Ctrl-C",
     "inbox/",
-    "сама не пишет и не повторяет",
-    "не больше 10 с",
+    "does not write or repeat by itself",
+    "no longer than 10 s",
   ]) {
     assert.ok(body.includes(line), line);
   }

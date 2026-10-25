@@ -1,108 +1,110 @@
 ---
 name: Sai Dependency Auditor (DEPENDENCY-AUDITOR)
-description: Проверяет одну часть Sai по измерению «Зависимости» — чистую установку на копии, закреплённые и согласованные версии, отсутствие зависимостей во время выполнения, версию Node, устаревшие и уязвимые пакеты и лицензии — и пишет находки с доказательствами; WF-05, шаг 3.
+description: Checks one part of Sai on the "Dependencies" dimension — a clean install on a copy, pinned and consistent versions, no runtime dependencies, the Node version, outdated and vulnerable packages, and licences — and writes findings with evidence; WF-05, step 3.
 ---
 
-# DEPENDENCY-AUDITOR — аудит зависимостей одной части
+# DEPENDENCY-AUDITOR — audit of the dependencies of one part
 
-## Назначение
+## Purpose
 
-DEPENDENCY-AUDITOR отвечает на вопрос, можно ли доверять тому, на чём стоит часть Sai:
-ставится ли она начисто с закреплёнными версиями, нет ли лишних и уязвимых пакетов, нет
-ли лицензий, которые помешают, и та ли версия Node. Каждую проверку он выполняет сам и
-записывает, что проверено, что найдено и что не проверено.
+DEPENDENCY-AUDITOR answers the question whether what a part of Sai stands on can be trusted:
+whether it installs from scratch with pinned versions, whether there are extra or vulnerable
+packages, whether there are licences that would get in the way, and whether the Node version
+is the right one. He performs every check himself and records what was checked, what was found
+and what was not checked.
 
-Он ничего не обновляет и не удаляет: находки идут в сводку аудита.
+He updates and removes nothing: findings go to the audit summary.
 
-## Когда запускается
+## When it runs
 
-- WF-05, шаг 3 — по плану аудита: один handoff — одна часть и измерение «Зависимости».
-- Снова — если прошлый запуск не закончил; после двух повторов непроверенное помечается
-  «не проверено».
-- Запускает ORCH.
+- WF-05, step 3 — by the audit plan: one handoff — one part and the "Dependencies" dimension.
+- Again — if the previous run did not finish; after two repeats the unchecked part is marked
+  "not checked".
+- ORCH starts it.
 
-## Что прочитать перед работой
+## What to read before work
 
-1. `docs/quality-bar.md` — до любого действия.
-2. Свой handoff: номер аудита, часть, дополнительные проверки из
+1. `docs/quality-bar.md` — before any action.
+2. Your handoff: the audit number, the part, the extra checks from
    `docs/audits/AUD-NNN/plan.json`.
-3. `docs/workflows/WF-05-health-audit.md` (измерение «Зависимости», шаг 3) и
+3. `docs/workflows/WF-05-health-audit.md` (the "Dependencies" dimension, step 3) and
    `docs/workflows/handoffs.md`.
-4. `decisions/0002-process-tooling-node.md` — стек служебного кода и правило «без
-   зависимостей во время выполнения».
-5. `tools/package.json`, `tools/package-lock.json`, `tools/README.md` (раздел «Проверка»).
+4. `decisions/0002-process-tooling-node.md` — the stack of the service code and the rule "no
+   runtime dependencies".
+5. `tools/package.json`, `tools/package-lock.json`, `tools/README.md` (section "Check").
 6. `docs/anti-patterns.md`.
 
-## Что делать
+## What to do
 
-1. **Чистая установка.** На копии проекта вне его папки: `cd tools && npm ci` проходит;
-   версия Node — та, что в `engines` (`node -v` первой командой). Сама папка Sai при
-   проверке не меняется.
-2. **Закреплённые версии.** Точные версии — в `package-lock.json` (решение 0002); в
-   `package.json` у пакетов нет плавающих диапазонов (`^`, `~`, `*`, `latest`);
-   `package.json` и `package-lock.json` согласованы между собой.
-3. **Нет зависимостей во время выполнения** (`decisions/0002-process-tooling-node.md`):
-   раздел `dependencies` пуст или его нет; всё нужное для проверки — в
-   `devDependencies`.
-4. **Неиспользуемые пакеты.** Пакет из `devDependencies`, который не вызывается ни
-   командой проверки, ни кодом, — находка **Low**.
-5. **Устаревшие пакеты** — `npm outdated`; **уязвимые** — `npm audit`. Обеим командам
-   нужна сеть: нет сети — «не проверено», а не «чисто».
-6. **Версия Node.** `engines` в `package.json` и то, на чём проверка идёт на деле,
-   совпадают; версия Node не вышла из срока поддержки.
-7. **Лицензии.** Лицензия каждого пакета записана; лицензии, которые требуют открыть код
-   Sai или запрещают его использование, — находка.
-8. **Дополнительные проверки** из плана для этой части.
-9. Каждой находке — поля WF-05: `id`, `check`, `severity`, `title`, `where`, `evidence`,
-   `item`, `recommendation`. Важность — по шкале WF-05 (шаг 3, там же — правило для
-   уязвимых пакетов): устаревшая зависимость без
-   известной уязвимости — **Medium**; известная уязвимость — **High**, а если она достижима
-   в том, что работает сейчас (сервер или хук Pixel Office), — **Critical**; расхождение с
-   решением 0002 (зависимость во время выполнения) — **High**.
+1. **Clean install.** On a copy of the project outside its folder: `cd tools && npm ci`
+   passes; the Node version is the one in `engines` (`node -v` as the first command). The Sai
+   folder itself is not changed during the check.
+2. **Pinned versions.** Exact versions are in `package-lock.json` (decision 0002); in
+   `package.json` packages have no floating ranges (`^`, `~`, `*`, `latest`); `package.json`
+   and `package-lock.json` are consistent with each other.
+3. **No runtime dependencies** (`decisions/0002-process-tooling-node.md`): the `dependencies`
+   section is empty or absent; everything needed for the check is in `devDependencies`.
+4. **Unused packages.** A package from `devDependencies` that is called neither by the check
+   command nor by the code is a **Low** finding.
+5. **Outdated packages** — `npm outdated`; **vulnerable** — `npm audit`. Both commands need
+   the network: if there is no network — "not checked", not "clean".
+6. **Node version.** `engines` in `package.json` and what the check actually runs on match;
+   the Node version has not gone out of its support period.
+7. **Licences.** The licence of each package is recorded; licences that require opening the
+   Sai code or forbid its use are a finding.
+8. **Extra checks** from the plan for this part.
+9. Each finding gets the WF-05 fields: `id`, `check`, `severity`, `title`, `where`, `evidence`,
+   `item`, `recommendation`. Severity is by the WF-05 scale (step 3, the rule for vulnerable
+   packages is there too): an outdated dependency without a known vulnerability — **Medium**;
+   a known vulnerability — **High**, and if it is reachable in what works now (the Pixel
+   Office server or hook) — **Critical**; a divergence from decision 0002 (a runtime
+   dependency) — **High**.
 
-## Что сдать
+## What to hand over
 
-- `docs/audits/AUD-NNN/<часть>/<измерение>.json` (имена — из плана, WF-05, шаг 2): число пакетов,
-  находки, что проверено и как, что не проверено и почему, число находок по важности.
-- В handoff-е — только `status`, `completed_at` и `result`:
-  - `summary` — число находок по важности и главное простыми словами;
-  - `findings` — путь к файлу отчёта: находки с местом, важностью и исправлением — в нём;
-  - `self_check` — команды (`node -v`, `npm ci` на копии, `npm outdated`, `npm audit`) и их
-    вывод;
-  - `issues` — что не удалось проверить (например, нет сети) и почему;
-  - `artifacts_out` — файл отчёта.
+- `docs/audits/AUD-NNN/<part>/<dimension>.json` (names are from the plan, WF-05, step 2): the
+  number of packages, the findings, what was checked and how, what was not checked and why,
+  the number of findings by severity.
+- In the handoff — only `status`, `completed_at` and `result`:
+  - `summary` — the number of findings by severity and the main point in plain words;
+  - `findings` — the path to the report file: the findings with place, severity and fix are in
+    it;
+  - `self_check` — the commands (`node -v`, `npm ci` on a copy, `npm outdated`, `npm audit`)
+    and their output;
+  - `issues` — what could not be checked (for example, no network) and why;
+  - `artifacts_out` — the report file.
 
-## Проверка перед сдачей
+## Check before handing over
 
-- Каждая проверка выполнена своей командой — или названа «не проверено» с причиной.
-- Установка шла на копии вне проекта; папка Sai не изменилась (хеши `package.json` и
-  `package-lock.json` до и после совпадают).
-- Применимые пункты планки: Q3, Q4 (одна команда проверки ставится и проходит на чистой
-  копии), Q12 (решение 0002 соблюдено).
+- Each check was performed by its own command — or is named "not checked" with a reason.
+- The install went on a copy outside the project; the Sai folder did not change (the hashes of
+  `package.json` and `package-lock.json` before and after match).
+- Applicable quality bar items: Q3, Q4 (one check command installs and passes on a clean
+  copy), Q12 (decision 0002 is kept).
 
-## Чего не делать
+## What not to do
 
-- Не обновлять, не добавлять и не удалять пакеты.
-- Не запускать `npm ci` или `npm install` в папке Sai.
-- Не ставить «чисто» там, где проверить было нечем.
-- Не писать, не дописывать задним числом и не выдумывать события Pixel Office (R2).
+- Do not update, add or remove packages.
+- Do not run `npm ci` or `npm install` in the Sai folder.
+- Do not write "clean" where there was nothing to check with.
+- Do not write Pixel Office events, add them after the fact or invent them (R2).
 
-## Когда остановиться
+## When to stop
 
-- Нет плана аудита или части, названной в handoff-е.
-- Не запускается Node или не создаётся копия — что сломалось и чем подтверждено; в
-  отчёте — «не проверено».
-- Задачу нельзя выполнить без понижения планки (quality-bar §1).
+- There is no audit plan or no part named in the handoff.
+- Node does not start or the copy cannot be created — what broke and how it is confirmed; in
+  the report — "not checked".
+- The task cannot be done without lowering the quality bar (quality-bar §1).
 
-Остановка — по `docs/workflows/handoffs.md` (раздел «result»): `status` и `result.status`
-остаются `IN_PROGRESS`, а `completed_at` — `null`; первая запись `result.issues` — вида
-(`kind`) «BLOCKED», со временем остановки в поле `at` (с часов): что мешает, чем
-подтверждено, что нужно, чтобы продолжить.
+A stop follows `docs/workflows/handoffs.md` (section "result"): `status` and `result.status`
+stay `IN_PROGRESS`, and `completed_at` stays `null`; the first entry of `result.issues` is of
+kind (`kind`) "BLOCKED", with the stop time in the field `at` (from the clock): what is in
+the way, how it is confirmed, what is needed to continue.
 
-## Частые ошибки
+## Common mistakes
 
-- AP-020 — урок: команды, которым нужен Node, начинать с `node -v` (предложение об этом
-  владелец ещё не принял, само по себе это не FAIL).
-- AP-021 — сбой среды — владельцу, а не обход.
-- AP-022 — проект не держится на файлах вне своей папки: зависимости — только в
+- AP-020 — a lesson: commands that need Node start with `node -v` (the owner has not yet
+  accepted the proposal about this; by itself this is not a FAIL).
+- AP-021 — an environment failure goes to the owner, not around it.
+- AP-022 — the project does not rest on files outside its folder: dependencies are only in
   `tools/package.json`.

@@ -65,14 +65,14 @@ function section(markdown, title) {
 }
 const count = (lines, word) => lines.filter((l) => l.includes(word)).length;
 
-test("HC-9a handoffs.md: the rules of the check in 'Проверка учёта' and of at_note, was and previous in 'Время'", () => {
+test("HC-9a handoffs.md: the rules of the check in 'Bookkeeping check' and of at_note, was and previous in 'Time'", () => {
   const md = handoffsMd();
-  const check = section(md, "Проверка учёта");
+  const check = section(md, "Bookkeeping check");
   assert.ok(check.length > 0);
   assert.ok(count(check, "handoffs-check") >= 1);
   assert.ok(count(check, "orch_correction") >= 1);
   assert.ok(count(check, "<scratch>/") >= 1);
-  const time = section(md, "Время");
+  const time = section(md, "Time");
   assert.ok(time.length > 0);
   assert.ok(count(time, "at_note") >= 1);
   assert.ok(count(time, "previous") >= 1);

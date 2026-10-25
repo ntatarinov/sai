@@ -58,21 +58,24 @@ function section(text, title) {
 const countLines = (text, needle) =>
   text.split("\n").filter((l) => l.includes(needle)).length;
 
-test("HO-50 handoffs.md: both forms of the command stand in the sections Время and Кто что пишет, at least two lines in all", () => {
+test("HO-50 handoffs.md: both forms of the command stand in the sections Time and Who writes what, at least two lines in all", () => {
   const text = read("docs", "workflows", "handoffs.md");
   assert.ok(countLines(text, "npm run handoff -- ") >= 2);
-  for (const title of ["Время", "Кто что пишет"]) {
+  for (const title of ["Time", "Who writes what"]) {
     const body = section(text, title);
     assert.match(body, /npm run handoff -- new/u, title);
     assert.match(body, /npm run handoff -- close/u, title);
   }
-  const who = section(text, "Кто что пишет");
-  assert.match(who, /записывает `context\.write_set` списком/u);
-  assert.match(who, /`IN_PROGRESS` и «BLOCKED»\) `close` не делает/u);
-  assert.match(section(text, "Время"), /один раз/u);
+  const who = section(text, "Who writes what");
+  assert.match(who, /writes `context\.write_set` as a list/u);
+  assert.match(
+    who,
+    /`close` does not do the stop by the rule of a role\s+\(`IN_PROGRESS` and "BLOCKED"\)/u,
+  );
+  assert.match(section(text, "Time"), /from \*\*one\*\* reading of the clock/u);
 });
 
-test("HO-51 orchestrator.md: a line with `handoff -- new`, the words «в момент запуска» and «не заранее»", () => {
+test("HO-51 orchestrator.md: a line with `handoff -- new`, the words «at the moment of launching» and «not in advance»", () => {
   const lines = read(".claude", "agents", "orchestrator.md").split("\n");
   const found = lines.filter((l) => l.includes("handoff -- new"));
   assert.ok(found.length >= 1);
@@ -81,25 +84,25 @@ test("HO-51 orchestrator.md: a line with `handoff -- new`, the words «в мом
   const point = [lines[at], lines[at + 1], lines[at + 2]]
     .filter((l, i) => i === 0 || (l !== undefined && l.startsWith("  ")))
     .join(" ");
-  assert.match(point, /в момент запуска/u);
-  assert.match(point, /не заранее/u);
+  assert.match(point, /at the\s+moment of launching the agent/u);
+  assert.match(point, /not in advance/u);
 });
 
-test("HO-52 README.md: the section «Команда handoff» holds both calls, every key, the codes of exit and the recipe of a long text; whole lines are counted, not the substring that handoffs-check already holds", () => {
+test("HO-52 README.md: the section «The handoff command» holds both calls, every key, the codes of exit and the recipe of a long text; whole lines are counted, not the substring that handoffs-check already holds", () => {
   const text = read("tools", "README.md");
   assert.ok(countLines(text, "npm run handoff -- ") >= 2);
-  const body = section(text, "Команда handoff");
+  const body = section(text, "The handoff command");
   assert.match(body, /^ {4}cd tools && npm run handoff -- new --run /mu);
   assert.match(body, /^ {4}cd tools && npm run handoff -- close /mu);
   assert.match(body, /^ {4}cd tools && npm run handoff -- --help/mu);
   for (const key of [...KEYS, "status"])
     assert.ok(body.includes(`\`--${key}\``), key);
-  assert.match(body, /Коды выхода: 0 .*1 .*2 /u);
+  assert.match(body, /Exit codes: 0 .*1 .*2 /u);
   assert.match(body, /\$\(cat /u);
   assert.match(body, /decisions\/0039/u);
   assert.match(body, /decisions\/0040/u);
-  assert.match(body, /[Мм]етк\S* `base\/<RUN-ID>`/u);
-  assert.match(body, /жёстки\S* ссыл/u);
+  assert.match(body, /tag `base\/<RUN-ID>`/u);
+  assert.match(body, /hard link/u);
   // The line about the content of npm run check is as it was.
   assert.match(text, /handoffs-check/u);
 });

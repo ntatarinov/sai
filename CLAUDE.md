@@ -1,200 +1,207 @@
-# Sai — указатель для сессии
+# Sai — session index
 
-«Сай» по-казахски — «подходящий». В Sai два слоя работы.
+"Sai" in Kazakh means "suitable". Sai has two layers of work.
 
-- **Продукт — «виртуальная команда» (Sai Team):** виртуальная команда ИИ-агентов для
-  бизнеса — человек пишет цель обычными словами, команда сама составляет план, распределяет
-  работу по ролям, проверяет её и приносит результат. Разработка начата 2026-10-06 по слову
-  владельца (`decisions/0015-product-virtual-team-start.md`), продукт уточнён решением
-  `decisions/0033-drop-clothing-shop-product.md`. Проверки спроса не было — это принятый риск.
-- **Конвейер агентов:** роли, процессы и планка качества, по которым агенты делают
-  работу — требования, проекты, исследования, бизнес-план, служебный код. Служебный код
-  конвейера лежит в `tools/` (Node 22): инструменты выбора идеи (WF-06), Pixel Office —
-  страница, на которой видно, что делают агенты, и сайт подбора решения (`tools/src/picker/`).
+- **The product — the "virtual team" (Sai Team):** a virtual team of AI agents for business.
+  A person writes a goal in ordinary words, and the team makes the plan itself, divides the
+  work between roles, checks it, and brings the result. Development started on 2026-10-06 on
+  the owner's word (`decisions/0015-product-virtual-team-start.md`); the product was
+  clarified by decision `decisions/0033-drop-clothing-shop-product.md`. There was no demand
+  check — this is an accepted risk.
+- **The agent pipeline:** the roles, workflows and quality bar by which agents do the work —
+  requirements, designs, research, the business plan, service code. The pipeline's service
+  code is in `tools/` (Node 22): the idea-selection tools (WF-06), Pixel Office — a page
+  that shows what the agents are doing, and the solution picker site (`tools/src/picker/`).
 
-## Что строим
+## What we are building
 
-Виртуальная команда: пользователь ставит цель обычными словами, движок строит план, запускает
-агентов-ролей, проверяет результат и спрашивает человека только о критичном, а Pixel Office
-показывает настоящую работу — без имитации и выдуманных статусов. Где мы сейчас:
-`docs/product/current-state.md`; сравнение и порядок работ: `docs/product/parity-matrix.md`,
-`docs/product/roadmap.md`; решение о старте, стек и правила хранения:
-`decisions/0015-product-virtual-team-start.md`. Код продукта — в `tools/src/team/`.
+The virtual team: the user sets a goal in ordinary words, the engine builds a plan, starts
+the role agents, checks the result, and asks a human only about what is critical, while Pixel
+Office shows the real work — with no imitation and no invented statuses. Where we are now:
+`docs/product/current-state.md`; comparison and order of work: `docs/product/parity-matrix.md`,
+`docs/product/roadmap.md`; the decision on the start, the stack and the storage rules:
+`decisions/0015-product-virtual-team-start.md`. The product code is in `tools/src/team/`.
 
-Сайт подбора решения — посетитель отвечает на вопросы анкеты и видит, какое решение ему
-подходит; у каждого арендатора свой файл, тексты на русском, казахском и английском. Код — в
-`tools/src/picker/`, команда `cd tools && npm run picker`, требования REQ-054…REQ-068, решение
-`decisions/0065-solution-picker-stack-and-choices.md`. Что из этого уже выполнено, видно в
-`docs/requirements.yaml` и `STATE.md`.
+The solution picker site — a visitor answers the questions of a questionnaire and sees which
+solution suits them; every tenant has its own file, texts in Russian, Kazakh and English. The
+code is in `tools/src/picker/`, the command is `cd tools && npm run picker`, the requirements
+are REQ-054…REQ-068, the decision is `decisions/0065-solution-picker-stack-and-choices.md`.
+What of this is already done can be seen in `docs/requirements.yaml` and `STATE.md`.
 
-Что уже сделано, что открыто и что дальше — `STATE.md`. Текущая итерация и план —
-`PLAN.md`.
+What is already done, what is open and what comes next — `STATE.md`. The current iteration
+and the plan — `PLAN.md`.
 
-## Прочитать при старте — любой роли
+## Read at the start — every role
 
-1. `docs/quality-bar.md` — **обязательно, до любого действия.** Минимум качества Sai;
-   опускать его нельзя.
-2. `STATE.md` — что есть, что открыто, что делать дальше.
-3. `PLAN.md` — итерации и что сейчас в работе.
-4. `docs/requirements.yaml` — требования и их статусы. Файл большой: своё требование
-   читайте блоком по id (команда — в `docs/workflows/handoffs.md`).
+1. `docs/quality-bar.md` — **mandatory, before any action.** The minimum quality of Sai; it
+   must not be lowered.
+2. `STATE.md` — what exists, what is open, what to do next.
+3. `PLAN.md` — iterations and what is in work now.
+4. `docs/requirements.yaml` — requirements and their statuses. The file is large: read your
+   requirement as a block by id (the command is in `docs/workflows/handoffs.md`).
 
-Перед работой по handoff-у — ещё: свой handoff и файлы из его `context.artifacts_in`,
-файл своей роли в `.claude/agents/`, документ своего процесса в `docs/workflows/`,
-протокол `docs/workflows/handoffs.md` и журнал ошибок процесса `docs/anti-patterns.md`.
+Before work on a handoff, also read: your handoff and the files from its
+`context.artifacts_in`, the file of your role in `.claude/agents/`, the document of your
+workflow in `docs/workflows/`, the protocol `docs/workflows/handoffs.md`, and the process
+error journal `docs/anti-patterns.md`.
 
-Идеи, из которых вырос проект, и почему остальные отброшены, — `ideas/README.md`. Читать,
-когда нужен контекст решения, а не на каждом старте.
+The ideas the project grew from, and why the others were dropped — `ideas/README.md`. Read it
+when the context of a decision is needed, not at every start.
 
-**Исключение:** роли IDEA-ANALYST и IDEA-JUDGE (WF-06) этот стартовый список и абзац
-«Перед работой по handoff-у» не читают — для них действует раздел «Reading scope» их
-файлов ролей: `runs/<RUN-ID>/`, `docs/quality-bar.md`, свой handoff, файл роли,
-`docs/workflows/WF-06-idea-selection.md` и контракты WF-06 из его проекта. Журнал ошибок
-и `docs/requirements.yaml` они не читают.
+**Exception:** the roles IDEA-ANALYST and IDEA-JUDGE (WF-06) do not read this start list or
+the paragraph "Before work on a handoff" — for them the section "Reading scope" of their role
+files applies: `runs/<RUN-ID>/`, `docs/quality-bar.md`, their handoff, the role file,
+`docs/workflows/WF-06-idea-selection.md`, and the WF-06 contracts from its design. They do not
+read the error journal or `docs/requirements.yaml`.
 
-## Главное правило
+## The main rule
 
-Планка качества не понижается ни одним агентом, ни по какой причине. Если задачу нельзя
-выполнить без понижения — остановиться и сообщить (quality-bar §1). Поднимать планку
-можно маленькими шагами, через решение владельца (quality-bar §4).
+The quality bar is not lowered by any agent, for any reason. If a task cannot be done without
+lowering it — stop and report (quality-bar §1). The bar can be raised in small steps, through
+a decision of the owner (quality-bar §4).
 
-Если указания расходятся, действует первое из списка:
+If instructions disagree, the first one in this list wins:
 
-1. планка качества и записанные решения в `decisions/`;
-2. задание вашего handoff-а;
-3. файл вашей роли;
-4. документ процесса в `docs/workflows/`;
-5. протокол `docs/workflows/handoffs.md`;
-6. этот файл.
+1. the quality bar and the recorded decisions in `decisions/`;
+2. the task of your handoff;
+3. the file of your role;
+4. the workflow document in `docs/workflows/`;
+5. the protocol `docs/workflows/handoffs.md`;
+6. this file.
 
-Расхождение не решают молча — его записывают в `result.issues`. Задание говорит, что
-делать; верен ли факт в задании, проверяется (quality-bar §6).
+A disagreement is not resolved silently — it is written into `result.issues`. The task says
+what to do; whether a fact in the task is true is checked (quality-bar §6).
 
-## Правила этой папки
+## Rules of this folder
 
-- **Sai самодостаточен.** Всё, что нужно агенту, лежит в файлах этой папки. Соседние
-  папки и другие проекты на компьютере не служат источником правил и не меняются.
-- В файлы Sai не пишутся пути этого компьютера (домашняя папка, папки программ,
-  временные папки) и ссылки на другие проекты. Пути — от корня Sai. Временные файлы —
-  вне проекта, в рабочей папке сессии; в документах такое место называется
-  `<вне проекта>`.
-- Отправка в `main` — по слову владельца от 2026-10-11 после PASS RELEASE-VALIDATOR (WF-02,
-  шаг 11, `decisions/0079`); мерж иным способом подтверждает владелец (quality-bar R1).
-- Код продукта пишется в `tools/src/team/` по решению `decisions/0015-product-virtual-team-start.md`
-  (Node 22 без зависимостей, одна команда проверки `cd tools && npm run check`). Решение
-  принято ORCH по прямому слову владельца и отменяемо им. Служебный код конвейера в `tools/`
-  — по `decisions/0002-process-tooling-node.md`, `decisions/0003-pixel-office-as-pipeline-tooling.md`.
+- **Sai is self-sufficient.** Everything an agent needs is in the files of this folder.
+  Neighbouring folders and other projects on the computer are not a source of rules and are
+  not changed.
+- Paths of this computer (the home folder, program folders, temporary folders) and links to
+  other projects are not written into Sai files. Paths are from the Sai root. Temporary
+  files go outside the project, in the working folder of the session; in documents such a
+  place is called `<outside the project>`.
+- Pushing to `main` is by the owner's word of 2026-10-11, after PASS of RELEASE-VALIDATOR
+  (WF-02, step 11, `decisions/0079`); a merge in any other way is confirmed by the owner
+  (quality-bar R1).
+- Product code is written in `tools/src/team/` by decision
+  `decisions/0015-product-virtual-team-start.md` (Node 22 without dependencies, one check
+  command `cd tools && npm run check`). The decision was made by ORCH on the owner's direct
+  word and the owner can cancel it. The pipeline's service code in `tools/` follows
+  `decisions/0002-process-tooling-node.md` and
+  `decisions/0003-pixel-office-as-pipeline-tooling.md`.
 
-## Роли — кто делает и кто проверяет
+## Roles — who does and who checks
 
-Каждый производящий шаг проверяет другой агент (quality-bar Q2). Файлы ролей —
-`.claude/agents/`; каждая роль соблюдает `docs/quality-bar.md`.
+Every producing step is checked by another agent (quality-bar Q2). The role files are in
+`.claude/agents/`; every role follows `docs/quality-bar.md`.
 
-| Область | Делает | Проверяет |
+| Area | Does | Checks |
 |---|---|---|
-| Управление | ORCH — маршрут, ворота, handoff-ы, сверка учёта, `PLAN.md`, отчёт владельцу. Сам пишет только то, что перечислено под таблицей; код, требования и другие документы — нет (AP-009, AP-011) | владелец — решения и мерж |
-| Требования | REQ-ANALYST | REQ-VALIDATOR |
-| Проектирование | CODE-DESIGNER; GUI-DESIGN-ANALYST — описание интерфейса по образцу или скриншоту | CODE-DESIGN-VALIDATOR |
-| Разработка | BACKEND-DEV, FRONTEND-DEV; переводы текстов пишет та же роль, что пишет код | SECURITY-REVIEWER — всегда (его область: данные клиентов и их пространств, секреты, внешние вызовы, права; затронута ли она, решает он) и REVIEWER, оба одновременно |
-| Правки | CODE-FIXER — по замечаниям проверок и по диагнозу дефекта | снова SECURITY-REVIEWER и REVIEWER одновременно, затем та проверка, чьи замечания он закрывал |
-| Тесты | TEST-DESIGNER | TEST-DESIGN-VALIDATOR |
-| Прогон проверки | TEST-RUNNER; TEST-FIXER — разбирает упавший прогон и чинит тест или код | RELEASE-VALIDATOR перезапускает проверку сам; правку TEST-FIXER — новый прогон и проверка изменённой части |
-| Приёмка | BA-ANALYST пишет сценарии, подписывает итог и сводит итог читателей текстов; UAT-RUNNER прогоняет сценарии на запущенной системе, страницы — в настоящем Chrome | RELEASE-VALIDATOR |
-| Интерфейс | FRONTEND-DEV по описанию интерфейса | DESIGN-QA-VALIDATOR — снимок страницы против утверждённого образца; без образца — приёмка UAT-RUNNER в настоящем Chrome (`decisions/0079`, п. 13) |
-| Итоговая проверка | — | RELEASE-VALIDATOR — сам перепроверяет каждый критерий и планку |
-| Учёт и выпуск | DOC-UPDATER — статусы, `STATE.md`, `PLAN.md`, журнал ошибок; RELEASE-FINALIZER — коммит файлов прогона, push в `main` после PASS RELEASE-VALIDATOR, ожидание `check.yml`, второй коммит с handoff-ом шага и отчёт о выпуске (свой репозиторий Sai на GitHub закрыт владельцем намеренно, `decisions/0062`; порядок — `decisions/0048`, WF-02, шаг 11) | ORCH сверяет файлы и поля; мерж иным способом — только с подтверждения владельца (R1) |
-| Дефекты | ISSUE-FIXER — диагноз причины | CODE-DESIGN-VALIDATOR (проект исправления), TEST-DESIGN-VALIDATOR (тест падает до исправления) |
-| Аудит | AUDIT-SCOUT → AUDIT-PLANNER → аудиторы SECURITY-AUDITOR, DEPENDENCY-AUDITOR, ARCHITECTURE-AUDITOR, COVERAGE-AUDITOR, DOC-AUDITOR и RELEASE-VALIDATOR (перепроверка требований в статусе `done`) → AUDIT-COMPILER → AUDIT-TRIAGE (заводит дефекты) → DOC-UPDATER (учёт) | AUDIT-COMPILER перепроверяет находки Critical и High; сводку, снятые находки, дефекты и учёт сверяет ORCH |
-| Выбор идеи | IDEA-ANALYST ×3 → IDEA-JUDGE | аналитики проверяют друг друга; VERDICT-EXECUTOR перепроверяет вердикт |
-| Бизнес-план | MARKET-RESEARCHER, PLAN-WRITER | PLAN-VALIDATOR, затем RELEASE-VALIDATOR |
+| Management | ORCH — route, gates, handoffs, bookkeeping check, `PLAN.md`, report to the owner. It writes by itself only what is listed under the table; code, requirements and other documents it does not (AP-009, AP-011) | the owner — decisions and merge |
+| Requirements | REQ-ANALYST | REQ-VALIDATOR |
+| Design | CODE-DESIGNER; GUI-DESIGN-ANALYST — a description of the interface from a sample or a screenshot | CODE-DESIGN-VALIDATOR |
+| Development | BACKEND-DEV, FRONTEND-DEV; text translations are written by the same role that writes the code | SECURITY-REVIEWER — always (its area: customer data and their spaces, secrets, external calls, permissions; whether the area is touched is decided by the reviewer) and REVIEWER, both at the same time |
+| Fixes | CODE-FIXER — by the findings of the checks and by the diagnosis of a defect | SECURITY-REVIEWER and REVIEWER again, at the same time, then the check whose findings it was closing |
+| Tests | TEST-DESIGNER | TEST-DESIGN-VALIDATOR |
+| Check run | TEST-RUNNER; TEST-FIXER — analyses a failed run and fixes the test or the code | RELEASE-VALIDATOR runs the check again itself; the fix of TEST-FIXER — a new run and a check of the changed part |
+| Acceptance | BA-ANALYST writes the scenarios, signs the result, and combines the result of the text readers; UAT-RUNNER runs the scenarios on the running system, pages in a real Chrome | RELEASE-VALIDATOR |
+| Interface | FRONTEND-DEV by the description of the interface | DESIGN-QA-VALIDATOR — a snapshot of the page against the approved sample; without a sample — acceptance by UAT-RUNNER in a real Chrome (`decisions/0079`, item 13) |
+| Final check | — | RELEASE-VALIDATOR — re-checks every criterion and the bar by itself |
+| Bookkeeping and release | DOC-UPDATER — statuses, `STATE.md`, `PLAN.md`, the error journal; RELEASE-FINALIZER — the commit of the run's files, push to `main` after PASS of RELEASE-VALIDATOR, waiting for `check.yml`, a second commit with the step's handoff, and the release report (Sai's own repository on GitHub is closed by the owner on purpose, `decisions/0062`; the order is in `decisions/0048`, WF-02, step 11) | ORCH checks files and fields; a merge in another way — only with the owner's confirmation (R1) |
+| Defects | ISSUE-FIXER — diagnosis of the cause | CODE-DESIGN-VALIDATOR (design of the fix), TEST-DESIGN-VALIDATOR (the test fails before the fix) |
+| Audit | AUDIT-SCOUT → AUDIT-PLANNER → the auditors SECURITY-AUDITOR, DEPENDENCY-AUDITOR, ARCHITECTURE-AUDITOR, COVERAGE-AUDITOR, DOC-AUDITOR and RELEASE-VALIDATOR (re-check of requirements in status `done`) → AUDIT-COMPILER → AUDIT-TRIAGE (opens defects) → DOC-UPDATER (bookkeeping) | AUDIT-COMPILER re-checks the Critical and High findings; the summary, the withdrawn findings, the defects and the bookkeeping are checked by ORCH |
+| Idea selection | IDEA-ANALYST ×3 → IDEA-JUDGE | the analysts check each other; VERDICT-EXECUTOR re-checks the verdict |
+| Business plan | MARKET-RESEARCHER, PLAN-WRITER | PLAN-VALIDATOR, then RELEASE-VALIDATOR |
 
-ORCH сам пишет только это (закрытый список):
+ORCH writes by itself only this (a closed list):
 
-- handoff-ы и служебные файлы прогона в `handoffs/<RUN-ID>/` — в том числе список
-  параллельных прогонов `handoffs/<RUN-ID>/parallel-runs.jsonl` и снимок «до» в WF-07;
-  поправки — отдельными полями `orch_note`, `orch_correction`, `orch_cancellation`;
-  `not_agent_attested` — только по правилам «Перерывов и обрывов» (`docs/workflows/handoffs.md`);
-- `PLAN.md` — план итераций: включает в него проверенные требования и убирает их по слову
-  владельца (WF-01, шаг 3);
-- записи решений в `decisions/` и их строки в `decisions/README.md` — предложения поднять
-  планку (quality-bar §4) и решения о ходе работы; запись переносит слова владельца или
-  предложение роли, с разделом «Основание» (`decisions/README.md`); исключение из планки —
-  только по письменным словам владельца (quality-bar §1, п. 3);
-- перевод статуса требования в `in_progress`, когда начинается работа по нему (WF-02,
-  шаг 0; вариант WF-07);
-- правку по короткому пути WF-02;
-- файл образца, который дал владелец (WF-04, шаг 0);
-- файлы прогона в `runs/<RUN-ID>/`, которые создаёт команда prepare-run (WF-06, шаг 0);
-- учёт после шага 6 WF-06: статусы требований, кроме `done` (его ставит только DOC-UPDATER
-  после PASS RELEASE-VALIDATOR — шапка `docs/requirements.yaml`), `docs/anti-patterns.md`,
-  `STATE.md` вне блока рекомендации;
-- запись решения владельца о старте в `STATE.md` по его прямому слову — это перенос его
-  слов (WF-06, шаг 7).
+- handoffs and the service files of a run in `handoffs/<RUN-ID>/` — including the list of
+  parallel runs `handoffs/<RUN-ID>/parallel-runs.jsonl` and the "before" snapshot in WF-07;
+  corrections go in separate fields `orch_note`, `orch_correction`, `orch_cancellation`;
+  `not_agent_attested` — only by the rules of "Pauses and interruptions"
+  (`docs/workflows/handoffs.md`);
+- `PLAN.md` — the plan of iterations: it adds checked requirements to it and removes them on
+  the owner's word (WF-01, step 3);
+- records of decisions in `decisions/` and their lines in `decisions/README.md` — proposals
+  to raise the bar (quality-bar §4) and decisions on the course of work; a record carries the
+  owner's words or the proposal of a role, with a section "Basis" (`decisions/README.md`); an
+  exception from the bar — only by the owner's written words (quality-bar §1, item 3);
+- moving a requirement status to `in_progress` when work on it starts (WF-02, step 0; the
+  WF-07 variant);
+- the fix on the short path of WF-02;
+- the sample file given by the owner (WF-04, step 0);
+- the run files in `runs/<RUN-ID>/` that the command prepare-run creates (WF-06, step 0);
+- bookkeeping after step 6 of WF-06: requirement statuses other than `done` (it is set only
+  by DOC-UPDATER after PASS of RELEASE-VALIDATOR — the header of `docs/requirements.yaml`),
+  `docs/anti-patterns.md`, `STATE.md` outside the recommendation block;
+- the record of the owner's decision on the start in `STATE.md` on his direct word — this is
+  a transfer of his words (WF-06, step 7).
 
-## Процессы
+## Workflows
 
-| Процесс | Когда | Документ |
+| Workflow | When | Document |
 |---|---|---|
-| WF-01 — требование | новое или изменённое требование | `docs/workflows/WF-01-requirement.md` |
-| WF-02 — разработка | требование проверено, можно строить | `docs/workflows/WF-02-development.md` |
-| WF-03 — дефект | открытый дефект, упавший тест, найденная ошибка | `docs/workflows/WF-03-defect.md` |
-| WF-04 — интерфейс по образцу | экран делается по скриншоту или эталонному коду | `docs/workflows/WF-04-ui-by-sample.md` |
-| WF-05 — аудит здоровья проекта | проверить проект целиком; не реже раза в 30 дней — перепроверить требования в статусе `done` | `docs/workflows/WF-05-health-audit.md` |
-| WF-06 — выбор идеи | выбрать идею из кандидатов | `docs/workflows/WF-06-idea-selection.md` |
-| WF-07 — бизнес-план | план или короткий документ по фактам | `docs/workflows/WF-07-business-plan.md` |
-| Протокол handoff-ов | для всех процессов | `docs/workflows/handoffs.md` |
+| WF-01 — requirement | a new or changed requirement | `docs/workflows/WF-01-requirement.md` |
+| WF-02 — development | the requirement is checked, it can be built | `docs/workflows/WF-02-development.md` |
+| WF-03 — defect | an open defect, a failed test, a found error | `docs/workflows/WF-03-defect.md` |
+| WF-04 — interface by sample | a screen is made from a screenshot or a reference code | `docs/workflows/WF-04-ui-by-sample.md` |
+| WF-05 — project health audit | check the whole project; at least once in 30 days — re-check the requirements in status `done` | `docs/workflows/WF-05-health-audit.md` |
+| WF-06 — idea selection | choose an idea from candidates | `docs/workflows/WF-06-idea-selection.md` |
+| WF-07 — business plan | a plan or a short document based on facts | `docs/workflows/WF-07-business-plan.md` |
+| Handoff protocol | for all workflows | `docs/workflows/handoffs.md` |
 
-Формат требований — шапка `docs/requirements.yaml`; формат решений —
-`decisions/README.md`; формат записей об ошибках процесса — `docs/anti-patterns.md`.
+The format of requirements — the header of `docs/requirements.yaml`; the format of decisions —
+`decisions/README.md`; the format of records about process errors — `docs/anti-patterns.md`.
 
-## Как идёт работа: вы даёте задачу — агенты сами проектируют, строят, тестируют и проверяют
+## How the work goes: you give a task — the agents design, build, test and check by themselves
 
-Вы даёте задачу своими словами. Дальше агенты ведут её сами. Тот, кто делает работу, её не
-проверяет. Проверяет другой агент, и он всё запускает заново сам. Одновременно работают не
-больше двух агентов. После каждого шага главный агент (ORCH) сверяет слова агента с файлами.
-Если проверка не пройдена, работа возвращается автору. Проходов на одну проверку — до трёх.
-Потом ORCH останавливается и спрашивает вас.
+You give a task in your own words. After that the agents lead it themselves. The one who does
+the work does not check it. Another agent checks, and it runs everything again by itself. No
+more than two agents work at the same time. After each step the main agent (ORCH) compares
+the agent's words with the files. If a check is not passed, the work goes back to the author.
+Gate passes for one check — up to three. Then ORCH stops and asks you.
 
-В разработке путь такой. Проектировщик описывает всё до кода и пробует идею на наброске.
-Другой агент повторяет пробы на чистой копии. Разработчик строит маленькими частями и после
-каждой запускает проверки. Безопасность и ревью идут одновременно. Первая сама пытается сломать
-код, вторая ищет костыли. Тестировщик пишет тест на каждый критерий и нарочно портит код. Так
-проверяются сами тесты. Одна команда проверяет оформление, правила, следы и все тесты. Страницы
-открывают в настоящем Chrome: три размера окна, две темы, три языка, со снимками. Переводы
-читают отдельные агенты в два–три круга. Последний проверяющий запускает всё заново. Только после
-этого ставится «готово». Выпуск уходит в `main` и ждёт зелёной проверки на GitHub. Вы получаете
-отчёт простыми словами.
+In development the path is this. The designer describes everything before the code and tries
+the idea on a sketch. Another agent repeats the trials on a clean copy. The developer builds
+in small parts and runs the checks after each. Security and review go at the same time. The
+first tries to break the code itself, the second looks for crutches. The tester writes a test
+for each criterion and spoils the code on purpose. This is how the tests themselves are
+checked. One command checks the formatting, the rules, the traces and all tests. Pages are
+opened in a real Chrome: three window sizes, two themes, three languages, with snapshots.
+Translations are read by separate agents in two or three rounds. The last checker runs
+everything again. Only after that is "done" set. The release goes to `main` and waits for a
+green check on GitHub. You get a report in plain words.
 
-## Как ведётся работа
+## How the work is led
 
-- Работу ведёт ORCH по `PLAN.md`. Итерация — один результат, который владелец может
-  увидеть сам. После каждой итерации — короткий отчёт владельцу: что сделано, как
-  проверить самому, что дальше. Следующая итерация начинается после отчёта.
-- Каждый шаг — handoff в `handoffs/<RUN-ID>/` (`docs/workflows/handoffs.md`). В конце
-  каждого процесса — отчёт владельцу простыми словами (раздел «Отчёт владельцу» в
-  документе процесса).
-- Одновременно работают не больше агентов, чем разрешает `PLAN.md` (сейчас — два).
-  Независимое запускается параллельно; PASS проверки — зависимость, следующий шаг его
-  ждёт.
-- Владельцу не оставляют того, что агенты могут сделать сами. К владельцу идут решения,
-  мерж и то, что агентам делать нельзя или нечем — например, починка общей программы на
-  компьютере (AP-021).
+- ORCH leads the work by `PLAN.md`. An iteration is one result that the owner can see by
+  himself. After each iteration — a short report to the owner: what is done, how to check it
+  himself, what is next. The next iteration starts after the report.
+- Every step is a handoff in `handoffs/<RUN-ID>/` (`docs/workflows/handoffs.md`). At the end
+  of each workflow — a report to the owner in plain words (the section "Report to the owner"
+  in the workflow document).
+- No more agents work at the same time than `PLAN.md` allows (now — two). What is independent
+  starts in parallel; a PASS of a check is a dependency, and the next step waits for it.
+- The owner is not left with what the agents can do themselves. To the owner go decisions,
+  the merge, and what the agents must not or cannot do — for example, repairing a shared
+  program on the computer (AP-021).
 
-## Pixel Office — как видеть работу агентов
+## Pixel Office — how to see the work of the agents
 
-Pixel Office — это требования REQ-001 (журнал событий и список задач) и REQ-007 (офис с
-персонажами). Он не теряется.
+Pixel Office is the requirements REQ-001 (the event journal and the task list) and REQ-007
+(the office with characters). It is not lost.
 
-1. Откройте Claude Code в папке Sai — там, где лежит этот файл. Хуки Pixel Office
-   записаны в `.claude/settings.json` проекта и срабатывают в каждой сессии этой папки.
-   Если хуки только что добавлены или изменены, подтвердите их командой `/hooks` в Claude
-   Code или начните новую сессию.
-2. В терминале: `cd tools && npm run pixel-office` (нужен Node 22). Команда печатает
-   ссылку — по умолчанию http://127.0.0.1:4780/.
-3. Откройте ссылку: там список задач (каждый запуск агента — строка), журнал событий и
-   офис с персонажами ролей. Страница обновляется сама.
+1. Open Claude Code in the Sai folder — where this file is. The Pixel Office hooks are
+   written in the project's `.claude/settings.json` and fire in every session of this
+   folder. If the hooks were just added or changed, confirm them with the command `/hooks` in
+   Claude Code or start a new session.
+2. In a terminal: `cd tools && npm run pixel-office` (Node 22 is needed). The command prints a
+   link — by default http://127.0.0.1:4780/.
+3. Open the link: there is a task list (every start of an agent is a row), an event journal,
+   and an office with characters of the roles. The page updates itself.
 
-Всё на странице строится из событий, которые хуки Claude Code присылают в момент
-срабатывания; выдуманных и дописанных задним числом событий нет (quality-bar R2).
-Подробно — `tools/README.md`. Одна команда проверки служебного кода — `cd tools && npm ci`
-(один раз) и `npm run check`.
+Everything on the page is built from events that the Claude Code hooks send at the moment they
+fire; there are no invented events and no events written after the fact (quality-bar R2). In
+detail — `tools/README.md`. One check command for the service code — `cd tools && npm ci`
+(once) and `npm run check`.

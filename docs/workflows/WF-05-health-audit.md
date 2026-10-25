@@ -1,304 +1,313 @@
-# WF-05 — Аудит здоровья проекта
+# WF-05 — Project health audit
 
-Как Sai проверяет сам себя целиком, а не одно изменение: один агент решает, что пора
-проверять, второй составляет план, аудиторы проверяют каждый своё, RELEASE-VALIDATOR
-заново проверяет требования в статусе `done`, сводчик собирает и перепроверяет находки,
-разборщик заводит дефекты по самым серьёзным, а учётчик записывает итог. Владелец получает
-отчёт простыми словами и решает, что чинить сейчас.
+How Sai checks itself as a whole, not one change: one agent decides what is time to check, a
+second makes the plan, the auditors check each their own part, RELEASE-VALIDATOR checks again
+the requirements in the status `done`, the compiler collects and re-checks the findings, the
+triage agent creates defects for the most serious ones, and the bookkeeper records the result.
+The owner gets a report in plain words and decides what to fix now.
 
-Аудит ничего в проекте не исправляет. Он пишет только свой отчёт (`docs/audits/`), новые
-дефекты (`docs/issues/`), handoff-ы и учёт DOC-UPDATER (шаг 7a). Исправления — потом, по
-WF-03.
+The audit fixes nothing in the project. It writes only its own report (`docs/audits/`), new
+defects (`docs/issues/`), handoffs and the bookkeeping of DOC-UPDATER (step 7a). The fixes come
+later, by WF-03.
 
-Все роли соблюдают `docs/quality-bar.md`; handoff-ы — по `docs/workflows/handoffs.md`.
+All roles follow `docs/quality-bar.md`; handoffs follow `docs/workflows/handoffs.md`.
 
-## Когда запускается
+## When it starts
 
-- Владелец просит проверить проект («что с проектом», «проверь безопасность»). Если он
-  просит проверить проект целиком, в плане всегда есть измерение «Требования».
-- Давно не было аудита, а изменений с тех пор много — это может предложить ORCH в отчёте
-  владельцу.
-- **Перепроверка требований в статусе `done`** — не реже раза в 30 дней. В начале каждой
-  итерации `PLAN.md` ORCH смотрит в `docs/audits/README.md` дату прошлой перепроверки и,
-  если срок вышел, запускает WF-05 хотя бы с измерением «Требования». Раньше срока
-  перепроверку включает AUDIT-SCOUT, если менялись файлы, на которые опираются критерии
-  таких требований.
-- Если владелец назвал, что проверять, шаг 1 (AUDIT-SCOUT) пропускается, и названное
-  сразу идёт в план.
+- The owner asks to check the project ("what is up with the project", "check the security").
+  If the owner asks to check the whole project, the plan always has the dimension
+  "Requirements".
+- There has been no audit for a long time, and there have been many changes since — ORCH may
+  propose it in the report to the owner.
+- **Re-checking the requirements in the status `done`** — at least once in 30 days. At the start
+  of each iteration of `PLAN.md`, ORCH looks in `docs/audits/README.md` for the date of the last
+  re-check and, if the term is over, starts WF-05 at least with the dimension "Requirements".
+  Before the term, the re-check is included by AUDIT-SCOUT if the files on which the criteria
+  of such requirements rely have changed.
+- If the owner named what to check, step 1 (AUDIT-SCOUT) is skipped, and what was named goes
+  straight into the plan.
 
-## Части и измерения
+## Parts and dimensions
 
-Части Sai, которые проверяет аудит:
+The parts of Sai that the audit checks:
 
-- `tools/src/` без Pixel Office — инструменты выбора идеи (prepare-run, validate,
+- `tools/src/` without Pixel Office — the idea selection tools (prepare-run, validate,
   apply-verdict, snapshot);
-- `tools/src/pixel-office/` — сервер, хук, страница Pixel Office;
-- `.claude/` — файлы ролей и настройки хуков;
-- документы и учёт — `docs/`, `decisions/`, `STATE.md`, `PLAN.md`, `CLAUDE.md`;
-- код продукта — когда он появится.
+- `tools/src/pixel-office/` — the server, the hook, the page of Pixel Office;
+- `.claude/` — the role files and the hook settings;
+- documents and bookkeeping — `docs/`, `decisions/`, `STATE.md`, `PLAN.md`, `CLAUDE.md`;
+- the product code — when it appears.
 
-Измерения и кто их проверяет:
+The dimensions and who checks them:
 
-| Измерение | Кто проверяет | Что проверяет |
+| Dimension | Who checks | What it checks |
 |---|---|---|
-| Безопасность | SECURITY-AUDITOR | Секреты в коде, конфиге, файлах страницы, handoff-ах и отчётах (Q7). Pixel Office: сервер слушает только локальный адрес, запись событий — только с секретом источника, страница только читает (`decisions/0005-pixel-office-design.md`, REQ-001), события не пишутся мимо хуков (R2). Пути файлов не выходят за свою папку. Ввод из сети и от хуков проверяется (Q10). Когда появится продукт — Q8, Q9, Q11, R3 |
-| Зависимости | DEPENDENCY-AUDITOR | `npm ci` проходит на чистой копии; версии закреплены, `package.json` и `package-lock.json` согласованы; во время выполнения зависимостей нет (`decisions/0002-process-tooling-node.md`); версия Node в `engines` и на деле; устаревшие и уязвимые пакеты (`npm outdated`, `npm audit` — им нужна сеть: нет сети — «не проверено», а не «чисто»); лицензии |
-| Архитектура | ARCHITECTURE-AUDITOR | Код соответствует записям `decisions/`; защита в той же операции, что действие; запись файлов «всё или ничего» там, где это обещано (`decisions/0004-write-phase-rename-and-hardlink-rollback.md`); границы частей (страница не пишет, хук не берёт лишнего); один механизм применён во всех соседних местах, а не в части из них (AP-014); мёртвый код; слишком большие файлы и функции — порога нет: аудитор сравнивает с соседним кодом и пишет в находке число строк и чем размер мешает |
-| Покрытие тестами | COVERAGE-AUDITOR | Сам запускает `cd tools && npm run check` и прикладывает вывод. У каждого критерия требований в статусах `done` и `in_progress` есть тест; у закрытых дефектов есть регрессионный тест; тесты отказа проверяют неизменность состояния; нет тестов без проверок и нет `skip` или `todo`; тесты не зависят от порядка и часов. Не пробел, а отметка в отчёте со ссылкой на запись: критерий, для которого TEST-DESIGNER записал «тестировать нечего» в своём handoff-е шага 5 (WF-02), и критерий, у которого в самом требовании способ проверки — не тест (например, проверка PLAN-VALIDATOR в WF-07, `grep`, `jq`); такие критерии требований в статусе `done` перепроверяет измерение «Требования», а у требований в статусе `in_progress` их проверит RELEASE-VALIDATOR на шаге 9 своего прогона (в WF-07 — шаг 4) |
-| Документация | DOC-AUDITOR | `STATE.md` и `PLAN.md` совпадают с файлами (статусы требований, открытые дефекты, решения); у требований все поля и способ проверки у критериев; ссылки ведут на существующие файлы внутри Sai; нет ссылок на другие проекты и путей этого компьютера; `decisions/README.md` совпадает с файлами решений; в `docs/anti-patterns.md` номера идут подряд и поля на месте; у прогонов нет брошенных handoff-ов `IN_PROGRESS` без причины; `tools/README.md` описывает команды, которые есть в `tools/package.json`; описания ролей и процессов сверены с последними прогонами — раз в 30 дней (`decisions/0079`, п. 10) |
-| Требования | RELEASE-VALIDATOR | Для каждого требования в статусе `done` (или для тех, что назвал AUDIT-SCOUT) выполняет способ проверки каждого критерия так, как он записан в критерии, — команду, тест или чтение названного файла — на текущих файлах и прикладывает вывод. Критерий о том, как шёл прогон, проверяется по записям этого прогона (handoff-ы, файлы прогона): записи на месте и говорят то же самое. Проверка, которая тратит лимит или деньги владельца (например, настоящая сессия Claude Code), — только с его согласия, которое ORCH получает заранее (как в WF-02, шаг 8, п. 2); без согласия критерий помечается «не проверено» с причиной — не «выполнен» и не «не выполняется». Проверка, которая пишет файлы, выполняется на копии проекта вне его папки. Критерий не выполняется — находка **High**; **Critical**, если он о пунктах Q7–Q11, R2 или R3 |
+| Security | SECURITY-AUDITOR | Secrets in code, config, page files, handoffs and reports (Q7). Pixel Office: the server listens only on the local address, writing events only with the secret of the source, the page only reads (`decisions/0005-pixel-office-design.md`, REQ-001), events are not written bypassing the hooks (R2). File paths do not leave their folder. Input from the network and from the hooks is validated (Q10). When the product appears — Q8, Q9, Q11, R3 |
+| Dependencies | DEPENDENCY-AUDITOR | `npm ci` passes on a clean copy; versions are pinned, `package.json` and `package-lock.json` agree; there are no dependencies at run time (`decisions/0002-process-tooling-node.md`); the Node version in `engines` and in fact; outdated and vulnerable packages (`npm outdated`, `npm audit` — they need the network: no network — "not checked", not "clean"); licenses |
+| Architecture | ARCHITECTURE-AUDITOR | The code matches the records of `decisions/`; protection in the same operation as the action; writing files "all or nothing" where this is promised (`decisions/0004-write-phase-rename-and-hardlink-rollback.md`); the boundaries of the parts (the page does not write, the hook does not take extra); one mechanism applied in all neighboring places, not in some of them (AP-014); dead code; files and functions that are too large — there is no threshold: the auditor compares with the neighboring code and writes in the finding the number of lines and how the size gets in the way |
+| Test coverage | COVERAGE-AUDITOR | Itself runs `cd tools && npm run check` and attaches the output. Every criterion of the requirements in the statuses `done` and `in_progress` has a test; closed defects have a regression test; failure tests check that the state is unchanged; there are no tests without checks and no `skip` or `todo`; tests do not depend on the order and the clock. Not a gap, but a mark in the report with a reference to the record: a criterion for which TEST-DESIGNER wrote "nothing to test" in its handoff of step 5 (WF-02), and a criterion whose way of checking in the requirement itself is not a test (for example, the PLAN-VALIDATOR check in WF-07, `grep`, `jq`); such criteria of requirements in the status `done` are re-checked by the dimension "Requirements", and for requirements in the status `in_progress` they will be checked by RELEASE-VALIDATOR at step 9 of its run (in WF-07 — step 4) |
+| Documentation | DOC-AUDITOR | `STATE.md` and `PLAN.md` match the files (statuses of requirements, open defects, decisions); requirements have all the fields and a way of checking for the criteria; links lead to existing files inside Sai; there are no links to other projects and no paths of this computer; `decisions/README.md` matches the decision files; in `docs/anti-patterns.md` the numbers go in a row and the fields are in place; runs have no abandoned `IN_PROGRESS` handoffs without a reason; `tools/README.md` describes the commands that are in `tools/package.json`; the descriptions of roles and workflows are checked against the latest runs — once in 30 days (`decisions/0079`, item 10) |
+| Requirements | RELEASE-VALIDATOR | For every requirement in the status `done` (or those named by AUDIT-SCOUT) it carries out the way of checking of each criterion as it is written in the criterion — a command, a test or reading a named file — on the current files and attaches the output. A criterion about how a run went is checked by the records of that run (handoffs, run files): the records are in place and say the same thing. A check that spends the limit or the money of the owner (for example, a real Claude Code session) — only with the owner's consent, which ORCH gets in advance (as in WF-02, step 8, item 2); without consent the criterion is marked "not checked" with the reason — not "met" and not "not met". A check that writes files is done on a copy of the project outside its folder. A criterion that is not met is a **High** finding; **Critical** if it is about the items Q7–Q11, R2 or R3 |
 
-Измерение «Требования» не делится на части: один handoff — одно требование (или несколько
-небольших), отчёт — `docs/audits/AUD-NNN/requirements/REQ-NNN.json`.
+The dimension "Requirements" is not divided into parts: one handoff is one requirement (or
+several small ones), the report is `docs/audits/AUD-NNN/requirements/REQ-NNN.json`.
 
-## Роли
+## Roles
 
-| Роль | Что делает | Кто проверяет |
+| Role | What it does | Who checks |
 |---|---|---|
-| ORCH | Номер аудита, прогон, handoff-ы, сверка сводки, дефектов и учёта, отчёт владельцу | — |
-| AUDIT-SCOUT | Решает, какие части и измерения проверять сейчас и почему | ORCH сверяет паспорта частей с файлами |
-| AUDIT-PLANNER | Папка аудита, план «часть × измерение», дополнительные проверки для каждой части, строка аудита в `docs/audits/README.md` | ORCH сверяет план с выбранным объёмом |
-| Аудиторы (пять) | Проверяют одно измерение в одной части; только читают проект | AUDIT-COMPILER перепроверяет каждую находку Critical и High |
-| RELEASE-VALIDATOR | Измерение «Требования»: заново проверяет критерии требований в статусе `done`; только читает и запускает проверки | AUDIT-COMPILER перепроверяет каждый невыполненный критерий |
-| AUDIT-COMPILER | Сводный отчёт: перепроверка, слияние повторов, оценки, сравнение с прошлым аудитом | ORCH сверяет числа и сам перепроверяет снятые находки |
-| AUDIT-TRIAGE | Заводит дефекты по причинам находок Critical и High (и Medium или Low, повторившихся с прошлого аудита) | ORCH; каждый дефект перед исправлением воспроизводит ISSUE-FIXER (WF-03) |
-| DOC-UPDATER | Учёт: `STATE.md`, состояние аудита в `docs/audits/README.md`, статус требования, которое перестало выполняться, журнал ошибок процесса | ORCH сверяет файлы и поля |
-| Владелец | Читает отчёт, решает, какие дефекты чинить сейчас | — |
+| ORCH | The audit number, the run, handoffs, checking the summary, defects and bookkeeping, the report to the owner | — |
+| AUDIT-SCOUT | Decides which parts and dimensions to check now and why | ORCH checks the passports of the parts against the files |
+| AUDIT-PLANNER | The audit folder, the plan "part × dimension", additional checks for each part, the audit row in `docs/audits/README.md` | ORCH checks the plan against the chosen scope |
+| Auditors (five) | Check one dimension in one part; only read the project | AUDIT-COMPILER re-checks every Critical and High finding |
+| RELEASE-VALIDATOR | The dimension "Requirements": checks again the criteria of the requirements in the status `done`; only reads and runs checks | AUDIT-COMPILER re-checks every criterion that is not met |
+| AUDIT-COMPILER | The summary report: re-check, merging repeats, scores, comparison with the last audit | ORCH checks the numbers and itself re-checks the withdrawn findings |
+| AUDIT-TRIAGE | Creates defects by the causes of the Critical and High findings (and of Medium or Low that repeated since the last audit) | ORCH; each defect is reproduced by ISSUE-FIXER before the fix (WF-03) |
+| DOC-UPDATER | Bookkeeping: `STATE.md`, the state of the audit in `docs/audits/README.md`, the status of a requirement that stopped being met, the log of process errors | ORCH checks files and fields |
+| Owner | Reads the report, decides which defects to fix now | — |
 
-## Шаги
+## Steps
 
-**Шаг 0 — ORCH.** Выдаёт номер аудита `AUD-NNN` — следующий по `docs/audits/README.md`
-(файла нет — `AUD-001`); заводит `handoffs/AUD-NNN-<ГГГГММДД>-01/`. Пока идёт аудит,
-другие прогоны новых дефектов не заводят: номера дефектов выдаёт ORCH по очереди.
+**Step 0 — ORCH.** Gives the audit number `AUD-NNN` — the next one by `docs/audits/README.md`
+(no file — `AUD-001`); creates `handoffs/AUD-NNN-<YYYYMMDD>-01/`. While an audit is going on,
+other runs do not create new defects: the defect numbers are given by ORCH in turn.
 
-**Шаг 1 — AUDIT-SCOUT решает, что проверять** (только если владелец не назвал объём).
-Опорное понятие шага — **доверие к части**: часть заслуживает доверия, пока её недавно
-проверили независимо и с тех пор ничего не подточило проверенное. AUDIT-SCOUT ищет, где
-доверие потеряно, и только туда направляет аудит.
+**Step 1 — AUDIT-SCOUT decides what to check** (only if the owner did not name the scope).
+The key idea of the step is **trust in a part**: a part deserves trust while it was recently
+checked independently and since then nothing has undermined what was checked. AUDIT-SCOUT looks
+for where trust is lost and directs the audit only there.
 
-1. **Паспорт доверия каждой части** (части — раздел «Части и измерения»). Три факта, у
-   каждого — источник:
-   - **возраст доверия** — сколько дней прошло с последней независимой проверки части и по
-     каким измерениям (`docs/audits/README.md`, последний отчёт); проверки не было —
-     доверия нет вовсе;
-   - **что изменилось с тех пор** — список файлов: у Sai свой репозиторий с 2026-10-05
-     (`PLAN.md`, шаг 2f), поэтому — из истории git; для изменений до него и для
-     незакоммиченных — из handoff-ов прогонов после прошлого аудита (`context.write_set`,
-     `result.changes`, `result.artifacts_out`) и по времени изменения файлов. Файл, которым пользуются несколько частей (например,
-     `tools/package.json` у инструментов выбора идеи и у Pixel Office), попадает в список
-     каждой из них;
-   - **открытые дефекты** части в `docs/issues/` — номера и серьёзность.
-2. **Какое доверие потеряно — то и проверяется.** По паспорту AUDIT-SCOUT отвечает для
-   каждого измерения, есть ли у него причина:
-   - **безопасность** — менялось то, что принимает чужой ввод или пишет файлы: сервер и хук
-     Pixel Office, `.claude/settings.json`, запись файлов в инструментах; такое изменение
-     всегда включает безопасность;
-   - **зависимости** — менялся состав пакетов (`package.json`, `package-lock.json`) или
-     версия Node;
-   - **покрытие** — код менялся или рос, а тесты в `tools/test/` рядом с ним — нет;
-   - **архитектура** — появилось решение в `decisions/` или часть перестроена;
-   - **документация** — менялись документы и учёт или код, который они описывают
-     (например, команды `tools/` при неизменном `tools/README.md`);
-   - **измерение открытого дефекта** — пока дефект открыт.
+1. **The trust passport of each part** (the parts are in the section "Parts and dimensions").
+   Three facts, each with a source:
+   - **the age of trust** — how many days have passed since the last independent check of the
+     part and by which dimensions (`docs/audits/README.md`, the last report); if there was no
+     check — there is no trust at all;
+   - **what has changed since** — a list of files: Sai has its own repository since 2026-10-05
+     (`PLAN.md`, step 2f), so — from the git history; for the changes before it and for the
+     uncommitted ones — from the handoffs of the runs after the last audit
+     (`context.write_set`, `result.changes`, `result.artifacts_out`) and by the time the files
+     were changed. A file used by several parts (for example, `tools/package.json` by the idea
+     selection tools and by Pixel Office) goes into the list of each of them;
+   - **the open defects** of the part in `docs/issues/` — numbers and severity.
+2. **The trust that is lost is what gets checked.** By the passport AUDIT-SCOUT answers for each
+   dimension whether it has a reason:
+   - **security** — something that accepts someone else's input or writes files changed: the Pixel
+     Office server and hook, `.claude/settings.json`, writing files in the tools; such a change
+     always includes security;
+   - **dependencies** — the set of packages (`package.json`, `package-lock.json`) or the Node
+     version changed;
+   - **coverage** — the code changed or grew, and the tests in `tools/test/` next to it did not;
+   - **architecture** — a decision appeared in `decisions/` or a part was rebuilt;
+   - **documentation** — documents and bookkeeping changed, or the code they describe (for
+     example, the commands of `tools/` while `tools/README.md` is unchanged);
+   - **the dimension of an open defect** — while the defect is open.
 
-   Три случая перекрывают этот разбор. Часть, которую ни разу не проверяли независимо,
-   часть с открытым дефектом CRITICAL или HIGH и часть, где менялось то, что принимает
-   чужой ввод или пишет файлы, проверяются по всем измерениям: доверия к ним нет целиком.
-   Часть без изменений и без дефектов, чьё доверие старше 45 дней, проверяется по
-   документации и покрытию — так видно, не разошлись ли записи с файлами.
-   Часть без изменений, без дефектов и моложе 45 дней не проверяется, и её паспорт —
-   причина.
-3. **Требования в статусе `done`** — отдельно от частей. В перепроверку идут те, чьи
-   критерии называют изменённые файлы, команды или тесты. Если перепроверки ещё не было
-   или с прошлой прошло больше 30 дней — все требования в статусе `done`.
-4. **Итог — список «часть → измерения → почему»** в `docs/audits/scope-<ГГГГММДД>.json`:
-   для каждой части её паспорт (дни, файлы, дефекты), выбранные измерения и причина
-   каждого; отдельно — требования для перепроверки с причинами. Строки, у которых
-   единственная причина — возраст доверия, помечаются «можно перенести»: если агентов не
-   хватает, ORCH переносит именно их и называет в отчёте владельцу. Подсказка ORCH из
-   задания добавляет названное, но паспорта всё равно собираются.
+   Three cases override this breakdown. A part that was never checked independently, a part with
+   an open CRITICAL or HIGH defect and a part where something that accepts someone else's input or
+   writes files changed are checked by all dimensions: there is no trust in them at all. A part
+   without changes and without defects whose trust is older than 45 days is checked by
+   documentation and coverage — this shows whether the records have drifted from the files. A
+   part without changes, without defects and younger than 45 days is not checked, and its
+   passport is the reason.
+3. **Requirements in the status `done`** — separately from the parts. Those go into the re-check
+   whose criteria name changed files, commands or tests. If there has been no re-check yet or
+   more than 30 days have passed since the last — all the requirements in the status `done`.
+4. **The result is a list "part → dimensions → why"** in `docs/audits/scope-<YYYYMMDD>.json`:
+   for each part its passport (days, files, defects), the chosen dimensions and the reason for
+   each; separately — the requirements for re-check with the reasons. The rows whose only
+   reason is the age of trust are marked «можно перенести» ("can be postponed"): if there are
+   not enough agents, ORCH postpones exactly those and names them in the report to the owner.
+   A hint of ORCH from the task adds what was named, but the passports are still collected.
 
-Ни у одной части нет измерений к проверке, а срок перепроверки требований не вышел, — исход
-«аудит не нужен» (раздел «Условия остановки»).
+If no part has dimensions to check and the term for re-checking the requirements is not over,
+the outcome is "no audit needed" (section "Stop conditions").
 
-**Шаг 2 — AUDIT-PLANNER составляет план.** Создаёт `docs/audits/AUD-NNN/`, пишет
-`docs/audits/AUD-NNN/plan.json`: части, измерения для каждой части, требования для
-перепроверки, дополнительные проверки по части (например, для Pixel Office — R2 и права
-на запись; для инструментов выбора идеи — запись «всё или ничего»). Частям и измерениям
-он даёт в плане короткие имена латиницей для путей (например, `pixel-office`, `security`):
-по ним аудиторы называют свои отчёты. Добавляет строку в `docs/audits/README.md`: номер,
-дата, объём, состояние «идёт»; если файла ещё нет (первый аудит), создаёт его с таблицей
-аудитов — номер, дата, объём, состояние, дата перепроверки требований.
+**Step 2 — AUDIT-PLANNER makes the plan.** Creates `docs/audits/AUD-NNN/`, writes
+`docs/audits/AUD-NNN/plan.json`: the parts, the dimensions for each part, the requirements for
+re-check, the additional checks by part (for example, for Pixel Office — R2 and the write
+permissions; for the idea selection tools — writing "all or nothing"). To the parts and
+dimensions it gives short Latin names in the plan for the paths (for example, `pixel-office`,
+`security`): the auditors name their reports by them. Adds a row to `docs/audits/README.md`:
+the number, the date, the scope, the state «идёт» (in progress); if the file does not exist yet (the
+first audit), creates it with a table of audits — the number, the date, the scope, the state,
+the date of the re-check of the requirements.
 
-**Шаг 3 — аудиторы и RELEASE-VALIDATOR проверяют.**
+**Step 3 — the auditors and RELEASE-VALIDATOR check.**
 
-- Один handoff — одна часть и одно измерение (для «Требований» — одно требование или
-  несколько небольших). Агенты работают параллельно в пределах числа агентов из
-  `PLAN.md`, каждый пишет только свой файл: `docs/audits/AUD-NNN/<часть>/<измерение>.json`
-  или `docs/audits/AUD-NNN/requirements/REQ-NNN.json`.
-- Проект только читается и проверки только запускаются: ни одна правка кода, документов
-  или настроек. Проверка, которая пишет файлы, выполняется на копии проекта вне его
-  папки; проверка, которая тратит лимит или деньги владельца, — только с его согласия,
-  иначе — «не проверено» с причиной.
-- Каждую проверку агент выполняет сам (Q3) и записывает: что проверено и как, что не
-  проверено и почему.
-- Находка — с полями: `id`, `check` (что проверялось; для требований — номер требования и
-  критерия), `severity`, `title`, `where` (файл и строка), `evidence` (команда и вывод или
-  цитата), `item` (пункт планки), `recommendation`.
-- Важность: **Critical** — нарушение пункта планки, которое вредит уже сейчас (секрет в
-  файлах, выдуманные события в Pixel Office, смешение данных клиентов, запись вне своей
-  папки); **High** — пункт планки не выполнен (критерий без теста, критерий требования в
-  статусе `done` больше не выполняется, сбой без обработки, расхождение с записанным
-  решением); **Medium** — документ расходится с файлами, слабый тест, устаревшая
-  зависимость без известной уязвимости; **Low** — имена, мёртвый код, оформление.
-  Зависимость с известной уязвимостью — **High**, а если уязвимость достижима в том, что
-  работает сейчас (сервер или хук Pixel Office), — **Critical**.
+- One handoff is one part and one dimension (for "Requirements" — one requirement or several
+  small ones). The agents work in parallel within the number of agents from `PLAN.md`, each
+  writes only its own file: `docs/audits/AUD-NNN/<part>/<dimension>.json` or
+  `docs/audits/AUD-NNN/requirements/REQ-NNN.json`.
+- The project is only read and the checks are only run: not a single edit of code, documents or
+  settings. A check that writes files is done on a copy of the project outside its folder; a
+  check that spends the limit or the money of the owner — only with the owner's consent,
+  otherwise — "not checked" with the reason.
+- The agent carries out each check itself (Q3) and records: what was checked and how, what was
+  not checked and why.
+- A finding has the fields: `id`, `check` (what was checked; for requirements — the number of
+  the requirement and the criterion), `severity`, `title`, `where` (file and line), `evidence`
+  (the command and output or a quote), `item` (the item of the bar), `recommendation`.
+- Severity: **Critical** — a violation of a bar item that harms already now (a secret in files,
+  invented events in Pixel Office, mixing of customer data, writing outside the own folder);
+  **High** — a bar item is not met (a criterion without a test, a criterion of a requirement in
+  the status `done` is no longer met, a failure without handling, a divergence from a recorded
+  decision); **Medium** — a document diverges from the files, a weak test, an outdated
+  dependency without a known vulnerability; **Low** — names, dead code, formatting. A dependency
+  with a known vulnerability is **High**, and if the vulnerability is reachable in what works
+  now (the Pixel Office server or hook) — **Critical**.
 
-**Шаг 4 — AUDIT-COMPILER собирает сводку.** Сводка должна быть такой, чтобы владелец мог
-ей верить, не читая отчётов шага 3: каждое серьёзное утверждение перепроверено, ничто не
-посчитано дважды и ничто не пропало молча.
+**Step 4 — AUDIT-COMPILER collects the summary.** The summary must be such that the owner can
+trust it without reading the reports of step 3: every serious statement is re-checked, nothing
+is counted twice and nothing disappears silently.
 
-1. **Полнота.** Все отчёты шага 3 прочитаны и сверены с планом: каждая пара «часть ×
-   измерение» и каждое требование плана либо проверены, либо названы «не проверено» с
-   причиной.
-2. **Перепроверка.** Каждую находку Critical и High сводчик проверяет сам — повторяет
-   команду из доказательства или открывает место. Не подтвердилась — остаётся в сводке с
-   пометкой «не подтверждено» и причиной, но в оценку не идёт.
-3. **Без двойного счёта.** Одна проверка в одном месте от двух агентов — одна находка. Одна
-   проверка, сработавшая в двух и больше частях, — одна общая находка со списком частей;
-   общие находки в отчёте идут первыми.
-4. **Оценка** — по подтверждённым находкам, схема `decisions/0009-audit-score.md`:
-   - штраф части: 30 за каждую Critical, 12 за High, 4 за Medium, 1 за Low;
-   - потолок по худшей находке: есть Critical — оценка части не выше 40; есть High — не
-     выше 70; иначе — не выше 100;
-   - оценка части = меньшее из «100 − штраф» и потолка, не ниже 0;
-   - «Требования» — отдельная часть со своей оценкой;
-   - оценка проекта = оценка самой слабой проверенной части, с её названием; часть «не
-     проверено» оценки не получает и называется рядом.
+1. **Completeness.** All reports of step 3 are read and checked against the plan: every pair
+   "part × dimension" and every requirement of the plan is either checked or named "not
+   checked" with the reason.
+2. **Re-check.** The compiler checks every Critical and High finding itself — repeats the
+   command from the evidence or opens the place. If it was not confirmed, it stays in the
+   summary with the mark «не подтверждено» ("not confirmed") and the reason, but does not go
+   into the score.
+3. **No double counting.** One check in one place by two agents is one finding. One check that
+   worked in two or more parts is one common finding with a list of parts; the common findings
+   go first in the report.
+4. **The score** — by the confirmed findings, the scheme of `decisions/0009-audit-score.md`:
+   - the penalty of a part: 30 for each Critical, 12 for High, 4 for Medium, 1 for Low;
+   - the ceiling by the worst finding: there is a Critical — the score of the part is not higher
+     than 40; there is a High — not higher than 70; otherwise — not higher than 100;
+   - the score of a part = the smaller of "100 − penalty" and the ceiling, not below 0;
+   - "Requirements" is a separate part with its own score;
+   - the score of the project = the score of the weakest checked part, with its name; a part
+     that is "not checked" gets no score and is named next to it.
 
-   Пример: в Pixel Office одна High и две Medium — 100 − 12 − 8 = 80, потолок 70, оценка
-   70; если остальные части выше, оценка проекта — «70, Pixel Office».
-5. **Сравнение с прошлым аудитом:** новые находки, исправленные, оставшиеся и
-   ухудшившиеся (важность выросла); одна и та же находка — та же проверка в том же месте.
-   Оценки сравниваются по частям; оценку проекта по уроку AP-015 сравнивают, только если
-   в обоих аудитах тот же набор частей.
-6. **Отчёт.** `docs/audits/AUD-NNN/report.json` — все находки с частью, измерением,
-   важностью, отметкой перепроверки, оценки и сравнение. `docs/audits/AUD-NNN/report.md` —
-   по порядку: итог для владельца простыми словами; снятые при перепроверке находки
-   Critical и High с причинами; таблица оценок с потолками; находки по важности, общие —
-   первыми; перепроверенные требования — какие выполняются, какие перестали; что не
-   проверено и почему.
+   An example: in Pixel Office one High and two Medium — 100 − 12 − 8 = 80, the ceiling is 70,
+   the score is 70; if the other parts are higher, the score of the project is "70, Pixel
+   Office".
+5. **Comparison with the last audit:** new findings, fixed, remaining and worsened (the severity
+   grew); the same finding is the same check in the same place. Scores are compared by parts; by
+   the lesson of AP-015 the score of the project is compared only if both audits have the same
+   set of parts.
+6. **The report.** `docs/audits/AUD-NNN/report.json` — all findings with the part, the
+   dimension, the severity, the re-check mark, the scores and the comparison.
+   `docs/audits/AUD-NNN/report.md` — in order: the result for the owner in plain words; the
+   Critical and High findings withdrawn at the re-check, with the reasons; the table of scores
+   with the ceilings; the findings by severity, the common ones first; the re-checked
+   requirements — which are met, which stopped being met; what was not checked and why.
 
-**Шаг 5 — ORCH сверяет сводку.** Своими командами: число находок каждой важности в
-сводке равно числу подтверждённых находок в отчётах шага 3; каждая неподтверждённая
-находка названа с причиной; ни одна часть и ни одно требование плана не пропали (не
-проверенное — названо). Каждую находку Critical и High, которую AUDIT-COMPILER пометил «не
-подтверждено», ORCH проверяет сам — повторяет её доказательство; подтвердилась —
-возвращается в счёт. Не сходится что-либо — доработка AUDIT-COMPILER.
+**Step 5 — ORCH checks the summary.** With its own commands: the number of findings of each
+severity in the summary equals the number of confirmed findings in the reports of step 3; every
+unconfirmed finding is named with the reason; not a single part and not a single requirement of
+the plan has disappeared (what was not checked is named). Every Critical and High finding that
+AUDIT-COMPILER marked "not confirmed" is checked by ORCH itself — repeats its evidence; if it was
+confirmed, it returns to the count. If anything does not match — a rework step of
+AUDIT-COMPILER.
 
-**Шаг 6 — AUDIT-TRIAGE заводит дефекты.** Дефект нужен тогда, когда по нему есть кому и
-что чинить: у него одна причина, понятно, в каких файлах её устранять, и одна работа по
-WF-03 закрывает его целиком. Отсюда устройство шага — от причины, а не от списка находок.
+**Step 6 — AUDIT-TRIAGE creates defects.** A defect is needed when there is someone to fix it
+and something to fix: it has one cause, it is clear in which files to remove it, and one piece
+of work under WF-03 closes it entirely. Hence the structure of the step — from the cause, not
+from the list of findings.
 
-1. **Собрать находки по причинам.** Подтверждённые находки Critical и High (и повторные
-   Medium и Low — п. 3) раскладываются по причинам: одна причина — один механизм, файл или
-   проверка, которые надо исправить, сколько бы частей и находок за ней ни стояло (AP-014).
-   Например, отсутствие проверки ввода в сервере Pixel Office, найденное и безопасностью,
-   и покрытием, — одна причина. Невыполненные критерии одного требования — одна причина:
-   требование чинят и перепроверяют целиком (WF-03, шаги 9–10).
-2. **Сверить причины с открытыми дефектами.** Причина, которую уже покрывает открытый
-   дефект в `docs/issues/` (то же место, тот же механизм), нового дефекта не получает; в
-   handoff-е пишется, какой дефект её покрывает.
-3. **Решить по каждой непокрытой причине:**
+1. **Collect the findings by causes.** The confirmed Critical and High findings (and the repeated
+   Medium and Low — item 3) are sorted by causes: one cause is one mechanism, file or check that
+   has to be fixed, however many parts and findings stand behind it (AP-014). For example, the
+   absence of input validation in the Pixel Office server, found by security and by coverage, is
+   one cause. The unmet criteria of one requirement are one cause: the requirement is fixed and
+   re-checked as a whole (WF-03, steps 9–10).
+2. **Check the causes against the open defects.** A cause that is already covered by an open
+   defect in `docs/issues/` (the same place, the same mechanism) gets no new defect; the
+   handoff says which defect covers it.
+3. **Decide for each uncovered cause:**
 
-   | Что стоит за причиной | Решение |
+   | What stands behind the cause | Decision |
    |---|---|
-   | хотя бы одна находка Critical | дефект CRITICAL; каждая находка Critical в нём — отдельный пункт «Как исправить» со своим регрессионным тестом, чтобы её нельзя было закрыть вместе с соседями |
-   | находки High, без Critical | дефект HIGH со списком всех мест |
-   | невыполненные критерии требования | дефект на требование, серьёзность — как у самой тяжёлой находки |
-   | только Medium или Low | дефекта нет — строка в сводке отчёта; но если та же находка была и в прошлом аудите (в сравнении сводки она «оставшаяся», шаг 4, п. 5), она заводится дефектом с её серьёзностью: сама она не уходит |
-   | только «не подтверждено» | дефекта нет |
+   | at least one Critical finding | a CRITICAL defect; each Critical finding in it is a separate «Как исправить» (How to fix) item with its own regression test, so that it cannot be closed together with its neighbors |
+   | High findings, no Critical | a HIGH defect with a list of all places |
+   | unmet criteria of a requirement | a defect per requirement, the severity as that of the heaviest finding |
+   | only Medium or Low | no defect — a row in the summary of the report; but if the same finding was also in the last audit (in the comparison of the summary it is "remaining", step 4, item 5), it is created as a defect with its severity: it does not go away by itself |
+   | only "not confirmed" | no defect |
 
-4. **Оформить.** Номера выдаёт ORCH. Файл — как у остальных дефектов (WF-03, «Как
-   выглядит дефект»), строка `Найдено: AUD-NNN, <роль>, <дата>`; в «Как исправить» — что
-   именно чинить и в каких файлах. Номер дефекта вписывается во все его находки в
-   `docs/audits/AUD-NNN/report.json`; другие поля сводки не меняются.
+4. **Write it up.** The numbers are given by ORCH. The file is like the other defects (WF-03,
+   "What a defect looks like"), the line `Найдено: AUD-NNN, <роль>, <дата>` (Found); in «Как исправить» (How to fix) — what
+   exactly to fix and in which files. The defect number is written into all its findings in
+   `docs/audits/AUD-NNN/report.json`; the other fields of the summary do not change.
 
-**Шаг 7 — ORCH сверяет дефекты.** Каждая подтверждённая находка Critical и High и каждая
-повторная Medium или Low (шаг 6, п. 3) входит в дефект — новый или названный уже открытый;
-у каждой находки Critical в дефекте свой пункт «Как исправить»; объединения по причине и
-дубли объяснены.
+**Step 7 — ORCH checks the defects.** Every confirmed Critical and High finding and every
+repeated Medium or Low (step 6, item 3) is included in a defect — a new one or a named already
+open one; every Critical finding has its own «Как исправить» (How to fix) item in the defect; the merges by
+cause and the duplicates are explained.
 
-**Шаг 7a — DOC-UPDATER, учёт.**
+**Step 7a — DOC-UPDATER, bookkeeping.**
 
-- `STATE.md`: итог аудита (номер, оценка, главное) и новые открытые дефекты (Q14).
-- `docs/audits/README.md`: строка аудита получает состояние «готов»; если перепроверялись
-  требования — дата перепроверки.
-- Требование в статусе `done`, у которого подтверждено, что критерий больше не
-  выполняется: статус → `in_progress` с комментарием (номер аудита, критерий, дефект).
-  Обратно в `done` его переводят после исправления дефекта по WF-03 (шаги 9–10).
-- Ошибки процесса, найденные в аудите, — в `docs/anti-patterns.md` (Q13).
-- ORCH сверяет учёт своими командами (`context.orch_check`) и только после этого
-  отправляет отчёт владельцу.
+- `STATE.md`: the result of the audit (number, score, the main points) and the new open defects
+  (Q14).
+- `docs/audits/README.md`: the audit row gets the state «готов» (ready); if requirements were re-checked
+  — the date of the re-check.
+- A requirement in the status `done` for which it is confirmed that a criterion is no longer
+  met: the status → `in_progress` with a comment (the audit number, the criterion, the defect).
+  It is moved back to `done` after the defect is fixed under WF-03 (steps 9–10).
+- Process errors found in the audit go to `docs/anti-patterns.md` (Q13).
+- ORCH checks the bookkeeping with its own commands (`context.orch_check`) and only after that
+  sends the report to the owner.
 
-**Шаг 8 — владелец решает**, какие дефекты чинить сейчас (по WF-03). ORCH предлагает
-первыми находки Critical по безопасности и по R2. Без решения владельца дефекты в работу
-не уходят.
+**Step 8 — the owner decides** which defects to fix now (under WF-03). ORCH proposes first the
+Critical findings on security and on R2. Without the owner's decision the defects do not go
+into work.
 
-## Ворота
+## Gates
 
-- Шаг 5: без сверки ORCH сводка владельцу не уходит.
-- Шаг 7: без сверки ORCH дефекты не считаются заведёнными.
-- Шаг 7a: без сверки ORCH учёт не считается сделанным, и отчёт владельцу не уходит.
-- Каждый дефект перед исправлением воспроизводит ISSUE-FIXER (WF-03, шаг 1): находка
-  аудита — повод проверить, а не готовый диагноз.
+- Step 5: without ORCH's check the summary does not go to the owner.
+- Step 7: without ORCH's check the defects are not considered created.
+- Step 7a: without ORCH's check the bookkeeping is not considered done, and the report does not
+  go to the owner.
+- Each defect is reproduced by ISSUE-FIXER before the fix (WF-03, step 1): a finding of the
+  audit is a reason to check, not a ready diagnosis.
 
-## Артефакты
+## Artifacts
 
-| Шаг | Кто | Что |
+| Step | Who | What |
 |---|---|---|
-| 1 | AUDIT-SCOUT | `docs/audits/scope-<ГГГГММДД>.json` |
-| 2 | AUDIT-PLANNER | `docs/audits/AUD-NNN/plan.json`, строка в `docs/audits/README.md` |
-| 3 | аудиторы | `docs/audits/AUD-NNN/<часть>/<измерение>.json` |
+| 1 | AUDIT-SCOUT | `docs/audits/scope-<YYYYMMDD>.json` |
+| 2 | AUDIT-PLANNER | `docs/audits/AUD-NNN/plan.json`, a row in `docs/audits/README.md` |
+| 3 | auditors | `docs/audits/AUD-NNN/<part>/<dimension>.json` |
 | 3 | RELEASE-VALIDATOR | `docs/audits/AUD-NNN/requirements/REQ-NNN.json` |
 | 4 | AUDIT-COMPILER | `docs/audits/AUD-NNN/report.json`, `docs/audits/AUD-NNN/report.md` |
-| 6 | AUDIT-TRIAGE | `docs/issues/ISS-NNNN-*.md`, номера дефектов в `docs/audits/AUD-NNN/report.json` |
-| 7a | DOC-UPDATER | `STATE.md`, состояние в `docs/audits/README.md`, статус в `docs/requirements.yaml` (если требование перестало выполняться), `docs/anti-patterns.md` |
-| 0–8 | ORCH | handoff-ы в `handoffs/AUD-NNN-<ГГГГММДД>-01/` |
+| 6 | AUDIT-TRIAGE | `docs/issues/ISS-NNNN-*.md`, the defect numbers in `docs/audits/AUD-NNN/report.json` |
+| 7a | DOC-UPDATER | `STATE.md`, the state in `docs/audits/README.md`, the status in `docs/requirements.yaml` (if a requirement stopped being met), `docs/anti-patterns.md` |
+| 0–8 | ORCH | handoffs in `handoffs/AUD-NNN-<YYYYMMDD>-01/` |
 
-## Handoff-ы
+## Handoffs
 
 - `workflow_id`: `"WF-05"`.
-- Файлы: `step-01-audit-scout.json`, `step-02-audit-planner.json`,
-  `step-03-<аудитор>-<часть>.json` (например, `step-03-security-auditor-pixel-office.json`),
-  `step-03-release-validator-<требование>.json` (например,
+- Files: `step-01-audit-scout.json`, `step-02-audit-planner.json`,
+  `step-03-<auditor>-<part>.json` (for example, `step-03-security-auditor-pixel-office.json`),
+  `step-03-release-validator-<requirement>.json` (for example,
   `step-03-release-validator-req005.json`), `step-04-audit-compiler.json`,
   `step-06-audit-triage.json`, `step-07a-doc-updater.json`.
 
-## Цикл доработки
+## Rework loop
 
-- Агент шага 3 не смог закончить (сбой команды, лимит) — не больше **двух** повторных
-  запусков. Не вышло — пара «часть × измерение» или требование в отчёте помечается «не
-  проверено» с причиной, а аудит идёт дальше.
-- Сверка ORCH на шаге 5, 7 или 7a не сошлась — не больше **двух** доработок
-  AUDIT-COMPILER, AUDIT-TRIAGE или DOC-UPDATER; не сошлось и после второй — аудит
-  останавливается, ORCH пишет владельцу, что не сходится.
+- The agent of step 3 could not finish (a command failure, a limit) — no more than **two**
+  re-launches. If it did not work out — the pair "part × dimension" or the requirement is marked
+  "not checked" in the report with the reason, and the audit goes on.
+- The check of ORCH at step 5, 7 or 7a did not match — no more than **two** rework steps of
+  AUDIT-COMPILER, AUDIT-TRIAGE or DOC-UPDATER; if it does not match after the second one, the
+  audit stops, and ORCH writes to the owner what does not match.
 
-## Условия остановки
+## Stop conditions
 
-- **Готово:** отчёт, дефекты и учёт сверены ORCH, отчёт у владельца.
-- **Аудит не нужен:** ни у одной части нет измерений к проверке (шаг 1, п. 2), и срок
-  перепроверки требований не вышел — ORCH пишет владельцу об этом с паспортами частей, по которым
-  так решено.
-- **Остановлено:** нечем выполнить проверку (например, нет Node 22 для
-  `npm run check`) — измерение помечается «не проверено», а сбой среды сразу идёт
-  владельцу (WF-02, «Остановлено, среда»).
+- **Done:** the report, the defects and the bookkeeping are checked by ORCH, the report is with
+  the owner.
+- **No audit needed:** no part has dimensions to check (step 1, item 2), and the term for
+  re-checking the requirements is not over — ORCH writes this to the owner, with the passports
+  of the parts by which it was decided.
+- **Stopped:** there is nothing to run the check with (for example, there is no Node 22 for
+  `npm run check`) — the dimension is marked "not checked", and the failure of the environment
+  goes to the owner at once (WF-02, "Stopped, environment").
 
-## Отчёт владельцу
+## Report to the owner
 
-Пять–десять строк простыми словами: общее состояние проекта (оценка по самой слабой
-части и что за ней стоит); главные проблемы — сначала те, что вредят уже сейчас; находки, которые сводчик снял
-как неподтверждённые, — отдельным списком; какие требования в статусе `done` перепроверены
-и какие перестали выполняться; что стало лучше или хуже с прошлого аудита; что не удалось
-проверить и почему; какие дефекты заведены и что предлагается чинить первым. Дальше —
-ссылка на `docs/audits/AUD-NNN/report.md`.
+Five to ten lines in plain words: the general state of the project (the score by the weakest
+part and what stands behind it); the main problems — first those that harm already now; the
+findings that the compiler withdrew as unconfirmed — as a separate list; which requirements in
+the status `done` were re-checked and which stopped being met; what became better or worse since
+the last audit; what could not be checked and why; which defects were created and what is
+proposed to fix first. Then — a link to `docs/audits/AUD-NNN/report.md`.

@@ -1,0 +1,127 @@
+{
+  "handoff_id": "step06-TRANSL-20261025-01",
+  "run_id": "TRANSL-20261025-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/TRANSL-20261025-01/step-06-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "decisions/0080-english-instructions.md",
+      "handoffs/TRANSL-20261025-01/step-04-doc-updater.json",
+      "handoffs/TRANSL-20261025-01/step-05-doc-updater.json"
+    ],
+    "route": "ORCH -> TEST-FIXER -> RELEASE-VALIDATOR -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/*.js, tools/test/fixtures/**, .claude/agents/*.md, docs/workflows/*.md, docs/quality-bar.md, docs/anti-patterns.md, CLAUDE.md, README.md, tools/README.md, handoffs/TRANSL-20261025-01/step-06-test-fixer.json"
+    ],
+    "base_tag": "base/TRANSL-20261025-01",
+    "orch_check": {
+      "at": "2026-10-25T13:57:05Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "37 tests re-pointed, none deleted per report; check shows only the 11 known reds; FS-16 negative-only check goes to the gate"
+      ]
+    }
+  },
+  "task": {
+    "description": "Re-point the tests that read Sai instruction files and compare Russian wording to the English wording introduced by run TRANSL-20261025-01 (decisions/0080, item 6). Before this run the full test run had exactly 11 known red tests (HO-46, HO-47, HC-RT-1e, LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e); the translation made about 37 more red. Fix only the extra ones.\nRules: (1) a test is never weakened, deleted, skipped or loosened to a bare \"file exists\": each re-pointed test must check the same fact (same section present, same rule stated, same number) in the English text, using the section titles and phrases that now exist in the files; (2) if a test fails because a translation lost or changed a fact (a rule, number, section, cross reference or a role-file front matter key), do not change the test — fix the English text in the instruction file and note it in result.issues with the exact place; (3) text of pages, tool messages and quoted Russian terms stay Russian where the files quote them; (4) known reds HO-46, HO-47, HC-RT-1e, LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e are not yours and must stay as they are; (5) cross references in the instruction files that name a section by its old Russian title (for example the section \"Команда handoff\" of tools/README.md quoted in handoffs.md) must be aligned with the section titles that actually exist, and a test that guards such a reference stays; (6) the failing tests known so far: DC-01, DC-02, FS-16, NM-09, MC-07, ST-06, RD-1…RD-4, TM-01, TM-50, EN-75, TD-1…TD-3, REQ-003, HO-50…HO-52, HC-9a, WEB-12, EX-37 and others you find with the full run. Work on a spare clone of tag base/TRANSL-20261025-01 for comparing old and new wording (a fresh git clone outside the project, never checkout/reset/stash/clean here). Finish with cd tools && npm run check: only the 11 known reds may remain. In result list every re-pointed test with the old and the new fact checked, and every fix of an instruction file.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T13:38:55Z",
+  "started_at": "2026-10-25T13:38:55Z",
+  "completed_at": "2026-10-25T13:56:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Re-pointed the tests that read Sai instruction files to the English wording of run TRANSL-20261025-01 (decisions/0080 item 6). Before: full run 1898 tests, 48 red (11 known + 37 extra). Now: 1898 tests, 1887 pass, 11 fail - exactly the 11 known (HO-46, HO-47, HC-RT-1e, LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e). 37 tests in 15 files were re-pointed, each to the same fact in the English text; no test was deleted, skipped or loosened. Instruction files fixed where the translation lost a fact: the heading '## Quality bar — binding' in 5 role files (em dash had become a hyphen), the 18-word rule in the README paragraph about forbidden signs (3 sentences), and 6 cross references to sections by old or wrong titles. The old wording was compared with a fresh clone of the tag base/TRANSL-20261025-01 outside the project.",
+    "changes": [
+      "RE-POINTED TESTS (37 failing tests in 15 files in tools/test/; every one checks the same fact in the English text; no test deleted, skipped or loosened). Criterion for all: decisions/0080 item 6 and the task of this step - the test checked a Russian wording that the translation replaced by the same fact in English.",
+      "exec-budget.test.js EX-33 (README states the rule of a run without a cost): section '## Sai Team — исполнители' -> '## Sai Team — executors'; 'по худшему случаю' / 'accounted: assumed' / 'не весь остаток' -> 'by the worst case' / 'accounted: assumed' / 'not the whole remainder'.",
+      "exec-docs.test.js EX-37 x3 (interface, executors, conditions, switches; ten roles and tools agree with the code; real arguments and never-passed list): heading -> '## Sai Team — executors'; 'только для тестов', 'Остаточный риск', 'Повторы', 'по худшему случаю', 'Коды выхода', 'отключает WebSearch и WebFetch', 'Ни у одной роли нет Bash' -> 'only for tests', 'Residual risk', 'Repeats', 'by the worst case', 'Exit codes', 'turns off WebSearch and WebFetch', 'No role has Bash'; the role-table row is found by the Russian role title at the start of the first cell (cells now read 'Руководитель проекта (project manager)'), the tool list of the row is still compared with ROLES in the code.",
+      "exec-executor.test.js EX-06 (no demo words in code; README says scripted is for tests only): README section anchor -> '## Sai Team — executors'; 'только для тестов' -> 'only for tests' in the line '- `scripted`'.",
+      "handoffs-cmd-docs.test.js HO-50 (handoffs.md: both forms of the command in two sections): sections 'Время' / 'Кто что пишет' -> 'Time' / 'Who writes what'; 'записывает `context.write_set` списком' -> 'writes `context.write_set` as a list'; '`IN_PROGRESS` и «BLOCKED») `close` не делает' -> '`close` does not do the stop by the rule of a role (`IN_PROGRESS` and \"BLOCKED\")'; 'один раз' in Time -> 'from **one** reading of the clock'.",
+      "handoffs-cmd-docs.test.js HO-51 (orchestrator.md line with `handoff -- new`): 'в момент запуска' / 'не заранее' -> 'at the moment of launching the agent' / 'not in advance'.",
+      "handoffs-cmd-docs.test.js HO-52 (tools/README.md section of the handoff command): section 'Команда handoff' -> 'The handoff command'; 'Коды выхода: 0 .*1 .*2' -> 'Exit codes: 0 .*1 .*2'; 'метка `base/<RUN-ID>`' -> 'tag `base/<RUN-ID>`'; 'жёсткая ссылка' -> 'hard link'.",
+      "handoffs-docs.test.js HC-9a (handoffs.md rules of the check and of at_note/was/previous): sections 'Проверка учёта' / 'Время' -> 'Bookkeeping check' / 'Time'.",
+      "picker-text.test.js TT-10a, TT-10b (README paragraph about forbidden signs: marks; every phrase <= 18 words; no second person): section anchor -> '## The solution picker site: the check of a tenant file'; the ban of the second person now also lists 'you, your, yours, yourself' (the Russian words stay in the pattern). TT-10b also needed a fix of the English text, see the instruction-file fixes.",
+      "pixel-office-docs.test.js DC-01 (README has every phrase of criterion 15): '### Хранение текста', 'остаточный риск', 'без --session', 'и у сервера, и у Claude Code (в обоих местах)', 'три части через точку' -> '### Storing the text', 'residual risk', 'without --session', 'both for the server and for Claude Code (in both places)', 'three parts through a dot'.",
+      "pixel-office-docs.test.js DC-02 (orchestrator role passes G1-G4 of criterion 16): G2 'до раздачи|до запуска агентов' -> 'before handing out to agents|before launching agents' (the role says 'before handing out to agents').",
+      "pixel-office-docs.test.js FS-16 (README new words; four checks of criterion 11): '### Ограничения' -> '### Limits' (also in the invented sample), '60 минут' -> '60 minutes'; the quoted screen words 'нет свежих данных', 'сервер перезапускался' and the negative words stay as they are quoted in the README.",
+      "pixel-office-docs.test.js NM-09 (REQ-036 criterion 10): 'строка на агента' -> 'a row for each agent' (the negative sample changed likewise).",
+      "pixel-office-docs.test.js MC-07 (REQ-047 criterion 7): 'карточка основной сессии' -> 'card of the main session' (the negative sample likewise).",
+      "pixel-office-server.test.js SV-12 (DEFAULT_PORT is the number in the README): 'Порт по умолчанию — (\\d+)' -> 'The default port is (\\d+)' (the number 4780 is checked against DEFAULT_PORT as before).",
+      "pixel-office-settings.test.js ST-06 (the 14 lines of criterion 13 and the link): 'в настройках которых есть обработчики Pixel Office', 'при копии обработчиков', '### Ограничения', 'учётная запись', 'одной вписанной строки', 'навсегда', '## Проверка', 'новые внизу' -> 'whose settings have the Pixel Office handlers', 'only if the handlers are copied into', '### Limits', '**account** of this computer', '**one written-in row**', '**forever**', '## Check', 'the new ones at the bottom'; the two forbidden old phrases 'новые сверху', 'например в соседней' -> 'the new ones at the top', 'for example in a neighbouring'.",
+      "repo.test.js REQ-003 AC1 (WF-06 has its sections and steps 0-7): headings Роли/Шаги/Артефакты/Handoff-ы/Цикл доработки/Условия остановки -> Roles/Steps/Artifacts/Handoffs/Rework loop/Stop conditions; 'Шаг N' -> 'Step N'. REQ-003 AC2 needed a fix of five role files, see the instruction-file fixes.",
+      "repo.test.js RD-1, RD-2, RD-3, RD-4 and the 'rules are not blind' test (REQ-030 README section): headings '## Проверка на GitHub и перед отправкой' / '## Как открыть на другом компьютере' -> '## Check on GitHub and before a push' / '## How to open on another computer'; the thirteen exact words: 'защиты ветки нет', 'мерж подтверждает владелец', 'около 2 минут', 'обход', 'рабочей папке' -> 'there is no branch protection', 'the merge is confirmed by the owner', 'about 2 minutes', 'bypass', 'working folder'; banned words 'ветка защищена', 'защита включена', 'обязательная проверка', 'приватн', 'публичн' -> 'branch is protected', 'protection is turned on', 'required check', 'private', 'public' (403 stays); the capital-letter mutant now turns 'there is no branch protection' into 'There is no branch protection'.",
+      "team-docs.test.js TM-01 (г) (CLAUDE.md describes the product as a virtual team, no longer says there is no product code): 'виртуальная команда' -> 'virtual team'; 'кода продукта нет' -> 'there is no product code' and 'no product code'.",
+      "team-docs.test.js TM-50 (README section of the core): '## Sai Team — ядро' -> '## Sai Team — the core'; 'занят', 'восстановлен', 'вручную', 'имена файлов результата не маскируются', 'двоичные отклоняются', 'похожее на ключ' -> 'busy', 'recovered', 'by hand', 'the names of result files are not masked', 'binary ones are rejected', 'looks like a key' ('прервано аварией', the Russian role titles and 'UTF-8' stay: they are quoted in the README).",
+      "team-engine-docs.test.js EN-75 (README section of the engine): '## Sai Team — движок' -> '## Sai Team — the engine'; the 12 '### ' subsection titles -> their English titles in the same order; key lines 'одну повторную попытку', 'только** тех задач, от которых она зависит', 'отдельный запуск', 'действие вовне движок не выполняет', 'резервируют', 'не больше двух раундов', 'сама не пишет и не повторяет', 'не больше 10 с' -> '**one repeat attempt**', '**only** of the tasks it depends on', 'a separate run', 'the engine does not perform the action outside', '**reserve**', 'no more than two rounds', 'does not write or repeat by itself', 'no longer than 10 s'.",
+      "team-web-control.test.js CTL-13 and CTL-14f (README section of the interface): '## Sai Team — интерфейс' -> '## Sai Team — the interface' (also in readmeSection()); 'необратима' -> 'irreversible'; CTL-14f words 'может запустить', 'по-прежнему не хватает', 'не сработает, пока вопрос без ответа', 'строка паузы говорит об этом заранее', 'новый платный запуск', 'снова', paragraph 'Если проект поставили на паузу, пока он ждал решения' and 'вопрос не закрывает' -> 'can start making', 'is still not enough', 'does not work while the question is without an answer', 'the pause line says so in advance', 'a new paid run', 'asks you again', 'If a project was put on a pause while it waited for a decision' and 'does not close the question' (still checked inside that one paragraph). The quoted buttons «Продолжить», «Пауза», «Остановить» stay.",
+      "team-web-docs.test.js WEB-12 (README section of the interface): '## Sai Team — интерфейс' -> '## Sai Team — the interface'; 'Сервер слушает только `127.0.0.1`', '### Правило срока', 'медиана', 'без процентов' -> 'The server listens only on `127.0.0.1`', '### The rule of the term', 'the median of durations', 'without percents'.",
+      "traces-readme.test.js TD-1 x5, TD-3 (README section of the open-on-another-computer instruction): heading -> '## How to open on another computer'; TD-3 'копию папки' -> also 'a copy of the folder'; TD-2 also gets the English forms of the two outdated phrases. The Russian placeholder 'git clone <адрес репозитория Sai>' stays (quoted in the README).",
+      "INSTRUCTION-FILE FIXES (the translation lost or changed a fact; the tests were not changed for these):",
+      ".claude/agents/plan-writer.md, idea-analyst.md, idea-judge.md, plan-validator.md, market-researcher.md - the heading '## Quality bar — binding' had become '## Quality bar - binding' (em dash replaced by a hyphen in 5 of the role files; the heading was English already before the run); restored to the em dash. Fact lost: the heading text the test REQ-003 AC2 (repo.test.js) requires.",
+      "tools/README.md, section 'The solution picker site: the check of a tenant file', the paragraph about forbidden signs - the Russian paragraph had no phrase longer than 18 words (rule checked by TT-10b); the translation made two: 'The command `check` rejects such a text ...: in it are the place and the code of the character, for example `U+200B`.' (28 words) split into two sentences; 'Ordinary spaces are allowed, ... `U+202F`: they are needed ...' (20 words) split into two; 'Such characters bypass the rule \"a phrase is not longer than 18 words\" and the ban of the second person.' (20 words) shortened to 'Such characters bypass the rule of the 18-word phrase and the ban of the second person.' Meaning unchanged.",
+      "CROSS-REFERENCES aligned with the section titles that exist now (rule 5): docs/workflows/handoffs.md - section 'Команда handoff' of tools/README.md -> 'The handoff command'; docs/anti-patterns.md AP-079 - README section 'Проверка на GitHub и перед отправкой' -> 'Check on GitHub and before a push' (twice) and the words the tests require (the old Russian words are named as the wording before this run); docs/anti-patterns.md AP-006 - handoffs.md section 'Breaks and cut-offs' -> 'Pauses and interruptions'; .claude/agents/orchestrator.md - handoffs.md section 'Breaks and interruptions' -> 'Pauses and interruptions'; .claude/agents/orchestrator.md, backend-dev.md, code-designer.md, frontend-dev.md - handoffs.md section 'General rules for all roles' -> 'Common rules for all roles'. The tests that guard these references (HO-50, HC-9a, HO-52, RD-1..RD-4) stay and are green.",
+      "The 11 known reds were not touched: HO-46, HO-47, HC-RT-1e, LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e."
+    ],
+    "self_check": [
+      "Before: cd tools && node --test \"test/**/*.test.js\" -> tests 1898, pass 1850, fail 48 (11 known + 37 extra).",
+      "After the edits, each re-pointed file was run on its own and was green except the known reds (handoffs-cmd-docs.test.js: only HO-46 and HO-47).",
+      "After: cd tools && npm run check -> format:check 'All matched files use Prettier code style!', lint without warnings, traces and handoffs-check passed, then npm run test: tests 1898, suites 0, pass 1887, fail 11, cancelled 0, skipped 0, todo 0; the red ones are exactly HO-46, HO-47, HC-RT-1e, LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e (the check command ends with code 1 only because of them).",
+      "No skip, todo or disabled rule added; the demo server on port 4782 was not touched."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Full test run before the fix: 1898 tests, 1850 pass, 48 fail = 11 known + 37 extra. After: 1898 tests, 1887 pass, 11 fail, exactly the 11 known. The 37 extra were found with the full run (the list in the task was complete for them: DC-01, DC-02, FS-16, NM-09, MC-07, ST-06, SV-12, RD-1..4 and the blind-rules test, TM-01, TM-50, EN-75, TD-1..TD-3 (6 tests), REQ-003 AC1 and AC2, HO-50..HO-52, HC-9a, WEB-12, EX-33, EX-37 (3), EX-06, CTL-13, CTL-14f, TT-10a, TT-10b)."
+      },
+      {
+        "id": "I2",
+        "kind": "FOR_REVIEW",
+        "text": "Negative checks that name an old Russian phrase are now only guards against the old text coming back, because the English README no longer contains Russian prose: FS-16 ('задач n/', 'полоса хода', «завершена»), TD-2/TD-3 (Russian forms kept next to the new English ones), ST-06 and the Russian words in the TT-10b pattern. They were kept (not removed, not loosened); English forms were added where the English text has the same fact (TD-2, TD-3, ST-06, TT-10b). FS-16 has no English form of those three words: the README names no progress bar words in English that could be tested without guessing, so the Russian forms stay."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "A search for cross references that name a section by its old Russian title found no other mismatch in CLAUDE.md, README.md, tools/README.md, docs/workflows, docs/quality-bar.md, docs/anti-patterns.md and .claude/agents; the remaining Russian section names are headings of files that were not translated (docs/issues, STATE.md, docs/uat, decisions) and of output files of roles (verdict, research), and stay."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/exec-budget.test.js",
+      "tools/test/exec-docs.test.js",
+      "tools/test/exec-executor.test.js",
+      "tools/test/handoffs-cmd-docs.test.js",
+      "tools/test/handoffs-docs.test.js",
+      "tools/test/picker-text.test.js",
+      "tools/test/pixel-office-docs.test.js",
+      "tools/test/pixel-office-server.test.js",
+      "tools/test/pixel-office-settings.test.js",
+      "tools/test/repo.test.js",
+      "tools/test/team-docs.test.js",
+      "tools/test/team-engine-docs.test.js",
+      "tools/test/team-web-control.test.js",
+      "tools/test/team-web-docs.test.js",
+      "tools/test/traces-readme.test.js",
+      "tools/README.md",
+      "docs/workflows/handoffs.md",
+      "docs/anti-patterns.md",
+      ".claude/agents/plan-writer.md",
+      ".claude/agents/idea-analyst.md",
+      ".claude/agents/idea-judge.md",
+      ".claude/agents/plan-validator.md",
+      ".claude/agents/market-researcher.md",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/backend-dev.md",
+      ".claude/agents/code-designer.md",
+      ".claude/agents/frontend-dev.md"
+    ]
+  }
+}

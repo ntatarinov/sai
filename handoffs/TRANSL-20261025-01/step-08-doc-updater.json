@@ -1,0 +1,145 @@
+{
+  "handoff_id": "step08-TRANSL-20261025-01",
+  "run_id": "TRANSL-20261025-01",
+  "workflow_id": "WF-02",
+  "step": "08",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/TRANSL-20261025-01/step-08-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/TRANSL-20261025-01/step-07-release-validator.json",
+      "handoffs/TRANSL-20261025-01/step-07b-release-validator.json",
+      "handoffs/TRANSL-20261025-01/step-07c-release-validator.json"
+    ],
+    "route": "ORCH -> DOC-UPDATER (rework) -> RELEASE-VALIDATOR (gate pass 2)",
+    "write_set": [
+      ".claude/agents/*.md, docs/workflows/*.md, docs/quality-bar.md, docs/anti-patterns.md, docs/requirements.yaml, CLAUDE.md, README.md, tools/README.md, decisions/0080-english-instructions.md, handoffs/TRANSL-20261025-01/step-08-doc-updater.json"
+    ],
+    "base_tag": "base/TRANSL-20261025-01",
+    "orch_check": {
+      "at": "2026-10-25T14:37:16Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "rework per gate findings reported done; npm run check shows only the 11 known reds; the gate pass 2 re-verifies on the files"
+      ]
+    }
+  },
+  "task": {
+    "description": "Rework of the translation after the gate FAIL (gate pass 1 of 3; findings in handoffs/TRANSL-20261025-01/step-07-release-validator.json, step-07b-release-validator.json and step-07c-release-validator.json, result.issues). Fix exactly these, keep everything else; the meaning of rules must not change.\n1. docs/workflows/handoffs.md \"Time\" (about lines 203-204): the rule says \"unknown\" is written, but tools/src/handoffs/times.js accepts only «неизвестно». Write «неизвестно» (\"unknown\"). Same for any other place where a literal that a tool or another file reads was translated.\n2. handoffs.md about line 127: the orch_check verdict «FAIL принят» must stay Russian with an English gloss (orchestrator.md and 42 handoffs use it).\n3. Cross references: verdict-executor.md line 39 -> WF-06 heading \"Rework loop\"; test-runner.md line 36 -> tools/README.md heading \"Check\"; orchestrator.md lines 233-234 must quote CLAUDE.md as it now reads (\"ORCH writes by itself only this (a closed list):\"). Re-check every cross reference of this kind after your edits.\n4. orchestrator.md lines 128-129: a wrapped line begins with a dash and became an extra Markdown bullet (111 list items against 110 in the tag): rejoin it so the list item count equals the tag.\n5. docs/anti-patterns.md: restore the Cyrillic identifiers that were turned into Latin: AP-015 lines about Д7 (Д7, not D7), AP-068 Ф7 (not F7), AP-059 \"WEB-15 (б)\" (not (b)); a Latin gloss in brackets is fine. Then search all translated files for other identifiers that point at Cyrillic names in unchanged files (table rows, test titles, section labels) and restore them too.\n6. Placeholders: use one form. Check tools/src and tools/test for any tool or test that reads `<вне проекта>`; if none reads it, use `<outside the project>` in CLAUDE.md (line 83), AP-022, AP-050, AP-069. In README.md lines 231 and 234 use `<Sai repository address>`.\n7. Small wording: WF-02 line 350 \"the gate of step 8 is closed without the signature\" -> \"stays closed (not passed) without the signature\"; AP-041 keep the window label «Просмотр истории» with the gloss \"History view\"; AP-073 \"finish accounting\" -> \"finish the bookkeeping\"; \"foreign errors\", \"at the order of ORCH\", \"much data\" -> plain English; audit-planner.md line 55 restore the original meaning of «с полосой Critical» from the tag (do not guess; if unclear, say so in issues).\n8. Unify standard headings across the 37 role files to one wording each (what to hand over / boundary with / flaky / score): choose the most frequent wording; run the full check after, because tests may read some headings (REQ-003 AC2 reads \"Quality bar — binding\").\n9. docs/requirements.yaml: about 14 done requirements (REQ-009, 010, 011, 013, 035, 038, 042, 044, 045, 048, 050, 052, 061, 068; WF-06/WF-07 lines about 375 and 454) quote old Russian headings and phrases of the translated files. Change ONLY the quoted heading or phrase to the English one that now exists (same fact), as a micro-amendment per docs/workflows/WF-01-requirement.md, and write the status-history event per that rule (reason: decisions/0080). Do not change any status or the meaning of a criterion. Search the whole file for other criteria that quote the translated files.\n10. decisions/0080-english-instructions.md: add the sections Question, Options, Basis (see decisions/README.md for what a decision needs; Basis = «Основание»), and a new numbered item \"Literals that tools and files read stay as they are\": list every Russian literal that code in tools/src reads from instruction or handoff files (for example «неизвестно», «FAIL принят», the defect fields Статус/Серьёзность/Найдено, Закрыто, the STATE.md heading written by contract.js) — find them by searching tools/src, give the file for each.\nDo not touch tools/test (another agent re-points the FS-16 guard). No git checkout/reset/stash/clean, no commits, do not run prettier on .md outside tools/. Before close: cd tools && npm run handoffs-check and npm run traces, then npm run check (only the 11 known reds may remain). In result list each item 1-10 with what you changed and where.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-25T14:16:48Z",
+  "started_at": "2026-10-25T14:16:48Z",
+  "completed_at": "2026-10-25T14:36:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework of the translation after gate pass 1 (findings of steps 07, 07b, 07c), items 1-10 done. The rule for an unknown time and the verdict «FAIL принят» in handoffs.md keep their Russian literals with a gloss; three cross references (verdict-executor, test-runner, orchestrator) now name headings that exist; the extra bullet in orchestrator.md is gone (110 list items again); the Cyrillic identifiers Д7, Ф7, (б) are back; placeholders are English in one form; the small wordings are fixed; the standard headings of the 37 role files have one wording each; 21 requirement blocks of docs/requirements.yaml got micro-amendments that change only the quoted heading or phrase; decisions/0080 has the sections Question, Options, Basis and three new items 7-9. No rule, status or criterion meaning changed. cd tools && npm run check: 1898 tests, 1887 pass, 11 fail - exactly the 11 known reds.",
+    "changes": [
+      "1. docs/workflows/handoffs.md, section \"Time\": the rule now says «неизвестно» (\"unknown\") is written (src/handoffs/times.js accepts only this word). Other translated literals that a tool or another file reads were searched in tools/src (grep for Cyrillic, 1108 lines read by kind): the others are already Russian (the interruptions template, WF-07, STATE.md headings, the exceptions-base header); the full list is in decisions/0080 item 7.",
+      "2. docs/workflows/handoffs.md, context.orch_check: the FAIL verdict is «FAIL принят» (\"FAIL accepted\"), as in orchestrator.md.",
+      "3. Cross references: verdict-executor.md line 39 -> \"Rework loop\"; test-runner.md line 36 -> \"Check\"; orchestrator.md lines 233-234 quote CLAUDE.md as it reads (\"ORCH writes by itself only this (a closed list):\"); orchestrator.md line 18 -> section \"What to hand over\" (heading unified in item 8). Re-check: python script over section/step quotations in all translated files against all headings of docs/, tools/README.md, CLAUDE.md, README.md - no other quoted title is missing (the remaining hits are quotations of Russian texts, not references).",
+      "4. orchestrator.md lines 128-129: the wrapped line no longer begins with a dash (\"...session), only after the owner's consent...\"); list items 110 = 110 in the tag (script over all 49 translated files: list items, headings and table rows equal to the tag in every file).",
+      "5. docs/anti-patterns.md: AP-015 Д7 (3 places), AP-068 Ф7, AP-059 \"WEB-15 (б)\" restored. Search over all translated files for short identifiers with Cyrillic letters (script: tokens like Д7, Ф7, (б), 6а, 3а in the tag against now): found and restored the checklist letters of WF-01 and req-validator.md, items (а)-(е) (12 + 16 places; Latin (a)-(f) had also shifted (д) to (e) and (е) to (f), while requirements.yaml line 8224 and many handoffs cite «пункт (г)»), and the sub-items 6а-6в of release-validator.md and 3а of req-analyst.md. The script now finds no lost Cyrillic identifier.",
+      "6. Placeholders: no code or test in tools/src or tools/test reads `<вне проекта>` as an instruction word (handoffs-paths.test.js uses it only as a sample of any `<...>` stand-in). CLAUDE.md line 83, AP-022, AP-050, AP-069 now `<outside the project>`; README.md git clone line `<Sai repository address>` and the gloss line below it removed. Same placeholders in role files (L2 of step 07): doc-updater, orchestrator, gui-design-analyst ×2, frontend-dev ×3, idea-judge. Left as they are: `<как понял>` (the note text the owner reads in Russian, glossed in orchestrator.md) and the usage text of tools/README.md.",
+      "7. WF-02 step 8 item 5: \"stays closed (not passed) without the signature\"; AP-041 keeps «Просмотр истории» (\"History view\") in title and body; AP-073 \"finish the bookkeeping\"; \"Foreign errors\" -> \"Errors of others\", \"at the order of ORCH\" -> \"on ORCH's instruction\", \"much data\" -> \"a lot of data\" (WF-04 ×2, design-qa-validator, code-design-validator); audit-planner.md line 55 now «полоса» (\"band\") Critical - the tag says «с полосой Critical», the word is not defined anywhere (see issues I1), so it is quoted, not guessed.",
+      "8. Standard headings of the 37 role files (27 files changed): \"What to read before work\", \"What to hand over\", \"Check before handing over\" (the most frequent wording, 14/14/27+10), \"Boundary with/of\" (Border -> Boundary in ba-analyst, code-fixer, design-qa-validator, code-design-validator), \"flaky test\" (orchestrator.md, issue-fixer.md; also handoffs.md and WF-02 ×2, same rule of decisions/0079 item 2), \"score\" (doc-updater.md). Headings count by wording now: 37 each of the nine standard sections; 'Quality bar — binding' (6) and 'Reading scope' (2) untouched. No test reads these headings (grep in tools/test); npm run check green except the 11 known.",
+      "9. docs/requirements.yaml: micro-amendment of 21 blocks (REQ-001, 003, 005, 006, 008, 009, 010, 011, 013, 014, 035, 036, 038, 039, 042, 047, 050, 051, 052, 053, 068); only the quoted heading or phrase of a translated file is changed to the English one that now exists (examples: «## Sai Team — ядро» -> «## Sai Team — the core»; «## Проверка учёта» -> «## Bookkeeping check»; awk '/^## Время/' -> awk '/^## Time/'; `необратима` -> `irreversible`; 'строка на агента' -> 'a row for each agent'; «Шаг 0» … «Шаг 7» -> «Step 0» … «Step 7»); each block got one event line before its `- id:` line (time from the clock, run, reason decisions/0080, was -> now). Found by: quoted-string comparison of the whole file against the tag and the tree, and by running every `awk … | grep` and `grep … FILE` command of the file on the tag and on the tree (51 commands; only counts that stay at or above the stated minimum differ, plus the pending REQ-040). REQ-044, 045, 046, 048, 049, 061 were checked and need no change (their quotations are page texts or still exist; the awk/grep checks of REQ-044/045/048 still return at least the required count). Not changed on purpose: pending requirements that quote future or old sections (REQ-015, 037, 040, 041), see issues I2.",
+      "10. decisions/0080-english-instructions.md: added the sections Question, Options and Basis; new items 7 (Literals that tools and files read stay as they are: «неизвестно» in src/handoffs/times.js; `# база:` and «База handoffs-check:» in src/handoffs/exceptions.js; the three STATE.md headings and the confidence words in src/contract.js and src/apply.js; «## Ограничения» in src/validate.js; «Записано:», «Статус:» and the columns «Итог», «Статус», «Почему нет» in src/contract.js; then the literals read by files and agents, not by code: «FAIL принят», the defect-file fields and sections, the mistakes-log fields, the Cyrillic identifiers, placeholders), 8 (one wording for a standard heading) and 9 (quotations in requirements.yaml)."
+    ],
+    "before_copy": {
+      "requirements_yaml": "<scratch>/req08-before.yaml (copy taken before my first edit of docs/requirements.yaml)",
+      "sha256_before": "fb7b40c37e49c90f798d80334cb03fe058f3559e56c271b138b24491780fb0d8",
+      "sha256_after": "3835518b35cef9fa8e3878b86d1b65a3f0df5c400d51058ca3b14bccfeabdccf",
+      "tag_clone": "<scratch>/clone-08 (fresh clone of base/TRANSL-20261025-01, used for all old text)"
+    },
+    "self_check": [
+      "Clock: date -u +%Y-%m-%dT%H:%M:%SZ gave 2026-10-25T14:30:39Z for the requirement events.",
+      "python script: docs/requirements.yaml split into the header and 68 blocks; 21 blocks differ (listed in change 9), the other 47 blocks plus the header have the same sha256 before and after (74a3e69e2a0c22d65c035956c01a1814193acdae288d4e6d8dd1247cfa028a03, event lines excluded); in the 21 blocks only acceptance_criteria and description differ - checked by loading both files with ruby YAML (68 = 68 blocks, no field status or depends_on changed, same number of criteria).",
+      "sha256 of docs/requirements.yaml: before fb7b40c37e49c90f798d80334cb03fe058f3559e56c271b138b24491780fb0d8, after 3835518b35cef9fa8e3878b86d1b65a3f0df5c400d51058ca3b14bccfeabdccf.",
+      "Commands of the file: 51 awk/grep commands on translated files extracted from the file before (run on the tag clone) and after (run on the tree): the counts stay at or above the stated minimum for every changed command; the only drop to 0 is REQ-040 (pending, not amended).",
+      "Every English phrase put into requirements.yaml was found by grep -F in the file it points at (tools/README.md, README.md, CLAUDE.md, handoffs.md, WF-01, WF-07, orchestrator.md).",
+      "Cyrillic identifiers script (tag against tree over all translated files): no lost token; list items, headings and table rows equal to the tag in all 49 translated files.",
+      "cd tools && npm run handoffs-check -> 'handoffs-check: файлов проверено 1123, нарушений 0, исключений использовано 114 из 114', exit 0; cd tools && npm run traces -> 'traces: файлов проверено 1997, следов 0, пропущено 61', exit 0 (both run after the last edit, before close).",
+      "cd tools && npm run check (my turn, foreground in background shell, 3 min): tests 1898, pass 1887, fail 11, skipped 0, todo 0, exit 1; the 11 reds are HO-46, HO-47, HC-RT-1e, LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e - the known list.",
+      "No git checkout/reset/stash/clean, no commit; tools/test not touched (TEST-FIXER edits it; the test TD-3 of traces-readme already expects <Sai repository address>); the demo server on port 4782 not touched; prettier not run on .md."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "audit-planner.md line 55: the original «с полосой Critical» (a part with a \"band\" Critical) is not defined in WF-05 or anywhere; I did not guess and quoted it with the gloss \"band\". WF-05 step 1 says the parts with an open CRITICAL or HIGH defect are checked on all dimensions - probably what was meant. Ask the owner or ORCH to confirm, then reword both the tag text and this line."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "docs/requirements.yaml: criteria of PENDING requirements still quote old Russian headings or phrases: REQ-015 («## Sai Team — интерфейс» - exists, easy), REQ-037 and REQ-040/REQ-041 (README «Что ещё не готово», WF-02 «Короткий путь», «## Ворота», handoffs.md «Частых необязательных полях»), REQ-018/023/024 (a future section «## Sai Team — пользователи»). Not amended: they are not audited and each is rewritten at the start of its own WF-01/WF-02 run; ORCH may order one more micro-amendment. Also REQ-040 checks the root README section «Что ещё не готово», now «What is not ready or not proven» (the RM2 item of STATE.md will touch it anyway)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Two different headings of tools/README.md both became \"Recovery after a crash\" (the core: «Восстановление после аварии», the engine: «Восстановление после падения»); REQ-035 now cites «Recovery after a crash» for the engine one. A distinguishing word would keep them apart (tools/README.md is another step's file; a test may read the heading)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "The task listed REQ-044, 045, 048, 061 among those to amend; their criteria quote page texts of the Pixel Office or tenant rules (REQ-054 «фраза не длиннее 18 слов»), not headings or phrases of a translated file, and every awk/grep check of theirs still returns the required count, so nothing was changed there. Listed pairs like 'Claude Code этого не сообщает' are texts of the page in tools/src, not of README."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Not done, outside item 8 as written: other differences between the translation batches named in L1 of step 07 (spelling behavior/behaviour, dash ' - ' against ' — ', 'He'/'It' for a role). Not blocking; one more pass or a test of the standard headings (I3 of step 07) could settle them."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "decisions/0080 items 7-9 are new text, written by me as a rework of the missing record sections; ORCH accepts or changes them (decisions/README.md row for 0080 was not touched - not in my write set)."
+      }
+    ],
+    "artifacts_out": [
+      ".claude/agents/audit-planner.md",
+      ".claude/agents/ba-analyst.md",
+      ".claude/agents/code-design-validator.md",
+      ".claude/agents/code-fixer.md",
+      ".claude/agents/design-qa-validator.md",
+      ".claude/agents/doc-updater.md",
+      ".claude/agents/frontend-dev.md",
+      ".claude/agents/gui-design-analyst.md",
+      ".claude/agents/idea-analyst.md",
+      ".claude/agents/idea-judge.md",
+      ".claude/agents/issue-fixer.md",
+      ".claude/agents/market-researcher.md",
+      ".claude/agents/orchestrator.md",
+      ".claude/agents/plan-validator.md",
+      ".claude/agents/plan-writer.md",
+      ".claude/agents/release-finalizer.md",
+      ".claude/agents/release-validator.md",
+      ".claude/agents/req-analyst.md",
+      ".claude/agents/req-validator.md",
+      ".claude/agents/reviewer.md",
+      ".claude/agents/security-auditor.md",
+      ".claude/agents/security-reviewer.md",
+      ".claude/agents/test-design-validator.md",
+      ".claude/agents/test-designer.md",
+      ".claude/agents/test-fixer.md",
+      ".claude/agents/test-runner.md",
+      ".claude/agents/uat-runner.md",
+      ".claude/agents/verdict-executor.md",
+      "CLAUDE.md",
+      "README.md",
+      "decisions/0080-english-instructions.md",
+      "docs/anti-patterns.md",
+      "docs/requirements.yaml",
+      "docs/workflows/WF-01-requirement.md",
+      "docs/workflows/WF-02-development.md",
+      "docs/workflows/WF-04-ui-by-sample.md",
+      "docs/workflows/handoffs.md",
+      "handoffs/TRANSL-20261025-01/step-08-doc-updater.json"
+    ]
+  }
+}

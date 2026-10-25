@@ -1,297 +1,297 @@
-# tools — служебный код конвейера Sai
+# tools — service code of the Sai pipeline
 
-Здесь лежит служебный код конвейера, а не код продукта. Стек — Node 22 без зависимостей во время выполнения; prettier, eslint, @eslint/js и globals — только зависимости разработки, их версии закреплены в `package-lock.json` (`decisions/0002-process-tooling-node.md`). Pixel Office — служебный инструмент наблюдения за работой агентов конвейера (`decisions/0003-pixel-office-as-pipeline-tooling.md`); решения его проекта записаны в `decisions/0005-pixel-office-design.md`, сам проект — `docs/design/REQ-001-pixel-office.md`.
+This folder holds the service code of the pipeline, not product code. The stack is Node 22 without run-time dependencies; prettier, eslint, @eslint/js and globals are development dependencies only, and their versions are pinned in `package-lock.json` (`decisions/0002-process-tooling-node.md`). Pixel Office is a service tool for watching the work of the pipeline agents (`decisions/0003-pixel-office-as-pipeline-tooling.md`); the decisions of its design are in `decisions/0005-pixel-office-design.md`, the design itself is `docs/design/REQ-001-pixel-office.md`.
 
-Команды WF-06 («выбор идеи»): `npm run prepare-run`, `npm run validate`, `npm run apply-verdict`, `npm run snapshot` и `npm run snapshot-diff`. Их устройство описано в `docs/design/REQ-002-idea-verdict.md`. Pixel Office запускается командой `npm run pixel-office`, она описана ниже.
+The WF-06 ("idea selection") commands: `npm run prepare-run`, `npm run validate`, `npm run apply-verdict`, `npm run snapshot` and `npm run snapshot-diff`. How they work is described in `docs/design/REQ-002-idea-verdict.md`. Pixel Office is started with `npm run pixel-office`; it is described below.
 
-## Проверка
+## Check
 
-Одна команда проверки (quality-bar Q4) — из каталога `tools/`; нужен Node 22 (`engines` в `package.json`: `>=22 <23`):
+The one check command (quality-bar Q4) runs from the folder `tools/`; Node 22 is needed (`engines` in `package.json`: `>=22 <23`):
 
     cd tools
     npm ci
     npm run check
 
-`npm run check` — это подряд `npm run format:check` (prettier --check), `npm run lint` (eslint --max-warnings 0), `npm run traces` (проверка следов), `npm run handoffs-check` (проверка учёта прогонов) и `npm run test` (node --test по `test/**/*.test.js`); остановка — на первой ошибке. Проверку не обходят: в тестах нет `skip` и `todo`, в коде и в настройках нет отключённых правил (quality-bar Q6).
+`npm run check` is, in a row, `npm run format:check` (prettier --check), `npm run lint` (eslint --max-warnings 0), `npm run traces` (the trace check), `npm run handoffs-check` (the check of the run records) and `npm run test` (node --test over `test/**/*.test.js`); it stops at the first error. The check is not bypassed: there is no `skip` and no `todo` in the tests, and there are no turned-off rules in the code or in the settings (quality-bar Q6).
 
 ## Pixel Office
 
-Pixel Office показывает вживую, какие задачи выполняют агенты Sai. Задача — один запуск субагента (инструмент Agent): роль (`agent_type`), короткое описание, начало, окончание и одно из пяти состояний: «в работе», «нет свежих данных», «сервер перезапускался, события не записывались», «закончила работу, итог не записан» или «окончание не записано». Отдельной строкой показана работа основной сессии. Рядом — журнал событий и офис: персонажи ролей за столами; нажатие на персонажа, подпись у его стола или его стол открывает карточку запуска агента. Всё строится из одного источника — событий, которые присылают сами хуки Claude Code в момент срабатывания, с этим временем. Заранее написанных или дописанных задним числом событий нет (планка R2).
+Pixel Office shows live which tasks the Sai agents are doing. A task is one start of a subagent (the tool Agent): a role (`agent_type`), a short description, a start, an end and one of five states: «в работе» (working), «нет свежих данных» (no fresh data), «сервер перезапускался, события не записывались» (the server was restarted, events were not recorded), «закончила работу, итог не записан» (finished the work, the result is not recorded) or «окончание не записано» (the end is not recorded). The work of the main session is shown as a separate row. Next to it are the event journal and the office: characters of the roles at desks; a click on a character, on the label at its desk or on its desk opens the card of the agent run. Everything is built from one source — the events that the Claude Code hooks send themselves at the moment they fire, with that time. There are no events written in advance or after the fact (bar item R2).
 
-«В работе» страница пишет только пока у сессии задачи есть свежее событие хука. Если доверенных событий этой сессии не было больше 60 минут (константа `STALE_AFTER_MS`), задача и строка основной сессии показаны как «нет свежих данных», а сессия — без слова «Идёт»: журнал перестал подтверждать работу, это не завершение и не ошибка. Возраст последнего события («2 ч 34 мин назад») растёт сам, без новых событий, и считается страницей по часам компьютера, на котором она открыта. Полоски прогресса и счётчика задач нет: журнал не знает, сколько работы осталось. «Сервер перезапускался, события не записывались» значит только, что после начала задачи сервер был запущен заново и в паузе события не записывались; это не утверждение, что агент остановился. Доверенные строки — только события хуков (источник `REAL`); запись оркестратора и строка с пометкой «не подтверждена» сессию не освежают. Если событие окончания придёт позже, задача станет «закончила работу, итог не записан» (слова про успех страница не говорит: журнал не знает, чем закончилась работа); когда нет «в работе», строка «Сейчас» называет число элементов «без свежих данных» и причину.
+The page writes «в работе» (working) only while the session of the task has a fresh hook event. If there were no trusted events of this session for more than 60 minutes (the constant `STALE_AFTER_MS`), the task and the row of the main session are shown as «нет свежих данных» (no fresh data), and the session is shown without the word «Идёт» (going): the journal stopped confirming the work; this is neither an end nor an error. The age of the last event («2 ч 34 мин назад», 2 h 34 min ago) grows by itself, without new events, and is counted by the page by the clock of the computer on which it is open. There is no progress bar and no task counter: the journal does not know how much work is left. «Сервер перезапускался, события не записывались» means only that after the task began the server was started again and in the pause events were not recorded; it is not a statement that the agent stopped. Trusted rows are only hook events (source `REAL`); an orchestrator record and a row marked «не подтверждена» (not confirmed) do not refresh the session. If the end event comes later, the task becomes «закончила работу, итог не записан»; the page says no word about success, because the journal does not know how the work ended. When nothing is «в работе», the row «Сейчас» (Now) names the number of elements «без свежих данных» (without fresh data) and the reason.
 
-На странице — шапка (название; блок связи: «на связи», пока сервер отвечает, или «Нет связи с сервером Pixel Office», а под ним пометка «Источник событий — Claude Code»; блок «Сейчас» — строка на агента для каждого, кто сейчас «в работе», «в работе: N» и «Показать всех (N)»; кнопки «Пауза», «1×», «2×», «4×» — они управляют только ходьбой персонажей), слева — офис с легендой ролей и карточкой запуска агента по нажатию на персонажа, подпись или стол, справа — журнал событий с фильтрами «Всё», «Работа», «Офис», поиском и фильтрами «Сессия», «Агент», «Тип события» и панель «Задачи» с разделами «Текущие», «История» и «Запуски сервера». Время показано по часам этого компьютера, пояс подписан в шапке журнала (в файле журнала время в UTC). Журнал показывает последние 200 подходящих под фильтр строк (новые внизу) и счётчик «N из M», панель задач — до 300 элементов, с пометкой «показано n из N»; правила — задачи, состояния, офис — читают весь журнал. Строка с источником не `REAL` или со временем, которое не сходится с порядком журнала, показана с пометкой «не подтверждена» и не влияет ни на задачи, ни на офис.
+The page has: a header (the title; the connection block: «на связи» (connected) while the server answers, or «Нет связи с сервером Pixel Office» (no connection with the Pixel Office server), and under it the note «Источник событий — Claude Code» (the source of events is Claude Code); the block «Сейчас» — a row for each agent that is «в работе» right now, «в работе: N» (working: N) and «Показать всех (N)» (show all); the buttons «Пауза» (pause), «1×», «2×», «4×» — they control only the walking of the characters); on the left, the office with the legend of roles and the agent run card that opens on a click on a character, a label or a desk; on the right, the event journal with the filters «Всё» (all), «Работа» (work), «Офис» (office), a search and the filters «Сессия» (session), «Агент» (agent), «Тип события» (event type), and the panel «Задачи» (tasks) with the sections «Текущие» (current), «История» (history) and «Запуски сервера» (server starts). The time is shown by the clock of this computer, and the time zone is written in the header of the journal (in the journal file the time is UTC). The journal shows the last 200 rows that fit the filter (the new ones at the bottom) and the counter «N из M» (N of M); the task panel shows up to 300 elements, with the note «показано n из N» (shown n of N); the rules — tasks, states, office — read the whole journal. A row whose source is not `REAL`, or whose time does not agree with the order of the journal, is shown with the note «не подтверждена» and influences neither the tasks nor the office.
 
-В офисе персонаж роли «работает», пока у роли есть задача «в работе» (не «нет свежих данных» и не «сервер перезапускался…»). Персонажи ходят только по двум событиям: при начале задачи запустивший идёт к столу роли запущенного субагента и возвращается, при окончании — персонаж субагента идёт к столу запустившего и возвращается. Совещаний и вопросов между агентами хуки не дают, поэтому их в офисе нет.
+In the office a role character «works» while the role has a task that is «в работе» (not «нет свежих данных» and not «сервер перезапускался…»). Characters walk only on two events: when a task begins, the one who started it walks to the desk of the role of the started subagent and comes back; when it ends, the character of the subagent walks to the desk of the one who started it and comes back. The hooks give no meetings or questions between agents, so there are none in the office.
 
-### Запуск
+### Start
 
     cd tools
     npm run pixel-office
 
-Команда запускает сервер и печатает одну строку со ссылкой:
+The command starts the server and prints one line with a link:
 
     Pixel Office: http://127.0.0.1:4780/
 
-Порт по умолчанию — 4780. Он постоянный, поэтому ссылка не меняется между запусками. Другой порт — `npm run pixel-office -- --port <номер>` (`--port 0` — любой свободный), другой каталог состояния — `--dir <абсолютный путь>` (см. «Что где лежит»). Если на порту уже работает Pixel Office, печатается та же строка и команда завершается с кодом 0, второй сервер не поднимается. Если порт занят другим процессом, команда пишет об этом по-русски в stderr и завершается с кодом 1. Справка — `npm run pixel-office -- --help`. Нужен Node 22: под другой версией команда печатает сообщение с версией и завершается с кодом 1.
+The default port is 4780. It is fixed, so the link does not change between starts. Another port: `npm run pixel-office -- --port <number>` (`--port 0` means any free port); another state folder: `--dir <absolute path>` (see "Where things are"). If Pixel Office is already running on the port, the same line is printed and the command ends with code 0; a second server is not started. If the port is taken by another process, the command writes about it in Russian to stderr and ends with code 1. Help: `npm run pixel-office -- --help`. Node 22 is needed: under another version the command prints a message with the version and ends with code 1.
 
-В stdout попадает только строка со ссылкой, предупреждения и ошибки идут в stderr. Если читатель этого вывода исчезнет (например, канал закроется после запуска в фоне), сервер продолжит работать: то, что некому прочитать, отбрасывается.
+Only the line with the link goes to stdout; warnings and errors go to stderr. If the reader of this output disappears (for example, the pipe closes after a start in the background), the server goes on working: what nobody can read is dropped.
 
-Страница обновляется сама, без перезагрузки: новое событие видно не позже чем через 5 секунд. Если сервер недоступен, страница пишет «Нет связи с сервером Pixel Office», продолжает показывать загруженное и после восстановления связи догружает пропущенные события.
+The page updates itself, without reloading: a new event is visible within 5 seconds at most. If the server is unavailable, the page writes «Нет связи с сервером Pixel Office», goes on showing what was loaded, and after the connection is back loads the missed events.
 
-### Как остановить
+### How to stop
 
-Ctrl+C в терминале, где запущена команда. Если сервер запущен в фоне — `kill <pid>`; pid покажет `lsof -nP -iTCP:4780 -sTCP:LISTEN`. Закрытие страницы сервер не останавливает.
+Ctrl+C in the terminal where the command runs. If the server was started in the background — `kill <pid>`; the pid is shown by `lsof -nP -iTCP:4780 -sTCP:LISTEN`. Closing the page does not stop the server.
 
-### Как смотреть задачи
+### How to watch the tasks
 
-1. Запустить сервер (команда выше) и открыть ссылку.
-2. Запустить Claude Code из каталога `sai/` (в расширении VS Code — рабочая папка `sai/`). Видны только сессии Claude Code, в настройках которых есть обработчики Pixel Office: сессии, начатые в `sai/`, — по `sai/.claude/settings.json` (<https://code.claude.com/docs/en/settings>), а сессии другой папки — только при копии обработчиков в её настройках проекта; сессия, начатая в другой папке, не видна, если там не стоят такие же обработчики (`decisions/0007`). Что расширение VS Code читает хуки `sai/` без диалога доверия, пока ожидание: его проверяет шаг «обычная сессия владельца» (`docs/design/REQ-001-pixel-office.md`, шаг U2).
-3. Интерактивной сессии нужно принять диалог доверия к папке: пока он не принят, Claude Code не запускает хуки из файлов настроек (<https://code.claude.com/docs/en/hooks>, раздел «Workspace trust»).
+1. Start the server (the command above) and open the link.
+2. Start Claude Code from the folder `sai/` (in the VS Code extension — the working folder `sai/`). Only the Claude Code sessions whose settings have the Pixel Office handlers are seen: the sessions started in `sai/` — by `sai/.claude/settings.json` (<https://code.claude.com/docs/en/settings>), and the sessions of another folder — only if the handlers are copied into the project settings of that folder; a session started in another folder is not seen if the same handlers are not there (`decisions/0007`). Whether the VS Code extension reads the hooks of `sai/` without a trust dialog is still an open question: the step "ordinary session of the owner" checks it (`docs/design/REQ-001-pixel-office.md`, step U2).
+3. An interactive session must accept the dialog of trust in the folder: until it is accepted, Claude Code does not start the hooks from the settings files (<https://code.claude.com/docs/en/hooks>, section "Workspace trust").
 
-События записываются, только пока сервер запущен: то, что произошло при остановленном сервере, теряется (см. «Ограничения»).
+Events are recorded only while the server is running: what happened while the server was stopped is lost (see "Limits").
 
-### Слова экрана и одно название роли
+### The words of the screen and the single name of a role
 
-Слова на странице понятны тому, кто не знает, как устроен Claude Code, и говорят то же, что прежние технические (таблица «было → стало» — REQ-048 в `docs/requirements.yaml`). Коротко:
+The words on the page are clear to a person who does not know how Claude Code works, and they say the same as the earlier technical ones (the table "was → became" is REQ-048 in `docs/requirements.yaml`). In short:
 
-| На экране                        | Что значит                                                                                                                              |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| «на связи»                       | сервер Pixel Office отвечает странице                                                                                                   |
-| «Источник событий — Claude Code» | пометка шапки называет, откуда страница берёт события; она не обещает, что каждая строка журнала настоящая                              |
-| «не подтверждена»                | строка есть в журнале, но Pixel Office не признал её настоящим событием от Claude Code (правило чтения); на задачи и офис она не влияет |
-| «запуск»                         | один запуск агента с его номером (`agent_id`) — то, что прежде называлось «экземпляр»                                                   |
-| «разговор»                       | сессия Claude Code: «Открыт разговор с Claude Code», «Закрыт разговор с Claude Code», «разговоров идёт: N»                              |
+| On the screen                    | What it means                                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| «на связи»                       | the Pixel Office server answers the page                                                                                                                                                    |
+| «Источник событий — Claude Code» | the note of the header names where the page takes events from; it does not promise that every row of the journal is genuine                                                                 |
+| «не подтверждена»                | the row is in the journal, but Pixel Office did not recognise it as a genuine event from Claude Code (a reading rule); it does not influence tasks or the office                            |
+| «запуск»                         | one start of an agent with its number (`agent_id`) — what was earlier called «экземпляр» (instance)                                                                                         |
+| «разговор»                       | a Claude Code session: «Открыт разговор с Claude Code» (a conversation with Claude Code is opened), «Закрыт разговор с Claude Code» (closed), «разговоров идёт: N» (conversations going: N) |
 
-Название роли одно везде — на холсте, в кнопке легенды, на доске в переговорной, в панели «Задачи», в окне «Просмотр истории» (столбец «Агент» и «кто» хронологии) и в заголовке карточки: название простыми словами по таблице `ROLE_NAMES` (`texts.js`). На холсте подпись стоит у стола роли, под местом, в одну или две строки по словам, без «…»; у идущего персонажа своей подписи нет, поэтому подписи не накладываются. Доска в переговорной — три столбца, название в столбце — до трёх строк; роли, которые не поместились, — «+N». Код роли (например, «Sai Security Reviewer (SECURITY-REVIEWER)») на виду не стоит: он есть в подсказке «код роли: …» у названия в легенде и в панели (если код отличается от названия) и строкой «код роли: …» в раскрытии «Полные номера и код роли» карточки запуска.
+The name of a role is one everywhere — on the canvas, in the legend button, on the board in the meeting room, in the panel «Задачи», in the window «Просмотр истории» (history view) (the column «Агент» and the «кто» (who) of the timeline) and in the title of the card: a plain-words name by the table `ROLE_NAMES` (`texts.js`). On the canvas the label stands at the desk of the role, under the place, in one or two lines by words, without «…»; a walking character has no label of its own, so labels do not overlap. The board in the meeting room has three columns, the name in a column takes up to three lines; roles that did not fit are shown as «+N». The role code (for example, «Sai Security Reviewer (SECURITY-REVIEWER)») is not in plain view: it is in the hint «код роли: …» (role code) at the name in the legend and in the panel (if the code differs from the name) and in the line «код роли: …» in the fold «Полные номера и код роли» (full numbers and role code) of the agent run card.
 
-### Блок «Сейчас»
+### The block «Сейчас» (Now)
 
-В блоке «Сейчас» — строка на агента: по одной строке на каждый элемент «в работе», в том же порядке, что раздел «Текущие» панели «Задачи». Слов «и ещё N» нет. Строка задачи — «<название роли> — <описание>», без описания — только название; у основной сессии — «Основная сессия — обрабатывает запрос». Роль берётся из `agent_type` события начала, описание — из `description` записи о передаче задания (связь только по идентификаторам). Название роли — то же простыми словами, что везде (переводится только роль Sai вида «Sai … (КОД)» с кодом из таблицы; любая другая роль показана как пришла, целиком). Ни название, ни описание не обрезаются: строки переносятся, а если строк больше, чем помещается, блок прокручивается внутри себя (получает фокус по Tab, листается стрелками). Справа в блоке — «в работе: N» и, когда строки не помещаются, кнопка «Показать всех (N)»: она показывает все строки одним списком поверх страницы и становится «Скрыть»; «Скрыть», Escape или нажатие вне списка закрывают его, фокус возвращается на кнопку; новые события обновляют и открытый список. Когда «в работе» ничего нет — «Сейчас: в работе ничего нет» и, если есть элементы без подтверждения, « · без свежих данных: N»; подписи и кнопки тогда нет.
+The block «Сейчас» has a row per agent: one row for each element «в работе», in the same order as the section «Текущие» of the panel «Задачи». There are no words «и ещё N» (and N more). The row of a task is «<role name> — <description>»; without a description — only the name; for the main session — «Основная сессия — обрабатывает запрос» (Main session — is handling a request). The role is taken from the `agent_type` of the start event, the description from the `description` of the task-handover record (the link is only by identifiers). The role name is the same plain-words one as everywhere (only a Sai role of the kind «Sai … (CODE)» with a code from the table is translated; any other role is shown as it came, in full). Neither the name nor the description is cut: the rows wrap, and if there are more rows than fit, the block scrolls inside itself (it gets focus with Tab and is scrolled with the arrows). On the right of the block is «в работе: N» and, when the rows do not fit, the button «Показать всех (N)»: it shows all rows as one list over the page and becomes «Скрыть» (hide); «Скрыть», Escape or a click outside the list close it, and the focus returns to the button; new events update an open list too. When nothing is «в работе» — «Сейчас: в работе ничего нет» (Now: nothing is working) and, if there are elements without confirmation, « · без свежих данных: N»; there is then no label and no button.
 
-### Журнал понятными словами
+### The journal in plain words
 
-Каждая строка журнала говорит, что произошло, словами одной таблицы (`EVENT_TABLE` в `tools/src/pixel-office/public/texts.js`); «{роль}» — название роли из этой же строки. Строка — только событие: слов состояний и возраста в ней нет. Полные тексты «что значит» и «чего не доказывает» — в таблице и в раскрытии строки; ниже — коротко.
+Every row of the journal says what happened, in words of one table (`EVENT_TABLE` in `tools/src/pixel-office/public/texts.js`); «{роль}» ({role}) is the role name from the same row. A row is only an event: it has no words of states or age. The full texts «что значит» (what it means) and «чего не доказывает» (what it does not prove) are in the table and in the fold of the row; below, in short.
 
-| Событие                             | Слова строки                                  | Что значит                                                        | Чего это не доказывает                                    |
-| ----------------------------------- | --------------------------------------------- | ----------------------------------------------------------------- | --------------------------------------------------------- |
-| `SessionStart`                      | Открыт разговор с Claude Code                 | начат новый разговор (сессия) или продолжен прежний               | что началась работа или пришёл запрос                     |
-| `SessionEnd`                        | Закрыт разговор с Claude Code                 | разговор закончился; причину Claude Code не сообщает              | что работа доведена до конца                              |
-| `UserPromptSubmit` (владелец)       | Владелец отправил запрос                      | человек отправил сообщение в основную сессию                      | что запрос понят или сделан                               |
-| `UserPromptSubmit` (служебное)      | В сессию пришло служебное сообщение           | сообщение от системы, а не от человека                            | что его написал человек                                   |
-| `UserPromptSubmit` (вид не записан) | В сессию пришло сообщение                     | кто написал, в строке не записано                                 | что его написал человек                                   |
-| `Stop`                              | Основная сессия вернула ответ                 | основная сессия закончила очередной ответ                         | что вся работа закончена или удалась                      |
-| `SubagentStart` (первое)            | Агент «{роль}» получил задание и начал работу | Claude Code запустил агента этой роли                             | какое задание и кто его дал                               |
-| `SubagentStart` (повторное)         | Агент «{роль}» продолжил работу               | тот же агент снова начал работу                                   | что прежняя работа удалась                                |
-| `SubagentStop`                      | Агент «{роль}» закончил работу и вернул ответ | агент вернул ответ; итог не записан                               | что задание сделано и ответ верен                         |
-| `PostToolUse`                       | Задание передано агенту «{роль}»              | передавший запустил агента                                        | что агент закончил; время записи — не время начала работы |
-| запись оркестратора                 | Оркестратор записал, как понял запрос         | запись, которую оркестратор сделал сам; не событие от Claude Code | что работа идёт или сделана так, как записано             |
-| строка «не подтверждена»            | слова её вида и пометка «не подтверждена»     | Pixel Office не признал строку настоящим событием                 | что событие было                                          |
+| Event                                  | Words of the row                                                                                | What it means                                                             | What it does not prove                                                         |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `SessionStart`                         | Открыт разговор с Claude Code                                                                   | a new conversation (session) was begun or an earlier one was continued    | that work began or a request came                                              |
+| `SessionEnd`                           | Закрыт разговор с Claude Code                                                                   | the conversation ended; Claude Code does not give the reason              | that the work was brought to the end                                           |
+| `UserPromptSubmit` (owner)             | Владелец отправил запрос (the owner sent a request)                                             | a person sent a message to the main session                               | that the request was understood or done                                        |
+| `UserPromptSubmit` (service)           | В сессию пришло служебное сообщение (a service message came into the session)                   | a message from the system, not from a person                              | that a person wrote it                                                         |
+| `UserPromptSubmit` (kind not recorded) | В сессию пришло сообщение (a message came into the session)                                     | who wrote it is not recorded in the row                                   | that a person wrote it                                                         |
+| `Stop`                                 | Основная сессия вернула ответ (the main session returned an answer)                             | the main session finished its next answer                                 | that all work is finished or succeeded                                         |
+| `SubagentStart` (first)                | Агент «{роль}» получил задание и начал работу (the agent «{role}» got a task and began work)    | Claude Code started an agent of this role                                 | what the task is and who gave it                                               |
+| `SubagentStart` (repeated)             | Агент «{роль}» продолжил работу (the agent continued work)                                      | the same agent began work again                                           | that the earlier work succeeded                                                |
+| `SubagentStop`                         | Агент «{роль}» закончил работу и вернул ответ (the agent finished work and returned an answer)  | the agent returned an answer; the result is not recorded                  | that the task is done and the answer is right                                  |
+| `PostToolUse`                          | Задание передано агенту «{роль}» (the task was handed to the agent)                             | the one who handed over started the agent                                 | that the agent finished; the time of the record is not the time the work began |
+| orchestrator record                    | Оркестратор записал, как понял запрос (the orchestrator recorded how it understood the request) | a record that the orchestrator made itself; not an event from Claude Code | that work is going on or is done as recorded                                   |
+| row «не подтверждена»                  | the words of its kind and the note «не подтверждена»                                            | Pixel Office did not recognise the row as a genuine event                 | that the event took place                                                      |
 
-Начало считается повторным, если раньше в журнале есть начало того же агента с источником `REAL` (решение `0055`). Записи оркестратора — строки журнала своим источником («кто» — «Оркестратор»): входят в фильтр «Всё» и в счёт «N из M», не входят в «Работа» и «Офис», не меняют задач, состояний, офиса и блока «Сейчас»; текста записи и номера требования в строке нет — они в раскрытии. У строки «не подтверждена» значение поля `source` видно только в раскрытии «Технические поля».
+A start is counted as repeated if earlier in the journal there is a start of the same agent with the source `REAL` (decision `0055`). Orchestrator records are rows of the journal with their own source («кто» — «Оркестратор»): they are in the filter «Всё» and in the count «N из M», they are not in «Работа» and «Офис», they do not change tasks, states, the office and the block «Сейчас»; the text of the record and the requirement number are not in the row — they are in the fold. In a row «не подтверждена» the value of the field `source` is visible only in the fold «Технические поля» (technical fields).
 
-У каждой строки справа слово «подробнее» (у раскрытой — «свернуть»). Нажатие на строку (или Enter и Space, когда строка в фокусе по Tab) раскрывает событие под ней; повторное нажатие, кнопка «Закрыть» или Escape закрывают раскрытие, фокус возвращается на строку. Раскрытие начинается с главного — «Что произошло» и «Чего это не доказывает», — затем «Когда» (дата, время с секундами и пояс), «Источник» («Claude Code», «запись оркестратора» или «не Claude Code»), «Сессия» (8 знаков и полностью), «Агент», «Задача» (её состояние сейчас, с подписью «сейчас»), у записи оркестратора — её текст, номер требования и время запроса, у помеченной строки — пометка «не подтверждена: …» с причиной, и закрытые по умолчанию «Технические поля» (все поля строки, кроме текста сообщения владельца). После раскрытия журнал прокручивается так, что верх раскрытия встаёт у верхнего края списка. Новая строка и обновление страницы раскрытие не закрывают.
+Each row has at its right the word «подробнее» (more) (for an open one — «свернуть», fold). A click on the row (or Enter and Space when the row is in focus by Tab) opens the event under it; a second click, the button «Закрыть» (close) or Escape close the fold, and the focus returns to the row. The fold begins with the main thing — «Что произошло» (what happened) and «Чего это не доказывает» (what this does not prove) — then «Когда» (when) (date, time with seconds and the time zone), «Источник» (source) («Claude Code», «запись оркестратора» (orchestrator record) or «не Claude Code»), «Сессия» (session) (8 characters and in full), «Агент», «Задача» (task) (its state now, with the label «сейчас»), for an orchestrator record — its text, the requirement number and the time of the request, for a marked row — the note «не подтверждена: …» with the reason, and the «Технические поля» closed by default (all fields of the row except the text of the owner's message). After the fold opens, the journal is scrolled so that the top of the fold stands at the top edge of the list. A new row and a page refresh do not close the fold.
 
-Переходы из раскрытия — кнопки под своим полем: у «Агента» — «открыть агента» (у передачи задания — «кто передал»), у «Задачи» — «кому» (у передачи задания), «к задаче в панели» (элемент «Задач» помечается, прокручивается в видимую часть и получает фокус; если он не среди последних 300 элементов панели — вместо кнопки текст «задача не показана в панели: там последние 300 элементов»), «события этой задачи» (фильтр «Задача») и «открыть историю запроса» (если событие вне окна запроса владельца — текст «запрос не определён: событие вне окна запроса владельца»). У строки запроса владельца отдельная кнопка «открыть историю запроса».
+Jumps from the fold are buttons under their own field: at «Агента» — «открыть агента» (open the agent) (for a task handover — «кто передал», who handed over), at «Задачи» — «кому» (to whom) (for a task handover), «к задаче в панели» (to the task in the panel) (the element of «Задач» is marked, scrolled into view and gets focus; if it is not among the last 300 elements of the panel — instead of the button the text «задача не показана в панели: там последние 300 элементов» (the task is not shown in the panel: it holds the last 300 elements)), «события этой задачи» (events of this task) (the filter «Задача») and «открыть историю запроса» (open the history of the request) (if the event is outside the window of the owner's request — the text «запрос не определён: событие вне окна запроса владельца» (the request is not determined: the event is outside the window of the owner's request)). The row of an owner's request has its own button «открыть историю запроса».
 
-Задним числом в строке могут меняться только два поля: описание у начала и окончания агента (оно появляется, когда придёт запись о передаче задания, и пропадает, если таких записей станет несколько) и пометка «не подтверждена» (конфликт времени, время из будущего) — вместе с ней в раскрытии тексты «что значит» и «чего не доказывает» переходят между случаем пометки и случаем вида строки. Слова события, «кто», время, сессия и источник не меняются.
+Only two fields in a row can change after the fact: the description at the start and the end of an agent (it appears when the task-handover record comes, and disappears if there become several such records) and the note «не подтверждена» (a time conflict, a time from the future) — together with it, in the fold the texts «что значит» and «чего не доказывает» pass between the case of the note and the case of the kind of the row. The words of the event, «кто», the time, the session and the source do not change.
 
-### Поиск и фильтры журнала
+### Search and filters of the journal
 
-Над журналом — поле «Поиск в журнале» и кнопка «Фильтры». Поиск действует по мере ввода, без учёта регистра, и просматривает слова события, «кто» (название и код роли того, кто в «кто»), описание задачи, полные номера сессии и агентов и текст записи оркестратора; текст сообщения владельца поиск не просматривает. Кнопка «Фильтры» открывает списки «Сессия», «Агент» и «Тип события» (варианты — только из журнала; «Агент» — тот, кто в «кто» строки, а не получатель задания). Фильтр «Задача» ставят переходы «события этой задачи» и «события в журнале»; он виден пометкой «Задача: <название> номер <8 знаков>» с кнопкой снятия. Все фильтры, поиск и прежние «Всё / Работа / Офис» действуют вместе; счётчик «N из M» считает строки под ними; выбранное не сбрасывается новыми событиями. «Сбросить фильтры» снимает всё и ставит «Всё». Если под выбранное не подходит ни одна строка — «Под выбранные фильтры не подходит ни одно событие» и кнопка «Сбросить фильтры». Журнал показывает последние 200 подходящих строк; кнопка «Показать более ранние» над ними добавляет ещё 200, смена фильтра или поиска возвращает показ к последним 200.
+Above the journal are the field «Поиск в журнале» (search in the journal) and the button «Фильтры» (filters). The search works as you type, without regard to case, and goes through the words of the event, «кто» (the name and code of the role of the one in «кто»), the description of the task, the full numbers of the session and of the agents, and the text of the orchestrator record; the search does not go through the text of the owner's message. The button «Фильтры» opens the lists «Сессия», «Агент» and «Тип события» (the options come only from the journal; «Агент» is the one in «кто» of the row, not the receiver of the task). The filter «Задача» is set by the jumps «события этой задачи» and «события в журнале» (events in the journal); it is visible by the note «Задача: <название> номер <8 знаков>» (Task: <name> number <8 characters>) with a button to remove it. All filters, the search and the earlier «Всё / Работа / Офис» act together; the counter «N из M» counts the rows under them; what is chosen is not reset by new events. «Сбросить фильтры» (reset filters) removes everything and sets «Всё». If no row fits the choice — «Под выбранные фильтры не подходит ни одно событие» (no event fits the chosen filters) and the button «Сбросить фильтры». The journal shows the last 200 fitting rows; the button «Показать более ранние» (show earlier) above them adds 200 more, and a change of the filter or search returns the view to the last 200.
 
-### Карточка запуска агента
+### The agent run card
 
-Карточка запуска (экземпляра агента) — один запуск со своим номером (`agent_id`); у роли их может быть несколько. Её открывает нажатие на персонажа роли, на подпись у его стола или на клетку стола (стол с ноутбуком и место за ним — даже когда персонаж ушёл по маршруту), Enter или Space на кнопке роли в легенде, кнопки «открыть агента», «кто передал», «кому» в раскрытии события и кнопка «агент» элемента панели «Задачи». Если точка попала и в персонажа, и в стол, открывается карточка персонажа. Какой запуск открывается: если у роли есть запуск «в работе» — первый из них; иначе запуск, требующий внимания («нет свежих данных» или «сервер перезапускался, события не записывались»), с самым поздним собственным событием (начало или окончание этого агента); иначе — запуск с самым поздним собственным событием.
+The run card (an instance of an agent) is one start with its own number (`agent_id`); a role can have several. It is opened by a click on the character of the role, on the label at its desk or on the cell of the desk (the desk with a laptop and the place behind it — even when the character has walked away on a route), Enter or Space on the role button in the legend, the buttons «открыть агента», «кто передал», «кому» in the fold of an event and the button «агент» of an element of the panel «Задачи». If the point hit both a character and a desk, the card of the character opens. Which run opens: if the role has a run «в работе» — the first of them; otherwise a run that needs attention («нет свежих данных» or «сервер перезапускался, события не записывались»), with the latest own event (the start or the end of this agent); otherwise — the run with the latest own event.
 
-В карточке сразу видны: название роли, под ним — что роль делает (описание из справки, раздел «Роли команды»; у роли вне таблицы — «Описания этой роли нет: так её назвал Claude Code.»), «номер запуска <8 знаков> · номер разговора <8 знаков>» (полные номера, «Скопировать» и код роли — в раскрытии «Полные номера и код роли»), текущая задача (описание, написанное передавшим задание), три строки состояния, «Кто запустил» и переходы. Три строки различаются: «Задача» — состояние задачи и его основание (время последнего события сессии и возраст, время перезапуска сервера, окончания или закрытия сессии); «Агент» — последнее событие самого запуска (начало, продолжение или окончание) с временем и возрастом; «Рабочее место» — слово легенды роли («работает» или «свободен»). Стол на холсте — изображение роли, общее для всех её запусков, а не компьютер. «Кто запустил: Основная сессия» — кнопка: по ней открывается карточка основной сессии. Список «Все запуски этой роли» переключает карточку на другой запуск. В раскрытиях — «Задание передано» (запись о передаче пишет тот, кто передал задание; это не действие самого агента), «Начала работы», «Возвраты», «Кого запустил» и «Вся роль» (прежние разделы карточки роли).
+The card shows at once: the role name; under it, what the role does (the description from the help, the section «Роли команды» (roles of the team); for a role outside the table — «Описания этой роли нет: так её назвал Claude Code.» (there is no description of this role: this is how Claude Code named it)); «номер запуска <8 знаков> · номер разговора <8 знаков>» (run number · conversation number) (the full numbers, «Скопировать» (copy) and the role code are in the fold «Полные номера и код роли»); the current task (the description written by the one who handed over the task); three state rows; «Кто запустил» (who started) and the jumps. The three rows differ: «Задача» — the state of the task and its basis (the time of the last event of the session and the age, the time of the server restart, of the end or of the closing of the session); «Агент» — the last event of the run itself (a start, a continuation or an end) with the time and the age; «Рабочее место» (workplace) — the word of the role legend («работает» (works) or «свободен» (free)). The desk on the canvas is an image of the role, common to all its runs, and not a computer. «Кто запустил: Основная сессия» is a button: it opens the card of the main session. The list «Все запуски этой роли» (all runs of this role) switches the card to another run. In the folds: «Задание передано» (the task was handed over) (the handover record is written by the one who handed over the task; it is not an action of the agent itself), «Начала работы» (starts of work), «Возвраты» (returns), «Кого запустил» (whom it started) and «Вся роль» (the whole role) (the earlier sections of the role card).
 
-Чего карточка не знает: других действий агента (чтение файлов, команды, правки), сообщений между агентами (известны только передачи задания и окончания работы), ошибок и того, что агент ждёт человека — Claude Code этого не сообщает.
+What the card does not know: other actions of the agent (reading files, commands, edits), messages between agents (only task handovers and ends of work are known), errors, and that the agent waits for a person — Claude Code does not report this.
 
-### Карточка основной сессии и переходы
+### The main session card and the jumps
 
-Карточка основной сессии открывается нажатием на персонажа, подпись или стол основной сессии, кнопкой легенды «Основная сессия», кнопкой «открыть агента» у событий основной сессии в журнале, кнопкой «агент» строки основной сессии в панели и кнопкой «Основная сессия» в «Кто запустил». Она показывает одну строку основной сессии (один запрос): под заголовком — «Ваш разговор с Claude Code. Он принимает ваши сообщения и запускает агентов.», «номер разговора <8 знаков>» (полный номер и «Скопировать» — раскрытием), «Задача» — слово состояния и основание (время последнего события сессии и возраст, слова и время запроса, время ответа, закрывшее событие или время перезапуска сервера), «Рабочее место» и раскрытия «кого запустила в этом запросе», «Другие запросы этой сессии», «Другие сессии», «Вся основная сессия» (в нём «разговоров идёт: N» и прежние разделы). Сессия без запросов — «запросов в этой сессии не записано».
+The main session card is opened by a click on the character, the label or the desk of the main session, by the legend button «Основная сессия» (main session), by the button «открыть агента» at the events of the main session in the journal, by the button «агент» of the main session row in the panel and by the button «Основная сессия» in «Кто запустил». It shows one row of the main session (one request): under the title — «Ваш разговор с Claude Code. Он принимает ваши сообщения и запускает агентов.» (Your conversation with Claude Code. It accepts your messages and starts agents.), «номер разговора <8 знаков>» (the full number and «Скопировать» are in a fold), «Задача» — the word of the state and the basis (the time of the last event of the session and the age, the words and time of the request, the time of the answer, the closing event or the time of the server restart), «Рабочее место», and the folds «кого запустила в этом запросе» (whom it started in this request), «Другие запросы этой сессии» (other requests of this session), «Другие сессии» (other sessions), «Вся основная сессия» (the whole main session) (in it, «разговоров идёт: N» and the earlier sections). A session without requests — «запросов в этой сессии не записано» (no requests are recorded in this session).
 
-В обеих карточках — переходы «к задаче в панели» и «события в журнале»: оба закрывают карточку; первый помечает элемент в панели «Задачи» и ставит на него фокус (элемента нет среди последних 300 — текст вместо кнопки), второй ставит в журнале фильтр «Задача» этого запуска или строки, раскрывает последнюю её строку и ставит на неё фокус. Окно «Просмотр истории» из карточки не открывается: его открывают кнопки «открыть историю запроса» в панели «Задачи» и в журнале; если в этот момент открыта карточка, она закрывается (решение `0014`, решения 5 и 6), после закрытия окна фокус — на кнопке, которой его открыли.
+Both cards have the jumps «к задаче в панели» and «события в журнале»: both close the card; the first marks the element in the panel «Задачи» and puts focus on it (if the element is not among the last 300 — a text instead of the button), the second sets in the journal the filter «Задача» of this run or row, opens its last row and puts focus on it. The window «Просмотр истории» does not open from a card: it is opened by the buttons «открыть историю запроса» in the panel «Задачи» and in the journal; if a card is open at that moment, it is closed (decision `0014`, decisions 5 and 6); after the window is closed, the focus is on the button that opened it.
 
-Клавиатура: при открытии фокус на «×»; Tab и Shift+Tab ходят по кругу внутри карточки; раскрытия открываются Enter и Space; Escape, «×» или нажатие вне карточки закрывают её, и фокус возвращается на кнопку, которой открыли первую карточку цепочки (кнопку легенды, кнопку в раскрытии события или «агент» в панели; после нажатия на холст — кнопку легенды роли; решение `0059`). Обновление страницы не закрывает раскрытия и не уводит фокус.
+Keyboard: on opening, focus is on «×»; Tab and Shift+Tab go round inside the card; folds open with Enter and Space; Escape, «×» or a click outside the card close it, and the focus returns to the button that opened the first card of the chain (a legend button, a button in the fold of an event, or «агент» in the panel; after a click on the canvas — the legend button of the role; decision `0059`). A page refresh does not close the folds and does not move the focus.
 
-### Справка «Как пользоваться»
+### The help «Как пользоваться» (How to use)
 
-Последняя кнопка шапки — «Как пользоваться» со знаком «?» (в окнах до 599 px виден только знак). Она открывает справку простыми словами: что это за страница, как работать с командой агентов, роли команды, офис, «Сейчас», журнал, «Задачи», карточки, окно «Просмотр истории», цвета и состояния, клавиши, чего страница не показывает, словарь. Вверху справки — оглавление «Разделы»: кнопка раздела прокручивает справку к нему и ставит фокус на его заголовок. Та же кнопка открывается из пустого журнала.
+The last button of the header is «Как пользоваться» with the sign «?» (in windows up to 599 px only the sign is visible). It opens a help in plain words: what this page is, how to work with the team of agents, the roles of the team, the office, «Сейчас», the journal, «Задачи», the cards, the window «Просмотр истории», the colours and states, the keys, what the page does not show, a glossary. At the top of the help is the table of contents «Разделы» (sections): the button of a section scrolls the help to it and puts focus on its heading. The same button opens from an empty journal.
 
-Справка стоит рядом со страницей и ничего не перекрывает: в окнах сетки (от 1240 × 640) — полоса шириной 22 rem у правого края, страница сужается на эту ширину, холст пересчитывается; в остальных окнах — лист у нижнего края высотой в половину окна, страница над ним прокручивается и нажимается. Подложки нет, фокус не заперт; справка ничего на странице не меняет и событий не добавляет, страница по-прежнему отправляет только GET. Карточка и окно «Просмотр истории» открываются поверх справки; пока они открыты, справка не открывается. Закрыть справку — кнопкой «Закрыть», повторным нажатием «Как пользоваться» или Escape; фокус возвращается на кнопку, которой справку открыли, если он был внутри справки.
+The help stands next to the page and covers nothing: in grid windows (from 1240 × 640) it is a strip 22 rem wide at the right edge, the page narrows by this width, the canvas is recalculated; in other windows it is a sheet at the bottom edge with a height of half the window, the page above it scrolls and can be pressed. There is no backdrop, the focus is not locked; the help changes nothing on the page and adds no events, and the page still sends only GET. A card and the window «Просмотр истории» open over the help; while they are open, the help does not open. The help is closed with the button «Закрыть», with a second press of «Как пользоваться» or with Escape; the focus returns to the button that opened the help, if it was inside the help.
 
-Общий порядок Escape страницы: одно нажатие закрывает одно, первое открытое из списка — окно истории, карточку, подсказку «?», тур, список «Показать всех (N)», справку (если фокус в ней), приглашение в тур (если фокус в нём), подробности строки журнала (если фокус в этой строке), справку.
+The common order of Escape on the page: one press closes one thing, the first open one from this list — the history window, a card, a «?» hint, the tour, the list «Показать всех (N)», the help (if focus is in it), the invitation to the tour (if focus is in it), the details of a journal row (if focus is in this row), the help.
 
-Раздел «Роли команды» показывает все роли по группам (то же описание стоит в карточке роли сразу под её названием, а строка номеров карточки — «номер запуска <8 знаков> · номер разговора <8 знаков>»): название — как на странице (`ROLE_NAMES`), описание — по коду из константы описаний `texts.js`. Описания идут по `ROLE_NAMES`: если в `ROLE_NAMES` добавить роль без описания или без группы, тест справки покраснеет. Роль не из этого списка в разделе не появляется, а на странице показана так, как её назвал Claude Code.
+The section «Роли команды» shows all roles by groups (the same description stands in the role card right under its name, and the number row of the card is «номер запуска <8 знаков> · номер разговора <8 знаков>»): the name is as on the page (`ROLE_NAMES`), the description is by code from the constant of descriptions in `texts.js`. The descriptions go by `ROLE_NAMES`: if a role without a description or without a group is added to `ROLE_NAMES`, the test of the help turns red. A role not from this list does not appear in the section, and on the page it is shown as Claude Code named it.
 
-### Тур первого открытия
+### The tour of the first opening
 
-Тур сам не открывается. После первого ответа сервера или первой неудачной попытки связи в шапке перед «Как пользоваться» появляется приглашение «Впервые здесь? Покажу за минуту, что где.» с кнопками «Показать» и «Не сейчас»; оно ничего не перекрывает и фокус не забирает. «Показать» открывает тур из шести шагов: страница, офис, «Сейчас», журнал, «Задачи», кнопка справки. Подпись шага стоит рядом с подсвеченным элементом (жёлтая рамка) или у нижнего края в узких окнах; подложки нет, фокус не заперт, нажатия на страницу работают и тур не закрывают. Если элемента ещё нет (персонажей нет, «Сейчас» скрыт до первого ответа) или он пуст, показан запасной текст о том, что видно сейчас. Закрывают тур «Пропустить», «Закрыть тур», «×», Escape и открытие справки. Повторить тур — кнопкой «Показать тур по странице» в справке.
+The tour does not open by itself. After the first answer of the server or the first failed attempt of connection, an invitation appears in the header before «Как пользоваться»: «Впервые здесь? Покажу за минуту, что где.» (First time here? I will show in a minute what is where.) with the buttons «Показать» (show) and «Не сейчас» (not now); it covers nothing and does not take focus. «Показать» opens a tour of six steps: the page, the office, «Сейчас», the journal, «Задачи», the help button. The caption of a step stands next to the highlighted element (a yellow frame) or at the bottom edge in narrow windows; there is no backdrop, the focus is not locked, clicks on the page work and do not close the tour. If the element is not there yet (no characters, «Сейчас» is hidden until the first answer) or it is empty, a fallback text is shown about what is visible now. The tour is closed by «Пропустить» (skip), «Закрыть тур» (close the tour), «×», Escape and the opening of the help. To repeat the tour — the button «Показать тур по странице» (show the tour of the page) in the help.
 
-После «Не сейчас» или Escape в приглашении на его месте на 10 секунд появляется строка «Тур можно открыть позже: «Как пользоваться» → «Показать тур по странице».» с кнопкой «×» (её озвучивает читалка экрана); фокус переходит на «Как пользоваться». Строка уходит сама, по «×» или при открытии тура.
+After «Не сейчас» or Escape in the invitation, in its place for 10 seconds appears the line «Тур можно открыть позже: «Как пользоваться» → «Показать тур по странице».» (The tour can be opened later: …) with the button «×» (a screen reader announces it); the focus moves to «Как пользоваться». The line goes away by itself, on «×», or when the tour opens.
 
-Память — один ключ «pixel-office-tour» в хранилище браузера (`localStorage`) со значением «closed»: его пишут «Не сейчас», Escape в приглашении и любое закрытие тура; после этого ни приглашение, ни тур сами не появляются. Память — только в этом браузере и на этом адресе (127.0.0.1 с другим портом — другой адрес). Читает и пишет хранилище только модуль тура `public/tour.js`; данных журнала в нём нет. Если хранилище недоступно или отказывает, страница работает как обычно: приглашение показывается при каждой загрузке, тур открывается и закрывается.
+The memory is one key «pixel-office-tour» in the storage of the browser (`localStorage`) with the value «closed»: it is written by «Не сейчас», by Escape in the invitation and by any closing of the tour; after that neither the invitation nor the tour appears by itself. The memory is only in this browser and at this address (127.0.0.1 with another port is another address). The storage is read and written only by the tour module `public/tour.js`; there is no journal data in it. If the storage is unavailable or fails, the page works as usual: the invitation is shown at every load, and the tour opens and closes.
 
-### Подсказки «?» и пустые состояния
+### The «?» hints and the empty states
 
-У блока «Сейчас», заголовков «Журнал» и «Задачи» и у легенды офиса — знак «?». Подсказка открывается наведением мыши или фокусом клавиатуры и закрывается, когда они уходят; нажатие (мышью, касанием, Enter или пробелом) закрепляет её. На телефоне и планшете подсказку открывает касание «?»: она сразу закреплена, второе касание «?» или касание в другом месте страницы её закрывает. Закреплённую закрывают второе нажатие на «?», нажатие мимо неё (оно при этом работает на странице как обычно) и Escape. Открыта не больше одной подсказки; в узких окнах подсказка стоит у нижнего края окна.
+The block «Сейчас», the headings «Журнал» and «Задачи» and the legend of the office have a sign «?». A hint opens by mouse hover or by keyboard focus and closes when they go away; a press (by mouse, touch, Enter or space) pins it. On a phone and a tablet, a touch on «?» opens the hint: it is pinned at once, and a second touch on «?» or a touch in another place of the page closes it. A pinned one is closed by a second press on «?», a press beside it (which at the same time works on the page as usual) and Escape. No more than one hint is open; in narrow windows the hint stands at the bottom edge of the window.
 
-Пустые состояния: в пустом журнале после ответа сервера — «Чтобы здесь появились события:», четыре шага и кнопка «Как пользоваться»; в пустом офисе под холстом — когда появятся столы; в «Задачах» без задач и строк основной сессии — «Задач пока нет…». С первым событием они исчезают.
+Empty states: in an empty journal after the answer of the server — «Чтобы здесь появились события:» (so that events appear here:), four steps and the button «Как пользоваться»; in an empty office under the canvas — when the desks will appear; in «Задачи» without tasks and without rows of the main session — «Задач пока нет…» (no tasks yet…). With the first event they disappear.
 
-### Что где лежит
+### Where things are
 
-Журнал и секрет лежат вне репозитория — в каталоге `~/.sai-pixel-office/` (права 0700). Не в `sai/`, потому что `npm run snapshot` снимает весь `sai/`, а журнал менялся бы при каждой сессии любого прогона. Сервер создаёт в нём только эти пять файлов:
+The journal and the secret lie outside the repository — in the folder `~/.sai-pixel-office/` (rights 0700). Not in `sai/`, because `npm run snapshot` takes a snapshot of the whole `sai/`, and the journal would change with every session of any run. The server creates in it only these five files:
 
-| Файл                  | Права | Что в нём                                                                                                          |
-| --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------ |
-| `events.jsonl`        | 0600  | журнал: одна строка JSON на событие; только дописывается, ни сервер, ни страница его не перезаписывают и не чистят |
-| `server-starts.jsonl` | 0600  | по строке на каждый запуск сервера: время и число строк журнала в этот момент; только дописывается                 |
-| `write-secret`        | 0600  | секрет записи (32 случайных байта, 43 символа); создаётся при первом запуске; команда запуска его не печатает      |
-| `port`                | 0600  | порт, на котором работает сервер; пишется при каждом запуске, читает хук                                           |
-| `node-path`           | 0600  | путь к Node, под которым работает сервер; пишется при каждом запуске, читает `hook.sh`                             |
+| File                  | Rights | What is in it                                                                                                      |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
+| `events.jsonl`        | 0600   | the journal: one JSON line per event; only appended to, neither the server nor the page rewrites or cleans it      |
+| `server-starts.jsonl` | 0600   | a line for each start of the server: the time and the number of journal rows at that moment; only appended to      |
+| `write-secret`        | 0600   | the write secret (32 random bytes, 43 characters); created at the first start; the start command does not print it |
+| `port`                | 0600   | the port on which the server works; written at every start, read by the hook                                       |
+| `node-path`           | 0600   | the path to the Node under which the server works; written at every start, read by `hook.sh`                       |
 
-Журнал, записи запусков и секрет должны быть обычными файлами: на их месте ссылку сервер не читает и не пишет через неё, так что чужой файл не изменится: при запуске команда печатает ошибку и завершается с кодом 1, а у работающего сервера журнал отвечает ошибкой 500. Файлы `port` и `node-path` при запуске заменяются новыми. Если указать в качестве каталога состояния каталог, где уже лежат другие файлы (например, домашний), его права будут сужены до 0700.
+The journal, the records of starts and the secret must be ordinary files: in their place the server does not read a link and does not write through it, so another's file will not change: at start the command prints an error and ends with code 1, and for a running server the journal answers with the error 500. The files `port` and `node-path` are replaced with new ones at start. If as the state folder one gives a folder where other files already lie (for example, the home folder), its rights will be narrowed to 0700.
 
-Каталог можно сменить переменной `SAI_PIXEL_OFFICE_DIR` (абсолютный путь), одной и той же для сервера и для Claude Code; ключа `--dir` одного не хватает (ограничение 12). Вторая переменная — `SAI_NODE_FALLBACKS`: каталоги через двоеточие, где `hook.sh` ищет Node 22 (например, `<каталог Node 22>:<ещё один каталог>`); если её не задать, `hook.sh` ищет в стандартных каталогах Homebrew для node@22 (они записаны в `tools/src/pixel-office/hook.sh`).
+The folder can be changed with the variable `SAI_PIXEL_OFFICE_DIR` (an absolute path), the same one for the server and for Claude Code; the key `--dir` alone is not enough (limit 12). The second variable is `SAI_NODE_FALLBACKS`: folders separated by a colon where `hook.sh` looks for Node 22 (for example, `<Node 22 folder>:<one more folder>`); if it is not set, `hook.sh` looks in the standard Homebrew folders for node@22 (they are written in `tools/src/pixel-office/hook.sh`).
 
-### Что из входа хука хранится и что нет
+### What of the hook input is stored and what is not
 
-Хранится только нужное, чтобы видеть задачи: время срабатывания хука (UTC, ISO 8601 с миллисекундами), источник (`REAL` ставит сервер при записи), вид события, `session_id` и, если они есть во входе хука, `agent_id`, `agent_type`, `tool_use_id`, идентификатор запуска из вызова Agent (`tool_response.agentId`), `subagent_type` и описание задачи (`tool_input.description`, не длиннее 100 символов; длиннее — обрезается). У события `UserPromptSubmit` хранится ещё вид сообщения (`prompt_kind`: сообщение владельца или служебное) и — только у сообщения владельца — его текст после маскирования (`decisions/0011`; подробно — «Хранение текста» ниже).
+Only what is needed to see the tasks is stored: the time the hook fired (UTC, ISO 8601 with milliseconds), the source (`REAL` is set by the server at writing), the kind of event, `session_id` and, if they are in the hook input, `agent_id`, `agent_type`, `tool_use_id`, the identifier of the run from the Agent call (`tool_response.agentId`), `subagent_type` and the description of the task (`tool_input.description`, no longer than 100 characters; longer is cut). For the event `UserPromptSubmit` the kind of message is also stored (`prompt_kind`: an owner's message or a service one) and — only for an owner's message — its text after masking (`decisions/0011`; in detail — "Storing the text" below).
 
-Не хранится и не показывается: текст служебных сообщений, текст задачи субагента, ответы модели и результаты, входы и выходы инструментов, пути (`transcript_path`, `cwd` и другие), название сессии и всё прочее из входа хука. Журнал лежит на диске без шифрования и читается без входа; в полных текстах бывает что угодно — вставленные ключи и пароли, личные данные, — поэтому сохраняемый текст маскируется, ограничен по длине, а хранение можно выключить.
+Not stored and not shown: the text of service messages, the text of the subagent's task, the answers of the model and results, inputs and outputs of tools, paths (`transcript_path`, `cwd` and others), the name of the session and everything else from the hook input. The journal lies on disk without encryption and is read without a login; in full texts there can be anything — pasted keys and passwords, personal data — so the stored text is masked, limited in length, and the storing can be turned off.
 
-### Хранение текста
+### Storing the text
 
-По `decisions/0011` журнал хранит два вида текста, и больше никакого:
+By `decisions/0011` the journal stores two kinds of text and no more:
 
-- **текст сообщения владельца** (событие `UserPromptSubmit`) — после маскирования, до 4 000 знаков; длиннее — обрезается, и строка получает пометку `prompt_truncated`;
-- **запись оркестратора «как понял»** — до 2 000 знаков, после маскирования; её пишет команда `pixel-office-note` (ниже).
+- **the text of the owner's message** (the event `UserPromptSubmit`) — after masking, up to 4 000 characters; longer is cut, and the row gets the note `prompt_truncated`;
+- **the orchestrator's record "how I understood"** — up to 2 000 characters, after masking; it is written by the command `pixel-office-note` (below).
 
-Не хранятся: ответы модели, входы и выходы инструментов, сообщения агентов и служебные сообщения. Служебное сообщение хук узнаёт по метке в начале текста (`<system-reminder>`, `[SYSTEM NOTIFICATION`, `<task-notification`, `Another Claude session`, `This session is being continued`): у такой строки есть только вид `service`, текста нет.
+Not stored: the answers of the model, inputs and outputs of tools, messages of agents and service messages. A service message is recognised by the hook by a mark at the start of the text (`<system-reminder>`, `[SYSTEM NOTIFICATION`, `<task-notification`, `Another Claude session`, `This session is being continued`): such a row has only the kind `service`, and no text.
 
-**Маскирование.** Найденный секрет заменяется меткой «[скрыто]». Маскируют три места: хук до отправки, команда до отправки и сервер до записи. Правила M1–M10: блок PEM (`-----BEGIN` … `-----END …-----`, без конца — до конца текста); значение заголовка `Authorization` до конца строки; `пользователь:пароль` в адресе вида `схема://пользователь:пароль@хост`; ключи `sk-…` (16 и больше знаков), `ghp_`, `gho_`, `ghs_`, `github_pat_` (20 и больше знаков), `AKIA…`/`ASIA…` (ровно 16 знаков) — в том числе сразу после `=`, `_`, `-` или `:` (`AWS_ACCESS_KEY_ID=AKIA…`, `K=ghp_…`), но не после буквы или цифры; три части через точку (как у JWT); значение после `Bearer`; значение после `token`, `secret`, `password`, `passwd`, `api_key`, `apikey`, `authorization` с `=` или `:` (без учёта регистра), в том числе когда имя — конец переменной после `_` или `-` (`DB_PASSWORD=`, `GITHUB_TOKEN=`) и когда имя — ключ JSON в кавычках (`"password": …`); значение в кавычках (`'`, `"` или `` ` ``) после такого имени и после `Bearer` скрывается вместе с кавычками — до такой же закрывающей кавычки в той же строке (`\` перед кавычкой её экранирует) или, если её нет, до конца строки: `password="primer 42"` → `password=[скрыто]`, пустое `password=""` не меняется; длинная случайная строка — 32 и больше знаков из букв, цифр и `_ + = -`, в которой есть строчная буква и цифра или прописная, если она не часть пути.
+**Masking.** A found secret is replaced with the mark «[скрыто]» (hidden). Three places mask: the hook before sending, the command before sending, and the server before writing. The rules M1–M10: a PEM block (`-----BEGIN` … `-----END …-----`, without an end — to the end of the text); the value of the header `Authorization` to the end of the line; `user:password` in an address of the form `scheme://user:password@host`; keys `sk-…` (16 and more characters), `ghp_`, `gho_`, `ghs_`, `github_pat_` (20 and more characters), `AKIA…`/`ASIA…` (exactly 16 characters) — including right after `=`, `_`, `-` or `:` (`AWS_ACCESS_KEY_ID=AKIA…`, `K=ghp_…`), but not after a letter or a digit; three parts through a dot (like a JWT); the value after `Bearer`; the value after `token`, `secret`, `password`, `passwd`, `api_key`, `apikey`, `authorization` with `=` or `:` (without regard to case), including when the name is the end of a variable after `_` or `-` (`DB_PASSWORD=`, `GITHUB_TOKEN=`) and when the name is a JSON key in quotes (`"password": …`); a value in quotes (`'`, `"` or `` ` ``) after such a name and after `Bearer` is hidden together with the quotes — up to the same closing quote in the same line (a `\` before a quote escapes it) or, if there is none, to the end of the line: `password="primer 42"` → `password=[скрыто]`, an empty `password=""` does not change; a long random string — 32 and more characters of letters, digits and `_ + = -`, in which there is a lowercase letter and a digit, or an uppercase one, if it is not part of a path.
 
-**Следствие правила M7.** Всякий отрезок из трёх частей через точку маскируется, а не только JWT. Поэтому в сохранённом тексте вместо имён файлов вида `a.test.js` и номеров версий вида `22.21.1` (а также имён вида `www.example.org`) может стоять «[скрыто]». Две части (`panels.js`) и четыре (`127.0.0.1`) не маскируются.
+**A consequence of the rule M7.** Any piece of three parts through a dot is masked, not only a JWT. So in the stored text, instead of file names like `a.test.js` and version numbers like `22.21.1` (and names like `www.example.org`), «[скрыто]» can stand. Two parts (`panels.js`) and four (`127.0.0.1`) are not masked.
 
-**Остаточный риск.** Маскирование — по образцам, поэтому остаточный риск есть. Не распознаются: секрет в произвольной форме с пробелами; секрет словами («пароль — имя кота и год»); секрет base64 со знаком «/» или «.»; секрет из одних прописных букв и цифр; секрет короче 32 знаков без имени из правила M9 и без префикса `sk-`, `ghp_`, `AKIA` и подобных. Значение в кавычках после имени из M9 и после `Bearer` теперь скрывается. Остаются нескрытыми:
+**Residual risk.** Masking is by patterns, so there is a residual risk. Not recognised: a secret in an arbitrary form with spaces; a secret in words («пароль — имя кота и год», password — the name of the cat and a year); a base64 secret with the sign «/» or «.»; a secret of only uppercase letters and digits; a secret shorter than 32 characters without a name from the rule M9 and without a prefix `sk-`, `ghp_`, `AKIA` and the like. A value in quotes after a name from M9 and after `Bearer` is now hidden. These stay not hidden:
 
-- имя из M9, слитое с другим словом без `_` или `-` перед ним (`mypassword=…`), и имена вне перечня M9 (`SECRET_ACCESS_KEY=…`, `PRIVATE_KEY=…`, `pwd=…`, `api-key: …`) — их значение скрывает только правило длинной строки (32 и больше знаков, без «/» и «.»);
-- пробел перед `=` или `:` (`password = …`) и значение через пробел без знака (`--password …`);
-- в значении без кавычек — часть после кавычки внутри (`password=ab"cd`: `cd` остаётся);
-- значение в кавычках, продолженное на следующей строке, — скрывается только до конца первой строки;
-- типографские кавычки (« », “ ”) — не кавычки для этих правил;
-- значение в экранированных кавычках (`curl -d "{\"password\":\"…\"}"` не скрывается совсем, а в `password=\"…\"` остаётся открытым);
-- знак присваивания из двух символов: в `password=>"x"` и `PASSWORD:="x"` скрывается только знак после первого, значение остаётся.
+- a name from M9 fused with another word without `_` or `-` before it (`mypassword=…`), and names outside the list of M9 (`SECRET_ACCESS_KEY=…`, `PRIVATE_KEY=…`, `pwd=…`, `api-key: …`) — their value is hidden only by the rule of the long string (32 and more characters, without «/» and «.»);
+- a space before `=` or `:` (`password = …`) and a value after a space without a sign (`--password …`);
+- in a value without quotes — the part after a quote inside (`password=ab"cd`: `cd` stays);
+- a value in quotes continued on the next line — hidden only to the end of the first line;
+- typographic quotes (« », “ ”) are not quotes for these rules;
+- a value in escaped quotes (`curl -d "{\"password\":\"…\"}"` is not hidden at all, and in `password=\"…\"` it stays open);
+- an assignment sign of two characters: in `password=>"x"` and `PASSWORD:="x"` only the sign after the first one is hidden, the value stays.
 
-**Следствие правила M9.** Имя на конце переменной скрывает и не-секреты: `max_token=1000` → `max_token=[скрыто]`.
+**A consequence of the rule M9.** A name at the end of a variable hides non-secrets too: `max_token=1000` → `max_token=[скрыто]`.
 
-Не вставляйте секреты в сообщения; если вставили — сотрите историю (ниже).
+Do not paste secrets into messages; if you pasted one — erase the history (below).
 
-**Как отключить.** `SAI_PIXEL_OFFICE_STORE_TEXT=0` — хранение выключено (любое значение, кроме пустого и `1`, тоже выключает). Хук тогда пишет только вид сообщения, команда ничего не отправляет и отвечает «хранение текста отключено», сервер отказывает записи с текстом. Важно: переменную SAI_PIXEL_OFFICE_STORE_TEXT задавать и у сервера, и у Claude Code (в обоих местах). Если хранение выключено только у сервера, а хук Claude Code всё ещё шлёт `prompt_text`, сервер отвечает 400 и событие запроса теряется целиком (известный риск).
+**How to turn off.** `SAI_PIXEL_OFFICE_STORE_TEXT=0` — storing is turned off (any value except empty and `1` also turns it off). The hook then writes only the kind of the message, the command sends nothing and answers «хранение текста отключено» (storing of text is turned off), the server refuses a record with text. Important: set the variable SAI_PIXEL_OFFICE_STORE_TEXT both for the server and for Claude Code (in both places). If storing is turned off only for the server, and the Claude Code hook still sends `prompt_text`, the server answers 400 and the request event is lost entirely (a known risk).
 
-**Запись оркестратора.** Команда из `tools/` (пример выдуманный):
+**The orchestrator record.** A command from `tools/` (the example is made up):
 
     npm run pixel-office-note -- --text "сделать черновик раздела" --req REQ-NNN
 
-Текст передаётся только через `--text`. Необязательные ключи: `--req` (номер требования вида `REQ-NNN`), `--session` (`session_id` сессии), `--request-time` (время сообщения владельца, ISO UTC с миллисекундами). Без `--request-time` сервер сам привязывает запись к сообщению владельца; без --session привязка идёт по последнему сообщению владельца во всём журнале, и при двух параллельных сессиях запись может попасть на чужое сообщение; ORCH `--session` не передаёт (он не видит свой `session_id`), так что этот риск принят. Команда ходит только на `127.0.0.1` и на порт из файла `port`, ждёт ответа не дольше 3 секунд и не печатает ни секрет, ни текст записи; код 0 — запись принята, справка или хранение выключено, 1 — сервер не запущен или отказал, 2 — ошибка в параметрах.
+The text is passed only through `--text`. Optional keys: `--req` (a requirement number of the form `REQ-NNN`), `--session` (the `session_id` of the session), `--request-time` (the time of the owner's message, ISO UTC with milliseconds). Without `--request-time` the server itself ties the record to the owner's message; without --session the tie goes to the last owner's message in the whole journal, and with two parallel sessions the record can land on another's message; ORCH does not pass `--session` (it does not see its own `session_id`), so this risk is accepted. The command goes only to `127.0.0.1` and to the port from the file `port`, waits for an answer no longer than 3 seconds and prints neither the secret nor the text of the record; code 0 — the record is accepted, or help, or storing is turned off; 1 — the server is not running or refused; 2 — an error in the parameters.
 
-**Пути записи.** Их два: `POST /api/events` (события хуков) и `POST /api/note` (записи оркестратора). Оба подписаны одним секретом из `write-secret` и принимаются только на `127.0.0.1`. Источник (`REAL` или `ORCH`) и время записи оркестратора ставит сервер.
+**The write paths.** There are two: `POST /api/events` (hook events) and `POST /api/note` (orchestrator records). Both are signed with one secret from `write-secret` and are accepted only on `127.0.0.1`. The source (`REAL` or `ORCH`) and the time of the orchestrator record are set by the server.
 
-**Как стереть историю.** Остановить сервер и удалить `~/.sai-pixel-office/events.jsonl` (и вместе с ним `server-starts.jsonl`).
+**How to erase the history.** Stop the server and delete `~/.sai-pixel-office/events.jsonl` (and with it `server-starts.jsonl`).
 
-### Как это устроено
+### How it is built
 
-- В Sai хуки заданы только в `sai/.claude/settings.json` (копия обработчиков в настройках проекта папки, где начинаются сессии владельца, — только по `decisions/0007`, это не часть Sai): по одному обработчику на события `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `SubagentStart`, `SubagentStop` и `PostToolUse` (для инструмента Agent). Обработчик — команда, синхронная, с `timeout` 4 секунды.
-- Команда запускает `tools/src/pixel-office/hook.sh`, а тот находит Node 22: сначала путь из файла `node-path`, затем `node` из `PATH`, если это Node 22, затем каталоги из `SAI_NODE_FALLBACKS`. Если Node 22 нет, хук молча завершается.
-- `hook.js` ставит время по часам компьютера в момент срабатывания, оставляет только разрешённые поля, подписывает запрос секретом из файла (HMAC-SHA256; сам секрет по сети не передаётся) и отправляет его на `127.0.0.1`. При любом сбое — сервер не запущен, не отвечает, отказал, нет секрета — хук завершается с кодом 0, ничего не пишет в stdout и укладывается в 2 секунды: событие теряется, сессия этого не замечает.
-- Сервер слушает только `127.0.0.1` и отвечает только на запросы с заголовком Host `127.0.0.1:<порт>` или `localhost:<порт>`. Путей записи два — `POST /api/events` (события хуков) и `POST /api/note` (записи оркестратора, «Хранение текста»), — и оба требуют подпись; событие со временем, которое отличается от часов сервера больше чем на 60 секунд, отклоняется. Страница только читает (`GET`).
-- Как отличить ответы обработчиков Pixel Office в потоке `claude -p --output-format stream-json --verbose --include-hook-events`: обработчик первым делом пишет в stderr строку `sai-pixel-office`, и она попадает в поле `stderr` сообщения `hook_response`. Отбор: `jq 'select(.type=="system" and .subtype=="hook_response" and (.stderr|startswith("sai-pixel-office")))'`.
+- In Sai the hooks are set only in `sai/.claude/settings.json` (a copy of the handlers in the project settings of the folder where the owner's sessions begin is only by `decisions/0007`, it is not part of Sai): one handler each for the events `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `SubagentStart`, `SubagentStop` and `PostToolUse` (for the tool Agent). A handler is a command, synchronous, with a `timeout` of 4 seconds.
+- The command starts `tools/src/pixel-office/hook.sh`, and that finds Node 22: first the path from the file `node-path`, then `node` from `PATH`, if it is Node 22, then the folders from `SAI_NODE_FALLBACKS`. If there is no Node 22, the hook ends silently.
+- `hook.js` sets the time by the clock of the computer at the moment of firing, leaves only the allowed fields, signs the request with the secret from the file (HMAC-SHA256; the secret itself is not sent over the network) and sends it to `127.0.0.1`. At any failure — the server is not running, does not answer, refused, there is no secret — the hook ends with code 0, writes nothing to stdout and fits in 2 seconds: the event is lost, the session does not notice it.
+- The server listens only on `127.0.0.1` and answers only requests with the header Host `127.0.0.1:<port>` or `localhost:<port>`. There are two write paths — `POST /api/events` (hook events) and `POST /api/note` (orchestrator records, "Storing the text") — and both require a signature; an event whose time differs from the server clock by more than 60 seconds is rejected. The page only reads (`GET`).
+- How to tell the answers of the Pixel Office handlers in the stream `claude -p --output-format stream-json --verbose --include-hook-events`: the handler first of all writes the line `sai-pixel-office` to stderr, and it gets into the field `stderr` of the message `hook_response`. The selection: `jq 'select(.type=="system" and .subtype=="hook_response" and (.stderr|startswith("sai-pixel-office")))'`.
 
-### Ограничения
+### Limits
 
-1. Задача не может остаться «в работе» дольше 60 минут без доверенных событий её сессии: если событие окончания потеряно, она через 60 минут станет «нет свежих данных» (не конец работы и не ошибка), а при запуске сервера — «сервер перезапускался, события не записывались»; рядом показано время начала задачи, время последнего события её сессии и, пока данных нет, его возраст.
-2. События пишутся, только пока сервер запущен.
-3. Страницу без входа может прочитать любая **учётная запись** этого компьютера через `127.0.0.1`; поэтому хранится только нужное.
-4. Правило чтения — обнаружение, а не защита: **одной вписанной строки** «из будущего» хватает, чтобы пометить «не из хуков» настоящие строки, пришедшие после неё со временем раньше её времени больше чем на 2 минуты; пометка снимается, когда таких строк станет на одну больше, чем вписанных, а если они больше не придут — остаётся **навсегда**. Прямую запись в файл журнала от имени владельца техника не запрещает — её запрещает мандат (планка R2).
-5. Ход, разбуженный фоновой работой, показывается как «Основная сессия — обрабатывает запрос»; служебные сообщения отличаются от сообщений владельца только по метке в начале текста («Хранение текста»), сообщение без такой метки считается сообщением владельца.
-6. У запуска субагента в переднем плане описание появляется после его окончания (фоновые запуски — по умолчанию — получают его сразу).
-7. Событие `Stop` не приходит при прерывании пользователем и при ошибке API: строка основной сессии остаётся «обрабатывает запрос» до следующего запроса, конца сессии или запуска сервера; после следующего запроса или конца сессии она показана как «окончание не записано», после запуска сервера — как «сервер перезапускался, события не записывались», а если событий сессии нет больше 60 минут — как «нет свежих данных». Если конец ответа всё же придёт позже запуска сервера или паузы (ход шёл, пока сервер был остановлен), строка станет «закончила работу, итог не записан»; позже следующего запроса или конца сессии — нет.
-8. Хук исполняет код с правами владельца (свойство хуков Claude Code); сессия `-p` считает папку доверенной.
-9. Если часы компьютера переведены назад больше чем на 2 минуты, правило чтения может пометить «не из хуков» настоящие строки около места перевода, и они пропадут из задач и офиса. Доверенная строка хука со временем в будущем (часы ушли вперёд и вернулись) считается свежей: отрицательный возраст равен нулю (критерий 1 REQ-042), поэтому сессия остаётся «Идёт», а задача «в работе», пока часы не дойдут до этого времени, а настоящие строки после неё помечены «не из хуков»; писать в журнал может только держатель секрета записи.
-10. Пока вкладка браузера скрыта, страница может обновляться реже (браузеры замедляют таймеры); при возвращении вкладки опрос идёт сразу.
-11. Если вы удаляете или обрезаете `events.jsonl`, удалите вместе с ним `server-starts.jsonl`.
-12. Каталог состояния, отличный от `~/.sai-pixel-office/`, задавайте переменной `SAI_PIXEL_OFFICE_DIR` — одной и той же для сервера и для Claude Code; ключа `--dir` одного не хватает: хук его не видит, и события теряются (команда при этом печатает предупреждение).
-13. Журнал в сотни тысяч строк (около 700 000 и больше) страница не загрузит: первая загрузка, как и любой запрос страницы, ограничена 3 секундами (100 000 строк загружаются примерно за 0,4 с). Как убрать журнал — пункт 11.
-14. Возраст последнего события и переход в «нет свежих данных» считает страница по часам компьютера, на котором она открыта (решение `0052`). Если страница открыта через проброс порта на другом компьютере с иными часами, возраст и момент перехода сдвигаются на величину расхождения.
-15. Название роли простыми словами показано только у ролей Sai вида «Sai … (КОД)» с кодом из таблицы `ROLE_NAMES` (решение `0055`); роль другого набора агентов с похожим кодом показана своим именем, без перевода.
-16. Журнал и карточка не знают действий агента, кроме начала, окончания и передачи задания: чтение файлов, команды, правки, сообщения между агентами, ошибки и ожидание человека хук не сообщает.
-17. С открытой линией фильтров или с пометкой «Задача» список журнала ниже, и раскрытие длинного события может требовать прокрутки, чтобы увидеть «Чего это не доказывает» целиком (решение `0058`, дополнение 2, п. 3).
-18. На холсте подсказки нет: если название роли вне таблицы `ROLE_NAMES` очень длинное, подпись у стола и строка доски сжаты (решение `0059`, п. 3), а полное название видно в кнопке легенды, в блоке «Сейчас», в панели «Задачи» и в заголовке карточки.
-19. Место и высоту полного списка «Показать всех» задают якоря CSS (по краям блока «Сейчас» и под настоящей высотой шапки). В браузерах без якорей CSS (например, Safari до версии 26) список стоит по запасным значениям: во всю ширину страницы с отступом 1 rem, а его высота считается от обычной высоты шапки (в узком окне — от шапки около 17 rem); если шапка выше, последние строки списка могут уйти за край окна.
-20. Память тура «pixel-office-tour» у каждого адреса и браузера своя: на другом порту, в другом браузере или после очистки данных сайта приглашение покажется снова; без хранилища браузера — при каждой загрузке страницы.
+1. A task cannot stay «в работе» for longer than 60 minutes without trusted events of its session: if the end event is lost, after 60 minutes it becomes «нет свежих данных» (not the end of work and not an error), and at a server start — «сервер перезапускался, события не записывались»; next to it are shown the time the task began, the time of the last event of its session and, while there is no data, its age.
+2. Events are recorded only while the server is running.
+3. The page can be read without a login by any **account** of this computer through `127.0.0.1`; that is why only what is needed is stored.
+4. The reading rule is detection and not protection: **one written-in row** "from the future" is enough to mark as "not from hooks" the genuine rows that came after it with a time earlier than its time by more than 2 minutes; the mark is removed when there become one more such rows than written-in ones, and if they no longer come — it stays **forever**. A direct write into the journal file on behalf of the owner is not forbidden by technique — it is forbidden by the mandate (bar item R2).
+5. A turn woken by background work is shown as «Основная сессия — обрабатывает запрос»; service messages differ from the owner's messages only by the mark at the start of the text ("Storing the text"), a message without such a mark is counted as the owner's message.
+6. For a subagent started in the foreground the description appears after its end (background starts — by default — get it at once).
+7. The event `Stop` does not come on an interruption by the user and on an API error: the row of the main session stays «обрабатывает запрос» until the next request, the end of the session or a server start; after the next request or the end of the session it is shown as «окончание не записано», after a server start — as «сервер перезапускался, события не записывались», and if there are no events of the session for more than 60 minutes — as «нет свежих данных». If the end of an answer still comes later than a server start or a pause (the turn went while the server was stopped), the row becomes «закончила работу, итог не записан»; later than the next request or the end of the session — it does not.
+8. The hook runs code with the rights of the owner (a property of Claude Code hooks); a `-p` session counts the folder as trusted.
+9. If the clock of the computer is set back by more than 2 minutes, the reading rule can mark as "not from hooks" genuine rows near the place of the change, and they will disappear from the tasks and the office. A trusted hook row with a time in the future (the clock went forward and came back) is counted as fresh: a negative age equals zero (criterion 1 of REQ-042), so the session stays «Идёт» and the task «в работе» until the clock reaches that time, while the genuine rows after it are marked "not from hooks"; only the holder of the write secret can write into the journal.
+10. While the browser tab is hidden, the page may update less often (browsers slow timers); when the tab comes back the polling goes at once.
+11. If you delete or cut `events.jsonl`, delete `server-starts.jsonl` together with it.
+12. A state folder other than `~/.sai-pixel-office/` is set with the variable `SAI_PIXEL_OFFICE_DIR` — the same one for the server and for Claude Code; the key `--dir` alone is not enough: the hook does not see it, and events are lost (the command prints a warning).
+13. A journal of hundreds of thousands of rows (about 700 000 and more) the page will not load: the first load, like any request of the page, is limited to 3 seconds (100 000 rows load in about 0.4 s). How to remove the journal — item 11.
+14. The age of the last event and the transition to «нет свежих данных» are counted by the page by the clock of the computer on which it is open (decision `0052`). If the page is open through a port forward on another computer with a different clock, the age and the moment of the transition shift by the size of the difference.
+15. The plain-words name of a role is shown only for Sai roles of the kind «Sai … (CODE)» with a code from the table `ROLE_NAMES` (decision `0055`); a role from another set of agents with a similar code is shown by its own name, without translation.
+16. The journal and the card do not know the actions of an agent except the start, the end and the handover of a task: reading files, commands, edits, messages between agents, errors and waiting for a person are not reported by the hook.
+17. With an open row of filters or with the note «Задача», the journal list is lower, and opening a long event may need scrolling to see «Чего это не доказывает» in full (decision `0058`, addition 2, item 3).
+18. There is no hint on the canvas: if a role name outside the table `ROLE_NAMES` is very long, the label at the desk and the row of the board are squeezed (decision `0059`, item 3), and the full name is visible in the legend button, in the block «Сейчас», in the panel «Задачи» and in the title of the card.
+19. The place and the height of the full list «Показать всех» are set by CSS anchors (at the edges of the block «Сейчас» and under the real height of the header). In browsers without CSS anchors (for example, Safari before version 26) the list stands by fallback values: across the whole page width with a 1 rem margin, and its height is counted from the usual height of the header (in a narrow window — from a header of about 17 rem); if the header is taller, the last rows of the list can go beyond the edge of the window.
+20. The tour memory «pixel-office-tour» is separate for every address and browser: on another port, in another browser or after the site data is cleared, the invitation will be shown again; without the browser storage — at every page load.
 
-## Sai Team — ядро
+## Sai Team — the core
 
-Ядро Sai Team — первая часть продукта (`decisions/0015-product-virtual-team-start.md`, проект `docs/design/REQ-009-team-core.md`): проект с целью, задачами и памятью, который живёт в файлах на этом компьютере, переживает аварийную остановку и читается одной правдой — журналом событий. Это ядро **без интерфейса и без исполнителя**: агентов оно не запускает (это REQ-010), задачами не управляет (это движок, REQ-013). Код — `tools/src/team/`, Node 22 без зависимостей во время выполнения.
+The core of Sai Team is the first part of the product (`decisions/0015-product-virtual-team-start.md`, design `docs/design/REQ-009-team-core.md`): a project with a goal, tasks and memory, which lives in files on this computer, survives an emergency stop and is read by one truth — the event journal. This is a core **without an interface and without an executor**: it does not start agents (that is REQ-010) and does not manage tasks (that is the engine, REQ-013). The code is in `tools/src/team/`, Node 22 without run-time dependencies.
 
-### Где данные и права
+### Where the data is and the rights
 
-Каталог данных — `~/.sai-team`; другой каталог задаёт переменная `SAI_TEAM_HOME` (только абсолютный путь; пустая или относительная — отказ `E_HOME`). Тесты и пробы работают только с временным `SAI_TEAM_HOME`. В каталоге — своя папка на проект с именем-id вида `p-20261006-a1b2c3` (id создаёт ядро, а не текст пользователя):
+The data folder is `~/.sai-team`; another folder is set by the variable `SAI_TEAM_HOME` (only an absolute path; an empty or relative one is refused with `E_HOME`). Tests and probes work only with a temporary `SAI_TEAM_HOME`. In the folder there is a separate folder per project with a name-id of the kind `p-20261006-a1b2c3` (the id is made by the core, not by the user's text):
 
-- `events.jsonl` — журнал событий, единственная правда о проекте;
-- `files/` — файлы результатов (пишет только ядро);
-- `work/` — рабочая папка исполнителя: в неё пишет агент, ядро её только читает; её содержимое не маскируется (это черновики агента в папке 0700), в результат файл из `work/` попадает только через ядро и уже маскированным;
-- `scenario.json` — только у тестовых проектов (исполнитель `scripted`): байт-в-байт копия файла сценария;
-- `writer.lock` — замок писателя, есть, пока право записи взято.
+- `events.jsonl` — the event journal, the only truth about the project;
+- `files/` — result files (written only by the core);
+- `work/` — the working folder of the executor: the agent writes into it, the core only reads it; its content is not masked (these are the agent's drafts in a 0700 folder), and a file from `work/` gets into a result only through the core and already masked;
+- `scenario.json` — only in test projects (the executor `scripted`): a byte-for-byte copy of the scenario file;
+- `writer.lock` — the lock of the writer, present while the right to write is taken.
 
-Права: папки — 0700, файлы — 0600. Если права шире, писатель (команда записи) сужает их до 0700/0600 — только после того, как взял замок и проверил журнал, — и говорит об этом в `notices`; команды чтения права не меняют, а предупреждают (`warnings` в выводе и та же строка в stderr).
+Rights: folders 0700, files 0600. If the rights are wider, the writer (the write command) narrows them to 0700/0600 — only after it has taken the lock and checked the journal — and says so in `notices`; the read commands do not change rights but warn (`warnings` in the output and the same line in stderr).
 
-### Что хранится
+### What is stored
 
-Цель проекта, задачи, события, разговор (сообщения `CHAT`), память проекта и файлы результатов. Все текстовые поля событий и содержимое файлов результатов перед записью проходят `maskSecrets` из `tools/src/pixel-office/mask.js` (правила `decisions/0013`): ключи, токены, пароли заменяются меткой `[скрыто]`. Не маскируются служебные значения, которые проверяются шаблоном: id, коды, числа и хеши sha256 (хеш считает само ядро). Имена файлов результата не маскируются, проверка шаблоном: латиница, цифры, `.`, `-`, `_`, до 80 знаков, без `..` и не с точки (маскирование испортило бы обычные имена вида `plan.v2.md`). Остаточный риск: имя файла, похожее на ключ, сохраняется как есть. Из `work/` в результат принимаются только текстовые файлы UTF-8, двоичные отклоняются (`E_WORK_FILE`); ссылки и пути с `..` — тоже.
+The goal of the project, tasks, events, the conversation (messages `CHAT`), the project memory and result files. All text fields of events and the content of result files pass through `maskSecrets` from `tools/src/pixel-office/mask.js` before writing (the rules of `decisions/0013`): keys, tokens and passwords are replaced by the mark `[скрыто]` (hidden). Not masked are service values that are checked by a pattern: ids, codes, numbers and sha256 hashes (the hash is counted by the core itself). The names of result files are not masked, they are checked by a pattern: Latin letters, digits, `.`, `-`, `_`, up to 80 characters, without `..` and not starting with a dot (masking would spoil ordinary names like `plan.v2.md`). Residual risk: a file name that looks like a key is stored as it is. From `work/` only UTF-8 text files are accepted into a result, binary ones are rejected (`E_WORK_FILE`); links and paths with `..` too.
 
-Производного файла состояния нет: состояние проекта собирается воспроизведением `events.jsonl`. Результаты не перезаписываются (`E_FILE_EXISTS`).
+There is no derived state file: the state of a project is assembled by replaying `events.jsonl`. Results are not overwritten (`E_FILE_EXISTS`).
 
-### Один писатель и «проект занят»
+### One writer and "the project is busy"
 
-Писать в проект может ровно один процесс — писатель. Право записи — файл-замок `writer.lock` с pid писателя, созданный атомарно. Пока право держит другой живой процесс (не движок — команды при работающем движке идут через его канал, см. «Sai Team — движок»), любая команда записи (`say` и команды REQ-010) получает отказ `E_PROJECT_BUSY: Проект занят другим процессом (pid N)` с кодом выхода 1, и файлы проекта не меняются. Команды чтения замок не берут и работают всегда. Замок, процесса которого уже нет (аварийная остановка), — устаревший: следующий писатель снимает его и записывает об этом событие.
+Exactly one process can write into a project — the writer. The right to write is the lock file `writer.lock` with the pid of the writer, created atomically. While the right is held by another live process (not the engine — with a running engine, commands go through its channel, see "Sai Team — the engine"), any write command (`say` and the commands of REQ-010) is refused with `E_PROJECT_BUSY: Проект занят другим процессом (pid N)` (the project is busy with another process) and exit code 1, and the project files do not change. The read commands do not take the lock and always work. A lock whose process no longer exists (an emergency stop) is stale: the next writer removes it and records an event about it.
 
-Остаточные риски: pid умершего писателя может достаться другому живому процессу — тогда проект считается занятым, пока тот процесс жив (ложное «занят», не две записи); гонка трёх процессов на одном устаревшем замке может оставить писателя без замка — он узнаёт об этом при следующей записи (`E_LOCK_LOST`), но одну строку в журнал в этом окне записать может.
+Residual risks: the pid of a dead writer can go to another live process — then the project is counted as busy while that process is alive (a false "busy", not two writes); a race of three processes on one stale lock can leave a writer without the lock — it learns about this at the next write (`E_LOCK_LOST`), but it can write one line to the journal in that window.
 
-### Восстановление после аварии
+### Recovery after a crash
 
-Восстановление идёт **по состоянию журнала**, а не по тому, кто снял замок: писатель, взяв замок, восстанавливает проект, если последняя строка журнала оборвана **или** в журнале есть открытые запуски либо задачи «в работе». Штатно закрытый проект (запуски закрыты) ничего не получает. Делает его только писатель, сразу после взятия замка:
+Recovery goes **by the state of the journal**, and not by who removed the lock: the writer, having taken the lock, recovers the project if the last line of the journal is cut **or** the journal has open runs or tasks «в работе». A project closed in the normal way (runs closed) gets nothing. Only the writer does it, right after taking the lock:
 
-- оборванная последняя строка журнала отбрасывается (файл усекается до последней целой строки), журнал восстановлен — это событие `JOURNAL_RECOVERED` с номером строки и числом отброшенных байт и строка в `notices`;
-- незакрытые запуски агентов закрываются как прерванные; задачи «в работе» получают статус «прервана», а задача «на проверке» — только если восстановление закрыло её открытый запуск; задача «на проверке» без открытого запуска остаётся «на проверке»;
-- проект, который был в работе или в планировании, встаёт на паузу «прервано аварией — возобновите проект», если что-то прервано: работа продолжается только после возобновления;
-- пакет восстановления (закрытие запусков, прерывание задач, пауза) записывается целиком или не записывается: одна запись, один `fsync`, при сбое журнал возвращается к прежнему размеру;
-- испорченная строка не последней — проект не открывается на запись (`E_CORRUPT` с номером строки); ничего не пропускается молча.
+- a cut last line of the journal is dropped (the file is truncated to the last whole line), the journal is recovered — this is the event `JOURNAL_RECOVERED` with the line number and the number of dropped bytes, and a line in `notices`;
+- unclosed agent runs are closed as interrupted; tasks «в работе» get the status «прервана» (interrupted), and a task «на проверке» (under review) only if the recovery closed its open run; a task «на проверке» without an open run stays «на проверке»;
+- a project that was in work or in planning goes on a pause «прервано аварией — возобновите проект» (interrupted by a crash — resume the project) if something was interrupted: the work goes on only after a resume;
+- the recovery package (closing the runs, interrupting the tasks, the pause) is written whole or not written: one record, one `fsync`, on a failure the journal returns to its earlier size;
+- a spoiled line that is not the last one — the project is not opened for writing (`E_CORRUPT` with the line number); nothing is skipped silently.
 
-Сломанный писатель (сбой записи) при закрытии замок не снимает до выхода процесса: проект остаётся «как после аварии». Следующий открывающий либо восстановит его (процесса уже нет), либо получит `E_PROJECT_BUSY`, пока тот процесс жив. Здоровый писатель замок снимает. Тот же процесс при следующем открытии проекта снимает замок своего собственного закрытого сломанного писателя и восстанавливает проект по журналу (решение 0026); другие процессы получают `E_PROJECT_BUSY` («занят»), пока тот процесс жив.
+A broken writer (a write failure) does not remove the lock at closing until the process exits: the project stays "as after a crash". The next opener either recovers it (the process is gone) or gets `E_PROJECT_BUSY` while that process is alive. A healthy writer removes the lock. The same process at the next opening of the project removes the lock of its own closed broken writer and recovers the project by the journal (decision 0026); other processes get `E_PROJECT_BUSY` ("busy") while that process is alive.
 
-Команды чтения при оборванной последней строке показывают состояние по целым строкам и пишут, что последняя строка не дописана; файлы при этом не меняются.
+The read commands, with a cut last line, show the state by whole lines and write that the last line is not finished; the files do not change.
 
-Остаточные риски (`decisions/0017-team-core-storage.md`):
+Residual risks (`decisions/0017-team-core-storage.md`):
 
-- расход запуска теряется, если процесс умер до записи итога запуска и расхода (S2): учтённое меньше фактического не больше чем на потолок такого запуска;
-- смерть процесса или питания посреди записи пакета оставляет начало пакета без паузы проекта (F-1);
-- при гонке трёх процессов на устаревшем замке проигравший может на короткое время считать себя писателем (`EEXIST` замка), он узнаёт об этом при следующей записи (`E_LOCK_LOST`);
-- ручное удаление замка: если `writer.lock` удалён вручную (например, после `E_LOCK_BAD`) или писатель закрылся штатно, не закрыв свой запуск, ядро ничего не прерывает — незакрытый запуск остаётся открытым, и задачу нельзя начать снова.
+- the spend of a run is lost if the process died before writing the result of the run and the spend (S2): the accounted is less than the actual by no more than the ceiling of such a run;
+- the death of the process or of the power in the middle of writing a package leaves the start of the package without a pause of the project (F-1);
+- in a race of three processes on a stale lock, the loser can for a short time consider itself the writer (`EEXIST` of the lock), it learns about this at the next write (`E_LOCK_LOST`);
+- manual deletion of the lock: if `writer.lock` is deleted by hand (for example, after `E_LOCK_BAD`) or the writer closed in the normal way without closing its run, the core interrupts nothing — the unclosed run stays open, and the task cannot be started again.
 
-### Каталог ролей
+### The catalog of roles
 
-Десять ролей (`tools/src/team/roles.js`): Руководитель проекта, Бизнес-аналитик, Исследователь, Финансовый аналитик, Юрист, Маркетолог, Дизайнер, Разработчик, Проверяющий (QA), Специалист поддержки. Внутренние коды ролей и внутренние поля каталога в выводе команд и во фразах не показываются; события показываются фразами на человеческом языке (`tools/src/team/language.js`), например «Аналитик изучает данные».
+Ten roles (`tools/src/team/roles.js`): Руководитель проекта (project manager), Бизнес-аналитик (business analyst), Исследователь (researcher), Финансовый аналитик (financial analyst), Юрист (lawyer), Маркетолог (marketer), Дизайнер (designer), Разработчик (developer), Проверяющий (QA) (reviewer), Специалист поддержки (support specialist). The internal role codes and the internal fields of the catalog are not shown in the output of commands and in phrases; events are shown by phrases in human language (`tools/src/team/language.js`), for example «Аналитик изучает данные» (the analyst studies the data).
 
-### Как удалить проект
+### How to delete a project
 
-Команды удаления нет: проект удаляется вручную — папкой `~/.sai-team/<id>/` (или `$SAI_TEAM_HOME/<id>/`). Папки `.creating-*` — остатки прерванного создания проекта; чтение их пропускает, их тоже можно удалить вручную. Остаточный риск создания: если в долю секунды между проверкой и переименованием кто-то создаст пустую папку с тем же случайным id, она будет заменена новым проектом (терять в ней нечего).
+There is no delete command: a project is deleted by hand — the folder `~/.sai-team/<id>/` (or `$SAI_TEAM_HOME/<id>/`). The folders `.creating-*` are leftovers of an interrupted creation of a project; reading skips them, and they can also be deleted by hand. Residual risk of creation: if in the fraction of a second between the check and the rename someone creates an empty folder with the same random id, it will be replaced by the new project (there is nothing to lose in it).
 
-### Команды
+### Commands
 
-Из каталога `tools/` (id в примерах вымышленные):
+From the folder `tools/` (the ids in the examples are made up):
 
     npm run team -- projects
     npm run team -- project p-20261006-a1b2c3
@@ -299,51 +299,51 @@ Ctrl+C в терминале, где запущена команда. Если �
     npm run team -- events p-20261006-a1b2c3 --after 10 --limit 10
     npm run team -- say p-20261006-a1b2c3 --text "Добавьте сравнение цен"
 
-- `projects` — список проектов: цель, статус, прогресс «готово из всего» (без процентов; у проекта без задач прогресса нет);
-- `project <id>` — проект с задачами, статусами, прогрессом, памятью, файлами и разговором;
-- `events <id> [--after N] [--limit M]` — журнал страницами: `--limit` от 1 до 200 (по умолчанию 50), следующая страница — `--after <next_after>`; у каждого события — фраза;
-- `say <id> --text "<текст>"` — сообщение пользователя в разговор проекта (до 4000 знаков; длиннее — отказ `E_TOO_LONG`).
+- `projects` — the list of projects: the goal, the status, the progress "done out of all" (without percents; a project without tasks has no progress);
+- `project <id>` — the project with tasks, statuses, progress, memory, files and the conversation;
+- `events <id> [--after N] [--limit M]` — the journal by pages: `--limit` from 1 to 200 (50 by default), the next page is `--after <next_after>`; each event has a phrase;
+- `say <id> --text "<text>"` — a message of the user into the conversation of the project (up to 4000 characters; longer is refused with `E_TOO_LONG`).
 
-Вывод — одна строка JSON в stdout. Коды выхода: 0 — успех; 1 — отказ по существу (например, `E_NOT_FOUND: Проект не найден`, `E_PROJECT_BUSY`, `E_CORRUPT`, `E_DISK`); 2 — неверные аргументы (`E_USAGE`); 3 — внутренняя ошибка (`E_INTERNAL`). При ошибке stdout пуст, а в stderr — одна строка `<КОД>: <сообщение>` без трассировки стека.
+The output is one JSON line in stdout. Exit codes: 0 — success; 1 — a refusal on the merits (for example, `E_NOT_FOUND: Проект не найден` (project not found), `E_PROJECT_BUSY`, `E_CORRUPT`, `E_DISK`); 2 — wrong arguments (`E_USAGE`); 3 — an internal error (`E_INTERNAL`). On an error stdout is empty, and stderr has one line `<CODE>: <message>` without a stack trace.
 
-Проверка — та же одна команда: `cd tools && npm run check`.
+The check is the same one command: `cd tools && npm run check`.
 
-## Sai Team — исполнители
+## Sai Team — executors
 
-Исполнитель выполняет одну задачу проекта Sai Team от имени роли (проект `docs/design/REQ-010-agent-executors.md`, решение `decisions/0015-product-virtual-team-start.md`). Код — `tools/src/team/executor.js`, `tools/src/team/runner.js` и папка `tools/src/team/executors/`; Node 22 без зависимостей во время выполнения. Журнал пишет только ядро через писателя проекта: сами исполнители ничего в журнал не пишут.
+An executor performs one task of a Sai Team project on behalf of a role (design `docs/design/REQ-010-agent-executors.md`, decision `decisions/0015-product-virtual-team-start.md`). The code is `tools/src/team/executor.js`, `tools/src/team/runner.js` and the folder `tools/src/team/executors/`; Node 22 without run-time dependencies. The journal is written only by the core through the writer of the project: the executors write nothing into the journal themselves.
 
-### Интерфейс `run`
+### The interface `run`
 
-`run(request, io)` — одна попытка задачи, один процесс, без повторов. Вход: проект (исполнитель, потолок и расход), роль, задача, номер попытки, контекст (цель, память, результаты задач-зависимостей, замечания), пределы (потолок этого запуска, таймаут, рабочая папка `work/` проекта) и схема ответа. Выход: итог попытки (`ok`, `failed`, `timeout`, `cancelled`, `invalid_output`, `not_found`, `network`), краткий итог, файлы результата, записи памяти, расход (`cost_usd` или «не пришёл») и постоянный текст причины сбоя. По ходу работы исполнитель сообщает активность («изучает материалы», «готовит документ»…) в момент, когда её видит.
+`run(request, io)` is one attempt at a task, one process, without repeats. Input: the project (the executor, the ceiling and the spend), the role, the task, the number of the attempt, the context (the goal, the memory, the results of the dependency tasks, remarks), the limits (the ceiling of this run, the timeout, the working folder `work/` of the project) and the schema of the answer. Output: the result of the attempt (`ok`, `failed`, `timeout`, `cancelled`, `invalid_output`, `not_found`, `network`), a short summary, result files, memory records, the spend (`cost_usd` or "did not come") and a constant text of the reason of a failure. In the course of work the executor reports the activity («изучает материалы» (studies the materials), «готовит документ» (prepares a document)…) at the moment it sees it.
 
-Отказ до запуска: если условие не выполнено, `run` бросает ошибку (`E_EXECUTOR`, `E_REAL_RUNS_OFF`, `E_NO_BUDGET`, `E_WORK_DIR`, `E_BUDGET_EXHAUSTED`, `E_SCENARIO`) до любого действия — процесс не создаётся, журнал не меняется. Условия проверяет сам `run`, поэтому обойти их прямым вызовом нельзя. Ответ исполнителя проверяется по схеме ещё раз у нас: ответ вне схемы — итог `invalid_output` («Ответ исполнителя не соответствует схеме»), результат не принимается. Из ответа берутся только поля схемы (`summary`, `files`, `memory`): текст агента не меняет ни исполнителя, ни потолок, ни роль, ни статусы.
+A refusal before the start: if a condition is not met, `run` throws an error (`E_EXECUTOR`, `E_REAL_RUNS_OFF`, `E_NO_BUDGET`, `E_WORK_DIR`, `E_BUDGET_EXHAUSTED`, `E_SCENARIO`) before any action — no process is created, the journal does not change. The conditions are checked by `run` itself, so they cannot be bypassed by a direct call. The answer of the executor is checked against the schema once more on our side: an answer outside the schema is the result `invalid_output` («Ответ исполнителя не соответствует схеме», the answer of the executor does not match the schema), the result is not accepted. From the answer only the fields of the schema are taken (`summary`, `files`, `memory`): the agent's text changes neither the executor, nor the ceiling, nor the role, nor the statuses.
 
-### Исполнители
+### Executors
 
-- `claude-cli` — единственный настоящий исполнитель: одна попытка — один процесс Claude Code в режиме печати. Исполнитель проекта задаётся при создании (`new`, по умолчанию `claude-cli`) и потом не меняется; если `claude-cli` не запустился, тестовый исполнитель вместо него не подставляется.
-- `scripted` — тестовый исполнитель, **только для тестов**: модель не вызывает, ничего не тратит и ничего не пишет на диск, а проигрывает сценарий. Сценарии лежат в `tools/test/fixtures/team/`; команда `new --executor scripted --scenario <файл>` кладёт байт-в-байт копию сценария в папку проекта (`scenario.json`), и `run-task` читает только эту копию. Честная пометка: у такого проекта исполнитель в данных — `scripted`, а к фразам задач, запусков и активности добавляется « — тестовый исполнитель».
+- `claude-cli` — the only real executor: one attempt is one Claude Code process in print mode. The executor of a project is set at creation (`new`, `claude-cli` by default) and does not change afterwards; if `claude-cli` did not start, a test executor is not substituted for it.
+- `scripted` — a test executor, **only for tests**: it does not call the model, spends nothing and writes nothing on disk, but plays a scenario. The scenarios are in `tools/test/fixtures/team/`; the command `new --executor scripted --scenario <file>` puts a byte-for-byte copy of the scenario into the project folder (`scenario.json`), and `run-task` reads only this copy. An honest note: in such a project the executor in the data is `scripted`, and to the phrases of tasks, runs and activity the words « — тестовый исполнитель» (a test executor) are added.
 
-### Условия настоящих запусков
+### Conditions of real runs
 
-Настоящий запуск Claude Code начинается, только если выполнены все условия:
+A real Claude Code run begins only if all conditions are met:
 
-- переменная `SAI_TEAM_REAL_RUNS=1` (ровно `1`; `true`, `yes`, `0` или пусто — запуски выключены, отказ `E_REAL_RUNS_OFF`);
-- у проекта потолок стоимости больше 0 (иначе `E_NO_BUDGET`; команда `new` проект без потолка не создаёт);
-- остаток потолка проекта больше нуля (иначе `E_BUDGET_EXHAUSTED` и одна строка `RUN_REFUSED` в журнале);
-- `SAI_TEAM_CLAUDE_BIN` — абсолютный путь к исполняемому файлу Claude Code. В PATH этого компьютера `claude` нет: файл лежит внутри расширения редактора, и папка меняется с каждой версией. Путь задаётся вручную (`<путь> --version` должен отвечать) и обновляется после обновления расширения; код путь не угадывает. Не задана — ищется `claude` в PATH; задана не абсолютным путём — `E_CONFIG`.
+- the variable `SAI_TEAM_REAL_RUNS=1` (exactly `1`; `true`, `yes`, `0` or empty — the runs are turned off, a refusal `E_REAL_RUNS_OFF`);
+- the project has a cost ceiling above 0 (otherwise `E_NO_BUDGET`; the command `new` does not create a project without a ceiling);
+- the remainder of the project ceiling is above zero (otherwise `E_BUDGET_EXHAUSTED` and one line `RUN_REFUSED` in the journal);
+- `SAI_TEAM_CLAUDE_BIN` — the absolute path to the executable file of Claude Code. In the PATH of this computer there is no `claude`: the file lies inside the editor extension, and the folder changes with every version. The path is set by hand (`<path> --version` must answer) and is updated after the extension is updated; the code does not guess the path. If it is not set — `claude` is looked up in PATH; if it is set as not an absolute path — `E_CONFIG`.
 
-Другие настройки:
+Other settings:
 
-- `SAI_TEAM_WEB=0` отключает WebSearch и WebFetch у Исследователя (иное значение или не задана — сеть у Исследователя есть);
-- `SAI_TEAM_TASK_TIMEOUT_MS` — таймаут одной попытки, целое от 1000 до 86 400 000 мс, по умолчанию 1 200 000 (20 минут);
-- `SAI_TEAM_RETRY_DELAY_MS` — пауза перед повтором, целое от 0 до 600 000 мс, по умолчанию 10 000;
-- `SAI_TEAM_RUN_CAP_USD` — потолок одного запуска в долларах, от 0.01 до 100000, до 6 знаков после точки (по умолчанию — четверть потолка проекта).
+- `SAI_TEAM_WEB=0` turns off WebSearch and WebFetch for the Researcher (another value or not set — the Researcher has the network);
+- `SAI_TEAM_TASK_TIMEOUT_MS` — the timeout of one attempt, an integer from 1000 to 86 400 000 ms, 1 200 000 by default (20 minutes);
+- `SAI_TEAM_RETRY_DELAY_MS` — the pause before a repeat, an integer from 0 to 600 000 ms, 10 000 by default;
+- `SAI_TEAM_RUN_CAP_USD` — the ceiling of one run in dollars, from 0.01 to 100000, up to 6 digits after the point (by default — a quarter of the project ceiling).
 
-Неверное значение — `E_CONFIG: Неверная настройка <ИМЯ_ПЕРЕМЕННОЙ>` с кодом 2; значения настроек никогда не печатаются и не пишутся.
+A wrong value is `E_CONFIG: Неверная настройка <VARIABLE_NAME>` (wrong setting) with code 2; the values of settings are never printed or written.
 
-### Как запускается Claude Code
+### How Claude Code is started
 
-Текст задачи передаётся через stdin, а не аргументом: он не может стать флагом или командой и не виден в списке процессов. Процесс запускается без оболочки (`shell: false`), в своей группе процессов, с рабочей папкой `work/` своего проекта. Аргументы — в постоянном порядке:
+The text of the task is passed through stdin, not as an argument: it cannot become a flag or a command and is not visible in the process list. The process is started without a shell (`shell: false`), in its own process group, with the working folder `work/` of its project. The arguments are in a constant order:
 
     -p --output-format stream-json --verbose --max-budget-usd <потолок запуска>
     --json-schema <схема ответа> --tools <инструменты роли> --allowedTools <те же>
@@ -351,116 +351,120 @@ Ctrl+C в терминале, где запущена команда. Если �
     --permission-prompts none --restricted --safe-mode --strict-mcp-config
     --no-session-persistence --append-system-prompt <промт роли>
 
-Списки передаются одним аргументом через запятую. Никогда не передаются: `--add-dir`, `--dangerously-skip-permissions`, `--allow-dangerously-skip-permissions`, `--permission-mode`, `--bare`, `--agents`, `--agent`, `--mcp-config`, `--plugin-dir`, `--plugin-url`, `--settings`, `--worktree`, `--bg`, `--resume`, `--continue`, `--model`, `--file`, `--cloud`.
+The lists are passed as one argument separated by commas. Never passed: `--add-dir`, `--dangerously-skip-permissions`, `--allow-dangerously-skip-permissions`, `--permission-mode`, `--bare`, `--agents`, `--agent`, `--mcp-config`, `--plugin-dir`, `--plugin-url`, `--settings`, `--worktree`, `--bg`, `--resume`, `--continue`, `--model`, `--file`, `--cloud`.
 
-Окружение процесса — только переменные `PATH`, `HOME`, `USER`, `LOGNAME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TMPDIR`, `TZ`, `CLAUDE_CONFIG_DIR` (если заданы). Не передаются `ANTHROPIC_API_KEY`, другие ключи и токены, все `SAI_TEAM_*` и `SAI_TEST_*`: вход Claude Code — по подписке владельца. Вывод ошибок процесса (stderr) не сохраняется и не печатается; сессия Claude Code на диск не сохраняется.
+The environment of the process is only the variables `PATH`, `HOME`, `USER`, `LOGNAME`, `LANG`, `LC_ALL`, `LC_CTYPE`, `TMPDIR`, `TZ`, `CLAUDE_CONFIG_DIR` (if set). Not passed: `ANTHROPIC_API_KEY`, other keys and tokens, all `SAI_TEAM_*` and `SAI_TEST_*`: the login of Claude Code is by the owner's subscription. The error output of the process (stderr) is not saved or printed; the Claude Code session is not saved to disk.
 
-Вывод `stream-json` разбирается «по форме с запасом»: строка неизвестного вида пропускается и считается, задача из-за неё не падает; строка не JSON или отсутствие итоговой строки — итог `invalid_output`. Документации формата в установленном пакете нет: образцы в `tools/test/fixtures/team/` помечены источником и будут сверены с первым записанным настоящим запуском.
+The `stream-json` output is parsed "by shape with a margin": a line of an unknown kind is skipped and counted, the task does not fail because of it; a line that is not JSON, or the absence of the final line, is the result `invalid_output`. There is no documentation of the format in the installed package: the samples in `tools/test/fixtures/team/` are marked with their source and will be compared with the first recorded real run.
 
-### Инструменты ролей
+### Tools of the roles
 
-| Роль                 | Инструменты                                        |
-| -------------------- | -------------------------------------------------- |
-| Руководитель проекта | Read, Write, Edit, Glob, Grep                      |
-| Бизнес-аналитик      | Read, Write, Edit, Glob, Grep                      |
-| Исследователь        | Read, Write, Edit, Glob, Grep, WebSearch, WebFetch |
-| Финансовый аналитик  | Read, Write, Edit, Glob, Grep                      |
-| Юрист                | Read, Write, Edit, Glob, Grep                      |
-| Маркетолог           | Read, Write, Edit, Glob, Grep                      |
-| Дизайнер             | Read, Write, Edit, Glob, Grep                      |
-| Разработчик          | Read, Write, Edit, Glob, Grep                      |
-| Проверяющий (QA)     | Read, Write, Edit, Glob, Grep                      |
-| Специалист поддержки | Read, Write, Edit, Glob, Grep                      |
+| Role                                      | Tools                                              |
+| ----------------------------------------- | -------------------------------------------------- |
+| Руководитель проекта (project manager)    | Read, Write, Edit, Glob, Grep                      |
+| Бизнес-аналитик (business analyst)        | Read, Write, Edit, Glob, Grep                      |
+| Исследователь (researcher)                | Read, Write, Edit, Glob, Grep, WebSearch, WebFetch |
+| Финансовый аналитик (financial analyst)   | Read, Write, Edit, Glob, Grep                      |
+| Юрист (lawyer)                            | Read, Write, Edit, Glob, Grep                      |
+| Маркетолог (marketer)                     | Read, Write, Edit, Glob, Grep                      |
+| Дизайнер (designer)                       | Read, Write, Edit, Glob, Grep                      |
+| Разработчик (developer)                   | Read, Write, Edit, Glob, Grep                      |
+| Проверяющий (QA) (reviewer)               | Read, Write, Edit, Glob, Grep                      |
+| Специалист поддержки (support specialist) | Read, Write, Edit, Glob, Grep                      |
 
-Ни у одной роли нет Bash и запуска команд. Промт каждой роли — внутренний (`tools/src/team/role-internal.js`) и пользователю не показывается.
+No role has Bash or the running of commands. The prompt of each role is internal (`tools/src/team/role-internal.js`) and is not shown to the user.
 
-### Сеть Исследователя
+### The network of the Researcher
 
-Сам код Sai Team по сети не ходит. Исходящие запросы делает Claude Code инструментами WebSearch и WebFetch по адресам, которые выбирает модель; проверить каждый адрес до запроса Sai не может. Защита: только чтение (инструментов отправки вовне нет); запрещающие правила `WebFetch(domain:…)` для `localhost`, `127.0.0.1`, `[::1]`, `0.0.0.0`, `169.254.169.254`; потолок `--max-budget-usd`; таймаут; выключатель `SAI_TEAM_WEB=0`; без `SAI_TEAM_REAL_RUNS=1` сети нет вообще. Остаточный риск: адреса частных сетей (10/8, 172.16/12, 192.168/16), имена, указывающие на внутренние адреса, и утечка контекста задачи через адрес запроса правилами не закрыты. Сбой сети распознаётся по ошибке результата WebFetch/WebSearch вместе с неуспехом попытки; фраза такого запуска — «Нет доступа к сети», итог задачи после всех попыток — «<роль>: нет доступа к сети, задача не получилась». Повтор объявляет только фраза «<роль> попробует ещё раз», и пишется она, только когда повтор действительно будет.
+The Sai Team code itself does not go to the network. Outgoing requests are made by Claude Code with the tools WebSearch and WebFetch, to addresses chosen by the model; Sai cannot check every address before the request. Protection: read only (there are no tools for sending outside); forbidding rules `WebFetch(domain:…)` for `localhost`, `127.0.0.1`, `[::1]`, `0.0.0.0`, `169.254.169.254`; the ceiling `--max-budget-usd`; the timeout; the switch `SAI_TEAM_WEB=0`; without `SAI_TEAM_REAL_RUNS=1` there is no network at all. Residual risk: addresses of private networks (10/8, 172.16/12, 192.168/16), names that point to internal addresses, and a leak of the task context through the address of a request are not closed by the rules. A network failure is recognised by an error in the WebFetch/WebSearch result together with the failure of the attempt; the phrase of such a run is «Нет доступа к сети» (no access to the network), the result of the task after all attempts is «<роль>: нет доступа к сети, задача не получилась» (<role>: no access to the network, the task failed). A repeat is announced only by the phrase «<роль> попробует ещё раз» (<role> will try again), and it is written only when a repeat will really happen.
 
-### Повторы, таймаут и процессы
+### Repeats, timeout and processes
 
-Временные сбои (ошибка исполнителя, таймаут, неверный вывод, сбой сети) повторяются не больше 2 раз (всего 3 попытки) с паузой `SAI_TEAM_RETRY_DELAY_MS`; одновременно у задачи не больше одного процесса — следующая попытка начинается только после того, как прежний процесс и его группа остановлены. Таймаут попытки — 20 минут: при таймауте или отмене (`SIGTERM`/`SIGINT` команды `run-task`) группе процессов посылается SIGTERM, через 3 с — SIGKILL. Если группа не ушла, повтора нет («Не удалось остановить процессы исполнителя»). «Исполнитель не найден» не повторяется. Остаточный риск: потомок, вышедший из группы (`setsid`), не останавливается; при `kill -9` самой команды `run-task` процесс Claude Code работает до своего конца (его ограничивает `--max-budget-usd`), а следующий писатель закрывает запуск как прерванный.
+Temporary failures (an executor error, a timeout, a wrong output, a network failure) are repeated no more than 2 times (3 attempts in all) with the pause `SAI_TEAM_RETRY_DELAY_MS`; a task has at most one process at a time — the next attempt begins only after the earlier process and its group are stopped. The timeout of an attempt is 20 minutes: on a timeout or a cancel (`SIGTERM`/`SIGINT` of the command `run-task`) SIGTERM is sent to the process group, and after 3 s — SIGKILL. If the group did not go away, there is no repeat («Не удалось остановить процессы исполнителя», the processes of the executor could not be stopped). «Исполнитель не найден» (the executor was not found) is not repeated. Residual risk: a descendant that left the group (`setsid`) is not stopped; on `kill -9` of the command `run-task` itself the Claude Code process works to its end (it is limited by `--max-budget-usd`), and the next writer closes the run as interrupted.
 
-### Потолок на запуск и учёт расхода
+### The ceiling per run and the accounting of spend
 
-Каждый запуск получает `--max-budget-usd` — меньшее из остатка потолка проекта и `SAI_TEAM_RUN_CAP_USD`; если переменная не задана — меньшее из остатка и четверти потолка проекта (так при любом потолке хватает минимум на 3 попытки одной задачи). После каждой попытки, где процесс запускался, в журнал пишется расход (`BUDGET_SPENT`): сообщённый исполнителем (`accounted: reported`). Правило учёта запуска без расхода: если расход не пришёл (нет итоговой строки, процесс остановлен по таймауту или отмене), попытка учитывается по худшему случаю: весь потолок этого запуска, не весь остаток, `accounted: assumed`. Повтор начинается, только если остаток позволяет следующий запуск; иначе повтора нет, в журнале — `RUN_REFUSED`, задача — «<роль>: потолок расходов исчерпан, задача остановлена».
+Every run gets `--max-budget-usd` — the lesser of the remainder of the project ceiling and `SAI_TEAM_RUN_CAP_USD`; if the variable is not set — the lesser of the remainder and a quarter of the project ceiling (so with any ceiling there is enough for at least 3 attempts of one task). After every attempt in which a process was started, the spend is written to the journal (`BUDGET_SPENT`): the one reported by the executor (`accounted: reported`). The rule of accounting for a run without a spend: if the spend did not come (no final line, the process was stopped by a timeout or a cancel), the attempt is accounted for by the worst case: the whole ceiling of this run, not the whole remainder, `accounted: assumed`. A repeat begins only if the remainder allows the next run; otherwise there is no repeat, the journal has `RUN_REFUSED`, and the task is «<роль>: потолок расходов исчерпан, задача остановлена» (<role>: the spending ceiling is exhausted, the task is stopped).
 
-### Файлы результата
+### Result files
 
-Файлы, которые агент назвал в ответе, принимает ядро: путь только внутри `work/` (без `..`, абсолютных путей и ссылок), только текст UTF-8 до 5 МиБ; сначала проверяются все файлы, потом записываются. Имя результата — `t-NNNN-N-<имя>` (задача, попытка, имя файла), содержимое маскируется. Исходник принятого файла в `work/` после приёма удаляется — немаскированная копия не остаётся; проверяющий и зависимые задачи получают в задании соответствие «исходное имя → принятое имя», а исходник по-прежнему удаляется; файлы, не названные в ответе, в результат не попадают и остаются в `work/`. Файл не принят — задача «не удалась» с причиной «файл с результатом не удалось принять». После удачной попытки задача — «на проверке»: «готово» ставит только проверка (движок, REQ-013).
+The files that the agent named in its answer are accepted by the core: the path only inside `work/` (without `..`, absolute paths and links), only UTF-8 text up to 5 MiB; first all files are checked, then they are written. The name of a result is `t-NNNN-N-<name>` (task, attempt, file name), the content is masked. The source of an accepted file in `work/` is deleted after the acceptance — an unmasked copy does not stay; the reviewer and the dependent tasks get in their task the correspondence "original name → accepted name", and the source is still deleted; files not named in the answer do not get into the result and stay in `work/`. A file is not accepted — the task is «не удалась» (failed) with the reason «файл с результатом не удалось принять» (the result file could not be accepted). After a successful attempt the task is «на проверке» (under review): «готово» (done) is set only by the check (the engine, REQ-013).
 
-### Команды
+### Commands
 
-Из каталога `tools/` (id в примерах вымышленные):
+From the folder `tools/` (the ids in the examples are made up):
 
     npm run team -- new --goal "Сравнить цены трёх поставщиков" --budget 2
     npm run team -- add-task p-20261006-a1b2c3 --role researcher --text "Собрать цены" --done-when "Таблица цен с источниками"
     SAI_TEAM_REAL_RUNS=1 SAI_TEAM_CLAUDE_BIN=/абсолютный/путь/claude npm run team -- run-task p-20261006-a1b2c3 t-0001
 
-- `new --goal "<цель>" --budget <usd> [--executor claude-cli|scripted] [--scenario <файл>]` — создаёт проект; потолок больше 0 и не больше 100000, до 6 знаков после точки; `--scenario` — только с `--executor scripted` и для него обязателен;
-- `add-task <id> --role <код> --text "<описание>" --done-when "<критерий>"` — добавляет задачу роли; коды ролей: `project_manager`, `business_analyst`, `researcher`, `financial_analyst`, `lawyer`, `marketer`, `designer`, `developer`, `reviewer`, `support`;
-- `run-task <id> <задача>` — выполняет задачу с повторами; первый `SIGTERM`/`SIGINT` отменяет её (задача «прервана»).
+(The Russian example texts mean: "Compare the prices of three suppliers", "Collect the prices", "A table of prices with sources", "/absolute/path/claude".)
 
-Вывод — одна строка JSON в stdout. Коды выхода: 0 — успех; 1 — отказ по существу (например, `E_REAL_RUNS_OFF`, `E_NO_BUDGET`, `E_BUDGET_EXHAUSTED`, `E_EXECUTOR_NOT_FOUND`, `E_TASK_FAILED: Задача не получилась: <причина>`, `E_TASK_CANCELLED`, `E_TASK_STATE`, `E_PROJECT_STATE`, `E_SCENARIO`, `E_DISK`, `E_PROJECT_BUSY`); 2 — неверные аргументы или настройки (`E_USAGE`, `E_CONFIG`); 3 — внутренняя ошибка (`E_INTERNAL`). При ошибке stdout пуст, в stderr — одна строка `<КОД>: <сообщение>` без трассировки стека; события, записанные до отказа, остаются в журнале — это правда о попытках.
+- `new --goal "<goal>" --budget <usd> [--executor claude-cli|scripted] [--scenario <file>]` — creates a project; the ceiling is above 0 and not above 100000, up to 6 digits after the point; `--scenario` is only with `--executor scripted` and is required for it;
+- `add-task <id> --role <code> --text "<description>" --done-when "<criterion>"` — adds a task of a role; the role codes: `project_manager`, `business_analyst`, `researcher`, `financial_analyst`, `lawyer`, `marketer`, `designer`, `developer`, `reviewer`, `support`;
+- `run-task <id> <task>` — performs the task with repeats; the first `SIGTERM`/`SIGINT` cancels it (the task is «прервана», interrupted).
 
-## Sai Team — движок
+The output is one JSON line in stdout. Exit codes: 0 — success; 1 — a refusal on the merits (for example, `E_REAL_RUNS_OFF`, `E_NO_BUDGET`, `E_BUDGET_EXHAUSTED`, `E_EXECUTOR_NOT_FOUND`, `E_TASK_FAILED: Задача не получилась: <причина>` (the task failed: <reason>), `E_TASK_CANCELLED`, `E_TASK_STATE`, `E_PROJECT_STATE`, `E_SCENARIO`, `E_DISK`, `E_PROJECT_BUSY`); 2 — wrong arguments or settings (`E_USAGE`, `E_CONFIG`); 3 — an internal error (`E_INTERNAL`). On an error stdout is empty, stderr has one line `<CODE>: <message>` without a stack trace; the events written before the refusal stay in the journal — this is the truth about the attempts.
 
-Движок ведёт проект от цели до итога (проект `docs/design/REQ-013-team-engine.md`, решение `decisions/0020-team-engine-channel.md`): Руководитель проекта составляет план, задачи выполняются параллельно, результат каждой проверяет отдельный запуск Проверяющего, важные действия ждут решения пользователя, потолок расходов соблюдается, а в конце сверяется цель. Код — `tools/src/team/engine/`; Node 22 без зависимостей во время выполнения, без сетевых модулей. Движок — долгоживущий процесс команды `start` или `resume`: пока он работает, он держит право записи проекта (замок `writer.lock` с полем `"holder":"engine"`), а журнал пишет только через писателя ядра.
+## Sai Team — the engine
 
-Проверено тестами только с тестовым исполнителем `scripted` и с поддельным исполняемым файлом Claude Code; настоящий Claude Code движком ещё не запускался (это приёмка UAT по согласию владельца).
+The engine leads a project from the goal to the result (design `docs/design/REQ-013-team-engine.md`, decision `decisions/0020-team-engine-channel.md`): the Project Manager makes a plan, the tasks are performed in parallel, the result of each is checked by a separate run of the Reviewer, important actions wait for the user's decision, the spending ceiling is kept, and at the end the goal is compared. The code is `tools/src/team/engine/`; Node 22 without run-time dependencies, without network modules. The engine is a long-living process of the command `start` or `resume`: while it works, it holds the right to write the project (the lock `writer.lock` with the field `"holder":"engine"`), and it writes the journal only through the writer of the core.
 
-### Как цель становится планом
+Checked by tests only with the test executor `scripted` and with a fake executable file of Claude Code; the real Claude Code has not yet been started by the engine (this is the UAT acceptance by the owner's consent).
 
-Руководитель проекта получает цель, роли каталога, задачи проекта и последние сообщения пользователя и отвечает списком задач: роль из каталога, описание, критерий готовности, зависимости, признак «критическая». Движок проверяет план по порядку: форма ответа, не больше 40 задач в плане (и 200 в проекте), роли только из каталога, зависимости только на задачи этого плана или проекта, без циклов. План с пороком отклоняется с причиной, и Руководитель проекта получает **одну повторную попытку** с этой причиной во входе; вторая неудача — проект ждёт решения пользователя («Не удалось составить план»), задач из плохих планов нет.
+### How a goal becomes a plan
 
-Планировщик видит принятые файлы проекта (исходные имена и задачи, которые их сдали). Задача, текст или критерий готовности которой называет такой файл, получает его: если планировщик не указал зависимость, движок сам добавляет зависимость на задачу, сдавшую файл.
+The Project Manager gets the goal, the roles of the catalog, the tasks of the project and the last messages of the user, and answers with a list of tasks: a role from the catalog, a description, a criterion of readiness, dependencies, the sign «критическая» (critical). The engine checks the plan in order: the shape of the answer, no more than 40 tasks in the plan (and 200 in the project), roles only from the catalog, dependencies only on tasks of this plan or of the project, without cycles. A plan with a fault is rejected with a reason, and the Project Manager gets **one repeat attempt** with this reason in the input; a second failure — the project waits for the user's decision («Не удалось составить план», the plan could not be made), and there are no tasks from bad plans.
 
-### Параллельность
+The planner sees the accepted files of the project (the original names and the tasks that handed them in). A task whose text or criterion of readiness names such a file gets it: if the planner did not give a dependency, the engine adds by itself a dependency on the task that handed in the file.
 
-Одновременно выполняется не больше двух задач; другой предел — `--parallel 1`, `2` или `3` у `start` и `resume`. Задача начинается только после того, как все её зависимости «готово». План и сверка цели идут, когда задач в работе нет.
+### Parallelism
 
-### Контекст задачи
+No more than two tasks are performed at the same time; another limit is `--parallel 1`, `2` or `3` of `start` and `resume`. A task begins only after all its dependencies are «готово». The plan and the comparison of the goal go when no tasks are in work.
 
-Вход задачи: цель проекта, память проекта (последние записи), файлы результатов **только** тех задач, от которых она зависит (эту зависимость движок достраивает при проверке плана, см. «Как цель становится планом»), и замечания (замечания Проверяющего при повторе, текст изменения от пользователя, для критической задачи — требование подготовить только черновик). Путей файлов ядра (`events.jsonl`, `writer.lock`, `inbox/`) агент не получает.
+### The context of a task
 
-### Проверка результата
+The input of a task: the goal of the project, the memory of the project (the last records), the result files **only** of the tasks it depends on (the engine completes this dependency when it checks the plan, see "How a goal becomes a plan"), and remarks (the remarks of the Reviewer on a repeat, the text of a change from the user, for a critical task — the requirement to prepare only a draft). The agent does not get the paths of the core files (`events.jsonl`, `writer.lock`, `inbox/`).
 
-Результат задачи проверяет **отдельный запуск** Проверяющего со своим номером запуска; «готово» — только после проверки «прошла». Не прошла — задача повторяется с замечаниями (всего три запуска одной роли), затем Руководитель проекта выбирает другую роль из каталога, и у неё тоже три запуска; если и она не справилась — задача ждёт решения пользователя. Сбой самой задачи после повторов исполнителя — тоже вопрос пользователю; остальные задачи при этом доводятся до своего итога.
+### The check of a result
 
-### Согласования
+The result of a task is checked by **a separate run** of the Reviewer with its own run number; «готово» only after the check has «прошла» (passed). If it did not pass — the task is repeated with remarks (three runs of one role in all), then the Project Manager chooses another role from the catalog, and it too has three runs; if it also did not manage — the task waits for the user's decision. A failure of the task itself after the repeats of the executor is also a question to the user; the other tasks are brought to their result meanwhile.
 
-Критическая задача (отправка, публикация, оплата и любое действие вовне) готовит только черновик файлом и после проверки ждёт решения пользователя:
+### Approvals
+
+A critical task (sending, publishing, paying and any action outside) prepares only a draft as a file and after the check waits for the user's decision:
 
     npm run team -- answer p-20261006-a1b2c3 t-0002 approve
     npm run team -- answer p-20261006-a1b2c3 t-0002 change --text "Сделайте тон дружелюбнее"
     npm run team -- answer p-20261006-a1b2c3 t-0002 reject
 
-`approve` отмечает задачу «готово» — **действие вовне движок не выполняет** (в журнале так и записано). `change` запускает задачу снова с текстом пользователя во входе. `reject` закрывает задачу; задачи, зависевшие от неё, закрываются тоже, а Руководитель проекта узнаёт об отказе при следующем раунде плана. Задаче «не получилась» можно ответить `change` или `reject`, но не `approve`.
+(The Russian example text means "Make the tone friendlier".)
 
-### Потолок расходов
+`approve` marks the task «готово» — **the engine does not perform the action outside** (this is recorded in the journal). `change` starts the task again with the user's text in the input. `reject` closes the task; the tasks that depended on it are closed too, and the Project Manager learns about the refusal at the next round of the plan. To a task that «не получилась» (failed) one can answer `change` or `reject`, but not `approve`.
 
-Каждый запуск получает свой потолок не больше остатка проекта, а параллельные запуски **резервируют** потолок: сумма потолков открытых запусков не больше остатка. Когда потолка не хватает на следующий запуск, проект ждёт решения («Достигнут потолок расходов»), новых запусков нет. Потолок поднимается командой `budget` (новое значение больше уже израсходованного), продолжение — `resume`; пока потолка всё ещё не хватает, `resume` отвечает отказом.
+### The spending ceiling
 
-### Завершение
+Every run gets its own ceiling not above the remainder of the project, and parallel runs **reserve** the ceiling: the sum of the ceilings of open runs is not above the remainder. When the ceiling is not enough for the next run, the project waits for a decision («Достигнут потолок расходов», the spending ceiling is reached), there are no new runs. The ceiling is raised with the command `budget` (the new value is above what is already spent), and the continuation is `resume`; while the ceiling is still not enough, `resume` answers with a refusal.
 
-Когда все задачи «готово» (или закрыты пользователем, при хотя бы одной «готово»), Проверяющий сверяет результаты с целью. Сверка прошла — проект «выполнен». Не прошла — Руководитель проекта добавляет задачи (раунд дозадач, не больше двух раундов); после второго — проект ждёт решения пользователя. «Выполнен» без пройденной сверки цели невозможен.
+### Completion
 
-### Пауза, возобновление, остановка, Ctrl-C
+When all tasks are «готово» (or closed by the user, with at least one «готово»), the Reviewer compares the results with the goal. The comparison passed — the project is «выполнен» (finished). It did not pass — the Project Manager adds tasks (a round of extra tasks, no more than two rounds); after the second one the project waits for the user's decision. «Выполнен» without a passed comparison of the goal is impossible.
 
-`pause` — новые задачи не начинаются, идущие доводятся до итога; `resume` — работа продолжается. `stop` — все запуски прерываются (их процессы останавливаются), задачи «прерваны», проект «остановлен» навсегда. Ctrl-C (`SIGINT`/`SIGTERM`) в терминале движка — пауза и выход; продолжить можно `resume`. На паузе и в ожидании решения движок не выходит и принимает команды.
+### Pause, resume, stop, Ctrl-C
 
-### Восстановление после падения
+`pause` — new tasks do not begin, those in progress are brought to the result; `resume` — the work goes on. `stop` — all runs are interrupted (their processes are stopped), the tasks are «прерваны», the project is «остановлен» (stopped) for good. Ctrl-C (`SIGINT`/`SIGTERM`) in the terminal of the engine — a pause and exit; one can continue with `resume`. On a pause and while waiting for a decision the engine does not exit and accepts commands.
 
-Если процесс движка убит, следующий `resume` (или любая команда) снимает устаревший замок, ядро прерывает незакрытую работу, и движок начинает прерванные задачи заново (попытка засчитывается). Задача не становится «готово» дважды. Сообщения, которые лежали в канале к моменту падения, не выполняются: новый движок удаляет их и записывает событие с их числом и идентификаторами, а ждущему отправителю отвечает «Сообщение не выполнено: проект перезапускался. Повторите команду». Два движка на один проект не бывают: второй `start` получает «Проект сейчас ведёт запущенный процесс Sai Team (pid N)…».
+### Recovery after a crash
 
-### Канал команд
+If the engine process is killed, the next `resume` (or any command) removes the stale lock, the core interrupts the unclosed work, and the engine begins the interrupted tasks again (the attempt is counted). A task does not become «готово» twice. Messages that lay in the channel at the moment of the crash are not performed: the new engine deletes them and records an event with their number and identifiers, and to the waiting sender it answers «Сообщение не выполнено: проект перезапускался. Повторите команду» (the message was not performed: the project was restarted. Repeat the command). Two engines for one project cannot be: the second `start` gets «Проект сейчас ведёт запущенный процесс Sai Team (pid N)…» (the project is now led by a running Sai Team process).
 
-Пока движок работает, команды `say`, `answer`, `pause`, `resume`, `stop`, `budget` из другого терминала передаются ему через папку `inbox/` проекта: команда кладёт сообщение файлом (0600, не больше 64 КиБ, тексты уже маскированы) под очередным номером, движок берёт его в течение 100 мс, проверяет, пишет событие и отвечает подтверждением. Команда ждёт подтверждения не больше 10 с. Нет подтверждения — команда сообщает «не подтверждено» и **сама не пишет и не повторяет**: если движок сообщение не взял, оно отозвано и событий нет; если взял — событие записано не больше одного раза, проверьте журнал (`events`). `add-task` и `run-task` при работающем движке отвечают отказом без записи. Без движка все эти команды пишут в журнал сами, как раньше.
+### The channel of commands
 
-### Команды движка
+While the engine works, the commands `say`, `answer`, `pause`, `resume`, `stop`, `budget` from another terminal are passed to it through the folder `inbox/` of the project: the command puts a message as a file (0600, no larger than 64 KiB, the texts are already masked) under the next number, the engine takes it within 100 ms, checks it, writes an event and answers with a confirmation. The command waits for the confirmation no longer than 10 s. No confirmation — the command reports «не подтверждено» (not confirmed) and **does not write or repeat by itself**: if the engine did not take the message, it is withdrawn and there are no events; if it took it, the event is written no more than once, check the journal (`events`). `add-task` and `run-task` with a running engine answer with a refusal without writing. Without the engine all these commands write into the journal themselves, as before.
 
-Из каталога `tools/` (id в примерах вымышленные):
+### Engine commands
+
+From the folder `tools/` (the ids in the examples are made up):
 
     npm run team -- start p-20261006-a1b2c3 --parallel 3
     npm run team -- say p-20261006-a1b2c3 "Сделайте упор на аренду"
@@ -469,105 +473,107 @@ Ctrl+C в терминале, где запущена команда. Если �
     npm run team -- budget p-20261006-a1b2c3 5
     npm run team -- stop p-20261006-a1b2c3
 
-- `start <id> [--parallel N]` — запускает движок проекта в статусе «создан» и работает до итога; вывод при выходе — проект и его статус;
-- `resume <id> [--parallel N]` — продолжает проект на паузе или ждущий решения (без движка — сама становится движком, при работающем движке — через канал);
-- `pause <id>`, `stop <id>`, `budget <id> <сумма>`, `answer <id> <задача> approve|change|reject [--text "…"]`, `say <id> "<текст>"` (или `say <id> --text "<текст>"`) — вывод: записанное событие.
+(The Russian example text means "Put the stress on rent".)
 
-Коды выхода те же: 0 — успех; 1 — отказ (например, `E_NOT_STARTABLE`, `E_ENGINE_RUNNING`, `E_ALREADY_RUNNING`, `E_STOPPED`, `E_OPEN_QUESTION`, `E_BUDGET_NEEDED`, `E_BUDGET_LOW`, `E_CHANNEL_TIMEOUT`, `E_CHANNEL_UNCONFIRMED`); 2 — неверные аргументы (`E_USAGE`, например `--parallel: число 1, 2 или 3`); 3 — внутренняя ошибка.
+- `start <id> [--parallel N]` — starts the engine of a project in the status «создан» (created) and works to the result; the output at exit is the project and its status;
+- `resume <id> [--parallel N]` — continues a project on a pause or waiting for a decision (without an engine it becomes the engine itself, with a running engine — through the channel);
+- `pause <id>`, `stop <id>`, `budget <id> <sum>`, `answer <id> <task> approve|change|reject [--text "…"]`, `say <id> "<text>"` (or `say <id> --text "<text>"`) — the output is the recorded event.
 
-### Остаточные риски
+The exit codes are the same: 0 — success; 1 — a refusal (for example, `E_NOT_STARTABLE`, `E_ENGINE_RUNNING`, `E_ALREADY_RUNNING`, `E_STOPPED`, `E_OPEN_QUESTION`, `E_BUDGET_NEEDED`, `E_BUDGET_LOW`, `E_CHANNEL_TIMEOUT`, `E_CHANNEL_UNCONFIRMED`); 2 — wrong arguments (`E_USAGE`, for example `--parallel: число 1, 2 или 3` (the number 1, 2 or 3)); 3 — an internal error.
 
-- Движок взял сообщение и упал, или подтверждение опоздало (например, при долгой остановке процессов `stop`) — команда сообщает «не подтверждено», событие записано ноль или один раз; повтор — новое действие пользователя.
-- Задержка приёма сообщения — до 100 мс (опрос папки).
-- Ложный `holder` в замке или файл в `inbox/` может подложить только тот же пользователь (папки 0700).
-- Предел «не больше 100 сообщений в `inbox/`» у отправителя — мягкая защита, а не гарантия; уборка и приём работают при любом числе файлов.
+### Residual risks
 
-## Sai Team — интерфейс
+- The engine took a message and crashed, or the confirmation was late (for example, during a long stop of the processes by `stop`) — the command reports «не подтверждено», the event is written zero or one time; a repeat is a new action of the user.
+- The delay of accepting a message is up to 100 ms (the polling of the folder).
+- A false `holder` in the lock or a file in `inbox/` can be planted only by the same user (the folders are 0700).
+- The limit "no more than 100 messages in `inbox/`" at the sender is a soft protection and not a guarantee; the cleanup and the acceptance work with any number of files.
 
-Страница для человека, который не программирует: список проектов, новый проект (цель одной фразой и потолок расходов), страница проекта, чат, карточки задачи и исполнителя (проект `docs/design/REQ-011-team-web.md`, решения `decisions/0024-team-web-location.md` и `decisions/0025-team-web-server.md`). Код сервера — `tools/src/web/`, страница — `tools/src/web/public/`; Node 22 без зависимостей во время выполнения. Всё, что показано, сервер выводит из журнала проекта воспроизведением на каждый запрос, своего файла состояния у него нет; записывает он только через ядро и движок.
+## Sai Team — the interface
 
-### Запуск
+A page for a person who does not program: the list of projects, a new project (the goal in one phrase and the spending ceiling), the project page, the chat, the cards of a task and of an executor (design `docs/design/REQ-011-team-web.md`, decisions `decisions/0024-team-web-location.md` and `decisions/0025-team-web-server.md`). The server code is `tools/src/web/`, the page is `tools/src/web/public/`; Node 22 without run-time dependencies. Everything shown the server derives from the journal of the project by replaying it on every request, it has no state file of its own; it writes only through the core and the engine.
 
-Из каталога `tools/`:
+### Start
+
+From the folder `tools/`:
 
     npm run team-web
 
-Команда печатает одну строку со ссылкой на страницу — по умолчанию `Sai Team: http://127.0.0.1:4781/` — и работает, пока её не остановят. Параметры:
+The command prints one line with a link to the page — by default `Sai Team: http://127.0.0.1:4781/` — and works until it is stopped. Parameters:
 
-- `--port <номер>` — другой порт (0 — любой свободный); если порт занят, команда так и скажет и предложит другой;
-- `--executor scripted --scenario <файл>` — тестовый исполнитель по файлу сценария, **только для тестов и приёмки**; такие проекты помечены на странице «тестовый исполнитель». Без параметров новые проекты ведёт Claude Code (`claude-cli`).
+- `--port <number>` — another port (0 means any free one); if the port is taken, the command says so and offers another;
+- `--executor scripted --scenario <file>` — the test executor by a scenario file, **only for tests and acceptance**; such projects are marked on the page «тестовый исполнитель» (test executor). Without parameters, new projects are led by Claude Code (`claude-cli`).
 
-Настоящие запуски Claude Code на этом компьютере включает переменная `SAI_TEAM_REAL_RUNS=1` (как у `npm run team`); без неё сервер не создаёт проект на `claude-cli` и объясняет это на странице. Папка данных — та же, что у `npm run team` (`SAI_TEAM_HOME` или `~/.sai-team`).
+Real Claude Code runs on this computer are turned on by the variable `SAI_TEAM_REAL_RUNS=1` (as for `npm run team`); without it the server does not create a project on `claude-cli` and explains this on the page. The data folder is the same as for `npm run team` (`SAI_TEAM_HOME` or `~/.sai-team`).
 
-### Безопасность
+### Security
 
-Сервер слушает только `127.0.0.1` и отвечает только на адрес `127.0.0.1:<порт>` или `localhost:<порт>`. Создать проект, написать в чат и нажать кнопки проекта можно только со своей страницы: запрос записи проверяется по источнику (`Origin`), типу тела и ключу страницы. Ключ создаётся заново при каждом запуске и живёт только в памяти сервера; страница, открытая до перезапуска, попросит обновиться. Граница доверия — пользователи этого компьютера (как у Pixel Office).
+The server listens only on `127.0.0.1` and answers only to the address `127.0.0.1:<port>` or `localhost:<port>`. Creating a project, writing into the chat and pressing the project buttons is possible only from its own page: a write request is checked by the source (`Origin`), the type of the body and the key of the page. The key is created anew at every start and lives only in the memory of the server; a page opened before a restart will ask to refresh. The border of trust is the users of this computer (as in Pixel Office).
 
-### Страница проекта: шесть вопросов
+### The project page: six questions
 
-1. **Что происходит** — последние пять фраз журнала простыми словами.
-2. **Кто занимается** — роли, у которых задача в работе или на проверке.
-3. **Когда будет готово** — правило срока ниже.
-4. **Есть ли проблема** — задачи «не удалось» с причиной и причина, по которой проект ждёт вашего решения.
-5. **Нужно ли что-то от меня** — число вопросов, ждущих ответа, и переход к каждому. Ответить на вопрос можно будет в окне решений (отдельное требование); сообщение в чате вопрос не закрывает.
-6. **Результат** — файлы результата с задачей и ролью.
+1. **Что происходит** (what is happening) — the last five phrases of the journal in plain words.
+2. **Кто занимается** (who is working) — the roles that have a task in work or under review.
+3. **Когда будет готово** (when it will be ready) — the rule of the term below.
+4. **Есть ли проблема** (is there a problem) — the tasks «не удалось» with the reason, and the reason why the project waits for your decision.
+5. **Нужно ли что-то от меня** (is anything needed from me) — the number of questions waiting for an answer, and a jump to each. A question can be answered in the window of decisions (a separate requirement); a message in the chat does not close a question.
+6. **Результат** (the result) — the result files with the task and the role.
 
-Прогресс — «N из M задач», без процентов.
+The progress is «N из M задач» (N of M tasks), without percents.
 
-### Правило срока
+### The rule of the term
 
-- Проект завершён, остановлен или не удался — показывается его статус словами.
-- Длительность готовой задачи — от её первого запуска до события «готово». Пока измеримых длительностей меньше двух — «срок пока не оценить».
-- Иначе X = медиана длительностей × округление вверх (незавершённые задачи / предел параллельности проекта), округлённое вверх до минуты: «примерно через X мин». Медиана чётного числа — среднее двух средних; предел параллельности — заданный при запуске проекта, иначе 2. Незавершённые — задачи «ждёт», «в работе», «на проверке», «прервана», «ждёт решения пользователя».
-- Если оценивать нечего (незавершённых задач нет, а проект ещё идёт — например, сверяется цель), — «срок пока не оценить».
+- The project is finished, stopped or failed — its status is shown in words.
+- The duration of a done task is from its first run to the event «готово». While there are fewer than two measurable durations — «срок пока не оценить» (the term cannot be estimated yet).
+- Otherwise X = the median of durations × the rounding up of (unfinished tasks / the parallelism limit of the project), rounded up to a minute: «примерно через X мин» (in about X min). The median of an even number is the average of the two middle ones; the parallelism limit is the one set at the start of the project, otherwise 2. Unfinished are the tasks «ждёт» (waits), «в работе», «на проверке», «прервана», «ждёт решения пользователя» (waits for the user's decision).
+- If there is nothing to estimate (there are no unfinished tasks, and the project still goes on — for example, the goal is being compared), — «срок пока не оценить».
 
-### Остановка
+### Stop
 
-Ctrl-C (или `SIGTERM`) — сервер перестаёт принимать запросы, а проекты, которые вёл он, встают на паузу так же, как после Ctrl-C у `npm run team -- start`; на всё — не больше 15 с. Сами после перезапуска сервера проекты не продолжаются: страница проекта покажет «Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше» (если проект ничего не ждал). Если проект до паузы ждал вашего решения или у задачи есть вопрос, строка скажет об этом прямо и объяснит, что может сделать «Продолжить». Кнопка «Продолжить» на странице проекта ведёт работу дальше — сервер сам запускает работу проекта. Из терминала, как и раньше, проект на паузе продолжает команда `npm run team -- resume <id>` (id в примере вымышленный):
+Ctrl-C (or `SIGTERM`) — the server stops accepting requests, and the projects that it led go on a pause the same way as after Ctrl-C of `npm run team -- start`; everything within 15 s at most. The projects do not continue by themselves after a server restart: the project page will show «Проект на паузе. Нажмите «Продолжить», чтобы работа пошла дальше» (the project is on a pause. Press «Continue» to make the work go on) (if the project was waiting for nothing). If before the pause the project waited for your decision or a task has a question, the line will say so directly and explain what «Продолжить» can do. The button «Продолжить» on the project page leads the work on — the server itself starts the work of the project. From the terminal, as before, a project on a pause is continued by the command `npm run team -- resume <id>` (the id in the example is made up):
 
     npm run team -- resume p-20261006-a1b2c3
 
-### Кнопки проекта
+### The project buttons
 
-У проекта на странице три кнопки (проект `docs/design/REQ-035-team-web-control.md`, решения `decisions/0030-req035-037-open-points.md` и `decisions/0032-req035-web-control.md`):
+A project on the page has three buttons (design `docs/design/REQ-035-team-web-control.md`, decisions `decisions/0030-req035-037-open-points.md` and `decisions/0032-req035-web-control.md`):
 
-- «Пауза» — видна, пока проект планирует работу, в работе или ждёт решения; начатые запуски доводятся до конца, новые задачи не начинаются;
-- «Продолжить» — видна у проекта на паузе, в том числе после перезапуска сервера;
-- «Остановить» — видна, пока проект планирует работу, в работе, на паузе или ждёт решения; сначала страница спрашивает подтверждение («Остановить» или «Не останавливать»).
+- «Пауза» (pause) — visible while the project plans the work, is in work or waits for a decision; started runs are brought to the end, new tasks do not begin;
+- «Продолжить» (continue) — visible for a project on a pause, including after a server restart;
+- «Остановить» (stop) — visible while the project plans the work, is in work, on a pause or waits for a decision; first the page asks for a confirmation («Остановить» or «Не останавливать», do not stop).
 
-У созданного, остановленного, выполненного и не удавшегося проекта кнопок нет. **Остановка необратима**: остановленный проект продолжить нельзя ни кнопкой, ни из терминала. Проект, который ждёт решения, продолжается ответом на вопрос, а не кнопкой (потолок расходов поднимает команда `budget` из терминала). Если проект поставили на паузу, пока он ждал решения (кнопкой «Пауза», из терминала или остановкой сервера), «Продолжить» делает то же, что `resume` из терминала. При ожидании из-за потолка расходов «Продолжить» ничего не обещает: если потолка по-прежнему не хватает, проект снова спросит об этом, без запусков и расходов. При ожидании из-за плана или проверки цели «Продолжить» может запустить составление плана, новую работу или проверку — это новый платный запуск в пределах потолка проекта; если не выйдет или потолка не хватит, проект снова спросит вас. Если у задачи открыт вопрос, «Продолжить» не сработает, пока вопрос без ответа; строка паузы говорит об этом заранее, ответ в чате вопрос не закрывает.
+A created, stopped, finished and failed project has no buttons. **A stop is irreversible**: a stopped project cannot be continued, neither by a button nor from the terminal. A project that waits for a decision is continued by an answer to the question and not by a button (the spending ceiling is raised by the command `budget` from the terminal). If a project was put on a pause while it waited for a decision (by the button «Пауза», from the terminal or by stopping the server), «Продолжить» does the same as `resume` from the terminal. When waiting because of the spending ceiling, «Продолжить» promises nothing: if the ceiling is still not enough, the project asks about it again, without runs and spend. When waiting because of the plan or the check of the goal, «Продолжить» can start making a plan, new work or a check — this is a new paid run within the ceiling of the project; if it does not work out or the ceiling is not enough, the project asks you again. If a task has an open question, «Продолжить» does not work while the question is without an answer; the pause line says so in advance, and an answer in the chat does not close the question.
 
-Страница сама ничего не записывает: каждая команда идёт через движок проекта (как `pause`, `resume` и `stop` из терминала), а что изменилось, страница показывает по журналу при следующем обновлении. Ответ на нажатие — «Отправлено» или простыми словами, почему команда не выполнена.
+The page itself writes nothing: every command goes through the engine of the project (as `pause`, `resume` and `stop` from the terminal), and what changed the page shows by the journal at the next refresh. The answer to a press is «Отправлено» (sent) or, in plain words, why the command was not performed.
 
-## Проверка учёта прогонов (handoffs-check)
+## The check of the run records (handoffs-check)
 
-Команда `cd tools && npm run handoffs-check` проверяет каждый файл `handoffs/**/*.json`, который отслеживает git или который лежит в рабочем дереве новым (тот же перечень файлов, что у `npm run traces`). Она входит в `npm run check` перед тестами и ничего не пишет. Проект — `docs/design/REQ-038-handoffs-check.md`, записи — `decisions/0036-handoffs-check-base.md`, `decisions/0037-handoffs-check-design.md`, `decisions/0038-handoffs-git-history-child-process.md`. Код — `tools/src/handoffs/`; вызовы git (и слово `child_process`) — только в `tools/src/handoffs/git-history.js`.
+The command `cd tools && npm run handoffs-check` checks every file `handoffs/**/*.json` that git tracks or that lies in the working tree as new (the same list of files as for `npm run traces`). It is part of `npm run check` before the tests and writes nothing. The design is `docs/design/REQ-038-handoffs-check.md`, the records are `decisions/0036-handoffs-check-base.md`, `decisions/0037-handoffs-check-design.md`, `decisions/0038-handoffs-git-history-child-process.md`. The code is `tools/src/handoffs/`; git calls (and the word `child_process`) are only in `tools/src/handoffs/git-history.js`.
 
-Что проверяется (код правила идёт в выводе и в базе исключений):
+What is checked (the code of the rule goes in the output and in the exceptions base):
 
-- H1 — файл читается как JSON в UTF-8, верхний уровень — объект (путь поля `$`);
-- H2 — есть все поля верхнего уровня из `docs/workflows/handoffs.md`, раздел «Поля»;
-- H3 — `file` равен пути файла, `run_id` — имени папки прогона, `handoff_id` не повторяется;
-- H4 — статус: в коммите только законченные handoff-ы (`COMPLETED`, `FAILED`, `CANCELLED` с `orch_cancellation`, остановка `IN_PROGRESS` с первой записью `issues` вида «BLOCKED»); `result.status` равен `status`; `PENDING` и `IN_PROGRESS` допустимы только у файла, которого ещё нет в HEAD или который отличается от него;
-- H5 — время вида `ГГГГ-ММ-ДДTчч:мм:ссZ`, `null` или строка, начинающаяся словом «неизвестно» (`completed_at` равен `null` только при `IN_PROGRESS`, `PENDING`, `CANCELLED`);
-- H6 — время не позже часов в момент проверки;
-- H7 — время не позже времени коммиттера самого раннего коммита, в котором значение появилось в этом поле;
-- H8 — `completed_at` не раньше `started_at`;
-- H9 — поправки ORCH (`orch_correction`, `orch_note`): объект или список объектов с `by` и `at` (или `at: null` с `at_note`); времена внутри `at_note` проверяются как H6 и H7; поля `was` и `previous` не проверяются;
-- H10 — путь домашнего каталога (та же функция и тот же файл исключений, что у `npm run traces`);
-- H11 — путь временной папки машины; путь после заглушки в угловых скобках (`<scratch>/…`) не считается.
+- H1 — the file is read as JSON in UTF-8, the top level is an object (the field path `$`);
+- H2 — all top-level fields from `docs/workflows/handoffs.md`, section "Fields", are present;
+- H3 — `file` equals the path of the file, `run_id` the name of the run folder, `handoff_id` is not repeated;
+- H4 — status: in a commit only finished handoffs (`COMPLETED`, `FAILED`, `CANCELLED` with `orch_cancellation`, a stop `IN_PROGRESS` with a first record of `issues` of the kind "BLOCKED"); `result.status` equals `status`; `PENDING` and `IN_PROGRESS` are allowed only for a file that is not yet in HEAD or that differs from it;
+- H5 — the time of the form `YYYY-MM-DDThh:mm:ssZ`, `null`, or a string beginning with the word «неизвестно» (unknown) (`completed_at` is `null` only for `IN_PROGRESS`, `PENDING`, `CANCELLED`);
+- H6 — the time is not later than the clock at the moment of the check;
+- H7 — the time is not later than the committer time of the earliest commit in which the value appeared in this field;
+- H8 — `completed_at` is not earlier than `started_at`;
+- H9 — ORCH corrections (`orch_correction`, `orch_note`): an object or a list of objects with `by` and `at` (or `at: null` with `at_note`); the times inside `at_note` are checked as H6 and H7; the fields `was` and `previous` are not checked;
+- H10 — a path of the home folder (the same function and the same file of exceptions as for `npm run traces`);
+- H11 — a path of the temporary folder of the machine; a path after a stand-in in angle brackets (`<scratch>/…`) does not count.
 
-Вывод — одна строка на нарушение: `<путь>:<строка> — <код правила>: <путь поля>: <что не так>`; последняя строка — итог `handoffs-check: файлов проверено N, нарушений M, исключений использовано K из L`. Найденный путь компьютера в вывод не попадает. Коды выхода: 0 — нарушений нет (снятые базой не считаются); 1 — есть нарушение; 2 — ошибка окружения или ввода (нет git, файл не читается, сломана база исключений), одна строка `handoffs-check: <код>: <текст>` в stderr, stdout пуст. Чтобы исправить нарушение, откройте файл на указанной строке и поле: это поле своего handoff-а исправляет его автор; чужие закоммиченные handoff-ы не переписываются (`docs/quality-bar.md`, §6, п. 8).
+The output is one line per violation: `<path>:<line> — <rule code>: <field path>: <what is wrong>`; the last line is the summary `handoffs-check: файлов проверено N, нарушений M, исключений использовано K из L` (files checked N, violations M, exceptions used K of L). A found computer path does not get into the output. Exit codes: 0 — no violations (those lifted by the base do not count); 1 — there is a violation; 2 — an error of the environment or the input (no git, a file cannot be read, the exceptions base is broken), one line `handoffs-check: <code>: <text>` in stderr, stdout is empty. To fix a violation, open the file at the given line and field: this field of its own handoff is fixed by its author; other people's committed handoffs are not rewritten (`docs/quality-bar.md`, §6, item 8).
 
-База исключений `tools/handoffs/exceptions.tsv` держит старые нарушения, снятые один раз на коммите базы. Одна запись — одно нарушение: путь файла, код правила (H1–H9 или H11), путь поля, sha256 значения, причина (через табуляцию). Запись снимает только своё нарушение и только пока значение поля совпадает с хешем. Каждая запись при каждом запуске сверяется с файлом в коммите базы: запись для нового handoff-а или нового значения невозможна. Коммит базы указан в шапке `# база: <40 hex>` и закреплён строкой «База handoffs-check: <40 hex>» в записи `decisions/` с наибольшим номером, где она есть; сдвинуть базу можно только новой записью. Запись, которая ничего не сняла, печатается строкой «исключение не использовано» и код выхода не меняет.
+The exceptions base `tools/handoffs/exceptions.tsv` holds old violations lifted once at the commit of the base. One record is one violation: the file path, the rule code (H1–H9 or H11), the field path, the sha256 of the value, the reason (separated by a tab). A record lifts only its own violation and only while the value of the field matches the hash. Every record is compared at every run with the file in the commit of the base: a record for a new handoff or a new value is impossible. The commit of the base is given in the header `# база: <40 hex>` and is fixed by the line «База handoffs-check: <40 hex>» in the record of `decisions/` with the largest number where it is present; the base can be moved only by a new record. A record that lifted nothing is printed as the line «исключение не использовано» (the exception was not used) and does not change the exit code.
 
-Ключи: `--root <папка>` (любая папка внутри репозитория), `--emit-exceptions` (вместо отчёта печатает записи базы для нарушений, не снятых базой; ничего не пишет; так база снята в прогоне REQ-038), `--help`.
+Keys: `--root <folder>` (any folder inside the repository), `--emit-exceptions` (instead of the report prints the records of the base for the violations not lifted by the base; writes nothing; this is how the base was lifted in the run REQ-038), `--help`.
 
-## Команда handoff
+## The handoff command
 
-Команда создаёт handoff и закрывает его. Проект — `docs/design/REQ-039-handoff-command.md`, записи — `decisions/0039-handoff-command-design.md` и `decisions/0040-handoffs-git-tag-lookup.md`. Код — `tools/src/handoffs/handoff.js` и соседние файлы; в `npm run check` команда не входит (она пишет файлы). Пишет только в `handoffs/<RUN-ID>/`.
+The command creates a handoff and closes it. The design is `docs/design/REQ-039-handoff-command.md`, the records are `decisions/0039-handoff-command-design.md` and `decisions/0040-handoffs-git-tag-lookup.md`. The code is `tools/src/handoffs/handoff.js` and the neighbouring files; the command is not part of `npm run check` (it writes files). It writes only into `handoffs/<RUN-ID>/`.
 
-Вызовы (из `tools/`; пути в ключах и в выводе — от корня репозитория):
+Calls (from `tools/`; the paths in the keys and in the output are from the repository root):
 
     cd tools && npm run handoff -- new --run <RUN-ID> --step <ШАГ> --role <КОД РОЛИ> --workflow <WF-NN> --task "<текст>"
                                   [--criterion "<пункт>"]… [--requirement <REQ-NNN>]… [--artifact-in "<путь или пояснение>"]…
@@ -576,72 +582,76 @@ Ctrl-C (или `SIGTERM`) — сервер перестаёт принимать
     cd tools && npm run handoff -- close <путь handoff-а от корня> --status COMPLETED|FAILED
     cd tools && npm run handoff -- --help
 
-`npm run` печатает перед выводом две строки заголовка; чистый вывод — `npm run -s handoff -- …` или `node src/handoffs/handoff.js …` из `tools/`.
+(In the call, `<ШАГ>` is the step, `<КОД РОЛИ>` the role code, `<текст>` the text, `<пункт>` the item, `<путь или пояснение>` a path or a note, `<уточнение>` a qualifier, `<путь handoff-а>` the path of the handoff, `<путь handoff-а от корня>` the path of the handoff from the root.)
 
-Ключи `new` (повторяемые дают списки в порядке ввода; при нарушении правила — код 1, `E_HO_INPUT`):
+`npm run` prints two header lines before the output; the clean output is `npm run -s handoff -- …` or `node src/handoffs/handoff.js …` from `tools/`.
 
-- `--run` — обязателен, `МЕТКА-ГГГГММДД-NN` (метка из заглавных латинских букв и цифр; у дефекта и аудита ещё номер из 3–4 цифр): `PROD-20991231-01`, `ISS-0002-20260930-01`;
-- `--step` — обязателен, две цифры и, если нужно, строчная буква: `00`, `01`, `05b`;
-- `--role` — обязателен, код роли из строк `name: Название (КОД)` в `.claude/agents/*.md` (список читается из файлов, в коде его нет);
-- `--workflow` — обязателен, `WF-01` … `WF-07`;
-- `--task` — обязателен, непустой текст (пишется как есть);
-- `--criterion`, `--artifact-in`, `--write-set` — повторяемые, непустой текст; `--write-set` всегда пишется списком;
-- `--requirement` — повторяемый, `REQ-NNN` (три цифры);
-- `--route` — один непустой текст; `--qualifier` — строчные латинские буквы и цифры через дефис, до 40 знаков; `--suffix` — `rN`, `runN` или `vN` (при `rN` пишется `round`); `--priority` — `HIGH`, `NORMAL` (по умолчанию) или `LOW`; `--rework-of` — путь от корня, начинается с `handoffs/`, кончается `.json`, существование не проверяется.
+The keys of `new` (repeatable ones give lists in the order of input; at a violation of a rule — code 1, `E_HO_INPUT`):
 
-Ключ `close`: `--status COMPLETED|FAILED`, плюс ровно один путь. Значение ключа, начинающееся с `--`, считается отсутствующим: текст задачи не может начинаться с `--`.
+- `--run` — required, `LABEL-YYYYMMDD-NN` (the label is capital Latin letters and digits; a defect and an audit also have a number of 3–4 digits): `PROD-20991231-01`, `ISS-0002-20260930-01`;
+- `--step` — required, two digits and, if needed, a lowercase letter: `00`, `01`, `05b`;
+- `--role` — required, a role code from the lines `name: Name (CODE)` in `.claude/agents/*.md` (the list is read from the files, it is not in the code);
+- `--workflow` — required, `WF-01` … `WF-07`;
+- `--task` — required, a non-empty text (written as it is);
+- `--criterion`, `--artifact-in`, `--write-set` — repeatable, a non-empty text; `--write-set` is always written as a list;
+- `--requirement` — repeatable, `REQ-NNN` (three digits);
+- `--route` — one non-empty text; `--qualifier` — lowercase Latin letters and digits separated by hyphens, up to 40 characters; `--suffix` — `rN`, `runN` or `vN` (with `rN`, `round` is written); `--priority` — `HIGH`, `NORMAL` (the default) or `LOW`; `--rework-of` — a path from the root, begins with `handoffs/`, ends with `.json`, the existence is not checked.
 
-`new` пишет файл `handoffs/<RUN-ID>/step-<ШАГ>-<роль строчными>[-<уточнение>][-<суффикс>].json` с `status` `PENDING`; `created_at` и `started_at` — одно чтение часов; новый файл проверяется правилами `handoffs-check` до записи. Имя занимается жёсткой ссылкой: существующий файл не заменяется, поэтому файловая система должна уметь жёсткие ссылки. Остаток `.<имя>.sai-tmp` от прерванной записи не удаляется командой: следующий `new` того же имени отвечает `E_HO_BUSY`, остаток удаляют вручную. Метка `base/<RUN-ID>` (`decisions/0031`): при `--workflow WF-02` без метки отказ (`E_HO_BASE`); у остальных процессов файл создаётся без поля `base_tag`; если метка есть, `context.base_tag` пишется при любом процессе.
+The key of `close`: `--status COMPLETED|FAILED`, plus exactly one path. A key value that begins with `--` is counted as missing: the text of a task cannot begin with `--`.
 
-`close` меняет в тексте файла только два значения верхнего уровня — `status` и `completed_at` (часы, одно чтение); остальные байты остаются прежними. Закрываются `PENDING` и `IN_PROGRESS` с заполненным `result`, у которого `result.status` равен `--status`, и `completed_at` равным `null`; остановка (`result.status` `IN_PROGRESS`) командой не закрывается. Новый текст проверяется правилами `handoffs-check` до записи (при нарушении — строки в stdout, файл прежний), запись — «всё или ничего» (`decisions/0004`).
+`new` writes the file `handoffs/<RUN-ID>/step-<STEP>-<role in lowercase>[-<qualifier>][-<suffix>].json` with `status` `PENDING`; `created_at` and `started_at` are one reading of the clock; the new file is checked by the rules of `handoffs-check` before writing. The name is taken by a hard link: an existing file is not replaced, so the file system must support hard links. A leftover `.<name>.sai-tmp` of an interrupted write is not deleted by the command: the next `new` of the same name answers `E_HO_BUSY`, and the leftover is deleted by hand. The tag `base/<RUN-ID>` (`decisions/0031`): with `--workflow WF-02` without the tag — a refusal (`E_HO_BASE`); for the other workflows the file is created without the field `base_tag`; if the tag exists, `context.base_tag` is written for any workflow.
 
-Коды выхода: 0 — сделано (stdout: две строки — путь и `handoff_id` у `new`, путь и `status: …, completed_at: …` у `close`); 1 — отказ по правилам (значение не принято, нет метки, файл или `handoff_id` уже есть, нарушение правил учёта, условие закрытия не выполнено); 2 — ошибка вызова или окружения (нет git, нет списка ролей, диск). Отказ — одна строка `handoff: <код>: <текст>` в stderr, без значений аргументов и без стека.
+`close` changes in the text of the file only two top-level values — `status` and `completed_at` (the clock, one reading); the other bytes stay as they were. Closed are `PENDING` and `IN_PROGRESS` with a filled `result` whose `result.status` equals `--status`, and `completed_at` equal to `null`; a stop (`result.status` `IN_PROGRESS`) is not closed by the command. The new text is checked by the rules of `handoffs-check` before writing (at a violation — lines in stdout, the file stays as it was), and the write is "all or nothing" (`decisions/0004`).
 
-Длинный текст — без нового ключа: файл вне проекта и подстановка, которую оболочка не разбирает заново:
+Exit codes: 0 — done (stdout: two lines — the path and the `handoff_id` for `new`, the path and `status: …, completed_at: …` for `close`); 1 — a refusal by the rules (a value not accepted, no tag, the file or `handoff_id` already exists, a violation of the bookkeeping rules, the condition of closing is not met); 2 — an error of the call or the environment (no git, no list of roles, the disk). A refusal is one line `handoff: <code>: <text>` in stderr, without the values of arguments and without a stack.
+
+A long text goes without a new key: a file outside the project and a substitution that the shell does not parse again:
 
     cd tools && npm run -s handoff -- new --run PROD-20991231-01 --step 02 --role BACKEND-DEV --workflow WF-02 \
       --task "$(cat <scratch>/task.txt)" --requirement REQ-999 --write-set "tools/src/demo.js"
 
-Пункты критериев — по одному `--criterion`. Предел длины задаёт ОС (`getconf ARG_MAX`).
+The items of criteria — one `--criterion` each. The limit of length is set by the OS (`getconf ARG_MAX`).
 
-## Сайт подбора решения: проверка файла арендатора
+## The solution picker site: the check of a tenant file
 
-Команда читает один файл арендатора и либо отвечает «в порядке», либо перечисляет все найденные ошибки по месту в файле (не больше 100 строк, затем «И ещё ошибок: N.»):
+The command reads one tenant file and either answers «в порядке» (all right) or lists all errors found by their place in the file (no more than 100 lines, then «И ещё ошибок: N.», and N more errors):
 
     cd tools && npm run picker -- check <файл>
 
-Коды выхода: 0 — файл в порядке, одна строка «Файл арендатора <id> в порядке: вопросов N, решений M, правил K.»; 1 — найдены ошибки, строки «<файл>: <место>: <код>: <текст>» в stdout; 2 — неверный вызов или файл нельзя прочитать, одна строка `picker: …` в stderr; 3 — ошибка программы, стек в stderr. Справка — `npm run picker -- --help`. Файл только читается: команда ничего не пишет и не создаёт. `npm run` печатает перед выводом лишние строки заголовка; чистый вывод — `npm run -s picker -- check <файл>`.
+Exit codes: 0 — the file is all right, one line «Файл арендатора <id> в порядке: вопросов N, решений M, правил K.» (the tenant file <id> is all right: questions N, solutions M, rules K); 1 — errors found, lines «<файл>: <место>: <код>: <текст>» (<file>: <place>: <code>: <text>) in stdout; 2 — a wrong call or the file cannot be read, one line `picker: …` in stderr; 3 — a program error, a stack in stderr. Help: `npm run picker -- --help`. The file is only read: the command writes and creates nothing. `npm run` prints extra header lines before the output; the clean output is `npm run -s picker -- check <файл>`. (`<файл>` means "file".)
 
-Файл арендатора бывает двух видов. Вид задаёт поле `schema`.
+A tenant file is of two kinds. The kind is set by the field `schema`.
 
-- `sai-picker-tenant/1` — файл на одном языке. Каждый текст для посетителя в нём обычная строка. Сайт показывает такой файл по-русски.
-- `sai-picker-tenant/2` — файл на трёх языках. Каждый текст для посетителя в нём объект из трёх полей: `ru`, `kk` и `en`. Например: `"title": { "ru": "…", "kk": "…", "en": "…" }`.
+- `sai-picker-tenant/1` — a file in one language. Every text for the visitor in it is an ordinary string. The site shows such a file in Russian.
+- `sai-picker-tenant/2` — a file in three languages. Every text for the visitor in it is an object of three fields: `ru`, `kk` and `en`. For example: `"title": { "ru": "…", "kk": "…", "en": "…" }`.
 
-Команда `check` проверяет оба вида. Если в файле `/2` у текста нет перевода или он не годится, в строке ошибки есть язык: `questions[2].title.kk`. Тогда вы сразу видите, какой язык исправлять. Файл `/2` примерно вдвое больше файла `/1`, а предел размера прежний — 512 КБ. Файлы `/1` по-прежнему принимаются. Их образцы лежат в `test/fixtures/picker-legacy/`.
+The command `check` checks both kinds. If in a `/2` file a text has no translation or it does not fit, the line of the error has the language: `questions[2].title.kk`. Then you see at once which language to fix. A `/2` file is about twice as big as a `/1` file, and the limit of size is as before — 512 KB. `/1` files are still accepted. Their samples are in `test/fixtures/picker-legacy/`.
 
-Тексты для посетителя не должны содержать управляющих знаков, кроме пяти пробельных: `U+0009`–`U+000D`. Нельзя и знаки категории Cf (невидимые знаки форматирования). Нельзя и разделители строк `U+2028` и `U+2029`, и непарные половины знаков. Команда `check` отвергает такой текст строкой с кодом `E_TEXT`: в ней место и код знака, например `U+200B`. Знак `U+200B` невидим и склеивает слова.
-Знак `U+202E` переворачивает текст после себя. Такие знаки обходят правило «фраза не длиннее 18 слов» и запрет второго лица. Удалите знак из текста и проверьте файл снова. Непарную половину знака (одиночный суррогат) команда тоже отвергает.
-Обычные пробелы разрешены, в том числе неразрывные `U+00A0` и `U+202F`: они нужны для чисел вроде «50 000». Эмодзи разрешены: «😀» и «❤️». Эмодзи, склеенные невидимым знаком `U+200D`, команда отвергает. Часть невидимых знаков команда пока не отвергает; не вставляйте их в тексты.
+The texts for the visitor must not contain control characters except five whitespace ones: `U+0009`–`U+000D`. Characters of the category Cf (invisible formatting characters) are also not allowed. The line separators `U+2028` and `U+2029` and unpaired halves of characters are also not allowed. The command `check` rejects such a text with a line with the code `E_TEXT`. The line has the place and the code of the character, for example `U+200B`. The character `U+200B` is invisible and glues words.
+The character `U+202E` reverses the text after it. Such characters bypass the rule of the 18-word phrase and the ban of the second person. Remove the character from the text and check the file again. An unpaired half of a character (a single surrogate) is also rejected by the command.
+Ordinary spaces are allowed, including non-breaking ones `U+00A0` and `U+202F`. They are needed for numbers like «50 000». Emoji are allowed: «😀» and «❤️». Emoji glued by the invisible character `U+200D` are rejected by the command. Some invisible characters the command does not yet reject; do not insert them into texts.
 
-Вымышленные арендаторы для стенда лежат в `src/picker/demo-tenants/`, и оба написаны в формате `/2`. Наборы ответов к ним лежат в `src/picker/demo-answers/`. Ответы не зависят от языка: в них идентификаторы и числа, например бюджет на рекламу 20. Команда `serve` запускает сайт, о ней — следующий раздел. Заготовка файла, заявки и инструкция для арендатора — в следующих требованиях. Команд для них пока нет.
+The made-up tenants for the stand are in `src/picker/demo-tenants/`, and both are written in the format `/2`. The sets of answers to them are in `src/picker/demo-answers/`. The answers do not depend on the language: they hold identifiers and numbers, for example an advertising budget of 20. The command `serve` starts the site; it is described in the next section. The template of a file, applications and the instruction for the tenant are in the next requirements. There are no commands for them yet.
 
-## Сайт подбора решения: сервер
+## The solution picker site: the server
 
-Сервер показывает сайт подбора посетителям. Он читает папку с файлами арендаторов один раз, при запуске. Он слушает только этот компьютер: адрес `127.0.0.1`. Каждому арендатору он отдаёт только его анкету и считает только его результат.
+The server shows the picker site to visitors. It reads the folder with the tenant files once, at start. It listens only to this computer: the address `127.0.0.1`. To each tenant it gives only its questionnaire and counts only its result.
 
-Запуск:
+Start:
 
     cd tools && npm run picker -- serve --tenants <папка> [--home <папка>] [--port N]
 
-| Ключ        | Что это                                                               | По умолчанию |
-| ----------- | --------------------------------------------------------------------- | ------------ |
-| `--tenants` | Папка с файлами арендаторов. Путь от текущей папки или полный.        | Обязателен   |
-| `--port`    | Порт: целое число от 0 до 65535. Число 0 значит любой свободный порт. | 4782         |
-| `--home`    | Папка для будущих заявок. Сервер её принимает, но пока не использует. | Нет          |
+| Key         | What it is                                                                         | Default  |
+| ----------- | ---------------------------------------------------------------------------------- | -------- |
+| `--tenants` | The folder with tenant files. A path from the current folder or a full one.        | Required |
+| `--port`    | The port: an integer from 0 to 65535. The number 0 means any free port.            | 4782     |
+| `--home`    | The folder for future applications. The server accepts it but does not use it yet. | None     |
 
-Ключ пишут как `--port 0` или как `--port=0`. Каждый ключ указывают один раз. Значение не может быть пустым и не может начинаться с `--`. Поэтому в `--port --tenants x` у порта нет значения. Порт 4782 выбран заранее: Pixel Office занимает 4780, Sai Team — 4781.
+(`<папка>` means "folder".)
 
-При запуске команда печатает в stdout пять строк. Ссылок столько, сколько исправных арендаторов. Для двух арендаторов строк пять:
+A key is written as `--port 0` or as `--port=0`. Each key is given once. A value cannot be empty and cannot begin with `--`. So in `--port --tenants x` the port has no value. The port 4782 was chosen in advance: Pixel Office takes 4780, Sai Team — 4781.
+
+At start the command prints five lines to stdout. There are as many links as there are healthy tenants. For two tenants there are five lines:
 
     Сайт подбора запущен. Откройте ссылки:
     http://127.0.0.1:<порт>/t/svet-marketing/
@@ -649,16 +659,18 @@ Ctrl-C (или `SIGTERM`) — сервер перестаёт принимать
     Изменения файлов арендаторов применяются после перезапуска.
     Остановить сайт: Ctrl+C.
 
-Остановить сайт можно клавишами Ctrl+C или сигналом `SIGTERM`. Оба способа закрывают порт и все соединения, код выхода 0. Если читатель вывода исчез (например, вывод передан команде `head`), сайт работает дальше.
+(The Russian lines mean: "The picker site is started. Open the links:", "<port>" for `<порт>`, "Changes of tenant files are applied after a restart.", "Stop the site: Ctrl+C.")
 
-Коды выхода:
+The site can be stopped with Ctrl+C or with the signal `SIGTERM`. Both ways close the port and all connections, exit code 0. If the reader of the output disappears (for example, the output is passed to the command `head`), the site goes on working.
 
-- 0 — сайт остановлен или показана справка.
-- 1 — в папке нет ни одного исправного файла, или порт занят, или его нельзя открыть.
-- 2 — неверный вызов или папку нельзя прочитать. Одна строка `picker: …` в stderr.
-- 3 — ошибка программы. В stderr стек, строки `picker:` нет.
+Exit codes:
 
-Команда ничего не пишет на диск. Справка — `npm run picker -- --help`. Она печатает такие строки:
+- 0 — the site is stopped or the help is shown.
+- 1 — there is not one healthy file in the folder, or the port is taken, or it cannot be opened.
+- 2 — a wrong call or the folder cannot be read. One line `picker: …` in stderr.
+- 3 — a program error. A stack in stderr, there is no `picker:` line.
+
+The command writes nothing to the disk. Help: `npm run picker -- --help`. It prints these lines:
 
     Использование: npm run picker -- <команда> [аргументы]
     Команды:
@@ -668,132 +680,138 @@ Ctrl-C (или `SIGTERM`) — сервер перестаёт принимать
     Коды выхода serve: 0 — остановлен; 1 — нет исправных арендаторов или порт занят; 2 — неверный вызов или папку нельзя прочитать.
     Ошибка программы: код 3, подробности в stderr.
 
-### Какие файлы сервер берёт
+(The help lines mean: "Usage: npm run picker -- <command> [arguments]", "Commands:", "check <file> — check a tenant file; the file is only read", "serve … — start the picker site on this computer (127.0.0.1)", "Exit codes of check: 0 — all right; 1 — errors found; 2 — a wrong call or the file cannot be read.", "Exit codes of serve: 0 — stopped; 1 — no healthy tenants or the port is taken; 2 — a wrong call or the folder cannot be read.", "A program error: code 3, details in stderr.")
 
-Сервер берёт файлы с именем на `.json`. Имя без `.json` должно совпадать с полем `id` внутри файла. Файл проверяют те же правила, что и команда `check`. Файл с ошибками сайт не показывает. Сервер печатает в stderr две части: строку `Арендатор <имя> не обслуживается:` и строки проверки. Остальные арендаторы работают. Ссылки, папки и файлы больше 512 КБ тоже не обслуживаются. Если файлов `*.json` больше 100, сервер не запускается: код 2.
+### Which files the server takes
 
-Файлы читаются один раз. Правки в них сайт увидит только после перезапуска.
+The server takes files with a name ending in `.json`. The name without `.json` must be equal to the field `id` inside the file. The file is checked by the same rules as the command `check`. A file with errors is not shown by the site. The server prints two parts to stderr: the line `Арендатор <имя> не обслуживается:` (the tenant <name> is not served:) and the lines of the check. The other tenants work. Links, folders and files larger than 512 KB are also not served. If there are more than 100 files `*.json`, the server does not start: code 2.
 
-### Адреса
+The files are read once. The site will see edits in them only after a restart.
 
-Арендатора сервер берёт только из адреса: это первый отрезок после `/t/`.
+### Addresses
 
-| Адрес                       | Метод | Ответ                                                         |
-| --------------------------- | ----- | ------------------------------------------------------------- |
-| `/t/<id>/`                  | GET   | страница сайта: карточка арендатора и анкета                  |
-| `/t/<id>`                   | GET   | переход на `/t/<id>/` (код 308), строка запроса отбрасывается |
-| `/t/<id>/api/questionnaire` | GET   | анкета арендатора, JSON                                       |
-| `/t/<id>/api/result`        | POST  | результат подбора, JSON                                       |
-| `/assets/<имя>`             | GET   | файл страницы: `.html`, `.js` или `.css`                      |
+The server takes the tenant only from the address: this is the first segment after `/t/`.
 
-Всё остальное отвечает кодом 404. Это и неизвестный арендатор, и путь с ошибкой, и арендатор из файла с ошибками. Ответ везде один и тот же, байт в байт. Его текст сразу на трёх языках:
+| Address                     | Method | Answer                                                           |
+| --------------------------- | ------ | ---------------------------------------------------------------- |
+| `/t/<id>/`                  | GET    | the page of the site: the tenant card and the questionnaire      |
+| `/t/<id>`                   | GET    | a redirect to `/t/<id>/` (code 308), the query string is dropped |
+| `/t/<id>/api/questionnaire` | GET    | the questionnaire of the tenant, JSON                            |
+| `/t/<id>/api/result`        | POST   | the result of the picking, JSON                                  |
+| `/assets/<name>`            | GET    | a page file: `.html`, `.js` or `.css`                            |
+
+Everything else answers with code 404. This is both an unknown tenant, and a path with an error, and a tenant from a file with errors. The answer is everywhere the same, byte for byte. Its text is in three languages at once:
 
     Страница не найдена. / Бет табылмады. / Page not found.
 
-Чужой метод на известный адрес даёт 405 и заголовок `Allow`. Списка арендаторов сайт не показывает.
+(The Russian and Kazakh parts mean "Page not found".)
 
-В анкете только то, что нужно посетителю: вопросы, варианты, число вопросов и поля заявки. Правил, баллов и решений в ней нет. В результате нет списка `ranking`, то есть баллов нерекомендованных решений.
+A wrong method on a known address gives 405 and the header `Allow`. The site does not show a list of tenants.
 
-Тело запроса к результату — `{"answers": {…}}`. Других ключей в нём быть не должно. Арендатор из тела, строки запроса и заголовков не берётся.
+The questionnaire has only what the visitor needs: questions, options, the number of questions and the fields of the application. There are no rules, points or solutions in it. The result has no list `ranking`, that is, no points of the solutions that are not recommended.
 
-### Защита
+The body of a request to the result is `{"answers": {…}}`. There must be no other keys in it. The tenant is not taken from the body, the query string or the headers.
 
-Сервер проверяет заголовок `Host`: он должен быть `127.0.0.1:<порт>` или `localhost:<порт>`. У запросов POST он ещё проверяет `Origin` и тип `application/json`. Тело не больше 16 КБ. Если пауза в теле дольше 15 секунд, ответ — 408. Поэтому команда `curl` для результата пишется с ключом `-H "Origin: http://127.0.0.1:<порт>"`. Без него сервер отвечает 403: так задумано.
+### Protection
 
-### Язык
+The server checks the header `Host`: it must be `127.0.0.1:<port>` or `localhost:<port>`. For POST requests it also checks `Origin` and the type `application/json`. The body is no larger than 16 KB. If a pause in the body is longer than 15 seconds, the answer is 408. So the command `curl` for the result is written with the key `-H "Origin: http://127.0.0.1:<port>"`. Without it the server answers 403: this is by design.
 
-Язык задаёт параметр `?lang=ru`, `?lang=kk` или `?lang=en`. Заголовок `Accept-Language` сервер не читает. Если параметра нет или язык не найден в файле арендатора, сервер выбирает русский. Тексты ошибок сервера лежат в `src/picker/public/texts.js`: это ключи `server_*`. Как добавить свой ключ, рассказывает раздел «три языка».
+### Language
 
-### Стенд из двух вымышленных арендаторов
+The language is set by the parameter `?lang=ru`, `?lang=kk` or `?lang=en`. The server does not read the header `Accept-Language`. If there is no parameter or the language is not found in the tenant file, the server chooses Russian. The texts of server errors are in `src/picker/public/texts.js`: these are the keys `server_*`. How to add your own key is told in the section "three languages".
 
-В папке `src/picker/demo-tenants` лежат `uchet-pro` и `svet-marketing`. Оба написаны на трёх языках. Запуск стенда:
+### A stand of two made-up tenants
+
+In the folder `src/picker/demo-tenants` there are `uchet-pro` and `svet-marketing`. Both are written in three languages. Start of the stand:
 
     cd tools
-    npm run picker -- serve --tenants src/picker/demo-tenants --home <папка вне проекта>
+    npm run picker -- serve --tenants src/picker/demo-tenants --home <folder outside the project>
 
-Если порт 4782 занят, команда так и скажет и закончится кодом 1. Тогда добавьте `--port <номер>` или `--port 0`. Настоящий порт напечатан в ссылках.
+(`<folder outside the project>` means "a folder outside the project".)
 
-Что открыть (порт 4782):
+If the port 4782 is taken, the command says so and ends with code 1. Then add `--port <number>` or `--port 0`. The real port is printed in the links.
 
-| Адрес                                                              | Что видно                                                                       |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| `http://127.0.0.1:4782/t/uchet-pro/`                               | Карточка: название, вступление, число вопросов и кнопка «Пройти опрос»          |
-| то же с `?lang=kk` и `?lang=en`                                    | Та же карточка на казахском и на английском                                     |
-| `http://127.0.0.1:4782/t/svet-marketing/`                          | Карточка другого арендатора                                                     |
-| `http://127.0.0.1:4782/t/uchet-pro/api/questionnaire`              | Анкета `uchet-pro`: 12 вопросов. С `?lang=kk` и `?lang=en` тексты на этом языке |
-| `http://127.0.0.1:4782/t/svet-marketing/api/questionnaire?lang=en` | Анкета другого арендатора, в ней нет слов первого                               |
-| `http://127.0.0.1:4782/t/uchet-pro`                                | Браузер сам переходит на `/t/uchet-pro/`                                        |
-| `http://127.0.0.1:4782/t/net-takogo/` и `http://127.0.0.1:4782/`   | Один и тот же ответ «Страница не найдена…»                                      |
-| `http://127.0.0.1:4782/assets/texts.js`                            | Файл с текстами сайта                                                           |
+What to open (port 4782):
 
-Анкета проходится в браузере. После кнопки «Показать результат» стоит временный экран: страница результата будет в следующем требовании. Результат можно получить и запросом POST.
+| Address                                                            | What is seen                                                                                                   |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `http://127.0.0.1:4782/t/uchet-pro/`                               | The card: the title, the introduction, the number of questions and the button «Пройти опрос» (take the survey) |
+| the same with `?lang=kk` and `?lang=en`                            | The same card in Kazakh and in English                                                                         |
+| `http://127.0.0.1:4782/t/svet-marketing/`                          | The card of another tenant                                                                                     |
+| `http://127.0.0.1:4782/t/uchet-pro/api/questionnaire`              | The questionnaire of `uchet-pro`: 12 questions. With `?lang=kk` and `?lang=en` the texts are in this language  |
+| `http://127.0.0.1:4782/t/svet-marketing/api/questionnaire?lang=en` | The questionnaire of another tenant, it has no words of the first                                              |
+| `http://127.0.0.1:4782/t/uchet-pro`                                | The browser itself goes to `/t/uchet-pro/`                                                                     |
+| `http://127.0.0.1:4782/t/net-takogo/` and `http://127.0.0.1:4782/` | The same answer «Страница не найдена…» (page not found…)                                                       |
+| `http://127.0.0.1:4782/assets/texts.js`                            | The file with the texts of the site                                                                            |
 
-Команда ниже берёт готовый набор ответов `leader` и отправляет его. Запускайте её из папки `tools`, пока стенд работает на порту 4782:
+The questionnaire is passed in the browser. After the button «Показать результат» (show the result) there is a temporary screen: the result page will be in the next requirement. The result can also be obtained with a POST request.
+
+The command below takes the ready set of answers `leader` and sends it. Run it from the folder `tools` while the stand works on port 4782:
 
     node --input-type=module -e 'import fs from "node:fs"; const a = JSON.parse(fs.readFileSync("src/picker/demo-answers/uchet-pro.json", "utf8")); process.stdout.write(JSON.stringify({ answers: a.leader }));' \
       | curl -s -X POST -H "Origin: http://127.0.0.1:4782" -H "Content-Type: application/json" \
         --data @- "http://127.0.0.1:4782/t/uchet-pro/api/result"
 
-В ответ придёт JSON с рекомендованными решениями. Вместо `leader` возьмите `close` или `none`. Для `svet-marketing` замените имя арендатора в двух местах. Язык задаёт `?lang=kk` в конце адреса. Все наборы лежат в `src/picker/demo-answers/`.
+The answer is JSON with the recommended solutions. Instead of `leader` take `close` or `none`. For `svet-marketing` replace the name of the tenant in two places. The language is set by `?lang=kk` at the end of the address. All sets are in `src/picker/demo-answers/`.
 
-### Чего сервер пока не умеет
+### What the server cannot do yet
 
-На сайте пока нет заявок, совета ИИ, публикации в интернете и входа арендатора. Ключ `--home` принимается, но ничего не делает. Они появятся в следующих требованиях.
+The site has no applications, no AI advice, no publishing on the internet and no tenant login yet. The key `--home` is accepted but does nothing. They will come in the next requirements.
 
-## Сайт подбора решения: страница
+## The solution picker site: the page
 
-Страница сайта лежит в `src/picker/public/`. Это модули без сборки и без внешних файлов. Сервер отдаёт их по адресу `/assets/<имя>`. Вот что лежит в папке.
+The page of the site is in `src/picker/public/`. These are modules without a build and without external files. The server gives them at the address `/assets/<name>`. This is what is in the folder.
 
-| Файл         | Зачем                                                                     |
-| ------------ | ------------------------------------------------------------------------- |
-| `index.html` | Основа страницы: одно место для экранов и скрытая строка для чтения вслух |
-| `page.css`   | Вид: светлая и тёмная тема, размеры, кольцо фокуса                        |
-| `main.js`    | Вход: запускает страницу                                                  |
-| `app.js`     | Управление: переходы между экранами, фокус, сохранение                    |
-| `screens.js` | Экраны: карточка, вопрос, блок связи                                      |
-| `result.js`  | Временный экран после кнопки «Показать результат»                         |
-| `dom.js`     | Построение узлов страницы: тексты кладутся только как текст               |
-| `flow.js`    | Прогресс «Вопрос K из N», соседние вопросы, ответы, число из поля         |
-| `rules.js`   | Правило видимости вопросов                                                |
-| `store.js`   | Хранилище браузера                                                        |
-| `net.js`     | Единственная связь с сервером: два адреса и предел 20 секунд              |
-| `say.js`     | Подстановка `{имя}` в тексты                                              |
-| `texts.js`   | Тексты сайта на трёх языках                                               |
+| File         | What it is for                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------ |
+| `index.html` | The base of the page: one place for screens and a hidden line for reading aloud                        |
+| `page.css`   | The look: the light and dark theme, sizes, the focus ring                                              |
+| `main.js`    | The entry: starts the page                                                                             |
+| `app.js`     | The control: jumps between screens, focus, saving                                                      |
+| `screens.js` | The screens: the card, a question, the connection block                                                |
+| `result.js`  | The temporary screen after the button «Показать результат»                                             |
+| `dom.js`     | Building the nodes of the page: texts are put only as text                                             |
+| `flow.js`    | The progress «Вопрос K из N» (question K of N), neighbouring questions, answers, a number from a field |
+| `rules.js`   | The rule of the visibility of questions                                                                |
+| `store.js`   | The storage of the browser                                                                             |
+| `net.js`     | The only connection with the server: two addresses and a limit of 20 seconds                           |
+| `say.js`     | The substitution of `{имя}` into texts                                                                 |
+| `texts.js`   | The texts of the site in three languages                                                               |
 
-Как открыть: запустите стенд (раздел выше) и откройте `/t/uchet-pro/`. Язык задаёт `?lang=` в адресе или кнопка языка на странице. Если в файле арендатора один язык, кнопок языка нет.
+How to open: start the stand (the section above) and open `/t/uchet-pro/`. The language is set by `?lang=` in the address or by the language button on the page. If the tenant file has one language, there are no language buttons.
 
-Ответы хранятся только в вашем браузере, под ключом `sai-picker:<id>`. В значении пять полей: `format`, `version`, `lang`, `current` и `answers`. Имени, телефона и почты там нет. Если вы закрыли страницу, кнопка «Продолжить» вернёт вас к последнему вопросу. Кнопка «Начать заново» стирает ключ. Если хранилище недоступно, анкета всё равно проходится, но без сохранения.
+The answers are stored only in your browser, under the key `sai-picker:<id>`. The value has five fields: `format`, `version`, `lang`, `current` and `answers`. There is no name, phone or mail in it. If you closed the page, the button «Продолжить» (continue) takes you back to the last question. The button «Начать заново» (start again) erases the key. If the storage is unavailable, the questionnaire can still be passed, but without saving.
 
-Правило видимости вопросов в `rules.js` — копия правила движка. Страница не получает файл движка. Тест сверяет копию с движком на очень многих наборах ответов. Если вы меняете правило в движке, меняйте и `rules.js`.
+The rule of the visibility of questions in `rules.js` is a copy of the rule of the engine. The page does not get the engine file. A test compares the copy with the engine on very many sets of answers. If you change the rule in the engine, change `rules.js` too.
 
-Без JavaScript страница пуста: текстов в `index.html` нет. Браузер сам просит `/favicon.ico`, и сервер отвечает 404. Это не ошибка страницы.
+Without JavaScript the page is empty: there are no texts in `index.html`. The browser itself asks for `/favicon.ico`, and the server answers 404. This is not an error of the page.
 
-Как проверить: `cd tools && npm run check`. Вид и клавиатуру проверяют шаги в настоящем браузере. Окна: 1470 × 784, 390 × 844 и 320 × 568. Темы: светлая и тёмная.
+How to check: `cd tools && npm run check`. The look and the keyboard are checked by steps in a real browser. Windows: 1470 × 784, 390 × 844 and 320 × 568. Themes: light and dark.
 
-## Сайт подбора решения: три языка
+## The solution picker site: three languages
 
-Сайт подбора говорит на трёх языках: русском (`ru`), казахском (`kk`) и английском (`en`). Тексты арендатора переводит не сайт, а агент. Перевод входит в файл арендатора, формат `/2`.
+The picker site speaks three languages: Russian (`ru`), Kazakh (`kk`) and English (`en`). The tenant texts are translated not by the site but by an agent. The translation is part of the tenant file, format `/2`.
 
-Как проверить файл: запустите `cd tools && npm run picker -- check <файл>`. Команда покажет до 100 ошибок перевода по месту. Её сообщения остаются по-русски.
+How to check a file: run `cd tools && npm run picker -- check <файл>`. The command will show up to 100 translation errors by place. Its messages stay in Russian.
 
-Язык выбирается так. Сначала сайт смотрит на параметр `?lang=` в адресе, например `?lang=kk`. Если его нет, берётся язык, который посетитель выбрал раньше. Если нет и его, сайт показывает русский. Заголовок `Accept-Language` сайт не читает. Если нужного языка нет в файле арендатора, сайт показывает русский.
+The language is chosen like this. First the site looks at the parameter `?lang=` in the address, for example `?lang=kk`. If there is none, the language that the visitor chose earlier is taken. If there is none either, the site shows Russian. The site does not read the header `Accept-Language`. If the needed language is not in the tenant file, the site shows Russian.
 
-Тексты самого сайта лежат в таблице `src/picker/public/texts.js`. Это кнопки, подписи и подсказки, а не тексты арендатора. Чтобы добавить текст, заведите новый ключ в `TEXTS`. Ключ пишут строчными латинскими буквами, цифрами и знаком `_`. У ключа три языка: `ru`, `kk` и `en`. Место для подстановки пишут так: `{имя}`. Во всех трёх языках набор подстановок должен быть одинаковый. Фраза не длиннее 18 слов.
+The texts of the site itself are in the table `src/picker/public/texts.js`. These are buttons, captions and hints, not tenant texts. To add a text, make a new key in `TEXTS`. A key is written with lowercase Latin letters, digits and the sign `_`. A key has three languages: `ru`, `kk` and `en`. A place for a substitution is written like this: `{имя}`. In all three languages the set of substitutions must be the same. A phrase is not longer than 18 words.
 
-Подстановку `{имя}` делает `src/picker/public/say.js`: в `texts.js` для неё нет отдельного экспорта. Тексты страницы имеют ключи с приставками `card_`, `quiz_`, `net_`, `progress_` и ключ `result_soon`.
+The substitution `{имя}` is done by `src/picker/public/say.js`: in `texts.js` there is no separate export for it. The texts of the page have keys with the prefixes `card_`, `quiz_`, `net_`, `progress_` and the key `result_soon`.
 
-Таблицу охраняет тест `test/picker-texts.test.js`. Он проверяет каждый ключ `TEXTS`, в том числе добавленный позже. Если у ключа нет языка, фраза длиннее 18 слов или подстановки расходятся, тест покраснеет. Новый отдельный экспорт в `texts.js` тоже покраснит тест: заводите тексты ключами `TEXTS`.
+The table is guarded by the test `test/picker-texts.test.js`. It checks every key of `TEXTS`, including one added later. If a key has no language, a phrase is longer than 18 words or the substitutions differ, the test turns red. A new separate export in `texts.js` also turns the test red: make texts by keys of `TEXTS`.
 
-Для кода есть две функции в `src/picker/view.js`. Функция `fileLanguages` отвечает, на каких языках написан файл. Функция `tenantInLanguage` отдаёт арендатора на одном языке в старой, одноязычной форме. Вызывайте её только для файла, который прошёл проверку. Движок подбора не менялся: он по-прежнему получает тексты строками.
+For code there are two functions in `src/picker/view.js`. The function `fileLanguages` answers in which languages a file is written. The function `tenantInLanguage` gives a tenant in one language in the old, one-language form. Call it only for a file that has passed the check. The picking engine did not change: it still gets texts as strings.
 
-Переводы kk и en демо-арендаторов делает агент. Отдельный читатель проверяет смысл каждой пары. Он не носитель казахского. Поэтому перед публикацией пары kk должен посмотреть человек, который знает казахский (запись `decisions/0069`, п. 6).
+The kk and en translations of the demo tenants are made by an agent. A separate reader checks the meaning of each pair. It is not a native speaker of Kazakh. So before publication the kk pairs must be looked at by a person who knows Kazakh (record `decisions/0069`, item 6).
 
-## Сайт подбора решения: движок
+## The solution picker site: the engine
 
-Модуль `src/picker/engine.js` считает подбор решения. Он находит видимые вопросы при данных ответах и считает баллы решений. Он выбирает лучшие решения с пометкой «явный лидер» и строит гипотезы. К каждому баллу он добавляет объяснение: какое правило и какой ответ его дали.
+The module `src/picker/engine.js` counts the picking of a solution. It finds the visible questions for given answers and counts the points of the solutions. It chooses the best solutions with the note «явный лидер» (a clear leader) and builds hypotheses. To each point it adds an explanation: which rule and which answer gave it.
 
-Модуль ничего не читает и не записывает: ни файлов, ни сети, ни часов, ни случайных чисел. Состояния между вызовами у него нет. Вы передаёте ему проверенный объект арендатора (его отдаёт проверка файла) и ответы посетителя. Он возвращает результат с объяснением или ошибку ответов `E_ANSWER`: в ней идентификатор вопроса и слово-причина.
+The module reads and writes nothing: no files, no network, no clock, no random numbers. It has no state between calls. You pass it a checked tenant object (given by the file check) and the visitor's answers. It returns a result with an explanation or the answers error `E_ANSWER`: in it are the identifier of the question and a reason word.
 
-Одинаковые ответы всегда дают один и тот же результат. В результате нет слов, которых нет в файле арендатора. Числа есть лишь в трёх местах: `score`, `points` и `because[].value`. В последнем лежит число, которое ответил посетитель.
+The same answers always give the same result. The result has no words that are not in the tenant file. Numbers are only in three places: `score`, `points` and `because[].value`. In the last one lies the number that the visitor answered.
 
-У движка нет команды: его вызывает сервер. Страница подбора движок не получает. Она повторяет только правило видимости вопросов (`public/rules.js`), и тест сверяет его с движком.
+The engine has no command: it is called by the server. The picker page does not get the engine. It repeats only the rule of the visibility of questions (`public/rules.js`), and a test compares it with the engine.

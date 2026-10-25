@@ -1,19 +1,20 @@
-# Анти-паттерны — журнал ошибок процесса
+# Anti-patterns — the journal of process errors
 
-Здесь записаны ошибки процесса, о которые агенты Sai уже споткнулись или могут
-споткнуться снова, и как работать правильно. Это уроки о том, как вести работу; дефекты
-кода живут отдельно, в `docs/issues/`.
+This file records process errors that Sai agents have already stumbled on or can stumble on
+again, and how to work correctly. These are lessons about how to lead the work; code defects
+live separately, in `docs/issues/`.
 
-- Перед любой нетривиальной работой журнал читают: многие уроки подходят к любой задаче.
-- Запись добавляется в той же работе, где ошибку нашли (quality-bar Q13). Кто нашёл,
-  предлагает её в `result.issues` своего handoff-а; записывает учётчик (DOC-UPDATER).
-- Номер — следующий свободный: самый большой номер в файле плюс один. Номера не
-  используются повторно, записи не удаляются; если урок устарел, к записи дописывают, что
-  изменилось и когда.
-- Урок должен быть понятен из самой записи. Ссылки «где найдено» ведут только на файлы
-  Sai.
+- Read the journal before any non-trivial work: many lessons fit any task.
+- A record is added in the same work in which the error was found (quality-bar Q13). Whoever
+  found it proposes it in `result.issues` of their handoff; the bookkeeper (DOC-UPDATER)
+  writes it.
+- The number is the next free one: the largest number in the file plus one. Numbers are not
+  reused and records are not deleted; if a lesson is out of date, what changed and when is
+  appended to the record.
+- The lesson must be clear from the record itself. The "Where found" links lead only to Sai
+  files.
 
-## Формат записи
+## Record format
 
 ```
 ### AP-NNN — Короткое название
@@ -24,1488 +25,2291 @@
 - Где найдено: (REQ / ISS / handoff)
 ```
 
-## Записи
+The four field names stay in Russian, because other files and checks refer to them by these words. The meaning: «Короткое название» is the short title, «Что случилось» is what happened, «Почему это плохо» is why it is bad, «Как правильно» is how to do it right, «Где найдено» is where it was found. The text of a record is written in English.
 
-### AP-001 — Секрет в клиентском коде
+## Records
 
-- Что случилось: в одном из прежних проектов владельца боевой токен Telegram-бота был
-  зашит в клиентский бандл и продублирован в документации.
-- Почему это плохо: токен уходит в браузер каждому посетителю; исправление кода без
-  отзыва токена ничего не даёт.
-- Как правильно: секреты только на сервере и только по ссылке (quality-bar Q7);
-  клиент вызывает свой сервер, а не внешний API с ключом.
-- Где найдено: разбор прежних проектов владельца перед началом работы над Sai.
+### AP-001 — A secret in client code
 
-### AP-002 — Журнал, написанный задним числом
+- Что случилось: in one of the owner's earlier projects, a live Telegram bot token was built
+  into the client bundle and copied into the documentation.
+- Почему это плохо: the token goes to the browser of every visitor; fixing the code without
+  revoking the token achieves nothing.
+- Как правильно: secrets only on the server and only by reference (quality-bar Q7); the
+  client calls its own server, not an external API with a key.
+- Где найдено: a review of the owner's earlier projects before work on Sai began.
 
-- Что случилось: в эталоне Pixel Office, с которого переносится внешний вид офиса
-  (код в `reference/`), события были написаны вручную в коде, с искусственным временем,
-  сжатым в один день, хотя в описании было «по фактическим событиям, записанным
-  рантаймом».
-- Почему это плохо: картинка выглядит как телеметрия, но ею не является; расхождение
-  не видно тому, кто смотрит.
-- Как правильно: события пишет только реальный источник (хуки) с реальным временем
+### AP-002 — A journal written after the fact
+
+- Что случилось: in the Pixel Office reference, from which the look of the office is carried
+  over (code in `reference/`), the events were written by hand in code, with artificial time
+  squeezed into one day, although the description said "by actual events recorded by the
+  runtime".
+- Почему это плохо: the picture looks like telemetry but is not; the difference is not visible to
+  the one who looks.
+- Как правильно: events are written only by a real source (hooks) with the real time
   (quality-bar R2, REQ-001).
-- Где найдено: эталонный код прежнего проекта владельца, файл `AgentOfficeSeed.cs`. Дополнение 2026-10-06: папка `reference/` с этим кодом удалена из Sai (решение 0019); урок остаётся в силе, образец — снимки `docs/design/samples/`.
+- Где найдено: the reference code of the owner's earlier project, file `AgentOfficeSeed.cs`.
+  Addition of 2026-10-06: the folder `reference/` with this code was removed from Sai
+  (decision 0019); the lesson stays in force, the sample is the snapshots in
+  `docs/design/samples/`.
 
-### AP-003 — Точка зрения без источника
+### AP-003 — A point of view without a source
 
-- Что случилось: на шаге 0 первого прогона WF-06 цели владельца были только в
-  `ideas/README.md`, который по дизайну не может быть источником. Аналитику `owner_fit`
-  было бы нечего цитировать.
-- Почему это плохо: аналитик либо оценил бы «по памяти» (Q3), либо не смог бы
-  выполнить контракт.
-- Как правильно: до prepare-run проверить, что у каждой точки зрения есть источник в
-  `--context`; цели владельца — в `docs/owner-goals.md`, дословно.
-- Где найдено: `handoffs/WF06-20260925-01/step-00-orch.json`; поймано до отправки
-  агентам, прогон подготовлен заново.
+- Что случилось: at step 0 of the first WF-06 run, the owner's goals were only in
+  `ideas/README.md`, which by design cannot be a source. The `owner_fit` analyst would have had
+  nothing to quote.
+- Почему это плохо: the analyst would either rate "from memory" (Q3) or could not fulfil the
+  contract.
+- Как правильно: before prepare-run, check that every point of view has a source in
+  `--context`; the owner's goals are in `docs/owner-goals.md`, verbatim.
+- Где найдено: `handoffs/WF06-20260925-01/step-00-orch.json`; caught before sending to the
+  agents, the run was prepared again.
 
-### AP-004 — Пример в контракте подсказывает ответ
+### AP-004 — An example in a contract suggests the answer
 
-- Что случилось: в примерах JSON в дизайне WF-06 стояли настоящие идеи, в том числе
-  `"chosen": "02-sai"` с рангом 1. Аналитики и судья этот документ читают.
-- Почему это плохо: пример работает как якорь и делает выбор круговым.
-- Как правильно: в примерах контрактов — только вымышленные данные (`01-alpha`,
+- Что случилось: in the JSON examples in the WF-06 design there were real ideas, including
+  `"chosen": "02-sai"` with rank 1. The analysts and the judge read this document.
+- Почему это плохо: an example works as an anchor and makes the choice circular.
+- Как правильно: examples in contracts contain only made-up data (`01-alpha`,
   `02-beta`…).
-- Где найдено: `docs/design/REQ-002-idea-verdict.md`; исправлено до отправки агентам.
+- Где найдено: `docs/design/REQ-002-idea-verdict.md`; fixed before sending to the agents.
 
-### AP-005 — Ссылка на отклонённую версию
+### AP-005 — A link to a rejected version
 
-- Что случилось: в `verdict-2.json` задача для ORCH всё ещё велела передать владельцу
-  `verdict-1.md` — отклонённую версию. apply-verdict переносит задачи дословно.
-- Почему это плохо: владелец получил бы неверный документ, хотя всё остальное
-  исправлено.
-- Как правильно: при каждой доработке искать в новой версии все ссылки на прежние
-  версии; прежние упоминаются только как история. Поймано исполнителем в
+- Что случилось: in `verdict-2.json` the task for ORCH still told it to hand `verdict-1.md` —
+  the rejected version — to the owner. apply-verdict carries tasks over verbatim.
+- Почему это плохо: the owner would have received a wrong document although everything else was
+  fixed.
+- Как правильно: at every rework, search the new version for all links to earlier
+  versions; earlier ones are mentioned only as history. Caught by the executor in
   `verdict-review-2.json`.
-- Где найдено: WF06-20260925-01, проверка 2.
+- Где найдено: WF06-20260925-01, check 2.
 
-### AP-006 — Агент оборвался на полпути
+### AP-006 — An agent broke off halfway
 
-- Что случилось: первый запуск VERDICT-EXECUTOR остановил лимит API; возобновлённый
-  запуск тоже закончился без результата. Handoff остался IN_PROGRESS.
-- Почему это плохо: без явной записи неясно, сделано ли что-то наполовину.
-- Как правильно: ORCH проверяет файлы (сделано ли что-то), закрывает handoff как
-  FAILED с пометкой `not_agent_attested` (`docs/workflows/handoffs.md`, раздел
-  «Перерывы и обрывы») и отправляет новый запуск с чистого листа.
+- Что случилось: the first run of VERDICT-EXECUTOR was stopped by an API limit; the resumed
+  run also ended without a result. The handoff stayed IN_PROGRESS.
+- Почему это плохо: without an explicit record it is unclear whether something was half done.
+- Как правильно: ORCH checks the files (whether something was done), closes the handoff
+  as FAILED with the mark `not_agent_attested` (`docs/workflows/handoffs.md`, section "Pauses
+  and interruptions") and sends a new run from a clean sheet.
 - Где найдено: `handoffs/WF06-20260925-01/step-05-verdict-executor.json`.
 
-### AP-007 — Снимок «до» снят после изменений
+### AP-007 — The "before" snapshot taken after the changes
 
-- Что случилось: чтобы исправить AP-003 и AP-004, ORCH поправил дизайн и мандаты уже
-  после prepare-run и снял снимок «до» заново — после этих правок. Отчёт шага 0 к тому
-  же неверно описал порядок.
-- Почему это плохо: снимок «до» должен доказывать, что за прогон ничего не менялось вне
-  разрешённых мест. Снятый позже, он прячет именно те изменения, которые должен ловить.
-  Сама проверка при этом «проходит».
-- Как правильно: снимок «до» — первое действие шага 0. Если после него пришлось что-то
-  исправить, начинать прогон заново с новым RUN-ID (или получить письменное исключение
-  владельца), а не переснимать снимок. Отчёт шага пишется по фактической хронологии.
-- Где найдено: RELEASE-VALIDATOR, REQ-004 AC4; поправка — `orch_correction` в
-  `handoffs/WF06-20260925-01/step-00-orch.json`. Закрыто повторным прогоном
-  `WF06-20260926-01`, где снимок «до» и prepare-run выполнены одной командой.
+- Что случилось: to fix AP-003 and AP-004, ORCH corrected the design and the mandates after
+  prepare-run and took the "before" snapshot again — after these edits. The report of step 0
+  also described the order wrongly.
+- Почему это плохо: the "before" snapshot must prove that during the run nothing changed outside
+  the allowed places. Taken later, it hides exactly the changes it must catch. The check
+  itself still "passes".
+- Как правильно: the "before" snapshot is the first action of step 0. If something had to
+  be fixed after it, start the run again with a new RUN-ID (or get a written exception from the
+  owner) and do not take the snapshot again. The report of the step is written by the actual
+  chronology.
+- Где найдено: RELEASE-VALIDATOR, REQ-004 AC4; the correction is `orch_correction` in
+  `handoffs/WF06-20260925-01/step-00-orch.json`. Closed by the repeated run
+  `WF06-20260926-01`, where the "before" snapshot and prepare-run were done by one command.
 
-### AP-008 — Параллельный агент видит недописанный чужой файл
+### AP-008 — A parallel agent sees another's file that is not finished
 
-- Что случилось: в прогоне `WF06-20260926-01` аналитик owner_fit запустил
-  самопроверку, пока аналитик market ещё писал свой файл, и увидел в нём «ошибки»
-  недописанного состояния.
-- Почему это плохо: агент может принять чужую незаконченную работу за нарушение или,
-  наоборот, счесть стадию проверенной по неполным данным.
-- Как правильно: при параллельной работе самопроверка оценивает только свой файл;
-  стадию целиком проверяет ORCH, когда все участники закончили. Параллельные агенты
-  не пишут в один и тот же файл.
+- Что случилось: in the run `WF06-20260926-01` the owner_fit analyst started a self-check while
+  the market analyst was still writing its file, and saw "errors" of the unfinished state in
+  it.
+- Почему это плохо: an agent can take another's unfinished work for a violation or, on the
+  contrary, count a stage as checked on incomplete data.
+- Как правильно: in parallel work a self-check rates only its own file; the stage as a
+  whole is checked by ORCH when all participants have finished. Parallel agents do not write
+  into the same file.
 - Где найдено: `handoffs/WF06-20260926-01/step-01-idea-analyst-owner_fit.json`.
 
-### AP-009 — ORCH сам пишет код
+### AP-009 — ORCH writes code itself
 
-- Что случилось: весь код `tools/` (REQ-002) и все исправления по находкам
-  валидаторов написал ORCH в главной сессии, а не отдельный запуск BACKEND-DEV;
-  последнее исправление затронуло 6 файлов — больше, чем разрешённое ORCH исключение
-  «один файл».
-- Почему это плохо: мандат ORCH запрещает ему писать код приложения. Независимость
-  проверки при этом сохранилась (все проверки делали отдельные запуски), но пара
-  «делает → проверяет» на шаге разработки была неполной: не было отдельного
-  разработчика и ревьюера.
-- Как правильно: код пишет отдельный запуск BACKEND-DEV по handoff-у; ORCH только
-  маршрутизирует. Исправления по находкам — тоже через BACKEND-DEV, затем REVIEWER.
-- Где найдено: RELEASE-VALIDATOR, 2026-09-28; владельцу сообщено.
+- Что случилось: all the code of `tools/` (REQ-002) and all fixes for the findings of the
+  validators were written by ORCH in the main session, not by a separate BACKEND-DEV run; the
+  last fix touched 6 files — more than the "one file" exception allowed to ORCH.
+- Почему это плохо: the mandate of ORCH forbids it to write application code. The independence of
+  the check was kept (all checks were done by separate runs), but the pair "does → checks" at
+  the development step was incomplete: there was no separate developer and reviewer.
+- Как правильно: code is written by a separate BACKEND-DEV run by a handoff; ORCH only
+  routes. Fixes for findings also go through BACKEND-DEV, then REVIEWER.
+- Где найдено: RELEASE-VALIDATOR, 2026-09-28; the owner was told.
 
-### AP-010 — Проверка требования параллельно с работой по нему
+### AP-010 — A requirement check in parallel with the work on it
 
-- Что случилось: в WF-07 ORCH запустил REQ-VALIDATOR одновременно с исследователями.
-  Требование получило FAIL (3 блокера), а исследования к тому моменту уже шли по
-  непроверенной постановке.
-- Почему это плохо: PASS проверки — зависимость, а не формальность. Работа по
-  непроверенному требованию может уйти не туда, и её придётся переделывать.
-- Как правильно: параллельно запускается только независимое. Проверка требования —
-  до работы по нему; параллельно с ней можно делать только то, что от требования не
-  зависит.
+- Что случилось: in WF-07, ORCH started REQ-VALIDATOR at the same time as the researchers. The
+  requirement got FAIL (3 blockers), and by then the research was already going on an unchecked
+  statement.
+- Почему это плохо: a PASS of a check is a dependency, not a formality. Work on an unchecked
+  requirement can go the wrong way and will have to be redone.
+- Как правильно: only independent things are started in parallel. The requirement check
+  goes before the work on it; in parallel with it one can do only what does not depend on the
+  requirement.
 - Где найдено: `handoffs/BP-20260929-01/step-00-req-validator.json`.
 
-### AP-011 — ORCH сам пишет требования
+### AP-011 — ORCH writes requirements itself
 
-- Что случилось: REQ-005 написал ORCH, а не REQ-ANALYST.
-- Почему это плохо: та же проблема, что AP-009, — у производящего шага нет отдельного
-  исполнителя; остаётся только проверяющий.
-- Как правильно: требования пишет REQ-ANALYST по handoff-у ORCH.
-- Где найдено: REQ-005, 2026-09-29. Там же ORCH посреди прогона расширил список
-  источников в `plan-writer.md` (добавил `ideas/README.md` и `ideas/05-drugie-idei.md`) —
-  записано только в handoff-е `step-02-plan-writer-r2.json`; такие изменения мандатов
-  должны проходить как решение.
+- Что случилось: REQ-005 was written by ORCH, not by REQ-ANALYST.
+- Почему это плохо: the same problem as AP-009 — the producing step has no separate performer;
+  only the checker is left.
+- Как правильно: requirements are written by REQ-ANALYST by a handoff of ORCH.
+- Где найдено: REQ-005, 2026-09-29. In the same place ORCH, in the middle of the run, widened
+  the list of sources in `plan-writer.md` (added `ideas/README.md` and
+  `ideas/05-drugie-idei.md`) — recorded only in the handoff `step-02-plan-writer-r2.json`;
+  such changes of mandates must go through as a decision.
 
-### AP-012 — ORCH вписывает непроверенные факты в задания агентам
+### AP-012 — ORCH writes unchecked facts into the tasks for agents
 
-- Что случилось: в заданиях исследователям WF-07 ORCH написал о владельце «работающий
-  прототип» и «построенные реальные системы» — это не подтверждено документами проекта.
-- Почему это плохо: агент принимает текст задания за факт и переносит его в выводы.
-  Здесь это дошло только до выводов исследований, не до плана, — но могло дойти.
-- Как правильно: в задании — только то, что есть в файлах проекта, со ссылкой на файл;
-  всё остальное — как вопрос или допущение.
+- Что случилось: in the tasks for the WF-07 researchers, ORCH wrote about the owner "a working
+  prototype" and "real systems that were built" — this is not confirmed by the project
+  documents.
+- Почему это плохо: an agent takes the text of a task for a fact and carries it into its
+  conclusions. Here it reached only the conclusions of the research, not the plan — but it
+  could have reached it.
+- Как правильно: a task holds only what is in the project files, with a link to the file;
+  everything else — as a question or an assumption.
 - Где найдено: RELEASE-VALIDATOR, `handoffs/BP-20260929-01/step-04-release-validator.json`.
 
-### AP-013 — Доработка без своего handoff-а
+### AP-013 — A rework step without its own handoff
 
-- Что случилось: в WF-07 исследователи доработали свои файлы после FAIL шага 1b
-  (последние правки 2026-09-29, 16:56–16:58Z), но handoff-ов доработки у них нет:
-  `completed_at` и `result` в `step-01-market-researcher-*.json` остались от первого
-  прохода (08:01Z, 08:05Z, 16:42Z). У шагов 2 и 3 того же прогона каждый раунд записан
-  отдельным файлом `…-r2/r3/r4.json`.
-- Почему это плохо: по handoff-ам не видно, кто, когда и что доработал; проверяющий
-  подтверждает текст, которого нет ни в одной записи производителя (Q2, Q14).
-- Как правильно: каждая доработка после FAIL — отдельный handoff производящей роли
-  `…-rN.json` со своим временем, `agent_run_id` и списком правок, как у шагов 2 и 3.
+- Что случилось: in WF-07 the researchers reworked their files after the FAIL of step 1b (last
+  edits 2026-09-29, 16:56–16:58Z), but they have no rework handoffs: `completed_at` and
+  `result` in `step-01-market-researcher-*.json` stayed from the first pass (08:01Z, 08:05Z,
+  16:42Z). In steps 2 and 3 of the same run every round is recorded as a separate file
+  `…-r2/r3/r4.json`.
+- Почему это плохо: from the handoffs it is not visible who reworked what and when; the checker
+  confirms a text that is in no record of the producer (Q2, Q14).
+- Как правильно: every rework step after a FAIL is a separate handoff of the producing
+  role `…-rN.json` with its own time, `agent_run_id` and list of edits, as in steps 2 and 3.
 - Где найдено: RELEASE-VALIDATOR, `handoffs/BP-20260929-01/step-04-release-validator.json`,
-  находка 2.
+  finding 2.
 
-### AP-014 — Исправлены названные места, остальные того же класса остались
+### AP-014 — The named places were fixed, the others of the same class stayed
 
-- Что случилось: помощник `readTextFile` (`tools/src/util.js`) уже защищал от
-  трассировки стека часть чтений файлов, но не все. RELEASE-VALIDATOR нашёл ещё 3
-  незащищённых чтения, и ISS-0001 завели ровно на эти 3 места; исправление ограничили
-  ими же. При исправлении BACKEND-DEV нашёл ещё 8 случаев того же класса (6 путей с
-  трассировкой стека и 2 варианта частичной записи в apply-verdict), REVIEWER — ещё 4
-  (2 пути и 2 варианта частичной записи). Итог — ISS-0002 (MEDIUM) и ISS-0003 (LOW).
-- Почему это плохо: закрывается issue, а не класс дефекта. Остальные места ждут
-  следующей проверки, и цикл «нашли → исправили названное → нашли ещё» повторяется.
-  Среди оставшихся оказался случай серьёзнее исходного: частичная запись (ISS-0002,
-  MEDIUM) при исходной LOW.
-- Как правильно: и заводя issue, и исправляя дефект, найти поиском все места того же
-  рода (здесь — каждый вызов `fs` в `tools/src`), а не только названные, и в той же
-  работе исправить каждое или перечислить в issue с местом и воспроизведением.
-  Проверяющий сравнивает обработку общего вопроса во всех соседних местах между собой, а
-  не каждое место по отдельности. Это частая ошибка, а не случайность: готовый механизм
-  попадает в две соседние ветки из трёх; одобренный проект чинит общую функцию, а
-  соседний путь, который строит то же состояние сам, остаётся; третье такое место
-  находится в другом модуле. Искать нужно по роду ошибки, а не по названным местам.
+- Что случилось: the helper `readTextFile` (`tools/src/util.js`) already protected some file
+  reads from a stack trace, but not all. RELEASE-VALIDATOR found 3 more unprotected reads, and
+  ISS-0001 was opened for exactly these 3 places; the fix was limited to them. During the fix
+  BACKEND-DEV found 8 more cases of the same class (6 paths with a stack trace and 2 variants
+  of a partial write in apply-verdict), and REVIEWER 4 more (2 paths and 2 variants of a
+  partial write). The result is ISS-0002 (MEDIUM) and ISS-0003 (LOW).
+- Почему это плохо: an issue is closed, not a class of defect. The other places wait for the next
+  check, and the cycle "found → fixed the named → found more" repeats. Among the remaining ones
+  there was a case more serious than the first: a partial write (ISS-0002, MEDIUM) while the
+  first was LOW.
+- Как правильно: both when opening an issue and when fixing a defect, find by search all
+  places of the same kind (here — every `fs` call in `tools/src`), not only the named ones, and
+  in the same work fix each one or list it in the issue with the place and the reproduction.
+  The checker compares the handling of the common question in all neighbouring places with each
+  other, not each place separately. This is a frequent error, not an accident: a ready
+  mechanism gets into two neighbouring branches out of three; an approved design fixes the
+  common function, while the neighbouring path that builds the same state itself stays; a third
+  such place is found in another module. Search by the kind of error, not by the named places.
 - Где найдено: ISS-0001, `handoffs/ISS-0001-20260930-01/step-01-backend-dev.json`
-  (`result.issues`) и `step-02-reviewer.json` (решение I3); следствия — ISS-0002 и
+  (`result.issues`) and `step-02-reviewer.json` (decision I3); consequences — ISS-0002 and
   ISS-0003.
-- Повтор 2026-10-21 (`ISS-0075-20261021-01`, WF-03): вспомогательная функция обхода папки (`readdirSync` + `lstatSync`) была скопирована в трёх тестовых файлах (`inboxNames` в `team-channel.test.js`, `inboxFiles` в `team-web-channel.test.js` и `team-web-control.test.js`); исправление названного места (EN-62) оставило бы две копии без защиты от исчезнувшего имени. Исправлено одной общей функцией `listFilesLive` в `tools/test/team-helpers.js`; ещё три обхода папки проекта без защиты остались как остаточный риск (ISS-0084, п. 1). Найдено: `handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json` (I2, I7), `step-05-release-validator.json` (F1).
+- Repeat on 2026-10-21 (`ISS-0075-20261021-01`, WF-03): the helper function that walks a folder
+  (`readdirSync` + `lstatSync`) was copied into three test files (`inboxNames` in
+  `team-channel.test.js`, `inboxFiles` in `team-web-channel.test.js` and
+  `team-web-control.test.js`); fixing the named place (EN-62) would have left two copies without
+  protection against a name that disappeared. Fixed with one common function `listFilesLive` in
+  `tools/test/team-helpers.js`; three more walks of the project folder without protection stayed
+  as a residual risk (ISS-0084, item 1). Found: `handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json`
+  (I2, I7), `step-05-release-validator.json` (F1).
 
-### AP-015 — Доли с разными знаменателями сравнены в критерии остановки
+### AP-015 — Shares with different denominators compared in a stop criterion
 
-- Что случилось: в большом плане `docs/business-plan/README.md` критерий остановки
-  Pixel Office сравнивал 3 предоплаты из 300 посетителей страницы (1%) с долей 2%
-  платящих среди активных бесплатных пользователей продукта (Д7, строка 504); сравнение
-  стоит в строках 594–595. Арифметика верна (3 ÷ 300 = 1%; 82 ÷ 0,02 = 4 100), но
-  знаменатели разные: посетители страницы и активные пользователи продукта. План прошёл
-  шаги 3 и 4 прогона BP-20260929-01 (PASS); в handoff-ах того прогона нет ни «Д7», ни
-  «594», ни «из 300», ни «знаменатель» (поиск по этим словам пуст). Ошибку нашёл внешний
-  рецензент: `docs/business-plan/reviews/2026-09-30-external-review.md`, раздел 1 — слова
-  рецензента, раздел 2 — согласие ORCH.
-- Почему это плохо: «1%, вдвое ниже модели» выглядит поводом остановить линию, но это
-  сравнение несопоставимого: 2% от активных пользователей продукта и 1–2% от холодного
-  трафика страницы напрямую сопоставлять нельзя (рецензент, раздел 1). Критерий остановки
-  решает судьбу линии, поэтому ошибка в нём ведёт к ложной остановке или ложному
-  продолжению. Проверка, которая пересчитывала числа и сверяла ссылки, её не поймала:
-  числа верны, неверно сравнение.
-- Как правильно: у каждой доли в плане сразу записывать знаменатель (посетители страницы,
-  активные пользователи, платящие) и сравнивать только доли с одним знаменателем; у
-  страницы — свой критерий со своим знаменателем, а долю «бесплатный → платный» мерить
-  уже на используемом продукте (рецензент, раздел 3). Проверяющий плана выписывает
-  знаменатель каждой доли и каждого порога и проверяет, что в сравнении они одинаковы, а
-  не только пересчитывает арифметику. В REQ-006 это закреплено критериями 11 и 12 («у
-  каждой доли назван знаменатель»; они относятся к ветке «проверка на 14 дней», в этом
-  прогоне итог «рано»), а документ `docs/business-plan/pixel-office-brief.md` такого
-  сравнения не делает. Сам `README.md` этим прогоном не менялся: исправление — в списке
-  доработок бизнес-плана в `STATE.md`.
-- Где найдено: внешний рецензент, `docs/business-plan/reviews/2026-09-30-external-review.md`
-  (раздел 1 — рецензент, раздел 2 — согласие ORCH; уточнение — находка F7,
+- Что случилось: in the big plan `docs/business-plan/README.md` the stop criterion of Pixel
+  Office compared 3 prepayments out of 300 visitors of the page (1%) with a share of 2% paying
+  among the active free users of the product (Д7, line 504); the comparison stands in lines
+  594–595. The arithmetic is right (3 ÷ 300 = 1%; 82 ÷ 0.02 = 4 100), but the denominators are
+  different: visitors of the page and active users of the product. The plan passed steps 3 and 4
+  of the run BP-20260929-01 (PASS); in the handoffs of that run there is no "Д7", no "594", no
+  "out of 300", no "denominator" (a search for these words is empty). The error was found by an
+  external reviewer: `docs/business-plan/reviews/2026-09-30-external-review.md`, section 1 —
+  the words of the reviewer, section 2 — the agreement of ORCH.
+- Почему это плохо: "1%, half the model" looks like a reason to stop the line, but this is a
+  comparison of things that cannot be compared: 2% of active users of a product and 1–2% of cold
+  traffic of a page cannot be compared directly (reviewer, section 1). A stop criterion decides
+  the fate of the line, so an error in it leads to a false stop or a false continuation. The
+  check that recalculated the numbers and compared the links did not catch it: the numbers are
+  right, the comparison is wrong.
+- Как правильно: for every share in the plan, write the denominator at once (visitors of
+  the page, active users, paying) and compare only shares with one denominator; the page has its
+  own criterion with its own denominator, and the share "free → paid" is measured on a product
+  already in use (reviewer, section 3). The plan checker writes out the denominator of every
+  share and every threshold and checks that in the comparison they are the same, and does not
+  only recalculate the arithmetic. In REQ-006 this is fixed by criteria 11 and 12 ("every share
+  has its denominator named"; they belong to the branch "14-day check", in this run the result
+  is «рано» ("too early")), and the document `docs/business-plan/pixel-office-brief.md` does
+  not make such a comparison. `README.md` itself was not changed by this run: the fix is in the
+  list of business plan reworks in `STATE.md`.
+- Где найдено: the external reviewer, `docs/business-plan/reviews/2026-09-30-external-review.md`
+  (section 1 — the reviewer, section 2 — the agreement of ORCH; clarification — finding F7,
   `handoffs/BP-20260930-01/step-04-release-validator.json`); `docs/business-plan/README.md`,
-  строки 593–595 и Д7 (строка 504); учёт — шаг 5 REQ-006,
+  lines 593–595 and Д7 (line 504); bookkeeping — step 5 of REQ-006,
   `handoffs/BP-20260930-01/step-05-doc-updater.json`.
 
-### AP-016 — Критерии одного требования, которые вместе невыполнимы
+### AP-016 — Criteria of one requirement that cannot be met together
 
-- Что случилось: в REQ-006 критерий 4 требует в таблице конкурентов строку на каждый
-  продукт из таблиц покрытия новых исследований, у которого «да» или «частично» хотя бы по
-  одному обещанному элементу; критерий 7 оставляет эту таблицу в итоговом документе при
-  итоге «проверка на 14 дней»; критерий 9 разрешает не больше 1 500 слов во всём файле.
-  Число строк зависело от исследований, которые пишутся позже, и в требовании не оценено;
-  ORCH отметил риск до шага 2a (`orch-notes.md`, «Риск для шага 2a»). Вышло 122 строки (120
-  по ячейкам таблиц покрытия и 2 обязательные по имени); файл с таблицей — 2 736 слов при
-  пределе 1 500, а одни знаки «|» `wc -w` считает 610 словами. Автор шага 2a строки не
-  сокращал и записал конфликт (`result.issues` I2 и I8). Итог прогона — «рано»: в документе
-  «рано» таблицы нет (критерий 8), и конфликт не проявился; ветку «проверка на 14 дней» он
-  блокирует, пока требование не поправлено (находка F1 шага 4).
-- Почему это плохо: у требования оказалась ветка, которую нельзя выполнить, и это стало
-  видно только на шаге 2a, когда REQ-VALIDATOR уже дал PASS, а исследования были готовы.
-  Выхода два, и оба понижают планку (Q6): нарушить предел или молча сократить таблицу.
-  Автор не сократил и вынес вопрос, но решить его может только владелец — поправкой
-  требования.
-- Как правильно: критерии одного требования проверять на совместимость друг с другом, и
-  особенно пределы размера против правил вида «на каждый найденный X»: до PASS проверки
-  требования оценить, сколько будет X, и сравнить с пределом. Если оценить нельзя — задать
-  верхнюю границу X в самом требовании или вынести таблицу из подсчёта (приложение вне
-  предела). Не записывать в одно требование «строка на каждый найденный» и предел размера
-  без оценки числа строк (предложение автора шага 2a, I8; находка F1). Поправку требования
-  решает владелец: либо считать предел без таблицы конкурентов, либо оставлять в документе
-  только строки, от которых зависит вердикт, а полную таблицу выносить из подсчёта слов
-  (F1).
-- Где найдено: `handoffs/BP-20260930-01/step-02a-plan-writer-value.json` (`result.issues`
-  I2, I8); `handoffs/BP-20260930-01/orch-notes.md` («Риск для шага 2a»);
-  `handoffs/BP-20260930-01/step-04-release-validator.json`, находка F1. Предложение
-  поднять планку по этому поводу — `decisions/0006-proposals-to-raise-the-bar.md`.
+- Что случилось: in REQ-006, criterion 4 requires in the competitor table a row for every
+  product from the coverage tables of the new research that has «да» ("yes") or «частично»
+  ("partly") for at least one promised element; criterion 7 keeps this table in the final
+  document for the result "14-day check"; criterion 9 allows no more than 1 500 words in the
+  whole file. The number of rows depended on the research, which is written later, and was not
+  estimated in the requirement; ORCH noted the risk before step 2a (`orch-notes.md`, "Risk for
+  step 2a"). The result was 122 rows (120 by the cells of the coverage tables and 2 mandatory by
+  name); the file with the table is 2 736 words against a limit of 1 500, and the "|" signs
+  alone are counted by `wc -w` as 610 words. The author of step 2a did not shorten the rows and
+  recorded the conflict (`result.issues` I2 and I8). The result of the run is «рано» ("too
+  early"): in the document «рано» there is no table (criterion 8), and the conflict did not show
+  itself; it blocks the branch "14-day check" until the requirement is corrected (finding F1 of
+  step 4).
+- Почему это плохо: the requirement had a branch that cannot be fulfilled, and this became visible
+  only at step 2a, when REQ-VALIDATOR had already given PASS and the research was ready. There
+  are two ways out, and both lower the bar (Q6): break the limit or silently shorten the table.
+  The author did not shorten and raised the question, but only the owner can decide it — by
+  correcting the requirement.
+- Как правильно: check the criteria of one requirement for compatibility with each other,
+  and especially size limits against rules of the kind "for every X found": before the PASS of
+  the requirement check, estimate how many X there will be and compare with the limit. If it
+  cannot be estimated — set an upper bound for X in the requirement itself or take the table out
+  of the count (an appendix outside the limit). Do not write into one requirement "a row for
+  every one found" and a size limit without an estimate of the number of rows (proposal of the
+  author of step 2a, I8; finding F1). The correction of the requirement is decided by the owner:
+  either count the limit without the competitor table, or keep in the document only the rows on
+  which the verdict depends and take the full table out of the word count (F1).
+- Где найдено: `handoffs/BP-20260930-01/step-02a-plan-writer-value.json` (`result.issues` I2,
+  I8); `handoffs/BP-20260930-01/orch-notes.md` ("Risk for step 2a");
+  `handoffs/BP-20260930-01/step-04-release-validator.json`, finding F1. The proposal to raise
+  the bar on this matter is `decisions/0006-proposals-to-raise-the-bar.md`.
 
-### AP-017 — Критерий «каждый найденный X» без границы поиска
+### AP-017 — A criterion "every X found" without a border of the search
 
-- Что случилось: критерий 2 REQ-006 требует строку для каждой найденной платформы и
-  каждого найденного продукта. Классы продуктов открыты: исследователь инструментов
-  показал, что каждый из 11 новых запросов по классам вернул новые репозитории, а каталог
-  skills.rest сообщает о «754,000+ skills indexed» (`result.issues` I1 доработки r2).
-  ORCH принял границу посреди прогона (`orch-notes.md`, «Решения ORCH»): «найденный» —
-  найденный запросами из раздела «## Где искали» каждого файла плюс
-  `research/pixel-office.md` и поправки шага 1b. Но граница не воспроизводится:
-  проверяющий шага 1b повторил 9 запросов и нашёл 11 подходящих продуктов без строк, а в
-  `session-review-platforms.md` осталась безымянная фраза о платформах, «встречавшихся
-  только в заголовках» (замечание S3), которую проверить нельзя. Граница была записана
-  только в заметках ORCH, а не в требовании (в `STATE.md` её внесли на шаге 5); в документе
-  «рано» оговорка о границе есть в Вопросе 1, а про 11 продуктов — нет (находка F3 шага 4).
-  С этим связано предложение исследователя (I2): список «найдено, но не открыто»
-  противоречит критерию «каждого найденного».
-- Почему это плохо: «каждый найденный» без границы либо невыполнимо (поиск не кончается),
-  либо у исполнителя и проверяющего получается свой «найденный», и полнота таблицы не
-  проверяется. Граница, придуманная посреди прогона, не следует из требования и не видна
-  владельцу (Q12). Для итога «рано» это критерий не нарушило (добавление продуктов могло
-  бы только усилить отказ, F3), но при PASS непроверенный продукт вне границы мог бы
-  изменить вердикт: условие 3 ворот спрашивает, есть ли продукт с «да» по всем
-  обещанным элементам.
-- Как правильно: в критерии с «каждым найденным» записывать границу поиска в самом
-  требовании: «найденный» — названный в перечисленных источниках или в выдаче
-  перечисленных запросов, сохранённой в файле, чтобы проверяющий мог её повторить; всё за
-  границей прямо называть «не искали». Название, попавшее в файл, открывают и либо
-  включают в таблицу, либо исключают с причиной по открытой странице; списка «найдено, но
-  не открыто» не ведут. Решение о границе записывать там, где его видит владелец
-  (`STATE.md`, Q12), а итоговый документ повторяет оговорку вместе с известными
-  исключениями. Отличие от AP-014: там класс замкнут (каждый вызов `fs` в `tools/src` —
-  конечный список), и «найти все места того же рода» выполнимо; здесь класс открыт, и такой
-  поиск не заканчивается.
+- Что случилось: criterion 2 of REQ-006 requires a row for every platform found and every
+  product found. The classes of products are open: the researcher of tools showed that each of
+  11 new queries by class returned new repositories, and the skills.rest catalog reports
+  "754,000+ skills indexed" (`result.issues` I1 of rework r2). ORCH accepted a border in the
+  middle of the run (`orch-notes.md`, "Decisions of ORCH"): "found" means found by the queries
+  from the section "## Где искали" ("Where we searched") of each file plus
+  `research/pixel-office.md` and the corrections of step 1b. But the border cannot be
+  reproduced: the checker of step 1b repeated 9 queries and found 11 suitable products without
+  rows, and in `session-review-platforms.md` an unnamed phrase stayed about platforms "met only
+  in headings" (remark S3), which cannot be checked. The border was recorded only in the notes of
+  ORCH, not in the requirement (it was entered into `STATE.md` at step 5); in the document
+  «рано» ("too early") the reservation about the border is in Question 1, but about the 11
+  products there is none (finding F3 of step 4). Connected with this is the researcher's
+  proposal (I2): a list "found but not opened" contradicts the criterion "every one found".
+- Почему это плохо: "every one found" without a border is either impossible (the search does not
+  end), or the performer and the checker each get their own "found", and the completeness of the
+  table is not checked. A border invented in the middle of a run does not follow from the
+  requirement and is not visible to the owner (Q12). For the result «рано» this did not break
+  the criterion (adding products could only strengthen the refusal, F3), but with a PASS an
+  unchecked product outside the border could change the verdict: condition 3 of the gate asks
+  whether there is a product with «да» on all promised elements.
+- Как правильно: in a criterion with "every one found", write the border of the search in
+  the requirement itself: "found" means named in the listed sources or in the output of the
+  listed queries, saved in a file so that the checker can repeat it; everything beyond the
+  border is directly called "not searched". A name that got into the file is opened and either
+  included in the table or excluded with a reason from the opened page; a list "found but not
+  opened" is not kept. The decision about the border is written where the owner sees it
+  (`STATE.md`, Q12), and the final document repeats the reservation together with the known
+  exclusions. The difference from AP-014: there the class is closed (every `fs` call in
+  `tools/src` is a finite list), and "find all places of the same kind" can be done; here the
+  class is open, and such a search does not end.
 - Где найдено: `handoffs/BP-20260930-01/step-01-market-researcher-session-review-tools-r2.json`
-  (`result.issues` I1 и I2); `handoffs/BP-20260930-01/orch-notes.md` («Решения ORCH»);
-  `handoffs/BP-20260930-01/step-01b-plan-validator-session-review-tools-r2.json` (раздел 4);
-  `handoffs/BP-20260930-01/step-04-release-validator.json`, находка F3.
+  (`result.issues` I1 and I2); `handoffs/BP-20260930-01/orch-notes.md` ("Decisions of ORCH");
+  `handoffs/BP-20260930-01/step-01b-plan-validator-session-review-tools-r2.json` (section 4);
+  `handoffs/BP-20260930-01/step-04-release-validator.json`, finding F3.
 
-### AP-018 — Независимому проверяющему сообщили ожидаемый вердикт
+### AP-018 — The independent checker was told the expected verdict
 
-- Что случилось: ORCH записал в handoff шага 2b (PLAN-VALIDATOR) в
-  `context.writer_expectation`: «The author's own check says condition 3 fails (14
-  products have «да» on both promised elements) and expects «рано»; do not rely on this:
-  recompute». В задании шага 4 (RELEASE-VALIDATOR) итог прогона назван заранее («Итог
-  прогона — «рано» (шаг 2b вынес FAIL…)»), хотя шаг 4 должен был вывести вердикт ворот
-  заново и независимо. Вред не показан: оба проверяющих пересчитали сами (2b — список из
-  14 продуктов совпал, а по условию 2 оценка получилась иной, чем у автора; шаг 4 — вердикт
-  совпал с вердиктом 2b). Но шаг 4 сам записал, что к моменту пересчёта уже знал списки 2a
-  и 2b и ожидаемый итог, и его независимость держится на способе (скрипт по таблицам
-  покрытия, устойчивость по 63 наборам элементов, выборочная сверка страниц), а не на
-  неведении (находка F9).
-- Почему это плохо: подсказка ослабляет независимость проверяющего (Q2): по совпавшему
-  вердикту нельзя отличить «нашёл сам» от «согласился». Оговорка «не полагайтесь на
-  это» в `context.writer_expectation` этого не меняет.
-- Как правильно: независимому проверяющему передают только артефакты и критерии — без
-  ожидания автора, прежнего вердикта и итога прогона (F9). Какие критерии применяются,
-  он определяет сам по артефактам: в документе есть строка «Итог: …», handoff-ы 2a и 2b
-  лежат в `handoffs/`. Если подсказка всё же ушла, проверяющий записывает это в свой
-  handoff (так сделал шаг 4).
+- Что случилось: ORCH wrote into the handoff of step 2b (PLAN-VALIDATOR), in
+  `context.writer_expectation`: "The author's own check says condition 3 fails (14 products
+  have «да» on both promised elements) and expects «рано»; do not rely on this: recompute". In
+  the task of step 4 (RELEASE-VALIDATOR) the result of the run is named in advance ("The result
+  of the run is «рано» (step 2b gave FAIL…)"), although step 4 had to derive the verdict of the
+  gate again and independently. No harm is shown: both checkers recalculated by themselves (2b —
+  the list of 14 products matched, and by condition 2 the rating came out different from the
+  author's; step 4 — the verdict matched the verdict of 2b). But step 4 itself recorded that by
+  the time of the recalculation it already knew the lists of 2a and 2b and the expected result,
+  and its independence rests on the method (a script over the coverage tables, stability over
+  63 sets of elements, a sample comparison of pages), not on ignorance (finding F9).
+- Почему это плохо: a hint weakens the independence of the checker (Q2): from a matching verdict
+  one cannot tell "found by itself" from "agreed". The reservation "do not rely on this" in
+  `context.writer_expectation` does not change that.
+- Как правильно: to an independent checker give only artifacts and criteria — without the
+  author's expectation, an earlier verdict and the result of the run (F9). Which criteria apply,
+  it determines itself from the artifacts: the document has a line "Result: …", and the
+  handoffs of 2a and 2b are in `handoffs/`. If a hint did go out, the checker records this in its
+  handoff (this is what step 4 did).
 - Где найдено: `handoffs/BP-20260930-01/step-02b-plan-validator-value.json`
   (`context.writer_expectation`); `handoffs/BP-20260930-01/step-04-release-validator.json`
-  (`task.description`, находка F9); `handoffs/BP-20260930-01/orch-notes.md` («Шаг 4 REQ-006:
-  PASS»).
+  (`task.description`, finding F9); `handoffs/BP-20260930-01/orch-notes.md` ("Step 4 REQ-006:
+  PASS").
 
-### AP-019 — Доработка вышла за перечень замечаний
+### AP-019 — The rework went beyond the list of findings
 
-- Что случилось: после FAIL шага 1b исследователю инструментов поручили доработку по пяти
-  замечаниям (строки Sentry, New Relic и Grafana; неоткрытые продукты; Torii; Jellyfish и
-  Datadog Agent Console; метка рынка у `/insights`;
-  `step-01-market-researcher-session-review-tools-r2.json`, `task.description`). В записи
-  исследователя после перерыва по лимиту: «выполнено ещё 11 запросов по классам … добавлено
-  47 строк (подразделы 12–16)». Таблица покрытия выросла с 54 до 127 строк, и 47 строк
-  добавлены по новым запросам, которых замечания не требовали. Проверяющий получил на
-  повторную проверку (1b, раунд 2) файл с этими 47 строками; он нашёл ещё 11 подходящих
-  продуктов вне границы и десять мелких замечаний N1–N10 (`orch-notes.md`; находка F3
-  шага 4).
-- Почему это плохо: доработка по перечню проверяется сверкой «исправлено ли названное».
-  Когда вместе с исправлениями приходят ещё 47 новых строк, сверка становится новой
-  проверкой нового содержимого, а лимит доработок (две) тратится на то, о чём замечаний не
-  было. Полноту это не закрыло: открытый класс продуктов не кончается (AP-017), и
-  проверяющий всё равно нашёл продукты вне границы.
-- Как правильно: в задании доработки — только перечисленные замечания; всё, что исполнитель
-  находит сверх, он записывает вопросом в `result.issues`, а не правкой. `result.changes`
-  соотносит каждую правку с замечанием (AP-013), а ORCH до отправки на новый 1b сверяет
-  рост файла (строки, таблицы) с перечнем замечаний. Расширение поиска — отдельное решение
-  ORCH с границей (AP-017), а не побочный эффект доработки.
-- Где найдено: `handoffs/BP-20260930-01/orch-notes.md` («Кандидаты в журнал ошибок», п. 9);
-  `handoffs/BP-20260930-01/step-01-market-researcher-session-review-tools-r2.json`
-  (`result.changes`, пункт F2; `result.summary`).
+- Что случилось: after the FAIL of step 1b the researcher of tools was given a rework for five
+  findings (rows for Sentry, New Relic and Grafana; products not opened; Torii; Jellyfish and
+  Datadog Agent Console; the market label for `/insights`;
+  `step-01-market-researcher-session-review-tools-r2.json`, `task.description`). In the
+  researcher's record after a break caused by a limit: "11 more queries by class were done …
+  47 rows added (subsections 12–16)". The coverage table grew from 54 to 127 rows, and 47 rows
+  were added from new queries that the findings did not require. The checker received for the
+  repeated check (1b, round 2) a file with these 47 rows; it found 11 more suitable products
+  outside the border and ten small remarks N1–N10 (`orch-notes.md`; finding F3 of step 4).
+- Почему это плохо: a rework by a list is checked by a comparison "is the named thing fixed".
+  When 47 new rows come together with the fixes, the comparison becomes a new check of new
+  content, and the limit of reworks (two) is spent on what had no findings. This did not close
+  the completeness: an open class of products does not end (AP-017), and the checker still found
+  products outside the border.
+- Как правильно: the task of a rework holds only the listed findings; everything the
+  performer finds beyond that it records as a question in `result.issues`, and not as an edit.
+  `result.changes` relates every edit to a finding (AP-013), and ORCH, before sending to a new
+  1b, compares the growth of the file (rows, tables) with the list of findings. A widening of
+  the search is a separate decision of ORCH with a border (AP-017), not a side effect of a
+  rework.
+- Где найдено: `handoffs/BP-20260930-01/orch-notes.md` ("Candidates for the error journal",
+  item 9); `handoffs/BP-20260930-01/step-01-market-researcher-session-review-tools-r2.json`
+  (`result.changes`, item F2; `result.summary`).
 
-### AP-020 — Рекурсивный chmod по символьной ссылке снял право запуска с настоящего Node
+### AP-020 — A recursive chmod through a symbolic link took the execute permission from the real Node
 
-- Что случилось: 2026-10-01 в 17:50 и 17:53 по Алматы (12:50:35Z и 12:53:29Z) проверочный
-  скрипт BACKEND-DEV прогона Pixel Office (в scratchpad, вне репозитория) создал во
-  временном дереве символьную ссылку `node` на `process.execPath` — ту же ситуацию
-  описывает тест HK-10 из дизайна, — а очистка сделала `fs.chmodSync(…, 0o600)` по всему
-  дереву. chmod идёт по ссылке, и право запуска исчезло у двух настоящих файлов —
-  программ Node 22 и Node 25, установленных на компьютере; оба стали `-rw-------` (по
-  подсчёту BACKEND-DEV, из 145 исполняемых файлов той же установки такими оказались только
-  эти два). `node`,
-  `npm` и `npx` отвечали «permission denied: node» у всех агентов и у владельца. Попытку
-  вернуть права система безопасности отклонила как изменение общего ресурса; починить
-  может только владелец. На 2026-10-01T16:52Z оба файла по-прежнему `-rw-------` (`ls -l`,
-  без запуска Node).
-- Почему это плохо: сбой вышел за пределы проекта и остановил работу: тесты ISS-0002,
-  проверка безопасности Pixel Office и все `npm run check` не идут, пока владелец не вернёт
-  права. Ловушка была видна заранее: тест HK-10 дизайна кладёт ровно такую ссылку, и та же
-  ловушка ждала в настоящих тестах (BACKEND-DEV, I8). Очистка, которой нужно вернуть права
-  файлам, сделанным нечитаемыми намеренно, обходит дерево рекурсивно и не отличает ссылку
-  от файла.
-- Как правильно: тесты и скрипты не меняют права ничего вне своей временной папки. chmod —
-  только по именованным путям, через `lstat`, не по ссылкам; без `chmod -R` и обходов,
-  которые идут за ссылками. В тестах и скриптах ссылка «node» ведёт не на
-  `process.execPath` и не на настоящий бинарник, а на заглушку-скрипт во временной папке
-  (жёсткое правило ORCH, `orch-notes.md`). Очистка временных папок тестов — безопасная
-  (`lstat`, без chmod по ссылкам), с регрессионным тестом: внутри очищаемого дерева лежит
-  ссылка на файл с известными правами, и права цели после очистки не изменились. Проверка
-  из предложения BACKEND-DEV (I8): `stat` у `process.execPath` (права и ctime) до и после
-  `npm run check` одинаков; `grep chmodSync` по `tools/test` находит только именованные
-  пути. Как предложение поднять планку она вынесена владельцу в
-  `decisions/0006-proposals-to-raise-the-bar.md`. Команды проверки, которым нужен Node,
-  начинаются с `node -v`: отказ запуска виден сразу (находка F11).
+- Что случилось: on 2026-10-01 at 17:50 and 17:53 Almaty time (12:50:35Z and 12:53:29Z) a check
+  script of BACKEND-DEV in the Pixel Office run (in the scratchpad, outside the repository)
+  created in a temporary tree a symbolic link `node` to `process.execPath` — the same situation
+  is described by the test HK-10 of the design — and the cleanup did `fs.chmodSync(…, 0o600)` on
+  the whole tree. chmod follows the link, and the execute permission disappeared from two real
+  files — the programs of Node 22 and Node 25 installed on the computer; both became
+  `-rw-------` (by the count of BACKEND-DEV, of 145 executable files of the same installation
+  only these two became so). `node`, `npm` and `npx` answered "permission denied: node" for all
+  agents and for the owner. An attempt to return the permissions was rejected by the security
+  system as a change of a shared resource; only the owner can repair it. At 2026-10-01T16:52Z
+  both files are still `-rw-------` (`ls -l`, without running Node).
+- Почему это плохо: the failure went beyond the project and stopped the work: the tests of
+  ISS-0002, the security check of Pixel Office and all `npm run check` do not run until the
+  owner returns the permissions. The trap was visible in advance: the test HK-10 of the design
+  puts exactly such a link, and the same trap waited in the real tests (BACKEND-DEV, I8). A
+  cleanup that has to return permissions to files made unreadable on purpose walks the tree
+  recursively and does not tell a link from a file.
+- Как правильно: tests and scripts do not change the permissions of anything outside their
+  temporary folder. chmod only on named paths, through `lstat`, not through links; no `chmod -R`
+  and no walks that follow links. In tests and scripts the link "node" leads not to
+  `process.execPath` and not to a real binary, but to a stub script in a temporary folder (a hard
+  rule of ORCH, `orch-notes.md`). The cleanup of the temporary folders of tests is safe (`lstat`,
+  no chmod through links), with a regression test: inside the tree to be cleaned there is a link
+  to a file with known permissions, and the permissions of the target did not change after the
+  cleanup. A check from the proposal of BACKEND-DEV (I8): `stat` of `process.execPath`
+  (permissions and ctime) is the same before and after `npm run check`; `grep chmodSync` over
+  `tools/test` finds only named paths. As a proposal to raise the bar it was put to the owner in
+  `decisions/0006-proposals-to-raise-the-bar.md`. Check commands that need Node begin with
+  `node -v`: a refusal to start is visible at once (finding F11).
 - Где найдено: `handoffs/PO-20260930-01/step-02-backend-dev.json` (`result.issues` I0, I8);
-  `handoffs/BP-20260930-01/orch-notes.md` («ИНЦИДЕНТ 2026-10-01 ~17:50 по Алматы»);
-  `handoffs/ISS-0002-20260930-01/step-07-test-design-validator.json` («ENVIRONMENT»);
-  `handoffs/BP-20260930-01/step-04-release-validator.json`, находка F11.
+  `handoffs/BP-20260930-01/orch-notes.md` ("INCIDENT 2026-10-01 ~17:50 Almaty time");
+  `handoffs/ISS-0002-20260930-01/step-07-test-design-validator.json` ("ENVIRONMENT");
+  `handoffs/BP-20260930-01/step-04-release-validator.json`, finding F11.
 
-### AP-021 — Обход сбоя среды вместо того, чтобы сразу вынести его владельцу
+### AP-021 — A workaround for an environment failure instead of taking it to the owner at once
 
-- Что случилось: после AP-020 ORCH передал владельцу просьбу починить права (команда
-  `chmod 555 …`), но не остановил затронутые шаги до ответа, а предложил агентам обход —
-  личную копию Node 22.21.1 в scratchpad и `PATH=<scratchpad>/bd/nodebin:$PATH` (ORCH
-  проверил `node -v`; `orch-notes.md`, «ИНЦИДЕНТ 2026-10-01»; в задании TEST-DESIGNER
-  ISS-0002 это правило стоит как `orch_rulings.node`). Обход сработал не у всех. Система
-  безопасности отказала TEST-DESIGNER ISS-0002 («[Code from External]») на первой же
-  команде с таким PATH, и он ничего не запускал (тесты, prettier, eslint и мутанты не
-  шли); когда координатор повторил указание, он его не выполнил, потому что сообщение
-  агента отказ системы не снимает. TEST-DESIGN-VALIDATOR получил отказ на такую же
-  команду, дальше работал на собственной копии Node с теми же байтами, а результаты трёх
-  команд в окне поломки, вероятно шедших на Node 25, отбросил. У RELEASE-VALIDATOR шага 4
-  REQ-006 обход сработал (его находка F11). ORCH сам записал вывод: обход «ненадёжен и не
-  должен использоваться как решение» (`orch-notes.md`, «БЛОКИРОВКА 2026-10-01 ~22:00»).
-- Почему это плохо: сбой общего инструмента вне проекта — не задача для обхода силами
-  агентов. Указание запускать другую копию просит агента исполнять файл, который система
-  безопасности не одобрила, а сообщение ORCH — не согласие владельца и не снимает отказ
-  системы. Результат разный у разных запусков: одни работали на копии, другой остановился,
-  результаты нескольких команд пришлось отбросить, потому что неясно, на каком Node они
-  шли.
-- Как правильно: сбой среды вне проекта (права файлов, общий инструмент, диск) ORCH сразу
-  выносит владельцу — что сломалось, чем подтверждено (`ls -l`, время), точная команда
-  починки, что из-за этого стоит — и останавливает затронутые шаги до ответа, а не ищет
-  обход. Отказ системы безопасности не повторяют и не пересылают агентам заново. Работать
-  агентам на личной копии Node можно только по явному разрешению владельца (`orch-notes.md`:
-  «явное разрешение владельца на правило с копией Node»); до него такие шаги стоят в
-  блокировке с названной командой владельца.
-- Где найдено: `handoffs/BP-20260930-01/orch-notes.md` («ИНЦИДЕНТ 2026-10-01 ~17:50 по
-  Алматы», «БЛОКИРОВКА 2026-10-01 ~22:00 по Алматы»);
+- Что случилось: after AP-020 ORCH passed to the owner a request to repair the permissions
+  (the command `chmod 555 …`), but did not stop the affected steps until the answer, and
+  offered the agents a workaround — a personal copy of Node 22.21.1 in the scratchpad and
+  `PATH=<scratchpad>/bd/nodebin:$PATH` (ORCH checked `node -v`; `orch-notes.md`, "INCIDENT
+  2026-10-01"; in the task of TEST-DESIGNER ISS-0002 this rule stands as `orch_rulings.node`).
+  The workaround did not work for everyone. The security system refused TEST-DESIGNER ISS-0002
+  ("[Code from External]") on the very first command with such a PATH, and it ran nothing
+  (tests, prettier, eslint and mutants did not run); when the coordinator repeated the
+  instruction, it did not follow it, because an agent's message does not lift a refusal of the
+  system. TEST-DESIGN-VALIDATOR got a refusal on the same command, then worked on its own copy
+  of Node with the same bytes, and dropped the results of three commands in the window of the
+  breakage, probably run on Node 25. For RELEASE-VALIDATOR of step 4 of REQ-006 the workaround
+  worked (its finding F11). ORCH itself recorded the conclusion: the workaround is "unreliable
+  and must not be used as a solution" (`orch-notes.md`, "BLOCK 2026-10-01 ~22:00").
+- Почему это плохо: a failure of a shared tool outside the project is not a task for a workaround
+  by the agents. An instruction to run another copy asks the agent to execute a file that the
+  security system has not approved, and a message of ORCH is not the owner's consent and does
+  not lift the refusal of the system. The result differs between runs: some worked on the
+  copy, another stopped, and the results of several commands had to be dropped because it is
+  unclear on which Node they ran.
+- Как правильно: ORCH takes an environment failure outside the project (file permissions,
+  a shared tool, the disk) to the owner at once — what broke, how it is confirmed (`ls -l`,
+  time), the exact repair command, what stands because of it — and stops the affected steps
+  until the answer, and does not look for a workaround. A refusal of the security system is not
+  repeated and not forwarded to the agents again. Agents may work on a personal copy of Node
+  only with the owner's explicit permission (`orch-notes.md`: "explicit permission of the owner
+  for the rule with a copy of Node"); until then such steps stand blocked with the named
+  command for the owner.
+- Где найдено: `handoffs/BP-20260930-01/orch-notes.md` ("INCIDENT 2026-10-01 ~17:50 Almaty
+  time", "BLOCK 2026-10-01 ~22:00 Almaty time");
   `handoffs/ISS-0002-20260930-01/step-06-test-designer-r2.json` (`context.orch_rulings.node`,
   `result.issues` I1); `handoffs/ISS-0002-20260930-01/step-07-test-design-validator.json`
-  («ENVIRONMENT»); `handoffs/BP-20260930-01/step-04-release-validator.json`, находка F11.
+  ("ENVIRONMENT"); `handoffs/BP-20260930-01/step-04-release-validator.json`, finding F11.
 
-### AP-022 — Проект держится на файлах вне своей папки
+### AP-022 — The project stands on files outside its folder
 
-- Что случилось: файлы ролей, планка качества и протокол handoff-ов ссылались на файлы вне
-  папки Sai, а в рабочих документах были пути этого компьютера (домашняя папка, папки
-  установленных программ, временные папки сессии).
-- Почему это плохо: на другом компьютере агент не находит своих правил и работает по
-  догадке (Q3); команды и проверки с путями этого компьютера там ломаются.
-- Как правильно: всё, что нужно агенту, лежит в файлах Sai; пути — от корня Sai, временные
-  места называются `<вне проекта>`. Переносимость проверяется копией папки Sai на чистом
-  месте: `cd tools && npm ci && npm run check` проходит, а поиск путей этого компьютера
-  по Sai даёт 0.
-- Где найдено: `PLAN.md`, итерация 2.
+- Что случилось: the role files, the quality bar and the handoff protocol referred to files
+  outside the Sai folder, and the working documents had paths of this computer (the home
+  folder, folders of installed programs, temporary folders of the session).
+- Почему это плохо: on another computer an agent does not find its rules and works by guess (Q3);
+  commands and checks with paths of this computer break there.
+- Как правильно: everything an agent needs is in the Sai files; paths are from the Sai
+  root, temporary places are called `<outside the project>`. Portability is
+  checked by a copy of the Sai folder in a clean place: `cd tools && npm ci && npm run check`
+  passes, and a search for paths of this computer over Sai gives 0.
+- Где найдено: `PLAN.md`, iteration 2.
 
-### AP-023 — Правка блока общего файла без копии «до» вне проекта
+### AP-023 — An edit of a block of a shared file without a "before" copy outside the project
 
-- Что случилось: в прогоне `PO-20261002-01` ORCH поручил REQ-ANALYST править по одному
-  блоку общего файла `docs/requirements.yaml`: на шаге 00a — блок REQ-007
-  (`context.edit_scope`: «только блок REQ-007; хеши остальных блоков до и после — в
-  result»), на шаге 00c — блок REQ-001. Копию файла до правки вне проекта ORCH не снял —
-  `context.before_copy` в этих handoff-ах нет. Поэтому независимая проверка шага 00b «кроме
-  своего блока, ничего не изменилось» опиралась на хеши самого автора правки и на старые
-  частичные копии; ORCH так и записал это в `context.before_copy` handoff-а шага 00b.
-- Почему это плохо: проверяющий не может сам сравнить файл «до» и «после» по байтам —
-  доказательство, что чужие блоки целы, даёт тот же агент, который их мог задеть (Q2).
-  Старые копии устарели: блоки, менявшиеся после них, сверить не с чем. Общий файл пишут
-  разные шаги и прогоны (в этом прогоне — два блока, на шагах 00a и 00c), и случайная
-  правка чужого блока прошла бы незаметно.
-- Как правильно: перед любым заданием с `context.edit_scope` на общий файл ORCH копирует
-  файл вне проекта и называет копию в `context.before_copy`; проверяющий сравнивает «до» и
-  «после» сам, по этой копии. Так сделано в доработке того же прогона: перед раундом 1 ORCH
-  снял копию и назвал её в задании (`step-00a-req-analyst-r1.json`).
-- Где найдено: `handoffs/PO-20261002-01/step-00a-req-analyst.json` и
-  `handoffs/PO-20261002-01/step-00c-req-analyst-req001.json` (в `context` нет
-  `before_copy`); `handoffs/PO-20261002-01/step-00b-req-validator.json`
-  (`context.before_copy` — запись ORCH, что копии нет); заметка ORCH в задании
+- Что случилось: in the run `PO-20261002-01` ORCH told REQ-ANALYST to edit one block at a time
+  of the shared file `docs/requirements.yaml`: at step 00a — the block REQ-007
+  (`context.edit_scope`: "only the block REQ-007; hashes of the other blocks before and after —
+  in result"), at step 00c — the block REQ-001. ORCH did not take a copy of the file before the
+  edit outside the project — there is no `context.before_copy` in these handoffs. So the
+  independent check of step 00b "except for its block, nothing changed" relied on the hashes of
+  the author of the edit and on old partial copies; ORCH recorded this in `context.before_copy`
+  of the handoff of step 00b.
+- Почему это плохо: the checker cannot compare the file "before" and "after" byte by byte itself —
+  the proof that other blocks are intact is given by the same agent who could have touched them
+  (Q2). Old copies are out of date: for blocks that changed after them there is nothing to
+  compare with. The shared file is written by different steps and runs (in this run — two
+  blocks, at steps 00a and 00c), and an accidental edit of another block would pass unnoticed.
+- Как правильно: before any task with `context.edit_scope` on a shared file, ORCH copies
+  the file outside the project and names the copy in `context.before_copy`; the checker compares
+  "before" and "after" itself, by this copy. This was done in the rework of the same run: before
+  round 1 ORCH took a copy and named it in the task (`step-00a-req-analyst-r1.json`).
+- Где найдено: `handoffs/PO-20261002-01/step-00a-req-analyst.json` and
+  `handoffs/PO-20261002-01/step-00c-req-analyst-req001.json` (no `before_copy` in `context`);
+  `handoffs/PO-20261002-01/step-00b-req-validator.json` (`context.before_copy` — ORCH's record
+  that there is no copy); a note of ORCH in the task
   `handoffs/SA-20261001-01/step-2c-final-doc-updater.json`.
 
-### AP-024 — Проверка следов — не по всем признакам сразу
+### AP-024 — The trace check does not cover all signs at once
 
-- Что случилось: поиски следов на шагах 2b–2d итерации 2 (`PLAN.md`) искали названия
-  других проектов и пути этого компьютера, но не имена соседних папок этого компьютера
-  (например, папки, где начинаются сессии) и не названия компании-работодателя, её продукта
-  и её системы. Поэтому строка `tools/README.md:47` и строки в `ideas/` нашлись только в
-  части C шага 2d.
-- Почему это плохо: «следов нет» по неполному списку признаков — ложное «готово» (Q3);
-  каждый новый признак требует нового круга по тем же файлам, а найденное позже
-  уже могло уйти в копию или в историю git.
-- Как правильно: проверка «следов нет» сразу перечисляет все признаки — названия других
-  проектов, автора образца, пути этого компьютера, имена соседних папок, названия
-  компании-работодателя, её продукта и её системы — и ищет их одним проходом; список
-  признаков записывается в задание проверки (так он записан в `PLAN.md`, шаг 2g).
-- Где найдено: `handoffs/SA-20261001-01/step-2d-c-doc-updater-r1.json`, `result.issues`
-  (I2).
+- Что случилось: the trace searches at steps 2b–2d of iteration 2 (`PLAN.md`) looked for names
+  of other projects and paths of this computer, but not for names of neighbouring folders of this
+  computer (for example, folders where sessions start) and not for the names of the employer
+  company, its product and its system. So the line `tools/README.md:47` and lines in `ideas/`
+  were found only in part C of step 2d.
+- Почему это плохо: "no traces" by an incomplete list of signs is a false "done" (Q3); every new
+  sign needs a new round over the same files, and what is found later may already have gone into
+  a copy or into git history.
+- Как правильно: the check "no traces" lists all signs at once — names of other projects,
+  the author of the sample, paths of this computer, names of neighbouring folders, names of the
+  employer company, its product and its system — and looks for them in one pass; the list of
+  signs is written into the task of the check (this is how it is written in `PLAN.md`, step 2g).
+- Где найдено: `handoffs/SA-20261001-01/step-2d-c-doc-updater-r1.json`, `result.issues` (I2).
 
-### AP-025 — Тестовый помощник запускает сервер на порту по умолчанию
+### AP-025 — A test helper starts a server on the default port
 
-- Что случилось: при написании теста SV-48 помощник `runMain` запускал сервер Pixel
-  Office без `--port`, то есть на порту по умолчанию 4780, где работает настоящий Pixel
-  Office владельца. Запуск упёрся в занятый порт, и проверка «здесь уже Pixel Office»
-  послала на 4780 один запрос GET (только чтение; журнал владельца не изменился).
-  Помощник исправлен: без `--port` он подставляет `--port 0`.
-- Почему это плохо: тест мог прочитать или изменить рабочие данные владельца, а его
-  результат зависел от того, запущен ли у владельца настоящий сервер (тест не независим,
-  Q5).
-- Как правильно: тестовый помощник, который запускает сервер, всегда передаёт явный порт
-  0 и отдельную временную папку состояния; если порт не 0, тест падает сразу и громко, а
-  не продолжает.
+- Что случилось: when the test SV-48 was written, the helper `runMain` started the Pixel Office
+  server without `--port`, that is, on the default port 4780, where the owner's real Pixel
+  Office runs. The start hit the busy port, and the check "Pixel Office is already here" sent
+  one GET request to 4780 (read only; the owner's journal did not change). The helper is fixed:
+  without `--port` it substitutes `--port 0`.
+- Почему это плохо: the test could read or change the owner's working data, and its result
+  depended on whether the owner has the real server running (the test is not independent, Q5).
+- Как правильно: a test helper that starts a server always passes an explicit port 0 and a
+  separate temporary state folder; if the port is not 0, the test fails at once and loudly and
+  does not go on.
 - Где найдено: `handoffs/PO-20261002-01/step-05-test-designer.json`, `result.issues` (I6).
 
-### AP-026 — Длинный документ по частям вне проекта без плана сборки
+### AP-026 — A long document in parts outside the project without an assembly plan
 
-- Что случилось: проект кода офиса (`docs/design/REQ-001-pixel-office.md`, прогон
-  `PO-20261002-01`) писался черновиками по частям вне проекта, а файла плана сборки
-  «раздел → источник» не было. После остановки первого запуска следующий восстанавливал
-  план по именам частей.
-- Почему это плохо: после перерыва легко потерять или задвоить раздел; проверяющий не
-  может сверить, что собранный документ взял каждый раздел из нужной части.
-- Как правильно: длинный документ, который пишется по частям, сразу получает файл плана
-  сборки «раздел → файл части → готов ли», рядом с частями; сборка идёт по нему, и он
-  называется в handoff-е.
-- Где найдено: `handoffs/PO-20261002-01/step-01-code-designer-run2.json`,
-  `result.issues` (I7, п. 8).
+- Что случилось: the design of the office code (`docs/design/REQ-001-pixel-office.md`, run
+  `PO-20261002-01`) was written as drafts in parts outside the project, and there was no
+  assembly plan file "section → source". After the first run was stopped, the next one restored
+  the plan by the names of the parts.
+- Почему это плохо: after a break it is easy to lose or double a section; the checker cannot
+  compare that the assembled document took each section from the right part.
+- Как правильно: a long document written in parts at once gets an assembly plan file
+  "section → part file → is it ready", next to the parts; the assembly goes by it, and it is
+  named in the handoff.
+- Где найдено: `handoffs/PO-20261002-01/step-01-code-designer-run2.json`, `result.issues` (I7,
+  item 8).
 
-### AP-027 — Критерий требования называет папку одного прогона
+### AP-027 — A criterion of a requirement names the folder of one run
 
-- Что случилось: критерий требования назвал папку конкретного прогона, а шаг, который он
-  проверяет, повторяется и в следующих прогонах.
-- Почему это плохо: в следующем прогоне критерий проверяет старую папку — проверка
-  проходит по чужим файлам или становится невыполнимой, и требование приходится править
-  заново.
-- Как правильно: критерий называет папку прогона шаблоном (`handoffs/<RUN-ID>/…`), а
-  конкретный прогон — только в комментарии к статусу или в истории требования.
-- Где найдено: `handoffs/PO-20261002-01/step-01-code-designer-run2.json`,
-  `result.issues` (I7, п. 9; там же I1).
+- Что случилось: a criterion of a requirement named the folder of a specific run, while the
+  step it checks repeats in the next runs too.
+- Почему это плохо: in the next run the criterion checks the old folder — the check passes on
+  other people's files or becomes impossible, and the requirement has to be corrected again.
+- Как правильно: the criterion names the run folder as a template
+  (`handoffs/<RUN-ID>/…`), and the specific run only in a comment to the status or in the
+  history of the requirement.
+- Где найдено: `handoffs/PO-20261002-01/step-01-code-designer-run2.json`, `result.issues` (I7,
+  item 9; I1 there too).
 
-### AP-028 — После доработки кода цепочка не перезапущена с тронутых ворот
+### AP-028 — After a rework of code the chain was not restarted from the touched gates
 
-- Что случилось: в прогоне `PO-20261002-01` после правок CODE-FIXER и доработок
-  TEST-DESIGNER (r2, r3) ORCH не перезапустил TEST-RUNNER (шаг 6) и направил работу дальше.
-  Пропуск нашёл RELEASE-VALIDATOR на итоговой проверке (находка RV-1); шаг 6 прошёл заново
-  (`handoffs/PO-20261002-01/step-06-test-runner-r1.json`), и только после этого итоговая
-  проверка дала PASS.
-- Почему это плохо: ворота, пройденные на прежнем коде, ничего не говорят о новом коде
-  (Q2); пропуск ловится только на последнем шаге, и прогон теряет круг.
-- Как правильно: любая доработка перезапускает цепочку с тех ворот, которые она задела,
-  включая TEST-RUNNER; ORCH ведёт на каждый круг список «какие ворота пройдены заново,
-  каким handoff-ом».
+- Что случилось: in the run `PO-20261002-01`, after the edits of CODE-FIXER and the reworks of
+  TEST-DESIGNER (r2, r3), ORCH did not restart TEST-RUNNER (step 6) and sent the work on. The
+  omission was found by RELEASE-VALIDATOR in the final check (finding RV-1); step 6 was passed
+  again (`handoffs/PO-20261002-01/step-06-test-runner-r1.json`), and only after that the final
+  check gave PASS.
+- Почему это плохо: a gate passed on the earlier code says nothing about the new code (Q2); the
+  omission is caught only at the last step, and the run loses a round.
+- Как правильно: any rework restarts the chain from the gates it touched, including
+  TEST-RUNNER; ORCH keeps for each round a list "which gates were passed again, by which
+  handoff".
 - Где найдено: `handoffs/PO-20261002-01/step-09-release-validator.json` (RV-1);
-  `handoffs/PO-20261002-01/step-09-release-validator-r1.json` (RV-1 закрыт).
+  `handoffs/PO-20261002-01/step-09-release-validator-r1.json` (RV-1 closed).
 
-### AP-029 — Ожидаемый вердикт в задании проверяющему — снова
+### AP-029 — The expected verdict in the task for a checker — again
 
-- Что случилось: это повтор AP-018. В задании итоговой проверки прогона `PO-20261002-01`
-  ORCH снова написал ожидаемый вердикт: «Выдайте итоговый вердикт: PASS при условии, что
-  «не проверено» — только …». RELEASE-VALIDATOR записал это и вывел PASS из своих
-  проверок.
-- Почему это плохо: то же, что в AP-018: задание подсказывает ответ независимому
-  проверяющему, и его независимость приходится доказывать отдельно; повтор показывает, что
-  урок AP-018 не вошёл в привычку.
-- Как правильно: задание независимому проверяющему перечисляет, что проверить, и какие
-  пункты допустимо оставить «не проверено», — и никогда не называет вердикт. Перед отправкой
-  ORCH ищет в тексте задания слова «PASS» и «FAIL».
+- Что случилось: this is a repeat of AP-018. In the task of the final check of the run
+  `PO-20261002-01` ORCH again wrote the expected verdict: "Give the final verdict: PASS provided
+  that «не проверено» ("not checked") is only …". RELEASE-VALIDATOR recorded this and derived
+  PASS from its own checks.
+- Почему это плохо: the same as in AP-018: the task suggests the answer to an independent checker,
+  and its independence has to be proved separately; the repeat shows that the lesson of AP-018
+  did not become a habit.
+- Как правильно: a task for an independent checker lists what to check and which items may
+  be left «не проверено» — and never names the verdict. Before sending, ORCH searches the text of
+  the task for the words "PASS" and "FAIL".
 - Где найдено: `handoffs/PO-20261002-01/step-09-release-validator-r1.json`
-  (`task.description`; `result.summary`, последняя строка).
+  (`task.description`; `result.summary`, last line).
 
-### AP-030 — У общего файла не снята копия до правки — снова
+### AP-030 — No "before" copy of a shared file before an edit — again
 
-- Что случилось: это повтор AP-023. В прогоне `PO-20261005-01` ORCH сообщил в задании
-  шага 10 (`handoffs/PO-20261005-01/step-10-doc-updater.json`), что у общего файла перед
-  правкой не была снята копия «до». Какой именно файл — в задании не назван; копии блока
-  требований у шагов 00a и 00b есть (`context.before_copy`), поэтому речь о другом общем
-  файле прогона.
-- Почему это плохо: то же, что в AP-023: проверяющий не может сам сравнить «до» и «после»
-  по байтам, доказательство целости чужих частей даёт тот же агент, который их мог задеть
-  (Q2); повтор показывает, что урок AP-023 не вошёл в привычку.
-- Как правильно: перед любым заданием, которое правит общий файл, ORCH снимает копию вне
-  проекта и называет её в `context.before_copy`; задание без `before_copy` на общий файл
-  не отправляется.
-- Где найдено: задание шага 10 прогона `PO-20261005-01`
-  (`handoffs/PO-20261005-01/step-10-doc-updater.json`, `task.description`, пп. 5а).
+- Что случилось: this is a repeat of AP-023. In the run `PO-20261005-01` ORCH reported in the
+  task of step 10 (`handoffs/PO-20261005-01/step-10-doc-updater.json`) that a shared file had no
+  "before" copy taken before the edit. Which file exactly is not named in the task; copies of the
+  block of requirements exist at steps 00a and 00b (`context.before_copy`), so it is about
+  another shared file of the run.
+- Почему это плохо: the same as in AP-023: the checker cannot compare "before" and "after" byte by
+  byte itself, the proof that other parts are intact is given by the same agent who could have
+  touched them (Q2); the repeat shows that the lesson of AP-023 did not become a habit.
+- Как правильно: before any task that edits a shared file, ORCH takes a copy outside the
+  project and names it in `context.before_copy`; a task without `before_copy` on a shared file is
+  not sent.
+- Где найдено: the task of step 10 of the run `PO-20261005-01`
+  (`handoffs/PO-20261005-01/step-10-doc-updater.json`, `task.description`, item 5а).
 
-### AP-031 — Валидатору заранее назван ожидаемый результат — снова
+### AP-031 — The expected result is named to the validator in advance — again
 
-- Что случилось: это повтор AP-018 и AP-029. В заданиях проверяющих прогона
-  `PO-20261005-01` стоят ожидаемые результаты: «ожидается 439 из 439» (шаги 5b, 6 и 9) и
-  «критерий 16 … не причина FAIL» (шаг 9). Проверяющие запустили проверку сами
+- Что случилось: this is a repeat of AP-018 and AP-029. In the tasks of the checkers of the run
+  `PO-20261005-01` there are expected results: "439 of 439 is expected" (steps 5b, 6 and 9) and
+  "criterion 16 … is not a reason for FAIL" (step 9). The checkers ran the check themselves
   (`handoffs/PO-20261005-01/step-06-test-runner.json`,
-  `handoffs/PO-20261005-01/step-09-release-validator.json`), числа совпали.
-- Почему это плохо: задание подсказывает ответ независимому проверяющему, и его
-  независимость приходится доказывать отдельно (Q2); третий повтор подряд (AP-018, AP-029,
-  этот).
-- Как правильно: задание проверяющему говорит, что запустить и какие пункты допустимо
-  оставить «не проверено», и не называет ни вердикт, ни ожидаемое число; перед отправкой
-  ORCH ищет в тексте «PASS», «FAIL» и «ожидается».
+  `handoffs/PO-20261005-01/step-09-release-validator.json`), the numbers matched.
+- Почему это плохо: the task suggests the answer to an independent checker, and its independence
+  has to be proved separately (Q2); the third repeat in a row (AP-018, AP-029, this one).
+- Как правильно: the task for a checker says what to run and which items may be left
+  «не проверено», and names neither the verdict nor the expected number; before sending, ORCH
+  searches the text for "PASS", "FAIL" and "expected" («ожидается»).
 - Где найдено: `handoffs/PO-20261005-01/step-05b-test-design-validator.json`,
   `step-06-test-runner.json`, `step-09-release-validator.json` (`task.description`).
 
-### AP-032 — После раунда правок не перезапущен TEST-RUNNER
+### AP-032 — TEST-RUNNER was not restarted after a round of edits
 
-- Что случилось: по сообщению ORCH в задании шага 10, в прогоне `PO-20261005-01` после
-  раунда правок прогон проверки (шаг 6) не был перезапущен; это повтор AP-028. Последний
-  в файлах прогон проверки — `handoffs/PO-20261005-01/step-06-test-runner.json` (16:15:01Z,
-  439 из 439, дважды подряд); RELEASE-VALIDATOR запустил `npm run check` сам и получил те же
-  439 из 439 (`handoffs/PO-20261005-01/step-09-release-validator.json`), поэтому на итог
-  пропуск не повлиял.
-- Почему это плохо: ворота, пройденные на прежнем коде, ничего не говорят о новом (Q2);
-  пропуск ловится только на последнем шаге.
-- Как правильно: как в AP-028 — любая доработка перезапускает цепочку с задетых ворот,
-  включая TEST-RUNNER; ORCH ведёт список «какие ворота пройдены заново, каким handoff-ом».
-- Где найдено: задание шага 10 прогона `PO-20261005-01`
-  (`handoffs/PO-20261005-01/step-10-doc-updater.json`, `task.description`, пп. 5в).
+- Что случилось: by the report of ORCH in the task of step 10, in the run `PO-20261005-01`, after
+  a round of edits the check run (step 6) was not restarted; this is a repeat of AP-028. The last
+  check run in the files is `handoffs/PO-20261005-01/step-06-test-runner.json` (16:15:01Z, 439 of
+  439, twice in a row); RELEASE-VALIDATOR ran `npm run check` itself and got the same 439 of 439
+  (`handoffs/PO-20261005-01/step-09-release-validator.json`), so the omission did not affect the
+  result.
+- Почему это плохо: a gate passed on the earlier code says nothing about the new one (Q2); the
+  omission is caught only at the last step.
+- Как правильно: as in AP-028 — any rework restarts the chain from the touched gates,
+  including TEST-RUNNER; ORCH keeps a list "which gates were passed again, by which handoff".
+- Где найдено: the task of step 10 of the run `PO-20261005-01`
+  (`handoffs/PO-20261005-01/step-10-doc-updater.json`, `task.description`, item 5в).
 
-### AP-033 — Проверка следов не охватила все признаки за один проход — снова
+### AP-033 — The trace check did not cover all signs in one pass — again
 
-- Что случилось: это повтор AP-024. В прогоне `PO-20261005-01` проверка следов снова не
-  покрыла все признаки сразу (по сообщению ORCH в задании шага 10). Пример: список
-  признаков в задании шага 10 — названия других проектов, пути этого компьютера и каталог
-  временных файлов — короче списка из AP-024 (нет названий компании, её продукта и системы,
-  имён соседних папок).
-- Почему это плохо: «следов нет» по неполному списку — ложное «готово» (Q3); каждый
-  недостающий признак — новый круг по тем же файлам.
-- Как правильно: список признаков берётся из записи AP-024 и из `PLAN.md`, шаг 2g, и
-  записывается в задание проверки целиком; ищется одним проходом по всем изменённым
-  файлам.
-- Где найдено: задание шага 10 прогона `PO-20261005-01`
-  (`handoffs/PO-20261005-01/step-10-doc-updater.json`, `task.description`, пп. 5г и
-  «Границы»).
+- Что случилось: this is a repeat of AP-024. In the run `PO-20261005-01` the trace check again
+  did not cover all signs at once (by the report of ORCH in the task of step 10). Example: the
+  list of signs in the task of step 10 — names of other projects, paths of this computer and the
+  folder of temporary files — is shorter than the list from AP-024 (there are no names of the
+  company, its product and system, and no names of neighbouring folders).
+- Почему это плохо: "no traces" by an incomplete list is a false "done" (Q3); every missing sign is
+  a new round over the same files.
+- Как правильно: the list of signs is taken from the record AP-024 and from `PLAN.md`, step
+  2g, and is written into the task of the check in full; it is searched in one pass over all
+  changed files.
+- Где найдено: the task of step 10 of the run `PO-20261005-01`
+  (`handoffs/PO-20261005-01/step-10-doc-updater.json`, `task.description`, items 5г and «Границы» ("Limits")).
 
-### AP-034 — REVIEWER не смог записать свой handoff (ограничение среды)
+### AP-034 — REVIEWER could not write its handoff (an environment limit)
 
-- Что случилось: на шаге 4 прогона `PO-20261005-01` REVIEWER выдал вердикт PASS
-  сообщением, но не смог записать в свой handoff поля `status`, `completed_at` и `result`:
-  в его окружении нет безопасного способа править только эти поля. Результат записал
-  ORCH с пометкой `not_agent_attested` (кто записал, когда, на чём основано, что не
-  проверить).
-- Почему это плохо: handoff выглядит как записанный самим проверяющим, хотя записал его
-  ORCH; без пометки это подмена источника (Q2). Это не ошибка агента, а ограничение среды.
-- Как правильно: когда агент не может записать свой handoff, ORCH переносит его отчёт и
-  добавляет `not_agent_attested` с полями `written_by`, `at`, `reason`, `fields_written`,
-  `evidence`, `unverifiable`, как в этом прогоне; без вердикта в сообщении агента handoff
-  не заполняется. Устранить ограничение — отдельная задача ORCH.
-- Где найдено: `handoffs/PO-20261005-01/step-04-reviewer.json`, поле `not_agent_attested`.
+- Что случилось: at step 4 of the run `PO-20261005-01` REVIEWER gave the verdict PASS in a
+  message, but could not write the fields `status`, `completed_at` and `result` into its
+  handoff: in its environment there is no safe way to edit only these fields. The result was
+  written by ORCH with the mark `not_agent_attested` (who wrote, when, on what basis, what cannot
+  be checked).
+- Почему это плохо: the handoff looks as if written by the checker itself, although ORCH wrote it;
+  without the mark this is a substitution of the source (Q2). This is not an error of the agent
+  but a limit of the environment.
+- Как правильно: when an agent cannot write its handoff, ORCH carries over its report and
+  adds `not_agent_attested` with the fields `written_by`, `at`, `reason`, `fields_written`,
+  `evidence`, `unverifiable`, as in this run; without a verdict in the agent's message the
+  handoff is not filled in. Removing the limit is a separate task of ORCH.
+- Где найдено: `handoffs/PO-20261005-01/step-04-reviewer.json`, field `not_agent_attested`.
 
-### AP-035 — Проект CODE-DESIGNER противоречит сам себе в двух местах
+### AP-035 — A CODE-DESIGNER design contradicts itself in two places
 
-- Что случилось: в прогоне `PO-20261005-02` проект `docs/design/REQ-008-history.md` дважды возвращали
-  ворота проекта из-за расхождений внутри самого проекта. Первый раз: в строках критериев 3 и 14 говорилось «расширение
-  HK-11c, HK-11d, HK-12b», а п. 12.1 утверждал, что меняются ровно четыре прежних теста и остальные «не меняются»
-  (находка N1, `handoffs/PO-20261005-02/step-01b-code-design-validator-r1.json`). Там же: проект разрешал открыть окно
-  из карточки агента, а описание интерфейса это запрещало (N2). В первом запуске — те же расхождения между разделами
-  (F2, F3). Ворота ловили это три раза подряд.
-- Почему это плохо: разработчик получает два закона вместо одного и либо выбирает наугад, либо ломает прежние тесты; в
-  каждом круге правка одного места оставляет второе (Q2: ловят ворота, а не автор).
-- Как правильно: CODE-DESIGNER перед сдачей сверяет проект с самим собой: каждое место, где названо то же самое
-  (список изменяемых прежних тестов, разметка карточки, таблица «критерий → тест»), читается рядом с остальными; при
-  доработке правится каждое место, где это упомянуто, а не одно.
-- Где найдено: `handoffs/PO-20261005-02/step-01b-code-design-validator.json`, `step-01b-code-design-validator-r1.json`,
-  `step-01-code-designer-r1.json`.
+- Что случилось: in the run `PO-20261005-02` the design `docs/design/REQ-008-history.md` was
+  returned twice by the design gate because of differences inside the design itself. The first
+  time: in the lines of criteria 3 and 14 it said "extension HK-11c, HK-11d, HK-12b", while item
+  12.1 said that exactly four earlier tests change and the others "do not change" (finding N1,
+  `handoffs/PO-20261005-02/step-01b-code-design-validator-r1.json`). In the same place: the design
+  allowed opening the window from the agent card, and the description of the interface forbade it
+  (N2). In the first run — the same differences between sections (F2, F3). The gate caught this
+  three times in a row.
+- Почему это плохо: the developer gets two laws instead of one and either chooses at random or
+  breaks the earlier tests; in every round an edit of one place leaves the second (Q2: the gate
+  catches it, not the author).
+- Как правильно: before handing in, CODE-DESIGNER compares the design with itself: every
+  place where the same thing is named (the list of earlier tests that change, the markup of the
+  card, the table "criterion → test") is read next to the others; in a rework every place where it
+  is mentioned is edited, not one.
+- Где найдено: `handoffs/PO-20261005-02/step-01b-code-design-validator.json`,
+  `step-01b-code-design-validator-r1.json`, `step-01-code-designer-r1.json`.
 
-### AP-036 — Валидатору назван ожидаемый результат — в четвёртый раз
+### AP-036 — The expected result is named to the validator — the fourth time
 
-- Что случилось: это повтор AP-018, AP-029 и AP-031. В заданиях ворот прогона `PO-20261005-02` ORCH снова назвал
-  проверяющему ожидаемый вердикт или вывод (по сообщению ORCH в задании шага 10; в частности подсказка по issue 4
-  разработчика, из-за которой SECURITY-REVIEWER записал, что вывел вердикт из своих проб:
-  `handoffs/PO-20261005-02/step-03-security-reviewer.json`, `result.issues`, «AP-018»).
-- Почему это плохо: по совпавшему вердикту нельзя отличить «нашёл сам» от «согласился»; независимость проверяющего
-  приходится доказывать отдельно (Q2). Четвёртый повтор показывает, что записи AP-018, AP-029, AP-031 не вошли в привычку.
-- Как правильно: как в AP-031 — задание проверяющему говорит, что запустить и какие пункты допустимо оставить
-  «не проверено», и не называет ни вердикт, ни ожидаемое число; перед отправкой ORCH ищет в тексте «PASS», «FAIL»,
-  «ожидается» и «issue» разработчика.
-- Где найдено: задание шага 10 прогона `PO-20261005-02`
-  (`handoffs/PO-20261005-02/step-10-doc-updater.json`, `task.description`, п. 4б);
-  `handoffs/PO-20261005-02/step-03-security-reviewer.json`.
+- Что случилось: this is a repeat of AP-018, AP-029 and AP-031. In the gate tasks of the run
+  `PO-20261005-02` ORCH again named to the checker the expected verdict or conclusion (by the
+  report of ORCH in the task of step 10; in particular a hint about the developer's issue 4, for
+  which SECURITY-REVIEWER recorded that it derived the verdict from its own probes:
+  `handoffs/PO-20261005-02/step-03-security-reviewer.json`, `result.issues`, "AP-018").
+- Почему это плохо: from a matching verdict one cannot tell "found by itself" from "agreed"; the
+  independence of the checker has to be proved separately (Q2). The fourth repeat shows that the
+  records AP-018, AP-029, AP-031 did not become a habit.
+- Как правильно: as in AP-031 — the task for a checker says what to run and which items may
+  be left «не проверено», and names neither the verdict nor the expected number; before sending,
+  ORCH searches the text for "PASS", "FAIL", "expected" («ожидается») and the developer's
+  "issue".
+- Где найдено: the task of step 10 of the run `PO-20261005-02`
+  (`handoffs/PO-20261005-02/step-10-doc-updater.json`, `task.description`, item 4б); `handoffs/PO-20261005-02/step-03-security-reviewer.json`.
 
-### AP-037 — Хук слал подписанное тело агентом по умолчанию: оно уходило в прокси
+### AP-037 — The hook sent the signed body with the default agent: it went to the proxy
 
-- Что случилось: хук Pixel Office отправлял подписанное тело записи обычным агентом Node по умолчанию. При `NODE_USE_ENV_PROXY=1` и заданном `HTTP_PROXY` такой запрос уходит в прокси, а не
-  напрямую на `127.0.0.1`. Нашёл CODE-DESIGNER измерением до проекта (`docs/design/REQ-008-history.md`, п. 0, строка F6: с агентом
-  по умолчанию запрос ушёл в прокси); решение — п. 13, I8: хук и команда записи получили свой `http.Agent` (тесты HK-28,
-  SV-70).
-- Почему это плохо: локальная запись с подписью и текст запроса владельца покинули бы компьютер через чужой прокси —
-  против границы «только `127.0.0.1`, ничего не уходит наружу» (`decisions/0011`, Q7); окружение разработчика с прокси
-  такое молча делает.
-- Как правильно: каждый исходящий вызов Pixel Office (хук, команда записи, любой новый клиент) создаётся со своим
-  `http.Agent` и адресом `127.0.0.1`; тест подменяет окружение (`NODE_USE_ENV_PROXY=1`, `HTTP_PROXY`) и проверяет, что
-  соединение идёт на `127.0.0.1`, а не на прокси.
-- Где найдено: `docs/design/REQ-008-history.md` (п. 0, F6; п. 13, I8), `handoffs/PO-20261005-02/step-01-code-designer.json`.
+- Что случилось: the Pixel Office hook sent the signed body of the record with the ordinary
+  default Node agent. With `NODE_USE_ENV_PROXY=1` and `HTTP_PROXY` set, such a request goes to the
+  proxy and not directly to `127.0.0.1`. CODE-DESIGNER found it by a measurement before the design
+  (`docs/design/REQ-008-history.md`, item 0, line F6: with the default agent the request went to
+  the proxy); the decision is item 13, I8: the hook and the write command got their own
+  `http.Agent` (tests HK-28, SV-70).
+- Почему это плохо: the local signed write and the text of the owner's request would have left the
+  computer through someone else's proxy — against the border "only `127.0.0.1`, nothing goes
+  outside" (`decisions/0011`, Q7); a developer environment with a proxy does this silently.
+- Как правильно: every outgoing call of Pixel Office (the hook, the write command, any new
+  client) is created with its own `http.Agent` and the address `127.0.0.1`; a test replaces the
+  environment (`NODE_USE_ENV_PROXY=1`, `HTTP_PROXY`) and checks that the connection goes to
+  `127.0.0.1` and not to the proxy.
+- Где найдено: `docs/design/REQ-008-history.md` (item 0, F6; item 13, I8),
+  `handoffs/PO-20261005-02/step-01-code-designer.json`.
 
-### AP-038 — Агенты записывают в handoff status «DONE» и время позже текущего — снова
+### AP-038 — Agents write status "DONE" and a time later than now into a handoff — again
 
-- Что случилось: повтор: агент записал в `status` handoff-а значение `DONE`, а не `COMPLETED`/`FAILED`; ORCH
-  исправил запись и пометил правку в `context.orch_corrections`
-  (`handoffs/PO-20261005-02/step-00a-req-analyst-r3.json`: `status` «DONE» → «COMPLETED», причина — допустимы только
-  COMPLETED/FAILED). По сообщению ORCH в задании шага 10, также встречалось время `completed_at` позже текущего.
-- Почему это плохо: статус вне перечня ломает проверку handoff-ов; время из будущего — запись не с часов
-  (quality-bar §6 п. 8, AP-002), и сверку по времени ей не доверить.
-- Как правильно: в `status` — только `COMPLETED` или `FAILED`; `completed_at` — вывод `date -u +%Y-%m-%dT%H:%M:%SZ` в
-  момент записи, не раньше `started_at` и не позже текущего; найденное ORCH правит с записью `orch_correction`
-  (поле, было, стало, причина), без молчаливой правки.
-- Где найдено: `handoffs/PO-20261005-02/step-00a-req-analyst-r3.json` (`context.orch_corrections`);
-  `handoffs/PO-20261005-01/step-07-design-qa-validator.json` (`status` «DONE» в файле); задание шага 10
-  (`handoffs/PO-20261005-02/step-10-doc-updater.json`, п. 4г).
+- Что случилось: a repeat: an agent wrote the value `DONE` into `status` of a handoff instead of
+  `COMPLETED`/`FAILED`; ORCH corrected the record and marked the edit in `context.orch_corrections`
+  (`handoffs/PO-20261005-02/step-00a-req-analyst-r3.json`: `status` "DONE" → "COMPLETED", the
+  reason — only COMPLETED/FAILED are allowed). By the report of ORCH in the task of step 10, a
+  `completed_at` later than now was also met.
+- Почему это плохо: a status outside the list breaks the handoff check; a time from the future is a
+  record not from the clock (quality-bar §6 item 8, AP-002), and a comparison by time cannot trust
+  it.
+- Как правильно: in `status` only `COMPLETED` or `FAILED`; `completed_at` is the output of
+  `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of writing, not earlier than `started_at` and not
+  later than now; what ORCH finds, it corrects with a record `orch_correction` (field, was, became,
+  reason), without a silent edit.
+- Где найдено: `handoffs/PO-20261005-02/step-00a-req-analyst-r3.json`
+  (`context.orch_corrections`); `handoffs/PO-20261005-01/step-07-design-qa-validator.json`
+  (`status` "DONE" in the file); the task of step 10
+  (`handoffs/PO-20261005-02/step-10-doc-updater.json`, item 4г).
 
-### AP-039 — Требование к экрану написано под два «красивых» размера, а не под реальные окна владельца
+### AP-039 — A requirement for a screen is written for two "nice" sizes and not for the owner's real windows
 
-- Что случилось: критерий 17 REQ-007 (масштаб под Full HD и 2K) был написан только под окна 1920 × 1080 и 2560 × 1440 и
-  в них выполнялся, но у владельца страницу видят окна ≈ 1470 × 784 (MacBook 13) и ≈ 1920 × 950 (монитор 25 дюймов):
-  клетка офиса была 15 px, персонаж ≈ 11 px, подпись нечитаема. Понадобился новый критерий 18 и ещё один прогон
+- Что случилось: criterion 17 of REQ-007 (scale for Full HD and 2K) was written only for windows
+  1920 × 1080 and 2560 × 1440 and was met in them, but the owner sees the page in windows of about
+  1470 × 784 (MacBook 13) and about 1920 × 950 (a 25-inch monitor): the office cell was 15 px, the
+  character about 11 px, and the label unreadable. A new criterion 18 and one more run were needed
   (`PO-20261006-01`, `decisions/0016-pixel-office-compact-office.md`).
-- Почему это плохо: «работает на Full HD и 2K» не говорит, работает ли у владельца; окно браузера меньше монитора
-  (панели, строка адреса), а у экрана Retina плотность пикселей 2 — CSS-размер окна не равен размеру экрана.
-- Как правильно: в требовании к экрану перечислять реальные размеры окна браузера владельца в CSS px (не размер
-  монитора), со снимком владельца, если он есть, и измеримые пороги читаемости (клетка, высота фигуры, шрифт подписи в px);
-  проверять в каждом из этих окон.
-- Где найдено: `docs/requirements.yaml` (REQ-007, критерии 17 и 18); `docs/design/samples/office-owner-1470x784-2026-10-06.png`;
+- Почему это плохо: "works on Full HD and 2K" does not say whether it works for the owner; a browser
+  window is smaller than the monitor (panels, the address bar), and on a Retina screen the pixel
+  density is 2 — the CSS size of the window is not the size of the screen.
+- Как правильно: in a requirement for a screen, list the real sizes of the owner's browser
+  window in CSS px (not the size of the monitor), with the owner's snapshot if there is one, and
+  measurable thresholds of readability (cell, height of the figure, font of the label in px);
+  check in each of these windows.
+- Где найдено: `docs/requirements.yaml` (REQ-007, criteria 17 and 18);
+  `docs/design/samples/office-owner-1470x784-2026-10-06.png`;
   `handoffs/PO-20261006-01/step-00b-req-validator.json`.
 
-### AP-040 — Арифметика высоты холста выявилась только на воротах требования
+### AP-040 — The arithmetic of the canvas height showed up only at the requirement gate
 
-- Что случилось: первая версия критерия 18 допускала сетку 36 × 24 клеток по 27 px (648 px по высоте), а под холст в окне
-  1470 × 784 при легенде на 7 строк остаётся ≈ 513 px; REQ-VALIDATOR отклонил требование, предел стал 36 × 22 (r2).
-  Расчёт по `tools/src/pixel-office/public/style.css` автор требования до сдачи не сделал.
-- Почему это плохо: числовое требование, которое физически не помещается в окно, пропущено автором; ошибку нашли
-  дорогими воротами, а не простым вычитанием.
-- Как правильно: до сдачи требования или проекта с размерами посчитать бюджет окна по `style.css` и константам рисования
-  (высота окна минус шапка, легенда, отступы = место холста) и записать расчёт рядом с числом.
-- Где найдено: `handoffs/PO-20261006-01/step-00b-req-validator.json` (замечание о высоте), `step-00a-req-analyst-r2.json`.
+- Что случилось: the first version of criterion 18 allowed a grid of 36 × 24 cells of 27 px (648
+  px high), while under the canvas in a 1470 × 784 window with a legend of 7 rows about 513 px
+  remain; REQ-VALIDATOR rejected the requirement, and the limit became 36 × 22 (r2). The author of
+  the requirement did not do the calculation by `tools/src/pixel-office/public/style.css` before
+  handing in.
+- Почему это плохо: a numeric requirement that physically does not fit into the window was passed by
+  the author; the error was found by an expensive gate and not by a simple subtraction.
+- Как правильно: before handing in a requirement or a design with sizes, count the budget of
+  the window by `style.css` and the drawing constants (height of the window minus the header, the
+  legend, the margins = the place of the canvas) and write the calculation next to the number.
+- Где найдено: `handoffs/PO-20261006-01/step-00b-req-validator.json` (the remark about the
+  height), `step-00a-req-analyst-r2.json`.
 
-### AP-041 — ORCH не записывал «как понял» сообщения владельца в окно «Просмотр истории»
+### AP-041 — ORCH did not record "how I understood" of the owner's messages in the «Просмотр истории» ("History view") window
 
-- Что случилось: роль ORCH обязывает записывать каждое сообщение владельца и «как понял» командой `pixel-office-note`,
-  окно «Просмотр истории» (REQ-008) для этого готово, но в прогоне `PO-20261006-01` записи по сообщению владельца не
-  делались (по сообщению ORCH в задании шага 10).
-- Почему это плохо: окно показывает владельцу пустое там, где должно быть его собственное поручение и понимание агента;
-  проверить, правильно ли понято, нельзя.
-- Как правильно: по каждому сообщению владельца, до начала работы, — запись командой `pixel-office-note` с «как понял»;
-  ORCH проверяет это в сверке учёта.
-- Где найдено: задание шага 10 (`handoffs/PO-20261006-01/step-10-doc-updater.json`, `task.description`);
-  `.claude/agents/orchestrator.md`.
+- Что случилось: the role of ORCH obliges it to record every message of the owner and "how I
+  understood" with the command `pixel-office-note`, the «Просмотр истории» ("History view") window (REQ-008) is ready
+  for this, but in the run `PO-20261006-01` the records for the owner's message were not made (by
+  the report of ORCH in the task of step 10).
+- Почему это плохо: the window shows the owner an empty place where his own order and the agent's
+  understanding should be; it cannot be checked whether it was understood correctly.
+- Как правильно: for every message of the owner, before the work begins — a record with the
+  command `pixel-office-note` with "how I understood"; ORCH checks this in the bookkeeping check.
+- Где найдено: the task of step 10 (`handoffs/PO-20261006-01/step-10-doc-updater.json`,
+  `task.description`); `.claude/agents/orchestrator.md`.
 
-### AP-042 — Код правился после последних PASS воротных шагов без повторных ворот
+### AP-042 — Code was edited after the last PASS of the gate steps without the gates again
 
-- Что случилось: в прогоне `PROD-20261006-01` код ядра и исполнителей менялся после PASS воротных шагов (15, 16, 19, 21)
-  и не проходил ворота снова; приёмка (RELEASE-VALIDATOR, шаг 20) вернула FAIL (замечания F6, F7).
-- Почему это плохо: PASS относится к коду, который проверяли; после правки он ничего не доказывает, а приёмка находит то, что
-  дешевле ловили бы воротами безопасности и ревью.
-- Как правильно: после любой правки кода, сделанной после PASS, повторять шаги 3–4 (безопасность и ревью) и тесты до приёмки;
-  ORCH сверяет, что последняя правка кода раньше последнего PASS ворот.
-- Где найдено: `handoffs/PROD-20261006-01/step-20-release-validator.json`, `step-24-code-design-validator.json`.
+- Что случилось: in the run `PROD-20261006-01` the code of the core and the executors changed
+  after the PASS of the gate steps (15, 16, 19, 21) and did not pass the gates again; the
+  acceptance (RELEASE-VALIDATOR, step 20) returned FAIL (findings F6, F7).
+- Почему это плохо: a PASS belongs to the code that was checked; after an edit it proves nothing, and
+  acceptance finds what the security and review gates would catch more cheaply.
+- Как правильно: after any code edit made after a PASS, repeat steps 3–4 (security and
+  review) and the tests before acceptance; ORCH checks that the last code edit is earlier than the
+  last PASS of the gates.
+- Где найдено: `handoffs/PROD-20261006-01/step-20-release-validator.json`,
+  `step-24-code-design-validator.json`.
 
-### AP-043 — Проект исполнителей ни разу не получил PASS: правки шли подряд после FAIL
+### AP-043 — The design of the executors never got a PASS: edits went one after another after a FAIL
 
-- Что случилось: проект REQ-010 правился несколькими редакциями подряд по перечням замечаний, и ворота проекта ни разу не
-  вернули PASS до начала кода; к коду перешли по «замечание исправлено».
-- Почему это плохо: исправление может внести новое расхождение (AP-005, AP-014); без повторных ворот проект уходит в код
-  непроверенным.
-- Как правильно: ворота проекта повторять до PASS; к коду переходить только по PASS, а не по заявлению автора об исправлении.
-- Где найдено: `docs/design/REQ-010-agent-executors.md` (r1…r7), `handoffs/PROD-20261006-01/step-24-code-design-validator.json`.
+- Что случилось: the design REQ-010 was edited in several versions in a row by lists of findings,
+  and the design gate never returned a PASS before the code began; they moved to the code on "the
+  finding is fixed".
+- Почему это плохо: a fix can bring in a new difference (AP-005, AP-014); without a repeated gate the
+  design goes into the code unchecked.
+- Как правильно: repeat the design gate until PASS; move to the code only on a PASS, and not
+  on the author's statement of a fix.
+- Где найдено: `docs/design/REQ-010-agent-executors.md` (r1…r7),
+  `handoffs/PROD-20261006-01/step-24-code-design-validator.json`.
 
-### AP-044 — Прежние тесты, которые меняла новая редакция кода, остались красными
+### AP-044 — Earlier tests that a new version of the code changed stayed red
 
-- Что случилось: новая редакция кода поменяла поведение, которое ждали прежние тесты; 11 тестов остались красными, пока
-  кто-то не разобрал их отдельно.
-- Почему это плохо: красный набор тормозит все шаги и подталкивает «подогнать» тесты (Q6) или спорить, чьё это падение.
-- Как правильно: проект и handoff кода содержат план обновления прежних тестов (до → после, ни одна проверка не ослаблена);
-  тесты правит тот, кто меняет поведение, в той же работе.
-- Где найдено: `handoffs/PROD-20261006-01/` (задание учёта, шаг 27), `docs/design/REQ-009-team-core.md` (п. 15.1a, 15.1b).
+- Что случилось: a new version of the code changed behaviour that the earlier tests expected; 11
+  tests stayed red until someone analysed them separately.
+- Почему это плохо: a red set slows all steps and pushes toward "fitting" the tests (Q6) or arguing
+  whose failure it is.
+- Как правильно: the design and the handoff of the code contain a plan for updating the
+  earlier tests (before → after, no check weakened); the tests are edited by the one who changes
+  the behaviour, in the same work.
+- Где найдено: `handoffs/PROD-20261006-01/` (the bookkeeping task, step 27),
+  `docs/design/REQ-009-team-core.md` (items 15.1a, 15.1b).
 
-### AP-045 — Тест без собственного таймаута завис при сломанной защите
+### AP-045 — A test without its own timeout hung on a broken protection
 
-- Что случилось: при сломанной защите (мутант V07) тест, который ждёт процесс или поток, не имел своего таймаута и завис;
-  проверка не краснела, а стояла.
-- Почему это плохо: зависший прогон не отличить от медленного; мутант не «убит», а проверка теряет смысл (Q6) и держит конвейер.
-- Как правильно: у каждого теста, который ждёт процесс, поток или событие, свой ограниченный таймаут с понятным сообщением;
-  мутанты проверяются на то, что тест падает, а не зависает.
-- Где найдено: `handoffs/PROD-20261006-01/step-24-code-design-validator.json` (мутант V07), тесты `tools/test/exec-*.test.js`.
+- Что случилось: with a broken protection (mutant V07) a test that waits for a process or a stream
+  had no timeout of its own and hung; the check did not turn red but stood still.
+- Почему это плохо: a hung run cannot be told from a slow one; the mutant is not "killed", and the
+  check loses its meaning (Q6) and holds the pipeline.
+- Как правильно: every test that waits for a process, a stream or an event has its own
+  limited timeout with an understandable message; mutants are checked so that the test fails and
+  does not hang.
+- Где найдено: `handoffs/PROD-20261006-01/step-24-code-design-validator.json` (mutant V07), tests
+  `tools/test/exec-*.test.js`.
 
-### AP-046 — Правка конкурентности внесла регрессию, пойманную только итоговой проверкой безопасности
+### AP-046 — A concurrency edit brought a regression caught only by the final security check
 
-- Что случилось: правка восстановления (r5) внесла гонку открывающих после аварии (S1): восстановление зависело от того, кто
-  снял устаревший замок. Тестов гонки в том же шаге не было; регрессию нашла только итоговая проверка безопасности повторной
-  пробой гонки.
-- Почему это плохо: конкурентную ошибку не видно при одном процессе; она доходит до последних ворот и стоит лишнего круга
-  правок и повторных ворот (AP-042).
-- Как правильно: у каждой правки, меняющей конкурентность (замок, восстановление, порядок записи), в том же шаге есть тест
-  гонки, который падает на прежнем коде.
-- Где найдено: `handoffs/PROD-20261006-01/step-36-code-fixer.json`, `step-28-code-fixer.json`; `docs/design/REQ-009-team-core.md`
-  (r8, P13, TM-67).
+- Что случилось: a recovery edit (r5) brought in a race of the openers after a crash (S1): the
+  recovery depended on who removed the stale lock. There were no race tests in the same step; the
+  regression was found only by the final security check, by a repeated probe of the race.
+- Почему это плохо: a concurrency error is not visible with one process; it reaches the last gates
+  and costs an extra round of edits and repeated gates (AP-042).
+- Как правильно: every edit that changes concurrency (a lock, recovery, the order of
+  writing) has in the same step a race test that fails on the earlier code.
+- Где найдено: `handoffs/PROD-20261006-01/step-36-code-fixer.json`, `step-28-code-fixer.json`;
+  `docs/design/REQ-009-team-core.md` (r8, P13, TM-67).
 
-### AP-047 — Тест гонки нестабилен под нагрузкой
+### AP-047 — A race test is unstable under load
 
-- Что случилось: тест гонки (F1 ворот тестов) проходил в одиночном прогоне и падал или зависел от времени, когда рядом шли
-  другие процессы.
-- Почему это плохо: нестабильный тест гонки либо краснеет без причины, либо молча пропускает ошибку; ему перестают верить (Q6).
-- Как правильно: тесты гонки проверять в 4 параллельных процессах, а не только по одному; ожидания — по событию, не по паузе.
-- Где найдено: `handoffs/PROD-20261006-01/step-40-test-design-validator.json` (F1), `tools/test/team-recovery.test.js` (TM-67).
+- Что случилось: a race test (F1 of the test gate) passed in a single run and failed or depended
+  on time when other processes ran next to it.
+- Почему это плохо: an unstable race test either turns red for no reason or silently misses an
+  error; people stop believing it (Q6).
+- Как правильно: check race tests in 4 parallel processes, not only one by one; wait for an
+  event, not for a pause.
+- Где найдено: `handoffs/PROD-20261006-01/step-40-test-design-validator.json` (F1),
+  `tools/test/team-recovery.test.js` (TM-67).
 
-### AP-048 — Мутант «проверка замка после записи» выжил: тесты проверяли итог, а не отсутствие побочных обращений
+### AP-048 — The mutant "lock check after the write" survived: the tests checked the result and not the absence of side calls
 
-- Что случилось: мутант, который переставлял проверку замка ПОСЛЕ записи, остался жив: тесты отказа проверяли итог (ошибку и
-  состояние), но не то, что при отказе в журнал не было обращений вообще.
-- Почему это плохо: отказ, который уже успел обратиться к журналу, оставляет следы или частичную запись; тест «состояние не
-  изменилось» (Q5) этого не видит.
-- Как правильно: тест отказа проверяет и итог, и отсутствие побочных обращений (0 записей, 0 `fsync`, 0 чтений журнала там, где
-  отказ должен быть раньше); для новой защиты — мутант «проверка позже» должен убиваться.
-- Где найдено: `handoffs/PROD-20261006-01/step-44-test-design-validator.json`, `step-41-test-designer.json`.
+- Что случилось: a mutant that moved the lock check AFTER the write stayed alive: the failure
+  tests checked the result (the error and the state), but not that on a refusal there were no
+  calls to the journal at all.
+- Почему это плохо: a refusal that has already reached the journal leaves traces or a partial
+  write; the test "the state did not change" (Q5) does not see this.
+- Как правильно: a failure test checks both the result and the absence of side calls (0
+  writes, 0 `fsync`, 0 reads of the journal where the refusal must come earlier); for a new
+  protection, the mutant "check later" must be killed.
+- Где найдено: `handoffs/PROD-20261006-01/step-44-test-design-validator.json`,
+  `step-41-test-designer.json`.
 
+### AP-049 — The final acceptance started before the design edit was finished and before the repeated design gate
 
-### AP-049 — Итоговая приёмка стартовала до завершения правки проекта и повторных ворот проекта
+- Что случилось: step 9 (RELEASE-VALIDATOR) was created at 04:33:49Z, and the design edit step-48
+  finished at 04:36:00Z and was not re-checked by the gate of step 1b: the last verdict of the
+  design gate stayed FAIL (step-46). The acceptance returned FAIL for the process (step-49, F1).
+  The release report at the same time said that the designs had passed the gates (F2), and the
+  requirement statuses stood at `pending` (F3).
+- Почему это плохо: the acceptance checks files that can still change; its verdict does not belong
+  to what will remain. An extra round of acceptance.
+- Как правильно: a repeat of AP-028 — do not start step 9 until step 1b of the last design
+  edit is finished with PASS; the release report names the verdicts of the gates by fact and
+  chronology, not "passed"; the status `in_progress` is set at the start of the run.
+- Где найдено: `handoffs/PROD-20261006-01/step-49-release-validator.json` (F1, F2, F3),
+  `step-50-code-design-validator.json`.
 
-- Что случилось: шаг 9 (RELEASE-VALIDATOR) был создан в 04:33:49Z, а правка проекта step-48 завершилась в 04:36:00Z и не была
-  перепроверена воротами шага 1b: последним вердиктом ворот проекта оставался FAIL (step-46). Приёмка вернула FAIL по процессу
-  (step-49, F1). Отчёт о выпуске при этом утверждал, что проекты прошли ворота (F2), а статусы требований стояли `pending` (F3).
-- Почему это плохо: приёмка проверяет файлы, которые ещё могут измениться; вердикт по ним не относится к тому, что останется.
-  Лишний круг приёмки.
-- Как правильно: повтор AP-028 — шаг 9 не запускать, пока шаг 1b последней правки проекта не завершён PASS; отчёт о выпуске
-  называет вердикты ворот по факту и хронологии, а не «прошли»; статус `in_progress` ставится в начале прогона.
-- Где найдено: `handoffs/PROD-20261006-01/step-49-release-validator.json` (F1, F2, F3), `step-50-code-design-validator.json`.
+### AP-050 — Paths of this computer in the handoffs of a run
 
-### AP-050 — Пути этого компьютера в handoff-ах прогона
-
-- Что случилось: в 65 из 85 handoff-ов прогона PROD-20261006-01 (`context.before_copy`, `task.description`) записаны абсолютные
-  пути временной папки этого компьютера.
-- Почему это плохо: учётные файлы только дописываются, поэтому такие пути остаются в истории и попадут в коммит; для чужого
-  читателя они ничего не значат.
-- Как правильно: в новых handoff-ах писать «<вне проекта>/…»; старые не переписывать — замену при коммите делает ORCH.
+- Что случилось: in 65 of 85 handoffs of the run PROD-20261006-01 (`context.before_copy`,
+  `task.description`) absolute paths of the temporary folder of this computer are written.
+- Почему это плохо: bookkeeping files are only appended to, so such paths stay in history and will
+  get into the commit; for another reader they mean nothing.
+- Как правильно: in new handoffs write "<outside the project>/…"; do not
+  rewrite old ones — the replacement at commit is done by ORCH.
 - Где найдено: `handoffs/PROD-20261006-01/step-49-release-validator.json` (L2).
 
-### AP-051 — Статус требования не переведён в in_progress в начале прогона (повтор AP-049)
+### AP-051 — The requirement status was not moved to in_progress at the start of the run (a repeat of AP-049)
 
-- Что случилось: прогон PROD-20261006-02 (REQ-013) шёл до шага 9, а в `docs/requirements.yaml` требование стояло `pending`;
-  приёмка step-43 вернула FAIL по этому (F1, High), статус `in_progress` поставили только к step-44.
-- Почему это плохо: Q14 — учёт не откладывается; по файлам требования нельзя понять, что работа идёт, а проверяющий тратит
-  круг на очевидное.
-- Как правильно: шаг 0 WF-02 — первое действие прогона: статус `in_progress` в блоке требования, до handoff-а первой роли.
-- Где найдено: `handoffs/PROD-20261006-02/step-43-release-validator.json` (F1, F5), `step-44-release-validator.json`; повтор AP-049.
+- Что случилось: the run PROD-20261006-02 (REQ-013) went on to step 9, while in
+  `docs/requirements.yaml` the requirement stood at `pending`; the acceptance step-43 returned
+  FAIL for this (F1, High), and the status `in_progress` was set only by step-44.
+- Почему это плохо: Q14 — bookkeeping is not postponed; from the requirement files one cannot tell
+  that work is going on, and the checker spends a round on the obvious.
+- Как правильно: step 0 of WF-02 is the first action of the run: the status `in_progress` in
+  the requirement block, before the handoff of the first role.
+- Где найдено: `handoffs/PROD-20261006-02/step-43-release-validator.json` (F1, F5),
+  `step-44-release-validator.json`; a repeat of AP-049.
 
-### AP-052 — Пути этого компьютера в handoff-ах (повтор AP-050)
+### AP-052 — Paths of this computer in handoffs (a repeat of AP-050)
 
-- Что случилось: в handoff-ах прогона PROD-20261006-02 снова оказались абсолютные пути временной папки и папки пользователя;
-  RELEASE-VALIDATOR (step-43, F4) нашёл их в 7 файлах, step-44 подтвердил замену в step-15, 18, 21, 25, 34, 42: ORCH заменил на `<рабочая папка ORCH>` и `<корень Sai>`.
-- Почему это плохо: handoff-ы только дописываются, пути остаются в истории и попадают в коммит; чужому читателю они ничего не
-  значат.
-- Как правильно: в задании и отчёте сразу писать `<рабочая папка ORCH>` и `<корень Sai>`; перед сдачей шага искать
-  `grep -rnE '/Users/|/private/tmp|/var/folders' handoffs/<RUN-ID>/` — пусто.
-- Где найдено: `handoffs/PROD-20261006-02/step-43-release-validator.json` (F4), `step-44-release-validator.json`; повтор AP-050.
+- Что случилось: in the handoffs of the run PROD-20261006-02 absolute paths of the temporary
+  folder and of the user folder appeared again; RELEASE-VALIDATOR (step-43, F4) found them in 7
+  files, step-44 confirmed the replacement in step-15, 18, 21, 25, 34, 42: ORCH replaced them
+  with `<рабочая папка ORCH>` (ORCH working folder) and `<корень Sai>` (Sai root).
+- Почему это плохо: handoffs are only appended to, paths stay in history and get into the commit;
+  for another reader they mean nothing.
+- Как правильно: in the task and the report write `<рабочая папка ORCH>` and `<корень Sai>`
+  at once; before handing in a step run
+  `grep -rnE '/Users/|/private/tmp|/var/folders' handoffs/<RUN-ID>/` — it must be empty.
+- Где найдено: `handoffs/PROD-20261006-02/step-43-release-validator.json` (F4),
+  `step-44-release-validator.json`; a repeat of AP-050.
 
-### AP-053 — Рабочая папка ORCH стёрта, а процесс опирался на неё
+### AP-053 — The ORCH working folder was wiped, and the process relied on it
 
-- Что случилось: по сообщению ORCH, выключение ноутбука стёрло рабочую папку ORCH; в ней лежали копии «до», логи прогонов и
-  снимки проверяющих, на которые ссылаются handoff-ы прогона PROD-20261006-02.
-- Почему это плохо: ссылки в handoff-ах ведут в пустоту; доказательство нельзя перепроверить (Q2, Q3), копию «до» нельзя
-  восстановить.
-- Как правильно: всё, что нужно процессу (копии «до», выводы проверок, цифры для сверки), лежит в проекте — в handoff-е или в
-  `docs/`/`handoffs/`; рабочая папка — только для временного, потеря которого ничего не ломает. Нужный вывод проверки
-  вставляется в `result` handoff-а, а не только ссылкой на файл в рабочей папке.
-- Где найдено: поручение ORCH этому шагу (`handoffs/PROD-20261006-02/step-45-doc-updater.json`); не проверялось
-  по файловой системе, записано со слов ORCH.
+- Что случилось: by the report of ORCH, shutting down the laptop wiped the ORCH working folder;
+  in it lay the "before" copies, the logs of runs and the snapshots of the checkers, which the
+  handoffs of the run PROD-20261006-02 refer to.
+- Почему это плохо: the links in handoffs lead into emptiness; the evidence cannot be re-checked
+  (Q2, Q3), the "before" copy cannot be restored.
+- Как правильно: everything the process needs (the "before" copies, outputs of checks,
+  numbers for comparison) lies in the project — in a handoff or in `docs/`/`handoffs/`; the
+  working folder is only for temporary things whose loss breaks nothing. The needed output of a
+  check is pasted into `result` of the handoff, and not only given as a link to a file in the
+  working folder.
+- Где найдено: the order of ORCH to this step (`handoffs/PROD-20261006-02/step-45-doc-updater.json`);
+  not checked in the file system, recorded from the words of ORCH.
 
-### AP-054 — Тесты с таймерами сочтены недостоверными из-за машины без протокола пауз
+### AP-054 — Tests with timers were considered unreliable because of a machine without a protocol of pauses
 
-- Что случилось: на перегруженной машине четыре полных `npm run check` дали 11, 9, 7 и 17 падений в разных файлах
-  (`handoffs/PROD-20261006-02/step-41-test-designer.json`, load average 12–17 на 10 ядрах); причину назвали догадкой «возможны
-  паузы машины/сна», измерить паузы было нечем. Шаг встал в BLOCKED, а на спокойной машине те же 940 тестов прошли (step-42,
-  step-44).
-- Почему это плохо: без измерения нельзя ни свалить падение на машину (quality-bar §6, п. 4 требует свидетельства), ни
-  оставить его за работой; тест перестают ждать, красное считают шумом (ISS-0004).
-- Как правильно: перед прогоном таймерных тестов — спокойная машина (`uptime`, ничего параллельно, `caffeinate`) и запись
-  load average до и после; нужен монитор пауз (протокол: сравнение хода часов и счётчика процесса за время теста, пауза
-  выше порога — отметка в отчёте). Падение с отметкой паузы повторяется на спокойной машине; без отметки и без повтора оно
-  остаётся за работой. Пока монитора нет — это предложение, не пункт планки.
-- Где найдено: `handoffs/PROD-20261006-02/step-41-test-designer.json`, `step-42-test-runner.json`; дефект ISS-0004.
+- Что случилось: on an overloaded machine four full `npm run check` gave 11, 9, 7 and 17 failures
+  in different files (`handoffs/PROD-20261006-02/step-41-test-designer.json`, load average 12–17
+  on 10 cores); the cause was named by a guess "pauses of the machine/sleep are possible", there
+  was nothing to measure the pauses with. The step went to BLOCKED, and on a calm machine the same
+  940 tests passed (step-42, step-44).
+- Почему это плохо: without a measurement one can neither blame the failure on the machine
+  (quality-bar §6, item 4 requires evidence) nor leave it with the work; the test is no longer
+  waited for, red is counted as noise (ISS-0004).
+- Как правильно: before a run of timer tests — a calm machine (`uptime`, nothing in parallel,
+  `caffeinate`) and a record of load average before and after; a pause monitor is needed (the
+  protocol: compare the clock and the counter of the process over the time of the test, a pause
+  above the threshold is marked in the report). A failure with a pause mark is repeated on a calm
+  machine; without a mark and without a repeat it stays with the work. While there is no monitor,
+  this is a proposal, not an item of the bar.
+- Где найдено: `handoffs/PROD-20261006-02/step-41-test-designer.json`, `step-42-test-runner.json`;
+  defect ISS-0004.
 
-### AP-055 — Слова требования и проект сверялись три круга из-за расхождения формулировок вывода
+### AP-055 — The words of a requirement and the design were compared for three rounds because of a difference in the wording of the output
 
-- Что случилось: проверка слов требования REQ-014 против проекта шла тремя кругами: REQ-VALIDATOR дал FAIL (`step-03`:
-  критерий 1 о выводе для названия в имени файла и критерий 4 об аргументах git не сходились с проектом), затем PASS
-  только после двух правок REQ-ANALYST (`step-06`, `step-08`); ещё одна правка слов потребовалась после кода (`step-15`).
-  Каждый круг — расхождение формулировки между критерием и пунктом проекта, а не между намерением и кодом.
-- Почему это плохо: каждый круг — лишние запуски двух ролей; формулировки вывода и вызовов (метка, аргументы) в двух
-  местах правятся независимо и расходятся; дойди расхождение до приёмки, оно стало бы дефектом (Q12).
-- Как правильно: формулировку вывода и точные аргументы вызовов писать в одном месте и ссылаться на него из второго
-  (критерий — на пункт проекта, проект — на критерий); перед воротами проверять дословную сверку этих мест, как это делает
-  REQ-VALIDATOR в `step-06`. Пока это предложение, не пункт планки.
-- Где найдено: `handoffs/PROD-20261009-01/step-03-req-validator.json`, `step-06-req-validator.json`,
-  `step-08-req-validator.json`, `step-15-req-validator.json`. Родственная находка приёмки: строка таблицы путей отказа п. 7
-  проекта («usage + справка») расходилась с кодом и п. 2/TC-24, поправлена при учёте (`step-21-release-validator.json`).
+- Что случилось: the check of the words of the requirement REQ-014 against the design went for
+  three rounds: REQ-VALIDATOR gave FAIL (`step-03`: criterion 1 about the output for the name in
+  the file name and criterion 4 about the git arguments did not match the design), then PASS only
+  after two edits of REQ-ANALYST (`step-06`, `step-08`); one more edit of the words was needed
+  after the code (`step-15`). Every round is a difference of wording between a criterion and an
+  item of the design, not between the intention and the code.
+- Почему это плохо: every round is extra runs of two roles; the wording of the output and of the
+  calls (the label, the arguments) in two places is edited independently and diverges; had the
+  difference reached acceptance, it would have become a defect (Q12).
+- Как правильно: write the wording of the output and the exact arguments of calls in one
+  place and refer to it from the second (a criterion to an item of the design, the design to the
+  criterion); before the gate, check the verbatim comparison of these places, as REQ-VALIDATOR
+  does in `step-06`. While it is a proposal, it is not an item of the bar.
+- Где найдено: `handoffs/PROD-20261009-01/step-03-req-validator.json`,
+  `step-06-req-validator.json`, `step-08-req-validator.json`, `step-15-req-validator.json`. A
+  related finding of the acceptance: a line of the table of failure paths, item 7 of the design
+  («usage + справка», "usage + help"), differed from the code and from item 2/TC-24, and was
+  corrected during bookkeeping (`step-21-release-validator.json`).
 
-### AP-056 — Времена в handoff-ах записаны не с часов, и «исправление» тоже не с часов
+### AP-056 — Times in handoffs were not written from the clock, and the "fix" was not from the clock either
 
-- Что случилось: в handoff-ах прогона `PROD-20261010-01` времена `completed_at` и `started_at` были записаны «примерно». Когда это
-  нашли, ORCH исправил их полем `orch_correction.at = 2026-10-10T18:30:00Z` в четырёх файлах (`step-23`, `24`, `25`, `27`); коммит
-  с этим значением сделан в 18:27:31Z — значение стоит на 2,5 минуты позже коммита, в котором лежит, часы такого дать не
-  могли (RELEASE-VALIDATOR, `step-50`, F1, FAIL круга 3). Тот же род ошибки у `step-47`: время 18:31:00Z против часов 18:30Z.
-- Почему это плохо: журнал, который должен доказывать порядок событий, сам содержит события из будущего (R2, Q3); исправление
-  неверного времени неверным временем ничего не исправляет (AP-002, AP-014: соседние места того же рода).
-- Как правильно: время — только `date -u +%Y-%m-%dT%H:%M:%SZ` в момент записи; неизвестное время — `null` и слова «не позже
-  <времени коммита>» (так сделано в круге 4: `orch_correction.at: null`, `at_note`); исправляя время, сверять новое значение с
-  временем коммита, в который оно попадёт (`git log -1 --format=%cI`), а не с памятью.
-- Где найдено: `handoffs/PROD-20261010-01/step-50-release-validator.json` (F1), `step-51-release-validator.json`.
+- Что случилось: in the handoffs of the run `PROD-20261010-01` the times `completed_at` and
+  `started_at` were written "approximately". When this was found, ORCH corrected them with the
+  field `orch_correction.at = 2026-10-10T18:30:00Z` in four files (`step-23`, `24`, `25`, `27`);
+  the commit with this value was made at 18:27:31Z — the value stands 2.5 minutes later than the
+  commit it lies in, a clock could not give that (RELEASE-VALIDATOR, `step-50`, F1, FAIL of round
+  3). The same kind of error is in `step-47`: the time 18:31:00Z against the clock 18:30Z.
+- Почему это плохо: a journal that must prove the order of events itself contains events from the
+  future (R2, Q3); fixing a wrong time with a wrong time fixes nothing (AP-002, AP-014:
+  neighbouring places of the same kind).
+- Как правильно: time is only `date -u +%Y-%m-%dT%H:%M:%SZ` at the moment of writing; an
+  unknown time is `null` and the words "not later than <the time of the commit>" (this is how it
+  was done in round 4: `orch_correction.at: null`, `at_note`); when correcting a time, compare the
+  new value with the time of the commit it will get into (`git log -1 --format=%cI`), not with
+  memory.
+- Где найдено: `handoffs/PROD-20261010-01/step-50-release-validator.json` (F1),
+  `step-51-release-validator.json`.
 
-### AP-057 — Шаг 1 WF-03 пропущен, проект написан задним числом, нарушение планки названо «принятым риском»
+### AP-057 — Step 1 of WF-03 skipped, the design written after the fact, a violation of the bar called an "accepted risk"
 
-- Что случилось: для ISS-0010 не выполнен шаг 1 WF-03 (ISSUE-FIXER: диагноз, воспроизведение, места того же рода); проект
-  исправления сразу писал CODE-DESIGNER, а его handoff `step-44-code-designer-iss0010.json` без `result` был написан ORCH
-  позже работы (`not_agent_attested: true`). Дефект сначала записали как «принятый остаточный риск» (`decisions/0025`, W9), хотя
-  пункт Q10 нарушен («повторите позже» говорило неправду); RELEASE-VALIDATOR вернул FAIL (`step-29`, F2).
-- Почему это плохо: пропуск шага — понижение планки (Q10 из-за ложного текста, Q2 — нет независимого диагноза); исключение из
-  планки даёт только владелец и письменно (`quality-bar.md` §1 п. 3), решение ORCH исключением не является; handoff, написанный
-  позже и не агентом, — не доказательство.
-- Как правильно: дефект идёт по WF-03 с шага 1; остаточный риск в решении допустим, только если пункт планки им не нарушен;
-  нарушенный пункт чинят или останавливаются и пишут владельцу. Если шаг всё же пропущен — это записывается в handoff-е
-  без выдумывания исполнителя и времени.
-- Где найдено: `handoffs/PROD-20261010-01/step-29-release-validator.json` (F2), `step-44-code-designer-iss0010.json`,
-  `docs/design/ISS-0010-web-chat-write-recovery.md` (вводная); `decisions/0026-team-core-reclaim-own-broken-lock.md`.
+- Что случилось: for ISS-0010 step 1 of WF-03 was not done (ISSUE-FIXER: diagnosis, reproduction,
+  places of the same kind); the design of the fix was written at once by CODE-DESIGNER, and its
+  handoff `step-44-code-designer-iss0010.json`, without `result`, was written by ORCH later than
+  the work (`not_agent_attested: true`). The defect was first recorded as an "accepted residual
+  risk" (`decisions/0025`, W9), although the item Q10 is violated ("try again later" said
+  something untrue); RELEASE-VALIDATOR returned FAIL (`step-29`, F2).
+- Почему это плохо: skipping a step lowers the bar (Q10 because of the false text, Q2 — no
+  independent diagnosis); an exception from the bar is given only by the owner and in writing
+  (`quality-bar.md` §1 item 3), a decision of ORCH is not an exception; a handoff written later
+  and not by an agent is not evidence.
+- Как правильно: a defect goes by WF-03 from step 1; a residual risk in a decision is
+  allowed only if it does not violate an item of the bar; a violated item is fixed, or one stops
+  and writes to the owner. If a step is still skipped, this is recorded in the handoff without
+  inventing a performer or a time.
+- Где найдено: `handoffs/PROD-20261010-01/step-29-release-validator.json` (F2),
+  `step-44-code-designer-iss0010.json`, `docs/design/ISS-0010-web-chat-write-recovery.md` (the
+  introduction); `decisions/0026-team-core-reclaim-own-broken-lock.md`.
 
-### AP-058 — Правка теста и описания интерфейса прошла без ворот, handoff-ы созданы заранее
+### AP-058 — An edit of a test and of the interface description passed without gates, handoffs created in advance
 
-- Что случилось: правка теста `step-42` (TEST-DESIGNER) дошла до учёта без TEST-DESIGN-VALIDATOR и TEST-RUNNER: ворота прошли
-  только в круге 2 (`step-48`, `step-49`). Правка описания интерфейса (r3.2) шла по «короткому пути» сначала без своих ворот
-  (`step-46` FAIL, `step-47` PASS после). Handoff-ы `step-45…48` ORCH создал до запуска исполнителей, поэтому у них не было
-  своего `started_at` с часов.
-- Почему это плохо: Q2 — кто делает, тот не проверяет; правка без ворот — непроверенная правка, и ворота потом приходится
-  проходить задним числом; заранее созданный handoff несёт время, которого не было (AP-056).
-- Как правильно: любая правка теста или описания — через ворота этого вида правки до следующего шага; handoff создаёт и
-  заполняет `started_at` сам исполнитель по часам; ORCH не создаёт handoff-ы заранее.
-- Где найдено: `handoffs/PROD-20261010-01/step-43-release-validator.json` (F3), `step-46-code-design-validator.json`,
-  `step-50-release-validator.json` (F2 — правка описания без записи ORCH).
+- Что случилось: the edit of the test `step-42` (TEST-DESIGNER) reached bookkeeping without
+  TEST-DESIGN-VALIDATOR and TEST-RUNNER: the gates passed only in round 2 (`step-48`, `step-49`).
+  The edit of the interface description (r3.2) went on the "short path" first without its own
+  gates (`step-46` FAIL, `step-47` PASS afterwards). The handoffs `step-45…48` were created by
+  ORCH before the performers were started, so they had no `started_at` of their own from the clock.
+- Почему это плохо: Q2 — who does does not check; an edit without gates is an unchecked edit, and the
+  gates then have to be passed after the fact; a handoff created in advance carries a time that
+  did not exist (AP-056).
+- Как правильно: any edit of a test or a description goes through the gates of this kind of
+  edit before the next step; the handoff is created and its `started_at` filled in by the
+  performer itself by the clock; ORCH does not create handoffs in advance.
+- Где найдено: `handoffs/PROD-20261010-01/step-43-release-validator.json` (F3),
+  `step-46-code-design-validator.json`, `step-50-release-validator.json` (F2 — an edit of the
+  description without a record of ORCH).
 
-### AP-059 — Тест на таймер нестабилен под нагрузкой: снимок «до» брали при живом писателе
+### AP-059 — A test on a timer is unstable under load: the "before" snapshot was taken with a live writer
 
-- Что случилось: WEB-15 (б) брал хеш журнала до остановки движка (`SIGSTOP`); запись движка в это окно меняла хеш, один из трёх
-  полных прогонов упал ложно (ISS-0015). TM-67 из `team-recovery` падает при 8 фоновых процессах `yes` (ISS-0017).
-- Почему это плохо: красный прогон без вины кода — повод проверку отключить (Q6, AP-054); при нагрузке окно гонки шире.
-- Как правильно: снимок «до» для проверки «ничего не записано» — только когда писатель остановлен (или хеш стабилен несколько
-  опросов подряд); ожидания в тестах — по условию, а не по длине паузы; новый тест гонять под нагрузкой (3 прогона параллельно,
-  цикл) до сдачи.
-- Где найдено: `handoffs/PROD-20261010-01/step-40-test-design-validator.json` (F1), `docs/issues/ISS-0015-web15-flaky-snapshot.md`,
+- Что случилось: WEB-15 (б) took the hash of the journal before stopping the engine (`SIGSTOP`);
+  a write of the engine in this window changed the hash, and one of three full runs failed falsely
+  (ISS-0015). TM-67 from `team-recovery` fails with 8 background `yes` processes (ISS-0017).
+- Почему это плохо: a red run without the code's fault is a reason to turn the check off (Q6, AP-054);
+  under load the window of the race is wider.
+- Как правильно: the "before" snapshot for the check "nothing was written" is taken only when
+  the writer is stopped (or the hash is stable over several polls in a row); waits in tests are by
+  condition, not by the length of a pause; a new test is run under load (3 runs in parallel, a loop)
+  before handing in.
+- Где найдено: `handoffs/PROD-20261010-01/step-40-test-design-validator.json` (F1),
+  `docs/issues/ISS-0015-web15-flaky-snapshot.md`,
   `docs/issues/ISS-0017-tm67-flaky-under-load.md`.
 
-### AP-060 — Настоящий браузер нашёл то, что не нашли тесты на самописной модели DOM
+### AP-060 — A real browser found what the tests on a hand-made DOM model did not
 
-- Что случилось: тесты страницы REQ-011 шли на самописной модели DOM, а проверка в настоящем браузере нашла состояние без связи
-  при первой загрузке страницы, которое эти тесты не ловили (по сообщению ORCH в задании этого шага; связанные дефекты —
-  ISS-0011 и ISS-0016; браузерные проверки — DESIGN-QA `step-18`, `step-22` и RELEASE-VALIDATOR `step-50`, настоящие
-  `index.html` и `app.js`).
-- Почему это плохо: модель DOM проверяет то, что в неё заложили; зелёный тест на ней не доказывает поведение страницы (Q3).
-- Как правильно: для каждого состояния страницы из описания интерфейса — хотя бы одна проверка на настоящем коде страницы в
-  настоящем браузере (или jsdom по REQ-033), и снимок в `docs/design/samples/`. Пока это предложение, не пункт планки.
-- Где найдено: `handoffs/PROD-20261010-01/step-50-release-validator.json`, `step-22-design-qa-validator.json`;
-  `docs/issues/ISS-0011-web-chat-error-after-project-ok.md`, `docs/issues/ISS-0016-web-chat-down-then-error-not-switched.md`.
+- Что случилось: the tests of the page REQ-011 ran on a hand-made DOM model, and a check in a real
+  browser found a state without connection at the first load of the page, which these tests did not
+  catch (by the report of ORCH in the task of this step; related defects — ISS-0011 and ISS-0016;
+  browser checks — DESIGN-QA `step-18`, `step-22` and RELEASE-VALIDATOR `step-50`, the real
+  `index.html` and `app.js`).
+- Почему это плохо: a DOM model checks what was put into it; a green test on it does not prove the
+  behaviour of the page (Q3).
+- Как правильно: for every state of the page from the interface description — at least one
+  check on the real code of the page in a real browser (or jsdom by REQ-033), and a snapshot in
+  `docs/design/samples/`. While it is a proposal, it is not an item of the bar.
+- Где найдено: `handoffs/PROD-20261010-01/step-50-release-validator.json`,
+  `step-22-design-qa-validator.json`; `docs/issues/ISS-0011-web-chat-error-after-project-ok.md`,
+  `docs/issues/ISS-0016-web-chat-down-then-error-not-switched.md`.
 
-### AP-061 — Времена из будущего в handoff-ах и в самой пометке об исправлении (повтор AP-056)
+### AP-061 — Times from the future in handoffs and in the correction mark itself (a repeat of AP-056)
 
-- Что случилось: в прогоне `PROD-20261011-01` `completed_at` в `step-08` (06:05:00Z при коммите 06:04:50Z) и `step-20` (06:34:00Z при
-  коммите 06:33:30Z) стояли позже коммита, в который файлы вошли, и без пометки ORCH; в `step-20` собственный `self_check` писал
-  «date -u → 06:33:01Z». У `step-25` и `step-35` такие времена были, но помечены ORCH. Ещё одна ошибка того же рода: в пометке
-  исправления (`orch_correction.at_note`) стояло числовое значение, которого часы дать не могли. RELEASE-VALIDATOR, `step-41`
-  (F1, FAIL круга 1); исправлено заменой `at_note` на «не позже момента коммита…» без числа, `step-43` — PASS.
-- Почему это плохо: журнал порядка событий содержит события из будущего (R2, Q3); повтор AP-056 в следующем прогоне означает, что
-  правило не действует без проверки.
-- Как правильно: время — только `date -u` в момент записи; неизвестное — `null` и «не позже <коммита>»; перед сдачей прогона
-  сверить каждое время в `handoffs/<RUN-ID>/` с коммитом файла (`git log --follow --format=%cI`), в том числе внутри
-  `orch_correction`/`orch_note`.
-- Где найдено: `handoffs/PROD-20261011-01/step-41-release-validator.json` (F1), `step-42-release-validator.json`,
-  `step-43-release-validator.json`.
+- Что случилось: in the run `PROD-20261011-01` `completed_at` in `step-08` (06:05:00Z with a commit
+  at 06:04:50Z) and `step-20` (06:34:00Z with a commit at 06:33:30Z) stood later than the commit the
+  files went into, and without a mark of ORCH; in `step-20` its own `self_check` wrote
+  "date -u → 06:33:01Z". `step-25` and `step-35` had such times, but marked by ORCH. One more
+  error of the same kind: in the correction mark (`orch_correction.at_note`) there stood a numeric
+  value that a clock could not give. RELEASE-VALIDATOR, `step-41` (F1, FAIL of round 1); fixed by
+  replacing `at_note` with "not later than the moment of the commit…" without a number, `step-43`
+  — PASS.
+- Почему это плохо: a journal of the order of events contains events from the future (R2, Q3); a
+  repeat of AP-056 in the next run means that the rule does not work without a check.
+- Как правильно: time is only `date -u` at the moment of writing; an unknown one is `null`
+  and "not later than <the commit>"; before handing in a run, compare every time in
+  `handoffs/<RUN-ID>/` with the commit of the file (`git log --follow --format=%cI`), including
+  inside `orch_correction`/`orch_note`.
+- Где найдено: `handoffs/PROD-20261011-01/step-41-release-validator.json` (F1),
+  `step-42-release-validator.json`, `step-43-release-validator.json`.
 
-### AP-062 — Путь домашнего каталога в handoff-е уронил проверку и сценарий приёмки (повтор AP-050, AP-052)
+### AP-062 — A path of the home folder in a handoff broke a check and an acceptance scenario (a repeat of AP-050, AP-052)
 
-- Что случилось: в handoff-ах `step-24` (DESIGN-QA) и `step-37` (TEST-RUNNER) прогона `PROD-20261011-01` остался путь домашнего
-  каталога этого компьютера; из-за него падали `cd tools && npm run check` (проверка следов) и сценарий приёмки 37 (UAT-RUNNER,
-  `step-39`). Путь заменили на `<scratch>/…`, сценарий 37 после этого выполнил ORCH, а не UAT-RUNNER (`step-41`, L4).
-- Почему это плохо: третий раз подряд (AP-050, AP-052) одно и то же; приёмка, которая проверяет следы, падает на учётных файлах, а
-  не на продукте, и подпись уходит с оговоркой.
-- Как правильно: перед сдачей handoff-а — `cd tools && npm run traces` и поиск пути домашнего каталога по `handoffs/<RUN-ID>/`;
-  в тексте писать `<scratch>/…` и «cd tools && …».
-- Где найдено: `handoffs/PROD-20261011-01/step-39-uat-runner.json`, `step-40-ba-analyst.json`, `step-41-release-validator.json` (L4).
+- Что случилось: in the handoffs `step-24` (DESIGN-QA) and `step-37` (TEST-RUNNER) of the run
+  `PROD-20261011-01` a path of the home folder of this computer stayed; because of it
+  `cd tools && npm run check` (the trace check) and acceptance scenario 37 (UAT-RUNNER, `step-39`)
+  failed. The path was replaced with `<scratch>/…`, scenario 37 was then done by ORCH and not by
+  UAT-RUNNER (`step-41`, L4).
+- Почему это плохо: the same thing the third time in a row (AP-050, AP-052); an acceptance that
+  checks traces fails on bookkeeping files and not on the product, and the signature goes out with
+  a reservation.
+- Как правильно: before handing in a handoff — `cd tools && npm run traces` and a search for
+  the path of the home folder over `handoffs/<RUN-ID>/`; in the text write `<scratch>/…` and
+  "cd tools && …".
+- Где найдено: `handoffs/PROD-20261011-01/step-39-uat-runner.json`, `step-40-ba-analyst.json`,
+  `step-41-release-validator.json` (L4).
 
-### AP-063 — Тесты начаты параллельно с воротами безопасности и ревью
+### AP-063 — Tests were started in parallel with the security and review gates
 
-- Что случилось: TEST-DESIGNER (`step-34`) начат в 09:05:05Z — до PASS безопасности (`step-32`, 09:05:45Z) и ревью (`step-33`,
-  09:09:00Z); WF-02 ставит тесты только после обоих ворот (шаг 5 после шагов 3 и 4). Ревью кода не потребовало, тесты прошли ворота
-  `step-36` и `step-37` после последней правки, поэтому итоговый порядок не нарушен.
-- Почему это плохо: если бы ворота вернули код, тесты были бы написаны под код, которого не будет (переделка, AP-028, AP-058).
-- Как правильно: ORCH запускает TEST-DESIGNER только после PASS шагов 3 и 4; запуск «заранее для скорости» — только с записью
-  решения до запуска и с повтором тестов после правок ворот.
-- Где найдено: `handoffs/PROD-20261011-01/step-41-release-validator.json` (L3), `step-34-test-designer.json`.
+- Что случилось: TEST-DESIGNER (`step-34`) was started at 09:05:05Z — before the PASS of security
+  (`step-32`, 09:05:45Z) and review (`step-33`, 09:09:00Z); WF-02 puts tests only after both gates
+  (step 5 after steps 3 and 4). The review did not require changes to the code, the tests passed
+  the gates `step-36` and `step-37` after the last edit, so the final order is not broken.
+- Почему это плохо: if the gates had returned the code, the tests would have been written for code
+  that will not exist (rework, AP-028, AP-058).
+- Как правильно: ORCH starts TEST-DESIGNER only after the PASS of steps 3 and 4; a start "in
+  advance for speed" is allowed only with a record of the decision before the start and with a
+  repeat of the tests after the edits of the gates.
+- Где найдено: `handoffs/PROD-20261011-01/step-41-release-validator.json` (L3),
+  `step-34-test-designer.json`.
 
-### AP-064 — Исход «Продолжить» предсказан по состоянию проекта, а не описан условно
+### AP-064 — The outcome of "Continue" was predicted by the state of the project and not described conditionally
 
-- Что случилось: текст паузы «Нажмите «Продолжить», чтобы работа пошла дальше» обещал исход, который зависит от того, чего
-  страница не знает на момент показа (ждал ли проект решения по потолку, остался ли потолок). У проекта, ждавшего решения, после
-  «Продолжить» проект снова спрашивал то же самое (ISS-0020, найдено BA-ANALYST, `step-25`; ворота проекта — F1, F2 в
-  `step-28`/`step-30`). После исправления четырёх причин ожидания остался случай исчерпанного потолка без ожидания (ISS-0022).
-- Почему это плохо: обещание, которое не сбылось, для человека хуже отсутствия текста (Q10).
-- Как правильно: текст у кнопки, исход которой определяет движок или состояние, который страница не знает, — условный
-  («после «Продолжить» проект продолжит работу или снова спросит о …»), либо кнопку блокируют до известного исхода; для каждой
-  причины паузы — свой текст и проверка на запущенной системе.
+- Что случилось: the text of the pause "Press «Продолжить» ("Continue") to make the work go on"
+  promised an outcome that depends on what the page does not know at the moment of showing (whether
+  the project was waiting for a decision about the ceiling, whether the ceiling is left). For a
+  project that was waiting for a decision, after «Продолжить» the project asked the same thing
+  again (ISS-0020, found by BA-ANALYST, `step-25`; the project gates — F1, F2 in
+  `step-28`/`step-30`). After the fix of four causes of waiting, the case of a spent ceiling
+  without waiting stayed (ISS-0022).
+- Почему это плохо: a promise that did not come true is worse for a person than no text (Q10).
+- Как правильно: the text at a button whose outcome is determined by the engine or by a state
+  the page does not know is conditional («после «Продолжить» проект продолжит работу или снова
+  спросит о …» — "after «Continue» the project will go on or will ask again about …"), or the
+  button is blocked until the outcome is known; for each cause of the pause — its own text and a
+  check on the running system.
 - Где найдено: `docs/issues/ISS-0020-pause-text-promises-more-for-waiting-project.md`,
-  `docs/issues/ISS-0022-pause-text-without-wait-at-spent-ceiling.md`, `handoffs/PROD-20261011-01/step-41-release-validator.json` (L1).
+  `docs/issues/ISS-0022-pause-text-without-wait-at-spent-ceiling.md`,
+  `handoffs/PROD-20261011-01/step-41-release-validator.json` (L1).
 
-### AP-065 — Интерфейс, проверенный в браузере, нашёл то, что не нашли тесты на модели DOM (повтор AP-060)
+### AP-065 — An interface checked in a browser found what the tests on a DOM model did not (a repeat of AP-060)
 
-- Что случилось: состояние «без связи при первой загрузке страницы» (REQ-011; AP-060) нашла проверка настоящего интерфейса в
-  браузере, а тесты на самописной модели DOM его не ловили. В REQ-035 то же подтвердилось: пустой ряд кнопок с отступом
-  (ISS-0021) нашёл DESIGN-QA (`step-24`) на снимках браузера; RELEASE-VALIDATOR `step-41` проверил критерии 1 и 4 в Chromium
-  (окна 1470 × 784 и 375 × 812) и по журналу.
-- Почему это плохо: зелёные тесты на модели доказывают модель; без браузерной проверки каждого состояния такие находки
-  случайны (Q3).
-- Как правильно: каждое состояние страницы из описания интерфейса — минимум одна проверка на настоящих `index.html` и `app.js` в
-  браузере и снимок в `docs/design/samples/`; в таблицу «критерий → тест» кода и страницы добавлять колонку «проверка в
-  браузере». Пока предложение (AP-060), не пункт планки.
-- Где найдено: `handoffs/PROD-20261011-01/step-24-design-qa-validator.json` (F-1), `step-41-release-validator.json`;
-  `docs/issues/ISS-0021-empty-controls-row-keeps-margin.md`.
+- Что случилось: the state "without connection at the first load of the page" (REQ-011; AP-060)
+  was found by a check of the real interface in a browser, and the tests on the hand-made DOM model
+  did not catch it. In REQ-035 the same was confirmed: an empty row of buttons with a margin
+  (ISS-0021) was found by DESIGN-QA (`step-24`) on browser snapshots; RELEASE-VALIDATOR `step-41`
+  checked criteria 1 and 4 in Chromium (windows 1470 × 784 and 375 × 812) and by the journal.
+- Почему это плохо: green tests on a model prove the model; without a browser check of every state
+  such findings are accidental (Q3).
+- Как правильно: every state of the page from the interface description — at least one check
+  on the real `index.html` and `app.js` in a browser and a snapshot in `docs/design/samples/`; add
+  a column "browser check" to the table "criterion → test" of the code and the page. For now a
+  proposal (AP-060), not an item of the bar.
+- Где найдено: `handoffs/PROD-20261011-01/step-24-design-qa-validator.json` (F-1),
+  `step-41-release-validator.json`; `docs/issues/ISS-0021-empty-controls-row-keeps-margin.md`.
 
-### AP-066 — Движок проверяли только исполнителем, который не читает файлы (родственна AP-065)
+### AP-066 — The engine was checked only with an executor that does not read files (related to AP-065)
 
-- Что случилось: тесты движка REQ-013 шли на исполнителе scripted и на поддельном claude, которые не читают рабочую папку и
-  подсказку, поэтому условия настоящей проверки не создавались. Первый запуск на настоящем Claude (ISS-0023) показал, что
-  проверяющий не находит файл по исходному имени: проект встал на первой задаче, израсходовав 0,67 из 1. Зелёные тесты
-  критерия 3 REQ-013 проверяли только, что файлы лежат в подсказке, а не что проверяющий может ими воспользоваться.
-- Почему это плохо: проверка не в тех условиях, где ошибка проявляется (quality-bar §6 п. 1), доказывает модель исполнителя, а не
-  систему; ошибка найдена только платным запуском.
-- Как правильно: для каждого поведения, которое зависит от того, что исполнитель читает (рабочая папка, подсказка), в тесте
-  использовать исполнителя, который действительно это читает и решает по прочитанному (`fake-claude-reads.js`), и проверять
-  охранный случай «до» (красный на копии без исправления); границу доказательства («последует ли настоящая модель») называть
-  прямо и закрывать настоящим запуском.
-- Где найдено: `handoffs/ISS-0023-20261011-01/step-01-issue-fixer.json` (диагноз), `docs/issues/ISS-0023-reviewer-cannot-see-result-file.md`.
+- Что случилось: the tests of the engine REQ-013 ran on the scripted executor and on a fake claude,
+  which do not read the working folder and the hint, so the conditions of a real check were not
+  created. The first run on a real Claude (ISS-0023) showed that the checker does not find a file
+  by its original name: the project stopped at the first task, having spent 0.67 of 1. The green
+  tests of criterion 3 of REQ-013 checked only that the files lie in the hint, and not that the
+  checker can use them.
+- Почему это плохо: a check not in the conditions where the error shows itself (quality-bar §6 item
+  1) proves the model of the executor and not the system; the error was found only by a paid run.
+- Как правильно: for every behaviour that depends on what the executor reads (the working
+  folder, the hint), the test uses an executor that really reads it and decides by what it read
+  (`fake-claude-reads.js`), and checks the guard case "before" (red on the copy without the fix);
+  the border of the evidence ("will the real model follow") is named directly and closed by a real
+  run.
+- Где найдено: `handoffs/ISS-0023-20261011-01/step-01-issue-fixer.json` (diagnosis),
+  `docs/issues/ISS-0023-reviewer-cannot-see-result-file.md`.
 
-### AP-067 — Красный тест в первом полном прогоне без записанного имени и без повтора
+### AP-067 — A red test in the first full run without a recorded name and without a repeat
 
-- Что случилось: в первом полном прогоне `npm run check` REVIEWER (прогон `ISS-0023-20261011-01`, `step-05-reviewer.json`) увидел
-  один красный тест (1163 прошли, 1 нет), но вывод был обрезан, имя теста не записано и прогон на той же копии не повторён; в
-  пяти следующих запусках падения не было. Чьё это падение, не установлено (догадка — нагрузка от параллельных агентов, не
-  свидетельство). Последующие полные прогоны (TEST-RUNNER, `step-08`) прошли без красных.
-- Почему это плохо: красный без имени — неразобранное (quality-bar §6 п. 4): нельзя отличить нестабильный тест (ср. ISS-0017) от
-  настоящей ошибки, и зелёные повторы ничего не доказывают.
-- Как правильно: при красном тесте сразу сохранить полный вывод в файл вне проекта, записать имя теста и повторить
-  то же самое (на той же копии и под нагрузкой); без имени в handoff-е красный считается неразобранным и не закрытым.
-- Где найдено: `handoffs/ISS-0023-20261011-01/step-05-reviewer.json` (issues, INFO), `step-08-test-runner.json`.
+- Что случилось: in the first full run of `npm run check` REVIEWER (run `ISS-0023-20261011-01`,
+  `step-05-reviewer.json`) saw one red test (1163 passed, 1 not), but the output was cut, the name
+  of the test was not recorded and the run on the same copy was not repeated; in the five next runs
+  there was no failure. Whose failure it is has not been established (a guess — the load from
+  parallel agents, not evidence). The following full runs (TEST-RUNNER, `step-08`) passed without
+  red.
+- Почему это плохо: a red without a name is not analysed (quality-bar §6 item 4): an unstable test
+  (compare ISS-0017) cannot be told from a real error, and green repeats prove nothing.
+- Как правильно: on a red test, at once save the full output to a file outside the project,
+  record the name of the test, and repeat the same (on the same copy and under load); without a
+  name in the handoff a red is counted as not analysed and not closed.
+- Где найдено: `handoffs/ISS-0023-20261011-01/step-05-reviewer.json` (issues, INFO),
+  `step-08-test-runner.json`.
 
-### AP-068 — Закрытый перечень файлов требования не учёл охранный тест соседнего требования
+### AP-068 — A closed list of files of a requirement did not take into account the guard test of a neighbouring requirement
 
-- Что случилось: REQ-038 задало закрытый перечень мест записи (`tools/src/handoffs/`, `tools/test/handoffs-*`, …). Охранный тест
-  `TR-4c` соседнего требования REQ-014 перечисляет файлы, где разрешён `child_process` (ровно два); команде `handoffs-check`
-  нужен вызов git в третьем файле. Это заметили только на проекте (находка CODE-DESIGNER Ф7), проект остановился (B1), и посреди
-  прогона пришлось менять критерий 4 REQ-014 и записывать решение `0038` (`handoffs/REQ038-20261011-01/step-00c-req-analyst.json`,
-  `docs/design/REQ-038-handoffs-check.md`, п. 2).
-- Почему это плохо: перечень, который мешает охранному тесту другого требования, ломает прогон после старта и вынуждает править
-  чужое требование и записывать решение задним числом работы (Q12).
-- Как правильно: при закрытом перечне REQ-ANALYST и REQ-VALIDATOR ищут охранные тесты, которые считают файлы или слова в
-  `tools/src` (`grep -rn "child_process\|CHILD_PROCESS_FILES" tools/test`), и называют их и нужную правку в перечне и критериях.
-- Где найдено: `handoffs/REQ038-20261011-01/step-00c-req-analyst.json`, `docs/design/REQ-038-handoffs-check.md` (п. 2),
+- Что случилось: REQ-038 set a closed list of places of writing (`tools/src/handoffs/`,
+  `tools/test/handoffs-*`, …). The guard test `TR-4c` of the neighbouring requirement REQ-014 lists
+  the files where `child_process` is allowed (exactly two); the command `handoffs-check` needs a
+  git call in a third file. This was noticed only on the design (finding of CODE-DESIGNER Ф7), the
+  design stopped (B1), and in the middle of the run criterion 4 of REQ-014 had to be changed and the
+  decision `0038` recorded (`handoffs/REQ038-20261011-01/step-00c-req-analyst.json`,
+  `docs/design/REQ-038-handoffs-check.md`, item 2).
+- Почему это плохо: a list that disturbs the guard test of another requirement breaks the run after
+  the start and forces one to edit another requirement and to record a decision after the work (Q12).
+- Как правильно: with a closed list, REQ-ANALYST and REQ-VALIDATOR look for guard tests that
+  count files or words in `tools/src` (`grep -rn "child_process\|CHILD_PROCESS_FILES" tools/test`),
+  and name them and the needed edit in the list and the criteria.
+- Где найдено: `handoffs/REQ038-20261011-01/step-00c-req-analyst.json`,
+  `docs/design/REQ-038-handoffs-check.md` (item 2),
   `decisions/0038-handoffs-git-history-child-process.md`.
 
-### AP-069 — Буквальные фрагменты путей временных папок и статус DONE в отчётах агентов (продолжение AP-050, AP-052, AP-062)
+### AP-069 — Literal fragments of paths of temporary folders and the status DONE in agents' reports (a continuation of AP-050, AP-052, AP-062)
 
-- Что случилось: в отчётах агентов прогона (`self_check`, `issues`) попали буквальные фрагменты путей временных папок и статус
-  `DONE` вместо `COMPLETED`. Новая команда `handoffs-check` нашла это только после готовности: три нарушения H11 в
-  `step-03-security-reviewer-r1.json` (поля `f1_timing_direct`, `f1_timing_cli`, `equivalence`; `step-04-reviewer.json` — ORCH
-  пришлось поручить переписать их до шага 6) и `DONE` у `step-00c-req-analyst.json`.
-- Почему это плохо: нарушение видят поздно, правку делают отдельным шагом в чужом handoff-е, а набор проверок на это время красный
-  (Q4, Q7).
-- Как правильно: с этого момента агент перед сдачей запускает `cd tools && npm run handoffs-check` (правило записано в
-  `docs/workflows/handoffs.md`, раздел «Проверка учёта»), ORCH включает эту команду в каждое задание; во временные места ссылаются
-  как `<scratch>/…` или `<вне проекта>`.
-- Где найдено: `handoffs/REQ038-20261011-01/step-04-reviewer.json`, `step-03-security-reviewer-r1.json`, `step-00c-req-analyst.json`.
+- Что случилось: in the agents' reports of the run (`self_check`, `issues`) literal fragments of
+  paths of temporary folders and the status `DONE` instead of `COMPLETED` got in. The new command
+  `handoffs-check` found this only after the work was ready: three violations of H11 in
+  `step-03-security-reviewer-r1.json` (the fields `f1_timing_direct`, `f1_timing_cli`,
+  `equivalence`; `step-04-reviewer.json` — ORCH had to order them rewritten before step 6) and
+  `DONE` in `step-00c-req-analyst.json`.
+- Почему это плохо: the violation is seen late, the edit is made as a separate step in another's
+  handoff, and the set of checks is red for that time (Q4, Q7).
+- Как правильно: from now on an agent runs `cd tools && npm run handoffs-check` before handing
+  in (the rule is written in `docs/workflows/handoffs.md`, section "Bookkeeping check"), ORCH includes this command in every task; temporary places are referred to as
+  `<scratch>/…` or `<outside the project>`.
+- Где найдено: `handoffs/REQ038-20261011-01/step-04-reviewer.json`,
+  `step-03-security-reviewer-r1.json`, `step-00c-req-analyst.json`.
 
-### AP-070 — Красный тест в первом полном прогоне без имени и без повтора — второй раз подряд (дополняет AP-067)
+### AP-070 — A red test in the first full run without a name and without a repeat — the second time in a row (adds to AP-067)
 
-- Что случилось: в прогоне REQ-038 REVIEWER (`step-04-reviewer.json`, `issues`, `FLAKY_UNRESOLVED`) снова увидел один красный тест
-  в первом полном прогоне при выводе, обрезанном `tail`: имя не снято, пять повторов зелёные. До этого то же было в прогоне
-  `ISS-0023-20261011-01` (AP-067). Дальнейшие полные прогоны REQ-038 (`step-05b-test-design-validator-r1.json` — дважды,
-  `step-06-test-runner.json`, `step-09-release-validator.json`) красных не показали; чьё это падение, не установлено.
-- Почему это плохо: красный без имени остаётся неразобранным (quality-bar §6 п. 4); AP-067 уже описывал это, и урок не
-  сработал — значит, он не доходил до агентов в задании.
-- Как правильно: полный прогон всегда пишет вывод в файл вне проекта, а не через `tail`; имя красного тестового случая
-  записывается в handoff до любого повтора; ORCH включает это в задание шагов, где идёт полный прогон.
-- Где найдено: `handoffs/REQ038-20261011-01/step-04-reviewer.json`, `handoffs/ISS-0023-20261011-01/step-05-reviewer.json`.
+- Что случилось: in the run of REQ-038 REVIEWER (`step-04-reviewer.json`, `issues`,
+  `FLAKY_UNRESOLVED`) again saw one red test in the first full run, with the output cut by `tail`:
+  the name was not taken, five repeats were green. Before that the same was in the run
+  `ISS-0023-20261011-01` (AP-067). The further full runs of REQ-038
+  (`step-05b-test-design-validator-r1.json` — twice, `step-06-test-runner.json`,
+  `step-09-release-validator.json`) showed no red; whose failure it is has not been established.
+- Почему это плохо: a red without a name stays not analysed (quality-bar §6 item 4); AP-067 already
+  described this, and the lesson did not work — so it did not reach the agents in the task.
+- Как правильно: a full run always writes its output to a file outside the project, not
+  through `tail`; the name of the red test case is recorded in the handoff before any repeat; ORCH
+  includes this in the task of the steps where a full run goes.
+- Где найдено: `handoffs/REQ038-20261011-01/step-04-reviewer.json`,
+  `handoffs/ISS-0023-20261011-01/step-05-reviewer.json`.
 
-### AP-071 — Критерий-подсчёт, который выполнен до работы, не доказывает работы
+### AP-071 — A counting criterion that is met before the work does not prove the work
 
-- Что случилось: критерий документов REQ-039 считал строки `grep -c 'npm run handoff' tools/README.md`. На базовом коммите это
-  число уже равно 2 — совпадения дают строки про `npm run handoffs-check`, — поэтому порог «не меньше 2» выполнен до любой
-  правки. Критерий не отличал сделанную работу от несделанной; закрывать его пришлось строгими тестами (HO-50…HO-53).
-- Почему это плохо: зелёный критерий без работы — ложная уверенность (Q2, Q5); RELEASE-VALIDATOR мог бы принять пустую правку
-  документа.
-- Как правильно: REQ-ANALYST и REQ-VALIDATOR считают значение «до» на базовом коммите и требуют, чтобы критерий на нём не
-  выполнялся; счёт строк заменяют проверкой содержания (тест на конкретную фразу или раздел).
-- Где найдено: `handoffs/REQ039-20261011-01/step-09-release-validator.json` (критерий 7), `docs/requirements.yaml` (блок REQ-039).
+- Что случилось: a documents criterion of REQ-039 counted lines with
+  `grep -c 'npm run handoff' tools/README.md`. On the base commit this number is already 2 — the
+  matches are lines about `npm run handoffs-check` — so the threshold "not less than 2" is met
+  before any edit. The criterion did not tell done work from not done; it had to be closed with
+  strict tests (HO-50…HO-53).
+- Почему это плохо: a green criterion without work is false confidence (Q2, Q5); RELEASE-VALIDATOR
+  could have accepted an empty edit of a document.
+- Как правильно: REQ-ANALYST and REQ-VALIDATOR compute the "before" value on the base commit
+  and require that the criterion is not met on it; a count of lines is replaced by a check of
+  content (a test for a specific phrase or section).
+- Где найдено: `handoffs/REQ039-20261011-01/step-09-release-validator.json` (criterion 7),
+  `docs/requirements.yaml` (block REQ-039).
 
-### AP-072 — Проект команды, которая пишет файлы, трижды возвращали с ворот: исходы шагов записи и файлы учёта в проверке границ пропущены (дополняет AP-068)
+### AP-072 — The design of a command that writes files was returned from the gate three times: outcomes of the write steps and bookkeeping files in the border check were missed (adds to AP-068)
 
-- Что случилось: CODE-DESIGN-VALIDATOR вернул проект REQ-039 дважды (`step-01b-code-design-validator.json`, `-r1`; принят в `-r2`).
-  В первой редакции были пропущены пути отказа очистки при гонке и частичном сбое: временный файл при EEXIST на ссылке,
-  `mkdir` в ещё не созданную папку при двух одновременных запусках, сбой повторного поиска; во второй — перечень файлов учёта
-  прогона в проверке границ критерия 8 (N1: `docs/requirements.yaml`, `STATE.md`, сам проект, `handoffs/<RUN-ID>/` и др. не
-  названы, и проверка краснела бы на правильном прогоне), и вывод при коде 2 (N2).
-- Почему это плохо: каждый возврат — отдельный круг проекта; разработчик иначе выбирал бы исход сам (мусорный `.sai-tmp` или
-  красный тест).
-- Как правильно: для команды, которая пишет файлы, CODE-DESIGNER сразу перечисляет исходы каждого шага записи (успех, EEXIST,
-  ошибка диска) и что остаётся на диске в каждом; в проверку границ включает файлы учёта прогона (как принято в REQ-038).
-- Где найдено: `handoffs/REQ039-20261011-01/step-01b-code-design-validator.json`, `step-01b-code-design-validator-r1.json`,
-  `step-01b-code-design-validator-r2.json`.
+- Что случилось: CODE-DESIGN-VALIDATOR returned the design of REQ-039 twice
+  (`step-01b-code-design-validator.json`, `-r1`; accepted in `-r2`). In the first version the
+  failure paths of the cleanup in a race and in a partial failure were missed: a temporary file at
+  EEXIST on a link, `mkdir` into a folder not yet created at two simultaneous starts, a failure of
+  a repeated search; in the second — the list of bookkeeping files of the run in the border check of
+  criterion 8 (N1: `docs/requirements.yaml`, `STATE.md`, the design itself, `handoffs/<RUN-ID>/` and
+  others were not named, and the check would turn red on a correct run), and the output at code 2
+  (N2).
+- Почему это плохо: every return is a separate round of the design; the developer would otherwise
+  choose the outcome himself (a garbage `.sai-tmp` or a red test).
+- Как правильно: for a command that writes files, CODE-DESIGNER lists at once the outcomes of
+  each write step (success, EEXIST, disk error) and what stays on the disk in each; the border check
+  includes the bookkeeping files of the run (as accepted in REQ-038).
+- Где найдено: `handoffs/REQ039-20261011-01/step-01b-code-design-validator.json`,
+  `step-01b-code-design-validator-r1.json`, `step-01b-code-design-validator-r2.json`.
 
-### AP-073 — Исправление кода вошло в снимок репозитория раньше, чем закрыты тесты и учёт дефекта (дополняет AP-013, AP-062)
+### AP-073 — The fix of the code got into the snapshot of the repository before the tests and the bookkeeping of the defect were closed (adds to AP-013, AP-062)
 
-- Что случилось: прогон `ISS-0002-20260930-01` остановился на среде на шаге 6, но код исправления (`writeAllOrNothing`,
-  `createFolderAllOrNothing` в `tools/src/util.js`, порядок записи в `apply.js`, сборка папки в `prepare.js`) уже лежал в дереве
-  и вошёл в снимок репозитория (коммит `87b1511`). Файл дефекта ISS-0002 и заголовок дизайна месяцами описывали состояние
-  «до» (open, старые номера строк, статус тестов «FAIL (узкий)»), а копии «до» в истории нет: для доказательства «тест падает
-  до исправления» потребовалось решение `decisions/0041` (реконструкция).
-- Почему это плохо: учёт говорит одно, код делает другое (Q14); следующий прогон не может отличить «чинить» от «доучитывать» и
-  тратит круг на диагноз; без копии «до» регрессионный тест нечем доказать иначе, чем реконструкцией, и автор исправления в
-  отчётах не виден.
-- Как правильно: при остановке прогона сразу записывать в файл дефекта и в `STATE.md`, что код уже в дереве, и список
-  недоделанного (тесты, учёт, дизайн); не коммитить код без такой записи; перед работой над кодом метить копию «до»
-  (`base/<RUN-ID>`) отдельным коммитом, чтобы шаги 6–7 WF-03 имели настоящую копию.
-- Где найдено: `handoffs/ISS-0002-20261011-01/step-01-issue-fixer.json`, `decisions/0041-iss0002-pre-fix-reconstruction.md`,
+- Что случилось: the run `ISS-0002-20260930-01` stopped on the environment at step 6, but the code of
+  the fix (`writeAllOrNothing`, `createFolderAllOrNothing` in `tools/src/util.js`, the order of
+  writing in `apply.js`, the assembly of the folder in `prepare.js`) already lay in the tree and got
+  into the snapshot of the repository (commit `87b1511`). The file of the defect ISS-0002 and the
+  header of the design for months described the state "before" (open, old line numbers, the test
+  status "FAIL (narrow)"), and there is no "before" copy in history: to prove "the test fails before
+  the fix" the decision `decisions/0041` (a reconstruction) was needed.
+- Почему это плохо: bookkeeping says one thing, the code does another (Q14); the next run cannot tell
+  "fix" from "finish the bookkeeping" and spends a round on diagnosis; without a "before" copy the
+  regression test can be proved only by a reconstruction, and the author of the fix is not visible in
+  the reports.
+- Как правильно: when a run stops, at once write into the defect file and into `STATE.md` that
+  the code is already in the tree, and a list of what is unfinished (tests, bookkeeping, design); do
+  not commit code without such a record; before work on code, mark the "before" copy
+  (`base/<RUN-ID>`) with a separate commit, so that steps 6–7 of WF-03 have a real copy.
+- Где найдено: `handoffs/ISS-0002-20261011-01/step-01-issue-fixer.json`,
+  `decisions/0041-iss0002-pre-fix-reconstruction.md`,
   `handoffs/ISS-0002-20261011-01/step-05-reviewer.json` (R4).
 
-### AP-074 — Копия «до», снятая через git archive, не несёт .git и handoffs, и три теста краснеют по среде, а не по работе
+### AP-074 — A "before" copy taken through git archive carries no .git and no handoffs, and three tests turn red by the environment and not by the work
 
-- Что случилось: в прогоне `ISS-0031-20261011-01` копию «до» (метка `base/ISS-0031-20261011-01`) получили через `git archive`.
-  В такой копии нет `.git` и нет `handoffs/`, поэтому на ней краснеют три теста (HC-7a, HC-7c, HC-5b) — по среде, а не из-за
-  дефекта. В чистой копии со `.git` красных нет.
-- Почему это плохо: свидетельство «чьё падение» (quality-bar §6 п. 4) смешивается с падением среды: красные тесты на копии
-  «до» нельзя отнести к дефекту, а число «красных до» приходится объяснять и вычитать вручную.
-- Как правильно: копию «до» делать клоном репозитория на метке (со `.git`, с `handoffs/`), а не архивом; если архив всё же
-  использован — назвать в отчёте тесты, которые краснеют по среде, и не считать их падение доказательством.
-- Где найдено: `handoffs/ISS-0031-20261011-01/step-09-release-validator.json` (summary, п. 1).
+- Что случилось: in the run `ISS-0031-20261011-01` the "before" copy (tag
+  `base/ISS-0031-20261011-01`) was obtained through `git archive`. In such a copy there is no `.git`
+  and no `handoffs/`, so three tests (HC-7a, HC-7c, HC-5b) turn red on it — by the environment and
+  not because of the defect. In a clean copy with `.git` there are no reds.
+- Почему это плохо: the evidence "whose failure" (quality-bar §6 item 4) is mixed with a failure of the
+  environment: red tests on the "before" copy cannot be attributed to the defect, and the number of
+  "reds before" has to be explained and subtracted by hand.
+- Как правильно: make the "before" copy as a clone of the repository at the tag (with `.git`,
+  with `handoffs/`), not as an archive; if an archive was still used — name in the report the tests
+  that turn red by the environment, and do not count their failure as evidence.
+- Где найдено: `handoffs/ISS-0031-20261011-01/step-09-release-validator.json` (summary, item 1).
 
-### AP-075 — Запись решения ссылалась на решение без нужного текста, описывала события журнала по памяти и была оформлена не по шаблону
+### AP-075 — A decision record referred to a decision without the needed text, described journal events from memory and was not made by the template
 
-- Что случилось: первая редакция `decisions/0043-iss0031-core-completes-file-dependency.md` цитировала решение 0020, в котором
-  нужного текста нет, и описывала события журнала по памяти (`TASK_CREATED` — это фраза проекции, а не событие журнала).
-  Оформление отступало от `decisions/README.md`: раздел «Причины» вместо «Почему», без «Границы» и «Оснований». Ворота проекта
-  (`step-03b-code-design-validator.json`) вернули работу с FAIL; принята редакция `-r1`.
-- Почему это плохо: решение с неверной ссылкой и вымышленным событием вводит в заблуждение следующих читателей (Q3, Q12);
-  возврат с ворот — лишний круг.
-- Как правильно: ссылку на решение давать только после проверки цитаты по тексту решения; названия событий журнала сверять
-  с кодом (`grep` по `tools/src/team/`); запись решения писать строго по шаблону `decisions/README.md`.
-- Где найдено: `handoffs/ISS-0031-20261011-01/step-03b-code-design-validator.json`, `step-03b-code-design-validator-r1.json`,
+- Что случилось: the first version of `decisions/0043-iss0031-core-completes-file-dependency.md`
+  quoted the decision 0020, which does not have the needed text, and described journal events from
+  memory (`TASK_CREATED` is a phrase of the projection, not an event of the journal). The format
+  departed from `decisions/README.md`: a section «Причины» ("Reasons") instead of «Почему» ("Why"),
+  without «Граница» ("Boundary") and «Основания» ("Basis"). The design gate
+  (`step-03b-code-design-validator.json`) returned the work with FAIL; the version `-r1` was
+  accepted.
+- Почему это плохо: a decision with a wrong reference and an invented event misleads the next readers
+  (Q3, Q12); a return from the gate is an extra round.
+- Как правильно: give a reference to a decision only after checking the quote against the text
+  of the decision; check the names of journal events against the code (`grep` over
+  `tools/src/team/`); write a decision record strictly by the template of `decisions/README.md`.
+- Где найдено: `handoffs/ISS-0031-20261011-01/step-03b-code-design-validator.json`,
+  `step-03b-code-design-validator-r1.json`,
   `decisions/0043-iss0031-core-completes-file-dependency.md`.
 
-### AP-076 — Проект с внешними действиями опирался на непроверенные факты о среде: четыре возврата с ворот и исключение 0046 (дополняет AP-012, AP-074)
-
-- Что случилось: проект REQ-030 (`docs/design/REQ-030-github-check.md`) четыре раза возвращали с ворот шага 1b (замечания F1…F7; `step-01b-code-design-validator.json`,
-  `-r1`, `-r2`, `-r3`; принят в `-r4`), и лимит доработок был превышен по слову владельца (`decisions/0046`). Первая редакция опиралась на факты,
-  которые никто не проверил запуском: (1) прототип хука `if ! npm run check; then echo "код $?"` теряет код выхода — в ветке `$?` равен 0 (F1); (2) шаг «красная
-  ветка» брал клон корня Sai, у которого `origin` — локальная папка, а не GitHub: отправка и «удаление ветки» пришли бы в сам репозиторий Sai, а проверка
-  удаления дала бы ложное подтверждение (F2); (3) утверждение «репозиторий приватный» устарело — он стал публичным между замером и повторными воротами (F1 в `-r1`);
-  (4) форма запуска `node --test test/` ложна на Node 22 (код 1 даже на зелёном тесте, F7); (5) вложенный запуск внутри идущего `node --test` наследует
-  `NODE_TEST_CONTEXT`, и красный тест «проходит» с кодом 0 (F7).
-- Почему это плохо: каждое непроверенное утверждение о внешней среде — это круг ворот (Q3, §6 п. 2); часть фактов (видимость репозитория) меняется сама, и
-  замер, не датированный и не повторённый до ворот, устаревает; проект с внешними действиями (отправка, удаление ветки) без прототипа может написать в
-  настоящий репозиторий не туда.
-- Как правильно: CODE-DESIGNER проверяет каждое утверждение о внешней среде запуском и ставит дату замера — видимость репозитория, права токена и настройки Actions
-  (только чтение), точную форму команд запуска, наследование окружения вложенными запусками; проект с внешними действиями проходит прототип на локальном «удалённом»
-  (bare-репозиторий вне проекта) до ворот; перед отправкой в ворота ORCH требует в проекте раздел «что проверено запуском и когда».
-- Где найдено: `handoffs/REQ030-20261012-01/step-01b-code-design-validator.json`, `-r1`, `-r2`, `-r3`, `-r4`; `decisions/0046-req030-rework-limit-exceeded.md`.
-
-### AP-077 — Текст документа и тесты на этот текст писались порознь: проект требовал написать слово, которое тест запрещал
-
-- Что случилось: в первой редакции проекта REQ-030 строка R-3 велела написать в README «это решение основано на том, что репозиторий приватный», а тест RD-4
-  запрещал в разделе слово «приватн» (F6, `step-01b-code-design-validator-r2.json`). Разработчик, выполнивший R-3 буквально, получил бы красный RD-4; выполнивший
-  RD-4 — отступил бы от R-3. Мелкие расхождения того же рода: «Защиты ветки нет» с заглавной против поиска `защиты ветки нет` строчными (N3), раздел README
-  в замере и в проекте стоял в разных местах (F5).
-- Почему это плохо: правила текста и проверка текста противоречат друг другу, и разработчику приходится угадывать; обнаружил это только независимый прогон.
-- Как правильно: текст документа, который проверяют тесты, CODE-DESIGNER прогоняет скриптом тестов ещё в проекте; CODE-DESIGN-VALIDATOR пишет раздел строго по
-  правилам проекта и запускает на нём скрипт (в `-r3` это закрыло F6 запуском).
-- Где найдено: `handoffs/REQ030-20261012-01/step-01b-code-design-validator-r2.json` (F6, N3), `step-01b-code-design-validator-r1.json` (F5), `step-01b-code-design-validator-r3.json` (F6 закрыт).
-
-### AP-078 — Подставной процесс в тестах не читал свой ввод, и тесты ни разу не шли на целевой платформе: гонка проигралась только на GitHub (дополняет AP-012, AP-076)
-
-- Что случилось: тест `GH-6` (`tools/test/handoffs-git.test.js`, REQ-038) подставляет вместо git скрипт, который отвечает и выходит с кодом 0, не читая стандартный ввод.
-  Код `readBlobs` пишет запросы git на этот ввод; если подставной процесс вышел раньше записи, `execFileSync` даёт `EPIPE` со статусом 0, и `gitFailure` писал
-  «git не смог выполнить команду (код 0)» вместо ожидаемого «вывод git не разобран». На macOS запись всегда успевала, тесты шли только там; на Linux-раннере
-  GitHub гонку проиграли (первый запуск `check.yml`: 1475 из 1476, упал случай 2 GH-6, строка 243) — остаточный риск 6 проекта REQ-030 («тесты ни разу не шли на Linux»)
-  сбылся в первом же запуске. Кроме того, описание дефекта называло неверную причину и неверный упавший тест: первая редакция `ISS-0053` утверждала, что упал `isShallow`
-  с `printf '\377\376'` и виновата разница оболочек (dash и bash), — воспроизведение это опровергло (оболочки дают одни байты; упал `readBlobs`).
-  Тот же класс гонки стоит в `HK-12b` и `HK-31` (запись в ввод `hook.sh` без обработчика ошибки) — ISS-0055.
-- Почему это плохо: красная проверка на чистой машине (Q4) узнаётся только после отправки, а подгонка под неверную причину (dash, `printf`) заняла бы работу и ничего бы не
-  исправила (Q3); ветка текста сбоя, написанная под код ошибки одной платформы, на другой может не сработать.
-- Как правильно: (1) подставной процесс читает ввод, прежде чем отвечать (в тесте без внешних команд — встроенной командой оболочки, например `while read -r _; do :; done;`);
-  (2) тест на «процесс не читает ввод» берёт ввод заведомо больше буфера (с запасом по сокету целевой платформы, а не по замеру на своей машине), чтобы исход не зависел
-  от гонки; (3) ветка по статусу выхода, а не по коду ошибки платформы, измеренному на одной платформе (решение 0047), с явным списком измеренного и неизмеренного;
-  (4) факт в файле дефекта проверяется воспроизведением до записи (AP-012): «упала проверка X, причина Y» — только с запуском; (5) пока Linux нет, подтверждение — только
-  запуск `check.yml` на GitHub, и дефект не закрывается без него.
-- Где найдено: `handoffs/ISS-0053-20261013-01/step-01-issue-fixer.json` (диагноз), `step-03-code-designer.json` (I2, I3, I7), `step-09-release-validator.json` (F1, R1…R6);
-  `decisions/0047-iss0053-git-exit-zero-with-failed-input.md`; `docs/issues/ISS-0053-gh6-fails-on-linux.md`.
-
-### AP-079 — Тест закрепил в документе слова о внешней настройке (защита ветки на GitHub), и факт изменился: документ нельзя исправить, не меняя критерий и тесты (дополняет AP-076, AP-077)
-
-- Что случилось: критерий 5 REQ-030 и тесты README `RD-2` и `RD-4` (`tools/test/repo.test.js`) требуют, чтобы раздел README «Проверка на GitHub и перед отправкой»
-  содержал слова «защиты ветки нет» и не содержал «ветка защищена», «защита включена», «обязательная проверка», «приватн», «публичн», «403». Это было верно на момент
-  проекта. 2026-10-13 владелец сказал, что открыл репозиторий намеренно (`decisions/0048`), и ORCH включил защиту `main` на GitHub. Теперь раздел README говорит
-  неправду («На GitHub защиты ветки нет»), но исправить его нельзя: тесты `RD-2` и `RD-4` станут красными, а критерий 5 требует именно эти слова. Правду пришлось записать
-  в других местах (описание REQ-030, строки README вне раздела, `STATE.md`), а ложный раздел оставить и вынести отдельным дефектом (ISS-0057).
-- Почему это плохо: настройка внешней системы (GitHub) меняется независимо от кода, а тест и критерий приморозили описание её сегодняшнего состояния. Документ не может
-  следовать за фактом без правки критерия и тестов, а Q3 и Q14 требуют, чтобы документ говорил правду. Тот же класс, что AP-076 (непроверенные факты о среде в проекте),
-  но в обратную сторону: факт не был неверным с самого начала, а устарел.
-- Как правильно: (1) критерий, который проверяет текст о состоянии внешней системы, не закрепляет слова о самом состоянии (включено или нет, приватный или публичный):
-  он проверяет ссылку на решение или файл, где состояние записано, и то, что текст не противоречит ему; (2) слова о состоянии внешней системы живут в одном месте
-  (решение или `STATE.md`) с датой проверки, а README ссылается на него; (3) когда факт меняется, поправка критерия и тестов идёт отдельной работой сразу, а не остаётся
-  открытой.
-- Где найдено: `docs/requirements.yaml` (REQ-030, критерий 5, описание); `tools/test/repo.test.js` (`README_WORDS`, `README_BANNED`, `RD-2`, `RD-4`); `README.md` (раздел
-  «Проверка на GitHub и перед отправкой»); `decisions/0048-owner-delegates-open-points-repo-public.md`; `docs/issues/ISS-0049-docs-call-repo-private-but-public.md`
-  (раздел «Закрыто»); `docs/issues/ISS-0057-readme-says-no-branch-protection.md`; `handoffs/REQ030-20261012-01/step-13-doc-updater.json`.
-
-### AP-080 — Требование стало `done`, а пометки зависимых требований «зависимость ещё `in_progress`» остались и два дня говорили неправду (дополняет AP-005)
-
-- Что случилось: REQ-002 стал `done` 2026-10-11 (прогон `ISS-0002-20261011-01`). В `docs/requirements.yaml` в блоках REQ-009, REQ-010, REQ-013 остались комментарии «REQ-002 ещё `in_progress`, `done` невозможен (шапка файла)» и «REQ-002 (сейчас `in_progress`)»; в REQ-011, REQ-035 — «зависимость REQ-013/REQ-002 `in_progress`». Статусные пометки были верны на день записи, но при смене статуса зависимости никто не обошёл блоки, которые на неё ссылаются. Заметил только RELEASE-VALIDATOR прогона `REAL-20261013-01` (находка F4) и только потому, что читал блоки перед `done`.
-- Почему это плохо: пометка со словами «сейчас», «ещё», «пока» живёт дольше факта; следующий исполнитель принимает её за текущее состояние (Q14, AP-005), а для блока, чей статус не менялся, её не поправит ни один шаг, потому что учёт по правилу трогает только блок своего требования.
-- Как правильно: (1) в пометках пишут состояние с датой («`in_progress` на 2026-10-09»), а не «сейчас»; (2) при смене статуса требования DOC-UPDATER ищет его id в комментариях других блоков (`grep -n 'REQ-NNN.*in_progress' docs/requirements.yaml`) и исправляет пометки, которые говорят о его прежнем статусе, — это комментарии, критерии не правятся; (3) если для этого блок не входит в `write_set`, расхождение идёт в `result.issues`, а не остаётся молча.
-- Где найдено: `handoffs/REAL-20261013-01/step-09-release-validator.json` (F4); `docs/requirements.yaml` (блоки REQ-009, REQ-010, REQ-013, REQ-011, REQ-014, REQ-035); `handoffs/REAL-20261013-01/step-10-doc-updater.json`.
-
-### AP-081 — Критерий приёмки привязал доказательство к команде и к числу, которое «назовёт владелец», а жизнь дала другой путь (дополняет AP-066, AP-071)
-
-- Что случилось: критерий 14 REQ-010 требовал «один настоящий `npm run team -- run-task`» с потолком, «который назовёт владелец», а критерий 13 REQ-013 — «`start`» с таким же потолком. Настоящий запуск 2026-10-13 шёл командой `start` (движок вызывает ту же `runTask`), а число потолка (3 USD) назвал ORCH по поручению владельца (`decisions/0048`), потому что владелец ответил «сам реши». По букве критерий не был выполнен ни там, ни там; RELEASE-VALIDATOR пришлось отдельно рассуждать, достаточно ли этого, и записать три оговорки (форма согласия, `run-task`, `ISS-0031`).
-- Почему это плохо: критерий, который называет одну команду и одного человека, при честной, но иной организации работы формально не выполнен, и решение о `done` держится на толковании проверяющего (Q3, AP-066). Граница доказательства (что не проверено на настоящей модели) при этом сама собой записывается плохо.
-- Как правильно: (1) критерий UAT описывает наблюдаемый результат («задача роли Исследователь дошла до итога, расход не больше потолка, журнал и файлы приложены»), а команду называет как пример проверки, не как условие; (2) кто называет число — «владелец или тот, кому он это поручил, с записью в `decisions/`» (WF-01); (3) каждое «не проверено на настоящей модели» попадает в пометку статуса и в `STATE.md` поимённо, а не словом «в основном».
-- Где найдено: `handoffs/REAL-20261013-01/step-09-release-validator.json` (оговорки (а), (б), (в); `result.issues` I3 п. 3–4); `docs/uat/REAL-RUN-20261013.md`, раздел «Остаточные риски»; `decisions/0048-owner-delegates-open-points-repo-public.md`. Правку формулировок критериев 13 и 14 здесь не делали: критерии `done` не переписываются учётом; это предложение для WF-01 (см. `result.issues`).
-
-### AP-082 — «Ожидается» в сценариях приёмки написано по интуиции «остальное остаётся прежним», а не по дословному правилу критерия (дополняет AP-066)
-
-- Что случилось: BA-ANALYST написал сценарии REQ-042 (`docs/uat/REQ-042.md`, 42 сценария), и в четырёх из них «Ожидается» противоречило критериям. UAT-RUNNER на живых стендах записал их как «не прошёл» (10, 12, 13, 15; `docs/uat/REQ-042-RUN.md`, «Провалы по буквальному сравнению (4 из 6 — вероятные ошибки ожиданий)»). Во всех четырёх страница вела себя по критерию. Сценарии 12, 13, 15 ждали, что молчавшая строка или задача «осталась «нет свежих данных»», когда в той же сессии пришла новая доверенная строка (конец задачи, конец ответа, запрос), — а по критериям 1 и 2(е) возраст считается по последней доверенной строке **сессии**, и любая такая строка, кроме `SessionEnd`, возвращает молчавшие элементы сессии в «в работе» на 60 минут. Сценарий 10 ждал, что «каждое значение возраста выросло» за 70 с, а формат «1 сут 2 ч назад» меняется раз в час (критерий 4). BA-ANALYST признал: «Мои первоначальные ожидания в 12, 13, 15 были ошибкой BA-ANALYST: … не учёл, что любая новая доверенная строка сессии освежает все её элементы» (`step-08c-ba-analyst-signoff.json`, I4) и исправил документ до редакции r2.
-- Почему это плохо: ложные «ВЫС»-провалы приёмки отправили бы в WF-03 дефекты, которых нет, или остановили бы выпуск; RELEASE-VALIDATOR пришлось отдельно сверять исправленные «Ожидается» с текстом критериев и повторять четыре сценария сам. Свойство критериев («любая новая доверенная строка возвращает молчавших той же сессии») — важное для владельца, но спрятано в правилах, а не в интуиции.
-- Как правильно: (1) каждую фразу «Ожидается» для перехода состояний BA-ANALYST сверяет с дословным правилом критерия и записывает в сценарии, из какого слова критерия она следует; (2) если правило освежает или меняет «чужие» элементы той же сессии, «остаётся прежним» пишется только для элементов **другой** сессии (стенд с двумя сессиями), а для той же — что именно и по какому правилу меняется; (3) «растёт со временем» не пишется для значений, у которых формат меняется реже шага проверки (дни и часы без минут).
-- Где найдено: `handoffs/REQ042-20261013-01/step-08b-uat-runner.json`, `step-08c-ba-analyst-signoff.json` (I1, I4, вердикты по сценариям 10, 12, 13, 15), `step-09-release-validator.json` (приёмка: «Результат каждого совпал с «Ожидается» редакции r2»); `docs/uat/REQ-042-RUN.md` (Ф1, Ф2, Ф3, Ф6).
-
-### AP-083 — Тест искал фразу в тексте, смысл которого поменялся, и остался зелёным на той же фразе внутри отрицания
-
-- Что случилось: тест `ST-06` (`tools/test/pixel-office-settings.test.js`) требует, чтобы в README были 14 обязательных строк, среди них «остаться «в работе»» (ограничение 1 прежней редакции: «Задача может **остаться «в работе»**, если событие окончания потеряно…»). REQ-042 меняет смысл ограничения на обратный: теперь задача не остаётся «в работе» дольше 60 минут без событий. FRONTEND-DEV переписал ограничение как «Задача не может остаться «в работе» дольше 60 минут без доверенных событий её сессии…», и `ST-06` остался зелёным — фраза по-прежнему в тексте, но уже в отрицании, то есть тест проверял бы противоположное тому, что требует критерий (`step-02-frontend-dev.json`, I3; REVIEWER, `step-04-reviewer.json`, I4: «остаётся зелёным, потому что ограничение 1 содержит «не может остаться «в работе»» — отрицание»). Это отметили FRONTEND-DEV и REVIEWER до замены строки; TEST-DESIGNER заменил в списке строку на «нет свежих данных» (число строк 14), TEST-DESIGN-VALIDATOR убил мутант «README без «нет свежих данных»» двумя тестами (FS-16 и `ST-06`).
-- Почему это плохо: тест на слово в документе доказывает наличие подстроки, а не смысл; при смене смысла он остаётся зелёным и прикрывает расхождение (Q5, Q6).
-- Как правильно: (1) когда меняется текст, который проверяет тест по фразе, проект называет тест в таблице «прежняя проверка → новая» и заменяет фразу на ту, которая выражает **новый** смысл; (2) REVIEWER и TEST-DESIGN-VALIDATOR проверяют, не совпадает ли старая фраза с новым текстом в другом значении (отрицание, пример, цитата), и применяют мутант «текст с прежним смыслом»; (3) критерий формулируется через присутствие нового слова, а не через отсутствие или присутствие старого.
-- Где найдено: `handoffs/REQ042-20261013-01/step-02-frontend-dev.json` (I3), `step-04-reviewer.json` (I4), `step-05-test-designer.json` (замена строки ST-06, мутант M34), `step-05b-test-design-validator.json` (мутант R1 убит FS-16 и ST-06); `docs/design/REQ-042-state-honesty.md` (раздел 11, строка ST-06).
-
-### AP-084 — Часы теста совпали с границей порога: «сейчас» = начало + порог, и любой сдвиг молча переходит порог
-
-- Что случилось: общий помощник тестов Pixel Office задавал «сейчас» страницы как `NOW = T0 + 3600 с`, а `STALE_AFTER_MS` (REQ-042) равен 3 600 000 мс. Для событий в момент `T0` возраст оказывается ровно на пороге, и любой тест, который сдвигает часы страницы или строит событие чуть раньше, переходит порог и получает «нет свежих данных» вместо «в работе». Эту ловушку CODE-DESIGNER заметил в проекте («тест `PN-02` держится за «сейчас» на границе», предложение записи в журнал: раздел 14.3); FRONTEND-DEV подтвердил на копии: с `NOW = T0 + 1800 с` `PN-02` зелёный и красных ровно 11 (`step-02-frontend-dev.json`, I2). TEST-DESIGNER заменил помощник на `NOW = T0 + 1800 с`, а границу проверил отдельным тестом `FS-05` (±1 мс от порога для задачи, строки основной сессии и сессии).
-- Почему это плохо: тест, не про границу, но стоящий на ней, ломается от несвязанных правок и учит чинить «подгонкой времени»; сама граница при этом проверяется случайно.
-- Как правильно: «сейчас» в общем помощнике стоит внутри порога с запасом (`T0 + 1800 с` при пороге 3600 с); граница порога проверяется своим тестом с событиями на `порог`, `порог + 1 мс` и `порог − 1 мс`; число порога в тестах берётся из одной константы или литерала критерия, а не выводится из помощника.
-- Где найдено: `docs/design/REQ-042-state-honesty.md` (раздел 14.3, раздел 11 строка `PN-02`); `handoffs/REQ042-20261013-01/step-02-frontend-dev.json` (I2), `step-05-test-designer.json` (FS-05).
-
-### AP-085 — Код и тесты читают настоящие часы компьютера: отчётная команда брала `Date.now()`, а тест движка один раз упал от шага часов назад (дополняет AP-084)
-
-- Что случилось: (1) `tools/src/pixel-office/public/office-report.js` (отчётная команда офиса) брал `Date.now()`. Пока возраст не влиял на состояния, это не замечалось; после REQ-042 журнал 2026-09-20 при сегодняшней дате превратил бы ожидания `OF-13` и `OF-25` в зависящие от даты. CODE-DESIGNER заметил это в проекте; `runReport(argv, io = process, nowFn = Date.now)` принимает часы параметром, `FS-19` проверяет заданные часы. (2) Тест `EN-57 (1, 2)` движка команды (`tools/test/team-channel.test.js`) один раз упал с `E_TIME` («Часы компьютера показывают время раньше последней записи проекта»): он пишет события движка по настоящим часам `Date.now`, а проверка `checkTime` для источника `ENGINE` строгая (`at < prev`). По журналу службы времени macOS в то же время часы шагнули назад на 0,111 с (12:13:16Z) и на 0,060 с (12:29:16Z). Сам сбой никто не воспроизвёл (`ISS-0065`).
-- Почему это плохо: результат проверки зависит от даты запуска и от службы времени компьютера, красный прогон не повторяется, и его легко «лечить» перезапуском (Q6, §6 п. 4 планки: внешняя причина должна быть воспроизведена).
-- Как правильно: время — параметр (`nowFn`, подставные часы), а не вызов `Date.now()` внутри кода, который проверяется по дате; тесты, пишущие события по настоящим часам в один журнал, получают подставные часы; случайную красную проверку по часам записывают в дефект с временем до и после и журналом службы времени (как сделано в `ISS-0065`), а не перезапускают до зелёного.
-- Где найдено: `docs/design/REQ-042-state-honesty.md` (раздел 14.3); `handoffs/REQ042-20261013-01/step-05b-test-design-validator.json` (I1), `step-05-test-designer.json` (I2), `step-09-release-validator.json` (I4); `docs/issues/ISS-0065-team-channel-tests-real-clock-e-time.md`.
-
-### AP-086 — Агент-аналитик выполнил `git checkout -- .` в каталоге Sai и отбросил непринятые правки прогона
-
-- Что случилось: по записи ORCH в задании шага 10 (`handoffs/REQ042-20261013-01/step-10-doc-updater.json`, `task.description`), агент-аналитик в этом прогоне выполнил `git checkout -- .` в каталоге Sai и отбросил непринятые (не закоммиченные) правки; правки были восстановлены, ORCH сверил результат. В handoff-ах прогона этот эпизод отдельно не записан (RELEASE-VALIDATOR в `step-09-release-validator.json` отметил только, что сам `git checkout/reset/stash/clean` не запускал и хеши рабочего дерева до и после совпали); подробности (какая роль, какой шаг) в файлах Sai не сохранены.
-- Почему это плохо: рабочее дерево прогона состоит из непринятых правок других ролей (код, тесты, документы); команда, возвращающая файлы к закоммиченному состоянию, молча стирает чужую работу, и восстановить её можно только из копий, если они есть (R1, Q2).
-- Как правильно: в заданиях агентам, работающим в каталоге Sai, прямо запрещены `git checkout`, `git reset`, `git stash`, `git clean` и любые команды, возвращающие файлы к коммиту; «вернуть как было» делают копированием из копии вне проекта, а не командами git; перед запуском роли, которой нужна «чистая» копия, ORCH даёт ей копию вне проекта (как сделал RELEASE-VALIDATOR этого прогона). ORCH теперь записывает запрет в задание явно.
-- Где найдено: `handoffs/PIXEL-20261013-01/step-01-req-analyst.json` (`result.issues`, пункт I10 — запись самого агента: выполнил `git checkout -- .`, восстановил файлы) и `step-01-req-analyst-r1.json` (ORCH сверил восстановление); `handoffs/REQ042-20261013-01/step-10-doc-updater.json` (задание, слова ORCH); `step-09-release-validator.json` (рабочее дерево не менялось, хеши до и после).
-
-### AP-087 — ORCH создал handoff командой, в тексте которой были обратные кавычки: оболочка подставила пустую строку, файла нет, агент получил сообщение о несуществующем файле
-
-- Что случилось: по записи ORCH в задании шага 10 (`handoffs/REQ042-20261013-01/step-10-doc-updater.json`), handoff был создан командой, в тексте задания которой стояли обратные кавычки; оболочка выполнила их как подстановку команды и подставила пустую строку, файл не создался, а агент был уведомлён о handoff-е, которого нет. В файлах Sai сам случай не зафиксирован (какой handoff — не записано).
-- Почему это плохо: текст задания теряет куски молча, а агент либо не находит файл, либо, найдя другой, работает по неполному заданию (Q3: исполнитель получает не то, что ORCH хотел сказать).
-- Как правильно: задание пишут в файл (редактором, не `echo`) и передают команде подстановкой из файла с кавычками (например, подстановкой `"$(cat файл)"`: содержимое файла оболочка уже не разбирает; если текст записывается в файл из оболочки — heredoc с кавычками у ограничителя `<<'EOF'`, он не подставляет команды); после создания ORCH читает созданный handoff и сверяет, что файл есть, а `task.description` не пуст и не обрезан.
-- Где найдено: создание `handoffs/REQ042-20261013-01/step-01-code-designer-r1.json` (шаг 1, доработка r1 проекта): первая попытка команды `handoff new` не создала файл, ORCH уже отправил агенту-проектировщику сообщение о нём; файл создан второй попыткой, агент получил поправку; `handoffs/REQ042-20261013-01/step-10-doc-updater.json` (задание, слова ORCH).
-
-### AP-088 — Номер шага у handoff-ов разных ролей совпал: BA-ANALYST и UAT-RUNNER на шаге 8 (дополняет `docs/workflows/handoffs.md`, раздел «Файлы»)
-
-- Что случилось: по записи ORCH в задании шага 10, у handoff-ов BA-ANALYST (сценарии) и UAT-RUNNER (прогон) в WF-02, шаг 8, совпал номер шага, а `handoff_id` не должен повторяться во всём `handoffs/` (`docs/workflows/handoffs.md`). В прогоне исправлено суффиксами подшагов: `step-08-ba-analyst.json` (`step08-…`), `step-08b-uat-runner.json` (`step08b-…`), `step-08c-ba-analyst-signoff.json` (`step08c-signoff-…`); `handoffs-check` в прогоне — нарушений 0 (RELEASE-VALIDATOR).
-- Почему это плохо: два файла с одним `handoff_id` ломают ссылки на них и проверку учёта; три роли одного шага (сценарии, прогон, подпись) — три разных handoff-а.
-- Как правильно: если на одном шаге работают несколько ролей или одна роль в нескольких подшагах, каждому handoff-у даётся своё `<ШАГ>` с буквой (`08`, `08b`, `08c`) и своё имя; ORCH выдаёт буквы при создании handoff-ов, а не после.
-- Где найдено: `handoffs/REQ042-20261013-01/step-08-ba-analyst.json`, `step-08b-uat-runner.json`, `step-08c-ba-analyst-signoff.json`; `docs/workflows/handoffs.md`; `handoffs/REQ042-20261013-01/step-10-doc-updater.json` (задание, слова ORCH).
-
-### AP-089 — Раскладку самого длинного слова нового состояния не измерили ни проект, ни тесты, ни приёмка до повтора: третий повтор AP-060 и AP-065
-
-- Что случилось: REQ-042 ввёл слова состояний длиной до 300 px (прежнее самое длинное — «окончание не записано», 145 px). Правила `tools/src/pixel-office/public/style.css` `.item-head` (`display: flex` без `flex-wrap`), `.item-state` (`flex: none`) и `.item` (`overflow-wrap: anywhere`) вместе оставили названию роли 20 px: «Plan» ломался на «Pl / an», строка основной сессии вырастала до 387 px (окно 1470×784) и 716 px (окно 375×812). ISSUE-FIXER записал причину: тесты страницы идут на самописной модели DOM, где `getBoundingClientRect` «отдаёт 0 или заданное вручную число», а проект REQ-042 раскладку самого длинного слова не называл; DESIGN-QA-VALIDATOR не запускался (образца нет), и «первым раскладку увидел UAT-RUNNER» (`step-01-issue-fixer.json`, диагноз и I9: «третье повторение AP-060/AP-065»). Попутно описание дефекта ISS-0062 ошибалось дважды (I1 диагноза): числа 332 / 644 и 387 / 716 — не два прогона, а высота шапки `.item-head` и высота всей строки `.item` из одного прогона; и «регресс, внесённый самой работой REQ-042» верно по эффекту, но не по коду — правила `.item-head` и `.item-state` не менялись с первого коммита Sai, новые слова вскрыли готовый дефект.
-- Почему это плохо: вид, который владелец видит в основном окне, держался на неизмеренном допущении «текст влезет»; единственная проверка — глаза приёмки; после исправления он закрыт критерием 14 REQ-042 и тестом `PN-23`, но тот же класс возможен при любом новом слове.
-- Как правильно: (1) когда требование вводит или удлиняет текст в строке с соседними элементами, проект называет **самое длинное** слово и окна проверки (1470×784, 375×812) и перечисляет правила раскладки, от которых зависит строка (flex, перенос, `flex: none`); (2) приёмка меряет `getBoundingClientRect` названия и строки с самым длинным словом, а не только читает текст; (3) регрессионный тест — свойство правил CSS (`PN-23`) плюс замер в браузере, и оговорка, что тест проверяет правило, а не вид; (4) описание дефекта не объясняет расхождение чисел «двумя прогонами» без проверки (AP-012): сначала выяснить, что именно измерено.
-- Где найдено: `handoffs/ISS-0062-20261013-01/step-01-issue-fixer.json` (диагноз, I1, I9); `step-09-release-validator.json` (замер до/после в шести окнах); `docs/issues/ISS-0062-pixel-office-restart-word-squeezes-role-name.md`; `decisions/0053-pixel-office-state-badge-wraps-below-role.md`.
-
-### AP-090 — Закрытый handoff поправили прямо в файле, потому что повторный `close` невозможен
-
-- Что случилось: по проверке ORCH `step-08-test-runner.json` (`orch_check`): агент после закрытия handoff-а «поправил строку `self_check` прямо в файле (E_HO_STATE мешал повторному `close`)». Команда `close` не закрывает handoff второй раз и отвечает `E_HO_STATE`; `handoffs-check` при этом дал 0 нарушений, поэтому отступление поймал только ORCH, читая файл.
-- Почему это плохо: закрытый handoff — запись о том, что агент сдал; правка после закрытия переписывает историю (AP-002), а `handoffs-check` такую правку не отличает от обычной. Неточность в `self_check` могла быть исправлена честнее.
-- Как правильно: неточность замечают до `close` и правят в `result` (в `self_check` или `issues`); после `close` handoff не правится — поправку записывает ORCH отдельным полем (`orch_note` или `orch_correction`, со временем и причиной, `docs/workflows/handoffs.md`, «Кто что пишет») или следующий handoff в своём `result.issues`. Если `close` не проходит — это повод остановиться и написать об этом, а не редактировать файл.
-- Где найдено: `handoffs/ISS-0062-20261013-01/step-08-test-runner.json` (`orch_check`, 2026-10-13T16:16:29Z); `tools/src/handoffs/close.js` (`E_HO_STATE`); `docs/workflows/handoffs.md`.
-
-### AP-091 — RELEASE-FINALIZER включил в первый коммит незакрытый handoff собственного шага, и проверка на GitHub покраснела
-
-- Что случилось: в прогоне `REQ042-20261013-01` RELEASE-FINALIZER закоммитил и отправил в `main` коммит `fd5fac6` вместе с handoff-ом шага 11 в статусе `PENDING`. `handoffs-check` на GitHub дал нарушение H4 («status: PENDING в коммите: в коммите только законченные handoff-ы»), запуск `check.yml` 38416285312 красный на шаге «Run the check», до тестов команда не дошла. Локально проверка была зелёной, потому что файла не было в коммите. По словам самого финалайзера: «Причина — моя ошибка: я включил этот handoff в первый коммит до закрытия» (`step-11-release-finalizer.json`, `result.summary`, I1); по записи ORCH в задании шага 10 прогона `ISS-0062-20261013-01`, задание ORCH перечисляло папку `handoffs` целиком. Handoff закрыт и закоммичен отдельным вторым коммитом (`130a46d`).
-- Почему это плохо: красная проверка на общей ветке (Q4) из-за порядка работы, а не кода; push ушёл напрямую, потому что владелец — администратор и `enforce_admins` выключено (`decisions/0048`), то есть защита ветки красную проверку не остановила.
-- Как правильно: незакрытый handoff в коммит не идёт; коммит handoff-а собственного шага — отдельный, после `close` (так сделано во втором коммите); в задание RELEASE-FINALIZER ORCH вписывает файлы поимённо, а не папку целиком, и явно: «handoff шага 11 не добавлять в первый коммит»; перед коммитом финалайзер запускает `handoffs-check` на том, что реально входит в коммит (список файлов — `git diff --cached --name-only`, статус каждого handoff-а в нём — не `PENDING`).
-- Где найдено: `handoffs/REQ042-20261013-01/step-11-release-finalizer.json` (summary, I1, I2); `handoffs/ISS-0062-20261013-01/step-10-doc-updater.json` (задание, слова ORCH); `tools/src/handoffs/` (правило H4).
-
-### AP-092 — В задании ревью назвали запись журнала ошибок, которой нет: ссылку на AP-номер не сверили с файлом
-
-- Что случилось: в задании шага 5 прогона `ISS-0062-20261013-01` (ворота ревью) среди сверок стояло «AP-060, AP-065, AP-089 если есть». REVIEWER нашёл, что такой записи нет, последняя была AP-088 (`step-05b-reviewer.json`, F3: «Задание называет «AP-089 если есть»: такой записи нет»), ORCH подтвердил в `orch_check` («AP-089 в задании названа ошибочно; последняя запись AP-088 — DOC-UPDATER пишет следующую»). Оговорка «если есть» превратила ссылку на несуществующий факт в проверку для исполнителя.
-- Почему это плохо: задание обязано содержать только факты из файлов проекта (`docs/workflows/handoffs.md`, «Как ORCH пишет задание», AP-012); ссылка на несуществующую запись тратит ход проверяющего и подсказывает, что урок уже записан, хотя его нет.
-- Как правильно: перед тем как сослаться на AP-, ISS- или другой номер в задании, ORCH проверяет его командой (`grep -n '^### AP-089' docs/anti-patterns.md`); нужен урок, которого ещё нет, — пишет «записи нет, предложить» и просит предложение в `result.issues`, а запись заводит DOC-UPDATER.
-- Где найдено: `handoffs/ISS-0062-20261013-01/step-05b-reviewer.json` (задание, F3, `orch_check`); `handoffs/ISS-0062-20261013-01/step-01-issue-fixer.json` (I9 — предложение записи, которое теперь оформлено как AP-089).
-
-### AP-093 — Тест сам содержал слова, отсутствие которых проверяет критерий: команда «поиск пуст» стала невыполнимой
-
-- Что случилось: критерий 9 (в) REQ-036 требует, чтобы `grep -rn '· и ещё\|NOW_MORE' tools/test/ tools/src/pixel-office/ docs/design/REQ-007-office-ui.md` ничего не находил. Тест `NM-02` (`tools/test/pixel-office-panels.test.js`), который как раз проверяет, что этих слов в коде нет, писал их буквально — в комментарии, в выражении `/NOW_MORE|· и ещё/` и в `Object.hasOwn(TX, "NOW_MORE")`. TEST-DESIGN-VALIDATOR: «Пока тест пишет искомые строки буквально, критерий 9 (в) невыполним: RELEASE-VALIDATOR получит FAIL на этом пункте при любом коде» (`step-05b-test-design-validator.json`, F1, Medium, блокирует). TEST-DESIGNER собрал имя и хвост из частей при запуске; проверка стала строже (добавлены проверки самого выражения), мутанты N3, N3b, N3c, N4 роняют `NM-02` (`step-05b-test-design-validator-r1.json`).
-- Почему это плохо: критерий «поиск по каталогам пуст» и тест, лежащий в этих же каталогах, противоречат друг другу; одна доработка ворот тестов ушла на это (1 из 3).
-- Как правильно: если критерий проверяет отсутствие слов поиском по каталогу, где лежат тесты, тест собирает искомое из частей (`["NOW", "MORE"].join("_")`), а комментарий описывает его без самих слов; TEST-DESIGNER перед сдачей запускает команду критерия дословно по `tools/test/` и прикладывает пустой вывод; проект называет эту ловушку в таблице «критерий → тест».
-- Где найдено: `handoffs/REQ044-20261014-01/step-05b-test-design-validator.json` (F1, `orch_check`), `step-05b-test-design-validator-r1.json`, `step-05-test-designer-r1.json`.
-
-### AP-094 — Требование утверждало, что поведение уже есть (маскирование описания), без проверки кода; проект унаследовал, пробел нашёл только TEST-DESIGNER на шаге 5
-
-- Что случилось: описание REQ-036 говорит: «секрет, попавший в описание, уже заменён «[скрыто]» при записи (hook.js, mask.js)». Это было неверно: хук и сервер маскировали только `prompt_text`, описание и роли шли в журнал как есть. Проект прогона считал хук и сервер неизменными (D1), ворота проекта и ревью этого не проверили. TEST-DESIGNER на шаге 5 не смог написать зелёный тест критерия 6 REQ-036 и остановился: «Утверждение требования … неверно, а проект (D1) считает хук и сервер неизменными. Зелёный тест этой части написать нельзя без правки кода вне public/» (`step-05-test-designer.json`, BLOCKED 2026-10-14T15:22:52Z). Понадобились дополнение проекта r3, решение `0056`, шаг 5c и повтор шагов 3 и 4; дефект — ISS-0068.
-- Почему это плохо: утверждение о существующем поведении в требовании принимается всеми следующими ролями как факт (AP-012, quality-bar §6, п. 2); секрет мог дойти до страницы, а пробел нашёлся на пятом шаге, а не на первом.
-- Как правильно: утверждение «уже есть» в описании требования REQ-ANALYST подкрепляет командой или пробой (функция, файл, вывод), REQ-VALIDATOR её повторяет; CODE-DESIGNER в разделе «Проверенные факты о текущем коде» проверяет каждое такое утверждение пробой, а не чтением описания. Формулировку описания REQ-036 правит WF-01 после прогона (вопрос О19 проекта), не учёт.
-- Где найдено: `handoffs/REQ044-20261014-01/step-05-test-designer.json` (BLOCKED), `step-01b-code-designer-r3.json`, `step-01c-code-design-validator-r2.json`; `decisions/0056-pixel-office-mask-all-text-fields.md`; `docs/issues/ISS-0068-pixel-office-secrets-in-description-and-role.md`.
-- Повтор 2026-10-21 (`TEXT068-20261021-01`, WF-02): критерий 1 REQ-068 утверждал «любая пара суррогатов допустима» (1024 × 1024), не проверив это на самом перечне запрещённых знаков. CODE-DESIGNER перебрал все пары на прототипе и нашёл, что 127 пар кодируют запрещённые знаки Cf вне BMP (`handoffs/TEXT068-20261021-01/step-01-code-designer.json`, I1, Ф5; допустимо 1 048 449 пар). Критерий поправлен микроправкой WF-01 (`handoffs/PICKERTEXT-20261021-01/step-01c-req-analyst.json`), перебор закреплён тестом TT-1d. Правило то же: утверждение о множестве («любая», «каждый», «ни одного») подкрепляется перебором этого множества до записи критерия; новой записи не заведено.
-
-### AP-095 — Название чужого проекта попало в команду поиска в `self_check`: проект искал его, а проверка следов нашла его в handoff-е
-
-- Что случилось: CODE-DESIGNER прогона `REQ044-20261014-01` в `self_check` записал команду `grep`, в шаблоне которой было название прежнего проекта владельца (поиск, что этого названия нет в проекте). Сама команда, сохранённая в handoff-е, стала следом. ORCH заменил название словами-заменителем «<название прежнего проекта владельца>» в `step-01b-code-designer.json` и в доработке `-r1` («ORCH заменил в self_check название прежнего проекта владельца словами-заменителем (проверка следов, decisions/0021)», `orch_check` r1). По словам ORCH в задании шага 10, это было дважды и проверка следов была красной.
-- Почему это плохо: handoff — файл проекта; название чужого проекта в нём нарушает правило `CLAUDE.md` («ссылки на другие проекты» не пишутся) и краснит `traces`; исправлять приходится ORCH в чужом `result`.
-- Как правильно: команду поиска запретных слов не записывают в `self_check` с самим словом: пишут «поиск названий других проектов и путей компьютера (шаблон — `tools/src/traces/`) → пусто» или запускают `npm run traces` и прикладывают его вывод; шаблон с запретным словом живёт только в коде проверки.
-- Где найдено: `handoffs/REQ044-20261014-01/step-01b-code-designer.json` (`self_check`), `step-01b-code-designer-r1.json` (`orch_check`); `decisions/0021`; `handoffs/REQ044-20261014-01/step-10-doc-updater.json` (задание, слова ORCH).
-
-### AP-096 — Ворота требований не сверили требование с решениями ORCH «внутри прогона» прошлой работы: противоречие решению 0014 нашли только на третьих воротах
-
-- Что случилось: REQ-047 требовал, чтобы окно «Просмотр истории» открывалось из карточки агента, а карточка под ним оставалась открытой. `decisions/0014` («Решения ORCH внутри прогона», 5 и 6) говорит обратное: окно открывается из журнала и карточек панели «Задачи», не из карточки агента; открытая карточка при открытии окна закрывается. Его «Граница»: «Решения ORCH 1–7 относятся к REQ-008 и могут быть отменены владельцем по одному» — то есть они действуют дальше. Ворота `PIXEL-20261014-01` шаг 2 и доработка r1 этого не нашли; нашла третья проверка (`step-02-req-validator-r2.json`, N7: «Требование молча расходится с записанным решением (Q12; quality-bar §6, п. 7)»). ORCH не отменил 0014, REQ-047 переписан (r3), это была третья и последняя доработка REQ-047. Позже BA-ANALYST тоже посчитал 0014 решением «о превышении лимита доработок REQ-008» по его названию (`handoffs/REQ044-20261014-01/step-08-ba-analyst.json`, I3).
-- Почему это плохо: решение называется по поводу (лимит доработок), а внутри несёт правила продукта; проверяющий, который смотрит только названия решений, пропускает их, и требование уходит дальше с противоречием (Q12).
-- Как правильно: решения ORCH «внутри прогона» действуют и после прогона, если так сказано в их «Границе»; REQ-VALIDATOR на первом заходе ищет по `decisions/` не только по названию, но и по затронутым словам требования (`grep -rn "Просмотр истории\|карточк" decisions/`) и перечисляет найденные решения в своём отчёте; решения с правилами продукта ORCH называет в строке `decisions/README.md` так, чтобы правила было видно.
-- Где найдено: `handoffs/PIXEL-20261014-01/step-02-req-validator.json`, `-r1`, `-r2` (N7), `-r3` (`orch_check`: «урок «решения ORCH внутри прогона действуют дальше по Границе» — в AP через DOC-UPDATER»); `decisions/0014-pixel-office-history-rework-limit.md` («Граница»).
-
-### AP-097 — Агент оборвался на лимите сессии посреди шага; шаг перезапустили новым агентом, а handoff остался `PENDING`
-
-- Что случилось: по словам ORCH в задании шага 10 прогона `REQ044-20261014-01`, агент оборвался на лимите сессии посреди шага, шаг был перезапущен новым агентом, а handoff оборванного остался в статусе `PENDING`. В handoff-ах прогона этот случай не записан (поля `interruptions` нет ни в одном, файлов `-runN` нет); какой это был шаг — в файлах Sai не названо.
-- Почему это плохо: без записи об обрыве не видно, какие файлы успел изменить оборванный агент и что из этого вошло в работу перезапущенного; handoff `PENDING` для уже сделанного шага вводит в заблуждение учёт и проверку `handoffs-check` перед коммитом (AP-091).
-- Как правильно: по `docs/workflows/handoffs.md`, раздел «Перерывы и обрывы»: перед перезапуском ORCH проверяет состояние handoff-а и файлов из `write_set` (что изменено после `started_at`), записывает перерыв в `interruptions`, и либо продолжает того же агента, либо закрывает handoff `FAILED` с пометкой `not_agent_attested` и запускает роль заново файлом `-runN`; оборванный handoff не остаётся `PENDING`.
-- Где найдено: `handoffs/REQ044-20261014-01/step-10-doc-updater.json` (задание, слова ORCH); `docs/workflows/handoffs.md` («Перерывы и обрывы»).
-
-### AP-098 — Продолженные агенты остаются «в работе» на странице, пока не закончатся: их handoff сдан, а события окончания ещё нет (наблюдение, не дефект кода)
-
-- Что случилось: RELEASE-VALIDATOR, открыв рабочую страницу владельца только на чтение, увидел в «Сейчас» три строки «в работе» ролей приёмки, «две из них — роли шагов, которые уже сдали handoff-ы» (`step-09-release-validator.json`, I3). ORCH: «продолженные агенты (SendMessage) не присылают окончания до своего завершения» (`orch_check` шага 9). Проверка по журналу владельца командами счёта (без вывода текстов, 2026-10-14T19:46Z): за 2026-10-14 начато 18 агентов, 13 из них продолжались повторно (повторный `SubagentStart` с тем же `agent_id`); у 22 продолжений, после которых окончание уже пришло, промежуток от продолжения до `SubagentStop` — до 13,6 мин (медиана 4,4 мин); у агента BA-ANALYST, продолженного в 17:08:43Z (через 2 с после создания handoff-а подписи `step-08c`, 17:08:41Z), `SubagentStop` на 19:46Z не было, хотя handoff-ы подписи `step-08c` и `-r1` закрыты в 19:14:33Z и 19:16:57Z. Страница показывает журнал верно (критерии REQ-001 и REQ-042).
-- Почему это плохо: владелец видит «в работе» у роли, чей шаг уже сдан, и может решить, что работа идёт; ORCH, глядя на страницу, может посчитать агента занятым.
-- Как правильно: это не дефект страницы; ORCH сверяет «в работе» со статусом handoff-ов, а не наоборот, и не продолжает агента без нужды после сдачи шага; если это мешает владельцу, это вход для требования о показе «продолженных» (новые события хуков — REQ-048), а не правка правил чтения.
-- Где найдено: `handoffs/REQ044-20261014-01/step-09-release-validator.json` (I3, `orch_check`); журнал владельца — только счёт строк `SubagentStart`/`SubagentStop` по `agent_id` (decisions/0054, дополнение 2).
-
-### AP-099 — Проект пообещал «перенос» длинной роли без названного правила CSS, критерий проверялся тестом текста, худший случай не мерил никто до приёмки: четвёртый повтор AP-060, AP-065 и AP-089
-
-- Что случилось: в прогоне `REQ048-20261015-01` таблица путей отказа проекта (`docs/design/REQ-048-049-046-047-interactive.md`, раздел 5) обещала для роли вне таблицы из 128 знаков без пробелов «легенда, панель, карточка — перенос», но правила CSS не называла; критерий 4 REQ-048 («легенда и панель — перенос») был закрыт тестом LW-05, который проверяет только текст, а тесты страницы идут на самописной модели DOM без раскладки. DESIGN-QA легенду с длинной ролью не мерил. Провал нашла приёмка (сценарий 48, важность ВЫС): в окне 1470×784 название уходило за край до 1165,8 px при видимых 1049, в 375×812 — до 1157,8 при 356. ISSUE-FIXER: у `.legend`, `.legend-item` и названия нет правила переноса внутри слова, правила легенды не менялись с первого коммита; `overflow-wrap: break-word` здесь не помогает — он не уменьшает наименьшую ширину элемента flex-линии и кнопки `inline-block`, нужен `anywhere`; той же причиной задеты «Кто запустил» и «Кого запустил» в карточках (`step-08d-issue-fixer.json`). Исправлено правкой `step-08e-code-fixer.json`, правило закреплено тестом DQ-04.
-- Почему это плохо: обещание вида держалось на неизмеренном допущении, а таблица «критерий → тест» выдавала тест текста за проверку переноса; понадобились диагноз, правка кода, повтор ворот безопасности, ревью и тестов и повтор приёмки. Это тот же класс, что AP-060, AP-065 и AP-089, в четвёртый раз.
-- Как правильно: (1) когда путь отказа обещает «перенос» текста из ввода, проект называет правило CSS для каждого элемента, где такой текст стоит во flex-элементе или в кнопке `inline-block` (`overflow-wrap: anywhere`, не `break-word`), и запрет `nowrap` у элемента и его предков; (2) таблица «критерий → тест» не закрывает «перенос» тестом текста — рядом стоят проверка правила CSS и замер в браузере; (3) DESIGN-QA и приёмка обходят все элементы, где может стоять длинная роль (легенда, панель, «Сейчас», «Кто запустил», «Кого запустил/а», варианты фильтра), а не только названные в сценарии, и меряют худший случай (128 знаков без пробелов, три слова по 40 знаков) в окнах 1470×784, 375×812 и 320×568.
-- Где найдено: `handoffs/REQ048-20261015-01/step-08b-uat-runner.json` (сценарий 48, Ф1), `step-08d-issue-fixer.json` (диагноз, I1, I6), `step-08e-code-fixer.json`, `step-05-test-designer-r3.json` (DQ-04); `docs/design/REQ-048-049-046-047-interactive.md` (раздел 5; п. 3.12 и 7.1 дописаны на шаге 10).
-
-### AP-100 — Замер раскладки зависел от часов страницы: проект и приёмка r1 мерили один момент, а «меньше минуты назад» и «нет свежих данных» удлиняют строки
-
-- Что случилось: описание интерфейса прогона `REQ048-20261015-01` (п. 7.2) обещало, что линия переходов карточки запуска видна сразу: «запас высоты прежней раскладки (видимое тело 726 px при «сразу» около 570) её вмещает». Приёмка r1 прошла, потому что стенд был старше минуты (746,75 ≤ 755). Повтор r2 провалил сценарий 42: пока последнее событие моложе минуты, основание «Задачи» с «меньше минуты назад» занимает три строки вместо двух, и кнопки уходят на 9 px ниже края; через 60 минут без событий «Рабочее место» пишет длинное «свободен…», и линия снова ниже края. Худший случай ролей таблицы — на 48 px ниже (ISSUE-FIXER, `step-08f-issue-fixer.json`; линия видна только между 1 и 60 минутами). ISSUE-FIXER мерил с часами страницы, зафиксированными подменой `Date.now` в браузере (журнал и сервер не трогались). Исправлено порядком частей карточки (`decisions/0060`, `step-08g-code-fixer.json`).
-- Почему это плохо: вид, который зависит от возраста событий, проверенный в один момент, проходит или проваливается случайно — по тому, сколько секунд прошло с последнего события стенда; та же ошибка класса AP-089 (неизмеренный самый длинный текст), только длину даёт время.
-- Как правильно: (1) проект и описание называют высоты частей для самого длинного текста каждого состояния, включая возраст («меньше минуты назад», сутки) и «нет свежих данных» / «свободен»; (2) проба ISSUE-FIXER, замер DESIGN-QA, приёмка и регрессионный замер фиксируют часы страницы (подмена `Date.now` только в странице) и мерят по крайней мере моменты +5 с и +61 мин после последнего события; (3) тест на модели DOM, который проверяет порядок частей (DQ-05), не выдаётся за проверку вида.
-- Где найдено: `handoffs/REQ048-20261015-01/step-08b-uat-runner-r2.json` (сценарий 42, Ф2), `step-08f-issue-fixer.json` (диагноз, I1, I2, I6), `step-08g-code-fixer.json`; `decisions/0060-card-links-after-launcher.md`; `docs/design/REQ-048-049-046-047-ui.md` (п. 7.2, исправлен на шаге 10).
-
-### AP-101 — Факты задания ORCH не сверены с файлами: правка блока требований шла без копии «до», а в задании тестам названо 23 ловушки вместо 27
-
-- Что случилось: в прогоне `REQ048-20261015-01` две доработки шага WF-01 (`step-01e-req-analyst-r2.json`, `-r3.json`) правили критерий 5 REQ-046 в общем `docs/requirements.yaml`, а их ворота (`step-01f-req-validator-r2.json`, `-r3.json`) получили задания без `context.before_copy` — копии файла «до» вне проекта (AP-023). REQ-VALIDATOR оба раза отметил это (I1: «context.before_copy в задании нет (AP-023)») и восстанавливал копию «до» сам — из `HEAD` и текущего файла (r2) и из своего файла ворот r2 (r3), сверяя хеши; ожидаемого вердикта в заданиях не было — это верно (AP-018). Отдельно: задание TEST-DESIGNER (`step-05-test-designer.json`) называло «Ловушки раздела 9 (23 шт.)», а в проекте их 27; ORCH в `orch_check`: «Ловушек 27, а не 23 — ошибка в задании ORCH, проект верен».
-- Почему это плохо: без копии «до» целость остальной части общего файла проверяющий может подтвердить только хешами автора или собственной реконструкцией — лишняя работа и риск пропустить чужую правку; неверное число в задании могло урезать работу исполнителя (23 мутанта вместо 27) или стоить ему хода на сверку (quality-bar §6, п. 2).
-- Как правильно: задание на правку блока общего файла (`docs/requirements.yaml`) и на его ворота несёт `context.before_copy` — путь к копии «до» вне проекта и её хеш, снятые ORCH до правки (AP-023, AP-007); числа и номера в задании ORCH берёт командой по файлу, а не по памяти (`grep -c` по разделу проекта; как AP-092 для номеров AP), или пишет «все ловушки раздела 9» без числа; ожидаемый вердикт проверяющему по-прежнему не сообщается (AP-018).
-- Где найдено: `handoffs/REQ048-20261015-01/step-01f-req-validator-r2.json` (I1), `step-01f-req-validator-r3.json` (I1), `step-05-test-designer.json` (задание, п. 4; `orch_check`).
-
-### AP-102 — В учёте записана настройка GitHub (видимость, защита ветки), которую после её изменения никто не перепроверил: документ для людей вне проекта повторил устаревший факт
-
-- Что случилось: `STATE.md` (раздел «На 2026-10-13 — REQ-030…»), `decisions/0048` и ISS-0057 записали: репозиторий открыт намеренно, защита `main` включена (обязательная проверка `check`, запрет force-push и удаления). 2026-10-17 DOC-UPDATER прогона `DOCSEN-20261017-01` написал в `README.en.md` «The main branch is protected since 2026-10-13…» — по этим записям, не читая GitHub. RELEASE-VALIDATOR сам прочитал GitHub (`gh api repos/<владелец>/sai` → `"private": true`; защита `main` — ответ 403 «Upgrade to GitHub Pro or make this repository public to enable this feature») и поставил FAIL: репозиторий сейчас private, защиты `main` нет (`step-09-release-validator.json`, F1, I1). Кто и когда сменил видимость, в файлах Sai не записано; ORCH видимость не менял. Повтор этим учётом 2026-10-17: `"protected": false`. Предположение (не проверено): защита пропала вместе со сменой видимости, потому что для private-репозитория на бесплатном плане она недоступна.
-- Почему это плохо: настройка GitHub меняется вне Sai (владелец, GitHub), а учёт держит её как постоянный факт; документ для читателя вне проекта едва не ушёл с неверным утверждением о защите; `STATE.md` продолжал утверждать защиту, которой уже нет (с какого дня — неизвестно). Тот же корень, что AP-079 (слова о внешней настройке закреплены, факт изменился).
-- Как правильно: (1) перед любым утверждением о настройке GitHub (видимость, защита ветки, обязательные проверки, права) — прочитать GitHub сейчас (`gh api repos/<владелец>/<репозиторий>`, `…/branches/main`) и записать дату чтения рядом с утверждением; (2) в документах для людей вне проекта не писать внешнюю настройку как постоянный факт — только то, что верно независимо от неё (например, «каждая отправка проверяется `check.yml`»); (3) RELEASE-FINALIZER и RELEASE-VALIDATOR, увидев расхождение настройки с учётом, сообщают ORCH, а учёт дописывает поправку с датой (прежний раздел не переписывается).
-- Где найдено: `handoffs/DOCSEN-20261017-01/step-09-release-validator.json` (F1, I1, `orch_check`), `step-01-doc-updater-r2.json`, `step-11-release-finalizer.json` (I3); `STATE.md` (разделы «На 2026-10-13 — REQ-030…» и «На 2026-10-17»); `decisions/0048`; `docs/issues/ISS-0057-readme-says-no-branch-protection.md`.
-
-### AP-103 — Повтор AP-095: проверяющий записал в `self_check` команду поиска с названиями других проектов, и проверка следов покраснела
-
-- Что случилось: RELEASE-VALIDATOR прогона `DOCSEN-20261017-01` проверял, что в новых документах нет названий других проектов, и записал в `self_check` своего handoff-а саму команду `grep` с этими названиями. После его `close` `npm run traces` стал красным на этом handoff-е — DOC-UPDATER доработки r2 сообщил: «npm run traces красный (код не 0) из-за чужого файла: handoffs/DOCSEN-20261017-01/step-09-release-validator.json … в self_check RELEASE-VALIDATOR записана команда grep с названиями других проектов» (`step-01-doc-updater-r2.json`, issues). ORCH заменил названия на «<названия других проектов>» (`orch_check` шага 9, 2026-10-17T03:17:06Z: «traces; повтор AP-095»).
-- Почему это плохо: правило из AP-095 уже было записано, а роль его повторила; закрытый handoff пришлось править ORCH, проверка всего репозитория стояла красной, пока шла доработка другой роли.
-- Как правильно: как в AP-095 — в `self_check` пишут «поиск названий других проектов и путей компьютера (шаблон — `tools/src/traces/`) → пусто» или прикладывают вывод `npm run traces`, а не команду с самими словами; перед `close` каждая роль запускает `npm run traces` на своём handoff-е (он входит в `npm run check`); ORCH в задании проверяющего, которому поручен поиск следов, напоминает это правило.
-- Где найдено: `handoffs/DOCSEN-20261017-01/step-09-release-validator.json` (`self_check`, `orch_check`), `step-01-doc-updater-r2.json` (issues); AP-095.
-
-### AP-104 — ORCH разрешил агенту дописать требование и закрытый handoff после `close`, когда ворота уже начали проверку: повтор AP-090
-
-- Что случилось: в прогоне `REQ050-20261017-01` REQ-ANALYST закрыл handoff доработки r3 (`step-01e-req-analyst-r3.json`) в 18:14:34Z. Ворота (`step-01f-req-validator-r3.json`) начали проверку в 18:15:40Z на хеше 3355a459…; в 18:15:55Z `docs/requirements.yaml` изменился ещё раз — дописаны строки 13, 21, 22 таблицы REQ-048 и комментарий над её критериями, — а в `result.changes` уже закрытого handoff-а появился четвёртый пункт о REQ-048. REQ-VALIDATOR заметил смену хеша и начал проверку заново на новом состоянии (I1: «закрытый handoff дописан после close (как AP-090)… правка должна завершиться до close и до запуска ворот»). ORCH в `orch_check`: «правка после close по разрешению ORCH во время старта ворот — ошибка ORCH (повтор AP-090)».
-- Почему это плохо: закрытый handoff — запись о сданном, правка после `close` переписывает историю (AP-002, AP-090); проверяющий начал работу на одном состоянии файла, а автор менял его под ним — проверка могла засчитать не ту редакцию, если бы смену хеша не заметили.
-- Как правильно: всё, что агент должен изменить, он меняет до `close`; ORCH, вспомнив о пропущенной правке после `close`, не разрешает дописать прежний handoff, а создаёт новую доработку (`-rN`, командой `new`) и запускает ворота только после её `close`; проверяющий снимает хеш общего файла в начале и в конце проверки и при расхождении начинает заново (так сделал REQ-VALIDATOR).
-- Где найдено: `handoffs/REQ050-20261017-01/step-01e-req-analyst-r3.json` (`result.changes`, `completed_at`), `step-01f-req-validator-r3.json` (I1, `orch_check`); AP-090.
-
-### AP-105 — Блок с отрицательным отступом и `z-index` положили на строку кнопок без заданной ширины; тесты нажимают `click()` прямо на элементе и перекрытия не видят
-
-- Что случилось: на подшаге 2d прогона `REQ050-20261017-01` блок кнопки «?» офиса (`.office-hint`) получил `position: relative; z-index: 1; align-self: stretch` и отрицательное нижнее поле, чтобы встать у левого края первой строки легенды. Описание интерфейса задало ему высоту и отступ, но не ширину; `align-self: stretch` растянул блок на всю ширину панели, и он лёг поверх первой строки легенды. Приёмка нашла это нажатием мыши (Ф3): в 1470×784 и 1920×1080 ни одна кнопка легенды не открывала карточку — `elementFromPoint` в каждой точке кнопок давал `div#office-hint`; в узких окнах не нажималась «Основная сессия». Клавиатура работала. HN-02 проверял только место блока в разметке, а тесты на поддельном DOM нажимают кнопки вызовом `click()` прямо на элементе — перекрытие им не видно; DESIGN-QA сверял вид (`step-08f-issue-fixer.json`). Исправлено `align-self: flex-start` и `pointer-events: none` у блока с `auto` только у кнопки «?» (`step-08g-code-fixer.json`, `step-08h-code-fixer.json`).
-- Почему это плохо: главная функция страницы (открыть карточку агента из легенды) перестала работать мышью при зелёных тестах и пройденном DESIGN-QA; понадобились диагноз, две правки кода, повтор ворот и приёмки.
-- Как правильно: элемент, надвинутый отрицательным полем или позиционированием на чужие кнопки, получает ширину своего содержимого (`align-self: flex-start` во flex-колонке) или `pointer-events: none` с `auto` только у своих кнопок; описание интерфейса называет у такого блока и ширину, и `pointer-events`; DESIGN-QA и приёмка проверяют нажимаемость соседних кнопок через `elementFromPoint` и настоящее нажатие мыши (протокол DevTools), а тест на поддельном DOM — правило CSS (HN-02 после r3), с оговоркой, что это не вид.
-- Где найдено: `handoffs/REQ050-20261017-01/step-08b-uat-runner-r1.json` (Ф3), `step-08f-issue-fixer.json` (диагноз, I4), `step-08g-code-fixer.json`, `step-08h-code-fixer.json`, `step-05-test-designer-r3.json` (HN-02).
-
-### AP-106 — Открытие подсказки по наведению проверяли отдельными событиями на поддельном DOM, без касания: на телефоне подсказка ложилась на свою кнопку и не закреплялась
-
-- Что случилось: подсказки «?» (REQ-053) открывались по `mouseenter` и закрывались по `mouseleave`. HN-01 на поддельном DOM вызывал `mouseenter`, `mouseleave` и `click` по отдельности. На касании Chrome после `touchend` шлёт совместимые события мыши (`mouseover`, `mouseenter`, `mousemove`, `mousedown`, `mouseup`, `click`) и перед каждым заново определяет элемент под точкой. В узком окне подсказка (`position: fixed`, у низа окна) ложилась на кнопку «?», стоявшую у низа экрана: `mouseenter` открывал её, `mouseleave` закрывал, `mousedown` и `mouseup` приходили на разные элементы, и `click`, который закрепляет подсказку, уходил их общему предку — у кнопок у низа экрана подсказка не открывалась ни одним касанием (в середине экрана касание работало; Ф2 приёмки). DESIGN-QA касания не эмулировал (`step-08d-issue-fixer.json`). Исправлено: наведение — только для мыши (`pointerType`), у подсказок `pointer-events: none` (D21, D22, подшаг 2g).
-- Почему это плохо: на телефоне часть подсказок была недоступна при зелёных тестах; тесты отдельными событиями проверяли не то, что делает браузер на касании.
-- Как правильно: элемент поверх страницы без нажимаемого содержимого получает `pointer-events: none`; открытие по наведению — только для `pointerType` «mouse»; приёмка и DESIGN-QA проверяют касание (эмуляция касаний, `Input.dispatchTouchEvent`) кнопок в той части окна, где появляется то, что они открывают; тест на поддельном DOM не выдаётся за проверку касания.
-- Где найдено: `handoffs/REQ050-20261017-01/step-08b-uat-runner.json` (Ф2, сценарий 26), `step-08d-issue-fixer.json` (диагноз, I6), `step-02g-frontend-dev.json`; `docs/design/REQ-050-053-guide.md` (D21, D22).
-
-### AP-107 — Живая область `aria-live` скрыта `display: none`, пока пуста: диктор может не прочитать текст, который в неё кладут вместе с показом
-
-- Что случилось: строка о туре `div#tour-later` с `aria-live="polite"` (REQ-052, критерий 1) по проекту D20 была «скрыта правилом `:empty`»; код сделал это через `.tour-later:empty { display: none }`, и область появлялась в дереве доступности в тот же миг, когда в неё клали текст. REVIEWER: «экранные дикторы часто не объявляют содержимое области, которой не было в дереве доступности до изменения» (`step-04-reviewer-r1.json`, L1). ORCH велел исправить сразу (REQ-052 требует озвучивания): пустая строка вынесена из линии шапки (`position: absolute`) и не имеет размеров, полей, рамки и фона — в дереве доступности она есть до текста, а для зрячего вид прежний; проверено `Accessibility.getFullAXTree` (`step-04a-code-fixer.json`).
-- Почему это плохо: требование объявить текст читалкой выполнялось только на словах; тесты и вид этого не ловят.
-- Как правильно: живая область (`aria-live`, `role="status"`) существует в дереве доступности до появления текста; пустую скрывают только визуально (вне потока, нулевые размеры), без `display: none`, `visibility: hidden` и атрибута `hidden`; проект называет способ скрытия, тест проверяет правило CSS, проверка в браузере — по дереву доступности.
-- Где найдено: `handoffs/REQ050-20261017-01/step-04-reviewer-r1.json` (L1, `orch_check`), `step-04a-code-fixer.json`; `docs/design/REQ-050-053-guide.md` (D20, уточнён на шаге 10).
-
-### AP-108 — ORCH передал агенту сообщение до того, как файл handoff-а был создан: создание отклонила проверка следов, а агент уже отвечал
-
-- Что случилось: по словам ORCH в задании шага 10 прогона `PICKER054-20261019-01`, перед шагом 9 (RELEASE-VALIDATOR) сообщение с заданием ушло агенту раньше, чем появился файл handoff-а: создание файла командой `new` отклонила проверка — в тексте задания был записан путь к проекту-образцу, а такие пути в файлах Sai запрещены (`traces`, `decisions/0021`). Агент между тем начал работу и дал ранний ответ по сообщению, без handoff-а. Сам handoff шага 9 создан позже: `handoffs/PICKER054-20261019-01/step-09-release-validator.json`, `created_at` и `started_at` 2026-10-19T18:56:36Z, закрыт 19:02:47Z. Сама «ранняя» переписка в файлах Sai не записана — факт взят из слов ORCH, не из handoff-а.
-- Почему это плохо: работа агента без handoff-а — вне учёта (Q14, `docs/workflows/handoffs.md`: handoff создаётся командой в момент запуска агента); ранний ответ не имеет `result`, времени и проверки `handoffs-check`; а путь чужого проекта в тексте задания — то же, что AP-095 и AP-103.
-- Как правильно: (1) сначала создать файл handoff-а (`cd tools && npm run handoff -- new …`) и убедиться, что он создан и проходит `handoffs-check`, и только потом запускать агента; (2) в текст задания не писать пути других каталогов и названия других проектов — сказать агенту отдельным сообщением, где лежит материал (называть «проект-образец», как делает RELEASE-VALIDATOR), или дать путь вне файла; (3) если создание отклонено — править текст задания и создавать снова, а не запускать агента с сообщением в обход.
-- Где найдено: слова ORCH в `handoffs/PICKER054-20261019-01/step-10-doc-updater.json` (задание, п. 3); `handoffs/PICKER054-20261019-01/step-09-release-validator.json` (`created_at`, I2: «Адрес проекта-образца в файлы Sai и сюда не пишется; называется «проект-образец»»); AP-095, AP-103.
-
-### AP-109 — Агент выполнил `git checkout` в своей копии вне проекта, хотя `git checkout` запрещён: в задании запрет был сформулирован только для проекта
-
-- Что случилось: CODE-DESIGNER прогона `PICKER054-20261019-01` для прототипа клонировал Sai в папки вне проекта и внутри этих клонов выполнил `git checkout` метки и `git checkout README.md`; в раскрытии написал: «запрет git checkout в задании относится к проекту; проект не затронут — git status проекта показывает только новый файл проекта и папку handoff-ов прогона» (`step-01-code-designer.json`, I10). Проект действительно не пострадал, ORCH принял это в `orch_check` («git checkout агента — в его копии вне проекта, правило о запретах относится к проекту — принято, но в следующих заданиях запрет формулируется и для копий»).
-- Почему это плохо: запрет `git checkout/reset/stash/clean` защищает рабочее дерево от потери чужих несохранённых правок (в Sai файлы прогона не закоммичены до шага 11); граница «проект/не проект» понималась агентом по-разному; тот же приём в копии, где лежат непроверенные файлы прогона, мог бы стереть их, а прототип, собранный в такой копии, — давать неверные числа.
-- Как правильно: в задании запрет формулируется и для копий: «git checkout, reset, stash, clean запрещены везде, в том числе в копиях вне проекта; копию для прототипа делают свежим `git clone` (нужную метку — `git clone -b <метка>`) и не переключают»; агент, которому нужна другая редакция, делает новый клон, а не переключает старый; о любом отступлении пишет в `result.issues`.
-- Где найдено: `handoffs/PICKER054-20261019-01/step-01-code-designer.json` (I10, `orch_check`); `handoffs/PICKER054-20261019-01/step-10-doc-updater.json` (задание, п. 3).
-
-### AP-110 — Повтор AP-014 в тестах движка подбора: проверка повтора в списке закрыла только соседние одинаковые элементы, как и защита унаследованных свойств — только известные вопросы
-
-- Что случилось: в прогоне `PICKER055-20261019-01` критерий 2 REQ-055 называет «повтор в списке», а тесты (шаг 5) проверяли его только для соседних одинаковых элементов (`b1,b1` и `b1,b1,b9`); защита «унаследованные свойства ответами не считаются» проверялась только для унаследованного свойства, которое само является известным вопросом (`a`…`d`). TEST-DESIGN-VALIDATOR на шаге 5b построил свои мутанты сверх мутантов проекта (106 в сумме, 102 убиты): N23 (повтор ищется только против предыдущего элемента) и N35 (только против первого) выжили с 0 красных тестов из 71 — список `[b1,b2,b3,b2]` при мутанте давал `ok: true` вместо `E_ANSWER duplicate_option`; N24 (ключи ответов берутся перебором `for-in`) выжил на ответах `Object.create({ zz: 1 })` с собственными верными ключами. Вердикт 5b — FAIL (F1, F2 блокирующие, Medium), назван повтором AP-014: названное место закрыто, соседний случай того же класса — нет. Доработка 1 из 3 (шаг 5c) добавила случаи `[b1,b2,b1]`, `[b1,b2,b3,b2]`, явно построенные повторы через один элемент в свойстве PE-R1 и новый тест PE-2e на унаследованные свойства; на шаге 5d мутанты убиты (N23 и N35 — 2 красных из 74, N24 — 1 из 74).
-- Почему это плохо: тест, закрывающий только пример из текста критерия, остаётся зелёным при ошибке в том же правиле, но в другом входе: код, который ищет повтор только рядом, пропустил бы список с повтором через элемент, а такой список посетитель прислать может. Автор теста проверял то, что назвал критерий, а не класс входов правила.
-- Как правильно: для каждого правила, которое проверяет входной набор («нет повтора», «унаследованное не считается», «порядок не важен»), TEST-DESIGNER строит случаи по классу, а не по названному примеру: повтор соседний, через один элемент, с первым и с последним; унаследованное свойство и известное, и неизвестное; в проекте тестов такие классы перечислены заранее. TEST-DESIGN-VALIDATOR по-прежнему строит собственные мутанты на каждую границу правила (поиск против предыдущего, против первого, пропуск последнего).
-- Где найдено: `handoffs/PICKER055-20261019-01/step-05b-test-design-validator.json` (F1, F2, мутанты N23, N24, N35); `step-05c-test-designer.json` (доработка); `step-05d-test-design-validator.json` (закрытие F1–F4); AP-014.
-
-### AP-111 — В задании модуль назван вычислителем условий, а в нём только проверка формы: расхождение найдено проектом, а не заданием
-
-- Что случилось: задание шага 1 прогона `PICKER055-20261019-01` называло `tools/src/picker/conditions.js` условиями показа и подразумевало, что вычисление «верно ли условие при ответах» уже есть. CODE-DESIGNER сверил это с файлом и записал расхождение Ф4: в модуле одна функция `checkCondition`, она проверяет *форму* условия в файле арендатора (REQ-054), а вычислителем видимости сегодня служит только оракул тестов `visibleQuestionIds` в `tools/test/picker-helpers.js`. Движок пришлось строить со своим вычислением условий (D2 проекта), а оракул тестов оставить независимым от кода `src/`. Если бы разработчик поверил заданию, он подключил бы `conditions.js` и не получил бы значения условий, а при подключении оракула тестов сделал бы тест видимости ничего не доказывающим.
-- Почему это плохо: имя и роль модуля в задании взяты по памяти или по названию, а не по содержимому; на таком факте строится объём работы, зависимости и независимость проверки (quality-bar §6, п. 2: факт в задании проверяется до того, как на нём строить).
-- Как правильно: ORCH, называя в задании существующий модуль, сверяет его по `grep -n "^export"` и пишет, что он делает по коду (вычисляет или только проверяет форму); получатель, не найдя названного в файле, пишет расхождение в `result.issues` и работает по измеренному, как сделал CODE-DESIGNER в Ф4 (команда сверки и вывод были приложены к записи).
-- Где найдено: `docs/design/REQ-055-picker-engine.md` (Ф4, D2, п. «Q13»); `handoffs/PICKER055-20261019-01/step-01-code-designer.json`; `handoffs/PICKER055-20261019-01/step-09-release-validator.json` (Q13).
-
-### AP-112 — Требование называет новые модули и пути, не проверив охранные тесты прежних требований (повтор AP-068)
-
-- Что случилось: требования REQ-056, REQ-057, REQ-059, REQ-060 и REQ-062 были записаны с новыми каталогами, модулями и командами (сервер в `tools/src/picker/`, страница в `tools/src/picker/public/`, запись заявок, команда `new`, каталог `tools/src/picker-ai/`) и с критерием «`npm run check` — код 0», но не назвали охранные тесты прежних требований, которые от этого краснеют. Воротами 2 прогона `PICKERLANG-20261020-01` (`step-02-req-validator.json`, F2–F6) это найдено чтением тестов на текущих файлах: PK-6d (точный текст справки и «Доступна: check»), PK-6e (закрытый перечень модулей и запрет слов записи в каталоге), PK-7c (разрешённые `node:`-модули), PK-8c (запрет перечислять папку), PE-8d (перечень модулей движка), TR-4b, TR-4d, TR-4e, TR-4f (сетевые файлы, адреса, `fetch(` и адреса в `public/` — охрана критерия 4 REQ-014). Там же F1: образец `e-field-schema.json` держал значение `sai-picker-tenant/2` как неверное, и новый формат делал его верным. Прежние ворота (`PICKER-20261019-01`, шаг 2) этого не заметили. Исправлено двумя доработками автора (`step-01b`, `step-01c`) и двумя повторными воротами (`step-02b`, `step-02c`): каждое требование получило раздел «Охранные тесты прежних требований» с таблицей замен без потери запрета, для ИИ — исключение из критерия 4 REQ-014 в `decisions/0069`, п. 8.
-- Почему это плохо: охранные тесты прежних требований входят в `npm run check`; требование, которое их не называет, при постройке даёт красную проверку, и разработчик или ослабляет чужой запрет, или останавливается посреди прогона — а правка чужого требования и запись решения задним числом нарушают Q12. Тот же класс, что AP-068, повторён на более широкой поверхности: одно требование за другим пишет «закрытый перечень» нового, не сверив его с перечнями прежних.
-- Как правильно: REQ-ANALYST, называя в требовании новый модуль, каталог, команду, сетевой адрес или запись на диск, до записи ищет охранные тесты, которые это считают (`grep` по `tools/test/` слов `readdir`, `node:`, `fetch(`, `://`, перечней модулей, точных текстов справки), и вносит в требование раздел «Охранные тесты прежних требований»: какой тест, чем краснеет, как изменяется без потери запрета (таблица замен, как в `0061`). REQ-VALIDATOR в пункте (б) повторяет этот поиск сам, а не доверяет перечню автора. Когда требование несовместимо с записанным правилом (внешний сервис против критерия 4 REQ-014), исключение записывается решением до стройки (`0069`, п. 8).
-- Где найдено: `handoffs/PICKERLANG-20261020-01/step-02-req-validator.json` (F1–F6); `step-02b-req-validator.json` и `step-02c-req-validator.json` (закрытие); `decisions/0069`; повтор AP-068.
-
-### AP-113 — Описание требования назвало перечень модулей там, где его нет (PK-7a, PK-8c), а охранные тесты закрытыми перечнями (PK-6e, PE-8d) пришлось править таблицей замен (продолжение AP-112)
-
-- Что случилось: в описании REQ-061 стояла фраза «охранные тесты закрытых перечней и запретов (PK-6e, PK-7a, PK-7c, PK-8c, PE-8b и PE-8d) получают новые модули в свой перечень». CODE-DESIGNER прогона `LANG061-20261020-01` проверил это чтением тестов и записал расхождение Ф7: перечни есть у PK-6e (список файлов каталога равен `ALL_MODULES`), PK-7c (`CORE_MODULES.length`) и PE-8d (`ALL_MODULES.length`), а PK-7a и PK-8c перечня не имеют — сами перебирают каталог (`pickerSources()`, только верхний уровень). CODE-DESIGNER и CODE-DESIGN-VALIDATOR подтвердили это (`step-01-code-designer.json`, `step-01c-code-design-validator.json`, Ф7); решение `0070`, О7, велело поправить текст требования при учёте. Пока таблицы замен не было, прежние тесты краснели: на коде после шага 3 красных ровно пять — PK-1b, PK-1c, PK-2a, PK-6e, PE-8d (`step-04b-reviewer.json`, `step-05-code-fixer.json`, I1); после 15 строк таблицы замен все 98 тестов `picker-*` зелёные (ревью, шаг 4b). Фраза требования в учёте исправлена на шаге 12 (копия «до» — `step-12-doc-updater.json`, `result.before_copy`).
-- Почему это плохо: AP-112 требовал, чтобы требование называло охранные тесты прежних требований после чтения тестов, а не по памяти. Здесь перечень был назван по названиям тестов, без чтения: два теста из шести оказались не перечнями. Задание, которое называет тесты, не проверив их, отправляет разработчика искать перечень, которого нет, а проект исправляет требование задним числом, и в этом прогоне расхождение нашёл проект, а не задание (то же, что AP-111).
-- Как правильно: когда требование называет охранные тесты, REQ-ANALYST для каждого записывает, что именно тест считает и где (`grep -n` по `tools/test/` с номером строки и выводом) — «закрытый перечень» (список или число) или «перебирает каталог сам»; REQ-VALIDATOR в пункте (б) повторяет это чтение для каждого названного теста, а не только для первого. В таблице замен остаются только тесты, которые на самом деле краснеют; тесты без перечня записываются как «правок нет, действуют на новые модули» (так сделано в проекте REQ-061, п. 11).
-- Где найдено: `handoffs/LANG061-20261020-01/step-01-code-designer.json` и `step-01c-code-design-validator.json` (Ф7); `step-04b-reviewer.json` (красные тесты до таблицы замен); `decisions/0070` (О7); `docs/design/REQ-061-picker-languages.md` (Ф7, п. 11); продолжение AP-112.
-- Повтор 2026-10-21 (`PICKERCARD-20261021-01`, WF-01): REQ-065 снова назвал охранные тесты выпущенного REQ-056 неполным перечнем — назвал только PK-6e, PK-7a, PK-7c, PK-8c, PE-8d, TR-4d, а тесты, которые считают маршруты и устройство `server.js` (SU-2, SV-3a, SV-3e, SV-4e и другие, всего девять), не назвал; воротами 2 найдено чтением тестов (P1, High, `handoffs/PICKERCARD-20261021-01/step-02-req-validator.json`), закрыто абзацем «Охранные тесты REQ-056 для новых маршрутов» со строками «было → стало» и сверкой по коду (`step-01b-req-analyst.json`, `step-02b-req-validator.json`); новой записи не заведено, правило то же.
-
-### AP-114 — Читатели перевода не носители языка расходятся между собой: итоговое «да» агентов не доказывает, что спорные строки верны, а третий круг споров не разрешает
-
-- Что случилось: смысл переводов kk и en проверяли агенты-читатели в три круга (критерий 8 REQ-061). Круг 1: «нет» у 21 пары kk и 12 пар en; круг 2: у 5 и 2; круг 3: у 0 и 0; итоговое «да» у 297 из 297 пар на обоих языках (`step-10-ba-analyst.json`, `step-09-backend-dev.json`, `step-09b-backend-dev.json`). Но читатели казахского — не носители, и их правки расходились между кругами и между запусками: в kk 139 первый читатель назвал «бос бюджет» двусмысленным и просил «еркін», второй предложил «бос бюджет», в тексте стоит третий вариант «Бос қаражат» (слово «бюджет» в остальных девяти текстах не менялось); в kk 105 читатель предлагал «сәйкессіздіксіз», второй назвал его тяжёлым, оставлено «алшақтықсыз»; kk 141 («сауда» добавлено), 121 (порядок слов, дословно у читателя) и 160 (в круге 1 смысл был обратный) — тоже слова читателя, не носителя. Круг 3 принял эти строки, но «да» агента-читателя не значит, что казахский безупречен: RELEASE-VALIDATOR признал критерий 8 выполненным только в части агента-читателя и оставил пять строк знающему казахский человеку (`step-11-release-validator.json`, К8).
-- Почему это плохо: третий читатель той же природы не разрешает спор двух предыдущих — он выбирает между вариантами, не зная, какой верен; цифра «297 из 297» выглядит как полная проверка, хотя на спорных строках это согласие трёх незнающих.
-- Как правильно: если после двух кругов у строки правки расходятся (читатели предлагают разные слова или один отвергает слово другого), строка не отдаётся третьему читателю, а помечается «для носителя» в `result.issues` (вид `FOR_NATIVE_SPEAKER`) и вместе с вариантами идёт владельцу или знающему человеку до публикации; число «да» агентов пишется отдельно от числа строк, ожидающих носителя; критерий записывается выполненным только в части агента-читателя (как в `decisions/0069`, п. 6, и записи REQ-061).
-- Где найдено: `handoffs/LANG061-20261020-01/step-10-ba-analyst.json` (I1, I2), `step-09b-backend-dev.json` (I1), `step-11-release-validator.json` (К8); `decisions/0069`, п. 6.
-
-### AP-115 — Порог по размеру буфера сокета в тесте устойчивости (SF-6b) краснел примерно в 7 % прогонов: тест зависел от обстановки, а не от кода
-
-- Что случилось: тест SF-6b файла `picker-server-faults.test.js` проверял, что сервер перестаёт принимать тело запроса: клиент шлёт поток 40 МиБ, и к моменту, когда сервер закрыл соединение, клиент мог записать не больше 12 МиБ (`assert.ok(forty.written < 12 * 1024 * 1024)`). TEST-DESIGN-VALIDATOR прогона `SERVER056-20261020-01` запустил четвёрку файлов сервера подряд 44 раза: красных 3, в двух пойманных — SF-6b с сообщениями `written 13107200` и `written 12582912` (последнее — ровно 12 МиБ). Тест без изменений кода краснел потому, что буферы сокетов loopback с обеих сторон вместе давали 12–13 МиБ, а запас в 4 МиБ был меньше их разброса. Весь `npm run check` и один SF-6b отдельно (0 из 30) при этом были зелёными. Исправлено доработкой 1 (`step-05c`): проверяется `serverClosed` и `written < 30 МиБ` (сервер, читающий всё, принял бы 40 МиБ, мутанты M14–M16 остаются красными), лишняя проверка времени убрана; серия устойчивости после правки — 62 прогона подряд без красных, SF-6b отдельно ×40 при двух параллельных `npm test` — 0 из 40.
-- Почему это плохо: порог, выбранный по единичным измерениям на тихой машине, проверяет размер буфера операционной системы, а не поведение сервера. Такой тест краснеет редко и без связи с работой, его списывают на «нестабильный» (ISS-0075 уже собрал три таких теста), а настоящая ошибка сервера прячется среди ложных красных. Единичный зелёный прогон обстановкой не проверяется (quality-bar §6, п. 1).
-- Как правильно: когда тест сверяет число, которое задаёт система (размер буфера, время, порядок событий), порог берётся с запасом в разы, а не на глаз, и ловит качественную разницу (поток не остановлен вовсе: принято почти всё), а не ту, что лежит внутри разброса буферов. TEST-DESIGN-VALIDATOR на шаге 5b запускает файлы теста серией подряд (десятки раз) и при нагрузке, а не одним запуском; красный в серии — находка, даже если `npm run check` зелёный. Числа по часам стены (меньше 1500 мс) в тестах устойчивости не используются.
-- Где найдено: `handoffs/SERVER056-20261020-01/step-05b-test-design-validator.json` (F1), `step-05c-test-designer.json` (доработка), `step-05d-test-design-validator.json` (закрытие, серия 62 прогона); связано с ISS-0075.
-
-### AP-116 — Тест, который при красной проверке не завершается: исключение в проверке не давало закрыть запущенный сервер, и файл тестов висел
-
-- Что случилось: тесты отказа SV-1c2, SV-1g и SF-6f проверяли, что `startPicker` при неверном параметре не запускает сервер. Если сервер по ошибке запускался (мутанты M96 и M75), красная проверка бросала исключение до закрытия этого сервера, и процесс `node --test` не завершался: прогон повисал вместо того, чтобы закончиться красным. TEST-DESIGN-VALIDATOR (`step-05b`, F3, Low) нашёл это мутантами; при M75 файл не завершался после красных SV-1b, SV-1c2, SV-1g и SV-1h. Исправлено доработкой 1 (`step-05c`): помощник `startPickerClosing(t, …)` закрывает сервер в `t.after`, если он всё же запустился; им заменены все вызовы `startPicker` в тестах отказа. После правки M96 и M75 красные, файлы завершаются за 29–30 с (`step-05d`, 59 мутантов без единого зависания).
-- Почему это плохо: красная проверка, после которой прогон не завершается, не отличить от зависания среды; `npm run check` стоит часами, ORCH или агент убивает процесс, и красный тест остаётся без сообщения. Тест, у которого освобождение ресурса идёт после проверки, при красном проверке его не освобождает.
-- Как правильно: ресурс, который тест открывает (сервер, сокет, таймер, процесс), закрывается через `t.after` сразу после открытия, а не в конце тела теста после проверок. Для тестов отказа это особенно важно: именно они запускают сервер там, где его запускать не должны. TEST-DESIGN-VALIDATOR для тестов отказа проверяет мутантом «отказ не срабатывает» не только что тест краснеет, но и что файл тестов после этого завершается.
-- Где найдено: `handoffs/SERVER056-20261020-01/step-05b-test-design-validator.json` (F3), `step-05c-test-designer.json`, `step-05d-test-design-validator.json` (закрытие).
-
-### AP-117 — В задании приёмки ожидание «в консоли браузера нет ошибок» стояло шире критерия: вышел провал сценария, которого нет в критерии
-
-- Что случилось: критерий 5 REQ-056, часть 1, требовал: страница открывается (200), показывает заглушку, текст виден на выбранном языке, снимок на каждый язык. В задание UAT-RUNNER (`step-08`) ORCH добавил сценарий 3 «в консоли браузера нет ошибок и предупреждений». На сервере с закрытым списком маршрутов свежий Chrome сам просит `/favicon.ico`, получает 404 и пишет в консоль строку `error` — 18 загрузок из 18 (Ф1, Low). Сценарий «не прошёл», хотя критерий выполнен; RELEASE-VALIDATOR воспроизвёл ту же строку сам (4 из 4) и разобрал, что критерий Ф1 не блокирует (`step-09`, F1, I1). Решение — в ISS-0081, п. 5, и в условиях проекта REQ-057.
-- Почему это плохо: сценарий, которого нет в критерии, превращает правильную находку в «провал приёмки», а выпуск ждёт решения, что считать ошибкой. Хуже того, ожидание проверяется после стройки, когда править заглушку уже поздно, а решение (объявить значок или записать исключение) принадлежит проекту.
-- Как правильно: ожидания сценария берутся из критерия дословно. Если ORCH или BA-ANALYST хочет проверить больше (консоль, скорость, контраст), это записывается в критерий заранее, через WF-01, или помечается в сценарии как «замечание, не провал». Для страницы с браузером в проекте сразу решается про запрос значка (объявить или записать исключение), как про любой запрос, который браузер делает сам.
-- Где найдено: `handoffs/SERVER056-20261020-01/step-08-uat-runner.json` (сценарий 3, Ф1), `step-09-release-validator.json` (F1, I1, I4а), `docs/uat/REQ-056-RUN.md`; ISS-0081, ISS-0077 (обновление 2026-10-21).
-
-### AP-118 — Таблица переводов в проекте разошлась с кодом после правок по читателям: проект отстал, а тесты по таблице покраснели бы (продолжение AP-114)
-
-- Что случилось: в проекте REQ-056 (п. 5.4) стояла таблица 12 текстов сервера, а kk и en в ней названы предложением, которое проверят читатели. Читатели (шаг 2c) предложили правки, ORCH принял их, и в `texts.js` попали отличающиеся значения: восемь значений в шести ключах (`server_forbidden`, `server_method`, `server_wrong_type`, `server_slow`, `server_answers_invalid`, `page_stub_notice`); я сверил таблицу с файлом программой. REVIEWER заметил расхождение на шаге 3b (F5), RELEASE-VALIDATOR подтвердил на шаге 9 (F5). Проект по таблице — это опора TEST-DESIGNER: взявший строки из таблицы получил бы красные тесты на тексты; ORCH сказал ему, что действует `texts.js`.
-- Почему это плохо: таблица текстов в проекте и файл текстов — две копии одного (AP-014); у перевода, который правят читатели, источник истины сразу меняется. Проект остаётся документом, по которому делают тесты и README, и его устаревшая строка превращается в ложный оракул.
-- Как правильно: в проекте таблица текстов, которые будут править читатели, помечена «исходная редакция; источник истины — `texts.js`», и при каждой правке по читателям (шаг, на котором ORCH принимает её) ORCH или CODE-DESIGNER дописывают это в проект или сообщают TEST-DESIGNER'у явно. Тесты берут тексты из `texts.js`, а не из таблицы проекта. DOC-UPDATER на шаге 10 сверяет таблицу проекта с файлом программой и пишет в проекте, сколько значений в скольких ключах разошлось (здесь добавлена пометка после стройки в п. 5.4).
-- Где найдено: `handoffs/SERVER056-20261020-01/step-03b-reviewer.json` (F5, I1), `step-09-release-validator.json` (F5, I4б), `docs/design/REQ-056-picker-server.md`, п. 5.4; продолжение AP-114.
-
-### AP-119 — Проба проверяющего остановила процесс по шаблону имени и задела собственный сервер: 10-минутная проверка устойчивости оборвалась по вине пробы
-
-- Что случилось: RELEASE-VALIDATOR прогона `SERVER056-20261020-01` (шаг 9) запустил 10-минутную проверку устойчивости сервера и в ходе неё убил процесс командой по шаблону имени; шаблон подошёл и к самому проверяемому серверу, и прогон оборвался. Это не отказ сервера; проверку повторили целиком, она прошла (8650 запросов, память 58 → 62 МБ, процесс жив). Отмечено в `step-09`, I4в, и в разделе об устойчивости.
-- Почему это плохо: остановка по шаблону имени (`pkill -f`, `killall`) зависит от того, что ещё запущено на компьютере с тем же названием команды: она может убить чужой процесс (в том числе Pixel Office или сервер другого агента) или проверяемый сервер вместо лишнего. Оборванная долгая проверка стоит минут, а красный вид прогона похож на отказ сервера.
-- Как правильно: процесс, запущенный пробой, останавливают по его собственному идентификатору (`$!` при запуске в фоне, затем `kill "$PID"`), а перед остановкой сверяют, что идентификатор тот. Сервер для пробы запускают на порту 0 и проверяют, что в списке слушающих сокетов только он. Если шаблон всё же нужен, в него входит уникальный путь папки данных пробы, чтобы он подходил только к ней.
-- Где найдено: `handoffs/SERVER056-20261020-01/step-09-release-validator.json` (раздел об устойчивости, I4в).
-
-### AP-120 — Запрет слов подстроками без границ идентификатора даёт ложные срабатывания на обычном коде: `rm(` внутри `setTransform(`
-
-- Что случилось: в REQ-067 критерий 1 запрещал в коде заказчицкой части слова `exec`, `eval(`, `rm(`, `fork` и другие «как подстроки», критерий 6 искал `skip|todo|only`, критерий 4 — подстроку `step-`. Воротами 2 прогона `PICKERCARD-20261021-01` (P2, Medium) это проверено на настоящем коде: офис владельца рисует через `ctx.setTransform(` (`tools/src/pixel-office/public/office-view.js:429`), а `rm(` — подстрока `setTransform(`; страница в стиле офиса повторит этот приём и покраснеет по критерию 1. Так же `eval(` внутри `retrieval(`, `exec` внутри `execCommand`, `fork` внутри `forkJoin`, `only` и `skipped` в тексте теста, `step-` в имени CSS-класса `step-list`. Исправлено доработкой автора (`step-01b-req-analyst.json`): правило сравнения по границам идентификатора (слева и справа нет буквы, цифры, `_`, `$`; перечень A — слова целиком везде, перечень B — имя с открывающей скобкой, `new Function`), точные формы пропуска теста (`.skip(`, `.only(`, `.todo(`), `step-` сужено до имён файлов шагов. Повторные ворота проверили правило сами: 12 нарушений из 12 пойманы, 10 допустимых строк (`setTransform(`, `retrieval(`, `execCommand(` и другие) не тронуты, на настоящих файлах срабатываний нет (`step-02b-req-validator.json`).
-- Почему это плохо: поиск по подстроке красит обычный код, и строитель либо гадает, как сравнивать, либо смягчает проверку (Q6), либо переименовывает чужие вызовы ради теста. Слабое звено не сам запрет, а то, что способ сравнения не назван: «слово как подстрока» и «слово целиком» дают разные результаты на одном файле, и требование без выбора невозможно проверить.
-- Как правильно: требование, которое запрещает слова в коде, называет способ сравнения (целый идентификатор или вызов, границы), что считается нарушением в комментарии и в строке, и точные формы вместо общих корней (`.skip(`, а не `skip`). REQ-ANALYST до записи проверяет правило на настоящем коде, в который оно будет смотреть, — на ложных срабатываниях (`setTransform(`, `retrieval(`) и на искусственных нарушениях; REQ-VALIDATOR в пункте (а) повторяет это сам, как сделал при воротах 2.
-- Где найдено: `handoffs/PICKERCARD-20261021-01/step-02-req-validator.json` (P2); `step-01b-req-analyst.json` (правило и проверка); `step-02b-req-validator.json` (закрытие); `docs/requirements.yaml`, REQ-067, критерии 1, 4, 6.
-
-### AP-121 — Вывод нестабильного красного не сохранён: причину пришлось восстанавливать по журналу ОС, а доказать её нельзя
-
-- Что случилось: в воротах 1g прогона `SERVER056-20261020-01` первый полный `npm run check` покраснел одним тестом EX-42; повторный запуск был зелёным, и красное записали как «не из-за работы». Полный вывод того падения и его точное время в handoff не попали. Диагноз ISS-0075 (`step-01-issue-fixer.json`, п. 3 и I12) потом 368 раз запускал тот же файл на неизменённом коде и ни разу не получил красного; механизм (шаг стенных часов назад и строгая проверка времени ENGINE) воспроизвели только эмуляцией, а что именно он был причиной того единственного красного — осталось совпадением по времени с журналом ОС и **не доказано**. Закрытие ISS-0075 (RELEASE-VALIDATOR, `step-05`, I1) пришлось ограничить: про EX-42 нельзя писать, что причина доказана или тест исправлен.
-- Почему это плохо: свидетельство «чьё падение» по quality-bar §6, п. 4 требует повтора с тем же сообщением; без сохранённого вывода повторять нечего сравнивать, а красный, не связанный с работой «по слову», выглядит так же, как красный, связанный с ней. Дефект остаётся с неподтверждённой причиной, а следующий агент снова решает, перезапускать ему или расследовать.
-- Как правильно: при первом красном, который агент относит не к работе, в `result.issues` своего handoff-а сохраняются полный вывод упавшего теста (имя, сообщение, стек), точное время падения с часов (`date -u +%Y-%m-%dT%H:%M:%SZ`), номер запуска и что шло параллельно (другие прогоны, нагрузка); к ним — повтор без работы по §6, п. 4. Если вывод не сохранён, об этом пишется прямо, а причина остаётся «не установлена».
-- Где найдено: `handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json` (п. 3, I7, I12), `step-05-release-validator.json` (I1, п. 5); `docs/issues/ISS-0065-team-channel-tests-real-clock-e-time.md` (обновление 2026-10-21).
-
-### AP-122 — Среда теста не защищена от фоновых действий инструмента, версия которого обновилась на CI позже, чем писались тесты: git 2.55 и новее держал замок в проверяемом дереве
-
-- Что случилось: тест HC-6a (`tools/test/handoffs-base.test.js`) хеширует всё дерево личного временного репозитория, `.git` включительно, до и после команды и требует, чтобы хеш не менялся. Git версии 2.55 и новее (она стоит на `ubuntu-24.04` в GitHub Actions) после `git commit` запускает фоновую уборку (`git maintenance run --auto --detach`), которая берёт `.git/objects/maintenance.lock`; хеш «до» видел замок, «после» — нет. Два запуска `check.yml` на GitHub покраснели одним и тем же тестом на одной строке, перезапуск решал (ISS-0075). Описание дефекта прежде называло причиной «медленную машину GitHub» — это была догадка без воспроизведения. Воспроизведено только с git 2.55.0 (замок виден в 74 из 100 коммитов; у 2.50.1 — в 0 из 100), на локальном системном git красного не было вовсе.
-- Почему это плохо: тест проходил на всех машинах, где git старше, и краснел на раннере с более новым; песочница теста не создавала условий, при которых окружающий инструмент ничего не делает «сам». Версия git в `check.yml` не закреплена (ISS-0084, п. 5), поэтому такое повторится при следующем обновлении образа. Исправлять хеш («исключить замок») нельзя — проверка «команда дерево не меняет» ослабла бы (Q6).
-- Как правильно: песочница теста отключает для всех процессов теста и проверяемой команды автоматические фоновые действия инструментов, которые пишут в проверяемое дерево (здесь `GIT_CONFIG_COUNT=2`, `maintenance.auto=false`, `gc.auto=0` в `sandbox()`), а тест окружения проверяет сами ключи (FR-4, FR-5), не завися от версии git на машине. Причину нестабильного красного на CI воспроизводят в тех условиях, где он краснеет (та же версия инструмента), а не называют по догадке.
-- Где найдено: `handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json` (п. 2, I3, I7, I9, I12), `step-05-release-validator.json` (п. 2), `decisions/0075-flaky-tests-en62-hc6a.md`, `docs/issues/ISS-0075-team-channel-en62-flaky-inbox-race.md`.
-
-### AP-123 — Критерий назвал файл теста, которого нет: проект планировал файл, задание его не назвало, тесты легли в другой файл, и способ проверки нельзя выполнить буквально
-
-- Что случилось: критерий 9 REQ-068 говорит: «Тест-свойство `tools/test/picker-text-property.test.js` с закреплённым зерном…». Проект (`docs/design/REQ-068-picker-text-charset.md`, п. 3, D9) тоже планировал такой файл, но в `write_set` шага 5 задания TEST-DESIGNER его не было, и тесты-свойства TP-9a…c легли в уже названный файл `tools/test/picker-text.test.js`; TEST-DESIGNER записал это в `result.issues` (`handoffs/TEXT068-20261021-01/step-05-test-designer.json`, INFO). Расхождение нашли дважды: TEST-DESIGN-VALIDATOR (`step-05b-test-design-validator.json`, F1, Low) и RELEASE-VALIDATOR (`step-07-release-validator.json`, F1, Low: «ls: no matches»; содержание критерия выполнено, названный способ проверки буквально выполнить нельзя). Исправлено на шаге 8 правкой имени в критерии (`picker-text.test.js`, тесты TP-9a…c; смысл критерия не менялся; копия «до» — `handoffs/TEXT068-20261021-01/step-08-doc-updater.json`, `result.before_copy`).
-- Почему это плохо: аудит WF-05 по измерению «Требования» выполняет способ проверки каждого критерия буквально; файла нет — находка High при выполненном по сути критерии. Ворота требования и проекта прошли, не открыв названный файл: имя файла в критерии, проекте и задании жило тремя независимыми записями, и никто не сверил их друг с другом. Пункт Q1 («у каждого критерия назван способ проверки») не выполнен, пока названное нельзя запустить.
-- Как правильно: (1) REQ-ANALYST называет в критерии файл теста только после того, как файл есть, или записывает «новый файл `…` создаётся этой работой», а ORCH включает такой файл в `write_set` TEST-DESIGNER; (2) CODE-DESIGNER, называя файл теста в таблице «критерий → тест», сверяет имя с критерием, а ORCH — `write_set` с таблицей проекта; (3) если TEST-DESIGNER кладёт тест в другой файл, он сразу пишет `result.issues` вида `DISCREPANCY` с именем из критерия, чтобы расхождение исправила микроправка WF-01 до шага 7, а не RELEASE-VALIDATOR на последних воротах; (4) TEST-DESIGN-VALIDATOR и RELEASE-VALIDATOR для каждого критерия запускают `ls` по названному файлу (как в `step-07`).
-- Где найдено: `handoffs/TEXT068-20261021-01/step-05-test-designer.json`, `step-05b-test-design-validator.json` (F1), `step-07-release-validator.json` (F1); `docs/requirements.yaml`, REQ-068, критерий 9; `docs/design/REQ-068-picker-text-charset.md`, п. 3 (D9).
-
+### AP-076 — A design with external actions relied on unchecked facts about the environment: four returns from the gate and the exception 0046 (adds to AP-012, AP-074)
+
+- Что случилось: the design REQ-030 (`docs/design/REQ-030-github-check.md`) was returned four times
+  from the gate of step 1b (findings F1…F7; `step-01b-code-design-validator.json`, `-r1`, `-r2`,
+  `-r3`; accepted in `-r4`), and the limit of reworks was exceeded on the owner's word
+  (`decisions/0046`). The first version relied on facts that nobody had checked by a run: (1) the
+  prototype of the hook `if ! npm run check; then echo "код $?"` loses the exit code — in the branch
+  `$?` is 0 (F1); (2) the step "red branch" took a clone of the Sai root, whose `origin` is a local
+  folder and not GitHub: the push and the "deletion of the branch" would have gone into the Sai
+  repository itself, and the check of the deletion would have given a false confirmation (F2); (3)
+  the statement "the repository is private" was out of date — it became public between the
+  measurement and the repeated gates (F1 in `-r1`); (4) the form of the start `node --test test/`
+  is false on Node 22 (code 1 even on a green test, F7); (5) a nested start inside a running
+  `node --test` inherits `NODE_TEST_CONTEXT`, and a red test "passes" with code 0 (F7).
+- Почему это плохо: every unchecked statement about the external environment is a round of the gate
+  (Q3, §6 item 2); some facts (the visibility of the repository) change by themselves, and a
+  measurement that is not dated and not repeated before the gate gets out of date; a design with
+  external actions (push, deleting a branch) without a prototype can write into the real repository
+  to the wrong place.
+- Как правильно: CODE-DESIGNER checks every statement about the external environment by a run
+  and puts the date of the measurement — the visibility of the repository, the rights of the token
+  and the Actions settings (read only), the exact form of the start commands, the inheritance of the
+  environment by nested starts; a design with external actions passes a prototype on a local
+  "remote" (a bare repository outside the project) before the gate; before sending to the gate ORCH
+  requires in the design a section "what was checked by a run and when".
+- Где найдено: `handoffs/REQ030-20261012-01/step-01b-code-design-validator.json`, `-r1`, `-r2`,
+  `-r3`, `-r4`; `decisions/0046-req030-rework-limit-exceeded.md`.
+
+### AP-077 — The text of a document and the tests for this text were written separately: the design required writing a word that the test forbade
+
+- Что случилось: in the first version of the design REQ-030 the line R-3 told to write in the README
+  "this decision is based on the fact that the repository is private" (приватный), while the test RD-4
+  forbade the word «приватн» in the section (F6, `step-01b-code-design-validator-r2.json`). A
+  developer who followed R-3 literally would have got a red RD-4; one who followed RD-4 would have
+  departed from R-3. Small differences of the same kind: «Защиты ветки нет» with a capital against a
+  search for `защиты ветки нет` in lower case (N3), the README section stood in different places in
+  the measurement and in the design (F5).
+- Почему это плохо: the rules of the text and the check of the text contradict each other, and the
+  developer has to guess; this was found only by an independent run.
+- Как правильно: the text of a document that tests check is run by CODE-DESIGNER through the
+  script of the tests already in the design; CODE-DESIGN-VALIDATOR writes the section strictly by the
+  rules of the design and runs the script on it (in `-r3` this closed F6 by a run).
+- Где найдено: `handoffs/REQ030-20261012-01/step-01b-code-design-validator-r2.json` (F6, N3),
+  `step-01b-code-design-validator-r1.json` (F5), `step-01b-code-design-validator-r3.json` (F6
+  closed).
+
+### AP-078 — A stand-in process in tests did not read its input, and the tests never ran on the target platform: the race was lost only on GitHub (adds to AP-012, AP-076)
+
+- Что случилось: the test `GH-6` (`tools/test/handoffs-git.test.js`, REQ-038) puts in place of git a
+  script that answers and exits with code 0 without reading standard input. The code `readBlobs`
+  writes git's requests to this input; if the stand-in process exited before the write, `execFileSync`
+  gives `EPIPE` with status 0, and `gitFailure` wrote «git не смог выполнить команду (код 0)» ("git
+  could not run the command (code 0)") instead of the expected «вывод git не разобран» ("the output of
+  git was not parsed"). On macOS the write always managed to finish, the tests ran only there; on the
+  Linux runner of GitHub the race was lost (the first run of `check.yml`: 1475 of 1476, case 2 of
+  GH-6 failed, line 243) — residual risk 6 of the design REQ-030 ("the tests never ran on Linux")
+  came true in the very first run. Besides, the description of the defect named a wrong cause and a
+  wrong failed test: the first version of `ISS-0053` stated that `isShallow` with `printf '\377\376'`
+  failed and the difference of shells (dash and bash) was to blame — the reproduction refuted this
+  (the shells give the same bytes; `readBlobs` failed). The same class of race stands in `HK-12b` and
+  `HK-31` (a write into the input of `hook.sh` without an error handler) — ISS-0055.
+- Почему это плохо: a red check on a clean machine (Q4) is learned only after the push, and fitting to a
+  wrong cause (dash, `printf`) would have taken the work and fixed nothing (Q3); a branch of failure
+  text written for the error code of one platform may not work on another.
+- Как правильно: (1) a stand-in process reads its input before it answers (in a test without
+  external commands — with a built-in shell command, for example `while read -r _; do :; done;`); (2)
+  a test for "the process does not read the input" takes an input surely larger than the buffer (with
+  a margin by the socket of the target platform, not by a measurement on its own machine), so that the
+  outcome does not depend on the race; (3) a branch by the exit status and not by the error code of a
+  platform measured on one platform (decision 0047), with an explicit list of what is measured and
+  what is not; (4) a fact in a defect file is checked by a reproduction before writing (AP-012): "the
+  check X failed, the cause is Y" — only with a run; (5) while there is no Linux, the confirmation is
+  only a run of `check.yml` on GitHub, and the defect is not closed without it.
+- Где найдено: `handoffs/ISS-0053-20261013-01/step-01-issue-fixer.json` (diagnosis),
+  `step-03-code-designer.json` (I2, I3, I7), `step-09-release-validator.json` (F1, R1…R6);
+  `decisions/0047-iss0053-git-exit-zero-with-failed-input.md`;
+  `docs/issues/ISS-0053-gh6-fails-on-linux.md`.
+
+### AP-079 — A test froze into a document words about an external setting (branch protection on GitHub), and the fact changed: the document cannot be corrected without changing the criterion and the tests (adds to AP-076, AP-077)
+
+- Что случилось: criterion 5 of REQ-030 and the README tests `RD-2` and `RD-4`
+  (`tools/test/repo.test.js`) require that the README section "Check on GitHub and before a push"
+  contains the words "there is no branch protection" and does not contain "branch is protected",
+  "protection is turned on", "required check", "private", "public", "403" (before the translation of
+  the README into English, run TRANSL-20261025-01, the words were «защиты ветки нет», «ветка защищена»,
+  «защита включена», «обязательная проверка», «приватн», «публичн»). This was true at the time of the design. On 2026-10-13 the owner said that he had
+  opened the repository on purpose (`decisions/0048`), and ORCH turned on the protection of `main` on
+  GitHub. Now the README section says something untrue ("On GitHub there is no branch protection"),
+  but it cannot be corrected: the tests `RD-2` and `RD-4` will turn red, and criterion 5 requires
+  exactly these words. The truth had to be written in other places (the description of REQ-030, lines
+  of the README outside the section, `STATE.md`), and the false section had to be left and raised as a
+  separate defect (ISS-0057).
+- Почему это плохо: the setting of an external system (GitHub) changes independently of the code, and a
+  test and a criterion froze the description of its state of today. The document cannot follow the
+  fact without editing the criterion and the tests, while Q3 and Q14 require the document to say the
+  truth. The same class as AP-076 (unchecked facts about the environment in a design), but the other
+  way round: the fact was not wrong from the start, it got out of date.
+- Как правильно: (1) a criterion that checks a text about the state of an external system does
+  not freeze words about the state itself (on or off, private or public): it checks a reference to the
+  decision or file where the state is recorded, and that the text does not contradict it; (2) words
+  about the state of an external system live in one place (a decision or `STATE.md`) with the date of
+  checking, and the README refers to it; (3) when the fact changes, the correction of the criterion
+  and the tests goes as a separate work at once, and does not stay open.
+- Где найдено: `docs/requirements.yaml` (REQ-030, criterion 5, the description);
+  `tools/test/repo.test.js` (`README_WORDS`, `README_BANNED`, `RD-2`, `RD-4`); `README.md` (the
+  section "Check on GitHub and before a push"); `decisions/0048-owner-delegates-open-points-repo-public.md`;
+  `docs/issues/ISS-0049-docs-call-repo-private-but-public.md` (the section «Закрыто», "Closed");
+  `docs/issues/ISS-0057-readme-says-no-branch-protection.md`;
+  `handoffs/REQ030-20261012-01/step-13-doc-updater.json`.
+
+### AP-080 — A requirement became `done`, and the marks of dependent requirements "the dependency is still `in_progress`" stayed and said something untrue for two days (adds to AP-005)
+
+- Что случилось: REQ-002 became `done` on 2026-10-11 (run `ISS-0002-20261011-01`). In
+  `docs/requirements.yaml` in the blocks REQ-009, REQ-010, REQ-013 the comments stayed "REQ-002 is
+  still `in_progress`, `done` is impossible (the header of the file)" and "REQ-002 (now
+  `in_progress`)"; in REQ-011, REQ-035 — "the dependency REQ-013/REQ-002 `in_progress`". The status
+  marks were true on the day of writing, but when the status of the dependency changed, nobody went
+  through the blocks that refer to it. Only RELEASE-VALIDATOR of the run `REAL-20261013-01` noticed
+  (finding F4), and only because it read the blocks before `done`.
+- Почему это плохо: a mark with the words "now", "still", "for now" lives longer than the fact; the next
+  performer takes it for the current state (Q14, AP-005), and for a block whose status did not change
+  no step will correct it, because by the rule bookkeeping touches only the block of its own
+  requirement.
+- Как правильно: (1) in marks write the state with a date ("`in_progress` on 2026-10-09"), not
+  "now"; (2) when a requirement status changes, DOC-UPDATER looks for its id in the comments of other
+  blocks (`grep -n 'REQ-NNN.*in_progress' docs/requirements.yaml`) and corrects the marks that speak
+  of its former status — these are comments, criteria are not edited; (3) if for this the block is not
+  in the `write_set`, the difference goes into `result.issues` and does not stay silent.
+- Где найдено: `handoffs/REAL-20261013-01/step-09-release-validator.json` (F4);
+  `docs/requirements.yaml` (blocks REQ-009, REQ-010, REQ-013, REQ-011, REQ-014, REQ-035);
+  `handoffs/REAL-20261013-01/step-10-doc-updater.json`.
+
+### AP-081 — An acceptance criterion tied the evidence to a command and to a number that "the owner will name", and life gave a different path (adds to AP-066, AP-071)
+
+- Что случилось: criterion 14 of REQ-010 required "one real `npm run team -- run-task`" with a ceiling
+  "that the owner will name", and criterion 13 of REQ-013 — "`start`" with the same ceiling. The real
+  run of 2026-10-13 went with the command `start` (the engine calls the same `runTask`), and the
+  number of the ceiling (3 USD) was named by ORCH on the owner's order (`decisions/0048`), because the
+  owner answered "decide yourself". By the letter the criterion was not met in either place;
+  RELEASE-VALIDATOR had to reason separately whether this was enough and to record three reservations
+  (the form of consent, `run-task`, `ISS-0031`).
+- Почему это плохо: a criterion that names one command and one person is formally not met in an honest
+  but different organisation of the work, and the decision about `done` rests on the interpretation of
+  the checker (Q3, AP-066). The border of the evidence (what is not checked on a real model) is then
+  badly recorded by itself.
+- Как правильно: (1) a UAT criterion describes an observable result ("the task of the role
+  Researcher reached a result, the spend is not more than the ceiling, the journal and files are
+  attached") and names the command as an example of checking, not as a condition; (2) who names the
+  number — "the owner or the one he has told to do it, with a record in `decisions/`" (WF-01); (3)
+  every "not checked on a real model" gets into the status mark and into `STATE.md` by name, and not
+  with the words "mostly".
+- Где найдено: `handoffs/REAL-20261013-01/step-09-release-validator.json` (reservations (а), (б), (в);
+  `result.issues` I3 items 3–4); `docs/uat/REAL-RUN-20261013.md`, the section «Остаточные риски»
+  ("Residual risks"); `decisions/0048-owner-delegates-open-points-repo-public.md`. The edit of the
+  wording of criteria 13 and 14 was not made here: criteria of `done` are not rewritten by
+  bookkeeping; this is a proposal for WF-01 (see `result.issues`).
+
+### AP-082 — "Expected" in acceptance scenarios was written by the intuition "the rest stays as before" and not by the verbatim rule of the criterion (adds to AP-066)
+
+- Что случилось: BA-ANALYST wrote the scenarios of REQ-042 (`docs/uat/REQ-042.md`, 42 scenarios), and
+  in four of them «Ожидается» ("Expected") contradicted the criteria. UAT-RUNNER on live stands
+  recorded them as "failed" (10, 12, 13, 15; `docs/uat/REQ-042-RUN.md`, «Провалы по буквальному
+  сравнению (4 из 6 — вероятные ошибки ожиданий)», "Failures by literal comparison (4 of 6 — probable
+  errors of expectations)"). In all four the page behaved by the criterion. Scenarios 12, 13, 15
+  expected that a silent row or task "stayed «нет свежих данных»" ("no fresh data") when in the same
+  session a new trusted row came (the end of a task, the end of an answer, a request) — but by
+  criteria 1 and 2(е) the age is counted from the last trusted row of the **session**, and any such
+  row except `SessionEnd` returns the silent elements of the session to «в работе» ("working") for 60
+  minutes. Scenario 10 expected that "every value of the age grew" over 70 s, but the format «1 сут 2 ч
+  назад» ("1 day 2 h ago") changes once an hour (criterion 4). BA-ANALYST admitted: «Мои первоначальные
+  ожидания в 12, 13, 15 были ошибкой BA-ANALYST: … не учёл, что любая новая доверенная строка сессии
+  освежает все её элементы» ("My first expectations in 12, 13, 15 were an error of BA-ANALYST: … I did
+  not take into account that any new trusted row of the session refreshes all its elements")
+  (`step-08c-ba-analyst-signoff.json`, I4) and corrected the document up to the version r2.
+- Почему это плохо: false "HIGH" failures of acceptance would have sent defects that do not exist to
+  WF-03, or stopped the release; RELEASE-VALIDATOR had to compare the corrected «Ожидается» with the
+  text of the criteria separately and repeat four scenarios itself. The property of the criteria ("any
+  new trusted row returns the silent ones of the same session") is important for the owner, but is
+  hidden in the rules and not in intuition.
+- Как правильно: (1) BA-ANALYST compares every phrase «Ожидается» for state transitions with the
+  verbatim rule of the criterion and writes into the scenarios from which word of the criterion it
+  follows; (2) if the rule refreshes or changes "other" elements of the same session, "stays as before"
+  is written only for elements of **another** session (a stand with two sessions), and for the same
+  one — what exactly changes and by which rule; (3) "grows with time" is not written for values whose
+  format changes less often than the step of the check (days and hours without minutes).
+- Где найдено: `handoffs/REQ042-20261013-01/step-08b-uat-runner.json`,
+  `step-08c-ba-analyst-signoff.json` (I1, I4, verdicts for scenarios 10, 12, 13, 15),
+  `step-09-release-validator.json` (acceptance: «Результат каждого совпал с «Ожидается» редакции r2»,
+  "The result of each matched «Expected» of version r2"); `docs/uat/REQ-042-RUN.md` (Ф1, Ф2, Ф3, Ф6).
+
+### AP-083 — A test looked for a phrase in a text whose meaning changed, and stayed green on the same phrase inside a negation
+
+- Что случилось: the test `ST-06` (`tools/test/pixel-office-settings.test.js`) requires the README to
+  have 14 mandatory lines, among them «остаться «в работе»» ("stay «working»") (limit 1 of the earlier
+  version: «Задача может **остаться «в работе»**, если событие окончания потеряно…», "A task can
+  **stay «working»** if the end event is lost…"). REQ-042 reverses the meaning of the limit: now a task
+  does not stay «working» longer than 60 minutes without events. FRONTEND-DEV rewrote the limit as
+  «Задача не может остаться «в работе» дольше 60 минут без доверенных событий её сессии…» ("A task
+  cannot stay «working» longer than 60 minutes without trusted events of its session…"), and `ST-06`
+  stayed green — the phrase is still in the text, but now inside a negation, that is, the test would
+  have been checking the opposite of what the criterion requires (`step-02-frontend-dev.json`, I3;
+  REVIEWER, `step-04-reviewer.json`, I4: «остаётся зелёным, потому что ограничение 1 содержит «не может
+  остаться «в работе»» — отрицание», "stays green because limit 1 contains «cannot stay «working»» — a
+  negation"). FRONTEND-DEV and REVIEWER noted this before the line was replaced; TEST-DESIGNER replaced
+  the line in the list with «нет свежих данных» ("no fresh data") (the number of lines is 14),
+  TEST-DESIGN-VALIDATOR killed the mutant "README without «нет свежих данных»" with two tests (FS-16
+  and `ST-06`).
+- Почему это плохо: a test for a word in a document proves the presence of a substring and not the
+  meaning; when the meaning changes, it stays green and covers the difference (Q5, Q6).
+- Как правильно: (1) when a text that a test checks by a phrase changes, the design names the test
+  in a table "earlier check → new" and replaces the phrase with one that expresses the **new** meaning;
+  (2) REVIEWER and TEST-DESIGN-VALIDATOR check whether the old phrase coincides with the new text in
+  another meaning (a negation, an example, a quote), and apply the mutant "text with the earlier
+  meaning"; (3) a criterion is formulated through the presence of a new word and not through the
+  absence or presence of the old one.
+- Где найдено: `handoffs/REQ042-20261013-01/step-02-frontend-dev.json` (I3), `step-04-reviewer.json`
+  (I4), `step-05-test-designer.json` (the replacement of the line ST-06, mutant M34),
+  `step-05b-test-design-validator.json` (mutant R1 killed by FS-16 and ST-06);
+  `docs/design/REQ-042-state-honesty.md` (section 11, line ST-06).
+
+### AP-084 — The clock of a test coincided with the border of a threshold: "now" = start + threshold, and any shift silently crosses the threshold
+
+- Что случилось: the common helper of Pixel Office tests set the "now" of the page as `NOW = T0 + 3600 s`,
+  and `STALE_AFTER_MS` (REQ-042) is 3 600 000 ms. For events at the moment `T0` the age is exactly at the
+  threshold, and any test that shifts the page clock or builds an event a little earlier crosses the
+  threshold and gets «нет свежих данных» ("no fresh data") instead of «в работе» ("working"). CODE-DESIGNER
+  noticed this trap in the design («тест `PN-02` держится за «сейчас» на границе», "the test `PN-02` holds
+  on to «now» at the border", a proposal for a journal record: section 14.3); FRONTEND-DEV confirmed on a
+  copy: with `NOW = T0 + 1800 s` `PN-02` is green and exactly 11 are red (`step-02-frontend-dev.json`, I2).
+  TEST-DESIGNER replaced the helper with `NOW = T0 + 1800 s`, and checked the border with a separate test
+  `FS-05` (±1 ms from the threshold for the task, the row of the main session and the session).
+- Почему это плохо: a test that is not about the border but stands on it breaks from unrelated edits and teaches
+  to fix by "fitting the time"; the border itself is then checked by accident.
+- Как правильно: "now" in the common helper stands inside the threshold with a margin (`T0 + 1800 s` with
+  a threshold of 3600 s); the border of the threshold is checked by its own test with events at `threshold`,
+  `threshold + 1 ms` and `threshold − 1 ms`; the number of the threshold in tests is taken from one constant
+  or the literal of the criterion, and is not derived from the helper.
+- Где найдено: `docs/design/REQ-042-state-honesty.md` (section 14.3, section 11 line `PN-02`);
+  `handoffs/REQ042-20261013-01/step-02-frontend-dev.json` (I2), `step-05-test-designer.json` (FS-05).
+
+### AP-085 — Code and tests read the real clock of the computer: the report command took `Date.now()`, and an engine test once failed from a step of the clock backwards (adds to AP-084)
+
+- Что случилось: (1) `tools/src/pixel-office/public/office-report.js` (the report command of the office) took
+  `Date.now()`. While the age did not influence the states, this was not noticed; after REQ-042 a journal of
+  2026-09-20 with today's date would have made the expectations `OF-13` and `OF-25` depend on the date.
+  CODE-DESIGNER noticed this in the design; `runReport(argv, io = process, nowFn = Date.now)` takes the clock as
+  a parameter, `FS-19` checks a given clock. (2) The test `EN-57 (1, 2)` of the team engine
+  (`tools/test/team-channel.test.js`) once failed with `E_TIME` («Часы компьютера показывают время раньше
+  последней записи проекта», "The clock of the computer shows a time earlier than the last record of the
+  project"): it writes engine events by the real clock `Date.now`, and the check `checkTime` for the source
+  `ENGINE` is strict (`at < prev`). By the log of the macOS time service, at the same time the clock stepped
+  back by 0.111 s (12:13:16Z) and by 0.060 s (12:29:16Z). Nobody reproduced the failure itself (`ISS-0065`).
+- Почему это плохо: the result of a check depends on the date of the run and on the time service of the computer,
+  a red run does not repeat, and it is easy to "cure" it with a restart (Q6, §6 item 4 of the bar: an external
+  cause must be reproduced).
+- Как правильно: time is a parameter (`nowFn`, a stand-in clock) and not a call of `Date.now()` inside code
+  that is checked by date; tests that write events by the real clock into one journal get a stand-in clock; an
+  accidental red check by the clock is recorded in a defect with the time before and after and the log of the
+  time service (as done in `ISS-0065`), and is not restarted until green.
+- Где найдено: `docs/design/REQ-042-state-honesty.md` (section 14.3);
+  `handoffs/REQ042-20261013-01/step-05b-test-design-validator.json` (I1), `step-05-test-designer.json` (I2),
+  `step-09-release-validator.json` (I4); `docs/issues/ISS-0065-team-channel-tests-real-clock-e-time.md`.
+
+### AP-086 — An analyst agent ran `git checkout -- .` in the Sai folder and threw away the not yet accepted edits of the run
+
+- Что случилось: by the record of ORCH in the task of step 10 (`handoffs/REQ042-20261013-01/step-10-doc-updater.json`,
+  `task.description`), an analyst agent in this run ran `git checkout -- .` in the Sai folder and threw away the
+  not yet accepted (not committed) edits; the edits were restored, ORCH checked the result. In the handoffs of the
+  run this episode is not recorded separately (RELEASE-VALIDATOR in `step-09-release-validator.json` noted only
+  that it itself did not run `git checkout/reset/stash/clean` and the hashes of the working tree before and after
+  matched); the details (which role, which step) are not kept in the Sai files.
+- Почему это плохо: the working tree of a run consists of not yet accepted edits of other roles (code, tests,
+  documents); a command that returns files to the committed state silently erases another's work, and it can be
+  restored only from copies, if there are any (R1, Q2).
+- Как правильно: in tasks for agents who work in the Sai folder, `git checkout`, `git reset`, `git stash`,
+  `git clean` and any commands that return files to a commit are directly forbidden; "return as it was" is done by
+  copying from a copy outside the project and not by git commands; before starting a role that needs a "clean"
+  copy, ORCH gives it a copy outside the project (as RELEASE-VALIDATOR of this run did). ORCH now writes the ban
+  into the task explicitly.
+- Где найдено: `handoffs/PIXEL-20261013-01/step-01-req-analyst.json` (`result.issues`, item I10 — the record of the
+  agent itself: ran `git checkout -- .`, restored the files) and `step-01-req-analyst-r1.json` (ORCH checked the
+  restoration); `handoffs/REQ042-20261013-01/step-10-doc-updater.json` (the task, the words of ORCH);
+  `step-09-release-validator.json` (the working tree did not change, hashes before and after).
+
+### AP-087 — ORCH created a handoff with a command whose text had backticks: the shell substituted an empty string, the file does not exist, and the agent got a message about a non-existent file
+
+- Что случилось: by the record of ORCH in the task of step 10 (`handoffs/REQ042-20261013-01/step-10-doc-updater.json`),
+  a handoff was created with a command in whose task text there were backticks; the shell executed them as a command
+  substitution and substituted an empty string, the file was not created, and the agent was notified of a handoff
+  that does not exist. In the Sai files the case itself is not recorded (which handoff — not written).
+- Почему это плохо: the text of a task silently loses pieces, and the agent either does not find the file or, finding
+  another one, works by an incomplete task (Q3: the performer gets not what ORCH wanted to say).
+- Как правильно: write the task into a file (with an editor, not `echo`) and pass it to the command by a
+  substitution from the file with quotes (for example, by the substitution `"$(cat file)"`: the content of the file
+  the shell no longer parses; if the text is written into a file from the shell — a heredoc with quotes at the
+  delimiter `<<'EOF'`, it does not substitute commands); after creating, ORCH reads the created handoff and checks
+  that the file exists and `task.description` is not empty and not cut.
+- Где найдено: the creation of `handoffs/REQ042-20261013-01/step-01-code-designer-r1.json` (step 1, rework r1 of the
+  design): the first attempt of the command `handoff new` did not create the file, ORCH had already sent the
+  designer agent a message about it; the file was created by the second attempt, the agent got a correction;
+  `handoffs/REQ042-20261013-01/step-10-doc-updater.json` (the task, the words of ORCH).
+
+### AP-088 — The step number in handoffs of different roles coincided: BA-ANALYST and UAT-RUNNER at step 8 (adds to `docs/workflows/handoffs.md`, section "Where handoffs are stored and how they are named")
+
+- Что случилось: by the record of ORCH in the task of step 10, the handoffs of BA-ANALYST (scenarios) and
+  UAT-RUNNER (run) in WF-02, step 8, had the same step number, while the `handoff_id` must not repeat in the whole
+  of `handoffs/` (`docs/workflows/handoffs.md`). In the run it was fixed with suffixes of sub-steps:
+  `step-08-ba-analyst.json` (`step08-…`), `step-08b-uat-runner.json` (`step08b-…`),
+  `step-08c-ba-analyst-signoff.json` (`step08c-signoff-…`); `handoffs-check` in the run — 0 violations
+  (RELEASE-VALIDATOR).
+- Почему это плохо: two files with one `handoff_id` break the links to them and the bookkeeping check; three roles of
+  one step (scenarios, run, signature) are three different handoffs.
+- Как правильно: if several roles work at one step or one role in several sub-steps, each handoff gets its own
+  `<STEP>` with a letter (`08`, `08b`, `08c`) and its own name; ORCH issues the letters when creating the handoffs
+  and not afterwards.
+- Где найдено: `handoffs/REQ042-20261013-01/step-08-ba-analyst.json`, `step-08b-uat-runner.json`,
+  `step-08c-ba-analyst-signoff.json`; `docs/workflows/handoffs.md`;
+  `handoffs/REQ042-20261013-01/step-10-doc-updater.json` (the task, the words of ORCH).
+
+### AP-089 — The layout of the longest word of a new state was measured neither by the design, nor by the tests, nor by the acceptance before the repeat: the third repeat of AP-060 and AP-065
+
+- Что случилось: REQ-042 introduced state words up to 300 px long (the earlier longest was «окончание не записано»
+  ("end not recorded"), 145 px). The rules of `tools/src/pixel-office/public/style.css` `.item-head`
+  (`display: flex` without `flex-wrap`), `.item-state` (`flex: none`) and `.item` (`overflow-wrap: anywhere`)
+  together left 20 px for the name of the role: «Plan» broke into «Pl / an», the row of the main session grew to
+  387 px (window 1470×784) and 716 px (window 375×812). ISSUE-FIXER recorded the cause: the page tests run on a
+  hand-made DOM model, where `getBoundingClientRect` «отдаёт 0 или заданное вручную число» ("gives 0 or a number set
+  by hand"), and the design REQ-042 did not name the layout of the longest word; DESIGN-QA-VALIDATOR was not run
+  (there is no sample), and «первым раскладку увидел UAT-RUNNER» ("UAT-RUNNER was the first to see the layout")
+  (`step-01-issue-fixer.json`, diagnosis and I9: «третье повторение AP-060/AP-065», "the third repetition of
+  AP-060/AP-065"). In passing, the description of the defect ISS-0062 was wrong twice (I1 of the diagnosis): the
+  numbers 332 / 644 and 387 / 716 are not two runs, but the height of the header `.item-head` and the height of the
+  whole row `.item` from one run; and «регресс, внесённый самой работой REQ-042» ("a regression brought in by the
+  work REQ-042 itself") is right by the effect but not by the code — the rules `.item-head` and `.item-state` have
+  not changed since the first commit of Sai, the new words revealed a ready defect.
+- Почему это плохо: the look that the owner sees in the main window stood on an unmeasured assumption "the text will
+  fit"; the only check was the eyes of the acceptance; after the fix it is closed by criterion 14 of REQ-042 and the
+  test `PN-23`, but the same class is possible with any new word.
+- Как правильно: (1) when a requirement introduces or lengthens text in a row with neighbouring elements, the
+  design names the **longest** word and the windows of checking (1470×784, 375×812) and lists the layout rules the
+  row depends on (flex, wrapping, `flex: none`); (2) the acceptance measures `getBoundingClientRect` of the name and
+  of the row with the longest word, and does not only read the text; (3) the regression test is a property of the
+  CSS rules (`PN-23`) plus a measurement in a browser, and a reservation that the test checks the rule and not the
+  look; (4) the description of a defect does not explain a difference of numbers by "two runs" without a check
+  (AP-012): first find out what exactly was measured.
+- Где найдено: `handoffs/ISS-0062-20261013-01/step-01-issue-fixer.json` (diagnosis, I1, I9);
+  `step-09-release-validator.json` (a measurement before/after in six windows);
+  `docs/issues/ISS-0062-pixel-office-restart-word-squeezes-role-name.md`;
+  `decisions/0053-pixel-office-state-badge-wraps-below-role.md`.
+
+### AP-090 — A closed handoff was corrected right in the file, because a repeated `close` is impossible
+
+- Что случилось: by the check of ORCH in `step-08-test-runner.json` (`orch_check`): the agent after closing the
+  handoff «поправил строку `self_check` прямо в файле (E_HO_STATE мешал повторному `close`)» ("corrected a line of
+  `self_check` right in the file (E_HO_STATE prevented a repeated `close`)"). The command `close` does not close a
+  handoff a second time and answers `E_HO_STATE`; `handoffs-check` gave 0 violations here, so the departure was
+  caught only by ORCH, reading the file.
+- Почему это плохо: a closed handoff is a record that the agent handed in; an edit after closing rewrites history
+  (AP-002), and `handoffs-check` does not tell such an edit from an ordinary one. An inaccuracy in `self_check`
+  could have been corrected more honestly.
+- Как правильно: an inaccuracy is noticed before `close` and corrected in `result` (in `self_check` or
+  `issues`); after `close` the handoff is not edited — the correction is written by ORCH in a separate field
+  (`orch_note` or `orch_correction`, with the time and the reason, `docs/workflows/handoffs.md`, "Who writes what") or by the next handoff in its `result.issues`. If `close` does not pass, this is a reason to
+  stop and write about it, and not to edit the file.
+- Где найдено: `handoffs/ISS-0062-20261013-01/step-08-test-runner.json` (`orch_check`, 2026-10-13T16:16:29Z);
+  `tools/src/handoffs/close.js` (`E_HO_STATE`); `docs/workflows/handoffs.md`.
+
+### AP-091 — RELEASE-FINALIZER put into the first commit the unclosed handoff of its own step, and the check on GitHub turned red
+
+- Что случилось: in the run `REQ042-20261013-01` RELEASE-FINALIZER committed and pushed to `main` the commit
+  `fd5fac6` together with the handoff of step 11 in the status `PENDING`. `handoffs-check` on GitHub gave a violation
+  H4 («status: PENDING в коммите: в коммите только законченные handoff-ы», "status: PENDING in the commit: only
+  finished handoffs are in the commit"), the run of `check.yml` 38416285312 is red at the step "Run the check", the
+  command did not reach the tests. Locally the check was green because the file was not in the commit. In the words
+  of the finalizer itself: «Причина — моя ошибка: я включил этот handoff в первый коммит до закрытия» ("The cause is
+  my error: I included this handoff in the first commit before closing") (`step-11-release-finalizer.json`,
+  `result.summary`, I1); by the record of ORCH in the task of step 10 of the run `ISS-0062-20261013-01`, the task of
+  ORCH listed the whole folder `handoffs`. The handoff was closed and committed in a separate second commit
+  (`130a46d`).
+- Почему это плохо: a red check on the shared branch (Q4) because of the order of work and not of the code; the push
+  went directly because the owner is an administrator and `enforce_admins` is off (`decisions/0048`), that is, the
+  protection of the branch did not stop a red check.
+- Как правильно: an unclosed handoff does not go into a commit; the commit of the handoff of its own step is
+  separate, after `close` (this is how the second commit was done); in the task of RELEASE-FINALIZER, ORCH writes
+  the files by name and not the whole folder, and explicitly: «handoff шага 11 не добавлять в первый коммит» ("do
+  not add the handoff of step 11 to the first commit"); before the commit the finalizer runs `handoffs-check` on what
+  really goes into the commit (the list of files is `git diff --cached --name-only`, the status of each handoff in
+  it is not `PENDING`).
+- Где найдено: `handoffs/REQ042-20261013-01/step-11-release-finalizer.json` (summary, I1, I2);
+  `handoffs/ISS-0062-20261013-01/step-10-doc-updater.json` (the task, the words of ORCH); `tools/src/handoffs/`
+  (the rule H4).
+
+### AP-092 — In the review task a record of the error journal that does not exist was named: the reference to an AP number was not checked against the file
+
+- Что случилось: in the task of step 5 of the run `ISS-0062-20261013-01` (the review gate) among the comparisons
+  there stood «AP-060, AP-065, AP-089 если есть» ("AP-060, AP-065, AP-089 if it exists"). REVIEWER found that there
+  is no such record, the last one was AP-088 (`step-05b-reviewer.json`, F3: «Задание называет «AP-089 если есть»:
+  такой записи нет», "The task names «AP-089 if it exists»: there is no such record"), and ORCH confirmed in
+  `orch_check` («AP-089 в задании названа ошибочно; последняя запись AP-088 — DOC-UPDATER пишет следующую», "AP-089
+  is named in the task by mistake; the last record is AP-088 — DOC-UPDATER writes the next one"). The reservation
+  "if it exists" turned a reference to a non-existent fact into a check for the performer.
+- Почему это плохо: a task must contain only facts from the project files (`docs/workflows/handoffs.md`, "How ORCH writes the task", AP-012); a reference to a non-existent record wastes the move of the
+  checker and suggests that the lesson is already recorded, although it is not.
+- Как правильно: before referring to an AP-, ISS- or other number in a task, ORCH checks it with a command
+  (`grep -n '^### AP-089' docs/anti-patterns.md`); if a lesson is needed that does not yet exist, it writes «записи
+  нет, предложить» ("no record, propose") and asks for a proposal in `result.issues`, and the record is made by
+  DOC-UPDATER.
+- Где найдено: `handoffs/ISS-0062-20261013-01/step-05b-reviewer.json` (the task, F3, `orch_check`);
+  `handoffs/ISS-0062-20261013-01/step-01-issue-fixer.json` (I9 — the proposal of a record, which is now made as
+  AP-089).
+
+### AP-093 — A test itself contained the words whose absence the criterion checks: the command "the search is empty" became impossible
+
+- Что случилось: criterion 9 (в) of REQ-036 requires that `grep -rn '· и ещё\|NOW_MORE' tools/test/
+  tools/src/pixel-office/ docs/design/REQ-007-office-ui.md` finds nothing. The test `NM-02`
+  (`tools/test/pixel-office-panels.test.js`), which exactly checks that these words are not in the code, wrote them
+  literally — in a comment, in the expression `/NOW_MORE|· и ещё/` and in `Object.hasOwn(TX, "NOW_MORE")`.
+  TEST-DESIGN-VALIDATOR: «Пока тест пишет искомые строки буквально, критерий 9 (в) невыполним: RELEASE-VALIDATOR
+  получит FAIL на этом пункте при любом коде» ("While the test writes the searched strings literally, criterion 9
+  (в) cannot be met: RELEASE-VALIDATOR will get FAIL on this item with any code")
+  (`step-05b-test-design-validator.json`, F1, Medium, blocks). TEST-DESIGNER assembled the name and the tail from
+  parts at run time; the check became stricter (checks of the expression itself were added), the mutants N3, N3b,
+  N3c, N4 make `NM-02` fail (`step-05b-test-design-validator-r1.json`).
+- Почему это плохо: a criterion "the search over the folders is empty" and a test lying in the same folders
+  contradict each other; one rework of the test gate went on this (1 of 3).
+- Как правильно: if a criterion checks the absence of words by a search over a folder where the tests lie, the
+  test assembles the searched thing from parts (`["NOW", "MORE"].join("_")`), and the comment describes it without
+  the words themselves; before handing in, TEST-DESIGNER runs the command of the criterion verbatim over
+  `tools/test/` and attaches the empty output; the design names this trap in the table "criterion → test".
+- Где найдено: `handoffs/REQ044-20261014-01/step-05b-test-design-validator.json` (F1, `orch_check`),
+  `step-05b-test-design-validator-r1.json`, `step-05-test-designer-r1.json`.
+
+### AP-094 — A requirement stated that a behaviour already exists (masking of the description) without checking the code; the design inherited it, the gap was found only by TEST-DESIGNER at step 5
+
+- Что случилось: the description of REQ-036 says: «секрет, попавший в описание, уже заменён «[скрыто]» при записи
+  (hook.js, mask.js)» ("a secret that got into the description is already replaced with «[скрыто]» ("hidden") at
+  writing (hook.js, mask.js)"). This was wrong: the hook and the server masked only `prompt_text`, the description
+  and the roles went into the journal as they were. The design of the run considered the hook and the server
+  unchanged (D1), the design gate and the review did not check this. At step 5 TEST-DESIGNER could not write a green
+  test of criterion 6 of REQ-036 and stopped: «Утверждение требования … неверно, а проект (D1) считает хук и сервер
+  неизменными. Зелёный тест этой части написать нельзя без правки кода вне public/» ("The statement of the
+  requirement … is wrong, and the design (D1) considers the hook and the server unchanged. A green test of this
+  part cannot be written without editing code outside public/") (`step-05-test-designer.json`, BLOCKED
+  2026-10-14T15:22:52Z). An addition to the design r3, the decision `0056`, step 5c and a repeat of steps 3 and 4
+  were needed; the defect is ISS-0068.
+- Почему это плохо: a statement about existing behaviour in a requirement is accepted by all the following roles as a
+  fact (AP-012, quality-bar §6, item 2); a secret could have reached the page, and the gap was found at the fifth
+  step and not at the first.
+- Как правильно: a statement "already exists" in the description of a requirement is backed by REQ-ANALYST with
+  a command or a probe (a function, a file, an output), REQ-VALIDATOR repeats it; CODE-DESIGNER in the section
+  «Проверенные факты о текущем коде» ("Checked facts about the current code") checks every such statement by a
+  probe, and not by reading the description. The wording of the description of REQ-036 is corrected by WF-01 after
+  the run (question О19 of the design), not by bookkeeping.
+- Где найдено: `handoffs/REQ044-20261014-01/step-05-test-designer.json` (BLOCKED),
+  `step-01b-code-designer-r3.json`, `step-01c-code-design-validator-r2.json`;
+  `decisions/0056-pixel-office-mask-all-text-fields.md`;
+  `docs/issues/ISS-0068-pixel-office-secrets-in-description-and-role.md`.
+- Repeat on 2026-10-21 (`TEXT068-20261021-01`, WF-02): criterion 1 of REQ-068 stated «любая пара суррогатов
+  допустима» ("any pair of surrogates is allowed") (1024 × 1024), without checking this on the list of forbidden
+  characters itself. CODE-DESIGNER went through all pairs on a prototype and found that 127 pairs encode forbidden
+  characters Cf outside the BMP (`handoffs/TEXT068-20261021-01/step-01-code-designer.json`, I1, Ф5; 1 048 449 pairs
+  are allowed). The criterion was corrected by a micro-amendment of WF-01
+  (`handoffs/PICKERTEXT-20261021-01/step-01c-req-analyst.json`), the enumeration is fixed by the test TT-1d. The rule
+  is the same: a statement about a set («любая», "any", «каждый», "every", «ни одного», "none") is backed by an
+  enumeration of this set before the criterion is written; no new record was made.
+
+### AP-095 — The name of another project got into a search command in `self_check`: the design looked for it, and the trace check found it in the handoff
+
+- Что случилось: CODE-DESIGNER of the run `REQ044-20261014-01` wrote into `self_check` a `grep` command with the name
+  of the owner's earlier project in its pattern (a search that this name is not in the project). The command itself,
+  kept in the handoff, became a trace. ORCH replaced the name with the stand-in words «<название прежнего проекта
+  владельца>» ("<name of the owner's earlier project>") in `step-01b-code-designer.json` and in the rework `-r1`
+  («ORCH заменил в self_check название прежнего проекта владельца словами-заменителем (проверка следов,
+  decisions/0021)», "ORCH replaced in self_check the name of the owner's earlier project with stand-in words (trace
+  check, decisions/0021)", `orch_check` r1). By the words of ORCH in the task of step 10, this happened twice and the
+  trace check was red.
+- Почему это плохо: a handoff is a project file; the name of another project in it violates the rule of `CLAUDE.md`
+  ("links to other projects" are not written) and turns `traces` red; ORCH has to fix it in another's `result`.
+- Как правильно: a command that searches for forbidden words is not written into `self_check` with the word
+  itself: write «поиск названий других проектов и путей компьютера (шаблон — `tools/src/traces/`) → пусто» ("a
+  search for names of other projects and computer paths (the template is in `tools/src/traces/`) → empty") or run
+  `npm run traces` and attach its output; a template with a forbidden word lives only in the code of the check.
+- Где найдено: `handoffs/REQ044-20261014-01/step-01b-code-designer.json` (`self_check`),
+  `step-01b-code-designer-r1.json` (`orch_check`); `decisions/0021`;
+  `handoffs/REQ044-20261014-01/step-10-doc-updater.json` (the task, the words of ORCH).
+
+### AP-096 — The requirement gate did not compare the requirement with the decisions of ORCH "inside a run" of a past work: a contradiction of decision 0014 was found only at the third gate
+
+- Что случилось: REQ-047 required that the window «Просмотр истории» ("History view") opens from the agent card and
+  the card under it stays open. `decisions/0014` («Решения ORCH внутри прогона», "Decisions of ORCH inside a run", 5
+  and 6) says the opposite: the window opens from the journal and the cards of the panel «Задачи» ("Tasks"), not from
+  the agent card; an open card is closed when the window opens. Its «Граница» ("Boundary"): «Решения ORCH 1–7
+  относятся к REQ-008 и могут быть отменены владельцем по одному» ("The decisions of ORCH 1–7 belong to REQ-008 and
+  can be cancelled by the owner one by one") — that is, they go on acting. The gates of `PIXEL-20261014-01` step 2 and
+  the rework r1 did not find this; the third check found it (`step-02-req-validator-r2.json`, N7: «Требование молча
+  расходится с записанным решением (Q12; quality-bar §6, п. 7)», "The requirement silently differs from a recorded
+  decision (Q12; quality-bar §6, item 7)"). ORCH did not cancel 0014, REQ-047 was rewritten (r3), this was the third
+  and last rework of REQ-047. Later BA-ANALYST also took 0014 for a decision «о превышении лимита доработок REQ-008»
+  ("about exceeding the limit of reworks of REQ-008") by its title (`handoffs/REQ044-20261014-01/step-08-ba-analyst.json`,
+  I3).
+- Почему это плохо: a decision is named after the occasion (the limit of reworks) but carries rules of the product inside;
+  a checker who looks only at the titles of decisions misses them, and the requirement goes on with a contradiction
+  (Q12).
+- Как правильно: the decisions of ORCH "inside a run" act also after the run if their «Граница» says so;
+  REQ-VALIDATOR at the first pass searches `decisions/` not only by the title but also by the affected words of the
+  requirement (`grep -rn "Просмотр истории\|карточк" decisions/`) and lists the decisions found in its report;
+  decisions with rules of the product are named by ORCH in the line of `decisions/README.md` so that the rules are
+  visible.
+- Где найдено: `handoffs/PIXEL-20261014-01/step-02-req-validator.json`, `-r1`, `-r2` (N7), `-r3` (`orch_check`:
+  «урок «решения ORCH внутри прогона действуют дальше по Границе» — в AP через DOC-UPDATER», "the lesson «decisions of
+  ORCH inside a run go on acting by the Boundary» — into AP through DOC-UPDATER");
+  `decisions/0014-pixel-office-history-rework-limit.md` («Граница»).
+
+### AP-097 — An agent broke off on a session limit in the middle of a step; the step was restarted with a new agent, and the handoff stayed `PENDING`
+
+- Что случилось: by the words of ORCH in the task of step 10 of the run `REQ044-20261014-01`, an agent broke
+  off on a session limit in the middle of a step, the step was restarted with a new agent, and the handoff of the
+  broken-off one stayed in the status `PENDING`. In the handoffs of the run this case is not recorded (the field
+  `interruptions` is in none of them, there are no `-runN` files); which step it was is not named in the Sai files.
+- Почему это плохо: without a record of the break it is not visible which files the broken-off agent managed to change
+  and what of this went into the work of the restarted one; a handoff `PENDING` for a step that is already done
+  misleads bookkeeping and the check `handoffs-check` before a commit (AP-091).
+- Как правильно: by `docs/workflows/handoffs.md`, section "Pauses and interruptions": before a
+  restart ORCH checks the state of the handoff and of the files from `write_set` (what changed after `started_at`),
+  writes the break into `interruptions`, and either continues the same agent, or closes the handoff `FAILED` with the
+  mark `not_agent_attested` and starts the role again with a file `-runN`; a broken-off handoff does not stay
+  `PENDING`.
+- Где найдено: `handoffs/REQ044-20261014-01/step-10-doc-updater.json` (the task, the words of ORCH);
+  `docs/workflows/handoffs.md` ("Pauses and interruptions").
+
+### AP-098 — Continued agents stay "working" on the page until they finish: their handoff is handed in, but the end event is not yet there (an observation, not a code defect)
+
+- Что случилось: RELEASE-VALIDATOR, having opened the owner's working page for reading only, saw in "Now" three rows
+  "working" of acceptance roles, «две из них — роли шагов, которые уже сдали handoff-ы» ("two of them are roles of
+  steps that have already handed in their handoffs") (`step-09-release-validator.json`, I3). ORCH: «продолженные
+  агенты (SendMessage) не присылают окончания до своего завершения» ("continued agents (SendMessage) do not send an
+  end until they finish") (`orch_check` of step 9). A check of the owner's journal with counting commands (without
+  printing texts, 2026-10-14T19:46Z): on 2026-10-14, 18 agents were started, 13 of them were continued again (a
+  repeated `SubagentStart` with the same `agent_id`); for 22 continuations after which the end had already come, the
+  interval from the continuation to `SubagentStop` is up to 13.6 min (median 4.4 min); for the BA-ANALYST agent
+  continued at 17:08:43Z (2 s after the handoff of the signature `step-08c` was created, 17:08:41Z) there was no
+  `SubagentStop` at 19:46Z, although the handoffs of the signature `step-08c` and `-r1` were closed at 19:14:33Z and
+  19:16:57Z. The page shows the journal correctly (criteria of REQ-001 and REQ-042).
+- Почему это плохо: the owner sees "working" at a role whose step is already handed in, and may decide that work is going
+  on; ORCH, looking at the page, may count the agent as busy.
+- Как правильно: this is not a defect of the page; ORCH compares "working" with the status of handoffs and not the
+  other way round, and does not continue an agent without need after the step is handed in; if this disturbs the owner,
+  it is an input for a requirement about showing "continued" ones (new hook events — REQ-048), and not an edit of the
+  reading rules.
+- Где найдено: `handoffs/REQ044-20261014-01/step-09-release-validator.json` (I3, `orch_check`); the owner's journal —
+  only a count of rows `SubagentStart`/`SubagentStop` by `agent_id` (decisions/0054, addition 2).
+
+### AP-099 — The design promised a "wrap" of a long role without a named CSS rule, the criterion was checked by a text test, nobody measured the worst case before acceptance: the fourth repeat of AP-060, AP-065 and AP-089
+
+- Что случилось: in the run `REQ048-20261015-01` the table of failure paths of the design
+  (`docs/design/REQ-048-049-046-047-interactive.md`, section 5) promised, for a role outside the table of 128 characters
+  without spaces, «легенда, панель, карточка — перенос» ("legend, panel, card — wrap"), but did not name the CSS rules;
+  criterion 4 of REQ-048 («легенда и панель — перенос», "legend and panel — wrap") was closed by the test LW-05, which
+  checks only text, while the page tests run on a hand-made DOM model without layout. DESIGN-QA did not measure the
+  legend with a long role. The failure was found by acceptance (scenario 48, severity HIGH): in the window 1470×784 the
+  name went beyond the edge up to 1165.8 px with 1049 visible, in 375×812 — up to 1157.8 with 356. ISSUE-FIXER: `.legend`,
+  `.legend-item` and the name have no rule of wrapping inside a word, the legend rules have not changed since the first
+  commit; `overflow-wrap: break-word` does not help here — it does not reduce the smallest width of a flex-line element
+  and of an `inline-block` button, `anywhere` is needed; the same cause hit «Кто запустил» and «Кого запустил» ("Who
+  started" and "Whom started") in the cards (`step-08d-issue-fixer.json`). Fixed by the edit `step-08e-code-fixer.json`,
+  the rule is fixed by the test DQ-04.
+- Почему это плохо: a promise of this kind rested on an unmeasured assumption, and the table "criterion → test" gave a text
+  test for a check of wrapping; a diagnosis, a code edit, a repeat of the security, review and test gates and a repeat of
+  acceptance were needed. This is the same class as AP-060, AP-065 and AP-089, the fourth time.
+- Как правильно: (1) when a failure path promises a "wrap" of text from input, the design names the CSS rule for
+  every element where such text stands in a flex element or in an `inline-block` button (`overflow-wrap: anywhere`, not
+  `break-word`), and a ban of `nowrap` on the element and its ancestors; (2) the table "criterion → test" does not close
+  a "wrap" with a text test — next to it stand a check of the CSS rule and a measurement in a browser; (3) DESIGN-QA and
+  acceptance go around all elements where a long role can stand (legend, panel, "Now", «Кто запустил», «Кого
+  запустил/а», filter options), and not only those named in the scenario, and measure the worst case (128 characters
+  without spaces, three words of 40 characters) in windows 1470×784, 375×812 and 320×568.
+- Где найдено: `handoffs/REQ048-20261015-01/step-08b-uat-runner.json` (scenario 48, Ф1), `step-08d-issue-fixer.json`
+  (diagnosis, I1, I6), `step-08e-code-fixer.json`, `step-05-test-designer-r3.json` (DQ-04);
+  `docs/design/REQ-048-049-046-047-interactive.md` (section 5; items 3.12 and 7.1 added at step 10).
+
+### AP-100 — The layout measurement depended on the page clock: the design and acceptance r1 measured one moment, while "less than a minute ago" and "no fresh data" lengthen rows
+
+- Что случилось: the interface description of the run `REQ048-20261015-01` (item 7.2) promised that the line of
+  transitions of the launch card is visible at once: «запас высоты прежней раскладки (видимое тело 726 px при «сразу»
+  около 570) её вмещает» ("the margin of height of the earlier layout (visible body 726 px with «at once» about 570)
+  holds it"). Acceptance r1 passed because the stand was older than a minute (746.75 ≤ 755). The repeat r2 failed
+  scenario 42: while the last event is younger than a minute, the basis of «Задачи» ("Tasks") with «меньше минуты
+  назад» ("less than a minute ago") takes three rows instead of two, and the buttons go 9 px below the edge; after 60
+  minutes without events «Рабочее место» ("Workplace") writes the long «свободен…» ("free…"), and the line is below the
+  edge again. The worst case of the roles of the table is 48 px lower (ISSUE-FIXER, `step-08f-issue-fixer.json`; the
+  line is visible only between 1 and 60 minutes). ISSUE-FIXER measured with the page clock fixed by replacing
+  `Date.now` in the browser (the journal and the server were not touched). Fixed by the order of the parts of the card
+  (`decisions/0060`, `step-08g-code-fixer.json`).
+- Почему это плохо: a look that depends on the age of events, checked at one moment, passes or fails by accident — by how
+  many seconds passed since the last event of the stand; the same error of the class AP-089 (an unmeasured longest
+  text), only the length is given by time.
+- Как правильно: (1) the design and the description name the heights of the parts for the longest text of every
+  state, including the age («меньше минуты назад», a day) and «нет свежих данных» / «свободен»; (2) the probe of
+  ISSUE-FIXER, the measurement of DESIGN-QA, acceptance and the regression measurement fix the page clock (replacing
+  `Date.now` only in the page) and measure at least the moments +5 s and +61 min after the last event; (3) a test on a
+  DOM model that checks the order of parts (DQ-05) is not passed off as a check of the look.
+- Где найдено: `handoffs/REQ048-20261015-01/step-08b-uat-runner-r2.json` (scenario 42, Ф2),
+  `step-08f-issue-fixer.json` (diagnosis, I1, I2, I6), `step-08g-code-fixer.json`;
+  `decisions/0060-card-links-after-launcher.md`; `docs/design/REQ-048-049-046-047-ui.md` (item 7.2, corrected at
+  step 10).
+
+### AP-101 — The facts of the ORCH task were not compared with the files: an edit of the requirement block went without a "before" copy, and the task named 23 traps to the tests instead of 27
+
+- Что случилось: in the run `REQ048-20261015-01` two reworks of the WF-01 step (`step-01e-req-analyst-r2.json`,
+  `-r3.json`) edited criterion 5 of REQ-046 in the shared `docs/requirements.yaml`, and their gates
+  (`step-01f-req-validator-r2.json`, `-r3.json`) got tasks without `context.before_copy` — a copy of the file "before"
+  outside the project (AP-023). REQ-VALIDATOR noted this both times (I1: «context.before_copy в задании нет (AP-023)»,
+  "there is no context.before_copy in the task (AP-023)") and restored the "before" copy itself — from `HEAD` and the
+  current file (r2) and from its own gate file r2 (r3), comparing hashes; there was no expected verdict in the tasks —
+  this is right (AP-018). Separately: the task of TEST-DESIGNER (`step-05-test-designer.json`) named «Ловушки раздела 9
+  (23 шт.)» ("Traps of section 9 (23)"), while the design has 27; ORCH in `orch_check`: «Ловушек 27, а не 23 — ошибка в
+  задании ORCH, проект верен» ("27 traps, not 23 — an error in the ORCH task, the design is right").
+- Почему это плохо: without a "before" copy the checker can confirm the integrity of the rest of a shared file only by the
+  author's hashes or by its own reconstruction — extra work and a risk of missing another's edit; a wrong number in a
+  task could have cut the performer's work (23 mutants instead of 27) or cost him a move on checking (quality-bar §6,
+  item 2).
+- Как правильно: a task for an edit of a block of a shared file (`docs/requirements.yaml`) and for its gate carries
+  `context.before_copy` — the path to the "before" copy outside the project and its hash, taken by ORCH before the edit
+  (AP-023, AP-007); numbers and numbers of items in a task ORCH takes by a command over the file and not from memory
+  (`grep -c` over a section of the design; like AP-092 for AP numbers), or writes "all traps of section 9" without a
+  number; the expected verdict is still not told to the checker (AP-018).
+- Где найдено: `handoffs/REQ048-20261015-01/step-01f-req-validator-r2.json` (I1), `step-01f-req-validator-r3.json` (I1),
+  `step-05-test-designer.json` (the task, item 4; `orch_check`).
+
+### AP-102 — A GitHub setting (visibility, branch protection) was recorded in bookkeeping and nobody re-checked it after it changed: a document for people outside the project repeated an out-of-date fact
+
+- Что случилось: `STATE.md` (the section «На 2026-10-13 — REQ-030…», "As of 2026-10-13 — REQ-030…"), `decisions/0048` and
+  ISS-0057 recorded: the repository is open on purpose, the protection of `main` is on (the required check `check`, a ban
+  of force-push and deletion). On 2026-10-17 DOC-UPDATER of the run `DOCSEN-20261017-01` wrote in `README.en.md` (this file was merged into `README.md` and removed on 2026-10-25, decision 0080) "The main
+  branch is protected since 2026-10-13…" — by these records, without reading GitHub. RELEASE-VALIDATOR read GitHub itself
+  (`gh api repos/<владелец>/sai` → `"private": true`; the protection of `main` — the answer 403 "Upgrade to GitHub Pro or
+  make this repository public to enable this feature") and gave FAIL: the repository is now private, there is no
+  protection of `main` (`step-09-release-validator.json`, F1, I1). Who changed the visibility and when is not recorded in
+  the Sai files; ORCH did not change the visibility. A repeat by this bookkeeping on 2026-10-17: `"protected": false`. An
+  assumption (not checked): the protection disappeared together with the change of the visibility, because for a private
+  repository on a free plan it is not available.
+- Почему это плохо: a GitHub setting changes outside Sai (the owner, GitHub), while bookkeeping holds it as a permanent fact;
+  a document for a reader outside the project almost went out with a wrong statement about protection; `STATE.md` went on
+  stating a protection that no longer exists (since which day — unknown). The same root as AP-079 (words about an external
+  setting are frozen, the fact changed).
+- Как правильно: (1) before any statement about a GitHub setting (visibility, branch protection, required checks,
+  rights) — read GitHub now (`gh api repos/<владелец>/<репозиторий>`, `…/branches/main`) and write the date of reading next
+  to the statement; (2) in documents for people outside the project do not write an external setting as a permanent fact —
+  only what is true independently of it (for example, "every push is checked by `check.yml`"); (3) RELEASE-FINALIZER and
+  RELEASE-VALIDATOR, seeing a difference between a setting and bookkeeping, tell ORCH, and bookkeeping appends a correction
+  with a date (the earlier section is not rewritten).
+- Где найдено: `handoffs/DOCSEN-20261017-01/step-09-release-validator.json` (F1, I1, `orch_check`),
+  `step-01-doc-updater-r2.json`, `step-11-release-finalizer.json` (I3); `STATE.md` (the sections «На 2026-10-13 — REQ-030…»
+  and «На 2026-10-17»); `decisions/0048`; `docs/issues/ISS-0057-readme-says-no-branch-protection.md`.
+
+### AP-103 — A repeat of AP-095: a checker wrote into `self_check` a search command with names of other projects, and the trace check turned red
+
+- Что случилось: RELEASE-VALIDATOR of the run `DOCSEN-20261017-01` checked that the new documents have no names of other
+  projects, and wrote into `self_check` of its handoff the very `grep` command with these names. After its `close`
+  `npm run traces` turned red on this handoff — DOC-UPDATER of the rework r2 reported: «npm run traces красный (код не 0)
+  из-за чужого файла: handoffs/DOCSEN-20261017-01/step-09-release-validator.json … в self_check RELEASE-VALIDATOR записана
+  команда grep с названиями других проектов» ("npm run traces is red (code not 0) because of another's file: …
+  RELEASE-VALIDATOR's self_check has a grep command with names of other projects") (`step-01-doc-updater-r2.json`,
+  issues). ORCH replaced the names with «<названия других проектов>» ("<names of other projects>") (`orch_check` of step 9,
+  2026-10-17T03:17:06Z: «traces; повтор AP-095», "traces; a repeat of AP-095").
+- Почему это плохо: the rule from AP-095 was already recorded, and the role repeated it; the closed handoff had to be edited by
+  ORCH, and the check of the whole repository stood red while another role's rework went on.
+- Как правильно: as in AP-095 — in `self_check` write «поиск названий других проектов и путей компьютера (шаблон —
+  `tools/src/traces/`) → пусто» ("a search for names of other projects and computer paths (template — `tools/src/traces/`)
+  → empty") or attach the output of `npm run traces`, and not a command with the words themselves; before `close` every role
+  runs `npm run traces` on its handoff (it is part of `npm run check`); ORCH in the task of a checker who is told to search
+  for traces reminds this rule.
+- Где найдено: `handoffs/DOCSEN-20261017-01/step-09-release-validator.json` (`self_check`, `orch_check`),
+  `step-01-doc-updater-r2.json` (issues); AP-095.
+
+### AP-104 — ORCH allowed an agent to append a requirement and a closed handoff after `close`, when the gate had already started its check: a repeat of AP-090
+
+- Что случилось: in the run `REQ050-20261017-01` REQ-ANALYST closed the handoff of rework r3 (`step-01e-req-analyst-r3.json`)
+  at 18:14:34Z. The gate (`step-01f-req-validator-r3.json`) started its check at 18:15:40Z on the hash 3355a459…; at 18:15:55Z
+  `docs/requirements.yaml` changed once more — rows 13, 21, 22 of the REQ-048 table and a comment above its criteria were
+  appended — and in `result.changes` of the already closed handoff a fourth item about REQ-048 appeared. REQ-VALIDATOR noticed
+  the change of the hash and started the check again on the new state (I1: «закрытый handoff дописан после close (как
+  AP-090)… правка должна завершиться до close и до запуска ворот», "the closed handoff was appended after close (like
+  AP-090)… the edit must finish before close and before the start of the gate"). ORCH in `orch_check`: «правка после close по
+  разрешению ORCH во время старта ворот — ошибка ORCH (повтор AP-090)», "an edit after close by ORCH's permission during the
+  start of the gate — an error of ORCH (a repeat of AP-090)".
+- Почему это плохо: a closed handoff is a record of what was handed in, an edit after `close` rewrites history (AP-002, AP-090);
+  the checker started work on one state of the file, and the author changed it under him — the check could have counted the
+  wrong version if the change of the hash had not been noticed.
+- Как правильно: everything an agent must change, it changes before `close`; ORCH, remembering a missed edit after
+  `close`, does not allow appending to the earlier handoff, but creates a new rework (`-rN`, with the command `new`) and starts
+  the gate only after its `close`; the checker takes the hash of a shared file at the beginning and at the end of the check and
+  starts again on a difference (this is what REQ-VALIDATOR did).
+- Где найдено: `handoffs/REQ050-20261017-01/step-01e-req-analyst-r3.json` (`result.changes`, `completed_at`),
+  `step-01f-req-validator-r3.json` (I1, `orch_check`); AP-090.
+
+### AP-105 — A block with a negative margin and `z-index` was put on a row of buttons without a set width; the tests press `click()` right on the element and do not see the overlap
+
+- Что случилось: at sub-step 2d of the run `REQ050-20261017-01` the block of the "?" button of the office (`.office-hint`) got
+  `position: relative; z-index: 1; align-self: stretch` and a negative bottom margin to stand at the left edge of the first row
+  of the legend. The interface description gave it a height and a margin, but not a width; `align-self: stretch` stretched the
+  block over the whole width of the panel, and it lay on top of the first row of the legend. Acceptance found this by a mouse
+  press (Ф3): in 1470×784 and 1920×1080 no legend button opened the card — `elementFromPoint` at every point of the buttons gave
+  `div#office-hint`; in narrow windows "Main session" could not be pressed. The keyboard worked. HN-02 checked only the place of
+  the block in the markup, and the tests on a fake DOM press buttons by calling `click()` right on the element — the overlap is not
+  visible to them; DESIGN-QA compared the look (`step-08f-issue-fixer.json`). Fixed with `align-self: flex-start` and
+  `pointer-events: none` on the block with `auto` only on the "?" button (`step-08g-code-fixer.json`,
+  `step-08h-code-fixer.json`).
+- Почему это плохо: the main function of the page (open an agent card from the legend) stopped working with the mouse while the tests
+  were green and DESIGN-QA passed; a diagnosis, two code edits, a repeat of the gates and of acceptance were needed.
+- Как правильно: an element that is pushed over other buttons by a negative margin or positioning gets the width of its content
+  (`align-self: flex-start` in a flex column) or `pointer-events: none` with `auto` only on its own buttons; the interface
+  description names for such a block both the width and `pointer-events`; DESIGN-QA and acceptance check the pressability of
+  neighbouring buttons through `elementFromPoint` and a real mouse press (the DevTools protocol), and the test on a fake DOM checks
+  the CSS rule (HN-02 after r3), with a reservation that this is not the look.
+- Где найдено: `handoffs/REQ050-20261017-01/step-08b-uat-runner-r1.json` (Ф3), `step-08f-issue-fixer.json` (diagnosis, I4),
+  `step-08g-code-fixer.json`, `step-08h-code-fixer.json`, `step-05-test-designer-r3.json` (HN-02).
+
+### AP-106 — Opening a hint on hover was checked by separate events on a fake DOM, without touch: on a phone the hint lay on its own button and did not pin
+
+- Что случилось: the "?" hints (REQ-053) opened on `mouseenter` and closed on `mouseleave`. HN-01 on a fake DOM called `mouseenter`,
+  `mouseleave` and `click` separately. On touch, Chrome after `touchend` sends compatible mouse events (`mouseover`, `mouseenter`,
+  `mousemove`, `mousedown`, `mouseup`, `click`) and before each one determines again the element under the point. In a narrow window
+  the hint (`position: fixed`, at the bottom of the window) lay on the "?" button that stood at the bottom of the screen: `mouseenter`
+  opened it, `mouseleave` closed it, `mousedown` and `mouseup` came to different elements, and the `click` that pins the hint went to
+  their common ancestor — for buttons at the bottom of the screen the hint did not open with any touch (in the middle of the screen the
+  touch worked; Ф2 of acceptance). DESIGN-QA did not emulate touch (`step-08d-issue-fixer.json`). Fixed: hover — only for the mouse
+  (`pointerType`), the hints have `pointer-events: none` (D21, D22, sub-step 2g).
+- Почему это плохо: on a phone a part of the hints was unavailable with green tests; tests with separate events checked not what the browser
+  does on touch.
+- Как правильно: an element over the page without pressable content gets `pointer-events: none`; opening on hover — only for
+  `pointerType` "mouse"; acceptance and DESIGN-QA check touch (touch emulation, `Input.dispatchTouchEvent`) of the buttons in the part of
+  the window where what they open appears; a test on a fake DOM is not passed off as a touch check.
+- Где найдено: `handoffs/REQ050-20261017-01/step-08b-uat-runner.json` (Ф2, scenario 26), `step-08d-issue-fixer.json` (diagnosis, I6),
+  `step-02g-frontend-dev.json`; `docs/design/REQ-050-053-guide.md` (D21, D22).
+
+### AP-107 — A live region `aria-live` is hidden with `display: none` while empty: a screen reader may not read a text that is put into it together with the showing
+
+- Что случилось: the tour row `div#tour-later` with `aria-live="polite"` (REQ-052, criterion 1) was by the design D20 "hidden by the rule
+  `:empty`"; the code did this through `.tour-later:empty { display: none }`, and the region appeared in the accessibility tree at the same
+  moment when a text was put into it. REVIEWER: «экранные дикторы часто не объявляют содержимое области, которой не было в дереве
+  доступности до изменения» ("screen readers often do not announce the content of a region that was not in the accessibility tree before
+  the change") (`step-04-reviewer-r1.json`, L1). ORCH ordered to fix it at once (REQ-052 requires announcing): the empty row was taken out
+  of the header line (`position: absolute`) and has no sizes, margins, border and background — it is in the accessibility tree before the text,
+  and for a sighted person the look is as before; checked with `Accessibility.getFullAXTree` (`step-04a-code-fixer.json`).
+- Почему это плохо: the requirement to announce a text by a screen reader was met only in words; tests and the look do not catch this.
+- Как правильно: a live region (`aria-live`, `role="status"`) exists in the accessibility tree before a text appears; an empty one is hidden
+  only visually (out of the flow, zero sizes), without `display: none`, `visibility: hidden` and the attribute `hidden`; the design names the way
+  of hiding, the test checks the CSS rule, the check in a browser is by the accessibility tree.
+- Где найдено: `handoffs/REQ050-20261017-01/step-04-reviewer-r1.json` (L1, `orch_check`), `step-04a-code-fixer.json`;
+  `docs/design/REQ-050-053-guide.md` (D20, clarified at step 10).
+
+### AP-108 — ORCH passed a message to an agent before the handoff file was created: the creation was rejected by the trace check, and the agent was already answering
+
+- Что случилось: by the words of ORCH in the task of step 10 of the run `PICKER054-20261019-01`, before step 9 (RELEASE-VALIDATOR) the message with
+  the task went to the agent earlier than the handoff file appeared: the creation of the file with the command `new` was rejected by the check — in
+  the text of the task a path to the sample project was written, and such paths in Sai files are forbidden (`traces`, `decisions/0021`). The agent
+  meanwhile started work and gave an early answer to the message, without a handoff. The handoff of step 9 itself was created later:
+  `handoffs/PICKER054-20261019-01/step-09-release-validator.json`, `created_at` and `started_at` 2026-10-19T18:56:36Z, closed at 19:02:47Z. The
+  "early" correspondence itself is not recorded in the Sai files — the fact is taken from the words of ORCH, not from a handoff.
+- Почему это плохо: an agent's work without a handoff is outside bookkeeping (Q14, `docs/workflows/handoffs.md`: a handoff is created with a command at the
+  moment an agent is started); an early answer has no `result`, no time and no `handoffs-check`; and a path of another project in the text of a task is
+  the same as AP-095 and AP-103.
+- Как правильно: (1) first create the handoff file (`cd tools && npm run handoff -- new …`) and make sure that it is created and passes
+  `handoffs-check`, and only then start the agent; (2) in the text of the task do not write paths of other folders and names of other projects — tell
+  the agent in a separate message where the material lies (call it «проект-образец», "sample project", as RELEASE-VALIDATOR does), or give the path
+  outside a file; (3) if the creation is rejected — edit the text of the task and create again, and do not start the agent with a message going around.
+- Где найдено: the words of ORCH in `handoffs/PICKER054-20261019-01/step-10-doc-updater.json` (the task, item 3);
+  `handoffs/PICKER054-20261019-01/step-09-release-validator.json` (`created_at`, I2: «Адрес проекта-образца в файлы Sai и сюда не пишется; называется
+  «проект-образец»», "The address of the sample project is not written in Sai files or here; it is called «sample project»"); AP-095, AP-103.
+
+### AP-109 — An agent ran `git checkout` in its copy outside the project, although `git checkout` is forbidden: in the task the ban was worded only for the project
+
+- Что случилось: CODE-DESIGNER of the run `PICKER054-20261019-01` cloned Sai for a prototype into folders outside the project and inside these clones ran
+  `git checkout` of a tag and `git checkout README.md`; in the disclosure it wrote: «запрет git checkout в задании относится к проекту; проект не
+  затронут — git status проекта показывает только новый файл проекта и папку handoff-ов прогона» ("the ban on git checkout in the task refers to the
+  project; the project is not touched — git status of the project shows only the new file of the design and the handoff folder of the run")
+  (`step-01-code-designer.json`, I10). The project indeed did not suffer, ORCH accepted this in `orch_check` («git checkout агента — в его копии вне
+  проекта, правило о запретах относится к проекту — принято, но в следующих заданиях запрет формулируется и для копий», "the agent's git checkout is in
+  its copy outside the project, the rule about bans refers to the project — accepted, but in the next tasks the ban is worded for copies too").
+- Почему это плохо: the ban on `git checkout/reset/stash/clean` protects the working tree from losing another's unsaved edits (in Sai the files of a run are
+  not committed until step 11); the border "project / not project" was understood by the agent differently; the same move in a copy where unchecked files
+  of the run lie could have erased them, and a prototype built in such a copy could give wrong numbers.
+- Как правильно: in the task the ban is worded for copies too: «git checkout, reset, stash, clean запрещены везде, в том числе в копиях вне проекта;
+  копию для прототипа делают свежим `git clone` (нужную метку — `git clone -b <метка>`) и не переключают» ("git checkout, reset, stash, clean are
+  forbidden everywhere, including in copies outside the project; a copy for a prototype is made with a fresh `git clone` (the needed tag with
+  `git clone -b <tag>`) and is not switched"); an agent that needs another version makes a new clone and does not switch the old one; it writes about any
+  departure in `result.issues`.
+- Где найдено: `handoffs/PICKER054-20261019-01/step-01-code-designer.json` (I10, `orch_check`); `handoffs/PICKER054-20261019-01/step-10-doc-updater.json`
+  (the task, item 3).
+
+### AP-110 — A repeat of AP-014 in the tests of the picker engine: the check of a repeat in a list covered only neighbouring equal elements, as the protection of inherited properties covered only known questions
+
+- Что случилось: in the run `PICKER055-20261019-01` criterion 2 of REQ-055 names "a repeat in a list", and the tests (step 5) checked it only for neighbouring
+  equal elements (`b1,b1` and `b1,b1,b9`); the protection "inherited properties do not count as answers" was checked only for an inherited property that is
+  itself a known question (`a`…`d`). TEST-DESIGN-VALIDATOR at step 5b built its own mutants on top of the mutants of the design (106 in total, 102 killed):
+  N23 (a repeat is looked for only against the previous element) and N35 (only against the first) survived with 0 red tests out of 71 — the list
+  `[b1,b2,b3,b2]` with the mutant gave `ok: true` instead of `E_ANSWER duplicate_option`; N24 (the keys of answers are taken by a `for-in` walk) survived on
+  answers `Object.create({ zz: 1 })` with their own correct keys. The verdict of 5b is FAIL (F1, F2 blocking, Medium), called a repeat of AP-014: the named
+  place is closed, the neighbouring case of the same class is not. Rework 1 of 3 (step 5c) added the cases `[b1,b2,b1]`, `[b1,b2,b3,b2]`, explicitly built
+  repeats through one element in the property PE-R1 and a new test PE-2e on inherited properties; at step 5d the mutants are killed (N23 and N35 — 2 red of
+  74, N24 — 1 of 74).
+- Почему это плохо: a test that closes only the example from the text of the criterion stays green with an error in the same rule but in another input: code that
+  looks for a repeat only nearby would have missed a list with a repeat through an element, and a visitor can send such a list. The author of the test checked what the
+  criterion named, and not the class of inputs of the rule.
+- Как правильно: for every rule that checks an input set ("no repeat", "inherited does not count", "order does not matter"), TEST-DESIGNER builds cases by the
+  class and not by the named example: a repeat neighbouring, through one element, with the first and with the last; an inherited property both known and unknown; in the
+  design of the tests such classes are listed in advance. TEST-DESIGN-VALIDATOR still builds its own mutants for every border of the rule (a search against the
+  previous, against the first, a skip of the last).
+- Где найдено: `handoffs/PICKER055-20261019-01/step-05b-test-design-validator.json` (F1, F2, mutants N23, N24, N35); `step-05c-test-designer.json` (rework);
+  `step-05d-test-design-validator.json` (closing of F1–F4); AP-014.
+
+### AP-111 — In the task a module is called an evaluator of conditions, while it holds only a check of the form: the difference was found by the design and not by the task
+
+- Что случилось: the task of step 1 of the run `PICKER055-20261019-01` called `tools/src/picker/conditions.js` "conditions of showing" and implied that the evaluation
+  "is the condition true with these answers" already exists. CODE-DESIGNER compared this with the file and recorded the difference Ф4: the module has one function
+  `checkCondition`, it checks the *form* of a condition in the tenant file (REQ-054), and the evaluator of visibility today is only the test oracle `visibleQuestionIds`
+  in `tools/test/picker-helpers.js`. The engine had to be built with its own evaluation of conditions (D2 of the design), and the test oracle had to stay independent
+  of the code of `src/`. Had the developer believed the task, he would have connected `conditions.js` and not got the values of conditions, and by connecting the test
+  oracle he would have made the visibility test prove nothing.
+- Почему это плохо: the name and the role of the module in the task are taken from memory or by the name, not by the content; on such a fact the volume of work, the
+  dependencies and the independence of the check are built (quality-bar §6, item 2: a fact in a task is checked before building on it).
+- Как правильно: ORCH, naming an existing module in a task, checks it with `grep -n "^export"` and writes what it does by the code (evaluates or only checks the
+  form); the receiver, not finding the named thing in the file, writes the difference into `result.issues` and works by what was measured, as CODE-DESIGNER did in Ф4 (the
+  command of the comparison and the output were attached to the record).
+- Где найдено: `docs/design/REQ-055-picker-engine.md` (Ф4, D2, item "Q13"); `handoffs/PICKER055-20261019-01/step-01-code-designer.json`;
+  `handoffs/PICKER055-20261019-01/step-09-release-validator.json` (Q13).
+
+### AP-112 — A requirement names new modules and paths without checking the guard tests of earlier requirements (a repeat of AP-068)
+
+- Что случилось: the requirements REQ-056, REQ-057, REQ-059, REQ-060 and REQ-062 were written with new folders, modules and commands (a server in `tools/src/picker/`, a
+  page in `tools/src/picker/public/`, writing of applications, the command `new`, the folder `tools/src/picker-ai/`) and with the criterion "`npm run check` — code 0", but did
+  not name the guard tests of earlier requirements that turn red from this. By gate 2 of the run `PICKERLANG-20261020-01` (`step-02-req-validator.json`, F2–F6) this was found
+  by reading the tests on the current files: PK-6d (the exact text of the help and «Доступна: check», "Available: check"), PK-6e (the closed list of modules and the ban of
+  write words in the folder), PK-7c (the allowed `node:` modules), PK-8c (the ban of listing a folder), PE-8d (the list of modules of the engine), TR-4b, TR-4d, TR-4e, TR-4f
+  (network files, addresses, `fetch(` and addresses in `public/` — the guard of criterion 4 of REQ-014). In the same place F1: the sample `e-field-schema.json` held the value
+  `sai-picker-tenant/2` as wrong, and the new format made it right. The earlier gates (`PICKER-20261019-01`, step 2) did not notice this. Fixed by two reworks of the author
+  (`step-01b`, `step-01c`) and two repeated gates (`step-02b`, `step-02c`): each requirement got a section «Охранные тесты прежних требований» ("Guard tests of earlier
+  requirements") with a table of replacements without losing the ban, and for AI — an exception from criterion 4 of REQ-014 in `decisions/0069`, item 8.
+- Почему это плохо: the guard tests of earlier requirements are part of `npm run check`; a requirement that does not name them gives a red check at the build, and the developer
+  either weakens another's ban or stops in the middle of the run — and an edit of another requirement and a record of a decision after the work violate Q12. The same class as
+  AP-068, repeated on a wider surface: one requirement after another writes a "closed list" of the new without comparing it with the lists of earlier ones.
+- Как правильно: REQ-ANALYST, naming in a requirement a new module, folder, command, network address or write to disk, before writing looks for guard tests that count
+  this (`grep` over `tools/test/` for the words `readdir`, `node:`, `fetch(`, `://`, lists of modules, exact help texts), and enters into the requirement a section "Guard
+  tests of earlier requirements": which test, what turns it red, how it is changed without losing the ban (a table of replacements, as in `0061`). REQ-VALIDATOR in item (б)
+  repeats this search itself, and does not trust the author's list. When a requirement is incompatible with a recorded rule (an external service against criterion 4 of
+  REQ-014), the exception is recorded as a decision before building (`0069`, item 8).
+- Где найдено: `handoffs/PICKERLANG-20261020-01/step-02-req-validator.json` (F1–F6); `step-02b-req-validator.json` and `step-02c-req-validator.json` (closing);
+  `decisions/0069`; a repeat of AP-068.
+
+### AP-113 — The description of a requirement named a list of modules where there is none (PK-7a, PK-8c), while the guard tests with closed lists (PK-6e, PE-8d) had to be edited with a table of replacements (a continuation of AP-112)
+
+- Что случилось: in the description of REQ-061 there stood the phrase «охранные тесты закрытых перечней и запретов (PK-6e, PK-7a, PK-7c, PK-8c, PE-8b и PE-8d) получают новые
+  модули в свой перечень» ("the guard tests of closed lists and bans (PK-6e, PK-7a, PK-7c, PK-8c, PE-8b and PE-8d) get the new modules into their list"). CODE-DESIGNER of the
+  run `LANG061-20261020-01` checked this by reading the tests and recorded the difference Ф7: lists exist in PK-6e (the list of files of the folder is equal to `ALL_MODULES`),
+  PK-7c (`CORE_MODULES.length`) and PE-8d (`ALL_MODULES.length`), while PK-7a and PK-8c have no list — they go over the folder themselves (`pickerSources()`, only the top level).
+  CODE-DESIGNER and CODE-DESIGN-VALIDATOR confirmed this (`step-01-code-designer.json`, `step-01c-code-design-validator.json`, Ф7); the decision `0070`, О7, ordered the text of the
+  requirement to be corrected during bookkeeping. Until the table of replacements existed, the earlier tests were red: on the code after step 3 exactly five are red — PK-1b, PK-1c,
+  PK-2a, PK-6e, PE-8d (`step-04b-reviewer.json`, `step-05-code-fixer.json`, I1); after 15 rows of the table of replacements all 98 tests `picker-*` are green (review, step 4b). The
+  phrase of the requirement was corrected in bookkeeping at step 12 (the "before" copy is `step-12-doc-updater.json`, `result.before_copy`).
+- Почему это плохо: AP-112 required that a requirement name the guard tests of earlier requirements after reading the tests and not from memory. Here the list was named by the names
+  of the tests, without reading: two tests of six turned out not to be lists. A task that names tests without checking them sends the developer to look for a list that is not there,
+  and the design corrects the requirement after the fact, and in this run the difference was found by the design and not by the task (the same as AP-111).
+- Как правильно: when a requirement names guard tests, REQ-ANALYST writes for each what exactly the test counts and where (`grep -n` over `tools/test/` with the line number and
+  the output) — a "closed list" (a list or a number) or "goes over the folder itself"; REQ-VALIDATOR in item (б) repeats this reading for every named test, and not only for the first.
+  In the table of replacements only tests that really turn red stay; tests without a list are recorded as "no edits, they act on the new modules" (this is how it was done in the design
+  of REQ-061, item 11).
+- Где найдено: `handoffs/LANG061-20261020-01/step-01-code-designer.json` and `step-01c-code-design-validator.json` (Ф7); `step-04b-reviewer.json` (red tests before the table of
+  replacements); `decisions/0070` (О7); `docs/design/REQ-061-picker-languages.md` (Ф7, item 11); a continuation of AP-112.
+- Repeat on 2026-10-21 (`PICKERCARD-20261021-01`, WF-01): REQ-065 again named the guard tests of the released REQ-056 with an incomplete list — it named only PK-6e, PK-7a, PK-7c,
+  PK-8c, PE-8d, TR-4d, and did not name the tests that count the routes and the structure of `server.js` (SU-2, SV-3a, SV-3e, SV-4e and others, nine in all); found by gate 2 by reading the
+  tests (P1, High, `handoffs/PICKERCARD-20261021-01/step-02-req-validator.json`), closed by the paragraph «Охранные тесты REQ-056 для новых маршрутов» ("Guard tests of REQ-056 for the
+  new routes") with rows "was → became" and a comparison with the code (`step-01b-req-analyst.json`, `step-02b-req-validator.json`); no new record was made, the rule is the same.
+
+### AP-114 — Translation readers who are not native speakers disagree with each other: the final "yes" of the agents does not prove that the disputed lines are right, and a third round of disputes does not resolve them
+
+- Что случилось: the meaning of the translations kk and en was checked by reader agents in three rounds (criterion 8 of REQ-061). Round 1: "no" for 21 pairs of kk and 12 pairs of
+  en; round 2: for 5 and 2; round 3: for 0 and 0; the final "yes" for 297 of 297 pairs in both languages (`step-10-ba-analyst.json`, `step-09-backend-dev.json`,
+  `step-09b-backend-dev.json`). But the readers of Kazakh are not native speakers, and their edits differed between rounds and between runs: in kk 139 the first reader called «бос
+  бюджет» ("free budget") ambiguous and asked for «еркін», the second proposed «бос бюджет», in the text there stands a third variant «Бос қаражат» (the word «бюджет» was not
+  changed in the other nine texts); in kk 105 a reader proposed «сәйкессіздіксіз», a second called it heavy, «алшақтықсыз» was left; kk 141 («сауда» added), 121 (word order,
+  verbatim from the reader) and 160 (in round 1 the meaning was the opposite) are also words of a reader, not a native speaker. Round 3 accepted these lines, but the "yes" of
+  a reader agent does not mean that the Kazakh is flawless: RELEASE-VALIDATOR recognised criterion 8 as met only in the part of the reader agent and left five lines to a person who
+  knows Kazakh (`step-11-release-validator.json`, К8).
+- Почему это плохо: a third reader of the same nature does not resolve the dispute of two earlier ones — it chooses between variants without knowing which is right; the figure "297
+  of 297" looks like a full check, although on the disputed lines it is the agreement of three who do not know.
+- Как правильно: if after two rounds the edits of a line differ (readers propose different words or one rejects the word of another), the line is not given to a third reader,
+  but marked "for a native speaker" in `result.issues` (kind `FOR_NATIVE_SPEAKER`) and goes together with the variants to the owner or to a person who knows, before publication; the
+  number of "yes" of agents is written separately from the number of lines waiting for a native speaker; the criterion is recorded as met only in the part of the reader agent (as in
+  `decisions/0069`, item 6, and the record of REQ-061).
+- Где найдено: `handoffs/LANG061-20261020-01/step-10-ba-analyst.json` (I1, I2), `step-09b-backend-dev.json` (I1), `step-11-release-validator.json` (К8); `decisions/0069`, item 6.
+
+### AP-115 — A threshold by the size of the socket buffer in a stability test (SF-6b) turned red in about 7% of runs: the test depended on the circumstances and not on the code
+
+- Что случилось: the test SF-6b of the file `picker-server-faults.test.js` checked that the server stops accepting the body of a request: the client sends a stream of 40 MiB, and by the
+  time the server closed the connection the client could have written no more than 12 MiB (`assert.ok(forty.written < 12 * 1024 * 1024)`). TEST-DESIGN-VALIDATOR of the run
+  `SERVER056-20261020-01` ran the four server files in a row 44 times: 3 red, in the two caught ones — SF-6b with the messages `written 13107200` and `written 12582912` (the latter is
+  exactly 12 MiB). The test without any change of code turned red because the loopback socket buffers on both sides together gave 12–13 MiB, and the margin of 4 MiB was smaller than
+  their spread. The whole `npm run check` and SF-6b alone (0 of 30) were green meanwhile. Fixed by rework 1 (`step-05c`): `serverClosed` and `written < 30 MiB` are checked (a server that reads
+  everything would have accepted 40 MiB, mutants M14–M16 stay red), the extra check of time was removed; the stability series after the fix is 62 runs in a row without red, SF-6b alone ×40
+  with two parallel `npm test` — 0 of 40.
+- Почему это плохо: a threshold chosen by single measurements on a quiet machine checks the size of the buffer of the operating system and not the behaviour of the server. Such a test turns red rarely and
+  without connection to the work, it is written off as "unstable" (ISS-0075 has already collected three such tests), and a real error of the server hides among false reds. A single green run does not
+  check the circumstances (quality-bar §6, item 1).
+- Как правильно: when a test compares a number that the system sets (a buffer size, time, the order of events), the threshold is taken with a margin of several times and not by eye, and catches a
+  qualitative difference (the stream was not stopped at all: almost everything was accepted) and not one that lies inside the spread of buffers. TEST-DESIGN-VALIDATOR at step 5b runs the test files as a
+  series in a row (tens of times) and under load, and not as a single run; a red in a series is a finding, even if `npm run check` is green. Numbers by wall clock (less than 1500 ms) are not used in
+  stability tests.
+- Где найдено: `handoffs/SERVER056-20261020-01/step-05b-test-design-validator.json` (F1), `step-05c-test-designer.json` (rework), `step-05d-test-design-validator.json` (closing, a series of 62 runs);
+  connected with ISS-0075.
+
+### AP-116 — A test that does not finish on a red check: an exception in the check did not let the started server be closed, and the test file hung
+
+- Что случилось: the failure tests SV-1c2, SV-1g and SF-6f checked that `startPicker` with a wrong parameter does not start a server. If the server was started by mistake (mutants M96 and M75), the red check
+  threw an exception before this server was closed, and the `node --test` process did not finish: the run hung instead of ending red. TEST-DESIGN-VALIDATOR (`step-05b`, F3, Low) found this with mutants; with M75
+  the file did not finish after the red SV-1b, SV-1c2, SV-1g and SV-1h. Fixed by rework 1 (`step-05c`): the helper `startPickerClosing(t, …)` closes the server in `t.after` if it was started after all; all calls of
+  `startPicker` in the failure tests were replaced with it. After the fix M96 and M75 are red, the files finish in 29–30 s (`step-05d`, 59 mutants without a single hang).
+- Почему это плохо: a red check after which the run does not finish cannot be told from a hang of the environment; `npm run check` stands for hours, ORCH or an agent kills the process, and the red test stays without a message.
+  A test whose release of a resource comes after the check does not release it when the check is red.
+- Как правильно: a resource that a test opens (a server, a socket, a timer, a process) is closed through `t.after` right after opening, and not at the end of the test body after the checks. For failure tests this is
+  especially important: they are the ones that start a server where it must not be started. TEST-DESIGN-VALIDATOR for failure tests checks with the mutant "the refusal does not work" not only that the test turns red but also
+  that the test file finishes after that.
+- Где найдено: `handoffs/SERVER056-20261020-01/step-05b-test-design-validator.json` (F3), `step-05c-test-designer.json`, `step-05d-test-design-validator.json` (closing).
+
+### AP-117 — In the acceptance task the expectation "there are no errors in the browser console" stood wider than the criterion: a failure of a scenario that is not in the criterion came out
+
+- Что случилось: criterion 5 of REQ-056, part 1, required: the page opens (200), shows a stub, the text is visible in the chosen language, a snapshot for each language. Into the task of UAT-RUNNER (`step-08`) ORCH added
+  scenario 3 «в консоли браузера нет ошибок и предупреждений» ("there are no errors and warnings in the browser console"). On a server with a closed list of routes, a fresh Chrome itself asks for `/favicon.ico`, gets 404 and writes a
+  line `error` into the console — 18 loads out of 18 (Ф1, Low). The scenario "failed", although the criterion is met; RELEASE-VALIDATOR reproduced the same line itself (4 of 4) and analysed that the criterion Ф1 does not block
+  (`step-09`, F1, I1). The decision is in ISS-0081, item 5, and in the conditions of the design of REQ-057.
+- Почему это плохо: a scenario that is not in the criterion turns a right finding into an "acceptance failure", and the release waits for a decision on what to count as an error. Worse, the expectation is checked after the build,
+  when it is already late to edit the stub, and the decision (declare an icon or record an exception) belongs to the design.
+- Как правильно: the expectations of a scenario are taken from the criterion verbatim. If ORCH or BA-ANALYST wants to check more (the console, speed, contrast), this is written into the criterion in advance, through WF-01, or is marked
+  in the scenario as "a remark, not a failure". For a page with a browser the design decides at once about the request for an icon (declare it or record an exception), like about any request that the browser makes itself.
+- Где найдено: `handoffs/SERVER056-20261020-01/step-08-uat-runner.json` (scenario 3, Ф1), `step-09-release-validator.json` (F1, I1, I4а), `docs/uat/REQ-056-RUN.md`; ISS-0081, ISS-0077 (update of 2026-10-21).
+
+### AP-118 — The table of translations in the design diverged from the code after the edits by readers: the design fell behind, and tests by the table would have turned red (a continuation of AP-114)
+
+- Что случилось: in the design of REQ-056 (item 5.4) there stood a table of 12 server texts, and kk and en in it are named as a sentence that the readers will check. The readers (step 2c) proposed edits, ORCH accepted them,
+  and different values got into `texts.js`: eight values in six keys (`server_forbidden`, `server_method`, `server_wrong_type`, `server_slow`, `server_answers_invalid`, `page_stub_notice`); I compared the table with the file by a
+  program. REVIEWER noticed the difference at step 3b (F5), RELEASE-VALIDATOR confirmed at step 9 (F5). The design by the table is the support of TEST-DESIGNER: one who took the lines from the table would have got red tests on the texts;
+  ORCH told him that `texts.js` is what acts.
+- Почему это плохо: the table of texts in the design and the file of texts are two copies of one thing (AP-014); for a translation that readers edit the source of truth changes at once. The design stays a document by which tests and the
+  README are made, and its out-of-date line turns into a false oracle.
+- Как правильно: in the design the table of texts that readers will edit is marked «исходная редакция; источник истины — `texts.js`» ("original version; the source of truth is `texts.js`"), and at every edit by readers (the step at which
+  ORCH accepts it) ORCH or CODE-DESIGNER append this to the design or tell TEST-DESIGNER explicitly. Tests take the texts from `texts.js` and not from the table of the design. DOC-UPDATER at step 10 compares the table of the design with the file
+  by a program and writes in the design how many values in how many keys diverged (here a mark after the build was added in item 5.4).
+- Где найдено: `handoffs/SERVER056-20261020-01/step-03b-reviewer.json` (F5, I1), `step-09-release-validator.json` (F5, I4б), `docs/design/REQ-056-picker-server.md`, item 5.4; a continuation of AP-114.
+
+### AP-119 — A checker's probe stopped a process by a name pattern and hit its own server: the 10-minute stability check broke off through the fault of the probe
+
+- Что случилось: RELEASE-VALIDATOR of the run `SERVER056-20261020-01` (step 9) started a 10-minute stability check of the server and in the course of it killed a process with a command by a name pattern; the pattern matched
+  the checked server itself too, and the run broke off. This is not a failure of the server; the check was repeated in full, it passed (8650 requests, memory 58 → 62 MB, the process alive). Noted in `step-09`, I4в, and in the
+  section about stability.
+- Почему это плохо: stopping by a name pattern (`pkill -f`, `killall`) depends on what else runs on the computer with the same command name: it can kill another's process (including Pixel Office or the server of another agent) or the
+  checked server instead of the extra one. A long check that broke off costs minutes, and the red look of the run is similar to a failure of the server.
+- Как правильно: a process started by a probe is stopped by its own identifier (`$!` when started in the background, then `kill "$PID"`), and before stopping one checks that the identifier is the right one. The server for a probe
+  is started on port 0 and one checks that it alone is in the list of listening sockets. If a pattern is still needed, it includes the unique path of the data folder of the probe, so that it fits only that one.
+- Где найдено: `handoffs/SERVER056-20261020-01/step-09-release-validator.json` (the section about stability, I4в).
+
+### AP-120 — A ban of words by substrings without identifier borders gives false hits on ordinary code: `rm(` inside `setTransform(`
+
+- Что случилось: in REQ-067 criterion 1 forbade in the code of the customer part the words `exec`, `eval(`, `rm(`, `fork` and others "as substrings", criterion 6 looked for `skip|todo|only`, criterion 4 — the
+  substring `step-`. By gate 2 of the run `PICKERCARD-20261021-01` (P2, Medium) this was checked on real code: the owner's office draws through `ctx.setTransform(`
+  (`tools/src/pixel-office/public/office-view.js:429`), and `rm(` is a substring of `setTransform(`; a page in the style of the office will repeat this move and turn red by criterion 1. Likewise `eval(` inside `retrieval(`,
+  `exec` inside `execCommand`, `fork` inside `forkJoin`, `only` and `skipped` in the text of a test, `step-` in the name of the CSS class `step-list`. Fixed by the author's rework (`step-01b-req-analyst.json`): a rule of
+  comparison by identifier borders (on the left and on the right there is no letter, digit, `_`, `$`; list A — whole words everywhere, list B — a name with an opening bracket, `new Function`), exact forms of a test skip (`.skip(`,
+  `.only(`, `.todo(`), `step-` narrowed to the names of step files. The repeated gate checked the rule itself: 12 violations out of 12 caught, 10 permitted lines (`setTransform(`, `retrieval(`, `execCommand(` and others) not touched,
+  on the real files there are no hits (`step-02b-req-validator.json`).
+- Почему это плохо: a search by substring paints ordinary code red, and the builder either guesses how to compare, or softens the check (Q6), or renames other people's calls for the sake of the test. The weak link is not the ban itself but
+  that the way of comparison is not named: "a word as a substring" and "a whole word" give different results on one file, and a requirement without a choice cannot be checked.
+- Как правильно: a requirement that forbids words in code names the way of comparison (a whole identifier or a call, the borders), what counts as a violation in a comment and in a string, and exact forms instead of general roots
+  (`.skip(`, not `skip`). REQ-ANALYST before writing checks the rule on the real code it will look into — on false hits (`setTransform(`, `retrieval(`) and on artificial violations; REQ-VALIDATOR in item (а) repeats this itself, as it
+  did at gate 2.
+- Где найдено: `handoffs/PICKERCARD-20261021-01/step-02-req-validator.json` (P2); `step-01b-req-analyst.json` (the rule and the check); `step-02b-req-validator.json` (closing); `docs/requirements.yaml`, REQ-067, criteria 1, 4, 6.
+
+### AP-121 — The output of an unstable red was not saved: the cause had to be restored from the OS log, and it cannot be proved
+
+- Что случилось: at gate 1g of the run `SERVER056-20261020-01` the first full `npm run check` turned red with one test EX-42; the repeated run was green, and the red was recorded as "not because of the work". The full output of that
+  failure and its exact time did not get into the handoff. The diagnosis of ISS-0075 (`step-01-issue-fixer.json`, item 3 and I12) later ran the same file 368 times on unchanged code and never got a red; the mechanism (a step of the wall
+  clock backwards and the strict check of the time ENGINE) was reproduced only by emulation, and whether it was the cause of that single red stayed a coincidence in time with the OS log and is **not proved**. The closing of ISS-0075
+  (RELEASE-VALIDATOR, `step-05`, I1) had to be limited: about EX-42 one cannot write that the cause is proved or the test is fixed.
+- Почему это плохо: the evidence "whose failure" under quality-bar §6, item 4 requires a repeat with the same message; without a saved output there is nothing to compare a repeat with, and a red not connected with the work "by word" looks the
+  same as a red connected with it. The defect stays with an unconfirmed cause, and the next agent again decides whether to restart or to investigate.
+- Как правильно: at the first red that an agent attributes not to the work, the full output of the failed test (name, message, stack), the exact time of the failure from the clock (`date -u +%Y-%m-%dT%H:%M:%SZ`), the number of the run
+  and what ran in parallel (other runs, load) are saved in `result.issues` of its handoff; with them — a repeat without the work by §6, item 4. If the output is not saved, this is written directly, and the cause stays "not established".
+- Где найдено: `handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json` (item 3, I7, I12), `step-05-release-validator.json` (I1, item 5); `docs/issues/ISS-0065-team-channel-tests-real-clock-e-time.md` (update of 2026-10-21).
+
+### AP-122 — The test environment is not protected from background actions of a tool whose version was updated on CI later than the tests were written: git 2.55 and newer held a lock in the checked tree
+
+- Что случилось: the test HC-6a (`tools/test/handoffs-base.test.js`) hashes the whole tree of a personal temporary repository, `.git` included, before and after a command and requires that the hash does not change. Git of version 2.55 and
+  newer (it is installed on `ubuntu-24.04` in GitHub Actions) after `git commit` starts a background cleanup (`git maintenance run --auto --detach`), which takes `.git/objects/maintenance.lock`; the hash "before" saw the lock, "after" did not.
+  Two runs of `check.yml` on GitHub turned red with the same test on the same line, a restart helped (ISS-0075). The description of the defect had before named "a slow GitHub machine" as the cause — this was a guess without reproduction.
+  Reproduced only with git 2.55.0 (the lock is visible in 74 of 100 commits; with 2.50.1 — in 0 of 100), on the local system git there was no red at all.
+- Почему это плохо: the test passed on all machines where git is older, and turned red on a runner with a newer one; the sandbox of the test did not create conditions in which the surrounding tool does nothing "by itself". The git version in `check.yml`
+  is not pinned (ISS-0084, item 5), so this will repeat at the next update of the image. Fixing the hash ("exclude the lock") is not allowed — the check "the command does not change the tree" would weaken (Q6).
+- Как правильно: the sandbox of a test turns off, for all processes of the test and of the checked command, the automatic background actions of tools that write into the checked tree (here `GIT_CONFIG_COUNT=2`, `maintenance.auto=false`,
+  `gc.auto=0` in `sandbox()`), and the test of the environment checks the keys themselves (FR-4, FR-5), not depending on the git version on the machine. The cause of an unstable red on CI is reproduced in the conditions in which it turns red (the same version of
+  the tool), and is not named by a guess.
+- Где найдено: `handoffs/ISS-0075-20261021-01/step-01-issue-fixer.json` (item 2, I3, I7, I9, I12), `step-05-release-validator.json` (item 2), `decisions/0075-flaky-tests-en62-hc6a.md`, `docs/issues/ISS-0075-team-channel-en62-flaky-inbox-race.md`.
+
+### AP-123 — A criterion named a test file that does not exist: the design planned a file, the task did not name it, the tests went into another file, and the way of checking cannot be run literally
+
+- Что случилось: criterion 9 of REQ-068 says: «Тест-свойство `tools/test/picker-text-property.test.js` с закреплённым зерном…» ("A property test `tools/test/picker-text-property.test.js` with a fixed seed…"). The design
+  (`docs/design/REQ-068-picker-text-charset.md`, item 3, D9) also planned such a file, but in the `write_set` of step 5 of the TEST-DESIGNER task it was not there, and the property tests TP-9a…c went into the already named file
+  `tools/test/picker-text.test.js`; TEST-DESIGNER recorded this in `result.issues` (`handoffs/TEXT068-20261021-01/step-05-test-designer.json`, INFO). The difference was found twice: by TEST-DESIGN-VALIDATOR
+  (`step-05b-test-design-validator.json`, F1, Low) and by RELEASE-VALIDATOR (`step-07-release-validator.json`, F1, Low: «ls: no matches»; the content of the criterion is met, the named way of checking cannot be run literally). Fixed at step 8
+  by an edit of the name in the criterion (`picker-text.test.js`, tests TP-9a…c; the meaning of the criterion did not change; the "before" copy is `handoffs/TEXT068-20261021-01/step-08-doc-updater.json`, `result.before_copy`).
+- Почему это плохо: the WF-05 audit by the dimension "Requirements" runs the way of checking of every criterion literally; the file is not there — a High finding with a criterion met in substance. The gates of the requirement and of the design passed
+  without opening the named file: the name of the file lived in the criterion, the design and the task as three independent records, and nobody compared them with each other. Item Q1 ("every criterion has its way of checking named") is not met while what is named cannot be run.
+- Как правильно: (1) REQ-ANALYST names a test file in a criterion only after the file exists, or writes "a new file `…` is created by this work", and ORCH includes such a file in the `write_set` of TEST-DESIGNER; (2) CODE-DESIGNER, naming a test file in the
+  table "criterion → test", compares the name with the criterion, and ORCH compares the `write_set` with the table of the design; (3) if TEST-DESIGNER puts a test in another file, it writes at once a `result.issues` of the kind `DISCREPANCY` with the name from the criterion, so that
+  the difference is corrected by a micro-amendment of WF-01 before step 7, and not by RELEASE-VALIDATOR at the last gates; (4) TEST-DESIGN-VALIDATOR and RELEASE-VALIDATOR for every criterion run `ls` on the named file (as in `step-07`).
+- Где найдено: `handoffs/TEXT068-20261021-01/step-05-test-designer.json`, `step-05b-test-design-validator.json` (F1), `step-07-release-validator.json` (F1); `docs/requirements.yaml`, REQ-068, criterion 9; `docs/design/REQ-068-picker-text-charset.md`, item 3 (D9).

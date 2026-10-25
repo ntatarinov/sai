@@ -1,135 +1,136 @@
-# WF-06 — Выбор идеи
+# WF-06 — Idea selection
 
-Несколько агентов совместно анализируют идеи-кандидаты; один агент выносит итоговый
-вердикт; второй агент получает вердикт, проверяет его и применяет в бизнес-логике
-проекта. Требования — REQ-002…REQ-004, дизайн — `docs/design/REQ-002-idea-verdict.md`
-(контракты файлов — там, §4; здесь — порядок работы).
+Several agents analyze the candidate ideas together; one agent gives the final verdict; a
+second agent receives the verdict, checks it and applies it in the business logic of the
+project. Requirements — REQ-002…REQ-004, design — `docs/design/REQ-002-idea-verdict.md` (the
+file contracts are there, §4; here is the order of work).
 
-Все команды — из `tools/`. Время — из часов: `date -u +"%Y-%m-%dT%H:%M:%SZ"`.
+All commands are run from `tools/`. Time is from the clock: `date -u +"%Y-%m-%dT%H:%M:%SZ"`.
 
-## Роли
+## Roles
 
-| Роль | Мандат | Что делает в WF-06 |
+| Role | Mandate | What it does in WF-06 |
 |---|---|---|
-| ORCH | `.claude/agents/orchestrator.md` | Шаги 0 и 6: готовит прогон, запускает агентов, пишет все handoff-ы, сверяет результат |
-| IDEA-ANALYST ×3 | `.claude/agents/idea-analyst.md` | Шаги 1–3, каждый со своей точкой зрения: `market`, `execution`, `owner_fit`. Один запуск на точку зрения на все три раунда |
-| IDEA-JUDGE | `.claude/agents/idea-judge.md` | Шаг 4: итоговый вердикт — **первый агент запроса владельца** |
-| VERDICT-EXECUTOR | `.claude/agents/verdict-executor.md` | Шаг 5: получает вердикт, перепроверяет, применяет — **второй агент запроса владельца** |
-| Владелец | — | Шаг 7: принимает решение. Агенты его не принимают |
+| ORCH | `.claude/agents/orchestrator.md` | Steps 0 and 6: prepares the run, launches the agents, writes all handoffs, checks the result |
+| IDEA-ANALYST ×3 | `.claude/agents/idea-analyst.md` | Steps 1–3, each with its own point of view: `market`, `execution`, `owner_fit`. One launch per point of view for all three rounds |
+| IDEA-JUDGE | `.claude/agents/idea-judge.md` | Step 4: the final verdict — **the first agent of the owner's request** |
+| VERDICT-EXECUTOR | `.claude/agents/verdict-executor.md` | Step 5: receives the verdict, re-checks it, applies it — **the second agent of the owner's request** |
+| Owner | — | Step 7: makes the decision. The agents do not make it |
 
-Все роли — разные запуски агентов. Судья и исполнитель не бывают аналитиками.
+All roles are different launches of agents. The judge and the executor are never analysts.
 
-## Шаги
+## Steps
 
-**Параллельность (требование владельца: «Агенты должны многопоточно работать»).**
-Всё, что не зависит друг от друга, запускается одновременно — одним сообщением с
-несколькими запусками агентов:
-- три аналитика в **каждом** раунде (шаги 1, 2, 3) работают одновременно;
-- задачи из `proposed-actions.json`, которые не зависят друг от друга (например, две
-  проверки конкурентов), отправляются одновременно;
-- последовательны только настоящие зависимости: раунд 2 ждёт все оценки раунда 1,
-  раунд 3 — все проверки раунда 2, судья — все ответы, исполнитель — вердикт;
-- **PASS проверки — тоже зависимость:** следующий шаг не начинается, пока `validate`
-  по предыдущей стадии не дал OK;
-- параллельные агенты **никогда не пишут в один и тот же файл**: у каждого свой
-  выходной файл, и ORCH назначает их так, чтобы они не пересекались. Чужой файл,
-  который ещё пишется, может быть недописан — свою самопроверку агент оценивает
-  только по своему файлу, стадию целиком проверяет ORCH, когда готовы все (AP-008).
+**Parallelism (the owner's requirement: «Агенты должны многопоточно работать» — "The agents
+must work multi-threaded").** Everything that does not depend on each other is launched at the
+same time — in one message with several agent launches:
+- the three analysts in **each** round (steps 1, 2, 3) work at the same time;
+- the tasks from `proposed-actions.json` that do not depend on each other (for example, two
+  competitor checks) are sent at the same time;
+- only real dependencies are sequential: round 2 waits for all the assessments of round 1,
+  round 3 for all the checks of round 2, the judge for all the responses, the executor for the
+  verdict;
+- **the PASS of a check is also a dependency:** the next step does not start until `validate`
+  on the previous stage has given OK;
+- parallel agents **never write into the same file**: each has its own output file, and ORCH
+  assigns them so that they do not overlap. Another's file that is still being written may be
+  incomplete — an agent judges its own self-check only by its own file, and ORCH checks the
+  whole stage when all are ready (AP-008).
 
-**Шаг 0 — ORCH готовит прогон.**
-1. Снимок «до» — **первым действием шага**, до любой правки:
-   `npm run snapshot -- <вне проекта>/wf06-<RUN-ID>-before.txt`. Если после снимка что-то
-   пришлось исправить — прогон начинается заново с новым RUN-ID (AP-007).
-2. Проверить, что выводы в файлах идей размечены `<!-- conclusion:start -->` …
-   `<!-- conclusion:end -->` (дизайн §4.2).
+**Step 0 — ORCH prepares the run.**
+1. The "before" snapshot is the **first action of the step**, before any edit:
+   `npm run snapshot -- <outside the project>/wf06-<RUN-ID>-before.txt`. If something had to
+   be fixed after the snapshot, the run starts again with a new RUN-ID (AP-007).
+2. Check that the conclusions in the idea files are marked `<!-- conclusion:start -->` …
+   `<!-- conclusion:end -->` (design §4.2).
 3. `npm run prepare-run -- <RUN-ID> --candidates <ids> --context <paths> --analyst market=analyst-market --analyst execution=analyst-execution --analyst owner_fit=analyst-owner-fit --judge judge --executor executor`.
-4. Записать напечатанный `seal` в `context.run_seal` handoff-а шага 0 и в отчёт
-   владельцу.
+4. Write the printed `seal` into `context.run_seal` of the handoff of step 0 and into the
+   report to the owner.
 
-**Шаг 1 — раунд 1, оценки.** ORCH пишет три handoff-а и запускает трёх аналитиков
-параллельно. Каждый пишет `assessment-<lens>.json` и проверяет его:
-`npm run validate -- ../runs/<RUN-ID> --stage assessments` (после того как готовы все
-три — это делает ORCH).
+**Step 1 — round 1, assessments.** ORCH writes three handoffs and launches the three analysts
+in parallel. Each writes `assessment-<lens>.json` and checks it:
+`npm run validate -- ../runs/<RUN-ID> --stage assessments` (after all three are ready — ORCH
+does this).
 
-**Шаг 2 — раунд 2, взаимная проверка.** ORCH продолжает тех же трёх аналитиков. Каждый
-читает оценки двух других и пишет `crossreview-<lens>.json`: по **каждой** чужой оценке —
-`agree` или `disagree` с предложенным баллом и цитатой.
+**Step 2 — round 2, cross-review.** ORCH continues the same three analysts. Each reads the
+assessments of the other two and writes `crossreview-<lens>.json`: for **each** other
+assessment — `agree` or `disagree` with a proposed score and a quote.
 `npm run validate -- ../runs/<RUN-ID> --stage crossreviews`.
 
-**Шаг 3 — раунд 3, ответы.** ORCH продолжает тех же аналитиков. Каждый отвечает на
-**каждое** несогласие со своими оценками в `response-<lens>.json`: `revise` (новый балл)
-или `hold` (держится, с цитатой). `npm run validate -- ../runs/<RUN-ID> --stage responses`.
+**Step 3 — round 3, responses.** ORCH continues the same analysts. Each answers **every**
+disagreement with its assessments in `response-<lens>.json`: `revise` (a new score) or `hold`
+(holds, with a quote). `npm run validate -- ../runs/<RUN-ID> --stage responses`.
 
-**Шаг 4 — вердикт.** ORCH запускает судью. Судья пишет `verdict-N.json` и
-`verdict-N.md` (N = 1 или номер доработки) и сам проверяет:
+**Step 4 — verdict.** ORCH launches the judge. The judge writes `verdict-N.json` and
+`verdict-N.md` (N = 1 or the number of the rework step) and checks itself:
 `npm run validate -- ../runs/<RUN-ID> --stage verdict`.
 
-**Шаг 5 — исполнитель.** ORCH запускает исполнителя. Исполнитель:
-1. сам проверяет вердикт (дизайн §4.9, пять обязательных проверок) и пишет
-   `verdict-review-N.json` с `ACCEPT` или `REJECT`;
+**Step 5 — executor.** ORCH launches the executor. The executor:
+1. itself checks the verdict (design §4.9, five mandatory checks) and writes
+   `verdict-review-N.json` with `ACCEPT` or `REJECT`;
 2. `npm run validate -- ../runs/<RUN-ID>`;
-3. при `ACCEPT` или при третьем `REJECT`: `npm run apply-verdict -- ../runs/<RUN-ID>`.
+3. on `ACCEPT` or on the third `REJECT`: `npm run apply-verdict -- ../runs/<RUN-ID>`.
 
-**Шаг 6 — ORCH сверяет и передаёт дальше.**
-1. Сверить artifacts_out исполнителя: блок в STATE.md, `proposed-actions.json`,
-   `apply-report.json` (хеши совпадают с файлами).
-2. По каждому действию из `proposed-actions.json` создать handoff следующей роли
-   (`handoffs/<RUN-ID>/step-<step>-<role>.json`, `status: PENDING`); если действие
-   зависит от другого — `context.depends_on`.
-3. Снимок «после» — сразу после handoff-ов, до любого учёта:
-   `npm run snapshot -- <вне проекта>/wf06-<RUN-ID>-after.txt`.
+**Step 6 — ORCH checks and passes on.**
+1. Check the executor's artifacts_out: the block in STATE.md, `proposed-actions.json`,
+   `apply-report.json` (the hashes match the files).
+2. For each action from `proposed-actions.json`, create a handoff for the next role
+   (`handoffs/<RUN-ID>/step-<step>-<role>.json`, `status: PENDING`); if an action depends on
+   another — `context.depends_on`.
+3. The "after" snapshot — right after the handoffs, before any bookkeeping:
+   `npm run snapshot -- <outside the project>/wf06-<RUN-ID>-after.txt`.
 4. `npm run snapshot-diff -- <before> <after> --allow runs/<RUN-ID>/ --allow handoffs/<RUN-ID>/ --allow STATE.md`.
 5. `npm run validate -- ../runs/<RUN-ID> --seal <seal>`.
-6. Только после этого — учёт: статусы требований, `docs/anti-patterns.md`, STATE.md
-   вне блока.
+6. Only after that — the bookkeeping: the statuses of requirements, `docs/anti-patterns.md`,
+   STATE.md outside the block.
 
-**Шаг 7 — владелец.** Читает блок «Рекомендация агентов (WF-06)» в STATE.md и
-`verdict-N.md`, принимает решение. Решение о старте записывает в STATE.md только
-владелец (или ORCH по его прямому слову).
+**Step 7 — owner.** Reads the block «Рекомендация агентов (WF-06)» ("Recommendation of the
+agents (WF-06)") in STATE.md and `verdict-N.md`, makes the decision. The decision to start is
+written into STATE.md only by the owner (or by ORCH on the owner's direct word).
 
-## Артефакты
+## Artifacts
 
-| Шаг | Кто | Файл в `runs/<RUN-ID>/` |
+| Step | Who | File in `runs/<RUN-ID>/` |
 |---|---|---|
-| 0 | ORCH (prepare-run) | `run.json`, `sources/…` (очищенные копии) |
+| 0 | ORCH (prepare-run) | `run.json`, `sources/…` (cleaned copies) |
 | 1 | IDEA-ANALYST | `assessment-<lens>.json` |
 | 2 | IDEA-ANALYST | `crossreview-<lens>.json` |
 | 3 | IDEA-ANALYST | `response-<lens>.json` |
 | 4 | IDEA-JUDGE | `verdict-N.json`, `verdict-N.md` |
-| 5 | VERDICT-EXECUTOR | `verdict-review-N.json`; через apply-verdict — `proposed-actions.json`, `apply-report.json`, блок в `STATE.md` |
-| 6 | ORCH | handoff-ы следующим ролям в `handoffs/<RUN-ID>/` |
+| 5 | VERDICT-EXECUTOR | `verdict-review-N.json`; through apply-verdict — `proposed-actions.json`, `apply-report.json`, the block in `STATE.md` |
+| 6 | ORCH | handoffs to the next roles in `handoffs/<RUN-ID>/` |
 
-## Handoff-ы
+## Handoffs
 
-Формат и правила полей — `docs/workflows/handoffs.md`. Пишет **только ORCH**;
-получатель меняет только `status`, `completed_at` и `result`.
+The format and the field rules are in `docs/workflows/handoffs.md`. **Only ORCH** writes them;
+the recipient changes only `status`, `completed_at` and `result`.
 
 - `workflow_id`: `"WF-06"`; `from_agent`: `"ORCH"`.
-- Файлы: `handoffs/<RUN-ID>/step-00-orch.json`, `step-01-idea-analyst-<lens>.json`,
+- Files: `handoffs/<RUN-ID>/step-00-orch.json`, `step-01-idea-analyst-<lens>.json`,
   `step-02-idea-analyst-<lens>.json`, `step-03-idea-analyst-<lens>.json`,
-  `step-04-idea-judge[-vN].json`, `step-05-verdict-executor[-vN].json`, затем
-  `step-10…`, `step-11…` из `proposed-actions.json`.
-- `created_at` и `started_at` — одно чтение часов при отправке.
-- `context.agent_run_id` — идентификатор запуска агента; ORCH пишет его сразу после
-  запуска. У аналитика в раундах 1–3 он один и тот же.
-- `context.run_seal` — только в handoff-е шага 0.
+  `step-04-idea-judge[-vN].json`, `step-05-verdict-executor[-vN].json`, then `step-10…`,
+  `step-11…` from `proposed-actions.json`.
+- `created_at` and `started_at` — one reading of the clock at sending.
+- `context.agent_run_id` — the identifier of the agent's launch; ORCH writes it right after the
+  launch. For an analyst it is the same in rounds 1–3.
+- `context.run_seal` — only in the handoff of step 0.
 
-## Цикл доработки
+## Rework loop
 
-- Исполнитель вернул `REJECT` в `verdict-review-N.json` и N < 3 → ORCH запускает судью
-  снова (новый handoff шага 4 с `-v<N+1>`). Судья пишет `verdict-(N+1).json` с учётом
-  `issues`, исполнитель проверяет его заново.
-- Не более **3** проверок вердикта. Третий `REJECT` → apply-verdict пишет в STATE.md
-  блок эскалации; прогон **ESCALATED**, решение за владельцем.
-- Нарушение контракта, найденное `validate` на шагах 1–3, исправляет **автор** файла;
-  ORCH продолжает того же агента с выводом validate.
+- The executor returned `REJECT` in `verdict-review-N.json` and N < 3 → ORCH launches the judge
+  again (a new handoff of step 4 with `-v<N+1>`). The judge writes `verdict-(N+1).json`
+  taking `issues` into account, the executor checks it again.
+- No more than **3** checks of the verdict. The third `REJECT` → apply-verdict writes an
+  escalation block into STATE.md; the run is **ESCALATED**, the decision is the owner's.
+- A contract violation found by `validate` at steps 1–3 is fixed by the **author** of the file;
+  ORCH continues the same agent with the validate output.
 
-## Условия остановки
+## Stop conditions
 
-- Прогон завершён: `apply-verdict` вывел `applied recommend` или `applied escalate`,
-  шаг 6 выполнен.
-- Прогон остановлен и эскалирован владельцу, если: `E_SOURCE_CHANGED` или `E_SEAL`
-  (кто-то поменял копии — начинать новый прогон); автор не может исправить нарушение
-  контракта за две попытки; snapshot-diff показал изменения вне разрешённых мест.
-- Прогон никогда не завершается «вручную»: нельзя писать блок в STATE.md, handoff-ы
-  или события Pixel Office в обход инструментов и этих шагов.
+- The run is finished: `apply-verdict` printed `applied recommend` or `applied escalate`,
+  step 6 is done.
+- The run is stopped and escalated to the owner if: `E_SOURCE_CHANGED` or `E_SEAL` (someone
+  changed the copies — start a new run); the author cannot fix the contract violation in two
+  attempts; snapshot-diff showed changes outside the allowed places.
+- A run is never finished "by hand": it is not allowed to write a block in STATE.md, handoffs
+  or Pixel Office events bypassing the tools and these steps.

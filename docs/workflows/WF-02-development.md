@@ -1,480 +1,499 @@
-# WF-02 — Разработка
+# WF-02 — Development
 
-Как проверенное требование становится работающим, проверенным и записанным изменением.
-Каждый производящий шаг проверяет другой агент (quality-bar Q2), и ни один шаг не
-пропускается: где шаг не нужен, это записывается с причиной.
+How a checked requirement becomes a working, checked and recorded change. Every producing step
+is checked by another agent (quality-bar Q2), and no step is skipped: where a step is not
+needed, this is recorded with the reason.
 
-Все роли соблюдают `docs/quality-bar.md`; handoff-ы — по `docs/workflows/handoffs.md`.
-Перед работой каждая роль читает `docs/anti-patterns.md`.
+All roles follow `docs/quality-bar.md`; handoffs follow `docs/workflows/handoffs.md`.
+Before the work, every role reads `docs/anti-patterns.md`.
 
-## Когда запускается
+## When it starts
 
-- Требование прошло WF-01 (PASS REQ-VALIDATOR), всё из его `depends_on` — `done`.
-- **Код продукта** — только после решения владельца о старте, записанного в `STATE.md`, и
-  после решения о стеке с одной командой проверки (номер 0001 в `decisions/README.md`,
-  quality-bar Q4). **Служебный код** конвейера в `tools/` — по
-  `decisions/0002-process-tooling-node.md`, команда проверки `cd tools && npm run check`.
-- **Не запускается** для дефекта уже описанного поведения — это WF-03.
-- Если требование меняет интерфейс по образцу или скриншоту, описание интерфейса делается
-  по WF-04 и входит в шаг 1.
-- Если интерфейс меняется без образца, это вариант «Интерфейс без образца» (шаг 7): описание
-  пишет GUI-DESIGN-ANALYST, сравнения с образцом нет (`decisions/0079`, п. 13).
+- The requirement has passed WF-01 (PASS of REQ-VALIDATOR), everything in its `depends_on` is
+  `done`.
+- **Product code** — only after the owner's decision to start, recorded in `STATE.md`, and after
+  the decision on the stack with one check command (number 0001 in `decisions/README.md`,
+  quality-bar Q4). **Service code** of the pipeline in `tools/` — by
+  `decisions/0002-process-tooling-node.md`, the check command is `cd tools && npm run check`.
+- It **does not start** for a defect of behavior that is already described — that is WF-03.
+- If the requirement changes the interface by a sample or a screenshot, the interface
+  description is made by WF-04 and is part of step 1.
+- If the interface changes without a sample, this is the variant "Interface without a sample"
+  (step 7): the description is written by GUI-DESIGN-ANALYST, there is no comparison with a
+  sample (`decisions/0079`, item 13).
 
-Один прогон — не больше **четырёх** требований: если что-то сломается, переделывать
-придётся меньше.
+One run holds no more than **four** requirements: if something breaks, less has to be redone.
 
-## Роли
+## Roles
 
-| Роль | Что делает | Кто проверяет |
+| Role | What it does | Who checks |
 |---|---|---|
-| ORCH | Готовит прогон, пишет handoff-ы, держит маршрут и ворота, сверяет учёт, пишет отчёт владельцу. Код не пишет — кроме правки по короткому пути (AP-009) | — |
-| CODE-DESIGNER | Проект: интерфейсы, данные, пути отказа, «критерий → тест» | CODE-DESIGN-VALIDATOR |
-| GUI-DESIGN-ANALYST | Описание интерфейса по образцу (WF-04) | CODE-DESIGN-VALIDATOR |
-| BACKEND-DEV, FRONTEND-DEV | Код по проверенному проекту, подшагами; переводы текстов данных и страниц | SECURITY-REVIEWER (всегда; затронута ли его область, решает он) и REVIEWER одновременно; переводы читают BA-ANALYST и новые запуски без контекста (шаг 8) |
-| CODE-FIXER | Правки по замечаниям проверок | снова SECURITY-REVIEWER и REVIEWER одновременно, затем та проверка, чьи замечания закрывал |
-| TEST-DESIGNER | Тесты и мутанты | TEST-DESIGN-VALIDATOR |
-| TEST-RUNNER | Прогон одной команды проверки | RELEASE-VALIDATOR (перезапускает сам) |
-| TEST-FIXER | Разбирает упавший прогон, чинит тест или код | правку кода — SECURITY-REVIEWER и REVIEWER, правку тестов — TEST-DESIGN-VALIDATOR; затем новый прогон TEST-RUNNER |
-| DESIGN-QA-VALIDATOR | Сравнивает готовый интерфейс с утверждённым образцом (только интерфейс) | — (сам проверяющий) |
-| BA-ANALYST, UAT-RUNNER | Сценарии пользователя и их прогон на запущенной системе (страницы — в настоящем Chrome); BA-ANALYST сводит итог читателей текстов | BA-ANALYST подписывает итог, затем RELEASE-VALIDATOR |
-| RELEASE-VALIDATOR | Итоговая проверка всех критериев и планки | — (сам проверяющий) |
-| DOC-UPDATER | Статус, `STATE.md`, документы, журнал ошибок | ORCH сверяет файлы и поля |
-| RELEASE-FINALIZER | Коммит файлов прогона, push в `main` после PASS RELEASE-VALIDATOR, ожидание `check.yml`, отчёт о выпуске | ORCH сверяет коммит; мерж иным способом подтверждает владелец (R1) |
+| ORCH | Prepares the run, writes handoffs, keeps the route and the gates, checks the bookkeeping, writes the report to the owner. Does not write code — except an edit on the short path (AP-009) | — |
+| CODE-DESIGNER | The design: interfaces, data, failure paths, "criterion → test" | CODE-DESIGN-VALIDATOR |
+| GUI-DESIGN-ANALYST | The interface description from a sample (WF-04) | CODE-DESIGN-VALIDATOR |
+| BACKEND-DEV, FRONTEND-DEV | Code by the checked design, in sub-steps; translations of data texts and page texts | SECURITY-REVIEWER (always; whether its area is touched is decided by it) and REVIEWER at the same time; translations are read by BA-ANALYST and by new launches without context (step 8) |
+| CODE-FIXER | Fixes by the remarks of the checks | again SECURITY-REVIEWER and REVIEWER at the same time, then the check whose remarks it closed |
+| TEST-DESIGNER | Tests and mutants | TEST-DESIGN-VALIDATOR |
+| TEST-RUNNER | A run of one check command | RELEASE-VALIDATOR (runs it again itself) |
+| TEST-FIXER | Analyzes a failed run, fixes the test or the code | a code fix — SECURITY-REVIEWER and REVIEWER, a test fix — TEST-DESIGN-VALIDATOR; then a new run of TEST-RUNNER |
+| DESIGN-QA-VALIDATOR | Compares the finished interface with the approved sample (the interface only) | — (a checker itself) |
+| BA-ANALYST, UAT-RUNNER | The user's scenarios and their run on the running system (pages — in a real Chrome); BA-ANALYST sums up the result of the readers of texts | BA-ANALYST signs the result, then RELEASE-VALIDATOR |
+| RELEASE-VALIDATOR | The final check of all criteria and of the bar | — (a checker itself) |
+| DOC-UPDATER | The status, `STATE.md`, documents, the log of errors | ORCH checks files and fields |
+| RELEASE-FINALIZER | The commit of the run files, the push to `main` after the PASS of RELEASE-VALIDATOR, waiting for `check.yml`, the release report | ORCH checks the commit; a merge in any other way is confirmed by the owner (R1) |
 
-## Маршрут
+## Route
 
 ```
 0 ORCH
-→ 1 CODE-DESIGNER (+ GUI-DESIGN-ANALYST по WF-04, если меняется интерфейс по образцу;
-     без образца — по варианту шага 7)
-→ 1a ORCH отвечает на вопросы проекта записью в decisions/
-→ 1b CODE-DESIGN-VALIDATOR                      ворота
-→ 2 BACKEND-DEV / FRONTEND-DEV — подшагами проекта
-→ 3 SECURITY-REVIEWER ‖ 4 REVIEWER — одновременно, оба только читают      ворота
-     (SECURITY-REVIEWER запускается всегда; вне его области — PASS «вне области»
-     с причиной, решает он, а не ORCH)
-     FAIL на 3 или 4 → CODE-FIXER → снова 3 и 4
+→ 1 CODE-DESIGNER (+ GUI-DESIGN-ANALYST by WF-04, if the interface changes by a sample;
+     without a sample — by the variant of step 7)
+→ 1a ORCH answers the questions of the design with a record in decisions/
+→ 1b CODE-DESIGN-VALIDATOR                      gate
+→ 2 BACKEND-DEV / FRONTEND-DEV — in sub-steps of the design
+→ 3 SECURITY-REVIEWER ‖ 4 REVIEWER — at the same time, both only read      gate
+     (SECURITY-REVIEWER always runs; outside its area — PASS "out of scope"
+     with a reason, decided by it, not by ORCH)
+     FAIL at 3 or 4 → CODE-FIXER → 3 and 4 again
 → 5 TEST-DESIGNER
-→ 5b TEST-DESIGN-VALIDATOR                      ворота
-→ 6 TEST-RUNNER                                 ворота
-     FAIL → TEST-FIXER → правка кода: снова 3 и 4; правка тестов: снова 5b → 6
-→ 7 DESIGN-QA-VALIDATOR (только интерфейс по образцу)  ворота
-     FAIL → CODE-FIXER → снова 3 и 4 → 6 → 7
-→ 8 UAT-RUNNER (+ BA-ANALYST, если есть сценарии; читатели текстов) — если есть запущенная система  ворота
-→ 9 RELEASE-VALIDATOR                           ворота
-→ 10 DOC-UPDATER, затем проверка ORCH
-→ 11 RELEASE-FINALIZER → коммит, push в main, ожидание check.yml, второй коммит с handoff-ом шага
+→ 5b TEST-DESIGN-VALIDATOR                      gate
+→ 6 TEST-RUNNER                                 gate
+     FAIL → TEST-FIXER → code fix: 3 and 4 again; test fix: 5b → 6 again
+→ 7 DESIGN-QA-VALIDATOR (only an interface by a sample)  gate
+     FAIL → CODE-FIXER → 3 and 4 again → 6 → 7
+→ 8 UAT-RUNNER (+ BA-ANALYST, if there are scenarios; readers of texts) — if there is a running system  gate
+→ 9 RELEASE-VALIDATOR                           gate
+→ 10 DOC-UPDATER, then the check by ORCH
+→ 11 RELEASE-FINALIZER → commit, push to main, waiting for check.yml, a second commit with the handoff of the step
 ```
 
-## Шаги
+## Steps
 
-**Шаг 0 — ORCH готовит прогон.**
+**Step 0 — ORCH prepares the run.**
 
-1. Проверяет предпосылки из раздела «Когда запускается» — по файлам, а не по памяти.
-2. Заводит `handoffs/<RUN-ID>/` и переводит статус требования `pending` → `in_progress`
-   (только это поле).
-   Ставит лёгкую метку git `base/<RUN-ID>` на коммит, с которого начинается прогон (до первого
-   изменения), и записывает её имя в `context.base_tag` каждого handoff-а (`decisions/0031`):
-   проверки «что изменилось в прогоне» берут базу только из этой метки. Метка ставится в
-   каждом процессе, не только в WF-02.
-3. Решает, какие файлы прогон может менять, и сверяет их с прогонами, которые идут
-   параллельно: один файл два прогона одновременно не пишут. Общий файл — по очереди
-   (`context.file_lock`) или по блокам (`context.edit_scope`).
-4. В каждый handoff пишет `context.route`, `context.write_set` и
-   `context.parallel_work_now`.
-5. Копией «до» служит метка `base/<RUN-ID>`: агент берёт «до» из свежего клона метки вне
-   проекта (`git clone -b base/<RUN-ID>`), а не из копии, снятой вручную. Правила для всех
-   ролей — `docs/workflows/handoffs.md`, «Общие правила для всех ролей».
+1. Checks the prerequisites from the section "When it starts" — by the files, not from memory.
+2. Creates `handoffs/<RUN-ID>/` and moves the status of the requirement `pending` →
+   `in_progress` (only this field).
+   Sets the lightweight git tag `base/<RUN-ID>` on the commit from which the run starts (before
+   the first change) and writes its name into `context.base_tag` of every handoff
+   (`decisions/0031`): the checks "what changed in the run" take the base only from this tag.
+   The tag is set in every workflow, not only in WF-02.
+3. Decides which files the run may change and checks them against the runs that go in parallel:
+   two runs do not write one file at the same time. A shared file — in turn
+   (`context.file_lock`) or by blocks (`context.edit_scope`).
+4. Writes `context.route`, `context.write_set` and `context.parallel_work_now` in every
+   handoff.
+5. The tag `base/<RUN-ID>` serves as the "before" copy: the agent takes "before" from a fresh
+   clone of the tag outside the project (`git clone -b base/<RUN-ID>`), not from a copy made by
+   hand. The rules for all roles are in `docs/workflows/handoffs.md`, "Common rules for all
+   roles".
 
-**Шаг 1 — CODE-DESIGNER пишет проект** `docs/design/REQ-NNN-<коротко>.md`:
+**Step 1 — CODE-DESIGNER writes the design** `docs/design/REQ-NNN-<short>.md`:
 
-- интерфейсы, формы данных, команды и их коды выхода, какие файлы читаются и пишутся;
-- каждый путь отказа: что видит пользователь и что остаётся неизменным;
-- защита стоит в той же операции, что и действие, которое она защищает: «проверить
-  сейчас, сделать потом, в другом вызове» — нельзя;
-- таблица «критерий → тест» (Q5);
-- раздел о планке: по каждому пункту Q1–Q14 и R1–R3 — «применим: как выполняется» или
-  «неприменим: почему». Молчание о пункте — пробел;
-- открытые вопросы — списком, а не решённые догадкой; выбор, который могут оспорить, —
-  предложение записи в `decisions/` (Q12);
-- кода реализации нет: только формы, сигнатуры, таблицы;
-- проверенные факты о текущей системе: команда, вывод, дата замера;
-- пробный набросок вне проекта, на котором замерены утверждения проекта (`result.prototype`:
-  где он лежит и что в нём);
-- таблица замен прежних тестов: каждый охранный тест выпущенных требований, который краснеет от
-  новых модулей, путей, команд или адресов (поиск по `tools/test/`) — файл, строка, «было →
-  стало»; запрет при замене не ослабляется (AP-068, AP-112, AP-113);
-- подшаги сборки малыми частями и для каждого — какие существующие тесты станут красными
-  (проверено наброском);
-- список мутантов — намеренных поломок на каждую ловушку, с тестом, который её ловит;
-- что устаревает вне проекта (для DOC-UPDATER).
+- interfaces, data shapes, commands and their exit codes, which files are read and written;
+- every failure path: what the user sees and what stays unchanged;
+- protection stands in the same operation as the action it protects: "check now, do later, in
+  another call" is not allowed;
+- the table "criterion → test" (Q5);
+- the section about the bar: for each item Q1–Q14 and R1–R3 — "applicable: how it is met" or
+  "not applicable: why". Silence about an item is a gap;
+- open questions — as a list, not settled by a guess; a choice that could be disputed is a
+  proposal of a record in `decisions/` (Q12);
+- there is no implementation code: only shapes, signatures, tables;
+- checked facts about the current system: the command, the output, the date of the measurement;
+- a trial sketch outside the project on which the statements of the design were measured
+  (`result.prototype`: where it lies and what is in it);
+- the table of replacements of earlier tests: every guard test of released requirements that
+  turns red because of new modules, paths, commands or addresses (a search in `tools/test/`) —
+  the file, the line, "was → became"; the prohibition is not weakened by the replacement (AP-068,
+  AP-112, AP-113);
+- the build sub-steps in small parts and for each — which existing tests will turn red (checked
+  with the sketch);
+- the list of mutants — intentional breakages, one per trap, with the test that catches it;
+- what becomes outdated outside the project (for DOC-UPDATER).
 
-Если требование меняет интерфейс по образцу, сначала GUI-DESIGN-ANALYST пишет описание
-интерфейса (WF-04, шаг 1), и проект на него опирается.
+If the requirement changes the interface by a sample, GUI-DESIGN-ANALYST first writes the
+interface description (WF-04, step 1), and the design relies on it.
 
-**Шаг 1a — ORCH отвечает на вопросы проекта.** Открытые вопросы проекта (О1, О2 …) ORCH
-закрывает записью `decisions/NNNN-<коротко>-conventions.md` с разделом «Основание» (Q12) до
-ворот 1b; ответы идут в задания ворот и разработчиков.
+**Step 1a — ORCH answers the questions of the design.** The open questions of the design (О1,
+О2 …) are closed by ORCH with a record `decisions/NNNN-<short>-conventions.md` with the section
+«Основание» (Basis) (Q12) before gate 1b; the answers go into the tasks of the gate and of the developers.
 
-**Шаг 1b — CODE-DESIGN-VALIDATOR, ворота.** Читает проект (и описание интерфейса, если
-оно есть) сам, не по `summary` автора, и проверяет:
+**Step 1b — CODE-DESIGN-VALIDATOR, gate.** Reads the design (and the interface description, if
+there is one) itself, not from the `summary` of the author, and checks:
 
-- каждый критерий ведёт к элементу проекта и к тесту; «потом решим» нет;
-- сигнатуры, данные и ошибки описаны полностью;
-- раздел о планке полный;
-- защита не отделена от действия;
-- нет противоречия с `decisions/` без предложения новой записи;
-- кода реализации нет;
-- утверждения проекта о том, как система работает сейчас, проверяющий повторяет сам, на
-  свежем клоне метки `base/<RUN-ID>`, а не на рабочей папке;
-- прежние тесты после таблицы замен он запускает сам; не менее 10 мутантов проекта применяет
-  сам; размер и порядок подшагов оценивает (подшаг, который нельзя проверить отдельно, —
-  замечание).
+- every criterion leads to an element of the design and to a test; there are no "we will decide
+  later";
+- signatures, data and errors are described in full;
+- the section about the bar is complete;
+- protection is not separated from the action;
+- no contradiction with `decisions/` without a proposal of a new record;
+- there is no implementation code;
+- the statements of the design about how the system works now are repeated by the checker
+  itself, on a fresh clone of the tag `base/<RUN-ID>`, not on the working folder;
+- it runs the earlier tests after the replacement table itself; it applies at least 10 mutants
+  of the design itself; it assesses the size and the order of the sub-steps (a sub-step that
+  cannot be checked separately is a remark).
 
-Любой непройденный пункт — FAIL. Частичного зачёта нет.
+Any item not passed is a FAIL. There is no partial credit.
 
-**Шаг 2 — BACKEND-DEV и FRONTEND-DEV пишут код.**
+**Step 2 — BACKEND-DEV and FRONTEND-DEV write the code.**
 
-- Только по проекту, прошедшему шаг 1b, и только в своих файлах (`context.write_set`).
-- Идёт подшагами проекта: после каждого запускает проверки и называет красные тесты. Красным
-  может быть только тест из списка проекта для этого подшага; красный не из списка —
-  остановка и доклад ORCH.
-- Двое работают параллельно в разных файлах. Общий контракт (например, файл схемы) пишет
-  один, второй его только читает и сообщает о расхождениях.
-- Каждый сохранённый файл согласован с остальными: параллельный прогон может запустить
-  проверку в любой момент.
-- Пока другие пишут свои файлы, можно проверять только свои; в конце — вся команда
-  проверки (Q4) и её настоящий вывод. Чужие ошибки называются с доказательством
-  (quality-bar §6, п. 4).
-- Упасть может только тест, который проверяет поведение, намеренно изменённое проектом:
-  каждый такой тест назван в `result.issues` с разделом проекта и новым ожидаемым
-  поведением, его правит TEST-DESIGNER на шаге 5. Такой «ожидаемый по проекту» провал
-  допустим только между шагами 2 и 5; с шага 5b его уже нет.
-- Самопроверка по планке: Q7 (секретов нет, клиент не держит ключей), Q8, Q9, Q10
-  (таймауты, понятные ошибки), Q11, R2 (события Pixel Office — только из хуков), R3.
-- Меняется общий тип или функция — найти поиском все места, где они используются.
-- Нужно отступить от проекта — остановиться и вернуть вопрос CODE-DESIGNER через ORCH.
-  Молча не отступать.
+- Only by the design that has passed step 1b, and only in their own files
+  (`context.write_set`).
+- Goes by the sub-steps of the design: after each one runs the checks and names the red tests.
+  Only a test from the list of the design for this sub-step may be red; a red test not from the
+  list is a stop and a report to ORCH.
+- Two work in parallel in different files. A shared contract (for example, a schema file) is
+  written by one, the other only reads it and reports divergences.
+- Every saved file is consistent with the others: a parallel run may start a check at any
+  moment.
+- While others write their files, only one's own can be checked; at the end — the whole check
+  command (Q4) and its real output. Errors of others are named with evidence (quality-bar §6,
+  item 4).
+- Only a test that checks the behavior intentionally changed by the design may fail: each such
+  test is named in `result.issues` with the section of the design and the new expected behavior,
+  and TEST-DESIGNER fixes it at step 5. Such a failure "expected by the design" is allowed only
+  between steps 2 and 5; from step 5b there is none.
+- Self-check by the bar: Q7 (no secrets, the client holds no keys), Q8, Q9, Q10 (timeouts,
+  understandable errors), Q11, R2 (Pixel Office events — only from the hooks), R3.
+- If a shared type or function changes — find by search all the places where they are used.
+- If it is necessary to depart from the design — stop and return the question to CODE-DESIGNER
+  through ORCH. Do not depart silently.
 
-**Шаги 3 и 4 идут одновременно:** SECURITY-REVIEWER и REVIEWER оба только читают и не
-мешают друг другу. FAIL любого из них — CODE-FIXER, затем снова обе проверки.
+**Steps 3 and 4 go at the same time:** SECURITY-REVIEWER and REVIEWER both only read and do not
+disturb each other. A FAIL of either — CODE-FIXER, then both checks again.
 
-**Шаг 3 — SECURITY-REVIEWER, ворота.** Запускается всегда; затронута ли его область,
-решает сам SECURITY-REVIEWER, а не ORCH. Его область — данные клиентов, секреты, фото
-людей, внешние вызовы, права доступа и запись в систему извне (например, приём
-событий хуков сервером Pixel Office).
+**Step 3 — SECURITY-REVIEWER, gate.** Always runs; whether its area is touched is decided by
+SECURITY-REVIEWER itself, not by ORCH. Its area is customer data, secrets, photos of people,
+external calls, access rights and writing into the system from outside (for example, the
+acceptance of hook events by the Pixel Office server).
 
-- Сначала решает, затронута ли его область. Нет — PASS «вне области» с причиной.
-- Иначе по каждому пункту Q7–Q11 и R3 (для Pixel Office — и R2): применим и выполнен
-  (чем проверено — своей командой) или неприменим (почему). Подробности пунктов —
+- First decides whether its area is touched. If not — PASS "out of scope" with a reason.
+- Otherwise for each item Q7–Q11 and R3 (for Pixel Office also R2): applicable and met (what
+  confirms it — its own command) or not applicable (why). The details of the items are in
   quality-bar §2.1.
-- Ищет секреты в изменении и в файлах, которые получает браузер.
-- Для входа из сети, из файла и из ответа сервера пробует враждебные входы своим оракулом, а
-  не тем же выражением, что код: перебор, фаззинг, ReDoS, длина. Для страницы подменяет ответ
-  сервера и хранилище в настоящем браузере. Числа проб — в `summary`.
-- Любой применимый пункт не выполнен — FAIL. Все такие находки блокирующие.
-- Его PASS не окончателен: мерж иным способом, чем push в `main` по шагу 11, подтверждает
-  владелец (R1).
+- Looks for secrets in the change and in the files that the browser receives.
+- For input from the network, from a file and from a server response, tries hostile inputs with
+  its own oracle, not with the same expression as the code: enumeration, fuzzing, ReDoS, length.
+  For a page, replaces the server response and the storage in a real browser. The numbers of
+  trials go in `summary`.
+- Any applicable item not met — FAIL. All such findings are blocking.
+- Its PASS is not final: a merge in any way other than the push to `main` by step 11 is
+  confirmed by the owner (R1).
 
-**Шаг 4 — REVIEWER, ворота.**
+**Step 4 — REVIEWER, gate.**
 
-- Настоящее ли это решение или костыль, который прячет симптом.
-- Идиомы стека (для `tools/` — `decisions/0002-process-tooling-node.md`).
-- Работа, которой не просило требование, — находка.
-- Расхождение с `decisions/` без новой записи — находка.
-- Эрозия планки — FAIL, даже если код работает: пропущенный или удалённый тест,
-  отключённое правило, скрытый код выхода, TODO вместо проверки, секрет «пока» (Q6, Q7).
-- Сверка с `docs/anti-patterns.md`.
-- Важность находок — по общей шкале `docs/workflows/handoffs.md` (раздел «result»):
-  Critical, High и Medium — FAIL; Low записывается и не теряется.
+- Is it a real solution or a crutch that hides the symptom.
+- The idioms of the stack (for `tools/` — `decisions/0002-process-tooling-node.md`).
+- Work that the requirement did not ask for is a finding.
+- A divergence from `decisions/` without a new record is a finding.
+- Erosion of the bar is a FAIL even if the code works: a skipped or deleted test, a disabled
+  rule, a hidden exit code, a TODO instead of a check, a "temporary" secret (Q6, Q7).
+- A check against `docs/anti-patterns.md`.
+- The severity of findings is by the common scale of `docs/workflows/handoffs.md` (section
+  "result"): Critical, High and Medium — FAIL; Low is recorded and not lost.
 
-**CODE-FIXER — после FAIL на шагах 3 или 4.**
+**CODE-FIXER — after a FAIL at steps 3 or 4.**
 
-- Правит только перечисленные находки; другой код не трогает и не «улучшает».
-- Поведение меняет, только если находка как раз о неверном поведении.
-- Запускает одну команду проверки; в `result.changes` — каждая правка с номером находки.
-  Тест, который проверяет поведение, изменённое по находке, назван в `result.issues`, как
-  на шаге 2: после шагов 3–4 его правит TEST-DESIGNER на шаге 5, после шага 7 (маршрут
-  3 → 4 → 6) — TEST-FIXER по упавшему прогону.
-- Что нельзя исправить без смены проекта — в `result.issues`; ORCH вернёт это
+- Fixes only the listed findings; does not touch or "improve" other code.
+- Changes behavior only if the finding is exactly about wrong behavior.
+- Runs one check command; in `result.changes` — every edit with the number of the finding. A
+  test that checks behavior changed by a finding is named in `result.issues`, as at step 2: after
+  steps 3–4 it is fixed by TEST-DESIGNER at step 5, after step 7 (the route 3 → 4 → 6) — by
+  TEST-FIXER from the failed run.
+- What cannot be fixed without changing the design — in `result.issues`; ORCH will return it to
   CODE-DESIGNER.
-- Затем снова шаги 3 и 4, и только потом — тесты: правка кода, который уже прошёл ревью,
-  без нового ревью дальше не идёт.
+- Then steps 3 and 4 again, and only after that — the tests: an edit of code that has already
+  passed review does not go further without a new review.
 
-**Шаг 5 — TEST-DESIGNER пишет тесты.**
+**Step 5 — TEST-DESIGNER writes the tests.**
 
-- Сначала решает, есть ли что тестировать. Если изменение — только документы или
-  настройки без исполняемой логики, пишет «тестировать нечего» с перечнем файлов и
-  причиной; шаги 5b и 6 пропускаются, и RELEASE-VALIDATOR проверяет критерии чтением и
-  командами. Тест, который ищет слово в документе ради галочки, — обман проверки (Q6).
-- Иначе на каждый критерий — хотя бы один запускаемый тест, названный по критерию,
-  который упал бы при нарушении (Q5).
-- Тест отказа проверяет, что состояние не изменилось.
-- Оракулы свои: тест не импортирует правила из `src`. Тесты-свойства идут с закреплённым
-  зерном; случаи строятся по классу входов, а не по примеру критерия.
-- Прежние тесты по таблице замен проекта чинятся первым делом, без ослабления: число `test(` и
-  `assert.` в старых файлах не ниже, чем на метке `base/<RUN-ID>`.
-- Где изменение их касается: пространство бизнеса A не видит и не меняет данные B (Q8); каждый
-  внешний вызов со сбоем (Q10); внутренний адрес отклоняется (Q11).
-- Тесты независимы, у каждого свои данные; нет зависимости от часов и от случайности без
-  зерна; нет секретов.
-- Для новой логики — мутанты: намеренные поломки по списку проекта и для каждой — какие тесты
-  падают (в `self_check`: что сломано → какие тесты упали → сколько). Тест к новому коду до появления кода падает просто потому, что кода
-  нет, — это ничего не говорит о том, ловит ли он ошибку.
-- Тесты, которые разработчики или CODE-FIXER назвали в `result.issues` как проверяющие
-  намеренно изменённое поведение, TEST-DESIGNER правит на этом шаге. Шаг сдаётся с
-  проходящей проверкой: допустимо только падение, доказанно не вызванное этой работой
-  (quality-bar §6, п. 4).
-- Тесты сам прогоняет для самопроверки; итоговый прогон — шаг 6.
-- Код TEST-DESIGNER не меняет. Если для теста нужно изменить файл кода, уже прошедший
-  шаг 4, он пишет об этом в `result.issues`; правку делает CODE-FIXER, и до шага 5b снова
-  идут шаги 3 и 4.
+- First decides whether there is anything to test. If the change is only documents or settings
+  without executable logic, writes "nothing to test" with the list of files and the reason;
+  steps 5b and 6 are skipped, and RELEASE-VALIDATOR checks the criteria by reading and commands.
+  A test that looks for a word in a document just for show is a deception of the check (Q6).
+- Otherwise, for each criterion — at least one runnable test, named by the criterion, that would
+  fail if the criterion were violated (Q5).
+- A failure test checks that the state did not change.
+- The oracles are its own: a test does not import rules from `src`. Property tests go with a
+  pinned seed; cases are built by the class of inputs, not by the example of the criterion.
+- Earlier tests by the replacement table of the design are fixed first, without weakening: the
+  number of `test(` and `assert.` in the old files is not lower than at the tag `base/<RUN-ID>`.
+- Where the change concerns them: the business space A does not see and does not change the data
+  of B (Q8); every external call with a failure (Q10); an internal address is rejected (Q11).
+- Tests are independent, each has its own data; there is no dependence on the clock or on
+  randomness without a seed; there are no secrets.
+- For new logic — mutants: intentional breakages by the list of the design and for each — which
+  tests fail (in `self_check`: what is broken → which tests failed → how many). A test for new
+  code, before the code appears, fails simply because there is no code — this says nothing about
+  whether it catches an error.
+- The tests that developers or CODE-FIXER named in `result.issues` as checking intentionally
+  changed behavior are fixed by TEST-DESIGNER at this step. The step is handed in with a passing
+  check: only a failure that is proven not to be caused by this work is allowed (quality-bar §6,
+  item 4).
+- It runs the tests itself for self-check; the final run is step 6.
+- TEST-DESIGNER does not change code. If a test needs a change of a code file that has already
+  passed step 4, it writes about it in `result.issues`; the edit is made by CODE-FIXER, and
+  steps 3 and 4 go again before step 5b.
 
-**Шаг 5b — TEST-DESIGN-VALIDATOR, ворота.**
+**Step 5b — TEST-DESIGN-VALIDATOR, gate.**
 
-- Читает тесты сам.
-- У каждого критерия есть хотя бы один запускаемый тест; нет `skip`, `todo`, «допишем
-  потом».
-- Тесты отказа проверяют неизменность состояния.
-- У каждого теста свои данные; тесты не зависят от порядка; секретов нет.
-- Тесты Q8, Q10, Q11 есть там, где изменение их касается.
-- Сам запускает тесты: три прогона подряд, каждый новый тест по отдельности; для тестов
-  устойчивости — серия в десятки прогонов под нагрузкой (AP-115).
-- Для новой логики сам применяет не менее 20 мутантов из списка проекта и несколько своих
-  вокруг изменённых мест (числа — в `summary`) и убеждается, что тесты падают; выживший
-  мутант — находка. Мутант «отказ не сработал» не должен вешать прогон (AP-116). Мутант
-  применяется во временной копии; рабочее дерево не меняется, и это проверено (список хешей
-  до и после совпадает), а тесты снова зелёные.
-- Замена прежних тестов ничего не ослабила: каждая строка таблицы замен сверена с файлом,
-  число `test(` и `assert.` в старых файлах не ниже, чем на метке.
-- Прогон годен, если код 0 или каждое падение доказанно не из-за этой работы; категории
-  «ожидаемый по проекту» провал здесь нет.
-- Любой непройденный пункт — FAIL.
+- Reads the tests itself.
+- Every criterion has at least one runnable test; there is no `skip`, `todo`, "we will add it
+  later".
+- Failure tests check that the state is unchanged.
+- Each test has its own data; tests do not depend on the order; there are no secrets.
+- The tests of Q8, Q10, Q11 are there where the change concerns them.
+- Runs the tests itself: three runs in a row, each new test separately; for stability tests — a
+  series of dozens of runs under load (AP-115).
+- For new logic, itself applies at least 20 mutants from the list of the design and several of
+  its own around the changed places (the numbers go in `summary`) and makes sure the tests fail;
+  a surviving mutant is a finding. A mutant "the failure did not trigger" must not hang the run
+  (AP-116). A mutant is applied in a temporary copy; the working tree does not change, and this
+  is checked (the list of hashes before and after is the same), and the tests are green again.
+- The replacement of earlier tests weakened nothing: every row of the replacement table is
+  checked against the file, the number of `test(` and `assert.` in the old files is not lower
+  than at the tag.
+- A run is acceptable if the code is 0 or every failure is proven not to be caused by this work;
+  there is no category of a failure "expected by the design" here.
+- Any item not passed — FAIL.
 
-**Шаг 6 — TEST-RUNNER, ворота.**
+**Step 6 — TEST-RUNNER, gate.**
 
-- Запускает одну команду проверки целиком, а не выборку, и дожидается её в своём ходе;
-  прикладывает настоящий вывод: сколько тестов, какие упали, код выхода.
-- Каждое падение разбирает: из-за этой работы или нет — только с доказательством
-  (quality-bar §6, п. 4). Без доказательства — неразобранное падение, и по поручению
-  ORCH заводится ISS.
-- Тест, который то проходит, то падает, — дефект: заводится ISS. Перезапуск до зелёного —
-  не PASS. Красный тест не повторяют до зелёного; нестабильный тест — дефект, ORCH
-  сообщает владельцу (`decisions/0079`, п. 2).
-- PASS — код 0 или каждое падение доказанно не из-за этой работы; любое другое — FAIL, и
-  дальше TEST-FIXER. Категории «ожидаемый по проекту» провал здесь нет.
+- Runs one check command in full, not a selection, and waits for it within its own turn;
+  attaches the real output: how many tests, which failed, the exit code.
+- Analyzes each failure: caused by this work or not — only with evidence (quality-bar §6, item
+  4). Without evidence it is an unanalyzed failure, and on ORCH's instruction an ISS is created.
+- A test that sometimes passes and sometimes fails is a defect: an ISS is created. A restart
+  until green is not a PASS. A red test is not repeated until it is green; a flaky test is a
+  defect, and ORCH tells the owner (`decisions/0079`, item 2).
+- PASS is code 0 or every failure proven not to be caused by this work; anything else is a FAIL,
+  and then TEST-FIXER. There is no category of a failure "expected by the design" here.
 
-**TEST-FIXER — после FAIL на шаге 6.**
+**TEST-FIXER — after a FAIL at step 6.**
 
-- Что неверно — код или тест, — решает по требованию: требование — источник правды.
-- Код даёт неверный по требованию результат — правит код. Тест ждёт не того, что требует
-  требование, или неверно подготовлен — правит тест.
-- Не удаляет и не пропускает тест; не подгоняет ожидание теста под неверный код.
-- Повторяет упавшую команду, затем всю проверку; в `result.changes` — каждая правка и
-  почему виноват код или тест.
-- До нового прогона правку кода снова проверяют шаги 3 и 4, правку тестов — шаг 5b; затем
-  снова шаг 6.
+- Decides what is wrong — the code or the test — by the requirement: the requirement is the
+  source of truth.
+- The code gives a result that is wrong by the requirement — fixes the code. The test expects
+  something other than the requirement demands, or is prepared wrongly — fixes the test.
+- Does not delete or skip a test; does not fit the test's expectation to wrong code.
+- Repeats the failed command, then the whole check; in `result.changes` — every edit and why the
+  code or the test is to blame.
+- Before the new run, a code fix is checked again by steps 3 and 4, a test fix by step 5b; then
+  step 6 again.
 
-**Шаг 7 — DESIGN-QA-VALIDATOR, ворота** (только если сделан интерфейс по утверждённому
-образцу). Порядок — `docs/workflows/WF-04-ui-by-sample.md`, шаг 4. FAIL → CODE-FIXER →
-снова шаги 3 и 4 → шаг 6 → снова шаг 7.
+**Step 7 — DESIGN-QA-VALIDATOR, gate** (only if an interface by an approved sample was made).
+The order is in `docs/workflows/WF-04-ui-by-sample.md`, step 4. FAIL → CODE-FIXER → steps 3 and
+4 again → step 6 → step 7 again.
 
-*Интерфейс без образца (`decisions/0079`, п. 13).* Образца владелец не утверждал: описание
-интерфейса пишет GUI-DESIGN-ANALYST, мерилом служит оно, в `summary` записано «образца нет,
-мерило — описание». DESIGN-QA-VALIDATOR не запускается; вместо него страницу принимает
-UAT-RUNNER в настоящем Chrome по матрице окон, тем и языков со снимками (шаг 8).
+*Interface without a sample (`decisions/0079`, item 13).* The owner did not approve a sample:
+the interface description is written by GUI-DESIGN-ANALYST, it serves as the measure, and
+`summary` records «образца нет, мерило — описание» ("no sample, the measure is the
+description"). DESIGN-QA-VALIDATOR does not run; instead, the page is accepted by UAT-RUNNER in
+a real Chrome by the matrix of windows, themes and languages with snapshots (step 8).
 
-**Шаг 8 — приёмка на запущенной системе, ворота.** Тесты шага 6 показывают, что код
-делает написанное; приёмка показывает, что человек, ради которого сделана работа, получает
-нужное на живой системе. Шаг нужен, если у изменения есть запущенная система и тот, кто ею
-пользуется: страница Pixel Office (пользуется владелец), страница виртуальной команды
-Sai Team (пользуется владелец бизнеса), сайт подбора решения `tools/src/picker/` (пользуется
-посетитель сайта).
+**Step 8 — acceptance on the running system, gate.** The tests of step 6 show that the code does
+what is written; the acceptance shows that the person for whom the work is done gets what is
+needed on the live system. The step is needed if the change has a running system and someone who
+uses it: the Pixel Office page (used by the owner), the page of the virtual team Sai Team (used
+by the business owner), the solution picker site `tools/src/picker/` (used by a visitor of the
+site).
 
-*Приёмка без сценариев BA-ANALYST.* Допустима, когда критерий и проект сами описывают шаги
-приёмки (команды и окна): тогда UAT-RUNNER идёт по ним и пишет `docs/uat/<REQ-ID>-RUN.md`
-(`decisions/0079`, п. 6). Подпись BA-ANALYST нужна, когда есть файл сценариев
-`docs/uat/<REQ-ID>.md`.
+*Acceptance without BA-ANALYST scenarios.* It is allowed when the criterion and the design
+themselves describe the steps of the acceptance (commands and windows): then UAT-RUNNER follows
+them and writes `docs/uat/<REQ-ID>-RUN.md` (`decisions/0079`, item 6). The signature of
+BA-ANALYST is needed when there is a scenario file `docs/uat/<REQ-ID>.md`.
 
-1. **Сценарии — BA-ANALYST.** Документ `docs/uat/<REQ-ID>.md`; он остаётся в проекте и при
-   следующих изменениях выполняется снова как регрессия. Сценарий написан словами того,
-   кто действует, — языком владельца и бизнеса: кто, что
-   делает, что должен увидеть. Документ обязательно содержит:
-   - основной путь;
-   - по сценарию на каждый путь отказа из критериев требования;
-   - сценарии на применимые Q8, Q10, Q11, R3;
-   - для страницы виртуальной команды — плохие условия: исполнитель не отвечает, исчерпан
-     потолок расходов, сервер перезапущен посреди работы, интернет медленный; для служебных
-     страниц, как Pixel Office, — сервер не отвечает, событий ещё нет, событий очень много.
+1. **Scenarios — BA-ANALYST.** The document `docs/uat/<REQ-ID>.md`; it stays in the project and
+   is run again as a regression at the next changes. A scenario is written in the words of the
+   one who acts — in the language of the owner and the business: who, what they do, what they
+   must see. The document must contain:
+   - the main path;
+   - a scenario for every failure path from the criteria of the requirement;
+   - scenarios for the applicable Q8, Q10, Q11, R3;
+   - for the page of the virtual team — bad conditions: the executor does not answer, the
+     spending ceiling is used up, the server is restarted in the middle of the work, the
+     internet is slow; for service pages like Pixel Office — the server does not answer, there
+     are no events yet, there are very many events.
 
-   В `result` handoff-а `step-08-ba-analyst.json` — путь к документу и, для каждого
-   сценария, какие критерии он покрывает.
-2. **Расход владельца — ORCH, до запуска.** Если прогон тратит лимит или деньги владельца
-   (например, настоящая сессия Claude Code, которая пишет события Pixel Office), ORCH
-   получает его согласие заранее. Без согласия такой сценарий не выполняется и
-   записывается «не выполнен: нет согласия владельца»; остальные сценарии идут как обычно.
-3. **Стенд — ORCH, до запуска.** ORCH сам проверяет, что система запущена и отвечает, и
-   передаёт её адрес. Не отвечает — приёмка не начинается, причина записывается. Для
-   Pixel Office стенд — отдельный сервер с новым пустым каталогом состояния вне проекта
-   (`--dir`): события, сочинённые для проверки, идут только туда. Сервер отмечает каждое
-   принятое событие как настоящее, поэтому в рабочий журнал владельца сочинённое не
-   попадает никогда — только события настоящих сессий (R2).
-4. **Прогон — UAT-RUNNER.** Каждый сценарий — на настоящей системе: настоящие запросы,
-   файлы и данные, без подмен. **Страницы** — в настоящем Chrome без окна, по протоколу
-   отладки: окна 1470 × 784, 390 × 844 и 320 × 568, светлая и тёмная темы, языки ru, kk, en;
-   снимки лежат вне проекта. Нет Chrome — остановка, `curl` шаг не заменяет. Ожидание
-   сценария берётся из критерия дословно; если сценарий шире критерия, лишнее — «замечание,
-   не провал», а в критерий оно попадает только через WF-01 (AP-117). Результат сценария —
-   **наблюдаемое состояние системы**, которое UAT-RUNNER сам запросил заново после действия и сравнил с ожидаемым в
-   сценарии; тишина в логах и на экране результатом не бывает. Пример для Pixel Office:
-   хук отправил событие начала работы роли — проверяется, что журнал отдельного сервера
-   получил запись с этой ролью и что страница, открытая заново, показывает персонажа этой
-   роли за столом; снимок и ответ сервера прикладываются. Сценарий, который нечем
-   выполнить, — «не выполнен» с причиной, а не пропуск. Фото и данные — только снятые и
-   придуманные для тестов, не реальных людей (AP-004). Итоги — в `result` handoff-а
-   `step-08-uat-runner.json`.
-5. **Подпись — BA-ANALYST.** Отдельным handoff-ом подписи BA-ANALYST подтверждает, какие
-   сценарии прошли на запущенной системе. Если есть файл сценариев, без подписи ворота шага 8
-   закрыты.
-6. **Переводы и тексты — читатели.** Переводы пишет роль, пишущая код (BACKEND-DEV или
-   FRONTEND-DEV), один язык на запуск; отдельной роли переводчика нет (`decisions/0079`,
-   п. 7). Читают отдельные новые запуски без контекста: им дают только строки «номер — ключ —
-   русский — перевод». Круг 1 — все строки, круг 2 — исправленные, круг 3 — исправленные
-   повторно; всего 2–3 круга. Спорные строки после двух кругов читателю не отдают: они уходят
-   знающему человеку (`FOR_NATIVE_SPEAKER`, AP-114). Шаг 8 может состоять только из читателей;
-   тогда BA-ANALYST сводит итог без запущенной системы, и критерий считается выполненным только
-   в части агентов-читателей.
-7. **Сценарий не прошёл.** ISSUE-FIXER разбирает причину, исправление идёт с проверками
-   WF-03 в этом же прогоне, после чего приёмка повторяется.
+   In the `result` of the handoff `step-08-ba-analyst.json` — the path to the document and, for
+   each scenario, which criteria it covers.
+2. **The owner's spending — ORCH, before the launch.** If the run spends the limit or the money
+   of the owner (for example, a real Claude Code session that writes Pixel Office events), ORCH
+   gets their consent in advance. Without consent such a scenario is not run and is recorded as
+   «не выполнен: нет согласия владельца» ("not run: no consent of the owner"); the other
+   scenarios go as usual.
+3. **The stand — ORCH, before the launch.** ORCH itself checks that the system is running and
+   answers, and passes its address. If it does not answer — the acceptance does not start, the
+   reason is recorded. For Pixel Office the stand is a separate server with a new empty state
+   directory outside the project (`--dir`): events made up for the check go only there. The
+   server marks every accepted event as real, so what is made up never gets into the owner's
+   working log — only events of real sessions (R2).
+4. **The run — UAT-RUNNER.** Every scenario on the real system: real requests, files and data,
+   without substitutes. **Pages** — in a real Chrome without a window, by the debugging protocol:
+   windows 1470 × 784, 390 × 844 and 320 × 568, light and dark themes, languages ru, kk, en;
+   the snapshots lie outside the project. No Chrome — a stop, `curl` does not replace the step.
+   The expectation of a scenario is taken from the criterion verbatim; if a scenario is wider
+   than the criterion, the extra is a "remark, not a failure", and it gets into the criterion
+   only through WF-01 (AP-117). The result of a scenario is the **observable state of the
+   system** that UAT-RUNNER itself asked for again after the action and compared with the
+   expected one in the scenario; silence in the logs and on the screen is never a result. An
+   example for Pixel Office: the hook sent an event of the start of work of a role — it is
+   checked that the log of the separate server received a record with this role and that the
+   page, opened anew, shows the character of this role at the desk; the snapshot and the server
+   response are attached. A scenario that cannot be run is "not run" with a reason, not a skip.
+   Photos and data are only taken and made up for tests, not of real people (AP-004). The
+   results go in the `result` of the handoff `step-08-uat-runner.json`.
+5. **The signature — BA-ANALYST.** In a separate signature handoff, BA-ANALYST confirms which
+   scenarios passed on the running system. If there is a scenario file, the gate of step 8 stays
+   closed (not passed) without the signature.
+6. **Translations and texts — the readers.** Translations are written by the role that writes
+   the code (BACKEND-DEV or FRONTEND-DEV), one language per launch; there is no separate role of
+   a translator (`decisions/0079`, item 7). They are read by separate new launches without
+   context: they are given only the lines "number — key — Russian — translation". Round 1 — all
+   lines, round 2 — the corrected ones, round 3 — the ones corrected again; 2–3 rounds in all.
+   Disputed lines after two rounds are not given to a reader: they go to a person who knows the
+   language (`FOR_NATIVE_SPEAKER`, AP-114). Step 8 may consist of the readers only; then
+   BA-ANALYST sums up the result without a running system, and the criterion is considered met
+   only in the part of the reader agents.
+7. **A scenario did not pass.** ISSUE-FIXER analyzes the cause, the fix goes with the checks of
+   WF-03 in the same run, after which the acceptance is repeated.
 
-**Шаг 9 — RELEASE-VALIDATOR, ворота.**
+**Step 9 — RELEASE-VALIDATOR, gate.**
 
-- Сам запускает одну команду проверки и прикладывает вывод. Число упавших может
-  отличаться от шага 6 — само по себе это ни подтверждение, ни поломка; каждое «не из-за
-  этой работы» выводится заново (quality-bar §6, п. 4).
-- Каждый критерий проверяет на системе и в файлах, а не по отчётам прошлых шагов. Если
-  критерий называет файл теста, делает `ls` по этому файлу (AP-123).
-- Для сервера и страниц — своя серия устойчивости и собственные мутанты; пробу, которую
-  запустил сам, останавливает по идентификатору процесса, а не по шаблону имени (AP-119).
-- Проходит планку как список: каждый пункт Q и R — PASS или «неприменим» с причиной. Одна
-  непояснённая дыра — FAIL.
-- Проверяет, что статусы и документы не отстали от сделанного.
-- FAIL — называет, к какому шагу и какой роли вернуться.
+- Itself runs one check command and attaches the output. The number of failures may differ from
+  step 6 — in itself this is neither a confirmation nor a breakage; every "not because of this
+  work" is derived anew (quality-bar §6, item 4).
+- Checks each criterion on the system and in the files, not by the reports of previous steps. If
+  a criterion names a test file, does `ls` on that file (AP-123).
+- For the server and the pages — its own series of stability runs and its own mutants; a probe
+  that it started itself it stops by the process identifier, not by a name pattern (AP-119).
+- Goes through the bar as a list: every item Q and R is PASS or "not applicable" with a reason.
+  One unexplained hole is a FAIL.
+- Checks that the statuses and documents have not fallen behind what was done.
+- On a FAIL — names to which step and to which role to return.
 
-**Шаг 10 — DOC-UPDATER, учёт.**
+**Step 10 — DOC-UPDATER, bookkeeping.**
 
-- Статус требования → `done` — только после PASS шага 9, последним действием шага.
-- `STATE.md` и `PLAN.md`: что работает (чем проверено), что решено, что дальше.
-- Дефекты по найденному попутно заводятся и дополняются по номерам ORCH. Если критерий
-  выполнен только в части, так и записывается: какая часть, какая нет.
-- В блоке требования DOC-UPDATER меняет статус и комментарий к нему. Имя, ссылку, число и
-  устаревший факт в тексте блока он исправляет без смены смысла, с `before_copy` в
-  `result`; любая смена смысла критерия — микроправка WF-01 с воротами REQ-VALIDATOR
-  (`decisions/0079`, п. 5).
-- Документы, которые описывают изменённое поведение (например, `tools/README.md`).
-- Ошибки процесса этого прогона — в `docs/anti-patterns.md` (Q13); принятые владельцем
-  повышения планки — в quality-bar §3.
-- В `result.artifacts_out` — каждый изменённый файл поимённо.
-- ORCH до записи DONE своими командами сверяет каждый названный файл и поле и пишет вывод
-  в `context.orch_check`.
-- Там же ORCH сам проходит применимые пункты Q и R по файлам и полям, а не по отчётам.
-  Пропущенный пункт — доработка, а не заметка на потом.
+- The status of the requirement → `done` — only after the PASS of step 9, as the last action of
+  the step.
+- `STATE.md` and `PLAN.md`: what works (how it is checked), what is decided, what is next.
+- Defects for findings on the way are created and supplemented by the numbers of ORCH. If a
+  criterion is met only in part, this is recorded as it is: which part, which not.
+- In the requirement block DOC-UPDATER changes the status and the comment on it. A name, a
+  reference, a number and an outdated fact in the text of the block it corrects without changing
+  the meaning, with `before_copy` in `result`; any change of the meaning of a criterion is a
+  micro-amendment of WF-01 with the REQ-VALIDATOR gate (`decisions/0079`, item 5).
+- The documents that describe the changed behavior (for example, `tools/README.md`).
+- The process errors of this run — in `docs/anti-patterns.md` (Q13); the raises of the bar
+  accepted by the owner — in quality-bar §3.
+- In `result.artifacts_out` — every changed file by name.
+- Before writing DONE, ORCH checks each named file and field with its own commands and writes
+  the output in `context.orch_check`.
+- There ORCH itself goes through the applicable items Q and R by files and fields, not by
+  reports. A missed item is a rework step, not a note for later.
 
-**Шаг 11 — RELEASE-FINALIZER, выпуск.**
+**Step 11 — RELEASE-FINALIZER, release.**
 
-- Перед коммитом забирает свежее состояние `main`; конфликт — остановка и вопрос владельцу,
-  ничего не перезаписывается силой.
-- Коммитит только файлы прогона, каждый по имени, кроме handoff-а своего шага (AP-091):
-  «добавить всё» нельзя; секреты, временные файлы и `node_modules` не коммитятся. Сообщение
-  коммита называет требование.
-- Отправляет коммит в `main` обычным push после PASS RELEASE-VALIDATOR, по слову владельца
-  от 2026-10-11 (`decisions/0048`, `0062`, `0079`, п. 1). Force-push, метки, другие ветки и
-  `--no-verify` — только по слову владельца.
-- Ждёт результата `check.yml` (`gh run list --workflow check.yml`). Красный результат не
-  чинит: остановка и доклад ORCH. Красный тест не повторяют до зелёного; нестабильный
-  тест — дефект, ORCH сообщает владельцу (`decisions/0079`, п. 2).
-- Пишет отчёт о выпуске `docs/releases/<RUN-ID>.md`: что сделано, какие проверки прошли
-  (со ссылками на handoff-ы), какие коммиты, что не сделано и почему.
-- Закрывает свой handoff и сдаёт его вторым коммитом.
-- Мерж иным способом и смена настроек GitHub — только после подтверждения владельца (R1).
-- ORCH сверяет: в первом коммите ровно файлы прогона, а отчёт совпадает с handoff-ами.
+- Before the commit, takes the fresh state of `main`; a conflict is a stop and a question to the
+  owner, nothing is overwritten by force.
+- Commits only the files of the run, each by name, except the handoff of its own step (AP-091):
+  "add everything" is not allowed; secrets, temporary files and `node_modules` are not
+  committed. The commit message names the requirement.
+- Sends the commit to `main` with an ordinary push after the PASS of RELEASE-VALIDATOR, on the
+  owner's word of 2026-10-11 (`decisions/0048`, `0062`, `0079`, item 1). A force-push, tags,
+  other branches and `--no-verify` — only on the owner's word.
+- Waits for the result of `check.yml` (`gh run list --workflow check.yml`). It does not fix a
+  red result: a stop and a report to ORCH. A red test is not repeated until it is green; a
+  flaky test is a defect, and ORCH tells the owner (`decisions/0079`, item 2).
+- Writes the release report `docs/releases/<RUN-ID>.md`: what was done, which checks passed
+  (with references to the handoffs), which commits, what was not done and why.
+- Closes its handoff and hands it in as a second commit.
+- A merge in any other way and a change of GitHub settings — only after the owner's confirmation
+  (R1).
+- ORCH checks: the first commit holds exactly the files of the run, and the report matches the
+  handoffs.
 
-## Короткий путь
+## Short path
 
-Маленькую правку ORCH может сделать сам или поручить одной роли без полного маршрута —
-только если верно **всё**:
+A small edit may be made by ORCH itself or given to one role without the full route — only if
+**all** of this is true:
 
-1. меняется ровно один файл;
-2. не появляется новой функции, модуля, команды или поля данных;
-3. не меняется формат хранимых данных и файлов;
-4. не затронуты данные клиентов, секреты, фото людей, внешние вызовы, права
-   доступа и события Pixel Office;
-5. не меняется поведение, которое проверяет существующий тест: ожидания тестов прежние;
-6. для кода — этот кусок уже проверяет существующий тест, и одна команда проверки после
-   правки проходит (вывод приложен).
+1. exactly one file changes;
+2. no new function, module, command or data field appears;
+3. the format of stored data and files does not change;
+4. customer data, secrets, photos of people, external calls, access rights and Pixel Office
+   events are not touched;
+5. the behavior that an existing test checks does not change: the expectations of the tests are
+   the same;
+6. for code — this piece is already checked by an existing test, and one check command passes
+   after the edit (the output is attached).
 
-Любое «нет» — полный маршрут; сомнение — тоже «нет». Даже на коротком пути правку
-проверяет не автор (Q2), и учёт ведётся в той же работе (Q14). Пример: опечатка в
-документе, комментарий, одно значение настройки.
+Any "no" means the full route; a doubt is also a "no". Even on the short path the edit is
+checked by someone other than the author (Q2), and the bookkeeping is done in the same work
+(Q14). An example: a typo in a document, a comment, one value of a setting.
 
-## Ворота
+## Gates
 
-Шаги 1b, 3 и 4 (одновременно), 5b, 6, 7 (интерфейс по образцу), 8 (если есть запущенная
-система) и 9. Пока ворота не дали PASS, следующий шаг не начинается. Любая правка кода, уже
-прошедшего шаги 3 и 4, до прогона тестов снова проходит оба шага. После каждого шага —
-`orch_check` ORCH; после шага 10 — проверка учёта, после шага 11 — результат `check.yml`.
+Steps 1b, 3 and 4 (at the same time), 5b, 6, 7 (an interface by a sample), 8 (if there is a
+running system) and 9. Until a gate gives a PASS, the next step does not start. Any edit of code
+that has already passed steps 3 and 4 passes both steps again before the tests are run. After
+every step — the `orch_check` of ORCH; after step 10 — the bookkeeping check, after step 11 — the
+result of `check.yml`.
 
-## Артефакты
+## Artifacts
 
-| Шаг | Кто | Что |
+| Step | Who | What |
 |---|---|---|
-| 1 | CODE-DESIGNER | `docs/design/REQ-NNN-<коротко>.md` (с набросками вне проекта в `result.prototype`) |
-| 1a | ORCH | `decisions/NNNN-<коротко>-conventions.md`, если у проекта были открытые вопросы |
-| 2 | BACKEND-DEV, FRONTEND-DEV | код в своих файлах; вывод команды проверки — в `result` |
-| 3, 4, 1b, 5b, 7, 9 | проверяющие роли | `result` своего handoff-а: PASS или FAIL с находками |
-| 5 | TEST-DESIGNER | тесты, перечень мутантов |
-| 6 | TEST-RUNNER | вывод команды проверки — в `result` |
-| 8 | BA-ANALYST, UAT-RUNNER | сценарии — `docs/uat/<REQ-ID>.md`; без сценариев — `docs/uat/<REQ-ID>-RUN.md`; снимки — вне проекта; итоги прогона и подпись — в `result` handoff-ов шага 8 |
-| 10 | DOC-UPDATER | статус в `docs/requirements.yaml`, `STATE.md`, `PLAN.md`, документы, `docs/anti-patterns.md` |
-| 11 | RELEASE-FINALIZER | два коммита (файлы прогона; затем handoff шага), push в `main`, `docs/releases/<RUN-ID>.md` |
-| 0–11 | ORCH | handoff-ы в `handoffs/<RUN-ID>/` |
+| 1 | CODE-DESIGNER | `docs/design/REQ-NNN-<short>.md` (with sketches outside the project in `result.prototype`) |
+| 1a | ORCH | `decisions/NNNN-<short>-conventions.md`, if the design had open questions |
+| 2 | BACKEND-DEV, FRONTEND-DEV | code in their own files; the output of the check command — in `result` |
+| 3, 4, 1b, 5b, 7, 9 | checking roles | the `result` of their handoff: PASS or FAIL with findings |
+| 5 | TEST-DESIGNER | tests, the list of mutants |
+| 6 | TEST-RUNNER | the output of the check command — in `result` |
+| 8 | BA-ANALYST, UAT-RUNNER | scenarios — `docs/uat/<REQ-ID>.md`; without scenarios — `docs/uat/<REQ-ID>-RUN.md`; snapshots — outside the project; the results of the run and the signature — in the `result` of the handoffs of step 8 |
+| 10 | DOC-UPDATER | the status in `docs/requirements.yaml`, `STATE.md`, `PLAN.md`, documents, `docs/anti-patterns.md` |
+| 11 | RELEASE-FINALIZER | two commits (the run files; then the handoff of the step), the push to `main`, `docs/releases/<RUN-ID>.md` |
+| 0–11 | ORCH | handoffs in `handoffs/<RUN-ID>/` |
 
-## Handoff-ы
+## Handoffs
 
 - `workflow_id`: `"WF-02"`.
-- Имена файлов — `<порядковый номер шага>-<роль>`, по `docs/workflows/handoffs.md`; номер в
-  имени — порядковый в прогоне, а шаг процесса назван первыми словами `task.description`.
-  Если требование писалось в этом же прогоне, первыми идут `step-00a` и `step-00b` (WF-01).
-- Доработки (следующая буква шага) и повторные запуски — по `docs/workflows/handoffs.md`.
+- File names are `<serial number of the step>-<role>`, by `docs/workflows/handoffs.md`; the
+  number in the name is the serial one in the run, and the workflow step is named in the first
+  words of `task.description`. If the requirement was written in the same run, `step-00a` and
+  `step-00b` (WF-01) go first.
+- Rework steps (the next letter of the step) and re-runs — by `docs/workflows/handoffs.md`.
 
-## Цикл доработки
+## Rework loop
 
-- На каждых воротах — не больше **трёх проходов**: первый и два повтора после FAIL
-  (`decisions/0079`, п. 4). Третий FAIL — остановка и доклад владельцу.
-- Если та же ошибка вернулась после доработки, следующая попытка меняет подход, а не
-  повторяет прежний.
-- Правка уже проверенного файла — отдельный handoff и новая проверка; если она даёт FAIL,
-  это проход в счёт лимита.
-- Новый запуск после обрыва (`-runN`) доработкой не считается.
+- At each gate — no more than **three passes**: the first and two repeats after a FAIL
+  (`decisions/0079`, item 4). The third FAIL is a stop and a report to the owner.
+- If the same error came back after a rework step, the next attempt changes the approach and
+  does not repeat the previous one.
+- An edit of an already checked file is a separate handoff and a new check; if it gives a FAIL,
+  that is a pass counted in the limit.
+- A new launch after an interruption (`-runN`) does not count as a rework step.
 
-## Условия остановки
+## Stop conditions
 
-- **Готово:** PASS шага 9, учёт шага 10 сверен ORCH, RELEASE-FINALIZER сделал push в `main`,
-  `check.yml` зелёный, второй коммит с handoff-ом шага сдан. Мерж иным способом ждёт
-  подтверждения владельца (R1).
-- **Остановлено, лимит:** третий проход ворот снова дал FAIL. Требование —
-  `blocked`; ORCH пишет владельцу, что пробовали, что не прошло и почему, и какие есть
-  варианты.
-- **Остановлено, планка:** задачу нельзя сделать без понижения планки (quality-bar §1)
-  или против записи в `decisions/` — вопрос владельцу.
-- **Остановлено, предпосылки:** для кода продукта нет решения о старте или одной команды
-  проверки — код продукта не может стать `done` (Q4).
-- **Остановлено, среда:** сломалось что-то вне проекта (Node, права файлов, диск). ORCH
-  сразу пишет владельцу: что сломалось, чем это подтверждено, точная команда починки, что
-  из-за этого стоит. Обход своими силами — только с явного разрешения владельца (AP-021).
+- **Done:** PASS of step 9, the bookkeeping of step 10 is checked by ORCH, RELEASE-FINALIZER
+  made the push to `main`, `check.yml` is green, the second commit with the handoff of the step
+  is handed in. A merge in any other way waits for the owner's confirmation (R1).
+- **Stopped, limit:** the third gate pass gave a FAIL again. The requirement is `blocked`; ORCH
+  writes to the owner what was tried, what did not pass and why, and what options there are.
+- **Stopped, bar:** the task cannot be done without lowering the bar (quality-bar §1) or against
+  a record in `decisions/` — a question to the owner.
+- **Stopped, prerequisites:** for product code there is no decision to start or no single check
+  command — product code cannot become `done` (Q4).
+- **Stopped, environment:** something outside the project broke (Node, file rights, disk). ORCH
+  writes to the owner at once: what broke, what confirms it, the exact command to fix it, what
+  stands still because of it. A workaround by own means — only with the explicit permission of
+  the owner (AP-021).
 
-## Отчёт владельцу
+## Report to the owner
 
-Простыми словами, без внутренних терминов: что сделано; как проверить самому (команда или
-ссылка); какие проверки прошли и кем; что не сделано и почему; сколько потрачено из
-лимитов владельца, если тратилось; что нужно решить владельцу.
+In plain words, without internal terms: what was done; how to check it yourself (a command or a
+link); which checks passed and by whom; what was not done and why; how much of the owner's
+limits was spent, if any was; what the owner has to decide.

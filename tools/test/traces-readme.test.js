@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { SAI } from "./fixtures/traces/helpers.js";
 
 const README = fs.readFileSync(path.join(SAI, "README.md"), "utf8");
-const HEADING = "## Как открыть на другом компьютере";
+const HEADING = "## How to open on another computer";
 
 function section() {
   const start = README.indexOf(`\n${HEADING}\n`);
@@ -37,13 +37,16 @@ for (const command of [
 test("TD-2 no outdated words in README.md", () => {
   assert.ok(!README.includes("Своего репозитория у Sai пока нет"));
   assert.ok(!README.includes("кода продукта нет"));
+  assert.ok(!README.includes("Sai has no repository of its own yet"));
+  assert.ok(!README.includes("there is no product code"));
 });
 
 test("TD-3 the section has no copy of the folder and no address but the placeholder", () => {
   const text = section();
   assert.ok(!text.includes("копию папки"));
+  assert.ok(!text.includes("a copy of the folder"));
   assert.ok(!text.includes("git@"));
   assert.ok(!text.includes("://"));
-  assert.ok(text.includes("git clone <адрес репозитория Sai>"));
+  assert.ok(text.includes("git clone <Sai repository address>"));
   assert.match(text, /npm run traces -- add/u);
 });

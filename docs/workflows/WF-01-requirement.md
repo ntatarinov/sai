@@ -1,185 +1,196 @@
-# WF-01 — Требование
+# WF-01 — Requirement
 
-Как в Sai появляется требование: просьба владельца становится записью в
-`docs/requirements.yaml` с критериями, каждый из которых можно проверить, а отдельный
-агент подтверждает, что по этой записи можно работать. Без требования, прошедшего этот
-процесс, код не пишется (quality-bar Q1).
+How a requirement appears in Sai: a request of the owner becomes a record in
+`docs/requirements.yaml` with criteria, each of which can be checked, and a separate agent
+confirms that work can be done from this record. No code is written without a requirement
+that has passed this workflow (quality-bar Q1).
 
-Все роли соблюдают `docs/quality-bar.md`; handoff-ы — по `docs/workflows/handoffs.md`.
+All roles follow `docs/quality-bar.md`; handoffs follow `docs/workflows/handoffs.md`.
 
-## Когда запускается
+## When it starts
 
-- Владелец просит новое: возможность продукта, документ, исследование, служебный
-  инструмент.
-- Нужно изменить действующее требование: добавить или поправить критерий. Например, после
-  дефекта, когда ожидаемого поведения в требовании не было, — так в REQ-002 появился
-  критерий 11.
-- **Не запускается** для дефекта, если ожидаемое поведение уже записано в требовании или в
-  тесте: это WF-03.
+- The owner asks for something new: a product feature, a document, research, a service tool.
+- An existing requirement must be changed: a criterion added or corrected. For example, after
+  a defect, when the expected behavior was not in the requirement — this is how criterion 11
+  appeared in REQ-002.
+- It **does not start** for a defect if the expected behavior is already written in a
+  requirement or in a test: that is WF-03.
 
-WF-01 идёт отдельным прогоном до WF-02 (так с `PICKER-20261019-01`): в нём
-`step-01-req-analyst.json`, `step-02-req-validator.json` и, если нужен учёт, `step-03-doc-updater.json`.
-Первыми шагами большего прогона (`step-00a`, `step-00b`) WF-01 идёт, только если WF-02
-открывается сразу в том же прогоне. Короткая правка требования посреди разработки — раздел
-«Микроправка по проекту кода».
+WF-01 goes as a separate run before WF-02 (as with `PICKER-20261019-01`): it holds
+`step-01-req-analyst.json`, `step-02-req-validator.json` and, if bookkeeping is needed,
+`step-03-doc-updater.json`. WF-01 goes as the first steps of a larger run (`step-00a`,
+`step-00b`) only if WF-02 opens right away in the same run. A short edit of a requirement in
+the middle of development is the section "Micro-amendment after the code design".
 
-## Роли
+## Roles
 
-| Роль | Что делает | Кто проверяет |
+| Role | What it does | Who checks |
 |---|---|---|
-| ORCH | Передаёт слова владельца дословно, пишет handoff-ы, после PASS включает требование в план итерации и сообщает владельцу. Сам требований не пишет (AP-011) | — |
-| REQ-ANALYST | Пишет или правит блок требования | REQ-VALIDATOR |
-| REQ-VALIDATOR | Ворота: проверяет требование | ORCH сверяет, что проверены все пункты |
-| DOC-UPDATER | Записывает ошибку процесса, если она найдена в отдельном прогоне WF-01, и то, что породили ответы владельца (`STATE.md`, `PLAN.md`, решения) | ORCH сверяет запись |
-| Владелец | Источник просьбы; решает спорные места постановки; может остановить работу по требованию | — |
+| ORCH | Passes the owner's words on verbatim, writes handoffs, after PASS includes the requirement in the iteration plan and tells the owner. Does not write requirements itself (AP-011) | — |
+| REQ-ANALYST | Writes or edits a requirement block | REQ-VALIDATOR |
+| REQ-VALIDATOR | Gate: checks the requirement | ORCH checks that all items were checked |
+| DOC-UPDATER | Records a process error if it is found in a separate WF-01 run, and what the owner's answers produced (`STATE.md`, `PLAN.md`, decisions) | ORCH checks the record |
+| Owner | The source of the request; decides the disputed points of the statement; may stop the work on a requirement | — |
 
-## Шаги
+## Steps
 
-**Шаг 0 — ORCH готовит задание.**
+**Step 0 — ORCH prepares the task.**
 
-1. Записывает просьбу владельца дословно — с датой и местом, где она сказана (сессия,
-   сообщение). Пересказ вместо слов не годится.
-2. Решает, что это: новое требование, правка действующего или дефект (тогда WF-03).
-3. Ставит лёгкую метку git `base/<RUN-ID>` до первого изменения прогона; она записана в
-   `context.base_tag` (`docs/workflows/handoffs.md`, «Общие правила для всех ролей»).
-4. Пишет handoff для REQ-ANALYST: слова владельца, связанные требования, какой блок можно
-   менять (`context.edit_scope`), кто ещё сейчас работает с `docs/requirements.yaml`
-   (`context.parallel_work_now`). Писать в этот файл в один момент может только один агент.
+1. Writes down the owner's request verbatim — with the date and the place where it was said
+   (session, message). A retelling instead of the words is not acceptable.
+2. Decides what it is: a new requirement, an edit of an existing one, or a defect (then
+   WF-03).
+3. Sets the lightweight git tag `base/<RUN-ID>` before the first change of the run; it is
+   written in `context.base_tag` (`docs/workflows/handoffs.md`, "Common rules for all
+   roles").
+4. Writes the handoff for REQ-ANALYST: the owner's words, the related requirements, which
+   block may be changed (`context.edit_scope`), who else is working with
+   `docs/requirements.yaml` now (`context.parallel_work_now`). Only one agent may write to
+   this file at a time.
 
-**Шаг 1 — REQ-ANALYST пишет требование.**
+**Step 1 — REQ-ANALYST writes the requirement.**
 
-1. Читает `docs/requirements.yaml` (номера, поля, соседние требования), записи
-   `decisions/` и `docs/anti-patterns.md`.
-2. Новое требование получает следующий свободный номер `REQ-NNN`: самый большой номер во
-   всём файле плюс один. Поля: `id`, `title`, `owner`, `status: pending`, `depends_on`,
-   `original_request` (слова владельца дословно), `description`, `acceptance_criteria`.
-   Образец — любое требование из файла.
-3. Критериев — не меньше двух. У каждого сказано, чем он проверяется: командой, тестом
-   или конкретным содержимым конкретного файла. «Удобно», «быстро», «хорошо работает» —
-   не критерии.
-4. Требование касается данных клиентов — в нём есть критерий изоляции пространств бизнеса
-   (Q8); фото людей — критерий срока хранения (R3; сейчас не применим, решение 0033);
-   внешнего сервиса — критерий на его сбой (Q10); адреса, который задаёт клиент или
-   пользователь и по которому ходит сервер, — критерий проверки адреса (Q11).
-5. Размер — одна работа одного прогона. Не помещается — несколько требований, связанных
-   через `depends_on`.
-6. Ничто в тексте не намекает на понижение планки («пока без тестов», «проверим потом»).
-7. Меняет только свой блок: новый блок добавляется в конец, остальные не переставляются и
-   не переписываются. До и после записи снимает хеш остальной части файла и пишет оба
-   хеша в `result`, чтобы было видно, что чужие блоки не изменились.
-   Копией «до» служит метка `base/<RUN-ID>` (`context.base_tag`): REQ-ANALYST пишет в
-   `result.before_copy` строки «до» каждой правки, взятые из `git show base/<RUN-ID>:docs/requirements.yaml`
-   (AP-023); REQ-VALIDATOR сверяет файл с меткой командой `git diff`.
-8. Сдаёт handoff: в `result.changes` — что записано или изменено, в `result.self_check` —
-   вывод своих проверок (например, что каждая команда из критериев запускается на текущих
-   файлах).
+1. Reads `docs/requirements.yaml` (numbers, fields, neighboring requirements), the records of
+   `decisions/` and `docs/anti-patterns.md`.
+2. A new requirement gets the next free number `REQ-NNN`: the largest number in the whole file
+   plus one. Fields: `id`, `title`, `owner`, `status: pending`, `depends_on`,
+   `original_request` (the owner's words verbatim), `description`, `acceptance_criteria`. The
+   sample is any requirement from the file.
+3. There are at least two criteria. Each one says what checks it: a command, a test or the
+   specific content of a specific file. "Convenient", "fast", "works well" are not criteria.
+4. The requirement concerns customer data — it has a criterion of isolation of the business
+   spaces (Q8); photos of people — a criterion of the storage period (R3; not applicable now,
+   decision 0033); an external service — a criterion for its failure (Q10); an address that a
+   customer or a user sets and that the server visits — a criterion of address validation
+   (Q11).
+5. The size is one piece of work for one run. If it does not fit — several requirements linked
+   through `depends_on`.
+6. Nothing in the text hints at lowering the bar ("no tests for now", "we will check later").
+7. Changes only its own block: a new block is added at the end, the others are not moved or
+   rewritten. Before and after writing, takes the hash of the rest of the file and writes both
+   hashes into `result`, so that it is visible that the other blocks did not change.
+   The tag `base/<RUN-ID>` (`context.base_tag`) serves as the "before" copy: REQ-ANALYST
+   writes into `result.before_copy` the "before" lines of every edit, taken from
+   `git show base/<RUN-ID>:docs/requirements.yaml` (AP-023); REQ-VALIDATOR compares the file
+   with the tag with the command `git diff`.
+8. Hands in the handoff: `result.changes` — what was written or changed, `result.self_check` —
+   the output of its own checks (for example, that every command from the criteria runs on the
+   current files).
 
-**Шаг 2 — REQ-VALIDATOR, ворота.** Читает блок сам, а не по отчёту автора, и проверяет:
+**Step 2 — REQ-VALIDATOR, gate.** Reads the block itself, not from the author's report, and
+checks:
 
-- (а) **проверяемость** — критериев не меньше двух, и у каждого есть способ проверки,
-  который однозначно даёт «да» или «нет»; меньше двух критериев или размытые слова («при
-  необходимости», «достаточно», «удобно») — FAIL;
-- (б) **согласованность** — нет противоречия с требованиями в статусе `done` и с записями
-  `decisions/`;
-- (в) **зависимости** — каждое требование из `depends_on` существует и действительно
-  нужно раньше;
-- (г) **размер** — одна работа, без нескольких отдельных работ внутри одного требования;
-- (д) **планка** — критерии Q8, R3, Q10 и Q11 есть там, где они нужны; ни слова о
-  понижении планки;
-- (е) **слова владельца** — `original_request` дословный, а не пересказ.
+- (а) **checkability** — there are at least two criteria, and each has a way of checking that
+  gives an unambiguous "yes" or "no"; fewer than two criteria or vague words ("if necessary",
+  "enough", "convenient") — FAIL;
+- (б) **consistency** — no contradiction with the requirements in the status `done` and with
+  the records of `decisions/`;
+- (в) **dependencies** — every requirement in `depends_on` exists and is really needed
+  earlier;
+- (г) **size** — one piece of work, without several separate pieces of work inside one
+  requirement;
+- (д) **bar** — the criteria Q8, R3, Q10 and Q11 are there where they are needed; not a word
+  about lowering the bar;
+- (е) **owner's words** — `original_request` is verbatim, not a retelling.
 
-Что ворота проверяют сами, не доверяя автору:
+What the gate checks itself, without trusting the author:
 
-- в (а): слова в запретах сравниваются по границам идентификатора, с точными формами вместо
-  корней, и правило проверено на настоящем коде (AP-120); утверждение «любая», «каждый»,
-  «ни одного» подкреплено перебором всего множества (AP-094); у критерия-подсчёта значение
-  «до» на базовом коммите не выполняет критерий (AP-071); файл теста, названный в критерии,
-  существует или записан как создаваемый этой работой (AP-123);
-- в (б): поиском по `tools/test/` найдены охранные тесты прежних требований, которые краснеют
-  от новых модулей, путей, команд и адресов, и названа таблица их замены (AP-068, AP-112,
-  AP-113); решения «внутри прогона» найдены по затронутым словам (AP-096).
+- in (а): the words in prohibitions are compared by identifier boundaries, with exact forms
+  instead of stems, and the rule is tested on real code (AP-120); a statement "any", "every",
+  "none" is backed by going through the whole set (AP-094); for a counting criterion, the
+  "before" value on the base commit does not satisfy the criterion (AP-071); the test file
+  named in a criterion exists or is written as created by this work (AP-123);
+- in (б): by searching `tools/test/`, the guard tests of earlier requirements that turn red
+  because of new modules, paths, commands and addresses are found, and the table of their
+  replacement is named (AP-068, AP-112, AP-113); the decisions "inside a run" are found by the
+  words concerned (AP-096).
 
-Команды из критериев проверяющий по возможности запускает сам на текущих файлах. Любой
-непройденный пункт — FAIL с перечнем: номер требования, буква пункта, что не так. PASS —
-требование готово для работы по нему.
+The checker runs the commands from the criteria itself on the current files where possible.
+Any item not passed is a FAIL with a list: the requirement number, the letter of the item,
+what is wrong. PASS — the requirement is ready to be worked on.
 
-**Шаг 3 — ORCH.** Сверяет, что проверяющий прошёл все пункты (а)–(е), включает
-проверенное требование в план итерации (`PLAN.md`) и сообщает о нём владельцу в отчёте.
-Отдельного одобрения не ждёт, но владелец может остановить работу по требованию — тогда
-по нему не работают, пока он не решит иначе. Статус требования остаётся `pending`: WF-01
-только подтверждает, что требование годно. В `in_progress` его переводит ORCH, когда
-начинается работа по нему (WF-02, шаг 0).
+**Step 3 — ORCH.** Checks that the checker went through all items (а)–(е), includes the
+checked requirement in the iteration plan (`PLAN.md`) and tells the owner about it in the
+report. It does not wait for a separate approval, but the owner may stop the work on the
+requirement — then nobody works on it until the owner decides otherwise. The status of the
+requirement stays `pending`: WF-01 only confirms that the requirement is fit. ORCH moves it
+to `in_progress` when the work on it starts (WF-02, step 0).
 
-Если в отдельном прогоне WF-01 найдена ошибка процесса, её записывает в
-`docs/anti-patterns.md` DOC-UPDATER — отдельным handoff-ом этого прогона
-(`step-03-doc-updater.json`); ORCH сверяет запись (Q13). В таком прогоне DOC-UPDATER
-записывает и то, что породили ответы владельца: `STATE.md`, `PLAN.md`, решения. Если WF-01
-идёт первыми шагами большего прогона, ошибку записывает учёт этого прогона.
+If a process error is found in a separate WF-01 run, DOC-UPDATER records it in
+`docs/anti-patterns.md` — with a separate handoff of this run (`step-03-doc-updater.json`);
+ORCH checks the record (Q13). In such a run DOC-UPDATER also records what the owner's answers
+produced: `STATE.md`, `PLAN.md`, decisions. If WF-01 goes as the first steps of a larger run,
+the error is recorded by the bookkeeping of that run.
 
-## Микроправка по проекту кода
+## Micro-amendment after the code design
 
-Бывает, что проект кода, ворота или тесты WF-02 показали: критерий невыполним, неверен или
-называет файл, которого нет (примеры: критерий 5 REQ-056 против порядка REQ-057, критерий 10
-REQ-057, критерий 1 REQ-068 про «любую пару суррогатов»). Тогда ORCH запускает короткий
-отдельный прогон WF-01 (`<МЕТКА>-<дата>-NN`), и разработка продолжается после его PASS.
+It happens that the code design, the gates or the tests of WF-02 showed that a criterion
+cannot be met, is wrong or names a file that does not exist (examples: criterion 5 of REQ-056
+against the order of REQ-057, criterion 10 of REQ-057, criterion 1 of REQ-068 about "any pair
+of surrogates"). Then ORCH starts a short separate WF-01 run (`<LABEL>-<date>-NN`), and the
+development continues after its PASS.
 
-- REQ-ANALYST правит только названные критерии и описание, не ослабляя их; в
-  `result.before_copy` — строки «до» каждой правки из метки, в `result.changes` — что было и
-  что стало.
-- REQ-VALIDATOR проверяет весь блок по (а)–(е), смысл правок и то, что остальная часть файла
-  не изменилась (хеш до и после, `git diff` с меткой); ворота короткие, но пункты те же.
-- DOC-UPDATER в WF-02, шаг 10, может исправить в блоке требования имя, ссылку, число или
-  устаревший факт без смены смысла, с `before_copy` в `result` (`decisions/0079`, п. 5).
-  Любая смена смысла критерия — только эта микроправка с воротами REQ-VALIDATOR.
+- REQ-ANALYST edits only the named criteria and the description, without weakening them; in
+  `result.before_copy` — the "before" lines of every edit from the tag, in `result.changes` —
+  what it was and what it became.
+- REQ-VALIDATOR checks the whole block by (а)–(е), the meaning of the edits and that the rest
+  of the file did not change (a hash before and after, `git diff` with the tag); the gate is
+  short, but the items are the same.
+- DOC-UPDATER in WF-02, step 10, may correct in the requirement block a name, a reference, a
+  number or an outdated fact without changing the meaning, with `before_copy` in `result`
+  (`decisions/0079`, item 5). Any change of the meaning of a criterion is only this
+  micro-amendment with the REQ-VALIDATOR gate.
 
-## Ворота
+## Gates
 
-Шаг 2 (REQ-VALIDATOR). Пока нет PASS, работа по требованию не начинается: ни проект, ни
-исследования, ни код (AP-010).
+Step 2 (REQ-VALIDATOR). Until there is a PASS, work on the requirement does not start: no
+design, no research, no code (AP-010).
 
-## Артефакты
+## Artifacts
 
-| Шаг | Кто | Что |
+| Step | Who | What |
 |---|---|---|
-| 1 | REQ-ANALYST | блок `REQ-NNN` в `docs/requirements.yaml` |
-| 2 | REQ-VALIDATOR | `result` своего handoff-а: PASS или FAIL с перечнем |
-| 3 | ORCH | требование в плане итерации (`PLAN.md`), отчёт владельцу |
-| 3 | DOC-UPDATER | запись в `docs/anti-patterns.md`, если найдена ошибка процесса |
-| 0–3 | ORCH | handoff-ы в `handoffs/<RUN-ID>/` |
+| 1 | REQ-ANALYST | the block `REQ-NNN` in `docs/requirements.yaml` |
+| 2 | REQ-VALIDATOR | the `result` of its handoff: PASS or FAIL with a list |
+| 3 | ORCH | the requirement in the iteration plan (`PLAN.md`), the report to the owner |
+| 3 | DOC-UPDATER | a record in `docs/anti-patterns.md`, if a process error is found |
+| 0–3 | ORCH | handoffs in `handoffs/<RUN-ID>/` |
 
-## Handoff-ы
+## Handoffs
 
-- `workflow_id`: `"WF-01"`, или процесс всего прогона, если WF-01 идёт его первыми шагами.
-- Имена файлов, порядковые номера шагов и форма доработок — `docs/workflows/handoffs.md`.
-  Доработка получает следующую букву шага, а не суффикс `-rN`.
+- `workflow_id`: `"WF-01"`, or the workflow of the whole run if WF-01 goes as its first steps.
+- File names, serial numbers of steps and the form of rework steps — see
+  `docs/workflows/handoffs.md`. A rework step gets the next letter of the step, not the suffix
+  `-rN`.
 
-## Цикл доработки
+## Rework loop
 
-- FAIL → REQ-ANALYST дорабатывает только по перечню замечаний (новый handoff со следующей
-  буквой шага, с таблицей «что исправлено, где»); находки сверх перечня — вопросом в
-  `result.issues` (AP-019). Затем снова шаг 2.
-- Не больше **трёх проходов ворот**: первый и два повтора после FAIL (`decisions/0079`, п. 4).
-  Если то же замечание вернулось после доработки, следующая попытка меняет подход, а не
-  повторяет прежний.
-- Правка требования после PASS — тоже отдельный handoff и новая проверка шага 2 (микроправка,
-  раздел выше); если эта проверка даёт FAIL, проход засчитывается в лимит.
-- Новый запуск после обрыва (`-runN`) доработкой не считается.
+- FAIL → REQ-ANALYST reworks only by the list of remarks (a new handoff with the next letter
+  of the step, with the table "what was fixed, where"); findings beyond the list go as a
+  question in `result.issues` (AP-019). Then step 2 again.
+- No more than **three gate passes**: the first and two repeats after a FAIL
+  (`decisions/0079`, item 4). If the same remark came back after a rework step, the next
+  attempt changes the approach and does not repeat the previous one.
+- An edit of a requirement after PASS is also a separate handoff and a new check of step 2
+  (the micro-amendment, the section above); if this check gives a FAIL, the pass counts toward
+  the limit.
+- A new launch after an interruption (`-runN`) does not count as a rework step.
 
-## Условия остановки
+## Stop conditions
 
-- **Готово:** PASS шага 2, ORCH сверил проверку, включил требование в план итерации и
-  отправил отчёт владельцу.
-- **Остановлено владельцем:** владелец остановил работу по требованию — ORCH убирает его
-  из плана итерации; требование остаётся `pending`.
-- **Остановлено:** третий проход ворот снова дал FAIL. ORCH пишет владельцу, что
-  предлагалось, что не прошло и почему; по требованию не работают, пока владелец не
-  решит.
-- **Остановлено:** постановка требует понизить планку или идти против записи в
-  `decisions/` — вопрос владельцу (quality-bar §1, §6).
+- **Done:** PASS of step 2, ORCH checked the check, included the requirement in the iteration
+  plan and sent the report to the owner.
+- **Stopped by the owner:** the owner stopped the work on the requirement — ORCH removes it
+  from the iteration plan; the requirement stays `pending`.
+- **Stopped:** the third gate pass gave a FAIL again. ORCH writes to the owner what was
+  proposed, what did not pass and why; nobody works on the requirement until the owner
+  decides.
+- **Stopped:** the statement of the requirement demands lowering the bar or going against a
+  record in `decisions/` — a question to the owner (quality-bar §1, §6).
 
-## Отчёт владельцу
+## Report to the owner
 
-Коротко и простыми словами: какое требование появилось или изменилось (номер и название),
-что оно обещает в одной-двух фразах, сколько в нём критериев и чем они проверяются, с
-какой попытки прошла проверка, что дальше (какой процесс пойдёт по нему) и что нужно решить
-владельцу, если есть что решать.
+Short and in plain words: which requirement appeared or changed (number and title), what it
+promises in one or two sentences, how many criteria it has and how they are checked, on which
+attempt the check passed, what is next (which workflow will go on it) and what the owner has
+to decide, if there is anything to decide.

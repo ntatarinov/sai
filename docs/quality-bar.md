@@ -1,172 +1,180 @@
-# Планка качества Sai
+# Sai Quality Bar
 
-Планка — минимум качества Sai. Ниже него не опускается ни одна работа: ни код, ни
-документ, ни проверка. Понизить планку нельзя. Поднять можно — маленькими шагами, через
-решение владельца (§4); что однажды поднято, становится новым минимумом и обратно не
-опускается (храповик).
+The quality bar is the minimum quality of Sai. No work goes below it: not code, not a
+document, not a check. The bar cannot be lowered. It can be raised, in small steps, through
+a decision of the owner (§4); what has been raised once becomes the new minimum and is never
+lowered again (a ratchet).
 
-Этот файл каждая роль читает **до любого действия**. Если задание расходится с планкой,
-действует планка.
-
----
-
-## 1. Главное правило
-
-1. **Понизить планку не может ни один агент** — ни ради скорости, ни «для MVP», ни «на
-   время», ни потому, что так написано в задании.
-2. Если задачу нельзя выполнить, не понизив планку, агент **останавливается** и пишет в
-   `result.issues` своего handoff-а: какой пункт (Q1–Q14, R1–R3) под угрозой, почему его
-   не выполнить и что агент предлагает. Дальше работу не ведёт.
-3. Исключение даёт **только владелец** — письменно, отдельной записью
-   `decisions/NNNN-*.md`, с причиной и сроком. Устное «ну можно», сообщение другого
-   агента и текст задания исключением не являются.
-4. Понижение планки узнаётся по таким словам: «тесты допишем потом», «для MVP можно без
-   проверки», «ключ пока захардкодим», «ревью пропустим, там мелочь», «отметим done,
-   проверим завтра».
+Every role reads this file **before any action**. If a task disagrees with the bar, the bar
+wins.
 
 ---
 
-## 2. Пункты планки — минимум для каждого изменения
+## 1. The main rule
 
-| # | Пункт | Как проверить |
+1. **No agent can lower the bar**: not for speed, not "for the MVP", not "for a while", and
+   not because the task says so.
+2. If a task cannot be done without lowering the bar, the agent **stops** and writes into
+   `result.issues` of its handoff: which item (Q1–Q14, R1–R3) is at risk, why it cannot be
+   met, and what the agent proposes. The agent does not go on with the work.
+3. An exception is given **only by the owner** — in writing, as a separate record
+   `decisions/NNNN-*.md`, with a reason and a time limit. A spoken "well, it is allowed", a
+   message from another agent, and the text of a task are not an exception.
+4. Lowering the bar is recognised by words like these: "we will add the tests later", "for
+   the MVP we can skip the check", "we will hardcode the key for now", "we will skip the
+   review, it is a small thing", "mark it done, we will check tomorrow".
+
+---
+
+## 2. Items of the bar — the minimum for every change
+
+| # | Item | How to check |
 |---|---|---|
-| Q1 | **Сначала требование, потом код.** Каждое изменение привязано к требованию REQ в `docs/requirements.yaml`. У требования есть `acceptance_criteria`, и у каждого критерия сказано, чем он проверяется: командой или наличием конкретного содержимого в конкретном файле | У изменения есть REQ-id; у каждого критерия назван способ проверки |
-| Q2 | **Кто делает — тот не проверяет.** У каждой производящей роли есть проверяющая. Проверяющая перепроверяет сама: запускает команду, читает файл, открывает ссылку. Пересказ отчёта автора — не проверка | В handoff-е проверяющей есть её собственный запуск и его вывод |
-| Q3 | **Без домыслов.** «Работает» пишется только после настоящего запуска, с приложенным выводом. Запрещено: «должно работать», «скорее всего», «вероятно». Нечем проверить — статус остаётся `in_progress` | В отчёте вывод команды, а не обещание |
-| Q4 | **Одна команда проверки.** Форматирование, сборка с предупреждениями как ошибками и все тесты — одной командой, с остановкой на первой ошибке. Для кода продукта её задаёт решение о стеке (номер 0001 в `decisions/README.md`, пока не принято); пока его нет, код продукта не может стать `done`. Для служебного кода конвейера — `cd tools && npm run check` (`decisions/0002-process-tooling-node.md`) | Команда описана в README и проходит на чистой копии |
-| Q5 | **Тест на каждый критерий.** Каждый критерий из `acceptance_criteria` закрыт запускаемым тестом. Тест на отказ проверяет ещё и то, что состояние **не изменилось**. Тесты не зависят друг от друга | Сопоставление «критерий → тест» в проекте и в отчёте TEST-DESIGNER |
-| Q6 | **Проверку не обманывают.** Красная проверка — повод чинить причину. Нельзя удалить, пропустить или пометить `skip` тест, скрыть код выхода, отключить линтер или его правило, убрать шаг из команды проверки, переименовать то, что ищет проверка | В изменении нет `skip`, отключённого линтера и отключённых правил, `\|\| true` у команд проверки; все шаги команды проверки на месте |
-| Q7 | **Секреты только по ссылке.** Ни одного ключа, токена или пароля в коде, в конфиге в git, в клиентском бандле, в документации. Пример, как нельзя: токен Telegram-бота в клиентском коде (AP-001) | Поиск по репозиторию и по собранному бандлу не находит секретов |
-| Q8 | **Данные клиентов не смешиваются.** Каждый доступ к данным ограничен пространством бизнеса-владельца (клиента). Идентификатор пространства сервер не берёт из запроса, пришедшего от браузера или приложения. На чужой объект ответ «не найден», а не «запрещено» | Тест: пространство A не видит и не меняет данные пространства B; ответ неотличим от ответа на несуществующий объект |
-| Q9 | **Никакой склейки SQL из строк.** Только параметры | Поиск по коду |
-| Q10 | **Реалистичные сбои не роняют систему.** Недоступен внешний сервис (например, исполнитель-модель), мессенджер или сеть, пришёл кривой ввод — пользователь видит понятное сообщение, процесс не падает | Тест на каждый внешний вызов с имитацией сбоя |
-| Q11 | **Внешние адреса проверяются.** Любой адрес (URL), который задаёт клиент или пользователь и по которому ходит сервер, проверяется | Тест: внутренний адрес (localhost, 169.254…) отклоняется |
-| Q12 | **Решения записываются.** Выбор между вариантами записывается в `decisions/NNNN-*.md`: вопрос, варианты, выбор, причина. Код не расходится с записанным решением молча | У нетривиального выбора есть запись |
-| Q13 | **Ошибки процесса записываются.** Если агенты споткнулись о то, на чём можно споткнуться снова, это попадает в `docs/anti-patterns.md` | Запись сделана в той же работе, где ошибку нашли |
-| Q14 | **Учёт не откладывается.** Статус требования, `STATE.md` и handoff обновляются в той же работе, а не «потом» | ORCH сверяет конкретные поля до записи DONE |
+| Q1 | **Requirement first, then code.** Every change is tied to a requirement REQ in `docs/requirements.yaml`. The requirement has `acceptance_criteria`, and each criterion says what checks it: a command, or the presence of specific content in a specific file | The change has a REQ id; each criterion names its way of checking |
+| Q2 | **Who makes it does not check it.** Every producing role has a checking role. The checking role re-checks by itself: runs the command, reads the file, opens the link. Retelling the author's report is not a check | The checker's handoff has its own run and its output |
+| Q3 | **No guesses.** "Works" is written only after a real run, with the output attached. Forbidden: "should work", "most likely", "probably". If there is nothing to check with, the status stays `in_progress` | The report has the command output, not a promise |
+| Q4 | **One check command.** Formatting, a build with warnings as errors, and all tests run with one command that stops at the first error. For product code it is set by the stack decision (number 0001 in `decisions/README.md`, not yet accepted); until it exists, product code cannot become `done`. For the pipeline's service code it is `cd tools && npm run check` (`decisions/0002-process-tooling-node.md`) | The command is described in the README and passes on a clean copy |
+| Q5 | **A test for every criterion.** Every criterion from `acceptance_criteria` is covered by a runnable test. A test for a failure also checks that the state **did not change**. Tests do not depend on each other | The "criterion → test" mapping in the design and in the TEST-DESIGNER report |
+| Q6 | **The check is not cheated.** A red check is a reason to fix the cause. It is forbidden to delete, skip or mark `skip` a test, hide an exit code, turn off a linter or its rule, remove a step from the check command, or rename what the check looks for | The change has no `skip`, no turned-off linter or rules, no `\|\| true` on check commands; all steps of the check command are in place |
+| Q7 | **Secrets only by reference.** No key, token or password in code, in config in git, in the client bundle, or in documentation. An example of what not to do: a Telegram bot token in client code (AP-001) | A search of the repository and of the built bundle finds no secrets |
+| Q8 | **Customer data is not mixed.** Every access to data is limited to the space of the business owner (the customer). The server does not take the space identifier from a request that came from a browser or an app. For an object that is not the caller's, the answer is "not found", not "forbidden" | Test: space A does not see and does not change the data of space B; the answer cannot be told apart from the answer for an object that does not exist |
+| Q9 | **No SQL built from strings.** Only parameters | A search of the code |
+| Q10 | **Realistic failures do not bring the system down.** An external service (for example, the model executor), a messenger or the network is unavailable, or bad input arrives — the user sees an understandable message, and the process does not crash | A test for every external call with a simulated failure |
+| Q11 | **External addresses are checked.** Any address (URL) that a client or a user sets and that the server calls is checked | Test: an internal address (localhost, 169.254…) is rejected |
+| Q12 | **Decisions are recorded.** A choice between options is recorded in `decisions/NNNN-*.md`: the question, the options, the choice, the reason. Code does not silently differ from a recorded decision | A non-trivial choice has a record |
+| Q13 | **Process errors are recorded.** If agents stumbled on something that can be stumbled on again, it goes into `docs/anti-patterns.md` | The record is made in the same work in which the error was found |
+| Q14 | **Bookkeeping is not postponed.** The requirement status, `STATE.md` and the handoff are updated in the same work, not "later" | ORCH checks the specific fields before writing DONE |
 
-### 2.1. Пункты безопасности Q7–Q11 подробнее
+### 2.1. The security items Q7–Q11 in more detail
 
-Это те же пункты, расписанные до проверки. Все нарушения здесь — блокирующие.
+These are the same items, spelled out before the check. All violations here are blocking.
 
-- **Q7.** Секрет не попадает туда, где его прочтёт посторонний или где он останется
-  надолго: код, конфиг в git, файлы, которые уходят в браузер, документация, логи,
-  сообщения об ошибках, ответы сервера, handoff-ы и отчёты. Код получает секрет в момент
-  использования — из окружения или из файла вне git — и не передаёт его дальше открытым
-  текстом. Каждое совпадение поиска SECURITY-REVIEWER разбирает сам: это секрет или только
-  имя ключа, пример из теста.
-- **Q8.** Ограничение по пространству бизнеса (клиенту) действует везде, в том числе в служебных и фоновых
-  путях. Какие данные и какие поля уходят клиенту, решает сервер до ответа: лишнее поле
-  сервер не отдаёт, а не прячет в интерфейсе — клиент никогда не граница доступа. Ответ на
-  чужой объект совпадает с ответом на несуществующий: тот же код, то же тело, без заметной
-  разницы во времени. Каждый новый путь к данным (адрес API, таблица, фоновая задача)
-  доказывает своё ограничение: SECURITY-REVIEWER в своём handoff-е перечисляет каждый
-  пункт Q7–Q11 и R3 — применим и выполнен (чем проверено) или неприменим (почему).
-- **Q9.** Сырые запросы ищутся поиском, и каждое найденное место разбирается вручную:
-  данные клиента, пользователя или из сети попадают в запрос только параметром.
-- **Q10.** Путь, где есть внешний вызов, данные клиента или ввод из сети, обрабатывает
-  ошибку явно — понятный ответ вместо падения; у внешнего вызова есть таймаут. Ошибка
-  одного клиента или одного запроса не ломает работу других.
-- **Q11.** Разрешена только схема `https`. Отклоняются адреса loopback (`127.0.0.0/8`,
-  `::1`), частных сетей (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`),
-  link-local (`169.254.0.0/16`, в том числе `169.254.169.254`, и `fe80::/10`) и те же
-  адреса IPv4, записанные внутри IPv6. Проверка выполняется прямо перед каждым запросом, а
-  не только при сохранении адреса: имя может позже начать указывать на внутренний адрес.
-  Переадресации сервер не выполняет. Тесты — на каждый запрещённый диапазон, на `http` и
-  на допустимый адрес.
+- **Q7.** A secret does not get to a place where an outsider will read it or where it will
+  stay for long: code, config in git, files that go to the browser, documentation, logs,
+  error messages, server answers, handoffs and reports. Code gets a secret at the moment of
+  use — from the environment or from a file outside git — and does not pass it on in plain
+  text. SECURITY-REVIEWER examines each match of the search by itself: is it a secret, or
+  only the name of a key, or an example from a test.
+- **Q8.** The limit by the business space (the customer) holds everywhere, including service
+  and background paths. Which data and which fields go to the client is decided by the
+  server before the answer: the server does not send an extra field, it does not hide it in
+  the interface — the client is never the border of access. The answer for an object that is
+  not the caller's is the same as for an object that does not exist: the same code, the same
+  body, no noticeable difference in time. Every new path to data (an API address, a table, a
+  background job) proves its limit: SECURITY-REVIEWER lists in its handoff every item Q7–Q11
+  and R3 — applicable and met (how it was checked) or not applicable (why).
+- **Q9.** Raw queries are found by search, and each place found is examined by hand: data of
+  a customer, a user or the network enters a query only as a parameter.
+- **Q10.** A path that has an external call, customer data or input from the network handles
+  the error explicitly — an understandable answer instead of a crash; an external call has a
+  timeout. An error of one customer or one request does not break the work of others.
+- **Q11.** Only the `https` scheme is allowed. Rejected: loopback addresses (`127.0.0.0/8`,
+  `::1`), private networks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`),
+  link-local (`169.254.0.0/16`, including `169.254.169.254`, and `fe80::/10`), and the same
+  IPv4 addresses written inside IPv6. The check runs right before every request, not only
+  when the address is saved: a name may later start to point to an internal address. The
+  server does not follow redirects. Tests — for every forbidden range, for `http`, and for a
+  permitted address.
 
 ---
 
-## 3. Поднятые пункты (R)
+## 3. Raised items (R)
 
-Пункты R Sai добавил к §2 с самого начала: он работает с живыми людьми — бизнесами и их
-клиентами — и показывает владельцу работу агентов. Это тоже
-минимум: убрать нельзя. Сюда же вносятся предложения, принятые владельцем по §4.
+Sai added the R items to §2 from the very start: it works with living people — businesses and
+their customers — and shows the owner the work of the agents. This is also a minimum: it
+cannot be removed. Proposals accepted by the owner under §4 are added here too.
 
-| # | Пункт | Почему |
+| # | Item | Why |
 |---|---|---|
-| R1 | **Мерж подтверждает человек.** Конвейер готовит мерж, перечисляет, что проверено, и останавливается. Мерж делается только после подтверждения владельца; мерж без человека в Sai не допускается | Мерж без человека годится там, где нет реальных пользователей. У Sai будут реальные бизнесы и их клиенты |
-| R2 | **Pixel Office показывает только правду.** Каждое событие работы агентов попадает в журнал из реального источника — хуков Claude Code — с реальным временем. Выдуманные, дописанные задним числом или «сжатые в один день» события запрещены. Режим симуляции существует только отдельно и помечен | В эталоне Pixel Office (код прежнего проекта владельца, в Sai не хранится) журнал был написан вручную в коде, с искусственным временем (AP-002). Здесь это исправляется (REQ-001) |
-| R3 | **Не применимо: продукт снят решением 0033** (`decisions/0033-drop-clothing-shop-product.md`, 2026-10-11). Прежний текст: **Фото покупателей — персональные данные.** Фото не хранится дольше, чем нужно для примерки, без явного согласия покупателя; не попадает в логи и отчёты | Прежний продукт работал с фотографиями людей. Пункт не удалён: если продукт снова будет работать с фото людей, он снова применим, и понижать его нельзя |
+| R1 | **A human confirms the merge.** The pipeline prepares the merge, lists what was checked, and stops. The merge is done only after the owner's confirmation; a merge without a human is not allowed in Sai | A merge without a human is fine where there are no real users. Sai will have real businesses and their customers |
+| R2 | **Pixel Office shows only the truth.** Every event of the agents' work gets into the journal from a real source — the Claude Code hooks — with the real time. Invented events, events written after the fact, or events "squeezed into one day" are forbidden. A simulation mode exists only separately and is marked | In the Pixel Office reference (code of the owner's earlier project, not kept in Sai) the journal was written by hand in code, with artificial time (AP-002). Here this is corrected (REQ-001) |
+| R3 | **Not applicable: the product was dropped by decision 0033** (`decisions/0033-drop-clothing-shop-product.md`, 2026-10-11). Former text: **Photos of buyers are personal data.** A photo is not kept longer than needed for the fitting, without the explicit consent of the buyer; it does not get into logs and reports | The former product worked with photos of people. The item is not deleted: if a product works with photos of people again, it applies again, and it cannot be lowered |
 
 ---
 
-## 4. Как поднимать планку (храповик)
+## 4. How to raise the bar (the ratchet)
 
-1. Любой агент может предложить улучшение: раздел «Предложение поднять планку» в своём
-   handoff-е — что именно, зачем, как это проверять.
-2. ORCH оформляет предложение записью в `decisions/` (так оформлено
-   `decisions/0006-proposals-to-raise-the-bar.md`).
-3. Владелец принимает или отклоняет каждое предложение отдельно.
-4. Принятое DOC-UPDATER вносит в §3, и с этого момента оно — часть минимума.
-5. Шаги маленькие: **одно улучшение за раз**, и у него есть способ проверки. Улучшение,
-   которое нечем проверить, не принимается.
+1. Any agent can propose an improvement: a section "Proposal to raise the bar" in its
+   handoff — what exactly, why, and how to check it.
+2. ORCH makes the proposal into a record in `decisions/` (this is how
+   `decisions/0006-proposals-to-raise-the-bar.md` was made).
+3. The owner accepts or rejects each proposal separately.
+4. DOC-UPDATER enters the accepted one into §3, and from that moment it is part of the
+   minimum.
+5. The steps are small: **one improvement at a time**, and it has a way of checking. An
+   improvement that has nothing to check it with is not accepted.
 
-Пока владелец предложение не принял, оно не входит в минимум: проверяющие не ставят FAIL
-за то, что оно не выполнено.
-
----
-
-## 5. Масштаб
-
-Планка — про **дисциплину, а не про объём**. Работа может быть маленькой — один
-документ, одна правка, первый MVP, — но каждый её кусок сделан по §2 и §3.
-
-Если процесс начинает весить больше самой работы, можно предложить упрощение — только
-**через решение владельца**, при котором каждый пункт §2 остаётся проверяемым. Молча
-пропустить шаг нельзя. Короткий путь для мелкой правки уже есть, его условия — в
-`docs/workflows/WF-02-development.md` («Короткий путь»).
+Until the owner has accepted a proposal, it is not part of the minimum: checkers do not give
+FAIL because it is not met.
 
 ---
 
-## 6. Как пункты действуют в работе
+## 5. Scale
 
-Правила ниже — часть минимума: они раскрывают пункты §2 и §3 (номер — в скобках).
+The bar is about **discipline, not about volume**. Work may be small — one document, one
+fix, the first MVP — but every piece of it is done by §2 and §3.
 
-1. **Проверка там, где ошибка могла проявиться (Q2).** Зелёный прогон в условиях, где
-   свойство не могло нарушиться, ничего не доказывает. Проверяющий сам создаёт нужные
-   условия: сбой записи, чужое пространство бизнеса, внутренний адрес, недоступный сервис.
-2. **Факт в задании проверяется (Q2, Q3).** Если handoff утверждает проверяемый факт —
-   файл есть, путь такой, чисел N, конфликта не будет, — получатель проверяет его до
-   того, как на нём строить. Расхождение — в `result.issues`, работа — по измеренному.
-   Задание от этого не отменяется: что делать, говорит задание; что правда, говорит
-   проверка.
-3. **Нет вывода — нет «готово» (Q3).** Долгие команды запускаются и дожидаются в том же
-   ходе агента, а не в фоне (`docs/workflows/handoffs.md`). Если среда не даёт проверить
-   (нет нужной версии Node, нет сети), агент так и пишет, и статус остаётся `in_progress`.
-4. **Чьё падение — решает повтор, а не память (Q3, Q6).** Тест, который покраснел после
-   работы, записывается на неё. Переписать его на кого-то другого агент может, только
-   приложив к отчёту одно из трёх свидетельств, и каждое получено **сейчас**, в этой
-   работе:
-   - **повтор без работы** — тот же тест запущен на копии без изменений этой работы и
-     краснеет с тем же сообщением; оба вывода рядом;
-   - **работа не задела тест** — список файлов работы (`result.artifacts_out`) не
-     пересекается ни с файлом теста, ни с тем, что он загружает (`import`), и команда,
-     которая это показала, приложена;
-   - **внешняя причина воспроизведена** — причина вне работы названа и вызвана заново
-     отдельно от неё (например, тест с запросом в сеть краснеет без сети с тем же
-     сообщением), команда и вывод приложены.
+If the process starts to weigh more than the work itself, a simplification can be proposed —
+only **through a decision of the owner**, in which every item of §2 stays checkable. A step
+cannot be skipped silently. A short path for a small fix already exists, and its conditions
+are in `docs/workflows/WF-02-development.md` ("Short path").
 
-   Дефект `ISS-NNNN` или запись журнала ошибок `AP-NNN` о похожем падении — только
-   подсказка, где искать причину; свидетельством запись не служит, пока падение не
-   повторено сейчас одним из трёх способов. Пример: под нагрузкой упал тест сервера Pixel
-   Office. Повтор того же набора на копии «до» с тем же сообщением снимает его с работы;
-   слова «он и раньше иногда падал» и ссылка на старый дефект — нет. Воспоминание, прошлый
-   отчёт или совпавшее число упавших свидетельством не служат. Без свидетельства падение
-   остаётся за работой как неразобранное («чьё — не установлено»): шаг не проходит, и ORCH
-   заводит по нему дефект.
-5. **Неверную проверку не обходят (Q6).** Если проверка сама ошибочна, агент пишет это в
-   `result.issues` и предлагает её исправить; добиваться зелёного цвета другим способом
-   нельзя. Новые проверки лучше строить на коде выхода, а не на поиске строки в выводе.
-6. **Найденное попутно не теряется и не чинится тайком (Q1, Q14).** Что мешает выполнить
-   задачу, устраняется в этой работе: агент сообщает ORCH, что мешает и как это убрать,
-   и ORCH поручает это той роли, чей это файл. Что не мешает, агент описывает ORCH (что,
-   где, как воспроизвести, важность), и по поручению ORCH заводится
-   `docs/issues/ISS-NNNN-*.md`; расширять ради этого текущую работу нельзя.
-7. **Записанное решение выше задания (Q12).** Если шаг требует пойти против записи в
-   `decisions/`, агент останавливается и выносит вопрос; решает владелец, новой записью.
-8. **Время — с часов, история — только дописывается (Q14, R2).** Время берётся командой
-   `date -u +%Y-%m-%dT%H:%M:%SZ`, не по памяти; `completed_at` не раньше `started_at`.
-   Учётные файлы (handoff-ы, список параллельных прогонов
-   `handoffs/<RUN-ID>/parallel-runs.jsonl`, журнал Pixel Office) только дописываются:
-   правка, после которой запись пропала или файл стал короче, — дефект.
+---
+
+## 6. How the items work in practice
+
+The rules below are part of the minimum: they spell out the items of §2 and §3 (the number
+is in brackets).
+
+1. **Check where the error could show itself (Q2).** A green run in conditions where the
+   property could not be broken proves nothing. The checker creates the needed conditions
+   itself: a write failure, another business space, an internal address, an unavailable
+   service.
+2. **A fact in a task is checked (Q2, Q3).** If a handoff states a checkable fact — the file
+   exists, the path is this, there are N of them, there will be no conflict — the receiver
+   checks it before building on it. A mismatch goes into `result.issues`, and the work goes
+   by what was measured. The task is not cancelled by this: what to do is said by the task;
+   what is true is said by the check.
+3. **No output — no "done" (Q3).** Long commands are run and waited for in the same turn of
+   the agent, not in the background (`docs/workflows/handoffs.md`). If the environment does
+   not allow checking (no needed Node version, no network), the agent writes exactly that,
+   and the status stays `in_progress`.
+4. **Whose failure it is is decided by a repeat, not by memory (Q3, Q6).** A test that turned
+   red after a work is recorded against that work. The agent can move it to someone else
+   only by attaching to the report one of three pieces of evidence, and each is obtained
+   **now**, in this work:
+   - **a repeat without the work** — the same test is run on a copy without the changes of
+     this work and turns red with the same message; both outputs are side by side;
+   - **the work did not touch the test** — the list of files of the work
+     (`result.artifacts_out`) does not intersect either the test file or what it loads
+     (`import`), and the command that showed this is attached;
+   - **the outside cause is reproduced** — the cause outside the work is named and caused
+     again separately from the work (for example, a test with a network request turns red
+     without the network with the same message), the command and the output are attached.
+
+   A defect `ISS-NNNN` or a record `AP-NNN` of the error journal about a similar failure is
+   only a hint of where to look for the cause; the record is not evidence until the failure
+   is repeated now in one of the three ways. Example: under load a Pixel Office server test
+   failed. A repeat of the same set on the "before" copy with the same message takes it off
+   the work; the words "it used to fail sometimes" and a link to an old defect do not. A
+   memory, a past report, or a matching number of failed tests are not evidence. Without
+   evidence the failure stays with the work as not analysed ("whose it is — not
+   established"): the step does not pass, and ORCH opens a defect for it.
+5. **A wrong check is not bypassed (Q6).** If the check itself is wrong, the agent writes
+   this in `result.issues` and proposes to fix it; getting a green colour another way is not
+   allowed. New checks are better built on an exit code, not on a search for a string in the
+   output.
+6. **What is found on the way is not lost and is not fixed secretly (Q1, Q14).** What
+   prevents the task from being done is removed in this work: the agent tells ORCH what
+   prevents it and how to remove it, and ORCH assigns it to the role whose file it is. What
+   does not prevent it, the agent describes to ORCH (what, where, how to reproduce,
+   importance), and by ORCH's order `docs/issues/ISS-NNNN-*.md` is created; the current work
+   cannot be widened for this.
+7. **A recorded decision is above the task (Q12).** If a step requires going against a
+   record in `decisions/`, the agent stops and raises the question; the owner decides, with
+   a new record.
+8. **Time — from the clock, history — only appended (Q14, R2).** Time is taken with the
+   command `date -u +%Y-%m-%dT%H:%M:%SZ`, not from memory; `completed_at` is not earlier than
+   `started_at`. Bookkeeping files (handoffs, the list of parallel runs
+   `handoffs/<RUN-ID>/parallel-runs.jsonl`, the Pixel Office journal) are only appended to:
+   an edit after which a record is gone or the file became shorter is a defect.
