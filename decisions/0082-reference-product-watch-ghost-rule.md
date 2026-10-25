@@ -15,6 +15,14 @@ The owner's words, verbatim: «1. Мы должны постоянно смот�
 3. **Ghost.** Nothing goes into that project: no commit, no push, no branch, no issue, no pull request, no comment, no message, no change of its files in any working folder of ours, no account created, no real request to its servers from tests or the study. The study runs only on a copy and with mocked data. The name and the address of the reference product are not written into Sai files (the traces check and the habit of `decisions/0018`-style anonymity stay as they are).
 4. **Bar.** Sai has to be visibly better than the reference at what the visitor sees: layout on a phone, readability, consistent design system, dark theme, accurate local formats, clear words. The reference is the floor, not the goal.
 
+## Addition (2026-10-25, the owner's word): the other reference project
+
+The owner repeated, about the other company project that Sai once used as a sample for its agents: «с проекта [второго проекта] надо брать документацию агентов, и на этом все! а остальное не стоит передавать туда никакой информации и прочей информации». So:
+
+- From that project only the **documentation of agents** (role descriptions, workflows, instructions) is taken, and only by reading; nothing else is taken.
+- Nothing goes there: no files, no information, no notes, no commits, no pushes, no messages. The ghost rule (item 3) applies to it in full.
+- Its name is not written into Sai files either; the working folders of both projects are not changed from the Sai sessions.
+
 ## Why
 
 The owner wants Sai to be stronger than a working product of a colleague, without any trace in or any conflict with the colleague's project.
