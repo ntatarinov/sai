@@ -1,0 +1,155 @@
+{
+  "handoff_id": "step04-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/PAGE057-20261021-01/step-04-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-057"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/PAGE057-20261021-01/step-03b-reviewer.json",
+      "handoffs/PAGE057-20261021-01/step-03-security-reviewer.json",
+      "docs/design/REQ-057-picker-page.md",
+      "tools/src/picker/public/"
+    ],
+    "route": "REVIEWER + SECURITY -> CODE-FIXER (этот) -> SECURITY-REVIEWER + REVIEWER (повтор по изменённому) -> TEST-DESIGNER",
+    "write_set": [
+      "tools/src/picker/public/app.js, tools/src/picker/public/screens.js, tools/src/picker/public/store.js, tools/src/picker/public/net.js, tools/src/picker/public/flow.js, docs/design/REQ-057-picker-page.md, handoffs/PAGE057-20261021-01/step-04-code-fixer.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-25T07:43:46Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "гонки F2–F4 ревью устранены (контроль на откате правок краснеет, на рабочем дереве 4/4, 5/5, 3/3, 2/2); F5, F6, безопасность F4 и F2; 12 проходов; красные ровно восемь (в полном npm test 11); решение D19 записано в 0078 пп. 11–14; на повторные ворота безопасности и ревью по изменённому"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 4 — исправления страницы анкеты по воротам (handoffs/PAGE057-20261021-01/step-03b-reviewer.json: result, findings F1–F7, I2; step-03-security-reviewer.json: findings F1–F5). Исправь ТОЛЬКО перечисленное в tools/src/picker/public/ (app.js, screens.js, store.js, net.js, flow.js — по месту) и, для F7, проект docs/design/REQ-057-picker-page.md (запись отличий). Ревью F2 (гонка ответов во время запроса результата): в send() делай снимок ответов и показывай результат по снимку; пока state.sending, onAnswer (смена ответа) игнорируется или блокируется (кнопки «Назад»/«Далее»/«Пропустить» уже игнорируются — согласуй), результат не расходится с тем, что ушло в запросе. Ревью F3 (блоки связи «один за раз», описание интерфейса п. 4.8): buildNet/setNetBlock убирают прежний блок при постановке второго, в документе один id=\"net-text\" одновременно. Ревью F4 (смена языка против запроса результата, D19 в обе стороны): после каждого await в changeLanguage и в send() проверять state.sending и текущий экран и язык; «язык нажат, затем Показать результат» — запрос уходит с актуальным языком или смена ждёт; «на экране результата нажат язык, затем Назад до второго ответа и новый ответ» — устаревший результат не открывается поверх. Ревью F5: ветку «Начать заново» при state.q === null в app.js (accept() заново применяет saved) убрать или обнулять saved, чтобы стёртые ответы не возвращались. Ревью F6: восстановить комментарий над buildCard (screens.js около 100–102, разорван посередине фразы); тест равенства rules.js с движком напишет TEST-DESIGNER. Безопасность F4: при смене языка в replaceState сохранять location.hash. Безопасность F2: страница отвергает слишком длинные тексты и списки анкеты в проверке формы ответа (rightQuestionnaire): названия/тексты — пределы как в validate.js (проект REQ-057 п. 8 и строки validate.js около 290 и 504: 30 вопросов, 2–8 вариантов, пределы длины текстов по полям из REQ-054/061); слишком длинное — как неверная форма (блок «ошибка сервера» с «Повторить»). Не делать: безопасность F1 (redirect: error — оставить, записано в ISS), F3 (dir=auto), F5 (шаблон id); ревью F1 (дубли списка языков — проект велел store.js и net.js быть без импортов) — не менять. Ревью F7: в проекте docs/design/REQ-057-picker-page.md впиши отличия, принятые ORCH: поле head в ctx renderResult (п. 4.9), служебные контейнеры div[data-part=\"net-slot\"] и div[data-part=\"head-net-slot\"] вместо div[data-part=\"net\"] прямо в панели/шапке (п. 10.2; селектор div[data-part=\"net\"][data-kind=…] работает как раньше), ребро screens.js → texts.js в графе п. 4; больше проект не менять. Проверь живьём в Chrome 155 (свой стенд на порту 0; управляемая задержка ответов fetch через протокол отладки): гонки F2–F4 больше не воспроизводятся (сценарии ревью: во время запроса выбран другой ответ; нажат kk, затем «Показать результат»; результат — язык — Назад — новый ответ; два сбоя подряд — один блок), 36 проходов не сломаны (выбери 12), консоль чиста кроме значка. Красных существующих тестов после правок — прежние 8 (LG-10c, TR-4b, TR-4e, SU-10, SU-11, SV-1f, SV-7e, SF-6c); иной красный — остановись и доложи. Тестов не писать. Запреты: engine.js, server.js, config.js, assets.js, request.js, public-data.js, messages.js, limits.js, view.js, demo-*, package.json, eslint.config.js не менять; ES-модули, нет inline, нет console/alert, один fetch( в net.js, комментарии public/ без номеров требований и слов handoff/ORCH/decisions; git checkout/reset/stash/clean запрещены (пробы — свежий git clone вне проекта; рабочая папка сессии — в сообщении ORCH, путь в файлы проекта и result не писать); демо-сервер на порту 4782 не останавливать (он читает рабочее дерево при каждом запросе — правки сразу видны ему); без названий проектов-образцов и путей компьютера. Перед close: cd tools && npx prettier --write src/picker/public && npm run format:check && npm run lint && npm run traces && npm run handoffs-check (код 0), затем node --test test/picker-*.test.js test/traces-runtime.test.js — красные только названные 8. В result — таблица F-пунктов «что исправлено, где» и что оставлено.",
+    "acceptance_criteria": [
+      "Гонки F2–F4 ревью, F5, F6 исправлены; безопасность F4 и F2; проект записывает отличия F7",
+      "Гонки не воспроизводятся в Chrome с управляемой задержкой; 12 проходов целы",
+      "format:check, lint, traces, handoffs-check — код 0; красные ровно восемь"
+    ]
+  },
+  "created_at": "2026-10-25T07:31:51Z",
+  "started_at": "2026-10-25T07:31:51Z",
+  "completed_at": "2026-10-25T07:42:54Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправлены гонки страницы анкеты и замечания ворот: ответы при запросе результата берутся один раз и поля закрыты на время запроса (ревью F2); блок связи один за раз (F3); смена языка и запрос результата больше не перебивают друг друга в обе стороны (F4); ветка «Начать заново» без анкеты убрана (F5); комментарий над buildCard восстановлен (F6); в проект записаны три принятых отличия (F7); смена языка сохраняет фрагмент адреса (безопасность F4); слишком длинные тексты и списки анкеты отвергаются как неверная форма (безопасность F2). Не менялись: безопасность F1, F3, F5 и ревью F1 — по заданию. Проверено в Chrome 155 с управляемой задержкой: гонки воспроизводятся на копии с откатом правок и не воспроизводятся в рабочем дереве; 12 проходов целы; красных по-прежнему ровно восемь.",
+    "changes": [
+      {
+        "item": "Ревью F2",
+        "file": "tools/src/picker/public/app.js (send, showResult, onAnswer), screens.js (setBusy)",
+        "what": "send() один раз берёт снимок ответов (sent = bodyAnswers) и подаёт его и в запрос, и в showResult(body, sent); пока идёт запрос, поля вопроса закрыты (fieldset disabled через новую setBusy в screens.js, снимается при сбое), onAnswer при state.sending выходит. Кнопки «Назад», «Далее», «Пропустить» и кнопки языка уже не работали при state.sending — согласовано. В changeLanguage на экране результата снимок тоже берётся один раз и идёт и в запрос, и в showResult"
+      },
+      {
+        "item": "Ревью F3",
+        "file": "tools/src/picker/public/app.js (send, langFailed)",
+        "what": "блок связи один за раз: langFailed убирает блок под кнопками вопроса (setNetBlock(ui.question, null)), сбой запроса результата убирает блок под шапкой (setHeadNet(ui.head, null)); в документе один div[data-part=net] и один #net-text"
+      },
+      {
+        "item": "Ревью F4",
+        "file": "tools/src/picker/public/app.js (send, changeLanguage)",
+        "what": "send() увеличивает state.ticket, поэтому ответ на смену языка, нажатую до «Показать результат», отбрасывается: запрос и страница остаются на одном языке (ru), нажатие языка пропадает, на результате его можно нажать снова. changeLanguage запоминает экран нажатия (from); если нажато на результате и экран перед post-запросом или после него уже не результат, смена отбрасывается; результат, пришедший после «Назад» и нового ответа, поверх не открывается (новый send тоже сбросил ticket). Комментарий над функцией переписан"
+      },
+      {
+        "item": "Ревью F5",
+        "file": "tools/src/picker/public/app.js (onNetAction, netBlock)",
+        "what": "ветка state.q === null в «Начать заново» убрана; чтобы кнопка «Начать заново» не могла появиться у блока загрузки анкеты, netBlock для kind \"load\" всегда даёт «Повторить» (answers_invalid от GET анкеты — обычная ошибка сервера с «Повторить»); accept() заново saved не применяет после стирания"
+      },
+      {
+        "item": "Ревью F6",
+        "file": "tools/src/picker/public/screens.js (над buildCard)",
+        "what": "комментарий переписан по строкам, фраза не разорвана"
+      },
+      {
+        "item": "Ревью F7",
+        "file": "docs/design/REQ-057-picker-page.md (п. 4, п. 4.9, п. 10.2)",
+        "what": "записаны три принятых отличия: ребро screens → texts (LANGUAGE_NAMES) в графе п. 4; поле head в ctx renderResult (п. 4.9); служебные контейнеры div[data-part=\"head-net-slot\"] и div[data-part=\"net-slot\"] с блоком div[data-part=\"net\"] внутри (п. 10.2). Больше проект не менялся"
+      },
+      {
+        "item": "Безопасность F4",
+        "file": "tools/src/picker/public/app.js (commitLanguage)",
+        "what": "replaceState получает location.pathname + \"?\" + params + location.hash; остальные параметры и число записей истории прежние"
+      },
+      {
+        "item": "Безопасность F2",
+        "file": "tools/src/picker/public/net.js (rightQuestionnaire, rightQuestion, rightOptions, rightCondition/strings)",
+        "what": "форма анкеты отвергает слишком длинное: name > 60, intro > 400, title > 200, help > 300, label варианта > 100, unit > 20 знаков (считаются целыми знаками после обрезки пробелов, как проверяет validate.js), show_if > 3 условий, any_of/none_of > 8 элементов; число вопросов (30) и вариантов (2–8) проверялись и раньше. Слишком длинное — «ошибка сервера» с «Повторить»"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "сценарии в Chrome 155 без окна по протоколу отладки, свой стенд serve --port 0, ответы fetch задерживаются или обрываются через Fetch.requestPaused; контрольный стенд — копия дерева вне проекта с откатом правок F2–F4, чтобы убедиться, что сценарии ловят гонки",
+        "out": "копия с откатом: A 4 из 4 FAIL (ушло goal-speed, сохранено goal-growth); B 2 FAIL (страница kk при запросе ru); C 2 FAIL; D 2 FAIL (два блока: lang и result). Рабочее дерево после правок: A 4/4 OK, B 5/5 OK, C 3/3 OK, D 2/2 OK, E 2/2 OK, F 1/1 OK, G 14/14 OK; консоль на всех сценариях и 12 проходах — только 404 на /favicon.ico"
+      },
+      {
+        "cmd": "12 проходов (по 6 на каждого арендатора, языки ru/kk/en по кругу, смена языка на третьем шаге, «Назад», «Пропустить», случайные ответы)",
+        "out": "walks ok: 12/12, на каждом экран результата и ответ POST 200"
+      },
+      {
+        "cmd": "cd tools && npx prettier --write src/picker/public; npm run format:check; npm run lint; npm run traces; npm run handoffs-check",
+        "out": "format:check код 0 (All matched files use Prettier code style!); lint код 0; traces код 0 (файлов проверено 1974, следов 0, пропущено 60); handoffs-check код 0 (файлов проверено 1102, нарушений 0)"
+      },
+      {
+        "cmd": "node --test test/picker-*.test.js test/traces-runtime.test.js",
+        "out": "tests 276, pass 268, fail 8: LG-10c, SF-6c, SU-10, SU-11, SV-1f, SV-7e, TR-4b, TR-4e — до правок и после тот же список"
+      },
+      {
+        "cmd": "cd tools && npm run test",
+        "out": "tests 1898, pass 1887, fail 11: те же восемь и HO-46, HO-47, HC-RT-1e (запускают traces-runtime подпроцессом и краснеют только из-за TR-4b и TR-4e; REVIEWER отметил это в I1)"
+      },
+      {
+        "cmd": "grep -nE \"REQ-[0-9]|handoff|ORCH|decisions|console\\.|alert\\(|innerHTML|eslint-disable|TODO\" tools/src/picker/public/*.js; grep -c 'fetch(' по файлам",
+        "out": "пусто; fetch( — один, в net.js"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOT_DONE",
+        "text": "По заданию не делались: безопасность F1 (redirect: \"error\" — оставлено, записано в ISS), F3 (dir=\"auto\"), F5 (шаблон идентификатора); ревью F1 (дубли списка языков, маски версии, isObject — проект велел store.js и net.js быть без импортов)."
+      },
+      {
+        "id": "I2",
+        "kind": "BEHAVIOR_CHANGE",
+        "text": "Для TEST-DESIGNER: (а) поля вопроса закрываются на время запроса результата (fieldset[disabled]) — это новое наблюдаемое состояние; (б) нажатие языка до «Показать результат» теперь пропадает (запрос и страница остаются на прежнем языке), нажатие языка на результате и «Назад»/«Начать заново» до ответа сервера тоже отбрасывается; (в) answers_invalid на GET анкеты даёт «Повторить», а не «Начать заново»; (г) страница отвергает анкету с name > 60, intro > 400, title > 200, help > 300, label > 100, unit > 20, show_if > 3, any_of/none_of > 8; (д) адрес после смены языка сохраняет фрагмент. Существующие тесты по этим местам не краснеют (красных по-прежнему восемь). Гонки F2–F4 в тестах на модели документа требуют подмены fetch с управляемой задержкой ответа."
+      },
+      {
+        "id": "I3",
+        "kind": "SAME_KIND_OUTSIDE",
+        "text": "Того же рода, что безопасность F2, но вне входа: идентификаторы вопросов, вариантов и элементы any_of/none_of страница по длине не проверяет (сервер даёт 1–40 знаков, шаблон строчные латинские буквы, цифры и дефис); длинная строка в них не рисуется как текст, но попадает в ключи ответов и тело запроса. Не правилось (граница входа)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Выбор по F4: нажатие языка перед «Показать результат» не выполняется (page и результат остаются на прежнем языке), а не ждёт — так язык страницы, запрос и результат не расходятся ни при каких задержках. Если ORCH нужно «смена ждёт и потом запрос уходит на новом языке», это другое правило D19 и правка проекта."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Закрытый на время запроса fieldset: у фокуса на поле (Enter в поле числа) фокус на время запроса теряется, при сбое он возвращается на кнопку блока связи (как раньше), при успехе уходит на заголовок результата. Стилей для disabled в page.css нет (файл вне набора), внешний вид полей не меняется."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Демо-сервер на порту 4782 не останавливался. Мои два стенда (рабочий и контрольный) остановлены; браузеры закрыты."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/picker/public/app.js",
+      "tools/src/picker/public/screens.js",
+      "tools/src/picker/public/net.js",
+      "docs/design/REQ-057-picker-page.md"
+    ]
+  }
+}

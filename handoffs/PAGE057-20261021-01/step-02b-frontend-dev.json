@@ -1,0 +1,167 @@
+{
+  "handoff_id": "step02b-PAGE057-20261021-01",
+  "run_id": "PAGE057-20261021-01",
+  "workflow_id": "WF-02",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/PAGE057-20261021-01/step-02b-frontend-dev.json",
+  "status": "COMPLETED",
+  "priority": "HIGH",
+  "context": {
+    "requirement_ids": ["REQ-057"],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-057-picker-page.md",
+      "docs/design/REQ-057-picker-page-ui.md",
+      "docs/requirements.yaml",
+      "handoffs/PAGE057-20261021-01/step-02a-frontend-dev.json",
+      "tools/src/picker/public/"
+    ],
+    "route": "FRONTEND-DEV (57a) -> FRONTEND-DEV (57b) -> FRONTEND-DEV (57c…57e)",
+    "write_set": [
+      "tools/src/picker/public/dom.js, tools/src/picker/public/screens.js, tools/src/picker/public/result.js, tools/src/picker/public/app.js, tools/src/picker/public/main.js, tools/src/picker/public/index.html, handoffs/PAGE057-20261021-01/step-02b-frontend-dev.json"
+    ],
+    "base_tag": "base/PAGE057-20261021-01",
+    "orch_check": {
+      "at": "2026-10-21T14:31:48Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "57b: страница в Chrome проходит от карточки до временного экрана, блок связи, хранилище, «Продолжить»; красные ровно LG-10c, TR-4b, TR-4e; отклонения проекта (head в ctx, контейнер net-slot) — TEST-DESIGNER и ворота; не проверено живьём E1, C3, answers_invalid, смена версии — проверить на 57c"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, шаг 2b — подшаг 57b проекта docs/design/REQ-057-picker-page.md (разделы 4.7–4.9, 5.1–5.4, 10, 15, 21; описание интерфейса docs/design/REQ-057-picker-page-ui.md; требование REQ-057; решения 0073, 0074 п. 6, 0077, 0078). Подшаг 57a (texts.js с 23 ключами, say.js, rules.js, flow.js, store.js, net.js) уже сделан (handoffs/PAGE057-20261021-01/step-02a-frontend-dev.json) — используй эти модули, не переписывай. Реализуй в tools/src/picker/public/: dom.js (маленький слой DOM: создание элементов, textContent вместо innerHTML, роли и подписи), screens.js (экраны: загрузка, карточка — название, вступление, card_gives, card_ask, число вопросов «от A до B» / при A = B ключ card_count_same, кнопки «Пройти опрос»/«Продолжить»/«Начать заново»; вопрос — single/multiple/number, пояснение, прогресс «Вопрос K из N» + полоса через style.width из скрипта, а не setAttribute(\"style\"); «Далее»/«Назад»/«Пропустить»/«Показать результат»; обязательный вопрос без ответа — сообщение рядом с вопросом, фокус; блок связи: нет сети, ошибка сервера server_*, «Повторить»; answers_invalid от сервера — текст сервера и «Начать заново»), result.js (временный экран result_soon до REQ-058 — 0078 п. 3), app.js (события B0–B2, C1–C3, Q1–Q6, R1, R2, E1 по разд. 5; фокус при переходе; aria-live #live; Enter как «Далее»; язык пока по правилу chooseLanguage из texts.js без кнопок переключателя — они в 57c), main.js (точка входа), index.html (подключает main.js как module и #live; заглушку stub.js НЕ удалять — это 57e; page_stub_notice остаётся; index.html на этом шаге может подключать main.js вместо stub.js — реши по проекту разд. 13 и 21 так, чтобы красных было ровно 3; если удаление ссылки на stub.js даёт новые красные раньше 57e — оставь ссылку и укажи это в result.issues). Не пиши page.css (57d) — но страница должна быть читаема без стилей (последовательные блоки); переключателя языка нет (57c); stub.js не удалять (57e); тестов не писать. Запреты прежние: ES-модули без сборки, нет inline-скриптов и стилей, нет alert/confirm/prompt/showModal, нет console, нет внешних адресов, комментарии public/ без номеров REQ-NNN и слов handoff/ORCH/decisions (0074 п. 6), единственный fetch( — в net.js. Контрольный запуск — строка 57b таблицы 21: запуск стенда `serve --port 0` (вне проекта, свежая копия или рабочее дерево с --home во временной папке), открыть /t/uchet-pro/?lang=kk в Chrome 155 без окна (протокол отладки, как в docs/uat/REQ-056-RUN.md): карточка, первый вопрос, document.activeElement; пройти до временного экрана; остановить стенд на вопросе — блок связи; снимки сохрани вне проекта. Красных существующих тестов после 57b — 3 (те же: LG-10c, TR-4b, TR-4e); иной красный — остановись и доложи (вопрос CODE-DESIGNER через ORCH). Не менять: engine.js, server.js, config.js, assets.js, request.js, public-data.js, messages.js, limits.js, view.js, demo-*, package.json, eslint.config.js, texts.js (кроме случая, когда в проекте разд. 14 нет нужного ключа — тогда остановись и доложи). Перед close: cd tools && npx prettier --write src/picker/public && npm run format:check && npm run lint && npm run traces && npm run handoffs-check (код 0), затем node --test test/picker-*.test.js test/traces-runtime.test.js — красные только названные. git checkout/reset/stash/clean запрещены; пробы вне проекта; без названий проектов-образцов и путей компьютера в файлах и result. Демо-сервер на порту 4782 не останавливать (свой пробный запускай на порту 0).",
+    "acceptance_criteria": [
+      "dom.js, screens.js, result.js, app.js, main.js, index.html по проекту; страница работает в Chrome: карточка, вопрос, временный экран, блок связи",
+      "format:check, lint, traces, handoffs-check — код 0; красные ровно LG-10c, TR-4b, TR-4e",
+      "Неизменяемые файлы не тронуты"
+    ]
+  },
+  "created_at": "2026-10-21T14:24:47Z",
+  "started_at": "2026-10-21T14:24:47Z",
+  "completed_at": "2026-10-21T14:30:57Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Подшаг 57b сделан: страница работает в Chrome 155 от карточки до временного экрана результата. Написаны dom.js, screens.js, result.js, app.js, main.js; index.html подключает main.js (вместо stub.js) и содержит #live. stub.js и ключ page_stub_notice не тронуты; page.css и переключателя языка нет (57c, 57d). Красных существующих тестов ровно три — LG-10c, TR-4b, TR-4e (те же, что после 57a); смена ссылки в index.html новых красных не дала (SV-7g, SV-7h, SV-1d и тесты заглушки зелёные: stub.js на месте и загружается тестами напрямую). События B0–B2, C1–C3, Q1–Q6, R1, R2, E1 разд. 5 проекта реализованы; фокус, прокрутка, живая область и хранилище — по п. 5.2 и 5.4. Код использует только поверхность документа п. 10.3; таймеров, console и innerHTML нет; ширина полосы задаётся присвоением style.width.",
+    "changes": [
+      {
+        "file": "tools/src/picker/public/dom.js",
+        "section": "4.7, D11",
+        "what": "новый: el(tag, attrs, ...children), part(tag, name, attrs, ...children) с data-part, setText; только createElement, setAttribute, append, textContent; null и undefined пропускаются"
+      },
+      {
+        "file": "tools/src/picker/public/screens.js",
+        "section": "4.7, 10.2, 10.3",
+        "what": "новый: buildHead, buildLoading, buildNet, buildFailure, buildCard, buildQuestion и точечные обновления setProgress, setNext, showMessage, clearMessage, clearField, setNetBlock; разметка и data-part/data-action по п. 10.2 (панель с data-screen; карточка; форма novalidate; h2#q-title tabindex=-1; fieldset с aria-labelledby; radio и checkbox с одним name; число с min, max, step, inputmode и label; постоянный div#q-error role=alert; progressbar с aria-value*; блок связи без role=alert с aria-describedby на текст); подписи только через say, тексты арендатора только как текст"
+      },
+      {
+        "file": "tools/src/picker/public/result.js",
+        "section": "4.9, D13",
+        "what": "новый: renderResult(ctx) -> { node, focus } — временный экран: панель data-screen=result, h2 tabindex=-1 с result_soon, кнопки edit и restart; в ctx добавлено поле head (узел шапки с названием, она остаётся на экране по п. 4.11 — проект называет шапку остающейся, но не говорит, кто её вставляет); без head экран тоже строится"
+      },
+      {
+        "file": "tools/src/picker/public/app.js",
+        "section": "4.8, 5.1–5.4, 8.2, 15",
+        "what": "новый: start() — состояние внутри вызова; B0 (чтение адреса и хранилища, язык chooseLanguage, загрузка анкеты), B1 (версия: другая — стирание, уведомление card_changed и запись только при hadAny; та же — pruneAnswers и сохранённая позиция, если видима), B2 (блок связи вместо экрана, фокус на его кнопке), C1–C3, Q1 (ответ, подпись главной кнопки, K и N, живая область при смене K или N, запись), Q2 (verdict, сообщение рядом с вопросом, фокус на первое поле, переход), Q3, Q4, Q5 (scrollTo, затем focus с preventScroll), Q6 (запрос результата, aria-disabled, повторные нажатия игнорируются, блок связи под кнопками), R1, R2 (answers_invalid: текст сервера и Начать заново), E1; первый сбой хранилища выключает его до конца жизни страницы; текст блока связи зависит от storageOk"
+      },
+      {
+        "file": "tools/src/picker/public/main.js",
+        "section": "4.8",
+        "what": "новый: импорт start и вызов, комментарий без номеров"
+      },
+      {
+        "file": "tools/src/picker/public/index.html",
+        "section": "10.1, 21",
+        "what": "скрипт type=module на /assets/main.js вместо stub.js; добавлен div#live role=status aria-live=polite aria-atomic=true после main#app; ссылки на page.css пока нет (57d)"
+      },
+      {
+        "file": "handoffs/PAGE057-20261021-01/step-02b-frontend-dev.json",
+        "section": "handoffs.md, result",
+        "what": "status, completed_at, result"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "cd tools && npx prettier --write src/picker/public && npm run format:check && npm run lint && npm run traces && npm run handoffs-check",
+        "out": "All matched files use Prettier code style!; eslint . --max-warnings 0 без вывода; traces: файлов проверено 1969, следов 0, пропущено 59; handoffs-check: файлов проверено 1097, нарушений 0, исключений использовано 114 из 114"
+      },
+      {
+        "cmd": "cd tools && node --test test/picker-*.test.js test/traces-runtime.test.js",
+        "out": "# tests 276, # pass 273, # fail 3, # skipped 0, # todo 0; красные: not ok 130 LG-10c (error: net.js: fetch( ), not ok 272 TR-4b (перечень: лишний picker/public/net.js), not ok 275 TR-4e (picker/public/net.js: expected 0, actual 1)"
+      },
+      {
+        "cmd": "grep -nE по public/*.js и index.html: REQ-[0-9], handoff, ORCH, decisions, https?://, XMLHttpRequest, WebSocket, EventSource, sendBeacon, importScripts, child_process, Math.random, console, innerHTML, insertAdjacent, outerHTML, document.write, Accept-Language, setTimeout, setInterval, requestAnimationFrame, matchMedia, alert(, confirm(, prompt(, showModal, beforeunload, setAttribute(\"style\"; grep fetch(; grep ^let|^var",
+        "out": "кроме stub.js совпадений нет; fetch( — одна строка, net.js:25; переменных уровня модуля нет"
+      },
+      {
+        "cmd": "свой стенд: node src/picker/cli.js serve --tenants src/picker/demo-tenants --home <папка сессии вне проекта> --port 0; Google Chrome 155 без окна (--headless=new, протокол отладки, новый профиль), окно 390 × 844 mobile (затем 1470 × 784); адрес /t/uchet-pro/?lang=kk",
+        "out": "КАРТОЧКА: lang=kk, title «Учёт-Про», screen=card, один h1, scrollWidth 390 = clientWidth 390; текст — название, вступление, card_gives, card_ask на kk; фокус на BODY (первая отрисовка не двигает). «Сауалнамадан өту» (data-action=start): screen=question, document.activeElement = H2[q-title], #live «12 сұрақтың 1-і». «Әрі қарай» без ответа: сообщение «Жалғастыру үшін осы сұраққа жауап беріңіз.» в #q-error, фокус на INPUT radio, aria-describedby fieldset = q-error. Enter на выбранном переключателе (настоящее нажатие клавиши через протокол) — переход ко второму вопросу (неявная отправка формы работает без своего обработчика клавиш)."
+      },
+      {
+        "cmd": "проход uchet-pro до конца в Chrome (первый вариант каждого вопроса; числа — сначала 99999999, потом 20)",
+        "out": "progressbar: K/N по шагам 2/11 (18.2%), 3/10, 4/10, 5/10, 6/10, 7/10, 8/10, 9/10, 10/10 (100.0%); N после второго вопроса не растёт, в конце K = N; после каждого перехода activeElement = H2[q-title]; «Назад» есть на всех вопросах кроме первого, «Пропустить» — только на budget (необязательный); на последнем кнопка data-action=show-result. Число 99999999: сообщение «1 мен 100000 арасындағы бүтін санды енгізіңіз.» (и «1 мен 500…» на втором числовом), aria-invalid=true. Скрытые вопросы documents и barcodes в ответ не попали."
+      },
+      {
+        "cmd": "в Chrome: сервер остановлен на последнем вопросе, «Нәтижені көрсету»",
+        "out": "под кнопками блок data-kind=result: «Байланыс жоқ. Жауаптарыңыз сақталды. Қайталап көріңіз.» и кнопка «Қайталау», фокус на ней (data-part=net-action), aria-disabled снят, экран остался вопросом. Сервер поднят снова на том же порту, «Қайталау» — экран результата: h1 один, activeElement = H2[result-title], текст «Нәтиже осы бетте жақында шығады.», кнопки «Артқа» и «Қайтадан бастау»; #live «Шешім таңдалуда»."
+      },
+      {
+        "cmd": "в Chrome: localStorage после прохода; перезагрузка; Продолжить; Назад; Начать заново",
+        "out": "значение sai-picker:uchet-pro: format 1, version (64 hex), lang kk, current goal, answers по видимым вопросам (business, items, places, tools, problems, staff, recount, migrate, budget, goal), контактов нет. После перезагрузки карточка с «Продолжить» и «Начать заново»; «Продолжить» открывает «10 сұрақтың 10-і» (последний вопрос); «Артқа» — 9-й с #live «10 сұрақтың 9-і». «Қайтадан бастау» на карточке: ключ стёрт (localStorage.getItem = null), открыт первый вопрос «12 сұрақтың 1-і»."
+      },
+      {
+        "cmd": "в Chrome: запрос анкеты заблокирован (Network.setBlockedURLs), адрес ?lang=en, затем блок снят и нажат «Try again»",
+        "out": "экран failure без шапки (h1 = 0): «No connection. Your answers are saved. Please try again.» и «Try again», фокус на кнопке, title «Sai»; после «Try again» — карточка «Uchet-Pro» на en, activeElement = H1[title], title «Uchet-Pro»."
+      },
+      {
+        "cmd": "в Chrome 1470 × 784: /t/svet-marketing/?lang=en; и с localStorage, который бросает исключение при обращении",
+        "out": "карточка svet-marketing на en, scrollWidth = clientWidth = 1470, «Questions: from …»; при бросающем хранилище страница проходит на вопрос 1 без «Продолжить» и без ошибок (ответы в памяти)."
+      },
+      {
+        "cmd": "консоль Chrome за весь прогон (Runtime.consoleAPICalled, Log.entryAdded, Runtime.exceptionThrown)",
+        "out": "две строки уровня error, обе не от страницы: 404 на /favicon.ico (исключение 0078, п. 4) и net::ERR_CONNECTION_REFUSED на POST api/result при остановленном сервере (мой намеренный сбой); исключений страницы и console-вызовов нет"
+      },
+      {
+        "cmd": "снимки (папка сессии вне проекта): card-kk-390, q1-kk-390, q-mid-kk-390, net-result-kk-390, result-kk-390, card-continue-390, load-fail-en-390, card-svet-en-1470",
+        "out": "просмотрен q-mid-kk-390: без стилей страница читается подряд сверху вниз (название, прогресс, заголовок вопроса, пояснение, флажки, кнопки «Артқа» и «Әрі қарай»); вид и размеры — подшаг 57d"
+      },
+      {
+        "cmd": "git status --short (кроме handoffs/, decisions/, docs/)",
+        "out": "M index.html, M texts.js (57a); новые: app, dom, flow, main, net, result, rules, say, screens, store; прочих файлов tools/ не изменено; демо-сервер на 4782 работает, мои стенды и Chrome остановлены"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "LG-10c, TR-4b, TR-4e красны так же, как после 57a (строки З15, З16 и пункт 13.3 проекта); других красных нет. Правит TEST-DESIGNER на шаге 5."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "index.html теперь подключает main.js (по заданию), stub.js остаётся в public/ до 57e. Проверено прогоном 276 тестов: новых красных от смены ссылки нет (проект, Ф8: удаление stub.js даёт красные SU-10, SU-11, SV-1f, SV-7e, SF-6c — это 57e)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Решения по месту, где проект молчит или допускает два чтения: (а) в ctx renderResult добавлено поле head — узел шапки с названием арендатора; проект п. 4.9 перечисляет ctx без head, а п. 4.11 требует, чтобы шапка осталась; REQ-058 вправе заменить файл и ctx вместе с app.js; (б) блок связи вопроса лежит в служебном контейнере div[data-part=net-slot] в конце панели (в проекте п. 10.2 блок стоит прямо в панели): контейнер нужен, чтобы убрать блок без remove(), которого нет в перечне п. 10.3; div[data-part=net] находится селектором как раньше; (в) кнопка «Далее» при отказе проверки ставит фокус на первый input (для multiple — первый флажок); (г) если запрос результата идёт, а посетитель меняет ответ, ответ в состоянии меняется, а уже ушедший запрос несёт прежние: нажатия «Назад», «Далее» и «Пропустить» игнорируются, а поля нет — для такого краткого окна проект ничего не требует; (д) #live после показа карточки хранит последний текст (quiz_loading) до следующей записи — проект не требует очистки."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Не проверено в этом подшаге (нет кода или нет случая): блок связи при смене языка и кнопки языка (57c); ответ сервера 4xx/5xx и answers_invalid в Chrome (проверены только ветки сети и загрузки; ветка answers_invalid и текст message — по коду, тест на подмене будет у TEST-DESIGNER); «Изменить ответы» (E1) и «Начать заново» (C3 с экрана результата) в Chrome не нажимались — C3 с карточки проверен; версия анкеты другая (B1) и карточка с card_changed — по коду, не на стенде."
+      }
+    ],
+    "artifacts_out": [
+      "tools/src/picker/public/dom.js",
+      "tools/src/picker/public/screens.js",
+      "tools/src/picker/public/result.js",
+      "tools/src/picker/public/app.js",
+      "tools/src/picker/public/main.js",
+      "tools/src/picker/public/index.html"
+    ]
+  }
+}

@@ -1,6 +1,6 @@
-// The languages and the texts of the picker site (design REQ-061, 7 and 8). The file
-// runs in the browser and in Node, so it has no dependencies and no calls to the
-// platform. Everything it exports is frozen.
+// The languages and the texts of the picker site. The file runs in the browser and in
+// Node, so it has no dependencies and no calls to the platform. Everything it exports
+// is frozen.
 
 export const LANGUAGES = Object.freeze(["ru", "kk", "en"]);
 export const DEFAULT_LANGUAGE = "ru";
@@ -75,10 +75,120 @@ export const TEXTS = Object.freeze({
     kk: "Бірдеңе дұрыс болмады. Кейінірек қайталап көріңіз.",
     en: "Something went wrong. Please try again later.",
   }),
-  page_stub_notice: Object.freeze({
-    ru: "Страница с вопросами скоро появится.",
-    kk: "Сұрақтар беті жақында пайда болады.",
-    en: "The questions page will be available soon.",
+  card_gives: Object.freeze({
+    ru: "В конце вы увидите, что вы получите: что входит, чем это поможет и что делать дальше.",
+    kk: "Соңында нені алатыныңызды көресіз: не кіретінін, қалай көмектесетінін және әрі қарай не істеу керегін.",
+    en: "At the end you will see what you get: what is included, how it helps, and next steps.",
+  }),
+  card_ask: Object.freeze({
+    ru: "Ответьте на вопросы, и сайт подберёт вам решение.",
+    kk: "Сұрақтарға жауап беріңіз, сайт сізге шешім таңдап береді.",
+    en: "Answer the questions, and the site will pick a solution for you.",
+  }),
+  card_count: Object.freeze({
+    ru: "Вопросов: от {min} до {max}",
+    kk: "Сұрақтар: {min} бастап {max} дейін",
+    en: "Questions: from {min} to {max}",
+  }),
+  card_count_same: Object.freeze({
+    ru: "Вопросов: {count}",
+    kk: "Сұрақтар: {count}",
+    en: "Questions: {count}",
+  }),
+  card_start: Object.freeze({
+    ru: "Пройти опрос",
+    kk: "Сауалнамадан өту",
+    en: "Take the survey",
+  }),
+  card_continue: Object.freeze({
+    ru: "Продолжить",
+    kk: "Жалғастыру",
+    en: "Continue",
+  }),
+  card_restart: Object.freeze({
+    ru: "Начать заново",
+    kk: "Қайтадан бастау",
+    en: "Start over",
+  }),
+  card_changed: Object.freeze({
+    ru: "Анкета изменилась. Начните, пожалуйста, заново.",
+    kk: "Сауалнама өзгерді. Қайтадан бастаңыз.",
+    en: "The questionnaire has changed. Please start again.",
+  }),
+  progress_label: Object.freeze({
+    ru: "Вопрос {current} из {total}",
+    kk: "{total} сұрақтың {current}-і",
+    en: "Question {current} of {total}",
+  }),
+  progress_name: Object.freeze({
+    ru: "Ход опроса",
+    kk: "Сауалнама барысы",
+    en: "Survey progress",
+  }),
+  quiz_next: Object.freeze({
+    ru: "Далее",
+    kk: "Әрі қарай",
+    en: "Next",
+  }),
+  quiz_back: Object.freeze({
+    ru: "Назад",
+    kk: "Артқа",
+    en: "Back",
+  }),
+  quiz_skip: Object.freeze({
+    ru: "Пропустить",
+    kk: "Өткізіп жіберу",
+    en: "Skip",
+  }),
+  quiz_show_result: Object.freeze({
+    ru: "Показать результат",
+    kk: "Нәтижені көрсету",
+    en: "Show the result",
+  }),
+  quiz_required: Object.freeze({
+    ru: "Ответьте на этот вопрос, чтобы продолжить.",
+    kk: "Жалғастыру үшін осы сұраққа жауап беріңіз.",
+    en: "Answer this question to continue.",
+  }),
+  quiz_number_range: Object.freeze({
+    ru: "Введите целое число от {min} до {max}.",
+    kk: "{min} мен {max} арасындағы бүтін санды енгізіңіз.",
+    en: "Enter a whole number from {min} to {max}.",
+  }),
+  quiz_number_hint: Object.freeze({
+    ru: "От {min} до {max}",
+    kk: "{min} бастап {max} дейін",
+    en: "From {min} to {max}",
+  }),
+  quiz_loading: Object.freeze({
+    ru: "Загружаем анкету",
+    kk: "Сауалнама жүктелуде",
+    en: "Loading the questionnaire",
+  }),
+  quiz_sending: Object.freeze({
+    ru: "Подбираем решение",
+    kk: "Шешім таңдалуда",
+    en: "Picking a solution",
+  }),
+  net_lost_saved: Object.freeze({
+    ru: "Нет связи. Ваши ответы сохранены. Попробуйте ещё раз.",
+    kk: "Байланыс жоқ. Жауаптарыңыз сақталды. Қайталап көріңіз.",
+    en: "No connection. Your answers are saved. Please try again.",
+  }),
+  net_lost_unsaved: Object.freeze({
+    ru: "Нет связи. Не закрывайте страницу, ответы пока только здесь. Попробуйте ещё раз.",
+    kk: "Байланыс жоқ. Бетті жаппаңыз, жауаптар әзірге тек осында. Қайталап көріңіз.",
+    en: "No connection. Do not close the page, the answers are only here for now. Please try again.",
+  }),
+  net_retry: Object.freeze({
+    ru: "Повторить",
+    kk: "Қайталау",
+    en: "Try again",
+  }),
+  result_soon: Object.freeze({
+    ru: "Результат скоро появится на этой странице.",
+    kk: "Нәтиже осы бетте жақында шығады.",
+    en: "The result will appear on this page soon.",
   }),
 });
 
