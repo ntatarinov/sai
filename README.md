@@ -173,11 +173,12 @@ runs (`STATE.md`).
   a separate check. The report: `docs/uat/REAL-RUN-20261013.md`.
 - **The solution picker site** — a visitor answers the questions of a questionnaire and sees
   which solution suits them; every tenant has its own file, texts in Russian, Kazakh and
-  English. A part of the requirements REQ-054…REQ-068 is done (the tenant file and its check,
+  English. A part of the requirements REQ-054…REQ-087 is done (the tenant file and its check,
   the scoring engine, the server, the three languages, the check of characters in texts, the
-  questionnaire page with the card of the site); the rest wait to be built, first the result
-  page (REQ-058): until then the questionnaire ends with a temporary screen and the page is
-  not for real visitors. The exact status is in `docs/requirements.yaml` and `STATE.md`. Start
+  questionnaire page with the card of the site); the rest are written and checked (including
+  the new office look, REQ-069…087) but wait to be built, in the order of `PLAN.md`: until the
+  result page exists the questionnaire ends with a temporary screen and the page is not for
+  real visitors. The exact status is in `docs/requirements.yaml` and `STATE.md`. Start
   it with `cd tools && npm run picker`; how it is built — `tools/README.md`; code —
   `tools/src/picker/`; decision — `decisions/0065-solution-picker-stack-and-choices.md`.
 - **The agent pipeline** — the roles, workflows and quality bar by which the AI agents make Sai
@@ -343,7 +344,7 @@ defects, release reports, research) are still in Russian.
 
 ## What is not ready or not proven
 
-As of 2026-10-25, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
+As of 2026-10-26, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
 
 - **Demand is not tested.** Nobody has checked yet that businesses want a virtual team; this is
   an accepted risk (`decisions/0015`).
@@ -359,7 +360,7 @@ As of 2026-10-25, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
   not yet confirmed that the page looks like the approved sample (criterion 16 of REQ-007).
   The requirements for the core of Pixel Office (REQ-001, REQ-007, REQ-008) are still in
   progress.
-- **Requirements:** 68 in total — 31 done, 4 in progress, 33 pending (counted from
+- **Requirements:** 87 in total — 31 done, 4 in progress, 52 pending (counted from
   `docs/requirements.yaml`; the order of work is in `docs/product/requirements-catalog.md`).
   Still pending, for example: user accounts and login, workspaces and access roles, a
   decisions window, goal templates, a second interface language. The requirements for a
@@ -367,7 +368,7 @@ As of 2026-10-25, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
   built and done since 2026-10-18.
 - **A single computer only.** Both servers listen only on `127.0.0.1`; there are no user
   accounts yet. The interface is in Russian only.
-- **Open defects: 73** in `docs/issues/` — 9 of medium severity and 64 low; none high or
+- **Open defects: 74** in `docs/issues/` — 9 of medium severity and 65 low; none high or
   critical.
 - **A merge in a way other than the push to `main` needs the owner's confirmation** (R1). The
   repository exists on GitHub and is closed by the owner on purpose (`decisions/0062`). A push

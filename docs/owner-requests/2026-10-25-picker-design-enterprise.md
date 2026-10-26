@@ -11,3 +11,9 @@ How ORCH understood it (the owner may correct): the questionnaire page (card, qu
 ## Follow-up 2026-10-26 (owner's words, verbatim)
 
 After the second mockup («Честно говоря, то, что этот сайт посмотрел, какой себе. Очень плохой. Это максимально стандартный дизайн сайта. И он является UI. UX. Для пользователя давай ты переделаешь это. Давай ты не потеряешь смысл того, что у нас мульти-тенденси, это раз. Пиксель-офис, это два. Пользователь должен это видеть на сайте. Это должно быть максимально очень просто минимальные движения должны быть. Должны быть минимальные взаимодействия. И максимальное результат для пользователя.») and the third mockup the owner answered «да» to the question whether the direction is accepted. Also: «от а до я систему дать человеку» (the whole journey for the visitor). Recorded in `decisions/0083`.
+
+## Answers 2026-10-26 (given by clicking the recommended option in the session)
+
+- «Когда клиент оставляет телефон, как получить его согласие на обработку контакта?» — «Фраза без галочки (Рекомендую)».
+- «Можно ли, чтобы кнопка «Написать в WhatsApp» открывала внешний адрес wa.me в новом окне?» — «Да, в новом окне (Рекомендую)».
+Recorded in `decisions/0084`, item 4.
