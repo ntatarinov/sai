@@ -25,6 +25,7 @@ const FILES = [
   "say.js",
   "screens.js",
   "store.js",
+  "tenant-look.js",
   "texts.js",
 ];
 const read = (name) => fs.readFileSync(path.join(PUBLIC, name), "utf8");
@@ -45,7 +46,7 @@ function codeOnly(text) {
 
 // ---------------------------------------------------------------------- QS-1
 
-test("QS-1: the files of public/ are exactly the 13 of the design - no folder, no old placeholder file, the names fit the pattern of the server and the extensions are .js, .css and .html", () => {
+test("QS-1: the files of public/ are exactly the files of the design (14) - no folder, no old placeholder file, the names fit the pattern of the server and the extensions are .js, .css and .html", () => {
   const entries = fs.readdirSync(PUBLIC, { withFileTypes: true });
   assert.deepEqual(entries.map((e) => e.name).sort(), [...FILES].sort());
   for (const entry of entries) {
@@ -57,7 +58,7 @@ test("QS-1: the files of public/ are exactly the 13 of the design - no folder, n
     );
   }
   assert.equal(fs.existsSync(path.join(PUBLIC, GONE_FILE)), false);
-  assert.equal(FILES.length, 13);
+  assert.equal(FILES.length, 14);
 });
 
 // ---------------------------------------------------------------------- QS-2
@@ -220,6 +221,7 @@ test("QS-5: each door has one file - localStorage only in store.js; fetch( and A
     "store.js",
     "net.js",
     "texts.js",
+    "tenant-look.js",
   ])
     assert.doesNotMatch(codeOnly(read(name)), /\bdocument\b/u, name);
   assert.deepEqual(where(/\bdocument\b/u), ["app.js", "dom.js"]);
@@ -258,10 +260,26 @@ const GRAPH = {
   "say.js": ["texts.js"],
   "screens.js": ["dom.js", "say.js", "texts.js"],
   "store.js": [],
+  "tenant-look.js": [],
   "texts.js": [],
 };
 
-test("QS-7: the imports - only './name.js' of a file that is there, no node: module, no '../', no cycle; rules.js, store.js, net.js and dom.js import nothing; the graph is that of the design", () => {
+// The name of an imported file: lower-case words joined by single hyphens.
+const IMPORT_NAME = /^\.\/[a-z]+(-[a-z]+)*\.js$/u;
+
+test("QS-7: the imports - only './name.js' of a file that is there, no node: module, no '../', no cycle; rules.js, store.js, net.js, dom.js and tenant-look.js import nothing; the graph is that of the design", () => {
+  // the pattern bites
+  for (const good of ["./progress-page.js", "./tenant-look.js", "./app.js"])
+    assert.match(good, IMPORT_NAME, good);
+  for (const bad of [
+    "./Look.js",
+    "./a_b.js",
+    "./-a.js",
+    "./a-.js",
+    "./a--b.js",
+    "../x.js",
+  ])
+    assert.doesNotMatch(bad, IMPORT_NAME, bad);
   const graph = {};
   for (const name of JS) {
     const imports = [
@@ -270,7 +288,7 @@ test("QS-7: the imports - only './name.js' of a file that is there, no node: mod
       ),
     ].map((m) => m[1] ?? m[2]);
     for (const spec of imports) {
-      assert.match(spec, /^\.\/[a-z]+\.js$/u, `${name}: ${spec}`);
+      assert.match(spec, IMPORT_NAME, `${name}: ${spec}`);
       assert.ok(
         FILES.includes(spec.slice(2)),
         `${name}: ${spec} is not a file`,
@@ -279,7 +297,13 @@ test("QS-7: the imports - only './name.js' of a file that is there, no node: mod
     }
     graph[name] = imports.map((s) => s.slice(2)).sort();
   }
-  for (const name of ["rules.js", "store.js", "net.js", "dom.js"])
+  for (const name of [
+    "rules.js",
+    "store.js",
+    "net.js",
+    "dom.js",
+    "tenant-look.js",
+  ])
     assert.deepEqual(graph[name], [], name);
   assert.deepEqual(graph, GRAPH);
   // no cycle
@@ -648,7 +672,7 @@ test("QS-11: texts.js - the key of the old placeholder is gone, there are 35 key
 
 // ---------------------------------------------------------------------- QS-12
 
-test("QS-12: the settings of the linter - the block for src/picker/public/**/*.js with the browser names is in eslint.config.js, every other block of a browser is a public/ folder, the script lint has --max-warnings 0, and no file of the page or of its tests turns a rule off", () => {
+test("QS-12: the settings of the linter - the block for src/picker/public/**/*.js with the browser names is in eslint.config.js, every other block of a browser is a public/ folder, the script lint has --max-warnings 0, and no file of the page or of any test or helper of the picker (every picker-*.js of test/) turns a rule off", () => {
   const config = fs.readFileSync(path.join(TOOLS, "eslint.config.js"), "utf8");
   const blocks = [
     ...config.matchAll(
@@ -674,8 +698,8 @@ test("QS-12: the settings of the linter - the block for src/picker/public/**/*.j
   assert.match(pkg.scripts.check, /npm run lint/u);
   const tests = fs
     .readdirSync(path.join(TOOLS, "test"))
-    .filter((f) => /^picker-page.*\.js$/u.test(f));
-  assert.ok(tests.length >= 5);
+    .filter((f) => /^picker-.*\.js$/u.test(f));
+  assert.ok(tests.length >= 25);
   const off = new RegExp(["eslint", "-disable"].join(""), "u");
   const ignore = new RegExp(["prettier", "-ignore"].join(""), "u");
   for (const name of JS) assert.doesNotMatch(read(name), off, name);

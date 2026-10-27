@@ -4,8 +4,26 @@
 // The one place where the core depends on a file of public/ (design REQ-061, 5.1).
 export { DEFAULT_LANGUAGE, LANGUAGES } from "./public/texts.js";
 
+// The closed catalogues and the colour rule of the look of a tenant (design REQ-069, D2):
+// they live in one file shared with the page, and the core reads them here.
+export {
+  FIGURES,
+  GLYPHS,
+  MIN_CONTRAST,
+  OBJECT_IDS,
+  OBJECT_RULES,
+  SHEET,
+  SHIRTS,
+  TEAM_SIZE,
+  contrastRatio,
+  fallbackLook,
+  isColor,
+  isMarkSign,
+} from "./public/tenant-look.js";
+
 export const FORMAT_V1 = "sai-picker-tenant/1";
 export const FORMAT_V2 = "sai-picker-tenant/2";
+export const FORMAT_V3 = "sai-picker-tenant/3";
 export const MAX_FILE_BYTES = 524288;
 export const MAX_DEPTH = 20;
 export const MAX_LINES = 100;
@@ -44,3 +62,5 @@ export const SECOND_PERSON_WORDS = Object.freeze([
 
 export const QUESTION_TYPES = Object.freeze(["single", "multiple", "number"]);
 export const CONTACT_FIELDS = Object.freeze(["phone", "email"]);
+// The ways of contact in a file of the form /3 (design REQ-069, 5.7).
+export const CONTACT_FIELDS_V3 = Object.freeze(["phone", "telegram", "email"]);

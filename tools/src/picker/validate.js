@@ -2,16 +2,26 @@
 // pure function: it does not change its input, does not read the clock, the environment
 // or the disk, and does not throw on any value that comes from JSON.
 import { checkCondition } from "./conditions.js";
-import { checkLanguageText, isFormatV2 } from "./lang-check.js";
+import { checkLanguageText, formatOf } from "./lang-check.js";
 import {
   CONTACT_FIELDS,
+  CONTACT_FIELDS_V3,
   DEFAULT_LANGUAGE,
   FORMAT_V1,
   FORMAT_V2,
+  FORMAT_V3,
   QUESTION_TYPES,
   TENANT_ID,
 } from "./limits.js";
 import { pathText, show } from "./places.js";
+import { checkItems, checkObject, field, isObject } from "./shape.js";
+import {
+  checkChips,
+  checkDesks,
+  checkLook,
+  checkOfficeObject,
+  checkWhatsapp,
+} from "./v3-check.js";
 import {
   forbiddenSign,
   textProblem,
@@ -45,16 +55,15 @@ const QUESTION_KEYS = new Set([
   "unit",
   "show_if",
 ]);
+// In the form /3 a question may also have the quick numbers and the desk.
+const QUESTION_KEYS_V3 = new Set([...QUESTION_KEYS, "desk", "chips"]);
 const ONLY_FOR = new Map([
   ["options", ["single", "multiple"]],
+  ["chips", ["number"]],
   ["min", ["number"]],
   ["max", ["number"]],
   ["unit", ["number"]],
 ]);
-
-function isObject(v) {
-  return v !== null && typeof v === "object" && !Array.isArray(v);
-}
 
 // The type of a question when it is one of the three, else null.
 function knownType(question) {
@@ -65,12 +74,13 @@ function knownType(question) {
 }
 
 // The context of one check: the issues (one per place, the first found wins), the
-// rules of type, size and range, and the tables for the references. `mode` is "/1"
-// (texts for the visitor are strings) or "/2" (each is an object with ru, kk and en).
+// rules of type, size and range, and the tables for the references. `mode` (the form of the file) is "/1"
+// (texts for the visitor are strings), "/2" or "/3" (each is an object with ru, kk and en).
 function makeContext(mode) {
   const issues = [];
   const places = new Set();
   const ctx = {
+    mode,
     issues,
     questions: new Map(),
     solutions: new Set(),
@@ -111,7 +121,9 @@ function makeContext(mode) {
         ctx.add(
           "E_LIMIT",
           path,
-          `Элементов: ${v.length}, допустимо от ${min} до ${max}. Исправьте список.`,
+          min === max
+            ? `Элементов: ${v.length}, нужно ровно ${min}. Исправьте список.`
+            : `Элементов: ${v.length}, допустимо от ${min} до ${max}. Исправьте список.`,
         );
       }
       return true;
@@ -119,17 +131,18 @@ function makeContext(mode) {
     bool(path, v) {
       if (typeof v !== "boolean") ctx.wrong(path, "bool");
     },
-    // A text for the visitor: a string in /1, an object with three languages in /2.
+    // A text for the visitor: a string in /1, an object with three languages in /2 and /3.
     text(path, v, min, max) {
-      if (mode === "/2") checkLanguageText(ctx, path, v, min, max);
+      if (mode !== "/1") checkLanguageText(ctx, path, v, min, max);
       else ctx.line(path, v, min, max, DEFAULT_LANGUAGE);
     },
     // A text in one language: type, forbidden sign, length, then the rule of
-    // understandable text. The address "ты" is forbidden in ru only.
+    // understandable text. The address "ты" is forbidden in ru only. True when the text
+    // passed all its rules, false when a line was written for it.
     line(path, v, min, max, language) {
       if (typeof v !== "string") {
         ctx.wrong(path, "string");
-        return;
+        return false;
       }
       const sign = forbiddenSign(v);
       if (sign !== null) {
@@ -141,7 +154,7 @@ function makeContext(mode) {
             ? `Непарная половина знака ${code}. Удалите её из текста.`
             : `Недопустимый знак ${code} (невидимый или управляющий). Удалите его из текста.`,
         );
-        return;
+        return false;
       }
       const length = trimmedLength(v);
       if (length < min || length > max) {
@@ -150,11 +163,11 @@ function makeContext(mode) {
           path,
           `Знаков: ${length}, допустимо от ${min} до ${max}. Исправьте текст.`,
         );
-        return;
+        return false;
       }
       const problem =
         language === FORMAL_LANGUAGE ? textProblem(v) : wordsProblem(v);
-      if (problem === null) return;
+      if (problem === null) return true;
       ctx.add(
         "E_TEXT",
         path,
@@ -162,6 +175,7 @@ function makeContext(mode) {
           ? "Обращение не на «вы». Перепишите текст в форме «вы»."
           : `Фраза длиннее 18 слов (в ней ${problem.words}). Разбейте её точкой.`,
       );
+      return false;
     },
     // A list of texts for the visitor.
     texts(path, v, listMin, listMax, min, max) {
@@ -170,37 +184,6 @@ function makeContext(mode) {
     },
   };
   return ctx;
-}
-
-// An object with known fields: the extra keys first, then the fields in the order of
-// the table. A field is { name, required, check(path, value) }.
-function checkObject(ctx, path, value, fields) {
-  if (!isObject(value)) {
-    ctx.wrong(path, "object");
-    return;
-  }
-  const known = new Set(fields.map((f) => f.name));
-  for (const key of Object.keys(value)) {
-    if (!known.has(key))
-      ctx.add(
-        "E_FIELD",
-        [...path, key],
-        `Лишнее поле ${show(key)}. Удалите его.`,
-      );
-  }
-  for (const field of fields) {
-    const fieldPath = [...path, field.name];
-    if (Object.hasOwn(value, field.name))
-      field.check(fieldPath, value[field.name]);
-    else if (field.required)
-      ctx.add("E_FIELD", fieldPath, `Нет поля ${field.name}. Добавьте его.`);
-  }
-}
-
-// The items of a list of objects, each checked by `each(path, item, index)`.
-function checkItems(ctx, path, value, min, max, each) {
-  if (ctx.list(path, value, min, max))
-    value.forEach((item, i) => each([...path, i], item, i));
 }
 
 // An inner id: type, pattern, repeat; `seen` maps the ids of this list to the places.
@@ -225,10 +208,6 @@ function checkInnerId(ctx, path, value, seen) {
   if (!seen.has(value)) seen.set(value, path);
 }
 
-function field(name, required, check) {
-  return { name, required, check };
-}
-
 function checkConditions(ctx, path, value, ownIndex) {
   checkItems(ctx, path, value, ownIndex === null ? 1 : 0, 3, (itemPath, item) =>
     checkCondition(ctx, itemPath, item, ownIndex),
@@ -239,6 +218,9 @@ function checkOption(ctx, path, value, seen) {
   checkObject(ctx, path, value, [
     field("id", true, (p, v) => checkInnerId(ctx, p, v, seen)),
     field("label", true, (p, v) => ctx.text(p, v, 1, 100)),
+    ...(ctx.mode === "/3"
+      ? [field("object", false, (p, v) => checkOfficeObject(ctx, p, v))]
+      : []),
   ]);
 }
 
@@ -251,8 +233,9 @@ function checkQuestion(ctx, path, value, index, seen) {
   // Until the type is known, the fields that depend on it are only checked for their form.
   const applies = (name) =>
     type === null || !ONLY_FOR.has(name) || ONLY_FOR.get(name).includes(type);
+  const keys = ctx.mode === "/3" ? QUESTION_KEYS_V3 : QUESTION_KEYS;
   for (const key of Object.keys(value)) {
-    if (!QUESTION_KEYS.has(key) || !applies(key))
+    if (!keys.has(key) || !applies(key))
       ctx.add(
         "E_FIELD",
         [...path, key],
@@ -304,6 +287,16 @@ function checkQuestion(ctx, path, value, index, seen) {
       "Число min должно быть меньше max. Исправьте границы.",
     );
   }
+  if (ctx.mode === "/3" && present("chips"))
+    checkChips(
+      ctx,
+      at("chips"),
+      value.chips,
+      minOk && maxOk ? value.min : null,
+      minOk && maxOk ? value.max : null,
+    );
+  if (ctx.mode === "/3" && Object.hasOwn(value, "desk"))
+    ctx.int(at("desk"), value.desk, 1, 4);
   if (present("unit")) ctx.text(at("unit"), value.unit, 1, 20);
   if (Object.hasOwn(value, "show_if"))
     checkConditions(ctx, at("show_if"), value.show_if, index);
@@ -371,14 +364,15 @@ function checkResult(ctx, path, value) {
 
 function checkContactFields(ctx, path, value) {
   const seen = new Set();
-  checkItems(ctx, path, value, 1, 2, (p, item) => {
+  const allowed = ctx.mode === "/3" ? CONTACT_FIELDS_V3 : CONTACT_FIELDS;
+  checkItems(ctx, path, value, 1, allowed.length, (p, item) => {
     if (typeof item !== "string") {
       ctx.wrong(p, "string");
-    } else if (!CONTACT_FIELDS.includes(item)) {
+    } else if (!allowed.includes(item)) {
       ctx.add(
         "E_FIELD",
         p,
-        "Допустимо только: phone, email. Исправьте значение.",
+        `Допустимо только: ${allowed.join(", ")}. Исправьте значение.`,
       );
     } else if (seen.has(item)) {
       ctx.add("E_DUP", p, `Способ связи ${item} указан дважды. Оставьте один.`);
@@ -400,6 +394,13 @@ function checkLeads(ctx, path, value) {
       ctx.line(p, v, 1, 200, DEFAULT_LANGUAGE),
     ),
     field("retention_days", true, (p, v) => ctx.int(p, v, 1, 365)),
+    ...(ctx.mode === "/3"
+      ? [
+          field("whatsapp", false, (p, v) => checkWhatsapp(ctx, p, v)),
+          field("max_per_hour", false, (p, v) => ctx.int(p, v, 1, 1000)),
+          field("max_stored", false, (p, v) => ctx.int(p, v, 1, 10000)),
+        ]
+      : []),
   ]);
 }
 
@@ -472,7 +473,7 @@ function checkReachable(ctx, doc) {
 
 // validateTenant(doc, { fileName }) -> [{ code, path, text }] in the order of finding.
 export function validateTenant(doc, options = {}) {
-  const ctx = makeContext(isFormatV2(doc) ? "/2" : "/1");
+  const ctx = makeContext(formatOf(doc));
   if (!isObject(doc)) {
     ctx.add(
       "E_FIELD",
@@ -490,15 +491,18 @@ export function validateTenant(doc, options = {}) {
   checkObject(ctx, [], doc, [
     field("schema", true, (p, v) => {
       if (typeof v !== "string") ctx.wrong(p, "string");
-      else if (v !== FORMAT_V1 && v !== FORMAT_V2)
+      else if (v !== FORMAT_V1 && v !== FORMAT_V2 && v !== FORMAT_V3)
         ctx.add(
           "E_FIELD",
           p,
-          `Допустимо только: ${FORMAT_V1} или ${FORMAT_V2}. Исправьте значение.`,
+          `Допустимо только: ${FORMAT_V1}, ${FORMAT_V2} или ${FORMAT_V3}. Исправьте значение.`,
         );
     }),
     field("id", true, (p, v) => checkTenantId(ctx, p, v, fileName)),
     field("name", true, (p, v) => ctx.text(p, v, 1, 60)),
+    ...(ctx.mode === "/3"
+      ? [field("look", true, (p, v) => checkLook(ctx, p, v))]
+      : []),
     field("intro", true, (p, v) => ctx.text(p, v, 1, 400)),
     field("questions", true, (p, v) =>
       checkItems(ctx, p, v, 1, 30, (qp, q, i) =>
@@ -521,6 +525,7 @@ export function validateTenant(doc, options = {}) {
     field("result", true, (p, v) => checkResult(ctx, p, v)),
     field("leads", false, (p, v) => checkLeads(ctx, p, v)),
   ]);
+  if (ctx.mode === "/3") checkDesks(ctx, doc.questions);
   checkReachable(ctx, doc);
   return ctx.issues;
 }

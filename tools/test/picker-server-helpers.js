@@ -22,6 +22,7 @@ import {
   makeTmp,
 } from "./picker-helpers.js";
 import { textPlaces, viewByOracle } from "./picker-lang-helpers.js";
+import { expectedLook, expectedObject } from "./picker-look-helpers.js";
 
 export const IDS = ["uchet-pro", "svet-marketing"];
 export const LANGS = ["ru", "kk", "en"];
@@ -574,17 +575,29 @@ export function portRefuses(port) {
 
 const hasOwn = (o, k) => Object.hasOwn(o, k);
 
-// The questionnaire that a visitor must get (design 5.3), built from the file of the
-// tenant (a plain object) and written again here: the order of the keys is part of it.
+// The forms whose texts are in three languages: /2 and /3.
+const THREE_LANGUAGES = ["sai-picker-tenant/2", "sai-picker-tenant/3"];
+export const isThreeLanguages = (tenant) =>
+  THREE_LANGUAGES.includes(tenant.schema);
+
+// The questionnaire that a visitor must get (design 5.3, and 7.1 of REQ-069 for the form
+// /3), built from the file of the tenant (a plain object) and written again here: the
+// order of the keys is part of it.
 export function expectedQuestionnaire(tenant, lang, version) {
-  const v2 = tenant.schema === "sai-picker-tenant/2";
-  const view = v2 ? viewByOracle(tenant, lang) : tenant;
-  const languages = v2 ? ["ru", "kk", "en"] : ["ru"];
-  const shown = v2 && languages.includes(lang) ? lang : "ru";
+  const three = isThreeLanguages(tenant);
+  const isV3 = tenant.schema === "sai-picker-tenant/3";
+  const languages = three ? ["ru", "kk", "en"] : ["ru"];
+  const shown = three && languages.includes(lang) ? lang : "ru";
+  const view = three ? viewByOracle(tenant, shown) : tenant;
   const condition = (c) => {
     const out = { question: c.question };
     for (const key of ["any_of", "none_of", "min", "max"])
       if (hasOwn(c, key)) out[key] = c[key];
+    return out;
+  };
+  const option = (o) => {
+    const out = { id: o.id, label: o.label };
+    if (hasOwn(o, "object")) out.object = expectedObject(o.object);
     return out;
   };
   const question = (q) => {
@@ -592,41 +605,41 @@ export function expectedQuestionnaire(tenant, lang, version) {
     if (hasOwn(q, "help")) out.help = q.help;
     out.type = q.type;
     out.required = q.required;
-    if (hasOwn(q, "options"))
-      out.options = q.options.map((o) => ({ id: o.id, label: o.label }));
-    for (const key of ["min", "max", "unit"])
+    if (hasOwn(q, "options")) out.options = q.options.map(option);
+    for (const key of ["min", "max", "unit", "chips", "desk"])
       if (hasOwn(q, key)) out[key] = q[key];
     if (hasOwn(q, "show_if")) out.show_if = q.show_if.map(condition);
     return out;
   };
-  const leads =
-    hasOwn(view, "leads") && view.leads.enabled === true
-      ? {
-          contact_fields: view.leads.contact_fields,
-          consent_text: view.leads.consent_text,
-          operator_name: view.leads.operator_name,
-          privacy_contact: view.leads.privacy_contact,
-          retention_days: view.leads.retention_days,
-        }
-      : null;
-  return {
-    version,
-    lang: shown,
-    languages,
-    name: view.name,
-    intro: view.intro,
-    questions_min: view.questions.filter((q) => !hasOwn(q, "show_if")).length,
-    questions_max: view.questions.length,
-    questions: view.questions.map(question),
-    ai: false,
-    leads,
-  };
+  let leads = null;
+  if (hasOwn(view, "leads") && view.leads.enabled === true) {
+    leads = { contact_fields: view.leads.contact_fields };
+    if (isV3)
+      leads.whatsapp = hasOwn(view.leads, "whatsapp")
+        ? view.leads.whatsapp
+        : null;
+    leads.consent_text = view.leads.consent_text;
+    leads.operator_name = view.leads.operator_name;
+    leads.privacy_contact = view.leads.privacy_contact;
+    leads.retention_days = view.leads.retention_days;
+  }
+  const out = { version, lang: shown, languages, name: view.name };
+  if (isV3) out.look = expectedLook(tenant, shown);
+  out.intro = view.intro;
+  out.questions_min = view.questions.filter(
+    (q) => !hasOwn(q, "show_if"),
+  ).length;
+  out.questions_max = view.questions.length;
+  out.questions = view.questions.map(question);
+  out.ai = false;
+  out.leads = leads;
+  return out;
 }
 
 // The result that a visitor must get: the engine on the view of the file, without ranking.
 export function expectedResult(tenant, lang, answers) {
-  const v2 = tenant.schema === "sai-picker-tenant/2";
-  const view = v2 ? viewByOracle(tenant, lang) : tenant;
+  const three = isThreeLanguages(tenant);
+  const view = three ? viewByOracle(tenant, lang) : tenant;
   const computed = computeResult(view, answers);
   if (!computed.ok) return null;
   const { ranking, ...rest } = computed.result;

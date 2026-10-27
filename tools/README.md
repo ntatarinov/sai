@@ -620,12 +620,15 @@ The command reads one tenant file and either answers «в порядке» (all 
 
 Exit codes: 0 — the file is all right, one line «Файл арендатора <id> в порядке: вопросов N, решений M, правил K.» (the tenant file <id> is all right: questions N, solutions M, rules K); 1 — errors found, lines «<файл>: <место>: <код>: <текст>» (<file>: <place>: <code>: <text>) in stdout; 2 — a wrong call or the file cannot be read, one line `picker: …` in stderr; 3 — a program error, a stack in stderr. Help: `npm run picker -- --help`. The file is only read: the command writes and creates nothing. `npm run` prints extra header lines before the output; the clean output is `npm run -s picker -- check <файл>`. (`<файл>` means "file".)
 
-A tenant file is of two kinds. The kind is set by the field `schema`.
+A tenant file is of three kinds. The kind is set by the field `schema`.
 
 - `sai-picker-tenant/1` — a file in one language. Every text for the visitor in it is an ordinary string. The site shows such a file in Russian.
 - `sai-picker-tenant/2` — a file in three languages. Every text for the visitor in it is an object of three fields: `ru`, `kk` and `en`. For example: `"title": { "ru": "…", "kk": "…", "en": "…" }`.
+- `sai-picker-tenant/3` — a file in three languages like `/2`, plus the section `look` (how the tenant is shown: the mark, the colours, the four staff of the office). It also has optional fields: `desk` and `chips` of a question, `object` of an option, `whatsapp`, `max_per_hour` and `max_stored` of `leads`, and `telegram` as a third way of contact. In a `/1` or `/2` file these fields are extra fields: the command `check` rejects them with the code `E_FIELD`.
 
-The command `check` checks both kinds. If in a `/2` file a text has no translation or it does not fit, the line of the error has the language: `questions[2].title.kk`. Then you see at once which language to fix. A `/2` file is about twice as big as a `/1` file, and the limit of size is as before — 512 KB. `/1` files are still accepted. Their samples are in `test/fixtures/picker-legacy/`.
+The command `check` checks all three kinds. If in a `/2` file a text has no translation or it does not fit, the line of the error has the language: `questions[2].title.kk`. Then you see at once which language to fix. A `/2` file is about twice as big as a `/1` file, and the limit of size is as before — 512 KB. `/1` files are still accepted. Their samples are in `test/fixtures/picker-legacy/`.
+
+The section `look` of a `/3` file has these fields. `mark` is one letter or digit of any alphabet. `tagline` (optional, up to 40 signs), `industry` (up to 60) and `headline` (up to 120) are texts in three languages. `colors` has the two themes `light` and `dark`, each with `accent` and `accent2`; a colour is written as `#` and six lower-case hexadecimal digits, for example `#1f7a8c`. The contrast of a colour with the sheet of its own theme must be not less than 3.0 : 1; the sheets are `#f3f5f9` for the light theme and `#161f2e` for the dark one. `team` has exactly four staff in the order of the four desks (reception, documents, specification, handover); each has `name`, `role` and `says` (the role and the reply are texts in three languages of up to 40 signs), `figure` (one of `f01`…`f12`) and `shirt` (`accent`, `accent2` or `ink`). A staff name is one string for all languages, 1–30 signs: letters, combining marks, digits, space, hyphen, apostrophe and dot (`decisions/0085`). The `object` of an option is `id` from the closed list of 15 (`shelf`, `shop`, `boxes`, `monitor`, `laptop`, `scanner`, `tsd`, `clip`, `bell`, `phone`, `cell`, `headset`, `poster`, `coins`, `chart`) and, for some ids only, `level`, `tag` (1–3 letters or digits) or `glyph` (`tool`, `box`, `house` or `cap`). Nothing in the section is an address, a style or a code. A `/1` or `/2` file has no `look`: the site shows it with a neutral look that the platform makes from the name of the tenant.
 
 The texts for the visitor must not contain control characters except five whitespace ones: `U+0009`–`U+000D`. Characters of the category Cf (invisible formatting characters) are also not allowed. The line separators `U+2028` and `U+2029` and unpaired halves of characters are also not allowed. The command `check` rejects such a text with a line with the code `E_TEXT`. The line has the place and the code of the character, for example `U+200B`. The character `U+200B` is invisible and glues words.
 The character `U+202E` reverses the text after it. Such characters bypass the rule of the 18-word phrase and the ban of the second person. Remove the character from the text and check the file again. An unpaired half of a character (a single surrogate) is also rejected by the command.
@@ -762,21 +765,24 @@ The site has no applications, no AI advice, no publishing on the internet and no
 
 The page of the site is in `src/picker/public/`. These are modules without a build and without external files. The server gives them at the address `/assets/<name>`. This is what is in the folder.
 
-| File         | What it is for                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------ |
-| `index.html` | The base of the page: one place for screens and a hidden line for reading aloud                        |
-| `page.css`   | The look: the light and dark theme, sizes, the focus ring                                              |
-| `main.js`    | The entry: starts the page                                                                             |
-| `app.js`     | The control: jumps between screens, focus, saving                                                      |
-| `screens.js` | The screens: the card, a question, the connection block                                                |
-| `result.js`  | The temporary screen after the button «Показать результат»                                             |
-| `dom.js`     | Building the nodes of the page: texts are put only as text                                             |
-| `flow.js`    | The progress «Вопрос K из N» (question K of N), neighbouring questions, answers, a number from a field |
-| `rules.js`   | The rule of the visibility of questions                                                                |
-| `store.js`   | The storage of the browser                                                                             |
-| `net.js`     | The only connection with the server: two addresses and a limit of 20 seconds                           |
-| `say.js`     | The substitution of `{имя}` into texts                                                                 |
-| `texts.js`   | The texts of the site in three languages                                                               |
+| File             | What it is for                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------ |
+| `index.html`     | The base of the page: one place for screens and a hidden line for reading aloud                        |
+| `page.css`       | The look: the light and dark theme, sizes, the focus ring                                              |
+| `main.js`        | The entry: starts the page                                                                             |
+| `app.js`         | The control: jumps between screens, focus, saving                                                      |
+| `screens.js`     | The screens: the card, a question, the connection block                                                |
+| `result.js`      | The temporary screen after the button «Показать результат»                                             |
+| `dom.js`         | Building the nodes of the page: texts are put only as text                                             |
+| `flow.js`        | The progress «Вопрос K из N» (question K of N), neighbouring questions, answers, a number from a field |
+| `rules.js`       | The rule of the visibility of questions                                                                |
+| `store.js`       | The storage of the browser                                                                             |
+| `net.js`         | The only connection with the server: two addresses and a limit of 20 seconds                           |
+| `say.js`         | The substitution of `{имя}` into texts                                                                 |
+| `tenant-look.js` | The look of a tenant: the closed lists, the colour rule, the neutral look (no texts)                   |
+| `texts.js`       | The texts of the site in three languages                                                               |
+
+`tenant-look.js` is a pure module shared by the page and the check of a file; it imports nothing. It exports the closed lists (`OBJECT_IDS`, `OBJECT_RULES`, `GLYPHS`, `FIGURES`, `SHIRTS`), the sheet colours and the contrast rule (`SHEET`, `MIN_CONTRAST`, `isColor`, `contrastRatio`), `isMarkSign`, and the functions `markOf`, `deskForQuestion` and `fallbackLook`.
 
 How to open: start the stand (the section above) and open `/t/uchet-pro/`. The language is set by `?lang=` in the address or by the language button on the page. If the tenant file has one language, there are no language buttons.
 

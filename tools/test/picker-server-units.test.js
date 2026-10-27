@@ -44,6 +44,11 @@ import {
   sha256,
   sourceOf,
 } from "./picker-server-helpers.js";
+import {
+  lookFixtureBytes,
+  lookFixtureJson,
+  expectedLook,
+} from "./picker-look-helpers.js";
 
 const SEE = "Справка: npm run picker -- --help";
 const NO_TENANTS =
@@ -504,7 +509,7 @@ test("SU-8: tame keeps a name (also with the word token), turns spaces and contr
 
 // ---------------------------------------------------------------------- SU-9
 
-test("SU-9: loadTenants - a folder of two, the order of ids, the files that are not .json skipped, frozen records with the views and the questionnaires, a name such as constructor is no tenant, one language for a file of the form /1; inspectDirectory has its four refusals", (t) => {
+test("SU-9: loadTenants - a folder of two, the order of ids, the files that are not .json skipped, frozen records with the views and the questionnaires, a name such as constructor is no tenant, one language for a file of the form /1, three languages and a frozen look for a file of the form /3; inspectDirectory has its four refusals", (t) => {
   const dir = makeTenantDir(t, {
     "uchet-pro.json": demoBytes("uchet-pro"),
     "svet-marketing.json": demoBytes("svet-marketing"),
@@ -558,6 +563,42 @@ test("SU-9: loadTenants - a folder of two, the order of ids, the files that are 
   assert.deepEqual(one.languages, ["ru"]);
   assert.equal(one.questionnaires.size, 1);
   assert.equal(one.views.size, 1);
+  // a file of the form /3: the same six keys, three languages, a look that is frozen
+  const office = makeTenantDir(t, {
+    "ok-office-a.json": lookFixtureBytes("ok-office-a"),
+  });
+  const three = loadTenants(office).registry.get("ok-office-a");
+  assert.deepEqual(Object.keys(three), Object.keys(entry));
+  assert.equal(three.fileName, "ok-office-a.json");
+  assert.equal(three.version, sha256(lookFixtureBytes("ok-office-a")));
+  assert.deepEqual(three.languages, ["ru", "kk", "en"]);
+  assert.equal(Object.isFrozen(three), true);
+  assert.equal(Object.isFrozen(three.languages), true);
+  assert.deepEqual([...three.views.keys()], ["ru", "kk", "en"]);
+  assert.deepEqual([...three.questionnaires.keys()], ["ru", "kk", "en"]);
+  for (const [lang, view] of three.views) {
+    assert.equal(Object.isFrozen(view), true, lang);
+    assert.equal(Object.isFrozen(view.look), true, lang);
+    assert.equal(Object.isFrozen(view.look.team), true, lang);
+    assert.equal(Object.isFrozen(view.look.team[0]), true, lang);
+    assert.equal(Object.isFrozen(view.look.colors.light), true, lang);
+    assert.equal(Object.isFrozen(view.questions[2].chips), true, lang);
+    assert.equal(
+      view.look.headline,
+      lookFixtureJson("ok-office-a").look.headline[lang],
+    );
+    assert.deepEqual(
+      JSON.parse(three.questionnaires.get(lang)).look,
+      expectedLook(lookFixtureJson("ok-office-a"), lang),
+      lang,
+    );
+  }
+  for (const body of three.questionnaires.values())
+    assert.ok(Buffer.isBuffer(body));
+  assert.notEqual(
+    three.views.get("ru").look.headline,
+    three.views.get("kk").look.headline,
+  );
   // a tenant called constructor
   const odd = JSON.parse(demoBytes("uchet-pro").toString("utf8"));
   odd.id = "constructor";

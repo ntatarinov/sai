@@ -1,0 +1,89 @@
+{
+  "handoff_id": "step14-LOOK069-20261026-01",
+  "run_id": "LOOK069-20261026-01",
+  "workflow_id": "WF-02",
+  "step": "14",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/LOOK069-20261026-01/step-14-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-069"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-069-tenant-look-format.md",
+      "handoffs/LOOK069-20261026-01/step-13-test-design-validator.json"
+    ],
+    "route": "TEST-DESIGNER",
+    "write_set": [
+      "tools/test",
+      "handoffs/LOOK069-20261026-01/step-14-test-designer.json"
+    ],
+    "base_tag": "base/LOOK069-20261026-01",
+    "orch_check": {
+      "at": "2026-10-26T18:58:03Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED; npm run check run by ORCH: 2044 tests, 2044 pass, 0 fail; sha256 of tools/src equal to before (129787a2…); only tools/test and the handoff changed; SV-9g added for F1, LK-5a and LK-4b extended for F2 and F3; three mutants (OWN8, MU70b, OWN2) red on the new cases per the agent's self_check; next: gate pass 2 (step 15)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Rework of the tests of REQ-069 after the gate FAIL of step 13 (pass 1 of 3). Read the result of step 13 (findings F1-F3). Change ONLY tools/test (new tests, new sample files if needed, extended cases) and your handoff; tools/src must not change (its sha256 must be the same at start and end). No commits, no git checkout/reset/stash/clean (also not in scratch copies). 16 GB RAM computer: single commands.\nDo exactly this:\nF1 (Medium, must): add a test (a new SV-9g, or an extension of SV-9a) that serves a /3 file with leads enabled and NO leads.whatsapp (a new sample file or a copy of ok-office-a without the field, written by the test into its temporary folder) and checks `whatsapp: null` is in the answer for ru, kk and en as the second key of `leads` (key order as the design says), and the same through publicQuestionnaire on a view without the field. The oracle is a literal, not computed by the code. Then show with a mutant on a scratch copy of tools/ (public-data.js gives undefined for a missing whatsapp, so the key disappears) that the new test is red, and restore the file.\nF2 (Low): in LK-5a add the desk cases [1,\"x\",\"-\",4] and [1,null,\"-\",\"-\"] (a wrong desk value before a missing desk) with literal expected lines (two lines for the first: E_FIELD at questions[1].desk and E_FIELD \"Стол задан не у всех вопросов\" at questions[2].desk per the design message texts; take the exact texts from the design M-list). Show that the mutant MU70b (the second line lost) is red now.\nF3 (Low): in LK-4b add object tags such as \"A BCD\" (count wrong AND class wrong) so that the order \"count first, then class\" is pinned by LK-4b; show the swapped-order mutant is red in LK-4b.\nThen run `cd tools && npm run check` once: it must be green with zero red; report the new test count. Put the three mutant runs into result.self_check. Close the handoff COMPLETED.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-26T18:49:47Z",
+  "started_at": "2026-10-26T18:49:47Z",
+  "completed_at": "2026-10-26T18:55:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework of the tests of REQ-069 after the gate FAIL of step 13 (pass 1 of 3), findings F1-F3 only; tools/src not touched (sha256 of the sorted list of its files is the same at the start and at the end: 129787a2ce296258cb517ddb4b2dd589b17909fe9d50ae1541d1a17d8bd2daa7). F1: new test SV-9g in tools/test/picker-server.test.js. A copy of ok-office-a with leads enabled and leads.whatsapp removed is written by the test into a temporary folder; for ru, kk and en the served answer has leads with exactly the keys contact_fields, whatsapp, consent_text, operator_name, privacy_contact, retention_days (whatsapp is the second key and is null), the whole leads equals a literal object per language, and the raw text holds the literal piece `\"leads\":{\"contact_fields\":[\"phone\",\"telegram\"],\"whatsapp\":null,\"consent_text\":`; the same through publicQuestionnaire on a frozen view of each language without the field. The oracle is literal (not expectedQuestionnaire). F2: LK-5a got the desk cases [1,\"x\",\"-\",4] and [1,null,\"-\",\"-\"] with literal expected lines: E_FIELD «Ожидается целое число. Исправьте значение.» (M04) at questions[1].desk and E_FIELD «Стол задан не у всех вопросов. Добавьте поле desk.» (M24) at questions[2].desk (and no line at questions[3].desk in the second case). F3: LK-4b got the object tags \"A BCD\" and \"ab cd\" (five signs, a space inside): E_LIMIT with the count text (M07, 5 signs, 1 to 3), not E_FIELD; the case counter went 15*(8+5+5) -> 15*(8+7+5). Table criterion -> test of the three: criterion 7 (what the visitor gets, whatsapp string or null, key always present in /3) -> SV-9g (new); criterion 5 (desks: a wrong value counts as a desk, the first question without the key gets the one line) -> LK-5a (extended); criterion 4 (object tag: count first, then class) -> LK-4b (extended). Q8, Q10, Q11, R3 unchanged by this rework (the three additions test the shape of one answer and two validator rules; no new tenant data crosses, no external call, no address, no photo).",
+    "changes": [
+      {
+        "file": "tools/test/picker-server.test.js",
+        "what": "F1: new test SV-9g (leads enabled, no leads.whatsapp: whatsapp null as the second key of leads for ru, kk, en, served and through publicQuestionnaire) with two literal constants LEADS_NO_WHATSAPP and LEADS_KEYS; nothing else in the file changed"
+      },
+      {
+        "file": "tools/test/picker-look.test.js",
+        "what": "F2: LK-5a two cases (wrong desk value before a missing desk), literal lines M04 + M24; F3: LK-4b TAGS gets \"A BCD\" and \"ab cd\" with E_LIMIT M07(5,1,3), case counter 15*(8+7+5)"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "mutant for F1 (OWN8): scratch copy of tools/, src/picker/public-data.js: `const whatsapp = has(leads, \"whatsapp\") ? leads.whatsapp : null;` -> `... : undefined;` (the key vanishes from the JSON); node --test picker-server, picker-look, picker-server-units",
+        "output": "97 tests, 96 pass, 1 fail: SV-9g is red (the only red one). File restored from the live tree, cmp equal."
+      },
+      {
+        "command": "mutant for F2 (MU70b): scratch copy, src/picker/v3-check.js checkDesks: a present desk with a wrong value sets `reported = true` (the second line is lost); node --test picker-look.test.js",
+        "output": "36 tests, 35 pass, 1 fail: LK-5a is red (before the rework this mutant survived). File restored, cmp equal."
+      },
+      {
+        "command": "mutant for F3 (OWN2): scratch copy, src/picker/v3-check.js checkTag: the class check before the count check (order swapped); node --test picker-look.test.js",
+        "output": "36 tests, 34 pass, 2 fail: LK-4b and LK-4e are red (before the rework only LK-4e). File restored, cmp equal."
+      },
+      {
+        "command": "cd tools && npm run check (live tree, once)",
+        "output": "exit code 0; format:check, lint green; traces: files 2172, traces 0, skipped 67; handoffs-check: files 1178, violations 0; tests 2044, pass 2044, fail 0, cancelled 0, skipped 0, todo 0 (before the rework 2043; one new test, SV-9g; LK-4b and LK-5a are extended, not new)"
+      },
+      {
+        "command": "sha256 of the sorted list of file hashes of tools/src, start and end",
+        "output": "129787a2ce296258cb517ddb4b2dd589b17909fe9d50ae1541d1a17d8bd2daa7 both times"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "F4 (MU56 caught only by the command on engine.js) and F5 (desk range literal vs TEAM_SIZE) are the follow-up list of the gate, not touched here. No code edit is needed by any of the three new checks. Mutants were applied in a scratch copy of tools/ only; the working tree was not changed by them."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-server.test.js",
+      "tools/test/picker-look.test.js"
+    ]
+  }
+}

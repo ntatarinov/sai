@@ -1,0 +1,116 @@
+{
+  "handoff_id": "step10-LOOK069-20261026-01",
+  "run_id": "LOOK069-20261026-01",
+  "workflow_id": "WF-02",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/LOOK069-20261026-01/step-10-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-069"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/LOOK069-20261026-01/step-09-backend-dev.json",
+      "docs/design/REQ-069-tenant-look-format.md"
+    ],
+    "route": "SECURITY-REVIEWER",
+    "write_set": [
+      "handoffs/LOOK069-20261026-01/step-10-security-reviewer.json"
+    ],
+    "base_tag": "base/LOOK069-20261026-01",
+    "orch_check": {
+      "at": "2026-10-26T16:57:54Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED, PASS; 728 hostile probes and 33 real check runs, 0 throws, no markup/URL/CSS from tenant data; /1 /2 answers hashes equal F4; isolation intact; code hash unchanged during the check; Low F-1: REQ-071 must show look texts only as text (follow-up)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Security gate for the code of REQ-069 (tenant file format /3 with `look`; validation, a shared pure module public/tenant-look.js, public data with the tenant look). Read the diff against the tag base/LOOK069-20261026-01 (new files tools/src/picker/public/tenant-look.js, shape.js, v3-check.js; changed limits.js, lang-check.js, view.js, validate.js, public-data.js, tools/README.md), the design docs/design/REQ-069-tenant-look-format.md and decisions 0084, 0085, 0073, 0074. For each of Q7-Q11 and R3 say met or not applicable with YOUR OWN check (run things, do not trust). Specifically: (1) tenant data can never become markup, URL, CSS or script on the page through look, colours, mark, tagline, headline, staff names, says, chips, desk, object ids, whatsapp: the closed catalogue of 15 object ids, #rrggbb lower-case only, the character classes, the length limits, unpaired surrogates, control and format characters (decisions 0076) - try hostile inputs through the real `picker check` and through the public data function (run them on a scratch copy outside the project, never git checkout/reset/stash/clean): url(...), javascript:, </script>, expression, backslash escapes, RTL marks, zero width characters, __proto__, constructor, very long strings, numbers as strings, nested objects, arrays where scalars are expected; (2) the public data never leaks max_per_hour, max_stored, the owner's fields, paths or the other tenants' data (compare the /1 and /2 answers sha256 with the F4 values of the design); (3) isolation of tenants is intact (the cache of ownLookOfView/lookOfView, if any, is keyed per tenant; no cross-tenant leak); (4) the shared module has no imports, no network, no timers, no eval, no texts.js keys, no Date or random; (5) whatsapp: the field holds digits only as the design says, nothing builds an external address in this requirement; (6) errors never echo foreign keys or secrets (ISS-0077 notes), messages obey the 18-word rule; (7) the check command does not write files (read-only) and does not hang on pathological input (time a few). Findings with severity, file, line, fix. Verdict PASS or FAIL. Change only your handoff. No commits, no git checkout/reset/stash/clean. 16 GB RAM computer: single commands; the full npm run check not needed (you may run the picker test files). In your handoff text never list project names or machine paths (say \"the traces list\").",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-26T16:49:13Z",
+  "started_at": "2026-10-26T16:49:13Z",
+  "completed_at": "2026-10-26T16:56:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. No blocking finding (no Critical, High or Medium). The code did not change during the check: the 13 changed or new files (list and sha256 below) have the same hashes at the start and at the end.\n\nMAP OF SURFACES (the area is touched).\n- Goes to the browser: tools/src/picker/public/tenant-look.js (new, served at /assets/ by the directory rule); the answers of the picker server built by public-data.js (look, desk, chips, option object, whatsapp). Items: Q7, text display. The page files do not read `look` yet (no `.look`, no innerHTML, outerHTML, insertAdjacentHTML, document.write in public/); the drawing is REQ-071.\n- Comes from outside: validate.js, v3-check.js, shape.js, lang-check.js, view.js (tenant file bytes read by `picker check` and by the loader of `serve`). Items: Q10, input check.\n- Writes files: none. The new code has no node: import, no write, rename, mkdir, no fs; `picker check` left the file and its folder unchanged in all 33 runs.\n- Holds a secret: none. Q7 search below.\n- The server goes by itself: no (no fetch, http, net, dns, child_process, timers, clock, random in the new code).\n- Customer data (tenants): public-data.js, limits.js (re-export), view.js. Item: Q8.\n- Photos of people: none. R3 not applicable (decision 0033).\n- No surface: tools/README.md (text only; its added lines hold no secret, machine path or project name), decisions/README.md, docs/requirements.yaml, docs/design and decisions/0085 (documents).\n\nTABLE OF ITEMS.\n- Q7 (secrets): applicable, met. Case-blind search for secret, token, password, api key, bearer, private key, long key patterns, home paths over the 8 changed and new source files of src/picker and over the added README lines: 0 matches. The same search over the page files of public/ (index.html, app.js, dom.js, flow.js, main.js, net.js, result.js, rules.js, say.js, screens.js, store.js, texts.js, tenant-look.js): the matches are the word `key` for object keys and the storage key name, none is a secret. No error text, line or public answer prints a file value except through show() (40 signs) or a number; the served /3 answers carry no max_per_hour, max_stored, owner field or path (checked by search on two served tenants).\n- Q8 (isolation of tenants): applicable, met. publicLook, lookOfView, ownLookOfView and fallbackLook keep no module state (search for Map, cache, module-level let: none in public-data.js and tenant-look.js); there is no cache to key. The shared constants are frozen; every call returns new objects (mutating a returned look changed neither the source view nor the next answer). Two /3 tenants and two demo tenants served together by the real `serve` command: each answer holds only its own look, whatsapp, name; interleaved calls A,B,A,B gave ABAB. The six /1 and /2 demo answers (3 languages x 2 tenants) have exactly the sha256 values of F4 of the design (ed7d6584..., b7ed6ba4..., b74367cc..., 952a99e2..., 53a70619..., 1a0b16d1...). An unknown tenant answers 404 in 0.3 ms, as before. The server takes no tenant id from a request body in this change (server.js is unchanged).\n- Q9 (raw queries): not applicable: no SQL, no database, no query string built in this change.\n- Q10 (explicit errors, timeouts, one request does not break others): applicable, met. No external call exists. A bad /3 file gives lines (code 1, stderr empty), never a throw: 728 in-process hostile probes and 33 runs of the real `picker check` command (23 hostile or valid files, 10 size and time files): 0 throws, 0 stderr output, every line is at most 18 words, ends with a dot, holds none of the words null, undefined, NaN, token, Unexpected and no `[object`, and never echoes a hostile string of more than 12 signs. Timing (single runs): nesting of 20000 and 5000 gives one E_JSON line in 70 ms; a 600 KB file is refused with code 2 in 68 ms; chips of 150000 items 209 ms; team of 150000 empty objects 762 ms (the old /2 path with 150000 empty options takes 398 ms, same shape); a 200000-sign headline, a 400000-sign staff name with a bad tail, 450000 digits of whatsapp: under 80 ms each. The regexes of the new code (staff name, mark, colour, whatsapp) are anchored classes, linear.\n- Q11 (requests to outside addresses): not applicable: the server makes no request. The new code builds no address: `whatsapp` holds ASCII digits only (probes with +, spaces, fullwidth and Arabic-Indic digits, a newline, tel: and an https address were all refused), the button address is for a later requirement; no field of the look is an image, address, style or code.\n- R3 (photos of people): not applicable: the product was dropped by decision 0033; the look holds no photo, the figures are ids of a closed catalogue.\n- R2 (Pixel Office): not applicable: no Pixel Office file is touched and nothing writes or reads events.\n\nHOSTILE INPUT (numbers of probes). 728 in-process probes of validateTenant on a copy of the code outside the project, each with an expected verdict written in the probe table (not computed by the code). 9826 colour probes (the 17x17x17 grid on the light and the dark accent) against an independent contrast function written with the older threshold 0.03928: 0 disagreements; the four boundary colours of F10 give the expected verdicts. 23 files through the real command, among them url(...), javascript:, </script>, expression(...), backslash escape, U+202E, U+200B, __proto__ as a key (reported as an extra field), a repeated key (E_JSON), a lone surrogate, nesting of 20000, numbers as strings, nested objects and arrays where scalars are expected, a wrong whatsapp address, 100000-sign names. Result: none of these can become a colour, mark, id, tag, whatsapp, glyph, desk or chip; only the closed catalogue of 15 object ids, 12 figures, 3 shirts, 4 glyphs, the form #rrggbb in lower case and integers pass. Names with `<`, quote, backslash, `:`, `(`, `;`, `/`, `@`, `_`, `%`, `&` are refused (E_FIELD); names with U+200B, U+200F, U+202E, a control sign or a lone half of a pair are refused (E_TEXT) before the character class runs. Public data: injected extra fields in look, colors, a staff member, an option object, a question and leads (including max_per_hour, max_stored and a token) did not reach the answer (26 checks).\n\nCHECKS BEYOND THE ITEMS. Writes files: not touched (no write path). Goes to the browser: the data is plain strings in application/json with nosniff and no-store; the picker page does not read `look` yet. See finding F-1 for the one condition on the later page.\n\nTENANT SAFETY POINTS ASKED BY ORCH. (1) closed catalogue, colours, characters, limits, surrogates, control and format signs: met, see above. (2) public data: met, the F4 values are equal, no owner field. (3) isolation: met, no cache. (4) the shared module has no import, no network, no timer, no eval, no Date, no random, no key of texts.js (search of the words import, require, node:, process, document, location, fetch, eval, Date, setTimeout, and of every snake-case word: empty; one comment says `no random`, it is a word in a comment, not a call). (5) whatsapp: digits only, 10 to 15, nothing builds an address (the word whatsapp appears only in validate.js, v3-check.js and public-data.js). (6) errors: no foreign value except through show(); messages M05 to M37 obey the 18-word rule in the probes. (7) `picker check` is read-only and does not hang.",
+    "findings": [
+      {
+        "id": "F-1",
+        "severity": "Low",
+        "item": "Q7 / text display (condition for the next requirement, not a defect of this code)",
+        "place": "tools/src/picker/v3-check.js:100-108 (role, says), :111-117 (tagline, industry, headline); tools/src/picker/public-data.js:71-90",
+        "what": "The free-text fields of the look (tagline, industry, headline, role, says) accept markup-like text on purpose (`<script>`, `url(...)`, `javascript:`, quotes, backslash are normal text, as for the other texts of /2 and /3 files); they leave the server unchanged in the JSON answer. Nothing is wrong today, because no page code reads `look`. If the page of REQ-071 ever puts such a text into innerHTML, an attribute or a style, a tenant file would run script in the visitor's browser.",
+        "fix": "No code change now. REQ-071 (the drawing) must show every look text through textContent only, set colours only from the checked #rrggbb value, and never build a URL or style text from a look field; its security gate should repeat the check with the hostile samples (see `</script>`, `url(...)` cases of this check)."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "sha256 of the 13 changed and new files (git diff --name-only against the base tag plus untracked files outside handoffs), at the start and at the end",
+        "output": "diff of the two lists is empty: HASHES-EQUAL. First 16 signs:\ne7c7f99f43e55cbb  decisions/0085-picker-look-format-conventions.md\n8fb81c179894293c  decisions/README.md\n7f5a937e5ccbca0a  docs/design/REQ-069-tenant-look-format.md\na8fafcecfc3766c9  docs/requirements.yaml\n9c1731d4b0fc0901  tools/README.md\nd6da76d84cf27a89  tools/src/picker/lang-check.js\n957f1c3a94f713bd  tools/src/picker/limits.js\n73c1d729a12562c2  tools/src/picker/public-data.js\n5ffd7380c8d385d5  tools/src/picker/public/tenant-look.js\ne2dbc56e18c97e7b  tools/src/picker/shape.js\nd037726777bebad7  tools/src/picker/v3-check.js\nddc6706fa069f58b  tools/src/picker/validate.js\n0420df96b508ae69  tools/src/picker/view.js"
+      },
+      {
+        "command": "node --test test/picker-*.test.js (picker test files only, once)",
+        "output": "tests 370, pass 363, fail 7, skipped 0; red: PK-2a, PK-6e, PK-7c, PE-8d, LG-1c, LG-1c2, QS-1 (the seven the design predicts). PK-6e and PK-7c are red only because the file list of src/picker gained shape.js and v3-check.js (expected vs actual list); a separate search of those new files for write, fs, node: words is empty."
+      },
+      {
+        "command": "case-blind search for secret|token|password|api key|bearer|BEGIN PRIVATE|home paths over the changed source files; the same over public/ page files; the same over the added README lines",
+        "output": "source files: 0 matches (exit 1); page files: only the word `key` in the sense of object key or storage key name (dom.js, flow.js, net.js, say.js, store.js, texts.js); added README lines: 0 matches"
+      },
+      {
+        "command": "search of public/tenant-look.js for import, require, node:, process, document, location, fetch, eval, Function(, Date, setTimeout, Math.random, innerHTML; search of public/ for REQ-, ISS-, WF-, AP-, handoff, ORCH, decisions",
+        "output": "code: empty (exit 1). One comment at line 3 uses the words `no random`. public/ search for the project words: empty (exit 1)"
+      },
+      {
+        "command": "in-process probes on a scratch copy outside the project: validateTenant with 728 hostile cases against expected verdicts",
+        "output": "probes 728 bad 0"
+      },
+      {
+        "command": "in-process contrast grid: 17x17x17 colours on light.accent and dark.accent against an independent function",
+        "output": "probes 9826 disagreements 0 accepted light/dark 2540/3576; #c67d42 ok, #1999c6 ok, #76691d ok, #c22c5c ok"
+      },
+      {
+        "command": "23 files through `picker check` on the scratch copy, each in its own folder, folder listing and mtime compared before and after",
+        "output": "all unchanged; exit 0 for the valid file and the BOM file (BOM tolerance is the released behaviour), exit 1 for the 20 hostile files, exit 2 for the 600 KB file; stderr empty except the code 2 line; lines of the shape <file>: <place>: <code>: <text>; no hostile string in any line"
+      },
+      {
+        "command": "size and time files through `picker check` (chips 150000, team 150000 empty objects, 200000-sign headline, 400000-sign name, 450000 digits)",
+        "output": "209 ms, 762 ms, 79 ms, 79 ms, 77 ms; exit 1; at most 101 lines each (100 lines and the line `И ещё ошибок`)"
+      },
+      {
+        "command": "`picker serve` on a scratch folder with the two demo tenants and two /3 tenants (one with a hostile headline); curl of 6 demo answers, 2 /3 answers, an unknown tenant, headers",
+        "output": "six sha256 equal to F4; /3 answers have look after name, desk, chips, option object, whatsapp in leads, no max_per_hour, no max_stored, no data of the other tenant; headers application/json, nosniff, no-store; unknown tenant 404 in under 1 ms"
+      },
+      {
+        "command": "public data checks in-process (26): fresh objects, frozen constants, fallback look, hostile arguments to the shared functions, injected fields, interleaved tenants",
+        "output": "checks 26 bad 0"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "For ORCH and REVIEWER (not a security finding): P2 of the build handoff. With min 10, max 5 and chips [7, 3] the check prints the own line of the question and also E_LIMIT at chips[0] and chips[1] with `от 10 до 5`. It is safe (no word null, 18-word rule holds) but reads oddly; TEST-DESIGNER should pin it or the designer should skip the chips range when min is not below max."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "The shared pick() of view.js recognises a three-language text by its keys (exactly ru, kk, en). A future /3 field must not be an object with exactly those three keys unless it is a text; the fields added by this requirement are not (staff member, colors, object have other keys). No action."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "The staff name accepts a name made only of dots, hyphens, apostrophes and spaces (decision 0085 item 8) and combining marks (up to 30 signs). It is data shown as text, so it is safe; recorded so that REQ-071 does not rely on a letter being present."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

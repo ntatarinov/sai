@@ -145,7 +145,9 @@ const hasOwn = (o, k) => Object.hasOwn(o, k);
 function fileSite(id, bytes) {
   const plain = JSON.parse(bytes.toString("utf8"));
   const version = sha256(bytes);
-  const v2 = plain.schema === "sai-picker-tenant/2";
+  const v2 = ["sai-picker-tenant/2", "sai-picker-tenant/3"].includes(
+    plain.schema,
+  );
   return {
     id,
     plain,

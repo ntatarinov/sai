@@ -11,7 +11,9 @@ import { test } from "node:test";
 import { checkFile } from "../src/picker/check.js";
 import { DEFAULT_PORT, HOST } from "../src/picker/config.js";
 import { parseServeArguments } from "../src/picker/serve.js";
+import * as publicData from "../src/picker/public-data.js";
 import { publicQuestionnaire } from "../src/picker/public-data.js";
+import { loadTenants } from "../src/picker/tenants.js";
 import { installFaults } from "./fault-inject.js";
 import { deepFreeze, sets } from "./picker-engine-helpers.js";
 import {
@@ -56,6 +58,18 @@ import {
   stringValues,
   textFor,
 } from "./picker-server-helpers.js";
+import {
+  OFFICES,
+  expectedFallback,
+  expectedLook,
+  expectedObject,
+  languageView,
+  lookFixtureBytes,
+  lookFixtureJson,
+  lookStrings,
+  officeDir,
+  walkNumbers,
+} from "./picker-look-helpers.js";
 
 const PAGE = fs.readFileSync(path.join(PUBLIC_DIR, "index.html"));
 const SEE = "Справка: npm run picker -- --help";
@@ -465,6 +479,21 @@ test("SV-2a: for each tenant and language the questionnaire equals the object bu
       assert.equal(res.text, JSON.stringify(want), `${id} ${lang}: key order`);
     }
   }
+  // the two files of the form /3: the oracle is the form of design 7.1 of REQ-069
+  const office = await startForTest(t, officeDir(t));
+  for (const id of OFFICES) {
+    const plain = lookFixtureJson(id);
+    const bytes = lookFixtureBytes(id);
+    for (const lang of LANGS) {
+      const res = await request(office.port, {
+        path: `/t/${id}/api/questionnaire?lang=${lang}`,
+      });
+      assert.equal(res.status, 200, `${id} ${lang}`);
+      const want = expectedQuestionnaire(plain, lang, sha256(bytes));
+      assert.deepEqual(JSON.parse(res.text), want, `${id} ${lang}`);
+      assert.equal(res.text, JSON.stringify(want), `${id} ${lang}: key order`);
+    }
+  }
 });
 
 const ALLOWED_QUESTION = [
@@ -500,6 +529,8 @@ const NEVER = [
   "price_text",
   "file",
   "path",
+  "max_per_hour",
+  "max_stored",
 ];
 
 test("SV-2b: the keys of every level of the questionnaire are those of the table of design 5.3, and none of the forbidden names stands anywhere", async (t) => {
@@ -555,6 +586,115 @@ test("SV-2b: the keys of every level of the questionnaire are those of the table
         for (const k of ["id", "title", "type", "required"])
           assert.ok(p.keys.includes(k), k);
       }
+    }
+  }
+  // the files of the form /3: the keys of every level are those of 7.1 and 7.2 of REQ-069
+  const office = await startForTest(t, officeDir(t));
+  const QUESTION_ORDER = [
+    "id",
+    "title",
+    "help",
+    "type",
+    "required",
+    "options",
+    "min",
+    "max",
+    "unit",
+    "chips",
+    "desk",
+    "show_if",
+  ];
+  for (const id of OFFICES) {
+    const plain = lookFixtureJson(id);
+    for (const lang of LANGS) {
+      const { json } = await getJson(
+        office.port,
+        `/t/${id}/api/questionnaire?lang=${lang}`,
+      );
+      const places = keyPaths(json);
+      const keysAt = (place) =>
+        places.filter((p) => p.place === place).map((p) => p.keys);
+      const label = `${id} ${lang}`;
+      assert.deepEqual(
+        keysAt("$"),
+        [
+          [
+            "version",
+            "lang",
+            "languages",
+            "name",
+            "look",
+            "intro",
+            "questions_min",
+            "questions_max",
+            "questions",
+            "ai",
+            "leads",
+          ],
+        ],
+        label,
+      );
+      assert.deepEqual(
+        keysAt("$.look"),
+        [["mark", "tagline", "industry", "headline", "colors", "team"]],
+        label,
+      );
+      assert.deepEqual(keysAt("$.look.colors"), [["light", "dark"]], label);
+      assert.deepEqual(keysAt("$.look.colors.light"), [["accent", "accent2"]]);
+      assert.deepEqual(keysAt("$.look.colors.dark"), [["accent", "accent2"]]);
+      assert.deepEqual(
+        keysAt("$.look.team[]"),
+        Array(4).fill(["name", "role", "says", "figure", "shirt"]),
+        label,
+      );
+      assert.deepEqual(
+        keysAt("$.questions[]"),
+        plain.questions.map((q) =>
+          QUESTION_ORDER.filter((k) => Object.hasOwn(q, k)),
+        ),
+        label,
+      );
+      assert.deepEqual(
+        keysAt("$.questions[].options[]"),
+        plain.questions.flatMap((q) =>
+          (q.options ?? []).map((o) =>
+            Object.hasOwn(o, "object")
+              ? ["id", "label", "object"]
+              : ["id", "label"],
+          ),
+        ),
+        label,
+      );
+      assert.deepEqual(
+        keysAt("$.questions[].options[].object"),
+        plain.questions.flatMap((q) =>
+          (q.options ?? [])
+            .filter((o) => Object.hasOwn(o, "object"))
+            .map((o) => Object.keys(expectedObject(o.object))),
+        ),
+        label,
+      );
+      assert.deepEqual(
+        keysAt("$.leads"),
+        [
+          [
+            "contact_fields",
+            "whatsapp",
+            "consent_text",
+            "operator_name",
+            "privacy_contact",
+            "retention_days",
+          ],
+        ],
+        label,
+      );
+      for (const p of places)
+        for (const forbidden of NEVER)
+          assert.equal(
+            p.keys.includes(forbidden),
+            false,
+            `${label} ${p.place}: ${forbidden}`,
+          );
     }
   }
 });
@@ -850,6 +990,71 @@ test("SV-2g: publicQuestionnaire on a view with extra fields at every level give
     out.questions[0].show_if[0].any_of,
     view.questions[0].show_if[0].any_of,
   );
+  // a view of the form /3 with extra fields at every new level (REQ-069): only the listed
+  // fields leave, in the order of 7.1, the input is frozen and stays as it was
+  const plain = lookFixtureJson("ok-office-a");
+  const noisy = structuredClone(languageView(plain, "kk"));
+  noisy.look.logo = "x";
+  noisy.look.colors.sepia = { accent: "#000000" };
+  noisy.look.colors.light.extra = 1;
+  noisy.look.colors.dark.extra = 1;
+  for (const staff of noisy.look.team) staff.age = 30;
+  for (const q of noisy.questions) {
+    q.points = 5;
+    if (q.chips !== undefined) q.chips.extra = 1;
+    for (const o of q.options ?? []) {
+      o.score = 3;
+      if (o.object !== undefined) o.object.size = 4;
+    }
+  }
+  noisy.leads.internal = "x";
+  noisy.leads.token = "y";
+  const noisyText = JSON.stringify(noisy);
+  deepFreeze(noisy);
+  const options = { version: "v", lang: "kk", languages: ["ru", "kk", "en"] };
+  const wanted = expectedQuestionnaire(plain, "kk", "v");
+  const got = publicQuestionnaire(noisy, options);
+  assert.equal(JSON.stringify(got), JSON.stringify(wanted));
+  assert.deepEqual(got, wanted);
+  assert.equal(JSON.stringify(noisy), noisyText, "the input is not changed");
+  assert.deepEqual(Object.keys(got.look), [
+    "mark",
+    "tagline",
+    "industry",
+    "headline",
+    "colors",
+    "team",
+  ]);
+  assert.deepEqual(Object.keys(got.look.team[0]), [
+    "name",
+    "role",
+    "says",
+    "figure",
+    "shirt",
+  ]);
+  assert.deepEqual(Object.keys(got.leads), [
+    "contact_fields",
+    "whatsapp",
+    "consent_text",
+    "operator_name",
+    "privacy_contact",
+    "retention_days",
+  ]);
+  const own = publicData.publicLook(noisy.look);
+  assert.equal(JSON.stringify(own), JSON.stringify(expectedLook(plain, "kk")));
+  assert.equal(JSON.stringify(got).includes("max_per_hour"), false);
+  assert.equal(JSON.stringify(got).includes("internal"), false);
+  // the arrays and objects are copies
+  assert.notEqual(got.questions[2].chips, noisy.questions[2].chips);
+  assert.notEqual(got.look.team, noisy.look.team);
+  assert.notEqual(got.look.colors, noisy.look.colors);
+  // a view of the form /2 (no look of its own): no look, no whatsapp
+  const old = publicQuestionnaire(languageView(demoPlain("uchet-pro"), "ru"), {
+    ...options,
+    lang: "ru",
+  });
+  assert.equal(Object.hasOwn(old, "look"), false);
+  assert.equal(Object.hasOwn(old.leads, "whatsapp"), false);
 });
 
 test("SV-2h: two requests give the same bytes; the type is application/json; charset=utf-8; Content-Length is the length of the body", async (t) => {
@@ -2119,6 +2324,473 @@ test("SV-8b: on a running server 50 different requests open connections only to 
     assert.ok(
       host === undefined || host === "127.0.0.1" || host === "localhost",
       String(host),
+    );
+  }
+});
+
+// ---------------------------------------------------------------------- SV-9
+
+// The sha256 of the six answers for the two demo tenants, obtained by running the server
+// on the base tag of the run (design REQ-069, F4): they must stay as they are.
+const DEMO_HASHES = {
+  "uchet-pro": {
+    ru: "ed7d65846b4885f0722b6428aab07080820c6cf597681a0ca462d6ebbdcc1e96",
+    kk: "b7ed6ba4f73efa9842cead1006f0c9e6038397441f8345c8576f6d57b47b4081",
+    en: "b74367ccc8716c3780275eef00ac3fc1171cc119166c07afdf788a845cf4d95e",
+  },
+  "svet-marketing": {
+    ru: "952a99e23c9c060a1b182028aee1c3721220db4b8221745412ebef8ce0ceda60",
+    kk: "53a706196b498567a1e23589339a6b468d0fff61d06defbe5332a54ae9f75024",
+    en: "1a0b16d18ea49937ff863d6fe030728148ece5bd9fb7fa7ff9ab725a8fa3fc7c",
+  },
+};
+const NEW_KEYS = ["look", "desk", "chips", "object", "whatsapp"];
+const OFFICE_NUMBERS = {
+  "ok-office-a": { max_per_hour: 37, max_stored: 4217 },
+  "ok-office-b": { max_per_hour: 41, max_stored: 5309 },
+};
+
+test("SV-9a: two files of the form /3 (A and B) in a temporary folder - for ru, kk and en the questionnaire holds the look, the desk of the questions that have it, the quick numbers, the objects of the options and whatsapp in leads; the keys of each level and the values equal the file in that language; the version is one for the three languages; max_per_hour and max_stored are not in the answer", async (t) => {
+  const s = await startForTest(t, officeDir(t));
+  for (const id of OFFICES) {
+    const plain = lookFixtureJson(id);
+    const bytes = lookFixtureBytes(id);
+    assert.equal(plain.schema, "sai-picker-tenant/3");
+    const versions = new Set();
+    for (const lang of LANGS) {
+      const label = `${id} ${lang}`;
+      const res = await getJson(
+        s.port,
+        `/t/${id}/api/questionnaire?lang=${lang}`,
+      );
+      assert.equal(res.status, 200, label);
+      const answer = res.json;
+      versions.add(answer.version);
+      assert.equal(answer.lang, lang, label);
+      assert.deepEqual(answer.languages, LANGS, label);
+      // the look in the language of the file
+      assert.deepEqual(answer.look, expectedLook(plain, lang), label);
+      assert.equal(answer.look.headline, plain.look.headline[lang], label);
+      assert.equal(answer.look.team[0].name, plain.look.team[0].name, label);
+      assert.equal(
+        answer.look.team[1].role,
+        plain.look.team[1].role[lang],
+        label,
+      );
+      assert.equal(
+        answer.look.colors.dark.accent,
+        plain.look.colors.dark.accent,
+        label,
+      );
+      // desks, quick numbers and objects
+      plain.questions.forEach((q, i) => {
+        const got = answer.questions[i];
+        assert.equal(got.desk, q.desk, `${label} q${i} desk`);
+        assert.deepEqual(got.chips, q.chips, `${label} q${i} chips`);
+        assert.equal(Object.hasOwn(got, "chips"), Object.hasOwn(q, "chips"));
+        (q.options ?? []).forEach((o, j) => {
+          assert.deepEqual(
+            got.options[j].object,
+            Object.hasOwn(o, "object") ? expectedObject(o.object) : undefined,
+            `${label} q${i} o${j}`,
+          );
+          assert.equal(
+            Object.hasOwn(got.options[j], "object"),
+            Object.hasOwn(o, "object"),
+          );
+        });
+      });
+      assert.equal(answer.leads.whatsapp, plain.leads.whatsapp, label);
+      assert.deepEqual(
+        answer.leads.contact_fields,
+        plain.leads.contact_fields,
+        label,
+      );
+      // the whole answer is what the oracle builds, key order included
+      const want = expectedQuestionnaire(plain, lang, sha256(bytes));
+      assert.deepEqual(answer, want, label);
+      assert.equal(res.text, JSON.stringify(want), `${label}: key order`);
+      // the limits of the lead server stay on the server
+      assert.equal(res.text.includes("max_per_hour"), false, label);
+      assert.equal(res.text.includes("max_stored"), false, label);
+      const numbers = walkNumbers(answer);
+      assert.equal(
+        numbers.includes(OFFICE_NUMBERS[id].max_per_hour),
+        false,
+        label,
+      );
+      assert.equal(
+        numbers.includes(OFFICE_NUMBERS[id].max_stored),
+        false,
+        label,
+      );
+      assert.equal(plain.leads.max_per_hour, OFFICE_NUMBERS[id].max_per_hour);
+      assert.equal(plain.leads.max_stored, OFFICE_NUMBERS[id].max_stored);
+    }
+    assert.deepEqual([...versions], [sha256(bytes)], `${id}: one version`);
+  }
+});
+
+test("SV-9b: isolation (Q8) - no string of the look of B stands in any answer of A in any language, and the other way round; the answer of each holds its own headline and its own first staff name, also after the other tenant has been asked in between", async (t) => {
+  const s = await startForTest(t, officeDir(t));
+  const SHARED = /^(f(0[1-9]|1[0-2])|accent|accent2|ink)$/u;
+  const answers = {};
+  for (const id of OFFICES) {
+    answers[id] = {};
+    for (const lang of LANGS) {
+      const res = await getJson(
+        s.port,
+        `/t/${id}/api/questionnaire?lang=${lang}`,
+      );
+      answers[id][lang] = res;
+    }
+  }
+  for (const [mine, other] of [OFFICES, [...OFFICES].reverse()]) {
+    const plainMine = lookFixtureJson(mine);
+    const plainOther = lookFixtureJson(other);
+    const foreign = [...lookStrings(plainOther)].filter((x) => !SHARED.test(x));
+    assert.ok(foreign.length > 30, `${other}: ${foreign.length} strings`);
+    for (const lang of LANGS) {
+      const { json, text } = answers[mine][lang];
+      const own = new Set(stringValues(json));
+      for (const f of foreign) {
+        assert.equal(own.has(f), false, `${mine} ${lang}: «${f}» of ${other}`);
+        if ([...f].length >= 15)
+          assert.equal(text.includes(f), false, `${mine} ${lang}: raw «${f}»`);
+      }
+      // the positive side: the own look is there
+      assert.equal(json.look.headline, plainMine.look.headline[lang]);
+      assert.equal(json.look.team[0].name, plainMine.look.team[0].name);
+      assert.equal(json.look.mark, plainMine.look.mark);
+      assert.equal(
+        json.look.colors.light.accent,
+        plainMine.look.colors.light.accent,
+      );
+      assert.equal(json.leads.whatsapp, plainMine.leads.whatsapp);
+      assert.notEqual(json.look.headline, plainOther.look.headline[lang]);
+    }
+  }
+  // the order of the requests changes nothing
+  for (const id of [...OFFICES, ...OFFICES].reverse()) {
+    for (const lang of LANGS) {
+      const again = await request(s.port, {
+        path: `/t/${id}/api/questionnaire?lang=${lang}`,
+      });
+      assert.equal(again.text, answers[id][lang].text, `${id} ${lang}`);
+    }
+  }
+});
+
+test("SV-9c: the six answers for the two demo tenants have the sha256 of the base tag (literals) and hold none of the keys look, desk, chips, object and whatsapp", async (t) => {
+  const s = await startForTest(t, demoDir(t));
+  for (const id of IDS) {
+    for (const lang of LANGS) {
+      const res = await request(s.port, {
+        path: `/t/${id}/api/questionnaire?lang=${lang}`,
+      });
+      assert.equal(res.status, 200, `${id} ${lang}`);
+      assert.equal(sha256(res.body), DEMO_HASHES[id][lang], `${id} ${lang}`);
+      for (const place of keyPaths(JSON.parse(res.text)))
+        for (const key of NEW_KEYS)
+          assert.equal(
+            place.keys.includes(key),
+            false,
+            `${id} ${lang} ${place.place}: ${key}`,
+          );
+    }
+  }
+  // the copies of the form /1 give their answer without the new keys too
+  const legacy = await startForTest(
+    t,
+    makeTenantDir(t, { "uchet-pro.json": legacyBytes("uchet-pro") }),
+  );
+  const res = await getJson(legacy.port, "/t/uchet-pro/api/questionnaire");
+  for (const place of keyPaths(res.json))
+    for (const key of NEW_KEYS)
+      assert.equal(place.keys.includes(key), false, key);
+});
+
+test("SV-9d: publicQuestionnaire and publicLook on views with extra fields at every level (the look, its colours, a theme, a staff member, a question, a quick-number list, an option, an office object, the leads) give only the listed fields in the order of the design; a frozen input is not changed; a look with no tagline gives null; a view with no look of its own gives no look", () => {
+  for (const [id, lang] of [
+    ["ok-office-b", "en"],
+    ["ok-no-tagline", "ru"],
+  ]) {
+    const plain = lookFixtureJson(id);
+    const base = languageView(plain, lang);
+    const noisy = structuredClone(base);
+    noisy.look.extra = { a: 1 };
+    noisy.look.colors.third = { accent: "#000000", accent2: "#000000" };
+    noisy.look.colors.light.accent3 = "#111111";
+    noisy.look.colors.dark.accent3 = "#222222";
+    noisy.look.team.forEach((staff, i) => {
+      staff.age = 30 + i;
+      staff.photo = "x";
+    });
+    noisy.leads.max_per_hour = 7;
+    noisy.questions.forEach((q) => {
+      q.internal = "x";
+      for (const o of q.options ?? []) {
+        o.points = 9;
+        if (o.object !== undefined) o.object.color = "red";
+      }
+    });
+    const text = JSON.stringify(noisy);
+    deepFreeze(noisy);
+    const look = publicData.publicLook(noisy.look);
+    assert.deepEqual(look, expectedLook(plain, lang), id);
+    assert.equal(
+      JSON.stringify(look),
+      JSON.stringify(expectedLook(plain, lang)),
+      id,
+    );
+    assert.equal(
+      look.tagline,
+      Object.hasOwn(plain.look, "tagline") ? plain.look.tagline[lang] : null,
+    );
+    const out = publicQuestionnaire(noisy, {
+      version: "v",
+      lang,
+      languages: LANGS,
+    });
+    assert.equal(
+      JSON.stringify(out),
+      JSON.stringify(expectedQuestionnaire(plain, lang, "v")),
+      id,
+    );
+    assert.equal(
+      JSON.stringify(noisy),
+      text,
+      `${id}: the input is not changed`,
+    );
+    assert.notEqual(out.look, noisy.look);
+  }
+  assert.equal(
+    expectedLook(lookFixtureJson("ok-no-tagline"), "ru").tagline,
+    null,
+  );
+  // a view with no look of its own
+  const two = languageView(demoPlain("svet-marketing"), "kk");
+  const out = publicQuestionnaire(deepFreeze(two), {
+    version: "v",
+    lang: "kk",
+    languages: LANGS,
+  });
+  assert.equal(Object.hasOwn(out, "look"), false);
+  assert.deepEqual(Object.keys(out), [
+    "version",
+    "lang",
+    "languages",
+    "name",
+    "intro",
+    "questions_min",
+    "questions_max",
+    "questions",
+    "ai",
+    "leads",
+  ]);
+});
+
+// The three kinds of tenant in registries built from temporary folders.
+function threeKinds(t) {
+  const mixed = loadTenants(
+    makeTenantDir(t, {
+      "ok-office-a.json": lookFixtureBytes("ok-office-a"),
+      "uchet-pro.json": demoBytes("uchet-pro"),
+    }),
+  ).registry;
+  const legacy = loadTenants(
+    makeTenantDir(t, { "uchet-pro.json": legacyBytes("uchet-pro") }),
+  ).registry;
+  return {
+    three: mixed.get("ok-office-a"),
+    two: mixed.get("uchet-pro"),
+    one: legacy.get("uchet-pro"),
+  };
+}
+
+test("SV-9e: lookOfView (for the tenant's own page and the progress data) - a /3 view gives its own look per language, a /2 view and a /1 view give the fallback look with the name of the tenant in that language, never null for any of the three kinds; every call gives a new object; the registry records of the three kinds have the same six keys", (t) => {
+  const kinds = threeKinds(t);
+  const plain3 = lookFixtureJson("ok-office-a");
+  const plain2 = demoPlain("uchet-pro");
+  const plain1 = JSON.parse(legacyBytes("uchet-pro").toString("utf8"));
+  const KEYS = [
+    "id",
+    "fileName",
+    "version",
+    "languages",
+    "views",
+    "questionnaires",
+  ];
+  for (const entry of Object.values(kinds))
+    assert.deepEqual(Object.keys(entry), KEYS);
+  for (const lang of LANGS) {
+    const view = kinds.three.views.get(lang);
+    const look = publicData.lookOfView(view);
+    assert.deepEqual(look, expectedLook(plain3, lang), `/3 ${lang}`);
+    assert.notEqual(look, publicData.lookOfView(view));
+    assert.deepEqual(look, publicData.lookOfView(view));
+    const view2 = kinds.two.views.get(lang);
+    assert.equal(view2.name, plain2.name[lang]);
+    const fallback = publicData.lookOfView(view2);
+    assert.notEqual(fallback, null);
+    assert.deepEqual(
+      fallback,
+      expectedFallback(plain2.name[lang]),
+      `/2 ${lang}`,
+    );
+    assert.equal(fallback.headline, plain2.name[lang]);
+    assert.notEqual(fallback, publicData.lookOfView(view2));
+    assert.equal(
+      fallback.team.every((s) => s.role === null && s.name === null),
+      true,
+    );
+  }
+  const view1 = kinds.one.views.get("ru");
+  const fallback1 = publicData.lookOfView(view1);
+  assert.notEqual(fallback1, null);
+  assert.deepEqual(fallback1, expectedFallback(plain1.name));
+  assert.equal(fallback1.headline, plain1.name);
+  // the fallback is made from the name, so the name decides the mark
+  assert.equal(fallback1.mark, expectedFallback(plain1.name).mark);
+  // the argument is not changed (the views are frozen)
+  assert.equal(Object.isFrozen(view1), true);
+  assert.equal(Object.isFrozen(kinds.three.views.get("ru").look), true);
+});
+
+test("SV-9f: ownLookOfView (for the board, decisions/0085 items 7 and 8) - a /3 view gives its own look, equal to publicLook of the view and to the look inside the questionnaire of the same language; a /2 view and a /1 view give exactly null; every call gives a new object; the server has no other function that makes a look for the board", (t) => {
+  const kinds = threeKinds(t);
+  for (const lang of LANGS) {
+    const view = kinds.three.views.get(lang);
+    const before = JSON.stringify(view);
+    const own = publicData.ownLookOfView(view);
+    assert.deepEqual(own, publicData.publicLook(view.look), lang);
+    assert.deepEqual(
+      own,
+      JSON.parse(kinds.three.questionnaires.get(lang)).look,
+      lang,
+    );
+    assert.deepEqual(own, publicData.lookOfView(view), lang);
+    assert.deepEqual(
+      own,
+      expectedLook(lookFixtureJson("ok-office-a"), lang),
+      lang,
+    );
+    assert.notEqual(own, publicData.ownLookOfView(view));
+    assert.notEqual(own.team, publicData.ownLookOfView(view).team);
+    assert.equal(JSON.stringify(view), before, "the argument is not changed");
+    assert.equal(
+      publicData.ownLookOfView(kinds.two.views.get(lang)),
+      null,
+      `/2 ${lang}`,
+    );
+  }
+  assert.equal(publicData.ownLookOfView(kinds.one.views.get("ru")), null);
+  // the functions of the module: the board builds its fallback itself in the browser
+  assert.deepEqual(Object.keys(publicData).sort(), [
+    "lookOfView",
+    "ownLookOfView",
+    "publicLook",
+    "publicQuestionnaire",
+    "publicResult",
+  ]);
+});
+
+// The leads of ok-office-a without the key `whatsapp`, as the visitor must get them
+// (literals, the key order of the design: contact_fields, whatsapp, consent_text,
+// operator_name, privacy_contact, retention_days).
+const LEADS_NO_WHATSAPP = {
+  ru: {
+    contact_fields: ["phone", "telegram"],
+    whatsapp: null,
+    consent_text: "Я согласен на хранение моей заявки.",
+    operator_name: "Пример-Лавка, вымышленная фирма",
+    privacy_contact: "Напишите на privacy@example.invalid.",
+    retention_days: 30,
+  },
+  kk: {
+    contact_fields: ["phone", "telegram"],
+    whatsapp: null,
+    consent_text: "Қазақша мәтін 33",
+    operator_name: "Пример-Лавка, вымышленная фирма",
+    privacy_contact: "Напишите на privacy@example.invalid.",
+    retention_days: 30,
+  },
+  en: {
+    contact_fields: ["phone", "telegram"],
+    whatsapp: null,
+    consent_text: "English text 33",
+    operator_name: "Пример-Лавка, вымышленная фирма",
+    privacy_contact: "Напишите на privacy@example.invalid.",
+    retention_days: 30,
+  },
+};
+const LEADS_KEYS = [
+  "contact_fields",
+  "whatsapp",
+  "consent_text",
+  "operator_name",
+  "privacy_contact",
+  "retention_days",
+];
+
+test("SV-9g: a file of the form /3 with the leads enabled and no leads.whatsapp - for ru, kk and en the served answer holds `whatsapp: null` as the second key of leads (after contact_fields), and publicQuestionnaire gives the same for a view without the field", async (t) => {
+  const plain = lookFixtureJson("ok-office-a");
+  assert.equal(plain.leads.enabled, true);
+  delete plain.leads.whatsapp;
+  assert.equal(Object.hasOwn(plain.leads, "whatsapp"), false);
+  const bytes = Buffer.from(`${JSON.stringify(plain, null, 2)}\n`, "utf8");
+  const dir = makeTenantDir(t, { "ok-office-a.json": bytes });
+  const s = await startForTest(t, dir);
+  for (const lang of LANGS) {
+    const label = `served ${lang}`;
+    const res = await getJson(
+      s.port,
+      `/t/ok-office-a/api/questionnaire?lang=${lang}`,
+    );
+    assert.equal(res.status, 200, label);
+    assert.equal(res.json.version, sha256(bytes), label);
+    assert.deepEqual(Object.keys(res.json.leads), LEADS_KEYS, label);
+    assert.equal(Object.hasOwn(res.json.leads, "whatsapp"), true, label);
+    assert.equal(res.json.leads.whatsapp, null, label);
+    assert.deepEqual(res.json.leads, LEADS_NO_WHATSAPP[lang], label);
+    // the key stands in the text of the answer, at its place
+    assert.equal(
+      res.text.includes(
+        `"leads":{"contact_fields":["phone","telegram"],"whatsapp":null,"consent_text":`,
+      ),
+      true,
+      `${label}: the text`,
+    );
+    assert.equal(
+      res.text.includes(`"leads":${JSON.stringify(LEADS_NO_WHATSAPP[lang])}`),
+      true,
+      `${label}: the whole leads`,
+    );
+  }
+  // the same through the function, on a frozen view of every language
+  for (const lang of LANGS) {
+    const label = `function ${lang}`;
+    const view = deepFreeze(languageView(plain, lang));
+    assert.equal(Object.hasOwn(view.leads, "whatsapp"), false, label);
+    const out = publicQuestionnaire(view, {
+      version: "v",
+      lang,
+      languages: LANGS,
+    });
+    assert.deepEqual(Object.keys(out.leads), LEADS_KEYS, label);
+    assert.equal(Object.hasOwn(out.leads, "whatsapp"), true, label);
+    assert.equal(out.leads.whatsapp, null, label);
+    assert.equal(
+      JSON.stringify(out.leads),
+      JSON.stringify(LEADS_NO_WHATSAPP[lang]),
+      label,
+    );
+    assert.equal(
+      JSON.stringify(out).includes(
+        `"contact_fields":["phone","telegram"],"whatsapp":null,"consent_text":`,
+      ),
+      true,
+      `${label}: the text`,
     );
   }
 });

@@ -32,8 +32,10 @@ export const CORE_MODULES = [
   "json.js",
   "text-rules.js",
   "places.js",
+  "shape.js",
   "conditions.js",
   "lang-check.js",
+  "v3-check.js",
   "validate.js",
   "report.js",
   "check.js",
@@ -319,7 +321,7 @@ export const EXPECTED = {
   "e-field-schema.json": {
     code: 1,
     lines: [
-      "e-field-schema.json: schema: E_FIELD: Допустимо только: sai-picker-tenant/1 или sai-picker-tenant/2. Исправьте значение.",
+      "e-field-schema.json: schema: E_FIELD: Допустимо только: sai-picker-tenant/1, sai-picker-tenant/2 или sai-picker-tenant/3. Исправьте значение.",
     ],
   },
   "e-id-capital.json": {

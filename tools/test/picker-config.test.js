@@ -808,7 +808,7 @@ test("PK-7c: each module imports exactly the node: modules of its row and holds 
     const words = (text.match(/node:/gu) ?? []).length;
     assert.equal(words, imported.length, `${file}: the word node: elsewhere`);
   }
-  assert.equal(CORE_MODULES.length, 18);
+  assert.equal(CORE_MODULES.length, 20);
 });
 
 // ---------------------------------------------------------------------- PK-8

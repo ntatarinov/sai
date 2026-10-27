@@ -1,7 +1,7 @@
 // The check of a text for the visitor in a file of the form /2 (design REQ-061, 5.3):
 // an object with exactly the languages ru, kk and en. It does not change the value and
 // does not throw on any value that comes from JSON.
-import { FORMAT_V2, LANGUAGES } from "./limits.js";
+import { FORMAT_V2, FORMAT_V3, LANGUAGES } from "./limits.js";
 import { show } from "./places.js";
 
 // "ru, kk и en": the list of languages for the messages, built from LANGUAGES.
@@ -16,6 +16,27 @@ export function isFormatV2(doc) {
     Object.hasOwn(doc, "schema") &&
     doc.schema === FORMAT_V2
   );
+}
+
+// The same for /3 (design REQ-069, D1).
+export function isFormatV3(doc) {
+  return (
+    doc !== null &&
+    typeof doc === "object" &&
+    Object.hasOwn(doc, "schema") &&
+    doc.schema === FORMAT_V3
+  );
+}
+
+// True for the forms whose texts for the visitor are in three languages: /2 and /3.
+export function isLanguageFormat(doc) {
+  return isFormatV2(doc) || isFormatV3(doc);
+}
+
+// "/1", "/2" or "/3". A value of schema that is none of the three gives "/1" (decision 0070).
+export function formatOf(doc) {
+  if (isFormatV3(doc)) return "/3";
+  return isFormatV2(doc) ? "/2" : "/1";
 }
 
 // checkLanguageText(ctx, path, value, min, max): `ctx` is the context of validate.js

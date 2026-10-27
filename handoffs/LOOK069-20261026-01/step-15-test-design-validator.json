@@ -1,0 +1,150 @@
+{
+  "handoff_id": "step15-LOOK069-20261026-01",
+  "run_id": "LOOK069-20261026-01",
+  "workflow_id": "WF-02",
+  "step": "15",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/LOOK069-20261026-01/step-15-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-069"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-069-tenant-look-format.md",
+      "handoffs/LOOK069-20261026-01/step-13-test-design-validator.json",
+      "handoffs/LOOK069-20261026-01/step-14-test-designer.json"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR",
+    "write_set": [
+      "handoffs/LOOK069-20261026-01/step-15-test-design-validator.json"
+    ],
+    "base_tag": "base/LOOK069-20261026-01",
+    "orch_check": {
+      "at": "2026-10-26T20:46:55Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED; gate verdict PASS at pass 2 of 3; F1-F3 of pass 1 closed with mutants red; 48 new mutants, survivors are six equivalent and four non-equivalent Low (F6 order of two lines at one place, F7 deskForQuestion non-integer index, F8 own-property guard of isFormatV3 and neighbours) with no stated criterion affected; Lows F6-F8 and the carried F4, F5 go to the follow-up list kept by DOC-UPDATER; tests and code unchanged after step 14 (ORCH ran npm run check: 2044 green); next: TEST-RUNNER"
+      ]
+    }
+  },
+  "task": {
+    "description": "Test design gate for REQ-069, SECOND pass (pass 2 of 3; the first was step 13 with FAIL, the rework is step 14). You work in a copy; you change only your handoff. No commits, no git checkout/reset/stash/clean (also not in scratch copies). 16 GB RAM computer: single commands, one test run at a time.\nRead the result of step 13 (your predecessor's findings F1-F5) and the result of step 14 (the rework). Check yourself:\n(1) F1 is really closed: SV-9g serves a /3 file with leads enabled and no whatsapp and expects whatsapp null as the second key of leads in ru, kk, en and through publicQuestionnaire; the oracle is a literal. Apply the mutant yourself (public-data.js gives undefined for a missing whatsapp; also a variant that gives \"\" and a variant that omits whatsapp when it is a number) on a scratch copy: each must turn a test red.\n(2) F2 and F3 are closed: LK-5a has the two new desk cases with the right literal lines, LK-4b the tags \"A BCD\" and \"ab cd\"; mutants MU70b and the swapped order (class check before count check) are red in those tests.\n(3) The rework changed nothing but tools/test (diff against the tag and the sha256 of tools/src equal 129787a2...) and weakened nothing: compare the diff of the two touched test files with the state after step 12 (the test( and assert. counts did not fall).\n(4) Because this is a second pass, try at least EIGHT new mutants of your own that neither the design list nor the first gate used, aimed at the whole new logic (the check order inside validate, the keys order of the public answer, the lang-check rules for the /3 mode, the fallback look, the clamp of deskForQuestion, the frozen objects, the ctx.line/ctx.list move in shape.js, the limits). Every non-equivalent mutant must turn at least one test red; report equivalent mutants with a reason. One scratch run at a time, restore after each.\n(5) Run `npm run check` once in the live tree: green (2044 tests expected), sha256 of tools/src unchanged.\nVerdict PASS or FAIL with findings (severity, file, line, fix). Low findings go to the follow-up list; only a surviving non-equivalent mutant on a stated criterion or a real defect makes FAIL. In your handoff text never list project names or machine paths (say \"the traces list\").",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-26T18:58:03Z",
+  "started_at": "2026-10-26T18:58:03Z",
+  "completed_at": "2026-10-26T20:46:29Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "VERDICT PASS (gate pass 2 of 3). Items 1, 2, 3 and 5 of the task are met by my own runs; item 4 gives 4 non-equivalent survivors, all Low and none on a stated criterion of REQ-069 (follow-up list). The task named no verdict; the verdict is derived from my own runs (AP-018).\n\nITEM 1 (F1 closed). SV-9g in tools/test/picker-server.test.js writes a /3 file (ok-office-a with leads enabled and leads.whatsapp deleted) into a temporary folder and, for ru, kk and en, checks: Object.keys(leads) equals the literal six keys with whatsapp second, whatsapp === null, the whole leads equals a literal object, the raw text holds the literal piece `\"leads\":{\"contact_fields\":[\"phone\",\"telegram\"],\"whatsapp\":null,\"consent_text\":`; then the same through publicQuestionnaire on a frozen view of each language (the view has no whatsapp key). The oracle is a literal (LEADS_NO_WHATSAPP, LEADS_KEYS), not expectedQuestionnaire. My mutants on a scratch copy, one at a time, source restored from the live tree after each run (cmp equal): F1a public-data gives undefined (key vanishes) - RED SV-9g only; F1b gives \"\" - RED SV-9g; F1c key omitted when null - RED SV-9g; F1g false instead of null - RED SV-9g; F1h whatsapp omitted when it is a digit string (the real-number reading of 'omits when it is a number') - RED 6 tests (SV-2a, 2b, 2g, 9a, 9b, 9d); F1e key moved last - RED 6 tests (SV-2a, 2b, 2g, 9a, 9d, 9g); F1f key moved first - RED the same 6. F1d (literally `typeof whatsapp === \"number\"` omitted) stays green: EQUIVALENT, a validated file has whatsapp only as a string (checkWhatsapp E_FIELD for any other type), so the branch cannot be reached by a checked file; the digit-string variant F1h that does the same job on real values is red.\n\nITEM 2 (F2, F3 closed). LK-5a has the two desk cases [1,\"x\",\"-\",4] and [1,null,\"-\",\"-\"] with the literal lines M04 at questions[1].desk and M24 at questions[2].desk (texts «Ожидается целое число. Исправьте значение.» and «Стол задан не у всех вопросов. Добавьте поле desk.»), and the second case has no line at questions[3].desk. LK-4b has the tags \"A BCD\" and \"ab cd\" (5 signs): E_LIMIT with the count text M07(5,1,3); the counter is 15*(8+7+5). Mutants: MU70b in two forms (a wrong desk value counts as 'no own desk'; a wrong value sets the 'already reported' flag) - RED LK-5a each; swapped order of the tag check (class before count) - RED LK-4b and LK-4e (before the rework only LK-4e).\n\nITEM 3 (rework scope, nothing weakened). Files changed after the end of step 13: exactly tools/test/picker-look.test.js and tools/test/picker-server.test.js (find by time; nothing else under tools, docs, decisions). sha256 of the sorted list of file hashes of tools/src: 129787a2ce296258cb517ddb4b2dd589b17909fe9d50ae1541d1a17d8bd2daa7 before and after. The diff of picker-server.test.js against the tag is +672 lines and 0 removed lines (so nothing can be weakened there; assert. 298 -> 416, test( 41 -> 49 by plain count; 46 -> 47 by the `^test(` count of step 13). picker-look.test.js is a new file against the tag; I read the two touched tests whole: LK-4b and LK-5a only gained cases (two tags, one `else if` branch, two desk cases, the counter); no assert was removed or loosened. Old files against the tag: test( and assert. counts equal or higher in every one (config 38/131, engine 30/199, lang 56/298, page-static 16 127->129, server-units 14 187->205). Tests in picker-*.test.js: 416 (415 at step 13 plus SV-9g). Limit: the state after step 12 is not stored as a file in this checkout, so I could not diff against it directly; the statement rests on the file times, the zero-deletion diff of the server file, the reading of the two touched tests and the counts.\n\nITEM 4 (new mutants). 48 own mutants that neither the design list nor the first gate used (the first gate's own set was OWN1-OWN19), one run at a time on a scratch copy; 38 RED, 10 survived (9 first run on 8 picker test files, the survivors rerun on all 20 picker-*.test.js files, still green except TP-9c, which fails in every scratch run because the copy is not a git repository: environment, green in the live tree). Killed (killers): N3 look key after intro in the public answer (SV-2a,2b,2g,9a,9d); N4 industry/headline swapped (same 5); N5 desk before chips in a public question (same 5); N6b staff key order figure/shirt swapped (same 5); N6c publicLook shares colors (SV-2g,9d,9e,9f); N6d public chips shares the array (SV-2g); N7b isLanguageFormat only /2 (7 tests); N7d extra-language rule skipped for one key (LG-2c,2g,2h,LK-2c); N8 fallback headline for a non-string name (LK-6e); N8b fallback colors shared (LK-6e); N8c fallback figure offset (LK-6b,6e,SV-9e); N8d fallback industry empty string (LK-6b,6e,SV-9e); N9 deskForQuestion clamp upper only (LK-6d); N9b clamp lower only (LK-6d); N9c total<0 instead of <1 (LK-6d); N9e round instead of floor (LK-6d); N10 freeze shallow (LK-6e); N10b NEUTRAL_COLORS unfrozen (LK-6e); N10c GLYPHS unfrozen (LK-6e); N10d SHEET unfrozen (LK-6e); N11b isObject accepts arrays (LK-2a,3a,4d); N11c checkItems max+1 (PK-2a,LK-1e,2f,5c,7a); N11d missing-field line at the parent path (12 tests); N12 CONTACT_FIELDS_V3 order (LK-1e,5c,7a); N13 whatsapp 15 digits refused (LK-1e,5c); N13b whatsapp regex + instead of * (LK-5c); N15 chips list min 1 (LK-1e,5b,7a); N16 desks previous = max (LK-5a); N16b desk 4 refused (LK-5a); N17 chips allowed on single (LK-1e,5b,7a); N18 max_per_hour 1001 (LK-1e,5c,7a); N18b max_stored 10001 (same); N19 markOf always upper (LK-6a); N19b colour regex accepts upper case (LK-1e,3a,6e,7a); N19c luminance weight 0.2127 (6 tests); N20 staff-name guard after ctx.line removed (LP-1,LK-2f); N21 staff name read as ru (LK-2d); N22 desk upper bound 5 (LK-1e,5a,7a). Survivors: EQUIVALENT with reasons - N1 checkDesks run after checkReachable (their lines stand at different places and report.js sorts by place); N6 publicObject key order level/tag/glyph changed (no object id allows two of the three parameters, so no object carries two); N7c formatOf checks /2 before /3 (one schema string cannot be both); N11 extra-field lines walked in reverse (report.js orders by place; each extra key has its own place); N11e tagline exempt from 'required' (tagline is optional already); N14 chips bounds passed when only one of min/max is valid (checkChips itself needs both, else ignores both). NON-EQUIVALENT survivors, all Low: N1b checkDesks run before the root fields; N2 the field `look` checked after `intro` - for a /3 file with lines at one and the same place the order of the lines changes (I ran check on a file without look and intro and with a question without title and desk: original order look, intro, title, desk; N2 gives intro before look; N1b gives desk before title); N7 isFormatV3 without the own-property check (a hand-made object with an inherited schema is taken for /3; JSON cannot make one; the same guard of isFormatV2 is pinned by LG-1h, the /3 one is not); N9d deskForQuestion with isFinite instead of isInteger (index 2.5 gives 3 instead of 1; D14 says a non-integer index gives 1, LK-6d only demands an integer from 1 to 4, as its design row says). See F6-F8.\nTotal mutant runs of this pass: 8 (item 1) + 3 (item 2) + 48 (item 4) + 10 reruns on the full picker set = 69 runs. No mutant made a test file hang; each run finished (73-78 s on 8 files, 137 s on 20). Every source file restored and compared with the live tree after each run (restored=true each time); the scratch copy equals the live src at the end.\n\nITEM 5 (own run). cd tools && npm run check on the live tree, once: format:check, lint green; traces: files checked 2173, traces 0, skipped 67; handoffs-check: files 1179, violations 0; tests 2044, pass 2044, fail 0, cancelled 0, skipped 0, todo 0. sha256 of tools/src after the run: 129787a2ce296258cb517ddb4b2dd589b17909fe9d50ae1541d1a17d8bd2daa7 (equal). The list of hashes of every file of tools/ (without node_modules) before and after: diff empty; git status hash before and after equal (70158679437a96410a5da2441dc19f385fb111765bc9f8fc989fd0e5c6d7bae1, taken before this handoff was filled). Nothing in the project changed except this handoff.\n\nCRITERIA still covered (re-checked this pass, not repeated in full): criterion 7 now has the null branch of leads.whatsapp (SV-9g); Q8 SV-9b, Q10 LP-1/LP-2/LK-5e, Q11 LK-4e/LK-5c, as in pass 1; Q9, R2, R3 not applicable (agree with the design).",
+    "findings": [
+      {
+        "id": "F6",
+        "item": "4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/picker-look.test.js (LK-2a or LK-5a)",
+        "problem": "The order of two lines at one place is not pinned: my mutants N2 (look checked after intro) and N1b (checkDesks before the root fields) survive all 20 picker test files. Observable: a /3 file without look and intro gives lines in the order look, intro; a question without title and without desk gives title then desk.",
+        "needed": "Add one in-memory case: ok-office-a without look and intro, and a question without title and desk; expect the four literal lines in the order look, intro, questions[1].title, questions[1].desk."
+      },
+      {
+        "id": "F7",
+        "item": "4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/picker-look.test.js LK-6d, last loop",
+        "problem": "Design D14 says a non-integer index or total, or a total below 1, gives 1; the loop only asserts an integer from 1 to 4. My mutant N9d (isFinite instead of isInteger: index 2.5 with total 5 gives 3) survives.",
+        "needed": "For the arguments that are not whole numbers or have total below 1 ([2.5,5], [NaN,5], ['1',5], [null,5], [undefined,undefined], [0,0], [0,-3], [3,2.5], [3,NaN], ['x',null], [Infinity,10], [1,Infinity]) assert the value equals 1."
+      },
+      {
+        "id": "F8",
+        "item": "4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/picker-lang.test.js (next to LG-1h)",
+        "problem": "The own-property guard of isFormatV3 is not pinned: my mutant N7 (guard removed) survives. LG-1h pins it for isFormatV2 only. Only a hand-made object can reach this; JSON cannot.",
+        "needed": "Add the same three lines for isFormatV3, formatOf and isLanguageFormat with Object.create({ schema: V3 }) (expect false, \"/1\", false)."
+      },
+      {
+        "id": "F4",
+        "item": "note",
+        "severity": "Low",
+        "blocking": false,
+        "where": "design MU56 (engine.js touched)",
+        "problem": "Caught by a command only, not by a test, as the design says. Kept from pass 1.",
+        "needed": "RELEASE-VALIDATOR runs `git diff --stat base/<RUN-ID> -- tools/src/picker/engine.js` (expected empty). I ran it on the live tree in this pass: empty."
+      },
+      {
+        "id": "F5",
+        "item": "note",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/src/picker/validate.js (desk range literal 1, 4) vs v3-check.js (TEAM_SIZE)",
+        "problem": "Reviewer remark, no test can tell the two apart. Kept from pass 1; not a test defect.",
+        "needed": "Follow-up list."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git diff --name-only base/<RUN-ID> -- tools/test/fixtures/picker/ ; find by modification time after the end of step 13",
+        "output": "fixtures: e-field-schema.json only (as in pass 1); files changed after step 13 under tools, docs, decisions: tools/test/picker-look.test.js and tools/test/picker-server.test.js only"
+      },
+      {
+        "command": "sha256 of sorted list of file hashes of tools/src, at the start and after npm run check",
+        "output": "129787a2ce296258cb517ddb4b2dd589b17909fe9d50ae1541d1a17d8bd2daa7 both times"
+      },
+      {
+        "command": "git diff --numstat base/<RUN-ID> -- tools/test and counts of test( and assert. against the tag",
+        "output": "picker-server.test.js 672 added, 0 removed; every old test file: test( and assert. counts equal or higher; tests in picker-*.test.js 416"
+      },
+      {
+        "command": "item 1 and 2 mutants, one at a time on a scratch copy (F1a,b,c,d,e,f,g,h; MU70b two forms; swapped tag order)",
+        "output": "F1a,b,c,g: red SV-9g only; F1e,f,h: red 6 tests; F1d green (equivalent, see summary); MU70b both forms: red LK-5a; swapped order: red LK-4b, LK-4e; restored=true after each"
+      },
+      {
+        "command": "48 own mutants N1..N22 (with variants) on 8 picker test files; 10 survivors rerun on all 20 picker-*.test.js",
+        "output": "38 red; survivors N1, N6, N7c, N11, N11e, N14 equivalent; N1b, N2, N7, N9d non-equivalent Low (F6-F8); only red left on the full set in every run: TP-9c (scratch copy is not a git repository)"
+      },
+      {
+        "command": "check output on a /3 file without look and intro and with a question without title and desk, original and with N2, N1b applied",
+        "output": "original: look, intro, questions[1].title, questions[1].desk; N2: intro before look; N1b: desk before title"
+      },
+      {
+        "command": "cd tools && npm run check (live tree, once)",
+        "output": "exit 0; format:check and lint green; traces: files 2173, traces 0, skipped 67; handoffs-check: files 1179, violations 0; tests 2044, pass 2044, fail 0, cancelled 0, skipped 0, todo 0"
+      },
+      {
+        "command": "git diff --stat base/<RUN-ID> -- tools/src/picker/engine.js tools/package.json (MU56 command, run in this pass on the live tree)",
+        "output": "empty (no output lines)"
+      },
+      {
+        "command": "list of file hashes of tools/ (without node_modules) and git status, before and after",
+        "output": "no difference; git status hash 70158679437a96410a5da2441dc19f385fb111765bc9f8fc989fd0e5c6d7bae1 both times"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "AP-018: the task named no expected verdict. PASS is derived from my own runs: F1, F2 and F3 are closed, the 2044 tests are green, and the 4 surviving non-equivalent mutants are Low and not on a stated criterion of REQ-069."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "F6, F7, F8 (with F4, F5) go to the follow-up list; they need tests only, no change of tools/src. No code defect found in this pass."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "The state of the tests after step 12 is not stored as a file in this checkout; the weakening check (item 3) rests on file times, the zero-deletion diff of the server file against the tag, a whole reading of LK-4b and LK-5a, and the counts."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

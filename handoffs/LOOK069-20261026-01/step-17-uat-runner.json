@@ -1,0 +1,64 @@
+{
+  "handoff_id": "step17-LOOK069-20261026-01",
+  "run_id": "LOOK069-20261026-01",
+  "workflow_id": "WF-02",
+  "step": "17",
+  "from_agent": "ORCH",
+  "to_agent": "UAT-RUNNER",
+  "file": "handoffs/LOOK069-20261026-01/step-17-uat-runner.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-069"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-069-tenant-look-format.md",
+      "handoffs/LOOK069-20261026-01/step-16-test-runner.json"
+    ],
+    "route": "UAT-RUNNER",
+    "write_set": [
+      "docs/uat/REQ-069-RUN.md",
+      "handoffs/LOOK069-20261026-01/step-17-uat-runner.json"
+    ],
+    "base_tag": "base/LOOK069-20261026-01",
+    "orch_check": {
+      "at": "2026-10-26T20:54:51Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED; PASS 8 of 8 steps; record docs/uat/REQ-069-RUN.md exists (125 lines); ORCH checks: traces 0 on 2176 files, sha256 of tools/src unchanged, only the two servers of the owner listen (no process left by the run); next: RELEASE-VALIDATOR"
+      ]
+    }
+  },
+  "task": {
+    "description": "Acceptance on the running system for REQ-069 (WF-02 step 8, without a scenario file: decisions/0079 item 6; you write docs/uat/REQ-069-RUN.md). The change gives the picker server a new tenant file form /3 with the section look. Use the real command and the real server with real HTTP; nothing replaced. 16 GB RAM computer: one server at a time, stop it at the end, no browser needed (no page changes in this requirement), single commands.\nDo this in a scratch copy of the sample folder and a scratch home folder inside the session scratchpad folder named in the launching message (never run in the project folder; the project files stay unchanged except docs/uat/REQ-069-RUN.md and your handoff):\n(1) `cd tools && npm run picker -- check` on tools/test/fixtures/picker-look/ok-office-a.json, ok-office-b.json and ok-minimal.json: exit 0 and the one literal line each; on five broken samples of your choice from the same folder (a colour with low contrast, a bad object id, desks out of order, a bad whatsapp number, a bad staff name): exit 1 and the lines the design (docs/design/REQ-069-tenant-look-format.md, section 6.4) lists for them; stderr empty; the file bytes unchanged (sha256 before and after).\n(2) Start `npm run picker -- serve` (see tools/README.md for the exact flags) on a tenants folder that holds ok-office-a, ok-office-b, one broken /3 file and the two demo tenants of src/picker/demo-tenants; the start must print the block about the not served tenant; with curl ask GET /t/<id>/api/questionnaire for ru, kk and en for office-a and office-b: the look, desk, chips, object and whatsapp are in the answer; no word of the look of B is in the answer of A; the broken tenant answers 404; for the two demo tenants (uchet-pro, svet-marketing) the sha256 of the six answers equals the literals in tools/test/fixtures or in SV-9c of tools/test/picker-server.test.js (find them; do not recompute them from the code). Also the owner-visible old page of a demo tenant still opens (GET /t/uchet-pro/ gives 200 and the same bytes as before).\n(3) Write the record docs/uat/REQ-069-RUN.md in English: for every step the command or request, what was seen, PASS or FAIL. The files and the result in the handoff. Verdict PASS or FAIL. No commits, no git checkout/reset/stash/clean. In your handoff text and in the record never list project names or machine paths (say \"the traces list\"; use relative paths).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-26T20:51:05Z",
+  "started_at": "2026-10-26T20:51:05Z",
+  "completed_at": "2026-10-26T20:54:16Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Acceptance of REQ-069 on a running system, without a scenario file (decisions/0079 item 6); the record is docs/uat/REQ-069-RUN.md. All work was done in a scratch copy of tools/ and a new scratch home folder inside the session scratchpad; my own server on a free port (56159, because 4782 was already taken by another process), one server at a time, stopped at the end (process gone, port closed). Verdict PASS, 8 of 8 steps passed, 0 failed, 0 not carried out. S1-1: `npm run -s picker -- check` on ok-office-a, ok-office-b, ok-minimal gave exit 0 and the one literal line each, stderr empty, sha256 of each file the same before and after. S1-2: five broken samples (e-contrast-light M18, e-object-unknown M20, e-desk-order M25, e-wa-plus M31, e-staff-name-url M14) gave exit 1 and exactly the lines of design 6.4/10.2, stderr empty, files unchanged. S2-1: serve on a folder with ok-office-a, ok-office-b, e-desk-order and the two demo tenants printed four links (none for the broken file) and on stderr the block about the not served tenant with its check line; the home folder stayed empty. S2-2: questionnaire for A and B in ru, kk, en: HTTP 200, key order as designed, look, desk, chips, objects, whatsapp equal to the file in 48 of 48 comparisons, max_per_hour and max_stored absent. S2-3: no string of the look of B in the answers of A or of A in B (only the closed shirt names accent, accent2, ink, shared by catalogue). S2-4: the broken tenant gives 404 with the same body, byte for byte (cmp), as an unknown name. S2-5: sha256 of the six answers of uchet-pro and svet-marketing equal the six literals DEMO_HASHES of SV-9c in tools/test/picker-server.test.js (all 64 signs), and none of the five new keys in them. S2-6: GET /t/uchet-pro/ gave 200, 423 bytes, sha256 equal to public/index.html of the base tag.",
+    "findings": [],
+    "self_check": "Commands: `cd tools && npm run -s picker -- check test/fixtures/picker-look/<name>.json` for 8 files (exit code, stdout, stderr size, shasum -a 256 before and after); `node src/picker/cli.js serve --tenants <new folder> --home <new empty folder> --port 0` (stdout 5+ lines, stderr 2 lines as in the record); `curl -s -o <file> -w '%{http_code}' 'http://127.0.0.1:56159/t/<id>/api/questionnaire?lang=<l>'` for 6 office answers + 2 for 404; `curl -s ... | shasum -a 256` for the 6 demo answers; `curl http://127.0.0.1:56159/t/uchet-pro/` and `git show base/LOOK069-20261026-01:tools/src/picker/public/index.html | shasum -a 256`; kill -TERM of the server, then ps, curl and lsof showed it gone. Raw outputs and the saved answers are in the scratch folder outside the project (session scratchpad, folder uat/out). No browser was needed (no page change). No commit/checkout/reset/stash/clean was run. Project files changed by me: docs/uat/REQ-069-RUN.md and this handoff.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "REMARK",
+        "text": "Port 4782 was already occupied by another process before the run; --port 0 was used. Not a defect."
+      },
+      {
+        "id": "I2",
+        "kind": "REMARK",
+        "text": "The exit code of serve after SIGTERM was not read (the server ran detached); the README says 0, the stop itself was observed. Covered by the test suite, outside the criteria of this run."
+      }
+    ],
+    "artifacts_out": [
+      "docs/uat/REQ-069-RUN.md"
+    ]
+  }
+}

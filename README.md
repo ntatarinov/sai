@@ -175,8 +175,9 @@ runs (`STATE.md`).
   which solution suits them; every tenant has its own file, texts in Russian, Kazakh and
   English. A part of the requirements REQ-054…REQ-087 is done (the tenant file and its check,
   the scoring engine, the server, the three languages, the check of characters in texts, the
-  questionnaire page with the card of the site); the rest are written and checked (including
-  the new office look, REQ-069…087) but wait to be built, in the order of `PLAN.md`: until the
+  questionnaire page with the card of the site, the tenant file form `/3` with the section
+  `look`, REQ-069); the rest are written and checked (including the new office look,
+  REQ-070…087) but wait to be built, in the order of `PLAN.md`: until the
   result page exists the questionnaire ends with a temporary screen and the page is not for
   real visitors. The exact status is in `docs/requirements.yaml` and `STATE.md`. Start
   it with `cd tools && npm run picker`; how it is built — `tools/README.md`; code —

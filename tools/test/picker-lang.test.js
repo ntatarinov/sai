@@ -124,13 +124,15 @@ test("LG-1b: the copies of the form /1 pass the check as before - code 0, one li
 });
 
 const SCHEMA_LINE =
-  "Допустимо только: sai-picker-tenant/1 или sai-picker-tenant/2. Исправьте значение.";
+  "Допустимо только: sai-picker-tenant/1, sai-picker-tenant/2 или sai-picker-tenant/3. Исправьте значение.";
 
-test("LG-1c: a file with a value of schema that is neither /1 nor /2 gives code 1 and exactly one line about schema; a number or null - 'a string is expected'; no schema - 'no field schema'; the mode /2 is not taken by the beginning of the string, by the case or by spaces", (t) => {
+test("LG-1c: a file with a value of schema that is none of /1, /2 and /3 gives code 1 and exactly one line about schema; a number or null - 'a string is expected'; no schema - 'no field schema'; the mode /2 is not taken by the beginning of the string, by the case or by spaces", (t) => {
   const dir = makeTmp(t);
   const id = "uchet-pro";
   const wrong = [
-    "sai-picker-tenant/3",
+    "sai-picker-tenant/4",
+    "sai-picker-tenant/3 ",
+    "SAI-PICKER-TENANT/3",
     "sai-picker-tenant/",
     "sai-picker-tenant/20",
     "sai-picker-tenant/2 ",
@@ -178,7 +180,7 @@ test("LG-1c2: a wrong schema on a body of the form /2 - code 1, the first line i
   const asString = "Ожидается строка. Исправьте значение.";
   const want = (text) => lineOf(MINIMAL, "schema", "E_FIELD", text);
   const values = [
-    ["sai-picker-tenant/3", SCHEMA_LINE],
+    ["sai-picker-tenant/4", SCHEMA_LINE],
     ["sai-picker-tenant/", SCHEMA_LINE],
     ["sai-picker-tenant/20", SCHEMA_LINE],
     ["sai-picker-tenant/2 ", SCHEMA_LINE],
@@ -212,7 +214,7 @@ test("LG-1c2: a wrong schema on a body of the form /2 - code 1, the first line i
   // the same with the demo file of a tenant
   const demo = {
     ...readJson(demoPath("uchet-pro")),
-    schema: "sai-picker-tenant/3",
+    schema: "sai-picker-tenant/4",
   };
   const many = checkObject(demo, "uchet-pro.json");
   assert.equal(many.exitCode, 1);
@@ -221,7 +223,7 @@ test("LG-1c2: a wrong schema on a body of the form /2 - code 1, the first line i
     lineOf("uchet-pro.json", "schema", "E_FIELD", SCHEMA_LINE),
   );
   // an object in place of name does not hide the line about schema
-  const objectName = { ...body, schema: "sai-picker-tenant/3" };
+  const objectName = { ...body, schema: "sai-picker-tenant/4" };
   assert.equal(
     checkObject(objectName).stdout[0],
     want(SCHEMA_LINE),
@@ -1634,7 +1636,7 @@ test("LG-10c: the files of public/ have no address, no fetch (except the one in 
   assert.equal(net.split("fetch(").length - 1, 1, "net.js: exactly one fetch(");
 });
 
-test("LG-10d: the new modules (lang-check.js, view.js, public/texts.js) hold no word of a clock, of a random number or of the environment - they are pure (the words as written, comments count)", () => {
+test("LG-10d: the new modules (lang-check.js, view.js, shape.js, v3-check.js, public/texts.js, public/tenant-look.js) hold no word of a clock, of a random number or of the environment - they are pure (the words as written, comments count)", () => {
   const expression =
     /new Date|Date[.]now|Math[.]random|performance[.]now|process[.]env/u;
   for (const sample of [
@@ -1649,7 +1651,10 @@ test("LG-10d: the new modules (lang-check.js, view.js, public/texts.js) hold no 
   for (const file of [
     "lang-check.js",
     "view.js",
+    "shape.js",
+    "v3-check.js",
     path.join("public", "texts.js"),
+    path.join("public", "tenant-look.js"),
   ]) {
     const text = fs.readFileSync(path.join(PICKER, file), "utf8");
     const found = text
