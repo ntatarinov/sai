@@ -1,0 +1,88 @@
+{
+  "handoff_id": "step14-DEMO070-20261027-01",
+  "run_id": "DEMO070-20261027-01",
+  "workflow_id": "WF-02",
+  "step": "14",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/DEMO070-20261027-01/step-14-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-070"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "decisions/0087-picker-demo-v3-reader-corrections.md",
+      "docs/design/REQ-070-demo-tenants-v3.md",
+      "handoffs/DEMO070-20261027-01/step-11-backend-dev.json",
+      "handoffs/DEMO070-20261027-01/step-12-backend-dev.json",
+      "handoffs/DEMO070-20261027-01/step-13-backend-dev.json"
+    ],
+    "route": "TEST-DESIGNER",
+    "write_set": [
+      "tools/test/picker-demo-v3.test.js",
+      "handoffs/DEMO070-20261027-01/step-14-test-designer.json"
+    ],
+    "base_tag": "base/DEMO070-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T07:59:14Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED; npm run check run by ORCH: 2065 tests, 2065 pass, 0 fail; only the test file and the handoff changed; table of reader corrections of 16 rows (6 kk, 10 en) at mapped paths, 26 other changed texts are executor-written; pair 99 carries after E2 (the text was first edited by E2); 16 mutants all killed; MU17 MU18 MU29 still killed; next: limited second pass of the test gate and the reader summary of BA-ANALYST"
+      ]
+    }
+  },
+  "task": {
+    "description": "Update the tests of REQ-070 for the corrections of the independent readers (decisions/0087; WF-02 step 5, repeated). The data files changed in steps 11, 12 and 13 of this run (42 + 6 + 1 strings, the list with was/became is in result.changes of those three handoffs): the reader's three passes ended with «да» for all 189 pairs of kk and of en. One test is now red: DT-2c, which compares the kk and en texts of the mapped paths with the sample.\nDo exactly this, in tools/test/picker-demo-v3.test.js only (no data, no src, no other test; the helpers stay imported):\n(1) Add the TABLE OF READER CORRECTIONS (decisions/0087 item 2) as a literal table in the test file: for each text that the readers made the file differ from the SAMPLE on a mapped path (a path of the path map of the design, section 4: the texts that come from the sample), one row: tenant, path, language (kk or en), the sample text (literal), the corrected text (literal, equal to the file now), the number of the reader's pair. Texts the executor wrote (not in the sample) are not rows: DT-2c does not compare them. Build the rows from the three handoffs and CHECK each row against the sample (the sample text at the path must equal the row's «was» of the FIRST correction of that path) and against the file now. The currency sign change («KZT» to «₸») is a row if the text is in the sample.\n(2) DT-2c: ru texts of the mapped paths equal the sample except rows E1-E3 of the table of edits (unchanged); kk and en texts of the mapped paths equal the sample except (a) the rows E1-E3 and (b) the rows of the table of reader corrections, where the file must equal the corrected text word for word. Keep the ban: a text of the file that differs from the sample without being in a table is red; a row whose corrected text does not equal the file is red; a row whose sample text does not equal the sample is red; a row for a ru text is impossible (assert no row has language ru). The table has no more rows than the number of changed pairs (assert the count equals the literal number you build). The table of edits stays at six rows at most (assert it).\n(3) Mutants for the new logic, applied one at a time on a scratch copy of tools/ (session scratchpad folder named in the launching message; restore the file from the live tree after each run; sequentially; no git checkout/reset/stash/clean, also not in scratch copies): a kk text changed without a row; a row whose corrected text differs from the file by one letter; a row whose sample text is wrong; a ru text corrected; a seventh row of the table of edits; a row removed (the file then differs from the sample); the table with a duplicated path. Each must make DT-2c (or another named test) red. Also re-run three mutants of the earlier set that touch DT-2c/DT-2d (MU17, MU18, MU29) to prove they are still killed.\n(4) Put the mutant table in result.self_check. Then `cd tools && npm run check` once: zero red; tests 2065 (no new test is required; if you add a test, say why and give the new number); format:check, lint, traces and handoffs-check green; the sha256 over the sorted per-file sha256 list of tools/src (data folders included) equal at start and end. In your handoff text never list project names or machine paths (say \"the traces list\"). 16 GB RAM computer: single commands.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T07:43:07Z",
+  "started_at": "2026-10-27T07:43:07Z",
+  "completed_at": "2026-10-27T07:53:19Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "TEST-DESIGNER, WF-02 step 5 repeated, REQ-070, decisions/0087. Only tools/test/picker-demo-v3.test.js changed: the TABLE OF READER CORRECTIONS (16 rows, a literal) and DT-2c extended. No data, no src, no other test touched; no test added (2065 tests). The table was built from the result.changes of steps 11, 12 and 13: 42 changed texts (15 kk, 27 en), of which 16 stand at a mapped path (texts that come from the sample): kk pairs 2, 4, 12, 98, 107, 108 (6 rows) and en pairs 2, 5, 28, 31, 33, 98, 99, 104, 118, 119 (10 rows; 118 and 119 are the currency sign KZT -> ₸). The other 26 are texts the executor wrote (solutions, rules, hypotheses, no-match texts): not rows, DT-2c does not compare them. For every row the sample text was checked against the sample and against the first 'was' of that path in the three handoffs (equal in 15 rows; the 16th, pair 99 en, is explained in issue I1), and the corrected text against the last 'became' and the file now (equal in all 16; the paths corrected twice or three times, pairs 108, 98, 161 and 153, end at the text of the last step). DT-2c now: ru texts of the mapped paths equal the sample except E1-E3 (unchanged); kk and en texts equal the sample except E1-E3 and the rows of the table, where the file equals the corrected text word for word; a row whose sample text is not the sample text, a row whose corrected text is not the file, a row on no mapped text, a text of the file that differs from the sample without being in a table are all red. Further asserts: no row has language ru; the count of rows equals the literal 16 and is at most the 42 changed texts; no path twice (id, path, language); a pair number once per language and one pair is one text of one tenant; a real correction (corrected differs from sample, not empty); the table of edits has at most six rows (kept). Table 'criterion -> test': criterion 5 of REQ-070 (every 'no' of the reader is corrected in the file and checked) and criterion 2 (ru texts equal the sample) -> DT-2c (the table, the ban); the count of texts to read -> DT-5a (unchanged); the rest of the 21 tests is as in step 8. Quality-bar items: Q8, Q10, Q11, R3 are not touched by this step (only a test table and one comparison over data files that are read, not written), as in step 8.",
+    "changes": [
+      {
+        "file": "tools/test/picker-demo-v3.test.js",
+        "what": "after the table of edits: the constant READER_ROWS (16 rows: pair, id, path, lang, sample, corrected; one row with 'after: E2'), READER_ROW_COUNT = 16 and READER_CHANGED_PAIRS = 42 with a comment on what a row is. DT-2c: title extended; the asserts on the table (count, at most the changed texts, no duplicated path, pair once per language, one pair one text, no ru row, a real correction, 'after' only on a path of the table of edits); in the loop of mapped texts the kk and en texts are compared with the row (sample text equal to the sample, or to the 'became' of E2 for the row after E2; file equal to the corrected text); every row must be used once on a mapped text. The comparison of ru texts and of the plain values is unchanged."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && npm run check (once, on the final files, after the handoff was closed)",
+        "output": "exit 0. format:check: all files use Prettier code style. lint: no output (eslint --max-warnings 0). traces: files checked 2205, traces 0, skipped 67. handoffs-check: files checked 1200, violations 0, exceptions used 114 of 114. test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0."
+      },
+      {
+        "command": "cd tools && node --test --test-concurrency=1 test/picker-demo-v3.test.js (before the mutants)",
+        "output": "tests 21, pass 21, fail 0, skipped 0, todo 0; DT-2c green."
+      },
+      {
+        "command": "mutants of the new logic and MU17, MU18, MU29",
+        "output": "one at a time on a scratch copy of tools/ (src, test, package.json, README.md) with the sample copied beside it, in the session scratch folder; node --test --test-concurrency=1 on the test file; the changed files restored from the live tree after each run (hash of each file equal to the live file, checked); the live tree was not touched. mutant: what is broken -> failing tests (count). N1: a kk text changed without a row (stock look.team[1].says) -> DT-2c (1) | N1b: an en text changed without a row, one letter (agency questions[3].title) -> DT-2c (1) | N2: a row whose corrected text differs from the file by one letter (pair 4 kk) -> DT-2c (1) | N3: a row whose sample text is wrong (pair 2 en) -> DT-2c (1) | N4a: a ru text corrected in the file (stock tagline ru) -> DT-2c (1) | N4b: a ru row in the table, the file changed to match -> DT-2c (1; 'ru is never corrected') | N5: a seventh row of the table of edits (E4-E7 added, files changed to match) -> DT-2c (1; 'at most six rows') | N6: a row removed, the count constant left -> DT-2c (1; the number of rows) | N6b: a row removed and the constant lowered to 15 (the file then differs from the sample) -> DT-2c (1; stock look.headline kk) | N7: the table with a duplicated path (constant raised to 17) -> DT-2c (1; no path twice) | N8: pair 99 (after E2) put back to the E2 text in the file -> DT-2c (1) | N9: the currency sign back to KZT in the en title (pair 118) -> DT-2c (1) | N10: a reader row for a path that has no mapped text (file changed to match) -> DT-2c (1; the row is on a mapped text) | MU17: agency desk 1 role copied back from the sample (E2 undone) -> DT-2c, DT-4b (2) | MU18: a headline ru copied from one tenant into the other -> DT-2c, DT-4b (2) | MU29: a fourth row SEP for a text only one sample tenant holds (file and table agree) -> DT-2d (1; DT-2c stays green, as designed). All 16 killed; no equivalent mutant; the three old mutants give the same failing tests as in step 8."
+      },
+      {
+        "command": "fingerprint of tools/src (sha256 of the sorted list of the sha256 of all 150 files, the data folders included)",
+        "output": "start cf8bee409881606b6d03d4622a84fdc23bd478804cba9f23203012f1ddb6d19d; end cf8bee409881606b6d03d4622a84fdc23bd478804cba9f23203012f1ddb6d19d (equal)."
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Pair 99 (agency, look.team[0].role, en) is a row that follows the table of edits: E2 had changed the sample text 'reception' to 'client reception' (reason SEP), and the reader then corrected it to 'customer intake'. The first 'was' of that path in step 11 is therefore the E2 text, not the sample text. The row carries 'after: E2' and its sample text is the 'became' of E2; DT-2c checks that link (the sample equals 'was' of E2, the row's sample text equals 'became' of E2, the file equals the corrected text). E2 itself is unchanged and its ru and kk texts are still compared with 'became'. If ORCH prefers another form, say so; the other 15 rows are plain."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Counting: 'a changed pair' is a text in one language (the readers' table has one number for the kk text and the en text of one place). 42 texts changed in steps 11-13 (15 kk, 25 en, 2 en currency sign; some were corrected twice or three times, the last text counts once); 16 of them are at mapped paths and are rows; the table of edits is not used for them and stays at three rows (limit six)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/picker-demo-v3.test.js"
+    ]
+  }
+}

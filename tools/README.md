@@ -757,6 +757,13 @@ The command below takes the ready set of answers `leader` and sends it. Run it f
 
 The answer is JSON with the recommended solutions. Instead of `leader` take `close` or `none`. For `svet-marketing` replace the name of the tenant in two places. The language is set by `?lang=kk` at the end of the address. All sets are in `src/picker/demo-answers/`.
 
+The stand of the new office. The folder `src/picker/demo-tenants-v3` holds `stock` («Складеон», stock control) and `agency` («Лидвейв», marketing). Both are written in the format `/3` with the section `look`. Start of this stand:
+
+    cd tools
+    npm run picker -- serve --tenants src/picker/demo-tenants-v3 --home <folder outside the project>
+
+The command prints two links: `/t/agency/` and `/t/stock/`. The sets of answers are in `src/picker/demo-answers-v3/`: `leader`, `close`, `none` and `half`. The set `half` holds only the first two answers and is meant for the live result (REQ-072); the result command refuses it today, because the questions it leaves out are required. Do not mix the two stand folders, because `serve` takes the whole folder. Both tenants are invented, and the Kazakh text is a draft.
+
 ### What the server cannot do yet
 
 The site has no applications, no AI advice, no publishing on the internet and no tenant login yet. The key `--home` is accepted but does nothing. They will come in the next requirements.

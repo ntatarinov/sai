@@ -1,0 +1,103 @@
+{
+  "handoff_id": "step06-DEMO070-20261027-01",
+  "run_id": "DEMO070-20261027-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/DEMO070-20261027-01/step-06-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-070"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-070-demo-tenants-v3.md",
+      "handoffs/DEMO070-20261027-01/step-05-backend-dev.json"
+    ],
+    "route": "SECURITY-REVIEWER",
+    "write_set": [
+      "handoffs/DEMO070-20261027-01/step-06-security-reviewer.json"
+    ],
+    "base_tag": "base/DEMO070-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T06:07:02Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED; PASS: Q7 Q8 Q10 met, Q9 Q11 R2 R3 not applicable; bytes clean (no invisible or bidi characters), 39 hostile paths over the real server gave 404, answer files not served; only the handoff changed (hashes equal per agent); Low F1 (names of real software and platforms in the made-up texts, taken from the approved sample: kept, the product is for users of those systems) goes to the follow-up list; the security check must run again when REQ-071 shows the look texts (REQ-069 note F-1)"
+      ]
+    }
+  },
+  "task": {
+    "description": "Security gate for the data of REQ-070 (runs at the same time as the review gate; both only read). Read the diff against the tag base/DEMO070-20261027-01 (new tools/src/picker/demo-tenants-v3/stock.json and agency.json, demo-answers-v3/stock.json and agency.json; changed tools/README.md), the design docs/design/REQ-070-demo-tenants-v3.md and decisions 0085, 0086, docs/quality-bar.md. Decide yourself whether your area is touched (data for a server that serves them to anonymous visitors; texts shown on a page later) and give for each item Q7-Q11 and R3 \"met\" or \"not applicable\" with your own check. Own checks to run: the files contain no address, link, email, path, script, markup, control character, invisible or bidi character in any text (search the bytes, not only the visible text), no real person, company, phone or price (the only numbers of 10+ digits are the two invented whatsapp numbers), no secret-like string; the look texts are plain text (REQ-069 security note F-1: every page that shows them must put them as text only); the colours are #rrggbb values from the closed rule; the object ids are from the closed catalogue; serve the folder once (`cd tools && npm run picker -- serve --tenants src/picker/demo-tenants-v3 --port 0 --home <a new folder in the session scratchpad folder named in the launching message>`; stop it afterwards) and ask for a few hostile paths (a path leaving the folder, an unknown tenant, a very long id) over the real HTTP: the answers are the usual 404 and no file of the data folders leaks beyond the questionnaire; the answer files (demo-answers-v3) are not served at all. Findings with severity, file, line, fix. Verdict PASS or FAIL. Change only your handoff. No commits, no git checkout/reset/stash/clean. 16 GB RAM computer: single commands, one server at a time. In your handoff text never list project names or machine paths (say \"the traces list\").",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T06:03:24Z",
+  "started_at": "2026-10-27T06:03:24Z",
+  "completed_at": "2026-10-27T06:06:45Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Map of surfaces. The change is four new JSON data files (two tenant files of the format /3 in demo-tenants-v3, two answer-set files in demo-answers-v3) and one paragraph in tools/README.md. No code file changed (diff against the tag: only tools/README.md among tracked files; the rest is new files). The surface 'goes to the browser' is touched indirectly: the tenant files are served to anonymous visitors by the picker server (questionnaire and result answers) and their texts are shown by a page later. The surface 'comes from outside' is not touched (no input path changed, the server code is the same). 'writes files', 'holds a secret', 'the server goes by itself', 'photos of people': not touched. 'customer data': the two tenants are invented; the lookup of a tenant is by the id of the path (server code unchanged). tools/README.md: documentation only (surface: none; read for secrets, links, machine paths: none).\nItems. Q7 met: byte-level and string-level scan of the four files (about 141 000 byte and code-point probes, 2022 strings and keys, 12 patterns each, own oracle script outside the project) found no secret-like string (no key, token, password words, no long base64 or hex run, no private-key header), the page files (tools/src/picker/public) contain no data of these files, and the questionnaire answers over HTTP hold no rules, points, file names or paths. The only digit runs of 10 or more are the two invented whatsapp numbers (77010000000, 77020000000), published on purpose in leads. Q8 met: each tenant holds no text of the other (counts 0 both ways); the unknown tenant, a tenant-like name that is a data folder, a path with '..', an encoded path and a long id all give one and the same 404 (same hash of the whole answer without the date header); the server takes the tenant from the path only (unchanged code). Q9 not applicable: no query, no database, no string built into a query in the change. Q10 met for the data: both files pass the real check (code 0), the real engine on leader, close and none gives the outcomes of the design over real HTTP, half is refused with a normal answers_invalid answer (not a crash); no new external call. Q11 not applicable: no address that a client sets and the server calls; the files contain no address at all (no scheme, no '//', no www, no domain, no '@'). R3 not applicable (photos of people are not in the product, decision 0033; the change adds none: figures are catalogue ids f01..f08, no image, no data URI). R2 not applicable (Pixel Office untouched).\nOwn checks of the handoff task. (1) Bytes: all four files are valid UTF-8, no BOM, no control byte except the line feed, no CR, no tab, no DEL, no backslash and no \\u escape (so nothing hidden by an escape), no duplicate key, no invisible, bidi, zero-width, variation-selector, private-use, tag or no-break character; the only non-ASCII beyond Cyrillic is the sign of the tenge in price and unit texts. (2) No address, link, email, path, script, markup: patterns for schemes, '//', 'www', domains, '@', slashes and '..', angle brackets, ampersand, backtick, dollar, template braces, 'script', 'on...=', 'javascript', 'url(' : zero hits except the schema value 'sai-picker-tenant/3' (a format name, not a path). (3) No real person, company, phone or price: staff have invented first names only, the operator is marked as an invented firm, the prices are invented text in the design ('from ... tenge' in one solution of each tenant). Platform and product names from the approved sample appear in texts (see finding F1, Low). (4) Look texts are plain text: no markup characters in any text; the pages of the picker site write text only with textContent (search of public/*.js: no innerHTML, outerHTML, insertAdjacentHTML, document.write, eval; the look section is not yet used by any page file, only by the pure module tenant-look.js), so REQ-069 note F-1 holds for every page that exists now; it stays binding for the pages of REQ-071 and later. (5) Colours: all eight are lower-case #rrggbb. (6) Object ids: all 29 options use ids of the closed catalogue of 15 (shelf, shop, monitor, scanner, tsd, clip, bell, phone, headset, poster, laptop, cell, chart), glyphs from the closed four, figures f01..f08 and shirts from accent, accent2, ink. (7) Real HTTP: the stand was served once on a free port with a new home folder, 39 hostile paths asked (path leaving the folder in plain and encoded form, unknown tenant, a name of a data folder as tenant, 5000-character id and asset name, query with a path and a 5000-character language, null byte, capital letters, double slash, absolute system path, direct file names of both data folders and of answer files): all 404 with the same 118-byte body (one 405 for a GET on the result route, one 200 each for the two pages and the questionnaires), no byte of a data file leaks beyond the questionnaire view, the answer files are not served at all. The server was stopped afterwards (port checked free); the owner's servers were not touched.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/picker/demo-tenants-v3/stock.json (intro, option labels of question sys, solution 1) and agency.json (intro, option labels of questions chan and intake, solution 1)",
+        "item": "Q7 / task check: no real company",
+        "severity": "Low",
+        "what": "Names of real software and platforms (accounting packages, social networks, a map service, a messenger) stand in invented texts. They come from the approved sample, the design and the requirement text, name no person and no firm as an actor, hold no address and no price of them, and are needed by the story of the two invented tenants.",
+        "fix": "None needed now. Does not block. If the owner wants no real brand at all, replace them in a later requirement with generic words."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "sha256 of the four data files and tools/README.md at the start and at the end; git status --short hash at start and end",
+        "output": "start and end equal (diff of the two lists empty, output SAME); status hash unchanged. Files: demo-answers-v3/agency.json 15ad71aa..., demo-answers-v3/stock.json 021100bb..., demo-tenants-v3/agency.json a913b4d1..., demo-tenants-v3/stock.json 2e6c9cf1..., tools/README.md 724e4326..."
+      },
+      {
+        "command": "own scan script (outside the project): bytes, code points, duplicate keys, 12 string patterns, colours, object ids, figures",
+        "output": "problems: 0; probes 141239; strings 2022; pattern hits only: schema value (path pattern, 2), price text with the tenge sign (12, invented), the two whatsapp numbers (digits10 and phone, 2); no hit for url, email, at, markup, scriptish, secret, long, hex"
+      },
+      {
+        "command": "cd tools && node src/picker/cli.js check src/picker/demo-tenants-v3/stock.json and agency.json",
+        "output": "stock: in order, questions 5, solutions 4, rules 15 (code 0); agency: same counts (code 0)"
+      },
+      {
+        "command": "cd tools && npm run picker -- serve --tenants src/picker/demo-tenants-v3 --port 0 --home <new folder in the session scratch folder>; 39 curl probes with --path-as-is",
+        "output": "the page and the questionnaire of each tenant 200; every hostile path 404 with the same body (md5 of three different 404 answers equal); GET on the result route 405; language query with a path or a long value falls back to ru (200); no data-file content in any answer"
+      },
+      {
+        "command": "POST /t/<id>/api/result?lang=en with Origin of the stand and each set leader, close, none, half for both tenants",
+        "output": "leader: clear_leader true; close: clear_leader false with several solutions; none: clear_leader null, recommended empty, no_match_text and hypotheses; half: refused with answers_invalid naming the first unanswered question (sku, budget); no stack, no path; without the Origin header: 403 forbidden (existing guard)"
+      },
+      {
+        "command": "search of the questionnaire answers for points, rules, any_of, hypotheses, file names, paths, password, token",
+        "output": "none found (the leads block with the invented whatsapp number, operator name and retention is published on purpose by the design)"
+      },
+      {
+        "command": "search of tools/src/picker/public for innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function, DOMParser, srcdoc",
+        "output": "no match; text goes in with textContent; only tenant-look.js mentions look"
+      },
+      {
+        "command": "lsof on the stand port and on the owner ports after the check",
+        "output": "stand port free; the owner servers still listening, untouched"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "The picker pages do not show the look section yet. REQ-069 note F-1 (show look texts as text only) must be checked again by this role when REQ-071 and later pages are built; this check covers the data and the server answers only."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "No real browser run was made: no page file reads the look section yet, so there is nothing to substitute in a browser for this change."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

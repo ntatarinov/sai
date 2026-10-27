@@ -1,0 +1,87 @@
+{
+  "handoff_id": "step18-DEMO070-20261027-01",
+  "run_id": "DEMO070-20261027-01",
+  "workflow_id": "WF-02",
+  "step": "18",
+  "from_agent": "ORCH",
+  "to_agent": "UAT-RUNNER",
+  "file": "handoffs/DEMO070-20261027-01/step-18-uat-runner.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-070"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-070-demo-tenants-v3.md",
+      "handoffs/DEMO070-20261027-01/step-17-ba-analyst.json"
+    ],
+    "route": "UAT-RUNNER",
+    "write_set": [
+      "docs/uat/REQ-070-RUN.md",
+      "handoffs/DEMO070-20261027-01/step-18-uat-runner.json"
+    ],
+    "base_tag": "base/DEMO070-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T08:18:32Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "closed COMPLETED; PASS 5 of 5 steps; record docs/uat/REQ-070-RUN.md exists; 24 result requests equal table 7.1, half refused with answers_invalid, no leak between tenants (57 probes both ways), old stand hashes equal; owner's ports untouched; remarks go to the follow-up list: the single-string fields (staff names, tag, operator_name, privacy_contact) are shared by the three languages by the format and carry Cyrillic in the en questionnaire; the real route has no ranking"
+      ]
+    }
+  },
+  "task": {
+    "description": "Acceptance on the running system for REQ-070 (WF-02 step 8, without a scenario file: decisions/0079 item 6; you write docs/uat/REQ-070-RUN.md in English; the readers' step is already done and summed in handoffs steps 16 and 17: do not repeat it). Real command, real server, real HTTP, nothing replaced. 16 GB RAM computer: one server at a time, stop it at the end, no browser (no page reads the new data yet), single commands; do not touch ports 4782 and 4790 (the owner's servers): use --port 0. Work in a scratch home folder inside the session scratchpad folder named in the launching message; the project files stay unchanged except docs/uat/REQ-070-RUN.md and your handoff.\nSteps: (1) `cd tools && npm run picker -- check` on tools/src/picker/demo-tenants-v3/stock.json and agency.json: exit 0, one literal line each («Файл арендатора <id> в порядке: вопросов 5, решений 4, правил 15.»), stderr empty; sha256 of both files and of the four answer files before and after. (2) Start `npm run picker -- serve --tenants src/picker/demo-tenants-v3 --home <scratch home> --port 0`: it prints the five lines with two links /t/agency/ and /t/stock/; GET /t/<id>/api/questionnaire?lang=ru, kk and en for both: 200 each, look, desk (1,2,3,3,4), chips on the number question, object on every option, whatsapp 77010000000 (stock) and 77020000000 (agency); no text of one tenant in the other's answer (search both ways for the names, taglines, staff names and the headline). (3) With the real result route (see tools/README.md for the exact route and body) post the answer sets of demo-answers-v3/ for both tenants and the three languages: `leader` gives the mark of a clear leader, `close` gives 2 or 3 recommended solutions with the mark of close variants, `none` gives an empty list and the no-match text; compare the solution ids and scores with the table 7.1 of docs/design/REQ-070-demo-tenants-v3.md; `half` is refused with a clean error (answers_invalid), no crash; the home folder holds nothing new after the results (no application stored). (4) Stop the server, check that no process is left and the port is free. (5) The old stand: start `serve --tenants src/picker/demo-tenants --home <scratch home 2> --port 0` once: two links as before (svet-marketing, uchet-pro), the six questionnaire sha256 equal the literals of SV-9c in tools/test/picker-server.test.js; stop it. (6) Write docs/uat/REQ-070-RUN.md: every step with the command or request, what was seen, PASS or FAIL. Verdict PASS or FAIL. No commits, no git checkout/reset/stash/clean. In the record and in your handoff never list project names or machine paths (relative paths; say \"the traces list\").",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T08:14:42Z",
+  "started_at": "2026-10-27T08:14:42Z",
+  "completed_at": "2026-10-27T08:18:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Acceptance of REQ-070 on the running system, real commands and real HTTP, no browser (no page reads the new data yet), one server at a time, --port 0, the owner's ports 4782 and 4790 untouched. (1) PASS: `npm run picker -- check` on stock.json and agency.json: exit 0, stderr empty, the literal line «Файл арендатора <id> в порядке: вопросов 5, решений 4, правил 15.» (exactly one line with `npm run -s`; plain `npm run` adds three npm header lines), sha256 of both tenant files and of the four answer files identical before and after. (2) PASS: serve on demo-tenants-v3 printed the five lines with /t/agency/ and /t/stock/; the six questionnaire answers (stock and agency, ru, kk, en) are 200, look present, desk 1,2,3,3,4, chips on the number question, object with an id on 14 of 14 (stock) and 15 of 15 (agency) options, whatsapp 77010000000 (stock) and 77020000000 (agency); search both ways for names, taglines, industries, headlines and staff names (57 probes each way): 0 hits, control probes found the own texts. (3) PASS: 24 POSTs to /t/<id>/api/result?lang=<lang>: leader gives clear_leader true with 1 recommended (sk-base 13, lw-start 11), close gives clear_leader false with 2 recommended (sk-exchange 7, sk-terminal 5; lw-channels 7, lw-report 5), none gives an empty list and no_match_text equal to the file's text of the language; all equal to table 7.1 and identical in the three languages; half is refused in all 6 cases with HTTP 400 answers_invalid (question sku for stock, budget for agency), no crash, the next request answered 200; the scratch home folder held 0 entries before and after. (4) PASS: SIGTERM, process gone, port free (connection refused), no process of mine left. (5) PASS: the old stand printed the two links svet-marketing and uchet-pro, and the six questionnaire sha256 equal the literals of SV-9c; stopped, port free. (6) The record docs/uat/REQ-070-RUN.md is written in English. The project files are unchanged except that record and this handoff.",
+    "findings": [],
+    "uncovered_criteria": [],
+    "self_check": [
+      {
+        "command": "cd tools && npm run picker -- check src/picker/demo-tenants-v3/stock.json ; same for agency.json ; and with npm run -s",
+        "output": "exit 0 each, stderr 0 bytes, line «Файл арендатора stock в порядке: вопросов 5, решений 4, правил 15.» and the same with agency; -s gives 1 line each"
+      },
+      {
+        "command": "shasum -a 256 of demo-tenants-v3/{stock,agency}.json, demo-answers-v3/{stock,agency}.json, demo-answers/{uchet-pro,svet-marketing}.json before and after the whole run",
+        "output": "identical (stock.json 1b2bdb67...e98f, agency.json 69dc84b0...e81b)"
+      },
+      {
+        "command": "node src/picker/cli.js serve --tenants src/picker/demo-tenants-v3 --home <scratch home 1> --port 0 (the script `picker` of tools/package.json); GET /t/<id>/api/questionnaire?lang=ru|kk|en for stock and agency",
+        "output": "5 lines, 2 links; 6 x HTTP 200; look, desk 1,2,3,3,4, chips, object 14/14 and 15/15, whatsapp as expected; 0 cross-tenant hits in 114 probes"
+      },
+      {
+        "command": "POST /t/<id>/api/result?lang=<lang> with {\"answers\": <set>} and the headers Origin and Content-Type, for stock and agency, leader, close, none, half, ru, kk, en",
+        "output": "18 x HTTP 200 equal to table 7.1 (ids, scores, clear_leader, no_match_text, hypotheses), 6 x HTTP 400 {\"error\":\"answers_invalid\",...,\"question\":\"sku\"|\"budget\"}; scratch home 0 entries; server stderr 0 bytes"
+      },
+      {
+        "command": "kill -TERM <pid>; ps -p <pid>; lsof -iTCP:<port>; curl http://127.0.0.1:<port>/",
+        "output": "process gone, nothing listens, connection refused (000)"
+      },
+      {
+        "command": "node src/picker/cli.js serve --tenants src/picker/demo-tenants --home <scratch home 2> --port 0; GET six questionnaires; shasum -a 256 against the DEMO_HASHES literals read from tools/test/picker-server.test.js",
+        "output": "2 links (svet-marketing, uchet-pro); 6 x 200; 6 of 6 hashes equal; stopped, port free"
+      },
+      {
+        "command": "git status --short (from tools/)",
+        "output": "only files that were already new or modified before the run; this run wrote docs/uat/REQ-070-RUN.md and this handoff"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "REMARK",
+        "text": "Not failures. (a) Plain `npm run picker -- check` prints three npm header lines before the literal line (documented in tools/README.md). (b) The en questionnaire of stock still holds Cyrillic in the staff names, the object tag 1С, operator_name and privacy_contact (a Russian sentence); names and tag are as the design says, privacy_contact is a plain Russian string in the file: BA-ANALYST may decide whether that is intended. (c) The server result has no ranking, so the ranking column of table 7.1 is not visible on the real route (covered by the engine test DT-3b). (d) The exit code of the stopped server was not read (it ran in the background); the stop, the gone process and the free port were observed."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
