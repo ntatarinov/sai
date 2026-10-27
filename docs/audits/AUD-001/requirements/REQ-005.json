@@ -1,0 +1,84 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "requirements",
+  "requirement": "REQ-005",
+  "auditor": "RELEASE-VALIDATOR",
+  "checked_at": "2026-10-27T13:35:19Z",
+  "base": "HEAD b64562a + working tree",
+  "method": "Each criterion's own way of checking carried out on the current files: commands and greps on the working tree; behaviour probes and writes only on a copy of Sai in <scratch> (team homes, Pixel Office stands and servers on port 0, one headless Chrome at a time); criteria about how a run went — by the run's handoffs and files. One full `npm run check` on the working tree and one on a clean copy.",
+  "check_command": "cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)",
+  "counts": {
+    "met": 8,
+    "not met": 1
+  },
+  "criteria": [
+    {
+      "n": 1,
+      "status": "met",
+      "how": "grep",
+      "evidence": "WF-07-business-plan.md: ## Roles, Steps, Artifacts, Handoffs, Rework loop, Stop conditions (:12-:83); market-researcher, plan-writer, plan-validator each 1× «## Quality bar — binding»; orchestrator.md mentions WF-07 4×"
+    },
+    {
+      "n": 2,
+      "status": "met",
+      "how": "grep of structure + step 1b records",
+      "evidence": "pixel-office, agent-pipeline, kpp-vision: «## Что нашли (проверено …)» 1, «## Где искали» 1, one conclusion pair each, links 87/69/87; market is marked per section («мир») or per fact ([Казахстан] etc. in agent-pipeline 13); kpp-vision §7 «Регулирование в Казахстане: персональные данные, биометрия, ИИ…» with the law cited; step 1b of the research (run BP-20260929-01) PASS; step-01b of BP-20261003-01 PASS (checked only the placeholder edit, cites 1b of BP-20260929-01)"
+    },
+    {
+      "n": 3,
+      "status": "met",
+      "how": "grep '^## ' docs/business-plan/README.md",
+      "evidence": "exactly the 15 headings in the required order (:26 … :849)"
+    },
+    {
+      "n": 4,
+      "status": "met",
+      "how": "own sample (PLAN-VALIDATOR's check is per number; I traced 5 numbers) + existence of every cited source",
+      "evidence": "every «(источник: research/…)» file exists; every project-file source exists (the two legend lines «research/<файл>.md» and «<путь>» are explanations); traced: $0,55→$2,05 млрд, 30,1% -> pixel-office.md:131; $3,41→$6,92 млрд -> kpp-vision.md:404-405; Pretty Prompt Pro $8,25 -> pixel-office.md:167; 37 vacancies hh.kz -> agent-pipeline.md:189; «Допущения» table in «Финансовая модель»; 43× «допущение»; step-03-plan-validator-r6 PASS"
+    },
+    {
+      "n": 5,
+      "status": "met",
+      "how": "read «Проверка гипотез»",
+      "evidence": "table of 5 steps (days 1-7 … 30), each with a checkable result; «### Критерии остановки» with numeric stop criteria for the three lines"
+    },
+    {
+      "n": 6,
+      "status": "met",
+      "how": "read the section + name search + record",
+      "evidence": "no name of the reference project anywhere in the plan (grep -ci 0); sources of «своё» exist (.claude/agents/, docs/quality-bar.md, handoffs/SA-20261001-01/…); step-03 r6 PASS, step-04-release-validator-r1 PASS; checked in part (sample reading), not every statement"
+    },
+    {
+      "n": 7,
+      "status": "met",
+      "how": "jq .context.agent_run_id over handoffs/BP-20261003-01",
+      "evidence": "all 23 agent handoffs have an agent_run_id; author and checker ids differ"
+    },
+    {
+      "n": 8,
+      "status": "not met",
+      "how": "jq .result.verdict over steps 3 and 4 of BP-20261003-01",
+      "evidence": "step 3 (PLAN-VALIDATOR): FAIL (step-03), FAIL r1, FAIL r2, FAIL r3, FAIL r4, PASS r5, PASS r6 — five FAILs; the criterion says 'after the second rework with FAIL the status is blocked; escalation does not count'. The excess is recorded in decisions/0010 (status 'принято (2026-10-05, ORCH). Владелец может отменить', on the owner's words «не возвращайся ко мне пока что не решишь все»), i.e. an ORCH decision, not a separate owner exception (quality-bar §1.3); step-04-release-validator FAIL, -r1 PASS"
+    },
+    {
+      "n": 9,
+      "status": "met",
+      "how": "grep -ci of the two words (the reference project name and the owner's word for its author) in README.md and every research/*.md, also after stripping URLs; search for the employer company name",
+      "evidence": "all six files: 0 and 0; company name 0 both with and without URLs; in its place only «[компания]», «[продукт компании]», «[система компании]» (kpp-vision.md:284-297, :542-552)"
+    }
+  ],
+  "not_checked": [],
+  "findings": [
+    {
+      "id": "REQ-005-F1",
+      "check": "REQ-005, criterion 8",
+      "severity": "High",
+      "title": "Step 3 of BP-20261003-01 passed only on the 6th run (5 FAILs); the criterion's rework limit (blocked after the 2nd FAIL) was exceeded under an ORCH decision, not an owner exception",
+      "where": "handoffs/BP-20261003-01/step-03-plan-validator*.json; decisions/0010-bp-rework-limit-exceeded.md:3",
+      "evidence": "jq: step-03 FAIL, r1 FAIL, r2 FAIL, r3 FAIL, r4 FAIL, r5 PASS, r6 PASS; decisions/0010 'Статус: принято (2026-10-05, ORCH). Владелец может отменить.'",
+      "item": "Q14 (quality-bar §1.3: an exception only by the owner)",
+      "recommendation": "Owner: confirm decision 0010 as an owner exception (then the record of REQ-005 names it) or return REQ-005 to in_progress; DOC-UPDATER notes in the status line that criterion 8 is met only through 0010"
+    }
+  ]
+}

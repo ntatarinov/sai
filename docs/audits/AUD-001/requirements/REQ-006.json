@@ -1,0 +1,164 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "requirements",
+  "requirement": "REQ-006",
+  "auditor": "RELEASE-VALIDATOR",
+  "checked_at": "2026-10-27T13:35:19Z",
+  "base": "HEAD b64562a + working tree",
+  "method": "Each criterion's own way of checking carried out on the current files: commands and greps on the working tree; behaviour probes and writes only on a copy of Sai in <scratch> (team homes, Pixel Office stands and servers on port 0, one headless Chrome at a time); criteria about how a run went — by the run's handoffs and files. One full `npm run check` on the working tree and one on a clean copy.",
+  "check_command": "cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)",
+  "counts": {
+    "met": 16,
+    "not applicable": 3
+  },
+  "criteria": [
+    {
+      "n": 1,
+      "status": "met",
+      "how": "grep headings/markers; jq artifacts_out of every step-1 handoff",
+      "evidence": "session-review-platforms.md and -tools.md: «## Что нашли (проверено …)» 1, «## Где искали» 1, one conclusion pair, [вендор] 127 and 297; each of the 5 step-01 handoffs (incl. -r2, -r3) has exactly one path, its own file"
+    },
+    {
+      "n": 2,
+      "status": "met",
+      "how": "grep -F of the header row; awk over every table row",
+      "evidence": "both files: «### Покрытие разбора всей сессии» 1 and the exact header row 1; first ### in platforms = «### 1. Есть ли разбор всей сессии…»; 35 platform rows (Claude Code, GitHub Copilot, Cursor, Codex, Claude …) and 141 tool rows (Pretty Prompt, Microsoft Prompt Coach …): every element cell is да/частично/нет/не найдено, every row with a non-«не найдено» value has a link"
+    },
+    {
+      "n": 3,
+      "status": "met",
+      "how": "read task.description; jq of step 1b",
+      "evidence": "platforms task asks «есть ли … в самих агентных платформах»; 1b: platforms FAIL -> r2 PASS (147 URLs) -> r3 PASS (164), tools FAIL -> r2 PASS (129); at most two reworks per file"
+    },
+    {
+      "n": 4,
+      "status": "met",
+      "how": "the criterion's commands on result.value_sentence (outcome «рано»)",
+      "evidence": "L lines 1, words 56, [.!?] 1, ends with one; '$10 в месяц','допущение','Claude','Copilot','Pretty Prompt' each 1; value_table header grep -Fxc 1; 2b result.headings ['## Ценность одной фразой']"
+    },
+    {
+      "n": 5,
+      "status": "met",
+      "how": "jq of the 2b handoff + own re-derivation of the gate verdict",
+      "evidence": "2b verdict FAIL; checks 15, reasons (check 2, check 3), urls_opened 271, unopened 1, headings 1. Own derivation: rows of the tools coverage table with «да» in both promised elements (Действия агента, Потерянное время) = 14 -> condition 3 holds -> FAIL, same as 2b (not disputed)"
+    },
+    {
+      "n": 6,
+      "status": "met",
+      "how": "jq over 2a/2b/2c",
+      "evidence": "exactly one 2a (value_sentence filled) and one 2b (FAIL); 2b completed 2026-10-01T12:09:14Z < 2c created 12:10:54Z"
+    },
+    {
+      "n": 7,
+      "status": "not applicable",
+      "how": "not applicable",
+      "evidence": "outcome is «рано»"
+    },
+    {
+      "n": 8,
+      "status": "met",
+      "how": "grep '^## ', grep -x, grep -cF",
+      "evidence": "headings exactly «## Итог», «## Попытка сформулировать ценность», «## Что нужно узнать сначала», «## Связь с большим планом»; «Итог: рано» 1; the value sentence 1; each 2b reason text 1 and 1; path of 2a 3×; «14 дней» 0"
+    },
+    {
+      "n": 9,
+      "status": "met",
+      "how": "wc -w; awk without the last section | grep -ciE 'кпп|конвейер|квиз'",
+      "evidence": "1463 words (<=1500); 0"
+    },
+    {
+      "n": 10,
+      "status": "met",
+      "how": "record of step 3 + existence of cited sources",
+      "evidence": "step-03-plan-validator-r1 PASS, urls_opened 16 (>=5); every cited file exists. Note: the brief cites line numbers of the previous plan version (see F2)"
+    },
+    {
+      "n": 11,
+      "status": "not applicable",
+      "how": "not applicable",
+      "evidence": "outcome «рано»"
+    },
+    {
+      "n": 12,
+      "status": "not applicable",
+      "how": "not applicable",
+      "evidence": "outcome «рано»"
+    },
+    {
+      "n": 13,
+      "status": "met",
+      "how": "grep -F in «## Связь с большим планом»",
+      "evidence": "docs/business-plan/README.md 1"
+    },
+    {
+      "n": 14,
+      "status": "met",
+      "how": "sha of snapshot-before vs context; grep of forbidden paths in the snapshot; git history; RV step-04 record",
+      "evidence": "context.snapshot_before_sha256 7d7cec55…; current file 9b0426c2… (differs); git show 7591fc0:<file> | shasum -> 7d7cec55… (equal) — the file was rewritten later in commit 187b0aa (decisions/0019, names removed); grep -cE of step-01/session-review-/pixel-office-brief in the snapshot -> 0; step-04-release-validator PASS with result.checks. Met at run time by the git version; see F1"
+    },
+    {
+      "n": 15,
+      "status": "met",
+      "how": "the criterion's jq (1)-(6) on parallel-runs.jsonl",
+      "evidence": "(1) true; (2) true; (3) head -n 2 | shasum = 8697765a… = recorded parallel_runs_sha256; (4) 0; (5) ISS-0002-20260930-01 and PO-20260930-01: REQ-006 0, undeclared ids none; (6) no run_id after the first 2 lines"
+    },
+    {
+      "n": 16,
+      "status": "met",
+      "how": "grep -cF of the phrases in every task.description of steps 1b-5",
+      "evidence": "13 handoffs: «REQ-006 действует вместо REQ-005» 1 and «Дополнительные источники этого прогона:» 1 each; 2b phrase 1; step 3 phrase 1 (both); 2c names both handoffs and has both in artifacts_in; every handoff has context.task_check"
+    },
+    {
+      "n": 17,
+      "status": "met",
+      "how": "jq verdicts and times",
+      "evidence": "00b PASS (r4) completed 17:21:40Z before step 1 created 17:23:53Z; step 3 FAIL -> r1 PASS (one rework); step 4 PASS"
+    },
+    {
+      "n": 18,
+      "status": "met",
+      "how": "jq over all handoffs",
+      "evidence": "every agent handoff has agent_run_id; author/checker ids differ per step; created_at == started_at in all 29; every producer -rN has result.changes; every checker has result.verdict"
+    },
+    {
+      "n": 19,
+      "status": "met",
+      "how": "grep AP record, STATE.md, WF-07; jq step 5",
+      "evidence": "AP-015 has the four fields and README.md, 594, Д7, the review file; WF-07 has «## Variant: a short document with a value gate» (:91) with Step 2a/2b/2c, рано, snapshot, parallel-runs.jsonl; REQ-006 status done; step-05 agent_run_id a10b184e…, context.orch_check.verdict PASS; STATE.md names «Итог: «рано»» and pixel-office-brief.md (:995). (б) on today's STATE.md: the heading «### … доработки бизнес-плана» no longer exists; «594» and «каскад сигналов» are at :1074-1075 in another section, without AP-015 — met by the step-5 record (orch_check PASS), not by today's text (Low, F3)"
+    }
+  ],
+  "not_checked": [],
+  "findings": [
+    {
+      "id": "REQ-006-F1",
+      "check": "REQ-006, criterion 14",
+      "severity": "Medium",
+      "title": "The run's snapshot-before.txt no longer matches the sha256 recorded in the step-1 handoffs (rewritten after the run)",
+      "where": "handoffs/BP-20260930-01/snapshot-before.txt; context.snapshot_before_sha256 of step-01-market-researcher-*.json",
+      "evidence": "shasum -a 256 -> 9b0426c2…; recorded 7d7cec55…; git show 7591fc0:handoffs/BP-20260930-01/snapshot-before.txt | shasum -> 7d7cec55…; git log: changed in 187b0aa (decisions/0019, 12 lines of reference/… removed)",
+      "item": "Q14 (quality-bar §6.8: bookkeeping is only appended)",
+      "recommendation": "DOC-UPDATER: add a note to the run (or to decisions/0019) that the snapshot was rewritten and the recorded hash refers to commit 7591fc0, so a future check knows where to read it"
+    },
+    {
+      "id": "REQ-006-F2",
+      "check": "REQ-006, criteria 10 and 13",
+      "severity": "Medium",
+      "title": "pixel-office-brief.md cites line numbers of the previous plan version; today those lines hold other content",
+      "where": "docs/business-plan/pixel-office-brief.md:5, :49, :57",
+      "evidence": "brief: «строке 503», «Шаг 2 … (строка 586) и его критерий остановки (строки 593–595)»; today README.md:503 «подписка Claude Max … 44 177 ₸», :586 risk «Никто не платит», :593-595 risks «Штрафы», «Закон об ИИ», «Точность»",
+      "item": "Q14",
+      "recommendation": "DOC-UPDATER/PLAN-WRITER: replace line numbers with section names or mark them as lines of the version before 2026-10-05 (STATE.md:1074 already says the notes concern the old version)"
+    },
+    {
+      "id": "REQ-006-F3",
+      "check": "REQ-006, criterion 19 (б)",
+      "severity": "Low",
+      "title": "STATE.md no longer has the «доработки бизнес-плана» section with the AP-015 item the criterion names",
+      "where": "STATE.md:1059-1077",
+      "evidence": "grep '^### .*доработки бизнес-плана' STATE.md -> nothing; «594» and «каскад сигналов» at :1074-1075 without AP-015",
+      "item": "Q14",
+      "recommendation": "Accept as superseded by the plan rewrite, or restore a one-line pointer to AP-015"
+    }
+  ]
+}

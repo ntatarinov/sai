@@ -1,0 +1,77 @@
+{
+  "handoff_id": "step03b-AUD-001-20261027-01",
+  "run_id": "AUD-001-20261027-01",
+  "workflow_id": "WF-05",
+  "step": "03b",
+  "from_agent": "ORCH",
+  "to_agent": "DEPENDENCY-AUDITOR",
+  "file": "handoffs/AUD-001-20261027-01/step-03b-dependency-auditor.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/AUD-001/plan.json",
+      "decisions/0090-first-audit-compressed.md"
+    ],
+    "route": "DEPENDENCY-AUDITOR",
+    "write_set": [
+      "docs/audits/AUD-001/all/dependencies.json",
+      "handoffs/AUD-001-20261027-01/step-03b-dependency-auditor.json"
+    ],
+    "base_tag": "base/AUD-001-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T13:52:50Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "report file present and parsed; counts by severity summed by ORCH from all step-3 reports (Critical 1, High 6, Medium 21, Low 24) equal the compiler's report.json",
+        "only the audit folder and the run's handoffs changed in the working tree (git status)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-05 step 3, audit AUD-001 (the first audit of Sai, whole project). Read docs/workflows/WF-05-health-audit.md (step 3 and the severity rules), docs/audits/AUD-001/plan.json and decisions/0090. Check the dimension 'dependencies' across ALL parts listed for it in the plan (each finding must name its part with the short name from the plan). npm ci on a fresh copy outside the project; npm outdated and npm audit need the network — if the network fails, 'not checked'. Only read the project and run checks; a check that writes files is done on a copy outside the project folder; no real Claude Code runs and nothing that spends money (that is 'not checked' with the reason). Every finding has id, part, check, severity, title, where (file and line), evidence (command and output or quote), item (quality-bar item), recommendation. Record what was checked and how, and what was not checked and why. Write only docs/audits/AUD-001/all/dependencies.json and your handoff. No machine paths and no names of other projects (say 'the traces list'). At the end, write in result a summary for the owner in two or three plain Russian sentences.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T12:37:46Z",
+  "started_at": "2026-10-27T12:37:46Z",
+  "completed_at": "2026-10-27T12:54:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Findings: Critical 1, High 1, Medium 1, Low 0 (report docs/audits/AUD-001/all/dependencies.json). The packages themselves are in order: npm ci passes on a clean copy, the four development tools have exact versions, the lockfile is consistent, there are no runtime dependencies, every package is used, npm audit finds 0 vulnerabilities, all licences are permissive. The problem is the Node build on this computer: 22.21.1 is five security releases behind, and the running Pixel Office server is a node:http server on it (DEP-01, Critical by the WF-05 rule, reachable only from this computer); the same cause for the other parts (DEP-02, High); eslint, globals and prettier are a little behind (DEP-03, Medium). Для владельца: Пакеты в порядке: ставятся с нуля, версии закреплены, лишних и уязвимых пакетов нет, лицензии не мешают. Главная проблема — Node на этом компьютере (22.21.1) отстал на пять выпусков с исправлениями безопасности, и на нём сейчас работает сервер Pixel Office; нужно обновить Node 22 до 22.23.4 или новее. Ещё три инструмента проверки (eslint, globals, prettier) немного устарели — это не срочно.",
+    "findings": "docs/audits/AUD-001/all/dependencies.json",
+    "self_check": [
+      "node -v -> v22.21.1; npm -v -> 10.9.4",
+      "git archive HEAD tools into a scratch folder outside the project; npm ci -> added 80 packages, audited 81, found 0 vulnerabilities, exit 0",
+      "git clone of the repository (HEAD b64562a) outside the project; npm ci exit 0; npm run traces -> files 2224, traces 0, skipped 67, exit 0; npm run handoffs-check -> files 1212, violations 0, exit 0",
+      "on the copy: npm run format:check -> All matched files use Prettier code style!, exit 0; npm run lint -> exit 0",
+      "npm ls --depth=0 -> @eslint/js@10.0.1, eslint@10.11.0, globals@17.12.0, prettier@3.9.9, exit 0",
+      "npm outdated -> eslint 10.11.0/10.13.0, globals 17.12.0/17.13.0, prettier 3.9.9/3.9.10, exit 1",
+      "npm audit -> found 0 vulnerabilities, exit 0",
+      "lockfile script: 80 packages, 0 without integrity, 0 outside registry.npmjs.org, 0 non-dev; licences MIT 56, Apache-2.0 12, BSD-2-Clause 6, ISC 4, BSD-3-Clause 1, BlueOak-1.0.0 1",
+      "nodejs.org/dist/index.json: security releases after v22.21.1: 22.22.0, 22.22.2, 22.23.0, 22.23.2, 22.23.4; Node schedule: v22 end 2027-04-30",
+      "lsof -p <pixel-office pid> -> Homebrew node@22 22.21.1_4 binary; brew info node@22 -> stable 22.23.3",
+      "shasum -a 256 tools/package.json tools/package-lock.json before 12:50Z and after 12:53Z: 99cec2fc...69ddc, 92d27c4e...7b5bde both times; git status --short tools/ empty"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOT_CHECKED",
+        "text": "The test step of npm run check was not run on the clean copy: by the task another auditor runs the full suite at the same time. Install, format, lint, traces and handoffs-check passed on the copy."
+      },
+      {
+        "id": "I2",
+        "kind": "NOT_CHECKED",
+        "text": "No exploit was tried against the running Pixel Office server; the reachability in DEP-01 rests on the Node changelog and on the server being a node:http server without its own header limits. Node itself rates the plainly reachable http fix (CVE-2026-58044) Low, and the server listens on loopback only; Critical comes from the WF-05 rule, not from a demonstrated attack."
+      },
+      {
+        "id": "I3",
+        "kind": "NOT_CHECKED",
+        "text": "Licences of the Node runtime and of the Claude Code program (called by the team part) — not npm packages, outside this dimension."
+      }
+    ],
+    "artifacts_out": ["docs/audits/AUD-001/all/dependencies.json"]
+  }
+}

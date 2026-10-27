@@ -1,0 +1,74 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "step": "03g",
+  "role": "RELEASE-VALIDATOR",
+  "dimension": "requirements",
+  "requirement": "REQ-046",
+  "title": "Pixel Office — навигация журнала",
+  "status_in_requirements": "done",
+  "checked_at": "2026-10-27T13:37:54Z",
+  "check_command": "cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.",
+  "summary": {
+    "met": 7,
+    "met_in_part": 0,
+    "not_met": 0,
+    "not_checked": 0
+  },
+  "criteria": [
+    {
+      "criterion": 1,
+      "title": "Фильтры по сессии, агенту, задаче и типу",
+      "verdict": "met",
+      "how": "tests JN-01 in tools/test/pixel-office-panels.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0); browser step 1",
+      "evidence": "JN-01 green; on the stand the «Сессия» options are «все сессии», «Сессия номер sample-1 · с 27.10.2026, 18:20:51», «Сессия номер sample-2 · с 27.10.2026, 18:20:53»; «Агент» — «все агенты», «Основная сессия», «Оркестратор» and the roles."
+    },
+    {
+      "criterion": 2,
+      "title": "Поиск и более ранние строки",
+      "verdict": "met",
+      "how": "tests JN-02 in tools/test/pixel-office-panels.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0); browser steps 5 and 6",
+      "evidence": "JN-02 green; see criterion 6."
+    },
+    {
+      "criterion": 3,
+      "title": "Переходы от события",
+      "verdict": "met",
+      "how": "tests JN-03 in tools/test/pixel-office-page.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0)",
+      "evidence": "JN-03 green; in the browser «события этой задачи», «к задаче в панели», «кому», «кто передал», «открыть историю запроса» are present in the expansion of a handoff row."
+    },
+    {
+      "criterion": 4,
+      "title": "Текст — только как текст (Q7)",
+      "verdict": "met",
+      "how": "tests JN-04 in tools/test/pixel-office-page.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0) and the grep",
+      "evidence": "`grep -rnE 'innerHTML|outerHTML|insertAdjacentHTML|document[.]write' tools/src/pixel-office/public/` — empty, code 1; JN-04 green."
+    },
+    {
+      "criterion": 5,
+      "title": "Плохие и пустые условия не ломают навигацию (Q10)",
+      "verdict": "met",
+      "how": "tests JN-05 in tools/test/pixel-office-page.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0)",
+      "evidence": "JN-05 green."
+    },
+    {
+      "criterion": 6,
+      "title": "Приёмка в браузере на стенде",
+      "verdict": "met",
+      "how": "steps 1, 2, 5 and 6 (given to RELEASE-VALIDATOR) repeated on an own stand of 456 rows in two sessions (roles A «Проверка безопасности» with two runs, B «Ревью кода», an orchestrator record, a task begun outside the window of a request); the other steps by the records: docs/uat/REQ-046-RUN.md, docs/uat/REQ-046-047-048-049-RUN.md, BA-ANALYST PASS (handoffs/REQ048-20261015-01/step-08c-ba-analyst-r1.json). Stand: an own Pixel Office server started with `node src/pixel-office/main.js --port 0 --dir <outside the project>/stand-…` and SAI_PIXEL_OFFICE_DIR set to the same folder; events written only through the real `src/pixel-office/hook.sh` (26 events: main session sample-1 with an owner request, 10 role runs, B launched by A, two ends, Stop) and one orchestrator record through `src/pixel-office/note.js`; the owner journal, its copies and the ports 4780, 4782, 4790 were not used. Browser: Google Chrome headless, a new profile per page, driven over the debugging protocol with real mouse and key events; Chrome and the stand were stopped by their process ids. Results: <outside the project>/uat/res/po1…po5.json, shots in <outside the project>/uat/res/shots/.",
+      "evidence": "Step 5: «200 из 456» → two presses of «Показать более ранние» → «456 из 456», the button is gone, the first row is the first line of the stand journal (SessionStart sample-1). Step 1: «Агент» = «Проверка безопасности» — rows 2, 5, 29, 31, 33, 35, exactly the rows of the file with that agent_type (starts, continuation, end and the handoff made by A; the handoffs to A from the main session are not in it); plus «Тип события» = «Агент получил задание и начал работу» — 2 rows, both starts of A; «Сбросить фильтры» — «200 из 456». Step 2: «события этой задачи» — mark «Задача: Проверка безопасности номер sample-a», 3 rows of the task; the «×» removes the mark. Step 6: search «вторая проверка» — «4 из 4», the start, the handoff, the continuation and the end of that task only."
+    },
+    {
+      "criterion": 7,
+      "title": "Документация и проверка не обходится",
+      "verdict": "met",
+      "how": "README awk; docs test; design table; counts; own check",
+      "evidence": "awk «## Pixel Office» | grep -c 'Показать более ранние' — 1; grep -c 'Поиск в журнале' — 1; `cd tools && node --test test/pixel-office-docs.test.js` — tests 9, pass 9, fail 0, skipped 0, todo 0; docs/design/REQ-046-journal-navigation.md exists; test( and assert. per tools/test/pixel-office-*.test.js, base/REQ048-20261015-01 → now: docs 6→9 / 32→41, hook 44→44 / 244→244, layout 19→19 / 210→210, note 7→7 / 103→103, office 59→61 / 564→602, page 92→114 / 833→1215, panels 51→55 / 892→1017, scale 7→7 / 48→48, server 72→72 / 346→346, settings 7→7 / 25→25 — none smaller; cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s."
+    }
+  ],
+  "findings": [],
+  "not_checked": [],
+  "notes": [
+    "Filter values were set on the select elements with a change event (the criterion allows the arrows of a select; the option list and the result were read from the page)."
+  ]
+}

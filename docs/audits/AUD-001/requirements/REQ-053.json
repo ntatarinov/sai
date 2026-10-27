@@ -1,0 +1,85 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "step": "03g",
+  "role": "RELEASE-VALIDATOR",
+  "dimension": "requirements",
+  "requirement": "REQ-053",
+  "title": "Pixel Office — подсказки «?» и пустые состояния",
+  "status_in_requirements": "done",
+  "checked_at": "2026-10-27T13:37:54Z",
+  "check_command": "cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.",
+  "summary": {
+    "met": 8,
+    "met_in_part": 0,
+    "not_met": 0,
+    "not_checked": 0
+  },
+  "criteria": [
+    {
+      "criterion": 1,
+      "title": "Четыре подсказки",
+      "verdict": "met",
+      "how": "tests HN-01 in tools/test/pixel-office-guide.test.js exist and are green in the own npm run check; browser steps 1, 2, 5",
+      "evidence": "HN-01 green; see criterion 7."
+    },
+    {
+      "criterion": 2,
+      "title": "Места подсказок и размеры",
+      "verdict": "met",
+      "how": "tests HN-02 in tools/test/pixel-office-guide.test.js exist and are green in the own npm run check; browser steps 1 and 5",
+      "evidence": "HN-02 green; «?» 24×24 px (1.5 rem) in 1470 and 1920, 36×36 px (2.25 rem) in 390 and 320."
+    },
+    {
+      "criterion": 3,
+      "title": "Пустой журнал учит",
+      "verdict": "met",
+      "how": "tests HN-03 in tools/test/pixel-office-guide.test.js exist and are green in the own npm run check; browser step 4",
+      "evidence": "HN-03 green; see criterion 7, step 4."
+    },
+    {
+      "criterion": 4,
+      "title": "Пустой офис учит",
+      "verdict": "met",
+      "how": "tests HN-04 in tools/test/pixel-office-guide.test.js exist and are green in the own npm run check; browser step 4",
+      "evidence": "HN-04 green."
+    },
+    {
+      "criterion": 5,
+      "title": "Пустая панель «Задачи» учит",
+      "verdict": "met",
+      "how": "tests HN-05 in tools/test/pixel-office-guide.test.js exist and are green in the own npm run check; browser step 4",
+      "evidence": "HN-05 green."
+    },
+    {
+      "criterion": 6,
+      "title": "Правда, безопасность, доступность",
+      "verdict": "met",
+      "how": "tests HN-06 in tools/test/pixel-office-guide.test.js exist and are green in the own npm run check, the greps and the diff of the run",
+      "evidence": "`grep -rnE 'innerHTML|outerHTML|insertAdjacentHTML|document[.]write' tools/src/pixel-office/public/` — empty, code 1; `grep -rnE 'https?://' tools/src/pixel-office/public` — empty, code 1; `grep -rniE 'заверш|готов|выполнен|успешн' tools/src/pixel-office/public/ | grep -v HISTORY_META_FINISHED` — empty, code 1; the command of criterion 3 REQ-048 (old words in string literals of public/*.js, comment lines excluded) — empty, code 1; package diff of the run empty; HN-06 and PN-17 green."
+    },
+    {
+      "criterion": 7,
+      "title": "Приёмка в браузере на стендах",
+      "verdict": "met",
+      "how": "steps 1, 2, 4 and 5 (given to RELEASE-VALIDATOR, own measurements) repeated; stands A and B. Page clock fixed by replacing Date.now in the page only (+5 s and +61 min after the last event of the stand). Stand: an own Pixel Office server started with `node src/pixel-office/main.js --port 0 --dir <outside the project>/stand-…` and SAI_PIXEL_OFFICE_DIR set to the same folder; events written only through the real `src/pixel-office/hook.sh` (26 events: main session sample-1 with an owner request, 10 role runs, B launched by A, two ends, Stop) and one orchestrator record through `src/pixel-office/note.js`; the owner journal, its copies and the ports 4780, 4782, 4790 were not used. Browser: Google Chrome headless, a new profile per page, driven over the debugging protocol with real mouse and key events; Chrome and the stand were stopped by their process ids. Results: <outside the project>/uat/res/po1…po5.json, shots in <outside the project>/uat/res/shots/. Step 3 and the readers of steps 6 and 7 by the records. Records of the run REQ050-20261017-01: docs/uat/REQ-050-051-052-053-RUN.md and docs/uat/REQ-05x-RUN.md, UAT 31 of 31 after repeat 2, BA-ANALYST signature handoffs/REQ050-20261017-01/step-08c-ba-analyst-r1.json (PASS).",
+      "evidence": "Step 1 (1920, 1470, both moments): four buttons 24×24 px; mouse over each — the tooltip visible and inside the window; «Закрыть подсказку: …» has the font-size (12px) and colour (rgb 219,228,240) of the main text; mouse away — hidden; header 60 px; no scroll aside. Step 2: Tab to «Подсказка: Сейчас» — visible; Escape — hidden, focus on it; Tab on to «Подсказка: Задачи» — visible. Step 4 (stand A): «Событий от Claude Code пока нет», the folder hint, «Чтобы здесь появились события:» and four steps; office «В офисе пока никого. …»; «Текущие» «Задач пока нет. …», «История» «Нет данных»; «Как пользоваться» in the journal opened the guide, Escape — focus on that button; first event through hook.sh — steps and office text gone after 2.1 s (≤ 5 s). Step 5 (390, 320, both moments, touch emulation of the debugging protocol): four buttons 36×36 px; a touch opens each tooltip inside the window; no scroll aside."
+    },
+    {
+      "criterion": 8,
+      "title": "Документация и проверка не обходится",
+      "verdict": "met",
+      "how": "README awk; docs test; design table; counts; own check",
+      "evidence": "awk «## Pixel Office» | grep -c 'Чтобы здесь появились события' — 1; `cd tools && node --test test/pixel-office-docs.test.js` — tests 9, pass 9, fail 0, skipped 0, todo 0; test( and assert. per tools/test/pixel-office-*.test.js, base/REQ050-20261017-01 → now: docs 8→9 / 36→41, hook 44→44 / 244→244, layout 19→19 / 210→210, note 7→7 / 103→103, office 61→61 / 602→602, page 113→114 / 1199→1215, panels 55→55 / 1016→1017, scale 7→7 / 48→48, server 72→72 / 346→346, settings 7→7 / 25→25 (pixel-office-guide.test.js is new) — none smaller; cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s."
+    }
+  ],
+  "findings": [],
+  "not_checked": [
+    {
+      "criterion": 7,
+      "part": "steps 6 and 7 (readers without context)",
+      "why": "need new launches of an agent (the limit of the owner); by the records the readers passed (step-08c-ba-analyst-r1.json, readers 34 and 35)"
+    }
+  ],
+  "notes": []
+}

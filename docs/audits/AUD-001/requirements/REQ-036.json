@@ -1,0 +1,89 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "requirements",
+  "requirement": "REQ-036",
+  "auditor": "RELEASE-VALIDATOR",
+  "checked_at": "2026-10-27T13:35:19Z",
+  "base": "HEAD b64562a + working tree",
+  "method": "Each criterion's own way of checking carried out on the current files: commands and greps on the working tree; behaviour probes and writes only on a copy of Sai in <scratch> (team homes, Pixel Office stands and servers on port 0, one headless Chrome at a time); criteria about how a run went — by the run's handoffs and files. One full `npm run check` on the working tree and one on a clean copy.",
+  "check_command": "cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)",
+  "counts": {
+    "met": 10
+  },
+  "criteria": [
+    {
+      "n": 1,
+      "status": "met",
+      "how": "full run + own browser",
+      "evidence": "37 role codes; pixel-office-panels tests green; browser (stand in <scratch>, 12 agents): body text has «Проверка безопасности», no 'SECURITY-REVIEW', the 60-char unknown role shown whole"
+    },
+    {
+      "n": 2,
+      "status": "met",
+      "how": "greps + tests",
+      "evidence": "NOW_MORE 0; '· и ещё' 0; tests green"
+    },
+    {
+      "n": 3,
+      "status": "met",
+      "how": "own browser at 1470×784, 480×800, 390×844",
+      "evidence": "every Now row: text-overflow clip (not ellipsis), line-clamp none, scrollWidth = clientWidth; the 100-char description and the long word present in full; no '…' added"
+    },
+    {
+      "n": 4,
+      "status": "met",
+      "how": "own browser",
+      "evidence": "12 agents -> 12 .now-row; .now-list overflow-y auto, scrollHeight 287 > clientHeight 34 (1920×1080); document not scrolling at 1920×1080 (1080/1080) and 1470×784 (784/784); at 480 and 390 vertical page scroll only, scrollWidth = width"
+    },
+    {
+      "n": 5,
+      "status": "met",
+      "how": "greps",
+      "evidence": "POST/PUT/PATCH/DELETE in pixel-office/public 0"
+    },
+    {
+      "n": 6,
+      "status": "met",
+      "how": "grep + tests",
+      "evidence": "innerHTML etc. in pixel-office/public 0; hook/mask tests green"
+    },
+    {
+      "n": 7,
+      "status": "met",
+      "how": "own browser at 1920×1080, 1920×950, 1470×784, 480×800, 390×844 + records",
+      "evidence": "no horizontal scroll anywhere; wide windows do not scroll vertically; samples req036-* exist. At 1470×784 the Now list is 139 px wide (116 px while the first-visit tour prompt shows), a single row (51 px) is taller than the 34 px box, so no row is readable whole inline; «Показать всех (12)» opens all 12 rows whole without inner scroll (REQ-049) — met through that button, see F1"
+    },
+    {
+      "n": 8,
+      "status": "met",
+      "how": "records",
+      "evidence": "docs/uat/REQ-036-044-045-RUN.md; REQ048-20261015-01 RV step-09 PASS"
+    },
+    {
+      "n": 9,
+      "status": "met",
+      "how": "the criterion's awk/grep",
+      "evidence": "REQ-007 block: 'и число остальных элементов' 0, 'по одной строке на каждый элемент' 1, 'простыми словами' 7; pixel-office-panels: tests 55 (>=23), asserts 1017 (>=390), PN-01…PN-22 and PN-21b present; '· и ещё|NOW_MORE' in tests, src, REQ-007-office-ui.md 0; base tags present"
+    },
+    {
+      "n": 10,
+      "status": "met",
+      "how": "awk/grep + check",
+      "evidence": "Pixel Office section: 'a row for each agent' 1; cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)"
+    }
+  ],
+  "not_checked": [],
+  "findings": [
+    {
+      "id": "REQ-036-F1",
+      "check": "REQ-036, criterion 7 (and 3)",
+      "severity": "Medium",
+      "title": "At 1470×784 the Now block is ~139 px wide after the guide controls were added; even one row cannot be read whole inline",
+      "where": "tools/src/pixel-office/public/index.html (header: now, tour prompt, «Как пользоваться»), style.css .now-list",
+      "evidence": "headless Chrome 1470×784, 12 live agents, tour dismissed: .now-list clientWidth 139, clientHeight 34, first row height 51, rows fully inside the box 0; at 1920×950 width 589, 2 rows visible; sample req036-twelve-1470x784-2026-10-14.png shows two whole rows on a wide block; «Показать всех (12)» list: 12 rows, none cut",
+      "item": "Q3 (owner's readability request)",
+      "recommendation": "FRONTEND-DEV via WF-03: give the Now block a minimum width at 1470×784 or move the guide button so at least one row fits; add a browser check of the inline block width to the DESIGN-QA step"
+    }
+  ]
+}

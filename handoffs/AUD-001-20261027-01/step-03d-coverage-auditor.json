@@ -1,0 +1,78 @@
+{
+  "handoff_id": "step03d-AUD-001-20261027-01",
+  "run_id": "AUD-001-20261027-01",
+  "workflow_id": "WF-05",
+  "step": "03d",
+  "from_agent": "ORCH",
+  "to_agent": "COVERAGE-AUDITOR",
+  "file": "handoffs/AUD-001-20261027-01/step-03d-coverage-auditor.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/AUD-001/plan.json",
+      "decisions/0090-first-audit-compressed.md"
+    ],
+    "route": "COVERAGE-AUDITOR",
+    "write_set": [
+      "docs/audits/AUD-001/all/coverage.json",
+      "handoffs/AUD-001-20261027-01/step-03d-coverage-auditor.json"
+    ],
+    "base_tag": "base/AUD-001-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T13:52:50Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "report file present and parsed; counts by severity summed by ORCH from all step-3 reports (Critical 1, High 6, Medium 21, Low 24) equal the compiler's report.json",
+        "only the audit folder and the run's handoffs changed in the working tree (git status)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-05 step 3, audit AUD-001 (the first audit of Sai, whole project). Read docs/workflows/WF-05-health-audit.md (step 3 and the severity rules), docs/audits/AUD-001/plan.json and decisions/0090. Check the dimension 'coverage' across ALL parts listed for it in the plan (each finding must name its part with the short name from the plan). Run cd tools && npm run check yourself and attach the summary of its output. Only read the project and run checks; a check that writes files is done on a copy outside the project folder; no real Claude Code runs and nothing that spends money (that is 'not checked' with the reason). Every finding has id, part, check, severity, title, where (file and line), evidence (command and output or quote), item (quality-bar item), recommendation. Record what was checked and how, and what was not checked and why. Write only docs/audits/AUD-001/all/coverage.json and your handoff. No machine paths and no names of other projects (say 'the traces list'). At the end, write in result a summary for the owner in two or three plain Russian sentences.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T12:37:47Z",
+  "started_at": "2026-10-27T12:37:47Z",
+  "completed_at": "2026-10-27T13:01:57Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Test coverage of tools-core, pixel-office, team and picker. The check command passes: 2065 of 2065 tests, 0 skipped, 0 todo, exit code 0. Of 380 criteria of the 37 requirements in done and in_progress, 324 have a test that exists and runs, 56 are checked not by a test (UAT stands, run records, commands, PLAN-VALIDATOR; listed with references), 0 are without a test. All 14 closed defects have regression tests that exist and run. Findings: 0 Critical, 0 High, 3 Medium (pixel-office: SV-11 duplicates SV-11d and the port-taken message is never compared; OF-17d says the journal is unchanged but checks only its size; team: 10–12 s wall-clock windows in WEB-15 (б) and CTL-8a are of the same kind as the load-flaky tests of ISS-0083 but not in it), 3 Low (HC-5a named in the REQ-038 design but absent; TP-9* file name in the REQ-068 design; stateFiles exported, never called, untested). This is an assessment by reading and mechanical cross-checks, not a line measurement. Для владельца: тесты проекта в порядке — все 2065 проходят, ни один не пропущен, у каждого проверяемого тестом критерия и у каждого закрытого дефекта тест есть. Серьёзных пробелов нет; найдено три средних слабых места (два слабых теста Pixel Office и проверки по стенным часам в команде, которые могут краснеть под нагрузкой) и три мелочи в названиях и мёртвой функции.",
+    "findings": "docs/audits/AUD-001/all/coverage.json",
+    "self_check": [
+      "node -v → v22.21.1",
+      "cd tools && npm run check (once, foreground) → exit 0; format:check «All matched files use Prettier code style!»; lint passed; traces «файлов проверено 2236, следов 0, пропущено 67»; handoffs-check «файлов проверено 1219, нарушений 0, исключений использовано 114 из 114»; test «# tests 2065 # suites 0 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 126973.764292»",
+      "grep -rnE '\\.(skip|todo|only)\\b|\\{ *(skip|todo|only) *:' tools/test → nothing outside fixtures; grep -rn eslint-disable tools/src tools/test → nothing",
+      "find tools/test -name '*.js' ! -name '*.test.js' | xargs grep -ln '^\\s*(test|it|describe)(' → nothing",
+      "scripts outside the project: cross-check of 2557 test-id references in docs/design tables against the check output (absent: HC-5a only, others explained); criterion-row mapping for 37 requirements; tests without assertions (40 bodies with no assert word, all read: delegate to asserting helpers); success-only tests (0); failure tests without a before/after check (sampled by hand); exports not named in tests (958 exports, 407 not named; one with no caller)",
+      "grep -nE 'new Date\\(\\)|Date\\.now\\(\\)' tools/test/*.test.js; sed -n 125,149p tools/test/team-web-channel.test.js; sed -n 243,265p tools/test/team-web-control-engine.test.js; grep -n '^| ' docs/issues/ISS-0083-*.md",
+      "sed -n 244,268p tools/test/pixel-office-server.test.js; grep -n 'занят' tools/test/pixel-office-server.test.js → nothing; sed -n 985,996p tools/test/pixel-office-office.test.js; grep -rn stateFiles tools/src tools/test → only state-dir.js:308"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOT_CHECKED",
+        "text": "Whether each test proves its criterion in full was not re-proved test by test (380 criteria): checked are the presence of a row and the existence and run of the named tests."
+      },
+      {
+        "id": "I2",
+        "kind": "NOT_CHECKED",
+        "text": "No mutants and no repeated runs under load: the full check was to run only once (another auditor at the same time); timing risks are judged from the code and the open defects ISS-0004, ISS-0017, ISS-0065, ISS-0083."
+      },
+      {
+        "id": "I3",
+        "kind": "NOT_CHECKED",
+        "text": "The 56 criteria whose way of checking is not a test were not executed here (Requirements dimension for done, RELEASE-VALIDATOR step 9 for in_progress); no real Claude Code run (decisions/0090, item 5)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "REQ-005 and REQ-006 (business documents, WF-07) belong to no part of the plan; they are listed in the report with their way of checking (PLAN-VALIDATOR, grep, jq)."
+      }
+    ],
+    "artifacts_out": ["docs/audits/AUD-001/all/coverage.json"]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "step": "03g",
+  "role": "RELEASE-VALIDATOR",
+  "dimension": "requirements",
+  "requirement": "REQ-045",
+  "title": "Pixel Office — журнал понятными словами",
+  "status_in_requirements": "done",
+  "checked_at": "2026-10-27T13:37:54Z",
+  "check_command": "cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.",
+  "summary": {
+    "met": 9,
+    "met_in_part": 0,
+    "not_met": 0,
+    "not_checked": 0
+  },
+  "criteria": [
+    {
+      "criterion": 1,
+      "title": "Слова событий — одна таблица",
+      "verdict": "met",
+      "how": "tests JR-01 in tools/test/pixel-office-panels.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0); the grep of the old words",
+      "evidence": "`grep -rnE 'субагент запущен|…|сессия закончилась' tools/src/pixel-office/public/` — empty, code 1; JR-01 green. Browser: the journal of the stand shows «Агент «Проверка безопасности» получил задание и начал работу», «… закончил работу и вернул ответ», «Задание передано агенту «Ревью кода»», «Основная сессия вернула ответ», «Оркестратор записал, как понял запрос»."
+    },
+    {
+      "criterion": 2,
+      "title": "Строка журнала — событие, прошлые строки не переписываются",
+      "verdict": "met",
+      "how": "tests JR-02 in tools/test/pixel-office-panels.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0)",
+      "evidence": "JR-02 green."
+    },
+    {
+      "criterion": 3,
+      "title": "Событие раскрывается",
+      "verdict": "met",
+      "how": "tests JR-03 in tools/test/pixel-office-page.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0); browser step 2 of criterion 8",
+      "evidence": "JR-03 green; on the stand the order of the fields of the expansion is what, not_proved, when, source, session, agent, task, then «Технические поля» (closed)."
+    },
+    {
+      "criterion": 4,
+      "title": "Записи оркестратора — строки журнала",
+      "verdict": "met",
+      "how": "tests JR-04 in tools/test/pixel-office-panels.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0); browser",
+      "evidence": "JR-04 green; on the stand the record is the row «Оркестратор · Оркестратор записал, как понял запрос» without the text; the expansion shows the text and REQ-008."
+    },
+    {
+      "criterion": 5,
+      "title": "Слова не обещают больше, чем знает источник (R2)",
+      "verdict": "met",
+      "how": "the grep of the criterion and test JR-01",
+      "evidence": "`grep -rniE 'заверш|готов|выполнен|успешн' tools/src/pixel-office/public/ | grep -v HISTORY_META_FINISHED` — empty, code 1; JR-01 green."
+    },
+    {
+      "criterion": 6,
+      "title": "Текст — только как текст (Q7)",
+      "verdict": "met",
+      "how": "tests JR-05 in tools/test/pixel-office-page.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0) and the grep",
+      "evidence": "`grep -rnE 'innerHTML|outerHTML|insertAdjacentHTML|document[.]write' tools/src/pixel-office/public/` — empty, code 1; JR-05 green."
+    },
+    {
+      "criterion": 7,
+      "title": "Плохие и пустые условия не ломают журнал (Q10)",
+      "verdict": "met",
+      "how": "tests JR-06 in tools/test/pixel-office-page.test.js exist (grep of the id in the file) and are green in the own npm run check (ok lines; not ok 0)",
+      "evidence": "JR-06 green."
+    },
+    {
+      "criterion": 8,
+      "title": "Приёмка в браузере на стенде",
+      "verdict": "met",
+      "how": "steps 2, 3 and 4 (the steps the criterion gives to RELEASE-VALIDATOR) repeated on an own stand; steps 1 and the rest by the records of the run: docs/uat/REQ-045-RUN.md and docs/uat/REQ-036-044-045-RUN.md, BA-ANALYST signature handoffs/REQ048-20261015-01/step-08c-ba-analyst-r1.json (verdict PASS). Stand: an own Pixel Office server started with `node src/pixel-office/main.js --port 0 --dir <outside the project>/stand-…` and SAI_PIXEL_OFFICE_DIR set to the same folder; events written only through the real `src/pixel-office/hook.sh` (26 events: main session sample-1 with an owner request, 10 role runs, B launched by A, two ends, Stop) and one orchestrator record through `src/pixel-office/note.js`; the owner journal, its copies and the ports 4780, 4782, 4790 were not used. Browser: Google Chrome headless, a new profile per page, driven over the debugging protocol with real mouse and key events; Chrome and the stand were stopped by their process ids. Results: <outside the project>/uat/res/po1…po5.json, shots in <outside the project>/uat/res/shots/.",
+      "evidence": "Step 2: the end row of «Исправление кода» — first «Что произошло» (case 9 words and meaning) and «Чего это не доказывает» («Не доказывает, что задание сделано, что проверки прошли и что ответ верен. Агента могут продолжить.»), then «Когда», «Источник: Claude Code», «Сессия», «Агент», «Задача: Исправление кода · sample-i · сейчас: закончила работу, итог не записан»; «Технические поля» — hook_event_name: SubagentStop, agent_id: sample-i. Step 3: Escape — aria-expanded false, focus on the same row (index 22); Tab, Enter — row 23 opened; the orchestrator record expansion holds its text and REQ-008. Step 4: 1470×784 and 375×812 — scrollWidth 1470/1470 and 375/375; no word of the journal broken (Range.getClientRects one rectangle each); 27 rows reached by Tab, each with a visible focus ring (outline solid)."
+    },
+    {
+      "criterion": 9,
+      "title": "Документация и проверка не обходится",
+      "verdict": "met",
+      "how": "awk of the README section; docs test; design replacement table; counts against base/REQ048-20261015-01; the own npm run check",
+      "evidence": "awk «## Pixel Office» | grep -c 'Чего это не доказывает' — 2; grep -c 'Оркестратор записал, как понял запрос' — 1; `cd tools && node --test test/pixel-office-docs.test.js` — tests 9, pass 9, fail 0, skipped 0, todo 0; docs/design/REQ-045-048-replacements.md and docs/design/REQ-045-journal-words.md hold the replacement table; test( and assert. per tools/test/pixel-office-*.test.js, base/REQ048-20261015-01 → now: docs 6→9 / 32→41, hook 44→44 / 244→244, layout 19→19 / 210→210, note 7→7 / 103→103, office 59→61 / 564→602, page 92→114 / 833→1215, panels 51→55 / 892→1017, scale 7→7 / 48→48, server 72→72 / 346→346, settings 7→7 / 25→25 — none smaller; cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s."
+    }
+  ],
+  "findings": [],
+  "not_checked": [],
+  "notes": [
+    "The statements «сейчас ничего не находит» about free test ids are the state before the build; they are not re-checked (the ids are now used by the tests)."
+  ]
+}

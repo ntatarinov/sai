@@ -1,0 +1,323 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "architecture",
+  "auditor": "ARCHITECTURE-AUDITOR",
+  "parts": ["tools-core", "pixel-office", "team", "picker", "claude"],
+  "checked_at": "2026-10-27T12:47:14Z",
+  "base": "a fresh git clone of the project at HEAD b64562a, outside the project; the working tree differs from HEAD only in decisions/README.md and the new audit files (git status), no code",
+  "counts": { "Critical": 0, "High": 0, "Medium": 4, "Low": 11 },
+  "counts_by_part": {
+    "tools-core": { "Critical": 0, "High": 0, "Medium": 0, "Low": 1 },
+    "pixel-office": { "Critical": 0, "High": 0, "Medium": 2, "Low": 3 },
+    "team": { "Critical": 0, "High": 0, "Medium": 2, "Low": 3 },
+    "picker": { "Critical": 0, "High": 0, "Medium": 0, "Low": 4 },
+    "claude": { "Critical": 0, "High": 0, "Medium": 0, "Low": 0 }
+  },
+  "findings": [
+    {
+      "id": "ARC-01",
+      "part": "pixel-office",
+      "check": "oversized files and functions; recorded decision decisions/0005 D10 (pure modules plus a thin DOM layer)",
+      "severity": "Medium",
+      "title": "The page's DOM layer is one 3307-line closure: app.js is 3551 lines, 5 to 10 times its neighbours",
+      "where": "tools/src/pixel-office/public/app.js:245 (createApp, to line 3551)",
+      "evidence": "node <outside the project>/fnsize.mjs src/pixel-office/public/app.js -> '3552 lines; 129 functions; largest: createApp@245=3307, decorate@3351=156, mainCardTree@2293=153, renderJournal@1188=128'. wc -l of the neighbouring page modules: office-view.js 690, model.js 585, panels.js 528, the rest 200-400 (texts.js 1081 is data). decisions/0005-pixel-office-design.md:68 D10 chose 'pure ES modules without DOM ... plus a thin DOM layer'. The pure logic does live in the other modules (app.js imports buildModel, buildOffice, journalRows, buildHistory and others), so the split itself holds; the DOM layer is not thin. One closure holds about 40 mutable state variables (app.js:263-300) shared by about 120 inner functions; its test file test/pixel-office-page.test.js is 6090 lines, the largest in the project.",
+      "item": "Q12",
+      "recommendation": "Split createApp by screen area (header and 'Сейчас', office and card, journal, task panel, guide wiring) into modules that take the shared state object explicitly, following the pattern already used by guide.js, tour.js and hints.js; no change of behaviour, the existing page tests as the guard. If ORCH reads D10 as violated, this is a divergence from a recorded decision (High) - see result.issues I1."
+    },
+    {
+      "id": "ARC-02",
+      "part": "pixel-office",
+      "check": "the list of addresses and methods matches tools/README.md and docs/design/REQ-001-pixel-office.md",
+      "severity": "Medium",
+      "title": "The Pixel Office design still says POST /api/events is the only write path; the code and README have a second one, POST /api/note",
+      "where": "docs/design/REQ-001-pixel-office.md:185, :2833 (section 5.2), :3046; tools/src/pixel-office/server.js:453",
+      "evidence": "grep -n 'единственный путь записи' docs/design/REQ-001-pixel-office.md -> 185 and 2833 ('| `POST /api/events` | **единственный путь записи** |'); grep -n 'api/note' docs/design/REQ-001-pixel-office.md -> nothing; grep -ln 'api/note' docs/design/*.md -> only REQ-008-history.md. server.js:453 routes POST /api/note; tools/README.md:200 and :209 describe two write paths. Live probe on a separate server (port 0, own state folder outside the project): 'POST /api/note -> 200 {\"request_time\":null,\"request_time_auto\":false}'.",
+      "item": "Q12",
+      "recommendation": "Add to REQ-001 design section 5.2 (and the picture at :185 and item 3 at :3046) the second write path with a reference to the REQ-008 design, or a note at the top of section 5 that REQ-008 changed it."
+    },
+    {
+      "id": "ARC-03",
+      "part": "pixel-office",
+      "check": "one mechanism in neighbouring places: append-only journals and all-or-nothing writes",
+      "severity": "Low",
+      "title": "The Pixel Office journal appends without fsync and without rollback; the neighbouring Team journal does both",
+      "where": "tools/src/pixel-office/journal.js:64-91 (appendText); compare tools/src/team/journal.js:150-200 (appendBytes)",
+      "evidence": "grep -n 'fsync\\|flush' src/pixel-office/*.js -> nothing. team/journal.js:150-153: 'On a failed write or fsync the file is cut back to expectedBytes (ftruncate + fsync), so either all the lines are written or the journal is as it was.' pixel-office/journal.js:62-65: a cut-off tail becomes 'a separate corrupt line' at the next append. The REQ-001 design accepts this (design line 687, the append contract), so it is not a divergence; but after a failed partial append the server answers 500 while a fragment stays in the journal for good and is reported as a corrupt line on reads.",
+      "item": "Q10",
+      "recommendation": "Either give the Pixel Office append the Team rollback (ftruncate to the size before the write, on failure) or record in the REQ-001 design why the two journals differ, so the next reader does not 'fix' one by the other."
+    },
+    {
+      "id": "ARC-04",
+      "part": "pixel-office",
+      "check": "error responses are of one kind (Q10); one mechanism in neighbouring places: the three HTTP servers",
+      "severity": "Low",
+      "title": "Three HTTP servers copy the same base by hand, and it has drifted: Pixel Office answers 403 and 405 with an empty body, the team page and the picker answer with JSON and a text",
+      "where": "tools/src/pixel-office/server.js:86-114, :438, :450-461; tools/src/web/server.js:107-129, :287-293; tools/src/picker/server.js:155-170. Also parts team and picker.",
+      "evidence": "Live probe on the separate Pixel Office server: 'DELETE /api/events -> 405 - ' (no Content-Type, empty body), 'GET / [host=evil.example] -> 403 - ', while every other error is JSON ('404 {\"error\":\"not_found\"}', '401 {\"error\":\"unauthorized\"}', '400 {\"error\":\"time_skew\"}', '413 {\"error\":\"too_large\"}', '500 {\"error\":\"write_failed\"}'). web/server.js:291 refuses 405 with failure(405, TEXT.badRequest) - a JSON body with a text. commonHeaders() is byte-identical in pixel-office/server.js:86 and web/server.js:107; the 413 drain is written three ways (pixel-office answerTooLarge with socket.setTimeout, web discard(), picker discard()). The empty 403 is what the REQ-001 design asks for (design line 2813), so this is a drift between neighbours, not a divergence from the design.",
+      "item": "Q10",
+      "recommendation": "Agree one error body for all three servers (code plus text) and move the shared base (headers, JSON answer, 413 drain, Host check) into one module, or keep the copies and add one parity test over the three servers."
+    },
+    {
+      "id": "ARC-05",
+      "part": "pixel-office",
+      "check": "dead code",
+      "severity": "Low",
+      "title": "HISTORY_SERVICE is exported by the page texts and used only by a test",
+      "where": "tools/src/pixel-office/public/texts.js:462",
+      "evidence": "grep -rn HISTORY_SERVICE src test -> only texts.js:462 (definition) and test/pixel-office-panels.test.js:1266. The page shows the same words through texts.js:76 and :199.",
+      "item": "Q12",
+      "recommendation": "Remove the constant and let the test take the text from the place the page uses, or use the constant in the page."
+    },
+    {
+      "id": "ARC-06",
+      "part": "team",
+      "check": "one mechanism in neighbouring places (AP-014): shared helpers",
+      "severity": "Medium",
+      "title": "team/common.js exports has and isPlainObject, but store.js, schema.js and engine/channel.js keep their own copies; lstatOrNull is copied four times in team",
+      "where": "tools/src/team/common.js:4, :10; copies in tools/src/team/store.js:60, :66, :102; tools/src/team/schema.js:397, :407; tools/src/team/engine/channel.js:132, :149; tools/src/team/files.js:32; tools/src/team/home.js:99",
+      "evidence": "grep -rn -E '^(export )?function isPlainObject' src -> 7 definitions, 4 of them in team (common.js exported, store.js, schema.js, channel.js private). grep -rln 'from \"./common.js\"' -> only executor.js, executors/scripted.js and one more use the shared helper. The four team copies of lstatOrNull are line-for-line the same (store.js:102-109, files.js:32-39, home.js:99-106, channel.js:132-139). The copies agree today, so nothing is broken; a change of the rule in common.js would reach two places out of six.",
+      "item": "Q12",
+      "recommendation": "Make store.js, schema.js and engine/channel.js import has and isPlainObject from common.js, and move lstatOrNull into common.js for the four team files."
+    },
+    {
+      "id": "ARC-07",
+      "part": "team",
+      "check": "one mechanism in neighbouring places (AP-014): accepting result files",
+      "severity": "Medium",
+      "title": "A result file with a bad name refuses the attempt in runner.js but is silently dropped in engine/single-run.js",
+      "where": "tools/src/team/engine/single-run.js:163; compare tools/src/team/runner.js:616 and :622",
+      "evidence": "single-run.js:163 'if (!checkResultName(name).ok) continue;' - the file is skipped and the run is still recorded as ok with fewer names; runner.js:616/:622 'if (!checkResultName(name).ok) return fileRefusal();' - the attempt fails with the reason «файл с результатом не удалось принять». runner.js also checks every file before the first write (step 1, :605-625); single-run.js writes as it goes (:159-171). The REQ-013 design does not mention importOutputs (grep -> nothing). The path is used by runs without a task with the scripted executor (single-run.js:156-158).",
+      "item": "Q10",
+      "recommendation": "Use one acceptance helper for both places (check all names first, refuse on a bad one), or record in the REQ-013 design why a run without a task may drop a file, and say so in its result."
+    },
+    {
+      "id": "ARC-08",
+      "part": "team",
+      "check": "part boundaries: modules do not import each other in a circle; oversized functions",
+      "severity": "Low",
+      "title": "executor.js and the two executors import each other in a circle",
+      "where": "tools/src/team/executor.js:13-14; tools/src/team/executors/claude-cli.js:17-24; tools/src/team/executors/scripted.js:9-14",
+      "evidence": "node <outside the project>/graph.mjs (import graph of src/) -> 'CYCLES 2: src/team/executor.js -> src/team/executors/claude-cli.js; src/team/executor.js -> src/team/executors/scripted.js'. executor.js:7 says 'Everything here is pure except getExecutor, which imports the two executors'; the REQ-010 design (line 105) places getExecutor there. It works with ES modules today because the executors use the imported names only at call time.",
+      "item": "Q12",
+      "recommendation": "Move getExecutor into its own small module (for example team/executors/index.js) so executor.js stays the pure interface and the cycle disappears."
+    },
+    {
+      "id": "ARC-09",
+      "part": "team",
+      "check": "oversized files and functions",
+      "severity": "Low",
+      "title": "Two very long functions in team: createEngine 944 lines and runTask 532 lines",
+      "where": "tools/src/team/engine/engine.js:107 (createEngine); tools/src/team/runner.js:157 (runTask, with the inner attempts 189 lines at :303)",
+      "evidence": "node <outside the project>/fnsize.mjs -> 'engine.js 1087 lines; largest: createEngine@107=944', 'runner.js 705 lines; largest: runTask@157=532, attempts@303=189'. Neighbours: reducer.js largest function 49 lines, schema.js 70, store.js 107. A reader of one step of the engine has to hold the whole closure state; the engine's tests are spread over 18 files.",
+      "item": "Q12",
+      "recommendation": "No urgent change; when the engine is next changed, take the phases (plan run, goal run, scheduling) out of the closure into functions that take the state explicitly, as schedule.js and plan.js already do."
+    },
+    {
+      "id": "ARC-10",
+      "part": "team",
+      "check": "dead code; one list in one place",
+      "severity": "Low",
+      "title": "OUTCOMES is exported by executor.js and used nowhere, while scripted.js keeps its own list RESULT_OUTCOMES",
+      "where": "tools/src/team/executor.js:19; tools/src/team/executors/scripted.js:28",
+      "evidence": "grep -rn OUTCOMES src test -> executor.js:19 (definition, no reader), scripted.js:28 and :105 (own list of 5 of the 7 values). The REQ-010 design lists OUTCOMES among the exports of executor.js (line 824).",
+      "item": "Q12",
+      "recommendation": "Use OUTCOMES (or a named subset of it) in scripted.js, or remove it."
+    },
+    {
+      "id": "ARC-11",
+      "part": "picker",
+      "check": "dead code",
+      "severity": "Low",
+      "title": "lookOfView, ownLookOfView and deskForQuestion are not called by any code",
+      "where": "tools/src/picker/public-data.js:98, :103; tools/src/picker/public/tenant-look.js:134",
+      "evidence": "grep -rn 'lookOfView\\|ownLookOfView\\|deskForQuestion' src test -> lookOfView and ownLookOfView: only the definitions; deskForQuestion: the definition and test/picker-look.test.js (LK-6d). The REQ-069 design (lines 15, 65) names them as entry points for later requirements (REQ-065, REQ-071, REQ-077), so they were left on purpose.",
+      "item": "Q12",
+      "recommendation": "Keep them only with a comment that names the requirement that will call them, or add them in that requirement; a function with no caller is not checked by any running path."
+    },
+    {
+      "id": "ARC-12",
+      "part": "picker",
+      "check": "one mechanism in neighbouring places (AP-014): shared helpers",
+      "severity": "Low",
+      "title": "isOsError is defined twice inside picker and four times in the project with three different rules",
+      "where": "tools/src/picker/load.js:36; tools/src/picker/tenants.js:17; compare tools/src/util.js:107 and tools/src/team/errors.js:28",
+      "evidence": "picker load.js and tenants.js: 'typeof err?.code === \"string\" && typeof err?.syscall === \"string\"'; team/errors.js: 'err instanceof Error && ... /^E[A-Z0-9]+$/.test(err.code)'; util.js: an object with a string code (util.js:107-111). isObject is defined 11 times (8 in picker). picker imports nothing from outside picker (import map), which looks deliberate, but the two copies inside picker are not.",
+      "item": "Q12",
+      "recommendation": "Keep one isOsError inside picker (for example in load.js, imported by tenants.js); if the different rules across parts are on purpose, say so in a comment."
+    },
+    {
+      "id": "ARC-13",
+      "part": "picker",
+      "check": "oversized functions",
+      "severity": "Low",
+      "title": "The picker page is one start() function of 549 lines out of 597",
+      "where": "tools/src/picker/public/app.js:48",
+      "evidence": "node <outside the project>/fnsize.mjs src/picker/public/app.js -> '597 lines; 39 functions; largest: start@48=549'. The same closure pattern as the Pixel Office page (ARC-01), at a smaller size.",
+      "item": "Q12",
+      "recommendation": "No change now; keep it from growing the way the Pixel Office page did - new screens go to their own modules (as screens.js and flow.js already do)."
+    },
+    {
+      "id": "ARC-14",
+      "part": "picker",
+      "check": "oversized code: tests and fixtures",
+      "severity": "Low",
+      "title": "89 look fixtures are full copies of a 432-line tenant file that differ in a few lines",
+      "where": "tools/test/fixtures/picker-look/ (89 files, 38146 lines)",
+      "evidence": "ls test/fixtures/picker-look | wc -l -> 89; wc -l e-chips-fraction.json e-chips-order.json -> 432 each; diff of the two -> 8 lines. All picker fixtures: 211 files, 73144 lines, against 5569 lines of picker code. A change of the tenant format means editing every copy.",
+      "item": "Q12",
+      "recommendation": "Build the error samples in the test from one base file plus a small change each (the way the team tests build theirs), or keep only the changed part in each fixture."
+    },
+    {
+      "id": "ARC-15",
+      "part": "tools-core",
+      "check": "all-or-nothing writes (decisions/0004)",
+      "severity": "Low",
+      "title": "The snapshot command writes its output file in place, not by the write of decisions/0004 - already an open defect",
+      "where": "tools/src/cli.js:145",
+      "evidence": "cli.js:145 'fs.writeFileSync(positional[0], snapshot(root));'. decisions/0004 'Граница' leaves this place to ISS-0003; docs/issues/ISS-0003-unguarded-fs-calls.md: 'Серьёзность: LOW. Статус: open', case g1 is this line. Recorded so the summary does not lose it; no new defect is needed.",
+      "item": "Q10",
+      "recommendation": "Fix under ISS-0003 (writeAllOrNothing from util.js, or a clear E_WRITE line)."
+    }
+  ],
+  "size_view": {
+    "method": "wc -l of JS under each part's folders (pages separately), CSS/HTML separately, JSON data separately; tests by file name prefix in tools/test (159 files); fixtures by folder",
+    "parts": {
+      "tools-core": {
+        "code_js": 6299,
+        "tests": 15086,
+        "test_files": 42,
+        "fixtures": 185,
+        "ratio_tests_to_code": "2.4"
+      },
+      "pixel-office": {
+        "server_and_hook_js": 2701,
+        "page_js": 10379,
+        "page_css_html": 3352,
+        "tests": 26166,
+        "test_files": 12,
+        "fixtures": 15,
+        "ratio_tests_to_js": "2.0"
+      },
+      "team": {
+        "core_and_engine_js": 10594,
+        "web_server_js": 2094,
+        "web_page_js": 1391,
+        "web_css_html": 1961,
+        "tests": 35723,
+        "test_files": 76,
+        "fixtures": 824,
+        "ratio_tests_to_js": "2.6"
+      },
+      "picker": {
+        "server_js": 3458,
+        "page_js": 2111,
+        "page_css_html": 536,
+        "demo_json": 4877,
+        "tests": 29933,
+        "test_files": 29,
+        "fixtures": 73144,
+        "ratio_tests_to_js": "5.4 (18 with fixtures)"
+      },
+      "claude": {
+        "files": 38,
+        "lines": 5626,
+        "note": "37 role files and settings.json; no code"
+      }
+    },
+    "largest_code_files": [
+      "pixel-office/public/app.js 3551 (one closure of 3307 lines, ARC-01)",
+      "pixel-office/public/style.css 3115",
+      "web/public/app.js 1391 (74 functions, largest 93 lines - fine)",
+      "web/public/style.css 1369",
+      "team/engine/engine.js 1086 (createEngine 944, ARC-09)",
+      "pixel-office/public/texts.js 1081 (texts, data)",
+      "team/engine/channel.js 989 (largest function 164)",
+      "validate.js 967 (largest function 208)",
+      "team/store.js 930 (largest 107)"
+    ],
+    "largest_test_files": [
+      "pixel-office-page.test.js 6090",
+      "pixel-office-panels.test.js 5341",
+      "pixel-office-office.test.js 3685",
+      "picker-page.test.js 3406",
+      "pixel-office-guide.test.js 3393"
+    ],
+    "is_it_justified": "Mostly yes. About 50 000 lines of code in tools/src, of which 4 877 are picker demo data and 5 000 are CSS; tests are 2 to 2.6 times the code in tools-core, pixel-office and team, which matches the bar's demand of a test per criterion and failure tests with a state check. Not justified: the Pixel Office page DOM layer as one 3307-line closure (ARC-01), the picker fixtures as near-identical full copies (ARC-14), and the long closures of the team engine and runner (ARC-09). The servers' createX closures (300-390 lines) are the same pattern in all three and are acceptable."
+  },
+  "checked": [
+    {
+      "check": "decisions/0002: Node 22, no run-time dependencies",
+      "how": "package.json (only devDependencies, engines >=22 <23); grep of every 'from \"...\"' and 'import(' in src for anything that is not node:, ./ or ../ -> nothing; node --version -> v22.21.1",
+      "result": "conforms"
+    },
+    {
+      "check": "decisions/0004: all-or-nothing writes where promised",
+      "how": "grep of every write call in src (writeFileSync, renameSync, linkSync, openSync with w/a, writeSync, ftruncate, rmSync, unlinkSync) outside public/; read util.js writeAllOrNothing (inspect, stage, commit, undo) and its callers apply.js, prepare.js, handoffs/close.js, traces/add.js; compared with the other writers: handoffs/create.js (exclusive temp + link, a new file), team/files.js (partial + link, never over a name), team/store.js (folder built then renamed), team/lock.js, team/engine/channel.js, team/journal.js (fsync + ftruncate rollback), pixel-office/state-dir.js (temp + rename), pixel-office/journal.js (append)",
+      "result": "the promised places conform; snapshot (cli.js:145) is the known exception of ISS-0003 (ARC-15); the Pixel Office journal differs from the Team journal by design (ARC-03); picker writes nothing (grep -> no write calls)"
+    },
+    {
+      "check": "decisions/0005 (Pixel Office), 0015 (product in tools/src/team), 0024/0025 (team web), 0065 (picker): placement and stack",
+      "how": "read the decisions; import map of src by part (team imports only pixel-office/mask.js from outside, allowed by 0015 line 65; web imports team; picker and pixel-office import nothing from other parts; handoffs and traces import util.js and each other)",
+      "result": "conforms; D10 of 0005 is stretched by the size of app.js (ARC-01)"
+    },
+    {
+      "check": "protection in the same operation as the action",
+      "how": "grep existsSync/accessSync/lstatSync in src; read the places: util.js inspect (lstat on the way, then rename - accepted in decisions/0004 and design W13), team/files.js publishResultFile (checkFreeName, then link which fails on EEXIST - the link is the protection), pixel-office state files (O_NOFOLLOW at open, fstat on the descriptor), server static files (O_NOFOLLOW|O_NONBLOCK, fstat), picker load.js/assets.js (O_NOFOLLOW, fstat), server.js processEvent/processNote (time check and append in one synchronous sequence, server.js:318-331, :333-393)",
+      "result": "no 'check now, act later in another call' found beyond what the decisions accept"
+    },
+    {
+      "check": "part boundaries: the page only reads; the hook takes only allowed fields; no import cycles",
+      "how": "grep of fetch/method/sendBeacon/WebSocket in the three pages -> Pixel Office page only 'method: \"GET\"' (app.js:461); import graph script over src -> 2 cycles (ARC-08), none across parts; hook.js run three times against the separate server with inputs that carry cwd, transcript_path, tool_input.prompt, tool_response.content, prompt and an extra field -> stored lines hold only time, source, hook_event_name, session_id, tool_use_id, launched_agent_id, subagent_type, description, agent_id, agent_type, prompt_kind",
+      "result": "conforms except ARC-08"
+    },
+    {
+      "check": "Pixel Office server: addresses, methods, codes, GET changes nothing, limits, response fields, hook vs server",
+      "how": "a separate server from the fresh clone, --port 0, SAI_PIXEL_OFFICE_DIR = an own state folder outside the project (0700); 21 probe requests plus failure probes (events.jsonl made read-only, then unreadable, then restored); sha of the journal before and after five GETs",
+      "result": "GET / and /api/events 200; unknown paths (/api/nope, /admin, /../server.js, /server.js) 404 JSON; DELETE/PUT/GET on write paths and POST on a page file 405 with Allow; foreign Host 403; unsigned 401; not JSON 400 not_json; extra key 400 unknown_key:extra; source in body 400 has_source; old time 400 time_skew; 20000-byte body 413; bad limit 400 bad_limit; good event 204; note 200; journal read-only -> 500 write_failed for both write paths; journal unreadable -> GET 500 read_failed; five GETs left the journal byte-identical ('GET changed nothing'). Two write paths as README says (design differs, ARC-02); empty bodies on 403/405 (ARC-04). Lists: GET /api/events returns the whole journal without a limit unless ?limit is given - this is what README limit 13 and the design (F7) say; no list limit is promised for the API. Only stored fields go out (the response is the journal lines). The hook builds its body with the same checkLine the server uses (protocol.js:183-186) and the stored lines confirm the match."
+    },
+    {
+      "check": "one mechanism in neighbouring places",
+      "how": "duplicate function names across src (grep of function definitions, uniq -c) and comparison of bodies; writers compared (above); result acceptance compared (runner.js vs single-run.js); the three HTTP servers compared; the role list: .claude/agents/*.md names vs ROLE_NAMES in pixel-office/public/texts.js (diff -> SAME, and test NM-01 ties them) and handoffs/roles.js (reads the files)",
+      "result": "ARC-04, ARC-06, ARC-07, ARC-10, ARC-12"
+    },
+    {
+      "check": "dead code and commented-out code",
+      "how": "script over src and test: files no src module imports (only entry points and files loaded by HTML remain), exports no src module imports and the own file does not use; grep for commented-out statements and TODO/FIXME; CSS class names of each page not found in its JS/HTML (0 of 215, 0 of 142, 0 of 1); demo folders of picker are referenced by README and tests",
+      "result": "ARC-05, ARC-10, ARC-11; no commented-out code; no TODO"
+    },
+    {
+      "check": "oversized files and functions",
+      "how": "wc -l per file and per part; a script that measures every top-level and inner function by its closing brace",
+      "result": "ARC-01, ARC-09, ARC-13, ARC-14; size_view"
+    },
+    {
+      "check": "claude part: hook settings vs README and decisions/0005, 0007",
+      "how": "read .claude/settings.json: seven events SessionStart, SessionEnd, UserPromptSubmit, Stop, SubagentStart, SubagentStop, PostToolUse with matcher Agent; each a synchronous command handler, /bin/sh with the 'sai-pixel-office' stderr mark, timeout 4, path through ${CLAUDE_PROJECT_DIR}; 37 role files with a code each",
+      "result": "conforms to tools/README.md 'How it is built' and D2/D7 of decisions/0005; no findings"
+    }
+  ],
+  "not_checked": [
+    {
+      "what": "real Claude Code runs (the hook fired by Claude Code itself, the claude-cli executor of team)",
+      "why": "decisions/0090 item 5 and the task: nothing that spends the owner's limit; the hook was run by hand with recorded inputs against the separate server instead"
+    },
+    {
+      "what": "line-by-line conformity of team code to decisions 0017, 0018, 0020, 0025, 0026 and of picker code to 0065-0087",
+      "why": "breadth over depth in the compressed first audit (decisions/0090); these were checked only through the import map, the write calls and the neighbour comparisons above"
+    },
+    {
+      "what": "the team web server and the picker server answer codes by live requests",
+      "why": "the plan's server check is for Pixel Office; the other two were compared by reading only (ARC-04)"
+    },
+    {
+      "what": "all-or-nothing of the result set as a whole in team (file 2 of 3 failing after file 1 was published)",
+      "why": "README promises 'first all files are checked, then they are written', not an all-or-nothing set; not tried with a fault injection"
+    },
+    {
+      "what": "the full check command (npm run check)",
+      "why": "belongs to COVERAGE-AUDITOR in this audit; only npm run traces and npm run handoffs-check were run before closing"
+    }
+  ]
+}

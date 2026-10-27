@@ -1,0 +1,48 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "requirements",
+  "requirement": "REQ-030",
+  "auditor": "RELEASE-VALIDATOR",
+  "checked_at": "2026-10-27T13:35:19Z",
+  "base": "HEAD b64562a + working tree",
+  "method": "Each criterion's own way of checking carried out on the current files: commands and greps on the working tree; behaviour probes and writes only on a copy of Sai in <scratch> (team homes, Pixel Office stands and servers on port 0, one headless Chrome at a time); criteria about how a run went — by the run's handoffs and files. One full `npm run check` on the working tree and one on a clean copy.",
+  "check_command": "cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)",
+  "counts": {
+    "met": 5
+  },
+  "criteria": [
+    {
+      "n": 1,
+      "status": "met",
+      "how": "read check.yml + repo.test.js",
+      "evidence": "on push and pull_request; node-version 22; npm ci and npm run check in tools; no '|| true', continue-on-error, secrets.; only checkout and setup-node pinned by commit hash"
+    },
+    {
+      "n": 2,
+      "status": "met",
+      "how": "gh (read-only), 2026-10-27T13:28:39Z",
+      "evidence": "gh run list --workflow check.yml --branch main --limit 1 -> conclusion success, headSha b64562af…, run 40500190408 (created 2026-10-27T11:58:48Z); git rev-parse origin/main and git ls-remote origin refs/heads/main -> b64562af… (equal)"
+    },
+    {
+      "n": 3,
+      "status": "met",
+      "how": "records (the check needs a push, which this audit does not do)",
+      "evidence": "handoffs/REQ030-20261012-01/step-12-release-validator.json PASS on criteria 2 and 3 with the red run link and the deleted branch"
+    },
+    {
+      "n": 4,
+      "status": "met",
+      "how": "read the hook + repo.test.js PH tests",
+      "evidence": ".githooks/pre-push -rwxr-xr-x, runs `npm run check`, exits 1 on failure, no --no-verify / '|| true'; PH tests in repo.test.js (:784 …) run the hook against fake npm and check the failing path; README:307 'git config core.hooksPath .githooks', merge confirmed by the owner (:298-299). The hook itself was not run on a copy with a failing test (that is one more full check run; the task allowed one)"
+    },
+    {
+      "n": 5,
+      "status": "met",
+      "how": "README + check",
+      "evidence": "README.md:295-297: no branch protection, reason decisions/0023 (D1); gh api …/branches/main/protection -> 403 'Upgrade to GitHub Pro or make this repository public', visibility private (2026-10-27T13:28Z) — matches; cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)"
+    }
+  ],
+  "not_checked": [],
+  "findings": []
+}

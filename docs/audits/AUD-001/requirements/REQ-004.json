@@ -1,0 +1,54 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "requirements",
+  "requirement": "REQ-004",
+  "auditor": "RELEASE-VALIDATOR",
+  "checked_at": "2026-10-27T13:35:19Z",
+  "base": "HEAD b64562a + working tree",
+  "method": "Each criterion's own way of checking carried out on the current files: commands and greps on the working tree; behaviour probes and writes only on a copy of Sai in <scratch> (team homes, Pixel Office stands and servers on port 0, one headless Chrome at a time); criteria about how a run went — by the run's handoffs and files. One full `npm run check` on the working tree and one on a clean copy.",
+  "check_command": "cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)",
+  "counts": {
+    "met": 3,
+    "not met": 1
+  },
+  "criteria": [
+    {
+      "n": 1,
+      "status": "met",
+      "how": "ls of the run folder + validate on the copy",
+      "evidence": "runs/WF06-20260926-01: run.json, sources/, assessment ×3, crossreview ×3, response ×3, verdict-1/2 .json+.md, verdict-review-1/2; `npm run validate -- ../runs/WF06-20260926-01` -> 'OK WF06-20260926-01 (stage review)' code 0"
+    },
+    {
+      "n": 2,
+      "status": "met",
+      "how": "jq .context.agent_run_id over handoffs/WF06-20260926-01",
+      "evidence": "analysts: execution aec94091…, market a4602c38…, owner_fit af653494… (the same per lens over rounds 1-3, as WF-06 continues them); judge a00b1d6c…; executor ac115b68… — all distinct"
+    },
+    {
+      "n": 3,
+      "status": "met",
+      "how": "jq of proposed-actions, verdict-review, apply-report; grep STATE.md",
+      "evidence": "verdict-review-2 ACCEPT; apply-report.json keys mode,run_id,schema,verdict_version,written; STATE.md:1096 «### Рекомендация агентов (WF-06)», :1122 «Решение принимает владелец»; proposed-actions to_agent: ORCH, REQ-ANALYST, BA-ANALYST only; handoffs step-10-orch, step-11-req-analyst, step-12-ba-analyst exist (status PENDING)"
+    },
+    {
+      "n": 4,
+      "status": "not met",
+      "how": "records of the run (criterion about how the run went): search for the after-step-6 snapshot-diff output",
+      "evidence": "step-00-orch.json records only the before-snapshot ('127 files, stored outside the project'); no handoff of the run contains a snapshot-diff output (grep -l snapshot-diff over handoffs/WF06-20260926-01 -> only step-00); there is no RELEASE-VALIDATOR handoff in handoffs/WF06-20260926-01 at all (the status line cites 'RELEASE-VALIDATOR PASS 2026-09-28'); the only trace is one summary sentence in reports/WF06-20260926-01-protocol.html: «snapshot-diff — код 0 (менялись только папка прогона, его handoff-ы и STATE.md)» and «RELEASE-VALIDATOR: PASS (REQ-002, REQ-003, REQ-004)». The criterion requires the output to be attached; the snapshots were kept outside the project and are gone"
+    }
+  ],
+  "not_checked": [],
+  "findings": [
+    {
+      "id": "REQ-004-F1",
+      "check": "REQ-004, criterion 4",
+      "severity": "High",
+      "title": "The after-step-6 snapshot-diff output of run WF06-20260926-01 is not in the records; the run has no RELEASE-VALIDATOR handoff",
+      "where": "handoffs/WF06-20260926-01/ (no step-09/RELEASE-VALIDATOR file; step-00-orch.json result); reports/WF06-20260926-01-protocol.html",
+      "evidence": "ls handoffs/WF06-20260926-01 -> step-00 … step-12, no release-validator; grep -l snapshot-diff over the folder -> step-00-orch.json only (before-snapshot, 'stored outside the project'); the protocol page states 'snapshot-diff — код 0' without output",
+      "item": "Q3, Q14",
+      "recommendation": "ORCH: either restore the evidence (if the run's after-snapshot or RV handoff exists anywhere) and add it to the run records, or record honestly in REQ-004 that criterion 4 is met only by a summary statement; the R2 proof of this run then rests on the statement alone. Route: WF-03 / DOC-UPDATER with ORCH decision"
+    }
+  ]
+}

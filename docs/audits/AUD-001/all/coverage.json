@@ -1,0 +1,649 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "coverage",
+  "agent": "COVERAGE-AUDITOR",
+  "date": "2026-10-27",
+  "parts": ["tools-core", "pixel-office", "team", "picker"],
+  "nature": "An assessment by reading the tests, the designs and the defects plus mechanical cross-checks, not a measurement of covered lines. A finding is a reason to check, not a ready conclusion (WF-05, gates).",
+  "check_run": {
+    "node": "v22.21.1",
+    "command": "cd tools && npm run check (run once, in full, in the foreground)",
+    "exit_code": 0,
+    "steps": {
+      "format:check": "All matched files use Prettier code style!",
+      "lint": "eslint . --max-warnings 0 — no output, passed",
+      "traces": "traces: файлов проверено 2236, следов 0, пропущено 67",
+      "handoffs-check": "handoffs-check: файлов проверено 1219, нарушений 0, исключений использовано 114 из 114",
+      "test": "# tests 2065 / # suites 0 / # pass 2065 / # fail 0 / # cancelled 0 / # skipped 0 / # todo 0 / # duration_ms 126973.764292"
+    }
+  },
+  "numbers": {
+    "requirements_checked": 37,
+    "requirements_note": "All requirements in status done (33) and in_progress (REQ-001, REQ-007, REQ-008, REQ-014) in docs/requirements.yaml",
+    "criteria_total": 380,
+    "criteria_with_test": 324,
+    "criteria_not_a_test": 56,
+    "criteria_without_test": 0,
+    "closed_defects": 14,
+    "closed_defects_with_regression_test": 14,
+    "test_id_references_in_design_tables": 2557,
+    "test_ids_named_but_absent": 1,
+    "test_files": "all test files match test/**/*.test.js; no file with test( outside the pattern",
+    "skips": 0,
+    "disabled_lint_rules": 0
+  },
+  "counts": { "Critical": 0, "High": 0, "Medium": 3, "Low": 3 },
+  "counts_by_part": {
+    "tools-core": { "Critical": 0, "High": 0, "Medium": 0, "Low": 1 },
+    "pixel-office": { "Critical": 0, "High": 0, "Medium": 2, "Low": 1 },
+    "team": { "Critical": 0, "High": 0, "Medium": 1, "Low": 0 },
+    "picker": { "Critical": 0, "High": 0, "Medium": 0, "Low": 1 }
+  },
+  "findings": [
+    {
+      "id": "COV-01",
+      "part": "pixel-office",
+      "check": "Weak tests: does a failure test compare the message, not only the exit code (REQ-001, criterion 7 — the port is taken)",
+      "severity": "Medium",
+      "title": "SV-11 is a byte-for-byte copy of SV-11d, and no test of SV-11…SV-11e compares the text «порт занят»: any Cyrillic error with code 1 passes",
+      "where": "tools/test/pixel-office-server.test.js:246-248 (SV-11) and :258-260 (SV-11d) both call occupied(t, \"text\"); helper occupied at :232-245; message at tools/src/pixel-office/main.js:229",
+      "evidence": "sed -n 244,268p tools/test/pixel-office-server.test.js: SV-11 body `await occupied(t, \"text\");`, SV-11d body `await occupied(t, \"text\");`. The helper checks only `assert.equal(r.code, 1); assert.equal(r.stdout, \"\"); cyrillic(r.stderr); noStack(r.stderr);`. grep -n \"занят\" tools/test/pixel-office-server.test.js — no match; the server text is «Порт ${args.port} занят другим процессом, это не Pixel Office. Освободите порт или запустите с другим: npm run pixel-office -- --port <номер>» (main.js:229).",
+      "item": "Q5",
+      "recommendation": "Make SV-11 a different case (a real occupant that is not HTTP, for example a TCP socket that answers nothing HTTP-like, or a second Pixel Office) and compare the exact message of main.js:229 with the port in SV-11…SV-11e."
+    },
+    {
+      "id": "COV-02",
+      "part": "pixel-office",
+      "check": "Failure tests check that the state is unchanged (Q5)",
+      "severity": "Medium",
+      "title": "OF-17d is named «the journal is not changed» but checks only that the file is not empty; its neighbours OF-17b/c/e compare the sha256",
+      "where": "tools/test/pixel-office-office.test.js:985-995 (OF-17d); compare the helper failure() at :947-960, which compares sha256File before and after",
+      "evidence": "sed -n 985,996p: after the refusal the only state check is `assert.ok(fs.statSync(file).size > 0);` — a change of the content of the same size or longer passes. The helper used by the other OF-17 tests does `if (before !== null) assert.equal(sha256File(journalFile), before);`.",
+      "item": "Q5",
+      "recommendation": "Take sha256 of the journal before chmod 000 and compare it after restoring the rights (as failure() does). The report command reads only, so the risk is low, but the test should prove what its name says."
+    },
+    {
+      "id": "COV-03",
+      "part": "team",
+      "check": "Independence from the clock and the load (AP-014: neighbouring places of an open defect)",
+      "severity": "Medium",
+      "title": "Wall-clock windows with an upper bound under SIGSTOP (10–12 s) in WEB-15 (б) and CTL-8a are not in the list of ISS-0083, though they are of the same kind as the tests that already turned red under parallel runs",
+      "where": "tools/test/team-web-channel.test.js:149 (WEB-15 (б): `assert.ok(took >= 10_000 && took <= 12_000)`); tools/test/team-web-control-engine.test.js:265 (CTL-8a, same window); also upper bounds at tools/test/team-web-faults.test.js:405 (`took >= 190 && took < 2000`), tools/test/team-channel.test.js:1562 (`took < ACK_WAIT_MS / 2`), tools/test/team-web-channel.test.js:295 (`took < 9000`)",
+      "evidence": "grep -rnE \"new Date\\(\\)|Date\\.now\\(\\)\" tools/test | grep .test.js — the lines above. docs/issues/ISS-0083-tests-red-under-parallel-full-runs.md lists only PG-08, EN-60, HC-7a, TM-67, HK-26, HK-27 (grep -n '^| ' on the file). Related open defects of the same cause: ISS-0004, ISS-0017, ISS-0065, ISS-0083. In this audit's single run all these tests passed (2065/2065), so the red is a risk under load, not an observed failure.",
+      "item": "Q5, Q4",
+      "recommendation": "Add WEB-15 (б), CTL-8a and the other upper-bound timers to ISS-0083 (one cause); keep the lower bound of 10 s from the criterion but measure the upper bound from the moment the server's timer fires (an event or a log line) rather than from the client's wall clock, or give the bound a margin agreed in the requirement."
+    },
+    {
+      "id": "COV-04",
+      "part": "tools-core",
+      "check": "Every test named in a «criterion → test» table exists and is run",
+      "severity": "Low",
+      "title": "The design of REQ-038 names test HC-5a (hasHomePath and hasTempPath on a table of lines), but no such test exists; the behaviour is covered only through the command (HC-4a, HC-4d, HC-4e, HC-4j) and by name (HC-4f, HC-4g)",
+      "where": "docs/design/REQ-038-handoffs-check.md:370 (row of criterion 5); tools/test/handoffs-runtime.test.js:350-382 (HC-4f, HC-4g, HC-5c, no HC-5a)",
+      "evidence": "A script over every design table (docs/design/*.md, sections «criterion → test» and catalogues) compared 2557 references to test identifiers with the names in the check output and the test files: the only identifier written as a test and absent is HC-5a (the other absent ones are explained in the designs: OF-22 removed, NM-08, JN-06, JN-07 unused, QP-11e «no test is named», RD-5, HO-92…94, PE-8c commands, SF-6d embedded in SF-6a…c as «the server is the same after»). grep -rn \"hasTempPath(\" tools/test — only HO-26/HO-38 through the command.",
+      "item": "Q5",
+      "recommendation": "Either add HC-5a as a direct table test of hasHomePath and hasTempPath or correct the design row to the tests that really hold criterion 5."
+    },
+    {
+      "id": "COV-05",
+      "part": "picker",
+      "check": "Names of test files in the design match the files",
+      "severity": "Low",
+      "title": "The design of REQ-068 puts the TP-9* property tests in tools/test/picker-text-property.test.js, which does not exist; they are in picker-text.test.js",
+      "where": "docs/design/REQ-068-picker-text-charset.md:93 and :282; tools/test/picker-text.test.js:1000 (TP-9a)",
+      "evidence": "ls tools/test | grep property → picker-engine-property, picker-lang-property, picker-look-property, picker-server-property only; grep -n TP-9a tools/test/picker-text.test.js → line 1000. The test runs (it is in the check output), so the criterion is covered; only the name drifts.",
+      "item": "Q5",
+      "recommendation": "Correct the file name in the design (or move the tests); no change of behaviour is needed."
+    },
+    {
+      "id": "COV-06",
+      "part": "pixel-office",
+      "check": "Uncovered code: exported functions that no test calls",
+      "severity": "Low",
+      "title": "stateFiles in state-dir.js is exported, never called by any source file and named in no test",
+      "where": "tools/src/pixel-office/state-dir.js:308",
+      "evidence": "grep -n stateFiles -r tools/src tools/test → only `tools/src/pixel-office/state-dir.js:308:export function stateFiles(dir) {`. A script over all `export function|const|class` of tools/src found 958 exports, 407 of them not named in tests; all the others that are functions are called inside their own module or by another module and reached by whole runs (for example buildChildEnv through EX-35, pauseText through the CTL tests); stateFiles is the only exported function with no caller at all.",
+      "item": "Q5",
+      "recommendation": "Remove it or test it (dead code is the Architecture dimension too)."
+    }
+  ],
+  "criteria": {
+    "rule": "with test — the design «criterion → test» table names at least one test that exists and is run by npm run check; not a test — the criterion's way of checking is a UAT stand, a run record, a command or PLAN-VALIDATOR (WF-05, Test coverage); such criteria of done requirements are rechecked by the Requirements dimension, of in_progress ones by RELEASE-VALIDATOR at step 9",
+    "by_requirement": [
+      {
+        "req": "REQ-001",
+        "status": "in_progress",
+        "part": "pixel-office",
+        "criteria": 14,
+        "with_test": "2-14",
+        "not_a_test": [
+          {
+            "n": 1,
+            "way": "UAT U1/U2 on a real Claude Code session (supporting tests HK-12, HK-13, HK-01, SV-09)",
+            "ref": "docs/design/REQ-001-pixel-office.md 10.3; handoffs/PO-20261002-01/step-05-test-designer.json"
+          }
+        ]
+      },
+      {
+        "req": "REQ-002",
+        "status": "done",
+        "part": "tools-core",
+        "criteria": 11,
+        "with_test": "1, 3-11",
+        "not_a_test": [
+          {
+            "n": 2,
+            "way": "RELEASE-VALIDATOR: npm ci && npm run check on a clean copy",
+            "ref": "docs/design/REQ-002-idea-verdict.md 9"
+          }
+        ]
+      },
+      {
+        "req": "REQ-003",
+        "status": "done",
+        "part": "tools-core",
+        "criteria": 3,
+        "with_test": "1-3 (repo.test.js)",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-004",
+        "status": "done",
+        "part": "tools-core",
+        "criteria": 4,
+        "with_test": "-",
+        "not_a_test": [
+          {
+            "n": "1-4",
+            "way": "RELEASE-VALIDATOR: validate, handoffs, STATE.md, snapshot-diff of the first real run",
+            "ref": "docs/design/REQ-002-idea-verdict.md 9 (row REQ-004 AC1–AC4)"
+          }
+        ]
+      },
+      {
+        "req": "REQ-005",
+        "status": "done",
+        "part": "none (business document, WF-07)",
+        "criteria": 9,
+        "with_test": "-",
+        "not_a_test": [
+          {
+            "n": "1-9",
+            "way": "PLAN-VALIDATOR, grep, jq as written in each criterion",
+            "ref": "docs/requirements.yaml REQ-005"
+          }
+        ]
+      },
+      {
+        "req": "REQ-006",
+        "status": "done",
+        "part": "none (business document, WF-07)",
+        "criteria": 19,
+        "with_test": "-",
+        "not_a_test": [
+          {
+            "n": "1-19",
+            "way": "PLAN-VALIDATOR, grep, jq, wc, ORCH check as written in each criterion",
+            "ref": "docs/requirements.yaml REQ-006"
+          }
+        ]
+      },
+      {
+        "req": "REQ-007",
+        "status": "in_progress",
+        "part": "pixel-office",
+        "criteria": 18,
+        "with_test": "1-7, 9-18 (18 (а) — step Q-18 only)",
+        "not_a_test": [
+          {
+            "n": 8,
+            "way": "commands of step T (ls of test files, skipped 0, todo 0)",
+            "ref": "docs/design/REQ-001-pixel-office.md 10.3, table REQ-007"
+          }
+        ]
+      },
+      {
+        "req": "REQ-008",
+        "status": "in_progress",
+        "part": "pixel-office",
+        "criteria": 19,
+        "with_test": "1-19",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-009",
+        "status": "done",
+        "part": "team",
+        "criteria": 15,
+        "with_test": "1-15",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-010",
+        "status": "done",
+        "part": "team",
+        "criteria": 16,
+        "with_test": "1-13, 15-16",
+        "not_a_test": [
+          {
+            "n": 14,
+            "way": "UAT-RUNNER, one real run-task after the owner's written consent",
+            "ref": "docs/design/REQ-010-agent-executors.md 15"
+          }
+        ]
+      },
+      {
+        "req": "REQ-011",
+        "status": "done",
+        "part": "team",
+        "criteria": 15,
+        "with_test": "1-15",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-013",
+        "status": "done",
+        "part": "team",
+        "criteria": 15,
+        "with_test": "1-12, 14 (ISS-0023 design, RF-*), 15 (ISS-0031 design, SF-*)",
+        "not_a_test": [
+          {
+            "n": 13,
+            "way": "UAT after the owner's written consent",
+            "ref": "docs/design/REQ-013-team-engine.md 21"
+          }
+        ]
+      },
+      {
+        "req": "REQ-014",
+        "status": "in_progress",
+        "part": "tools-core",
+        "criteria": 6,
+        "with_test": "1-2, 4-6",
+        "not_a_test": [
+          {
+            "n": 3,
+            "way": "RELEASE-VALIDATOR on a clean machine; owner UAT on another computer",
+            "ref": "docs/design/REQ-014-traces.md 14"
+          }
+        ]
+      },
+      {
+        "req": "REQ-030",
+        "status": "done",
+        "part": "tools-core",
+        "criteria": 5,
+        "with_test": "1, 4, 5",
+        "not_a_test": [
+          {
+            "n": "2, 3",
+            "way": "steps П-2, П-3 after the push (GitHub run)",
+            "ref": "docs/design/REQ-030-github-check.md 7.4"
+          }
+        ]
+      },
+      {
+        "req": "REQ-035",
+        "status": "done",
+        "part": "team",
+        "criteria": 13,
+        "with_test": "1-9, 11-13 (CTL-*)",
+        "not_a_test": [
+          {
+            "n": 10,
+            "way": "acceptance by eye: CODE-DESIGN-VALIDATOR, DESIGN-QA-VALIDATOR, BA-ANALYST + UAT-RUNNER",
+            "ref": "docs/design/REQ-035-team-web-control.md 15"
+          }
+        ]
+      },
+      {
+        "req": "REQ-036",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 10,
+        "with_test": "1-7, 10",
+        "not_a_test": [
+          {
+            "n": "8, 9",
+            "way": "interface description check and BA scenario; counts of test(/assert. against the tag",
+            "ref": "docs/design/REQ-036-044-045-interactive.md 9.1"
+          }
+        ]
+      },
+      {
+        "req": "REQ-038",
+        "status": "done",
+        "part": "tools-core",
+        "criteria": 11,
+        "with_test": "1-11 (see COV-04 for HC-5a)",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-039",
+        "status": "done",
+        "part": "tools-core",
+        "criteria": 8,
+        "with_test": "1-8 (HO-*)",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-042",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 14,
+        "with_test": "1-11, 13, 14 (ISS-0062 design, PN-23)",
+        "not_a_test": [
+          {
+            "n": 12,
+            "way": "RELEASE-VALIDATOR commands against the tag (git show, counts of test(/assert.)",
+            "ref": "docs/design/REQ-042-state-honesty.md 10"
+          }
+        ]
+      },
+      {
+        "req": "REQ-044",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 11,
+        "with_test": "1-9, 11",
+        "not_a_test": [
+          {
+            "n": 10,
+            "way": "UAT stand, docs/uat/REQ-044*.md",
+            "ref": "docs/design/REQ-036-044-045-interactive.md 9"
+          }
+        ]
+      },
+      {
+        "req": "REQ-045",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 9,
+        "with_test": "1-9",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-046",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 7,
+        "with_test": "1-5, 7",
+        "not_a_test": [
+          {
+            "n": 6,
+            "way": "UAT stand, docs/uat/REQ-046*.md",
+            "ref": "docs/design/REQ-048-049-046-047-interactive.md 7"
+          }
+        ]
+      },
+      {
+        "req": "REQ-047",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 8,
+        "with_test": "1-5, 7-8",
+        "not_a_test": [
+          {
+            "n": 6,
+            "way": "UAT stand, docs/uat/REQ-047*.md",
+            "ref": "docs/design/REQ-048-049-046-047-interactive.md 7"
+          }
+        ]
+      },
+      {
+        "req": "REQ-048",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 8,
+        "with_test": "1-6, 8",
+        "not_a_test": [
+          {
+            "n": 7,
+            "way": "UAT stand of 19 roles, docs/uat/REQ-048*.md",
+            "ref": "docs/design/REQ-048-049-046-047-interactive.md 7.1"
+          }
+        ]
+      },
+      {
+        "req": "REQ-049",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 6,
+        "with_test": "1-4, 6",
+        "not_a_test": [
+          {
+            "n": 5,
+            "way": "UAT stand, docs/uat/REQ-049*.md",
+            "ref": "docs/design/REQ-048-049-046-047-interactive.md 7"
+          }
+        ]
+      },
+      {
+        "req": "REQ-050",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 9,
+        "with_test": "1-7, 9",
+        "not_a_test": [
+          {
+            "n": 8,
+            "way": "UAT stand, docs/uat/REQ-050*.md",
+            "ref": "docs/design/REQ-050-053-guide.md 7.1"
+          }
+        ]
+      },
+      {
+        "req": "REQ-051",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 8,
+        "with_test": "1-5, 7, 8 (GR-06, table 13.8)",
+        "not_a_test": [
+          {
+            "n": 6,
+            "way": "UAT stand, docs/uat/REQ-051*.md",
+            "ref": "docs/design/REQ-050-053-guide.md 7, 13.8"
+          }
+        ]
+      },
+      {
+        "req": "REQ-052",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 10,
+        "with_test": "1-8, 10",
+        "not_a_test": [
+          {
+            "n": 9,
+            "way": "UAT stands А and Б, docs/uat/REQ-052*.md",
+            "ref": "docs/design/REQ-050-053-guide.md 7"
+          }
+        ]
+      },
+      {
+        "req": "REQ-053",
+        "status": "done",
+        "part": "pixel-office",
+        "criteria": 8,
+        "with_test": "1-6, 8",
+        "not_a_test": [
+          {
+            "n": 7,
+            "way": "UAT stands А and Б, docs/uat/REQ-053*.md",
+            "ref": "docs/design/REQ-050-053-guide.md 7"
+          }
+        ]
+      },
+      {
+        "req": "REQ-054",
+        "status": "done",
+        "part": "picker",
+        "criteria": 8,
+        "with_test": "1-8",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-055",
+        "status": "done",
+        "part": "picker",
+        "criteria": 8,
+        "with_test": "1-8 (8: PE-8a, 8b, 8d, 8e; PE-8c is the check command)",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-056",
+        "status": "done",
+        "part": "picker",
+        "criteria": 8,
+        "with_test": "1-8",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-057",
+        "status": "done",
+        "part": "picker",
+        "criteria": 11,
+        "with_test": "1-11 (browser steps ПР-* in addition)",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-061",
+        "status": "done",
+        "part": "picker",
+        "criteria": 10,
+        "with_test": "1-7, 10",
+        "not_a_test": [
+          {
+            "n": "8, 9",
+            "way": "BA-ANALYST reader step; TEST-RUNNER commands (check, counts)",
+            "ref": "docs/design/REQ-061-picker-languages.md 13.1"
+          }
+        ]
+      },
+      {
+        "req": "REQ-068",
+        "status": "done",
+        "part": "picker",
+        "criteria": 10,
+        "with_test": "1-9",
+        "not_a_test": [
+          {
+            "n": 10,
+            "way": "TEST-RUNNER commands (check, counts of tests)",
+            "ref": "docs/design/REQ-068-picker-text-charset.md 11"
+          }
+        ]
+      },
+      {
+        "req": "REQ-069",
+        "status": "done",
+        "part": "picker",
+        "criteria": 9,
+        "with_test": "1-9",
+        "not_a_test": []
+      },
+      {
+        "req": "REQ-070",
+        "status": "done",
+        "part": "picker",
+        "criteria": 7,
+        "with_test": "1-7 (DT-*)",
+        "not_a_test": []
+      }
+    ]
+  },
+  "closed_defects": [
+    {
+      "id": "ISS-0001",
+      "part": "tools-core",
+      "regression": "4 tests in tools/test/cli.test.js (verdict-1.md a folder / unreadable, STATE.md a folder, snapshot a folder) — run"
+    },
+    {
+      "id": "ISS-0002",
+      "part": "tools-core",
+      "regression": "W01–W61 + W13b (62), P01–P21 (21), L01–L09 (9) — all 92 run"
+    },
+    {
+      "id": "ISS-0010",
+      "part": "team",
+      "regression": "TM-73, TM-77, WEB-10a, WEB-10g, WEB-10h — run"
+    },
+    {
+      "id": "ISS-0011",
+      "part": "team",
+      "regression": "WEB-P16, WEB-P14 — run"
+    },
+    {
+      "id": "ISS-0015",
+      "part": "team",
+      "regression": "WEB-15 (the flaky test itself fixed) — run"
+    },
+    {
+      "id": "ISS-0020",
+      "part": "team",
+      "regression": "tests of design ISS-0020 / REQ-035 15.2 in team-web-control*.test.js — all identifiers present and run"
+    },
+    {
+      "id": "ISS-0023",
+      "part": "team",
+      "regression": "RF-01, RF-02, RF-14 (team-engine-reads-files.test.js) — run"
+    },
+    {
+      "id": "ISS-0031",
+      "part": "team",
+      "regression": "SF-01, SF-10, SF-15 (team-planner-files, team-engine-rounds) — run"
+    },
+    {
+      "id": "ISS-0049",
+      "part": "tools-core",
+      "regression": "RD-2, RD-4 (repo.test.js) — run"
+    },
+    {
+      "id": "ISS-0053",
+      "part": "tools-core",
+      "regression": "GH-6, GH-7, GH-7b (handoffs-git.test.js) — run"
+    },
+    {
+      "id": "ISS-0062",
+      "part": "pixel-office",
+      "regression": "PN-23 (pixel-office-panels.test.js) — run"
+    },
+    {
+      "id": "ISS-0068",
+      "part": "pixel-office",
+      "regression": "MK-01…MK-05, NM-06 — run"
+    },
+    {
+      "id": "ISS-0075",
+      "part": "team",
+      "regression": "FR-1…FR-5, FR-3b (flaky-regression.test.js), EN-62, EX-42, HC-6a — run"
+    },
+    {
+      "id": "ISS-0078",
+      "part": "picker",
+      "regression": "TT-1a…TT-10a, TP-9a, SU-8, SF-6k — run"
+    }
+  ],
+  "checked": [
+    "The full check command, once, in the foreground: exit code 0, 2065 tests, 2065 passed, 0 failed, 0 skipped, 0 todo.",
+    "Skips and disabled rules: grep -rnE '\\.(skip|todo|only)\\b|\\{ *(skip|todo|only) *:' tools/test (fixtures excluded) — nothing; grep -rn eslint-disable tools/src tools/test — nothing; tools/eslint.config.js has no 'off' rule; tools/.prettierignore only node_modules and package-lock.json; the check script has no '|| true'.",
+    "Test file names: find tools/test -name '*.js' ! -name '*.test.js' | xargs grep -ln '^\\s*(test|it|describe)(' — nothing; no *.test.js below test/ subfolders.",
+    "Criteria: a script parsed every «criterion → test» table and catalogue of docs/design/*.md, mapped rows to the criteria of the 37 done/in_progress requirements and checked that every named test identifier exists in the check output or the test files; the rows without a test were read by hand (all are UAT, commands or reader steps, listed under criteria.not_a_test).",
+    "Closed defects: the 14 defects with a «Закрыто» section were read; each regression test they name was looked up in the check output and in tools/test.",
+    "Tests without assertions: a script extracted the body of each of 1994 test( declarations; 40 have no assert word — each was read: all delegate to helpers that assert (rejectedWithoutChanges, failsCleanly, failure, occupied, failedBatchCase, success, table) or throw on a non-empty issue list. A second script looked for tests whose only assertions are 'status 0' or 'ok' — none.",
+    "Failure tests and state: a script picked 820 failure-like tests and flagged those with no before/after word; the flagged ones were sampled by hand: most are pure functions or read-only commands; OF-17d is the one that claims an unchanged file and does not prove it (COV-02).",
+    "Clock and randomness: grep of Date.now/new Date/Math.random in tools/test — Math.random only in assertions that the code does not use it; generators have fixed seeds (picker-helpers.js mulberry32, seeds 56001… 68001); clock uses are injected clocks (makeClock) or timing bounds (COV-03).",
+    "Independence: no top-level mutable state shared between tests except a memoised pure computation (picker-look.test.js:953); no before/beforeEach except one after() cleanup in listing.test.js; tests that touch the home folder only assert it is not used.",
+    "Commands of tools/package.json: every entry file (src/cli.js for prepare-run/validate/apply-verdict/snapshot/snapshot-diff, pixel-office/main.js, note.js, team/cli.js, web/main.js, traces/cli.js, handoffs/cli.js, handoffs/handoff.js, picker/cli.js) is spawned as a whole process by tests.",
+    "Server addresses: Pixel Office (/, static files, /api/events GET and POST, /api/note), the team web server (/api/projects, /api/projects/<id>, /control, /chat, /tasks/<id>, /roles/<n>) and the picker server routes (SV-*, SF-*, SP-*) are requested by tests on a real listening server.",
+    "Exported functions: a script listed 958 exports of tools/src and those not named in any test; each exported function without a caller in other modules was checked for a caller in its own module (COV-06 is the only one with none)."
+  ],
+  "not_checked": [
+    "Whether each test really checks everything its criterion says: the mapping «criterion → test» was checked for presence and existence of tests, not re-proved test by test against the criterion text (380 criteria; that depth is the work of TEST-DESIGN-VALIDATOR and the Requirements dimension).",
+    "Mutants and repeated runs under load: not run — the check was to be run only once (another auditor runs at the same time) and load runs would disturb it; timing risks are judged from the code and the open defects (COV-03).",
+    "Item 9 «only the ordinary path» per module: judged by sampling (every part has many refusal and fault tests: 820 failure-like tests); not proved module by module.",
+    "Criteria whose way of checking is not a test (56) — not executed here; for done requirements they belong to the Requirements dimension, for in_progress ones to RELEASE-VALIDATOR at step 9.",
+    "No real Claude Code run and nothing that spends money (decisions/0090, item 5)."
+  ]
+}

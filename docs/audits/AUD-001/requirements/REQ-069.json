@@ -1,0 +1,88 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "step": "03g",
+  "role": "RELEASE-VALIDATOR",
+  "dimension": "requirements",
+  "requirement": "REQ-069",
+  "title": "Сайт подбора — формат /3 с разделом look",
+  "status_in_requirements": "done",
+  "checked_at": "2026-10-27T13:37:54Z",
+  "check_command": "cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.",
+  "summary": {
+    "met": 9,
+    "met_in_part": 0,
+    "not_met": 0,
+    "not_checked": 0
+  },
+  "criteria": [
+    {
+      "criterion": 1,
+      "title": "Формат /3 принимается, /1 и /2 по-прежнему",
+      "verdict": "met",
+      "how": "the commands; tests LK-1a…LK-1e in tools/test/picker-look.test.js exist and are green in the own npm run check",
+      "evidence": "`npm run -s picker -- check test/fixtures/picker-look/ok-minimal.json` — code 0, «Файл арендатора ok-minimal в порядке: вопросов 4, решений 2, правил 3.»; `npm run -s picker -- check` on src/picker/demo-tenants/uchet-pro.json — code 0, «Файл арендатора uchet-pro в порядке: вопросов 12, решений 5, правил 39.»; svet-marketing.json — code 0, «… вопросов 11, решений 5, правил 37.»; the same two lines for the copies tools/test/fixtures/picker-legacy/; `check test/fixtures/picker/e-field-schema.json` (value /4) — code 1, «e-field-schema.json: schema: E_FIELD: Допустимо только: sai-picker-tenant/1, sai-picker-tenant/2 или sai-picker-tenant/3. Исправьте значение.»; a copy with «sai-picker-tenant/» — the same line; `git diff --name-only base/LOOK069-20261026-01 cd789f5 -- tools/test/fixtures/picker/` — exactly e-field-schema.json; 44 samples; `git diff --stat base/LOOK069-20261026-01 -- tools/src/picker/demo-tenants tools/src/picker/demo-answers tools/test/fixtures/picker-legacy` — empty (run and now)."
+    },
+    {
+      "criterion": 2,
+      "title": "Раздел look: форма и границы",
+      "verdict": "met",
+      "how": "tests LK-2a…LK-2g in tools/test/picker-look.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 3,
+      "title": "Цвета",
+      "verdict": "met",
+      "how": "tests LK-3a…LK-3f in tools/test/picker-look.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 4,
+      "title": "Предметы офиса из закрытого перечня",
+      "verdict": "met",
+      "how": "tests LK-4a…LK-4f in tools/test/picker-look.test.js exist and are green in the own npm run check; the search",
+      "evidence": "`grep -rnE 'https?://|url[(]|<script|javascript:' tools/test/fixtures/picker-look/ok-minimal.json` — empty, code 1 (LK-4e green)."
+    },
+    {
+      "criterion": 5,
+      "title": "Столы, быстрые числа, заявки",
+      "verdict": "met",
+      "how": "tests LK-5a…LK-5e in tools/test/picker-look.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 6,
+      "title": "Запасной вид и неизменность ответов для /1 и /2",
+      "verdict": "met",
+      "how": "tests LK-6a…LK-6e in tools/test/picker-look.test.js exist and are green in the own npm run check and SV-9c in picker-server.test.js; the search",
+      "evidence": "`grep -nE '(^|[^A-Za-z0-9_$])(lead_|flow_|receipt_|progress_|panel_|quiz_|scene_|shell_|start_|act_)' tools/src/picker/public/tenant-look.js` — empty, code 1; self-check: the line `role: \"scene_desk_1\"` is found, `role: null` is not."
+    },
+    {
+      "criterion": 7,
+      "title": "Что получает посетитель от файла /3",
+      "verdict": "met",
+      "how": "tests SV-9a, SV-9b, SV-9d…SV-9f in tools/test/picker-server.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 8,
+      "title": "Сбои не роняют, лишнего нет",
+      "verdict": "met",
+      "how": "tests LP-1…LP-3 in tools/test/picker-look-property.test.js exist and are green in the own npm run check; the search; the diffs of the run",
+      "evidence": "`grep -rnE 'fetch[(]|https?[.]request|node:net|node:dgram|child_process|Math[.]random' tools/src/picker/ --include='*.js' | grep -v '/public/'` — empty, code 1; `git diff base/LOOK069-20261026-01 cd789f5 -- tools/package.json` — empty; `git diff --stat base/LOOK069-20261026-01 -- tools/src/picker/engine.js` — empty (run and now)."
+    },
+    {
+      "criterion": 9,
+      "title": "Охранные тесты не ослаблены",
+      "verdict": "met",
+      "how": "guard tests green in the own check; the counts",
+      "evidence": "`ls tools/test/picker-*.js | wc -l` — 29 (≥ 28); `grep -n 'tests.length >= 25' tools/test/picker-page-static.test.js` — one line (702); test( in picker-*.test.js: base/LOOK069-20261026-01 370, now 437; PK-6e, PK-7a, PK-7c, PK-8c, PK-8e, PE-8d, SV-2a, SV-2b, SV-2g, SU-9, LG-10c, TR-4f, QS-1, QS-5, QS-7, QS-12 green; cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.; `cd tools && npm run traces` — code 0"
+    }
+  ],
+  "findings": [],
+  "not_checked": [],
+  "notes": [
+    "The mutants of criterion 9 (a public/ file outside the list reddens QS-1, a disabled eslint rule reddens QS-12) were not repeated in this re-check; the step-18 RELEASE-VALIDATOR of the run recorded them."
+  ]
+}

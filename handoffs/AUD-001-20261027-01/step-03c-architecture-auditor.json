@@ -1,0 +1,83 @@
+{
+  "handoff_id": "step03c-AUD-001-20261027-01",
+  "run_id": "AUD-001-20261027-01",
+  "workflow_id": "WF-05",
+  "step": "03c",
+  "from_agent": "ORCH",
+  "to_agent": "ARCHITECTURE-AUDITOR",
+  "file": "handoffs/AUD-001-20261027-01/step-03c-architecture-auditor.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/AUD-001/plan.json",
+      "decisions/0090-first-audit-compressed.md"
+    ],
+    "route": "ARCHITECTURE-AUDITOR",
+    "write_set": [
+      "docs/audits/AUD-001/all/architecture.json",
+      "handoffs/AUD-001-20261027-01/step-03c-architecture-auditor.json"
+    ],
+    "base_tag": "base/AUD-001-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T13:52:50Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "report file present and parsed; counts by severity summed by ORCH from all step-3 reports (Critical 1, High 6, Medium 21, Low 24) equal the compiler's report.json",
+        "only the audit folder and the run's handoffs changed in the working tree (git status)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-05 step 3, audit AUD-001 (the first audit of Sai, whole project). Read docs/workflows/WF-05-health-audit.md (step 3 and the severity rules), docs/audits/AUD-001/plan.json and decisions/0090. Check the dimension 'architecture' across ALL parts listed for it in the plan (each finding must name its part with the short name from the plan). Include the extra checks of the plan. Also give an honest view of size: lines of code against lines of tests per part, the largest files, and whether the size is justified. Only read the project and run checks; a check that writes files is done on a copy outside the project folder; no real Claude Code runs and nothing that spends money (that is 'not checked' with the reason). Every finding has id, part, check, severity, title, where (file and line), evidence (command and output or quote), item (quality-bar item), recommendation. Record what was checked and how, and what was not checked and why. Write only docs/audits/AUD-001/all/architecture.json and your handoff. No machine paths and no names of other projects (say 'the traces list'). At the end, write in result a summary for the owner in two or three plain Russian sentences.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T12:37:47Z",
+  "started_at": "2026-10-27T12:37:47Z",
+  "completed_at": "2026-10-27T12:49:36Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Architecture across tools-core, pixel-office, team, picker and claude: 0 Critical, 0 High, 4 Medium, 11 Low (pixel-office 2 M + 3 L, team 2 M + 3 L, picker 4 L, tools-core 1 L, claude 0). Recorded decisions hold: no run-time dependencies, all-or-nothing writes where decisions/0004 promises them (snapshot is the known ISS-0003), the Pixel Office page only reads, the hook stores only the allowed fields, the separate Pixel Office server answers every case with its own code. Main points: the Pixel Office page DOM layer is one 3307-line closure (D10 asked for a thin layer); the REQ-001 design still names one write path while the code has two; team copies shared helpers instead of using common.js; a bad result-file name refuses the attempt in runner.js but is silently dropped in single-run.js. Для владельца: серьёзных нарушений архитектуры не найдено — решения из decisions/ соблюдаются, запись файлов «всё или ничего» там, где обещана, Pixel Office только читает и отвечает правильными кодами. Главные замечания — слишком большой файл страницы Pixel Office (3551 строка, одна функция на 3307 строк), устаревшее описание путей записи в проекте REQ-001 и повторённые вручную вспомогательные функции в Sai Team. Размер кода оправдан: тестов в 2–2,6 раза больше кода, кроме сборщика решений, где почти одинаковые копии образцов раздувают тесты.",
+    "findings": "docs/audits/AUD-001/all/architecture.json",
+    "self_check": [
+      "import sources in src other than node:, ./, ../ -> none; package.json has only devDependencies",
+      "import graph script over src (<outside the project>/graph.mjs) -> CYCLES 2: team/executor.js <-> executors/claude-cli.js, executors/scripted.js; no cross-part cycle",
+      "grep of all write calls in src outside public/ -> writers listed in the report; picker -> none",
+      "function size script (<outside the project>/fnsize.mjs) -> pixel-office/public/app.js createApp@245=3307; team/engine/engine.js createEngine@107=944; team/runner.js runTask@157=532; picker/public/app.js start@48=549",
+      "fresh git clone at HEAD b64562a in <outside the project>/clone; SAI_PIXEL_OFFICE_DIR=<outside the project>/state node src/pixel-office/main.js --port 0 -> Pixel Office: http://127.0.0.1:55509/ (owner ports untouched; lsof on 4780 after stop -> nothing listening from this run)",
+      "21 probe requests -> 200/400/401/403/404/405/413/204 as listed in the report; journal read-only -> POST /api/events and /api/note 500 write_failed; journal unreadable -> GET 500 read_failed",
+      "sha of state journals before and after five GETs -> identical (GET changed nothing)",
+      "hook.js run 3 times against the separate server with extra input fields -> stored lines hold only the allowed fields",
+      "diff of ROLE_NAMES keys and .claude/agents name codes -> SAME (37)",
+      "npm run traces -> файлов проверено 2236, следов 0, пропущено 67",
+      "npm run handoffs-check -> файлов проверено 1219, нарушений 0, исключений использовано 114 из 114",
+      "search for the names of other projects and computer paths in the report and this handoff -> empty (npm run traces above)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "ARC-01: decisions/0005 D10 chose pure modules plus a thin DOM layer. The pure logic is split out as decided, but the DOM layer (app.js) is 3551 lines. I rated it Medium (size), not High (divergence from a recorded decision), because D10 gives no measure of thin; ORCH or the owner may read it as a divergence."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "ARC-03: the Pixel Office journal keeps a cut-off fragment after a failed append, the Team journal rolls back. The REQ-001 design accepts the Pixel Office behaviour; I did not impose the Team mechanism and rated it Low as a neighbour difference to be recorded or aligned."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "The role file says writing is only POST /api/events; tools/README.md and the code have two signed write paths (POST /api/events and POST /api/note, REQ-008). I checked against README; the REQ-001 design repeats the old single path (ARC-02)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOT_CHECKED",
+        "text": "No real Claude Code runs (decisions/0090 item 5); team decisions 0017-0026 and picker decisions 0065-0087 checked only through imports, writes and neighbour comparison, not line by line; team web and picker servers checked by reading, not by live requests; npm run check left to COVERAGE-AUDITOR."
+      }
+    ],
+    "artifacts_out": ["docs/audits/AUD-001/all/architecture.json"]
+  }
+}

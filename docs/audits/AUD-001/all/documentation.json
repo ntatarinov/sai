@@ -1,0 +1,296 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "documentation",
+  "role": "DOC-AUDITOR",
+  "date": "2026-10-27",
+  "parts": ["docs", "claude", "tools-core", "pixel-office", "team", "picker"],
+  "counts": {
+    "by_severity": {
+      "Critical": 0,
+      "High": 1,
+      "Medium": 9,
+      "Low": 4
+    },
+    "by_part": {
+      "docs": 13,
+      "claude": 0,
+      "tools-core": 1,
+      "pixel-office": 0,
+      "team": 0,
+      "picker": 0
+    }
+  },
+  "numbers": {
+    "requirements_total": 101,
+    "requirements_with_all_8_fields": 101,
+    "requirements_by_status": {
+      "done": 33,
+      "in_progress": 4,
+      "pending": 64
+    },
+    "criteria_total": 822,
+    "done_requirements_confirmed_by_RV_PASS_and_DOC_UPDATER": 32,
+    "done_requirements_without_RV_PASS": ["REQ-003"],
+    "defects_total": 91,
+    "defects_open": 77,
+    "defects_open_by_severity": {
+      "MEDIUM": 9,
+      "LOW": 68
+    },
+    "defects_full_WF03_format": 50,
+    "defects_not_in_format": 41,
+    "decisions_files": 89,
+    "decisions_table_rows": 90,
+    "decisions_mismatches": 0,
+    "anti_patterns_entries": 131,
+    "anti_patterns_gaps_or_repeats": 0,
+    "anti_patterns_missing_fields": 0,
+    "handoffs_total": 1219,
+    "handoffs_by_status": {
+      "COMPLETED": 1178,
+      "FAILED": 29,
+      "PENDING": 6,
+      "IN_PROGRESS": 2,
+      "CANCELLED": 2,
+      "DONE (legacy, in exceptions.tsv)": 2
+    },
+    "package_json_scripts": 19,
+    "scripts_described_in_tools_README": 19
+  },
+  "findings": [
+    {
+      "id": "DOC-01",
+      "part": "docs",
+      "check": "Requirement in status done is confirmed by run records (RELEASE-VALIDATOR PASS + DOC-UPDATER handoff)",
+      "severity": "High",
+      "title": "REQ-003 is done without any RELEASE-VALIDATOR record",
+      "where": "docs/requirements.yaml:361 (REQ-003, status line); handoffs/WF06-20260926-01/",
+      "evidence": "docs/requirements.yaml:361: «status: done   # RELEASE-VALIDATOR PASS 2026-09-28; прогон WF06-20260926-01». `ls handoffs/WF06-20260926-01/` -> step-00-orch, step-01..03 idea-analyst, step-04 idea-judge(-v2), step-05 verdict-executor(-v2), step-10-orch, step-11-req-analyst, step-12-ba-analyst: no release-validator handoff. Script over all 1219 handoffs (context.requirement_ids contains the id, to_agent RELEASE-VALIDATOR, result.verdict PASS): REQ-003 -> 0; the only DOC-UPDATER handoff is handoffs/ISS-0001-20260930-01/step-04-doc-updater.json. `grep -l REQ-003 handoffs/*/*release-validator*.json` -> only ISS-0002-20261011-01/step-09 (requirement_ids [REQ-002, REQ-004]) and the pending AUD-001 step-03f. The other 32 done requirements each have at least one RV PASS and one DOC-UPDATER handoff.",
+      "item": "Q14 (and Q2/Q3: done only after an independent PASS)",
+      "recommendation": "Treat REQ-003 as unconfirmed: either the re-check of this audit (step 03f, RELEASE-VALIDATOR) gives the PASS record that was missing and DOC-UPDATER cites it in the status comment, or DOC-UPDATER returns the status to in_progress until a PASS exists."
+    },
+    {
+      "id": "DOC-02",
+      "part": "docs",
+      "check": "Requirement in in_progress has a run in progress",
+      "severity": "Medium",
+      "title": "Four requirements stay in_progress for 2–3 weeks with no run going; REQ-001's reason is stale",
+      "where": "docs/requirements.yaml:15 (REQ-001), :626 (REQ-007), :933 (REQ-008), :2474 (REQ-014)",
+      "evidence": "`grep -n '    status: in_progress' docs/requirements.yaml` -> lines 15, 626, 933, 2474. No IN_PROGRESS or PENDING handoff names them (handoff status script: IN_PROGRESS only AUD-001 step-03e and ISS-0002-20260930-01 step-06; PENDING only AUD-001 and WF06-20260926-01). REQ-001 comment (line 15): «кроме того, depends_on REQ-002 ещё in_progress», but REQ-002 is done (line of REQ-002 status; STATE.md 2026-10-11 «REQ-002 снова done»). REQ-014 (line 2474): «2026-10-09: прогон PROD-20261009-01 начат ... повтор шага 9 ... не делался».",
+      "item": "Q14",
+      "recommendation": "DOC-UPDATER: move REQ-001/007/008 to blocked with the real reason (owner consent for a real Claude Code session; REQ-007 criterion 16 owner's look) and remove the stale REQ-002 remark; for REQ-014 either schedule the step-9 re-check or set blocked with its reason."
+    },
+    {
+      "id": "DOC-03",
+      "part": "docs",
+      "check": "STATE.md and PLAN.md match the files (recent runs)",
+      "severity": "Medium",
+      "title": "STATE.md and PLAN.md say four runs are not committed/pushed, but they are in main and on origin",
+      "where": "STATE.md:25, :38, :64 (headings «коммит и отправка ещё не сделаны»), STATE.md:21 («Следующая работа: ... RELEASE-FINALIZER прогона DEVLAUNCH-20261027-01»); PLAN.md:321, :323, :324, :325 («СДЕЛАНО ..., не отправлено»)",
+      "evidence": "`git status -sb` -> «## main...origin/main» (nothing ahead). `git log --oneline` -> f08421e REQ-057 (PAGE057), cd789f5 + e3be325 (LOOK069 and its finalizer handoff), f8957be + f228854 (DEMO070 and its finalizer handoff), b64562a (DEVLAUNCH-20261027-01); docs/releases/PAGE057-20261021-01.md, LOOK069-20261026-01.md, DEMO070-20261027-01.md exist.",
+      "item": "Q14",
+      "recommendation": "DOC-UPDATER: after each RELEASE-FINALIZER step update the heading/line of the run in STATE.md and PLAN.md (commit and push done, release report path)."
+    },
+    {
+      "id": "DOC-04",
+      "part": "docs",
+      "check": "STATE.md and PLAN.md are readable for the owner (length, staleness)",
+      "severity": "Medium",
+      "title": "STATE.md (370 KB, 1164 lines) and PLAN.md (106 KB, 379 lines) are logs, not a readable state; every role is told to read STATE.md at start",
+      "where": "STATE.md (whole file); PLAN.md:265-379; CLAUDE.md:37-38 (read STATE.md and PLAN.md at the start)",
+      "evidence": "`wc -lc STATE.md PLAN.md` -> 1164 lines / 369571 bytes and 379 / 105670. `grep -c '^## ' STATE.md` -> 34 dated sections, newest first, single bullets up to several thousand characters; there is no short 'current state' block (requirement counts, open defects, what waits for the owner) apart from the newest dated section. PLAN.md: 15 lines «Заменено/Заменена ...» or struck-through items in iteration 9, queues stacked on queues («ОЧЕРЕДЬ ПОСЛЕ ...» x5, «Следующие номера» x6), and a section «## Что уже сделано (на 2026-10-05)» at line 361 three weeks old. The Read tool could not show STATE.md at once (output 82.8 KB for the first 120 lines).",
+      "item": "Q14 (bookkeeping usable), quality-bar §1 for the owner's report",
+      "recommendation": "DOC-UPDATER: keep at the top of STATE.md a short current block (≤ one screen: counts, open defects by severity, what waits for the owner, next work) and move dated sections older than the last iteration to an archive file (e.g. docs/state-history/); in PLAN.md keep only the current queue and next numbers, archive the replaced queues."
+    },
+    {
+      "id": "DOC-05",
+      "part": "docs",
+      "check": "README.md tells a newcomer what Sai is and what works today",
+      "severity": "Medium",
+      "title": "README «What is not ready or not proven» has stale counts (87 requirements, 74 defects, as of 2026-10-26)",
+      "where": "README.md:350, :366-367, :374-375",
+      "evidence": "README.md:366: «Requirements: 87 in total — 31 done, 4 in progress, 52 pending»; :374: «Open defects: 74 ... 9 of medium severity and 65 low». Counted from files: docs/requirements.yaml 101 blocks — 33 done, 4 in_progress, 64 pending (script over «  - id: REQ-» and «    status:»); docs/issues/: 77 open — 9 MEDIUM, 68 LOW (`grep -m1 -o 'Статус: [a-z]*'` per file). The rest of README (What Sai is, Who it is for, What already works, How to open, Check on GitHub) reads correctly for a newcomer.",
+      "item": "Q14",
+      "recommendation": "DOC-UPDATER: update the counts and the date, or replace the numbers with a pointer to the current block of STATE.md so they cannot drift."
+    },
+    {
+      "id": "DOC-06",
+      "part": "docs",
+      "check": "Documents describe the current product (docs/product/)",
+      "severity": "Medium",
+      "title": "docs/product/ is a snapshot of 2026-10-05..10-13 and contradicts the files; CLAUDE.md and README.md send readers there",
+      "where": "docs/product/current-state.md:18, :22, :128; docs/product/requirements-catalog.md:5, :44-46; docs/product/roadmap.md:12-14; CLAUDE.md:20-22; README.md:367",
+      "evidence": "current-state.md:18 «Проверка служебного кода: 483 теста из 483», «Не существует: движка, который сам запускает агентов, хранилища проектов...», :22 «Готовность ... около 10 %» — today REQ-009, REQ-010, REQ-013 are done (requirements.yaml) and the last check had 2065 tests (STATE.md, DEMO070). requirements-catalog.md:5 «Статусы взяты ... на 2026-10-06», :44-46 REQ-009/010/013 «Сделано частично»; the catalog has no REQ-042…REQ-101 (`grep -c 'REQ-0[5-9][0-9]\\|REQ-10' docs/product/*.md` -> 0 for all three files) — so the picker site and the development launch are absent. roadmap.md stages 1–3 not marked done (`grep -ci 'сделан\\|done'` -> 1, header only). Last changes: `git log -1 -- docs/product/*` -> 2026-10-09..2026-10-13. CLAUDE.md:20: «Where we are now: docs/product/current-state.md»; README.md:367 «the order of work is in docs/product/requirements-catalog.md». The 0033 note on top of current-state.md says the clothing-shop lines are history — that part is honest.",
+      "item": "Q14",
+      "recommendation": "DOC-UPDATER: either refresh current-state.md, requirements-catalog.md and roadmap.md (statuses from requirements.yaml, picker site and development launch added) or mark them as a dated snapshot and point CLAUDE.md/README.md to STATE.md and PLAN.md instead."
+    },
+    {
+      "id": "DOC-07",
+      "part": "docs",
+      "check": "Documents describe the current product (ideas/README.md, decision 0033)",
+      "severity": "Medium",
+      "title": "ideas/README.md still shows the clothing-shop Sai as the chosen idea",
+      "where": "ideas/README.md:9",
+      "evidence": "ideas/README.md:9: «| [02-sai.md](02-sai.md) | **Sai** — подбор размера + примерка + заказ в WhatsApp для Instagram-магазинов одежды | **Выбрана**, спрос не проверен |». decisions/0033-drop-clothing-shop-product.md (2026-10-11) dropped this hypothesis; README.md and CLAUDE.md say ideas/ is the history and CLAUDE.md:47 tells roles to read ideas/README.md for the context of decisions. No note in ideas/README.md about 0015/0033 (`grep -n '0033\\|0015' ideas/README.md` -> empty). Note: plan.json lists ideas/ as out of scope; checked on ORCH's explicit request.",
+      "item": "Q14",
+      "recommendation": "DOC-UPDATER: change the status cell to «Снята решением 0033 (2026-10-11); продукт — виртуальная команда (0015)» and add a one-line note on top, without rewriting the idea files."
+    },
+    {
+      "id": "DOC-08",
+      "part": "docs",
+      "check": "CLAUDE.md (start index) matches the files",
+      "severity": "Medium",
+      "title": "CLAUDE.md names the picker requirements as REQ-054…REQ-068 and points to the stale docs/product/current-state.md",
+      "where": "CLAUDE.md:20-22, :28",
+      "evidence": "CLAUDE.md:28 «the requirements are REQ-054…REQ-068»; picker requirements in docs/requirements.yaml go up to REQ-087 and the development launch REQ-088…101 (decisions/0088) also belongs to the picker board. CLAUDE.md:20 points to docs/product/current-state.md (see DOC-06).",
+      "item": "Q14",
+      "recommendation": "DOC-UPDATER: replace the fixed range with «REQ-054 and later (see docs/requirements.yaml)» and point 'where we are now' to STATE.md."
+    },
+    {
+      "id": "DOC-09",
+      "part": "tools-core",
+      "check": "tools/README.md describes commands and environment variables",
+      "severity": "Medium",
+      "title": "The traces check (`npm run traces`) has no section in tools/README.md; its variable SAI_TRACE_LIST is not described",
+      "where": "tools/README.md:15 (only mention of traces); tools/src/traces/lists.js:165-176",
+      "evidence": "`grep -n traces tools/README.md` -> 3 lines, all passing mentions (line 15 «npm run traces (the trace check)», lines 550, 563). `grep -rhoE '\\bSAI_[A-Z0-9_]+' tools/src | sort -u` vs the same over tools/README.md -> SAI_TRACE_LIST is in code only (SAI_ROLE is a regexp name, not a variable). lists.js:168 reads env.SAI_TRACE_LIST and refuses it inside the repository (E_TRACE_LIST_INSIDE). The variable is described only in docs/design/REQ-014-traces.md and STATE.md. All 19 package.json scripts are named in tools/README.md; Node 22, ports 4780/4781/4782, 127.0.0.1 and limits are described for Pixel Office, Sai Team and the picker.",
+      "item": "Q14 (WF-05 Documentation: README describes the commands, a missing item is Medium)",
+      "recommendation": "CODE-FIXER (README of tools/): add a short section «The trace check (traces)»: purpose, command, what it checks, the open list SAI_TRACE_LIST (outside the repository), exit codes."
+    },
+    {
+      "id": "DOC-10",
+      "part": "docs",
+      "check": "Run records: no abandoned handoffs",
+      "severity": "Medium",
+      "title": "Three PENDING handoffs of WF06-20260926-01 are left open a month after the owner chose another product",
+      "where": "handoffs/WF06-20260926-01/step-10-orch.json, step-11-req-analyst.json, step-12-ba-analyst.json",
+      "evidence": "Status script over handoffs/: PENDING outside AUD-001 = exactly these three, created_at 2026-09-28T17:07:57Z. step-10 task: «Передать владельцу runs/WF06-20260926-01/verdict-2.md ... получить его письменное решение: начинать ли проверку спроса 01-kviz-zayavki»; step-11/12: «Только после записанного решения владельца о старте 01-kviz-zayavki ...». The owner decided otherwise (decisions/0015 virtual team, 0033). No orch_cancellation / orch_note field in them.",
+      "item": "Q14",
+      "recommendation": "ORCH: set them CANCELLED with orch_cancellation (time, reason: decisions/0015 and 0033) — the record is not rewritten, only closed."
+    },
+    {
+      "id": "DOC-11",
+      "part": "docs",
+      "check": "Run records: no IN_PROGRESS handoff without a reason",
+      "severity": "Low",
+      "title": "Handoff ISS-0002-20260930-01 step-06 (test-designer r2) stays IN_PROGRESS after it was resumed; the defect was closed by another run",
+      "where": "handoffs/ISS-0002-20260930-01/step-06-test-designer-r2.json",
+      "evidence": "status IN_PROGRESS, result.status IN_PROGRESS; context.interruptions[0]: cause «API session limit (HTTP 429)», «resumed_at»: «2026-10-01T16:34:57Z», «how»: «same agent run resumed via SendMessage». Nothing after the resumption; ISS-0002 was closed 2026-10-11 by run ISS-0002-20261011-01. Formally the interruption is a reason, but it says the work resumed, so the open state is unexplained.",
+      "item": "Q14",
+      "recommendation": "ORCH: add orch_note (time, reason: superseded by ISS-0002-20261011-01) and mark the handoff CANCELLED or FAILED; do not rewrite result."
+    },
+    {
+      "id": "DOC-12",
+      "part": "docs",
+      "check": "Defects are in the WF-03 format (sections)",
+      "severity": "Low",
+      "title": "32 defect files lack one or more WF-03 sections (mostly «Маршрут» and «Доказательство» in ISS-0001…ISS-0039)",
+      "where": "docs/issues/ISS-0001, 0010–0022 (no «Доказательство», no «Маршрут»), 0015 and 0074 (no «Как исправить»), 0023 (no «Что не так»), 0024–0039 (no «Маршрут»)",
+      "evidence": "Script over '## ' headings of docs/issues/ISS-*.md checking «Что не так», «Доказательство», «Как исправить», «Маршрут», and «Закрыто» for closed: 32 files fail; all 14 closed files have «Закрыто». ISS-0074 is open and has no «Как исправить».",
+      "item": "Q13/Q14 (format of the bookkeeping)",
+      "recommendation": "No mass rewrite of history; DOC-UPDATER adds the missing sections when a defect is next touched; ISS-0074 gets «Как исправить» now because it is open and queued (PLAN.md iteration 9)."
+    },
+    {
+      "id": "DOC-13",
+      "part": "docs",
+      "check": "Defects are in the WF-03 format (severity/status line)",
+      "severity": "Low",
+      "title": "11 defect files have the severity line with extra words or split over two lines",
+      "where": "docs/issues/ISS-0002:3, ISS-0005:3-4, ISS-0006:3, ISS-0007:3, ISS-0010:3, ISS-0019:3, ISS-0058:3, ISS-0065:3, ISS-0075:3, ISS-0081:3, ISS-0083:3",
+      "evidence": "Regex «Серьёзность: (LOW|MEDIUM|HIGH|CRITICAL). Статус: (\\w+)» fails on these; e.g. ISS-0005:3 «Серьёзность: MEDIUM (если повторится); сейчас не воспроизведён — под наблюдением.» and status on line 4; ISS-0081:3 «Серьёзность: LOW, при решении о публикации — MEDIUM.» A looser count still finds the severity word first, so the totals agree with STATE.md (77 open: 9 MEDIUM, 68 LOW).",
+      "item": "Q14 (format)",
+      "recommendation": "Keep the strict form «Серьёзность: X. Статус: Y.» and move the explanations into a sentence after it, so that counting by a command stays reliable."
+    },
+    {
+      "id": "DOC-14",
+      "part": "docs",
+      "check": "No paths of this computer in documents (AP-022)",
+      "severity": "Low",
+      "title": "A temporary folder path of this computer is written in an ORCH notes file of a run",
+      "where": "handoffs/BP-20260930-01/orch-notes.md:246",
+      "evidence": "`grep -nE '/Users/|/home/[a-z]|/private/(tmp|var)|/var/folders'` over tracked .md/.json/.yaml/.js/.sh -> only rule texts and quoted bans, plus handoffs/BP-20260930-01/orch-notes.md:246 «/var/folders/bz/<…>/T/com.google.Chrome.<…> — безвредны, можно удалить.» (a real machine temp path; not caught by npm run traces, which checks home paths and the traces list, nor by handoffs-check H11, which checks only .json). `npm run traces` -> «файлов проверено 2237, следов 0».",
+      "item": "AP-022",
+      "recommendation": "Mask the path in that line as «<временная папка>/…» by an ORCH correction note, and consider extending the traces rule to temp-folder paths in .md files."
+    }
+  ],
+  "checked": [
+    {
+      "check": "STATE.md / PLAN.md vs requirement statuses, open defects, decisions",
+      "how": "Recounted requirement statuses (script over docs/requirements.yaml) and open defects (per-file 'Статус:' line) and compared with STATE.md:11-24 (101: 33/4/64; 77 open, 9 MEDIUM, 68 LOW — match); every open defect number grepped in STATE.md (all 77 present); next numbers ISS-0092 / decision 0090 / AP-132 compared with files; git log/status vs 'not pushed' claims",
+      "result": "counts match; DOC-03, DOC-02, DOC-04"
+    },
+    {
+      "check": "Requirements: 8 schema fields, way of checking per criterion, done confirmed by records",
+      "how": "Parser over '  - id:' blocks and 4-space fields; keyword scan of 822 criteria for a named command/test/file; script over 1219 handoffs for RELEASE-VALIDATOR PASS and DOC-UPDATER COMPLETED per done requirement",
+      "result": "101/101 have all fields; 4 criteria without an explicit check word (REQ-004 crit. lines 405-407, REQ-035 line 4467) were read: each names a file, a command (snapshot-diff) or a UAT scenario — not counted as findings; REQ-003 -> DOC-01"
+    },
+    {
+      "check": "Links lead to existing files inside Sai",
+      "how": "All markdown links [..](..) and back-quoted paths starting with docs/, decisions/, tools/, handoffs/, runs/, .claude/, ideas/ in 365 tracked .md files (business docs excluded) resolved with os.path.exists/glob; shorthand 'decisions/NNNN' accepted when a file with the prefix exists",
+      "result": "markdown links: 12 unresolved, all inside example/test text of docs/design/REQ-014-traces.md and REQ-001 plus a history line in a release report; back-quoted: 95 unresolved, read one by one — planned files of pending requirements (tools/src/devjob/, tools/src/picker-ai/, tools/test/team-spaces.test.js), examples in designs, and history mentions of docs/agents.en.md / README.en.md merged by decisions/0080; none in live instructions (.claude/agents, docs/workflows, CLAUDE.md, quality bar: 0 unresolved)"
+    },
+    {
+      "check": "No links to other projects / no paths of this computer",
+      "how": "`cd tools && npm run traces` (the traces list and home paths) -> 0 traces in 2237 files; own grep for /Users/, /home/, /private/tmp, /var/folders, C:\\\\Users",
+      "result": "DOC-14 only"
+    },
+    {
+      "check": "decisions/README.md vs decision files",
+      "how": "Script: every file in the table, every row's link exists, status words (accepted/cancelled/replaced/narrowed/reserved) compared",
+      "result": "89 files, 90 rows (0001 reserved without a file, by design), 0 mismatches"
+    },
+    {
+      "check": "Defects in WF-03 format; open ones named in STATE.md",
+      "how": "Script over first line, severity/status line and '## ' sections",
+      "result": "DOC-12, DOC-13; all open named in STATE.md"
+    },
+    {
+      "check": "Mistakes log numbering and fields",
+      "how": "Split docs/anti-patterns.md by '### AP-NNN', checked sequence and the four fields (Russian or English names)",
+      "result": "AP-001…AP-131 in a row, no repeats, all fields present"
+    },
+    {
+      "check": "Abandoned handoffs",
+      "how": "Status script over all handoffs; context.interruptions and BLOCKED issues read",
+      "result": "DOC-10, DOC-11; npm run handoffs-check -> 1219 files, 0 violations, 114 of 114 exceptions used"
+    },
+    {
+      "check": "tools/README.md vs tools/package.json; newcomer items",
+      "how": "Each of 19 scripts grepped as 'npm run <name>'; purpose, start command, Node 22, environment variables (SAI_* in src vs README), address/port (4780 Pixel Office, 4781 Sai Team, 4782 picker, 127.0.0.1) and limits sections read for pixel-office, team, picker, handoffs",
+      "result": "DOC-09 (tools-core); pixel-office, team, picker: no finding"
+    },
+    {
+      "check": "README.md for a newcomer; ideas/README.md and docs/product/ describe the current product",
+      "how": "Read README.md sections and compared facts with files; read ideas/README.md and the four docs/product files, git log dates",
+      "result": "DOC-05, DOC-06, DOC-07, DOC-08"
+    },
+    {
+      "check": ".claude/ (part claude) documents",
+      "how": "37 role files, unique 'name:' lines, back-quoted paths in role and workflow files resolved (0 missing), settings.json hooks match the description in tools/README.md 'Where things are'; spot check of two stale lines named in PLAN.md (code-fixer 'no own repository', doc-updater 'step 10') — both already fixed",
+      "result": "no finding"
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Descriptions of roles and processes against the latest runs (WF-05 item, decisions/0079 item 10)",
+      "why": "Not due: the last full reconciliation was run AGENTS-20261025-01 on 2026-10-25 (decisions/0079, 85 findings fixed), 2 days ago, inside the 30-day term; only the spot checks named above were done"
+    },
+    {
+      "check": "Business documents ideas/* (except ideas/README.md), docs/business-plan/, docs/research/",
+      "why": "Out of scope by plan.json 'not_in_scope'; ideas/README.md was checked on ORCH's explicit request"
+    },
+    {
+      "check": "Way of checking of all 822 criteria read one by one",
+      "why": "Checked by a keyword scan plus reading the 4 criteria it flagged; a criterion with a check word but a vague check would not be caught"
+    },
+    {
+      "check": "Full npm run check",
+      "why": "Another auditor runs the full test suite at the same time (ORCH instruction); only the read-only parts npm run traces and npm run handoffs-check were run"
+    },
+    {
+      "check": "Anything with a real Claude Code session",
+      "why": "Spends the owner's limit; not needed for this dimension"
+    }
+  ]
+}

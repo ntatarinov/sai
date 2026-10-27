@@ -1,0 +1,90 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "step": "03g",
+  "role": "RELEASE-VALIDATOR",
+  "dimension": "requirements",
+  "requirement": "REQ-056",
+  "title": "Сайт подбора, часть 3 — сервер, арендатор по пути, изоляция",
+  "status_in_requirements": "done",
+  "checked_at": "2026-10-27T13:37:54Z",
+  "check_command": "cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.",
+  "summary": {
+    "met": 8,
+    "met_in_part": 0,
+    "not_met": 0,
+    "not_checked": 0
+  },
+  "criteria": [
+    {
+      "criterion": 1,
+      "title": "Запуск и ссылки",
+      "verdict": "met",
+      "how": "tests SV-1a…SV-1i in tools/test/picker-server.test.js exist and are green in the own npm run check; own serve run",
+      "evidence": "green; own `node src/picker/cli.js serve --tenants src/picker/demo-tenants --home <outside the project>/s056/home --port 0`: five lines, two links http://127.0.0.1:54999/t/svet-marketing/ and /t/uchet-pro/, «Изменения файлов арендаторов применяются после перезапуска.», stderr empty."
+    },
+    {
+      "criterion": 2,
+      "title": "Анкета — только разрешённые поля",
+      "verdict": "met",
+      "how": "tests SV-2a…SV-2h in tools/test/picker-server.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 3,
+      "title": "Неизвестный арендатор неотличим",
+      "verdict": "met",
+      "how": "tests SV-3a…SV-3e in tools/test/picker-server.test.js exist and are green in the own npm run check; own curl",
+      "evidence": "green; own run: the ten requests of the criterion give one hash (10 × ea65cc094cf7, Date removed), POST to /t/net-takogo/api/result the same hash, HTTP/1.1 404."
+    },
+    {
+      "criterion": 4,
+      "title": "Арендатор только из пути",
+      "verdict": "met",
+      "how": "tests SV-4a…SV-4f in tools/test/picker-server.test.js exist and are green in the own npm run check; own curl",
+      "evidence": "green; own run: body with tenant — 400 «В запросе лишнее поле tenant. Удалите его.»; answers of svet-marketing — 400 answers_invalid, \"question\":null, no term of svet-marketing in the body; ?tenant=, X-Tenant, ?lang=kk&tenant= and Accept-Language: kk — cmp equal to the answers without them."
+    },
+    {
+      "criterion": 5,
+      "title": "Стенд из двух арендаторов: изоляция на запущенной системе",
+      "verdict": "met",
+      "how": "part 2 (curl, steps C1, C3–C7 of docs/design/REQ-056-picker-server.md, 6.3) repeated on an own server; part 1 (the stub page in the browser) by the records of the run: handoffs/SERVER056-20261020-01/step-08-uat-runner.json (18 of 18 combinations showed page_stub_notice in the chosen language), BA-ANALYST step-07 PASS",
+      "evidence": "C3: 30 answers, all 200. C4: search of the solution names and ids of uchet-pro in the files of svet-marketing — empty, code 1, and the other way — empty, code 1; control: the own names are found in every result-leader and result-close (1) and not in result-none (0); `grep -F '\"ranking\"'` in all result files — empty, code 1, the control file — found, code 0. C5, C6 — see criteria 3 and 4. C7: kill — exit 0, curl after it — code 7 (refused). The stub of part 1 no longer exists: REQ-057 replaced it by the card page by design (criterion 11 of REQ-057, texts.js has no page_stub_notice), as this criterion itself foresaw («Страниц анкеты и результата к приёмке REQ-056 ещё нет»)."
+    },
+    {
+      "criterion": 6,
+      "title": "Сбои не роняют сервер",
+      "verdict": "met",
+      "how": "tests SF-6a…SF-6o in tools/test/picker-server-faults.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 7,
+      "title": "Защита запросов",
+      "verdict": "met",
+      "how": "tests SV-7a…SV-7h in tools/test/picker-server.test.js exist and are green in the own npm run check and the search",
+      "evidence": "`grep -rnE 'https?://' tools/src/picker/public/` — empty, code 1; TR-4f green."
+    },
+    {
+      "criterion": 8,
+      "title": "Без исходящих запросов и платных сервисов",
+      "verdict": "met",
+      "how": "the search; guard tests; the loop of test( counts; the diff of the run; own check; traces",
+      "evidence": "`grep -rnE 'fetch[(]|https?[.]request|https?[.]get[(]|node:net|node:dgram' tools/src/picker/ --include='*.js' | grep -v '/public/'` — empty, code 1; PK-6d, PK-6e, PK-7c, PK-8c, PE-8d, TR-4b, TR-4d, TR-4e, TR-4f green; the loop of `test(` against base/SERVER056-20261020-01 — empty; `git diff base/SERVER056-20261020-01 c4db926 -- tools/package.json` — empty; `cd tools && npm run traces` — code 0; cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s."
+    }
+  ],
+  "findings": [
+    {
+      "id": "RV-B-056-1",
+      "check": "REQ-056, criterion 5, part 1",
+      "severity": "Low",
+      "title": "The criterion still describes the stub page, which REQ-057 replaced by design; part 1 can now be checked only by the records of the run",
+      "where": "docs/requirements.yaml, REQ-056 criterion 5 (part 1, key page_stub_notice)",
+      "evidence": "`grep -n page_stub_notice tools/src/picker/public/texts.js` — nothing; GET /t/uchet-pro/ shows the card «Пройти опрос» (own browser run, REQ-057 report); the records (step-08-uat-runner.json of SERVER056-20261020-01) hold the stub on three languages.",
+      "item": "Q14 (records follow what is done)",
+      "recommendation": "At the next WF-01 on the picker, add to criterion 5 of REQ-056 a note that part 1 is replaced by criterion 11 of REQ-057 (the card on three languages), so that a future re-check knows where its browser part lives. No code change."
+    }
+  ],
+  "not_checked": [],
+  "notes": []
+}

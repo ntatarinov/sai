@@ -1,0 +1,233 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "security",
+  "agent": "SECURITY-AUDITOR",
+  "date": "2026-10-27",
+  "parts": ["tools-core", "pixel-office", "team", "picker", "claude"],
+  "counts": {
+    "Critical": 0,
+    "High": 1,
+    "Medium": 1,
+    "Low": 2
+  },
+  "counts_by_part": {
+    "tools-core": { "Critical": 0, "High": 0, "Medium": 1, "Low": 0 },
+    "pixel-office": { "Critical": 0, "High": 0, "Medium": 0, "Low": 1 },
+    "team": { "Critical": 0, "High": 1, "Medium": 0, "Low": 0 },
+    "picker": { "Critical": 0, "High": 0, "Medium": 0, "Low": 1 },
+    "claude": { "Critical": 0, "High": 0, "Medium": 0, "Low": 0 }
+  },
+  "findings": [
+    {
+      "id": "SEC-01",
+      "part": "team",
+      "check": "team: masking of results (plan extra; ISS-0058); Q7 masking applied to result files of the core",
+      "severity": "High",
+      "title": "Masking of result files corrupts code and other technical text silently, and the unmasked source is deleted",
+      "where": "tools/src/team/store.js:395 (maskSecrets(content) of every result file); tools/src/team/runner.js:132 (the masked copy goes to dependent tasks); tools/src/team/runner.js:655-680 (the source in work/ is deleted after acceptance); tools/src/pixel-office/mask.js:104-108 (rule M7, any x.y.z run) and :259 (rule M10)",
+      "evidence": "A script outside the project applied maskSecrets from tools/src/pixel-office/mask.js to project files (as the core does to a result file) and counted «[скрыто]»: tools/src/team/files.js — 3 (line 12 `const NOFOLLOW = fs.constants.O_NOFOLLOW ?? 0;` => `const NOFOLLOW = [скрыто] ?? 0;`); tools/src/web/server.js — 7 (line 173 `if (!PATTERNS.project.test(id)) return null;` => `if (![скрыто](id)) return null;`); tools/src/picker/public/app.js — 52 (line 77 `document.documentElement.lang = state.lang;` => `[скрыто] = state.lang;`); tools/package.json — 5 (`\"eslint\": \"10.11.0\"` => `\"eslint\": \"[скрыто]\"`); tools/src/pixel-office/public/app.js — 196. No file of these holds a secret. The role «Разработчик» (developer) has Write/Edit and returns code as result files (tools/README.md, «Tools of the roles»); its result is stored masked, the unmasked source in work/ is deleted (README «Result files»: «The source of an accepted file in work/ is deleted after the acceptance — an unmasked copy does not stay»), and the reviewer and dependent tasks get the broken text. This matches the owner's probe of 2026-10-27 (a code result with 41 marks).",
+      "item": "Q7 (the masking mechanism) together with Q10 (a realistic input — ordinary code — breaks the result without an understandable message); REQ-009 criterion 12; open defect ISS-0058 (MEDIUM) covers the rule M7 but describes only hosts, task descriptions and role names, not code results",
+      "recommendation": "Through WF-03 on ISS-0058 (raise it to HIGH and widen it, or a new defect with the same cause): do not run the free-text rules M7 and M10 over result files as they are; mask result files only by the precise rules (PEM, Authorization, keys with prefixes, name=value pairs), or keep the original and mark found places instead of replacing them; add a regression test: a JavaScript file with `a.b.c` expressions and version numbers keeps every byte, and a real key in it is still hidden."
+    },
+    {
+      "id": "SEC-02",
+      "part": "tools-core",
+      "check": "File paths do not leave their own folder through a link (check 3); input of command arguments is checked (Q10)",
+      "severity": "Medium",
+      "title": "prepare-run copies a file from outside the project into runs/ when a --context path inside docs/ or ideas/ is a symbolic link",
+      "where": "tools/src/prepare.js:93 (readTextFile(path.join(root, p))); tools/src/util.js:57 (fs.statSync follows a link); tools/src/contract.js:64-68 (isSafeSourcePath checks only the text of the path). The same kind: tools/src/cli.js:41 (resolveRunDir checks the run folder by path.resolve only, a link in runs/ is not refused)",
+      "evidence": "On a copy of the project outside its folder: `ln -s <temporary folder>/outside/secret.md <copy>/docs/leak.md` (the file holds OUTSIDE-CONTENT-MARKER), then `node src/cli.js prepare-run WF06-20261027-99 --root <copy> --candidates 01-kviz-zayavki,02-sai --context docs/leak.md --analyst market=A --analyst execution=B --analyst owner_fit=C --judge J --executor E` → `prepared WF06-20261027-99`, and `grep -rl OUTSIDE-CONTENT-MARKER <copy>/runs/WF06-20261027-99` → `.../runs/WF06-20261027-99/sources/docs/leak.md`. `..` is refused (contract.js:67), a link is not.",
+      "item": "Q10 (input from command arguments is checked before use); the check of the role «paths do not leave their own folder — neither through .. nor through a link»",
+      "recommendation": "Walk every part of a source path with lstat and refuse a link (as tools/src/team/files.js readWorkFile and tools/src/picker/load.js checkInside do), open the file with O_NOFOLLOW and compare fstat with lstat; do the same for the run folder in resolveRunDir; add tests with a link to a file and a link to a folder."
+    },
+    {
+      "id": "SEC-03",
+      "part": "pixel-office",
+      "check": "Pixel Office: signed writes, R2 (no event is written twice or after the fact)",
+      "severity": "Low",
+      "title": "A signed write request can be replayed within 60 seconds and the journal gets a duplicate event",
+      "where": "tools/src/pixel-office/protocol.js:218 (only the time window WRITE_SKEW_MS is checked); tools/src/pixel-office/public/schema.js:67 (WRITE_SKEW_MS = 60000); tools/src/pixel-office/server.js processEvent (no check of a repeated body)",
+      "evidence": "A probe server on port 0 with a temporary state folder outside the project: the same signed body sent twice → `\"good\": \"204 \"`, `\"replay\": \"204 \"`; the journal then held two identical lines `{\"time\":\"2026-10-27T12:39:27.499Z\",\"source\":\"REAL\",\"hook_event_name\":\"SessionStart\",\"session_id\":\"probe-1\"}`. To replay one needs the signed bytes (traffic on 127.0.0.1 or the memory of the hook process), which on this computer means root or the owner's own account.",
+      "item": "R2 (an event gets into the journal once, from a real hook)",
+      "recommendation": "Keep the signatures of the last 60 seconds in memory and refuse a repeated one (409), or add a random nonce to the signed body; a test: the same signed body twice — the second is refused and the journal has one line. Or record the residual risk in tools/README.md «Limits»."
+    },
+    {
+      "id": "SEC-04",
+      "part": "picker",
+      "check": "Responses and errors do not give out a stack trace, internal paths or what a visitor sent (check 5)",
+      "severity": "Low",
+      "title": "On an uncaught exception the picker command writes the whole stack (with the message) to stderr, unlike the server log rule",
+      "where": "tools/src/picker/cli.js:103-106",
+      "evidence": "Quote: `process.on(\"uncaughtException\", (err) => { const stack = err instanceof Error ? err.stack : undefined; ... process.stderr.write(`${stack ?? String(err)}\\n`, ...` ; while tools/src/picker/server.js describeError says: «The text of an exception is never written: it may hold what a visitor sent». Visitors do not get it (the HTTP answers are fixed texts: probe — unknown tenant and unknown path both `{\"error\":\"not_found\",...} 404`, bad UTF-8 `400`, hostile nested body `413`), so this is only the operator's log; it matters before publication on the internet (ISS-0081).",
+      "item": "Q7 / Q10 (errors do not carry internal paths or input into logs)",
+      "recommendation": "Write the kind and code of the error (as describeError) and the stack only under an explicit debug switch; take it into ISS-0081 before the site is published."
+    }
+  ],
+  "checked": [
+    {
+      "check": "Secrets (Q7) in all tracked files: code, settings, files sent to the browser, docs, handoffs, reports",
+      "parts": ["tools-core", "pixel-office", "team", "picker", "claude"],
+      "how": "`git ls-files | xargs grep -o -h -I -E \"(sk-ant-…|sk-…{20,}|gh[pos]_…|github_pat_…|AKIA…|xox[baprs]-…|BEGIN … PRIVATE KEY|<telegram bot token>|AIza…)\" | sort | uniq -c` over 2291 files; every distinct match examined; then a search for password/secret/token/api_key assignments with values of 12+ characters without FAKE/EXAMPLE/abcdef",
+      "result": "20 distinct matches, all made-up test values (sk-ant-abcdefghij1234567890, AKIAZZZZEXAMPLE00001, ghp_FAKE…, AKIAIOSFODNN7EXAMPLE and the like) in tests, designs and decisions about masking; the private-key match is a test fixture `MIIBabc123xyz` in tools/test/pixel-office-helpers.js:1546; assignment matches are `fictional-secret-AAAA…` and test inputs. No real secret."
+    },
+    {
+      "check": "Secrets in the git history",
+      "parts": ["all"],
+      "how": "`git log --all -p | grep -o -E \"(sk-ant-…{20,}|gh[pos]_…{30,}|github_pat_…|AKIA…|<telegram token>)\" | sort -u` over 155 commits",
+      "result": "Only the same made-up values. No real secret. .gitignore keeps out node_modules, temporary write files and .claude/settings.local.json; `git status --ignored` shows only tools/node_modules/."
+    },
+    {
+      "check": "Secrets in the real Pixel Office journal (read only, counts only, no content printed)",
+      "parts": ["pixel-office"],
+      "how": "`grep -c -E \"sk-ant-…{20,}|gh[pos]_…{30,}|AKIA…\" <state folder>/events.jsonl`",
+      "result": "0 matches in 4297 lines."
+    },
+    {
+      "check": "Pixel Office: listens only on 127.0.0.1, answers only to its own Host",
+      "parts": ["pixel-office"],
+      "how": "A probe script outside the project started createServer on port 0 with a temporary state folder; connection to the computer's LAN address; requests with Host evil.example, without Host (raw HTTP/1.0), LOCALHOST (upper case), [::1]",
+      "result": "LAN address: ECONNREFUSED; foreign Host, no Host, LOCALHOST, [::1]: 403; 127.0.0.1:<port> and localhost:<port>: 200."
+    },
+    {
+      "check": "Pixel Office: writes only with the hook signature; a time far from the server clock is refused; no source or extra field from the client",
+      "parts": ["pixel-office"],
+      "how": "Same probe: POST /api/events unsigned, with a wrong signature, signed with time −120 s and +120 s, signed with `source`, signed with an extra key `cwd`; POST /api/note unsigned; body of 20 000 bytes; reading tools/src/pixel-office/protocol.js (HMAC-SHA256, timingSafeEqual)",
+      "result": "401, 401, 400 time_skew, 400 time_skew, 400 has_source, 400 unknown_key:cwd, 401, 413; a correct signed event 204. Replay of the same signed body accepted — SEC-03."
+    },
+    {
+      "check": "Pixel Office: the page only reads; static files do not leave public/",
+      "parts": ["pixel-office"],
+      "how": "PUT/DELETE /api/events, POST /, GET /..%2f..%2fserver.js, GET /../server.js, GET /write-secret; CSP header of /; grep of public/ for fetch with methods",
+      "result": "405, 405, 405, 404, 404, 404; CSP `default-src 'self'; script-src 'self'; ... frame-ancestors 'none'; object-src 'none'`; the page has one fetch, method GET (public/app.js:461)."
+    },
+    {
+      "check": "Pixel Office: rights of the state folder and files (tools/README.md, «Where things are»)",
+      "parts": ["pixel-office"],
+      "how": "Probe: modes after start in a temporary folder; `ls -la` of the owner's real state folder (read only)",
+      "result": "Probe: folder 700, events.jsonl, server-starts.jsonl, write-secret, port, node-path 600. Real folder: drwx------ and -rw------- for all five files, owner the user."
+    },
+    {
+      "check": "R2: no events written in advance in code; nothing gets into the journal past the hooks",
+      "parts": ["pixel-office"],
+      "how": "grep of tools/src for events.jsonl / EVENTS_FILE writers and for `hook_event_name:` literals in public/; reading journal.js (append only) and office-sim.js (movement only, no journal); the real journal: sources and order counted without content",
+      "result": "The only writer of the Pixel Office journal is pixel-office/journal.js:331 (append), reached only through the signed server paths; no hard-coded events in public/; real journal: 4290 REAL, 7 ORCH (records of the signed note path), 0 lines out of order by more than 2 minutes, 0 unparsable."
+    },
+    {
+      "check": "Pages show text as text (pixel-office, team web, picker)",
+      "parts": ["pixel-office", "team", "picker"],
+      "how": "grep -E \"innerHTML|outerHTML|insertAdjacentHTML|document.write|eval(|new Function|srcdoc\" over pixel-office/public, web/public, picker/public; grep of href/src assignments; reading picker/public/tenant-look.js (colours by /^#[0-9a-f]{6}$/, mark by one letter or digit)",
+      "result": "No match. Tenant colours and marks are checked by strict patterns before use."
+    },
+    {
+      "check": "team web: loopback, Host, Origin, page key, hostile bodies, not-found answers",
+      "parts": ["team"],
+      "how": "`node src/web/main.js --port 0` with a temporary SAI_TEAM_HOME outside the project, curl",
+      "result": "Foreign Host 403; POST without key 403; foreign Origin with key 403; unknown project and `..%2f..%2fetc` both `{\"error_text\":\"Не найдено\"...} 404`; malformed JSON and `__proto__` body 400 «Запрос не понят»; a valid create without SAI_TEAM_REAL_RUNS 400 «Настоящие запуски … выключены»; the temporary home was not created."
+    },
+    {
+      "check": "team: paths of result files and work/ (plan extra)",
+      "parts": ["team"],
+      "how": "Reading tools/src/team/files.js readWorkFile (checkWorkPath, lstat of every part, no links, nlink 1, O_NOFOLLOW, same dev/ino, size limit, strict UTF-8), schema.js checkWorkPath, home.js resolveProjectDir (pattern, no link, own uid) and checkHomeStat; running test/team-security.test.js on the copy",
+      "result": "Paths with .., absolute paths, links and hard links are refused; the project folder and home are refused when they are links or of another user. Tests passed (see self-check)."
+    },
+    {
+      "check": "team: how Claude Code is started (arguments, environment, network rules)",
+      "parts": ["team"],
+      "how": "Reading tools/src/team/executors/claude-cli.js; `<Claude Code binary> --help` (prints help, no model call) to confirm the flags exist",
+      "result": "shell: false, task text on stdin, environment from an allow list (no keys, no SAI_TEAM_*), stderr dropped; flags --permission-prompts, --restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --tools, --allowedTools, --disallowedTools, --max-budget-usd, --json-schema all exist in Claude Code 2.1.306. WebFetch is denied only for localhost, 127.0.0.1, [::1], 0.0.0.0, 169.254.169.254; private networks stay open — this is the residual risk accepted in decisions/0015 and 0018 and written in tools/README.md, so it is not a finding here."
+    },
+    {
+      "check": "team: masking of results (plan extra, ISS-0058)",
+      "parts": ["team"],
+      "how": "maskSecrets applied by a script outside the project to five project files; reading store.js, runner.js",
+      "result": "Finding SEC-01."
+    },
+    {
+      "check": "Q9 — no SQL from strings",
+      "parts": ["team", "picker", "tools-core", "pixel-office"],
+      "how": "grep -i -E \"sqlite|SELECT .* FROM|INSERT INTO|node:sqlite\" over tools/src",
+      "result": "No database and no query in the code: Q9 has nothing to apply to."
+    },
+    {
+      "check": "Commands of the system started from code (Q10: arguments do not become options or shell)",
+      "parts": ["tools-core", "team"],
+      "how": "grep of child_process/execFileSync/spawn over tools/src; reading traces/git-files.js and handoffs/git-history.js",
+      "result": "Only execFileSync of git (no shell) and spawn of Claude Code (shell: false); a commit id is checked by /^[0-9a-f]{40}$/ (git-history.js:12,52) and a RUN-ID by its pattern before a ref is built (git-history.js:206)."
+    },
+    {
+      "check": "Handoff commands: paths stay in handoffs/",
+      "parts": ["tools-core"],
+      "how": "Reading tools/src/handoffs/args.js:106-107, close.js:40-62, create.js:31-40 and 184-201",
+      "result": "Absolute paths, empty parts, . and .. are refused; the path must start with handoffs/ and end with .json; links on the path are refused by lstat; creation is exclusive (wx, then link)."
+    },
+    {
+      "check": "Idea-selection commands: paths (tools-core)",
+      "parts": ["tools-core"],
+      "how": "Reading cli.js, prepare.js, contract.js, util.js; prepare-run with a linked --context on a copy of the project outside its folder",
+      "result": "Finding SEC-02."
+    },
+    {
+      "check": "picker: hostile tenant files (plan extra)",
+      "parts": ["picker"],
+      "how": "Reading tools/src/picker/load.js (checkInside, lstat of each part, O_NOFOLLOW, size limit 512 KB, fstat); `node src/picker/cli.js serve --tenants <temporary folder> --home <temporary folder> --port 0` with the two v3 demo tenants and a link evil.json → a system file",
+      "result": "The link is refused: «Арендатор evil.json не обслуживается: evil.json — ссылка»; the two real tenants are served. The --home folder stayed empty."
+    },
+    {
+      "check": "picker: Q8 tenant isolation and hostile visitor input (plan extra)",
+      "parts": ["picker"],
+      "how": "Same server, curl: foreign Host; unknown tenant; answers of tenant agency sent to agency and to stock; POST without Origin; `{\"answers\":{\"__proto__\":…}}`; 100 000 nested brackets; invalid UTF-8; reading server.js (tenant only from the path, one registry lookup, question ids of another tenant never given back)",
+      "result": "403; unknown tenant and unknown path give the same body `{\"error\":\"not_found\",\"message\":\"Страница не найдена. / Бет табылмады. / Page not found.\"} 404`; agency answers to agency 200 with a result, to stock 400 answers_invalid with `\"question\":null`; no Origin 403; __proto__ 400 answers_invalid; nested 413; bad UTF-8 400."
+    },
+    {
+      "check": "picker: Q11 — external addresses",
+      "parts": ["picker"],
+      "how": "grep -E \"http.request|https|fetch(|net.connect|dns\" over tools/src/picker except the page",
+      "result": "The server makes no outgoing request: Q11 has nothing to apply to. The page's fetch goes only to its own origin (CSP connect-src 'self')."
+    },
+    {
+      "check": "Responses and errors do not give out a stack, paths or secrets",
+      "parts": ["pixel-office", "team", "picker"],
+      "how": "Reading describeError in pixel-office/server.js and picker/server.js, formatError in team/errors.js; grep of `.stack` over tools/src; the probe answers above",
+      "result": "HTTP answers are fixed codes and texts; team errors are `<CODE>: message` or `E_INTERNAL … (<name>)`; one place writes a stack to the operator's stderr — SEC-04."
+    },
+    {
+      "check": ".claude/: hooks and permissions",
+      "parts": ["claude"],
+      "how": "Reading .claude/settings.json; grep -i of dangerously/bypassPermissions/skip-permissions/--no-verify/force push over .claude and tools/src",
+      "result": "Seven hooks, each `/bin/sh -c` with the project folder passed as an argument (not pasted into the command), output thrown away, timeout 4, exit 0; no permission rules; .claude/settings.local.json is ignored by git. The only matches of the grep are prohibitions in orchestrator.md and release-finalizer.md. Note (not a finding, no bar item): the agent files have no `tools:` line, so every role, the read-only auditors included, gets every tool; their read-only rule is only in the text."
+    },
+    {
+      "check": "Security tests of the parts",
+      "parts": ["pixel-office", "team", "picker"],
+      "how": "On the copy outside the project, HOME set to a temporary folder: `node --test test/pixel-office-server.test.js test/pixel-office-hook.test.js test/team-security.test.js test/picker-server.test.js test/picker-server-faults.test.js test/team-web-guard.test.js`",
+      "result": "tests 202, pass 202, fail 0, skipped 0."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "team: a real Claude Code run — whether --restricted, --safe-mode and --permission-prompts none together really keep Read/Write/Edit inside work/, whether the WebFetch deny rules work, and what the developer's real result looks like after masking",
+      "reason": "A real run spends the owner's subscription limit; the handoff and decisions/0090 item 5 forbid real runs in this audit. Only the existence of the flags was confirmed by `--help`."
+    },
+    {
+      "check": "Pixel Office hook in a live Claude Code session (the event reaches the owner's working journal)",
+      "reason": "It would write into the owner's working journal; the role forbids writing events there for a check (R2). The hook path was checked by the existing tests on the copy only."
+    },
+    {
+      "check": "Secrets in the built bundle",
+      "reason": "There is no build step: the pages are served as they lie in public/ (they were included in the search of tracked files)."
+    },
+    {
+      "check": "Q8 for team",
+      "reason": "Sai Team has one owner per computer and no customer spaces; the project id comes from the path and is checked by pattern, ownership and no-link rules (checked above). There is no multi-customer data to mix."
+    },
+    {
+      "check": "R3",
+      "reason": "Not applicable: decision 0033 (the product with photos was dropped)."
+    },
+    {
+      "check": "Q11 for team web and team core",
+      "reason": "Neither the team web server nor the core calls any address; the only network is the Researcher's WebFetch inside Claude Code, covered by the accepted residual risk (decisions/0015, 0018) and not checkable without a real run."
+    }
+  ]
+}

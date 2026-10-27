@@ -1,0 +1,104 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "step": "03g",
+  "role": "RELEASE-VALIDATOR",
+  "dimension": "requirements",
+  "requirement": "REQ-061",
+  "title": "Сайт подбора — три языка, формат /2",
+  "status_in_requirements": "done",
+  "checked_at": "2026-10-27T13:37:54Z",
+  "check_command": "cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.",
+  "summary": {
+    "met": 9,
+    "met_in_part": 0,
+    "not_met": 1,
+    "not_checked": 0
+  },
+  "criteria": [
+    {
+      "criterion": 1,
+      "title": "Формат /2 принимается, /1 по-прежнему",
+      "verdict": "not_met",
+      "how": "the commands of the criterion on the current files; the copy probes on a copy of the sample outside the project; the sha256 command",
+      "evidence": "`npm run -s picker -- check` on src/picker/demo-tenants/uchet-pro.json — code 0, «Файл арендатора uchet-pro в порядке: вопросов 12, решений 5, правил 39.»; svet-marketing.json — code 0, «… вопросов 11, решений 5, правил 37.»; the same two lines for the copies tools/test/fixtures/picker-legacy/; sha256 of the base copies equal the legacy copies (uchet-pro 2f6c3437c379…, svet-marketing 46d3a5199701…). NOT MET: (1) schema «sai-picker-tenant/3» no longer gives the line «Допустимо только: sai-picker-tenant/1 или sai-picker-tenant/2. Исправьте значение.» — /3 is now an accepted format (REQ-069): a copy of e-field-schema.json with /3 gives code 1 and 34 lines, the first «e-field-schema.json: look: E_FIELD: Нет поля look. Добавьте его.»; (2) «sai-picker-tenant/» gives code 1 and «e-field-schema.json: schema: E_FIELD: Допустимо только: sai-picker-tenant/1, sai-picker-tenant/2 или sai-picker-tenant/3. Исправьте значение.» — not the text of the criterion; (3) the sample tools/test/fixtures/picker/e-field-schema.json holds «sai-picker-tenant/4», not /3 (changed by cd789f5, run LOOK069-20261026-01). The test LG-1c was replaced by REQ-069 by design (description of REQ-069, item (а)), and it is green; only the text of this criterion was not changed with it."
+    },
+    {
+      "criterion": 2,
+      "title": "Перевод обязателен: E_FIELD и E_LIMIT",
+      "verdict": "met",
+      "how": "tests LG-2a…LG-2i in tools/test/picker-lang.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 3,
+      "title": "Правило понятности по языкам",
+      "verdict": "met",
+      "how": "tests LG-3a…LG-3g in tools/test/picker-lang.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 4,
+      "title": "Правило выбора языка",
+      "verdict": "met",
+      "how": "tests LG-4a…LG-4c in tools/test/picker-lang.test.js exist and are green in the own npm run check",
+      "evidence": "green (31 rows of the table)."
+    },
+    {
+      "criterion": 5,
+      "title": "Результат не зависит от языка",
+      "verdict": "met",
+      "how": "tests LP-5a…LP-5g in tools/test/picker-lang-property.test.js exist and are green in the own npm run check; the diff",
+      "evidence": "`git diff base/LANG061-20261020-01 -- tools/src/picker/engine.js` — empty at the release of the run (d2e4c17) and now."
+    },
+    {
+      "criterion": 6,
+      "title": "Таблица текстов сайта",
+      "verdict": "met",
+      "how": "tests TX-6a…TX-6f, TX-R1 in tools/test/picker-texts.test.js exist and are green in the own npm run check",
+      "evidence": "green."
+    },
+    {
+      "criterion": 7,
+      "title": "Вымышленные арендаторы: структура переводов",
+      "verdict": "met",
+      "how": "tests LG-7a…LG-7h in tools/test/picker-lang.test.js exist and are green in the own npm run check; the diff",
+      "evidence": "`git diff base/LANG061-20261020-01 -- tools/src/picker/demo-answers/` — empty (run and now)."
+    },
+    {
+      "criterion": 8,
+      "title": "Смысл переводов проверен отдельным читателем",
+      "verdict": "met",
+      "how": "by the records of the run (a reader is a new launch of an agent — the limit of the owner): handoffs/LANG061-20261020-01/step-10-ba-analyst.json; the count command now",
+      "evidence": "`grep -o '\"kk\":' src/picker/demo-tenants/uchet-pro.json | wc -l` — 152, svet-marketing — 145, sum 297 = the 297 pairs of the BA-ANALYST table; the same for \"en\" (152 + 145). BA-ANALYST PASS «в той части, что проверяет агент-читатель»: kk 297 of 297 «да», en 297 of 297 «да». `git diff --stat d2e4c17 -- tools/src/picker/demo-tenants` — empty: the texts are those the readers read. The status note of REQ-061 keeps the bound: kk 105, 121, 139, 141, 160 are left for a person who knows Kazakh."
+    },
+    {
+      "criterion": 9,
+      "title": "Охранные и прежние тесты не ослаблены",
+      "verdict": "met",
+      "how": "own check; the loop of test( counts; the fixtures diff of the run; traces",
+      "evidence": "cd tools && npm run check (node v22.21.1, own run in this turn, no other node --test running): code 0; prettier — all files formatted; eslint --max-warnings 0 — clean; traces — 0 traces; handoffs-check — 0 violations; node --test: tests 2065, pass 2065, fail 0, cancelled 0, skipped 0, todo 0; duration 131 s.; the loop against base/LANG061-20261020-01 — empty; `git diff --name-only base/LANG061-20261020-01 d2e4c17 -- tools/test/fixtures/picker/` — exactly tools/test/fixtures/picker/e-field-schema.json; 44 samples; PK-8e green; `cd tools && npm run traces` — code 0"
+    },
+    {
+      "criterion": 10,
+      "title": "Файлы раздельны, сбои не роняют",
+      "verdict": "met",
+      "how": "tests LG-10a, LG-10b in tools/test/picker-lang.test.js exist and are green in the own npm run check; the searches; the diff of the run",
+      "evidence": "`grep -rnE 'fetch[(]|https?[.]request|node:net|node:dgram|child_process|Math[.]random' tools/src/picker/ --include='*.js' | grep -v '/public/'` — empty, code 1; `grep -rnE 'https?://' tools/src/picker/public/` — empty, code 1; `git diff base/LANG061-20261020-01 d2e4c17 -- tools/package.json` — empty."
+    }
+  ],
+  "findings": [
+    {
+      "id": "RV-B-061-1",
+      "check": "REQ-061, criterion 1",
+      "severity": "High",
+      "title": "Criterion 1 of REQ-061 (done) is no longer met as written: /3 is now an accepted format and the schema message names /1, /2 and /3",
+      "where": "docs/requirements.yaml:8247 (REQ-061, criterion 1); tools/test/fixtures/picker/e-field-schema.json:2; tools/test/picker-lang.test.js:129 (LG-1c)",
+      "evidence": "Copy of e-field-schema.json outside the project with schema «sai-picker-tenant/3»: `node src/picker/cli.js check` — code 1, 34 lines, first «e-field-schema.json: look: E_FIELD: Нет поля look. Добавьте его.»; with «sai-picker-tenant/»: code 1, «e-field-schema.json: schema: E_FIELD: Допустимо только: sai-picker-tenant/1, sai-picker-tenant/2 или sai-picker-tenant/3. Исправьте значение.»; the sample in the project holds «sai-picker-tenant/4» (commit cd789f5, REQ-069). The criterion still expects code 1 and «Допустимо только: sai-picker-tenant/1 или sai-picker-tenant/2.» for /3 and for the sample.",
+      "item": "Q1 (each criterion names a way of checking that is true), Q14 (records follow the change)",
+      "recommendation": "WF-01 (REQ-ANALYST, REQ-VALIDATOR): amend criterion 1 of REQ-061 the way REQ-069 (description, item (а)) already amended the test LG-1c — the wrong values become «sai-picker-tenant/4» and «sai-picker-tenant/», the expected line «Допустимо только: sai-picker-tenant/1, sai-picker-tenant/2 или sai-picker-tenant/3. Исправьте значение.», the sample value /4; with a was → became row and a reference to REQ-069. No code change: the behaviour is the one REQ-069 decided (decisions/0085). Then RELEASE-VALIDATOR re-checks the criterion (WF-03, steps 9–10)."
+    }
+  ],
+  "not_checked": [],
+  "notes": []
+}

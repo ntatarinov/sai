@@ -1,0 +1,117 @@
+{
+  "handoff_id": "step03a-AUD-001-20261027-01",
+  "run_id": "AUD-001-20261027-01",
+  "workflow_id": "WF-05",
+  "step": "03a",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-AUDITOR",
+  "file": "handoffs/AUD-001-20261027-01/step-03a-security-auditor.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/AUD-001/plan.json",
+      "decisions/0090-first-audit-compressed.md"
+    ],
+    "route": "SECURITY-AUDITOR",
+    "write_set": [
+      "docs/audits/AUD-001/all/security.json",
+      "handoffs/AUD-001-20261027-01/step-03a-security-auditor.json"
+    ],
+    "base_tag": "base/AUD-001-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T13:52:50Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "report file present and parsed; counts by severity summed by ORCH from all step-3 reports (Critical 1, High 6, Medium 21, Low 24) equal the compiler's report.json",
+        "only the audit folder and the run's handoffs changed in the working tree (git status)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-05 step 3, audit AUD-001 (the first audit of Sai, whole project). Read docs/workflows/WF-05-health-audit.md (step 3 and the severity rules), docs/audits/AUD-001/plan.json and decisions/0090. Check the dimension 'security' across ALL parts listed for it in the plan (each finding must name its part with the short name from the plan). Include the extra checks of the plan for this dimension (Pixel Office write signature and loopback, the masking of results in the team core — the owner's probe on 2026-10-27 showed a code result with 41 places replaced by the mask, see ISS-0058 — and picker tenant isolation and hostile input). Only read the project and run checks; a check that writes files is done on a copy outside the project folder; no real Claude Code runs and nothing that spends money (that is 'not checked' with the reason). Every finding has id, part, check, severity, title, where (file and line), evidence (command and output or quote), item (quality-bar item), recommendation. Record what was checked and how, and what was not checked and why. Write only docs/audits/AUD-001/all/security.json and your handoff. No machine paths and no names of other projects (say 'the traces list'). At the end, write in result a summary for the owner in two or three plain Russian sentences.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T12:37:46Z",
+  "started_at": "2026-10-27T12:37:46Z",
+  "completed_at": "2026-10-27T12:48:06Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Безопасность проверена по всем пяти частям плана (tools-core, pixel-office, team, picker, claude): 0 Critical, 1 High, 1 Medium, 2 Low. Секретов в файлах и в истории git нет; Pixel Office слушает только 127.0.0.1, принимает запись только с подписью и свежим временем, страница только читает; сайт подбора не смешивает арендаторов. Главная проблема (High): маскирование секретов портит файлы с кодом в результатах Sai Team (в обычном файле кода — десятки «[скрыто]» вместо выражений вида a.b.c) и удаляет исходник, так что исправной копии не остаётся; ещё prepare-run копирует файл из-за пределов проекта по символьной ссылке (Medium), подписанный запрос Pixel Office можно повторить в течение 60 секунд (Low), а команда сайта подбора при сбое печатает полный стек (Low).",
+    "findings": "docs/audits/AUD-001/all/security.json",
+    "changes": [
+      {
+        "file": "docs/audits/AUD-001/all/security.json",
+        "what": "created: the security report of AUD-001 (4 findings, what was checked and how, what was not checked and why)"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git ls-files | xargs grep -o -h -I -E \"(sk-ant-…|gh[pos]_…|github_pat_…|AKIA…|xox…|BEGIN … PRIVATE KEY|<bot token>|AIza…)\" | sort | uniq -c",
+        "output": "20 distinct values, all made-up (sk-ant-abcdefghij1234567890 ×14, AKIAZZZZEXAMPLE00001 ×12, ghp_FAKEfake… ×8, …); BEGIN PRIVATE KEY only in tools/test/pixel-office-helpers.js:1546,1552"
+      },
+      {
+        "command": "git log --all -p | grep -o -E \"<the same patterns, longer>\" | sort -u",
+        "output": "only AKIAFAKEFAKEFAKE1234, AKIAIOSFODNN7EXAMPLE, AKIAZZZZEXAMPLE00001, ghp_FAKE…, sk-ant-abcdefghij…, sk-ant-api03-FAKE…, sk-ant-FAKEdecoy…; 155 commits"
+      },
+      {
+        "command": "probe of createServer (Pixel Office) on port 0, temporary state folder outside the project",
+        "output": "LAN address ECONNREFUSED; badHost 403; unsigned 401; badSig 401; oldTime 400 time_skew; futureTime 400 time_skew; withSource 400 has_source; extraKey 400 unknown_key:cwd; good 204; replay 204; noteUnsigned 401; PUT/DELETE, POST / 405; traversal 404; /write-secret 404; 20000 bytes 413; modes 700 and 600 for five files; raw HTTP/1.0 without Host 403, LOCALHOST 403, [::1] 403"
+      },
+      {
+        "command": "node <script outside the project> applying maskSecrets to project files",
+        "output": "team/files.js masks: 3; web/server.js masks: 7; picker/public/app.js masks: 52; tools/package.json masks: 5; pixel-office/public/app.js masks: 196 (e.g. `if (!PATTERNS.project.test(id))` => `if (![скрыто](id))`)"
+      },
+      {
+        "command": "prepare-run on a copy of the project with docs/leak.md as a link to a file outside",
+        "output": "prepared WF06-20261027-99; the outside marker found in runs/WF06-20261027-99/sources/docs/leak.md"
+      },
+      {
+        "command": "node src/web/main.js --port 0 (temporary SAI_TEAM_HOME) + curl",
+        "output": "badhost 403; no key 403; foreign origin 403; unknown project 404 «Не найдено»; ..%2f..%2fetc 404; malformed 400; __proto__ 400; valid create 400 «Настоящие запуски … выключены»"
+      },
+      {
+        "command": "node src/picker/cli.js serve --tenants <temp> --home <temp> --port 0 + curl",
+        "output": "evil.json link refused; badhost 403; unknown tenant 404 and unknown path 404 with the same body; agency answers to agency 200, to stock 400 answers_invalid question:null; no Origin 403; __proto__ 400; nested 413; bad UTF-8 400"
+      },
+      {
+        "command": "<Claude Code binary> --version; --help | grep flags",
+        "output": "2.1.306 (Claude Code); --permission-prompts, --restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --tools, --allowedTools, --disallowedTools, --max-budget-usd, --json-schema, --append-system-prompt all present"
+      },
+      {
+        "command": "node --test test/pixel-office-server.test.js test/pixel-office-hook.test.js test/team-security.test.js test/picker-server.test.js test/picker-server-faults.test.js test/team-web-guard.test.js (on the copy, HOME temporary)",
+        "output": "tests 202, pass 202, fail 0, skipped 0"
+      },
+      {
+        "command": "grep -i -E \"sqlite|SELECT .* FROM|INSERT INTO\" tools/src; grep innerHTML|outerHTML|insertAdjacentHTML|eval( over the three public/ folders",
+        "output": "no matches"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOT_CHECKED",
+        "text": "A real Claude Code run of Sai Team (isolation of Read/Write/Edit to work/, WebFetch deny rules, the real developer result after masking) was not checked: it spends the owner's limit (decisions/0090, item 5)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOT_CHECKED",
+        "text": "The Pixel Office hook in a live session was not run: it would write into the owner's working journal (R2); covered only by the existing tests on a copy."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "SEC-01 has the same cause as the open ISS-0058 (MEDIUM), but ISS-0058 describes only hosts, descriptions and role names; for code results the harm is a broken product result with the unmasked source deleted. ORCH/AUDIT-TRIAGE: raise ISS-0058 to HIGH and widen it, or open a separate HIGH defect."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Not a finding (no bar item): the files in .claude/agents/ have no `tools:` line, so the read-only auditors and checkers get every tool; their read-only rule is only in the text. ARCHITECTURE-AUDITOR or ORCH may judge it."
+      }
+    ],
+    "artifacts_out": ["docs/audits/AUD-001/all/security.json"]
+  }
+}

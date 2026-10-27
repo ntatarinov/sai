@@ -1,0 +1,84 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "requirements",
+  "requirement": "REQ-002",
+  "auditor": "RELEASE-VALIDATOR",
+  "checked_at": "2026-10-27T13:35:19Z",
+  "base": "HEAD b64562a + working tree",
+  "method": "Each criterion's own way of checking carried out on the current files: commands and greps on the working tree; behaviour probes and writes only on a copy of Sai in <scratch> (team homes, Pixel Office stands and servers on port 0, one headless Chrome at a time); criteria about how a run went — by the run's handoffs and files. One full `npm run check` on the working tree and one on a clean copy.",
+  "check_command": "cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)",
+  "counts": {
+    "met": 11
+  },
+  "criteria": [
+    {
+      "n": 1,
+      "status": "met",
+      "how": "grep of the sections in decisions/0002 + repo.test.js in the full run",
+      "evidence": "decisions/0002-process-tooling-node.md: headings «Вопрос» :13, «Варианты» :19, «Решение» :31, «Почему» :38, «Граница» :44, «Основание» :50; line 3 «Подтверждено владельцем проекта», line 11 the owner's answer; repo.test.js green in the full run"
+    },
+    {
+      "n": 2,
+      "status": "met",
+      "how": "jq engines, ls lock, clean-copy npm ci && npm run check",
+      "evidence": "engines.node \">=22 <23\"; tools/package-lock.json present; cd tools && node -v -> v22.21.1; cd tools && npm run check (working tree, own turn, foreground) -> exit 0, '# tests 2065 # pass 2065 # fail 0 # cancelled 0 # skipped 0 # todo 0'; clean copy of the whole Sai folder without node_modules in <scratch>/copy: npm ci -> exit 0 (80 packages, 0 vulnerabilities), npm run check -> exit 0, the same 2065/2065, skipped 0, todo 0 (format:check, lint --max-warnings 0, traces, handoffs-check, test all ran)"
+    },
+    {
+      "n": 3,
+      "status": "met",
+      "how": "every error code of validate/prepare/apply/contract mapped to test files (bash loop grep -lw)",
+      "evidence": "44 codes E_CANDIDATE … E_WRITE, each found in >=1 of test/validate*.test.js, prepare*.test.js, apply*.test.js, snapshot.test.js, cli.test.js (min 1, E_SHAPE 4); all green in the full run"
+    },
+    {
+      "n": 4,
+      "status": "met",
+      "how": "own probes on the clean copy",
+      "evidence": "validate missing run folder -> 'E_USAGE: run folder not found' code 2; folder outside runs/ -> code 2; prepare-run on existing WF06-20260926-01 -> 'E_USAGE: run folder already exists' code 2; broken assessment JSON -> 'E_JSON assessment-execution.json: invalid JSON: …' code 1, one line, no stack; missing file -> 'E_JSON … file is missing or unreadable' code 1"
+    },
+    {
+      "n": 5,
+      "status": "met",
+      "how": "src/contract.js constants, prepare.test.js, grep of the real cleaned sources",
+      "evidence": "contract.js:50 STRIPPED_PARAGRAPH_PREFIXES [Записано:, Статус:], :51 STRIPPED_TABLE_COLUMNS [Итог, Статус, Почему нет]; test 'E_SOURCE_PATH: ideas/README.md is never a source' prepare.test.js:46; grep of runs/WF06-20260926-01/sources for «Записано:»/«Статус:»/conclusion:start -> 0 lines"
+    },
+    {
+      "n": 6,
+      "status": "met",
+      "how": "tests apply.reject.test.js (invalid run; E_NOT_ACCEPTED v1, v2: nothing is written) green in the full run",
+      "evidence": "apply.reject.test.js:14, :21, :28"
+    },
+    {
+      "n": 7,
+      "status": "met",
+      "how": "apply.state.test.js green",
+      "evidence": "E_STATE_ANCHOR ×3, E_STATE_MARKERS, E_OWNER_SECTION tests at apply.state.test.js:19-41"
+    },
+    {
+      "n": 8,
+      "status": "met",
+      "how": "apply.accept.test.js green + grep of the expected strings",
+      "evidence": "3 matches of the block/proposed-actions/owner-section strings in apply.accept.test.js; green in the full run"
+    },
+    {
+      "n": 9,
+      "status": "met",
+      "how": "apply.escalate.test.js green",
+      "evidence": "test 'third REJECT: escalation block, report, no proposed actions' (:9)"
+    },
+    {
+      "n": 10,
+      "status": "met",
+      "how": "own probe on the copy: snapshot, add a file, snapshot-diff with and without --allow",
+      "evidence": "added file outside allow -> 'added runs/…/run.json.tmpprobe' code 1; with --allow runs/WF06-20260926-01/ -> code 0; identical snapshots -> code 0"
+    },
+    {
+      "n": 11,
+      "status": "met",
+      "how": "the criterion's command on the copy",
+      "evidence": "node --test test/apply.write.test.js test/prepare.write.test.js test/listing.test.js -> tests 92, pass 92, fail 0, skipped 0; SIGKILL tests: 4 lines in each write test file; ENOSPC/EFBIG/EIO lines: apply.write 49, prepare.write 17"
+    }
+  ],
+  "not_checked": [],
+  "findings": []
+}

@@ -1,0 +1,129 @@
+{
+  "handoff_id": "step04-AUD-001-20261027-01",
+  "run_id": "AUD-001-20261027-01",
+  "workflow_id": "WF-05",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "AUDIT-COMPILER",
+  "file": "handoffs/AUD-001-20261027-01/step-04-audit-compiler.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/AUD-001/plan.json",
+      "decisions/0090-first-audit-compressed.md"
+    ],
+    "route": "AUDIT-COMPILER",
+    "write_set": [
+      "docs/audits/AUD-001/report.json",
+      "docs/audits/AUD-001/report.md",
+      "handoffs/AUD-001-20261027-01/step-04-audit-compiler.json"
+    ],
+    "base_tag": "base/AUD-001-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T13:52:50Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "report file present and parsed; counts by severity summed by ORCH from all step-3 reports (Critical 1, High 6, Medium 21, Low 24) equal the compiler's report.json",
+        "only the audit folder and the run's handoffs changed in the working tree (git status)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-05 step 4, audit AUD-001. Read docs/workflows/WF-05-health-audit.md (step 4), decisions/0009 (the score), decisions/0090 (the compressed form: one report per dimension across all parts in docs/audits/AUD-001/all/, every finding names its part) and docs/audits/AUD-001/plan.json. Read every report of step 3: all/security.json, all/dependencies.json, all/architecture.json, all/coverage.json, all/documentation.json and docs/audits/AUD-001/requirements/*.json (33 requirements), and the result of each step-03 handoff of this run. Do step 4 completely: completeness against the plan; re-check every Critical and High finding yourself (repeat the command or open the place; in particular the Critical DEP-01 on the local Node version — say whether the vulnerable code is reachable in what runs now — the High SEC-01 on the masking of code results, the High DOC-01 on REQ-003, and the High findings on REQ-004 criterion 4 and REQ-005 criterion 8); merge repeats (SEC-01 and the open ISS-0058 are one cause); score by part and the separate Requirements part; this is the first audit, so there is no comparison — say so. Write docs/audits/AUD-001/report.json and docs/audits/AUD-001/report.md (report.md starts with the result for the owner in plain Russian, five to eight sentences, then the order of WF-05 step 4 item 6). Only read and run checks; no real Claude Code runs; checks that write files go on a copy outside the project; port 0 for any server. Write only the two report files and your handoff. No machine paths and no names of other projects (say 'the traces list').",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T13:37:17Z",
+  "started_at": "2026-10-27T13:37:17Z",
+  "completed_at": "2026-10-27T13:52:06Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Сводка AUD-001 собрана: docs/audits/AUD-001/report.json и report.md. Оценка проекта — 40, часть pixel-office (Critical DEP-01: локальная сборка Node 22.21.1 без пяти выпусков безопасности, уязвимый разбор заголовков node:http досягаем в работающем сервере, но только с этого компьютера; сервер не падает). Подтверждённых находок 52: Critical 1, High 6, Medium 21, Low 24; снятых нет. Оценки частей: tools-core 70, pixel-office 40, team 60, picker 70, claude 100, docs 52, Требования 48. План закрыт полностью: 24 пары «часть × измерение» из 24 и 33 требования из 33; перестали выполняться REQ-004 (к. 4), REQ-005 (к. 8), REQ-061 (к. 1); у REQ-003 нет прежней записи RELEASE-VALIDATOR, но все 3 критерия выполнены в этом аудите. Слияния: SEC-01 и открытый ISS-0058 — одна причина (правило M7), DEP-01 и DEP-02 — одна причина (две записи из-за разной важности по шкале WF-05), ARC-04 — общая находка трёх частей. Это первый аудит — сравнения нет.",
+    "self_check": [
+      {
+        "what": "Recheck DEP-01 (Critical, pixel-office)",
+        "command": "node -v; which -a node; ps -axo pid,lstart,command | grep pixel-office/main.js; lsof -p 93326 (txt, LISTEN); curl nodejs.org/dist/index.json; curl CHANGELOG_V22.md; grep maxHeadersCount|headersDistinct|trailersDistinct|AsyncLocalStorage|async_hooks tools/src; a separate server `node src/pixel-office/main.js --port 0 --dir <outside the project>` and raw requests with N short headers",
+        "output": "v22.21.1; working server pid 93326 started 2026-10-18 on node@22/22.21.1_4, LISTEN localhost:4790; security releases after it: 22.22.0, 22.22.2, 22.23.0, 22.23.2, 22.23.4; changelog: CVE-2026-58044 «http: reject requests exceeding max header count» (22.23.2, Low). grep: nothing. Separate server: 1990 headers -> 200, 2500 -> 200 (not refused), 2500 with Host last -> 400, 3000 with Host last -> 400, then GET -> 200 (server up); probe server stopped. Verdict: confirmed, reachable in what runs now from a local process only; CVE-2026-21710 and CVE-2025-59466 not reachable (headersDistinct and async_hooks unused). Critical by the WF-05 scale."
+      },
+      {
+        "what": "Recheck DEP-02 (High, tools-core/team/picker)",
+        "command": "same as DEP-01; lsof -p 55496 (running picker server)",
+        "output": "same node v22.21.1; picker server on port 4782 runs node@22/22.21.1_4. Confirmed."
+      },
+      {
+        "what": "Recheck SEC-01 (High, team)",
+        "command": "a script outside the project imports maskSecrets from tools/src/pixel-office/mask.js and applies it to 5 project files; sed of store.js:385-400, runner.js:125-135 and 650-682; grep tools/README.md; head docs/issues/ISS-0058*",
+        "output": "marks: team/files.js 3 (line 12 `fs.constants.O_NOFOLLOW` -> `[скрыто]`), web/server.js 7, picker/public/app.js 52, package.json 5 (`\"0.1.0\"` -> `\"[скрыто]\"`), pixel-office/public/app.js 196; `const v = a.b.c; x = obj.prop.method();` -> `const v = [скрыто]; x = [скрыто]();`. store.js #publish stores only maskSecrets(content); runner.js deletes the work/ source after acceptance; README:391 «an unmasked copy does not stay». ISS-0058 open MEDIUM, hosts only. Confirmed; one cause with ISS-0058."
+      },
+      {
+        "what": "Recheck DOC-01 (High, docs)",
+        "command": "requirements.yaml REQ-003 status line; ls handoffs/WF06-20260926-01/; jq loop over handoffs/*/*.json for to_agent RELEASE-VALIDATOR with REQ-003 in requirement_ids; grep -l REQ-003 handoffs/*/*release-validator*.json; grep -rln REQ-003 handoffs/WF06-20260926-01/",
+        "output": "«status: done   # RELEASE-VALIDATOR PASS 2026-09-28; прогон WF06-20260926-01»; run folder: steps 00-05, 10-12, no RELEASE-VALIDATOR; jq loop: none; grep: ISS-0002-20261011-01/step-09 (REQ-002, REQ-004) and AUD-001 step-03f only; the run folder never names REQ-003. Confirmed. Note: step-03f found all 3 REQ-003 criteria met."
+      },
+      {
+        "what": "Recheck REQ-004-F1 (High, Requirements)",
+        "command": "awk of REQ-004 in requirements.yaml (criterion 4); ls handoffs/ and runs/WF06-20260926-01/; grep -rl snapshot-diff over the project (no node_modules, .git) | xargs grep -l WF06-20260926-01; jq strings of ISS-0002-20261011-01/step-09 for REQ-004",
+        "output": "criterion 4 asks for the snapshot-diff output «вывод приложен»; the only records: step-00-orch (before-snapshot «stored outside the project») and reports/WF06-20260926-01-protocol.html:396 «snapshot-diff — код 0» without output; the later RV PASS checked the ISS-0002 code. Confirmed."
+      },
+      {
+        "what": "Recheck REQ-005-F1 (High, Requirements)",
+        "command": "awk of REQ-005 (criterion 8); jq .status .result.verdict of handoffs/BP-20261003-01/step-03-plan-validator*.json; sed -n 1,12p decisions/0010-bp-rework-limit-exceeded.md",
+        "output": "criterion 8: «после второй доработки с FAIL статус — blocked»; step-03 FAIL, r1-r4 FAIL, r5 PASS, r6 PASS; 0010 «Статус: принято (2026-10-05, ORCH). Владелец может отменить.» Confirmed."
+      },
+      {
+        "what": "Recheck RV-B-061-1 (High, Requirements)",
+        "command": "awk of REQ-061 criterion 1; copies of tools/test/fixtures/picker/e-field-schema.json outside the project with schema /4 (as is), «sai-picker-tenant/» and /3; node src/picker/cli.js check <copy>",
+        "output": "/4: «schema: E_FIELD: Допустимо только: sai-picker-tenant/1, sai-picker-tenant/2 или sai-picker-tenant/3. Исправьте значение.»; «sai-picker-tenant/»: same line, code 1; /3: accepted as a format, first line «look: E_FIELD: Нет поля look. Добавьте его.» The criterion expects «…/1 или sai-picker-tenant/2.» for /3 and the sample. Confirmed."
+      },
+      {
+        "what": "Recount of severities from the step-3 reports (own command, not from report.json)",
+        "command": "cat all/*.json requirements/*.json | jq -s -r '[.[] | .findings[]? | .severity] | group_by(.) | map(\"\\(.[0]) \\(length)\")'",
+        "output": "Critical 1, High 6, Low 24, Medium 21 = 52; report.json counts {Critical 1, High 6, Medium 21, Low 24, total 52}; 52 finding ids in report.json, 0 repeated; withdrawn 0."
+      },
+      {
+        "what": "Scores recomputed by an own jq command over the step-3 reports (decisions/0009; DEP-02 on tools-core, team, picker; ARC-04 on pixel-office, team, picker; requirement findings on Requirements)",
+        "command": "jq -s over all/*.json requirements/*.json: penalty 30/12/4/1, ceiling 40/70/100, score = max(0, min(100-penalty, ceiling))",
+        "output": "tools-core: penalty 26 (H1 M3 L2), ceiling 70, score 70; pixel-office: penalty 51 (C1 M4 L5), ceiling 40, score 40; team: penalty 40 (H2 M3 L4), ceiling 70, score 60; picker: penalty 19 (H1 L7), ceiling 70, score 70; claude: penalty 0, ceiling 100, score 100; docs: penalty 48 (H1 M8 L4), ceiling 70, score 52; Requirements: penalty 52 (H3 M3 L4), ceiling 70, score 48. Project: 40, pixel-office; no part «not checked». Same as report.json."
+      },
+      {
+        "what": "Completeness against plan.json",
+        "command": "build script: every part of every dimension of plan.json against the parts list of its report; plan requirement list A+B against requirements/*.json",
+        "output": "pairs 24 of 24 checked; requirements 33 of 33 reported, missing []. Partial «not checked» items inside pairs and criteria are listed in report.json not_checked and report.md."
+      },
+      {
+        "what": "Step-3 reports not changed; no machine paths; traces",
+        "command": "stat mtimes of all/*.json and requirements/*.json; grep -nE '/Users/|/home/[a-z]|/private/|/var/folders|/tmp/' report.json report.md; cd tools && npm run traces",
+        "output": "the newest step-3 file (requirements/REQ-070.json) was last modified at 13:41:56Z, before step-03g closed (13:43:10Z) and before report.json (13:48:54Z) and report.md (13:50:45Z); this step only read them. grep of machine paths in report.json and report.md: no match. «traces: файлов проверено 2275, следов 0, пропущено 67»."
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "step-03f, issue I1: RELEASE-VALIDATOR saw runs/WF06-20261027-99 (the SECURITY-AUDITOR probe of SEC-02, source docs/leak.md) in the working tree about 13:05Z and not at 13:10Z, while security.json says the probe ran on a copy. At 13:50Z `ls runs/WF06-20261027-99` -> no such folder, and `git status --short --ignored` shows nothing under runs/. ORCH: confirm with the auditor whether a probe wrote inside the project (handoffs.md, item 7)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "ARC-04 is a shared finding (the auditor names pixel-office, team, picker), but architecture.json counts_by_part put it only on pixel-office. By WF-05 step 4 item 3 the summary puts it on all three parts; this lowers team from 61 to 60 and changes no other score."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "DEP-01 and DEP-02 are one cause (local Node 22.21.1 and the open engines floor) but stay two entries because the WF-05 scale gives different severities (Critical for the Pixel Office server, High for the other parts). AUDIT-TRIAGE: one CRITICAL defect covering both. The observed harm of DEP-01 is small (local only, request refused, server up); the severity comes from the WF-05 rule, not from a shown attack."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Medium and Low findings were taken with the auditors' evidence (WF-05 step 4 item 2 rechecks Critical and High); they carry the mark «auditor evidence» in report.json. The running Pixel Office (port 4790) and picker (port 4782) servers were only looked at with ps/lsof; all probes used a separate server on port 0 with a temporary state folder outside the project, stopped afterwards."
+      }
+    ],
+    "artifacts_out": [
+      "docs/audits/AUD-001/report.json",
+      "docs/audits/AUD-001/report.md"
+    ]
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "audit": "AUD-001",
+  "run_id": "AUD-001-20261027-01",
+  "dimension": "dependencies",
+  "agent": "DEPENDENCY-AUDITOR",
+  "date": "2026-10-27",
+  "parts": ["tools-core", "pixel-office", "team", "picker"],
+  "packages": {
+    "direct": 4,
+    "direct_list": [
+      "@eslint/js 10.0.1",
+      "eslint 10.11.0",
+      "globals 17.12.0",
+      "prettier 3.9.9"
+    ],
+    "total_installed": 80,
+    "runtime": 0,
+    "note": "All four parts share one tools/package.json and one tools/package-lock.json; there is no other package.json in the repository. The runtime of every part is Node 22 itself and its built-in modules."
+  },
+  "counts": { "Critical": 1, "High": 1, "Medium": 1, "Low": 0 },
+  "counts_by_part": {
+    "tools-core": { "Critical": 0, "High": 1, "Medium": 1, "Low": 0 },
+    "pixel-office": { "Critical": 1, "High": 0, "Medium": 0, "Low": 0 },
+    "team": { "Critical": 0, "High": 1, "Medium": 0, "Low": 0 },
+    "picker": { "Critical": 0, "High": 1, "Medium": 0, "Low": 0 }
+  },
+  "findings": [
+    {
+      "id": "DEP-01",
+      "part": "pixel-office",
+      "check": "Node version: the Node that actually runs the Pixel Office server and hook, against the Node 22 security releases (WF-05 rule for vulnerable dependencies)",
+      "severity": "Critical",
+      "title": "The Pixel Office server and hook run on Node 22.21.1, which is five security releases behind; known node:http fixes are missing in the server that works now",
+      "where": "tools/package.json:8 (engines \"node\": \">=22 <23\" lets any vulnerable 22.x pass); tools/src/pixel-office/server.js:467 (http.createServer) and :504 (listen); tools/src/pixel-office/hook.sh:30-45 (the hook takes node 22 from PATH or the Homebrew node@22 folder)",
+      "evidence": "`node -v` -> v22.21.1. The running server: `ps -axo pid,command | grep pixel-office/main.js` -> `93326 node src/pixel-office/main.js --port 4790`; `lsof -p 93326` txt -> the Homebrew node@22 22.21.1_4 binary. `curl https://nodejs.org/dist/index.json` (v22 lines): v22.22.0 2026-01-12 security=true, v22.22.2 2026-03-24 security=true, v22.23.0 2026-06-17 security=true, v22.23.2 2026-07-28 security=true, v22.23.4 2026-10-20 security=true; v22.21.1 is 2025-10-28. The Node changelog (doc/changelogs/CHANGELOG_V22.md) for these releases lists, among others, CVE-2026-58044 «http: reject requests exceeding max header count» (22.23.2, rated Low by Node), CVE-2026-21710 «use null prototype for headersDistinct/trailersDistinct» (22.22.2, High), CVE-2025-59466 «rethrow stack overflow exceptions in async_hooks» (22.22.0). The Pixel Office server is a node:http server and sets no maxHeadersCount (`grep -rn maxHeadersCount tools/src` -> nothing), so the http server fix applies to it. `brew info node@22` -> «22.21.1_4 → stable 22.23.3»: even the Homebrew stable build lacks the 22.23.4 fixes. Reach: the server listens on the loopback address only, so only a process on this computer can send such a request; Node rates the plainly reachable http fix Low. The WF-05 rule names a known vulnerability reachable in the Pixel Office server or hook as Critical, so it is Critical here.",
+      "item": "Q10 (realistic failures do not bring the system down) through the WF-05 rule for vulnerable dependencies; Q12 (decisions/0002: Node 22)",
+      "recommendation": "Update the local Node 22 to v22.23.4 or newer (the official installer or a manager, since Homebrew node@22 is at 22.23.3) and restart the Pixel Office server; through a decision of the owner, raise the floor in engines to the last security release (for example \">=22.23.4 <23\") so that the check and the Node guards of the commands refuse a vulnerable build; repeat at every Node security release."
+    },
+    {
+      "id": "DEP-02",
+      "part": "tools-core, team, picker",
+      "check": "Node version: the Node that runs the check command, the team core and web server, and the picker server, against the Node 22 security releases",
+      "severity": "High",
+      "title": "The check command, the team commands and the picker server run on Node 22.21.1 with known vulnerabilities fixed in later 22.x releases",
+      "where": "tools/package.json:8 (engines \">=22 <23\"); tools/src/web/server.js and tools/src/picker/server.js (node:http servers); tools/src/team/executors/claude-cli.js:203 (child processes)",
+      "evidence": "The same commands and output as DEP-01: `node -v` -> v22.21.1; nodejs.org/dist/index.json lists five security releases of 22.x after it (22.22.0, 22.22.2, 22.23.0, 22.23.2, 22.23.4). These parts are not on the WF-05 list of what works now (the Pixel Office server or hook), so the rule gives High. The CI run is not affected: .github/workflows/check.yml:26-29 installs node-version \"22\", which resolves to the newest 22.x.",
+      "item": "WF-05 rule: a dependency with a known vulnerability is High; Q12 (decisions/0002)",
+      "recommendation": "The same fix as DEP-01 (one cause: the local Node build and the open engines floor): update the local Node 22 to v22.23.4 or newer and raise the engines floor through a decision of the owner."
+    },
+    {
+      "id": "DEP-03",
+      "part": "tools-core",
+      "check": "Outdated packages (`npm outdated` on the copy)",
+      "severity": "Medium",
+      "title": "Three development tools of the check command are behind their latest releases: eslint, globals, prettier",
+      "where": "tools/package.json:32-34 (eslint 10.11.0, globals 17.12.0, prettier 3.9.9); tools/package-lock.json",
+      "evidence": "`npm outdated` on the copy (exit code 1): `eslint 10.11.0 10.11.0 10.13.0`, `globals 17.12.0 17.12.0 17.13.0`, `prettier 3.9.9 3.9.9 3.9.10`. `npm view <pkg> time`: eslint 10.12.0 2026-10-02 and 10.13.0 2026-10-16; globals 17.13.0 2026-10-01; prettier 3.9.10 2026-10-10. `npm audit` on the copy: «found 0 vulnerabilities», so no known vulnerability stands behind the lag. @eslint/js 10.0.1 is the latest (`npm view @eslint/js version` -> 10.0.1).",
+      "item": "WF-05: an outdated dependency without a known vulnerability is Medium; Q4 (the one check command rests on these tools)",
+      "recommendation": "Through a short WF-02/WF-03 job: raise eslint to 10.13.0, globals to 17.13.0, prettier to 3.9.10 with exact versions in package.json and a regenerated lockfile, then run `npm run check` on a clean copy; a new prettier may reformat files, which is part of the same job. The file is shared by all parts; the finding is put on tools-core because the check command lives there."
+    }
+  ],
+  "checked": [
+    {
+      "check": "Clean install on a copy outside the project",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "`git archive HEAD tools` into a scratch folder outside the project, then in it: `node -v` -> v22.21.1, `npm -v` -> 10.9.4, `npm ci` -> «added 80 packages, and audited 81 packages in 2s … found 0 vulnerabilities», exit code 0 (with pipefail). A second copy as `git clone` of the repository (HEAD b64562a) outside the project: `npm ci` exit 0.",
+      "result": "passes"
+    },
+    {
+      "check": "The check command on the clean copy, without the test suite (Q4)",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "On the copies: `npm run format:check` -> «All matched files use Prettier code style!» exit 0; `npm run lint` -> exit 0; in the git clone: `npm run traces` -> «файлов проверено 2224, следов 0, пропущено 67» exit 0; `npm run handoffs-check` -> «файлов проверено 1212, нарушений 0, исключений использовано 114 из 114» exit 0.",
+      "result": "passes; the test step is in not_checked"
+    },
+    {
+      "check": "Pinned versions and consistency of package.json and package-lock.json",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "Read tools/package.json: the four devDependencies have exact versions, no ^, ~, *, latest. A Node script over package-lock.json: lockfileVersion 3; the root entry repeats the same four exact versions and engines; all 80 entries have integrity, all resolve from https://registry.npmjs.org/. `npm ci` (which fails on a mismatch) passed; `npm ls --depth=0` lists exactly the four packages at the pinned versions, exit 0.",
+      "result": "met"
+    },
+    {
+      "check": "No runtime dependencies (decisions/0002)",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "package.json has no dependencies section; every lockfile entry has dev: true (script count nonDev = 0); `npm audit --json` metadata: prod 1 (the root package itself), dev 80. Imports in tools/src, tools/test and eslint.config.js: every non-relative import is node:* except @eslint/js and globals in eslint.config.js (two bare \"fs\"/\"net\" matches are text inside tests: test/team-web-guard.test.js:279, test/traces-runtime.test.js:81). The pages (pixel-office, web, picker public/index.html) load only their own style and script files, no CDN.",
+      "result": "met"
+    },
+    {
+      "check": "Unused packages",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "eslint — the lint script; @eslint/js and globals — imported in tools/eslint.config.js:1-2; prettier — the format and format:check scripts.",
+      "result": "every package is used; no finding"
+    },
+    {
+      "check": "Vulnerable packages",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "`npm audit` on the copy -> «found 0 vulnerabilities», exit 0 (the network worked).",
+      "result": "no known vulnerability in npm packages"
+    },
+    {
+      "check": "Outdated packages",
+      "parts": ["tools-core"],
+      "how": "`npm outdated` on the copy and `npm view <pkg> time` (the network worked).",
+      "result": "finding DEP-03"
+    },
+    {
+      "check": "Node version: engines, the CI, the local runtime, the support period",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "engines \">=22 <23\" (package.json and lockfile root); .github/workflows/check.yml:26-29 node-version \"22\"; local `node -v` v22.21.1 satisfies engines; the Node schedule (raw.githubusercontent.com/nodejs/Release/main/schedule.json): v22 maintenance from 2025-10-21, end 2027-04-30 — inside the support period on 2026-10-27, about six months left. Security releases since 22.21.1 from nodejs.org/dist/index.json and the v22 changelog.",
+      "result": "engines and the CI match; Node 22 is supported until 2027-04-30; the local build is behind security releases — findings DEP-01, DEP-02"
+    },
+    {
+      "check": "Licences",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "From the lockfile and from package.json of every installed package on the copy (both give the same): MIT 56, Apache-2.0 12, BSD-2-Clause 6, ISC 4, BSD-3-Clause 1, BlueOak-1.0.0 1 (minimatch); none without a licence. All are permissive; none requires opening the Sai code or forbids its use; all are development tools that are not shipped.",
+      "result": "no finding"
+    },
+    {
+      "check": "External programs outside npm",
+      "parts": ["team"],
+      "how": "`grep -rnE \"spawn\\(|execFile\\(|execSync|spawnSync\" tools/src`: the only child process is tools/src/team/executors/claude-cli.js:203, spawn(config.claudeBin, …) — the Claude Code program, set by configuration, not an npm package.",
+      "result": "recorded; not a package dependency"
+    },
+    {
+      "check": "The Sai folder did not change",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "how": "`shasum -a 256 tools/package.json tools/package-lock.json` before (12:50Z) and after (12:53Z): 99cec2fc…69ddc and 92d27c4e…7b5bde both times; `git status --short tools/` empty after the checks. No npm command was run in the Sai folder.",
+      "result": "unchanged"
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "The test step of the check command (`npm run test`) on the clean copy",
+      "parts": ["tools-core", "pixel-office", "team", "picker"],
+      "reason": "By the task another auditor (coverage) runs the full test suite at the same time; this auditor did not run it, so the claim «npm run check passes on a clean copy» is confirmed here for install, format, lint, traces and handoffs-check only."
+    },
+    {
+      "check": "Whether each Node CVE fixed after 22.21.1 is actually exploitable in the Pixel Office server or hook",
+      "parts": ["pixel-office"],
+      "reason": "No exploit was tried against the running server (it would load or break the owner's working instance). Reachability of DEP-01 rests on the changelog text and on the server being a node:http server without its own header limits."
+    },
+    {
+      "check": "Licences of the Node runtime and of the Claude Code program",
+      "parts": ["team", "pixel-office"],
+      "reason": "They are not npm packages and are not in package.json; outside this dimension's package list."
+    }
+  ]
+}
