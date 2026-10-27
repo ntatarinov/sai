@@ -177,8 +177,9 @@ runs (`STATE.md`).
   the scoring engine, the server, the three languages, the check of characters in texts, the
   questionnaire page with the card of the site, the tenant file form `/3` with the section
   `look`, REQ-069, and the two demo tenants of the new office, REQ-070); the rest are written
-  and checked (including the new office look, REQ-071…087) but wait to be built, in the
-  order of `PLAN.md`: until the
+  and checked (including the new office look, REQ-071…087, and the launch of development from
+  the operator board and the customer cabinet, REQ-088…101, `decisions/0088`) but wait to be
+  built, in the order of `PLAN.md`: until the
   result page exists the questionnaire ends with a temporary screen and the page is not for
   real visitors. The exact status is in `docs/requirements.yaml` and `STATE.md`. Start
   it with `cd tools && npm run picker`; how it is built — `tools/README.md`; code —

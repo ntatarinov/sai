@@ -1,0 +1,1037 @@
+{
+  "handoff_id": "step03-DEVLAUNCH-20261027-01",
+  "run_id": "DEVLAUNCH-20261027-01",
+  "workflow_id": "WF-01",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/DEVLAUNCH-20261027-01/step-03-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/DEVLAUNCH-20261027-01/step-02-req-validator.json",
+      "decisions/0089-devlaunch-choices.md"
+    ],
+    "route": "REQ-ANALYST",
+    "write_set": [
+      "docs/requirements.yaml",
+      "handoffs/DEVLAUNCH-20261027-01/step-03-req-analyst.json"
+    ],
+    "base_tag": "base/DEVLAUNCH-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T11:39:27Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git diff against the base tag: 0 deleted lines; first 11100 lines hash unchanged by the agent's report",
+        "traces: one trace in the closed step-02 handoff (a command text) removed by ORCH, see decisions/0089 item 11"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-01 step 3, rework after the first FAIL of REQ-VALIDATOR (step 02, gate pass 1 of 3; a third FAIL stops the run for the owner, decisions/0079 item 4). Read step 02's result completely (16 findings: F1-F4 blocking, F5-F16 advice). Edit only the blocks REQ-088…REQ-101 of docs/requirements.yaml and your handoff; nothing before them (take the hash of the first 11100 lines before and after and write both).\nORCH directions you must follow:\nF1: do not change tools/src/team. Make the criteria of REQ-089, REQ-090, REQ-091 and REQ-092 consistent: name exactly which devjob files may contain writing words and for which folders (the gate files only in the gate folder), and drop the \"delete the Sai Team project folder on a failed start\" demand: choose a way that needs no deletion by the core (for example the working folder lives under the job's own folder of devjob, or a failed start leaves the folder and marks the job record), and make the criteria say so once, in one place, with the other blocks pointing to it.\nF2: replace the word ban on telegram/whatsapp by a check that matches the real rule (no outgoing network and no sending to a customer): a search of the imports and calls of the network, mail and process modules, plus the connection spy; words that are data values stay allowed.\nF3: fix the counts (16 pairs: 8 answers 200 and 8 answers 404) and check every other count in REQ-096…101 the same way, by arithmetic.\nF4: put the field list of REQ-092 criterion 6 and the new fields of REQ-093 (external_refs) and its /result/ path in agreement in one place; add to REQ-093 the paragraph naming the guard tests that this changes and their \"was → became\" rows.\nF5-F16: apply each one that can be checked by a command or a test; for any you decline, give a one-line reason in result. Keep the blocks within the sizes the validator accepted (do not split REQ-088 or REQ-091).\nAll the ORCH decisions of decisions/0089 stay. No machine paths and no names of other projects. Write the \"was → became\" notes for everything you change that earlier step 01 stated.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T11:22:03Z",
+  "started_at": "2026-10-27T11:22:03Z",
+  "completed_at": "2026-10-27T11:38:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework of REQ-088...REQ-101 by the 16 remarks of step 02 (gate pass 2 of 3). F1-F4 are closed (details in findings_closed); F5-F16 are all applied, two of them in part (F11, F15; reasons below). Blocks REQ-099 and REQ-100 are unchanged; all other blocks changed only in description, acceptance_criteria and the trailing comment line; id, title, owner, status, depends_on and original_request of all 14 blocks are unchanged (compared programmatically). Criteria counts per block are unchanged (88:8, 89:6, 90:8, 91:9, 92:10, 93:8, 94:8, 95:11, 96:8, 97:7, 98:8, 99:8, 100:6, 101:8); no block was split. Nothing before line 11101 changed: the hash of the first 11100 lines is the same before and after. The file diff against the tag has 1293 added and 0 deleted lines.",
+    "findings_closed": {
+      "F1": "Closed once, in one place: REQ-088 description, rules (7)-(10) ('Единые правила проверки группы'), with the check in criterion 8 (tests/rules file devjob-rules.test.js). Closed list of writer modules, each with its own folder: edit-store.js (edits/), jobs.js (dev/ and dev/running.lock), gate.js (gate/), and in phase B accept-store.js (accept/) and safe-store.js (safe/); no other file of tools/src/devjob/ may contain a writing word. tools/src/team is not changed. The demand 'delete the Sai Team project folder on a failed start' is dropped: devjob never deletes or writes in project folders; the folder stays and the job record is closed as failed with its id in team_project (the record is made first, the project after it). REQ-089 (crit 6, description), REQ-090 (crit 8, crit 1, description), REQ-091 (description, crit 6, crit 7), REQ-092 (description, crit 9, crit 10), REQ-093 (crit 7) now only point to the rules; per-module 'only its own folder' tree comparisons are in REQ-088 crit 8 (b), REQ-089 crit 6, REQ-090 crit 8.",
+      "F2": "REQ-095 criterion 3: the word ban on sendMail/smtp/webhook/telegram/whatsapp/notify and on http:// https:// is replaced by rule (9) of REQ-088: search of imports and calls (fetch as a whole identifier, http.request/https.request, node:net/dgram/dns/tls/http/https/http2/child_process/cluster/worker_threads/vm, child_process, Math.random), a parse of import/require/import() that finds third-party packages, no dependencies section in package.json, plus the connection spy that was already there. Data values stay allowed; the rule is self-checked on temporary files and run on real files (limits.js, public-data.js hold whatsapp/telegram as data: both searches empty). Scope named: devjob folder and the handlers board-edit.js, board-dev.js, board-result.js (phase B: board-accept.js, board-changes.js), not every board-*.js (the board server legitimately imports node:http). The old ban would also have hit result.js, which needs the string 'https://' to count external addresses.",
+      "F3": "REQ-096 criterion 5: 8 answers 200 and 8 answers 404 of 16 pairs (checked by a script: 4 customers x 2 tenants x 2 routes). Other counts re-derived by arithmetic: REQ-101 crit 1 (40 pairs, 20 and 20) correct; REQ-101 crit 2 said 'not less than 25 variants' while 10 kinds were listed: now 10 kinds x 2 places x 5 routes = 100 requests; REQ-090 36/8/28 correct; REQ-092 'five routes' was four (GET dev, preview, start, cancel): fixed; REQ-095 'five residual risks' while the description listed four: now six in both places; REQ-095 crit 5 (b) 3 x 3 = 9 launches correct; 10 blocker codes correct.",
+      "F4": "REQ-092 description now holds the one list of the fields of jobs[].result (size, sha256 first 12 chars, and external_refs added by REQ-093, nothing else) and names the single route outside /api/ (GET /b/<code>/result/<tenant>/<job id>/); REQ-092 criterion 6 checks the key set accordingly. REQ-093 got the paragraph 'Охранные тесты прежних требований' with five was -> became rows: REQ-092 crit 6 (result keys), REQ-077 crit 2/3 and the 'Маршруты' paragraph with the REQ-088/092 additions (new route line and its own CSP literal), REQ-067 crit 7 (address /result/), PK-7c and PE-8d rows for board-result.js, the data-folder fingerprint (unchanged)."
+    },
+    "advice": {
+      "F5": "applied: REQ-091 cites docs/design/REQ-010-agent-executors.md and says README gets the sentence from REQ-095 crit 8",
+      "F6": "applied: rule (8) of REQ-088 (whole identifier, comments count, helper names outside the writer list must not use listed words) and self-check on temporary and real files in crit 8 (g); the grep patterns avoid '(' after -w (GNU -w would not match 'fetch(x')",
+      "F7": "applied: devjob-helpers.js and devjob-brief.test.js are in the Files lines as created by this work; the literal check has a command; hash comparison is checked by replacing crypto.timingSafeEqual (always true / always false), no variable names",
+      "F8": "applied: env-variable refusal is a test in REQ-089 crit 1; the no-echo terminal read is a UAT-RUNNER step in a pseudo-terminal (python3 pty outside the project); not runnable until the code exists",
+      "F9": "applied: REQ-091 description and crit 5 (stop of the board = cancel, reason owner, 5 s, lock released, exit 0), REQ-090 reason text, REQ-092 description and Files, REQ-095 crit 7",
+      "F10": "applied: taskHash = sha256 of the task text with both borders replaced by the string <ГРАНИЦА>; the border is made when the task is built for the launch; preview, token and job record use the same hash (REQ-090, 091, 092, with tests)",
+      "F11": "applied in part: (1) source of the request count named (browser network log + request-event counter of the stand); (2) wrong claims removed ('top.location gives a CSP violation', 'external addresses will not open'), self-navigation added as a second hostile sample whose outcome is recorded, with a check that board state is unchanged, no write requests and no Referer; the description now names the residual risk honestly. Not done: the sandbox cannot stop self-navigation, so it is not 'fixed', only stated (see issue I1 for a proposed stronger option)",
+      "F12": "applied: tests copy the fixture into a temp folder (0755) and use the copy",
+      "F13": "applied now, not at the re-gate: REQ-096 (PK-6e, PK-7a, PK-7c, PK-8c, PE-8d, PK-6d, SV-3e added to the list), REQ-097 (safe-read.js), REQ-098 (QS-1, QS-3, QS-4, QS-5, QS-7, QS-11, QS-12, read from tools/test/picker-page-static.test.js); exact was -> became rows stay for CODE-DESIGNER at the build base tag",
+      "F14": "applied: REQ-095 Q8/Q10, REQ-096 Q10, REQ-097 Q10, REQ-091 size advice renumbered; REQ-095 got a real Q8 check (agency unchanged); all other Planka lines of REQ-088...101 re-read against the criterion order: correct",
+      "F15": "applied in part: probe of file isolation added to the single real run (cap 0.5 USD, same owner consent), the overlap after kill -9 is a named sixth risk and a fixed test fact. Declined: 'let recover() check the old group' - the core gives no handle on the old process group and tools/src/team may not change; naming the risk is what the requirement can do",
+      "F16": "applied: (a) REQ-094 crit 3 compares the set of found lines with the set at the build base tag and requires none in new files; (b) 'no word about development' = list Р of REQ-086 on ru/kk/en; (c) REQ-095 crit 5 (c) is five tasks for five requests, the sixth for a sixth; (d) 404 reference defined in rule (10) of REQ-088"
+    },
+    "changes": [
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-088 description (new paragraph, rules 7-10) and criterion 8",
+        "what": "F1, F2, F6, F16: the one place for writer modules, word comparison, network and sending, 404 reference; criterion 8 holds the commands; Files line gets tools/test/devjob-rules.test.js"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-089 description, Files, criteria 1, 2, 4, 6",
+        "what": "F1, F7, F8: gate.js in the writer list with folder gate/, helper file created by this work, env variable and terminal checks, timingSafeEqual replaced by behaviour check, literal check with a command, pointer to the group rules"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-090 description, criteria 1 and 8",
+        "what": "F1, F9, F10: team_project set once, brief_sha256 by taskHash, reason owner for the stop of the board, pointer to the group rules instead of the own word list"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-091 description, Files, criteria 1, 2, 5, 6, 7, 9",
+        "what": "F1, F2, F5, F9, F10, F12, F14: project is not deleted, taskHash, stop by signal, fixture copied to temp, citation of the design file, group rules, size advice renumbered"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-092 description, Files, criteria 2, 6, 9, 10",
+        "what": "F1, F3, F4, F9, F10: record first and project after it, failed start leaves the folder, four routes, one list of result fields, stop by signal, taskHash"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-093 description (cost of the sandbox, new paragraph with was -> became rows), criteria 4 and 7",
+        "what": "F1, F4, F11: honest residual risk, guard-test rows, request count source, second hostile sample, group rules"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-094 description and criterion 3",
+        "what": "F11, F16: sentence about external addresses, path typo '/b/<код>/ result/' fixed, comparison of found lines with the build base tag"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-095 description, criteria 2, 3, 5, 7, 8, 9, 10",
+        "what": "F2, F9, F14, F15, F16: network rule by imports and calls, six risks, Q8 check on agency, count wording, list Р, file isolation probe, overlap"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-096 description and criterion 5",
+        "what": "F3, F13, F14: 8 and 8, guard tests listed, Q10 numbers"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "REQ-097 description; REQ-098 description; REQ-101 criterion 2",
+        "what": "F13, F14 (97, 98); F3 (101): Q10 criterion number, guard tests, 100 requests"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "one trailing comment line after each of the 11 changed blocks (REQ-088...098 except REQ-099/100, plus REQ-101)",
+        "what": "the was -> became note of the rework with the remark numbers"
+      }
+    ],
+    "before_copy": {
+      "source": "git show base/DEVLAUNCH-20261027-01:docs/requirements.yaml has only the first 11100 lines; REQ-088...REQ-101 were appended after the tag by step 01, so their 'before' is the text left by step 01 (whole file sha256 bcf74846d262a472bfb22db5b53eacc9fbd99423706b76501d0932d836935a4c, 12278 lines), which was also copied outside the project (session scratchpad) before the first edit.",
+      "tag_copy_prefix_sha256": "1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7",
+      "edits": [
+        {
+          "n": 1,
+          "req": "REQ-088",
+          "remark": "F1, F2, F6, F16",
+          "before": "      владелец может их изменить, критерии пересматриваются вместе с таблицей без снижения проверки.\n"
+        },
+        {
+          "n": 2,
+          "req": "REQ-088",
+          "remark": "F1, F2, F6",
+          "before": "      tools/test/devjob-edit*.test.js (создаётся этой работой). Чего требование не касается: страницы правки"
+        },
+        {
+          "n": 3,
+          "req": "REQ-088",
+          "remark": "F1, F2, F6",
+          "before": "границы: `grep -rnE 'child_process|spawn|node:net|node:dgram|node:http|fetch[(]|Math[.]random' tools/src/devjob/` — пусто (код 1; самопроверка: на временном файле со строкой spawn(x) поиск находит); разбор строк import:"
+        },
+        {
+          "n": 4,
+          "req": "REQ-089",
+          "remark": "F1",
+          "before": "      (UTC или null), last_failure_at (UTC или null).\n"
+        },
+        {
+          "n": 5,
+          "req": "REQ-089",
+          "remark": "F7",
+          "before": "      tools/test/devjob-gate*.test.js (создаётся этой работой). Чего требование не касается: окна ввода пароля"
+        },
+        {
+          "n": 6,
+          "req": "REQ-089",
+          "remark": "F8",
+          "before": "и не печатает ни соли, ни хэша.\""
+        },
+        {
+          "n": 7,
+          "req": "REQ-089",
+          "remark": "F7",
+          "before": "поиск `grep -nE 'timingSafeEqual' tools/src/devjob/gate.js` находит вызов, а сравнения хэшей операторами === и == нет (разбор тестом: в gate.js нет выражений сравнения переменных hash и derived; самопроверка на временном файле со строкой if (hash === derived)); поиск"
+        },
+        {
+          "n": 8,
+          "req": "REQ-089",
+          "remark": "F7",
+          "before": "в самом репозитории пароль не хранится: тест не содержит строковых литералов паролей длиной 8 знаков и более, кроме границ длины, сгенерированных кодом (проверка: все пароли теста берутся из функции crypto.randomBytes в одном помощнике tools/test/devjob-helpers.js)."
+        },
+        {
+          "n": 9,
+          "req": "REQ-089",
+          "remark": "F1",
+          "before": "в нём нет child_process, spawn, fetch(, node:net, node:http (поиск критерия 8 REQ-088, пусто);"
+        },
+        {
+          "n": 10,
+          "req": "REQ-090",
+          "remark": "F10",
+          "before": "(sha256 текста задания, которое ушло исполнителю, REQ-091);"
+        },
+        {
+          "n": 11,
+          "req": "REQ-090",
+          "remark": "F1",
+          "before": "      записки владельца и текстов задания в записи нет.\n"
+        },
+        {
+          "n": 12,
+          "req": "REQ-090",
+          "remark": "F9",
+          "before": "для cancelled — owner;"
+        },
+        {
+          "n": 13,
+          "req": "REQ-090",
+          "remark": "F1",
+          "before": "запись задач — только jobs.js и edit-store.js, границы и\n      поиск слов записи в остальных модулях devjob — критерий 8."
+        },
+        {
+          "n": 14,
+          "req": "REQ-090",
+          "remark": "F1",
+          "before": "конечное состояние снимает замок, переход starting → running его не снимает.\""
+        },
+        {
+          "n": 15,
+          "req": "REQ-090",
+          "remark": "F1, F6",
+          "before": "`grep -rnE 'child_process|spawn|node:net|node:dgram|node:http|fetch[(]|Math[.]random' tools/src/devjob/` — пусто (самопроверка критерия 8 REQ-088); слова записи (перечень WRITING теста PK-6e и их формы с Sync: writeFile, writeFileSync, appendFile, appendFileSync, mkdir, mkdirSync, rename, renameSync, unlink, unlinkSync, rm, rmSync, copyFile, copyFileSync, truncate, chmod, utimes, createWriteStream, O_WRONLY, O_RDWR, O_CREAT) в devjob встречаются только в jobs.js и edit-store.js (разбор целых слов по границам идентификатора, комментарии считаются; тест проверяет правило на временных файлах: находит `fs.unlinkSync(x)`, `rename(a, b)` и слово mkdir в комментарии, не находит `unlinked`, `renamed`, `Renamer`, `term`); "
+        },
+        {
+          "n": 16,
+          "req": "REQ-091",
+          "remark": "F5",
+          "before": "(README, «Tools of the roles»); процесс, ушедший"
+        },
+        {
+          "n": 17,
+          "req": "REQ-091",
+          "remark": "F10",
+          "before": "и окружении его нет. Остаточный риск назван:"
+        },
+        {
+          "n": 18,
+          "req": "REQ-091",
+          "remark": "F1",
+          "before": "проект Sai Team, созданный для задачи, при сбое до запуска удаляется целиком."
+        },
+        {
+          "n": 19,
+          "req": "REQ-091",
+          "remark": "F9",
+          "before": "замок снят, расход записан. Сбой на любом шаге"
+        },
+        {
+          "n": 20,
+          "req": "REQ-091",
+          "remark": "F2",
+          "before": "нет fetch, http, net), письма"
+        },
+        {
+          "n": 21,
+          "req": "REQ-091",
+          "remark": "F14",
+          "before": "(1) brief.js и критерий 2, (2) canStart, запуск через ядро и\n      результат — критерии 1, 3, 8, (3) пределы,"
+        },
+        {
+          "n": 22,
+          "req": "REQ-091",
+          "remark": "F7",
+          "before": "      и tools/test/fixtures/devjob/fake-claude-devjob.js (создаются"
+        },
+        {
+          "n": 23,
+          "req": "REQ-091",
+          "remark": "F12",
+          "before": "SAI_TEAM_CLAUDE_BIN — поддельный файл из tools/test/fixtures/devjob/)"
+        },
+        {
+          "n": 24,
+          "req": "REQ-091",
+          "remark": "F10",
+          "before": "процесс не запущен; поиск каждой строки данных в аргументах"
+        },
+        {
+          "n": 25,
+          "req": "REQ-091",
+          "remark": "F9",
+          "before": "новая задача после отмены стартует (замок снят).\""
+        },
+        {
+          "n": 26,
+          "req": "REQ-091",
+          "remark": "F1",
+          "before": "замок снят, проект Sai Team при сбое до запуска удалён, процесс теста жив"
+        },
+        {
+          "n": 27,
+          "req": "REQ-091",
+          "remark": "F2, F6",
+          "before": "поиск `grep -rnE 'child_process|spawn|node:net|node:dgram|node:http|fetch[(]|Math[.]random|WebFetch|WebSearch' tools/src/devjob/` — пусто (код 1; самопроверка на временном файле);"
+        },
+        {
+          "n": 28,
+          "req": "REQ-091",
+          "remark": "F7",
+          "before": "(помощник tools/test/devjob-helpers.js отказывает, если путь не внутри os.tmpdir())"
+        },
+        {
+          "n": 29,
+          "req": "REQ-092",
+          "remark": "F4",
+          "before": "sha256 — первые 12 знаков} или null), left_for_lead и left_today (сколько задач ещё можно). POST"
+        },
+        {
+          "n": 30,
+          "req": "REQ-092",
+          "remark": "F1",
+          "before": "запись задачи (REQ-090),\n      создать проект Sai Team и запустить (REQ-091); ответ"
+        },
+        {
+          "n": 31,
+          "req": "REQ-092",
+          "remark": "F10",
+          "before": "версии правки, sha256 задания и пределам,"
+        },
+        {
+          "n": 32,
+          "req": "REQ-092",
+          "remark": "F9",
+          "before": "неверные пароли в гонке считаются по\n      REQ-089."
+        },
+        {
+          "n": 33,
+          "req": "REQ-092",
+          "remark": "F3",
+          "before": "добавляются пять маршрутов этого требования;"
+        },
+        {
+          "n": 34,
+          "req": "REQ-092",
+          "remark": "F9",
+          "before": "      доске), tools/test/devjob-routes"
+        },
+        {
+          "n": 35,
+          "req": "REQ-092",
+          "remark": "F10",
+          "before": "после запуска равен sha256, привязанному к токену."
+        },
+        {
+          "n": 36,
+          "req": "REQ-092",
+          "remark": "F4",
+          "before": "поля jobs ровно из описания, в ответе нет путей компьютера"
+        },
+        {
+          "n": 37,
+          "req": "REQ-092",
+          "remark": "F1",
+          "before": "не создался проект Sai Team (папка без права записи) — start даёт 500 с постоянным текстом без путей и стека, записи задачи и замка нет, проекта нет, токен остаётся годным; запись задачи не удалась после создания проекта — проект удалён, замок снят, 500;"
+        },
+        {
+          "n": 38,
+          "req": "REQ-092",
+          "remark": "F1, F2, F6",
+          "before": "(разбор import) и не содержат слов записи, child_process, spawn, fetch(, node:net (поиск по границам идентификатора с самопроверкой на временных файлах);"
+        },
+        {
+          "n": 39,
+          "req": "REQ-093",
+          "remark": "F4",
+          "before": "для задачи built добавляет в result поле external_refs —"
+        },
+        {
+          "n": 40,
+          "req": "REQ-093",
+          "remark": "F11",
+          "before": "«Внешних адресов в файле: N; в просмотре они не откроются.»"
+        },
+        {
+          "n": 41,
+          "req": "REQ-093",
+          "remark": "F11",
+          "before": "и открывать окна; ссылки\n      наружу в ней не откроются в новой вкладке (REQ-ANALYST, выбор; владелец может изменить, например на\n      скачивание файла)."
+        },
+        {
+          "n": 42,
+          "req": "REQ-093",
+          "remark": "F4",
+          "before": "      заявки в ответах нет. Публичный сервер на этот путь отвечает как на неизвестный.\n"
+        },
+        {
+          "n": 43,
+          "req": "REQ-093",
+          "remark": "F11",
+          "before": "window.open, top.location, загрузку изображения"
+        },
+        {
+          "n": 44,
+          "req": "REQ-093",
+          "remark": "F11",
+          "before": "журнал запросов доски за время просмотра показывает ровно один запрос — сам GET страницы;"
+        },
+        {
+          "n": 45,
+          "req": "REQ-093",
+          "remark": "F11",
+          "before": "Снимки и журнал — в handoff-е UAT-RUNNER.\""
+        },
+        {
+          "n": 46,
+          "req": "REQ-093",
+          "remark": "F1, F6",
+          "before": "и не содержит слов записи (перечень критерия 8 REQ-090, целые слова по границам идентификатора) — файл принимает и записывает ядро Sai Team;"
+        },
+        {
+          "n": 47,
+          "req": "REQ-094",
+          "remark": "F11 (typo of the step-01 text)",
+          "before": "/b/<код>/ result/<арендатор>/<id задачи>/"
+        },
+        {
+          "n": 48,
+          "req": "REQ-094",
+          "remark": "F11",
+          "before": "файле: {n}; в просмотре они не откроются.»"
+        },
+        {
+          "n": 49,
+          "req": "REQ-094",
+          "remark": "F16",
+          "before": "находит только прежние обращения REQ-078 к ключу sai-board (перечень строк в проекте), новых нет;"
+        },
+        {
+          "n": 50,
+          "req": "REQ-095",
+          "remark": "F15",
+          "before": "доски не останавливают агента (он работает до конца в пределах потолка); модель может поддаться тексту в"
+        },
+        {
+          "n": 51,
+          "req": "REQ-095",
+          "remark": "F15",
+          "before": "при сообщении исполнителя «не пришёл» считается по худшему случаю."
+        },
+        {
+          "n": 52,
+          "req": "REQ-095",
+          "remark": "F14",
+          "before": "Q8 —\n      критерий 5; Q9 — SQL нет; Q10 — критерий 7;"
+        },
+        {
+          "n": 53,
+          "req": "REQ-095",
+          "remark": "F14",
+          "before": "(поиск каждой строки; слова состояний в файлах страниц не ищутся: они могут встречаться в обычном коде)."
+        },
+        {
+          "n": 54,
+          "req": "REQ-095",
+          "remark": "F2",
+          "before": "в каталоге tools/src/devjob/ и в board-*.js нет слов sendMail, smtp, webhook, telegram, whatsapp, notify и адресов http:// и https:// (поиск по границам идентификатора с самопроверкой на временном файле); файлов-очередей исходящих сообщений в папке данных нет."
+        },
+        {
+          "n": 55,
+          "req": "REQ-095",
+          "remark": "F16",
+          "before": "(в) на чистой папке данных в течение 24 часов (часы) шестая задача по пяти разным заявкам — dev_day_limit;"
+        },
+        {
+          "n": 56,
+          "req": "REQ-095",
+          "remark": "F9, F15",
+          "before": "доска, остановленная SIGINT во время работы, отменяет задачу (cancelled, процесс остановлен, замок снят);"
+        },
+        {
+          "n": 57,
+          "req": "REQ-095",
+          "remark": "F15",
+          "before": "пять остаточных рисков описания (по одной строке с ключевыми словами: флаги процесса, kill -9, текст в данных, худший случай расхода, песочница)"
+        },
+        {
+          "n": 58,
+          "req": "REQ-095",
+          "remark": "F16",
+          "before": "не показывает ни слова о разработке)"
+        },
+        {
+          "n": 59,
+          "req": "REQ-095",
+          "remark": "F15",
+          "before": "образцы ещё не сверены)."
+        },
+        {
+          "n": 60,
+          "req": "REQ-096",
+          "remark": "F3",
+          "before": "ровно 4 ответа 200 из 16 — а остальные 12 дают 404"
+        },
+        {
+          "n": 61,
+          "req": "REQ-096",
+          "remark": "F14",
+          "before": "Q10 — критерий 6; Q11 — сервер"
+        },
+        {
+          "n": 62,
+          "req": "REQ-096",
+          "remark": "F13",
+          "before": "      SV-3a, SV-4e, SV-7a, SV-7d, SV-7e) добавляются"
+        },
+        {
+          "n": 63,
+          "req": "REQ-096",
+          "remark": "F13",
+          "before": "принятия — только accept-store.js (модули записи devjob), заказчицкая часть его не подключает."
+        },
+        {
+          "n": 64,
+          "req": "REQ-097",
+          "remark": "F14",
+          "before": "Q10 — критерий 6; Q9"
+        },
+        {
+          "n": 65,
+          "req": "REQ-097",
+          "remark": "F13",
+          "before": "критерий 3 REQ-096 меняется так же."
+        },
+        {
+          "n": 66,
+          "req": "REQ-098",
+          "remark": "F13",
+          "before": "      Файлы: tools/src/picker/public/cabinet-*, texts.js (ключи cabinet_), scene*.js (режим work), progress-*.js"
+        },
+        {
+          "n": 67,
+          "req": "REQ-101",
+          "remark": "F3",
+          "before": "не менее 25 вариантов подмены кода и пути (.., %2e%2e%2f, %252e, обратная косая, %00, абсолютный путь, file://, пробелы, очень длинный, не ASCII) — ни один не даёт 200, кроме GET с верным кодом;"
+        }
+      ]
+    },
+    "table": [
+      {
+        "n": 1,
+        "req": "REQ-088",
+        "remark": "F1, F2, F6, F16",
+        "became": "      владелец может их изменить, критерии пересматриваются вместе с таблицей без снижения проверки.\n\n      Единые правила проверки группы (одно место: блоки REQ-089…REQ-095 на него ссылаются и своих перечней не\n      заводят; менять его можно только отдельным прогоном WF-01). (7) Модули записи. Слова записи — перечень\n      WRITING теста PK-6e и их формы с Sync: writeFile, writeFileSync, appendFile, appendFileSync, mkdir,\n      mkdirSync, rename, renameSync, unlink, unlinkSync, rm, rmSync, copyFile, copyFileSync, truncate, chmod,\n      utimes, createWriteStream, O_WRONLY, O_RDWR, O_CREAT — могут стоять в tools/src/devjob/ только в закрытом\n      перечне файлов и только для своей папки: edit-store.js — <папка данных>/<арендатор>/edits/; jobs.js —\n      <папка данных>/<арендатор>/dev/ и <папка данных>/dev/running.lock; gate.js — <папка данных>/gate/\n      (secret.json, attempts.json и их временные файлы); в фазе B ещё accept-store.js — …/accept/ и\n      safe-store.js — …/safe/. В limits.js, request.js, brief.js, runner.js, result.js и index.js слов записи\n      нет. Папки проектов Sai Team devjob не удаляет и не пишет в них: ядро удалять проекты не умеет\n      (tools/README.md, «How to delete a project») и не меняется. Проект, созданный для задачи, остаётся на\n      диске при любом исходе, а запись задачи (REQ-090) хранит его id в поле team_project; убрать папку может\n      только владелец вручную (чистки нет). (8) Сравнение слов (AP-120). Слово ищется как целый идентификатор:\n      по обе стороны от него не буква, не цифра, не «_» и не «$» (в grep — ключ -w, в тесте — регулярное\n      выражение с такими границами); комментарии и строки считаются, поэтому вне перечня модулей записи\n      комментарии и имена помощников не употребляют слов перечня (вместо truncate — например clip). Правила\n      проверены на временных файлах и на реальных файлах tools/src/picker/ (критерий 8). (9) Сеть и отправка.\n      Правило «сервер никуда не ходит и заказчику ничего не уходит» проверяется по импортам и вызовам, а не по\n      словам о каналах связи: в каждом файле tools/src/devjob/ и в обработчиках доски board-edit.js,\n      board-dev.js и board-result.js (в фазе B ещё board-accept.js и board-changes.js) нет ни одного вхождения\n      регулярного выражения критерия 8 (вызов fetch как целого идентификатора, http.request и https.request,\n      node:net, node:dgram, node:dns, node:tls, node:http, node:https, node:http2, node:child_process,\n      node:cluster, node:worker_threads, node:vm, child_process, Math.random) и ни одного import, require или\n      import() стороннего пакета (имя, которое не начинается с «.» и не с «node:»). Слова telegram, whatsapp,\n      smtp, webhook, notify и подобные не запрещены: они бывают значениями данных (via, kind контакта, тексты\n      доски), а отправку выявляют импорты, вызовы и шпион исходящих соединений (REQ-091, критерий 7; REQ-095,\n      критерий 3). (10) Эталон 404. Фраза «байт в байт как у GET /t/net-takogo» значит: для маршрутов доски —\n      ответ этой же доски на GET /b/<верный код>/net-takogo (REQ-077, критерий 2), для маршрутов публичной части\n      — ответ публичного `serve` на GET /t/net-takogo.\n"
+      },
+      {
+        "n": 2,
+        "req": "REQ-088",
+        "remark": "F1, F2, F6",
+        "became": "      tools/test/devjob-edit*.test.js и tools/test/devjob-rules.test.js (создаются этой работой; второй держит\n      единые правила проверки группы, правила 7–9, с самопроверкой). Чего требование не касается: страницы правки"
+      },
+      {
+        "n": 3,
+        "req": "REQ-088",
+        "remark": "F1, F2, F6",
+        "became": "единые правила проверки группы (описание, правила 7–10; тест tools/test/devjob-rules.test.js проверяет по состоянию дерева, то есть по файлам, которые уже есть): (а) модули записи: `grep -rlwE 'writeFile|writeFileSync|appendFile|appendFileSync|mkdir|mkdirSync|rename|renameSync|unlink|unlinkSync|rm|rmSync|copyFile|copyFileSync|truncate|chmod|utimes|createWriteStream|O_WRONLY|O_RDWR|O_CREAT' tools/src/devjob/` печатает только имена из закрытого перечня правила 7 (edit-store.js, jobs.js, gate.js, а в фазе B accept-store.js и safe-store.js), а такой же поиск по board-edit.js, board-dev.js и board-result.js пуст; (б) папка своего модуля: edit-store.js при всех операциях этого требования меняет во временной папке данных только <арендатор>/edits/ (сравнение дерева папки до и после; то же для gate.js и jobs.js в критериях REQ-089 и REQ-090); (в) сеть и отправка: `grep -rnE '(^|[^A-Za-z0-9_$])fetch[(]|https?[.]request|node:(net|dgram|dns|tls|http|https|http2|child_process|cluster|worker_threads|vm)|child_process|Math[.]random' tools/src/devjob/ $(ls tools/src/picker/board-edit.js tools/src/picker/board-dev.js tools/src/picker/board-result.js tools/src/picker/board-accept.js tools/src/picker/board-changes.js 2>/dev/null)` — пусто (код 1; пока каталога tools/src/devjob/ нет, поиск даёт код 2 и идёт после его появления), и разбор import, require и import() не находит в этих файлах сторонних пакетов; (г) самопроверка правил на временных файлах: (а) находит `fs.unlinkSync(x)`, `rename(a, b)` и слово mkdir в комментарии и не находит `unlinked`, `renamed`, `Renamer`, `term`, `truncated`; (в) находит `fetch(x)`, `import n from 'node:net'`, `import('node:https')` и (разбором import) `import m from 'nodemailer'` и не находит `prefetch(x)`, `const via = 'whatsapp'`, `contact.kind = 'telegram'` и строку 'https://' (она нужна result.js для подсчёта внешних адресов, REQ-093); на реальных файлах tools/src/picker/limits.js и public-data.js, где whatsapp и telegram стоят значениями данных, поиски (а) и (в) ничего не находят (на текущем дереве оба пусты); разбор строк import:"
+      },
+      {
+        "n": 4,
+        "req": "REQ-089",
+        "remark": "F1",
+        "became": "      (UTC или null), last_failure_at (UTC или null). Писать в gate/ (и только туда) может единственный модуль\n      gate.js: он входит в закрытый перечень модулей записи группы (описание REQ-088, правило 7).\n"
+      },
+      {
+        "n": 5,
+        "req": "REQ-089",
+        "remark": "F7",
+        "became": "      tools/test/devjob-gate*.test.js и tools/test/devjob-helpers.js (создаются этой работой; помощник: функция\n      randomPassword(), временные папки вне дерева, подмена часов; его расширяют REQ-090…REQ-092). Чего\n      требование не касается: окна ввода пароля"
+      },
+      {
+        "n": 6,
+        "req": "REQ-089",
+        "remark": "F8",
+        "became": "и не печатает ни соли, ни хэша. Пароль в переменных окружения не принимается: `set` с переменными SAI_DEV_PASSWORD, SAI_BOARD_PASSWORD и PASSWORD, заданными случайной строкой, и пустым стандартным вводом — код 2 и файл не создан. Ввод с терминала без показа знаков проверяет шаг приёмки (UAT-RUNNER): `set` запускается в псевдотерминале (скрипт вне проекта на python3 с модулем pty), вводит случайный пароль и читает всё, что вышло из терминала; строка «Пароль задан.» есть, самого пароля в выводе нет (ни в эхо, ни в сообщениях).\""
+      },
+      {
+        "n": 7,
+        "req": "REQ-089",
+        "remark": "F7",
+        "became": "поиск `grep -nE 'timingSafeEqual' tools/src/devjob/gate.js` находит вызов, и решение о совпадении принимает именно он: с подменой crypto.timingSafeEqual на функцию, всегда возвращающую true, неверный пароль принимается, а с подменой на всегда false верный отвергается; подмена получает два буфера одной длины в 64 байта (имена переменных gate.js не важны); поиск"
+      },
+      {
+        "n": 8,
+        "req": "REQ-089",
+        "remark": "F7",
+        "became": "в самом репозитории пароль не хранится: все пароли тестов берутся из одной функции randomPassword() помощника tools/test/devjob-helpers.js (создаётся этой работой; внутри — crypto.randomBytes; границы длины 7, 8, 128 и 129 знаков строятся ею же по длине), а `grep -nE '(password|passwd|pwd)[A-Za-z_]*[ ]*[:=(,][ ]*[^ A-Za-z0-9_(][^ ]{8,}' tools/test/devjob-*.test.js` (присваивание или аргумент пароля, за которым стоит литерал из 8 знаков и более) — пусто (код 1; самопроверка: на временной строке `const password = 'abcdefgh12';` поиск находит, на `password: randomPassword()` — нет)."
+      },
+      {
+        "n": 9,
+        "req": "REQ-089",
+        "remark": "F1",
+        "became": "для gate.js действуют единые правила проверки группы (описание и критерий 8 REQ-088): слова записи в нём разрешены, но только для папки gate/ — `set`, серия проверок, блокировка и сбои выполняются во временной папке данных, и сравнение дерева папки до и после показывает изменения только в gate/ (secret.json, attempts.json; временных файлов после операции нет); поиск сети и отправки (в) пуст;"
+      },
+      {
+        "n": 10,
+        "req": "REQ-090",
+        "remark": "F10",
+        "became": "(sha256 текста задания, в котором граница данных заменена строкой «<ГРАНИЦА>»: taskHash REQ-091, одинаковый у предпросмотра, токена и записи);"
+      },
+      {
+        "n": 11,
+        "req": "REQ-090",
+        "remark": "F1",
+        "became": "      записки владельца и текстов задания в записи нет. Поле team_project ставится один раз, пока задача в\n      состоянии starting, сразу после создания проекта ядра (если проект не создался, остаётся null); после\n      создания записи, кроме него, меняются только state, state_at, reason, result, spent_usd и spent_accounted —\n      при переходе в конечное состояние.\n"
+      },
+      {
+        "n": 12,
+        "req": "REQ-090",
+        "remark": "F9",
+        "became": "для cancelled — owner (отмена кнопкой или остановка доски владельцем, REQ-091);"
+      },
+      {
+        "n": 13,
+        "req": "REQ-090",
+        "remark": "F1",
+        "became": "запись — только модули записи группы (описание\n      REQ-088, правило 7): jobs.js пишет в dev/ и dev/running.lock, edit-store.js — в edits/, gate.js — в gate/;\n      границы и поиск слов записи — критерий 8."
+      },
+      {
+        "n": 14,
+        "req": "REQ-090",
+        "remark": "F1",
+        "became": "конечное состояние снимает замок, переход starting → running его не снимает; team_project записывается один раз в состоянии starting (второй раз и в другом состоянии — отказ), остальные поля после создания меняются только при переходе.\""
+      },
+      {
+        "n": 15,
+        "req": "REQ-090",
+        "remark": "F1, F6",
+        "became": "единые правила проверки группы (описание и критерий 8 REQ-088): поиск (в) по сети и отправке пуст, поиск (а) по словам записи называет jobs.js среди файлов перечня и не называет ни один файл вне перечня; jobs.js пишет только в <арендатор>/dev/ и <папка данных>/dev/running.lock (создание, переходы, recover() и сбои выполняются во временной папке данных, и сравнение дерева папки до и после показывает изменения только там); "
+      },
+      {
+        "n": 16,
+        "req": "REQ-091",
+        "remark": "F5",
+        "became": "(docs/design/REQ-010-agent-executors.md, о --restricted; в README это скажет раздел REQ-095); процесс, ушедший"
+      },
+      {
+        "n": 17,
+        "req": "REQ-091",
+        "remark": "F10",
+        "became": "и окружении его нет. Хэш задания taskHash (brief.js) — sha256 текста задания, в котором обе границы заменены строкой «<ГРАНИЦА>»: границу делает сборка задания при запуске, а предпросмотр и токен подтверждения (REQ-092) опираются на хэш, который от границы не зависит. Остаточный риск назван:"
+      },
+      {
+        "n": 18,
+        "req": "REQ-091",
+        "remark": "F1",
+        "became": "проект Sai Team, созданный для задачи, не удаляется (правило 7 описания REQ-088): запись задачи хранит его id в team_project."
+      },
+      {
+        "n": 19,
+        "req": "REQ-091",
+        "remark": "F9",
+        "became": "замок снят, расход записан. Остановка доски сигналом SIGINT или SIGTERM при идущей задаче действует как отмена владельцем (причина owner): runner.js отдаёт функцию остановки, которую cli.js вызывает из обработчика сигналов при сборке REQ-092; процесс и его группа останавливаются не позже чем за 5 секунд, замок снят, и только потом доска завершается с кодом 0 (REQ-077). Сбой на любом шаге"
+      },
+      {
+        "n": 20,
+        "req": "REQ-091",
+        "remark": "F2",
+        "became": "нет импортов и вызовов сети и процессов, правило 9 описания REQ-088), письма"
+      },
+      {
+        "n": 21,
+        "req": "REQ-091",
+        "remark": "F14",
+        "became": "(1) brief.js — критерий 2 и первая часть критерия 8 (маркеры чужого\n      арендатора в задании), (2) canStart, запуск через ядро и результат — критерии 1 и 3 и вторая часть критерия 8\n      (обращения к файлам, проект ядра), (3) пределы,"
+      },
+      {
+        "n": 22,
+        "req": "REQ-091",
+        "remark": "F7",
+        "became": "      и tools/test/devjob-brief.test.js (чистый модуль задания), tools/test/fixtures/devjob/fake-claude-devjob.js (создаются"
+      },
+      {
+        "n": 23,
+        "req": "REQ-091",
+        "remark": "F12",
+        "became": "SAI_TEAM_CLAUDE_BIN — копия поддельного файла из tools/test/fixtures/devjob/: тест копирует его с правами 0755 во временную папку и ставит путь копии)"
+      },
+      {
+        "n": 24,
+        "req": "REQ-091",
+        "remark": "F10",
+        "became": "процесс не запущен; taskHash двух сборок задания одной заявки с разными границами равен, а при изменении любой строки данных другой; поиск каждой строки данных в аргументах"
+      },
+      {
+        "n": 25,
+        "req": "REQ-091",
+        "remark": "F9",
+        "became": "новая задача после отмены стартует (замок снят). Остановка доски: вызов функции остановки runner.js (её cli.js подключает к SIGINT и SIGTERM) при идущей задаче действует как отмена — cancelled с причиной owner, процесс и группа остановлены не позже чем за 5 секунд, замок снят, результат не принят.\""
+      },
+      {
+        "n": 26,
+        "req": "REQ-091",
+        "remark": "F1",
+        "became": "замок снят, проект Sai Team (если он был создан) остаётся на диске, его id записан в team_project (devjob проекты не удаляет: поиск (а) критерия 8 REQ-088 не называет файлов вне перечня), процесс теста жив"
+      },
+      {
+        "n": 27,
+        "req": "REQ-091",
+        "remark": "F2, F6",
+        "became": "поиск (в) единых правил проверки группы (критерий 8 REQ-088; правило 9 описания) — пусто;"
+      },
+      {
+        "n": 28,
+        "req": "REQ-091",
+        "remark": "F7",
+        "became": "(помощник tools/test/devjob-helpers.js — создан REQ-089 и здесь расширен — отказывает, если путь не внутри os.tmpdir())"
+      },
+      {
+        "n": 29,
+        "req": "REQ-092",
+        "remark": "F4",
+        "became": "sha256 — первые 12 знаков; у задачи built после сборки REQ-093 ещё external_refs} или null), left_for_lead и left_today (сколько задач ещё можно). Состав result — одно место для REQ-092 и REQ-093: размер, первые 12 знаков sha256 и (после сборки REQ-093) число external_refs, других ключей нет. Единственный маршрут группы вне /api/ — просмотр результата GET /b/<код>/result/<арендатор>/<id задачи>/ (REQ-093). POST"
+      },
+      {
+        "n": 30,
+        "req": "REQ-092",
+        "remark": "F1",
+        "became": "запись задачи (REQ-090);\n      сразу после неё — создать проект Sai Team и запустить (REQ-091); сбой на этих шагах закрывает запись как\n      failed и снимает замок, а проект не удаляется (правило 7 описания REQ-088); ответ"
+      },
+      {
+        "n": 31,
+        "req": "REQ-092",
+        "remark": "F10",
+        "became": "версии правки, sha256 задания (taskHash REQ-091: граница заменена строкой «<ГРАНИЦА>», поэтому хэш не зависит от случайной границы) и пределам,"
+      },
+      {
+        "n": 32,
+        "req": "REQ-092",
+        "remark": "F9",
+        "became": "неверные пароли в гонке считаются по\n      REQ-089. Остановка доски сигналом SIGINT или SIGTERM отменяет идущую задачу (правило REQ-091), затем доска\n      завершается с кодом 0 (REQ-077)."
+      },
+      {
+        "n": 33,
+        "req": "REQ-092",
+        "remark": "F3",
+        "became": "добавляются четыре маршрута этого требования (GET …/dev, POST …/dev/preview, …/dev/start, …/dev/cancel);"
+      },
+      {
+        "n": 34,
+        "req": "REQ-092",
+        "remark": "F9",
+        "became": "      доске и вызов остановки runner.js по SIGINT и SIGTERM), tools/test/devjob-routes"
+      },
+      {
+        "n": 35,
+        "req": "REQ-092",
+        "remark": "F10",
+        "became": "после запуска равен sha256, привязанному к токену (хэш одинаков при двух сборках задания с разными границами)."
+      },
+      {
+        "n": 36,
+        "req": "REQ-092",
+        "remark": "F4",
+        "became": "множество ключей каждого элемента jobs ровно из описания, а у result — {size, sha256} (после сборки REQ-093 — {size, sha256, external_refs}: строка «было → стало» в описании REQ-093), в ответе нет путей компьютера"
+      },
+      {
+        "n": 37,
+        "req": "REQ-092",
+        "remark": "F1",
+        "became": "запись задачи не удалась (нет места, нет прав) — start даёт 500 с постоянным текстом без путей и стека, записи, замка и проекта нет (проект создаётся только после записи задачи), токен остаётся годным; не создался проект Sai Team (SAI_TEAM_HOME без права записи) — тот же 500, запись задачи failed с причиной error и team_project null, замок снят, токен остаётся годным (такой запуск считается в пределах: запись есть); проект создался, а запуск не удался — запись failed с id проекта в team_project, замок снят, проект на диске остаётся (devjob проекты не удаляет);"
+      },
+      {
+        "n": 38,
+        "req": "REQ-092",
+        "remark": "F1, F2, F6",
+        "became": "(разбор import); поиски (а) и (в) единых правил проверки группы (критерий 8 REQ-088) по board-dev.js пусты;"
+      },
+      {
+        "n": 39,
+        "req": "REQ-093",
+        "remark": "F4",
+        "became": "для задачи built добавляет в result поле external_refs (состав result — в описании REQ-092, одно место) —"
+      },
+      {
+        "n": 40,
+        "req": "REQ-093",
+        "remark": "F11",
+        "became": "«Внешних адресов в файле: N; страница не сможет ничего с них загрузить.»"
+      },
+      {
+        "n": 41,
+        "req": "REQ-093",
+        "remark": "F11",
+        "became": "и открывать окна (REQ-ANALYST, выбор; владелец\n      может изменить, например на скачивание файла). Остаточный риск назван честно: песочница не запрещает странице\n      увести свою вкладку (ссылка, location, meta refresh — вкладка открыта сама, не во вложенном окне) на внешний\n      адрес, и страница видит адрес своей вкладки, в котором код доски; заголовок Referer при этом не уходит\n      (no-referrer), код новый при каждом запуске доски, а воспользоваться им можно только с этого компьютера\n      (проверки Host и Origin, REQ-077); число внешних адресов владелец видит до открытия."
+      },
+      {
+        "n": 42,
+        "req": "REQ-093",
+        "remark": "F4",
+        "became": "      заявки в ответах нет. Публичный сервер на этот путь отвечает как на неизвестный.\n\n      Охранные тесты прежних требований (AP-068, AP-112, AP-113; тесты REQ-077 и REQ-092 к этому времени\n      построены, точные имена и числа проект CODE-DESIGNER берёт чтением tools/test/ на базовой метке прогона\n      сборки; здесь они названы по описаниям). Строки «было → стало»: (1) критерий 6 REQ-092 (состав полей\n      jobs): result было {size, sha256} → стало {size, sha256, external_refs} у задач built, у остальных result\n      остаётся null, ключи прочих полей те же; (2) полный список маршрутов доски и ответ «любой другой путь —\n      404» (REQ-077, критерии 2 и 3, абзац «Маршруты», с дополнениями REQ-088 и REQ-092): было — оболочка,\n      /assets/, /shared/ и /api/; стало — к ним добавляется GET /b/<код>/result/<арендатор>/<id задачи>/\n      отдельной строкой перечня (другого пути вне /api/ у группы нет), а проверка «все ответы доски имеют CSP\n      без внешних источников» (REQ-077, критерий 2) для этого маршрута сверяет заголовок с литералом этого\n      требования (в нём есть sandbox и data:, внешних адресов нет); (3) критерий 7 REQ-067 (доска недостижима с\n      публичного сайта): к адресам /dev, /dev/preview, /dev/start, /dev/cancel (REQ-092) добавляется\n      /result/<арендатор>/<id>/ по тому же правилу; (4) строки таблиц PK-7c и PE-8d для нового модуля\n      board-result.js — как в REQ-088 для остальных board-*.js; (5) отпечаток папки данных в тестах REQ-077 не\n      меняется: просмотр ничего не пишет.\n"
+      },
+      {
+        "n": 43,
+        "req": "REQ-093",
+        "remark": "F11",
+        "became": "window.open, загрузку изображения"
+      },
+      {
+        "n": 44,
+        "req": "REQ-093",
+        "remark": "F11",
+        "became": "число запросов к доске за время просмотра берётся не из журнала доски (его нет, REQ-077), а из журнала сети самого браузера (DevTools Network) и из счётчика события request сервера доски, который ставит стенд, и оба показывают ровно один запрос — сам GET страницы;"
+      },
+      {
+        "n": 45,
+        "req": "REQ-093",
+        "remark": "F11",
+        "became": "Второй враждебный образец пробует уйти из вкладки (location.href на адрес публичного сервера и на https-адрес, клик по ссылке, meta refresh, переход на /b/<код>/api/tenants своей доски): песочница уход не запрещает, и тест отказа не требует; требуется, чтобы за этот образец состояние доски (записи задач, замок, список файлов папки данных, отпечаток дерева Sai) осталось прежним, ни одного запроса POST, PUT или DELETE к доске не было, а запросы ушедшей вкладки не несли заголовка Referer; куда вкладка ушла, записано в handoff-е UAT-RUNNER. Снимки и журнал — в handoff-е UAT-RUNNER.\""
+      },
+      {
+        "n": 46,
+        "req": "REQ-093",
+        "remark": "F1, F6",
+        "became": "и не входит в перечень модулей записи (правило 7 описания REQ-088: поиск (а) критерия 8 REQ-088 его не называет) — файл принимает и записывает ядро Sai Team; поиск (в) того же критерия по result.js пуст (строка 'https://' для подсчёта адресов его не задевает);"
+      },
+      {
+        "n": 47,
+        "req": "REQ-094",
+        "remark": "F11 (typo of the step-01 text)",
+        "became": "/b/<код>/result/<арендатор>/<id задачи>/"
+      },
+      {
+        "n": 48,
+        "req": "REQ-094",
+        "remark": "F11",
+        "became": "файле: {n}; страница не сможет ничего с них загрузить.»"
+      },
+      {
+        "n": 49,
+        "req": "REQ-094",
+        "remark": "F16",
+        "became": "в файлах, добавленных этой работой (`git diff --name-status base/<RUN-ID> -- tools/src/picker/board-public/` со строкой A), не находит ничего, а в прежних файлах множество найденных строк (без номеров) равно множеству на базовой метке прогона сборки, когда REQ-078 построен (это обращения к ключу sai-board; CODE-DESIGNER записывает множество в проект);"
+      },
+      {
+        "n": 50,
+        "req": "REQ-095",
+        "remark": "F15",
+        "became": "доски не останавливают агента (он работает до конца в пределах потолка), а после kill -9 новый запуск доски может\n      начать задачу, пока старый агент ещё работает (перекрытие двух агентов в пределах их потолков); модель может поддаться тексту в"
+      },
+      {
+        "n": 51,
+        "req": "REQ-095",
+        "remark": "F15",
+        "became": "при сообщении исполнителя «не пришёл» считается по худшему случаю; страница результата может увести свою вкладку\n      на внешний адрес (песочница этого не запрещает, REQ-093). Всего шесть рисков."
+      },
+      {
+        "n": 52,
+        "req": "REQ-095",
+        "remark": "F14",
+        "became": "Q8 —\n      критерии 1 и 2 (изоляция арендаторов внутри группы — критерии Q8 блоков REQ-088, 090, 091, 092, 094); Q9 — SQL нет; Q10 — критерии 5 и 7;"
+      },
+      {
+        "n": 53,
+        "req": "REQ-095",
+        "remark": "F14",
+        "became": "(поиск каждой строки; слова состояний в файлах страниц не ищутся: они могут встречаться в обычном коде). Q8: на втором арендаторе agency, у заявки которого за сценарий задач нет, ответ api/progress, оболочка страницы, файл заявки в leads/ и запись status/ остаются прежними (sha256) на всех фазах сценария stock."
+      },
+      {
+        "n": 54,
+        "req": "REQ-095",
+        "remark": "F2",
+        "became": "отправка и сеть по словам не ищутся (telegram и whatsapp — значения данных: поле via, kind контакта, тексты доски; они разрешены): действует правило 9 описания REQ-088 — поиск (в) критерия 8 REQ-088 по tools/src/devjob/ и обработчикам доски board-edit.js, board-dev.js, board-result.js пуст, сторонних пакетов в них нет, а `git diff base/<RUN-ID> -- tools/package.json` не добавляет раздела dependencies (почтовых и мессенджерных библиотек нет); тот же поиск на реальных файлах tools/src/picker/limits.js и public-data.js, где whatsapp и telegram стоят значениями данных, ничего не находит; файлов-очередей исходящих сообщений в папке данных нет: список её файлов после сценария состоит только из leads/, status/, edits/, dev/, gate/ и running.lock."
+      },
+      {
+        "n": 55,
+        "req": "REQ-095",
+        "remark": "F16",
+        "became": "(в) на чистой папке данных в течение 24 часов (часы): пять задач по пяти разным заявкам проходят, шестая по шестой заявке — dev_day_limit;"
+      },
+      {
+        "n": 56,
+        "req": "REQ-095",
+        "remark": "F9, F15",
+        "became": "доска, остановленная SIGINT во время работы, отменяет задачу (cancelled с причиной owner, процесс остановлен не позже чем за 5 секунд, замок снят; правило REQ-091); перекрытие: пока процесс агента убитой доски ещё жив, новое нажатие запускает вторую задачу — тест фиксирует это как известный остаточный риск (сумма --max-budget-usd двух запусков не больше 2 × ceiling_usd), а не как норму;"
+      },
+      {
+        "n": 57,
+        "req": "REQ-095",
+        "remark": "F15",
+        "became": "шесть остаточных рисков описания (по одной строке с ключевыми словами: флаги процесса, kill -9, перекрытие, текст в данных, худший случай расхода, самонавигация)"
+      },
+      {
+        "n": 58,
+        "req": "REQ-095",
+        "remark": "F16",
+        "became": "не содержит ни одного слова списка Р REQ-086 — закрытого списка «разработка и программирование» на ru, kk и en; целые слова, помощник REQ-086 сверяет textContent страницы на трёх языках)"
+      },
+      {
+        "n": 59,
+        "req": "REQ-095",
+        "remark": "F15",
+        "became": "образцы ещё не сверены). Тем же согласием покрыт один короткий зонд изоляции файлов (потолок 0,5 доллара, отдельная задача того же runner.js, не кнопка): задание просит прочитать файл-метку, лежащий рядом с work/ вне рабочей папки, и записать файл рядом с work/; ожидается отказ инструмента: текста метки в ответе нет, вне work/ не появилось файлов (список и sha256 до и после), результат зонда записан в handoff."
+      },
+      {
+        "n": 60,
+        "req": "REQ-096",
+        "remark": "F3",
+        "became": "ровно 8 ответов 200 из 16 (каждый из четырёх кодов под своим арендатором на обоих маршрутах) — а остальные 8 дают 404"
+      },
+      {
+        "n": 61,
+        "req": "REQ-096",
+        "remark": "F14",
+        "became": "Q10 — критерии 1 и 2; Q11 — сервер"
+      },
+      {
+        "n": 62,
+        "req": "REQ-096",
+        "remark": "F13",
+        "became": "      SV-3a, SV-3e, SV-4e, SV-7a, SV-7d, SV-7e) добавляются"
+      },
+      {
+        "n": 63,
+        "req": "REQ-096",
+        "remark": "F13",
+        "became": "принятия — только accept-store.js (модули записи devjob), заказчицкая часть его не подключает. Перечень охранных тестов проверен чтением tools/test/ на метке прогона разработки и уточняется на метке прогона сборки: PK-6e (файлы picker/ равны ALL_MODULES — к ним добавляются cabinet-*.js и accept-read.js, а в REQ-097 safe-read.js), PK-7a (запрет сети, процессов и случайных чисел: новые файлы picker/ под ним), PK-7c (строка импортов node: на каждый новый модуль), PK-8c (папки не перечисляются: accept/ читается по id), PE-8d (число модулей), PK-6d (справка не меняется), SV-3e; строки «было → стало» составляет CODE-DESIGNER."
+      },
+      {
+        "n": 64,
+        "req": "REQ-097",
+        "remark": "F14",
+        "became": "Q10 — критерий 4; Q9"
+      },
+      {
+        "n": 65,
+        "req": "REQ-097",
+        "remark": "F13",
+        "became": "критерий 3 REQ-096 меняется так же. Охранные тесты picker/ для нового safe-read.js — те же, что названы в REQ-096 (PK-6e, PK-7a, PK-7c, PK-8c, PE-8d, PK-6d); safe-store.js входит в перечень модулей записи группы (правило 7 описания REQ-088), и его строка в перечне критерия 8 REQ-088 — строка «было → стало» проекта."
+      },
+      {
+        "n": 66,
+        "req": "REQ-098",
+        "remark": "F13",
+        "became": "      Охранные тесты страницы посетителя (проверено чтением tools/test/ на метке прогона разработки; на метке\n      прогона сборки список уточняет CODE-DESIGNER): QS-1 (перечень файлов public/ — к нему добавляются\n      cabinet-*), QS-3 (запрещённые слова в скриптах страницы), QS-4 и QS-5 (один fetch( в net.js, двери\n      хранилища), QS-7 (граф импортов), QS-11 (число ключей texts.js — вырастает на ключи cabinet_), QS-12\n      (настройки линтера); строки «было → стало» — в проекте.\n\n      Файлы: tools/src/picker/public/cabinet-*, texts.js (ключи cabinet_), scene*.js (режим work), progress-*.js"
+      },
+      {
+        "n": 67,
+        "req": "REQ-101",
+        "remark": "F3",
+        "became": "10 видов подмены (.., %2e%2e%2f, %252e, обратная косая, %00, абсолютный путь, file://, пробелы, очень длинный, не ASCII), каждый вместо кода и каждый вместо id арендатора — 20 вариантов, каждый на пяти маршрутах перечня — 100 запросов; ни один не даёт 200 или 201;"
+      }
+    ],
+    "hashes": {
+      "first_11100_lines_before": "1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7",
+      "first_11100_lines_after": "1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7",
+      "whole_file_before": "bcf74846d262a472bfb22db5b53eacc9fbd99423706b76501d0932d836935a4c (12278 lines)",
+      "whole_file_after": "b75495b3762a4f527de95adc213ea0b77f310e07e06154b02b6191c6b0f51541 (12393 lines)"
+    },
+    "self_check": [
+      {
+        "command": "head -n 11100 docs/requirements.yaml | shasum -a 256 (before the first edit and after the last)",
+        "output": "1f7a26e4...fac7 both times (equals the tag copy)"
+      },
+      {
+        "command": "git diff base/DEVLAUNCH-20261027-01 --numstat -- docs/requirements.yaml; git diff ... | grep -c '^-[^-]'",
+        "output": "1293 added, 0 deleted; 0 removed lines"
+      },
+      {
+        "command": "ruby -ryaml: load docs/requirements.yaml; compare REQ-088...101 with the copy made before the rework, field by field",
+        "output": "101 requirements, ids unique; for all 14 blocks id, title, owner, status, depends_on, original_request are equal to the earlier version; criteria count unchanged; REQ-099 and REQ-100 identical in every field; REQ-097 and REQ-098 changed in description only"
+      },
+      {
+        "command": "awk '/^  - id: REQ-088$/{f=1} f&&/^  - id: /&&!/REQ-088$/{exit} f' docs/requirements.yaml | wc -l (also 093, 101)",
+        "output": "158, 95, 52 lines: blocks are readable"
+      },
+      {
+        "command": "arithmetic script (python3) for the counts of REQ-090, 092, 095, 096, 101",
+        "output": "REQ-096: 16 pairs, 8 answer 200, 8 answer 404; REQ-101 c1: 40 pairs, 20/20; REQ-101 c2: 10x2x5 = 100; REQ-090: 36 pairs, 8 allowed, 28 refused; REQ-095 c5b: 9 launches; REQ-092: 10 blocker codes, 4 routes; REQ-095: 6 risks"
+      },
+      {
+        "command": "rule (a) of REQ-088 crit 8 on temporary files: grep -rlwE '<writing words>' (files with fs.unlinkSync(x), rename(a, b), '// we mkdir here', and a file with unlinked/renamed/Renamer/term/truncated)",
+        "output": "the first three are found, the file with look-alike names is not"
+      },
+      {
+        "command": "rule (c) of REQ-088 crit 8: grep -rlE '(^|[^A-Za-z0-9_$])fetch[(]|https?[.]request|node:(net|...|vm)|child_process|Math[.]random' on temporary files (fetch(x), import 'node:net', import('node:https'); prefetch(x), via = 'whatsapp', kind = 'telegram', 'https://')",
+        "output": "the first three are found; the second file is not"
+      },
+      {
+        "command": "rules (a) and (c) of REQ-088 crit 8 on the real files tools/src/picker/limits.js and public-data.js (they hold whatsapp/telegram as data); rule (a) also on tools/src/picker/*.js",
+        "output": "both empty, exit 1 each (ordinary code is not hit)"
+      },
+      {
+        "command": "the exact command of rule (c) with $(ls ...board-*.js 2>/dev/null) on the current tree",
+        "output": "exit 2: tools/src/devjob/ does not exist yet (said in the criterion: the search runs after the folder appears)"
+      },
+      {
+        "command": "grep -nE '(password|passwd|pwd)[A-Za-z_]*[ ]*[:=(,][ ]*[^ A-Za-z0-9_(][^ ]{8,}' on a temporary file with: const password = 'abcdefgh12'; password: randomPassword(); run(passwordX, 'abc')",
+        "output": "only the first line is found"
+      },
+      {
+        "command": "loop of REQ-088 criterion 8 (test counts of picker-*.test.js against base/DEVLAUNCH-20261027-01)",
+        "output": "nothing printed, as the criterion says"
+      },
+      {
+        "command": "grep -c '^## The development launch (devjob)$' tools/README.md",
+        "output": "0 (the value before the work does not satisfy REQ-095 crit 8, AP-071)"
+      },
+      {
+        "command": "search of the new lines (after line 11100) for the machine-path prefixes and for the names of other projects, with the list of the traces check",
+        "output": "one hit: REQ-101 criterion 5 keeps two banned path prefixes as test data (as in step 01); nothing else"
+      },
+      {
+        "command": "cd tools && npm run format:check",
+        "output": "All matched files use Prettier code style (docs/ is outside its scope)"
+      },
+      {
+        "command": "cd tools && npm run traces",
+        "output": "exit 1 with one trace: handoffs/DEVLAUNCH-20261027-01/step-02-req-validator.json line 244 (the validator's own command text names the checked words). It is outside my write set; docs/requirements.yaml and this handoff add none (see I2)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "Q12 candidate for decisions/: the sandbox of REQ-093 cannot stop the result page from navigating its own tab (link, location, meta refresh) to an external address, and the page can read its own address with the board code in it. The text now says this honestly and the acceptance step records it; the code is new at every board start and works only from this computer (Host and Origin checks, REQ-077). If ORCH or the owner want it closed: serve the result under a separate view code made for one viewing (the board code never in the page address), or switch the choice to 'download the file'. I did not choose, because it changes the route and REQ-077 headers."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "`npm run traces` now exits 1 because of handoffs/DEVLAUNCH-20261027-01/step-02-req-validator.json line 244 (the command text of the validator lists names the traces check bans). Before the validator handoff was written the count was 0. It is outside my write set; ORCH should have it reworded before the check of the run, otherwise the criterion 'npm run traces - code 0' of every block fails at RELEASE-VALIDATOR."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Consequence of the order 'job record first, project after it' (F1): a start that fails before or while the project is made leaves a failed record, and failed records count toward the limits (3 per request, 5 per day). A choice of mine within ORCH's direction; the owner may prefer not to count starts that never launched an agent. Proposal: one line in decisions/0089 (or a new record) saying devjob never deletes project folders of Sai Team and a failed start is a failed record."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Not runnable now, and said so in the criteria: every test command of the 14 blocks (no code), rule (c) over tools/src/devjob/ (folder missing, exit 2), the pseudo-terminal step of REQ-089, the real-browser steps, the real Claude Code run and the file-isolation probe (need the owner's written consent). `npm run check` was not run: this step changes no code."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Beyond the 16 remarks but of the same kind (counts and criterion numbers, so inside F3/F14): REQ-092 'five routes' -> four; REQ-095 'five risks' while four were listed; REQ-101 crit 2 '25 variants' -> 100 requests; REQ-096 and REQ-097 Planka numbers for Q10; REQ-094 address typo '/b/<код>/ result/'. The change of the sentence about external addresses (REQ-093 and REQ-094: 'в просмотре они не откроются' was false for navigation) touches the ru text of a page string: kk and en are checked later by the readers (REQ-094 crit 5, FOR_NATIVE_SPEAKER)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Phase B blocks REQ-099 and REQ-100 are unchanged. Their grep criteria (REQ-099 crit 7, REQ-096 crit 6) still use unbounded words (rename, fetch[(]); rule (8) of REQ-088 is written for tools/src/devjob/, and these should adopt it at the re-gate before phase B is built (not changed now: not in the remark list, AP-019)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

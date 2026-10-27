@@ -1,0 +1,272 @@
+{
+  "handoff_id": "step01-DEVLAUNCH-20261027-01",
+  "run_id": "DEVLAUNCH-20261027-01",
+  "workflow_id": "WF-01",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/DEVLAUNCH-20261027-01/step-01-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "decisions/0088-request-list-development-launch.md",
+      "docs/owner-requests/2026-10-27-request-list-to-development.md"
+    ],
+    "route": "REQ-ANALYST",
+    "write_set": [
+      "docs/requirements.yaml"
+    ],
+    "base_tag": "base/DEVLAUNCH-20261027-01",
+    "orch_check": {
+      "at": "2026-10-27T11:06:18Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "git diff against base/DEVLAUNCH-20261027-01 for docs/requirements.yaml: 1178 lines added, 0 deleted; no existing block touched",
+        "npm run traces: 0 traces; owner request file and decisions/0088 written before the step"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-01 step 1. Write the requirements for the new direction recorded in decisions/0088 and in docs/owner-requests/2026-10-27-request-list-to-development.md (read both completely; the owner's words are in the second file, pass them verbatim into original_request).\n\nWhat the owner wants, in short: (1) test mode, nothing is delivered to a customer now, the owner goes through the survey himself and in the end sees the built variant; (2) requests are NOT taken automatically: a list of requests, the owner reads and edits a request and presses «В разработку», then agents build the site; (3) that button is guarded by a password or an equivalent check so that tokens are not spent by accident; (4) the public entry stays the HTML site of the approved sample, pixel with modern shades; (5) LATER phase: a customer who received and accepted the development has a personal cabinet with the Pixel Office showing how his task is worked, and he can submit changes there but not at once (a queue, the owner decides), all multi-tenant.\n\nDo this:\n1. Read docs/requirements.yaml (REQ-059, 064-067, 071, 074, 077, 078, 085 first), decisions 0065, 0073, 0074, 0083, 0084, 0088, docs/anti-patterns.md, docs/quality-bar.md, docs/workflows/WF-01-requirement.md and the existing development tools (the run commands, the handoff tool, the workflow documents) so that the requirements fit what exists.\n2. Write NEW requirements only, from the next free number (REQ-088 and up), split by size, each one piece of work for one run, with depends_on. Phase A (now): the editing of a request on the board (which fields the owner may edit, validation, what the customer-visible data does after an edit), the password check (where the secret lives outside the repository, how it is compared, lockout after wrong tries, nothing in logs), the button «В разработку» and what it does (a development job record; the single-run rule; a confirmation that shows what will be spent; how the job starts the agents on the owner's computer and in which working folder outside the Sai repository; how the request text is passed as DATA and never as instructions; limits on turns, time and size; what happens on failure, cancel and a restart), the new stage(s) of the progress record and how they reach the customer's page, and how the owner opens the built result at the end. Phase B (later, mark it so and make it depend on phase A): acceptance by the customer, the personal cabinet with the office for his own task through a prepared safe data set, change requests that go to a queue, and tenant isolation (quality-bar Q8) with tests.\n3. Do NOT edit any existing block except by a micro-amendment strictly needed for consistency (list each one in result.changes with the before-copy). Specifically propose, as separate small edits or notes, the words «pixel with modern shades» for the pending look/shell requirements (REQ-071, REQ-085, REQ-087) only if their criteria can still be checked.\n4. Every choice you make that the owner did not state must be listed in result.choices with a recommended default, so that ORCH can record it. The questions that really need the owner go in result.owner_questions (keep them few, plain, with a default).\n5. Security of the start button is the heart of this work: the board stays a local server on the loopback address, the customer's routes still start and change nothing (decisions/0073 as narrowed by 0088), prompt injection through the request text must be named and have a criterion, and spending must be bounded. Give criteria that a test or a command can check (quality-bar Q7-Q11).\n6. Write only to docs/requirements.yaml and your handoff. Take the hash of the rest of the file before and after (WF-01 step 1, item 7). No machine paths and no names of other projects in any text.\nNobody else works with docs/requirements.yaml now.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-27T10:37:26Z",
+  "started_at": "2026-10-27T10:37:26Z",
+  "completed_at": "2026-10-27T11:05:21Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fourteen new requirement blocks were appended to docs/requirements.yaml, REQ-088...REQ-101, all pending, nothing existing edited. Phase A (build now, order 088 -> 095): REQ-088 owner edits a request on the board (answers + a note; separate versioned edit record; the visitor's request, stage and page are untouched); REQ-089 password check (scrypt hash in a file outside the repository, `picker board-password set|status`, constant-time compare, 5 wrong tries = 15 min lock that survives restart, nothing secret in output); REQ-090 job record + one-job-at-a-time lock + limits (3 jobs per request, 5 per 24 h) + restart recovery without auto-start + the table of group limits; REQ-091 the agent run: one task of the Sai Team role Developer through the existing claude-cli executor, working folder = the Sai Team project work/ outside the repository, the request passed as DATA (random-boundary block, one JSON line, name and contact never passed, no Bash and no network for the agent), limits, cancel, failure map, result = one index.html; REQ-092 board routes: GET state with blockers, POST preview (one-time confirm token with the limits and the exact brief), POST start (token + password), POST cancel; REQ-093 how the owner opens the built result (board route, sandbox CSP, sha256 re-check, external-address count); REQ-094 the board page (edit form, «В разработку», in-page confirmation with the spending limits and the password field, job strip with «Отменить» and «Открыть результат»); REQ-095 the end-to-end wall and acceptance (public site knows nothing about jobs, visitor stages unchanged, nothing sent to a customer, hostile request text cannot steer the agent, spend bounded, secrets nowhere, restart starts nothing, README section, real run only with the owner's consent). Phase B (later, marked in every title and description, depends on 095): REQ-096 owner marks delivered/accepted + customer cabinet entry by the same personal link; REQ-097 prepared safe data set for the cabinet written at real job transitions; REQ-098 cabinet page with the office; REQ-099 change-request queue (customer proposes, owner decides, nothing starts by itself); REQ-100 the two pages of the queue; REQ-101 tenant/customer isolation (4 x 2 x 5 = 40 pairs) and the cabinet wall.",
+    "changes": [
+      {
+        "file": "docs/requirements.yaml",
+        "place": "appended after REQ-087 (line 11100 of the base copy), lines 11101-12278",
+        "what": "14 new blocks REQ-088...REQ-101, each with id, title, owner, status pending, depends_on, original_request (the owner's message of 2026-10-27 verbatim, compared with the code block of docs/owner-requests/2026-10-27-request-list-to-development.md: identical, 1226 characters), description, acceptance_criteria (6-11 per block), and a dated trailing comment line"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "existing blocks",
+        "what": "no existing block edited, no micro-amendment made (git diff against the tag: 0 deleted lines, 1178 added). Every place where the new blocks change the behaviour that earlier pending blocks describe is written as a «was -> became» paragraph inside the NEW block (REQ-088: board writes only through injected functions, route list of REQ-077; REQ-092: route list, REQ-067 crit 7, folders in fingerprints; REQ-096: eight -> nine fields of REQ-065 and REQ-067 crit 4, customer-part file list; REQ-097: five -> seven cabinet fields, jobs.js imports; REQ-098: no <a> on «Мой запрос» and a new scene mode of REQ-071; REQ-099: PK-6e/7c/8c/PE-8d rows for change-store.js; REQ-100: page guard rows), the table itself is left to CODE-DESIGNER on the base tag of the build run (AP-068, AP-112, AP-113)"
+      }
+    ],
+    "before_copy": {
+      "source": "git show base/DEVLAUNCH-20261027-01:docs/requirements.yaml",
+      "note": "append-only run: no line of the base copy was changed or removed, so there are no «before» lines of edits; the base copy equals the working file before writing (same sha256)",
+      "sha256_tag_copy": "1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7",
+      "lines_in_base_copy": 11100,
+      "edits": []
+    },
+    "hashes": {
+      "rest_of_file_before": "1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7",
+      "rest_of_file_after": "1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7 (first 11100 lines of the working file = everything except the new blocks)",
+      "whole_file_after": "bcf74846d262a472bfb22db5b53eacc9fbd99423706b76501d0932d836935a4c",
+      "method": "shasum -a 256 docs/requirements.yaml; head -n 11100 docs/requirements.yaml | shasum -a 256; git show base/DEVLAUNCH-20261027-01:docs/requirements.yaml | shasum -a 256"
+    },
+    "self_check": [
+      "shasum before work: 1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7; git show base/DEVLAUNCH-20261027-01:docs/requirements.yaml | shasum: the same value",
+      "head -n 11100 docs/requirements.yaml | shasum -a 256 after writing: 1f7a26e47b7e1c741185ae12cbb4d12df514f59a032d610100d1692c81e3fac7 (same, the rest of the file did not change); whole file after: bcf74846d262a472bfb22db5b53eacc9fbd99423706b76501d0932d836935a4c, 12278 lines",
+      "git diff base/DEVLAUNCH-20261027-01 -- docs/requirements.yaml | grep -c '^-[^-]' -> 0; --numstat -> 1178 added, 0 deleted",
+      "ruby -ryaml: docs/requirements.yaml parses; blocks=101, ids unique, max=REQ-101; the 14 new blocks: all status pending, all 8 header fields present, 6..11 criteria each, every depends_on id exists",
+      "block readable by the command of the role file: awk '/^  - id: REQ-088$/{f=1} f&&/^  - id: /&&!/REQ-088$/{exit} f' docs/requirements.yaml | wc -l -> 126 lines (REQ-089 82, 090 94, 091 124, 092 88, 093 73, 094 96, 095 75, 096 77, 097 72, 098 71, 099 83, 100 66, 101 51)",
+      "original_request compared programmatically with the ```text block of docs/owner-requests/2026-10-27-request-list-to-development.md: equal (1226 characters)",
+      "commands of the criteria that can run on today's files: (a) the test-count loop (git ls-tree base ... picker-*.test.js) -> prints nothing; (b) grep -c '^## The development launch (devjob)$' tools/README.md -> 0 (the criterion needs 1, so the work is not met before it, AP-071); (c) grep -rnE '[[]0-9a-f[]][{]32[}]' tools/src/picker/*.js -> empty, rc 1 (the criterion needs exactly one definition after the work); (d) self-checks of the whole-word greps: «method: POST» found, «INPUT OUTPUT DISPATCH» not; «el.innerHTML = x» found, «innerHTMLish» not; «sessionStorage.setItem(a, b)» found. Everything else checks code, files or pages that do not exist yet (tools/src/devjob/, board-*.js, board-public/, cabinet-*): it cannot be run before the build",
+      "facts checked before use (Q3, AP-012): tools/test/ has no picker-board*, picker-status*, picker-lead*, picker-progress* (0 files): the guard tests of REQ-064...078 do not exist yet, so the replacement rows are named from the requirement text; PK-6e, PK-7a, PK-7c, PK-8c read only the top folder tools/src/picker/*.js (readdirSync(PICKER), not recursive; PK-7a bans child_process there) - this is why the new owner-side code is a new folder tools/src/devjob/; the Sai Team core exists and is done (REQ-009, REQ-010, REQ-013): runTask(writer, taskId, {signal}) takes a cancel signal, the executor passes the task text by stdin, role Developer has Read/Write/Edit/Glob/Grep only (tools/README.md 'Tools of the roles'), result files go flat into files/ (t-NNNN-N-<name>, UTF-8 text up to 5 MiB, the source in work/ is deleted) - this is why the built site is ONE self-contained index.html; the first real Claude Code run by the core has not happened (README: stream-json samples not yet compared with a recorded real run); ports 4780/4781/4782 are taken (Pixel Office, Sai Team, picker), the board default 4783 is REQ-077's",
+      "cd tools && npm run traces -> «traces: файлов проверено 2218, следов 0, пропущено 67»; npm run handoffs-check -> «нарушений 0»",
+      "wording check: no «при необходимости/достаточно/удобно/быстро/по возможности» in the new blocks; the only «около» was replaced by an exact value (retry_after_s = 900 with fake clock); no machine paths and no names of other projects (traces: 0)"
+    ],
+    "choices": [
+      {
+        "id": "C1",
+        "about": "Stages for the visitor",
+        "default": "No new stage in the progress record. The four visitor stages (REQ-064) and the eight fields of the “Мой запрос” data (REQ-065) do not change in phase A; «development» stays refused by `status set` and by the board move. The state of a development job is a SEPARATE job record (starting, running, built, failed, cancelled, interrupted) shown only on the board. In phase B the customer cabinet shows it through a prepared safe set of four plain steps (REQ-097).",
+        "alternative": "Add stage(s) development/built to REQ-064 and carry them through REQ-065, 066, 067, 071, 077, 078 - seven pending blocks to amend and the desks of the approved sample would change from four to five. Rejected: size, risk, and decision 0083 item 1 ties four desks to four stages.",
+        "where": "REQ-088 rule 4, REQ-095 crit 2, REQ-097"
+      },
+      {
+        "id": "C2",
+        "about": "Where the new code lives",
+        "default": "A new folder tools/src/devjob/ with fixed file names (limits, edit-store, request, gate, jobs, brief, runner, result, index). The board handlers in tools/src/picker/board-*.js get their functions as arguments from cli.js and import nothing from devjob or team. Only runner.js imports the Sai Team core; no file of devjob contains child_process (the executor of the core starts the process).",
+        "why": "PK-7a (done) bans child_process in tools/src/picker/*.js; REQ-077 forbids board modules to import team; REQ-067 keeps the customer part free of such imports.",
+        "where": "REQ-088 rule 3, REQ-091 crit 7, REQ-095 crit 1"
+      },
+      {
+        "id": "C3",
+        "about": "How agents are started",
+        "default": "The existing Sai Team core, executor claude-cli: create a project (ceiling), add ONE task of the role Developer, run it with runTask and a cancel signal. No engine, no planner, no second reviewer run (owner is the reviewer in test mode; a reviewer run would double the spend).",
+        "alternative": "Engine run with planner and reviewer.",
+        "where": "REQ-091"
+      },
+      {
+        "id": "C4",
+        "about": "Shape of the result",
+        "default": "One self-contained UTF-8 file index.html, at most 2 MiB (stricter than the core's 5 MiB), starting with a doctype, no external addresses asked for in the brief. A multi-file site is impossible without changing the core (result files are flat and the source is deleted).",
+        "where": "REQ-091"
+      },
+      {
+        "id": "C5",
+        "about": "How the owner opens the result",
+        "default": "A board route GET /b/<code>/result/<tenant>/<job id>/ for jobs in state built; sha256 re-checked on every read; CSP with `sandbox allow-scripts` (opaque origin, no network, no storage, no access to the board); the page shows the count of external addresses in the file. Opens in a new tab from the button «Открыть результат».",
+        "alternative": "Download the file; or open it from the folder with the OS.",
+        "where": "REQ-093, REQ-094"
+      },
+      {
+        "id": "C6",
+        "about": "Password",
+        "default": "Owner sets it with `picker board-password set` (read from the terminal without echo or from stdin; never from arguments or environment), 8-128 characters, NFC; scrypt hash + salt in <data home>/gate/secret.json (0600) which must lie outside the Sai tree; constant-time compare; 5 wrong tries in a row = 15 minutes lock, persisted in gate/attempts.json (restart does not clear it, a locked gate does not even compute the hash); a broken file closes the gate; the password is typed in the confirmation section for EVERY start; cancel and edit need no password.",
+        "alternative": "Environment variable; or one unlock for a period of time.",
+        "where": "REQ-089, REQ-092, REQ-094"
+      },
+      {
+        "id": "C7",
+        "about": "Confirmation",
+        "default": "Two steps: preview returns a one-time token (128 bit, memory only, 5 minutes, bound to tenant, request, edit version, brief hash and limits) plus the exact brief and the limits; start needs the token and the password. An in-page section, not the browser confirm(). A wrong password does not spend the token.",
+        "where": "REQ-092, REQ-094"
+      },
+      {
+        "id": "C8",
+        "about": "What the owner may edit",
+        "default": "The answers (full set, recomputed recommended solutions and estimate) and a note «Записка для исполнителей» (0-2000 characters). Not editable: name, contact, via, consent, number. The edit is a separate versioned record; the request file, `leads list`, the stage and the visitor page do not change; «Вернуть как у посетителя» removes it.",
+        "where": "REQ-088"
+      },
+      {
+        "id": "C9",
+        "about": "Request as data",
+        "default": "The visitor's name and contact are never passed to the agent. The brief is a constant template + one data block between two random-boundary lines (new 32 hex per job), the data as a single JSON line, every string cleaned with the REQ-068 rule and capped, text goes by stdin only; the agent has no Bash and no network; the result is viewed by a human in a sandbox. Residual risk is named in the block and in the README section: the model may still follow text in the data.",
+        "where": "REQ-091 crit 1-2, REQ-095 crit 4"
+      },
+      {
+        "id": "C10",
+        "about": "Spending limits (all assumptions, defaults)",
+        "default": "Ceiling per job 5 USD (env SAI_DEV_CEILING_USD, 0.5-20); per attempt a quarter of it (core rule); at most 3 attempts of 20 minutes (core rules); whole job deadline 65 minutes (SAI_DEV_DEADLINE_MS, for tests); 3 jobs per request ever; 5 jobs per 24 hours on the whole data folder; one job at a time on the whole board; note 2000 characters; task text 16 KiB; result 2 MiB; token 5 minutes.",
+        "where": "REQ-090 table"
+      },
+      {
+        "id": "C11",
+        "about": "Limit on turns",
+        "default": "Not introduced: the core does not pass a turns flag, and the check of the installed Claude Code was not made here. Replaced by the cost ceiling and the timeouts; the confirmation does not claim a turn limit. If the installed Claude Code has such a flag, a separate requirement to the core is needed.",
+        "where": "REQ-091"
+      },
+      {
+        "id": "C12",
+        "about": "Failure, cancel, restart",
+        "default": "Closed lists of states and reasons; cancel by signal stops the process group (3 s to SIGKILL) and no late result is accepted; after a board restart a job that was running becomes `interrupted` and NOTHING starts by itself (a new job needs the button again with every check and counts in the limits); kill -9 of the board leaves the agent running to its end within the ceiling (residual risk of the core, written in the README section).",
+        "where": "REQ-090, REQ-091, REQ-095 crit 7"
+      },
+      {
+        "id": "C13",
+        "about": "Test mode",
+        "default": "Nothing is sent to the customer: no e-mail, message, notification; no outgoing network from devjob or board handlers (checked by a search and by a connection spy).",
+        "where": "REQ-088 rule 1, REQ-091, REQ-095 crit 3"
+      },
+      {
+        "id": "C14",
+        "about": "Phase B",
+        "default": "Built only after phase A is accepted and the owner says start. Acceptance marks «Передано» and «Принято» are set by the OWNER on the board (no public write path before the cabinet); cabinet by the same personal link as «Мой запрос» (no new login); cabinet data = lang, name, look, number, accepted_at, work, updated_at, changes; the work part comes from a prepared safe set written by the launch at real job transitions (four steps received/working/result/ready or paused, no reasons, no text) so the customer part never reads the Sai Team journal; the change queue: one text up to 1000 characters, 3 open per request, 30 per day per tenant, same text within 10 minutes refused, owner accepts (text appended to the note) or declines, a new job still needs the button, the password and the confirmation; isolation checked on all 4 x 2 x 5 = 40 pairs.",
+        "where": "REQ-096...REQ-101"
+      },
+      {
+        "id": "C15",
+        "about": "Real run",
+        "default": "Exactly one real Claude Code run at acceptance, ceiling 2 USD, only after the owner's written consent; tests use a fake executable only. Without consent the criterion is not claimed and the requirement stays in_progress with an honest note (as REQ-001).",
+        "where": "REQ-095 crit 10"
+      },
+      {
+        "id": "C16",
+        "about": "«pixel with modern shades»",
+        "default": "No edit of REQ-071, REQ-085, REQ-087. Their criteria already check the look against the approved sample (docs/design/samples/picker-v3-approved-2026-10-26/, decision 0083) and decision 0088 item 5 restates it; «modern shades» is not measurable by a command, so a new criterion for it would not be checkable. Proposal as a note only (see proposals).",
+        "where": "result.proposals"
+      }
+    ],
+    "owner_questions": [
+      {
+        "id": "Q1",
+        "ru": "Потолок расходов на одну заявку — 5 долларов, не больше 3 запусков на заявку и 5 в сутки на всё. Оставить так?",
+        "default": "Да, оставить (число можно менять в одном месте).",
+        "affects": "REQ-090 table, REQ-092 preview"
+      },
+      {
+        "id": "Q2",
+        "ru": "Пока агенты строят сайт, показывать ли на странице «Мой запрос» пятый шаг вроде «Строим сайт»?",
+        "default": "Нет: в тестовом режиме страница посетителя не меняется; ход работы видно на доске у тебя, а заказчик увидит его позже, в личном кабинете (фаза B).",
+        "affects": "REQ-088 rule 4, REQ-095 crit 2; «yes» means a new WF-01 run for REQ-064...066 and the scene"
+      },
+      {
+        "id": "Q3",
+        "ru": "Разрешаешь один настоящий запуск Claude Code при приёмке (потолок 2 доллара из лимита подписки)? Решение нужно только к концу фазы A.",
+        "default": "Спросить заново при приёмке; до тех пор все проверки идут на поддельном исполнителе без расхода.",
+        "affects": "REQ-095 crit 10"
+      },
+      {
+        "id": "Q4",
+        "ru": "Фаза B: «заказчик принял разработку» отмечаешь ты на доске, или заказчик должен нажимать сам?",
+        "default": "Отмечаешь ты на доске: у заказчика нет пути записи, пока нет кабинета.",
+        "affects": "REQ-096"
+      }
+    ],
+    "proposals": [
+      {
+        "id": "P1",
+        "about": "«pixel with modern shades» for REQ-071 / 085 / 087",
+        "proposal": "Do not change any criterion. If ORCH wants the words recorded, add ONE sentence to the description of REQ-071 (not to criteria) in a later micro-amendment: «Образец вида — утверждённый docs/design/samples/picker-v3-approved-2026-10-26/ (пиксельная сцена с современными оттенками); совпадение с ним проверяет DESIGN-QA-VALIDATOR по структуре и смыслу, а не по пикселям (WF-04).» Reason: the existing criteria are checked against that sample; the phrase adds no measurable condition, so it cannot become a criterion (Q1)."
+      },
+      {
+        "id": "P2",
+        "about": "Decision record (Q12)",
+        "proposal": "ORCH records one decision, for example 0089, with the choices C1, C2, C3, C6, C7 and C14 above (stages for the visitor stay four; devjob folder and injection; Sai Team executor for the run; password scheme; two-step confirmation; phase B shape), because several of them restate or narrow earlier records: 0073 item 3 and 0074 item 2 are used only in the narrowed sense of 0088, and no development stage is added for the visitor."
+      },
+      {
+        "id": "P3",
+        "about": "Order for PLAN.md",
+        "proposal": "Phase A can start only after its dependencies are built: REQ-059 (leads), 064 (status), 065, 066, 067, 069 done, 071, 072, 077, 078, 079, 083, 084, 086, 087. Inside the group the order is 088 -> 089 -> 090 -> 091 -> 092 -> 093 -> 094 -> 095; 088, 089 and 090 touch different files and could run in parallel within the two-agent limit once REQ-077 exists."
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Guard tests of REQ-064...REQ-078 do not exist yet (tools/test has no picker-board*, picker-status*, picker-lead*, picker-progress* files; checked: 0). The «was -> became» parts of the new blocks therefore name tests from the text of the earlier pending requirements (PK-6e/7c/8c/PE-8d/PK-6d, REQ-077 crit 2, 3, 6, 8, REQ-067 crit 4 and 7, REQ-065 crit 1, REQ-078 page tests). CODE-DESIGNER must enumerate the real tests on the base tag of the build run and write the table (AP-068, AP-112, AP-113); REQ-VALIDATOR should read that part with the same caution."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "The first real run of Claude Code by the Sai Team core has never happened (tools/README.md, 'Sai Team — the engine' and fixtures README: the stream-json samples are assumptions until compared with a recorded real run). REQ-095 criterion 10 is the first such run and may reveal a format mismatch; it needs the owner's consent (Q3)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Size: REQ-088 and REQ-091 are long (each about 8000 characters of description, 8-9 criteria). Sub-steps are advised inside each block (as for REQ-057/059). If REQ-VALIDATOR judges item (г) FAIL, the natural split is REQ-091 -> brief.js (criterion 2) + runner (the rest), and REQ-088 -> edit store + routes."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Long dependency chain: phase A depends on the whole unbuilt group REQ-059...087 (leads, progress record, board, scene). The owner will see the first result of this direction only after the board exists. Proposal P3 gives an order; ORCH decides the plan."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Not verified here (stated as an assumption inside the blocks, not as a fact): whether the installed Claude Code has a turns flag (C11); that a headless Chrome sandbox without allow-same-origin blocks every access named in REQ-093 criterion 4 (that is what the UAT step proves); the exact names of the Sai Team functions to create a project and add a task from code (the commands `new` and `add-task` exist; the code design picks the calls, and a gap in the core is raised to ORCH instead of editing the core)."
+      },
+      {
+        "id": "I6",
+        "kind": "FOR_NATIVE_SPEAKER",
+        "text": "New Kazakh strings for the board panels and the cabinet (keys board_edit_, board_dev_, board_changes_, cabinet_, change_) go to a reader and then to a native speaker as before (decision 0072 item 2: release does not wait)."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Language: the blocks are in Russian like the rest of docs/requirements.yaml (decision 0080 item 2 leaves the file as it is); this handoff is in English."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Not done on purpose: no change to decisions/, STATE.md, PLAN.md, REQ-064...REQ-087, tools/ or the Pixel Office journal (write set: docs/requirements.yaml and this handoff). R2: nothing in these blocks writes Pixel Office events; the cabinet's picture is driven by a prepared safe set from real job transitions, not by owner's Pixel Office."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}
