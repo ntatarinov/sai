@@ -1,0 +1,86 @@
+{
+  "handoff_id": "step12-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "12",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-FINALIZER",
+  "file": "handoffs/ISS-0093-20261028-01/step-12-release-finalizer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": "a920b9173cf768673",
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-10-release-validator.json (PASS)",
+      "handoffs/ISS-0093-20261028-01/step-11-doc-updater.json (bookkeeping, context.orch_check)",
+      "decisions/0048, 0062, 0079, 0106",
+      "docs/program/public-v1/PLAN.md (section 4.4)"
+    ],
+    "route": "RELEASE-VALIDATOR 10 PASS -> DOC-UPDATER 11 -> ORCH check -> RELEASE-FINALIZER 12 (commit by name, push to main, check.yml on main, second commit)",
+    "write_set": [
+      "docs/releases/ISS-0093-20261028-01.md",
+      "handoffs/ISS-0093-20261028-01/step-12-release-finalizer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01"
+  },
+  "task": {
+    "description": "WF-03, step 11 (in this run the number is 12) - RELEASE-FINALIZER for run ISS-0093-20261028-01 (defect ISS-0093 / requirement REQ-102). Read your role file, docs/quality-bar.md (R1, Q7, Q14), docs/workflows/WF-03-defect.md (step 11) and WF-02-development.md (step 11), docs/workflows/handoffs.md, docs/anti-patterns.md (AP-091 especially), docs/program/public-v1/PLAN.md section 4.4, decisions/0048, 0062, 0079, and the handoffs of this run: PASS of RELEASE-VALIDATOR is handoffs/ISS-0093-20261028-01/step-10-release-validator.json (completed 2026-10-30T04:10:51Z), the bookkeeping is step-11-doc-updater.json with ORCH's check in its context.orch_check. Preconditions hold (PASS at step 10, ORCH check after step 11); the owner gave the word for the release in the chat on 2026-10-30 («продолжи работу, чтобы я мог с ПК потом работать и релиз сделан?»), and the push to `main` after PASS is the ordinary push of decisions/0048, 0062, 0079 item 1.\nWHAT IS \"THE RUN'S FILES\" HERE. The working tree holds the uncommitted work of the whole milestone M0 since the audit AUD-001 release: besides run ISS-0093 (code in tools/src/team and tools/src/pixel-office, tests, decisions 0102, 0105, 0106, the check.yml limit, REQ-102 and its design, the defect files ISS-0093 and ISS-0097..0099, the handoffs of this run) there are the records of earlier closed runs that were never released (M0REQ061-20261028-01, M0EXC-20261028-01, ISS-0094-20261028-01, M0BACKLOG-20261028-01 steps 01-03, AUD-001-20261027-01 steps 06 and 07a, decisions 0101, 0103, 0104, the defect files, docs/owner-requests, docs/program/public-v1) and the shared files docs/requirements.yaml, STATE.md, docs/anti-patterns.md, decisions/README.md, docs/audits/AUD-001/*, which carry the bookkeeping of several runs together and cannot be split by run. The whole tree was tested as one: the full check on GitHub (two runs on temporary snapshot commits, 2135 of 2135 tests green; the files of the last snapshot equal the current ones except documents and bookkeeping that ORCH and DOC-UPDATER wrote after it, and for these the format check, lint and the tests that read documents were run locally and are green). So the first commit holds every changed and new file of the working tree (list them with `git status --short -uall` and name each one in `git add -- <path>`; no `git add -A`, no `git add .`), except: your own handoff (AP-091), the release report if you write it after the commit, and, for the second commit as PLAN 4.4 says, docs/program/public-v1/** (ORCH's files) together with your handoff. Check first that the first commit alone keeps the check green: nothing in tools/ or the tests may depend on a file that you put only in the second commit (look at what the tests read: decisions/, docs/, handoffs/); if in doubt put the file into the first commit. Follow the form of the earlier releases (`git log` of this repository: a commit of the run's files, then «Handoff of the finalizer step of <RUN-ID>»). Name in result.issues, in plain words, that the first commit carries the records of earlier M0 runs as well and why (shared files cannot be split), and list the groups by run so the owner can read it.\nORDER. (1) `git fetch origin`; if `origin/main` is not the local HEAD 6f5a38a (behind or diverged) STOP and report. (2) Check there is no unclosed handoff among the files to commit: every `\"status\"` of the changed handoffs is COMPLETED or FAILED (list the command and its output), no file with a secret-shaped literal, no scratch or temporary file, nothing from node_modules; `cd tools && npm run handoffs-check` and `npm run traces` clean; do NOT run the full `npm run check` on this 16 GB computer (it runs on GitHub; if the update of `main` brought code changes you would need it, it does not). (3) The commit message of the first commit names the requirement and the defect, e.g. «Result files stored byte-exact: REQ-102, defect ISS-0093 (run ISS-0093-20261028-01); decisions 0102, 0105, 0106; check.yml limit 30 minutes; bookkeeping of the M0 runs after AUD-001», and ends with the line `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`. The author is the configured git user; do not change git config. (4) Write the release report docs/releases/ISS-0093-20261028-01.md in the form of the earlier ones: what was done, the checks with links to the handoffs (the check on GitHub run 40968115867 and run 40996714076, 2135 of 2135; the gate passes including the owner's extra passes DG-1..DG-5; the interruptions and re-runs of step 08n and 11), the commits, what was NOT done and why (the full check did not run on this computer; the open Low findings and the defects ISS-0097, ISS-0098, ISS-0099; residual risks (1)-(7); the stale texts), what waits for the owner (nothing new from this run; the M0 owner actions stay in PROGRESS). Do not promise what did not happen. (5) `git push origin main` (ordinary push, no force, no tags, no other branch, no --no-verify), then wait for `check.yml` on the pushed sha (`gh run list --workflow check.yml --branch main --limit 3 --json conclusion,headSha,status,createdAt,databaseId`; the run takes 13-15 minutes of a limit of 30; check at intervals of a few minutes, never a blocking loop longer than ten minutes). A red `check.yml` is NOT fixed and NOT re-run: STOP and report with the real log lines to ORCH (`status` and `result.status` stay IN_PROGRESS, `completed_at` null, the first issue of kind BLOCKED, as the role file says). If a sibling workflow runs (path filter), report it. (6) After the green run: close your handoff and deliver it with the report and docs/program/public-v1/** as the second commit and push it; wait for `check.yml` of the second sha as well and report its result (a handoff and documents commit is expected to be green; if it is red, report and stop). Nothing is deployed (no app/ change). (7) At the end: `git status` shows no uncommitted file of the run (the report and the list), `git log -3`, the remote has only `main` at the new sha. No machine paths and no names of other projects in the report or the handoff; no secret-shaped literal. result.summary: two or three plain Russian sentences for the owner with the numbers of both commits and the results of both check runs.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-30T13:47:10Z",
+  "started_at": "2026-10-30T13:47:10Z",
+  "completed_at": "2026-10-30T14:11:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправление ISS-0093 (требование REQ-102) отправлено в main: первый коммит 0d9a1f1 с файлами прогона и записями ранее закрытых прогонов M0, обычная отправка 6f5a38a..0d9a1f1, без force, без тегов, без других веток. Полная проверка на GitHub для этого коммита зелёная: запуск 41067131331, 2135 тестов из 2135, 15 мин 26 с при пределе 30. Второй коммит (отчёт о выпуске, файлы программы PUBLIC-V1 и эта запись) отправлен следом; его хеш и результат его проверки на GitHub названы в отчёте ORCH, потому что запись не может содержать номер коммита, в котором лежит. От владельца из этого выпуска ничего нового не ждётся.",
+    "changes": [
+      "docs/releases/ISS-0093-20261028-01.md - the release report (in the second commit).",
+      "Commit 1: 0d9a1f1 on main, 125 files, each added by name (command: git add -- <list> from git status --short -uall without docs/program/public-v1/**, this handoff and the report). Push origin main: 6f5a38a..0d9a1f1, ordinary push at 2026-10-30T13:54Z; git ls-remote afterwards: only refs/heads/main (and HEAD) at 0d9a1f1.",
+      "check.yml for 0d9a1f1: run 41067131331, status completed, conclusion success, job check from 13:54:20Z to 14:09:46Z (15 min 26 s of the limit of 30); tests 2135, pass 2135, fail 0, skipped 0, todo 0. No other workflow ran (gh run list shows only the workflow check).",
+      "Commit 2 (docs/releases/ISS-0093-20261028-01.md, docs/program/public-v1/** six files, this handoff): its hash and the result of check.yml for it are in ORCH's report and in git log; this file cannot hold the hash of the commit that contains it (AP-091).",
+      "The tag base/ISS-0093-20261028-01 stays local, not pushed."
+    ],
+    "self_check": [
+      "Preconditions: step-10-release-validator.json COMPLETED 2026-10-30T04:10:51Z, verdict PASS; step-11-doc-updater.json COMPLETED 2026-10-30T13:44:10Z with context.orch_check PASS 2026-10-30T13:46:32Z.",
+      "git fetch origin: origin/main = 6f5a38a997d807ba383f4c06201e917a1ecfada7 = local HEAD before the commit (again checked right before the push); no conflict; the update brought no code, so the full npm run check was not run on this computer (by the owner's decision; the proof is GitHub run 41067131331 on the pushed sha).",
+      "Handoff statuses of the files to commit (first lines '\"status\"' of the 60 handoff files of the tree): 58 COMPLETED, 1 FAILED (step-08n-test-design-validator.json, the interrupted attempt, closed FAILED by ORCH with not_agent_attested), 1 PENDING = this file, not in the first commit (AP-091).",
+      "cd tools && npm run handoffs-check: 'файлов проверено 1280, нарушений 0, исключений использовано 114 из 114'; npm run traces: 'файлов проверено 2371, следов 0, пропущено 67' (both before the first commit and again after it, and again before the second commit).",
+      "Secret scan of the files to commit (patterns sk-, ghp_, AKIA, xox, private-key blocks, machine paths): only invented example keys in docs/requirements.yaml, docs/design/REQ-102-result-files-byte-exact.md, tools/test/team-result-bytes.test.js (the samples that findSecrets must refuse) and a fake token 'ghp_FAKE...' in the diagnosis of step-01-issue-fixer.json; no real secret, no machine path. No temporary file; git status --ignored shows only tools/node_modules/ as ignored and it is not in the commit.",
+      "Files of the first commit (git show --name-only 0d9a1f1): 125 = handoffs 59 (ISS-0093 steps 01-11: 47; M0REQ061: 4; M0BACKLOG: 3; ISS-0094: 2; AUD-001 steps 06, 07a: 2; M0EXC: 1), tools 17 (src 5, test 11, README 1), docs/issues 9, decisions 31 (17 new: 0001 and 0091-0106; 13 older decision files changed; decisions/README.md), docs/design 2, docs/audits 2, docs/requirements.yaml, docs/anti-patterns.md, docs/owner-requests 1, STATE.md, .github/workflows/check.yml. They equal the list of git status --short -uall minus docs/program/public-v1/** (6 files), this handoff and the report; after the commit git status showed exactly those 7 files as the only untracked.",
+      "Before the second commit: the first commit alone does not depend on the second one - grep of tools/src, tools/test, package.json and .github finds no path docs/program, owner-requests or docs/releases; the document tests (handoffs-docs, team-docs, exec-docs, pixel-office-docs, handoffs-cmd-docs, team-engine-docs) passed 34 of 34 on a clean export of the first commit; the 193 handoffs tests passed in the repository; the real check on GitHub for the pushed sha is green."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "The first commit carries the records of earlier closed M0 runs as well as run ISS-0093, because the shared files (docs/requirements.yaml, STATE.md, docs/anti-patterns.md, decisions/README.md, docs/audits/*) hold the bookkeeping of several runs together and cannot be split by run, and ORCH tested the whole tree as one on GitHub. Groups by run: (1) ISS-0093-20261028-01 - code in tools/src/team and tools/src/pixel-office/mask.js, 2 new test files, 1 new fixture, changed tests, decisions 0102/0105/0106, check.yml limit 30, REQ-102 and its design, defects ISS-0093 and ISS-0097..0099, handoffs steps 01-11; (2) M0REQ061-20261028-01 - micro-amendment of REQ-061 (4 handoffs); (3) M0EXC-20261028-01 - owner exceptions, decisions 0103 and 0104; (4) ISS-0094-20261028-01 - REQ-003 independent check, defect ISS-0094 closed; (5) M0BACKLOG-20261028-01 steps 01-03 - the batch of requirements; (6) AUD-001-20261027-01 steps 06 and 07a - audit triage and bookkeeping, defects ISS-0092..ISS-0096, decision 0091 ... 0101; (7) docs/owner-requests/2026-10-27-public-launch-plan.md and decisions 0001, 0091-0101 of the program PUBLIC-V1."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Nothing differs between the commit's files and the run's files: the commit holds the whole list from the task. Not in the first commit by the task: docs/program/public-v1/** (ORCH's files, second commit), this handoff and the report (second commit)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "The temporary branches ci/iss-0093-step09-check and ci/iss-0093-release-validator-check are not on the remote any more (git ls-remote origin: only main); ORCH or the owner removed them before this step, I did not touch them."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "The check on GitHub took 15 min 26 s of 30 on a push to main; ISS-0099 already names the margin and the rule of decisions/0106 (option C at 25 minutes). Nothing to add."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Nothing is deployed (no app/ change). Not done and not promised: the full check on this computer; the Low findings and ISS-0097..0099 stay open as the report says."
+      }
+    ],
+    "artifacts_out": [
+      "docs/releases/ISS-0093-20261028-01.md"
+    ]
+  }
+}
