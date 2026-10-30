@@ -1,0 +1,131 @@
+{
+  "handoff_id": "step08n-run2-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "08n",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0093-20261028-01/step-08n-test-design-validator-run2.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": "a246b70ce15d1e66a",
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-08m-test-designer.json",
+      "handoffs/ISS-0093-20261028-01/step-08l-test-design-validator.json (result.findings F1-F5, result.issues)",
+      "handoffs/ISS-0093-20261028-01/step-08n-test-design-validator.json (the interrupted earlier launch, closed FAILED not_agent_attested; no verdict)",
+      "docs/requirements.yaml (block REQ-102 by id)",
+      "decisions/0102-core0-result-files-conventions.md (Additions 13, 14 and 15)"
+    ],
+    "route": "TEST-DESIGNER 08m rework 5 -> TEST-DESIGN-VALIDATOR 08n run2 (the third extra pass, decisions/0102 Addition 15, re-run after interruption; a FAIL goes to the owner) -> TEST-RUNNER (09)",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-08n-test-design-validator-run2.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "checked_by": "ORCH",
+      "at": "2026-10-29T18:37:35Z",
+      "verdict_accepted": "FAIL",
+      "own_checks": [
+        "HEAD 6f5a38a; git status: 119 прежних изменений + новый файл run2 (всего 120), остальное не менялось",
+        "handoffs-check: 0 нарушений; traces: 0 следов; процессов агента не осталось",
+        "F1 подтверждён по файлу: tools/test/team-result-bytes.test.js строка 4122 (фильтр x !== \".\") и строка 366 (строка O32 без точки)",
+        "в системной временной папке лишнего файла нет (слип I3 агента устранён)"
+      ],
+      "not_rechecked": "прогоны тестов и мутантов (мутант t31 и др.) ORCH сам не повторял; опирается на запись агента",
+      "next": "FAIL третьего дополнительного прохода (DG-4): дальше решает владелец"
+    }
+  },
+  "task": {
+    "description": "RE-RUN of step 08n (suffix run2): the earlier launch of this step was interrupted twice by restarts of the computer and closed FAILED with the mark not_agent_attested (handoffs/ISS-0093-20261028-01/step-08n-test-design-validator.json, see context.interruptions); it gave no verdict and the pass is NOT counted, so this is still the third extra pass of decisions/0102 Addition 15. Start from a clean sheet: do not trust anything in that file's PARTIAL self_check, run everything yourself. This computer is a Mac with 16 GB: run exactly one heavy process at a time, never two test files at once, and keep every run under ten minutes. If your own run is cut short, write what you have into your handoff at once: status IN_PROGRESS, completed_at null, the first issue of kind BLOCKED. ORIGINAL TASK FOLLOWS. WF-03, step 7 gate (WF-02 step 5b), the THIRD EXTRA pass allowed by the owner (decisions/0102 Addition 15) after the FAIL of the second extra pass (a FAIL here goes to the owner) - TEST-DESIGN-VALIDATOR: check the tests of requirement REQ-102 (defect ISS-0093) after the rework of step 08m (handoffs/ISS-0093-20261028-01/step-08m-test-designer.json; the exhaustive slot rule), reading the earlier gate reports step-08b, step-08e, step-08h, step-08j, step-08l-test-design-validator.json (findings and issues) and judging the rework against them, but run your own full check, not only those points. The tests: tools/test/team-result-bytes.test.js (55 tests; the designer claims 430 sweeps and 393,699 sweep rows, 573 stored and 506 refused rows, 605 pairs, a table of 28 enumerated positions in result.positions of step 08m, and a mechanical generator of three sets of classes; 15,970 mutants over all sets, every survivor named). The new sweeps take their expected side from a REFERENCE predicate written in the test from the requirement's definitions: judge it (AP-071) - is it an independent reading of the requirement text, or the code's own reading copied? Compare it with the requirement words position by position and try inputs where a reading could differ, tools/test/team-result-timing.test.js (14 tests: criterion 7), tools/test/fixtures/team/scenario-secret.json (new), tools/test/fixtures/team/scenario-files.json (edited), and the guard tests edited by the 'was -> became' table in team-store.test.js, team-engine-reads-files.test.js, team-engine-rounds.test.js, team-journal.test.js, exec-workdir.test.js, exec-scripted-source.test.js. Read your role file, docs/quality-bar.md, docs/workflows/WF-03-defect.md (step 7), docs/workflows/WF-02-development.md (step 5b), docs/workflows/handoffs.md, docs/anti-patterns.md (AP-110: test the class of a rule, not the example; check each position of the designer's table: a slot hidden by neighbouring text, a set tested by examples only, a count with no n-1 and n+1), the REQ-102 block by id (criteria 1-12, the table 'was -> became', mutants m1-m45, sample groups, forms F1-F9, the placeholder rules), the design (the requirement wins where they differ), decisions/0102 and 0105, the code diff `git diff -- tools/src tools/README.md`. The code is unchanged since the first gate.\nCheck with your OWN runs: (1) the criterion -> test mapping for criteria 1-12, any criterion with no test or a weak one; (2) the whole set (bytes, timing, six guard files) on a copy of the whole working tree outside the project in the scratch folder: each file alone in a fresh process and together, at least 3 runs in a row (the timing file alone and not beside other heavy work: the instrument is known to give false reds at about 2x CPU oversubscription, F7 of the previous pass; run nothing heavy beside it), flaky tests, no port, no clock, no order dependence, unique temp folders cleaned; (3) no skip, no todo, no `|| true`, no turned-off lint rule; oracles independent of the code under test (AP-071); no key-shaped literal; the new rows against the RULE text of the requirement (each added row and sweep predicate: is the expected side what the requirement says? the designer reports three own oracle corrections, I1 of step 08k: judge them); (4) failure tests check the state did not change; (5) the criterion 9 numbers recomputed on the final files; (6) regression: the tests fail on a clean copy of the tag base/ISS-0093-20261028-01 with the tests overlaid (no git checkout, reset, stash or clean, also not in copies); (7) apply mutants YOURSELF on a copy outside the project: at least ten of the design's m1-m45, the nine mutants x54, y22-y25, y19, y20, z01b, z02 of step 08l and the seven of step 08j (they must now be red), and at least TWENTY-FIVE NEW mutants of your own that are not in any earlier report, chosen by the CLASS of each rule of forms F1-F9 and of the placeholder rules (every rule stated as «starts with», «ends with», «the whole value», «only of», «optional one», «a run of», «without regard to case», «at least n», «at most n», a boundary character): for each rule try its looser and its tighter neighbour (contains, first k, last k, exactly one, any number, off-by-one in a count, case-sensitive); report which test kills each and every survivor; (8) the criterion 7 instrument: time of the timing file alone, thresholds unchanged, the control separated, the early abandonment equal to the median rule; (9) the deviations: criterion 7 in a second file, scenario-files.json edited (EX-51 row), the amended criteria 1 and 7, TM-57 split. Verdict PASS or FAIL with findings by severity (Critical, High and Medium block; Low does not), each with place, evidence and fix. Do not edit any project file; write only your handoff. Work only inside the Sai folder and the scratch folder: do not read, list or count files of other folders. The scratch folder is the only place for copies, clones and temp files: no files in the system temp folder (set TMPDIR to a scratch sub-folder before any run); no git checkout, reset, stash or clean, also not in copies; leave no process running (ps before you finish). No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it); no secret-shaped literal. Do not touch ports 4780, 4781, 4782, 4790 (list the Pixel Office test files that bind their own ports and that you did not run). Do not run the full `npm run check` in the project folder (TEST-RUNNER does); no run longer than ten minutes. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-29T17:05:00Z",
+  "started_at": "2026-10-29T17:05:15Z",
+  "completed_at": "2026-10-29T18:36:22Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Тесты стали намного крепче: 165 тестов зелёные три раза подряд (файл с цепочками на 140 с, файл замеров на 94 с из 120), на чистой копии метки красны 11 охранных тестов и оба новых файла, а из 29 мутантов проекта, 16 мутантов двух прошлых проходов и моих 68 новых красны все, кроме двух: один из них равнозначен (список имён уже защищён порогом длины), а один настоящий. Шаг всё же не проходит (пункт 3 роли): если точка стоит слева от eyJ (x.eyJ... и .eyJ... из трёх частей), настоящий код правильно хранит строку, как требует определение отрезка из четырёх частей, но мутант «точка слева от eyJ - граница» живёт при 55 из 55 зелёных тестах, потому что в сквозном ряду XJ1 знак «.» вырезан фильтром с ошибочной оговоркой «требование молчит». Это третий дополнительный проход (решение 0102, дополнение 15), поэтому решает владелец: код чинить не нужно, достаточно убрать один фильтр в XJ1 и добавить две строки.",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Medium",
+        "blocking": true,
+        "where": "tools/test/team-result-bytes.test.js, sweep XJ1 (line with CHARS_X.filter((x) => x !== \".\")) and rows O32 (form F7, the character to the left of eyJ); result.issues I2 point 2 of step 08m; role item 3; AP-110, AP-014",
+        "what": "The slot to the left of eyJ is swept over all characters except the dot, on the claim that the requirement is silent. It is not silent: F7 defines the segment as a run of [A-Za-z0-9_.-], 'exactly three non-empty parts, the first begins with eyJ'. A run 'x.eyJ<a>.<b>.<c>' or '.eyJ<a>.<b>.<c>' has four parts, so it is stored; the real code stores it (checked: x.+three-part sample, .+three-part sample and a.b.+eyJa.b.c all give null). My mutant t31 (a dot to the left of eyJ is a boundary, i.e. the line 'if (at > 0 && findIsRunChar(prev)) continue;' also lets a dot through) survives the whole bytes file (55 of 55 green, 144 s) and the fast subset (10 of 10). Real code and mutant differ on 'x.' + the three-part sample, '.' + the three-part sample, 'a.b.eyJa.b.c' (stored by the real code, F7 by the mutant). O32 holds x _ 9 - only. This is the same class that the task of 08m named (the slot before the item, 128 ASCII + others): one character of the slot was left out.",
+        "fix": "TEST-DESIGNER, tests only: remove the filter in XJ1 so the slot takes every character (the reference already gives 'stored' for the dot: isRun('.') is true and the run has four parts), add '.' to O32 as a stored row and keep the whole three-part sample as the refused partner (C6). Then t31 must be red; also rerun the generator class 'left boundary: one character of the run set let through' for the other 'left of the item' slots (F4-F6 are covered by XK*l, F8 by XE2)."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "blocking": false,
+        "where": "reference of the exhaustive sweeps (isAlnum / KEY_FAMILIES in the X block); result.issues I2 of step 08m",
+        "what": "For F4-F6 the requirement says 'слева не буква и не цифра' and, for F5, only 'не менее 20 знаков' with no character set. The reference takes the ASCII reading and the body sets [A-Za-z0-9] (gh), [A-Za-z0-9_] (github_pat_) from the old rules M4-M6 (base mask.js lines 92-95), so a letter or a digit outside ASCII to the left of a key counts as a boundary (the key is refused: checked for the letter e-acute and an Arabic-Indic digit). That is the safe side and 'Ф5 (M5)' points to M5, so it is a defensible reading, but it is the code's predecessor, not the requirement text, and the designer's list of silent positions does not name it.",
+        "fix": "Not blocking. Put the two quoted places into result.issues of the next step as 'silent: the reading follows the old rules M4-M6' so a later reader does not take them for the requirement's words."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "blocking": false,
+        "where": "RB-20 first test (line 2352 ff.: assert.deepEqual(wrong.map(...), []))",
+        "what": "A mutant that makes about half of the 393,699 sweep rows wrong (m3: findSecrets always null; m4 for F9) does not end with a normal failure: the file process was killed with SIGKILL after about 21 s (the TAP shows signal SIGKILL, no failing test name). I did not measure memory; the likely cause is the diff of a list with hundreds of thousands of strings built by deepEqual. The mutant still counts as red, but the machine has crashed before from memory pressure, and a loud mutant must end in a short message.",
+        "fix": "Not blocking. Compare wrong.length first and put only the first 20 entries into the message (wrong.slice(0, 20))."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/team-result-bytes.test.js run time; tools/test/team-result-timing.test.js under parallel load",
+        "what": "Bytes file alone 140.0 s here (144.5 s claimed; 132 s at 08l); the eight files one after another 252.5, 248.0 and 243.2 s. The timing file alone 94.4 s, green. Rule of the task: never two test files at once, so I did not run the timing file next to the heavy file; npm test starts the files in parallel and F7 of 08j (false red of the instrument at about 2x oversubscription) is therefore still unverified under load by me.",
+        "fix": "Not blocking. TEST-RUNNER: a red of the timing file with a ratio between 8 and 20 is rerun alone."
+      },
+      {
+        "id": "F5",
+        "severity": "Low",
+        "blocking": false,
+        "where": "mutant t55 (the list of names also holds pwd, appended at the end of the array)",
+        "what": "Survives all 55 tests. Equivalent in the code: the prefilter FIND_NAME_MIN = 5 (length) and the last-letter test n t d y reject a 3-letter word before the list is read (designer's I4). The requirement side (pwd is no name) is held by rows O72#0 and sweep XN7, which would catch a change of the prefilter. Recorded so that nobody counts it as a gap.",
+        "fix": "None."
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      "HASHES: sha256 list of tools/src, tools/test, tools/README.md, tools/package.json, tools/eslint.config.js, docs/requirements.yaml and decisions/ (663 files) taken before the first action and after the last run: identical (cmp). git status --short before and after: identical. All copies and lanes are in the session scratch folder (a full copy of the working tree, a mutation lane, a clean copy of the tag made with git archive, TMPDIR in a sub-folder for every run). No git checkout, reset, stash or clean anywhere. ps at the end: no node process of mine.",
+      "OWN RUNS ON THE COPY OF THE WORKING TREE (node 22.23.4): bytes file alone: tests 55, pass 55, fail 0, skipped 0, todo 0, 140.0 s. Timing file alone: tests 14, pass 14, fail 0, 94.4 s. Eight files in one invocation, one after another (--test-concurrency=1), three runs in a row: tests 165 / pass 165 / fail 0 / skipped 0 / todo 0 each time, 252.5 s, 248.0 s, 243.2 s. Each of the six guard files alone: team-store 30, team-engine-reads-files 34, team-engine-rounds 8, team-journal 11, exec-workdir 7, exec-scripted-source 6 tests, all pass. Criterion 9 (a) command: tests 25 (not below 24), pass 25.",
+      "CRITERION 9 recomputed with the commands of the criterion (base / now): TM-57 4/5, TM-58 2/2, TM-63 3/3, RF-03 1/1, SF-13 1/1, SF-10 1/1, SF-11 1/1, SF-12 1/1, SF-15 1/1, TM-43 2/2, EX-41 2/2, EX-51 5/5; assert lines team-store 203/219, team-engine-reads-files 113/122, team-engine-rounds 60/69, team-journal 79/84, exec-workdir 63/72, exec-scripted-source 34/38; the search for skip / todo / only / { skip / { todo in the six files: 0. The hash literals of the TM-57, TM-58, TM-63 tests were recomputed with shasum -a 256 on the bytes of the texts: equal.",
+      "NO CHEAT: in the bytes file, the timing file and the two fixtures a search for .skip( .todo( .only( { skip { todo || true eslint-disable prettier-ignore finds nothing; the criterion 3 search for key-shaped text (the grep of the criterion) finds nothing in the four new or edited files; grep for AKIA, ASIA, github_pat, -----BEGIN, MASK_LABEL in tools/src/team: empty; eslint config is unchanged. No port, no clock except process.hrtime.bigint in the timing instrument, no random, home folders through makeHome (cleaned by the helper).",
+      "REGRESSION (clean copy of the tag base/ISS-0093-20261028-01 made with git archive, the new tests overlaid, eight files one after another): tests 98, pass 85, fail 13: the bytes file and the timing file fail as files (findSecrets does not exist at the tag), and 11 guard tests are red: EX-51, EX-41, RF-03, SF-13, TM-43 (two), TM-57 (two), TM-58, TM-63 (two). SF-10, SF-11, SF-12 and SF-15 stay green at the tag, as the requirement says (their statements do not change; they turn red only under a mutant that refuses the default content).",
+      "MUTANTS, mask.js-level, applied one at a time on a lane copy by a script that asserts exactly one occurrence of the text to replace (NOT_APPLIED rows were corrected and rerun); a mutant is RED if a test of the bytes file fails in the fast subset (names RB-20, RB-07, RB-08, RB-09, RB-00: 10 tests, 38 s, pristine 10 of 10 green). (1) Seven of the earlier pass 08j: n67, wd01, wd49, wd50, n28, wd19, wd38 - ALL RED (fail counts 7, 7, 7, 7, 4, 3, 3). (2) Nine of 08l: x54 RED 2, y22 RED 2, y23 RED 1, y24 RED 1, y25 RED 1, y19 RED 2, y20 RED 2, z01b RED 4, z02 RED 4. (3) Design list: 21 variants that are an edit of mask.js - m3, m4 for F1 F2 F3 F4 F5(gh) F5(pat) F6 F7 F8 F9, m9, m10, m11a, m11b, m13, m20, m27, m33, m41, m44, m45 - all RED; and 8 edits outside mask.js, run on the whole bytes file (55 tests, about 140 s each): m1 RED 20, m2 RED 5, m22 RED 2, m23 RED 2, m7 RED 8, m24a RED 3, m24b RED 2, m29 RED 4. Total design: 29 variants, 0 survivors. (m3 and m4F9 end by SIGKILL of the file process, see F3.) (4) MY OWN 68 NEW MUTANTS (named t01-t55 and t56, t57, t59, t60, t62, t66, t67, t70, t71, t72, t79, t82, t83; by class of the rules of F1-F9 and Z/Sh/B1-B4): 66 RED, 2 SURVIVE: t31 (real, F1) and t55 (equivalent, F5). Classes and first killer: F1 (right dash unchecked t01, label in any case t02, tab or 1-3 spaces z02/z01b); F9 names (suffix without _ or - t03, prefix + _ t04, sign also > t05, hard white space after the sign t06, line ends after the sign t07, space before the sign t46, name min 6 t47, list shrunk t54 / widened t55); F2 (scheme needs a capital t08, closing quote always t09, bare name an expression after a scheme t15, two quotes before the scheme t72, max 8 t70, min 4 t71, text after a kept value read to the line end t59); F8 (underscore boundary t10, exactly one separator t11, no-break space separates t12, B3 after Bearer t13, closing quote t14, rescan inside a kept value t57); F3 (scheme set without + t16 / with _ t17, slash in the user t18, colon ends the password t19, empty user t20, password = user kept t21); F4-F6 (min 15 t22, min 21 t23, gh body + _ t24, pat body + - t25, digit left t26, + dropped from the lookahead t27, ASIA gone t28, 16 or more t29); F7 (trailing dots counted t30, a dot left of eyJ t31 SURVIVES, four parts t32, empty part t33, - or _ left of eyJ t34/t35, eyJ in any case t36); Z/Sh/B (chain min 2 t37, placeholder max 10 t38, keyword max 7 t39, example case t40, $NAME digit t41, digits in an identifier t42, one-part path t43, at most two closers t44, semicolon t45, $ in a bare name t48, group over a line end t49, no backtick t50, white space set -U+FEFF / +U+200B / +0x0E t51 t52 t53, %NAME% two letters t79, text behind a group in a quotation t82 / unquoted t83); quotation (no escape t60, unclosed quotation past the line end t62, line end + U+2028 t66, line end only \\n t67, rescan inside a kept value t56). Killers: RB-20 sweeps (most), RB-07 order and forms, RB-08, RB-09. Survivor t31 was then run on the WHOLE bytes file: 55 of 55 green (144 s). The lane file was compared with cmp after every batch: equal to the original.",
+      "REFERENCE (AP-071), read position by position against the words of the requirement (placeholder Z, template Sh, B1-B4, closers, value in quotes and without, F2 scheme and white space, F3 password): agrees with the definitions; it is a predicate over a value, not the scanner of the code. Exceptions: the ASCII reading of 'letter' and the bodies of F5 follow the old rules (F2), and the dot in XJ1 (F1). My hand probes of the requirement's own stored examples run on the code (token=f(x)&password=..., Authorization: ${A} hunter2fake, token: data.token,hunter..., password=correct_horse / hunter.fake / getit(, password = \"...\", address with no user, no-break space after the sign, ...) all give the side that the requirement states; the same stored rows are killed by t56, t57, t59, so they are in the tables or sweeps.",
+      "INSTRUMENT of criterion 7 (read and run): thresholds unchanged (ratio 8, floor 20 ms, control 64 on 8 / 32 / 128 KiB, one-pass control below 8, 7 repeats / 3 for the quadratic control); family 11 on 16 / 64 / 256 KiB; early abandonment 'more than half of the repeats over the limit' equals 'the median is over the limit' for 7 and 3 repeats; the control is its own test with fixedK 1; the file sha256 starts 12f944d0 as at 08l; 94.4 s alone against 120 s.",
+      "COVERAGE TABLE (own, from the criteria): 1 -> RB-01 x3, RB-02 x4, RB-07 (AC0.3), RB-00, RB-20, TM-57/58/63, EX-41, EX-51; 2 -> RB-03 (a) (d) x2, RB-04, RB-05 x2 (levels depsOf, engine, limit PROMPT_MAX), RF-03; 3 -> RB-06 x3 + order x3 + tail x3, RB-07 x2, RB-08, RB-09, RB-10, RB-20 x4; 4 -> RB-11 x3; 5 -> RB-12 x7, RB-13 (scripted), RB-14 run-task names; 6 -> RB-14 x2; 7 -> team-result-timing 14 tests; 8 -> RB-16 + TM-44 hash (equal) + empty diffs of the Pixel Office files (command (a) not run by me, I2); 9 -> RB-18 + the guard files; 10 -> this report; 11 -> RB-17 x3; 12 -> RB-18 (second) + src diff outside mask.js and team/ is empty + single-run.js unchanged. No criterion without a test."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Third extra pass (decisions/0102 Addition 15), re-run 'run2' from a clean sheet; the earlier launch of this step gave no verdict and its PARTIAL self_check was not used. The verdict is FAIL by role item 3 (F1 Medium). It goes to the owner (decisions/0102 Addition 15). The task named no expected verdict. The code is right for every row and every probe that I ran; nothing for CODE-FIXER."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Pixel Office test files that bind their own ports and that I did not run: tools/test/pixel-office-server.test.js, pixel-office-page.test.js, pixel-office-hook.test.js, pixel-office-note.test.js (found by a search for listen / startServer / createServer). I did not touch ports 4780, 4781, 4782, 4790. Criterion 8 (a) (the command with the name pattern over four Pixel Office files) was not run by me; the diff of those files against the tag is empty, and the hash of the TM-44 body equals the base (both eba784b1...)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Process slip, recorded for honesty: one of my shell commands started with a stray 'cat > <file in the system temp folder>' that waited on input; it created an empty file there. I deleted it at once (the folder was checked afterwards). Nothing else was written outside the Sai folder and the session scratch folder."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Deviations judged (task item 9): criterion 7 in a second file is a faithful split (14 tests, same thresholds 8 / 20 ms / 64 / 7 and 3 repeats, early abandonment at more than half of the repeats is equal to the median rule for 7 and for 3 repeats, the controls are separate tests; the file is byte-identical to the one of 08l, sha256 starts 12f944d0). scenario-files.json: the EX-51 row was edited as the table says (the note without a key; a new scenario-secret.json carries the refused case, its bait is joined from parts at run time). Amended criteria 1 and 7 and the split of TM-57 (4 base titles kept, 5 now) agree with the files. The three oracle corrections of 08k I1 are right by the words of the requirement (quote followed by white space is the closing quote; 'xxx(' is a call and '***(' is not; a quote as the first character opens a string)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

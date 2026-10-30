@@ -1,0 +1,359 @@
+{
+  "handoff_id": "step05-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/ISS-0093-20261028-01/step-05-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-102-result-files-byte-exact.md",
+      "docs/requirements.yaml (block REQ-102 by id)",
+      "decisions/0102-core0-result-files-conventions.md",
+      "handoffs/ISS-0093-20261028-01/step-03h-code-design-validator.json",
+      "handoffs/ISS-0093-20261028-01/step-04d-req-validator.json"
+    ],
+    "route": "REQ-VALIDATOR (04d, PASS) -> CODE-FIXER (this) -> SECURITY-REVIEWER (06) and REVIEWER (07) at the same time -> TEST-DESIGNER ...",
+    "write_set": [
+      "tools/src/pixel-office/mask.js",
+      "tools/src/team/files.js",
+      "tools/src/team/store.js",
+      "tools/src/team/runner.js",
+      "tools/src/team/language.js",
+      "tools/README.md",
+      "handoffs/ISS-0093-20261028-01/step-05-code-fixer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T15:55:17Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-28T15:52:50Z; git diff --stat -- tools: exactly six files (README.md 8, mask.js +703/-0, files.js 8, language.js 50, runner.js 94, store.js 33), 866 insertions and 30 deletions; no test, decision, requirement or design file written (git status)",
+        "own run of the 49 team and exec test files without default ports (list from ls | grep -v team-web): 548 tests, 536 pass, 12 fail, 0 skipped; the failing ones are exactly EX-41, EX-51, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63 - the twelve of the design (EXPECTED_RED until the tests step)",
+        "mask.js has 0 removed lines (no existing rule M1-M10 edited); the agent's oracle run (108 keep, 109 refuse, no mismatch) and the timing figures (worst ratio 5.07 of limit 8, twelve families 57.7 s) are the agent's own and are re-run by SECURITY-REVIEWER, TEST-DESIGNER and TEST-RUNNER",
+        "handoffs-check and traces return 0; next: step 06 SECURITY-REVIEWER and step 07 REVIEWER at the same time (decisions/0079; tests start only after both, AP-063)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 4 - CODE-FIXER: write the fix of defect ISS-0093 (REQ-102) by the gate-passed design docs/design/REQ-102-result-files-byte-exact.md, build sub-steps 1-5 and the README part of sub-step 6 (section 8 of the design, each sub-step with its check). Read your role file, docs/quality-bar.md, docs/workflows/WF-03-defect.md (step 4), docs/workflows/handoffs.md, docs/anti-patterns.md, the REQ-102 block by id (the contract: forms Ф1-Ф9, definitions, samples С/О, criteria 1-12, residual risks), the whole design (sections 2, 3, 4, 8, 13, 16, 18), decisions/0102 (Additions 1-11; items 14, 18-34 binding), the gate reports step-03h-code-design-validator.json (findings W1-W6) and step-04d-req-validator.json (F1-F6). Write ONLY these files: tools/src/pixel-office/mask.js (findSecrets and its helpers; no existing rule M1-M10 and no existing export is edited), tools/src/team/files.js and tools/src/team/store.js (BOM decoders, #publish scan before #prepare, E_WORK_FILE with reason secret), tools/src/team/runner.js (acceptResult step 1: full pass before the first write, removal of the sources of refused files from work/, secretRefusal, depsOf withholding), tools/src/team/language.js (FAIL_DETAIL.secret, secretDetail(names) with the guard, FILE_WITHHELD, the conditional PHRASES row), the stale 'masked' comments named in design sections 13 and 16 (files.js about lines 69 and 91, runner.js about lines 114-115 and 655), tools/README.md (the texts of design section 13, agreeing with the greps of criterion 11(a); the word 'residual risk' on the line with findSecrets, 'false refusal', 'placeholder', 'byte-exact', 'reason `secret`', and the line of work/ no longer saying 'already masked'; do not repeat the design's sentence that no key-shaped string stands in the file), tools/src/team/engine/single-run.js stays UNCHANGED (written exclusion). You may NOT write tests (TEST-DESIGNER does), decisions/ (ORCH writes decisions/0105 after your step), docs/requirements.yaml or the design. Follow the design's call order exactly: the secret check sits before the first write on every path; a hit writes nothing and leaves the state unchanged; one-pass algorithms only (the failed-search record of section 2.2 item 5 and the counting closer drop of item 3: a repeated-group regex or a text-wide indexOf per name is forbidden); keep the left boundary (no letter or digit to the left) for the key prefixes; the left-most decisions are those of the oracle in section 18. Checks to run and report with real output after EACH sub-step (design section 8, 'Red after' column): sub-step 1 - extract the oracle of section 18 with the command the design gives and run it through your findSecrets by a scratch driver OUTSIDE the project (100+ keep, 100+ refuse, no mismatch; the pairs added by the micro-amendment, including token=${A}} kept, secret=${{A}}} kept, token=hunter2fake} refused); the team and exec test files without default ports (list by `ls tools/test/team-*.test.js tools/test/exec-*.test.js | grep -v team-web`) stay 548 of 548 after sub-steps 1-3; after sub-step 4 exactly the 12 tests EX-51, EX-41, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63 are red and no other (EXPECTED_RED, to be fixed by TEST-DESIGNER by the 'was -> became' table; name each with its message in result.issues); HK-21, HK-24, MK-01..MK-05, NM-06 and TM-44 stay green. Timing: run your findSecrets on the family inputs of criterion 7 (families 1-12, 256 KiB to 4 MiB, no line end) and report the figures: every ratio below 8. Do NOT run the full `npm run check` (12 tests are red by design between steps 4 and 6; the full check is the TEST-RUNNER's). Prettier and eslint: run `cd tools && npx prettier --check <your files>` and `npx eslint <your files>` if the dependencies are installed (they are, in tools/node_modules); fix formatting with prettier --write on YOUR files only. Work only inside the Sai folder and the scratch folder; do not read, list or count files of other folders. Do not touch ports 4780, 4781, 4782, 4790 (tests bind port 0). No machine paths and no names of other projects in any file (run `cd tools && npm run traces` before close). No secret-shaped literal in code: the baits and samples of tests are built from parts by TEST-DESIGNER; your code holds rules, not samples. result.changes: every edit by file and place; result.issues: anything the design leaves unclear (DISCREPANCY), each red test (EXPECTED_RED), proposals. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Sub-steps 1-5 and the README part of 6 done with the checks of design section 8 and their real output",
+      "After sub-step 4 exactly the twelve listed tests are red, none other; HK/MK/NM/TM-44 green",
+      "Criterion 7 families measured: every ratio below 8",
+      "handoffs-check and traces return 0; no test, decision or requirement file written"
+    ]
+  },
+  "created_at": "2026-10-28T15:23:16Z",
+  "started_at": "2026-10-28T15:23:16Z",
+  "completed_at": "2026-10-28T15:52:50Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Я написал проверку findSecrets в mask.js и подключил её во все три входа файлов результата: файл теперь хранится байт-в-байт (BOM тоже), а файл с настоящим секретом не принимается — задача получает понятный отказ с именами файлов, исходник секрета удаляется из work/, при чтении для проверяющего такой файл заменяется постоянной строкой. Образцы дизайна сошлись без единой ошибки (108 «хранится» и 109 «отказ» вместе с парами микро-правки), двенадцать семейств враждебного ввода идут за линейное время (худшее отношение 5,07 при пределе 8), и после шага 4 красны ровно двенадцать старых охранных тестов по таблице дизайна, остальные 536 и ещё 1317 зелёные. README обновлён по разделу 13 дизайна; полную проверку npm run check я не запускал по заданию — её запускает TEST-RUNNER после правки тестов.",
+    "changes": [
+      {
+        "item": "design 2 / sub-step 1 (findSecrets)",
+        "file": "tools/src/pixel-office/mask.js",
+        "place": "appended after prepareText (new lines 316-1018; git diff -U0 shows 0 removed lines, no existing rule M1-M10 and no existing export edited)",
+        "what": "New export findSecrets(text) -> null | { form: F1..F9 } and its helpers (prefix find*). Forms in the order F1 (indexOf loop, certificate line excepted), F3 (://user:password@), F4/F5/F6 (three look-behind regexes, left boundary on all four rules), F7 (indexOf eyJ, run, trailing dots, two dots), F8 (bearer regex, then value), F2/F9 (one pass over name segments; Authorization with wide white space, scheme list, quote reading; other names spaces and tabs). Value reader: quoted value, template group (record of failed closer searches per pass, scan stops at closer/line end/limit, no text-wide indexOf), closers at the end dropped by six counters and one walk back, classes З, Ш, В1-В4, left-most decisions as the oracle of section 18. No RegExp with a repeated group, no recursion, no Node API."
+      },
+      {
+        "item": "design 2.5 / sub-step 2",
+        "file": "tools/src/team/files.js",
+        "place": "decoder (was line 147)",
+        "what": "TextDecoder options { fatal: true, ignoreBOM: true }: readWorkFile keeps the byte-order mark (F3: importWorkFile stored 4 bytes of 7 before, 7 after)."
+      },
+      {
+        "item": "design 2.5 / sub-step 2",
+        "file": "tools/src/team/store.js",
+        "place": "new constant resultUtf8 above strictUtf8; importResultBytes",
+        "what": "importResultBytes decodes with resultUtf8 (ignoreBOM: true); strictUtf8 (default options) stays and is used only by checkScenario, so a scenario with a BOM is still accepted."
+      },
+      {
+        "item": "design 13 item 6 (stale comments)",
+        "file": "tools/src/team/files.js",
+        "place": "comments of contentOf (was line 69) and publishResultFile (was line 91)",
+        "what": "\"(masked) text\" -> \"text\"; \"(already masked) text\" -> \"text, byte for byte\"."
+      },
+      {
+        "item": "design 2.4 / 3.3 / sub-step 3",
+        "file": "tools/src/team/language.js",
+        "place": "imports; FAIL_DETAIL; new FILE_WITHHELD and secretDetail before `always`; PHRASES before the TASK_FAILED/result_file row",
+        "what": "import maskSecrets (one line ending mask.js\";) and checkResultName; FAIL_DETAIL.secret = \"Файл результата не принят: в нём найден секрет\"; export FILE_WITHHELD = \"Файл не передан: в нём найден секрет\"; export secretDetail(names): shows at most 3 names that pass checkResultName and are unchanged by maskSecrets, counts the rest in \"и ещё N\", singular \"файл:\" only for one refused file, falls back to the constant when no name is shown or when the finished text is changed by maskSecrets (fixed point); new conditional row (reason result_file and detail starts with FAIL_DETAIL.secret) before the existing row, which is unchanged."
+      },
+      {
+        "item": "design 3.1 / sub-step 4",
+        "file": "tools/src/team/store.js",
+        "place": "import line; new secretError before isPlainObject; #publish",
+        "what": "Import { findSecrets, maskSecrets } on one line. #publish: contentOf(content) of the original, then findSecrets(content), a hit throws TeamError E_WORK_FILE \"Файл результата «<name>» не принят: в нём найден секрет\" with details { reason: \"secret\", form } before #prepare and before any write; publishResultFile and the hash use the original content (the masked local is gone)."
+      },
+      {
+        "item": "design 3.2 / sub-step 5",
+        "file": "tools/src/team/runner.js",
+        "place": "imports; depsOf; failTask; acceptResult (helpers, claude-cli step 1, write loop catch, step 4 comment)",
+        "what": "Import findSecrets (maskSecrets had one use) and FILE_WITHHELD, secretDetail. depsOf: findSecrets on the content as stored; a hit gives FILE_WITHHELD, no exception. failTask(reason, detailKey, detailText): detail = detailText ?? FAIL_DETAIL[detailKey]; the call site passes accepted.detailText. acceptResult: refusal gets detailText; new secretRefusal(names) = secretDetail(names) for the event detail, the question and the error of the command (one string); isSecretRefusal; claude-cli step 1 is one full pass (path, read, findSecrets before the name check, name check), a hit adds path and accepted name, after the loop removeSource of every hit path then secretRefusal(all names), else fileRefusal; the write loop catch has a secret branch before isFileRefusal (removeSource of the item, secretRefusal([item.name])); scripted path keeps name check only and the files accepted before a hit stay. Comments: depsOf (was lines 114-115) and step 4 (was line 655) no longer say \"masked\"."
+      },
+      {
+        "item": "design 13 items 1-4 / sub-step 6 (README part)",
+        "file": "tools/README.md",
+        "place": "line of the core section about what is stored (was 253); work/ line (was 245); executors paragraph (was 391) + one new short paragraph after it",
+        "what": "Result file content is stored byte-exact, findSecrets and reason `secret` described with refused forms, placeholder/template/expression keep, residual risk of findSecrets, false refusals; work/ line no longer says \"already masked\"; executors: \"the content is stored byte-exact\", source of a secret file deleted too, \"(... for a secret: «в нём найден секрет»)\"; new paragraph on the reads (FILE_WITHHELD). Existing sentences that TM-50 and DC-01 search are kept."
+      },
+      {
+        "item": "task: engine/single-run.js stays unchanged",
+        "file": "tools/src/team/engine/single-run.js",
+        "place": "-",
+        "what": "not edited (git status clean for tools/src/team/engine and executors)."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "baseline before any edit: cd tools && node --test $(ls test/team-*.test.js test/exec-*.test.js | grep -v team-web)",
+        "output": "49 files; # tests 548, # pass 548, # fail 0, # skipped 0 (61 s)"
+      },
+      {
+        "command": "SUB-STEP 1: cd tools && node --test --test-name-pattern='^HK-21' test/pixel-office-hook.test.js",
+        "output": "# tests 1, # pass 1, # fail 0, # skipped 0"
+      },
+      {
+        "command": "git diff -U0 -- tools/src/pixel-office/mask.js | grep -c '^-[^-]'",
+        "output": "0 (only added lines; git diff --stat: 703 insertions)"
+      },
+      {
+        "command": "oracle of design section 18 extracted with the awk command of the design (106 keep / 108 refuse entries), plus the micro-amendment pairs O25 (token=${A}} and secret=${{A}}}, kept) and C25 (token=hunter2fake}, refused F9); scratch driver <scratch>/ci/drive-oracle.mjs: marks expanded, every refused string also placed inside about 10000 characters of text and next to O1/O3",
+        "output": "{\"kn\":108,\"kb\":0,\"rn\":109,\"rm\":0,\"rf\":0,\"lost\":0,\"assembly\":null,\"assemblyO1toO17\":null}  (108 kept, 0 broken; 109 refused, 0 missed, 0 wrong form, 0 lost in text; the assembly of all kept strings, one per line, returns null)"
+      },
+      {
+        "command": "scratch <scratch>/ci/matrix.mjs: placeholder matrix 26 words x 3 casings x 3 places (kept; word9 refused except example9; your-key, xxxx, ***, pw-example, YOUR_API_KEY kept; https://u:u@h and https://имя:имя@h refused), nine samples of AC0.3 alone and in one HTML page, old-core marks (F14), Authorization white-space cases (F15), non-string input",
+        "output": "{\"checks\":515,\"bad\":0}"
+      },
+      {
+        "command": "scratch fuzz <scratch>/ci/fuzz.mjs: 20000 random strings of 1-40 tokens from a pool of 61 hostile fragments (groups, quotes, closers, white space, surrogates, keys)",
+        "output": "{\"n\":20000,\"hits\":6121,\"thrown\":0,\"slow\":0} (every result null or an object with exactly one key `form` in F1..F9)"
+      },
+      {
+        "command": "scratch <scratch>/ci/trap.mjs: 18 hostile units (token={{ , password=$( , Authorization: Bearer {{ , token: {{{{ , Bearer $( , password=${ , password=<a , ${{ , <a<a<a, ${{ a } , quoted unclosed groups, closers ...) repeated to 256 KiB / 1 MiB / 4 MiB, and 1 MiB + closers",
+        "output": "every row linear; slowest: Authorization: Bearer {{  4 MiB 95 ms, token={{  4 MiB 72 ms; the F22 inputs (quadratic without the record: 10 s at 256 KiB) take 7-10 ms at 256 KiB"
+      },
+      {
+        "command": "SUB-STEP 1 TIMING (criterion 7 families 1-12, no line end, 7 repeats median, k doubled to >= 20 ms on the smallest size, outcome checks no-secret and bait-at-the-end per size) <scratch>/ci/timing.mjs",
+        "output": "family 1: k=8 ms 21.1/83.4/387.5 ratios 3.95, 4.65 | 2: k=32 33.9/137.3/541.3 3.94-4.06 | 3: k=32 23.8/92.7/470.0 3.89, 5.07 | 4: k=16 21.1/83.6/338.7 3.96, 4.05 | 5: k=16 40.0/151.8/586.7 3.79, 3.86 | 6: k=16 34.3/135.9/608.0 3.96, 4.47 | 7: k=32 37.9/150.1/623.8 3.96, 4.16 | 8: k=8 30.7/121.2/532.6 3.95, 4.39 | 9: k=16 34.8/137.1/551.8 3.94, 4.02 | 10: k=16 37.0/146.6/585.5 3.96, 3.99 | 11 (16/64/256 KiB): k=64 22.3/87.7/351.0 3.93, 4.00 | 12: k=16 34.8/137.2/553.7 3.94, 4.04. Worst ratio 5.07 (family 3, 1 MiB -> 4 MiB), limit 8. Twelve families 57.7 s in one process (the control of the instrument is TEST-DESIGNER's and was not run)."
+      },
+      {
+        "command": "cd tools && node --test <49 team/exec files> after sub-steps 1-2",
+        "output": "# tests 548, # pass 548, # fail 0"
+      },
+      {
+        "command": "SUB-STEP 2 BOM trial <scratch>/ci/bom.test.js (7 bytes EF BB BF 41 0D 0A 42 through importResultBytes, importWorkFile, writeResultFile; createProject with test/fixtures/team/scenario-bom.json), run on a copy of the tag and on the tree",
+        "output": "tag: [[\"bom1.md\",4,false],[\"bom2.md\",4,false],[\"bom3.md\",7,true]], sha equal false; tree: [[\"bom1.md\",7,true],[\"bom2.md\",7,true],[\"bom3.md\",7,true]], 3 RESULT_FILE events, sha256 of all three equal to sha256 of the 7 bytes; scenario with BOM accepted on both"
+      },
+      {
+        "command": "SUB-STEP 3: <scratch>/ci/sd.mjs (secretDetail with the name sets of F28 plus five files, 75-character name, empty list)",
+        "output": "12 of 12 as expected, every finished text equals its own maskSecrets; REPORT.md -> \"... (файл: t-0001-1-REPORT.md)\"; app.test.js, key-shaped name, vendor.min.js + notes.v2.md, bearer + app.test.js, long name -> the constant; four files -> \"(файлы: t-0001-1-REPORT.md и ещё 3)\"; five -> \"(файлы: a, b, c и ещё 2)\"; long name beside good.md -> \"(файлы: t-0001-1-good.md и ещё 1)\""
+      },
+      {
+        "command": "cd tools && node --test test/team-language.test.js test/team-core-r13.test.js ; node --test --test-name-pattern='^TM-44' test/team-journal.test.js",
+        "output": "# tests 26, # pass 26, # fail 0 ; # tests 1, # pass 1, # fail 0"
+      },
+      {
+        "command": "grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team | wc -l",
+        "output": "0"
+      },
+      {
+        "command": "cd tools && node --test <49 files> after sub-step 3",
+        "output": "# tests 548, # pass 548, # fail 0"
+      },
+      {
+        "command": "SUB-STEP 4: cd tools && node --test <49 files> (mask.js, files.js, store.js, language.js changed; runner.js as on the tag)",
+        "output": "# tests 548, # pass 536, # fail 12, # skipped 0; not ok: EX-51 (104), EX-41 (126), RF-03 (233), SF-10 (269), SF-11 (270), SF-12 (271), SF-13 (272), SF-15 (276), TM-43 (326), TM-57 (515), TM-58 (521), TM-63 (529) and no other"
+      },
+      {
+        "command": "SUB-STEP 5 trials with the fake claude and the scripted executor, <scratch>/ci/trial5.test.js (run-task), trial5e.test.js (engine path), deps.test.js (depsOf), single.test.js (runSingle)",
+        "output": "run-task, one bait file report.md: exit 1, stdout empty, stderr one line `E_TASK_FAILED: Задача не получилась: Файл результата не принят: в нём найден секрет (файл: t-0001-1-report.md)`, files/ and work/ empty, events PROJECT_CREATED,TASK_CREATED,TASK_STARTED,RUN_STARTED,AGENT_ACTIVITY x3,RUN_FINISHED,BUDGET_SPENT,TASK_FAILED (one RUN_STARTED), the bait in no file of the data folder, the second project empty, `events` view detail equal to the journal detail, phrase \"Исследователь: файл с результатом не принят — в нём найден секрет\". Clean + bait: only the bait is named, files/ empty, the clean source stays in work/. Two baits: work/ empty, (файлы: a, b). Name sets, run-task: app.test.js and a key-shaped name -> the constant alone in stderr, event and `events` view, key name found nowhere; four files -> (файлы: t-0001-1-REPORT.md и ещё 3) in all; bearer -> (файл: t-0001-1-bearer); bearer + app.test.js -> the constant; five files -> a, b, c и ещё 2; 75-character name -> the constant. Engine path (A-C and app.test.js): detail = `events` view detail = text inside the question of the team (`Задача «...» не получилась: <detail>. Изменить её или отклонить?`), files/ and work/ empty (clean source stays in B), one work RUN_STARTED, the bait in no stdin and in no file of the project folder. Scripted with a bait in `note`: exit 1, stderr (файл: t-0001-1-note.md), files/ = [t-0001-1-input.md] (accepted before the refusal), the bait only in scenario.json. runSingle (scripted outputs a.md clean, b.md bait): returns error E_WORK_FILE details {reason: secret, form: F5}, files/ = [r-00001-a.md], events ...RUN_STARTED,RESULT_FILE,RUN_FINISHED,BUDGET_SPENT, writer.broken false. depsOf: a.md exact, BOM file exact (first code feff), old-core `password=[скрыто]` and a bait file -> FILE_WITHHELD, `const v = [скрыто];` handed out as it is."
+      },
+      {
+        "command": "cd tools && node --test <49 files> after sub-step 5",
+        "output": "# tests 548, # pass 536, # fail 12: the same twelve (EX-51, EX-41, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63), no other"
+      },
+      {
+        "command": "cd tools && node --test $(the 83 test files that mention none of the ports 4780, 4781, 4782, 4790 and are not in the 49-file set)",
+        "output": "# tests 1317, # pass 1317, # fail 0, # cancelled 0, # skipped 0"
+      },
+      {
+        "command": "cd tools && node --test --test-name-pattern='^(HK-21|HK-24|MK-0[1-5]|NM-06)' test/pixel-office-hook.test.js test/pixel-office-server.test.js test/pixel-office-panels.test.js test/pixel-office-page.test.js",
+        "output": "# tests 9, # pass 9, # fail 0, # skipped 0 (the tests bind port 0 only; no default port touched). With TM-44, TM-49, TM-50, DC-01 added to the pattern over their files: # tests 14, # pass 14, # fail 0"
+      },
+      {
+        "command": "SUB-STEP 6 greps of criterion 11(a) on tools/README.md",
+        "output": "'content of result files pass through' 0; 'the content is masked' 0; 'byte-exact' 3; 'findSecrets' 2; 'reason `secret`' 1; work/ line with 'already masked' 0; lines with findSecrets and (case-insensitive) 'residual risk' 1; 'placeholder' 1; 'false refusal' (case-insensitive) 1. cd tools && node --test test/team-docs.test.js test/pixel-office-docs.test.js: # tests 14, # pass 14, # fail 0"
+      },
+      {
+        "command": "cd tools && npx prettier --check README.md src/pixel-office/mask.js src/team/files.js src/team/store.js src/team/runner.js src/team/language.js ; npx eslint --max-warnings 0 <the five .js files>",
+        "output": "All matched files use Prettier code style! ; eslint: no output, exit 0"
+      },
+      {
+        "command": "git status --short tools ; git diff --stat -- tools",
+        "output": "only tools/README.md, mask.js, files.js, language.js, runner.js, store.js changed (866 insertions, 30 deletions); no test, decision, requirement or design file written; engine/single-run.js and executors/* untouched"
+      },
+      {
+        "command": "NOT RUN by the task: cd tools && npm run check (twelve tests are red by design after sub-step 4; the full check is the TEST-RUNNER's)",
+        "output": "-"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "test": "EX-51",
+        "location": "tools/test/exec-scripted-source.test.js:71",
+        "design": "design section 7, row EX-51 (REQ-102 criterion 9)",
+        "text": "EX-51 (tools/test/exec-scripted-source.test.js:71) is red by the design after sub-step 4: run-task of the scripted scenario scenario-files.json (note holds a key bait) now exits 1 instead of 0: assert.equal(r.status, 0) fails, `1 !== 0`, stderr `E_TASK_FAILED: Задача не получилась: Файл результата не принят: в нём найден секрет (файл: t-0001-1-note.md)`. New expected behaviour: scenario-files.json with a clean note is accepted exactly (sha256 literal); a new scenario-secret.json with the key is refused, no bait file, scenario.json stays the only file with the scenario text. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I2",
+        "kind": "EXPECTED_RED",
+        "test": "EX-41",
+        "location": "tools/test/exec-workdir.test.js:35",
+        "design": "design section 7, row EX-41",
+        "text": "EX-41 (tools/test/exec-workdir.test.js:35) is red by the design after sub-step 4: run-task with report.md that holds a key bait now exits 1: `1 !== 0`, stderr names (файл: t-0001-1-report.md). New expected behaviour: report.md without a secret (with a.b.c) accepted exactly, source removed, extra.md stays; a separate run with the key: task failed (result_file), files/ empty, no RESULT_FILE, the key nowhere in the data folder including work/. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I3",
+        "kind": "EXPECTED_RED",
+        "test": "RF-03",
+        "location": "tools/test/team-engine-reads-files.test.js:133",
+        "design": "design section 7, row RF-03",
+        "text": "RF-03 (tools/test/team-engine-reads-files.test.js:133) is red by the design after sub-step 4: the file with the bait is no longer accepted: `REVIEW_RESULT did not come: ... TASK_FAILED, PROJECT_WAITING, CHAT`. New expected behaviour: clean file with a.b.c: the input of the reviewer holds the text exactly and no [скрыто], work/ empty, same files and modes; the bait run is RB-12 (whole attempt refused, bait nowhere including work/). To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I4",
+        "kind": "EXPECTED_RED",
+        "test": "SF-10",
+        "location": "tools/test/team-engine-rounds.test.js:110",
+        "design": "design section 7, new row (F9, F10)",
+        "text": "SF-10 (tools/test/team-engine-rounds.test.js:110) is red by the design after sub-step 4: helper twoRounds puts `Ключ: ${BAIT}` into every round-1 file, so the first task now fails: `Expected values to be strictly equal: 1 !== 2`. New expected behaviour: the default round-1 content has no secret (`Версия a.b.c`); no assertion of the test changes. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I5",
+        "kind": "EXPECTED_RED",
+        "test": "SF-11",
+        "location": "tools/test/team-engine-rounds.test.js:143",
+        "design": "design section 7, new row",
+        "text": "SF-11 (tools/test/team-engine-rounds.test.js:143) is red by the design after sub-step 4: same cause: `Cannot read properties of undefined (reading 'data')`. New expected behaviour: as SF-10. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I6",
+        "kind": "EXPECTED_RED",
+        "test": "SF-12",
+        "location": "tools/test/team-engine-rounds.test.js:181",
+        "design": "design section 7, new row",
+        "text": "SF-12 (tools/test/team-engine-rounds.test.js:181) is red by the design after sub-step 4: same cause: `1 !== 2`. New expected behaviour: as SF-10. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I7",
+        "kind": "EXPECTED_RED",
+        "test": "SF-13",
+        "location": "tools/test/team-engine-rounds.test.js:233",
+        "design": "design section 7, row SF-13",
+        "text": "SF-13 (tools/test/team-engine-rounds.test.js:233) is red by the design after sub-step 4: the bait in the round-1 file is refused, no second round: `Cannot read properties of undefined (reading 'data')`. New expected behaviour: round-1 file without a secret reaches the round-2 input byte-exact with no label; the bait is a separate run (refusal, nowhere on disk); second project and work/ empty stay. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I8",
+        "kind": "EXPECTED_RED",
+        "test": "SF-15",
+        "location": "tools/test/team-engine-rounds.test.js:368",
+        "design": "design section 7, new row",
+        "text": "SF-15 (tools/test/team-engine-rounds.test.js:368) is red by the design after sub-step 4: same cause as SF-10: `Cannot read properties of undefined (reading 'data')`. New expected behaviour: as SF-10. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I9",
+        "kind": "EXPECTED_RED",
+        "test": "TM-43",
+        "location": "tools/test/team-journal.test.js:450",
+        "design": "design section 7, row TM-43",
+        "text": "TM-43 (tools/test/team-journal.test.js:450) is red by the design after sub-step 4: writeResultFile of the five baits throws E_WORK_FILE `Файл результата «report.md» не принят: в нём найден секрет`. New expected behaviour: text-field checks unchanged; for each of the five baits the call is refused (reason secret), nothing on disk, files/report.md absent; the second TM-43 (line 502) also checks the content `Версия 1.2.3\\n` and a literal sha256. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I10",
+        "kind": "EXPECTED_RED",
+        "test": "TM-57",
+        "location": "tools/test/team-store.test.js:499",
+        "design": "design section 7, row TM-57",
+        "text": "TM-57 (tools/test/team-store.test.js:499) is red by the design after sub-step 4: importWorkFile of notes/report.md with the key throws E_WORK_FILE `Файл результата «report.md» не принят: в нём найден секрет`. New expected behaviour: split in two: the same call with `Отчёт. a.b.c, 0.1.0` stores the exact text with the hash of the source; with the key: E_WORK_FILE reason secret, files/ and journal unchanged, source and work/ intact. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I11",
+        "kind": "EXPECTED_RED",
+        "test": "TM-58",
+        "location": "tools/test/team-store.test.js:757",
+        "design": "design section 7, row TM-58",
+        "text": "TM-58 (tools/test/team-store.test.js:757) is red by the design after sub-step 4: writeResultFile of `Ключ ${FAKE_KEY}` throws E_WORK_FILE `Файл результата «key.md» не принят: в нём найден секрет`. New expected behaviour: text without a secret (`Ключ: см. a.b.c`); the journal hash equals the hash of the original (literal); the two notEqual become equal. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I12",
+        "kind": "EXPECTED_RED",
+        "test": "TM-63",
+        "location": "tools/test/team-store.test.js:1006",
+        "design": "design section 7, row TM-63",
+        "text": "TM-63 (tools/test/team-store.test.js:1006) is red by the design after sub-step 4: importResultBytes of the bytes with the key throws E_WORK_FILE `Файл результата «note.md» не принят: в нём найден секрет`. New expected behaviour: bytes without a secret written byte for byte (literal sha256); bytes with the key refused; mode 0600, work/ untouched, 5 MiB limit stay; the case at line 1058 gets a refusal case. To be fixed by TEST-DESIGNER by the 'was -> became' table."
+      },
+      {
+        "id": "I13",
+        "kind": "DISCREPANCY",
+        "text": "Design section 1 F9 and section 7 (last paragraph) say that the other test files that bind no default port are 75 files with 1006 tests. Measured now: the files that mention none of the four ports and are not in the 49-file set are 83 files with 1317 tests, all green after sub-step 5 (the same figure as the code-design gate, finding W6). The work went by the measured set."
+      },
+      {
+        "id": "I14",
+        "kind": "DISCREPANCY",
+        "text": "The oracle of design section 18 and sections 2.3/6 have no rows for the samples O25 and C25 of the micro-amended requirement (REQ-VALIDATOR 04d, I2), no mutant m44 and no RB-12 runs (д)-(ж) in the block. I added the pairs to my scratch driver as the block states them: O25 `token=${A}}` and `secret=${{A}}}` are kept, C25 `token=hunter2fake}` is refused with F9. The counting reading of section 2.2 item 3 (and of the requirement: «по счёту, а не по наличию пары») gives exactly these answers; a presence reading would refuse the two O25 strings. TEST-DESIGNER needs these rows in the test."
+      },
+      {
+        "id": "I15",
+        "kind": "DISCREPANCY",
+        "text": "Design section 3.2/step 1 reads every file of the attempt (a full pass) also when the refusal is not about a secret. Before this change a path or name refusal returned at the first bad file without reading the later ones; now the later files are read (readWorkFile) before the same fileRefusal text is returned. Observable result for EX-42-style cases is the same (same text, nothing written); noted because it is a change of the order of reads, not of the outcome."
+      },
+      {
+        "id": "I16",
+        "kind": "NOTE",
+        "text": "Observation for the README/record about false refusals: `\"Authorization\": \"Bearer \",` (the closing quote of the string directly followed by a comma) and `{\"Authorization\": \"Bearer\"}` are refused, because after a scheme a quote is the closing quote only when white space or the end follows (design 2.2 forms table, Ф2/Ф8 as written). The old rules M2/M8 hid these too, so it is not a narrowing; no sample pins it, no edit made."
+      },
+      {
+        "id": "I17",
+        "kind": "NOTE",
+        "text": "Timing (criterion 7): my findSecrets on the twelve families gives the ratios listed in self_check, worst 5.07 (family 3, 1 MiB to 4 MiB), all other 3.79-4.65; the twelve families cost 57.7 s in one process on this machine (7 repeats). The control of the instrument (quadratic sample function) is part of the test and was not run by me, so the 120 s budget of the test file (design section 10) is not measured here; if the control needs three repeats at 8/32/128 KiB the design measured about 41 s for it, so the margin is the designer's 1.2."
+      },
+      {
+        "id": "I18",
+        "kind": "NOTE",
+        "text": "Places of the same kind (AP-014) searched by `grep -rnE 'maskSecrets' tools/src/team` (17 lines now: engine/channel.js 4, engine/commands.js 2, engine/plan.js 2, language.js 5, store.js 4, runner.js 0; the design counted 15 for the sketch, mine has two more because the comments of secretDetail name the function) and `grep -rn findSecrets tools/src`: the remaining maskSecrets calls take journal text fields, chat arguments and the planner's note of accepted names (not file content); the only reads of the content of files/ are depsOf (done) and of work/ readWorkFile (done). No other place of the same kind outside the write set."
+      },
+      {
+        "id": "I19",
+        "kind": "NOTE",
+        "text": "Q7: no secret-shaped literal in code: mask.js holds rules (prefix words, regexes), runner/store/language hold no rule words (`grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team` = 0, TM-44 green); the baits of my scratch trials were built from parts outside the project. The refusal message of #publish contains the accepted file name (design 2.4), which the pattern of names has checked; the runner replaces it by secretDetail, which never prints a name that maskSecrets would change."
+      },
+      {
+        "id": "I20",
+        "kind": "NOTE",
+        "text": "For the later steps: decisions/0105 (not 0103, decisions/0102 item 31) is ORCH's; I wrote no test, decision, requirement or design file. The quality items touched: Q6 (no skip, no disabled rule, no || true, no test fitted), Q7, Q10 (a refused file is a failed task with an understandable text; findSecrets is linear and does not throw on the 20000 random strings), R2 not applicable."
+      }
+    ],
+    "prototype": "Scratch trials outside the project, under <scratch>/ci/: drive-oracle.mjs (oracle of section 18 + O25/C25), matrix.mjs, fuzz.mjs, trap.mjs, timing.mjs, bom.test.js (+ bom-before.test.js on a copy of the tag), sd.mjs, trial5.test.js, trial5e.test.js, deps.test.js, single.test.js; nothing of them is in Sai.",
+    "artifacts_out": [
+      "tools/src/pixel-office/mask.js",
+      "tools/src/team/files.js",
+      "tools/src/team/store.js",
+      "tools/src/team/runner.js",
+      "tools/src/team/language.js",
+      "tools/README.md"
+    ]
+  }
+}

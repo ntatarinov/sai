@@ -1,0 +1,142 @@
+{
+  "handoff_id": "step08k-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "08k",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0093-20261028-01/step-08k-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-08j-test-design-validator.json (result.findings F1-F10, result.issues)",
+      "handoffs/ISS-0093-20261028-01/step-08i-test-designer.json",
+      "docs/requirements.yaml (block REQ-102 by id)",
+      "decisions/0102-core0-result-files-conventions.md (Additions 13 and 14)",
+      "tools/src/pixel-office/mask.js: read only"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR 08j FAIL (extra pass) -> owner: one more rework and one more pass (decisions/0102 Addition 14) -> TEST-DESIGNER rework 4 (this, 08k) -> TEST-DESIGN-VALIDATOR 08l (the second extra pass) -> TEST-RUNNER (09)",
+    "write_set": [
+      "tools/test/team-result-bytes.test.js",
+      "tools/test/fixtures (new fixtures only)",
+      "handoffs/ISS-0093-20261028-01/step-08k-test-designer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "rework_of": "handoffs/ISS-0093-20261028-01/step-08j-test-design-validator.json",
+    "orch_check": {
+      "at": "2026-10-29T10:39:22Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-29T10:28:29Z; handoffs-check clean (1270 files, 0 violations); changed after step 08j: only tools/test/team-result-bytes.test.js (and the decision/PROGRESS lines written by ORCH); tools/src, the six guard files and the timing file unchanged (timing file sha256 starts 12f944d0, as before)",
+        "own run: bytes file + six guard files: 151 tests, 151 pass, 0 fail, 0 skipped, 0 todo; prettier --check clean; eslint --max-warnings 0 clean; no skip/todo/only/|| true/eslint-disable in the bytes file",
+        "own mutants on a copy outside the project (no git commands; each applied by a script that asserts one occurrence, NOT APPLIED check empty): n67 (the word your anywhere in the value), wd50 (one white-space char skipped after the colon of Authorization), wd49 (one skipped after the scheme word), wd01 (a chain of x/X/* counts when its first three characters are such) - the bytes file is red for each: 14 of 55 failed, 41 passed; the project mask.js was compared with cmp and is untouched",
+        "the report's F2 mutants and the designer's numbers (24,159 sweep rows, 2,189 mutants, 180 survivors all named) not re-run by ORCH; the second validator pass checks them",
+        "remark I2 of the designer: the bytes file grew to about 135 s and is the longest file of npm test; TEST-RUNNER runs it inside the one full check; noted for the report, no weakening of RB-11 / RB-20"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 6 rework 4 (test gate FAIL at the extra pass 08j; the owner allowed exactly one more rework and one more gate pass: decisions/0102 Addition 14) - TEST-DESIGNER: fix the tests by the remarks F1 and F2 (blocking) and the cheap Low items F3, F4, F5 of TEST-DESIGN-VALIDATOR, handoffs/ISS-0093-20261028-01/step-08j-test-design-validator.json (result.findings, result.issues; read F1-F6 in full with their 'fix' text). You change NO file in tools/src, no decision, no requirement, no design file, no README of tools/. Read your role file, docs/quality-bar.md, docs/anti-patterns.md (AP-110), the REQ-102 block by id (forms F2, F8, F9, the class of placeholder rules, residual risk (4)) and your own reports step-08c, step-08g, step-08i.\nThe cause of four FAILs in a row is the same: a rule is tested from one side, so a looser neighbour of the rule survives. Fix it by CLASS this time. For every rule of the requirement that is stated as «starts with», «ends with», «is the whole value», «only of», «optional one», «a run of», or «without regard to case», add the rows or the sweep that tell it from its looser and tighter neighbours: «starts with» from «contains» and from «first k characters»; «a chain only of x, X, *» from «starts with a chain» and from «the first three characters»; «a run of white space» from «exactly one» and from «at most two»; «optional one» from «any number»; case-insensitive from case-sensitive for the rest of the word. Do it once for the whole requirement text of the placeholder rules and the nine forms, not only for the places named in the report.\nDo: (1) F1 (Medium, blocking): (a) refused rows with a character BEFORE `your` in the three places (unquoted, in quotes, password of an address) - a letter, a digit, `_`, `.`, `-` before the word make the value a literal; a separator before it ends the value - best as one sweep with a slot before the word, like the existing sweep with a slot before `example`; (b) refused rows «a chain of x, X, * followed by more characters» in the same three places - best as a sweep with a slot after the chain (kept only when the slot ends the value). Expected sides come from the words of the requirement, not from the code (AP-018).\n(2) F2 (Medium, blocking): refused rows with a run of two and three white-space characters (spaces; a tab and a space; two different members of the closed set) after the colon of Authorization and after the scheme word, with a literal value, each paired with the stored row of the same shape with a template value; or a second slot in the sweep T2.\n(3) F3, F4, F5 (Low, cheap): rows for the word Bearer in upper and mixed case (refused) and a stored row with a letter to its left in upper case; stored rows with two quotes after a name (one per quote kind); one refused row with a quotation of a single blank after `password:`.\n(4) Mutation check: the validator's mutants n67 («your anywhere in the value»), wd01 («the first three characters are x, *, X»), wd49 and wd50 («only one white-space character is skipped after the colon and after the scheme word»), n28, wd19, wd38 must be red - make them yourself on a copy outside the project and report red/green for each. Then extend your mechanical generator of step 08g with the missing mutation classes (prefix test -> contains test; prefix test -> first k characters; run -> exactly one; optional one -> any number; case-insensitive -> case-sensitive) over findIsPlaceholder, the white-space skips and the quote steps of findSecrets, run it, and report the numbers; no survivor may stay unnamed (add the row, or EQUIVALENT with a one-line proof, or 'the requirement is silent' with the quoted place).\nRules for you: nothing deleted, skipped, todo or weakened; criterion 9 floors stay or grow; the timing file untouched; build secret bodies from parts at run time, no key-shaped literal written whole; use only the session scratch folder for copies and temp files (not /tmp, not the system temp folder), no git checkout/reset/stash/clean anywhere (also not in a copy), no background loops left running (check with ps before you finish), no servers on fixed ports, no real AI; run node --test on the bytes file and the six guard files and prettier and eslint on the files you touched; do not run the full npm run check. Report: the rows added, red/green of every mutant above, your sweep numbers, the run counts, the time of the bytes file, result.issues.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-29T09:45:29Z",
+  "started_at": "2026-10-29T09:45:29Z",
+  "completed_at": "2026-10-29T10:28:29Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 4 (extra pass 08j: F1 and F2 blocking, F3-F5 Low). The cause of four FAILs in a row was one: a rule was tested from one side, so a looser neighbour survived. This time every rule of the placeholder class and of the nine forms that the requirement states as 'starts with', 'ends with', 'is the whole value', 'only of', 'a run of', 'an optional one' or 'in any case' is held against BOTH neighbours (looser: contains / the first k characters / any number; tighter: exactly one / a fixed case). Only tools/test/team-result-bytes.test.js changed (no code, no other test, no fixture, no timing file). ROWS ADDED: stored 503 -> 564 (+61: O62-O67, O69-O71), refused 393 -> 493 (+100: C59-C71), pairs 484 -> 588 (+104), sweeps 100 -> 154 (+54), sweep rows 15,607 -> 24,159 (+8,552). F1(a) 'starts with your': a character BEFORE your - 9 sweeps (Yb*: unquoted, three quote kinds, the password of an address, after Basic, after Bearer, in quotes after Basic and Bearer; stored only when the slot ends the value / closes the quote / is '$' (name template $your9)) and 7 refused rows C66 (password=Xyour9abc, token=myyourkey, password: 'Zyourz1', https://u:Zyour1@h, Basic ZYOUR_CREDENTIALS, Bearer ZYOUR_TOKEN, token=\"9your\") each paired with its stored shape (O70, O26#10, O26#11). F1(b) 'a chain only of x, X, *': a character AFTER the chain - 15 sweeps (Ch*: chain xxx in all 9 places, *** and XXX in 3 places; stored only when the slot ends the value; 'xxx(' is a call, '***(' is not) and 7 refused rows C65 (token=xxxhunter2fake, password=***abc, secret=XXXq1w2e3, password: 'xxxabc9', https://u:xxxQx7Rt2Lm9@h, Basic xxxabc9, Bearer ***abc9) paired with the whole chain O69. F2 'a run of white space': 8 runs after the colon of Authorization (C59/O62) and 8 after the scheme word (C60/O63) - two and three spaces, tab+space, space+tab, two tabs, two different members, three different, four mixed - each refused with a literal and paired with the stored template row of the same shape; sweeps T3/T4 (every pair of the 25 members of the closed set, 625 rows each) and T5/T6 (125 triples of {space, tab, U+00A0, U+3000, LF}); runs after Bearer (C61/O64, T7 pairs, T8 triples). F3 Bearer in any case: C64 BEARER, bEARER, BeArEr, BEARER+tab; O67 a capital/mixed letter to the left; the class sweep CB. F4: O65 twelve stored rows with two quotes after a name (all 3x3 kinds with '=', three with ':'), paired with the one-quote refused rows C62; O66/C63 two opening quotes after the colon of Authorization. F5: C70 six quotations of blanks (space in three quote kinds, tab, two spaces, U+00A0) paired with the empty pair of quotes O14#1. THE CLASS, once for the whole text (AP-110): case sweeps CB, CN/CNp, CS, CWq/CWa, CYq/CYa, CEq/CEa, CK (every word the requirement writes without regard to case: Bearer, the seven names, the nine schemes, the 26 placeholder words, your, example, the 26 type words - lower, capitals, capitalised, two alternating cases, and each letter replaced by a digit) and CXsk, CXgh, CXpat, CXak, CXjwt, CXpem, CXcert (the words it writes in ONE case are refused in that case only); first-k / last-k: B4a/B4b (block characters only: a character before or after seven block characters), C71, C67 (a letter before each of the 26 type words), C68 (a digit before each of the nine schemes), C69 and the long-name template sweeps GpairL*/GaddrL* (a name template is the whole value, not its first six characters). Expected sides come from the words of the requirement, not from the code (AP-018). Before the counts were written every row and sweep was run on the real code: three expectations of my own oracle were wrong and were corrected from the words of the requirement, the code was right each time (see issues I1). RESULT: bytes file 55 of 55 green; bytes + six guard files 151 of 151 green; the seven mutants named in the order are RED: n67 14 tests, wd01 14, wd49 14, wd50 14, n28 11, wd19 7, wd38 10 (of 151); the mechanical generator extended with the five missing mutation classes: 136 new mutants, no survivor unnamed.",
+    "changes": [
+      {
+        "remark": "F1 (a) - starts with your",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "REFUSE C66 (7 rows), KEEP O70 (5 rows); PAIRS +7 (O70#0-3 and O26#10, O26#11, O70#4 against C66#0-6); sweeps Yb* (9, SLOT_PLACES x 165 characters = 1,521 rows). RB-00 counts and the lengths of the new groups."
+      },
+      {
+        "remark": "F1 (b) - a chain only of x, X, * followed by more characters",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "REFUSE C65 (7 rows), KEEP O69 (7 rows); PAIRS +7; sweeps Ch* (15, 2,535 rows)."
+      },
+      {
+        "remark": "F2 - a run of white space after the colon and after the scheme",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "RUNS_AUTH (8 runs) and RUNS_BEARER (6 runs) built from codes; KEEP O62, O63, O64 (8+8+6), REFUSE C59, C60, C61 (8+8+6); PAIRS +22; sweeps T3, T4 (625 rows each), T5, T6 (125 each), T7 (625), T8 (64). SWEEP_ROWS: the id of a slot of several characters is its place in the list (a slot of one character keeps its code, so no old id changed)."
+      },
+      {
+        "remark": "F3 - Bearer in upper and mixed case",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "REFUSE C64 (4), KEEP O67 (3, a letter to the left in upper and mixed case); PAIRS +4; sweep CB (Bearer in six casings and with each letter replaced)."
+      },
+      {
+        "remark": "F4 - two quotes after a name",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "KEEP O65 (12), REFUSE C62 (6, the one-quote partners); KEEP O66 (3) and REFUSE C63 (5: three one-quote partners, two rows with quotes of different kinds, which are an unclosed quotation); PAIRS +15."
+      },
+      {
+        "remark": "F5 - a quotation of blanks",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "REFUSE C70 (6); PAIRS +6 against O14#1 (a pair of quotes in a row)."
+      },
+      {
+        "remark": "class rework (task item 4: the mutation classes found by the extended generator)",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "REFUSE C67 (26: a letter before each type word), C68 (9: a digit before each scheme), C69 (2: long name template in an address), C71 (6: block characters and a word), KEEP O71 (9 stored schemes); PAIRS +43; sweeps B4a, B4b, GpairL*/GaddrL* (4), CN, CNp, CS, CWq, CWa, CYq, CYa, CEq, CEa, CK, CXsk, CXgh, CXpat, CXak, CXjwt, CXpem, CXcert."
+      },
+      {
+        "remark": "bookkeeping",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "SHA table: 61 new literal sha256 values taken with `shasum -a 256` from the bytes of the rows, and the value of E:g-new (the engine file of the groups above O35); RB-00 counts 564 / 493 and the lengths of O62-O71, C59-C71; RB-20 counts 154 sweeps, 24,159 rows. Nothing deleted, skipped or weakened; 40 test( lines and 55 tests as before; assert. lines 290."
+      }
+    ],
+    "self_check": [
+      "COMMANDS (project, node 22.23.4; TMPDIR in the session scratch folder): cd tools && node --test test/team-result-bytes.test.js: tests 55, pass 55, fail 0, skipped 0, todo 0, duration 135.2 s (was 105.5 s at 08i: the tables grew by a fifth, RB-11 takes about 15 s per input, RB-20 about 9 s). cd tools && node --test <bytes + team-store + team-engine-reads-files + team-engine-rounds + team-journal + exec-workdir + exec-scripted-source>: tests 151, pass 151, fail 0, skipped 0, todo 0, 135.6 s, code 0. npx prettier --check on the bytes file: clean. npx eslint test/team-result-bytes.test.js --max-warnings 0: code 0. grep for .skip( .todo( .only( {skip|todo} eslint-disable '|| true': empty. The full npm run check was NOT run (as ordered); the timing file and the six guard files are untouched (the sha256 of 1,027 other files of tools/src, tools/test, tools/README.md, tools/package.json, docs, decisions are equal before and after my work).",
+      "MUTANTS NAMED IN THE ORDER (made by me on copies outside the project, one edit of mask.js each; lane = copy of tools/src and tools/test, decisions and docs linked; the seven files above; a mutant is RED if a shipped test fails): n67 (findIsPlaceholder: 'your' anywhere in the value) RED 14 of 151 (RB-03 d, RB-06 x3, RB-07 order, RB-07 forms, RB-08, RB-11 x3, RB-20 x4; first rows Yb u#002d..., C66#0); wd01 (a chain: the first three characters are x, X, *) RED 14 (first rows Ch120u#0000..., C65#0); wd49 (one white-space character after the scheme word) RED 14 (T4 from #i0000, C60#0); wd50 (one after the colon) RED 14 (T3 from #i0000, C59#0); n28 (the word is [Bb]earer, no i flag) RED 11 (CB#i0001, C64#0); wd19 (any number of quotes after the name) RED 7 (RB-01 x3 at O65#0, RB-03 a, RB-04 b, RB-07, RB-08); wd38 (a quotation of white space only is empty) RED 10 (C70#0 in RB-03 d, RB-06 x3, RB-07 order, RB-07, RB-08, RB-11 x3). The pristine mask.js is GREEN: 151 of 151. At 08j all seven were green (151 of 151, or 55 + 96).",
+      "EXTENDED GENERATOR (gen2.mjs in <scratch>/td08k, over the whole findSecrets region lines 317-1041 of mask.js, whose sha256 is equal to the project file): five classes - contains (prefix test -> contains test; endsWith -> includes / startsWith; set membership -> some(startsWith / includes / endsWith); 'group is the whole' -> 'a group exists'), firstk (whole value -> the first 3 / 6 or the last 3 characters of the call range; the chain of x, X, * -> first three / starts with / first four; your / example -> the first 1, 3, 6 letters), run1 and run2 (every while -> if, i.e. exactly one step, and -> at most two steps; the regex + -> none or {1,2}; {n,} -> {n} and {n,n+1}), optmany (if (x) p += 1 -> while; any number of opening quotes after the colon), casesens (every findLowerAscii call removed, only the first letter / all but the first / half of the alphabet; '| 32' removed, first letter only, all but the first; the i flag removed; Bearer as [Bb]earer) and caseinsens (the i flag added to the prefixes sk-, gh?_, github_pat_, AKIA|ASIA; indexOf eyJ and -----BEGIN and startsWith of the certificate line made case-insensitive): 136 mutants (run1 24, run2 22, casesens 17, firstk 45, contains 18, optmany 3, caseinsens 7) plus the seven named ones as text edits. Screened against the final tables (KEEP, REFUSE, 24,159 sweep rows, the order joins, the word rows): on the tables of 08i 103 killed (102 by a row, 1 non-terminating) and 33 survived; on the final tables 129 killed (128 by a row, 1 non-terminating: a counter step of findDropClosers turned into a loop) and 7 survive, all equivalent: {16,} -> {16} and {16,17} (line 839, sk-), {20,} -> {20} and {20,21} (840, ghp_/gho_/ghs_), the same for github_pat_ (841) - the rule is unanchored on the right, so a body of n characters matches iff a longer one does; and the control 'Bearer written as [Bb][Ee][Aa][Rr][Ee][Rr]' (equal by construction). Differential fuzz of the 7: 300,000 random texts built by the grammar of the rules plus the neighbours of every table row: 0 differences; the same fuzz tells 9 of 9 killed mutants (n67, wd01, wd49, wd50, n28, wd19, wd38 and two more) from the original (power check).",
+      "OLD SWEEP OF 08g AND 08i RE-RUN ON THE FINAL TABLES: 2,010 mutants of the first generator: 1,840 killed (84 of them non-terminating), 170 survive = the same 168 named at 08g (153 equivalent, 13 'the requirement is silent', 2 performance, the last two killed by the timing file) plus the 2 mutants of the guard for a value that is not a string (mask.js line 1032, indices 1990 and 1991): in 08j (F6) the harness probe 'non-string' had counted them killed, no shipped test calls findSecrets with a non-string; I took the probe out of the screen and name them SILENT: the requirement does not state the behaviour on a non-string, the store checks the type before the call. 43 directed mutants of 'a template is the whole value' (08i): 40 killed, 3 equivalent (i8, i8b, a4, proofs as at 08i). TOTAL on the final tables: 2,010 + 43 + 136 = 2,189 mutants, 180 survive (153 + 6 + 3 + 1 equivalent, 13 + 2 silent, 2 performance), 0 unnamed.",
+      "SWEEP NUMBERS: SWEEPS 154 (100 + 54), SWEEP_ROWS 24,159; per family: Yb 1,521 (9 sweeps), Ch 2,535 (15), T3-T8 2,250 (6), B4a/B4b 338, long name templates 676 (4), case sweeps 1,232 (18); every sweep has a stored and a refused row (RB-20 checks it); the ids are unique; 24,159 of 24,159 agree with the expected side written in the test (checked on the real code before the counts were written). Pairs 588, each stored partner accepted and each refused one refused with reason secret through the store (RB-08). Every new refused row goes through RB-06 (three inputs x three positions + order), RB-07 (forms, order cross product), RB-11 (state unchanged after a refusal: files, writer state, journal) and RB-03 (d) (depsOf withholds); every new stored row through RB-01 (bytes, literal sha256, event, mode 0600), RB-03 (a) and RB-04 (b) (the engine reads the file of the groups above O35 byte for byte).",
+      "CRITERION -> TEST for this rework: 3 (the placeholder rules and the nine forms, both sides) RB-00 (tables), RB-07 forms and order, RB-08 pairs, RB-09 words, RB-20 sweeps (findSecrets and through the store); 1 RB-01 (new stored rows); 4 RB-11 (new refused rows leave the state unchanged); 2(d) RB-03; 9 RB-18 (guard floors: green, unchanged). Criteria 5, 6, 7, 8, 10, 11, 12: not touched by this rework, tests unchanged and green (the timing file was not run: it is untouched and has its own process).",
+      "QUALITY-BAR ITEMS: Q3/Q4 the output above is real; Q5 every new row is a failure/edge test of the rule and enters RB-11 (state unchanged); Q6 no skip, todo, only, no disabled rule, nothing weakened; Q7 no secret in the tests: bait bodies are built from parts at run time (prefix + N(n)), 'hunter2fake' and Qx7Rt2Lm9Zp4 are the fixed fictitious literals of the earlier tables, RB-10 (no key-shaped text in the test files) green; Q8, Q10, Q11, R3: not touched (the rework adds rows and sweeps to the scan of content; no tenant data, no external call, no address from a user, no photo).",
+      "PROCESSES AND FILES: ps checked at the end: no process of mine runs (node --test pid 62025 and the Pixel Office and picker servers were there before and are not mine). No port bound. No git checkout/reset/stash/clean/commit/push anywhere. Copies, lanes, the generator, the corpus and the outputs are in <scratch>/td08k; TMPDIR pointed into that folder for every run, so no folder was made in the system temp folder by my runs."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Three expectations of my own oracle were wrong before the first run on the real code; each was corrected from the words of the requirement and the code was right every time: (1) in quotes after a scheme or Bearer, a quote followed by WHITE SPACE is the closing quote of a string and there is no value at all (F2, F8 text), so the row 'Authorization: Basic \"<white space>your9\"' is stored, not refused (sweeps Ybsq, Ybbq: the slot stored when it is white space, the quote or '$'); (2) 'xxx(' is a call (class V2: an identifier and then '('), '***(' is not - '*' is no identifier character; (3) as the FIRST character of a value a quote opens a string whose content is a literal (B1-B4 do not apply in quotes), so 'token: \"{[(|>{[(' is refused. Two rows with quotes of two kinds after the colon of Authorization (\"' and '\") are refused, not stored: the first quote opens a string that is not closed on its line and the whole rest of the line is one non-empty quotation (the definition of a value in quotes); they are C63#3 and #4 without a stored partner."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Time: the bytes file alone is now 135.2 s (105.5 s at 08i), the seven files 135.6 s; the growth is the new rows (RB-11 about 15 s per input, RB-20 about 9 s per input). The bytes file is now the longest file of npm test, so the whole suite takes about the time of the bytes file. Criterion 7 (budget 120 s) belongs to the timing file, which is untouched. If TEST-RUNNER or the owner wants it shorter, the store pass of RB-20 (every third row) and RB-11 (every refused row, three inputs) can take a stride for the old sweeps; I did not weaken either."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "F6 of 08j (the guard for a value that is not a string, mask.js line 1032): not a rule of the requirement and not in my order; I did not add an assertion for a behaviour the requirement does not state. The two mechanical mutants (indices 1990, 1991) are named SILENT in the sweep numbers above; the harness probe 'non-string' that counted them killed is taken out of my screen, so the screen now equals the shipped tests."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "Reading taken from the letter of the requirement and worth one sentence at the next requirement edit (like F9 of 08j): the marker '-----BEGIN' and the prefixes sk-, ghp_, github_pat_, AKIA, eyJ are written in one case; the code and the tables read them case-sensitively (as the old rules M1 and M4-M6 did), so '-----begin PRIVATE KEY-----', 'SK-...', 'GHP_...', 'akia...', 'EYJ.a.b' are stored (sweeps CXpem, CXsk, CXgh, CXpat, CXak, CXjwt). The text does not say 'in any case' for them, and it does for Bearer, the names, the schemes and the 26 words."
+      },
+      {
+        "id": "I5",
+        "kind": "PROPOSAL",
+        "text": "AP-110 for the list, as proposed at 08j (I3) and now carried out: for every rule written as 'starts with', 'ends with', 'the whole value', 'only of', 'a run of', 'an optional one', 'any case' add a mutation class to the generator (contains, first k, exactly one / at most two, any number, case-sensitive / case-insensitive) next to the generic ones; the five classes are in gen2.mjs (about 150 lines) and find in seconds the survivors that a validator found by hand at 08h and 08j (33 of the 136 new mutants were alive on the tables of 08i, among them all seven named ones; 7 are alive now and all are equivalent)."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "text": "F7-F10 of 08j are not mine and nothing was changed for them (timing file untouched; AC0.3 of the plan; the reading of F9; the sentence in decisions/0105 item 7). No code edit is needed, nothing for CODE-FIXER; I found no error of the code: 24,159 sweep rows, 100 new rows and 104 new pairs give the expected side on the real code."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-result-bytes.test.js"
+    ]
+  }
+}

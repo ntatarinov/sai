@@ -1,0 +1,36 @@
+# ISS-0097 — REQ-102: close residual risk (7) (a call value followed by a glued pair) and the Low items of the code gates that stayed unfixed
+
+Серьёзность: MEDIUM. Статус: open. Найдено: SECURITY-REVIEWER (шаги 06 и 06b, F-L1, I2, I3), REVIEWER (шаги 07 и 07b, F1-F3, I2, I3), прогон `ISS-0093-20261028-01`, 2026-10-28; остаточный риск (7) принят владельцем «потом» (`decisions/0102`, пункт 35, `decisions/0105`, пункт 6); заведено DOC-UPDATER (шаг 11), 2026-10-30. Пункт планки: Q7 (пункт 1; пункты 2-6 — Q10 и честность текстов). Требования: REQ-102 (сделано; остаточный риск назван в описании), REQ-009, REQ-010, REQ-013. Связан с открытыми ISS-0058 и ISS-0045 (те же правила журнала, отдельный прогон).
+
+## Что не так
+
+The fix of ISS-0093 (REQ-102, `findSecrets` in `tools/src/pixel-office/mask.js`) is released with named holes. They are named in the requirement, in `tools/README.md` and in `decisions/0105`, and none of them blocks the status `done`. This defect holds them so that they are not lost (Q1, Q14).
+
+1. **Residual risk (7), the main item (MEDIUM, Q7).** A value that reads as a call is kept up to the first white space, comma, semicolon or quote and is not scanned inside. A real secret that stands right behind it as a pair joined with `&` or `=` (the shape `token=f(x)&` and then a name, `=` and a literal value) is stored on disk. The old journal rules hid such a text. The owner accepted this on 2026-10-28 on the condition that a defect closes it later (`decisions/0102` item 35: «потом»). Wanted behaviour: a call value that has `&` or `=` after the opening parenthesis is read as a literal (the rule in the answer of the owner), so the pair behind it is examined.
+2. **A kept value that ends in a name word (REVIEWER 07b F3, Low).** In the same family: the end of a kept value is itself a name word and a quote and a colon are glued behind it (a path, a bare identifier or a placeholder word that is also a key name, then the next pair). Measured by a differential run against an independent reference: 76 differences in 2.6 million strings, all in one direction (the reference refuses, the code keeps). Not valid JSON, probability very low. The README words of risk (7) do not name this shape; either widen the words or close it together with item 1.
+3. **A comment for the limit of the key regular expressions (SECURITY-REVIEWER 06b F-L1, REVIEWER 07b F2, Low, Q10).** `findSecrets` throws `RangeError` on a single key-shaped run longer than about 5.3 MiB. The two writing callers cannot reach it (they hold the input to the 5 MiB `FILE_BYTES_MAX`, about 8 percent of headroom); `depsOf` catches it. The dependence is written only above `withheldOrContent` in `tools/src/team/runner.js`, not in `mask.js` beside the function that can throw. If the limit is raised, the writing callers get an exception from a place that looks pure. Fix: one sentence in the header comment of `findSecrets`, or bound the repeat of the three look-behind expressions (a few thousand characters decide the form).
+4. **`withheldOrContent` catches every error (REVIEWER 07b F1, Low).** The comment names the `RangeError`, the `catch` takes any error, so a defect inside `findSecrets` would turn into the withheld line for every file without a trace. It is fail-closed (no secret leaks), but a broken check hides itself. Fix: catch only `RangeError` and let any other error reach the closing path, or say in the comment that every error is meant to be fail-closed.
+5. **Scripted run without a task (SECURITY-REVIEWER 06b I2, test executor only).** A no-task scripted run records the task text as an output file; if the goal or the project memory holds a masked secret, that file is refused as a secret by the store (`E_WORK_FILE`) and `runSingle` returns the error. The real executor has no outputs. Checked at the unit level only; a test can pin the behaviour.
+6. **The file name in the message of a single run (SECURITY-REVIEWER 06b I3, REVIEWER 07 I2).** In the single-run path (`engine/single-run.js`, unchanged by design) the `TeamError` message of a refused file carries the name as it is. Nothing prints that message today. If a later change prints `r.error.message` of a single run, it must go through `secretDetail`, or the rule «a name that the journal rules would change is never printed» is broken.
+
+## Доказательство
+
+- Item 1: `tools/README.md` (the paragraph «Result files», residual risk of `findSecrets`: «a value that reads as a call is kept to the first white space … so a pair glued right behind it … stays kept»); `docs/requirements.yaml` block REQ-102 (description, residual risks); `decisions/0102` item 35 and `decisions/0105` item 6; `handoffs/ISS-0093-20261028-01/step-06b-security-reviewer.json` (issue I1: no entry in `docs/issues/` yet).
+- Items 2 and 4: `handoffs/ISS-0093-20261028-01/step-07b-reviewer.json` (findings F1, F3, issue I3).
+- Items 3 and 5-6: `step-06b-security-reviewer.json` (F-L1, I2, I3), `step-07b-reviewer.json` (F2), `step-07-reviewer.json` (issue I2). Re-checked by DOC-UPDATER on 2026-10-30 against the current files: `tools/src/pixel-office/mask.js` has no sentence about 5 MiB or `RangeError` (grep empty); `withheldOrContent` in `tools/src/team/runner.js` has `catch {` with no error test.
+- Reproduction of item 1 (for the fixer): `findSecrets` on a line made of a name of the list, `=`, a call whose first character after the opening parenthesis is `&` or `=` and a following pair with a literal value; the expected result today is `null` (stored), the expected result after the fix is a refusal. Build every secret-shaped sample from parts, never write one whole in a file (Q7).
+
+## Как исправить
+
+One work, in order:
+
+1. Item 1 first: a micro-amendment of REQ-102 (WF-01, the rule for a call value with `&` or `=` after the opening parenthesis; the text is the owner's answer of 2026-10-28), then the design, the code, the tests (rows for the family in `tools/test/team-result-bytes.test.js` with the sweeps, not a single sample) and the README words of risk (7). A rule that makes a refusal wider adds false refusals: measure them on the project's own text files and name them in the README (AP-110 class: every new position of a rule gets a sweep).
+2. Items 2-4 with the same code change (one touch of `mask.js` and `runner.js`).
+3. Items 5-6: a test row or a README sentence, as the fixer chooses; write the choice in the handoff.
+4. Look for all places of the same kind (AP-014): every other consumer of `findSecrets` and every call of `maskSecrets` over text that is not a short request line.
+
+Regression test: the sweeps of item 1 are red on the base of this fix and green after it; the files `team-result-bytes.test.js` and `team-result-timing.test.js` stay green (the timing family covers a new rule only if it adds a loop over the input: add a family if it does).
+
+## Маршрут
+
+WF-03, after the owner chooses to do it (it is a Q7 hole accepted by him, so no hurry is implied). Step 1 ISSUE-FIXER, together with ISS-0058 and ISS-0045 (the same file `mask.js`; ISSUE-FIXER says whether they are one design or ordered fixes, so that two runs do not change `mask.js` at once), then the route of WF-03 with REQ-ANALYST (micro-amendment) and REQ-VALIDATOR before the design.

@@ -31,3 +31,5 @@ Two earlier mockups looked like a generic template. The owner wants a product wi
 ## Basis
 
 The owner's messages in the session (the rejection of the enterprise style; the three hard conditions; «да»), the sample folder above, `decisions/0073`, `0074`, `0082`.
+
+Narrowed by decisions/0091 and decisions/0097 (2026-10-28): item 7 stays for public pages; the private project office of 0097 shows a safe projection of real events to users with a `view` grant.

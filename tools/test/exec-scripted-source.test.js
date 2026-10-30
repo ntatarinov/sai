@@ -21,7 +21,7 @@ import {
   stateOf,
 } from "./exec-helpers.js";
 
-const GHP = "ghp_FAKEfake0000000000000000000000000000";
+const GHP = ["gh", "p_", "FAKEfake", "0".repeat(28)].join("");
 const SCRIPTED = path.join(TEAM_SRC, "executors", "scripted.js");
 
 function walk(dir, visit) {
@@ -68,7 +68,7 @@ test("EX-07 no long text of any scenario of the fixtures appears in the code of 
   assert.ok(checked >= 8, `strings checked: ${checked}`);
 });
 
-test("EX-51 a scripted run writes nothing into work/; its files come from memory and are masked, 0600", (t) => {
+test("EX-51 a scripted run writes nothing into work/; its files come from memory and are stored byte for byte, 0600; a note with a key is refused", (t) => {
   const sb = makeSandbox(t);
   const scenario = fs.readFileSync(path.join(FIXTURES, "scenario-files.json"));
   const p = makeProject(sb, { executor: "scripted", scenario_bytes: scenario });
@@ -84,9 +84,18 @@ test("EX-51 a scripted run writes nothing into work/; its files come from memory
   for (const name of fs.readdirSync(p.files)) {
     assert.equal(fs.lstatSync(path.join(p.files, name)).mode & 0o777, 0o600);
   }
-  const note = fs.readFileSync(path.join(p.files, "t-0001-1-note.md"), "utf8");
-  assert.match(note, /\[скрыто\]/u);
-  assert.equal(note.includes(GHP), false);
+  const noteBytes = fs.readFileSync(path.join(p.files, "t-0001-1-note.md"));
+  const note = noteBytes.toString("utf8");
+  assert.equal(
+    note,
+    "Заметка с вымышленными версиями a.b.c и 0.1.0 для проверки точного хранения\n",
+    "the note is the text of the scenario, byte for byte",
+  );
+  assert.doesNotMatch(note, /\[скрыто\]/u);
+  assert.equal(
+    sha256(noteBytes),
+    "fe4ac9e96d66dae3795c55544ffa19499bdbb86351c2aa234bb76e686f9b3596",
+  );
   const input = fs.readFileSync(
     path.join(p.files, "t-0001-1-input.md"),
     "utf8",
@@ -109,6 +118,31 @@ test("EX-51 a scripted run writes nothing into work/; its files come from memory
   }
   assert.equal(stateOf(sb, p.id).tasks[0].status, "review");
   assert.ok(allFilesText(sb.home).length > 0);
+
+  // The same scenario with a key in the note (the mark of the fixture is replaced by
+  // the key at run time): the core refuses the file, nothing of it is stored, the key
+  // is only in the byte copy of the scenario.
+  const text = fs.readFileSync(
+    path.join(FIXTURES, "scenario-secret.json"),
+    "utf8",
+  );
+  const sb2 = makeSandbox(t);
+  const q = makeProject(sb2, {
+    executor: "scripted",
+    scenario_bytes: Buffer.from(text.replace("@@BAIT@@", GHP + "A".repeat(36))),
+  });
+  const refused = runTeam(["run-task", q.id, q.task], execEnv(sb2));
+  assert.equal(refused.status, 1, describeRun(refused));
+  assert.equal(fs.existsSync(path.join(q.files, "t-0001-1-note.md")), false);
+  for (const name of Object.keys(snapshot(sb2.home))) {
+    const abs = path.join(sb2.home, name);
+    if (!fs.statSync(abs).isFile() || name.endsWith("scenario.json")) continue;
+    assert.equal(
+      fs.readFileSync(abs, "latin1").includes(GHP + "A".repeat(36)),
+      false,
+      name,
+    );
+  }
 });
 
 test("EX-51 scripted.js has no call that writes, only one read that does not follow a link", () => {

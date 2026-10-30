@@ -1,0 +1,150 @@
+{
+  "handoff_id": "step02e-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "02e",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/ISS-0093-20261028-01/step-02e-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-02d-req-validator.json",
+      "decisions/0102-core0-result-files-conventions.md",
+      "handoffs/ISS-0093-20261028-01/step-02c-req-analyst.json"
+    ],
+    "route": "REQ-VALIDATOR (step 02d, FAIL pass 2) -> REQ-ANALYST rework (this) -> REQ-VALIDATOR (step 02f, pass 3 of 3)",
+    "write_set": [
+      "docs/requirements.yaml (REQ-102 block and its dated comment lines only)",
+      "handoffs/ISS-0093-20261028-01/step-02e-req-analyst.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "rework_of": "handoffs/ISS-0093-20261028-01/step-02d-req-validator.json",
+    "orch_check": {
+      "at": "2026-10-28T06:19:54Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-28T06:18:34Z, result.changes has 9 rows (F1-F8 and the beyond-the-list item), 6 result.issues",
+        "ruby YAML load: 102 requirements, REQ-102 pending with 12 criteria; head -n 12401 sha256 f44c6e4d42b6... unchanged; 12 hunks, hunk-range hash of HEAD and of the working file both c276956d051e... (equal)",
+        "handoffs-check and traces return 0",
+        "issue about forms that cannot be refused without refusing an AC0.3 sample answered by decisions/0102 Addition 5 (items 21-22); independent check: REQ-VALIDATOR step 02f, gate pass 3 of 3"
+      ]
+    }
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/ISS-0093-20261028-01/step-02d-req-validator.json, gate pass 3 of 3 follows (a third FAIL stops the requirement and goes to the owner) - WF-03 step 2, REQ-ANALYST. Rework ONLY by the remarks of that FAIL (AP-019): read its result.findings F1-F8 and result.issues I1-I4, and decisions/0102 including Additions 1-4 (Addition 4, items 18-20, is binding and REPLACES item 15: ORCH may not accept narrowings of the old protection; the refusal set is narrower than the old rules M1-M6, M8, M9 only where an AC0.3 sample of the program plan (docs/program/public-v1/PLAN.md, M0, AC0.3, R1) demands that text to be stored; every other form the validator found is REFUSED). Fix: F1 - the cases named by the validator are refused and each gets a refuse sample and a keep sample at its boundary: unquoted password-like values with ! @ # $ and other punctuation (e.g. DB_PASSWORD=P@ssw0rd!, SECRET=Sup3r!Secret#2026, password=Pa$$w0rd, token=ya29.a0AfH6SMBx1234567890abcdefghijk), a URL password with $, { or < (https://deploy:Pa$$w0rd@host/x) with the placeholder form ${VAR} still kept, a quoted value with <, >, ${ or {{ that is a literal (password: \\\"p<ss>w0rd\\\") with an obvious placeholder (\\\"<your-password>\\\", \\\"${PASSWORD}\\\") kept; redefine Л1/Л2/Ф3 so they use the same characters and the definition of a literal does not depend on a restricted alphabet (a literal is the opposite of an expression/identifier/call/member access/template placeholder - define that closed list); where a form cannot be refused without refusing an AC0.3 sample, do NOT narrow silently: name it in result.issues for ORCH (decisions/0102 item 19); F2 - quoted-name forms: \\\"Authorization\\\": \\\"Basic …\\\" and the single-quote and backtick forms, Ф9 key names with all three quote kinds, add authorization to the name list, a non-Bearer scheme in the quoted form (refuse and keep samples), remove the 8-character minimum and the restricted alphabet of Л3 for Authorization/Bearer values except where an AC0.3 sample demands it (Authorization: `Bearer ${token}` stays stored); F3 - the word example: one rule in both the URL clause and the quoted-value clause of criterion 3 and in the placeholder definition, so that a correct implementation passes the written test (check all 26 words in three casings yourself); F4 - name the false-refusal costs (a camelCase identifier after Authorization:, { token: 'a' }, a message text such as Unexpected token) as keep or refuse samples with the reason, decide each; F5 - criterion 1 sample statements corrected by running the old code on the clone of the tag (redis://:${PASSWORD}@host stays intact on the base; the quote style of password: \\\"\\\"); F6 - give criterion 7 a time budget for the quadratic control (it costs about 9.4 s per call at 256 KiB; reduce sizes or calls so the whole file runs well under the check workflow limit, keep the separation of ratios); F7 - the refusal text with the word «секрет» has its own detail text (EX-42 pins the path-refusal text), add tools/src/team/language.js to the files of the description and the criterion; F8 - pin the details the validator listed: the label alphabet of Ф1, whether whitespace after Bearer includes a line end, where an unquoted value ends (e.g. { token: abcdef12, user: x }). Do not touch anything outside the REQ-102 block and its dated comment lines; do not weaken any criterion. Update residual risks (only the plan-seed exceptions and M10 remain, named). Prove the unchanged rest again with the hunk-range hash (HEAD with the diff ranges removed vs the working file with the same ranges removed; give the commands and values and the hunk count). result.changes: table 'remark - place - was - became'. Write only docs/requirements.yaml (REQ-102 block and its comments) and your handoff. No machine paths and no names of other projects, also not inside search patterns in the handoff (the traces check scans it). result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Every finding F1-F8 has a row in result.changes",
+      "No narrowing of the old protection except the AC0.3 plan seeds; others refused or named in result.issues for ORCH",
+      "Unchanged-rest proof by hunk-range hash; handoffs-check and traces return 0 before close"
+    ]
+  },
+  "created_at": "2026-10-28T05:50:01Z",
+  "started_at": "2026-10-28T05:50:01Z",
+  "completed_at": "2026-10-28T06:18:34Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправил требование REQ-102 по замечаниям F1–F8 второй проверки. Теперь отклоняется всё, что скрывал старый маскировщик, кроме образцов приёмки плана и закрытых списков заглушек и выражений: пароли без кавычек со знаками ! @ # $, пароль в адресе со знаком $ { <, заголовок Authorization в любой записи и с любой схемой, значения в кавычках с < > ${ {{, ключи в кавычках всех трёх видов; слово example теперь везде одно правило, цены ложных отказов названы, у проверки скорости есть бюджет времени. На ваше решение вынесены две вещи: секрет, написанный точно как путь, вызов или имя переменной, хранится (так требует образец плана data.token), и ложные отказы на тестовых данных вроде token: 'tok' (в большом клиентском проекте это 150 из 1164 файлов).",
+    "changes": [
+      {
+        "remark": "F1",
+        "place": "REQ-102 description: first paragraph; forms Ф3 and Ф9; definitions (new «Литерал», З, Ш, В1–В4; Л1–Л3 removed); samples О8, О13–О16, С13–С15; criterion 3 (pairs at the boundary of Ф3, Ф9); criterion 10 (м9, м13, м16, м18, м19, м20)",
+        "was": "Л2: an unquoted value is a literal only as a chain of [A-Za-z0-9+/=_~-], 8+ characters, with a digit; Л1: a quoted value without space and without «${», «{{», «<», «>»; Ф3 excluded the characters $ { < from a URL password. So DB_PASSWORD=P@ssw0rd!, SECRET=Sup3r!Secret#2026, password=Pa$$w0rd, token=ya29.a0AfH6…, https://deploy:Pa$$w0rd@…, https://deploy:p{ss}w0rd1@… and password: \"p<ss>w0rd\" were stored (old maskSecrets hides all of them)",
+        "became": "A literal is every non-empty value that is not in a closed class: З (placeholder, one rule), Ш (template group), В1 path, В2 call, В3 bare identifier (narrow), В4 block opener; no alphabet, no minimum length. All seven cases above are refused and have refuse samples (С13–С15) and keep samples at the boundary (O6 data.token, O8 ${DEPLOY_PASSWORD}, O13, O14 \"<your-password>\", \"${PASSWORD}\", \"{{ password }}\"); the same characters are allowed in Ф3 and in the quoted value (same frame). The word «literal» no longer depends on a restricted alphabet; the list of non-literal forms is closed"
+      },
+      {
+        "remark": "F2",
+        "place": "REQ-102 description: forms Ф2, Ф9 (name list with authorization, key quote of all three kinds, scheme list), definition of the value; samples О12, С11, С14; criterion 3 pairs; criterion 10 (м14, м15, м17)",
+        "was": "Ф2 only for «authorization:»/«authorization=» and Bearer in the quoted form through Ф8; the name list of Ф9 had no authorization; Л3 required 8+ characters and a restricted alphabet; Ф9 key quote only «\"»; no sample for a non-Bearer scheme in the quoted-name form",
+        "became": "authorization is in the name list of Ф9 (same segment rule, so Proxy-Authorization too); the key may carry one quote of any of the three kinds; the value after a scheme word (Basic, Bearer, Digest, Token, Negotiate, NTLM, OAuth, ApiKey, Bot) or without a scheme is a literal by the common definition: no 8-character minimum, no alphabet; refuse samples С11: Authorization: Basic …, \"Authorization\": \"Basic …\", 'Authorization': 'Basic …', backtick form, Proxy-Authorization, Bearer with 7 characters, Token, Digest, Authorization: hunter, Authorization: header, Basic authHeader; keep samples О6 (Bearer ${token} in backticks stays), О12 (\"Bearer \" + token, Basic ${creds}, authHeader, req.headers.authorization); С14 has the single-quote and backtick password keys"
+      },
+      {
+        "remark": "F3",
+        "place": "REQ-102 description: definition З (placeholder), form Ф3; criterion 3 (boundary of placeholders); criterion 10 (м17)",
+        "was": "The definition said any value containing «example» is a placeholder, the criterion said «схема://u:слово9@h» is refused for every word except example only in the clause for «password: '…'»; so the URL variant of example9 was both stored (definition) and refused (criterion)",
+        "became": "One rule З in the quoted value, the unquoted value and the URL password; the criterion states the same exception («example» and its casings) for all three places; I ran all 26 words × 3 casings × 3 places × 2 variants (390 checks) against the written rule: 0 mismatches; only «example» carries such an addition. «имя:имя» (password equal to the user) is no longer a placeholder (see issue I3)"
+      },
+      {
+        "remark": "F4",
+        "place": "REQ-102 description: new paragraph «Цена правила»; samples С14 (`{ token: 'a' }`, `Unexpected token: '%0'`), О12 (`Authorization: authHeader`), С11 (`Authorization: header`), О13 (`token: string`); criterion 3 («Цены ложных отказов»); criterion 11 (README and record: false refusal)",
+        "was": "Only the cost «a fake password in an agent test is refused» was named",
+        "became": "Decided one by one: `Authorization: authHeader` (camelCase identifier without scheme) is KEPT as an expression (В3), `Authorization: header` (lower-case word) is REFUSED; `{ token: 'a' }` is REFUSED (a quoted value is a literal; the plan does not demand it); a message text such as `Unexpected token: '%0'` is REFUSED; costs are listed in the description (fixtures, translation files, badge URLs with token=, short variables in bundled code, prose «Bearer authentication», PEM-parsing code, app:app@db, lower-case identifiers) and criterion 11 requires them in the README and the record (grep 'false refusal'); measured rate in issue I2"
+      },
+      {
+        "remark": "F5",
+        "place": "REQ-102 criterion 1, last sentence",
+        "was": "«старый код оставлял целыми только `const password = await ask();`, `password=`, `password: ''` (пустые кавычки) и весь О17»",
+        "became": "Run of the old maskSecrets of the tag on every individual entry of the new sample list: it changes 60 of 80 entries of group О (all nine AC0.3 samples included) and leaves 20 intact, now listed exactly: `redis://:${PASSWORD}@host` (О8), `Bearer ` + line end + `foo9bar` (О12), `const password = await ask();` and `api_key = options.apiKey` (О13), `password=` and `password: \"\"` with double quotes (О14), all seven of О15, seven of the eight of О17; all 80 entries of group С are hidden by the old code"
+      },
+      {
+        "remark": "F6",
+        "place": "REQ-102 criterion 7 (control of the instrument, budget); families (1), (6), (8), (9)",
+        "was": "Quadratic control on sizes 16/64/256 KiB with three families, 7 repeats, k from doubling: about 9.4 s per call at 256 KiB, about four minutes for the control; no budget",
+        "became": "Control: one quadratic sample function (its cost does not depend on the content, so family (1) is enough), k = 1, one warm-up and three repeats, sizes 8/32/128 KiB, the call at 8 KiB takes at least 20 ms, ratio t(128 KiB)/t(8 KiB) at least 64 (two steps; the first step alone is about 10 and was on the edge of 8); one-pass control on 256 KiB/1 MiB/4 MiB, both ratios under 8. Budget of the test file: at most 120 s on the developer machine, at most 5 min on CI (workflow limit 15 min); measured on the sketch: nine families 46 s, quadratic control 32 s (ratios 140–170 against 16 for one pass, 3.4–4.1 for the one-pass control at 256 KiB–4 MiB), nine families secret-free and bait found at the end in all, ratios 3.93–4.31. Families (1), (6), (8), (9) were rewritten because the new definitions make the old texts secrets (an incomplete PEM header, `password=\"a ` with a space, a 7-character Bearer value, a quoted placeholder text are now refused or must stay secret-free)"
+      },
+      {
+        "remark": "F7",
+        "place": "REQ-102 description «Файлы»; criterion 5",
+        "was": "Files named only store.js and runner.js of tools/src/team; the text of the refusal for «секрет» was not placed",
+        "became": "tools/src/team/language.js added: a new key secret of the table FAIL_DETAIL with its own text with the word «секрет»; the text of FAIL_DETAIL.result_file stays (EX-42 pins it for path refusals); criterion 5 requires the detail to come from the new key and `grep -c 'Файл результата не найден в рабочей папке или недопустим' tools/src/team/language.js` = 1 (run now: 1), EX-42 green without a test edit"
+      },
+      {
+        "remark": "F8",
+        "place": "REQ-102 description: forms Ф1, Ф8, definition of the value; samples О11, О12, С10, С12, С13; criterion 3 pairs; criterion 10 (м11, м21)",
+        "was": "The label alphabet and the END line of Ф1, whitespace after Bearer and the end of an unquoted value were left to the project",
+        "became": "Ф1: no label alphabet and no END line: any `-----BEGIN` is refused except the exact text `-----BEGIN CERTIFICATE-----` (truncated, lower-case, other labels and the bare word are refused; samples С10). Ф8: after Bearer only spaces and tabs, a line end is not a space (sample: `Bearer ` + line end + `foo9bar` stored, `Authorization: Bearer` + line end + `nextline9x` stored); a quote followed by whitespace or the end closes the string (`\"Bearer \" + token`). An unquoted value ends at the first whitespace, quote, comma or semicolon; trailing unpaired `)`, `]`, `}` are dropped: `{ token: abcdef12, user: x }` → refused value `abcdef12`, `{ token: data.token}` → `data.token` kept"
+      },
+      {
+        "remark": "item 18 (general, not a numbered remark)",
+        "place": "REQ-102 description: first paragraph, «Отличия от старых правил», Ф1, Ф3, Ф7, definitions; criterion 1, 3, 10",
+        "was": "Narrowings of decisions/0102 item 15 (public PEM labels other than the certificate, bare -----BEGIN, unquoted value under 8 characters or without a digit, quoted value with a space or non-ASCII, password equal to the user, JWT with two eyJ parts) were part of the text as «residual risk»",
+        "became": "Item 15 is withdrawn by Addition 4, so these are refused: PEM labels PUBLIC KEY, CERTIFICATE REQUEST and so on, the bare word, `secret=abc`, `password=hunter`, \"Пароль\", \"Enter your password\", `app:app@db`; Ф7 now refuses any three-part run whose first part starts with eyJ (was: first two parts). Residual risk now: M10; the plan-seed exceptions (three dotted parts, the certificate header); the expression look-alikes (issue I1); the old gaps that were never protected (assignment with a space before the sign, URL without a user, key without a PEM header)"
+      }
+    ],
+    "before_copy": {
+      "source": "The rework edits only the REQ-102 block and its dated comment lines; the block is not in the tag. The «before» of this rework is the file as it stood at the start of this step: a copy at <scratch>/e3/requirements.before-rework2.yaml, sha256 c87313f548c030d98c80f9884e5f7aa4abff2c288f1337d8d88730107d63d44a (REQ-102 block with its comments: 359 lines, sha256 9fb0f3921ec630c0ab89113f5d7ce47a151a6e85c713663940233b35ebc984f1; after: 495 lines, sha256 ec18dc6212133c97cf357c1cb2b73b794a937f48719aef8759ce5815a266aa2f). The lines before the block (head -n 12401) have sha256 f44c6e4d42b691fb24b96983b061bd29fe2bf8f45da90382a9d22b0f67efc005 before and after. The «before» lines of the four amended criteria of REQ-009/010/013 are in step-02-req-analyst.json result.before_copy and were not touched."
+    },
+    "self_check": "date -u -> 2026-10-28T06:10:15Z at the start of the edit; Q-bar read before any action (docs/quality-bar.md).\nBlock readable: awk '/^  - id: REQ-102$/{f=1} f&&/^  - id: /&&!/REQ-102$/{exit} f' docs/requirements.yaml | wc -l -> 492 (the block without its three comment lines).\nYAML loads: ruby -ryaml -e 'y=YAML.load_file(\"docs/requirements.yaml\"); rs=y[\"requirements\"]; puts [rs.size, rs.map{|r|r[\"id\"]}.uniq.size, rs.last[\"id\"], rs.last[\"status\"], rs.last[\"acceptance_criteria\"].size].inspect' -> [102, 102, \"REQ-102\", \"pending\", 12].\nHashes of docs/requirements.yaml: before c87313f548c030d98c80f9884e5f7aa4abff2c288f1337d8d88730107d63d44a, after a3c905a30f836c556e43ab984edd5e658ed5ec49eaf657a895eb431d1074ab97 (hash of the file as it stands when this self_check was written). head -n 12401 (everything before the block and its comments) before and after: f44c6e4d42b691fb24b96983b061bd29fe2bf8f45da90382a9d22b0f67efc005 both; diff of the two heads -> empty.\nUnchanged rest against the base (HEAD = tag base/ISS-0093-20261028-01 = 6f5a38a997d807ba383f4c06201e917a1ecfada7): ruby -rdigest -e 't=\"HEAD\"; d=`git diff #{t} -U0 -- docs/requirements.yaml`; o=[];n=[]; d.each_line{|l| if l=~/^@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/ then o<<[$1.to_i,($2||1).to_i]; n<<[$3.to_i,($4||1).to_i] end}; s=->(ls,rm){dr={};rm.each{|a,c| c.times{|i| dr[a+i]=1}}; ls.each_with_index.reject{|_,i| dr[i+1]}.map(&:first)}; a=s.(`git show #{t}:docs/requirements.yaml`.lines,o); b=s.(File.readlines(\"docs/requirements.yaml\"),n); puts o.size, a.size, Digest::SHA256.hexdigest(a.join), b.size, Digest::SHA256.hexdigest(b.join)' -> hunks 12; 12370 lines / c276956d051e87916d289e9f906b6fdc470b2bdd87a41c20cad86d76c97b6f36 (HEAD with the 12 hunk ranges removed) and 12370 lines / c276956d051e87916d289e9f906b6fdc470b2bdd87a41c20cad86d76c97b6f36 (working file with the same ranges removed): equal, and equal to the values of REQ-VALIDATOR at step 02d. The 12 hunks (git diff HEAD -U0 -- docs/requirements.yaml | grep '^@@'): 361, 384, 413, 1049, 1355/1356, 1366, 1655/1657, 1674, 1993/1999, 2080/2088, 8108/8116 (four status lines of REQ-003, REQ-004, REQ-005, REQ-061 made by other runs, the dated comment lines and the four amended criteria of REQ-009/010/013 - none touched here) and the last one @@ -12393,0 +12402,495 @@ (the REQ-102 block with its three comment lines; was +359). The list of hunks equals git diff base/ISS-0093-20261028-01 -U0 -- docs/requirements.yaml (diff empty). The hash proof is true by construction for any diff; its meaning is the head comparison above and the equal first 11 hunks.\nNo machine paths and no names of other projects in the block: awk 'NR>=12402' docs/requirements.yaml | grep -nE '/Users/|/private/|/tmp/|<names of the other projects>' -> no match.\nSketch of findSecrets by the written definitions and the old maskSecrets of a fresh clone of the tag, both run on every written sample (my script in <scratch>/e3: sk.mjs, samples.mjs, run1.mjs, cnt.mjs): group О 80 entries - the sketch keeps 80/80, the old code changes 60 and leaves 20 intact (the 20 are listed in criterion 1); group С 80 entries - the sketch refuses 80/80, the old code hides 80/80; the assembly О10 (all О entries on separate lines) is kept; the nine AC0.3 samples each and joined are kept, and the old code changes all nine.\nBoundary pairs of criterion 3 written out as a list (pairs.mjs): 21 keep entries kept, 35 refuse entries refused, 0 mismatches.\nPlaceholder boundary of criterion 3 (words.mjs): 26 words × 3 casings × 5 checks (password: 'w' kept, password: 'w9' refused, https://u:w@h kept, https://u:w9@h refused, password=w kept; for «example» the 9-variants kept) -> 390 checks, 0 mismatches; your-key, xxxx, ***, pw-example kept; https://u:u@h and https://имя:имя@h refused.\nDifferential of the old and the new rule (diff.mjs): 9216 combinations of 9 names × 4 key quotes × 4 separators × 64 values: the old code hides 8944, the sketch refuses 4864; every combination that the old code hides and the sketch keeps belongs to a closed class: placeholder, template, path, call, identifier of В3, block opener, empty value, or a scheme word without a credential (checked by reading the list of values); no combination is refused by the sketch and not hidden by the old code. The same for URL passwords, Bearer/Authorization credentials, PEM headers and three-part runs (diff2.mjs): the kept ones are templates, placeholders, the certificate header and the three-part strings of the plan.\nCriterion 7 prototype (c7b.mjs, one-pass control one.mjs, quadratic control ctl.mjs): nine families at 256 KiB/1 MiB/4 MiB (whole repeats) - no secret in all nine, bait at the end found in all nine, k 4-16, ratios t(1M)/t(256K) and t(4M)/t(1M) between 3.93 and 4.31, 46 s for the nine families; quadratic control on 8/32/128 KiB, k = 1, median of 3: 48.5/448.9/6778.6 ms and 41.5/432.8/7035.8 ms, two-step ratios 140 and 170 (first step 9.3-10.4), 32 s; one-pass control 256 KiB/1 MiB/4 MiB: ratios 4.09/3.79 and 4.01/3.40.\nFacts re-run: grep -c 'Файл результата не найден в рабочей папке или недопустим' tools/src/team/language.js -> 1 (the text that EX-42 pins; EX-42 asserts failed[0].data.detail equals it and one executor start); grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team -> 0 lines.\nNot runnable now: everything that needs findSecrets, the new test file team-result-bytes.test.js, the README change and the decision record (the code is not written; the sketch is only a consistency check of the text and is not kept in the project). The full npm run check was not run (not allowed in this step).\ncd tools && npm run handoffs-check -> «файлов проверено 1230, нарушений 0, исключений использовано 114 из 114», code 0; cd tools && npm run traces -> «файлов проверено 2310, следов 0, пропущено 67», code 0; both run on the filled handoff, before the close command; ruby YAML.load_file of docs/requirements.yaml after the last edit -> 102 requirements, REQ-102 with 12 criteria; shasum -a 256 docs/requirements.yaml at the end -> a3c905a30f836c556e43ab984edd5e658ed5ec49eaf657a895eb431d1074ab97.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "For ORCH and the owner (decisions/0102 item 19). Forms that cannot be refused without refusing an AC0.3 sample of the plan: (a) a value that is a path, `token: data.token` (so `password=hunter.fake` cannot be told from it); (b) a template `${token}` in the Bearer position (a real secret written exactly as `${…}` is not a secret); (c) three dotted parts without the eyJ start, `a.b.c`, `\"1.2.3\"`, `vendor.min.js` (JWT without eyJ is not found; M7); (d) the 40-character identifier (M10); (e) the line `-----BEGIN CERTIFICATE-----` (the body of a certificate is not looked at). All five are the only plan-seed exceptions in the description and are named there as residual risk. Beyond the seeds I also store four classes that decisions/0102 item 14 and the task wording («expression/identifier/call/member access/template placeholder») call non-literal but that no sample demands: a call (`secret: getSecret()`), a bare identifier of the narrow class В3 (type words, names with `_`, camelCase: `token: string`, `password: SecretString`, `Authorization: authHeader`), a shell substitution `$(…)` and a block opener (`token: {`). A secret written exactly in these shapes (`password=correct_horse`, `password=getit(`) is stored, because the old rule hid it and the new one does not. The question to the owner: keep these classes (cost of refusing them measured below), or tighten to path + template only? My proposal: keep as written; refusing them adds +1 file of 1072 in the development dependencies and +35 of 1164 in a large TypeScript client tree (TypeScript types and calls), and does not close the gap of (a)."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "Cost of the closed refuse set, measured on my sketch of the written rules (not the final code): 2 of 154 own files (tools/src, tools/README.md, docs/*.md at the top level) - both are texts that mention the PEM header (`-----BEGIN`); 27 of 1072 text files of the development dependencies (README badge URLs with `?token=…`, bundled parsers with `this.token=t`, one declaration file); 35 of 684 files of tools/test and docs (baits and quoted examples, expected); 150 of 1164 files of a large TypeScript web client tree on this machine (118 of them by form Ф9: test fixtures such as `token: 'tok'`, `password: 'pw'` - the quoted value is a literal and the closed placeholder list does not contain `tok` or `pw`). A refused file fails the whole attempt without retry. Decision 0102 item 18 keeps the placeholder list closed and says ORCH cannot widen it; whether the owner wants more test words (for example `tok`, `pw`, `fake`) is the owner's decision (option B of the earlier question; item 16 of the record). Until then the cost is named in the description, criterion 11 (README and record) and here."
+      },
+      {
+        "id": "I3",
+        "kind": "OBSERVATION",
+        "text": "For ORCH: Addition 4 of decisions/0102 withdrew item 15, but the text of item 15 and the older wording of item 14 («every form … for a literal value») still stand in the record file; the text of REQ-102 now follows item 18 and 20 and refuses more than item 15 accepted: PEM labels other than the certificate (PUBLIC KEY, CERTIFICATE REQUEST, …), the bare `-----BEGIN`, unquoted values under 8 characters or without a digit, quoted values with a space or non-ASCII, a URL password equal to the user name (`app:app@db`; the sample `имя:имя@h` moved from «stored» to «refused»), the 8-character minimum of Bearer/Authorization. Criterion 11(b) requires the record of the code step to say so; the existing file is not mine to edit."
+      },
+      {
+        "id": "I4",
+        "kind": "OBSERVATION",
+        "text": "For REQ-VALIDATOR and the test steps: criterion 7 changed shape on purpose (F6): the control of the instrument is one family, k = 1, sizes 8/32/128 KiB and a two-step ratio of at least 64, instead of three families with both ratios at least 8; reasons: the cost (a call of the old control was about 9.4 s at 256 KiB) and the measured first-step ratio of about 10, too close to 8. The separation holds: 140-170 against about 16 for a linear function. The families (1), (6), (8), (9) changed because the new definitions make their old texts secrets; every family was run on the sketch (secret-free at 256 KiB, 1 MiB, 4 MiB; bait at the end found). The mutant м5 is killed by the real findSecrets on (1), (5), (6)."
+      },
+      {
+        "id": "I5",
+        "kind": "OBSERVATION",
+        "text": "docs/requirements.yaml still carries four status lines of REQ-003, REQ-004, REQ-005, REQ-061 made by other runs; they are not part of this step (the hunk proof removes them explicitly). Only the REQ-102 block and its three dated comment lines were edited here; the block is not weakened: no criterion was removed, criteria 1, 3, 5, 7, 10, 11 were extended or restated, and the criteria that stayed unchanged are 2, 4, 6, 8, 9, 12."
+      },
+      {
+        "id": "I6",
+        "kind": "OBSERVATION",
+        "text": "For CODE-DESIGNER (additions to the earlier I4 of step 02d): the secret detail needs a new key secret in FAIL_DETAIL (tools/src/team/language.js) and the runner has to pass it as the detail of TASK_FAILED while the reason stays result_file; the check of all files before the first write (criterion 5(b)) is in step 1 of acceptResult for the claude-cli path; the unquoted-value end rule (whitespace, quote, comma, semicolon, template group taken whole, unpaired closers dropped) and the quote-after-Bearer rule are written in the description and are decided by the samples О12, О13, С12, С13."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

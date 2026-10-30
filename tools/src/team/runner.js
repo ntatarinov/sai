@@ -4,7 +4,7 @@
 // steps 1-4 have passed.
 import fs from "node:fs";
 import path from "node:path";
-import { maskSecrets, prepareText } from "../pixel-office/mask.js";
+import { findSecrets, prepareText } from "../pixel-office/mask.js";
 import { abortablePause } from "./common.js";
 import { RETRIES_MAX } from "./config.js";
 import { TeamError, executorError, fromOsError } from "./errors.js";
@@ -18,7 +18,7 @@ import {
   runCapFor,
 } from "./executor.js";
 import { FILES_DIR } from "./home.js";
-import { FAIL_DETAIL } from "./language.js";
+import { FAIL_DETAIL, FILE_WITHHELD, secretDetail } from "./language.js";
 import { readWorkFile } from "./files.js";
 import { roleByCode } from "./roles.js";
 import {
@@ -111,8 +111,24 @@ function taskView(state, taskId) {
   };
 }
 
-// The files of the tasks this one depends on (masked already: files/ holds only
-// masked text). Only the tasks of task.depends_on (design REQ-013, section 7.1).
+// A file put into files/ by hand is not held to LIMITS.FILE_BYTES_MAX (5 MiB)
+// as the files of the other two paths into findSecrets are (the size check of
+// the writer and of readWorkFile): on a single key-shaped run of more than about
+// 5.3 MiB the regular expressions of the keys with a known prefix throw a
+// RangeError. A check that cannot decide is a refusal: the file is withheld
+// (design REQ-102, finding F3 of the security gate).
+function withheldOrContent(content) {
+  try {
+    return findSecrets(content) === null ? content : FILE_WITHHELD;
+  } catch {
+    return FILE_WITHHELD;
+  }
+}
+
+// The files of the tasks this one depends on, exactly as stored (the content is
+// not masked; a stored file in which findSecrets finds a secret, one of an older
+// core or one put into files/ by hand, is replaced by FILE_WITHHELD, nothing is
+// thrown). Only the tasks of task.depends_on (design REQ-013, section 7.1).
 export function depsOf(writer, task) {
   const filesDir = path.join(path.dirname(writer.workDir), FILES_DIR);
   const deps = [];
@@ -129,7 +145,11 @@ export function depsOf(writer, task) {
       } catch (err) {
         throw fromOsError(err, "read");
       }
-      deps.push({ task: depId, name, content: maskSecrets(content) });
+      deps.push({
+        task: depId,
+        name,
+        content: withheldOrContent(content),
+      });
     }
   }
   return deps;
@@ -368,7 +388,7 @@ export async function runTask(writer, taskId, opts = {}) {
         if (accepted.error !== null) {
           finishRun(thisRunId, "failed", null, cost, accepted.names);
           const spent = chargeIfSpawned(result, cost, thisRunId, maxBudget);
-          failTask("result_file", accepted.detailKey);
+          failTask("result_file", accepted.detailKey, accepted.detailText);
           return finish(
             "failed",
             "failed",
@@ -557,12 +577,14 @@ export async function runTask(writer, taskId, opts = {}) {
     return { cost_usd: cost, accounted };
   }
 
-  function failTask(reason, detailKey) {
+  // detailText is a finished text of the refusal (the secret refusal names the
+  // refused files); without it the detail is the constant text of the key.
+  function failTask(reason, detailKey, detailText) {
     writer.append({
       source: "ENGINE",
       type: "TASK_FAILED",
       task: taskId,
-      data: { reason, detail: FAIL_DETAIL[detailKey] },
+      data: { reason, detail: detailText ?? FAIL_DETAIL[detailKey] },
     });
   }
 
@@ -586,36 +608,82 @@ export async function runTask(writer, taskId, opts = {}) {
   }
 
   // Section 8.5: the result files of an ok attempt. Returns { names, error,
-  // detailKey }; error is the TeamError for the command (null — all accepted).
+  // detailKey, detailText }; error is the TeamError for the command (null — all
+  // accepted); detailText is the finished text of a refusal for a secret
+  // (undefined for every other refusal).
   async function acceptResult(result, attempt) {
     const names = [];
-    const refusal = (err, detailKey) => ({ names, error: err, detailKey });
+    const refusal = (err, detailKey, detailText) => ({
+      names,
+      error: err,
+      detailKey,
+      detailText,
+    });
     const fileRefusal = () =>
       refusal(
         executorError("E_TASK_FAILED", FAIL_DETAIL.result_file),
         "result_file",
       );
+    // A secret was found (REQ-102): the same text goes to the event, to the
+    // question of the team and to the error of the command. secretDetail takes
+    // the accepted names of all refused files and decides which may be shown.
+    const secretRefusal = (refusedNames) => {
+      const text = secretDetail(refusedNames);
+      return refusal(executorError("E_TASK_FAILED", text), "secret", text);
+    };
     const isFileRefusal = (err) =>
       err instanceof TeamError &&
       ["E_WORK_FILE", "E_FILE_NAME", "E_FILE_EXISTS", "E_EVENT"].includes(
         err.code,
       );
+    const isSecretRefusal = (err) =>
+      err instanceof TeamError &&
+      err.code === "E_WORK_FILE" &&
+      err.details?.reason === "secret";
 
     const planned = [];
     if (result.executor === "claude-cli") {
-      // Step 1: every path and every file is checked before the first write.
+      // Step 1: every path and every file is checked, and scanned for a secret,
+      // before the first write. One full pass, no early return: every file with a
+      // secret is found, so that every such source can be removed.
+      let refused = false;
+      const secretPaths = [];
+      const secretNames = [];
       for (const file of result.files) {
-        if (!checkWorkPath(file.path).ok) return fileRefusal();
+        if (!checkWorkPath(file.path).ok) {
+          refused = true;
+          continue;
+        }
+        let content;
         try {
-          readWorkFile(writer.workDir, file.path);
+          content = readWorkFile(writer.workDir, file.path);
         } catch (err) {
-          if (isFileRefusal(err)) return fileRefusal();
-          throw err;
+          if (!isFileRefusal(err)) throw err;
+          refused = true;
+          continue;
         }
         const name = `${taskId}-${attempt}-${file.path.split("/").pop()}`;
-        if (!checkResultName(name).ok) return fileRefusal();
+        // A secret is refused as a secret whatever the name of the file is.
+        if (findSecrets(content) !== null) {
+          secretPaths.push(file.path);
+          secretNames.push(name);
+          continue;
+        }
+        if (!checkResultName(name).ok) {
+          refused = true;
+          continue;
+        }
         planned.push({ path: file.path, name, kind: file.kind });
       }
+      if (secretPaths.length > 0) {
+        // The sources of the refused files leave work/ too, so the secret does
+        // not stay on disk; nothing was written, the other sources stay.
+        for (const secretPath of secretPaths) {
+          removeSource(writer.workDir, secretPath);
+        }
+        return secretRefusal(secretNames);
+      }
+      if (refused) return fileRefusal();
     } else {
       for (const output of result.outputs) {
         const name = `${taskId}-${attempt}-${output.name}`;
@@ -642,6 +710,12 @@ export async function runTask(writer, taskId, opts = {}) {
           });
         }
       } catch (err) {
+        if (isSecretRefusal(err)) {
+          // Not found at step 1 (claude-cli: the file changed since; scripted:
+          // the files are in memory). The files accepted before it stay.
+          if (item.path !== undefined) removeSource(writer.workDir, item.path);
+          return secretRefusal([item.name]);
+        }
         if (isFileRefusal(err)) return fileRefusal();
         if (err instanceof TeamError && err.code === "E_DISK") {
           if (writerBroken(err)) throw err;
@@ -652,7 +726,7 @@ export async function runTask(writer, taskId, opts = {}) {
       names.push(item.name);
     }
 
-    // Step 4: the unmasked sources of the accepted files leave work/.
+    // Step 4: the sources of the accepted files leave work/.
     for (const item of planned) {
       if (item.path === undefined) continue;
       removeSource(writer.workDir, item.path);

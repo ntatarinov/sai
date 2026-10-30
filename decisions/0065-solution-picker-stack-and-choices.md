@@ -21,3 +21,5 @@
 ## Основание
 
 `handoffs/PICKER-20261019-01/step-01-req-analyst.json`, `docs/owner-requests/2026-10-19-solution-picker-site.md`, `decisions/0015`, `decisions/0048`. Отдельных слов владельца об этих выборах нет — решение ORCH.
+
+Narrowed by decisions/0092 (2026-10-28): for `app/` only, the no-publication line: the closed Vercel deployment of decision 0092; the picker server itself is never deployed.

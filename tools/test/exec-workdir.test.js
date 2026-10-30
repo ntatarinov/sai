@@ -23,7 +23,7 @@ import {
   writePlan,
 } from "./exec-helpers.js";
 
-const GHP = "ghp_FAKEfake0000000000000000000000000000";
+const GHP = ["gh", "p_", "FAKEfake", "0".repeat(28)].join("");
 const REFUSED = "Файл результата не найден в рабочей папке или недопустим";
 
 function run(sb, p, over = {}) {
@@ -32,13 +32,15 @@ function run(sb, p, over = {}) {
 
 const mode = (p) => fs.lstatSync(p).mode & 0o777;
 
-test("EX-41 a named result file is accepted masked, 0600, its source leaves work/; an unnamed file stays unaccepted", (t) => {
+const CLEAN_REPORT = "Итог. Версия a.b.c в тексте.\n";
+
+test("EX-41 a named result file is accepted byte for byte, 0600, its source leaves work/; an unnamed file stays unaccepted; a file with a key fails the task and the key is nowhere", (t) => {
   const sb = makeSandbox(t);
   writePlan(sb, {
     default: {
       stream: "stream-ok.jsonl",
       work_files: [
-        { path: "report.md", content: `Итог. Ключ ${GHP} в тексте.\n` },
+        { path: "report.md", content: CLEAN_REPORT },
         { path: "extra.md", content: "Черновик, который агент не назвал.\n" },
       ],
       answer_files: ["report.md"],
@@ -57,8 +59,8 @@ test("EX-41 a named result file is accepted masked, 0600, its source leaves work
   assert.deepEqual(fs.readdirSync(a.files), ["t-0001-1-report.md"]);
   const kept = path.join(a.files, "t-0001-1-report.md");
   const text = fs.readFileSync(kept, "utf8");
-  assert.match(text, /\[скрыто\]/u);
-  assert.equal(text.includes(GHP), false);
+  assert.equal(text, CLEAN_REPORT, "the file is the source, byte for byte");
+  assert.doesNotMatch(text, /\[скрыто\]/u);
   assert.equal(mode(kept), 0o600);
   assert.equal(mode(a.files), 0o700);
   assert.equal(mode(a.dir), 0o700);
@@ -67,6 +69,11 @@ test("EX-41 a named result file is accepted masked, 0600, its source leaves work
   assert.equal(rf.length, 1);
   assert.equal(rf[0].data.name, "t-0001-1-report.md");
   assert.equal(rf[0].data.from_work, true);
+  // the hash of the original, as taken with `shasum -a 256` from its bytes
+  assert.equal(
+    rf[0].data.sha256,
+    "c3c0c820aeb6345a44782f24324d63ab065182131b7706541305b7abc017c429",
+  );
   assert.deepEqual(ofType(events, "RUN_FINISHED")[0].data.files, [
     "t-0001-1-report.md",
   ]);
@@ -74,12 +81,36 @@ test("EX-41 a named result file is accepted masked, 0600, its source leaves work
   // The unnamed file is not a result; it stays where the agent left it.
   assert.equal(fs.existsSync(path.join(a.files, "extra.md")), false);
   assert.equal(fs.existsSync(path.join(a.work, "extra.md")), true);
-  // The unmasked source is gone: no copy of the key anywhere in the data folder.
+  // The source of the accepted file is gone: no copy of it stays in work/.
   assert.equal(fs.existsSync(path.join(a.work, "report.md")), false);
   assert.equal(allFilesText(sb.home).includes(GHP), false);
   // The other project is untouched.
   assert.deepEqual(fs.readdirSync(b.work), []);
   assert.deepEqual(fs.readdirSync(b.files), []);
+
+  // A separate run with a key in the named file: the task fails, nothing is accepted,
+  // the key is found nowhere in the data folder, work/ included.
+  const sb2 = makeSandbox(t);
+  writePlan(sb2, {
+    default: {
+      stream: "stream-ok.jsonl",
+      work_files: [
+        { path: "report.md", content: `Итог. Ключ ${GHP} в тексте.\n` },
+      ],
+      answer_files: ["report.md"],
+    },
+  });
+  const c = makeProject(sb2);
+  const failed = run(sb2, c);
+  assert.equal(failed.status, 1, describeRun(failed));
+  const cEvents = journal(c);
+  assert.equal(ofType(cEvents, "TASK_FAILED").length, 1);
+  assert.equal(ofType(cEvents, "TASK_FAILED")[0].data.reason, "result_file");
+  assert.equal(ofType(cEvents, "RESULT_FILE").length, 0);
+  assert.deepEqual(fs.readdirSync(c.files), []);
+  assert.equal(stateOf(sb2, c.id).tasks[0].status, "failed");
+  assert.equal(allFilesText(sb2.home).includes(GHP), false);
+  assert.deepEqual(fs.readdirSync(c.work), [], "the source of the key is gone");
 });
 
 test("EX-41 a file in a subfolder: the name is the last part, the source goes, the folder stays", (t) => {

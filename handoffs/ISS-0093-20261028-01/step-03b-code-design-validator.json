@@ -1,0 +1,168 @@
+{
+  "handoff_id": "step03b-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "03b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0093-20261028-01/step-03b-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102",
+      "REQ-009",
+      "REQ-010",
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-102-result-files-byte-exact.md",
+      "handoffs/ISS-0093-20261028-01/step-03-code-designer.json",
+      "decisions/0102-core0-result-files-conventions.md"
+    ],
+    "route": "CODE-DESIGNER (step 03, done) -> CODE-DESIGN-VALIDATOR (this, pass 1 of 3) -> REQ-ANALYST micro-amendment (WF-01) -> REQ-VALIDATOR -> BACKEND-DEV ...",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-03b-code-design-validator.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T08:32:10Z",
+      "by": "ORCH",
+      "verdict": "FAIL принят",
+      "checked": [
+        "handoff COMPLETED 2026-10-28T08:30:43Z, verdict FAIL, G1 High and G2, G3 Medium block, G4-G8 Low",
+        "the design file hash be887488... is the one the validator reports; no tracked file changed by the validator (git status)",
+        "G1 evidence read: measured quadratic growth (about 4x per doubling) on an unclosed double brace or dollar-parenthesis repeated on one long line; the ten families of criterion 7 contain no such input",
+        "rework step 03c for CODE-DESIGNER by the list of remarks; gate pass 2 of 3 at step 03d"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 3 gate (WF-02 step 1b) - CODE-DESIGN-VALIDATOR: check the design docs/design/REQ-102-result-files-byte-exact.md for requirement REQ-102 (defect ISS-0093) before any code. Read your role file, docs/quality-bar.md, docs/workflows/WF-02-development.md (steps 1 and 1b), docs/workflows/WF-03-defect.md (step 3), docs/workflows/handoffs.md and docs/anti-patterns.md; the REQ-102 block by id (the whole block: forms, samples, definitions, criteria 1-12; the amended criteria of REQ-009 15, REQ-010 16(b), REQ-013 14(c), 15(c)); decisions/0102 (all Additions; items 14, 18-26 binding; item 15 withdrawn), decisions/0095, 0017, 0018, 0035; the design's author report handoffs/ISS-0093-20261028-01/step-03-code-designer.json is context only. Check with your OWN commands, not the author's: (1) every criterion 1-12 of REQ-102 is covered by a named test or command in the design table, and every quality bar item Q1-Q14, R1-R3 is named with its measure; (2) there is no implementation code in the design (signatures, shapes and pseudo-steps are fine; working function bodies are not); (3) the facts and trials of design section 1 and the sketch statements: repeat them on a FRESH clone of the tag base/ISS-0093-20261028-01 made from the local repository outside the project (git clone -b; the tag lacks docs/program/, docs/design drafts and decisions 0091-0102: read those in the working tree) - at least: which tests turn red when the masking of result files is removed (the claim is twelve, not eight: run the team and exec test files you can run without default ports and report the ids), what TextDecoder does with a BOM on the three import paths, what depsOf receives, what TM-38, TM-40 and TM-42 allow in a PHRASES row, the two traps (a repeated-group regex on a 4 MiB value; a text-wide indexOf for the line end) and the timing figures; (4) apply the old tests after the 'was -> became' table: which old guard tests stay green and which are replaced, no deleted or skipped test; (5) apply at least eight of the design's mutants and eight of your own to the sketch or to your own re-implementation of the written rules in the scratch folder and report which the planned tests would catch (you may reason from the design's table, but state which you actually ran); (6) the design can be built without guessing: sub-steps small and checkable, every failure path states the state after it, the order of calls (check before the first write; removal of refused sources from work/), the exclusion for engine/single-run.js is measured; (7) the micro-amendment wording of section 12 (items A-J): each old sentence exists exactly once in the current REQ-102 block (check by script) and each new sentence is not weaker, and nothing outside the REQ-102 block is touched; (8) consistency with the recorded decisions and with REQ-102 (the design may not narrow the refusal set beyond item 18, 21, 24 or silently change a criterion). Verdict PASS or FAIL with findings by severity (Critical, High and Medium block). Do not edit any project file; write only your handoff. Work only inside the Sai folder and the scratch folder: do not read or count files of other folders. No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it). result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "A PASS or FAIL from the validator's own runs on a fresh clone; every finding with a place, a severity and a fix"
+    ]
+  },
+  "created_at": "2026-10-28T07:39:05Z",
+  "started_at": "2026-10-28T07:39:05Z",
+  "completed_at": "2026-10-28T08:30:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Вердикт FAIL: дизайн в целом верен (мои собственные запуски на свежем клоне метки подтвердили почти все его факты, а правила, переписанные мной с нуля по тексту, дали те же счёты, что у автора), но в нём есть одна серьёзная ошибка — на одной очень длинной строке с повторяющимися «{{» или «$(» без закрытия проверка секретов работает квадратично (256 КиБ — около 15 секунд, 5 МиБ — около полутора часов), а заявленное в дизайне «повторять неудачный поиск не придётся» неверно и ни одно из десяти семейств теста критерия 7 этого не ловит. Ещё два блокирующих замечания средней тяжести: старая фраза микро-правки C в разделе 12 не совпадает с текстом требования, и мои собственные мутанты (пустая группа «${}» и группа через строки) выживают при планируемых образцах; остальное — замечания Low.",
+    "findings": [
+      {
+        "id": "G1",
+        "severity": "High",
+        "blocking": true,
+        "pass_item": "pass D item 9 / Q10 (hostile input is linear) and pass A item 3; criterion 7 of REQ-102",
+        "place": "design section 2.2, item 5 (line 67: 'a failed search is never repeated on the same long line'), section 0 item 1, section 9 row Q10, section 10 (families 1-10), section 11 (m5, m28, m30)",
+        "what": "The claim is false. A failed group search (no closer before the line end) falls back to reading the text as an ordinary value; that value is a kept class, not a literal, for an unclosed '{{' (class V4: only block-opening characters) and for an unclosed '$(' (class V2: identifier '$' followed by '('). Then the scan goes on, the next name on the same line starts the same search again, and each search runs to the end of the line. On my re-implementation of the written rules (first 85/85 keep and 87/87 refuse samples pass, so it follows the text), single-line inputs without a line end cost: 'token={{ ' repeated: 32768 chars 217 ms, 65536 chars 888 ms, 131072 chars 3612 ms, 262144 chars 14624 ms (x4 per doubling = quadratic); 'password=$( ' repeated: 173 / 688 / 2749 / 11042 ms; 'Authorization: Bearer {{ ' and 'token: {{{{ ' the same. Linear extrapolation fails: 1 MiB of such input is about 4 minutes, the 5 MiB limit about 97 minutes in the engine process. With a line end after each unit the time is linear (5 ms at 256 KiB), which is why family 8 and the F12 repair do not see it. A random fuzz of 5500 units of 1-4 tokens found no other super-linear shape (every flagged unit held an unclosed '{{' or '$('). None of the ten families of criterion 7 has such an input, so the planned tests would pass the defect.",
+        "needed": "Change the rule so that the total cost of failed group searches on one line is linear (for example a failed search for a given closer is not repeated on the same line), and correct item 5 and the F12 statement accordingly; add a family for unclosed '{{' and '$(' on one line with no line end (outcomes: no secret / bait found, ratios < 8) to criterion 7 and section 10 through the micro-amendment (section 12 G), with a mutant that repeats the search; re-measure the time budget of the test file after the added family."
+      },
+      {
+        "id": "G2",
+        "severity": "Medium",
+        "blocking": true,
+        "pass_item": "task check 7 (micro-amendment wording, each old sentence exactly once)",
+        "place": "design section 12, items C and G",
+        "what": "By script (block REQ-102 cut from docs/requirements.yaml, runs of white space folded, \\\" unfolded): the old sentences of A, B (form F2), D, E, F, I and the single old line of G occur exactly once. Item C does not: its 'Old' text starts with an ellipsis and holds '(...)' in place of the list of schemes, so it is not a sentence of the block (0 occurrences), and the phrase 'пробелы и табуляции' occurs 3 times in the block (twice in F2, once in F9), so 'replaced twice' cannot be applied mechanically. In item G the phrase 'девять семейств' occurs twice in the block (the list of families and the budget sentence) and only the budget sentence is named. Anchors of added text were found once each (checked: 'новый ключ secret таблицы FAIL_DETAIL', the criterion-3 pair of F2, 'сумма 20', 'не меньше 20 (на базовом коммите 20, проверено)', the SF-13 row, 'Бюджет времени файла теста').",
+        "needed": "Give the old text of C as it stands in the block (or exact anchors for the two places in F2 and a statement that F9 is not touched), and name both places of 'девять семейств' in G (and the new count if G1 adds a family)."
+      },
+      {
+        "id": "G3",
+        "severity": "Medium",
+        "blocking": true,
+        "pass_item": "pass A item 3 (mutants) and Q5/Q7",
+        "place": "design section 2.3 (sample -> form table), section 6 RB-08, section 11",
+        "what": "My own mutants of the re-implementation that keep MORE than the text allows survive every planned sample (O and C groups, boundary pairs, the six added samples): (o1) a template group may cross a line end - 'password: ${' + newline + 'hunter2fake}' is refused by the text ('group is non-empty and lies on one line') and kept by the mutant; (o2) an empty group is accepted - 'password=${}' is refused by the text and kept by the mutant. Both are narrowings of the refused set (Q7) that no test would notice; the text of the definition (one line, non-empty) has no sample pair in criterion 3.",
+        "needed": "Add a refuse sample and its keep counterpart for each of the two rules ('lies on one line', 'non-empty') to the pairs of criterion 3 (micro-amendment), map them in section 2.3 and RB-08, and add the two mutants to section 11."
+      },
+      {
+        "id": "G4",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass A item 3 (mutants)",
+        "place": "design section 2.3, RB-08",
+        "what": "Three more own mutants survive the planned samples, all in the false-refusal direction or documented: (o3) the closed list of schemes shortened to the four of the samples - 'Authorization: NTLM ${creds}' is then refused (the list holds 9 schemes, samples only Basic, Bearer, Digest, Token); (o4) a path with '?.' not accepted - 'token: opts?.token' is then refused; (o5) the empty-user URL form applied - 'redis://:hunter2fake@host', named in residual risk (5) as stored, would be refused with no test noticing. Seven other own mutants were killed by the samples (names case, JWT without 'eyJ' start, AKIA right boundary, 'sk-' left boundary, trailing closers, 'bearer' case, type words).",
+        "needed": "Add one pair per item (a scheme outside the four, '?.', and the documented empty-user case) or state in section 11 that they are accepted survivors."
+      },
+      {
+        "id": "G5",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass B item 6 (build sub-steps checkable)",
+        "place": "design section 8, sub-step 1",
+        "what": "Sub-step 1 (about 270 added lines, the largest and riskiest step) is checked by 'the sample tables ... through a throwaway script outside the project'. The author's scripts are in a scratch folder the developer does not receive, so the check is only reproducible if the developer transcribes about 170 strings from the requirement himself. The prose rules were sufficient (my independent implementation matched the author's counts on the three trees: 1 / 22+1 own file / 13 refused), so this is a convenience gap.",
+        "needed": "Say where the developer gets a runnable check of findSecrets before sub-step 7 (for example the table 2.3 plus the O and C lists as a file named in the design), or allow the check to be the test of step 7 and move the risk note there."
+      },
+      {
+        "id": "G6",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass D item 11 and pass A item 2 (same-kind places, AP-014)",
+        "place": "design sections 5, 8 (sub-step 6), 14, 15 (О1-О4); section 6 row RB-12; sections 13 and 16",
+        "what": "(a) Decision 0102 Addition 6 (items 23-26) already answers О1-О4 and says the record 0103 is written by ORCH; sections 5, 8 and 14 still say the developer writes it and section 15 still lists the questions as open. (b) Row RB-12 of section 6 lacks the third run with two bait files, on which mutant m29 (section 11, section 12 H) depends. (c) Comments in the code that say 'masked' are not in section 13 or 16: files.js lines 69 and 91, runner.js lines 114-115 and 655 (tag); they become false after the change.",
+        "needed": "Bring sections 5, 8, 14, 15 in line with Addition 6; add the two-bait run to RB-12; add the comments to the list of things the developer updates."
+      },
+      {
+        "id": "G7",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass B item 5 (what the user sees) and Q10",
+        "place": "design section 2.4 and section 4, P4/P8",
+        "what": "On the task path the visible text is a constant without the file name, and the refused source is deleted from work/ (decision 0102 item 9): after a false refusal (price of the rule: 'password: \"wrong-password\"' in an agent's test) the user cannot tell which file was refused or recover it. The store inputs do name the file. This follows the recorded decisions, so it is a note, not a violation.",
+        "needed": "State in the design (or put as a question to ORCH) whether the validated file name may be added to the visible task text; the name is checked by the name pattern and holds no value."
+      },
+      {
+        "id": "G8",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass B item 6 / section 10 budget",
+        "place": "design section 10 (budget) and section 11 (m5)",
+        "what": "Margins: on my machine the nine families at 5 repeats take 34 s (about 47 s at 7 repeats, design 46 s), the quadratic control at k=1, 3 repeats about 58 s (design 37 s; two-step ratio 222, limit 64, 8 KiB = 57.7 ms, floor 20 ms met), together about 100 s against the limit of 120 s, before any added family (G1). Mutant m5 (quadratic F1) made family 1 run 163 s for that family alone (killed at 1 MiB, ratio 23.9), so a mutant run of the whole file takes several minutes. The order 'outcomes first for all sizes, then measure' would hang on a quadratic code at 4 MiB; the design says outcomes are checked per size and the test stops at the first failure - keep that order explicit.",
+        "needed": "Re-state the budget after G1 with a margin, and say in section 10 that the two outcomes are checked per size in the same loop as the ratio."
+      }
+    ],
+    "self_check": [
+      "date -u at the start 2026-10-28T07:39:33Z, before writing the result 2026-10-28T08:28:33Z. sha256 docs/design/REQ-102-result-files-byte-exact.md before and after: be8874884d6a8ba4129b2cd7f816aa8574fd20f0bd9ae2a4bc0a990de9c7ed53 (equal). HEAD 6f5a38a997d807ba383f4c06201e917a1ecfada7 = tag base/ISS-0093-20261028-01 (checked with git rev-parse). Clones only by 'git clone -b base/ISS-0093-20261028-01' of the local repository into <scratch>/v/before; no checkout, reset, stash or clean; no project file other than this handoff changed; no default port touched.",
+      "Facts of the task (AP-012): the tag has no docs/program, no decisions 0091-0102 and no design draft (ls of the clone: confirmed); the design is in the working tree (untracked), the REQ-102 block is the last block of docs/requirements.yaml (lines 12405-12896 of the working tree, 492 lines, with uncommitted changes of other runs in the same file).",
+      "Baseline on the clone of the tag: cd tools && node --test $(ls test/team-*.test.js test/exec-*.test.js | grep -v team-web) -> 49 files, # tests 548, # pass 548, # fail 0, # skipped 0.",
+      "Mutant 'no masking' (clone <scratch>/v/mutA: maskSecrets removed from #publish and depsOf only), same 49 files: # pass 540, # fail 8: EX-51 (104), EX-41 (126), RF-03 (233), SF-13 (272), TM-43 (326), TM-57 (515), TM-58 (521), TM-63 (529).",
+      "Sketch of the whole design applied by me from the written text in clone <scratch>/v/work (findSecrets re-implemented from section 2.2 and the requirement; store.js, files.js, runner.js, language.js edited as sections 2.4, 2.5, 3.1-3.3), same 49 files: # pass 536, # fail 12: EX-51 (104), EX-41 (126), RF-03 (233), SF-10 (269), SF-11 (270), SF-12 (271), SF-13 (272), SF-15 (276), TM-43 (326), TM-57 (515), TM-58 (521), TM-63 (529) - same ids and numbers as design F9. 81 other test files without default ports (1293 tests): # pass 1293, # fail 0. HK-21|HK-24|MK-01..05|NM-06 by name in the four Pixel Office files: # tests 9, # pass 9, # fail 0, # skipped 0. TM-38, TM-40, TM-42, TM-44, TM-49, TM-50, DC-01, EX-07, EX-21, EX-35, EX-42, SF-09, TM-04: green in these runs.",
+      "Sub-steps (design section 8): state S2 (decoders only) 548/548 pass; state S4 (mask.js, files.js, language.js, store.js, no runner.js) 12 red, the same ids as above. After sub-step 5 (full) 12 red, no more. Matches the 'Red after' column.",
+      "Criterion 9 literals on the tag: TM-57 4, TM-58 2, TM-63 3, RF-03 1, SF-13 1, SF-10 1, SF-11 1, SF-12 1, SF-15 1, TM-43 2, EX-41 2, EX-51 5 (grep -cE '^(test\\(|  )\"<id>[ :]'); assert counts 203 / 113 / 60 / 79 / 63 / 34; pattern run of the 8 ids: # tests 20, with the 12 ids: # tests 24 (both # fail 0). All line numbers of section 7 equal the lines of the tag.",
+      "BOM (own script test, store API, bytes EF BB BF 41 0D 0A 42): tag stores 7 / 4 / 4 bytes through writeResultFile / importWorkFile / importResultBytes (equal to input: true / false / false); sketch 7 / 7 / 7 (all equal). createProject with tools/test/fixtures/team/scenario-bom.json: accepted on the tag and on the sketch (first bytes 239 187 191); with the scenario decoder also given ignoreBOM (mutant m25) the oracle test turns red. 30000 random valid UTF-8 inputs (U+FEFF anywhere, U+FFFE/U+FFFF, 4-byte) decoded with {fatal:true, ignoreBOM:true} and encoded again: 0 differences; 8 invalid inputs refused.",
+      "depsOf (fake writer, files put in files/): tag 'const v = [скрыто];' / BOM kept (first code feff) / 'password=[скрыто]' / 'k [скрыто]'; sketch 'const v = a.b.c;' exact / BOM kept / FILE_WITHHELD for the old-label file and the bait, no exception; a file of 400000 chars comes whole. maskSecrets('const v = a.b.c; password=hunter2fake') on the tag = 'const v = [скрыто]; password=[скрыто]' (criterion 8 literal). TM-44 body hash equal to the tag (eba784b1...efe31).",
+      "Engine path with the fake claude of the tests (own trial test in the clone): one bait file -> files/ empty, work/ empty, events ... TASK_FAILED {reason result_file, detail 'Файл результата не принят: в нём найден секрет'}, RUN_STARTED of the task 1, no RESULT_FILE, bait on disk nowhere, in no stdin; clean + bait -> files/ empty, the clean source stays in work/; two baits -> work/ empty; clean file with 'const v = a.b.c; version 0.1.0' -> accepted byte-exact, no '[скрыто]' in any stdin. 'project <id>': task phrase 'Команда задала вам вопрос', chat text '... не получилась: Файл результата не принят: в нём найден секрет. Изменить её или отклонить?'; 'events <id>': TASK_FAILED phrase 'Исследователь: файл с результатом не принят — в нём найден секрет'. run-task with the fake: exit 1, stdout empty, stderr one line 'E_TASK_FAILED: Задача не получилась: Файл результата не принят: в нём найден секрет', project phrase = the new row, status failed, bait nowhere. Scripted run-task with scenario-files.json (bait in note): exit 1, files/ = [t-0001-1-input.md], bait only in scenario.json. runSingle (purpose plan, scripted outputs a.md clean, b.md bait): error E_WORK_FILE {reason secret, form F5}, events RUN_STARTED, RESULT_FILE, RUN_FINISHED, BUDGET_SPENT, files/ = [r-00001-a.md], writer not broken. All equal to design F7 and F8.",
+      "Store inputs, refusal (own oracle tests): three inputs each throw E_WORK_FILE reason secret, message without the value; snapshot of the data folder, deep copy of writer.state and events.jsonl bytes equal before and after; the next clean write adds exactly one line.",
+      "Re-implementation of the written rules (<scratch>/v/find.mjs, samples transcribed from the REQ-102 block in <scratch>/v/samples.mjs): 83 keep strings and 88 refuse strings (80 of the requirement + the added ones of section 12 + 'https://u:u@h') -> 0 mismatches, each refuse sample returns an allowed form of the table 2.3, the assembly of all keep strings is kept, each refuse sample inside 10000 chars of text and next to O1/O3 is refused; F14 and F15 of the design reproduced word for word (password=[скрыто] F9, Authorization: [скрыто] F2, https://u:[скрыто]@h/x F3, const v = [скрыто]; null, NBSP + authHeader null, NBSP + abc1234 F2, Authorization: ${A} hunter2fake null). Counts over the text files of the tag clone: tools/src 150 files 1 refused (F1), tools/test 400 files 23 refused (the design: 398 files 22; the extra file is my own trial test), docs 290 files 13 refused (F4 3, F9 8, F1 2) - same as design F17.",
+      "Traps: /^[A-Za-z_$]+(\\??\\.[A-Za-z_$]+)+$/.test('a.'.repeat(2097152)+'b') -> RangeError: Maximum call stack size exceeded (F11 confirmed). Text-wide indexOf for the closer and the line end (my mutant m30), family 8: 47.5 ms at 256 KiB, 667.9 ms at 1 MiB, ratio 14.1 (design 12.6, limit 8) - killed. Regex-path mutant m28, family 10: RangeError - killed. Instrument, my re-implementation, 5 repeats, families 1-10 at 256 KiB / 1 MiB / 4 MiB: every family 'no secret' and bait found, ratios 3.9-4.5 (family 1 36.0 / 162.7 / 648.9 ms, family 8 20.3 / 87.4 / 346.2 ms, family 10 27.4 / 109.8 / 444.3 ms). Mutant m12 (first 512 KiB only), family 3: outcome 2 (bait missed) - killed. Mutant m5 (quadratic F1), family 1: 1288 ms / 30781 ms, ratio 23.9 - killed. The new hole: <scratch>/v/trap.mjs, see G1.",
+      "Mutants of the design applied by me (11 on the integration clone with my oracle tests, 22 on the re-implementation with the sample tables, 4 with the timing instrument): integration - m1 (RED: sha/bytes test), m2 (RED: depsOf), m6 (RED: state after refusal), m7 (RED: work/ not empty, 3 tests), m8 (RED: clean+bait and two-bait cases), m22 (RED), m23 (RED), m24 files.js (RED: importWorkFile BOM), m24 store.js (RED: importResultBytes BOM), m25 (RED: scenario-bom), m29 (RED: two baits). Re-implementation with samples - m3 (264 mismatches), m4 for F1..F9 (39 / 20 via label / 24 / 3 / 12 / 6 / 3 / 15 / 153), m9 (11), m10 (14), m11 both directions (4 / 39), m13 (4), m14 (12), m15 (12), m16 (9), m17 both variants (2 / 2), m18 (60), m19 (18), m20 (3), m21 (2, after I made the mutant real), m26 (3), m27 (12): all RED. With the instrument: m5, m12, m28, m30 RED. All 30 mutants m1-m30 of the design were applied (m1, m2, m6, m7, m8, m22, m23, m24, m25, m29 on the integration clone; m3, m4, m9, m10, m11, m13-m21, m26, m27 on the re-implementation; m5, m12, m28, m30 with the instrument) and all were killed - by my oracle tests and by the sample tables that stand in for the planned tests RB-01..RB-17, which do not exist yet; so this shows that the design table points at the right checks, not that the future tests are written. Own mutants (12): killed - names case-sensitive (60), JWT without eyJ (16), AKIA no right boundary (2), sk- no left boundary (2), trailing closers kept (2), 'bearer' case-sensitive (15), shorter type-word list (2); survived - group across lines, empty group, empty-user URL, shortened scheme list, no '?.' (see G3, G4).",
+      "Micro-amendment check by script (<scratch>/v/amend.py, anch.py): see G2. Nothing outside the REQ-102 block is named by A-J (REQ-009, REQ-010, REQ-013 amended criteria were already amended earlier; decisions/0102 item 4 is covered by Addition 6, items 23-26). New wording not weaker: A makes the claim exact per view (checked by my engine and run-task trials), B, C, E, F, H, I, J widen the refused set or add tests; D names residual risks that the requirement text already implies (first word only; M10 hid a key body by chance - my count over 2000 random 64-character base64 lines: 710 hidden by the old code, the gate counted 81 of 200).",
+      "README (section 13) simulated in the clone: the three replacements apply to exactly one place each in tools/README.md; greps of criterion 11(a) (content of result files pass through 0, the content is masked 0, byte-exact 3, findSecrets 1, reason `secret` 1, placeholder 1, work/ line without 'already masked' 0, findSecrets + residual risk on one line 1, false refusal 1); team-docs, exec-docs, team-engine-docs, pixel-office-docs: 20 of 20 pass (TM-50, EX-37 and EN-75 word bans /sk-ant-|ghp_|AKIA/ are not hit by the proposed text - AP-077 checked on README, language.js rows and TM-44 words). grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team -> 0 lines on the tag and on the sketch.",
+      "Shared mechanisms (AP-014): maskSecrets in tools/src/team 15 lines (10 calls + 5 imports), only store.js:395 and runner.js:132 touch file content; read calls in team and web 9 lines, only runner.js:125 reads files/; files/ is written only through #publish (grep of publishResultFile, linkSync, writeFileSync); depsOf has 7 callers (runner 145, review.js 54/55/71/72, engine.js 458/591/667) all by lines of the design; TextDecoder: files.js:147 and store.js:456/502 are the result decoders and the scenario decoder, journal.js:67, channel.js:98, scripted.js:38 read JSON only. No place missing from section 3.5; stale comments 'masked' are in G6.",
+      "No implementation code: sections 2-3 and 8 hold signatures, shapes, tables and pseudo-steps; only one-line forms appear (the two import lines needed by TM-44, and secretRefusal() as 'refusal(executorError(...), \"secret\")'): accepted as shape, not as a working function body. Quality bar section 9 names Q1-Q14 and R1-R3, each with how it is met or why not applicable. Criterion 1-12 of REQ-102 each lead to a row of section 6 (criteria 9-12 by commands, criterion 10 by the mutants of TEST-DESIGN-VALIDATOR, as the requirement says). Decisions: no contradiction with 0017 P8/P9, 0018 P6, 0035, 0095, 0102 items 14, 18-26; the narrowing set of items 18, 21, 24 is not exceeded by the design (my implementation of the text keeps only the classes of items 18 and 21)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Fact of the task (AP-012): 'the claim is twelve, not eight' about 'when the masking of result files is removed'. Measured: removing the masking alone (store #publish and depsOf return the content as is) turns exactly EIGHT tests red: EX-51 (104), EX-41 (126), RF-03 (233), SF-13 (272), TM-43 (326), TM-57 (515), TM-58 (521), TM-63 (529), which is item 4 of decision 0102. The TWELVE appear with the refusal behaviour of the design: those eight plus SF-10 (269), SF-11 (270), SF-12 (271), SF-15 (276); ids and test numbers equal to the design F9. With the bait line of the helper twoRounds replaced by a clean line, only SF-13 stays red in that file (7 of 8 pass). The design is right; only the wording of the task mixes the two mutants."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Not run, by the limits of the task: the full 'npm run check' (project folder), the 8 test files that bind or mention the default ports (pixel-office-server, pixel-office-hook as a whole file, pixel-office-note, picker-server, picker-server-faults, picker-server-property, picker-server-units, team-web-server) - HK-21 and the other criterion-8 tests were run by name from the Pixel Office files: 9 of 9 pass; prettier and eslint (no dependencies installed in the clone). Run: 130 of 138 test files on the clones - 49 team/exec files (548 tests) and 81 others (1293 tests), all green on the sketch except the 12. The design's own figure for the others is 75 files / 1006 tests; mine differ because I ran more files, the result (no red) is the same."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Verdict is derived by me; the task named no expected result (AP-018). After the fix of G1-G3 a second pass is needed: the amendment of criterion 7 and of criterion 3 changes the requirement block, so the route REQ-ANALYST micro-amendment -> REQ-VALIDATOR stays as in the route of the task."
+      }
+    ],
+    "prototype": "<scratch>/v/ (outside the project): find.mjs (re-implementation of the written rules with switchable mutants), samples.mjs, run-samples.mjs, forms.mjs, timing.mjs, trap.mjs, fuzz.mjs, ctrl.mjs, tree.mjs, amend.py, anch.py, mutate.py, zz-*.test.js (trial and oracle tests); clones before (tag), mutA (masking removed), work (whole design), sub-s2, sub-s4 and mut-* (mutants).",
+    "artifacts_out": []
+  }
+}

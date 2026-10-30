@@ -1,0 +1,130 @@
+{
+  "handoff_id": "step08c-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "08c",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0093-20261028-01/step-08c-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-08b-test-design-validator.json (result.findings F1-F6, result.issues I1-I6)",
+      "handoffs/ISS-0093-20261028-01/step-08-test-designer.json (your own earlier report)",
+      "docs/requirements.yaml (block REQ-102 by id; the contract)",
+      "tools/src/team/runner.js (acceptResult) and tools/src/pixel-office/mask.js (findSecrets): read only"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR 08b FAIL (test gate pass 1 of 3) -> TEST-DESIGNER rework (this, 08c) -> TEST-DESIGN-VALIDATOR 08e (pass 2 of 3); at the same time REQ-ANALYST 08d edits only the text of criteria 1 and 7 of REQ-102",
+    "write_set": [
+      "tools/test/team-result-bytes.test.js",
+      "tools/test/team-result-timing.test.js (only if a remark needs it)",
+      "tools/test/fixtures (new fixtures; the one README line that lists the fixtures)",
+      "handoffs/ISS-0093-20261028-01/step-08c-test-designer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "rework_of": "handoffs/ISS-0093-20261028-01/step-08b-test-design-validator.json",
+    "orch_check": {
+      "at": "2026-10-28T21:35:45Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-28T21:33:01Z; changed after 08b by find -newer: tools/test/team-result-bytes.test.js, tools/test/fixtures/team/README.md, docs/requirements.yaml (step 08d), PROGRESS.md; tools/src unchanged (find -newer finds nothing there), team-result-timing.test.js unchanged (sha256 12f944d0...)",
+        "own run (node --test): team-result-bytes.test.js + the six guard-test files: 140 tests, 140 pass, 0 fail, 0 skipped, 0 todo, 39 s (44 + 96); the timing file was not rerun by ORCH (unchanged); prettier --check clean on the touched files, eslint clean on the bytes file; grep for key-shaped literals in the two new test files and scenario-secret.json: 0; traces 0, handoffs-check 0",
+        "the designer reports 112 own mutants killed (all 15 survivors of 08b red now), 154 tests in the eight files, no change in tools/src needed for the late-refusal seam (RB-19); to be re-checked by the validator with its own mutants",
+        "I1 of the designer: the set of F2 white-space characters is 25 code points, not 19 (my task text and the first report said 19 and 17; the requirement lists the characters, tables use the list); I3: after a late refusal the source of a file accepted earlier stays in work/ - ORCH asks the validator whether this conflicts with decisions/0018 P6 and 0035 (pass 2), otherwise a Low defect for DOC-UPDATER"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 6 rework (test gate FAIL, pass 1 of 3) - TEST-DESIGNER: fix the tests by the remarks of TEST-DESIGN-VALIDATOR, handoffs/ISS-0093-20261028-01/step-08b-test-design-validator.json (result.findings, result.issues). You change NO file in tools/src, no decision, no requirement, no design file, no README of tools/. Read your role file, docs/quality-bar.md, docs/anti-patterns.md (AP-110 the class of a rule, not the example of the requirement; AP-014; AP-018), the REQ-102 block by id, and the validator report.\nDo: (F1, blocking) for EVERY rule the validator lists add the missing sample or pair to the tables (KEEP, REFUSE) and to PAIRS, through the same three inputs and the same tests as the existing rows, one row per case, never a key-shaped literal written whole (build from parts at run time as the file does): the closed set of 19 white-space characters of form F2 (U+0009, U+000A, U+000B, U+000C, U+000D, U+0020, U+00A0, U+1680, U+2000-U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF): for each one a stored sample 'Authorization:' + W + the template and 'Authorization: Basic' + W + the credentials, and the 'Bearer' + W + short word pairs as item (5) of the residual risk says (refused for U+0009 and U+0020, stored for the other 17); a refused 'Bearer authHeader' and 'Authorization: Bearer authHeader' (the bare identifier does not apply after Bearer); a stored password=%PASSWORD% and token=%TOKEN% (the %NAME% template form); a stored '_bearer abc1234'; a stored 'x' + a three-part JWT (a JWT must not start in the middle of a longer run); pairs 19/20 characters after gh?_ (stored / refused) for each of gh[pos]_ and for github_pat_, and a pair 15/16 after sk- in criterion 3 (not only in the timing file); a stored '_://deploy:<12 characters>@host/x' (the character left of :// must be one of A-Za-z0-9+.-). The orchestrator probed each of these on the working tree: the stored ones are stored, the refused ones are refused, so the code agrees; only the tests miss them. Before you write each pair, take the expected side from the requirement text, not from the code (AP-018: the oracle is the requirement; if the code and the requirement disagree for one of them, stop on that one and report it to ORCH).\n(o32/o33) the late refusal branch of acceptResult on the claude-cli path (a source that changes after step 1 and before the write): try a seam in the test, in-process, with the fake claude executable as RB-13 does: open the writer, wrap its importWorkFile so that it rewrites the source file in work/ with a real-looking secret just before the original call, then check the whole attempt is refused with reason secret, the source removed from work/, files accepted before it stay, nothing else written, the state in memory equals the state rebuilt from the journal. If the seam cannot be built without a change in tools/src, do NOT change tools/src: stop that item and say so in result.issues (ORCH then names the gap as a defect).\n(F2, blocking) criterion 6 on the claude-cli path: next to RB-14 run runTask in the process of the test with the fake executable (as RB-13) and compare w.state with readProject(id, { home }).state by deepStrictEqual after the refusal; keep the child-process run for stderr and the exit code.\n(F6, cheap) C12 uses 37 characters where the requirement says 40: fix to the requirement; RB-17 must check that the 'was -> became' comment of the edited tests is dated; add scenario-secret.json to the fixtures README line (the line that lists the fixtures; the write-set allows only that line).\nF3, F4, F5 are not yours (F3 is a requirement-text amendment running at the same time in step 08d; F4 is the open clock defect ISS-0065; F5 is the cost of a quadratic mutant, nothing to change).\nRules for you: nothing is deleted, skipped, todo or weakened; the criterion 9 floors (titles per id, assert lines) stay or grow; the timing file stays within the 120 s budget of criterion 7 (if you touch it measure it again and report the number); every added row must fail if the rule it names is removed - for each added row run a mutant of your own that removes that rule from a COPY of the code outside the project, in the session scratch folder (the scratch folder named in your system prompt), and report killed or not; do not write to the system temp folder, do not run git checkout/reset/stash/clean anywhere, even in a copy (AP-086, AP-109); do not start servers on fixed ports; run node --test on your two files and the six guard-test files, then prettier --check and eslint on the files you touched. Report: the list of added rows per remark, the mutants killed, the run counts, the timing, result.issues, result.artifacts_out.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-28T20:55:00Z",
+  "started_at": "2026-10-28T20:55:00Z",
+  "completed_at": "2026-10-28T21:33:01Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 08c for the FAIL of 08b (test gate pass 1 of 3) is done: F1, F2, F6 and the seam of o32/o33 are covered; F3, F4, F5 are not mine and untouched. The sample tables got 93 stored rows (groups O27-O35) and 68 refused rows (groups C27-C34) and PAIRS got 123 pairs (187 in all, all distinct), built by the class of each rule (every member of the closed set of white space, both sides of every number, every left-boundary class), not by the example of the requirement; the expected side of each row is taken from the requirement text (Ф2, Ф3, Ф4, Ф5, Ф7, Ф8, Ш, residual risk (5)) and only afterwards compared with the code, which agrees for every row. New tests: RB-14 in-process claude-cli test (F2) and RB-19 x2 (the late refusal branch of acceptResult, reached by a seam in the test with no change in tools/src). The 8 files (my two + six guard files): 154 tests, 154 pass, 0 fail, 0 skipped, 0 todo, 105 s. 112 mutants of my own on copies outside the project: 112 killed, 0 survived (all 15 survivors of 08b are now red). No file in tools/src, no decision, no requirement, no design file was changed.",
+    "changes": [
+      {
+        "remark": "F1 (blocking)",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "Tables KEEP: O27 (24 rows) 'Authorization:' + W + template, O28 (24) 'Authorization: Basic' + W + template, O29 (23) 'Bearer' + W + 'abc1234' for the 23 characters that are not a space or a tab (the older rows O12#14 and O12#6 hold U+00A0 and the plain space, so they are left out of O27/O28), O30 (2) '_bearer abc1234' and '9bearer abc1234', O31 (2) password=%PASSWORD% and token=%TOKEN%, O32 (4) a three-part JWT after x, _, 9, - (a JWT must not start in the middle of a longer run), O33 (7) 19 characters after ghp_, gho_, ghs_, github_pat_ and 15 after sk- (plain, with an underscore, with a hyphen), O34 (3) '_://', ' ://', '!://' + deploy:<12 characters>@host/x, O35 (4) a newline and a carriage return after the colon and after Basic followed by a literal (the value is not taken from the next line). Tables REFUSE: C27 (2) 'Bearer authHeader' and 'Authorization: Bearer authHeader'; C28 (21) 'Authorization:' + W + 'abc1234' for the wide white space that F2 skips (U+00A0 and U+000C are older rows C11#15 and C11#17); C29 (21) 'Authorization: Basic' + W + credentials (the space and U+2003 are older rows); C30 (4) bearer / -bearer / .bearer / (bearer + ' abc1234'; C31 (4) password=%1PASSWORD%, token=%TOKEN, token=$1TOKEN, password=p%X%w; C32 (4) the JWT after (, \", =, a space; C33 (7) 20 characters after ghp_, gho_, ghs_, github_pat_ and 16 after sk- (plain, underscore, hyphen); C34 (5) a:// 9:// +:// .:// -:// + deploy:<12 characters>@host/x. Every character is built from its code (no blank typed in the file), every secret-shaped text is built from parts at run time. PAIRS: 123 pairs added through the same RB-08 test (stored sample / refused sample, one row per case); the SHA table got the literal sha256 of every new stored sample and of every new group file, taken with `shasum -a 256` on the bytes (the 144 old values were re-checked the same way: 0 differences). RB-00 updated: 213 stored, 194 refused, 25 characters of white space, row counts of each new group. The groups feed the same tests as the old rows (RB-01 x3 inputs, RB-03 depsOf, RB-04 engine reading, RB-06 x3 inputs x3 positions, RB-07, RB-08, RB-11 x3 inputs)."
+      },
+      {
+        "remark": "F2 (blocking)",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "New test RB-14 'criterion 6, claude-cli path in the process of the test' next to the child-process RB-14: runTask runs in the test process with the fake executable (as RB-13), after the refusal for REPORT.md w.state is compared with readProject(id, { home }).state by deepStrictEqual, the journal grew by whole lines, no RESULT_FILE, one TASK_FAILED, one run; then the same writer runs t-0002 (accepted, literal sha256) and the two states are equal again. The child-process run (stderr, exit code) is kept unchanged."
+      },
+      {
+        "remark": "o32/o33",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "New tests RB-19 (two cases): the writer of the test wraps importWorkFile and rewrites the source in work/ with a real-looking key (built from parts) just before the original call of write number 1 (nothing accepted before) and of write number 2 (first.md accepted before). Checked: result failed, one TASK_FAILED with reason result_file and the text 'Файл результата не принят: в нём найден секрет (файл: t-0001-1-<changed>)', one run, no retry, the changed source is gone from work/, the key is nowhere under the project or the home of the fake executable, files/ holds exactly what was accepted before (literal sha256), no partial file, no further write after the refused one, writer not broken, w.state equals the state rebuilt from the journal. The seam needed no change in tools/src."
+      },
+      {
+        "remark": "F6 (1)",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "C12 first sample: 'Bearer ' + N(36) + 'x' (37 characters) -> 'Bearer ' + N(40) (the requirement says 40)."
+      },
+      {
+        "remark": "F6 (2)",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "RB-17 (c): besides the hash sign, the run id and the words 'было' and 'стало', the note above each of the REQ-009, REQ-010 and REQ-013 blocks must start with a time stamp of the form 2026-10-28T04:54:25Z (assert.match); the title says so."
+      },
+      {
+        "remark": "F6 (3)",
+        "file": "tools/test/fixtures/team/README.md",
+        "what": "The one line that lists the scenario fixtures: scenario-files.json now says that its note has no secret (stored byte for byte, ISS-0093); scenario-secret.json is added (the note holds the mark @@BAIT@@, the test RB-13 puts a key built from parts in its place, the core refuses the file, REQ-102)."
+      }
+    ],
+    "self_check": [
+      "Clock: finished 2026-10-28T21:30:02Z (date -u).",
+      "cd tools && TMPDIR=<scratch>/tmp node --test test/team-result-bytes.test.js test/team-result-timing.test.js test/team-store.test.js test/team-engine-reads-files.test.js test/team-engine-rounds.test.js test/team-journal.test.js test/exec-workdir.test.js test/exec-scripted-source.test.js -> # tests 154, # pass 154, # fail 0, # cancelled 0, # skipped 0, # todo 0, duration_ms 105191 (real 1:45). Split: team-result-bytes 44 (was 41: +RB-14 in-process, +2 RB-19), team-result-timing 14, the six guard files 96 (RB-18 floors: titles per id and assert lines are unchanged and not below the base, the guard files were not touched). npm run check was NOT run, as ordered.",
+      "Timing (criterion 7, the file is not touched): node --test test/team-result-timing.test.js alone -> 14 tests, 14 pass, duration_ms 89090 (budget 120 s); inside the run of eight files next to the longer bytes file the sum of the 14 durations is 105.1 s (still under 120 s).",
+      "cd tools && npx prettier --check test/team-result-bytes.test.js test/team-result-timing.test.js test/fixtures/team/README.md -> All matched files use Prettier code style; npx eslint test/team-result-bytes.test.js test/team-result-timing.test.js --max-warnings 0 -> exit 0, no output.",
+      "Q6/Q7: grep -nE '[.]skip[(]|[.]todo[(]|[.]only[(]|[{] ?(skip|todo)' on both new files -> empty; the criterion 3 grep for key-shaped text ('ghp_' + 36, 'AKIA' + 16, PEM private key header, 'sk_live_', 'Basic ' + 12) on both new files -> empty (rc 1); grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team -> empty; RB-10 is green in the run.",
+      "Expected side of every new row = the requirement text (AP-018). Probe of the code after writing each class (the orchestrator's probe repeated by me on all 25 characters): stored/refused as the requirement says for every row; Bearer + W + abc1234 is refused for U+0009 and U+0020 only and stored for the other 23 (the task says 17 because it counts 19 characters, see I1). Rows where the requirement is silent were NOT added (ghu_/ghr_, an underscore in the github_pat_ body, a leading dot before a JWT).",
+      "MUTANTS (copies of tools outside the project in <scratch>/mt; one mutant at a time, restored from a pristine copy after each; the working tree tools/src was not touched: diff -r of tools/src against the copy taken before the mutants is empty and the 112 mutants were all applied to the copy). Fast set = RB-07 (criterion 3) + RB-08 (pairs), 2 tests; 'rows' = the first failing rows reported by the messages. 1) White space removed from findIsWs, one character at a time, 25 mutants (all of U+0009 U+000A U+000B U+000C U+000D U+0020 U+00A0 U+1680 U+2000-U+200A U+2028 U+2029 U+202F U+205F U+3000 U+FEFF): 25 killed, 2 of 2 tests red each (rows O27#n / O28#n / O12#6, O12#14, O12#11, O6#0). 2) The Bearer pattern takes one more character instead of only space and tab, 23 mutants: 23 killed, 2 of 2 red (rows O29#n; U+000A by O12#11/O12#12). 3) One character added to the line ends (so the value after it is not taken), 23 mutants (all skipped characters): 23 killed, 2 of 2 red (rows C28#n, C11#2, C11#15, C11#16, C11#17). 4) A line end treated as white space that may be skipped: LF, CR: 2 killed (O35#0, O35#2; LF also O12#11). 5) o13 bare identifier applies after Bearer: F8 only -> killed (C27#0, 1 of 2 tests before the two pairs were added, 2 of 2 now), F8 and F2 scheme -> killed (C11#2, C27#0), F2 scheme only -> killed (C11#2): 3 killed. 6) o21 left of the word Bearer: underscore no longer blocks (O30#0), digit no longer blocks (O30#1), hyphen/period/bracket block (C30#1), case sensitive (C30#0): 4 killed. 7) o20 %NAME%: not a template (O31#0), the name may start with a digit (C18#0 old row / C31 rows), the closing percent not needed (C31#1), %NAME% searched anywhere in the value (C31#3): 4 killed. 8) o22 JWT inside a longer run: check removed (O32#0), only a letter on the left blocks (O32#1), letters and digits block but not _ and - (O32#1), any visible character blocks (C32#0): 4 killed. 9) o23/o24 minimums after the prefix: ghp_ 20->10 (O33#0), gho_ (O33#1), ghs_ (O33#2), all three 20->21 (C33#0), github_pat_ 20->10 (O33#3), 20->21 (C33#3): 6 killed. 10) sk-: 16->15 (O33#4), 16->17 (C33#4), no underscore in the class (C33#5), no hyphen in the class (C33#6): 4 killed. 11) o15 character left of ://: check removed (O34#0), digit / plus / period / hyphen removed from [A-Za-z0-9+.-] (C34#1..#4: 4 mutants), underscore added (O34#0), space added (O34#1): 7 killed. 12) Late branch of acceptResult (RB-19): the changed source is not removed, a secret is treated as a plain file refusal, the text names no file, the error is thrown, the files accepted before are deleted: 5 killed (RB-19 2 of 2 red for the first four, 1 of 2 for the last one, the case with a file accepted before). 13) F2: the claude-cli refusal changes the state in memory only (a ghost file pushed into the task in the secret branch of step 1): killed by the new in-process RB-14 only; the old child-process RB-14 stays green (1 of 2 red). 14) RB-17 (c): the time stamp removed from the note of REQ-009 in a copy of requirements.yaml: killed (1 of 3 red). Total 112 mutants, 112 killed, 0 survived. A first version of the 'files accepted before are deleted' mutant was a no-op (wrong path under a try/catch), survived, and was replaced by the working one: not counted.",
+      "The same mutants with the whole set RB-00..RB-11 (25 tests, three inputs, depsOf, engine): U+3000 not white space -> 7 red (RB-01 x3, RB-03 a, RB-04 engine, RB-07, RB-08); U+3000 a line end -> 9 red (RB-03 d, RB-06 x3, RB-07, RB-08, RB-11 x3); eyJ inside a run starts a JWT -> 7 red; ghp_ minimum 10 -> 7 red; sk- minimum 15 -> 7 red; left of :// not checked -> 7 red; bare identifier after Bearer -> 9 red; %NAME% not a template -> 7 red; underscore no longer blocks Bearer -> 7 red. So the new rows reach the three inputs, depsOf and the engine reading, not only findSecrets.",
+      "Not mutated, with the reason: C12 first sample 37 -> 40 characters (both are refused by the same rule, it is an alignment with the text of the requirement, a mutant cannot tell them apart); the fixtures README line (a document line).",
+      "Q8, Q9, Q11, R3: untouched by this rework (the same reasons as in step 08: no new data path, no SQL, no address is followed, no photos); Q10: RB-19 and the in-process RB-14 are failure tests that check the state unchanged (journal, files/, work/, writer state equal to the rebuilt state); Q7: no key-shaped text in the files, the key of RB-19 is built from parts and checked absent from the project and from the home of the fake executable.",
+      "All temporary data of my runs went to <scratch>/tmp (TMPDIR) and <scratch>/mt, <scratch>/drv, <scratch>/sha; no server, no fixed port, no git checkout/reset/stash/clean/commit/push, no real AI run (only the fake executables of fixtures/team); docs/requirements.yaml was only read (and copied into the scratch tree for the RB-17 mutant)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "The number 19 in the task (and in 08b F1): the closed set of white space that the task and the Ф2 text list is 25 code points (U+0009, U+000A, U+000B, U+000C, U+000D, U+0020, U+00A0, U+1680, U+2000-U+200A = 11, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF); 23 of them are skipped by Ф2 (all except \\n and \\r, which are line ends), and 'Bearer' + W + 'abc1234' is stored for 23 characters, not 17. The tables use the whole list, one row per character; no code and no requirement text carries the number 19. For information only."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Rows beyond the list of 08b F1, added because the same class has a second side that no mutant of 08b exercised: C28/C29 (a literal after every skipped character is refused), O35 (a newline or a carriage return after the colon or the scheme is a line end: stored), C30 (the left boundary of Bearer with a hyphen, a period, a bracket, small letters), C31 (a %NAME% with a digit first, unclosed, text around), C32 (a JWT after a separator), the hyphen member of the sk- class. Each has its mutant above and the expected side from the requirement."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "o32/o33 answered: the late refusal branch of acceptResult on the claude-cli path is reachable and now tested (RB-19) with a seam in the test; no change in tools/src was needed. Observation, not a defect of this work and not asserted by the tests: after a late refusal the source of a file that was accepted before it stays in work/ (step 4, the removal of accepted sources, is not reached), while its copy stays in files/; the requirement is silent on that case (the all-or-nothing promise of criterion 5 is about step 1). If ORCH wants the source removed, a sentence in criterion 5 and a CODE-FIXER edit are needed."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "Not mine and not touched: F3 (criterion 7 file name, amendment in 08d), F4 (ISS-0065, the clock of the engine tests; the 154-test run was green, no E_TIME), F5 (cost of a quadratic mutant, nothing to change). The timing file was not edited; its measured time is given in self_check."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "RB-04 (the engine reading) takes every group of KEEP except O9 as a file, so the nine new groups are read by the engine too (green); the SHA table was rewritten in one sorted block (the old values are unchanged, re-verified with shasum). docs/requirements.yaml was not edited by me; the concurrent edit of criteria 1 and 7 by 08d did not break RB-17 (green at the time of my run)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-result-bytes.test.js",
+      "tools/test/fixtures/team/README.md"
+    ]
+  }
+}

@@ -1,0 +1,199 @@
+{
+  "handoff_id": "step02c-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "02c",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/ISS-0093-20261028-01/step-02c-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-02b-req-validator.json",
+      "decisions/0102-core0-result-files-conventions.md",
+      "handoffs/ISS-0093-20261028-01/step-02-req-analyst.json"
+    ],
+    "route": "REQ-VALIDATOR (step 02b, FAIL pass 1) -> REQ-ANALYST rework (this) -> REQ-VALIDATOR (step 02d, pass 2)",
+    "write_set": [
+      "docs/requirements.yaml (REQ-102 block and the dated comment lines of the four amended criteria only)",
+      "handoffs/ISS-0093-20261028-01/step-02c-req-analyst.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "rework_of": "handoffs/ISS-0093-20261028-01/step-02b-req-validator.json",
+    "orch_check": {
+      "at": "2026-10-28T05:32:59Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED, result.changes has 10 rows (F1-F9 and the extra comment line)",
+        "ruby YAML load: 102 requirements, ids unique, REQ-102 pending with 12 criteria",
+        "head -n 12401 of docs/requirements.yaml: sha256 f44c6e4d42b6... (same as the analyst's value before and after); 12 hunk ranges of git diff HEAD removed on both sides: sha256 c276956d051e... equal (HEAD vs working file)",
+        "handoffs-check and traces return 0",
+        "issues I1-I3 closed by decisions/0102 Addition 3 (items 15-17); the independent check is REQ-VALIDATOR step 02d, gate pass 2 of 3"
+      ]
+    }
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/ISS-0093-20261028-01/step-02b-req-validator.json, gate pass 2 of 3 - WF-03 step 2, REQ-ANALYST. Rework ONLY by the remarks of that FAIL (AP-019); read its result.findings F1-F9 and result.issues I1-I3, decisions/0102 (including Addition 2, item 14) and the REQ-102 block with the amended criteria. Fix: F1 (Medium) - extend the refusal set and criteria 3 and 11(b) per decisions/0102 item 14: take the old rules M1-M6, M8, M9 of tools/src/pixel-office/mask.js, list every form that hides a secret for a literal value, give each a refuse sample and a keep sample (keep: a name followed by an expression, e.g. { token: data.token, user: x }), correct the sentence that says protection is 'not weaker/stricter' so that it states exactly what is covered and that only M7 and M10 are not carried over (residual risk named); F2 (Medium) - criterion 7 and mutant m5: choose adversarial inputs that contain NO match so the whole input is scanned (a scan that stops at the first match makes the ratio timer noise), say which input family kills m5, give the measurement a floor (for example the median of several runs and a minimum time at 1 MiB, or a size so that the quadratic control is clearly separated) and keep the quadratic-reference control; F3 - correct the grep counts in the description (take them again by command: maskSecrets lines under tools/src/team, readers of files/); F4 - name that executor.js buildPrompt cuts a dependency file at PROMPT_MAX (200000) while files up to 5 MiB are accepted, in the description and in criterion 2 ('same bytes' below the limit); F5 - define the border between a placeholder and a real password or URL credential by a closed list plus samples for ordinary output (postgres:postgres@host, password=changeme) with the reason; F6 - criterion 5: a literal expected number of executor starts (EX-42 pins it); F7 - criterion 9: a minimum number of tests per guard test and do not count comment lines in part (b); F8 - criterion 11(b): the new record names the sentences of 0017 P9 and 0035 ('already masked') that it replaces for result files; F9 - engine/single-run.js importOutputs: add a criterion or an explicit written exclusion with the reason. Do not touch anything outside the REQ-102 block and the dated comment lines of the four amended criteria; do not weaken any criterion. Prove the unchanged rest again: sha256 of the file with the REQ-102 block, the four amended ranges, their comment lines and the four status lines of REQ-003, REQ-004, REQ-005, REQ-061 removed equals that of git show HEAD with the same ranges removed (give both commands and values). result.changes holds the table 'remark - place - was - became'. Write only docs/requirements.yaml (REQ-102 block and comments of the amended criteria) and your handoff. No machine paths and no names of other projects. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Every finding F1-F9 has a row in result.changes: where, was, became",
+      "Unchanged-rest proof by two sha256 values",
+      "handoffs-check and traces return 0 before close"
+    ]
+  },
+  "created_at": "2026-10-28T05:14:32Z",
+  "started_at": "2026-10-28T05:14:32Z",
+  "completed_at": "2026-10-28T05:31:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Исправил требование REQ-102 по замечаниям ворот F1-F9. Главное: я перечислил все формы секретов, которые прятал старый маскировщик (ключи с префиксом, закрытый ключ, пароль в адресе, Authorization и Bearer, пары password=, token=, api_key= и им подобные), и для каждой дал пример отказа и пример «хранится как есть» (имя с выражением, например { token: data.token, user: x }, хранится), а фразу «защита не слабеет» заменил точным списком того, что не покрыто. Проверка линейного времени теперь меряет входы без секретов с нижней границей замера и проверкой, что просматривается весь вход; остальные замечания (счёт, предел запроса, заглушки, число запусков, число тестов, цитаты решений 0017 и 0035, путь scripted) закрыты в тексте и критериях. Остались вопросы к вам и ORCH: какие сужения старой защиты принять (открытые блоки сертификатов, короткие значения без цифры, фразы-пароли) и считать ли приемлемым отказ на фиктивных паролях в тестах агента.",
+    "changes": [
+      {
+        "remark": "F1",
+        "place": "REQ-102 description: first paragraph; new paragraphs \"Что считается секретом\" (forms Ф1-Ф9), \"Определения\" (Л1-Л3, closed placeholder list), \"Остаточный риск\" (1)-(5); sample groups: О10 assembly, new О11-О17, С10-С15; criterion 1 (AP-071 sentence); criterion 3; criterion 10 (m4 per form, new m9, m10, m11, m13); criterion 11(a) README and 11(b) record",
+        "was": "Sentence \"Защита от настоящих секретов не слабеет, а становится строже\"; refuse set only C1-C9 (keys with prefix, PEM, JWT, URL password, password=hunter2fake, Authorization: Bearer); criterion 3 listed C1-C9; m4 removed five rules; no sample for name=value forms api_key/secret/token/passwd, Bearer outside a header, other Authorization schemes",
+        "became": "Sentence replaced: found secrets are refused instead of masked, the set is every form of old rules M1-M6, M8, M9 for a literal value plus JWT; only M7 and M10 are not carried over (0102 items 10, 14); table Ф1-Ф9 each with refuse samples (С1-С15) and keep samples (О1-О17), e.g. keep { token: data.token, user: x }, token = process.env.TOKEN, token: string; literal definitions Л1/Л2/Л3 versus expression; residual risk (1)-(5) named, with the narrowings beyond M7/M10 (public PEM blocks, bare -----BEGIN, short or digitless unquoted values, non-ASCII or spaced quoted values, placeholders) opened as question I1; criterion 3 covers С1-С15 and every form; m4 per form Ф1-Ф9, new mutants m9 (expression taken as literal), m10 (placeholders ignored), m11 (public PEM refused), m13 (Л2 without digit, Л3 with plain word); README must name residual risk next to findSecrets and the placeholder list"
+      },
+      {
+        "remark": "F2",
+        "place": "REQ-102 criterion 7; criterion 10 (m5 and new m12); Допущения paragraph",
+        "was": "Seven families, three of which (BEGIN PRIVATE KEY repeated, eyJ...  repeated, password=\"a repeated) contained a refused input so a scan stopping at the first match measured timer noise; ratio 4 MiB / 1 MiB, median of five; quadratic control on the same sizes; m5 had no named killing input",
+        "became": "Nine families with NO secret (separators between repeats; 15-char sk-/AKIA, two-part eyJ, incomplete PEM header, password=\"a  with inner space, placeholder in quotes, Bearer with 7 chars); per family the test first asserts \"no secret\" on the input and \"found\" on the same input with a bait C1 at the very end (no early stop, no cap on the scanned part); floor: k calls per sample chosen by doubling until a sample at 256 KiB takes at least 20 ms, same k at 1 MiB and 4 MiB, median of seven after a warm-up; both ratios t(1M)/t(256K) and t(4M)/t(1M) below 8, measured upward and stopped at the first failure; control: quadratic reference on 16/64/256 KiB gives both ratios at least 8 on families (1), (5), (6), linear reference below 8 on 256 KiB/1 MiB/4 MiB; m5 is killed by families (1), (5), (6); m12 (scan only the first 512 KiB or stop at the first rule hit) is killed by the bait-at-end check"
+      },
+      {
+        "remark": "F3",
+        "place": "REQ-102 description, paragraph \"Как\", exhaustive pass",
+        "was": "maskSecrets under tools/src/team: 12 places; readers: 11 places",
+        "became": "Counts taken again by the same commands: maskSecrets 15 lines (10 calls + 5 imports, all listed by file and line; two calls touch result-file content, eight take journal text); readFileSync|readFile(|createReadStream over tools/src/team and tools/src/web 9 lines, all listed (only runner.js:125 reads files/)"
+      },
+      {
+        "remark": "F4",
+        "place": "REQ-102 description first paragraph; criterion 2 title and new part (в)",
+        "was": "\"те же байты\" stated without the prompt limit; criterion 2 used small samples",
+        "became": "Description names executor.js buildPrompt: PROMPT_MAX 200000 characters, dependency content beyond it cut with the visible mark «[обрезано]» while files up to 5 MiB are accepted, existing behaviour not changed, \"same bytes\" promised only below the limit; criterion 2(в): a file of O1 repeated beyond PROMPT_MAX is stored byte-exact (literal sha256), depsOf returns it whole and exact, the reviewer stdin holds the exact start (literal of the first 1000 characters), then the cut mark, no «[скрыто]»"
+      },
+      {
+        "remark": "F5",
+        "place": "REQ-102 description \"Определения\" (closed placeholder list and reason); samples О14, О16, С13-С15; criterion 3 (boundary of the list)",
+        "was": "Boundary between placeholder and real password given only by the literals password, ${...}, hunter2fake, S3cr3tPassw0rd; postgres:postgres@host and password=changeme undefined",
+        "became": "Closed list of 26 words (password, passwd, pass, pwd, secret, token, key, changeme, change-me, change_me, changeit, example, sample, placeholder, dummy, demo, test, admin, root, user, guest, postgres, mysql, none, null, undefined) + runs of 3 or more of * x X + values starting with your + values containing example; URL password equal to the user name is kept; reason stated (defaults of ordinary compose/README output, a refusal fails the whole attempt without retry); keep samples postgres://postgres:postgres@db:5432/app, mysql://root:root@..., mongodb://admin:changeme@..., password=changeme, user:pw-example@host; refuse samples one step beyond (password=changeme2, \"wrong-password\" named as the cost); criterion 3 tests the list literal, three casings, the word+9 variant refused, URL variants"
+      },
+      {
+        "remark": "F6",
+        "place": "REQ-102 criterion 5, last sentence of (б)",
+        "was": "Number of executor starts \"equal to the number for a path refusal in the same test\" (another run of the code under test)",
+        "became": "Literal 1 in each of (а) and (б): exactly one RUN_STARTED of the task in the journal and one TASK_FAILED; 1 is the value EX-42 pins, but compared with a literal"
+      },
+      {
+        "remark": "F7",
+        "place": "REQ-102 criterion 9 (а), (б), (в)",
+        "was": "(а) no minimum test count; (б) grep -c of the id over the whole file (counts comments and the table ids); (в) grep -c assert counting comment lines",
+        "became": "(а) \"# tests\" at least 20 (20 on the base, checked by running the command); (б) per-id literals counted only on test-title lines with grep -cE \"^(test\\(|  )\\\"<id>[ :]\" : TM-57 4, TM-58 2, TM-63 3, RF-03 1, SF-13 1, TM-43 2, EX-41 2, EX-51 5 (sum 20), same command on the tag prints the same literals; (в) assert lines without comment lines, literals of the base: 203, 113, 60, 79, 63, 34"
+      },
+      {
+        "remark": "F8",
+        "place": "REQ-102 criterion 11(б)",
+        "was": "Record in decisions/ checked for findSecrets, M10, residual risk, work/ only",
+        "became": "Record must quote what it replaces for result files: 0017 P9 «попадает только маскированное» (files/ half; the journal half stays), 0035 item 1 «(они уже маскированы)» and the row А «копия из files/ маскирована, секрета в ней нет»; checks grep -lF for both fragments and grep -l for P9 and 0035 on the same file; also placeholder list, M7/M10, the cost wrong-password, scripted per-file acceptance, and the closed question on narrowings (2)-(5)"
+      },
+      {
+        "remark": "F9",
+        "place": "REQ-102 description (explicit exclusion after \"Не затрагиваются\") and criterion 5 new part (в)",
+        "was": "engine/single-run.js listed as untouched; importOutputs per-file acceptance not stated; no criterion for the scripted path",
+        "became": "Written exclusion with reason: the scripted (test) executor keeps per-file acceptance in single-run.js importOutputs and in the non-claude-cli branch of runner.js acceptResult, the secret is still never stored (check in #publish), all-or-nothing is promised only for claude-cli; criterion 5(в): run-task with a scripted scenario holding bait C1 in note (fixture created by this work) -> exit 1, one stderr line with «секрет», no bait in files/ and none under SAI_TEAM_HOME except scenario.json (as EX-51), memory equals the journal replay; the test does not pin whether the earlier input file stays"
+      },
+      {
+        "remark": "all",
+        "place": "REQ-102 dated comment line above the block",
+        "was": "one dated comment line (step 02)",
+        "became": "second dated comment line for this rework (05:24:08Z) listing F1-F9; four amended criteria of REQ-009/010/013 and their comment lines not touched"
+      }
+    ],
+    "before_copy": {
+      "source": "The rework edits only the REQ-102 block, which is not in the tag (the block was created at step 02). The \"before\" of the rework is the file as it stood at the start of this step: copy at <scratch>/requirements.before-rework.yaml, sha256 b5cb4c295cd3efbec340a10a257a5a6e1fab2442c98f31ed0a2ed7a301e746db; the lines of the four amended criteria of REQ-009/010/013 and their before/now text are in step-02-req-analyst.json result.before_copy and were not touched here. Lines outside the block: head -n 12401 of the file has sha256 f44c6e4d42b691fb24b96983b061bd29fe2bf8f45da90382a9d22b0f67efc005 before and after.",
+      "edits": [
+        {
+          "remark": "F1",
+          "place": "REQ-102 description: first paragraph; new paragraphs \"Что считается секретом\" (forms Ф1-Ф9), \"Определения\" (Л1-Л3, closed placeholder list), \"Остаточный риск\" (1)-(5); sample groups: О10 assembly, new О11-О17, С10-С15; criterion 1 (AP-071 sentence); criterion 3; criterion 10 (m4 per form, new m9, m10, m11, m13); criterion 11(a) README and 11(b) record",
+          "before": "Sentence \"Защита от настоящих секретов не слабеет, а становится строже\"; refuse set only C1-C9 (keys with prefix, PEM, JWT, URL password, password=hunter2fake, Authorization: Bearer); criterion 3 listed C1-C9; m4 removed five rules; no sample for name=value forms api_key/secret/token/passwd, Bearer outside a header, other Authorization schemes"
+        },
+        {
+          "remark": "F2",
+          "place": "REQ-102 criterion 7; criterion 10 (m5 and new m12); Допущения paragraph",
+          "before": "Seven families, three of which (BEGIN PRIVATE KEY repeated, eyJ...  repeated, password=\"a repeated) contained a refused input so a scan stopping at the first match measured timer noise; ratio 4 MiB / 1 MiB, median of five; quadratic control on the same sizes; m5 had no named killing input"
+        },
+        {
+          "remark": "F3",
+          "place": "REQ-102 description, paragraph \"Как\", exhaustive pass",
+          "before": "maskSecrets under tools/src/team: 12 places; readers: 11 places"
+        },
+        {
+          "remark": "F4",
+          "place": "REQ-102 description first paragraph; criterion 2 title and new part (в)",
+          "before": "\"те же байты\" stated without the prompt limit; criterion 2 used small samples"
+        },
+        {
+          "remark": "F5",
+          "place": "REQ-102 description \"Определения\" (closed placeholder list and reason); samples О14, О16, С13-С15; criterion 3 (boundary of the list)",
+          "before": "Boundary between placeholder and real password given only by the literals password, ${...}, hunter2fake, S3cr3tPassw0rd; postgres:postgres@host and password=changeme undefined"
+        },
+        {
+          "remark": "F6",
+          "place": "REQ-102 criterion 5, last sentence of (б)",
+          "before": "Number of executor starts \"equal to the number for a path refusal in the same test\" (another run of the code under test)"
+        },
+        {
+          "remark": "F7",
+          "place": "REQ-102 criterion 9 (а), (б), (в)",
+          "before": "(а) no minimum test count; (б) grep -c of the id over the whole file (counts comments and the table ids); (в) grep -c assert counting comment lines"
+        },
+        {
+          "remark": "F8",
+          "place": "REQ-102 criterion 11(б)",
+          "before": "Record in decisions/ checked for findSecrets, M10, residual risk, work/ only"
+        },
+        {
+          "remark": "F9",
+          "place": "REQ-102 description (explicit exclusion after \"Не затрагиваются\") and criterion 5 new part (в)",
+          "before": "engine/single-run.js listed as untouched; importOutputs per-file acceptance not stated; no criterion for the scripted path"
+        },
+        {
+          "remark": "all",
+          "place": "REQ-102 dated comment line above the block",
+          "before": "one dated comment line (step 02)"
+        }
+      ]
+    },
+    "self_check": "Commands and results (run in the Sai repo on 2026-10-28, after the last edit):\n1) ruby -ryaml -e 'y=YAML.load_file(\"docs/requirements.yaml\"); rs=y[\"requirements\"]; ... r=rs.last' -> count 102 uniq 102; REQ-102 keys id,title,owner,status,depends_on,original_request,description,acceptance_criteria; status pending; depends_on [\"REQ-009\",\"REQ-010\",\"REQ-013\"]; 12 criteria (the YAML loads; a double quote inside a criterion string was caught by the editor diagnostics and fixed before this run).\n2) awk '/^  - id: REQ-102$/{f=1} f&&/^  - id: /&&!/REQ-102$/{exit} f' docs/requirements.yaml | wc -l -> 357 lines (block readable).\n3) Hashes of the file: before the rework (copy at <scratch>/requirements.before-rework.yaml) b5cb4c295cd3efbec340a10a257a5a6e1fab2442c98f31ed0a2ed7a301e746db; after c87313f548c030d98c80f9884e5f7aa4abff2c288f1337d8d88730107d63d44a.\n4) Unchanged rest, own rework: head -n 12401 of the file before and after the rework (lines before the REQ-102 block and its comment lines) -> f44c6e4d42b691fb24b96983b061bd29fe2bf8f45da90382a9d22b0f67efc005 both, equal.\n5) Unchanged rest against the base (HEAD and the tag base/ISS-0093-20261028-01 are the same commit 6f5a38a997d807ba383f4c06201e917a1ecfada7): command, run in the repo root:\nruby -rdigest -e 't=\"HEAD\"; d=`git diff #{t} -U0 -- docs/requirements.yaml`; o=[];n=[]; d.each_line{|l| if l=~/^@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/ then o<<[$1.to_i,($2||1).to_i]; n<<[$3.to_i,($4||1).to_i] end}; s=->(ls,rm){dr={};rm.each{|a,c| c.times{|i| dr[a+i]=1}}; ls.each_with_index.reject{|_,i| dr[i+1]}.map(&:first)}; a=s.(`git show #{t}:docs/requirements.yaml`.lines,o); b=s.(File.readlines(\"docs/requirements.yaml\"),n); puts a.size, Digest::SHA256.hexdigest(a.join), b.size, Digest::SHA256.hexdigest(b.join)'\n-> 12370 / c276956d051e87916d289e9f906b6fdc470b2bdd87a41c20cad86d76c97b6f36 (HEAD with the 12 hunk ranges removed) and 12370 / c276956d051e87916d289e9f906b6fdc470b2bdd87a41c20cad86d76c97b6f36 (working file with the same hunks removed): equal, and equal to the value REQ-VALIDATOR got at step 02b. The 12 hunks: git diff base/ISS-0093-20261028-01 -U0 -- docs/requirements.yaml | grep '^@@' -> the first 11 (361, 384, 413, 1049, 1355, 1366, 1655, 1674, 1993, 2080, 8108 = four status lines of REQ-003, REQ-004, REQ-005, REQ-061, the dated comment lines, the four amended criteria) are identical to the list before the rework (diff empty); the last one grew from +12402,243 to +12402,359 (the REQ-102 block and its comment lines). As the validator noted, the hash proof is true by construction for any diff; its meaning is checks 4 and the first-11-hunks comparison.\n6) Facts re-measured: grep -rnE 'maskSecrets' tools/src/team -> 15 lines; grep -rnE 'readFileSync|readFile\\(|createReadStream' tools/src/team tools/src/web -> 9 lines; cd tools && node --test --test-name-pattern='TM-57|TM-58|TM-63|RF-03|SF-13|TM-43|EX-41|EX-51' <six files> -> tests 20, pass 20, fail 0, skipped 0; per-id title counts (command of criterion 9(б)) on the working tree and on the tag -> TM-57 4/4, TM-58 2/2, TM-63 3/3, RF-03 1/1, SF-13 1/1, TM-43 2/2, EX-41 2/2, EX-51 5/5; assert counts without comment lines, working vs tag -> team-store 203/203, team-engine-reads-files 113/113, team-engine-rounds 60/60, team-journal 79/79, exec-workdir 63/63, exec-scripted-source 34/34; grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team -> 0 lines; README baseline counts on the tag: 'placeholder' 0, 'findSecrets' 0; executor.js: PROMPT_MAX = 200_000 (line 29), CUT_MARK \"[обрезано]\" (line 30), buildPrompt cut at lines 298-315; single-run.js importOutputs lines 159-175 calls importResultBytes per output with no pre-check, errors go to closeAfterError (RUN_FINISHED failed) and back as a TeamError; runner.js acceptResult: the pre-check loop exists only for claude-cli, the else branch plans scripted outputs without a secret check.\n7) Old maskSecrets run on every new keep sample (node script in <scratch>): О11-О16 are CHANGED by the old code except three that it left whole (const password = await ask(); password=; password: ''), О17 is unchanged by the old code (stated in criterion 1).\n8) Sketch outside the project (<scratch>/proto.mjs, a regex prototype of findSecrets by the definitions Ф1-Ф9/Л1-Л3, not linear-time, only to test the split): 84 samples (refuse and keep) -> 0 wrong; <scratch>/bound.mjs: the 26-word list, three casings, word+9, URL variants -> 0 wrong; the prototype over all 149 files (js, mjs, json, html, css, md) of tools/src -> 0 files with hits (no false refusal on the code of Sai, including mask.js with its bare -----BEGIN); over docs/design -> 2 files with hits (design documents holding deliberate secret examples). This is evidence that the definitions are consistent, not a design of findSecrets.\n9) No machine paths, other project names or secrets in the added lines: git diff base/ISS-0093-20261028-01 -U0 -- docs/requirements.yaml | grep '^+' | grep -niE <pattern of home-folder paths and of the names of the other projects, as in the check of step 02> -> empty; the repository command npm run traces confirms it (the owner's verbatim words contain the word vercel, unchanged from step 02). No trailing spaces in added lines (count 0).\n10) Not runnable now (code and test file do not exist yet; they are made by the work): everything that needs tools/test/team-result-bytes.test.js, findSecrets, the scripted bait fixture, the README change, the decision record, base-versus-work diffs.\n11) Quality bar: Q1 each new or changed criterion names its check; Q7 criteria 3, 5, 11 (baits assembled from parts, grep extended with sk_live_ and Basic patterns); Q8, Q9, Q11, R2, R3 stay \"not applicable\" with the reasons of step 02; Q10 criteria 3, 5, 6, 7; Q12 open choices raised in issues I1, I2; no words about lowering the bar.\n12) cd tools && npm run handoffs-check && npm run traces -> handoffs-check: файлов проверено 1228, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2308, следов 0, пропущено 67 (exit 0). The first traces run found one trace in this very handoff (the names of other projects written inside my own grep pattern in item 9); the pattern was removed from the text and the run repeated (see item 9).\n",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "For ORCH and the owner (Q12, decisions/0102 item 14 left the border to the analyst, but two points go beyond \"only M7 and M10 are not carried over\"): (a) public PEM blocks (CERTIFICATE, PUBLIC KEY, CERTIFICATE REQUEST, ...) and a bare \"-----BEGIN\" without a full header are no longer treated as secrets, because AC0.3 sample O7 and Sai own code (mask.js) require them to be stored; the old rule M1 hid them; (b) unquoted name=value values shorter than 8 characters or without a digit, quoted values with a space or non-ASCII characters, passwords equal to the user name in an address and the 26 placeholder words are not refused; the old M2/M3/M9 hid them. All are listed as residual risk (1)-(5) of the description and the record required by criterion 11(b) must close them with a decision. Proposal: accept (a) and (b) as written (the alternative, refusing them, breaks ordinary code such as token: string, lockfiles, certificates in fixtures); record the choice in a new decisions/ file together with the list of forms F1-F9, or tell me to tighten any point and I rework by your list."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "Cost of the chosen border (F5): a quoted literal such as password: \"wrong-password\" in a test written by an agent is refused and the whole task attempt fails without retry (criteria 5 and 6); the old code masked it instead (and corrupted the file). Options: (A, written) keep, the refusal text tells the agent to take the value from the environment or to use a word from the placeholder list; (B) add a few more test words to the list (for example test-password, wrong-password); (C) refuse only values of 8 or more characters. I wrote A because the list is closed by decisions/0102 item 14 and an extension needs your word; please choose, the criterion text then follows."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "Found beyond the list of remarks (AP-019), handled only inside F9: the same per-file acceptance without a secret pre-check exists in the non-claude-cli branch of runner.js acceptResult (scripted outputs), not only in single-run.js importOutputs. I named both in the explicit exclusion and criterion 5(в) tests the run-task path; I did not require all-or-nothing there. If ORCH wants the pre-check for scripted too, it is a one-line change of criterion 5(б) and the exclusion."
+      },
+      {
+        "id": "I4",
+        "kind": "OBSERVATION",
+        "text": "For CODE-DESIGNER: (a) the definitions Л1-Л3 and the forms are a contract by samples; the details may be refined by the design if every sample of groups О and С keeps its outcome, the sketch <scratch>/proto.mjs gives 84/84 and can be used as a starting oracle (it is not linear-time). (b) The timing test of criterion 7 runs 9 families x 3 sizes x 7 samples with k calls each; I did not measure its running time, the design should keep it to tens of seconds. (c) The refusal detail for the secret must be distinct from the constant REFUSED text pinned by EX-42 and must be the same on the claude-cli and scripted branches. (d) criterion 3 grep for baits was widened to sk_live_ and \"Basic <base64>\" patterns, so the new test file must build those samples from parts."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

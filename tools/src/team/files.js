@@ -66,7 +66,7 @@ function checkFilesDir(filesDir) {
   }
 }
 
-// The bytes and the sha256 of a (masked) text, checked against FILE_BYTES_MAX.
+// The bytes and the sha256 of a text, checked against FILE_BYTES_MAX.
 export function contentOf(content) {
   if (typeof content !== "string") throw eventError("content");
   const buf = Buffer.from(content, "utf8");
@@ -88,7 +88,7 @@ export function checkFreeName(filesDir, name) {
   if (st !== null) throw fileExistsError();
 }
 
-// Writes files/<name> with the given (already masked) text, mode 0600, never over
+// Writes files/<name> with the given text, byte for byte, mode 0600, never over
 // an existing name. Returns { bytes, sha256 }. On failure nothing is left.
 export function publishResultFile(filesDir, name, content) {
   const { buf, bytes, sha256 } = contentOf(content);
@@ -144,7 +144,9 @@ export function cleanPartials(filesDir) {
   }
 }
 
-const decoder = new TextDecoder("utf-8", { fatal: true });
+// ignoreBOM keeps a byte-order mark in the text, so the stored file has the same
+// bytes as the source (the default decoder drops it).
+const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 
 // The text of work/<relPath> (section 6.7): the path is checked before any access
 // to files; every part is walked with lstat (no links); the file is opened without

@@ -21,3 +21,5 @@
 ## Основание
 
 `docs/owner-requests/2026-10-21-picker-owner-answers-2.md`, `decisions/0068`, `0069`.
+
+Narrowed by decisions/0092 (2026-10-28): item 5 (no publication) for `app/` only, closed first.

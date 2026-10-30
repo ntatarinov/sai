@@ -78,3 +78,5 @@
 `docs/requirements.yaml` (REQ-009, REQ-010, REQ-013).
 
 Уточнено решением 0033 (2026-10-11): продукт — виртуальная команда, гипотеза «магазин одежды» снята.
+
+Narrowed by decisions/0001 (2026-10-28): the code of the public product site lives in `app/`, not in `tools/src/team/`; the team core there stays the engine the worker runs.

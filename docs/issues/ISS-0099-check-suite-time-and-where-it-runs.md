@@ -1,0 +1,27 @@
+# ISS-0099 — The full check on GitHub takes 13-15 minutes of a 30-minute limit: the old time in the REQ-030 design is stale, option C of decision 0106 waits for 25 minutes, and no document says where the check can run
+
+Серьёзность: LOW. Статус: open. Найдено: TEST-RUNNER (шаг 09, I2), RELEASE-VALIDATOR (шаг 10, L2, L6), ORCH (`decisions/0106`), прогон `ISS-0093-20261028-01`, 2026-10-29 и 2026-10-30; заведено DOC-UPDATER (шаг 11), 2026-10-30. Пункт планки: Q4 (проходит одной командой), Q10 (предел времени ещё останавливает зависание), Q3 (честность текстов; пункты 1 и 3). Требования: REQ-030 (сделано). Связан с `decisions/0106`.
+
+## Что не так
+
+1. **The time in the REQ-030 design is stale.** `docs/design/REQ-030-github-check.md` says «запуск ≈ 3–5 минут» (line 102, the row `timeout-minutes: 15`; the estimate in line 199 says the same) and gives the limit as 15 minutes in three more places (line 73, the YAML sample; line 117, the hang row; line 201, the fork row). The real runs of the file `.github/workflows/check.yml` took: 11 min 28 s on `main` before this run (2065 tests, run 40516041491), 14 min 58 s at the first full run with the REQ-102 tests (2135 tests, run 40968115867; a run before it, 40965967184, was cancelled by the old 15-minute limit with 2030 tests ok and none red), 12 min 58 s on the final files (2135 tests, tests 741.6 s, run 40996714076). The runner speed varies by about 15 percent between runs of the same files. The limit is 30 minutes since `decisions/0106`. **What DOC-UPDATER did on 2026-10-30:** wrote a dated note at the head of the design file that names the stale places and the measured times; the lines themselves were not rewritten (a design record keeps its text; the old numbers are history of the run `REQ030-20261012-01`). The design says «около 2 минут» for the local hook (lines 139, 166, 198) too; it was not re-measured for this defect.
+2. **Option C of `decisions/0106`.** The decision keeps the limit at 30 minutes and says: if the time of the full check nears 25 minutes, option C is opened (split the suite into parallel jobs of the workflow). The margin today is about 15 to 17 minutes. The suite grew by 70 tests and by about two minutes (base 11 min 28 s, final 12 min 58 s) in this run alone, and the timing file of REQ-102 takes about 85 s on the runner by itself. Nothing is red now; the point is to watch it. `decisions/0106` says the time of the suite is watched at each audit (WF-05); a way to read it is `gh run list --workflow check.yml --branch main --limit 10 --json createdAt,updatedAt,conclusion`, and a run of 25 minutes or longer opens option C.
+3. **Where the full check can run is written nowhere.** The full `npm run check` is green on the main computer and on GitHub (Linux, Node 22). It cannot run on Windows: 38 test files under `tools/test/` use file modes or links (`chmodSync`, `symlinkSync`), one test fixes the null device as `/dev/null` and another builds the environment with `os.devNull`, and the code and the tests have no handling of the platform. A launch of step 08n of this run on a Windows computer therefore stopped without a verdict (AP-138). The README of `tools/` has no sentence on this, and `tools/README.md` was outside the write set of the bookkeeping step, so DOC-UPDATER could not write it.
+
+## Доказательство
+
+- Item 1: `grep -n "3–5 минут\|timeout-minutes\|около 2 минут" docs/design/REQ-030-github-check.md`; `grep -n "timeout-minutes" .github/workflows/check.yml` gives `timeout-minutes: 30`. Runs: `handoffs/ISS-0093-20261028-01/step-09-test-runner.json` (I2), `step-10-release-validator.json` (self_check: «CHECK ON GITHUB», «BASE RUN»), `decisions/0106-check-workflow-timeout-30.md`.
+- Item 2: the same runs; `decisions/0106` («Decision»: option C at 25 minutes).
+- Item 3: `grep -lE "chmodSync|symlinkSync" tools/test/*.js | wc -l` gives 38 on 2026-10-30; `grep -rn "devNull\|/dev/null" tools/test/repo.test.js tools/test/flaky-regression.test.js`; `handoffs/ISS-0093-20261028-01/step-08n-test-design-validator.json` (`context.interruptions`, third item); `grep -n "Windows" tools/README.md` finds no sentence about the check (only the browser windows).
+
+## Как исправить
+
+1. Item 1 is answered by the note in the design file; if the owner wants the design lines themselves corrected, the author of the design (CODE-DESIGNER) does it in a WF-02 or WF-03 run that touches that design, with the measured times above.
+2. Item 2: at each audit, read the times (command above) and write them in the audit report (the way `decisions/0106` asks); at 25 minutes open option C as a WF-02 run with its own requirement (a change of `check.yml` is a change of the quality gate: the five steps in the same order, the same tests and thresholds, Q4 and Q6 unchanged).
+3. Item 3: one paragraph in `tools/README.md`, section on the check («Проверка»): the full `npm run check` runs on the main computer and on GitHub (Linux, Node 22) and not on Windows, and why (the three causes above); a step that needs the full suite is not moved to another system (AP-138). A DOC-UPDATER run whose write set includes `tools/README.md` does it; no code change.
+
+Regression check: none is needed for items 2-3 (a text and a watch). For item 1 the grep above finds the note at the head of the design file.
+
+## Маршрут
+
+WF-03, bookkeeping form (DOC-UPDATER; items 2 and 3 can ride with the next DOC-UPDATER run that has `tools/README.md` in its write set). Option C, if it is ever opened, is a separate WF-02 run.

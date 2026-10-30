@@ -1,0 +1,262 @@
+{
+  "handoff_id": "step06-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/ISS-0093-20261028-01/step-06-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-05-code-fixer.json",
+      "docs/design/REQ-102-result-files-byte-exact.md",
+      "decisions/0102-core0-result-files-conventions.md"
+    ],
+    "route": "CODE-FIXER (05, done) -> SECURITY-REVIEWER (this) and REVIEWER (07) at the same time -> TEST-DESIGNER (08)",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-06-security-reviewer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T16:21:42Z",
+      "by": "ORCH",
+      "verdict": "FAIL принят",
+      "checked": [
+        "handoff COMPLETED, verdict FAIL (code gate pass 1 of 3): F1 Medium Q7 (the placeholder tests 'starts with your' and 'contains example' are applied to the whole whitespace-free chunk, so a secret with '&redirect=https://example.com' glued behind it is kept; the old rules M2, M8, M9 hid it), F2-F4 Low; Q8, Q9, Q11, R3 not applicable, Q10 and R2 met",
+        "no tracked file changed by the reviewer (git status: only the earlier runs' files and the six tools files of step 05)",
+        "cross-check with REVIEWER (step 07, PASS): same 548 / 536 / 12 count; the reviewer's differential did not target the glued placeholder chunk; F1 is a gap of the rule of the requirement (class З), not a coding slip (independent reference of the security reviewer agrees with the code on 4.3 million strings)",
+        "route: micro-amendment of REQ-102 (stricter: the your-prefix and example-substring tests apply only to values made of letters, digits, underscore, dot and hyphen; same for quoted content and the URL password; new refuse and keep samples; a mutant; the call-class scanning gap named) -> REQ-VALIDATOR gate -> CODE-FIXER rework (F1 plus the README Low items F2 and F4, the depsOf RangeError F3, the REVIEWER Low items) -> SECURITY-REVIEWER and REVIEWER again (AP-028)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 5 (gate 1 of 2, WF-02 step 3) - SECURITY-REVIEWER: the code fix of defect ISS-0093 for requirement REQ-102, written at step 05 (handoffs/ISS-0093-20261028-01/step-05-code-fixer.json). The diff is `git diff -- tools` against HEAD (six files: tools/src/pixel-office/mask.js, tools/src/team/files.js, store.js, runner.js, language.js, tools/README.md). You only READ; you fix nothing. Read your role file, docs/quality-bar.md (sections 2.1 and 6), docs/workflows/WF-03-defect.md (step 5), docs/workflows/handoffs.md, docs/anti-patterns.md, the REQ-102 block by id (forms, definitions, samples, criteria, residual risks), the design docs/design/REQ-102-result-files-byte-exact.md, decisions/0102 (all Additions; items 14, 18-34 binding), decisions/0017, 0018, 0035. Decide yourself whether your area is touched (it is: secrets and masking). For EVERY item Q7, Q8, Q9, Q10, Q11 and R3 give 'met' (how you checked) or 'not applicable' (why); R2 too where Pixel Office is touched (the journal rules M1-M10 and the owner's Pixel Office must be unchanged: prove it). Check with your OWN runs on a COPY outside the project (a plain copy of the working tree files you need; do not run anything that writes inside the project): (1) hostile input at the new function findSecrets and the new paths: huge inputs (4 MiB and 5 MiB files of every hostile shape you can build: unclosed {{, $(, <, closers, long dotted runs, long single lines, deep nesting, all-whitespace, NUL, lone surrogates, invalid UTF-8, a BOM): time and memory, no exception, no stack overflow; (2) bypass attempts of the refusal: a real-secret-shaped value split by a line end, a tab, a no-break space, a zero-width character, a different case, quoted forms of every name, base64 or percent encoding of a key form the old rules refused (the old rules M1-M6, M8, M9 are the baseline: build a differential fuzz between the old maskSecrets (tools/src/pixel-office/mask.js on the tag base/ISS-0093-20261028-01, cloned outside the project) and findSecrets: every string the old rules hid by M1-M6, M8, M9 for a literal value must be refused by findSecrets except the plan-seed exceptions and the expression classes of decisions/0102 items 18 and 21; report each exception that is neither); (3) state after a refusal: engine path, run-task, scripted path, runSingle: nothing written, the bait nowhere on disk (grep -r the data folder), the source removed from work/, and the journal and the chat carry no value; the refusal text: names only files that pass checkResultName and that maskSecrets leaves unchanged, at most three, never a value, an offset or a path; the same string on the three channels; (4) depsOf: a file with a secret or with the label is withheld by a constant text without exception; the reviewer's stdin and the dependent task never get a secret; (5) path and file-name handling (traversal, symlink, absolute name, long name) unchanged and still refused as before (EX-42 text for path refusals unchanged); (6) the hash and the stored bytes: byte-exact through the three import paths including a BOM, sha256 of the original; (7) the README and the code carry no secret-shaped literal (search the diff and tools/src/team and tools/README.md; each match examined by hand: a rule, a name, or an example); (8) the guard tests that should still pass: HK-21, HK-24, MK-01..MK-05, NM-06, TM-44, TM-49, TM-50, DC-01 by name (the Pixel Office files that bind default ports: say which you did not run); the twelve tests EX-41, EX-51, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63 are red by the design until the tests step - run the 49 team and exec files without default ports (`ls test/team-*.test.js test/exec-*.test.js | grep -v team-web` in tools/) on a copy and confirm exactly those twelve fail (536 pass, 12 fail expected by the author: do not take it, count); (9) residual risks named in the requirement (1)-(6) and the owner's answers: are they all named in README and code comments honestly. Verdict PASS or FAIL; findings with severity (Critical, High and Medium block; Low does not) each with place, evidence (command and output) and fix. Do not edit any project file; write only your handoff. Work only inside the Sai folder and the scratch folder: do not read, list or count files of other folders. No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it). Do not run the full `npm run check`; REVIEWER works at the same time and also only reads. No run longer than ten minutes. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Each of Q7, Q8, Q9, Q10, Q11, R2, R3 is met (how checked) or not applicable (why)",
+      "Own differential fuzz against the old rules; exactly twelve red tests counted"
+    ]
+  },
+  "created_at": "2026-10-28T15:55:25Z",
+  "started_at": "2026-10-28T15:55:25Z",
+  "completed_at": "2026-10-28T16:20:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Нашёл одно слабое место (Medium, блокирует): настоящий секрет, к которому без пробела приклеен текст со словом example (например, адрес https://example.com в параметрах ссылки), ядро принимает как «заглушку», хотя старые правила такое скрывали; это правится одним уточнением правила заглушек. Всё остальное сошлось: файлы хранятся байт-в-байт, файл с секретом отклоняется без записи на диск и без значения в тексте отказа, журнал и Pixel Office не изменились, красных тестов ровно двенадцать из ожидаемых. Сверка со старыми правилами на 4,3 млн строк и 222 враждебных файла по 4–5 МБ (не больше 106 мс, без исключений) других расхождений не показали.",
+    "surface_map": [
+      {
+        "file": "tools/src/pixel-office/mask.js",
+        "surfaces": [
+          "holds a secret",
+          "comes from outside (text of agent files)",
+          "goes to the browser: no (the module is imported by hook, server, command and core only; no page file imports it - grep over tools/src/pixel-office/public found no import)"
+        ],
+        "note": "704 lines appended after prepareText; the first 315 lines (rules M1-M10) are byte-identical to the base tag (diff of the two is empty); nothing deleted (git diff --stat: 703 insertions, 0 deletions)"
+      },
+      {
+        "file": "tools/src/team/store.js",
+        "surfaces": [
+          "writes files",
+          "holds a secret",
+          "comes from outside"
+        ],
+        "note": "#publish is the one funnel for writeResultFile, importWorkFile, importResultBytes (grep: no other caller of publishResultFile); check sits after the size check and before #prepare and before any write"
+      },
+      {
+        "file": "tools/src/team/runner.js",
+        "surfaces": [
+          "writes files (removes sources)",
+          "holds a secret",
+          "comes from outside"
+        ],
+        "note": "acceptResult step 1 pre-scan and removal of refused sources; depsOf is the only reader of files/ content (grep over tools/src/team and tools/src/web)"
+      },
+      {
+        "file": "tools/src/team/files.js",
+        "surfaces": [
+          "writes files",
+          "comes from outside"
+        ],
+        "note": "TextDecoder ignoreBOM only; path checks (checkWorkPath, lstat walk, NOFOLLOW, nlink) untouched"
+      },
+      {
+        "file": "tools/src/team/language.js",
+        "surfaces": [
+          "holds a secret (texts that carry file names)"
+        ],
+        "note": "secretDetail, FAIL_DETAIL.secret, FILE_WITHHELD, one PHRASES row; the module is imported by the server side of the team web, not by the page (grep language.js)"
+      },
+      {
+        "file": "tools/README.md",
+        "surfaces": [
+          "documentation (Q7: no secret-shaped literal; residual risks honest)"
+        ],
+        "note": "two paragraphs changed"
+      },
+      {
+        "area": "Pixel Office (R2)",
+        "surfaces": [
+          "touched only by the shared module mask.js"
+        ],
+        "note": "no change to hook.js, hook.sh, server.js, journal.js, state-dir.js, public/; git status shows no other pixel-office file"
+      }
+    ],
+    "items": [
+      {
+        "item": "Q7",
+        "result": "NOT MET",
+        "how": "Reading the code, 4.3 million differential strings, 2 880 name matrix, 73 bypass shapes, search of the diff, README, src/team and the page files for key-shaped literals (no match; the one README match is the fake-password example password: \"wrong-password\"). Secrets do not reach the journal, the chat, stderr, the exception or the disk after a refusal (P1, P2, P5, P7 runs). Not met because of finding F1: a value with a real-looking secret and text with the word example glued behind it is kept."
+      },
+      {
+        "item": "Q8",
+        "result": "not applicable",
+        "how": "No customer space or business owner in this change: it adds a pure function over text and a check at the existing write funnel; no new path to data, no space identifier. Project isolation is unchanged: depsOf reads only names from the journal of its own project (pattern-checked, NOFOLLOW), the test with a second project is part of SF-13 (red by design until the tests step)."
+      },
+      {
+        "item": "Q9",
+        "result": "not applicable",
+        "how": "No SQL or query language in the change; search of the added lines for SELECT/INSERT/UPDATE/DELETE/query( found nothing."
+      },
+      {
+        "item": "Q10",
+        "result": "met with one Low (F4)",
+        "how": "Hostile input up to 16 MiB: 222 shapes at 4 and 5 MiB (max 106 ms, 0 exceptions), 111 shapes at 1, 4, 16 MiB (ratio 16x size gives 16-18x time: linear), 15 big fuzz texts (max 79 ms); a refusal is a TeamError handled by acceptResult; other errors keep their old path. Corner: F4."
+      },
+      {
+        "item": "Q11",
+        "result": "not applicable",
+        "how": "No network call and no address is fetched: the address rule F3 only reads text. Search of the added lines for fetch/http/net/spawn: no match."
+      },
+      {
+        "item": "R2",
+        "result": "met (unchanged)",
+        "how": "Journal rules M1-M10 byte-identical to the base tag; HK-21, HK-24, MK-01..MK-05, NM-06 (two tests) all pass on the copy; no Pixel Office file other than mask.js is in the diff; the hook, the signature, the local address and the page are untouched. Simulation mode not involved."
+      },
+      {
+        "item": "R3",
+        "result": "not applicable",
+        "how": "Decision 0033: the product with photos of people was dropped; the change introduces no photo."
+      }
+    ],
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/pixel-office/mask.js: findIsPlaceholder (lines 533-560: the tests `starts with your` and `contains example`), used by findValue (unquoted line 749 and quoted line 734) and by findUrlPassword (line 805)",
+        "item": "Q7 (and decisions/0102 items 14 and 18: no narrowing of the old rules except the named ones)",
+        "severity": "Medium",
+        "what": "The two substring tests of the placeholder class are applied to the whole value up to the next white space, comma, semicolon or quote. A real-looking secret with anything glued behind it that contains the word example (or a glued value that starts with your) is therefore kept as a placeholder, and the old rules M2, M8, M9 hid every one of these. Realistic shapes: a query string with a secret followed by a redirect to https://example.com/..., a user:secret@example.com address inside a value, `Authorization: Basic <base64>&x=example`, `Bearer <token>&redirect=example.com`, and a quoted `password: \"<secret> for example.com\"`. It is not the named residual (4) (a secret written exactly like a placeholder) and not (6) (text after the first value): the first value here is the secret itself.",
+        "evidence": "Own runs on a copy outside the project with the old rules (scratch copy of the base tag with the rules exported) and findSecrets side by side: of 23 glued variants in one run 19 print KEEP for the new check, every one of them hidden by the old rules, and every shape named above is among the 19; the shape `token=<12 letters and digits>&redirect=https://example.com/cb` is kept, the same text with a space, a comma or a semicolon instead of the glue character is refused. An independent reference written from the requirement text agrees with the code on every case (0 disagreements in 4.3 million strings), so this is a gap in the rule itself, not a slip in the code. Same cause makes a kept call-class value swallow a glued pair: `token=f(x)&<name>=<literal>` is kept (old M9 hid it).",
+        "fix": "Apply the `your` prefix and the `example` substring tests only to a value made of word characters [A-Za-z0-9_.-] (the shape of every placeholder in the requirement: YOUR_API_KEY, pw-example, example9, your-token); any value with another character (`&`, `/`, `:`, `@`, a space) is a literal and is refused. Same restriction for the quoted content and for the address password. Add refuse samples (the shapes above) and keep samples (pw-example, YOUR_API_KEY, example9) to the design table and the test, and name in the README that a kept call-class value is not scanned inside. This changes a rule of REQ-102 (class З): it needs the micro-amendment gate (REQ-VALIDATOR) before CODE-FIXER, and it makes the check stricter, not looser. After the fix this role runs again."
+      },
+      {
+        "id": "F2",
+        "place": "tools/README.md line 253 (residual risks of findSecrets)",
+        "item": "Q7 (honesty of the residual risks)",
+        "severity": "Low",
+        "what": "The README names residual risks (1)-(4) and (6) but not the two old holes of (5): an assignment with a space before the sign (`password = \"...\"`) and an address with no user (`redis://:<secret>@host`); both are kept by the new check as they were by the old one (parity table below). The paragraph also says a name the journal rules would change is counted in «и ещё N», but when it is the only refused file nothing is named and no count is printed (the constant text only; checked with secretDetail).",
+        "evidence": "bypass table: `password = <value>` keep/old-kept; `redis://:<value>@db` keep/old-kept; secretDetail([\"t-0001-1-app.test.js\"]) prints the constant text.",
+        "fix": "Add the two forms to the residual-risk sentence and say that the count is shown only beside at least one named file."
+      },
+      {
+        "id": "F3",
+        "place": "tools/src/pixel-office/mask.js FIND_PREFIXED (line 815, three look-behind regexes with an unbounded repeat) and tools/src/team/runner.js depsOf (line 118-141)",
+        "item": "Q10",
+        "severity": "Low",
+        "what": "The prefixed-key regexes throw RangeError (backtrack stack) on a single key-shaped run longer than about 5.33 MiB (5 593 088 characters). Every path that reaches findSecrets through #publish or acceptResult is held to 5 MiB first, so the headroom is 6 percent; but depsOf reads a stored file without a size check, so a file put into files/ by hand that is larger than that makes depsOf throw a non-TeamError, against the code comment `nothing is thrown`. The old code with maskSecrets threw the same, so it is not a regression.",
+        "evidence": "bisect run: threshold 5 593 088 for sk-, ghp_, github_pat_ and repeated sk-; at exactly 5 MiB all four print F4/F5; depsOf on a 10 MiB hand-placed file printed `RangeError: Maximum call stack size exceeded` (old maskSecrets: same message).",
+        "fix": "Either skip the content check by a try/catch that turns a RangeError into the withheld text in depsOf, or bound the repeat ({16,4096} is enough to decide the form); state the dependence on FILE_BYTES_MAX in a code comment."
+      },
+      {
+        "id": "F4",
+        "place": "tools/README.md section Result files; tools/src/team/runner.js acceptResult (non claude-cli branch)",
+        "item": "Q10 (documentation)",
+        "severity": "Low",
+        "what": "For the test executor (scripted) the files are accepted one by one: a file accepted before a refused one stays stored and the task fails. The requirement writes this exclusion; the README does not. Test projects only, no user path.",
+        "evidence": "run-task with a scenario of three files (clean, secret, clean): files/ holds the first file, RESULT_FILE for it exists, TASK_FAILED names the second; the secret appears on disk only in the byte copy of the scenario (the allowed exception of EX-51).",
+        "fix": "One sentence in the README: for the scripted executor acceptance is file by file."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "sha256 of tools/README.md, tools/src/pixel-office/mask.js and every tools/src/team/*.js at the start and at the end",
+        "output": "the two lists are identical (diff empty): README 83707fee72db, mask.js 8610753a06d9, files.js ad5b74332540, store.js 1b2b1415b2d8, runner.js c208ebe9b09d, language.js f48770691f83; no project file was changed by this role"
+      },
+      {
+        "command": "diff of the first 315 lines of mask.js with `git show base/ISS-0093-20261028-01:tools/src/pixel-office/mask.js`; git diff --stat -- tools/src/pixel-office",
+        "output": "empty diff; `1 file changed, 703 insertions(+)` - rules M1-M10 untouched"
+      },
+      {
+        "command": "copy of the working tree to <scratch>/root (without .git and node_modules) and of the base tag to <scratch>/beforeroot; all runs below are there",
+        "output": "copies only; ports 4780, 4781, 4782, 4790 not used (the Pixel Office tests used temporary ports)"
+      },
+      {
+        "command": "cd <scratch>/root/tools && node --test --test-reporter=tap $(ls test/team-*.test.js test/exec-*.test.js | grep -v team-web)  (49 files)",
+        "output": "tests 548, pass 536, fail 12. The failing names: EX-51, EX-41, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63 - exactly the twelve. (A first run in a copy that lacked the repository documents showed 4 more failures, TM-01 a-d, ENOENT on STATE.md: the copy, not the code; with the documents present they pass.)"
+      },
+      {
+        "command": "same 12 test names on <scratch>/beforeroot (repeat without the work) and on <scratch>/root",
+        "output": "before: 24 selected, 24 pass; after: 24 selected, 12 pass, 12 fail (the failing ones assert the old label and the old masking, e.g. error `Файл результата «report.md» не принят: в нём найден секрет`)"
+      },
+      {
+        "command": "node --test --test-name-pattern with HK-21 HK-24 MK-01 MK-03 MK-05 NM-06 DC-01 (hook, page, docs files), MK-02 (server file), MK-04 (panels file), TM-44 TM-49 TM-50 (journal, deps, docs files)",
+        "output": "all pass: 8 of 8, 2 of 2, 4 of 4. Not run: the other tests of the Pixel Office files, and the Pixel Office server/hook started for real (nothing in them changed)"
+      },
+      {
+        "command": "hostile shapes: 111 shapes (unclosed {{ ${ $( < and closers, long dotted runs, one long line, deep nesting, white space only, NUL, lone surrogates, BOM, Bearer and Authorization spam, :// spam, key prefixes, interleaved group kinds, groups closed only at the very end) at 4 MiB and 5 MiB, then 1, 4, 16 MiB for scaling; 12 random fuzz texts of 5 MiB and 3 texts of 5 MiB of kept lines",
+        "output": "222 runs at 4 and 5 MiB: 0 exceptions, max 106 ms; scaling 1 -> 16 MiB: time ratio 16-18 (linear, not 256); big fuzz 12 rounds, 0 exceptions, worst 79 ms; peak rss 206 MiB. Exception only at 16 MiB for repeated sk- (F3)"
+      },
+      {
+        "command": "differential fuzz: old rules M1-M6, M8, M9 (scratch copy of the base tag with the rules exported; M7 and M10 left out) against findSecrets, 5 seeds, generator of name/value/Authorization/Bearer/address/key/JWT/PEM shapes with 14 white-space variants and 121 values; plus an independent reference of the forms written from the requirement text (regex based, quadratic)",
+        "output": "4 300 000 strings: old rules hid 1.9 million, the code refused 1.5 million of them, about 0.45 million kept; code vs reference: 0 disagreements. Every kept string falls into a named class: certificate line, placeholder, template, path (plan seeds, decisions 0102 item 18); call, bare identifier, $(…), block opener (item 21, owner answer item 30a); text after the first value (residual 6, item 24 and 30b); value empty after unmatched closers or empty quotes, the closing quote of a Bearer string, the scheme word that old M9 hid as a value; M7 and M10 (items 10 and 18). Not named: the glued placeholder (F1) and the swallowed glued pair (F1)"
+      },
+      {
+        "command": "bypass table of 73 shapes (split by LF, tab, no-break space, zero-width space; upper, lower and mixed case; quoted names with three quote kinds; base64 and percent forms; JWT, PEM, address, Bearer, Authorization variants) and a matrix of 2 880 name/quote/sign/gap/value cases against the old rules",
+        "output": "matrix: old hid and new keeps 0, new refuses more than old 0. Table: every shape the old M1-M6, M8, M9 hid is refused except those recorded as F1; the shapes that only M7 or M10 hid (base64 or percent of a key, upper-case prefix, three plain parts) are kept as the decisions say; the split and encoded forms the old rules did not hide are not hidden now either (parity)"
+      },
+      {
+        "command": "run-task with the fake executable (claude-cli): six answered files, among them a clean file with a BOM, four secret files (one with a two-dot name, one named like a key, one in a subfolder) and an unnamed draft; also a path refusal beside a secret, a symlink, a hard link, a 90-letter name, an absolute path, `a/../x`",
+        "output": "exit 1; stderr `E_TASK_FAILED: Задача не получилась: Файл результата не принят: в нём найден секрет (файлы: t-0001-1-s1.md, t-0001-1-s2.md и ещё 2)`; the event TASK_FAILED detail is the same string; files/ empty; no RESULT_FILE; grep -r of the data folder for the four baits and a base64 value: no hit; the four sources removed, the clean file and the draft stay; path-only refusal keeps the EX-42 text; link, hard link, long name and absolute path are refused as before (their sources stay, as before) and the decoy outside is untouched"
+      },
+      {
+        "command": "engine run with the fake reader (the engine path)",
+        "output": "TASK_FAILED detail and CHAT question carry the same name text `(файл: t-0001-1-memo_research.md)`; bait found nowhere in the project folder or the fake's folder; no stdin of any run holds the bait"
+      },
+      {
+        "command": "store API: BOM, CRLF, NUL, 5 MiB file, 7 files through run-task; BOM through writeResultFile, importWorkFile, importResultBytes; refusals through the three entries; a file of invalid UTF-8; secretDetail with 12 name lists",
+        "output": "stored bytes equal the source for all, sha256 in the event is the hash of the original; each refusal is TeamError E_WORK_FILE with details {reason: secret, form} and no value in message or stack; journal length unchanged after three refusals; invalid UTF-8 refused as before (E_EVENT not text); secretDetail output is a fixed point of maskSecrets for every list, names that fail the pattern or change under the rules are never printed"
+      },
+      {
+        "command": "depsOf on hand-placed files in files/: a file with password=[скрыто], a PEM header, a clean file with a BOM, a file with the label only, and a 5.5 MiB key-shaped run",
+        "output": "first three: withheld text `Файл не передан: в нём найден секрет` for the secret ones, the clean one byte-exact with the BOM, the label-only file passes (decision item 32); the 10 MiB case throws RangeError (F3)"
+      },
+      {
+        "command": "search of the diff, tools/src/team, tools/README.md and the page folders (pixel-office/public, picker/public, web) for key prefixes, JWT, PEM headers and name=value with 8+ characters",
+        "output": "no key, JWT or PEM literal anywhere; the single name=value match is the README example of a fake password in an agent's test; TM-44 (no rule words in tools/src/team) passes"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "F1 changes a rule of REQ-102 (class З in the requirement and the design: `starts with your`, `contains example`). Route proposal for ORCH: micro-amendment of the requirement (stricter, no owner question under decisions 0102 item 18, because it widens the refusal), REQ-VALIDATOR, design edit, CODE-FIXER, then this role again. The twelve red tests are unaffected."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Environment of a copy: a copy of tools/ alone fails TM-01 (a-d) and several Pixel Office tests for lack of STATE.md, CLAUDE.md, decisions/ and .claude/ at the repository root; I ran on a copy of the whole working tree. Anyone repeating the 536/12 count needs the same."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "For REVIEWER (not a security item): the README says `(…) and not named`, the code keeps the constant text when the only refused name is not shown; duplicates in the list of refused names (the same last name from two folders) print twice."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

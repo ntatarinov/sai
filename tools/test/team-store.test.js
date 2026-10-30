@@ -39,8 +39,8 @@ import {
   withPlan,
 } from "./team-helpers.js";
 
-// A fictional key shaped like a GitHub token.
-const FAKE_KEY = "ghp_FAKEFAKEFAKEFAKEFAKE1234567890abcd";
+// A fictional key shaped like a GitHub token, built from parts.
+const FAKE_KEY = ["gh", "p_", "FAKEFAKEFAKEFAKEFAKE1234567890abcd"].join("");
 const ID = /^p-[0-9]{8}-[0-9a-f]{6}$/;
 
 function out(r) {
@@ -496,22 +496,19 @@ function work(p, rel, content) {
   return file;
 }
 
-test("TM-57 a text file of work/ becomes a result file: masked, 0600, with the event and the hash of what was written", (t) => {
+test("TM-57 a text file of work/ becomes a result file: stored byte for byte, 0600, with the event and the hash of the original", (t) => {
   const home = makeHome(t);
   const p = startProject(t, home, makeClock());
   const { writer: w } = p;
-  const source = work(
-    p,
-    "notes/report.md",
-    `Отчёт. Ключ: ${FAKE_KEY}\nКонец\n`,
-  );
+  const text = "Отчёт. a.b.c, 0.1.0\nКонец\n";
+  const source = work(p, "notes/report.md", text);
   const workBefore = snapshot(w.workDir);
   const event = w.importWorkFile({ path: "notes/report.md" });
   const written = path.join(p.dir, "files", "report.md");
   assert.equal(modeOf(written), 0o600);
   const content = fs.readFileSync(written, "utf8");
-  assert.ok(!content.includes(FAKE_KEY));
-  assert.ok(content.includes("[скрыто]"));
+  assert.equal(content, text, "the file is the source, byte for byte");
+  assert.ok(!content.includes("[скрыто]"));
   assert.deepStrictEqual(event.data, {
     name: "report.md",
     bytes: fs.statSync(written).size,
@@ -519,6 +516,12 @@ test("TM-57 a text file of work/ becomes a result file: masked, 0600, with the e
     kind: "result",
     from_work: true,
   });
+  // the hash of the original, as taken with `shasum -a 256` from the bytes of the source
+  assert.equal(
+    event.data.sha256,
+    "53264d3269718cc7925eb333a0a86dcb19cbccc5395c7ff464b2506dc40d5579",
+  );
+  assert.equal(event.data.sha256, sha256(fs.readFileSync(source)));
   assert.equal(journalOf(p.events).at(-1).type, "RESULT_FILE");
   assert.equal(journalOf(p.events).at(-1).source, "ENGINE");
   assert.deepStrictEqual(
@@ -526,11 +529,33 @@ test("TM-57 a text file of work/ becomes a result file: masked, 0600, with the e
     workBefore,
     "work/ is not changed",
   );
-  assert.ok(
-    fs.readFileSync(source, "utf8").includes(FAKE_KEY),
+  assert.equal(
+    fs.readFileSync(source, "utf8"),
+    text,
     "the original keeps its content",
   );
   assert.equal(w.state.files[0].from_work, true);
+});
+
+test("TM-57 a text file of work/ with a key is refused: E_WORK_FILE, the reason secret; files/, the journal and the data folder are as before, work/ and the source are intact", (t) => {
+  const home = makeHome(t);
+  const p = startProject(t, home, makeClock());
+  const { writer: w } = p;
+  const text = `Отчёт. Ключ: ${FAKE_KEY}\nКонец\n`;
+  const source = work(p, "notes/report.md", text);
+  const workBefore = snapshot(w.workDir);
+  const journalBefore = fs.readFileSync(p.events);
+  const err = assertRefusal(
+    home,
+    () => w.importWorkFile({ path: "notes/report.md" }),
+    "E_WORK_FILE",
+  );
+  assert.equal(err.details.reason, "secret");
+  assert.ok(!err.message.includes(FAKE_KEY), "the key is not in the message");
+  assert.deepStrictEqual(fs.readdirSync(path.join(p.dir, "files")), []);
+  assert.ok(fs.readFileSync(p.events).equals(journalBefore));
+  assert.deepStrictEqual(snapshot(w.workDir), workBefore, "work/ is intact");
+  assert.equal(fs.readFileSync(source, "utf8"), text, "the source is intact");
 });
 
 test("TM-57 the name of the result file: the last part of the path, or the name given; a draft is a draft; the same name twice is refused", (t) => {
@@ -754,7 +779,7 @@ test("TM-58 ordinary names are kept as they are; names that are not allowed are 
   );
 });
 
-test("TM-58 RESULT_FILE cannot be written through append; the hash in the journal is the hash of the masked file", (t) => {
+test("TM-58 RESULT_FILE cannot be written through append; the hash in the journal is the hash of the original file", (t) => {
   const home = makeHome(t);
   const p = startProject(t, home, makeClock());
   const { writer: w } = p;
@@ -766,14 +791,18 @@ test("TM-58 RESULT_FILE cannot be written through append; the hash in the journa
     from_work: false,
   };
   assertRefusal(p.dir, () => w.append(eng("RESULT_FILE", data)), "E_EVENT");
-  const event = w.writeResultFile({
-    name: "key.md",
-    content: `Ключ ${FAKE_KEY}`,
-  });
+  const text = "Ключ: см. a.b.c";
+  const event = w.writeResultFile({ name: "key.md", content: text });
   const file = fs.readFileSync(path.join(p.dir, "files", "key.md"));
   assert.equal(event.data.sha256, sha256(file));
   assert.equal(event.data.bytes, file.length);
-  assert.notEqual(event.data.sha256, sha256(Buffer.from(`Ключ ${FAKE_KEY}`)));
+  // the hash of the original text, as taken with `shasum -a 256` from its bytes
+  assert.equal(
+    event.data.sha256,
+    "71168940be68fff5b5b15b7b244bc42d26cd12e5675506249b52d9a8b2ace946",
+  );
+  assert.equal(event.data.sha256, sha256(Buffer.from(text)));
+  assert.equal(file.toString("utf8"), text);
   assert.notEqual(event.data.sha256, "[скрыто]");
 });
 
@@ -1003,19 +1032,19 @@ test("a task that is created by a user has the next number; memory of an agent c
 
 // ---- TM-63 (r4, section 6.8) ---------------------------------------------------------
 
-test("TM-63 importResultBytes: the file is masked, 0600, with the event of the written bytes; work/ is not touched", (t) => {
+test("TM-63 importResultBytes: the file is stored byte for byte, 0600, with the event of the written bytes; work/ is not touched; bytes with a key are refused", (t) => {
   const home = makeHome(t);
   const p = startProject(t, home, makeClock());
   const { writer: w } = p;
   withPlan(w, [planTask("t-0001", "developer")]);
   const workBefore = snapshot(w.workDir);
-  const bytes = Buffer.from(`Итог. Ключ: ${FAKE_KEY}\nКонец, ёжик\n`, "utf8");
+  const bytes = Buffer.from("Итог. Версия a.b.c\nКонец, ёжик\n", "utf8");
   const event = w.importResultBytes({ task: null, name: "note.md", bytes });
   const written = path.join(p.dir, "files", "note.md");
   assert.equal(modeOf(written), 0o600);
+  assert.ok(fs.readFileSync(written).equals(bytes), "the same bytes");
   const content = fs.readFileSync(written, "utf8");
-  assert.ok(!content.includes(FAKE_KEY), "the key is not in the file");
-  assert.ok(content.includes("[скрыто]"));
+  assert.ok(!content.includes("[скрыто]"), "no label");
   assert.ok(content.includes("ёжик"), "the rest of the text is as it was");
   assert.deepStrictEqual(event.data, {
     name: "note.md",
@@ -1024,6 +1053,11 @@ test("TM-63 importResultBytes: the file is masked, 0600, with the event of the w
     kind: "result",
     from_work: false,
   });
+  // the hash of the original, as taken with `shasum -a 256` from the bytes
+  assert.equal(
+    event.data.sha256,
+    "c128e2243247229bb17259418bfb4690c10516d6d0dd0b635ccf51056b1b70cc",
+  );
   assert.equal(event.type, "RESULT_FILE");
   assert.equal(event.source, "ENGINE");
   assert.equal(event.task, null);
@@ -1031,13 +1065,27 @@ test("TM-63 importResultBytes: the file is masked, 0600, with the event of the w
   assert.equal(w.state.files.length, 1);
   assert.equal(w.state.files[0].from_work, false);
   assert.deepStrictEqual(snapshot(w.workDir), workBefore, "work/ is the same");
-  assert.ok(
-    !fs.readFileSync(p.events, "utf8").includes(FAKE_KEY),
-    "the key is not in the journal",
-  );
   assert.deepStrictEqual(fs.readdirSync(path.join(p.dir, "files")), [
     "note.md",
   ]);
+
+  // bytes with a key are refused: the reason secret, nothing changes
+  const refused = assertRefusal(
+    home,
+    () =>
+      w.importResultBytes({
+        task: null,
+        name: "key.md",
+        bytes: Buffer.from(`Итог. Ключ: ${FAKE_KEY}\nКонец, ёжик\n`, "utf8"),
+      }),
+    "E_WORK_FILE",
+  );
+  assert.equal(refused.details.reason, "secret");
+  assert.ok(!fs.readFileSync(p.events, "utf8").includes(FAKE_KEY));
+  assert.deepStrictEqual(fs.readdirSync(path.join(p.dir, "files")), [
+    "note.md",
+  ]);
+  assert.deepStrictEqual(snapshot(w.workDir), workBefore, "work/ is the same");
 
   // a task, a draft, and the text exactly at the limit
   const draft = w.importResultBytes({
@@ -1101,6 +1149,11 @@ test("TM-63 importResultBytes: every refusal writes nothing (files/, the journal
       "E_TASK_NOT_FOUND",
     ],
     ["no file object", null, "E_EVENT"],
+    [
+      "bytes with a key",
+      { name: "a.md", bytes: Buffer.from(`Ключ ${FAKE_KEY}`, "utf8") },
+      "E_WORK_FILE",
+    ],
   ];
   for (const [label, input, code] of cases) {
     const err = assertRefusal(home, () => w.importResultBytes(input), code);

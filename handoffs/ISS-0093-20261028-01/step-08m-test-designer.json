@@ -1,0 +1,157 @@
+{
+  "handoff_id": "step08m-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "08m",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0093-20261028-01/step-08m-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-08l-test-design-validator.json (result.findings F1-F5, result.issues)",
+      "handoffs/ISS-0093-20261028-01/step-08k-test-designer.json",
+      "docs/requirements.yaml (block REQ-102 by id)",
+      "decisions/0102-core0-result-files-conventions.md (Additions 13, 14 and 15)",
+      "tools/src/pixel-office/mask.js: read only"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR 08l FAIL (second extra pass) -> owner: one more rework with an exhaustive slot rule and one more pass (decisions/0102 Addition 15) -> TEST-DESIGNER rework 5 (this, 08m) -> TEST-DESIGN-VALIDATOR 08n (the third extra pass) -> TEST-RUNNER (09)",
+    "write_set": [
+      "tools/test/team-result-bytes.test.js",
+      "tools/test/fixtures (new fixtures only)",
+      "handoffs/ISS-0093-20261028-01/step-08m-test-designer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "rework_of": "handoffs/ISS-0093-20261028-01/step-08l-test-design-validator.json",
+    "orch_check": {
+      "at": "2026-10-29T14:38:34Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-29T14:27:07Z; handoffs-check clean (1272 files, 0 violations); changed after step 08l: only tools/test/team-result-bytes.test.js; tools/src (mask.js sha256 starts 205e40c6, as the designer reports), the timing file (12f944d0) and the six guard files unchanged",
+        "own run: bytes file + six guard files: 151 tests, 151 pass, 0 fail, 0 skipped, 0 todo; prettier --check clean; eslint --max-warnings 0 clean; no skip/todo/only/|| true/eslint-disable in the bytes file",
+        "own mutants on a copy outside the project (each applied by a script that asserts one occurrence; project mask.js compared with cmp afterwards and intact): x54 (the chain set also accepts the hyphen) - bytes file 1 of 55 red; the left-dash test of the certificate header dropped (ORCH's own, not the validator's y19) - 11 of 55 red; n67 - 14 of 55 red; wd50 - 14 of 55 red. None survives",
+        "not re-run by ORCH: the designer's 15,970-mutant generator numbers, the 28-row position table, the 369,540 sweep rows. The new sweeps use a reference predicate written in the test from the requirement's definitions (the designer reports it agrees with the code on all new rows): the next gate pass must judge its independence from the code (AP-071) and whether any expected side is the code's reading instead of the requirement's",
+        "growth: the bytes file about 144 s alone, 151 tests together about 150 s; three positions where the requirement is silent got no row (host of an F3 address, a leading dot before eyJ, a non-string value)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 6 rework 5 (test gate FAIL at the second extra pass 08l; the owner allowed exactly one more rework and one more gate pass, with an exhaustive slot rule: decisions/0102 Addition 15) - TEST-DESIGNER: fix the tests by the remarks of TEST-DESIGN-VALIDATOR, handoffs/ISS-0093-20261028-01/step-08l-test-design-validator.json (result.findings F1-F5, result.issues; read F1 in full with its 'fix' text). You change NO file in tools/src, no decision, no requirement, no design file, no README of tools/. Read your role file, docs/quality-bar.md, docs/anti-patterns.md (AP-110), the REQ-102 block by id and your own reports step-08c, step-08g, step-08i, step-08k.\nWhy five FAILs in a row: each pass finds a neighbour of a rule that no row tells apart, and each rework adds the named neighbours only. This time close the CLASS at once by the EXHAUSTIVE SLOT RULE: for EVERY position in the requirement text (forms F1-F9, the placeholder rules, the definitions, the closed lists) where the requirement names a set of characters, a closed list of words, a count (at least n / at most n / exactly n / a run) or a boundary, build a sweep that fills that position with ALL 128 ASCII characters and a fixed set of Unicode ones (a letter outside ASCII, a non-breaking space, a zero-width character, a full-width form of a letter and of a digit, an astral character), with the expected side taken from the words of the requirement as a predicate written in the test (not a call of the code under test, AP-071), and do it in BOTH directions: the slot before the item, the slot after it, and the slot inside it where the rule allows a run. For a list of words, sweep every word of the list with the 128-character slot before and after it, and every word of the list written with each letter in the other case, and add the words just outside the list (one letter off). For a count, test n-1, n, n+1. Do it once over the whole requirement text, then say in result which positions you enumerated (a table: rule, position, set, slot width).\nMust be red afterwards (make each yourself on a copy outside the project, report red/green): the validator's mutants x54 (the chain set also accepts the hyphen or the dot), y22 (also y), y23 (+), y24 (=), y25 (#), y19 and y20 (a word followed or preceded by . - _ is still a word), z01b (the certificate header accepts one to three spaces), z02 (a tab instead of the space); and the seven of the earlier pass (n67, wd01, wd49, wd50, n28, wd19, wd38). F1 specifics (the exhaustive sweeps above cover them, make sure): a chain sweep WITHOUT a trailing digit (the slot is the last character of the value); the 26 list words with a character before and after; refused rows for the header with two spaces, a tab and a tab plus a space, each paired with the stored header O7.\nF2 (Low, cheap): for the closed lists, add the words just outside each list (pw, Hmac, char, api-key, pwd, a prefix of gh plus another lower-case letter, AIDA) as stored/refused rows where the requirement or decisions/0102 states the side (decisions/0102 item 22(б) names pw); where the requirement is silent, put the quoted place in result.issues and do not add a row. F3 (m43 not finishing): nothing for you. F5 is equivalent.\nThen re-run your generator of step 08k (gen2.mjs, kept in the scratch sub-folder td08k if it is still there) on the final tables with a THIRD set of classes: set widening by one character at every set (all 128 + the Unicode ones, one at a time), set narrowing by one member, list widening by one word, list narrowing by one word, count off-by-one in both directions; report the numbers; no survivor may stay unnamed (add the row, or EQUIVALENT with a one-line proof, or 'the requirement is silent' with the quoted place).\nTime: the bytes file is 132 s; keep the growth small (a sweep of 128 characters at a position is one row each: check the cost) and say the new time. Rules for you: nothing deleted, skipped, todo or weakened; criterion 9 floors stay or grow; the timing file untouched; build secret bodies from parts at run time, no key-shaped literal written whole; use only the session scratch folder for copies and temp files (not /tmp, not the system temp folder; set TMPDIR to a scratch sub-folder before any run), no git checkout/reset/stash/clean anywhere (also not in a copy), no background loops left running (ps before you finish), no servers on fixed ports, no real AI; run node --test on the bytes file and the six guard files and prettier and eslint on the files you touched; do not run the full npm run check. Report: the table of enumerated positions, the rows and sweeps added, red/green of every mutant above, the numbers of the third generator set, the run counts, the time of the bytes file, result.issues.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-29T12:04:47Z",
+  "started_at": "2026-10-29T12:04:47Z",
+  "completed_at": "2026-10-29T14:27:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 5 (gate FAIL at the second extra pass 08l; the owner allowed exactly one more rework with an EXHAUSTIVE SLOT RULE, decisions/0102 Addition 15). Only tools/test/team-result-bytes.test.js changed (no code, no fixture, no other test, the timing file untouched). Every position of the requirement text where a set of characters, a closed list of words, a count or a boundary is named was enumerated once (table in result.positions) and swept over ALL 128 ASCII characters plus a fixed set of others (a letter outside ASCII, the no-break space and the rest of the closed white space, a zero-width space, the full-width form of a letter and of a digit, an astral character, typographic quotes), before the item, behind it and inside it where a run is allowed; lists are swept word by word (each letter in the other case, a letter dropped, put in, replaced, and words just outside). The expected side of the new sweeps is NOT read from the code: it comes from a reference written in the test, a reading of the DEFINITIONS of the requirement (the value in quotes, the value without quotes, classes Z, Sh, B1-B4, F2 scheme and white space); it agrees with the real code on all 369,540 new rows (no error of the code found). ADDED: 276 sweeps and 369,540 sweep rows (SWEEPS 154 -> 430, SWEEP_ROWS 24,159 -> 393,699); stored rows 564 -> 573 (O72 four words just outside the name and prefix lists, O73 five list members next to refused words), refused rows 493 -> 506 (C72 the stored header with two spaces, a tab, tab+space, space+tab, three spaces, a no-break space, none; C73 pw, pw, pw in an address, char, tok, Hmac), pairs 588 -> 605 (+17: C72 x7 against the stored header O7#0, O72 x4, O73 x5 and Hmac against Basic). RED NOW (real tests, seven files, 151 tests): x54 2 failed, y22 2, y23 1, y24 1, y25 1, y19 2, y20 2, z01b 11, z02 22, and the seven of the earlier pass n67 14, wd01 14, wd49 14, wd50 14, n28 11, wd19 8, wd38 10; pristine 151 of 151 green. THIRD generator set on the final tables: 13,781 mutants (set widened by one character at every set of the code with all 128 ASCII and 21 other codes, set narrowed by one member, class of a regular expression widened/narrowed, list widened by one word, list narrowed by one word, every number +-1, every relational operator moved by one, quantifiers +-1): 6,003 killed, 7,778 survive, all named (6,258 proved equivalent by evaluating the predicate itself, 1,520 in named classes (S1-S11, counts, R1-R2, L1-L5) with a one-line reason each, 0 unnamed). The older sets re-run on the final tables: gen2 129 of 136 killed (the same 7 equivalent), 2,010 older 1,856 killed (16 more than before), 43 directed 40 killed (the same 3). Time: the bytes file alone 144.5 s (132 s before: +12 s; the sweeps of the new rule go through the store at every 400th row only), bytes plus six guard files 151 of 151 green twice (148.2 s and 155.1 s).",
+    "positions": [
+      "F1 | character before the stored header | any; a dash makes six dashes | 1 | XF1a",
+      "F1 | character behind the stored header | any; a dash makes six dashes | 1 | XF1b",
+      "F1 | gap BEGIN..CERTIFICATE | exactly one space | 0,1,2,3,4,5 characters; space+x and x+space for every x; all 625 pairs and 125 triples of the white-space set | XF1c",
+      "F1 | dashes left and right of the header | exactly 5 each (fewer than 5 on the left is no marker at all) | counts 0..8 x 0..8 | XF1d",
+      "F1 | each letter of BEGIN, each of the five dashes, each of the 11 letters of CERTIFICATE | that character only (capitals) | 1 per place, 5+5+11 places | XF1e0-4, XF1f0-4, XF1g0-10",
+      "F1 | label one letter more or less; a second marker behind the header | n-1, n, n+1; any character between | 1 | XF1h, XF1i",
+      "F9, F2 | the name (seven closed words) | segment [A-Za-z0-9_-], '_' or '-' before the word | left slot 1, right slot 1, behind one quote 1, every letter replaced by every character, one letter off (case, drop, put in, replace), prefix of 0..30 characters, 36 words outside the list (pw, pwd, api-key, plurals ...) beside the 7 names | XN1-XN7 for each of the 7 names",
+      "F9 | after the sign | spaces and tabs only, any number | runs 0..3 over {space, tab, no-break space}; slot before and behind a literal | XRu, XPu",
+      "F2 | slot between white space and the scheme word; the optional quote | white space skipped, one quote, else glued | 1 (also behind two quotes) | XA1, XA6",
+      "F2 | character behind each of the 9 scheme words; before each; inside each | white space or quote ends the word | 1; 1; len-1 places | XA2, XA3, XA5",
+      "F2 | the nine scheme words | closed list, any case | every letter in the other case, dropped, put in, replaced; 17 words outside (Hmac, Bearers, Aws4 ...) | XA4",
+      "F2, F8 | runs of white space after the colon, after the scheme, after Bearer | closed set; spaces and tabs after Bearer | pairs (625), triples (125), runs 0..9 | T3-T8 (earlier), XRs, XRb, XE5",
+      "F3 | character left of :// | [A-Za-z0-9+.-] | 0 or 1 | XU1",
+      "F3 | first and last character of the user; the colon; the at sign; each character of ://; number of slashes; length of user and password | no / @ : white space; exactly those | 1; counts 0..4 and 0,1,2,3,20 | XU2a, XU2b, XU3-XU10",
+      "F4, F5, F6 | each character of every prefix (sk-, ghp_ gho_ ghs_, github_pat_, AKIA ASIA); the other prefixes of the family | one case; the listed prefixes only | 1 per place | XKskp.., XKghp.., XKpatp.., XKakp.., XKak",
+      "F4-F6 | character left of the prefix; the body count; the first, middle and last body character; the character after the minimum body | [A-Za-z0-9] left; at least 16/20/20, AKIA exactly 16; sets [A-Za-z0-9_-], [A-Za-z0-9], [A-Za-z0-9_], [A-Z0-9]; AKIA: not [A-Za-z0-9_+=-] | 1; n-2..n+2 and 40 | XK*l, XK*n, XK*bfirst/middle/last, XK*r",
+      "F7 | left of eyJ; each character of eyJ; first part; both separators; middle part; last part; dots and empty parts; trailing dots | run set [A-Za-z0-9_.-]; exactly three non-empty parts | 1; 1..5 parts over {empty, a}; 0..3 trailing dots | XJ1-XJ9",
+      "F8 | left of Bearer; behind Bearer; each letter of Bearer; neighbours; runs | [A-Za-z0-9_]; space and tab; any case | 0 or 1; 0..9 | XE1-XE5",
+      "Z | the 26 words of the list | closed list, any case | slot before and behind in 5 places (unquoted, quotation, address, after a scheme, after Bearer); neighbours (case, dropped, put in, replaced); each letter replaced | XW*, XO*, XRq34",
+      "Z | your, example | starts with / contains, only in a value of [A-Za-z0-9_.-] | before, behind, inside; 7 places (unquoted, 3 quotes, address, scheme, Bearer) | XY*",
+      "Z | the chain of * x X | at least 3, only of those | every string over the set to length 4 (counts 1..4), runs to 7, slots before, behind and inside; 7 places | XC*",
+      "Z | change-me, change_me | the mark in the word | every character in its place; 5 places | XI*",
+      "Sh | $NAME, %NAME%, ${..}, ${{..}}, {{..}}, $(..), <..> | opener, content, closer, name characters | every character of every template replaced by every character; 3 places; openers with balanced content | XT*, XOx, XG*, XE*",
+      "B1-B4 | path, call, bare name, block | dot, ?., bracket, underscore, capital, block characters | every character replaced; all strings of up to 4 characters over 13 structural characters (unquoted, after a scheme), up to 3 in a quotation | XS*, XE*, XB*",
+      "B3 | the 26 types and keywords | closed list, any case | before, behind, neighbours; after a scheme and Bearer B3 does not apply | XVu, XMu, XMs, XVs, XVb",
+      "closers | trailing ) ] } dropped by count | 0..3 closers of three kinds on 15 bases (with openers, groups) | 0..3 | XD*",
+      "value | the character before a literal after the sign, a scheme, Bearer, a quote, the colon of a password | what is skipped and what ends the value | 1 before and behind | XP*",
+      "closed lists | words outside the lists (decisions/0102 items 22 and 30) | pw, tok, Hmac, char, pwd, api-key, ghu_, AIDA, ... | 324 words (with the capitalised forms) x 5 places | XZ*, O72, O73, C73, XN7, XA4, XKak"
+    ],
+    "changes": [
+      {
+        "remark": "F1 (a) chain set without a trailing digit",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "sweeps XC* (7 places): every string over {*, x, X} up to length 4 as the whole value, runs of 7, and a slot before, behind and inside a chain of three; the slot is the LAST character of the value; every sweep takes the 128 ASCII characters and 53 others (181 slots); x54, y22, y23, y24, y25 are red (see self_check)."
+      },
+      {
+        "remark": "F1 (b) a word of the list is the whole value",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "sweeps XW* (5 places): each of the 26 words with a slot before and behind, XO* (neighbours: case, dropped, put in, replaced), XRq34, XI*; y19, y20 red."
+      },
+      {
+        "remark": "F1 (c) exactly one space in the stored header",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "REFUSE C72 (7 rows: two spaces, tab, tab+space, space+tab, three spaces, no-break space, none), 7 PAIRS against the stored header O7#0; sweeps XF1a-XF1i (7,856 rows); z01b, z02 red."
+      },
+      {
+        "remark": "F2 words just outside each list",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "KEEP O72 (pwd=, api-key= as names, ghu_ + 20, AIDA + 16; stored where the requirement fixes the closed list of names and prefixes), KEEP O73 (pwd as a placeholder, bool, token as a value), REFUSE C73 (pw quoted, unquoted, in an address; char; tok; Hmac as a scheme; sides stated by decisions/0102 items 22(b), 30 and the closed lists of the requirement); PAIRS +17; SHA table +9 literal sha256 and E:g-new; RB-00 counts 573 / 506 and the lengths of the new groups; sweeps XN7, XA4, XKak, XZ*."
+      },
+      {
+        "remark": "exhaustive slot rule (task)",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "block between the markers X-BEGIN and X-END before SWEEPS: CHARS_X, the reference (refPlaceholder, refGroupEnd, refUnquoted, refQuoted, refAuth, refPassword), VALUE_PLACES, valueSweep and the sweeps X_VALUE_SWEEPS, X_STRUCT_SWEEPS, X_SOUP_SWEEPS, X_WORD_SWEEPS, X_F1_SWEEPS, X_F3_SWEEPS, X_KEY_SWEEPS, X_F7_SWEEPS, X_F8_SWEEPS, X_NAME_SWEEPS, X_F2_SWEEPS joined as EXHAUSTIVE_SWEEPS at the end of SWEEPS."
+      },
+      {
+        "remark": "bookkeeping",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "RB-20: SWEEPS 430, SWEEP_ROWS 393,699 (OLD_SWEEP_ROWS = 24,159 first); the store pass takes every third row of the earlier sweeps as before and every 400th row of the exhaustive ones; the id of a row whose slot is not a one-character string is its place in the list (no old id changed); RB-00 counts. Nothing deleted, skipped, disabled or weakened; 55 tests as before."
+      }
+    ],
+    "self_check": [
+      "COMMANDS (TMPDIR in the session scratch folder, node 22.23.4, nothing else heavy running): cd tools && node --test test/team-result-bytes.test.js: tests 55, pass 55, fail 0, skipped 0, todo 0, 144.5 s (was 132 s). The bytes file plus team-store, team-engine-reads-files, team-engine-rounds, team-journal, exec-workdir, exec-scripted-source (seven files): tests 151, pass 151, fail 0, skipped 0, todo 0, run 1 148.2 s, run 2 155.1 s. npx prettier --check on the file: clean. npx eslint test/team-result-bytes.test.js --max-warnings 0: code 0. grep for .skip( .todo( .only( {skip {todo eslint-disable '|| true' prettier-ignore: empty. RB-10 (no key-shaped text in the new test files) green: the second marker of XF1i is built from parts. The criterion 9 floors (RB-18) green. The full npm run check was NOT run. Only team-result-bytes.test.js is newer than the start of the work in tools/; sha256 of src/pixel-office/mask.js is 205e40c6... before and after.",
+      "NAMED MUTANTS, real tests (copies of tools/src and tools/test in four lanes of the scratch folder, one text edit of mask.js each, seven files, 151 tests; a mutant is RED if a shipped test fails; after every run the lane file equals the original): x54 (chain set also accepts - and .) RED 2 of 151 failed (RB-20 findSecrets, RB-20 importResultBytes; first rows XCu#i0168); y22 (also y) RED 2 (XCu#i0244); y23 (also +) RED 1 (RB-20 findSecrets, XCu#i0166); y24 (also =) RED 1 (XCu#i0184); y25 (also #) RED 1 (XCu#i0158); y19 (a word followed by . - _ is still a word) RED 2 (XWu#i0226); y20 (a word preceded by . - _ is still a word) RED 2 (XWu#i0045); z01b (header accepts one to three spaces) RED 11 (XF1c#i0214, C72#0 in RB-03 d, RB-06 x3, RB-07, RB-08, RB-11 x3, RB-20); z02 (a tab instead of the space) RED 22; the seven of the earlier pass: n67 RED 14, wd01 RED 14, wd49 RED 14, wd50 RED 14, n28 RED 11, wd19 RED 8, wd38 RED 10. Pristine mask.js: 151 of 151 green. The in-process screen (all rows of the tables and sweeps through findSecrets) agrees: all 16 red, the pristine file green.",
+      "THIRD GENERATOR SET (gen3.mjs in <scratch>/td08m over the whole findSecrets region, 317-1041, of mask.js, sha256 equal to the project file): cwiden 6,258 (every set of the code - 42 roots of character tests - widened by one of 149 codes: 128 ASCII, 0x80, 0x85, 0xa0, 0xa1, 0xe9, 0xff, 0x1680, 0x2000, 0x200b, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000, 0xfeff, 0xff10, 0xff21, 0xff41 and the two halves of an astral character) 3,836 killed, 2,422 survive; cnarrow 6,258 (the same sets narrowed by one member) 1,068 killed, 5,190 survive; rwiden 676 (a class of a regular expression widened by one character, ranges by one) 585 killed, 91 survive; rnarrow 82 (a member removed, a range shortened at either end) 78 killed, 4 survive; lwiden 105 (a closed list or the prefix alternation widened by one word just outside: 30 test words for the placeholders, 28 types, 18 schemes, 20 names, 8 key prefixes) 82 killed, 23 survive; lnarrow 70 (each word of each list removed) 69 killed, 1 survives; count 332 (every number +-1 except 0 and 1 increments, every relational operator moved by one, quantifiers {n,} +-1) 285 killed, 47 survive. TOTAL 13,781: 6,003 killed (10 of them by non-termination), 7,778 survive. The first run left 9,481 survivors; two gaps of my own were found and closed by the run itself (the narrowing mutant lacked brackets round the set: a precedence error of the generator, fixed; and the sweeps lacked the structural characters: templates, closers, bracket soup, words outside the lists - added). SURVIVORS, ALL NAMED: E0 6,258 are equivalent because the mutation does not change the set (a widened set that already holds the character, a narrowed set that does not): proved by evaluating the predicate itself on the character. The other 1,520 are in classes, each with its reason (counts in brackets): S1 (8: a lone half of an astral character widens a set; valid text holds halves only as a pair, a differential fuzz with the pair as the character has 0 differences), S2 (66: an ender in the set of an identifier, an underscore or a block character - an unquoted value holds no ender, and a group starts with a character that is no identifier character), S3 (14) and S3/S4 (40: a line end at the start or inside a value - none can be there - or a character shadowed by an earlier branch of the same else-if chain), S4 (3: shadowed: 123 behind 40, 36 and 123 behind 36 and 123, 62 behind 62), S5 (152: the character after an identifier is neither an identifier character nor an ender; a bracket there is a call anyway), S6 (146: the guard 'the last character is a closer' widened - the walk back ends at once for a character that is no closer), S7 (436: a character that is no bracket reached by the walk back - the budget is spent on a real closer and the value that is left is a literal or a call in both readings), S8 (168: between eyJ and the end of the run there is only a run character), S9 (145: a prefilter on the last letter, the exact endsWith follows), S10 (111: the character before a name is a segment character of the lower-cased tail), S11 (65: the scheme word ended by a character M, the value then starts at M and is one character: a literal; the block characters, '.', '<', '(', '{' were killed by new rows), counts (47 in 35 places: a boundary read of the character after a value or a limit above the longest or below the shortest member - the character read is NaN, an ender, a closer or a quote and never changes the kind; the memo of a failed group search changes time only; named constants compared by identity), R1 (41) and R2 (54): a class widened by a duplicate member; with the i flag A-Z and a-z are one set; lower-casing maps a character outside A-Z onto a character outside [a-z_-] - the two that hit (63 -> _, 13 -> -) are killed by XI*, L1-L5 (24: example is also a placeholder by the rule 'contains example'; yourkey and xxx by the your and chain rules; null, undefined, none, token are placeholders and int32 holds a digit; the 14 names pw pwd pass auth keys apikeys tokens secrets passw pswd credential credentials bearer and client_secret are inert or already names - the prefilter FIND_NAME_MIN = 5 and the last-letter test n t d y cannot admit them; negotiates is longer than the longest scheme word and key is a placeholder). The classifier (classify3.mjs) prints UNNAMED 0.",
+      "DIFFERENTIAL FUZZ of the 1,521 survivors that are not equivalent by the predicate: random strings over the structural alphabet plus the mutated character (the pair for a half), 11 places, 22,000 texts each: 1 mutant showed a difference (966 + '<': 'Authorization: token<a>,' - the word glued to a group; real, killed now by the rows w + '<' + 'a>', w + '$' + '{a}', w + '{' + '{a}}' of XA2), 0 differences for the other 1,520.",
+      "OLDER GENERATORS re-run on the final tables (screen = every row of the tables, the order joins and the sweeps through findSecrets): gen2.mjs of 08k 136 mutants: 129 killed, 7 survive = the same 7 as at 08k (line 839 {16,} -> {16}, {16,17}; 840, 841 the same for 20; the control [Bb]earer); the 43 directed mutants of 'a template is the whole value': 40 killed, 3 equivalent (i8, i8b, a4); the 2,010 mutants of the first generator: 1,856 killed, 154 survive = 152 of the 168 named at 08g (16 more killed now: indices 1001, 1019, 1073, 1407, 1408, 1412, 1413, 1417, 1418, 1454, 1455, 1459, 1460, 1464, 1465, 1466) plus the 2 of the guard for a value that is not a string (indices 1990, 1991; the requirement is silent, the store checks the type). Mutants of all sets: 13,781 + 136 + 43 + 2,010 = 15,970.",
+      "ENUMERATION: result.positions lists the positions (rule, position, set, slot width, sweeps). Every sweep puts the 128 ASCII characters and 53 others into its slot (CHARS_X = 181 characters; the astral character is one slot of two code units); every sweep has a stored and a refused row (RB-20 checks it, the exemption of the four earlier sweeps K2-K5 is unchanged); the ids are unique. The new sweeps were run on the real code before the counts were written: 369,540 of 369,540 rows agree with the expected side of the reference (checked with the bounded harness chk.mjs; the same check is RB-20 first test).",
+      "OPEN LISTS (F2 of 08l): the rows for words just outside each list stand where the requirement or decisions/0102 states the side (items 22(b) and 30: pw and tok are refused; the closed lists of names, schemes, types, key prefixes). The words that no text states (any test word) are swept as a class (XZ*, 324 words in 5 places) with the side taken from the classes of the value; a word that is a placeholder by another rule is expected stored by the reference.",
+      "PROCESSES AND FILES: ps checked at the end: no process of mine runs (node --test 62025 and the Pixel Office server on its own port were there before and are not mine). No port bound, no git checkout/reset/stash/clean/commit/push anywhere, copies and lanes only in the scratch folder, TMPDIR in it for every run. A bounded stub of the old harness (sweep/screen.mjs) was reordered so that the sweeps run first; nothing in the project was touched except the test file."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "No error of the code found: every new row and sweep (369,540) gives on the real code the side that the reference reads from the definitions of the requirement; nothing for CODE-FIXER. The five Medium/High points of 08l (F1 a, b, c) are covered by the exhaustive sweeps, not by the named neighbours only; F3 (m43 not finishing) nothing for me, F5 (x44) equivalent."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "The requirement is SILENT on three positions; no row was added, the quoted place is given. (1) The host of F3: 'схема://пользователь:пароль@хост' - the host has no definition; the code refuses an address with a real password whatever stands behind '@' (even nothing). (2) A dot to the left of eyJ in F7: 'отрезок из знаков [A-Za-z0-9_.-]' - the run includes the dot, so '.eyJ...' does not start with eyJ and is stored by the code; the requirement does not say whether a leading dot belongs to the run, so XJ1 leaves the dot out (as J1 of the earlier pass did). (3) The behaviour on a value that is not a string (guard at the end of findSecrets): not a rule of the requirement (the two mutants 1990, 1991 stay named SILENT)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Time: the bytes file alone is 144.5 s (132 s before). The growth is the new refused rows in RB-06/07/11 (13 rows x three inputs) and the store pass of the exhaustive sweeps (every 400th row = 924 rows, 308 per input); building and checking 394 thousand rows through findSecrets in RB-20 takes a few seconds. The seven files together took 148 s and 155 s. Criterion 7 (budget 120 s) belongs to the timing file, untouched."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Three survivors of the third set are worth one sentence at the next requirement edit: the list of names is protected twice (the length prefilter FIND_NAME_MIN = 5 and the last-letter test n t d y), so a widening of the list by a short word or a word ending in another letter is inert in the code although the requirement would forbid it; the sweeps XN7 and the rows O72 hold the requirement side and would catch a change of the prefilter. Nothing to change."
+      },
+      {
+        "id": "I5",
+        "kind": "PROPOSAL",
+        "text": "AP-110 for the list, carried out here: a sweep must put into its slot a character that the neighbouring text cannot hide - the old sweeps ended every chain with a digit, so a widened set was invisible; and a reference written from the definitions of the requirement (about 120 lines) replaces hand-written predicates for every value place, so a new place costs a line, not a predicate. The third generator class set (gen3.mjs, about 230 lines: sets, lists, counts) finds in minutes what a validator found by hand at 08h, 08j and 08l; it should run at the start of the next test step."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-result-bytes.test.js"
+    ]
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "handoff_id": "step08n-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "08n",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0093-20261028-01/step-08n-test-design-validator.json",
+  "status": "FAILED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-08m-test-designer.json",
+      "handoffs/ISS-0093-20261028-01/step-08l-test-design-validator.json (result.findings F1-F5, result.issues)",
+      "docs/requirements.yaml (block REQ-102 by id)",
+      "decisions/0102-core0-result-files-conventions.md (Additions 13, 14 and 15)"
+    ],
+    "route": "TEST-DESIGNER 08m rework 5 -> TEST-DESIGN-VALIDATOR 08n (the third extra pass, decisions/0102 Addition 15; a FAIL goes to the owner) -> TEST-RUNNER (09)",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-08n-test-design-validator.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "interruptions": [
+      {
+        "at": "неизвестно: the end of the previous working session, before 2026-10-29T15:26:00Z (the handoff stayed PENDING with no result)",
+        "cause": "the working session ended while the validator ran; no result was written (the check time is from the PROGRESS log line of 15:26:00Z)",
+        "checked_by_orch_at": "2026-10-29T15:26:00Z",
+        "resumed_at": "2026-10-29T15:26:00Z",
+        "how": "the same handoff was started again by a new agent run (agent_run_id was not recorded)"
+      },
+      {
+        "at": "2026-10-29T15:48:43Z",
+        "cause": "the computer shut down twice in the evening (a window-server watchdog panic at 15:23:45Z, then a forced power-button reset at 15:48:43Z); the last write of this file was at 15:33:58Z (a PARTIAL self_check); the agent run ended without a result",
+        "checked_by_orch_at": "2026-10-29T17:04:38Z",
+        "resumed_at": null,
+        "how": "not continued: the agent run id is unknown and the session is gone; this handoff is closed FAILED with not_agent_attested and the step is run again from a clean sheet as step-08n-test-design-validator-run2.json"
+      },
+      {
+        "at": "неизвестно: the evening of 2026-10-29, on another computer",
+        "cause": "as reported by the owner in the chat (not seen in any file here): a launch of this step on a Windows computer ended without a verdict, because part of the tests is red only because of that system (file modes, links, path separators); the files of that computer are not on this one",
+        "checked_by_orch_at": "2026-10-29T17:04:38Z",
+        "resumed_at": null,
+        "how": "not counted and not continued: the owner decided to run the step again on this computer, where the earlier passes ran"
+      }
+    ]
+  },
+  "task": {
+    "description": "WF-03, step 7 gate (WF-02 step 5b), the THIRD EXTRA pass allowed by the owner (decisions/0102 Addition 15) after the FAIL of the second extra pass (a FAIL here goes to the owner) - TEST-DESIGN-VALIDATOR: check the tests of requirement REQ-102 (defect ISS-0093) after the rework of step 08m (handoffs/ISS-0093-20261028-01/step-08m-test-designer.json; the exhaustive slot rule), reading the earlier gate reports step-08b, step-08e, step-08h, step-08j, step-08l-test-design-validator.json (findings and issues) and judging the rework against them, but run your own full check, not only those points. The tests: tools/test/team-result-bytes.test.js (55 tests; the designer claims 430 sweeps and 393,699 sweep rows, 573 stored and 506 refused rows, 605 pairs, a table of 28 enumerated positions in result.positions of step 08m, and a mechanical generator of three sets of classes; 15,970 mutants over all sets, every survivor named). The new sweeps take their expected side from a REFERENCE predicate written in the test from the requirement's definitions: judge it (AP-071) - is it an independent reading of the requirement text, or the code's own reading copied? Compare it with the requirement words position by position and try inputs where a reading could differ, tools/test/team-result-timing.test.js (14 tests: criterion 7), tools/test/fixtures/team/scenario-secret.json (new), tools/test/fixtures/team/scenario-files.json (edited), and the guard tests edited by the 'was -> became' table in team-store.test.js, team-engine-reads-files.test.js, team-engine-rounds.test.js, team-journal.test.js, exec-workdir.test.js, exec-scripted-source.test.js. Read your role file, docs/quality-bar.md, docs/workflows/WF-03-defect.md (step 7), docs/workflows/WF-02-development.md (step 5b), docs/workflows/handoffs.md, docs/anti-patterns.md (AP-110: test the class of a rule, not the example; check each position of the designer's table: a slot hidden by neighbouring text, a set tested by examples only, a count with no n-1 and n+1), the REQ-102 block by id (criteria 1-12, the table 'was -> became', mutants m1-m45, sample groups, forms F1-F9, the placeholder rules), the design (the requirement wins where they differ), decisions/0102 and 0105, the code diff `git diff -- tools/src tools/README.md`. The code is unchanged since the first gate.\nCheck with your OWN runs: (1) the criterion -> test mapping for criteria 1-12, any criterion with no test or a weak one; (2) the whole set (bytes, timing, six guard files) on a copy of the whole working tree outside the project in the scratch folder: each file alone in a fresh process and together, at least 3 runs in a row (the timing file alone and not beside other heavy work: the instrument is known to give false reds at about 2x CPU oversubscription, F7 of the previous pass; run nothing heavy beside it), flaky tests, no port, no clock, no order dependence, unique temp folders cleaned; (3) no skip, no todo, no `|| true`, no turned-off lint rule; oracles independent of the code under test (AP-071); no key-shaped literal; the new rows against the RULE text of the requirement (each added row and sweep predicate: is the expected side what the requirement says? the designer reports three own oracle corrections, I1 of step 08k: judge them); (4) failure tests check the state did not change; (5) the criterion 9 numbers recomputed on the final files; (6) regression: the tests fail on a clean copy of the tag base/ISS-0093-20261028-01 with the tests overlaid (no git checkout, reset, stash or clean, also not in copies); (7) apply mutants YOURSELF on a copy outside the project: at least ten of the design's m1-m45, the nine mutants x54, y22-y25, y19, y20, z01b, z02 of step 08l and the seven of step 08j (they must now be red), and at least TWENTY-FIVE NEW mutants of your own that are not in any earlier report, chosen by the CLASS of each rule of forms F1-F9 and of the placeholder rules (every rule stated as «starts with», «ends with», «the whole value», «only of», «optional one», «a run of», «without regard to case», «at least n», «at most n», a boundary character): for each rule try its looser and its tighter neighbour (contains, first k, last k, exactly one, any number, off-by-one in a count, case-sensitive); report which test kills each and every survivor; (8) the criterion 7 instrument: time of the timing file alone, thresholds unchanged, the control separated, the early abandonment equal to the median rule; (9) the deviations: criterion 7 in a second file, scenario-files.json edited (EX-51 row), the amended criteria 1 and 7, TM-57 split. Verdict PASS or FAIL with findings by severity (Critical, High and Medium block; Low does not), each with place, evidence and fix. Do not edit any project file; write only your handoff. Work only inside the Sai folder and the scratch folder: do not read, list or count files of other folders. The scratch folder is the only place for copies, clones and temp files: no files in the system temp folder (set TMPDIR to a scratch sub-folder before any run); no git checkout, reset, stash or clean, also not in copies; leave no process running (ps before you finish). No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it); no secret-shaped literal. Do not touch ports 4780, 4781, 4782, 4790 (list the Pixel Office test files that bind their own ports and that you did not run). Do not run the full `npm run check` in the project folder (TEST-RUNNER does); no run longer than ten minutes. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-29T14:38:34Z",
+  "started_at": "2026-10-29T14:38:34Z",
+  "completed_at": "2026-10-29T17:04:38Z",
+  "result": {
+    "status": "FAILED",
+    "verdict": null,
+    "summary": "No verdict: the third extra pass (decisions/0102 Addition 15) was interrupted before it finished, twice by restarts of the computer and once more on another computer that cannot run these tests. The pass is NOT counted as given and the limit is not spent; the step is run again as step-08n-test-design-validator-run2.json. Written by ORCH from the files, not by the agent.",
+    "findings": [],
+    "self_check": [
+      "PARTIAL (written during work): copy of the working tree in the scratch sub-folder tdv08n; hashes of 2426 files before work saved. Timing file alone, 3 runs in a row: 14 of 14 green each (97, 89, 90 s). Static grep for skip/todo/only/eslint-disable/'|| true'/prettier-ignore over the 8 files: empty. Criterion 9 recount: title lines TM-57 5/4, TM-58 2/2, TM-63 3/3, RF-03 1/1, SF-13 1/1, SF-10/11/12/15 1/1 each, TM-43 2/2, EX-41 2/2, EX-51 5/5; assert lines 219/203, 122/113, 69/60, 84/79, 72/63, 38/34. git diff of code outside mask.js and tools/src/team empty; single-run.js untouched; mask.js 726 insertions, 0 deletions; Pixel Office test files diff empty."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "BLOCKED",
+        "text": "interrupted without a verdict; see not_agent_attested and context.interruptions"
+      }
+    ],
+    "artifacts_out": []
+  },
+  "not_agent_attested": {
+    "written_by": "ORCH",
+    "at": "2026-10-29T17:04:38Z",
+    "reason": "the agent run of this step ended without a report when the computer restarted (and a launch on another computer also ended without a verdict); nobody can continue it",
+    "fields_written": [
+      "status",
+      "completed_at",
+      "result",
+      "context.interruptions"
+    ],
+    "evidence": [
+      "git status --short -uall | wc -l -> 119 and git rev-parse --short HEAD -> 6f5a38a on this computer at the time of this entry: the set of changed files is the one of the transfer",
+      "before this entry the file had status PENDING, completed_at null, result.status IN_PROGRESS, verdict null, agent_run_id null (read with a script)",
+      "the file was last written at 15:33:58Z (stat of the file) with a PARTIAL self_check that is kept verbatim in result.self_check",
+      "the kernel panic report of 15:23:45Z and the forced-reset report of 15:48:43Z in the system diagnostic reports of this computer (listed with ls -lt)"
+    ],
+    "unverifiable": [
+      "whether the agent changed any file: the list of hashes it saved before work was in its scratch folder, which is gone after the restarts",
+      "what the launch on the other computer did: known only from the owner's chat message",
+      "whether the agent had checked its own work before it stopped: the PARTIAL self_check covers only the timing file, the static grep and the criterion 9 recount"
+    ]
+  }
+}

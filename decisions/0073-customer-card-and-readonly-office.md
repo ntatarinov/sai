@@ -20,3 +20,5 @@
 ## Основание
 
 `docs/owner-requests/2026-10-21-card-and-customer-view.md`, `decisions/0065`, `0068`, `0072`.
+
+Narrowed by decisions/0092 and decisions/0097 (2026-10-28): the no-publication boundary for `app/` only; the read-only office of the customer is the project office of 0097.

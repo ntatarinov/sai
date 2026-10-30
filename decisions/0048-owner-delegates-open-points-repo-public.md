@@ -30,3 +30,5 @@
 ## Основание
 
 Слова владельца 2026-10-13 (выше, дословно); `decisions/0023` (D1), `decisions/0044`, `decisions/0045`; `docs/design/REQ-030-github-check.md`; отчёт ORCH с вопросами владельцу.
+
+Narrowed by decisions/0092 (2026-10-28): for `app/` the 3 $ × 3 run limit is replaced by the owner's written answer to G2 (real AI runs); the push rule after RELEASE-VALIDATOR PASS stays.

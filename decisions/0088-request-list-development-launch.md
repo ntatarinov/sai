@@ -31,3 +31,5 @@ Not a permission to publish on the internet, to spend paid services, or to build
 ## Basis
 
 `docs/owner-requests/2026-10-27-request-list-to-development.md`, `decisions/0073`, `0074`, `0083`, `0084`.
+
+Narrowed by decisions/0092 and decisions/0098 (2026-10-28): the no-publication boundary for `app/` only; who starts development and how: sessions of 0098.

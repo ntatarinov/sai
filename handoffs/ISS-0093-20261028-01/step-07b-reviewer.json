@@ -1,0 +1,174 @@
+{
+  "handoff_id": "step07b-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "07b",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/ISS-0093-20261028-01/step-07b-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-05d-code-fixer.json",
+      "handoffs/ISS-0093-20261028-01/step-07-reviewer.json",
+      "decisions/0102-core0-result-files-conventions.md"
+    ],
+    "route": "CODE-FIXER rework (05d, done) -> REVIEWER (this, pass 2 of 3) and SECURITY-REVIEWER (06b) at the same time -> TEST-DESIGNER",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-07b-reviewer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T17:49:40Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-28T17:49:03Z, verdict PASS (code gate pass 2 of 3), findings F1-F3 Low; the pass-1 remarks are closed (SECURITY F1 fixed, README F2/F4, depsOf, helper copies, duplicate names)",
+        "count matches my own earlier run: 548 tests, 536 pass, 12 fail, the same twelve ids; no tracked file changed by the reviewer",
+        "F1 (try/catch of withheldOrContent swallows every error, fail-closed), F2 (the RangeError limit is documented only in runner.js) and F3 (a kept value ending in a name word with a quote and a colon glued behind it: 69 of 2.4M strings, not valid JSON, not named) are Low: they go into the defect that ORCH opens for the residual risk (7) and the Low items, not into a code edit after the gates (AP-028)"
+      ]
+    }
+  },
+  "task": {
+    "description": "CODE GATE PASS 2 OF 3 (re-check after rework). Pass 1 was handoffs/ISS-0093-20261028-01/step-06-security-reviewer.json (FAIL: F1 Medium Q7, the placeholder tests applied to a glued chunk; F2-F4 Low) and step-07-reviewer.json (PASS, two Low). The micro-amendment of the requirement is step-05b-req-analyst.json (gate step-05c PASS) and the rework is step-05d-code-fixer.json. Read them only to know what was raised; then check the CURRENT code completely as for a first pass: do not trust the rework report. Extra checks for this pass: (a) the amended rule of class Z: the 'starts with your' and 'contains example' tests only for values made of letters, digits, underscore, dot and hyphen - rebuild the glued shapes of F1 (and 40 of your own, secrets built from parts) and show every old-code-hidden shape is refused now except the residual risks (4), (6), (7) the owner accepted (decisions/0102 Additions 10-12); the oracle of the requirement block including O25, C25, O26, C26 (the claim: 120 keep and 126 refuse, no mismatch); (b) depsOf with a hand-placed file over 5.3 MiB that makes a regex throw: now withheld, no exception; (c) the refusal text lists each distinct name once; (d) the README names the residual risks and the price of the rule; (e) differential fuzz again against the old rules; (f) timing of the 12 families and long runs of 'example' glued chunks at 4 MiB. \nWF-03, step 5 (gate 2 of 2, WF-02 step 4) - REVIEWER: the code fix of defect ISS-0093 for requirement REQ-102, written at step 05 (handoffs/ISS-0093-20261028-01/step-05-code-fixer.json). The diff is `git diff -- tools` against HEAD (six files: tools/src/pixel-office/mask.js +703 lines, tools/src/team/files.js, store.js, runner.js, language.js, tools/README.md). You only READ; you fix nothing. SECURITY-REVIEWER works at the same time on the security side; you do the code review. Read your role file, docs/quality-bar.md, docs/workflows/WF-03-defect.md (step 5), docs/workflows/handoffs.md, docs/anti-patterns.md, the REQ-102 block by id, the design docs/design/REQ-102-result-files-byte-exact.md (sections 2, 3, 4, 8, 13, 16), decisions/0102 (all Additions; items 14, 18-34), decisions/0002, 0015, 0017, 0018, 0035, 0095. Main question: is the cause removed, or does the fix only hide the symptom (Q6)? Check with your OWN runs and reading: (1) cause: the content of result files is stored and handed on byte-exact at BOTH call sites (the write in store.js and the read in runner.js depsOf) and `maskSecrets` is no longer applied to file content anywhere in tools/src (search; list every remaining call and say why it is not file content); (2) the design is followed: the call order (scan before the first write; acceptResult step 1 one full pass; sources of refused files removed from work/; a clean file beside a refused one is not accepted and its source stays), the exclusion for engine/single-run.js (unchanged, measured), BOM decoders (strictUtf8 for scenario bytes unchanged), FAIL_DETAIL.secret, FILE_WITHHELD, secretDetail with its guard, the conditional PHRASES row (TM-38, TM-40, TM-42 green), the stale 'masked' comments updated; any difference from the design is a finding (design drift) unless the design is silent; (3) stack idioms of Node 22 and of this codebase (decisions/0002: no dependencies, plain JavaScript, node:test), naming, comment density like the surrounding code, error handling (Q10), no dead code, no duplicated logic that the codebase already has (reuse: checkResultName, existing helpers, the helper style of mask.js), function size (mask.js grew by 703 lines: is it structured, readable, with one-pass algorithms as the design demands, any needless complexity or crutch; are comments honest), no console output, no new `child_process`, no new network or file-system access, TM-44 (no secret rules in tools/src/team) green; (4) the README text: true, matches the code, the greps of criterion 11(a) of REQ-102; (5) scope: only the six files, no test, no decision, no requirement file changed; no change in the journal masking rules M1-M10 (`git diff -U0 -- tools/src/pixel-office/mask.js | grep '^-' | grep -v '^---'` empty); (6) erosion of the quality bar: nothing skipped, no test touched, no `|| true`, no turned-off lint rule (run `cd tools && npx prettier --check` and `npx eslint --max-warnings 0` on the six files); (7) run the 49 team and exec test files without default ports on a copy: 548 expected tests of which twelve red by design (EX-41, EX-51, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63) until the tests step - count yourself and name the red ones; (8) a crutch hunt: special cases keyed to the test samples, hardcoded sample strings in code, a rule that passes the oracle by listing the samples. Verdict PASS or FAIL; findings with severity (Critical, High and Medium block; Low does not) each with place, evidence and fix. Do not edit any project file; write only your handoff. Work only inside the Sai folder and the scratch folder: do not read, list or count files of other folders. No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it). Do not run the full `npm run check`; no run longer than ten minutes. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Cause removed at both call sites, rework followed, no crutch, scope, exactly twelve red tests counted"
+    ]
+  },
+  "created_at": "2026-10-28T17:30:09Z",
+  "started_at": "2026-10-28T17:30:09Z",
+  "completed_at": "2026-10-28T17:49:03Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Причина устранена в обоих местах (запись в store.js и чтение в depsOf): файл результата хранится и отдаётся байт в байт, а файл с настоящим секретом не принимается; поправка правила заглушек (слова your и example считаются заглушкой только для значения из латинских букв, цифр, _, . и -) работает: все 126 образцов отказа отклоняются, все 120 образцов «хранится» хранятся, а склеенный с секретом текст вроде &redirect=https://example.com теперь отклоняется. Моя проверка на 53 тысячах склеенных форм и на 3,3 млн случайных строк не нашла ни одной формы, которую старый код скрывал бы, а новый хранит, кроме принятых владельцем остаточных рисков (4), (6), (7); красных тестов ровно двенадцать по замыслу, правила журнала не тронуты, подгонки под образцы нет. Остались только три Низких замечания, они не блокируют.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/team/runner.js:120-126 (withheldOrContent)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The try/catch around findSecrets in depsOf catches every error, while the comment above it says the cause is the RangeError of the key-prefix regular expressions on a run longer than about 5.3 MiB. A different error (a bug inside findSecrets) would be turned into the fixed withheld line for every file, with no trace and no signal; the effect is fail-closed and visible to the reviewer of the task (the file is not handed over), so no secret leaks, but a defect of the check would hide itself. Measured: a hand-placed 6 MiB file gives the withheld line and no exception, as designed.",
+        "fix": "Optional: catch only RangeError (`catch (err) { if (!(err instanceof RangeError)) throw err; return FILE_WITHHELD; }`) so that any other error still reaches closeAfterError, or say in the comment that every error is meant to be fail-closed. No change of the behaviour measured above."
+      },
+      {
+        "id": "F2",
+        "place": "tools/src/pixel-office/mask.js:317-328 (the contract comment of findSecrets) and :838-843 (FIND_PREFIXED)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "findSecrets throws RangeError (look-behind regular expressions with an unbounded repeat) on a single key-shaped run longer than about 5.3 MiB (measured: 6 MiB throws, exactly 5 MiB does not, for the four prefixed rules). The dependence on the 5 MiB limit of result files, which keeps store #publish and acceptResult step 1 from ever reaching it, is written only in runner.js above withheldOrContent; the function that can throw says nothing. If FILE_BYTES_MAX is raised later, the two write-side callers get an exception from a place that looks pure.",
+        "fix": "Add one sentence to the header comment of findSecrets (callers hold the input to FILE_BYTES_MAX; above about 5.3 MiB the prefixed-key rules throw RangeError), or bound the repeat (a bound of a few thousand characters is enough to decide the form). No change of the behaviour measured."
+      },
+      {
+        "id": "F3",
+        "place": "tools/README.md:253 (residual risks of findSecrets) with tools/src/pixel-office/mask.js:996-1027 (findNamedValue resumes after the end of a value)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Differential run against an independent reference written from the requirement text (patched only for the amended class Z): 69 of 2.4 million random strings (four seeds) plus 7 of 200 thousand differ, always in one direction (reference refuses, code keeps), never the other. All of them are one shape: the end of a kept value is itself a name word and is followed directly by a quote and a colon (a path, a bare identifier or a placeholder word that is also a key name, then the next pair glued on), or the glued pair sits inside a kept call value. The second kind is residual risk (7); the first kind is the same cause (the pass resumes after the end of the value, as design 2.2 says) but is not named in the README sentence of (7), and the old rules hid such text. Realistic probability is very low (it is not valid JSON), so it blocks nothing.",
+        "fix": "Optional: widen the README words of risk (7) (\"not scanned inside\") to say that a name that stands as the end of a kept value, with a quote and a colon glued behind it, is not read as the next pair; or accept as is. ORCH decides whether it is worth a defect (see issues I3)."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && git diff --name-only -- . ; git status --short tools; git diff --stat -- test | tail -1",
+        "output": "exactly six files: tools/README.md, tools/src/pixel-office/mask.js, tools/src/team/{files,language,runner,store}.js; no untracked file in tools; no test file, no decision and no requirement file is touched by this change (other modified files in the working tree belong to other runs)."
+      },
+      {
+        "command": "cd tools && git diff -U0 -- src/pixel-office/mask.js | grep '^-' | grep -v '^---' | wc -l ; git show base/ISS-0093-20261028-01:tools/src/pixel-office/mask.js | cmp - <(head -315 src/pixel-office/mask.js); git diff --name-only base/ISS-0093-20261028-01 -- src | grep -vE '^tools/src/(pixel-office/mask[.]js|team/)' ; git diff --name-only base/ISS-0093-20261028-01 -- src/team/engine/single-run.js",
+        "output": "0 removed lines; the first 315 lines of mask.js are byte-identical to the base tag (rules M1-M10 untouched; one hunk of 726 added lines); no source file outside mask.js and src/team; single-run.js unchanged."
+      },
+      {
+        "command": "cd tools && npx prettier --check <the six files>; npx eslint --max-warnings 0 <the five js files>",
+        "output": "All matched files use Prettier code style! exit 0; eslint exit 0, no output."
+      },
+      {
+        "command": "cd tools && grep -nE \"\\.skip\\(|\\.only\\(|todo|TODO|eslint-disable|\\|\\| true|console\\.|child_process|node:net|node:http|fetch\\(|XXX|FIXME\" <the five js files>",
+        "output": "no hit. No test touched, no turned-off rule, no new child_process, network, console output or file-system access. A search of the five files for sample strings of the requirement (words of the oracle such as the fake passwords, vendor.min.js, documentElement, a.b.c, version numbers) finds nothing: no special case keyed to the samples."
+      },
+      {
+        "command": "cd tools && grep -rn \"maskSecrets\\|findSecrets\" src | grep -v pixel-office/mask.js",
+        "output": "findSecrets: store.js:410 (#publish, the write), runner.js:122 (depsOf, the read) and runner.js:667 (acceptResult step 1). maskSecrets that remain: store.js:232 (text fields of events), :321 (length check of text), :577 (fields of a new project); language.js:62 and :73 (the guard of secretDetail, on file NAMES and on the finished refusal text); engine/channel.js:246, :321, :323 (chat texts); engine/commands.js:133 (length check); engine/plan.js:313 (names of accepted files in the planner note); pixel-office protocol.js, server.js, note.js (journal and notes). None of them is file content. The only reader of files/ is runner.js:141 (readFileSync in depsOf); all other readFileSync/readSync calls read the journal, the lock, the scenario, the inbox or static pages. TM-44 search (rule words) in src/team: empty."
+      },
+      {
+        "command": "copy of the project in <scratch>/rv07b/copy (no .git, no node_modules copy); cd tools && node --test --test-concurrency=4 <49 files: ls test/team-*.test.js test/exec-*.test.js | grep -v team-web>",
+        "output": "tests 548, pass 536, fail 12, cancelled 0, skipped 0, todo 0 (72 s). Red, counted from the TAP output: EX-51 (104), EX-41 (126), RF-03 (233), SF-10 (269), SF-11 (270), SF-12 (271), SF-13 (272), SF-15 (276), TM-43 (326), TM-57 (515), TM-58 (521), TM-63 (529): exactly the twelve of the task, no other. TM-38, TM-40, TM-42, TM-44, TM-49, EX-42, EX-07, EX-35 and SF-09 are in the green part. No default port is used by these files."
+      },
+      {
+        "command": "node --test --test-name-pattern='^(HK-21|HK-24)' test/pixel-office-hook.test.js ; node --test test/team-docs.test.js test/pixel-office-docs.test.js (on the copy)",
+        "output": "HK-21 and HK-24: 2 tests, 2 pass (the masking rules M1-M10 and their known gaps are unchanged); TM-50, DC-01 and the other docs tests: 14 pass. Files that mention the default ports were not run."
+      },
+      {
+        "command": "<scratch>/rv07b/drive2.mjs: the oracle block of design section 18 (extracted by the command of that section) plus O25, O26, C25, C26 transcribed from the requirement block, fill marks expanded, run on the copy; every refused sample also placed in 10000 characters of text and between the kept samples",
+        "output": "{ keptN: 120, keptBad: 0, refN: 126, refBad: 0, embBad: 0, assembly: null }. The claim 120 keep / 126 refuse holds with no mismatch (the numbers 118 and 125 of the rework task count the design tables without O25 and C25; the same remark is in the 05d record)."
+      },
+      {
+        "command": "<scratch>/rv07b/matrix.mjs: every value built from 1 to 3 pieces (your, YOUR, Your, example, EXAMPLE, Example, ab, 9, - _ . & @ / : ~ ! # % + = ? | ^ * a non-ASCII letter, x) in eight places (unquoted pair, colon pair, double and single quotes, address password, Bearer, Authorization with and without a scheme), plus quoted values with a tab or space inside; expectation written independently: kept only when the whole value is made of letters, digits, _ . - and starts with your or contains example",
+        "output": "n 62124, 24 differences; all 24 are the value %example% in three casings (a %NAME% template, class Ш, kept by design), so the matrix agrees with the amended rule of class Z in all three places."
+      },
+      {
+        "command": "<scratch>/rv07b/glue.mjs and glue2.mjs: 3 secret bodies (built from parts, 12-14 characters) x 33 glue characters x 15 glued tails (example, example.com, a redirect to an example address, your, YOUR_KEY, your-token, example9, changeme and so on) x before/after x 18 contexts (token, secret, password, api_key, DB_PASSWORD pairs unquoted and in three kinds of quotes, a JSON pair, two address passwords, Authorization with Basic, plain and quoted-key forms, Bearer alone and in the middle of text); the old rules = a copy of mask.js without M7 and M10",
+        "output": "53460 texts, 52734 hidden by the old rules, 5490 hidden by the old rules and kept now. All 5490 classified: 2106 are residual risk (4) (the whole value is made of letters, digits, _ . - and starts with your or contains example), 2952 are residual risk (6) (text after the first value, behind a comma, semicolon, space or quote), 360 are residual risk (7) (a value that reads as a call), 72 are an address whose password ends at its first @ and is a placeholder; 0 unexplained. So every shape of finding F1 of the security gate (a query string with a secret and an example address glued behind, user:secret@example.com inside a value, Basic value with &x=example, Bearer value with &redirect=example.com, a quoted password with ' for example.com') and 47244 other old-hidden texts are refused now."
+      },
+      {
+        "command": "<scratch>/rv07b/fuzz2.mjs: 300000 + 3 x 1000000 random strings of 1-7 fragments (names, signs, quotes, values, groups, placeholders, glued tails, prefixes, PEM, JWT, address pieces, separators); three readers side by side: the current findSecrets, a copy with the placeholder rule as before the rework, the old rules without M7 and M10",
+        "output": "monotone breaks (a text refused before the rework and kept now): 0; texts kept before and refused now: about 30600, every one contains the word your or example (0 without); old-hidden and kept now: about 89000 strings, 1096 minimal shapes in the first run, read by hand after removing the expression classes: only empty values (a name, a sign and a lone quote), placeholder words of the closed list, bare identifiers with an underscore or a hump (class В3, for example a base64-looking word of letters only), closing brackets only, and the classes (4), (6), (7). Nothing else."
+      },
+      {
+        "command": "<scratch>/rv07b/diffref.mjs: an independent reference written from the requirement text (patched in one function to the amended class Z) against findSecrets, 4 x 600000 + 200000 random strings",
+        "output": "mismatches 69 + 7; every one is 'reference refuses, code keeps' (0 in the other direction); all in the shape of finding F3 (the pass resumes after the end of a kept value) or inside a kept call value (risk 7). No difference in the class Z rule itself."
+      },
+      {
+        "command": "<scratch>/rv07b/deps.mjs: depsOf on a folder with four hand-placed files: a 6 MiB run starting with the prefix of an sk key, a clean file with CRLF, a file of an older core that carries the mark after a password name, a clean file with a BOM and Cyrillic",
+        "output": "findSecrets alone throws RangeError (Maximum call stack size exceeded) on the 6 MiB file; depsOf throws nothing and returns the fixed line FILE_WITHHELD for the 6 MiB file and for the old-core file, and returns the CRLF file and the BOM file exactly as stored (equal strings); 8 ms for the four files. (b) holds."
+      },
+      {
+        "command": "<scratch>/rv07b/edge5.mjs: findSecrets on 10 inputs of exactly 5242880 characters (a prefix run of each of the four key rules, repeated prefixes, repeated name, repeated name with sign, one letter, a JWT shape of dots)",
+        "output": "no exception, results F4/F5/F9 or null as expected, slowest 60 ms: the 5 MiB limit of result files keeps the two write-side callers away from the RangeError threshold (headroom 6 percent, see finding F2)."
+      },
+      {
+        "command": "<scratch>/rv07b/sd.mjs (secretDetail unit) and a throwaway test on the copy: the agent names report.md twice and a clean file beside it; the report holds a secret built from parts with an example address glued behind; fake claude executor",
+        "output": "secretDetail with a repeated name lists it once: (файл: ...) for one distinct name; three distinct names and more give '... (файлы: A, B, C и ещё N)' counting distinct names only; a name with two dots alone gives the constant text with no parentheses. The run: exit 1, error line, TASK_FAILED detail and (engine run) the question of the team in CHAT carry the same text 'Файл результата не принят: в нём найден секрет (файл: t-0001-1-<file>)'; files/ empty; no RESULT_FILE; the secret is found nowhere in the data folder; the clean neighbour was not accepted and its source stays in work/; the source of the refused file is gone (removed once, the second removal of the duplicate is quiet). (c) holds."
+      },
+      {
+        "command": "<scratch>/rv07b/perf2.mjs: the 12 families of criterion 7 (units as the requirement writes them; sizes 256 KiB / 1 MiB / 4 MiB, family 11 on 16 / 64 / 256 KiB), the two outcomes per size (no secret; the same input with a bait at the end is found), k doubled to at least 20 ms, 7 repeats, median",
+        "output": "worst ratio 4.69 (limit 8) over the 24 ratios; the slowest single call at 4 MiB is 74 ms (family 8); all outcomes correct for all sizes; the 12 families took 58 s. Fifteen more families about glued example and your chunks at 4 MiB (one giant value made of example repeated, of your- repeated, of example& repeated, many token=example lines, a quoted value with example for ... and no closing quote, many quoted values, a dense run of the letter e, the near miss exampl, an address password made of example-, Bearer example. runs, Authorization Basic YOUR_ runs, many example addresses, many Bearer your-token): worst ratio 4.67, slowest call 81 ms (a run of the letter e), none quadratic, none throws. (f) holds."
+      },
+      {
+        "command": "README greps of criterion 11(a) of REQ-102 on tools/README.md, and a run of every example of the README paragraph through findSecrets",
+        "output": "'content of result files pass through' 0; 'the content is masked' 0; 'byte-exact' 3; 'findSecrets' 2; 'reason `secret`' 1; the work/ line with 'already masked' 0; findSecrets and 'residual risk' on one line 1; 'placeholder' 1; 'false refusal' 1; 'space before the sign' 1; 'address with no user' 1; 'not scanned inside' 1. All eight examples the README gives as refused are refused and all fourteen it gives as kept are kept (the lines of the residual risks and of the price of the rule are true to the code). (d) holds."
+      },
+      {
+        "command": "a walk of findSecrets over the source files of tools/src and tools/test (information on the price of the rule)",
+        "output": "of the 134 source files of tools/src two are refused: mask.js (the PEM rule words) and team/language.js (the message `secret: \"Файл результата...\"`, a quoted text after a name, the named price of the rule). Test files with baits are refused as expected (22 of 383)."
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: six files in the change; 548 tests, 536 green and exactly twelve red by design, named and counted from my own run; the removed-lines search in mask.js is empty; 120 keep and 126 refuse with no mismatch. Nothing contradicts the task. The expected verdict was not in the task; the verdict comes from my own reading (AP-018)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Pass 1 remarks are all closed in the current code: SECURITY F1 (class Z, measured above), F2 and F4 (README), F3 (depsOf withholds), REVIEWER F1 (comment on the copies of isLineEnd and QUOTES, present above findIsWs) and F2 (distinct names). The rework stayed inside the list of remarks (AP-019): the six files only, the extra function withheldOrContent is the remedy of SECURITY F3. For TEST-DESIGNER (check especially): the 17 C26 and 12 O26 records and the pairs 'starts with your / contains example' for a value inside and outside the character set in all three places; O25 and C25 (counting of trailing closers); a clean file beside a refused one (not accepted, source stays), the same text in the event, the question of the team and the error line, a repeated name listed once; a depsOf trial above 5.3 MiB (withheld, no exception) and a file of an older core; BOM and CRLF bytes on the three inputs; the README greps with the three new words; linear time on the 12 families and on glued example chunks."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Question to ORCH (Low, no block): finding F3 is a shape not named among the residual risks (a kept value that ends in a name word with a quote and a colon glued behind). It is outside the current requirement and run; if ORCH wants it closed or named, it is a small defect for a later run together with the README words of risk (7). Findings F1 and F2 are optional hygiene of the same kind and can go to the same defect."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Not a finding: a differential count on the sources of Sai itself shows the price of the rule: two source files of tools/src would be refused if an agent wrote them (mask.js because of the PEM rule words, language.js because of a message text after the name secret). This is the named price of the rule (README, 'false refusal') accepted by the owner in decisions/0102; recorded so that the report to the owner can say it in plain words."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

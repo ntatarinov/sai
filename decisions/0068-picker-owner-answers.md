@@ -21,3 +21,5 @@
 ## Основание
 
 `docs/owner-requests/2026-10-20-picker-owner-answers.md`, `decisions/0064`, `0065`, `0048`.
+
+Narrowed by decisions/0092 and decisions/0093 (2026-10-28): item 2 (first public URL needs the owner's yes) is kept as G4 for `app/`; item 4: the subscription never serves visitors but may serve the owner's own projects.

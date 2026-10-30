@@ -39,3 +39,5 @@ Does not build anything, does not change done blocks, does not allow publication
 9. **I1 (result page can navigate its own tab).** The sandbox is kept and the residual risk stays named in REQ-093; no separate one-time view code and no "download only" now. The owner is the only viewer, on his own computer, and the file is built from a request he has read himself. The question can be reopened before phase B.
 10. **I3.** A failed-start record counts toward the limits of 3 per request and 5 per 24 hours (safer for spending).
 11. The wording of one command in the closed step-02 handoff was changed by ORCH only to remove the words the traces check forbids; the findings are untouched.
+
+Narrowed by decisions/0092 and decisions/0098 (2026-10-28): the no-publication boundary for `app/` only; C2–C4, C6 and C7 replaced by 0098 items 6–7.

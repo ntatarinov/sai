@@ -1,0 +1,203 @@
+{
+  "handoff_id": "step05b-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "05b",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/ISS-0093-20261028-01/step-05b-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-06-security-reviewer.json",
+      "handoffs/ISS-0093-20261028-01/step-07-reviewer.json",
+      "docs/design/REQ-102-result-files-byte-exact.md",
+      "decisions/0102-core0-result-files-conventions.md"
+    ],
+    "route": "SECURITY-REVIEWER (06, FAIL pass 1) -> REQ-ANALYST micro-amendment (this) -> REQ-VALIDATOR (05c) -> CODE-FIXER rework (05d) -> SECURITY-REVIEWER (06b) and REVIEWER (07b) at the same time",
+    "write_set": [
+      "docs/requirements.yaml (REQ-102 block and one dated comment line only)",
+      "handoffs/ISS-0093-20261028-01/step-05b-req-analyst.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T16:32:11Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED; ruby YAML load: 103 requirements, ids unique, REQ-102 pending with 12 criteria; own command awk 'NR<12406||NR>13043' on the file after the edit gives 18a08a65... = the value before (rest of the file unchanged; the block with its comment lines now spans 12406-13043)",
+        "no file in tools/ touched by this step (git status shows the six tools files of step 05 only); the amendment is stricter (placeholder tests restricted to the character set), adds samples O26 (12 keep) and C26 (17 refuse), mutant m45, residual risk (7), the README greps of criterion 11(a); the owner's answers (decisions/0102 item 30) unchanged",
+        "design difference recorded in PROGRESS (requirement wins); independent check: REQ-VALIDATOR step 05c"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-01, micro-amendment after the build (section 'Micro-amendment after the code design'), run ISS-0093-20261028-01, step 05b - REQ-ANALYST: SECURITY-REVIEWER found a Medium (Q7) in the built code that is a gap in the RULE of the requirement, handoffs/ISS-0093-20261028-01/step-06-security-reviewer.json finding F1 (read result.findings and result.issues; the reviewer's independent reference agrees with the code on 4.3 million strings, so the rule text itself lets it through). The finding: the placeholder class З tests 'the value starts with your' and 'the value contains example' are applied to the whole whitespace-free chunk. So a real-looking secret with placeholder text GLUED behind it is kept: a query-string secret followed by `&redirect=https://example.com/...`; `secret=<value>@example.com`; `Authorization: Basic <b64>&x=example`; `Bearer <token>&redirect=example.com`; a quoted `\"<secret> for example.com\"`; an address password with `&example` glued on. The old rules M2, M8, M9 hid every one of these (19 of 23 glued variants are kept by the code; the same text with a space, comma or semicolon instead of the glue is refused). Also a kept call-class value swallows a glued pair (`token=f(x)&<name>=<literal>` is kept). Read your role file, docs/quality-bar.md, docs/workflows/WF-01-requirement.md (micro-amendment section), the REQ-102 block by id (the definitions of class З and the placeholder list, forms Ф2, Ф3, Ф8, Ф9, samples С and О, criteria 1, 3, 10, residual risks), decisions/0102 (all Additions; items 14, 18-34 binding: the amendment makes the refusal STRICTER and narrows nothing; the owner's answers on the closed placeholder list and on the expression classes stay as they are), the design sections 2.1-2.3, 18 for how the rule is implemented (the requirement is the contract; where the design text differs, the requirement wins and ORCH records it). Do exactly this in the REQ-102 block of docs/requirements.yaml and nothing else: (1) change the definition of class З (placeholder) so that the 'starts with your' prefix test and the 'contains example' substring test apply ONLY when the whole value consists of the characters letters, digits, underscore, dot and hyphen (the shape of every placeholder in the requirement: YOUR_API_KEY, pw-example, example9); a value with any other character (an ampersand, an at sign, a slash, a colon, a space) is judged without these two tests; the closed list of placeholder words stays as it is; the same for the quoted-content case and for the URL password (Ф3). (2) Add refuse samples (a new group, next free number after С25) for each shape above built from parts (no secret-shaped literal written whole: use the fill-mark style the block already uses) and keep samples at the boundary (YOUR_API_KEY, pw-example, example9, a bare example.com host value that the old rules also kept? - check with the old maskSecrets of a clone of the tag base/ISS-0093-20261028-01 outside the project and say which keep samples the old code hid, as the block does for the others), plus the matching pairs in criterion 3; (3) add ONE mutant m45 to the criterion 10 list (the placeholder tests applied to the whole chunk) killed by the new pair; (4) name the call-class scanning gap (`token=f(x)&<name>=<literal>` kept: a glued pair after a kept call-class value) as a residual risk (7) in the description and in the places that count the residual risks ('(1)-(6)' -> '(1)-(7)': find all by script), without changing the owner's answers (decisions/0102 item 30 (а) stays: expression classes kept). (5) add the two old holes to residual risk (5) that the README must name (security-reviewer F2): an assignment with a space before the sign (`password = value`) and an address with no user; (6) ONE new dated comment line above the block with 'was -> now'. Do not touch any other block, status line or older comment line; do not weaken any criterion; do not narrow the refusal set. Each replacement: the old text must occur exactly once (script); use the quote escapes of a double-quoted YAML scalar; result.changes: a table 'place - FULL old text - FULL new text' (no ellipsis). Prove the unchanged rest: `awk 'NR<12406||NR>13011'` of the file before your edit gives 18a08a65dd4ca9e02d6346491096f5071b136108b4bc73f166473b2c9f1a8b8b - the block grows, so take the start and end lines of the block with its comment lines yourself, remove them, and compare the rest before and after (copy the file outside the project first; give commands and both values); ruby YAML load: 103 requirements, REQ-102 with 12 criteria, pending. Write only docs/requirements.yaml and your handoff. Work only inside the Sai folder and the scratch folder: do not read, list or count files of other folders. No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it). result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Placeholder tests restricted to values of letters, digits, underscore, dot and hyphen; new refuse and keep samples, pair in criterion 3, mutant m45, residual risk (7) and the two old holes of (5)",
+      "Rest-of-file hash equal before and after; YAML loads with 103 requirements and 12 criteria",
+      "handoffs-check and traces return 0 before close"
+    ]
+  },
+  "created_at": "2026-10-28T16:21:42Z",
+  "started_at": "2026-10-28T16:21:42Z",
+  "completed_at": "2026-10-28T16:31:22Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Я уточнил в требовании REQ-102 правило «заглушки»: слова your и example делают значение заглушкой только тогда, когда всё значение состоит из букв, цифр, подчёркивания, точки и дефиса, поэтому настоящий секрет с приклеенным текстом вроде &redirect=https://example.com теперь отклоняется (раньше ядро его пропускало, а старые правила скрывали). Добавлены 12 образцов «хранится» и 17 образцов «отказ», пары в критерии 3, мутант м45 и седьмой остаточный риск (значение-вызов хранится целиком, приклеенная к нему пара не просматривается); два прежних места пункта (5) привязаны к тексту README. Остальной файл не изменился (хеш тот же), YAML читается: 103 требования, у REQ-102 двенадцать критериев, статус pending.",
+    "before_copy": {
+      "source": "The tag base/ISS-0093-20261028-01 has no block REQ-102 (git show base/ISS-0093-20261028-01:docs/requirements.yaml | grep -c 'id: REQ-102' -> 0), so the «before» of every edit is the Old column of result.changes, taken from the file as it stood at the start of this step: a copy at <scratch>/requirements.before.yaml, sha256 350745f6b73e69314736592173fc199eb3619a7454b6039fe455ecd4d4f7345e, 13183 lines; the block REQ-102 with its comment lines stood at lines 12406-13011 (the six comment lines 12406-12412 are the older ones, the id line is 12413); after the edit the comment lines stand at 12406-12413, the new dated comment is line 12413, the id line is 12414 and the block ends at line 13043.",
+      "rule": "Old and New in result.changes are the exact file text of each edit (a double quote inside a criterion is written with a backslash, as in the file). Reverse check by script: every New replaced by its Old, in the reverse order, gives the before copy byte for byte (True); each Old occurred in the file exactly once before the edit (assert in the script)."
+    },
+    "changes": [
+      {
+        "edit": "E1",
+        "finding": "task item 6",
+        "place": "comment above the block (new line)",
+        "old": "  - id: REQ-102\n",
+        "new": "  # 2026-10-28T16:28:15Z, run ISS-0093-20261028-01, WF-01 micro-amendment, step 05b (REQ-ANALYST), by the FAIL of step 06 (step-06-security-reviewer.json, finding F1 Medium and F2 Low) and decisions/0102 items 14, 18-34. Was -> now: (1) class З (definition; criterion 3, border of placeholders) the tests «starts with your» and «contains example» were applied to the whole chunk up to the next white space -> now only to a value made of the characters [A-Za-z0-9_.-]; a value with any other character is judged without these two tests, the same for quoted content and for the URL password, the list of 26 words and the chain of *, x, X stay; (2) samples: new group О26 (12 keep samples) and С26 (17 refuse samples) in the description, counts in criterion 1, pairs and the group lists О11-О26, С1-С26 in criterion 3; (3) criterion 10 mutants m1-m44 -> m1-m45 (m45: the two placeholder tests on the whole chunk); (4) residual risks (1)-(6) -> (1)-(7): (7) a kept call-class value is not scanned inside (a glued pair stays inside), in the description and in criterion 11(а); (5) residual risk (5) bound to README words «space before the sign», «address with no user» (criterion 11(а)). The refusal set becomes stricter, nothing is narrowed or weakened\n  - id: REQ-102\n"
+      },
+      {
+        "edit": "E2",
+        "finding": "F1 (step 06)",
+        "place": "description, class З (definition)",
+        "old": "или цепочка не короче 3 знаков только из `*`, `x`, `X`, или начинается с `your`\n      (YOUR_API_KEY), или содержит `example` (`pw-example`). Слово списка с добавкой заглушкой не является, кроме двух\n      последних правил: `changeme2`, `password9`, `user9` — литералы, `example9` и `your9` — заглушки; из 26 слов только\n      example имеет такую добавку.",
+        "new": "или цепочка не короче 3 знаков только из `*`, `x`, `X`, или (последние два правила, и только они) значение\n      целиком состоит из латинских букв, цифр, `_`, `.` и `-` (знаки [A-Za-z0-9_.-]; таковы все заглушки этого требования: YOUR_API_KEY, pw-example, example9)\n      и при этом начинается с `your` (YOUR_API_KEY) или содержит `example` (`pw-example`). Значение с любым другим знаком (`&`, `@`, `/`, `:`, пробел и так далее)\n      проверяется без этих двух правил: заглушкой оно бывает только как слово списка или цепочка из `*`, `x`, `X`, всё прочее — литерал, и текст со словом example\n      или your, приписанный вплотную к настоящему значению, заглушкой его не делает (`token=` и 12 знаков и `&redirect=https://example.com/cb`, `secret=` и 12 знаков\n      и `@example.com`, `password=your&` и 12 знаков — литералы; `token=example.com` и `pw-example` — заглушки). Набор знаков ограничивает эти два правила одинаково\n      в трёх местах: значение без кавычек, всё содержимое в кавычках (`\"your \"` с пробелом и дальше любой текст — литерал, `\"your-password\"` — заглушка), пароль адреса (Ф3).\n      Список из 26 слов и цепочка из `*`, `x`, `X` набором не ограничиваются и остаются как были. Слово списка с добавкой заглушкой не является, кроме правил your и example:\n      `changeme2`, `password9`, `user9` — литералы, `example9` и `your9` — заглушки (значение из букв и цифр); из 26 слов только example имеет такую добавку."
+      },
+      {
+        "edit": "E3",
+        "finding": "F2 (step 06)",
+        "place": "description, residual risk (5) -> end of the point",
+        "old": "пункт (1). (6) Сужение:",
+        "new": "пункт (1). Все три прежние дыры этого пункта (присваивание с пробелом перед знаком, адрес без пользователя, пробельный знак вне пробела и табуляции) называются в tools/README.md,\n      первые две — словами «space before the sign» и «address with no user» (замечание F2 шага 06; критерий 11(а)). (6) Сужение:"
+      },
+      {
+        "edit": "E4",
+        "finding": "F1 (step 06), call-class gap",
+        "place": "description, residual risk (6) -> end, new point (7)",
+        "old": "здесь и называется в записи решения (решение 0102, п. 30 (б) и (г)).\n",
+        "new": "здесь и называется в записи решения (решение 0102, п. 30 (б) и (г)).\n      (7) Сужение: значение-вызов внутри не просматривается (находка F1 шага 06). Значение, которое читается как вызов (В2: идентификатор или путь, сразу за которым `(`; остальное безразлично),\n      хранится целиком до первого пробельного знака, запятой, точки с запятой или кавычки, и пара, приписанная к нему вплотную, остаётся внутри значения и не разбирается:\n      `token=f(x)&` и имя из Ф9 и `=` и литерал (например `token=f(x)&password=hunter2fake`) хранится. Старый M9 скрывал и такую пару. Это следствие ответа владельца 2026-10-28 (решение 0102,\n      п. 30 (а)): класс вызова остаётся хранимым, и правило В2 этой правкой не меняется. Остаточный риск назван здесь и называется в записи решения, в tools/README.md (слова\n      «not scanned inside», критерий 11(а)) и в отчёте о выпуске.\n"
+      },
+      {
+        "edit": "E5",
+        "finding": "F1 (step 06), point (7)",
+        "place": "description, assumptions (residual risk count)",
+        "old": "остаточный риск — пункты (1)–(6) выше",
+        "new": "остаточный риск — пункты (1)–(7) выше"
+      },
+      {
+        "edit": "E6",
+        "finding": "F1 (step 06)",
+        "place": "description, sample O10 assembly",
+        "old": "записи О18–О25 в сборку не входят",
+        "new": "записи О18–О26 в сборку не входят"
+      },
+      {
+        "edit": "E7",
+        "finding": "F1 (step 06)",
+        "place": "description, samples: new group О26 (after О25)",
+        "old": "наличием парной открывающей) `token=${A}}`, `secret=${{A}}}`. Группа С — отказ:",
+        "new": "наличием парной открывающей) `token=${A}}`, `secret=${{A}}}`; О26 (З, значение целиком из знаков [A-Za-z0-9_.-] с `your` в начале или `example` внутри — заглушка; половины пар С26) `token=example.com`,\n      `api_key=YOUR_API_KEY`, `password=pw-example`, `token=example9`, `password=your-token`, `secret=your9`, `password: \"your-password\"`, `password: 'pw-example'`, `https://u:pw-example@h/x`,\n      `https://u:example9@h/x`, `Authorization: Basic YOUR_CREDENTIALS`, `Bearer YOUR_TOKEN`. Группа С — отказ:"
+      },
+      {
+        "edit": "E8",
+        "finding": "F1 (step 06)",
+        "place": "description, samples: new group С26 (after С25)",
+        "old": "`token=hunter2fake}`.\n    acceptance_criteria:",
+        "new": "`token=hunter2fake}`;\n      С26 (З, текст со словом example или your, приписанный вплотную к значению, или значение с знаком вне набора [A-Za-z0-9_.-]; тела собираются из частей, «N знаков» — N знаков [A-Za-z0-9]; находка F1 шага 06):\n      (Ф9) `token=` и 12 знаков и `&redirect=https://example.com/cb`, `secret=` и 12 знаков и `@example.com`, `password: \"` и 12 знаков и ` for example.com\"`; (Ф2) `Authorization: Basic ` и 24 знака и `&x=example`;\n      (Ф8) `Bearer ` и 24 знака и `&redirect=example.com`; (Ф3) `https://deploy:` и 12 знаков и `&example@host/x`; префикс your со знаком вне набора: `password=your&` и 12 знаков, `api_key=your/` и 12 знаков,\n      `https://deploy:your:` и 12 знаков и `@host/x`, `password: \"your ` и 12 знаков и `\"`, `Bearer your:` и 24 знака; вторые половины пар к О26 (заглушка и приписанный вплотную секрет): `token=example.com&` и 12 знаков,\n      `password=your-token&` и 12 знаков, `https://u:pw-example&` и 12 знаков и `@h/x`, `password: 'pw-example for ` и 12 знаков и `'`, `Authorization: Basic YOUR_CREDENTIALS&` и 24 знака, `Bearer YOUR_TOKEN&` и 24 знака (всего 17 записей).\n    acceptance_criteria:"
+      },
+      {
+        "edit": "E9",
+        "finding": "F1 (step 06)",
+        "place": "criterion 1, counts of original records",
+        "old": "записи О18–О25 и С16–С25 в них не входят, их границу проверяют пары критерия 3\"",
+        "new": "записи О18–О26 и С16–С26 в них не входят, их границу проверяют пары критерия 3; из 12 записей О26 старый код скрывает все 12, из 17 записей С26 — все 17 (проверено 2026-10-28 той же командой по каждой записи), поэтому тест по ним на базовом коммите красный\""
+      },
+      {
+        "edit": "E10",
+        "finding": "F1 (step 06)",
+        "place": "criterion 3, range of group С",
+        "old": "(С1–С25, описание",
+        "new": "(С1–С26, описание"
+      },
+      {
+        "edit": "E11",
+        "finding": "F1 (step 06)",
+        "place": "criterion 3, kept groups",
+        "old": "включая О6, О7, О8 и О11–О25, не отклоняются",
+        "new": "включая О6, О7, О8 и О11–О26, не отклоняются"
+      },
+      {
+        "edit": "E12",
+        "finding": "F1 (step 06)",
+        "place": "criterion 3, border of placeholders: example9 sentence",
+        "old": "потому что значение, содержащее\n        example, — заглушка",
+        "new": "потому что значение из знаков [A-Za-z0-9_.-], содержащее\n        example, — заглушка"
+      },
+      {
+        "edit": "E13",
+        "finding": "F1 (step 06)",
+        "place": "criterion 3, new pairs of the character set of class З (before the sentence on baits)",
+        "old": "`https://u:u@h` и `https://имя:имя@h` отклоняются. Приманки собраны из частей:",
+        "new": "`https://u:u@h` и `https://имя:имя@h` отклоняются. Набор знаков заглушки (шаг 05b, находка F1 шага 06; правило З, в тесте есть оба случая каждой пары, образцы О26 и С26 литералами, секретные части собраны):\n        два правила (начало your, слово example внутри) действуют только на значение целиком из знаков [A-Za-z0-9_.-]; в трёх местах правила З — без кавычек `token=example.com` и `password=your-token` хранятся, а те же значения\n        с приписанным вплотную секретом (`token=example.com&` и 12 знаков, `password=your-token&` и 12 знаков) отклоняются; в кавычках `password: 'pw-example'` и `password: \\\"your-password\\\"` хранятся, а\n        `password: 'pw-example for ` и 12 знаков и `'` и `password: \\\"your ` и 12 знаков и `\\\"` отклоняются; в адресе `https://u:pw-example@h/x` и `https://u:example9@h/x` хранятся, а `https://u:pw-example&` и 12 знаков и `@h/x`\n        отклоняется; после схемы Ф2 и после Bearer (Ф8) `Authorization: Basic YOUR_CREDENTIALS` и `Bearer YOUR_TOKEN` хранятся, а те же строки с `&` и 24 знаками сразу после значения отклоняются; кроме пар, отклоняются\n        все остальные образцы С26 (приписанный вплотную к секрету текст со словом example: `token=` и 12 знаков и `&redirect=https://example.com/cb`, `secret=` и 12 знаков и `@example.com`,\n        `Authorization: Basic ` и 24 знака и `&x=example`, `Bearer ` и 24 знака и `&redirect=example.com`, `password: \\\"` и 12 знаков и ` for example.com\\\"`, `https://deploy:` и 12 знаков и `&example@host/x`;\n        значения, где your стоит впереди знака вне набора: `password=your&` и 12 знаков, `api_key=your/` и 12 знаков, `https://deploy:your:` и 12 знаков и `@host/x`, `Bearer your:` и 24 знака), а остальные образцы О26\n        (`token=example.com`, `api_key=YOUR_API_KEY`, `password=pw-example`, `token=example9`, `secret=your9`) хранятся; слово из списка в 26 слов и цепочка из `*`, `x`, `X` набором не ограничены (`token=***` хранится).\n        Приманки собраны из частей:"
+      },
+      {
+        "edit": "E14",
+        "finding": "F1 (step 06)",
+        "place": "criterion 10, mutants: new m45 (after m44)",
+        "old": "`token=hunter2fake}` (С25) отклоняется при любом чтении и служит контролем\"",
+        "new": "`token=hunter2fake}` (С25) отклоняется при любом чтении и служит контролем; (м45) проверки «начинается с `your`» и «содержит `example`» класса З применяются ко всему\n        значению до пробельного знака, запятой, точки с запятой или кавычки, без ограничения набором знаков [A-Za-z0-9_.-] (в каждом из трёх мест правила З отдельным запуском: без кавычек, в кавычках, пароль адреса) →\n        красный тест критерия 3 на образцах С26 этого места и на парах `token=example.com` / `token=example.com&` и 12 знаков, `password: 'pw-example'` / `password: 'pw-example for ` и 12 знаков и `'`,\n        `https://u:pw-example@h/x` / `https://u:pw-example&` и 12 знаков и `@h/x`: приписанный вплотную к настоящему значению текст с example или your делает его «заглушкой», и оно хранится\""
+      },
+      {
+        "edit": "E15",
+        "finding": "F1 (step 06), point (7)",
+        "place": "criterion 11(а), README: count of residual-risk points",
+        "old": "README называет остаточный риск файлов (пункты\n        (1)–(6) описания):",
+        "new": "README называет остаточный риск файлов (пункты\n        (1)–(7) описания):"
+      },
+      {
+        "edit": "E16",
+        "finding": "F2 (step 06)",
+        "place": "criterion 11(а), README: words of points (5) and (7)",
+        "old": "строки, которые ищут TM-50 и DC-01, на месте. (б)",
+        "new": "слова остаточного риска пунктов (5) и (7) (замечание F2 шага 06): `grep -c 'space before the sign' tools/README.md`, `grep -c 'address with no user' tools/README.md` и `grep -c 'not scanned inside' tools/README.md` — каждое не меньше 1 (на базовом коммите и на дереве до правки 0, проверено 2026-10-28);\n        строки, которые ищут TM-50 и DC-01, на месте. (б)"
+      }
+    ],
+    "self_check": "date -u at the edit -> 2026-10-28T16:28:15Z (the time of the new dated comment line); the handoff was filled at 2026-10-28T16:30:43Z. Read before the first edit: docs/quality-bar.md, the handoff of step 06 (result.findings F1-F4, result.issues), the handoff of step 07 (no finding on class З), docs/workflows/WF-01-requirement.md (section «Micro-amendment after the code design»), decisions/0102 (all Additions, items 14, 18-34), the design docs/design/REQ-102-result-files-byte-exact.md sections 2.1-2.3 and 18, the whole block REQ-102.\n\n1. Facts of the task (quality-bar 6.2). The block with its comment lines stood at lines 12406-13011: awk 'NR<12406||NR>13011' <before copy> | shasum -a 256 -> 18a08a65dd4ca9e02d6346491096f5071b136108b4bc73f166473b2c9f1a8b8b (12577 lines), as the task says. 103 requirements, REQ-102 has 12 criteria, pending: confirmed (command 5). The finding is true on the built code, checked by me (command 8): 17 of 17 new refuse samples are KEPT by findSecrets of the built tree and HIDDEN by the old maskSecrets of the tag base/ISS-0093-20261028-01; token=<12 characters>&redirect=https://example.com/cb is kept, the same text with a space, a comma or a semicolon instead of & is refused (form F9 each), with / or @ kept. The call-class swallow is true: token=f(x)&password=hunter2fake is kept by the built code and hidden by the old code. The reviewer's 19 of 23 variants I did not repeat (his set is not in the handoff); my own set is the 17 samples C26.\n\n2. The rest of the file, before and after (copy first: cp docs/requirements.yaml <scratch>/requirements.before.yaml; whole file 350745f6b73e69314736592173fc199eb3619a7454b6039fe455ecd4d4f7345e, 13183 lines):\n before: awk 'NR<12406||NR>13011' <scratch>/requirements.before.yaml | shasum -a 256 -> 18a08a65dd4ca9e02d6346491096f5071b136108b4bc73f166473b2c9f1a8b8b (12577 lines)\n after:  awk 'NR<12406||NR>13043' docs/requirements.yaml | shasum -a 256 -> 18a08a65dd4ca9e02d6346491096f5071b136108b4bc73f166473b2c9f1a8b8b (12577 lines)\n The block with its comment lines now stands at lines 12406-13043 (the next comment, of REQ-103, is line 13044; the line before it is the last line of the criterion 12 of REQ-102). Whole file after: c318a3fe06e84daa72ac25e477f7724aa66774d3bb45f2a389dd69e517928b5c, 13215 lines (+32).\n\n3. All sixteen edits were applied by one script (assert: each Old occurs exactly once before the edit; the script and the JSON of the table are in <scratch>/r05b/, outside the project). 16 edits, 16 applied.\n\n4. Block readable: awk '/^  - id: REQ-102$/{f=1} f&&/^  - id: /&&!/REQ-102$/{exit} f' docs/requirements.yaml | wc -l -> 631.\n\n5. YAML loads: ruby -ryaml -e 'y=YAML.load_file(\"docs/requirements.yaml\")[\"requirements\"]; q=y.find{|r| r[\"id\"]==\"REQ-102\"}; puts y.size, q[\"acceptance_criteria\"].size, q[\"status\"]' -> 103, 12, pending. Parsed comparison with the before copy: only the block REQ-102 differs, and in it only the field description and the criteria 1, 3, 10 and 11 (indexes 0, 2, 9, 10); the key list of the block is the same; the other 102 requirements are equal as parsed values.\n\n6. Proof of the new rule on a prototype outside the project (not the built code; the built tree is untouched). <scratch>/r05b/fix/mask.js is a copy of the built mask.js with one change in findIsPlaceholder: the tests «starts with your» and «contains example» run only when every character of the value is a letter, a digit, _, . or - (the list of 26 words and the chain of *, x, X are not restricted). Driver <scratch>/r05b/drv.mjs: the 214 entries of the oracle tables of the design (section 18, extracted with its awk command) plus the new groups O26 (12) and C26 (17):\n node drv.mjs cur extra.json -> keep 118 bad 0 | refuse 125 bad 17 (the built code keeps all 17 C26: this is the finding)\n node drv.mjs fix extra.json -> keep 118 bad 0 | refuse 125 bad 0 (every C26 sample refused by the allowed form; every O26 sample kept; the 106 and 108 old entries unchanged)\n node only.mjs -> cur: O26 12, refused wrongly 0, old maskSecrets hid 12 | C26 17, kept wrongly 17, old hid 17; fix: O26 12 refused wrongly 0, old hid 12 | C26 17 kept wrongly 0, old hid 17.\n So the old code hid ALL 12 keep samples of O26 (the new rule keeps them, as the plan's placeholders must be kept) and all 17 refuse samples of C26.\n node matrix.mjs (the placeholder matrix of the design: the 26 words in three casings in three places, W and W9, plus your-key, xxxx, ***, pw-example, YOUR_API_KEY, your9, example9, https://u:u@h, https://имя:имя@h) -> 491 checks, 0 mismatches for the built code and for the prototype.\n Differential fuzz (400000 strings from 9 name prefixes and 26 fragments, fixed seed): the prototype keeps something the built code refused: 0 times; the prototype refuses what the built code kept: 74925 times, of which with a value made only of [A-Za-z0-9_.-]: 0. So the rule is stricter only on values with another character; nothing is narrowed.\n Exhaustive pass for the call-class point (AP-094): 23 kept heads (path, templates of every kind, $NAME, %NAME%, bare identifiers, block openers, placeholders, example.com, f(x), os.getenv(x), getSecret(), $(cat)) followed by &password=hunter2fake, with the names password and token, on the prototype: only the call heads are kept (getSecret(), os.getenv(x), $(cat), f(x) - 8 of 46 strings); every other head makes the glued pair a literal and is refused. So point (7) of the residual risk is limited to the class В2.\n\n7. Applicable quality-bar items: Q1 (every new check names its way: criterion 3 pairs and groups, criterion 10 m45, criterion 11(а) three README greps, run on the tree: grep -c 'space before the sign' / 'address with no user' / 'not scanned inside' tools/README.md -> 0, 0, 0 on the tree and on the tag, so the criterion is not met before the work, AP-071); Q7 (the new samples are built from parts: a fill mark «N знаков» in the text, no complete key-shaped literal in the block; the grep of criterion 3 for baits would not match the text of O26: «Basic YOUR_CREDENTIALS» has a run of 4 characters before the underscore); Q12 (the open choice - to close the gap of point (7) - is a question in issues, I2); no word about lowering the bar; the refusal set is stricter, no criterion is weakened or removed (criteria 1, 3, 10, 11 only gained text; all other numbers kept). No path of this computer and no other project in the text.\n\n8. Handoff checks, run before the close: cd tools && npm run handoffs-check -> exit 0 («файлов проверено 1255, нарушений 0, исключений использовано 114 из 114»); cd tools && npm run traces -> exit 0 («файлов проверено 2338, следов 0, пропущено 67»). The YAML loads with the command of item 5 (ruby -ryaml): 103, 12, pending. Then: cd tools && npm run handoff -- close handoffs/ISS-0093-20261028-01/step-05b-req-analyst.json --status COMPLETED.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "The design and the oracle tables still carry the old rule and need ORCH's record (the requirement wins): docs/design/REQ-102-result-files-byte-exact.md section 2.2 item 4 (class З: «starts with your; or contains example») and the form table, section 2.3 (add the groups C26 and O26), section 11 (mutant m45), section 12 and section 18 (the oracle tables: O26 with 12 keep entries, C26 with 17 refuse entries - the extra.json of my proof, <scratch>/r05b/extra.json, has them with the fill marks of the design; expected totals after: 118 kept entries, 125 refused entries). The built code (mask.js findIsPlaceholder, three places: findValue unquoted and quoted, findUrlPassword) is for CODE-FIXER at step 05d."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Point (7), the call-class gap, is named, not closed, as the task says. It is a narrowing against the old rule M9 that follows from the owner's answer 30 (а) (the class of calls stays kept) and from the rule В2 «the rest does not matter». Closing it (a call followed by a glued pair, or any text after the closing parenthesis, is a literal) would not refuse a plan sample, but it changes the rule В2 and touches the owner's answer, so by decisions/0102 item 19 it needs the owner. Proposal for the record decisions/0105 (written by ORCH at build sub-step 6): name point (7) and the character-set rule of class З. I did not add a keep sample for the gap: a test that pins a known gap as «kept» would forbid closing it (the same reason as for the empty-user address in the design)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Point (5): the block already named both old holes (a space before the sign and an address with no user) with samples; what was missing is the binding of the README (finding F2 of step 06: the README names only the third one). The edit adds the words «space before the sign» and «address with no user» to the point and three README greps to criterion 11(а). The second half of F2 (the count «и ещё N» is shown only beside at least one named file) is a README wording for CODE-FIXER, not a requirement matter; F3 (RangeError of the prefixed-key regexes above about 5.33 MiB in depsOf) and F4 (the scripted executor accepts file by file, one sentence in the README) are code and README items outside this micro-amendment; the requirement already writes the exclusion for scripted in the description."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Price of the stricter rule, now inside the definition of З: a value with a space or another character outside [A-Za-z0-9_.-] is a placeholder only if it is a word of the list or a chain of *, x, X; so «password: \"your password\"» (an instruction with a space) and a bare address as a value (token=https://example.com/x) are refused, where the built code kept them. Both were hidden by the old rules. I did not add them to the README list of false refusals in the requirement (not in the task); CODE-FIXER may add one clause to the README paragraph «False refusals»."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Facts of the task checked (6.2): the tag has no REQ-102 block, so «before» is the file at the start of this step (before_copy); the rest-of-file hash 18a08a65... for NR<12406||NR>13011 was true; the file at the start was 13183 lines, whole hash 350745f6.... Nothing in the task contradicted the files."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

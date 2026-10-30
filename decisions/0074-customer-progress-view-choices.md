@@ -29,3 +29,5 @@
 ## Основание
 
 `handoffs/PICKERCARD-20261021-01/step-01-req-analyst.json`, `decisions/0073`, `0072`, `0065`.
+
+Narrowed by decisions/0097 (2026-10-28): item 3 and the renderer for `app/` (one renderer in `app/public/office/`); item 6's word ban carries over to every file under `app/public/`.

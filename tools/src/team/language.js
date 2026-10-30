@@ -4,9 +4,10 @@
 //
 // A phrase takes only the public fields of a role (name, genitive) and numbers; the
 // text of the user or of an agent never goes into a phrase.
+import { maskSecrets } from "../pixel-office/mask.js";
 import { reduceInPlace } from "./reducer.js";
 import { roleByCode, publicRole } from "./roles.js";
-import { EVENT_TYPES } from "./schema.js";
+import { EVENT_TYPES, checkResultName } from "./schema.js";
 
 export const NEUTRAL_PHRASE = "В проекте произошли изменения";
 export const SCRIPTED_SUFFIX = " — тестовый исполнитель";
@@ -24,10 +25,53 @@ export const FAIL_DETAIL = Object.freeze({
   not_found: "Исполнитель не найден: проверьте SAI_TEAM_CLAUDE_BIN",
   result_file: "Файл результата не найден в рабочей папке или недопустим",
   result_disk: "Не удалось записать файл результата на диск",
+  // (REQ-102) a result file in which the check of secrets found one: the start of
+  // every text of such a refusal; secretDetail adds the names of the files.
+  secret: "Файл результата не принят: в нём найден секрет",
   group: "Не удалось остановить процессы исполнителя",
   // (r13, C1) written by the engine of REQ-013.
   dependency_closed: "Задача зависит от отклонённой",
 });
+
+// The content that stands in the place of a stored file in which the check of
+// secrets finds one (a file of an older core, or one put into files/ by hand):
+// a constant, so the file is not handed to the model and nothing is thrown.
+export const FILE_WITHHELD = "Файл не передан: в нём найден секрет";
+
+const SECRET_NAMES_SHOWN = 3;
+
+// The text of a refusal for a secret, with the names of the refused files: the
+// accepted names (<task>-<attempt>-<file name>) of all of them, each distinct
+// name once (a file named twice by the agent is listed once and counted once).
+// The names are not values. A name is shown only if the pattern of result names
+// accepts it and maskSecrets leaves it unchanged (the event and the question of
+// the team are masked, the error line of the command is not: a name that the
+// rules would change is never printed). At most three names are shown, in the
+// order of the files; every other refused file is counted in "и ещё N". When no
+// name is shown (no refused name passes the two tests, for example the only
+// refused file has a name the rules would change) the text is FAIL_DETAIL.secret
+// alone, with no count: the count stands only beside a shown name. A finished
+// text that maskSecrets would still change (a name that ends in a rule word, in
+// front of "и ещё N") also falls back to the constant, so the three places that
+// show it print one string.
+export function secretDetail(names) {
+  const list = Array.isArray(names) ? [...new Set(names)] : [];
+  const shown = [];
+  for (const name of list) {
+    if (shown.length === SECRET_NAMES_SHOWN) break;
+    if (checkResultName(name).ok && maskSecrets(name) === name) {
+      shown.push(name);
+    }
+  }
+  if (shown.length === 0) return FAIL_DETAIL.secret;
+  const rest = list.length - shown.length;
+  const files =
+    list.length === 1
+      ? `файл: ${shown[0]}`
+      : `файлы: ${shown.join(", ")}${rest > 0 ? ` и ещё ${rest}` : ""}`;
+  const text = `${FAIL_DETAIL.secret} (${files})`;
+  return maskSecrets(text) === text ? text : FAIL_DETAIL.secret;
+}
 
 const always = () => true;
 const dataIs = (key, value) => (event) => event.data?.[key] === value;
@@ -258,6 +302,14 @@ export const PHRASES = Object.freeze([
     "TASK_FAILED",
     "{name}: задача не нужна — она зависела от отклонённой",
     dataIs("reason", "dependency_closed"),
+  ),
+  row(
+    "TASK_FAILED",
+    "{name}: файл с результатом не принят — в нём найден секрет",
+    (e) =>
+      e.data?.reason === "result_file" &&
+      typeof e.data?.detail === "string" &&
+      e.data.detail.startsWith(FAIL_DETAIL.secret),
   ),
   row(
     "TASK_FAILED",

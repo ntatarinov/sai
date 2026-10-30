@@ -1,0 +1,201 @@
+{
+  "handoff_id": "step06-AUD-001-20261027-01",
+  "run_id": "AUD-001-20261027-01",
+  "workflow_id": "WF-05",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "AUDIT-TRIAGE",
+  "file": "handoffs/AUD-001-20261027-01/step-06-audit-triage.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/AUD-001/report.json",
+      "docs/audits/AUD-001/report.md",
+      "docs/audits/AUD-001/plan.json",
+      "docs/workflows/WF-05-health-audit.md",
+      "docs/workflows/WF-03-defect.md",
+      "docs/issues/"
+    ],
+    "route": "AUDIT-COMPILER (step 4, done) -> ORCH check (step 5, done) -> AUDIT-TRIAGE (this) -> ORCH check (step 7) -> DOC-UPDATER (step 7a)",
+    "write_set": [
+      "docs/issues/ISS-NNNN-*.md (new files, at most six, numbers from ORCH)",
+      "docs/audits/AUD-001/report.json (only the 'defect' fields of findings)",
+      "handoffs/AUD-001-20261027-01/step-06-audit-triage.json"
+    ],
+    "base_tag": "base/AUD-001-20261027-01",
+    "orch_check": {
+      "at": "2026-10-28T04:20:36Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "AC0.1 own commands: jq select(Critical|High).defect | grep -c null -> 0; seven Critical/High findings map to ISS-0092 (DEP-01, DEP-02), ISS-0093 (SEC-01), ISS-0094 (DOC-01), ISS-0095 (REQ-004-F1), ISS-0096 (REQ-005-F1), ISS-0089 (RV-B-061-1, an already open defect)",
+        "jq -S 'del(.findings[].defect)' of report.json: same sha256 as the copy in HEAD (8f2887ca...ead19); git diff of the file: 7 lines changed",
+        "line 2 of ISS-0092..0096 matches '^Серьёзность: [A-Z]+\\. Статус: '; ISS-0097 not created; handoffs-check and traces return 0",
+        "DISCREPANCY: the program plan says SEC-01 is covered by ISS-0058; the triage read ISS-0058 in full and opened ISS-0093 instead (ISS-0058 is about hosts, file names and role names, not result files). Work goes by the measurement: WF-03 on ISS-0093 together with the diagnosis of ISS-0058"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-05, step 6 - AUDIT-TRIAGE for audit AUD-001 (run AUD-001-20261027-01). Steps 4 and 5 are done (the compiler's summary is docs/audits/AUD-001/report.json and report.md; ORCH's reconciliation is in context.orch_check of step-04-audit-compiler.json). Read your role file, docs/workflows/WF-05-health-audit.md (steps 5-7), docs/workflows/WF-03-defect.md (section \"What a defect looks like\"), docs/workflows/handoffs.md, docs/anti-patterns.md and the open defects in docs/issues/. Do WF-05 step 6 as written: sort the confirmed Critical and High findings (and the Medium and Low that repeated from the previous audit; AUD-001 is the first audit, so check report.json 'comparison') by cause; for each cause check the open defects in docs/issues/ (same place, same mechanism - read the defect file itself, do not decide by the title) and open a new defect only for a cause that no open defect covers; a Critical finding gets its own 'Как исправить' item with its own regression test. Defect numbers: take the next free number from the command `ls docs/issues | sort | tail -1` and then in order; ORCH issues at most six numbers (the next six free numbers). If you need more, stop and ask (BLOCKED) - do not take a number yourself. Write the defect number into every finding it covers in docs/audits/AUD-001/report.json, field 'defect', for covered-by-open-defect findings too; change no other field of the summary (show a before/after comparison of everything except the 'defect' fields, for example `jq -S 'del(.findings[].defect)'` and a sha256 of each). Fix and diagnose nothing. Write only the new defect files, the 'defect' fields of docs/audits/AUD-001/report.json and your handoff. No machine paths and no names of other projects in any file (run the traces check before close). At the end write in result.summary two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Every confirmed Critical and High finding is in a defect, new or a named open one; every Critical has its own 'Как исправить' item with a regression test",
+      "report.json differs from the base only in the 'defect' fields (jq -S del(.findings[].defect) before and after: same sha256)",
+      "The new defect files are in the WF-03 format with line 2 matching '^Серьёзность: [A-Z]+\\. Статус: '",
+      "cd tools && npm run handoffs-check && npm run traces return 0 before close"
+    ]
+  },
+  "created_at": "2026-10-28T04:14:28Z",
+  "started_at": "2026-10-28T04:14:28Z",
+  "completed_at": "2026-10-28T04:19:46Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Открыто пять новых дефектов (ISS-0092 … ISS-0096) по пяти причинам из семи находок Critical и High; шестой номер, ISS-0097, не использован. Главный дефект — ISS-0092 (CRITICAL): на компьютере стоит старая сборка Node 22.21.1, на ней работает сервер Pixel Office; лечится обновлением Node и поднятием нижней границы в engines. Ещё три дефекта — записи о требованиях REQ-003, REQ-004, REQ-005 (нет записи проверки, нет вывода snapshot-diff, превышен лимит доработок по решению ORCH, а не владельца), и ISS-0093 — защита от утечки секретов в Sai Team портит файлы с кодом. Находка по REQ-061 (RV-B-061-1) уже записана в открытом ISS-0089 (пункт 18, исправить текст критерия), нового дефекта на неё нет. Повторяющихся Medium и Low нет: AUD-001 — первый аудит.",
+    "changes": [
+      {
+        "defect": "ISS-0092",
+        "file": "docs/issues/ISS-0092-node-22-21-1-behind-security-releases.md",
+        "severity": "CRITICAL",
+        "findings": [
+          "DEP-01 (Critical)",
+          "DEP-02 (High, общая: tools-core, team, picker)"
+        ],
+        "why": "One cause: the local Node build 22.21.1 and the open engines floor. Two separate «Как исправить» items: item 1 is DEP-01 (Critical) with its own regression test, item 2 is DEP-02 with its own test. Merge explained: report.json merges, DEP-01 + DEP-02."
+      },
+      {
+        "defect": "ISS-0093",
+        "file": "docs/issues/ISS-0093-team-result-files-corrupted-by-free-text-masking.md",
+        "severity": "HIGH",
+        "findings": [
+          "SEC-01 (High)"
+        ],
+        "why": "Not counted as covered by the open ISS-0058: see issues I1."
+      },
+      {
+        "defect": "ISS-0094",
+        "file": "docs/issues/ISS-0094-req003-done-without-release-validator-record.md",
+        "severity": "HIGH",
+        "findings": [
+          "DOC-01 (High)"
+        ],
+        "why": "Defect per requirement (REQ-003)."
+      },
+      {
+        "defect": "ISS-0095",
+        "file": "docs/issues/ISS-0095-req004-criterion4-snapshot-diff-output-missing.md",
+        "severity": "HIGH",
+        "findings": [
+          "REQ-004-F1 (High)"
+        ],
+        "why": "Defect per requirement (REQ-004). Not merged with DOC-01: another requirement, another check and another place; the two defects name each other and go together."
+      },
+      {
+        "defect": "ISS-0096",
+        "file": "docs/issues/ISS-0096-req005-criterion8-rework-limit-exceeded-without-owner-exception.md",
+        "severity": "HIGH",
+        "findings": [
+          "REQ-005-F1 (High)"
+        ],
+        "why": "Defect per requirement (REQ-005)."
+      },
+      {
+        "defect": "ISS-0089 (open, not changed)",
+        "file": "docs/audits/AUD-001/report.json",
+        "severity": "LOW (the defect's own severity; the finding is High)",
+        "findings": [
+          "RV-B-061-1 (High)"
+        ],
+        "why": "Covered by the open ISS-0089, item 18 (criterion 1 of REQ-061 names the schema line «/1 или /2»; a text-only fix); only the number is written into the finding."
+      },
+      {
+        "file": "docs/audits/AUD-001/report.json",
+        "place": "findings[].defect",
+        "what": "Field `defect` changed from null to the number in 7 findings: DEP-01 and DEP-02 -> ISS-0092; SEC-01 -> ISS-0093; DOC-01 -> ISS-0094; REQ-004-F1 -> ISS-0095; REQ-005-F1 -> ISS-0096; RV-B-061-1 -> ISS-0089. Nothing else in the file changed (7 lines in the diff)."
+      }
+    ],
+    "self_check": [
+      {
+        "what": "Numbers: the next free number and that nobody uses ISS-0092 … ISS-0097",
+        "command": "ls docs/issues | sort | tail -1; grep -rl 'ISS-009[2-7]' <whole tree without node_modules and .git> (before writing)",
+        "output": "ISS-0091-devlaunch-requirements-followups.md; no file mentions ISS-0092 … ISS-0097. Used 0092-0096 in order, 0097 not used (five new defects were enough; no extra number was taken)."
+      },
+      {
+        "what": "Every confirmed Critical and High finding is in a defect",
+        "command": "jq -c '[.findings[]|select(.severity==\"Critical\" or .severity==\"High\")|{id,severity,defect}]' docs/audits/AUD-001/report.json",
+        "output": "7 of 7: DEP-01 Critical -> ISS-0092; DEP-02 High -> ISS-0092; SEC-01 -> ISS-0093; DOC-01 -> ISS-0094; REQ-004-F1 -> ISS-0095; REQ-005-F1 -> ISS-0096; RV-B-061-1 -> ISS-0089 (open). Withdrawn / not confirmed findings: none (report.json withdrawn = []), so none was skipped."
+      },
+      {
+        "what": "Repeated Medium and Low",
+        "command": "jq -c .comparison docs/audits/AUD-001/report.json",
+        "output": "previous_audit null: AUD-001 is the first audit, nothing «remaining» -> no Medium or Low goes into a defect (21 Medium and 24 Low stay report rows). ARC-15 (Low) names the open ISS-0003, but it is not a repeat from an earlier audit, so it gets no defect and no number."
+      },
+      {
+        "what": "Each Critical has its own «Как исправить» item with a regression test",
+        "command": "grep -n -E '^1\\. \\*\\*DEP-01|^2\\. \\*\\*DEP-02|Regression test' docs/issues/ISS-0092-*.md",
+        "output": "item 1 (DEP-01, Critical): Regression test for this item; item 2 (DEP-02): Regression test for this item. The only Critical of the audit is DEP-01."
+      },
+      {
+        "what": "Open defects against the causes: read the files, not the titles",
+        "command": "for f in docs/issues/ISS-*.md with «Статус: open» in the first lines: list (68 open); grep -il -E 'node ?22|22\\.21|engines|CVE' ; grep -n -E 'REQ-(003|004|005|061)\\b'; read ISS-0058, ISS-0045, ISS-0089 in full",
+        "output": "Node version (DEP-01/02): no open defect (ISS-0048, ISS-0077, ISS-0085 mention Node 22 only in passing, ISS-0053 is closed). REQ-003, REQ-004, REQ-005: no open defect. REQ-061 criterion 1: ISS-0089 item 18. Masking: ISS-0058 and ISS-0045 open, see issues I1."
+      },
+      {
+        "what": "The summary changed only in the `defect` fields",
+        "command": "jq -S 'del(.findings[].defect)' docs/audits/AUD-001/report.json | sha256sum   (before: copy taken at the start, <scratch>/report.before.json)",
+        "output": "before 8f2887ca72addaa50fbbb3ec02dbf8c674b9f795b801f3eb68c3467fd32ead19; after 8f2887ca72addaa50fbbb3ec02dbf8c674b9f795b801f3eb68c3467fd32ead19; cmp of the two outputs: same. `diff` of the file itself: 7 lines, all `\"defect\": null` -> `\"defect\": \"ISS-…\"`; 45 findings keep null; the severity of every finding is unchanged."
+      },
+      {
+        "what": "Format of the new defect files (WF-03)",
+        "command": "for f in docs/issues/ISS-009[2-6]-*.md: sed -n 2p $f | grep -c -E '^Серьёзность: [A-Z]+\\. Статус: '; grep -c '^## ' $f",
+        "output": "5 files: 1 match each on line 2; 4 sections each («Что не так», «Доказательство», «Как исправить», «Маршрут»); line 1 is `# ISS-NNNN — title`."
+      },
+      {
+        "what": "Facts of the findings repeated by AUDIT-TRIAGE (Q3, AP-012)",
+        "command": "node -v; sed -n 8p tools/package.json; sed -n '467p;504p' tools/src/pixel-office/server.js; sed -n 395p tools/src/team/store.js; sed -n 132p tools/src/team/runner.js; maskSecrets('const v = a.b.c; x = obj.prop.method();'); sed -n 361p docs/requirements.yaml; head -4 decisions/0010-bp-rework-limit-exceeded.md",
+        "output": "v22.21.1; \"node\": \">=22 <23\"; http.createServer / server.listen at the named lines; maskSecrets(content) at store.js:395 and runner.js:132; the sample becomes `const v = [скрыто]; x = [скрыто]();` and `\"version\": \"0.1.0\"` becomes `\"version\": \"[скрыто]\"`; the REQ-003 status line cites «RELEASE-VALIDATOR PASS 2026-09-28; прогон WF06-20260926-01»; decisions/0010 reads «Статус: принято (2026-10-05, ORCH)». Matches the findings."
+      },
+      {
+        "what": "Before close",
+        "command": "cd tools && npm run handoffs-check && npm run traces",
+        "output": "handoffs-check: файлов проверено 1221, нарушений 0 (exit 0); traces: файлов проверено 2300, следов 0, пропущено 67 (binary files only) (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DOUBT",
+        "text": "SEC-01 and the open ISS-0058 (MEDIUM): one rule (M7, and M10) of tools/src/pixel-office/mask.js, but I did not count SEC-01 as covered. ISS-0058 (read in full) is about hosts in addresses, file names in descriptions and role names, calls the error «safe» (readability) and does not name result files, code corruption or the deletion of the unmasked source (runner.js:655-680); its fix (a smarter M7) does not require that a code file keeps every byte. The fix site of SEC-01 is different (store.js, runner.js, the way result files are masked) and the harm is High. Result: new ISS-0093 (HIGH), which names ISS-0058 and sends both to one ISSUE-FIXER diagnosis so that two runs do not change mask.js at once. The role file and the audit recommendation allowed the other way (widen ISS-0058 and raise it to HIGH); I could not do that: ISS-0058 is outside my write_set. ORCH: if you prefer to merge, close ISS-0093 as a duplicate and let DOC-UPDATER widen ISS-0058 to HIGH; then report.json must get ISS-0058 in the SEC-01 field (a new rework step, AP-013)."
+      },
+      {
+        "id": "I2",
+        "kind": "DOUBT",
+        "text": "RV-B-061-1 (High) is covered by ISS-0089 item 18, whose severity is LOW and whose route is «a text-only fix in a later bookkeeping step, ORCH decides who». The audit severity is High (a criterion of a done requirement is not met), so the owner may want a higher priority; per WF-05 step 7a, DOC-UPDATER also moves REQ-061 to in_progress with a comment while the criterion text is wrong. I did not change ISS-0089 (outside my write_set) and did not change the severity of the finding. ORCH decides whether DOC-UPDATER raises ISS-0089 or adds an «see AUD-001» note."
+      },
+      {
+        "id": "I3",
+        "kind": "DOUBT",
+        "text": "Sorting by causes: (a) DEP-01 and DEP-02 are one defect (ISS-0092) with two «Как исправить» items, one per finding; (b) DOC-01 (REQ-003) and REQ-004-F1 (REQ-004) are two defects, not one: they come from the same run WF06-20260926-01 without a RELEASE-VALIDATOR step, but these are two requirements with different fixes (a status line against a missing criterion output); each file names the other and both are to be done together; if ORCH sees one cause, they can be merged without loss, and one number would be freed; (c) the other findings of the same run (none High) were not touched."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "The issue I1 of the compiler's step (the folder runs/WF06-20261027-99 seen and gone) is not mine to settle: it is not a finding of the audit and it needs no defect. Not touched. The number ISS-0097 is not used and is returned to ORCH; it was not written anywhere."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Two things in ISS-0092 need the owner before any code: the choice of the new engines floor (a decision record, Q12) and the restart of the working Pixel Office server and the picker server on the new Node. Nothing was restarted or touched by this step."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0092-node-22-21-1-behind-security-releases.md",
+      "docs/issues/ISS-0093-team-result-files-corrupted-by-free-text-masking.md",
+      "docs/issues/ISS-0094-req003-done-without-release-validator-record.md",
+      "docs/issues/ISS-0095-req004-criterion4-snapshot-diff-output-missing.md",
+      "docs/issues/ISS-0096-req005-criterion8-rework-limit-exceeded-without-owner-exception.md",
+      "docs/audits/AUD-001/report.json"
+    ]
+  }
+}

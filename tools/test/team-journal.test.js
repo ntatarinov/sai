@@ -420,11 +420,16 @@ test("TM-10 the rules of the time are checked again when the journal is read", (
 // ---- TM-43 ---------------------------------------------------------------------------
 
 // Fictional values shaped like keys (the rules M4-M7 and the label of an assignment).
+// Built from parts, so that no key-shaped text stands in the file in one piece.
 const SECRETS = [
-  "sk-ant-api03-FAKEFAKEFAKEFAKE1234567890abcd",
-  "ghp_FAKEFAKEFAKEFAKEFAKE1234567890abcd",
-  "AKIAFAKEFAKEFAKE1234",
-  "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmYWtlIn0.ZmFrZXNpZ25hdHVyZQ",
+  ["sk", "-ant-api03-", "FAKEFAKEFAKEFAKE1234567890abcd"].join(""),
+  ["gh", "p_", "FAKEFAKEFAKEFAKEFAKE1234567890abcd"].join(""),
+  ["AK", "IA", "FAKEFAKEFAKE1234"].join(""),
+  [
+    ["ey", "JhbGciOiJIUzI1NiJ9"].join(""),
+    ["ey", "JzdWIiOiJmYWtlIn0"].join(""),
+    "ZmFrZXNpZ25hdHVyZQ",
+  ].join("."),
   "hunter2fake",
 ];
 const LABEL = "[скрыто]";
@@ -474,8 +479,26 @@ test("TM-43 secrets in text fields and in files never reach a file of the data f
     }),
   );
   w.addTask({ role: "lawyer", text, done_when: text });
-  w.writeResultFile({ task: "t-0001", name: "report.md", content: text });
   const dir = path.join(home, id);
+  // A result file with any of the five samples is refused (REQ-102): nothing of it
+  // reaches the disk, the file is not created, the files and the journal do not change.
+  const contents = [
+    `ключи: ${SECRETS[0]}`,
+    `ключи: ${SECRETS[1]}`,
+    SECRETS[2],
+    `токен ${SECRETS[3]}`,
+    `password=${SECRETS[4]}`,
+  ];
+  for (const content of contents) {
+    const err = assertRefusal(
+      dir,
+      () => w.writeResultFile({ task: "t-0001", name: "report.md", content }),
+      "E_WORK_FILE",
+    );
+    assert.equal(err.details.reason, "secret", content);
+    assert.ok(!fs.existsSync(path.join(dir, "files", "report.md")));
+  }
+  assert.deepStrictEqual(fs.readdirSync(path.join(dir, "files")), []);
   const all = everyFile(dir)
     .map((f) => fs.readFileSync(f, "utf8"))
     .join("\n");
@@ -489,10 +512,6 @@ test("TM-43 secrets in text fields and in files never reach a file of the data f
   const chat = events.find((e) => e.type === "CHAT" && e.source === "USER");
   assert.equal(chat.data.text, maskSecrets(text));
   assert.ok(chat.data.text.includes(LABEL));
-  assert.equal(
-    fs.readFileSync(path.join(dir, "files", "report.md"), "utf8"),
-    maskSecrets(text),
-  );
   assert.equal(w.state.chat[0].text, maskSecrets(text));
   const plan = events.find((e) => e.type === "PLAN_RECEIVED");
   assert.equal(plan.data.tasks[0].text, maskSecrets(text));
@@ -514,6 +533,15 @@ test("TM-43 masking does not touch ids, codes, hashes and names", (t) => {
   const events = journalOf(p.events);
   assert.equal(events.at(-1).data.name, "plan.v2.md");
   assert.match(file.data.sha256, /^[0-9a-f]{64}$/);
+  // the content is the text as written (the rule M7 once made "Версия [скрыто]" of it)
+  assert.equal(
+    fs.readFileSync(path.join(p.dir, "files", "plan.v2.md"), "utf8"),
+    "Версия 1.2.3\n",
+  );
+  assert.equal(
+    file.data.sha256,
+    "c01c475efa274f49aebc33b6dea4307fc5400330863115161fc8baf41fac3214",
+  );
   const run = events.find((e) => e.type === "RUN_STARTED");
   assert.equal(run.data.run_id, "r-00001");
   assert.equal(run.task, "t-0001");

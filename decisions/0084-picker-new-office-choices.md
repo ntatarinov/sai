@@ -71,3 +71,5 @@ Does not change code, done requirement blocks or `0073`'s read-only rule. The re
 ## Basis
 
 `decisions/0083`, the owner's messages of 2026-10-25/26 (verbatim in `docs/owner-requests/2026-10-25-picker-design-enterprise.md`), `handoffs/DESIGN0083-20261026-01/step-01-req-analyst.json` (issues and owner questions), `step-02-req-validator.json` (findings F5, I3, I4, I5).
+
+Narrowed by decisions/0097 (2026-10-28): §1: the renderer for `app/` is the one of 0097 item 4.

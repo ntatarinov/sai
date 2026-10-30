@@ -1,0 +1,198 @@
+{
+  "handoff_id": "step02b-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-VALIDATOR",
+  "file": "handoffs/ISS-0093-20261028-01/step-02b-req-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102",
+      "REQ-009",
+      "REQ-010",
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-02-req-analyst.json",
+      "decisions/0102-core0-result-files-conventions.md",
+      "docs/issues/ISS-0093-team-result-files-corrupted-by-free-text-masking.md"
+    ],
+    "route": "REQ-ANALYST (step 02, done) -> REQ-VALIDATOR (this) -> CODE-DESIGNER (step 03)",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-02b-req-validator.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T05:14:33Z",
+      "by": "ORCH",
+      "verdict": "FAIL принят",
+      "checked": [
+        "handoff COMPLETED, verdict FAIL, F1 and F2 Medium (block), F3-F9 Low",
+        "F1 reproduced by ORCH: maskSecrets on API_KEY=..., secret=..., token=..., passwd=..., authorization=..., 'Authorization: Basic ...', 'x Bearer ...' hides each value (rules M2, M8, M9); the new refusal set of REQ-102 does not cover them - a lowering of Q7, closed by decisions/0102 Addition 2 item 14",
+        "docs/requirements.yaml unchanged by the validator (same sha256 at start and end per its report)",
+        "rework step 02c for REQ-ANALYST by the list of remarks, gate pass 2 of 3 at step 02d"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 2 gate (WF-01 step 2) - REQ-VALIDATOR: check the new requirement REQ-102 and the amended criteria written at step 02 (REQ-ANALYST) for defect ISS-0093. Read your role file, docs/workflows/WF-01-requirement.md, docs/quality-bar.md, docs/requirements.yaml header (format), the REQ-102 block and the amended criteria (the dated comment lines above REQ-009 criterion 15, REQ-010 criterion 16(b), REQ-013 criteria 14(c) and 15(c)), docs/issues/ISS-0093-*.md, decisions/0102-core0-result-files-conventions.md (including its Addition) and decisions/0095. Check yourself, with your own commands (the analyst's report is not evidence): (1) the YAML loads, ids unique, the schema fields of the block are complete, depends_on targets exist and have no cycle; (2) every criterion is testable, names its check, and has an expected result that is a literal (not computed by the code under test); failure criteria check that the state is unchanged; Q7-Q11 lines are present or 'not applicable' with a reason; (3) independent facts: the eight guard tests of the 'was -> became' table exist at the files and lines named, in a fresh clone of the tag base/ISS-0093-20261028-01 (clone from the local path outside the project); the tests listed as 'stay green' exist; the claim that these eight turn red when result-file masking is removed is the diagnosis's claim - check the table is complete against `grep -rn \"maskSecrets\\|MASK_LABEL\\|скрыто\" tools/test` for tests of result files and name any test missing from the table; (4) each amendment of an existing criterion is not weaker than the old text (read old and new, from `git show HEAD:docs/requirements.yaml`), and nothing else in the file changed except the status lines of REQ-003, REQ-004, REQ-005, REQ-061 made by other runs of this session: prove it by a hash of the file with the new block, the amended ranges, the comment lines and those four status lines removed, against HEAD with the same ranges removed; (5) sizing: could one WF-02 run build and check it; (6) consistency with decisions 0017, 0018, 0035, 0095, 0102. Give PASS or FAIL; findings with severity (Critical, High and Medium block). Do not edit docs/requirements.yaml or any other file; write only your handoff. No machine paths and no names of other projects. Note: the base tag does not contain docs/program/ or decisions 0091-0102 (uncommitted); read those from the working tree. In result.summary write two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Verdict PASS or FAIL from the validator's own commands, each finding with a place, a severity and a fix"
+    ]
+  },
+  "created_at": "2026-10-28T04:59:54Z",
+  "started_at": "2026-10-28T04:59:54Z",
+  "completed_at": "2026-10-28T05:13:29Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Требование REQ-102 написано хорошо и большую часть проверок прошло: слова владельца переданы дословно, таблица из восьми охранных тестов полная и указывает на настоящие файлы и строки, четыре правки старых критериев не слабее прежних, остальной файл не тронут. Но проверку не пропускаю: во-первых, требование утверждает, что защита от секретов не слабеет, а на деле старый маскировщик прятал ещё и значения вида api_key=..., token=..., secret=..., passwd=..., а новая проверка отказывает только по password=, и это нигде не названо; во-вторых, тест на линейное время для части входов измеряет шум, потому что такие входы сами содержат секрет и проверка остановится на первом совпадении. Оба замечания нужно поправить в требовании до проектирования кода.",
+    "item_results": {
+      "a": "Checkability - NOT PASSED (F2, F1 part). 12 criteria; each names a test file, command or file content. Checked: tools/test/team-result-bytes.test.js does not exist on the base tag and is written as created by this work (AP-123); fake-claude-reads.js, scenario-files.json, readsProject, snapshot helpers exist. Counting/AP-071: on the base clone maskSecrets changes all nine AC0.3 samples and samples O1-O3, and TextDecoder drops the BOM (length 1 for EF BB BF 61), so criteria 1 and 2 are red before the work. Literal oracles: sha256 by shasum, substring literals, ratio 8; failure criteria 3-6 check unchanged state. Bans: the grep of criterion 3 is empty on the base, the skip/todo/only pattern of criterion 9 is empty on the six real files (AP-120 tested). Not passed: criterion 7 families that are themselves refused inputs (F2); the rule set for name=value / Bearer forms is not fixed by any criterion (F1). Run by me: commands of criteria 8(a), 8(c), 9(a), 9(g), 11(a) greps, 3 grep, 12 greps on the base clone (output in self_check). Not runnable now: everything that needs tools/test/team-result-bytes.test.js, findSecrets, the README change, the decision record, base-vs-work diffs (code not written).",
+      "b": "Consistency - PASSED with Low remarks (F5, F6, F8). Compared with decisions 0017 (P6-P9), 0018 (P6), 0035, 0095, 0102 (including Addition 9-13): consistent (sources of accepted files still removed; refused-file source removal is the recorded extension, 0102 item 9; M10 not in the scan, 0102 item 10). Guard tests: all eight table entries exist at the named files and lines on a fresh clone of the tag (TM-57 499, TM-58 757, TM-63 1006, RF-03 134, SF-13 234, TM-43 450, EX-41 35, EX-51 71; the other TM-57/TM-58/TM-63/TM-43/EX-41/EX-51 tests at the named lines too). Completeness of the table: I removed masking from store.js:395 and runner.js:132 in the clone and ran all tools/test/team-*.test.js (except the one with port constants) and exec-*.test.js: 694 tests, exactly 9 red lines = the eight table tests, plus a ninth that was my own backup file in src/team (EX-51 TM-04 test, artefact of my mutation; re-run without the backup: only the eight). No other test file outside team-/exec- imports the team core. Stay-green tests exist and pass on the base: HK-21, HK-24, MK-01..05, NM-06 (9 tests), TM-44 (body hash equal), TM-04, TM-49, TM-50, DC-01, EX-07, EX-21, EX-35, EX-42, SF-09 (15 tests). Other done requirements: only the four amended criteria carry masked-result-file wording (grep over all criteria); stale descriptions of REQ-009/010/015/091 are assigned to DOC-UPDATER by 0102 item 13. AP-096: decisions grep by masking words found 0013, 0017, 0018, 0020, 0035, 0043, 0056, 0095, 0102; no contradiction.",
+      "c": "Dependencies - PASSED. depends_on REQ-009, REQ-010, REQ-013 exist, all done, chain REQ-013 -> REQ-010 -> REQ-009 -> REQ-002, no cycle (ruby DFS over all 102 blocks), no missing targets; each is really needed earlier (core writer, acceptance from work/, depsOf/reviewer reading).",
+      "d": "Size - PASSED. One job (result files byte-exact, real secrets refused) in two code places plus the engine pre-check; the BOM fix, the refused-source removal, README and the decision record are part of the same flow; the eight test repairs are by table. Heavy but one WF-03 run (same size as PLAN M0.8).",
+      "e": "Quality bar - NOT PASSED (F1). Q7, Q8 (not applicable, reason given and supported by criterion 5 second project), Q9 (not applicable), Q10 (criteria 3, 5, 6, 7), Q11 (not applicable, reason given), R2 and R3 (not applicable) lines present. No word about lowering the bar, except that the statement 'protection does not get weaker, it gets stricter' is not true for the old rules M2, M8, M9 (F1).",
+      "f": "Owner's words - PASSED. All four quoted passages of original_request were found verbatim (whitespace-normalised, plus the double space in the first quote) in docs/owner-requests/2026-10-27-public-launch-plan.md (sections 11 and 14 at lines 346, 348, 441); the SEC-01 title equals the title in docs/audits/AUD-001/report.json.",
+      "g": "File integrity - PASSED. Tag base/ISS-0093-20261028-01 equals HEAD 6f5a38a. git diff of docs/requirements.yaml against the tag: 12 hunks. Removing exactly those hunk ranges (the four status lines of REQ-003, REQ-004, REQ-005, REQ-061 made by other runs, the three dated comment lines, the four amended criterion ranges, the new block 12402-12644 with its comment) from both versions gives the same sha256 c276956d051e87916d289e9f906b6fdc470b2bdd87a41c20cad86d76c97b6f36 (12371 lines each). Every removed line outside status lines belongs to an amended criterion sentence (read). Hash of the file before and after my check: b5cb4c295cd3efbec340a10a257a5a6e1fab2442c98f31ed0a2ed7a301e746db, unchanged. YAML loads, 102 unique ids, REQ-102 has all eight schema fields, status pending, 12 criteria; criteria counts of REQ-009/010/013 unchanged (15/16/15). No machine paths and no names of other projects in the added lines (grep empty).",
+      "amendments": "The four amended criteria were read old against new (git show of the tag): REQ-009 criterion 15 (README must say what is stored), REQ-010 16(b), REQ-013 14(c), 15(c). None is weaker for the cases they covered: the secret case becomes a refusal plus a grep over the data folder and work/, the clean-file case is added with a byte comparison; REQ-009 criterion 12 is about events and was rightly left alone. The general narrowing of detection (F1) is a REQ-102 matter, not a defect of these four sentences."
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "requirement": "REQ-102",
+        "item": "(d) quality bar Q7, and (a) checkability",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "docs/requirements.yaml: description lines 12437-12440 ('Защита от настоящих секретов не слабеет, а становится строже'), the Допущения paragraph (12529), criterion 3 (12569), criterion 11(b) (12630); decisions/0102 item 11",
+        "what_is_wrong": "The old maskSecrets (rules M2, M8, M9) hid in result files, as I ran on the base clone: API_KEY=..., api_key: \"...\", secret=..., token=..., passwd=..., authorization=..., a literal after Bearer outside an Authorization header, and any value of Authorization: (for example Basic). The new refusal set of criteria 3/11 (C1-C9) holds only password=<literal> and Authorization: Bearer <literal> from these families. So api_key=/secret=/token=/passwd=/apikey= with a real literal value, and non-Bearer Authorization values, are now stored in files/ and handed to the reviewer unprotected, while the description says the protection is not weaker. The residual-risk wording ('секрет без префикса и без метки имени') even suggests that labelled secrets are caught, but no criterion says which names are labels. Step 9 cannot decide whether api_key=<literal> must be refused. Quality bar section 1: the bar is not lowered by a task text.",
+        "needed_to_pass": "Decide, by the author and with ORCH where it is a choice (record in decisions/ per Q12), for each dropped form (name=value pairs of the M9 names, Bearer outside the header, other Authorization schemes): either it is refused and has a refuse sample and a keep sample on the criterion 1 / criterion 3 boundary (O6 `{ token: data.token, user: x }` must keep being stored), or the narrowing is named as an accepted residual risk in the description and criterion 11(b) and the claim 'не слабеет, а строже' is corrected. A narrowing against the old rules needs the ORCH/owner record, not only the analyst's assumption."
+      },
+      {
+        "id": "F2",
+        "requirement": "REQ-102",
+        "item": "(a) checkability, AP-071/Q5",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "criterion 7 (line 12599), families (1), (4), (6); mutant m5 in criterion 10 (line 12624)",
+        "what_is_wrong": "The ratio of the time at 4 MiB to the time at 1 MiB measures the scan only if the scan runs to the end of the input. Family (1) is `-----BEGIN PRIVATE KEY-----` repeated without END, which by criterion 3 sample C5 (second form) is a refused input, so a findSecrets that returns at the first match is constant time and the ratio is timer noise of microsecond values (the test can be red or green by chance, and the pressure to loosen it is a Q6 risk). Families (4) (the first three repeated `eyJ...` parts already form a JWT shape) and (6) (`password=\"a...` is a literal value) can hit at the start in the same way. Then mutant m5 (quadratic end search) may not be killed by the named test, so criterion 10 cannot be answered with yes/no for m5. The criterion does not say what the function returns for these inputs nor that the whole input must be scanned.",
+        "needed_to_pass": "Define the families so that every measured input holds no secret (or define the measured work so that it cannot stop at a first hit), say which family kills m5, and give the measurement a floor so that the compared times are not noise. The instrument control (quadratic reference function) stays."
+      },
+      {
+        "id": "F3",
+        "requirement": "REQ-102",
+        "item": "(a) exhaustive pass, AP-094/AP-012",
+        "severity": "Low",
+        "blocks": false,
+        "place": "description line 12447-12452 (exhaustive pass)",
+        "what_is_wrong": "The counts are wrong: `grep -rnE 'maskSecrets' tools/src/team` finds 15 lines (10 uses and 5 imports), not 12; `grep -rnE 'readFileSync|readFile\\(|createReadStream' tools/src/team tools/src/web` finds 9 lines, not 11 (checked on the base clone and in the working tree). The conclusion is right: I read every hit, only store.js:395 and runner.js:132 touch result-file content, and only runner.js:125 reads files/.",
+        "needed_to_pass": "Correct the two numbers to what the commands print."
+      },
+      {
+        "id": "F4",
+        "requirement": "REQ-102",
+        "item": "(a)/(e) owner's promise vs behaviour",
+        "severity": "Low",
+        "blocks": false,
+        "place": "description first paragraph (12430-12434) and criterion 2 (12561)",
+        "what_is_wrong": "'Проверяющий и зависимые задачи читают те же байты' is true only below the prompt limit: tools/src/team/executor.js buildPrompt (PROMPT_MAX 200000, lines 298-311) cuts the content of a dependency file with a visible cut mark, while files up to 5 MiB are accepted. Criterion 2 uses small samples, so it does not test the limit. This is existing behaviour, not a regression.",
+        "needed_to_pass": "Name the limit in the description (what the owner can rely on above it) or add it to the not-changed list."
+      },
+      {
+        "id": "F5",
+        "requirement": "REQ-102",
+        "item": "(a) checkability, Q10",
+        "severity": "Low",
+        "blocks": false,
+        "place": "description Допущения (12529-12533), samples O8 and C7/C8, criterion 3",
+        "what_is_wrong": "The boundary between a placeholder and a real password is given only by the listed literals ('password', ${...}, hunter2fake, S3cr3tPassw0rd). Ordinary build output such as `postgres://postgres:postgres@db:5432/app` or `password=changeme` falls outside the list; a refusal fails the whole attempt without a retry (criterion 5/6), which works against the owner's own sentence about not damaging ordinary code. The criteria are still answerable for the listed samples.",
+        "needed_to_pass": "State, as an accepted assumption with a decision record, how such common placeholders are treated, or add a keep sample for them."
+      },
+      {
+        "id": "F6",
+        "requirement": "REQ-102",
+        "item": "(a) literal oracle",
+        "severity": "Low",
+        "blocks": false,
+        "place": "criterion 5, last sentence (12582-12590)",
+        "what_is_wrong": "The expected number of executor starts is 'equal to the number for a path refusal in the same test' (another run of the system under test), although EX-42 pins it to 1. A literal would make the oracle independent of the code under test.",
+        "needed_to_pass": "Give the expected number as a literal."
+      },
+      {
+        "id": "F7",
+        "requirement": "REQ-102",
+        "item": "(a) guard against weakening, Q6",
+        "severity": "Low",
+        "blocks": false,
+        "place": "criterion 9 (a) and (b) (12613-12623)",
+        "what_is_wrong": "(a) has no minimum test count (20 tests run on the base for the eight ids), and (b) counts text lines that also hold comments and the rest of the table ids, so a deleted test with a left comment can go unnoticed if another line is added. Combined with (c) the risk is small.",
+        "needed_to_pass": "Add a minimum count of tests for (a) (not less than the base count), or count only `test(` lines."
+      },
+      {
+        "id": "F8",
+        "requirement": "REQ-102",
+        "item": "(b) consistency with decisions",
+        "severity": "Low",
+        "blocks": false,
+        "place": "criterion 11(b) (12630-12639)",
+        "what_is_wrong": "Decision 0017 P9 says that only the masked form of work/ content goes to files/, and 0035 says accepted files are 'already masked'. 0095 and 0102 change this in substance but name only 0018 P6 as extended. The new record required by criterion 11(b) should say which sentences of 0017 P9 and 0035 it replaces for result files, otherwise a reader of 0017 finds a contradiction.",
+        "needed_to_pass": "Add the replaced sentences of 0017 P9 and 0035 to what the record must contain (and the check of it)."
+      },
+      {
+        "id": "F9",
+        "requirement": "REQ-102",
+        "item": "(a) completeness of exhaustive pass for the third importer",
+        "severity": "Low",
+        "blocks": false,
+        "place": "description 'Не затрагиваются: ... engine/single-run.js' and criteria 4-5",
+        "what_is_wrong": "engine/single-run.js importOutputs calls importResultBytes (line 164) for scripted outputs without any pre-check, so a secret there refuses a file after earlier outputs of the same run were written; no criterion tests this path, and criterion 5 covers all-or-nothing only for the claude-cli path (runner.js acceptResult has a pre-check loop only for that executor). The scripted executor is a test executor, so the effect is small.",
+        "needed_to_pass": "Say in the description that the scripted/test path keeps the old per-file acceptance, or cover it with a criterion."
+      }
+    ],
+    "self_check": [
+      "git rev-parse base/ISS-0093-20261028-01 HEAD -> 6f5a38a997d807ba383f4c06201e917a1ecfada7 (both)",
+      "shasum -a 256 docs/requirements.yaml (start 05:00:10Z and end of check) -> b5cb4c295cd3efbec340a10a257a5a6e1fab2442c98f31ed0a2ed7a301e746db (same)",
+      "git diff base/ISS-0093-20261028-01 -U0 -- docs/requirements.yaml -> hunks at 361, 384, 413, 1049, 1355, 1366, 1655, 1674, 1993, 2080, 8116, 12402(+243); script removing exactly those ranges from the tag version and the working file: 12371 lines each, sha256 c276956d051e87916d289e9f906b6fdc470b2bdd87a41c20cad86d76c97b6f36 both, equal",
+      "ruby YAML.load_file -> count 102 uniq 102; REQ-102 keys id,title,owner,status,depends_on,original_request,description,acceptance_criteria; depends_on REQ-009/010/013 all done; missing deps []; cycle=false; REQ-009/010/013 criteria 15/16/15",
+      "fresh clone of the local repository, checkout of the tag, in <scratch>/clone; node v22.21.1",
+      "guard tests: grep for test( ids in tools/test -> TM-57 team-store 499/536/569/629; TM-58 679/757; TM-63 1006/1058/1142; RF-03 team-engine-reads-files 134; SF-13 team-engine-rounds 234; TM-43 team-journal 450/502; EX-41 exec-workdir 35/85; EX-51 exec-scripted-source 71/114/132/155/201 (all as the table says)",
+      "mutation in the clone: store.js:395 `maskSecrets(content)` -> `content`, runner.js:132 same; node --test over team-*.test.js (not the one with port constants) and exec-*.test.js: tests 694, pass 685, fail 9; red: EX-51 (71), EX-51 (201, caused by my .bak file inside src/team, removed; re-run exec-scripted-source: fail 1 = EX-51 71), EX-41 (35), RF-03, SF-13, TM-43 (450), TM-57 (499), TM-58 (757), TM-63 (1006) -> the table of eight is complete",
+      "grep -lE 'src/team|writeResultFile|importWorkFile|importResultBytes|depsOf' tools/test minus team-/exec- -> none",
+      "node --test --test-name-pattern='^(HK-21|HK-24|MK-0[1-5]|NM-06)' (four pixel-office files) -> tests 9 pass 9 fail 0 skipped 0",
+      "node --test --test-name-pattern='TM-57|TM-58|TM-63|RF-03|SF-13|TM-43|EX-41|EX-51' (six files) -> tests 20 pass 20 fail 0 skipped 0",
+      "node --test --test-name-pattern='^(TM-04|TM-49|TM-50|DC-01|EX-07|EX-21|EX-35|EX-42|SF-09)' (nine files) -> tests 15 pass 15 fail 0 skipped 0; each id found in the file the criterion names (TM-04 in team-state, TM-49 team-deps, TM-50 team-docs, DC-01 pixel-office-docs, EX-07 exec-scripted-source, EX-21 exec-stream, EX-35 exec-secrets, EX-42 exec-workdir, SF-09 team-planner-files)",
+      "TM-44: awk body hash on the tag version and the working file: eba784b1dae58b570cf8b493d28584c8983f9c27926ed255648d57cda9cefe31 both; --test-name-pattern='^TM-44' -> pass 1",
+      "grep -nE '[.]skip[(]|[.]todo[(]|[.]only[(]|[{] ?(skip|todo)' over the six test files -> no hits (rc 1); grep -c assert: 203/115/61/79/63/34",
+      "grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team -> 0 lines; README greps on the base: 'content of result files pass through' 1, 'the content is masked' 1, 'byte-exact' 0, 'findSecrets' 0, work/ line with 'already masked' 1, 'reason `secret`' 0; grep -l findSecrets decisions/*.md minus 0102 -> none",
+      "ls tools/test/team-result-bytes.test.js -> missing (created by the work); fake-claude-reads.js, scenario-files.json, readsProject, snapshot exist",
+      "maskSecrets on the base clone: all nine AC0.3 samples and O1-O3 CHANGED (e.g. `{ token: data.token, user: x }` -> `{ token: [скрыто] user: x }`, `https://api.example.com/v1` -> `https://[скрыто]/v1`); `const v = a.b.c; password=hunter2fake` -> `const v = [скрыто]; password=[скрыто]` (criterion 8(b) literal holds); API_KEY=..., secret=..., token=..., passwd=..., authorization=..., `Bearer <x>` outside a header all masked (F1); counts of marks in the five named files 3, 7, 52, 5, 196 (195 new + 1 already in the source)",
+      "node: new TextDecoder('utf-8',{fatal:true}).decode(Buffer.from([0xEF,0xBB,0xBF,0x61])).length -> 1 (BOM lost; files.js:147, store.js:502)",
+      "grep -c maskSecrets tools/src/team -> 15 lines; readFileSync|readFile\\(|createReadStream over team and web -> 9 lines (F3)",
+      "owner words: all four quotations found in docs/owner-requests/2026-10-27-public-launch-plan.md (lines 16, 346, 348, 441); SEC-01 title identical in docs/audits/AUD-001/report.json",
+      "added lines of the diff grep -niE for machine paths and other project names -> none",
+      "cd tools && npm run traces -> traces: файлов проверено 2307, следов 0, пропущено 67 (rc 0); npm run handoffs-check -> нарушений 0 (before filling this handoff; re-run at close)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "For ORCH and the owner (F1): the old masking hid name=value secrets (api_key, secret, token, passwd, apikey), Bearer outside a header and any Authorization value in result files. Do you accept that result-file detection is narrowed to the CORE-0 list plus password= and Authorization: Bearer (decision 0102 item 11), or must the refused set also cover those name forms? This is a choice between protection and false refusals of ordinary code; it needs a record in decisions/ either way (Q12)."
+      },
+      {
+        "id": "I2",
+        "kind": "OBSERVATION",
+        "text": "Process notes. (1) The base tag exists and equals HEAD, so integrity of other blocks is proved by my own diff, not by the author's hashes (AP-023 not triggered). (2) The hunk-removal hash proof is true by construction for any diff; its meaning comes from my reading of every removed line (all are status lines or sentences of the four amended criteria). (3) The task did not name an expected verdict (AP-018 not triggered). (4) My mutation clone lives in <scratch>/clone; the only temporary artefact there inside the source folder was a .bak file I removed; no project file other than this handoff was changed. The pixel-office test helper opens servers on port 0 (an ephemeral port); I did not run the full check and did not open ports 4780-4782 or 4790 (the listeners I saw on 4782 and 4790 are not from my commands)."
+      },
+      {
+        "id": "I3",
+        "kind": "OBSERVATION",
+        "text": "For CODE-DESIGNER after rework: (a) acceptResult step 1 reads each work file but the secret check will run in #publish unless the design moves it before the first write; criterion 5(b) requires the pre-write check for the claude-cli path. (b) EX-42 pins detail === REFUSED for path refusals, so the secret refusal needs its own detail text with the word 'секрет'; REQ-009 criterion 11 (the table of phrases) may be touched (analyst issue I4 g). (c) TM-44 scans only top-level tools/src/team/*.js while criterion 3 greps recursively; both must hold."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

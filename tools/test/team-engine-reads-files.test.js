@@ -131,34 +131,36 @@ function walk(dir, out = []) {
 }
 
 test(
-  "RF-03 criterion 14 (c): the secret of an accepted file is masked in the task text and nowhere on disk, the source is removed from work/, no copy is left, modes are not loosened",
+  "RF-03 criterion 14 (c): the accepted file reaches the check byte for byte (no label), the source is removed from work/, no copy is left, modes are not loosened; a file with a key is refused and the key is nowhere",
   { timeout: 60_000 },
   async (t) => {
+    const clean = `${MEMO_TEXT}Версия a.b.c, ключей нет\n`;
     const p = readsProject(
       t,
       oneTask({
-        work: [
-          {
-            files: [{ path: MEMO, content: `${MEMO_TEXT}Ключ: ${BAIT}\n` }],
-          },
-        ],
+        work: [{ files: [{ path: MEMO, content: clean }] }],
       }),
     );
     const e = startEngine(t, p);
     await until(p, (x) => x.type === "REVIEW_RESULT", "REVIEW_RESULT");
     await pauseAndExit(e);
     assert.ok(reviews(p).length >= 1);
-    // The task text of every run: the bait is hidden, the label is there.
+    // The task text of every run: the content is there exactly, no label.
     const checkRuns = p
       .stdins()
       .filter((s) => s.text.includes("## Критерий готовности"));
     assert.ok(checkRuns.length >= 1);
     for (const s of p.stdins()) {
       assert.equal(s.text.includes(BAIT), false, `stdin-${s.n} has the bait`);
+      assert.equal(
+        s.text.includes("[скрыто]"),
+        false,
+        `stdin-${s.n} has a label`,
+      );
     }
     assert.ok(
-      stdinOf(p, reviews(p)[0].n).includes("[скрыто]"),
-      "the content is the masked one",
+      stdinOf(p, reviews(p)[0].n).includes(clean),
+      "the content is the exact one",
     );
     // Nowhere in the project folder, nor in the folder of the fake (HOME).
     for (const root of [p.dir, p.fakeDir]) {
@@ -175,12 +177,51 @@ test(
     assert.deepEqual(fs.readdirSync(path.join(p.dir, "work")), []);
     const accepted = fs.readdirSync(path.join(p.dir, "files"));
     assert.deepEqual(accepted, ["t-0001-1-memo_research.md"]);
+    assert.equal(
+      fs.readFileSync(path.join(p.dir, "files", accepted[0]), "utf8"),
+      clean,
+    );
     // Modes: nothing readable for the group or others, no executable file.
     for (const { full, st } of walk(p.dir)) {
       const what = path.relative(p.sb.root, full);
       assert.equal(st.mode & 0o077, 0, `${what} is open to others`);
       if (st.isFile()) assert.equal(st.mode & 0o111, 0, `${what} executable`);
       assert.equal(st.isSymbolicLink(), false, what);
+    }
+
+    // The same file with a key (REQ-102, criterion 5): the whole attempt is refused,
+    // the key is on no disk of the test, not in work/ and not in an input.
+    const q = readsProject(
+      t,
+      oneTask({
+        work: [
+          {
+            files: [{ path: MEMO, content: `${MEMO_TEXT}Ключ: ${BAIT}\n` }],
+          },
+        ],
+      }),
+    );
+    const f = startEngine(t, q);
+    await until(q, (x) => x.type === "TASK_FAILED", "TASK_FAILED");
+    await pauseAndExit(f);
+    const failed = ofType(journal(q), "TASK_FAILED");
+    assert.equal(failed.length, 1);
+    assert.equal(failed[0].data.reason, "result_file");
+    assert.equal(ofType(journal(q), "RESULT_FILE").length, 0);
+    assert.deepEqual(fs.readdirSync(path.join(q.dir, "files")), []);
+    assert.deepEqual(fs.readdirSync(path.join(q.dir, "work")), []);
+    for (const s of q.stdins()) {
+      assert.equal(s.text.includes(BAIT), false, `stdin-${s.n} has the bait`);
+    }
+    for (const root of [q.dir, q.fakeDir]) {
+      for (const { full, st } of walk(root)) {
+        if (!st.isFile() || path.basename(full) === "plan.json") continue;
+        assert.equal(
+          fs.readFileSync(full).includes(BAIT),
+          false,
+          `the bait is in ${path.relative(q.sb.root, full)}`,
+        );
+      }
     }
   },
 );

@@ -25,3 +25,5 @@
 ## Основание
 
 `handoffs/PICKERLANG-20261020-01/step-01-req-analyst.json`, `step-02-req-validator.json` (F1–F15, оценка выборов), `decisions/0065`, `0068`, `0048`.
+
+Narrowed by decisions/0092, 0093 and 0094 (2026-10-28): item 9 (no publication) for `app/` only; item 8 (external services) by the closed list of 0094; AI credentials by 0093.

@@ -29,3 +29,5 @@
 ## Основание
 
 `docs/design/AGENTS-workflow-audit.md`, `handoffs/AGENTS-20261025-01/step-01-doc-auditor.json`, `decisions/0048`, `0057`, `0063`, `0069`, `0070`.
+
+Narrowed by decisions/0092 (2026-10-28): the boundary «не разрешает … публикации в интернет» does not apply to `app/` deployed under decision 0092.

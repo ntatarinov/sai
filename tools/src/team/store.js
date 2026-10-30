@@ -7,7 +7,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { maskSecrets } from "../pixel-office/mask.js";
+import { findSecrets, maskSecrets } from "../pixel-office/mask.js";
 import { TeamError, eventError, fromOsError, notFoundError } from "./errors.js";
 import {
   cleanPartials,
@@ -56,6 +56,17 @@ import { eventView, projectSummary } from "./view.js";
 const CREATE_ATTEMPTS = 5;
 const INPUT_KEYS = ["source", "type", "task", "data", "ts"];
 const CREATE_KEYS = ["goal", "budget_usd", "executor", "scenario_bytes"];
+
+// The refusal of a result file in which a secret was found (REQ-102): the name
+// of the file (checked by the pattern of names) and the form of the rule, never
+// the value, a position or a part of the content.
+function secretError(name, form) {
+  return new TeamError(
+    "E_WORK_FILE",
+    `Файл результата «${name}» не принят: в нём найден секрет`,
+    { reason: "secret", form },
+  );
+}
 
 function isPlainObject(v) {
   if (v === null || typeof v !== "object" || Array.isArray(v)) return false;
@@ -387,13 +398,17 @@ class Writer {
   }
 
   // Sections 6.6 and 6.7: the file, then its event RESULT_FILE (only the core
-  // writes it). A failed event removes the file again.
+  // writes it). The content is stored as given, byte for byte, and the hash is
+  // the hash of the original; a content in which findSecrets finds a secret is
+  // refused before anything is prepared or written (REQ-102). A failed event
+  // removes the file again.
   #publish({ task, name, content, kind, fromWork }) {
     if (this.#broken || this.#closed) throw writerBroken();
     checkFreeName(this.#filesDir, name);
     if (typeof content !== "string") throw eventError("content");
-    const masked = maskSecrets(content);
-    const { bytes, sha256 } = contentOf(masked);
+    const { bytes, sha256 } = contentOf(content);
+    const found = findSecrets(content);
+    if (found !== null) throw secretError(name, found.form);
     const prepared = this.#prepare(
       {
         source: "ENGINE",
@@ -403,7 +418,7 @@ class Writer {
       },
       true,
     );
-    const written = publishResultFile(this.#filesDir, name, masked);
+    const written = publishResultFile(this.#filesDir, name, content);
     if (written.sha256 !== sha256) throw internalError("sha256");
     try {
       return this.#commit(prepared);
@@ -453,7 +468,7 @@ class Writer {
     }
     let content;
     try {
-      content = strictUtf8.decode(bytes);
+      content = resultUtf8.decode(bytes);
     } catch {
       throw notTextError();
     }
@@ -499,6 +514,12 @@ class Writer {
 
 // ---- creating a project (section 6.5) ----------------------------------------------
 
+// The bytes of a result file: strict UTF-8 that keeps a byte-order mark, so the
+// stored file has the same bytes as the input.
+const resultUtf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
+
+// The bytes of a scenario: strict UTF-8; a mark at the start is dropped, as
+// JSON.parse does not take it.
 const strictUtf8 = new TextDecoder("utf-8", { fatal: true });
 
 function checkScenario(bytes, executor) {

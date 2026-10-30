@@ -1,0 +1,117 @@
+{
+  "handoff_id": "step08i-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "08i",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0093-20261028-01/step-08i-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-08h-test-design-validator.json (result.findings F1-F6, result.issues)",
+      "handoffs/ISS-0093-20261028-01/step-08g-test-designer.json",
+      "docs/requirements.yaml (block REQ-102 by id)",
+      "decisions/0102-core0-result-files-conventions.md (Addition 13)",
+      "tools/src/pixel-office/mask.js: read only"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR 08h FAIL (pass 3 of 3) -> owner: one more rework and one more pass (decisions/0102 Addition 13) -> TEST-DESIGNER rework 3 (this, 08i) -> TEST-DESIGN-VALIDATOR 08j (the extra pass) -> TEST-RUNNER (09)",
+    "write_set": [
+      "tools/test/team-result-bytes.test.js",
+      "tools/test/fixtures (new fixtures only)",
+      "handoffs/ISS-0093-20261028-01/step-08i-test-designer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "rework_of": "handoffs/ISS-0093-20261028-01/step-08h-test-design-validator.json",
+    "orch_check": {
+      "at": "2026-10-29T05:17:10Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-29T05:10:00Z; changed after step 08h: tools/test/team-result-bytes.test.js (and decisions/0102, written by ORCH); tools/src, the timing file and the six guard files unchanged",
+        "own run: bytes file + six guard files: 151 tests, 151 pass, 0 fail, 0 skipped, 0 todo, 107 s; prettier --check clean; eslint --max-warnings 0 clean; no skip/todo/only/|| true; grep for key-shaped literals 0",
+        "own mutants on a copy outside the project (no git commands): A - the quoted value that merely starts with a group taken as a template (findValue: findGroup(...) !== -1 instead of === contentEnd) -> 14 of 55 red; B - the unquoted value that merely starts with a group taken as a template (group !== -1 instead of group === stop) -> 14 of 55 red (a first attempt at B did not apply because of a wrong path; redone and checked with cmp that the file differed)",
+        "the designer reports: 27 refused rows (C56-C58), 27 pairs, 52 sweeps, i6/i6b/i6c red 14 of 55, e15 red, a sweep of 990 mutants of the template code with every survivor named (82 equivalent, 13 silent, 2 performance-only), 43 directed mutants (40 killed, 3 equivalent), differential fuzz 834272 texts; to be spot-checked by the validator in the extra pass",
+        "hygiene: the RB-04 engine sandbox leaves sai-exec-test-* folders in the system temp folder (the designer removed its own one; older ones from Oct 9-27 are not from this run) - to be recorded as a Low defect by DOC-UPDATER (tests leave folders in the system temp folder, AP-class temp hygiene)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 6 rework 3 (test gate FAIL on pass 3 of 3; the owner allowed exactly one more rework and one more gate pass: decisions/0102 Addition 13) - TEST-DESIGNER: fix the tests by the remark F1 (and the cheap Low items below) of TEST-DESIGN-VALIDATOR, handoffs/ISS-0093-20261028-01/step-08h-test-design-validator.json (result.findings, result.issues; read F1 in full with its 'fix' text). You change NO file in tools/src, no decision, no requirement, no design file, no README of tools/. Read your role file, docs/quality-bar.md, docs/anti-patterns.md (AP-110), the REQ-102 block by id (the rule: a template must be the WHOLE value; a group with text around it is a literal) and your own reports step-08c and step-08g.\nDo: (1) F1 (Medium, blocking): add refused rows (group first, text after the closer of the group) for the three places - a quotation (password: \"${x}w0rd\"; password: '<A>hunter2fake' built from parts; password: \"$(A)tail\"; password: \"{{A}}hunter\"), after a scheme (Authorization: Basic \"${x}y\"), and the password of an address (https://u:${A}hunter2fake@h, https://u:<A>x@h, https://u:$(A)x@h, https://u:{{A}}x@h and two groups in a row https://u:${A}${B}@h) - each paired with the stored whole-template row that already exists, through the same inputs and tests as the other rows. Better, by the class: one sweep with a slot for the character right after the closer of the group, in a quotation and in an address, stored only when the slot is empty and refused for each kind of character (letter, digit, and the other classes the requirement names as part of a literal value). The validator ran the given rows on the real code: all refused; the whole-template partners stored. The expected side comes from the requirement text, not from the code (AP-018). The mutants i6 (a quoted value that merely starts with a group is taken as a template) and i6b (the same for the password of an address) must be red; make them yourself from the description of the report on a copy outside the project, and report red/green for both.\n(2) Do the same mutation-sweep idea only for this rule family: mutate the template-recognition code of findSecrets (every place that decides 'the whole value is one template': the closer of each of the four group kinds, the end of the value, the slot after the closer) with your harness of step 08g (kept in your scratch sub-folder td08g if still there; else write a small one), and report the numbers; no survivor may stay unnamed (add the row, or EQUIVALENT with a one-line proof, or 'the requirement is silent' with the quoted place).\n(3) F2 (Low, cheap): the mutant e15 (depsOf scans only the first 100000 characters of a stored file) survives: add a bait at the very end of a stored file larger than 100000 characters that depsOf must withhold (the requirement part (г): depsOf withholds a file with a secret) - if the requirement does not state it for that size, say so in result.issues instead. F4 is a plan text (ORCH's job). F3, F5, F6 are not yours.\nRules for you: nothing deleted, skipped, todo or weakened; criterion 9 floors stay or grow; the timing file untouched; build secret bodies from parts at run time, no key-shaped literal written whole; use only the session scratch folder for copies and temp files (not /tmp, not the system temp folder; one stray empty file in the system temp folder was made by the previous validator: do not repeat), no git checkout/reset/stash/clean anywhere (also not in a copy), no background loops left running (check with ps before you finish), no servers on fixed ports, no real AI; run node --test on the bytes file and the six guard files and prettier and eslint on the files you touched; do not run the full npm run check. Report: the rows added, red/green of i6, i6b, e15 and your sweep numbers, the run counts, the time of the bytes file, result.issues.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-29T04:42:49Z",
+  "started_at": "2026-10-29T04:42:49Z",
+  "completed_at": "2026-10-29T05:10:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 3 (remark F1 of step 08h, and the cheap F2). A template must be the WHOLE value (requirement: 'Ш - значение целиком (в кавычках - всё содержимое) состоит из одной группы ...; шаблон с текстом вокруг (p${x}w0rd, p<ss>w0rd) - литерал'). The tables held only text BEFORE a group; now text AFTER a group is held in the three places (a quotation, after a scheme / Bearer, the password of an address). Added: 27 refused rows (C56 10 rows: quoted pair + unquoted two groups; C57 9 rows: after Basic and after Bearer; C58 8 rows: password of an address) with 27 new PAIRS (each against an existing stored whole-template row: O14#10-13, O52#0/#2, O20#1/#2, O55#0/#1, O12#4/#5/#6, O8#2/#3/#4), and 52 new character sweeps (one slot for the character right after the group, in quotes of three kinds after a name, in quotes after Basic and after Bearer, in the password of an address, and unquoted after Basic and Bearer; for the seven group kinds ${..}, ${{..}}, {{..}}, $(..), <..>, %NAME%, $NAME): +8,788 sweep rows (6,819 -> 15,607), 100 sweeps. The expected side comes from the words of the requirement (stored only when the closing quote or the end of the line follows the group; in an address only when '@' follows, '/' or white space mean there is no address; without quotes only when the value ends; for $NAME a letter, digit or '_' belongs to the name), not from the code; on the real code 0 disagreements (15,607 of 15,607). Mutants i6 (quoted value that merely starts with a group is a template), i6b (the same for the password of an address) and i6c (the same unquoted) are RED now: 14 of 55 tests each (they survived 151 of 151 at 08h). F2: mutant e15 (depsOf scans only the first N characters) is RED for N = 100000, 1 MiB and 5 MiB (1 of 3 RB-03 tests each) by four new files with the bait at the very end of a plain file of 100000, 300000, 2.5 million and 6 million characters. Sweep of the template-recognition code: 990 mutants, 893 killed, 97 survivors, all named (82 equivalent with the proof class, 13 requirement silent, 2 performance-only). Run: bytes file 55 of 55 green (105.5 s alone); bytes + six guard files 151 of 151 green, 0 skipped, 0 todo (109.6 s). Only tools/test/team-result-bytes.test.js changed.",
+    "changes": [
+      {
+        "remark": "F1 (Medium, blocking) - rows",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "REFUSE C56 (10 rows, form F9): password: \"${x}w0rd\"; password: '<A>'+'hunter'+'2fake' (built from parts); \"$(A)tail\"; \"{{A}}hunter\"; \"${{ A }}x\"; \"%A%x\"; back quotes `${A}x`; \"${A}${B}\" (two groups in a row); unquoted token=${A}${B}; '$A.x'. C57 (9 rows): Authorization: Basic \"${x}y\" (F2), '<A>x', \"$(A)x\", \"{{A}}x\", \"${A}${B}\", unquoted ${A}tail; Bearer \"${x}y\", '<A>x', \"{{A}}x\" (F8). C58 (8 rows, F3): https://u:${A}+hunter2fake(from parts)@h, <A>x, $(A)x, {{A}}x, ${A}${B}, ${{A}}x, %A%x, $A.x. RB-00 counts: 366 -> 393 refused, lengths [10, 9, 8] checked."
+      },
+      {
+        "remark": "F1 - pairs",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "PAIRS +27 entries (484 in all): C56#0..9 against O14#10, O14#11, O52#0, O14#12, O20#2, O55#1, O14#13, O14#10, O20#1, O55#0; C57#0..8 against O12#6 (x6), O12#5, O12#4, O12#5; C58#0..7 against O8#2, O8#3, O52#2, O8#2 (x3), O8#4 (x2). They run through the same RB-08 test (findSecrets and the store: the stored partner is accepted, its pair refused with reason secret) and, as REFUSE rows, through RB-06 (3 inputs x 3 positions + order), RB-07 (forms, order cross product), RB-11 (state unchanged after a refusal), RB-03 (d) (depsOf withholds)."
+      },
+      {
+        "remark": "F1 - sweeps by the class",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "TEMPLATE_KINDS (7 group kinds), TEMPLATE_QUOTED (pair with ' \" `, Basic with \", Bearer with '), TEMPLATE_SWEEPS: 35 quoted sweeps + 7 address sweeps + 10 unquoted sweeps (after Basic and after Bearer, 5 kinds; $(..) has none because without quotes '$(' opens a call, class B2) = 52 sweeps, each over all 165 characters of CHARS_ALL in the slot right after the group. Expected: quoted -> stored iff the slot is the closing quote or a line end (LF, CR) (or, for $NAME, a letter/digit/_); address -> stored iff the slot is white space, '/', '@' (or a name character for $NAME); unquoted -> stored iff the slot ends a value (endsValue). RB-20 counts: 48 -> 100 sweeps, 6,819 -> 15,607 rows; each sweep keeps both sides (stored and refused), and every third row goes through the three inputs of the store."
+      },
+      {
+        "remark": "F2 (Low)",
+        "file": "tools/test/team-result-bytes.test.js",
+        "what": "RB-03 (d) depsOf: four more files tail-100000, tail-300000, tail-2500000, tail-6000000 = plain text of that length, a line end, then a key-shaped bait built from parts; all must come back as FILE_WITHHELD (requirement (г): depsOf checks EVERY file that is read, no size is named)."
+      }
+    ],
+    "self_check": [
+      "RUNS (project, node --test): team-result-bytes alone: 55 tests, 55 pass, 0 fail, 0 skipped, 0 todo, 105.45 s. Bytes + team-store + team-engine-reads-files + team-engine-rounds + team-journal + exec-workdir + exec-scripted-source in one run: 151 tests (55 + 96), 151 pass, 0 fail, 0 skipped, 0 todo, 109.6 s. prettier --check on the file: clean. eslint --max-warnings 0 on the file: rc 0. grep for .skip( .todo( .only( {skip|todo}: empty. The full npm run check was NOT run (as ordered). The timing file and the six guard files are untouched (criterion 9 floors unchanged: only the bytes file differs from before this step; 40 test( lines, 55 tests).",
+      "TABLES: KEEP 503 (unchanged), REFUSE 366 -> 393, PAIRS 457 -> 484, SWEEPS 48 -> 100, SWEEP_ROWS 6,819 -> 15,607. Before the counts were written, every new row/sweep was run on the real code: 0 disagreements with the expected side taken from the requirement. One reading corrected in my own oracle before that: unquoted '$(A)' + anything is a call (class B2: identifier '$' then '('), stored whatever follows, so no unquoted sweep for $(..); the code was right. Secret-shaped bodies are built from parts ('hunter' + '2fake', ghp_ + N(36)); RB-10 (no key-shaped literal in the test files) is green.",
+      "MUTANT i6 (findValue: findGroup(text, a, null, contentEnd) === contentEnd -> !== -1): 14 of 55 red (RB-03 d, RB-06 x3, RB-07 order, RB-07 forms, RB-08, RB-11 x3, RB-20 x4); on the screen the first killer is C56#0. i6b (findUrlPassword: findGroup(text, a, null, j) === j -> !== -1): 14 of 55 red (same tests), first killer C58#0. i6c (unquoted: group === stop -> group !== -1): 14 of 55 red, first killer C56#8. Made by me from the description of 08h on copies outside the project (<scratch>/td08i/masks, lanes l1-l3 with a copy of tools; the working tree was not changed). With the tables of 08g (old corpus) on the same screen i6 and i6b survive (as the validator found), i7e (name template tested on 2 characters, address) too. e15 (runner.js withheldOrContent: findSecrets(content.slice(0, N))): N = 100000 -> RB-03 (d) red 1 of 3; N = 1048576 -> red 1 of 3; N = 5242880 -> red 1 of 3; the pristine runner.js (sha256 cee99604... equals the project file) -> 3 of 3 green.",
+      "DIRECTED MUTANTS of the rule 'a template is the whole value' (43, hand-made, every place that decides it: the end test in quotes / address / unquoted, 'never a template' in each place, the end off by one, the name template never / on two characters, the search limit, the four closers and the angle closer (single instead of pair, +1, +2, empty group allowed, a second '<' inside, a line end), the opener '${{', the closer of '$(', '{{' open, the end of an unquoted value (comma, semicolon, quote, white space), the group taken first, the content end of a quotation, the escape, the line end in a quotation, the three stops of the password of an address, the restart after a kept address): 40 killed, 3 survive and all three are EQUIVALENT: i8 (quoted: the search limit n instead of contentEnd) - the result equals contentEnd only if the first closer lies before contentEnd, which is the same for both limits, a later closer gives a larger number, not equal; i8b (address: limit n instead of j) - text[j] is '@', the same argument; a4 (after a kept address restart at j+1 instead of j) - '://' cannot begin at '@' (text[j]). Fuzz confirms: the same differential run finds 400 (capped) differing texts for i6, i6b, i6c, i7e and none for i8, i8b, a4.",
+      "SWEEP of the template-recognition code (harness of 08g copied to <scratch>/td08i/sweep, region = findGroup, findAngleGroup, findIsNameTemplate; findQuoted, findDropClosers, findValue; findUrlPassword; findBearer; findSchemeEnd, findAuthorization - lines 396-496, 697-787, 805-844, 887-928, 961-995 of mask.js, which includes the two regex lines 840-841 of the prefixed keys): 990 mutants (comparison 111, numeric constants 270, conditions negated 78, operands dropped 86, logical operators 43, arithmetic 36, returns 53, break/continue 20, regex 180, kinds 24, ...). Screen against every row/pair/sweep/order text of the final tables: 893 killed (861 by a row, 32 never terminate: infinite loops, counted as killed as in 08g), 97 survivors. The SAME 97 survive with the tables of 08g (compared by site): the mechanical generator cannot make the i6 mutant (it has no operator 'the end test weakened to found-anywhere'), so the 43 directed mutants above are the evidence for this rule, not the generator.",
+      "THE 97 SURVIVORS, all named (classes and proofs as in 08g I2): 13 SILENT (lines 840-841, the body characters of ghp_/gho_/ghs_/github_pat_: the requirement says only 'not less than 20 characters' - not template code; F5 of 08h); 2 PERFORMANCE only (lines 441-442, the record of failed group searches: same answer, quadratic time; killed by the timing file family 11 as measured at 08g, the timing file is untouched and was not run again); 82 EQUIVALENT: A 9 (kinds NONE and KEEP are never told apart, the only reader tests === FIND_LITERAL), C 1 (the name of a record key), D 2 (return -1 removed for a start that is not an opener: start is undefined, the loop does not run, -1 at the end), E 3 (cache hit conditions: starts grow in one pass), F 6 (j < limit / j + 1 < limit / angle bound: text[limit] is a quote, a line end, '@', '/', white space or the end of the text, never } ) < >), G 6 (name template guards: a lone $ % %% fail the first-character test anyway), K 11 (a backslash before a line end or at the end of an unclosed quotation: literal in both versions; the position after the closing quote differs by one character that is a quote or the last character), L 7 (closers count: nothing kept changes), M 12 (end-of-text sentinels: an empty value at the end is NONE for any of them), N 9 (initial indexes, '< n' read as '<= n': charCodeAt(n) is NaN), P 8 (a closing quote at the end of the text), Q 8 (name and scheme guards redundant to the set). Evidence beyond the proofs: a new differential run, original against each of the 84 non-silent survivors, on 834,272 texts built by the grammar of this rule (6 contexts x 4 quote kinds x 8 groups x a slot of two characters from 29 x 29 x 5 tails, and 8 groups x 29 x 29 x 4 address texts): 0 differences, 0 hangs.",
+      "SOURCE OF THE EXPECTED SIDE: the words of REQ-102 quoted in summary (Ш), the definitions of a value in quotes (to the same quote on the same line, an unclosed quotation ends with its line, a backslash escapes the next character), the trailing closers rule, the password of an address (non-empty, no '/', '@', white space), classes B1-B4 'only for an unquoted value', B2 (a call) - AP-018. Not read from mask.js.",
+      "PROCESSES / FILES: no background process of mine is running (ps checked; the node --test pid 62025 from 3:28PM, the Pixel Office on 4790 and the http.server 8080 were there before and are not mine). No port bound by me. No git checkout/reset/stash/clean/commit/push anywhere. One directory sai-exec-test-uWjRMB made at 09:48 in the system temp folder by the RB-04 engine sandbox of my own run of the bytes file (the test creates it under os.tmpdir() and leaves it, older ones from Oct 9-27 stand there too) was removed by name. Copies, lanes, harness and outputs are in <scratch>/td08i."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "F2 (e15): the requirement (г) says depsOf checks 'каждый читаемый файл' by the same findSecrets and names no size limit, so the bait at the very end of a long file is required by the text; tail files of 100000 / 300000 / 2.5 million / 6 million characters added; e15 red for caps 100000, 1 MiB and 5 MiB."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "For ORCH / the next audit: the mechanical mutation generator (08g harness) is blind to the class of the survivor i6: 'the test that a group ends exactly at the end of the value is weakened to a test that a group exists'. The same 97 mutants survive with the 08g tables and with the new ones, while the three directed mutants of that class were green before and are red now. A sweep for a rule 'the whole value is X' needs that operator (found-anywhere for === end, always-true, always-false for each place); I used 43 directed mutants for it. This is the same class as proposal I3 of 08h (AP-110: test the text before AND after X)."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "Unquoted '$(...)' is a call (class B2: identifier '$' directly followed by '('), so 'token=$(A)x' is stored whatever follows and has no unquoted sweep; in quotes and in the password of an address 'B1-B4 do not apply' and '$(A)x' is refused (rows C56#2, C57#2, C58#2, sweeps). Not a code error, a note for the reader of the sweeps."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "F3 (timing instrument), F4 (AC0.3 of the plan), F5 and F6 of 08h are not mine and nothing was changed for them; the timing file is untouched. The bytes file is now 105.5 s alone (was 102.9 s); the budget of criterion 7 belongs to the timing file."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "Items Q8, Q10, Q11, R3: not touched by this rework (the rows and sweeps concern the scan of secrets only; Q10 failures of writing and reading, the state-unchanged checks of RB-11 and the late refusal of RB-19 are unchanged and green; the new C rows enter RB-11 and RB-06 automatically). No code edit is needed; nothing for CODE-FIXER."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/team-result-bytes.test.js"
+    ]
+  }
+}

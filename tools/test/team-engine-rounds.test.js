@@ -52,7 +52,9 @@ const task2 = (key, over = {}) =>
     ...over,
   });
 
-function twoRounds(second, over = {}) {
+// `body` is the middle line of the file of round 1: no secret by default (the bait of
+// the test is passed only by SF-13, which needs it).
+function twoRounds(second, over = {}, body = "Версия a.b.c") {
   return {
     goal: GOAL,
     plans: [{ tasks: [FIRST] }, { tasks: second }],
@@ -64,9 +66,7 @@ function twoRounds(second, over = {}) {
     reviewTask: true,
     work: [
       {
-        files: [
-          { path: ONE, content: `${LABEL}\nКлюч: ${BAIT}\nКофе в подарок\n` },
-        ],
+        files: [{ path: ONE, content: `${LABEL}\n${body}\nКофе в подарок\n` }],
       },
       ...second.map((s) => ({
         when: `МЕТКА-${s.key}`,
@@ -231,7 +231,7 @@ const FOUND = (root, needle, except) =>
     .map(({ full }) => path.basename(full));
 
 test(
-  "SF-13 criterion 15 (c): the bait of a key is found nowhere on disk after the second round and is masked in the content the task got; a second project holds nothing of the first",
+  "SF-13 criterion 15 (c): the file of round 1 reaches the task of round 2 byte for byte, no label, and nowhere on disk; a file with a key is refused whole and the key is nowhere; a second project holds nothing of the first",
   { timeout: 120_000 },
   async (t) => {
     const p = readsProject(
@@ -243,12 +243,39 @@ test(
     const run = workRunOf(p, "b");
     const input = p.stdins().find((s) => s.n === run.n).text;
     assert.ok(input.includes(LABEL), "the task got the content");
-    assert.ok(input.includes("[скрыто]"), "the secret is masked, not removed");
+    assert.ok(
+      input.includes(`${LABEL}\nВерсия a.b.c\nКофе в подарок\n`),
+      "the content is exact",
+    );
+    assert.equal(input.includes("[скрыто]"), false, "no label in the content");
     assert.equal(input.includes(BAIT), false);
     // grep -r over the project folder and the folder of the fake (not its plan).
     assert.deepEqual(FOUND(p.dir, BAIT, null), []);
     assert.deepEqual(FOUND(p.fakeDir, BAIT, "plan.json"), []);
     assert.deepEqual(fs.readdirSync(path.join(p.dir, "work")), []);
+
+    // The same project with the bait in the file of round 1: refused whole (REQ-102),
+    // nothing is accepted, the bait is on no disk, work/ included, and in no input.
+    const r = readsProject(
+      t,
+      twoRounds(
+        [task2("b", { text: `МЕТКА-b правь ${ONE}` })],
+        {},
+        `Ключ: ${BAIT}`,
+      ),
+    );
+    const refused = await runProject(t, r);
+    const failed = ofType(refused, "TASK_FAILED");
+    assert.equal(failed.length, 1);
+    assert.equal(failed[0].data.reason, "result_file");
+    assert.equal(ofType(refused, "RESULT_FILE").length, 0);
+    assert.deepEqual(FOUND(r.dir, BAIT, null), []);
+    assert.deepEqual(FOUND(r.fakeDir, BAIT, "plan.json"), []);
+    assert.deepEqual(fs.readdirSync(path.join(r.dir, "files")), []);
+    assert.deepEqual(fs.readdirSync(path.join(r.dir, "work")), []);
+    for (const s of r.stdins()) {
+      assert.equal(s.text.includes(BAIT), false, `stdin-${s.n} has the bait`);
+    }
 
     // A second project of the same test: another goal, own folders, own id.
     const OTHER = "ВТОРОЙ-ПРОЕКТ";

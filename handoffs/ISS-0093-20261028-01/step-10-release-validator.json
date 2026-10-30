@@ -1,0 +1,150 @@
+{
+  "handoff_id": "step10-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/ISS-0093-20261028-01/step-10-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": "aca26534e32dd4c0b",
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-09-test-runner.json",
+      "handoffs/ISS-0093-20261028-01/step-08p-test-design-validator.json",
+      "docs/requirements.yaml (block REQ-102 by id)",
+      "decisions/0102, 0105, 0106",
+      ".github/workflows/check.yml"
+    ],
+    "route": "TEST-RUNNER 09 PASS (check read from GitHub) -> RELEASE-VALIDATOR 10 (check on GitHub, run 40996714076) -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-10-release-validator.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-30T04:12:36Z",
+      "by": "ORCH",
+      "verdict": "PASS accepted",
+      "checked": [
+        "handoff COMPLETED 2026-10-30T04:10:51Z, verdict PASS, findings L1-L6 all Low; agent_run_id as written by ORCH; handoffs-check 0 violations, traces 0 traces",
+        "own reading of GitHub run 40996714076 (commit 6b89db6): success, tests 2135, pass 2135, fail 0, cancelled 0, skipped 0, todo 0, 0 `not ok`; the job about 13 min (03:19:21Z to 03:32:22Z)",
+        "remote: only `main` at 6f5a38a after deleting the temporary branch ci/iss-0093-release-validator-check; local HEAD 6f5a38a; mask.js sha256 starts 205e40c6; no test process left",
+        "not re-run by ORCH: the validator's own runs on this computer (series, mutants, the reproduction of the original error)"
+      ],
+      "next": "DOC-UPDATER step 11 (REQ-102 done, ISS-0093 closed, new defects ISS-0097..0099, error-log entries, STATE.md), then RELEASE-FINALIZER step 12; the owner is told just before the push to `main`. Any edit after snapshot 6b89db6 makes the GitHub run old: the check on `main` after the push is the next one"
+    }
+  },
+  "task": {
+    "description": "WF-03, step 9 gate of run ISS-0093-20261028-01 (in this run the number is 10) - RELEASE-VALIDATOR for defect ISS-0093 / requirement REQ-102 (secret masking corrupts result files; the fix: result files stored byte-exact by the content check `findSecrets`, decisions/0102 and 0105). Do as WF-02 step 9 and WF-03 step 9 say, and your role file: judge the requirement itself on the CURRENT files and a running system, not by the reports of earlier steps (read them, then check each point yourself). Read first: your role file, docs/quality-bar.md, docs/workflows/WF-03-defect.md (step 9), docs/workflows/WF-02-development.md (step 9), docs/anti-patterns.md (AP-119, AP-123), the REQ-102 block by id, docs/issues/ISS-0093-*.md, decisions/0102, 0105 and 0106, `git diff -- tools .github` and the untracked new files of tools/ (the code and tests of this run), the handoffs of this run (steps 01 to 09).\nTHE CHECK COMMAND. Where the full `npm run check` is run was decided by the owner (chat, 2026-10-29): NOT on this 16 GB Mac (it shut down twice under load) but on GitHub (Linux, ubuntu-24.04, Node 22, .github/workflows/check.yml, which runs `npm ci` and `npm run check` in tools/). ORCH has pushed a temporary branch ci/iss-0093-release-validator-check with a snapshot commit of the working files (commit 6b89db69b6747d6c482ed443126f8512dc052c75, parent cfeffe0ec77eb41f2f2ab84a2c6f3397882f4897, made outside the working branch); its run on GitHub is 40996714076 and takes about 15 minutes. You do NOT push anything. You read this run yourself: wait for it with `gh run view 40996714076 --json status,conclusion` (check at intervals of a few minutes while you do the rest; never `gh run watch` in a loop that blocks for more than ten minutes), then read its log yourself (`gh run view 40996714076 --log`, saved only into your scratch folder), take the counters (tests, pass, fail, cancelled, skipped, todo) and count `not ok` lines, the order of the stages (format:check, lint, traces, handoffs-check, tests), the time of the job against the limit now in the workflow. Verify with blob hashes that the snapshot equals the current working files for all files except the ones written after it (your own handoff and, maybe, docs/program/public-v1/PROGRESS.md) and name any other difference; if the temporary branch has been deleted by then, the objects stay in the local repository (`git cat-file -t <sha>`). If the run is red or cancelled, report what failed with the real log lines: that is a FAIL and ORCH decides. The number of failures may differ from earlier steps; derive every «not because of this work» yourself.\nOTHER CHECKS with your own runs on this computer, ONE heavy process at a time, never two test files at once, each run under ten minutes, no full npm run check, no port 4780, 4781, 4782, 4790, TMPDIR set to a sub-folder of your scratch folder: (1) every criterion 1-12 of REQ-102 on the files and the system, not by the reports; if a criterion names a test file, `ls` it (AP-123); (2) reproduce the ORIGINAL ERROR of ISS-0093 yourself on a copy (a result file with code in it, the way the issue describes it, through the real path of the team engine or the command the issue names) and see that it is gone now, and see that on a clean copy of the tag base/ISS-0093-20261028-01 (made by `git archive` into the scratch folder, no git checkout/reset/stash/clean, also not in copies) it is still there; (3) a file with a real secret is refused and a file with code is stored byte-exact, on the running path, with the state unchanged on refusal; (4) the bytes file and the timing file and the six guard files once each alone, in a fresh process; a small series of stability runs of the REQ-102 files, as many as fit; your own mutants (at least ten of the design list m1-m45 and a few of your own) on a copy outside the project, report red/green and that the project's mask.js is unchanged afterwards (sha256 starts 205e40c6); (5) go through docs/quality-bar.md as a list: every item Q and R is PASS or «not applicable» with a reason; one unexplained hole is a FAIL; (6) the statuses and documents have not fallen behind what was done (the requirement's status stays as it is: DOC-UPDATER sets `done` only after your PASS; STATE.md, PLAN.md, the defect file); (7) judge the change of `.github/workflows/check.yml` (timeout-minutes 15 to 30, decisions/0106) as a process fix, not a lowering of the bar; (8) the known open points are NOT yours to fix, but judge whether any blocks the status: Low findings F1-F4 of step 08p (F3 host of an address and the non-string guard named silent and pinned by no row; the ASCII reading of «without regard to case» not named; two comment lines that lost the start of a sentence; the bytes file 145-147 s), the residual risk (7) of REQ-102 for which DOC-UPDATER opens a defect, the difference of the design file from the requirement (PROGRESS, «Open problems»), the stale text «3-5 минут» in docs/design/REQ-030-github-check.md. Say which of them you consider blocking, and why. Do not edit any project file; write only your handoff. Work only inside the Sai folder and your scratch folder: do not read, list or count files of other folders. No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it); no secret-shaped literal. Leave no process running (ps before you finish). Verdict PASS or FAIL with findings by severity (Critical, High and Medium block; Low does not), each with place, evidence and fix; on FAIL name the step and the role to return to. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-10-30T03:20:08Z",
+  "started_at": "2026-10-30T03:20:08Z",
+  "completed_at": "2026-10-30T04:10:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Вердикт PASS. Полная проверка прошла на GitHub на снимке, равном рабочим файлам (запуск 40996714076, 2135 тестов из 2135, ни одного упавшего, пропущенного или todo, 12 мин 58 с при пределе 30), а на этом компьютере я сам прошёл все 12 критериев REQ-102, воспроизвёл исходную ошибку (на метке код с a.b.c портится: 6 замен «[скрыто]», другой sha256, исходник удалён; сейчас файл побайтно тот же), показал отказ для файла с настоящим секретом (ничего не записано, секрета на диске нет) и поймал 40 из 41 моих мутантов (выживший равнозначен). Блокирующих замечаний нет; остались только Low-замечания и уже известные открытые пункты, ни один из них статус не блокирует.\n\nCRITERIA (each checked by me on the current files; the requirement status stays 'pending' for DOC-UPDATER):\n1 met - bytes file RB-00..RB-02, RB-07, RB-18 green alone (55/55, three runs 140.1, 145.2, 143.8 s); own repro through the real path of the team (fake executor, claude-cli path, a code file of 6579 bytes with a.b.c, 0.1.0 and a real project file): tag base -> stored 6571 bytes, sha256 differs, 6 marks, work/ emptied; current -> 6579 bytes, same sha256 as the original, 0 marks, event sha256 equals it.\n2 met - RB-03, RB-04, RB-05 (depsOf exact; reviewer/dependent/goal inputs exact; file over PROMPT_MAX stored exact and cut with the visible mark; depsOf withholds a file with a secret by the constant text, no throw). Only reader of result file content is depsOf (grep of src, AP-014).\n3 met - RB-06, RB-07, RB-08, RB-09, RB-20 green (refusal E_WORK_FILE reason secret on all three inputs, pairs, 26 placeholders). My own probes of findSecrets: private key, prefixed keys, AWS id, JWT, Bearer, address password, name=value in JSON/env/yaml are refused; code with a.b.c, process.env.PASSWORD, header templates, types are stored. Residual risks (space before sign, API_TOKEN = \"...\") are the named ones.\n4 met - RB-11 (3 inputs): files, writer state, journal unchanged after every refusal; own run: refusal -> files/ empty, work/ empty, no RESULT_FILE event, no bait value anywhere in the project folder or the fake's home (grep -rlF empty).\n5 met - RB-12, RB-13, RB-19: whole attempt refused, TASK_FAILED reason result_file with one text in event, question, error line, events output; no source left in work/; my own run: exit code 1, one line 'E_TASK_FAILED: Задача не получилась: Файл результата не принят: в нём найден секрет (файл: t-0001-1-code.js)'.\n6 met - RB-14 (REPORT.md quoting an example key: code 1, empty stdout, one line, no stack, one run, next task accepted).\n7 met - team-result-timing.test.js: 14 of 14 in three runs of mine (89.9, 91.2, 93.1 s); own mutants: quadratic findPem (char walk per candidate) red in family 1, 512 KiB cut red in the timing file and the bytes file.\n8 met - the command with the pattern HK-21|HK-24|MK-0[1-5]|NM-06: 9 of 9, fail 0; git diff of the four pixel-office test files and the helper against the tag empty; TM-44 body hash eba784b1... equal to the tag, TM-44 green; first 315 lines of mask.js unchanged (726 insertions, 0 deletions); project mask.js sha256 starts 205e40c6 before and after my mutants.\n9 met - 12 ids: title-line counts equal or above the tag (TM-57 5 vs 4, others equal), assert counts above the tag in all six files (219/203, 122/113, 69/60, 84/79, 72/63, 38/34), no skip/todo/only in the files; the six guard files green alone (30, 34, 8, 11, 7, 6 tests); the command (g) 15 of 15 green; the files of the other guard tests are untouched (git diff empty).\n10 met - 41 mutants of mine on a copy outside the project: see self_check.\n11 met - all grep conditions of the criterion hold on the current files (README counts, decision 0105 words, README row of decisions, three dated 'was -> became' micro-amendments in REQ-009, REQ-010, REQ-013, no open question for risks (4) and (6)); RB-17 green.\n12 met - check on GitHub: format, lint, traces (2365 files, 0 traces), handoffs-check (0 violations, 114 of 114), tests 2135 (tag base run on GitHub: 2065, so +70 = 55 + 14 + 1); no 'dependencies' field in tools/package.json; src diff only in mask.js and team/; single-run.js untouched; lint config and package.json untouched.\n\nQUALITY BAR: Q1 PASS (REQ-102, every criterion names its check). Q2 PASS (my own runs, listed). Q3 PASS (outputs below; nothing 'probably'). Q4 PASS (the single command ran on GitHub, clean checkout, Node 22.23.4; owner's decision of 2026-10-29: not on this Mac; I read the run myself). Q5 PASS (criterion -> test mapping holds, failure tests check state unchanged, RB-11). Q6 PASS (no skip/todo, same five stages in the same order, nothing turned off; the only change of check.yml is the number of minutes). Q7 PASS (a real secret is refused and is on no disk; no key-shaped text in the new test files - criterion 3 grep empty; rules only in mask.js - grep of src/team empty; residual risks named and accepted by the owner). Q8 not applicable (no customer data space). Q9 not applicable (no SQL). Q10 PASS (refusal is a readable text, no crash, no stack; depsOf cannot throw). Q11 not applicable (no outgoing address check touched; the address form F3 is a content scan). Q12 PASS (decisions 0105 and 0106 exist and are in the README of decisions; code equals them; the replaced sentences of 0017 P9 and 0035 are quoted). Q13 PASS with a note (the process errors of the run are listed in PROGRESS.md for DOC-UPDATER to write into anti-patterns at step 10; not yet written, which is the order of the process). Q14 PASS with a note (requirement status stays 'pending' until DOC-UPDATER; see finding L1). R1 PASS (I pushed and merged nothing; PASS is permission for bookkeeping). R2 not applicable (no Pixel Office event written; journal masking unchanged and HK-21 etc. green). R3 not applicable (dropped by decision 0033).\n\nGATE VERDICT ON THE OPEN POINTS: none blocks the status. F1-F4 of step 08p are Low (test-only holes in silent positions; code is on the safe side; the bytes file at 140-147 s is stable and inside the 600 s test timeout and the 30-minute job limit). Residual risk (7) is named in README and decision 0105 and accepted by the owner: DOC-UPDATER opens the defect. The drift of the design file from the requirement is named in PROGRESS 'Open problems'; the requirement is the contract. The text '3-5 minutes' in docs/design/REQ-030-github-check.md is stale (line 102 and 199): DOC-UPDATER.\nCHECK.YML (decision 0106): a process fix, not a lowering of the bar. git diff shows exactly one line (timeout-minutes 15 -> 30); same command, same steps, same tests and thresholds; 30 minutes still stops a hang (Q10); real margin: job 12 min 58 s (tests 741.6 s) against 30. The rule of 0106 (if a run nears 25 minutes open option C) stands.",
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocking": false,
+        "where": "docs/program/public-v1/PROGRESS.md, table 'Requirements', row REQ-102 (quality bar Q14)",
+        "evidence": "the row still says 'build running (step 05 CODE-FIXER)' although steps 05 to 09 are done and gates passed; the file is ORCH's own bookkeeping",
+        "fix": "ORCH updates the row (and the date line) when it records my PASS; not a gate item",
+        "return_to": "none (ORCH)"
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocking": false,
+        "where": "docs/design/REQ-030-github-check.md lines 102 and 199",
+        "evidence": "'запуск ≈ 3–5 минут' is out of date: GitHub job of this run 12 min 58 s, base run 11 min 28 s",
+        "fix": "DOC-UPDATER notes it at step 10 (as decision 0106 says)",
+        "return_to": "none (DOC-UPDATER)"
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/team-result-bytes.test.js comment block X-BEGIN, lines 3398-3406 (finding F1-F3 of step 08p)",
+        "evidence": "no row for an empty or white-space host behind the at sign of form F3 and for a non-string argument; ASCII-only case reading not named; the two comment lines before X_EXTRA still start in the middle of a sentence (seen at lines 3405-3406). Code verified safe for the first (refused).",
+        "fix": "TEST-DESIGNER, comment and rows only, in a later run; no code change",
+        "return_to": "none (later run)"
+      },
+      {
+        "id": "L4",
+        "severity": "Low",
+        "blocking": false,
+        "where": "design list mutant m23 (depsOf throws on a secret)",
+        "evidence": "on the final code m23 as written is equivalent: the throw sits inside withheldOrContent, whose try/catch returns the constant text, so 18 tests stay green (survived). The variant of mine that throws outside the try (m23b) is red in RB-03 (d). The behaviour is held.",
+        "fix": "none; the design/test text may say that m23 is a throw outside the try",
+        "return_to": "none"
+      },
+      {
+        "id": "L5",
+        "severity": "Low",
+        "blocking": false,
+        "where": "findSecrets, false refusals (price named in README and decision 0105)",
+        "evidence": "over 2325 text files of the project copy the new scan refuses 133, all of them documents, handoffs and tests that talk about secrets, and one line of ordinary code: a quoted text with a space after a name 'secret' (language.js line 30, key secret with a Russian sentence). The old masking changed 1591 of the same files. The price is the owner-accepted one (quoted value with a space; 'token: tok' style).",
+        "fix": "none for this status; if agents' real code is refused often, the later defect for residual risk (7) and the 'false refusal' list can be revisited",
+        "return_to": "none"
+      },
+      {
+        "id": "L6",
+        "severity": "Low",
+        "blocking": false,
+        "where": "suite time (check.yml, decision 0106)",
+        "evidence": "tests 741.6 s, job 12 min 58 s on the final snapshot; step 09 run was 14 min 58 s on the same files, so runner speed varies about 15 percent; the 30-minute limit has a margin of about 17 minutes",
+        "fix": "watch at the audit; option C of 0106 at 25 minutes",
+        "return_to": "none"
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      "TIME: started 2026-10-30T03:20:08Z (handoff), work until 2026-10-30T04:10Z; node -v -> v22.23.4 on this computer. No full 'npm run check' here (owner's rule); it was read from GitHub.",
+      "CHECK ON GITHUB (read by me): gh run view 40996714076 --json status,conclusion,headSha,jobs -> status completed, conclusion success, branch ci/iss-0093-release-validator-check, head 6b89db69b6747d6c482ed443126f8512dc052c75, job started 2026-10-30T03:19:23Z completed 03:32:21Z (12 min 58 s), step 'Run the check' 03:19:30Z-03:32:19Z success, Node v22.23.4, image ubuntu-24.04. Log (13110 lines, saved in my scratch folder): order npm run format:check -> lint -> traces -> handoffs-check -> test. format:check 'All matched files use Prettier code style!' (12 s); lint no output; 'traces: файлов проверено 2365, следов 0, пропущено 67'; 'handoffs-check: файлов проверено 1277, нарушений 0, исключений использовано 114 из 114'; tests '# tests 2135 / # suites 0 / # pass 2135 / # fail 0 / # cancelled 0 / # skipped 0 / # todo 0 / # duration_ms 741608.33'. Count of 'not ok' lines: 0; 'ok N' lines at top level: 2135 (numbers run 1..2135); the words SKIP/TODO appear only in the counters 'skipped 0' and 'todo 0'. RB titles ok: 55 of team-result-bytes (ok 1702-1756) and 14 of team-result-timing (RB-15 criterion 7); the 11 guard tests found by title and ok (TM-57 x5 titles, TM-58 x2, TM-63 x3, RF-03, SF-13, TM-43 x2, EX-41 x2, EX-51 x5, SF-10/11/12/15).",
+      "BASE RUN for Q4 (criterion 12): gh run list shows run 40516041491 on main at the commit of the tag base/ISS-0093-20261028-01 (6f5a38a), success, job 2026-10-27T13:53:18Z-14:04:46Z (11 min 28 s); its log: '# tests 2065 # pass 2065 # fail 0 # skipped 0 # todo 0 # duration_ms 642730.36'. 2135 > 2065. Earlier: run 40965967184 (first attempt of step 09, 15-minute limit) was cancelled by the old limit with 0 'not ok'; run 40968115867 green with 2135.",
+      "SNAPSHOT = WORKING FILES: git ls-tree -r 6b89db6 (2432 blobs) against git hash-object of every tracked and untracked non-ignored working file (2433): only two differences - docs/program/public-v1/PROGRESS.md (ORCH's progress file, written after the snapshot; no test reads it: grep of tools/src and tools/test finds no read of it) and handoffs/ISS-0093-20261028-01/step-10-release-validator.json (my own handoff). After all my runs the same comparison of working files gave no difference to the list taken before my runs (the working tree is unchanged by me).",
+      "ORIGINAL ERROR, own repro (script in my scratch folder, copies made by git archive of the tag into a scratch folder and a copy of the working files; no checkout/reset/stash/clean anywhere; team engine real path: 'new', 'add-task', 'run-task' of the CLI, executor claude-cli with the fixture fake executor that writes the file into work/): code file = the two issue lines 'const v = a.b.c; x = obj.prop.method();' and '{\"version\": \"0.1.0\"}' plus a real source file of the project, 6579 bytes, sha256 9e3ff12e15f50b26ab56629754a29fbde6807b8b61a7e08cc203590fc96a0a76. TAG: run-task exit 0, files/ has t-0001-1-code.js of 6571 bytes, sha256 ce1596ac00f1b17f2b1657ad36858e37760a38100441b727c5a42454e07d7e53 (differs), 6 marks '[скрыто]', equal-to-original false, work/ empty (source gone). CURRENT: stored 6579 bytes, sha256 9e3ff12e...0a96 equal to the original, 0 marks, equal-to-original true, event RESULT_FILE sha256 the same, work/ empty.",
+      "REAL SECRET, own run on the same path: a code file with one prefixed-key-shaped value built from parts (not written here). TAG: accepted but masked (2 marks), stored 84 of 101 bytes - the secret is hidden but the code is spoiled. CURRENT: run-task exit 1, stdout empty, stderr one line 'E_TASK_FAILED: Задача не получилась: Файл результата не принят: в нём найден секрет (файл: t-0001-1-code.js)'; files/ empty, work/ empty; events PROJECT_CREATED, TASK_CREATED, TASK_STARTED, RUN_STARTED, RUN_FINISHED, BUDGET_SPENT, TASK_FAILED:result_file (no RESULT_FILE); data.detail equals the stderr text; grep -rlF of the value over the project folder and the fake's home (except the plan of the fake) -> no file.",
+      "OWN PROBES of findSecrets on the current code (19 texts): refused F5, F4, F6, F1, F9 (json password), F9 (DB_PASSWORD=...), F9 (upper case PASSWORD=...), F3, F8, F7, F9 (client_secret: ...), F9 (api_key: '...'); stored: code with a.b.c, process.env.PASSWORD, a function parameter named token, a header template, https://host/a?x=1, 'password: string;', a README sentence; null (known residual risk 5, space before the sign): 'password = \"...\"' and 'API_TOKEN = \"...\"'.",
+      "TEST FILES, each alone in a fresh process, TMPDIR in a sub-folder of my scratch folder: team-result-bytes.test.js x3: 55 of 55 each, fail 0 cancelled 0 skipped 0 todo 0, 140.07 s, 145.17 s, 143.80 s. team-result-timing.test.js x3: 14 of 14 each, 89.86 s, 91.22 s, 93.12 s. team-store 30/30, team-engine-reads-files 34/34, team-engine-rounds 8/8, team-journal 11/11, exec-workdir 7/7, exec-scripted-source 6/6 (all fail 0, skipped 0, todo 0). Criterion 8 command: 9 of 9; TM-44 alone 1 of 1; TM-44 body sha256 eba784b1dae58b570cf8b493d28584c8983f9c27926ed255648d57cda9cefe31 on the tag and on the working file; git diff --stat of the four pixel-office test files and helper against the tag: empty. Criterion 9 (g) command: 15 of 15, fail 0. ls on the test files of criteria 1-8: team-result-bytes.test.js (253906 bytes), team-result-timing.test.js (9771 bytes), fixtures scenario-secret.json and scenario-bom.json all exist (AP-123).",
+      "MUTANTS (copy of the working files outside the project, one at a time; fast subset of the bytes file without RB-01, RB-08, RB-11, RB-20, then the six guard files if green; the timing mutants on the timing file). Design list, RED: m1 (mask back in #publish, 18 failed), m2, m3, m4 for each of F1, F3, F6, F7, F8, F9, m7, m10, m12 (bytes file and timing file), m20, m22, m23b (throw outside the try), m24 (files.js decoder), m24b (store.js decoder), m29, m32, m33, m34, m35, m36, m41, m44, m45, m45b; m5 as a char walk per candidate in findPem: RED in the timing family 1 (264 s). SURVIVED: m23 as written, equivalent (the catch of withheldOrContent swallows the throw). My first version of the quadratic mutant used indexOf and was green: the engine does that scan too fast to cost anything at these sizes (an equivalent mutant in practice); the char-walk version is red. Own mutants o1-o12, all RED: source of an accepted file stays in work/ (RB-04), names shown 3 -> 4 (RB-12), AKIA right boundary dropped, scan skipped for files from work/ (importWorkFile rows), CERTIFICATE dash check dropped, Bearer left boundary dropped, event sha256 from a masked copy, sk- minimum 16 -> 17, JWT needs three dots, placeholder chain 3 -> 4, late-refusal path leaves the source (RB-19), FILE_WITHHELD replaced by the content. Total 42 mutant runs, 41 red, 1 equivalent. After all of them: sha256 of the project's tools/src/pixel-office/mask.js starts 205e40c6127f5f70 (unchanged), and the comparison of all working files (2433) against the list taken before my runs shows no difference.",
+      "PS: ps for node processes of mine before finishing - none running (checked at 04:09Z; the monitors I started ended). Ports 4780, 4781, 4782, 4790 not used; the Pixel Office tests bind port 0 only."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked (quality bar section 6 item 2): the snapshot equals the working files except PROGRESS.md and my handoff (blob hashes, see self_check); the branch ci/iss-0093-release-validator-check was still on the remote while I read the run. GitHub run 40996714076 is green. The 'tag' base/ISS-0093-20261028-01 points at 6f5a38a, the same commit as HEAD."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "For DOC-UPDATER: (a) set REQ-102 to done only with the honest note that residual risks (1)-(7) are named, (4)-(6) owner-accepted, (7) to be closed by a new defect; (b) open that defect; (c) write the process errors listed in PROGRESS 'Open problems' into anti-patterns; (d) note the stale '3-5 minutes' text of REQ-030; (e) the design file of REQ-102 drifts from the requirement (named in PROGRESS); (f) close ISS-0093 with the outcome 'closed' - the cause is removed and the regression test exists (team-result-bytes.test.js, team-result-timing.test.js, twelve repaired guard tests). ISS-0058 and ISS-0045 stay open (journal rules, a separate run)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "For ORCH: this PASS is of the files as they are now. Any edit of a source, test, README or decision file after the snapshot 6b89db6 makes the GitHub run old; RELEASE-FINALIZER must wait for check.yml on main after the push (step 11), and the temporary branch ci/iss-0093-release-validator-check should be deleted after this report is read (the objects stay in the local repository)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "AP-017/AP-018: the task named no expected verdict; the verdict PASS is derived from my own runs. Not checked by me, with the reason: the generator sets of the designer (15,970 mutants) were not re-run - I judged the claim by my own 42 mutants in the same classes; the Pixel Office tests outside criterion 8 were not run here (they run in the GitHub check); the timing file was not run under parallel load (one heavy process at a time, 16 GB machine) - on GitHub it ran beside the other files in the full suite and was green."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Proposal on the process (not a raise of the bar): when a mutant is meant to cost time (a quadratic one), prefer a loop in the language over a native search call; a native search over a short text may be too fast to show at the sizes of the test. Nothing to change in the requirement."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

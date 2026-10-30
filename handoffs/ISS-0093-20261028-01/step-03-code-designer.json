@@ -1,0 +1,232 @@
+{
+  "handoff_id": "step03-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0093-20261028-01/step-03-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102",
+      "REQ-009",
+      "REQ-010",
+      "REQ-013"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml (block REQ-102 by id; amended criteria of REQ-009, REQ-010, REQ-013)",
+      "handoffs/ISS-0093-20261028-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0093-20261028-01/step-02f-req-validator.json",
+      "handoffs/ISS-0093-20261028-01/step-02d-req-validator.json",
+      "decisions/0102-core0-result-files-conventions.md",
+      "docs/program/public-v1/ARCHITECTURE.md (sections 8 and 10)"
+    ],
+    "route": "REQ-VALIDATOR (step 02f, PASS) -> CODE-DESIGNER (this) -> CODE-DESIGN-VALIDATOR (03b) -> micro-amendment (WF-01) -> BACKEND-DEV / CODE-FIXER -> SECURITY-REVIEWER and REVIEWER -> TEST-DESIGNER ...",
+    "write_set": [
+      "docs/design/REQ-102-result-files-byte-exact.md",
+      "handoffs/ISS-0093-20261028-01/step-03-code-designer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T07:39:20Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-28T07:37:39Z; the design file exists (425 lines, 17 sections: interfaces, order of calls, failure paths, criterion-to-test table, was-became table, build sub-steps, quality bar, mutants, micro-amendment, README, decision record, open questions)",
+        "only docs/design/REQ-102-result-files-byte-exact.md and the handoff are new from this step (git status: no tracked file modified by it); handoffs-check and traces return 0",
+        "design questions О1-О4 closed by decisions/0102 Addition 6 (items 23-26); the design differs from the requirement in two places (twelve guard tests; project view shows the PHRASES row) - both through a micro-amendment, not silently",
+        "independent check: CODE-DESIGN-VALIDATOR step 03b (pass 1 of 3)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 3 - CODE-DESIGNER: write the design of the fix of defect ISS-0093 for requirement REQ-102 (status pending, passed the requirement gate at step 02f of this run). Read your role file, docs/quality-bar.md, docs/workflows/WF-03-defect.md (step 3), docs/workflows/WF-02-development.md (steps 1 and 1b: the design contents), docs/workflows/handoffs.md, docs/anti-patterns.md, the REQ-102 block by id (the awk command is in handoffs.md) - the whole block, its forms, samples, definitions and criteria are the input, not to be restated or weakened - the amended criteria of REQ-009 (15), REQ-010 (16 b), REQ-013 (14 c, 15 c), the diagnosis handoffs/ISS-0093-20261028-01/step-01-issue-fixer.json, the gate reports step-02b/02d/02f-req-validator.json (all remarks and issues, I-notes for the designer included), decisions/0102 (all Additions; items 14, 18-22 binding), decisions/0095, 0017 P9, 0018 P6, 0035, and docs/program/public-v1/ARCHITECTURE.md sections 8 and 10 (CORE-0, as adjusted by decisions/0102 - the decision wins where they differ). Write ONE file docs/design/REQ-102-result-files-byte-exact.md (like the other designs in docs/design/): interfaces and data shapes (findSecrets in tools/src/pixel-office/mask.js; its return shape; the notice and the error shape E_WORK_FILE with reason secret; FAIL_DETAIL.secret and a PHRASES row in tools/src/team/language.js), the exact call order in store.js (#publish, writeResultFile, importWorkFile, importResultBytes - the BOM fix: TextDecoder without ignoreBOM must not drop the BOM), runner.js (depsOf and acceptResult step 1: the secret check before the first write on the claude-cli path; removal of the refused source from work/), engine/single-run.js (the written exclusion), every failure path with the state after it, the table 'criterion -> test' for criteria 1-12 with the test file names (tools/test/team-result-bytes.test.js is created by this work), the 'was -> became' table for the eight guard tests, the section on the quality bar items (Q1-Q14, R1-R3) each named, the build sub-steps (small, each checkable with a command), the list of mutants m1-m21 as in the requirement with how each is applied, the instrument of criterion 7 (families, floor, control, budget), and the trials: statements about the behaviour of the code (e.g. what depsOf receives, what TextDecoder does with a BOM, what TM-38 and TM-40 allow in a PHRASES row, what the refused-source removal does on the three import paths) are checked by a sketch OUTSIDE the project and its output goes to the design; say where the sketch lies as '<scratch>/...'. Binding notes from the gate reports: (F3 of step 02f) criterion 5 expects the word «секрет» in the view of `npm run team -- project <id>`, but that view shows the PHRASES row, not detail - the design must say which text the view shows, the PHRASES row must be conditional on the detail so TM-38 stays green and TM-40's word ban is respected, and criterion 5's wording must be corrected by a micro-amendment: list the exact new wording in the design; (F1) an Authorization pair with a quoted value and no scheme word: the design decides it by the general rule (a quoted string is a literal) and lists one added sample; (F2) old rule M2 also hid values after no-break space, em space, form feed, vertical tab after the colon or scheme and text after the first value of an Authorization header on the same line: either refuse those too in the scan or name them as a residual risk in the micro-amendment (they are narrowings that need decisions/0102 item 19, so default is to REFUSE them); (F4) what depsOf does on a hit (old-core files that carry the mark [скрыто] - password=[скрыто] is refused by the new rule): decide and add a criterion text and a test; TM-44 scans only top-level tools/src/team/*.js while criterion 3 greps recursively - both must hold; the check must sit in step 1 of acceptResult before the first write. Put the micro-amendment wording (criteria 3 and 5, and any new sample or criterion for F1, F2, F4) in a section 'Micro-amendment of REQ-102' with the exact old and new sentences; do not edit docs/requirements.yaml. Write only the design file and your handoff. No implementation code in the design (signatures, shapes and pseudo-steps only), no machine paths, no names of other projects, also not inside search patterns. Facts of the project you rely on are checked by a command and the output is cited. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Every criterion 1-12 of REQ-102 has a named test and a way to check",
+      "Every quality bar item Q1-Q14, R1-R3 is named with its measure",
+      "No implementation code; facts about the code are cited with a command and its output",
+      "The micro-amendment section has exact old and new sentences"
+    ]
+  },
+  "created_at": "2026-10-28T06:49:34Z",
+  "started_at": "2026-10-28T06:49:34Z",
+  "completed_at": "2026-10-28T07:37:39Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Я написал проект исправления: новая проверка findSecrets ищет настоящие секреты по девяти формам, файл результата хранится точно как его написал агент, а файл с настоящим секретом ядро не принимает и честно говорит об этом словом «секрет» (его исходник тоже удаляется из рабочей папки). Проект проверен на рабочем эскизе в копии вне репозитория: образцы требования ведут себя как написано, проверка работает за линейное время, но красными становятся не восемь охранных тестов из требования, а двенадцать — требование нужно поправить микро-правкой. Один остаточный риск (текст после первого значения в той же строке) назван и вынесен вопросом к ORCH и владельцу.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-102-result-files-byte-exact.md",
+        "section": "0, 1",
+        "what": "summary; 22 checked facts F1-F21 (F10b) with commands, outputs and the date 2026-10-28: the BOM per input, depsOf before and after, the end-to-end refusal on the engine path, run-task, scripted and runSingle, the red set of the sketch (12), the cause of SF-10/11/12/15, the stack overflow of a repeated-group regular expression, the quadratic text-wide indexOf, the sample tables, the timing instrument with its control, the cost of the rule on a real tree"
+      },
+      {
+        "file": "docs/design/REQ-102-result-files-byte-exact.md",
+        "section": "2",
+        "what": "findSecrets: signature and result shape, the order of checks, the value reader and the closed classes as steps, the nine forms as a table, the sample-to-form oracle, the error and texts (E_WORK_FILE reason secret, FAIL_DETAIL.secret, the conditional PHRASES row, FILE_WITHHELD), the two BOM decoders and the unchanged scenario decoder"
+      },
+      {
+        "file": "docs/design/REQ-102-result-files-byte-exact.md",
+        "section": "3, 4, 5",
+        "what": "exact call order in store.js #publish, runner.js acceptResult step 1 (full pass, removal of every hit source, secretRefusal) and depsOf (scan, withhold, no exception), the written exclusion for engine/single-run.js with its measured behaviour, the table of shared items and their places, 13 failure paths with the state after each, the order of work and owners"
+      },
+      {
+        "file": "docs/design/REQ-102-result-files-byte-exact.md",
+        "section": "6, 7, 8",
+        "what": "criterion -> test table for criteria 1-12 (tests RB-01..RB-17 of the new file tools/test/team-result-bytes.test.js), the was->became table for the eight guard tests plus SF-10, SF-11, SF-12, SF-15, eight build sub-steps with the red tests after each"
+      },
+      {
+        "file": "docs/design/REQ-102-result-files-byte-exact.md",
+        "section": "9, 10, 11",
+        "what": "quality bar Q1-Q14 and R1-R3 each named; the instrument of criterion 7 (families, floor, control, budget) with the added family 10; mutants m1-m21 with how each is applied and what kills it, plus m22-m30 found by the design"
+      },
+      {
+        "file": "docs/design/REQ-102-result-files-byte-exact.md",
+        "section": "12",
+        "what": "Micro-amendment of REQ-102 with exact old and new sentences: A criterion 5 (F3), B quoted Authorization without scheme (F1), C white space refused (F2 part 1), D residual risk (6) named (F2 part 2), E criterion 2 part (г) for depsOf (F4), F twelve guard tests, G family 10, H second source and group search, I BOM per input and scenario decoder, J samples of the existing rule"
+      },
+      {
+        "file": "docs/design/REQ-102-result-files-byte-exact.md",
+        "section": "13, 14, 15, 16, 17",
+        "what": "README texts agreed with the greps of criterion 11, the proposal for the decision record 0103, open questions O1-O4, what becomes outdated for DOC-UPDATER, the places of the sketches"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "cd <scratch>/cd/before && git log --oneline | head -1 (fresh git clone -b base/ISS-0093-20261028-01)",
+        "out": "6f5a38a Audit AUD-001 ... (the tag equals HEAD)"
+      },
+      {
+        "cmd": "before: node --test <49 files test/team-*.test.js test/exec-*.test.js without team-web>",
+        "out": "# tests 548 / # pass 548 / # fail 0 (the baseline, measured in the diagnosis too)"
+      },
+      {
+        "cmd": "work (the design applied as a sketch, outside the project): node --test <the same 49 files>  [output <scratch>/cd/team-run2.out]",
+        "out": "# tests 548 / # pass 536 / # fail 12: EX-51, EX-41, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63"
+      },
+      {
+        "cmd": "work: node --test <75 other test files that bind no default port>  [<scratch>/cd/rest-run1.out]",
+        "out": "# tests 1006 / # pass 1006 / # fail 0"
+      },
+      {
+        "cmd": "work: node --test --test-name-pattern='^HK-21' test/pixel-office-hook.test.js",
+        "out": "# tests 1 / # pass 1 / # fail 0"
+      },
+      {
+        "cmd": "before: node --test --test-name-pattern='TM-57|TM-58|TM-63|RF-03|SF-13|TM-43|EX-41|EX-51' <6 files>; the same with |SF-10|SF-11|SF-12|SF-15",
+        "out": "# tests 20 (pass 20) ; # tests 24 (pass 24)"
+      },
+      {
+        "cmd": "before and work: grep -rnE 'AKIA|ASIA|github_pat|-----BEGIN|MASK_LABEL|скрыто' tools/src/team | wc -l",
+        "out": "0 and 0; grep -rnE 'maskSecrets' tools/src/team | wc -l on the tag: 15"
+      },
+      {
+        "cmd": "bomtrial test (7 bytes EF BB BF + A CR LF B) on before and on work",
+        "out": "before: importResultBytes 4 bytes (not equal), importWorkFile 4 (not equal), writeResultFile 7 (equal); work: 7, 7, 7 all equal"
+      },
+      {
+        "cmd": "node roundtrip.mjs (20000 random valid UTF-8, ignoreBOM decoder, re-encode)",
+        "out": "{ n: 20000, bad: 0, refusedOf5: 5 }"
+      },
+      {
+        "cmd": "node <scratch>/cd/proto/run-samples.mjs ; node matrix.mjs",
+        "out": "keepN 85 keepBad 0 ; refN 87 refBad 0 (80 of the requirement + 7); assembly null; nine plan samples kept; placeholder matrix { n: 488, bad: 0 }"
+      },
+      {
+        "cmd": "node <scratch>/cd/proto/timing.mjs 1,2,3,4,5,6,7,8,9 ; fam10.mjs ; ctrl.mjs",
+        "out": "all nine families no secret / bait found, ratios 3.92-4.42 and 3.86-4.39, 46 s; family 10 ratios 4.05 4.00; quadratic control 46.5 / 779.5 / 7152.7 ms, two-step ratio 154.0; one-pass control ratios 3.88 3.79"
+      },
+      {
+        "cmd": "/^[A-Za-z_$]+(\\??\\.[A-Za-z_$]+)+$/.test('a.'.repeat(2097152)+'b') ; NAIVE=1 node naive8.mjs (family 8, plain indexOf per group)",
+        "out": "RangeError: Maximum call stack size exceeded ; 52 / 653 / 2587 ms at 256 KiB / 1 MiB / 2 MiB (quadratic); final sketch 12.7 / 20.4 / 39.2 / 78.7 ms at 256 KiB..4 MiB"
+      },
+      {
+        "cmd": "trials A-G (zz-design-trials*.test.js in the work clone, outputs <scratch>/cd/trial-out.txt, trial2-out.txt, trial3-out.txt, trial3-before-out.txt, trial4-out.txt)",
+        "out": "engine path: files/ empty, bait source gone, clean source stays, one RUN_STARTED, TASK_FAILED detail 'Файл результата не принят: в нём найден секрет'; run-task: exit 1 and one stderr line with 'секрет', project phrase from the new PHRASES row; scripted: exit 1, input.md accepted before the refusal, bait only in scenario.json; runSingle: returns E_WORK_FILE reason secret, run closed failed; depsOf: exact bytes / FILE_WITHHELD, base gave 'const v = [скрыто];'"
+      },
+      {
+        "cmd": "grep -rnE 'readFileSync|readFile\\(|createReadStream' tools/src/team tools/src/web (tag)",
+        "out": "9 lines; only runner.js:125 reads files/"
+      },
+      {
+        "cmd": "python normalised-whitespace check that each 'Old' sentence of section 12 stands in the current REQ-102 block",
+        "out": "all True (A, A2, B, C, D, E, E2, F, G, G2, G3, I, B2)"
+      },
+      {
+        "cmd": "cd tools && npm run traces (before the handoff text)",
+        "out": "traces: файлов проверено 2313, следов 0, пропущено 67"
+      },
+      {
+        "cmd": "cd tools && npm run handoffs-check && npm run traces (after the handoff text and the design were final)",
+        "out": "handoffs-check: файлов проверено 1232, нарушений 0, исключений использовано 114 из 114 ; traces: файлов проверено 2313, следов 0, пропущено 67"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "The requirement's table of guard tests is incomplete (AP-111, AP-123). It names eight tests (decision 0102 item 4: 'eight, not five'), taken from a mutant that removes masking. The design applied as a sketch turns TWELVE red: SF-10, SF-11, SF-12 and SF-15 of tools/test/team-engine-rounds.test.js too, because the shared helper twoRounds (line 68) puts a key bait into the round-1 file of every test that uses it, and the new core refuses that file. Measured: 548 pass on the tag, 536 pass and 12 fail on the sketch; with the bait line replaced only SF-13 stays red. Design section 7 and micro-amendment F (section 12) take all twelve. See O1."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "Criterion 5 expects the word 'секрет' in the output of 'team project <id>' from the key FAIL_DETAIL.secret. Measured: the project view shows the phrase of the LAST event of the task; on the engine path that is a CHAT question ('Команда задала вам вопрос'), the failure text is in chat[].text; after run-task the phrase is the PHRASES row, not the detail. The design adds a PHRASES row conditional on the detail (TM-38 and TM-40 stay green, measured) and rewrites the sentence of criterion 5 (micro-amendment A, exact old and new text)."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "O1 (needs an ORCH answer before the design gate). Twelve guard tests, not eight: micro-amendment F of section 12 (REQ-ANALYST then REQ-VALIDATOR) and an addition to decisions/0102 item 4 or to the new record. Default: the design already treats all twelve as the tests expected red between steps 4 and 6; without the amendment criterion 9(a) counts 20 and does not name four tests that the work must change."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "O2 (needs ORCH and, by decisions/0102 item 19, the owner). Text after the first value in the same line is not examined (old M2 hid the rest of an Authorization line; old M9 hid text glued after a comma). Refusing it would refuse the plan seed O6 itself ({ token: data.token, user: x }) and every headers object. Proposal: name it as residual risk (6) (micro-amendment D) and add it to the closed questions of decisions/0102 item 22. Default: named, not refused. The white-space variants (no-break space, em space, form feed, vertical tab) are REFUSED (micro-amendment C): no owner needed."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "O3. Old-core files carry the mark [скрыто]: 'password=[скрыто]', 'token: [скрыто]', 'Authorization: [скрыто]', 'https://u:[скрыто]@h/x' are refused by the new forms (measured). Decision of the design for finding F4 of the gate: depsOf scans and WITHHOLDS such a file (constant text FILE_WITHHELD, no exception, nothing written; micro-amendment E adds part (г) to criterion 2 and mutants m22, m23). Alternative for ORCH or the owner: count a value that starts with the mark as a seventh kept class (a requirement change; not applied). Default: withhold."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "O4. Proposal for a decisions/ record (Q12): 0103 'Result files: byte-exact storage, findSecrets, refusal of a real secret (REQ-102)', content in section 14 (it must carry the phrases that criterion 11(b) greps, the three quotations of 0017 P9 and 0035 that it replaces, M7 and M10, the placeholder list, the false-refusal prices, the scripted exclusion, the answer to the expression question of decisions/0102 item 22, the twelve tests, residual risk (6), the depsOf withholding, the BOM decision). ORCH gives the number and accepts it; alternatively an Addition 6 to 0102 (then the grep -v of criterion 11(b) changes)."
+      },
+      {
+        "id": "I7",
+        "kind": "EXPECTED_RED",
+        "text": "Between steps 4 and 6 these 12 tests of the tag are red by the design (section 7 of docs/design/REQ-102-result-files-byte-exact.md; new expected behaviour in its was->became table): TM-57 (tools/test/team-store.test.js:499), TM-58 (:757), TM-63 (:1006), RF-03 (tools/test/team-engine-reads-files.test.js:134), SF-10 (tools/test/team-engine-rounds.test.js:111), SF-11 (:144), SF-12 (:182), SF-13 (:234), SF-15 (:369), TM-43 (tools/test/team-journal.test.js:450), EX-41 (tools/test/exec-workdir.test.js:35), EX-51 (tools/test/exec-scripted-source.test.js:71)."
+      },
+      {
+        "id": "I8",
+        "kind": "FINDING",
+        "text": "Two things found by the sketch that no criterion has: (1) a regular expression with a repeated group over a 4 MiB path value overflows the stack (RangeError) and a text-wide indexOf for the end of line makes the template-group search quadratic (family 8: 52 / 653 / 2587 ms at 256 KiB / 1 MiB / 2 MiB). The design forbids both and adds family 10 to criterion 7 and mutants m28, m30 (micro-amendment G, H). (2) Decoder of scenario bytes: strictUtf8 in store.js must NOT get ignoreBOM, a scenario with a BOM is accepted today and no old test pins it; the design splits a new resultUtf8 and adds a guard test (RB-02, mutant m25)."
+      },
+      {
+        "id": "I9",
+        "kind": "FINDING",
+        "text": "Cost of the rule on a real tree (named, not hidden): findSecrets over the text files of the tag refuses 1 of 150 files of tools/src (pixel-office/mask.js, because it holds the PEM marker text; the new mask.js will hold it too), 22 of 398 files of tools/test (bait fixtures and masking tests) and 13 of 290 files of docs (quotations of samples). A generated file about PEM or key formats is refused as a secret; this is the price already named in the requirement ('код и текст о заголовках PEM')."
+      },
+      {
+        "id": "I10",
+        "kind": "AP_PROPOSAL",
+        "text": "Q13, two entries for docs/anti-patterns.md (text for DOC-UPDATER, besides the two of the diagnosis I13): (a) 'The table of guard tests was taken from a mutant that REMOVES a feature; a design that changes the behaviour (here: a refusal instead of a mark) turns red more tests (SF-10/11/12/15 through one shared helper). The table is checked with the new design applied as a sketch, not only with a mutant.' (b) 'A regular expression with a repeated group over the text of a file overflows the stack (RangeError at about 1 million repeats), and indexOf for a character that is absent is searched to the end for each call: both make a pure scan unsafe; use one forward pass.'"
+      },
+      {
+        "id": "I11",
+        "kind": "OBSERVATION",
+        "text": "Process notes. The tag lacks docs/program/, the design drafts and decisions 0091-0102 (read from the working tree; diagnosis I14 d). docs/requirements.yaml in the working tree carries four status lines of other runs (REQ-003, REQ-004, REQ-005, REQ-061; gate note): the final commit of this run must not take them. The Pixel Office and picker test files that mention the default ports 4780-4790 were not run (forbidden); they do not call the team core, and the mask.js rules they pin are not edited (HK-21 by name: 1 of 1 pass). The full npm run check was not run. No file of the project was changed except this handoff and the design file."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-102-result-files-byte-exact.md"
+    ],
+    "prototype": {
+      "where": "<scratch>/cd (outside the project): proto/ (find.mjs, samples.mjs, run-samples.mjs, matrix.mjs, timing.mjs, fam10.mjs, ctrl.mjs, adv.mjs, tree.mjs, naive8.mjs, regex-overflow.mjs), roundtrip.mjs, bom trial scripts; before/ (a fresh clone of the tag base/ISS-0093-20261028-01); work/ (a second clone with the whole design applied as a sketch: mask.js +267 lines, runner.js, store.js, files.js, language.js; trial tests zz-design-trials*.test.js were run there and removed); s2/ and s3/ (the clone with only the first sub-steps, for the red set per sub-step); outputs trial-out.txt ... trial4-out.txt, team-run2.out, rest-run1.out",
+      "what": "A working findSecrets (about 265 lines) with the nine forms, the value reader and the closed classes; the sample tables of the requirement (85 keep, 87 refuse strings, the assembly, the nine plan samples, the placeholder matrix of 488 checks), the timing instrument with its control, the end-to-end trials A-G on a fake claude, and the guard-test runs. It is a sketch to check the design, not the code of the fix."
+    }
+  }
+}

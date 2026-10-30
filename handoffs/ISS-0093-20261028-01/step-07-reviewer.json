@@ -1,0 +1,151 @@
+{
+  "handoff_id": "step07-ISS-0093-20261028-01",
+  "run_id": "ISS-0093-20261028-01",
+  "workflow_id": "WF-03",
+  "step": "07",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/ISS-0093-20261028-01/step-07-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-102"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0093-20261028-01/step-05-code-fixer.json",
+      "docs/design/REQ-102-result-files-byte-exact.md",
+      "decisions/0102-core0-result-files-conventions.md"
+    ],
+    "route": "CODE-FIXER (05, done) -> REVIEWER (this) and SECURITY-REVIEWER (06) at the same time -> TEST-DESIGNER (08)",
+    "write_set": [
+      "handoffs/ISS-0093-20261028-01/step-07-reviewer.json"
+    ],
+    "base_tag": "base/ISS-0093-20261028-01",
+    "orch_check": {
+      "at": "2026-10-28T16:06:16Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "handoff COMPLETED 2026-10-28T16:05:37Z, verdict PASS, findings F1 and F2 Low; tracked files changed by the reviewer: none (git status shows only the earlier runs' files)",
+        "own count of maskSecrets call lines in tools/src outside mask.js (grep -rn 'maskSecrets' src): note.js 2, protocol.js 3, server.js 2 (Pixel Office journal and notes), engine/channel.js 4, engine/commands.js 2, engine/plan.js 2 (chat, commands, planner note), language.js 5 (the guard in secretDetail and comments), store.js 4 (text fields and length checks - lines listed by the reviewer); findSecrets is used at store.js 402 and 410 (the write) and runner.js 115, 137, 653 (the read and the accept pass) - none of the maskSecrets lines is file content as far as read; agrees with the reviewer's list (the first attempt of this grep failed in the shell and was repeated)",
+        "own run of the 49 team and exec files earlier in this step: 548 / 536 pass / 12 fail = the reviewer's count",
+        "F1 (copies of isLineEnd and QUOTES in mask.js) and F2 (a file named twice is listed twice in the refusal text) are Low, non-blocking: they go into a new defect found on the way (WF-03 step 1 route later), the current run is not widened and no code edit is made after the gates (AP-028)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 5 (gate 2 of 2, WF-02 step 4) - REVIEWER: the code fix of defect ISS-0093 for requirement REQ-102, written at step 05 (handoffs/ISS-0093-20261028-01/step-05-code-fixer.json). The diff is `git diff -- tools` against HEAD (six files: tools/src/pixel-office/mask.js +703 lines, tools/src/team/files.js, store.js, runner.js, language.js, tools/README.md). You only READ; you fix nothing. SECURITY-REVIEWER works at the same time on the security side; you do the code review. Read your role file, docs/quality-bar.md, docs/workflows/WF-03-defect.md (step 5), docs/workflows/handoffs.md, docs/anti-patterns.md, the REQ-102 block by id, the design docs/design/REQ-102-result-files-byte-exact.md (sections 2, 3, 4, 8, 13, 16), decisions/0102 (all Additions; items 14, 18-34), decisions/0002, 0015, 0017, 0018, 0035, 0095. Main question: is the cause removed, or does the fix only hide the symptom (Q6)? Check with your OWN runs and reading: (1) cause: the content of result files is stored and handed on byte-exact at BOTH call sites (the write in store.js and the read in runner.js depsOf) and `maskSecrets` is no longer applied to file content anywhere in tools/src (search; list every remaining call and say why it is not file content); (2) the design is followed: the call order (scan before the first write; acceptResult step 1 one full pass; sources of refused files removed from work/; a clean file beside a refused one is not accepted and its source stays), the exclusion for engine/single-run.js (unchanged, measured), BOM decoders (strictUtf8 for scenario bytes unchanged), FAIL_DETAIL.secret, FILE_WITHHELD, secretDetail with its guard, the conditional PHRASES row (TM-38, TM-40, TM-42 green), the stale 'masked' comments updated; any difference from the design is a finding (design drift) unless the design is silent; (3) stack idioms of Node 22 and of this codebase (decisions/0002: no dependencies, plain JavaScript, node:test), naming, comment density like the surrounding code, error handling (Q10), no dead code, no duplicated logic that the codebase already has (reuse: checkResultName, existing helpers, the helper style of mask.js), function size (mask.js grew by 703 lines: is it structured, readable, with one-pass algorithms as the design demands, any needless complexity or crutch; are comments honest), no console output, no new `child_process`, no new network or file-system access, TM-44 (no secret rules in tools/src/team) green; (4) the README text: true, matches the code, the greps of criterion 11(a) of REQ-102; (5) scope: only the six files, no test, no decision, no requirement file changed; no change in the journal masking rules M1-M10 (`git diff -U0 -- tools/src/pixel-office/mask.js | grep '^-' | grep -v '^---'` empty); (6) erosion of the quality bar: nothing skipped, no test touched, no `|| true`, no turned-off lint rule (run `cd tools && npx prettier --check` and `npx eslint --max-warnings 0` on the six files); (7) run the 49 team and exec test files without default ports on a copy: 548 expected tests of which twelve red by design (EX-41, EX-51, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63) until the tests step - count yourself and name the red ones; (8) a crutch hunt: special cases keyed to the test samples, hardcoded sample strings in code, a rule that passes the oracle by listing the samples. Verdict PASS or FAIL; findings with severity (Critical, High and Medium block; Low does not) each with place, evidence and fix. Do not edit any project file; write only your handoff. Work only inside the Sai folder and the scratch folder: do not read, list or count files of other folders. No machine paths and no names of other projects in the handoff, also not inside search patterns (the traces check scans it). Do not run the full `npm run check`; no run longer than ten minutes. result.summary: two or three plain Russian sentences for the owner.",
+    "acceptance_criteria": [
+      "Cause removed at both call sites, design followed, no crutch, scope of six files, exactly twelve red tests counted"
+    ]
+  },
+  "created_at": "2026-10-28T15:55:25Z",
+  "started_at": "2026-10-28T15:55:25Z",
+  "completed_at": "2026-10-28T16:05:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. Причина устранена в обоих местах (запись в store.js и чтение в depsOf): содержимое файлов результата хранится и отдаётся байт в байт, maskSecrets к содержимому файлов больше нигде не применяется, а файл с настоящим секретом не принимается, и его исходник удаляется из work/; код идёт по замыслу, подгонки под образцы нет, изменены ровно шесть файлов и правила журнала M1-M10 не тронуты. Мой прогон 49 файлов даёт 548 тестов: 536 зелёных и ровно 12 красных по замыслу (EX-41, EX-51, RF-03, SF-10, SF-11, SF-12, SF-13, SF-15, TM-43, TM-57, TM-58, TM-63); замечания только Низкие и не блокируют. Для TEST-DESIGNER особенно: чистый файл рядом с отклонённым (не принят, исходник остаётся), одинаковый текст отказа в событии, вопросе команды и строке ошибки, байты BOM и CRLF, линейное время на длинных входах, пары образцов таблиц раздела 18.",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "tools/src/pixel-office/mask.js:353 and :361 (findIsLineEnd, findIsQuote); the existing isLineEnd and QUOTES at :122 and :120",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The design (section 2.1, Names) says the new code reuses SCHEME_CHAR, QUOTES and isLineEnd as they are. The code reuses SCHEME_CHAR and NAME_TAIL, but has its own char-code versions findIsLineEnd and findIsQuote (and findIsWs, which I compared with the regular expression for white space on all 65536 code units: 0 differences). It is a parallel copy of the same sets, justified by the char-code style of the new passes, not a behaviour difference.",
+        "fix": "Optional: say in the comment above findIsWs that findIsLineEnd and findIsQuote repeat isLineEnd and QUOTES in char-code form on purpose, or reuse the old ones. No change of behaviour."
+      },
+      {
+        "id": "F2",
+        "place": "tools/src/team/runner.js:653-655 (secretPaths and secretNames push) with tools/src/team/language.js:53 (secretDetail)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "If the agent names the same refused file twice in its answer, the refusal text lists the name twice: secretDetail(['t-0001-1-a.md','t-0001-1-a.md']) gives '(файлы: t-0001-1-a.md, t-0001-1-a.md)'. Measured on a copy. The design is silent about duplicates; the effect is only a cosmetic repeat in the text, the source is removed once (the second removeSource meets ENOENT and returns quietly), nothing leaks.",
+        "fix": "Optional: skip a path that is already in secretPaths, or let secretDetail count distinct names. Not needed for this run."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && git diff --stat -- . ; git diff --name-only -- tools",
+        "output": "six files under tools: README.md (8 lines), src/pixel-office/mask.js (+703), src/team/files.js (8), language.js (50), runner.js (94), store.js (33); no file under tools/test, package.json or eslint config. The other modified files in the working tree (decisions, docs, STATE.md, requirements.yaml) are not in the CODE-FIXER artifacts_out and belong to earlier steps of this run and other runs."
+      },
+      {
+        "command": "git diff -U0 -- tools/src/pixel-office/mask.js | grep '^-' | grep -v '^---' | wc -l",
+        "output": "0 (only added lines; one hunk @@ -313,3 +313,706 @@ at the end of the file; M1-M10 untouched)"
+      },
+      {
+        "command": "cd tools && npx prettier --check <six files>; npx eslint --max-warnings 0 <five js files>",
+        "output": "All matched files use Prettier code style!  exit 0; eslint exit 0, no output"
+      },
+      {
+        "command": "grep -nE \"\\.skip\\(|\\.only\\(|todo|TODO|eslint-disable|\\|\\| true|console\\.|child_process|node:net|node:http|node:https|fetch\\(\" <six files>",
+        "output": "only two hits, both in unchanged README lines 15 and 552 (descriptions of the check command and of handoffs-check); no hit in any added line. No new child_process, network or console output."
+      },
+      {
+        "command": "grep -rn \"maskSecrets\\|findSecrets\" tools/src | grep -v pixel-office/mask.js",
+        "output": "findSecrets: runner.js:137 (depsOf), runner.js:653 (acceptResult step 1), store.js:410 (#publish). maskSecrets remaining: store.js:232 (mapTextFields of event text fields), store.js:321 (length check of text), store.js:577 (create-project fields), language.js:58 and :69 (secretDetail guard on file NAMES and the finished text), engine/plan.js:313 (names of accepted files in the planner note), engine/channel.js:246,321,323 (chat texts), engine/commands.js:133 (text length), pixel-office protocol.js:75,227, note.js:108, server.js:351 (journal and notes). None of them is file content."
+      },
+      {
+        "command": "grep -rnE \"readFileSync|openSync|createReadStream|readFile\\b\" tools/src/team tools/src/web",
+        "output": "the only read of files/ is runner.js:127 (depsOf); the others read the journal, the lock, the scenario, the inbox or the static web files. So the one read and the one write of file content are both covered."
+      },
+      {
+        "command": "copy of the project in <scratch>/rv07/copy; cd tools && node --test --test-concurrency=4 $(ls test/team-*.test.js test/exec-*.test.js | grep -v team-web)  (49 files)",
+        "output": "tests 548, pass 536, fail 12, skipped 0, todo 0, cancelled 0. Red: EX-51 (104), EX-41 (126), RF-03 (233), SF-10 (269), SF-11 (270), SF-12 (271), SF-13 (272), SF-15 (276), TM-43 (326), TM-57 (515), TM-58 (521), TM-63 (529) - exactly the twelve of the task. Reasons read: E_WORK_FILE 'не принят: в нём найден секрет' for the bait files (EX-41, TM-57, TM-63, RF-03...), the rounds tests fail because their helper puts a bait key in round-1 files. Green and relevant: TM-38 (180,330-332), TM-40 (334), TM-42 (336), TM-44 (328), EX-42 (128-130)."
+      },
+      {
+        "command": "node --test test/pixel-office-hook.test.js test/team-web-chat.test.js test/team-web-guard.test.js test/team-web-create.test.js (on the copy)",
+        "output": "tests 75, pass 75, fail 0 (HK-21 and the masking tests stay green)"
+      },
+      {
+        "command": "driver in <scratch>/rv07/drive.mjs: the oracle block of design section 18 (fenced JSON between the two comment marks), expanded fill marks, run on the copy",
+        "output": "{ keptN: 106, keptBad: 0, refN: 108, refBad: 0, assembly: null }; every refused sample also refused inside 10000 characters of text and next to kept samples"
+      },
+      {
+        "command": "<scratch>/rv07/fuzz.mjs: 300000 random strings of 2..13 fragments (names, quotes, groups, closers, prefixes, PEM, JWT)",
+        "output": "no throw, repeat call gives the same answer, result is null or exactly { form: F1..F9 } with no other key; 0 cases where the old prefixed-key rules M4/M5 match and findSecrets says null"
+      },
+      {
+        "command": "<scratch>/rv07/perf.mjs: 26 adversarial families (unclosed groups, closers, Bearer repeats, JWT, PEM, URL, long names, white space, quotes, long paths) at 256 KiB / 1 MiB / 4 MiB",
+        "output": "largest case at 4 MiB: 90 ms; every ratio 1 MiB to 4 MiB between 0 and 6.0 (a hit in the first part counts 0): linear, no quadratic family"
+      },
+      {
+        "command": "<scratch>/rv07/ws.mjs: findIsWs against /\\s/ on all 65536 code units",
+        "output": "mismatches 0"
+      },
+      {
+        "command": "throwaway test on the copy: claude-cli fake executor names three files: a secret one (memo.md), a clean one with BOM and CRLF and a path a.b.c, and a secret one with two dots (app.test.js)",
+        "output": "run-task exit 1: 'E_TASK_FAILED: Задача не получилась: Файл результата не принят: в нём найден секрет (файлы: t-0001-1-memo.md и ещё 1)'; files/ empty; work/ holds only clean.md (the secret sources are gone, the clean source stays); one RUN_STARTED; TASK_FAILED detail equals the error line; the two-dot name is counted, not named; the key found nowhere in the data folder. Second trial: a clean BOM+CRLF+Cyrillic file is stored with Buffer.compare = 0 against the original."
+      },
+      {
+        "command": "README greps of criterion 11(a) of REQ-102",
+        "output": "'content of result files pass through' 0; 'the content is masked' 0; 'byte-exact' 3; 'findSecrets' 2; 'reason `secret`' 1; work/ line with 'already masked' 0; findSecrets+residual risk on one line 1; 'placeholder' 1; 'false refusal' 1. The text was compared with the code: 26 placeholder words (count checked), refused names of Authorization etc., residual risks and the BOM, all match."
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: six files in the change, 548 tests, exactly the twelve named red, M1-M10 diff empty - all true by my own runs. Nothing contradicts the task."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Observation, not a finding: in the path without a task (single-run, unchanged by design section 3.4) the TeamError message of a refused file carries the file name as it is (store.js secretError); the engine does not print that message to the user (writeFailure only checks the writer), so the rule 'a name that the journal rules would change is never printed' (N6) is not broken on a visible channel today. If a later change prints r.error.message of a single run, it must go through secretDetail."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "F1 and F2 are Low and may stay for the next touch of these files; ORCH decides whether to open a defect. No question about a recorded decision."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER (English): check especially a clean file beside a refused one (not accepted, its source stays), one refusal text in the event, the team question and the error line, BOM and CRLF bytes of a clean file, linear time on long hostile inputs, the pairs of the oracle tables of design section 18, and the duplicate-name listing of F2 if it is meant to be covered."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
