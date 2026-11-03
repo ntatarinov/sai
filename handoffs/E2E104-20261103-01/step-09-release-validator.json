@@ -1,0 +1,151 @@
+{
+  "handoff_id": "step09-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/E2E104-20261103-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "decisions/0107-e2e-real-chrome-in-check.md",
+      "decisions/0108-e2e-kit-conventions.md",
+      "docs/quality-bar.md",
+      "handoffs/ISS-0093-20261028-01/step-10-release-validator.json",
+      "handoffs/E2E104-20261103-01/step-06-test-runner.json"
+    ],
+    "route": "6 PASS -> (7 and 8 not applicable, see task) -> RELEASE-VALIDATOR (this, gate) -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "none in the project; the verdict goes only into this handoff; a temporary index and a temporary branch ci/E2E104-20261103-01-release-validator-check are allowed by decisions/0107 and are deleted after the run"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "WF-02, step 9 — last gate before status done for REQ-104 (the kit of e2e tests on a real Chrome; the other three requirements REQ-105..107 are NOT in this run). Follow the section 'Step 9' of docs/workflows/WF-02-development.md. (1) Run the single check command yourself (cd tools && npm run check) and attach the output; derive every 'not caused by this work' anew. (2) Check ALL 13 criteria of REQ-104 on the files and the running system, not by the reports; where a criterion names a file, ls it (AP-123); criterion 13 is a precondition (decisions/0107 exists and is accepted, README prerequisites name Chrome and SAI_CHROME, REQ-014 and REQ-033 blocks byte-equal to the tag base/E2E104-20261103-01). (3) Criterion 10 (GitHub): you yourself run a snapshot commit of the current working tree on a temporary branch ci/E2E104-20261103-01-release-validator-check, built through a temporary index as in the precedent handoff handoffs/ISS-0093-20261028-01/step-10-release-validator.json (read it first; main and the working tree and the real index must not change; hash before and after); the owner's permission is decisions/0107 ('Да, можно'), the branch is deleted (remote and local) after the run. Read the facts with gh: image, the e2e browser line and the record line in the log, conclusion, job time (limit 1500 s watch value). Outcome A (Chrome with sandbox): .github unchanged. Outcome B (no Chrome): the criterion text of REQ-104 allows exactly one pinned install step in check.yml — if you get B, do NOT edit check.yml yourself, report FAIL naming BACKEND-DEV step and the exact finding. Outcome C (Chrome starts only without sandbox): BLOCKED with an owner question, never --no-sandbox. (4) Your own series of stability runs of npm run e2e (at least 5, one at a time), your own mutants (at least 10 different from the earlier validators: they used the design list M01..M72 and R/K/X/G series; take new ones around the runner's close, the registry sweep, safeText and the pgid guard), applied in a temporary copy outside the project; a probe you start you stop by process id, not by name pattern (AP-119). (5) Go through docs/quality-bar.md as a list: every item Q and R is PASS or 'not applicable' with a reason. Step 7 (no interface by sample) and step 8 (acceptance on a running system) are NOT APPLICABLE for this run: the kit has no end user and no running product; confirm or refute that in your verdict in one sentence each. (6) Check statuses and documents have not fallen behind: REQ-104 is in_progress (DOC-UPDATER sets done after your PASS); list for DOC-UPDATER anything stale (design counts 50 kit tests, 63 total, 10 fixtures; REQ-038 and REQ-040 wording 'check ends with npm run test'; the raw SAI_CHROME path in START_FAILED as a new Low defect; root README time claim). Do not edit the project, do not commit, never push to main. Do not write absolute machine paths or other projects' names into the handoff. On FAIL name the step and the role to return to. Report to me in at most 12 lines.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T16:44:40Z",
+  "started_at": "2026-11-03T16:44:40Z",
+  "completed_at": "2026-11-03T17:18:47Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "plain": "PASS. Набор REQ-104 работает: полная проверка npm run check прошла у меня на этом компьютере (2185 тестов из 2185 и 13 из 13 в настоящем Chrome, 0 упавших, пропущенных и todo, 262 с) и на GitHub на снимке, равном рабочим файлам (запуск 41678354227: успех, 836 с при пределе 1800 с, Chrome 156 с включённой защитой, ветка Б и В не нужны, .github не менялся). Все 13 критериев выполнены, пункты Q1-Q14 и R1-R3 отмечены, блокирующих находок нет, только Low.",
+      "criteria": {
+        "1": "met: grep remote-debugging-port lists only tools/test/e2e/kit/browser.js (none in tools/src); lock unchanged against the tag (exit 0); package.json equals the tag one after dropping scripts.e2e and scripts.check (deep-equal true, no dependencies, 4 dev dependencies same)",
+        "2": "met: tests/e2e-kit.test.js exists (ls) and is green in my full run; command check: SAI_CHROME=missing path gives exit 1, one stderr line with SAI_CHROME and the path, 0 lines matching '^\\s+at ', pgrep sai-e2e- 0",
+        "3": "met: tools/test/e2e/smoke.e2e.js exists (ls); SMK-01..04 green in my full run, in 6 further npm run e2e runs and alone each; after each run no sai-e2e- folder and no process",
+        "4": "met: fault tests with tools/test/fixtures/e2e/fake-chrome.js (exists, mode 0755) green; mutants of the clean-up and the registry (N02, N15, N25) are caught",
+        "5": "met: E2K-25 and the refusal tests green; no file under tools/test/e2e names the two sandbox flags (grep exit 1)",
+        "6": "met: SMK-05..08 green (sizes, overflow, themes, four console entries, favicon once per start)",
+        "7": "met: package.json scripts.e2e=node test/e2e/run.js, test unchanged; 'npm run -s e2e -- smoke | tail -n 1' = 'e2e: command=npm run e2e -- smoke selection=smoke exit=0 duration_ms=17421'; all: selection=all; nosuch: exit 1 with the list of spec names and no pass count; browser line once; independence loop: 13 names printed by the TAP reporter, each alone passes with exit 0, exactly one 'ok 1 - <name>' line and no 'not ok' (13 of 13); a wrong name selects nothing and prints only the file path line (the loop would fail it); order of files: one spec file only, so the reverse-order check is trivially the single name; a repeated name is refused (SELECTION_DUPLICATE)",
+        "8": "met: scripts.check = the six exact steps, no '||'; npm run check exit 0 here and on GitHub; with SAI_CHROME=missing the last step is red (criterion 2); the replaced guard tests are inside the green full test; mutant 'npm run e2e removed from check' makes HC-02 (and HC-03) red on a copy",
+        "9": "met: smoke duration_ms 17421 (limit 30000); whole npm run e2e 17462-17469 in 6 runs (limit 240000); GitHub 25539",
+        "10": "met, outcome A: see self_check (image, browser line, record line exit=0, conclusion success, job 836 s, .github unchanged, sandbox flags not used)",
+        "11": "met: traces count for the e2e paths 0; secret grep no line; skip/todo/'|| true'/eslint-disable grep no line; git status before = after; sai-e2e- folders 0; pgrep 0",
+        "12": "met: section exists once with npm run e2e, SAI_CHROME, '-- smoke', 'selection=', duration_ms, the table row smoke.e2e.js -> REQ-104, the fail-not-skip words and the places for files; the Check section names six steps; repo, team-docs, traces-readme and pixel-office-settings tests are inside the green full test",
+        "13": "met: decisions/0107 exists, 'Status: accepted' count 1, REQ-104 mentioned 3 times; root README paragraph 'You need' holds Chrome, SAI_CHROME and 'fails'; tools/README section Check holds Chrome and SAI_CHROME; sha256 of the blocks REQ-014 and REQ-033 equal to the tag (7730a51b... and dd442f8a...)"
+      },
+      "quality_bar": {
+        "Q1": "PASS: REQ-104 with 13 criteria, each with its way of checking",
+        "Q2": "PASS: this handoff holds my own runs (check, GitHub run, series, mutants, probes)",
+        "Q3": "PASS: every statement above comes from a command run in this turn; no criterion left unchecked",
+        "Q4": "PASS: one command npm run check, six steps joined by &&, e2e last; green here and on a clean GitHub runner (npm ci)",
+        "Q5": "PASS: each criterion has a runnable test (e2e-kit.test.js 50 tests, smoke.e2e.js 13 tests); failure tests check the state after (folders, processes)",
+        "Q6": "PASS: no skip/todo/'|| true'/disabled lint (grep), a missing Chrome fails (exit 1), sandbox never turned off, the replaced guards still exact; skipped 0, todo 0",
+        "Q7": "PASS: secret grep empty; no new variable besides SAI_CHROME; traces 0",
+        "Q8": "not applicable: no customer data",
+        "Q9": "not applicable: no query (grep of the new files for SQL words: no match)",
+        "Q10": "PASS: Chrome missing, dying, hung start, bad answers give a clear message and a clean state (tests, SMK-04, my mutants N08-N10)",
+        "Q11": "PASS: the browser opens only 127.0.0.1 (E2K tests, SMK-13); a screenshot path in the repository is refused",
+        "Q12": "PASS: decisions/0107 (accepted) and 0108 exist and are in decisions/README.md; the code does not differ from them; 0108 point O9 asks DOC-UPDATER to correct the words of REQ-038 and REQ-040 (see issues I3)",
+        "Q13": "PASS with a note: new process lessons (a pending own handoff in a snapshot commit makes H4 red on GitHub) are for DOC-UPDATER, see I5",
+        "Q14": "PASS for the run so far: REQ-104 is in_progress as it must be before my PASS; stale texts listed in I3, I4 for DOC-UPDATER",
+        "R1": "PASS: nothing merged or pushed to main; main stays f806d7d, only the temporary branch was pushed and is deleted",
+        "R2": "not applicable: no Pixel Office events written",
+        "R3": "not applicable: decision 0033"
+      },
+      "steps_7_8": "Step 7 (no interface by sample) is not applicable: the kit has no page or screen of its own, only test helpers. Step 8 (acceptance on a running system) is not applicable: no end user and no running product; the kit is checked by its real-Chrome smoke tests and the GitHub run, which I read myself.",
+      "gate_verdict_wf07": "not applicable (WF-02)"
+    },
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/e2e/kit/browser.js lines 193-195 and 246-248 (START_FAILED), quality bar Q10",
+        "evidence": "the message 'could not start \"<found.path>\": <code>' puts the raw path (that is the text of SAI_CHROME) into the message without safeText, while other operator or page text is cut and escaped. Read in the source; not run with a control character in the path",
+        "fix": "BACKEND-DEV: pass found.path through safeText(…, 300) in both places and pin it with a test row; open as a Low defect",
+        "return_to": "none (new defect by ORCH)"
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/e2e-kit.test.js, the runner and registry rows (Q5 test strength)",
+        "evidence": "of 23 mutants of mine (runner close, registry sweep, safeText, pgid guard, selection, spec names) 16 were caught (N01 N02 N05 N08 N09 N10 N11 N12 N13 N14 N15 N18 N19 N20 N21 N25) and 7 survived: N03 (no await of the stop of the group after a timeout), N04 (no sweep of the registry right after a file ends; the final sweep still runs), N06 (exit-code test '!== 0' made '> 0': a spec killed by a signal then fails through the empty TAP text with another message), N07 (cancelled count dropped: node exits non-zero anyway, equivalent), N16 (profile folder name pattern widened to dots and dashes), N17 (a record whose profile folder is already gone is still killed: the guard against a reused process id is not pinned), N23 (Math.floor instead of Math.round in duration_ms). None breaks a criterion; every survivor is either equivalent or a defence in depth",
+        "fix": "TEST-DESIGNER in a later run may add rows for N04, N06, N16, N17, N23; not blocking",
+        "return_to": "none"
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "blocking": false,
+        "where": "tools/test/e2e/kit/runner.js, criterion 7 (order of files)",
+        "evidence": "there is one spec file now (smoke), so the order check 'all names, last to first' proves nothing yet; a repeated name is refused with SELECTION_DUPLICATE, so no workaround with a repeated name. The order will first be tested for real when REQ-105 adds the second file (E2K-32 already pins the order with fixture files and N-mutants around it were caught)",
+        "fix": "none now; REQ-105 validator re-runs the order check",
+        "return_to": "none"
+      }
+    ],
+    "self_check": [
+      "TIME: handoff started 2026-11-03T16:44:40Z; work until about 2026-11-03T17:18Z. node -v -> v22.23.4 (engines >=22 <23). HEAD f806d7db7301ecb022a37033272985d9218043e6 = main = origin/main before and after.",
+      "WORKING TREE: before and after: sha256 of .git/index equal (27a917be...), git status --short equal, sha256 over the list of changed and untracked files equal (65fc01b8...); no commit, no checkout, nothing staged in the real index. Snapshot commits were built through a temporary index (GIT_INDEX_FILE) with 'git add -A', write-tree, commit-tree -p HEAD.",
+      "CHECK (mine, foreground in my turn): cd tools && npm run check -> exit=0, 262.16 s total (user 635 s). Steps: format:check ok, lint ok, traces 'файлов проверено 2429, следов 0, пропущено 67', handoffs-check 'файлов проверено 1305, нарушений 0, исключений использовано 114 из 114', test '# tests 2185 # pass 2185 # fail 0 # cancelled 0 # skipped 0 # todo 0' and 0 lines 'not ok', e2e 'e2e: browser=Chrome/156.0.8078.80 / e2e: file=smoke / # tests 13 # pass 13 # fail 0 # cancelled 0 # skipped 0 # todo 0 / e2e: command=npm run e2e selection=all exit=0 duration_ms=17462'. No failure to analyse, so no 'not caused by this work' to derive.",
+      "GITHUB, first try (failed through my own mistake, not through the work): snapshot 3cdf2e0abe55402a1aca8f71f07fd8636ddf1939 held my own handoff with status PENDING; run 41677599441 failed at handoffs-check with 'step-09-release-validator.json:9 — H4: status: PENDING в коммите' (53 s). The branch was deleted, the snapshot rebuilt without my own handoff file.",
+      "GITHUB, second try: snapshot abd6c2317ec9ebed97c07a1548f87905c2708d65 (parent f806d7d), tree 6a5f2a1ad3014dad2b6f6499131e81996adb7875 equals the tree of the current working files without my handoff (checked again after the run: same tree id). gh run list --branch ci/E2E104-20261103-01-release-validator-check --workflow check.yml -> databaseId 41678354227, headSha abd6c2317ec9ebed97c07a1548f87905c2708d65 (equals the snapshot), conclusion success. gh run view 41678354227 --json jobs: job check startedAt 2026-11-03T16:50:59Z completedAt 2026-11-03T17:04:55Z = 836 s (limit 1500 s watch value, 1800 s timeout). Log: 'Image: ubuntu-24.04' count 1; 'e2e: browser=Chrome/156.0.8078.47' ; 'e2e: file=smoke' ; 'e2e: command=npm run e2e selection=all exit=0 duration_ms=25539'; '# tests 2185 # pass 2185 # fail 0 # cancelled 0 # skipped 0 # todo 0' and '# tests 13 # pass 13 # fail 0 ... skipped 0 todo 0'; 0 'not ok'; stages in order format:check, lint, traces, handoffs-check, test, e2e. OUTCOME A: Chrome is on the runner and starts with its sandbox (the kit never passes the two sandbox flags: E2K-25 plus grep exit 1 on tools/test/e2e). git diff --quiet base/E2E104-20261103-01 -- .github -> exit 0 (workflow unchanged).",
+      "BRANCH CLEAN-UP: git push origin --delete ci/E2E104-20261103-01-release-validator-check -> deleted; git ls-remote --heads origin -> only refs/heads/main f806d7db...; local branches: only main; git fetch --prune done. Nothing was pushed to main.",
+      "OWN RUNS OF THE COMMAND: SAI_CHROME=/no/such/chrome npm run -s e2e -> exit 1; stderr one line 'e2e: error=CHROME_NOT_FOUND: SAI_CHROME is set to \"/no/such/chrome\" but there is no executable file there. The other places are not tried when SAI_CHROME is set. …'; stack lines 0; pgrep sai-e2e- 0. npm run -s e2e -- smoke -> exit 0, last line 'e2e: command=npm run e2e -- smoke selection=smoke exit=0 duration_ms=17421', 'e2e: browser=' once. npm run -s e2e -- nosuch -> exit 1 'SELECTION_UNKNOWN: no spec file \"nosuch\"; the spec files are: smoke'. npm run -s e2e -- smoke smoke -> exit 1 SELECTION_DUPLICATE.",
+      "STABILITY SERIES: 6 runs of npm run -s e2e, one at a time: all exit 0, duration_ms 17469, 17429, 17396, 17320, 17338, 17398; after each run sai-e2e- processes 0 and sai-e2e- folders in the temporary root 0. Plus the whole smoke file once under the TAP reporter (13 ok) and each of the 13 tests alone with --test-name-pattern: 13 of 13 pass with exactly one 'ok 1 - <name>' line; a pattern that selects nothing prints only 'ok 1 - test/e2e/smoke.e2e.js' (checked: the loop would catch it).",
+      "MUTANTS (23, outside the project, on a copy under my scratch folder with TMPDIR inside it; baseline of the copy: e2e-kit.test.js 50 of 50): caught N01 (signalGroup integer guard dropped), N02 (sweep pgid > 1 made > 0), N05 (skipped-only check), N08 (signal hook not removed), N09 (record on interrupt exit 0), N10 (spec not detached: the run hung and was ended by my 400 s limit, counted as RED), N11 (':: ' neutralising off), N12 (U+2029 not escaped), N13 (cut boundary >=), N14 (DEL not escaped), N15 (profile folder not required directly under the temporary root), N18 (NODE_TEST_CONTEXT kept), N19 (spec name pattern without ^), N20 (path outside tools not refused), N21 (tap 'no tests' rule widened), N25 (record file of the runner not removed). Survived: N03, N04, N06, N07, N16, N17, N23 (finding L2). One pattern (N24) did not apply and is not counted. After the mutants the kit files in the copy are byte-equal to the originals and the kit in the project is byte-equal to the copy. Criterion 8 mutant on a copy: 'npm run e2e' removed from check -> HC-02 and HC-03 red. The sandbox flags and pgid 0/1 were never fed to a kill (I avoided mutants that would let kill(-1) run).",
+      "LEFTOVERS: after N10 two spec processes of my own mutant (and their children) stayed; I stopped them by process id (five ids, checked by their working folder), nothing by name pattern. Final: no sai-e2e- folder, pgrep sai-e2e- 0, no process with remote-debugging-port, no node process of mine. The owner's own Chrome windows (about 20 processes) were not touched.",
+      "OTHER FACTS: tools/src, .github, .githooks have no change in git status. 0107 and 0108 are in decisions/README.md. package-lock.json equal to the tag."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "The task said outcome A means '.github unchanged' and that the snapshot is built from the current working tree. Both hold. One correction of the method for the next run of this kind: a snapshot must not contain the validator's own handoff with status PENDING or IN_PROGRESS (handoffs-check H4 goes red on GitHub); I rebuilt it without that one file. This is the same as the precedent, where the own handoff was excluded."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "For DOC-UPDATER (REQ-104 -> done): honest note: all 13 criteria met; criterion 7 order check ran with one spec file only (finding L3); Low findings L1-L3 stay open. Open a defect for L1 (raw SAI_CHROME path in START_FAILED, Low)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Stale text for DOC-UPDATER: (a) docs/design/REQ-104-e2e-chrome-kit.md line 18 says '53 tests (40 E2K, 13 SMK)'; the real numbers are 50 tests in e2e-kit.test.js plus 13 in smoke.e2e.js = 63 and 2185 tests in npm test (the base had 2135), and the fixtures folder holds 10 spec fixtures, 5 tap texts and fake-chrome.js; (b) docs/requirements.yaml REQ-038 (lines about 5266, 5268, 5313) says the check ends with 'npm run test' and REQ-040 (about 5502, 5566) says the same: now the sixth and last step is 'npm run e2e' (decision 0108 point O9: correct as an outdated fact with before_copy, stop if the meaning changes); (c) root README.md line 306 says 'about 2 minutes' for npm run check; the real time is 4 min 22 s here and 14 min on GitHub; the sentence is pinned by RD-2 in tools/test/repo.test.js, so a change needs the test row in a WF-03 job; (d) the raw SAI_CHROME path (L1)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Time on GitHub: the whole job is 836 s (13 min 56 s) against the 1500 s watch value of decisions/0106 and the 1800 s limit; the e2e step took 25.5 s there. The next requirements REQ-105..107 add to the e2e part; the watch value stays the owner's trigger."
+      },
+      {
+        "id": "I5",
+        "kind": "PROPOSAL",
+        "text": "Lesson for docs/anti-patterns.md (DOC-UPDATER decides): the snapshot commit for a check on a temporary branch must exclude the validator's own handoff while it is not finished, or the first run on GitHub fails at handoffs-check (H4); it cost one extra run of 53 s here."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

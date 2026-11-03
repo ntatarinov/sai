@@ -1,0 +1,122 @@
+{
+  "handoff_id": "step01c-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "01c",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/E2E104-20261103-01/step-01c-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "handoffs/E2E104-20261103-01/step-01b-code-design-validator.json",
+      "decisions/0108-e2e-kit-conventions.md",
+      "docs/requirements.yaml"
+    ],
+    "route": "CODE-DESIGNER (rework) -> CODE-DESIGN-VALIDATOR (second pass) -> BACKEND-DEV",
+    "write_set": [
+      "docs/design/REQ-104-e2e-chrome-kit.md only"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-01-code-designer.json"
+  },
+  "task": {
+    "description": "WF-02, step 1 (rework 1 of at most 2 repeats) — rework the design docs/design/REQ-104-e2e-chrome-kit.md by the list of remarks of the gate CODE-DESIGN-VALIDATOR in handoffs/E2E104-20261103-01/step-01b-code-design-validator.json (read its result.findings yourself: F1-F10; the numbering there is the one to use). Rework ONLY by that list; anything beyond it goes to result.issues as a question (AP-019). Do not weaken any criterion. The answers of ORCH to О1-О9 are in decisions/0108 and stay as they are.\n\nBlocking:\n- F1 (§6 flow step 5, E2K-32/33/34): inside `npm test` the variable NODE_TEST_CONTEXT=child-v8 is set; a nested `node --test --test-reporter=tap` then prints nothing on stdout. Decide and write down: who clears that variable (and which others), the exact environment of the spec process, a test and a mutant for it. Measure it yourself on a fresh clone of the tag outside the project.\n- F2 (§6 flow step 5): the path `tools/test/e2e/<name>.e2e.js` with working folder `tools/` gives \"Could not find\"; fix the path form and the dependence of the `noTests` rule on the exact path string node prints (measure what node prints).\n- F3 (E2K-50 against E2K-32/34 and the criterion-11 grep, AP-077): the same test file must contain forbidden words (`{skip}`, `eslint-disable`...) and the rules E2K-50 and the grep forbid them. Make the tests build such strings from parts (say so in the tests list) or move them to a fixture that the grep does not scan, and settle the `process.env` rule ambiguity (`env = process.env` as a default parameter). Check the criterion-11 grep of REQ-104 against the design text of the tests.\nNon-blocking (take them if they cost little; otherwise say why in result.issues): F4 (what happens to the spec process and its Chrome after SIGTERM of the runner), F5 (the check commands print NO_SPECS on the real tree: say how sub-step 6 is verified), F6 (replace the unrepeatable \"163/157\" by the measured 187/181/6 with the command), F7 accepted as is, F8 (M38/SMK-06 depends on a dark default scheme: make the test force or detect it), F9 (name the `noisy` call; START_TIMEOUT cannot hold \"sandbox\": fix the branch-C text), F10 (sub-step 4 bundles three modules: split or justify).\nAfter the rework: the replacement table, the mutant list (add mutants for the new rules), the criterion → test table and the bar section must still be consistent. Write the table \"what was fixed, where\" in result. One agent works on this Mac at a time: light trials, kill any Chrome you start by process id, remove only temp folders you made, never rm inside the project. No name of another project in any file.",
+    "acceptance_criteria": [
+      "Every remark F1..F10 has a line in what was fixed / where, or an honest reason",
+      "No implementation code"
+    ]
+  },
+  "created_at": "2026-11-02T22:10:25Z",
+  "started_at": "2026-11-02T22:10:25Z",
+  "completed_at": "2026-11-02T22:19:39Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Reworked docs/design/REQ-104-e2e-chrome-kit.md by the remarks F1-F10 of the gate and nothing else. Blocking F1-F3 settled with new measurements on a fresh clone of the tag (facts F29-F33). Totals now: 13 criteria, 52 tests (39 E2K + 13 SMK; new E2K-36, E2K-37, E2K-38), 61 mutants (new M55-M61), 8 sub-steps, replacement table unchanged (six tests). Criterion table, mutant list, bar section and file table updated and read for consistency. No implementation code.",
+    "changes": [
+      {
+        "remark": "F1",
+        "where": "section 1 F29 (new); section 6 flow step 5 'The environment' + signature (specEnv, runAll env option); section 11.1 E2K-32 (runs with NODE_TEST_CONTEXT in env), E2K-37 (new); section 16 M55",
+        "what": "The runner always removes NODE_TEST_CONTEXT (and nothing else) from the spec process environment. Measured on a fresh clone of the tag: it is the only family variable node --test sets; with it a nested node --test --test-reporter=tap exits 0 and prints nothing; without it TAP appears. analyseTap treats a missing '# tests' line as 0 tests, so the failure is red, not silent."
+      },
+      {
+        "remark": "F2",
+        "where": "section 1 F30 (new); section 6 step 5 'The argument', analyseTap; E2K-34, E2K-37; M56, M57",
+        "what": "Argument form: path relative to tools/, forward slashes, no leading ./ and no tools/ prefix (test/e2e/<name>.e2e.js). Measured what node prints: ./ is normalized away, tools/... gives 'Could not find', absolute prints absolute. noTests rule compares the single top-level 'ok 1 - <name>' with that same string; specDir must lie inside tools/ (else USAGE)."
+      },
+      {
+        "remark": "F3",
+        "where": "section 11 intro 'Forbidden words in the tests' (new); 11.3 fixtures (new); E2K-32/E2K-34/E2K-50 rewritten; section 3 files table; section 10 row 11",
+        "what": "Fixtures that must hold skip/todo options are plain files under tools/test/fixtures/e2e/specs and tap, not scanned by the criterion-11 skip grep or E2K-50 (E2K-50 asserts exactly that exclusion); words a test searches for are assembled from parts at run time and E2K-50 scans its own file. The process.env rule is two exact patterns: (i) property reads only from a named list, (ii) the bare object exactly once in find-chrome.js, browser.js, runner.js (parameter defaults) and anywhere in the test file. Design text checked against the grep tokens."
+      },
+      {
+        "remark": "F4",
+        "where": "section 1 F31 (new); section 4.4 (addSignalHook, installHandlers, registerGroup without profileDir); section 6 step 5 'The process'/'Stopping it'; section 7 rows 13, 16, 17 (new); section 8; E2K-33, E2K-38 (new); M58-M60",
+        "what": "Taken, not left as risk: the spec process runs in its own group; on SIGINT/SIGTERM/SIGHUP of the runner (and on the 120 s watchdog) the runner sends SIGTERM to the group, waits up to 5 s, then SIGKILL of the group, prints INTERRUPTED and the record line, exits 130/143/129. Measured with two simulators (node --test forwards SIGTERM to its file child; SIGKILL of the leader alone leaves the file child). SIGKILL of the runner stays a residual risk (row 16, widened to the spec group)."
+      },
+      {
+        "remark": "F5",
+        "where": "section 15 sub-step 6",
+        "what": "Stated that on the real tree all runner commands print NO_SPECS until smoke.e2e.js exists; the message checks run on a scratch copy of tools/test/e2e (the copy finds its own tools folder), with TMPDIR outside the copy; E2K-09 note says the real tree must hold smoke.e2e.js."
+      },
+      {
+        "remark": "F6",
+        "where": "section 1 F6",
+        "what": "Replaced 163/157/6 by the measured 187/181/6 with the full command of the 14 files; repeated by the gate with the same figures."
+      },
+      {
+        "remark": "F7",
+        "where": "-",
+        "what": "Accepted as is (branch B table deferred to a later design step); no change."
+      },
+      {
+        "remark": "F8",
+        "where": "E2K-36 (new, machine independent: the stand-in records Emulation.setEmulatedMedia light and the 1470x784 mobile:false override before the first Page.navigate); M38, M39 now name E2K-36 first",
+        "what": "M38 is caught on any machine, not only on a dark one."
+      },
+      {
+        "remark": "F9",
+        "where": "section 1 F32 (new); section 5 mode noisy; E2K-16 (premise check); M29; section 6 reading table (branch C)",
+        "what": "(a) noisy writes with fs.writeSync(2, chunk) after the port line; measured: it blocks on an unread pipe, process.stderr.write does not; E2K-16 checks that premise. (b) Branch C is START_EXITED, START_TIMEOUT or START_FAILED with no browser= line and no CHROME_NOT_FOUND, as criterion 10 reads it; only START_EXITED can hold the word sandbox, and without it the validator still stops BLOCKED and quotes the stderr line."
+      },
+      {
+        "remark": "F10",
+        "where": "section 3 files table; section 15 sub-steps 3 and 4; module order",
+        "what": "console.js (pure, depends on errors.js only) moved to sub-step 3 with a driver check on the E2K-35 cases; sub-step 4 is now cleanup.js and browser.js."
+      }
+    ],
+    "self_check": "cd tools && npm run handoffs-check -> 'нарушений 0'; npm run traces -> 'следов 0'; npm run format:check -> 'All matched files use Prettier code style!'. grep of the design for a user path or another project name -> no line. Measurements (fresh clone of tag base/E2E104-20261103-01 in the session scratch folder, node v22.23.4, 2026-11-02T22:11Z-22:19Z): F29 nested node --test inside a node:test test with NODE_TEST_CONTEXT kept: exit 0, stdout empty, stderr 'run() is being called recursively'; with it removed: TAP with 'ok 1 - alpha' and '# tests 1'. F30 'test/e2e/x', './test/e2e/x' run and print 'ok 1 - test/e2e/x...'; 'tools/test/e2e/x' -> Could not find (exit 1); absolute path prints absolute. F31 SIGTERM to the node --test leader reaches the file child (handler ran); runner simulator with a detached spec group, SIGTERM -> exit 143, no spec process left (pgrep 0). F32 fs.writeSync(2) child blocks on an unread pipe (still running after 1.5 s), process.stderr.write child ends in 2 ms. F33 eslint and prettier accept a skip-option file, a todo-option file and a zero-byte e2e.js. No Chrome was started in this rework. Slip: two tiny output files of one shell experiment were written to the system temp folder for one second and removed in the same command (AP-136); nothing else outside the scratch folder.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "F7 accepted by the gate as is: the branch B 'was -> became' table of CI-4/CI-8 stays deferred until the criterion-10 run shows the step; ORCH must keep that rework step in the task of step 9."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "For ORCH: the fix of F4 adds a small public piece to cleanup.js (addSignalHook, awaited before the exit of the signal handler) and a new error code INTERRUPTED; if the second gate prefers the smaller 'named residual risk' answer of F4 instead, drop E2K-38, M59, M60, row 17 and the hook (about 30 lines of text in the design)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Not measured and named as such: the path form that node prints on Windows (the comparison turns backslashes into slashes on both sides); the behaviour of the stand-in with fs.writeSync when the pipe is non-blocking on Linux (EAGAIN) - BACKEND-DEV reads it at sub-step 3."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "E2K-09 needs smoke.e2e.js on the real tree (listSpecs runs before the preflight); the file and the test are written in the same step 5, so the order holds; recorded in the E2K-09 row."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/REQ-104-e2e-chrome-kit.md"
+    ],
+    "prototype": "Session scratch folder, e2e104c: clone of the tag, sk/ with outer.test.js, runner-sim.mjs, runner-sim2.mjs, noisy-parent.mjs, noisy-child.mjs; removed at the end."
+  }
+}

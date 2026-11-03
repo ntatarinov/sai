@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step04g-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "04g",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E104-20261103-01/step-04g-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E104-20261103-01/step-04e-code-fixer.json",
+      "handoffs/E2E104-20261103-01/step-04d-reviewer.json",
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "decisions/0108-e2e-kit-conventions.md"
+    ],
+    "route": "CODE-FIXER 04e -> SECURITY-REVIEWER || REVIEWER (this) -> TEST-DESIGNER",
+    "write_set": [
+      "this handoff only; repository files are read-only"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-04d-reviewer.json"
+  },
+  "task": {
+    "description": "STEP 4 (role REVIEWER, third pass). THIRD and last pass of the gate (a FAIL stops the run and goes to the owner) on the code of REQ-104 after the small CODE-FIXER round 04e (handoffs/E2E104-20261103-01/step-04e-code-fixer.json: read result.changes and result.issues). Your previous pass: handoffs/E2E104-20261103-01/step-04c-security-reviewer.json (SECURITY) and step-04d-reviewer.json (REVIEWER), both PASS with Low findings. The round changed only: cleanup.js, browser.js, runner.js, find-chrome.js (noteBrowserForRunner now reads SAI_E2E_REGISTRY from the spec's own process.env and takes (pgid, profileDir); operator argv, the selection= part of the record line and SAI_CHROME text go through safeText; both raw process.kill(-pgid) calls use signalGroup, which refuses a group id of 0, 1, negative, fractional or non-numeric). Verify these with your OWN probes and then re-check the WHOLE kit once more for regressions (the previous rounds' fixes: registry, safeText, no-proxy-server, connect timeout, shared helper). ORCH ruling: two START_FAILED messages in browser.js print the SAI_CHROME path raw; the source is the operator, this is Low and accepted for now (record it, no FAIL). REVIEWER L4 (copied helpers) and SECURITY F4 (frame size) stay accepted. The before is the tag base/E2E104-20261103-01. Tests of the kit still do not exist (TEST-DESIGNER at step 5); exactly six old guard tests (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13) are red by design. MAC LOAD: one agent each; at most one full npm test; Chrome only through the kit's cleanup; kill any Chrome you start by process id; remove only temp folders you made; never rm inside the project; change no repository file except your own handoff. List every changed hunk of this round that no item of 04e names; check the fixes are real solutions, the code still matches the design except the differences the fixers listed (DOC-UPDATER carries them at step 10), and the bar items. Severity scale of docs/workflows/handoffs.md.",
+    "acceptance_criteria": [
+      "Findings with severity, file and line",
+      "Each item of round 04e judged fixed or not"
+    ]
+  },
+  "created_at": "2026-11-03T00:33:12Z",
+  "started_at": "2026-11-03T00:33:12Z",
+  "completed_at": "2026-11-03T00:37:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Third and last pass: PASS. Q1 cause: the registry folder now comes from process.env of the spec (cleanup.js:108-111), not from the env option; my own probe (blocked spec launching the stand-in with its own env object, SIGTERM to the runner) leaves 0 processes and 0 folders with the fixed kit, and 1 process and 1 folder with the pre-round cleanup.js/browser.js (copy from another agent's scratch, killed by group id by me). Q2 records: Node 22, no dependency, decisions 0107/0108 (no-proxy-server present at browser.js:34), design met except the differences the fixers listed (DOC-UPDATER, step 10). Q3 extra work: diffing the four changed files against the pre-round copy shows only hunks that 04e names (F1, F2, L1, F3); errors.js, cdp.js, console.js, guards.js, page.js, index.js are byte-identical to that copy; no unnamed hunk. Q4 bar: grep over the kit finds no skip/todo-as-code, eslint-disable, || true, no-sandbox (only the TAP counters todo/skipped in runner.js 75,284-287, which enforce the rule); package.json adds e2e to check without removing a step. Q5 idiom: the shared signalGroup is the only process.kill sender (cleanup.js:58; the other call is signal 0 at :45), all group kills go through it (AP-014 met). Round 04e items: F1=L3 fixed, F2=L2 fixed, L1 fixed, F3 fixed. Regression run of the whole kit: stand-in and the real Chrome 156 through npm run e2e (good spec: record created and removed, exit 0, no process or folder left); a hung spec with fileTimeoutMs 3000 gives SPEC_TIMEOUT and leaves nothing. For TEST-DESIGNER: see issue I1.",
+    "findings": [
+      {
+        "id": "L-1",
+        "severity": "Low",
+        "blocks": false,
+        "file": "tools/test/e2e/kit/browser.js",
+        "line": "194, 247",
+        "what": "The two START_FAILED messages print found.path (the SAI_CHROME program path) raw; the source is the operator and the path has to name an existing executable file, so a newline or leading :: is possible only in a file name the operator made. ORCH ruling: accepted for now, not FAIL.",
+        "fix": "Wrap found.path in safeText(...) in both messages (same class as F2, AP-014)."
+      },
+      {
+        "id": "L-2",
+        "severity": "Low",
+        "blocks": false,
+        "file": "tools/test/e2e/kit/cleanup.js",
+        "line": "44-52, 66-72",
+        "what": "groupGone/waitGroupGone do not refuse a group id <= 1 the way signalGroup now does; kill(-pgid, 0) with 0 or 1 only probes, sends nothing, and answers 'alive', so stopGroup on such an id would wait grace + 3 s and report false. No caller can pass such an id (pids come from spawn). Info level.",
+        "fix": "Optional: return true (gone) or throw for a non-integer or <= 1 id in groupGone."
+      },
+      {
+        "id": "L-3",
+        "severity": "Low",
+        "blocks": false,
+        "file": "tools/test/e2e/kit/runner.js",
+        "line": "312-324",
+        "what": "The runner writes e2e: error=<code>: <message> with the whole message of any E2eError (multi-line on purpose for the places tried); this is safe only while every E2eError message is safeText-clean. Today L-1 is the one raw place. Same item as L-1, listed so a future raw message is not missed.",
+        "fix": "None beyond L-1."
+      }
+    ],
+    "round_04e_items": {
+      "F1 = L3": "fixed (real solution; own before/after probe)",
+      "F2 = L2": "fixed (argv in command= and selection=, SELECTION_UNKNOWN name, SAI_CHROME text; Places tried (5) list whole and multi-line)",
+      "L1": "fixed (both raw process.kill(-pgid, SIGKILL) replaced by signalGroup; sweep counts only true)",
+      "F3": "fixed (signalGroup refuses 0, 1, negative, fractional, NaN, undefined, string, null, Infinity, BigInt, array, 2**53, 1e21; own probe: all false, runner alive)",
+      "unnamed hunks": "none (diff against the pre-round copy)",
+      "kept as ordered": "L4, F4, frame size untouched"
+    },
+    "self_check": [
+      "Probe F1 (copy of tools/test/e2e + fixture in a new temp folder, own TMPDIR folder, stand-in fake-chrome.js, spec blockprobe launches launchBrowser({env:{PATH,HOME,SAI_CHROME}}) and blocks with Atomics.wait; node test/e2e/run.js blockprobe; SIGTERM to the runner after 6 s). Fixed kit: before procs 0 folders []; during procs 1, folders [profile, registry], registry [20014.json]; exit [143]; after procs 0 folders []. Pre-round browser.js+cleanup.js: during registry [] ; after procs 1, folder sai-e2e-profile-Hh6cW3 left (killed by group id and removed by me).",
+      "Probe F2 via runAll with sinks: argument 'x<LF>::error::pwn' -> e2e: error=SELECTION_UNKNOWN: no spec file \"x\\n::error::pwn\"... and command=npm run e2e -- x\\n::error::pwn selection=x\\n::error::pwn, no line starts with ::; argument '::error::a' -> \\u003a:error::a; 100000-character argument -> 820 bytes in all; duplicate name -> SELECTION_DUPLICATE. findChrome with SAI_CHROME '/x<LF>::error::pwn', 'rel<LF>::error::pwn', '::x', '/'+100000 y, U+2028 '::z' -> one line, escaped, 417 characters at most; findChrome({PATH:''}) still lists Places tried (5) and five numbered lines.",
+      "Probe F3: signalGroup(0,1,-1,-5,1.5,NaN,undefined,'7',null,Infinity,2n,[],2**53,1e21,999999999) -> false for all, no throw, process alive. noteBrowserForRunner with the variable unset, set to /etc, set to a folder outside the temp root, set to 42, and pgid 0 / 1.5 / '9' -> writes nothing, throws nothing.",
+      "Regression: npm run e2e good (stand-in, then real Chrome/156 from /Applications): exit 0, a record present during the launch and gone after close, args include --no-proxy-server, TMPDIR empty afterwards. Hung spec with fileTimeoutMs 3000/killGraceMs 1000: SPEC_TIMEOUT, no process, no folder. fake-chrome processes left: 0. All temp folders made by me removed.",
+      "grep -nE '\\.skip\\(|\\.todo\\(|todo|TODO|FIXME|eslint-disable|\\|\\| true|no-sandbox|--disable-web-security|ignore-certificate|@ts-ignore' on tools/test/e2e/kit/*.js run.js fake-chrome.js -> only runner.js:75,284,287 (TAP counters todo/skipped that enforce the rule). grep process.kill in kit: cleanup.js:45 (signal 0) and :58 (the helper).",
+      "cd tools: npm run format:check -> All matched files use Prettier code style; npm run lint -> exit 0; npm run handoffs-check -> 1299 files, violations 0, exceptions 114 of 114; npm run traces -> 2406 files, traces 0. Full npm test not run by me (load rule; 04e reports 2129 pass, 6 red by design: HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13).",
+      "No repository file changed by me except this handoff; nothing committed."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "TEST-DESIGNER: test F1 with a stand-in launched with an env option lacking the variable while process.env has it (record appears; blocked spec + SIGTERM leaves nothing), the variable absent (no record, no failure), set outside the temp root (nothing written); F2 for argv, selection= and SAI_CHROME; F3 for the values listed in the self_check and for sweepBrowserRegistry ignoring records with pgid 0 or 1. Also test that the START_FAILED path is cut if L-1 is fixed."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Provenance: the pre-round copy used for the unnamed-hunk comparison is the scratch copy of another agent (scratchpad probe/before), not a tag; it matches 04e's list exactly, and the current files equal that agent's probe/after copy. The kit is untracked, so the tag base/E2E104-20261103-01 holds no 'before' for it."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "DOC-UPDATER (step 10): design 4.4/6 still lack the registry, the variable coming from process.env of the spec, and signalGroup returning a boolean and refusing ids <= 1 (04e I3); design lines listed in 04b I-list also apply."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

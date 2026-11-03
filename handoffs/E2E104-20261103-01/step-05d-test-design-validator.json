@@ -1,0 +1,87 @@
+{
+  "handoff_id": "step05d-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "05d",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/E2E104-20261103-01/step-05d-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E104-20261103-01/step-05b-test-design-validator.json",
+      "handoffs/E2E104-20261103-01/step-05c-test-fixer.json",
+      "docs/design/REQ-104-e2e-chrome-kit.md"
+    ],
+    "route": "5c done -> TEST-DESIGN-VALIDATOR 5b again (this, gate) -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "none in the project; mutants only in a temporary copy outside the project; the verdict goes only into this handoff"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-05b-test-design-validator.json"
+  },
+  "task": {
+    "description": "WF-02, step 5b again after the TEST-FIXER step 05c. Check the fixes of your own findings T1..T5: E2K-46 (runner exits promptly after the record line), the new fixture exit-one.e2e.js and the new row of E2K-32 (a stand-in spawnSpec; judge whether it really reaches the exit-code check of runOne and is not circular), E2K-30 and E2K-34 counts 10, the nested-folder row of E2K-44 part (e), the last assertion of E2K-60. Repeat the mutants R14, R15, K10 on the changed test file and re-run a reduced selection of your earlier 82 (at least 20, including those that were slow to fail, K2 excepted) to make sure nothing regressed; hash the project before and after (equal). Run npm test once, npm run e2e twice, and E2K-46 plus E2K-32 alone five times under light load. Re-check that the number of test( and assert. in the five old files is still equal to the tag base/E2E104-20261103-01 and that the six replaced guard tests are untouched since your last pass. Also say whether the design document needs the new counts (50 tests, 10 spec fixtures) carried by DOC-UPDATER. Any item not passed is FAIL. Report to me in at most 10 lines.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T04:55:52Z",
+  "started_at": "2026-11-03T04:55:52Z",
+  "completed_at": "2026-11-03T16:37:33Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "verdict_reason": "All items closed by my own runs. T1..T5 fixes verified; R14, R15, K10 are now killed; no regression in the 36 other mutants; both survivors are equivalent.",
+      "fixes_checked": {
+        "T1_E2K-46": "runs the real runAll path in a child node with the stand-in browser and pass-a, asserts exit 0, not killed by its own 15 s limit, ends within 4000 ms after the record line. Mutant R15 (clearTimeout(watchdog) removed): E2K-46 red (the whole kit file then took 139 s instead of 33 s, as before). Alone 5 times under 2 busy loops: 5 of 5 green together with E2K-32.",
+        "T2_E2K-32_exit-one": "the new row uses a spawnSpec stand-in that prints the committed passing TAP (normal.txt) and exits 1, so the TAP checks cannot produce the failure; the expected text 'SPEC_FAILED: exit-one.e2e.js failed (exit code 1)' is the test's own literal. It does reach the exit-code check of runOne and is not circular: mutant R14 (exit code not checked) makes E2K-32 red, and with the check intact the stand-in's TAP alone would pass. I also ran the real fixture: a real node --test run shows 'not ok 1' and fail 1 in the TAP, so a fixture alone could never reach that check; the stand-in is the only way. The real fixture file is used only by its name (listSpecs). E2K-30 and E2K-34 hold 10 names and pass.",
+        "T3_E2K-44e": "nested-folder row (<tmp>/<sub>/sai-e2e-profile-nested, live group): mutant K10 (directly-under-root clause dropped) makes E2K-44 red.",
+        "T4_E2K-60": "last assertion now reads the README section for 'the sixth and last step of `npm run check`'; I changed that phrase in a copy: E2K-60 red; real README green.",
+        "T5": "accepted as before (flag pinned by the exact argument list E2K-25; M43 and M44 red)."
+      },
+      "mutants": "39 applied by me in a copy outside the project, whole kit file per mutant (file of 50 tests, 33 s): the three of the task R14, R15, K10, 32 from the design list (M01 M04 M06 M07 M08 M11 M12 M13 M15 M16 M17 M20 M22 M25 M26 M28 M34 M36 M38 M39 M40 M43 M44 M46 M48 M49 M55 M62 M66 M68 M70 M71), 4 of my own (X1 todo allowed, X2 cancelled not counted, X3 own-pid check dropped in the sweep, X4 SPEC_TIMEOUT branch disabled). M40 was run on the real smoke file (SMK-05 red). The harness of the earlier pass was no longer on disk, so I rebuilt it; K2 was left out as the task allows. 37 caught, 2 survived: M06 as I wrote it (the empty-value check removed, so an empty SAI_CHROME falls to the 'not a full path' error: still CHROME_NOT_FOUND, only the wording differs; equivalent for behaviour) and X2 (cancelled count ignored: unreachable, the exit-code check ends the file first, as R14 shows; equivalent). M71 (spec started without detached) is caught by 6 tests but the file needed more than my 300 s limit (slow to fail like K2, not a hang: tests use bounded waits); it left two stand-in processes of my copy, removed by pid after checking their command line.",
+      "runs": {
+        "npm_test": "once: tests 2185, pass 2185, fail 0, cancelled 0, skipped 0, todo 0, 229 s",
+        "npm_run_e2e": "twice: browser=Chrome/156.0.8078.80, file=smoke, 13 of 13, exit=0 duration_ms 17583 and 17624 (budget 30000); after each: no process and no folder named sai-e2e-",
+        "E2K-46_and_E2K-32": "5 runs alone, 2 busy loops: 5 of 5 pass 2, fail 0",
+        "static": "format:check clean, lint clean, traces 2427 files 0 traces"
+      },
+      "old_files": "test( and assert. at the tag and now: handoffs-docs 11/11 and 27/27, handoffs-cmd-docs 9/9 and 54/54, picker-config 38/38 and 131/131, picker-look-property 8/8 and 48/48, team-web-control 54/54 and 275/275. The diff of the five files is still 10 insertions and 6 deletions, and their modification time is before my first pass: the six replaced guard tests are untouched since then.",
+      "design_document": "Yes, DOC-UPDATER (or CODE-DESIGNER) has to carry the counts: the design says 40 E2K tests / 53 in all (line 18) and nine spec fixtures (11.3, E2K-30), the files now hold 50 E2K tests, 63 with the 13 smoke tests, and 10 spec fixtures (exit-one added). It has no row for E2K-46 and none for the exit-one row of E2K-32; the counts were already stale before 05c.",
+      "working_tree": "hashes of all 2494 files outside .git and tools/node_modules before and after the work: identical (diff empty), taken before this handoff was filled."
+    },
+    "findings": [
+      {
+        "id": "N1",
+        "severity": "Note",
+        "place": "tools/test/fixtures/e2e/specs/exit-one.e2e.js",
+        "what": "The fixture is used only by its name (it makes listSpecs return 10 names); a real run of it shows a failed test in the TAP, so the exit-code check is reached only by the stand-in in E2K-32. Its comment says nothing of this.",
+        "how_to_fix": "No action required; optionally one comment line saying that E2K-32 runs it through a stand-in."
+      },
+      {
+        "id": "N2",
+        "severity": "Note",
+        "place": "design document REQ-104",
+        "what": "Counts and rows are stale (see summary.design_document).",
+        "how_to_fix": "DOC-UPDATER or CODE-DESIGNER: 50 E2K tests, 63 in all, 10 spec fixtures, rows for E2K-46 and for the exit-one case of E2K-32."
+      }
+    ],
+    "self_check": {
+      "commands": [
+        "cd tools && npm test -> 2185/2185",
+        "cd tools && npm run e2e x2 -> 13/13, exit=0",
+        "node --test --test-name-pattern='^E2K-(46|32) ' test/e2e-kit.test.js x5 under 2 busy loops -> 5 of 5 green",
+        "python3 harness over a copy of the repository outside the project -> 39 mutants, 37 caught, 2 equivalent survivors",
+        "git grep counts of test( and assert. at base/E2E104-20261103-01 and now for the five old files -> equal",
+        "shasum of 2494 files before and after -> diff empty"
+      ]
+    },
+    "issues": [],
+    "artifacts_out": []
+  }
+}

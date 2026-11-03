@@ -1,0 +1,171 @@
+{
+  "handoff_id": "step04b-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "04b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/E2E104-20261103-01/step-04b-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E104-20261103-01/step-04-reviewer.json",
+      "handoffs/E2E104-20261103-01/step-03-security-reviewer.json",
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "decisions/0108-e2e-kit-conventions.md"
+    ],
+    "route": "REVIEWER FAIL -> CODE-FIXER (this) -> SECURITY-REVIEWER || REVIEWER again -> TEST-DESIGNER",
+    "write_set": [
+      "tools/test/e2e/kit/*.js, tools/test/e2e/run.js, tools/test/fixtures/e2e/fake-chrome.js, tools/README.md only if a sentence about behaviour becomes untrue"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "WF-02, CODE-FIXER after a FAIL at step 4 — fix the code of REQ-104 by the findings of the two gates. Read their results yourself: handoffs/E2E104-20261103-01/step-04-reviewer.json (REVIEWER: FAIL) and handoffs/E2E104-20261103-01/step-03-security-reviewer.json (SECURITY-REVIEWER: PASS with Low findings). The numbering \"R-F1..R-F8\" = findings of the REVIEWER, \"S-F1..S-F6\" = findings of the SECURITY-REVIEWER.\nMUST FIX (blocking): R-F1 High (runner.js:342 prints only the first line of every E2eError: print the full message, keep the cut only for INTERNAL) and R-F2 Medium (cdp.js:167 connect() has no time limit on the WebSocket handshake: apply callTimeoutMs to the open; the preflight must not hang).\nALSO FIX (cheap Low items, ORCH decision, so that step 5 can test them): R-F3 dead code ERROR_CODES/usage() (remove or use), R-F4 group-kill helpers written twice (one shared helper), R-F5 waitFor must not hide PROTOCOL_ERROR in the timeout text, R-F6 the stderr 'close' branch that never fires (START_EXITED takes about 0.4 s: make it fire), R-F7 a screenshot write failure must not be coded USAGE, R-F8 (the 100 ms settle is now recorded in the Addendum of decisions/0108 — no code change); S-F1 the runner must keep a registry of the browsers its spec started and kill them (with their profile folders) after a stop or a hung spec, as tools/README.md says; S-F2 escape control characters and a line start \"::\" in page/browser text that goes into errors and the log, cut each piece, cap the number of listed entries; S-F3 add the Chrome argument --no-proxy-server (decisions/0108 Addendum) — and keep the argument list in the design section where it is listed consistent (tell ORCH in result.issues which design lines now differ, DOC-UPDATER will carry them); S-F4 a NUL character, an over-long name or a link loop in a path must give PATH_REFUSED, not a raw Node error. S-F5 (frame-size limit) and S-F6 are NOT to be done (Info).\nRULES: change only what the findings name; do not weaken anything; do not edit the six old guard tests or write tests of the kit (TEST-DESIGNER writes them at step 5 — leave your own probes outside the project); keep the words forbidden by the design out of every file under tools/test/e2e (sandbox flags, skip words) comments included; format with `cd tools && npx prettier --write <your files>`; `npm run lint`; self-check `cd tools && npm run format:check && npm run lint && npm run traces && npm run handoffs-check`, plus your probes of each fix (R-F1, R-F2 with a TCP server that never upgrades, S-F1 with a blocked spec, S-F2 with a page that prints \"::error\" lines, S-F4). No full `npm test` more than once (the six guard tests stay red until step 5 — name exactly which). Mac: one agent at a time, kill Chrome you start by process id, remove only your own temp folders, never rm inside the project. Do not commit. In result.changes: every edit with the finding number; in result.issues: what step 5 must test because of these fixes.",
+    "acceptance_criteria": [
+      "R-F1 and R-F2 fixed with a probe each",
+      "Every other listed finding fixed or an honest reason in issues",
+      "format:check, lint, traces, handoffs-check green"
+    ]
+  },
+  "created_at": "2026-11-02T23:55:00Z",
+  "started_at": "2026-11-02T23:55:00Z",
+  "completed_at": "2026-11-03T00:11:44Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "All findings R-F1..R-F7 and S-F1..S-F4 fixed in the write set; R-F8 needs no code; S-F5, S-F6 not done by order. R-F1 (full E2eError text) and R-F2 (time limit on the WebSocket open) each have a probe with the before and after output. Real Chrome 156 and the stand-in were used; every Chrome I started is gone, my temp folders removed. The six old guard tests are red as before (not touched). Tests of the kit are not written (step 5).",
+    "changes": [
+      {
+        "finding": "R-F1",
+        "file": "tools/test/e2e/kit/runner.js",
+        "place": "runAll catch",
+        "change": "an E2eError is printed with its whole message (`e2e: error=<code>: <message>`); the first-line cut stays only for INTERNAL (and INTERNAL text goes through safeText)"
+      },
+      {
+        "finding": "R-F2",
+        "file": "tools/test/e2e/kit/cdp.js",
+        "place": "connect()",
+        "change": "the open of the WebSocket has the limit callTimeoutMs; on expiry the socket is closed and CALL_TIMEOUT `connect: no answer in <ms> ms` is thrown; launchBrowser then kills the group and removes the folder, so the preflight of runAll cannot hang"
+      },
+      {
+        "finding": "R-F2",
+        "file": "tools/test/fixtures/e2e/fake-chrome.js",
+        "place": "upgrade handler, header comment",
+        "change": "new mode `no-upgrade`: prints the port line, accepts the connection, never answers the upgrade (for the step-5 test)"
+      },
+      {
+        "finding": "R-F3",
+        "file": "tools/test/e2e/kit/errors.js",
+        "place": "ERROR_CODES, usage()",
+        "change": "both removed (no user in tools/; the table of codes stays in the design 4.1)"
+      },
+      {
+        "finding": "R-F4",
+        "file": "tools/test/e2e/kit/cleanup.js, browser.js, runner.js",
+        "place": "signalGroup/waitGroupGone/stopGroup",
+        "change": "one set of group helpers (signalGroup, waitGroupGone, stopGroup) in cleanup.js; the two private copies in browser.js and runner.js removed; Browser.close, abortStart and the runner use them"
+      },
+      {
+        "finding": "R-F5",
+        "file": "tools/test/e2e/kit/page.js",
+        "place": "waitFor",
+        "change": "the last swallowed PROTOCOL_ERROR is kept and appended to the WAIT_TIMEOUT text: `; last protocol error: <message>`"
+      },
+      {
+        "finding": "R-F6",
+        "file": "tools/test/e2e/kit/browser.js",
+        "place": "child.on(exit) in launchBrowser",
+        "change": "waits for the child's own `close` event (process ended and stderr read) instead of a stderr `close` that had already happened; the 300 ms timer stays for a helper holding the pipe; START_EXITED now ~60 ms instead of ~380 ms"
+      },
+      {
+        "finding": "R-F7",
+        "file": "tools/test/e2e/kit/page.js, browser.js",
+        "place": "Page.screenshot catch; withBrowser",
+        "change": "a write failure is coded SCREENSHOT_FAILED (new code, was USAGE); the repeated `failure !== null &&` removed"
+      },
+      {
+        "finding": "R-F8",
+        "file": "-",
+        "place": "-",
+        "change": "no code change (recorded in the Addendum of decisions/0108)"
+      },
+      {
+        "finding": "S-F1",
+        "file": "tools/test/e2e/kit/cleanup.js, runner.js, browser.js",
+        "place": "REGISTRY_VAR, noteBrowserForRunner, makeBrowserRegistry, sweepBrowserRegistry, dropBrowserRegistry; runAll/runOne; launchBrowser",
+        "change": "the runner makes a registry folder (makeTempDir('registry')) and gives it to the spec in SAI_E2E_REGISTRY; launchBrowser writes `<pgid>.json` {pgid, profileDir} at spawn and unregisterGroup removes it; after every spec (normal end, SPEC_TIMEOUT, signal) and in the exit pass (cleanupAllSync) the runner reads the records of the exact shape, SIGKILLs a group only if the profile folder still exists, removes the folder and the record"
+      },
+      {
+        "finding": "S-F2",
+        "file": "tools/test/e2e/kit/errors.js, console.js, page.js, cdp.js, browser.js, guards.js, runner.js",
+        "place": "safeText + its uses",
+        "change": "new safeText(value, max=200): cut, control characters (incl. newline, 0x7f-0x9f, U+2028/9) shown as escapes, leading `::` neutralised; used for console entry text/url and declarations, CLICK_INTERCEPTED id, PAGE_EXCEPTION, NAVIGATION_FAILED, VIEWPORT/SCHEME_MISMATCH values, PROTOCOL_ERROR message and code, START_EXITED last stderr line, the `e2e: browser=` line, refused path/URL text; CONSOLE_ENTRIES lists at most 20 unexpected and 20 unmet entries plus `... and N more` (details keep the whole lists)"
+      },
+      {
+        "finding": "S-F3",
+        "file": "tools/test/e2e/kit/browser.js",
+        "place": "buildArgs",
+        "change": "`--no-proxy-server` added after `--disable-gpu` (8 entries now)"
+      },
+      {
+        "finding": "S-F4",
+        "file": "tools/test/e2e/kit/guards.js",
+        "place": "realOf",
+        "change": "resolveReal is wrapped: a NUL character, a too long name, a link loop give PATH_REFUSED `not a usable path`"
+      }
+    ],
+    "self_check": [
+      "R-F1 before (scratch copy of the code before the edit, runAll with findChrome PATH empty): stderr `e2e: error=CHROME_NOT_FOUND: no Chrome or Chromium found. Set SAI_CHROME ... Places tried (5):` and the five lines missing. After: the same command prints the line and `  1) /Applications/Google Chrome.app/Contents/MacOS/Google Chrome` ... `  5) chromium-browser (in PATH)`; exit 1; record line last.",
+      "R-F2 before (plain TCP server that accepts and never answers the upgrade, callTimeoutMs 700): `STILL PENDING after 4 s`. After: `rejected CALL_TIMEOUT: connect: no answer in 700 ms after 728 ms`, the probe process ends by itself. Through launchBrowser with the stand-in mode no-upgrade (callTimeoutMs 800): `CALL_TIMEOUT: connect: no answer in 800 ms` after 909 ms, registry groups=0 dirs=0, leftover folders=0, no fake-chrome process.",
+      "R-F6: START_EXITED with exit-early, 6 starts. Before: 370 390 395 395 91 362 ms. After: 63 60 59 59 58 59 ms.",
+      "R-F5/R-F7/S-F4 (probe outside the project, Page on a stub connection and the guards): waitFor -> `WAIT_TIMEOUT waited 200 ms for: 1+1===3; last value: undefined; last protocol error: Runtime.evaluate: Cannot find context with specified id (code -32000)` (before: no protocol error text). Screenshot into a missing folder -> before `USAGE`, after `SCREENSHOT_FAILED ... ENOENT`. Paths with NUL, a 300-character name, a link loop x assertShotPath/assertUnderTempRoot/assertOutsideRepo: before 9 raw Node errors (TypeError ERR_INVALID_ARG_VALUE, ENAMETOOLONG, ELOOP); after 9 x PATH_REFUSED; the normal path still accepted by all three.",
+      "S-F2 (real Chrome, a page with console.error('line1\\n::error file=app.js::forged\\n::add-mask::secret'), '::stop-commands::', 60 floods with a control character, a rejection with '::warning::', an element id 'x\\n::error::forged-id'): before CONSOLE_ENTRIES 67 lines, 30905 characters, 2 lines starting with '::', control characters present, CLICK_INTERCEPTED had a line `::error::forged-id`. After CONSOLE_ENTRIES 23 lines (20 listed + `... and 43 more` + headers), 4542 characters, 0 lines starting with '::', no control characters; CLICK_INTERCEPTED one line `covered by x\\n::error::forged-id`.",
+      "S-F3 (real Chrome through a wrapper outside the project that appends --proxy-server=http://127.0.0.1:<my proxy>; the page fetches http://example.invalid/): before args lack the flag, the fetch `reached`, my proxy got 16 requests (Chrome's own clients2.google.com/time, clientservices.googleapis.com ...). After: args hold --no-proxy-server, fetch `refused: Failed to fetch`, proxy hits 0.",
+      "S-F1 (real Chrome; spec holds a browser and blocks the event loop for 60 s; run through node test/e2e/run.js with SIGTERM after 5 s): before exit 143, `chrome processes with my profile folders: 10`, 1 folder left (killed by pgid by me). After: 4+2 runs SIGTERM and 4 runs with fileTimeoutMs 5000 (SPEC_TIMEOUT) -> 0 processes and 0 folders right after the runner exit (one early count of 1 one second later was a process still dying; the same check later gave 0). A normal passing spec through the runner: `# pass 1`, exit 0, 0 folders, 0 processes.",
+      "cd tools && npm run -s format:check -> All matched files use Prettier code style!",
+      "cd tools && npm run -s lint -> exit 0",
+      "cd tools && npm run -s traces -> traces: файлов проверено 2401, следов 0, пропущено 67",
+      "cd tools && npm run -s test (the one full run): # tests 2135 # pass 2129 # fail 6 # cancelled 0 # skipped 0 # todo 0. The six red: HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13 - the same six that were red before this work (they check package.json/README text for the old check chain; see the replacement table of the design, section 12); no other test fails.",
+      "grep for the forbidden words (two sandbox flags, .skip(, .todo(, || true, eslint-disable, {skip, {todo) over tools/test/e2e and tools/test/fixtures/e2e: no line.",
+      "handoffs-check: see the line after the close command in the report of ORCH (run after this file was written)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "DESIGN LINES that now differ (DOC-UPDATER carries them, decisions/0108 Addendum covers S-F2/S-F3/100 ms): (a) S-F3: section 4.6 step 3 (line ~214: the argument list gets `--no-proxy-server` between `--disable-gpu` and the resolver rule; the words `No other flag` still hold for the sandbox); E2K-25 (line ~450: the list that the stand-in records and the test compares); the sentence of section 0 / C-4 (lines ~17, 78) and fact F23 (line ~51) may name the proxy flag; mutant table: a mutant `--no-proxy-server dropped` could be added near M44. (b) R-F2: section 4.5 line ~185: `connect` now also rejects CALL_TIMEOUT (`connect: no answer in <ms> ms`) when the upgrade is not answered in callTimeoutMs; section 5 table: new stand-in mode `no-upgrade`. (c) R-F7: section 4.1 table: new code SCREENSHOT_FAILED (`Page.screenshot: could not write \"<path>\": <system code>`, thrown by Page.screenshot); PATH_REFUSED line ~138: new reason `not a usable path` (NUL, over-long name, link loop). (d) S-F2: section 4.1 / 7: page and browser text in messages goes through safeText (escape, cut, leading `::`), CONSOLE_ENTRIES lists at most 20 + 20 entries; `E2eError.message` of CONSOLE_ENTRIES differs from the earlier unlimited list. (e) S-F1: sections 4.4 and 6: the registry of browsers (variable SAI_E2E_REGISTRY, files <pgid>.json, sweep after each spec/at stop/at exit); this makes `no process left` true after a hung or blocked spec; the residual O7 (SIGKILL of the runner itself) is unchanged. (f) R-F5: section 4.8 waitFor row: the WAIT_TIMEOUT text may end with `; last protocol error: <message>`. (g) R-F3: section 4.1: the module no longer exports ERROR_CODES and usage; a test that wants to pin the table keeps its own list. tools/README.md: no sentence became untrue (line 842 'cannot reach any other address' and 'removed ... on a failure' are now truer); not edited."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "WHAT STEP 5 MUST TEST because of these fixes: R-F1 (runAll with a launch that throws CHROME_NOT_FOUND: stderr holds `  5) chromium-browser (in PATH)`, E2K-32/E2K-09; a non-E2eError still one line); R-F2 (stand-in mode no-upgrade: launchBrowser rejects CALL_TIMEOUT within about callTimeoutMs, group and folder gone; cdp.connect against a TCP server that never upgrades); R-F6 (START_EXITED for exit-early well under 1 s; use a start limit well above 1 s); R-F5 (WAIT_TIMEOUT text with `last protocol error` through a stub connection); R-F7 (screenshot into a missing folder -> SCREENSHOT_FAILED, not USAGE, file absent); S-F1 (runner with a spec that starts a browser (stand-in `ok`) and blocks / hangs: after the stop no process of the stand-in and no sai-e2e-profile folder remain; the SAI_E2E_REGISTRY variable is in the spec's environment; a record whose profile folder is gone is not used to kill; a record with a pgid <= 1, a foreign file name or a profile outside the temporary root is ignored); S-F2 (safeText table: newline, ESC, 0x7f, U+2028, leading `::`, over-long, Symbol; CONSOLE_ENTRIES with 25+ entries lists 20 and `... and N more`, no line starts with `::`; CLICK_INTERCEPTED with a newline id); S-F3 (E2K-25: the list holds --no-proxy-server; SMK-13 may add a proxy trial); S-F4 (assertShotPath/assertUnderTempRoot/assertOutsideRepo with NUL, 300-character name, link loop -> PATH_REFUSED). Tests that check intentionally changed behaviour: E2K-25 (exact list of arguments, S-F3) and any test that compares the full CONSOLE_ENTRIES text or expects USAGE for a failed screenshot write - none exists yet; the six old guard tests stay red until step 5 (EXPECTED_RED: HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13)."
+      },
+      {
+        "id": "I3",
+        "kind": "EXPECTED_RED",
+        "text": "HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13 are red exactly as before this work (the replacement table of design section 12 is for TEST-DESIGNER); no new red test."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Same kind, outside the list, not edited (AP-014 / AP-019): (1) guards.js tempRoot() (realpath of os.tmpdir()) throws a raw ENOENT when TMPDIR points to a missing folder; used by makeTempDir, assertUnderTempRoot, assertShotPath - an environment fault, not a path argument, so left. (2) runner.js `e2e: command=... selection=...` prints the operator's argv raw (I4 of SECURITY-REVIEWER; the argument is refused as SELECTION_UNKNOWN anyway). (3) S-F5 (no frame-size limit) and S-F6 (SIGKILL of the runner itself, O7) not done by order. (4) The registry is best-effort: a spec killed between spawn of Chrome and the write of its record (microseconds) is not covered, and SIGKILL of the runner itself still leaves the spec and Chrome (O7)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e/kit/errors.js",
+      "tools/test/e2e/kit/cleanup.js",
+      "tools/test/e2e/kit/browser.js",
+      "tools/test/e2e/kit/cdp.js",
+      "tools/test/e2e/kit/console.js",
+      "tools/test/e2e/kit/guards.js",
+      "tools/test/e2e/kit/page.js",
+      "tools/test/e2e/kit/runner.js",
+      "tools/test/fixtures/e2e/fake-chrome.js"
+    ]
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "handoff_id": "step01d-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "01d",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/E2E104-20261103-01/step-01d-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "docs/requirements.yaml",
+      "decisions/0108-e2e-kit-conventions.md",
+      "handoffs/E2E104-20261103-01/step-01b-code-design-validator.json",
+      "handoffs/E2E104-20261103-01/step-01c-code-designer.json"
+    ],
+    "route": "CODE-DESIGNER (rework 01c) -> CODE-DESIGN-VALIDATOR (this, second pass) -> BACKEND-DEV",
+    "write_set": [
+      "this handoff only; repository files are read-only for this step"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-01b-code-design-validator.json"
+  },
+  "task": {
+    "description": "WF-02, step 1b (second gate pass of at most three) — check again the design docs/design/REQ-104-e2e-chrome-kit.md after the rework 01c (handoffs/E2E104-20261103-01/step-01c-code-designer.json) by the same section \"Step 1b\" of docs/workflows/WF-02-development.md and by your own first-pass remarks in handoffs/E2E104-20261103-01/step-01b-code-design-validator.json. Read the design itself.\nCheck in particular: (1) F1, F2, F3 (blocking in the first pass) are really closed — REPEAT yourself the measurements behind the new rules on a fresh clone of the tag base/E2E104-20261103-01 outside the project (NODE_TEST_CONTEXT cleared in the spec environment gives a TAP with `# tests`; the spec path form `test/e2e/<name>.e2e.js` relative to tools/ is the string node prints; the criterion-11 grep and E2K-50 against the design's test list: build the grep tokens from criterion 11 of REQ-104 and search the described test texts and fixtures paths); (2) the F4 answer (process group, SIGTERM then SIGKILL after 5 s on SIGINT/SIGTERM/SIGHUP and on the 120 s timeout): is it complete, is the signal hook safe (no handler leaks, no double kill, exit codes), is the added code size sensible for this requirement or is it work beyond the criteria (the designer offers dropping E2K-38, M59, M60, row 17 and the signal hook as a smaller alternative — judge it); (3) nothing new broke: the replacement table still fixes exactly HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13 without weakening; the criterion → test table covers criteria 1-13; the bar section; no implementation code; no contradiction with decisions 0107 and 0108; (4) apply at least 10 mutants again, at least 5 of them from the new M55-M61 and E2K-36/37/38 area, plus several of your own around the rework. Answers of ORCH in decisions/0108 are binding; О7b and REQ-033/REQ-014 are open for the owner and not a reason to FAIL.\nMAC LOAD: one agent at a time; at most one full `npm test`; kill every Chrome you start by process id; remove only temp folders you created; never rm inside the project.\nResult: PASS or FAIL with a list (section, item, what is wrong).",
+    "acceptance_criteria": [
+      "Each item of WF-02 step 1b has a stated result",
+      "PASS or FAIL with a list: section, item, what is wrong"
+    ]
+  },
+  "created_at": "2026-11-02T22:20:24Z",
+  "started_at": "2026-11-02T22:20:24Z",
+  "completed_at": "2026-11-02T22:44:45Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": {
+      "pass_A_item_1": "MET (statements repeated on a fresh clone of base/E2E104-20261103-01, f806d7d, in a new folder of the system temp, npm ci there). F1/F29: inside a node:test test NODE_TEST_CONTEXT=child-v8; a nested 'node --test --test-reporter=tap' with it kept: exit 0, stdout length 0; with it removed from a copy: 'ok 1 - alpha', '# tests 1' (also for 'ok 1 - test/e2e/empty.e2e.js'); the only NODE/TEST key is NODE_TEST_CONTEXT. F2/F30: 'test/e2e/x.e2e.js' and './test/e2e/x.e2e.js' both print 'ok 1 - test/e2e/x.e2e.js'; 'tools/test/e2e/x.e2e.js' -> \"Could not find\" exit 1; skip/todo file -> '# skipped 1', '# todo 1', exit 0. F31: SIGTERM to the node --test leader only -> file child ran its SIGTERM handler (marker written); SIGKILL to the leader only -> file child alive. F32: 1 MB with fs.writeSync(2) to an unread pipe blocks the child (stdout answer after 100 ms never comes), with process.stderr.write the answer comes. F6: the 14 files after the package.json edit and README edits -> '# tests 187 / pass 181 / fail 6', the six names HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13 (with the skip/todo fixtures, an empty .e2e.js and the tap texts present). F33 held: lint exit 0, format:check ok, 'npm test' glob did not pick the fixtures. Of the criterion-11 / E2K-50 grep: see item 8 and F11.",
+      "pass_A_item_2": "MET with one neighbour not named (F15). Shared mechanism 'scripts.check ends with npm run test / exact list': six tests (confirmed by the 6-red run and by a full green run after the replacements), README sentences, test-runner.md item 3, REQ-038 lines 5266-5268 and 5313 (named). Not named: pending REQ-040 (docs/requirements.yaml 5502, 5566) with the same 'check ends with npm run test passes without edit' sentence. Shared mechanism 'NODE_TEST_CONTEXT dropped for a nested node --test': the one existing place (handoffs-cmd-docs.test.js nodeTest) is named in F29.",
+      "pass_A_item_3": "MET. Replacement table applied in the clone exactly as section 12 (HC-02 six steps, HC-03 /npm run test && npm run e2e$/u, HO-54 six, PK-7b string + e2e, LP-3 key list with e2e between test and check + string, CTL-13 regex): the six files give '# tests 118 / pass 118 / fail 0'; README tests (repo, team-docs, traces-readme, pixel-office-settings, exec-docs, team-web-docs) 51/51 with the section-14 text; ONE full 'npm test' of the clone with every file of the work present (dummy kit, dummy smoke, dummy e2e-kit.test.js, stand-in mode 0755, 9 spec fixtures with skip/todo options and an empty file, 5 tap texts, package.json, both READMEs, six replaced tests): '# tests 2136 / pass 2136 / fail 0 / skipped 0 / todo 0'. Nothing weakened: every replaced assertion stays an exact list/string/anchored regex. Mutants applied (16, see self_check): M55, M56, M57, M58, M59, M60 (new area, on a measured prototype of the runner + cleanup flow written outside the project), M61 (patterns of E2K-50 run on three snippets), M51, M52 and X4, X5, X6 on package.json (killed by the replaced guard tests), X1, X2, X3 on the runner. All killed by a test named in the design or implied by it; M59 is killed for another reason than the design states (F14). Sub-steps: sizes and order sound; sub-step 4 smaller after the move of console.js; 7 is one edit with six expected red; 8 adds none.",
+      "pass_B_item_4": "MET with Low remarks F12, F13: signatures, shapes, codes, files and the contract between the two developers (codes 4.1, args 4.6, record 6, stand-in modes 5) are complete.",
+      "pass_B_item_5": "MET with Low remark F12: every failure path has 'user sees / state afterwards'; row 17 (signal during a spec) is new and measured by my prototype: SIGTERM -> exit 143 in 0.33 s, SIGINT -> 130, spec leader, file child, 'browser' group and its child all gone; row 13/16 consistent with my measurement of the stubborn file (the leader exits on SIGTERM and leaves the stubborn file child orphaned in the group; only the group SIGKILL after the wait removes it, so the wait must be on the GROUP, as the design says).",
+      "pass_B_item_6": "MET with Low remarks F12, F13 (places the developer or tester would choose: removal of the runner's hook after a run, hook installed from step 1 or before the first spec, how E2K-37 sees 'detached' through an injected spawnSpec, which env the preflight uses).",
+      "pass_B_item_7": "MET: no code fence in the file (grep -c of three backticks -> 0), only shapes, signatures, tables, texts.",
+      "pass_C_item_8": "NOT MET (F11). Criteria 1-13 each lead to elements and tests (section 10 read line by line; E2K count 39 and SMK 13, 61 mutants, 8 sub-steps all agree with section 0). But the procedure of 11.3 for the captured TAP texts (command given, 'captured once') puts the absolute path of the capturing machine into tap/failing.txt; measured: location: and stack: lines hold file:///<abs path>; with a home-folder path the 'npm run traces' step of 'check' reports 'путь домашнего каталога' for tools/test/fixtures/e2e/tap/failing.txt (checked on a copy with the path replaced by a home-folder-style path), so criterion 11 ('npm run -s traces | grep -c ...' -> 0) and the check itself would be red at step 5.",
+      "pass_D_item_9": "MET: section 17 names Q1-Q14 and R1-R3, each with 'applicable how' or 'not applicable why'; the new text of Q3, Q6, Q10 matches the rework.",
+      "pass_D_item_10": "MET: section 8 keeps protection inside the action; the spec group is registered in the call that spawns it and the runner hook before the first spec (see F12 for the preflight window).",
+      "pass_D_item_11": "MET: no contradiction with 0107 (lifts only the 'no browser binary' clause; sixth step; a missing Chrome fails; no skip) or with 0108 (O1 no starter, O2 strings only, O3 stop at first fail / 120 s / no-test and skipped fail, O4 hashes kept, O5 resolver rule in the argument list, O6 stand-in by BACKEND-DEV, O7 residual risk accepted and 7b not decided, O8 API kept, O9 DOC-UPDATER corrects REQ-038); section 19 still lists O1-O9 as open questions but 0108 now answers them (not a defect)."
+    },
+    "findings": [
+      {
+        "id": "F11",
+        "severity": "Medium",
+        "blocking": true,
+        "pass_item": "pass C, item 8 (and pass B, item 6)",
+        "place": "section 11.3, paragraph 'Folder tools/test/fixtures/e2e/tap/ ...' (the capture command and 'failing.txt'); section 10 criterion 11 row; E2K-34",
+        "what": "The tap texts are captured by 'env -u NODE_TEST_CONTEXT node --test --test-reporter=tap test/fixtures/e2e/specs/<name>.e2e.js > ...'. For 'fail' the TAP holds 'location: ...' and 'stack: ... file:///<absolute path of the capturing machine>/tools/test/fixtures/e2e/specs/fail.e2e.js:3:9' (measured in the clone). On the owner's machines that is a path inside the home folder (Mac) or a drive path (Windows PC): measured with the path replaced by a home-folder-style path, 'npm run traces' (step 3 of 'check') reports 'путь домашнего каталога' for tools/test/fixtures/e2e/tap/failing.txt lines 7 and 12. So following the design literally makes 'check' red and criterion 11 ('npm run -s traces | grep -c -E tools/test/e2e|tools/test/fixtures/e2e' -> 0) unmet; the tester would have to choose by himself how to clean the file (Q6 forbids silencing the rule). The note 'the duration_ms figures ... no test reads them' does not cover the paths.",
+        "needed": "State how failing.txt (and any text with a location/stack line) is produced so that it holds no path of the capturing machine: say which lines E2K-34 needs from it (the 'not ok' line and the '# tests/# pass/# fail/...' lines) and that the location/stack lines are removed or replaced by a neutral relative text, or that the file is written without the YAML block; and add that the file must pass 'npm run traces' (criterion 11)."
+      },
+      {
+        "id": "F12",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass B, items 5, 6",
+        "place": "section 4.4 (addSignalHook, installHandlers), section 6 flow steps 1, 4, 5 and the paragraph 'Exit codes', section 8 row 'Clean-up', section 7 row 17",
+        "what": "The signal hook is sound as measured (see summary), but five points are left to the developer: (a) the hook is returned as 'remove' by addSignalHook, yet nothing says the runner calls it when the run ends; E2K-32 runs runAll six times in one test process, so six stale hooks would stay and run on a later signal; (b) the hook is 'installed before the first spec starts', but the record line and INTERRUPTED are said to be printed 'in all cases'; a signal during listSpecs or the preflight (up to 20 s) has no hook, so the process exits 143 with neither INTERRUPTED nor the record line; (c) the stop of the hook must unregister the spec group (otherwise cleanupAllSync sends a second SIGKILL to a pgid that may be gone); (d) what happens when a hook throws (the handler is async: an unhandled rejection before cleanupAllSync); the value of 'its own limit' of a hook is not given (only the 10 s total); (e) the exit code after a second signal is not stated.",
+        "needed": "One sentence each: the runner removes its hook in a finally; the hook is installed together with installHandlers (step 1) and the INTERRUPTED/record output is made for a signal at any moment of runAll, or the preflight window is named as the exception; stop() unregisters the group; a hook error is caught and the clean-up still runs; the exit code after a second signal."
+      },
+      {
+        "id": "F13",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass B, items 4, 6; pass C",
+        "place": "section 6 signature 'spawnSpec({ args, cwd, env }) -> child' and E2K-37 ('the record says the process is detached'); section 6 step 4 ('launchBrowser()'), E2K-32",
+        "what": "(a) The injected spawnSpec receives only args, cwd and env, so a recorder cannot see 'detached' (it is inside the default implementation); the E2K-37 assertion cannot be written as worded, and what a fake child must look like (pid, stdout, close) so that registerGroup is not given a foreign pid is not said. (b) Step 4 says the preflight calls launchBrowser() without env, while E2K-32 runs 'with the stand-in for the preflight' and with an injected env; it is not said that the preflight uses the injected 'launch' option (with the runner's env), so a developer may launch the real Chrome from E2K-32.",
+        "needed": "(a) Add 'detached: true' to the argument that spawnSpec receives (or move the assertion to E2K-33/E2K-38) and say what the injected fake returns. (b) Say that the preflight calls the option 'launch' with the runner's env, and that E2K-32 injects a launch that starts the stand-in."
+      },
+      {
+        "id": "F14",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass D, quality-bar section 6 item 1; pass A item 3",
+        "place": "section 7 rows 12 and 17, section 14 item 4 (SIGHUP, 129, 'a second signal skips the wait', '10 s'); section 16 M59, M60",
+        "what": "Promises without a test: SIGHUP (exit 129) is installed and documented, but E2K-18 and E2K-38 send SIGTERM and SIGINT only (a mutant 'SIGHUP not installed / wrong code' survives); the second-signal behaviour and the 10 s cap have no test either. M59 is explained as 'the spec leader, file child and stand-in pids are alive after the runner exit': measured on my prototype of the flow, with the group registered by registerGroup the exit cleanup SIGKILLs the spec group, so the leader and the file child are gone and only the browser group (stand-in and its child) stays alive; E2K-38 still turns red (through the stand-in pids), but the stated reason is wrong.",
+        "needed": "Either a SIGHUP run in E2K-38 (and E2K-18) and a second-signal case, or drop the SIGHUP/second-signal/cap promises from section 7 and 14; correct the reason of M59 (the stand-in and its child stay alive)."
+      },
+      {
+        "id": "F15",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass A, item 2 (AP-014)",
+        "place": "section 18 (outdated outside the project), section 19 O9",
+        "what": "The places that say 'the check ends with npm run test passes without edit' are named as REQ-038 (lines 5266-5268, 5313). The same sentence stands in the pending REQ-040: docs/requirements.yaml line 5566 ('TC-20 and the check \"check ends with npm run test\" pass without edit', with a step 'npm run facts' before 'npm run test') and line 5502. When REQ-040 is built the sentence is false after this work. 0108 O9 covers REQ-038 only.",
+        "needed": "Name the REQ-040 lines in section 18 for ORCH (a note for the start of REQ-040, or an amendment by WF-01); no change to the REQ-104 code."
+      },
+      {
+        "id": "F16",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "pass D, AP-077",
+        "place": "section 4.6 step 3 ('never --no-sandbox ...') and section 11 'Forbidden words in the tests'",
+        "what": "The word rule is written for tests, but E2K-50 and the criterion-10(d) grep (tools/test/e2e) also scan the kit files, and the kit comments are the natural place for a developer to write 'never --no-sandbox' or a note with 'eslint-disable'; the design text itself uses the literal flag in 4.6. A comment in browser.js would turn E2K-25 and the grep red.",
+        "needed": "Add one sentence for BACKEND-DEV: the two sandbox flags and the four skip words do not appear in any file under tools/test/e2e, comments included."
+      }
+    ],
+    "closure_of_first_pass": {
+      "F1": "CLOSED. specEnv removes exactly NODE_TEST_CONTEXT; repeated by me (kept -> empty stdout, removed -> TAP); mutant M55 on the prototype: all five fixtures give SPEC_NO_TESTS, killed by E2K-32/E2K-37.",
+      "F2": "CLOSED. Relative form without './' and without 'tools/'; noTests compares the same string; M56 (SPEC_FAILED for every file) and M57 (empty fixture passes as ok) killed.",
+      "F3": "CLOSED for the words: the rule 'plain files for fixtures, assembled-from-parts for searched words' is consistent; the four grep tokens of criterion 11 occur in the design only in the rule texts, the criterion table row, the Q6 bar row and the E2K-50 row (assembled from parts); the fixtures lie outside both grep folders; E2K-50 patterns run on snippets: (i) catches process.env.HOME, (ii) counts the bare object. A NEW defect of the same family was found in 11.3 (F11).",
+      "F4": "ANSWERED, complete for SIGINT/SIGTERM and the 120 s watchdog; see F12/F13/F14 (Low).",
+      "F5-F10": "CLOSED (read in the file; F6 repeated 187/181/6; F8 by E2K-36; F9 fs.writeSync repeated; F10 console.js now in sub-step 3)."
+    },
+    "judgement_f4_size": "Keep the hook. The 120 s watchdog (binding by 0108 O3) needs the spec in its own process group (a SIGKILL of the leader alone leaves the file child, repeated by me), and a detached group no longer receives the terminal's Ctrl-C, so without the hook an interrupted 'npm run check' leaves the spec and its Chrome running until the file ends. The extra over the watchdog is small: addSignalHook (about the size of one function), the INTERRUPTED code, one test (E2K-38), one fixture (sleep-chrome), M59/M60, row 17. Dropping E2K-38, M59, M60, row 17 and the hook would be a smaller design but a worse command; I do not require it.",
+    "self_check": {
+      "design_sha256_before": "e4c6fe64592ba7fdc9cb0c7a9284525af9cd15b601778ee337a4d022ae27ef7f",
+      "design_sha256_after": "e4c6fe64592ba7fdc9cb0c7a9284525af9cd15b601778ee337a4d022ae27ef7f",
+      "clone": "git clone -b base/E2E104-20261103-01 into a new empty folder of the system temp (removed at the end), npm ci in tools/",
+      "commands_and_results": [
+        "outer node:test file spawning 'node --test --test-reporter=tap <arg>' with the env kept / NODE_TEST_CONTEXT deleted, args test/e2e/x.e2e.js, ./test/e2e/x.e2e.js, tools/test/e2e/x.e2e.js, test/e2e/empty.e2e.js, a skip+todo file: CTX= child-v8; kept: exit 0, stdout length 0 for all; cleared: TAP 'ok 1 - alpha' '# tests 1' / 'ok 1 - test/e2e/empty.e2e.js' / '# skipped 1 # todo 1'; tools/... -> Could not find, exit 1; KEYS NODE_TEST_CONTEXT",
+        "node --test <14 files> after package.json + READMEs edit: '# tests 187 # pass 181 # fail 6' (HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13)",
+        "same six files + traces-check after the section-12 replacements: '# tests 118 # pass 118 # fail 0'",
+        "README tests (repo, team-docs, traces-readme, pixel-office-settings, exec-docs, team-web-docs) with the section-14 text: '# tests 51 # pass 51 # fail 0'",
+        "one full 'npm test' of the clone with all files of the work and the replacements: '# tests 2136 # pass 2136 # fail 0 # skipped 0 # todo 0'",
+        "npm run -s lint exit 0; format:check passes with the fixtures (skip/todo option files, a zero-byte .e2e.js, tap texts); npm run -s traces: 0 traces; with failing.txt carrying a home-folder-style path: the home-path rule fires twice (F11)",
+        "prototype of the runner + cleanup flow (outside the project, not part of the design): drive.mjs results none: pass-a ok, fail SPEC_FAILED, empty SPEC_NO_TESTS, skipped/todo SPEC_SKIPPED, args '--test --test-reporter=tap test/fixtures/e2e/specs/pass-a.e2e.js', env identical but NODE_TEST_CONTEXT, sleep/sleep-stubborn SPEC_TIMEOUT with leader group, file child gone; drive38.mjs none: SIGTERM exit 143 in 328 ms, SIGINT 130, leader, file child, browser group gone",
+        "mutants: M55 (all fixtures SPEC_NO_TESTS), M56 (SPEC_FAILED), M57 (empty -> ok), M58 (stubborn file child alive after the run), M59 (exit 143 but the browser group and its child alive), M60 (same), M61 (snippet run: HOME read and a bare second process.env found), M51 (six red: test numbers 5, 10, 11, 43, 52, 83), M52 (2 red incl. HC-03), X1 specEnv drops TMPDIR (envDiff TMPDIR -> E2K-37), X2 not detached (the stop does not reach the group, the run lasts about the 60 s of the fixture instead of 8 s -> E2K-33), X3 noTests for any single test (pass-a SPEC_NO_TESTS -> E2K-32), X4 e2e key after check (LP-3), X5 e2e before test (6 red), X6 '|| true' on e2e (7 red)",
+        "git grep of 'npm run test' / 'ends with' outside tools/test: found REQ-040 lines 5502, 5566 (F15)",
+        "node URL parser rows of E2K-20 (127.1, trimmed spaces, :0, :65536, no port, user part, IPv6 mapped, //host): all as the table says",
+        "pgrep for cdv2, spec fixtures and headless Chrome after the work: none; the temp folder removed; no Chrome was started by me; git status of the project unchanged except this handoff"
+      ]
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: tag base/E2E104-20261103-01 exists (f806d7d); the design has 61 mutants, 52 tests (39 E2K + 13 SMK), 8 sub-steps; the task does not name an expected verdict (AP-018 not applicable)."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "For ORCH: F11 is the only blocking remark and is a text fix in section 11.3 (no new measurement of the system is needed beyond what is above). F12-F16 are Low and do not block; F15 asks ORCH to note the pending REQ-040 criterion before that requirement is built."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Judgement of the smaller alternative offered by the designer (drop E2K-38, M59, M60, row 17 and the hook): not required; reasons in judgement_f4_size."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Not repeated in this pass: the real-Chrome facts F12-F28 (unchanged since the first pass, where they were repeated); no Chrome was started. The Linux/runner behaviour stays unmeasured and is settled by criterion 10, as the design says."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "M51 was run on the six replaced files; the six red tests were the ones of the replacement table (numbers 5, 10, 11, 43, 52, 83)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

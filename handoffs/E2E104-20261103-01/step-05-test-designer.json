@@ -1,0 +1,239 @@
+{
+  "handoff_id": "step05-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/E2E104-20261103-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "docs/requirements.yaml",
+      "handoffs/E2E104-20261103-01/step-02-backend-dev.json",
+      "handoffs/E2E104-20261103-01/step-04b-code-fixer.json",
+      "handoffs/E2E104-20261103-01/step-04e-code-fixer.json",
+      "handoffs/E2E104-20261103-01/step-04g-reviewer.json",
+      "handoffs/E2E104-20261103-01/step-04f-security-reviewer.json",
+      "handoffs/E2E104-20261103-01/step-01f-code-design-validator.json"
+    ],
+    "route": "gates 3 and 4 PASS -> TEST-DESIGNER (this) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/smoke.e2e.js, tools/test/e2e-kit.test.js, tools/test/fixtures/e2e/specs/*, tools/test/fixtures/e2e/tap/*, and the six guard tests: tools/test/handoffs-docs.test.js, tools/test/handoffs-cmd-docs.test.js, tools/test/picker-config.test.js, tools/test/picker-look-property.test.js, tools/test/team-web-control.test.js (and the file holding HO-54 or any README test the design section 12 names)"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "WF-02, step 5 — write the tests of REQ-104 by the design docs/design/REQ-104-e2e-chrome-kit.md (sections 10 \"criterion → test\", 11 \"The tests\", 12 \"Replacement table\", 16 \"Mutants\") and the section \"Step 5\" of docs/workflows/WF-02-development.md. The code passed gates 3 and 4 (third pass PASS: handoffs/E2E104-20261103-01/step-04f-security-reviewer.json and step-04g-reviewer.json). Read the design completely, the block REQ-104 in docs/requirements.yaml, docs/quality-bar.md, docs/anti-patterns.md.\n\nYOUR FILES (design section 3): tools/test/e2e/smoke.e2e.js (SMK-01..SMK-13, real Chrome), tools/test/e2e-kit.test.js (E2K-01..E2K-61, 40 tests), tools/test/fixtures/e2e/specs/*.e2e.js and tools/test/fixtures/e2e/tap/*.txt (plain fixtures, TAP texts normalized so they hold NO absolute path — design 11.3), and the replacement of the six guard tests HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13 by section 12 (fix them FIRST, without weakening: the number of `test(` and `assert.` in the old files is not lower than at the tag base/E2E104-20261103-01). You do not change code of the kit; if a test needs a code change, write it in result.issues (the edit is CODE-FIXER's and the gates 3 and 4 run again).\n\nMUST ALSO COVER (read these handoffs' result.issues yourself and take every item): step-02-backend-dev.json (I1..I5: the stand-in modes, the contract details, criterion 4 needs smoke.e2e.js to exist), step-04b-code-fixer.json (I2: R-F1 full CHROME_NOT_FOUND text, R-F2 stand-in mode `no-upgrade` and CALL_TIMEOUT, R-F5 WAIT_TIMEOUT last-protocol-error text, R-F6 START_EXITED well under 1 s, R-F7 SCREENSHOT_FAILED, S-F1 stopped runner with hung/blocked spec leaves no process and no folder + registry validation, S-F2 safeText table and the 20-entry cap, S-F3 `--no-proxy-server` in the E2K-25 argument list, S-F4 PATH_REFUSED for NUL / long name / link loop), step-04e-code-fixer.json (F1 a Chrome launched with an `env` option that lacks the registry variable still gets a record; F2 newline or leading `::` in argv or SAI_CHROME never starts a log line and a 100 KB argument is cut; F3 `signalGroup` returns false for 0, 1, negative, fractional, NaN, string and true for a live group; a record with pgid 0 or 1 is ignored), step-04d/04g (reviewer notes for TEST-DESIGNER), and the Low remarks N1-N6 of the design gate step-01f-code-design-validator.json (N3: a two-hook case if \"at once\" stays; N5: pin or not the exact line and column; N6: build outside paths at run time). Tests for hung stand-in modes must not hang the run (AP-116); for `exit-early` use a start limit well above 1 s (one early START_TIMEOUT at 1 s was seen). Oracles are your own: do not import rules from the kit's source for the expected values, except the kit's public API under test.\n\nBAR: Q5 a test per criterion (1-13), failure tests check the state did not change, tests independent of each other and of the clock, no skip/todo/`|| true`/eslint-disable, no secret, no absolute machine path in any committed file (npm run traces), the forbidden words only built from parts (design 11.1/11.3). New logic needs mutants: apply at least 20 of the 72 mutants of design section 16 (the design names the test that catches each) in a TEMPORARY COPY outside the project, record in self_check: what is broken → which tests failed → how many; the working tree must not change (list of hashes before and after) and the tests are green again after. The step is handed in with a passing check: after your work `cd tools && npm test` must be green (only a failure proven not to be caused by this work is allowed) and `cd tools && npm run e2e` must run the real Chrome smoke spec and exit 0 on this Mac with `e2e: browser=` printed; run `npm run check` once at the end if the time allows (about 5 minutes).\nSAFETY ON THIS MAC: one agent at a time; at most three full `npm test` runs in the whole step, mutant runs only of the relevant test files; Chrome only through the kit's own cleanup; kill any Chrome you start by process id; remove only temp folders you made; never rm inside the project (a test that creates a temp folder removes it itself); format new files with `cd tools && npx prettier --write <your files>`; `npm run lint`. Do not commit. No name of another project in any file.",
+    "acceptance_criteria": [
+      "A runnable test for each of criteria 1-13 (design section 10 table)",
+      "Six guard tests replaced without weakening (counts of test( and assert. not lower than at the tag)",
+      "At least 20 mutants applied in a temporary copy, numbers in self_check",
+      "npm test green and npm run e2e green with the real Chrome"
+    ]
+  },
+  "created_at": "2026-11-03T00:45:54Z",
+  "started_at": "2026-11-03T00:45:54Z",
+  "completed_at": "2026-11-03T02:42:42Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Tests of REQ-104 written: tools/test/e2e-kit.test.js (49 tests, no real browser, a stand-in program speaks the protocol), tools/test/e2e/smoke.e2e.js (13 tests, real Chrome), nine runner fixtures, five normalized TAP texts, and the six guard tests HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13 replaced first without weakening (counts of test( and assert. equal to the tag). All items of the handoff issues of the earlier steps are taken: stand-in modes (ok-ignore-term, no-upgrade), R-F1, R-F2, R-F5, R-F6, R-F7, S-F1 (hung and blocked file with a browser, the list of browsers and what it trusts), S-F2, S-F3, S-F4, F1, F2, F3, and the Low remarks N1...N6 of the design gate. 87 mutants applied in a temporary copy, 86 caught, 1 equivalent survivor. npm test 2184 of 2184, npm run e2e 13 of 13 with the real Chrome, npm run check exit 0.\n\nCriterion -> test (Q5):\n1 nothing like it exists, nothing else changes -> E2K-01 (the debugging-port word only under tools/test, at least one hit in the kit), E2K-02 (imports node: or relative, no require, no bare dynamic import), E2K-03 (no dependencies, the four development ones, lock agrees)\n2 Chrome found by a fixed rule, absence fails -> E2K-04 (SAI_CHROME wins), E2K-05 (missing: no place asked), E2K-06 (own literal list of the five places, exhaustive suffix loop, PATH order), E2K-07 (message: SAI_CHROME, five places in order, count 5, no stack), E2K-08 (empty, relative, folder, not executable, empty PATH entry, no PATH, undefined), E2K-09 (the command with SAI_CHROME=/no/such/chrome: exit 1, one error line, record line, no browser line, no folders), E2K-42 (the whole message with the five numbered lines is printed)\n3 start, real protocol, stop, clean-up on failure -> SMK-01 (open, click, title, status 200, product, folder under temp root, process and folder gone), SMK-02 (throwing body: same error object), SMK-03 (pending request), SMK-04 (SIGKILL mid-call), SMK-09 (keys and typing), SMK-10 (click checks, waitFor), SMK-11 (network, reload, second tab); E2K-17 (group kill, SIGTERM ignored), E2K-18 (SIGTERM, SIGINT, SIGHUP, exit, throw), E2K-39 (signal hooks a-f), E2K-29 (signalGroup refuses 0, 1, negatives, fractions, text), E2K-28 (page method failures)\n4 faults with the stand-in -> E2K-10 (exits at once), E2K-11 (hang, hang-ignore-term), E2K-12 (close-on-connect, port-then-close, no-answer killed mid-call, started browser killed), E2K-13 (not JSON, two pending calls), E2K-14 (error object), E2K-15 (no answer), E2K-16 (stderr drained, with the premise check), E2K-19 (no-upgrade, CALL_TIMEOUT of connect); each ends with the state check and 'a second start works'\n5 only this computer, files outside the project -> E2K-20 (29 URL rows), E2K-21 (Page.navigate count 0 / 1 and the normalized url), E2K-22 (screenshot paths, no capture call, no file), E2K-23 (temporary root inside the repository, plus the repository-inside-temporary-root case), E2K-24 (folders under the temporary root), E2K-27 (NUL, long name, link loop), E2K-26 (safe text), SMK-12 (screenshot), SMK-13 (redirect and literal foreign address fail in the browser)\n6 windows, themes, overflow, console errors -> SMK-05 (three sizes, overflow positive and negative control), SMK-06 (default light, dark, back), SMK-07 (four kinds, clean page, declared, unmet), SMK-08 (favicon once per start), E2K-35 (pure matcher and event mapping), E2K-36 (defaults of a new page recorded by the stand-in), E2K-28 (strict overflow, viewport and scheme mismatches)\n7 the command and its record, independence -> E2K-30 (selection table, listSpecs shape, unknown name stops before any browser), E2K-31 (record line), E2K-32 (order, one browser line, stop at the first failure, empty/skipped/todo), E2K-33 (hung and stubborn file stopped by group), E2K-34 (TAP texts, single-line rule, no machine path in the fixtures), E2K-37 (exact argument, folder, environment, own group, start failure, folder outside tools), E2K-38 (SIGTERM, SIGINT, SIGHUP while a file runs, SIGTERM in the preflight), E2K-39, E2K-40, E2K-43 and E2K-45 (hung and blocked file with a browser), E2K-44 (the list of browsers)\n8 npm run check runs it last -> HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13 (replaced), E2K-40\n9 time stays inside the limit -> E2K-41 (duration_ms from an injected clock, integer; the README holds 30000 and 240000)\n10 Chrome exists and starts on the CI runner -> E2K-25 (the exact argument list, no sandbox flag in the list or in any file under tools/test/e2e, comments included); the CI procedure itself is RELEASE-VALIDATOR's\n11 clean tree, no traces, no secrets -> E2K-34, E2K-50 (no skip/todo/turned-off rule/secret shape, environment rule, only specs/ and tap/ unscanned), E2K-51 (nothing left at the end)\n12 the README tells how to run it -> E2K-60\n13 the departure from 0023 D2 is on record -> E2K-61\nWhy each exists: every row has a test that turns red when its criterion is broken (proved by the mutants below). Tests added beyond the design table: E2K-19, E2K-26, E2K-27, E2K-28, E2K-29, E2K-42, E2K-43, E2K-44, E2K-45 for the fixes of CODE-FIXER (R-F1, R-F2, R-F5, R-F7, S-F1, S-F2, S-F4, F1, F2, F3) and for N3 (E2K-39 case f). E2K-43 and E2K-45 are the two halves of one planned test (hung file / blocked event loop), split so that each stays far inside its 30000 ms limit.\nFiles: tools/test/e2e-kit.test.js 49 tests (design 40 + 9), tools/test/e2e/smoke.e2e.js 13 tests; fixtures: 9 spec files, 5 normalized TAP texts.\nQuality bar items: Q8 not applicable (the kit holds no data of customers or spaces); Q10 tested (every failure of Chrome, the socket, the answers, the file, the signals; every call has a limit; E2K-10...E2K-19, E2K-33, E2K-38, E2K-43, E2K-45); Q11 tested (E2K-20, E2K-21, SMK-13, the argument list in E2K-25); Q7 no secret, E2K-50 searches the shapes; R3 not applicable (decision 0033).\nSix guard tests replaced by section 12, before the other work: HC-02 (sixth step in the list), HC-03 (end `npm run test && npm run e2e`, scripts.test equality kept), HO-54 (sixth step in the list, title updated), PK-7b (string + ` && npm run e2e`, title updated), LP-3 (19 keys with e2e between test and check, six-step string), CTL-13 (end `npm run test && npm run e2e`). Counts of test( and assert. at the tag and now: handoffs-docs 11/27 -> 11/27, handoffs-cmd-docs 9/54 -> 9/54, picker-config 38/131 -> 38/131, picker-look-property 8/48 -> 8/48, team-web-control 54/275 -> 54/275 (never lower; every comparison stays exact).",
+    "changes": [
+      {
+        "file": "tools/test/handoffs-docs.test.js",
+        "change": "HC-02: list of check steps gets `npm run e2e` as the sixth (deepEqual stays exact); HC-03: end of check is `npm run test && npm run e2e` (scripts.test equality unchanged)"
+      },
+      {
+        "file": "tools/test/handoffs-cmd-docs.test.js",
+        "change": "HO-54: six steps in the list, title text updated"
+      },
+      {
+        "file": "tools/test/picker-config.test.js",
+        "change": "PK-7b: check string + ` && npm run e2e`, title updated"
+      },
+      {
+        "file": "tools/test/picker-look-property.test.js",
+        "change": "LP-3: 19 script names with e2e between test and check; six-step string"
+      },
+      {
+        "file": "tools/test/team-web-control.test.js",
+        "change": "CTL-13: /npm run test && npm run e2e$/"
+      },
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "change": "new, 49 tests E2K-01...E2K-61"
+      },
+      {
+        "file": "tools/test/e2e/smoke.e2e.js",
+        "change": "new, 13 tests SMK-01...SMK-13 (real Chrome)"
+      },
+      {
+        "file": "tools/test/fixtures/e2e/specs/*.e2e.js",
+        "change": "new, nine runner fixtures"
+      },
+      {
+        "file": "tools/test/fixtures/e2e/tap/*.txt",
+        "change": "new, five TAP texts captured outside the project and normalized (the absolute path of tools/ removed in both forms; grep for file:, /Users/, /home/, /tmp/, /var/ gives 0)"
+      }
+    ],
+    "self_check": [
+      "cd tools && npm run check -> exit 0: format:check 'All matched files use Prettier code style!', lint no output, traces 'файлов проверено 2423, следов 0', handoffs-check 'нарушений 0', npm test '# tests 2184 # pass 2184 # fail 0 # skipped 0 # todo 0', npm run e2e 'e2e: browser=Chrome/156.0.8078.80', '# tests 13 # pass 13 # fail 0', 'e2e: command=npm run e2e selection=all exit=0 duration_ms=17215'.",
+      "cd tools && npm test (separate run, before the check run): '# tests 2184 # pass 2184 # fail 0 # cancelled 0 # skipped 0 # todo 0', duration 236058 ms. The two full runs of npm test are the only ones of this step.",
+      "cd tools && npm run e2e on the real tree: e2e: browser=Chrome/156.0.8078.80, e2e: file=smoke, 13 of 13 ok, record line `e2e: command=npm run e2e selection=all exit=0 duration_ms=17094` (budget 30000). smoke was also run three times by node --test (13 of 13 ok each, 16.5 s to 21.4 s) and once inside npm run check (duration_ms=17215).",
+      "node --test test/e2e-kit.test.js: 49 of 49 ok in 31.9 s (alone, by itself, with its own private temporary root).",
+      "The five edited old files plus traces-check, repo, team-docs, traces-readme, pixel-office-settings, exec-docs, exec-scripted-source, picker-page-static, team-web-docs: '# tests 187 # pass 187 # fail 0' right after the six replacements, before the new files were checked.",
+      "MUTANTS: 87 breakages applied one at a time in a temporary copy of the repository outside the project (copied without .git and node_modules; the copy was removed at the end): 70 of the 72 mutants of the design (all except M30 and M63), M39b, and X01...X15 for the fixes of CODE-FIXER; 86 caught by at least one test, 1 equivalent survivor (X13). For each: what is broken -> which tests failed (count). Series run with `python3 mutants.py` over `node --test test/e2e-kit.test.js`, `node --test test/e2e/smoke.e2e.js` or the guard files, in the copy.",
+      "M01: findChrome: SAI_CHROME set but missing falls back to the places -> e2e-kit: 4 failed (E2K-05, E2K-08, E2K-09, E2K-42)",
+      "M02: findChrome: SAI_CHROME ignored when a place exists -> e2e-kit: 29 failed (E2K-04, E2K-05, E2K-08, E2K-09, E2K-10, E2K-11, E2K-12, E2K-13, E2K-14, E2K-15, E2K-16, E2K-17, E2K-18, E2K-19 ...)",
+      "M03: CHROME_PLACES: chromium and google-chrome swapped -> e2e-kit: 3 failed (E2K-06, E2K-07, E2K-42)",
+      "M04: CHROME_PLACES: chromium-browser dropped -> e2e-kit: 3 failed (E2K-06, E2K-07, E2K-42)",
+      "M05: not-found message omits SAI_CHROME -> e2e-kit: 1 failed (E2K-07)",
+      "M06: empty SAI_CHROME treated as unset -> e2e-kit: 1 failed (E2K-08)",
+      "M07: relative SAI_CHROME accepted -> e2e-kit: 1 failed (E2K-08)",
+      "M08: empty PATH entry searched (the current folder) -> e2e-kit: 1 failed (E2K-08)",
+      "M09: runner exits 0 when Chrome is missing -> e2e-kit: 2 failed (E2K-09, E2K-42)",
+      "M10: runner prints the stack of an error -> e2e-kit: 4 failed (E2K-09, E2K-32, E2K-37, E2K-42)",
+      "M11: assertLoopbackUrl accepts localhost -> e2e-kit: 2 failed (E2K-20, E2K-21)",
+      "M12: assertLoopbackUrl accepts https -> e2e-kit: 2 failed (E2K-20, E2K-21)",
+      "M13: host check is a prefix test -> e2e-kit: 2 failed (E2K-20, E2K-21)",
+      "M14: goto: address check removed (navigation before/without the check) -> e2e-kit: 1 failed (E2K-21)",
+      "M15: goto navigates to the raw input, not the normalized href -> e2e-kit: 1 failed (E2K-21)",
+      "M16: assertShotPath accepts a path inside the repository -> e2e-kit: 1 failed (E2K-23)",
+      "M17: guards compare paths without following links -> e2e-kit: 2 failed (E2K-22, E2K-27)",
+      "M18: profile folder made in the current folder -> e2e-kit: 6 failed (E2K-23, E2K-24, E2K-37, E2K-45, E2K-44, E2K-51)",
+      "M19: withBrowser closes only when the body succeeded (no finally) -> smoke: 2 failed (SMK-02, SMK-07)",
+      "M20: signals reach the leader only, not the group -> e2e-kit: 12 failed (E2K-17, E2K-19, E2K-30, E2K-32, E2K-33, E2K-37, E2K-38, E2K-42, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M21: close() never escalates to SIGKILL -> e2e-kit: 11 failed (E2K-17, E2K-19, E2K-30, E2K-32, E2K-33, E2K-37, E2K-42, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M22: profile folder not removed on a start failure -> e2e-kit: 21 failed (E2K-10, E2K-11, E2K-12, E2K-13, E2K-14, E2K-15, E2K-16, E2K-17, E2K-18, E2K-19, E2K-24, E2K-30, E2K-32, E2K-33 ...)",
+      "M23: pending calls not rejected when the connection fails -> e2e-kit: 19 failed (E2K-12, E2K-13, E2K-14, E2K-15, E2K-16, E2K-17, E2K-18, E2K-19, E2K-24, E2K-30, E2K-32, E2K-33, E2K-37, E2K-38 ...)",
+      "M24: a call after the close hangs instead of rejecting -> e2e-kit: 38 failed (E2K-12, E2K-13, E2K-14, E2K-15, E2K-16, E2K-17, E2K-18, E2K-19, E2K-20, E2K-21, E2K-22, E2K-23, E2K-24, E2K-25 ...)",
+      "M25: JSON parse of a frame not guarded -> e2e-kit: 1 failed (E2K-13)",
+      "M26: an error object resolves -> e2e-kit: 1 failed (E2K-14)",
+      "M27: a failed start does not kill the process -> e2e-kit: 6 failed (E2K-11, E2K-12, E2K-13, E2K-14, E2K-15, E2K-19)",
+      "M28: an early exit is noticed only by the start timer -> e2e-kit: 1 failed (E2K-10)",
+      "M29: stderr not read after the port line -> e2e-kit: 2 failed (E2K-16, E2K-51)",
+      "M31: signal handlers not installed -> e2e-kit: 12 failed (E2K-18, E2K-19, E2K-24, E2K-32, E2K-33, E2K-37, E2K-38, E2K-39, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M32: exception events not collected -> e2e-kit: 1 failed (E2K-35); smoke: 1 failed (SMK-07)",
+      "M33: Log.entryAdded entries not collected -> e2e-kit: 1 failed (E2K-35); smoke: 3 failed (SMK-07, SMK-08, SMK-11)",
+      "M34: a declaration matches by contains -> e2e-kit: 1 failed (E2K-35)",
+      "M35: declaration path ignored -> e2e-kit: 1 failed (E2K-35)",
+      "M36: expectOncePerStart allows two entries -> e2e-kit: 1 failed (E2K-35)",
+      "M37: an unmet declaration does not fail -> e2e-kit: 1 failed (E2K-35); smoke: 2 failed (SMK-07, SMK-08)",
+      "M38: colour scheme left to the machine (no explicit light) -> e2e-kit: 1 failed (E2K-36); smoke: 1 failed (SMK-06)",
+      "M39: mobile:true in the default window -> e2e-kit: 1 failed (E2K-36); smoke: 0 failed ()",
+      "M40: overflow test uses >= -> e2e-kit: 1 failed (E2K-28); smoke: 1 failed (SMK-05)",
+      "M41: hit test of click removed -> smoke: 1 failed (SMK-10)",
+      "M42: waitFor returns on the first poll whatever the value -> e2e-kit: 1 failed (E2K-28); smoke: 1 failed (SMK-10)",
+      "M43: a sandbox flag added to the arguments -> e2e-kit: 1 failed (E2K-25)",
+      "M44: resolver rule dropped -> e2e-kit: 1 failed (E2K-25); smoke: 1 failed (SMK-13)",
+      "M45: an unknown spec name exits 0 -> e2e-kit: 3 failed (E2K-30, E2K-41, E2K-42)",
+      "M46: the selection is sorted instead of kept in the given order -> e2e-kit: 2 failed (E2K-30, E2K-32)",
+      "M47: e2e: browser= not printed -> e2e-kit: 1 failed (E2K-32)",
+      "M48: the record always says exit=0 -> e2e-kit: 6 failed (E2K-09, E2K-30, E2K-32, E2K-33, E2K-41, E2K-42)",
+      "M49: a spec with no test passes -> e2e-kit: 1 failed (E2K-32)",
+      "M50: the run goes on after a failing file -> e2e-kit: 5 failed (E2K-32, E2K-33, E2K-37, E2K-43, E2K-45)",
+      "M51: npm run e2e removed from check -> guard files + E2K-40: 7 failed (E2K-40, HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13)",
+      "M52: the test glob widened -> guard files + E2K-40: 3 failed (E2K-40, HC-03, CTL-13)",
+      "M53: the kit imports a package (dynamic import of a bare name) -> e2e-kit: 1 failed (E2K-02)",
+      "M54a: README section heading renamed -> e2e-kit: 2 failed (E2K-41, E2K-60)",
+      "M54b: SAI_CHROME removed from the paragraph \"You need\" -> e2e-kit: 1 failed (E2K-61)",
+      "M55: spec process keeps NODE_TEST_CONTEXT -> e2e-kit: 6 failed (E2K-32, E2K-33, E2K-37, E2K-38, E2K-43, E2K-45)",
+      "M56: spec argument written from the root of Sai -> e2e-kit: 6 failed (E2K-32, E2K-33, E2K-37, E2K-38, E2K-43, E2K-45)",
+      "M58: the watchdog stops the leader only, not the group -> e2e-kit: 2 failed (E2K-33, E2K-45)",
+      "M60: the signal handler does not await the hooks -> e2e-kit: 1 failed (E2K-39)",
+      "M61: a kit file reads another variable -> e2e-kit: 1 failed (E2K-50)",
+      "M62: runAll does not remove its signal hook -> e2e-kit: 9 failed (E2K-30, E2K-32, E2K-33, E2K-37, E2K-42, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M64: SIGHUP is not handled -> e2e-kit: 12 failed (E2K-18, E2K-19, E2K-24, E2K-32, E2K-33, E2K-37, E2K-38, E2K-39, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M65: a second signal still waits for the hooks -> e2e-kit: 1 failed (E2K-39)",
+      "M66: the wait for the hooks has no limit -> e2e-kit: 1 failed (E2K-39)",
+      "M67: a hook that throws is not caught -> e2e-kit: 1 failed (E2K-39)",
+      "M68: remove() of a hook does nothing -> e2e-kit: 10 failed (E2K-30, E2K-32, E2K-33, E2K-37, E2K-39, E2K-42, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M69: the stopped spec group is not unregistered -> e2e-kit: 8 failed (E2K-32, E2K-33, E2K-37, E2K-42, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M70: the preflight ignores the injected launch -> e2e-kit: 2 failed (E2K-32, E2K-42)",
+      "M71: spawnSpec called without detached -> e2e-kit: 7 failed (E2K-33, E2K-37, E2K-38, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "M72: a comment names a sandbox flag -> e2e-kit: 1 failed (E2K-25)",
+      "X01: S-F3: --no-proxy-server dropped -> e2e-kit: 1 failed (E2K-25)",
+      "X02: F3: signalGroup accepts group 0 and 1 -> e2e-kit: 1 failed (E2K-29)",
+      "X03: F3: signalGroup accepts a number written as text -> e2e-kit: 1 failed (E2K-29)",
+      "X04: S-F2: a leading :: is not neutralised -> e2e-kit: 1 failed (E2K-26)",
+      "X05: S-F2: the list of console entries has no cap -> e2e-kit: 1 failed (E2K-26)",
+      "X06: S-F4: a bad path raises a raw error -> e2e-kit: 1 failed (E2K-27)",
+      "X07: R-F7: a failed screenshot write is reported as USAGE -> e2e-kit: 1 failed (E2K-28)",
+      "X08: R-F5: WAIT_TIMEOUT forgets the last protocol error -> e2e-kit: 1 failed (E2K-28)",
+      "X09: R-F2: connect has no limit on the upgrade -> e2e-kit: 12 failed (E2K-19, E2K-24, E2K-30, E2K-32, E2K-33, E2K-37, E2K-38, E2K-42, E2K-43, E2K-45, E2K-44, E2K-51)",
+      "X10: R-F1: only the first line of an error is printed -> e2e-kit: 1 failed (E2K-42)",
+      "X11: F1: no record of the browser is written for the runner -> e2e-kit: 3 failed (E2K-45, E2K-44, E2K-51)",
+      "X12: S-F1: the sweep trusts a record without checking the folder shape -> e2e-kit: 1 failed (E2K-44)",
+      "X13: S-F1: the sweep after a stopped spec is not done -> e2e-kit: 0 failed ()",
+      "X14: F2: operator text printed raw in the selection -> e2e-kit: 1 failed (E2K-42)",
+      "X15: F2: operator text printed raw in the command -> e2e-kit: 1 failed (E2K-42)",
+      "M39b: mobile:true in the viewport override of setViewport -> e2e-kit: 0 failed (); smoke: 1 failed (SMK-05)",
+      "M57: noTests compares with another form of the path -> e2e-kit: 2 failed (E2K-32, E2K-34)",
+      "M59: the runner does not stop the spec group on its own signal -> e2e-kit: 1 failed (E2K-38)",
+      "History: M16 survived the first series (the repository check of assertShotPath is hidden by the temporary-root check), a repository-inside-temporary-root case was added to E2K-23 and M16 is then caught by E2K-23; M59 survived the second series (the registry sweep hides the missing stop), the mark of the SIGTERM handler of sleep-chrome was added to E2K-38 and M59 is then caught by E2K-38; M39 (default window mobile:true) is not caught by smoke because SMK-05 sets its own window, it is caught by E2K-36, and M39b (mobile:true in setViewport) is caught by SMK-05; X13 survives: the sweep after a stopped spec is repeated by the sweep in the finally of runAll, the end state is the same, so it is an equivalent mutant for every observable result.",
+      "Working tree unchanged by the mutants: the list of sha256 of all 2490 files known to git (tracked and untracked, `git ls-files -co --exclude-standard`) before the series and after it differ in exactly two files, tools/test/e2e-kit.test.js and tools/test/fixtures/e2e/specs/sleep-chrome.e2e.js, which I edited on purpose in between (the E2K-23 case and the E2K-38 mark); every mutation was written to the copy and restored there. The tests are green again on the project after the series (npm test and npm run check above).",
+      "Processes: the mutants M02 and M70 make the kit start the real Chrome (the stand-in is ignored); the run timeout of M02 killed the test process, which left 88 Chrome processes of the copy's private temporary folder; I killed them by process id (only processes whose command line held the private folder of the series), and removed the folder. No Chrome of the owner was touched."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "No code edit is needed for the tests; nothing was changed in the kit, the stand-in or any file outside the write set. The new tests found no error of the code (the first run of each new file was green apart from errors of the tests themselves, fixed in the tests)."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "Design vs build: (a) design 11.3 lists the fixture contents; sleep-chrome.e2e.js also reads SAI_FIXTURE_BLOCK (1 = block the event loop with Atomics.wait instead of waiting; used by E2K-45) and leaves the mark <pidfile>.term in a SIGTERM handler (used by E2K-38 to tell an orderly stop from a kill, needed because the registry of browsers now hides the difference for M59); its pid key is `spec`, not `file`, because E2K-34 forbids the text `file:` in fixtures. (b) The design says hang-ignore-term is used by E2K-17; as the backend developer wrote (step-02 I4d) no Browser can be built on it, so E2K-17 uses ok-ignore-term and E2K-11 uses hang-ignore-term for the START_TIMEOUT kill. (c) SMK-13 has no proxy trial: Chrome on macOS takes proxies from the system, not from the environment, so a positive control cannot be made; the flag --no-proxy-server is pinned by the exact argument list of E2K-25 and mutant X01. (d) Design E2K-50 section 10 text mentions a rule `://` that 11.1 does not have (N1 of the design gate): the test follows 11.1. (e) SMK-09, SMK-10, SMK-11, SMK-12 sit under criteria 3 and 5 (N2)."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "For ORCH / DOC-UPDATER: X13 is an equivalent mutant. The sweep of the registry after each spec (runner.js, 'a browser the spec did not close ... is killed now') changes nothing a test can see, because a failed or stopped spec ends the run and the finally of runAll sweeps again; it would matter only for a spec that passes and leaves a browser running while the next spec starts. If that case is wanted it needs a spec fixture that leaves a live browser and exits with code 0 (the kit's own exit handler normally prevents it). Not built: no criterion asks for it."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Not tested, as ordered by the earlier gates: the START_FAILED messages in browser.js (two places) still print the SAI_CHROME path raw (SECURITY-REVIEWER I1, CODE-FIXER 04e I2, Low, accepted); when someone fixes them a test is to be added next to E2K-42 (the lookup messages of findChrome are already covered there). The wait of 100 ms after a load (LOAD_SETTLE_MS, step-02 I3) is exercised only through SMK-08; no unit test pins the number. The mutants M63 (hook added late) and M30 (a module flag makes a second start fail) were not built: M63 has no one-place form here, M30 needs a flag the code does not have; their effects are covered by E2K-38 (the preflight case) and by 'a second start works' in E2K-10...E2K-14."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Time-based assertions use wide limits (stop within 8 to 9 s, start failures within 5 s) and lower bounds only where the code must wait (E2K-15 >= 450 ms, E2K-17 >= 450 ms, E2K-39 b >= 900 ms). The full suite ran green twice in a row under the parallel load of npm test (2184 of 2184); if a slow machine makes one of them flaky, the longest are E2K-33 (7 s), E2K-43 and E2K-45 (about 5.5 s each), E2K-39 (2.5 s), all with the 30000 ms limit. Every test makes its own folders under a private temporary root and the last test (E2K-51) asserts that the root is empty, so a leaked folder turns that test red."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Candidates for docs/anti-patterns.md (Q13): (1) a mutation harness that kills a timed-out test process leaves the browsers that process started, because they sit in their own process group: kill them by the private temporary folder in their command line; (2) a mutant that makes the kit ignore the stand-in starts the real Chrome in every test, about 4 minutes per such mutant (M02); (3) files written to the scratch folder came back reformatted and with an escape \\u2028 turned into the real character, which broke a regular expression (fixed by writing the check as a loop over character codes)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e-kit.test.js",
+      "tools/test/e2e/smoke.e2e.js",
+      "tools/test/fixtures/e2e/specs/empty.e2e.js",
+      "tools/test/fixtures/e2e/specs/fail.e2e.js",
+      "tools/test/fixtures/e2e/specs/pass-a.e2e.js",
+      "tools/test/fixtures/e2e/specs/pass-b.e2e.js",
+      "tools/test/fixtures/e2e/specs/skipped.e2e.js",
+      "tools/test/fixtures/e2e/specs/sleep.e2e.js",
+      "tools/test/fixtures/e2e/specs/sleep-chrome.e2e.js",
+      "tools/test/fixtures/e2e/specs/sleep-stubborn.e2e.js",
+      "tools/test/fixtures/e2e/specs/todo.e2e.js",
+      "tools/test/fixtures/e2e/tap/normal.txt",
+      "tools/test/fixtures/e2e/tap/empty.txt",
+      "tools/test/fixtures/e2e/tap/skipped.txt",
+      "tools/test/fixtures/e2e/tap/todo.txt",
+      "tools/test/fixtures/e2e/tap/failing.txt",
+      "tools/test/handoffs-docs.test.js",
+      "tools/test/handoffs-cmd-docs.test.js",
+      "tools/test/picker-config.test.js",
+      "tools/test/picker-look-property.test.js",
+      "tools/test/team-web-control.test.js"
+    ]
+  }
+}

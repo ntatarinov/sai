@@ -455,12 +455,13 @@ test("LP-3: the scans of the source text - the files of the core hold none of th
     "format:check",
     "lint",
     "test",
+    "e2e",
     "check",
   ]);
   assert.equal(pkg.scripts.picker, "node src/picker/cli.js");
   assert.equal(
     pkg.scripts.check,
-    "npm run format:check && npm run lint && npm run traces && npm run handoffs-check && npm run test",
+    "npm run format:check && npm run lint && npm run traces && npm run handoffs-check && npm run test && npm run e2e",
   );
   // the search of the criterion over the whole core, outside public/
   const NETWORK_WORDS =

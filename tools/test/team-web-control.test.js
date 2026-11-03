@@ -1699,7 +1699,7 @@ test("CTL-13 (crit. 13) tools/README.md, the section «## Sai Team — the inter
     fs.readFileSync(path.join(TOOLS_DIR, "package.json"), "utf8"),
   );
   assert.equal(pkg.scripts.test, 'node --test "test/**/*.test.js"');
-  assert.match(pkg.scripts.check, /npm run test$/);
+  assert.match(pkg.scripts.check, /npm run test && npm run e2e$/);
   const mine = fs
     .readdirSync(path.join(TOOLS_DIR, "test"))
     .filter((n) => /^team-web-control.*\.test\.js$/.test(n))

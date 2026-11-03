@@ -138,7 +138,7 @@ test("HO-53 --help: code 0, both subcommands, every key, in Russian, nothing on 
   assert.equal(npm.stdout, direct.stdout);
 });
 
-test("HO-54 package.json: the script handoff is `node src/handoffs/handoff.js`, the steps of check are the same five, no ||", () => {
+test("HO-54 package.json: the script handoff is `node src/handoffs/handoff.js`, the steps of check are the same five and `npm run e2e` as the sixth, no ||", () => {
   const raw = fs.readFileSync(path.join(TOOLS, "package.json"), "utf8");
   const { scripts } = JSON.parse(raw);
   assert.equal(scripts.handoff, "node src/handoffs/handoff.js");
@@ -151,6 +151,7 @@ test("HO-54 package.json: the script handoff is `node src/handoffs/handoff.js`, 
       "npm run traces",
       "npm run handoffs-check",
       "npm run test",
+      "npm run e2e",
     ],
   );
   assert.ok(!raw.includes("||"));

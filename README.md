@@ -230,9 +230,13 @@ The text of the pages and commands the user sees is in Russian.
 
 ## How to open on another computer
 
-You need: git; Node 22 with npm (`tools/package.json`, field `engines`). Claude Code is needed
-only for the Pixel Office hooks and for real runs of the Sai Team executor; for the rest it is
-not needed.
+You need: git; Node 22 with npm (`tools/package.json`, field `engines`); Google Chrome or
+Chromium: the last step of `npm run check` opens the Sai pages in a real headless browser. The
+check looks for Chrome in the standard place of macOS and then for `google-chrome`,
+`google-chrome-stable`, `chromium` and `chromium-browser` in `PATH`; if it is somewhere else, set
+the variable `SAI_CHROME` to its full path. Without a browser `npm run check` fails with a clear
+message and is not skipped. Claude Code is needed only for the Pixel Office hooks and for real
+runs of the Sai Team executor; for the rest it is not needed.
 
 1. Clone the Sai repository (the owner's access is needed):
 

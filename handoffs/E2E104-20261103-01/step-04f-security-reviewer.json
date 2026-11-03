@@ -1,0 +1,106 @@
+{
+  "handoff_id": "step04f-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "04f",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/E2E104-20261103-01/step-04f-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E104-20261103-01/step-04e-code-fixer.json",
+      "handoffs/E2E104-20261103-01/step-04c-security-reviewer.json",
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "decisions/0108-e2e-kit-conventions.md"
+    ],
+    "route": "CODE-FIXER 04e -> SECURITY-REVIEWER (this) || REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "this handoff only; repository files are read-only"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-04c-security-reviewer.json"
+  },
+  "task": {
+    "description": "STEP 3 (role SECURITY-REVIEWER, third pass). THIRD and last pass of the gate (a FAIL stops the run and goes to the owner) on the code of REQ-104 after the small CODE-FIXER round 04e (handoffs/E2E104-20261103-01/step-04e-code-fixer.json: read result.changes and result.issues). Your previous pass: handoffs/E2E104-20261103-01/step-04c-security-reviewer.json (SECURITY) and step-04d-reviewer.json (REVIEWER), both PASS with Low findings. The round changed only: cleanup.js, browser.js, runner.js, find-chrome.js (noteBrowserForRunner now reads SAI_E2E_REGISTRY from the spec's own process.env and takes (pgid, profileDir); operator argv, the selection= part of the record line and SAI_CHROME text go through safeText; both raw process.kill(-pgid) calls use signalGroup, which refuses a group id of 0, 1, negative, fractional or non-numeric). Verify these with your OWN probes and then re-check the WHOLE kit once more for regressions (the previous rounds' fixes: registry, safeText, no-proxy-server, connect timeout, shared helper). ORCH ruling: two START_FAILED messages in browser.js print the SAI_CHROME path raw; the source is the operator, this is Low and accepted for now (record it, no FAIL). REVIEWER L4 (copied helpers) and SECURITY F4 (frame size) stay accepted. The before is the tag base/E2E104-20261103-01. Tests of the kit still do not exist (TEST-DESIGNER at step 5); exactly six old guard tests (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13) are red by design. MAC LOAD: one agent each; at most one full npm test; Chrome only through the kit's cleanup; kill any Chrome you start by process id; remove only temp folders you made; never rm inside the project; change no repository file except your own handoff. Items Q7-Q11, R2, R3 again with your own commands; trial numbers in summary.",
+    "acceptance_criteria": [
+      "Each of Q7-Q11, R2, R3 applicable-and-met or not applicable with reason",
+      "Trial numbers in summary"
+    ]
+  },
+  "created_at": "2026-11-03T00:33:12Z",
+  "started_at": "2026-11-03T00:33:12Z",
+  "completed_at": "2026-11-03T00:45:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "VERDICT PASS (derived by me from my own trials; no expected verdict was given). Third and last pass, narrow check of the 04e round plus a re-check of the whole kit. 0 Critical/High/Medium; 1 Low (accepted by ORCH ruling, reproduced), 2 Info.\n\nMAP OF SURFACES: area touched yes. Files = git against tag base/E2E104-20261103-01 (tracked: PLAN.md, README.md, decisions/README.md, docs/program/public-v1/PROGRESS.md, docs/requirements.yaml, tools/README.md, tools/package.json; untracked: tools/test/e2e/run.js, kit/{browser,cdp,cleanup,console,errors,find-chrome,guards,index,page,runner}.js, tools/test/fixtures/e2e/fake-chrome.js, decisions/0107, 0108, docs/design/REQ-104). browser.js, cleanup.js, runner.js, run.js -> 'server goes by itself' + 'writes files' (browser and spec as own process groups, signals, registry and profile folders in the temp root); find-chrome.js, errors.js, cdp.js, page.js, console.js, guards.js, index.js -> 'comes from outside' (argv, SAI_CHROME, protocol frames, page text) + 'goes to the browser' (the URL given to it) + 'writes files' (screenshot path); fake-chrome.js -> stand-in on 127.0.0.1; package.json, README, decisions, design, requirements, PLAN, PROGRESS -> no surface (read for secrets and machine paths). tools/src (both page folders), .github, .claude, package-lock.json: untouched (git diff against the tag: 0 lines). 'holds a secret', 'customer data', 'photos': absent.\n\nITEMS\n- Q7 applicable, MET. Secret-shape grep over tools/test/e2e, fixtures, the three documents and the README diff: only url.password === \"\" (guards.js:139) and design prose; no machine path in code; process.env read at 4 places (parameter defaults and cleanup.js:109), no value printed except SAI_CHROME (a path chosen by the operator, now through safeText). Page files that a browser receives (tools/src/pixel-office/public, tools/src/picker/public): unchanged.\n- Q8 not applicable (no customer data, no space identifier, no API). Q9 not applicable (grep for SQL words: 0 lines).\n- Q10 applicable, MET. Trial 5: 13 stand-in modes each ended with the expected coded E2eError (no-upgrade and no-answer CALL_TIMEOUT after 1553 ms with a 1000 ms limit; hang and hang-ignore-term START_TIMEOUT 1980 ms with a 1500 ms limit; exit-early START_EXITED), 0 processes and 0 folders after each. Stop paths: trials 1 and 2 below.\n- Q11 applicable by analogy (the browser may visit one address only), MET. Trial 8: real Chrome 156, my servers on the LAN address, [::1], 0.0.0.0: 11 foreign targets x 11 vectors (fetch, cors fetch, xhr, img, script, iframe, ws, beacon, redirect from the loopback server, css link, audio) + 11 goto() inputs + 4 location= navigations: 0 foreign hits (host-header oracle); control (resolver rule line removed in a copy): 85 foreign hits. Trial 7: proxy: real Chrome through a wrapper that appends --proxy-server and with http_proxy/https_proxy/ALL_PROXY set: 4 fetches blocked, my proxy 0 requests; control (--no-proxy-server removed in a copy): proxy got CONNECT clients2.google.com etc. The argument list is 8 entries; grep for no-sandbox, disable-setuid, disable-web-security, remote-allow-origins, remote-debugging-address, ignore-certificate: 0 lines.\n- R2 not applicable (Pixel Office, hook, server, journal untouched; the kit writes no event). R3 not applicable (dropped by decision 0033; no photos).\n\nVERIFIED FIXES OF 04e (own probes, own oracles)\n- F1 = L3 (registry from the spec's process.env): Trial 1, stand-in `ok`, spec launching with its own env object without the registry variable, and with a WRONG SAI_E2E_REGISTRY pointing to a decoy folder, blocking the event loop, SIGTERM to the runner: record <pgid>.json present during the run (the decoy folder stayed empty), runner exit 143, after: 0 processes, 0 folders. Control (the noteBrowserForRunner call removed in a copy): 1 process and 1 folder left, so the oracle sees the leak. Trial 2, real Chrome, withBrowser({env}) blocked, SIGTERM/SIGINT/SIGHUP (exit 143/130/129): 10 Chrome processes and 2 folders during, 0 and 0 after, each. Trial 3: stand-in spec that SIGKILLs itself, a spec that awaits forever and a blocked spec under fileTimeoutMs 4000 (SPEC_TIMEOUT), alone and two in one run: 0 processes and 0 folders each.\n- F2 = L2 (operator text): Trial 4: 11 hostile argv (newline + '::error::', leading '::', CR, ESC, U+2028, U+0085, 100000 chars, two args, shell metacharacters) through run.js: 0 lines starting with '::' or '##', 0 ESC/U+2028, output 137-818 bytes, 2 lines, no file made by the shell text. 7 SAI_CHROME values (newline + '::error::' in an absolute and a relative value, leading '::', ESC, 100000 chars absolute and relative, empty): same oracle clean, one line each, 246-507 bytes. findChrome with nothing found still prints 'Places tried (5):' and five numbered lines; non-string SAI_CHROME values (Symbol, throwing toString, number, null, array, object) -> CHROME_NOT_FOUND, no crash. Remaining raw print of a path from SAI_CHROME: finding F1 (Low, ORCH-accepted).\n- F3 + L1 (signalGroup): Trial 6: signalGroup with signal 0 (a probe that sends nothing: a refused id gives false, an unguarded one would give true) for 0, 1, -1, -5, 1.5, NaN, +-Infinity, undefined, null, '7', '2', [], {}, 0n, true, -0, 2**53, 1e21, my own pid and a gone id: false for all, no throw, runner alive. grep process.kill in the kit: cleanup.js:45 (signal 0 probe in groupGone) and cleanup.js:58 (inside signalGroup) only; browser.js uses signalGroup at 161. Registry forgery (Trial 9, real runner, 8 decoy groups of `sleep` in their own groups, records of every wrong shape): only the valid-shape decoy was killed (the spec is trusted code with the same rights: no new power); wrong profile name, symlink profile to a 'precious' folder, name/pgid mismatch, nested profile, profile outside the temp root, '..' in the profile path, array record, huge pgid, non-JSON: all ignored, decoys alive, 'precious' intact; records named 1, 0, 00, 01, -1 and '1.json' ignored, their folders kept.\n\nWHOLE KIT, REGRESSION (files not edited in 04e: cdp.js, console.js, errors.js, guards.js, page.js, index.js; verified by modification time and by the same behaviour)\n- Trial 10 (S-F2 page text), real Chrome 156 through the runner: page with console.error of newline + '::error file=...::', '::add-mask::', '::stop-commands::', ESC/OSC/BEL, U+2028, U+0085, CR, 3000 flood lines each with '::error::', a 2,000,000-character line, an unhandled rejection and an exception with '::error::' and '##[error]', an element id with a newline covering the button: whole output 55 lines, 2 KB; 0 lines starting with '::' or '##'; 0 ESC, CR, BEL, U+2028, U+0085; list of 20 entries + '... and 2985 more'; the TAP block does not print error.details; CLICK_INTERCEPTED id shown as 'x\\n::error::forged-id'. 0 processes and 0 folders after.\n- Trial 11 (S-F4 paths): 6000 generated paths (links into the repository copy, to the temp root, to its parent, dangling links, loops, self link, relative links, '..' after a link, NUL in 10 percent) through assertShotPath: 1210 accepted, 4790 refused, 0 raw system errors; oracle = write at the ORIGINAL input and at the returned path and look where the file really landed (realpath): 0 outside the temp root or inside the repository copy; control with a naive lexical guard: violations found (for example link in temp root to the repository copy). Trial 12: assertLoopbackUrl 100000 generated URLs (47 pieces: schemes, userinfo, decimal/hex/octal/short IPs, trailing dot, mapped v6, NUL, tabs, unicode dots, ports 0..99999999999), 5985 accepted, each checked with a strict regexp and a userinfo test: 0 bad, 0 non-coded throws; 9 non-string values (Symbol, throwing toString, null, 5, array, object, function, bigint) -> URL_REFUSED; timing: 1e5/1e6/1e7 characters through assertLoopbackUrl 0/1/10 ms, safeText of 1e7 newlines 2 ms, 1e7 colons 7 ms (no ReDoS).\n- Connect timeout and shared helper: Trial 5 above; the runner's group stop, sweep and cleanupAllSync all go through signalGroup (cleanup.js:77,79,161,205).\n\nTRIAL COUNT: 12 groups, about 120000 generated inputs (6000 paths, 100000 URLs, 11 argv, 7 SAI_CHROME values, 21 signalGroup ids, 8 forged records), 3 + 3 + 2 + 3 stand-in/real-Chrome signal runs, 13 stand-in modes, 1 hostile page, 2 proxy runs, 2 containment runs, 3 control runs. Every Chrome I started is gone (ps: 0 processes with sai-e2e-profile after each trial), the decoy `sleep` groups were killed by pid, my scratch folder (new, outside the project) is removed. The kit files, run.js and fake-chrome.js (12 files) have identical hashes before and after, and `git status --short` is identical (hash e6635f81...).",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "item": "Q7/Q10 log text, AP-014 (accepted by ORCH ruling, recorded, no FAIL)",
+        "place": "tools/test/e2e/kit/browser.js:194 and :247 (START_FAILED messages, `could not start \"${found.path}\"`)",
+        "what": "The path of the SAI_CHROME program is printed raw. Repro: an executable file named 'a<newline>::error::pwn' in SAI_CHROME with non-program content gives the message `could not start \".../a` then a line `::error::pwn\": ENOEXEC` (a line that starts with '::'). The source is the operator who also chooses what is executed, so no power is gained.",
+        "fix": "safeText(found.path, 300) at both places (same helper as find-chrome.js:53,59)."
+      },
+      {
+        "id": "F2",
+        "severity": "Info",
+        "item": "AP-014 (same class)",
+        "place": "tools/test/e2e/kit/page.js:319,325 (selector in ELEMENT_NOT_FOUND / ELEMENT_NOT_VISIBLE) and :364 (key name)",
+        "what": "The selector and the key name come from the spec code (not from the page) and are printed raw; no page or network text reaches them. Not blocking.",
+        "fix": "Optional: safeText(selector, 200)."
+      },
+      {
+        "id": "F3",
+        "severity": "Info",
+        "item": "Q10 hardening",
+        "place": "tools/test/e2e/kit/cleanup.js:150-152 (sweep) with signalGroup:56",
+        "what": "A record may name any group id above 1 except process.pid; the group of the runner itself (a non-leader group id) is not excluded. The spec is trusted code with the same rights (shown by the forgery trial: a valid-shape record kills its group). Analysis only: I did not send a real signal to my own group.",
+        "fix": "Optional: also refuse process's own group id (read once at start)."
+      },
+      {
+        "id": "F4",
+        "severity": "Info",
+        "item": "accepted earlier",
+        "place": "tools/test/e2e/kit/cdp.js (frame size), copied helpers (REVIEWER L4)",
+        "what": "Unchanged by order of ORCH; SIGKILL of the runner itself still leaves spec, Chrome and folders (documented O7).",
+        "fix": "none now"
+      }
+    ],
+    "self_check": [
+      "Hashes (shasum -a 256) of 12 files (kit/*.js x10, run.js, fake-chrome.js) before and after: `diff` -> identical (HASHES_SAME). `git status --short | shasum` before and after: e6635f8174a78cb0d6734074e28bef8934c0fc8f both times. The only file I changed is this handoff.",
+      "All trials ran on COPIES of tools/test/e2e and tools/test/fixtures/e2e in a new folder in the system temp folder (TMPDIR for the kit set to an empty sibling folder; a second copy for the three control runs); the project was only read. Stand-in Chrome = tools/test/fixtures/e2e/fake-chrome.js via SAI_CHROME; real Chrome 156.0.8078.74 for trials 2, 7, 8, 10 (and by default in the one forgery run), always started by the kit and stopped by it.",
+      "Trial 1: `node test/e2e/run.js blockenv` + `kill -TERM` after the spec wrote its ready file: variant 'no registry var in env option': during `procs=1 profile_folders=1 e2e_folders=2`, `registry records: 19984.json`, `runner exit=143`, after `procs=0 profile_folders=0 e2e_folders=0`; variant 'wrong SAI_E2E_REGISTRY': same with record 20049.json, decoy folder empty. Control copy without the noteBrowserForRunner call: `CONTROL after: procs=1 folders=1` (killed by me by group id, folder removed).",
+      "Trial 2: realblock (real Chrome, withBrowser({env:{PATH,HOME}}), blocked loop): SIGTERM `during: procs=10 folders=2 records=21394.json`, `exit=143`, `after: procs=0 folders=0`; SIGINT exit=130 same; SIGHUP exit=129 same. Trial 3 (drv.mjs: runAll with fileTimeoutMs 4000, killGraceMs 1000): selfkill `SPEC_FAILED ... exit code 1` procs=0 folders=0; awaithang `SPEC_TIMEOUT` procs=0 folders=0; blockenv `SPEC_TIMEOUT` procs=0 folders=0; two specs in one run procs=0 folders=0.",
+      "Trial 4: `arg1..arg11 rc=1 bytes=137..818 lines=2 ::lines=0 esc=0 u2028=0`, `bad=0`, no file made by the shell text; SAI_CHROME: 7 values `rc=1 bytes=246..507 lines=2 ::lines=0 esc=0`; first message with a newline: `e2e: error=SELECTION_UNKNOWN: no spec file \"x\\n::error::pwn\"` and `e2e: command=npm run e2e -- x\\n::error::pwn selection=x\\n::error::pwn exit=1`.",
+      "Trial 5: modes.mjs 13 lines, each `procs 0 dirs 0`. Trial 6: signalGroup list, all `false`, then `alive`. Trial 9: forge spec; after the run `A 20482 killed`, `B,C,D,E,G,H,I ALIVE`; `precious/keep.txt` and the outside folder intact; folders of records 1, 0, 00, 01, -1, 1.json kept; decoys killed by me by pid, my folders removed.",
+      "Trial 7 (proxy.mjs): `proxy hits: 0 []`, 4 fetches 'blocked'; control: proxy hits with CONNECT clients2.google.com:443, www.gstatic.com:443, www.google.com:443. Trial 8 (contain.mjs): `foreignHits: 0, loopHits: 65`; control `foreignHits: 85`. Trial 10: output 55 lines, grep '^[[:space:]]*(::|##)' -> 0; grep ESC/CR/BEL -> 0.",
+      "grep checks over the change: forbidden words (.skip(, .todo(, eslint-disable, || true, no-sandbox, disable-setuid, disable-web-security, remote-allow-origins, remote-debugging-address, ignore-certificate): 0 lines; exec/execSync/spawnSync/shell:/eval/new Function/innerHTML/fetch(/net/dns in the kit: only RegExp.exec; SQL words: 0; machine paths in code: 0."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "ORCH ruling kept: the two raw SAI_CHROME paths in browser.js:194 and :247 are finding F1 (Low, accepted, no FAIL). One-line fix when someone next touches the file."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "For step 5 (not blocking): test that launchBrowser/withBrowser with an env option lacking or carrying a wrong SAI_E2E_REGISTRY still writes a record from process.env and leaves nothing after SIGTERM; that signalGroup refuses 0, 1, negative, fractional and non-numbers and sweeps ignore records of the shapes in trial 9; that argv and SAI_CHROME with newline and '::' give no line starting with '::'."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Outside my area: the 7-8 Chrome processes that were already running on the Mac before my work were not started by me and were not touched; scratch copy of a second control run was removed with the first."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

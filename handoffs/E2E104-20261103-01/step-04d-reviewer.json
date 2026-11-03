@@ -1,0 +1,138 @@
+{
+  "handoff_id": "step04d-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "04d",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E104-20261103-01/step-04d-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E104-20261103-01/step-04b-code-fixer.json",
+      "handoffs/E2E104-20261103-01/step-04-reviewer.json",
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "decisions/0108-e2e-kit-conventions.md"
+    ],
+    "route": "CODE-FIXER -> SECURITY-REVIEWER || REVIEWER (this, second pass) -> TEST-DESIGNER",
+    "write_set": [
+      "this handoff only; repository files are read-only"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-04-reviewer.json"
+  },
+  "task": {
+    "description": "STEP 4 again (role REVIEWER, second pass). Second pass of the gate on the code of REQ-104 after CODE-FIXER (handoffs/E2E104-20261103-01/step-04b-code-fixer.json: read its result.changes and result.issues). Your own first-pass result is in handoffs/E2E104-20261103-01/step-03-security-reviewer.json (S-F1..S-F6) and step-04-reviewer.json (R-F1..R-F8). Design: docs/design/REQ-104-e2e-chrome-kit.md; answers: decisions/0107, decisions/0108 (with its Addendum: 100 ms settle, ok-ignore-term and the three rejecting stand-in modes, --no-proxy-server, safeText). The before is the tag base/E2E104-20261103-01; take the changed file list from git. Re-check the WHOLE change again, not only the fixes: the fixes may have broken something (the registry of browsers, the shared group-kill helper, safeText, the new stand-in mode no-upgrade, connect() timeout, START_EXITED timing, the PATH_REFUSED paths). Tests of the kit still do not exist (TEST-DESIGNER at step 5); exactly six old guard tests (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13) are red by design. MAC LOAD: one agent each; at most one full npm test; Chrome only through the kit's own cleanup; kill any Chrome you start by process id; remove only temp folders you made; never rm inside the project; change no repository file except your own handoff. Check that R-F1 and R-F2 are really fixed by your own probes (full CHROME_NOT_FOUND text; a TCP server that never upgrades does not hang the preflight), that R-F3..R-F7 are fixed, that the fixes are real solutions and not crutches, that the shared helper is used by both places, that nothing beyond the findings was changed (list every changed hunk that no finding names), the code still matches the design signatures except the differences the fixer listed (DOC-UPDATER will carry them at step 10), and the bar items. Severity scale of docs/workflows/handoffs.md: Critical, High, Medium = FAIL; Low recorded.",
+    "acceptance_criteria": [
+      "Findings with severity, file and line",
+      "Each earlier finding R-F1..R-F8 judged fixed or not"
+    ]
+  },
+  "created_at": "2026-11-03T00:12:16Z",
+  "started_at": "2026-11-03T00:12:16Z",
+  "completed_at": "2026-11-03T00:17:53Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "verdict_reason": "PASS: no Critical, High or Medium. Four Low findings (non-blocking). R-F1..R-F7 are fixed, R-F8 is covered by the Addendum of decisions/0108.",
+      "Q1_cause_not_symptom": "Met. R-F1 and R-F2 are real solutions: the whole E2eError text is printed (the cut stays for INTERNAL only), and the WebSocket open has the time limit callTimeoutMs, closes the socket and rejects CALL_TIMEOUT; launchBrowser then kills the group and removes the folder. The only swallow in the kit (waitFor, PROTOCOL_ERROR) now names the last error in the timeout text.",
+      "Q2_agrees_with_records": "Met. decisions/0002 (Node 22, ES modules, node: imports only, no runtime dependency): met; tools/src, .github, package-lock.json and the eslint config are unchanged against the tag. decisions/0107, 0108 and its Addendum (100 ms settle, ok-ignore-term and the three rejecting modes, --no-proxy-server, safeText): code matches. Signatures and codes match the design except the lines the fixer listed in its I1 (a)-(g); DOC-UPDATER carries them. New code SCREENSHOT_FAILED, new reason `not a usable path`, new stand-in mode no-upgrade, export list without ERROR_CODES/usage: all inside that list. tools/README.md: no sentence is untrue (the Chrome places text, `cannot reach any other address` is now truer with --no-proxy-server).",
+      "Q3_more_than_ordered": "Not found. Every hunk I could attribute is named by a finding: errors.js (R-F3, S-F2 safeText), cleanup.js (R-F4 helpers, S-F1 registry), browser.js (R-F4, R-F6, R-F7, S-F1, S-F2, S-F3), cdp.js (R-F2, S-F2), console.js/page.js/guards.js (S-F2, S-F4, R-F5, R-F7), runner.js (R-F1, R-F4, S-F1, S-F2), fake-chrome.js (no-upgrade for R-F2). The first-pass copy no longer exists, so the check is by reading the whole current code against the fixer's list of changes; I found no change outside it. Write set respected: no test of the kit, the six guard tests untouched, no file outside tools/test/e2e, the stand-in, and the handoffs.",
+      "Q4_quality_bar": "Met. grep for .skip(, .todo(, todo, FIXME, eslint-disable, || true, both sandbox flags, {skip, {todo, only(, secret shapes over tools/test/e2e and tools/test/fixtures/e2e: only runner.js:75,281,284 (the runner REFUSES skipped/todo specs). Package.json diff is the two script keys, check keeps all six steps and a hidden exit code is absent. format:check, lint, traces green.",
+      "Q5_idioms": "Good: promises awaited, timers cleared in finally/settle, errors are E2eError with codes, no shared state beyond the intentional registry in cleanup.js. The shared group helper (signalGroup, waitGroupGone, stopGroup in cleanup.js) is imported by both browser.js and runner.js; the private copies are gone. Residual duplication is Low (L1, L4).",
+      "criteria_1_13_have_code": "Unchanged from the first pass: 1-13 each have code or text that can satisfy them; criterion 2(d) is now met in what the user sees (R-F1) and criterion 4 (no hang) also for the handshake (R-F2). Criterion 10 (CI) is RELEASE-VALIDATOR's.",
+      "for_TEST_DESIGNER": "Test especially: E2K-32 with a line `  5) chromium-browser (in PATH)` on stderr; the no-upgrade mode through launchBrowser with a short callTimeoutMs (CALL_TIMEOUT, group and folder gone) and cdp.connect against a bare TCP server; START_EXITED for exit-early with a start limit well above 1 s; the registry (a spec that starts the stand-in `ok` browser and blocks, run with a small fileTimeoutMs and a SIGTERM: no stand-in process and no sai-e2e-profile folder after the stop; a record with a pgid <= 1, a foreign file name, or a profile folder outside the temporary root is ignored; a record whose folder is gone is not used to kill); safeText table (newline, ESC, 0x7f, U+2028, leading `::`, over-long, Symbol, throwing toString); CONSOLE_ENTRIES with 25+ entries (20 listed, `... and N more`, no line starting with `::`); path guards with NUL, a 300-character name, a link loop; waitFor text with `last protocol error`; screenshot into a missing folder = SCREENSHOT_FAILED; E2K-25 list of eight arguments. See L3 before writing the registry test: the registry is read from the `env` option of launchBrowser.",
+      "judgement_R_F": {
+        "R-F1": "fixed. My probe (runAll, launch = findChrome with empty PATH and no file): stderr holds the whole text, `Places tried (5):` and the five numbered lines 1) ... 5) chromium-browser (in PATH); exit 1; the record line is last on stdout.",
+        "R-F2": "fixed. Probe 1: cdp.connect to a bare TCP server that never answers the upgrade, callTimeoutMs 600: CALL_TIMEOUT `connect: no answer in 600 ms` after 629 ms (a refused connection still gives BROWSER_CLOSED). Probe 2: launchBrowser with the stand-in mode no-upgrade, callTimeoutMs 700: CALL_TIMEOUT after 1912 ms on a loaded Mac (700 ms limit plus the group kill), temporary folder empty, no stand-in process.",
+        "R-F3": "fixed. grep ERROR_CODES / usage( over tools/test/e2e and the stand-in: no hit.",
+        "R-F4": "fixed. One set in cleanup.js (signalGroup, waitGroupGone, stopGroup), imported by browser.js (close, abortStart) and runner.js (watchdog, signal hook). Two direct process.kill(-pgid, SIGKILL) calls remain in the synchronous paths of cleanup.js (L1).",
+        "R-F5": "fixed. Code read (page.js:279-307): the last swallowed PROTOCOL_ERROR is appended to the WAIT_TIMEOUT text as `; last protocol error: <message>`; the real-Chrome probe printed `WAIT_TIMEOUT waited 300 ms for: window.nothing; last value: undefined` (no protocol error in that case, as it should be).",
+        "R-F6": "fixed. My probe (stand-in mode exit-early, 4 starts): START_EXITED after 71 65 64 68 ms (the first pass measured about 370-400 ms); temporary folders left: 0. The exit handler waits for the child own close event; the 300 ms timer stays only for a helper holding the pipe.",
+        "R-F7": "fixed. SCREENSHOT_FAILED is thrown by Page.screenshot for a write failure (page.js:492-497); the repeated null check is gone from withBrowser (browser.js:355 now only `typeof failure === \"object\"`, safe because failure === null returns earlier).",
+        "R-F8": "no code change needed; the 100 ms settle (page.js:27, :216) is recorded in the Addendum of decisions/0108. Closed."
+      },
+      "judgement_S_F": {
+        "S-F1": "fixed and probed by me: a spec that starts the stand-in browser and blocks the event loop for 60 s; runAll with fileTimeoutMs 3000 gives SPEC_TIMEOUT, the temporary folder is empty and no stand-in process is left. Second probe: node test/e2e/run.js with SIGTERM after 4 s: exit 143, one INTERRUPTED line, one record line, no folder, no process.",
+        "S-F2": "fixed and probed on real Chrome 156: a page printing console errors with `\\n::error file=...` and control characters: CONSOLE_ENTRIES lists 20 + `... and 13 more`, 0 lines start with `::`, the newline is shown as `\\n`. safeText table probed (newline, ESC, 0x7f, U+2028, leading `::`, Symbol, throwing toString). Bidi override characters (U+202E) are not escaped: not a log-injection vector, noted only.",
+        "S-F3": "fixed. Real Chrome run: the argument list holds --no-proxy-server (8 entries), a fetch to a foreign name from the page was `refused`.",
+        "S-F4": "fixed. NUL, a 300-character name: PATH_REFUSED `not a usable path` from assertShotPath, assertUnderTempRoot and assertOutsideRepo (all three probed)."
+      },
+      "trials": "All in a new folder of the system temp folder with TMPDIR pointed inside it: a copy of tools/test/e2e and the stand-in laid out like the repository (so the kit's repository-root rule holds), two throwaway spec files inside the copy only. One real Chrome 156 run (removed by the kit's own close; pgrep with my TMPDIR: none before and after), stand-in runs, runner runs. The owner's own Chrome was running and was not touched. The scratch folder was removed at the end; nothing in the project was changed except this handoff."
+    },
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/cleanup.js:153 and :203",
+        "what": "Two direct `process.kill(-pgid, \"SIGKILL\")` in try/catch remain next to the new shared `signalGroup` (cleanup.js:52), which does the same thing synchronously. The group-kill mechanism is again written more than once in the same file (AP-014 residue of R-F4).",
+        "fix": "Call signalGroup(pgid, \"SIGKILL\") in both places. Behaviour is the same."
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/runner.js:47 and :321; tools/test/e2e/kit/find-chrome.js:53,59",
+        "what": "Since R-F1 the whole E2eError message goes to stderr as is. Three messages carry text of the operator, not of a page: SELECTION_UNKNOWN (the argument of the command line), and CHROME_NOT_FOUND with the value of SAI_CHROME. They are not passed through safeText, so a newline or a line start `::` in an argument or in the variable can forge a log line. The source is the person who runs the command, so this is not an attack path; the safeText rule of S-F2 covers page and browser text only. Same kind as I4(2) of SECURITY-REVIEWER and I4 of the fixer.",
+        "fix": "Wrap `name` and `value` in safeText in those three messages (one line each), or leave as recorded; either way TEST-DESIGNER need not test it."
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/browser.js:202 (noteBrowserForRunner(env, ...)) and cleanup.js:100",
+        "what": "The registry variable SAI_E2E_REGISTRY is read from the `env` option of launchBrowser, not from the process environment. A spec that calls launchBrowser or withBrowser with its own `env` object that lacks the variable (for example `{ SAI_CHROME: ... }`) is not recorded, so the safety net of S-F1 does not cover it. The normal call (no env option, or env spread from process.env) is covered, as probed. The next requirements (REQ-105..107) may pass a custom env.",
+        "fix": "Read the variable from process.env in noteBrowserForRunner (the spec process always has it), and keep `env` only for the child. Or document in tools/README.md that a custom env must carry the variable."
+      },
+      {
+        "id": "L4",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/page.js:59 and :63, console.js:8 and :12, runner.js:153",
+        "what": "The same two small helpers (first line of a text; cut to a length) are written in three modules (firstLine in page.js and console.js, oneLine in runner.js, cut in page.js and console.js). Not new in the fixes and not a finding of the first pass; recorded because the shared safeText now exists in errors.js and these could live next to it.",
+        "fix": "Optional: export firstLine from errors.js and import it; leave cut where it is."
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      "cd tools && npm run -s format:check -> All matched files use Prettier code style!",
+      "cd tools && npm run -s lint -> exit 0",
+      "cd tools && npm run -s traces -> traces: файлов проверено 2403, следов 0, пропущено 67",
+      "grep -rnE '\\.skip\\(|\\.todo\\(|todo|TODO|FIXME|eslint-disable|\\|\\| true|no-sandbox|disable-setuid|\\{ skip|\\{ todo|ghp_|sk-|BEGIN [A-Z ]*PRIVATE|\\.only\\(' tools/test/e2e tools/test/fixtures/e2e -> only runner.js:75 `todo: countOf(text, \"todo\")`, :281, :284 (the runner refuses skipped/todo specs)",
+      "grep -rn 'ERROR_CODES\\|usage(' tools/test/e2e tools/test/fixtures/e2e -> no hit",
+      "git diff base/E2E104-20261103-01 -- tools/src .github tools/package-lock.json eslint config -> empty; package.json diff = the keys e2e and check (six steps)",
+      "probe R-F1 (runAll, findChrome with PATH empty and no file): stderr `e2e: error=CHROME_NOT_FOUND: no Chrome or Chromium found. ... Places tried (5):` then `  1) /Applications/Google Chrome.app/Contents/MacOS/Google Chrome` ... `  5) chromium-browser (in PATH)`; stdout record `exit=1`",
+      "probe R-F2: connect to a bare TCP server, callTimeoutMs 600 -> `rejected CALL_TIMEOUT connect: no answer in 600 ms 629 ms`; refused port -> BROWSER_CLOSED; launchBrowser with stand-in mode no-upgrade, callTimeoutMs 700 -> `CALL_TIMEOUT connect: no answer in 700 ms 1912 ms`, leftover temp folders [], no stand-in process",
+      "probe S-F1: blocking spec + runAll fileTimeoutMs 3000 -> `e2e: error=SPEC_TIMEOUT`, tmp left [], procs none; run.js + SIGTERM after 4 s -> exit=143, `e2e: error=INTERRUPTED: SIGTERM`, one record line, no process, empty temp folder",
+      "probe real Chrome 156 via withBrowser: args = --headless=new | --remote-debugging-port=0 | --user-data-dir=<profile> | --no-first-run | --disable-gpu | --no-proxy-server | --host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1 | about:blank; goto status 200; fetch to a foreign name `refused`; WAIT_TIMEOUT text; ELEMENT_NOT_FOUND; CONSOLE_ENTRIES 33 entries -> 23 lines, 0 lines starting with `::`; temp folder empty and no process after",
+      "probe safeText/guards: `a\\nb`->`a\\\\nb`; `::error::x`->`\\\\u003a:error::x`; ESC, 0x7f, U+2028 escaped; Symbol and throwing toString safe; NUL and 300-character path -> PATH_REFUSED `not a usable path` x3 guards",
+      "no full npm test run by me (the fixer ran the one; six guard tests red by design: HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13)",
+      "probe R-F6: stand-in exit-early x4 -> START_EXITED 71, 65, 64, 68 ms, temp folders 0"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "L3 is the one finding that may bite a later requirement; ORCH may pass it to CODE-FIXER together with L1 (a two-line change) or leave all four Low to DOC-UPDATER/the report. None blocks."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "The registry (SAI_E2E_REGISTRY, files <pgid>.json, sweep after each spec, at the stop and at exit) is not described in tools/README.md; DOC-UPDATER should add it to the design sections 4.4/6 (the fixer's I1(e)). tools/README.md says `removed ... on SIGINT, SIGTERM, SIGHUP`, which is true."
+      },
+      {
+        "id": "I3",
+        "kind": "EXPECTED_RED",
+        "text": "HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13 are red by design until step 5; not touched."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -12,7 +12,7 @@ The one check command (quality-bar Q4) runs from the folder `tools/`; Node 22 is
     npm ci
     npm run check
 
-`npm run check` is, in a row, `npm run format:check` (prettier --check), `npm run lint` (eslint --max-warnings 0), `npm run traces` (the trace check), `npm run handoffs-check` (the check of the run records) and `npm run test` (node --test over `test/**/*.test.js`); it stops at the first error. The check is not bypassed: there is no `skip` and no `todo` in the tests, and there are no turned-off rules in the code or in the settings (quality-bar Q6).
+`npm run check` is, in a row, `npm run format:check` (prettier --check), `npm run lint` (eslint --max-warnings 0), `npm run traces` (the trace check), `npm run handoffs-check` (the check of the run records), `npm run test` (node --test over `test/**/*.test.js`) and `npm run e2e` (the end-to-end tests in a real headless Chrome); it stops at the first error. Chrome is needed for the last step: the variable `SAI_CHROME` (a full path) is read first, then the standard places; without a browser the step fails with a clear message and is never skipped (decisions/0107). The check is not bypassed: there is no `skip` and no `todo` in the tests, and there are no turned-off rules in the code or in the settings (quality-bar Q6).
 
 ## Pixel Office
 
@@ -830,3 +830,23 @@ The module reads and writes nothing: no files, no network, no clock, no random n
 The same answers always give the same result. The result has no words that are not in the tenant file. Numbers are only in three places: `score`, `points` and `because[].value`. In the last one lies the number that the visitor answered.
 
 The engine has no command: it is called by the server. The picker page does not get the engine. It repeats only the rule of the visibility of questions (`public/rules.js`), and a test compares it with the engine.
+
+## End-to-end tests in a real browser
+
+The spec files `tools/test/e2e/<name>.e2e.js` open the Sai pages in a real headless Chrome. The command is `cd tools && npm run e2e`; one file: `npm run e2e -- smoke`; several names run in the order given. The script `test` never starts a browser: the browser tests are only in this command, the sixth and last step of `npm run check`.
+
+Where Chrome is searched: first the variable `SAI_CHROME` (a full path; if it is set and the file is missing, the run fails and no other place is tried), then five places in this order: the standard place of macOS, then `google-chrome`, `google-chrome-stable`, `chromium` and `chromium-browser` in `PATH`. A missing Chrome fails the run with a message that names `SAI_CHROME` and the places that were tried; it is never skipped.
+
+The output: the line `e2e: browser=<product and version>` once, the line `e2e: file=<name>` before each file, then the lines of the file itself, and the last line `e2e: command=… selection=… exit=… duration_ms=…` (`selection=` is `all` or the names that were given). The budgets of `duration_ms` (REQ-104, criterion 9): `smoke` 30000, all files 240000. The run stops at the first file that fails, hangs for more than 120 seconds, registers no test, or has a skipped or todo test. After a signal (`SIGINT`, `SIGTERM`, `SIGHUP`) to the command, it stops the running file and the browsers, prints `e2e: error=INTERRUPTED: <signal>` and the last line, and ends with the code 130, 143 or 129.
+
+Where files go: the profile folder of each browser (`sai-e2e-profile-…`) and any screenshot lie under the temporary root of the system (`TMPDIR` is honoured), never in the project; they are removed at the end, on a failure, and on `SIGINT`, `SIGTERM` and `SIGHUP` (a `SIGKILL` of the command itself cannot be caught). The browser can open only `http://127.0.0.1:<port>/…` and cannot reach any other address; the sandbox of Chrome is never turned off.
+
+How to write a spec: a file named `<name>.e2e.js` with top-level `test()` calls only; each test starts its own browser with `withBrowser` from `test/e2e/kit/index.js`; test names are unique and each test passes alone. Page code is given to `evaluate` as a string, not as a function.
+
+| Spec file    | Requirement |
+| ------------ | ----------- |
+| smoke.e2e.js | REQ-104     |
+
+REQ-105, REQ-106 and REQ-107 add their rows.
+
+On the CI runner (the GitHub image `ubuntu-24.04`) the step is read as criterion 10 of REQ-104 says: the result of a real run decides whether Chrome needs anything more there.

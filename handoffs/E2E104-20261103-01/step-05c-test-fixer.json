@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step05c-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "05c",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/E2E104-20261103-01/step-05c-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E104-20261103-01/step-05b-test-design-validator.json",
+      "docs/design/REQ-104-e2e-chrome-kit.md"
+    ],
+    "route": "5b FAIL -> TEST-FIXER (this) -> TEST-DESIGN-VALIDATOR 5b again -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e-kit.test.js, tools/test/fixtures/e2e/specs/*, tools/test/fixtures/e2e/tap/*"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-05b-test-design-validator.json"
+  },
+  "task": {
+    "description": "WF-02 after FAIL of step 5b — fix the tests by the findings of handoffs/E2E104-20261103-01/step-05b-test-design-validator.json (read result.issues and the summary fully). T1 (Medium): add a test that the runner process exits promptly after the record line (the watchdog timer must be cleared); it must FAIL for the mutant R15 (watchdog timer never cleared) and pass on the current code. T2 (Low): add a fixture spec that passes every test and still exits non-zero, with a row in E2K-32; update the file counts in E2K-30 and E2K-34 (9 to 10). T3 (Low): add a nested-folder row to part (e) of E2K-44 (mutant K10). T4 (Low): the last assertion of E2K-60 can never fail — drop it or assert the word the README really uses. T5 (Low): accept, only name it in result.issues. If a finding needs a CODE change (for example the timer in the runner really keeps the process alive), do NOT edit code: write it in result.issues. Write only into the write_set. Prove each new test fails on its mutant in a temporary copy outside the project and passes on the real tree; the working tree must not change by mutant runs. Finish with one npm test run green and one npm run e2e green. Do not commit. One thing at a time; kill Chrome only by process id, only your own. Report in at most 10 lines.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T04:46:17Z",
+  "started_at": "2026-11-03T04:46:17Z",
+  "completed_at": "2026-11-03T04:55:36Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Step 5b FAIL fixed by tests only, no code edit. T1 (Medium), T2, T3, T4 done; T5 accepted. Each new check was shown to fail on its mutant in a copy outside the project and to pass on the real tree. npm test 2185/2185, npm run e2e 13/13 exit 0.",
+    "changes": [
+      {
+        "kind": "test",
+        "file": "tools/test/e2e-kit.test.js",
+        "place": "new E2K-46",
+        "finding": "T1",
+        "criterion": "REQ-104 criterion 9 (the run stays inside its time budget; a timer left armed holds the process up to 120 s after the record line) and criterion 7 (a file stopped by the timer is cleaned up, so the timer must belong only to a running file)",
+        "what": "A child node runs runAll with the stand-in browser and pass-a; the test asserts exit code 0, the process ends within 4000 ms after the record line and by itself (not killed). Mutant R15 (watchdog never cleared): E2K-46 red, process still alive at the 15 s limit."
+      },
+      {
+        "kind": "test",
+        "file": "tools/test/e2e-kit.test.js (E2K-32) and tools/test/fixtures/e2e/specs/exit-one.e2e.js",
+        "place": "new row at the end of E2K-32; E2K-30 list and E2K-34 count (9 to 10)",
+        "finding": "T2",
+        "criterion": "REQ-104 criterion 7 (a failing file fails the run: exit non-zero, one record line)",
+        "what": "A real node --test run turns a non-zero exit of the file into a failed test in the TAP, so a fixture alone cannot reach the exit-code check; the row uses the fixture name with a spawnSpec stand-in that prints the committed passing TAP and exits 1, and asserts the TAP shows fail 0, code 1, SPEC_FAILED naming exit code 1 and the record line exit=1. Mutant R14 (exit code not checked): E2K-32 red."
+      },
+      {
+        "kind": "test",
+        "file": "tools/test/e2e-kit.test.js",
+        "place": "E2K-44 part (e)",
+        "finding": "T3",
+        "criterion": "REQ-104 criterion 7 (clean-up kills only what the kit started; a record that is not of the exact shape is not trusted, design section on the sweep)",
+        "what": "A record whose profile folder is <temporary root>/<sub>/sai-e2e-profile-nested with a live group: sweep returns 0, the group is alive, the folder stays. Mutant K10 (directly-under-root clause dropped): E2K-44 red."
+      },
+      {
+        "kind": "test",
+        "file": "tools/test/e2e-kit.test.js",
+        "place": "E2K-60 last assertion",
+        "finding": "T4",
+        "criterion": "REQ-104 criterion 12 (the README names e2e as the sixth step of the check)",
+        "what": "The assertion that could not fail is replaced by one on the README section text: it must contain the sentence part 'the sixth and last step of `npm run check`'. Passes on the real README."
+      }
+    ],
+    "mutant_proofs": {
+      "R14": "E2K-32 red",
+      "R15": "E2K-46 red (process alive at the limit)",
+      "K10": "E2K-44 red",
+      "method": "copy of the repository outside the project, validator harness with the changed test file, pattern run of E2K-32, E2K-44, E2K-46; project files edited only by me"
+    },
+    "self_check": {
+      "before": "step 5b FAIL: 82 mutants, survivors R14, R15, K10 (all other survivors equivalent)",
+      "commands": [
+        "cd tools && npm test -> tests 2185, pass 2185, fail 0, cancelled 0, skipped 0, todo 0",
+        "cd tools && npm run e2e -> 13 of 13, e2e: command=npm run e2e selection=all exit=0 duration_ms=17276; no sai-e2e- process or folder left",
+        "npm run -s format:check clean; npm run -s lint clean; npm run -s traces 0 traces"
+      ]
+    },
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "T5 accepted as the validator proposed: the effect of --no-proxy-server in a real Chrome stays pinned only by the exact argument list (E2K-25); no test change."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Counts: the kit test file has 50 tests now (E2K-46 added) and the spec fixtures are 10 files; docs/design/REQ-104-e2e-chrome-kit.md says 49 tests and 9 files in places and is not in my write set - for DOC-UPDATER or CODE-DESIGNER to align if they quote the numbers."
+      },
+      {
+        "kind": "NOTE",
+        "text": "E2K-46 limits: the bound of 4000 ms after the record line is wide on purpose against the 120000 ms timer it guards; the child is killed at 15000 ms so that the mutant fails fast."
+      },
+      {
+        "kind": "NOTE",
+        "text": "No code defect found; the runner timer is cleared correctly in the real tree."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e-kit.test.js",
+      "tools/test/fixtures/e2e/specs/exit-one.e2e.js"
+    ]
+  }
+}

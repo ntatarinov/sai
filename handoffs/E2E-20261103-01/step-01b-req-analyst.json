@@ -1,0 +1,188 @@
+{
+  "handoff_id": "step01b-E2E-20261103-01",
+  "run_id": "E2E-20261103-01",
+  "workflow_id": "WF-01",
+  "step": "01b",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/E2E-20261103-01/step-01b-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104",
+      "REQ-105",
+      "REQ-106",
+      "REQ-107"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "handoffs/E2E-20261103-01/step-02-req-validator.json",
+      "decisions/0107-e2e-real-chrome-in-check.md",
+      "decisions/0023-parity-frame-fixes.md",
+      "handoffs/E2E-20261103-01/step-01-req-analyst.json"
+    ],
+    "route": "REQ-ANALYST (rework) -> REQ-VALIDATOR (second pass) -> ORCH",
+    "write_set": [
+      "docs/requirements.yaml: blocks REQ-104..REQ-107 and optionally a new REQ-108 at the end"
+    ],
+    "base_tag": "base/E2E-20261103-01",
+    "rework_of": "handoffs/E2E-20261103-01/step-01-req-analyst.json"
+  },
+  "task": {
+    "description": "WF-01, step 1 (rework, first of at most two repeats) — rework REQ-104 (and only where the cross-references demand it, REQ-105, REQ-106, REQ-107) by the remarks of the gate in handoffs/E2E-20261103-01/step-02-req-validator.json (read its result yourself: the remarks N1…N7 and the Low remarks of REQ-105/106/107). Rework only by that list; anything beyond it goes into result.issues as a question (AP-019). Do not weaken any criterion.\n\nNEW FACTS since step 01 (owner's answers of 2026-11-03, recorded in decisions/0107-e2e-real-chrome-in-check.md — read it): Chrome IS needed; the end-to-end tests are part of `npm run check`; the \"no browser binary\" clause of decisions/0023 D2 is lifted for REQ-104…REQ-107 only; a temporary branch `ci/<name>` MAY be pushed to learn whether the GitHub runner has Chrome and deleted after the run (main untouched). REQ-033 stays pending and is NOT decided: do not edit it, and do not write that REQ-107 replaces it.\n\nWHAT TO FIX:\n- N1 (blocking): make the departure from 0023 D2 explicit: the description and the relevant criteria name decisions/0107 (a criterion checks that the file exists and that the README prerequisites of tools/ now name Chrome, with the \"Chrome missing → red, understandable message, never skip\" behaviour). Remove criteria's dependence on the open points I2 and I5.\n- N2 (blocking): the GitHub criteria must be answerable at a step that exists: say WHO reads the run (RELEASE-VALIDATOR at WF-02 step 9, or the finalizer waiting for check.yml), AT WHICH step, and BEFORE the push to main — through a run on a temporary `ci/*` branch (decisions/0107, built with the temporary-index snapshot commit as in run ISS-0093-20261028-01), with the exact fact to be read (the Chrome binary found on ubuntu-24.04, the e2e step green, the duration recorded and under the watch value). If the runner has no Chrome, the criterion says what the requirement then demands (an install step in check.yml, pinned by version/SHA like the existing steps) — write both branches as checkable.\n- N3…N7 (non-blocking, do them if they fit without growing REQ-104 into two pieces of work): criteria 1 and 11 already met on HEAD → add a \"before\" value that fails on HEAD or mark them honestly as guards; the criterion-7 loop must not pass on zero tests and must check run order independence; favicon request on first profile load must not collide with the \"declared expectation must happen\" rule; mention the program plan's own e2e plan (docs/program/public-v1/) in the description only as a related fact, with no dependence. For REQ-105/106/107 keep the cross-references to REQ-104 criteria numbers correct after the rework (renumber nothing if you can; if you must, fix every reference) and take the Low remarks that cost one line.\nIf the size gate (г) would fail, use the split proposed in step 01 (criteria 1–6 kit, 7–12 command/wiring/CI as a new REQ-108 depending on REQ-104) and fix depends_on of REQ-105…107.\n\nEDIT SCOPE: only the blocks REQ-104…REQ-107 (and a new REQ-108 at the end if you split). Hash of the rest of the file before and after into result; \"before copy\" of every edited line from `git show base/E2E-20261103-01:docs/requirements.yaml` is not possible for these blocks (they are new in this run) — instead take them from the current file before your edit, into result.before_copy, with the table \"what was fixed, where\". No name of another project in any text (traces).",
+    "acceptance_criteria": [
+      "Every remark N1..N7 has a line in the table what was fixed / where, or an honest reason",
+      "Rest of the file unchanged by hash"
+    ]
+  },
+  "created_at": "2026-11-02T20:35:53Z",
+  "started_at": "2026-11-02T20:35:53Z",
+  "completed_at": "2026-11-02T20:45:49Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework of REQ-104 by the gate remarks N1..N7 and decisions/0107; the Low remarks N8..N14 of REQ-105, REQ-106, REQ-107 that cost a line were taken. REQ-104 was NOT split: it has 13 criteria (the new one is criterion 13, at the end), the numbers 1..12 are kept, so every reference of REQ-105..107 to REQ-104 criteria 5, 6 and 7 is still right; depends_on of all four blocks is unchanged. N1: the description now names the departure from 0023 D2 / 0022 D7 (only the clause 'no browser binary', only for REQ-104..107), the state of REQ-033 (pending, not decided, two of its criteria conflict with the script e2e, not edited, not 'replaced') and of REQ-014 criterion 3 (not edited, question I1); new criterion 13 checks that decisions/0107 exists and is accepted and that the root README paragraph 'You need' and the section 'Check' of tools/README.md name Chrome and SAI_CHROME and say that without a browser the check fails. N2: criterion 10 is rewritten - RELEASE-VALIDATOR at WF-02 step 9, before any push, a run of a snapshot commit on a temporary branch ci/<run id>-release-validator-check built through a temporary index as in ISS-0093-20261028-01, the exact facts to read (image, e2e browser line and record line, conclusion, job time up to 1500 s), and three checkable outcomes: A the runner has Chrome (workflow unchanged), B no Chrome (one pinned install step in check.yml, guard tests CI-4/CI-8 replaced), C Chrome only without the sandbox (BLOCKED, owner question). The time half of criterion 9 moved to criterion 10; criterion 9 keeps the local budgets.",
+    "changes": [
+      "docs/requirements.yaml: only the blocks REQ-104..REQ-107 and one dated comment line before REQ-104 changed; 52 lines of the previous text of those blocks were removed or replaced (listed in before_copy), 172 lines added; nothing before the comment line and nothing outside the four blocks changed; REQ-108 was not created.",
+      "N1 (blocking): REQ-104 description - paragraph 'Decisions this requirement leans on' rewritten around decisions/0107 and a new paragraph 'The departure from an earlier record, named' (0023 D2 half 'no browser binary' lifted for REQ-104..107 only, half 'inside npm run check' kept; REQ-033 pending and not decided; REQ-014 criterion 3 not edited); the Files paragraph now lists the root README.md and the tools/README.md words about Chrome, and the conditional change of check.yml; the sentence 'the question is in result.issues of the run that wrote this text' and the 'kept' claim are gone; the 'Bar' paragraph names Q12 and criterion 13. New criterion 13 (precondition on decisions/0107; README words; the unchanged blocks of REQ-014 and REQ-033 by hash). Criterion 8 now says: on a machine with Chrome check is green, with SAI_CHROME=/no/such/chrome the last step is red. Criteria 8 and 10 no longer depend on the open points I2 and I5 of step 01.",
+      "N2 (blocking): criterion 10 rewritten (who: RELEASE-VALIDATOR; when: WF-02 step 9 before the push; on what: snapshot commit on a temporary ci/* branch, permission decisions/0107; the facts (a)-(d); branches A, B, C; no PASS without a run read by the validator; RELEASE-FINALIZER step 11 still waits for check.yml on main). Criterion 9 keeps only the local budgets (30000 and 240000 ms) and points to criterion 10 for the GitHub time. Description facts: the line 'Image: ubuntu-24.04' exists in the log of an earlier run (checked with gh run view 41096355955 --log).",
+      "N3 (Low): criterion 1 says which half is counting (before: 0 files, after: at least 1 file, only under tools/test/) and which half is a guard; criterion 11 says that its greps are guards and adds the run 'npm run -s e2e' with exit=0 (the base: the script does not exist).",
+      "N4 (Low): criterion 7 - the independence loop now needs exit 0 AND exactly one line starting with 'ok ' equal to 'ok 1 - <name>' in the TAP output and no 'not ok' (checked on Node v22.23.4: a pattern that selects nothing exits 0 and prints only 'ok 1 - <file path>'); the order of running is shown by a new line 'e2e: file=<name>' before each spec (added to the description of the command) and compared with the reversed list. The summary line '# pass 1' alone is not enough: it is printed also for a pattern that selects nothing.",
+      "N5 (Low): criterion 6 - a declared console entry belongs to one browser start; the favicon 404 line is declared 'once per start' (at most one per start, at least one over the test), with a smoke proof of both halves; REQ-105 criteria 1 and 7 name this declaration (also N9).",
+      "N6 (Low): description paragraph 'Related, with no dependence' names docs/program/public-v1/ARCHITECTURE.md (browser tests with playwright-core for the app folder) and PLAN.md (Actions minutes as a watched risk) as a related fact only; the claim in the gate text that PLAN.md section 6 classifies REQ-033 as RESCOPE was NOT found in PLAN.md by grep (REQ-033 does not occur there), so it is not repeated. The owner question goes to issues (I3).",
+      "N7 (Low): no split - the weight stays one job after the rework (13 criteria, the file holds done requirements with 13 to 19); the split line (criteria 1-6 kit; 7-13 command, wiring, CI, clean tree, README) stays available (I5).",
+      "N8 (Low): REQ-105 criterion 7 - '/t/%2e%2e/' is sent by a raw HTTP request (node:http, path as written), the other four by Chrome; still five requests.",
+      "N9 (Low): REQ-105 criteria 1 and 7 - the allowed console lines (the favicon line, the browser's own 404 line of the four page loads) are written in the criteria text.",
+      "N10 (Low): no criterion of REQ-104 was moved; the references 'criterion 5/6/7 of REQ-104' in REQ-105, REQ-106 and REQ-107 stay right (checked by grep; the loop of criterion 7 is now stricter, the references say 'every test of the file alone', which still holds).",
+      "N11 (Low): owner question, not an edit - see I3.",
+      "N12 (Low): REQ-106 criterion 5 - the substring grep for 'write|append|createWriteStream' was dropped; the hash and size of the real folder before and after stay as the proof.",
+      "N13 (Low): REQ-107 criterion 1 - a positive control for the trap (the test runs the trap itself once, sees the marker, removes it) and a definition of 'no entry of a claude-cli project' (rows with the mark 'тестовый исполнитель' equal the number of project folders).",
+      "N14 (Low): REQ-107 criteria 5 and 6 - the plain sentence for the empty chat message and for the refused data folder must be non-empty and free of the banned fragments (stack, undefined, [object, Error:).",
+      "Not on the remark list, one word: the description of REQ-104 said 'the five guard tests of the table below' while the table lists six rows; now 'six' (a stale count in my own block, see I6)."
+    ],
+    "self_check": [
+      "Hash of the rest of the file (the first 13218 lines, everything before the comment line of REQ-104): before dbdb84cfe36740982b02352c81bcc37e71e925bb63700ef0253df6359590fbbc ; after the same value (dbdb84cfe36740982b02352c81bcc37e71e925bb63700ef0253df6359590fbbc); equals the hash of the file at the tag base/E2E-20261103-01 (`git show base/E2E-20261103-01:docs/requirements.yaml | shasum -a 256`). Hash of the whole file: before f7bd80420c526f1631137ea093add52d6d08e8ef67f15b150a9d12a64091184c , after fe2e597aebed2725b8875c712dfc10ce1f67976f2b913dcffe22aedd52811173 (13801 -> 13921 lines). `git diff base/E2E-20261103-01 -- docs/requirements.yaml | grep -c '^-[^-]'` -> 0 (no line of the tag text removed); --stat: 702 insertions.",
+      "ruby -ryaml safe_load of docs/requirements.yaml -> parsed, 107 requirements; REQ-104 13 criteria, REQ-105 10, REQ-106 8, REQ-107 8; depends_on unchanged ([], [REQ-104,REQ-057,REQ-061,REQ-070], [REQ-104,REQ-036,REQ-042,REQ-045], [REQ-104,REQ-011,REQ-035]); all status pending.",
+      "Commands of the new criteria that can run now, on the base files: the criterion 13 precondition `test -f decisions/0107-e2e-real-chrome-in-check.md` -> 0, `grep -c '^Status: \\*\\*accepted\\*\\*'` -> 1, `grep -c 'REQ-104'` -> 3; the README cut `awk '/^## How to open on another computer$/{f=1;next} f&&/^## /{exit} f' README.md | sed -n '1,/^1\\. /p'` prints the paragraph 'You need' and `grep -c` of Chrome, SAI_CHROME, fails gives 0, 0, 0 (the base value that the work must change); the hash comparison of the blocks REQ-014 and REQ-033 against the tag -> equal for both; `grep -rlE -- '--(no-sandbox|disable-setuid-sandbox)' tools/test` -> no file, exit 1; `grep -nE 'latest|continue-on-error|[|][|]' .github/workflows/check.yml` -> no line; `grep -c '^      - name: ' .github/workflows/check.yml` -> 4 (branch B needs 5). Not run, because they check files or runs that this work creates: everything that names tools/test/e2e*, the script e2e, the README additions, a GitHub run on a temporary branch (no push was made in this step).",
+      "Facts checked in files before they were written: `gh run view 41096355955 --log | grep -m1 'Image:'` -> 'Image: ubuntu-24.04'; that run's job time 11 min (17:09:41 to 17:20:34); on Node v22.23.4 `node --test --test-reporter=tap --test-name-pattern='^nosuchname$' test/traces-readme.test.js` -> exit 0 and the only ok line is 'ok 1 - test/traces-readme.test.js', while a real name gives 'ok 1 - TD-2 no outdated words in README.md'; .github/workflows/check.yml has 4 steps and two pinned actions; README.md section 'How to open on another computer' starts with 'You need: git; Node 22 with npm ...' and has no browser; docs/program/public-v1/ARCHITECTURE.md lines about playwright-core exist, PLAN.md has no mention of REQ-033.",
+      "Sketch outside the project (a copy of the tag in the session scratch folder; the project was not touched): check.yml with one `run` step added before 'Run the check'; `node --test test/repo.test.js test/handoffs-docs.test.js test/handoffs-cmd-docs.test.js` -> 40 tests, 38 pass, 2 fail (CI-4, CI-8); full `npm test` on it -> '# tests 2135', '# pass 2132', '# fail 3': CI-4, CI-8 and HC-7a, where HC-7a fails only because the copy has a new git history ('E_HC_BASE_COMMIT: нет такого коммита базы'), not because of the step. This is the base of the statement in criterion 10, branch B.",
+      "cd tools && npm run -s format:check -> 'All matched files use Prettier code style!'; npm run -s handoffs-check -> 'handoffs-check: файлов проверено 1283, нарушений 0, исключений использовано 114 из 114'; npm run -s traces -> 'traces: файлов проверено 2376, следов 0, пропущено 67'. The full `npm run check` and `npm run lint` were not run (no code changed); the run `npm run handoffs-check && npm run traces && npm run format:check` is the one ORCH asked for.",
+      "No name of another project and no path of a home folder in the new text (traces 0); the owner's words in original_request are untouched in all four blocks (the blocks' original_request lines are not in the removed lines)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "For ORCH / the owner (outside my edit scope): REQ-014 (in_progress), criterion 3 'Чистая машина' says that `cd tools && npm ci && npm run check` gives code 0 on a clean clone; after REQ-104 that needs Chrome (decisions/0107 lifts the clause for REQ-104..107). I did not edit REQ-014. Proposal: a micro-amendment of REQ-014 criterion 3 in a separate WF-01 run - the same command, with the condition 'on a machine with Chrome or with SAI_CHROME set', and the same for the paragraph in the root README; criterion 13 of REQ-104 already makes the README name Chrome."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "For the owner via ORCH: REQ-033 stays pending as 0107 says. While it stays as written, its criterion 1 (check without a browser in the system) and criterion 2 (no script named browser or e2e, count 0) cannot hold together with REQ-104. REQ-104 neither depends on it nor says it is replaced. The owner has to say cancel, narrow or keep (jsdom as the first development dependency since 0002)."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "For the owner via ORCH (gate N6 and N11): is the pure-Node kit meant only for the pages of tools/, while the public-version plan in docs/program/public-v1/ARCHITECTURE.md uses playwright-core for the app folder; and are about 4 minutes more per push on GitHub accepted (the watch value is 25 minutes in criterion 10; PLAN.md lists the Actions minutes as a watched risk). Not a contradiction of a decision, so no criterion depends on the answer."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "For ORCH: criterion 10 makes the temporary-branch run mandatory and puts it on RELEASE-VALIDATOR at step 9 (the gate asked for a step that exists before the push). 0107 allows a temporary ci/<name> branch to learn whether the runner has Chrome, 'the way of building the snapshot commit is the one of ISS-0093'. Please confirm that this permission covers the validator's own run on the final files, and that branch B (one pinned install step of Chrome in check.yml, with the replacement of CI-4 and CI-8) is inside 'Chrome is needed, e2e is part of the check'. If the owner wants to be asked first about B, say so and I will turn B into a BLOCKED stop like C. Branch C (Chrome only without its sandbox) is a stop with an owner question in any case; 0107 does not allow --no-sandbox."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Size: REQ-104 was not split (13 criteria, the done requirements of this file hold 13 to 19; the gate passed item г). The split line of step 01 (criteria 1-6 the kit; 7-13 command, wiring, CI, clean tree, README) is still available if the work proves heavy; criteria 1..12 keep their numbers, so a split would not move the references of REQ-105..107."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Outside the list of remarks, one word: 'the five guard tests of the table below' was changed to 'six' in the Files paragraph of REQ-104 (the table has six rows, the gate counted six red tests). Everything else beyond N1..N14 is raised here, not edited. Windows: the kit looks for Chrome only by SAI_CHROME there (unchanged from step 01); the root README words of criterion 13 must name SAI_CHROME, which covers the Windows computer."
+      }
+    ],
+    "before_copy": {
+      "source": "the working file docs/requirements.yaml before this step (the blocks REQ-104..REQ-107 are new in this run, so the tag base/E2E-20261103-01 does not hold them; a copy of the file made before the first edit was kept outside the project)",
+      "sha256_whole_file_before": "f7bd80420c526f1631137ea093add52d6d08e8ef67f15b150a9d12a64091184c",
+      "sha256_whole_file_after": "fe2e597aebed2725b8875c712dfc10ce1f67976f2b913dcffe22aedd52811173",
+      "sha256_first_13218_lines_before_and_after": "dbdb84cfe36740982b02352c81bcc37e71e925bb63700ef0253df6359590fbbc",
+      "block_sha256_before_after_first_12_chars": {
+        "REQ-104": [
+          "99c88824f90d",
+          "d9667a29bdeb"
+        ],
+        "REQ-105": [
+          "0853467ee973",
+          "f4114baa3206"
+        ],
+        "REQ-106": [
+          "22a4d28b2f97",
+          "c2d69f186df6"
+        ],
+        "REQ-107": [
+          "cd8a8ff1f264",
+          "bf8a02789205"
+        ]
+      },
+      "removed_or_replaced_lines": "the 52 'before' lines follow, each as '<line number in the file before>: <text without leading spaces>'",
+      "lines": [
+        "13255: on the GitHub runner, and whether it starts there with its sandbox on (criterion 10 settles it by a real",
+        "13255: run).",
+        "13258: Decisions this requirement leans on: 0002 and 0015 (Node 22, no run-time dependency; no development",
+        "13258: dependency is added here — not even a protocol library: the kit uses the global `WebSocket`, `fetch`",
+        "13258: and `node:child_process`); 0023 D2 (browser tests are inside `npm run check`, \"no exceptions\" — kept: the",
+        "13258: new command is also a step of `check`); 0106 (the 30-minute limit); 0082 (no name of another project in",
+        "13258: Sai files). The pending REQ-033 (jsdom tests of the team page, devDependency) overlaps this work; it is",
+        "13258: not touched here — the question is in result.issues of the run that wrote this text.",
+        "13269: tools/package.json (the script `e2e` and the last step of `check`); tools/README.md (a section, and the",
+        "13269: sentence that lists the steps of `npm run check`); the five guard tests of the table below. Not changed:",
+        "13269: tools/src/ (no page, server or hook code), .github/workflows/check.yml, .githooks/pre-push (it already",
+        "13269: runs `npm run check`), decisions/, other blocks of docs/requirements.yaml, package-lock.json.",
+        "13295: Chrome>`. If there is no Chrome, the command fails with a message — it never skips (Q6).",
+        "13332: Bar: Q1 — every criterion names its check; Q3 — criterion 10 is settled by real runs; Q4 — criterion 8",
+        "13332: (one check command, the new step inside it); Q5 — the \"criterion → test\" files are named in the",
+        "13332: criteria; Q6 — no skip, no `|| true`, a missing Chrome fails (criteria 2 and 3), the replaced guard",
+        "13332: assertions stay exact; Q7 — criterion 11 (no secret, no path of a home folder, no name of another",
+        "13342: Nothing like it exists yet, and nothing else changes. On the base, `grep -rlE 'remote-debugging-port'",
+        "13342: tools/test tools/src` → no file, exit 1. After the work the same command lists only paths that start",
+        "13342: with tools/test/ (none in tools/src: a pass over both folders). `git diff --quiet \"$B\" --",
+        "13402: fails the test.",
+        "13413: passes when run alone — `node --test --test-name-pattern=\"^<name>$\" test/e2e/F.e2e.js` → exit 0, with",
+        "13413: regular-expression characters of the name escaped (RELEASE-VALIDATOR loops over the printed names); and the selection runs the files in the order given,",
+        "13413: so `npm run -s e2e -- <all names, last to first>` → exit 0 as well.",
+        "13420: has no `||`. `cd tools && npm run check` → exit 0, \"# fail 0\", \"# skipped 0\", \"# todo 0\" in the output of",
+        "13420: `npm run test`, and the output holds a record line with `exit=0`. The replaced guard tests of the table:",
+        "13429: REQ-104…REQ-107 once they are done) at most 240000. The job `check` of the release commit on GitHub",
+        "13429: ends with `conclusion` success and takes at most 25 minutes (`gh run view <id> --json",
+        "13429: jobs` — `completedAt` minus `startedAt`; 25 is the value at which decisions/0106 opens option C). If a",
+        "13429: run is longer, the work stops with a question to the owner and the budget is not widened here.",
+        "13434: Chrome exists on the CI runner, and the workflow is unchanged. `git diff --quiet \"$B\" -- .github` → exit",
+        "13434: 0 (the workflow and so the tests CI-4 and PH-2 of REQ-030 are not changed). The log of the `check` run on",
+        "13434: GitHub for the release commit (RELEASE-FINALIZER reads it after check.yml; a temporary branch run is",
+        "13434: allowed, as in decisions/0106) satisfies `gh run view <id> --log | grep -c 'e2e: browser='` ≥ 1 and holds",
+        "13434: a record line with `exit=0`. If the runner has no Chrome, or Chrome does not start there with its",
+        "13434: sandbox on, the run does not go green by a skip: the work stops as BLOCKED with the question to the owner",
+        "13434: (installing a program on the runner and starting Chrome without its sandbox are decisions, Q12).",
+        "13442: Clean tree, no traces, no secrets (Q7). After `npm run -s e2e`: `git status --short` is the same before",
+        "13442: and after; `ls \"$(node -p \"require('os').tmpdir()\")\" | grep -c '^sai-e2e-'` → 0 before and after (a pass",
+        "13515: the kit reports no console error and no exception. On the base `ls tools/test/e2e/picker.e2e.js` fails (the file does not exist), so the criterion is not",
+        "13565: found\": Chrome opens `/t/net-takogo/`, `/t/UCHET-PRO/`, `/t/%2e%2e/`, `/t/uchet-pro/%00` and `/`. Each",
+        "13565: answers 404 and shows the line `Страница не найдена. / Бет табылмады. / Page not found.` in the page text;",
+        "13565: the body bytes of the five answers are identical (their sha256 are equal); the kit reports no",
+        "13565: console error except the declared ones for the 404 of these five requests; afterwards `/t/uchet-pro/`",
+        "13679: `.sai-pixel-office` at the end. `grep -nE 'events\\.jsonl' tools/test/e2e/pixel-office.e2e.js | grep -ciE",
+        "13679: 'write|append|createWriteStream'` → 0 (the spec only reads the journal).",
+        "13748: own words (not a blank page), and at the end of the whole file the trap marker file does not exist and the",
+        "13748: data folder has no entry created by a `claude-cli` project. `grep -n 'SAI_TEAM_REAL_RUNS'",
+        "13779: text. An empty message is not sent: either the send control is disabled or a plain sentence appears, and in both",
+        "13779: cases the journal is unchanged (same size and sha256 before and after).",
+        "13789: plain sentence, no project appears in the list, no folder is created, and the process stays alive and answers",
+        "13789: the next request."
+      ]
+    },
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

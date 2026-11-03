@@ -5265,7 +5265,8 @@ requirements:
       Место в команде проверки. В tools/package.json — скрипт handoffs-check и шаг `npm run
       handoffs-check` в scripts.check перед `npm run test`: тест TC-20
       (tools/test/traces-check.test.js) требует traces до test и отсутствие «||», а тест в
-      tools/test/team-web-control.test.js — что check кончается на `npm run test`.
+      tools/test/team-web-control.test.js — что check кончается на `npm run test && npm run e2e`
+      (с 2026-11-03, REQ-104; к моменту этого требования check кончался на `npm run test`).
 
       Точные места записи (перечень закрытый). Код — tools/src/handoffs/ (новая папка;
       имена файлов — проект CODE-DESIGNER), в tools/src/traces/rules.js — только новая
@@ -5310,7 +5311,7 @@ requirements:
          этого не говорит (на 2026-10-11 встречаются оба: step-17 и step-28 прогона
          PROD-20261011-01); H4 требует только, чтобы status и result.status совпадали.
     acceptance_criteria:
-      - "Команда и место в проверке. `cd tools && npm run handoffs-check -- --help` печатает справку по-русски, код 0. В tools/package.json: `grep -c 'handoffs-check' tools/package.json` не меньше 2 (скрипт и шаг check); в scripts.check шаг `npm run handoffs-check` стоит перед `npm run test`, «||» нет. Тест TC-20 (tools/test/traces-check.test.js) и проверка «check кончается на npm run test» в tools/test/team-web-control.test.js проходят без правки"
+      - "Команда и место в проверке. `cd tools && npm run handoffs-check -- --help` печатает справку по-русски, код 0. В tools/package.json: `grep -c 'handoffs-check' tools/package.json` не меньше 2 (скрипт и шаг check); в scripts.check шаг `npm run handoffs-check` стоит перед `npm run test`, «||» нет. Тест TC-20 (tools/test/traces-check.test.js) и проверка «check кончается на npm run test» в tools/test/team-web-control.test.js (с 2026-11-03, REQ-104, — «на npm run test && npm run e2e») проходят без правки"
       - "Правила H1–H6, H8 на фикстурах (тест во временном git-репозитории; по одному случаю, вход → ожидаемое): (а) обрезанный JSON → строка «<путь>:1 — H1: $: …», код 1; (б) нет created_at → «…:1 — H2: created_at: …»; нет created_at и task → две строки H2; (в) file не равен пути, run_id не равен папке, два файла с одним handoff_id → три строки H3; (г) в коммите status DONE → H4; PENDING в коммите → H4; тот же PENDING новым незакоммиченным файлом → нарушения нет; (д) IN_PROGRESS в коммите с первой записью issues kind «BLOCKED», at по часам и completed_at null → нарушения нет; то же без kind «BLOCKED» → H4; (е) COMPLETED и result.status FAILED → H4; CANCELLED без orch_cancellation → H4; CANCELLED с orch_cancellation (at по часам, reason), completed_at null и result null → нарушения нет; (ж) completed_at «2026-10-03T18:00Z» → H5; «неизвестно: файла не было» в created_at → нарушения нет; completed_at null при COMPLETED → H5; (з) completed_at на 1 час позже часов → H6; (и) completed_at раньше started_at → H8. Каждый отказ: код 1, файлы фикстуры не изменены (хеши до и после)"
       - "Правило H7 по истории git (тест во временном репозитории с заданными временами коммитов; время коммиттера задаётся GIT_COMMITTER_DATE, время автора — другое): (а) completed_at 06:05:00Z, файл с этим значением впервые в коммите со временем коммиттера 06:04:50Z и временем автора 06:10:00Z → «— H7: completed_at: 2026-10-11T06:05:00Z позже коммита <краткий хеш> (2026-10-11T06:04:50Z), в который вошло значение»; (б) файл вошёл в коммит в 06:00:00Z без completed_at, значение 06:10:00Z появилось в коммите 06:20:00Z → нарушения нет; (в) orch_correction.at 10:25:00Z дописан в коммите 10:23:05Z → H7; (г) orch_correction.at null и at_note «не позже 2026-10-11T10:25:00Z (чтение часов)» в коммите 10:23:05Z → H9; та же at_note с временем в кавычках «2026-10-11T10:25:00Z» и словами «прежнее значение» → тоже H9 (исключения для кавычек нет); прежнее значение 10:25:00Z в поле previous того же объекта и at_note без времени → нарушения нет; (д) поля was и previous со временем позже коммита → нарушения нет; (е) orch_note строкой, а не объектом → H9; orch_correction без by → H9"
       - "Пути (H10, H11). Тест: строка handoff-а с путём домашнего каталога → «— H10: <путь поля>: путь домашнего каталога», в выводе нет самого пути; та же строка, записанная в tools/traces/exceptions.tsv фикстуры, → нарушения нет; на тех же фикстурах файлы с H10 — ровно те, о которых `npm run traces` фикстуры печатает путь домашнего каталога; путь временной папки машины с именем после корня → «— H11: <путь поля>: путь временной папки», без самого пути; «<scratch>/l1/sai», «<scratch>/tmp/x», «<scratch>/private/tmp/y», «<вне проекта>/var/folders/z», «<корень репозитория Sai>/tmp/w» (пробелы внутри заглушки допустимы) и команда «grep -rnE '/Users/|/private/tmp|/var/folders' handoffs/» → нарушения нет. По коду: `grep -rn 'hasHomePath' tools/src/handoffs/` и `grep -rn 'readExceptions' tools/src/handoffs/` не пусто (импорт функций traces), `grep -rnE 'Users|/home|traces/exceptions' tools/src/handoffs/` пусто (своего правила и своего чтения базы traces нет); новая функция H11 — в tools/src/traces/rules.js"
@@ -5500,7 +5501,8 @@ requirements:
 
       Команда. `cd tools && npm run facts` — сверка, входит в `npm run check` перед `npm
       run test` (как traces и handoffs-check: TC-20 и проверка «check кончается на npm run
-      test» проходят без правки). Собирает текст блока из источников и сравнивает с блоком
+      test» проходят без правки; с 2026-11-03, REQ-104, эта проверка читает «check кончается на
+      npm run test && npm run e2e»). Собирает текст блока из источников и сравнивает с блоком
       в README.md и STATE.md. Расхождение числа — строка «<файл>:<строка> — блок «Факты»
       отстал: <что>: в тексте <X>, по <источник> <Y>; запустите `cd tools && npm run facts
       -- --write`»; все расхождения, а не первое; блок отличается не числом (текст правили
@@ -5563,7 +5565,7 @@ requirements:
          ISS-0002 — HIGH») — отдельной работой.
     acceptance_criteria:
       - "Блок поставлен. `grep -c '^<!-- facts:begin -->$' README.md STATE.md` и `grep -c '^<!-- facts:end -->$' README.md STATE.md` — по 1 в каждом файле; в README.md блок внутри раздела: `awk '/^## Что ещё не готово/{f=1;next} /^## /{f=0} f' README.md | grep -c 'facts:begin'` равно 1; в STATE.md — над первым заголовком: `awk '/^## /{exit} 1' STATE.md | grep -c 'facts:begin'` равно 1; в пунктах раздела README.md чисел больше нет: `awk '/^## Что ещё не готово/{f=1;next} /^## /{f=0} f' README.md | grep -cE 'из [0-9]+ — [0-9]+ в статусе|Открытые дефекты — [0-9]+'` равно 0"
-      - "Команда и место в проверке. `cd tools && npm run facts -- --help` — справка по-русски, называет сверку и `--write`, код 0; в scripts.check tools/package.json шаг `npm run facts` перед `npm run test`, «||» нет; TC-20 и проверка «check кончается на npm run test» проходят без правки"
+      - "Команда и место в проверке. `cd tools && npm run facts -- --help` — справка по-русски, называет сверку и `--write`, код 0; в scripts.check tools/package.json шаг `npm run facts` перед `npm run test`, «||» нет; TC-20 и проверка «check кончается на npm run test» (с 2026-11-03, REQ-104, — «на npm run test && npm run e2e») проходят без правки"
       - "Сборка из источников (тест на фикстурах, вход → ожидаемое): requirements.yaml из трёх блоков со status done, pending и «pending   # комментарий» → в блоке всего 3, done 1, in_progress 0, pending 2, blocked 0, cancelled 0; issues с «Серьёзность: LOW. Статус: open.» и «Статус: closed, 2026-10-11, остаток — ISS-0022» и наибольшим файлом ISS-0022 → открытых 1, следующий ISS-0023; decisions с файлами 0031, 0033 и строкой таблицы 0001 → следующий 0034; anti-patterns с заголовком «### AP-065 — …» последним → AP-066; текст блока равен ожидаемому тексту теста байт в байт"
       - "Пересборка `--write` (тест): блок с устаревшими числами → после `--write` блок равен собранному, а текст вне блока байт в байт прежний (sha256 файла без строк блока до и после равны) в обоих файлах; повторный `--write` → файлы байт в байт те же, строка «без изменений»; нет маркера, маркер повторён или не закрыт в одном из файлов → код 1, ни один из двух файлов не изменён (хеши); сбой записи (внедрение сбоя, как tools/test/fault-inject.js) → файл прежний, временного файла в папке нет, код 2, без стека"
       - "Сверка (тест, вход → ожидаемое; документы при этом не изменены — хеши до и после): блок README с pending 27 при 28 блоках pending → строка «README.md:<строка> — блок «Факты» отстал: pending: в тексте 27, по docs/requirements.yaml 28; запустите `cd tools && npm run facts -- --write`», код 1; блок STATE со следующим номером ISS-0022 при файле ISS-0022 → строка о следующем номере дефекта с ISS-0022 и ISS-0023; три расхождения сразу → три строки; в блок вписано слово руками → «блок «Факты» изменён руками», код 1; числа в разделе даты STATE.md ниже блока устарели → расхождения нет; блока нет → строка об этом, код 1"
@@ -13216,3 +13218,705 @@ requirements:
       - >-
         One check command and no traces (Q4, Q7). `cd tools && npm run check` → exit 0, "# fail 0", "# skipped 0", "# todo 0";
         `cd tools && npm run traces` → exit 0 with docs/archive/* present; `cd tools && npm run handoffs-check` → exit 0.
+  # 2026-11-02T19:44:09Z, run E2E-20261103-01, WF-01 step 01 (REQ-ANALYST): REQ-104…REQ-107 appended at the end of the file (end-to-end tests in a real headless Chrome); no other block is changed
+  # 2026-11-02T20:41:00Z, run E2E-20261103-01, WF-01 step 01b (REQ-ANALYST), rework by the remarks N1..N14 of step 02 and decisions/0107: only the blocks REQ-104..REQ-107 are edited, no criterion is weakened, the numbers of the criteria of REQ-104 are kept (the new criterion 13 is at the end); the text before REQ-104 is not changed
+  - id: REQ-104
+    title: End-to-end tests in a real headless Chrome, part 1 — a kit in pure Node (launcher, protocol client, windows, themes, console errors, clean-up, a clear message when Chrome is missing) and the command `npm run e2e` inside `npm run check`
+    owner: BACKEND-DEV   # the kit, the command and the README section; the replacement of the old guard tests (table below) and the fault tests are made by TEST-DESIGNER in the same run (WF-02, step 5)
+    status: done   # 2026-11-03, run E2E104-20261103-01: RELEASE-VALIDATOR PASS (handoffs/E2E104-20261103-01/step-09-release-validator.json) confirmed all 13 criteria by its own runs. Met in full: 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13. Criterion 7 is met with one limit: the order of several spec files was checked on the real command with ONE spec file (smoke), so the check 'all names, last to first' shows one name; the order itself is pinned by test E2K-32 on fixture files and will be run on two real files by the validator of REQ-105 (docs/issues/ISS-0102). Criterion 5: the argument list (with --no-proxy-server) is pinned by E2K-25; the effect of that argument in a real Chrome is not shown. Criterion 10 (GitHub, outcome A): run 41678354227 on a temporary-branch snapshot equal to the working files: success, Ubuntu 24.04, Chrome 156 with its sandbox on, job 836 s (watch value 1500 s), .github unchanged. Criterion 9: smoke 17421 ms locally (limit 30000). Local check: 2185 of 2185 tests and 13 of 13 in Chrome, 262 s. Not proven: Windows (never run); 7 surviving equivalent mutants of the runner and the registry (docs/issues/ISS-0102); the raw SAI_CHROME path in START_FAILED (docs/issues/ISS-0100, Low). Words of REQ-038 and REQ-040 about the end of check corrected as an outdated fact on the same date
+    depends_on: []   # none: the kit needs no page; REQ-105, REQ-106 and REQ-107 depend on it
+    original_request: >
+      «по проекту sai  используй инструкции [другого проекта владельца] и sai. Чтобы убрать ошибки и покрыть
+      тестами проект, а именно e2e тесты» (владелец, 2026-11-03, сообщение ORCH в сессии Claude Code в VS Code;
+      двойной пробел владельца сохранён; название другого проекта владельца в скобках заменено по
+      decisions/0082, дословно — в задании handoffs/E2E-20261103-01/step-01-req-analyst.json).
+    description: >
+      What the owner gets. A repeatable test that opens the Sai web pages in a REAL headless Chrome, clicks them
+      like a person and fails when a page breaks. Today there is none: the pages are tested against hand-made
+      DOM stubs (tools/test/picker-page-dom.js, tools/test/team-web-dom.js, the DOM inside
+      tools/test/pixel-office-helpers.js), and a real Chrome is used only by hand, by UAT-RUNNER at acceptance
+      (.claude/agents/uat-runner.md, item 5), which leaves no test behind. This requirement builds the base
+      that three page requirements stand on: REQ-105 (the picker site), REQ-106 (Pixel Office), REQ-107 (the
+      team page). The owner's words are about removing errors and covering the project with e2e tests; the
+      practices of the owner's other project were read for ideas only (decisions/0082) and are written here
+      neutrally: the slow browser suite is its own command that also runs alone; the run record holds the
+      command, the selection, the exit code and the duration; a comparison of pages is by structure and
+      meaning, not by pixels (as in DESIGN-QA-VALIDATOR).
+
+      In the criteria, `B` is the base tag of the work run (`context.base_tag` of its handoffs, `base/<RUN-ID>`,
+      set by ORCH before the first edit of the run); the commands are for bash and run from the root of Sai.
+
+      Facts checked by REQ-ANALYST on 2026-11-03 at HEAD f806d7d (the numbers of the baseline run were
+      reported by ORCH and were not repeated: format:check, lint, traces and handoffs-check green, `npm test`
+      2135 of 2135 in about 233 s). Checked here: Node v22.23.4 (`node -v`); Google Chrome 156.0.8078.74 at
+      the standard macOS place (`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --version`);
+      `grep -rlE 'remote-debugging-port|Emulation\.|Page\.navigate' tools/test tools/src` finds no file (exit
+      1); a headless Chrome opened `/t/uchet-pro/?lang=en` of the picker stand started with `--port 0`
+      (`--dump-dom` showed the card); `tools/package.json` has no `dependencies` and four development ones
+      (guarded by PK-7b); `.github/workflows/check.yml` runs on ubuntu-24.04 with Node 22, `npm ci` and
+      `npm run check`, limit 30 minutes (decisions/0106). Not checked and not assumed: that Chrome is installed
+      on the GitHub runner, and whether it starts there with its sandbox on (criterion 10 settles it: a real run
+      on a temporary branch, read by RELEASE-VALIDATOR before anything goes to main). Checked on 2026-11-03: the
+      log of an earlier run of check.yml (`gh run view 41096355955 --log`) holds the line `Image: ubuntu-24.04`,
+      so criterion 10 can read the image from the log.
+
+      Decisions this requirement leans on. decisions/0107 (accepted 2026-11-03, on the owner's answers of the
+      same day «Chrome нужен, e2e входят в проверку» and «Да, можно»): the end-to-end tests of REQ-104…REQ-107
+      need a real Chrome and run inside `npm run check`; if no Chrome is found the test FAILS with an
+      understandable message and is never skipped (Q6); a temporary branch `ci/<name>` may be pushed to learn
+      whether the GitHub runner has Chrome and is deleted after the run, `main` is not touched by it; no new npm
+      package is allowed. 0002 and 0015 (Node 22, no run-time dependency; no development dependency is added
+      here — not even a protocol library: the kit uses the global `WebSocket`, `fetch` and
+      `node:child_process`); 0106 (the 30-minute limit and the 25-minute watch value, read in criterion 10);
+      0048 and 0079 (the push to `main` is not changed); 0082 (no name of another project in Sai files).
+
+      The departure from an earlier record, named. decisions/0023 D2 (which replaced Playwright in
+      0022 D7) says that the page tests run «без браузерного бинарника: ставится `npm ci`, работает на чистой
+      машине REQ-014» and are all inside `npm run check`, no exceptions. 0107 lifts the clause «no browser
+      binary» for the end-to-end tests of REQ-104…REQ-107 and for nothing else; the half «inside `npm run
+      check`» is kept, and the new step does exactly that. D2 stays in force for everything else: the existing
+      page tests stay on the hand-made DOM, with no browser. Neighbours that this work does not edit (they are
+      outside its scope; criterion 13 checks that they are unchanged): the pending REQ-033 (jsdom tests; its
+      criterion 1 «npm ci && npm run check … без браузера в системе» and criterion 2 «no script whose name
+      matches browser|e2e», count 0) is NOT decided by 0107 and not by this requirement — it stays pending until
+      the owner says what happens to it; while it stays as written, those two criteria cannot be met together
+      with the script `e2e`, and REQ-104 neither depends on REQ-033 nor says that REQ-107 or anything else
+      replaces it. REQ-014 (in_progress), criterion 3 «Чистая машина»: after this work `npm ci && npm run check`
+      on a clean machine needs Chrome; the text of that criterion is not edited here — a micro-amendment of it
+      is a separate WF-01 run on ORCH's order. What this work does for the person who opens Sai on another
+      computer is criterion 13: the instructions name Chrome and say what happens without it.
+
+      Related, with no dependence. The program plan of the public version already plans its own browser
+      tests for the folder app/ (docs/program/public-v1/ARCHITECTURE.md, the rows about browser tests and
+      about the end-to-end tests: `playwright-core` driven from `node:test`, Chromium in the CI of that folder;
+      docs/program/public-v1/PLAN.md names the GitHub Actions minutes as a watched risk). This requirement is for
+      the pages of tools/ only; it neither relies on that plan nor changes it, and the two mechanisms are not
+      merged here.
+
+      Files (from the root of Sai). New: tools/test/e2e/ — the kit (modules of the launcher, the protocol
+      client and the page helpers; their names are the design's choice) and the spec files `*.e2e.js`;
+      tools/test/e2e/smoke.e2e.js; tools/test/e2e-kit.test.js; tools/test/fixtures/e2e/fake-chrome.js (a
+      stand-in program that speaks just enough of the protocol for the fault tests; mode 0755). Changed:
+      tools/package.json (the script `e2e` and the last step of `check`); tools/README.md (a section, the words
+      about Chrome in the section "Check", and the sentence that lists the steps of `npm run check`); README.md
+      of the root (the paragraph "You need" of the section "How to open on another computer" — criterion 13);
+      the six guard tests of the table below. Changed only if criterion 10 ends in its branch B (the runner has
+      no Chrome): .github/workflows/check.yml (one install step) and the guard tests of REQ-030 that compare
+      that file (tools/test/repo.test.js, CI-4 and CI-8 at least; the complete list is the red tests of the full
+      `npm test`). Not changed: tools/src/ (no page, server or hook code), .githooks/pre-push (it already runs
+      `npm run check`), decisions/ (0107 exists and is read, not edited), other blocks of
+      docs/requirements.yaml, package-lock.json.
+
+      The kit. It finds a Chrome binary, starts it as `--headless=new` with `--remote-debugging-port=0` and a
+      fresh profile folder under the temporary root of the system, reads the port Chrome reports, talks to it
+      by the DevTools protocol over the global `WebSocket`, and stops it. It can: open a URL (only
+      `http://127.0.0.1:<port>/…`), evaluate a script and return the value, click and type through the
+      protocol, wait for a condition with a time limit, set the window size (`Emulation.setDeviceMetricsOverride`:
+      a window narrower than about 500 px needs it), set the colour scheme (`Emulation.setEmulatedMedia`,
+      `prefers-color-scheme`), measure horizontal overflow, collect console errors and uncaught exceptions,
+      take a screenshot into a folder outside the project. The language of a page is not a browser setting
+      here: the Sai pages take it from `?lang=` and their own buttons, and the picker deliberately ignores
+      the header `Accept-Language`. Where Chrome is searched: the variable `SAI_CHROME` (a full path) first;
+      if it is set and the file is not there, the run fails and does not fall back to other places; if it is
+      unset — the standard macOS place `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`, then
+      `google-chrome`, `google-chrome-stable`, `chromium`, `chromium-browser` found in `PATH`. Windows places
+      are not in the list (the full check was never run on Windows; `SAI_CHROME` still works there).
+
+      The command. `cd tools && npm run e2e` runs every spec file `tools/test/e2e/*.e2e.js` one after another;
+      `npm run e2e -- <name> [<name>…]` runs only the files named `<name>.e2e.js`, in the order given (the browser
+      suite also runs alone). The spec files are named `*.e2e.js` on purpose: the script `test` stays `node --test
+      "test/**/*.test.js"` and never starts a browser. The command is the last step of `check`. Its last
+      stdout line is the run record `e2e: command=<text> selection=<all or the names> exit=<n>
+      duration_ms=<n>`; before the first spec it prints `e2e: browser=<product and version reported by
+      Chrome>`, and before each spec file the line `e2e: file=<name>` (it shows the order of the run). If there
+      is no Chrome, the command fails with a message — it never skips (Q6, decisions/0107).
+
+      Guard tests of earlier requirements that the new step turns red, "was → became" (grep of tools/test on
+      2026-11-03 for `scripts.check`, `pkg.scripts`, `Object.keys(pkg.scripts)`, `npm run test`, `readdirSync`
+      of tools/test and of tools/src; each hit was classified by what it counts, AP-068, AP-112, AP-113):
+      (1) HC-02, tools/test/handoffs-docs.test.js, lines 16–36 — compares the whole list of steps of `check`.
+      Was: five steps, from `npm run format:check` to `npm run test`. Becomes: the same five and then
+      `npm run e2e` as the sixth (the whole list is still compared; `||` is still forbidden).
+      (2) HC-03, same file, line 46 — `assert.match(scripts.check, /npm run test$/u)`. Was: `check` ends with
+      `npm run test`. Becomes: `/npm run test && npm run e2e$/u`; the line before it (`scripts.test` equal to
+      `node --test "test/**/*.test.js"`) is not changed and guards that the browser suite stays out of
+      `npm test`.
+      (3) HO-54, tools/test/handoffs-cmd-docs.test.js, lines 141–161 — compares the five steps. Becomes the six;
+      the check that `handoff` stands right after `handoffs-check` in the key order is not changed.
+      (4) PK-7b, tools/test/picker-config.test.js, lines 779–795 — compares the string of `check`. Becomes the
+      string with ` && npm run e2e` at the end; the lines about `picker` after `handoff`, about no
+      `dependencies` and about the four development dependencies are not changed.
+      (5) LP-3, tools/test/picker-look-property.test.js, lines 440–466 — compares the whole key list of
+      `scripts` and the string of `check`. Becomes: the list with `e2e` between `test` and `check`, and the
+      new string.
+      (6) CTL-13, tools/test/team-web-control.test.js, line 1702 — `assert.match(pkg.scripts.check, /npm run
+      test$/)`. Becomes `/npm run test && npm run e2e$/`.
+      (7) none, unchanged: TC-20, tools/test/traces-check.test.js (it compares the places of `npm run traces`
+      and `npm run test`, both stay); PK-4 style scans of tools/test by file-name prefix (`picker-`,
+      `handoffs-`: tools/test/picker-config.test.js lines 881–883, tools/test/picker-page-static.test.js
+      lines 700–702, tools/test/handoffs-docs.test.js lines 99–100) do not read `e2e-kit.test.js` or the
+      folder `e2e`; the scans of tools/src (exec-*, team-*, traces-runtime, team-web-docs) do not see
+      tools/test; REQ-030 tests (repo.test.js CI-4, PH-2, RD-1…RD-4) read the workflow, the hook and two README
+      sections that this work does not change. Sketch outside the project, 2026-11-03, on a clone of the
+      base tag with the script `e2e` added after `test`, `npm run e2e` appended to `check`, a dummy file
+      tools/test/e2e/smoke.e2e.js, a dummy tools/test/e2e-kit.test.js, a dummy tools/test/fixtures/e2e/fake-chrome.js,
+      the README sentence about the steps changed and an empty README section added: `cd tools && npm test` gave
+      "# tests 2136", "# pass 2130", "# fail 6", and the six red tests are exactly rows (1)–(6) of this table
+      (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13); every other test stayed green, so the list is complete for
+      this change (an exhaustive pass, AP-094). In every replaced assertion the comparison stays exact — the
+      table makes them stricter or equal, never weaker (Q6).
+
+      Bar: Q1 — every criterion names its check; Q3 — criterion 10 is settled by a real run that
+      RELEASE-VALIDATOR reads itself before the push; Q4 — criterion 8 (one check command, the new step inside
+      it); Q5 — the "criterion → test" files are named in the criteria; Q6 — no skip, no `|| true`, a missing
+      Chrome fails (criteria 2, 3 and 13), the replaced guard assertions stay exact; Q12 — the departure from
+      0023 D2 is the record 0107 (criterion 13), the sandbox question is raised and not decided (criterion 10,
+      branch C); Q7 — criterion 11 (no secret, no path of a home folder, no name of another
+      project); Q10 — criteria 3 and 4 (Chrome missing, Chrome dying, a hung start, a bad protocol answer
+      give a clear message and a cleaned-up state); Q11 — criterion 5 (the browser opens only 127.0.0.1); Q8,
+      Q9 — not applicable: no data of customers, no query; R2 — not applicable here, applies to REQ-106; R3 —
+      not applicable (decision 0033).
+    acceptance_criteria:
+      - >-
+        Nothing like it exists yet, and nothing else changes. The first half is a counting criterion and the
+        second a guard (it holds on the base too). On the base, `grep -rlE 'remote-debugging-port'
+        tools/test tools/src` → no file, exit 1 (0 lines). After the work the same command lists at least one
+        file, and only paths that start with tools/test/ (none in tools/src: a pass over both folders).
+        Guard: `git diff --quiet "$B" --
+        tools/package-lock.json` → exit 0; `node -e` over `git show "$B:tools/package.json"` and the file now
+        shows that, after the keys `scripts.e2e` and `scripts.check` are dropped from both, the two objects are
+        deep-equal (`dependencies` still absent, the four development dependencies unchanged). `B` is the base
+        tag of the work run (`context.base_tag`).
+      - >-
+        Chrome is found by a fixed rule, and its absence is a clear failure, never a skip (Q6, Q10). Test file
+        tools/test/e2e-kit.test.js, with an injected "file exists" and an injected `PATH`, no Chrome needed:
+        (a) with `SAI_CHROME` set to an existing file, that file is chosen even when the standard places exist;
+        (b) with `SAI_CHROME` set to a missing file, the lookup fails and does not try the other places; (c) with
+        it unset, the first existing place of the order above wins, and each of the five other places is chosen
+        when it is the only existing one (an exhaustive pass over the list); (d) when nothing exists, the error
+        text names `SAI_CHROME` and lists every place tried (the number of places in the text equals the length
+        of the list). Command check: `cd tools && SAI_CHROME=/no/such/chrome npm run -s e2e; echo "exit=$?"` →
+        a non-zero exit, one error message on stderr that holds `SAI_CHROME` and `/no/such/chrome`, no line that
+        matches `^\s+at ` (no stack), and no process whose command line holds `sai-e2e-` afterwards
+        (`pgrep -f '[s]ai-e2e-' | wc -l` → 0).
+      - >-
+        Start, real protocol, stop, and clean-up even on failure. Test file tools/test/e2e/smoke.e2e.js, real
+        Chrome, a tiny page served by the test itself on 127.0.0.1 port 0: the kit opens it, clicks a button
+        and reads the changed `document.title`; the profile folder it used lies under the temporary root of the
+        system and is outside the repository. The test records the Chrome pid and the profile folder, and after
+        the body ends `process.kill(pid, 0)` throws `ESRCH` and the folder does not exist. The same two facts
+        hold after a body that throws (the test runs such a body and expects the same error back), and after
+        a body that leaves a request of the page pending. Fault tests, same smoke file:
+        Chrome is killed with SIGKILL while a protocol call is in flight → the call rejects within 5 s with a
+        message that says the browser closed, a later call rejects the same way, and the clean-up still removes
+        the folder.
+      - >-
+        Faults of the browser with a stand-in program (no real Chrome), test file tools/test/e2e-kit.test.js
+        and tools/test/fixtures/e2e/fake-chrome.js given through `SAI_CHROME`: (a) the program exits at once
+        before it reports a port → the start rejects in at most 5 s with a message that holds its exit code and
+        the last stderr line of the program; (b) it reports nothing and hangs → after the start time limit (an
+        option, set to 1 s in the test; 20 s by default) the process is killed (`ESRCH` for its pid) and the
+        message says that the browser did not start in that time; (c) it reports a port and then closes the
+        connection or is killed while a call is pending → the call rejects within 5 s, no hang; (d) it answers
+        with text that is not JSON, and with an error object, to a call → the rejection names the protocol
+        method; (e) in every case the profile folder is gone and no process is left. Each of the five cases
+        also checks that a second start with a working stand-in succeeds in the same test process (the state is
+        not poisoned).
+      - >-
+        The browser can only visit this computer, and files stay outside the project (Q11 style). Tests in
+        tools/test/e2e-kit.test.js with the stand-in program recording the protocol calls it gets: opening
+        `http://example.com/`, `https://127.0.0.1:1/`, `http://localhost:1/`, `http://10.0.0.1/`, `file:///etc/hosts`
+        and a URL with a user part (`http://127.0.0.1@example.com/`) is refused before any `Page.navigate` is
+        sent (the recorded count of `Page.navigate` is 0), and `http://127.0.0.1:<port>/x` is accepted; a screenshot
+        path inside the repository folder is refused, a path under the temporary root is accepted.
+      - >-
+        Windows, themes, overflow, console errors — the helpers can see what they are for (a positive control
+        for each, Q6 section 6 item 1). Test file tools/test/e2e/smoke.e2e.js, real Chrome, pages served by the
+        test: for each of 1470×784, 390×844 and 320×568 the page reports `innerWidth` and `innerHeight` equal to
+        the requested size; a page with a 700 px wide block is reported as overflowing at 320 and a fluid page
+        as not overflowing at all three sizes; with the scheme set to dark `matchMedia('(prefers-color-scheme:
+        dark)').matches` is true and the computed background colour of a page that styles itself by
+        `prefers-color-scheme` differs from the one in the light scheme, and back to light gives the first
+        value again. A page that calls `console.error('x')`, throws in a timer, rejects a promise and fetches an
+        address that answers 500 gives four distinct entries (kind and text); a clean page gives none; an entry
+        declared as expected by its exact text is not counted, and a declared expectation that never happened
+        fails the test. A declaration belongs to one browser start. Chrome writes the line for the missing
+        `/favicon.ico` (a 404) on the first page load of a fresh profile only (measured by REQ-VALIDATOR in a real
+        headless Chrome on 2026-11-03: the next loads in the same profile do not repeat it), so that line is
+        declared as «once per start»: at most one such entry per browser start, and at least one over the
+        test. The smoke file proves both halves: a page without a favicon whose server answers 404 for
+        `/favicon.ico`, two loads in one start → exactly one entry; the same declaration in a start that loads
+        no page fails. So a test with many loads in one start (the 18 combinations of REQ-105, five bad
+        addresses) does not fail by a fact of Chrome, and a test that starts a new browser for each load is
+        also fine.
+      - >-
+        The command and its run record. `cd tools && node -e "const s=require('./package.json').scripts;
+        console.log(s.e2e, '|', s.test)"` → the script `e2e` is set (the base: undefined) and `test` is still
+        `node --test "test/**/*.test.js"`. `cd tools && npm run -s e2e -- smoke | tail -n 1` matches
+        `^e2e: command=.+ selection=smoke exit=0 duration_ms=[0-9]+$`; `npm run -s e2e | tail -n 1` has
+        `selection=all`; `npm run -s e2e -- nosuch; echo "exit=$?"` → non-zero, a message that lists the spec
+        names that exist, and no "pass" count (a selection that selects nothing fails; it cannot pass with zero
+        tests). The line `e2e: browser=` is printed once before the first spec. Independence (the same loop is
+        used by REQ-105, REQ-106 and REQ-107): for every spec file F in tools/test/e2e, each test name printed
+        by `cd tools && node --test --test-reporter=tap test/e2e/F.e2e.js` (the top-level lines `ok N - <name>`)
+        passes when run alone: `node --test --test-reporter=tap --test-name-pattern="^<name>$"
+        test/e2e/F.e2e.js` → exit 0 AND its output holds exactly one line that starts with `ok ` and that line is
+        `ok 1 - <name>`, and no line starts with `not ok` (regular-expression characters of the name escaped;
+        RELEASE-VALIDATOR loops over the printed names). The exit code alone proves nothing: on Node 22 a
+        pattern that selects no test also exits 0, and then the only `ok` line is the file path
+        (`ok 1 - test/e2e/F.e2e.js`) — checked on 2026-11-03 with v22.23.4, so a name that selects nothing fails
+        the loop. The selection runs the files in the order given, and the output shows it: `npm run -s e2e --
+        <all names, last to first>` → exit 0, and `npm run -s e2e -- <all names, last to first> | grep '^e2e:
+        file=' | sed 's/^e2e: file=//'` prints the names in exactly that order (the same list, line for line,
+        compared by the validator).
+      - >-
+        `npm run check` runs it, last (Q4). `node -e "console.log(JSON.stringify(require('./package.json').scripts.check.split('&&').map(s=>s.trim())))"`
+        in tools/ → exactly `["npm run format:check","npm run lint","npm run traces","npm run
+        handoffs-check","npm run test","npm run e2e"]` (the base: the same without the last one), and the string
+        has no `||`. On a machine with Chrome, `cd tools && npm run check` → exit 0, "# fail 0", "# skipped 0",
+        "# todo 0" in the output of `npm run test`, and the output holds a record line with `exit=0`. The same
+        machine with `SAI_CHROME=/no/such/chrome`: `npm run -s e2e` is non-zero (criterion 2), so the last step
+        of `check`, joined by `&&`, is red; the check is never green without a browser (decisions/0107). The replaced guard tests of the table:
+        `cd tools && node --test test/handoffs-docs.test.js test/handoffs-cmd-docs.test.js
+        test/picker-config.test.js test/picker-look-property.test.js test/team-web-control.test.js
+        test/traces-check.test.js` → exit 0, "# fail 0". Mutant (TEST-DESIGNER lists it in the design's
+        mutants and TEST-DESIGN-VALIDATOR applies it): with `npm run e2e` removed from `check`, HC-02 turns red.
+      - >-
+        Time stays inside the limit (decisions/0106). The `duration_ms` of the record line of `npm run -s e2e -- smoke` is
+        at most 30000 on the machine of RELEASE-VALIDATOR, and the whole `npm run -s e2e` (all spec files of
+        REQ-104…REQ-107 once they are done) at most 240000. If a run is longer, the work stops with a question
+        to the owner and the budget is not widened here. The time of the job on GitHub (the 25-minute watch value
+        of decisions/0106) is read in criterion 10, from the same run that shows Chrome there.
+      - >-
+        Chrome exists and starts on the CI runner, and this is read before anything goes to main (decisions/0107;
+        Q3). Who, when, on what: RELEASE-VALIDATOR itself, in WF-02 step 9 — the step that comes before the push of
+        step 11 — on the final files of the run. How: it builds a snapshot commit of the working tree through a
+        temporary index (a temporary `GIT_INDEX_FILE`, `git add -A`, `git write-tree`, `git commit-tree -p HEAD`;
+        the way of run ISS-0093-20261028-01, see handoffs/ISS-0093-20261028-01/step-10-release-validator.json),
+        pushes it to a temporary branch `ci/<run id in lower case>-release-validator-check` (`git push origin
+        <sha>:refs/heads/ci/<name>`; the permission is decisions/0107, and `main` is not touched), reads the run
+        itself and deletes the branch (`git push origin --delete ci/<name>`; afterwards `git ls-remote --heads
+        origin` lists only `main`). The run is found by `gh run list --branch ci/<name> --workflow check.yml
+        --json databaseId,headSha,conclusion`, and `headSha` equals the snapshot commit. The facts to read: (a)
+        `gh run view <id> --log | grep -c 'Image: ubuntu-24.04'` ≥ 1; (b) `gh run view <id> --log | grep -c
+        'e2e: browser='` ≥ 1 and one line that matches `e2e: command=.* exit=0 duration_ms=[0-9]+` with
+        `duration_ms` at most 240000; (c) `gh run view <id> --json conclusion,jobs` → `conclusion` success, and
+        the job `check` has `completedAt` minus `startedAt` at most 1500 seconds (25 minutes, the value at which
+        decisions/0106 opens option C); (d) the kit never turns the sandbox off: a test in tools/test/e2e-kit.test.js
+        records the argument list that the stand-in program receives and compares every argument with the two exact
+        flags `--no-sandbox` and `--disable-setuid-sandbox` (a pass over the whole list), and `grep -rlE --
+        '--(no-sandbox|disable-setuid-sandbox)' tools/test/e2e` → no file, exit 1 (the kit and the specs; the test
+        file that names the flags in its comparison lies outside that folder).
+        What the work does depends on what the log says, and each outcome is checkable. Branch A — the runner has
+        Chrome and starts it with its sandbox on: (a) to (c) hold, and `git diff --quiet "$B" -- .github` → exit 0
+        (the workflow is unchanged, so CI-1 to CI-8 and PH-2 of REQ-030 stay as they are). Branch B — the runner
+        has no Chrome (the run is red at the step `Run the check` and its log holds the message of criterion 2
+        with `SAI_CHROME`): this requirement then demands one install step in .github/workflows/check.yml and no
+        other change there: `grep -c '^      - name: ' .github/workflows/check.yml` → 5 (the base: 4), the fourth
+        name line is the new step and the fifth is still `Run the check`; `git diff "$B" -- .github | grep -c
+        '^-[^-]'` → 0 (no line is removed); `grep -nE 'latest|continue-on-error|[|][|]'
+        .github/workflows/check.yml` → no line; the Chrome version is pinned — an action only by a 40-character
+        commit with the version in a comment, as the two existing actions are, or a command line with the exact
+        version number in it, never a floating name. The guard tests of REQ-030 that compare the workflow turn
+        red by that step (sketch outside the project on 2026-11-03: a copy of the base tag with a `run` step
+        added between «Install dependencies» and «Run the check»; the full `npm test` on it, 2135 tests, shows CI-4 and
+        CI-8 of tools/test/repo.test.js red because of the step — one more red test, HC-7a, comes from the copy
+        having a new git history, not from the step; an added third-party action would also redden CI-5; the
+        complete list of the work is the red tests of its own full `npm test`). They are replaced in the same work by a table «was → became», never weaker (Q6), and `cd tools &&
+        node --test test/repo.test.js` → exit 0. A new temporary branch is then run and read again, and (a) to (c)
+        hold in it. Branch C — Chrome is there but starts only without its sandbox (the log says there is no
+        usable sandbox, or the step is red and `e2e: browser=` is absent while the binary exists): the work stops
+        as BLOCKED with a question to the owner; starting Chrome without its sandbox is not allowed by 0107 and is
+        a decision (Q12). RELEASE-VALIDATOR does not answer PASS here without a run it read itself; if `gh` cannot
+        be used (no network, not logged in), the criterion stays unmet and the validator writes exactly that.
+        After the push to `main`, RELEASE-FINALIZER (step 11) waits for check.yml on `main` as for any release; a
+        red result there is a stop and a report, never a repeat until green.
+      - >-
+        Clean tree, no traces, no secrets (Q7). The greps and folder checks alone are guards (they hold on the
+        base); the part that needs the work is the first command: `cd tools && npm run -s e2e; echo "exit=$?"` →
+        `exit=0` (the base: the script does not exist, non-zero). After it: `git status --short` is the same
+        before and after; `ls "$(node -p "require('os').tmpdir()")" | grep -c '^sai-e2e-'` → 0 before and after (a pass
+        over the whole temporary root); `pgrep -f '[s]ai-e2e-' | wc -l` → 0. `cd tools && npm run -s traces | grep -c
+        -E 'tools/test/e2e|tools/test/fixtures/e2e'` → 0 (no path of a home folder, no name of another project in
+        the files of this work). `grep -rniE "(ghp_|sk-)[A-Za-z0-9]{16,}|BEGIN [A-Z ]*PRIVATE KEY"
+        tools/test/e2e tools/test/e2e-kit.test.js tools/test/fixtures/e2e` → no line. `grep -rnE
+        '\.skip\(|\.todo\(|\|\| true|eslint-disable' tools/test/e2e tools/test/e2e-kit.test.js` → no line.
+      - >-
+        The README tells how to run it (Q4). `grep -c '^## End-to-end tests in a real browser$' tools/README.md` →
+        1 (the base: 0); that section (up to the next `## `) holds `npm run e2e`, `SAI_CHROME`, `-- smoke`,
+        `selection=`, `duration_ms`, the five places searched, the words that a missing Chrome fails the run, that
+        profiles and screenshots lie outside the project, and a table "spec file → requirement" with the row
+        smoke.e2e.js → REQ-104. The sentence in the section "Check" that lists the steps of `npm run check`
+        names six steps ending with `npm run e2e`. `cd tools && node --test test/repo.test.js
+        test/team-docs.test.js test/traces-readme.test.js test/pixel-office-settings.test.js` → exit 0.
+      - >-
+        The departure from 0023 D2 is on record and in the instructions (Q12, Q6). A precondition RELEASE-VALIDATOR
+        answers yes or no before anything else: `test -f decisions/0107-e2e-real-chrome-in-check.md` → exit 0,
+        `grep -c '^Status: \*\*accepted\*\*' decisions/0107-e2e-real-chrome-in-check.md` → 1 and `grep -c 'REQ-104'`
+        of the same file ≥ 1 (met already on the base: the record exists before the work starts; the work does
+        not edit it). The instructions (the base: none names a browser): the paragraph «You need» of the section
+        «How to open on another computer» of the root README.md, cut out with `awk '/^## How to open on another
+        computer$/{f=1;next} f&&/^## /{exit} f' README.md | sed -n '1,/^1\. /p'`, holds `Chrome` and `SAI_CHROME`
+        (`grep -c` of each ≥ 1) and says that without a browser `npm run check` fails and is not skipped (the
+        word `fails` in that paragraph, `grep -c fails` ≥ 1); the section «Check» of tools/README.md (up to the
+        next `## `) holds `Chrome` and `SAI_CHROME` too. The behaviour itself — a missing Chrome is red with an
+        understandable message and never green or skipped — is proved by criteria 2 and 8. The earlier tests
+        that read the root README stay green: `cd tools && node --test test/traces-readme.test.js
+        test/repo.test.js test/team-docs.test.js` → exit 0 (the new words hold no address, no `://`, no path of a
+        home folder). The blocks of the neighbours are unchanged by this work: for each id in REQ-014 and REQ-033,
+        `git show "$B:docs/requirements.yaml" | awk '/^  - id: <id>$/{f=1;print;next} f&&/^  - id: /{exit} f' |
+        shasum -a 256` equals the same command on the file now.
+
+  - id: REQ-105
+    title: End-to-end tests in a real headless Chrome, part 2 — the solution picker site (a visitor in ru, kk and en, light and dark theme, three window sizes, two tenants kept apart, a bad address, a server that goes away)
+    owner: TEST-DESIGNER   # the spec and its fixtures; if a spec finds a real defect of the page, the fix is a WF-03 job on ORCH's order, not a weaker test
+    status: pending
+    depends_on: [REQ-104, REQ-057, REQ-061, REQ-070]   # the kit; the page (REQ-057) and its three languages (REQ-061); the invented tenants of the new stand (REQ-070)
+    original_request: >
+      «по проекту sai  используй инструкции [другого проекта владельца] и sai. Чтобы убрать ошибки и покрыть
+      тестами проект, а именно e2e тесты» (владелец, 2026-11-03, сообщение ORCH в сессии Claude Code в VS Code;
+      двойной пробел владельца сохранён; название другого проекта владельца в скобках заменено по
+      decisions/0082, дословно — в задании handoffs/E2E-20261103-01/step-01-req-analyst.json).
+    description: >
+      What the owner gets. The picker site (tools/src/picker/, README sections "The solution picker site: …")
+      is opened by a visitor in a real Chrome by a test: a tenant card, the questionnaire, the result screen,
+      in each of the three languages, in the light and the dark theme, in the windows 1470×784, 390×844 and
+      320×568, with no horizontal scroll. Today the page is tested only against the hand-made DOM
+      tools/test/picker-page-dom.js; the acceptance in a real browser was done once by hand (the step of REQ-057 about the keyboard and the
+      three windows). One spec file: tools/test/e2e/picker.e2e.js, run by `cd tools && npm run e2e -- picker`.
+
+      The stand. The spec starts the server itself: `node src/picker/cli.js serve --tenants
+      src/picker/demo-tenants --port 0` (two invented tenants `uchet-pro` and `svet-marketing`, three languages
+      each) and reads the link from its stdout; for the part about the new office the same with
+      `src/picker/demo-tenants-v3` (`agency` and `stock`). Answer sets are the files of
+      `src/picker/demo-answers/` (`leader`, `close`, `none`) and `src/picker/demo-answers-v3/`. The server is
+      stopped with SIGTERM and must exit with code 0 (README, "The server"); the browser and the folders are
+      cleaned up by the kit (REQ-104). The server code, the page code and the tenant files are not changed.
+
+      What is seen today and what is not promised. The screen after «Показать результат» is a placeholder
+      (tools/src/picker/public/result.js: «the real screen replaces this file as a whole»; the text key
+      `result_soon`). So the spec asserts the structure and the meaning — the screen is `[data-screen="result"]`
+      and the server's answer behind it is the right one — and never the placeholder's words; the future
+      result-screen requirement replaces those assertions in its own table of replaced tests. The only console
+      error that is allowed is the browser's own line for the missing `/favicon.ico` (README: the server
+      answers 404 there, "this is not an error of the page"); it is declared by exact text in the spec, and
+      the kit fails a declared expectation that did not happen (REQ-104, criterion 6). If a criterion below
+      finds a real defect of the page (for example, an overflow at 320 in Kazakh), the criterion is not
+      weakened: ORCH opens a defect and the fix goes in as WF-03 with a regression test; the finding is
+      written in result.issues.
+
+      Guard tests of earlier requirements, "was → became": none. New files only: tools/test/e2e/picker.e2e.js
+      (the name has no `picker-` prefix, so the scans PK-8d and the lint scan of picker-page-static.test.js, which
+      select files by the prefix `picker-`, do not read it), and its row in the table of the README section made
+      by REQ-104. No existing assertion counts the files of tools/test or of tools/src/picker.
+
+      Bar: Q1, Q5 (every criterion has a test in the one file), Q6 (no skip), Q7 (no key; the spec writes none),
+      Q8 — criterion 6 (a second tenant does not show the first tenant's data, in the page, in the network
+      answers and in the browser storage), Q10 — criteria 7 and 8 (a bad address, a server that goes away),
+      Q11 — not applicable: the visitor supplies no address that the server visits (the kit opens only
+      127.0.0.1, REQ-104 criterion 5); Q9 — not applicable; R2, R3 — not applicable.
+    acceptance_criteria:
+      - >-
+        The card and the first question in every combination. Test "matrix" of tools/test/e2e/picker.e2e.js: for
+        `uchet-pro` and each language of `ru`, `kk`, `en` (the address `?lang=`), each of the two colour schemes
+        and each of the windows 1470×784, 390×844, 320×568 (18 combinations — the test counts them and fails if
+        the count is not 18): the attribute `lang` of `<html>` equals the language; the `<h1>` text equals the
+        tenant `title` that `GET /t/uchet-pro/api/questionnaire?lang=<l>` returns; after the press of
+        `[data-action="start"]` there is exactly one question on the screen; `document.documentElement.scrollWidth`
+        is not above `innerWidth` on the card and on the question; the start button lies inside the window;
+        the kit reports no console error and no exception, except the one declared line for the missing
+        `/favicon.ico`, declared «once per start» (REQ-104, criterion 6). On the base `ls tools/test/e2e/picker.e2e.js` fails (the file does not exist), so the criterion is not
+        met before the work.
+      - >-
+        A full pass to the result, answers checked against the server (Q3, the oracle is the server's own
+        answer). Test "pass" of the same file: the questionnaire of `uchet-pro` is answered from the sets
+        `leader`, `close` and `none` of `src/picker/demo-answers/uchet-pro.json` in Russian (single choice by the
+        radio buttons, multiple by the checkboxes, numbers by the number field, a question that is not visible
+        is not answered), and `leader` in Kazakh and in English; together the passes cover each of the three
+        windows, both colour schemes, all three languages and all three sets at least once (the test builds the
+        table of what each pass covered and asserts it is complete). At the end `[data-screen="result"]` is
+        on the screen and has the focus on its heading. The answer of the server that the page received
+        (`POST /t/uchet-pro/api/result`, read through the kit) is deep-equal to the answer of a direct `POST` of
+        the same set made by the test with `fetch` and the header `Origin: http://127.0.0.1:<port>`; the three
+        answers of the three sets are pairwise different (the control that a wrongly answered question would
+        be noticed).
+      - >-
+        The two colour schemes are really different and readable. Test "themes": on the card of `uchet-pro`, in
+        the light and then in the dark scheme, `matchMedia('(prefers-color-scheme: dark)').matches` is false and
+        true, the computed `background-color` of `body` differs, and the contrast ratio of the computed
+        `color` and `background-color` of `body` and of the text of `[data-part="intro"]` is at least 4.5 (the
+        formula of WCAG 2.x written in the spec, with a check on black/white = 21 and on equal colours = 1).
+        A dark page that keeps the light colours, or low contrast, fails.
+      - >-
+        The keyboard alone works (the step of REQ-057 about the keyboard). Test "keyboard": with only `Tab`,
+        `Shift+Tab`, `Enter` and `Space` sent through the protocol (no mouse event is sent), the visitor goes from
+        the card to the first question (`[data-action="start"]`), answers it, goes forward (`next`) and back
+        (`back`), and reaches `[data-action="restart"]` of the card; the element that holds the focus after every
+        change of screen is inside the new `[data-screen]`; the polite
+        status line `#live` has a non-empty text after each change; every control reached by `Tab` on the
+        question screen has a visible focus outline (a non-zero outline width or a box shadow in the computed
+        style).
+      - >-
+        Answers are kept, and only for their tenant. Test "storage": after the third answer the page is reloaded
+        and shows «Продолжить» (`[data-action="continue"]`); pressing it opens the fourth
+        question with the three earlier answers still selected; `localStorage` of the origin holds exactly the
+        one key `sai-picker:uchet-pro` (an exhaustive pass over `localStorage.length` and the keys), whose
+        value has the five fields `format`, `version`, `lang`, `current`, `answers`; «Начать заново» (`[data-action="restart"]`)
+        removes the key. The storage holds no name, phone or mail.
+      - >-
+        Tenants are kept apart (Q8). Test "isolation", the stands `uchet-pro`/`svet-marketing` and
+        `agency`/`stock`. The test builds from `GET …/api/questionnaire` of tenant A the set of its strings
+        (titles, question and option texts) that do not occur in the questionnaire of tenant B, and asserts the
+        set has at least 10 members (the control that the check can see anything). After a full pass of A,
+        the page of B in the same browser has none of those strings in its `textContent`, its network answers
+        (`/t/B/api/questionnaire` and `/t/B/api/result` for B's own set) hold none of them, the storage still
+        holds only A's key, and B's card shows no «Продолжить». A `POST /t/B/api/result` with A's `leader`
+        set does not return a result of A: it is an error answer of the server, with no solution name of A in
+        the body. The server's request log and stderr are free of a stack.
+      - >-
+        A bad address gives an understandable page and does not hurt the server (Q10, state unchanged). Test "not
+        found": Chrome opens `/t/net-takogo/`, `/t/UCHET-PRO/`, `/t/uchet-pro/%00` and `/`, and the test sends
+        `/t/%2e%2e/` by a raw HTTP request (`node:http`, the path kept as written), because Chrome turns that
+        address into `/` before it sends it (measured by REQ-VALIDATOR on 2026-11-03), so five requests in all.
+        Each answers 404 and shows the line `Страница не найдена. / Бет табылмады. / Page not found.` in the page
+        text (for the raw request, in the body); the body bytes of the five answers are identical (their sha256 are
+        equal); the kit reports no console error except the declared ones: the browser's own line for the 404 of
+        each of the four page loads (by exact text) and the one favicon line, «once per start» (REQ-104, criterion
+        6); afterwards `/t/uchet-pro/`
+        still opens a card, and at the end SIGTERM ends the server with code 0 and nothing on stderr that
+        matches `^\s+at `.
+      - >-
+        A server that goes away (Q10). Test "no connection": the visitor answers the questions up to the last
+        one, the test stops the server with SIGTERM, and the press of «Показать результат» shows «Нет связи.
+        Ваши ответы сохранены. Попробуйте ещё раз.» and the button «Повторить» (the words of REQ-057 and of the README
+        for a failed network); pressing «Повторить» with the server still down shows the same message
+        again (no blank page, no uncaught exception, the kit reports none); `localStorage` still holds the same
+        answers byte for byte (compared with the value read before the stop).
+      - >-
+        The new office stand opens. Test "v3": for `agency` and `stock` of `src/picker/demo-tenants-v3` in
+        Russian, in 1470×784 light and 390×844 dark, the card opens, a full pass with the set `leader` of
+        `src/picker/demo-answers-v3/<id>.json` reaches `[data-screen="result"]`, and the answer received equals a
+        direct `POST` of the same set (as in criterion 2).
+      - >-
+        Time and independence. `cd tools && npm run -s e2e -- picker | tail -n 1` → `exit=0` and `duration_ms` at most
+        80000. The loop of criterion 7 of REQ-104 (every test of the file alone by `--test-name-pattern`) → all exit 0.
+        `grep -nE '\.skip\(|\.todo\(|\|\| true' tools/test/e2e/picker.e2e.js` → no line;
+        `cd tools && npm run -s traces | grep -c 'tools/test/e2e/picker'` → 0.
+
+  - id: REQ-106
+    title: End-to-end tests in a real headless Chrome, part 3 — Pixel Office (a hook event shows on the page within 5 seconds without reload, the journal row has the right words, a secret is masked, the owner's real folder is untouched)
+    owner: TEST-DESIGNER   # the spec; if it finds a real defect, the fix is a WF-03 job on ORCH's order
+    status: pending
+    depends_on: [REQ-104, REQ-036, REQ-042, REQ-045]   # the kit; the rows and plain role names (REQ-036), the states (REQ-042), the journal words (REQ-045). REQ-001 is not listed: it is blocked until one real Claude Code session (decisions/0099); this spec proves the 5-second claim of REQ-001 without a real session and does not replace that acceptance
+    original_request: >
+      «по проекту sai  используй инструкции [другого проекта владельца] и sai. Чтобы убрать ошибки и покрыть
+      тестами проект, а именно e2e тесты» (владелец, 2026-11-03, сообщение ORCH в сессии Claude Code в VS Code;
+      двойной пробел владельца сохранён; название другого проекта владельца в скобках заменено по
+      decisions/0082, дословно — в задании handoffs/E2E-20261103-01/step-01-req-analyst.json).
+    description: >
+      What the owner gets. The Pixel Office page (tools/src/pixel-office/, README section "Pixel Office") is
+      opened in a real Chrome by a test, and the claim of REQ-001 — a new event is on the page in at most 5
+      seconds, without reload — is checked by a machine on every `npm run check`. One spec file:
+      tools/test/e2e/pixel-office.e2e.js, run by `cd tools && npm run e2e -- pixel-office`.
+
+      The stand and R2. The spec starts `node src/pixel-office/main.js --port 0` with the variable
+      `SAI_PIXEL_OFFICE_DIR` set to a new folder under the temporary root and `HOME` set to another new
+      folder (so that nothing can reach `~/.sai-pixel-office`); it reads the link from the stdout line
+      `Pixel Office: http://127.0.0.1:<port>/`. Events are sent only through the real hook program
+      `sh src/pixel-office/hook.sh` (stdin: a JSON payload of the shape that README, "What of the hook input is
+      stored", lists; the time is set by the hook at firing, the payload has no time field), with the same two
+      environment variables; the spec never writes the journal file itself. These payloads are composed for
+      the test and live only in the throwaway folder; the owner's journal never gets them (bar item R2, the same
+      rule as for the stands of UAT-RUNNER). The spec refuses to start a server whose state folder is not under
+      the temporary root.
+
+      Facts checked on 2026-11-03: the page polls every `POLL_MS` = 2000 ms with a request limit of
+      `POLL_TIMEOUT_MS` = 3000 ms (tools/src/pixel-office/public/schema.js); the mask label is `[скрыто]`
+      (`MASK_LABEL`, same file); the words of the journal rows are the table in README "The journal in plain
+      words"; the connection words are «на связи» and «Нет связи с сервером Pixel Office»
+      (tools/src/pixel-office/public/texts.js, `LIVE` and `NO_CONNECTION`); the text of a task description is
+      masked by the write protocol that the hook and the server share, before it is stored
+      (tools/src/pixel-office/protocol.js, `prepareText`). The names of
+      roles on the page are those of the table `ROLE_NAMES` (decision 0055); the spec reads the plain name from
+      that table for the role it uses, and takes the words of the rows from the README table, so the two
+      oracles are different sources.
+
+      Not asserted: horizontal overflow of the page in narrow windows (no requirement promises it for Pixel
+      Office; it is a question in result.issues of the run that wrote this text), the walking of the characters
+      (the office animation is the subject of REQ-007), and the history window of the owner's request (REQ-008).
+
+      Guard tests of earlier requirements, "was → became": none. New file only, and a row in the table of the
+      README section made by REQ-104. The tests pixel-office-*.test.js read tools/src/pixel-office and the
+      README sections of Pixel Office, not tools/test/e2e; no existing assertion counts files of tools/test.
+
+      Bar: Q1, Q5, Q6 (no skip), Q7 — criterion 4 (the key-shaped test text is built from parts at run time, so
+      the spec holds none), Q10 — criterion 6 (the server goes away and comes back), R2 — criteria 1 and 5, Q8,
+      Q9, Q11, R3 — not applicable (no customer data, no query, no address supplied to the server, no photos).
+    acceptance_criteria:
+      - >-
+        The stand is isolated before any event (R2). Test "isolated start" of tools/test/e2e/pixel-office.e2e.js:
+        the server answers with a link; the page shows «на связи» and no task «в работе»; the temporary state
+        folder holds no file except the five of README ("Where things are"), `events.jsonl` has no row (absent or
+        empty), and `server-starts.jsonl` has 1 row; the `HOME` folder of the server has no entry `.sai-pixel-office`. The
+        starter of the spec, called with a state folder outside the temporary root (for example the home
+        folder), throws before any process is started (the test counts the spawned processes: 0).
+      - >-
+        An event reaches the page in at most 5 seconds without reload (the claim of REQ-001). Test "live" (each test of this file starts its own server and its own folders): the
+        page is open and the test sets `window.__e2eMarker` and counts `performance.getEntriesByType('navigation')`
+        (1); before the hook runs, no task row «в работе» exists (control); the test runs the real hook with a
+        `SubagentStart` payload of a role (session id, agent id, agent type) and measures the time from the
+        exit of the hook to the moment the page shows a task row with the plain name of that role and the state
+        «в работе» (polling the page every 100 ms): at most 5000 ms. Then the hook sends `SubagentStop` of the same
+        agent and the row shows «закончила работу, итог не записан» within the same limit. At the end the marker
+        is still set and the navigation count is still 1 (no reload happened).
+      - >-
+        The journal says the right words and holds the right rows. Test "journal": the journal list of the page
+        shows, in this order (the new rows at the bottom), «Агент «<role name>» получил задание и начал работу», a
+        second start of the same agent «Агент «<role name>» продолжил работу», and «Агент «<role name>» закончил
+        работу и вернул ответ» (the words of the README table); the counter «N из M» equals 3 from 3. The file
+        `events.jsonl` of the temporary folder has exactly 3 lines, each valid JSON, in order of kinds
+        `SubagentStart`, `SubagentStart`, `SubagentStop`, each with `source` equal to `REAL`, the one `session_id`
+        and `agent_id` that were sent, and a `time` that is an ISO 8601 UTC time with milliseconds lying between
+        the test clock read just before and just after the run of its own hook (the time came from the hook,
+        not from the payload).
+      - >-
+        A secret in a text is masked on the page and in the file (Q7). Test "mask": the test builds at run time, from
+        parts, a key-shaped string of the form `ghp_` followed by 36 letters and digits, and sends the
+        events of an agent start, of the hand-over (`PostToolUse` of the tool Agent, whose
+        `tool_input.description` is `Check <string> now`, with the agent's id) and of the end; a second agent has
+        the description `Check the stock list now` (control). After the update `document.body.textContent` holds `[скрыто]`, holds neither the whole string nor its 12
+        middle characters, and shows the control description verbatim; `grep -c` of the string and of the 12
+        middle characters in `events.jsonl` → 0 and the control text is there. The spec file holds no
+        string of that shape: `grep -nE 'ghp_[A-Za-z0-9]{16,}' tools/test/e2e/pixel-office.e2e.js` → no line.
+      - >-
+        The owner's real folder is not touched (R2). The hash and the size of the file `events.jsonl` and of the
+        file `server-starts.jsonl` in the real state folder of the computer (when they exist; when they do not, the
+        fact that they do not) are the same before and after `cd tools && npm run -s e2e -- pixel-office`
+        (RELEASE-VALIDATOR measures it with `shasum -a 256` and `stat`); the `HOME` folder of the spec has no
+        `.sai-pixel-office` at the end. The hash of the real folder is the proof; a search of the spec for
+        words like «write» is not used, because it would count a comment (AP-120).
+      - >-
+        A server that goes away and comes back (Q10, state unchanged). Test "reconnect": the test stops the
+        server with SIGTERM; within 10 seconds (one poll of 2 s plus the 3-second limit of the request, with slack)
+        the page shows «Нет связи с сервером Pixel Office» and still shows the three rows that were loaded; a hook run
+        while the server is down exits with code 0, prints nothing, and the sha256 of `events.jsonl` is the
+        same before and after it (the event is lost, the file is unchanged). The test starts the server again
+        with `--port <the same port>` and the same folder: within 10 seconds the page shows «на связи» again and
+        the three rows, `server-starts.jsonl` has 2 rows, and a new hook event shows on the page in at most 5 s.
+      - >-
+        Windows and errors. Test "windows": the page opens in 1470×784, 390×844 and 320×568; in each the kit
+        reports no console error and no uncaught exception, the connection block shows «на связи», and the
+        block «Сейчас» exists. At the end SIGTERM ends the server with code 0.
+      - >-
+        Time and independence. `cd tools && npm run -s e2e -- pixel-office | tail -n 1` → `exit=0` and `duration_ms`
+        at most 50000. The loop of criterion 7 of REQ-104 (every test of the file alone) → all exit 0. `grep -nE
+        '\.skip\(|\.todo\(|\|\| true' tools/test/e2e/pixel-office.e2e.js` → no line; `cd tools && npm run -s traces | grep
+        -c 'tools/test/e2e/pixel-office'` → 0.
+
+  - id: REQ-107
+    title: End-to-end tests in a real headless Chrome, part 4 — the team page (create a project, see it in the list, open it, pause and continue, stop, write in the chat, a failure in plain words), with the scripted test executor only
+    owner: TEST-DESIGNER   # the spec and the two scenario files; if it finds a real defect, the fix is a WF-03 job on ORCH's order
+    status: pending
+    depends_on: [REQ-104, REQ-011, REQ-035]   # the kit; the page and the engine behind it (REQ-011); the buttons «Пауза», «Продолжить», «Остановить» (REQ-035)
+    original_request: >
+      «по проекту sai  используй инструкции [другого проекта владельца] и sai. Чтобы убрать ошибки и покрыть
+      тестами проект, а именно e2e тесты» (владелец, 2026-11-03, сообщение ORCH в сессии Claude Code в VS Code;
+      двойной пробел владельца сохранён; название другого проекта владельца в скобках заменено по
+      decisions/0082, дословно — в задании handoffs/E2E-20261103-01/step-01-req-analyst.json).
+    description: >
+      What the owner gets. The page of the virtual team (tools/src/web/, README section "Sai Team — the
+      interface") is driven in a real Chrome by a test: a person writes a goal, a project appears, runs, can be
+      put on a pause, continued or stopped, can be written to in the chat, and a failure is told in plain words.
+      Today the page is tested against tools/test/team-web-dom.js. One spec file:
+      tools/test/e2e/team-web.e2e.js, run by `cd tools && npm run e2e -- team-web`.
+
+      The stand and the money. The spec starts `node src/web/main.js --port 0 --executor scripted --scenario
+      <file>` (README: only for tests; such projects carry the mark «тестовый исполнитель»). The data folder is
+      new, set by `SAI_TEAM_HOME`, and `HOME` is another new folder. The variable `SAI_TEAM_REAL_RUNS` is not
+      set, and `SAI_TEAM_CLAUDE_BIN` points to a trap program (a script in tools/test/fixtures/e2e/ that
+      writes a marker file when it is started); the spec asserts the marker file never appears — no real
+      Claude Code session is started and nothing is spent. Scenarios: `tools/test/fixtures/team/engine-basic.json`
+      (exists; a plan of two tasks, work, check and goal check; not changed), and two new files made by this
+      work in tools/test/fixtures/e2e/: `team-slow.json` (the same shape with `delay_ms` steps so that a project is
+      in work for at least 10 seconds) and `team-fail.json` (every attempt of a task fails). They are checked by
+      the real `parseScenario` at the start of the server (README: a wrong scenario stops the start).
+
+      Facts checked on 2026-11-03: `npm run team-web` takes `--port`, `--executor scripted` and `--scenario`
+      (tools/src/web/main.js); the project buttons and their states are in README "The project buttons";
+      the page writes only through the engine; a write request needs the page's own key (README "Security"), so
+      the spec drives the page and never posts by hand; the project page answers six questions (README "The
+      project page: six questions"). Not asserted: horizontal overflow in narrow windows (no requirement
+      promises it for this page; a question in result.issues), the answering of a question of a task (the
+      README says it is not on the page yet).
+
+      Guard tests of earlier requirements, "was → became": none. New files only (the spec, two scenarios, the
+      trap program) and a row in the README table made by REQ-104. The scans of the scenario folder by
+      exec-*.test.js read tools/test/fixtures/team, not fixtures/e2e; no existing assertion counts files of
+      tools/test/fixtures.
+
+      Bar: Q1, Q5, Q6 (no skip), Q7 (no key), Q10 — criterion 6 (a failing task, an unwritable data folder),
+      Q8 — not applicable: the page has one local owner and no space of other customers (the server listens on
+      127.0.0.1; the write key and the `Origin` check are the border, and are checked by the tests of REQ-011);
+      Q9, Q11, R2, R3 — not applicable.
+    acceptance_criteria:
+      - >-
+        No real run, no spending. Test "stand" of tools/test/e2e/team-web.e2e.js: the page opens at the link
+        printed by the server (`Sai Team: http://127.0.0.1:<port>/`), the list of projects is empty with its
+        own words (not a blank page). Positive control for the trap, before the stand starts: the test runs the
+        trap program once itself, as a child process, and sees its marker file, then removes the marker (so the
+        check can see a start). At the end of the whole file the trap marker file does not exist, and the data
+        folder has no project of the executor `claude-cli`: the number of list rows with the mark «тестовый исполнитель»
+        equals the number of project folders in the data folder (README: the page marks the test executor, and a
+        project is `claude-cli` unless it is the test one). `grep -n 'SAI_TEAM_REAL_RUNS'
+        tools/test/e2e/team-web.e2e.js` → no line that sets it to `1`.
+      - >-
+        Create a project, see it, open it (the main path of a person). Test "create": the person types a goal of
+        one phrase and a ceiling of 1 (dollar) into the form and presses the button; the list shows a project whose
+        title is the goal text verbatim, with the mark «тестовый исполнитель»; the data folder has exactly one
+        project folder, its id is in the link of the project, and its journal file exists; the project page shows
+        the six headings of the README ("Что происходит", "Кто занимается", "Когда будет готово", "Есть ли
+        проблема", "Нужно ли что-то от меня", "Результат"). After the reload of the page the project is still in
+        the list (the page shows the server's state, not its own memory).
+      - >-
+        A project runs to the end. Test "finish": with `engine-basic.json` the project reaches the state of a
+        finished project within 60 seconds; the progress reads «N из M задач» with N equal to M and M equal to
+        the number of tasks of the plan in the scenario file (the test reads that number from the file, the oracle
+        is the file); «Результат» is not empty; the project has no buttons any more (README "The project
+        buttons": a finished project has none).
+      - >-
+        Pause, continue, stop (REQ-035), state checked again on the server side. Test "control", scenario
+        `team-slow.json`: while the project is in work, «Пауза» and «Остановить» are visible and «Продолжить» is
+        not; after «Пауза» the page shows the phrase «Проект на паузе. Нажмите «Продолжить», чтобы работа пошла
+        дальше» (or the other pause phrase of README that fits the state), «Продолжить» is visible and «Пауза» is
+        not, and the journal of the project in the data folder holds the pause event; after «Продолжить» the
+        project is in work again and finishes. A second project: «Остановить» asks for a confirmation; «Не
+        останавливать» changes nothing (the journal has no stop event); «Остановить» stops it, the page says
+        «Проект остановлен. Продолжить его нельзя», no button is left, and the page opened anew (a new tab)
+        shows the same.
+      - >-
+        The chat is text only and reaches the project. Test "chat": the person writes `<b>привет</b> & «тест»` in the
+        chat of a project; the message appears in the chat list as that exact text (the list has no `<b>` element
+        made from it), and the journal of the project in the data folder holds a message event with the same
+        text. An empty message is not sent: either the send control is disabled or a plain sentence appears (a
+        non-empty text with none of `^\s+at `, `undefined`, `[object`, `Error:` - the same rules as in the
+        failure test), and in both cases the journal is unchanged (same size and sha256 before and after).
+      - >-
+        A failing task is told in plain words, the page lives (Q10). Test "failure", scenario `team-fail.json`: the
+        page says in the words of the journal table that the attempt did not succeed («Попытка не удалась»), the
+        question «Есть ли проблема» is not empty and names the task with a reason in words; the reason text and the page text contain no stack
+        (`^\s+at `), no `undefined`, no `[object`, no `Error:`; the list of projects still loads; a new project can
+        be created after it; at the end SIGTERM ends the server with code 0. A refusal of the data folder: a second
+        server started with `SAI_TEAM_HOME` pointing under a regular file (`<temporary>/f/home` where `f` is a
+        file, so the folder cannot be made even for the superuser) opens the page; creating a project shows a
+        plain sentence (non-empty, with none of `^\s+at `, `undefined`, `[object`, `Error:`), no project appears
+        in the list, no folder is created, and the process stays alive and answers the next request.
+      - >-
+        Windows and errors. Test "windows": the list page and the project page open in 1470×784, 390×844 and
+        320×568 with no console error and no uncaught exception reported by the kit, and the form button is inside
+        the window.
+      - >-
+        Time and independence. `cd tools && npm run -s e2e -- team-web | tail -n 1` → `exit=0` and `duration_ms` at most
+        70000. The loop of criterion 7 of REQ-104 (every test of the file alone) → all exit 0. `grep -nE
+        '\.skip\(|\.todo\(|\|\| true' tools/test/e2e/team-web.e2e.js` → no line; `cd tools && npm run -s traces | grep
+        -c -E 'tools/test/e2e/team-web|tools/test/fixtures/e2e'` → 0; `cd tools && node --test test/exec-docs.test.js
+        test/exec-scripted-source.test.js` → exit 0 (the earlier tests of the scenario folder stay green).

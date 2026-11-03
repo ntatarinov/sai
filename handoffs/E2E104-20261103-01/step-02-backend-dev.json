@@ -1,0 +1,149 @@
+{
+  "handoff_id": "step02-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/E2E104-20261103-01/step-02-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "docs/requirements.yaml",
+      "decisions/0107-e2e-real-chrome-in-check.md",
+      "decisions/0108-e2e-kit-conventions.md",
+      "handoffs/E2E104-20261103-01/step-01f-code-design-validator.json"
+    ],
+    "route": "CODE-DESIGN-VALIDATOR PASS (01f) -> BACKEND-DEV (this) -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/kit/*.js, tools/test/e2e/run.js, tools/test/fixtures/e2e/fake-chrome.js, tools/package.json (scripts only), tools/README.md, README.md (root, by hand)"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "WF-02, step 2 — write the code of REQ-104 by the design docs/design/REQ-104-e2e-chrome-kit.md (it passed gate 1b on the third pass, handoffs/E2E104-20261103-01/step-01f-code-design-validator.json), in the 8 build sub-steps of design section 15, and only in the files that section 3 gives to BACKEND-DEV. The answers of ORCH are in decisions/0107 and decisions/0108 (binding). Read the design completely, the block REQ-104 in docs/requirements.yaml, docs/quality-bar.md and docs/anti-patterns.md first.\n\nRULES: pure Node 22, no npm package. After EACH sub-step run the checks named in the design for that sub-step and name the red tests; only the six guard tests (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13) may turn red, and only at sub-step 7 (the package.json edit); any other red test is a stop and a report to ORCH. Tests of the kit (tools/test/e2e-kit.test.js, smoke.e2e.js, fixtures/e2e/specs and tap) are NOT yours: they are written by TEST-DESIGNER at step 5; so in sub-steps 1-6 check your modules with your own throw-away probes OUTSIDE the project (system temp folder) and in sub-step 7 run the whole `cd tools && npm run check`-parts that the design names. The guard tests turned red at sub-step 7 are fixed by TEST-DESIGNER at step 5 — report them in result.issues with the section of the design.\nDo not depart silently from the design; if something cannot be built as designed, stop and write it in result.issues for ORCH. The Low remarks of gate 1b for the developers (handoffs/E2E104-20261103-01/step-01f-code-design-validator.json, N1-N6) and the open points of the designer (check whether fs.writeSync gives EAGAIN on a non-blocking pipe for the stand-in `noisy` mode; the path form node prints for a spec) are yours to follow: N4 — cleanupAllSync clears the registry after killing, so a group is not killed twice. Do not put the words forbidden by the design (the sandbox flags, skip words, `|| true`, `eslint-disable`) anywhere under tools/test/e2e, in tools/test/e2e-kit.test.js or in the stand-in, comments included; no secret; no absolute machine path in any committed file (npm run traces); the root README.md is edited by hand, not through prettier; format the new code under tools/ with `cd tools && npx prettier --write <your files>` and run `npm run lint`.\nSAFETY ON THIS MAC: one agent at a time; start Chrome only with the kit's own cleanup, kill any Chrome you start by process id (never by name pattern), remove only the temp folders you created, never rm inside the project; at most two full `npm test` runs in the whole step. Final self-check: `cd tools && npm run format:check && npm run lint && npm run traces && npm run handoffs-check` and a real run of the new `node test/e2e/run.js` form you built (preflight prints `e2e: browser=` with the real Chrome here); the full suite is not green until step 5 fixes the six guard tests — name exactly which are red.\nDo not commit. No name of another project in any file.",
+    "acceptance_criteria": [
+      "Every sub-step 1-8 of design section 15 done and checked, red tests named",
+      "Only the six named guard tests red, and only from sub-step 7",
+      "format:check, lint, traces, handoffs-check green",
+      "A real run of the runner prints e2e: browser= with the real Chrome"
+    ]
+  },
+  "created_at": "2026-11-02T23:09:51Z",
+  "started_at": "2026-11-02T23:09:51Z",
+  "completed_at": "2026-11-02T23:33:55Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Sub-steps 1-8 of design section 15 done in order and checked with throw-away drivers outside the project (scratch folder, TMPDIR pointed there). Kit of 9 modules + runner + run.js + stand-in written; package.json got `e2e` and the sixth step; both READMEs edited by hand (root) and by prettier (tools). Only the six guard tests are red, and only since sub-step 7.",
+    "changes": [
+      {
+        "file": "tools/test/e2e/kit/errors.js, find-chrome.js",
+        "design": "4.1, 4.2 (sub-step 1)",
+        "what": "E2eError + code list; findChrome with SAI_CHROME as the only place when set, five places, empty PATH entries skipped"
+      },
+      {
+        "file": "tools/test/e2e/kit/guards.js",
+        "design": "4.3 (sub-step 2)",
+        "what": "repoRoot, tempRoot, assertLoopbackUrl, assertOutsideRepo/UnderTempRoot/ShotPath; paths resolved segment by segment through symbolic links (also before a '..'); the checks return the normalized href / real path"
+      },
+      {
+        "file": "tools/test/e2e/kit/cdp.js, console.js, tools/test/fixtures/e2e/fake-chrome.js (0755)",
+        "design": "4.5, 4.7, 5 (sub-step 3)",
+        "what": "protocol client with guarded parse; pure matcher; stand-in with all modes of section 5 plus the extra mode ok-ignore-term"
+      },
+      {
+        "file": "tools/test/e2e/kit/cleanup.js, browser.js",
+        "design": "4.4, 4.6 (sub-step 4)",
+        "what": "registry, signal hooks (called at once, one limit, errors kept, second signal skips the wait, first signal's exit code), cleanupAllSync clears the registry (N4); launchBrowser/withBrowser/Browser"
+      },
+      {
+        "file": "tools/test/e2e/kit/page.js, index.js",
+        "design": "4.8, 4.9 (sub-step 5)",
+        "what": "Page API and exports"
+      },
+      {
+        "file": "tools/test/e2e/kit/runner.js, tools/test/e2e/run.js",
+        "design": "6 (sub-step 6)",
+        "what": "listSpecs, parseSelection, analyseTap, formatRecord, specEnv, specArgument, runAll with hook-first flow, preflight, spec process group, stop, INTERRUPTED"
+      },
+      {
+        "file": "tools/package.json",
+        "design": "6, 15 step 7",
+        "what": "script e2e between test and check; check ends with `&& npm run e2e`"
+      },
+      {
+        "file": "tools/README.md, README.md",
+        "design": "14, 15 step 8",
+        "what": "Check sentence + sentence about Chrome, new last section 'End-to-end tests in a real browser'; root paragraph 'You need' edited by hand"
+      }
+    ],
+    "self_check": [
+      "sub-step 1-6: drivers in <scratch>: findChrome table (5 places, order, no fallback, empty/relative SAI_CHROME), E2K-20 table (all 24 refused, 5 accepted forms), shot-path table incl. symlink and a '..' after a link, all stand-in modes through cdp.connect and launchBrowser (right codes, pid and folder gone, registry empty, next start ok), signals SIGTERM/SIGINT/SIGHUP/exit(3)/throw -> 143/130/129/3/1 with stand-in group and folder gone, hook cases a-f of E2K-39 (+ two hooks of 600 ms both run), real Chrome 20 start/stop cycles: ps and folders 0 before/after (6.2 s), page driver on real Chrome 156: sizes, overflow (+/-), light default and dark, hit test, far click, waitFor, keys, typing, network+body, 404 status, reload, second tab localStorage, screenshot, confinement (redirect and direct foreign address fail), four console kinds, favicon once per start, kill mid-call (BROWSER_CLOSED 13 ms); runner on a scratch copy: nosuch, SAI_CHROME missing, ordered runs, NODE_TEST_CONTEXT set, failing/empty/skipped/todo/duplicate/'../x', SIGTERM/SIGINT/SIGHUP during a spec and SIGTERM in the preflight (exit 143/130/129/143, INTERRUPTED once, record once, no process/folder left), timeout of sleep and sleep-stubborn via runAll (1.1 s / 1.6 s, group gone, registry empty).",
+      "sub-step 7 (14 guard files): # tests 187 # pass 181 # fail 6 -> HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13; before the edit: 187/187/0. After sub-step 8 the same six.",
+      "cd tools && npm run -s format:check -> All matched files use Prettier code style!; npm run -s lint -> exit 0; npm run -s traces -> traces: файлов проверено 2398, следов 0, пропущено 67; npm run -s handoffs-check -> нарушений 0",
+      "one full run: node --test --test-reporter=tap \"test/**/*.test.js\" (what `npm test` runs): # tests 2135 # pass 2129 # fail 6 # cancelled 0 # skipped 0 # todo 0; red: HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13 (the design predicted 2136 with the 41 tests of this work that TEST-DESIGNER still has to write; here 2135 is the old suite)",
+      "real run of the runner with the real Chrome (scratch copy with one trivial spec, because the real tree has no spec until step 5): `e2e: browser=Chrome/156.0.8078.74`, `e2e: file=pass-a`, `# pass 1`, `e2e: command=npm run e2e -- pass-a selection=pass-a exit=0 duration_ms=520`, exit 0, 0 sai-e2e folders left. On the real tree: `e2e: error=NO_SPECS: …` + record exit=1 (as the design says for this stage).",
+      "greps over tools/test/e2e and the stand-in: both sandbox flags, .skip(, .todo(, || true, eslint-disable, '{ skip', '{ todo' -> none (the word 'sandbox' stands only in the START_EXITED sentence, as 4.1 requires); process.env: bare once each in find-chrome.js, browser.js, runner.js (parameter defaults); property reads only SAI_FAKE_CHROME_MODE/LOG in the stand-in; secret shapes -> none; '://' only in two guards.js strings and the ws pattern; no absolute machine path. Root README paragraph: Chrome 2, SAI_CHROME 1, fails 1, '://' 0; section heading line 1."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "Six guard tests red from sub-step 7, replaced by TEST-DESIGNER at step 5 by section 12 of the design: HC-02 (row 1, six steps list), HC-03 (row 2, end `npm run test && npm run e2e`), HO-54 (row 3, six steps), PK-7b (row 4, string + ` && npm run e2e`), LP-3 (row 5, 19 keys with e2e between test and check), CTL-13 (row 6, `/npm run test && npm run e2e$/`). No other test red."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "The acceptance criterion 'a real run of the runner prints e2e: browser= with the real Chrome' cannot be met on the real tree yet: smoke.e2e.js does not exist before step 5, so listSpecs gives NO_SPECS before the preflight (design 15 step 6 says so). It was done on a scratch copy with a trivial spec (see self_check). Please repeat on the real tree after step 5."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "Behaviour added beyond the letter of the design, for ORCH/CODE-DESIGNER to confirm: Page.goto/reload wait 100 ms after the load event (LOAD_SETTLE_MS). Measured: with a second navigation started at once, Chrome drops the favicon request and its console line EVERY time (3 of 3), with a 50 ms gap it appears every time (3 of 3, also at 400 ms). Without the settle SMK-08 ('two loads in one start, exactly one favicon entry') would fail on every run. Cost 0.1 s per goto."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Contract details TEST-DESIGNER must know (not fixed in the design): (a) a console declaration is {kind, text, path?, once?}; evaluateConsole(entries, declarations) reads `once` (true = expectOncePerStart); makeDeclaration() builds it; entryFromEvent(message,{page,at}) and consoleError(unexpected, unmet) are exported from console.js; (b) runAll `out`/`err` accept an object with write(text) or a plain function(text); the defaults write synchronously to fd 1/2; `now` is a function returning ms; (c) guards return the normalized href / the real path (symbolic links resolved) and callers use that value; (d) the stand-in has an extra mode ok-ignore-term (like ok, ignores SIGTERM) because hang-ignore-term prints no port line, so no Browser can be built on it: E2K-17 'close() escalates to SIGKILL' must use ok-ignore-term (the hang-ignore-term mode still covers the START_TIMEOUT kill); (e) bad-json/error-object/no-answer make launchBrowser itself reject (Browser.getVersion is the first call), so E2K-13/14/15 and the two-pending-calls case need cdp.connect on the stand-in's port line directly or accept the launch rejection; (f) Page.waitFor lets a PROTOCOL_ERROR of a poll pass (a page that is changing) and rethrows everything else."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Module order differs from the arrow list of section 3 in one place without effect: browser.js imports page.js (newPage), page.js does not import browser.js, so there is no cycle. page.js was written before the sub-step 4 driver ran (browser.js imports it); sub-step 4 checks did not use pages."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Open points of the designer answered: fs.writeSync(2, …) of the `noisy` mode gave 0 EAGAIN on the child pipe (probe: it blocks after 32 chunks of 4 KB while the parent does not read, finishes after the read; the stand-in still retries on EAGAIN). The path form node prints for a spec is the relative one without './' (`ok 1 - test/e2e/empty.e2e.js`). N4 done (cleanupAllSync clears the registry); N3 (hooks run at once) built as designed, a test needs two hooks of 600 ms with a 1000 ms limit (probe: both markers appear). N1, N2, N5, N6 touch the tests only."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Safety: only my own scratch folder was used as TMPDIR for kit runs; every Chrome was started by the kit (cleanup verified, pgrep 'sai-e2e-profile' = 0, no stand-in left); the owner's own Chrome was never touched. One full test run used (the limit is two)."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e/kit/errors.js",
+      "tools/test/e2e/kit/find-chrome.js",
+      "tools/test/e2e/kit/guards.js",
+      "tools/test/e2e/kit/cdp.js",
+      "tools/test/e2e/kit/console.js",
+      "tools/test/e2e/kit/cleanup.js",
+      "tools/test/e2e/kit/browser.js",
+      "tools/test/e2e/kit/page.js",
+      "tools/test/e2e/kit/index.js",
+      "tools/test/e2e/kit/runner.js",
+      "tools/test/e2e/run.js",
+      "tools/test/fixtures/e2e/fake-chrome.js",
+      "tools/package.json",
+      "tools/README.md",
+      "README.md"
+    ]
+  }
+}

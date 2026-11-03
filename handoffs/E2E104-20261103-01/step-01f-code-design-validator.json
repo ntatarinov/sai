@@ -1,0 +1,153 @@
+{
+  "handoff_id": "step01f-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "01f",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/E2E104-20261103-01/step-01f-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "docs/requirements.yaml",
+      "decisions/0108-e2e-kit-conventions.md",
+      "handoffs/E2E104-20261103-01/step-01d-code-design-validator.json",
+      "handoffs/E2E104-20261103-01/step-01e-code-designer.json"
+    ],
+    "route": "CODE-DESIGNER (rework 01e) -> CODE-DESIGN-VALIDATOR (this, third pass) -> BACKEND-DEV",
+    "write_set": [
+      "this handoff only; repository files are read-only for this step"
+    ],
+    "base_tag": "base/E2E104-20261103-01",
+    "rework_of": "handoffs/E2E104-20261103-01/step-01d-code-design-validator.json"
+  },
+  "task": {
+    "description": "WF-02, step 1b (THIRD and last gate pass: a FAIL stops the run and goes to the owner) — check the design docs/design/REQ-104-e2e-chrome-kit.md after the rework 01e (handoffs/E2E104-20261103-01/step-01e-code-designer.json) by the section \"Step 1b\" of docs/workflows/WF-02-development.md and by your own second-pass findings F11-F16 in handoffs/E2E104-20261103-01/step-01d-code-design-validator.json. Read the design itself.\nCheck in particular: (1) F11 is really closed: REPEAT yourself, on a fresh clone of the tag outside the project, that `npm run traces` fails on a captured TAP text with the machine path and passes after the path removal described in section 11.3; that E2K-34 (with hasHomePath/hasTempPath from tools/src/traces/rules.js) would catch the committed fixtures; the criterion-11 grep of REQ-104 gives 0 on the described fixtures and kit text. (2) F12-F16 are closed in the design (section 4.4, 6, 7 rows 12/17/18, E2K-18/37/38/39, M59, section 18 with REQ-040, F16 comment ban E2K-25/50 and M72). (3) The two additions beyond the list (a SPEC_FAILED row for a spec process that cannot start, and the option hookLimitMs) are accepted by ORCH if they are needed to make F13/F14 testable; judge whether they are sensible, not as work beyond the criteria. (4) Nothing new broke: replacement table (six tests), criterion → test table (53 tests: 40 E2K, 13 SMK; criteria 1-13), bar section, no implementation code, no contradiction with decisions 0107/0108 (О9 now also names REQ-040: whether DOC-UPDATER or a micro-amendment corrects it is decided by ORCH at step 10 and is not a reason to FAIL). (5) Apply at least 10 mutants again, at least 5 from M62-M72, plus several of your own around the new signal-hook rules. If you find a missing mutant for \"tap text committed with a machine path\" say whether it is needed (a remark, not a FAIL, unless a criterion is left unprotected).\nAnswers of ORCH in decisions/0108 are binding; О7b and REQ-033/REQ-014 are for the owner. A FAIL only for blocking items (a criterion unprotected, a contradiction, an unbuildable or unsafe design); Low items are remarks and go to the developers.\nMAC LOAD: one agent at a time; at most one full `npm test`; kill every Chrome you start by process id; remove only temp folders you created; never rm inside the project.\nResult: PASS or FAIL with a list (section, item, what is wrong).",
+    "acceptance_criteria": [
+      "Each item of WF-02 step 1b has a stated result",
+      "PASS or FAIL with a list: section, item, what is wrong"
+    ]
+  },
+  "created_at": "2026-11-02T22:52:46Z",
+  "started_at": "2026-11-02T22:52:46Z",
+  "completed_at": "2026-11-02T23:09:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "pass_A_item_1": "MET. Repeated on a fresh clone of base/E2E104-20261103-01 (f806d7d), npm ci, in a new folder of the scratch space (removed at the end). F11/F34 closed: a spec fail.e2e.js (one throwing test) captured with `env -u NODE_TEST_CONTEXT node --test --test-reporter=tap` (exit 1) holds the machine path on line 7 (`location: '<abs>/...:3:1'`) and line 12 (`(file://<abs>/...:4:9)`); with that raw text placed in tools/test/fixtures/e2e/tap/failing.txt `npm run traces` printed 'путь домашнего каталога' for lines 7 and 12, `traces: ... следов 2`, exit 1. After the removal of `file://<abs>/` and `<abs>/` (section 11.3 step 2) the lines read `location: 'test/fixtures/e2e/specs/fail.e2e.js:3:1'` and `(test/fixtures/e2e/specs/fail.e2e.js:4:9)`, `traces: файлов проверено 2382, следов 0`, exit 0, `npm run -s traces | grep -c -E 'tools/test/e2e|tools/test/fixtures/e2e'` -> 0, prettier --check accepts the folder. A probe that imports hasHomePath (per line) and hasTempPath (whole text) from tools/src/traces/rules.js: raw fail text true/true (also `file:` and the plain absolute-path pattern of E2K-34 true), the five normalized tap texts and five spec fixtures false for all four tests. Note: hasTempPath is used by handoffs rules only, not by `npm run traces`; E2K-34 applies it additionally (stricter, fine). Criterion-11 greps on the described fixtures: secret grep exit 1 (no line), skip-word grep exit 1, sandbox-flag grep exit 1; a simulated comment `never pass --no-sandbox` in a kit file turns the 10(d) grep to exit 0 (M72 killed). Other statements repeated: F35 (kill(-pid,0) for 2147483646, 4194305, 99999: ESRCH), F29 (inside a node:test test NODE_TEST_CONTEXT=child-v8; nested run with it kept: exit 0, stdout length 0; with it dropped from a copy: TAP printed), F30 (test/... and ./test/... print the normalized name, tools/test/... gives Could not find).",
+      "pass_A_item_2": "MET (AP-014). Shared mechanism 'scripts.check shape': grep of the whole tree for `npm run test`, 'ends with', 'five steps', 'пять шагов': the six tests, tools/README.md line 15, .claude/agents/test-runner.md item 3, REQ-038 (5266-5268, 5313), REQ-040 (5502, 5566), REQ-033 (4200) are all named in sections 12, 13, 18, 19; older design files are history. Shared mechanism 'NODE_TEST_CONTEXT dropped for a nested node --test': F29 names handoffs-cmd-docs.test.js; the same drop also stands in repo.test.js 560 and handoffs-runtime.test.js 340 (informational, nothing is changed there).",
+      "pass_A_item_3": "MET. Replacement table repeated: package.json edit (e2e after test, `npm run e2e` appended) and the 14 test files -> '# tests 187 # pass 181 # fail 6' with exactly HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13; after the six replacements of section 12 applied literally -> '# tests 187 # pass 187 # fail 0 # skipped 0 # todo 0'. Mutants applied (19, see self_check): from the list M51, M52, M60, M62, M63, M64, M65, M66, M67, M68, M69, M70, M71, M72 (14, of them 11 from M62-M72); own: X1, X2, X-or, X-order, M64 baseline. All killed by a test named in the design, except X2 (see N3). Sub-steps: sizes and order sound; 1-6 add files nothing reads; 7 is one edit with six expected red tests (measured); 8 adds none.",
+      "pass_B_item_4": "MET. Signatures, codes (4.1), argument list (4.6), record line (6), stand-in modes (5), spawnSpec contract and fake child (6, E2K-37) are complete; the contract between BACKEND-DEV and TEST-DESIGNER is the list of codes, args, record and modes.",
+      "pass_B_item_5": "MET. Rows 1-18 of section 7 each give 'user sees' and 'state afterwards'; rows 17 and 18 (signals during a spec, during the preflight, second signal, throwing and silent hook) agree with my prototype of 4.4 plus the runner flow.",
+      "pass_B_item_6": "MET with Low remarks N1, N3, N4, N6 (places where a developer or tester would otherwise choose).",
+      "pass_B_item_7": "MET: grep -c of three backticks in the design -> 0; only shapes, signatures, tables and texts.",
+      "pass_C_item_8": "MET with Low N1, N2, N6. Criteria 1-13 each lead to a design element and to tests in section 10; E2K rows counted 40, SMK 13, mutants 72, sub-steps 8, as section 0 says; no 'decide later' row.",
+      "pass_D_item_9": "MET: section 17 names Q1-Q14 and R1-R3, each 'applicable: how' or 'not applicable: why'; the texts of Q3, Q6, Q10 match the rework 01e.",
+      "pass_D_item_10": "MET: section 8: URL check inside Page.goto before the protocol call, SAI_CHROME decision inside findChrome, the spec group registered in the call that spawns it, the runner hook installed in step 1 of runAll with installHandlers and removed in a finally.",
+      "pass_D_item_11": "MET: no contradiction with 0107 (only the 'no browser binary' clause is lifted, sixth step, a missing Chrome fails) or 0108 (O1-O9; O9 names REQ-038 and REQ-040, who corrects it is for ORCH at step 10 and is not a reason to FAIL).",
+      "F11": "CLOSED (measured above). F12 CLOSED: runner hook removed in a finally (6 step 1, E2K-32 hooks==0), hook installed with installHandlers before listSpecs and the preflight (E2K-38 fourth run), stopped group unregistered, hook error caught and kept (4.4, E2K-39c), exit code of the first signal after a second one (E2K-39d). F13 CLOSED: detached:true is in the spawnSpec argument and the fake child is defined (E2K-37), the preflight uses the injected launch with the runner's env (6 step 4, E2K-32, M70). F14 CLOSED: SIGHUP in E2K-18/E2K-38/E2K-39a, second signal E2K-39d, cap E2K-39b, M59 reason corrected. F15 CLOSED: REQ-040 lines named in sections 18 and 19 (O9) and in decisions/0108. F16 CLOSED: section 3 and section 11 forbid the two sandbox flags and the skip words in comments too (E2K-25, E2K-50, M72, greps of criteria 10(d) and 11).",
+      "additions_beyond_the_list": "Both ACCEPTED as sensible and needed: the SPEC_FAILED row for a spec process that cannot start (E2K-37) defines the fake child contract that F13(a) needs; the option hookLimitMs of installHandlers (read by the first call only) lets E2K-39 run with a 1 s limit instead of waiting 10 s (otherwise F14's cap and second-signal promises have no affordable test). No criterion is widened by them.",
+      "missing_mutant_machine_path": "A numbered mutant 'tap text committed with a machine path' is NOT needed: the oracle exists twice (E2K-34 with hasHomePath/hasTempPath/file:/absolute-path checks turns red on the raw text; the traces step of check turns red on a home-style path) and criterion 11 is protected by the command of RELEASE-VALIDATOR. Blind spot noted only for information: a Windows path with backslashes (`C:\\Users\\...`) is not seen by hasHomePath (it needs a slash); E2K-34's own drive-letter pattern covers it.",
+      "verdict_reason": "All items of the applicable passes are met; F11-F16 are closed by my own runs; no criterion is unprotected, no contradiction, the design is buildable. Remarks N1-N6 are Low and go to the developers."
+    },
+    "findings": [
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "B6, C8 (AP-077)",
+        "place": "section 10, row of criterion 11 (the E2K-50 cell) against section 11.1 row E2K-50",
+        "what": "Section 10 says E2K-50 also checks 'no `://` outside the `http://127.0.0.1` forms'. The E2K-50 row of 11.1 has no such rule, the requirement criterion 11 has none, and the design's own required text would break it: E2K-20/E2K-21 (`http://example.com/`, `https://127.0.0.1:1/`, `file:///etc/hosts`), SMK-13 (`http://example.com/`, `http://192.0.2.1/`), the `ws://127.0.0.1` pattern of browser.js and fake-chrome.js are all in files E2K-50 scans.",
+        "needed": "Strike the clause from section 10, or say that 11.1 governs; TEST-DESIGNER implements E2K-50 as the 11.1 row and does not add a `://` rule."
+      },
+      {
+        "id": "N2",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "C8",
+        "place": "section 10, intro sentence 'Every test appears in this table'",
+        "what": "SMK-09, SMK-10, SMK-11, SMK-12 are not in the table of section 10 (each has its criterion in the column of 11.2: 3, 3, 3, 5).",
+        "needed": "Add them to the rows of criteria 3 and 5, or soften the sentence; no criterion is unprotected."
+      },
+      {
+        "id": "N3",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "A3 (mutants), B6",
+        "place": "section 4.4 (installHandlers, steps 1-2) and E2K-39",
+        "what": "'All hooks are called at once and awaited together with one limit' has no test: a mutant that runs the hooks one after another (my X2, each hook awaited in turn, the total limit kept) survives all five cases of E2K-39, because no case has two hooks that finish within the limit. Only the runner registers a hook today, so the effect is nil now.",
+        "needed": "Either a case with two hooks of about 600 ms each and a 1000 ms limit (both markers expected), or drop 'at once' from 4.4."
+      },
+      {
+        "id": "N4",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "B6",
+        "place": "section 4.4 cleanupAllSync, section 7 row 18 ('no group is signalled twice')",
+        "what": "cleanupAllSync is called in step 4 of the signal handler and again by the exit handler, and it is not said that it clears the registry; a registered group (the preflight browser) is then sent SIGKILL twice (a gone pid may be reused). The sentence of row 18 is true only for the stopped spec group.",
+        "needed": "One sentence: cleanupAllSync unregisters what it killed (or the exit handler skips it after the signal path)."
+      },
+      {
+        "id": "N5",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "B6, C8",
+        "place": "section 11.1 E2K-34 ('the text of failing holds the line `location: 'test/fixtures/e2e/specs/fail.e2e.js:3:1'` shape')",
+        "what": "The word 'shape' leaves open whether the exact line:column 3:1 is pinned. Pinned, it ties fail.e2e.js to a fixed layout (import on line 1, the test call on line 3) and to the formatter; unpinned, the assertion is a pattern.",
+        "needed": "Say which: an exact string (and then the layout of fail.e2e.js is fixed in 11.3) or a pattern `location: 'test/fixtures/e2e/specs/fail.e2e.js:<n>:<n>'`."
+      },
+      {
+        "id": "N6",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "B6",
+        "place": "section 11.1 E2K-22, E2K-23 and the README texts",
+        "what": "`npm run traces` flags a literal temporary-root or home-folder path in any file (the rule of line-level home paths and, for handoffs, temporary roots); the tests that need a path 'outside the temporary root' must not write one as a literal that looks like a system temporary or home folder. Not stated for the tester.",
+        "needed": "A half sentence in E2K-22: the outside path is built at run time or is a non-temporary root such as a system folder, not a literal temporary or home path."
+      }
+    ],
+    "self_check": {
+      "design_sha256_before": "b828c8ce126d27a2d30c75573f5e75e8ca85f085f6001e2d7bf945226a72b670",
+      "design_sha256_after": "b828c8ce126d27a2d30c75573f5e75e8ca85f085f6001e2d7bf945226a72b670",
+      "clone": "git clone -b base/E2E104-20261103-01 of the repository into a new empty folder of the scratch space, npm ci in tools/; removed at the end",
+      "commands_and_results": [
+        "capture: env -u NODE_TEST_CONTEXT node --test --test-reporter=tap test/fixtures/e2e/specs/<fail|pass-a|empty|skipped|todo>.e2e.js -> exits 1,0,0,0,0; only fail holds a machine path (line 7 location, line 12 stack)",
+        "npm run -s traces with the raw fail text as tap/failing.txt: two lines 'путь домашнего каталога' (7, 12), 'следов 2', exit 1",
+        "after removal of 'file://<abs>/' and '<abs>/': grep -c -E 'file:|/Users/|/home/|/tmp/|/var/' on the five tap texts -> 0 each; npm run -s traces -> 'файлов проверено 2382, следов 0', exit 0; traces | grep -c -E 'tools/test/e2e|tools/test/fixtures/e2e' -> 0; npx prettier --check test/fixtures -> All matched files use Prettier code style",
+        "probe of hasHomePath/hasTempPath/file:/absolute-path pattern: raw fail text {h:true,tp:true,file:true,abs:true}; normalized 5 tap texts + 5 spec fixtures: all false",
+        "secret grep, skip-word grep, sandbox-flag grep on the fixtures: exit 1 (no line); simulated comment with the flag in a kit file: 10(d) grep exit 0 (M72)",
+        "F35: process.kill(-2147483646|-4194305|-99999, 0) -> ESRCH; F29: CTX=child-v8, nested run kept -> exit 0 stdout length 0, dropped -> TAP; F30: relative forms print 'test/fixtures/e2e/specs/empty.e2e.js', tools/... -> Could not find",
+        "14 guard files after the package.json edit: '# tests 187 # pass 181 # fail 6' (HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13); after the six replacements: '# tests 187 # pass 187 # fail 0 # skipped 0 # todo 0'",
+        "package.json mutants on the five replaced files: M51 (remove `npm run e2e`) 6 red (HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13); M52 (widen the test glob) HC-03 and CTL-13 red; X-or (`|| true` after test) 6 red; X-order (e2e before test) 6 red",
+        "prototype of 4.4 (cleanup with addSignalHook/installHandlers/hookLimitMs) and of the runAll flow (hook first, preflight, detached spec group, Stop, interrupted flag), outside the project, with a fake browser group; baseline: SIGTERM 143, SIGINT 130, SIGHUP 129, second signal 143, signal in the preflight 143, in each case INTERRUPTED once, record once, no process left; E2K-39 cases a-e: (a) 129 and marker, (b) 143 after 1007 ms, (c) 143 second marker and hookErrors 1, (d) 143 in 323 ms, (e) 143 and no marker",
+        "mutants on the prototype: M60 (hooks not awaited) a and b red; M62 (hook not removed) hooks==1 after a normal run; M63 (hook added after the preflight) no INTERRUPTED, no record, browser group alive after SIGTERM in the preflight; M64 (no SIGHUP) process ends by signal, group alive; M65 (second signal still waits) case d hangs; M66 (no limit) case b hangs; M67 (a throwing hook stops the others) second marker missing, hookErrors 0; M68 (remove does nothing) stale marker written; M69 (stopped group not unregistered) groups non-empty after a normal run; M70 (injected launch ignored) preflight fails; M71 (not detached) spec leader and file child survive the signal; X1 (code of the last signal) case d gives 130; X2 (hooks one by one) SURVIVES (N3); M72 killed by the 10(d) grep",
+        "pgrep for the prototype scripts and ps for headless Chrome after the work: none left (three leftover shell and node processes of a backgrounded command were killed by their pids); no Chrome was started by me; sai-e2e- folders in the temporary root: 0; the scratch folder removed; git status of the project unchanged except this handoff; design hash before and after equal"
+      ]
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the tag base/E2E104-20261103-01 exists (f806d7d); the design has 40 E2K + 13 SMK = 53 tests, 72 mutants, 8 sub-steps, six replaced tests; F11-F16 are in step-01d. The task names no expected verdict (AP-018 not applicable)."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "For ORCH: PASS goes to BACKEND-DEV with the Low remarks N1-N6 in the task of the developers and of TEST-DESIGNER (N1, N2, N5, N6 touch the tests; N3, N4 the cleanup module). O9: whoever corrects the REQ-040 sentence is ORCH's choice at step 10."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Not repeated in this pass: the real-Chrome facts F12-F28 of the design (unchanged since the first and second pass); no Chrome was started. The Linux behaviour of the runner (sandbox, resolver rule) stays settled by criterion 10, as the design says."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,124 @@
+{
+  "handoff_id": "step04e-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "04e",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/E2E104-20261103-01/step-04e-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E104-20261103-01/step-04c-security-reviewer.json",
+      "handoffs/E2E104-20261103-01/step-04d-reviewer.json",
+      "handoffs/E2E104-20261103-01/step-04b-code-fixer.json",
+      "docs/design/REQ-104-e2e-chrome-kit.md"
+    ],
+    "route": "both gates PASS (04c,04d) -> CODE-FIXER (this) -> SECURITY-REVIEWER || REVIEWER narrow third pass -> TEST-DESIGNER",
+    "write_set": [
+      "tools/test/e2e/kit/browser.js, cleanup.js, runner.js, find-chrome.js, errors.js only"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "WF-02, CODE-FIXER, small second fix round for REQ-104 after the second pass of both gates. Read handoffs/E2E104-20261103-01/step-04c-security-reviewer.json (SECURITY-REVIEWER, PASS; its F1-F3) and handoffs/E2E104-20261103-01/step-04d-reviewer.json (REVIEWER, PASS; its L1-L4). Fix ONLY these:\n1. SECURITY F1 = REVIEWER L3 (the one that matters): tools/test/e2e/kit/browser.js:202 passes the `env` option to noteBrowserForRunner (cleanup.js:99-101), so a spec calling withBrowser({env}) / launchBrowser({env}) is never registered with the runner and its Chrome survives a stopped hung spec. The registry location must come from the RUNNER's environment (process.env of the spec process, set by the runner) and not from the per-call `env` option; the per-call env stays what it was for Chrome's own environment. Prove it with a probe: a blocked spec that launches the browser with its own env object, SIGTERM to the runner, nothing left (count processes and folders before/after), and the same probe failing before the fix.\n2. SECURITY F2 = REVIEWER L2: pass operator-controlled text (argv in the `command=` record line and runner.js:46-47, SAI_CHROME text in find-chrome.js:55,62) through safeText so a line cannot start with \"::\" and a 100 KB argument is cut. Keep the full list of \"Places tried\" in CHROME_NOT_FOUND (R-F1) readable.\n3. REVIEWER L1: the two raw process.kill(-pgid, SIGKILL) calls in cleanup.js (about lines 153 and 203) use the shared signalGroup helper. SECURITY F3 (Info): refuse a pgid <= 1 in that helper (no kill of the runner's own group).\nNOT to be done: REVIEWER L4 (copied helpers), SECURITY F4, unlimited frame size. Change nothing else; do not weaken anything; do not edit the six old guard tests or write kit tests (step 5); keep forbidden words out of tools/test/e2e. Format with `cd tools && npx prettier --write <your files>`; self-check `npm run format:check && npm run lint && npm run traces && npm run handoffs-check`; at most one full `npm test` (six guard tests red by design: HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13; name exactly which). Mac: one agent at a time; kill Chrome you start by process id; remove only your own temp folders; never rm inside the project. In result.changes every edit with the finding number; in result.issues what step 5 must test. Do not commit.",
+    "acceptance_criteria": [
+      "SECURITY F1 fixed with a before/after probe",
+      "Items 2 and 3 fixed",
+      "format:check, lint, traces, handoffs-check green"
+    ]
+  },
+  "created_at": "2026-11-03T00:23:55Z",
+  "started_at": "2026-11-03T00:23:55Z",
+  "completed_at": "2026-11-03T00:32:41Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "SECURITY F1 = REVIEWER L3 fixed: the registry folder is read from the process environment of the spec, not from the env option (probe: before 1 process and 1 folder left after SIGTERM, after 0 and 0). F2 = L2: argv, selection and SAI_CHROME text go through safeText; the places-tried list stays whole. L1 + F3: both raw group kills use signalGroup, which refuses a group id <= 1. L4, F4 and the frame size were not touched, as ordered.",
+    "changes": [
+      {
+        "finding": "F1 = L3",
+        "file": "tools/test/e2e/kit/cleanup.js",
+        "place": "noteBrowserForRunner",
+        "change": "signature is now (pgid, profileDir); the registry folder is read from process.env[REGISTRY_VAR] (set by the runner for the spec), the env option plays no part"
+      },
+      {
+        "finding": "F1 = L3",
+        "file": "tools/test/e2e/kit/browser.js",
+        "place": "launchBrowser, call of noteBrowserForRunner",
+        "change": "call is noteBrowserForRunner(pid, profileDir); the env option stays what it was: Chrome's own environment (spawn and findChrome)"
+      },
+      {
+        "finding": "F2 = L2",
+        "file": "tools/test/e2e/kit/runner.js",
+        "place": "parseSelection, SELECTION_UNKNOWN message",
+        "change": "the argument name goes through safeText(name)"
+      },
+      {
+        "finding": "F2 = L2",
+        "file": "tools/test/e2e/kit/runner.js",
+        "place": "runAll, command and selectionText (the record line)",
+        "change": "argv.join(\" \") goes through safeText(..., 200) in the command= part, argv.join(\",\") through safeText(..., 200) in the selection= part (same text, same line, AP-014)"
+      },
+      {
+        "finding": "F2 = L2",
+        "file": "tools/test/e2e/kit/find-chrome.js",
+        "place": "SAI_CHROME must be a full path / no executable file there",
+        "change": "the SAI_CHROME value goes through safeText; import of safeText added; the \"Places tried\" list of CHROME_NOT_FOUND is unchanged and whole"
+      },
+      {
+        "finding": "L1",
+        "file": "tools/test/e2e/kit/cleanup.js",
+        "place": "sweepBrowserRegistry and cleanupAllSync",
+        "change": "the two raw process.kill(-pgid, \"SIGKILL\") are replaced by signalGroup(pgid, \"SIGKILL\"); the sweep counts a group as killed only when signalGroup returns true (same count as before)"
+      },
+      {
+        "finding": "F3 (Info)",
+        "file": "tools/test/e2e/kit/cleanup.js",
+        "place": "signalGroup",
+        "change": "returns false without a call when pgid is not a whole number or is <= 1 (no kill of the runner's own group 0 or of everything -1); returns true when the signal was sent"
+      }
+    ],
+    "self_check": [
+      "F1 probe (scratch copy of tools/test/e2e + fixtures outside the project, TMPDIR in an empty scratch folder, stand-in Chrome fake-chrome.js mode ok, a spec that calls launchBrowser({env:{PATH,HOME,SAI_CHROME}}) and then blocks the event loop; `node test/e2e/run.js blockprobe`, SIGTERM after 5 s). BEFORE the fix (kit as received): procs before 0 folders 0; during: 1 process, 2 folders, registry records: none; runner exit 143; AFTER the stop: procs 1, folder sai-e2e-profile-fDPbNc left (I killed the group by id). AFTER the fix: during: 1 process, 2 folders, record 43591.json present; exit 143; after the stop: procs 0, folders 0.",
+      "F2 probe, before (old kit copy): argument \"x<newline>::error::pwn\" printed a line starting with `::error::pwn`; a 100000-character argument printed 300139 bytes. After: `e2e: error=SELECTION_UNKNOWN: no spec file \"x\\n::error::pwn\"; ...` and `command=npm run e2e -- x\\n::error::pwn`, one line each; the 100000-character argument printed 820 bytes. SAI_CHROME=\"/x<newline>::error::pwn\" and \"rel<newline>::error::pwn\": the message holds `\\n` and stays on one line. findChrome with nothing found still prints `Places tried (5):` and the five numbered lines.",
+      "F3 probe: signalGroup(0|1|-5|1.5|NaN|undefined|\"7\", SIGKILL) -> false for all, runner alive; signalGroup(999999, SIGTERM) -> false (ESRCH). grep process.kill in the kit: only the probe signal 0 in groupGone and the one call inside signalGroup.",
+      "After all probes: `ps` shows 0 processes with sai-e2e-profile; the temp folders were in my scratch area only. No Chrome was started (stand-in only).",
+      "cd tools: `npx prettier --write` on the four changed files; `npm run format:check` -> All matched files use Prettier code style (exit 0); `npm run lint` exit 0; `npm run traces` -> files checked 2404, traces 0 (exit 0); `npm run handoffs-check` -> files checked 1297, violations 0, exceptions used 114 of 114.",
+      "One full `npm test`: tests 2135, pass 2129, fail 6, cancelled 0, skipped 0. The six failing are exactly the guard tests red by design (each rerun by file): HC-02 and HC-03 (test/handoffs-docs.test.js), HO-54 (test/handoffs-cmd-docs.test.js), PK-7b (test/picker-config.test.js), LP-3 (test/picker-look-property.test.js), CTL-13 (test/team-web-control.test.js). No other failure.",
+      "grep over the kit for .skip(, .todo(, eslint-disable, `|| true`, no-sandbox: no line."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "WHAT STEP 5 MUST TEST for these fixes: (F1) a stand-in `ok` browser launched with an env option that lacks SAI_E2E_REGISTRY (and with one that carries a wrong value) while process.env of the spec has the variable -> a record <pgid>.json appears in the registry folder, and after a blocked spec plus SIGTERM to the runner no stand-in process and no sai-e2e-profile folder remain; with the variable absent from process.env, launchBrowser writes no record and does not fail. noteBrowserForRunner(pgid, profileDir) has no env parameter any more (it was not exported from index.js and no test or doc used it). (F2) runAll/parseSelection with an argument holding a newline and a leading `::` -> no stderr or stdout line starts with `::`, `\\n` shown; a 100000-character argument -> output well under 1 KB; SAI_CHROME with newline/`::` and 100000 characters -> message cut and on one line; CHROME_NOT_FOUND from \"nothing found\" still lists all five places on separate lines. (F3/L1) signalGroup returns false and sends nothing for 0, 1, negative, fractional, NaN, a string; true for a live group; sweepBrowserRegistry still counts only killed groups; a record with pgid 0 or 1 is ignored; cleanupAllSync kills registered groups through signalGroup. Tests that check intentionally changed behaviour: none exists yet (the kit has no tests until step 5)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Same kind outside the order, NOT edited: browser.js START_FAILED messages (two places, `could not start \"${found.path}\"`) print the path of the SAI_CHROME program raw; the path must be an absolute path of an existing executable file, so a newline or a leading `::` is possible only in a file name made by the operator. Left for ORCH to decide (same class as F2, AP-014). Not done as ordered: L4 (copied helpers), F4 (frame size, SIGKILL of the runner O7)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "DOC-UPDATER: design sections 4.4/6 still do not describe the registry (REVIEWER I2); add that the registry folder comes from the process environment of the spec, not from the env option, and that signalGroup refuses a group id <= 1 and returns whether it sent the signal."
+      },
+      {
+        "id": "I4",
+        "kind": "EXPECTED_RED",
+        "text": "HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13 are red by design until step 5; not touched."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e/kit/cleanup.js",
+      "tools/test/e2e/kit/browser.js",
+      "tools/test/e2e/kit/runner.js",
+      "tools/test/e2e/kit/find-chrome.js"
+    ]
+  }
+}

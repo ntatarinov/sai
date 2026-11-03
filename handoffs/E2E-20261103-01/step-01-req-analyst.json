@@ -1,0 +1,126 @@
+{
+  "handoff_id": "step01-E2E-20261103-01",
+  "run_id": "E2E-20261103-01",
+  "workflow_id": "WF-01",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/E2E-20261103-01/step-01-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "docs/workflows/WF-01-requirement.md",
+      ".claude/agents/uat-runner.md",
+      "docs/quality-bar.md",
+      "tools/README.md"
+    ],
+    "route": "REQ-ANALYST -> REQ-VALIDATOR -> (WF-02 after the owner's word)",
+    "write_set": ["docs/requirements.yaml: new blocks at the end only"],
+    "base_tag": "base/E2E-20261103-01"
+  },
+  "task": {
+    "description": "WF-01, step 1 — write requirements for automated end-to-end (e2e) tests of the Sai web pages in a REAL headless Chrome.\n\nOWNER'S WORDS (verbatim, 2026-11-03, Claude Code session in VS Code, message to ORCH): «по проекту sai  используй инструкции [другого проекта владельца] и sai. Чтобы убрать ошибки и покрыть тестами проект, а именно e2e тесты». Put these words into original_request of every requirement you write.\n\nFACTS CHECKED BY ORCH ON 2026-11-03 (verify the ones you rely on yourself, quality-bar Q3):\n1. Baseline at HEAD f806d7d on the Mac, Node 22.23.4: format:check, lint, traces (2372 files, 0 traces) and handoffs-check (1280 files, 0 violations) are green; `npm test` is 2135 of 2135 pass, 0 fail, 0 skipped, about 233 s. So there is no red test to fix; the gap is the lack of e2e.\n2. The automated suite has NO real-browser test: the pages are tested against hand-made DOM stubs (tools/test/picker-page-dom.js, tools/test/team-web-dom.js and similar). A real headless Chrome is used only by UAT-RUNNER agents by hand at acceptance (.claude/agents/uat-runner.md, items 5 and following) and leaves no repeatable test behind.\n3. Three web surfaces exist and are the scope: Pixel Office (tools/src/pixel-office/, start `npm run pixel-office -- --port 0`), the solution picker site (tools/src/picker/, start `npm run picker -- serve --tenants <folder> --port 0`, demo tenants in tools/src/picker/demo-tenants-v3/) and the team web page (tools/src/web/, start `npm run team-web`). Read their README sections and requirements for exact start keys and behaviour.\n4. Feasibility sketch ORCH ran outside the project: Node 22 alone (child_process + global WebSocket + fetch to the Chrome debugging port) starts `Google Chrome --headless=new --remote-debugging-port=0 --user-data-dir=<temp>`, opens a local page, clicks a button and reads the changed title; no npm dependency is needed. A window narrower than about 500 px needs `Emulation.setDeviceMetricsOverride`. Chrome is installed on the Mac at /Applications/Google Chrome.app; the CI runner (.github/workflows/check.yml) is ubuntu-24.04 with Node 22 — whether Chrome is available there must be CHECKED by a criterion or stated as an open question for the owner, not assumed.\n\nCONSTRAINTS:\n- Node 22 without run-time dependencies (decisions/0002, 0015); no new npm package, not even a dev one, without a decision record — prefer none.\n- quality-bar Q4 (one check command `cd tools && npm run check`), Q5 (a test per criterion), Q6 (no skip, no `|| true`; if Chrome is missing the e2e must FAIL with an understandable message, not skip), Q10 (a failing external thing gives a clear message), R2 (tests must never write into the owner's real Pixel Office journal: use a temporary SAI_PIXEL_OFFICE_DIR and a free port), Q7 (no secrets).\n- Tests must be independent of each other and of the clock/order; pages and servers started on port 0 on 127.0.0.1; every temp folder and every Chrome process cleaned up even on failure; screenshots and Chrome profiles go outside the project.\n- Total added time must stay inside the 30-minute limit of check.yml (decisions/0106); say in a criterion how it is measured.\n- Do not write the name of any other project or of any person's product into Sai files (decisions/0082). Practices taken from an outside reference, written neutrally: keep the slow browser suite as its own command also runnable alone; record in the run output the command, the selection, the exit code and the duration; a baseline of screenshots/DOM snapshots is compared by structure and meaning, not by pixels (as in DESIGN-QA-VALIDATOR).\n\nWHAT TO WRITE: two to four requirements (WF-01 step 1, item 5: one piece of work for one run each, linked by depends_on). Suggested split, change it if you can justify it:\n (A) an e2e kit in tools/test: a Chrome launcher and a debugging-protocol client in pure Node, viewport and theme/language switching, console-error collection, cleanup, a Chrome-missing message — with its own tests (including a fault test: Chrome binary not found, Chrome killed mid-test); and a separate command `npm run e2e` that is also part of `npm run check`;\n (B) e2e of the picker site: a visitor opens a demo tenant in each of ru/kk/en, answers the questionnaire, sees the result; light and dark theme; windows 1470×784, 390×844, 320×568 without horizontal scroll; a second tenant does not show the first tenant's data (Q8); a bad address/tenant gives the understandable page, not a crash;\n (C) e2e of Pixel Office: with a temporary state folder and a free port, a hook event posted to the server shows on the page within 5 seconds without reload (the claim of REQ-001), the journal row has the right words, the owner's real folder is untouched (R2), a secret in an event text appears masked on the page;\n (D) e2e of the team web page: create a project, see it in the list, open it, pause/resume if the page offers it, the chat message appears; failures of the engine give a human message (Q10); with a scripted (fake) executor only — NO real Claude session and no spending.\nEach criterion must say what checks it (a command or a named test file; the named test file is \"created by this work\"), and have a \"before\" value that is NOT satisfied on HEAD (AP-071): for example `grep` finds no file using the debugging port in tools/test now.\n\nLook for guard tests in tools/test that a new folder, new npm script or changed `check` script would turn red (AP-068/112/113) and name the replacement table in the description of the requirement that causes it. Next free REQ number: the largest in the whole file plus one (REQ-103 exists, check for more).\n\nEDIT SCOPE: only new blocks at the END of docs/requirements.yaml; nothing else in the repository is changed. Take the hash of the rest of the file before and after (WF-01 step 1, item 7) and write the \"before copy\" from the tag base/E2E-20261103-01.\n\nQuestions you cannot decide go into result.issues (do not guess): in particular (1) whether e2e belongs inside `npm run check` given the 30-minute limit and the Chrome availability on the CI runner; (2) the Chrome binary lookup (env variable SAI_CHROME, standard Mac and Linux paths); (3) anything in the three pages that cannot be driven without a real Claude session.",
+    "acceptance_criteria": [
+      "At least two criteria per requirement, each with a named way of checking",
+      "Rest of docs/requirements.yaml unchanged (hash before and after in result)",
+      "No name of another project in the text"
+    ]
+  },
+  "created_at": "2026-11-02T19:30:58Z",
+  "started_at": "2026-11-02T19:30:58Z",
+  "completed_at": "2026-11-02T19:52:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Four requirements for automated end-to-end tests of the Sai web pages in a real headless Chrome were appended at the end of docs/requirements.yaml (status pending, owner's words in original_request with the name of the owner's other project replaced by a placeholder, decisions/0082): REQ-104 the kit in pure Node (Chrome lookup by SAI_CHROME and standard places, DevTools protocol client over the global WebSocket, windows, colour scheme, overflow and console-error helpers, clean-up, 127.0.0.1 only, fault tests with a stand-in browser) and the command `npm run e2e` as the last step of `npm run check`, 12 criteria; REQ-105 the picker site (18 combinations of language, theme and window, full passes with answers compared with the server's own answer, keyboard, storage, two tenants kept apart Q8, bad address Q10, server gone Q10, the new office stand), 10 criteria; REQ-106 Pixel Office (isolated stand R2, an event from the real hook program on the page within 5 s without reload, journal words and rows, a masked secret Q7, the owner's real folder untouched, server gone and back Q10), 8 criteria; REQ-107 the team page with the scripted executor only (no Claude session, trap program proves no spending; create, finish, pause/continue/stop, chat as text, plain failure Q10, unwritable data folder), 8 criteria. REQ-105..107 depend on REQ-104. I did not run the checks of the requirements' own future files (they do not exist yet); the commands that can run on the current files were run (see self_check). The requirements are not validated: REQ-VALIDATOR is the next step (AP-010).",
+    "changes": [
+      "docs/requirements.yaml: one comment line and the blocks REQ-104 (238 lines), REQ-105 (131), REQ-106 (110), REQ-107 (102) appended after line 13218; no existing line is edited (before: 13218 lines, after: 13790).",
+      "REQ-104: fields id, title, owner BACKEND-DEV, status pending, depends_on [], original_request, description (what the owner gets, facts checked, decisions leaned on, files, the kit, the command, the table of six replaced guard tests HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13 with was and became, bar items), acceptance_criteria 12.",
+      "REQ-105: owner TEST-DESIGNER, depends_on [REQ-104, REQ-057, REQ-061, REQ-070], spec tools/test/e2e/picker.e2e.js, guard tests: none (new files only), criteria 10.",
+      "REQ-106: owner TEST-DESIGNER, depends_on [REQ-104, REQ-036, REQ-042, REQ-045] (REQ-001 is deliberately not listed: it is blocked by decisions/0099), spec tools/test/e2e/pixel-office.e2e.js, guard tests: none, criteria 8.",
+      "REQ-107: owner TEST-DESIGNER, depends_on [REQ-104, REQ-011, REQ-035], spec tools/test/e2e/team-web.e2e.js and two scenario files tools/test/fixtures/e2e/team-slow.json and team-fail.json made by the work, guard tests: none, criteria 8.",
+      "The split differs from the suggestion only in details: the faults of the kit and the command with its run record are both in REQ-104 (one job: nothing in REQ-105..107 can run without the command); the spec files are named *.e2e.js so that the script `test` and its glob stay unchanged and `npm test` never starts a browser."
+    ],
+    "self_check": [
+      "git diff --quiet base/E2E-20261103-01 -- docs/requirements.yaml before the write: exit 0 (the file equalled the tag).",
+      "Hash of the whole file before: sha256 dbdb84cfe36740982b02352c81bcc37e71e925bb63700ef0253df6359590fbbc. Hash of the first 13218 lines after (`head -n 13218 docs/requirements.yaml | shasum -a 256`): dbdb84cfe36740982b02352c81bcc37e71e925bb63700ef0253df6359590fbbc - the same, so every earlier block is unchanged. Hash of the whole file after: f7bd80420c526f1631137ea093add52d6d08e8ef67f15b150a9d12a64091184c.",
+      "The file parses as YAML (ruby -ryaml): 107 requirements, the last four are REQ-104..REQ-107 with 12, 10, 8 and 8 criteria, all status pending.",
+      "Block reads back: awk '/^  - id: REQ-104$/{f=1} f&&/^  - id: /&&!/REQ-104$/{exit} f' docs/requirements.yaml | wc -l -> 238 (the same command for REQ-105, 106, 107 -> 131, 110, 102 with the exact-match form of the id).",
+      "Facts checked: node -v -> v22.23.4; Chrome --version -> Google Chrome 156.0.8078.74 at the standard macOS place; grep -rlE 'remote-debugging-port|Emulation\\.|Page\\.navigate' tools/test tools/src -> no file, exit 1; git log -> HEAD f806d7d; tag base/E2E-20261103-01 exists; a headless Chrome with --dump-dom opened /t/uchet-pro/?lang=en of the picker stand started with --port 0 and showed the card (title, language buttons, data-action=start); scripts.e2e is undefined and scripts.check has the five steps (node -e on tools/package.json).",
+      "Guard tests (AP-068, AP-112, AP-113), exhaustive pass: on a clone of the base tag outside the project I added the script `e2e` after `test`, `npm run e2e` at the end of `check`, dummy files tools/test/e2e/smoke.e2e.js, tools/test/e2e-kit.test.js, tools/test/fixtures/e2e/fake-chrome.js and the README edits, and ran `cd tools && npm test`: '# tests 2136, # pass 2130, # fail 6, # skipped 0, # todo 0, # duration_ms 235064'. The six red tests: HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13 - exactly the table in REQ-104. The duration agrees with the 233 s that ORCH reported for the base.",
+      "Commands of the criteria run on the current files: `cd tools && node --test test/handoffs-docs.test.js test/handoffs-cmd-docs.test.js test/picker-config.test.js test/picker-look-property.test.js test/team-web-control.test.js test/traces-check.test.js` -> 118 pass, 0 fail (green now; they turn red only by the table); `node --test test/repo.test.js test/team-docs.test.js test/traces-readme.test.js test/pixel-office-settings.test.js test/exec-docs.test.js test/exec-scripted-source.test.js` -> 54 pass, 0 fail; the TAP name loop works on an existing file (`node --test --test-reporter=tap test/listing.test.js`, then `--test-name-pattern` on one printed name -> '# pass 1'); the node -e commands on package.json print `undefined | node --test \"test/**/*.test.js\"` and the five-step array; `ls $TMPDIR | grep -c '^sai-e2e-'` -> 0 and `pgrep -f '[s]ai-e2e-' | wc -l` -> 0.",
+      "Cannot be run yet (they check files and behaviour that this work creates): everything that names tools/test/e2e/*, tools/test/e2e-kit.test.js, tools/test/fixtures/e2e/*, the script `e2e`, the README section 'End-to-end tests in a real browser', the run record line, and the GitHub run (criterion 10 of REQ-104 needs a pushed commit).",
+      "cd tools && npm run format:check -> exit 0; npm run lint -> exit 0; npm run handoffs-check -> 'файлов проверено 1281, нарушений 0, исключений использовано 114 из 114'. npm run traces -> exit 1 with 'следов 1': the only trace is handoffs/E2E-20261103-01/step-01-req-analyst.json line 28 (the name of the owner's other project inside the owner's verbatim words in the task of this handoff, written by ORCH); docs/requirements.yaml has none (see issue I1). The prettier check of docs/requirements.yaml itself is not part of format:check (that command covers tools/ only); the file at the base tag is not prettier-clean either.",
+      "git status --short: docs/requirements.yaml modified, handoffs/E2E-20261103-01/ new; docs/program/public-v1/PROGRESS.md was already modified before my work and is not touched by it. Nothing else changed; temporary clone and probe folders were removed."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "The task of this handoff (line 28, the owner's verbatim words) contains the name of the owner's other project, which the traces check treats as a forbidden name (decisions/0082); `cd tools && npm run traces` now exits 1 with one trace, so the instructed run of traces cannot be green and `npm run check` is red in this tree until the line is fixed. The exceptions file does not apply to names. I cannot edit `task`. In the requirements the name is replaced by the placeholder [другого проекта владельца] and the text says so, as REQ-033 does with its [образец]. Proposal for ORCH: replace the name by a placeholder in the handoff by an orch_correction or rewrite the task line before the gate, and check that REQ-VALIDATOR accepts the placeholder as 'verbatim' (item е)."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "Question 1 of the task - does e2e belong inside `npm run check`? Proposal: yes. decisions/0023 D2 already says browser tests are inside `check` with no exceptions (a separate-only command was rejected there as a Q4 violation), so REQ-104 adds a separate command that is also the last step of `check`. Open risks, settled by criteria 8-10 of REQ-104 and not assumed: (a) Chrome on the ubuntu-24.04 runner is not verified (I did not check it); (b) Chrome may need to start without its sandbox there (unprivileged user namespaces are restricted on that image) - starting without the sandbox is a security decision, the kit opens only 127.0.0.1 pages of Sai (criterion 5) but it still needs an owner's record; (c) time: the suite takes about 235 s on this Mac and the earlier GitHub runs took 10-14.7 min, the first run with REQ-102 hit the old 15-minute limit; the e2e budget is 240 s in total and the 25-minute watch value of decisions/0106 is the stop; (d) the pre-push hook runs `npm run check`, so every push will need Chrome (its text 'about 2 minutes' and the README guard 'about 2 minutes' are already out of date and are not touched). Proposal for a record in decisions/ (Q12): 0107 - real-Chrome e2e inside `check`, spec files `*.e2e.js` outside the glob of `test`, no browser dependency, what happens if the runner has no Chrome or needs --no-sandbox."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "Question 2 - the Chrome lookup. Proposed in REQ-104 and open for confirmation: the variable SAI_CHROME first (a wrong value fails and does not fall back), then the standard macOS place, then google-chrome, google-chrome-stable, chromium, chromium-browser from PATH. Windows places are left out because the full check was never run on Windows; SAI_CHROME works there. The language of the Chrome-missing message is left to the design (the criteria check the content: the variable name and every place tried, no stack)."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "Question 3 - what cannot be driven without a real Claude session. Pixel Office: nothing in REQ-106 needs one - events go through the real hook program with composed payloads into a throwaway folder; this does NOT replace the real-session acceptance of REQ-001 (criterion 1 and the UAT items, blocked by decisions/0099), and REQ-106 does not list REQ-001 in depends_on for that reason. Team page: only the scripted executor is driven (README: for tests only); real claude-cli runs, real spending, and answering a task's question (not on the page yet, README) are not covered; a trap program proves no real run starts. Picker: the screen after 'Показать результат' is a placeholder (result.js), so the spec checks its structure and the server's answer, not its words; the future result-screen requirements (REQ-071 and later) must replace those assertions in their own tables."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "REQ-033 (pending, 'tests of the team page in jsdom', devDependency, decisions/0022 D7 and 0023 D2) overlaps REQ-107 and promises 'no separate command'; its jsdom would be the first development dependency added since decisions/0002 and would not see layout, themes or scrolling. I did not touch it. Proposal for ORCH and the owner: a record in decisions/ that the real-Chrome e2e of REQ-104..107 takes the place of REQ-033 (cancel or narrow REQ-033, no jsdom). 0022 D7 already says the owner may demand a real browser."
+      },
+      {
+        "id": "I6",
+        "kind": "DOUBT",
+        "text": "Size (AP-016): REQ-104 is the biggest (12 criteria: kit, fault tests, command, check wiring, six replaced guard tests, README). I kept it as one job because the command is useless without the kit and the table has to be done once. If REQ-VALIDATOR returns (г), the natural split is REQ-104a criteria 1-6 (kit) and REQ-104b criteria 7-12 (command, wiring, time, CI, clean tree, README)."
+      },
+      {
+        "id": "I7",
+        "kind": "DOUBT",
+        "text": "Real defects may be found by the new specs (contrast of 4.5 on the picker text in both themes, overflow at 320 px in Kazakh, a visible focus outline on every control, the Pixel Office and team page in narrow windows). No requirement promised some of these before, so I put into the criteria only what a README or an earlier requirement says or what WCAG fixes; a found defect goes by WF-03 (stated in REQ-105..107), the criterion is not weakened. Horizontal overflow of Pixel Office and the team page at 390 and 320 px is deliberately not asserted - an owner's question whether it should be a requirement."
+      },
+      {
+        "id": "I8",
+        "kind": "DOUBT",
+        "text": "Test-data note (R2): REQ-106 sends composed payloads through the real hook program into a throwaway state folder under the temporary root with HOME redirected; the starter refuses any other folder (criterion 1) and criterion 5 compares the owner's real journal before and after. I judged this inside R2 (the same rule UAT-RUNNER works by); SECURITY-REVIEWER should confirm."
+      }
+    ],
+    "before_copy": {
+      "docs/requirements.yaml": {
+        "source": "git show base/E2E-20261103-01:docs/requirements.yaml",
+        "edits": "none of the existing lines is edited or moved; one comment line and four blocks are appended after the last line of the file",
+        "lines_before": 13218,
+        "lines_after": 13790,
+        "last_two_lines_before": [
+          "        One check command and no traces (Q4, Q7). `cd tools && npm run check` → exit 0, \"# fail 0\", \"# skipped 0\", \"# todo 0\";",
+          "        `cd tools && npm run traces` → exit 0 with docs/archive/* present; `cd tools && npm run handoffs-check` → exit 0."
+        ],
+        "sha256_before": "dbdb84cfe36740982b02352c81bcc37e71e925bb63700ef0253df6359590fbbc",
+        "sha256_rest_after": "dbdb84cfe36740982b02352c81bcc37e71e925bb63700ef0253df6359590fbbc",
+        "sha256_whole_after": "f7bd80420c526f1631137ea093add52d6d08e8ef67f15b150a9d12a64091184c"
+      }
+    },
+    "artifacts_out": ["docs/requirements.yaml"]
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-11-02T19:53:12Z",
+    "field": "task.description",
+    "was": "the quoted words of the owner contained the name of another project of the owner",
+    "now": "the name is replaced by the placeholder [другого проекта владельца] (traces rule, decisions/0082); the words are otherwise unchanged",
+    "note": "2026-11-03, after REQ-ANALYST reported I1: npm run traces gave 1 trace in this file"
+  }
+}

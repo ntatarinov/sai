@@ -29,6 +29,7 @@ test("HC-02 package.json has the script handoffs-check and the step in check bef
     "npm run traces",
     "npm run handoffs-check",
     "npm run test",
+    "npm run e2e",
   ]);
   const raw = fs.readFileSync(path.join(TOOLS, "package.json"), "utf8");
   assert.ok((raw.match(/handoffs-check/gu) ?? []).length >= 2);
@@ -43,7 +44,8 @@ test("HC-03 the properties that TC-20 of traces and the check of team-web-contro
   assert.ok(list.indexOf("npm run traces") < list.indexOf("npm run test"));
   // The check of tools/test/team-web-control.test.js.
   assert.equal(scripts.test, 'node --test "test/**/*.test.js"');
-  assert.match(scripts.check, /npm run test$/u);
+  // REQ-104: the browser suite is the sixth and last step; `test` stays free of it.
+  assert.match(scripts.check, /npm run test && npm run e2e$/u);
 });
 
 const handoffsMd = () =>

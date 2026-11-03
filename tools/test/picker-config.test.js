@@ -776,14 +776,14 @@ test("PK-7a: no network, no process, no random number anywhere in the code of th
     assert.doesNotMatch(text, re, file);
 });
 
-test("PK-7b: package.json - the script picker right after handoff, check as it was, no dependencies, the four development ones with their versions", () => {
+test("PK-7b: package.json - the script picker right after handoff, check as it was plus the sixth step npm run e2e, no dependencies, the four development ones with their versions", () => {
   const pkg = readJson(path.join(TOOLS, "package.json"));
   assert.equal(pkg.scripts.picker, "node src/picker/cli.js");
   const keys = Object.keys(pkg.scripts);
   assert.equal(keys.indexOf("picker"), keys.indexOf("handoff") + 1);
   assert.equal(
     pkg.scripts.check,
-    "npm run format:check && npm run lint && npm run traces && npm run handoffs-check && npm run test",
+    "npm run format:check && npm run lint && npm run traces && npm run handoffs-check && npm run test && npm run e2e",
   );
   assert.equal(Object.hasOwn(pkg, "dependencies"), false);
   assert.deepEqual(pkg.devDependencies, {

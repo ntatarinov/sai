@@ -1,0 +1,162 @@
+{
+  "handoff_id": "step04-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E104-20261103-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "docs/requirements.yaml",
+      "handoffs/E2E104-20261103-01/step-02-backend-dev.json",
+      "decisions/0107-e2e-real-chrome-in-check.md",
+      "decisions/0108-e2e-kit-conventions.md"
+    ],
+    "route": "BACKEND-DEV -> SECURITY-REVIEWER || REVIEWER (this) -> TEST-DESIGNER",
+    "write_set": [
+      "this handoff only; the repository files are read-only for this step"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "Read-only gate on the code written by BACKEND-DEV for REQ-104 (handoffs/E2E104-20261103-01/step-02-backend-dev.json; the files: tools/test/e2e/kit/*.js, tools/test/e2e/run.js, tools/test/fixtures/e2e/fake-chrome.js, the script edit in tools/package.json, tools/README.md, root README.md), against the design docs/design/REQ-104-e2e-chrome-kit.md (passed gate 1b), the block REQ-104 in docs/requirements.yaml and the answers decisions/0107 and decisions/0108. The 'before' is the tag base/E2E104-20261103-01 (fresh clone outside the project): take the list of changed files from git, not from the report. Tests of the kit do not exist yet (TEST-DESIGNER writes them at step 5) and exactly six old guard tests (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13) are red by design: that is expected until step 5. DEVIATIONS reported by BACKEND-DEV that you must judge (result.issues of its handoff): (1) a 100 ms wait after the load event in goto and reload (without it the favicon console line is dropped when a second navigation starts at once and SMK-08 would fail); (2) the extra stand-in mode ok-ignore-term; (3) the modes bad-json, error-object, no-answer make launchBrowser itself reject. MAC LOAD: one agent each, at most one full npm test; start Chrome only through the kit's own cleanup; kill any Chrome you start by process id; remove only temp folders you made; never rm inside the project; change no repository file except your own handoff. STEP 4 role REVIEWER (WF-02 step 4). Is it a real solution or a crutch; idioms of the stack (decisions/0002: Node 22, no run-time dependencies); work the requirement did not ask for; differences from decisions/ and from the design without a record; erosion of the bar (skipped or deleted test, disabled rule, hidden exit code, TODO instead of a check); check against docs/anti-patterns.md; every criterion of REQ-104 (1-13) has code that can satisfy it; the code matches the design signatures and error codes; dead code; size. Severity by the common scale of docs/workflows/handoffs.md: Critical, High and Medium are FAIL, Low is recorded for the developers. Run the new runner yourself on a scratch copy and the lint/format/traces commands.",
+    "acceptance_criteria": [
+      "Findings with severity, file and line",
+      "Each deviation of BACKEND-DEV judged"
+    ]
+  },
+  "created_at": "2026-11-02T23:34:24Z",
+  "started_at": "2026-11-02T23:34:24Z",
+  "completed_at": "2026-11-02T23:41:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": {
+      "verdict_reason": "FAIL: one High (F1) and one Medium (F2). Everything else is Low.",
+      "Q1_cause_not_symptom": "Met. No error is swallowed to turn a check green; the only swallow is waitFor (F5, Low). The cleanup swallow of ESRCH and rmSync errors in exit handlers is the design's 'never throws'.",
+      "Q2_agrees_with_records": "Mostly. Signatures, error codes, the argument list (7 arguments, no sandbox flags), the six-step check, the record line and the stand-in modes match design 4-6. Differences: F1 (printed message), F2 (no limit on the handshake), deviations 1-3 above. decisions/0002 (Node 22, ES modules, no runtime dependency): met, only node: imports and relative imports, package.json diff is the two script keys, package-lock.json, tools/src, .github, eslint config unchanged against the tag.",
+      "Q3_more_than_ordered": "Not found. Files = the design's list; extras are tiny (reload timeoutMs option, makeDeclaration/consoleError exports the design implies). No new package.",
+      "Q4_quality_bar": "Met. grep for .skip(, .todo(, todo/TODO/FIXME, eslint-disable, || true, {skip, {todo, both sandbox flags, secret shapes over tools/test/e2e and the stand-in: only hits are the words skipped/todo in runner.js:70,305,308 (the runner REFUSES them). No removed step of check, no hidden exit code. Six guard tests red exactly as designed (187/181/6: HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13); not touched. Expected: until step 5 the real tree has no *.e2e.js, so `npm run e2e` and `npm run check` fail with NO_SPECS and README names smoke.e2e.js, which does not exist yet.",
+      "Q5_idioms": "Good: promises awaited, no shared mutable state except the intentional registry in cleanup.js, style as neighbours, 2020 lines in 10 modules (page.js 506 is the largest). Duplication F4, dead code F3.",
+      "criteria_1_13_have_code": "1 yes; 2 findChrome + F1 for the user-visible text; 3 launch/close/cleanup (real Chrome trial: clicked, title read, 5x repeated, no process or folder left); 4 yes (F2 is the gap in 4(c)-style hang); 5 URL/path guards in the action; 6 sizes, overflow, scheme, four console kinds, favicon once per start (smoke page trial in a real Chrome passed 5 of 5); 7 command, record line, selection errors, SPEC_FAILED/NO_TESTS/SKIPPED (scratch trials); 8 package.json; 9 duration_ms; 10 argument list only (CI run is RELEASE-VALIDATOR's); 11 clean; 12 README section exists; 13 root README and tools/README text exist.",
+      "for_TEST_DESIGNER": "Check especially: E2K-32 must assert the full CHROME_NOT_FOUND text on stderr (F1); a hang test for a handshake that never completes (F2); SMK-08 with two back-to-back loads (deviation 1) and a repeated series; E2K-17 with ok-ignore-term; E2K-13/14/15 via cdp.connect because launchBrowser rejects first; the slow START_EXITED path (~0.4 s) is inside the 5 s limit. One run in my first trial (stand-in, startTimeoutMs 1000, under load from the other reviewer) returned START_TIMEOUT for exit-early once at 1011 ms; 20+ later runs gave START_EXITED at ~0.4 s; not reproduced, so a test should use a start limit well above 1 s for the exit case.",
+      "trials": "Own scratch copy in a new folder of the session scratchpad, TMPDIR pointed inside it, removed at the end: real Chrome 156.0.8078.74, runner on 2 specs (pass), nosuch, SAI_CHROME missing, failing spec, empty spec, skip spec (all codes right), SIGTERM during a spec (exit 143, one INTERRUPTED, one record, no process or folder left), 11 stand-in modes through launchBrowser (all clean), favicon race 8+20 starts, 5 repeated smoke runs. No Chrome of mine left (pgrep 0, temp folder empty before removal)."
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "High",
+        "blocks": true,
+        "place": "tools/test/e2e/kit/runner.js:342",
+        "what": "runAll prints an E2eError as `oneLine(error.message)`, so every multi-line message is cut to its first line. The design (4.1, 4.2, section 7 row 2, section 6 step 6: only the message of a NON-E2eError is cut to its first line) and tools/README.md ('a message that names SAI_CHROME and the places that were tried') say that when no Chrome is found the five numbered places are printed. Measured on a scratch copy (findChrome with PATH empty and exists false, run through runAll): stderr is `e2e: error=CHROME_NOT_FOUND: no Chrome or Chromium found. ... Places tried (5):` and the five lines are gone (findChrome itself builds them, checked). On the CI runner this is the log that branch B of criterion 10 and the owner read; criterion 2(d) is only met inside the function, not in what the user sees.",
+        "fix": "Print `error.message` in full for E2eError (keep oneLine only for the INTERNAL branch at line 345); the stack must still not be printed. The runner test E2K-32 should assert that a line `  5) chromium-browser (in PATH)` is on stderr."
+      },
+      {
+        "id": "F2",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "tools/test/e2e/kit/cdp.js:167-198 (connect), used at tools/test/e2e/kit/browser.js:332",
+        "what": "The WebSocket handshake to the browser has no time limit. Measured: a plain TCP server that accepts and never answers the upgrade leaves `connect()` pending for the whole 4 s of the probe (callTimeoutMs 500 is not used for opening). startTimeoutMs stops being counted at the port line (settle clears the timer), so a browser that prints the port line and then does not complete the upgrade hangs launchBrowser, and the preflight of runAll has no watchdog at all, until the 30-minute job limit. Q10: an external call has a timeout; design 4.5/4.6 promise 'no hang' for every browser fault.",
+        "fix": "Give connect a limit (use callTimeoutMs for the open, reject CALL_TIMEOUT or BROWSER_CLOSED and close the socket), or keep the start timer running until Browser.getVersion has answered. Add a stand-in mode that accepts TCP and never upgrades, and a test."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/errors.js:5 and :47",
+        "what": "`ERROR_CODES` and `usage()` are used by no file of the work (grep over tools/test/e2e and the stand-in); every USAGE error is built by `new E2eError(\"USAGE\", ...)` by hand. Dead code unless TEST-DESIGNER uses ERROR_CODES to pin the table.",
+        "fix": "Delete `usage`; keep ERROR_CODES only if a test reads it, else delete it too."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/browser.js:35-60 and tools/test/e2e/kit/runner.js:143-170",
+        "what": "The same three helpers (is the group alive / signal the group / wait until it is gone) are written twice, with opposite polarity (`groupAlive` vs `groupGone`). One shared mechanism in two places is how AP-014 starts.",
+        "fix": "Move them to cleanup.js (it already owns the group registry) and import them in both."
+      },
+      {
+        "id": "F5",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/page.js:279-290 (waitFor)",
+        "what": "A PROTOCOL_ERROR of a poll is swallowed until the deadline and the WAIT_TIMEOUT message does not mention it; a persistent protocol error (a bad session) then reads as 'last value: undefined'. Behaviour not in the design (BACKEND-DEV note I4(f)).",
+        "fix": "Keep the last swallowed error and add its message to the WAIT_TIMEOUT text; record the rule in the design."
+      },
+      {
+        "id": "F6",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/browser.js:313-314",
+        "what": "On a start failure the code waits for stderr 'close' or 300 ms. Measured: START_EXITED always takes ~370-400 ms, i.e. the 300 ms timer always fires ('close' has already been emitted before the 'exit' listener is attached). Harmless (limit is 5 s) but the 'close' branch is dead in practice.",
+        "fix": "Check `child.stderr.destroyed` / `readableEnded` before waiting, or drop the 'close' listener and keep only the short timer."
+      },
+      {
+        "id": "F7",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/page.js:489 and :378 in browser.js",
+        "what": "A failed screenshot write is reported with the code USAGE (a caller bug), which is the wrong code for an I/O failure; and `failure !== null && typeof failure === \"object\"` repeats the null check.",
+        "fix": "Use a code of the table that fits (or add one with a design note); drop the repeated condition."
+      },
+      {
+        "id": "F8",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/test/e2e/kit/page.js:27 and :216 (LOAD_SETTLE_MS)",
+        "what": "Deviation 1 is not in the design or in 0108 (see judgement). Needs a record so that the next reader does not remove it.",
+        "fix": "CODE-DESIGNER / ORCH: one sentence in design 4.8 (goto, reload) and a line in 0108 or the design change log; SMK-08 must run goto twice back to back."
+      }
+    ],
+    "deviation_judgements": [
+      {
+        "deviation": "(1) 100 ms wait after the load event in goto and reload",
+        "judgement": "ACCEPTED, with Low F8. It is a real solution to a real Chrome race, not a hidden symptom: on a scratch copy with LOAD_SETTLE_MS=0, two back-to-back loads of the same page lost the favicon console line in 1 of 8 starts (the developer saw 3 of 3 under his conditions); with 100 ms 20 of 20 starts gave exactly one line. It costs 0.1 s per goto and is a time wait (no event exists for 'the favicon request was made'), which is the only weak point. It is not in the design and has no record: F8."
+      },
+      {
+        "deviation": "(2) extra stand-in mode ok-ignore-term",
+        "judgement": "ACCEPTED. The design's E2K-17 uses hang-ignore-term, but that mode prints no port line, so no Browser exists to call close() on; the escalation SIGTERM -> SIGKILL of Browser.close can only be tested with a mode that starts and ignores SIGTERM. One line in the stand-in, section 5 allows added modes. Verified: ok-ignore-term close() finishes in ~0.7 s with the group gone. The design table row of E2K-17 should name the new mode (TEST-DESIGNER is told in summary)."
+      },
+      {
+        "deviation": "(3) bad-json, error-object, no-answer make launchBrowser itself reject",
+        "judgement": "ACCEPTED. It follows the design (4.6 step 5: Browser.getVersion is the first call), not a defect of the code. Measured with the stand-in: PROTOCOL_BAD_ANSWER / PROTOCOL_ERROR / CALL_TIMEOUT, each naming Browser.getVersion, group gone, folder gone, registry empty, next start works. Criterion 4(d) is met by the rejection of launchBrowser; E2K-13/14/15 should use cdp.connect directly for the 'pending calls' cases."
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      "cd tools && npm run -s format:check -> All matched files use Prettier code style!, exit 0",
+      "cd tools && npm run -s lint -> exit 0",
+      "cd tools && npm run -s traces -> traces: файлов проверено 2400, следов 0, пропущено 67, exit 0",
+      "node -e on package.json -> check = [format:check, lint, traces, handoffs-check, test, e2e] (six), e2e = node test/e2e/run.js, test unchanged",
+      "git diff --name-only base/E2E104-20261103-01 + untracked: tools/package.json, tools/README.md, README.md (+ ORCH's PLAN.md, requirements.yaml, decisions/README.md, PROGRESS.md) and the new tools/test/e2e/**, tools/test/fixtures/e2e/fake-chrome.js (mode 0755); no change in tools/src, .github, package-lock.json, eslint config",
+      "grep -rnE '\\.skip\\(|\\.todo\\(|todo|TODO|FIXME|eslint-disable|\\|\\| true|no-sandbox|disable-setuid|\\{ skip|\\{ todo|ghp_|sk-|BEGIN [A-Z ]*PRIVATE' tools/test/e2e tools/test/fixtures/e2e -> only runner.js:70 `todo: countOf(text, \"todo\")`, :305, :308 (the runner rejects skipped/todo specs)",
+      "node --test over the 14 guard files -> # tests 187 # pass 181 # fail 6 (HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13), # skipped 0 # todo 0",
+      "scratch: node test/e2e/run.js smoke -> e2e: browser=Chrome/156.0.8078.74, e2e: file=smoke, # pass 2 # fail 0, e2e: command=npm run e2e -- smoke selection=smoke exit=0 duration_ms=2205; nosuch -> SELECTION_UNKNOWN + exit=1; SAI_CHROME=/no/such/chrome -> CHROME_NOT_FOUND one line + exit=1; failing/empty/skip spec -> SPEC_FAILED / SPEC_NO_TESTS / SPEC_SKIPPED",
+      "scratch: runAll with launch throwing findChrome({env:{PATH:''},exists:()=>false}) -> stderr `e2e: error=CHROME_NOT_FOUND: no Chrome or Chromium found. ... Places tried (5):` and nothing after (F1); findChrome message alone has the five lines",
+      "scratch: connect() against a TCP server that never answers the upgrade -> `STILL PENDING after 4 s` (F2)",
+      "scratch: SIGTERM to the runner during a spec -> exit=143, stderr e2e: error=INTERRUPTED: SIGTERM, record exit=1 once, temp folder 0, process 0",
+      "scratch: 11 stand-in modes -> START_EXITED, START_TIMEOUT, BROWSER_CLOSED x2, CALL_TIMEOUT, PROTOCOL_BAD_ANSWER, PROTOCOL_ERROR, OK x4; alive 0, registry 0 0 in all"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "The design section 5 table lists E2K-17 with hang-ignore-term; it needs ok-ignore-term (deviation 2). CODE-DESIGNER or ORCH should correct the table, or TEST-DESIGNER reports it as a divergence."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Not a finding of this change: decisions/0108 О7(c) already notes the root README sentence 'about 2 minutes'. The check on GitHub for Chrome with its sandbox (criterion 10, branch C) is not decidable from this Mac and is left to RELEASE-VALIDATOR."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "handoff_id": "step01-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/E2E104-20261103-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml",
+      "decisions/0107-e2e-real-chrome-in-check.md",
+      "handoffs/E2E-20261103-01/step-02b-req-validator.json",
+      "docs/workflows/WF-02-development.md"
+    ],
+    "route": "CODE-DESIGNER (this) -> ORCH answers questions -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/design/REQ-104-e2e-chrome-kit.md (new) only"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "WF-02, step 1 — write the design of REQ-104 (the real-Chrome end-to-end kit and the command `npm run e2e` inside `npm run check`) in docs/design/REQ-104-e2e-chrome-kit.md, by the section \"Step 1\" of docs/workflows/WF-02-development.md. No implementation code in the design: shapes, signatures, tables only.\n\nREAD FIRST: the block REQ-104 in docs/requirements.yaml (all 13 criteria; read by id, the file is large), decisions/0107-e2e-real-chrome-in-check.md, decisions/0023 (D2), decisions/0002, docs/quality-bar.md, docs/anti-patterns.md, the gate results handoffs/E2E-20261103-01/step-02b-req-validator.json (its Low remarks M1-M3 are for you to handle in the design) and step-02-req-validator.json. REQ-105/106/107 depend on this kit: read their blocks too so the kit's API serves them (window sizes, themes, languages, console errors, overflow check, `e2e: browser=` / `e2e: file=` lines, clean-up).\n\nIMPORTANT FACTS:\n- The block REQ-104 and the decision 0107 are in the working tree, NOT in the tag base/E2E104-20261103-01 (they are uncommitted); the tag is the \"before\" copy for code and tests. Statements about the current system are measured on a fresh clone of the tag outside the project; statements about the requirement are read from the working tree.\n- Feasibility sketch by ORCH (outside the project, Node 22.23.4, macOS, Chrome at /Applications/Google Chrome.app): child_process.spawn of Chrome with `--headless=new --remote-debugging-port=0 --user-data-dir=<temp> --no-first-run --disable-gpu`; the `ws://` address is read from the \"DevTools listening on\" line on stderr; `fetch http://127.0.0.1:<port>/json/list` gives the page target; the global WebSocket of Node 22 speaks the protocol; clicking a button and reading `document.title` worked; a window below about 500 px needs `Emulation.setDeviceMetricsOverride`. Make your own sketch for every other statement (Linux flags, the sandbox on the runner, killing the process group, favicon request, theme via `Emulation.setEmulatedMedia`, language via `Accept-Language`/`navigator.language` override, console errors via `Runtime.exceptionThrown` and `Log.entryAdded`, horizontal overflow check) and put its location and content in result.prototype.\n- Six guard tests turn red when `check` gets a sixth step: HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13 (the replacement table of REQ-104 lists them); measure the others on the tag again, give file, line, \"was → became\", and the prohibition must not be weakened.\n- Another computer has no Chrome in a CI-like situation: the \"Chrome missing\" path must FAIL with an understandable message, never skip (Q6).\n- Only Node 22 built-ins, no npm package. Tests and the kit live in tools/test/ (decide the file layout; REQ-104 names the files — follow it).\n\nHOW TO WORK: sub-steps small enough to be checked one by one, each with the tests that will turn red; a list of mutants (at least 20, one per trap) with the test that catches each; the table \"criterion → test\"; the bar section for every item Q1-Q14 and R1-R3; open questions as a list (ORCH answers them with a decisions/ record before the gate) — do not settle a disputed choice by a guess. One agent at a time works on this Mac: keep your trials light (no full `npm test` more than twice; kill every Chrome you start by its process id, never by name pattern; clean your temp folders yourself, only the ones you made).\nDo not write the name of any other project into any file (traces).",
+    "acceptance_criteria": [
+      "Every criterion of REQ-104 leads to an element of the design and to a test",
+      "Replacement table of earlier guard tests, measured on the tag",
+      "Bar section Q1-Q14 and R1-R3 complete",
+      "At least 20 mutants, each with the test that catches it",
+      "No implementation code"
+    ]
+  },
+  "created_at": "2026-11-02T21:11:56Z",
+  "started_at": "2026-11-02T21:11:56Z",
+  "completed_at": "2026-11-02T21:44:34Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Wrote docs/design/REQ-104-e2e-chrome-kit.md (649 lines, 20 sections): a kit of ten modules in tools/test/e2e/kit/ (errors, find-chrome, guards, cdp, cleanup, console, browser, page, index, runner) plus tools/test/e2e/run.js; the command `npm run e2e [-- names]` with the run record; the sixth step of `check`; a stand-in program speaking the protocol; 49 tests (36 in tools/test/e2e-kit.test.js, 13 in tools/test/e2e/smoke.e2e.js) mapped to the 13 criteria; the replacement table of the six guard tests measured on the tag; the bar section Q1-Q14 and R1-R3; 8 build sub-steps with the red tests of each; 54 mutants; 9 open questions O1-O9. Measured on fresh clones of the tag: exactly six guard tests turn red (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13), full npm test with all files of the work present = 2136 tests, 2130 pass, 6 fail, 0 skipped, 0 todo, 235.8 s. Findings that the requirement does not state and the design builds in: the default colour scheme of a headless Chrome is the machine's (dark here), so the kit sets light; a launched Chrome survives a killed parent (9 orphan processes measured) so clean-up is by process group plus exit/SIGINT/SIGTERM/SIGHUP handlers; an unguarded JSON parse of a protocol frame crashed the sketch process; a favicon 404 line and a page 404 line have the same text (declarations match on text and optional path); without a resolver rule the browser reaches the network (a trial did not finish in 120 s), so --host-resolver-rules leaves only 127.0.0.1. Remarks M1-M3 of the gate: M1 corrected in section 12 row 7, M2 answered by the error codes and the log-reading table in section 6, M3 raised as O4. Not measured and said so: Linux flags, the sandbox on the runner, the resolver rule on Linux (criterion 10 settles them by a real run); I pushed nothing.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-104-e2e-chrome-kit.md",
+        "place": "new file",
+        "what": "sections 0 summary, 1 checked facts F1-F28, 2 disputable choices C-1..C-7, 3 files and owners, 4 interfaces (errors, find-chrome, guards, cleanup, cdp, browser, console, page, index), 5 stand-in program and its modes, 6 command and run record, 7 failure paths, 8 protection in the same operation, 9 links, 10 criterion->test, 11 tests E2K-01..E2K-61 and SMK-01..SMK-13, 12 replacement table, 13 shared places, 14 README texts, 15 sub-steps, 16 mutants M01-M54, 17 quality bar, 18 outdated outside the project, 19 open questions O1-O9, 20 sketch notes"
+      },
+      {
+        "file": "handoffs/E2E104-20261103-01/step-01-code-designer.json",
+        "place": "status, result",
+        "what": "status IN_PROGRESS at start, result filled, closed by the handoff command"
+      }
+    ],
+    "self_check": [
+      "date -u at start: 2026-11-02T21:14:49Z (local 2026-11-03, UTC+5); node -v: v22.23.4; Chrome --version: Google Chrome 156.0.8078.74",
+      "git show base/E2E104-20261103-01:docs/requirements.yaml | grep -c 'id: REQ-104' -> 0; git cat-file -e base/...:decisions/0107-... -> fatal: exists on disk, but not in the tag; git show base/...:tools/package.json | grep -c '\"e2e\"' -> 0",
+      "git grep -lE 'remote-debugging-port|Emulation\\.|Page\\.navigate' base/E2E104-20261103-01 -- tools/test tools/src -> no file, exit 1",
+      "fresh clone of the tag, npm ci, dummy files only (clone2): node --test <14 files> -> # tests 187, # pass 187, # fail 0",
+      "clone with package.json edit + dummy files + both README edits: node --test <10 files> -> # tests 163, # pass 157, # fail 6 (HO-54, HC-02, HC-03, PK-7b, LP-3, CTL-13)",
+      "clone, cd tools && npm test (1 full run, 235.8 s) -> # tests 2136, # pass 2130, # fail 6 (the same six), # skipped 0, # todo 0",
+      "clone: npm run lint -> exit 0; npm run format:check -> All matched files use Prettier code style; npm run traces -> traces: files 2377, traces 0, skipped 67",
+      "sketches s1..s12 outside the project (see prototype): sizes, overflow, scheme, click+hit test, keys, typing, network, tabs, console events, favicon, clean-up by group, orphans, signal handlers, confinement flag, seven stand-in modes; results in section 1 of the design",
+      "ps -axo pid,command | grep -E 'remote-debugging|fake-chrome|sai-e2e-' -> 0 lines; ls <system temporary folder> | grep -cE '^(sai-e2e-|fk-)' -> 0 (after removing my 5 + 12 sketch folders and one stand-in process by its pid)",
+      "design file: 649 lines; grep -c '^| M[0-9]' -> 54 mutants; grep -c '^| E2K-' -> 36; grep -c '^| SMK-' -> 13; search for names of other projects and computer paths in the design -> empty",
+      "cd tools && npm run handoffs-check && npm run traces && npm run format:check -> handoffs-check: файлов проверено 1285, нарушений 0; traces: файлов проверено 2379, следов 0, пропущено 67; Prettier: All matched files use Prettier code style (the design file is in docs/, outside the prettier scope, and was not formatted)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "O1 (ORCH): who writes the starter of server processes (spawn, read a stdout line, SIGTERM and exit code, refuse a state folder outside the temporary root) that REQ-105, 106 and 107 each need? Design default: not in REQ-104 (no criterion, no test); REQ-105 designs tools/test/e2e/kit/stand.js and the others reuse it. REQ-104 provides makeTempDir, removeTempDir, assertUnderTempRoot."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "O2 (ORCH): page code as strings only (default) or add globals.browser for test/e2e/** in eslint.config.js and accept functions? Measured: a function with `document` in a spec fails no-undef; eslint.config.js is not in the file list of REQ-104."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "O3 (ORCH): confirm the runner rules beyond the letter of criteria 7 and 11: stop at the first failing spec file; a hung file ended after 120 s (SPEC_TIMEOUT); a file with no test (node counts the file itself as one test), or with skipped/todo above 0, fails."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "O4 (ORCH, remark M3 of the gate): the hash comparison of the REQ-014 and REQ-033 blocks against tag B in criterion 13 turns red if the owner's answers about those two requirements land in this run. Default: keep their WF-01 runs after the release of this run."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "O5 (ORCH): accept the extra Chrome flag --host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1 (second layer of criterion 5). Measured on this Mac: example.com, the literal 192.0.2.1, localhost and a 302 to example.com all fail at once (ERR_NAME_NOT_RESOLVED) and 127.0.0.1 loads; without it a trial navigating to foreign addresses did not finish in 120 s. Linux behaviour is read by the criterion-10 run (SMK-13)."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "O6 (ORCH): the stand-in program fake-chrome.js is written by BACKEND-DEV (a stand, as in the design of REQ-056) in sub-step 3 because the fault paths cannot be checked without it; the tests that use it are TEST-DESIGNER's. The REQ owner line gives 'the fault tests' to TEST-DESIGNER."
+      },
+      {
+        "id": "I7",
+        "kind": "QUESTION",
+        "text": "O7 (ORCH/owner): (a) accept the residual risk that a SIGKILL of the runner (for example a CI job killed at its time limit) leaves Chrome processes (measured: 9 orphans); no sweeper of old sai-e2e-* folders is added. (b) Branch C pre-decision: if the runner log shows that Chrome on ubuntu-24.04 does not start with its sandbox because the system restricts unprivileged user namespaces, may the fix be one step in check.yml that changes that system setting (a runner setting, not a Chrome flag)? Today branch C says BLOCKED with a question to the owner; I could not measure the runner and pushed nothing. (c) FYI: the root README says 'about 2 minutes' for the pre-push check, pinned by RD-2 (repo.test.js 1124); a full npm test alone took 235.8 s, so the sentence was already untrue on the tag."
+      },
+      {
+        "id": "I8",
+        "kind": "QUESTION",
+        "text": "O8 (ORCH): the kit API offers key presses, network records with response bodies, reload and a second tab, which the description of REQ-104 does not list among 'the kit can' but REQ-105 (criteria 2, 4, 5, 6) and REQ-107 (criterion 4) need. Default: keep, with tests SMK-09 and SMK-11. REVIEWER may read them as work beyond the requirement."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "O9 (ORCH, AP-133): the done REQ-038 says (criterion at docs/requirements.yaml line 5313; description 5266-5268) that the check 'check ends with npm run test' in team-web-control.test.js passes without edit. This work edits that assertion (CTL-13), so the statement becomes false. A WF-01 micro-amendment in this run, or a defect? docs/requirements.yaml is not in my write set."
+      },
+      {
+        "id": "I10",
+        "kind": "PROPOSAL",
+        "text": "One record decisions/0108-e2e-kit-conventions.md with the section 'Basis', answering O1-O9 before the gate 1b (WF-02 step 1a). ORCH should also put the table 'reading of the CI log' (section 6 of the design: branch B = error=CHROME_NOT_FOUND and no browser= line; branch C = error=START_EXITED or START_TIMEOUT with the word sandbox and no browser= line; any other red = plain FAIL) into the task of step 9 (remark M2 of the gate)."
+      },
+      {
+        "id": "I11",
+        "kind": "DISCREPANCY",
+        "text": "Remark M1 of the gate was right and is applied: the REQ text says the REQ-030 tests read two README sections that the work does not change; the work edits the paragraph 'You need' of the root README and the section 'Check' of tools/README.md. Measured: the tests stay green with both edits (163-test subset and the full npm test show only the six red tests). Section 12 row 7 says so."
+      },
+      {
+        "id": "I12",
+        "kind": "FACT",
+        "text": "The root README.md is not covered by prettier (format:check runs in tools/); running prettier on it rewrote 15 unrelated lines in the clone. The design says: edit the root README by hand."
+      },
+      {
+        "id": "I13",
+        "kind": "FACT",
+        "text": "Not measured, said so in the design: the Linux flags, the Chrome sandbox on the runner, the behaviour of the resolver rule on Linux. The published software list of the ubuntu-24.04 image 20261026.354.1 names Google Chrome 156.0.8078.47 (documentation, read only, not a run)."
+      },
+      {
+        "id": "I14",
+        "kind": "PROCESS",
+        "text": "AP-136 slip, mine: during the sketches the kit-like launcher wrote Chrome profile folders (sai-e2e-*, 5 left over) and stand-in log folders (fk-*, 12) into the system temporary folder instead of the session scratch folder; one stand-in process (pid 75093) survived a crashed sketch (the sketch client died on an unguarded JSON parse, see F25); one sketch (s8) did not finish in 120 s and was stopped with TaskStop. All folders were removed by name and the process killed by its pid; afterwards ps shows no remote-debugging/fake-chrome/sai-e2e- process and the temporary folder holds no sai-e2e-/fk- entry. The design asks later checkers to run the kit with TMPDIR set to their scratch folder."
+      }
+    ],
+    "prototype": {
+      "where": "<scratch>/e2e104/ (session scratch folder, outside the project)",
+      "contents": "clone/ (fresh clone of tag base/E2E104-20261103-01 after npm ci, with dummy kit files, fake-chrome.js, the package.json edit and both README edits: the full npm test of F7); clone2/ (the same tag with the new dummy files only: F5); sketch/lib.mjs (minimal launcher and protocol client for measuring), sketch/fake-chrome.mjs (the 70-line stand-in), sketch/s1..s12 (start/sizes/overflow/themes/click/console/SIGKILL; favicon and 404 lines/locale; keys/typing/network/reload/tabs; clean-up by group; orphan after a killed parent; confinement flags; seven stand-in modes; cost per cycle; signal handlers; click with hit test)"
+    },
+    "artifacts_out": [
+      "docs/design/REQ-104-e2e-chrome-kit.md"
+    ]
+  }
+}

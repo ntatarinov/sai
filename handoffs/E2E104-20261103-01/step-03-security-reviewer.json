@@ -1,0 +1,138 @@
+{
+  "handoff_id": "step03-E2E104-20261103-01",
+  "run_id": "E2E104-20261103-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/E2E104-20261103-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "docs/requirements.yaml",
+      "handoffs/E2E104-20261103-01/step-02-backend-dev.json",
+      "decisions/0107-e2e-real-chrome-in-check.md",
+      "decisions/0108-e2e-kit-conventions.md"
+    ],
+    "route": "BACKEND-DEV -> SECURITY-REVIEWER (this) || REVIEWER -> TEST-DESIGNER",
+    "write_set": [
+      "this handoff only; the repository files are read-only for this step"
+    ],
+    "base_tag": "base/E2E104-20261103-01"
+  },
+  "task": {
+    "description": "Read-only gate on the code written by BACKEND-DEV for REQ-104 (handoffs/E2E104-20261103-01/step-02-backend-dev.json; the files: tools/test/e2e/kit/*.js, tools/test/e2e/run.js, tools/test/fixtures/e2e/fake-chrome.js, the script edit in tools/package.json, tools/README.md, root README.md), against the design docs/design/REQ-104-e2e-chrome-kit.md (passed gate 1b), the block REQ-104 in docs/requirements.yaml and the answers decisions/0107 and decisions/0108. The 'before' is the tag base/E2E104-20261103-01 (fresh clone outside the project): take the list of changed files from git, not from the report. Tests of the kit do not exist yet (TEST-DESIGNER writes them at step 5) and exactly six old guard tests (HC-02, HC-03, HO-54, PK-7b, LP-3, CTL-13) are red by design: that is expected until step 5. DEVIATIONS reported by BACKEND-DEV that you must judge (result.issues of its handoff): (1) a 100 ms wait after the load event in goto and reload (without it the favicon console line is dropped when a second navigation starts at once and SMK-08 would fail); (2) the extra stand-in mode ok-ignore-term; (3) the modes bad-json, error-object, no-answer make launchBrowser itself reject. MAC LOAD: one agent each, at most one full npm test; start Chrome only through the kit's own cleanup; kill any Chrome you start by process id; remove only temp folders you made; never rm inside the project; change no repository file except your own handoff. STEP 3 role SECURITY-REVIEWER (WF-02 step 3). Decide whether your area is touched (external calls: the kit starts a browser and connects to a local debugging port; a spawned process tree and signals; temp folders; paths and URLs given to the browser; secrets; the hostile-input classes: a page that tries to leave 127.0.0.1, a debugging-protocol frame that is malformed or huge, a spec path or folder outside tools/, a symlink, a state folder outside the temporary root, a profile folder left behind, orphan processes). For each item Q7-Q11 and R2, R3: applicable and met with your own command, or not applicable with the reason. Try hostile inputs with your own oracle (not the code's expression) in a real browser and on the stand-in: numbers of trials into summary. Check the argument list of Chrome (no sandbox-off flags, the resolver rule really keeps the browser on 127.0.0.1 including redirects and sub-resources), that nothing is written outside the temporary root and tools/, no secret, no machine path. Any applicable item not met is a FAIL with a list (file, line, what, how to reproduce).",
+    "acceptance_criteria": [
+      "Each of Q7-Q11, R2, R3 is applicable-and-met with a command, or not applicable with a reason",
+      "Hostile-input trials counted in summary"
+    ]
+  },
+  "created_at": "2026-11-02T23:34:24Z",
+  "started_at": "2026-11-02T23:34:24Z",
+  "completed_at": "2026-11-02T23:54:24Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "VERDICT PASS. No applicable item of Q7-Q11, R2, R3 is unmet. Six findings, none Critical/High/Medium (4 Low, 2 Info); the Low ones should go to CODE-FIXER through ORCH before release.\n\nAREA TOUCHED: yes, in 4 of the 7 surfaces. MAP (every changed file assigned; the list was taken from git against the tag base/E2E104-20261103-01, not from the report: 7 tracked files changed + 12 untracked code/doc files + 3 decision/design files):\n- tools/test/e2e/kit/browser.js, cleanup.js, runner.js, run.js -> 'the server goes by itself' (starts a browser and a node child as own process groups, signals), 'writes files' (profile folders under the temporary root).\n- tools/test/e2e/kit/cdp.js, find-chrome.js -> 'comes from outside' (debugging-protocol frames, the SAI_CHROME variable, argv of the command).\n- tools/test/e2e/kit/guards.js, page.js -> 'comes from outside' + 'writes files' (URL allow-list, screenshot path) + the browser is pointed at pages (URL given to the browser).\n- tools/test/e2e/kit/console.js, errors.js, index.js -> 'comes from outside' (page text becomes error text).\n- tools/test/fixtures/e2e/fake-chrome.js -> test stand: listens on 127.0.0.1 port 0 only; 'writes files' only to a log path the test gives it.\n- tools/package.json (script e2e + sixth step), tools/README.md, README.md, decisions/0107, 0108, docs/design/REQ-104, docs/requirements.yaml, PLAN.md, decisions/README.md, docs/program/public-v1/PROGRESS.md -> no surface (documents/script line); read for secrets, machine paths and false claims. README.md of tools line 842 says files are removed 'on a failure' (see F1).\n- Not touched (checked with git status): tools/src (no page file the browser receives, no Pixel Office file), .github, .claude, .githooks, package-lock.json. Surfaces 'holds a secret', 'customer data', 'photos' : absent.\n\nITEMS:\n- Q7 applicable, MET. Secret-shape grep over the change (tools/test/e2e, fixtures, package.json, both READMEs, decisions 0107/0108, the design): no match. The only 'password' hit is guards.js:138 (url.password === \"\"), a field name. 'process.env' appears only as parameter defaults (find-chrome.js:39, browser.js:200, runner.js:197) and two property reads in the stand-in; the environment is handed to Chrome and to the spec (design says so) but never printed; messages hold SAI_CHROME only. No machine path, home path, or token in the files (grep for /Users/, /home/, /private/var, /var/folders: no line). Page files of the browser (tools/src/pixel-office/public, tools/src/picker/public): unchanged by this work; the shape grep finds only the pre-existing literal '<task-notification' (false hit 'sk-notification').\n- Q8 not applicable: no customer data, no space identifier, no API; tools/src/team and tools/src/web untouched.\n- Q9 not applicable: grep for select/insert/update/delete..from/into/set, sqlite, .query(, .prepare( in the change: no SQL (only two RegExp.exec).\n- Q10 applicable, MET with the findings below. Every external call has a limit and an explicit error: start 20 s (START_TIMEOUT, trials 3), call 20 s (CALL_TIMEOUT, trial 3: 'deep', 'slow'), navigation 15 s, spec file 120 s (SPEC_TIMEOUT), stop grace 5 s+3 s. Bad input does not crash: binary frame, non-object JSON, wrong id type, error as a string, events with wrong shapes, 6 MB nested JSON, 64 MB frame, 80 MB stderr without newline, a port line for a foreign host, split port line: each ended with a coded E2eError or was ignored, the process lived, registry empty, no folder, no process left (trial 3). Argv of the command: 18 hostile arguments, each SELECTION_UNKNOWN/DUPLICATE, no shell (spawn with argument arrays, no shell: option anywhere), no file created (trial 8).\n- Q11 applicable by analogy (the criterion-5 'browser only visits this computer'; the rule here is an allow-list of one address, not https), MET. assertLoopbackUrl stands inside Page.goto before any protocol call and navigation uses the returned normalized href; resolver rule --host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1 is in the real argument list. Real Chrome 156 + own servers bound to the machine's LAN address and 0.0.0.0 as the oracle: 0 hits on the outside servers over 61 vectors (trial 1) and 6 more (trial 10). See F3 for the one way round it (a loopback proxy).\n- R2 not applicable: Pixel Office, its hook, server and journal are not touched; the kit writes no event. R3 not applicable (dropped by decision 0033); no photos introduced (screenshots are of test pages, under the temporary root).\n- Sandbox: the argument list is exactly 7 entries (seen in `ps` of the running browser: --headless=new, --remote-debugging-port=0, --user-data-dir=<tmp>, --no-first-run, --disable-gpu, the resolver rule, about:blank). No sandbox-off flag in the process list of all 10 processes of the group (browser, gpu, utility, renderer all start with the sandbox), and grep finds none in any file.\n\nDEVIATIONS of BACKEND-DEV judged: (1) 100 ms wait after load in goto/reload: no security effect; it makes the kit see more console lines, not fewer (the dropped favicon line is the reason); accepted from my side, design question for REVIEWER. (2) mode ok-ignore-term: a test stand that listens on 127.0.0.1 only and ignores SIGTERM; no effect. (3) bad-json/error-object/no-answer rejecting launchBrowser: confirmed the same way by my own stand-ins (binary, weird, ctrl, slow): launch rejects, group killed, folder removed, next start works.\n\nTRIALS (own oracle, real Chrome 156 and my own hostile stand-in, nothing run in the project tree): 1) hostile page leaving 127.0.0.1: 6 foreign targets (LAN address, localhost, [::1], 192.0.2.1, an unresolvable name, 0.0.0.0) x 7 vectors (fetch, img, script, css, xhr, iframe, 302-redirect fetch) = 42, + websocket, beacon, prefetch, preconnect, a-ping, popup, WebRTC = 49 page-side, + 6 goto() to foreign URLs (all URL_REFUSED) + 6 location= by script (foreign -> chrome-error page; file:, data:, chrome:, javascript:, view-source: -> blocked): 61, outside servers 0 hits. 2) process flags, listening ports, debugging port from the page (fetch, no-cors, PUT, WebSocket with its secret path: Chrome refuses by Origin), profile mode 700, profile removed: 14 checks. 3) hostile protocol peer: 9 modes (binary, weird shapes, control characters, 6 MB nested, never answers, 80 MB stderr line, foreign port line, split port line, 64 MB frame). 4) signals on a spec runner with a live Chrome: SIGTERM, SIGINT, SIGHUP, SIGKILL of the runner, a spec that hangs, a spec with a blocked event loop (twice: one signalled before the loop, one inside it), one stopped by hand during a multi-spec run: 8 runs. 5) guards: 65 URL table + 9 non-string + 7 accepted forms; 40000 mutated URLs, 1475 accepted, each checked against a strict regexp of the returned href and 1475 re-parsed in Chrome (0 disagreements); 6 long inputs up to 10 MB (<=11 ms, no ReDoS). 6) paths: 35 screenshot paths, 8 with a link before '..', 10 temp labels, 3 temp-root checks, TMPDIR inside the repository (refused before anything is made, trial 9). 7) page text in errors: 4 probes. 8) CLI arguments: 18. 10) top-level 302, meta refresh, form post to the LAN address, foo.localhost, localhost, [::1]: 6, 0 outside hits. 11) loopback proxy: 1. In total about 1,700 inputs (40,000 more in the URL fuzz).",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "item": "design criterion 'no process left' (not a Q item; REVIEWER may grade up)",
+        "place": "tools/test/e2e/kit/runner.js:170-177 (stopGroup), :264-266 (watchdog), tools/test/e2e/kit/browser.js:211-215 (Chrome started detached = own group), tools/README.md:842",
+        "what": "When the runner has to SIGKILL a spec (the spec ignores or cannot run SIGTERM, e.g. a synchronous endless loop, or the 120 s SPEC_TIMEOUT) it kills the spec's process group only. Chrome sits in its OWN group (detached) and the kit's clean-up lived inside the killed spec process, so Chrome (8 processes), its profile folder and its unauthenticated debugging port on 127.0.0.1 stay until someone kills them. README line 842 says files are removed 'on a failure'. Same class as the accepted residual of the runner's own SIGKILL (open point O7), but here the runner could cover it.",
+        "repro": "In a COPY of the kit outside the project: a spec test that calls withBrowser, prints the browser pid, then runs `const end = Date.now()+40000; while (Date.now() < end) {}`; start `node test/e2e/run.js <name>` with TMPDIR set to an empty folder; 2.5 s later send SIGTERM to the runner. Result: exit 143, record line printed, but `ps` shows the Chrome group alive and one sai-e2e-profile-* folder left (killed by pgid by hand afterwards). Without the blocked loop (a normal await) the same signal leaves nothing.",
+        "fix": "Let the runner own the knowledge of the browsers its spec started: give the spec an environment variable with a registry file/folder inside a runner-made temporary folder; launchBrowser appends pgid and profile folder to it; after the stop (and in the runner's exit handler) the runner kills those groups (SIGKILL, once, only ids it read) and removes the folders. Or document it as a second accepted residual next to O7 and change README line 842 ('on a failure, SIGINT, SIGTERM, SIGHUP; not after SIGKILL of the command or of a spec')."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "item": "Q7/Q10 (log text; hostile text from a page or a browser)",
+        "place": "tools/test/e2e/kit/console.js:107-113 (describeEntry/consoleError), tools/test/e2e/kit/page.js:323-327 (found.by), tools/test/e2e/kit/cdp.js:148 (PROTOCOL_ERROR message), tools/test/e2e/kit/runner.js:329 (`e2e: browser=` line)",
+        "what": "Text that the page or the browser controls goes into error messages and the log raw: newlines kept, control characters kept, and no total limit. A page that does console.error('a\\n::error::x\\n::add-mask::y') puts lines that START with two colons into the CONSOLE_ENTRIES message (GitHub Actions treats such a line in a step log as a workflow command: forged annotations, masking of later output, stop-commands); an element id with a newline does the same through CLICK_INTERCEPTED (`covered by <id>`); the product string of a browser (e2e: browser=) and a PROTOCOL_ERROR message too. Sizes are unbounded: 300000 console.error lines gave a 7 MB message, a 1 MB element id gave a 1 MB message. Pages today are the project's own, so exposure is low; it grows when tenant text is reflected into a page that logs it.",
+        "repro": "Trial 7 (t6-text): a stand page with `console.error('line1\\n::error file=app.js::forged\\n::add-mask::secret')`, an id of 'x\\n::error::forged', then 300000 console.error calls; withBrowser ends with CONSOLE_ENTRIES, 300006 lines, 7,089,060 characters, two lines starting with '::'.",
+        "fix": "Print page/browser text through one function that escapes newlines and control characters (JSON.stringify of the text, or replace [\\x00-\\x1f\\x7f] with a visible mark), cut each piece at 200-500 characters (id, product, protocol message, url), and list at most 20 entries plus '... and N more'."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "item": "Q11 style (browser only visits this computer); defence in depth",
+        "place": "tools/test/e2e/kit/browser.js:23-33 (buildArgs)",
+        "what": "The resolver rule decides names for Chrome's own resolver. A request that goes through a proxy is resolved by the proxy, so with a proxy on a loopback address (a system proxy setting, or an environment-driven one on Linux) the browser reaches foreign names and Chrome's own background traffic (time sync, updates) goes out: the rule is not the whole guarantee that README line 842 states ('cannot reach any other address'). No proxy is configured on this machine or on the GitHub image, so nothing leaks now.",
+        "repro": "Trial 11: a wrapper program (outside the project) that starts the real Chrome with the kit's arguments plus --proxy-server=http://127.0.0.1:<port>, SAI_CHROME pointing at it; the page does fetch('http://example.invalid/via-proxy') and gets the proxy's answer; my proxy also logged GET requests to clients2.google.com and update.google. Without a proxy the same fetch is refused (trial 1, 10).",
+        "fix": "Add `--no-proxy-server` to the argument list (the design says 'no other flag', so this is a design change through ORCH/CODE-DESIGNER, and E2K-24/25's exact list changes with it), or soften the README sentence."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "item": "Q10 (explicit error, no raw system error)",
+        "place": "tools/test/e2e/kit/guards.js:37-72 (resolveReal), :84 (realOf)",
+        "what": "A hostile path produces a raw Node error instead of PATH_REFUSED: a NUL character (ERR_INVALID_ARG_VALUE), a name over 255 bytes (ENAMETOOLONG), a link loop (ELOOP). It fails closed (nothing is written), only the code is not the kit's. The design says every failure the kit defines is an E2eError.",
+        "repro": "Trial 6: assertShotPath(<temp>/'a\\0b.png'), (<temp>/'x'.repeat(300)+'.png'), (<temp>/loop1/x.png with loop1 -> loop2 -> loop1).",
+        "fix": "Wrap resolveReal in realOf with try/catch and throw refusePath(input, 'not a usable path')."
+      },
+      {
+        "id": "F5",
+        "severity": "Info",
+        "item": "Q10",
+        "place": "tools/test/e2e/kit/cdp.js:127-164, page.js:127-137",
+        "what": "No limit on frame size or on how many events are kept (a 64 MB frame was accepted, +400 MB RSS; 300000 console entries took 7.5 s to read). The peer is the browser the operator chose, and the page under test is the project's own, so a limit is optional.",
+        "repro": "Trial 3 mode huge (64 MB), trial 7 flood.",
+        "fix": "Optional: close the connection with PROTOCOL_BAD_ANSWER above a frame limit (e.g. 64 MB) and keep at most N console entries."
+      },
+      {
+        "id": "F6",
+        "severity": "Info",
+        "item": "documented residual (O7)",
+        "place": "tools/test/e2e/kit/cleanup.js (exit/signal handlers), tools/README.md:842",
+        "what": "SIGKILL of the runner leaves the spec and its Chrome (9 processes, one folder) alive until the spec ends by itself; the debugging port on 127.0.0.1 has no login for other local users of the machine (the page itself cannot use it: its WebSocket is refused by Chrome's Origin check, trial 2). Already named in the README and the design (O7); recorded here so that it is a decision, not a surprise.",
+        "repro": "Trial 4: SIGKILL of the runner during a spec that holds a browser for 60 s.",
+        "fix": "None required; the CI job ends the processes. On a shared Linux machine consider --remote-debugging-pipe in a later requirement."
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      "Hashes of the 15 files of the change (tools/test/e2e/run.js, kit/*.js, fake-chrome.js, tools/package.json, tools/README.md, README.md) before and after the check: `diff hash-before.txt hash-after.txt` -> identical (shasum -a 256 lists kept outside the project).",
+      "`git diff --name-only base/E2E104-20261103-01` (tracked): PLAN.md, README.md, decisions/README.md, docs/program/public-v1/PROGRESS.md, docs/requirements.yaml, tools/README.md, tools/package.json; `git ls-files --others --exclude-standard | grep -v ^handoffs/`: decisions/0107, 0108, docs/design/REQ-104, tools/test/e2e/kit/{browser,cdp,cleanup,console,errors,find-chrome,guards,index,page,runner}.js, tools/test/e2e/run.js, tools/test/fixtures/e2e/fake-chrome.js. `git status --short -- tools/src .github .claude tools/package-lock.json .githooks | wc -l` -> 0.",
+      "Q7: `grep -rniE '(ghp_|gho_|sk-|xox[bp]-|AKIA)[A-Za-z0-9_-]{12,}|BEGIN [A-Z ]*PRIVATE KEY|bearer ...|(api[_-]?key|secret|token|passw(or)?d)[\"\\']?\\s*[:=]\\s*[\"\\'][^\"\\']{6,}' <the change>` -> only pre-existing text in tools/README.md (the masking rules section, not in the diff); `grep -rniE 'secret|token|password|api[_-]?key|credential' tools/test/e2e tools/test/fixtures/e2e` -> guards.js:138 `url.password === \"\"`; machine-path grep -> no line; the same shape grep on tools/src/pixel-office/public and tools/src/picker/public -> only schema.js:60 `\"<task-notification\"` (pre-existing, 'sk-' inside 'task-notification').",
+      "Sandbox/skip words: `grep -rnE -- '--(no-sandbox|disable-setuid-sandbox)|\\.skip\\(|\\.todo\\(|\\|\\| true|eslint-disable|\\{ *(skip|todo)' tools/test/e2e tools/test/fixtures/e2e` -> no line. `ps -axo pgid,pid,command` of the running browser: 10 processes (browser, gpu-process, utility, renderer), none with --no-sandbox, --disable-web-security, --remote-allow-origins, --allow-file-access, --ignore-certificate-errors; browser command line = the 7 entries of buildArgs.",
+      "Trial 1 output: `OUTSIDE HITS (must be 0): [] raw tcp hits: 0`; every foreign request in the protocol log `net::ERR_NAME_NOT_RESOLVED`; `goto foreign codes` six x URL_REFUSED; `js navigations`: LAN address -> chrome-error://chromewebdata/, file:/data:/chrome:/javascript:/view-source: -> stays on the stand page; `pid gone: true`. Trial 10: `outside hits (must be 0): []` for a top-level 302, a meta refresh and a form post to the LAN address; foo.localhost, localhost and [::1] -> blocked.",
+      "Trial 2 output: `has no-sandbox/...: false`, `process types: browser,gpu-process,utility,renderer`, debugging port listens on 127.0.0.1 only, `page -> debugging port: {fetch: ERR Failed to fetch, nocors: opaque, put: ERR ... unsupported in no-cors mode, ws: ERROR}`, `profile mode: 700`, `after close: folder exists: false group alive: false`.",
+      "Trial 3 (my own stand-in, not the project's): binary -> PROTOCOL_BAD_ANSWER 814 ms; weird -> launched with product '' then PROTOCOL_BAD_ANSWER; ctrl -> product and error text keep newlines (F2); deep -> CALL_TIMEOUT 3093 ms; slow -> CALL_TIMEOUT 3127 ms; stderr-flood-before (80 MB, no newline) -> START_TIMEOUT, memory not retained; foreign-port-line -> START_TIMEOUT; split port line -> BROWSER_CLOSED; huge 64 MB -> launched (F5). After every mode: `registry groups=0 dirs=0 leftover folders=0`, `evil-chrome processes left: 0`; the WebSocket handshake carried no Origin header.",
+      "Trial 4: SIGTERM -> exit 143, SIGINT -> 130, SIGHUP -> 129, each with `e2e: error=INTERRUPTED: <signal>` once, the record line once with exit=1, `chromeGroupAlive=false specProcsLeft=0 folders after=0` (2.9 s); SIGKILL of the runner -> 9 processes and 1 folder left until killed by pgid by me (F6); blocked event loop + SIGTERM -> exit 143 but `chromeGroupAlive=true specProcsLeft=8 folders after=1` (F1). All processes I left were killed by their own process group id; at the end `ps | grep sai-e2e-profile` -> 0 and my temporary folder removed.",
+      "Trial 5/6/8/9: guards table: 0 mismatches after correcting two expectations of my own (`http:127.0.0.1:5` and a backslash before '@' parse to the loopback and are returned normalized); fuzz `40000 inputs, accepted 1475`, `chrome oracle: 1475 accepted inputs, disagreements 0`; long input 10,000,000 chars: 10-11 ms; `link-before-dotdot trials 8 mismatches 0`; TMPDIR inside a copy of the repository: `makeTempDir -> PATH_REFUSED | launchBrowser -> PATH_REFUSED | entries created: 0`; 18 CLI arguments: all SELECTION_UNKNOWN/SELECTION_DUPLICATE, `/tmp` canary file for `;touch` and `$(touch)` arguments not created.",
+      "Trial 7: CONSOLE_ENTRIES message of 300006 lines / 7,089,060 characters with 2 lines starting with '::'; CLICK_INTERCEPTED message for a newline id: `covered by x\\n::error::...`.",
+      "Environment: Node v22.23.4, Google Chrome 156.0.8078.74, macOS; one agent, one Chrome at a time, no full npm test run; all trials from drivers outside the project (the kit's real files imported read-only; copies in a scratch folder for the runner trials), TMPDIR pointed at an own empty folder so that other agents' folders could not be touched; everything I created is removed.",
+      "`cd tools && npm run -s handoffs-check` -> 'handoffs-check: файлов проверено 1293, нарушений 0, исключений использовано 114 из 114'; `npm run -s traces` -> 'traces: файлов проверено 2400, следов 0, пропущено 67'."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "F1 is graded Low because it needs a spec with a blocked event loop or a hard kill of the spec (not reachable from page content) and has the same shape as the accepted residual O7; under the scale Medium would block. REVIEWER or ORCH may grade it up; the fix is a registry of started browsers owned by the runner (design change in section 4.4/6)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "F3 needs a design decision (the argument list is closed in design 4.6 and tested exactly by E2K-24/25 as planned): add --no-proxy-server or soften the README claim."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Not checked and cannot be from this Mac: that Chrome starts with its sandbox on and that the resolver rule behaves the same on the GitHub image (criterion 10, branch A/B/C by a real run; design F27). The kit never turns the sandbox off; if Chrome there refuses to start, the START_EXITED message carries the sandbox sentence."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Outside my area, for REVIEWER: the record line `e2e: command=... selection=...` prints the operator's argv raw, so a newline inside an argument breaks the one-line format (harmless: the argument is refused anyway as SELECTION_UNKNOWN)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
