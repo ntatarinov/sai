@@ -42,3 +42,10 @@ Four points found while building, accepted by the reviewers and by ORCH; DOC-UPD
 - The stand-in program gets the mode `ok-ignore-term` (for the SIGKILL escalation test E2K-17, because `hang-ignore-term` prints no port line), and the modes `bad-json`, `error-object`, `no-answer` make `launchBrowser` itself reject; the tests E2K-13/14/15 use `cdp.connect` on the stand-in port line for the pending-call cases.
 - The Chrome argument `--no-proxy-server` is added to the argument list (finding F3 of SECURITY-REVIEWER: with a proxy on a loopback address foreign names get out and the resolver rule alone does not confine the browser). It keeps criterion 5 true; the Linux behaviour is read by the run of criterion 10.
 - Page and browser text that goes into errors and the log is escaped (control characters, a line start `::` of workflow commands) and bounded (finding F2 of SECURITY-REVIEWER).
+
+## Addendum 2026-11-03 (DOC-UPDATER, WF-03 step 10 of the run ISS-0103-20261103-01; the decision above is not rewritten)
+
+- A kit test that has seen a process end by a kill waits with a limit for `ESRCH` of the pid and of its group (the helper `waitGone` of `tools/test/e2e-kit.test.js`, limit 5000 ms by default). One immediate check of a killed process (`pidGone`/`groupGone` right after the end of the child) is not allowed in the kit tests: the process is dead but may not be reaped yet, and a zombie still answers `kill(pid, 0)`. The check right after an awaited close of the kit itself, which polls the group and lets the event loop reap, and a check inside `until(...)` are fine.
+- The guard is the test E2K-63 (a reading of the source of E2K-18 and E2K-38) together with E2K-62 (the helper); their known limits are in `docs/issues/ISS-0104-e2e-kit-e2k63-guard-limits-and-e2k62-survivors.md`. The reason is `docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md`.
+- A timing fact of Linux (how long the reaping takes on the runner) is taken from the runner, not from the developer machine.
+

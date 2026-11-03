@@ -1,4 +1,4 @@
-// E2K-01 ... E2K-61: the tests of the end-to-end kit (REQ-104) that need no real
+// E2K-01 ... E2K-63: the tests of the end-to-end kit (REQ-104) that need no real
 // browser. A stand-in program (fixtures/e2e/fake-chrome.js) speaks the protocol; the
 // runner is tried on plain spec files in fixtures/e2e/specs. The oracles are the
 // design's own tables and literals (docs/design/REQ-104-e2e-chrome-kit.md), not the
@@ -147,6 +147,20 @@ function groupGone(pgid) {
   } catch (err) {
     return err.code === "ESRCH";
   }
+}
+
+// After a kill the death comes later than the call: the signal is delivered and the
+// dead process is reaped by its parent after the call has returned, and a process that
+// is dead but not yet reaped (a zombie) still answers kill(pid, 0). So a test that has
+// seen a process end by a kill waits, with a limit, until both the pid and its group
+// answer ESRCH; one check right after the end is a race (ISS-0103). It returns true
+// or fails with a message that names what was waited for.
+async function waitGone(pid, what, ms = 5000) {
+  return until(
+    () => pidGone(pid) && groupGone(pid),
+    ms,
+    `${what}, pid ${pid} and its group, being gone`,
+  );
 }
 
 function kitFolders() {
@@ -1068,7 +1082,7 @@ setInterval(() => {}, 1000);
           fs.readFileSync(resultFile, "utf8"),
         );
         assert.ok(
-          pidGone(pid) && groupGone(pid),
+          await waitGone(pid, `${how}: the stand-in`),
           `${how}: the stand-in is gone`,
         );
         assert.equal(
@@ -1081,6 +1095,287 @@ setInterval(() => {}, 1000);
     } finally {
       drop(dir);
     }
+  },
+);
+
+// ISS-0103: the real E2K-18 and E2K-38 cannot be made red on every machine, so the
+// state that made them red is held by hand. A parent kills a process (or its group),
+// writes the pid, and then blocks its own event loop, so it does not reap: the killed
+// process stays a zombie, and kill(pid, 0) still succeeds, until a file tells the
+// parent to go on. The single check of the old tests is false at that moment; the
+// bounded wait must wait through it and end with true only after the parent has
+// reaped. A live process must make the wait fail in time with a message that names
+// what was waited for, and must be left alone.
+const HOLD_SCRIPT = `import fs from "node:fs";
+import { spawn } from "node:child_process";
+const [, , how, pidFile, releaseFile] = process.argv;
+const victim = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], {
+  detached: true,
+  stdio: "ignore",
+});
+if (how === "group") process.kill(-victim.pid, "SIGKILL");
+else process.kill(victim.pid, "SIGKILL");
+fs.writeFileSync(pidFile + ".part", String(victim.pid));
+fs.renameSync(pidFile + ".part", pidFile);
+const nap = new Int32Array(new SharedArrayBuffer(4));
+const stop = Date.now() + 20000;
+while (!fs.existsSync(releaseFile) && Date.now() < stop) Atomics.wait(nap, 0, 0, 5);
+`;
+
+test(
+  "E2K-62 a stand-in that was killed but is not reaped yet is waited for, a live one fails the wait in time and is left alone",
+  LIMIT,
+  async () => {
+    const dir = scratch("hold");
+    const groups = [];
+    const members = [];
+    try {
+      const script = writeScript(dir, "hold.mjs", HOLD_SCRIPT);
+      for (const how of ["group", "pid"]) {
+        const pidFile = path.join(dir, `${how}.pid`);
+        const releaseFile = path.join(dir, `${how}.release`);
+        const run = runChild(
+          script,
+          [how, pidFile, releaseFile],
+          { PATH: process.env.PATH, TMPDIR: MY_TMP },
+          25000,
+        );
+        const pid = Number(
+          await until(
+            () => fs.existsSync(pidFile) && fs.readFileSync(pidFile, "utf8"),
+            15000,
+            `${how}: the kill`,
+          ),
+        );
+        // the state of the old tests: killed, not reaped, the single check is false
+        assert.equal(
+          pidGone(pid),
+          false,
+          `${how}: kill(pid, 0) still succeeds`,
+        );
+        assert.equal(groupGone(pid), false, `${how}: the group still answers`);
+        let settled = false;
+        const waiting = waitGone(pid, `${how}: the held stand-in`).then(
+          (value) => {
+            settled = true;
+            return value;
+          },
+        );
+        await sleep(300);
+        assert.equal(
+          settled,
+          false,
+          `${how}: the wait goes on while it is held`,
+        );
+        fs.writeFileSync(releaseFile, "go");
+        assert.equal(await waiting, true, `${how}: the wait ends with true`);
+        assert.equal(pidGone(pid) && groupGone(pid), true, how);
+        await run.done;
+        assert.equal(run.timedOut, false, how);
+        assert.equal(run.code, 0, `${how}: ${run.stderr}`);
+      }
+
+      // a process that is alive: the wait fails after its limit, names what it
+      // waited for, and does not touch the process
+      const child = spawn(
+        process.execPath,
+        ["-e", "setInterval(() => {}, 1000)"],
+        { detached: true, stdio: "ignore" },
+      );
+      const live = child.pid;
+      groups.push(live);
+      const began = Date.now();
+      await assert.rejects(
+        waitGone(live, "the live stand-in", 300),
+        (err) =>
+          err.message.includes("the live stand-in") &&
+          err.message.includes(String(live)) &&
+          err.message.includes("being gone"),
+      );
+      const waited = Date.now() - began;
+      assert.ok(waited >= 300, `it waited the limit, not less: ${waited} ms`);
+      assert.ok(waited < 3000, `it stopped at the limit given: ${waited} ms`);
+      assert.equal(pidGone(live), false, "the live process is untouched");
+      assert.equal(groupGone(live), false);
+
+      // the leader is gone but a member of its group is alive: the pid answers
+      // ESRCH alone, so the wait must look at the group too
+      const leaderScript = writeScript(
+        dir,
+        "leader.mjs",
+        `import { spawn } from "node:child_process";
+spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" }).unref();
+`,
+      );
+      const leader = spawn(process.execPath, [leaderScript], {
+        detached: true,
+        stdio: "ignore",
+      });
+      const leaderPid = leader.pid;
+      groups.push(leaderPid);
+      await until(() => pidGone(leaderPid), 15000, "the leader ending");
+      assert.equal(groupGone(leaderPid), false, "a member keeps the group");
+      await assert.rejects(
+        waitGone(leaderPid, "the group with a live member", 300),
+        (err) => err.message.includes("the group with a live member"),
+      );
+      process.kill(-leaderPid, "SIGKILL");
+      assert.equal(await waitGone(leaderPid, "the group after the kill"), true);
+
+      // a live process that is not a group leader: it shares the group of this test,
+      // so its pid is no group id and the group check on that pid answers ESRCH at
+      // once. A wait that looked at the group alone would end with true for it.
+      const member = spawn(
+        process.execPath,
+        ["-e", "setInterval(() => {}, 1000)"],
+        { stdio: "ignore" },
+      );
+      const memberPid = member.pid;
+      members.push(memberPid);
+      assert.equal(pidGone(memberPid), false, "the member is alive");
+      assert.equal(
+        groupGone(memberPid),
+        true,
+        "its pid is no group id: the group check alone says gone",
+      );
+      await assert.rejects(
+        waitGone(memberPid, "a live process that is no group leader", 300),
+        (err) =>
+          err.message.includes("a live process that is no group leader") &&
+          err.message.includes(String(memberPid)),
+      );
+      assert.equal(pidGone(memberPid), false, "the member is untouched");
+    } finally {
+      for (const memberPid of members) {
+        try {
+          process.kill(memberPid, "SIGKILL");
+        } catch {
+          // already gone
+        }
+        await waitGone(memberPid, "a stand-in member at the end");
+      }
+      for (const group of groups) {
+        try {
+          process.kill(-group, "SIGKILL");
+        } catch {
+          // already gone
+        }
+        await waitGone(group, "a stand-in group at the end");
+      }
+      drop(dir);
+    }
+  },
+);
+
+// ISS-0103: E2K-62 pins the helper, this pins its use. The real E2K-18 and E2K-38
+// cannot be made red on every machine, so a call site that went back to one check,
+// lost its assertion or got a tiny limit would stay unnoticed. The text of the two
+// tests is read by tokens, not by lines, so a reformat does not matter. Comments are
+// blanked out with spaces (offsets and line numbers stay), the body of a test runs to
+// the closing line of its call.
+function blankComments(text) {
+  return text.replace(/^[ \t]*\/\/[^\n]*/gmu, (line) =>
+    " ".repeat(line.length),
+  );
+}
+
+function lineAt(text, index) {
+  return text.slice(0, index).split("\n").length;
+}
+
+function callArguments(text, open) {
+  const args = [];
+  let depth = 0;
+  let start = open + 1;
+  for (let i = open; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === "`") {
+      i += 1;
+      while (i < text.length && text[i] !== ch) i += text[i] === "\\" ? 2 : 1;
+    } else if ("([{".includes(ch)) {
+      depth += 1;
+    } else if (")]}".includes(ch)) {
+      depth -= 1;
+      if (depth === 0) {
+        args.push(text.slice(start, i));
+        break;
+      }
+    } else if (ch === "," && depth === 1) {
+      args.push(text.slice(start, i));
+      start = i + 1;
+    }
+  }
+  const trimmed = args.map((arg) => arg.trim());
+  if (trimmed.at(-1) === "") trimmed.pop();
+  return trimmed;
+}
+
+function waitGoneProblems(text, id, sites, groupArguments) {
+  const starts = [...text.matchAll(/^test\(\s*"(E2K-\d+) /gmu)];
+  const first = starts.find((m) => m[1] === id);
+  if (!first) return [`${id}: the test is not in this file`];
+  const end = text.slice(first.index).search(/^\);/mu);
+  const from = first.index;
+  const body = text.slice(from, end < 0 ? text.length : from + end);
+  const problems = [];
+  const where = (index) => `${id} line ${lineAt(text, from + index)}`;
+  const calls = [...body.matchAll(/\bwaitGone\s*\(/gu)];
+  const asserted = [
+    ...body.matchAll(/assert\s*\.\s*ok\s*\(\s*await\s+waitGone\s*\(/gu),
+  ];
+  if (asserted.length !== sites || calls.length !== sites) {
+    problems.push(
+      `${id} line ${lineAt(text, from)}: expected ${sites} assert.ok(await waitGone(...)) places, found ${asserted.length} of ${calls.length} calls`,
+    );
+  }
+  for (const m of asserted) {
+    const open = m.index + m[0].length - 1;
+    const args = callArguments(body, open);
+    const limit = args[2]?.replaceAll("_", "");
+    if (args.length < 2 || args.length > 3) {
+      problems.push(
+        `${where(m.index)}: waitGone takes the pid, a name and a limit`,
+      );
+    } else if (
+      args.length === 3 &&
+      !(/^\d+$/u.test(limit) && Number(limit) >= 1000)
+    ) {
+      problems.push(
+        `${where(m.index)}: the limit ${args[2]} is below 1000 ms or not a number`,
+      );
+    }
+  }
+  for (const m of body.matchAll(/\bpidGone\s*\(/gu)) {
+    problems.push(
+      `${where(m.index)}: pidGone( is the single check after a kill`,
+    );
+  }
+  for (const m of body.matchAll(/\bgroupGone\s*\(/gu)) {
+    const [arg] = callArguments(body, m.index + m[0].length - 1);
+    if (!groupArguments.includes(arg)) {
+      problems.push(
+        `${where(m.index)}: groupGone(${arg}) of a killed process without waitGone`,
+      );
+    }
+  }
+  return problems;
+}
+
+test(
+  "E2K-63 the three places that wait for a killed stand-in use the bounded wait, not one check",
+  LIMIT,
+  () => {
+    const text = blankComments(
+      fs.readFileSync(fileURLToPath(import.meta.url), "utf8"),
+    );
+    // E2K-18: one place for the five scenarios. E2K-38: the signal loop and the
+    // preflight; after the loop waits, the group of the leader and of the browser
+    // may be asked once more.
+    const problems = [
+      ...waitGoneProblems(text, "E2K-18", 1, []),
+      ...waitGoneProblems(text, "E2K-38", 2, ["leader", "pids.browser"]),
+    ];
+    assert.equal(problems.length, 0, problems.join("\n"));
   },
 );
 
@@ -2825,7 +3120,10 @@ test(
         );
         const leader = Number(fs.readFileSync(leaderFile, "utf8"));
         for (const pid of [leader, pids.spec, pids.browser, ...logPids(log)]) {
-          assert.ok(pidGone(pid), `${signal}: pid ${pid} is gone`);
+          assert.ok(
+            await waitGone(pid, `${signal}: a process of the run`),
+            `${signal}: pid ${pid} is gone`,
+          );
         }
         assert.ok(groupGone(leader));
         assert.ok(groupGone(pids.browser));
@@ -2866,7 +3164,9 @@ test(
       assert.match(lastLine(run.stdout), /exit=1 duration_ms=[0-9]+$/u);
       assert.ok(!run.stdout.includes("e2e: file="));
       assert.equal(fs.existsSync(leaderFile), false, "no spec was started");
-      for (const pid of logPids(log)) assert.ok(pidGone(pid) && groupGone(pid));
+      for (const pid of logPids(log)) {
+        assert.ok(await waitGone(pid, "the preflight stand-in"));
+      }
       assert.deepEqual(kitFolders(), []);
     } finally {
       drop(dir);

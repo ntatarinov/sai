@@ -1,0 +1,106 @@
+{
+  "handoff_id": "step10-ISS-0103-20261103-01",
+  "run_id": "ISS-0103-20261103-01",
+  "workflow_id": "WF-03",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/ISS-0103-20261103-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0103-20261103-01/step-09-release-validator.json",
+      "handoffs/ISS-0103-20261103-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0103-20261103-01/step-07c-test-design-validator.json",
+      "docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md",
+      "decisions/0108-e2e-kit-conventions.md"
+    ],
+    "route": "9 PASS -> DOC-UPDATER (this) -> ORCH checks files and fields -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/issues/ISS-0103-*.md and one new defect file docs/issues/ISS-0104-*.md",
+      "docs/design/REQ-104-e2e-chrome-kit.md, decisions/0108-e2e-kit-conventions.md (an addendum only), docs/anti-patterns.md, STATE.md, PLAN.md only if a number line there is stale"
+    ],
+    "base_tag": "base/ISS-0103-20261103-01"
+  },
+  "task": {
+    "description": "WF-03, step 10 — bookkeeping after RELEASE-VALIDATOR PASS (handoffs/ISS-0103-20261103-01/step-09-release-validator.json; read result.issues V1 — the list is there). (1) Close ISS-0103: status line 'closed, 2026-11-04' (take the time from the clock, not from memory) ONLY with what is true: the cause (a single immediate pidGone/groupGone check right after the end of a process that the kit ends by SIGKILL without a wait; a killed but not yet reaped process still answers kill(pid,0)) is removed in the three exposed places by the helper waitGone with a 5000 ms limit; regression tests E2K-62 (deterministic zombie hold; fails before, passes after) and E2K-63 (source guard of the call sites); series 30/30 after against one natural red in 30 before; GitHub run 41701454358 on a temporary branch green (E2K-18, E2K-38, E2K-62, E2K-63 ok); the kit code did not change. State openly what was NOT proven: the Linux fact zombie versus slow was not measured on the runner (docker absent), the cause is confirmed in kind on macOS under load (3 of 160 runs) and by one natural red in the series on the tag; the green GitHub run is one sample; the check on main after the push of this fix is read by the finalizer. The section «Закрыто» with the run id, files and where the tests are. (2) Open ONE new Low defect ISS-0104 for the known limits of the guard E2K-63 and the surviving mutants M20 and M21 (read them in step-07c result): the body is cut at ^); and breaks when a title is shortened and prettier collapses test(; only whole-line // comments are blanked so a removed assertion in a trailing comment, a /* */, a string or if(false) stays green; harmless edits (a limit through a named constant, an extra pidGone read, a trailing comment that mentions waitGone() make it red. Number: check the folder, ISS-0103 is the last used by this run, so ISS-0104. (3) docs/design/REQ-104-e2e-chrome-kit.md: correct fact F20 ('SIGKILL is instant') and the rows of E2K-18 and E2K-38 in section 11.3 ('gone' now means gone within a bounded wait, the helper waitGone), add rows for E2K-62 and E2K-63, update the counts (2187 tests in the whole suite; the kit tests are now 52 and the total of e2e tests 65 — count them in the file yourself, do not take these numbers from me) in the section 21 'As built' too. (4) decisions/0108: an Addendum with the date: a test waits with a limit for ESRCH after a kill; a single immediate check of a killed process is not allowed in the kit tests (guard E2K-63). Do not rewrite the decision. (5) docs/anti-patterns.md: next number after the last (check; STATE said AP-144 is next after AP-143 — verify): a timing fact taken on one machine (macOS launchd reaps in about 2 ms, the runner did not) made a test pass on every validator run and fail on GitHub; the validators' series were all on one machine; the first release went to main with one GitHub sample from a temporary branch; what to do instead (a bounded wait after a kill; the Linux fact only from the runner). Reference AP-012/AP-100 if they fit. (6) STATE.md: add to the existing 2026-11-03 block of REQ-104, or a short new dated block, that main was red after the push of 30ab39c (check.yml run 41685488320, 2184 of 2185, E2K-18) and what ISS-0103 did; update the counts of defects (open) by counting the files; next free numbers. PLAN.md only if a line is stale. Do not touch REQ-104's status or the requirements file unless a count there became wrong. Do not touch docs/releases/ (the finalizer's). No absolute machine paths or other projects' names. Do not commit. Close this handoff; then make handoffs-check, traces and format:check clean. Report in at most 10 lines: what changed where, the counts you got, the numbers you assigned.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T19:34:14Z",
+  "started_at": "2026-11-03T19:34:14Z",
+  "completed_at": "2026-11-03T19:37:44Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Closed ISS-0103 (closed, 2026-11-03: the clock said 2026-11-03T19:35:10Z, so not 2026-11-04 as in the task text) with the real outcome and the limits of the proof (Linux zombie-or-slow not measured on the runner, one green GitHub sample, main after the push is read by the finalizer). Opened ISS-0104 (LOW) for the known limits of E2K-63 and the surviving mutants M20, M21 of E2K-62. Design REQ-104: F20 corrected, E2K-18 and E2K-38 rows say the wait is bounded (waitGone), rows E2K-62 and E2K-63 added, counts set to the built ones (52 kit tests, 13 smoke, 65 in all; npm test 2187). Addendum to decisions/0108. New AP-144. STATE.md has a new dated block, PLAN.md two lines.",
+    "changes": [
+      {
+        "file": "docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md",
+        "change": "status line open -> closed, 2026-11-03; new section «Закрыто» (what was done, regression tests E2K-62 and E2K-63, how checked, what is NOT proved)"
+      },
+      {
+        "file": "docs/issues/ISS-0104-e2e-kit-e2k63-guard-limits-and-e2k62-survivors.md",
+        "change": "new file, LOW, open: limits of the guard E2K-63 (body cut at ^); false red on a shortened title; false green on a trailing or block comment, string, if(false)) and survivors M20, M21 of E2K-62"
+      },
+      {
+        "file": "docs/design/REQ-104-e2e-chrome-kit.md",
+        "change": "header note for the step; section 0 sizes 63 -> 65 (52 + 13); fact F20 corrected; section 3 row of e2e-kit.test.js (E2K-01..63, 52); section 11.1 rows E2K-18 and E2K-38 (bounded wait), new rows E2K-62, E2K-63, the closing sentence; section 21 counts (52, 65, 2187) and a new part «Added by ISS-0103»"
+      },
+      {
+        "file": "decisions/0108-e2e-kit-conventions.md",
+        "change": "Addendum 2026-11-03 (ISS-0103) appended; the decision text not rewritten"
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "change": "new entry AP-144 (a timing fact taken on one machine), after AP-143; earlier entries untouched"
+      },
+      {
+        "file": "STATE.md",
+        "change": "new dated block «На 2026-11-03 (позже)» above the REQ-104 block; the old line of next free numbers marked as replaced; open defects 85 (1 CRITICAL, 10 MEDIUM, 74 LOW; 19 closed of 104); next numbers ISS-0105, decision 0109, AP-145, REQ-108; the owner's section and the WF-06 block untouched"
+      },
+      {
+        "file": "PLAN.md",
+        "change": "one line for the run ISS-0103-20261103-01; the line of next numbers replaced by ISS-0105, 0109, AP-145, REQ-108"
+      }
+    ],
+    "self_check": [
+      "date -u +%Y-%m-%dT%H:%M:%SZ -> 2026-11-03T19:35:10Z (used as the closing time)",
+      "grep -c '^test($' tools/test/e2e-kit.test.js -> 52; tools/test/e2e/smoke.e2e.js -> 13; total 65; npm test 2187 from step 9",
+      "defects: grep -lE 'Статус: open' docs/issues/*.md | wc -l -> 85 (after closing ISS-0103 and opening ISS-0104); severity 1 CRITICAL, 10 MEDIUM, 74 LOW; closed 19; files 104",
+      "grep -c '^### AP-' docs/anti-patterns.md -> 145 headings (AP-000 style numbering: last AP-144)",
+      "git status: docs/requirements.yaml unchanged; docs/releases/ untouched; no commit",
+      "grep for absolute machine paths in the changed files: see the final check"
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "The task text said closed, 2026-11-04; the clock said 2026-11-03T19:35:10Z, so the files say 2026-11-03."
+      },
+      {
+        "kind": "NOTE",
+        "text": "The task called the rows of E2K-18 and E2K-38 'section 11.3'; they are in 11.1 (11.3 is the fixtures). The rows were changed where they are."
+      },
+      {
+        "kind": "NOTE",
+        "text": "docs/requirements.yaml REQ-104 comment still says 'Local check: 2185 of 2185'; that is the record of the earlier run and is true for it, not changed (the task: do not touch the requirements file unless a count became wrong)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "The status line 'closed' precedes the release commit; STATE.md and ISS-0103 say that a red check on main after the push reopens the defect."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md",
+      "docs/issues/ISS-0104-e2e-kit-e2k63-guard-limits-and-e2k62-survivors.md",
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "decisions/0108-e2e-kit-conventions.md",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "PLAN.md"
+    ]
+  }
+}

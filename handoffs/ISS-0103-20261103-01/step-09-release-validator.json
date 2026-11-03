@@ -1,0 +1,93 @@
+{
+  "handoff_id": "step09-ISS-0103-20261103-01",
+  "run_id": "ISS-0103-20261103-01",
+  "workflow_id": "WF-03",
+  "step": "09",
+  "from_agent": "ORCH",
+  "to_agent": "RELEASE-VALIDATOR",
+  "file": "handoffs/ISS-0103-20261103-01/step-09-release-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-104"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md",
+      "handoffs/ISS-0103-20261103-01/step-01-issue-fixer.json",
+      "handoffs/ISS-0103-20261103-01/step-07c-test-design-validator.json",
+      "handoffs/ISS-0103-20261103-01/step-08-test-runner.json",
+      "handoffs/ISS-0103-20261103-01/step-06-test-designer.json",
+      "handoffs/ISS-0103-20261103-01/step-07b-test-fixer.json",
+      "handoffs/ISS-0093-20261028-01/step-10-release-validator.json",
+      "docs/quality-bar.md"
+    ],
+    "route": "8 PASS -> RELEASE-VALIDATOR (this, gate) -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "none in the project; the verdict goes only into this handoff; a temporary index and the temporary branch ci/ISS-0103-20261103-release-validator-check are allowed (decisions/0107) and deleted after the run"
+    ],
+    "base_tag": "base/ISS-0103-20261103-01"
+  },
+  "task": {
+    "description": "WF-03, step 9 — last gate for ISS-0103 (the flaky test E2K-18 that turned check.yml on main red in run 41685488320). Follow 'Step 9' of docs/workflows/WF-03-defect.md and 'Step 9' of docs/workflows/WF-02-development.md. The fix is only in tools/test/e2e-kit.test.js (waitGone helper at three places, regression tests E2K-62 and E2K-63); the kit code did not change (check with git diff against the tag base/ISS-0103-20261103-01). (1) Run npm run check once yourself and attach the output. (2) REPRODUCE the original error and see it gone: on a fresh clone of the tag base/ISS-0103-20261103-01 outside the project, put in only the new E2K-62/E2K-63 or the old single check variant and show the deterministic zombie hold makes the single immediate check false (the original error in a deterministic form) and that on the current tree the same hold is waited through; also run E2K-18 and E2K-38 30 times each under about 8 busy loops on the current tree (one at a time; kill your busy loops by explicit pid, no word splitting). (3) Verify the claims of the defect and of the diagnosis yourself: three exposed places, others not exposed (look for any you think were missed, AP-014); the kit code untouched. (4) The GitHub fact: run a snapshot commit of the current working tree on the temporary branch ci/ISS-0103-20261103-release-validator-check built through a temporary index as in the precedent handoff (main, working tree and real index unchanged; hash before and after; leave out your own PENDING handoff from the snapshot: a PENDING handoff inside it turned the first run of the previous release red with handoffs-check H4), read with gh: conclusion, image, e2e browser line and record line, E2K-18 / E2K-62 / E2K-63 lines, job time; delete the branch (remote and local) afterwards; never push to main. (5) Walk docs/quality-bar.md as a list, each Q and R item PASS or not applicable with a reason; confirm the closed defect would not promise what was not done: the Linux zombie-vs-slow fact was NOT measured on the runner (docker absent), the cause is confirmed in kind on macOS under load (3 of 160) and by one natural red in the series on the tag. (6) List for DOC-UPDATER what must be written: close ISS-0103 with the real outcome; fix F20 and the E2K-18/E2K-38 rows (section 11.3) in docs/design/REQ-104-e2e-chrome-kit.md; the addendum to decisions/0108 (a test waits with a limit for ESRCH after a kill); an anti-patterns entry (a timing fact taken on one machine, AP-012/AP-100); a new Low defect for the known limits of the guard E2K-63 (the body cut at ^); breaks when a title is shortened and prettier collapses test(; only whole-line // comments are blanked, so a removed assertion in a trailing comment or if(false) stays green; harmless edits are red) and for the survivors M20 and M21; the counts of tests (2187) and of open defects. Do not edit the project, do not commit, never push to main. No absolute machine paths or other projects' names in project files. Report in at most 10 lines: PASS or FAIL, the GitHub run facts, the reproduction result, findings.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T19:03:45Z",
+  "started_at": "2026-11-03T19:03:45Z",
+  "completed_at": "2026-11-03T19:33:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS (bookkeeping only; the release to main stays with RELEASE-FINALIZER step 11 and the owner's permission, R1). Verdict derived by me from my own runs of 2026-11-03/04, not from reports.\n\nCRITERIA (the defect has no acceptance_criteria; REQ-104 is done and not returned to in_progress, so only the defect claims and the criteria touched by the fix were checked):\n1 met - the fix is in tests only: git diff base/ISS-0103-20261103-01 against the working tree = tools/test/e2e-kit.test.js + docs/program/public-v1/PROGRESS.md (ORCH progress file); tools/src and tools/test/e2e fixtures/kit untouched; no new skip/only/todo in the diff.\n2 met - the three exposed places (E2K-18 assertion, E2K-38 signal loop, E2K-38 preflight loop) use waitGone (pid and group ESRCH, bound 5000 ms); E2K-63 pins their use.\n3 met - the original error is reproduced in its deterministic form and gone (self_check R1-R3): a killed, not reaped victim (ps state Z) makes the old single check pidGone&&groupGone false on the tag; on the current tree the same hold is waited through (settled=false after 500 ms) and ends true after release.\n4 met - E2K-18 30 of 30 and E2K-38 30 of 30 green under 8 busy loops on the current tree; E2K-63 goes red with the message naming test and line when E2K-18 is put back to the single check (own mutant in a copy).\n5 met on GitHub - run 41701454358 green (see self_check G).\n6 neighbours (AP-014) - I looked for any further single check after a kill: every other pidGone/groupGone in e2e-kit.test.js is either after an in-process awaited close/abort of the kit (which polls kill(-pgid,0) and lets libuv reap), inside until(...) (lines 2528, 3561, 3642, 3741), or after waitGone (3128-3129); other test files (exec-closure, team-helpers/recovery, team-writer assertDead) check a child run with spawnSync, which has reaped it. None exposed; I found none missed. This is a reading of the call sites, not a measured fact for every one.\n\nQUALITY BAR: Q1 PASS (ISS-0103 tied to REQ-104). Q2 PASS (own check run, own repro, own GitHub run). Q3 PASS (outputs below; the Linux zombie-vs-slow fact is NOT measured on the runner: docker absent; the cause is confirmed in kind on macOS under load, 3 of 160 in the diagnosis, and by one natural red on the tag; the green runner run is one sample, not proof the flake cannot recur, so the closing text must say 'fix by waiting for the death; Linux state at the failure not measured'). Q4 PASS (npm run check once, exit 0). Q5 PASS (E2K-62 deterministic regression fails on the old way, E2K-63 guards call sites). Q6 PASS (no skip/only, no weaker assertion: the single check became a stronger bounded wait; no repeat of the run). Q7 PASS (no secret in the diff; E2K-50 green). Q8, Q9, Q10, Q11 not applicable (test-only change about process death, no data/SQL/external call/address). Q12 PASS (decisions/0107, 0108 not contradicted; an addendum to 0108 is listed for DOC-UPDATER). Q13 open until DOC-UPDATER writes the anti-patterns entry (listed). Q14 open until DOC-UPDATER step 10 (listed; not lagging yet because the step has not run). R1 PASS (nothing merged; the branch was temporary and deleted; main unchanged). R2 not applicable (no Pixel Office event written). R3 not applicable (dropped by decisions/0033).\n\nRESULT in plain words: the flaky test is fixed by waiting (with a limit) until the killed stand-in is really gone; the deterministic reproduction shows the old check fails and the new one waits through; the whole check is green locally (2187 of 2187, e2e 13 of 13) and on GitHub on a snapshot equal to the working files.",
+    "findings": [
+      {
+        "place": "tools/test/e2e-kit.test.js, E2K-63 waitGoneProblems (body cut at the first line '^);')",
+        "severity": "LOW",
+        "evidence": "step 7c copy test: a shortened title plus prettier gives a false red; known, accepted limit",
+        "what": "known limit of the guard: breaks when a title is shortened and prettier collapses test( to one line (or at print width 120)",
+        "fix": "recorded as ONE new Low defect by DOC-UPDATER (step 10), not a blocker; later a TEST-FIXER job: cut the body at the next test( start"
+      },
+      {
+        "place": "tools/test/e2e-kit.test.js, E2K-63 blankComments",
+        "severity": "LOW",
+        "evidence": "step 7c P1-P5: only whole-line // comments are blanked, so a removed assertion in a trailing comment, /* */, string, if (false) stays green; harmless edits are red",
+        "what": "known limit of the guard (false pass in a hostile edit, accidental regressions are caught)",
+        "fix": "same new Low defect"
+      },
+      {
+        "place": "E2K-62 survivors M20 (hold-pending assertion removed) and M21 (live lower bound removed)",
+        "severity": "LOW",
+        "evidence": "step 7c: survive, covered by other assertions of the same test",
+        "what": "two surviving mutants, not equivalent-critical",
+        "fix": "same new Low defect (list them)"
+      },
+      {
+        "place": "decisions/0108 and docs/design/REQ-104-e2e-chrome-kit.md F20 and 11.3 rows E2K-18/E2K-38",
+        "severity": "LOW",
+        "evidence": "F20 says 'SIGKILL of the group is instant' (true for the call, not for the death)",
+        "what": "bookkeeping that must change in step 10",
+        "fix": "DOC-UPDATER"
+      }
+    ],
+    "self_check": "TIME: started 2026-11-03T19:03:45Z (handoff); work until 2026-11-03T19:35Z. node -v -> v22.23.4.\nA. CHECK (my own, foreground, nothing else alongside): cd tools && npm run check -> exit=0 in 257 s. 'All matched files use Prettier code style!'; lint no output; 'traces: файлов проверено 2444, следов 0, пропущено 67'; 'handoffs-check: файлов проверено 1315, нарушений 0, исключений использовано 114 из 114'; '# tests 2187 # pass 2187 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 227943'; 'e2e: browser=Chrome/156.0.8078.80', 'e2e: file=smoke', '# tests 13 # pass 13 # fail 0 # skipped 0 # todo 0', 'e2e: command=npm run e2e selection=all exit=0 duration_ms=17857'. 'not ok' lines: 0.\nR. REPRODUCTION (script written by me outside the project; helpers cut out of the test file by text): on a fresh clone of the tag base/ISS-0103-20261103-01 (30ab39c, waitGone absent, the assertion at line 1071 is 'pidGone(pid) && groupGone(pid)'): a parent SIGKILLs a victim group and blocks without reaping -> ps state of the victim 'Z'; 'OLD single check pidGone&&groupGone -> false' (= the original error, 'the stand-in is gone' fails). On the current tree the same hold: ps 'Z'; old single check false; 'NEW waitGone after 500 ms of hold: settled = false'; after release 'waitGone -> true', single check -> true. Current test file copied into the tag clone: E2K-18, E2K-38, E2K-62, E2K-63 4 of 4 ok (4.1 s). Own mutant (E2K-18 assertion back to the single check) in that copy: E2K-63 not ok, 'E2K-18 line 1048: expected 1 assert.ok(await waitGone(...)) places, found 0 of 0 calls'.\nS. SERIES on the current tree, one at a time, under 8 busy loops (pids 70601..70608, nice 10, ncpu 10), TMPDIR in my scratch folder: 'E2K-18 : pass=30 fail=0'; 'E2K-38 : pass=30 fail=0'. My first attempt to stop the busy loops by a pid list variable failed (zsh does not split it); I then killed each by its explicit pid; ps afterwards: no busy loop, no h.mjs, no sai-e2e process, 0 sai-e2e folders in the system temp folder.\nG. GITHUB (read by me, 2026-11-03/04): snapshot commit 6424c9c711c1c0b57b5d287311693ca1874e0095 (tree 814e16aeae33...) built through a temporary index (GIT_INDEX_FILE in my scratch folder: read-tree HEAD, add -A without my own PENDING handoff, write-tree, commit-tree with parent HEAD); the snapshot's blobs equal the working files (only my handoff left out; in my first comparison my grep also dropped other step-09 handoffs of old runs from the working list, which is why they appeared only on the snapshot side). Pushed to ci/ISS-0103-20261103-release-validator-check at 19:14:47Z. gh run view 41701454358: status completed, conclusion success, headSha 6424c9c..., job 2026-11-03T19:14:52Z - 19:31:52Z = 17 min 00 s (limit 30), image ubuntu-24.04. Log (13522 lines): format 'All matched files use Prettier code style!'; 'traces: файлов проверено 2443, следов 0, пропущено 67'; 'handoffs-check: файлов проверено 1314, нарушений 0, исключений использовано 114 из 114'; '# tests 2187 # pass 2187 # fail 0 # cancelled 0 # skipped 0 # todo 0'; 'e2e: browser=Chrome/156.0.8078.47', 'e2e: file=smoke', e2e '# tests 13 # pass 13 # fail 0'; record line 'e2e: command=npm run e2e selection=all exit=0 duration_ms=29403'; 'ok 105 - E2K-18 ...', 'ok 106 - E2K-62 ...', 'ok 107 - E2K-63 ...', 'ok 127 - E2K-38 ...'; 'not ok' count 0. Branch deleted on the remote (git push origin --delete); git ls-remote --heads origin shows only main 30ab39c; no local ci/* branch.\nINVARIANTS: HEAD = main = 30ab39c47103ba636a8914e0b63f453f328c8890 before and after; hash of all tracked and untracked project files without my handoff 4d5f6a8133927397e4ff011ca13f95ef4283d24d before the check and after everything; git status --short identical before and after; the real index never used for the snapshot; the same 8 'node -e setInterval' strays of parent 1 (10044 10090 10141 10153 10171 13667 14415 14481) before and after, none touched. Temporary files only in my scratch folder.",
+    "issues": [
+      {
+        "id": "V1",
+        "kind": "NOTE",
+        "text": "For DOC-UPDATER step 10: (1) close ISS-0103 as 'closed, 2026-11-04' with the real outcome: the cause (a single check right after a kill races the death/reaping) is removed in the three places by a bounded wait, regression tests E2K-62 (deterministic) and E2K-63 (call-site guard); say plainly that the Linux zombie-vs-slow state at the failure was NOT measured on the runner (docker absent), the cause is confirmed in kind on macOS (3 of 160 under load) and by one natural red; the green run 41701454358 is one sample. (2) docs/design/REQ-104-e2e-chrome-kit.md: fix F20 ('SIGKILL of the group is instant' is true for the call, not for the death) and the E2K-18/E2K-38 rows of section 11.3 (the check waits with a limit); add E2K-62 and E2K-63. (3) addendum to decisions/0108: a test that has seen a process end by a kill waits with a limit for ESRCH of the pid and its group. (4) docs/anti-patterns.md: a timing fact taken on one machine (macOS reaps in about 2 ms) was taken for a fact of all machines (AP-012/AP-100 family). (5) ONE new Low defect: known limits of E2K-63 (body cut at '^);', breaks when a title is shortened and prettier collapses test(; only whole-line // comments blanked, so a removed assertion in a trailing comment, block comment, string or if(false) stays green; harmless edits are red) and survivors M20, M21 of E2K-62. (6) counts: tests 2185 -> 2187 (E2K-62, E2K-63), e2e 13; open defects by the grep of 'Статус: open'/'Status: open' in docs/issues: 85 files now including ISS-0103; after closing ISS-0103 and opening one Low: 85 (recount with the same grep, do not copy). (7) STATE.md and docs/program/public-v1/PROGRESS.md as usual; no machine paths in project files (grep of the diff and the new files: none)."
+      },
+      {
+        "id": "V2",
+        "kind": "NOTE",
+        "text": "The full check ran on this Mac (257 s) and on GitHub (17 min 00 s, limit 30 min, 0106). Any edit after snapshot 6424c9c makes the GitHub run old; the check on main after the push is the next one. The previous release run has the same remark."
+      },
+      {
+        "id": "V3",
+        "kind": "NOTE",
+        "text": "Untracked handoffs/E2E104-20261103-01/step-11-release-finalizer.json is IN_PROGRESS and sits in the working tree; handoffs-check accepts it (0 violations locally and on GitHub). RELEASE-FINALIZER of this run decides what goes into the release commit."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

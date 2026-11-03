@@ -1,0 +1,73 @@
+{
+  "handoff_id": "step07c-ISS-0103-20261103-01",
+  "run_id": "ISS-0103-20261103-01",
+  "workflow_id": "WF-03",
+  "step": "07c",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0103-20261103-01/step-07c-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0103-20261103-01/step-07-test-design-validator.json",
+      "handoffs/ISS-0103-20261103-01/step-07b-test-fixer.json",
+      "handoffs/ISS-0103-20261103-01/step-06-test-designer.json"
+    ],
+    "route": "7b done -> TEST-DESIGN-VALIDATOR second pass (this) -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "none in the project; mutants only in a temporary copy outside the project; the verdict goes only into this handoff"
+    ],
+    "base_tag": "base/ISS-0103-20261103-01",
+    "rework_of": "handoffs/ISS-0103-20261103-01/step-07-test-design-validator.json"
+  },
+  "task": {
+    "description": "WF-03, step 7 second pass after TEST-FIXER 07b. Re-check the two survivors you found in step 07: (1) E2K-62 now has a live non-leader process: mutant M05 (helper looks at the group only) must fail; (2) the new source guard E2K-63 on the bodies of E2K-18 and E2K-38: your seven call-site mutants (assertion removed, back to the single check, 1 ms limit at the three sites) must fail, and judge E2K-63 critically: is it robust to prettier reformatting (run prettier --check and a reformat in a copy), does it have false failures (a guard that breaks on harmless edits is a flaw) and false passes (e.g. a waitGone call in a comment or string, a renamed helper, a moved assertion), is its message useful, does it count as a real test and not a tautology. Repeat your earlier 21 mutants in reduced form (at least 12, including M05) and add at least 4 new ones of your own around E2K-63 itself. Hash the project before and after (equal). Run npm test once, E2K-18/E2K-38/E2K-62/E2K-63 alone 10 times each under light load. The test( and assert. counts not lower than at the tag base/ISS-0103-20261103-01 (56/513). The eight stray node -e setInterval processes of parent 1 are not yours: do not kill them, only state whether any appeared or disappeared. This is the second pass of three allowed. Any item not passed is FAIL. Do not edit the project, do not commit. Kill each of your own processes by an explicit pid, no word splitting. No absolute machine paths or other projects' names in project files. Report in at most 8 lines.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T18:44:50Z",
+  "started_at": "2026-11-03T18:44:50Z",
+  "completed_at": "2026-11-03T18:57:21Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS (second pass). Mutants in a copy outside the project: 56 runs in all. Reduced earlier set 13 (helper 11, E2K-62 own 2): M05 (helper looks at the group only) now KILLED by E2K-62 together with M01-M04, M06-M10, M12 (11 of 11 helper mutants killed, each in 3.4-21 s, none hung); M20 (hold-pending assertion removed) and M21 (live lower bound removed) survive as before, covered by other assertions of the same test (low, not equivalent-critical). The seven call-site mutants of step 7 plus two more (E2K-18 assertion removed / single check / 1 ms; E2K-38 loop the same three; preflight the same three) = 9 of 9 KILLED by E2K-63 with the message naming the test and the line; limit 999 ms killed, 1000 ms passes (boundary as designed). New mutants around E2K-63 (N1-N19 and P1-P13, 32): killed: assertion in a trailing/blocked comment together with a pidGone, assert.ok(x || true) (count), swapped/missing args, extra bare groupGone(pid), group-only wait, moved to another count, limit via a const. Judgement of E2K-63: (1) it is a real test, not a tautology: 9 of 9 regressions red, emptying its assert makes them green; behaviour of the helper is carried by E2K-62. (2) Robust to prettier with the project config: prettier --check clean, default reformat idempotent; also green at print width 40 and 60. (3) False failures (flaw, LOW): at width 120/200 and when the title of E2K-18/E2K-38 is shortened so that prettier collapses test( to one line, the body is cut by '^);' and runs into the next tests (checked: title 'E2K-18 no leftovers' + prettier --write gives 'E2K-18 line 1048: expected 1 ... found 1 of 8 calls' and pidGone( reports from other tests); a limit given by a named constant, any harmless pidGone( read, a trailing comment that mentions waitGone( are also red. All red in the safe direction, the message gives test and line but not the cause. (4) False passes (flaw, LOW-MEDIUM): only whole-line // comments are blanked; the removed assertion replaced by the same text in a trailing // comment, in a /* */ comment, in a string or template literal, under if (false), or in an arrow that is never called stays green (P1-P5, with no pidGone left in the body); the placement of the assertion relative to the kill is not checked. Accidental regressions (removal, single check, tiny limit, renamed helper: red, 'found 0 of 0 calls') are all caught. Counts: test( 56 -> 59, assert. 513 -> 534 (grep method of the tag counts); the removed lines of the diff against the tag are the three single checks and the header range, each replaced by the stronger wait. npm test once: tests 2187 pass 2187 fail 0 skipped 0 todo 0, exit 0. E2K-18, E2K-38, E2K-62, E2K-63 alone 10 times each under two nice-10 busy loops: 10 green 0 red each (each pattern runs exactly 1 test). Hash of all project files (tracked and untracked, without this handoff) 07647054b5a1e0e7f0f03028ed6f537a126cf9fc before and after, equal. Strays: the same 8 node -e setInterval processes of parent 1 (10044 10090 10141 10153 10171 13667 14415 14481) before and after, none appeared, none disappeared; my two busy loops killed by explicit pid, none left.",
+    "findings": [
+      {
+        "place": "tools/test/e2e-kit.test.js, E2K-63 waitGoneProblems (end of the body)",
+        "severity": "LOW",
+        "what": "The body of a test is cut at the first line '^);'. When a title of E2K-18 or E2K-38 gets short enough that prettier writes test(\"...\", LIMIT, async () => { on one line, the closing line is '});' and the body runs into the following tests: a harmless edit gives a long false report (checked in the copy). Same at print width 120.",
+        "fix": "Cut the body at the next line that starts a test( (or at '^}?\\);' of the same call), not at '^);'."
+      },
+      {
+        "place": "tools/test/e2e-kit.test.js, E2K-63 blankComments",
+        "severity": "LOW",
+        "what": "Only whole-line // comments are blanked. The required assertion hidden in a trailing comment, a /* */ comment, a string or template literal, an if (false) or a never-called arrow keeps E2K-63 green (P1-P5); the test then no longer waits at all. Accidental regressions are caught, so this is only a hardening.",
+        "fix": "Blank trailing // and /* */ comments and string/template contents (keep offsets), and ask for the assertion at the statement level of the loop/scenario body; or accept and record as a known limit of a source guard."
+      },
+      {
+        "place": "tools/test/e2e-kit.test.js, E2K-63 rules",
+        "severity": "LOW",
+        "what": "Harmless edits are red: a limit through a named constant, any other pidGone( read in the two bodies, a trailing comment containing waitGone(. The message says what is expected but not why.",
+        "fix": "Add to the message one sentence: the guard reads the source; update the allowed list in E2K-63 if the change is intended."
+      },
+      {
+        "place": "E2K-62 hold-pending assertion and live lower bound",
+        "severity": "LOW",
+        "what": "M20 and M21 still survive (other assertions of the same test cover them).",
+        "fix": "none required."
+      }
+    ],
+    "self_check": "git diff base/ISS-0103-20261103-01 -- tools/test/e2e-kit.test.js; grep -c 'test(' and grep -o 'assert\\.' | wc -l on the tag file and the current one: 56/513 -> 59/534; copy of the project outside it (scratchpad), python drivers mut.py and mut2.py with a 120 s timeout, results above; npx prettier --check on the copy clean; prettier --print-width 40/60/120/200 on the copy: E2K-63 green/green/red/red; npm test exit 0, 2187/2187; series 4 x 10 under two nice-10 busy loops 10/10 green each; hashes 07647054b5a1e0e7f0f03028ed6f537a126cf9fc before and after; git status unchanged; ps of the strays unchanged.",
+    "issues": [
+      {
+        "id": "V1",
+        "kind": "NOTE",
+        "text": "The eight stray node -e setInterval processes of parent 1 are the same before and after; I did not touch them. The four findings are LOW and go to ORCH to decide whether TEST-FIXER hardens E2K-63 (first two) before RELEASE-VALIDATOR or they are recorded as known limits."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

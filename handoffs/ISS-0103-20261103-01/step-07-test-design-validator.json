@@ -1,0 +1,68 @@
+{
+  "handoff_id": "step07-ISS-0103-20261103-01",
+  "run_id": "ISS-0103-20261103-01",
+  "workflow_id": "WF-03",
+  "step": "07",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0103-20261103-01/step-07-test-design-validator.json",
+  "status": "FAILED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0103-20261103-01/step-06-test-designer.json",
+      "handoffs/ISS-0103-20261103-01/step-01-issue-fixer.json",
+      "docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md",
+      "docs/workflows/WF-03-defect.md",
+      "decisions/0075-flaky-tests-en62-hc6a.md"
+    ],
+    "route": "fix only in tests: ... TEST-DESIGNER (6, done) -> TEST-DESIGN-VALIDATOR (this) -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "none in the project; mutants only in a temporary copy outside the project; the verdict goes only into this handoff"
+    ],
+    "base_tag": "base/ISS-0103-20261103-01"
+  },
+  "task": {
+    "description": "WF-03, step 7 — gate on the test fix of ISS-0103 (only tools/test/e2e-kit.test.js changed: helper waitGone, used in E2K-18, the E2K-38 signal loop and the E2K-38 preflight; new regression test E2K-62). Follow 'Step 7' of docs/workflows/WF-03-defect.md and 'Step 5b' of docs/workflows/WF-02-development.md. Read the diff against the tag base/ISS-0103-20261103-01 yourself (git diff of that one file) and check: (a) nothing weakened — every old assertion is still there, test( and assert. counts not lower than the tag (56/513 at the tag); (b) the diagnosis's three exposed places are all fixed and the 'not exposed' places were not changed without reason; look yourself for any other immediate pidGone/groupGone after a kill or a process end without a wait that the diagnosis missed (AP-014), in e2e-kit.test.js and smoke.e2e.js; (c) E2K-62 is deterministic and not circular: on a fresh clone of the tag outside the project with the helper replaced by the old single check E2K-62 FAILS, on the current tree it PASSES; it does not depend on the machine speed beyond a wide margin (check the 300 ms hold against the 5000 ms limit and run it 20 times under 8 busy loops, one agent at a time); (d) the wait is bounded and a process that never dies still fails (not an infinite or always-true wait); (e) apply at least 10 mutants of the helper and the three call sites in a temporary copy outside the project (limit 0, single check, always true, pid only, ignore group, limit ignored, removed assertion at a call site, wrong message, swallowed failure, timer not cleared) and show which tests fail; any survivor that is not equivalent is a finding; hash the project files before and after (equal). (f) Run npm test once and E2K-18 plus E2K-38 plus E2K-62 alone 10 times. Eight stray node -e setInterval processes older than two hours exist on the machine with parent 1; they are not yours and not the designer's — do not kill them, just state whether any appeared or disappeared during your work. Any item not passed is FAIL. Do not edit the project, do not commit, kill only your own processes by process id. No absolute machine paths or other projects' names in project files. Report in at most 10 lines.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T18:24:25Z",
+  "started_at": "2026-11-03T18:24:25Z",
+  "completed_at": "2026-11-03T18:36:39Z",
+  "result": {
+    "status": "FAILED",
+    "verdict": "FAIL",
+    "summary": "FAIL on item (e): non-equivalent survivors. (a) PASS: diff of tools/test/e2e-kit.test.js vs tag: 5 lines removed (header range and the three single checks, each replaced by the same assertion with waitGone; the signal loop now also checks the group); test( 56 -> 57, assert. 513 -> 528. (b) PASS: three exposed places fixed; I read every other pidGone/groupGone use in e2e-kit.test.js and smoke.e2e.js (assertCleaned after withBrowser close): all are behind until/waitGroupGone/close/abortStart or the process was reaped by node; no missed place. (c) PASS: fresh clone of the tag outside the project with the helper replaced by the old single check: E2K-62 fails (\"group: the held stand-in, pid N and its group, being gone did not become true\"), E2K-18 and E2K-38 stay green (cannot be made red on the Mac); on the current tree E2K-62 passes; 20 runs under 8 busy loops (nice 10): 20 green 0 red; hold 300 ms against limit 5000 ms (wide margin). (d) PASS: the live-process and live-group-member cases make waitGone reject at 300 ms limit (waited in [300,3000) ms). (e) FAIL: 21 mutants in the clone (helper 12, call sites 7, E2K-62 own assertions 2): killed by E2K-62 (10): limit 0, single check, always true, pid only, pid-or-group, limit ignored, failure swallowed to true, failure swallowed to false, message without what/pid, loop ends at limit with true (M01-M04, M06-M10, M12). SURVIVORS: M05 helper checks the group only (groupGone(pid)) - NOT equivalent: for a pid that is not a group leader (a log pid of E2K-38 or a spec pid) groupGone(pid) is ESRCH at once, so the wait would be true while the process lives; E2K-62 uses only group leaders (detached) so it cannot see it. Call-site mutants all survive on the Mac, E2K-18 and E2K-38 green: E2K-18 site assertion removed / back to single check, E2K-38 signal loop assertion removed / single check pidGone only / limit 1 ms, E2K-38 preflight removed / single check. M11 timer not cleared: helper has no timer of its own (until sleeps are awaited), not applicable; M20 hold-pending assertion removed and M21 live-case lower bound removed survive but are covered by other assertions of the same test (low). Hashes of all project files (tracked and untracked, without this handoff) before and after: 3bd57deb... equal. (f) PASS: npm test once: tests 2186 pass 2186 fail 0 skipped 0, exit 0 (3m50s); E2K-18, E2K-38, E2K-62 each alone 10 times: 10 green 0 red each. Strays: the same 8 node -e setInterval processes (pids 10044 10090 10141 10153 10171 13667 14415 14481, parent 1) before and after, none appeared, none disappeared; my own busy loops killed by pid, no leftovers.",
+    "findings": [
+      {
+        "place": "tools/test/e2e-kit.test.js, E2K-62 / waitGone",
+        "severity": "MEDIUM",
+        "what": "Mutant M05 (waitGone checks only groupGone(pid)) survives. All E2K-62 victims are group leaders (detached), where pid gone and group gone coincide; for a non-leader pid (E2K-38 spec pid, logPids) groupGone(pid) is true at once, so the helper would accept a live process.",
+        "fix": "Add to E2K-62 a live process that is NOT a group leader (spawn without detached, from a child of the test, so its pgid differs from its pid): waitGone(pid, what, 300) must reject, the process stays alive; kill it by pid in finally."
+      },
+      {
+        "place": "tools/test/e2e-kit.test.js, call sites in E2K-18 (line ~1085), E2K-38 signal loop (~2979), E2K-38 preflight (~3023)",
+        "severity": "MEDIUM",
+        "what": "Nothing fails if a call site is reverted to the single check, loses its assertion, or gets a tiny limit (7 mutants M13-M19 survive); the real tests cannot be red on this machine, so only the helper is pinned, not its use at the three places (Q5: the regression can come back unnoticed).",
+        "fix": "Add a source guard in E2K-62 (or next to it): read the file text, cut out the bodies of E2K-18 and E2K-38 by test name, and assert each contains the expected number of waitGone( calls (5 scenarios share one site in E2K-18 -> 1; signal loop 1; preflight 1) and no `pidGone(pid) && groupGone(pid)` / bare `assert.ok(pidGone(pid)` after run.done; or give the three sites one shared function that E2K-62 can drive with the zombie hold. Accept and record in the design if the owner decides a guard is out of scope."
+      },
+      {
+        "place": "E2K-62 hold script",
+        "severity": "LOW",
+        "what": "When the test fails early (mutants M01-M03) the hold script still blocks up to 20 s (bounded, run limit 25 s, no hang); the file takes 21 s. Acceptable, noted for AP-116.",
+        "fix": "none required; optionally have the script stop when its parent exits."
+      }
+    ],
+    "self_check": "git diff base/ISS-0103-20261103-01 -- tools/test/e2e-kit.test.js; grep counts 56/513 -> 57/528; pre-fix clone: node --test --test-name-pattern=\"E2K-62|E2K-18|E2K-38\" -> not ok E2K-62 (1 fail, 2 pass); current tree E2K-62 20/20 green under 8 busy loops; python mutation driver in the scratchpad, 21 mutants, results above; npm test exit 0 2186/2186; hashes 3bd57deb73f4b791b4ec95df100f9c10ee978602 before and after.",
+    "issues": [
+      {
+        "id": "V1",
+        "kind": "NOTE",
+        "text": "The 8 stray node -e setInterval processes were present unchanged before and after; I did not touch them. Busy loop kill: the first kill attempt failed (zsh word splitting), killed again by explicit pids 16427-16434; ps confirms none remain."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "handoff_id": "step06-ISS-0103-20261103-01",
+  "run_id": "ISS-0103-20261103-01",
+  "workflow_id": "WF-03",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0103-20261103-01/step-06-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0103-20261103-01/step-01-issue-fixer.json",
+      "docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md",
+      "decisions/0075-flaky-tests-en62-hc6a.md"
+    ],
+    "route": "A fix only in tests (WF-03 step 5, 'A fix only in tests'): ISSUE-FIXER (done) -> TEST-DESIGNER (this) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER; the design of the fix, CODE-FIXER and the security and code review gates are skipped because by the diagnosis the error is in the tests themselves and the kit code does not change",
+    "write_set": [
+      "tools/test/e2e-kit.test.js",
+      "tools/test/fixtures/e2e/ (a new fixture for the deterministic zombie test, if needed)"
+    ],
+    "base_tag": "base/ISS-0103-20261103-01"
+  },
+  "task": {
+    "description": "WF-03, step 6 (fix only in tests) — repair the race in the tests by the diagnosis in handoffs/ISS-0103-20261103-01/step-01-issue-fixer.json (read result fully). (1) Add ONE bounded-wait helper over the existing until() in tools/test/e2e-kit.test.js (wait for pidGone && groupGone to be true, limit 5000 ms, a message that names what was waited for) and use it in the three exposed places: E2K-18 (all 5 scenarios, about line 1070), the E2K-38 signal loop (about lines 2825-2831) and the E2K-38 preflight (about line 2869). Do not touch the other places the diagnosis lists as not exposed. The assertions must not be weakened: the same facts, only with a wait; keep every other assertion, the number of test( and assert. must not go down against the tag base/ISS-0103-20261103-01. The kit code and the stand-in do not change; if you find the kit must change, stop and write it in result.issues. (2) The regression test: the diagnosis says the real E2K-18/E2K-38 were never red on the Mac in 80 runs, so write a DETERMINISTIC test: a fixture or inline script where a parent SIGKILLs a process group and blocks its own event loop for about 300 ms so that the group shows state Z and the single immediate check pidGone/groupGone is false, and show that the new helper waits through it and then returns true, while a single immediate check on the same fixture is false (this is the proof the old way is wrong). On the copy before the fix (a fresh clone of the tag base/ISS-0103-20261103-01 in a temporary folder outside the project) the new test file part must FAIL where it applies the old single check or be written so that the pre-fix variant of E2K-18 is demonstrably red under the fixture; record both runs (before: red, after: green) with commands and output in result. (3) A race needs series: run E2K-18 and E2K-38 alone at least 30 times before and 30 times after under about 10 busy loops (one agent at a time, kill your busy loops by process id), and record the counts. (4) Mutants: break the helper on purpose (limit 0 / no wait / always true) in a temporary copy and show which tests fail. (5) Finish with one npm test run green and the whole npm run check not needed. Do not commit. Do not write absolute machine paths or other projects' names into project files. Report in at most 10 lines.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T18:04:35Z",
+  "started_at": "2026-11-03T18:04:35Z",
+  "completed_at": "2026-11-03T18:23:55Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fix only in tests; code, kit and stand-in unchanged; only tools/test/e2e-kit.test.js changed (no new fixture: the hold script is inline). Helper waitGone(pid, what, ms=5000) over until(): ends only when pidGone && groupGone (ESRCH), else fails with a message naming what, the pid and 'being gone'. Used at the three exposed places: E2K-18 (5 scenarios), the E2K-38 signal loop (4 pids per signal, the two group asserts kept), the E2K-38 preflight loop. Same facts, assertions kept (test( 56 -> 57, assert. 513 -> 528 against the tag). Other listed places not touched.\nTable criterion -> test: E2K-18/E2K-38 'the stand-in is gone after the end' (REQ-104 criterion 3/11) -> E2K-18, E2K-38 (now with the bounded wait); new regression E2K-62 (deterministic): a parent SIGKILLs a stand-in (case group-kill and case pid-kill), then blocks its loop with Atomics.wait until a release file appears, so the victim is a zombie: single check pidGone/groupGone is false (the old way is wrong), waitGone stays pending 300 ms, then after release returns true; a live process: waitGone(…, 300) rejects within [300, 3000) ms with the message naming what, the process is left alive; a leader gone with a live member: pid ESRCH but the wait rejects (group is looked at too), after SIGKILL of the group it returns true. State checks: live process untouched, groups killed and waited in finally, test folder removed (E2K-51 green).\nQ8, Q11, R3: not touched (test-only change about process death). Q10 (external call with failure): not touched, no external call. Q7: no secrets, E2K-50 green.",
+    "changes": [
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "what": "helper waitGone; used in E2K-18, E2K-38 signal loop, E2K-38 preflight; new test E2K-62 with inline hold script; header comment range"
+      }
+    ],
+    "self_check": "npm test (whole suite): # tests 2186 pass 2186 fail 0 skipped 0 todo 0, exit 0. prettier --check and eslint --max-warnings 0 on the file clean. npm run check not run (not required).\nPre-fix: fresh clone of tag base/ISS-0103-20261103-01 (30ab39c), new test file with the old single check in the helper: 'not ok E2K-62 ... group: the held stand-in, pid N and its group, being gone did not become true', pass 0 fail 1. After (current tree): E2K-62 ok, E2K-18 ok, E2K-38 ok.\nSeries under 10 busy loops (nice 10, killed by pid; one command at a time), node --test --test-name-pattern, 30 runs each: BASE E2K-18 green 30 red 0; BASE E2K-38 green 29 red 1 (run 20: assert.ok(pidGone(pid) && groupGone(pid)) at line 2869, the preflight place, a natural reproduction of the race); CURRENT E2K-18 green 30 red 0; CURRENT E2K-38 green 30 red 0.\nMutants of the helper in a temporary copy (working tree unchanged; copy restored after): single check no loop -> E2K-62 fails (1 test); limit 0 -> E2K-62 fails (1); always true -> E2K-62 fails (1); loop ends at the limit with true -> E2K-62 fails (1); limit argument ignored (5000) -> E2K-62 fails (1); pid only without group -> E2K-62 fails (1; first version survived, the leader-gone case was added); message without what -> E2K-62 fails (1). E2K-18/E2K-38 stay green on all mutants on the Mac (they cannot be made red here), so E2K-62 alone carries the evidence.",
+    "issues": [
+      {
+        "id": "T1",
+        "kind": "NOTE",
+        "text": "The real E2K-38 preflight place (line 2869 of the tag) went red 1 of 30 on the base copy under load: a natural confirmation of the diagnosis; 0 of 30 after the fix."
+      },
+      {
+        "id": "T2",
+        "kind": "NOTE",
+        "text": "There are 8 stray 'node -e setInterval' processes about 2 hours old on this machine (parent 1) that are not from this run (a probe of the diagnosis or older); I did not kill them. My own processes were all killed (no stray after the series)."
+      },
+      {
+        "id": "T3",
+        "kind": "NOTE",
+        "text": "No kit code edit is needed. Not done by me, belongs to DOC-UPDATER/ORCH: design note F20/11.3, decision 0108 addendum, anti-pattern Q13 (diagnosis I4, I7). Header comment of the test file now says E2K-01 ... E2K-62."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e-kit.test.js"
+    ]
+  }
+}

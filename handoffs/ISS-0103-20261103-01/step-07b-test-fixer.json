@@ -1,0 +1,62 @@
+{
+  "handoff_id": "step07b-ISS-0103-20261103-01",
+  "run_id": "ISS-0103-20261103-01",
+  "workflow_id": "WF-03",
+  "step": "07b",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/ISS-0103-20261103-01/step-07b-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0103-20261103-01/step-07-test-design-validator.json",
+      "handoffs/ISS-0103-20261103-01/step-06-test-designer.json"
+    ],
+    "route": "7 FAIL (item e) -> TEST-FIXER (this) -> TEST-DESIGN-VALIDATOR again (07c) -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e-kit.test.js"
+    ],
+    "base_tag": "base/ISS-0103-20261103-01",
+    "rework_of": "handoffs/ISS-0103-20261103-01/step-07-test-design-validator.json"
+  },
+  "task": {
+    "description": "WF-03 after FAIL of step 7 — fix the tests by the two MEDIUM survivors in handoffs/ISS-0103-20261103-01/step-07-test-design-validator.json (read result.summary and issues fully). Survivor 1: the helper waitGone checking groupGone(pid) only (mutant M05) is not seen, because every victim in E2K-62 is a group leader. Add to E2K-62 (or a new test) a LIVE process that is NOT a group leader (for example a child in the leader's group, or a plain child with its own pid not equal to its pgid) and require that waitGone rejects for it within a short limit, so that a helper looking only at the group is red. Survivor 2: the seven call-site mutants survive because the real E2K-18/E2K-38 cannot go red on this Mac, so only the helper is pinned, not its use. Add one source guard test (the repository already has such tests, e.g. E2K-50 reads the test file text) that reads tools/test/e2e-kit.test.js and checks, for the bodies of E2K-18 and E2K-38, that they call waitGone( at the three places (5 scenarios loop, the signal loop, the preflight) and contain no direct assert.ok(pidGone(...) ...) or assert.ok(groupGone(...) ...) of a killed process; make the guard robust to prettier reformatting (match on tokens, not on exact lines) and make it fail with a message that names the test and the line. Keep it small; do not weaken any existing assertion; test( and assert. counts must not go down. Prove both new checks red on mutants in a temporary copy outside the project: M05 (group only) for survivor 1; for survivor 2 the call-site mutants (assertion removed, back to the single check, 1 ms limit at each of the three sites) — name which of them the guard catches; a mutant that only changes the limit value may be pinned by a lower bound of the limit in the guard (waitGone( called with no limit below 1000, or with the default) — decide and say why. Finish with one npm test run green; prettier and eslint on the file clean. Do not commit. Do not write absolute machine paths or other projects' names into project files. Kill only your own processes by process id (no word splitting: kill each pid explicitly). Report in at most 8 lines.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-03T18:37:21Z",
+  "started_at": "2026-11-03T18:37:21Z",
+  "completed_at": "2026-11-03T18:44:31Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Step 7 FAIL item (e), two MEDIUM survivors, both closed in tools/test/e2e-kit.test.js only. Survivor 1 (M05, helper looks at the group only): E2K-62 now also spawns a live process that is not a group leader (no detached, so its pid is no group id), requires groupGone(pid) to be true for it (the blind spot), and requires waitGone(pid, name, 300) to reject with the name and pid in the message and the process to stay alive; it is killed by pid in finally. Survivor 2 (seven call-site mutants): new test E2K-63, a source guard, reads this file by tokens, cuts out the bodies of E2K-18 and E2K-38 and requires exactly 1 and 2 assert.ok(await waitGone(...)) places, no pidGone( at all, groupGone( only of leader and pids.browser (E2K-38 after the loop waits), and a limit argument, when given, that is a number of at least 1000 ms (the default is 5000). The message names the test and the line.",
+    "changes": [
+      {
+        "kind": "test",
+        "file": "tools/test/e2e-kit.test.js",
+        "place": "E2K-62 (new non-leader live process, members list and its clean-up in finally)",
+        "criterion": "ISS-0103 step 7 finding 1 (MEDIUM): the helper must wait for the group as well as the pid; the criterion of the defect is that a stand-in killed by a test is waited for until pid and group are gone, a live one fails the wait. The non-leader case was not pinned."
+      },
+      {
+        "kind": "test",
+        "file": "tools/test/e2e-kit.test.js",
+        "place": "new E2K-63 with the helpers blankComments, lineAt, callArguments, waitGoneProblems, placed before E2K-19; header comment E2K-01 ... E2K-63",
+        "criterion": "ISS-0103 step 7 finding 2 (MEDIUM): the three exposed places (E2K-18, E2K-38 signal loop, E2K-38 preflight) must use the bounded wait; the real tests cannot go red on this machine, so the use is pinned by the source."
+      }
+    ],
+    "mutants": "Temporary copy outside the project, project file untouched by them. Survivor 1: M05 (waitGone = groupGone(pid) only) -> E2K-62 RED. Survivor 2, all nine call-site mutants caught by E2K-63 (RED): E2K-18 assertion removed, back to single check, limit 1 ms; E2K-38 signal loop assertion removed, single pidGone check, limit 1 ms; E2K-38 preflight assertion removed, single check, limit 1 ms. A limit-only mutant is caught by the lower bound of 1000 ms in the guard (decision: pin the lower bound, not the exact value, so a reasoned change of 5000 stays possible but a limit too small to wait is red; the default 5000 passes).",
+    "self_check": "Before: step 7 survivors M05 and M13-M19. After: node --test E2K-62 and E2K-63 green; npx prettier --check and npx eslint on the file clean; npm test once: tests 2187 pass 2187 fail 0 skipped 0 todo 0, exit 0 (previous run 2186, +1 test E2K-63). Existing assertions untouched (only additions plus the header number).",
+    "issues": [
+      {
+        "id": "F1",
+        "kind": "NOTE",
+        "text": "E2K-63 allows groupGone(leader) and groupGone(pids.browser) in E2K-38 because they follow the waits of the loop; the guard would have to be updated if those two lines move. The guard needs the closing line of a test call at the start of a line, which prettier always produces."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e-kit.test.js"
+    ]
+  }
+}
