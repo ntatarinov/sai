@@ -1,0 +1,221 @@
+{
+  "handoff_id": "step03-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/E2E105-20261105-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "tools/test/e2e/kit/stand.js, tools/test/e2e/kit/index.js, tools/test/fixtures/e2e-stand/fake-stand.js, tools/README.md (the diff against the tag base/E2E105-20261105-01)",
+      "docs/design/REQ-105-e2e-picker.md (sections 2 C-1..C-3, 4.1, 4.3, 5, 6, 15)",
+      "decisions/0109-e2e-stand-conventions.md (with O13 and O14)",
+      "decisions/0108-e2e-kit-conventions.md (the addendum about escaped and bounded text)",
+      "handoffs/E2E105-20261105-01/step-02-backend-dev.json and step-02b-backend-dev.json",
+      "docs/quality-bar.md"
+    ],
+    "route": "SECURITY-REVIEWER + REVIEWER (this pair, gate) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the gate reads; hostile trials go outside the project)"
+    ],
+    "base_tag": "base/E2E105-20261105-01"
+  },
+  "task": {
+    "description": "WF-02, step 3 — the security gate on the code of REQ-105 written at steps 02 and 02b: the server starter tools/test/e2e/kit/stand.js (startStand, withStand), its export in tools/test/e2e/kit/index.js, the stand-in tools/test/fixtures/e2e-stand/fake-stand.js and the README section. You always run; decide yourself whether your area is touched, and for each item Q7-Q11 and R3 give 'met' or 'not applicable' with your own check; for R2 judge it too, because REQ-106 will start the Pixel Office server through this starter. Check on hostile input, with your own trials outside the project through the stand-in or small scripts: (1) the environment of the child — the short list of C-1: no variable of the developer shell (a token, HOME, any SAI_ variable not given by the caller) reaches the child, and a caller-given value with a NUL or a bad name is refused before anything is started; (2) the link read from stdout — a link to another host, a crafted URL, user info in the URL, a very long line, a line split across chunks, control characters, several links: only a loopback link is accepted; (3) state folders — outside the temporary root, a symbolic link, '..': refused before the spawn; (4) the spawn — process.execPath with an argument list only, never a shell; (5) signals — an undefined pid, a pid of another group, a reused pid: the starter never signals a group it did not start, and the runner sweep through the marker folder cannot be made to kill a foreign group; (6) messages and logs — no environment, no raw machine paths that are not needed (the ISS-0100 pattern), stderr text escaped and bounded as the kit does. Read every line of stand.js. Your verdict is PASS or FAIL with findings (severity, the line, a one-sentence fix). Task text and report hold no absolute machine paths and no names of other projects of the owner. Do not edit any project file except this handoff; do not commit or push.",
+    "acceptance_criteria": [
+      "Q7-Q11, R2, R3 each met or not applicable with own check",
+      "Hostile trials (1)-(6) run and reported",
+      "Verdict PASS or FAIL with findings"
+    ]
+  },
+  "created_at": "2026-11-08T17:44:14Z",
+  "started_at": "2026-11-08T17:44:14Z",
+  "completed_at": "2026-11-08T18:17:07Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-02 step 3, the security gate on the code of REQ-105 written at steps 02 and 02b: tools/test/e2e/kit/stand.js (432 lines, read line by line), the export line of tools/test/e2e/kit/index.js, the stand-in tools/test/fixtures/e2e-stand/fake-stand.js (165 lines, read in full) and the README section, against the tag base/E2E105-20261105-01 (4f41032, equal to HEAD; the work of the run is uncommitted). Verdict PASS: no Critical, High or Medium finding; four Low findings F1-F4 and questions for ORCH (I1 and I2 first).\n\nMAP OF SURFACES (all 20 files of the change: git diff against the tag plus the untracked files). (1) tools/test/e2e/kit/stand.js - 'comes from outside': the output of a child process (the link on stdout, the stderr text) and the options of the caller; 'writes files': the marker folder (makeTempDir under the temporary root) and the runner's record <pid>.json, and their removal; it signals process groups; it builds the environment of the child, so the tokens and switches of the developer's shell must not pass (the secret side); the link it accepts is what a spec's browser opens. Items: Q7, Q10, Q11 (judged), R2 (judged forward), and both checks of the map. (2) tools/test/e2e/kit/index.js - one re-export line: no surface of its own. (3) tools/test/fixtures/e2e-stand/fake-stand.js - a test stand-in, never served to a browser: it listens on 127.0.0.1 only, writes the log file that the test names (event names, pids, argv and environment NAMES, no values) and starts its own child with an argument list: 'writes files' (a test log) and input from the test's env; Q7. (4) tools/README.md - documentation, no surface; its security sentences were checked against the trials (F1, F2). (5-20) decisions/0109, decisions/0110, decisions/README.md, docs/design/REQ-105-e2e-picker.md, docs/program/public-v1/PROGRESS.md, docs/requirements.yaml (only the status line of REQ-105), the ten handoffs of the run - documents, no surface; Q7 search of the text the run added. tools/src/ is unchanged (git diff), so no page, server answer, hook, journal, data path, query or outbound call of Sai changes: the rows 'customer data', 'the server goes by itself' and 'photos of people' are not touched, and 'goes to the browser' only through the stand's address.\n\nITEMS. Q7 - applicable, met. The 2805 lines the run added (the '+' lines of the diff of the tracked files and the new files) hold no secret shape (a GitHub token, an sk- key, a private key block, a cloud key id, a chat bot token, a JWT, a URL with user info, a key word followed by a value of 12 or more characters): 0 hits; the 15 hits of the key words were read one by one and are all prose words. The 40 page files under tools/src/*/public/ (unchanged): 0 secret shapes; 4 key-word hits read (a fetch option 'credentials', two comments, a design token of a stylesheet), none a secret. The environment of the child (trial 1): only PATH, TMPDIR, TEMP, TMP, LANG, LC_ALL, TZ, the names the caller gives, macOS's own __CF_USER_TEXT_ENCODING and Node's own NODE_V8_COVERAGE when the parent has it; none of 13 leak names reached it (a fake GitHub token, a fake cloud secret, SAI_TEAM_REAL_RUNS, SAI_PIXEL_OFFICE_DIR, SAI_FAKE_LEAK, the runner's SAI_E2E_REGISTRY, NODE_TEST_CONTEXT, NODE_OPTIONS, HOME, USER, LOGNAME, SHELL, PWD); the values of the base names equal the parent's (hashes compared). The 136 messages of all trials hold no environment value, no PATH and no path of node (trial 6); the stand-in logs names only. Q8 - not applicable: no access to customer or tenant data is added or changed (tools/src unchanged); the starter reads only the output of the process it started. Q9 - not applicable: no query of any kind; a search of the three code files for SQL and query calls gives 0 hits. Q10 - applicable, met, with one Low gap (F3): a program that cannot start (a cwd that does not exist: ENOENT in 1 ms; an argument list over the system limit: E2BIG in 3 ms; an env value made bad after the check: ERR_INVALID_ARG_VALUE) gives STAND_START_FAILED with nothing registered and no folder; every wait has a limit (start, stop, group gone 3 s, pipe drain 1 s); floods of 2.3-4.7 MB with the patterns of the design end at the start timer (3023-3026 ms for a limit of 3000 ms) with at most 3 ms of event-loop lag; every bad end of a spec process (SIGTERM, SIGHUP, process.exit, an uncaught throw) removes the stand, and a hung spec killed by SIGKILL leaves it only until the runner's sweep (trial 9). Q11 - not applicable as the rule for outbound addresses: the starter calls no address; the only address it handles is the link the child prints, and only http://127.0.0.1:<port>/... is accepted (trial 2: 28 refused forms - another host, a loopback-looking name, a host behind a fragment or behind user info, user and password, https, 127.0.0.2, localhost, [::1], [::ffff:127.0.0.1], 0.0.0.0, the ports 0, 65536, none and 80 (normalized away), javascript, file and ws schemes, control characters in the host or the port, a 60000-character host and a 50000-digit port; 15 accepted forms, all turned into http://127.0.0.1:<port>/ as checked by my own text oracle, not by new URL). R2 - judged at the task's request; met for this change: no Pixel Office event is written, invented or read, tools/src/pixel-office is unchanged, the stand-in's log is a test log, the stands listen only on 127.0.0.1 (lsof, trial 7). Forward, for REQ-106: the starter keeps the developer's HOME and SAI_PIXEL_OFFICE_DIR VARIABLES away from the child, but it does not by itself keep a Pixel Office stand off the real state folder: a child without HOME finds the real home folder through the system user database, and main.js of Pixel Office then computes <home>/.sai-pixel-office (trial 8, a pure computation; the real folder was not created or touched), and stateDirs is not tied to the env value the server reads (F1, F2, I1). R3 - not applicable: decision 0033; the change handles no photos.\n\nMAP CHECKS. 'Writes files': 27 hostile state paths (dot-dot out of the root, links to the home folder and to an outside folder, a chain of links, a dangling link pointing out, a link loop, a NUL, a 5000-character name, non-strings) are refused with PATH_REFUSED before the marker and before any spawn (0 spawns, 0 folders); a link inside the marker, and the marker replaced by a link to an outside folder, are removed by stop() without touching the target or its file (trial 3); the runner record is <integer pid>.json in a registry folder checked under the temporary root, and stop() removes it (trials 1, 5). 'Goes to the browser': the change has no page and no server answer; what a browser gets from it is the stand's address, which is loopback only (trial 2).\n\nHOSTILE TRIALS, outside the project: a fresh clone of the tag in <scratch>/e2e105s/clone with the four files of the change copied in (hashes equal to the project's), a private TMPDIR per trial under <scratch>/e2e105s/tmproot, the scripts in <scratch>/e2e105s/trials, the results in <scratch>/e2e105s/results. (1) Environment, 37 hostile inputs, 65 checks: 19 refused env shapes (names with NUL, '=', a space, a dash, a digit first, a non-ASCII letter, a newline, an empty name; values with NUL, a number, null, undefined, an object, an array, a boolean; env null, an array, a string, a number), each USAGE with 0 spawns and no folder; the 13 leak names; 4 object tricks (inherited keys do not pass; an own key __proto__ passes as a plain name; a key added to Object.prototype of the spec process passes, by Node's spawn; a value changed after the check gives STAND_START_FAILED with the marker removed); a given name and an override of a base name pass. (2) Link, 64 hostile inputs, 87 + 9 checks: 28 refused, 15 accepted forms, 5 cases of several links (a foreign first link fails closed; with the picker pattern a foreign line is skipped), 5 cases of a line split across chunks (the picker and REQ-106 patterns wait for the whole address; a multi-byte character split in two stays whole), 3 length cases (1 MB before the link: read; a link longer than the kept 64 KB window: no link, timeout; a 30000-character loopback link: read), 8 floods. (3) State folders, 36 inputs, 38 checks. (4) Spawn, 55 inputs, 42 checks: 10 extra spawn options of the caller (shell, stdio, detached, uid, gid, argv0 and others) are ignored and the options are exactly cwd, detached, env, stdio; 13 shell metacharacter arguments reach node as the same strings and no file was made; a PATH with a fake node does not change process.execPath; 27 refused options and a non-function deps.spawn give USAGE with 0 spawns; ENOENT; E2BIG; the optional group of F3. (5) Signals, 20 inputs, 20 checks: a real stand leads its own group, gets SIGTERM once and SIGKILL once, all sent to -pid; with no pid there is no kill call; for the pids 0, 1, -5, 2.5, NaN, a string and null no real signal is sent, only existence checks; the reuse simulation of F4; 9 crafted registry records (8 refused, the well-formed one obeyed). (6) Messages and logs, 16 checks: 3 hostile stderr lines (ANSI escapes, BEL, NUL, CR, U+2028, a bidi override, a leading '::error::', 60000 characters) and a forced CLEANUP_FAILED; each stderr line is escaped, cut at 300 characters with a count, its leading '::' neutralized; the longest of the 136 messages is 438 characters; absolute paths appear only in PATH_REFUSED (the refused input itself); CLEANUP_FAILED names no folder; details hold only pid, exitCode and signal; the TAP output of the e2e runner prints message, code and stack only. Also (7) the real picker and the stand-in through the starter, 11 checks; (8) the R2 computation, 5 checks; (9) bad ends of a spec process, 7 checks. In all 300 checks: 295 as expected at the first run; the other 5 were faults of my harness and were redone: 4 floods passed as a 2 MB argument hit the system's argument limit (the starter answered STAND_START_FAILED with E2BIG in 5-36 ms and left nothing), re-run as trial 2b with the flood made inside the stand-in, 9 of 9; 1 static oracle took RegExp.prototype.exec for a shell exec and was replaced by a direct search (stand.js imports only spawn; 'shell' is a word of a comment). Leftovers: LEFT of design section 16 is 0 processes and 0 folders before and after; the only node processes alive at the end are the ten that were there before (two 'node stand.js' of 2026-11-07, eight 'node -e setInterval' of 2026-11-03), not mine.\n\nThe task named no expected verdict (AP-018). The code did not change during the check: the files under review are byte for byte the same at the start and at the end (self_check).",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "item": "R2 (forward, REQ-106) and Q7 (what the stand can reach); the 'writes files' row for later stands",
+        "place": "tools/test/e2e/kit/stand.js:26-27 (the comment 'a server never sees the home folder, tokens or switches of the developer's shell'), :28-44 (baseEnvironment), :284 (the env of spawn); tools/README.md:844 ('... and what the spec gives, nothing else')",
+        "what": "The child gets no HOME variable, but a Node child without HOME still finds the real home folder through the system user database: in trial 1 (case A) os.homedir() of the stand is the user's real home folder, and in trial 8 a Pixel Office process started this way computes <home>/.sai-pixel-office as its state folder (main.js homeDir falls back to os.homedir()). So the comment states a protection that does not hold, and the README's 'nothing else' also misses the two names the platform adds (macOS __CF_USER_TEXT_ENCODING; Node's NODE_V8_COVERAGE when the parent has it, trial 1 A). No harm in REQ-105: the picker server reads no home folder and writes nothing (no write call and no homedir in tools/src/picker/*.js; trial 7: nothing written).",
+        "fix": "Reword the comment and the README sentence to say that the child gets no HOME variable yet can still find the home folder, so a stand that must not touch it is given HOME (and its own state variable) under the temporary root - or, if ORCH so decides for REQ-106 (I1), let the starter set HOME to a private temporary folder when the caller gives none."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "item": "'writes files' check of the map; R2 forward (REQ-106, REQ-107)",
+        "place": "tools/test/e2e/kit/stand.js:277 (stateDirs checked) against :284 (the env the server receives); tools/README.md:844 ('a state folder given to it must lie under the temporary root'); design sections 4.1, 4.2, 6",
+        "what": "The guard checks the list stateDirs, which the server never receives; the folder the server really uses comes from env (or args) and is not checked. Trial 3 ('binding') and trial 8 ('unbound'): stateDirs holding a folder under the root, env SAI_PIXEL_OFFICE_DIR naming the real state folder - accepted, and the stand computes the real folder. The check stands in the same call as the spawn but not on the same value (guards.js: 'the callers use the value these functions return, never the raw input').",
+        "fix": "Bind the check to the value the server receives - for example an option of name-to-folder pairs that the starter checks with assertUnderTempRoot and puts into the child's env as the returned real path - decided with the design of REQ-106 (I1), and until then the README says that the spec passes the same folders in env."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "item": "Q10 (a failure gives an understandable error and a clean state)",
+        "place": "tools/test/e2e/kit/stand.js:338 (if (match) settle({ link: match[1] })), :383-389 (the else branch calls exitInfoOf(state.exit) while state.exit is null); the group count check :83-89 allows an optional group",
+        "what": "A readyPattern whose one capture group is optional can match with group 1 undefined: startStand then throws a raw TypeError ('Cannot read properties of null (reading 'signal')') instead of an E2eError, skips abortStart, and leaves the stand alive, registered and with its marker until the exit handler of the spec process (trial 4, section 6: alive, registered, marker left; after the trial process ended, 0 folders).",
+        "fix": "Treat a match whose group 1 is undefined as no match, so the start ends by the link or by the timer with the usual clean-up."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "item": "signals (task item 5): a group the starter did not start; the shared mechanism of the kit (AP-014)",
+        "place": "tools/test/e2e/kit/stand.js:197 (the final SIGKILL to the group, also when the leader ended long before), :204 (unregisterGroup only in stop()), :353-359 (the exit handler keeps the registration); unchanged shared code with the same shape: tools/test/e2e/kit/cleanup.js:205 (exit handler) and :149-162 (runner sweep), browser.js (Chrome groups)",
+        "what": "When a stand ends by itself and its group is empty, its group number stays registered, with its runner record and marker, until stop(), the exit handler or the runner's sweep; if the number were reused by a new process-group leader in that window, that group would get SIGKILL. Simulated, not reproduced by a real reuse: trial 5 D (deps.spawn gave the number of a group of the trial; stop() killed that group) and E (a well-formed record with an existing marker makes the sweep kill the group it names). Pids are sequential on this macOS (8 starts: 48843-48850; no random-pid setting), so a reuse needs a wrap of the pid space inside the window.",
+        "fix": "On the exit of the leader, when kill(-pid, 0) already gives ESRCH, unregister the group, drop its record and skip the later signals - in stand.js and browser.js together, as one defect of the shared mechanism (I2), not in this run."
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      {
+        "command": "date -u +%Y-%m-%dT%H:%M:%SZ at the start; file list (git diff --name-only base/E2E105-20261105-01 plus git ls-files --others --exclude-standard) and shasum -a 256 of each, kept in <scratch>/e2e105s",
+        "output": "2026-11-08T17:44:38Z; 20 files. Code under review: stand.js 9f512e3caabd0de7..., index.js c5d82a73e599a0e3..., fake-stand.js d3d3cfe959fabaab..., tools/README.md c7021795bfbd240e..."
+      },
+      {
+        "command": "git rev-parse --short HEAD; git rev-parse --short base/E2E105-20261105-01; git diff --stat base/E2E105-20261105-01 -- tools/; git ls-files --others --exclude-standard tools/",
+        "output": "4f41032; 4f41032. tools/README.md | 13 (+8 -5), tools/test/e2e/kit/index.js | +1; new: tools/test/e2e/kit/stand.js, tools/test/fixtures/e2e-stand/fake-stand.js; tools/src unchanged"
+      },
+      {
+        "command": "the step-02b edits in the files: grep -n quit-later fake-stand.js; sed -n 234p stand.js",
+        "output": "fake-stand.js:25 and :120 (the mode quit-later); stand.js:234 'if (!this.#sentTerm || exit.code !== 0 || exit.signal)' (the reading O14). The 02b report gives the hashes before its rework only, so the edits were checked by content"
+      },
+      {
+        "command": "git clone -b base/E2E105-20261105-01 <the project> <scratch>/e2e105s/clone; copy of the four files of the change; shasum -a 256 of cleanup.js, guards.js, errors.js, runner.js, browser.js in the project and in the clone",
+        "output": "the four copies have the project's hashes; the five shared kit files are the same in both (the shared mechanism is unchanged)"
+      },
+      {
+        "command": "Q7, the change: the '+' lines of git diff base/E2E105-20261105-01 and the untracked files -> <scratch>/e2e105s/added.txt; search for the secret shapes (a GitHub token, an sk- key, a private key block, a cloud key id, a chat bot token, a JWT, a URL with user info, a key word followed by a value of 12+ characters), then for the key words secret, token, passw, api key, bearer, credential",
+        "output": "2805 lines; secret shapes: 0 hits; key words: 15 hits on 15 lines, each read: prose words such as 'tokens of the developer's shell' and 'secret shapes scanned', no value"
+      },
+      {
+        "command": "Q7, the page files: find tools/src -path '*/public/*' -type f (40 files), the same secret shapes, then the key words per file",
+        "output": "0 secret shapes; 4 key-word hits: tools/src/web/public/app.js:46 the fetch option credentials: \"same-origin\"; tools/src/pixel-office/public/schema.js:53 and tools/src/picker/public/net.js:31 comments; tools/src/picker/public/page.css:1 'a token of the two blocks' (a design token) - no secret"
+      },
+      {
+        "command": "Q9: grep -niE for SELECT/INSERT/UPDATE/DELETE with FROM/INTO/SET/WHERE, 'sql', .query(, .prepare(, .raw( over stand.js, index.js, fake-stand.js",
+        "output": "no hit (exit 1)"
+      },
+      {
+        "command": "spawn, static: grep -n for child_process, shell, execSync, execFile, spawnSync, fork(, eval(, Function( and exec( in stand.js; spawn in fake-stand.js",
+        "output": "stand.js:1 imports spawn only; 'shell' only at :27 (a comment); exec( at :84 and :337 are RegExp exec; fake-stand.js:138 spawn(process.execPath, [its own file, '--child']) with an argument list"
+      },
+      {
+        "command": "the picker server: grep for write calls (writeFile, appendFile, mkdir, createWriteStream, rename, rm, unlink, copyFile, open for writing) and for homedir or HOME in tools/src/picker/*.js; how Pixel Office finds its folder: tools/src/pixel-office/main.js:92-99 and :195, state-dir.js:51-68",
+        "output": "picker: 0 hits for both; Pixel Office: homeDir(env) = env.HOME, else os.homedir(); resolveStateDir(env, home) = SAI_PIXEL_OFFICE_DIR, else <home>/.sai-pixel-office; then ensureStateDir and ensureSecret"
+      },
+      {
+        "command": "pid allocation: 8 times '/usr/bin/true & echo $!'; sysctl kern.randompid",
+        "output": "48843 48844 48845 48846 48847 48848 48849 48850 (sequential); kern.randompid: no such setting"
+      },
+      {
+        "command": "cd <scratch>/e2e105s/trials && <13 leak variables set in the parent: fake GitHub token, fake cloud secret, SAI_TEAM_REAL_RUNS, SAI_PIXEL_OFFICE_DIR, SAI_FAKE_LEAK, NODE_TEST_CONTEXT, NODE_OPTIONS, NODE_V8_COVERAGE, TEMP, TMP, LANG, LC_ALL, TZ> node t1-env.mjs",
+        "output": "== t1-env: 65 checks, 65 pass, 0 fail. Child keys with no env given: LANG, LC_ALL, NODE_V8_COVERAGE, PATH, TEMP, TMP, TMPDIR, TZ, __CF_USER_TEXT_ENCODING; HOME variable absent; os.homedir() of the child == the real home folder (F1); with HOME given: os.homedir() == the given folder; a key on Object.prototype reaches the child (Node); the runner record existed during the life of the stand and was removed by stop()"
+      },
+      {
+        "command": "node t2-link.mjs",
+        "output": "== t2-link: 87 checks, 83 pass, 4 fail - the 4 floods: 'could not start \"hostile\": E2BIG' (my plan of 2 MB passed as one argument; the starter answered in 5-36 ms and left nothing; redone in t2b). 28 refused forms: URL_REFUSED, group gone, marker gone, nothing registered, message escaped and at most 288 characters; 15 accepted forms: url http://127.0.0.1:4242/ (one: http://127.0.0.1:4242/@evil.com/, one: http://127.0.0.1:4242/%1B[2J); split chunks: ports 12345 and 23456 read whole; INFO: a pattern without a delimiter after the port read port 1 of 12345"
+      },
+      {
+        "command": "node t2b-timing.mjs (floods made inside the stand-in, start timer 3000 ms)",
+        "output": "== t2b-timing: 9 checks, 9 pass, 0 fail; elapsed 3023-3026 ms, max loop lag 2-3 ms, group gone, for 2.3-4.7 MB of near-matches, digit runs, prefixes, line starts, control characters, 1-character writes and a stderr flood"
+      },
+      {
+        "command": "node t3-state.mjs",
+        "output": "== t3-state: 38 checks, 38 pass, 0 fail; 27 hostile paths and 2 bad lists refused with 0 spawns and no folder; a folder, a link to a folder inside, a folder not made yet and the root itself accepted and shown as real paths; the binding case accepted (F2); a link in the marker and the marker replaced by a link: the outside folder and its file stay"
+      },
+      {
+        "command": "node t4-spawn.mjs",
+        "output": "== t4-spawn: 42 checks, 41 pass, 1 fail - the failing one is my static oracle (it took the two RegExp exec calls for a shell exec; replaced by the static search above). Spawn options exactly cwd, detached, env, stdio; metacharacters literal, no file made; process.execPath kept with a fake node in PATH; 27 refused options with 0 spawns; ENOENT in 1 ms, E2BIG in 3 ms; optional group: 'TypeError: Cannot read properties of null (reading 'signal')', alive=true, registered=true, marker left=true (F3); after the trial ended: 0 folders"
+      },
+      {
+        "command": "node t5-signals.mjs (process.kill recorded)",
+        "output": "== t5-signals: 20 checks, 20 pass, 0 fail; real stand: [[-pid,SIGTERM],[-pid,SIGKILL],[-pid,0]], its pgid equals its pid and differs from the trial's; no pid: no call; odd pids: only signal 0; reuse simulation: the foreign group was killed (F4); 8 malformed records: no signal; the well-formed record: its group killed"
+      },
+      {
+        "command": "node t6-messages.mjs",
+        "output": "== t6-messages: 16 checks, 16 pass, 0 fail; e.g. 'msg ended with exit code 1 after SIGTERM. Last line of its stderr: \"\\u003a:error::... \\u001b[31mred... \\u0007 ... \\u0000 ... \\r ... \\u2028...' cut with '... (N more characters)'; CLEANUP_FAILED: 'could not clean up \"msg\": pid N: the folder could not be removed (EACCES); the main process ended with exit code 0'; 136 messages: no environment value, no control character, max 438 characters, paths only in PATH_REFUSED (18)"
+      },
+      {
+        "command": "node --test --test-reporter=tap cause.test.mjs, then --test-reporter=spec (a start with a cwd that does not exist)",
+        "output": "TAP: error 'could not start \"picker\": ENOENT', code, name, stack only - the node path printed 0 times, the arguments 0 times; spec: also the cause (the raw spawn error with path and spawnargs), as for START_FAILED of browser.js (I6)"
+      },
+      {
+        "command": "node t7-real.mjs",
+        "output": "== t7-real: 11 checks, 11 pass, 0 fail; picker: 200 'Учёт-Про', listens only on 127.0.0.1 (lsof), stop code 0, stderr empty, git status of the clone unchanged, nothing in the temporary root; stand-in: 127.0.0.1 only; with-child: the child in the stand's group, no port, gone after stop()"
+      },
+      {
+        "command": "node t8-r2.mjs (po-probe.mjs computes the folder with resolveStateDir, writes nothing there)",
+        "output": "== t8-r2: 5 checks, 5 pass, 0 fail; no env: the computed folder == <home>/.sai-pixel-office (F1); HOME given: under it; SAI_PIXEL_OFFICE_DIR and HOME given (design 4.2): dirA; unbound env: the real folder (F2); the real folder not created or touched"
+      },
+      {
+        "command": "node t9-orphans.mjs",
+        "output": "== t9-orphans: 7 checks, 7 pass, 0 fail; SIGTERM 143, SIGHUP 129, process.exit 3, uncaught throw 1: the stand group gone, no folder, no record; hung spec killed by SIGKILL: the stand alive until the sweep, then killed=1, marker and record removed"
+      },
+      {
+        "command": "node t10-misc.mjs",
+        "output": "startTimeoutMs 2^31: TimeoutOverflowWarning, STAND_START_TIMEOUT after 25 ms; withStand with a frozen body error and a failing stop: 'TypeError: Cannot add property cleanupError, object is not extensible' (I4)"
+      },
+      {
+        "command": "leftovers: ps -axo pid=,lstart=,command= for node processes; LEFT of design section 16 (ps by the started programs; sai-e2e-* folders of the temporary root); find <scratch>/e2e105s/tmproot -name 'sai-e2e-*'",
+        "output": "LEFT before: 0 processes, 0 folders; after: 0 and 0; node processes at the end: only the ten that were there before the check (pids 266, 726 'node stand.js' of 2026-11-07; 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481 'node -e setInterval' of 2026-11-03); in my roots only my own symbolic-link fixture of trial 5, unlinked"
+      },
+      {
+        "command": "at the end: date -u; the same file list and shasum -a 256 as at the start; diff of the two hash lists",
+        "output": "2026-11-08T18:16:43Z; the same 20 files; 18 of 20 hashes equal, including all four files under review (stand.js, index.js, fake-stand.js, tools/README.md) and the documents; the two that differ are this handoff (IN_PROGRESS, then this result) and step-04-reviewer.json (REVIEWER writing its own handoff in parallel)"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1 (before close)",
+        "output": "handoffs-check: файлов проверено 1327, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2463, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "For ORCH, before the design of REQ-106 (and REQ-107): the starter alone does not keep a Pixel Office stand off the real state folder (F1, F2; trial 8) - a stand without HOME computes <home>/.sai-pixel-office, which holds the real journal and the real source secret, and a stand with test events there would put them into the real journal (R2). Decide: (a) whether the starter sets HOME to a private temporary folder when the caller gives none; (b) whether state folders are passed as name-to-folder pairs that the starter checks and writes into the env itself. Otherwise the design of REQ-106 must give SAI_PIXEL_OFFICE_DIR (or --dir) and HOME under the temporary root and prove with a test that the stand's state folder resolves under the temporary root (the computation of trial 8 is a pattern). The same holds for REQ-107 (SAI_TEAM_HOME, HOME)."
+      },
+      {
+        "id": "I2",
+        "kind": "DEFECT_CANDIDATE",
+        "text": "F4 belongs to the shared mechanism of tools/test/e2e/kit/cleanup.js and browser.js (REQ-104) as much as to stand.js: a group number stays registered after its leader ended by itself, and the sweep obeys any well-formed record whose marker exists. Proposal: one ISS for the three places together (AP-014), Low; not a fix in this run."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER through ORCH (E2S-05): Node gives NODE_V8_COVERAGE to every child when the parent has it (trial 1 A: present in the stand although the starter does not pass it), so E2S-05, which allows exactly one extra name (__CF_USER_TEXT_ENCODING), would be red in a run with coverage on; the test can unset it in its own environment or name it as a second platform allowance with the reason. Also informational: a key added to Object.prototype of the spec process reaches the child (Node's spawn reads inherited keys, trial 1 F); no code of the kit does that."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "For REVIEWER (not a security item): (a) startTimeoutMs and stopTimeoutMs have no upper bound; 2^31 ms makes Node set the timer to 1 ms with a TimeoutOverflowWarning, so the start fails at once (t10: STAND_START_TIMEOUT after 25 ms) - it fails fast, it does not hang; (b) withStand sets cleanupError on the body's error object; with a frozen error object that assignment throws in strict mode and the body error is lost (t10: 'TypeError: Cannot add property cleanupError, object is not extensible')."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "The shared helper safeText (errors.js, REQ-104) escapes C0, DEL, C1, U+2028 and U+2029 but lets the bidi control characters (U+202A-U+202E, U+2066-U+2069) through: trial 6 shows a stand's stderr line with U+202E unchanged inside STAND_EXIT. A terminal or log viewer may show such a line reordered. A candidate for the shared helper, not for this run."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "The message of STAND_START_FAILED holds only the name and the system code, so the ISS-0100 pattern (raw operator text in a message) is not repeated in stand.js. Its cause (the raw spawn error with the path of node and the argument list) is printed by the default spec reporter of node --test, not by the TAP reporter of the e2e runner (checked) - the same as START_FAILED of browser.js; the stack of any failure already holds the absolute paths of the kit files."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the tag base/E2E105-20261105-01 is 4f41032 and equals HEAD (the work is uncommitted); the four files of artifacts_in exist; step 02b reports only the hashes before its rework, and the files hold its two edits (stand.js:234, fake-stand.js:25 and :120); decisions/0109 holds O13 and O14, decisions/0108 holds the addendum about escaped and bounded text (verified in trial 6). The task named no expected verdict (AP-018). REVIEWER worked in parallel: its handoff step-04-reviewer.json changed during this check, as expected; no other file changed."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

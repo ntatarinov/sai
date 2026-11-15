@@ -20,3 +20,9 @@
 ## Маршрут
 
 WF-03 for item 1 (can ride with ISS-0100: the same test file). Item 2 — the step 9 of the REQ-105 run.
+
+## Обновление 2026-11-15 (DOC-UPDATER, прогон `E2E105-20261105-01`, шаг 10): пункт 2 выполнен, пункт 1 открыт
+
+Item 2 is met. REQ-105 added the second real spec file (`tools/test/e2e/picker.e2e.js`), and its RELEASE-VALIDATOR ran the order check of criterion 7 of REQ-104 on two real files (`handoffs/E2E105-20261105-01/step-09-release-validator.json`, `self_check` «ORDER CHECK ON TWO REAL FILES»; design `docs/design/REQ-105-e2e-picker.md`, section 13), from `tools/`: all names, last to first, are `smoke picker` (not the alphabetical order); `npm run -s e2e -- smoke picker` → exit 0, the lines `e2e: file=smoke` then `e2e: file=picker`, `e2e: browser=` once, the last line `e2e: command=npm run e2e -- smoke picker selection=smoke,picker exit=0 duration_ms=33717`; `npm run -s e2e -- picker smoke` → exit 0, `picker` then `smoke` (`duration_ms=33755`); `npm run -s e2e -- picker picker` → exit 1 with `SELECTION_DUPLICATE`. One Mac (Chrome 157), one run of each.
+
+Item 1 (the seven surviving mutants of the runner and the registry, N03, N04/X13, N06, N07, N16, N17, N23) is unchanged and not touched by REQ-105; the defect stays `open` for it.

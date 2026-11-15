@@ -1,0 +1,288 @@
+{
+  "handoff_id": "step05g-run2-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "05g",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/E2E105-20261105-01/step-05g-test-fixer-run2.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": "a88df557bfab718f7",
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-05g-test-fixer.json (the interrupted first launch)",
+      "handoffs/E2E105-20261105-01/step-05f-test-design-validator.json",
+      "handoffs/E2E105-20261105-01/step-05b-test-design-validator.json, step-05c-test-fixer.json, step-05d-test-design-validator.json, step-05e-test-fixer.json (the mutant descriptions)",
+      "decisions/0109-e2e-stand-conventions.md (addendum after the third pass, О19)",
+      "docs/requirements.yaml (block REQ-105, criterion 6)",
+      "docs/design/REQ-105-e2e-picker.md"
+    ],
+    "route": "5b PASS (pass 3) -> TEST-FIXER (05g, re-run 2 after the interruption; an edit of an already checked file, decisions/0109 О19) -> TEST-DESIGN-VALIDATOR (05h, the new check; a FAIL is the third FAIL of the gate: stop and report to the owner) -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable -> 8 not applicable -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/picker.e2e.js (test isolation and its helpers)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-05f-test-design-validator.json",
+    "orch_check": {
+      "at": "2026-11-15T13:09:56Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T13:07:10Z, result.status COMPLETED, issues I1-I9",
+        "shasum -a 256 tools/test/e2e/picker.e2e.js -> f83d3e45aa008313… (as reported)",
+        "diff of the agent's hash lists before/after (2547 files) -> only tools/test/e2e/picker.e2e.js and this handoff differ",
+        "git status --short -> only the run's files (6 modified, 8 untracked paths), as before the step",
+        "grep -c 'assert\\.' picker.e2e.js -> 159 (as reported)",
+        "npm run -s e2e -- picker (ORCH, twice) -> ok 1-9, exit 0, duration_ms 16874",
+        "node src/handoffs/cli.js -> 0 violations; node src/traces/cli.js -> 0 traces",
+        "ps -> no Chrome, picker server or stand-in left",
+        "issues I1, I2, I3 recorded in decisions/0109 as О20, О21 and 'Outside criterion 6' (addendum 2026-11-15); I7, I8 go to step 10"
+      ]
+    }
+  },
+  "task": {
+    "description": "RE-RUN AFTER AN INTERRUPTION (docs/workflows/handoffs.md, 'Pauses and interruptions'; the first launch is handoffs/E2E105-20261105-01/step-05g-test-fixer.json, closed FAILED with not_agent_attested). tools/test/e2e/picker.e2e.js already holds the edit of the first launch (sha256 ffff3a819bd2b510…; before the step e87fc3ee8850b6d1…, the file at tag base/E2E105-20261105-01 plus the earlier steps of this run). Nobody has checked that edit: you may keep it, change it or redo it, but you report for the final file yourself, and every point below is shown by your own measurements and mutants, not by the first launch's words. The helper files of the earlier steps (the gates' mutant lists, probes and series scripts outside the project) no longer exist: rebuild the mutants from their descriptions in the handoffs 05b, 05c, 05d, 05e and 05f of this run. The task of the first launch follows unchanged.\n\nWF-02, step 5b, an edit of an already checked file after PASS of pass 3 (handoffs/E2E105-20261105-01/step-05f-test-design-validator.json: F6 Low, issue I1, issue I4), by decisions/0109 'Addendum 2026-11-09 (ORCH, WF-02 step 5b, after the third pass of the test gate)', О19. TEST-FIXER edits the test 'isolation' of tools/test/e2e/picker.e2e.js and its helpers, nothing else. The edit gets a new check (step 05h); a FAIL of that check is the third FAIL of this gate and stops the run, so measure before you write and look for surviving mutants yourself before you hand over. The code under test (tools/src, tools/test/e2e/kit/*, the stand-in, tools/README.md, package.json) is right and is not changed; tools/test/e2e-stand.test.js is not changed.\n\n(1) Issue I1, the page of B on every screen of its own pass. Today the page text of B is read only on its card. Read it also on each question screen of B's pass and on B's result screen (wait for each screen by a fact, never by time). The page text is the textContent of the body; as the raise of the bar of О19, also document.title and the attributes aria-label, title, alt and placeholder of every element. The rule of О17 as corrected applies to the page: a text or a solution name of A that stands inside a ru text of B's tenant file is compared with the whole text of each element (and with each whole attribute value and document.title); every other text and name of A is looked for as a part of the page text. MEASURE FIRST on the correct server, both pairs, with a real browser: which texts and names of A stand inside the page texts of B on each screen, and why (a text of B's file, a fixed string of the page); the exceptions must be exactly the measured ones and pinned in the test so that they cannot grow silently. If a text of A is found on a screen of B on the correct server for another reason, stop and report it in result.issues instead of loosening anything.\n\n(2) Issue I1, the requests of B's page: every request of the page from the open of B's address to B's result goes under B's address /t/<B>/ or to a shared path that the test names with its reason (measure the paths first; the favicon line of the kit may be one); assert that, and that nothing goes under /t/<A>/.\n\n(3) F6, the keys: no key (at any depth) of B's questionnaire answer, B's result answer or the error answer to A's set holds a text or a solution name of A (no exception: the gate measured none); and every key of B's two answers is a key of B's tenant file or a field of the answer shape named in the test with its reason (the gate measured for B's two answers: version, lang, languages, questions_min, questions_max, ai, leads, clear_leader, recommended, score, because, value, selected; measure again yourself, and for the error answer name its own fields).\n\n(4) Issue I4: the comment of assertNothingOf (and any other comment of the test that says where «Средний» stands) states the measured fact: «Средний» stands inside a rule text of svet-marketing's file and in none of B's answers for the leader set; the check of B's own strings catches it inside any string.\n\nOut of criterion 6 by О19, not to be added: response headers, number values of A.\n\nSHOW on copies outside the project, each with the assertion that catches it: the gate's G01, G01-v3, G02, G08 (keys), G05 and G06 (screens and requests) red; all earlier mutants still red (W01, W02, N05, N09 and their v3 forms, P13 and P13-v3, O1 to O7 of step 05e, G03 and G09 of step 05f); and at least six own mutants that only the new checks catch, for example: A's text shown on a question screen of B taken from A's storage key with no request; a common word of A («человек») shown as a whole element text on a screen of B; A's name in document.title of B; A's name in an aria-label on B's page; B's page asking for the questionnaire of a third tenant (not A); A's id used as a key in B's result answer. The correct code: 'isolation' alone green in a series of dozens of runs under load (AP-115) and quiet.\n\nTHEN: the changed test alone; the independence loop of the nine spec tests (each name alone: exit 0, exactly one line that starts with 'ok ', and it is 'ok 1 - <name>'); npm run -s e2e -- picker three times (one Chrome at a time) with duration_ms (say how much the new reads cost against 17 s); the two kit files three times; the counts of test( and assert. not lower than now (picker.e2e.js 144 assert., test( 12; e2e-stand.test.js 211 assert., test( 22, unchanged); npm run check once at the end, exit 0. Every edit and why the test (not the code) is to blame goes into result.changes, with the remark number (F6, I1, I4). RULES: change only tools/test/e2e/picker.e2e.js; no skip, no sandbox flags, no sleep (waits for facts with limits); do not commit, push or pull; kill only your own processes by explicit pid; the ten old node processes of this machine (two 'node stand.js' with a working folder outside the project, eight 'node -e setInterval') are not yours. The handoff holds no absolute machine paths and no names of the owner's other projects.",
+    "acceptance_criteria": [
+      "I1: the page text of B (textContent, document.title, aria-label, title, alt, placeholder) is checked on every screen of B's own pass by the rule of О17 as corrected, with the exceptions measured on the correct server and pinned",
+      "I1: every request of B's page goes under B's address or to a named shared path; nothing under A's address",
+      "F6: no key of B's answers holds a text or a solution name of A, and every key of B's two answers is a key of B's file or a named field of the answer shape; I4: the comment about «Средний» states the measured fact",
+      "G01, G01-v3, G02, G08, G05, G06, all earlier mutants and at least six own mutants red on copies; the correct code green in a load series of dozens of isolation runs",
+      "the independence loop, three picker runs with duration_ms, the kit files three times, counts not lower, npm run check exit 0; only picker.e2e.js changed"
+    ]
+  },
+  "created_at": "2026-11-15T11:40:33Z",
+  "started_at": "2026-11-15T11:40:33Z",
+  "completed_at": "2026-11-15T13:07:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Re-run 2 of step 05g (WF-02, step 5b, an edit of an already checked file by decisions/0109 О19), F6, I1, I4 of step 05f. The file at my start was the unchecked edit of the first launch (sha256 ffff3a819bd2b510, equal to the task); I checked it point by point with my own measurement on the correct server (real Chrome, both pairs, my own script that shares no code with the spec) and my own mutants on copies, kept what holds and fixed what did not. KEPT (first launch, verified): the reads of B's page on the card, on each question screen of B's pass (when it is shown and again after its answer) and on the result screen (before and after its answer is read); the rule of О17 as corrected applied to the page with the measured exception pinned; the request check of B's page with the one named shared path /assets/<name> and the control that every record has its answer (a dedicated or shared worker shows as its script with no answer); the key checks (no key of B's three answers holds a text or a solution name of A, no exception; every key of B's two answers is a key of B's file or one of 13 named fields, the error answer held to its own 3 fields); the I4 comment. FIXED by me, because 7 own mutants survived the start file: (1) an exception word of A («человек») was compared with whole texts only, so the same word placed inside another text or an attribute of B's team screen passed (A2d, A2f): every text node, the title, the address and every attribute that holds it must now be one of B's file texts shown on that screen, and the pin is the measured holder read from the page («человек» in «Есть отдельный человек»); (2) only 4 attributes were read, so A's name in aria-valuetext of the progress bar or in aria-description passed (A15, A16): every attribute is read; (3) the address of the page was not read (A19): it is read, decoded; (4) a service worker of B's page asked A's questionnaire outside the page records (A14; a probe copy with a request log showed the server got GET /t/uchet-pro/api/questionnaire after B's open): the test asserts the origin has no service worker registration; (5) a shared path could bring A's data (A18: /assets/peek.js served A's questionnaire): what B's page got under its page address and the shared paths must hold no text or solution name of A. Measured on the correct server: on B's screens only «человек» inside B's own option on the team screen of svet-marketing (no fixed text of the page holds a text of A; title, every attribute and the address hold none); B's page asks its page, 12 files under /assets/, its questionnaire and its result (no /favicon.ico, which comes once with A's first load; no service worker); the keys outside B's file are exactly the 13 fields the gate measured (leads only in pair 1, stock's file has that key) and error, message, question for the error answer; no key holds a text of A. Mutants on copies, final file: all 29 earlier mutants named by the task red (W01, W02, N05, N09 and their v3 forms, P13, P13-v3, O1 to O7 of step 05e in 11 forms, G01, G01-v3, G02, G08, G05, G06, G03, G09); 25 own mutants red, 24 of them green when the new checks are taken out of a copy; 3 timing probes (A's text added 300 ms after a screen appears) survive by the rule of no wait by time (issue I1). Runs: isolation alone 130 runs green (100 under 6 or 8 busy loops, load average up to 11.4 on 10 cores; 30 quiet); independence loop 9 of 9; npm run -s e2e -- picker x3: duration_ms 16898, 16901, 16978 (isolation inside 2429, 2450, 2481 ms; at 05f 17157-17150 and 2497-2657 ms, so the new reads cost no measurable time); the two kit files x3: 72 of 72; counts picker.e2e.js test( 13, assert. 159 (start 13/156, 05f 12/144), e2e-stand.test.js 22/211 unchanged; npm run check exit 0. Only picker.e2e.js and this handoff differ from my hash list taken before my first change.",
+    "changes": [
+      {
+        "remark": "I1 (page of B on every screen): kept",
+        "fixed": "the test (kept as built by the first launch, checked by me)",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "answerAllLooking (line 838); shownTexts (line 725); isolation: look (line 1600) on the card, on each question screen (shown, and again after its answer) and on the result screen twice; the pin of measuredOnScreens (PAIRS line 1466, the assertion near line 1652)",
+        "was": "e87fc3ee8850b6d1 (05f): the page text of B read only on its card",
+        "became": "ffff3a819bd2b510 (first launch): the page read on every screen of B's pass, each screen waited for by a fact (the title of the next question, the result screen), never by time",
+        "why_the_test_not_the_code": "decisions/0109 О19: criterion 6 covers every screen of B's page; measured on the correct server the code shows nothing of A (only «человек» inside B's own text on one screen), so the test, not the code, had to read more. Red now: G05 (result screen), A1, A12, A13 (question and result screens), A2b"
+      },
+      {
+        "remark": "I1 (the exception words on a screen)",
+        "fixed": "the test",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "SCREEN_TEXTS (line 686): new field pieces (every text node of the document); assertScreenNothingOf (line 743): new parameter ownTexts in place of exceptions, the new holder rule and its return value; isolation look (line 1600); PAIRS (line 1466) and its comment",
+        "was": "a text or a solution name of A that stands inside a text of B's file shown on the screen was compared only with the whole text of each element, the whole title and each whole attribute; the pin was 'question 11 (team): человек', computed from B's file",
+        "became": "the same whole-text comparison, and in addition every text node, the title, the address and every attribute that holds such a word as a part must be one of B's file texts shown on that screen; the pin is where the word stands on the page, read from the page: 'question 11 (team): «человек» in «Есть отдельный человек»'",
+        "why_the_test_not_the_code": "criterion 6 and О19 (the page holds none of A's strings; such a word is an exception only because it stands inside B's own text). Measured on the correct server: «человек» stands only in the text node «Есть отдельный человек» (option has-smm of svet-marketing's question team, its file questions[10].options[2].label.ru) on that one screen, so the code is right; on the start file my mutants A2d («человек» appended inside the option «Я сам» of the same screen) and A2f (inside an attribute of the same screen) survived. Red now: A2d «shows «человек» inside «Я сам человек» (a text of the page), no text of B's file on this screen», A2f the same for «Кто: человек» (an attribute); A2 (the word as a whole element) red as before"
+      },
+      {
+        "remark": "I1 (the attributes, raise of О19)",
+        "fixed": "the test",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "SCREEN_TEXTS (line 686) and its comment",
+        "was": "the attributes aria-label, title, alt and placeholder of every element",
+        "became": "the value of every attribute of every element (the four of О19 among them)",
+        "why_the_test_not_the_code": "О19 reads the attributes 'which a visitor reads or hears'; B's page also carries aria-valuetext on its progress bar, which a screen reader says. Measured on the correct server: 52 kinds of attributes on B's screens, none holds a text or a solution name of A, so no exception is needed. On the start file A15 (A's name as aria-valuetext of the progress bar) and A16 (as aria-description) survived; red now 'shows «Учёт-Про» in an attribute'"
+      },
+      {
+        "remark": "I1 (the address of the page)",
+        "fixed": "the test",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "SCREEN_TEXTS (line 686): new field address (location.href decoded, the raw one when it does not decode); assertScreenNothingOf (line 743): the address is read like the title",
+        "was": "not read",
+        "became": "every text and solution name of A looked for in the address of B's page on every screen",
+        "why_the_test_not_the_code": "the visitor reads the address; measured: B's address is /t/<B>/?lang=ru on every screen and holds nothing of A. On the start file A19 (A's name put after # of B's address, no request) survived; red now 'shows «Учёт-Про» in the address of the page'"
+      },
+      {
+        "remark": "I1 (the requests of B's page): kept",
+        "fixed": "the test (kept as built by the first launch, checked by me)",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "SHARED_PATHS (line 787), assertRequestsOfB (line 801), its call after B's result (line 1658); page.clearNetwork() before the open of B's address",
+        "was": "e87fc3ee: no check of the requests",
+        "became": "every record from the open of B's address to B's result: the same origin, nothing under /t/<A>, everything under /t/<B>/ or /assets/<name> (named, with its reason), and every record has its answer",
+        "why_the_test_not_the_code": "О19. Measured in both pairs on the correct server: 15 records, GET /t/<B>/?lang=ru (Document), the 12 files page.css, main.js, app.js, flow.js, net.js, result.js, say.js, screens.js, store.js, texts.js, rules.js, dom.js under /assets/, GET /t/<B>/api/questionnaire?lang=ru, POST /t/<B>/api/result?lang=ru, all 200 and finished; /favicon.ico only in A's first load (Other, 404). Red: G06, A9 (asked under A), A5 (a third tenant tretiy), A8 and A17 (a dedicated and a shared worker: their script recorded with no answer; measured with a probe: the worker's request reached the server unseen by the records)"
+      },
+      {
+        "remark": "I1 (the requests: a service worker)",
+        "fixed": "the test",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "isolation, after assertRequestsOfB (line 1666): navigator.serviceWorker.getRegistrations() of B's page equals []",
+        "was": "a request made by a service worker of B's page was not seen",
+        "became": "the origin of B's page has no service worker registration at the end of B's pass",
+        "why_the_test_not_the_code": "the request check reads the page records, which hold no request of a service worker; measured with a probe copy (a request log in the server, copy only): under A14 the server got GET /t/uchet-pro/api/questionnaire after B's open while the records of B's page were the 15 of the correct page. On the correct code the registrations are []. A14 survived the start file; red now 'a service worker of the origin of B's page'"
+      },
+      {
+        "remark": "I1 (the requests: what a shared path brings)",
+        "fixed": "the test",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "isolation (line 1675): the bodies of every record of B's page outside /t/<B>/api/ (its page and its 12 files) are searched for every text and solution name of A as a part",
+        "was": "a shared path was named with its reason ('the same for every tenant') and not checked",
+        "became": "what B's page got under its page address and the shared paths holds no text and no solution name of A (B's two answers keep their own checks)",
+        "why_the_test_not_the_code": "criterion 6 ('holds none of them') and О19 (a shared path is allowed for its reason). Measured without a browser on the correct server: the page and the 14 files of the page folder as served hold none of the 64 (pair 1) and 35 (pair 2) texts and names of A, so no exception. A18 (the server answers /assets/peek.js with A's questionnaire and B's page asks it, shows nothing) survived the start file; red now 'B's page got «Учёт-Про» of A with /assets/peek.js'"
+      },
+      {
+        "remark": "F6 (keys): kept",
+        "fixed": "the test (kept as built by the first launch, checked by me)",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "placedKeys (line 480); assertNothingOf (line 555, the key loop at line 571); ANSWER_FIELDS (line 641); assertOwnKeys (line 669) on B's questionnaire answer, B's result answer and the error answer to A's set",
+        "was": "e87fc3ee: the keys of the answers were not read",
+        "became": "no key at any depth of the three answers holds a text or a solution name of A (no exception); every key of B's two answers is a key of B's file or one of the 13 named fields (version, lang, languages, questions_min, questions_max, ai, leads; clear_leader, recommended, score, because, selected, value), the error answer only error, message, question",
+        "why_the_test_not_the_code": "О19. Measured again on the correct server: keys of B's answers not in B's file: questionnaire pair 1 version, lang, languages, questions_min, questions_max, ai, leads, pair 2 the same without leads (a key of stock's file); result both pairs clear_leader, recommended, score, because, value, selected; error answer {error, message, question} (400, answers_invalid, question null); no key holds a text of A. Red: G01, G01-v3, G02, G08 (a text of A in a key), A6, A6-v3 (A's id as a key of B's result), A6q (A's question id as a key of B's questionnaire answer)"
+      },
+      {
+        "remark": "I4: kept",
+        "fixed": "the test (a comment; kept as written by the first launch, checked by me); PAIRS comment changed by me for the new pin",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "the comment of assertNothingOf (lines 537-554); the comment of PAIRS (lines 1457-1465); the comment of shownTexts reworded without the word 'only:' (so a scan for test options reads no comment)",
+        "was": "05f: 'such a word stands inside B's answers on the correct server'",
+        "became": "«Средний» stands inside a rule text of svet-marketing's file and in none of B's answers for the leader set; the check of B's own strings catches such a word inside any string",
+        "why_the_test_not_the_code": "measured (<scratch>/e2e105r2/h/words.mjs): «человек» = uchet-pro questions[5].unit, inside svet-marketing questions[10].options[2].label «Есть отдельный человек», in B's questionnaire answer at questions[10].options[2].label, not in B's result; «Средний» = uchet-pro questions[10].options[1].label, inside svet-marketing rules[6].text «Средний бюджет хорошо расходуется на регулярный контент.», in neither of B's answers for the leader set; «Обучение» = agency questions[0].options[3].label, inside stock solutions[0].includes[2] «Обучение сотрудников», in B's result at recommended[0].includes[2], not in B's questionnaire answer"
+      }
+    ],
+    "measured_exceptions_on_B_screens": {
+      "uchet-pro then svet-marketing": "screens of B's pass: the card; questions 1 (place), 2 (ad-budget), 3 (channels), 4 (aim), 5 (photos), 7 (booking), 10 (when, skipped by the leader set), 11 (team), each shown and (when answered) after its answer; the result screen twice. The only text or solution name of A on any screen: «человек» on question 11 (team), shown and after the answer, inside the text node «Есть отдельный человек» (a span of the option has-smm), the text of B's own file (questions[10].options[2].label.ru); never as a whole element text. No fixed text of the page holds one (no hit in the attributes «Язык», «Ход опроса», the progress text, the buttons). document.title on every screen «Свет Маркетинг»; the address /t/svet-marketing/?lang=ru; no attribute holds a text of A. 49 texts and 15 solution names of A.",
+      "agency then stock": "screens: the card; questions 1 (sites), 2 (sys), 3 (sku), 4 (count), 5 (support), each shown and after its answer; the result twice. No text or solution name of A on any screen, in the title («Складеон»), in the address, in any attribute. 23 texts and 12 solution names of A.",
+      "pinned in the test": "PAIRS: [\"question 11 (team): «человек» in «Есть отдельный человек»\"] and []; the test asserts the list of where such words stand on B's screens equals it, so the exception cannot grow silently; the one-word list of О17 for B's answers stays [«человек», «Средний»] and [«Обучение»]"
+    },
+    "named_shared_paths_and_answer_fields": {
+      "shared paths": "only /^\\/assets\\/[^/]+$/ ('a file of the page, the same for every tenant', README /assets/<name>); measured: 12 files asked by B's page in each pair; /favicon.ico is not among B's requests (once per start, with A's first load); now also checked: what they bring holds nothing of A",
+      "answer fields": "questionnaire: version (sha256 of the file bytes), lang, languages, questions_min, questions_max, ai, leads; result: clear_leader, recommended, score, because, selected, value; error answer: error, message, question - each with its reason in ANSWER_FIELDS"
+    },
+    "mutants": {
+      "how": "Harness <scratch>/e2e105r2/h/mut.mjs with the list <scratch>/e2e105r2/h/mutants.mjs (rebuilt from the descriptions in handoffs 05b, 05d, 05e, 05f): a fresh clone of base/E2E105-20261105-01 (<scratch>/e2e105r2/clone) with every modified and untracked work file of the run copied in except handoffs (diff -rq of the whole tree except .git, node_modules and handoffs: no difference; root README and decisions/0107 equal); each mutant in its own copy of the clone's tools/ under <scratch>/e2e105r2/m, every edit asserted to match exactly once, the copy deleted after the run; a lock file; Chrome one at a time; a limit of 200 s (whole spec) or 90 s (isolation alone); red tests and their first error line read from TAP; leftovers looked for by program and folder after each run (0 found, 0 killed, 0 timeouts in 220 runs). Spec variants: new = the final file; old = the final file with the new checks of О19 taken out (the screen reads, the pin, the requests, the service worker check, the bodies, the keys); start = the file at my start (ffff3a819bd2b510, rebuilt by reversing my edits, sha256 equal); noscreen = only the screen reads taken out.",
+      "earlier mutants (named by the task), final file, whole spec": [
+        "W01 -> red 1 isolation 'uchet-pro then svet-marketing: the questionnaire answer of B: holds the text of A «Сколько видов товара у вас в наличии?»'",
+        "W01-v3 -> red 1 isolation 'agency then stock: the questionnaire answer of B: holds the text of A «Где ищем клиентов?»'",
+        "W02, W02-v3 -> red 1 isolation, the same messages",
+        "N05 -> red 1 isolation '... the questionnaire answer of B: holds the text of A «Учёт-Про»'; N05-v3 -> '... «Лидвейв»'",
+        "N09 -> red 1 isolation '... the result of B: holds the text of A «Учёт-Про»'; N09-v3 -> '... «Лидвейв»'",
+        "P13 -> red 6 (matrix, pass, storage, isolation, no connection, v3), isolation 'uchet-pro then svet-marketing: 0 texts of A'",
+        "P13-v3 -> red 2 (isolation 'agency then stock: the card of B shows «Лидвейв»', v3)",
+        "O1, O1-v3 -> red 1 isolation 'the questionnaire answer of B: not the texts of the tenant file at question 1 (place|sites): title'",
+        "O2 -> red 1 isolation '«... (Средний)» at recommended[0].summary is not a string of the tenant file of B'; O2-v3 -> '... (Обучение)»'",
+        "O3, O3-v3 -> red 1 isolation 'the result of B: «<the summary of A's first solution>» at recommended[0].summary is not a string of the tenant file of B'",
+        "O4-v3 -> red 1 isolation '«Соберём план привлечения клиентов — пока вы отвечаете» at look.headline is not a string of the tenant file of B'; O5-v3 -> '«... пока вы отвечаете Обучение» at look.headline ...'",
+        "O6, O6-v3 -> red 1 isolation 'the questionnaire answer of B: the field version'",
+        "O7 -> red 1 isolation 'the answer of B to the answers of A: holds the text of A «Учёт-Про»'",
+        "G01 -> red 1 isolation 'the questionnaire answer of B: the key at seen.Учёт-Про holds «Учёт-Про» of A'; G01-v3 -> '... seen.Лидвейв ...'",
+        "G02 -> red 1 isolation 'the result of B: the key at recommended[0].by.<intro of A> holds «Учёт-Про» of A'",
+        "G03 -> red 1 isolation '«100000» at recommended[0].score is not a string of the tenant file of B'",
+        "G08 -> red 1 isolation 'the answer of B to the answers of A: the key at Учёт-Про holds «Учёт-Про» of A'",
+        "G09 -> red 1 isolation 'the questionnaire answer of B: not the texts of the tenant file at question 1 (place): title'",
+        "G05 -> red 1 isolation 'the screen of the result of B shows «Учёт-Про» in the text of the page'",
+        "G06 -> red 1 isolation 'B's page asked under the address of A: GET /t/uchet-pro/api/questionnaire?lang=ru' (in earlier runs the screen read was first: 'the screen of question 2 (ad-budget) | 4 (aim) of B shows «Учёт-Про»', the moment of its asynchronous append decides which; with the screen reads taken out (noscreen) red by the requests)"
+      ],
+      "own mutants, final file, whole spec (catcher; old = with the new checks taken out)": [
+        "A1 A's name on B's question screens from A's own stored value (the page keeps the tenant name in it), no request -> red 2: isolation 'the screen of question 1 (place) of B shows «Учёт-Про» in the text of the page', storage (the sixth field); old: green",
+        "A2 «человек» as a whole element on B's team screen -> red isolation '... question 11 (team) ... shows «человек» in the text of the page as a whole text'; old: green",
+        "A2b the same word on B's first question screen -> red '... question 1 (place) ... shows «человек» in the text of the page'; old: green",
+        "A2c the same word appended inside B's team title on the page -> red by the pass driver 'a title the questionnaire does not have'; old: red the same (not counted as only-new)",
+        "A2d the same word appended inside another option of the team screen -> red '... shows «человек» inside «Я сам человек» (a text of the page), no text of B's file on this screen'; old: green; start: green (survived the first launch's edit)",
+        "A2f the same word inside an attribute of the team screen -> red '... inside «Кто: человек» (an attribute) ...'; old: green; start: green",
+        "A3 A's name in document.title of B (kept in window.name) -> red 'the screen of the card of B shows «Учёт-Про» in the text of the page' (the title element is inside the root text); old: green",
+        "A4 A's name as aria-label of B's question panel -> red '... question 1 (place) ... in an attribute'; old: green",
+        "A5 B's page asks the questionnaire of a third tenant tretiy (a copy of B's file added to both folders) -> red 'B's page asked outside its address and the shared paths: GET /t/tretiy/api/questionnaire?lang=ru'; old: green",
+        "A6, A6-v3 A's tenant id as a key in B's result answer -> red 'the key «uchet-pro» at recommended[0].uchet-pro is no key of the tenant file of B and no field of the answer' / '«agency»'; old: green",
+        "A6q A's question id as a key in B's questionnaire answer -> red 'the key «business» at questions[0].business ...'; old: green",
+        "A7 A's name as placeholder of B's number field -> red '... question 2 (ad-budget) ... in an attribute'; old: green",
+        "A8 a dedicated worker of B's page asks A's questionnaire -> red 'B's page got no answer to GET /assets/w.js (a request handed to a worker, or one still on its way)'; old: green",
+        "A9 B's page asks A's questionnaire and shows nothing -> red 'B's page asked under the address of A: GET /t/uchet-pro/api/questionnaire?lang=ru'; old: green",
+        "A10 A's name as alt of an image on B's card -> red 'the screen of the card of B shows «Учёт-Про» in an attribute'; old: green",
+        "A11 A's name as title (tooltip) of B's heading -> red the same; old: green",
+        "A12 A's name in the live region on B's question screens -> red '... question 1 (place) ... in the text of the page'; old: green",
+        "A13 A's name on B's result screen from window.name -> red 'the screen of the result of B shows «Учёт-Про» in the text of the page'; old: green",
+        "A14 a service worker of B's page asks A's questionnaire -> red 'a service worker of the origin of B's page'; old: green; start: green",
+        "A15 A's name as aria-valuetext of B's progress bar -> red '... question 1 (place) ... in an attribute'; old: green; start: green",
+        "A16 A's name as aria-description of B's question group -> red the same; old: green; start: green",
+        "A17 a shared worker of B's page asks A's questionnaire -> red 'B's page got no answer to GET /assets/sw2.js ...'; old: green",
+        "A18 /assets/peek.js answers A's questionnaire, B's page asks it and shows nothing -> red 'B's page got «Учёт-Про» of A with /assets/peek.js'; old: green; start: green",
+        "A19 A's name after # in B's address -> red 'the screen of the card of B shows «Учёт-Про» in the address of the page'; old: green; start: green",
+        "T1, T2, T3 (timing probes: A's name added 300 ms after B's card, result screen or each question screen appears) -> green on new, old and start: issue I1"
+      ],
+      "totals": "On the final file (sha256 f83d3e45aa008313): BASE green 9 of 9; 29 earlier mutants red 29; 25 own mutants red 25 (24 of them green on 'old', A2c red there by the pass driver); 3 timing probes green (I1). Every red is in isolation only, except P13 (6 tests), P13-v3 (2), A1 (storage too). The first runs of the whole spec were on the file before a last comment-only edit (sha256 5716178c63151eec, the 3 lines of the comment of shownTexts differ); all 58 records were run again on the final file with isolation alone, with the same first error line in each of the 58. Probe of the worker class (<scratch>/e2e105r2/h/probe-workers.mjs, copies with a request log in the server): under A8, A14, A17 the server got GET /t/uchet-pro/api/questionnaire after B's open; on the correct copy nothing under /t/uchet-pro after B's open and no registration."
+    },
+    "runs": {
+      "isolation alone (load series, AP-115)": "the project's tools/, node --test --test-reporter=tap --test-name-pattern='^isolation$' test/e2e/picker.e2e.js, one Chrome at a time (<scratch>/e2e105r2/h/series.sh, busy loops 'node -e' bounded by time and stopped by their own pids, 0 left): on 5716178c: 40 runs under 6 busy loops (load average up to 10.54) 40 of 40, 30 under 8 (11.09) 30 of 30, 20 quiet 20 of 20; on the final f83d3e45: 30 under 8 (11.40) 30 of 30, 10 quiet 10 of 10; 130 of 130 exit 0 with exactly 'ok 1 - isolation'; duration_ms 2436-2512 quiet, 2797-3287 under load. Also on the clone x3 after each edit: 2505, 2427, 2418 ms",
+      "independence loop (final file)": "<scratch>/e2e105r2/h/indep.mjs: the full file exit 0, 9 top-level ok; each printed name alone with --test-name-pattern='^<name>$': exit 0, exactly one line starting 'ok ', equal to 'ok 1 - <name>', no 'not ok': 9 of 9 (matrix 3218, pass 2973, themes 1050, keyboard 1080, storage 1177, isolation 2455, not found 1395, no connection 1010, v3 2201 ms)",
+      "picker x3 (final file)": "cd tools && npm run -s e2e -- picker -> exit 0, 9 ok / 0 not ok each; 'e2e: command=npm run e2e -- picker selection=picker exit=0 duration_ms=' 16898, 16901, 16978; isolation inside 2429, 2450, 2481 ms; Chrome/157.0.8103.78. Against 05f (17157, 17090, 17150; isolation 2497-2657 alone): the new reads of every screen, the requests, the bodies and the keys cost no measurable time (the 17 s of the task stay 17 s)",
+      "kit files x3 (final file)": "cd tools && node --test test/e2e-kit.test.js test/e2e-stand.test.js -> exit 0, tests 72, pass 72, fail 0, cancelled 0, skipped 0, todo 0 each; duration_ms 34993, 35078, 35024",
+      "counts": "grep -o 'test(' / 'assert\\.' | wc -l: picker.e2e.js test( 13 (9 top-level, the other 4 are the regular-expression calls .test( of hasStack, noContactData, hasBlank and SHARED_PATHS), assert. 159; at my start 13 / 156; at 05f 12 / 144; e2e-stand.test.js 22 / 211, not changed (equal hash)",
+      "npm run check (once, at the end)": "exit 0, 2026-11-15T12:59:04Z to 2026-11-15T13:03:45Z: prettier 'All matched files use Prettier code style!', eslint . --max-warnings 0 passed, traces: файлов проверено 2480, следов 0, пропущено 67, handoffs-check: файлов проверено 1341, нарушений 0, исключений использовано 114 из 114, npm test tests 2207 pass 2207 fail 0 cancelled 0 skipped 0 todo 0 (duration_ms 235047), e2e picker 9 of 9 (16592 ms) and smoke 13 of 13, 'e2e: command=npm run e2e selection=all exit=0 duration_ms=34252'; 0 lines 'not ok'"
+    },
+    "self_check": {
+      "commands": [
+        "node -v -> v22.23.4; my hash list before my first change (find of the project without .git and tools/node_modules, sorted, shasum -a 256) -> 2547 files, <scratch>/e2e105r2/hashes-before.txt; picker.e2e.js ffff3a819bd2b510... (= the task); then this handoff set IN_PROGRESS",
+        "processes before: the eight 'node -e setInterval' (10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481) never touched; no picker server, stand-in or kit Chrome; the temporary root 6092 sai-* entries, 0 sai-e2e-",
+        "git clone -b base/E2E105-20261105-01 <repo> <scratch>/e2e105r2/clone (HEAD 4f41032); the 13 work paths of git status --short (handoffs excepted) copied in; diff -rq of tools/ -> equal; diff -rq of the whole tree except .git, node_modules, handoffs -> equal; root README and decisions/ equal",
+        "node <scratch>/e2e105r2/h/measure.mjs <clone>/tools 1 (real Chrome through the kit, both pairs, no code of the spec) -> the figures in measured_exceptions_on_B_screens and in changes (screens, holders, title, attributes, address, records, keys, error answer, stop code 0, stderr empty); node h/assets-measure.mjs -> the page and its 14 files hold none of A's 64 and 35 items; node h/words.mjs -> the I4 places",
+        "the edits: cd tools && npx prettier --check test/e2e/picker.e2e.js -> clean; npx eslint --max-warnings 0 test/e2e/picker.e2e.js -> exit 0 (after each edit)",
+        "node h/mut.mjs <label> <variant> <full|iso> <ids> (records <scratch>/e2e105r2/out/mut-*.jsonl; FIN1 and FIN2 whole spec on 5716178c, FINAL isolation alone on f83d3e45, FIN3 and FIN3b old, FIN4 start, F4n noscreen) -> the table in mutants; node h/probe-workers.mjs BASE A8 A14 A17 -> the probe in mutants.totals",
+        "node h/series.sh (four series) -> 130 of 130; node h/indep.mjs <project>/tools -> 9 of 9; npm run -s e2e -- picker x3; node --test test/e2e-kit.test.js test/e2e-stand.test.js x3; npm run check -> the figures in runs",
+        "scans on picker.e2e.js: grep -nE '\\.skip\\(|\\.todo\\(|\\|\\| true' -> no line (exit 1); test options skip:, todo:, only:, eslint-disable, the sandbox flag, process.env, require( -> no line (exit 1); imports: node: modules and ./kit/index.js only; no sleep: the waits are page.waitFor of a fact and the existing poll helper until (20 ms poll of a fact with a limit, not changed); npm run -s traces | grep -c 'tools/test/e2e/picker' -> 0; ls tools/test/e2e/picker.e2e.js -> the file",
+        "LEFT at the end: picker server, stand-in, kit Chrome, busy loops 0; <scratch>/e2e105r2/m empty; the eight old processes keep their pids; the temporary root 6295 sai-* entries: the 203 new ones are 195 sai-wf06-*, 5 sai-outside-*, 2 sai-snap-*, 1 sai-flaky-*, made by other test files of the one npm run check (step 05, I11); my mutant runs, series, probes, picker and kit runs added no sai-e2e- or sai-stand-test- entry",
+        "hashes after (the same command): 2547 files; the only differing paths are tools/test/e2e/picker.e2e.js (ffff3a819bd2b510 -> f83d3e45aa008313) and this handoff",
+        "before close, with this result written: node src/handoffs/cli.js (tools/) -> exit 0, 'handoffs-check: файлов проверено 1341, нарушений 0, исключений использовано 114 из 114'; node src/traces/cli.js (tools/) -> exit 0, 'traces: файлов проверено 2480, следов 0, пропущено 67'; the handoff with status set back to PENDING and result null gives the sha256 of my list before (28e679b8551c42e7), so only status and result changed"
+      ],
+      "hashes": "<scratch>/e2e105r2/hashes-before.txt (before my first change) and hashes-after.txt (after npm run check): 2547 files each; the differences are exactly tools/test/e2e/picker.e2e.js and handoffs/E2E105-20261105-01/step-05g-test-fixer-run2.json"
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Survivors by the rule of no wait by time (for ORCH; not fixable inside the rules of this step). A text of A that the page adds later than the test reads the screen is not seen: own probes T1 (A's name on B's card 300 ms after it appears), T2 (on B's result screen 300 ms after it appears), T3 (on each question screen 300 ms after it appears) stay green on the final file. Each screen is read when it appears by a fact and again after its answer; the test moves on within tens of milliseconds, so a delayed text lands on a screen already left (or after the last read of the result). Seeing it needs time to pass on the page, which a spec may get only by a wait by time (forbidden: no sleep). A fact-based way exists outside this file: the page's own clock run forward by the debugging protocol (Emulation.setVirtualTimePolicy with a budget, which ends with an event), a feature of the kit (REQ-104) with its own requirement. Proposal: ORCH records it like О13 and S22 (not testable with the tools of this run), or opens it for the kit."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Places of B's page the test does not read (outside criterion 6 and О19 as written; no mutant of mine): text drawn by CSS generated content (::before, ::after) or into canvas, SVG images and pictures; text inside a shadow root (textContent and the tree walk do not enter it); the value property of a field; a second window that B's page opens; dialogs; and A's texts in kk and en (the set of criterion 6 is built from A's questionnaire in ru and B's pass runs in ru). Recorded by О19 as outside: the response headers and the number values of A."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Beyond the letter of О19, within its meaning, for ORCH to record (decisions/0109) and for DOC-UPDATER at step 10: the page read takes every attribute, not only the four named (aria-valuetext of the progress bar is said by a screen reader), and the address of the page; an exception word must stand only inside the measured text of B (pinned with that text); the request check is completed by two controls that the records hold the requests of the page (no service worker registration; a dedicated or shared worker shows as its script with no answer) and by a search of what the page and its shared files bring. Each is measured clean on the correct server (no exception) and each has a mutant red only by it (A15, A16, A19, A2d, A2f, A14, A18)."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "The task names 'the ten old node processes of this machine (two node stand.js with a working folder outside the project, eight node -e setInterval)'. Measured at my start and at the end: only the eight 'node -e setInterval' (10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481); no 'node stand.js' is running. Not touched. The launch message names the eight."
+      },
+      {
+        "id": "I5",
+        "kind": "DISCREPANCY",
+        "text": "The task says the counts must not be lower than now: picker.e2e.js 144 assert., test( 12. Those are the figures of 05f (e87fc3ee); the file at my start (ffff3a819bd2b510) had 156 / 13; the final file has 159 / 13. grep -o 'test(' also counts the calls .test( of regular expressions: 9 top-level tests plus hasStack, noContactData, hasBlank (12 at 05f) and SHARED_PATHS (added by the first launch). e2e-stand.test.js 211 / 22, not changed."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "The first launch's edit cannot be shown against e87fc3ee8850b6d1 by a diff: no copy of that file exists (no commit, no remote branch holds it; its helper folders are gone). My diff is against the start file ffff3a819bd2b510 (rebuilt in <scratch>/e2e105r2/ref/picker-start.js by reversing my edits, sha256 equal): my hunks are only in helpers used by isolation (SCREEN_TEXTS, shownTexts comment, assertScreenNothingOf, PAIRS) and in isolation. By grep every helper the first launch added (placedKeys, ANSWER_FIELDS, assertOwnKeys, SCREEN_TEXTS, shownTexts, assertScreenNothingOf, SHARED_PATHS, assertRequestsOfB, answerAllLooking) is used only by isolation or another of them; the eight other tests ran green in every run (independence loop, picker x3, npm run check). The gate 05h compares with its own copy if it has one."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "For step 10 (DOC-UPDATER, as decisions/0109 О19 says): design section 8, row 6 and section 4.4 (helpers) are behind the test: the reads of every screen of B's pass (text of the page, title, address, every attribute, whole texts, text nodes), the pinned holder of «человек», the requests with the shared path /assets/<name> and its reason, the two controls (answer of every record, no service worker), the search of the bodies of the page and its files, the keys and the 13 named fields with the error answer's 3; the mutants of this step (G01, G02, G05, G06, G08 now red; own A1-A19; the timing probes T1-T3 of I1) for section 16; the criterion 6 precision of О19. The counts of picker.e2e.js: test( 13 (9 top-level), assert. 159."
+      },
+      {
+        "id": "I8",
+        "kind": "Q13_CANDIDATE",
+        "text": "Two lessons of this step. (1) An exception that compares a word with whole texts only needs a pin of where the word stands (the text that holds it): otherwise the same word placed inside another text of the same screen passes (A2d, A2f survived the first launch's edit). (2) A check that reads the network records of a page sees only what the page itself asks: a worker or a service worker of the page asks unseen (A8, A14, A17, shown with a request log of the server in a copy); such a check needs a control that the records hold every request, and a named shared path needs a check that it brings nothing of the other tenant (A18)."
+      },
+      {
+        "id": "I9",
+        "kind": "NOTE",
+        "text": "All runs on one machine (macOS, 10 cores, 16 GB, Node 22.23.4, Chrome/157.0.8103.78); the GitHub runner is not measured here (decisions/0110: TEST-RUNNER). The new checks do not depend on timing on the correct code: every screen is waited for by a fact, the requests and bodies are read after B's result answer was read, and the service worker registrations are a fact of the origin."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e/picker.e2e.js"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-15T11:40:55Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/test-fixer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same."
+  }
+}

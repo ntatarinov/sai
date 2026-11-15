@@ -1,0 +1,191 @@
+{
+  "handoff_id": "step05d-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "05d",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/E2E105-20261105-01/step-05d-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-05c-test-fixer.json",
+      "handoffs/E2E105-20261105-01/step-05b-test-design-validator.json (your pass 1)",
+      "decisions/0109-e2e-stand-conventions.md (addenda O17 and O18)",
+      "docs/requirements.yaml (block REQ-105)",
+      "docs/design/REQ-105-e2e-picker.md",
+      "docs/workflows/WF-02-development.md (Step 5b)"
+    ],
+    "route": "TEST-FIXER done -> TEST-DESIGN-VALIDATOR (this, gate, pass 2 of 3) -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable -> 8 not applicable -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the gate reads); mutants only on copies outside the project"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-05b-test-design-validator.json"
+  },
+  "task": {
+    "description": "WF-02, step 5b, pass 2 of 3 - gate on the tests of REQ-105 after the fix of TEST-FIXER (handoffs/E2E105-20261105-01/step-05c-test-fixer.json) for your findings of pass 1 (step-05b-test-design-validator.json: F1 High, F2 Medium, F3 Low). Follow the section 'Step 5b' of docs/workflows/WF-02-development.md item by item for what changed, and check that nothing else changed.\n\nWHAT TO CHECK: (1) the diff: only tools/test/e2e/picker.e2e.js (test isolation and its helpers) and tools/test/e2e-stand.test.js (one group check in E2S-01, E2S-06, E2S-07, E2S-08, E2S-13) changed since your pass 1; the code under test, the kit, the stand-in, the README and the other tests are byte-equal to what you checked (compare with the hashes of your pass 1). (2) F1 and F2 against decisions/0109 addendum O17 (the reading of criterion 6 by ORCH): the set of A's texts is built against B's tenant file in ru, multi-word texts of A are looked for as a part of B's answer strings, one-word texts as whole values, the solution names of A as a part, the page text of B for every text as a part, the control of 10 kept; measure yourself on the correct server the set sizes and 0 hits; run your mutants W01 and W02 again in both pairs and P13, and add at least five new own mutants of the server or the page around criterion 6 (for example a text of A inside a string of B's result answer, a one-word text of A as a whole value in B's answer, a solution name of A in B's result, A's storage key read by B's page), each on a copy outside the project with the tests that went red. (3) F3 and decisions/0109 addendum O18 (ORCH): run V12 and V13 again (E2S-13 alone and the whole file; E2S-07 and E2S-08 alone) and say whether the record of O18 (V12 caught only by the timing of the system, red in whole-file runs) is acceptable or a finding; the new immediate checks must hold on the correct code, so run a series of dozens of runs under load of E2S-01, E2S-06, E2S-07, E2S-08 and E2S-13 (AP-115) and of the whole file. (4) Runs: the isolation test alone and the nine spec tests each alone (the independence loop); npm run -s e2e -- picker three times in a row (one Chrome at a time) with duration_ms; the two kit files three times; the counts of test( and assert. in both changed files not lower than at pass 1 (TEST-FIXER reports picker.e2e.js 137 to 139 assert., e2e-stand.test.js 200 to 205); npm run check once at the end. (5) Verdict PASS only if every item of Step 5b holds; otherwise FAIL with findings ranked (pass 3 is the last).\n\nRULES: do not change any project file and do not commit, push or pull; the verdict goes only into this handoff. Kill processes only by explicit pid and only your own; the ten old node processes of this machine (two 'node stand.js' with a working folder outside the project, eight 'node -e setInterval') are not yours. Temporary folders only outside the project; at the end no picker server, stand-in, Chrome or sai-e2e folder of yours is left. The handoff holds no absolute machine paths and no names of the owner's other projects.",
+    "acceptance_criteria": [
+      "the diff since pass 1 is limited to the two test files, shown by hashes",
+      "F1 and F2 checked against O17 by own measurement; W01, W02, P13 and at least five new own mutants around criterion 6 applied on copies with the red tests named",
+      "F3 and O18 judged: V12 and V13 run again; the new group checks green in a load series of dozens of runs",
+      "the independence loop, three picker runs with duration_ms, the kit files three times, counts not lower, npm run check exit 0",
+      "PASS only if every item of Step 5b holds; otherwise FAIL with findings ranked"
+    ]
+  },
+  "created_at": "2026-11-08T22:46:46Z",
+  "started_at": "2026-11-08T22:46:46Z",
+  "completed_at": "2026-11-08T23:33:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": {
+      "verdict_reason": "FAIL at item 3 of Step 5b (do the tests catch an error), criterion 6 (Q8). F1 and F2 of pass 1 are closed: the set of A's texts is built against B's tenant file in ru, a text of A with a blank is looked for as a part of B's answer strings, and W01 and W02 are red by a hit in both pairs. But two of my nine new mutants around criterion 6 survive the test `isolation` in both pairs: N05 (the name of tenant A inside the first question title of B's questionnaire answer) and N09 (the name of A inside a string of B's result answer). They survive because of the one-word rule of decisions/0109 О17 (a text of one word is compared with whole string values only), which is wider than its measured reason: 9 of the 12 one-word texts of A in the two pairs, A's own name among them, stand inside no Russian text of B's tenant file (finding F4, Medium). F3 is closed for V13 (red by a fact the test controls in E2S-07 and E2S-08, 20 of 20 runs alone each, quiet and under load) and not for V12, which the new check of E2S-13 catches only by the timing of the system; О18 accepts that on a premise that my probe outside the project measures false (finding F5, Low). Everything else holds: the diff since pass 1 is limited to the two test files and only `isolation` uses the changed helpers; the new checks are green in every run (130 runs of each of the five changed starter tests, 100 of them under 8-10 busy loops, six whole-file runs under load); the nine spec tests and the twenty starter tests pass each alone; picker x3, the kit files x3 and npm run check exit 0; the counts are not lower; no hang, no leftover, the working tree is unchanged.",
+      "diff_since_pass_1": "Hash list of the whole working tree (2543 files) against the last list of pass 1 (<scratch>/e2e105g/hashes-after2.txt): the only differing files are tools/test/e2e/picker.e2e.js (c42ecab9de449050 -> aaae160bbc43fe25), tools/test/e2e-stand.test.js (1fc0812d688efb91 -> 1e4d174c2a1f41af), decisions/0109 (addendum of 2026-11-09, О17 and О18), decisions/README.md and the handoffs 05b (closed), 05c and 05d (new). The code under test, the kit, the stand-in and the README are byte-equal to pass 1 (stand.js aba66b015fbd57f5, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab, tools/README.md d4d0b664b90ad40d; every other file of tools/ equal). diff -u against the pass-1 copies: picker.e2e.js adds russianOf, tenantFileStrings and hasBlank, changes exclusiveStrings(qa, fileOfB) and assertNothingOf, and in isolation reads B's tenant file with its id asserted, plus comments; grep shows the changed helpers are used only by isolation, so the other eight spec tests are unchanged. e2e-stand.test.js adds one assert.ok(groupGone(...)) with a comment right after stop() in E2S-01 and E2S-13 and right after the failed start in E2S-06, E2S-07 and E2S-08 (no await in between); every bounded waitGone stays.",
+      "f1_f2_against_O17": "Measured by me on the correct server (my own oracle, <scratch>/e2e105g2/h/o17-measure.mjs, the real picker of the clone through the kit's startStand, no browser): uchet-pro -> svet-marketing: 49 texts of A, the set against B's tenant file 49 = the set against B's served answer 49 (46 with a blank, 3 of one word: «Учёт-Про», «человек», «Средний»), B's file texts equal B's served texts; by the rule of О17: 0 hits in B's questionnaire answer and 0 in B's result answer (direct POST of B's leader, 200); 'every text as a part' would give only «человек» in B's questionnaire. agency -> stock: 23 = 23 (14 with a blank, 9 of one word: «Лидвейв», «Услуги», «Товары», «Недвижимость», «Обучение», «Instagram», «TikTok», «WhatsApp», «Звонки»), 0 and 0 hits; 'every part' only «Обучение» in B's result. stop {code 0, signal null}, stderr empty in both. In the real test (Chrome): W01 and W02 (exact forms, both pairs) red in pair 1 by a hit, W01-v3 and W02-v3 red in pair 2 by a hit; P13 (exact) red by the control in pair 1 ('0 texts of A'), P13-v3 red in pair 2 by a hit ('the card of B shows «Лидвейв»'); new own N01, N02, N03, N04, N06, N07, N08 red in isolation (N08 also in matrix and storage); N05 and N09 survive. Without a browser on the same mutant servers: under N05 and N09 the rule of О17 finds 0, while «Учёт-Про» (pair 1) and «Лидвейв» (pair 2) stand inside a string of B's questionnaire answer (N05) or of B's result (N09). Of the 12 one-word texts of A, only «человек», «Средний» and «Обучение» stand inside any ru string of B's tenant file.",
+      "O17_judgement": "Point 1 (the set built against B's tenant file in ru, A's texts still from GET /t/<A>/api/questionnaire?lang=ru): ACCEPTABLE - the oracle is outside the server, the sets equal the served ones on the correct server (49, 23), and W02 is red by a hit in both pairs. Point 2, texts with a blank as a part of every string value: ACCEPTABLE (W01, W01-v3, N01 red). Point 2, every one-word text compared with whole values only: NOT ACCEPTABLE as written - its measured reason (single common words of A inside B's own texts) holds for 3 of the 12 one-word texts, and the rule also hides the 9 others, A's own name among them (N05, N09 survive; finding F4). Solution names of A as a part and B's page text as a part: ACCEPTABLE (N03, P13-v3, N08 red). The control of 10 kept: ACCEPTABLE (P13 red by it in pair 1).",
+      "f3_and_O18": "V13: E2S-07 alone 10 of 10 red quiet and 10 of 10 under 8 busy loops ('hang: the group after the failed start'), E2S-08 alone 10 of 10 and 10 of 10 ('a foreign link: the group after the failed start'), the whole file red in E2S-07 and E2S-08; E2S-06 alone 0 of 10 (its stand-in ended by itself and was reaped before the start failed, as step 05c says). V12: the whole e2e-stand.test.js red in E2S-13 'the group after stop()' 21 of 21 (1 + 10 quiet + 10 under 8 busy loops); E2S-13 alone 0 of 30 quiet and 19 of 30 under 8 busy loops. My probe outside the project (<scratch>/e2e105g2/probe/v12-probe.test.js, Node only): the stand-in in mode ignore-term, deps.spawn gives the starter 'exit' (code 0) and 'close' as soon as the stand-in logs 'term' and does not pass on the real ones, so at the final SIGKILL of stop() the group holds the stand-in, a child of the test process that only the test process reaps when its event loop turns; then one groupGone check right after stop(). Under V12 red 60 of 60 alone (30 quiet, 30 under 8 busy loops); on the correct code green 120 of 120 (60 quiet, 60 under 8 busy loops); about 0.16 s a run.",
+      "O18_judgement": "The checks right after stop() and after a failed start: ACCEPTABLE - they pin design 4.1, hold on the correct code in every run of mine (130 runs of each of the five tests, 100 under load; six whole-file runs under load; npm run check) and catch V13 and S09 by a fact the test controls. The record of V12 as 'caught only by the timing of the system' and accepted like S22: NOT ACCEPTABLE as reasoned - its premise ('a Node-only stand-in cannot keep a member of the group unreaped') does not hold for the test process itself, and my probe catches V12 deterministically through the existing deps.spawn seam with no new kit code and no fixture in another language (finding F5, Low, not blocking; V12 is red in every whole-file run, the way npm test runs it). The P13 part of О18 (red by the control in pair 1, by a hit in pair 2 in the form limited to demo-tenants-v3): ACCEPTABLE, confirmed by my P13 and P13-v3.",
+      "coverage_table_own": {
+        "1 card and first question in every combination": "matrix (picker.e2e.js:540, unchanged since pass 1: the diff touches only isolation and helpers used only by it): green in the full run of the loop, alone (3234 ms), in npm run -s e2e -- picker x3 and in npm run check; red under my N08 and P13.",
+        "2 full pass, answers checked against the server": "pass (picker.e2e.js:665, unchanged): green alone (3021 ms) and in every run; red under P13.",
+        "3 the two schemes": "themes (picker.e2e.js:837, unchanged): green alone (1136 ms) and in every run.",
+        "4 the keyboard alone": "keyboard (picker.e2e.js:876, unchanged): green alone (1166 ms) and in every run; red under W03.",
+        "5 answers kept, only for their tenant": "storage (picker.e2e.js:967, unchanged): green alone (1303 ms) and in every run; red under N08 ('sessionStorage holds something'), W03, P13.",
+        "6 tenants kept apart (Q8)": "isolation (picker.e2e.js:1107), both pairs: B's texts from B's tenant file in ru (tenantFileStrings, the file's id asserted, a field without ru fails); the set of A's texts not in B: 49 and 23 (control >= 10 kept); B's card: every text and every solution name of A as a part, no «Продолжить»; storage keys [sai-picker:<A>]; B's questionnaire answer and B's result: texts with a blank as a part of every string value, one-word texts as whole values, solution names of A as a part (assertNothingOf); A's leader POSTed to B: 400, an error string, no solution name of A; stop() code 0; no stack line on stderr. Green alone (2540 ms) and in every run. Red under W01, W02, W01-v3, W02-v3, P13 (control), P13-v3 (hit), N01, N02, N03, N04, N06, N07, N08, P16, P20, W03. NOT red under N05 and N09 (finding F4).",
+        "7 a bad address (Q10)": "not found (picker.e2e.js:1210, unchanged): green alone (1508 ms) and in every run; red under P16.",
+        "8 a server that goes away (Q10)": "no connection (picker.e2e.js:1303, unchanged): green alone (1147 ms) and in every run; red under P13.",
+        "9 the new office stand": "v3 (picker.e2e.js:1362, unchanged): green alone (2274 ms) and in every run; red under P13, P13-v3, P20.",
+        "10 time and independence": "npm run -s e2e -- picker x3 -> exit=0, duration_ms 16964, 17027, 17047 (limit 80000); the loop of REQ-104 criterion 7 -> 9 of 9; grep -nE of the skip words on picker.e2e.js -> no line; npm run -s traces | grep -c tools/test/e2e/picker -> 0.",
+        "supporting 7, 8, 10 (decisions/0109 О6)": "E2S-01..E2S-20: each alone 20 of 20; the five changed (E2S-01, 06, 07, 08, 13) green in 130 runs each (100 under load), the whole file 6 of 6 under load, in the kit files x3 and in npm test; red under S02, S19, S05, S07, S17, V10, V11, S09, V02, V03, V13, S15, V20, and V12 in whole-file runs only (F5).",
+        "Q8, Q10, Q11, R3": "Q8: isolation (with F4). Q10: not found, no connection and the starter failure paths. Q11: not applicable (the visitor gives no address the server visits; E2S-08 refuses a link not of 127.0.0.1, red under S05, V02, V03). R3: not applicable (decisions/0033)."
+      },
+      "runs": {
+        "independence, picker.e2e.js": "node --test --test-reporter=tap test/e2e/picker.e2e.js -> exit 0, 9 top-level ok (16727 ms); each name alone with --test-name-pattern=^<name>$ -> exit 0, exactly one line starting 'ok ', equal to 'ok 1 - <name>', no 'not ok': 9 of 9 (matrix 3234, pass 3021, themes 1136, keyboard 1166, storage 1303, isolation 2540, not found 1508, no connection 1147, v3 2274 ms)",
+        "independence, e2e-stand.test.js": "the same loop on the 20 starter tests -> full run exit 0, 20 ok; each alone 20 of 20",
+        "picker x3": "npm run -s e2e -- picker -> exit 0, 9 ok / 0 not ok each; 'selection=picker exit=0 duration_ms=' 16964, 17027, 17047",
+        "kit files x3": "node --test test/e2e-kit.test.js test/e2e-stand.test.js -> exit 0, tests 72, pass 72, fail 0, cancelled 0, skipped 0, todo 0 each; duration_ms 35116, 34977, 34994",
+        "load series (AP-115), correct code": "series 1: 4 loops x 15 runs of --test-name-pattern='^E2S-(01|06|07|08|13) ' with 8 busy loops (load average 8.6 at the end): 60 of 60 exit 0, 60 ok each of the five; series 2: 4 loops x 10 runs of the same and at the same time 2 loops x 3 runs of the whole e2e-stand.test.js with 10 busy loops (load average up to 14.8): 40 of 40 exit 0, 40 ok each, the six whole-file runs exit 0 with 20 of 20; series 3: 30 runs in a row of the same five (load falling from 12.6 to 3.2): 30 ok each. 0 red: 130 runs of each of E2S-01, E2S-06, E2S-07, E2S-08, E2S-13",
+        "npm run check (at the end)": "exit 0, 2026-11-08T23:22:42Z to 2026-11-08T23:27:24Z: prettier 'All matched files use Prettier code style!', eslint 0 warnings, traces 2476 files 0 traces, handoffs-check 1337 files 0 violations, npm test tests 2207 pass 2207 fail 0 cancelled 0 skipped 0 todo 0 (duration_ms 235820), e2e picker 9/9 and smoke 13/13, record 'e2e: command=npm run e2e selection=all exit=0 duration_ms=34778'"
+      },
+      "duration_ms_picker": "npm run -s e2e -- picker on this Mac: 16964, 17027, 17047 (in npm run check the picker file took 16722 ms of the 34778 ms record). Limit 80000; the line of 48000 is about the GitHub runner, which I did not run (decisions/0110).",
+      "counts": "grep -o | wc -l: picker.e2e.js test( 12 (pass 1: 11; the extra one is /\\s/u.test of hasBlank; top-level tests 9 = 9), assert. 139 (137); e2e-stand.test.js test( 22 (22; top-level 20 = 20), assert. 205 (200); e2e-kit.test.js unchanged since pass 1: 59 / 535 (tag 59 / 534). Not lower.",
+      "mutants": {
+        "how": "32 distinct mutants (and 2 bases) applied by me, each in its own copy <scratch>/e2e105g2/m/<id> of a fresh clone of base/E2E105-20261105-01 with the eight work files copied in (cmp-equal; diff -rq of tools/ against the project: none) and the root README and decisions/; each edit asserted to match exactly once; a run with a limit of 200 s (spec) or 300 s (starter); the red top-level tests and their first error line read from TAP; leftovers looked for by program and folder; the copy deleted. The exact forms of W01, W02, P13, P16, P20, W03 and of the starter mutants are taken from the pass-1 list; W01-v3, W02-v3, P13-v3 and N01-N09 are new. Chrome mutants one at a time.",
+        "totals": "From the earlier lists 20 (design section 16: P13, P16, P20, S02, S05, S07, S09, S15, S17, S19; own of pass 1: W01, W02, W03, V02, V03, V10, V11, V12, V13, V20) and 12 new own (W01-v3, W02-v3, P13-v3, N01-N09), 9 of them new mutants of the server or the page around criterion 6 (N01-N09). First runs: bases green; 30 red; survivors N05 and N09 (F4). V12 red in every whole-file run, not alone (F5).",
+        "hang_and_leftovers": "No run hung (AP-116): 164 harness records, 0 timeouts, the slowest S17 27.1 s; the harness killed 0 processes and removed 0 folders. After every series and at the end: no picker server, stand-in, kit Chrome or busy loop of mine; no sai-e2e- folder; <scratch>/e2e105g2/m empty.",
+        "table": [
+          "BASE-A no edit (picker spec) -> green (exit 0, 9 of 9); 16.9 s",
+          "W01 (exact form of pass 1, both pairs: ' (<second question title of A>)' appended to B's first title) -> red (1): isolation 'uchet-pro then svet-marketing: the questionnaire answer of B: holds the text of A «Сколько видов товара у вас в наличии?»'; 15.3 s",
+          "W02 (exact form of pass 1, both pairs: B's first help = the second question title of A) -> red (1): isolation, the same message (pair 1); 15.5 s",
+          "W01-v3 own (W01 in the second pair only, so pair 2 is reached) -> red (1): isolation 'agency then stock: the questionnaire answer of B: holds the text of A «Где ищем клиентов?»'; 16.7 s",
+          "W02-v3 own (W02 in the second pair only) -> red (1): isolation, the same message (pair 2); 16.6 s",
+          "P13 (design row, exact form of pass 1: every known address serves the first tenant of the folder) -> red (6): matrix, pass, storage, isolation, no connection, v3; isolation by the control 'uchet-pro then svet-marketing: 0 texts of A'; 8.3 s",
+          "P13-v3 own (P13 only in a folder that holds stock) -> red (2): isolation by a hit 'agency then stock: the card of B shows «Лидвейв»', v3; 16.1 s",
+          "N01 own (server: B's result, the summary of the first recommended solution gets ' (<intro of A>)', both pairs) -> red (1): isolation 'uchet-pro then svet-marketing: the result of B: holds the text of A «Учёт-Про помогает навести порядок в товарных остатках. …»'; 15.5 s",
+          "N02 own (server: the help of B's first question = the name of A, a one-word text as a whole value, both pairs) -> red (1): isolation 'the questionnaire answer of B: holds the text of A «Учёт-Про»'; 15.5 s",
+          "N03 own (server: B's result, the name of the first recommended solution gets ' / <first solution name of A>', both pairs) -> red (1): isolation 'the result of B: holds the solution «Остатки в таблице»'; 15.6 s",
+          "N04 own (page, store.js: with no value under its own key the page reads the first sai-picker: key of the origin, so B reads A's key) -> red (1): isolation 'uchet-pro then svet-marketing: the storage'; 15.4 s",
+          "N05 own (server: B's first question title gets ' (<name of A>)', a one-word text of A inside a string of B's questionnaire answer, both pairs) -> SURVIVED (0 red, exit 0, 9 of 9); 17.1 s",
+          "N06 own (server: one more item of the includes of B's first recommended solution = the name of A, a one-word text as a whole value in B's result, both pairs) -> red (1): isolation 'the result of B: holds the text of A «Учёт-Про»'; 15.5 s",
+          "N07 own (server: answers that B refuses are tried on the other tenants, so A's leader POSTed to B gives A's result with 200) -> red (1): isolation, the status assertion with the body of A's result; 15.8 s",
+          "N08 own (page, app.js: the last questionnaire is kept in sessionStorage under one fixed key and shown on the next load whatever the tenant) -> red (3): matrix 'kk light 1470x784: html lang', storage 'sessionStorage holds something', isolation 'the card of B shows «Учёт-Про»'; 13.3 s",
+          "N09 own (server: the summary of B's first recommended solution gets ' (<name of A>)', a one-word text of A inside a string of B's result, both pairs) -> SURVIVED (0 red, exit 0, 9 of 9); 17.0 s",
+          "P16 (design row: a stack on stderr on every 404) -> red (2): isolation, not found; 15.8 s",
+          "P20 (design row: the public look of a tenant of format /3 throws) -> red (2): isolation, v3; 13.9 s",
+          "W03 (own of pass 1: a copy of the value under a second key) -> red (3): keyboard, storage, isolation ('the storage'); 14.7 s",
+          "BASE-B no edit (e2e-stand.test.js) -> green (exit 0, 20 of 20); 17.3 s",
+          "S02 (design row: no SIGKILL to the group after the main process ended) -> red (1): E2S-13 (CLEANUP_FAILED, the group alive after SIGKILL); 20.2 s",
+          "S19 (design row: SIGTERM to the leader only) -> red (1): E2S-13; 22.2 s",
+          "S05 (design row: the link is not passed through assertLoopbackUrl) -> red (3): E2S-01, E2S-08, E2S-17; 16.1 s",
+          "S07 (design row: the group is not registered) -> red (3): E2S-01, E2S-16, E2S-18; 21.0 s",
+          "S17 (design row: an exit before the link reported as a timeout) -> red (1): E2S-06; 27.1 s",
+          "V10 (own of pass 1: the guarded STAND_START_EXITED reports an unknown end as code 0) -> red (1): E2S-06; 17.2 s",
+          "V11 (own of pass 1: STAND_START_EXITED loses the last stderr line) -> red (1): E2S-06; 17.0 s",
+          "S09 (design row: a start timeout does not kill the process) -> red (1): E2S-07, now by the new check 'hang: the group after the failed start'; 20.2 s",
+          "V02 (own of pass 1) -> red (1): E2S-08; 17.1 s",
+          "V03 (own of pass 1) -> red (1): E2S-08; 16.8 s",
+          "V13 (own of pass 1: a failed start does not wait for the group after its SIGKILL) -> red (2): E2S-07 'hang: the group after the failed start', E2S-08 'a foreign link: the group after the failed start'; 16.7 s",
+          "V12 (own of pass 1: stop() does not wait for the group after the final SIGKILL) -> red (1): E2S-13 'the group after stop()' in this whole-file run; 17.1 s (alone: see summary.f3_and_O18)",
+          "S15 (design row: the marker folder is not removed by stop()) -> red (19): E2S-01..E2S-18, E2S-20; 9.6 s",
+          "V20 (own of pass 1: the marker folder is made before the state folders are checked) -> red (17): E2S-03..E2S-18, E2S-20; 10.3 s"
+        ]
+      }
+    },
+    "findings": [
+      {
+        "id": "F4",
+        "severity": "Medium",
+        "place": "tools/test/e2e/picker.e2e.js, assertNothingOf (lines 480-502) as used by isolation (lines 1169-1185); decisions/0109 addendum О17, second point (a text of one word compared with the whole string values)",
+        "what": "Criterion 6 (Q8): B's network answers 'hold none of' A's texts. О17 compares every one-word text of A with the whole string values of B's answers, because single common words of A stand inside B's own texts on the correct server. The rule is wider than that reason: of the 12 one-word texts of A in the two pairs, 9 stand inside no ru text of B's tenant file, A's own name among them (pair 1: «Учёт-Про»; pair 2: «Лидвейв», «Услуги», «Товары», «Недвижимость», «Instagram», «TikTok», «WhatsApp», «Звонки»), and a leak of such a text inside a string of B's answer is not seen. Own mutants, both pairs: N05 (server: B's first question title gets ' (<name of A>)') and N09 (server: the summary of B's first recommended solution gets ' (<name of A>)'): isolation stays green (exit 0, 9 of 9), while B's questionnaire answer (N05) or B's result answer (N09) holds «Учёт-Про» / «Лидвейв» inside a string (measured without a browser on the same servers). The card check cannot see it: the leak is on the question screen and in the result body.",
+        "how_to_fix": "In assertNothingOf compare a one-word text of A with the whole string values only when it stands inside some ru string of B's tenant file (any field of the file: questions, solutions, rules, result texts; the test already reads that file as fileOfB); look for every other text of A as a part of every string value, as for the texts with a blank. Measured with this rule (no browser, my oracle): correct server 0 hits in B's questionnaire and result answers in both pairs; N05 -> «Учёт-Про» and «Лидвейв» in B's questionnaire answer; N09 -> the same in B's result; W01, W02, N02, N06 still hit. The second point of О17 needs this precision first (issue I1)."
+      },
+      {
+        "id": "F5",
+        "severity": "Low",
+        "place": "tools/test/e2e-stand.test.js, E2S-13 (line 1193, the check right after stop()); decisions/0109 addendum О18 (V12)",
+        "what": "The new check catches V12 (stop() does not wait for the group after its final SIGKILL) only by the timing of the system: whole-file runs red in E2S-13 21 of 21, E2S-13 alone 0 of 30 on a quiet machine and 19 of 30 under 8 busy loops (my runs). О18 accepts it like S22 because 'a Node-only stand-in cannot keep a member of the group unreaped'. That does not hold for the test process itself: my probe outside the project (<scratch>/e2e105g2/probe/v12-probe.test.js) runs the stand-in in mode ignore-term, and its deps.spawn gives the starter 'exit' (code 0) and 'close' as soon as the stand-in logs 'term' and does not pass on the real ones; at the final SIGKILL the group holds the stand-in, a child of the test process that only the test process reaps when its loop turns. Under V12: red 60 of 60 alone (30 quiet, 30 under load), 'the group after stop()'; on the correct code green 120 of 120 (60 quiet, 60 under load). It uses only the existing deps.spawn seam (as spawnHoldingExit of E2S-13 does), no new kit code and no fixture in another language.",
+        "how_to_fix": "TEST-DESIGNER adds such a case with the same one check right after stop() (for example a second stand inside E2S-10 or E2S-13, so the counts of the design stay), keeping the bounded waits; or ORCH corrects the premise of О18 and records V12 with the measured numbers. Not blocking."
+      }
+    ],
+    "self_check": {
+      "commands": [
+        "hashes before: git ls-files -co --exclude-standard -z | xargs -0 shasum -a 256 -> 2543 files (<scratch>/e2e105g2/hashes-before.txt), then status set to IN_PROGRESS; the ten old node processes recorded by pid and never touched",
+        "diff of the sorted hash lists, pass 1 (<scratch>/e2e105g/hashes-after2.txt) against mine -> tools/test/e2e/picker.e2e.js, tools/test/e2e-stand.test.js, decisions/0109-e2e-stand-conventions.md, decisions/README.md, handoffs 05b, 05c, 05d; nothing else",
+        "shasum of the pass-1 copies (<scratch>/e2e105g/clone/tools) and of the project: stand.js aba66b015fbd57f5, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab, README d4d0b664b90ad40d equal; picker.e2e.js c42ecab9 -> aaae160b, e2e-stand.test.js 1fc0812d -> 1e4d174c; diff -u of both files -> the changes listed in summary.diff_since_pass_1",
+        "counts (grep -o 'test(' / 'assert\\.' | wc -l): picker.e2e.js 12 / 139 (pass 1: 11 / 137), e2e-stand.test.js 22 / 205 (22 / 200), e2e-kit.test.js 59 / 535 (tag 59 / 534); grep -c '^test(' -> 9 = 9 and 20 = 20",
+        "scans of the two changed files: skip words, skip options, '|| true', sandbox flags, eslint-disable, secret shapes -> no line (exit 1); grep -nE '\\.skip\\(|\\.todo\\(|\\|\\| true' tools/test/e2e/picker.e2e.js -> no line (exit 1); search for the names of other projects and computer paths -> empty",
+        "git clone -b base/E2E105-20261105-01 <repo> <scratch>/e2e105g2/clone; the eight work files of tools/ copied in, each cmp-equal; diff -rq -x node_modules <project>/tools <clone>/tools -> no difference (exit 0)",
+        "node <scratch>/e2e105g2/h/o17-measure.mjs <clone>/tools correct -> uchet-pro->svet-marketing: textsOfA 49, setFile 49, setServed 49, multi 46, one 3, fileBEqualsServedB true, O17 hits [] / [], everyPart ['человек'] / [], names [] / [], result 200, stop {code 0, signal null}, stderr ''; agency->stock: 23, 23, 23, 14, 9, true, [] / [], everyPart [] / ['Обучение'], [] / [], 200, {code 0}, ''",
+        "node <scratch>/e2e105g2/h/o17-mutants.mjs correct N05 N09 W01 W02 N02 N06 P13-v3 (copies, no browser) -> correct: O17 0, narrow rule 0 in both answers of both pairs; N05: O17 0, narrow ['Учёт-Про'] | ['Лидвейв'] in B's questionnaire; N09: O17 0, narrow ['Учёт-Про'] | ['Лидвейв'] in B's result; W01: O17 2 | 1; W02: 2 | 1 (served set 48 | 22, file set 49 | 23); N02: 1 | 1 (questionnaire); N06: 1 | 1 (result); P13-v3 pair 2: 23 hits",
+        "node <scratch>/e2e105g2/h/indep.mjs <project>/tools test/e2e/picker.e2e.js -> full exit 0, 9 ok; alone 9 of 9 (exit 0, one ok line 'ok 1 - <name>', no not ok); the same on test/e2e-stand.test.js -> 20 of 20",
+        "cd tools && npm run -s e2e -- picker (x3, one Chrome at a time) -> exit 0, 9 ok / 0 not ok each; 'e2e: command=npm run e2e -- picker selection=picker exit=0 duration_ms=' 16964, 17027, 17047",
+        "node <scratch>/e2e105g2/h/mut2.mjs A BASE-A W01 W02 W01-v3 W02-v3 P13 P13-v3 N01..N09 P16 P20 W03 (Chrome, one at a time) and B BASE-B S02 S19 S05 S07 S17 V10 V11 S09 V02 V03 V13 V12 S15 V20 (no Chrome) -> bases green; 30 of 32 mutants red; N05 and N09 survive (table in summary.mutants.table); 0 timeouts, 0 kills, 0 folders removed",
+        "V12 series: mut2.mjs --kind stand:E2S-13 --repeat 30 V12 -> 0 of 30 red (quiet); the same under 8 busy loops -> 19 of 30 red; mut2.mjs B --repeat 10 V12 (whole file) -> 10 of 10 red quiet, 10 of 10 under 8 busy loops; with the stream-B run 21 of 21",
+        "V13 series: --kind stand:E2S-07 --repeat 10 V13 -> 10 of 10 red, under 8 busy loops 10 of 10; stand:E2S-08 -> 10 of 10, under load 10 of 10; stand:E2S-06 -> 0 of 10",
+        "probe (copies <scratch>/e2e105g2/m/probe-ok and probe-v12, deleted after): node --test --test-reporter=tap test/v12-probe.test.js -> correct code 3 of 3, then 60 of 60 green quiet and 60 of 60 under 8 busy loops; with V12 30 of 30 red quiet and 30 of 30 red under 8 busy loops ('the group after stop()'); 0 stand-in left",
+        "load series on the correct code in the project tools/ (<scratch>/e2e105g2/h/series.sh under h/busy.sh, busy loops 'node -e' bounded by time and killed by their pids, 0 left): 60 + 40 + 30 runs of the five changed starter tests, 130 ok each, 0 not ok; 6 whole-file runs under 10 busy loops, 20 of 20 each",
+        "cd tools && node --test test/e2e-kit.test.js test/e2e-stand.test.js (x3) -> exit 0, tests 72, pass 72, fail 0, cancelled 0, skipped 0, todo 0 each; duration_ms 35116, 34977, 34994",
+        "cd tools && npm run -s traces | grep -c 'tools/test/e2e/picker' -> 0",
+        "cd tools && npm run check (once, at the end, 2026-11-08T23:22:42Z to 2026-11-08T23:27:24Z) -> exit 0: format clean, eslint 0 warnings, traces 2476 files 0 traces, handoffs-check 1337 files 0 violations, npm test 2207/2207, e2e picker 9/9 + smoke 13/13, duration_ms=34778; then S15 and V20 on copies (red 19 and 17)",
+        "LEFT at the end: ps by 'src/picker/cli.js serve|fake-stand.js|sai-e2e-' and the busy loops -> 0; the temporary root holds no sai-e2e- folder and only the sai-stand-test- folder of 2026-11-05 (not mine); the ten old node processes have the pids they had at my start",
+        "hashes after: the same command -> 2543 files; diff with the list before -> one line: this handoff (status IN_PROGRESS); every other file byte-equal; git status shows the same entries as at the start",
+        "before close: cd tools && npm run handoffs-check && npm run traces -> exit 0 both: handoffs-check: файлов проверено 1337, нарушений 0, исключений использовано 114 из 114; traces: файлов проверено 2476, следов 0, пропущено 67"
+      ],
+      "hashes": "2543 files of the working tree (tracked and untracked, without the ignored node_modules) hashed before and after: equal except this handoff; no file added or changed in the project; the clone, the copies, the harness, the probe and all outputs are in <scratch>/e2e105g2."
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "For ORCH: the fix of F4 changes the second point of decisions/0109 О17 (one-word texts compared with whole values): the exception would cover only the one-word texts of A that stand inside a ru string of B's tenant file (today «человек», «Средний», «Обучение»), every other text of A is looked for as a part. Measured: 0 hits on the correct server, N05 and N09 red. The precision is needed before TEST-FIXER (pass 3 of 3 is the last); DOC-UPDATER then writes it into criterion 6 together with О17."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "For ORCH: F5 (Low) - the premise of О18 is measured false (a Node-only, deterministic catcher of V12 through deps.spawn exists, probe in <scratch>/e2e105g2/probe). Either TEST-DESIGNER adds the case or О18 is corrected and V12 recorded with the numbers (whole file 21 of 21; alone 0 of 30 quiet, 19 of 30 under load)."
+      },
+      {
+        "id": "I3",
+        "kind": "Q13_CANDIDATE",
+        "text": "An exception to a check (a whole value in place of a part) is bounded by its measured reason: when the reason is 'these words stand inside B's own texts', the exception is computed from B's texts, not given to a whole class (every one-word text); otherwise it hides the most telling member of the class (here A's own name: N05, N09). Pass 1 found the same shape for every text (F2), О17 kept it for the one-word texts."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "The temporary root holds sai-stand-test-lvEDJb of 2026-11-05, not of this step (noted by pass 1 and step 05c); left as it is. My runs left no folder there."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "The GitHub runner time of npm run -s e2e -- picker is not measured by me (decisions/0110: TEST-RUNNER and RELEASE-VALIDATOR); on this Mac 16964-17047 ms."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -837,16 +837,19 @@ The spec files `tools/test/e2e/<name>.e2e.js` open the Sai pages in a real headl
 
 Where Chrome is searched: first the variable `SAI_CHROME` (a full path; if it is set and the file is missing, the run fails and no other place is tried), then five places in this order: the standard place of macOS, then `google-chrome`, `google-chrome-stable`, `chromium` and `chromium-browser` in `PATH`. A missing Chrome fails the run with a message that names `SAI_CHROME` and the places that were tried; it is never skipped.
 
-The output: the line `e2e: browser=<product and version>` once, the line `e2e: file=<name>` before each file, then the lines of the file itself, and the last line `e2e: command=… selection=… exit=… duration_ms=…` (`selection=` is `all` or the names that were given). The budgets of `duration_ms` (REQ-104, criterion 9): `smoke` 30000, all files 240000. The run stops at the first file that fails, hangs for more than 120 seconds, registers no test, or has a skipped or todo test. After a signal (`SIGINT`, `SIGTERM`, `SIGHUP`) to the command, it stops the running file and the browsers, prints `e2e: error=INTERRUPTED: <signal>` and the last line, and ends with the code 130, 143 or 129.
+The output: the line `e2e: browser=<product and version>` once, the line `e2e: file=<name>` before each file, then the lines of the file itself, and the last line `e2e: command=… selection=… exit=… duration_ms=…` (`selection=` is `all` or the names that were given). The budgets of `duration_ms` (REQ-104, criterion 9; REQ-105, criterion 10): `smoke` 30000, `picker` 80000, all files 240000. The run stops at the first file that fails, hangs for more than 120 seconds, registers no test, or has a skipped or todo test. After a signal (`SIGINT`, `SIGTERM`, `SIGHUP`) to the command, it stops the running file and the browsers, prints `e2e: error=INTERRUPTED: <signal>` and the last line, and ends with the code 130, 143 or 129.
 
 Where files go: the profile folder of each browser (`sai-e2e-profile-…`) and any screenshot lie under the temporary root of the system (`TMPDIR` is honoured), never in the project; they are removed at the end, on a failure, and on `SIGINT`, `SIGTERM` and `SIGHUP` (a `SIGKILL` of the command itself cannot be caught). The browser can open only `http://127.0.0.1:<port>/…` and cannot reach any other address; the sandbox of Chrome is never turned off.
 
+Servers for the page specs: a spec starts the server it needs with `startStand` or `withStand` from `test/e2e/kit/index.js`. The server is a Node program started with an argument list; it gets a short list of environment variables (`PATH`, `TMPDIR`, `TEMP`, `TMP`, `LANG`, `LC_ALL`, `TZ`, `SystemRoot`) and what the spec gives, nothing else (no `HOME` unless the spec gives it; the home folder itself is not hidden: Node finds it through the system's list of users, decisions/0109); the system and Node may add variables of their own, none of them given by the starter (`__CF_USER_TEXT_ENCODING` on macOS, and `NODE_V8_COVERAGE` when the spec process has it); the link is read from its stdout and must be an address of `127.0.0.1`; a state folder given to it must lie under the temporary root. `stop()` sends `SIGTERM` to the process group and requires the exit code 0 after that signal; if the server ended by itself before `stop()`, `stop()` fails whatever the exit code (decisions/0109). The server is stopped and removed on a failure, on a signal, and when the runner stops a hung file.
+
 How to write a spec: a file named `<name>.e2e.js` with top-level `test()` calls only; each test starts its own browser with `withBrowser` from `test/e2e/kit/index.js`; test names are unique and each test passes alone. Page code is given to `evaluate` as a string, not as a function.
 
-| Spec file    | Requirement |
-| ------------ | ----------- |
-| smoke.e2e.js | REQ-104     |
+| Spec file     | Requirement |
+| ------------- | ----------- |
+| picker.e2e.js | REQ-105     |
+| smoke.e2e.js  | REQ-104     |
 
-REQ-105, REQ-106 and REQ-107 add their rows.
+REQ-106 and REQ-107 add their rows.
 
 On the CI runner (the GitHub image `ubuntu-24.04`) the step is read as criterion 10 of REQ-104 says: the result of a real run decides whether Chrome needs anything more there.

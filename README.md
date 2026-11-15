@@ -238,7 +238,7 @@ the variable `SAI_CHROME` to its full path. Without a browser `npm run check` fa
 message and is not skipped. Claude Code is needed only for the Pixel Office hooks and for real
 runs of the Sai Team executor; for the rest it is not needed.
 
-1. Clone the Sai repository (the owner's access is needed):
+1. Clone the Sai repository (while it is closed, the owner's access is needed):
 
    ```
    git clone <Sai repository address>
@@ -378,9 +378,10 @@ As of 2026-10-26, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
 - **Open defects: 74** in `docs/issues/` — 9 of medium severity and 65 low; none high or
   critical.
 - **A merge in a way other than the push to `main` needs the owner's confirmation** (R1). The
-  repository exists on GitHub and is closed by the owner on purpose (`decisions/0062`). A push
-  to `main` after PASS of RELEASE-VALIDATOR is allowed by the owner (`decisions/0048`,
-  `decisions/0079`); the release step commits the run's files, pushes them and waits for a
-  green check on GitHub (`docs/workflows/WF-02-development.md`, step 11).
+  repository exists on GitHub; the owner opened it to everyone on purpose (read on GitHub on
+  2026-11-15, `decisions/0111`, which replaces the part of `decisions/0062` about a closed
+  repository). A push to `main` after PASS of RELEASE-VALIDATOR is allowed by the owner
+  (`decisions/0048`, `decisions/0079`); the release step commits the run's files, pushes them
+  and waits for a green check on GitHub (`docs/workflows/WF-02-development.md`, step 11).
 - **No health audit yet.** The first WF-05 audit has not run; the folder `docs/audits/` will
   appear with it (`docs/workflows/WF-05-health-audit.md`).

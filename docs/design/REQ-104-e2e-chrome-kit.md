@@ -77,7 +77,7 @@ Each one has a default that this design uses; ORCH confirms or changes it with t
 | # | Choice | Default | Why | Question |
 |---|---|---|---|---|
 | C-1 | Page code is passed to the page as a **string**; the helpers refuse a function | strings | F9: a function body with `document` fails `no-undef`; adding browser globals to `eslint.config.js` for `test/e2e/**` is a change of a file the requirement does not list | О2 |
-| C-2 | A starter of server processes for the page specs (spawn, read a stdout line, SIGTERM and the exit code) | **not in this kit**; REQ-105 designs it when it needs it | no criterion of REQ-104 covers it; a test without a criterion is not allowed here | О1 |
+| C-2 | A starter of server processes for the page specs (spawn, read a stdout line, SIGTERM and the exit code) | **not in this kit**; REQ-105 designs it when it needs it. *Since 2026-11-15 (REQ-105, run `E2E105-20261105-01`): built as `startStand` and `withStand` in `tools/test/e2e/kit/stand.js`, exported by `tools/test/e2e/kit/index.js`; design `docs/design/REQ-105-e2e-picker.md`, section 4.1; `decisions/0108` О1 is carried out* | no criterion of REQ-104 covers it; a test without a criterion is not allowed here | О1 |
 | C-3 | The runner stops at the first spec file that fails, kills a hung file after 120 s, and fails a file that registered no test or has `skipped`/`todo` above 0 | yes | Q4 "stops at the first error", Q6; F11 shows that a file with no test passes silently | О3 |
 | C-4 | `--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1` in the Chrome arguments | yes | F23; makes "the browser can only visit this computer" true for redirects, sub-resources and literal addresses, not only for the first URL | О5 |
 | C-5 | The stand-in program is written by BACKEND-DEV (a stand, as in the design of REQ-056), the tests by TEST-DESIGNER | yes | the fault paths of the kit cannot be checked in sub-steps 3–4 without it | О6 |
@@ -779,7 +779,7 @@ Rework `01c`: sketches in `<scratch>/e2e104c/` (a fresh clone of the tag; `sk/` 
 **What is not proven (honest limits).**
 
 - The effect of `--no-proxy-server` in a real Chrome is not shown; only the argument list is pinned (T5 of the gate, accepted).
-- The order of several spec files (criterion 7) was checked on the real command with one spec file only (`smoke`); `E2K-32` pins the order with fixture files. The second real file comes with REQ-105 (`docs/issues/ISS-0102`, item 2).
+- The order of several spec files (criterion 7) was checked on the real command with one spec file only (`smoke`); `E2K-32` pins the order with fixture files. The second real file comes with REQ-105 (`docs/issues/ISS-0102`, item 2). *Checked on two real files on 2026-11-15 by RELEASE-VALIDATOR of REQ-105 (`handoffs/E2E105-20261105-01/step-09-release-validator.json`, `self_check` «ORDER CHECK ON TWO REAL FILES»): `smoke picker` and `picker smoke` each exit 0 with the files in the given order and `e2e: browser=` once, `picker picker` exit 1 with `SELECTION_DUPLICATE`; item 2 of `ISS-0102` is met.*
 - Seven mutants of the runner and the registry survive (equivalent or defence in depth): `docs/issues/ISS-0102`, item 1.
 - The kit was run in a real Chrome 156 on the main computer and on the GitHub runner (Ubuntu 24.04, Chrome 156 with its sandbox on). It was not run on Windows (the full check never runs there, `docs/issues/ISS-0099`).
 

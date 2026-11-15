@@ -1,0 +1,445 @@
+{
+  "handoff_id": "step10-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "10",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/E2E105-20261105-01/step-10-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": "ac7457f8f9860b090",
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-09-release-validator.json (issues I2, I3, I4, I6)",
+      "handoffs/E2E105-20261105-01/step-05h-test-design-validator.json",
+      "handoffs/E2E105-20261105-01/step-05g-test-fixer-run2.json",
+      "handoffs/E2E105-20261105-01/step-06-test-runner.json",
+      "handoffs/E2E105-20261105-01/step-05-test-designer.json (issues I1, I2, I4, I11)",
+      "decisions/0109-e2e-stand-conventions.md",
+      "decisions/0111-repository-open-on-purpose.md",
+      "docs/requirements.yaml (blocks REQ-105, REQ-106, REQ-107)",
+      "docs/design/REQ-105-e2e-picker.md",
+      "docs/issues/ISS-0104-e2e-kit-e2k63-guard-limits-and-e2k62-survivors.md (format)"
+    ],
+    "route": "RELEASE-VALIDATOR 09 PASS -> DOC-UPDATER (this) -> ORCH bookkeeping check -> RELEASE-FINALIZER (commit, push to main by decisions/0110 and 0111, wait for check.yml, release report)",
+    "write_set": [
+      "docs/requirements.yaml (REQ-105 status, its note and name/reference/number corrections; name or reference in REQ-106 and REQ-107)",
+      "docs/design/REQ-105-e2e-picker.md, docs/design/REQ-104-e2e-chrome-kit.md (confirmed stale rows only)",
+      "docs/issues/ (ISS-0105 to ISS-0108 new, ISS-0102 supplement)",
+      "docs/anti-patterns.md (append), STATE.md, PLAN.md, tools/README.md and README.md (confirmed stale only)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "orch_check": {
+      "at": "2026-11-15T17:02:10Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T17:00:30Z",
+        "docs/requirements.yaml REQ-105 -> status: done",
+        "grep -E '^    status: ' docs/requirements.yaml | sort | uniq -c -> 36 done, 1 in_progress, 60 pending, 3 blocked, 7 cancelled (as reported)",
+        "grep -l 'Статус: open' docs/issues/ISS-*.md | wc -l -> 89; ls docs/issues | wc -l -> 108 (as reported)",
+        "ls docs/issues -> ISS-0105, ISS-0106, ISS-0107, ISS-0108 exist",
+        "grep '^### AP-14[5-9]' docs/anti-patterns.md -> AP-145 to AP-149 exist",
+        "grep 2026-11-15 STATE.md -> the new top block exists",
+        "git diff --stat -- docs/program/public-v1/PROGRESS.md tools/src tools/test .github -> only the run's earlier edits (e2e-kit.test.js, kit/index.js, PROGRESS.md unchanged by this step)",
+        "node src/handoffs/cli.js -> 0 violations; node src/traces/cli.js -> 0 traces",
+        "issues I3, I7, I9 -> continued as step 10b by the same launch; the 0064 row of decisions/README.md corrected by ORCH; I2 (meaning changes in criteria 1, 4, 6, 8) -> a later WF-01 micro-amendment, not in this run; I4 (depends_on of REQ-106/107) -> for the WF-01 of REQ-106"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 10, bookkeeping after RELEASE-VALIDATOR PASS (handoffs/E2E105-20261105-01/step-09-release-validator.json) for REQ-105 only. Follow the section 'Step 10' of docs/workflows/WF-02-development.md and your role file. The list of stale items is issue I2 of step 09 and the defects are its issue I3; read them first, and check each item yourself before you change it. Do:\n\n(1) docs/requirements.yaml, block REQ-105: status in_progress -> done as the LAST action of the step, with an honest status note: what each criterion meets and what is not proven (one Mac and two GitHub samples, runs 43723864463 and 43727151996: picker 20035 and 22050 ms on the runner; the readings of criterion 6 and what they place outside or move to defects, by a pointer to decisions/0109 О17-О23, not by copying them). By decisions/0109 О23 the TEXT of criterion 6 is not changed in this run. In the rest of the block correct only a name, a reference, a number or an outdated fact without changing the meaning, with before_copy in result (decisions/0079, item 5): criterion 1 'title' -> the field 'name' (О2), the description's 'Guard tests … none' -> the edits of E2K-50, E2K-41 and E2K-60 (О9), the list of new files (+ tools/test/e2e/kit/stand.js, tools/test/e2e-stand.test.js, tools/test/fixtures/e2e-stand/). Where a correction would change the meaning (for example the readings of О3 and О4 in criteria 1 and 8), do not edit: list it in result.issues as a WF-01 micro-amendment for ORCH. Do not touch the blocks of other requirements except a name or a reference in REQ-106 and REQ-107 where they name 'the starter' (point at startStand/withStand of tools/test/e2e/kit/stand.js), with before_copy. Recount the requirements by the status lines and write the number you got by counting.\n\n(2) docs/design/REQ-105-e2e-picker.md: an 'As built' update, not a rewrite: §8 row 6 (every screen of B's pass, by О19 and О20), §4.4 helper table (the missing helpers, the signature of exclusiveStrings by О17), §4.1 and §5 row 9 (the reading of О14), §4.3 (the stand-in mode quit-later), §11.1 (E2S-11, the О14 case, and E2S-13, the V12 case), §16 (the mutant series V, W, N, O, G, A, H, T and RV with their results, the timing probes T1-T3 and every survivor with its record), §0 and the counts (count them yourself from the files: lines, tests, asserts of picker.e2e.js, E2S, E2K, the total of npm test), §7 (the runner times 20035 and 22050 ms), the places 'Outside criterion 6' of 0109, §13 (the order result of step 09). (3) docs/design/REQ-104-e2e-chrome-kit.md: §2 row C-2 and the §21 order line, as I2 of step 09 says, only if you confirm they are stale.\n\n(4) Defects (docs/issues/, the format of the existing files, Russian section titles as in ISS-0104): ISS-0105 the kit cannot see a text that a page adds after it reads a screen (decisions/0109 О21, probes T1-T3; the page clock by the debugging protocol) together with F8 of step 05h (the network of workers and service workers of a page, mutant H3), LOW; ISS-0106 the gaps of the test isolation (decisions/0109 О22: F7 and F9 of step 05h with their measured fixes, the error answer pinned to its measured body for H5, B's stored value after B's pass for H7), LOW; ISS-0107 the findings outside the change by О16 (F4 of step 03, the pid-reuse case of the registry; I2 of REVIEWER and I2 of step 04b, the shapes in browser.js), severity as the handoffs give it; ISS-0108 the temporary-folder litter of older test files (issue I11 of step 05: one npm run check leaves about 203 new entries in the system temporary root, 195 sai-wf06, 5 sai-outside, 2 sai-snap, 1 sai-flaky), LOW. Check the numbers against the folder first (the last file is ISS-0104). Supplement ISS-0102: its item 2 (the order check with two real spec files) is now met (step 09). Recount the open defects by the lines 'Статус: open' with a command and write the count you got.\n\n(5) docs/anti-patterns.md: append new entries after the last one (check the last number; AP-144 was the last): (a) an exception compared with whole texts needs a pin of where the word stands, and a check of a page's network records sees only what the page itself asks (I8 of step 05g re-run 2); (b) an exemption must be as narrow as its reason, a check read once at the end misses what removes itself before it, a word rule must read the text the visitor reads (I6 of step 05h); (c) a git archive copy of a snapshot cannot run handoffs-check or traces, which need git: give it its own git metadata (I1 of step 06; append, do not edit AP-141); (d) in zsh a variable followed by ':r' is read as a modifier, so a refspec must be written with the variable in braces (I2 of step 06); (e) the repository visibility read on GitHub differed from the recorded decision (I4 of step 09; now decisions/0111); (f) ORCH kept the notes of a paused run only in the system temporary folder, and the system clean-up removed them before the run resumed (the scratch of 05g; the facts survived only because the handoffs held them): notes of a paused run go into its handoffs. Merge entries where the rules of the journal ask for it.\n\n(6) STATE.md: a new dated block 2026-11-15 in the style of the existing ones (plain words in Russian: what was done, the proof, what is NOT proven, the defects, what is next, the next free numbers checked against the files: decision 0112, ISS-0109, the next AP, REQ-108), and mark REQ-105 done where STATE lists it as pending. The release is NOT yet pushed at the time of writing: say so (RELEASE-FINALIZER does the commit and the push). The repository: open on purpose (decisions/0111), read on GitHub 2026-11-15; correct any line of STATE.md that says private as an outdated fact. (7) PLAN.md: the REQ-105 lines (about 361-363) -> done; next REQ-106, REQ-107 and the defects ISS-0100-0102, 0104-0108. (8) tools/README.md and the root README.md: change only what you confirm is stale (step 09 found nothing stale in tools/README.md).\n\nDo not touch docs/program/public-v1/PROGRESS.md. Do not change any code or test file. Do not commit or push. Files outside tools/ are formatted by hand (prettier --write only on files under tools/). The handoff and every file hold no absolute machine paths, no temporary paths and no names of the owner's other projects. In result.artifacts_out list every changed file by name.",
+    "acceptance_criteria": [
+      "REQ-105 done as the last action with an honest status note; criterion 6 text unchanged (О23); only name, reference, number or outdated-fact corrections elsewhere, with before_copy; meaning changes listed for ORCH; requirements recounted",
+      "the design of REQ-105 carries the as-built facts and counts counted from the files; REQ-104 design rows corrected only if confirmed stale",
+      "ISS-0105 to ISS-0108 opened, ISS-0102 supplemented, open defects recounted by a command",
+      "new error-journal entries appended; STATE.md block 2026-11-15 with next free numbers checked; PLAN.md updated; no line says private",
+      "no code, test or PROGRESS.md change; no commit; every changed file in artifacts_out; handoffs-check and traces clean"
+    ]
+  },
+  "created_at": "2026-11-15T16:30:14Z",
+  "started_at": "2026-11-15T16:30:14Z",
+  "completed_at": "2026-11-15T17:00:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "plain": "Учёт шага 10 по PASS шага 09 сделан. REQ-105 стал done последним действием (2026-11-15T16:53:02Z) с честной пометкой по каждому критерию: 2, 3, 5, 7, 9 — по букве; 1, 4, 8 — с чтениями О2, О3, О5, О4; 6 — по букве и чтениям О17–О22, текст критерия 6 не тронут (О23); 10 — по командам, на GitHub 20035 и 22050 мс. В блоке REQ-105 без смены смысла исправлены слово «title» (→ поле name), фраза «Guard tests … none» и список новых файлов; в REQ-106 «the starter of the spec» получил ссылку на startStand/withStand. Остальная часть файла совпадает по хешу. Заведены ISS-0105…ISS-0108 (все LOW), дополнен ISS-0102 (п. 2 выполнен). Записаны AP-145…AP-149 (кандидаты (a) и (b) объединены в AP-145). Проект REQ-105 получил пометки «As built» и раздел 21 с числами из файлов; в проекте REQ-104 дополнены строка C-2 и строка о порядке файлов. STATE.md — блок 2026-11-15 (отправки ещё нет; репозиторий открыт, 0111), устаревшие строки «private» помечены; PLAN.md — REQ-105 done, дальше REQ-106, REQ-107 и дефекты. В корневом README исправлены две строки о видимости; tools/README.md не менялся. Пересчёт: требований 107 — 36 done, 1 in_progress, 60 pending, 3 blocked, 7 cancelled; открытых дефектов 89 (1/0/10/78). Проверки: handoffs-check 0 нарушений, traces 0, format:check и lint чистые, npm test 2207 из 2207.",
+      "requirement": "REQ-105: in_progress -> done (the last edit of the step, 2026-11-15T16:53:02Z), with the status note: criteria 2, 3, 5, 7, 9 met by their letter; 1 with decisions/0109 О2 and О3; 4 with О5; 8 with О4; 6 by its letter and the readings О17 as corrected and О19-О22, text unchanged (О23), with what those records place outside it and the open defects ISS-0105, ISS-0106; 10 by its commands and the two runner readings 20035 and 22050 ms; what is not proven (two samples of one runner image, one Mac, no Windows, S22).",
+      "counts": "requirements 107: 36 done, 1 in_progress (REQ-014), 60 pending, 3 blocked, 7 cancelled (before: 35 done, 2 in_progress). Open defects 89: 1 CRITICAL, 0 HIGH, 10 MEDIUM, 78 LOW; closed 19 of 108 files (before: 85 = 1, 0, 10, 74 of 104).",
+      "new_numbers": "defects ISS-0105, ISS-0106, ISS-0107, ISS-0108; error journal AP-145, AP-146, AP-147, AP-148, AP-149; next free: ISS-0109, decision 0112, AP-150, REQ-108 (checked against the files)."
+    },
+    "changes": [
+      {
+        "file": "docs/requirements.yaml",
+        "place": "block REQ-105, the line status (line 13573)",
+        "what": "status: in_progress -> done with the status note (English, the form of REQ-104's note); the last edit of the step"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "block REQ-105, criterion 1 (line 13624)",
+        "what": "«the tenant `title` that GET … returns» -> «the tenant name, the field `name` that GET … returns» (decisions/0109 О2: an outdated word, no change of meaning)"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "block REQ-105, description, the paragraph on guard tests and new files (lines 13608-13611)",
+        "what": "«Guard tests …: none. New files only: picker.e2e.js …, and its row …» -> the three edited tests E2K-50, E2K-41, E2K-60 with the design's replacement table (О9), and the new files: picker.e2e.js, tools/test/e2e/kit/stand.js (with its exports in kit/index.js), tools/test/e2e-stand.test.js, tools/test/fixtures/e2e-stand/ (fake-stand.js, specs/sleep-stand.e2e.js), and the row, the budget words and the paragraph of the README section; the last sentence kept"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "place": "block REQ-106, criterion 1 (lines 13761-13762)",
+        "what": "«The starter of the spec» -> «The starter of the spec (`startStand`/`withStand` of tools/test/e2e/kit/stand.js, made by REQ-105)» (a reference only; the lines rewrapped). REQ-107 names no starter: not changed"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "after the header; §0 Time and Sizes; §4.1 row stop(); §4.3 new row quit-later and a note on child-term; §4.4 exclusiveStrings row, an «As built» note and a table of 31 rows with the other helpers, item 6 of «The nine tests»; §5 row 9; §7 «As built (measured)» table; §8 row 6 «As built» (О17 as corrected, О19, О20) and a paragraph «outside criterion 6» with the known survivors; §10 item 3 (README paragraph as built, L4 of step 04); §11.1 rows E2S-11 (О14, quit-later) and E2S-13 (S19 hold, О18 V12 case; mutants column S02, S19, V12); §13 the order result of step 09; §16 row S19 (caught by E2S-13), the counts paragraph, the survivors paragraph and a table «As built — the mutant series of the run» (05, 05b, 05d, 05e, 05f, 05g re-run 2, 05h, 09); new §21 «As built» (counts with commands, differences, not proven)",
+        "what": "an As-built update, the design text not rewritten (AP-143)"
+      },
+      {
+        "file": "docs/design/REQ-104-e2e-chrome-kit.md",
+        "place": "§2 row C-2 (line 80); §21 «What is not proven», the line on the order of spec files (line 782)",
+        "what": "both confirmed stale (stand.js exists in the kit; the order was checked on two real files at step 09 of REQ-105); a dated note appended in each, the old words kept"
+      },
+      {
+        "file": "docs/issues/ISS-0105-e2e-kit-late-page-text-and-worker-network.md",
+        "place": "new",
+        "what": "LOW, open: T1-T3 (О21) and F8/H3 (О22), the page clock by the debugging protocol and the network of workers as the fix"
+      },
+      {
+        "file": "docs/issues/ISS-0106-picker-isolation-test-gaps.md",
+        "place": "new",
+        "what": "LOW, open: F7 (H1, H1b), F9 (H4), the error body pin (I1 of 05h, H5), B's stored value after B's pass (I3 of 05h, H7), each with the measured fix (О22)"
+      },
+      {
+        "file": "docs/issues/ISS-0107-e2e-kit-group-registration-and-browser-js-error-shapes.md",
+        "place": "new",
+        "what": "LOW (all items Low in the handoffs), open: item 1 F4 of step 03 (the group registration after the leader ended; stand.js, cleanup.js, browser.js), item 2 I2 of step 04 and I2 of step 04b (browser.js listener order, self-attached cleanupError, unprotected assignment, thrown null); two causes under the one number of the task (issue I3)"
+      },
+      {
+        "file": "docs/issues/ISS-0108-older-tests-leave-folders-in-system-temp.md",
+        "place": "new",
+        "what": "LOW, open: about 203 folders per npm run check (195 sai-wf06, 5 sai-outside, 2 sai-snap, 1 sai-flaky) from tools/test/helpers.js, cli.test.js, flaky-regression.test.js"
+      },
+      {
+        "file": "docs/issues/ISS-0102-e2e-kit-tests-survivors-and-order-check-with-one-spec.md",
+        "place": "appended section «Обновление 2026-11-15 …»",
+        "what": "item 2 met by the order check of step 09 (outputs quoted); item 1 open; status stays open"
+      },
+      {
+        "file": "docs/anti-patterns.md",
+        "place": "appended after AP-144",
+        "what": "AP-145 (a)+(b) merged, with the same-family candidates I2 of 05b, I3 of 05d, I5 of 05e, I5 of 05f; AP-146 (c), extends AP-141 item 2, AP-141 not edited; AP-147 (d); AP-148 (e); AP-149 (f). Earlier records untouched"
+      },
+      {
+        "file": "STATE.md",
+        "place": "new top block «На 2026-11-15 …» before the block 2026-11-03 (позже); dated markers in the older blocks: 2026-11-03 (позже) lines «Следующие свободные номера» and «Следующая работа»; 2026-11-03 lines «Требования» and «Следующая работа» (REQ-105 done); 2026-10-17 block: a note after its heading; the owner's answer line on 0062 (line 288); the note of 2026-10-17 in the block 2026-10-13 (line 425); the line «приватный» of the block 2026-10-09 (line 1106)",
+        "what": "the session handover in Russian; the outdated «private» statements marked with the reading of GitHub of 2026-11-15 and decisions/0111, history not rewritten (AP-102 item 3). The owner's section on the start and the WF-06 block not touched"
+      },
+      {
+        "file": "PLAN.md",
+        "place": "line 363 (a marker that it is replaced), new lines after line 365 (WF-02 E2E105-20261105-01 done; «Дальше (на 2026-11-15, после REQ-105)»; next numbers), line 297 (a marker on «репозиторий private»)",
+        "what": "REQ-105 done; next REQ-106, REQ-107 and the defects ISS-0100-0102, ISS-0104-0108"
+      },
+      {
+        "file": "README.md",
+        "place": "line 241 (clone) and lines 381-384 (the bullet on the merge)",
+        "what": "«the owner's access is needed» -> «while it is closed, the owner's access is needed»; «closed by the owner on purpose (decisions/0062)» -> «the owner opened it to everyone on purpose (read on GitHub on 2026-11-15, decisions/0111, which replaces the part of decisions/0062 about a closed repository)»; the rest of the bullet rewrapped. Other stale numbers of the section «What is not ready or not proven» not touched (issue I7)"
+      }
+    ],
+    "self_check": [
+      "START: handoff status PENDING -> IN_PROGRESS at 2026-11-15T16:30:57Z (status only). Read: the role file, CLAUDE.md, docs/quality-bar.md, docs/workflows/handoffs.md, docs/workflows/WF-02-development.md (step 10), docs/anti-patterns.md (format, AP-102, AP-139-AP-144), STATE.md and PLAN.md (the blocks touched), the blocks REQ-104 (status note), REQ-105, REQ-106, REQ-107 by awk, decisions/0109 and 0111, the design of REQ-105 (whole) and of REQ-104 (sections 2, 18-21), the handoffs 09, 05h, 05g re-run 2, 05g, 06, 05 and, for the facts of the mutant series and the defects, 03, 04, 04b, 04e, 02, 02b, 05b, 05c, 05d, 05e, 05f; ISS-0102 and ISS-0104 (format).",
+      "BEFORE COPY: the nine existing files to edit copied with cp -p to <scratch>/e2e105-10/before/ at 2026-11-15T16:36:28Z (sha256 list there: requirements.yaml 4c1b61c2…, REQ-105 design 24794043…, REQ-104 design d414c010…, ISS-0102 a95d0507…, anti-patterns ca3ecf66…, STATE 57c598c2…, PLAN c7deb938…, tools/README.md d4d0b664…, README aae79112…); git status --short and the sha256 of .git/index (34a1054f990e199f…) recorded.",
+      "FACTS OF THE TASK CHECKED: last issue file ISS-0104 (ls docs/issues | tail; 104 files) -> ISS-0105…0108 free; last AP is AP-144 (grep -o '^### AP-[0-9]*' | sort -t- -k2 -n | tail -1); last decision 0111 (ls decisions); last requirement REQ-107; PLAN.md names REQ-105 at lines 361 and 363; REQ-107 has no word «starter» (awk of the block | grep -i starter -> only REQ-106 criterion 1, line 13761); S19 is caught by E2S-13 (step 05 I2, 05b, 05d tables), not a survivor as I2 (2) of step 09 says (issue I1); tools/README.md e2e section read against stand.js, О14, О15: nothing stale (unchanged, sha256 d4d0b664… before and after).",
+      "REQUIREMENT BLOCK SELECTION: awk '/^  - id: REQ-105$/{f=1} f&&/^  - id: /&&!/REQ-105$/{exit} f' docs/requirements.yaml -> the block with the new status line (13573) and the two corrected places; the same for REQ-106 and REQ-107.",
+      "HASH OF THE REST of docs/requirements.yaml (<scratch>/e2e105-10/rest-hash.sh: the file without the blocks REQ-105 and REQ-106, and each block): before eccee82a52300933d08efba7c0f5429c5c3466ca4ce80c62ec59c775a07ebe93, after eccee82a52300933d08efba7c0f5429c5c3466ca4ce80c62ec59c775a07ebe93 (equal); block REQ-107 bf8a02789205eed9… before and after (equal); block REQ-105 711494b5… -> 6c1791d7…; block REQ-106 0b17334a… -> 2a6dd996…. diff -U0 of the before copy and the file: 7 lines replaced, at 13573 (status), 13608, 13610-13611 (description), 13624 (criterion 1), 13761-13762 (REQ-106 criterion 1); the text of criterion 6 unchanged (О23).",
+      "STATUS AS THE LAST EDIT: the status line was written at 2026-11-15T16:53:02Z, after every other file of the step (the last before it: README.md, PLAN.md, STATE.md, the name corrections of requirements.yaml); after it only checks ran and this handoff was filled.",
+      "RECOUNT OF REQUIREMENTS: grep -c '^  - id: REQ-' docs/requirements.yaml -> 107; grep -E '^    status: ' docs/requirements.yaml | sed -E 's/^    status: ([a-z_]+).*/\\1/' | sort | uniq -c -> 3 blocked, 7 cancelled, 36 done, 1 in_progress, 60 pending (before the step: 35 done, 2 in_progress, the rest the same); awk of the in_progress ids -> REQ-014 only.",
+      "RECOUNT OF OPEN DEFECTS: ls docs/issues/ISS-*.md | wc -l -> 108; grep -l 'Статус: open' docs/issues/ISS-*.md | wc -l -> 89; by severity (grep -l 'Статус: open' … | xargs grep -l 'Серьёзность: <S>' | wc -l): CRITICAL 1, HIGH 0, MEDIUM 10, LOW 78; grep -L 'Статус: open' … | wc -l -> 19 closed. Before the step: 104 files, 85 open (1, 0, 10, 74), 19 closed.",
+      "ERROR JOURNAL NUMBERS: grep -o '^### AP-[0-9]*' docs/anti-patterns.md | tail -6 -> AP-144, AP-145, AP-146, AP-147, AP-148, AP-149; sort | uniq -d -> nothing; grep -c '^### AP-' -> 150 (149 records and the format block); each new record has the four fields; diff -U0 of anti-patterns.md against the before copy: lines added after line 2478 only, none removed.",
+      "GITHUB READING (read only, for the README, STATE and PLAN lines, decisions/0111 'only after a reading of GitHub with its date'): 2026-11-15T16:35:52Z gh repo view --json visibility,isPrivate,updatedAt -> {\"isPrivate\":false,\"updatedAt\":\"2026-11-05T19:16:51Z\",\"visibility\":\"PUBLIC\"}. No GitHub setting changed, nothing pushed.",
+      "TEMPORARY ROOT READ FOR ISS-0108 (2026-11-15, before npm test): ls of os.tmpdir() | grep -c '^<prefix>' -> sai-wf06- 6630, sai-outside- 170, sai-snap- 68, sai-flaky- 34; grep of the prefixes in tools/test -> helpers.js, cli.test.js, flaky-regression.test.js.",
+      "COUNTS FOR THE DESIGN (from tools/): wc -l test/e2e/picker.e2e.js -> 1923; grep -c '^test(' test/e2e/picker.e2e.js -> 9; grep -o 'test(' … | wc -l -> 13 (grep -n '\\.test(' -> lines 397, 509, 824, 891: noContactData, hasBlank, assertRequestsOfB, hasStack); grep -o 'assert\\.' … | wc -l -> 159; grep -c '^test(' test/e2e-stand.test.js -> 20 (E2S-01…E2S-20 by the titles), assert. 211; grep -c '^test($' test/e2e-kit.test.js -> 52; wc -l stand.js 456, fake-stand.js 165, sleep-stand.e2e.js 34; MODES of fake-stand.js -> 12 modes; the helper list by grep -nE '^(async )?function|^const' of picker.e2e.js, each comment read.",
+      "FORMAT OF FILES OUTSIDE tools/ (formatted by hand; prettier --check only): the four new ISS files and ISS-0102 -> clean (exit 0); the REQ-105 and REQ-104 designs, anti-patterns.md, STATE.md, PLAN.md and README.md were not prettier-clean before the step either (exit 1 before and after); the count of lines prettier would change is the same before and after for anti-patterns.md (6), STATE.md (41), PLAN.md (31) and README.md (5), and grows only by the new table rows in the two designs (prettier realigns tables; the house style is by hand).",
+      "CHECKS (from tools/, after the last edit): node src/handoffs/cli.js -> 'handoffs-check: файлов проверено 1345, нарушений 0, исключений использовано 114 из 114', exit 0; node src/traces/cli.js -> 'traces: файлов проверено 2489, следов 0, пропущено 67', exit 0; npm run -s format:check -> 'All matched files use Prettier code style!', exit 0; npm run -s lint -> no output, exit 0.",
+      "NPM TEST (once: requirements.yaml, README.md and the journal changed; tests read them): cd tools && npm test, 2026-11-15T16:53:34Z to 16:57:27Z -> exit 0; '# tests 2207 # suites 0 # pass 2207 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 232200.929958'; grep -c '^not ok' -> 0. Log at <scratch>/e2e105-10/npm-test.log.",
+      "NO CODE, TEST OR PROGRESS CHANGE: sha256 after the step equal to the start: tools/README.md d4d0b664…, docs/program/public-v1/PROGRESS.md fb6417af…, decisions/README.md 3ad1e3a0…, tools/test/e2e-kit.test.js a1e9d54c…, tools/test/e2e/kit/index.js c5d82a73…; git status --short lists, besides the run's earlier files, only my 7 modified tracked files, the edited design docs/design/REQ-105-e2e-picker.md (untracked already) and my 4 new issue files; sha256 of .git/index 34a1054f… unchanged; no commit, no push, no pull, no checkout, reset, stash or clean; prettier --write not used.",
+      "TRACES OF THIS STEP: the changed files and this handoff hold no machine path, no temporary path except <scratch>/…, and no name of the owner's other projects (npm run traces above: 0, the new files among the 2489)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "I2 (2) of step 09 lists S19 among «the survivors on record (equivalent)». The files say otherwise: step 05 (issue I2 and its mutant table: 'S19 … -> red (1): E2S-13'), step 05b and step 05d (S19 red in E2S-13) — the hold of the child's exit until child-term makes S19 red. The design now records S19 as caught by E2S-13 (section 16, row S19 and the table «As built»); the survivors on record are S22, T1-T3 and H3 (ISS-0105), H1, H1b, H4, H5, H7 (ISS-0106), G04, G03b, H6, H8 (outside criterion 6)."
+      },
+      {
+        "id": "I2",
+        "kind": "MICRO_AMENDMENT_FOR_ORCH",
+        "text": "Not edited because the edit would change the meaning of a criterion (WF-02 step 10; decisions/0079 item 5); for a WF-01 micro-amendment with the gate of REQ-VALIDATOR, if ORCH wants them: (a) REQ-105 criterion 1 «the start button lies inside the window» -> horizontally inside and wholly inside once scrolled into view (decisions/0109 О3); (b) criterion 8 «the kit reports none» -> no console entry but the two declared refused-connection lines (О4); (c) criterion 6, by О23 not changed in this run: «the questionnaire of tenant B» read as B's tenant file and the one-word rule (О17 as corrected), every screen of B's pass, B's requests and the keys of the answers (О19, О20), and the readings of ISS-0106 items 3-4 (О22); (d) criterion 6 «The server's request log and stderr» — the server has no request log (design F20), only stderr is read; (e) criterion 4 «with only Tab, Shift+Tab, Enter and Space … reaches restart of the card» needs one reload through the kit (О5), a protocol call that the words do not name. The status note of REQ-105 states (a), (b), (c) and (e) as readings with their records."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "ISS-0107 holds two causes under the one number the task gave: item 1 (F4 of step 03: the group registration of a leader that ended; stand.js, cleanup.js, browser.js) and item 2 (I2 of step 04 and I2 of step 04b: the error shapes of browser.js and withBrowser). decisions/0109 О16 asks «one cause per defect», and 04b I2 (b) (a body that throws null passes) calls itself another cause. I did not take a number ORCH did not issue (role file, 'When to stop'); the file says the items are fixed separately. If ORCH wants them split, it issues ISS-0109 (the next free number) and a bookkeeping edit of DOC-UPDATER moves item 2 there."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "REQ-107 does not name «the starter» anywhere (only «The spec starts `node src/web/main.js …`»), so only REQ-106 criterion 1 got the reference. REQ-106 and REQ-107 reuse stand.js but their depends_on does not list REQ-105 (REQ-104 only); adding it would be a change of the block beyond a name or reference — for ORCH. decisions/0109 О15 is the precondition of the design of REQ-106 (PLAN.md and STATE.md say so)."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "AP-141 is not edited (the task: 'append, do not edit AP-141'). AP-146 says it extends AP-141 item 2. The journal's rule ('if a lesson is out of date, what changed and when is appended to the record') could be read as asking for a one-line pointer at the end of AP-141; I did not add it, because the task forbids editing AP-141. ORCH decides."
+      },
+      {
+        "id": "I6",
+        "kind": "Q13",
+        "text": "Merged: the candidates (a) I8 of 05g re-run 2 and (b) I6 of 05h are one lesson and became AP-145 together with the same-family candidates I2 of 05b, I3 of 05d, I5 of 05e, I5 of 05f and I1 of 05 (a substring oracle over short texts). Not entered as new records, with my reading (decisions/0109 О12 lets DOC-UPDATER decide): the design traps of section 15 Q13 and 01 I12, 01b I4 — the armed stop timer (covered by AP-142 item 1), «title», «inside the window», «the kit reports none», «guard tests: none» (the requirement words were false on the real page: repeats of the shape of AP-094, AP-112, AP-113, AP-117), an oracle not run on the real data (N1) and 'cannot be forced with a real process' (04 I4 (b)) (the shape of AP-012 and AP-144), a scan entry made one step before its file (N3), a leak check by a name the process does not carry (N7, AP-140 item 2), the neighbouring test and an unrun 'caught by' claim (N12, F40, the shape of AP-126); 04 I4 (a) (an outcome told by `!== undefined` of an optional group: a code lesson, fixed at 04b and pinned by E2S-08); 05 I9 (a) a no-op mutant is not a survivor (P06a), (b) a 24-day timer in the test's own process hangs the file, (c) a test that fails half-way must stop what it started (AP-116); 05 I2 and I3 (an event logged in a SIGTERM handler, a stdout chunk read too early: the shape of AP-144). ORCH may order separate records for any of them."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Stale lines outside my write set, not edited: CLAUDE.md line 111 says «Sai's own repository on GitHub is closed by the owner on purpose, decisions/0062» (stale by decisions/0111); the row 0064 of decisions/README.md says «видимость репозитория (0062) не меняется» (a record of that date). In the root README, besides the two lines I corrected, the section «What is not ready or not proven» has stale numbers (87 requirements, 74 open defects, «No health audit yet», «1998 of 1998 tests» in «What already works») — already listed as a separate DOC-UPDATER task in PLAN.md (2026-10-25, RM2) and ISS-0101; not this run's. The root README is not prettier-clean before and after (ISS-0050)."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "The status note of the done REQ-104 says that the order check on two real files 'will be run … by the validator of REQ-105 (docs/issues/ISS-0102)'. It was run at step 09 and ISS-0102 item 2 is now recorded as met; the REQ-104 block is outside my write set (only REQ-105, and names in REQ-106 and REQ-107), so its dated note is not touched (AP-080: no dependent note says 'still in_progress')."
+      },
+      {
+        "id": "I9",
+        "kind": "NOTE",
+        "text": "Found in the handoffs and not opened (no number, not in the task): SECURITY-REVIEWER step 03 I5 — safeText (errors.js, REQ-104) lets the bidi control characters U+202A-U+202E and U+2066-U+2069 through into a message (a line of a stand's stderr with U+202E inside STAND_EXIT, trial 6), 'a candidate for the shared helper, not for this run'. ORCH decides whether it becomes a defect (ISS-0109 is free) or joins ISS-0100 (the same kit, raw text in messages)."
+      },
+      {
+        "id": "I10",
+        "kind": "NOTE",
+        "text": "Design counts: the task's «section 0 and F42» — section 0 got the as-built counts and section 21 the commands; F42 (a fact row of the design-time table) is not rewritten. The series names of the task: the V series is V01-V17 and V20 (05b; no V18, V19), the O series is O1-O7 with their -v3 forms (11 mutants, 05e), the T series of step 05 is T01-T11 and the timing probes of 05g are T1-T3 — the design names both apart."
+      }
+    ],
+    "before_copy": {
+      "where": "<scratch>/e2e105-10/before/<path> — a copy of every edited existing file taken at 2026-11-15T16:36:28Z (the time of its hash list), before the first edit of the step at 16:39:45Z (sha256 list <scratch>/e2e105-10/before-hashes.txt); the tag base/E2E105-20261105-01 differs only in the REQ-105 status line (pending) and in the run's earlier edits of other files",
+      "exact_before_lines": {
+        "docs/requirements.yaml": [
+          {
+            "lines": "13573-13573",
+            "before": [
+              "    status: in_progress"
+            ]
+          },
+          {
+            "lines": "13608-13608",
+            "before": [
+              "      Guard tests of earlier requirements, \"was → became\": none. New files only: tools/test/e2e/picker.e2e.js"
+            ]
+          },
+          {
+            "lines": "13610-13611",
+            "before": [
+              "      select files by the prefix `picker-`, do not read it), and its row in the table of the README section made",
+              "      by REQ-104. No existing assertion counts the files of tools/test or of tools/src/picker."
+            ]
+          },
+          {
+            "lines": "13624-13624",
+            "before": [
+              "        tenant `title` that `GET /t/uchet-pro/api/questionnaire?lang=<l>` returns; after the press of"
+            ]
+          },
+          {
+            "lines": "13761-13762",
+            "before": [
+              "        starter of the spec, called with a state folder outside the temporary root (for example the home",
+              "        folder), throws before any process is started (the test counts the spawned processes: 0)."
+            ]
+          }
+        ],
+        "docs/design/REQ-105-e2e-picker.md": [
+          {
+            "lines": "14-14",
+            "before": [
+              "- **Time.** The prototype of the nine tests runs in 16.6 s on the developer machine (three runs: 16733, 16603, 16622 ms), limit 80000. Under a load of eight copies at once it ran in 43–45 s. The GitHub runner was not measured for this file (section 7)."
+            ]
+          },
+          {
+            "lines": "16-16",
+            "before": [
+              "- **Sizes.** 10 criteria, 9 spec tests, 20 starter tests (`E2S-01…20`), 2 build sub-steps for BACKEND-DEV and 5 for TEST-DESIGNER, 55 mutants (section 16: P 25, S 22, R 8; 53 with a catcher, 2 survivors on record), 12 open questions for ORCH (section 19; how the remarks of the gate were closed is in 19.1 and 19.2), 42 checked facts. Every count has its command in F42 (AP-143)."
+            ]
+          },
+          {
+            "lines": "149-149",
+            "before": [
+              "| `stop() → Promise<{ code: 0, signal: null }>` | idempotent: every call returns the same promise, `SIGTERM` is sent once. If the process is running: `signalGroup(pid, \"SIGTERM\")` (the **group**), wait for the end of the process at most `stopTimeoutMs`; on timeout `SIGKILL` to the group, wait, clean up, throw `STAND_STOP_TIMEOUT`: `<name> did not stop in <ms> ms after SIGTERM; it was killed`. After the process has ended: `SIGKILL` to the group for anything it left behind, wait (3 s) for the group to be gone, `unregisterGroup`, remove the marker (the registration and the marker are removed also when the group is still alive). **Precedence (N11):** if the group is still there after the wait, `CLEANUP_FAILED` is thrown and it **wins** over `STAND_EXIT` (a process left alive is the graver fact); its message ends with the exit code or signal of the main process. Only when the group is gone: if the exit was not code 0 with no signal → `STAND_EXIT`: `<name> ended with exit code <n>|signal <s>` (+ ` after SIGTERM` or ` on its own`) + `. Last line of its stderr: \"<line>\"`. A process that ended by itself before `stop()` is cleaned up the same way and `stop()` then throws `STAND_EXIT` (a crashed server fails the test that used it) |"
+            ]
+          },
+          {
+            "lines": "206-206",
+            "before": [
+              "| `exclusiveStrings(qA, qB)` | the strings (name, intro, titles, helps, units, option labels) of A that are not in B |"
+            ]
+          },
+          {
+            "lines": "219-219",
+            "before": [
+              "6. **`isolation`** — for each pair `[demo-tenants, demo-answers, uchet-pro, svet-marketing]` and `[demo-tenants-v3, demo-answers-v3, agency, stock]`: one stand, one browser: the steps of criterion 6."
+            ]
+          },
+          {
+            "lines": "240-240",
+            "before": [
+              "| 9 | the server dies by itself during a test | the page calls fail as for any dead server; `stop()` throws `STAND_EXIT` (its code) | cleaned up |"
+            ]
+          },
+          {
+            "lines": "302-302",
+            "before": [
+              "| 6 Tenants are kept apart (Q8) | 4.4 (`isolation`), `exclusiveStrings` | `isolation` | per pair: the exclusive set of A has ≥ 10 members (control); after A's full pass the card of B has none of them in `textContent`, no `continue`, and the storage keys are `[\"sai-picker:<A>\"]`; B's questionnaire answer (network record) and B's result answer after B's own `leader` pass hold none of them and none of A's solution names (read from A's file); `POST /t/B/api/result` with A's `leader` → status 400 and a body with no solution name of A; the stand's stderr has no `hasStack` line; `stop()` gives code 0 | — |"
+            ]
+          },
+          {
+            "lines": "362-362",
+            "before": [
+              "| E2S-11 | `stop()` called twice without an `await` between: the two return values are the same object (`===`), and after the stop the log holds exactly one `term`; for `die-later` the test first **waits for the fact** that the stand has ended by itself (`isRunning()` false, limit 5 s; the stand-in exits 300 ms after the link, and a `stop()` called before that would send `SIGTERM` and get code 0), then `stop()` throws `STAND_EXIT` with `exit code 5` and `on its own`, and the log has no `term`; group gone | S12 |"
+            ]
+          },
+          {
+            "lines": "364-364",
+            "before": [
+              "| E2S-13 | `with-child` (4.3, N4, N13). The link is printed only after the child is ready, so the test needs no sleep and no extra wait: when `startStand` has resolved, the test reads the log and **holds**: a `child` event and a `child-ready` event with the same pid, and that pid is alive (`kill(pid, 0)`); only then `stop()`. It resolves `{code:0}`; then (`waitGone`, 5 s) the server pid and group and the child pid are gone. A `finally` kills the child pid with `SIGKILL` if it is still alive. Under the mutant S02 `stop()` throws `CLEANUP_FAILED` and the child is alive until the `finally` (F36, F38) | S02 |"
+            ]
+          },
+          {
+            "lines": "544-544",
+            "before": [
+              "| S19 | `SIGTERM` to the leader only, then the final `SIGKILL` to the group | — | applied, **survives, equivalent** (N17): the main process ends, the final `SIGKILL` takes the group; the effect is the same. On record, not a gap |"
+            ]
+          },
+          {
+            "lines": "562-562",
+            "before": [
+              "**Counts (AP-143).** `grep -c '^| [PSR][0-9][0-9] '` over this section gives 55 rows: P 25, S 22, R 8 (`grep -c '^| P'`, `'^| S'`, `'^| R'` over the section). Of them 53 have a catcher and 2 are survivors on record (S19, S22). 51 are applied in a sketch (P01…P25, S01…S22, R01, R02, R03, R07) and 4 are \"to apply\" (R04, R05, R06, R08)."
+            ]
+          },
+          {
+            "lines": "564-564",
+            "before": [
+              "**Survivors and informational cases on record.** (1) S19, equivalent (N17). (2) S22, not testable, read by REVIEWER (N15). (3) The equivalent mutant of the page below. (4) Q15 of the gate: changing the **English** text of the lost-net block survives, because criterion 8 is about the Russian text; it is informational and is not a mutant of this design (N17). (5) Q01c of the gate is the equivalent mutant below."
+            ]
+          }
+        ],
+        "docs/design/REQ-104-e2e-chrome-kit.md": [
+          {
+            "lines": "80-80",
+            "before": [
+              "| C-2 | A starter of server processes for the page specs (spawn, read a stdout line, SIGTERM and the exit code) | **not in this kit**; REQ-105 designs it when it needs it | no criterion of REQ-104 covers it; a test without a criterion is not allowed here | О1 |"
+            ]
+          },
+          {
+            "lines": "782-782",
+            "before": [
+              "- The order of several spec files (criterion 7) was checked on the real command with one spec file only (`smoke`); `E2K-32` pins the order with fixture files. The second real file comes with REQ-105 (`docs/issues/ISS-0102`, item 2)."
+            ]
+          }
+        ],
+        "STATE.md": [
+          {
+            "lines": "20-21",
+            "before": [
+              "- **Следующие свободные номера:** ISS-0105; решение 0109; запись журнала ошибок — AP-145; требование REQ-108.",
+              "- **Следующая работа.** Проверка учёта ORCH → RELEASE-FINALIZER (шаг 11 этого прогона): коммит файлов прогона по именам, отправка в `main` с ведома владельца, ожидание `check.yml` на `main`, отчёт выпуска `docs/releases/ISS-0103-20261103-01.md`. Дальше без изменений: REQ-105 (сайт подбора), REQ-106, REQ-107; ISS-0100…ISS-0102 и ISS-0104 — один WF-03 вместе с REQ-105, по желанию владельца."
+            ]
+          },
+          {
+            "lines": "29-29",
+            "before": [
+              "- **Требования (пересчитано командой по строкам `status` блоков `docs/requirements.yaml` после правки):** всего **107 — 35 done, 1 in_progress (REQ-014), 61 pending, 3 blocked (REQ-001, REQ-007, REQ-008), 7 cancelled** (до этого шага 34 done, 2 in_progress, 61 pending; изменился один статус — REQ-104 из `in_progress` в `done`). REQ-105, REQ-106 и REQ-107 остаются `pending`, их блоки не тронуты. REQ-014 остаётся `in_progress`: нужны два действия владельца. Статус `done` REQ-104 записан с честной пометкой о том, какая часть критериев 7 и 5 доказана и какая нет. Правка слов в блоках REQ-038 и REQ-040 («check кончается на `npm run test`» стало «…на `npm run test && npm run e2e`» с пометкой о дате): это устаревший факт без смены смысла критерия, прежние строки лежат в `result.before_copy` шага. Остальное в файле не менялось (проверено сравнением с копией до правки)."
+            ]
+          },
+          {
+            "lines": "34-34",
+            "before": [
+              "- **Следующая работа.** Проверка учёта ORCH (счёт требований и дефектов, ссылки, `handoffs-check`, `traces`) → RELEASE-FINALIZER (шаг 11): коммит файлов прогона по именам, отправка в `main` (перед отправкой ORCH сообщает владельцу), ожидание `check.yml` на `main`, второй коммит с записью шага, отчёт выпуска `docs/releases/E2E104-20261103-01.md`. Дальше по порядку: REQ-105 (сайт подбора) — ему сначала нужен запускатель серверных процессов `tools/test/e2e/kit/stand.js` (по решению `0108`, О1, его проектирует прогон REQ-105 первым), затем REQ-106 (Pixel Office), REQ-107 (страница команды, только с подставным исполнителем); отдельный WF-03 для `ISS-0100…ISS-0102` можно пустить вместе с REQ-105."
+            ]
+          },
+          {
+            "lines": "288-288",
+            "before": [
+              "- **Ответы владельца 2026-10-17** (дословно — `docs/owner-requests/2026-10-17-guide-and-english.md`): репозиторий закрыт намеренно — **`decisions/0062`** (защита `main` у закрытого репозитория на бесплатном тарифе недоступна; часть `0048` об открытом репозитории не действует, порядок выпуска в силе); лицензия — «да, но для чего?» — ORCH объясняет и ждёт выбора владельца (MIT или закрытая) *(закрыто 2026-10-18: «давай закрытую» — `decisions/0064`)*; гайд — строить, «максимально для рядового пользователя понятен и не блокирущий функционал»."
+            ]
+          },
+          {
+            "lines": "425-425",
+            "before": [
+              "> **Пометка 2026-10-17 (DOC-UPDATER, прогон `GUIDE-20261017-01`, шаг 3):** по чтению GitHub 2026-10-17 репозиторий сейчас private и защиты `main` нет; написанное ниже о видимости и защите верно на 2026-10-13 и сейчас не действует — см. раздел «На 2026-10-17» и AP-102. Текст ниже не переписан."
+            ]
+          },
+          {
+            "lines": "1106-1106",
+            "before": [
+              "- **Мержа без подтверждения владельца** — свой репозиторий есть (приватный, `PLAN.md`, шаг 2f), коммиты в нём делает ORCH по"
+            ]
+          }
+        ],
+        "PLAN.md": [
+          {
+            "lines": "297-297",
+            "before": [
+              "- **Русский `README.md` устарел** — 41 требование, 17 дефектов, «настоящий Claude ни разу не запускался», раздел о проверке на GitHub — «защиты ветки нет» (сейчас защиты действительно нет, но по другой причине: репозиторий private, `STATE.md`, 2026-10-17). Привести к фактам **в одной правке с ISS-0057** (критерий 5 REQ-030 и тесты `RD-2`/`RD-4` закрепляют слова о защите — AP-079) — после ответа владельца о видимости репозитория."
+            ]
+          },
+          {
+            "lines": "363-363",
+            "before": [
+              "- **Дальше (на 2026-11-03, после REQ-104):** (1) шаг 11 прогона `E2E104-20261103-01`; (2) **REQ-105** — страницы сайта подбора в настоящем Chrome; сначала проектируется запускатель серверных процессов `tools/test/e2e/kit/stand.js` (решение `0108`, О1); (3) **REQ-106** (Pixel Office); (4) **REQ-107** (страница команды, только с подставным исполнителем); (5) по желанию владельца — один WF-03 для `ISS-0100…ISS-0102` вместе с REQ-105. Открытые вопросы владельцу из `E2E-20261103-01` (REQ-033 и критерий 3 REQ-014; лишние минуты проверки на каждый пуш) остаются."
+            ]
+          }
+        ],
+        "README.md": [
+          {
+            "lines": "241-241",
+            "before": [
+              "1. Clone the Sai repository (the owner's access is needed):"
+            ]
+          },
+          {
+            "lines": "381-384",
+            "before": [
+              "  repository exists on GitHub and is closed by the owner on purpose (`decisions/0062`). A push",
+              "  to `main` after PASS of RELEASE-VALIDATOR is allowed by the owner (`decisions/0048`,",
+              "  `decisions/0079`); the release step commits the run's files, pushes them and waits for a",
+              "  green check on GitHub (`docs/workflows/WF-02-development.md`, step 11)."
+            ]
+          }
+        ]
+      },
+      "appended_only": [
+        "docs/anti-patterns.md (after line 2478, AP-145-AP-149)",
+        "docs/issues/ISS-0102-e2e-kit-tests-survivors-and-order-check-with-one-spec.md (after line 23)"
+      ],
+      "tag_note": "on the tag base/E2E105-20261105-01 the status line of REQ-105 reads «    status: pending»; ORCH set in_progress at step 0"
+    },
+    "artifacts_out": [
+      "docs/requirements.yaml",
+      "docs/design/REQ-105-e2e-picker.md",
+      "docs/design/REQ-104-e2e-chrome-kit.md",
+      "docs/issues/ISS-0105-e2e-kit-late-page-text-and-worker-network.md",
+      "docs/issues/ISS-0106-picker-isolation-test-gaps.md",
+      "docs/issues/ISS-0107-e2e-kit-group-registration-and-browser-js-error-shapes.md",
+      "docs/issues/ISS-0108-older-tests-leave-folders-in-system-temp.md",
+      "docs/issues/ISS-0102-e2e-kit-tests-survivors-and-order-check-with-one-spec.md",
+      "docs/anti-patterns.md",
+      "STATE.md",
+      "PLAN.md",
+      "README.md"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-15T16:30:37Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/doc-updater.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same."
+  }
+}

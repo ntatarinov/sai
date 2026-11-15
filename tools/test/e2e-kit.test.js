@@ -3393,7 +3393,8 @@ test(
     const section = readme.slice(
       readme.indexOf("## End-to-end tests in a real browser"),
     );
-    for (const word of ["duration_ms", "30000", "240000"]) {
+    // the budgets: smoke 30000 (REQ-104), picker 80000 (REQ-105), all files 240000
+    for (const word of ["duration_ms", "30000", "80000", "240000"]) {
       assert.ok(section.includes(word), word);
     }
   },
@@ -3768,6 +3769,7 @@ const SCANNED = () => [
   ...walk(KIT),
   path.join(E2E, "run.js"),
   path.join(E2E, "smoke.e2e.js"),
+  path.join(E2E, "picker.e2e.js"),
   fileURLToPath(import.meta.url),
   FAKE,
 ];
@@ -3778,10 +3780,18 @@ test(
   () => {
     const files = SCANNED();
     const here = fileURLToPath(import.meta.url);
+    // the server starter (stand.js) reads the base list of REQ-105 by name: PATH,
+    // TMPDIR and the six names below (docs/design/REQ-105-e2e-picker.md, 4.1, 12)
     const ENV_NAMES = new Set([
       "SAI_CHROME",
       "PATH",
       "TMPDIR",
+      "TEMP",
+      "TMP",
+      "LANG",
+      "LC_ALL",
+      "TZ",
+      "SystemRoot",
       "SAI_FAKE_CHROME_MODE",
       "SAI_FAKE_CHROME_LOG",
       "SAI_FIXTURE_PIDFILE",
@@ -3900,10 +3910,14 @@ test(
       "REQ-105",
       "REQ-106",
       "REQ-107",
+      "startStand",
+      "withStand",
+      "80000",
     ]) {
       assert.ok(section.includes(token), `the section lacks: ${token}`);
     }
     assert.match(section, /^\|\s*smoke\.e2e\.js\s*\|\s*REQ-104\s*\|$/mu);
+    assert.match(section, /^\|\s*picker\.e2e\.js\s*\|\s*REQ-105\s*\|$/mu);
 
     const checkAt = readme.indexOf("\n## Check");
     assert.ok(checkAt >= 0);

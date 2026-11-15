@@ -1,0 +1,142 @@
+{
+  "handoff_id": "step05c-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "05c",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/E2E105-20261105-01/step-05c-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-05b-test-design-validator.json (findings F1-F3, mutants W01, W02, V12, V13)",
+      "decisions/0109-e2e-stand-conventions.md (addendum O17)",
+      "docs/requirements.yaml (block REQ-105, criterion 6)",
+      "docs/design/REQ-105-e2e-picker.md (4.1, 4.4, section 8 row 6, 11.1)",
+      "decisions/0108-e2e-kit-conventions.md (addendum of 2026-11-03 on the check after a kill)"
+    ],
+    "route": "5b FAIL (pass 1) -> TEST-FIXER (this) -> TEST-DESIGN-VALIDATOR (pass 2 of 3) -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable -> 8 not applicable -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/picker.e2e.js (test isolation and its helpers)",
+      "tools/test/e2e-stand.test.js (E2S-01, E2S-06, E2S-07, E2S-08, E2S-13: one group check each)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-05b-test-design-validator.json"
+  },
+  "task": {
+    "description": "WF-02, TEST-FIXER after FAIL of step 5b (pass 1): fix the three findings of handoffs/E2E105-20261105-01/step-05b-test-design-validator.json in the tests only, by the requirement and by decisions/0109 addendum O17 (the reading of criterion 6, written by ORCH on 2026-11-09). The code under test (tools/src, tools/test/e2e/kit/*, the stand-in, tools/README.md, package.json) is right and is not changed.\n\nF1 (High) and F2 (Medium), tools/test/e2e/picker.e2e.js, test 'isolation' and its helpers (exclusiveStrings, assertNothingOf, questionnaireStrings or new helpers next to them): (a) build the set 'texts of A that B does not have' against B's tenant file in ru (src/picker/demo-tenants*/<B>.json: the name, the intro, and the title, help, unit and option labels of each question), not against B's answer of the server under test; the texts of A still come from GET /t/<A>/api/questionnaire?lang=ru as criterion 6 says; keep the control of at least 10 texts; (b) in B's questionnaire answer and B's result answer, a text of A that has a blank is looked for as a part of every string value, a text of one word is compared with the whole string values; the solution names of A stay a check of a part of the answer text; the check of B's page text stays a check of every text of A as a part; (c) update the comments so they say O17 and the reason (the two measured common words). Before you write it, measure on the correct server: the sizes of the set in both pairs (the gate measured 49 and 23) and 0 hits in B's answers. Then show on copies outside the project that the validator's mutants W01 and W02 (their exact forms are in the step-05b handoff, self_check and the mutant table) go red in both pairs, and that P13 is now red by a hit, not only by the control of 10.\n\nF3 (Low), tools/test/e2e-stand.test.js: right after 'await stand.stop()' in E2S-01 and E2S-13, and right after the rejection of the failed start in E2S-06, E2S-07 and E2S-08, assert once that the process group is gone (groupGone of the stand pid; allowed by the decisions/0108 addendum, because stop() and the failed start of the kit poll the group themselves and let the event loop reap), keeping the bounded waitGone that follows. Show on copies that the validator's mutants V12 and V13 now go red, and run a series of dozens of runs under load (AP-115) of E2S-01, E2S-06, E2S-07, E2S-08 and E2S-13 on the correct code: 0 red. If a mutant cannot be made red reliably, say so with the numbers instead of loosening anything.\n\nTHEN: each changed test alone (the isolation test by --test-name-pattern through npm run -s e2e -- picker or the runner's own selection, the E2S tests by name); the two kit files three times; npm run -s e2e -- picker three times (one Chrome at a time) with their duration_ms; the counts of test( and assert. of both files not lower than before your change; npm run check once at the end, exit 0. Every edit and why the test (not the code) is to blame goes into result.changes. RULES: change only the two files of the write set; no skip, no sandbox flags, no sleep (waits for facts with limits); do not commit, push or pull; kill only your own processes by explicit pid; the ten old node processes of this machine (two 'node stand.js' with a working folder outside the project, eight 'node -e setInterval') are not yours. The handoff holds no absolute machine paths and no names of the owner's other projects.",
+    "acceptance_criteria": [
+      "isolation builds the set of A's texts against B's tenant file in ru and keeps the control of at least 10",
+      "multi-word texts of A are looked for as a part of B's answer strings, one-word texts as whole values; on the correct server 0 hits, measured",
+      "W01, W02 and P13 red by a hit in both pairs; V12 and V13 red; each shown on copies outside the project",
+      "E2S-01, E2S-06, E2S-07, E2S-08, E2S-13 hold a group check right after stop() or the failed start, green in a load series",
+      "test( and assert. counts not lower; npm run check exit 0 at the end"
+    ]
+  },
+  "created_at": "2026-11-08T22:11:06Z",
+  "started_at": "2026-11-08T22:11:06Z",
+  "completed_at": "2026-11-08T22:44:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework for FAIL of handoffs/E2E105-20261105-01/step-05b-test-design-validator.json (gate pass 1 of 3), findings F1, F2 and F3; fixed in the tests only. What failed: the gate's own server mutants W01 and W02 (a text of tenant A put into the questionnaire answer of tenant B) survived the test `isolation` in both pairs, because the set 'texts of A that B does not have' was built against B's answer of the server under test, so a leaked text left the set (F1), and B's JSON answers were compared with the texts of A by whole string values only, so a text of A inside a string of B was not seen (F2); the starter mutants V12 and V13 (no wait for the group after the final SIGKILL of stop() and of a failed start) survived, because the starter tests only waited themselves afterwards (F3). What was fixed, by criterion 6 of REQ-105 as decisions/0109 О17 reads it and by design 4.1: (1) tools/test/e2e/picker.e2e.js builds the set against B's tenant file in ru (the name, the intro, and the title, help, unit and option labels of each question), the texts of A still come from GET /t/<A>/api/questionnaire?lang=ru, the control of at least 10 stays, and the same set is used for B's card text; (2) in B's questionnaire answer and B's result answer a text of A that has a blank is looked for as a part of every string value, a one-word text is compared with the whole string values, the solution names of A stay a part of the answer text, the card text check is unchanged (every text of A as a part); the comments say О17 and the two measured common words; (3) tools/test/e2e-stand.test.js asserts once that the process group is gone right after `await stand.stop()` in E2S-01 and E2S-13 and right after the rejection of the failed start in E2S-06, E2S-07 and E2S-08, keeping every bounded waitGone. The code under test is right by the criteria and was not touched: on the correct server the new oracle gives the same 49 and 23 texts and 0 hits in B's answers (measured before the edit), and the five starter tests are green in 206 runs each under load. Shown on copies outside the project: W01 and W02 red by a hit in both pairs; P13 red by a hit in pair 2 (in pair 1 its exact form stays red by the control, because there the address of A itself serves B); V13 red 10 of 10 in E2S-07 and in E2S-08; V12 red 11 of 11 in whole-file runs of e2e-stand.test.js but not reliably when E2S-13 runs alone (0 of 30 quiet, 18 of 30 under 8 busy loops) - a race with the system reaping an orphan, reported with the numbers in issue I1, nothing loosened. Counts not lower; npm run check exit 0; npm run -s e2e -- picker 17124, 17014, 17038 ms. Next by the route: TEST-DESIGN-VALIDATOR (step 5b again, pass 2 of 3) for the two test files, then TEST-RUNNER.",
+    "changes": [
+      {
+        "remark": "F1 (High)",
+        "fixed": "the test",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "new helpers russianOf (line 416) and tenantFileStrings (line 422); exclusiveStrings (line 449); test isolation (line 1107): fileOfB read and its id asserted (lines 1113-1116), exclusiveStrings(qa, fileOfB) (line 1127), a comment that the served qb is for B's own pass only",
+        "was": "exclusiveStrings(qa, qb): the texts of A minus the texts of qb = GET /t/<B>/api/questionnaire?lang=ru of the server under test",
+        "became": "exclusiveStrings(qa, fileOfB): the texts of A (still from GET /t/<A>/api/questionnaire?lang=ru) minus the ru values of the name, the intro and the title, help, unit and option labels of each question of src/picker/demo-tenants*/<B>.json (read before the stand starts, its id asserted to be B, a field without a Russian text fails the test); the >= 10 control kept; the same set used for B's card text; the served qb used only to answer B's own questions",
+        "why_the_test_not_the_code": "Criterion 6 of REQ-105 builds the set from 'the questionnaire of tenant B'; decisions/0109 О17 reads it as B's tenant file, because an answer of the server cannot be the oracle of its own leak: under W02 the served set shrank 49 -> 48 and 23 -> 22 and the leaked text hid itself. The server agrees with the criterion: on the correct server the file-based set holds the same 49 and 23 texts as the served-based one and B's answers hold none of them (measured before the edit), so the code had nothing to fix; the oracle of the test was wrong."
+      },
+      {
+        "remark": "F2 (Medium)",
+        "fixed": "the test",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "new helper hasBlank (line 476); assertNothingOf (line 487) and its comment",
+        "was": "every text of A compared with the whole string values of B's answer only (departure I1 of step 05)",
+        "became": "a text of A that has a blank (/\\s/u) fails when it stands inside any string value of B's questionnaire answer or of B's result answer; a one-word text fails when it is a whole string value; a solution name of A fails when it stands in the answer text (as before); the check of B's card text is unchanged (every text of A and every solution name as a part)",
+        "why_the_test_not_the_code": "Criterion 6: B's answers 'hold none of them'; О17 reads it as above. By whole values only, a text of A inside a string of B is not seen (W01 survived the gate). One-word texts stay whole values because a single common word of A stands inside B's own texts on the correct server: measured again here, 'every text by a part' gives exactly «человек» (the unit of uchet-pro, inside a question of svet-marketing) and «Обучение» (the option of agency, inside a result of stock), while the rule of О17 gives 0 hits in both pairs. The server is right; the comparison of the test was too narrow."
+      },
+      {
+        "remark": "F1, F2 item (c)",
+        "fixed": "the test (comments)",
+        "file": "tools/test/e2e/picker.e2e.js",
+        "place": "comments above russianOf, exclusiveStrings, hasBlank and assertNothingOf, and two comments in isolation",
+        "was": "the comment of assertNothingOf justified whole values for every text",
+        "became": "the comments name criterion 6 as decisions/0109, О17 reads it, why B's texts come from its tenant file (a served text would hide its own leak), and the reason of the one-word rule («человек» of uchet-pro inside a question of svet-marketing, «Обучение» of agency inside a result of stock, both measured)",
+        "why_the_test_not_the_code": "task item (c); the comments follow the edited oracle"
+      },
+      {
+        "remark": "F3 (Low)",
+        "fixed": "the test",
+        "file": "tools/test/e2e-stand.test.js",
+        "place": "E2S-01 line 456 and E2S-13 line 1193: assert.ok(groupGone(stand.pid), ...) right after 'await stand.stop()'; E2S-06 line 847 and E2S-07 line 916: assert.ok(groupGone(pid), ...), E2S-08 lines 971-974: assert.ok(groupGone(startPid(log)), ...) right after the rejection of the failed start (only synchronous assertions between the rejection and the check, no await); a comment at each",
+        "was": "after stop() and after a failed start only the test's own bounded waitGone (5 s) of the pid and the group",
+        "became": "one check that the process group is gone (kill(-pgid, 0) gives ESRCH) right after the kit's own awaited close, then the same bounded waitGone as before (kept everywhere)",
+        "why_the_test_not_the_code": "Design 4.1: stop() sends SIGKILL to the group and waits (3 s) for it to be gone before it resolves, and a failed start (step 7) sends SIGKILL to the group and waits until it is gone before it throws; the tests did not pin that wait (V12 and V13 survived). The decisions/0108 addendum of 2026-11-03 allows one check right after an awaited close of the kit, which polls the group and lets the loop reap. stand.js is right: the five tests with the new checks are green alone, in 3 runs of the two kit files, in 206 runs each under load, and in npm run check."
+      }
+    ],
+    "self_check": {
+      "commands": [
+        "status set to IN_PROGRESS first; hashes before: git ls-files -co --exclude-standard -z | xargs -0 shasum -a 256 -> 2542 files (<scratch>/e2e105x/hashes-before.txt)",
+        "facts of the task checked: e2e-stand.test.js sha256 1fc0812d688efb91 = the file the gate read; the gate's exact mutant forms W01, W02, P13, V12, V13 read from its harness in <scratch>/e2e105g (read only) and written again in <scratch>/e2e105x/h/edits.mjs; counts before (grep -o | wc -l): picker.e2e.js test( 11, assert. 137; e2e-stand.test.js test( 22, assert. 200",
+        "copies: git clone -b base/E2E105-20261105-01 <repo> <scratch>/e2e105x/clone; the eight work files of tools/ of this run copied in, each cmp-equal to the project; decisions/0109 and 0110 copied in; each mutant run uses a copy of this clone at <scratch>/e2e105x/m/<label> (no node_modules) with the two edited test files copied in ('new') or the files before the edit kept ('old'), every edit asserted to match exactly once, the copy deleted after the run (0 left)",
+        "measurement BEFORE the edit: node <scratch>/e2e105x/h/measure.mjs correct (the real picker of a copy through the kit's startStand, no browser) -> uchet-pro -> svet-marketing: set against B's served answer 49, against B's tenant file in ru 49, the same texts (46 with a blank, 3 of one word); agency -> stock: 23 and 23, the same (14 / 9); hits by the rule of О17 in B's questionnaire answer and in B's result answer (direct POST of B's leader set, 200): [] and [] in both pairs; no text of A holds a blank other than a space or a blank at an end; every text by a part would give only «человек» (pair 1, B's questionnaire) and «Обучение» (pair 2, B's result); stop {code 0, signal null}, stderr empty",
+        "the same measurement on mutant copies: W01 -> file set 49 / 23, hits by О17: 2 («Сколько видов товара у вас в наличии?», «видов товара») and 1 («Где ищем клиентов?»), the old rule 0 and 0; W02 -> served set 48 and 22, file set 49 and 23, hits 2 and 1, old rule 0 and 0; P13 -> pair 1: 0 texts by both oracles (the address of A serves svet-marketing), pair 2: file set 23 with 23 hits in B's questionnaire answer (served set 0); P13-v3 (P13 only for the folder that holds stock) -> pair 1: 49 and 0 hits, pair 2: 23 and 23 hits",
+        "cd tools && npx prettier --write test/e2e/picker.e2e.js test/e2e-stand.test.js -> unchanged; npx eslint --max-warnings 0 test/e2e/picker.e2e.js test/e2e-stand.test.js -> no output, exit 0",
+        "each changed test alone in the project: node --test --test-reporter=tap --test-name-pattern='^E2S-NN ' test/e2e-stand.test.js for 01, 06, 07, 08, 13 -> exit 0 each, exactly one line starting 'ok ', 'ok 1 - E2S-NN ...', no 'not ok'; node --test --test-reporter=tap --test-name-pattern='^isolation$' test/e2e/picker.e2e.js -> exit 0, the only ok line 'ok 1 - isolation', tests 1, pass 1, duration_ms 2576",
+        "mutants, the isolation test of a copy alone (node <scratch>/e2e105x/h/mutrun.mjs <label> <mutant> new iso; one Chrome at a time): base, no edit -> green; W01 (exact form of step 05b, both pairs) -> red: 'uchet-pro then svet-marketing: the questionnaire answer of B: holds the text of A «Сколько видов товара у вас в наличии?»'; W02 (exact) -> red, the same message; W01-v3 (the same edit with LEAK_FROM only stock -> agency, so pair 1 is correct and pair 2 is reached) -> red: 'agency then stock: the questionnaire answer of B: holds the text of A «Где ищем клиентов?»'; W02-v3 -> red, the same message; P13 (exact) -> red: 'uchet-pro then svet-marketing: 0 texts of A' (the control); P13-v3 -> red by a hit: 'agency then stock: the card of B shows «Лидвейв»'",
+        "the same copies with the test files before the edit ('old'): W01, W02, W01-v3, W02-v3 -> green (survive, as at the gate); P13-v3 -> red only by the control: 'agency then stock: 0 texts of A'",
+        "V13 (exact form): the whole e2e-stand.test.js of a copy -> exit 1, red [E2S-07, E2S-08], 18 green, messages 'hang: the group after the failed start' and 'a foreign link: the group after the failed start'; E2S-07 alone x10 -> 10 of 10 red; E2S-08 alone x10 -> 10 of 10 red; E2S-06 alone x10 -> 0 of 10 red; the whole file before the edit -> green 20/20",
+        "V12 (exact form): the whole e2e-stand.test.js of a copy x11 (1 + 10) -> 11 of 11 red [E2S-13] 'the group after stop()', 19 green each; E2S-13 alone x30 quiet -> 0 of 30 red; E2S-13 alone x30 with 8 busy loops -> 18 of 30 red; E2S-01 alone x5 -> 0 of 5; the whole file before the edit -> green 20/20. No mutant run hung: limit 300 s per run, 0 timeouts, the slowest run 16.8 s; 121 records in <scratch>/e2e105x/mutants.jsonl",
+        "load series on the correct code (AP-115), in the project's tools/, node <scratch>/e2e105x/h/series.mjs under <scratch>/e2e105x/h/busy.sh (busy loops 'yes > /dev/null', killed by their own pids, 0 left): series 1: 4 loops x 20 runs of node --test --test-reporter=tap --test-name-pattern='^E2S-(01|06|07|08|13) ' test/e2e-stand.test.js with 8 busy loops (load average up to 9.68) -> 80 of 80 exit 0, each of the five tests 80 ok, 0 not ok; series 2: 6 loops x 20 runs of the same with 10 busy loops and at the same time 2 loops x 3 runs of the whole test/e2e-stand.test.js (load average up to 18.90) -> 120 of 120 exit 0, each of the five 120 ok, 0 not ok, the six whole-file runs exit 0 with 20/20. 0 red in 206 runs of each of E2S-01, E2S-06, E2S-07, E2S-08, E2S-13 (one machine, macOS, Node v22.23.4)",
+        "cd tools && node --test test/e2e-kit.test.js test/e2e-stand.test.js (x3) -> exit 0, tests 72, pass 72, fail 0, cancelled 0, skipped 0, todo 0 each; duration_ms 35058, 35043, 34977",
+        "cd tools && npm run -s e2e -- picker (x3, one Chrome at a time) -> exit 0, 9 ok / 0 not ok each (matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3); record lines 'selection=picker exit=0 duration_ms=' 17124, 17014, 17038",
+        "counts after (grep -o | wc -l): picker.e2e.js test( 12 (11 before: the new call .test( of hasBlank; top-level tests 9 = 9), assert. 139 (137 before); e2e-stand.test.js test( 22 (22 before; top-level tests 20 = 20), assert. 205 (200 before)",
+        "grep -nE '\\.skip\\(|\\.todo\\(|\\|\\| true' tools/test/e2e/picker.e2e.js -> no line (exit 1); search for the names of other projects and computer paths in the two files -> empty (npm run traces below: 0 traces)",
+        "hashes after: the same command -> 2542 files; diff with the list before -> exactly two files differ: tools/test/e2e-stand.test.js and tools/test/e2e/picker.e2e.js; git status shows the same entries as at the start; no file added in the project",
+        "cd tools && npm run check (once, at the end, 2026-11-08T22:36:31Z to 2026-11-08T22:41:14Z) -> exit 0: prettier 'All matched files use Prettier code style!', eslint 0 warnings, traces 2475 files 0 traces, handoffs-check 1336 files 0 violations, npm test tests 2207 pass 2207 fail 0 cancelled 0 skipped 0 todo 0 (duration_ms 236821), e2e picker 9/9 and smoke 13/13, record 'e2e: command=npm run e2e selection=all exit=0 duration_ms=34781'",
+        "LEFT after every series and at the end: ps by 'src/picker/cli.js serve|fake-stand.js|sai-e2e-|yes' and headless Chrome -> none; the temporary root holds 0 'sai-e2e-' folders and one 'sai-stand-test-' folder of 2026-11-05 (not of this step); the ten old node processes have the pids they had at my start and were not touched; <scratch>/e2e105x/m is empty",
+        "before close: cd tools && npm run handoffs-check && npm run traces -> exit 0 both: handoffs-check: файлов проверено 1336, нарушений 0, исключений использовано 114 из 114; traces: файлов проверено 2475, следов 0, пропущено 67"
+      ],
+      "hashes": "2542 files of the working tree (tracked and untracked, without ignored ones) hashed after the status was set and again after the work: only tools/test/e2e-stand.test.js and tools/test/e2e/picker.e2e.js differ; the copies, the harness and all outputs are in <scratch>/e2e105x."
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "V12 (stop() does not wait for the group after its final SIGKILL) cannot be made red reliably by a check in this write set; it is reported with the numbers, nothing is loosened. The new check of E2S-13 makes it red in 11 of 11 runs of the whole e2e-stand.test.js (the way npm test runs it), but E2S-13 alone is red in 0 of 30 runs on a quiet machine and 18 of 30 under 8 busy loops. Cause: after the main process has ended, the only member of the group is the child that ignored SIGTERM; its parent is gone, so the system reaps it, not the test process, and whether it is gone in the fraction of a millisecond between the SIGKILL and the check is a race. E2S-01 cannot catch V12 at all (0 of 5: its stand-in is the only member of its group and the test process reaps it before stop() goes on). A catcher that does not depend on timing needs a member of the group that a live process keeps unreaped after the SIGKILL; a Node-only stand-in cannot make one (the parent of every member is itself in the group, decisions/0109 addendum of 2026-11-08 on О13), and tools/test/fixtures/e2e-stand/fake-stand.js is outside this write set. For ORCH: record V12 as a mutant caught only in whole-file runs, or give the question to TEST-DESIGNER / CODE-DESIGNER."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "V13 is red without luck in E2S-07 and E2S-08 (10 of 10 each): the killed stand-in is a child of the test process, which cannot reap it before its event loop turns, and there is no await between the rejection and the check. E2S-06 cannot catch V13 (0 of 10): its stand-in ended by itself and was reaped before the start failed, so no group is left for the missing wait. The checks of E2S-06 and E2S-01 still pin the contract of 4.1 and are green in every run."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "P13 in its exact form stays red by the control in pair 1 ('uchet-pro then svet-marketing: 0 texts of A'): under it the address of A itself serves svet-marketing, so A has no text that B lacks (0 by both oracles, measured) and there is nothing to leak; the test stops at its first failure and never reaches pair 2. Red by a hit is shown with the same edit limited to the folder demo-tenants-v3: 'agency then stock: the card of B shows «Лидвейв»'; the test before the edit gave only 'agency then stock: 0 texts of A' there."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "For DOC-UPDATER at step 10: design 4.4 (the helper row 'exclusiveStrings(qA, qB)') and section 8 row 6 describe the oracle before О17; the test now takes B's tenant file (exclusiveStrings(questionnaireA, tenantFileB)) and the rule of О17 for the JSON answers, together with the precision of criterion 6 that О17 already assigns."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "The count of the substring 'test(' in picker.e2e.js rises from 11 to 12 only because of the call /\\s/u.test(text) of the new hasBlank; the top-level tests stay nine. The temporary root holds sai-stand-test-lvEDJb of 2026-11-05, not of this step (noted by the gate too); left as it is."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e/picker.e2e.js",
+      "tools/test/e2e-stand.test.js"
+    ]
+  }
+}

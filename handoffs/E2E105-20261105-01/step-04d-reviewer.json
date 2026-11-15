@@ -1,0 +1,153 @@
+{
+  "handoff_id": "step04d-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "04d",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E105-20261105-01/step-04d-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-04b-code-fixer.json (the fixes and their proofs)",
+      "handoffs/E2E105-20261105-01/step-04-reviewer.json (your pass 1: FAIL, M1, L1-L4)",
+      "handoffs/E2E105-20261105-01/step-03-security-reviewer.json (SECURITY-REVIEWER pass 1: PASS with F1-F4)",
+      "decisions/0109-e2e-stand-conventions.md (addenda O13-O16)",
+      "tools/test/e2e/kit/stand.js, tools/README.md (the diff against the tag base/E2E105-20261105-01)"
+    ],
+    "route": "SECURITY-REVIEWER + REVIEWER (this pair, pass 2 of at most 3) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the gate reads)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-04-reviewer.json"
+  },
+  "task": {
+    "description": "WF-02, step 4, pass 2 of at most 3 — the code review gate again, after CODE-FIXER step 04b changed tools/test/e2e/kit/stand.js and the starter paragraph of tools/README.md. Review the whole starter again on the current files, not only the diff: (a) M1 is fixed for real (re-run your own trial of pass 1: 3 of 7 red before; every outcome of the start goes through one explicit field, every failure through the same clean-up, every path throws the kit's error class); (b) L1-L4 are fixed, and the fixes read like the kit (no defensive noise, no crutch: the optional chaining on the pipes, the try/catch around cleanupError — is each one needed and honest?); (c) the README paragraph: the old words kept, the two new clauses true; (d) the precedence CLEANUP_FAILED, STAND_STOP_TIMEOUT, STAND_EXIT and the O14 condition are unchanged; (e) decisions/0109 O13 now records your forced zombie trial — say whether its wording is true. Known Low items you may judge: the timeout options given 0 say 'must be a whole number of milliseconds' (I3 of step 04b); the README says the child gets 'nothing else' while the platform adds a variable or two (I5 of step 04b). Verdict PASS or FAIL with findings (severity, the line, a one-sentence fix). Task text and report hold no absolute machine paths and no names of other projects of the owner. Do not edit any project file except this handoff; do not commit or push.",
+    "acceptance_criteria": [
+      "M1 and L1-L4 fixed for real, no crutch",
+      "Precedence and O14 unchanged",
+      "Verdict PASS or FAIL with findings"
+    ]
+  },
+  "created_at": "2026-11-08T18:45:57Z",
+  "started_at": "2026-11-08T18:45:57Z",
+  "completed_at": "2026-11-08T18:56:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS: no Critical, High or Medium finding. M1 and L1-L4 of pass 1 are fixed for real. Two new Low findings (L5, L6) are recorded and do not block. Read again: the whole of stand.js on the current files, not only the diff, and the README paragraph. The diff against my pass-1 copy (the code of step 02b) is exactly the eight items of step 04b and nothing else; index.js and fake-stand.js are byte for byte as before (AP-019 held). (a) M1: every settle of the start now carries an explicit kind (link, error, timeout, exited, stand.js:323, 335, 354, 370), and the branches test result.kind (375-397). Every match goes through assertLoopbackUrl, so a group that took no part gives URL_REFUSED 'refused to open \"[undefined]\"', and every failure goes through abortStart. My pass-1 trial group1.mjs: 7 of 7 green on the current code; on the step 02b code the same trial is still 3 of 7 red, so it sees the defect. A wider trial of every start outcome (outcomes.mjs) has 18 of 18 green: ok; a foreign link; an optional group; a group in the other alternative; exit before the link; no link in time; a missing cwd; a throwing spawn; a pipeless child. Each failure is an E2eError with its code, and nothing is left registered, no marker and no process. On the step 02b code the same trial is red at the M1 and L1 cases and then crashes. (b) L1: the error listener comes before the pipes (334-344), and the pipes are read with ?. (345-358), the order of runner.js. The ?. is the part that is needed: it lets a child without pipes reach its error event and end as STAND_START_FAILED with the marker removed. Moving the listener first alone would still throw a TypeError at setEncoding and leave the marker to the exit handler. Once ?. is there the move is not strictly needed, but it is the order of runner.js, adds no code and keeps the listener in place before any pipe call: honest, not noise. Measured: under `ulimit -n 64` the start now gives STAND_START_FAILED 'could not start \"em\": EMFILE' and the process goes on (exit 0); in pass 1 it crashed. L2: `cleanupError !== failure` (436) adds nothing when the body awaited the failing stop(). I4 of SECURITY-REVIEWER: the assignment stands in try/catch with a comment (440-444). It is needed by the contract of 4.1 ('a body error is rethrown as it is'); it is not defensive noise. withstand2.mjs is 10 of 10 green: no self-reference; a frozen error and an error with a read-only cleanupError are rethrown as the same object; a plain error still gets cleanupError STAND_EXIT; a thrown null or string is rethrown as it is; a good body with a failing stop gets the stop error, and a good body with a good stop gets its value. On the step 02b code 3 of 10 are red. L3: 'env value of TOKEN must be a string without NUL', the value absent. F1 of SECURITY-REVIEWER: the comment (26-29) is true (envtruth.mjs): the child has no HOME, its os.homedir() is still the user's real home folder, and with HOME given it is that folder. All fixes read like the kit: kit comments, `catch { // … }` as in cleanup.js and browser.js, kit codes, prettier and eslint clean. (c) README:844: all 111 words of the old paragraph are kept in order (punctuation at word ends ignored); two clauses are inserted; no other README line changed; the tokens of E2K-41 and E2K-60 are present (both green). The two clauses are true: the home clause by envtruth.mjs, the O14 clause by o14.mjs (code 0, code 5 and a signal on its own fail; code 0 after SIGTERM resolves). One old phrase is imprecise in the letter (L6). (d) Precedence and O14 unchanged: #doStop (182-246) is identical to pass 1 apart from the line shift. My zombie trial (precedence.mjs) on the current code: CLEANUP_FAILED in all four paths (exit 1 and exit 0 after SIGTERM, SIGTERM ignored, ended by itself), each message ending with the end of the main process, 3.0-4.0 s, 25 of 25. o14.mjs on the current code: every O14 check green; its one red check is case 8, which asserted the self-reference of L2 that the fix removed (expected). drain.mjs 6/6 (stop() 1006 ms with the pipes held open), withchild.mjs 5/5, refusals.mjs 31/31. (e) O13 as now recorded in decisions/0109: true in its facts (macOS; a helper in another language; an unreaped zombie in the group; the helper left the group; the four paths; CLEANUP_FAILED with the end of the main process). The conclusion 'cannot be forced with Node alone' holds for a stand started the real way. The reason in parentheses, '(Node reaps its children)', is not accurate (issue I1). Known Lows judged. The timeout message for 0 is real and so is the overflow above 2^31-1 ms that SECURITY-REVIEWER gave me (I4 (a) of step 03), measured (L5). 'nothing else' in the README and 'switches of the developer's shell' in the comment miss two variables the platform adds, measured (L6). Checks: the kit test file on a fresh copy of the tag with the current files gives 52 tests, 51 pass, 1 fail = E2K-50 ('reads TEMP', red by the design until sub-step 3); check (a) of section 14 prints 200 Учёт-Про {\"code\":0,\"signal\":null} \"\" (exit 0); there is no erosion sign, no whole-environment read and no sleep in stand.js. For TEST-DESIGNER especially, see issue I3. The task names no expected verdict (AP-018 not applicable).",
+    "findings": [
+      {
+        "id": "L5",
+        "where": "tools/test/e2e/kit/stand.js:105-111 (the check of startTimeoutMs and stopTimeoutMs; the message at :110); the same shape at :93 ('cwd must be a path' also for a NUL)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "0 is refused with '<option> must be a whole number of milliseconds', though 0 is a whole number (the rule broken is 'at least 1'; I3 of step 04b; the shape of L3, which I should have found in pass 1 with L3, AP-014). A value of 2^31 or more is accepted, but Node keeps no timer that long: it sets it to 1 ms with a TimeoutOverflowWarning. Measured (bigtimeout.mjs): startTimeoutMs 2^31 ends the start after 26 ms with 'fake did not print its link in 2147483648 ms; it was killed'. stopTimeoutMs 2^31 makes a stand that exits 0 on SIGTERM end as STAND_STOP_TIMEOUT 'did not stop in 2147483648 ms after SIGTERM; it was killed'. So a bad option spawns a process, kills it, and reports a false time (I4 (a) of SECURITY-REVIEWER, given to REVIEWER). No real caller gives such values, hence Low.",
+        "fix": "Refuse a timeout outside 1…2147483647 with USAGE and name the range in the message ('must be a whole number of milliseconds from 1 to 2147483647'); say 'without NUL' for cwd as for args and env."
+      },
+      {
+        "id": "L6",
+        "where": "tools/README.md:844 ('and what the spec gives, nothing else') and tools/test/e2e/kit/stand.js:27 ('a server never sees the tokens or switches of the developer's shell')",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Measured (envtruth.mjs): a stand started with the short list also gets __CF_USER_TEXT_ENCODING (added by macOS to every process) and, when the spec process has it, NODE_V8_COVERAGE. Node passes NODE_V8_COVERAGE on even when the starter gives a short environment; it is a switch of the developer's shell when coverage is on. The starter itself passes nothing else, so the texts are true of the starter but not of what the child gets (I5 of step 04b; F1 and I3 of step 03). E2S-05 allows the first name, and TEST-DESIGNER has been told about the second (I3 of step 03).",
+        "fix": "Add to both texts that the system and Node may add their own variables, for example '__CF_USER_TEXT_ENCODING on macOS and NODE_V8_COVERAGE when the spec process has it'. Make the edit together with section 10 item 3 of the design, by DOC-UPDATER at step 10 or in a later rework (issue I2)."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "diff -u of stand.js and README.md: my pass-1 copy (<scratch>/e2e105r/after, the code of step 02b) against the project; cmp of index.js and fake-stand.js",
+        "output": "stand.js: the comment at 26-29 (F1), the message at 101 (L3), the kind of every settle and the branches on result.kind with two comment lines (M1), the error listener moved before the pipes and ?. on the six pipe calls with two comment lines (L1), the withStand comment at 413-415 and the catch at 432-445 (L2, I4); README.md: line 844 only. Nothing else; index.js and fake-stand.js identical"
+      },
+      {
+        "command": "git clone -b base/E2E105-20261105-01 into <scratch>/e2e105r/after2, the four current files copied in; shasum -a 256 of the four files in after2 and in the project, at the start and at the end of the check",
+        "output": "equal at the start and at the end: stand.js 9ded9116221ba14f, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab, README.md 579da23531a6d1a0; the code did not change during the check"
+      },
+      {
+        "command": "LEFT of section 16 before the trials",
+        "output": "processes 0, folders 0"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/group1.mjs on after2 (my pass-1 trial of M1, unchanged) and again on the pass-1 copy as a control",
+        "output": "current code: checks 7, failed 0: the optional group gives E2eError URL_REFUSED 'refused to open \"[undefined]\": only http://127.0.0.1:<port>/… is allowed', the stand gone when startStand has rejected, nothing registered, no marker. Code of step 02b: checks 7, failed 3 (TypeError, the stand alive, 1 group and 1 folder registered), as in pass 1"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/outcomes.mjs on after2 and on the pass-1 copy (every outcome of the start; a pipeless child through deps.spawn: no pid, no pipes, error EMFILE on the next tick, as Node gives it)",
+        "output": "current code: checks 18, failed 0: ok gives a loopback url; foreign link, optional group and group in the other alternative give URL_REFUSED; exit-early gives STAND_START_EXITED with the last stderr line; hang with startTimeoutMs 1500 gives STAND_START_TIMEOUT after 1526 ms; a missing cwd gives STAND_START_FAILED ENOENT in 1 ms; a throwing spawn gives STAND_START_FAILED EBOOM; the pipeless child gives STAND_START_FAILED EMFILE; after each failure nothing is registered and there is no marker and no process. Code of step 02b: the two M1 cases give a TypeError and leave their stands; the pipeless child gives a TypeError at setEncoding, and its error event without a listener crashes the trial (exit 1); the exit handler of the kit then removed what was registered (LEFT 0)"
+      },
+      {
+        "command": "sh -c 'ulimit -n 64; node <scratch>/e2e105r/trials/emfile.mjs <after2>/tools' (my pass-1 trial of L1, unchanged)",
+        "output": "descriptors held: 50, then EMFILE; startStand rejected: E2eError: STAND_START_FAILED: could not start \"em\": EMFILE; the process is still running after the rejection; exit handler: code 0 (pass 1: a TypeError and an unhandled error event, exit 1)"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/withstand2.mjs on after2 and on the pass-1 copy (L2, I4 and the other shapes of a body)",
+        "output": "current code: checks 10, failed 0: the body awaited the failing stop(), so STAND_EXIT with no cleanupError; a frozen body error with a failing stop is the same object with no TypeError; a read-only cleanupError keeps its value and the error is the same object; a plain error gets cleanupError STAND_EXIT; a thrown null is rethrown as null, both when the stop is good and when it fails; a thrown string is rethrown as the string; a good body with a failing stop gets the stop error; a good body with a good stop gets 42; nothing registered. Code of step 02b: checks 10, failed 3 (the self-reference; 'TypeError: Cannot add property cleanupError, object is not extensible'; 'Cannot assign to read only property')"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/envtruth.mjs on after2 (a stand-in that writes its env names, HOME and os.homedir()); then the same with NODE_V8_COVERAGE set in the trial's environment",
+        "output": "names beyond the base list and the given ones: [\"__CF_USER_TEXT_ENCODING\"]; with NODE_V8_COVERAGE in the parent: [\"NODE_V8_COVERAGE\",\"__CF_USER_TEXT_ENCODING\"] (L6); no HOME in the child; the child's os.homedir() equals the user's real home folder; with HOME given it equals that folder; 'startStand: env value of TOKEN must be a string without NUL', the value absent; startTimeoutMs 0 gives 'startStand: startTimeoutMs must be a whole number of milliseconds' (L5); checks 4, failed 0"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/bigtimeout.mjs on after2",
+        "output": "TimeoutOverflowWarning '2147483648 does not fit into a 32-bit signed integer. Timeout duration was set to 1.' twice; startTimeoutMs 2^31 with a link after 800 ms: STAND_START_TIMEOUT 'fake did not print its link in 2147483648 ms; it was killed' after 26 ms; stopTimeoutMs 2^31 with a stand that exits 0 on SIGTERM: STAND_STOP_TIMEOUT 'fake did not stop in 2147483648 ms after SIGTERM; it was killed' (L5); leftover pids 0"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/precedence.mjs, o14.mjs, drain.mjs, withchild.mjs, refusals.mjs on after2 (the pass-1 trials, unchanged)",
+        "output": "precedence: checks 25, failed 0. CLEANUP_FAILED '…: the process group is still alive after SIGKILL; the main process ended with exit code 1' (3024 ms); 'exit code 0' (3010 ms); 'signal SIGKILL' with SIGTERM ignored (4013 ms); 'exit code 0' after the stand ended by itself (3015 ms). o14: checks 31, failed 1. Every O14 check is green; the one red is case 8, which asserted error.cleanupError === error, the self-reference the fix of L2 removed (expected). drain 6/0 (stop() 1006 ms with the pipes held open); withchild 5/0; refusals 31/0. Leftover pids 0 in each"
+      },
+      {
+        "command": "node -e script: the words of README line 844 in the pass-1 copy against the current line (punctuation at word ends ignored), the other lines, the tokens of the section",
+        "output": "111 old words, 111 kept in order, 153 now; the inserted runs are the home clause and the O14 clause; 1 README line differs (844), 856 lines before and after; the next non-empty line starts with 'How to write a spec:'; duration_ms, 30000, 80000, 240000, startStand, withStand, REQ-105, REQ-106, REQ-107 present in the section"
+      },
+      {
+        "command": "cd <after2>/tools && node --test test/e2e-kit.test.js; then check (a) of section 14 (the real picker through the starter) in the same folder",
+        "output": "# tests 52, # pass 51, # fail 1, # skipped 0, # todo 0; not ok 49 - E2K-50 …, error: 'test/e2e/kit/stand.js: reads TEMP' (red by the design until sub-step 3); ok 44 - E2K-41; ok 50 - E2K-60. Check (a): 200 Учёт-Про {\"code\":0,\"signal\":null} \"\", exit 0"
+      },
+      {
+        "command": "cd tools && npx prettier --check test/e2e/kit/stand.js README.md && npx eslint --max-warnings 0 test/e2e/kit/stand.js; grep -cE over stand.js and README line 844 for skip, todo, eslint-disable, '|| true', TODO, FIXME, XXX, 'for now'; the two sandbox flags (pattern from parts); secret shapes; whole-environment reads; prints and sleeps; import sources",
+        "output": "All matched files use Prettier code style! (exit 0); eslint exit 0; erosion words 0 and 0; sandbox flags 0; secret shapes none; whole-environment reads none (8 named reads); console, process.stdout or stderr, Atomics.wait, a fixed setTimeout sleep: none; imports node:child_process, node:path, ./cleanup.js, ./errors.js, ./guards.js"
+      },
+      {
+        "command": "node -e: typeof process.setsid, process.setpgid, process.setpgrp; read HOLD_SCRIPT of E2K-62 in tools/test/e2e-kit.test.js (for O13)",
+        "output": "undefined, undefined, undefined (no Node call moves a process into or out of a process group; spawn knows only detached); E2K-62 keeps a killed child unreaped by a Node parent whose event loop waits in Atomics.wait, so a Node parent does not always reap its children"
+      },
+      {
+        "command": "LEFT after all trials; pgrep -f 'perl -e'; rv105-* log folders of the temporary root",
+        "output": "processes 0, folders 0, perl helpers 0; one log folder of my own trial (outcomes.mjs on the step 02b code, which crashed before its finally) was found, its six log files read, and removed by name: 0 left"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1 (after this result was written, before close)",
+        "output": "handoffs-check: файлов проверено 1330, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2466, следов 0, пропущено 67 (exit 0); run again after this entry, before close"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "PROPOSAL",
+        "text": "decisions/0109, the corrected O13: the facts of my trial are recorded truly, and 'cannot be forced with Node alone' holds for a stand started the real way. The reason given, '(Node reaps its children)', is not accurate. A Node parent whose event loop is blocked does not reap: E2K-62 keeps a killed child unreaped exactly that way. The real reason is the process group. Node has no call that moves a process into another group or out of its own (process.setsid, setpgid, setpgrp are undefined; spawn knows only detached, which makes a new group). So every member of the stand's group descends from the leader inside the group, its parent dies with the group SIGKILL, and the system's first process reaps the orphan. (A fake child given through deps.spawn could imitate the case; O13 already declines test-only hooks.) Proposal for ORCH: reword the parenthesis, for example '(no Node call moves a process out of its process group, so the parent of every member dies with the group's SIGKILL and the system reaps the orphan)'. Linux not measured. The record is ORCH's (quality-bar §6 item 7); nothing in the code depends on it."
+      },
+      {
+        "id": "I2",
+        "kind": "ROUTE",
+        "text": "The design texts now lag behind the README and the code (I4 of step 04b, AP-005, AP-077): section 10 item 3 of docs/design/REQ-105-e2e-picker.md is the source text of README line 844 and lacks the two inserted clauses (and L6 if taken); section 4.1 lacks the reading of O14; section 15 row R2 says the starter keeps the real home folder from REQ-106's stand, which is false (O15). For DOC-UPDATER at step 10, with README line 844 and section 10 item 3 in the same edit. L5 is a small CODE-FIXER edit if ORCH wants it before the tests; otherwise it is recorded for the report."
+      },
+      {
+        "id": "I3",
+        "kind": "FOR_TEST_DESIGNER",
+        "text": "New behaviour to cover (through ORCH): (a) M1: a readyPattern whose one group takes no part (optional, or in the other alternative) gives URL_REFUSED with '[undefined]'; afterwards the group is gone, nothing is registered and there is no marker. (b) L1: a deps.spawn that returns a child with no pid and no pipes, and emits error EMFILE on the next tick, gives STAND_START_FAILED with no crash and no marker. A deps.spawn fake that returns a child with a pid must give real streams (a PassThrough), because only the stream is guarded with ?., not its methods. (c) L2: no cleanupError when the body awaited the failing stop(). (d) I4: a frozen body error with a failing stop is rethrown as the same object; a body that throws null rejects with null. (e) L3: the message 'must be a string without NUL', with the value absent. (f) E2S-05: NODE_V8_COVERAGE when the parent has it (I3 of step 03). My trials in <scratch>/e2e105r/trials/ (outcomes.mjs, withstand2.mjs, envtruth.mjs, bigtimeout.mjs) may be reused."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: base/E2E105-20261105-01 = HEAD = 4f41032. The change against my pass-1 copy is exactly the eight items of step 04b; index.js and fake-stand.js are unchanged. decisions/0109 holds the corrected O13, O14, O15 and O16 (O16 now also names the withBrowser shapes of I2 of step 04b). E2K-50 is the only red test and is red by the design. The task names no expected verdict (AP-018). Every trial ran outside the project on fresh clones of the tag, every process a trial started was ended by its pid, and LEFT was 0 before and after. This handoff's status was set to IN_PROGRESS at the start of the work."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

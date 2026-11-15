@@ -1,0 +1,201 @@
+{
+  "handoff_id": "step04-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E105-20261105-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "tools/test/e2e/kit/stand.js, tools/test/e2e/kit/index.js, tools/test/fixtures/e2e-stand/fake-stand.js, tools/README.md (the diff against the tag base/E2E105-20261105-01)",
+      "docs/design/REQ-105-e2e-picker.md",
+      "decisions/0109-e2e-stand-conventions.md (with O13 and O14), decisions/0108, decisions/0107",
+      "handoffs/E2E105-20261105-01/step-02-backend-dev.json and step-02b-backend-dev.json (issues I3-I8 and I2-I5)",
+      "docs/anti-patterns.md"
+    ],
+    "route": "SECURITY-REVIEWER + REVIEWER (this pair, gate) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the gate reads)"
+    ],
+    "base_tag": "base/E2E105-20261105-01"
+  },
+  "task": {
+    "description": "WF-02, step 4 — the code review gate on the code of REQ-105 written at steps 02 and 02b (tools/test/e2e/kit/stand.js, the export in index.js, the stand-in tools/test/fixtures/e2e-stand/fake-stand.js, the README section), at the same time as SECURITY-REVIEWER. Judge: is it a real solution or a crutch; the idioms of the kit (Node 22 ESM, no dependency, the error class and the codes of the kit, the naming, the comment density of the neighbouring kit files — the code must read like the kit); extra work beyond the design (the refusals with USAGE that section 5 does not list — I4 of step 02; the wait of up to 1000 ms for the pipes after the end — I5; say whether each is right or scope creep); differences from decisions 0107, 0108, 0109 (O1-O14); erosion of the quality bar; waits: every wait is for a fact with a limit, no sleep; protection in the same operation as the action (refusals before the spawn, registration at the spawn). Two points are yours by decision: read the precedence CLEANUP_FAILED over STAND_STOP_TIMEOUT over STAND_EXIT in stop() against section 4.1 of the design (O13: mutant S22 is not testable, so your reading is the check), and read the O14 condition (a stand that ended by itself before stop() fails with any code). Also read the README text against section 10 of the design. Your verdict is PASS or FAIL with findings (severity, the line, a one-sentence fix). Task text and report hold no absolute machine paths and no names of other projects of the owner. Do not edit any project file except this handoff; do not commit or push.",
+    "acceptance_criteria": [
+      "Real solution, kit idioms, no scope creep",
+      "Precedence and O14 read against 4.1",
+      "Verdict PASS or FAIL with findings"
+    ]
+  },
+  "created_at": "2026-11-08T17:44:14Z",
+  "started_at": "2026-11-08T17:44:14Z",
+  "completed_at": "2026-11-08T18:08:32Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "FAIL for one Medium finding (M1, blocking); four Low findings (L1-L4) are recorded and do not block. The change is the four files of the write set and nothing else under tools/ (README.md and index.js modified, stand.js and fake-stand.js new); the rework of step 02b changed exactly its three listed places (diff against the step 02 copy). (1) Real solution or crutch: a real starter built to 4.1; every failure path has its code and cleans up, nothing is hidden (the empty error handlers of the two pipes and the swallowed marker removal in abortStart are the idiom of browser.js; the folder stays registered, so the exit handler retries it). The one path that is not handled is M1: a readyPattern whose single capture group does not take part in the match gives a TypeError, and the stand stays alive with its registration and marker until the spec process ends (measured). (2) Recorded decisions: 0002 (Node 22 ES module, no runtime dependency: imports are node: and relative only), 0107 (no package), 0108 (O1 the place of the starter; addendum: the child's stderr line goes through safeText and is cut at 300), 0109 O7 (marker by makeTempDir('profile'), cleanup.js unchanged), O8/C-1 (the eight base names read one by one, never the whole environment, the caller's env added over them), C-2 (detached; registerGroup, noteBrowserForRunner and installHandlers in the same synchronous block as spawn, before the first await), C-3 (code 0 after SIGTERM required), the five new codes with the message shapes of 4.1 word for word, O10 (named properties; E2K-50 red with 'reads TEMP' as section 12 plans), O13 and O14: no difference without a record. (3) Scope. I4 of step 02 (refusals that section 5 row 1 does not list): right, not scope creep. They are the type column of the 4.1 table under step 1 ('Nothing is spawned or made before this point') and the contract of section 4 ('All functions throw E2eError'). Without them a wrong type gives a TypeError, or a spawn and a kill (a NaN timeout fires at once), or a marker made and removed (a NUL in cwd or in an env value makes spawn throw after step 2, and Node's own error for a NUL env value quotes the value in err.cause), and an env name with '=' would hand the child a variable other than the one named (against C-1). Measured: 28 refusals, 0 spawns, no folder, no env value in a message. I5 (the wait of at most 1000 ms for the close of the pipes after the end): right, not scope creep. It is what makes 'Last line of its stderr' and the E2S-12 promise (both kept texts end with END after stop()) true, because the exit event can come before the last chunk; it is the idiom of browser.js (300 ms there); it waits for the fact 'close' with a limit and its timer is cleared on close. Measured with a detached holder of the pipes: stop() resolves after 1005 ms and STAND_START_EXITED keeps the last stderr line after 1095 ms, no hang. I7 (an unknown stand-in mode exits 2): right, a misspelt mode cannot pass as ok. (4) Quality bar: the search over the three code files and the added README lines finds no skip, todo, turned-off rule, '|| true', TODO or FIXME, sandbox flag or secret shape (one hit, 'temporary root', is the kit's own term); no test file was touched; the only red test is E2K-50, the one the design plans until sub-step 3 (after-copy 52 tests, 51 pass, 1 fail; before-copy 52, 52, 0). (5) Idioms: ES module, E2eError with the kit codes, naming and comment density as in the neighbours (stand.js 5 % comment lines, browser.js 3 %, runner.js 5 %, cleanup.js 14 %), prettier and eslint clean. Every wait is for a fact with a limit (the start timer, the stop timer, close or 1000 ms, waitGroupGone 3000 ms); there is no sleep in stand.js; the stand-in has only the delays of the 4.3 contract and the EAGAIN back-off of the released fake-chrome.js and runner.js. Protection in the same operation: all refusals before the marker and the spawn, registration at the spawn in the same block. AP-014, the same mechanism in the neighbours: browser.js and stand.js both touch the pipes before the child's error listener, runner.js does not (L1, measured with EMFILE); withBrowser and withStand both attach the error to itself when the body awaited the failing stop (L2); the close wait is bounded in both (300 ms in browser.js, 1000 ms here; no finding); after a group survives SIGKILL browser.js keeps the registration and stand.js removes it, as 4.1 orders (no finding). Precedence (O13; my reading is the check): stop() throws CLEANUP_FAILED (the group alive after SIGKILL, or the marker not removed) before STAND_STOP_TIMEOUT before STAND_EXIT (stand.js:212-242). That is 4.1 N11 (CLEANUP_FAILED wins over STAND_EXIT: a process left alive is the graver fact) and section 5 rows 7-8 (STAND_STOP_TIMEOUT only with the group gone; its text 'it was killed' would be false otherwise). The CLEANUP_FAILED message ends with the end of the main process ('the main process ended with exit code 1', or 'the main process did not end'); the registration and the marker are removed also when the group is alive. Beyond the reading I forced the case with a real process: a zombie member of the stand's group whose parent, a perl one-line helper, left the group by setsid(). stop() gave CLEANUP_FAILED in all four paths (exit 1 after SIGTERM, exit 0 after SIGTERM, SIGTERM ignored with stopTimeoutMs 1000, ended by itself with code 0), each message ending as N11 says, in 3.0-4.0 s, with nothing registered and no marker left (issue I1: the premise 'cannot be forced with a real process' of O13 and S22 does not hold on macOS). O14: the condition `!this.#sentTerm || exit.code !== 0 || exit.signal` (stand.js:234). #sentTerm is set only when stop() found the process running and sent SIGTERM, so a stand that ended by itself fails with any code, 0 included, and code 0 after SIGTERM is the only good end. Measured: quit-later 'exit code 0 on its own' (no term; a second stop() gives the same rejection), die-later 'exit code 5 on its own', a stand that killed itself 'signal SIGKILL on its own', exit-one 'exit code 1 after SIGTERM', quit-later stopped before its own end and ok resolve {code: 0, signal: null}. The residual of I3 of step 02b (a stand that ends in the very moment of stop()) cannot be told apart from outside, since a zombie leader still takes the signal: agreed. README against section 10: the table, the line after it, the budgets sentence and the paragraph are word for word those of section 10, the paragraph stands right before 'How to write a spec', and the old sentence is gone (script). Against the code there is one gap: L4 (O14 not told). For TEST-DESIGNER especially: (a) after the fix of M1, a case with a readyPattern whose single group is optional: URL_REFUSED, group gone, nothing registered, no marker; (b) E2S-02 with the refusals of I4, each with 0 spawns and no folder, and the NUL env value absent from the message; (c) E2S-11 with quit-later after the fact isRunning() false (O14), and quit-later stopped before its end ({code: 0}); (d) the three Low remarks of the design gate: 'after SIGTERM' in E2S-09 (N20), child-term with the child's pid in E2S-13 (N18), a throwing deps.spawn (N19); (e) E2S-10 asserts STAND_STOP_TIMEOUT although the end is by SIGKILL (exitInfo signal SIGKILL); (f) E2S-12 relies on the close wait of I5. The task names no expected verdict (AP-018 not applicable).",
+    "findings": [
+      {
+        "id": "M1",
+        "where": "tools/test/e2e/kit/stand.js:338 (settle({ link: match[1] })) with :369 (if (result.link !== undefined)) and :383-389 (the else branch reads state.exit)",
+        "severity": "Medium",
+        "blocking": true,
+        "what": "The outcome of the start is told apart by `result.link !== undefined`. A readyPattern that passes the option check (exactly one capture group, no g or y) but whose group does not take part in the match, for example /(no-such-text)?Fake stand ready\\./u, sends a match into the 'exited' branch while the process runs: exitInfoOf(null) throws a TypeError (\"Cannot read properties of null (reading 'signal')\"), abortStart is never reached, and the stand stays alive with its group registered and its marker folder kept until the spec process exits. Measured with <scratch>/e2e105r/trials/group1.mjs: 3 of 7 checks red (not an E2eError; the pid alive after the rejection; 1 group and 1 folder registered); the same stand-in with /()Fake stand ready\\./u gives URL_REFUSED and is gone at once. This departs from 4.1 step 6 ('On a match: url = assertLoopbackUrl(group 1)'), from step 7 ('In every failure of steps 4–7 … SIGKILL to the group, …, remove the marker; then throw') and from section 4 ('All functions throw E2eError'); bad input gets no understandable message (Q10).",
+        "fix": "Tell the outcomes apart by an explicit kind (for example settle({ kind: \"link\", text: match[1] }) and if (result.kind === \"link\")), so that every match goes through assertLoopbackUrl (an undefined group 1 then gives URL_REFUSED) and every failure through abortStart."
+      },
+      {
+        "id": "L1",
+        "where": "tools/test/e2e/kit/stand.js:329-332, before :343 (child.on(\"error\", …))",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The pipes are touched before the child's error listener exists. When spawn fails with EMFILE (or ENFILE), Node returns a child without stdout and stderr and emits error on the next tick: child.stdout.setEncoding throws a TypeError (not STAND_START_FAILED), the 15 s start timer is already armed, the marker is left to the exit handler, and the error event has no listener, so the spec process crashes ('Unhandled error event', exit 1). Measured under `ulimit -n 64` with <scratch>/e2e105r/trials/emfile.mjs. 4.1 step 3 says 'A throw or an error event → STAND_START_FAILED …, the marker removed'. Not realistic for a spec process (Node raises its own descriptor limit), hence Low. runner.js:217-234 attaches the error listener first and reads the pipes with ?.; browser.js:224-252 has the same order as stand.js (issue I2).",
+        "fix": "Attach child.on(\"error\", …) right after spawn and treat a child without stdout or stderr as STAND_START_FAILED with the marker removed, in the order of runner.js."
+      },
+      {
+        "id": "L2",
+        "where": "tools/test/e2e/kit/stand.js:422-428 (withStand)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "When the body awaited stand.stop() itself and it failed (the tests 'no connection' and 'not found' stop the server in the body), the second stop() is the same rejected promise and the error is attached to itself: error.cleanupError === error (measured, <scratch>/e2e105r/trials/o14.mjs case 8). 4.1 says the second call 'is the same promise and adds nothing'. The node:test report is not disturbed (selfref.test.mjs: the TAP output shows the error once); withBrowser (browser.js:355) does the same.",
+        "fix": "Attach cleanupError only when it is not the body's error itself (cleanupError !== failure)."
+      },
+      {
+        "id": "L3",
+        "where": "tools/test/e2e/kit/stand.js:98-99",
+        "severity": "Low",
+        "blocking": false,
+        "what": "An env value that is a string with a NUL is refused with 'env value of <name> must be a string', which is wrong for a string; the message for args says 'without NUL'.",
+        "fix": "Say 'must be a string without NUL'; the value itself stays out of the message, as now."
+      },
+      {
+        "id": "L4",
+        "where": "tools/README.md:844 ('`stop()` sends `SIGTERM` to the process group and requires the exit code 0.'), and its source text docs/design/REQ-105-e2e-picker.md:334 (section 10, item 3)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Since O14 (stand.js:232-234) a server that ended by itself before stop() fails it whatever its code, 0 included; the README sentence tells the reader that code 0 is enough. O14 sends only section 4.1 to DOC-UPDATER, so this sentence would be left behind (AP-005).",
+        "fix": "Add 'after that signal; a server that ended by itself before `stop()` fails it whatever its exit code (decisions/0109)' to the README sentence and to section 10 item 3 of the design in the same edit (the tokens of E2K-41, E2K-60 and E2S-19 are not touched)."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git rev-parse base/E2E105-20261105-01; git log --oneline -1",
+        "output": "4f410324572ed16cef6d7b57a6c4deadf04d9a26; HEAD 4f41032 (the change is in the working tree)"
+      },
+      {
+        "command": "git diff --stat base/E2E105-20261105-01 -- . ; git status --short --untracked-files=all -- tools/",
+        "output": "tracked: decisions/README.md, docs/program/public-v1/PROGRESS.md, docs/requirements.yaml (ORCH), tools/README.md (+8 -5), tools/test/e2e/kit/index.js (+1); tools/: M README.md, M test/e2e/kit/index.js, ?? test/e2e/kit/stand.js, ?? test/fixtures/e2e-stand/fake-stand.js; nothing else under tools/ (no src, package.json, other kit file or test file)"
+      },
+      {
+        "command": "diff -u of stand.js and fake-stand.js: the step 02 copy (<scratch>/e2e105d/c1) against the project",
+        "output": "stand.js: the condition at :234 and its two comment lines only; fake-stand.js: \"quit-later\" in MODES and the quit-later line in announce() only: the three places of step 02b, no other edit (AP-019 held)"
+      },
+      {
+        "command": "git clone -b base/E2E105-20261105-01 into <scratch>/e2e105r/before and <scratch>/e2e105r/after, the four files copied into after (mode 0755 kept); shasum -a 256 of the four files in after and in the project, at the start and at the end of the check",
+        "output": "equal at the start and at the end: stand.js 9f512e3caabd0de7, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab, README.md c7021795bfbd240e; the code did not change during the check"
+      },
+      {
+        "command": "LEFT of section 16 (ps over src/picker/cli.js serve, fake-stand.js, sai-e2e-; the count of sai-e2e-* folders of the temporary root) before the trials",
+        "output": "processes 0, folders 0"
+      },
+      {
+        "command": "grep -nE '\\.skip\\(|\\.todo\\(|\\{ ?skip|\\{ ?todo|eslint-disable|\\|\\| ?true|TODO|FIXME|XXX|for now|temporar' over stand.js, index.js, fake-stand.js and the added README lines; the two sandbox flags (pattern assembled from parts); the secret shapes (GitHub token, sk- key, PEM block, cloud key id); whole-environment reads in stand.js; import sources; prints in stand.js",
+        "output": "erosion words: one hit, the added README paragraph ('the temporary root', the kit's term), nothing in the code files; sandbox flags: none; secret shapes: none; whole-environment reads: none (eight named reads, lines 30-37); imports: node:child_process, node:fs, node:http, node:path, node:url and ./browser.js, ./cleanup.js, ./errors.js, ./find-chrome.js, ./guards.js, ./stand.js only; console or process.stdout/stderr in stand.js: none"
+      },
+      {
+        "command": "cd tools && npx prettier --check test/e2e/kit/stand.js test/e2e/kit/index.js test/fixtures/e2e-stand/fake-stand.js README.md && npx eslint --max-warnings 0 <the three js files>; head -1 and the mode of fake-stand.js",
+        "output": "All matched files use Prettier code style! (exit 0); eslint exit 0, no output; #!/usr/bin/env node; -rwxr-xr-x"
+      },
+      {
+        "command": "cd <scratch>/e2e105r/after/tools && node --test test/e2e-kit.test.js; the same in <scratch>/e2e105r/before/tools",
+        "output": "after: # tests 52, # pass 51, # fail 1, # skipped 0, # todo 0; not ok 49 - E2K-50 …, error: 'test/e2e/kit/stand.js: reads TEMP' (exit 1; red by the design until sub-step 3, section 12 row 1). before: # tests 52, # pass 52, # fail 0 (exit 0)"
+      },
+      {
+        "command": "node -e script: the three texts of section 10 cut out of the design and looked for in tools/README.md",
+        "output": "table at README line 848, 4 rows equal; the next line 'REQ-106 and REQ-107 add their rows.' equal; the budgets sentence present; the paragraph is a whole README line (844) and the next non-empty line starts with 'How to write a spec:'; the old sentence 'REQ-105, REQ-106 and REQ-107 add their rows.' gone"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/o14.mjs <after>/tools (ok, quit-later after the fact isRunning() false, quit-later stopped at once, die-later, exit-one, ignore-term with stopTimeoutMs 1500, a stand-in that kills itself by SIGKILL, withStand with a body that awaits a failing stop())",
+        "output": "checks 31, failed 0: ok {code:0, signal:null}; quit-later STAND_EXIT 'fake ended with exit code 0 on its own. Last line of its stderr: \"\"', no term, a second stop() the same rejection; quit-later stopped at once {code:0}, one term; die-later 'exit code 5 on its own'; exit-one 'exit code 1 after SIGTERM'; ignore-term STAND_STOP_TIMEOUT after 1523 ms with exitInfo {code:null, signal:SIGKILL}; self-kill 'signal SIGKILL on its own'; withStand: error.cleanupError === error (L2); after each case the group gone and nothing registered; leftover pids killed by the trial 0"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/precedence.mjs <after>/tools (stand-in zgroup.mjs: a perl helper in the stand's group forks a child that exits at once and then leaves the group by setsid(), so the group keeps a zombie that SIGKILL cannot remove; modes exit1, exit0, ignore with stopTimeoutMs 1000, self0)",
+        "output": "checks 25, failed 0; the zombie has ps stat Z; exit1: CLEANUP_FAILED 'could not clean up \"zg\": pid <n>: the process group is still alive after SIGKILL; the main process ended with exit code 1' (3019 ms); exit0: the same, ending 'exit code 0' (3007 ms); ignore: the same, ending 'signal SIGKILL' (4011 ms), not STAND_STOP_TIMEOUT; self0 (ended by itself first): the same, ending 'exit code 0' (3012 ms), not STAND_EXIT; in all four nothing registered and no marker although the group was alive; after the trial killed the helper by pid the group was gone within the 5 s limit; leftover pids 0"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/group1.mjs <after>/tools (the stand-in in mode ok with /()Fake stand ready\\./u and with /(no-such-text)?Fake stand ready\\./u)",
+        "output": "checks 7, failed 3 (M1): empty group -> E2eError URL_REFUSED 'refused to open \"\": …', the stand gone at once, nothing registered; optional group -> TypeError 'Cannot read properties of null (reading 'signal')', the stand pid alive after the rejection, 1 group and 1 folder still registered; gone after the trial's own SIGKILL to its group"
+      },
+      {
+        "command": "sh -c 'ulimit -n 64; node <scratch>/e2e105r/trials/emfile.mjs <after>/tools' (one stand started and stopped first, so the kit handlers exist; then /dev/null opened until EMFILE; then startStand)",
+        "output": "descriptors held: 50, then EMFILE; startStand rejected: TypeError: Cannot read properties of undefined (reading 'setEncoding'); then 'Unhandled error event' of the child (Error: spawn … EMFILE), exit 1 (L1). The first form of the trial, with no stand started before, crashed inside Node itself (an assertion in SignalWrap) before any spawn and proves nothing"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/refusals.mjs <after>/tools (deps.spawn that counts and throws)",
+        "output": "checks 31, failed 0: USAGE for options null or a string, a capital in name, args empty or with NUL, readyPattern a string, 0 or 2 groups, flag g or y, env an array, env names 'A=B' and '', env value a number or with NUL (the value absent from the message), cwd empty, with NUL or a number, stateDirs a string, startTimeoutMs 0, 1.5, NaN, stopTimeoutMs -1, deps.spawn not a function, withStand body not a function; PATH_REFUSED for the home folder, a relative path, a path with '..' leaving the root; spawn called 0 times, no sai-e2e folder, nothing registered"
+      },
+      {
+        "command": "node -e in <scratch>/e2e105r: spawn(process.execPath, …) with env { TOKEN: <a value with NUL> }, with cwd \"a\\0b\", and spawnSync with env { \"A=B\": \"x\" } (what the refusals of I4 prevent)",
+        "output": "env NUL: ERR_INVALID_ARG_VALUE \"The property options.env[TOKEN] must be a string without null bytes. Received <the value>\" (Node quotes the value, so it would reach err.cause of STAND_START_FAILED); cwd NUL: ERR_INVALID_ARG_VALUE, thrown by spawn (after the marker is made); env name A=B with value x: the child sees the variable A with the value B=x, not the name given"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/drain.mjs <after>/tools (stand-in holder.mjs leaves a detached helper that holds the starter's pipes)",
+        "output": "checks 6, failed 0: serve: stop() resolves {code:0} after 1005 ms (the bound of I5); early: STAND_START_EXITED 'holder exited before it printed its link (exit code 3). Last line of its stderr: \"holder stand: cannot start, last words\"' after 1095 ms; the helpers killed by the trial by pid"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/withchild.mjs <after>/tools",
+        "output": "checks 5, failed 0: at the link the log holds start,env,child-ready,child; child-ready and child name the same live pid; stop() {code:0, signal:null}; the log then holds child-term with the child's pid and one term (the group SIGTERM, N18); leader, group and child gone within 5 s"
+      },
+      {
+        "command": "RV_TOOLS=<after>/tools node --test --test-reporter=tap <scratch>/e2e105r/trials/selfref.test.mjs",
+        "output": "not ok 1 with error 'fake ended with exit code 1 after SIGTERM. …', code STAND_EXIT, name E2eError and the stack; the self-referencing cleanupError is not printed and does not disturb the report"
+      },
+      {
+        "command": "comment lines against non-empty lines: stand.js, browser.js, runner.js, cleanup.js, fake-stand.js, fake-chrome.js",
+        "output": "24/407 (5 %), 10/330 (3 %), 16/315 (5 %), 42/291 (14 %), 13/154 (8 %), 10/236 (4 %)"
+      },
+      {
+        "command": "LEFT after all trials; pgrep -f 'perl -e'; the count of rv105-* log folders of the temporary root",
+        "output": "processes 0, folders 0; perl helpers 0; log folders 0"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1 (before this result was written; run again after it, before close)",
+        "output": "handoffs-check: файлов проверено 1327, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2463, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Design section 16 row S22, section 19.1 N11 and decisions/0109 О13 say that a group that survives the SIGKILL of the starter 'cannot be forced with a real process' on a healthy system. Measured on macOS (<scratch>/e2e105r/trials/precedence.mjs, zgroup.mjs): a perl one-line helper in the stand's group forks a child that exits at once, then leaves the group by setsid() and does not reap the child, so the group keeps a zombie member; kill(-pgid, 0) still answers, waitGroupGone gives up after 3 s and stop() throws CLEANUP_FAILED. The code's precedence held in all four paths (see self_check). Linux was not measured. The code is right and О13 is not broken (no dependency was injected); the premise is. ORCH decides: keep О13 with this trial as the evidence of the reading, or let TEST-DESIGNER add a case (it needs perl or python on the runner, while the fixtures are Node-only today)."
+      },
+      {
+        "id": "I2",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "Outside this change, the same as L1 and L2 in the released kit: browser.js:224-252 touches child.stderr before the child's error listener (EMFILE: a TypeError and an unhandled error event, as measured for stand.js; browser.js itself was not run here, it needs Chrome), and withBrowser (browser.js:355) attaches the error to itself when the body awaited a failing close. Importance Low. Not fixed here (quality-bar §6 item 6); ORCH may open a defect."
+      },
+      {
+        "id": "I3",
+        "kind": "ROUTE",
+        "text": "M1 is one small CODE-FIXER edit in stand.js; L1-L3 are in the same file and may go in the same edit if ORCH lists them (AP-019: the rework goes only by the list). L4 is either in the same rework (the README of tools/ is in CODE-FIXER's area; section 10 item 3 of the design has to change in the same edit, AP-077) or goes to DOC-UPDATER at step 10 together with section 4.1, which О14 already names. Then steps 3 and 4 again."
+      },
+      {
+        "id": "I4",
+        "kind": "Q13_CANDIDATE",
+        "text": "For DOC-UPDATER (the error journal): (a) an outcome told apart by `value !== undefined` where the value comes from an optional regex group: a match fell into the 'exited' branch (M1); a discriminant field is safer than the absence of a value; (b) 'cannot be forced with a real process' was written without trying a member whose parent is outside the group (setsid), the way a mutant was once called equivalent without a stand-in that could show the difference (gate 01f, I3 (a))."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: base/E2E105-20261105-01 is 4f41032; the four files named are the whole change under tools/; the step 02b rework changed exactly its three places; decisions/0109 holds О13 and О14; E2K-50 is the only red test and is red by the design. The task names no expected verdict (AP-018). Every trial ran on a fresh clone of the tag with the four files copied in, outside the project; every process a trial started was ended by its pid, and LEFT was 0 before and after. This handoff's status was set to IN_PROGRESS at the start of the work."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

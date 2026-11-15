@@ -1,0 +1,156 @@
+{
+  "handoff_id": "step04f-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "04f",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/E2E105-20261105-01/step-04f-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-04e-code-fixer.json (the fixes and their proofs)",
+      "handoffs/E2E105-20261105-01/step-04c-security-reviewer.json (your pass 2: PASS with F5, F6)",
+      "tools/test/e2e/kit/stand.js, tools/README.md"
+    ],
+    "route": "SECURITY-REVIEWER + REVIEWER (this pair, pass 3 of 3, the last) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the gate reads; trials go outside the project)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-04c-security-reviewer.json"
+  },
+  "task": {
+    "description": "WF-02, step 3, pass 3 of 3 — the security gate on the last fixes of the server starter. Pass 2 of this gate was PASS with Low findings; ORCH had CODE-FIXER fix them before the tests (step 04e: L5 timeouts accepted only from 1 to 2147483647 ms with the range in the USAGE message, and the cwd message 'without NUL'; F5 the guarded STAND_START_EXITED for a child that ends with close and no exit; L6 = F6 the comment of stand.js and the README clause that the system and Node may add variables of their own). Check on the current files: (a) each of the three fixes does what it says (re-run your own trial of the finding; REVIEWER's old bigtimeout trial asserted the overflow and must now see a USAGE refusal); (b) nothing else changed since your pass 2 (compare stand.js and the README paragraph with what you reviewed: the diff must be exactly these fixes); (c) your pass-2 trials still pass on the current code (no regression), and the README keeps every earlier word. Items outside this change that step 04e listed in its issues (the unbounded wait of stop() for a fake child that never emits exit — I2; the unchecked timeout options of the other kit files — I3; 'must be an object' also for an array — I4) are judged by you as Low or not: they go to defects at step 10 unless you show they are Medium or worse. This is the LAST allowed pass: FAIL only for a Medium or worse gap, with a one-sentence fix. Task text and report hold no absolute machine paths and no names of other projects of the owner. Do not edit any project file except this handoff; do not commit or push. For each item Q7-Q11, R2, R3 confirm or correct your pass-2 answer.",
+    "acceptance_criteria": [
+      "F5, F6 and L5 proved fixed",
+      "No other change, no regression",
+      "Verdict PASS or FAIL"
+    ]
+  },
+  "created_at": "2026-11-08T19:19:10Z",
+  "started_at": "2026-11-08T19:19:10Z",
+  "completed_at": "2026-11-08T19:26:49Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-02 step 3, pass 3 of 3 (step 04f), on the current files after CODE-FIXER step 04e. Verdict PASS: F5, F6 (= L6) and L5 are fixed and proved; the diff since my pass 2 is exactly these fixes; every pass-2 trial passes on the current code; no Medium or worse gap. Three Low items that step 04e found outside its list (its I2, I3, I4) are judged Low (G1-G3) and go to the defects of step 10; F2 and F4 stay as decisions/0109 O15 and O16 record them, and both addenda are true (O15 now also names the folder argument, my pass-2 I1).\n\n(b) NOTHING ELSE CHANGED since pass 2. stand.js 9ded9116... -> aba66b01...: the diff against my pass-2 copy holds exactly the fixes - line 25 MAX_TIMER_MS = 2147483647; lines 27-32 the comment (L6); line 96 'cwd must be a non-empty path without NUL'; lines 112-116 the range check and its message; lines 396-402 the guarded end of STAND_START_EXITED (F5). tools/README.md 579da235... -> d4d0b664...: only line 844, one clause inserted; every earlier word kept in order (153 of 153 of the pass-2 paragraph, 111 of 111 of the step-02b paragraph, punctuation at word ends ignored; 28 words added). index.js and fake-stand.js have the pass-2 hashes; the nine other kit files equal the tag; tools/src: 0 files changed. decisions/0109 changed: O13's premise reworded, O15 extended with the folder argument, O16 now says that F4 is not fixed in stand.js.\n\n(a) THE FIXES. L5: trial 13 on a fresh clone of the tag holding the current files (<scratch>/e2e105s/clone3): for each of startTimeoutMs and stopTimeoutMs, 15 bad values (0, -1, 1.5, NaN, Infinity, -Infinity, 2147483648, 2^31+1, the largest safe integer, 1e10, a string, null, true, an array, an object with valueOf) give USAGE '<option> must be a whole number of milliseconds from 1 to 2147483647' with 0 spawns and no folder; 2147483647 for both is accepted, the stand starts and stops with code 0 and no TimeoutOverflowWarning; 1 is accepted and times out honestly ('did not print its link in 1 ms'); 5 bad cwd values give 'cwd must be a non-empty path without NUL'. REVIEWER's old bigtimeout trial: on the pass-2 code it still records the overflow (two TimeoutOverflowWarnings, a false STAND_START_TIMEOUT after 27 ms, a false STAND_STOP_TIMEOUT); on the current code both calls are refused at once with USAGE '... from 1 to 2147483647' (the first caught by the trial, the second thrown out of it, exit 1). My pass-2 trial t10: 2^31 now USAGE after 0 ms. F5: a child that sends close with no exit (deps.spawn only; pid undefined and pid 999999) gives STAND_START_EXITED '(exit code null)' with its last stderr line, exitCode and signal null, nothing registered, no marker, no runner record (trial 13; trial 12 now prints the same with groups 0 and markers 0); a real child that exits 3 keeps the old message ('exit code 3', its last stderr line). L6 = F6: the comment (27-32) and the README clause say that the system and Node may add variables of their own, none given by the starter (__CF_USER_TEXT_ENCODING on macOS, NODE_V8_COVERAGE when the spec process has it); trial 1 run twice proves it exact: with coverage on, the child's keys are LANG, LC_ALL, NODE_V8_COVERAGE, PATH, TEMP, TMP, TMPDIR, TZ, __CF_USER_TEXT_ENCODING; with it off the same without NODE_V8_COVERAGE; the base list names neither. Control: trial 13 on the pass-2 code fails 41 of 45 (out-of-range timeouts go on to the spawn there, the old messages and texts, F5 leaves the fake pid registered).\n\n(c) NO REGRESSION: the pass-2 trials on the current code (results in <scratch>/e2e105s/results-p3) - environment 65/65 twice, link 83/83 (31 refused, 48 accepted), timing 9/9 (3025-3029 ms for 3000 ms, loop lag at most 4 ms), state folders 38/38, spawn 41/41, signals 20/20 (the F4 residual as before, O16), the real picker and the stand-in 11/11, the R2 computation 5/5, bad ends of a spec process 7/7, messages 16/16 (180 messages: no environment value, no control character, at most 438 characters, absolute paths only in PATH_REFUSED), the pass-2 fix trial 27 of 28 - the one red check is my own pass-2 oracle that matched the old wording of the comment literally ('gets no // HOME variable' on one line), which the approved L6 fix reworded; a wording-tolerant check on the current comment finds all four statements of F1 true (no HOME variable; the home folder not hidden; Node finds it through the system's list of users; no 'never sees the home folder' left), and trial 13 checks the new text; a real EMFILE still gives STAND_START_FAILED 'EMFILE' in 2 ms with nothing left. In all 433 checks on the current code: 432 as expected and the 1 oracle fault named above. Leftovers: LEFT 0 processes and 0 folders; at the end only the ten node processes that were there before the check (two 'node stand.js' of 2026-11-07, eight 'node -e setInterval' of 2026-11-03).\n\nITEMS (pass-2 answers confirmed). Q7 - met: the 4126 lines the run has added by now hold no secret shape and no key word followed by a value (0 and 0); the 14 key-word lines new since pass 2 were read, all prose; the 40 page files are unchanged; the child's environment as stated (trial 1 twice); 180 messages without environment values. Q8 - not applicable (no data access added or changed; tools/src unchanged). Q9 - not applicable (0 hits). Q10 - met: F5 and L5 close the two remaining failure-path gaps of the starter for a real child; G1 is a wait reachable only with an injected fake. Q11 - not applicable as the outbound rule (only http://127.0.0.1:<port>/... is accepted, trial 2). R2 - met for this change (no Pixel Office event written, invented or read; tools/src/pixel-office unchanged); forward, O15 now names the home folder, the env pairs and the folder argument - a true and complete precondition for REQ-106 as far as my trials show. R3 - not applicable (decision 0033).\n\nTHE ITEMS OF STEP 04E JUDGED. I2 (stop() waits for exit with no limit once the group is gone): Low - G1; reachable only with a deps.spawn fake that never sends exit (trial 14: still waiting after 3002 ms); with a real child the group is seen gone only after the leader is reaped, and Node emits exit in the same callback that reaps it. I3 (the timeout options of the other kit functions are not checked): Low - G2; by reading the code, an out-of-range value ends a wait early with the kit's own error, or (page.js waitFor with NaN) waits until the runner's 120 s watchdog; it fails closed, skips no check and leaves no process, and the callers are the kit's own specs. I4 ('must be an object' also for an array): Low - G3, words only, not a security item.\n\nThe task named no expected verdict (AP-018). The files under review did not change during the check (self_check).",
+    "findings": [
+      {
+        "id": "G1",
+        "severity": "Low",
+        "item": "Q10 (every wait has a limit) - I2 of step 04e, judged; for the defects of step 10",
+        "place": "tools/test/e2e/kit/stand.js:207-209 (if (gone) { await state.exited; await state.closed; })",
+        "what": "Once the group is gone, stop() waits for the exit event with no limit. Only a fake child of deps.spawn that never sends exit reaches it: trial 14 (pid 999999, a link printed, stopTimeoutMs 300) - stop() still waiting after 3002 ms. With a real child the group is seen gone only after its leader is reaped, and Node emits exit in the same callback that reaps it, so the wait ends at once; a test with a bad fake ends by its own test timeout. Not Medium: no real path hangs.",
+        "fix": "Race state.exited with a short limit (for example GONE_WAIT_MS) and treat a missing end as unknown, as the F5 guard does."
+      },
+      {
+        "id": "G2",
+        "severity": "Low",
+        "item": "Q10 - I3 of step 04e, judged (AP-014, the kind of L5 in the released kit); for the defects of step 10",
+        "place": "tools/test/e2e/kit/runner.js:241 (fileTimeoutMs), cleanup.js:282 (hookLimitMs), browser.js:294 (startTimeoutMs), cdp.js:43 and :191 (call timeouts), page.js:195 and :278-292 (timeoutMs, pollMs)",
+        "what": "These options are not range-checked. By reading the code (not run): a value above 2147483647, 0, NaN or a non-number makes a timer fire after 1 ms, so the wait ends early with the kit's own error (SPEC_TIMEOUT, START_TIMEOUT, CALL_TIMEOUT, NAVIGATION_FAILED) or the signal hooks are cut short before the clean-up; in page.js waitFor a NaN timeoutMs gives a deadline that is never reached, so the wait ends only by the runner's 120 s watchdog. Every case fails closed: no check is skipped and no process is left; the callers are the kit's own specs and tests.",
+        "fix": "Apply the 1-2147483647 whole-number check of stand.js to each of these options, as one defect for the released kit files."
+      },
+      {
+        "id": "G3",
+        "severity": "Low",
+        "item": "message words - I4 of step 04e, judged; not a security item",
+        "place": "tools/test/e2e/kit/stand.js:60 ('the options must be an object') and :98 ('env must be an object')",
+        "what": "An array is refused correctly (USAGE, 0 spawns - trial 4 'options array', trial 1 'env array'), but the words say 'an object', which an array is in JavaScript; the rule broken is 'a plain object, not a list'.",
+        "fix": "Say 'must be a plain object, not a list' in both messages."
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      {
+        "command": "date -u +%Y-%m-%dT%H:%M:%SZ at the start; the file list (git diff --name-only base/E2E105-20261105-01 plus untracked) and shasum -a 256 of each; compared with the list at the end of pass 2",
+        "output": "2026-11-08T19:19:32Z; 26 files (the 23 of pass 2 and 04e, 04f, 04g). Changed since pass 2: stand.js 9ded9116221ba14f... -> aba66b015fbd57f5..., tools/README.md 579da23531a6d1a0... -> d4d0b664b90ad40d..., decisions/0109 98c2d40919a4fd64... -> 17e1b03d4d0641cf..., step-04c (my own result and close came after the pass-2 snapshot; no orch_check added); 04e, 04f, 04g new; index.js and fake-stand.js unchanged"
+      },
+      {
+        "command": "diff of stand.js and of tools/README.md between my pass-2 copies (<scratch>/e2e105s/clone2) and the project; the README paragraph word by word against the pass-2 and step-02b copies (punctuation at word ends ignored)",
+        "output": "stand.js: +25 (MAX_TIMER_MS), 27-32 (the comment), 96 (the cwd message), 112-116 (the range check and message), 396-402 (the guarded end) - nothing else; README: 844c844 only; 153 of 153 and 111 of 111 earlier words kept in order, 28 added"
+      },
+      {
+        "command": "git rev-parse --short HEAD and base/E2E105-20261105-01; git diff --stat base/E2E105-20261105-01 -- tools/; the untracked files of tools/; shasum of the nine other kit files against a fresh clone of the tag (<scratch>/e2e105s/clone3, with the four current files copied in, hashes equal)",
+        "output": "4f41032 and 4f41032; README +8 -5 and index.js +1 against the tag; new: stand.js, fake-stand.js; the nine other kit files equal the tag; tools/src: 0 files changed"
+      },
+      {
+        "command": "cd <scratch>/e2e105s/trials && E2E105_CLONE=clone3 E2E105_RESULTS=results-p3 node t13-p3.mjs; the same with E2E105_CLONE=clone2 (the pass-2 code) as a control",
+        "output": "current: == t13-p3: 45 checks, 45 pass, 0 fail (30 timeout refusals 'must be a whole number of milliseconds from 1 to 2147483647', 0 spawns; 2147483647 accepted, no TimeoutOverflowWarning; 1 accepted -> 'did not print its link in 1 ms'; 5 cwd refusals; F5 x2 '(exit code null)', clean; exit 3 unchanged; the L6 texts). Control on the pass-2 code: 45 checks, 4 pass, 41 fail ('could not start \"p3\": error' for 2^31 and above: the old code let them reach the spawn; the old messages and texts; groups [999999] left by F5)"
+      },
+      {
+        "command": "REVIEWER's trial <scratch>/e2e105r/trials/bigtimeout.mjs on the pass-2 clone and on clone3 (TMPDIR private)",
+        "output": "pass-2 code: two TimeoutOverflowWarnings, 'STAND_START_TIMEOUT: fake did not print its link in 2147483648 ms; it was killed after 27 ms', 'STAND_STOP_TIMEOUT: fake did not stop in 2147483648 ms after SIGTERM'; current code: 'USAGE: startStand: startTimeoutMs must be a whole number of milliseconds from 1 to 2147483647 after 0 ms', then 'E2eError: startStand: stopTimeoutMs must be ... from 1 to 2147483647' thrown out of the trial (exit 1); 0 folders both times"
+      },
+      {
+        "command": "node t1-env.mjs on clone3 twice, with the 13 leak variables and the base names set in the parent: once with NODE_V8_COVERAGE set, once with it unset (env -u)",
+        "output": "65/65 both; coverage on: child keys LANG, LC_ALL, NODE_V8_COVERAGE, PATH, TEMP, TMP, TMPDIR, TZ, __CF_USER_TEXT_ENCODING; coverage off: the same without NODE_V8_COVERAGE; no leak name; os.homedir() without HOME = the real home folder; with HOME given = that folder"
+      },
+      {
+        "command": "the other pass-2 trials on clone3: t2-link, t2b-timing, t3-state, t4-spawn, t5-signals, t7-real, t8-r2, t9-orphans, t11-fixes, then t6-messages",
+        "output": "t2 83/83 (31 refused, 48 accepted); t2b 9/9 (3025-3029 ms, lag 2-4 ms); t3 38/38; t4 41/41 (cwd refusals with the new words; startTimeoutMs 0 -> the range message; F3 FIXED); t5 20/20 (SIGTERM and SIGKILL to -pid only; D and E residuals as before - F4, O16); t7 11/11; t8 5/5; t9 7/7; t11 27/28 - the red one is my pass-2 oracle that matched the old comment wording literally; t6 16/16 (180 messages)"
+      },
+      {
+        "command": "a wording-tolerant check of F1 on the current comment (stand.js lines 27-32, comment markers removed): 'no HOME variable', 'home folder itself is not hidden', 'Node finds it through the system's list of users', and no 'never sees the home folder' anywhere",
+        "output": "{\"no HOME variable\":true,\"home folder itself is not hidden\":true,\"Node finds it through the system list of users\":true,\"no longer: never sees the home folder\":true}"
+      },
+      {
+        "command": "node t10-misc.mjs; node t12-closeonly.mjs <kit of clone3>; (ulimit -n 64; node emfile-child.mjs <kit of clone3>)",
+        "output": "t10: 'startTimeoutMs 2^31 -> USAGE after 0 ms; warnings: none', the frozen body error kept; t12: pid undefined and 999999 -> 'E2eError STAND_START_EXITED: fix exited before it printed its link (exit code null)', groups 0, markers 0; EMFILE: 'STAND_START_FAILED: could not start \"fix\": EMFILE', 2 ms, groups 0, no folder, exit 0"
+      },
+      {
+        "command": "node t14-noexit.mjs <kit of clone3> (G1: a deps.spawn fake with pid 999999 that prints its link and never sends exit; stopTimeoutMs 300; my own limit 3000 ms)",
+        "output": "'stop() of a fake child that never sends exit: still waiting after 3002 ms (stopTimeoutMs 300)'; 0 folders after the process ended"
+      },
+      {
+        "command": "reading for G2: grep -n setTimeout( in runner.js, cleanup.js, browser.js, cdp.js, page.js; page.js:273-292 (waitFor)",
+        "output": "runner.js:241 (fileTimeoutMs), cleanup.js:282 (hookLimit), browser.js:294 (startTimeoutMs), cdp.js:43 and :191, page.js:195 (timeoutMs) and :292 (pollMs); waitFor computes deadline = performance.now() + timeoutMs (:278) and breaks only when now >= deadline (:291)"
+      },
+      {
+        "command": "Q7: the '+' lines against the tag and the untracked files -> <scratch>/e2e105s/p3-added.txt; the secret shapes; a key word followed by a value of 12+ characters; the key-word lines not present in pass 2; the page files; Q9: the query search over stand.js, index.js, fake-stand.js",
+        "output": "4126 lines; secret shapes 0; key word with a value 0; key-word lines 60, of them 14 new, each read: prose (handoff texts about secret shapes and the reworded comment 'no token or switch of the developer's shell'); 40 page files, tools/src unchanged; Q9: 0 hits"
+      },
+      {
+        "command": "leftovers: ps for node processes; LEFT of design section 16; find <scratch>/e2e105s/tmproot -name 'sai-e2e-*'",
+        "output": "node processes at the end: only the ten that were there before the check (266, 726, 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481); LEFT 0 processes, 0 folders; my own symbolic-link fixture of trial 5 unlinked"
+      },
+      {
+        "command": "at the end: date -u; the same file list and hashes; diff with the start",
+        "output": "2026-11-08T19:24:40Z; the same 26 files; 25 of 26 hashes equal, including stand.js, tools/README.md, index.js, fake-stand.js and decisions/0109; the one that differs is step-04g-reviewer.json (REVIEWER writing its own handoff in parallel)"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1 (before close)",
+        "output": "handoffs-check: файлов проверено 1333, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2469, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "O15 and O16 as they stand now are true: O15 names the missing HOME, the env pairs and the folder argument (--dir of Pixel Office), which matches trials 1, 3 and 8 and my pass-2 I1; O16 says that F4 is not fixed in stand.js (trial 5 D and E still reproduce it on the current code) and that the two shapes of REVIEWER's I2 are; nothing to correct."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER through ORCH: a fake child of deps.spawn must send exit and then close (or error and then close), as Node does: a fake that never sends exit makes stop() wait for ever (G1, trial 14); a fake that sends close alone now gives STAND_START_EXITED '(exit code null)' (F5 fixed). The timeout range 1-2147483647 and the messages of L5 are new behaviour to pin (I1 of step 04e)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "My pass-2 trial t11 has one check that matched the old comment wording literally and is red on the current code for that reason only; its meaning was re-checked with a wording-tolerant check (all four statements true) and by trial 13. The trial lives outside the project and is not a test of Sai."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the tag = HEAD = 4f41032; step 04e changed only stand.js and tools/README.md (the diff against my pass-2 copies holds only its listed lines); REVIEWER's bigtimeout trial exists in the session scratch and was run on both codes; step 04e's I2-I4 are judged as G1-G3. The task named no expected verdict (AP-018). REVIEWER's pass 3 (step 04g) ran in parallel and its handoff changed during this check, as expected."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

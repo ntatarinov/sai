@@ -1,0 +1,252 @@
+{
+  "handoff_id": "step01b-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "01b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/E2E105-20261105-01/step-01b-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-105-e2e-picker.md",
+      "decisions/0109-e2e-stand-conventions.md (answers O1-O12)",
+      "handoffs/E2E105-20261105-01/step-01-code-designer.json",
+      "docs/requirements.yaml (block REQ-105, read by id)",
+      "docs/workflows/WF-02-development.md (Step 1b)"
+    ],
+    "route": "CODE-DESIGNER (done) -> ORCH answers questions (decisions/0109, done) -> CODE-DESIGN-VALIDATOR (this) -> BACKEND-DEV -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the validator reads; sketches go outside the project)"
+    ],
+    "base_tag": "base/E2E105-20261105-01"
+  },
+  "task": {
+    "description": "WF-02, step 1b — gate CODE-DESIGN-VALIDATOR on the design of REQ-105 (docs/design/REQ-105-e2e-picker.md). Read the design and the block REQ-105 yourself, not the summary of the author, and check by the section \"Step 1b\" of docs/workflows/WF-02-development.md: every one of the ten criteria leads to an element of the design and to a test; signatures, data and errors are complete (the starter stand.js, its fixture stand-in, the spec); the bar section Q1-Q14 and R1-R3 is complete; protection stands in the same operation as the action; no contradiction with decisions/ (0107, 0108, 0109, 0023); no implementation code; the statements about the current system are repeated BY YOU on a fresh clone of the tag base/E2E105-20261105-01 (git clone -b, outside the project; the design file and decision 0109 are new files and are not in the tag, read them from the working folder); run the earlier tests after the replacement table (E2K-50, E2K-41, E2K-60 and the whole kit test file) with the new dummy files; apply at least 10 mutants of the design yourself (the product mutants against the real picker page and the real server, not only the design's list) and report each with the test that catches it or the gap; measure the time budget claim (section 7) yourself, three runs, and say how far it is from the 80000 ms limit; assess the size and order of the sub-steps (section 14); check the order check on two real files (section 13). Two points to judge with your own measurement: O3 (start button below the window at 320x568 in Russian — is it a page defect that the requirement forbids to hide, or a scrolled page?) and O4 (the declared network error line, exactly two entries). Any item not passed is a FAIL, there is no partial credit. Task text and your report hold no absolute machine paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "Every criterion leads to a design element and a test",
+      "Statements repeated on a fresh clone of the tag",
+      "At least 10 own mutants",
+      "Time budget re-measured",
+      "Verdict PASS or FAIL with concrete remarks"
+    ]
+  },
+  "created_at": "2026-11-04T20:04:38Z",
+  "started_at": "2026-11-04T20:04:38Z",
+  "completed_at": "2026-11-04T20:42:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": {
+      "pass_A_item_1": "MET. Repeated by me on a fresh clone of base/E2E105-20261105-01 (4f41032, npm ci), outside the project. F1: the block REQ-105 has 10 criteria (awk + grep -c). F3/F4: the real picker started by `node src/picker/cli.js serve --tenants src/picker/demo-tenants --port 0` prints 5 lines (two links), SIGTERM -> exit 0, stderr 0 bytes; the questionnaire answer has `name`, no `title` (keys: version,lang,languages,name,intro,questions_min,questions_max,questions,ai,leads). F11: /t/net-takogo/, /t/UCHET-PRO/, /t/uchet-pro/%00, / and the raw /t/%2e%2e/ (curl --path-as-is) all 404, 118 bytes, one sha256 prefix 1f0b844d8fc3. F7/F9/F10/F13-F19/F23: all repeated by running the author's prototype spec (copied from the designer's scratch into my clone and run by me) and my own probes; the claims held, with the exceptions in findings N1-N3. F24 section 13: `npm run -s e2e -- smoke picker` prints file=smoke then file=picker, reverse prints picker then smoke, both exit 0 (34160 / 34135 ms), `picker picker` -> SELECTION_DUPLICATE exit=1; `ls ... | sort -r` prints `smoke picker`. F28: the three runner readings (25539, 34821, 17462) are in docs/releases/E2E104-20261103-01.md and ISS-0103-20261103-01.md.",
+      "pass_A_item_2": "MET with N7. Shared mechanisms: (1) the runner's list of browsers (noteBrowserForRunner / sweep) used by the stand through a marker folder - repeated: a fixture spec that starts a stand and sleeps, with the event loop free and blocked, is stopped by runAll (fileTimeoutMs 4000) and the stand group and marker are gone (my check c18); with the noting call removed the stand stays alive (S08 red). (2) env reading guard E2K-50: the ENV_NAMES, SCANNED, the unscanned-fixtures rule - the new fixtures folder e2e-stand/ keeps the rule green (stage B). (3) the scans by file-name prefix (picker-, handoffs-, team-web-): grepped, picker.e2e.js and e2e-stand.test.js are not selected. (4) README mentions: STATE.md, PLAN.md, requirements, design of REQ-104 are in section 17; ISS-0101 and ISS-0104 are older history. Gap: the leftover check of section 16 cannot see a leaked stand (N7).",
+      "pass_A_item_3": "NOT MET (sub-step expectation wrong, N3; three claimed mutant catches do not hold, N4-N6). Replacement table repeated: with every new file present (starter, fake stand-in in tools/test/fixtures/e2e-stand/, sleep-stand fixture spec, dummy e2e-stand.test.js, README edit of section 10 written by prettier) and no test edit: `node --test test/e2e-kit.test.js test/e2e-stand.test.js` -> 53 tests, 52 pass, 1 fail = E2K-50 ('stand.js: reads TEMP'); after the edits of section 12 rows 1-3 applied literally: 53/53 pass, 0 skipped 0 todo; full `npm test` on the clone: `# tests 2188 # pass 2188 # fail 0 # skipped 0 # todo 0`, 236.7 s (the design's 2188 and its one red agree). Mutants: 18 of the product against the real page and server (Q01-Q18) and 20 of the starter (S01-S20), see self_check; 4 of them survive their claimed catcher or any catcher (Q01, S02, plus Q15/Q16 outside the criteria) and R07 survives by reading (N6). Sub-steps: sizes sound and order sound except that sub-step 3 puts picker.e2e.js into the SCANNED list of E2K-50 one step before the file exists: E2K-50 then fails with ENOENT (measured by removing the file from my clone), so 'none red after it' is wrong (N3).",
+      "pass_B_item_4": "MET. Options, defaults, rules, order of steps, members of Stand, error codes and messages (4.1), the stand-in modes (4.3), the helper list of the spec (4.4), the contract between BACKEND-DEV and TEST-DESIGNER (4.1 and 4.3) are complete enough that I built the starter checker and a stand-in from the text; the prototype starter conforms after four small additions (port, exitInfo, message wording, env value check), which are exactly what the text asks for.",
+      "pass_B_item_5": "MET. Section 5 rows 1-15 each have 'user sees' and 'state afterwards'; rows 3-9, 11, 12 repeated by my checks c03, c06-c11, c16, c18 (all as written).",
+      "pass_B_item_6": "NOT MET. Two oracles written in the design are false on the real system and a developer would have to change them: criterion 5 (section 8, N1) and E2S-05 (section 11.1, N2). Smaller places where the developer chooses: N8 (pid undefined), N11 (error precedence, END on both streams).",
+      "pass_B_item_7": "MET. `grep -c` of three backticks in the design -> 0; only shapes, signatures, tables, regular expressions and formulas in words.",
+      "pass_C_item_8": "NOT MET for criterion 5 only (N1: the 'no run of 7 digits in the value' oracle is red on the correct page). Criteria 1-10 each have a design element, a test and an oracle in section 8; no 'decide later' row; counts checked by command: 10 criteria, 9 spec tests, 20 E2S, 49 mutants (23+18+8, grep -c), 24 'applied', 30 F-rows, 5 TEST-DESIGNER sub-steps plus 2 BACKEND-DEV, 12 open questions.",
+      "pass_D_item_9": "MET. Section 15 names Q1-Q14 and R1-R3, each applicable with how, or not applicable with why. Q13 traps listed are true; I add the three of this gate in findings for DOC-UPDATER.",
+      "pass_D_item_10": "MET. Section 6: state folders under the temporary root checked before the marker and the spawn (my c03: PATH_REFUSED, spawn count 0, no folder, S06 red); loopback check on the link in the same step that takes the link (c08, S05 red); the environment built in one place (c05, S10 red); the group registered in the block of the spawn (c16, S07 red).",
+      "pass_D_item_11": "MET. No contradiction with decisions 0107 (Chrome required, e2e inside check), 0108 (O1: this run designs the starter; O6 owner of stand-ins) or 0109 (answers O1-O12, which record C-1..C-3). 0023 D2 is lifted for these tests by 0107, as the design says.",
+      "O3": "Judged by my own measurement (tenants uchet-pro and svet-marketing, ru, kk, en, windows 1470x784, 390x844, 320x568): the start button lies fully inside the window in 7 of the 9 language-window pairs of each tenant (identical for both tenants); at 320x568 in Russian AND Kazakh (not only Russian, as the design says) it lies at 546..594 (bottom 26 px below the 568 edge) and in English at 495..543 (inside). The document there is 643 px high, html and body have overflow visible, no element is position:fixed, the page scrolls normally, window.scrollTo(0,0) then scrollIntoView puts the whole button at 520..568 inside the window; horizontal: left 29, right 291 of 320, scrollWidth equals innerWidth. REQ-057 promises at 320x568 only 'no horizontal scroll' and controls of at least 44x44 (the button is 262x48); it does not promise the button on the first screen. Verdict: a scrolled page, not a page defect; the design's reading (horizontal containment plus the whole rectangle inside the window after scrollIntoView) is right and is not a weakening, because the vertical reading is checked in the only form the page promises (reachability).",
+      "O4": "Judged by my own measurement (six runs of the lost-net scenario, two with 3 s waits before and after the stop): every run gave exactly three console entries - the favicon 404 line once and exactly two `Failed to load resource: net::ERR_CONNECTION_REFUSED` with url .../t/uchet-pro/api/result?lang=ru (one per press, two POST records), focus on the retry button, stop code 0, no exception entry. Deterministic, so the declaration by exact text with path plus 'exactly two' is a sound, not a weakened, reading of 'the kit reports none'. The residual risk (the freed port reused by another process during the test) is theoretical and not a remark.",
+      "time_budget": "Measured by me three times with the real command `cd tools && npm run -s e2e -- picker` on the prototype spec: duration_ms=16828, 16789, 16792 (load average about 2 at start). That is 21 percent of the 80000 ms limit, 63200 ms of margin; the designer's 16733/16603/16622 agree within 1.5 percent. Both files together (`smoke picker`) 34160 / 34135 ms. The GitHub figure stays an estimate (about 33-52 s) as the design says; the rule 'above 48000 ms the validator asks ORCH' is clear. The final spec has more assertions than the prototype: my extended copy with the section-8 oracles added ran 16358-16792 ms.",
+      "verdict_reason": "FAIL. Three Medium (blocking) findings, each found by running the text of the design on the real system: N1 (criterion 5 oracle red on the correct page), N2 (E2S-05 oracle red on the owner's Mac), N3 (sub-step 3 leaves E2K-50 red until sub-step 4a). Everything else I repeated held: the replacement table, the time budget, the order check on two real files, O3, O4, 34 of 38 mutants killed. All three blocking items are one-sentence corrections for CODE-DESIGNER; no redesign is needed. The task does not name an expected verdict (AP-018 not applicable)."
+    },
+    "findings": [
+      {
+        "id": "N1",
+        "severity": "Medium",
+        "blocking": true,
+        "pass_item": "B6, C8 (and Q3: an oracle not run)",
+        "place": "section 8, row of criterion 5 ('no `@`, no run of 7 digits in the text of the value')",
+        "what": "The value of `sai-picker:uchet-pro` holds the field `version`, the 64-hex hash of the questionnaire. For uchet-pro it is d4f0885bf5b34469014bcd2e57258ddc04056c5bdf661363749a035ab5a55ee8 and contains the run `3446901` (seven digits). I wrote the assertion as the text says (on the whole stored text) in my extended spec: `storage` is red with 'The expression evaluated to a falsy value' on the correct page, deterministically (the hash is fixed by the tenant file). A hex string of 64 characters contains a run of 7 decimal digits with a high probability, so any tenant version can trip it. The prototype has no such assertion, so the designer never ran it. With the version cut out of the text first the assertion holds (my run).",
+        "needed": "Name what the 'no free text / no contact data' check is applied to (the `answers` and `current` and `lang` parts, not `version`), or drop the digit rule and keep the check on the keys and on '@'; say which. Re-run the final assertion on the prototype."
+      },
+      {
+        "id": "N2",
+        "severity": "Medium",
+        "blocking": true,
+        "pass_item": "B6, C8",
+        "place": "section 11.1, E2S-05 ('the `env` event of the stand-in lists only names from the base list, the given ones and its own two variables')",
+        "what": "On macOS every Node child receives `__CF_USER_TEXT_ENCODING` from the system whatever environment the parent passes: `env -i PATH=... node -e 'console.log(Object.keys(process.env))'` prints `[ 'PATH', '__CF_USER_TEXT_ENCODING' ]`, and a spawn with env {PATH, TMPDIR} gives `PATH, TMPDIR, __CF_USER_TEXT_ENCODING`. My starter check built from the text of E2S-05 is red on the developer's machine for exactly this name (the starter itself is right). The test as worded is red on the owner's Mac.",
+        "needed": "E2S-05 must assert what matters (no name that is not in the base list, the given list or the stand-in's two variables, apart from a named allowance for names the operating system adds on its own, or: the four named leak names are absent and the given names are present). Say which, and name the allowance."
+      },
+      {
+        "id": "N3",
+        "severity": "Medium",
+        "blocking": true,
+        "pass_item": "A3 (sub-step order and the expected red tests)",
+        "place": "section 14, sub-step 3 against section 12 row 1 ('SCANNED gets tools/test/e2e/picker.e2e.js')",
+        "what": "Sub-step 3 (TEST-DESIGNER) edits E2K-50 so that SCANNED lists `tools/test/e2e/picker.e2e.js`, but the file is created only in sub-step 4a. E2K-50 reads every listed file with readFileSync: with the edit and without the file it fails with ENOENT (measured in my clone: `node --test --test-name-pattern=E2K-50 test/e2e-kit.test.js` -> not ok, ENOENT picker.e2e.js). The design says 'none red after it; `node --test test/e2e-stand.test.js test/e2e-kit.test.js` -> exit 0'. That check is red until 4a.",
+        "needed": "Move the SCANNED entry to sub-step 4a (with the spec), or state the red test after sub-step 3 as EXPECTED_RED with the reason; correct the expectation of the sub-step table and of section 9 accordingly."
+      },
+      {
+        "id": "N4",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "A3 (mutants)",
+        "place": "section 16, S02; section 4.3 mode `with-child`; section 11.1 E2S-13",
+        "what": "S02 (no SIGKILL to the group after the main process ended) survives E2S-13 as described: the stop sends SIGTERM to the whole group and the sleeping child of the stand-in dies from that signal, so the final SIGKILL never has anything to do. In my run S02 was red nowhere (the other 15 starter mutants I applied were red where the design says).",
+        "needed": "Say in 4.3 that the child of `with-child` ignores SIGTERM (only SIGKILL removes it), and that E2S-13 checks it is gone."
+      },
+      {
+        "id": "N5",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "A3 (mutants)",
+        "place": "section 16, P21 ('the page sends an answer of a hidden question' -> caught by `pass`)",
+        "what": "Applied by me (bodyAnswers returns the raw answers): survives. In a pass that never answers a question that later becomes hidden, the raw and the pruned answers are equal, so the request body is equal in both. The claim 'caught by pass (request body deep-equal)' does not hold for the planned passes.",
+        "needed": "Either add to `pass` one path that answers, goes back, changes the answer that hides a question and presses on (and compare the body), or mark P21 as not caught here (REQ-057's own test guards it)."
+      },
+      {
+        "id": "N6",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "A3 (mutants), AP-077",
+        "place": "section 16, R07; section 11.1 E2S-20",
+        "what": "R07 (hasStack with `\\s`) is said to be caught by E2S-20, but the described negative case is 'a text with `at ` inside a line'. Checked in node: `we arrive at the end` is false for both the right and the mutated expression; only a text with an empty line followed by a line that starts with `at ` (`note\\n\\nat start`) separates them.",
+        "needed": "Name that negative case in E2S-20."
+      },
+      {
+        "id": "N7",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "A1/A2 (AP-014), Q3",
+        "place": "section 16 (the check after the series: `pgrep -f 'sai-e2e-'`), section 1 F30",
+        "what": "A leaked stand is a plain `node src/picker/cli.js serve ...` or `node .../fake-stand.js` whose command line has no `sai-e2e-`; the pgrep cannot see it. Proof: when I came, two picker servers (started 00:26 local) from the designer's sketches were still alive with the designer's scratch folder as their folder, after F30 said nothing was left; my own S07/S08/S09/S16/S20 mutants leaked 20 stand-in processes the same way, which that command would not have listed (I killed mine by pid).",
+        "needed": "The after-series check must list processes by the program that was started (`cli.js serve`, `fake-stand.js`) or by their working folder, not only by `sai-e2e-`; add it to section 16 and to E2S/RV commands."
+      },
+      {
+        "id": "N8",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "B6",
+        "place": "section 4.1 steps 3-7 (bad `cwd`, E2S-04)",
+        "what": "When the program cannot start (bad cwd) the child has no pid and the error comes as an event. The text does not say what steps 4 and 7 do with an undefined pid. In the sketch (guard on pid, then `waitGroupGone(undefined, 3000)`) the call takes 3025 ms for nothing before STAND_START_FAILED is thrown (measured).",
+        "needed": "One sentence: with no pid, nothing is registered, signalled or waited for; the marker is removed and the error thrown at once."
+      },
+      {
+        "id": "N9",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "C8 (strength of criteria 1 and 3)",
+        "place": "section 8, rows of criteria 1 and 3 (`matrix`, `themes`)",
+        "what": "My mutant Q16 (the dark block applies only to windows of 400 px and wider, so at 390 and 320 the dark scheme shows the light colours) survives the whole spec: `themes` reads colours in one window only and `matrix` sets the scheme per combination but asserts no colour. The requirement as written does not ask more, so this is not a blocking gap, but the matrix says 'each of the two colour schemes'.",
+        "needed": "Optional and cheap: in `matrix` also read `matchMedia(dark)` and the body background per combination (different between the two schemes in each window)."
+      },
+      {
+        "id": "N10",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "B6",
+        "place": "section 1 F8 and section 19 O3 ('at 320x568 in Russian')",
+        "what": "Kazakh has the same position (546..594) in both tenants; English fits. The assertion is generic, so no test changes, but the text names Russian only.",
+        "needed": "Say 'Russian and Kazakh'."
+      },
+      {
+        "id": "N11",
+        "severity": "Low",
+        "blocking": false,
+        "pass_item": "B6",
+        "place": "section 4.1 `stop()` (CLEANUP_FAILED against STAND_EXIT) and section 4.3 `noisy`",
+        "what": "If the process ended with a bad code and the group is still alive after the SIGKILL wait, both CLEANUP_FAILED and STAND_EXIT apply; the text lists CLEANUP_FAILED first in one sentence and STAND_EXIT after it without a rule. `noisy` ends 'with the line END': on one stream or on both is not said, E2S-12 says both streams end with END.",
+        "needed": "State which error wins and that both streams end with END."
+      }
+    ],
+    "self_check": {
+      "design_sha256_before": "b96deb989e86948dd05616d3b96576173e658f4d43ddbab932256e837e43227e",
+      "design_sha256_after": "b96deb989e86948dd05616d3b96576173e658f4d43ddbab932256e837e43227e",
+      "decision_0109_sha256_before_and_after": "a0205a4be4e82125288264db1b51c6d6a98398fb64d8fc0649b599de40f0a870",
+      "project_state": "git status of the project unchanged by me except this handoff (the three modified files and the new design, decision and handoff folder were there at the start); no commit, push or pull; PROGRESS.md untouched.",
+      "clone": "git clone -b base/E2E105-20261105-01 of the repository into <scratch>/e2e105v/clone, HEAD 4f410324572ed16cef6d7b57a6c4deadf04d9a26, npm ci in tools/; a copy of it <scratch>/e2e105v/mutclone for the mutants (edited only there). The design and decision 0109 are not in the tag and were read from the working folder.",
+      "prototype_used": "the designer's prototype of the starter and of the nine tests (from its scratch folder) copied into my clone and run by me; the stand-in server was written by me from section 4.3 (the designer's sketch deviated from 4.3), the starter was patched by four small additions to conform to 4.1. The assertions of section 8 that the prototype lacks (intro, tenant-file name, scrollIntoView, first title, cookie, sessionStorage, value fields, back x3, retry focus, two console entries, B's network answer, storage keys after B) were added by me to a copy of the spec and run.",
+      "commands_and_results": [
+        "stage A: `node --test test/e2e-kit.test.js test/e2e-stand.test.js` with every new file and the README edit, no test edit -> `# tests 53 # pass 52 # fail 1`, red = E2K-50 ('stand.js: reads TEMP'), 35 s",
+        "stage B: the edits of section 12 rows 1-3 applied (ENV_NAMES +6 names, SCANNED + picker.e2e.js, '80000' in E2K-41, three tokens + the picker row regex in E2K-60), prettier --check on the test file ok -> `# tests 53 # pass 53 # fail 0 # skipped 0 # todo 0`",
+        "full `npm test` on the clone: `# tests 2188 # pass 2188 # fail 0 # skipped 0 # todo 0 # duration_ms 236748`; `npm run -s traces` -> 'следов 0' and 0 lines for tools/test/e2e/picker; `grep -nE '\\.skip\\(|\\.todo\\(|\\|\\| true'` on the spec -> 0 lines",
+        "time: three runs `npm run -s e2e -- picker` -> duration_ms=16828, 16789, 16792, exit 0; `smoke picker` 34160, `picker smoke` 34135; my extended spec 16358-16792",
+        "independence loop (env -u NODE_TEST_CONTEXT node --test --test-reporter=tap --test-name-pattern='^<name>$') for matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3 on my extended spec: each exit 0, one `ok` line, 0 `not ok`",
+        "O3 probe over 2 tenants x 3 languages x 3 windows (see summary.O3); O4 probe six runs (see summary.O4); v3 probe: h1 equals the questionnaire name for agency and stock in 1470x784 light and 390x844 dark, no overflow",
+        "digits: node check of `/\\d{7}/` against the `version` of uchet-pro in ru, kk, en -> match `3446901`; svet-marketing -> no match (so the defect depends on the tenant)",
+        "env: `env -i PATH=$PATH node -e 'console.log(Object.keys(process.env))'` -> [ 'PATH', '__CF_USER_TEXT_ENCODING' ]",
+        "hasStack: node test of /^[ \\t]+at /mu and /^\\s+at /mu on four texts: only `note\\n\\nat start` separates them",
+        "E2K-50 without picker.e2e.js after the SCANNED edit: ENOENT (not ok)",
+        "starter check (my 16 cases c01-c16, c18 from the descriptions of E2S-01..18, written by me): baseline all ok after the stand-in followed 4.3 and N2 was allowed for; mutants S01-S20 as listed",
+        "cleanup: my mutants leaked stand-in processes (20 fake-stand and 1 sleeping child); all killed by explicit pid after checking that their working folder was my mutant folder; no Chrome of mine is left; `ls` of the temporary root for sai-e2e-* and my check folders -> none"
+      ],
+      "mutants_product": [
+        "Q01 (design P21) bodyAnswers returns raw answers: SURVIVES (N5)",
+        "Q02 cookie written on every save: killed by `storage` (needs the cookie assertion of section 8, which I added to the prototype)",
+        "Q03 sessionStorage mirror: killed by `storage` (same remark)",
+        "Q04 card intro empty for kk (kind of design P22): killed by `matrix` (intro oracle of section 8, added by me)",
+        "Q05 (design P23) start button min-width 340 at 320: killed by `matrix` (my first version lost the CSS cascade and was equal; rewritten with !important)",
+        "Q06 overflow only in dark scheme at 380-400 px: killed by `matrix`",
+        "Q07 unknown address answered 410: all nine tests red (favicon declaration)",
+        "Q08 404 body longer for capitals: killed by `not found` (sha256 equality)",
+        "Q09 retry button not focused: killed by `no connection` (focus assertion of section 8, added by me)",
+        "Q10 `continue` opens the first question: killed by `storage`",
+        "Q11 light text colour too pale: killed by `themes`",
+        "Q12 html lang stuck on ru for en: killed by `matrix`",
+        "Q13 result endpoint answers for the first tenant: killed by `pass`, `isolation`, `v3`",
+        "Q14 storage key not tenant-scoped: killed by `isolation`",
+        "Q15 English lost-net text changed: SURVIVES (language outside criterion 8, informational)",
+        "Q16 dark block only for windows of 400 px and wider: SURVIVES (N9)",
+        "Q17 retry does not call the network again: killed by `no connection`",
+        "Q18 SIGTERM exit code 2: all nine tests red (`stop()`)"
+      ],
+      "mutants_starter": [
+        "S01 exit code not checked: red c09, c11, c15 (E2S-09, 11, 15)",
+        "S02 no SIGKILL to the group after the main process ended: SURVIVES (N4)",
+        "S03 stop timer not cleared: red c14 (E2S-14)",
+        "S04 stderr not read: red c06, c12",
+        "S05 link not passed through assertLoopbackUrl: red c08, c18",
+        "S06 state folders checked after the spawn: red c03",
+        "S07 group not registered: red c16, c18",
+        "S08 runner not told (marker): red c18 (blocked loop)",
+        "S09 start failure does not kill: red c07, c08",
+        "S10 whole environment to the child: red c05",
+        "S11 kept text not cut: red c12",
+        "S12 stop not idempotent: red c11",
+        "S13 withStand throws the stop error over the body error: red c15",
+        "S14 `g` flag accepted: red c02",
+        "S15 marker not removed: red c01, c09, c18",
+        "S16 no SIGKILL after the stop timeout: red c10",
+        "S17 exit before the link reported as timeout: red c06",
+        "S18 stdout not read after the link: red c12",
+        "S19 SIGTERM to the leader only, SIGKILL to the group after: SURVIVES (equivalent in effect, informational; not a design mutant)",
+        "S20 not detached: my checker hung until its own 200 s limit and leaked stands (counted as caught by the limit, inconclusive)"
+      ],
+      "mutant_totals": "38 applied by running (18 product, 20 starter) + R07 and the sub-step mutant by running a small node/test command: killed 32, survived Q01, Q15, Q16, S02, S19 (S19 and Q15 informational), S20 inconclusive; design-listed mutants checked: P21, P22 (as Q04), P23 (as Q05), S01-S18, R03 (stage A), R07 (by command); R01, R02, R04, R05, R06, R08 by reading (R04/R05/R06 are caught by their own counters/controls, which exist in the text)"
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the tag base/E2E105-20261105-01 exists (4f41032); the block has ten criteria (the task says ten); decision 0109 and the design are new files not in the tag. The task names no expected verdict (AP-018 not applicable). Task asks me to set started_at; the protocol lets only ORCH write it, and it was already set at 2026-11-04T20:04:38Z, so I left it."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "For ORCH: two picker servers (pid 17526 and 17610, started 00:26 and 00:26 local on 2026-11-05, working folder inside the designer's scratch clone) are still alive, parent pid 1. They are not mine and I did not kill them; they are leftovers of the designer's sketches (see N7). Eight old `node -e setInterval(...)` processes (pids 10044 .. 14481, with spaces in the text) are also not mine and were left."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Rework route: FAIL goes back to CODE-DESIGNER with N1-N3 (blocking, Medium) and N4-N11 (Low, fix in the same pass if cheap). Nothing else needs redesign. O2, O3, O4 of decision 0109 are confirmed by my measurements; O3's wording and N10 go to DOC-UPDATER at step 10 as in section 17."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "For docs/anti-patterns.md candidates (Q13), from this gate: an oracle written in a design and not run on the prototype can be false on the real data (hex hash contains digit runs); a test of the environment of a child must allow names the operating system adds; adding a path to a scan list one step before the file exists leaves a red test; a leak check by a name that the leaked process does not carry sees nothing."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

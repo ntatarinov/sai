@@ -1,0 +1,348 @@
+{
+  "handoff_id": "step05-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/E2E105-20261105-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-105-e2e-picker.md (sections 3, 8, 11, 12, 13, 14, 16; table 14.1)",
+      "docs/requirements.yaml (block REQ-105, ten criteria; read by id)",
+      "decisions/0109-e2e-stand-conventions.md (O1-O16)",
+      "handoffs/E2E105-20261105-01/step-01f-code-design-validator.json (gate remarks N18-N20)",
+      "handoffs/E2E105-20261105-01/step-02b-backend-dev.json, step-04b-code-fixer.json, step-04e-code-fixer.json (what the code does now)",
+      "handoffs/E2E105-20261105-01/step-04g-reviewer.json and step-04f-security-reviewer.json (notes for the tests: issue I2 of 04g)",
+      "tools/test/e2e/smoke.e2e.js and tools/test/e2e-kit.test.js (the models of style)"
+    ],
+    "route": "TEST-DESIGNER (this, sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e-kit.test.js (the tests E2K-50, E2K-41, E2K-60 only, by section 12 of the design)",
+      "tools/test/e2e-stand.test.js (new)",
+      "tools/test/fixtures/e2e-stand/specs/sleep-stand.e2e.js (new)",
+      "tools/test/e2e/picker.e2e.js (new)"
+    ],
+    "base_tag": "base/E2E105-20261105-01"
+  },
+  "task": {
+    "description": "WF-02, step 5 — write the tests of REQ-105 by the checked design docs/design/REQ-105-e2e-picker.md: the TEST-DESIGNER rows of section 3 and sub-steps 3 and 4 of section 14, in order, one sub-step at a time, each checked as its 'Red after it' column says before the next. Sub-step 3: the edits of section 12 rows 1 (the six names only), 2 and 3 in tools/test/e2e-kit.test.js (the prohibitions they guard are not weakened); tools/test/e2e-stand.test.js with E2S-01..E2S-20 (section 11.1); the fixture spec tools/test/fixtures/e2e-stand/specs/sleep-stand.e2e.js; after it `node --test test/e2e-kit.test.js test/e2e-stand.test.js` gives 72 tests, 72 pass. Sub-steps 4a-4c: tools/test/e2e/picker.e2e.js with the nine tests named as the criteria name them (matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3), and the SCANNED entry of section 12 row 1 made in the same change as the file (4a). Sub-step 4d: the independence loop of REQ-104 criterion 7 on picker.e2e.js (each name alone: exit 0, exactly one line that starts with 'ok ', and it is 'ok 1 - <name>'); the mutant series of section 16 applied on COPIES outside the project, never in the working tree, each with the test that catches it; the order check of section 13 on the two real files (smoke picker, picker smoke); `npm run check` at the end.\n\nWHAT THE CODE STEPS CHANGED SINCE THE DESIGN — cover it, do not change the code: (a) O14: a stand that ended by itself before stop() fails with STAND_EXIT 'on its own' whatever its exit code; the stand-in mode quit-later (ends by itself with code 0 about 300 ms after the link) is covered inside E2S-11, no new id: wait for the fact isRunning() false (limit 5 s), then stop() rejects with STAND_EXIT holding 'exit code 0 on its own' and the log has no term; (b) gate remarks of the design: N18, E2S-13 asserts the event child-term in the log; N19, one case with a deps.spawn that throws at once (no pid: nothing registered, no signal, the marker removed, the error thrown at once) inside E2S-04 or E2S-02; N20, E2S-09 asserts the words 'after SIGTERM'; (c) the fixes of steps 04b and 04e, each inside the E2S test of its subject (no new ids, the counts of the design stay): a readyPattern whose one group takes no part in the match ends in URL_REFUSED with the stand cleaned up; in withStand a stop error that is the body's own error is not attached to itself, and a body error that cannot take a property is rethrown unchanged; an env value with a NUL is refused 'without NUL'; the timeouts accept 1 and 2147483647 and refuse 0 and 2147483648 with USAGE naming the range; a fake child that ends with close and no exit gets STAND_START_EXITED; (d) E2S-05 keeps two named allowances with their reasons, __CF_USER_TEXT_ENCODING (macOS adds it) and NODE_V8_COVERAGE (Node passes it on when the spec process has it), and the four leak names stay absent; (e) a fake child given through deps.spawn has real streams and sends exit and then close, as Node does (stop() waits for exit without a limit, a known Low).\n\nRULES: the two sandbox flags and the skip words stand in none of these files, comments included (section 3); no sleep: wait for facts with limits, and a kill is followed by a wait for ESRCH, never one immediate check (decisions/0108 addendum, ISS-0103); each test runs alone; failure tests check that the state is unchanged. Report the duration_ms of `npm run -s e2e -- picker` (three runs) and of `npm run -s e2e`. If a test finds a real defect of the page or the server, do not weaken the test: stop and report it in result.issues with evidence (ORCH opens WF-03). Do not change tools/src, tools/test/e2e/kit/*, the stand-in, package.json. Task text and files hold no absolute machine paths and no names of the owner's other projects. Do not commit or push.",
+    "acceptance_criteria": [
+      "Sub-step 3: 72 of 72 in the two kit files",
+      "Sub-steps 4a-4c: nine spec tests green, each alone",
+      "Code changes since the design covered (O14, N18-N20, 04b/04e fixes)",
+      "Mutant series of section 16 on copies, each with its catcher",
+      "Order check on two real files; npm run check green"
+    ]
+  },
+  "created_at": "2026-11-08T19:30:48Z",
+  "started_at": "2026-11-08T19:30:48Z",
+  "completed_at": "2026-11-08T21:08:12Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": {
+      "what": "WF-02 step 5, sub-steps 3, 4a, 4b, 4c and 4d of docs/design/REQ-105-e2e-picker.md, in order, each checked as its 'Red after it' column says before the next. Sub-step 3: the edits of section 12 rows 1 (the six names only), 2 and 3 in tools/test/e2e-kit.test.js; tools/test/e2e-stand.test.js with E2S-01..E2S-20 (section 11.1, plus the code changes since the design: O14, N18-N20, the fixes of 04b and 04e, the two platform names of E2S-05); tools/test/fixtures/e2e-stand/specs/sleep-stand.e2e.js; then `node --test test/e2e-kit.test.js test/e2e-stand.test.js` -> 72 tests, 72 pass. 4a: tools/test/e2e/picker.e2e.js with matrix, pass, themes and their helpers, and in the same change the SCANNED entry of E2K-50 (72/72, each alone). 4b: keyboard, storage. 4c: isolation, not found (with the hasStack controls), no connection, v3. 4d: the independence loop (9 of 9 names alone, and 20 of 20 for the starter tests), the mutant series of section 16 on copies outside the project, the order check of section 13 on the two real files, the durations, npm run check. The page and the server were not changed and showed no defect: every test is green on them as they are; nothing for WF-03. Two places of the design did not hold on the real system and were written by the measurement (issues I1, I2), and one race of my own test was found by a stress run and removed (I3).",
+      "criterion_to_test": [
+        "1 the card and the first question in every combination -> `matrix`: 18 combinations (ru, kk, en x light, dark x 1470x784, 390x844, 320x568), counted and pairwise different; html lang = the language; the only h1 = `name` of GET /t/uchet-pro/api/questionnaire?lang=<l> and = name[<l>] of the tenant file; [data-part=\"intro\"] = `intro` of the same answer (tells kk from ru, whose name is the same); no horizontal overflow on the card and on the question; the start button inside the window horizontally where it stands and wholly once scrolled into view (decisions/0109 O3); one [data-screen=\"question\"] with the title of the first question; matchMedia dark = the scheme set, and the body background has one value per scheme over its 9 combinations and the two differ (N9); the console holds only the favicon line, once. Why: Q5 for criterion 1; the 18 and the distinct tuples are its controls.",
+        "2 a full pass, answers checked against the server -> `pass`: five passes (ru leader 1470 light, ru close 390 dark, ru none 320 light, kk leader 320 dark, en leader 1470 dark), each on a fresh tab with an empty storage: the result screen; the focus on a heading inside it; exactly one POST, path /t/uchet-pro/api/result and lang = the language; its body parsed deep-equals {answers: set} (no hidden answer, none missing; every key of the set met on a screen); the answer the page got = a direct POST of the same set with the header Origin, character for character, status 200; the three Russian answers pairwise different (control); the coverage table is built from what the page reports (innerWidth, matchMedia, html lang) and the set name, and holds exactly {1470, 390, 320}, {light, dark}, {ru, kk, en}, {leader, close, none}; the hidden pass of F34 (N5): the body deep-equals {answers: X} where X is leader with problems [no-reports] and without recount (computed from the set), the stored answers deep-equal X, the answer = a direct POST of X.",
+        "3 the two schemes differ and are readable -> `themes`: the WCAG controls first (black on white 21, equal colours 1, #767676 on white >= 4.5, #777777 < 4.5); light then dark: matchMedia false then true; the body background differs; the contrast of the body text on its background and of the intro text on its effective background (walked up the parents, laid over white) >= 4.5 in both.",
+        "4 the keyboard alone -> `keyboard`: after the load only press (Tab, Shift+Tab, Enter, Space) and one reload of the kit (decisions/0109 O5), no mouse call; the control: before the first Tab the body has the focus and no ring; every control reached by Tab has a visible ring (style not none and width above 0, or a shadow; for a radio its option row counts); Enter on start -> question 1 with the focus on its title inside [data-screen=\"question\"] and #live = the progress line «Вопрос 1 из N»; Space chooses the first option and the storage has it at once; next -> question 2 (same checks); Tab to the number field and to back, Enter -> question 1 with the answer kept; the reload shows continue and restart; Tab to restart, Enter -> question 1, nothing checked, localStorage.length 0.",
+        "5 answers kept and only for their tenant -> `storage`: the controls of the rule «no free text, no contact data» first; answers 1-3 and next; a reload shows «Продолжить» and no start button; continue opens question 4 («Вопрос 4 из N»); the keys of localStorage (a pass over length and key(i)) are exactly [sai-picker:uchet-pro]; the value has exactly format, version, lang, current, answers: format 1, version 64 hex = the questionnaire version (not searched for digits, F31), lang ru, current = the id of question 4, answers = the three given and each valid by the questionnaire; JSON of {lang, current, answers} has no @ and no run of 7 digits, the whole value no @; sessionStorage empty, no cookie; back x3 shows the three answers; with a decoy key, restart leaves exactly [decoy].",
+        "6 tenants kept apart (Q8) -> `isolation`, for uchet-pro/svet-marketing and agency/stock: the texts of A not in B (name, intro, titles, helps, units, option labels) number at least 10 (49 and 23; control); after A's full pass, the card of B shows none of them and no solution name of A, offers no continue, and the storage keys are [sai-picker:<A>]; B's questionnaire answer (the network record of the page) and B's result answer after B's own leader pass hold no text of A as a string value and no solution name of A (issue I1); A's leader set POSTed to B gives 400 with an error and no solution name of A; stop() gives {code: 0}, and the stderr of the server has no stack line.",
+        "7 a bad address (Q10, state unchanged) -> `not found`: the hasStack controls first; /t/net-takogo/, /t/UCHET-PRO/, /t/uchet-pro/%00 and / through Chrome each 404 with the line «Страница не найдена. / Бет табылмады. / Page not found.» in the page text; /t/%2e%2e/ by node:http, the sent path asserted to be exactly that string, 404 with the line; the five sha256 equal, and the card document's differs (control); the four 404 lines are declared with their path and the favicon line once, and the kit fails anything else; the card still opens; stop() gives {code: 0}; no stack on stderr.",
+        "8 a server that goes away (Q10) -> `no connection`: answers up to the last question; the stored value read; stop() gives {code: 0}; «Показать результат» shows [data-kind=\"result\"] with «Нет связи. Ваши ответы сохранены. Попробуйте ещё раз.» and «Повторить» holding the focus, on the question screen; the stored value is the same byte for byte; «Повторить» with the server still down shows the same block, the value is still the same; exactly two console lines of the refused request (declared with its path, decisions/0109 O4), and nothing else (the kit).",
+        "9 the new office stand -> `v3`: agency and stock x 1470x784 light and 390x844 dark, each on a fresh tab: the card with the h1 = name; a full pass with leader of demo-answers-v3/<id>.json to the result; the body = {answers: leader}; the answer = a direct POST (200).",
+        "10 time and independence -> by command (C-7, no timing assertion in the spec): `npm run -s e2e -- picker | tail -n 1` (exit=0, duration_ms 17002, 16997, 17118 <= 80000); the loop of REQ-104 criterion 7 (9 of 9); the grep for skip words (no line); traces lines naming the spec 0; and the edited scans E2K-50 (SCANNED holds picker.e2e.js), E2K-41 (80000), E2K-60 (startStand, withStand, 80000, the row picker.e2e.js | REQ-105); the order check of section 13.",
+        "supporting 7, 8, 10 (decisions/0109 O6) -> E2S-01..E2S-20 in tools/test/e2e-stand.test.js (no browser, part of npm test): start and stop (01), option checks and the timeout range (02), state folders (03), a program that cannot start: a missing cwd, a spawn that throws (N19), a child without pipes (04), the environment with the two platform names (05), exit before the link and a close with no exit (06), the start limit (07), a foreign link and a group that took no part (08), code 1 after SIGTERM with 'after SIGTERM' (09, N20), SIGTERM ignored (10), one promise and the ends 'on its own' with codes 5 and 0 (11, O14), noisy output (12), the group SIGTERM seen by the child and the final SIGKILL (13, N18), no timer outlives (14), withStand with the self-attachment and the frozen error (15), the five exits of a spec process (16), the real picker (17), the runner's net (18), the words and files (19), the stack mode (20)."
+      ],
+      "quality_bar": {
+        "Q5": "met: every criterion 1-9 has its test named by the criterion, criterion 10 its commands; the failure tests check the state: storage byte equality (no connection), the five hashes and the card still opening (not found), registrations, folders, processes and spawn counts (E2S-02..13).",
+        "Q6": "met: no skip, todo, turned-off rule or '|| true' (E2K-50 over picker.e2e.js, E2S-19 over the four starter files and itself; the grep of criterion 10 finds no line).",
+        "Q7": "met: no key in any file (secret shapes scanned by E2K-50 and E2S-19); the stand gets the named list only (E2S-05); the stored answers hold no contact data (storage).",
+        "Q8": "met: isolation, both tenant pairs (page, network answers, storage, a foreign set refused).",
+        "Q10": "met: not found, no connection, and the starter's failure paths E2S-04..13; every wait has a limit.",
+        "Q11": "not applicable: the visitor gives no address that the server visits; the kit opens only 127.0.0.1 (REQ-104), and the starter refuses a link that is not of 127.0.0.1 (E2S-08).",
+        "R3": "not applicable: the product with photos was dropped (decisions/0033).",
+        "R2": "not applicable: no Pixel Office event is written."
+      }
+    },
+    "changes": [
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "test": "E2K-50 (section 12 row 1, sub-step 3)",
+        "was": "ENV_NAMES = SAI_CHROME, PATH, TMPDIR, SAI_FAKE_CHROME_MODE, SAI_FAKE_CHROME_LOG, SAI_FIXTURE_PIDFILE",
+        "became": "the same plus TEMP, TMP, LANG, LC_ALL, TZ, SystemRoot (the base list of 4.1), with a two-line comment; the prohibitions are unchanged: three files may read the whole environment, a computed key only in cleanup.js, NODE_TEST_CONTEXT only in runner.js, the unscanned-fixtures rule"
+      },
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "test": "E2K-41 (row 2, sub-step 3)",
+        "was": "the README section holds duration_ms, 30000, 240000",
+        "became": "duration_ms, 30000, 80000, 240000"
+      },
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "test": "E2K-60 (row 3, sub-step 3)",
+        "was": "the tokens up to REQ-107 and the smoke row",
+        "became": "plus the tokens startStand, withStand, 80000 and assert.match of the row /^\\|\\s*picker\\.e2e\\.js\\s*\\|\\s*REQ-105\\s*\\|$/mu"
+      },
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "test": "E2K-50 SCANNED (row 1, sub-step 4a, in the same change as the file)",
+        "was": "walk(KIT), run.js, smoke.e2e.js, this file, fake-chrome.js",
+        "became": "plus path.join(E2E, \"picker.e2e.js\")"
+      },
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "counts": "test( 59 (tag 59); assert. 535 (tag 534); 52 top-level tests as before; git diff against the tag: 15 lines in, 1 out"
+      },
+      {
+        "file": "tools/test/e2e-stand.test.js",
+        "new": "E2S-01..E2S-20 (20 top-level tests, 200 assert.), its own temporary root, waits for facts with limits, kills from the stand-in log in finally and stops its own stands in finally (stopQuietly; failureOf stops a stand that should not have started), a deps.spawn that holds the exit event until the child logged child-term (E2S-13, issue I2), the long-timer start of E2S-02 and the default-timer start of E2S-14 in a child process (stopInChild)"
+      },
+      {
+        "file": "tools/test/fixtures/e2e-stand/specs/sleep-stand.e2e.js",
+        "new": "the plain spec of E2S-18: starts the stand-in through the kit, writes the spec and stand pids into SAI_FIXTURE_PIDFILE (the stand-in logs next to it), waits 60 s or blocks its event loop with SAI_FIXTURE_BLOCK=1"
+      },
+      {
+        "file": "tools/test/e2e/picker.e2e.js",
+        "new": "the nine tests in the order of 4.4 (matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3), 137 assert., each with { timeout: 30000 }, its own stand (withStand) and browser (withBrowser), the favicon line declared once per start; helpers written with their first test (4a: pickerStand, readJson, getJson, directPost, startFresh, answerAll, resultRecord, the WCAG table and contrast, the colour page code; 4b: atQuestion, the focus and ring page code, tabTo, the storage page code, the contact rule; 4c: answerUpToLast, until, the strings of a questionnaire, exclusiveStrings, stringValues, solutionNames, assertNothingOf, rawGet, sha256, hasStack, lostNetBlock)"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "date -u; git rev-parse --short HEAD and base/E2E105-20261105-01; shasum -a 256 of the starter, its export file, the stand-in, the README and tools/test/e2e-kit.test.js; git diff --stat of tools against the tag",
+        "output": "2026-11-08T19:34:19Z; both 4f41032; stand.js aba66b015fbd57f5, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab (-rwxr-xr-x), README.md d4d0b664b90ad40d (the hashes of step 04e), e2e-kit.test.js c97b11d90db600b6 = the tag (test( 59, assert. 534); against the tag only README.md and kit/index.js differ (stand.js, fake-stand.js and the design are new)"
+      },
+      {
+        "command": "LEFT of design section 16 before the work: ps -axo pid=,command= | grep -E 'src/picker/cli\\.js serve|fake-stand\\.js|sai-e2e-' | grep -v grep | wc -l; ls <tmp> | grep -c '^sai-e2e-'",
+        "output": "0 processes, 0 folders; node processes: only the ten old ones (two 'node stand.js', eight 'node -e setInterval'), not mine"
+      },
+      {
+        "command": "sub-step 3, from tools/: npx prettier --write and npx eslint --max-warnings 0 on the three files; node --test test/e2e-stand.test.js; node --test test/e2e-kit.test.js test/e2e-stand.test.js",
+        "output": "prettier wrote, eslint exit 0; e2e-stand.test.js: # tests 20 # pass 20 # fail 0 # duration_ms 16495; both files: # tests 72 # suites 0 # pass 72 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 34811 (the figure of section 14: 52 + 20); LEFT 0/0 before and after"
+      },
+      {
+        "command": "sub-step 4a (matrix, pass, themes and the SCANNED entry): npm run -s e2e -- picker; the independence loop (<scratch>/e2e105t/loop.sh: the names printed by node --test --test-reporter=tap, each by --test-name-pattern=\"^<name>$\", exit 0, exactly one line starting 'ok ', and it is 'ok 1 - <name>'); node --test test/e2e-kit.test.js test/e2e-stand.test.js",
+        "output": "exit=0, ok 1 - matrix, ok 2 - pass, ok 3 - themes, duration_ms=12202 (a cold Chrome; then 7632 and 7681); loop: 3 names, 0 failed; kit files 72 / 72 / 0"
+      },
+      {
+        "command": "sub-step 4b (keyboard, storage): npm run -s e2e -- picker; the loop",
+        "output": "exit=0, 5 tests 5 pass, duration_ms=10079; loop: 5 names, 0 failed"
+      },
+      {
+        "command": "sub-step 4c (isolation, not found, no connection, v3): npm run -s e2e -- picker; the loop; node --test test/e2e-kit.test.js test/e2e-stand.test.js",
+        "output": "exit=0, 9 tests 9 pass, duration_ms=17081 (matrix 3142, pass 2984, themes 1048, keyboard 1096, storage 1206, isolation 2424, not found 1421, no connection 1015, v3 2191 ms); loop: 9 names, 0 failed; kit files # tests 72 # pass 72 # fail 0 # skipped 0 # todo 0"
+      },
+      {
+        "command": "before writing isolation: the real server of each pair through startStand; the texts of A not in B; which of them stand inside B's own questionnaire and result answers; the solution names of A",
+        "output": "uchet-pro/svet-marketing: 49 texts of A only; inside svet-marketing's questionnaire: ['человек'] (the unit of uchet-pro); inside its leader result: none; 15 solution names of A, none shared, none inside B's answers; A's leader set to B: 400 {\"error\":\"answers_invalid\",…,\"question\":null}. agency/stock: 23 texts of A only; inside stock's questionnaire: none; inside its leader result: ['Обучение'] (an option of agency); 12 solution names of A, none shared or inside; A's set to B: 400 answers_invalid (issue I1)"
+      },
+      {
+        "command": "the mutant series: <scratch>/e2e105t/clone = git clone -b base/E2E105-20261105-01, the eight work files copied in (cmp: equal), the modules of tools/ copied; control on the unmutated clone (the three files); then python3 mutants.py <ids> (one APFS copy per mutant, the edit asserted, the tests run, LEFT after each run)",
+        "output": "control: picker.e2e.js 9 pass 0 fail, e2e-stand.test.js 20 / 0, e2e-kit.test.js 52 / 0. 70 runs: design list 55 (P 25, S 22, R 8): 54 caught by the test the design names, S22 survives (on record); own T01-T11 all caught; variants S20b, R02b, R07b caught; P06a a no-op (issue I4). After every run: 0 processes killed, 0 folders removed (the table in result.mutants)"
+      },
+      {
+        "command": "the working tree before and after the series: git ls-files -co --exclude-standard | xargs shasum -a 256 (2540 files) at 20:03Z and again at the end of the series; cmp of the eight work files with the clone that the final series used",
+        "output": "the only difference is tools/test/e2e-stand.test.js (be3f92f203bb7f63 -> 1fc0812d688efb91), my own edits between the chunks (issues I2, I3, I6); the eight work files of the project = those of the clone; no mutant copy left (m/ empty)"
+      },
+      {
+        "command": "stress of the first form of E2S-13 (child-term read after stop()): 6 copies of node --test test/e2e-stand.test.js at once and 8 loops of 25 runs of E2S-13 alone, at the same time",
+        "output": "full files: 5 of 6 green, 1 red (not ok 13 - E2S-13); E2S-13 alone: 172 green, 28 red, all 'actual [] expected [<child pid>]' on child-term (issue I2)"
+      },
+      {
+        "command": "stress after the hold of the exit event (deps.spawn) in E2S-13: (A) 6 full copies with 8 x 25 E2S-13; (B) 8 full copies with 8 x 25 E2S-13; then, after the wait for the link lines in E2S-01 and E2S-17 (issue I3): (C) 3 rounds of 8 full copies; (D) 2 rounds of 8 full copies with 8 x 25 runs of E2S-13 and E2S-17",
+        "output": "(A) 6 of 6 full green, 200 of 200 E2S-13 green; (B) 7 of 8 full green, the one red E2S-17 ('uchet-pro', the link line not yet read, issue I3), 200 of 200 E2S-13 green; (C) 24 of 24 full green (20 pass each); (D) 16 of 16 full green, 400 of 400 runs green (E2S-13 and E2S-17 each 400 ok). E2S-13 after the hold: 854 runs, 0 red. LEFT 0/0 after every round"
+      },
+      {
+        "command": "the final e2e-stand.test.js (sha256 1fc0812d688efb91): node --test test/e2e-stand.test.js; node --test test/e2e-kit.test.js test/e2e-stand.test.js; the loop over its 20 names",
+        "output": "20 / 20 / 0, duration_ms 16551; 72 / 72 / 0 / skipped 0 / todo 0; loop: 20 names, 0 failed"
+      },
+      {
+        "command": "the order check of section 13, from tools/: ls test/e2e/*.e2e.js | sed … | sort -r; npm run -s e2e -- smoke picker; npm run -s e2e -- picker smoke; npm run -s e2e -- picker picker",
+        "output": "smoke, picker (last to first, not the alphabetical order). smoke picker: exit=0, e2e: file= smoke then picker, e2e: browser= once, last line 'e2e: command=npm run e2e -- smoke picker selection=smoke,picker exit=0 duration_ms=34734'. picker smoke: exit=0, picker then smoke, 'e2e: command=npm run e2e -- picker smoke selection=picker,smoke exit=0 duration_ms=34308'. picker picker: exit=1, 'e2e: error=SELECTION_DUPLICATE: the spec file \"picker\" is given twice', 'e2e: command=npm run e2e -- picker picker selection=picker,picker exit=1 duration_ms=1'"
+      },
+      {
+        "command": "durations: npm run -s e2e -- picker (three runs); npm run -s e2e",
+        "output": "e2e: command=npm run e2e -- picker selection=picker exit=0 duration_ms=17002 / 16997 / 17118; e2e: command=npm run e2e selection=all exit=0 duration_ms=34063 (file=picker, file=smoke)"
+      },
+      {
+        "command": "criterion 10 on the final spec: the loop over the nine names; grep -nE '\\.skip\\(|\\.todo\\(|\\|\\| true' tools/test/e2e/picker.e2e.js; npm run -s traces | grep -c 'tools/test/e2e/picker'",
+        "output": "loop: 9 names, 0 failed (each 'ok 1 - <name>'); grep: no line (exit 1); traces lines naming the spec: 0"
+      },
+      {
+        "command": "counts: test( and assert. per file (grep), against the tag for the released file",
+        "output": "e2e-kit.test.js: test( 59 (tag 59), assert. 535 (tag 534), 52 top-level tests; e2e-stand.test.js: 20 top-level tests, 200 assert.; picker.e2e.js: 9 top-level tests, 137 assert.; sleep-stand.e2e.js: 1 test. tools/src, package.json, package-lock.json, run.js, smoke.e2e.js: git diff --quiet against the tag; the kit, the stand-in and the README equal the step 04e hashes"
+      },
+      {
+        "command": "cd tools && npm run check (all six steps)",
+        "output": "2026-11-08T21:01:01Z to 21:05:39Z, exit=0. format:check: All matched files use Prettier code style!; lint: no output; traces: файлов проверено 2473, следов 0, пропущено 67; handoffs-check: файлов проверено 1334, нарушений 0, исключений использовано 114 из 114; test: # tests 2207 # suites 0 # pass 2207 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 231895 (the figure of section 14 after sub-step 4a: 2187 + 20); e2e: e2e: browser=Chrome/156.0.8078.80, file=picker 9 / 9 / 0 (duration_ms 16646), file=smoke 13 / 13 / 0, last line 'e2e: command=npm run e2e selection=all exit=0 duration_ms=34794'"
+      },
+      {
+        "command": "after the check, from tools/: npm run -s format:check; npm run -s lint; npm run -s traces | tail -1; npm run -s handoffs-check | tail -1",
+        "output": "Checking formatting... All matched files use Prettier code style! (exit 0); lint exit 0, no output; traces: файлов проверено 2473, следов 0, пропущено 67; handoffs-check: файлов проверено 1334, нарушений 0, исключений использовано 114 из 114"
+      },
+      {
+        "command": "at the end: ps of node and Chrome processes; LEFT; the sai-* folders of the temporary root by kind, and those made by one npm run check",
+        "output": "node processes: only the ten old ones; no Chrome with a sai-e2e- profile; LEFT 0 processes, 0 folders. sai-stand-test-*: 1 (of 2026-11-05, not mine; my file removes its own root, 0 made by the check); made by the one npm run check of this step: sai-wf06 195, sai-outside 5, sai-snap 2, sai-flaky 1 (released test files cli.test.js, flaky-regression.test.js, helpers.js; issue I11)"
+      },
+      {
+        "command": "after this result was written, before close: JSON.parse of this handoff; a search of it for the paths of this computer; cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1",
+        "output": "JSON valid (19 self_check entries before this one, 11 issues, 70 rows of the mutant table, 4 files in artifacts_out); paths of this computer 0; handoffs-check: файлов проверено 1334, нарушений 0, исключений использовано 114 из 114; traces: файлов проверено 2473, следов 0, пропущено 67"
+      }
+    ],
+    "mutants": {
+      "how": "Each mutant was applied in its own APFS copy of <scratch>/e2e105t/clone (a fresh clone of base/E2E105-20261105-01 with the eight work files copied in and the modules of tools/), never in the working tree; the edit was asserted to match its text exactly the expected number of times and to change the file; the full spec (P), the full e2e-stand.test.js (S, T) or the named tests (R) were run; the red top-level tests are listed; LEFT and the temporary folders were checked after every run (0 processes and 0 folders to remove after all 70 runs); the copy was deleted. The S, T, R03 and R07b rows are from the run on the final e2e-stand.test.js (sha256 1fc0812d688efb91); the P rows and the other R rows ran on the same spec, which did not change after its series.",
+      "totals": "Design list (section 16): 55 mutants, P 25, S 22, R 8: 54 caught by the test the design names (P06 in its two-place form, I4; S19 caught by E2S-13, I2), 1 survivor on record (S22, I5). Own: T01-T11 (the code changes since the design, and the wide form of S22), all 11 caught; variants S20b (a start without pid registers it), R02b (a sandbox flag in the spec), R07b (hasStack with \\s in e2e-stand.test.js), all caught; P06a a no-op on record (I4). 70 runs.",
+      "table": [
+        "P01 the page does not set html lang (3 places) -> red (2): matrix, pass; the catcher of the design: matrix; caught by the named test; 14.4 s; processes killed after the run 0, folders removed 0",
+        "P02 the dark block of page.css switched off -> red (2): matrix, themes; the catcher of the design: themes; caught by the named test; 16.0 s; processes killed after the run 0, folders removed 0",
+        "P03 a panel with a minimum width of 420 px -> red (1): matrix; the catcher of the design: matrix; caught by the named test; 14.3 s; processes killed after the run 0, folders removed 0",
+        "P04 dark text colour set to a dark value -> red (1): themes; the catcher of the design: themes; caught by the named test; 16.4 s; processes killed after the run 0, folders removed 0",
+        "P05 the focus ring of buttons, fields and option rows removed (outline: none) -> red (1): keyboard; the catcher of the design: keyboard; caught by the named test; 16.2 s; processes killed after the run 0, folders removed 0",
+        "P06a (first form of P06, a no-op: the lookup lower-cased only; the route refuses capitals before the lookup, so no request reaches it) -> red (0): none; the catcher of the design: none named; survived; 16.8 s; processes killed after the run 0, folders removed 0",
+        "P07 the 404 body repeats the path -> red (1): not found; the catcher of the design: not found; caught by the named test; 16.3 s; processes killed after the run 0, folders removed 0",
+        "P08 the stored value gets a sixth field (phone) -> red (1): storage; the catcher of the design: storage; caught by the named test; 16.4 s; processes killed after the run 0, folders removed 0",
+        "P09 «Начать заново» clears the whole storage -> red (1): storage; the catcher of the design: storage; caught by the named test; 16.4 s; processes killed after the run 0, folders removed 0",
+        "P10 the answers are wiped when the network fails -> red (1): no connection; the catcher of the design: no connection; caught by the named test; 16.5 s; processes killed after the run 0, folders removed 0",
+        "P11 the page asks for the result in Russian whatever the language -> red (1): pass; the catcher of the design: pass; caught by the named test; 15.7 s; processes killed after the run 0, folders removed 0",
+        "P12 the focus is not moved to the result heading -> red (1): pass; the catcher of the design: pass; caught by the named test; 14.6 s; processes killed after the run 0, folders removed 0",
+        "P13 every tenant address returns the first tenant -> red (7): matrix, pass, storage, isolation, not found, no connection, v3; the catcher of the design: isolation; caught by the named test; 7.2 s; processes killed after the run 0, folders removed 0",
+        "P06 a tenant id is looked up in lower case and the route accepts capitals -> red (1): not found; the catcher of the design: not found; caught by the named test; 16.1 s; processes killed after the run 0, folders removed 0",
+        "P14 the server answers the favicon with 204 -> red (9): matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3; the catcher of the design: matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3; caught by the named test; 15.6 s; processes killed after the run 0, folders removed 0",
+        "P15 the server exits with code 1 after SIGTERM -> red (9): matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3; the catcher of the design: matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3; caught by the named test; 15.2 s; processes killed after the run 0, folders removed 0",
+        "P16 the server writes a stack to stderr on a 404 -> red (2): isolation, not found; the catcher of the design: isolation, not found; caught by the named test; 15.5 s; processes killed after the run 0, folders removed 0",
+        "P17 the live region is never written -> red (1): keyboard; the catcher of the design: keyboard; caught by the named test; 16.2 s; processes killed after the run 0, folders removed 0",
+        "P18 the focus is not moved to the question title -> red (1): keyboard; the catcher of the design: keyboard; caught by the named test; 16.1 s; processes killed after the run 0, folders removed 0",
+        "P19 the Russian lost-net text changed -> red (1): no connection; the catcher of the design: no connection; caught by the named test; 16.3 s; processes killed after the run 0, folders removed 0",
+        "P20 the public look of a tenant of format /3 throws -> red (2): isolation, v3; the catcher of the design: v3, isolation; caught by the named test; 13.5 s; processes killed after the run 0, folders removed 0",
+        "P21 a hidden answer is sent: setAnswer keeps hidden answers and bodyAnswers returns the raw answers -> red (1): pass; the catcher of the design: pass; caught by the named test; 16.3 s; processes killed after the run 0, folders removed 0",
+        "P22 the Kazakh page asks for the Russian questionnaire -> red (2): matrix, pass; the catcher of the design: matrix; caught by the named test; 13.9 s; processes killed after the run 0, folders removed 0",
+        "P23 the start button 25 rem wide (the page's own selector) -> red (1): matrix; the catcher of the design: matrix; caught by the named test; 14.5 s; processes killed after the run 0, folders removed 0",
+        "P24 setAnswer keeps the answer of a hidden question (pruned only for the request) -> red (1): pass; the catcher of the design: pass; caught by the named test; 16.4 s; processes killed after the run 0, folders removed 0",
+        "P25 the dark block applies only to windows of 400 px and wider -> red (1): matrix; the catcher of the design: matrix; caught by the named test; 16.4 s; processes killed after the run 0, folders removed 0",
+        "R01 the README row of picker.e2e.js removed -> red (1): E2K-60; the catcher of the design: E2K-60; caught by the named test; 0.1 s; processes killed after the run 0, folders removed 0",
+        "R02 a skip word put into picker.e2e.js -> red (2): E2K-50, grep(1 lines); the catcher of the design: E2K-50; caught by the named test; 0.4 s; processes killed after the run 0, folders removed 0",
+        "R02b a sandbox flag put into picker.e2e.js -> red (1): E2K-25; the catcher of the design: E2K-25; caught by the named test; 0.4 s; processes killed after the run 0, folders removed 0",
+        "R04 matrix runs 17 combinations -> red (1): matrix; the catcher of the design: matrix; caught by the named test; 3.0 s; processes killed after the run 0, folders removed 0",
+        "R05 pass drops the Kazakh pass -> red (1): pass; the catcher of the design: pass; caught by the named test; 2.1 s; processes killed after the run 0, folders removed 0",
+        "R06 the contrast formula uses 0.5 in place of 0.05 -> red (1): themes; the catcher of the design: themes; caught by the named test; 0.1 s; processes killed after the run 0, folders removed 0",
+        "R07 hasStack of the spec uses \\s -> red (1): not found; the catcher of the design: not found; caught by the named test; 0.1 s; processes killed after the run 0, folders removed 0",
+        "R08 the raw request goes through fetch -> red (1): not found; the catcher of the design: not found; caught by the named test; 1.1 s; processes killed after the run 0, folders removed 0",
+        "S01 the exit code is not checked in stop() -> red (3): E2S-09, E2S-11, E2S-15; the catcher of the design: E2S-09; caught by the named test; 16.5 s; processes killed after the run 0, folders removed 0",
+        "S02 no SIGKILL to the group after the main process ended (only after a timeout) -> red (1): E2S-13; the catcher of the design: E2S-13; caught by the named test; 19.9 s; processes killed after the run 0, folders removed 0",
+        "S03 the stop timer is not cleared -> red (2): E2S-02, E2S-14; the catcher of the design: E2S-14; caught by the named test; 32.9 s; processes killed after the run 0, folders removed 0",
+        "S04 stderr is not read after the link -> red (2): E2S-12, E2S-20; the catcher of the design: E2S-12; caught by the named test; 32.8 s; processes killed after the run 0, folders removed 0",
+        "S05 the link is not passed through assertLoopbackUrl -> red (3): E2S-01, E2S-08, E2S-17; the catcher of the design: E2S-08; caught by the named test; 15.6 s; processes killed after the run 0, folders removed 0",
+        "S06 the state folders are checked after the spawn -> red (1): E2S-03; the catcher of the design: E2S-03; caught by the named test; 16.8 s; processes killed after the run 0, folders removed 0",
+        "S07 the group is not registered (registerGroup) -> red (3): E2S-01, E2S-16, E2S-18; the catcher of the design: E2S-16; caught by the named test; 20.8 s; processes killed after the run 0, folders removed 0",
+        "S08 the stand is not noted for the runner (noteBrowserForRunner) -> red (1): E2S-18; the catcher of the design: E2S-18; caught by the named test; 21.8 s; processes killed after the run 0, folders removed 0",
+        "S09 a start timeout does not kill the process -> red (1): E2S-07; the catcher of the design: E2S-07; caught by the named test; 21.8 s; processes killed after the run 0, folders removed 0",
+        "S10 the child gets the whole environment -> red (2): E2S-05, E2S-19; the catcher of the design: E2S-05; caught by the named test; 16.7 s; processes killed after the run 0, folders removed 0",
+        "S11 the kept text is not cut -> red (1): E2S-12; the catcher of the design: E2S-12; caught by the named test; 16.8 s; processes killed after the run 0, folders removed 0",
+        "S12 stop() is not idempotent -> red (2): E2S-11, E2S-15; the catcher of the design: E2S-11; caught by the named test; 15.8 s; processes killed after the run 0, folders removed 0",
+        "S13 withStand throws the stop error over the body error -> red (1): E2S-15; the catcher of the design: E2S-15; caught by the named test; 16.4 s; processes killed after the run 0, folders removed 0",
+        "S14 a pattern with the flag g is accepted -> red (1): E2S-02; the catcher of the design: E2S-02; caught by the named test; 16.6 s; processes killed after the run 0, folders removed 0",
+        "S15 the marker folder is not removed -> red (19): E2S-01, E2S-02, E2S-03, E2S-04, E2S-05, E2S-06, E2S-07, E2S-08, E2S-09, E2S-10, E2S-11, E2S-12, E2S-13, E2S-14, E2S-15, E2S-16, E2S-17, E2S-18, E2S-20; the catcher of the design: E2S-01; caught by the named test; 9.3 s; processes killed after the run 0, folders removed 0",
+        "S16 no SIGKILL after the stop timeout -> red (1): E2S-10; the catcher of the design: E2S-10; caught by the named test; 19.9 s; processes killed after the run 0, folders removed 0",
+        "S17 an exit before the link is reported as a timeout (the close is not listened to) -> red (1): E2S-06; the catcher of the design: E2S-06; caught by the named test; 26.6 s; processes killed after the run 0, folders removed 0",
+        "S18 stdout is not read after the link -> red (1): E2S-12; the catcher of the design: E2S-12; caught by the named test; 27.8 s; processes killed after the run 0, folders removed 0",
+        "S19 SIGTERM to the leader only, then the final SIGKILL to the group -> red (1): E2S-13; the catcher of the design: E2S-13; caught by the named test; 21.8 s; processes killed after the run 0, folders removed 0",
+        "S20 a start that has no pid waits for the group of that pid (3 s) -> red (1): E2S-04; the catcher of the design: E2S-04; caught by the named test; 34.8 s; processes killed after the run 0, folders removed 0",
+        "S20b a start that has no pid registers it -> red (14): E2S-04, E2S-05, E2S-06, E2S-07, E2S-08, E2S-09, E2S-10, E2S-11, E2S-12, E2S-13, E2S-15, E2S-17, E2S-18, E2S-20; the catcher of the design: E2S-04; caught by the named test; 10.8 s; processes killed after the run 0, folders removed 0",
+        "S21 the start timer is not cleared after the link -> red (2): E2S-02, E2S-14; the catcher of the design: E2S-14; caught by the named test; 37.7 s; processes killed after the run 0, folders removed 0",
+        "S22 CLEANUP_FAILED no longer wins over STAND_EXIT (only that precedence changed) -> red (0): none; the catcher of the design: none named; survived; 16.8 s; processes killed after the run 0, folders removed 0",
+        "T01 (own, N20) STAND_EXIT always says 'on its own' -> red (2): E2S-09, E2S-15; the catcher named here: E2S-09; caught by the named test; 16.5 s; processes killed after the run 0, folders removed 0",
+        "T02 (own, N19) the marker is left after a spawn that throws -> red (18): E2S-02, E2S-03, E2S-04, E2S-05, E2S-06, E2S-07, E2S-08, E2S-09, E2S-10, E2S-11, E2S-12, E2S-13, E2S-14, E2S-15, E2S-16, E2S-17, E2S-18, E2S-20; the catcher named here: E2S-04; caught by the named test; 10.2 s; processes killed after the run 0, folders removed 0",
+        "T03 (own, 04b L3) an env value with a NUL is accepted -> red (1): E2S-02; the catcher named here: E2S-02; caught by the named test; 16.6 s; processes killed after the run 0, folders removed 0",
+        "T04 (own, 04e L5) the upper bound 2147483647 of the timeouts is dropped -> red (1): E2S-02; the catcher named here: E2S-02; caught by the named test; 16.6 s; processes killed after the run 0, folders removed 0",
+        "T05 (own, 04e F5) a close with no exit reads the end without the guard -> red (14): E2S-06, E2S-07, E2S-08, E2S-09, E2S-10, E2S-11, E2S-12, E2S-13, E2S-14, E2S-15, E2S-16, E2S-17, E2S-18, E2S-20; the catcher named here: E2S-06; caught by the named test; 10.5 s; processes killed after the run 0, folders removed 0",
+        "T06 (own, 04b L2) the stop error is attached to itself -> red (1): E2S-15; the catcher named here: E2S-15; caught by the named test; 16.6 s; processes killed after the run 0, folders removed 0",
+        "T07 (own, 04b I4) the assignment of cleanupError is not protected -> red (1): E2S-15; the catcher named here: E2S-15; caught by the named test; 16.7 s; processes killed after the run 0, folders removed 0",
+        "T08 (own, 04b M1) a group that took no part is not refused (undefined link) -> red (12): E2S-08, E2S-09, E2S-10, E2S-11, E2S-12, E2S-13, E2S-14, E2S-15, E2S-16, E2S-17, E2S-18, E2S-20; the catcher named here: E2S-08; caught by the named test; 10.7 s; processes killed after the run 0, folders removed 0",
+        "T09 (own, O14) a stand that ended by itself with code 0 passes stop() -> red (1): E2S-11; the catcher named here: E2S-11; caught by the named test; 16.8 s; processes killed after the run 0, folders removed 0",
+        "T10 (own, 04b L1) the pipes are touched without the guard (a child without pipes) -> red (16): E2S-04, E2S-05, E2S-06, E2S-07, E2S-08, E2S-09, E2S-10, E2S-11, E2S-12, E2S-13, E2S-14, E2S-15, E2S-16, E2S-17, E2S-18, E2S-20; the catcher named here: E2S-04; caught by the named test; 10.3 s; processes killed after the run 0, folders removed 0",
+        "T11 (own) STAND_EXIT checked first of all, also before STAND_STOP_TIMEOUT, with a shorter message (the first, wider form tried as S22) -> red (4): E2S-09, E2S-10, E2S-11, E2S-15; the catcher named here: none named; caught; 16.1 s; processes killed after the run 0, folders removed 0",
+        "R03 stand.js reads the whole environment -> red (3): E2K-50, E2S-05, E2S-19; the catcher of the design: E2K-50, E2S-05, E2S-19; caught by the named test; 0.3 s; processes killed after the run 0, folders removed 0",
+        "R07b hasStack of e2e-stand.test.js uses \\s -> red (1): E2S-20; the catcher of the design: E2S-20; caught by the named test; 0.2 s; processes killed after the run 0, folders removed 0"
+      ]
+    },
+    "durations": {
+      "npm run -s e2e -- picker": "duration_ms 17002, 16997, 17118 (three runs; limit 80000, the line of section 7 is 48000); 17081 at the 4c check",
+      "npm run -s e2e (both files)": "duration_ms 34063 (picker then smoke); the order check: smoke picker 34734, picker smoke 34308",
+      "node --test test/e2e-stand.test.js": "16.5 s alone (20 of 20)",
+      "node --test test/e2e-kit.test.js test/e2e-stand.test.js": "34.8 s (72 of 72)",
+      "per test of the spec (4c run)": "matrix 3142, pass 2984, themes 1048, keyboard 1096, storage 1206, isolation 2424, not found 1421, no connection 1015, v3 2191 ms",
+      "npm run check": "2026-11-08T21:01:01Z to 2026-11-08T21:05:39Z (4 min 38 s): npm test duration_ms 231895, e2e record duration_ms 34794"
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Design section 8 row 6 (and criterion 6 of the block): 'B's questionnaire answer and B's result answer hold none of them' is false on the correct server when read as a substring test. Measured with the real server (<scratch>/e2e105t, a node script through startStand, before writing the test): uchet-pro -> svet-marketing: 49 texts of A only, and one of them, the unit «человек», stands inside svet-marketing's own questionnaire text; agency -> stock: 23 texts of A only, and the option label «Обучение» stands inside stock's own result for its leader set. Both are common words, not data of A. The test therefore checks the JSON answers by whole string values (no string value of B's answer equals a text of A) and keeps the substring test for the page text of B's card and for the solution names of A (multi-word names; 15 and 12, none shared with B, none a substring of B's answers, measured). A page or server that serves A's questionnaire to B gives A's texts as whole values: mutant P13 is red in isolation (and 6 more tests). For DOC-UPDATER: section 8 row 6 and 4.4 exclusiveStrings, and the wording 'hold none of them' of criterion 6 as an outdated wording; Q13 candidate (a substring oracle over short texts is false on common words)."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "N18 in the form the task gives (E2S-13 reads child-term after stop()) is a race on the stand-in as it is: the starter sends SIGKILL to the group as soon as the main process has ended, and the child may not have run its SIGTERM handler yet. Measured under load (6 full copies of the file and 8 loops of E2S-13 at once): 28 of 200 runs of E2S-13 alone and 1 of 6 full runs red with 'actual [] expected [<child pid>]'. Without changing the stand-in or the starter (task), E2S-13 now gives the starter, through deps.spawn (for the tests only, design 4.1), the real child whose 'exit' event is passed on only when the child has logged child-term or after 5000 ms: the final SIGKILL can only come later, never earlier, so S02 is still red (CLEANUP_FAILED) and S19 is red (no child-term, after the 5 s). After the change: 854 runs of E2S-13 under the same and a heavier load, 0 red (details in self_check). Consequence for section 16: S19 is caught by E2S-13, not a survivor; the only survivor of the design's list is S22. For DOC-UPDATER: section 11.1 E2S-13 and section 16 rows S19; Q13 candidate (an event that a child logs in a SIGTERM handler races the SIGKILL that follows the end of its parent: wait for the event before the starter may go on, never for a stretch of time)."
+      },
+      {
+        "id": "I3",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "A race of my own test, found by the stress run and removed before the series was rerun: startStand resolves at the first line that matches the pattern (for the picker the first link, svet-marketing), and the next lines can come in a later chunk of the pipe, so stand.stdout() right after the start may lack them: E2S-17 was red once in 8 full runs under load ('uchet-pro'). E2S-17 and E2S-01 now wait for the line as a fact (limit 5000 ms). After it: 40 full runs under load and 400 runs of E2S-13 and E2S-17 alone, 0 red. Not a defect of the starter (it promises the link, not the later lines). Q13 candidate: the start of a stand ends at its link, not at the end of its output."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "Mutant P06 as worded ('a tenant id is looked up in lower case and accepts capitals') needs two edits: the lookup alone (my first form, P06a in the table) changes nothing a request can see, because the route refuses an id with capitals before the lookup (TENANT_ID of src/picker/limits.js, used by routeOf in request.js), and no test is red. The form that also lets the route take capitals is red in not found (/t/UCHET-PRO/ answers 200). For DOC-UPDATER and for TEST-DESIGN-VALIDATOR: section 16 row P06 names both places."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "S22 (CLEANUP_FAILED no longer wins over STAND_EXIT, only that precedence changed) survives, as the design and decisions/0109 O13 record it (not testable with Node alone; REVIEWER read it). My first, wider form of it (STAND_EXIT before every other check, also before STAND_STOP_TIMEOUT, with a shorter message) is kept in the table as the own mutant T11: red in E2S-09, E2S-10, E2S-11, E2S-15, which pins the message and the place of STAND_STOP_TIMEOUT."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Test-side choices beyond the words of 11.1, all inside the write set and the design's intent, for DOC-UPDATER (section 11.1 rows): (a) E2S-02 also proves the two bounds of the timeouts are taken (1 and 2147483647 reach the spawn) and starts one real stand with both timeouts at 2147483647 in a child process (a timer that stayed armed would hold the test process for 24 days; in the child it turns E2S-02 red after 3000 ms instead, see S03 and S21); the refused options still spawn 0 times; (b) E2S-14 uses the same child helper; (c) every test stops its own stands in finally, so a test that fails half-way leaves no marker and no registration for the tests after it (in the first run of the series S05 and S07 turned 19 tests red by that cascade; now 3 each); a mutant that leaks a registered folder or group in the test process itself (S15, S20b, T02, T05, T08, T10) still turns the later tests red, honestly; (d) E2S-05 compares the exact environment the starter hands to spawn (a deps.spawn that records it and calls the real spawn) besides the names the child logs: the base names the parent has, the given names, a given LANG over the parent's."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Reading of criterion 4 'the element that holds the focus after every change of screen is inside the new [data-screen]': after a load or a reload the page leaves the focus on the body (F15, F17; it is the control 'the body has no ring'); the test asserts the rule on the changes made by keys (start, next, back, restart) and that the first Tab on the card lands inside [data-screen=\"card\"]."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Not mine and left alone: a folder sai-stand-test-lvEDJb of 2026-11-05 in the temporary root of the system (from an earlier step of this run; the LEFT check does not see it, its pattern is sai-e2e-), and the ten old processes (two 'node stand.js' with a working folder outside the project, eight 'node -e setInterval'). Every process this step started was ended by its pid or ended by itself; LEFT 0 processes and 0 sai-e2e- folders before and after every run."
+      },
+      {
+        "id": "I9",
+        "kind": "NOTE",
+        "text": "Q13 candidates for DOC-UPDATER besides I1-I3: (a) a mutant that never reaches the changed code is a no-op, not a survivor: check that the mutated value is reachable (P06a); (b) a test that arms a timer of 24 days in its own process turns a 'timer not cleared' mutant into a hang of the whole file; start such a stand in a child process with a limit on its end (S03 hit the 240 s limit of my harness in the first run); (c) a test that fails half-way must stop what it started, or every later test fails on its leftovers and the red list stops telling which test caught the mutant."
+      },
+      {
+        "id": "I10",
+        "kind": "NOTE",
+        "text": "Facts of the task checked before the work: base/E2E105-20261105-01 = HEAD = 4f41032; stand.js aba66b015fbd57f5, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab (mode 0755, with the mode quit-later), README d4d0b664b90ad40d are the hashes of step 04e; e2e-kit.test.js was equal to the tag (59 test(, 534 assert.); the block REQ-105 has ten criteria; the README row of picker.e2e.js and the starter paragraph exist. tools/src, package.json, package-lock.json, run.js, smoke.e2e.js, the kit and the stand-in are unchanged against the tag and the step 04e files. The status of this handoff was set to IN_PROGRESS at the start. No commit, push or pull; docs/program/public-v1/PROGRESS.md not touched."
+      },
+      {
+        "id": "I11",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "Outside this work, not fixed (quality-bar §6 item 6): released test files leave folders in the temporary root of the system on every npm test. One npm run check of this step made 195 sai-wf06-*, 5 sai-outside-*, 2 sai-snap-* and 1 sai-flaky-* (counted with find -newer against the start of the check); the root now holds 4680 sai-wf06-*, 120 sai-outside-*, 48 sai-snap-*, 24 sai-flaky-*. The names stand in tools/test/cli.test.js, tools/test/flaky-regression.test.js and tools/test/helpers.js. No folder is in the project and the LEFT check (sai-e2e-) does not see them. The files of this step leave none (their own root is removed in after: 0 sai-stand-test-* made). Importance Low (disk litter); ORCH decides whether DOC-UPDATER opens a defect."
+      }
+    ],
+    "prototype": "<scratch>/e2e105t (the scratch folder of the session; nothing of it is in the project): clone/ (the fresh clone of the tag with the work files and modules), mutants.py (the harness and the 70 edits), results.jsonl and out/<id>.txt (the result and the raw output of every mutant run), results-superseded.jsonl and out-superseded/ (the S and T runs on the earlier forms of e2e-stand.test.js), table.py, loop.sh (the independence loop), stress/ (the load runs), tree-before.txt, tree-after.txt, tree-after2.txt (sha256 of every file of the working tree before and after the series), the outputs of the sub-step checks, the order check, the durations and npm run check.",
+    "artifacts_out": [
+      "tools/test/e2e-kit.test.js",
+      "tools/test/e2e-stand.test.js",
+      "tools/test/fixtures/e2e-stand/specs/sleep-stand.e2e.js",
+      "tools/test/e2e/picker.e2e.js"
+    ]
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "handoff_id": "step01e-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "01e",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/E2E105-20261105-01/step-01e-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-01d-code-design-validator.json (pass 2: FAIL, remarks N12-N17 in result)",
+      "handoffs/E2E105-20261105-01/step-01b-code-design-validator.json (pass 1 remarks N1-N11)",
+      "docs/design/REQ-105-e2e-picker.md",
+      "decisions/0109-e2e-stand-conventions.md"
+    ],
+    "route": "CODE-DESIGNER (this, rework 2) -> CODE-DESIGN-VALIDATOR (pass 3, the last allowed) -> BACKEND-DEV -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/design/REQ-105-e2e-picker.md only"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-01d-code-design-validator.json"
+  },
+  "task": {
+    "description": "WF-02, step 01e — second rework of the design of REQ-105 after the second FAIL of the gate CODE-DESIGN-VALIDATOR. The next pass is the THIRD and the LAST allowed: a third FAIL stops the run for the owner. So do not only close the two remarks; remove the whole KIND of mistake. Remarks (read the details in the result of the rework-of handoff): N12 (Medium) E2S-19 lists picker.e2e.js but the file exists only from sub-step 4a, so E2S-19 fails with ENOENT after sub-step 3 — the same mistake as N3 one test further; N13 (Medium) the fix of mutant S02 does not work as written: the with-child child writes no readiness signal and E2S-13 has no wait, so the group SIGTERM kills the child before its handler is installed (S02 survived 6 of 6 on a starter, stand-in and test built from the TEXT; with a 400 ms wait it was caught 3 of 3) — the design needs a readiness signal from the child (a line or a file) and E2S-13 must wait for it, with a bounded wait and no sleep guess (AP-144 and ISS-0103: wait for a fact, not for a time); N14 the figures at sub-steps 1-2 are 52 tests, 51 pass, 1 fail (e2e-stand.test.js and E2S-17 do not exist yet); N15 the order CLEANUP_FAILED over STAND_EXIT is untestable — give it a row in section 16 as 'not testable, read by REVIEWER' with the reason; N16 section 18 shows stale prototype paths; N17 survivors Q15 and S19 are informational — say so in section 16. THE KIND OF MISTAKE to sweep, by reading the whole design again with a pencil: (1) every test, table and check that names a file or a function: does that file/function exist at the sub-step where the test is first counted? Make one table 'test x first sub-step at which it can run' and fix every row that disagrees with section 14; (2) every claim that a mutant is caught: could a test written ONLY from the text of the design catch it, with nothing from your sketch (hidden waits, inline commands, a long-lived parent, a warm cache)? For each caught-claim, write down in the design what the test must wait for and what it must hold, and re-run the mutant in a sketch built only from the text; (3) every number: the counts of tests, mutants, sub-steps, the red-after column — recount with a command and write the command. Sketches outside the project; every process you start must be ended by explicit pid and checked with ps at the end. The task text and the design hold no absolute machine paths and no names of the owner's other projects (do not even list them as examples).",
+    "acceptance_criteria": [
+      "N12-N13 closed and re-proved with sketches built only from the text",
+      "N14-N17 closed",
+      "Table: test x first sub-step, consistent with section 14",
+      "All counts recounted with commands",
+      "No process left behind"
+    ]
+  },
+  "created_at": "2026-11-04T21:35:40Z",
+  "started_at": "2026-11-04T21:35:40Z",
+  "completed_at": "2026-11-04T22:29:12Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Second rework of docs/design/REQ-105-e2e-picker.md after the second FAIL of CODE-DESIGN-VALIDATOR (remarks N12-N17), and a sweep of the whole KIND of mistake. N12 closed: E2S-19 now lists four files that exist from sub-step 3 (stand.js, fake-stand.js, sleep-stand.e2e.js, its own file) and picker.e2e.js is covered by E2K-50 (SCANNED entry, sub-step 4a) and E2K-25 (flags); the sweep found a second reader of the spec, E2S-20 (it compared sources with the spec), and it now reads no other file. N13 closed: the child of with-child writes {child-ready} to the log and 'ready' to its parent after it has installed the SIGTERM-ignoring handler, the parent prints the link only after that, E2S-13 reads the log and the live pid before stop() and has no sleep; a starter, a stand-in and a test written from the text alone catch S02 in 8 of 8 runs, and the text before the rework (link at once) leaves S02 green 3 of 3. N14: the figures are measured without a dummy file (sub-steps 1-2: 52 tests, 51 pass, 1 fail; 3 and 4a: 72/72; full suite 2187/2186/1 and 2207/2207/0) and BACKEND-DEV gets two checks of its own. N15: S22 is on record as not testable, read by REVIEWER. N16: section 18 fixed. N17: S19 named equivalent, Q15 informational. Sweep beyond the remarks: table 14.1 'test x first sub-step' (built by reading every file each test opens and checked in four states); the 22 starter mutants run against the text-built stack, which corrected three catcher claims (S01 was given E2S-17, which is green under it; R02 was given E2S-19, and E2K-25 does not scan skip words; S08 is caught only by the blocked case of E2S-18) and added two mutants that had none (S20 start without pid, S21 start timer); waits that the text did not state were written down (waiting rule of 11.1: E2S-06/07/08/11/14/16/18); P22 and P23 applied; all counts recounted with commands (F42): 55 mutants (53 with a catcher, 2 survivors on record).",
+    "changes": [
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "header, section 0",
+        "what": "rework note for step 01e; findings (k) readiness of a child and (l) a test may read only files of its own sub-step or earlier [N12, N13]; replacement-table bullet and sizes re-stated with the measured figures and 55 mutants [N14]; the statement about the working tree corrected (record 0109 and its README line are there now)"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 1 (checked facts)",
+        "what": "F21 and F37 rewritten without the dummy test file (2187/2186/1, 2207/2207/0; 52/51/1, 72/72/0) [N14, N3]; F36 marked superseded; new rows F38 (S02 from the text alone, with and without readiness) [N13], F39 (E2S-19 first form red at S3, new form green; R01-R03 runs) [N12], F40 (the sweep of the catchers, S20, S21) , F41 (P22, P23), F42 (every count with its command)"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 4.3",
+        "what": "events child-ready and start-first; the --child form installs the handler, logs child-ready, writes 'ready'; the with-child row: parent waits for 'ready' (5 s, exit 4) and prints the link only after it; note that the normal SIGTERM handler is not same-tick; 'Used by' of ok completed [N13]"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 4.4, section 8 criterion 7",
+        "what": "hasStack controls (three texts) asserted at the start of 'not found' so the spec's own definition is tested (mutant R07 in the spec) [sweep]"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 11.1",
+        "what": "waiting rule (facts with limits, the three elapsed-time assertions, kill by pid in finally); helper assertNothingRegistered; E2S-01/04/06/07/08/09/11/13/14/16/17/18 rewritten with what each waits for and holds; E2S-19 four files and a statement of who scans picker.e2e.js [N12]; E2S-20 reads no other file [N12]; the Mutants column corrected (S20, S21; E2S-17 no longer a catcher of S01) [sweep]"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 12 row 8",
+        "what": "E2K-25 scans the sandbox flags only; skip words are E2K-50's [N12, F39]"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 14 and new 14.1",
+        "what": "sub-step tables re-written: figures per state, BACKEND-DEV's two own checks, full-suite figures, helpers written with the first test that uses them (lint stays clean) [N14]; new table 14.1 'test x the first sub-step at which it can run', one row per test with the files it reads [N12]"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 15 (Q6, Q13)",
+        "what": "Q6 names who scans which file; Q13 gets three traps of the second gate [N12, N13, F40]"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "section 16",
+        "what": "rewritten: meaning of 'applied' (a stack built from the text), S01-S22 with real catchers and statuses, S19 equivalent [N17], S20 and S21 new, S22 survivor on record [N15], P22 and P23 applied, R01-R03 applied, R07 in both places, counts 55 / 53 / 2 / 51 / 4, survivors-on-record paragraph [N15, N17]"
+      },
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "sections 18, 19.1, 19.2, 20",
+        "what": "section 18 names the old and final place of the stand-in and lists the sketches of all reworks [N16]; 19.1 N3, N4, N8 rows annotated; new 19.2 closing N12-N17 and the five sweep items; section 20 lists the new sketches"
+      }
+    ],
+    "self_check": [
+      "date -u: 2026-11-04T21:38Z at the start of the rework, 2026-11-04T22:27Z near the end; node v22.23.4 macOS arm64; Google Chrome 156 (kit); remarks read: step-01d N12-N17 and I5, step-01b N1-N11 for context; decisions/0109 read (its text agrees: 20 starter tests, three released tests edited, named env properties)",
+      "fresh clones of the tag (git clone -b base/E2E105-20261105-01 of the repository, HEAD 4f41032, node_modules copied from the earlier clone): <scratch>/e2e105/c1e (stack written from the design text alone) and <scratch>/e2e105/c1s (states S1, S2, S3, S4a); no git checkout/reset/stash/clean was used anywhere",
+      "git show base/E2E105-20261105-01:docs/requirements.yaml | awk '/- id: REQ-105/{f=1;next} f&&/^  - id:/{exit} f' | grep -c '^      - >-'  ->  10",
+      "text-built stack (stand.js from 4.1, fake-stand.js from 4.3 with the new readiness, e2e-stand.test.js from 11.1): cd tools && node --test --test-reporter=spec test/e2e-stand.test.js  ->  # tests 20, # pass 20, # fail 0 (README of the state S2 present; with the README of the tag E2S-19 is the one red, as the table 14.1 says)",
+      "N13: python3 mut_e.py S02 (mutant: no SIGKILL to the group after the main process ended) run 8 times (1 + 3 + 1 + 3 over the session): red every time, 'E2S-13' (the child alive until the finally of the test killed it). With the stand-in that prints the link without waiting for the child (the text before the rework) and the readiness assertion taken out of the test: S02 green in 3 of 3 (only E2S-19, which needs the README of S2, was red). The stand-in started by hand in with-child: link printed; log events [start, env, child-ready, child]",
+      "N14 states (python3 sk/states.py <state>, node --test on the kit files): S1 and S2: '# tests 52 # pass 51 # fail 1', red E2K-50 ('test/e2e/kit/stand.js: reads TEMP'); S1 with the missing test/e2e-stand.test.js on the command line: the same 52/51/1; S3 (six names, 80000, tokens, e2e-stand.test.js, sleep-stand.e2e.js): '# tests 72 # pass 72 # fail 0'; S3 with the SCANNED entry and no picker.e2e.js: '# pass 71 # fail 1' E2K-50 ENOENT; S4a: '# tests 72 # pass 72 # fail 0'",
+      "N14 full suite: cd tools && npm test in c1s at S2 -> '# tests 2187 # pass 2186 # fail 1 # skipped 0 # todo 0', duration_ms 225509, only 'not ok 136 - E2K-50'; at S4a -> '# tests 2207 # pass 2207 # fail 0 # skipped 0 # todo 0', duration_ms 238626",
+      "N12: the first form of E2S-19 (four files + picker.e2e.js) alone: S3 -> 'ENOENT ... tools/test/e2e/picker.e2e.js', # fail 1; S4a -> # pass 1. The new form: green at S3 and S4a",
+      "BACKEND-DEV check (a) extracted from the design file and run in c1s: cd tools && node --input-type=module -e '...startStand(picker)...'  ->  200 Учёт-Про {\"code\":0,\"signal\":null} \"\"  and exit 0, then no picker process left",
+      "starter mutants against the text-built stack (python3 mut_e.py, one run each, red tests read): S01 E2S-09,11,15 (not E2S-17); S02 E2S-13; S03 E2S-14; S04 E2S-12; S05 E2S-08 (+ cascade); S06 E2S-03; S07 E2S-16,18; S08 E2S-18 (blocked case only); S09 E2S-07; S10 E2S-05; S11 E2S-12; S12 E2S-11; S13 E2S-15; S14 E2S-02; S15 E2S-01 (+ cascade); S16 E2S-10; S17 E2S-06; S18 E2S-12; S19 survives (exit 0); S20 E2S-04; S21 E2S-14; S22 survives (exit 0). Mutants that leak (S05, S07, S08, S09, S16) were killed by pid by the harness after each run",
+      "R-mutants in c1s at S4a: skip word in picker.e2e.js -> E2K-50 red only; sandbox flag there -> E2K-25 red only; README row removed -> E2K-60 red; stand.js given the whole environment -> E2K-50, E2S-05, E2S-19 red; hasStack with \\s vs [ \\t] in node: 'note, empty line, at start' right false / mutant true",
+      "P22, P23: sk/s18.mjs (matrix oracle of section 8 on the real server and Chrome): clean -> GREEN; P22 (kk asks for the ru questionnaire) -> RED 6 (all kk); P23 (start button min-width 25rem) -> RED 24 (390 and 320); the copy was restored (diff -q)",
+      "cleanup.js exit codes claimed in section 5 row 11, run in c1s: SIGTERM -> 143, SIGINT -> 130, SIGHUP -> 129, process.exit(3) -> 3, uncaught throw -> 1, stand gone every time",
+      "counts: spec tests (sed range over 4.4 | grep -c) 9; grep -c '^| E2S-' 20; sub-steps (sed range over 14 | grep -cE) 7; grep -c '^| О' 12; grep -c '^| F[0-9]' 42; section 16 rows 55 (P 25, S 22, R 8); design      643 lines, sha256 prefix 247940430966b276 (final); the write set is the design file only: git status --short shows besides it only the files ORCH changed before this step (decisions/README.md, docs/requirements.yaml status line, docs/program/public-v1/PROGRESS.md, decisions/0109) and the handoffs",
+      "hygiene: grep -nE '/Users/|/private/|/tmp/' on the design -> 0 lines; grep -ciE for the names of the owner's other projects -> 0; grep -c three-backtick fences -> 0; cd tools && npm run -s traces | tail -1 -> 'traces: файлов проверено 2455, следов 0, пропущено 67'; npm run -s handoffs-check | tail -1 -> 'нарушений 0' (see the final line of this list for the run after the close)",
+      "processes: every sketch process was started and ended by its harness or by explicit pid (stand-ins killed by pid, the by-hand with-child stand-in 39144 and its child 39146 by kill -9); final ps for 'src/picker/cli.js serve|fake-stand.js|sai-e2e-' -> 0; the eight old 'node -e setInterval' processes (pids 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481, parent 1, started 2026-11-03) are not mine and were left; the owner's VS Code processes were left. Left behind (files, not processes): 75 empty folders sai-outside-* in the system temporary root made by killed mutant runs of the sketch test; an attempt to delete them was refused by the permission system and was not worked around"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Remarks N12-N17: all six closed in the design (19.2). Beyond them the sweep found and fixed: E2S-20 read the spec (same kind as N12); the catcher claims S01-E2S-17 and R02-E2S-19 were false; E2K-25 scans only the sandbox flags; N8 and the start timer had no mutant (S20, S21); E2S-11/06/07/08/14/16 had waits the text did not state; the working-tree statement in the header was stale. What I did NOT build from the text: the spec picker.e2e.js (the gate built one for 20 product mutants; I applied P22, P23 with a matrix oracle); R04, R05, R06, R08 mutate the spec itself and stay 'to apply' for TEST-DESIGN-VALIDATOR."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "For ORCH (answers I5 of the gate): S22, the order CLEANUP_FAILED over STAND_EXIT, is left as 'not testable, read by REVIEWER' (section 16). The alternative, an injected group-signal dependency in deps (a wider interface for one rule), is not in the design. Default used: the reading by REVIEWER; no record needed unless ORCH wants the injected form."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Anti-pattern candidates for DOC-UPDATER (Q13, also in section 15): (a) a fix of one reader of a file must look for every reader of it (N3 fixed E2K-50, E2S-19 and E2S-20 read the same not-yet-existing file); (b) a mutant that needs another process to have done something is caught only if that process says it has: a readiness signal, not a sleep, and a sketch that waited without the text carrying it proves nothing; (c) a 'caught by' claim that was not run on a stack written from the text is a guess (S01 was given a test that is green under it); (d) an existing guard (E2K-25) was assumed to scan more than it does: read the guard, not its name (AP-094)."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Facts the next steps may need: the full npm test takes about 225-240 s on the developer machine (two runs); under the mutants the starter test file takes 15-35 s; a red E2S test of a mutant that leaks (S05, S07, S08, S09, S16) leaves a stand-in process until killed by pid - the final tests should kill the pids they learned from the log in a finally (stated in the waiting rule of 11.1), as the sketch test did not for S05."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Left behind: 75 empty folders sai-outside-* in the system temporary root, made by killed runs of my sketch test file (not by the design: E2S-03 of the design makes no folder outside the root). The permission system refused a bulk delete in the shared temporary folder; I did not try another way. They are plain empty directories, harmless to the check LEFT (it looks for sai-e2e-). The eight old setInterval processes are still there, not mine."
+      }
+    ],
+    "prototype": {
+      "where": "<scratch>/e2e105/ (the session scratch folder, outside the project)",
+      "contents": "c1e/ (fresh clone of the tag; stand.js, kit index export, fixtures/e2e-stand/fake-stand.js, fixtures/e2e-stand/specs/sleep-stand.e2e.js and test/e2e-stand.test.js written from the design text alone) with mut_e.py (the starter mutant harness; it restores stand.js after each mutant and kills leaked stand-ins by pid), stand.js.orig, mut_e.out and mut_e2.out (results); c1s/ (fresh clone in which sk/states.py sets the states S1, S2, S3, S3-with-SCANNED, S4a and the old form of E2S-19; sk/edits2.py makes the e2e-kit.test.js edits; README.md.s2 is the README of section 10), full_s2.txt and full_s4a.txt (full npm test outputs, with .time files), states2.out; mutp/ (copy of tools/ for P22, P23) with sk/s18.mjs (matrix oracle); o1.txt, o2.txt (first runs of the text-built test file); old19.test.js (first form of E2S-19); earlier sketches of the first pass and the first rework are kept (clone/, sk/s1-s17, c1c/). None of it is part of the project; no process is running from it."
+    },
+    "artifacts_out": [
+      "docs/design/REQ-105-e2e-picker.md"
+    ]
+  }
+}

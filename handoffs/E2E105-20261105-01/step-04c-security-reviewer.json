@@ -1,0 +1,160 @@
+{
+  "handoff_id": "step04c-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "04c",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/E2E105-20261105-01/step-04c-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-04b-code-fixer.json (the fixes and their proofs)",
+      "handoffs/E2E105-20261105-01/step-03-security-reviewer.json (your pass 1: PASS with F1-F4)",
+      "handoffs/E2E105-20261105-01/step-04-reviewer.json (REVIEWER pass 1: FAIL, M1 = your F3)",
+      "decisions/0109-e2e-stand-conventions.md (addenda O13-O16)",
+      "tools/test/e2e/kit/stand.js, tools/README.md (the diff against the tag base/E2E105-20261105-01)"
+    ],
+    "route": "SECURITY-REVIEWER + REVIEWER (this pair, pass 2 of at most 3) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the gate reads; trials go outside the project)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-03-security-reviewer.json"
+  },
+  "task": {
+    "description": "WF-02, step 3, pass 2 of at most 3 — the security gate again, after CODE-FIXER step 04b changed tools/test/e2e/kit/stand.js and the starter paragraph of tools/README.md (the fixes of M1 = F3, L1, L2, L3, I4 of your pass 1 and F1). Check the whole starter again on the current files, not only the diff: (a) re-run your own hostile trials of pass 1 (environment, link, state folders, spawn, signals, messages) on the current code; (b) prove that F3 is fixed (a pattern whose group takes no part ends in URL_REFUSED with the stand cleaned up: group gone, registration and marker removed, no TypeError) and that F1 is now said truthfully in the comment and the README; (c) check that the fixes made no new hole (the explicit outcome field, the listener order, the try/catch around cleanupError). F2 and the HOME default are the precondition of REQ-106 (decisions/0109 O15), and F4 is a defect at step 10 (O16): do not fail this pass for them, but say if O15 and O16 describe them truly. Known Low items you may judge: the timeout options given 0 say 'must be a whole number of milliseconds' (I3 of step 04b); the README says the child gets 'nothing else' while the platform adds a variable or two of its own (I5 of step 04b). For each item Q7-Q11, R2, R3 give 'met' or 'not applicable' with your own check. Verdict PASS or FAIL with findings (severity, the line, a one-sentence fix). Task text and report hold no absolute machine paths and no names of other projects of the owner. Do not edit any project file except this handoff; do not commit or push.",
+    "acceptance_criteria": [
+      "Pass-1 trials re-run on the current code",
+      "F3 and F1 proved fixed, no new hole",
+      "Verdict PASS or FAIL with findings"
+    ]
+  },
+  "created_at": "2026-11-08T18:45:57Z",
+  "started_at": "2026-11-08T18:45:57Z",
+  "completed_at": "2026-11-08T19:02:18Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-02 step 3, pass 2 of at most 3 (step 04c), on the current files after CODE-FIXER step 04b: the whole starter tools/test/e2e/kit/stand.js read again (449 lines; changed since step 02b: the outcome kind, the listener order, the L3 message, the F1 comment, withStand), the starter paragraph of tools/README.md (line 844), index.js and fake-stand.js unchanged since pass 1 (same hashes), the tag base/E2E105-20261105-01 = 4f41032 = HEAD. Verdict PASS: F3 and F1 (its home-folder statement) are fixed and proved; the fixes opened no new hole for a real child process; two Low findings remain (F5, F6); F2 and F4 stand as decisions/0109 O15 and O16 record them, and both addenda describe them truly (one addition for O15, issue I1).\n\nMAP OF SURFACES (23 files now: the 20 of pass 1 and the handoffs 04b, 04c, 04d): as in pass 1. stand.js: 'comes from outside' (the output of the child, the options of the caller), 'writes files' (the marker folder and the runner record), signals to process groups, the environment of the child, the address a browser opens; tools/README.md: documentation, its security sentences checked again; index.js and fake-stand.js: unchanged since pass 1; decisions/0109 (addenda O13-O16), the new handoffs and the other documents: no surface (Q7 search). tools/src: 0 files changed against the tag; the nine other kit files equal those of the tag.\n\nPROOF OF THE FIXES. F3: trial 11 on a fresh clone of the tag holding the current files (<scratch>/e2e105s/clone2): five pattern shapes whose one group takes no part or captures nothing (an optional group, a group in the other alternative, a group inside a non-capturing alternative, an optional group that matches at once on the first chunk, an empty group) each end in URL_REFUSED of the kit ('refused to open \"[undefined]\": ...' or '\"\"'), with the stand's group gone, nothing registered, the marker and the runner record removed, no TypeError and no unhandled rejection; a normal start works after them; trial 4 (section 6) asserts the same. Control: the same trial on the step-02b clone of pass 1 (<scratch>/e2e105s/clone) fails 22 of 25 checks, the four no-part shapes with 'TypeError: Cannot read properties of null (reading 'signal')' and four stands left alive until the exit handler (killed then, checked by pid). F1: the comment (stand.js:26-29) now says that the server gets no HOME variable and that Node finds the home folder through the system's list of users, and the README (line 844) says the same; both are true: in trial 1 (A) the child has no HOME variable and its os.homedir() is the real home folder; in trial 1 (B) a HOME given by the caller is taken. The side point of the pass-1 F1, the README's 'nothing else', is not changed: F6.\n\nNO NEW HOLE. (1) The explicit outcome field: the kind is set only by the code; the child's text goes only into 'text' and through assertLoopbackUrl, so output cannot choose a branch; with a real child every kind ends in an error of the kit and the same clean-up (link refused: 31 cases of trial 2 and 5 of trial 11; error: a missing cwd, E2BIG, a pipeless child, a real EMFILE; timeout: 2 refused cases and 8 floods; exited: STAND_START_EXITED in trial 6). The 'exited' branch still reads state.exit without a guard: a child that emits close with no exit, which only an injected deps.spawn can produce (with Node's spawn, error comes before close on a failed spawn and exit before close otherwise), gives a raw TypeError and skips the clean-up (trial 12): F5, Low. (2) The listener order: the error listener stands before any access to the pipes; a real EMFILE (the descriptor table filled) gives STAND_START_FAILED 'EMFILE' in 2 ms with no crash, nothing registered and no marker left (on the step-02b code a TypeError and the marker left until exit); a pipeless child through deps.spawn (EMFILE, ENFILE) the same at once; a child process that runs this case ends 1 ms after its last line (no armed timer); normal starts still read the link from the first byte (48 accepted cases of trial 2, the split-chunk and multi-byte cases, 1 MB before the link); the registration block right after spawn is unchanged (stand.js:299-304; the runner record exists for the life of the stand, trial 1 A). (3) The try/catch around cleanupError: in all eight cases (a frozen, a sealed, a read-only cleanupError, a Proxy whose set throws, a plain error, a string, null, undefined) the body value is rethrown as the same value and the stand is gone; a plain body error still gets the stop error as cleanupError; a body that awaited the failing stop() itself gets no cleanupError of itself; a good body with a failing stop gets the stop error. When the body error cannot take the property, a failure of stop() is reported nowhere (before 04b so for non-objects; for a frozen error pass 1 lost the body error instead): issue I4, informational.\n\nITEMS. Q7 - applicable, met: the 3619 lines the run has added by now (the '+' lines against the tag and the untracked files, the new handoffs and the addenda of 0109 included) hold no secret shape (a GitHub token, an sk- key, a private key block, a cloud key id, a chat bot token, a JWT, a URL with user info) and no key word followed by a value: 0 and 0; the 48 key-word lines were read one by one, all prose (for example the variable name TOKEN of a message under test, 'secret shapes', 'the tokens of E2K-41'); the 40 page files (unchanged): 0 secret shapes; the environment of the child (trial 1, 65 of 65): the base list, the given names, macOS's own __CF_USER_TEXT_ENCODING and Node's own NODE_V8_COVERAGE when the parent has it, none of the 13 leak names; the 143 messages of the pass-2 trials hold no environment value, no PATH and no path of node (trial 6). Q8 - not applicable: no data access is added or changed (tools/src unchanged). Q9 - not applicable: 0 hits for queries in the three code files. Q10 - applicable, met (F5 Low, test seam only): every failure with a real child gives an error of the kit and a clean state, every wait has a limit, the floods end at the start timer (3024-3028 ms for 3000 ms, event-loop lag at most 4 ms), and the bad ends of a spec process remove the stand (trial 9). Q11 - not applicable as the rule for outbound addresses: the starter calls no address, and only http://127.0.0.1:<port>/... is accepted (trial 2, 83 of 83: 28 refused forms, 15 accepted forms checked by my own text oracle). R2 - met for this change: no Pixel Office event is written, invented or read, tools/src/pixel-office is unchanged, the stands listen only on 127.0.0.1 (trial 7). Forward: a stand without HOME still computes the real <home>/.sai-pixel-office, and stateDirs is not tied to env (trial 8, 5 of 5, the real folder untouched) - recorded by O15. R3 - not applicable (decision 0033).\n\nO15 AND O16. O15 describes F1 and F2 truly: no HOME variable, but the real home folder found by Node (trial 1 A, trial 8); stateDirs checked but not bound to the env variables the server reads (trials 3 and 8); REQ-105 needs neither (no write call and no homedir in tools/src/picker; trial 7); its remedy (a private temporary home folder for every stand; state folders only through checked pairs) closes both. One door it does not name: a folder can also reach the server through its arguments - main.js of Pixel Office takes --dir <absolute path> - so REQ-106 should also check or forbid folder arguments (issue I1). O16 describes F4 truly: a group number stays registered until stop(), the exit handler or the sweep, and a reused number would get SIGKILL, in cleanup.js, browser.js and stand.js; trial 5 (D, E) reproduces it on the current code (stand.js:199, 206 and 359-365 not changed by 04b). Its words 'the same two shapes ... are fixed in this run' are the two shapes of REVIEWER's I2 (the pipes read before the error listener, an error attached to itself), both fixed in stand.js (trial 11), not F4.\n\nKNOWN LOW ITEMS JUDGED. I3 of step 04b (a timeout of 0 refused with '... must be a whole number of milliseconds'): the refusal is right (USAGE, 0 spawns, trial 4), only the words are imprecise; not a security item (issue I4). I5 of step 04b (the README's 'nothing else'): F6, Low.\n\nTRIALS of pass 2, all outside the project (scripts in <scratch>/e2e105s/trials, results in <scratch>/e2e105s/results-p2): the pass-1 trials re-run on the current code - environment 65/65, link 83/83 (the four floods that hit the argument limit in pass 1 run in the timing trial), timing 9/9, state folders 38/38, spawn 41/41, signals 20/20, the real picker and the stand-in 11/11, the R2 computation 5/5, bad ends of a spec process 7/7, messages 16/16, and the small behaviours (the frozen body error now kept; 2^31 ms still a 1 ms timer that fails fast); new - trial 11 (the fixes) 28/28, its control on the step-02b code 3 of 25, a real EMFILE on both codes, trial 12 (a child that emits close alone). 323 checks in all on the current code, every one as expected. Leftovers: LEFT 0 processes and 0 folders; at the end only the ten node processes that were there before the check (two 'node stand.js' of 2026-11-07, eight 'node -e setInterval' of 2026-11-03).\n\nThe task named no expected verdict (AP-018). The files under review did not change during the check (self_check).",
+    "findings": [
+      {
+        "id": "F5",
+        "severity": "Low",
+        "item": "Q10 (a failure gives an error of the kit and a clean state); AP-014: the sibling branch of F3",
+        "place": "tools/test/e2e/kit/stand.js:390-396 (the 'exited' branch: exitInfoOf(state.exit), state.exit.code, state.exit.signal)",
+        "what": "The branch still reads state.exit without a guard. A child that emits close with no exit - possible only through deps.spawn (with Node's spawn, error comes before close on a failed spawn and exit before close otherwise) - makes startStand throw a raw TypeError ('Cannot read properties of null (reading 'signal')') and skip abortStart, so the marker stays and, with a pid, the group stays registered until the exit handler (trial 12: pid undefined -> 1 marker left; pid 999999 -> 1 group registered and 2 markers). No effect with a real child; it can trip a test of TEST-DESIGNER that injects a fake child (issue I3).",
+        "fix": "Build STAND_START_EXITED from 'state.exit ?? { code: null, signal: null }' (or let exitInfoOf accept null), so this branch too ends with an error of the kit and abortStart."
+      },
+      {
+        "id": "F6",
+        "severity": "Low",
+        "item": "Q7 (what reaches the child) - precision of the README statement; the side point of the pass-1 F1, left by step 04b (its I5)",
+        "place": "tools/README.md:844 ('... and what the spec gives, nothing else (no HOME unless the spec gives it; ...)')",
+        "what": "Two names reach the child that are neither in the base list nor given by the spec: macOS adds __CF_USER_TEXT_ENCODING to every process, and Node itself copies NODE_V8_COVERAGE from the parent when it is set (trial 1 A on the current code: LANG, LC_ALL, NODE_V8_COVERAGE, PATH, TEMP, TMP, TMPDIR, TZ, __CF_USER_TEXT_ENCODING). Neither holds a secret (one is set by the system for every process, the other exists only when the developer turned coverage on), so the sentence is imprecise, not a leak.",
+        "fix": "Add a clause such as '(the platform may add its own: __CF_USER_TEXT_ENCODING on macOS, and NODE_V8_COVERAGE when the spec process has it)' without removing any existing word."
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      {
+        "command": "date -u +%Y-%m-%dT%H:%M:%SZ at the start; the file list (git diff --name-only base/E2E105-20261105-01 plus git ls-files --others --exclude-standard) and shasum -a 256 of each; compared with the list at the end of pass 1",
+        "output": "2026-11-08T18:46:24Z; 23 files (the 20 of pass 1 and 04b, 04c, 04d). Changed since pass 1: stand.js 9f512e3caabd0de7... -> 9ded9116221ba14f..., tools/README.md c7021795bfbd240e... -> 579da23531a6d1a0..., decisions/0109 d4683ce993e59aef... -> 98c2d40919a4fd64...; step-03 (my own last self_check entries and the close came after the pass-1 snapshot; no orch_check was added); 04b, 04c, 04d new. index.js c5d82a73e599a0e3... and fake-stand.js d3d3cfe959fabaab... unchanged"
+      },
+      {
+        "command": "git rev-parse --short HEAD; git rev-parse --short base/E2E105-20261105-01; git diff --stat base/E2E105-20261105-01 -- tools/; git ls-files --others --exclude-standard tools/; shasum of the nine other kit files against the clone of the tag",
+        "output": "4f41032; 4f41032. tools/README.md | 13 (+8 -5), tools/test/e2e/kit/index.js | +1; new: stand.js, fake-stand.js; cleanup.js, guards.js, errors.js, runner.js, browser.js, page.js, cdp.js, console.js, find-chrome.js: the same as the tag; tools/src: 0 files changed"
+      },
+      {
+        "command": "diff of stand.js and tools/README.md between the step-02b copies of pass 1 (<scratch>/e2e105s/clone) and the project",
+        "output": "stand.js: 26-29 (the F1 comment), 101 (L3 'must be a string without NUL'), 319 (a comment), 323/336/354/370 (the kinds timeout, error, link, exited), 332-358 (the error listener first, the pipes with ?.), 375-384 (the branches by kind; the link branch passes the text to assertLoopbackUrl), 413-415 and 434-445 (withStand); README: line 844 only, two clauses inserted (O14, O15)"
+      },
+      {
+        "command": "git clone -b base/E2E105-20261105-01 <the project> <scratch>/e2e105s/clone2; copy of the four files of the change; shasum -a 256 in the project and in the clone",
+        "output": "the four hashes equal (stand.js 9ded9116..., index.js c5d82a73..., fake-stand.js d3d3cfe9..., README 579da235...)"
+      },
+      {
+        "command": "Q7: the '+' lines of git diff base/E2E105-20261105-01 and the untracked files -> <scratch>/e2e105s/p2-added.txt; the secret shapes (a GitHub token, an sk- key, a private key block, a cloud key id, a chat bot token, a JWT, a URL with user info), a key word followed by a value of 12+ characters, then the lines with the key words secret, token, passw, api key, bearer, credential",
+        "output": "3619 lines; secret shapes: 0; key word with a value: 0; key-word lines: 48, each read: prose (e.g. 'env value of TOKEN must be a string without NUL' - a variable name in a message under test; 'secret shapes'; 'the tokens of E2K-41'; 'its signing secret under the home folder')"
+      },
+      {
+        "command": "Q7, the page files: find tools/src -path '*/public/*' -type f, the same secret shapes; Q9: grep -niE for SELECT/INSERT/UPDATE/DELETE with FROM/INTO/SET/WHERE, sql, .query(, .prepare(, .raw( over stand.js, index.js, fake-stand.js",
+        "output": "40 page files, 0 secret shapes; Q9: 0 hits"
+      },
+      {
+        "command": "cd <scratch>/e2e105s/trials && E2E105_CLONE=clone2 E2E105_RESULTS=results-p2 node t11-fixes.mjs",
+        "output": "== t11-fixes: 28 checks, 28 pass, 0 fail. F3 x5: 'E2eError URL_REFUSED: refused to open \"[undefined]\": only http://127.0.0.1:<port>/... is allowed; gone=true; clean=true' (the empty group: '\"\"'); pipeless EMFILE and ENFILE: 'could not start \"fix\": EMFILE' in 0 ms; the child process with the pipeless case: exit 0, 1 ms after its last line; withStand: the same value rethrown in 8 cases, no self cleanupError, the stop error for a good body; L3 message exact; README O14 cases; the F1 comment text; no unhandled rejection"
+      },
+      {
+        "command": "control: E2E105_CLONE=clone E2E105_RESULTS=results-p2-control E2E105_SKIP_PIPELESS=1 node t11-fixes.mjs (the step-02b code)",
+        "output": "== t11-fixes: 25 checks, 3 pass, 22 fail; the four no-part shapes: 'TypeError undefined: Cannot read properties of null (reading 'signal')'; frozen and sealed: 'TypeError: Cannot add property cleanupError, object is not extensible'; read-only: 'TypeError: Cannot assign to read only property'; the Proxy: 'Error: trap'; L3: the old message; F1: the old comment; the rest red only because the four leaked stands kept the registry dirty; the run ended by its time limit (exit 124) because the leaked stands kept it alive; afterwards the six pids of that run: gone; 0 folders"
+      },
+      {
+        "command": "real EMFILE: (ulimit -n 64; node emfile-child.mjs <kit>) on clone2 and on clone; the child installs the kit's handlers, fills the descriptor table with /dev/null, starts a stand, then closes its descriptors",
+        "output": "current code: {fillers 61427, outcome 'E2eError STAND_START_FAILED: could not start \"fix\": EMFILE', 2 ms, crashed null, groups 0, dirsLeftBeforeExit 0}, exit 0; step-02b code: outcome 'TypeError ... (reading 'setEncoding')', dirsLeftBeforeExit 1, exit 0; 0 folders after both. A first attempt without the handlers installed first made Node abort in SignalWrap (exit 134) - a harness fault, not the starter's"
+      },
+      {
+        "command": "node t12-closeonly.mjs <kit of clone2> (a fake child through deps.spawn that emits close with no exit and no error)",
+        "output": "pid undefined: 'TypeError: Cannot read properties of null (reading 'signal')', groups 0, markers left 1; pid 999999: the same TypeError, groups 1, markers 2; after the process ended: 0 folders (the exit handler) - F5"
+      },
+      {
+        "command": "the pass-1 trials on the current code, each with E2E105_CLONE=clone2 E2E105_RESULTS=results-p2: t1-env.mjs (with the 13 leak variables and the base names set in the parent), t2-link.mjs, t2b-timing.mjs, t3-state.mjs, t4-spawn.mjs, t5-signals.mjs, t7-real.mjs, t8-r2.mjs, t9-orphans.mjs, t10-misc.mjs, then t6-messages.mjs",
+        "output": "t1 65/65 (child keys LANG, LC_ALL, NODE_V8_COVERAGE, PATH, TEMP, TMP, TMPDIR, TZ, __CF_USER_TEXT_ENCODING; os.homedir() without HOME = the real home folder); t2 83/83 (31 refusals, 48 accepts, split chunks read whole); t2b 9/9 (3024-3028 ms, lag 2-4 ms); t3 38/38 (the binding case still accepted: F2/O15); t4 41/41 ('F3 FIXED ... URL_REFUSED ... alive=false'; ENOENT 1 ms; E2BIG 3 ms; the static search: only spawn imported); t5 20/20 (SIGTERM and SIGKILL to -pid only; D and E residuals as in pass 1: F4/O16); t7 11/11; t8 5/5 (no env: the real state folder computed; the real folder untouched); t9 7/7; t10: the frozen body error kept, 2^31 ms -> STAND_START_TIMEOUT after 25 ms; t6 16/16 (143 messages: no environment value, no control character, max 438 characters, absolute paths only in PATH_REFUSED, 18)"
+      },
+      {
+        "command": "Pixel Office, how a folder reaches it: grep -n for --dir in tools/src/pixel-office/main.js; resolveStateDir in hook.js",
+        "output": "main.js:26-28 and :51-66 take --dir <absolute path> (an argument); hook.js:86 resolves the hook's folder from the hook's own environment and os.homedir() (issue I1)"
+      },
+      {
+        "command": "leftovers: ps for node processes; LEFT of design section 16; find <scratch>/e2e105s/tmproot -name 'sai-e2e-*'",
+        "output": "node processes at the end: only the ten that were there before (266, 726, 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481); LEFT: 0 processes, 0 folders; in my roots only my own symbolic-link fixture of trial 5, unlinked"
+      },
+      {
+        "command": "at the end: date -u; the same file list and hashes; diff with the start",
+        "output": "2026-11-08T18:59:36Z; the same 23 files; 22 of 23 hashes equal, including stand.js, index.js, fake-stand.js, tools/README.md and decisions/0109; the one that differs is step-04d-reviewer.json (REVIEWER writing its own handoff in parallel)"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1 (before close)",
+        "output": "handoffs-check: файлов проверено 1330, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2466, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "For ORCH, on O15 (true as written): one door it does not name - a folder can reach the server through its arguments as well as through env: main.js of Pixel Office takes --dir <absolute path>, and with --dir and no SAI_PIXEL_OFFICE_DIR or HOME it still resolves the hook's folder from the home folder (it only warns). The checked pairs 'variable -> folder' of O15 do not cover an argument, so the design of REQ-106 should also check or forbid folder arguments; and the hook, which the spec runs itself, resolves its folder from its own environment (hook.js:86), so the spec gives the hook the same folder."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "On O16 (true as written): F4 remains in stand.js (199, 206 and 359-365 unchanged by 04b; trial 5 D and E reproduce it on the current code) and belongs to O16's defect with cleanup.js and browser.js. The words 'the same two shapes in the new stand.js are fixed in this run' mean the two shapes of REVIEWER's I2 (the pipes read before the error listener, an error attached to itself), both verified fixed (trial 11), not F4."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER through ORCH: (a) a fake child given through deps.spawn must emit exit before close, or error before close, as Node does; a fake that emits close alone meets F5 (a TypeError, trial 12); (b) the pipeless case of L1 can be tested with a deps.spawn fake that emits error and then close on the next tick (trial 11 b), no descriptor limit needed; a real EMFILE needs the kit's handlers installed before the descriptor table is filled, otherwise Node itself aborts in SignalWrap (exit 134); (c) E2S-05 and NODE_V8_COVERAGE (I3 of step 03) still hold."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "For REVIEWER (not security items): (a) I3 of step 04b judged - a timeout of 0 is refused correctly (USAGE, 0 spawns), only the words '... a whole number of milliseconds' are imprecise; (b) when the body error cannot take cleanupError (frozen, sealed, a read-only property, a Proxy that refuses, a non-object), a failure of stop() - even CLEANUP_FAILED, a group alive after SIGKILL - is reported nowhere; before 04b this was so for non-objects, and for a frozen error pass 1 lost the body error instead; informational; (c) timeouts above 2147483647 ms still become a 1 ms timer (fail fast, no hang), I4 (a) of step 03."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the tag = HEAD = 4f41032; step 04b changed only stand.js and tools/README.md (the diff against the pass-1 copies holds only the lines it lists), index.js and fake-stand.js have the pass-1 hashes, the nine other kit files equal the tag, tools/src is unchanged; decisions/0109 holds O13-O16; REVIEWER's pass-1 FAIL (M1 = F3, L1-L4) was read. The task named no expected verdict (AP-018). REVIEWER's pass 2 (step 04d) ran in parallel and its handoff changed during this check, as expected; no other file changed."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Pass-1 issues after 04b: I4 (b) of step 03 (a frozen body error replaced by a TypeError) is fixed (t10: 'the body error'); I4 (a) (timeouts above 2^31-1 ms) unchanged and harmless; I5 (bidi characters pass safeText) and I6 (the spec reporter prints the cause of STAND_START_FAILED) concern shared kit code and are unchanged, outside this run."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

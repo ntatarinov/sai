@@ -13570,7 +13570,7 @@ requirements:
   - id: REQ-105
     title: End-to-end tests in a real headless Chrome, part 2 — the solution picker site (a visitor in ru, kk and en, light and dark theme, three window sizes, two tenants kept apart, a bad address, a server that goes away)
     owner: TEST-DESIGNER   # the spec and its fixtures; if a spec finds a real defect of the page, the fix is a WF-03 job on ORCH's order, not a weaker test
-    status: pending
+    status: done   # 2026-11-15T16:53:02Z, run E2E105-20261105-01 (WF-02, step 10): RELEASE-VALIDATOR PASS (handoffs/E2E105-20261105-01/step-09-release-validator.json, 2026-11-15T15:08:44Z) confirmed all 10 criteria by its own runs. Met by their letter: 2, 3, 5, 7, 9. Criterion 1 with the readings of decisions/0109 О2 (the oracle is the field `name`; the word corrected below) and О3 (the start button is asserted inside the window horizontally and wholly inside once scrolled into view; at 320×568 in ru and kk it lies below the first screen; the words «lies inside the window» are not changed). Criterion 4 with О5 (one reload through the kit, then keys only). Criterion 8 with О4 (exactly the two declared refused-connection lines; the words «the kit reports none» are not changed). Criterion 6 by its letter and by the readings of decisions/0109 О17 as corrected and О19–О22; its text is not changed in this run (О23); the server has no request log, its stderr is read (design F20). Not proven for criterion 6: what those records place outside it (response headers, number values, text drawn by CSS, canvas or SVG, shadow roots, iframes, a second window, A's kk and en texts, what B sends) is not read, and the known gaps of the test are open defects: a text added after a screen is read and the requests of the page's workers (docs/issues/ISS-0105); the body search that skips all of /t/<B>/api/, a word split over two elements, the error body, B's own stored value (docs/issues/ISS-0106); the validator's probe shows the system meets the letter (exactly 2 of B's 15 requests under /t/<B>/api/). Criterion 10: picker exit=0 duration_ms=16593 here (limit 80000), the independence loop 9 of 9, no skip word, traces 0; on GitHub the picker file took 20035 ms (run 43723864463, step 06) and 22050 ms (run 43727151996, step 09), under the 48000 ms line. Local check 2207 of 2207 tests, picker 9 of 9 and smoke 13 of 13 in Chrome 157, 272 s. Not proven: the runner beyond these two samples of one image (AP-144); every other run on one Mac; Windows never run; the mutant S22 cannot be forced with Node alone (О13). Words corrected without a change of meaning on the same date (before_copy in handoffs/E2E105-20261105-01/step-10-doc-updater.json): criterion 1 «the tenant `title`» → the field `name` (О2); the description's guard tests («none» → E2K-50, E2K-41, E2K-60, О9) and its list of new files. ISS-0102 item 2 (the order check on two real files) met at step 09. History: pending; in_progress at step 0 of the run; done — this record
     depends_on: [REQ-104, REQ-057, REQ-061, REQ-070]   # the kit; the page (REQ-057) and its three languages (REQ-061); the invented tenants of the new stand (REQ-070)
     original_request: >
       «по проекту sai  используй инструкции [другого проекта владельца] и sai. Чтобы убрать ошибки и покрыть
@@ -13605,10 +13605,17 @@ requirements:
       weakened: ORCH opens a defect and the fix goes in as WF-03 with a regression test; the finding is
       written in result.issues.
 
-      Guard tests of earlier requirements, "was → became": none. New files only: tools/test/e2e/picker.e2e.js
+      Guard tests of earlier requirements, "was → became": three tests of tools/test/e2e-kit.test.js, edited by the
+      replacement table of docs/design/REQ-105-e2e-picker.md (section 12; decisions/0109 О9) without weakening what
+      they guard: E2K-50 (the six names of the starter's base list of variables, and picker.e2e.js in its list of
+      scanned files), E2K-41 and E2K-60 (the words of the README section). New files: tools/test/e2e/picker.e2e.js
       (the name has no `picker-` prefix, so the scans PK-8d and the lint scan of picker-page-static.test.js, which
-      select files by the prefix `picker-`, do not read it), and its row in the table of the README section made
-      by REQ-104. No existing assertion counts the files of tools/test or of tools/src/picker.
+      select files by the prefix `picker-`, do not read it); the starter of server processes
+      tools/test/e2e/kit/stand.js (`startStand`, `withStand`, exported by tools/test/e2e/kit/index.js); its tests
+      tools/test/e2e-stand.test.js; the fixtures folder tools/test/fixtures/e2e-stand/ (the stand-in server
+      fake-stand.js and the fixture spec specs/sleep-stand.e2e.js); and the row, the budget words and the
+      paragraph "Servers for the page specs" of the README section made by REQ-104. No existing assertion counts
+      the files of tools/test or of tools/src/picker.
 
       Bar: Q1, Q5 (every criterion has a test in the one file), Q6 (no skip), Q7 (no key; the spec writes none),
       Q8 — criterion 6 (a second tenant does not show the first tenant's data, in the page, in the network
@@ -13621,7 +13628,7 @@ requirements:
         `uchet-pro` and each language of `ru`, `kk`, `en` (the address `?lang=`), each of the two colour schemes
         and each of the windows 1470×784, 390×844, 320×568 (18 combinations — the test counts them and fails if
         the count is not 18): the attribute `lang` of `<html>` equals the language; the `<h1>` text equals the
-        tenant `title` that `GET /t/uchet-pro/api/questionnaire?lang=<l>` returns; after the press of
+        tenant name, the field `name` that `GET /t/uchet-pro/api/questionnaire?lang=<l>` returns; after the press of
         `[data-action="start"]` there is exactly one question on the screen; `document.documentElement.scrollWidth`
         is not above `innerWidth` on the card and on the question; the start button lies inside the window;
         the kit reports no console error and no exception, except the one declared line for the missing
@@ -13758,8 +13765,9 @@ requirements:
         the server answers with a link; the page shows «на связи» and no task «в работе»; the temporary state
         folder holds no file except the five of README ("Where things are"), `events.jsonl` has no row (absent or
         empty), and `server-starts.jsonl` has 1 row; the `HOME` folder of the server has no entry `.sai-pixel-office`. The
-        starter of the spec, called with a state folder outside the temporary root (for example the home
-        folder), throws before any process is started (the test counts the spawned processes: 0).
+        starter of the spec (`startStand`/`withStand` of tools/test/e2e/kit/stand.js, made by REQ-105), called with a
+        state folder outside the temporary root (for example the home folder), throws before any process is started
+        (the test counts the spawned processes: 0).
       - >-
         An event reaches the page in at most 5 seconds without reload (the claim of REQ-001). Test "live" (each test of this file starts its own server and its own folders): the
         page is open and the test sets `window.__e2eMarker` and counts `performance.getEntriesByType('navigation')`

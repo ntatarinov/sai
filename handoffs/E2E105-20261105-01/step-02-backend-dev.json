@@ -1,0 +1,197 @@
+{
+  "handoff_id": "step02-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/E2E105-20261105-01/step-02-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-105-e2e-picker.md (PASS of the gate on pass 3; sections 3, 4.1, 4.3, 5, 6, 10, 14, 15, 16)",
+      "decisions/0109-e2e-stand-conventions.md",
+      "decisions/0108-e2e-kit-conventions.md",
+      "handoffs/E2E105-20261105-01/step-01f-code-design-validator.json (remarks N18-N20)",
+      "docs/anti-patterns.md"
+    ],
+    "route": "BACKEND-DEV (this, sub-steps 1-2) -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/kit/stand.js (new)",
+      "tools/test/e2e/kit/index.js (two exports added)",
+      "tools/test/fixtures/e2e-stand/fake-stand.js (new, mode 0755)",
+      "tools/README.md (section 10 of the design; then npx prettier --write README.md in tools/)"
+    ],
+    "base_tag": "base/E2E105-20261105-01"
+  },
+  "task": {
+    "description": "WF-02, step 2 — write the code of REQ-105 by the checked design docs/design/REQ-105-e2e-picker.md, ONLY the BACKEND-DEV rows: sub-step 1 (tools/test/e2e/kit/stand.js with startStand and withStand and the codes of 4.1; the two exports in tools/test/e2e/kit/index.js; the stand-in server tools/test/fixtures/e2e-stand/fake-stand.js, mode 0755, 4.3) and sub-step 2 (the README text of section 10 in tools/README.md, then prettier on that file). Do the sub-steps in order, one at a time, and after each run its own check from the table of section 14 (the real picker through the starter; the order of events of the stand-in) and the leftover check LEFT of section 16 before and after; say in the handoff which tests are red after each sub-step — the design says only E2K-50 (names of environment variables) stays red until TEST-DESIGNER fixes it at sub-step 3; leave it red and say so. Do NOT edit any test file, no spec, no tools/src, no package.json. Two details from the gate remarks: N18 — the --child SIGTERM handler of the with-child mode must write a 'child-term' event to the log (so that E2S-13 can assert the group SIGTERM reached the child; a test for it is TEST-DESIGNER's job); and keep the event order of the log exactly as the design says (start, env, child-ready, child; the link is printed only after the child is ready — no sleeps anywhere, wait for facts with a limit). The words in comments: the two sandbox flags and the skip words stand in none of the files (section 3, 'Words in comments'). The code reads like the surrounding kit code (same comment density, same error class, same naming). Task text and the files hold no absolute machine paths and no names of other projects of the owner. Sketches go outside the project (the folder is given in the prompt of the agent); Chrome is not needed by this step. End every process you start by explicit pid; check with ps at the end. Do not commit or push.",
+    "acceptance_criteria": [
+      "Sub-step 1 done, own checks (a) and (b) as in section 14 green",
+      "Sub-step 2 done, prettier --check green",
+      "Red tests after each sub-step stated truthfully",
+      "No sleeps; no process or folder left behind"
+    ]
+  },
+  "created_at": "2026-11-04T23:12:24Z",
+  "started_at": "2026-11-04T23:12:24Z",
+  "completed_at": "2026-11-08T17:32:27Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 2, sub-steps 1 and 2 of docs/design/REQ-105-e2e-picker.md (the BACKEND-DEV rows only). The four files of the write set were left, unreported, by the run that the owner's pause stopped on 2026-11-05; they were treated as a draft and compared line by line with sections 3, 4.1, 4.3, 5, 6, 10, 14, 15, 16, decision 0109 (with О13) and the gate remarks N18-N20. Sub-step 1: tools/test/e2e/kit/stand.js (startStand, withStand, the five new codes), the export line in tools/test/e2e/kit/index.js, the stand-in tools/test/fixtures/e2e-stand/fake-stand.js (mode 0755, the eleven modes of 4.3, the child-term event of N18). One edit to the draft: the CLEANUP_FAILED message of stop() read 'the main process ended with no end seen' when the main process had not ended; it now reads 'the main process did not end' (it still ends with the exit code or signal when the main process ended, 4.1 N11). Everything else matched the design and was kept. Sub-step 2: the README text of section 10 was already in place and equal to the design in all four places; npx prettier --write README.md left it unchanged; prettier --check green. Own checks of section 14: (a) the real picker through the starter printed `200 Учёт-Про {\"code\":0,\"signal\":null} \"\"`, exit 0; (b) the stand-in started by hand in with-child printed the link, its log held start, env, child-ready, child in this order, and those four were already in the log at the moment the link appeared; it was stopped by the pid of start (exit 0) and the child by the pid of child; SIGTERM to the child pid wrote child-term and the child stayed alive (N18); through startStand, stop() gave {code: 0, signal: null} and the group SIGTERM reached the child (child-term with its pid). A wider own trial outside the project (25 cases, 121 checks: every mode of 4.3, every failure path of section 5, the N19 path, five exits of a spec process, the runner's list with a blocked event loop) passed and left nothing. LEFT of section 16: 0 processes and 0 folders before, after the sub-step 1 checks, after the full check and at the end. Red tests: after sub-step 1 (state S1, a fresh clone of the tag with the sub-step 1 files only) and after sub-step 2 (the project) exactly one, E2K-50 ('test/e2e/kit/stand.js: reads TEMP'): node --test test/e2e-kit.test.js -> 52 tests, 51 pass, 1 fail; npm run check -> format, lint, traces, handoffs-check green, then 2187 tests, 2186 pass, 1 fail (E2K-50), 0 skipped, 0 todo, exit 1 at its test step (its e2e step was not reached). E2K-50 is red by the design (section 12 row 1) until TEST-DESIGNER adds the six names at sub-step 3; it is left red. No test file, spec, tools/src or package.json was touched.",
+    "red_tests": {
+      "after_sub_step_1": "E2K-50 only. State S1 (<scratch>/e2e105d/c1: a fresh clone of base/E2E105-20261105-01 with stand.js, index.js and fake-stand.js copied in, README as in the tag): node --test test/e2e-kit.test.js -> # tests 52, # pass 51, # fail 1; not ok 49 - E2K-50, error 'test/e2e/kit/stand.js: reads TEMP'. As section 14 row 1 and table 14.1 say.",
+      "after_sub_step_2": "E2K-50 only, the same one. The project: node --test test/e2e-kit.test.js -> # tests 52, # pass 51, # fail 1 (E2K-41 and E2K-60 ok); npm test inside npm run check -> # tests 2187, # pass 2186, # fail 1 (not ok 136 - E2K-50), # skipped 0, # todo 0. As section 14 row 2 and F21 say."
+    },
+    "changes": [
+      {
+        "file": "tools/test/e2e/kit/stand.js",
+        "sub_step": 1,
+        "design": "4.1, 5, 6; decision 0109 C-1..C-3, О10; remarks N8, N11",
+        "what": "New (430 lines). Read as a draft and kept where it matched: option checks before anything is made (name ^[a-z0-9-]{1,24}$, args a non-empty list of strings without NUL, readyPattern a RegExp with exactly one capture group and without g and y, env values strings); every stateDirs entry through assertUnderTempRoot before the marker, the real paths exposed; the marker by makeTempDir('profile'); spawn of process.execPath only, detached, stdio ignore/pipe/pipe, env = the eight base names (PATH, TMPDIR, TEMP, TMP, LANG, LC_ALL, TZ, SystemRoot) read by name, plus the given env; with no pid nothing is registered, signalled or waited for and STAND_START_FAILED is thrown at once with the marker removed (N8), a synchronous throw of spawn likewise; registerGroup, noteBrowserForRunner and installHandlers in the same block at spawn; both pipes read for the life of the process, the last 65536 characters kept for each, the pattern tried on the kept stdout until it matches; the link through assertLoopbackUrl (URL_REFUSED); STAND_START_EXITED, STAND_START_TIMEOUT with SIGKILL to the group, a 3 s wait for it, unregisterGroup and the marker removed; Stand with frozen name, pid, url, origin, port, stateDirs and stdout(), stderr(), isRunning(), exitInfo(); stop() one promise for every call and one SIGTERM to the group, the stop timer cleared, then SIGKILL to the group, a 3 s wait, unregisterGroup and the marker removed also when the group is alive, CLEANUP_FAILED checked before STAND_STOP_TIMEOUT and STAND_EXIT (N11), STAND_EXIT with ' after SIGTERM' or ' on its own' and the last stderr line through safeText; withStand rethrows a body error as it is and attaches the stop error as cleanupError, or throws the stop error after a good body. Edit of this run: the CLEANUP_FAILED message when the main process did not end, 'the main process ended with no end seen' -> 'the main process did not end' (4.1, N11: the message ends with the exit code or signal of the main process when it ended)."
+      },
+      {
+        "file": "tools/test/e2e/kit/index.js",
+        "sub_step": 1,
+        "design": "3",
+        "what": "One line added: export { startStand, withStand } from \"./stand.js\"; (from the draft, unchanged)."
+      },
+      {
+        "file": "tools/test/fixtures/e2e-stand/fake-stand.js",
+        "sub_step": 1,
+        "design": "4.3; remark N18 (task)",
+        "what": "New (163 lines), mode 0755, first line #!/usr/bin/env node, ES module, Node built-ins only, never reads stdin; from the draft, unchanged after the comparison. Events: start (first, with pid and argv), env (sorted names), term (first in the SIGTERM handler), child, child-ready (written by the child itself) and child-term (N18). Modes: ok, ok-late (link after 800 ms), exit-early (stderr 'fake stand: cannot start, boom', exit 3), hang, foreign-link (http://example.com:1/t/demo/), exit-one, ignore-term, die-later (exit 5, 300 ms after the link), noisy (512 chunks of 4096 characters on each stream with writeSync and a retry on EAGAIN, both streams ending with the line END), with-child, stack. with-child: after listening, the parent starts the same script with --child in its own group (stdio ignore/pipe/ignore), waits for the line ready at most 5 s (else exit 4), appends child and only then prints 'Fake stand ready.' and the link; on SIGTERM it closes the server and exits 0, leaving the child. The --child process installs its SIGTERM handler, then appends child-ready, then writes ready, then stays alive; its handler appends {event: 'child-term', pid} and does not end it, so only SIGKILL removes it."
+      },
+      {
+        "file": "tools/README.md",
+        "sub_step": 2,
+        "design": "10",
+        "what": "Section 'End-to-end tests in a real browser': the budgets sentence ('(REQ-104, criterion 9; REQ-105, criterion 10): `smoke` 30000, `picker` 80000, all files 240000.'), the paragraph 'Servers for the page specs: …' right before 'How to write a spec', the table with the row picker.e2e.js / REQ-105 above smoke.e2e.js / REQ-104, and the line 'REQ-106 and REQ-107 add their rows.'. From the draft, compared with section 10 by a script (all four places equal, the old sentence gone); npx prettier --write README.md left it unchanged (sha256 prefix c7021795bfbd240e before and after)."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "LEFT of section 16 before the sub-step 1 checks (the ps line over src/picker/cli.js serve, fake-stand.js and sai-e2e-, and the count of sai-e2e-* folders of the temporary root)",
+        "output": "processes 0, folders 0"
+      },
+      {
+        "command": "cd tools && npx prettier --check test/e2e/kit/stand.js test/e2e/kit/index.js test/fixtures/e2e-stand/fake-stand.js && npx eslint --max-warnings 0 <the same three files>",
+        "output": "All matched files use Prettier code style! (exit 0); eslint: no output (exit 0)"
+      },
+      {
+        "command": "State S1: git clone -b base/E2E105-20261105-01 into <scratch>/e2e105d/c1 (HEAD 4f41032), the three sub-step 1 files copied in (mode 0755 kept, README as in the tag); cd tools && node --test test/e2e-kit.test.js",
+        "output": "# tests 52, # suites 0, # pass 51, # fail 1, # cancelled 0, # skipped 0, # todo 0, # duration_ms 34928; not ok 49 - E2K-50 the scanned files hold no skip, no turned-off rule, no secret, and read only the named variables; error: 'test/e2e/kit/stand.js: reads TEMP'"
+      },
+      {
+        "command": "(a) from tools/, the one-line command of section 14, sub-step 1, (a), verbatim: node --input-type=module -e 'import { startStand } from \"./test/e2e/kit/index.js\"; const s = await startStand({ name: \"picker\", args: [\"src/picker/cli.js\", \"serve\", \"--tenants\", \"src/picker/demo-tenants\", \"--port\", \"0\"], readyPattern: /(http:\\/\\/127\\.0\\.0\\.1:\\d+)\\/t\\// }); const r = await fetch(s.origin + \"/t/uchet-pro/api/questionnaire?lang=ru\"); console.log(r.status, (await r.json()).name, JSON.stringify(await s.stop()), JSON.stringify(s.stderr()));'; echo \"exit=$?\"",
+        "output": "200 Учёт-Про {\"code\":0,\"signal\":null} \"\"\nexit=0"
+      },
+      {
+        "command": "(b) node <scratch>/e2e105d/check-b.mjs <tools>. Part 1, by hand as section 14 says: SAI_FAKE_STAND_MODE=with-child SAI_FAKE_STAND_LOG=<a file under the temporary root> node test/fixtures/e2e-stand/fake-stand.js from tools/; wait for the link (a fact, limit 10 s); read the log; SIGTERM to the child pid and wait for child-term (limit 5 s); stop it by the pid of start (SIGTERM), then the child by the pid of child (SIGKILL). Part 2: the same mode through startStand and stop(). No sleep; every learned pid killed in a finally if alive",
+        "output": "21 of 21 PASS, result: PASS, exit=0. Part 1: link printed ('Fake stand ready.\\nhttp://127.0.0.1:<port>/t/demo/\\n'); the log holds start,env,child-ready,child in this order; at the moment the link appeared the log already held start,env,child-ready,child; start.pid is the started pid; child-ready and child name the same pid, other than the parent; the child alive; the env event lists sorted names with the two given ones; SIGTERM to the child pid -> child-term with its pid in the log, the child still alive; SIGTERM to the pid of start -> exit code 0, exactly one term; the child alive after the parent ended, gone after SIGKILL; stderr empty; events start,env,child-ready,child,child-term,term. Part 2: right after startStand child and child-ready with the same live pid; url http://127.0.0.1:<port>/; stop() -> {\"code\":0,\"signal\":null}; the log then held term and child-term with the child's pid (the group SIGTERM reached the child, N18); server pid, its group and the child pid gone; isRunning() false, exitInfo() code 0"
+      },
+      {
+        "command": "Own trial outside the project: node <scratch>/e2e105d/trial-modes.mjs <tools> (25 cases against 4.1, 4.3 and section 5; waits for facts with limits; leftovers killed by pid in a finally)",
+        "output": "cases 25, failed checks 0 (121 checks PASS), 7222 ms, leftover pids killed by the trial: 0. Shown: ok (url = http://127.0.0.1:<port>/, origin and port agree, the object frozen, one marker and the registration while running, both gone after stop, stop -> {code:0, signal:null}); ok-late; exit-early -> 'fake exited before it printed its link (exit code 3). Last line of its stderr: \"fake stand: cannot start, boom\"', pid of start gone, a second start works; hang with startTimeoutMs 1500 -> 'fake did not print its link in 1500 ms; it was killed', pid and group gone; foreign-link with /^(http:\\/\\/\\S+?)\\/t\\//mu -> URL_REFUSED, pid and group gone; exit-one -> 'fake ended with exit code 1 after SIGTERM. Last line of its stderr: \"\"'; ignore-term with stopTimeoutMs 1500 -> 'fake did not stop in 1500 ms after SIGTERM; it was killed' after 1524 ms, exactly one term; stop() twice -> the same promise, one term; die-later -> ended by itself, then 'fake ended with exit code 5 on its own. …', no term; noisy -> code 0, both kept texts 65536 characters, both ending with END; stack -> stderr 'Error: boom' and '    at fake (file.js:1:1)'; a cwd that does not exist -> 'could not start \"fake\": ENOENT' in under 1 ms of the trial's clock, spawn called once, no marker, nothing registered, a second start works; a spawn that throws (N19) -> 'could not start \"fake\": EBOOM', no marker, nothing registered; 16 bad options -> USAGE with 0 spawns and no folder; 4 state folders (home, relative, inside the repository, a link under the root to home) -> PATH_REFUSED with 0 spawns, a folder under the root accepted as its real path; the env event of the stand-in: LANG, PATH, SAI_FAKE_STAND_LOG, SAI_FAKE_STAND_MODE, TMPDIR, __CF_USER_TEXT_ENCODING, none of SAI_FAKE_LEAK, HOME, SAI_TEAM_REAL_RUNS, NODE_TEST_CONTEXT that the parent had; a given value reaches the child, LANG overridden, no HOME; withStand: the body value, the same error object, cleanupError STAND_EXIT, STAND_EXIT after a good body, USAGE for a non-function body; a process that ran startStand and stop() with the default timeouts closed at once, code 0 (no timer left armed); a spec process ending by SIGTERM, SIGINT, SIGHUP, process.exit(3), an uncaught throw -> codes 143, 130, 129, 3, 1, the stand pid and group gone, no sai-e2e folder; the runner's list: a spec process with a blocked event loop, the stand's record in the list, the spec group stopped (SIGTERM then SIGKILL), the stand still alive, sweepBrowserRegistry killed 1 group, the stand gone, no sai-e2e folder"
+      },
+      {
+        "command": "LEFT after the sub-step 1 checks",
+        "output": "processes 0, folders 0; no folder of the trials left"
+      },
+      {
+        "command": "Sub-step 2: a node script that cuts the three texts of section 10 out of the design and looks for them in tools/README.md; cd tools && npx prettier --write README.md && npx prettier --check README.md",
+        "output": "the paragraph is a README line: true; the budgets sentence inside a README line: true; the line after the table 'REQ-106 and REQ-107 add their rows.': true; the 4 table lines in order: true; the old sentence 'REQ-105, REQ-106 and REQ-107 add their rows.' gone: true; the paragraph right before 'How to write a spec': true. prettier --write: 'README.md 169ms (unchanged)', sha256 prefix c7021795bfbd240e before and after. prettier --check: All matched files use Prettier code style! (exit 0)"
+      },
+      {
+        "command": "State S2 (the project after sub-step 2): cd tools && node --test test/e2e-kit.test.js",
+        "output": "# tests 52, # suites 0, # pass 51, # fail 1, # cancelled 0, # skipped 0, # todo 0, # duration_ms 34832; not ok 49 - E2K-50 …; error: 'test/e2e/kit/stand.js: reads TEMP'; ok 44 - E2K-41, ok 50 - E2K-60"
+      },
+      {
+        "command": "cd tools && npm run check (started in the foreground at 2026-11-08T17:22:55Z; the Bash tool of the session moved it to the background after 180 s; the agent waited for its end in the same turn and read the output from the file; ended 2026-11-08T17:26:56Z)",
+        "output": "format:check: All matched files use Prettier code style!; lint: no output; traces: файлов проверено 2460, следов 0, пропущено 67; handoffs-check: файлов проверено 1324, нарушений 0, исключений использовано 114 из 114; test: # tests 2187, # suites 0, # pass 2186, # fail 1, # cancelled 0, # skipped 0, # todo 0, # duration_ms 229644; the only failure: not ok 136 - E2K-50 the scanned files hold no skip, no turned-off rule, no secret, and read only the named variables, error: 'test/e2e/kit/stand.js: reads TEMP'; exit=1. The check stops at its first failing step, so its e2e step was not reached; the import of index.js by the spec files is shown by check (a), which imports it."
+      },
+      {
+        "command": "Q7: search of the four changed files for the secret shapes of E2K-50 (a GitHub token, an sk- key, a private key block) and a cloud key id, and for the words token, password, secret, api key, bearer, credential, private",
+        "output": "no shape matches; one word match: stand.js line 27, the comment saying that a server never sees the home folder, 'tokens' or switches of the developer's shell — a word, not a secret"
+      },
+      {
+        "command": "Q6 and the words of section 3: search of stand.js, index.js and fake-stand.js for the skip words, the two skip options, the turned-off-rule word, the hiding of an exit code, the two sandbox flags (comments included) and NODE_TEST_CONTEXT; the environment reads of stand.js; the imports",
+        "output": "no match; stand.js reads the environment only by name: PATH, TMPDIR, TEMP, TMP, LANG, LC_ALL, TZ, SystemRoot (no whole-environment read, no computed key); the imports of stand.js and fake-stand.js are node: modules and ./cleanup.js, ./errors.js, ./guards.js"
+      },
+      {
+        "command": "Before close, from tools/: npm run -s format:check; npm run -s lint; npm run -s traces | tail -1; npm run -s handoffs-check | tail -1; node --test test/e2e-kit.test.js 2>&1 | tail -8",
+        "output": "format:check: Checking formatting... All matched files use Prettier code style! (exit 0)\nlint: no output (exit 0)\ntraces: файлов проверено 2460, следов 0, пропущено 67\nhandoffs-check: файлов проверено 1324, нарушений 0, исключений использовано 114 из 114\n# tests 52\n# suites 0\n# pass 51\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 34896.222583"
+      },
+      {
+        "command": "LEFT at the end (2026-11-08T17:30:00Z) and ps",
+        "output": "processes 0, folders 0; no e2e105d-* or sai-kit-test-* folder left. The eight old `node -e setInterval` processes of 2026-11-03 are still there, not touched. Two `node stand.js` processes started on 2026-11-07 run with a working folder outside Sai: not started by this run, not matched by LEFT, left alone. No process started by this run is alive."
+      },
+      {
+        "command": "Search for the names of other projects and computer paths",
+        "output": "empty: npm run traces -> следов 0 (above, after the result was written as well)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "E2K-50 of tools/test/e2e-kit.test.js is red after sub-step 1 and after sub-step 2, as the design says (section 12 row 1, section 14, table 14.1): 'test/e2e/kit/stand.js: reads TEMP'. Cause: stand.js reads the base list of C-1 by name (decision 0109 О10), and six of its names (TEMP, TMP, LANG, LC_ALL, TZ, SystemRoot) are not in the list ENV_NAMES of the test. New expected behaviour: ENV_NAMES gets those six names (PATH and TMPDIR are in it already); the rules 'no whole-environment read outside find-chrome.js, browser.js, runner.js', 'no computed key outside cleanup.js' and 'NODE_TEST_CONTEXT only in runner.js' stay. Fixed by TEST-DESIGNER at sub-step 3; left red here. Evidence: S1 on a fresh clone of the tag (52/51/1), S2 in the project (52/51/1), the full suite (2187/2186/1, the only failure E2K-50). No other test is red."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "The draft. The four files of the write set existed before this run (left by the run that the owner's pause stopped; stand.js 427 lines, fake-stand.js 163 lines, mode 0755, the export line, the README edits). They were not taken as done work: each was compared with the design (the options and rules of 4.1, the seven steps of startStand, the members of Stand, stop() and its precedence, withStand, the codes and the message shapes, section 5 rows 1-12, section 6, the events and modes of 4.3, section 10) and run (checks (a), (b), the trial). Changed: one message of stand.js (CLEANUP_FAILED when the main process did not end). Kept: everything else."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "For CODE-DESIGNER through ORCH (not a departure; the code follows the rule as written). Section 4.1, stop(): 'Only when the group is gone: if the exit was not code 0 with no signal -> STAND_EXIT …', and then 'A process that ended by itself before stop() is cleaned up the same way and stop() then throws STAND_EXIT (a crashed server fails the test that used it)'. Both give the same result for a crashed server (a code other than 0 or a signal; die-later: 'exit code 5 on its own', shown). They differ for a server that ended by itself with exit code 0 before stop(): by the rule (and C-3, the README 'requires the exit code 0') stop() resolves {code: 0, signal: null}; by a literal reading of the second sentence it would throw STAND_EXIT '… exit code 0 on its own'. stand.js follows the rule. No test of 11.1 covers this case. If the second reading is wanted, it is a one-condition change of stop() and one more test for TEST-DESIGNER; ORCH decides."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Option checks beyond those that section 5 row 1 names (name, args, pattern, env value). The code (from the draft, kept) also refuses with USAGE, in step 1, before anything is made or spawned: options that are not an object; env that is not an object; an env name that is not a variable name; a NUL in an env value (as for args; otherwise spawn would throw after the marker is made); a cwd that is not a non-empty string without NUL (a cwd that does not exist still goes to spawn and gives STAND_START_FAILED, E2S-04); stateDirs that is not a list; a timeout that is not a whole number above 0; a deps.spawn that is not a function; and in withStand a body that is not a function (as withBrowser). They are checks of the options of the 4.1 table on the path of step 1; no design test depends on them; REVIEWER may judge them."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "A wait that the design does not name. When the process ends, the starter waits for the close of its pipes at most 1000 ms before it takes the last stderr line for STAND_START_EXITED and STAND_EXIT (the exit event can come before the last bytes are read; browser.js does the same with 300 ms). It is a wait for a fact with a limit, its timer is cleared on close; stop() resolves only after the close, so stdout() and stderr() are complete then (E2S-12). No fixed sleep stands in stand.js; in fake-stand.js the only delays are those of the 4.3 contract (ok-late 800 ms, die-later 300 ms) and the 5 ms back-off on EAGAIN of the released kit pattern (fake-chrome.js, runner.js)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Gate remarks N18-N20 (step 01f). N18: the SIGTERM handler of the --child process appends {event: 'child-term', pid}; check (b) shows that a SIGTERM to the child pid and the group SIGTERM of stop() both write it, and that the child stays alive until SIGKILL. The assertion in E2S-13 that would catch the mutant S19 is TEST-DESIGNER's (sub-step 3). N19: a synchronous throw of spawn gives STAND_START_FAILED with the marker removed and nothing registered (shown by the own trial); its test is TEST-DESIGNER's. N20: STAND_EXIT says ' after SIGTERM' when stop() sent the signal ('fake ended with exit code 1 after SIGTERM. …', shown); its assertion is TEST-DESIGNER's."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Beyond 4.3 in the stand-in (from the draft, kept): an unknown SAI_FAKE_STAND_MODE writes 'fake stand: unknown mode <mode>' to stderr and exits 2 after the start and env events, so a misspelt mode in a test fails at once (STAND_START_EXITED) instead of running as ok. A mode that TEST-DESIGNER adds (4.3 allows it) must also be added to the set MODES of the file."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: base/E2E105-20261105-01 is 4f41032; the draft files and their sizes and mode were as the task says; the figures 52/51/1 and 'only E2K-50' were measured, not assumed. In the working tree, outside the write set and not named by the task: decisions/0110-run-checks-on-github.md (untracked; read: local runs stay allowed for building and measuring, so it does not change this step); docs/program/public-v1/PROGRESS.md, docs/requirements.yaml and decisions/README.md are modified by ORCH and were not touched. The status of this handoff was set to IN_PROGRESS at the start of the work."
+      }
+    ],
+    "prototype": "<scratch>/e2e105d/ (the scratch folder of the session; nothing of it is in the project): c1/ — a fresh clone of base/E2E105-20261105-01 with the three sub-step 1 files copied in (state S1); check-b.mjs — own check (b) and the N18 event; trial-modes.mjs — the 25-case trial of the starter and the stand-in; write-result.mjs — writes this result by one text replacement; s1-kit.txt, s2-kit.txt — the kit test output of S1 and S2; check.txt — the output of npm run check; trial-1.txt — the output of the trial.",
+    "artifacts_out": [
+      "tools/test/e2e/kit/stand.js",
+      "tools/test/e2e/kit/index.js",
+      "tools/test/fixtures/e2e-stand/fake-stand.js",
+      "tools/README.md"
+    ]
+  },
+  "orch_correction": [
+    {
+      "by": "ORCH",
+      "at": "2026-11-08T17:43:44Z",
+      "what": "result.self_check, check (b) of the with-child mode: the count '21 of 21 PASS' is wrong; counted by command the check has 20 checks and prints 20 PASS lines (20 of 20). The text of each check is right; only the number is corrected.",
+      "reason": "issue I4 of handoffs/E2E105-20261105-01/step-02b-backend-dev.json (the author found it; a closed handoff is not rewritten by its author)"
+    }
+  ]
+}

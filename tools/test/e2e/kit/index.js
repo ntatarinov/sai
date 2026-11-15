@@ -11,3 +11,4 @@ export {
   repoRoot,
 } from "./guards.js";
 export { makeTempDir, removeTempDir } from "./cleanup.js";
+export { startStand, withStand } from "./stand.js";

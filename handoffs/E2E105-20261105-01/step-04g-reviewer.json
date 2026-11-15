@@ -1,0 +1,126 @@
+{
+  "handoff_id": "step04g-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "04g",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E105-20261105-01/step-04g-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-04e-code-fixer.json (the fixes and their proofs)",
+      "handoffs/E2E105-20261105-01/step-04d-reviewer.json (your pass 2: PASS with L5, L6)",
+      "tools/test/e2e/kit/stand.js, tools/README.md"
+    ],
+    "route": "SECURITY-REVIEWER + REVIEWER (this pair, pass 3 of 3, the last) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only (the gate reads)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-04d-reviewer.json"
+  },
+  "task": {
+    "description": "WF-02, step 4, pass 3 of 3 — the code review gate on the last fixes of the server starter. Pass 2 of this gate was PASS with Low findings; ORCH had CODE-FIXER fix them before the tests (step 04e: L5 timeouts accepted only from 1 to 2147483647 ms with the range in the USAGE message, and the cwd message 'without NUL'; F5 the guarded STAND_START_EXITED for a child that ends with close and no exit; L6 = F6 the comment of stand.js and the README clause that the system and Node may add variables of their own). Check on the current files: (a) each of the three fixes does what it says (re-run your own trial of the finding; REVIEWER's old bigtimeout trial asserted the overflow and must now see a USAGE refusal); (b) nothing else changed since your pass 2 (compare stand.js and the README paragraph with what you reviewed: the diff must be exactly these fixes); (c) your pass-2 trials still pass on the current code (no regression), and the README keeps every earlier word. Items outside this change that step 04e listed in its issues (the unbounded wait of stop() for a fake child that never emits exit — I2; the unchecked timeout options of the other kit files — I3; 'must be an object' also for an array — I4) are judged by you as Low or not: they go to defects at step 10 unless you show they are Medium or worse. This is the LAST allowed pass: FAIL only for a Medium or worse gap, with a one-sentence fix. Task text and report hold no absolute machine paths and no names of other projects of the owner. Do not edit any project file except this handoff; do not commit or push. Also judge whether the fixes read like the kit (no defensive noise, the messages in the kit's style).",
+    "acceptance_criteria": [
+      "L5, L6 and F5 proved fixed",
+      "No other change, no regression",
+      "Verdict PASS or FAIL"
+    ]
+  },
+  "created_at": "2026-11-08T19:19:10Z",
+  "started_at": "2026-11-08T19:19:10Z",
+  "completed_at": "2026-11-08T19:23:47Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS, pass 3 of 3. The three fixes of step 04e (L5, L6 = F6, F5) do what they say, nothing else changed since my pass 2, and there is no regression. No Critical, High or Medium finding. The three items that step 04e found outside its list (its I2, I3 and I4) are Low and go to defects at step 10 (L7, L8, issue I1). (b) Only these fixes changed. Against my pass-2 copy (the code of step 04b) the diff of stand.js is: the constant MAX_TIMER_MS with its line comment (25); the comment above baseEnvironment() (27-32); the cwd message (96); the range check of the two timeouts (112-116); the guarded end in the branch of a child that ended before its link (396-402). The README diff is line 844 only. index.js and fake-stand.js are byte for byte as before, and nothing else under tools/ is changed. (a) Each fix proved on a fresh clone of the tag with the current files (pass3.mjs, 23 of 23 green). The same trial on the code of step 04b is 22 of 23 red, so it sees the old defects. L5: 0, -1, 1.5, NaN, Infinity, 2^31 and a string, for each of the two timeouts, give USAGE '<option> must be a whole number of milliseconds from 1 to 2147483647' with 0 spawns and nothing made. On the old code 2^31 passed the check and reached the spawn. 2147483647 for both is accepted and kept: the link printed after 800 ms is still read, stop() gives {code: 0}, and there is no TimeoutOverflowWarning. My old bigtimeout.mjs, which asserted the overflow, now sees the USAGE refusal at once (0 ms), as the task says. The cwd message is 'cwd must be a non-empty path without NUL' for empty, NUL and a number. F5: a deps.spawn child that sends close with no exit gives STAND_START_EXITED 'fake exited before it printed its link (exit code null). Last line of its stderr: \"fake child: going away\"', with exitCode and signal null. Nothing is registered and there is no marker, with no pid and with pid 999999; on the old code it was a TypeError with the marker (and the group) left. L6: measured again (envtruth.mjs): the child gets __CF_USER_TEXT_ENCODING beyond the given names, and NODE_V8_COVERAGE too when the spec process has it, which is exactly what the new comment and the new README clause say. (c) No regression. group1 7/0, outcomes 18/0, withstand2 10/0, envtruth 4/0, precedence 25/0 (CLEANUP_FAILED in all four paths, the messages ending with the end of the main process, 3.0-4.0 s), drain 6/0, withchild 5/0, refusals 31/0, and EMFILE under ulimit gives STAND_START_FAILED with exit 0. o14 is 30/31: every O14 check is green, and the one red is case 8, which still asserts the self-reference that step 04b removed (expected since pass 2). The kit test file gives 52 tests, 51 pass, 1 fail = E2K-50 ('reads TEMP', red by the design until sub-step 3), with E2K-41 and E2K-60 green. Check (a) of section 14 prints 200 Учёт-Про {\"code\":0,\"signal\":null} \"\" (exit 0). The README keeps every earlier word: 153 of 153 of the pass-2 paragraph and 111 of 111 of the pass-1 paragraph, in order; only line 844 differs; prettier clean. Kit style: the line comment on a constant is the style of cleanup.js (lines 11-14); the messages have the shape of the existing ones ('… without NUL', the range said in words and numbers); the F5 guard is two lines with a comment that says when it is reached; eslint clean. There is no defensive noise. The only odd text is '(exit code null)' for an end that is unknown, and only a fake child can reach it; not a finding. Precedence and O14 are unchanged (#doStop not touched, and the zombie and O14 trials as above). Judged outside the change (step 04e issues): I2 = L7 below, Low. The unbounded wait in stop() is reachable only through deps.spawn: for a real child Node gives the exit event in the same callback in which it reaps the leader, so the group cannot be gone before the exit is seen, and every stop() of my real-process trials ended. In the tests the wait is bounded by the per-test timeout of node:test. I4 = L8 below, Low wording. I3 (the timeouts of browser.js, cdp.js, page.js, runner.js, cleanup.js are unchecked) is outside this change, Low (the callers are the kit's own code), issue I1. The task names no expected verdict (AP-018 not applicable).",
+    "findings": [
+      {
+        "id": "L7",
+        "where": "tools/test/e2e/kit/stand.js:207-209 (if (gone) { await state.exited; await state.closed; })",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Once the group is gone, stop() waits for the exit event with no limit. A real child cannot hang it: Node gives the exit event in the same callback in which it reaps the leader, so the exit is seen before the group can be gone, and every stop() of my real-process trials ended. A fake child given through deps.spawn that never sends exit makes stop() wait until the test's own timeout (I2 of step 04e, measured there). This is a test seam only.",
+        "fix": "Defect at step 10: either race the two awaits with a limit (as the stop timer does) or state in the contract that a deps.spawn child must send exit and then close, as Node does, and let TEST-DESIGNER's fakes do so."
+      },
+      {
+        "id": "L8",
+        "where": "tools/test/e2e/kit/stand.js:60 ('the options must be an object') and :98 ('env must be an object')",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Both are also the answers for an array, which is an object in JavaScript; the rule broken is 'a plain object, not a list' (I4 of step 04e; the message class of L3 and L5).",
+        "fix": "Defect at step 10: say 'must be a plain object, not a list'."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "diff -u of stand.js and README.md: my pass-2 copy (<scratch>/e2e105r/after2, the code of step 04b) against the project; cmp of index.js and fake-stand.js; git status of tools/",
+        "output": "stand.js: MAX_TIMER_MS with its line comment (25), the comment at 27-32, the cwd message (96), the range check (112-116), the guarded end of STAND_START_EXITED (396-402); README.md: line 844 only (one clause inserted). index.js and fake-stand.js identical; tools/ status: README.md and index.js modified, stand.js and fake-stand.js new, nothing else"
+      },
+      {
+        "command": "git clone -b base/E2E105-20261105-01 into <scratch>/e2e105r/after3, the four current files copied in; shasum -a 256 in after3 and in the project, at the start and at the end",
+        "output": "equal at the start and at the end: stand.js aba66b015fbd57f5, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab, README.md d4d0b664b90ad40d; the code did not change during the check"
+      },
+      {
+        "command": "LEFT of section 16 before the trials",
+        "output": "processes 0, folders 0"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/pass3.mjs on after3 (L5: 7 bad values × 2 timeouts with a counting spawn, the upper bound with a real start, the cwd message; F5: a deps.spawn child that sends close with no exit, with no pid and with pid 999999), then the same on after2 as a control",
+        "output": "current code: checks 23, failed 0. Every bad value gives 'startStand: <option> must be a whole number of milliseconds from 1 to 2147483647', with spawn called 0 times and nothing made. 2147483647 for both: started after 875 ms (the link of ok-late at 800 ms was read), stop() {code:0, signal:null}, warnings []. cwd empty, NUL or a number gives 'startStand: cwd must be a non-empty path without NUL'. F5: 'fake exited before it printed its link (exit code null). Last line of its stderr: \"fake child: going away\"', details exitCode null and signal null, nothing registered, no marker, both with no pid and with pid 999999. Code of step 04b: checks 23, failed 22. The old messages; 2^31 reached the spawn (2 spawns); F5 gave a TypeError with the marker, and with pid 999999 the group, left until the exit handler"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/bigtimeout.mjs on after3 (my pass-2 trial that asserted the overflow)",
+        "output": "startTimeoutMs 2^31 -> USAGE 'startStand: startTimeoutMs must be a whole number of milliseconds from 1 to 2147483647' after 0 ms; its overflow check is now red, as it must be; its second step throws the same USAGE for stopTimeoutMs; no TimeoutOverflowWarning; leftover pids 0"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/{group1,outcomes,withstand2,envtruth,precedence,o14,drain,withchild,refusals}.mjs on after3; envtruth again with NODE_V8_COVERAGE set in the trial's environment; sh -c 'ulimit -n 64; node emfile.mjs <after3>/tools'",
+        "output": "group1 7/0, outcomes 18/0, withstand2 10/0, envtruth 4/0 (names beyond the base list and the given ones: [\"__CF_USER_TEXT_ENCODING\"]; with coverage on: [\"NODE_V8_COVERAGE\",\"__CF_USER_TEXT_ENCODING\"]), precedence 25/0 (CLEANUP_FAILED '…still alive after SIGKILL; the main process ended with exit code 1 / exit code 0 / signal SIGKILL / exit code 0', 3009-4005 ms), o14 30/1 (the red one is case 8, the L2 self-reference removed in step 04b), drain 6/0, withchild 5/0, refusals 31/0; emfile: 'startStand rejected: E2eError: STAND_START_FAILED: could not start \"em\": EMFILE', exit handler code 0; leftover pids 0 in each"
+      },
+      {
+        "command": "cd <after3>/tools && node --test test/e2e-kit.test.js; then check (a) of section 14 (the real picker through the starter) in the same folder",
+        "output": "# tests 52, # pass 51, # fail 1, # skipped 0, # todo 0; not ok 49 - E2K-50 …, error: 'test/e2e/kit/stand.js: reads TEMP' (red by the design until sub-step 3); ok 44 - E2K-41; ok 50 - E2K-60. Check (a): 200 Учёт-Про {\"code\":0,\"signal\":null} \"\", exit 0"
+      },
+      {
+        "command": "node -e script: the words of README line 844 of the pass-2 copy and of the pass-1 copy against the current line (punctuation at word ends ignored), and the other lines",
+        "output": "pass-2 paragraph: 153 words, 153 kept in order, 181 now; pass-1 paragraph: 111 of 111 kept in order; 1 README line differs (844), 856 lines before and after; the next non-empty line starts with 'How to write a spec:'"
+      },
+      {
+        "command": "cd tools && npx prettier --check test/e2e/kit/stand.js README.md && npx eslint --max-warnings 0 test/e2e/kit/stand.js; grep -c over stand.js and README line 844: skip, todo, eslint-disable, '|| true', TODO, FIXME, XXX, 'for now'; the two sandbox flags (pattern from parts); secret shapes; whole-environment reads; prints and sleeps; import sources; the line comments on constants in cleanup.js",
+        "output": "All matched files use Prettier code style! (exit 0); eslint exit 0; erosion words 0 and 0; sandbox flags 0; secret shapes 0 and 0; whole-environment reads 0 (8 named reads); prints or sleeps 0; imports node:child_process, node:path, ./cleanup.js, ./errors.js, ./guards.js (as before); cleanup.js:11-14 put line comments on constants, the style of MAX_TIMER_MS"
+      },
+      {
+        "command": "LEFT after all trials; pgrep -f 'perl -e'; rv105-* log folders of the temporary root",
+        "output": "processes 0, folders 0, perl helpers 0, log folders 0"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1 (after this result was written, before close)",
+        "output": "handoffs-check: файлов проверено 1333, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2469, следов 0, пропущено 67 (exit 0); run again after this entry, before close"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "ROUTE",
+        "text": "For DOC-UPDATER at step 10 (no change before the tests): L7 and L8 of this pass and I3 of step 04e (the unchecked timeouts of launchBrowser, connect, goto, reload, waitFor, runAll and installHandlers; the L5 kind in the released kit, AP-014) as defects with their places, Low; and the design texts that lag behind the code and the README (I5 of step 04e, I2 of my step 04d): section 10 item 3 now lacks three clauses of README line 844, section 6, section 4.1 (O14, the timeout range 1…2147483647, the unknown end 'exit code null') and section 15 row R2."
+      },
+      {
+        "id": "I2",
+        "kind": "FOR_TEST_DESIGNER",
+        "text": "Besides I3 of my step 04d and I1 of step 04e: a deps.spawn fake child must send exit and then close, as Node does (L7); 2147483647 is accepted for both timeouts and must stay accepted (the bound itself), 2147483648 refused; the F5 shape (close with no exit) gives '(exit code null)'. My trials in <scratch>/e2e105r/trials/ (pass3.mjs among them) may be reused."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: base/E2E105-20261105-01 = HEAD = 4f41032; the change since my pass 2 is exactly L5, L6 and F5 of step 04e; index.js and fake-stand.js unchanged; E2K-50 the only red test and red by the design. The task names no expected verdict (AP-018). Every trial ran outside the project on fresh clones of the tag, every process a trial started was ended by its pid, and LEFT was 0 before and after. This handoff's status was set to IN_PROGRESS at the start of the work."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

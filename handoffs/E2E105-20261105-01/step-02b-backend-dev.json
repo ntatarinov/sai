@@ -1,0 +1,150 @@
+{
+  "handoff_id": "step02b-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/E2E105-20261105-01/step-02b-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "decisions/0109-e2e-stand-conventions.md (addendum O14)",
+      "handoffs/E2E105-20261105-01/step-02-backend-dev.json (issue I3)",
+      "docs/design/REQ-105-e2e-picker.md (4.1 stop(), section 5 rows 7 and 9, 4.3 modes, E2S-11)"
+    ],
+    "route": "BACKEND-DEV (this, rework for O14) -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable (no interface by a sample) -> 8 not applicable (the work adds tests only; the page and the server are not changed) -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/kit/stand.js (the condition of STAND_EXIT in stop())",
+      "tools/test/fixtures/e2e-stand/fake-stand.js (one new mode that ends by itself with code 0, in MODES)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-02-backend-dev.json"
+  },
+  "task": {
+    "description": "WF-02, step 02b — apply the answer O14 of decisions/0109 to your own code of step 02 (question I3). In stop() of tools/test/e2e/kit/stand.js a stand that ended by itself before stop() throws STAND_EXIT with ' on its own' for ANY exit, code 0 included; after SIGTERM the code 0 with no signal stays the only good end; the precedence of CLEANUP_FAILED and STAND_STOP_TIMEOUT does not change. In tools/test/fixtures/e2e-stand/fake-stand.js add one mode (name it in the style of the existing ones, for example quit-later) that prints the link and then ends by itself with code 0 about 300 ms later, as die-later does with code 5; add it to MODES. Nothing else changes; no test file is edited (TEST-DESIGNER covers the mode inside E2S-11 at step 5). Prove it outside the project: through startStand, the new mode, wait for the fact isRunning() false (limit 5 s), then stop() rejects with STAND_EXIT whose message holds 'exit code 0 on its own'; die-later still gives 'exit code 5 on its own'; ok mode stopped by stop() still returns { code: 0, signal: null }; the leftover check LEFT of section 16 is 0 before and after. Then from tools/: npm run -s format:check, npm run -s lint, npm run -s traces | tail -1, npm run -s handoffs-check | tail -1, node --test test/e2e-kit.test.js | tail -8 (still only E2K-50 red). Task text and files hold no absolute machine paths and no names of the owner's other projects. Do not commit or push.",
+    "acceptance_criteria": [
+      "Self-ended stand with code 0 gives STAND_EXIT on its own",
+      "New stand-in mode in MODES",
+      "Checks green except the expected E2K-50"
+    ]
+  },
+  "created_at": "2026-11-08T17:34:06Z",
+  "started_at": "2026-11-08T17:34:06Z",
+  "completed_at": "2026-11-08T17:42:56Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 02b, the rework of step 02 for the answer О14 of decisions/0109 (my question I3). stop() of tools/test/e2e/kit/stand.js now throws STAND_EXIT for a stand that ended by itself before stop() whatever its exit code, code 0 included, with ' on its own' in the message; a stop after the SIGTERM of stop() with code 0 and no signal stays the only good end ({ code: 0, signal: null }); the order CLEANUP_FAILED -> STAND_STOP_TIMEOUT -> STAND_EXIT and every message text are unchanged. tools/test/fixtures/e2e-stand/fake-stand.js got the mode quit-later (in MODES): it prints the link and ends by itself with code 0 300 ms later, as die-later does with code 5; on a SIGTERM before that it behaves like ok. Nothing else changed; no test file was edited. Proof outside the project (7 cases, 29 checks, all PASS): quit-later through startStand, after the fact isRunning() false (limit 5 s), stop() rejects with STAND_EXIT 'fake ended with exit code 0 on its own. Last line of its stderr: \"\"'; die-later still gives 'fake ended with exit code 5 on its own. …'; ok stopped by stop() still returns { code: 0, signal: null }; exit-one, ignore-term (STAND_STOP_TIMEOUT) and quit-later stopped before its own end are unchanged; withStand around a stand that ends by itself throws STAND_EXIT. Control: the same proof on a fresh clone of the tag with the step 02 stop() and the new stand-in fails exactly the 4 checks of the self-ended code 0 cases, so the proof sees the change. Regression: check (a) of section 14, check (b) and the 25-case trial of step 02 all pass. LEFT of section 16: 0 processes, 0 folders before and after. Checks: format:check and lint clean, traces 0, handoffs-check 0 violations, node --test test/e2e-kit.test.js 52 tests, 51 pass, 1 fail = E2K-50 ('test/e2e/kit/stand.js: reads TEMP', expected until TEST-DESIGNER's sub-step 3); npm run check: see self_check. Found on the way: my step 02 report counted check (b) as 21 checks; it has 20 (issue I4).",
+    "changes": [
+      {
+        "remark": "О14 (decisions/0109, answer to I3 of step 02)",
+        "file": "tools/test/e2e/kit/stand.js",
+        "place": "Stand#doStop (stop()), the condition of STAND_EXIT, line 234",
+        "was": "if (exit.code !== 0 || exit.signal) {",
+        "became": "if (!this.#sentTerm || exit.code !== 0 || exit.signal) {  — with a two-line comment above it: 'the only good end is code 0 after the SIGTERM of stop(): a stand is a server, so one that ended by itself fails whatever its code (decisions/0109)'. The message is the same (' on its own' when stop() sent no SIGTERM, ' after SIGTERM' otherwise); CLEANUP_FAILED and STAND_STOP_TIMEOUT are still checked before it. 430 -> 432 lines."
+      },
+      {
+        "remark": "О14",
+        "file": "tools/test/fixtures/e2e-stand/fake-stand.js",
+        "place": "the set MODES, line 25",
+        "was": "… \"die-later\", \"noisy\", …",
+        "became": "… \"die-later\", \"quit-later\", \"noisy\", …"
+      },
+      {
+        "remark": "О14",
+        "file": "tools/test/fixtures/e2e-stand/fake-stand.js",
+        "place": "announce(), line 120 (after the die-later line)",
+        "was": "only the die-later timer: if (MODE === \"die-later\") setTimeout(() => process.exit(5), 300);",
+        "became": "+ if (MODE === \"quit-later\") setTimeout(() => process.exit(0), 300);  — the mode prints 'Fake stand ready.' and the link, then ends by itself with code 0 300 ms later; its SIGTERM handler is that of ok (term, close, exit 0). Mode 0755 kept; 163 -> 165 lines."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "LEFT of section 16 before the rework (2026-11-08T17:35:03Z); sha256 of the two files",
+        "output": "processes 0, folders 0; stand.js f14b552cb9b2a535 and fake-stand.js c92ebaeca9b86685 — the same as at the close of step 02"
+      },
+      {
+        "command": "cd tools && npx prettier --check test/e2e/kit/stand.js test/fixtures/e2e-stand/fake-stand.js && npx eslint --max-warnings 0 <the same two files>; the mode of fake-stand.js",
+        "output": "All matched files use Prettier code style! (exit 0); eslint: no output (exit 0); -rwxr-xr-x"
+      },
+      {
+        "command": "diff -u of the two files against their step 02 version (kept in <scratch>/e2e105d/c1)",
+        "output": "stand.js: -    if (exit.code !== 0 || exit.signal) {  +    // the only good end is code 0 after the SIGTERM of stop(): a stand is a server,  +    // so one that ended by itself fails whatever its code (decisions/0109)  +    if (!this.#sentTerm || exit.code !== 0 || exit.signal) {\nfake-stand.js: +  \"quit-later\",  (in MODES, after die-later) and +  if (MODE === \"quit-later\") setTimeout(() => process.exit(0), 300);  (in announce(), after the die-later line). Nothing else."
+      },
+      {
+        "command": "Proof: node <scratch>/e2e105d/check-o14.mjs <tools> (through startStand; waits for facts with limits; every learned pid killed in a finally)",
+        "output": "cases 7, checks 29, failed 0, leftover pids killed 0, result PASS. quit-later: ends by itself (isRunning() false, limit 5 s), exitInfo() {code:0, signal:null}, stop() rejects with STAND_EXIT 'fake ended with exit code 0 on its own. Last line of its stderr: \"\"', a second stop() returns the same promise and the same error object, no term in the log, group and marker gone, nothing registered. die-later: the same with 'fake ended with exit code 5 on its own. Last line of its stderr: \"\"'. ok stopped by stop(): {\"code\":0,\"signal\":null}, exactly one term. quit-later stopped at once (before its 300 ms): {code:0, signal:null}, one term. exit-one: 'fake ended with exit code 1 after SIGTERM. Last line of its stderr: \"\"'. ignore-term with stopTimeoutMs 1500: STAND_STOP_TIMEOUT 'fake did not stop in 1500 ms after SIGTERM; it was killed', one term. withStand with quit-later and a body that waits until the stand has ended and returns: STAND_EXIT 'fake ended with exit code 0 on its own. …' is thrown."
+      },
+      {
+        "command": "Control: the same proof on <scratch>/e2e105d/c2 — a fresh clone of base/E2E105-20261105-01 with the step 02 stand.js (the old condition) and the new fake-stand.js",
+        "output": "cases 7, checks 29, failed 4, result FAIL: exactly 'stop() rejects with STAND_EXIT', 'the message holds exit code 0 on its own', 'the whole message' of quit-later, and the withStand case; die-later, ok, quit-later stopped at once, exit-one and ignore-term pass there too. So the proof tells the old condition from the new."
+      },
+      {
+        "command": "Regression on the project: (a) the one-line command of section 14, sub-step 1, (a), verbatim; node <scratch>/e2e105d/check-b.mjs <tools>; node <scratch>/e2e105d/trial-modes.mjs <tools>",
+        "output": "(a): 200 Учёт-Про {\"code\":0,\"signal\":null} \"\" and exit=0. check-b: 20 PASS, 0 FAIL, result PASS. trial-modes: cases 25, failed checks 0 (121 PASS), leftover pids killed by the trial 0, result PASS."
+      },
+      {
+        "command": "LEFT after the proof and the regression runs (2026-11-08T17:37:08Z)",
+        "output": "processes 0, folders 0; no folder of the sketches left"
+      },
+      {
+        "command": "From tools/: npm run -s format:check; npm run -s lint; npm run -s traces | tail -1; npm run -s handoffs-check | tail -1; node --test test/e2e-kit.test.js | tail -8",
+        "output": "format:check: Checking formatting... All matched files use Prettier code style! (exit 0)\nlint: no output (exit 0)\ntraces: файлов проверено 2461, следов 0, пропущено 67\nhandoffs-check: файлов проверено 1325, нарушений 0, исключений использовано 114 из 114\n# tests 52\n# suites 0\n# pass 51\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 34935.971458\n(the only failure: not ok 49 - E2K-50 …, error: 'test/e2e/kit/stand.js: reads TEMP')"
+      },
+      {
+        "command": "cd tools && npm run check (the role file asks for it at the end; started in the foreground, moved by the Bash tool of the session to the background after 180 s, waited for in the same turn)",
+        "output": "2026-11-08T17:38:08Z -> 2026-11-08T17:42:13Z. format:check: All matched files use Prettier code style!; lint: no output; traces: файлов проверено 2461, следов 0, пропущено 67; handoffs-check: файлов проверено 1325, нарушений 0, исключений использовано 114 из 114; test: # tests 2187, # pass 2186, # fail 1, # cancelled 0, # skipped 0, # todo 0, # duration_ms 232907; the only failure: not ok 136 - E2K-50 the scanned files hold no skip, no turned-off rule, no secret, and read only the named variables; exit=1 at the test step, so the e2e step was not reached. The same figures as at step 02."
+      },
+      {
+        "command": "LEFT at the end and ps",
+        "output": "2026-11-08T17:42:32Z: processes 0, folders 0; no folder of the sketches or of the kit test left; the eight old `node -e setInterval` processes of 2026-11-03 untouched; no process started by this step is alive. git status: this step changed only the two files of its write set and this handoff (the other entries are those of step 02 and of ORCH)."
+      },
+      {
+        "command": "Search for the names of other projects and computer paths",
+        "output": "empty: npm run traces -> следов 0 (above; run again after this result was written)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "E2K-50 of tools/test/e2e-kit.test.js stays the only red test, with the same message 'test/e2e/kit/stand.js: reads TEMP' and the same cause as in step 02 (issue I1 there): the six base-list names are not yet in ENV_NAMES. This rework does not touch it; TEST-DESIGNER fixes it at sub-step 3 (design section 12 row 1)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "For TEST-DESIGNER (step 5, inside E2S-11 as the task says; no test was written here): the mode quit-later prints the link and exits 0 by itself 300 ms later. A test must first wait for the fact isRunning() false (limit 5 s), then expect stop() to reject with STAND_EXIT whose message is 'fake ended with exit code 0 on its own. Last line of its stderr: \"\"', and no term in the log. A stop() called before the 300 ms sends SIGTERM and resolves { code: 0, signal: null } (shown by the proof), so the wait is needed."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "A residual of the reading, not a change: a stand that ends by itself in the very moment stop() is called, before the starter has seen its exit, still gets the SIGTERM and is read as a stop after SIGTERM; with code 0 stop() then resolves. From outside the two cannot be told apart (a leader that has ended but is not yet reaped still takes the signal). A test meets it only if it calls stop() in that moment; E2S-11 waits for isRunning() false first."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "In my closed step 02 handoff, the self_check entry of check (b) says '21 of 21 PASS'. Counted by command, check-b.mjs has 20 checks (grep -c of the check( calls: 20) and its runs print 20 PASS lines (the rerun of this step: 20 PASS, 0 FAIL). The text of every check listed there is right; the number is wrong. A closed handoff is not rewritten by its author: ORCH may add an orch_correction to step 02 (was '21 of 21 PASS', became '20 of 20 PASS')."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "For DOC-UPDATER at step 10 (as О14 says): section 4.1 of the design gets the reading 'a stand that ended by itself before stop() fails with STAND_EXIT … on its own, whatever its code'; the 4.3 mode table should also get the row quit-later ('prints the link, exits 0 by itself 300 ms after it' | E2S-11), and section 5 row 9 reads the same way."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the addendum of 2026-11-08 with О14 is in decisions/0109; the two files of the write set were byte for byte those of the close of step 02 (sha256 above) before the edit; context.rework_of names step 02. The status of this handoff was set to IN_PROGRESS at the start of the work."
+      }
+    ],
+    "prototype": "<scratch>/e2e105d/ (the scratch folder of the session; nothing of it is in the project): check-o14.mjs — the proof of О14; o14-1.txt — its output on the project; c2/ — a fresh clone of the tag with the step 02 stand.js and the new stand-in (the control); o14-before.txt — the control's output; b-2.txt, trial-2.txt — the regression runs of check (b) and of the 25-case trial; kit-02b.txt — the kit test output; check-02b.txt — the output of npm run check; write-result-02b.mjs — writes this result by one text replacement. c1/ is the step 02 state S1 (kept unchanged).",
+    "artifacts_out": [
+      "tools/test/e2e/kit/stand.js",
+      "tools/test/fixtures/e2e-stand/fake-stand.js"
+    ]
+  }
+}

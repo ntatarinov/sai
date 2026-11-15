@@ -1,0 +1,257 @@
+{
+  "handoff_id": "step04b-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "04b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/E2E105-20261105-01/step-04b-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-04-reviewer.json (FAIL: M1, L1-L4)",
+      "handoffs/E2E105-20261105-01/step-03-security-reviewer.json (PASS with F1-F4, issues I1-I7)",
+      "decisions/0109-e2e-stand-conventions.md (addenda O13, O14, O15, O16)",
+      "docs/design/REQ-105-e2e-picker.md (4.1, section 5, section 10, section 12)"
+    ],
+    "route": "CODE-FIXER (this) -> SECURITY-REVIEWER + REVIEWER again (pass 2 of at most 3) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable -> 8 not applicable -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/kit/stand.js",
+      "tools/README.md (the starter paragraph only; then npx prettier --write README.md in tools/)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-04-reviewer.json"
+  },
+  "task": {
+    "description": "WF-02, step 04b — fix the code of the server starter by the remarks of the first pass of the gates (REVIEWER FAIL, SECURITY-REVIEWER PASS with Lows). Fix in tools/test/e2e/kit/stand.js: (1) M1 of REVIEWER = F3 of SECURITY-REVIEWER: a readyPattern whose one capture group does not take part in the match (for example an optional group) must not end in a raw TypeError and must not leave the stand alive: record the outcome of the start in an explicit field, send every match through the loopback check (a match whose group took no text is refused with URL_REFUSED, the kit's code for a link that is not a loopback link) and every failure through the same clean-up as the other start failures (group killed, registration and marker removed), so that every path throws the kit's error class; (2) L1: listen for the child's error event before the pipes are touched, in the order runner.js uses; (3) L2: in withStand, when the stop error is the same object as the body error (the body itself awaited a failing stop()), add nothing; (4) I4 of SECURITY-REVIEWER: in withStand, a body error that cannot take a property (a frozen object, or not an object) is rethrown unchanged, never replaced by a TypeError of the assignment; (5) L3: an env value with a NUL is refused with a message that says 'without NUL', as the message for args does; (6) F1 of SECURITY-REVIEWER: the comment that says a server never sees the home folder is false — say the truth (the child gets no HOME variable; Node can still find the home folder through the system's list of users; decisions/0109 O15). In tools/README.md, the starter paragraph: (7) L4: add that a server that ended by itself before stop() fails whatever its exit code (decisions/0109 O14); (8) F1: the same truth about the home folder. In the README keep every existing word of the paragraph (section 10 of the design and the tests E2K-41, E2K-60 and E2S-19 read it): add clauses, do not remove or reword the existing ones; run prettier on README.md. Not in this step: F2 (state folders bound to env) and the HOME default go to the design of REQ-106 (O15); F4 and the browser.js shapes are defects at step 10 (O16). Prove each fix outside the project with a trial that fails on the code of step 02b and passes on yours (the trials of the reviewers in the session scratchpad may be reused); then from tools/: npm run -s format:check, npm run -s lint, npm run -s traces | tail -1, npm run -s handoffs-check | tail -1, node --test test/e2e-kit.test.js | tail -8 (still only E2K-50 red, until TEST-DESIGNER), and the real picker through the starter (check (a) of section 14). No sleeps; waits for facts with limits. Task text and files hold no absolute machine paths and no names of the owner's other projects. Do not edit any test file; do not commit or push.",
+    "acceptance_criteria": [
+      "M1/F3 fixed: no TypeError, nothing left alive, every path throws the kit's error",
+      "L1, L2, L3, I4, F1 fixed in stand.js",
+      "README: L4 and F1 clauses added, no existing word removed",
+      "Each fix proved by a trial red on step 02b code and green on the fix",
+      "Checks green except the expected E2K-50"
+    ]
+  },
+  "created_at": "2026-11-08T18:18:37Z",
+  "started_at": "2026-11-08T18:18:37Z",
+  "completed_at": "2026-11-08T18:45:01Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 04b, the rework for the FAIL of step 04 (REVIEWER: M1 blocking, L1-L4) together with SECURITY-REVIEWER F1, F3 (= M1) and I4; next comes pass 2 of 3 of SECURITY-REVIEWER and REVIEWER. All eight items of the task are closed, in the two files of the write set and nothing else (index.js, fake-stand.js, every test file, every other kit file and tools/src are byte for byte as before). tools/test/e2e/kit/stand.js: (1) M1/F3 - the outcome of the start is recorded in an explicit field kind (link, error, timeout, exited) and the link travels as text; every match goes through assertLoopbackUrl, so a match whose group took no part (an optional group, or a group in the other alternative) is refused with URL_REFUSED in the kit's words, and goes through abortStart like every other start failure (SIGKILL to the group, the wait until it is gone, unregisterGroup, the marker removed); no path of startStand throws a TypeError any more. (2) L1 - the child's error listener is attached before the pipes are touched and the pipes are read with ?. (the order of runner.js); a spawn that fails with EMFILE now gives STAND_START_FAILED 'could not start \"<name>\": EMFILE' at once, the start timer cleared, the marker removed, and the spec process goes on instead of crashing; the registration block right after spawn (C-2) is unchanged. (3) L2 - withStand attaches nothing when the stop error is the body error itself. (4) I4 - the assignment of cleanupError sits in try/catch, so a frozen or sealed body error, or one with a read-only cleanupError, is rethrown unchanged; a value that is not an object is still skipped; a thrown string, undefined and null are rethrown as they are. (5) L3 - 'env value of <name> must be a string without NUL', the words of the args message; the value stays out. (6) F1 - the comment above baseEnvironment() says the truth: no HOME variable, the home folder itself is not hidden, Node finds it through the system's list of users (decisions/0109 O15). tools/README.md, the starter paragraph (line 844) only, two clauses inserted and no existing word removed or reworded (118 of 118 words kept in order, 45 added; no other line changed; prettier left the file unchanged): (7) L4 - 'requires the exit code 0 after that signal; if the server ended by itself before `stop()`, `stop()` fails whatever the exit code (decisions/0109)'; (8) F1 - 'nothing else (no `HOME` unless the spec gives it; the home folder itself is not hidden: Node finds it through the system's list of users, decisions/0109)'. PROOF: seven trials outside the project, each run on a fresh clone of the tag holding the four step-02b files (<scratch>/e2e105f/c02b) and on a second clone holding the same files plus the two fixed ones (<scratch>/e2e105f/fix): every remark red on 02b and green on the fix - M1 10 of 17 checks red -> 0; L1 a TypeError and then a crash with exit code 1 -> STAND_START_FAILED EMFILE and exit 0; L2 and I4 4 of 20 red -> 0; L3 2 of 12 red -> 0; F1 3 of 8 red -> 0 (the behaviour checks are the same on both copies: they are what makes the old comment false and the new one true); README 4 of 8 red -> 0; the regression of every start outcome 32 of 32 green on both. The reviewers' own trials on the fix: group1 7/0 (was 7/3), their EMFILE trial STAND_START_FAILED and exit 0 (was a crash), refusals 31/0, drain 6/0, withchild 5/0, o14 30 of 31 (the one red check is the one that asserted the L2 self-reference, which is gone). CHECKS from tools/: format:check and lint clean; traces 0 traces; handoffs-check 0 violations; node --test test/e2e-kit.test.js 52/51/1 with only E2K-50 red ('test/e2e/kit/stand.js: reads TEMP', red by the design until TEST-DESIGNER at sub-step 3; the same red with the same message on the 02b copy, so it is not this work); the real picker through the starter (check (a) of section 14) prints 200 Учёт-Про {\"code\":0,\"signal\":null} \"\" and exits 0; the whole npm run check stops at npm test with 2187/2186/1 (the same E2K-50; the figure the design gives after sub-step 2), so npm run e2e was not reached. No sleep in the code or the trials: every wait is for a fact with a limit. LEFT 0 processes and 0 folders before and after; at the end only the ten old node processes run. Found on the way and not edited (issues I2-I5): the same kind as I4 in withBrowser of the released browser.js, reproduced, and not named in O16; a thrown null taken as success by withBrowser, reproduced; the L3 shape in the timeout messages of stand.js; design texts that now lag behind the README (section 10 item 3, 4.1, section 15 row R2). Nothing committed or pushed; docs/program/public-v1/PROGRESS.md not touched.",
+    "changes": [
+      {
+        "remark": "M1 (REVIEWER) = F3 (SECURITY-REVIEWER)",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "319, 323, 336, 354, 370, 375-384",
+        "was": "the outcome was told apart by the presence of a value: settle({ link: match[1] }), settle({ error }), settle({ timeout: true }), settle({ exited: true }) and then if (result.link !== undefined) … else if (result.error !== undefined) … else if (result.timeout) … else <exited>; a match whose one group took no part gave link undefined and fell into the exited branch, where exitInfoOf(state.exit) read null: a TypeError, abortStart skipped, the stand alive with its registration and marker until the spec process ended",
+        "became": "every settle carries an explicit kind: { kind: 'link', text: match[1] }, { kind: 'error', error }, { kind: 'timeout' }, { kind: 'exited' }; the branches test result.kind; the link branch calls assertLoopbackUrl(result.text), so an undefined group 1 gives URL_REFUSED 'refused to open \"[undefined]\": only http://127.0.0.1:<port>/… is allowed' and goes through abortStart like every other failure of the start; two comment lines (319, 376) say why"
+      },
+      {
+        "remark": "L1 (REVIEWER)",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "332-358",
+        "was": "the pipes were touched first (child.stdout.setEncoding and the five other pipe calls) and the error listener came after them; a spawn that failed with EMFILE gave a child without pipes: a TypeError from setEncoding, the start timer of 15 s armed, and an error event with no listener that crashed the spec process ('Unhandled error event', exit 1)",
+        "became": "child.on('error', …) is attached right after the outcome promise and before any pipe access, and the six pipe calls read child.stdout?. and child.stderr?. (the order of runner.js: the error listener first, then the pipes with ?.); a pipeless child ends by its error event as STAND_START_FAILED with its system code, the timer cleared by settle, the marker removed; with no pid nothing is registered, signalled or waited for (4.1 step 3); the registration block right after spawn (C-2) is not touched; two comment lines (332-333)"
+      },
+      {
+        "remark": "L2 (REVIEWER)",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "434-436",
+        "was": "if (failure !== null && typeof failure === 'object') failure.cleanupError = cleanupError; - when the body itself had awaited the failing stop(), the second stop() was the same rejected promise and the error got itself as its cleanupError",
+        "became": "the condition begins with cleanupError !== failure, so the same error adds nothing (4.1: the second call 'is the same promise and adds nothing'); one comment line (434)"
+      },
+      {
+        "remark": "I4 (SECURITY-REVIEWER)",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "413-415, 437-445",
+        "was": "the assignment failure.cleanupError = cleanupError ran unprotected inside the catch: a frozen or sealed body error, or one with a read-only cleanupError, made it throw a TypeError in strict mode, and that TypeError replaced the body error",
+        "became": "the assignment stands in try { … } catch { // a frozen body error is thrown without it }, so the body error is rethrown unchanged in every case; a value that is not an object is skipped by the typeof test as before; the top comment of withStand (413-415) now says when the stop error is attached"
+      },
+      {
+        "remark": "L3 (REVIEWER)",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "101",
+        "was": "throw usage(`env value of ${key} must be a string`) - also for a string with a NUL",
+        "became": "throw usage(`env value of ${key} must be a string without NUL`) - the words of the args message; the value is not in the message (the name has passed the name check)"
+      },
+      {
+        "remark": "F1 (SECURITY-REVIEWER), decisions/0109 O15",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "26-29",
+        "was": "// The only variables of the spec process that the server gets, each read by name; // a server never sees the home folder, tokens or switches of the developer's shell.",
+        "became": "// The only variables of the spec process that the server gets, each read by name; // a server never sees the tokens or switches of the developer's shell, and gets no // HOME variable. The home folder itself is not hidden: Node finds it through the // system's list of users (decisions/0109)."
+      },
+      {
+        "remark": "L4 (REVIEWER), decisions/0109 O14",
+        "file": "tools/README.md",
+        "lines": "844 (the starter paragraph of the section 'End-to-end tests in a real browser')",
+        "was": "`stop()` sends `SIGTERM` to the process group and requires the exit code 0.",
+        "became": "`stop()` sends `SIGTERM` to the process group and requires the exit code 0 after that signal; if the server ended by itself before `stop()`, `stop()` fails whatever the exit code (decisions/0109)."
+      },
+      {
+        "remark": "F1 (SECURITY-REVIEWER), decisions/0109 O15",
+        "file": "tools/README.md",
+        "lines": "844 (the same paragraph)",
+        "was": "… (`PATH`, `TMPDIR`, `TEMP`, `TMP`, `LANG`, `LC_ALL`, `TZ`, `SystemRoot`) and what the spec gives, nothing else; the link is read from its stdout …",
+        "became": "… (`PATH`, `TMPDIR`, `TEMP`, `TMP`, `LANG`, `LC_ALL`, `TZ`, `SystemRoot`) and what the spec gives, nothing else (no `HOME` unless the spec gives it; the home folder itself is not hidden: Node finds it through the system's list of users, decisions/0109); the link is read from its stdout …; then npx prettier --write README.md in tools/: unchanged"
+      }
+    ],
+    "table": [
+      {
+        "file": "tools/README.md:844",
+        "was": "and what the spec gives, nothing else;",
+        "became": "and what the spec gives, nothing else (no `HOME` unless the spec gives it; the home folder itself is not hidden: Node finds it through the system's list of users, decisions/0109);",
+        "source": "decisions/0109 O15; SECURITY-REVIEWER F1; measured by <scratch>/e2e105f/trials/t-f1.mjs: a stand started without HOME has no HOME variable and its os.homedir() is the user's real home folder; with HOME given it is that folder"
+      },
+      {
+        "file": "tools/README.md:844",
+        "was": "requires the exit code 0.",
+        "became": "requires the exit code 0 after that signal; if the server ended by itself before `stop()`, `stop()` fails whatever the exit code (decisions/0109).",
+        "source": "decisions/0109 O14; REVIEWER L4; the code stand.js:236 (if (!this.#sentTerm || exit.code !== 0 || exit.signal)); measured by the REVIEWER trial o14.mjs on the fix: exit code 0, exit code 5 and signal SIGKILL 'on its own' all reject with STAND_EXIT, code 0 after SIGTERM resolves"
+      },
+      {
+        "file": "tools/test/e2e/kit/stand.js:26-29",
+        "was": "a server never sees the home folder, tokens or switches of the developer's shell.",
+        "became": "a server never sees the tokens or switches of the developer's shell, and gets no HOME variable. The home folder itself is not hidden: Node finds it through the system's list of users (decisions/0109).",
+        "source": "decisions/0109 O15; SECURITY-REVIEWER F1; t-f1.mjs as above"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "date -u at the start; git rev-parse base/E2E105-20261105-01 HEAD; shasum -a 256 of the four files of the change",
+        "output": "2026-11-08T18:19:16Z; both 4f410324572e…; stand.js 9f512e3caabd0de7, index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab, README.md c7021795bfbd240e - the step-02b code that REVIEWER and SECURITY-REVIEWER checked; node v22.23.4"
+      },
+      {
+        "command": "LEFT of design section 16 before the work (ps by src/picker/cli.js serve, fake-stand.js, sai-e2e-; the sai-e2e-* folders of the temporary root); ps of node processes",
+        "output": "0 processes, 0 folders; node processes: the ten old ones (pids 266 and 726 'node stand.js' of 2026-11-07, eight 'node -e setInterval' of 2026-11-03), not mine, left alone"
+      },
+      {
+        "command": "git clone -b base/E2E105-20261105-01 into <scratch>/e2e105f/c02b and <scratch>/e2e105f/fix; the four step-02b files copied into both (mode 0755 of fake-stand.js kept); after the edit stand.js and README.md copied into fix",
+        "output": "both clones at 4f41032; c02b stand.js 9f512e3caabd0de7; fix stand.js 9ded9116221ba14f and README.md 579da23531a6d1a0, equal to the project. Every trial sets TMPDIR to its own private folder under <scratch>/e2e105f/tmp before it loads the kit"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-m1.mjs <copy>/tools (stand-in mode ok; readyPattern with a group that takes the empty text as a control, then /(no-such-text)?Fake stand ready./u and /Fake stand ready.|(never-printed)/u with the dots escaped; then a normal start)",
+        "output": "02b: checks 17, failed 10 - both forms: TypeError 'Cannot read properties of null (reading 'signal')' after 67 ms, the stand pid and group alive after the rejection, 1 group and 1 folder registered, the marker left; fix: checks 17, failed 0 - both forms: E2eError URL_REFUSED 'refused to open \"[undefined]\": only http://127.0.0.1:<port>/… is allowed' after 90 ms, pid and group gone at the rejection, nothing registered, no marker; the control gives URL_REFUSED 'refused to open \"\"' on both; a normal start afterwards stops with {code:0, signal:null}; leftover processes killed by the trial: 0"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/run-l1.mjs <copy>/tools (runs t-l1.mjs under ulimit -n 64: one stand started and stopped, then /dev/null opened until EMFILE, then startStand; the parent checks the exit code, the time from the last line to the end, the folders after the end)",
+        "output": "02b: 'descriptors held: 50, then EMFILE'; startStand rejected with TypeError 'Cannot read properties of undefined (reading 'setEncoding')', then 'Unhandled 'error' event … Error: spawn <node> EMFILE' and exit code 1 (child checks 4, failed 2; parent checks 4, failed 1); fix: E2eError STAND_START_FAILED 'could not start \"em\": EMFILE' at once, no group registered, the marker removed (0 folders, 0 registered), the process went on and ended with exit code 0 1 ms after its last line (no timer left), no folder after the end (child 4/0, parent 4/0)"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-l2i4.mjs <copy>/tools (withStand with the stand-in in mode exit-one, so every stop() fails with STAND_EXIT)",
+        "output": "02b: checks 20, failed 4 - a body that awaited the failing stop(): cleanupError is the error itself; a frozen and a sealed body error: TypeError 'Cannot add property cleanupError, object is not extensible'; a read-only cleanupError: TypeError 'Cannot assign to read only property 'cleanupError' …'; fix: checks 20, failed 0 - nothing attached in the first case, the three body errors thrown as the same objects (the read-only property kept); controls the same on both: an ordinary body error gets cleanupError STAND_EXIT, a good body gives STAND_EXIT, a thrown string, undefined and null are rethrown unchanged; in every case the stand stopped, its group gone, nothing registered, no folder"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-l3.mjs <copy>/tools (a deps.spawn that counts and throws)",
+        "output": "02b: checks 12, failed 2 - 'startStand: env value of TOKEN must be a string' for a string with a NUL and for a number; fix: checks 12, failed 0 - 'startStand: env value of TOKEN must be a string without NUL' for both, the value absent from the message, 0 spawns, no folder; the args message unchanged on both"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-f1.mjs <copy>/tools (homeprobe.mjs: a stand that writes whether it has a HOME variable and what os.homedir() gives; then the comment above baseEnvironment())",
+        "output": "02b: checks 8, failed 3 - the comment claims 'a server never sees the home folder' and says nothing of HOME or of the system's list of users; fix: checks 8, failed 0. Behaviour, the same on both copies: without HOME in env the stand has no HOME variable and its os.homedir() equals the user's real home folder (so the old comment is false and the new one true); with HOME given it is that folder; each probe stopped with code 0"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-readme.mjs <copy>/tools <scratch>/e2e105f/orig/README.md (the starter paragraph against the step-02b one)",
+        "output": "02b: checks 8, failed 4 (the two L4 checks and the two F1 checks); fix: checks 8, failed 0 - the clauses present; the 118 words of the step-02b paragraph kept in their order, 45 words added; the first and the last sentence whole; no other README line changed; the paragraph still right before 'How to write a spec:'"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-paths.mjs <copy>/tools (regression of every start outcome: ok, ok-late, noisy, with-child, a cwd that does not exist, exit-early, hang with startTimeoutMs 1500, foreign-link with a generic pattern)",
+        "output": "02b: checks 32, failed 0; fix: checks 32, failed 0 - ENOENT: STAND_START_FAILED 'could not start \"fake\": ENOENT' in 1 ms; exit-early: STAND_START_EXITED '… (exit code 3). Last line of its stderr: \"fake stand: cannot start, boom\"'; hang: STAND_START_TIMEOUT after 1526 ms; foreign-link: URL_REFUSED; noisy: both kept texts end with END and are at most 65536 characters; with-child: the child alive at the link and gone after stop(); after each case the group gone, nothing registered, no folder"
+      },
+      {
+        "command": "node <scratch>/e2e105r/trials/{group1,o14,refusals,drain,withchild}.mjs <scratch>/e2e105f/fix/tools; sh -c 'ulimit -n 64; exec node …' <scratch>/e2e105r/trials/emfile.mjs <scratch>/e2e105f/fix/tools (REVIEWER's trials, unchanged)",
+        "output": "group1 checks 7, failed 0 (was 7/3 on 02b); o14 checks 31, failed 1 - the failed one asserts 'error.cleanupError === error (self-reference)', the L2 defect, which is gone; every other stop() outcome of O14 as REVIEWER measured; refusals 31/0; drain 6/0; withchild 5/0; emfile: 'startStand rejected: E2eError: STAND_START_FAILED: could not start \"em\": EMFILE', 'the process is still running after the rejection', 'exit handler: code 0'"
+      },
+      {
+        "command": "cd tools && npx prettier --write README.md; npx prettier --check test/e2e/kit/stand.js README.md; npx eslint --max-warnings 0 test/e2e/kit/stand.js",
+        "output": "README.md (unchanged); All matched files use Prettier code style! (exit 0); eslint exit 0, no output"
+      },
+      {
+        "command": "diff -u <scratch>/e2e105f/orig/stand.js test/e2e/kit/stand.js; git diff --no-index --word-diff <scratch>/e2e105f/orig/README.md README.md",
+        "output": "stand.js: the places of the list only (26-29, 101, 319-384, 413-445), nothing else; README.md: line 844 only, 'else;' -> 'else (…);' and '0.' -> '0 after that signal; … (decisions/0109).'"
+      },
+      {
+        "command": "the new stand.js: whole-environment reads, computed keys, named reads, the nested runner variable, the skip/todo/turned-off words and '|| true' (patterns assembled from parts), imports, prints; comment lines against non-empty lines",
+        "output": "0, 0, the eight base names only (PATH, TMPDIR, TEMP, TMP, LANG, LC_ALL, TZ, SystemRoot), 0, 0; imports node:child_process, node:path, ./cleanup.js, ./errors.js, ./guards.js; prints 0; comments 33 of 424 (7 %; before 24 of 407, 5 %; browser.js 3 %, runner.js 5 %, cleanup.js 14 %)"
+      },
+      {
+        "command": "cd tools && npm run -s format:check; npm run -s lint; npm run -s traces | tail -1; npm run -s handoffs-check | tail -1",
+        "output": "All matched files use Prettier code style! (exit 0); lint exit 0, no output; traces: файлов проверено 2464, следов 0, пропущено 67 (exit 0); handoffs-check: файлов проверено 1328, нарушений 0, исключений использовано 114 из 114 (exit 0)"
+      },
+      {
+        "command": "cd tools && node --test test/e2e-kit.test.js | tail -8",
+        "output": "# tests 52, # suites 0, # pass 51, # fail 1, # cancelled 0, # skipped 0, # todo 0, # duration_ms 34859; the one not ok is 49 E2K-50 with error 'test/e2e/kit/stand.js: reads TEMP' (red by the design until TEST-DESIGNER, section 12 row 1)"
+      },
+      {
+        "command": "cd <scratch>/e2e105f/c02b/tools && node --test test/e2e-kit.test.js (the repeat without this work, quality-bar §6 item 4)",
+        "output": "# tests 52, # pass 51, # fail 1: the same not ok 49 E2K-50 with the same error 'test/e2e/kit/stand.js: reads TEMP'; the red comes from the base list of baseEnvironment() (lines 30-46, not edited), not from this work"
+      },
+      {
+        "command": "cd tools && node --input-type=module -e '<check (a) of design section 14, word for word>' (the real picker through the starter); LEFT before and after; git status --short",
+        "output": "200 Учёт-Про {\"code\":0,\"signal\":null} \"\" (exit 0); LEFT 0/0 before and after; git status the same list as at the start of the step"
+      },
+      {
+        "command": "cd tools && npm run check (the whole check, 2026-11-08T18:34:19Z to 18:38:17Z)",
+        "output": "format:check: All matched files use Prettier code style!; lint: clean; traces: файлов проверено 2464, следов 0, пропущено 67; handoffs-check: файлов проверено 1328, нарушений 0, исключений использовано 114 из 114; npm run test: # tests 2187, # pass 2186, # fail 1, # cancelled 0, # skipped 0, # todo 0 - the one not ok is 136 E2K-50, error 'test/e2e/kit/stand.js: reads TEMP'; exit 1, so the sixth step npm run e2e was not reached. 2187/2186/1 is the figure the design gives after sub-step 2 (section 14)"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-wb.mjs <scratch>/e2e105f/fix/tools (withBrowser of the released browser.js with the stand-in Chrome; a folder inside the profile made unremovable by the trial and restored after; for issue I2)",
+        "output": "(a) a frozen body error with a close() that fails: TypeError 'Cannot add property cleanupError, object is not extensible' instead of the body error; (b) a body that throws null: withBrowser resolves with undefined; checks 2, failed 2 - two defects of browser.js, not edited"
+      },
+      {
+        "command": "at the end: shasum -a 256 of the four files; git diff --quiet base/E2E105-20261105-01 -- tools/test/e2e-kit.test.js and the other kit files and tools/src; LEFT; ps of node processes",
+        "output": "stand.js 9ded9116221ba14f, README.md 579da23531a6d1a0, index.js c5d82a73e599a0e3 and fake-stand.js d3d3cfe959fabaab unchanged; the test file, browser.js, cleanup.js, runner.js, guards.js, errors.js and tools/src unchanged against the tag; LEFT 0 processes, 0 folders; node processes: only the ten old ones; every process a trial started was ended by its pid or group; the private temporary roots of the trials removed"
+      },
+      {
+        "command": "after this result was written, before close: node -e JSON.parse of this handoff; a search of it for machine paths; cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1",
+        "output": "JSON valid (8 changes, 22 self_check entries, 7 issues); machine paths 0; handoffs-check: файлов проверено 1328, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2464, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "E2K-50 (tools/test/e2e-kit.test.js) stays red with 'test/e2e/kit/stand.js: reads TEMP', as the design plans until TEST-DESIGNER adds the six names at sub-step 3 (section 12 row 1); this step did not touch the base list, and the repeat on the 02b copy is red with the same message (self_check). No existing test checks the behaviour changed here (the tests E2S-01…20 are not written yet; E2K-41 and E2K-60 read README words and stay green). For TEST-DESIGNER at sub-steps 3-4, the new behaviour to cover: (a) a readyPattern whose one group takes no part (optional, or in another alternative) -> URL_REFUSED, group gone, nothing registered, no marker; (b) the message 'env value of <name> must be a string without NUL', the value absent; (c) withStand: a body that awaits the failing stop() gets no cleanupError, and a frozen body error is rethrown as the same object; (d) a child without pipes: EMFILE cannot be forced inside npm test without lowering the descriptor limit of the test process, so it needs a child process under ulimit (as <scratch>/e2e105f/trials/run-l1.mjs) or a deps.spawn that returns a pipeless child and emits error on the next tick - TEST-DESIGNER decides."
+      },
+      {
+        "id": "I2",
+        "kind": "DEFECT_CANDIDATE",
+        "text": "AP-014, outside the write set: withBrowser of the released tools/test/e2e/kit/browser.js:343-358. (a) The kind of I4: 'if (typeof failure === \"object\") failure.cleanupError = cleanupError;' is unprotected, so a frozen body error together with a close() that fails is replaced by a TypeError (reproduced: <scratch>/e2e105f/trials/t-wb.mjs (a)). O16 names only the self-reference of withBrowser, not this. (b) Found on the way, another cause: failure === null is the mark of 'no failure', so a body that throws null passes as a success (t-wb.mjs (b): resolves with undefined); withStand keeps a separate flag and rethrows null (t-l2i4.mjs). Importance Low. Not edited (quality-bar §6 item 6); ORCH decides whether DOC-UPDATER opens (a) with the self-reference defect of O16 (the same statement) and (b) as its own defect."
+      },
+      {
+        "id": "I3",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "The shape of L3 in stand.js:105-112 (the message at 110), not in the list and so not edited (AP-019): startTimeoutMs or stopTimeoutMs 0 is refused with '<option> must be a whole number of milliseconds', though 0 is a whole number; the rule broken is 'at least 1'. A one-phrase change (for example 'a whole number of milliseconds above 0') if ORCH wants it; Low."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "Design texts that now lag behind the code and the README (AP-005), outside the write set: (a) docs/design/REQ-105-e2e-picker.md section 10 item 3, the source text of the README paragraph, lacks the two clauses added here (O14, O15); REVIEWER's L4 fix asked for both edits together, but the design is not in this write set; (b) section 4.1 (O14 already sends it to DOC-UPDATER at step 10); (c) section 15 row R2 says 'the starter is built so that REQ-106's stand has no real home folder (C-1, stateDirs)', which t-f1.mjs shows false (a stand without HOME finds the real home folder) - the claim F1 found in the comment; O15 moves the real protection into the design of REQ-106. For DOC-UPDATER at step 10, or CODE-DESIGNER, as ORCH decides."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "F1 also says that the README's 'nothing else' misses two names the platform adds by itself (macOS __CF_USER_TEXT_ENCODING; Node's NODE_V8_COVERAGE when the parent has it). Neither F1's fix nor this task asks for it, and the task orders to keep every existing word, so it was not touched; E2S-05 already allows the first name, and I3 of step 03 tells TEST-DESIGNER about the second."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "AP-014 search of each remark's kind: M1 (an outcome told by a missing value) - no other place in stand.js (the other '!== undefined' tests are of pid and mean 'no process'), browser.js settles by resolve and reject, runner.js has no such shape; L1 (pipes touched before the error listener) - browser.js:224-252 (O16), runner.js already in the right order, and the stand-in fake-stand.js:152-154 attaches its child's error listener first but reads child.stdout without a guard (under EMFILE in the stand-in it would end with a TypeError, which the starter reports as STAND_START_EXITED; no change proposed); L2 - browser.js:355 (O16); I4 - browser.js:355 (I2); L3 - I3; F1 - I4 (c), and no other such claim in tools/."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: base/E2E105-20261105-01 = HEAD = 4f41032; the four step-02b files have the hashes the gates checked; decisions/0109 holds O13-O16; the starter paragraph is README line 844 and stands right before 'How to write a spec:'; E2K-50 is the only red test before and after this step. The task names no expected verdict (AP-018). This handoff's status was set to IN_PROGRESS at the start of the work."
+      }
+    ],
+    "prototype": "<scratch>/e2e105f: trials/ (lib.mjs; t-m1.mjs; run-l1.mjs with t-l1.mjs; t-l2i4.mjs; t-l3.mjs; t-f1.mjs with homeprobe.mjs; t-readme.mjs; t-paths.mjs; t-wb.mjs), out/ (the output of every run on both copies, the two e2e-kit runs and the whole check), c02b/ and fix/ (the two clones), orig/ (stand.js and README.md of step 02b)",
+    "artifacts_out": [
+      "tools/test/e2e/kit/stand.js",
+      "tools/README.md"
+    ]
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "handoff_id": "step06-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-RUNNER",
+  "file": "handoffs/E2E105-20261105-01/step-06-test-runner.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": "ae64b00b4f21311a2",
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-05h-test-design-validator.json",
+      "decisions/0110-run-checks-on-github.md",
+      "decisions/0107-e2e-real-chrome-in-check.md (the snapshot on a temporary branch)",
+      "docs/anti-patterns.md (AP-141)",
+      "docs/workflows/WF-02-development.md (Step 6)"
+    ],
+    "route": "TEST-DESIGN-VALIDATOR 05h PASS -> TEST-RUNNER (this, local and GitHub, decisions/0110) -> 7 not applicable -> 8 not applicable -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "this handoff only; the temporary branch ci/e2e105-20261105-01-<n> on GitHub, deleted after its run"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "orch_check": {
+      "at": "2026-11-15T14:32:14Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T14:31:17Z, result.verdict PASS, issues I1-I4",
+        "gh run view 43723864463 -> conclusion success, headSha 3c574b061da93fe224d450c0f748ef8d79e87797, branch ci/e2e105-20261105-01-1, 14:20:55Z-14:27:14Z",
+        "git ls-remote origin -> only HEAD and refs/heads/main at 4f410324572ed16cef6d7b57a6c4deadf04d9a26 (the ci branch is deleted, main untouched)",
+        "git status --short -> 14 lines; sha256 of .git/index 34a1054f990e199f… (as reported before and after)",
+        "node src/handoffs/cli.js -> 0 violations",
+        "I1 (git archive copy needs git metadata for handoffs-check and traces), I2 (zsh modifier :r after a variable) -> candidates for the error journal at step 10; I3 -> the known I11 of step 05, step 10; I4 -> recorded, one sample"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 6, gate, run E2E105-20261105-01 (REQ-105, the e2e tests of the solution picker site), by decisions/0110: the check runs locally AND on GitHub. (1) LOCAL: run the single check command in full once, in your own turn: cd tools && npm run check (six steps: format:check, lint, traces, handoffs-check, test, e2e). Record the command, the exit code, the duration of each step and the total, the tests passed/failed/skipped, the line e2e: browser=<version>, the e2e lines of both spec files (smoke and picker) and the duration_ms of the e2e record. (2) GITHUB: build a snapshot commit of the work through a temporary index (GIT_INDEX_FILE; write-tree; commit-tree -p HEAD), never in the real index, with no checkout, reset, stash or clean. The snapshot holds the files of the run and leaves out the handoff of this step and every handoff whose status is not COMPLETED or FAILED (AP-141), and it leaves out docs/program/public-v1/PROGRESS.md (not a file of this run; it is never committed in runs). Before the push run handoffs-check and traces on the tree of the snapshot (a copy outside the project made with git archive of the snapshot commit) and push only when both are clean. Push it as <sha>:refs/heads/ci/e2e105-20261105-01-1 (the next number if that name is taken), find its check.yml run by the head sha, wait for it within your turn (about 15 minutes; the job timeout is 30 minutes, decisions/0106), read the conclusion, the job time, the image line, the e2e lines (browser, both spec files, the record line with duration_ms) and the test counts from the log, then delete the branch and show it is gone. Write the list of files left out of the snapshot into self_check. (3) Analyse every failure with evidence; a failure is acceptable only if proven not caused by this work; a test that passes and fails by turns is a defect (say so, do not rerun until green). (4) Say how long the picker spec took on the runner against the local 17 s and against 48000 ms (if it is longer than 48000 ms, say so plainly: ORCH must ask the owner). (5) Check afterwards that no sai-e2e process and no sai-e2e temporary folder of yours is left, and that the working tree is as before your step (git status --short, sha256 of .git/index, sha256 over the run's files). Compare the local and the GitHub totals with the CI limit of 30 minutes (watch value about 25 minutes) and state the margin. PASS only if both runs are green or every failure is proven not caused by this work; otherwise FAIL. Do not edit the project (only this handoff), do not commit to any branch other than the temporary ci/ branch, do not push to main. The Mac has crashed under load before: one heavy job at a time.",
+    "acceptance_criteria": [
+      "local npm run check in full once: exit code, step durations, counts, e2e lines of smoke and picker, duration_ms",
+      "GitHub check.yml on a snapshot of the run on a temporary ci/ branch built by AP-141, with conclusion, job time, image, e2e lines and counts read from the log; the branch deleted afterwards",
+      "every failure analysed with evidence; flaky = defect; picker time on the runner against 17 s and 48000 ms",
+      "no leftovers; the working tree as before; margins against the 30-minute limit"
+    ]
+  },
+  "created_at": "2026-11-15T14:09:16Z",
+  "started_at": "2026-11-15T14:09:16Z",
+  "completed_at": "2026-11-15T14:31:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. The single check command passed in full both times, with no failure to analyse. LOCAL (this Mac, under caffeinate -i, once, in my own turn): cd tools && npm run check -> exit 0 in 279.1 s; format, lint, traces and handoffs-check clean; npm test 2207 of 2207, 0 failed, 0 skipped, 0 todo; e2e in Chrome/157.0.8103.78: picker 9 of 9, smoke 13 of 13, record 'e2e: command=npm run e2e selection=all exit=0 duration_ms=34124'. GITHUB (decisions/0110): snapshot commit 3c574b061da93fe224d450c0f748ef8d79e87797 (parent 4f410324572ed16cef6d7b57a6c4deadf04d9a26) built through a temporary index, the 38 files of the run without this handoff and without docs/program/public-v1/PROGRESS.md, handoffs-check and traces clean on the snapshot tree before the push; pushed to ci/e2e105-20261105-01-1; check.yml run 43723864463 conclusion success, job 376 s on ubuntu-24.04; npm test 2207 of 2207; e2e in Chrome/157.0.8103.50: picker 9 of 9, smoke 13 of 13, record 'e2e: command=npm run e2e selection=all exit=0 duration_ms=44930'; the branch is deleted and only main (unchanged, 4f41032) is on the remote. The picker spec took 20035 ms on the runner against 16547 ms here (the earlier local 17 s): 1.21 times, 42 percent of the 48000 ms line, so no question for the owner. Margins: local 4 min 39 s and GitHub 6 min 16 s against the 30-minute limit (25 min 21 s and 23 min 44 s left; 20 min 21 s and 18 min 44 s under the 25-minute watch value). No sai-e2e process or folder left; the working tree is as before the step.",
+    "findings": [],
+    "self_check": [
+      "ENVIRONMENT: node -v -> v22.23.4, npm -v -> 10.9.9 (engines >=22 <23); tools/node_modules already installed, npm ci not needed locally (the runner runs npm ci itself). Before the run (14:11Z): ps for node and chrome -> only the eight old 'node -e setInterval' processes (pids 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481, started 2026-11-03; not mine, left alone) and the editor's own processes; no Chrome, no picker server, no stand-in; the two old 'node stand.js' processes named in earlier tasks of this run were no longer running. pgrep -f sai-e2e- -> 0; sai-e2e-* folders in the system temporary root -> 0; load average 1.36 2.24 3.43. One heavy job at a time: nothing else ran during the local check, and the GitHub run ran on the runner only.",
+      "LOCAL RUN: from tools/, caffeinate -i node <scratch>/e2e105-06/stamp.mjs <tools> <raw log> <stamped log> 'npm run check' (my wrapper: runs the command through sh with stderr merged into stdout, writes the raw output and a copy with elapsed-ms stamps, exits with the child's code). Start 2026-11-15T14:12:14Z, end 2026-11-15T14:16:53Z, exit=0 (wrapper exit 0), elapsed 279097 ms. Steps by the stamps of the npm lines '> sai-tools@0.1.0 <step>': format:check 3677 ms ('All matched files use Prettier code style!'); lint 2577 ms (eslint . --max-warnings 0, no output); traces 3750 ms ('traces: файлов проверено 2482, следов 0, пропущено 67'); handoffs-check 1007 ms ('handoffs-check: файлов проверено 1343, нарушений 0, исключений использовано 114 из 114'; this handoff was IN_PROGRESS and not in a commit, which the rule allows); test 233731 ms ('# tests 2207 # suites 0 # pass 2207 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 233565.532333'); e2e 34178 ms. E2E lines: 'e2e: browser=Chrome/157.0.8103.78' once; 'e2e: file=picker', then ok 1 - matrix, ok 2 - pass, ok 3 - themes, ok 4 - keyboard, ok 5 - storage, ok 6 - isolation, ok 7 - not found, ok 8 - no connection, ok 9 - v3, '# tests 9 # suites 0 # pass 9 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 16547.171667'; 'e2e: file=smoke', then ok 1 - SMK-01 … ok 13 - SMK-13, '# tests 13 # suites 0 # pass 13 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 16697.211583'; last line 'e2e: command=npm run e2e selection=all exit=0 duration_ms=34124'. Lines matching 'not ok' -> 0; '# SKIP' or '# TODO' -> 0. Output kept outside the project: <scratch>/e2e105-06/local-check.log (13509 lines) and <scratch>/e2e105-06/local-check.stamped.log.",
+      "SNAPSHOT (AP-141, decisions/0110): GIT_INDEX_FILE=<scratch>/e2e105-06/snap.index git read-tree HEAD; git add -- <the 38 files by name>; git write-tree -> tree 99169d53ea90d9862505eac56111d12790a93b3d; git commit-tree <tree> -p HEAD -F <message file in scratch> -> 3c574b061da93fe224d450c0f748ef8d79e87797, parent 4f410324572ed16cef6d7b57a6c4deadf04d9a26 (HEAD = main = base/E2E105-20261105-01). git diff --name-only HEAD <snapshot> -> exactly the 38 files of the list; for each of them git hash-object of the working file equals the blob in the snapshot (0 mismatches). The real index was not touched: sha256 of .git/index 34a1054f990e199fc89986e5948148810ba1760cb2e9bfa6dddd266fcec8c8e3 before and after. No ref was made locally (git branch --list -> only main).",
+      "FILES LEFT OUT OF THE SNAPSHOT (git status lists 40 paths: 6 modified, 34 untracked; 38 in, 2 out): (1) handoffs/E2E105-20261105-01/step-06-test-runner.json — this handoff, IN_PROGRESS; (2) docs/program/public-v1/PROGRESS.md — modified in the working tree, not a file of this run; the snapshot keeps its HEAD blob 4f6e5a8664bf56f0a795c52c356f7beb0e3b4a04 (git ls-tree of the snapshot and of HEAD give the same blob). No other handoff of the run was left out: in the run folder 25 handoffs went in, 24 COMPLETED and 1 FAILED (step-05g-test-fixer.json); the folder holds no other file.",
+      "CHECK OF THE SNAPSHOT TREE BEFORE THE PUSH: git archive <snapshot> | tar -x -C <scratch>/e2e105-06/snap -> 2548 files (= git ls-tree -r --name-only <snapshot> | wc -l). Both commands list files through git, so a plain archive copy cannot run them: on a git archive copy of tools/ of the snapshot, node src/handoffs/cli.js and node src/traces/cli.js each print 'E_TRACE_NOT_GIT: это не git-репозиторий: команда проверяет файлы, которые отслеживает git; запустите её в клоне Sai' with exit 2 (copy removed afterwards). So the archive copy got its own git metadata with no checkout: git init -b main in the copy, the object store of the project as an alternate (read only), git update-ref refs/heads/main <snapshot>, git read-tree <snapshot>; git status --short of the copy -> empty, HEAD = 3c574b0, git ls-files -> 2548. With HEAD at the snapshot, rule H4 judges the handoffs as committed, as on the runner. In the copy: node src/handoffs/cli.js -> 'handoffs-check: файлов проверено 1342, нарушений 0, исключений использовано 114 из 114', exit 0; node src/traces/cli.js -> 'traces: файлов проверено 2481, следов 0, пропущено 67', exit 0. Status scan of every handoffs/**/*.json in the snapshot: none under handoffs/E2E105-20261105-01/ is PENDING or IN_PROGRESS; the only four in the whole tree are old and committed since 7591fc0 (ISS-0002-20260930-01/step-06-test-designer-r2.json IN_PROGRESS, WF06-20260926-01/step-10-orch.json, step-11-req-analyst.json, step-12-ba-analyst.json PENDING), covered by the base of exceptions (114 of 114 used).",
+      "PUSH: no pre-push hook is active (core.hooksPath unset, no hook file in .git/hooks). First attempt 2026-11-15T14:20:38Z refused by git locally, 'error: src refspec … does not match any': my shell (zsh) read ':r' right after the variable as a modifier (issue I2); git ls-remote --heads origin afterwards -> only refs/heads/main 4f41032, nothing reached GitHub. Second attempt 14:20:50Z with the variable in braces: git push origin 3c574b061da93fe224d450c0f748ef8d79e87797:refs/heads/ci/e2e105-20261105-01-1 -> '* [new branch] 3c574b0… -> ci/e2e105-20261105-01-1', exit 0 (the name was free: before the push ls-remote showed only main); ls-remote then: the ci branch at 3c574b0 and main at 4f41032.",
+      "GITHUB RUN: gh run list --workflow check.yml --commit 3c574b061da93fe224d450c0f748ef8d79e87797 -> databaseId 43723864463, event push, headBranch ci/e2e105-20261105-01-1, headSha 3c574b061da93fe224d450c0f748ef8d79e87797 (equals the snapshot; the log of 'Get the code' shows the same sha). gh run view 43723864463 -> status completed, conclusion success. Job 'check' 2026-11-15T14:20:57Z to 14:27:13Z = 376 s (6 min 16 s); step 'Run the check' 14:21:05Z to 14:27:10Z = 365 s; npm ci 2 s. Log (gh run view --log, 13710 lines, kept at <scratch>/e2e105-06/gh-run.log): 'Image: ubuntu-24.04' (count 1, image version 20261111.370.1), node v22.23.4, npm 10.9.9. Steps by the log stamps: format:check 9.6 s, lint 5.6 s, traces 7.4 s, handoffs-check 1.4 s, test 296.1 s, e2e 45.0 s. 'All matched files use Prettier code style!'; 'traces: файлов проверено 2481, следов 0, пропущено 67'; 'handoffs-check: файлов проверено 1342, нарушений 0, исключений использовано 114 из 114'; '# tests 2207 # suites 0 # pass 2207 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 295979.177997'; 'e2e: browser=Chrome/157.0.8103.50'; 'e2e: file=picker', ok 1 - matrix … ok 9 - v3, '# tests 9 # suites 0 # pass 9 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 20034.546924'; 'e2e: file=smoke', ok 1 - SMK-01 … ok 13 - SMK-13, '# tests 13 # suites 0 # pass 13 # fail 0 # cancelled 0 # skipped 0 # todo 0 # duration_ms 18657.952846'; 'e2e: command=npm run e2e selection=all exit=0 duration_ms=44930'. 'not ok' -> 0; '# SKIP' or '# TODO' -> 0; no '##[error]' line. Stages in order: format:check, lint, traces, handoffs-check, test, e2e.",
+      "BRANCH CLEAN-UP: 2026-11-15T14:27:56Z git push origin --delete ci/e2e105-20261105-01-1 -> ' - [deleted] ci/e2e105-20261105-01-1', exit 0; git ls-remote --heads origin -> only 4f410324572ed16cef6d7b57a6c4deadf04d9a26 refs/heads/main; gh api repos/<owner>/sai/branches -> main only; local refs: main, origin/main, origin/HEAD, all at 4f41032; no remote-tracking ref of the ci branch. Nothing was pushed to main; no force-push.",
+      "PICKER TIME ON THE RUNNER: 20035 ms (TAP '# duration_ms 20034.546924'; between 'e2e: file=picker' 14:26:31.9Z and 'e2e: file=smoke' 14:26:52.0Z, 20.1 s) against 16547 ms in this local check and the earlier local 17 s: 1.21 times the local time; 41.7 percent of the 48000 ms line (27965 ms under it) and 25 percent of the 80000 ms limit of criterion 10. Not above 48000 ms, so there is no question for the owner. Also: smoke 18658 ms on the runner (budget 30000), all files 44930 ms (budget 240000). One GitHub sample (AP-144): this measures one run of the runner, not every run.",
+      "TIME AGAINST THE CI LIMIT (decisions/0106: 30 minutes, watch value about 25 minutes): local total 279.1 s = 4 min 39 s, margin 25 min 21 s to 30 min and 20 min 21 s to 25 min; GitHub job 376 s = 6 min 16 s, margin 23 min 44 s to 30 min and 18 min 44 s to 25 min.",
+      "FAILURES: none in either run (0 'not ok', exit 0 locally, conclusion success on GitHub), so no failure to attribute and no evidence under quality-bar §6 item 4 is needed; no test passed and failed by turns, nothing was re-run.",
+      "LEFTOVERS (after both runs): pgrep -f sai-e2e- -> 0; sai-e2e-* folders in the system temporary root -> 0; no Chrome process, no picker server, no stand-in; no process of mine (the wrapper, caffeinate and their children ended; the eight old 'node -e setInterval' pids are untouched). The system temporary root held 6498 sai-* entries before and 6701 after: the 203 new ones are 195 sai-wf06-, 5 sai-outside-, 2 sai-snap- and 1 sai-flaky-, made by other test files of the one npm run check (the same kinds and counts that step 05h recorded; step 05, I11); I did not remove them (issue I3). The one sai-stand folder is from 2026-11-05, older than this step; no old sai-* entry is missing (comm -23 -> 0). My scratch folder keeps the logs, the temporary index and the snapshot copy (outside the project).",
+      "WORKING TREE: before (2026-11-15T14:11:41Z, after this handoff was set IN_PROGRESS) and after the GitHub run: git status --short equal (14 lines, diff exit 0); sha256 of .git/index 34a1054f990e199fc89986e5948148810ba1760cb2e9bfa6dddd266fcec8c8e3 both times; sha256 over the 40 changed and untracked files (git ls-files -m -o --exclude-standard | shasum -a 256) equal, diff exit 0; over the 39 without this handoff the digest of the list is 5616a9ab61f8a83f97acbc28e1ccc980bb3b66e9d3342c85fd98376050dcabb4. Later git status calls ran with GIT_OPTIONAL_LOCKS=0 so that git did not rewrite the index. Only this handoff changes after that, by this result and the close command. No commit on the real index or on any local branch, no checkout, reset, stash or clean (git stash list -> empty)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "The task (and AP-141, item 2) asks to run handoffs-check and traces on 'a copy outside the project made with git archive of the snapshot commit'. Taken literally this cannot be run: both commands list files through git and give exit 2 E_TRACE_NOT_GIT on a plain archive copy (shown in self_check). I gave the archive copy its own git metadata without a checkout (git init, the project's object store as an alternate, update-ref to the snapshot, read-tree), so that HEAD is the snapshot and rule H4 judges the handoffs as committed, as on the runner; a copy whose HEAD is not the snapshot would see every handoff as 'not in a commit' and let a PENDING one pass. Proposal for ORCH: write the way the copy gets its git metadata into AP-141 (item 2) and into the task text of the next snapshot step."
+      },
+      {
+        "id": "I2",
+        "kind": "PROCESS",
+        "text": "My first push attempt was refused by git on this machine ('src refspec … does not match any') because zsh treats ':r' right after a variable as a modifier: \"$SHA:refs/heads/…\" lost its tail. Nothing reached GitHub (ls-remote right after: only main), and no run was started by it. The second attempt with the variable in braces worked. A lesson that can repeat for any step that pushes a <sha>:<ref> refspec from a variable in zsh; ORCH decides whether it goes into the error journal."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "One npm run check leaves 203 new sai-* entries in the system temporary root (195 sai-wf06-, 5 sai-outside-, 2 sai-snap-, 1 sai-flaky-), the same as at step 05h; they come from test files outside this work (step 05, I11), not from the e2e kit (0 sai-e2e-). I left them in place. ORCH decides whether a defect is needed or already open."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "This GitHub run took 376 s, the test step 296 s. The earlier GitHub runs of the full check took 836 s (run 41678354227) and 17 min 00 s (run 41701454358), both on 2026-11-03 with 2185 and 2187 tests. Why this one was shorter is not established: it is one sample, on image version 20261111.370.1. The runner used Chrome/157.0.8103.50; this Mac used Chrome/157.0.8103.78."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-15T14:09:45Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/test-runner.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same."
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "handoff_id": "step01-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/E2E105-20261105-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml (block REQ-105, read by id)",
+      "docs/design/REQ-104-e2e-chrome-kit.md (section 4 interfaces, section 21 As built)",
+      "decisions/0107-e2e-real-chrome-in-check.md",
+      "decisions/0108-e2e-kit-conventions.md (O1: this run designs tools/test/e2e/kit/stand.js)",
+      "docs/workflows/WF-02-development.md",
+      "docs/issues/ISS-0102 and ISS-0104 (open notes from REQ-104)"
+    ],
+    "route": "CODE-DESIGNER (this) -> ORCH answers questions -> CODE-DESIGN-VALIDATOR -> BACKEND-DEV (stand.js) -> SECURITY-REVIEWER + REVIEWER -> TEST-DESIGNER (picker.e2e.js) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "docs/design/REQ-105-e2e-picker.md (new) only"
+    ],
+    "base_tag": "base/E2E105-20261105-01"
+  },
+  "task": {
+    "description": "WF-02, step 1 — write the design of REQ-105 (end-to-end tests of the solution picker site in a real headless Chrome) in docs/design/REQ-105-e2e-picker.md, by the section \"Step 1\" of docs/workflows/WF-02-development.md. No implementation code in the design: shapes, signatures, tables only.\n\nREAD FIRST: the block REQ-105 in docs/requirements.yaml (all 9 criteria; read by id, the file is large); docs/design/REQ-104-e2e-chrome-kit.md (the kit API and section 21 \"As built\" — the code in tools/test/e2e/kit/ is the truth, read it too); decisions/0107, decisions/0108 (O1 and the addenda), decisions/0023 (D2); docs/quality-bar.md; docs/anti-patterns.md (especially AP-140..AP-144); the README sections \"The solution picker site\" and tools/src/picker/ (cli.js serve, public/*.js, demo-tenants, demo-tenants-v3, demo-answers, demo-answers-v3); tools/test/e2e/smoke.e2e.js as the model of a spec file; docs/issues/ISS-0100, ISS-0102, ISS-0103, ISS-0104.\n\nWHAT THE DESIGN MUST SETTLE: (1) the server starter tools/test/e2e/kit/stand.js that REQ-104 left to this run (spawn node src/picker/cli.js serve with --port 0, read the link from stdout, stop with SIGTERM and require exit code 0, keep stderr, refuse a state folder outside the temporary root with assertUnderTempRoot, clean up on every path including a killed runner, a free stand-in for the tests of the starter itself, and how REQ-106 and REQ-107 will reuse it); (2) the structure of tools/test/e2e/picker.e2e.js: eight tests for the eight page criteria and the one time/independence criterion, with the helper table for the 18-combination matrix, the coverage table of criterion 2, the WCAG contrast formula with its two controls, the raw HTTP request for /t/%2e%2e/, the declared console lines (favicon once per start, the 404 line of each of four page loads); (3) a time budget: criterion 9 says 80000 ms at most, and the GitHub runner was about 2 times slower than the developer machine for the smoke file (17 s here, 35 s there) — state how the design keeps the file under the limit on the runner (one browser per test or one for all, reuse of tabs, parallel stands), measured with a sketch, and do not take a timing from one machine as a fact for the other (ISS-0103); (4) the kit calls that already exist and any missing kit call (list it as a change of the kit with its own tests, not a silent edit); (5) the replacement table of earlier guard tests (search tools/test/ for scans that read the folder tools/test/e2e or count files; the requirement says none, check it on the tag) and the shared places (README table row made by REQ-104, tools/package.json if the runner selects files by name); (6) criterion 7 of REQ-104 left open in ISS-0102: with picker.e2e.js and smoke.e2e.js there are now two real spec files, so state how the order check on two real files is run by the validator.\n\nCheck every statement about the current system with a sketch outside the project (a fresh clone of the tag base/E2E105-20261105-01, npm ci, then dummy files) and write the command, the output and the date. The text of tasks and the design must hold no absolute machine paths and no names of other projects of the owner (traces and handoffs-check fail on them). Mutants: at least 20, each with the test that catches it. The section about the bar: Q1-Q14 and R1-R3, each \"applicable: how\" or \"not applicable: why\". Open questions go as a list O1, O2, … with a default, not settled by a guess.",
+    "acceptance_criteria": [
+      "Every criterion of REQ-105 leads to an element of the design and to a test",
+      "stand.js interface, failure paths and clean-up designed, with its own tests",
+      "Time budget for the 80000 ms limit argued with a measurement",
+      "Replacement table measured on the tag",
+      "Bar section Q1-Q14 and R1-R3 complete",
+      "At least 20 mutants, each with the test that catches it",
+      "No implementation code"
+    ]
+  },
+  "created_at": "2026-11-04T19:22:52Z",
+  "started_at": "2026-11-04T19:22:52Z",
+  "completed_at": "2026-11-04T20:03:31Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Wrote docs/design/REQ-105-e2e-picker.md (554 lines, 20 sections): the starter tools/test/e2e/kit/stand.js (startStand/withStand: detached node process with a short environment list, link read from stdout and passed through assertLoopbackUrl, state folders checked with assertUnderTempRoot before any spawn, SIGTERM to the group with exit code 0 required, SIGKILL escalation, registered for exit/signal handlers and for the runner's sweep through a marker folder, five new error codes), its stand-in fake-stand.js (11 modes) and 20 tests E2S-01..20 (no Chrome); the structure of tools/test/e2e/picker.e2e.js: nine tests named as the criteria name them, helper table, 18-combination matrix, pass coverage table, WCAG formula with 3 pins, raw HTTP request for /t/%2e%2e/, declared console lines; time budget (prototype 16.6 s, limit 80 s, stress 43-45 s, runner not measured and said so); replacement table measured on the tag (exactly one red test, E2K-50, plus word additions in E2K-41/E2K-60); procedure for the order check of two real spec files (ISS-0102 item 2, run on the prototype); quality bar Q1-Q14, R1-R3; 49 mutants (24 applied in the sketch); 12 open questions O1-O12. Findings the requirement does not state: ten criteria not nine; `name` not `title`; start button below the window at 320x568; the failed fetch writes a console error; restart of the card needs a reload; saved state spoils the second pass on one origin; an armed stop timer kept the spec alive 10 s.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-105-e2e-picker.md",
+        "place": "new file",
+        "what": "0 summary; 1 checked facts F1-F30 with commands and results; 2 disputable choices C-1..C-7; 3 files, owners, order; 4 interfaces: 4.1 stand.js (startStand, withStand, options, order of steps, members, five new codes), 4.2 reuse by REQ-106/107, 4.3 fake-stand.js and its modes, 4.4 picker.e2e.js (helpers, WCAG table, nine tests, declared console lines); 5 failure paths; 6 protection in the same operation; 7 time budget with measurements; 8 criterion -> test; 9 order of work; 10 README texts; 11 tests E2S-01..20 and the nine spec tests; 12 replacement table (E2K-50, E2K-41, E2K-60 measured); 13 order check on two real files (ISS-0102); 14 build sub-steps; 15 quality bar Q1-Q14, R1-R3; 16 mutants (49); 17 what becomes outdated; 18 sketch notes; 19 open questions O1-O12; 20 sketches."
+      }
+    ],
+    "self_check": [
+      "date -u at start 2026-11-04T19:24:38Z (local 2026-11-05, UTC+5); node -v v22.23.4; Chrome 156.0.8078.80 (the kit found it itself)",
+      "git tag -l 'base/E2E105*' -> base/E2E105-20261105-01; clone of the tag in <scratch>/e2e105/clone (4f41032), npm ci done; grep -c 'id: REQ-105' docs/requirements.yaml in the clone -> 1; ls tools/test/e2e -> kit run.js smoke.e2e.js",
+      "criteria count: awk over lines 13570.. of docs/requirements.yaml, grep -c '^      - >-' -> 10 (the handoff says 9)",
+      "s1 (18 combinations, one tab): all h1 = questionnaire name, html lang = lang, scrollWidth = innerWidth, 1 question; 'total matrix ms 2307'; server exit { code: 0, sig: null }, stderr ''. Start button at 320x568 ru: top/bottom 546/594 (window 568)",
+      "s2 (5 passes): page POST body == direct fetch POST body for all 5; three Russian bodies pairwise different; focus H2 in [data-screen=result]; first run failed 'no element matches [data-action=start]' on the second pass because of the saved state (F10) - fixed by localStorage.clear()+reload",
+      "s4 (bad addresses): 5 requests, status 404, same sha256 prefix 1f0b844d8fc3; Chrome turns /t/%2e%2e/ into /; 6 console entries (4 page lines, favicon once, one from the fifth Chrome load)",
+      "s5 (lost net): text 'Нет связи. Ваши ответы сохранены. Попробуйте ещё раз.', button retry holds the focus, storage equal; entries: favicon + 2x 'Failed to load resource: net::ERR_CONNECTION_REFUSED' (url .../t/uchet-pro/api/result?lang=ru)",
+      "s6/s7 (themes, focus, keyboard): outlineWidth 3px with outlineStyle none on body; ring on every Tab stop; path card -> start -> radio -> Space -> next -> Shift+Tab -> next -> Enter -> back -> reload -> continue, restart -> Enter -> storage null",
+      "s8: exclusive strings uchet-pro vs svet-marketing 49/45 (ru, kk, en), agency vs stock 23/22; B card has no continue; POST /t/B/api/result with A leader -> 400 answers_invalid; storage keys ['sai-picker:<A>'], sessionStorage 0, cookie ''",
+      "prototype stand.js + picker.e2e.js in the clone: cd tools && npm run -s e2e -- picker -> 3 runs duration_ms=16733, 16603, 16622, 9 of 9 ok. First version 26.6 s because of an armed stop timer (F26). 4 copies at once 24.6-25.7 s each, 8 copies at once 42.8-44.7 s each (stress, not the runner)",
+      "cd tools && npm run -s e2e (picker + smoke) -> exit=0 duration_ms=34202; npm run -s e2e -- smoke picker and -- picker smoke -> exit 0, e2e: file= order smoke,picker and picker,smoke (34335 / 34248 ms)",
+      "independence loop on the prototype: for each of matrix, pass, themes, keyboard, storage, isolation, 'not found', 'no connection', v3: env -u NODE_TEST_CONTEXT node --test --test-reporter=tap --test-name-pattern='^<name>$' test/e2e/picker.e2e.js -> exit 0, one 'ok 1 - <name>' line, 0 'not ok'",
+      "full npm test of the clone with dummy stand.js (whole-environment read), fake-stand.js, e2e-stand.test.js, README row+sentence: '# tests 2188 # pass 2187 # fail 1 # skipped 0 # todo 0', 230063 ms; the red test is E2K-50 'test/e2e/kit/stand.js: the whole environment object'. With E2K-50 edited (bareAllowed / SCANNED / ENV_NAMES) a run of E2K-01, 02, 25, 34, 50, 60 -> 6 ok; with named-property reads and no ENV_NAMES edit E2K-50 is red 'stand.js: reads TEMP'",
+      "npx prettier --check README.md (clone, with the table row) -> clean; stand.js prototype was not prettier-formatted (not needed)",
+      "s9 (starter through 11 stand-in modes): ok/ok-late stop {code:0}; exit-early STAND_START_EXITED code 3 + last stderr line; hang STAND_START_TIMEOUT, process gone; exit-one STAND_EXIT; ignore-term STAND_STOP_TIMEOUT, gone; noisy -> stop code 0, 65536 kept; with-child -> both pids gone; stateDirs=[home] -> PATH_REFUSED, spawned 0; liveRegistrations empty after each",
+      "s10 (runner net): runAll fileTimeoutMs 4000 on a fixture spec that starts a stand and sleeps: event loop free and blocked (Atomics.wait) -> SPEC_TIMEOUT, spec and stand gone, no sai-e2e-* folder; with the noteBrowserForRunner call removed and the loop blocked -> stand alive and folder sai-e2e-profile-* left (removed by hand afterwards)",
+      "s11: noisy mode, stderr read removed -> STAND_STOP_TIMEOUT; with it -> {code:0}, stderr/stdout 65536",
+      "mut.py: 20 product mutants P01-P20 applied to a copy (<scratch>/e2e105/mut), the prototype run on each: each caught by the test named in section 16 (P20 first version, markOf, unused by the page: survived; replaced by publicLook: red isolation, v3)",
+      "after all sketches: ps for fake-stand / sai-e2e-profile -> 0 processes; ls of the temporary root | grep sai-e2e -> empty",
+      "cd tools && npm run -s traces -> 'traces: файлов проверено 2450, следов 0, пропущено 67' (design file untracked, included); grep -nE 'Users|/private|/var/' of the design -> no line",
+      "grep -c '^| [PSR][0-9][0-9] ' docs/design/REQ-105-e2e-picker.md -> 49 mutants; wc -l -> 554 lines",
+      "git status --short in the project: only docs/requirements.yaml and docs/program/public-v1/PROGRESS.md (changed before this step, by ORCH), the new design file and the handoff folder; no pull/fetch/commit/push; no git checkout/reset/stash/clean in the project"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "The block REQ-105 has ten acceptance criteria (matrix, pass, themes, keyboard, storage, isolation, not found, no connection, v3, time and independence), the handoff says nine and 'eight tests'. The design has nine tests for criteria 1-9 and criterion 10 by command and by the scans (O1). Checked: awk over the block, 10 lines '- >-'."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "Criterion 1 says the h1 equals the tenant 'title' of GET .../api/questionnaire; the answer has the field `name` and no `title` (the tenant file has name per language). The design uses `name` and the tenant file's name[lang] (O2)."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "Criterion 1 'the start button lies inside the window': at 320x568 in Russian its bottom is 594 > 568 while there is no horizontal overflow (measured). The design asserts horizontal containment and that the whole rectangle is inside the window after scrolling it into view; the vertical reading would fail on a correct page (O3)."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "Criterion 8 says the kit reports no console error; every failed fetch writes one browser line 'Failed to load resource: net::ERR_CONNECTION_REFUSED' (two for two presses) and the kit fails an undeclared one. The design declares that exact line with its path and asserts exactly two entries (O4). The criterion text needs the same declaration (micro-amendment of WF-01 or an as-built note)."
+      },
+      {
+        "id": "I5",
+        "kind": "DISCREPANCY",
+        "text": "Criterion 4 'reaches restart of the card' with keys only: the card has 'restart' only after a reload with something saved, and no key path leads from a question back to the card. The design reloads once with the kit (a protocol call, no input event) (O5)."
+      },
+      {
+        "id": "I6",
+        "kind": "DISCREPANCY",
+        "text": "The block says 'Guard tests of earlier requirements, was -> became: none'. Measured on a clone of the tag with all new files: of 2188 tests one is red, E2K-50 (the files that may read the environment / the variable names), and E2K-41 and E2K-60 need two small word additions; all three are in tools/test/e2e-kit.test.js; no other guard test is touched (section 12, O9, O10)."
+      },
+      {
+        "id": "I7",
+        "kind": "QUESTION",
+        "text": "O6 (ORCH): the starter stand.js has no criterion in REQ-105; its 20 tests E2S-01..20 are listed as supporting tests under criteria 7, 8 and 10. Alternative: a criterion 11 by a WF-01 micro-amendment."
+      },
+      {
+        "id": "I8",
+        "kind": "QUESTION",
+        "text": "O7 (ORCH): the runner's list of browsers is fed with a marker folder made by makeTempDir('profile') so that cleanup.js does not change (a blocked-event-loop spec still loses its stand: measured). Alternative: rename the shape in cleanup.js (small change of a released file)."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "O8 (ORCH): proposal for decisions/0109-e2e-stand-conventions.md with the section 'Basis' (Q12): the short environment list for a stand, detached + registered + marker, exit code 0 required on stop, the five new error codes, the fixtures folder tools/test/fixtures/e2e-stand, the base list names."
+      },
+      {
+        "id": "I10",
+        "kind": "QUESTION",
+        "text": "O10 (ORCH): E2K-50 - read the base environment list by named properties (six names added to ENV_NAMES, default) or by one whole-environment read in stand.js (the allowlist of files that read the whole object grows from three to four)."
+      },
+      {
+        "id": "I11",
+        "kind": "QUESTION",
+        "text": "O11 (ORCH): the spec does not assert its own run time (a timing assertion is a flaky test, AP-144); RELEASE-VALIDATOR reads duration_ms of the e2e step in the GitHub run of the release and stops with a question above 48000 ms (60 percent of the limit). The runner time for this file is an estimate (33-52 s), not a measurement: no push was allowed."
+      },
+      {
+        "id": "I12",
+        "kind": "QUESTION",
+        "text": "O3/O5/O9 defaults are written in section 19 of the design with the cost of the other choice; O12: the Q13 items (armed stop timer kept the spec alive 10 s; 'inside the window' read both ways; the console line of a failing request; saved state at the second pass on one origin) are for DOC-UPDATER to put into docs/anti-patterns.md - this run's write set is the design only."
+      },
+      {
+        "id": "I13",
+        "kind": "INFO",
+        "text": "The statement in the task that the GitHub runner took about 35 s for the smoke file: the release reports give two readings, 25539 ms (run 41678354227) and 34821 ms (the run on main after ISS-0103), against 17462 ms here. Both are used in section 7; neither is taken as a fact for picker.e2e.js."
+      },
+      {
+        "id": "I14",
+        "kind": "INFO",
+        "text": "ISS-0102 item 2 (order of spec files on two real files) was run on the prototype: 'e2e -- smoke picker' prints smoke, picker; the reverse prints picker, smoke; the alphabetical order differs from 'last to first' for the first time. The procedure for the validator is section 13."
+      }
+    ],
+    "prototype": {
+      "where": "<scratch>/e2e105/ (session scratch folder, outside the project)",
+      "contents": "clone/ (fresh clone of tag base/E2E105-20261105-01 after npm ci; in it: tools/test/e2e/kit/stand.js (sketch starter), tools/test/e2e/picker.e2e.js (prototype of the nine tests), tools/test/fixtures/e2e/fake-stand.js and tools/test/fixtures/e2e-stand/specs/sleep-stand.e2e.js (sketch stand-in and fixture spec), dummy tools/test/e2e-stand.test.js, the README row edit, the E2K-50 edit); sk/ (lib.mjs, solver.mjs, sketches s1..s11, mut.py); mut/ (copy of tools/ for product mutants); fulltest.txt (full npm test of the clone), order1.txt, order2.txt (two-file order), mut.out (mutant results). None of it is part of the project."
+    },
+    "artifacts_out": [
+      "docs/design/REQ-105-e2e-picker.md"
+    ]
+  }
+}

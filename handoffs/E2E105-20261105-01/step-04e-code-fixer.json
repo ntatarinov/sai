@@ -1,0 +1,216 @@
+{
+  "handoff_id": "step04e-E2E105-20261105-01",
+  "run_id": "E2E105-20261105-01",
+  "workflow_id": "WF-02",
+  "step": "04e",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/E2E105-20261105-01/step-04e-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-105"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/E2E105-20261105-01/step-04d-reviewer.json (PASS with L5, L6)",
+      "handoffs/E2E105-20261105-01/step-04c-security-reviewer.json (PASS with F5, F6)",
+      "handoffs/E2E105-20261105-01/step-04b-code-fixer.json (your previous fix)"
+    ],
+    "route": "CODE-FIXER (this, the Low findings of pass 2) -> SECURITY-REVIEWER + REVIEWER again (pass 3 of 3, the last) -> TEST-DESIGNER (sub-steps 3-4) -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER (local and GitHub, decisions/0110) -> 7 not applicable -> 8 not applicable -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER",
+    "write_set": [
+      "tools/test/e2e/kit/stand.js",
+      "tools/README.md (the starter paragraph only; then npx prettier --write README.md in tools/)"
+    ],
+    "base_tag": "base/E2E105-20261105-01",
+    "rework_of": "handoffs/E2E105-20261105-01/step-04d-reviewer.json"
+  },
+  "task": {
+    "description": "WF-02, step 04e — both gates passed on pass 2 (REVIEWER step 04d, SECURITY-REVIEWER step 04c), but with Low findings in the new code that ORCH wants fixed before the tests are written, so that no test pins a wrong behaviour. Fix in tools/test/e2e/kit/stand.js: (1) L5 of REVIEWER: the timeout options accept only whole numbers from 1 to 2147483647 ms (Node cuts a longer timer to 1 ms, so a larger value made the start fail at once with a message about a time that never passed); a value outside that range, 0 included, is refused with USAGE before anything is started, and the message names the range; the message for a cwd with a NUL says 'without NUL' in the same shape as the message for args; (2) F5 of SECURITY-REVIEWER: the branch for a child that ended before its link builds STAND_START_EXITED from the end of the process with a guard (no end seen: code and signal null), so that a child that emits close without exit (possible only through an injected deps.spawn) gives the kit's error and the same clean-up, never a TypeError. Fix in the starter comment of stand.js and in the starter paragraph of tools/README.md: (3) L6 = F6: 'nothing else' is not quite true — say that the system and Node may add variables of their own (macOS adds __CF_USER_TEXT_ENCODING; Node passes NODE_V8_COVERAGE on when the spec process has it), none of them given by the starter; in the README keep every existing word of the paragraph (add a clause, do not remove or reword), run prettier on README.md. Nothing else changes. Prove each fix outside the project with a trial that fails on the current code and passes on yours (the trials of the reviewers in the session scratchpad may be reused); re-run your own trials of step 04b on the fixed code; then from tools/: npm run -s format:check, npm run -s lint, npm run -s traces | tail -1, npm run -s handoffs-check | tail -1, node --test test/e2e-kit.test.js | tail -8 (still only E2K-50 red), and the real picker through the starter (check (a) of section 14 of the design). Task text and files hold no absolute machine paths and no names of the owner's other projects. Do not edit any test file; do not commit or push.",
+    "acceptance_criteria": [
+      "L5: timeouts 1..2147483647 only, range named; cwd NUL message",
+      "F5: guarded STAND_START_EXITED, no TypeError",
+      "L6/F6: comment and README say the platform may add variables; README words kept",
+      "Each fix proved red-before green-after; checks green except E2K-50"
+    ]
+  },
+  "created_at": "2026-11-08T19:03:17Z",
+  "started_at": "2026-11-08T19:03:17Z",
+  "completed_at": "2026-11-08T19:18:36Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 04e, the rework for the Low findings of pass 2 (REVIEWER step 04d: L5, L6; SECURITY-REVIEWER step 04c: F5, F6 = L6), made before the tests so that no test pins a wrong behaviour; next comes pass 3 of 3 of SECURITY-REVIEWER and REVIEWER. The three items of the task are closed, in the two files of the write set and nothing else (index.js, fake-stand.js, every test file, the other nine kit files and tools/src are as before). tools/test/e2e/kit/stand.js: (1) L5 - a constant MAX_TIMER_MS = 2147483647, the longest delay a Node timer keeps (a longer one fires after 1 ms); startTimeoutMs and stopTimeoutMs outside 1…2147483647 (0, a negative number, a fraction, NaN, Infinity, 2^31 and above) are refused with USAGE '<option> must be a whole number of milliseconds from 1 to 2147483647' before anything is made or spawned; 2147483647 itself is accepted and kept by Node without a TimeoutOverflowWarning; the cwd message is now 'cwd must be a non-empty path without NUL', the shape of the args message. (2) F5 - the branch of a child that ended before its link builds STAND_START_EXITED from state.exit ?? { code: null, signal: null }: a child that sends close with no exit (only an injected deps.spawn can) now gives the kit's error '<name> exited before it printed its link (exit code null). Last line of its stderr: \"…\"' with exitCode and signal null, and goes through abortStart like every other start failure (nothing registered, no marker); no TypeError; with a real child the message is as before ('exit code 3'). (3) L6 = F6 - the comment above baseEnvironment() now says that these are the only variables of the spec process the starter passes to the server, and that the system and Node may add their own, none given by the starter: __CF_USER_TEXT_ENCODING on macOS and NODE_V8_COVERAGE when the spec process has it; its old first line ('the only variables of the spec process that the server gets') was false when coverage is on. tools/README.md, the starter paragraph (line 844) only: one clause inserted after the home-folder parenthesis, 'the system and Node may add variables of their own, none of them given by the starter (`__CF_USER_TEXT_ENCODING` on macOS, and `NODE_V8_COVERAGE` when the spec process has it);'; all 163 words of the step-04b paragraph kept in their order (28 added; against the step-02b paragraph 118 of 118), no other line changed, prettier left the file unchanged. PROOF: three new trials outside the project, run on a clone holding the current files (<scratch>/e2e105f/fix, the code of step 04b) and on a fresh clone holding the fix (<scratch>/e2e105f/fix2): L5 17 of 36 checks red -> 0; F5 8 of 10 red -> 0; L6 4 of 10 red -> 0 (its behaviour checks are the same on both copies and are what make the old texts false and the new ones true). My seven trials of step 04b, rerun on the fix: all green (17/0, 20/0, 12/0, 8/0, 32/0, the EMFILE trial 4/0 and 4/0, README 8/0). The reviewers' trials on the fix: group1 7/0, refusals 31/0, drain 6/0, withchild 5/0, outcomes 18/0, withstand2 10/0, envtruth 4/0, emfile exit 0; o14 30 of 31 (its one red check still asserts the L2 self-reference that 04b removed); SECURITY-REVIEWER's close-only trial goes from a TypeError with markers and a group left to STAND_START_EXITED with nothing left; REVIEWER's bigtimeout, which records the overflow defect, sees it on the current code (a false time in both messages, two TimeoutOverflowWarnings) and no longer on the fix (USAGE at once). CHECKS from tools/: format:check and lint clean; traces 0 traces; handoffs-check 0 violations; node --test test/e2e-kit.test.js 52/51/1 with only E2K-50 ('reads TEMP', red by the design until TEST-DESIGNER; the same on the copy without this step); check (a) of section 14 prints 200 Учёт-Про {\"code\":0,\"signal\":null} \"\" and exits 0; the whole npm run check stops at npm test with 2187/2186/1 (the same E2K-50), so npm run e2e was not reached. No sleep: every wait is for a fact with a limit. LEFT 0 processes and 0 folders before and after; only the ten old node processes run at the end. Found on the way and not edited (issues I2-I5): stop() waits without a limit for a fake child that never sends exit (measured); the timeout options of the other kit functions are not checked at all; 'must be an object' also answers an array; the design texts lag behind (section 10 item 3, section 6, 4.1). Nothing committed or pushed; PROGRESS.md not touched.",
+    "changes": [
+      {
+        "remark": "L5 (REVIEWER step 04d), the timeouts",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "25, 112-116",
+        "was": "if (!Number.isInteger(value) || value < 1) throw usage(`${label} must be a whole number of milliseconds`); - 0 was refused with words that 0 keeps, and 2^31 or more was accepted: Node fires such a timer after 1 ms, so the start failed at once with 'did not print its link in 2147483648 ms' and a stand that stops well was reported as STAND_STOP_TIMEOUT",
+        "became": "const MAX_TIMER_MS = 2147483647; // Node fires a longer timer after 1 ms (line 25) and if (!Number.isInteger(value) || value < 1 || value > MAX_TIMER_MS) throw usage(`${label} must be a whole number of milliseconds from 1 to ${MAX_TIMER_MS}`); - refused before the marker and the spawn, the range named; 2147483647 accepted"
+      },
+      {
+        "remark": "L5 (REVIEWER step 04d), the cwd message",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "96",
+        "was": "throw usage(\"cwd must be a path\") - also for a cwd with a NUL",
+        "became": "throw usage(\"cwd must be a non-empty path without NUL\") - the shape of 'args must be a non-empty list of strings without NUL'"
+      },
+      {
+        "remark": "F5 (SECURITY-REVIEWER step 04c)",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "396-402",
+        "was": "the exited branch read exitInfoOf(state.exit), state.exit.code and state.exit.signal with no guard: a child that sends close alone (deps.spawn only) gave a raw TypeError, skipped abortStart and left the marker (and, with a pid, the registration) to the exit handler",
+        "became": "// no exit seen (a child of deps.spawn that sends close alone): the end is unknown; const end = state.exit ?? { code: null, signal: null }; the message and the details are built from end, so this branch ends like the others: the kit's STAND_START_EXITED and abortStart"
+      },
+      {
+        "remark": "L6 (REVIEWER step 04d) = F6 (SECURITY-REVIEWER step 04c), the comment",
+        "file": "tools/test/e2e/kit/stand.js",
+        "lines": "27-32",
+        "was": "// The only variables of the spec process that the server gets, each read by name; // a server never sees the tokens or switches of the developer's shell, and gets no // HOME variable. The home folder itself is not hidden: Node finds it through the // system's list of users (decisions/0109).",
+        "became": "// The only variables of the spec process that the starter passes to the server, // each read by name: no token or switch of the developer's shell, no HOME variable. // The home folder itself is not hidden: Node finds it through the system's list of // users (decisions/0109). The system and Node may add variables of their own, none // given by the starter: __CF_USER_TEXT_ENCODING on macOS, and NODE_V8_COVERAGE when // the spec process has it."
+      },
+      {
+        "remark": "L6 (REVIEWER step 04d) = F6 (SECURITY-REVIEWER step 04c), the README",
+        "file": "tools/README.md",
+        "lines": "844 (the starter paragraph)",
+        "was": "… Node finds it through the system's list of users, decisions/0109); the link is read from its stdout …",
+        "became": "… Node finds it through the system's list of users, decisions/0109); the system and Node may add variables of their own, none of them given by the starter (`__CF_USER_TEXT_ENCODING` on macOS, and `NODE_V8_COVERAGE` when the spec process has it); the link is read from its stdout …; then npx prettier --write README.md in tools/: unchanged"
+      }
+    ],
+    "table": [
+      {
+        "file": "tools/README.md:844",
+        "was": "decisions/0109); the link is read",
+        "became": "decisions/0109); the system and Node may add variables of their own, none of them given by the starter (`__CF_USER_TEXT_ENCODING` on macOS, and `NODE_V8_COVERAGE` when the spec process has it); the link is read",
+        "source": "REVIEWER L6 and SECURITY-REVIEWER F6; measured by <scratch>/e2e105f/trials/t-l6.mjs with NODE_V8_COVERAGE set: the starter hands spawn neither name, the child gets exactly these two beyond the base list and the given names"
+      },
+      {
+        "file": "tools/test/e2e/kit/stand.js:27-32",
+        "was": "The only variables of the spec process that the server gets, each read by name; a server never sees the tokens or switches of the developer's shell, and gets no HOME variable.",
+        "became": "The only variables of the spec process that the starter passes to the server, each read by name: no token or switch of the developer's shell, no HOME variable. … The system and Node may add variables of their own, none given by the starter: __CF_USER_TEXT_ENCODING on macOS, and NODE_V8_COVERAGE when the spec process has it.",
+        "source": "the same as above"
+      },
+      {
+        "file": "tools/test/e2e/kit/stand.js:114",
+        "was": "<option> must be a whole number of milliseconds",
+        "became": "<option> must be a whole number of milliseconds from 1 to 2147483647",
+        "source": "REVIEWER L5; Node: a delay above 2147483647 ms becomes 1 ms with a TimeoutOverflowWarning (measured by REVIEWER's bigtimeout.mjs on the step-04b code)"
+      },
+      {
+        "file": "tools/test/e2e/kit/stand.js:96",
+        "was": "cwd must be a path",
+        "became": "cwd must be a non-empty path without NUL",
+        "source": "REVIEWER L5 (the shape of the args message)"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "date -u at the start; shasum -a 256 of the four files of the change; git rev-parse --short HEAD",
+        "output": "2026-11-08T19:03:28Z; stand.js 9ded9116221ba14f, README.md 579da23531a6d1a0 (the step-04b result), index.js c5d82a73e599a0e3, fake-stand.js d3d3cfe959fabaab; HEAD = base tag = 4f41032"
+      },
+      {
+        "command": "LEFT of design section 16 before the work; ps of node processes",
+        "output": "0 processes, 0 folders; node processes: the ten old ones (pids 266 and 726 'node stand.js', eight 'node -e setInterval'), not mine, left alone"
+      },
+      {
+        "command": "cmp of the four files of the project with <scratch>/e2e105f/fix (the clone of step 04b, used as the current code); git clone -b base/E2E105-20261105-01 into <scratch>/e2e105f/fix2 with the four files; after the edit stand.js and README.md copied into fix2",
+        "output": "fix equal to the project before the edit; both clones at 4f41032; fix2 stand.js aba66b015fbd57f5 and README.md d4d0b664b90ad40d, equal to the project after the edit"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-l5.mjs <copy>/tools (a deps.spawn that counts and throws; timeouts 0, 2^31, -1, 1.5 for start and 0, 2^31, MAX_SAFE_INTEGER, Infinity for stop; cwd with a NUL, empty, a number; then 2147483647 for both with the real stand-in)",
+        "output": "current code: checks 36, failed 17 - the eight timeout values refused, if at all, with 'must be a whole number of milliseconds' and no range; startTimeoutMs 2^31, stopTimeoutMs 2^31 and MAX_SAFE_INTEGER accepted and spawned (the trial's spawn called once, then STAND_START_FAILED); the three cwd cases 'cwd must be a path'. fix: checks 36, failed 0 - each value refused with USAGE 'startStand: <option> must be a whole number of milliseconds from 1 to 2147483647', the cwd cases with 'startStand: cwd must be a non-empty path without NUL', 0 spawns, no folder; 2147483647 for both accepted, the stand started and stopped with {code:0, signal:null}, no TimeoutOverflowWarning"
+      },
+      {
+        "command": "node <scratch>/e2e105f/trials/t-f5.mjs <copy>/tools (deps.spawn returns a fake child with working pipes that writes a stderr line and then sends close alone: (A) no pid, (B) pid 999999, a group that cannot exist on macOS, checked by kill(-pid, 0) = ESRCH first; (C) measured only: a fake child with that pid that prints its link and never ends, stop() with stopTimeoutMs 300)",
+        "output": "current code: checks 10, failed 8 - (A) TypeError 'Cannot read properties of null (reading 'signal')' in 2 ms, the marker left; (B) the same, the group 999999 registered and the markers left; fix: checks 10, failed 0 - (A) and (B) E2eError STAND_START_EXITED 'fake exited before it printed its link (exit code null). Last line of its stderr: \"fake child: last words\"' in 1-2 ms, details exitCode null and signal null, nothing registered, no marker. (C) on both copies: stop() still waiting after 3012-3015 ms (issue I2)"
+      },
+      {
+        "command": "NODE_V8_COVERAGE=<scratch>/e2e105f/cov node <scratch>/e2e105f/trials/t-l6.mjs <copy>/tools <scratch>/e2e105f/orig04b/README.md (a deps.spawn that records the env the starter hands over and then calls the real spawn; the stand-in's env event; the comment; the README paragraph against the step-04b one)",
+        "output": "current code: checks 10, failed 4 - the comment names neither variable, does not say that the system and Node add their own, and still says 'the only variables of the spec process that the server gets'; the README lacks the clause. fix: checks 10, failed 0 - the comment and the clause present; 163 of 163 words of the step-04b paragraph kept in their order, 28 added; no other line changed; the paragraph still right before 'How to write a spec:'. Behaviour, the same on both copies: the starter handed spawn LANG, PATH, TMPDIR and the two given names; the child got exactly NODE_V8_COVERAGE and __CF_USER_TEXT_ENCODING beyond the base list and the given names"
+      },
+      {
+        "command": "my step-04b trials rerun on <scratch>/e2e105f/fix2/tools: t-m1, t-l2i4, t-l3, t-f1 (its comment parser now drops the comment markers before it looks for a phrase; the same 8/0 on the step-04b code), t-paths, run-l1 (ulimit -n 64), t-readme against the step-02b README",
+        "output": "t-m1 17/0 (URL_REFUSED '[undefined]'), t-l2i4 20/0, t-l3 12/0, t-f1 8/0, t-paths 32/0 (exit-early still 'exit code 3' with the stderr line; ENOENT in 1 ms; hang 1524 ms; foreign link URL_REFUSED), run-l1 child 4/0 and parent 4/0 (STAND_START_FAILED 'EMFILE', exit 0), t-readme 8/0 (118 of 118 words of the step-02b paragraph kept, 73 added by 04b and 04e together)"
+      },
+      {
+        "command": "the reviewers' trials, unchanged: node <scratch>/e2e105r/trials/{group1,o14,refusals,drain,withchild,outcomes,withstand2}.mjs <scratch>/e2e105f/fix2/tools; emfile.mjs under ulimit -n 64; NODE_V8_COVERAGE=… envtruth.mjs and bigtimeout.mjs on both copies; node <scratch>/e2e105s/trials/t12-closeonly.mjs <the kit's index.js of each copy as a file URL>",
+        "output": "fix2: group1 7/0, o14 31 checks 1 failed (the check that asserts 'error.cleanupError === error', the L2 defect removed in 04b), refusals 31/0, drain 6/0, withchild 5/0, outcomes 18/0, withstand2 10/0, emfile 'STAND_START_FAILED: could not start \"em\": EMFILE', 'exit handler: code 0'; envtruth 4/0 on both (extra names NODE_V8_COVERAGE and __CF_USER_TEXT_ENCODING; the startTimeoutMs 0 message names the range on the fix); bigtimeout on the current code: 'STAND_START_TIMEOUT: fake did not print its link in 2147483648 ms; it was killed after 25 ms', 'STAND_STOP_TIMEOUT: fake did not stop in 2147483648 ms after SIGTERM', warnings TimeoutOverflowWarning twice; on the fix: USAGE '… from 1 to 2147483647' after 0 ms for the start, and the stop case stops at its own unguarded start call with the same USAGE (the trial asserts the defect, which is gone); t12-closeonly on the current code: TypeError with 1 marker left (no pid) and 1 group and 2 markers (pid 999999); on the fix: E2eError STAND_START_EXITED '… (exit code null) …', groups 0, markers 0 for both"
+      },
+      {
+        "command": "cd tools && npx prettier --write README.md; npx prettier --check test/e2e/kit/stand.js README.md; npx eslint --max-warnings 0 test/e2e/kit/stand.js; diff -u of stand.js and git diff --no-index --word-diff of README.md against <scratch>/e2e105f/orig04b",
+        "output": "README.md (unchanged); All matched files use Prettier code style!; eslint exit 0; stand.js: lines 25, 27-32, 96, 112-116 and 396-402 only; README.md: one inserted run of words, none removed"
+      },
+      {
+        "command": "the new stand.js: whole-environment reads, computed keys, named reads, the nested runner variable, the skip/todo/turned-off words and '|| true' (patterns assembled from parts), imports, prints, timers awaited for time only; comment lines against non-empty lines",
+        "output": "0, 0, the eight base names only, 0, 0; imports node:child_process, node:path, ./cleanup.js, ./errors.js, ./guards.js; prints 0; sleeps 0; comments 36 of 431 (8 %; 04b 7 %; browser.js 3 %, runner.js 5 %, cleanup.js 14 %)"
+      },
+      {
+        "command": "cd tools && npm run -s format:check; npm run -s lint; npm run -s traces | tail -1; npm run -s handoffs-check | tail -1",
+        "output": "All matched files use Prettier code style! (exit 0); lint exit 0, no output; traces: файлов проверено 2467, следов 0, пропущено 67 (exit 0); handoffs-check: файлов проверено 1331, нарушений 0, исключений использовано 114 из 114 (exit 0)"
+      },
+      {
+        "command": "cd tools && node --test test/e2e-kit.test.js | tail -8; the same in <scratch>/e2e105f/fix/tools (the copy without this step)",
+        "output": "project: # tests 52, # suites 0, # pass 51, # fail 1, # cancelled 0, # skipped 0, # todo 0, # duration_ms 34811; the one not ok is 49 E2K-50, error 'test/e2e/kit/stand.js: reads TEMP' (red by the design until TEST-DESIGNER, section 12 row 1). Copy without this step: 52 / 51 / 1, the same not ok 49 E2K-50 with the same error - not this work"
+      },
+      {
+        "command": "cd tools && node --input-type=module -e '<check (a) of design section 14, word for word>'; LEFT before and after; git status --short",
+        "output": "200 Учёт-Про {\"code\":0,\"signal\":null} \"\" (exit 0); LEFT 0/0 before and after; git status the same list as at the start of the step"
+      },
+      {
+        "command": "cd tools && npm run check (the whole check, 2026-11-08T19:11:50Z to 19:15:52Z)",
+        "output": "format:check: All matched files use Prettier code style!; lint clean; traces: файлов проверено 2467, следов 0, пропущено 67; handoffs-check: файлов проверено 1331, нарушений 0, исключений использовано 114 из 114; npm run test: # tests 2187, # pass 2186, # fail 1, # cancelled 0, # skipped 0, # todo 0 - the one not ok is 136 E2K-50, error 'test/e2e/kit/stand.js: reads TEMP'; exit 1, so the sixth step npm run e2e was not reached (the figure of the design after sub-step 2)"
+      },
+      {
+        "command": "at the end: shasum -a 256 of the four files; git diff --quiet base/E2E105-20261105-01 -- the test file, the nine kit files other than stand.js and index.js, and tools/src; LEFT; ps of node processes",
+        "output": "stand.js aba66b015fbd57f5, README.md d4d0b664b90ad40d; index.js c5d82a73e599a0e3 and fake-stand.js d3d3cfe959fabaab unchanged since step 02b; the test file, those nine kit files and tools/src unchanged against the tag; LEFT 0 processes, 0 folders; node processes: only the ten old ones; every process a trial started was ended by its pid or group; the trials' private temporary roots and the coverage folder removed"
+      },
+      {
+        "command": "after this result was written, before close: node -e JSON.parse of this handoff; a search of it for machine paths; cd tools && npm run -s handoffs-check | tail -1; npm run -s traces | tail -1",
+        "output": "JSON valid (5 changes, 16 self_check entries, 7 issues); machine paths 0; handoffs-check: файлов проверено 1331, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2467, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "E2K-50 (tools/test/e2e-kit.test.js) stays red with 'test/e2e/kit/stand.js: reads TEMP' until TEST-DESIGNER adds the six names at sub-step 3 (section 12 row 1); this step did not touch the base list, and the copy without this step is red with the same message. No existing test checks what changed here. New behaviour for TEST-DESIGNER (sub-steps 3-4), besides I1 of step 04b: (a) startTimeoutMs and stopTimeoutMs of 0, -1, 1.5, NaN, Infinity and 2147483648 give USAGE '<option> must be a whole number of milliseconds from 1 to 2147483647' with 0 spawns and no folder, and 2147483647 is accepted; (b) a cwd that is empty, not a string or holds a NUL gives 'cwd must be a non-empty path without NUL'; (c) a deps.spawn child that sends close alone gives STAND_START_EXITED '(exit code null)' with exitCode and signal null, nothing registered and no marker; (d) L6 changes text only (E2S-05 already allows __CF_USER_TEXT_ENCODING; NODE_V8_COVERAGE as I3 of step 03 says)."
+      },
+      {
+        "id": "I2",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "The sibling of F5 in stop(), not in the list and so not edited (AP-019): once the group is gone, #doStop waits for state.exited with no limit (stand.js:207-210). A real child always sends exit by then, but a fake child of deps.spawn that never sends exit makes stop() wait forever: measured with a fake child of pid 999999 that printed its link (t-f5.mjs (C), the same on both copies: stop() still waiting after 3012-3015 ms, stopTimeoutMs 300). For TEST-DESIGNER: a fake child must send exit (then close), as Node does. ORCH decides whether this wait needs a limit; Low, a test seam only."
+      },
+      {
+        "id": "I3",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "The L5 kind outside the write set (AP-014): the timeout options of the released kit are not checked at all, so a value above 2147483647 also fires after 1 ms there (and 0, NaN or a string pass through): launchBrowser of browser.js (startTimeoutMs, callTimeoutMs, closeGraceMs), connect of cdp.js (callTimeoutMs), goto, reload and waitFor of page.js (timeoutMs, pollMs), runAll of runner.js (fileTimeoutMs, killGraceMs), installHandlers of cleanup.js (hookLimitMs). Low: the callers are the kit's own specs and tests. Not edited; ORCH decides whether DOC-UPDATER opens a defect."
+      },
+      {
+        "id": "I4",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "The message shape of L3 and L5 that stays in stand.js, not in the list: 'the options must be an object' (line 60) and 'env must be an object' (line 98) are also the answers for an array, which is an object in JavaScript; the rule broken is 'a plain object, not a list'. Low; not edited (AP-019)."
+      },
+      {
+        "id": "I5",
+        "kind": "DISCREPANCY",
+        "text": "Design texts that now lag behind the code and the README (AP-005), outside the write set, for DOC-UPDATER at step 10 (with REVIEWER I2 of step 04d and I4 of step 04b): section 10 item 3 of docs/design/REQ-105-e2e-picker.md, the source text of README line 844, now lacks three clauses (O14, O15, L6); section 6 row 'The child sees no foreign variable' is imprecise in the way of L6 (the platform's own names reach the child); 4.1 lacks the reading of O14, the range of the two timeouts (1…2147483647) and the unknown end of STAND_START_EXITED ('exit code null'); section 15 row R2 as I4 (c) of step 04b says."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "AP-014 search of the three kinds: F5 (a read of state.exit with no guard) - the other reads are guarded (isRunning and exitInfo test for null, the CLEANUP_FAILED message tests exit === null) or come after await state.exited, which is resolved only after state.exit is set; the only open sibling is the wait of I2. L5 (a timeout outside what Node keeps, a message that names a kept rule) - I3 and I4. L6 (a text that says 'only' or 'nothing else' about the child's environment) - the design row of I5; no other such text in tools/."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: base/E2E105-20261105-01 = HEAD = 4f41032; the files at the start were the step-04b result (stand.js 9ded9116221ba14f, README.md 579da23531a6d1a0); step 04d holds L5 and L6 and step 04c holds F5 and F6 with the places and fixes the task names; the starter paragraph is README line 844; E2K-50 is the only red test before and after this step. The task names no expected verdict (AP-018). This handoff's status was set to IN_PROGRESS at the start of the work."
+      }
+    ],
+    "prototype": "<scratch>/e2e105f: trials/ (the step-04b trials, t-f1.mjs with its parser change, and the new t-l5.mjs, t-f5.mjs, t-l6.mjs), out/ (every run on the current and the fixed copy, the kit runs and the whole check), fix/ (a clone with the step-04b code, the current code of this step), fix2/ (a fresh clone with the fix), orig04b/ (stand.js and README.md of step 04b)",
+    "artifacts_out": [
+      "tools/test/e2e/kit/stand.js",
+      "tools/README.md"
+    ]
+  }
+}
