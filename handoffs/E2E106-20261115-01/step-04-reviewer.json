@@ -1,0 +1,440 @@
+{
+  "handoff_id": "step04-E2E106-20261115-01",
+  "run_id": "E2E106-20261115-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E106-20261115-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-106"
+    ],
+    "agent_run_id": "aed68c032c24a54b8",
+    "artifacts_in": [
+      "handoffs/E2E106-20261115-01/step-02-backend-dev.json",
+      "docs/design/REQ-106-e2e-pixel-office.md (sections 3, 4.1, 4.2, 5, 10, 11.1, 14, 16)",
+      "decisions/0112-e2e-pixel-office-conventions.md"
+    ],
+    "route": "BACKEND-DEV 02 -> SECURITY-REVIEWER 03 + REVIEWER (this) at the same time -> TEST-DESIGNER 5 -> ...",
+    "write_set": [
+      "this handoff only (the gate reads); mutants only outside the project"
+    ],
+    "base_tag": "base/E2E106-20261115-01",
+    "parallel_work_now": "SECURITY-REVIEWER, step 03, on the same files (reads only)",
+    "orch_check": {
+      "at": "2026-11-15T21:07:36Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T21:06:13Z, verdict PASS, findings L1-L5 and T1-T4 all Low",
+        "git diff --stat -- tools/ -> the same three files as step 2 (no change by the gate)",
+        "node src/handoffs/cli.js -> 0 violations",
+        "rulings in decisions/0112 О20-О23: L1, L2, L5 -> a defect at step 10; L3, L4 -> DOC-UPDATER at step 10; T1-T4 -> TEST-DESIGNER at step 5; I4 -> the design of REQ-107; I5 -> handoffs.md stands, a note to AP-136 at step 10"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 4 — REVIEWER, gate, on the change of step 2 (handoffs/E2E106-20261115-01/step-02-backend-dev.json): tools/test/e2e/kit/stand.js, tools/test/fixtures/e2e-stand/fake-stand.js, tools/README.md (diff against the tag base/E2E106-20261115-01). Check against the design docs/design/REQ-106-e2e-pixel-office.md (sections 3, 4.1, 4.2, 5, 10, 14) and decisions/0112 (О1–О19): the interface, the exact USAGE messages, the order of the checks, the precedence of the stop codes, the frozen fields, the three new stand-in modes, the README texts of section 10 (each found once), and the departures the builder names (issues I4, I5, I6: the message naming the real path, the exemption recognised by the reason text of guards.js, only the part after the first '='). Look for crutches: code made only for a test, a check by text that can drift, a silent fallback, dead branches, a behaviour the design does not name. Run the kit files and npm test yourself (expected: the kit files 72 tests, 69 pass, 3 fail — exactly E2S-01, E2S-03, E2S-05; npm test 2207 / 2204 / 3), lint and format:check, and the picker spec (npm run -s e2e -- picker) on the changed starter. Apply at least 8 mutants of the change on copies outside the project and say which of them the expected tests of step 5 (design section 11.1 and 16) will catch. Step 3 (SECURITY-REVIEWER) runs at the same time on the same files; do not coordinate, judge alone. R2, strict: every call that names the person's home folder or the real Pixel Office state folder goes only to a spawn that records and throws; record sha256, size and time of all five real files before your first trial and after your last. Change no project file other than this handoff; no commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner. Verdict PASS or FAIL with findings ranked (Critical, High, Medium block).",
+    "acceptance_criteria": [
+      "the change checked against the design and decisions/0112 item by item, incl. the builder's departures I4-I6",
+      "crutches looked for; the kit files, npm test, lint, format and the picker spec run",
+      "at least 8 mutants with the expected catching tests of step 5",
+      "the five real files unchanged before and after; PASS or FAIL with findings ranked"
+    ]
+  },
+  "created_at": "2026-11-15T20:43:32Z",
+  "started_at": "2026-11-15T20:43:32Z",
+  "completed_at": "2026-11-15T21:06:13Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-02 step 4, REVIEWER, on the change of step 02 (tools/test/e2e/kit/stand.js, tools/test/fixtures/e2e-stand/fake-stand.js, tools/README.md; git diff against base/E2E106-20261115-01: 205, 66 and 15 lines, nothing else in tools/). Verdict PASS: no Critical, High or Medium finding; five Low findings (L1-L5) and four Low remarks for the tests of step 5 (T1-T4), none blocking. (1) The cause is fixed, not hidden: a folder now reaches a stand only as the value that rule P returned (the checked objects are the only ones the spawn uses), the private home is made in the same call as the spawn and set last, and a write through the home lookup is read in stop() before the home goes. Measured with the real Pixel Office through the changed starter (trial t2): with stateEnv the link answers 200, the home stays empty, stop() gives code 0; with no state folder Pixel Office falls back to its home lookup, which is now the private home, and stop() fails with 'STAND_HOME_WRITTEN: office wrote into its own home folder: .sai-pixel-office' - so the net of C-4 works on the real server, not only on the stand-in. No error is swallowed: a home that cannot be read becomes the entry '(not readable: ENOENT)' (t3), a home that cannot be made is STAND_START_FAILED with the marker removed and 0 spawns (t3), CLEANUP_FAILED wins over STAND_HOME_WRITTEN (t4). (2) Agreement with the design and decisions/0112: the options, the members (stateEnv frozen, homeDir, no stateDirs; the Stand frozen), every USAGE message of 4.1 word for word (trial t1, 50 cases: 18 USAGE, 25 PATH_REFUSED, 7 that reach the recording spawn), the order (all USAGE first, then rule P on stateEnv, env, args, then the marker, the home, the spawn - t1 order cases), the precedence CLEANUP_FAILED > STAND_HOME_WRITTEN > STAND_STOP_TIMEOUT > STAND_EXIT (read, t4, mutant M11), the three new stand-in modes and its guard (15 modes), the README texts of section 10 (the sentence, the paragraph, the table and the line each found once in the section, the paragraph equal as a whole), Node 22, ES modules, built-ins only (0002), cleanup.js, guards.js and src unchanged (0112 О13, О14: an env value inside the repository is refused). The builder's departures: I4 (the 'inside the repository' message names the real path) is what the prototype that passed gate 1b does, a Low text difference from design 4.1 (L3); I5 (the script exemption recognised by the reason text of guards.js) is a text coupling, fail-closed and loud (mutant M05 turns E2S-01, E2S-03, E2S-22 red), Low (L1); I6 (only the part after the first '=') is the design's own limit; trial t1 shows a=b=<path>, -d<path> and rel:<path> reach the spawn unchecked, and Pixel Office takes its folder only as --dir <v> or --dir=<v> (src/pixel-office/main.js:39-52) and refuses a relative one, so no Pixel Office path is opened by them. (3) Nothing beyond the order: the three files of the write set only; the small refactor namedBase()/BASE_NAMES serves the stateEnv check; the stand-in's stderr line on a failed write is a fixture detail (I7). (4) The bar holds: no skip, todo, disabled rule, hidden exit code or secret in the changed files (the search is in self_check); the three red tests are exactly the EXPECTED_RED of the design. (5) Idioms: as the neighbouring kit code (E2eError codes, safeText on child-controlled text, sync fs in the start path as before); the shared rule P is one function used in the three places (AP-014). Runs: kit files 72 / 69 / 3 (E2S-01, E2S-03, E2S-05); npm test once 2207 / 2204 / 3 (the same three); lint and format:check clean; npm run -s e2e -- picker exit 0, 9 of 9, duration_ms 17501; the designer's step-01c starter tests (the model of step 5) on the change 22 of 22; 25 mutants, 22 red in the expected tests, 3 survivors (M16, M20, M22) that are gaps of the planned tests, not of the code. The five real files are unchanged before and after. For TEST-DESIGNER especially: T1-T4 below (stateDirs: undefined; the read-error entry by removing stand.homeDir while the stand runs; the stand-in with HOME equal to its TMPDIR; E2S-19 must get the tokens stateEnv, STAND_HOME_WRITTEN, 50000 that design 11.1 names - the prototype file still checks only the old three); do not assert the spelling of a linked value in the 'inside the repository' message (L3); every refusal call naming a real folder keeps the recording, throwing spawn (rule R2-S).",
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/test/e2e/kit/stand.js:38 (REPO_REASON) and 213-225 (checkedScript, line 218)",
+        "what": "The exemption of the first argument is decided by the text of another file's message: err.message.endsWith(': inside the repository') of guards.js (issue I5 of step 02). If the reason in guards.js is ever reworded, the exemption silently stops applying. It fails closed (every absolute script inside the repository is then refused as outside the temporary root) and is loud: mutant M05 turns E2S-01, E2S-03 and E2S-22 red; it is tighter than the prototype's regular expression.",
+        "fix": "Not now (guards.js is outside the write set). In a later kit change: an exported predicate in guards.js (for example isInsideRepo(input) built on realOf and isInside) or a reason code in the error details, used by checkedScript instead of the text."
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/test/e2e/kit/stand.js:77-79 (isPlainObject) used at 141 for stateEnv (and at 127 for env, released)",
+        "what": "Design 4.1 [F10]: 'Not a plain object -> USAGE startStand: stateEnv must be an object'. isPlainObject accepts any object that is not a list, so stateEnv: new Map([['SAI_X', <folder>]]) is taken as {} without a word and the server gets no state variable (trial t1, case 'stateEnv Map with a folder': the spawn was reached with HOME and USERPROFILE only). For Pixel Office the home net catches the fallback at stop() (t2 b), for another server it would not. A state that the data shape allows and the design forbids (quality-bar §6, item 6).",
+        "fix": "In checkOptions, for stateEnv (and env) also require Object.getPrototypeOf(value) to be Object.prototype or null, with the same message; a row 'stateEnv that is a Map' in E2S-02. Recorded in issues for ORCH (I2)."
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/test/e2e/kit/stand.js:194 against docs/design/REQ-106-e2e-pixel-office.md 4.1, rule P step (3)",
+        "what": "The design writes the refusal as 'refused path \"<value>\": inside the repository'; the code passes the real path returned by step (1) to assertOutsideRepo, so the message names the real path (issue I4 of step 02). The behaviour is the design's (the three steps judge the value the child gets), the prototype that passed gate 1b does the same, and the model test E2S-22 holds (it asserts the folder is included, and its folder has no link).",
+        "fix": "DOC-UPDATER at step 10 writes 'the real path' into design 4.1 step (3) (or CODE-FIXER names the input in that message, one line). TEST-DESIGNER does not assert the spelling of a linked value in this message."
+      },
+      {
+        "id": "L4",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/README.md:844 (the paragraph 'Servers for the page specs', the verbatim text of design section 10)",
+        "what": "Three precisions of a text that is correct as built from the design: (a) the clause 'a server that wrote into its home folder fails stop() with STAND_HOME_WRITTEN (decisions/0109)' credits 0109, while STAND_HOME_WRITTEN, stateEnv and rule P are decisions/0112 О1 (0109 О15 only asked for the private home and the checked pairs); (b) 'A state folder reaches the server only through stateEnv ... or as an argument' - an env value that is a folder under the temporary root reaches it as well (t1, 'accept: good folder everywhere'), checked by the same rule; (c) the limit of 0112 О16 (os.userInfo() still names the person's home folder) was in the old paragraph and is now only in the code comment and the decision.",
+        "fix": "Not by CODE-FIXER now (the text is agreed with E2K-60 and E2S-19, AP-077): DOC-UPDATER at step 10 cites decisions/0112 next to STAND_HOME_WRITTEN, adds 'or in a value of env' and one clause on О16, in the design section 10 and the README together, with E2K-41, E2K-60, E2S-19 green; or ORCH rules otherwise."
+      },
+      {
+        "id": "L5",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/test/e2e/kit/stand.js:25-28 (header comment)",
+        "what": "'every absolute path it is given is checked' - cwd is not checked (design 4.1, by choice); the comment says more than the code does.",
+        "fix": "'every absolute path in stateEnv, in env and in the arguments is checked' (comment only)."
+      },
+      {
+        "id": "T1",
+        "severity": "Low",
+        "blocking": false,
+        "place": "step 5, tools/test/e2e-stand.test.js E2S-02 (design 11.1)",
+        "what": "Design 4.1: an options object that has the key stateDirs at all is USAGE. The code refuses { stateDirs: undefined } (t1), but the planned rows (a string, []) do not hold it: mutant M16 (options.stateDirs !== undefined) survives the model E2S-02.",
+        "fix": "A row 'stateDirs: undefined' in E2S-02 with the exact message."
+      },
+      {
+        "id": "T2",
+        "severity": "Low",
+        "blocking": false,
+        "place": "step 5, E2S-21 (design 4.1, stop())",
+        "what": "'a read error gives the one entry (not readable: <code>)' has no test: mutant M20 (a read error counts as empty) survives the model E2S-21. Measured way to pin it (t3, case 3): remove stand.homeDir while the stand runs; stop() throws 'STAND_HOME_WRITTEN: fake wrote into its own home folder: (not readable: ENOENT)' and the marker goes.",
+        "fix": "That case inside E2S-21 (no new stand-in mode needed)."
+      },
+      {
+        "id": "T3",
+        "severity": "Low",
+        "blocking": false,
+        "place": "step 5, E2S-21, the direct runs of the stand-in (design 4.2, 'strictly under')",
+        "what": "The direct runs cover a home outside and inside the temporary root, not a home equal to it: mutant M22 (equality accepted) survives. BACKEND-DEV's own check (c) did that case; no test keeps it.",
+        "fix": "A third direct run with HOME = TMPDIR = a folder of the test: home-refused, the folder holds no entry."
+      },
+      {
+        "id": "T4",
+        "severity": "Low",
+        "blocking": false,
+        "place": "step 5, E2S-19 (design 11.1 row E2S-19)",
+        "what": "The design asks E2S-19 to check also stateEnv, STAND_HOME_WRITTEN and 50000 in the README section; the prototype file of step 01c still checks only startStand, withStand, 80000, so mutant M25 (the STAND_HOME_WRITTEN clause removed) leaves the model E2S-19 green (E2K-60 is red).",
+        "fix": "Write the six tokens of 11.1 into E2S-19 at step 5."
+      }
+    ],
+    "mutants": {
+      "how": "Each applied alone to <scratch>/e2e106-04/mut (a fresh clone of the tag + the three changed files of the project + the designer's step-01c files tools/test/e2e-stand.test.js and tools/test/e2e-kit.test.js copied read only as the model of the step-5 tests, sha256 469a582f50d6... and 6b02ea6c6f72...), the named tests run alone (--test-name-pattern), the file restored and its hash checked after each; harness <scratch>/e2e106-04/mutants.py with a lock file; outputs in <scratch>/e2e106-04/mut-out/. R2-S: the rule-P mutants ran only E2S-02, E2S-03, E2S-22, whose refusal calls go to a spawn that records and throws (M01 red with 'the home folder in stateEnv: could not start \"fake\": EACCES' - the call reached the throwing spawn, no process); the home mutants ran only E2S-01, E2S-05, E2S-21 (a decoy HOME, the stand-in's guard); the tripwire was preloaded in every run (0 refusals). Control on the unmutated copy: 22 of 22.",
+      "counts": "25 applied: 22 red in the expected tests of step 5, 3 survivors (M16, M20, M22) = remarks T1, T2, T3",
+      "list": [
+        {
+          "id": "M01",
+          "design_id": "S05",
+          "breakage": "stateEnv folders passed without rule P",
+          "expected_catching_tests_of_step_5": "E2S-03",
+          "observed": "E2S-03"
+        },
+        {
+          "id": "M02",
+          "design_id": "S09",
+          "breakage": "a whole absolute value of env or args checked, but the raw value given",
+          "expected_catching_tests_of_step_5": "E2S-03",
+          "observed": "E2S-03"
+        },
+        {
+          "id": "M03",
+          "design_id": "S08+S20",
+          "breakage": "the form <name>=<path> not checked (env and args)",
+          "expected_catching_tests_of_step_5": "E2S-03, E2S-22",
+          "observed": "E2S-03, E2S-22"
+        },
+        {
+          "id": "M04",
+          "design_id": "S11",
+          "breakage": "the first argument may be any absolute path",
+          "expected_catching_tests_of_step_5": "E2S-03",
+          "observed": "E2S-03"
+        },
+        {
+          "id": "M05",
+          "design_id": "own (issue I5)",
+          "breakage": "the reason text of guards.js drifts: the script exemption never applies",
+          "expected_catching_tests_of_step_5": "every test with an absolute script (fail-closed)",
+          "observed": "E2S-01, E2S-03, E2S-22"
+        },
+        {
+          "id": "M06",
+          "design_id": "S10",
+          "breakage": "the temporary root itself taken",
+          "expected_catching_tests_of_step_5": "E2S-03",
+          "observed": "E2S-03"
+        },
+        {
+          "id": "M07",
+          "design_id": "S24",
+          "breakage": "the root compared as spelled, not by its real path",
+          "expected_catching_tests_of_step_5": "E2S-03",
+          "observed": "E2S-03"
+        },
+        {
+          "id": "M08",
+          "design_id": "S19",
+          "breakage": "rule P without the step outside the repository",
+          "expected_catching_tests_of_step_5": "E2S-22",
+          "observed": "E2S-22 (E2S-03 green, as the design says)"
+        },
+        {
+          "id": "M09",
+          "design_id": "S12",
+          "breakage": "stop() never throws STAND_HOME_WRITTEN",
+          "expected_catching_tests_of_step_5": "E2S-21",
+          "observed": "E2S-21"
+        },
+        {
+          "id": "M10",
+          "design_id": "S13",
+          "breakage": "the home read after it went, a read error counted as empty",
+          "expected_catching_tests_of_step_5": "E2S-21",
+          "observed": "E2S-21"
+        },
+        {
+          "id": "M11",
+          "design_id": "S21+S22",
+          "breakage": "the home looked at only after a clean stop (a bad exit and a timeout win)",
+          "expected_catching_tests_of_step_5": "E2S-21",
+          "observed": "E2S-21"
+        },
+        {
+          "id": "M12",
+          "design_id": "S04 (USAGE part)",
+          "breakage": "env may give HOME and USERPROFILE",
+          "expected_catching_tests_of_step_5": "E2S-02",
+          "observed": "E2S-02"
+        },
+        {
+          "id": "M13",
+          "design_id": "S01",
+          "breakage": "the private home made, HOME not given",
+          "expected_catching_tests_of_step_5": "E2S-05, E2S-21",
+          "observed": "E2S-05, E2S-21"
+        },
+        {
+          "id": "M14",
+          "design_id": "S15",
+          "breakage": "the home made with the default mode",
+          "expected_catching_tests_of_step_5": "E2S-01",
+          "observed": "E2S-01"
+        },
+        {
+          "id": "M15",
+          "design_id": "S17",
+          "breakage": "stateDirs taken and ignored",
+          "expected_catching_tests_of_step_5": "E2S-02",
+          "observed": "E2S-02"
+        },
+        {
+          "id": "M16",
+          "design_id": "own",
+          "breakage": "stateDirs: undefined (the key present) taken",
+          "expected_catching_tests_of_step_5": "E2S-02 (design 4.1: the key at all)",
+          "observed": "SURVIVES (E2S-02 green): remark T1"
+        },
+        {
+          "id": "M17",
+          "design_id": "S16",
+          "breakage": "stateEnv may give a base name (TMPDIR)",
+          "expected_catching_tests_of_step_5": "E2S-02",
+          "observed": "E2S-02"
+        },
+        {
+          "id": "M18",
+          "design_id": "S18",
+          "breakage": "a stateEnv name may also stand in env",
+          "expected_catching_tests_of_step_5": "E2S-02",
+          "observed": "E2S-02"
+        },
+        {
+          "id": "M19",
+          "design_id": "own",
+          "breakage": "stand.stateEnv not frozen",
+          "expected_catching_tests_of_step_5": "E2S-01, E2S-03",
+          "observed": "E2S-01, E2S-03"
+        },
+        {
+          "id": "M20",
+          "design_id": "own",
+          "breakage": "a home folder that cannot be read counts as empty",
+          "expected_catching_tests_of_step_5": "E2S-21 (design 4.1: the entry (not readable: <code>))",
+          "observed": "SURVIVES (E2S-21 green): remark T2"
+        },
+        {
+          "id": "M21",
+          "design_id": "S25",
+          "breakage": "the stand-in writes into any home (guard removed)",
+          "expected_catching_tests_of_step_5": "E2S-21",
+          "observed": "E2S-21 (the direct run outside its root)"
+        },
+        {
+          "id": "M22",
+          "design_id": "own",
+          "breakage": "the stand-in writes into a home equal to its temporary root",
+          "expected_catching_tests_of_step_5": "E2S-21 (design 4.2: strictly under)",
+          "observed": "SURVIVES (E2S-21 green): remark T3"
+        },
+        {
+          "id": "M23",
+          "design_id": "S03",
+          "breakage": "USERPROFILE not given",
+          "expected_catching_tests_of_step_5": "E2S-05",
+          "observed": "E2S-05"
+        },
+        {
+          "id": "M24",
+          "design_id": "R07",
+          "breakage": "the README row pixel-office.e2e.js removed",
+          "expected_catching_tests_of_step_5": "E2K-60 (edited)",
+          "observed": "E2K-60"
+        },
+        {
+          "id": "M25",
+          "design_id": "own",
+          "breakage": "the README clause on STAND_HOME_WRITTEN removed",
+          "expected_catching_tests_of_step_5": "E2K-60 and E2S-19 (both edited)",
+          "observed": "E2K-60 red; E2S-19 of the model green: remark T4"
+        }
+      ]
+    },
+    "self_check": [
+      {
+        "command": "node -v",
+        "output": "v22.23.4"
+      },
+      {
+        "command": "Real state folder BEFORE my first trial, 2026-11-15T20:45:23Z: the default state folder of this computer (README 'Where things are'), read only: ls -A, shasum -a 256, stat -f %z, stat -f %Sm of the five files; lsof -nP -iTCP:4780 -sTCP:LISTEN (<scratch>/e2e106-04/real.sh, output real-before.txt)",
+        "output": "the folder holds exactly events.jsonl node-path port server-starts.jsonl write-secret; events.jsonl 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 4035130 2026-10-29T17:05:09; server-starts.jsonl b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e 280 2026-10-28T17:03:24; write-secret 465f654a88e7cb3b172f4f557b0beaf44015440f3b04661bf6e569f30980e8b3 44 2026-10-01T22:52:26 (the hash of the file, not the secret); port 8d0d7d110042d429466cb6db2d6569714cd470115db692648be0fbeb7ddc6b19 5 2026-10-28T17:03:24; node-path 10ee90e816f43a29e511ed0c6161afa2a2ccbefa4ad10b84e2dfb257b43bdc2c 46 2026-10-28T17:03:24; port 4780 listeners: 0"
+      },
+      {
+        "command": "Before work, 2026-11-15T20:45:32Z: ps of node and Chrome processes with start times; LEFT of design section 16 (the ps line over src/pixel-office/main.js, src/picker/cli.js serve, fake-stand.js, sai-e2e-; the count of sai-e2e-* folders of the temporary root)",
+        "output": "no Chrome; node: the eight old 'node -e setInterval' processes of 2026-11-03 (pids 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481, not mine, left alone) and editor and Claude Code processes; LEFT 0 and 0"
+      },
+      {
+        "command": "Extra net: the gate's tripwire <scratch>/e2e106-01b/guard/tripwire.cjs (read first, then only loaded) preloaded with NODE_OPTIONS=--require in every own Node process, with my own log files in <scratch>/e2e106-04/guard/; control: a start of /usr/bin/true with the argument src/pixel-office/main.js and HOME outside the temporary root (names no real folder), and a harmless start",
+        "output": "control 1 refused ('tripwire: refused spawnSync (a Pixel Office program with HOME outside the temporary root)', logged, moved to trip-control.log); control 2 exit 0. After all later runs: trip.log never created = 0 refusals; loaded.log 1921 Node processes loaded the preload"
+      },
+      {
+        "command": "git rev-parse base/E2E106-20261115-01; git diff --stat base/E2E106-20261115-01 -- tools/; shasum -a 256 of the three files (kept in <scratch>/e2e106-04/change-sums.txt); a program that cuts the three quoted texts of design section 10 and the table and counts them in the README and in its last section",
+        "output": "85e79b0e5a9fcd317655b7c20999da2ef0f9639d; tools/README.md 15, tools/test/e2e/kit/stand.js 205, tools/test/fixtures/e2e-stand/fake-stand.js 66, nothing else; stand.js 41478b6d9cea4a9bb8dfcc4a246ebe8e26feec79813680c6af185b4ee641c7a2, fake-stand.js 54f95072e8016ad6bbeeee01b5a2ab7839c20b2403f35a846cace0acef303e8c, README.md 26739d53ac3929bc5a270f5ed4f95934314d4cb2640341dac54de6cf9b21733c; sentence (168 characters) 1 in the README and 1 in the section; paragraph (1636) 1 and 1, and equal to the whole paragraph; line 'REQ-107 adds its row.' 1 and 1, right after the table; table 1 and 1; the section is the last of the README; the four hunks at 840, 844, 848-852, 854 all inside it"
+      },
+      {
+        "command": "cd tools && node --test test/e2e-kit.test.js test/e2e-stand.test.js (in the project, with the tripwire), 2026-11-15T20:48:58Z",
+        "output": "exit 1; # tests 72, # pass 69, # fail 3, # cancelled 0, # skipped 0, # todo 0, # duration_ms 35200; not ok 53 E2S-01 (test/e2e-stand.test.js:449), not ok 55 E2S-03 (assertKitError, test/e2e-stand.test.js:252: USAGE instead of PATH_REFUSED), not ok 57 E2S-05 (test/e2e-stand.test.js:781: HOME and USERPROFILE in the env) - exactly the EXPECTED_RED of the design, nothing else red"
+      },
+      {
+        "command": "Trial t1, rule R2-S: <scratch>/e2e106-04/trials/t1-refusals.mjs on <scratch>/e2e106-04/after (a fresh clone of the tag + the three files, hashes equal), every call with a spawn that records its arguments and throws; 50 cases of USAGE, PATH_REFUSED, the order, the limits and the accepted values",
+        "output": "18 USAGE with the exact texts of 4.1 (stateDirs [], string, undefined and with a good stateEnv: 'startStand: stateDirs is replaced by stateEnv, pairs of a variable and a folder'; env HOME / USERPROFILE: 'startStand: env may not give HOME: the stand gets a home folder of its own'; stateEnv list, string, null: 'startStand: stateEnv must be an object'; 1BAD: 'startStand: stateEnv name \"1BAD\" is not a variable name'; HOME, USERPROFILE, TMPDIR, SystemRoot, a name of env: 'startStand: stateEnv may not give <NAME>'; NUL and a number: 'startStand: stateEnv value of SAI_X must be a string without NUL'); 25 PATH_REFUSED (relative and empty: not absolute; <home>, <home>/.sai-pixel-office, a link to <home>, a folder inside the repository: outside the temporary root; the root as real path, with '/', with '/.', as '<folder>/..', as a link, in the os.tmpdir spelling: the temporary root itself; a link loop: not a usable path; env <home>/.sai-pixel-office, opt=<home>, the root, inside the repository; --dir <state>, --dir=<state>, a second argument inside the repository, a first argument <home>/x.js, a first argument --dir=<state>); order: stateEnv before env, env before args, every USAGE before rule P; 7 reached the recording spawn: stateEnv as a Map (finding L2), the limits a=b=<state>, -d<state>, rel:<state> (issue I6 of step 02), and the accepted first argument inside the repository (kept as given), a link in the temporary root to a repository script (kept), and good folders everywhere (the child got the real paths, opt=<real>, --e=<real>); spawn calls 7, sai-e2e folders before/after 0 0"
+      },
+      {
+        "command": "Trial t2: <scratch>/e2e106-04/trials/t2-office.mjs - the real Pixel Office through the changed starter with a guarded spawn (throws unless HOME, USERPROFILE and any SAI_PIXEL_OFFICE_DIR lie under the temporary root and no value names the person's home), (a) with stateEnv { SAI_PIXEL_OFFICE_DIR: makeTempDir('office') }, (b) with no state folder",
+        "output": "(a) link http://127.0.0.1:59614/ GET 200; homeDir <tmp>/sai-e2e-profile-.../home mode 700, entries []; stateEnv frozen, Stand frozen; the office folder: node-path, port, server-starts.jsonl, write-secret; stop {code 0, signal null}, home gone | (b) home entries while running ['.sai-pixel-office']; stop -> 'STAND_HOME_WRITTEN: office wrote into its own home folder: .sai-pixel-office'; home gone, exit {code 0} | guard refusals 0, sai-e2e folders 0 0"
+      },
+      {
+        "command": "Trial t3: <scratch>/e2e106-04/trials/t3-home.mjs - the stand-in (mode ok, folders of the trial only, guarded spawn): the home that cannot be made (fs.mkdirSync of the home made to fail), seven entries with a control character, the home removed while it runs, a 250-character entry",
+        "output": "1 STAND_START_FAILED: could not make the home folder of \"fake\": EROFS (cause EROFS, spawned 0, sai-e2e folders 0) | 2 STAND_HOME_WRITTEN: 'fake wrote into its own home folder: a, b, c, d<U+202E>x\\\\u0007y, e' (the first five, sorted; U+202E unescaped = the known ISS-0110, issue I3) | 3 STAND_HOME_WRITTEN: fake wrote into its own home folder: (not readable: ENOENT), no marker left | 4 the entry cut by safeText at 200 with '... (N more characters)' | sai-e2e folders 0 0"
+      },
+      {
+        "command": "Trial t4: <scratch>/e2e106-04/trials/t4-precedence.mjs - a folder of mode 000 made by the trial inside the stand's home (its own temporary folder, no link), then stop(); afterwards the trial opens it and removes it",
+        "output": "CLEANUP_FAILED: could not clean up \"fake\": pid 54661: the folder could not be removed (EACCES); the main process ended with exit code 0 (CLEANUP_FAILED wins over STAND_HOME_WRITTEN); leftover sai-e2e folders 0"
+      },
+      {
+        "command": "Control of the model tests: cd <scratch>/e2e106-04/mut/tools && node --test test/e2e-stand.test.js (the designer's step-01c starter tests on the changed starter, with the tripwire); read before: every refusal case naming the home folder uses countingSpawn(refusingSpawn), E2S-05 sets a decoy HOME, E2S-21 runs the stand-in directly with HOME a folder of the test",
+        "output": "exit 0; # tests 22, # pass 22, # fail 0, # skipped 0, # todo 0, # duration_ms 19530; LEFT 0 and 0"
+      },
+      {
+        "command": "caffeinate -i python3 <scratch>/e2e106-04/mutants.py (25 mutants, 2026-11-15T20:55:00Z to 20:55:22Z); shasum -a 256 -c of the three files of the copy after the series",
+        "output": "M01-M15, M17-M19, M21, M23-M25 red in the expected tests (see result.mutants); M16, M20, M22 green = survivors (T1-T3); no timeout; the three files of the copy restored (OK OK OK); tripwire 0 refusals"
+      },
+      {
+        "command": "cd tools && caffeinate -i npm test (once, in the project, with the tripwire), 2026-11-15T20:56:00Z to 20:59:53Z",
+        "output": "# tests 2207, # suites 0, # pass 2204, # fail 3, # cancelled 0, # skipped 0, # todo 0, # duration_ms 233361; not ok 140 E2S-01, not ok 142 E2S-03, not ok 144 E2S-05; nothing else red (design F23: 2207 / 2204 / 3)"
+      },
+      {
+        "command": "cd tools && npm run -s lint; npm run -s format:check",
+        "output": "lint exit 0, no output; 'All matched files use Prettier code style!', exit 0"
+      },
+      {
+        "command": "cd tools && caffeinate -i npm run -s e2e -- picker (in the project, with the tripwire; no other Chrome or e2e run was going: ps before), 2026-11-15T21:00:20Z",
+        "output": "exit 0; e2e: browser=Chrome/157.0.8103.78; e2e: file=picker; # tests 9, # pass 9, # fail 0, # skipped 0, # todo 0, # duration_ms 16548; e2e: command=npm run e2e -- picker selection=picker exit=0 duration_ms=17501"
+      },
+      {
+        "command": "Search for signs of erosion and secrets over the changed files: grep -nE over stand.js and fake-stand.js for .skip(, .todo(, todo, TODO, FIXME, eslint-disable, || true, { skip, { todo, 'for now', 'temporar'; the same over the added lines of the README diff; key shapes ghp_, gh?_, sk-, private key, and the words password, secret, token, api key; the two sandbox flags; process.env reads",
+        "output": "only the words 'temporary root' (lines 151 of fake-stand.js, 183 and 191 of stand.js: not a temporary crutch); README added lines: none; secrets: one match, the word 'token' in the comment 'no token or switch of the developer's shell' (stand.js:41, there before, not a secret); sandbox flags: none; process.env reads: the eight named base variables of stand.js and the two variables of the stand-in, as before"
+      },
+      {
+        "command": "Every caller of the starter and every use of stateDirs: grep -rn over tools/ (js, md, mjs) and the REQ-105 design",
+        "output": "callers: tools/test/e2e/picker.e2e.js (relative script and tenants folders, no env) and the fixture spec tools/test/fixtures/e2e-stand/specs/sleep-stand.e2e.js (an absolute script inside the repository - the exemption; a log under the temporary root); stateDirs: only the refusal in stand.js:85, the released e2e-stand.test.js (step 5) and docs/design/REQ-105-e2e-picker.md (step 10, design section 17)"
+      },
+      {
+        "command": "After my last trial, 2026-11-15T21:03:04Z: the same real-folder commands; diff against the reading before (the six lines after the time)",
+        "output": "the same five files and the same values: events.jsonl 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 4035130 2026-10-29T17:05:09; server-starts.jsonl b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e 280 2026-10-28T17:03:24; write-secret 465f654a88e7cb3b172f4f557b0beaf44015440f3b04661bf6e569f30980e8b3 44 2026-10-01T22:52:26; port 8d0d7d110042d429466cb6db2d6569714cd470115db692648be0fbeb7ddc6b19 5 2026-10-28T17:03:24; node-path 10ee90e816f43a29e511ed0c6161afa2a2ccbefa4ad10b84e2dfb257b43bdc2c 46 2026-10-28T17:03:24; port 4780 listeners 0; diff: IDENTICAL"
+      },
+      {
+        "command": "At the end, 2026-11-15T21:03:11Z: shasum -a 256 -c of the three changed files of the project; git status --short; LEFT; rv04-* folders of the temporary root; ls -a of the person's home folder for fake-stand entries; ps of node and Chrome",
+        "output": "the three files OK (the code did not change during the check); git status: the same entries as before my work, my only change is this handoff; LEFT 0 and 0; rv04-* 0; fake-stand entries 0; no Chrome, no process of mine; the eight old loops still there, not mine"
+      },
+      {
+        "command": "cd tools && node src/handoffs/cli.js (after the result was written)",
+        "output": "handoffs-check: файлов проверено 1355, нарушений 0, исключений использовано 114 из 114; exit 0"
+      },
+      {
+        "command": "cd tools && node src/traces/cli.js (after the result was written)",
+        "output": "traces: файлов проверено 2504, следов 0, пропущено 67 (binary files); exit 0"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked: the diff of the three files against the tag (only these three in tools/), the expected counts (kit files 72 / 69 / 3 with exactly E2S-01, E2S-03, E2S-05; npm test 2207 / 2204 / 3) - both held. The task names no expected verdict (AP-018 not touched)."
+      },
+      {
+        "id": "I2",
+        "kind": "Low",
+        "text": "For ORCH (quality-bar §6, item 6; finding L2): the starter takes a non-plain object (a Map, a class instance) as stateEnv or env and gives the server nothing from it, while design 4.1 [F10] says such a value is USAGE. Not blocking: the home net catches the Pixel Office fallback (t2 b). Proposal: a defect or a one-line change by CODE-FIXER if ORCH wants it in this run, with a row in E2S-02."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "ISS-0110, one more caller confirmed by a run (design section 20): an entry name of the home folder with U+202E reaches the STAND_HOME_WRITTEN message unescaped (trial t3, case 2); \\u0007 is escaped. DOC-UPDATER adds the caller, as the design says; not fixed here."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "For the design of REQ-107: rule P treats any env value that starts with an absolute path as one path, so a list of folders (PATH, NODE_PATH) given in env is refused as outside the temporary root (fail-closed). A spec cannot override PATH with absolute folders through env; the base PATH of the spec process is passed as before."
+      },
+      {
+        "id": "I5",
+        "kind": "DISCREPANCY",
+        "text": "The copies of this step were made with git clone -b base/E2E106-20261115-01 from the local repository (docs/workflows/handoffs.md, common rule 3, which says a copy is a fresh clone and not git archive, AP-074, AP-146), while the lesson of AP-136 item (1) says no git clone that checks out a tree and git archive instead. The two texts disagree; I followed the protocol. No checkout, reset, stash or clean was run anywhere. ORCH may settle the wording."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "What I used of other steps, read only: the gate's tripwire (<scratch>/e2e106-01b/guard/tripwire.cjs, loaded with my own logs) and the designer's step-01c test files (<scratch>/e2e106-01/proto/tools/test/e2e-stand.test.js and e2e-kit.test.js, copied into my own copy as the model of the step-5 tests; their mutant verdicts are predictions for TEST-DESIGNER, not the final tests). fake-stand.js was never imported: it ran only as a child started by the starter or by the model tests. SECURITY-REVIEWER ran at the same time; I did not coordinate with it; while my npm test and the picker spec ran, ps showed no other test or browser run."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Anti-pattern candidates for DOC-UPDATER (Q13, if ORCH agrees): (1) an exemption decided by matching the reason text of another module's error is a silent coupling - here fail-closed and pinned, but the shape repeats (L1); (2) a check 'is a plain object' that only rejects lists lets a Map through as empty (L2)."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-15T20:44:00Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/reviewer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same."
+  }
+}

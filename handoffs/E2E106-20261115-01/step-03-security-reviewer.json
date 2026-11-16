@@ -1,0 +1,152 @@
+{
+  "handoff_id": "step03-E2E106-20261115-01",
+  "run_id": "E2E106-20261115-01",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/E2E106-20261115-01/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-106"
+    ],
+    "agent_run_id": "a2ff6039f51f8576c",
+    "artifacts_in": [
+      "handoffs/E2E106-20261115-01/step-02-backend-dev.json",
+      "docs/design/REQ-106-e2e-pixel-office.md (sections 4.1, 4.2, 5, 6)",
+      "decisions/0112-e2e-pixel-office-conventions.md",
+      "decisions/0109-e2e-stand-conventions.md (О15, О16)",
+      "docs/issues/ISS-0110-e2e-kit-safetext-lets-bidi-controls-through.md"
+    ],
+    "route": "BACKEND-DEV 02 -> SECURITY-REVIEWER (this) + REVIEWER 04 at the same time -> TEST-DESIGNER 5 -> ...",
+    "write_set": [
+      "this handoff only (the gate reads); attack cases only outside the project"
+    ],
+    "base_tag": "base/E2E106-20261115-01",
+    "parallel_work_now": "REVIEWER, step 04, on the same files (reads only)",
+    "orch_check": {
+      "at": "2026-11-15T21:03:43Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T21:02:58Z, verdict PASS, findings F1-F3 Low",
+        "git diff --stat -- tools/ -> the same three files as step 2 (no change by the gate)",
+        "real state folder (ORCH, read only): five sha256 unchanged (5dbc7b86913f, 10ee90e816f4, 8d0d7d110042, b6e6452cdf24, 465f654a88e7)",
+        "F1 -> ISS-0110 caller at step 10 (design section 20); F2 (README cites 0109 for STAND_HOME_WRITTEN, the record is 0112) -> to the code fixer if step 4 sends a rework, else DOC-UPDATER at step 10; F3 known limit (BACKEND-DEV I6)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 3 — SECURITY-REVIEWER, gate, on the change of step 2 (handoffs/E2E106-20261115-01/step-02-backend-dev.json): tools/test/e2e/kit/stand.js, tools/test/fixtures/e2e-stand/fake-stand.js, tools/README.md (diff against the tag base/E2E106-20261115-01), by the design docs/design/REQ-106-e2e-pixel-office.md (sections 4.1, 4.2, 5, 6) and decisions/0112 (О1, О13, О14, О16) and decisions/0109 О15. Your area here is R2 and the safety of the owner's computer: the starter must never let a stand reach the person's real home folder or the real Pixel Office state folder, through HOME or USERPROFILE, through stateEnv, through a value of env (also after '='), through an argument (also after '=', and the first-argument exemption), through links, '..', a relative path, a path equal to the temporary root in any spelling, a path inside the repository; and the refusal must come before the marker and before any spawn (protection in the same operation as the action). Try to break it yourself: write attack cases on copies outside the project (a clone of the tag with the work files copied in), each with the spawn that records and throws for any call that names a real folder (rule R2-S of the design, section 6), and report each case with the result. Also check: the private home is created with mode 0700 and removed on every path; STAND_HOME_WRITTEN and its precedence; the stand-in's own guard (it writes only strictly under its real temporary root); what the README says against what the code does; secrets and messages (safeText on new messages, the open defect ISS-0110). Step 4 (REVIEWER) runs at the same time on the same files; do not coordinate, judge alone. The three red starter tests E2S-01, E2S-03, E2S-05 are expected (EXPECTED_RED until step 5). R2, strict: never start Pixel Office, its hook or the stand-in with the real home or the real state folder; record sha256, size and time of all five real files before your first trial and after your last. Change no project file other than this handoff; no commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner. Verdict PASS or FAIL with findings ranked (Critical, High, Medium block).",
+    "acceptance_criteria": [
+      "every way to reach the real home or state folder tried on copies with a recording, throwing spawn, each with its result",
+      "refusal before the marker and the spawn; private home mode and clean-up; STAND_HOME_WRITTEN; the stand-in guard; README against code; messages and secrets",
+      "the five real files unchanged before and after; PASS or FAIL with findings ranked"
+    ]
+  },
+  "created_at": "2026-11-15T20:43:32Z",
+  "started_at": "2026-11-15T20:43:32Z",
+  "completed_at": "2026-11-15T21:02:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-02 step 3, SECURITY-REVIEWER gate on the change of step 2 (tools/test/e2e/kit/stand.js, tools/test/fixtures/e2e-stand/fake-stand.js, tools/README.md), diff against base/E2E106-20261115-01. My area is touched (R2 and the safety of the owner's computer). Verdict PASS: no applicable item is unmet; no Critical/High/Medium finding. MAP OF SURFACES. stand.js: 'comes from outside' (the options a spec passes - args, env, stateEnv - are input, checked by rule P), 'the server goes by itself'/R2 (it spawns a Sai server, the central R2 concern: a stand must never reach the person's real home or the real Pixel Office state folder), 'writes files' (it makes a private home and a marker under the temporary root). fake-stand.js: 'writes files'/R2 (mode write-home writes into its home only under its own real temporary root - its own guard), 'comes from outside' (test-controlled env). README.md: documentation (must match the code and hold no secret). No page file changed (no 'goes to the browser' page surface); the starter's error text reaches the console/logs/handoffs and so meets the text-as-text concern through safeText. ITEMS. Q7 secrets: APPLICABLE and MET - no secret in the change or in the files a browser gets (the only grep hit is the word 'token' in a comment naming what the base env list excludes); the child env is built from a named base list only (PATH, TMPDIR, TEMP, TMP, LANG, LC_ALL, TZ, SystemRoot), never the whole shell env; messages hold no env value and no secret. Q8 customer spaces: NOT APPLICABLE - no customer data, no business space (test infrastructure; Pixel Office has one local owner). Q9 SQL: NOT APPLICABLE - no query. Q10 failures: APPLICABLE and MET - every error path is explicit with a code (USAGE, PATH_REFUSED, STAND_START_FAILED, STAND_HOME_WRITTEN, STAND_STOP_TIMEOUT, STAND_EXIT), text goes through safeText, no crash. Q11 external addresses: APPLICABLE and MET in the narrow sense - the server link is checked by assertLoopbackUrl (only http://127.0.0.1:<port>/); no client-supplied address is dialled. R2 Pixel Office / owner's machine: APPLICABLE, CENTRAL, and MET - see the attacks below. R3 photos: NOT APPLICABLE (product dropped, decision 0033; no photo introduced). TWO CHECKS THE MAP REQUIRES. 'writes files' - the path never leaves its own folder: the private home and the marker are made under the temporary root (makeTempDir uses assertOutsideRepo(tempRoot) then mkdtemp), rule P refuses any caller path that is not under the temporary root, is the root itself, or is inside the repository; the stand-in writes only strictly under its own real temporary root. 'goes to the browser' text-as-text - the starter's messages show external text as an escaped string (safeText), not as markup; the one gap is bidi controls, which is the open LOW ISS-0110, not new. SHARED MECHANISM (AP-014): rule P is applied consistently to stateEnv, to env values, and to arguments (checkedPath / checkedValue / checkedScript), with the first-argument exemption applied to arg[0] only (verified arg[1] is not exempt); the 'home strictly under the real temporary root' logic is the same in the starter (private home, STAND_HOME_WRITTEN) and in the stand-in (writeHome guard). PROBES: 21 refusal attack cases + 3 temp-root-via-'..' spellings + 1 inside-the-repository case (repo placed under the temporary root) + 1 accepted control = 26 R2 cases through a recording, throwing spawn; 1 accepted env-inspection case (parent HOME set to the real home); 3 STAND_HOME_WRITTEN precedence cases; 4 stand-in guard cases. All as expected. The gate tripwire was preloaded over every trial as an extra net: 0 refusals, so no real process start slipped past the injected spawn. PROOF FOR THE REAL FOLDER: sha256, size and mtime of all five files of the real Pixel Office state folder recorded before the first trial (2026-11-15T20:45:37Z) and after the last (2026-11-15T20:59:32Z): IDENTICAL, 5 of 5; no listener on port 4780 before or after; no .fake-stand entry and no .sai-pixel-office write in the person's home; no stand/office/hook process and no sai-e2e folder left.",
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "item": "Q10 text-as-text / R2 message hygiene; open defect ISS-0110",
+        "place": "tools/test/e2e/kit/stand.js:355-361 (STAND_HOME_WRITTEN uses safeText) via tools/test/e2e/kit/errors.js safeText/isControl",
+        "what": "STAND_HOME_WRITTEN is a new caller of safeText, which escapes C0/C1/DEL/U+2028/U+2029 but lets the bidirectional controls (U+202A-U+202E, U+2066-U+2069, U+200E, U+200F, U+061C) through - the open LOW defect ISS-0110. Confirmed by calling safeText from the clone: a newline is escaped and a leading '::' neutralised, but U+202E and U+2066 pass unescaped. A home-entry name with such a control could read reordered in the runner's console/log.",
+        "fix": "None in this run. This is already the open LOW ISS-0110; the design records STAND_HOME_WRITTEN as one more caller (section 20) and DOC-UPDATER adds the caller at step 10. Not a new or blocking finding; raised here only to confirm it is the known defect, not a new leak.",
+        "blocking": false
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "item": "Q12 accuracy of a documentation reference (REVIEWER/DOC area, not security)",
+        "place": "tools/README.md, paragraph 'Servers for the page specs' ('... fails stop() with STAND_HOME_WRITTEN (decisions/0109)')",
+        "what": "The README cites decisions/0109 for STAND_HOME_WRITTEN, but this convention (private home, stateEnv, rule P, STAND_HOME_WRITTEN) is settled in decisions/0112 O1, which closes the precondition O15 of 0109. The code behaviour is correct; only the citation points at the parent decision rather than the one that defines the rule.",
+        "fix": "Optional: cite decisions/0112 (or 0112 and 0109). Non-security; for REVIEWER or DOC-UPDATER. Not blocking.",
+        "blocking": false
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "item": "R2 known limit of rule P (design-acknowledged, BACKEND-DEV I6)",
+        "place": "tools/test/e2e/kit/stand.js:200-207 (checkedValue), :94/:120-126 (cwd)",
+        "what": "Rule P treats a value as a path only when the absolute path is the whole value or the part after the FIRST '=', and it does not check cwd. Neither reaches the real home or the real state folder: an env value like a=b=<path> cannot redirect Pixel Office (SAI_PIXEL_OFFICE_DIR must itself be an absolute path or Pixel Office refuses it - F12; HOME/USERPROFILE are always the private home, set last and un-overridable by env); cwd does not point the state folder (Pixel Office derives it from SAI_PIXEL_OFFICE_DIR or HOME, never from cwd). Verified: env FOO='--dir=<real state>' is refused (after the first '='); the accepted env-inspection case shows the child HOME is the private home even when the parent HOME is the real home.",
+        "fix": "None required; recorded as a known, bounded limit (matches BACKEND-DEV issue I6 and design section 4.1). Not blocking.",
+        "blocking": false
+      }
+    ],
+    "changes": [],
+    "self_check": [
+      {
+        "command": "Capture of the change (hashes of the three reviewed files at the start and at the end of the check)",
+        "output": "stand.js 41478b6d9cea4a9bb8dfcc4a246ebe8e26feec79813680c6af185b4ee641c7a2; fake-stand.js 54f95072e8016ad6bbeeee01b5a2ab7839c20b2403f35a846cace0acef303e8c; README.md 26739d53ac3929bc5a270f5ed4f95934314d4cb2640341dac54de6cf9b21733c. Same bytes at the end as at the start (no change during the check). diff against base/E2E106-20261115-01: README.md 15, stand.js 205, fake-stand.js 66. I changed no project file other than this handoff."
+      },
+      {
+        "command": "Real Pixel Office state folder (read only), the five files of README 'Where things are', sha256 + size + mtime; lsof on port 4780; .fake-stand in the person's home. BEFORE 2026-11-15T20:45:37Z, AFTER 2026-11-15T20:59:32Z",
+        "output": "events.jsonl 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 4035130 2026-10-29T17:05:09; server-starts.jsonl b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e 280 2026-10-28T17:03:24; write-secret 465f654a88e7cb3b172f4f557b0beaf44015440f3b04661bf6e569f30980e8b3 44 2026-10-01T22:52:26 (hash of the file, not the secret); port 8d0d7d110042d429466cb6db2d6569714cd470115db692648be0fbeb7ddc6b19 5 2026-10-28T17:03:24; node-path 10ee90e816f43a29e511ed0c6161afa2a2ccbefa4ad10b84e2dfb257b43bdc2c 46 2026-10-28T17:03:24. BEFORE vs AFTER: IDENTICAL, 5 of 5. Port 4780: no listener, before and after. .fake-stand entries in the home: 0."
+      },
+      {
+        "command": "R2 attack set on a fresh clone of the tag with the three work files copied in (clone verified at 85e79b0, same file hashes as the project). Each case through a spawn that records its arguments and throws (rule R2-S); folders counted before/after; the gate tripwire preloaded as an extra net. <scratch>/e2e106-03/harness/attack.mjs, attack2.mjs, attack3.mjs",
+        "output": "26 R2 cases, all as expected. stateEnv/env/arg = real state or real home (whole and after '='), first argument = real home or real state: PATH_REFUSED 'outside the temporary root', spawn reached 0, no sai-e2e folder made. symlink under temp pointing to the real state/home: PATH_REFUSED (resolved real path). temp root itself (5 spellings: the path, trailing '/', trailing '/.', <child-of-tmp>/.., a symlink to the root): PATH_REFUSED 'the temporary root itself', spawn 0. a folder inside the repository when the repo is placed under the temporary root: PATH_REFUSED 'inside the repository', spawn 0 (control: a sibling under temp but outside the repo is accepted and reaches the spawn). env HOME / USERPROFILE: USAGE 'env may not give <NAME>'. stateDirs present and stateDirs=[]: USAGE 'stateDirs is replaced by stateEnv'. Every refusal happened BEFORE the marker (folders 0->0) and BEFORE any spawn (0 reached)."
+      },
+      {
+        "command": "Accepted-path env inspection with the parent process HOME set to the person's real home; the child env captured without starting a real process (recordingSpawn). <scratch>/e2e106-03/harness/accept.mjs",
+        "output": "child HOME = USERPROFILE = <tmp>/sai-e2e-profile-*/home (the private home), mode 0700, empty while running; SAI_PIXEL_OFFICE_DIR = the given temp office; a symlink env value exposed as its real target; stand.stateEnv frozen. The person's real home and the real state folder appear NOWHERE in the child's env/args (checked by substring over the whole spawn call). So the parent's real HOME does not leak to the child; HOME is set last and cannot be replaced."
+      },
+      {
+        "command": "STAND_HOME_WRITTEN and its precedence: the real stand-in started through the starter with a private temp home (never the real home), modes write-home, write-home-exit-one, write-home-ignore-term. <scratch>/e2e106-03/harness/homewrite.mjs",
+        "output": "write-home: the private home holds [.fake-stand-dir, .fake-stand-note]; stop() throws STAND_HOME_WRITTEN 'fake wrote into its own home folder: .fake-stand-dir, .fake-stand-note'; homeDir gone after stop(). write-home-exit-one (server exits 1 on SIGTERM) and write-home-ignore-term (stopTimeoutMs 1500): stop() throws STAND_HOME_WRITTEN, not STAND_EXIT and not STAND_STOP_TIMEOUT - so STAND_HOME_WRITTEN wins over both. CLEANUP_FAILED > STAND_HOME_WRITTEN confirmed by reading #doStop (the written check runs only after the CLEANUP_FAILED throw). sai-e2e folders before/after 0 0; home cleaned on every path."
+      },
+      {
+        "command": "The stand-in's own guard, run directly with TMPDIR = a test folder A and HOME = temp folders only (never the real home). <scratch>/e2e106-03/harness/guard.mjs",
+        "output": "HOME strictly under A: WROTE [.fake-stand-dir, .fake-stand-note]. HOME outside A: refused, 0 written. HOME = A itself (not strictly under): refused, 0 written. HOME = a symlink inside A that escapes to outside A: refused, 0 written. So a broken starter that gives no private home (os.homedir() -> the real home) makes the stand-in write nothing into the real home, because the real home is not strictly under the real temporary root."
+      },
+      {
+        "command": "Secrets (Q7) and erosion markers over the added lines of the three files",
+        "output": "key shapes (ghp_/gh?_, sk-, xox?-, private key, BEGIN PRIVATE), and the words password/secret/token/api key: one hit, the word 'token' in a comment ('no token or switch of the developer's shell') describing what the base env list excludes - not a secret. Skip/erosion words (.skip(, .todo(, || true, eslint-disable, @ts-ignore, xit(, fit(): none."
+      },
+      {
+        "command": "safeText behaviour that STAND_HOME_WRITTEN relies on (imported from the clone, a library, not a program)",
+        "output": "newline -> '\\n' (escaped); leading '::' -> '\\u003a:...' (neutralised); U+202E and U+2066 pass through unescaped, U+2028 escaped. This matches the open LOW ISS-0110 (F1); the message is still bounded by length and names its code."
+      },
+      {
+        "command": "README vs code (the paragraph 'Servers for the page specs', the budgets sentence, the table)",
+        "output": "The base env list (8 names), the private home as HOME and USERPROFILE under the temporary root (spec cannot give them), stateEnv/argument + rule P (under the temporary root, not the root, outside the repository), the first-argument exemption, the 127.0.0.1 link, stop() requiring code 0 after SIGTERM, STAND_HOME_WRITTEN on a home write, and the removal of the server and its home on failure/signal/sweep - all match the code. Only a citation nit (F2): STAND_HOME_WRITTEN is attributed to decisions/0109 rather than 0112."
+      },
+      {
+        "command": "Leftovers and traces at the end",
+        "output": "no stand/office/hook/harness process; 0 sai-e2e folders; my own temp folders under the system temporary root removed; search for the names of other projects and computer paths -> empty; my temporary files are under <scratch>/e2e106-03. node -v = v22.23.4."
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "F1 is the open LOW defect ISS-0110, not a new leak: STAND_HOME_WRITTEN is one more caller of safeText, which lets bidirectional controls through. The design already records this (section 20) and DOC-UPDATER adds the caller at step 10. No action for this gate."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "F2 (README cites decisions/0109 for STAND_HOME_WRITTEN rather than 0112) is a documentation accuracy point for REVIEWER (step 4) or DOC-UPDATER (step 10), not a security defect. Non-blocking."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "F3 records the two known, bounded limits of rule P (only the part after the FIRST '=' is a path; cwd is not checked), matching BACKEND-DEV issue I6 and design section 4.1. Neither reaches the real home or the real state folder. Non-blocking."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-15T20:44:00Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/security-reviewer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same."
+  }
+}

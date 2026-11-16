@@ -1,0 +1,1373 @@
+{
+  "handoff_id": "step05-E2E106-20261115-01",
+  "run_id": "E2E106-20261115-01",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/E2E106-20261115-01/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-106"
+    ],
+    "agent_run_id": "aae27c8e98222fdf0",
+    "artifacts_in": [
+      "docs/design/REQ-106-e2e-pixel-office.md (sections 3, 4.4, 6, 8, 11, 12, 13, 14, 16)",
+      "decisions/0112-e2e-pixel-office-conventions.md (О1-О23)",
+      "handoffs/E2E106-20261115-01/step-02-backend-dev.json",
+      "handoffs/E2E106-20261115-01/step-03-security-reviewer.json",
+      "handoffs/E2E106-20261115-01/step-04-reviewer.json (T1-T4)",
+      "handoffs/E2E106-20261115-01/step-01d-code-design-validator.json (N1)",
+      "docs/requirements.yaml (block REQ-106)"
+    ],
+    "route": "SECURITY-REVIEWER 03 PASS + REVIEWER 04 PASS -> TEST-DESIGNER (this) -> TEST-DESIGN-VALIDATOR 5b -> TEST-RUNNER 6 (local and GitHub) -> 7, 8 not applicable -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11",
+    "write_set": [
+      "tools/test/e2e-stand.test.js",
+      "tools/test/e2e-kit.test.js (E2K-41, E2K-50 SCANNED entry, E2K-60)",
+      "tools/test/e2e/pixel-office.e2e.js (new)"
+    ],
+    "base_tag": "base/E2E106-20261115-01",
+    "orch_check": {
+      "at": "2026-11-15T22:05:30Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T22:03:14Z",
+        "git status --short -> the three test files of the write set changed or new, besides the files of steps 1-4 and PROGRESS.md (not of this run)",
+        "npm run -s e2e -- pixel-office (ORCH, once) -> ok 1-7, exit=0, duration_ms=22307",
+        "real state folder (ORCH, read only): sha256, size and time of all five files and the listing equal before and after that run; no fake-stand, hook-note or po-cache entry in the home folder",
+        "grep -cE 'ghp_[A-Za-z0-9]{16,}' and the skip/todo/|| true grep on pixel-office.e2e.js -> 0 and 0",
+        "node --test test/e2e-kit.test.js test/e2e-stand.test.js -> 74 tests, 74 pass",
+        "node src/handoffs/cli.js -> 0 violations",
+        "I2 (P06b narrower than the design), the design text items (R02h, R02r, counts) and the README notes -> step 10; the runner time against 30000 ms -> steps 6 and 9"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 5 — TEST-DESIGNER writes the tests of REQ-106 by the design docs/design/REQ-106-e2e-pixel-office.md (sections 3, 4.4, 8, 11, 12, 13, 14 sub-steps 3, 4a, 4b, 4c, 4d, 16) and decisions/0112 (О1–О23), on the starter as built at step 2 (handoffs/E2E106-20261115-01/step-02-backend-dev.json; gates 03 and 04 PASS). Sub-step 3: the edits of tools/test/e2e-stand.test.js (E2S-01, 02, 03, 05, 19; new E2S-21 and E2S-22, section 11.1) and of tools/test/e2e-kit.test.js (E2K-41, E2K-60; section 12 rows 5–7; the SCANNED entry of E2K-50 is NOT made here); after it the kit files are 74 tests, 74 pass. Add, by decisions/0112 О21, REVIEWER's remarks: a row of E2S-02 for { stateDirs: undefined } (mutant M16), a case that removes stand.homeDir while the stand runs and expects the entry '(not readable: <code>)' (M20), a direct run of the stand-in with HOME equal to its temporary root expecting home-refused (M22), and E2S-19 reading stateEnv, STAND_HOME_WRITTEN and 50000 as section 11.1 says (M25). Do NOT add a test for stateEnv given as a Map (О20: it goes with a defect). Sub-steps 4a–4c: tools/test/e2e/pixel-office.e2e.js, the seven tests of section 4.4 with their helpers, and in the same change as the file the SCANNED entry of E2K-50 (section 12 row 8). Add, by О18, the two refusal calls of the hook helper in test 1 (a): a home equal to the person's home folder, and an office equal to the temporary root, each with the spawn that records and throws, each expecting PATH_REFUSED with the spawn not called, with their mutants. Mind the kit trap of section 4.4: page.waitFor with a function source and no args evaluates the function itself as true and ends at once. Sub-step 4d: the independence loop of the seven spec tests (each name alone: exit 0, exactly one line that starts with 'ok ', and it is 'ok 1 - <name>'), the mutant series of section 16 (each mutant on its own copy outside the project, a clone of the tag base/E2E106-20261115-01 with the run's work files copied in; E2K-61 reads the root README and decisions/0107, so copy those too; report every mutant with the test that went red or why it survives), the order check on three real files (section 13), npm run -s e2e -- pixel-office three times with duration_ms (say how far from 50000 ms and from the 30000 ms question line of О10, and do not take this machine's time as the runner's), the kit files three times, and npm run check once at the end, exit 0. The counts of test( and assert. in the two changed test files are not lower than at the tag except where the design replaces an assertion, and each such place is named. STRICT R2 (rule R2-S, design section 6): every call of the starter, of the hook helper, of test 1 and of every mutant of rule P or of the helper's checks that names the person's home folder or the real Pixel Office state folder goes only to a spawn that records and throws; Pixel Office and its hook run only with HOME and SAI_PIXEL_OFFICE_DIR under the temporary root; never import a program file (fake-stand.js, main.js, hook files) to count or read it: read it as text; record sha256, size and time of all five real files before your first trial and after your last. No skip, no todo, no sandbox flags, no sleep (waits for facts with limits); the key-shaped text of the mask test is built from parts at run time, so no file holds the shape. Change only the three test files of the write set; no commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "sub-step 3: the starter and kit test edits of sections 11.1 and 12, with О21's four remarks; kit files 74/74 plus the new cases",
+      "sub-steps 4a-4c: pixel-office.e2e.js with the seven tests of 4.4, the SCANNED entry in the same change, the two hook-helper refusals of О18",
+      "sub-step 4d: independence loop, mutant series of section 16 on copies with the catching tests, order check on three files, picker-office spec three times with duration_ms, kit files three times, npm run check exit 0",
+      "R2-S held everywhere; the five real files unchanged before and after; no skip, no sleep, no key shape in any file; counts not lower except named replacements"
+    ]
+  },
+  "created_at": "2026-11-15T21:08:04Z",
+  "started_at": "2026-11-15T21:08:04Z",
+  "completed_at": "2026-11-15T22:03:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 5 of REQ-106 (design docs/design/REQ-106-e2e-pixel-office.md sections 3, 4.4, 8, 11-14, 16; decisions/0112 О1-О23), on the starter of step 2 (gates 03 and 04 PASS). SUB-STEP 3: tools/test/e2e-stand.test.js - E2S-01, 02, 03, 05, 19 edited and E2S-21, E2S-22 new, by section 11.1, with the four remarks of О21 (E2S-02 row stateDirs: undefined, M16; E2S-21 a home removed while the stand runs -> the entry (not readable: ENOENT), M20; E2S-21 a direct run of the stand-in with HOME equal to its TMPDIR -> home-refused, M22; E2S-19 reads stateEnv, STAND_HOME_WRITTEN and 50000, M25); no test of stateEnv given as a Map (О20). tools/test/e2e-kit.test.js - E2K-41 (50000) and E2K-60 (50000, stateEnv, STAND_HOME_WRITTEN, the row pixel-office.e2e.js | REQ-106), section 12 rows 5-7. After it: the kit files 74 tests, 74 pass (52 + 22). SUB-STEPS 4a-4c: tools/test/e2e/pixel-office.e2e.js, the seven top-level tests of 4.4 in order (isolated start, live, journal, mask, untouched home, reconnect, windows), each { timeout: 30000 }, each with its own two folders (makeTempDir office and hook-home, removed in every outcome; the hook home asserted empty), its own server through startStand/withStand with stateEnv and the private home, and its own browser; helpers officeOptions, testFolders, dropFolders, inFolders, checkedFolder, runHook (both folders checked in the same call before the spawn, exactly PATH, SAI_PIXEL_OFFICE_DIR, HOME with the real paths, 10000 ms limit then a kill by pid), start/stop/handover payloads without a time field, plainName (ROLE_NAMES, О15), readmeWords and readmeStateFiles (the README tables), the page codes (expressions, or TASKS with its args: the kit trap of 4.4 avoided), keyShaped (built from parts, sha512 of a fixed phrase, controls on the 36-character tail and the shape), restart (outcomes i, ii, iii of 4.4 test 6, no wait, no retry), stopStands (a stop failure attached, not thrown over the first error). In the same change: the SCANNED entry of E2K-50 (section 12 row 8). The two hook-helper refusals of О18 are in test 1 (a), and two more of the same class (AP-110): the four cases are the office outside the root (the real state folder), the home outside the root (the person's home folder), the office equal to the root, the home equal to the root; each PATH_REFUSED with the throwing spawn not called. SUB-STEP 4d: the independence loop - 7 of 7 names alone exit 0, exactly one ok line, equal to ok 1 - <name>; the mutant series - 81 mutants, each in its own fresh clone of the tag with the run's work files copied in, the named tests run alone with the gate's tripwire preloaded: all 26 starter mutants S01-S26 red, 27 of the 31 product mutants red in the spec and the 4 survivors the design names (P06a, P06b, P07, P32) red in named unit tests, R01-R07 red (R08 on record, R09 never applied), the two О18 mutants red, the four О21 mutants red, 11 own mutants red or demonstrated; the project tree identical before and after (2585 lines of hashes), LEFT 0 and 0 after every mutant; the order check on the three real files (smoke, pixel-office, picker; exit 0, the order, one browser line, duration_ms 55576; the duplicate exit 1 SELECTION_DUPLICATE); npm run -s e2e -- pixel-office three times exit 0, 7 of 7, duration_ms 22315, 22265, 22325; the kit files three times 74 of 74; npm run check once at the end exit 0 in 305 s (npm test 2209 of 2209). CRITERION -> TEST. 1 isolated start (with E2S-01, 02, 03, 05, 21, 22): (a) six refusals of startStand through the recording throwing spawn (the home folder and the real state folder in stateEnv, the real state folder in env, after --dir and in --dir=: PATH_REFUSED; HOME in env: USAGE), four refusals of runHook through it, the spawn called 0 times, the sai-e2e folders of the root unchanged, the recorded hook call exactly /bin/sh, [src/pixel-office/hook.sh], the tools folder and the three variables with the real paths; (b) stateEnv given as the real path, the server's home empty, the state folder holds only names of the README five, events.jsonl no line, server-starts.jsonl 1 line, the page 200 and «на связи», no task «в работе», the home still empty at the end. 2 live: marker set, navigations [navigate]; control no task in work; start hook code 0, the row with the plain name and «в работе» polled every 100 ms within 5000 ms and asserted <= 5000 ms from the end of the hook, exactly one such row; the same for the stop and «закончила работу, итог не записан»; marker and [navigate] at the end. 3 journal: three hooks back to back, the .event texts EQUAL in order to the three README words with the plain name, the meta ends with ' · 3 из 3', the file 3 JSON lines with the kinds in order, source REAL, the session and agent id, the ISO time with milliseconds inside [before, after] of its own hook run; the payloads have no time field (asserted). 4 mask: the key controls (40 characters, upper, lower, digit in the tail, the shape regexp built from parts), the control text absent before; six hooks; after the wait the page shows [скрыто] and the control text; neither the key nor its 12 middle characters in the text of the page, the title, the address, every attribute, the storage of the origin, the bodies of every finished /api/events answer (control: one answer holds 'Check [скрыто] now'), the stdout and the stderr of the server; the file: 0 of the key and of the middle, the control text and 'Check [скрыто] now' there. 5 untouched home: one hook, the event (1 line, the sent agent id) in the temporary folder, the server's home and the hook's home empty, stop() {code 0, signal null}, the home gone (and every test's dropFolders and every stop() of the file); the hash of the real folder is RELEASE-VALIDATOR's (О6). 6 reconnect: three rows; stop() code 0; «Нет связи…» within 10000 ms with the same three rows; a hook while down code 0, no stdout, no stderr, the sha256 of events.jsonl unchanged; the restart on the same port and folder with its identity read at once (outcomes i-iii, the messages of 4.4), «на связи» and the same three rows within 10000 ms, 2 start rows, a new row within 5000 ms (polled 100 ms, asserted from the end of the hook) with the README words of the stop, the file 4 lines and none of the lost agent, the second stop code 0; REFUSED declared with expect. 7 windows: one tab, FAVICON once per start, for 1470x784, 390x844, 320x568: 200, «на связи», NOW_SHOWN (not hidden, a box above 0, visible, not display none, text starts with «Сейчас», О9), no unexpected console entry; then stop() code 0 and withBrowser's own console check. 8: no test inside the spec (C-7); E2K-50 with the SCANNED entry, E2K-25, E2K-41, E2K-60; the commands of section 8 row 8 were run (self_check). QUALITY BAR. Q5 a test per criterion, every failure test checks the state (0 spawns and no folder for the refusals, the hash of events.jsonl while down, the rows kept, the homes empty, nothing registered); Q6 no skip, todo, || true, eslint-disable, skip/todo options, sandbox flag, sleep (every wait a fact with a limit); Q7 the key-shaped text built from parts, no file holds the shape (criterion 4 grep: no line), no secret in the tests; Q8 not touched: Pixel Office has one local owner and no space of a customer; Q10 touched: reconnect (the server goes away and comes back, the hook quiet and the file unchanged) and the starter failure paths (E2S-02, 03, 21, 22); Q11 not touched: no address comes from a client, the kit opens only http://127.0.0.1 links that pass assertLoopbackUrl; R2 central: rule R2-S held (below); R3 not applicable (decision 0033). STRICT R2 (rule R2-S). Every call of this step that names the person's home folder or the real state folder went to a spawn that records and throws: E2S-03 (countingSpawn(refusingSpawn)), the child of E2S-22 (it names only a folder of its copy), test 1 (a) (throwingSpawn in both refusal loops); E2S-05 uses a decoy HOME and USERPROFILE; the direct runs of the stand-in in E2S-21 get folders of the test only. The harness checked these seams in every copy before and after applying each mutant (r2s_check held 81 of 81). Pixel Office and its hook ran only with HOME and SAI_PIXEL_OFFICE_DIR under the temporary root. No program file was imported to count or read it (all reads were text: sed, grep, cat); the spec imports only the kit and the data table texts.js, as the design says. The gate's tripwire was preloaded in every own Node trial with my own logs: its control refused 1 start and passed 1; afterwards 0 refusals over 3313 Node processes that loaded it. The five files of the real state folder: sha256, size and time of last change before my first trial (2026-11-15T21:10:24Z) and after my last (2026-11-15T22:00:02Z) IDENTICAL, the folder holds the same five files, no listener on port 4780 either time; the person's home folder holds no fake-stand, hook-note or po-cache entry.",
+    "changes": [
+      {
+        "file": "tools/test/e2e-stand.test.js",
+        "sub_step": 3,
+        "design": "11.1, 12 rows 1-5; decisions/0112 О21",
+        "what": [
+          "header comment: E2S-01 ... E2S-22, the design of REQ-106 and rule R2-S named",
+          "E2S-01 (row 1): the assertion stand.stateDirs deep-equals [] is REPLACED by: {...stand.stateEnv} deep-equals {} and stateEnv frozen; homeDir named home, its parent a sai-e2e-profile- marker right under the temporary root of the file and that marker is the one kit folder, a folder (lstat) of mode 0700, empty while the stand runs, gone after stop()",
+          "E2S-02 (row 2): the row 'stateDirs that are a string' with /stateDirs/ is REPLACED by the exact message; new rows: stateDirs [] and stateDirs undefined (О21, M16); env HOME and env USERPROFILE with the exact message; stateEnv a list, a string, null, a number; stateEnv names 1BAD, A-B, empty, 'A B'; stateEnv HOME, USERPROFILE and each of the eight base names; a stateEnv name that env gives too; a stateEnv value with a NUL, a number, a list - each USAGE with its exact message of 4.1; the value of a variable never in a message (a marker folder value); 0 spawns and no folder after all",
+          "E2S-03 (row 3): the five refused cases as stateDirs are REPLACED by 27 cases, each PATH_REFUSED with its reason at the end of the message, 0 spawns, no folder, all through countingSpawn(refusingSpawn): the five cases in stateEnv; the four absolute ones also in env, after --dir and as --dir=; the temporary root in stateEnv in five spellings (its real path, a trailing separator, a trailing dot, a folder and .., a link) and in env, after --dir and as --dir= (: the temporary root itself); opt=<home> in a value of env; a script outside the repository and the root. The accepted start with stateDirs [link, ..] and the assertions on stand.stateDirs are REPLACED by: stateEnv with the link, env with the .. path, opt=<.. path> and a relative value, the arguments --state <link>, --state=<.. path> and a word; the recorded spawn has the real path in each place (opt=<real> in env, the relative value as it is), stand.stateEnv holds it and is frozen, the start event of the stand-in lists the real paths",
+          "E2S-05 (row 4): HOME is no longer a leak name (it is the private home now); the parent's HOME and USERPROFILE are a decoy folder of the test (rule R2-S; was the person's home folder); expected env = base + given + HOME and USERPROFILE equal to stand.homeDir, not the decoy; the env event's home equals stand.homeDir and not the decoy; the decoy stays empty and is removed",
+          "E2S-19 (row 5; О21, M25): the README tokens get stateEnv, STAND_HOME_WRITTEN, 50000",
+          "E2S-21 (new): two stands at once - two homes in two markers, each gone with its own stop; write-home - the folder .fake-stand-dir and the file .fake-stand-note (lstat kinds), stop() STAND_HOME_WRITTEN with exactly 'fake wrote into its own home folder: .fake-stand-dir, .fake-stand-note', home, pid and group gone, nothing registered; write-home-exit-one and write-home-ignore-term (stopTimeoutMs 1500) -> STAND_HOME_WRITTEN with the exact message, and the control that the other failure happened (exitInfo {code 1} / {signal SIGKILL}, one SIGTERM); a home removed while the stand runs -> exactly '(not readable: ENOENT)', the stand ended with code 0, the marker gone (О21, M20); the stand-in alone with TMPDIR = a folder A of the test and HOME outside A -> home-refused, inside A -> home-written and the two entries, equal to A -> home-refused and A empty (О21, M22), each child killed by pid and waited for, its env event naming that home; exit-early leaves no folder",
+          "E2S-22 (new): a copy of stand.js, cleanup.js, errors.js, guards.js under the temporary root of the file shaped like the repository; a child imports the copy and calls it with a spawn that records and throws: a folder of the copy in stateEnv, in env, in env after =, after --dir, as --dir=, and the copy's script as a LATER argument -> PATH_REFUSED naming the path and ending ': inside the repository'; the script as the first argument -> STAND_START_FAILED EACCES; spawn calls 1; control repoRoot() of the copy is the copy; the child exits 0; no kit folder left"
+        ]
+      },
+      {
+        "file": "tools/test/e2e-kit.test.js",
+        "sub_step": "3 and 4a",
+        "design": "12 rows 6, 7 (sub-step 3) and row 8 (sub-step 4a)",
+        "what": [
+          "E2K-41: the words of the budgets get 50000 (its comment names REQ-106)",
+          "E2K-60: the tokens get 50000, stateEnv, STAND_HOME_WRITTEN; one more row expression ^| pixel-office.e2e.js | REQ-106 |$; REQ-106 still found (in the row)",
+          "SCANNED of E2K-50: tools/test/e2e/pixel-office.e2e.js, in the same change as the file (4a)"
+        ]
+      },
+      {
+        "file": "tools/test/e2e/pixel-office.e2e.js",
+        "sub_step": "4a-4c",
+        "design": "4.4, 8, 11.2; decisions/0112 О2-О10, О15, О18",
+        "what": [
+          "new, 906 lines, 7 top-level tests, 93 assert.; the seven tests and helpers as in the summary; read by run.js by its name (no change of the runner or of package.json)"
+        ]
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node -v",
+        "output": "v22.23.4"
+      },
+      {
+        "command": "Real state folder BEFORE my first trial (README 'Where things are'; read only: ls -a, shasum -a 256, stat -f %z, stat -f %Sm; lsof -nP -iTCP:4780 -sTCP:LISTEN)",
+        "output": "2026-11-15T21:10:24Z; the folder holds exactly events.jsonl, node-path, port, server-starts.jsonl, write-secret; events.jsonl 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 4035130 2026-10-29T17:05:09; server-starts.jsonl b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e 280 2026-10-28T17:03:24; write-secret 465f654a88e7cb3b172f4f557b0beaf44015440f3b04661bf6e569f30980e8b3 44 2026-10-01T22:52:26 (the hash of the file, not the secret); port 8d0d7d110042d429466cb6db2d6569714cd470115db692648be0fbeb7ddc6b19 5 2026-10-28T17:03:24; node-path 10ee90e816f43a29e511ed0c6161afa2a2ccbefa4ad10b84e2dfb257b43bdc2c 46 2026-10-28T17:03:24; port 4780: no listener"
+      },
+      {
+        "command": "LEFT of section 16 before the first trial",
+        "output": "processes 0, sai-e2e folders 0"
+      },
+      {
+        "command": "Extra net: the gate's tripwire <scratch>/e2e106-01b/guard/tripwire.cjs (read only) preloaded with NODE_OPTIONS=--require in every own Node trial, my own logs in <scratch>/e2e106-05/guard/; its controls first: a start of /usr/bin/true with the argument src/pixel-office/main.js and HOME outside the temporary root, and a harmless start",
+        "output": "control 1 refused: 'tripwire: refused spawnSync (a Pixel Office program with HOME outside the temporary root)', logged (moved to trip-control.log); control 2 passed, status 0. Over all later trials (sub-steps 3-4d, 81 mutants, the loop, the order check, the runs, npm run check): trip.log never created = 0 refusals; loaded.log 3313 Node processes loaded the preload"
+      },
+      {
+        "command": "Sub-step 3: cd tools && node --test test/e2e-kit.test.js test/e2e-stand.test.js (tripwire), 2026-11-15T21:18:30Z",
+        "output": "exit 0; # tests 74, # pass 74, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 35303"
+      },
+      {
+        "command": "Sub-steps 4a-4c: cd tools && npm run -s e2e -- pixel-office (tripwire), 2026-11-15T21:23:36Z",
+        "output": "exit 0; e2e: browser=Chrome/157.0.8103.78; ok 1 - isolated start ... ok 7 - windows; # tests 7, # pass 7, # fail 0; e2e: command=npm run e2e -- pixel-office selection=pixel-office exit=0 duration_ms=22409"
+      },
+      {
+        "command": "Sub-step 4a with the SCANNED entry: cd tools && node --test test/e2e-kit.test.js test/e2e-stand.test.js",
+        "output": "exit 0; # tests 74, # pass 74, # fail 0, # skipped 0, # todo 0, # duration_ms 35344"
+      },
+      {
+        "command": "Counts against the tag: git show base/E2E106-20261115-01:<file> | grep -c '^test(' and | grep -o 'assert\\.' | wc -l, the same on the tree",
+        "output": "tools/test/e2e-stand.test.js tag 20 tests, 211 assert. -> now 22 tests, 271 assert.; tools/test/e2e-kit.test.js tag 52 tests, 535 assert. -> now 52 tests, 536 assert.; tools/test/e2e/pixel-office.e2e.js (new) 7 tests, 93 assert. No count falls. The assertions the design replaces (section 11.1, section 12 rows 1-4), each named in changes: E2S-01 stand.stateDirs deep-equals []; E2S-02 the row of stateDirs as a string with /stateDirs/; E2S-03 the five cases as stateDirs, and [...stand.stateDirs] deep-equals [real, real] with Object.isFrozen(stand.stateDirs); E2S-05 the leak name HOME (now the private home, asserted equal to stand.homeDir)"
+      },
+      {
+        "command": "Independence loop of REQ-104 criterion 7, from tools/, for each name printed by the TAP of the file: node --test --test-reporter=tap --test-name-pattern=\"^<name>$\" test/e2e/pixel-office.e2e.js (tripwire), 2026-11-15T21:24:57Z",
+        "output": "PASS isolated start (exit 0, ok lines 1, 'ok 1 - isolated start', not ok 0, 1074 ms); PASS live (4914 ms); PASS journal (2968 ms); PASS mask (2905 ms); PASS untouched home (225 ms); PASS reconnect (9028 ms); PASS windows (1275 ms) - 7 of 7, each exit 0 with exactly one ok line equal to ok 1 - <name>, no not ok"
+      },
+      {
+        "command": "Mutant series: python3 -I <scratch>/e2e106-05/harness/mut.py; each mutant: git clone -b base/E2E106-20261115-01 of the project into <scratch>/e2e106-05/m/<id>, the run's work files copied in (the 11 files of the tree against the tag outside handoffs/, plus the root README and decisions/0107 for E2K-61), the R2-S seams checked, the edit applied by exact text (found once), the named tests run alone with the tripwire (starter mutants: every E2S test but E2S-17, the real picker, so they run with the stand-in only), LEFT read, the clone removed; control on an unmutated copy first",
+        "output": "control: e2e-stand 22/22, e2e-kit 52/52, the spec 7/7, exit 0. 81 mutants applied (see result.mutants): starter side 38 (S01-S26, S09b, M16, M20, M22, M25, R07, R07b, X01-X05) all red; product 33 (P01-P05, P06a, P06b, P07-P24, P29, P31-P35, X06, X07): 29 red in the spec, P06a, P06b, P07, P32 green in the spec and red in named unit tests (MK-02; MK-01, MK-03, MK-02; SV-04b; HK-21); spec 10 (R01, R02, R02o, R02h, R02r, R03, R04, R04x, R05, R06) red, R04x the demonstration of the SCANNED entry. P34 was first refused by the harness (its anchor text was found twice in server.js), the anchor was made unique and the mutant run again: red. r2s_check held in 81 of 81 copies; LEFT 0 processes and 0 sai-e2e folders before and after every mutant; no run hit its time limit; tripwire 0 refusals"
+      },
+      {
+        "command": "The project tree before and after the series: git status --porcelain and shasum -a 256 of every file of git ls-files -co --exclude-standard (2585 lines)",
+        "output": "diff of the two lists: IDENTICAL"
+      },
+      {
+        "command": "Order check, section 13, from tools/ (tripwire): ls test/e2e/*.e2e.js | sed 's#test/e2e/##; s#\\.e2e\\.js##' | sort -r; npm run -s e2e -- smoke pixel-office picker > <scratch>/e2e106-05/order1.txt; echo exit=$?; grep '^e2e: file=' ... ; npm run -s e2e -- pixel-office pixel-office; echo exit=$?, 2026-11-15T21:50:00Z",
+        "output": "smoke, pixel-office, picker; exit=0; e2e: file= smoke, pixel-office, picker in that order; e2e: browser= 1 time; smoke 13/13 (16735 ms), pixel-office 7/7 (21810 ms), picker 9/9 (16430 ms); last line 'e2e: command=npm run e2e -- smoke pixel-office picker selection=smoke,pixel-office,picker exit=0 duration_ms=55576'. The duplicate: exit=1, 'e2e: error=SELECTION_DUPLICATE: the spec file \"pixel-office\" is given twice', then the record line with exit=1"
+      },
+      {
+        "command": "cd tools && npm run -s e2e -- pixel-office, three times (tripwire), from 2026-11-15T21:51:12Z",
+        "output": "run 1 exit=0, 7/7, duration_ms=22315 (isolated start 964, live 4823, journal 2895, mask 2871, untouched home 157, reconnect 8951, windows 1189); run 2 exit=0, 7/7, duration_ms=22265 (973, 4853, 2814, 2898, 157, 8913, 1194); run 3 exit=0, 7/7, duration_ms=22325 (952, 4865, 2848, 2859, 157, 8949, 1189). 27685-27735 ms under the limit of 50000 (2.24 times) and 7675-7735 ms under the question line of 30000 (О10). This Mac's time, not the runner's (AP-144): the runner's reading is for steps 6 and 9 (design section 7)"
+      },
+      {
+        "command": "cd tools && node --test test/e2e-kit.test.js test/e2e-stand.test.js, three times (tripwire), from 2026-11-15T21:52:26Z",
+        "output": "run 1 exit 0, 74/74, 0 skipped, 0 todo, duration_ms 35457; run 2 exit 0, 74/74, 35445; run 3 exit 0, 74/74, 35394"
+      },
+      {
+        "command": "Criterion commands: grep -nE of the key shape of criterion 4 over the spec; grep -nE '\\.skip\\(|\\.todo\\(|\\|\\| true' over the spec; cd tools && npm run -s traces | grep -c 'tools/test/e2e/pixel-office'; the skip words over the two edited test files",
+        "output": "no line (exit 1); no line (exit 1); 0 (traces: 2506 files, 0 traces); none in either file"
+      },
+      {
+        "command": "cd tools && npm run check (once, at the end, tripwire), 2026-11-15T21:54:38Z",
+        "output": "exit=0 in 305 s (end 2026-11-15T21:59:43Z): format:check 'All matched files use Prettier code style!'; lint clean; traces 2506 files, 0 traces; handoffs-check 1356 files, 0 violations, 114 of 114 exceptions; npm test # tests 2209, # pass 2209, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 236589 (2207 + E2S-21 + E2S-22, design F24); e2e: browser=Chrome/157.0.8103.78, picker 9/9, pixel-office 7/7 (21846 ms), smoke 13/13, 'e2e: command=npm run e2e selection=all exit=0 duration_ms=56101'"
+      },
+      {
+        "command": "Real state folder AFTER my last trial, the same commands; diff of the listing and the five lines before and after",
+        "output": "2026-11-15T22:00:02Z; IDENTICAL (the same five files; each sha256, size and time of last change as before; port 4780 no listener); the person's home folder holds no fake-stand, hook-note or po-cache entry (ls -a | grep -c -> 0)"
+      },
+      {
+        "command": "At the end: LEFT; ps for Chrome, hook, Pixel Office, picker and stand-in processes of mine",
+        "output": "processes 0, sai-e2e folders 0; no clone left in <scratch>/e2e106-05/m"
+      }
+    ],
+    "mutants": [
+      {
+        "id": "S01",
+        "source": "design section 16, starter",
+        "breakage": "the private home is made, but HOME is not given",
+        "red": [
+          "E2S-05",
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          22.4
+        ]
+      },
+      {
+        "id": "S02",
+        "source": "design section 16, starter",
+        "breakage": "HOME is the HOME of the spec process",
+        "red": [
+          "E2S-05",
+          "E2S-19",
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          22.2
+        ]
+      },
+      {
+        "id": "S03",
+        "source": "design section 16, starter",
+        "breakage": "USERPROFILE is not given",
+        "red": [
+          "E2S-05"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.4
+        ]
+      },
+      {
+        "id": "S04",
+        "source": "design section 16, starter",
+        "breakage": "env may give HOME, and it wins over the private home",
+        "red": [
+          "E2S-02"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.2
+        ]
+      },
+      {
+        "id": "S05",
+        "source": "design section 16, starter",
+        "breakage": "the folders of stateEnv are passed without the check",
+        "red": [
+          "E2S-03",
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S06",
+        "source": "design section 16, starter",
+        "breakage": "the values of env that are paths are not checked",
+        "red": [
+          "E2S-03",
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S07",
+        "source": "design section 16, starter",
+        "breakage": "the arguments are not checked",
+        "red": [
+          "E2S-03",
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S08",
+        "source": "design section 16, starter",
+        "breakage": "the form --name=<absolute path> is not checked in the arguments",
+        "red": [
+          "E2S-03",
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S09",
+        "source": "design section 16, starter",
+        "breakage": "the checked real path is used for the check only; the raw value goes to the child (env and arguments)",
+        "red": [
+          "E2S-03"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.4
+        ]
+      },
+      {
+        "id": "S09b",
+        "source": "own",
+        "breakage": "the same for stateEnv: checked, the raw folder given",
+        "red": [
+          "E2S-03"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S10",
+        "source": "design section 16, starter",
+        "breakage": "the temporary root itself is taken",
+        "red": [
+          "E2S-03"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S11",
+        "source": "design section 16, starter",
+        "breakage": "the first argument may be any absolute path",
+        "red": [
+          "E2S-03"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.5
+        ]
+      },
+      {
+        "id": "S12",
+        "source": "design section 16, starter",
+        "breakage": "stop() does not look into the home",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          17.2
+        ]
+      },
+      {
+        "id": "S13",
+        "source": "design section 16, starter",
+        "breakage": "the home is read after it was removed, and a read error counts as empty",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          17.1
+        ]
+      },
+      {
+        "id": "S14",
+        "source": "design section 16, starter",
+        "breakage": "one home folder shared by every stand of the process, beside the markers",
+        "red": [
+          "E2S-01",
+          "E2S-02",
+          "E2S-03",
+          "E2S-04",
+          "E2S-06",
+          "E2S-07",
+          "E2S-08",
+          "E2S-09",
+          "E2S-10",
+          "E2S-11",
+          "E2S-13",
+          "E2S-14",
+          "E2S-15",
+          "E2S-16",
+          "E2S-18",
+          "E2S-21",
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          9.4
+        ]
+      },
+      {
+        "id": "S15",
+        "source": "design section 16, starter",
+        "breakage": "the home is made with the default mode",
+        "red": [
+          "E2S-01"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          18.4
+        ]
+      },
+      {
+        "id": "S16",
+        "source": "design section 16, starter",
+        "breakage": "stateEnv may give a name of the base list (TMPDIR)",
+        "red": [
+          "E2S-02"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.2
+        ]
+      },
+      {
+        "id": "S17",
+        "source": "design section 16, starter",
+        "breakage": "stateDirs is still taken and ignored",
+        "red": [
+          "E2S-02"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.2
+        ]
+      },
+      {
+        "id": "S18",
+        "source": "design section 16, starter",
+        "breakage": "a stateEnv name may also stand in env",
+        "red": [
+          "E2S-02"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.2
+        ]
+      },
+      {
+        "id": "S19",
+        "source": "design section 16, starter",
+        "breakage": "rule P without step (3), outside the repository",
+        "red": [
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S20",
+        "source": "design section 16, starter",
+        "breakage": "the form <name>=<path> is not checked in the values of env",
+        "red": [
+          "E2S-03",
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S21",
+        "source": "design section 16, starter",
+        "breakage": "the home is looked at only when the exit was code 0 (a bad exit wins)",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          17.3
+        ]
+      },
+      {
+        "id": "S22",
+        "source": "design section 16, starter",
+        "breakage": "the home is looked at only when the stop did not time out",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          18.9
+        ]
+      },
+      {
+        "id": "S23",
+        "source": "design section 16, starter",
+        "breakage": "only files count in the home (a folder is not seen)",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          17.2
+        ]
+      },
+      {
+        "id": "S24",
+        "source": "design section 16, starter",
+        "breakage": "the temporary root is compared as it was given, not as its real path",
+        "red": [
+          "E2S-03"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "S25",
+        "source": "design section 16, starter",
+        "breakage": "the stand-in writes into any home (its guard removed)",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.1
+        ]
+      },
+      {
+        "id": "S26",
+        "source": "design section 16, starter",
+        "breakage": "a stateEnv name that is not a variable name is taken",
+        "red": [
+          "E2S-02"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.2
+        ]
+      },
+      {
+        "id": "M16",
+        "source": "decisions/0112 О21 (REVIEWER M16)",
+        "breakage": "stateDirs: undefined (the key present) is taken",
+        "red": [
+          "E2S-02"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.4
+        ]
+      },
+      {
+        "id": "M20",
+        "source": "decisions/0112 О21 (REVIEWER M20)",
+        "breakage": "a home that cannot be read counts as empty",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.0
+        ]
+      },
+      {
+        "id": "M22",
+        "source": "decisions/0112 О21 (REVIEWER M22)",
+        "breakage": "the stand-in writes into a home equal to its temporary root",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "M25",
+        "source": "decisions/0112 О21 (REVIEWER M25)",
+        "breakage": "the README clause on STAND_HOME_WRITTEN removed",
+        "red": [
+          "E2S-19",
+          "E2K-60"
+        ],
+        "green_named_runs": [
+          "E2K-41"
+        ],
+        "status": "red",
+        "seconds": [
+          0.1,
+          0.1,
+          0.1
+        ]
+      },
+      {
+        "id": "R07",
+        "source": "design section 16, spec",
+        "breakage": "the README row of pixel-office.e2e.js is removed",
+        "red": [
+          "E2K-60"
+        ],
+        "green_named_runs": [
+          "E2K-41",
+          "E2S-19"
+        ],
+        "status": "red",
+        "seconds": [
+          0.1,
+          0.1,
+          0.1
+        ]
+      },
+      {
+        "id": "R07b",
+        "source": "own",
+        "breakage": "the README budget 50000 of pixel-office removed",
+        "red": [
+          "E2K-41",
+          "E2K-60",
+          "E2S-19"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1,
+          0.1,
+          0.1
+        ]
+      },
+      {
+        "id": "X01",
+        "source": "own",
+        "breakage": "stand.stateEnv not frozen",
+        "red": [
+          "E2S-01",
+          "E2S-03"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          18.5
+        ]
+      },
+      {
+        "id": "X02",
+        "source": "own",
+        "breakage": "the exemption of the script holds for every argument",
+        "red": [
+          "E2S-03",
+          "E2S-22"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.3
+        ]
+      },
+      {
+        "id": "X03",
+        "source": "own",
+        "breakage": "stand.homeDir names the marker, not the home inside it",
+        "red": [
+          "E2S-01",
+          "E2S-02",
+          "E2S-03",
+          "E2S-04",
+          "E2S-05",
+          "E2S-06",
+          "E2S-08",
+          "E2S-09",
+          "E2S-10",
+          "E2S-11",
+          "E2S-12",
+          "E2S-13",
+          "E2S-14",
+          "E2S-15",
+          "E2S-20",
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          14.7
+        ]
+      },
+      {
+        "id": "X04",
+        "source": "own",
+        "breakage": "STAND_HOME_WRITTEN names the first entry only",
+        "red": [
+          "E2S-21"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          17.2
+        ]
+      },
+      {
+        "id": "X05",
+        "source": "own",
+        "breakage": "env may give USERPROFILE (only HOME refused), and the private one still wins",
+        "red": [
+          "E2S-02"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          19.2
+        ]
+      },
+      {
+        "id": "P01",
+        "source": "design section 16, product",
+        "breakage": "the page polls every 9 s",
+        "red": [
+          "live"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          6.0
+        ]
+      },
+      {
+        "id": "P02",
+        "source": "design section 16, product",
+        "breakage": "the page reloads itself when new events come",
+        "red": [
+          "live"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          4.8
+        ]
+      },
+      {
+        "id": "P03",
+        "source": "design section 16, product",
+        "breakage": "the word of the link is another",
+        "red": [
+          "isolated start",
+          "windows"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          10.8,
+          10.8
+        ]
+      },
+      {
+        "id": "P04",
+        "source": "design section 16, product",
+        "breakage": "the word of a lost link is another",
+        "red": [
+          "reconnect"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          12.7
+        ]
+      },
+      {
+        "id": "P05",
+        "source": "design section 16, product",
+        "breakage": "no masking in the hook and none in the server",
+        "red": [
+          "mask"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          11.3
+        ]
+      },
+      {
+        "id": "P06a",
+        "source": "design section 16, product",
+        "breakage": "the server does not mask again (the hook does)",
+        "red": [
+          "MK-02"
+        ],
+        "green_named_runs": [
+          "mask"
+        ],
+        "status": "survives the spec (defence in depth, design section 16 and О7), red in the named unit tests",
+        "seconds": [
+          3.0,
+          0.2
+        ]
+      },
+      {
+        "id": "P06b",
+        "source": "design section 16, product",
+        "breakage": "the hook does not mask the description (the server does)",
+        "red": [
+          "MK-01",
+          "MK-03",
+          "MK-02"
+        ],
+        "green_named_runs": [
+          "mask",
+          "HK-22",
+          "HK-23"
+        ],
+        "status": "survives the spec (defence in depth, design section 16 and О7), red in the named unit tests",
+        "seconds": [
+          3.0,
+          0.2,
+          0.1,
+          0.1,
+          0.1,
+          0.2
+        ]
+      },
+      {
+        "id": "P07",
+        "source": "design section 16, product",
+        "breakage": "the server stores its own time, not the hook's",
+        "red": [
+          "SV-04b"
+        ],
+        "green_named_runs": [
+          "journal"
+        ],
+        "status": "survives the spec (defence in depth, design section 16 and О7), red in the named unit tests",
+        "seconds": [
+          3.0,
+          0.2
+        ]
+      },
+      {
+        "id": "P08",
+        "source": "design section 16, product",
+        "breakage": "the hook ends with code 1 when the server is down",
+        "red": [
+          "reconnect"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          4.8
+        ]
+      },
+      {
+        "id": "P09",
+        "source": "design section 16, product",
+        "breakage": "the hook prints a line when the server is down",
+        "red": [
+          "reconnect"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          4.8
+        ]
+      },
+      {
+        "id": "P10",
+        "source": "design section 16, product",
+        "breakage": "the server empties the journal at its start",
+        "red": [
+          "reconnect"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          15.0
+        ]
+      },
+      {
+        "id": "P11",
+        "source": "design section 16, product",
+        "breakage": "the server writes a sixth file into its folder",
+        "red": [
+          "isolated start"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.2
+        ]
+      },
+      {
+        "id": "P12",
+        "source": "design section 16, product",
+        "breakage": "the server writes a row into the journal at its start",
+        "red": [
+          "isolated start"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.2
+        ]
+      },
+      {
+        "id": "P13",
+        "source": "design section 16, product",
+        "breakage": "the server makes its default folder in its home folder as well",
+        "red": [
+          "isolated start",
+          "untouched home"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.2,
+          0.3
+        ]
+      },
+      {
+        "id": "P14",
+        "source": "design section 16, product",
+        "breakage": "the words of a repeated start are other",
+        "red": [
+          "journal"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          2.7
+        ]
+      },
+      {
+        "id": "P15",
+        "source": "design section 16, product",
+        "breakage": "the new rows of the journal go on top",
+        "red": [
+          "journal"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          2.7
+        ]
+      },
+      {
+        "id": "P16",
+        "source": "design section 16, product",
+        "breakage": "the counter shows one row more",
+        "red": [
+          "journal"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          2.6
+        ]
+      },
+      {
+        "id": "P17",
+        "source": "design section 16, product",
+        "breakage": "the role is shown by its code, not by its plain name",
+        "red": [
+          "live",
+          "journal"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          5.9,
+          2.7
+        ]
+      },
+      {
+        "id": "P18",
+        "source": "design section 16, product",
+        "breakage": "the word of a finished task is another",
+        "red": [
+          "live"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          7.9
+        ]
+      },
+      {
+        "id": "P19",
+        "source": "design section 16, product",
+        "breakage": "the page stops polling after a failed request",
+        "red": [
+          "reconnect"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          14.9
+        ]
+      },
+      {
+        "id": "P20",
+        "source": "design section 16, product",
+        "breakage": "the page forgets the rows when the link is lost",
+        "red": [
+          "reconnect"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          4.7
+        ]
+      },
+      {
+        "id": "P21",
+        "source": "design section 16, product",
+        "breakage": "the server ends with code 1 after SIGTERM",
+        "red": [
+          "windows"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          1.3
+        ]
+      },
+      {
+        "id": "P22",
+        "source": "design section 16, product",
+        "breakage": "the page writes a console error at its start",
+        "red": [
+          "windows"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.8
+        ]
+      },
+      {
+        "id": "P23",
+        "source": "design section 16, product",
+        "breakage": "the page throws in a narrow window",
+        "red": [
+          "windows"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.9
+        ]
+      },
+      {
+        "id": "P24",
+        "source": "design section 16, product",
+        "breakage": "the block «Сейчас» is display none in a narrow window",
+        "red": [
+          "windows"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.9
+        ]
+      },
+      {
+        "id": "P29",
+        "source": "design section 16, product",
+        "breakage": "the hook takes its folder from the home folder only (the variable ignored)",
+        "red": [
+          "live"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          5.9
+        ]
+      },
+      {
+        "id": "P31",
+        "source": "design section 16, product",
+        "breakage": "the server prefers the home folder to the variable",
+        "red": [
+          "isolated start",
+          "untouched home"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.2,
+          0.3
+        ]
+      },
+      {
+        "id": "P32",
+        "source": "design section 16, product",
+        "breakage": "the rule of gh?_ keys is gone (the rule of long strings stays)",
+        "red": [
+          "HK-21"
+        ],
+        "green_named_runs": [
+          "mask"
+        ],
+        "status": "survives the spec (defence in depth, design section 16 and О7), red in the named unit tests",
+        "seconds": [
+          3.0,
+          0.1
+        ]
+      },
+      {
+        "id": "P33",
+        "source": "design section 16, product",
+        "breakage": "the rule of gh?_ keys and the rule of long strings are gone",
+        "red": [
+          "mask"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          11.3
+        ]
+      },
+      {
+        "id": "P35",
+        "source": "design section 16, product",
+        "breakage": "our own server writes no start row on a restart",
+        "red": [
+          "reconnect"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          4.8
+        ]
+      },
+      {
+        "id": "X06",
+        "source": "own",
+        "breakage": "the hook writes a note into its home folder",
+        "red": [
+          "untouched home"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.3
+        ]
+      },
+      {
+        "id": "X07",
+        "source": "own",
+        "breakage": "the server writes a cache file into its home folder",
+        "red": [
+          "untouched home"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.3
+        ]
+      },
+      {
+        "id": "P34",
+        "source": "design section 16, product",
+        "breakage": "the hook does not mask, and the server writes the body it got to stderr before masking",
+        "red": [
+          "mask"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          2.8
+        ]
+      },
+      {
+        "id": "R01",
+        "source": "design section 16, spec",
+        "breakage": "the spec gives the hook the whole environment",
+        "red": [
+          "isolated start",
+          "E2K-50"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1,
+          0.1
+        ]
+      },
+      {
+        "id": "R02",
+        "source": "design section 16, spec",
+        "breakage": "the spec runs the hook without the two folder checks",
+        "red": [
+          "isolated start"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1
+        ]
+      },
+      {
+        "id": "R02o",
+        "source": "own",
+        "breakage": "runHook does not check the state folder",
+        "red": [
+          "isolated start"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1
+        ]
+      },
+      {
+        "id": "R02h",
+        "source": "decisions/0112 О18",
+        "breakage": "runHook does not check its home folder",
+        "red": [
+          "isolated start"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1
+        ]
+      },
+      {
+        "id": "R02r",
+        "source": "decisions/0112 О18",
+        "breakage": "runHook takes the temporary root itself",
+        "red": [
+          "isolated start"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1
+        ]
+      },
+      {
+        "id": "R03",
+        "source": "design section 16, spec",
+        "breakage": "the key-shaped text is written as a literal",
+        "red": [
+          "E2K-50",
+          "grep of criterion 4"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1
+        ]
+      },
+      {
+        "id": "R04",
+        "source": "design section 16, spec",
+        "breakage": "a skip word is put into a comment of the spec",
+        "red": [
+          "E2K-50",
+          "grep of criterion 8"
+        ],
+        "green_named_runs": [
+          "E2K-25"
+        ],
+        "status": "red",
+        "seconds": [
+          0.1,
+          0.7
+        ]
+      },
+      {
+        "id": "R04x",
+        "source": "own",
+        "breakage": "the same skip word with the SCANNED entry removed (the reason for row 8 of section 12)",
+        "red": [
+          "grep of criterion 8"
+        ],
+        "green_named_runs": [
+          "E2K-50"
+        ],
+        "status": "a demonstration, not a survivor: without the SCANNED entry E2K-50 is green, so the entry of section 12 row 8 is needed; the grep of criterion 8 is red",
+        "seconds": [
+          0.1
+        ]
+      },
+      {
+        "id": "R05",
+        "source": "design section 16, spec",
+        "breakage": "the spec gives the hook no HOME",
+        "red": [
+          "isolated start"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.2
+        ]
+      },
+      {
+        "id": "R06",
+        "source": "design section 16, spec",
+        "breakage": "the key-shaped text has a dash in place of the underscore",
+        "red": [
+          "mask"
+        ],
+        "green_named_runs": [],
+        "status": "red",
+        "seconds": [
+          0.1
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Facts of the task checked before building on them: the starter as built (read as text: stateEnv, homeDir, the messages of 4.1, the precedence, checkedScript by the reason text, L3: the 'inside the repository' message names the real path, so E2S-22 asserts it on a path with no link), the stand-in (15 modes, the guard 'strictly under' its real temporary root, the env event with home), the tag's counts (20/211 and 52/535, as design F28), and after sub-step 3 the kit files are 74 of 74 as the task says. The step-02 handoff's EXPECTED_RED E2S-01, 03, 05 are fixed here by section 11.1."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "Design section 16 says P06b (the hook does not mask) is red in HK-22, HK-23, MK-01, MK-03, MK-02. My P06b removes only the hook's masking of the task description (protocol.js buildWriteBody); with it MK-01, MK-03 and MK-02 are red, HK-22 and HK-23 stay green (they check other fields or the prompt text). The spec is green under it, as the design says (defence in depth: the server masks again). The designer's P06b may have removed more; for DOC-UPDATER at step 10, section 16 can name the narrower mutant and its three red tests."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "How the product mask mutants turn the spec red: P05 and P33 make 'mask' red at its wait (the mask label never appears on the page, WAIT_TIMEOUT 10000 ms), before the place checks; P34 makes it red at the place 'the stderr of the server holds the key'. The places 'an answer of /api/events' and 'the storage of the origin' have no mutant of their own, as О8 records (no raw text reaches them while the server masks); the answers place has a positive control (an answer holds 'Check [скрыто] now')."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Cases added beyond the design's list, each of the class of a listed case (AP-110), none weakening it: E2S-02 every base name, USERPROFILE, null and number stateEnv, the names A-B, empty and 'A B', a list as a value; E2S-03 the root as an argument and after =, a relative env value given as it is, the reason of every refusal asserted, the count 27; E2S-05 a decoy USERPROFILE too, the decoy left empty; E2S-21 the controls of the precedence (the bad exit and the timeout did happen), lstat kinds of the two entries; E2S-22 the script path as a later argument is refused (pins 'the first argument only', own mutant X02); spec: four runHook refusals (both folders x both checks; О18 asked two), EVENTS equal (not 'includes'), exactly one task row, the elapsed time from the end of the hook asserted in live and in reconnect, the lost event absent from the file, the README words of the new row after the restart. Own mutants S09b, R02o, R07b, X01-X07 (11) are red; R04x is a demonstration."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "For steps 6, 9 (the time line): on this Mac npm run -s e2e -- pixel-office gave duration_ms 22315, 22265, 22325 (and 22409, and 21810/21846 as the TAP time inside the three-file and all-file runs); the design's poll waits are the product's clock, so most of the time does not grow on a slower machine. This is not the runner's time (AP-144); the GitHub reading of the check.yml run of the ci/ snapshot is for TEST-RUNNER and RELEASE-VALIDATOR, with the 30000 ms question line of О10 and the limit 50000 of criterion 8."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "For steps 9 and 10: (a) the counts for the design (AP-143): e2e-stand.test.js 22 tests, 271 assert.; e2e-kit.test.js 52 tests, 536 assert.; pixel-office.e2e.js 7 tests, 93 assert.; mutants applied at step 5: 81 (results in result.mutants); (b) the two О18 mutants for design 4.4 and 16 (DOC-UPDATER): R02h 'runHook does not check its home folder' and R02r 'runHook takes the temporary root itself', both red in isolated start with 'Error: a real folder reached the spawn' (the throwing spawn of rule R2-S was reached, no process started); (c) the four О21 mutants M16, M20, M22, M25 are red (E2S-02; E2S-21; E2S-21; E2S-19 and E2K-60); (d) the order check readings for docs/issues/ISS-0102 item 2 (self_check); (e) E2S-19 and E2K-60 check the tokens stateEnv, STAND_HOME_WRITTEN and 50000 and the table row, not the citation: the README corrections of О20 (decisions/0112 next to STAND_HOME_WRITTEN, 'or in a value of env', the О16 clause) keep both green as long as those tokens and the row stay (AP-077); (f) R04 is red in E2K-50 and the grep of criterion 8, E2K-25 stays green (it scans sandbox flags only), as the design says; R04x shows E2K-50 green without the SCANNED entry."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Rule R2-S evidence in one place: no call of this step gave the person's home folder or the real state folder to a real spawn; the harness checked the seams (E2S-03 countingSpawn(refusingSpawn), the child spawn of E2S-22, the two throwingSpawn loops of test 1, os.homedir() only inside them) in every mutated copy before and after the edit; the tripwire logged 0 refusals; the five real files are unchanged (self_check). The R2 rule of the series held: starter mutants ran only with the stand-in (E2S-17, the real picker, left out of their runs); product mutants that write into 'the home folder' (P13, P31, X06, X07, P29) ran with the correct starter and hook helper, so they wrote only under the temporary root and were caught there; R09 was never applied. No program file was imported to count or read it."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Found on the way, not changed (quality-bar 6, item 6): the old folder of 2026-11-05 in the system temporary folder that BACKEND-DEV named (issue I9 of step 02, a link to the person's home folder inside it) is still there; not mine, not touched. The working tree holds changes of other steps (decisions/README.md, decisions/0112, docs/program/public-v1/PROGRESS.md, docs/requirements.yaml, the design, tools/README.md, stand.js, fake-stand.js, the run's handoffs); my changes are the three test files of the write set and this handoff."
+      }
+    ],
+    "prototype": "<scratch>/e2e106-05/ (outside the project): harness/mut.py (the mutant harness, its table of 81 mutants and the R2-S seam check), harness/show.py, brief.py, result.py; mutants.jsonl (one record per mutant: the edit hashes, the runs, the red tests, LEFT, the tripwire) and mut-out/ (the TAP of each run); guard/ (net.sh, control.mjs, trip-control.log, loaded.log; no trip.log); real-before.txt, real-after.txt; tree-before.txt, tree-after-mutants.txt; kit-s3.txt, kit-s4a.txt, kit-run1-3.txt, spec-try1.txt, spec-run1-3.txt, loop.txt, names.txt, order0-2.txt, check.txt, check.done. The facts later steps need are in this result (AP-149).",
+    "artifacts_out": [
+      "tools/test/e2e-stand.test.js",
+      "tools/test/e2e-kit.test.js",
+      "tools/test/e2e/pixel-office.e2e.js"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-15T21:08:24Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/test-designer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same."
+  }
+}

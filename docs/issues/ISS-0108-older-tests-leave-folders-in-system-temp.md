@@ -23,3 +23,10 @@ Each of the three test files removes the folders it makes, in `after` or in a `f
 ## Маршрут
 
 WF-03 for TEST-FIXER (tests only), not urgent; on ORCH's order.
+
+## Обновление 2026-11-16 (DOC-UPDATER, прогон `E2E106-20261115-01`, шаг 10): снова 203 записи за проверку; старая папка со ссылкой на домашнюю папку
+
+1. **Seen again.** TEST-RUNNER of run `E2E106-20261115-01` (`handoffs/E2E106-20261115-01/step-06-test-runner.json`, issue I3 and `self_check` «LEFTOVERS», 2026-11-16T00:18:56Z): one `npm run check` left 203 new `sai-*` entries in the system temporary root — 195 `sai-wf06-`, 5 `sai-outside-`, 2 `sai-snap-`, 1 `sai-flaky-` (9949 before, 10152 after; no old entry missing), the same kinds and counts as in run `E2E105-20261105-01`; the e2e kit left none (0 `sai-e2e-`).
+2. **An old folder holds a link to the person's home folder.** BACKEND-DEV (`handoffs/E2E106-20261115-01/step-02-backend-dev.json`, issue I9; seen again by TEST-DESIGNER, `step-05-test-designer.json`, issue I8) found in the system temporary folder an old folder `sai-stand-test-…` of 2026-11-05 that holds a link `link-to-home` to the person's home folder and six `t-s*` folders. It is not of run `E2E106-20261115-01`: the `E2S` tests of today make their own root and remove it in `after`. It may be left by a run of `tools/test/e2e-stand.test.js` of 2026-11-05 (run `E2E105-20261105-01`, while that file was built) that ended before its `after`; whose run it was is not established. Nobody removed it. A link to the home folder that lies in a shared folder can be followed by any later tool that walks that folder, so the clean-up of this defect should also list the old `sai-stand-test-*` folders; the folders already left are removed by the owner or on his word, not by a test.
+
+The defect stays `open`.

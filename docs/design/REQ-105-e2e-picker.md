@@ -6,6 +6,8 @@ This file holds shapes, signatures, tables and texts. It holds no implementation
 
 **As built (DOC-UPDATER, step 10, 2026-11-15).** The design text is not rewritten: the places that the built work and the records `decisions/0109` О13–О23 changed carry a note «As built» (sections 0, 4.1, 4.3, 4.4, 5, 7, 8, 10, 11.1, 13, 16), and section 21 holds the counts read from the files, the differences and what is not proven.
 
+**As built, later (DOC-UPDATER of run `E2E106-20261115-01`, step 10, 2026-11-16).** REQ-106 changed the starter `stand.js` as `decisions/0109` О15 asked (`decisions/0112` О1): `stateEnv` replaces `stateDirs`, every stand gets a private home, rule P checks every absolute path, and `stop()` has the code `STAND_HOME_WRITTEN`. The places of this design that describe the starter as REQ-105 left it carry a note «As built 2026-11-16» (sections 4.1, 4.2, 4.3, 6, 11.1) that points to `docs/design/REQ-106-e2e-pixel-office.md`; the text here is not rewritten.
+
 ---
 
 ## 0. Summary
@@ -156,6 +158,8 @@ New codes (the table of REQ-104 4.1 gets these rows; the codes `USAGE`, `PATH_RE
 
 **What the starter does not do:** it does not start `sh` programs or wrappers (the hook of REQ-106 is run by the spec itself with its own two environment variables); it does not restart (REQ-106 "reconnect" stops, then calls `startStand` again with `--port <the old stand.port>` in `args`); it does not read the state folder.
 
+*As built 2026-11-16 (REQ-106, `decisions/0112` О1; `docs/design/REQ-106-e2e-pixel-office.md`, section 4.1).* This section describes the starter as REQ-105 left it. Since REQ-106: the option `stateDirs` and the member `stand.stateDirs` (the rows above and step 1 of the order) are gone — an options object that has the key `stateDirs` at all fails with `USAGE`; a state folder is given through `stateEnv` (pairs "variable → folder", checked, and the child gets the real path), in a value of `env` or as an argument, and rule P checks every absolute path in them (under the temporary root, not the root itself, outside the repository; the script as the first argument may lie inside the repository); the child is no longer started without `HOME`: every stand gets a private home `<marker>/home`, given as `HOME` and `USERPROFILE`, set last, and `env` may not name them (`stand.homeDir`); `stop()` throws `STAND_HOME_WRITTEN` when the server left anything there, with the precedence `CLEANUP_FAILED` > `STAND_HOME_WRITTEN` > `STAND_STOP_TIMEOUT` > `STAND_EXIT`. The starter still does not start `sh` programs, does not restart and does not read the state folder.
+
 ### 4.2 How REQ-106 and REQ-107 use it (invented values)
 
 | Requirement | Call |
@@ -165,6 +169,8 @@ New codes (the table of REQ-104 4.1 gets these rows; the codes `USAGE`, `PATH_RE
 | REQ-107 (team page) | `name: "team"`, `args: ["src/web/main.js", "--port", "0", "--executor", "scripted", "--scenario", <file>]`, `env: { SAI_TEAM_HOME: <dirA>, HOME: <dirB>, SAI_TEAM_CLAUDE_BIN: <trap> }`, `stateDirs: [<dirA>, <dirB>]`. `SAI_TEAM_REAL_RUNS` is unset without a line of code: the base list does not carry it |
 
 If a later requirement needs the stdout line in another shape, it changes `readyPattern`, not the starter. If it needs a program other than Node, it is a change of the kit with its own design.
+
+*As built 2026-11-16 (`docs/design/REQ-106-e2e-pixel-office.md`, section 4.3).* The rows of REQ-106 and REQ-107 above are the plan of REQ-105. REQ-106 calls `stateEnv: { SAI_PIXEL_OFFICE_DIR: <office> }` with no `env` and no `stateDirs`; `HOME` is the starter's private home, not a folder the spec gives (the hook gets a home folder of the test, `decisions/0112` О2). For REQ-107 `HOME` is the starter's too, and a trap program inside `tools/test/fixtures/` given in `env` is refused by rule P (О14, О22): its design settles it.
 
 ### 4.3 The stand-in server `tools/test/fixtures/e2e-stand/fake-stand.js`
 
@@ -188,6 +194,8 @@ Mode 0755, first line `#!/usr/bin/env node`, ES module, Node built-ins only, nev
 TEST-DESIGNER may add modes; the modes above are the contract.
 
 *As built.* The stand-in has the twelve modes of the table (`MODES` of `fake-stand.js`). The child of `with-child` also appends `{event:"child-term", pid}` in its `SIGTERM` handler (the handler still does nothing else), which `E2S-13` reads (section 11.1).
+
+*As built 2026-11-16 (`docs/design/REQ-106-e2e-pixel-office.md`, section 4.2).* Since REQ-106 the `env` event is `{event:"env", keys:[…], home: <os.homedir() of the stand-in>}`, and the stand-in has three modes more, fifteen in all: `write-home` (after the link it makes the folder `.fake-stand-dir` and the file `.fake-stand-note` in its home, only when that home lies strictly under its real temporary root; otherwise it writes nothing and logs `home-refused`), `write-home-exit-one` and `write-home-ignore-term`.
 
 ### 4.4 `picker.e2e.js`
 
@@ -302,6 +310,8 @@ Top-level `test()` calls only, nine of them, in this order; each has `{ timeout:
 | The spec reads no real home folder | the picker writes nothing; the stand has no `HOME` in its environment (C-1) |
 
 There is no "check now, act later in another call".
+
+*As built 2026-11-16 (`docs/design/REQ-106-e2e-pixel-office.md`, section 6).* The first and the last rows describe the starter as REQ-105 left it. Since REQ-106 the stand has a `HOME` in its environment — its private home under the temporary root, made and given in the same call as the spawn — so its home lookup cannot reach the person's home folder; every absolute path in `stateEnv`, in `env` and in the arguments is checked before anything is made; a write into the home fails `stop()` with `STAND_HOME_WRITTEN`. The picker spec is green on the changed starter (9 of 9 at steps 06 and 09 of run `E2E106-20261115-01`).
 
 ---
 
@@ -425,6 +435,8 @@ The file makes its own temporary root (`TMPDIR` set to a private folder before t
 | E2S-18 | the runner's net: the fixture spec `sleep-stand.e2e.js` starts a stand, **writes the spec pid and the stand pid to the file named by `SAI_FIXTURE_PIDFILE`**, and sleeps; `runAll` with `fileTimeoutMs: 4000`, `killGraceMs: 500` and the stand-in Chrome for its preflight (as `E2K-43`), in two cases: the event loop free, and blocked with `Atomics.wait` (as `E2K-45`); both → `SPEC_TIMEOUT`; the file exists and holds both pids (the start of a stand, 0.1 s, against the 4000 ms limit: the same margin as the released `E2K-43`; a missing file fails with a message that names this cause); then the stand pid and the spec pid and their groups are gone (`waitGone`) and no `sai-e2e-*` folder is left | S08 |
 | E2S-19 | the words and the files: `stand.js`, `fake-stand.js`, `sleep-stand.e2e.js` and this file — **these four, all of which exist from sub-step 3; the test reads no other file of the spec side (N12)** — hold none of the skip words, options, secret shapes or sandbox flags (assembled from parts, comments included); `stand.js` has no whole-environment read, reads only the named base variables, and does not name `NODE_TEST_CONTEXT`; imports are `node:` or relative; the two exports are in `index.js`; the README holds `startStand`, `withStand`, `80000`. `picker.e2e.js` is not read here: its skip words, options, secret shapes and environment reads are scanned by `E2K-50` (the `SCANNED` entry, made in 4a, F39), and its sandbox flags by `E2K-25` (it walks `tools/test/e2e`, so the file is covered from the day it exists, with no edit; it scans for the flags only) | R03 |
 | E2S-20 | the stand-in's `stack` mode: `stderr()` holds the two lines, and the expression of `hasStack` (`/^[ \t]+at /mu`, written in this file as a pure function; **this file reads no other file**, N12) is true for them and false for two negative texts: `we arrive at the end` (`at ` inside a line) and **`note`, an empty line, `at start`** (an empty line followed by a line that starts with `at `, no blanks before it) — the second is the one that tells the right expression from the mutant with `\s` (N6; checked in node: right false, mutant true). The spec carries the same three texts as controls of its own `hasStack` (section 4.4), so the definition in the spec is tested where it lives | R07 (in this file) |
+
+*As built 2026-11-16 (`docs/design/REQ-106-e2e-pixel-office.md`, sections 11.1 and 22).* The rows above are the tests as REQ-105 left them. REQ-106 edited `E2S-01` (`stand.stateEnv` and `stand.homeDir` in place of `stand.stateDirs`), `E2S-02` (`stateDirs` refused with `USAGE`, the rows of `stateEnv` and of `HOME` and `USERPROFILE` in `env`), `E2S-03` (the refused cases as values of `stateEnv`, `env`, `--dir` and `--dir=`, the temporary root in five spellings, through the spawn that records and throws), `E2S-05` (the parent's `HOME` is a decoy folder of the test; the child's `HOME`, `USERPROFILE` and `os.homedir()` are `stand.homeDir`; the environment compared by its shape first) and `E2S-19` (the README tokens `stateEnv`, `STAND_HOME_WRITTEN`, `50000` too), and added `E2S-21` (a private home per stand, `STAND_HOME_WRITTEN` and its precedence, the guard of the stand-in) and `E2S-22` (the step «outside the repository» of rule P): 22 tests in the file.
 
 ### 11.2 `tools/test/e2e/picker.e2e.js`
 

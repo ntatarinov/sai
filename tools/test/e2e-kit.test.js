@@ -2944,11 +2944,38 @@ test(
     delete rest[REGISTRY_VAR];
     const expected = { ...env };
     delete expected.NODE_TEST_CONTEXT;
+    // every other key and value passes through. The names first: the two this test
+    // gives by name, every other one (a variable of this process) only counted;
+    // then each value on its own, compared without being printed, so that a red
+    // check names no variable of this process and prints no value (Q7;
+    // decisions/0112, О24)
+    const own = ["SAI_CHROME", "SAI_FAKE_CHROME_MODE"];
+    const names = Object.keys(rest);
     assert.deepEqual(
-      rest,
-      expected,
-      "every other key and value passes through",
+      {
+        names: names.filter((name) => own.includes(name)).sort(),
+        passed: names.filter(
+          (name) => !own.includes(name) && Object.hasOwn(expected, name),
+        ).length,
+        others: names.filter((name) => !Object.hasOwn(expected, name)).length,
+        symbols: Object.getOwnPropertySymbols(rest).length,
+      },
+      {
+        names: own,
+        passed: Object.keys(expected).length - own.length,
+        others: 0,
+        symbols: 0,
+      },
+      "every other key passes through and none is added",
     );
+    for (const name of Object.keys(expected)) {
+      assert.ok(
+        rest[name] === expected[name],
+        own.includes(name)
+          ? `the value of ${name} passes through`
+          : "the value of a variable of this process passes through",
+      );
+    }
     assertNothingRegistered();
     assert.deepEqual(kitFolders(), []);
 
@@ -3393,8 +3420,9 @@ test(
     const section = readme.slice(
       readme.indexOf("## End-to-end tests in a real browser"),
     );
-    // the budgets: smoke 30000 (REQ-104), picker 80000 (REQ-105), all files 240000
-    for (const word of ["duration_ms", "30000", "80000", "240000"]) {
+    // the budgets: smoke 30000 (REQ-104), picker 80000 (REQ-105), pixel-office
+    // 50000 (REQ-106), all files 240000
+    for (const word of ["duration_ms", "30000", "80000", "50000", "240000"]) {
       assert.ok(section.includes(word), word);
     }
   },
@@ -3770,6 +3798,7 @@ const SCANNED = () => [
   path.join(E2E, "run.js"),
   path.join(E2E, "smoke.e2e.js"),
   path.join(E2E, "picker.e2e.js"),
+  path.join(E2E, "pixel-office.e2e.js"),
   fileURLToPath(import.meta.url),
   FAKE,
 ];
@@ -3913,11 +3942,16 @@ test(
       "startStand",
       "withStand",
       "80000",
+      // the starter and the budget of REQ-106 (docs/design/REQ-106-e2e-pixel-office.md, 10, 12)
+      "50000",
+      "stateEnv",
+      "STAND_HOME_WRITTEN",
     ]) {
       assert.ok(section.includes(token), `the section lacks: ${token}`);
     }
     assert.match(section, /^\|\s*smoke\.e2e\.js\s*\|\s*REQ-104\s*\|$/mu);
     assert.match(section, /^\|\s*picker\.e2e\.js\s*\|\s*REQ-105\s*\|$/mu);
+    assert.match(section, /^\|\s*pixel-office\.e2e\.js\s*\|\s*REQ-106\s*\|$/mu);
 
     const checkAt = readme.indexOf("\n## Check");
     assert.ok(checkAt >= 0);

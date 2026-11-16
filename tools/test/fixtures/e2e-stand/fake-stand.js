@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 // A stand-in for a server of Sai, for the tests of the starter
-// (docs/design/REQ-105-e2e-picker.md, section 4.3). Node built-ins only. It never
-// reads stdin. Variables: SAI_FAKE_STAND_MODE (default "ok") and SAI_FAKE_STAND_LOG
-// (a file; one JSON line per event: start, env, term, child, child-ready,
-// child-term). It listens on 127.0.0.1 and prints its link; the modes change what
-// it does around that. Started with the argument --child it is the child of the
-// mode "with-child": it ignores SIGTERM, tells that it is ready, and sleeps.
+// (docs/design/REQ-105-e2e-picker.md, section 4.3, and
+// docs/design/REQ-106-e2e-pixel-office.md, section 4.2). Node built-ins only. It
+// never reads stdin. Variables: SAI_FAKE_STAND_MODE (default "ok") and
+// SAI_FAKE_STAND_LOG (a file; one JSON line per event: start, env, term, child,
+// child-ready, child-term, home-written, home-refused). It listens on 127.0.0.1
+// and prints its link; the modes change what it does around that. Started with the
+// argument --child it is the child of the mode "with-child": it ignores SIGTERM,
+// tells that it is ready, and sleeps.
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MODE = process.env.SAI_FAKE_STAND_MODE || "ok";
@@ -26,7 +30,12 @@ const MODES = new Set([
   "noisy",
   "with-child",
   "stack",
+  "write-home",
+  "write-home-exit-one",
+  "write-home-ignore-term",
 ]);
+// the modes that write into the home folder after the link (only under the guard)
+const WRITE_HOME = MODE.startsWith("write-home");
 
 function log(event) {
   if (!LOG) return;
@@ -66,7 +75,11 @@ if (process.argv.includes("--child")) {
 
 function main() {
   log({ event: "start", pid: process.pid, argv: process.argv.slice(2) });
-  log({ event: "env", keys: Object.keys(process.env).sort() });
+  log({
+    event: "env",
+    keys: Object.keys(process.env).sort(),
+    home: os.homedir(),
+  });
   if (!MODES.has(MODE)) {
     stderr(`fake stand: unknown mode ${MODE}\n`);
     process.exit(2);
@@ -85,8 +98,8 @@ function main() {
   };
   process.on("SIGTERM", () => {
     log({ event: "term" });
-    if (MODE === "ignore-term") return;
-    shutdown(MODE === "exit-one" ? 1 : 0);
+    if (MODE === "ignore-term" || MODE === "write-home-ignore-term") return;
+    shutdown(MODE === "exit-one" || MODE === "write-home-exit-one" ? 1 : 0);
   });
 
   if (MODE === "hang") {
@@ -116,6 +129,7 @@ function main() {
 
 function announce(link) {
   stdout(`Fake stand ready.\n${link}\n`);
+  if (WRITE_HOME) writeHome();
   if (MODE === "die-later") setTimeout(() => process.exit(5), 300);
   if (MODE === "quit-later") setTimeout(() => process.exit(0), 300);
   if (MODE === "stack") {
@@ -130,6 +144,40 @@ function announce(link) {
     stdout("END\n");
     stderr("END\n");
   }
+}
+
+// The modes "write-home…": a folder and a file in the home folder, as a server that
+// keeps its state under the home folder would make, but only when that folder lies
+// strictly under the real temporary root of this process. So a starter that gives
+// no private home makes the stand-in write nothing into the home folder of the
+// person who runs the tests (docs/design/REQ-106-e2e-pixel-office.md, 4.2).
+function writeHome() {
+  let home = null;
+  let rel = "";
+  try {
+    const root = fs.realpathSync(os.tmpdir());
+    home = fs.realpathSync(os.homedir());
+    rel = path.relative(root, home);
+  } catch {
+    // a root or a home folder that cannot be resolved: nothing is written
+  }
+  if (rel === "" || path.isAbsolute(rel) || rel.split(path.sep)[0] === "..") {
+    log({ event: "home-refused" });
+    return;
+  }
+  try {
+    fs.mkdirSync(path.join(home, ".fake-stand-dir"));
+    // "wx": a new file only, never through a link or over another file
+    fs.writeFileSync(path.join(home, ".fake-stand-note"), "fake\n", {
+      flag: "wx",
+    });
+  } catch (err) {
+    stderr(
+      `fake stand: the home folder was not written: ${err.code ?? "error"}\n`,
+    );
+    return;
+  }
+  log({ event: "home-written" });
 }
 
 // The child is in the same group (no detach). The link is printed only when the

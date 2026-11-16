@@ -1,12 +1,17 @@
-// E2S-01 ... E2S-20: the tests of the server starter of the end-to-end kit
+// E2S-01 ... E2S-22: the tests of the server starter of the end-to-end kit
 // (tools/test/e2e/kit/stand.js, REQ-105, docs/design/REQ-105-e2e-picker.md, 4.1 and
-// 11.1). No browser: the stand-in server tools/test/fixtures/e2e-stand/fake-stand.js
-// prints the link and logs what happened to it (one JSON line per event), and
-// E2S-17 starts the real picker server. The oracles are the design's numbers, codes
-// and words and the stand-in's log, not the values the starter exports. Every test
-// waits for a fact it can read, with a limit, never for a stretch of time; a process
-// that a test learned from the log and that is still alive at the end of the test
-// is killed by its pid, so a red run leaves nothing behind.
+// 11.1; the private home, stateEnv and rule P of REQ-106,
+// docs/design/REQ-106-e2e-pixel-office.md, 4.1, 4.2 and 11.1). No browser: the
+// stand-in server tools/test/fixtures/e2e-stand/fake-stand.js prints the link and
+// logs what happened to it (one JSON line per event), and E2S-17 starts the real
+// picker server. The oracles are the design's numbers, codes and words and the
+// stand-in's log, not the values the starter exports. Every test waits for a fact
+// it can read, with a limit, never for a stretch of time; a process that a test
+// learned from the log and that is still alive at the end of the test is killed by
+// its pid, so a red run leaves nothing behind. Rule R2-S of the design (section 6):
+// every call that names the home folder of the person who runs the tests goes to a
+// spawn that records the call and throws, never to a real one; a real stand gets
+// folders of the test only.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
@@ -194,6 +199,26 @@ function readLog(file) {
 
 function eventsOf(file, name) {
   return readLog(file).filter((event) => event.event === name);
+}
+
+// The shape of an environment `env` as spawn hands it to a child (for…in: also the
+// names inherited from its prototype): the names of `wanted` that it has, and only
+// the count of every other name, so that a red check names no other variable of
+// this process and prints no value (Q7; decisions/0112, О24). It equals
+// shapeOf(wanted) exactly when the child gets the names of `wanted` and no other.
+function envShape(env, wanted) {
+  const names = [];
+  for (const name in env) names.push(name);
+  return {
+    plain: Object.getPrototypeOf(env) === Object.prototype,
+    symbols: Object.getOwnPropertySymbols(env).length,
+    names: names.filter((name) => wanted.includes(name)).sort(),
+    others: names.filter((name) => !wanted.includes(name)).length,
+  };
+}
+
+function shapeOf(wanted) {
+  return { plain: true, symbols: 0, names: [...wanted].sort(), others: 0 };
 }
 
 // The pid of the stand-in, from its first event (written before anything else).
@@ -468,7 +493,24 @@ test(
           5000,
           `${mode}: the whole link line`,
         );
-        assert.deepEqual(stand.stateDirs, []);
+        // no state folder was given: the frozen stateEnv is empty
+        assert.deepEqual({ ...stand.stateEnv }, {}, `${mode}: stateEnv`);
+        assert.ok(Object.isFrozen(stand.stateEnv), `${mode}: stateEnv frozen`);
+        // the private home (design 4.1, C-1): the folder "home" inside the marker of
+        // the stand, which lies right under the temporary root of this file; mode
+        // 0700; empty while the stand runs
+        assert.equal(path.basename(stand.homeDir), "home", `${mode}: home`);
+        const marker = path.dirname(stand.homeDir);
+        assert.match(path.basename(marker), /^sai-e2e-profile-/u, mode);
+        assert.equal(
+          path.dirname(marker),
+          MY_TMP,
+          `${mode}: the marker's root`,
+        );
+        const homeStat = fs.lstatSync(stand.homeDir);
+        assert.ok(homeStat.isDirectory(), `${mode}: the home is a folder`);
+        assert.equal(homeStat.mode & 0o777, 0o700, `${mode}: the home's mode`);
+        assert.deepEqual(fs.readdirSync(stand.homeDir), [], `${mode}: empty`);
         assert.equal(stand.isRunning(), true);
         assert.equal(stand.exitInfo(), null);
         const answer = await fetch(stand.url, {
@@ -481,8 +523,11 @@ test(
         const markers = kitFolders();
         assert.equal(markers.length, 1, `${mode}: ${markers.join(",")}`);
         assert.match(markers[0], /^sai-e2e-profile-/u);
+        // the home is inside that one marker, so it goes with it
+        assert.equal(markers[0], path.basename(marker), `${mode}: one marker`);
 
         assert.deepEqual(await stand.stop(), { code: 0, signal: null });
+        assert.equal(fs.existsSync(stand.homeDir), false, `${mode}: home gone`);
         // stop() resolves only once the group is gone (4.1): its own wait polled the
         // group and let the loop reap, so one check fits here (decisions/0108,
         // addendum of 2026-11-03); the bounded wait below stays
@@ -532,6 +577,12 @@ test(
       /^startStand: cwd must be a non-empty path without NUL$/u;
     const argsMessage = /args must be a non-empty list of strings without NUL/u;
     const nameMessage = /name must match/u;
+    const stateDirsMessage =
+      /^startStand: stateDirs is replaced by stateEnv, pairs of a variable and a folder$/u;
+    const stateValueMessage =
+      /^startStand: stateEnv value of SAI_FAKE_X must be a string without NUL$/u;
+    // a folder of this file whose name is the marker of a value: no message may hold it
+    const given = path.join(MY_TMP, "given-value-x");
     const cases = [
       ["a pattern that is a string", { readyPattern: "(x)" }, /readyPattern/u],
       ["a pattern with no group", { readyPattern: /x/u }, /exactly one/u],
@@ -577,7 +628,69 @@ test(
       ["an empty cwd", { cwd: "" }, cwdMessage],
       ["a cwd with a NUL", { cwd: `${TOOLS}\0` }, cwdMessage],
       ["a cwd that is a number", { cwd: 5 }, cwdMessage],
-      ["stateDirs that are a string", { stateDirs: MY_TMP }, /stateDirs/u],
+      // the old option is refused whatever its value, even undefined: the key at
+      // all (design 4.1; decisions/0112, О1 and О21)
+      ["stateDirs that are a string", { stateDirs: MY_TMP }, stateDirsMessage],
+      ["stateDirs that are a list", { stateDirs: [] }, stateDirsMessage],
+      [
+        "stateDirs that are undefined",
+        { stateDirs: undefined },
+        stateDirsMessage,
+      ],
+      // the two home names are the starter's own
+      ...["HOME", "USERPROFILE"].map((name) => [
+        `an env that gives ${name}`,
+        { env: { [name]: given } },
+        new RegExp(
+          `^startStand: env may not give ${name}: the stand gets a home folder of its own$`,
+          "u",
+        ),
+      ]),
+      // stateEnv: an object of variable names and folders
+      ...[
+        ["a list", []],
+        ["a string", "x"],
+        ["null", null],
+        ["a number", 5],
+      ].map(([what, stateEnv]) => [
+        `a stateEnv that is ${what}`,
+        { stateEnv },
+        /^startStand: stateEnv must be an object$/u,
+      ]),
+      ...["1BAD", "A-B", "", "A B"].map((name) => [
+        `a stateEnv name ${JSON.stringify(name)}`,
+        { stateEnv: { [name]: given } },
+        new RegExp(
+          `^startStand: stateEnv name "${name}" is not a variable name$`,
+          "u",
+        ),
+      ]),
+      // no home name, no name of the base list, no name that env gives too
+      ...["HOME", "USERPROFILE", ...BASE].map((name) => [
+        `a stateEnv that gives ${name}`,
+        { stateEnv: { [name]: given } },
+        new RegExp(`^startStand: stateEnv may not give ${name}$`, "u"),
+      ]),
+      [
+        "a stateEnv name that env gives too",
+        { env: { SAI_FAKE_X: "a" }, stateEnv: { SAI_FAKE_X: given } },
+        /^startStand: stateEnv may not give SAI_FAKE_X$/u,
+      ],
+      [
+        "a stateEnv value with a NUL",
+        { stateEnv: { SAI_FAKE_X: `${given}\0` } },
+        stateValueMessage,
+      ],
+      [
+        "a stateEnv value that is a number",
+        { stateEnv: { SAI_FAKE_X: 5 } },
+        stateValueMessage,
+      ],
+      [
+        "a stateEnv value that is a list",
+        { stateEnv: { SAI_FAKE_X: [given] } },
+        stateValueMessage,
+      ],
       ...timeoutCases,
     ];
     for (const [what, patch, message] of cases) {
@@ -660,36 +773,158 @@ test(
     const log = path.join(dir, "log.jsonl");
     let stand = null;
     try {
+      const outside = "outside the temporary root";
       const refused = [
-        ["the home folder", [os.homedir()]],
-        ["a relative path", ["state-of-the-stand"]],
-        ["a folder inside the repository", [path.join(TOOLS, "test")]],
-        ["a link in the temporary root to the home folder", [homeLink]],
-        ["a good folder and the home folder", [realState, os.homedir()]],
+        ["the home folder", [os.homedir()], outside],
+        ["a relative path", ["state-of-the-stand"], "not absolute"],
+        ["a folder inside the repository", [path.join(TOOLS, "test")], outside],
+        [
+          "a link in the temporary root to the home folder",
+          [homeLink],
+          outside,
+        ],
+        [
+          "a good folder and the home folder",
+          [realState, os.homedir()],
+          outside,
+        ],
       ];
-      for (const [what, stateDirs] of refused) {
+      // every refused case in every place a stand can be given a path: a folder of
+      // stateEnv; the absolute ones also as a value of env, as an argument after
+      // --dir and in the form --dir=<path> (design 4.1, rule P; 11.1)
+      const forms = [];
+      for (const [what, folders, reason] of refused) {
+        const pairs = (prefix) =>
+          Object.fromEntries(folders.map((f, i) => [`${prefix}_${i}`, f]));
+        forms.push([
+          `${what} in stateEnv`,
+          { stateEnv: pairs("SAI_FAKE_STATE") },
+          reason,
+        ]);
+        if (folders.every((f) => path.isAbsolute(f))) {
+          forms.push([
+            `${what} in env`,
+            { env: pairs("SAI_FAKE_ENV") },
+            reason,
+          ]);
+          forms.push([
+            `${what} as an argument`,
+            { args: [FAKE_STAND, ...folders.flatMap((f) => ["--dir", f])] },
+            reason,
+          ]);
+          forms.push([
+            `${what} after = in an argument`,
+            { args: [FAKE_STAND, ...folders.map((f) => `--dir=${f}`)] },
+            reason,
+          ]);
+        }
+      }
+      // the temporary root itself, whatever its spelling, is refused: compared by
+      // its real path (design 4.1, rule P step 2)
+      const root = "the temporary root itself";
+      const rootLink = path.join(dir, "root-link");
+      fs.symlinkSync(MY_TMP, rootLink);
+      for (const [spelling, value] of [
+        ["its real path", MY_TMP],
+        ["a trailing separator", `${MY_TMP}${path.sep}`],
+        ["a trailing dot", [MY_TMP, "."].join(path.sep)],
+        ["a folder and ..", [dir, ".."].join(path.sep)],
+        ["a link to it", rootLink],
+      ]) {
+        forms.push([
+          `the temporary root (${spelling}) in stateEnv`,
+          { stateEnv: { SAI_FAKE_STATE: value } },
+          root,
+        ]);
+      }
+      forms.push([
+        "the temporary root in env",
+        { env: { SAI_FAKE_ENV: MY_TMP } },
+        root,
+      ]);
+      forms.push([
+        "the temporary root as an argument",
+        { args: [FAKE_STAND, "--dir", MY_TMP] },
+        root,
+      ]);
+      forms.push([
+        "the temporary root after = in an argument",
+        { args: [FAKE_STAND, `--dir=${MY_TMP}`] },
+        root,
+      ]);
+      // the form <name>=<path> in a value of env too (F3)
+      forms.push([
+        "the home folder after = in a value of env",
+        { env: { SAI_FAKE_ENV: `opt=${os.homedir()}` } },
+        outside,
+      ]);
+      // the script may lie inside the repository only: one outside it and outside
+      // the root is refused
+      forms.push([
+        "a script outside the repository and the root",
+        { args: [path.join(os.homedir(), "x.js")] },
+        outside,
+      ]);
+      for (const [what, patch, reason] of forms) {
         const err = await failureOf(
-          startStand(fakeOptions("ok", log, { stateDirs }), {
+          startStand(fakeOptions("ok", log, patch), {
             spawn: counter.spawn,
           }),
           what,
         );
         assertKitError(err, "PATH_REFUSED", what);
+        assert.ok(
+          err.message.endsWith(`: ${reason}`),
+          `${what}: ${err.message}`,
+        );
         assert.equal(counter.calls.length, 0, `${what}: started nothing`);
         assert.deepEqual(kitFolders(), [], `${what}: made no folder`);
       }
+      assert.equal(forms.length, 27, "the count of the refused cases");
       assertNothingRegistered();
 
-      // a link and a ".." under the root: the stand is given the real path
+      // a link and a ".." under the root, in each place: the stand is given the real
+      // path (also after "="), a relative value and a word as they are
       const stateLink = path.join(dir, "state-link");
       fs.symlinkSync(realState, stateLink);
       const dotted = [dir, "real-state", "..", "real-state"].join(path.sep);
-      stand = await startStand(
-        fakeOptions("ok", log, { stateDirs: [stateLink, dotted] }),
-      );
       const real = fs.realpathSync(realState);
-      assert.deepEqual([...stand.stateDirs], [real, real]);
-      assert.ok(Object.isFrozen(stand.stateDirs));
+      const seen = countingSpawn((file, args, options) =>
+        spawn(file, args, options),
+      );
+      stand = await startStand(
+        fakeOptions("ok", log, {
+          stateEnv: { SAI_FAKE_STATE: stateLink },
+          env: {
+            SAI_FAKE_OTHER: dotted,
+            SAI_FAKE_EQ: `opt=${dotted}`,
+            SAI_FAKE_REL: "rel/folder",
+          },
+          args: [
+            FAKE_STAND,
+            "--state",
+            stateLink,
+            `--state=${dotted}`,
+            "plain",
+          ],
+        }),
+        { spawn: seen.spawn },
+      );
+      assert.deepEqual({ ...stand.stateEnv }, { SAI_FAKE_STATE: real });
+      assert.ok(Object.isFrozen(stand.stateEnv), "stateEnv frozen");
+      assert.equal(seen.calls.length, 1);
+      const childEnv = seen.calls[0].options.env;
+      assert.equal(childEnv.SAI_FAKE_STATE, real, "the stateEnv folder");
+      assert.equal(childEnv.SAI_FAKE_OTHER, real, "the env value");
+      assert.equal(
+        childEnv.SAI_FAKE_EQ,
+        `opt=${real}`,
+        "the env value after =",
+      );
+      assert.equal(childEnv.SAI_FAKE_REL, "rel/folder", "a relative value");
+      const argv = ["--state", real, `--state=${real}`, "plain"];
+      assert.deepEqual(seen.calls[0].args, [FAKE_STAND, ...argv]);
+      assert.deepEqual(eventsOf(log, "start").at(-1).argv, argv);
       assert.deepEqual(await stand.stop(), { code: 0, signal: null });
       assert.ok(await waitGone(stand.pid, "the stand with a state folder"));
       assert.deepEqual(kitFolders(), []);
@@ -784,11 +1019,22 @@ test(
   async () => {
     const dir = scratch("env");
     const log = path.join(dir, "log.jsonl");
-    const leaks = ["SAI_FAKE_LEAK", "HOME", "SAI_TEAM_REAL_RUNS"];
-    const touched = [...leaks, "NODE_TEST_CONTEXT", "LANG"];
+    const leaks = ["SAI_FAKE_LEAK", "SAI_TEAM_REAL_RUNS"];
+    const touched = [
+      ...leaks,
+      "HOME",
+      "USERPROFILE",
+      "NODE_TEST_CONTEXT",
+      "LANG",
+    ];
     const saved = new Map(touched.map((name) => [name, process.env[name]]));
     process.env.SAI_FAKE_LEAK = "leak";
-    process.env.HOME = os.homedir();
+    // the home of this process is a decoy folder of the test, never the person's
+    // home folder (rule R2-S): a starter that passed it on would hand the stand a
+    // folder of the test only
+    const decoy = fs.realpathSync(scratch("decoy-home"));
+    process.env.HOME = decoy;
+    process.env.USERPROFILE = decoy;
     process.env.SAI_TEAM_REAL_RUNS = "1";
     // under node --test it is set already; alone, the test sets it itself
     process.env.NODE_TEST_CONTEXT =
@@ -816,28 +1062,57 @@ test(
         }
       }
       Object.assign(expected, given);
+      // and the two home names, both the private home of the stand, set last
+      expected.HOME = stand.homeDir;
+      expected.USERPROFILE = stand.homeDir;
+      assert.notEqual(
+        stand.homeDir,
+        decoy,
+        "the private home is not the decoy",
+      );
       assert.equal(counter.calls.length, 1);
       assert.equal(counter.calls[0].file, process.execPath);
       assert.deepEqual(counter.calls[0].args, [FAKE_STAND]);
-      assert.deepEqual(counter.calls[0].options.env, expected);
-      assert.equal(
-        counter.calls[0].options.env.LANG,
-        "C",
-        "a given base name wins",
+      // exactly these names (another name only counted), then each value on its
+      // own, compared without being printed: the values are those of this process
+      const handed = counter.calls[0].options.env;
+      const names = Object.keys(expected);
+      assert.deepEqual(
+        envShape(handed, names),
+        shapeOf(names),
+        "the names handed over: the base names this process has, the given ones and the two home names, no other",
       );
+      for (const name of names) {
+        assert.ok(
+          handed[name] === expected[name],
+          `the value of ${name} handed over`,
+        );
+      }
+      assert.ok(handed.LANG === "C", "a given base name wins");
 
       // what the child has: no name outside the list, the given names, the platform's
       const [envEvent] = eventsOf(log, "env");
       assert.ok(envEvent, "the stand-in logged its environment");
-      const allowed = new Set([...Object.keys(expected), ...PLATFORM_NAMES]);
-      const foreign = envEvent.keys.filter((name) => !allowed.has(name));
-      assert.deepEqual(foreign, [], `names the stand got: ${envEvent.keys}`);
+      const allowed = [...names, ...PLATFORM_NAMES];
+      assert.deepEqual(
+        {
+          names: envEvent.keys.filter((name) => names.includes(name)).sort(),
+          others: envEvent.keys.filter((name) => !allowed.includes(name))
+            .length,
+        },
+        { names: [...names].sort(), others: 0 },
+        "the names the stand has: the handed-over ones (the platform may add its own), no other",
+      );
       for (const name of [...leaks, "NODE_TEST_CONTEXT"]) {
         assert.ok(!envEvent.keys.includes(name), `${name} reached the stand`);
       }
       for (const name of Object.keys(expected)) {
         assert.ok(envEvent.keys.includes(name), `${name} did not reach it`);
       }
+      // the home lookup of Node in the stand gives the private folder
+      assert.equal(envEvent.home, stand.homeDir, "os.homedir() of the stand");
+      assert.notEqual(envEvent.home, decoy, "the stand saw the decoy home");
+      assert.deepEqual(fs.readdirSync(decoy), [], "the decoy home is empty");
       assert.deepEqual(await stand.stop(), { code: 0, signal: null });
       assert.ok(await waitGone(stand.pid, "the stand"));
       assertNothingRegistered();
@@ -849,6 +1124,7 @@ test(
       await stopQuietly(stand);
       killFromLog(log);
       drop(dir);
+      drop(decoy);
     }
   },
 );
@@ -1646,7 +1922,16 @@ test(
     const rest = readme.slice(at + 1);
     const next = rest.slice(3).search(/\n## /u);
     const section = next === -1 ? rest : rest.slice(0, next + 3);
-    for (const token of ["startStand", "withStand", "80000"]) {
+    // the starter of REQ-106: the pairs of state folders, the code of a write into
+    // the home folder, and the budget of the Pixel Office file (design 11.1)
+    for (const token of [
+      "startStand",
+      "withStand",
+      "80000",
+      "stateEnv",
+      "STAND_HOME_WRITTEN",
+      "50000",
+    ]) {
       assert.ok(section.includes(token), `the README section lacks ${token}`);
     }
   },
@@ -1682,6 +1967,269 @@ test(
       await stopQuietly(stand);
       killFromLog(log);
       drop(dir);
+    }
+  },
+);
+
+// ---------------------------------------------------------------- the private home (REQ-106)
+
+test(
+  "E2S-21 every stand has a home folder of its own; a stand that wrote into it fails its stop with STAND_HOME_WRITTEN before a bad exit and a stop timeout, and the folder goes in every outcome",
+  LIMIT,
+  async () => {
+    const dir = scratch("home");
+    const logs = [];
+    const logOf = (label) => {
+      const file = path.join(dir, `${label}.jsonl`);
+      logs.push(file);
+      return file;
+    };
+    const stands = [];
+    const children = [];
+    const wrote = "fake wrote into its own home folder: ";
+    const both = [".fake-stand-dir", ".fake-stand-note"];
+    try {
+      // two stands at once: two homes in two markers, each gone with its own stop
+      const first = await startStand(fakeOptions("ok", logOf("first")));
+      stands.push(first);
+      const second = await startStand(fakeOptions("ok", logOf("second")));
+      stands.push(second);
+      assert.notEqual(first.homeDir, second.homeDir, "two stands, one home");
+      assert.notEqual(
+        path.dirname(first.homeDir),
+        path.dirname(second.homeDir),
+        "two stands, one marker",
+      );
+      assert.deepEqual(await first.stop(), { code: 0, signal: null });
+      assert.equal(fs.existsSync(first.homeDir), false, "the first home");
+      assert.ok(fs.existsSync(second.homeDir), "the home of the running stand");
+      assert.deepEqual(await second.stop(), { code: 0, signal: null });
+      assert.equal(fs.existsSync(second.homeDir), false, "the second home");
+      assert.deepEqual(kitFolders(), []);
+
+      // a stand that makes a folder and a file in its home: the stop fails with
+      // both names, and the home, the process and its group are gone
+      const writeLog = logOf("write-home");
+      const writer = await startStand(fakeOptions("write-home", writeLog));
+      stands.push(writer);
+      await until(
+        () => eventsOf(writeLog, "home-written").length === 1,
+        5000,
+        "the write into the home",
+      );
+      assert.deepEqual(fs.readdirSync(writer.homeDir).sort(), both);
+      const madeDir = fs.lstatSync(path.join(writer.homeDir, both[0]));
+      assert.ok(madeDir.isDirectory(), "the stand-in made a folder");
+      const madeFile = fs.lstatSync(path.join(writer.homeDir, both[1]));
+      assert.ok(madeFile.isFile(), "the stand-in made a file");
+      const err = await failureOf(writer.stop(), "a stand that wrote");
+      assertKitError(err, "STAND_HOME_WRITTEN", "write-home");
+      assert.equal(err.message, `${wrote}${both.join(", ")}`);
+      assert.equal(fs.existsSync(writer.homeDir), false, "write-home: home");
+      assert.ok(await waitGone(writer.pid, "the stand that wrote"));
+      assert.deepEqual(kitFolders(), []);
+      assertNothingRegistered();
+
+      // the precedence (decisions/0112, О1): the write into the home wins over a
+      // bad exit code and over a stop timeout; the control is that the other
+      // failure did happen
+      for (const [mode, extra, ended] of [
+        ["write-home-exit-one", {}, { code: 1, signal: null }],
+        [
+          "write-home-ignore-term",
+          { stopTimeoutMs: 1500 },
+          { code: null, signal: "SIGKILL" },
+        ],
+      ]) {
+        const modeLog = logOf(mode);
+        const stand = await startStand(fakeOptions(mode, modeLog, extra));
+        stands.push(stand);
+        await until(
+          () => eventsOf(modeLog, "home-written").length === 1,
+          5000,
+          `${mode}: the write into the home`,
+        );
+        const modeErr = await failureOf(stand.stop(), mode);
+        assertKitError(modeErr, "STAND_HOME_WRITTEN", mode);
+        assert.equal(modeErr.message, `${wrote}${both.join(", ")}`, mode);
+        assert.deepEqual(stand.exitInfo(), ended, `${mode}: how it ended`);
+        assert.equal(eventsOf(modeLog, "term").length, 1, `${mode}: SIGTERM`);
+        assert.equal(fs.existsSync(stand.homeDir), false, `${mode}: home`);
+        assert.ok(await waitGone(stand.pid, mode));
+      }
+      assert.deepEqual(kitFolders(), []);
+      assertNothingRegistered();
+
+      // a home that cannot be read at the stop counts as written: here it is
+      // removed while the stand runs (decisions/0112, О21, mutant M20)
+      const goneLog = logOf("home-removed");
+      const removed = await startStand(fakeOptions("ok", goneLog));
+      stands.push(removed);
+      fs.rmdirSync(removed.homeDir);
+      const goneErr = await failureOf(removed.stop(), "a removed home");
+      assertKitError(goneErr, "STAND_HOME_WRITTEN", "a removed home");
+      assert.equal(goneErr.message, `${wrote}(not readable: ENOENT)`);
+      assert.deepEqual(removed.exitInfo(), { code: 0, signal: null });
+      assert.ok(await waitGone(removed.pid, "the stand of the removed home"));
+      assert.deepEqual(kitFolders(), [], "the marker of the removed home");
+      assertNothingRegistered();
+
+      // the guard of the stand-in itself, by a direct run (not through the
+      // starter), with TMPDIR = a folder A of the test: it writes into a home
+      // strictly under A only (design 4.2; S25, and M22 of decisions/0112, О21)
+      for (const [where, want, entries] of [
+        ["outside its root", "home-refused", []],
+        ["inside its root", "home-written", both],
+        ["equal to its root", "home-refused", []],
+      ]) {
+        const rootA = fs.realpathSync(scratch("root-a"));
+        let home = rootA;
+        if (where === "outside its root") {
+          home = fs.realpathSync(scratch("home-b"));
+        } else if (where === "inside its root") {
+          home = fs.mkdtempSync(path.join(rootA, "home-"));
+        }
+        const directLog = logOf(`direct-${children.length}`);
+        const child = spawn(process.execPath, [FAKE_STAND], {
+          env: {
+            PATH: process.env.PATH,
+            TMPDIR: rootA,
+            HOME: home,
+            SAI_FAKE_STAND_MODE: "write-home",
+            SAI_FAKE_STAND_LOG: directLog,
+          },
+          stdio: ["ignore", "ignore", "ignore"],
+        });
+        children.push(child);
+        try {
+          await until(
+            () =>
+              eventsOf(directLog, "home-written").length +
+                eventsOf(directLog, "home-refused").length ===
+              1,
+            5000,
+            `the stand-in alone, a home ${where}: its verdict`,
+          );
+          assert.equal(eventsOf(directLog, want).length, 1, where);
+          // control: the stand-in looked at that very home
+          const [envEvent] = eventsOf(directLog, "env");
+          assert.equal(envEvent.home, home, `${where}: the home it saw`);
+          assert.deepEqual(fs.readdirSync(home).sort(), entries, where);
+        } finally {
+          sendSignal(child.pid, "SIGKILL");
+          await waitGone(child.pid, `the stand-in alone, a home ${where}`);
+          if (home !== rootA) drop(home);
+          drop(rootA);
+        }
+      }
+
+      // a start that fails leaves no marker and no home either
+      const early = await failureOf(
+        startStand(fakeOptions("exit-early", logOf("early"))),
+        "exit-early",
+      );
+      assertKitError(early, "STAND_START_EXITED", "exit-early");
+      assert.deepEqual(kitFolders(), [], "exit-early: no folder");
+      assertNothingRegistered();
+    } finally {
+      for (const stand of stands) await stopQuietly(stand);
+      for (const child of children) sendSignal(child.pid, "SIGKILL");
+      for (const file of logs) killFromLog(file);
+      drop(dir);
+    }
+  },
+);
+
+test(
+  "E2S-22 a folder inside the repository is refused also where the repository lies under the temporary root; only the first argument, the script, may lie there",
+  LIMIT,
+  async () => {
+    // a copy of the starter and the three files it imports, in a folder of this
+    // file shaped like the repository: the copied kit takes that folder for the
+    // repository (four folders up from its own place), and it lies under the
+    // temporary root of this file
+    const copy = fs.realpathSync(scratch("repo-copy"));
+    const kitCopy = path.join(copy, "tools", "test", "e2e", "kit");
+    fs.mkdirSync(kitCopy, { recursive: true });
+    fs.writeFileSync(
+      path.join(copy, "tools", "package.json"),
+      '{ "type": "module" }\n',
+    );
+    for (const name of ["stand.js", "cleanup.js", "errors.js", "guards.js"]) {
+      fs.copyFileSync(path.join(KIT, name), path.join(kitCopy, name));
+    }
+    const inside = path.join(copy, "tools", "state-in-repo");
+    const script = path.join(copy, "tools", "x.js");
+    const url = (name) =>
+      JSON.stringify(pathToFileURL(path.join(kitCopy, name)).href);
+    // every call gets a spawn that records it and throws (rule R2-S)
+    const source = `
+import { startStand } from ${url("stand.js")};
+import { repoRoot } from ${url("guards.js")};
+const inside = ${JSON.stringify(inside)};
+const script = ${JSON.stringify(script)};
+let calls = 0;
+const spawn = () => {
+  calls += 1;
+  throw Object.assign(new Error("recorded and refused"), { code: "EACCES" });
+};
+const base = { name: "copy", args: ["x.js"], readyPattern: /(x)/u };
+const cases = [
+  { stateEnv: { SAI_FAKE_STATE: inside } },
+  { env: { SAI_FAKE_ENV: inside } },
+  { env: { SAI_FAKE_ENV: "opt=" + inside } },
+  { args: ["x.js", "--dir", inside] },
+  { args: ["x.js", "--dir=" + inside] },
+  { args: ["x.js", script] },
+  { args: [script] },
+];
+const out = [];
+for (const patch of cases) {
+  try {
+    await startStand({ ...base, ...patch }, { spawn });
+    out.push("started");
+  } catch (err) {
+    out.push(err.code + ": " + err.message);
+  }
+}
+process.stdout.write(JSON.stringify({ root: repoRoot(), out, calls }) + "\\n");
+`;
+    const run = startChild(source);
+    try {
+      const end = await within(run.closed, 20000);
+      assert.notEqual(end, LATE, "the child did not end in 20000 ms");
+      assert.deepEqual(end, { code: 0, signal: null }, run.stderr);
+      const got = JSON.parse(run.stdout.trim().split("\n").at(-1));
+      // control: the copied kit takes the copy for the repository, so a pass on
+      // the real repository (which lies outside the root) is impossible
+      assert.equal(got.root, copy);
+      assert.equal(got.out.length, 7);
+      // a folder of the copy in each place, and the script path as a later
+      // argument: refused as inside the repository, naming the folder
+      for (const [i, named] of [
+        [0, inside],
+        [1, inside],
+        [2, inside],
+        [3, inside],
+        [4, inside],
+        [5, script],
+      ]) {
+        assert.ok(
+          got.out[i].startsWith(`PATH_REFUSED: refused path "${named}"`),
+          got.out[i],
+        );
+        assert.ok(got.out[i].endsWith(": inside the repository"), got.out[i]);
+      }
+      // the script as the first argument passes rule P and reaches the spawn
+      assert.equal(
+        got.out[6],
+        'STAND_START_FAILED: could not start "copy": EACCES',
+      );
+      assert.equal(got.calls, 1, "the spawn calls of the child");
+      assert.deepEqual(kitFolders(), [], "no folder of the copied kit left");
+    } finally {
+      if (!run.ended) sendSignal(run.child.pid, "SIGKILL");
+      drop(copy);
     }
   },
 );

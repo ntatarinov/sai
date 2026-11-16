@@ -238,7 +238,8 @@ the variable `SAI_CHROME` to its full path. Without a browser `npm run check` fa
 message and is not skipped. Claude Code is needed only for the Pixel Office hooks and for real
 runs of the Sai Team executor; for the rest it is not needed.
 
-1. Clone the Sai repository (while it is closed, the owner's access is needed):
+1. Clone the Sai repository (it is open to everyone on purpose: read on GitHub on 2026-11-16,
+   `decisions/0111`):
 
    ```
    git clone <Sai repository address>

@@ -1,0 +1,306 @@
+{
+  "handoff_id": "step05d-E2E106-20261115-01",
+  "run_id": "E2E106-20261115-01",
+  "workflow_id": "WF-02",
+  "step": "05d",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/E2E106-20261115-01/step-05d-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-106"
+    ],
+    "agent_run_id": "ad0a6a33a75c5b359",
+    "artifacts_in": [
+      "handoffs/E2E106-20261115-01/step-05c-test-fixer.json (issue I1)",
+      "decisions/0112-e2e-pixel-office-conventions.md (О24)"
+    ],
+    "route": "TEST-FIXER 05c -> TEST-FIXER (this, the same launch) -> TEST-DESIGN-VALIDATOR 05e (check of the parts changed at 05c and 05d, pass 2 of 3) -> TEST-RUNNER 6 -> 9 -> 10 -> 11",
+    "write_set": [
+      "tools/test/e2e-stand.test.js",
+      "tools/test/e2e-kit.test.js (only an assertion of the same kind)"
+    ],
+    "base_tag": "base/E2E106-20261115-01",
+    "orch_check": {
+      "at": "2026-11-15T23:27:57Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T23:27:17Z",
+        "sha256 e2e-stand.test.js 09010bdab778…, e2e-kit.test.js e782f2aad0a7… (as reported); assert. counts 272 and 537",
+        "git status --short -> 12 lines, unchanged set of files",
+        "real state folder (ORCH, read only): five sha256 unchanged",
+        "issue I1 (a prototype environment passes 'isolated start' after 05c) -> step 05e by the same launch, then the check 05f"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 5b, a second fix of TEST-FIXER by the same launch, before the check of the changed part, for issue I1 of handoffs/E2E106-20261115-01/step-05c-test-fixer.json, by decisions/0112 О24 (the same Q7 reason as F3 of step 05b: the GitHub logs of the open repository can be read by anyone). In tools/test/e2e-stand.test.js, E2S-05 (about line 1056) compares the recorded environment of the child with assert.deepEqual, so a red run under a starter that leaks the whole environment prints every variable of the test process with its value. Change E2S-05, and any other assertion of that file or of tools/test/e2e-kit.test.js that compares or prints a whole recorded environment, in the same way as F3: compare the names first as { names: <the expected names present>, others: <count of other names> }, then each value on its own, with values of the test process (PATH and the base list) compared without printing them; the prohibition stays as strong as before (the child gets exactly the base list, the given variables and the two home names). Show with the gate's or your own mutant that gives the child the whole environment that E2S-05 is red and its output names no foreign variable and no value of the test process (delete any output file that does), and that the correct code is green. Then: E2S-05 alone, the starter and kit test files three times, npm run check once, exit 0; counts of test( and assert. not lower. Change only tools/test/e2e-stand.test.js (and tools/test/e2e-kit.test.js only if it has the same kind of assertion). STRICT R2 as at step 05c; record the five real files before and after. No commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "E2S-05 and any same-kind assertion compare names with a count, then values one by one; the prohibition is as strong as before",
+      "a whole-environment mutant turns E2S-05 red and its output names no foreign variable or value; correct code green",
+      "E2S-05 alone, kit files x3, npm run check exit 0, counts not lower; R2-S held, five real files unchanged; only the named test files changed"
+    ]
+  },
+  "created_at": "2026-11-15T23:13:30Z",
+  "started_at": "2026-11-15T23:13:30Z",
+  "completed_at": "2026-11-15T23:27:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02, step 5b, the second fix of TEST-FIXER by the same launch, for issue I1 of step 05c (decisions/0112 О24, Q7): only tools/test/e2e-stand.test.js and tools/test/e2e-kit.test.js changed, both only in assertions of the named kind; no code file changed. E2S-05 compared the recorded spawn environment of the stand with assert.deepEqual against an object holding the base variables of this process with their values, and printed every name of the stand-in's environment in a message; E2K-37 compared the whole environment of the spec process on both sides. A red run of either would print the environment of the test process, with values, into a log of the open repository. The starter and the runner are right (green on the real code); the test was to blame by the shape of its assertions. Now: E2S-05 compares the shape { plain, symbols, the expected names present, the count of other names } (names by for…in, so also names inherited from a prototype, which spawn passes on) and then each value on its own by assert.ok of a strict equality; the stand-in's names as { expected names present, others counted }; E2K-37 the two own names, the passed and added names counted, then each value by assert.ok. The prohibition is as strong as before (the same conditions as deepStrictEqual: keys, values, prototype, symbols) and stronger for inherited names. Mutants (own, on fresh clones of the tag): W1 (the starter hands the child the whole environment) and W2 (the right own names on a prototype that is the whole environment) red in E2S-05; K1, K2, K3 (the runner drops, changes, adds a variable) red in E2K-37; every red output names no variable the test does not expect and holds no value; the correct code green (CONTROL). The probe SP1 found a gap of my step 05c in the Pixel Office spec (issue I1, for ORCH). Runs (tripwire, 0 refusals): E2S-05 and E2K-37 alone green; the kit and starter files three times 74 of 74 each; npm run check exit=0 (tests 2209, fail 0 in npm test; every e2e file green). Counts not lower: e2e-stand 22 tests, 272 assert. (271 before); e2e-kit 52, 537 (536). Real state folder: the five files identical before my first trial (2026-11-15T23:13:47Z) and after my last (2026-11-15T23:26:47Z). Way back: TEST-DESIGN-VALIDATOR 05e, then TEST-RUNNER 6.",
+    "changes": [
+      {
+        "issue": "I1 of step 05c (the same kind as F3 of step 05b)",
+        "what": "the test",
+        "file": "tools/test/e2e-stand.test.js",
+        "place": "two new helpers after eventsOf(): envShape(env, wanted) and shapeOf(wanted); test E2S-05, the assertions on the recorded options.env of the spawn and on the names the stand-in logged",
+        "was": "assert.deepEqual(counter.calls[0].options.env, expected), where expected holds the base variables of this process with their values: a red run printed every variable of the test process with its value; assert.equal(env.LANG, 'C'); and for the stand-in's names assert.deepEqual(foreign, [], `names the stand got: ${envEvent.keys}`), whose message printed every name the child had",
+        "became": "assert.deepEqual(envShape(handed, names), shapeOf(names)) with names = Object.keys(expected): { plain: the prototype is Object.prototype, symbols: the count of symbol keys, names: the expected names present (sorted), others: the count of every other name, collected by for…in, so also the names inherited from a prototype, which spawn passes on to the child } against { plain: true, symbols: 0, names: <all expected>, others: 0 }; then for each expected name assert.ok(handed[name] === expected[name], 'the value of <name> handed over'); assert.ok(handed.LANG === 'C'); for the stand-in: assert.deepEqual({ names: <the expected names it has>, others: <the count of names outside the expected and the platform names> }, { names: <all expected>, others: 0 }); the two loops that follow (the planted leak names absent, every expected name present) are kept",
+        "why_the_test_and_not_the_code": "The starter hands over exactly the base list, the given variables and the two home names (green on the real code, CONTROL and every run below); only the shape of the assertion could print the environment of the test process into a log that anyone can read (Q7, decisions/0111, decisions/0112 О24). As strong as before: deepStrictEqual of the old line held exactly when the own enumerable string keys equal, each value strictly equal, the prototypes equal and the enumerable symbol keys equal; the new pair holds under the same conditions (the names by the shape, the values one by one, the prototype by plain, the symbols by their count), and adds what the child really gets: names inherited from a prototype, which the old line saw only through the prototype check. The stand-in's names: the old check (no name outside the allowed ones) is the others: 0 of the new one, which also asserts every expected name present."
+      },
+      {
+        "issue": "I1 of step 05c, the same kind in the other file",
+        "what": "the test",
+        "file": "tools/test/e2e-kit.test.js",
+        "place": "test E2K-37, the assertion 'every other key and value passes through' on the environment of the spec process",
+        "was": "assert.deepEqual(rest, expected, 'every other key and value passes through'), both sides the whole environment of the test process with its values (runnerEnv = fakeEnv = a copy of process.env with two names of the test): a red run printed the whole environment twice",
+        "became": "assert.deepEqual({ names: <SAI_CHROME and SAI_FAKE_CHROME_MODE, the two the test gives, if present>, passed: <the count of the other names that the expected copy has>, others: <the count of names it does not have>, symbols: <the count of symbol keys> }, { names: [SAI_CHROME, SAI_FAKE_CHROME_MODE], passed: <the number of expected names minus 2>, others: 0, symbols: 0 }); then for each expected name assert.ok(rest[name] === expected[name], 'the value of <name> passes through' for the two own names, 'the value of a variable of this process passes through' for the others)",
+        "why_the_test_and_not_the_code": "The runner passes every key and value through except NODE_TEST_CONTEXT, and adds the registry name (green on the real code). Here the expected names are the environment of the test process itself, so even its names are only counted: a red run names no variable of this process and prints no value. As strong as before: both sides are spread copies (plain objects), so the old deepStrictEqual held exactly when the key sets are equal and every value is strictly equal; the counts give the key set (the two own names present, every other expected name present, no other name) and the loop gives every value."
+      },
+      {
+        "table": "what was fixed, where",
+        "rows": [
+          "I1 | e2e-stand.test.js, helpers | — | envShape(env, wanted), shapeOf(wanted)",
+          "I1 | E2S-05, the handed-over environment | deepEqual of the whole object with the values of this process | the shape (plain, symbols, expected names, others counted; names by for…in) and each value by assert.ok of a strict equality",
+          "I1 | E2S-05, LANG | assert.equal(LANG, 'C') | assert.ok(LANG === 'C')",
+          "I1 | E2S-05, the names of the stand-in | deepEqual(foreign, []) with every name in the message | { expected names present, others counted } deep-equal { all expected, 0 }",
+          "I1 | E2K-37, the environment of the spec process | deepEqual(rest, expected), the whole environment on both sides | the two own names, the passed and the added names counted, the symbols counted; each value by assert.ok of a strict equality"
+        ]
+      },
+      {
+        "counts": "against step 05 (the hashes of the step-05 tree list and of gate issue I1) and the tag: tools/test/e2e-stand.test.js 5f4e037c5fbb -> 09010bdab778, 22 'test(' at line start and 271 'assert.' -> 22 and 272 (tag: 20 and 211); tools/test/e2e-kit.test.js 6fadaa5b2dc7 -> e782f2aad0a7, 52 and 536 -> 52 and 537 (tag: 52 and 535); no test removed, renamed or weakened; diffs <scratch>/e2e106-05c/d/e2e-stand.diff (8 lines out, 43 in) and e2e-kit.diff (3 out, 30 in)"
+      },
+      {
+        "way_back": "a test fix only: TEST-DESIGN-VALIDATOR, step 05e (the parts changed at 05c and 05d), then TEST-RUNNER step 6. No code file changed, so steps 3 and 4 do not repeat."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node -v",
+        "output": "v22.23.4"
+      },
+      {
+        "command": "Real state folder BEFORE my first trial of this step; read only from the shell: ls -1A, shasum -a 256, stat -f %z, stat -f %Sm; lsof -nP -iTCP:4780 -sTCP:LISTEN (<scratch>/e2e106-05c/real.sh)",
+        "output": "2026-11-15T23:13:47Z; exactly events.jsonl, node-path, port, server-starts.jsonl, write-secret; events.jsonl 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 4035130 2026-10-29T17:05:09; server-starts.jsonl b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e 280 2026-10-28T17:03:24; write-secret 465f654a88e7cb3b172f4f557b0beaf44015440f3b04661bf6e569f30980e8b3 44 2026-10-01T22:52:26; port 8d0d7d110042d429466cb6db2d6569714cd470115db692648be0fbeb7ddc6b19 5 2026-10-28T17:03:24; node-path 10ee90e816f43a29e511ed0c6161afa2a2ccbefa4ad10b84e2dfb257b43bdc2c 46 2026-10-28T17:03:24 (write-secret: the hash of the file, not the secret); port 4780 listeners: 0; the same as at the end of step 05c"
+      },
+      {
+        "command": "Facts of the task checked: the place named; a search of both files for every assertion whose first argument is an environment, and for messages that print one (a Python scan of the assert calls, then each hit read)",
+        "output": "E2S-05 line 1056 deepEqual of the recorded spawn env (as the task says); in the same test line 1068 deepEqual(foreign, []) whose message printed every name the child had; tools/test/e2e-kit.test.js E2K-37 line 2947 deepEqual(rest, expected) of the whole environment of the spec process (the same kind, so in scope by the task); not of the kind: stateEnv comparisons (E2S-01, E2S-03: the folders the test gave), single values of the test's own variables (E2S-03, E2S-05 home, E2S-21 home), E2K-37 Object.hasOwn(arg.env, 'NODE_TEST_CONTEXT') (a boolean), the pure-helper checks of specEnv on a two-key made-up object (E2K-37), findChrome({ env }) (a path). The hashes before: e2e-stand 5f4e037c5fbb, e2e-kit 6fadaa5b2dc7 = the step-05 tree list"
+      },
+      {
+        "command": "Measurement: what spawn hands to a child from an env object with a prototype (probe in <scratch>/e2e106-05c/probe: spawnSync('/usr/bin/env', [], { env: Object.assign(Object.create({ INHERITED_X: 'from-the-prototype' }), { PATH }) }), no environment of this process in it)",
+        "output": "own keys: PATH | the child has: INHERITED_X,PATH — so the names are collected by for…in, as spawn does"
+      },
+      {
+        "command": "cd tools && npx prettier --write, then --check, of the two files; npx eslint of the two files; the counts",
+        "output": "both unchanged by --write, 'All matched files use Prettier code style!'; eslint exit 0; e2e-stand 22 tests, 272 assert.; e2e-kit 52 tests, 537 assert."
+      },
+      {
+        "command": "The changed tests alone, from tools/ (tripwire <scratch>/e2e106-01b/guard/tripwire.cjs preloaded, my logs in <scratch>/e2e106-05c/guard/): node --test --test-reporter=tap --test-name-pattern='^E2S-05 ' test/e2e-stand.test.js and '^E2K-37 ' test/e2e-kit.test.js, 2026-11-15T23:18:20Z",
+        "output": "E2S-05: exit 0, the one line 'ok 1 - E2S-05 the stand gets the base list and the given variables only, never the whole environment', tests 1 pass 1 fail 0 skipped 0 todo 0, 76 ms; E2K-37: exit 0, the one line 'ok 1 - E2K-37 the spec process gets the exact argument, folder, environment and its own process group', tests 1 pass 1 fail 0 skipped 0 todo 0, 216 ms"
+      },
+      {
+        "command": "Mutant harness python3 -I <scratch>/e2e106-05c/harness/mut_d.py (the harness of step 05c with my own list <scratch>/e2e106-05c/harness/mutants_d.py: a fresh git clone of the tag per mutant with the work files copied in and hash-checked, the R2-S seams checked, each edit by exact text found once, the named test alone with the tripwire, the output searched for every name of this process's environment that the test does not expect (E2S-05 may name the base list and the two home names, E2K-37 none) and for every value of 8 or more characters that is not only digits, after the path of the copy, the scratch path and the temporary root are replaced by words; a file that still holds a value is deleted at once; LEFT after each run; the copy removed). CONTROL first, 2026-11-15T23:19:08Z",
+        "output": "CONTROL (the correct code): E2K-37, E2K-50, E2S-05, isolated start all green; seams true; LEFT 0 0"
+      },
+      {
+        "command": "The mutants W1, W2, K1, K2, K3 and the probe SP1, the same harness, 2026-11-15T23:19:08Z to 23:19:19Z (a first pass at 23:18:28Z gave the same verdicts; its search counted the expected base names LANG and TMPDIR of E2S-05 as other names, so the search was made per test and the pass repeated)",
+        "output": "W1 red in E2S-05 (0.3 s); W2 red in E2S-05 (0.3 s); K1, K2, K3 red in E2K-37 (0.4-0.5 s); SP1: isolated start green, E2K-50 red. In every red output: 0 names of variables the test does not expect, 0 values (the session id stood only inside the replaced scratch path); no file deleted; LEFT 0 0 after every run; no limit hit"
+      },
+      {
+        "command": "cd tools && node --test --test-reporter=tap test/e2e-kit.test.js test/e2e-stand.test.js, three times (tripwire), from 2026-11-15T23:19:31Z",
+        "output": "run 1: exit 0, tests 74 pass 74 fail 0 cancelled 0 skipped 0 todo 0, duration_ms 35380; run 2: exit 0, tests 74 pass 74 fail 0 cancelled 0 skipped 0 todo 0, duration_ms 35426; run 3: exit 0, tests 74 pass 74 fail 0 cancelled 0 skipped 0 todo 0, duration_ms 35357"
+      },
+      {
+        "command": "cd tools && npm run check (once, at the end, tripwire), started 2026-11-15T23:21:23Z",
+        "output": "exit=0 end=2026-11-15T23:26:29Z; format:check 'All matched files use Prettier code style!'; lint (eslint . --max-warnings 0) clean; traces: файлов проверено 2509, следов 0, пропущено 67; handoffs-check: файлов проверено 1359, нарушений 0, исключений использовано 114 из 114; npm test # tests 2209, # pass 2209, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 237811.118292; e2e files picker, pixel-office, smoke all green; e2e: command=npm run e2e selection=all exit=0 duration_ms=56272"
+      },
+      {
+        "command": "Extra net: the tripwire over all trials of this step",
+        "output": "no trip log created: 0 refusals over 4051 Node processes that loaded the preload (steps 05c and 05d together; 1835 of them at the end of step 05c)"
+      },
+      {
+        "command": "Project tree after the trials: shasum -a 256 of every file of git ls-files -co --exclude-standard compared with my list at the end of step 05c; git status --short",
+        "output": "2576 files; against my list at the end of step 05c the hashes differ only for tools/test/e2e-stand.test.js (last changed 23:17:21Z) and tools/test/e2e-kit.test.js (23:17:34Z), both before my first trial of this step at 23:18:20Z and unchanged since (09010bdab778, e782f2aad0a7 in every copy and at the end), the 05c handoff (written by ORCH at 23:13:15Z, after my close at 23:12:25Z) and this handoff (new); tools/src, the kit, the stand-in, the Pixel Office spec and the README unchanged; git status --short identical (the new handoff lies in the untracked run folder)"
+      },
+      {
+        "command": "Real state folder AFTER my last trial, the same commands",
+        "output": "2026-11-15T23:26:47Z; IDENTICAL to before: the same five files with the same sha256, size and time of last change; port 4780 listeners: 0"
+      },
+      {
+        "command": "At the end: LEFT; ps of node and chrome processes compared by pid with the list before step 05c; <scratch>/e2e106-05c/m",
+        "output": "LEFT processes=0 folders=0; the same node and chrome pids as before step 05c (no process of mine left, the eight old ones untouched); no clone left in <scratch>/e2e106-05c/m"
+      }
+    ],
+    "mutants": [
+      {
+        "id": "W1",
+        "source": "own (step 05d)",
+        "breakage": "the starter hands the child the whole environment of the spec process (then the base list, the given ones, the home)",
+        "red": [
+          "E2S-05"
+        ],
+        "green": [],
+        "seconds": [
+          0.3
+        ],
+        "edit_hashes": [
+          "stand.js 41478b6d9cea -> 11d0f6e74854"
+        ],
+        "first_message": "E2S-05: 'the names handed over: the base names this process has, the given ones and the two home names, no other'; expected { plain: true, symbols: 0, names: [HOME, LANG, PATH, SAI_FAKE_GIVEN, SAI_FAKE_STAND_LOG, SAI_FAKE_STAND_MODE, TMPDIR, USERPROFILE], others: 0 }, actual the same names with others: 61",
+        "other_variable_names_in_output": [],
+        "variable_values_in_output": [],
+        "left_after": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "W2",
+        "source": "own (step 05d)",
+        "breakage": "the starter hands the child the right own names on an object whose prototype is the whole environment (spawn passes inherited names on)",
+        "red": [
+          "E2S-05"
+        ],
+        "green": [],
+        "seconds": [
+          0.3
+        ],
+        "edit_hashes": [
+          "stand.js 41478b6d9cea -> 84a0a68662bc"
+        ],
+        "first_message": "E2S-05: the same message; actual plain: false, others: 61 (the inherited names counted)",
+        "other_variable_names_in_output": [],
+        "variable_values_in_output": [],
+        "left_after": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "K1",
+        "source": "own (step 05d)",
+        "breakage": "the runner drops PATH from the environment of the spec process",
+        "red": [
+          "E2K-37"
+        ],
+        "green": [],
+        "seconds": [
+          0.4
+        ],
+        "edit_hashes": [
+          "runner.js 9abe061b6a8d -> 2383c1cadc52"
+        ],
+        "first_message": "E2K-37: 'every other key passes through and none is added'; expected names [SAI_CHROME, SAI_FAKE_CHROME_MODE], passed 62, others 0, symbols 0; actual passed 61",
+        "other_variable_names_in_output": [],
+        "variable_values_in_output": [],
+        "left_after": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "K2",
+        "source": "own (step 05d)",
+        "breakage": "the runner changes the value of PATH for the spec process",
+        "red": [
+          "E2K-37"
+        ],
+        "green": [],
+        "seconds": [
+          0.5
+        ],
+        "edit_hashes": [
+          "runner.js 9abe061b6a8d -> d0d51f387631"
+        ],
+        "first_message": "E2K-37: 'the value of a variable of this process passes through', expected true, actual false",
+        "other_variable_names_in_output": [],
+        "variable_values_in_output": [],
+        "left_after": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "K3",
+        "source": "own (step 05d)",
+        "breakage": "the runner adds a variable to the environment of the spec process",
+        "red": [
+          "E2K-37"
+        ],
+        "green": [],
+        "seconds": [
+          0.4
+        ],
+        "edit_hashes": [
+          "runner.js 9abe061b6a8d -> 406500befbf2"
+        ],
+        "first_message": "E2K-37: 'every other key passes through and none is added'; actual others: 1",
+        "other_variable_names_in_output": [],
+        "variable_values_in_output": [],
+        "left_after": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "SP1",
+        "source": "own probe (step 05d)",
+        "breakage": "probe of the spec of step 05c: the hook helper gives the three names on an object whose prototype is the whole environment",
+        "red": [
+          "E2K-50"
+        ],
+        "green": [
+          "isolated start"
+        ],
+        "seconds": [
+          1.1,
+          0.1
+        ],
+        "edit_hashes": [
+          "pixel-office.e2e.js c7fbdcc8a348 -> 2fb5e928f327"
+        ],
+        "first_message": "isolated start GREEN (the gap of the step-05c form, issue I1); E2K-50 red: 'test/e2e/pixel-office.e2e.js: the whole environment object', 1 !== 0",
+        "other_variable_names_in_output": [],
+        "variable_values_in_output": [],
+        "left_after": [
+          0,
+          0
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "A gap of my own step 05c, found by the probe SP1 of this step (for ORCH; tools/test/e2e/pixel-office.e2e.js is not in this write set, so it is not edited here). The step-05c form in 'isolated start' collects the names of the recorded hook env with Object.keys, so a hook helper that gives the three right names on an object whose prototype is the whole environment passes it (SP1: isolated start green), while spawn hands every inherited name to the child (measured in self_check). The step-05 form, assert.deepEqual of the whole object, failed it by its prototype check. The suite still catches SP1 through E2K-50 (the bare read of the whole environment in the spec: red), but 'isolated start' alone no longer does. The fix is the same as here: collect the names by for…in and assert a plain prototype and no symbol keys, as envShape does in e2e-stand.test.js. Proposal: ORCH adds the spec to a write set (this launch can do it at once) or gives it to step 05e as a finding."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "E2S-05 still names the expected names in its red output (the base names this process has: PATH, TMPDIR, LANG and so on, the given SAI_FAKE_* names, HOME, USERPROFILE): they are the names the test expects, not other variables of the process, and no value is printed. E2K-37 names only its two own names, because there the expected names are the whole environment of this process."
+      },
+      {
+        "id": "I3",
+        "kind": "PROCESS",
+        "text": "The full check ran in the tool's background and I waited for it within my turn (a watch on its done file); nothing heavy ran meanwhile. One harness at a time, one Chrome at a time, caffeinate -i, no busy loops. The criterion word 'picker-office' of step 05c was ORCH's typo (ORCH's message), as read there."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e-stand.test.js",
+      "tools/test/e2e-kit.test.js"
+    ]
+  }
+}

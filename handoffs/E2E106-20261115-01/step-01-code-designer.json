@@ -1,0 +1,207 @@
+{
+  "handoff_id": "step01-E2E106-20261115-01",
+  "run_id": "E2E106-20261115-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/E2E106-20261115-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-106"
+    ],
+    "agent_run_id": "af3f18e4844f0e379",
+    "artifacts_in": [
+      "docs/requirements.yaml (block REQ-106, read by id)",
+      "docs/design/REQ-105-e2e-picker.md (sections 4 and 21)",
+      "docs/design/REQ-104-e2e-chrome-kit.md (sections 4 and 21)",
+      "decisions/0109-e2e-stand-conventions.md (О15 and all addenda)",
+      "decisions/0107, 0108, 0110",
+      "docs/anti-patterns.md (AP-140 to AP-149)",
+      "docs/issues/ISS-0105, ISS-0107, ISS-0108, ISS-0110"
+    ],
+    "route": "ORCH step 0 (tag base/E2E106-20261115-01, REQ-106 in_progress) -> CODE-DESIGNER (this) -> ORCH 1a (answers to О) -> CODE-DESIGN-VALIDATOR 1b -> BACKEND-DEV 2 (starter change) -> SECURITY-REVIEWER 3 + REVIEWER 4 -> TEST-DESIGNER 5 -> TEST-DESIGN-VALIDATOR 5b -> TEST-RUNNER 6 (local and GitHub) -> 7, 8 not applicable -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11",
+    "write_set": [
+      "docs/design/REQ-106-e2e-pixel-office.md (new) only"
+    ],
+    "base_tag": "base/E2E106-20261115-01",
+    "orch_check": {
+      "at": "2026-11-15T19:05:41Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-15T19:03:51Z, result.status COMPLETED",
+        "ls docs/design/REQ-106-e2e-pixel-office.md -> 564 lines, sections 0-20 incl. 4.1 (starter change), 8 (criterion -> test), 12 (replacement), 15 (bar), 16 (mutants), 19 (open questions)",
+        "git status --short -> only the design, the run folder, REQ-106 status line, and PROGRESS.md (not of this run)",
+        "real state folder (ORCH, read only): shasum -a 256 events.jsonl -> 5dbc7b86913fc319…, 4035130 bytes, Oct 29; server-starts.jsonl -> b6e6452cdf2437d8…, 280 bytes, Oct 28; 5 files (equal to the designer's before/after record)",
+        "node src/handoffs/cli.js -> 0 violations; node src/traces/cli.js -> 0 traces",
+        "open questions О1-О17 answered in decisions/0112 (step 1a)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 1 — write the design of REQ-106 (end-to-end tests of Pixel Office in a real headless Chrome) in docs/design/REQ-106-e2e-pixel-office.md, by the section \"Step 1\" of docs/workflows/WF-02-development.md. No implementation code in the design: shapes, signatures, tables only.\n\nREAD FIRST: the block REQ-106 in docs/requirements.yaml (all 8 criteria; read by id, the file is large); docs/design/REQ-105-e2e-picker.md (the starter stand.js, its sections 4 and 21 \"As built\") and docs/design/REQ-104-e2e-chrome-kit.md (the kit API, section 21) — the code in tools/test/e2e/kit/ is the truth, read it too (stand.js, index.js, browser.js, errors.js, runner.js); decisions/0107, 0108, 0109 (all addenda, especially О15, and the lessons of О17–О23), 0110; docs/quality-bar.md; docs/anti-patterns.md (especially AP-140 to AP-149); the README sections of Pixel Office (\"Pixel Office\", \"Where things are\", \"What of the hook input is stored\", \"The journal in plain words\") and tools/src/pixel-office/ (main.js, hook.sh and what it calls, protocol.js, public/schema.js, public/texts.js, the role-name table of decision 0055); tools/test/e2e/picker.e2e.js and smoke.e2e.js as models of a spec file; docs/issues/ISS-0105, ISS-0107, ISS-0108, ISS-0110 (open kit defects; say whether this design touches them, do not fix them here).\n\nWHAT THE DESIGN MUST SETTLE: (1) The precondition О15 of decisions/0109, before anything else: every stand gets a private temporary home folder (the child's HOME is set to a new folder under the temporary root, so that Node's home lookup cannot reach the real one), and state folders reach the server only through checked pairs \"variable -> folder\" and through checked folder arguments (Pixel Office also takes its folder from --dir: check it the same way or forbid it); the starter refuses before any process is started when a folder is outside the temporary root (criterion 1 counts spawned processes: 0). This changes the released starter tools/test/e2e/kit/stand.js and its tests: design the change of the interface, the failure paths, the clean-up, and the tests of the starter (tools/test/e2e-stand.test.js) that must change \"was -> became\" (for example the tests that today assert the child gets no HOME: E2S-05, E2S-19, E2K-50 — check on the tag which ones), without weakening any prohibition (AP-068, AP-112, AP-113). (2) The structure of tools/test/e2e/pixel-office.e2e.js: one test per criterion 1–7 and the time/independence criterion 8, each test with its own server and folders; how events are sent only through the real hook program with the two environment variables; how the time of an event is proven to come from the hook; the mask test with the key-shaped text built from parts at run time; the measurement of the real state folder before and after (criterion 5, which RELEASE-VALIDATOR measures, and what the spec itself may assert); the reconnect test on the same port (state how a port taken by another process in between is handled without a wait by time and without a flaky result). (3) Re-check every fact the requirement lists as \"checked on 2026-11-03\" (POLL_MS, POLL_TIMEOUT_MS, MASK_LABEL, the connection words, prepareText, ROLE_NAMES, the README word table, the five files of \"Where things are\") on the tag base/E2E106-20261115-01 and write the command, the output and the date; a fact that changed is an open question, not a silent fix. (4) A time budget: criterion 8 says 50000 ms at most; measured runner times of the picker spec were about 1.2–1.35 times the local ones (20035–22050 ms on the runner against about 16.5 s on the Mac, handoffs of run E2E105-20261105-01); state how the file stays under the limit on the runner, measured with a sketch, and do not take a timing of one machine as a fact of another (AP-144, ISS-0103). (5) The kit calls that exist and any missing kit call (as a change of the kit with its own tests, not a silent edit). (6) The replacement table of earlier guard tests (search tools/test/ for tests that read tools/test/e2e, count files, read README rows or the starter's behaviour) and the shared places (the README table row made by REQ-104, tools/package.json if the runner selects files by name, the order check of spec files of ISS-0102). (7) Lessons of the last run to apply from the start: an exemption must be as narrow as its reason and pinned with what it covers; a check read once at the end misses what removes itself before it; a page check must read the text the visitor reads (AP-145).\n\nCheck every statement about the current system with a sketch outside the project (a fresh clone of the tag base/E2E106-20261115-01, npm ci, then dummy files) and write the command, the output and the date. The text of the design must hold no absolute machine paths, no temporary paths and no names of other projects of the owner (traces and handoffs-check fail on them). Mutants: at least 25, each with the test that catches it, covering both the starter change and the spec. The section about the bar: Q1–Q14 and R1–R3, each \"applicable: how\" or \"not applicable: why\" (R2 is central: the owner's real Pixel Office folder must never be touched). Open questions go as a list О1, О2, … with a default, not settled by a guess.",
+    "acceptance_criteria": [
+      "Every criterion of REQ-106 leads to an element of the design and to a test",
+      "The precondition О15 settled: private temporary home, checked variable->folder pairs and folder arguments, refusal before any spawn; the starter change with its interface, failure paths, clean-up and the was->became table of its tests",
+      "The facts of 2026-11-03 re-checked on the tag with commands and outputs",
+      "Time budget for the 50000 ms limit argued with a measurement, no timing of one machine taken as a fact of another",
+      "Replacement table measured on the tag; bar section Q1-Q14 and R1-R3 complete",
+      "At least 25 mutants, each with the test that catches it; open questions as a list with defaults; no implementation code"
+    ]
+  },
+  "created_at": "2026-11-15T18:07:12Z",
+  "started_at": "2026-11-15T18:07:12Z",
+  "completed_at": "2026-11-15T19:03:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "The design of REQ-106 is written in docs/design/REQ-106-e2e-pixel-office.md. It settles decisions/0109 O15 first, as a change of the released starter tools/test/e2e/kit/stand.js: every stand gets a home folder of its own (HOME and USERPROFILE point to <marker folder>/home under the temporary root, so os.homedir() in the server cannot reach the real home folder); a state folder reaches a server only through the new option stateEnv (checked pairs variable -> folder) or as an argument; every absolute path in stateEnv, in a value of env and in an argument (also after '=', as in --dir=<path>) must lie under the temporary root, not be the root itself and lie outside the repository, else PATH_REFUSED before anything is made or spawned (criterion 1: 0 spawns); stateDirs is refused with USAGE; a server that wrote into its home folder fails stop() with the new code STAND_HOME_WRITTEN. The stand-in gets the home in its env event and a mode write-home that can never write outside the temporary root. The spec tools/test/e2e/pixel-office.e2e.js has seven tests, one per criterion 1-7 (isolated start, live, journal, mask, untouched home, reconnect, windows); criterion 8 is proved by commands. Events go only through the real hook program, run by a spec helper with exactly PATH, SAI_PIXEL_OFFICE_DIR and HOME, both folders checked in the same call; the spec never reads the real state folder. The restart test tells three outcomes of a port taken in between apart by facts (no wait, no retry). All facts of 2026-11-03 hold on the tag (one precision of place: prepareText is defined in mask.js and called by protocol.js). A prototype of the whole change and of the spec ran in fresh clones of the tag: the spec 22.0-22.2 s on this Mac (limit 50 s; about 14.3 s of it is the page's own 2 s poll), the runner estimated at about 25 s and at most about 37 s from REQ-105's measured ratios; 56 mutants listed, 55 applied in a sketch, 51 caught by the tests of this work, 4 survivors of the spec caught by named unit tests. The real state folder of this computer was not touched (the same sha256 and size before the first trial and after the last). 17 open questions for ORCH, each with a default.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-106-e2e-pixel-office.md",
+        "place": "new file",
+        "what": "0 summary; 1 checked facts F1-F30 with commands, outputs and the date (the re-check of every fact of 2026-11-03, the Pixel Office stand, the hook, the restart and its port cases, Node's home lookup, the page DOM, the timing, the independence loop, the mutant series, the full suites, the order check, the real-folder proof, the counts); 2 disputable choices C-1..C-9; 3 files, owners, order; 4 interfaces: 4.1 the starter change (options before/after, rule P, the order of steps, members, stop() precedence with STAND_HOME_WRITTEN, what it does not do), 4.2 the stand-in, 4.3 the calls of REQ-105/106/107, 4.4 the spec (constants, console declarations, helpers, the seven tests, the identity check of the restart); 5 failure paths; 6 protection in the same operation; 7 time budget with the measured numbers and the runner estimate; 8 criterion -> test; 9 order of work; 10 README texts; 11 the tests (11.1 was -> became of E2S-01, 02, 03, 05, 19 and the new E2S-21); 12 replacement table (8 rows changed, 1 row of untouched scans); 13 order check on three real files; 14 build sub-steps (2 BACKEND-DEV, 5 TEST-DESIGNER) and 14.1 test x sub-step; 15 quality bar Q1-Q14, R1-R3; 16 mutants S01-S18, P01-P34 (30 rows), R01-R08 with the LEFT check; 17 outdated outside the project; 18 sketch notes; 19 open questions O1-O17; 20 the open kit defects ISS-0105, 0107, 0108, 0110"
+      }
+    ],
+    "self_check": {
+      "real_state_folder_before": "2026-11-15T18:09:06Z, before the first trial, the default state folder of this computer (README 'Where things are', ~/.sai-pixel-office): events.jsonl sha256 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 size 4035130 (4488 lines); server-starts.jsonl sha256 b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e size 280 (5 lines); commands: shasum -a 256 <file>, stat -f %z <file>; SAI_PIXEL_OFFICE_DIR unset in this shell",
+      "real_state_folder_middle": "2026-11-15 after the independence loop and at 18:59:27Z: the same two hashes and sizes",
+      "real_state_folder_after": "2026-11-15T19:01:55Z, after the last trial: events.jsonl sha256 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 size 4035130 (last change 2026-10-29); server-starts.jsonl sha256 b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e size 280 (last change 2026-10-28); the folder holds the same five files, nothing new. Every Pixel Office server and hook of every trial had SAI_PIXEL_OFFICE_DIR and HOME under the temporary root",
+      "node": "node -v -> v22.23.4; Chrome 157.0.8103.78",
+      "clones": "git clone -b base/E2E106-20261115-01 into <outside the project>/e2e106-01/clone, proto, c1s; npm ci in tools/ of each (80 packages); git log -1 -> 85e79b0; no checkout, reset, stash or clean",
+      "facts_2026_11_03": "on the tag at 2026-11-15T18:19:24Z: grep -n 'export const POLL_MS|POLL_TIMEOUT_MS|MASK_LABEL' public/schema.js -> 54 MASK_LABEL = \"[скрыто]\", 83 POLL_MS = 2000, 84 POLL_TIMEOUT_MS = 3000; grep LIVE|NO_CONNECTION public/texts.js -> 11 'на связи', 12 'Нет связи с сервером Pixel Office'; grep prepareText -> mask.js:294 (definition), protocol.js:6 (import), :97, :176 (calls); git log -S'export function prepareText' -> 596abbf 2026-10-06; STATE_FILES of config.js:17 -> events.jsonl, server-starts.jsonl, write-secret, port, node-path; ROLE_NAMES -> 37 entries, CODE-DESIGNER 'Проект кода', BACKEND-DEV 'Серверная часть'; EVENT_TABLE agent_start/agent_resume/agent_stop/handoff words = README lines 84-87",
+      "criteria_count": "git show base/E2E106-20261115-01:docs/requirements.yaml cut to the block REQ-106 | grep -c '^      - >-' -> 8; diff with the block of the tree -> one line (status pending -> in_progress)",
+      "home_lookup": "node -e spawning a child with env {PATH} and with {PATH, HOME=<a folder under the temporary root>}: no HOME -> os.homedir() is the real home; HOME given -> os.homedir() is the given folder; os.userInfo().homedir is the real home in both; grep -rn 'userInfo|homedir|env.HOME' tools/src -> main.js:93,95, hook.js:86, note.js:339, team/home.js:121, no userInfo",
+      "pixel_office_sketch": "sk/s3-office.mjs (node, no browser): start 71 ms, 4 files after the start, events.jsonl absent, 1 start row, home empty; hook exit 0 no output 76 ms, the line with source REAL and the hook's time inside its window; SIGTERM exit 0 in 2 ms; hook while down exit 0, no output, sha256 unchanged; restart on the same port: 2 start rows; a start on a port held by Pixel Office prints the link and ends 0 with no start row; a foreign holder -> exit 1 'Порт <n> занят другим процессом…'; --dir relative -> exit 2; SAI_PIXEL_OFFICE_DIR relative -> exit 1",
+      "page_sketch": "sk/s4-dom.mjs (Chrome, the prototype starter): #link-status 'на связи'; #tasks .item[data-kind=task] .item-role/.item-state; #journal > li .event; #journal-meta ' · n из N'; the favicon 404 line once per start; an event on the page 1855 and 1755 ms after the hook",
+      "starter_tests": "proto, the starter change with the old tests: node --test test/e2e-stand.test.js test/e2e-kit.test.js -> # tests 72, # pass 69, # fail 3 (E2S-01, E2S-03, E2S-05); with the edited tests and E2S-21: node --test test/e2e-stand.test.js -> # tests 21, # pass 21; node --test test/e2e-kit.test.js with the E2K-41/50/60 edits -> # tests 52, # pass 52",
+      "full_suite_after_backend_dev": "c1s (stand.js, fake-stand.js, README of proto; tests of the tag): npm test -> # tests 2207, # pass 2204, # fail 3 (E2S-01, E2S-03, E2S-05), # skipped 0, # todo 0, # duration_ms 216559",
+      "full_suite_final": "proto (all files of the design): npm test -> # tests 2208, # pass 2208, # fail 0, # skipped 0, # todo 0, # duration_ms 215761",
+      "spec_runs": "proto: npm run -s e2e -- pixel-office, three runs: exit 0, duration_ms 22177, 22168, 21991; two runs with the eight poll waits timed: 22288 (waits 14384 ms in all), 22169 (14276 ms); under four busy loops (killed by their pids 98938-98941 after the run, all gone): 23196",
+      "independence_loop": "each of the 7 names alone: node --test --test-reporter=tap --test-name-pattern='^<name>$' test/e2e/pixel-office.e2e.js -> exit 0, ok_lines 1 'ok 1 - <name>', not_ok 0, for isolated start, live, journal, mask, untouched home, reconnect, windows",
+      "order_check": "proto: npm run -s e2e -- smoke pixel-office picker -> exit 0, files smoke, pixel-office, picker, e2e: browser= once, duration_ms=55971 (smoke 13/13, pixel-office 7/7, picker 9/9 on the changed starter); npm run -s e2e -- pixel-office pixel-office -> exit 1 SELECTION_DUPLICATE",
+      "mutants": "sk/mut_starter.py: 18 starter mutants, all red in the named tests (mut_starter.out); sk/mut_product.py: 34 product and spec mutants, 30 red; survivors P06a, P06b, P07, P32 red in unit tests MK-02; HK-22, HK-23, MK-01, MK-02, MK-03; SV-04b; HK-21 (node --test test/pixel-office-server.test.js test/pixel-office-hook.test.js on each, files restored); R03, R04, R07 applied by hand: E2K-50 red, E2K-50 red with the SCANNED entry and green without it, E2K-60 red; the hashes of proto's src and spec files equal before and after each series",
+      "leftovers": "LEFT after every series and at the end: ps -axo pid=,command= | grep -E 'src/pixel-office/main\\.js|src/picker/cli\\.js serve|fake-stand\\.js|sai-e2e-' | grep -v grep | wc -l -> 0; ls <temporary root> | grep -c '^sai-e2e-' -> 0; sketch folders sai-e2e106-* -> 0; no busy loop left. Killed only my own four busy loops, by their pids. The eight old 'node -e setInterval' processes were not touched",
+      "counts_of_the_design": "grep -c '^| F[0-9]' -> 30; grep -c '^| О' -> 17; section 16 rows -> 56 (S 18, P 30, R 8); the seven tests -> 7",
+      "project_tree": "git status --short -> only ' M docs/program/public-v1/PROGRESS.md', ' M docs/requirements.yaml' (ORCH, step 0), '?? docs/design/REQ-106-e2e-pixel-office.md', '?? handoffs/E2E106-20261115-01/'",
+      "traces": "cd tools && node src/traces/cli.js -> 'traces: файлов проверено 2497, следов 0, пропущено 67', exit 0 (search for the names of other projects and computer paths -> empty)",
+      "handoffs_check": "cd tools && node src/handoffs/cli.js -> 'handoffs-check: файлов проверено 1349, нарушений 0, исключений использовано 114 из 114', exit 0 (run again after this result is written, before close)"
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "O1 (proposal for a record, e.g. decisions/0112-e2e-pixel-office-conventions.md, or an addendum to 0109 O15): the change of the released starter — stateEnv replaces stateDirs (refused with USAGE), rule P on stateEnv, env values and args (one pinned exemption: an absolute script inside the repository as the first argument), the private home <marker>/home with HOME and USERPROFILE, the code STAND_HOME_WRITTEN and its place in the precedence (CLEANUP_FAILED > STAND_HOME_WRITTEN > STAND_STOP_TIMEOUT > STAND_EXIT); choices C-1..C-4. Default: as design section 4.1."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "O2: the hook's HOME is a folder of the test (makeTempDir('hook-home')), not the stand's home, because the hook must run while no stand exists (reconnect); 'the same two variables' read as the same two names. Default: as stated."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "O3: criterion 7 says 'the kit reports no console error'; the browser writes one favicon 404 line per start (F15; the server serves no icon). Default: declare it exactly with its path once per start, as REQ-105 (decisions/0109 O4); the criterion read as 'the kit reports none'."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "O4: in reconnect every failed poll writes net::ERR_CONNECTION_REFUSED for /api/events; the count depends on the polls. Default: expect (at least one, no upper bound) with the path; nothing else allowed (the stop comes right after a poll answer, so no request is in flight)."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "O5: a port taken by another process between the stop and the restart (about 2.1 s; on Linux even a self-connection of the browser's poll can hold it). Default: the three outcomes told apart by facts (2 start rows and the port file = ours; STAND_START_EXITED with 'Порт <n> занят' = foreign; link but 1 start row = another Pixel Office), a taken port fails with its cause named, no retry, no other port, no wait. The alternative (a fixed port outside the ephemeral ranges) leaves '--port 0' of the block: a WF-01 micro-amendment."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "O6: criterion 5 gets the spec test 'untouched home' (the event lands in the temporary folder, both homes empty, stop() code 0); the hash of the real folder stays RELEASE-VALIDATOR's measurement and the spec never reads the real folder (a hash inside the spec would be flaky when a real session writes during a check). Default: as stated; RV greps new lines of the real journal for the prefix e2e106- if the hash changed."
+      },
+      {
+        "id": "I7",
+        "kind": "QUESTION",
+        "text": "O7: 'the time came from the hook' — the spec proves 'inside the window of its own hook run, payload without time'; that the server keeps the sent time is the unit test SV-04b (mutant P07 survives the spec, red in SV-04b). Default: accepted and recorded."
+      },
+      {
+        "id": "I8",
+        "kind": "QUESTION",
+        "text": "O8: the mask test reads more places than criterion 4 names (every attribute, document.title, the address, the storage, the /api/events answers the page got, the server's stdout and stderr) — AP-145 item 1; P34 is the mutant of 'server output'. Default: as stated."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "O9: criterion 7 'the block «Сейчас» exists' read as 'is shown and starts with «Сейчас»' (mutant P24, display:none in narrow windows, is red only so). Default: as stated."
+      },
+      {
+        "id": "I10",
+        "kind": "QUESTION",
+        "text": "O10: the line for a question on the runner: 30000 ms (60 % of 50000, the rule of decisions/0109 O11); the alternative 40000 (80 %) because about 15 s of the file are the product's poll. Default: 30000."
+      },
+      {
+        "id": "I11",
+        "kind": "DISCREPANCY",
+        "text": "O11: the block names (tools/src/pixel-office/protocol.js, prepareText); prepareText is defined in mask.js:294 (since 596abbf, 2026-10-06) and called by protocol.js:97 and :176. Default: DOC-UPDATER corrects the words at step 10 without a change of meaning."
+      },
+      {
+        "id": "I12",
+        "kind": "DISCREPANCY",
+        "text": "O12: the block says 'Guard tests of earlier requirements, was -> became: none … no existing assertion counts files of tools/test'. Measured: E2S-01, E2S-03, E2S-05 turn red by the starter change (F23); E2S-02, E2S-19, E2K-41, E2K-60 get words or cases, E2K-50 gets the SCANNED entry (design section 12). Also the task's example 'the tests that today assert the child gets no HOME: E2S-05, E2S-19, E2K-50': only E2S-05 asserts it; E2S-19 and E2K-50 check which variables the kit files read, not the child's environment, and stay as they are in that rule. Default: the edits of section 12; DOC-UPDATER corrects the sentence at step 10 with before_copy."
+      },
+      {
+        "id": "I13",
+        "kind": "QUESTION",
+        "text": "O13: the private home inside the marker folder (reuses the exit handler and the runner's sweep; the sai-e2e-* folder count of the released tests stays 1 per stand). Default: as stated."
+      },
+      {
+        "id": "I14",
+        "kind": "QUESTION",
+        "text": "O14: rule P refuses an absolute path inside the repository in env; the block of REQ-107 says SAI_TEAM_CLAUDE_BIN points to a trap in tools/test/fixtures/e2e/. Default: no exemption now; the design of REQ-107 copies the trap under the temporary root or asks for a pinned exemption with a record."
+      },
+      {
+        "id": "I15",
+        "kind": "QUESTION",
+        "text": "O15: the spec imports ROLE_NAMES from src/pixel-office/public/texts.js (the requirement's own words) while WF-02 step 5 says a test does not import rules from src; the words of the rows come from the README. Default: the import of the data table, as the requirement says."
+      },
+      {
+        "id": "I16",
+        "kind": "QUESTION",
+        "text": "O16: os.userInfo() still names the real home folder whatever HOME is (F13); no server of Sai asks it. Default: recorded in design 4.1; a later server that asked it would need a change of the kit."
+      },
+      {
+        "id": "I17",
+        "kind": "QUESTION",
+        "text": "O17: the mutants and the anti-pattern candidates (I18) are recorded by DOC-UPDATER at step 10 from this list. Default: as stated."
+      },
+      {
+        "id": "I18",
+        "kind": "AP_CANDIDATE",
+        "text": "For docs/anti-patterns.md (Q13): (1) a starter that checks a folder but does not hand that same value to the child proves nothing (O15, F14); (2) os.userInfo() names the real home folder whatever HOME is (F13); (3) a kit test whose stand-in writes into 'the home folder' must be built so that a broken starter makes it write nothing (design 4.2); (4) a foreign server on the same port shows the same page, so the identity is read from our own folder before the page (F11); (5) a hash of a shared real file read inside a test is flaky when real sessions write to it (C-6); (6) a key-shaped test text can be masked by a second rule, so the shape of the input needs its own control (R06 survived without it)."
+      },
+      {
+        "id": "I19",
+        "kind": "FOUND_ON_THE_WAY",
+        "text": "docs/issues/ISS-0110: STAND_HOME_WRITTEN puts the entry names of a home folder through safeText, one more caller that would show a bidirectional control unescaped (design section 20); not fixed here. docs/issues/ISS-0102 item 2 can be continued with three real files (F26, design section 13). ISS-0105, ISS-0107, ISS-0108 are not touched (section 20)."
+      },
+      {
+        "id": "I20",
+        "kind": "NOTE",
+        "text": "Outdated outside this design after the build (for DOC-UPDATER, design section 17): docs/design/REQ-105-e2e-picker.md 4.1-4.3, 6, 11.1 (stateDirs, 'no HOME', the REQ-106 row); the REQ-107 block words 'HOME is another new folder' and the trap path; the README section of the e2e tests (made by the build)."
+      }
+    ],
+    "prototype": {
+      "where": "<outside the project>/e2e106-01/ (the working folder of this session; no path of the computer written here)",
+      "contents": "clone/ — a fresh clone of base/E2E106-20261115-01 with npm ci, the 'before' copy, never changed. proto/ — a fresh clone in which the prototype was written: tools/test/e2e/kit/stand.js (the starter change of design 4.1), tools/test/fixtures/e2e-stand/fake-stand.js (4.2), tools/test/e2e-stand.test.js (the edits of 11.1 and E2S-21), tools/test/e2e-kit.test.js (the E2K-41, E2K-50, E2K-60 edits), tools/README.md (section 10), tools/test/e2e/pixel-office.e2e.js (the seven tests, not formatted by prettier). c1s/ — a fresh clone in the state after BACKEND-DEV (stand.js, fake-stand.js and README of proto). sk/ — s3-office.mjs (Pixel Office and the hook without a browser), s4-dom.mjs (the page in Chrome), mut_starter.py and mut_starter.out, mut_product.py and mut_product.out, run1-3.txt, waits1-2.txt, load1.txt, order1-2.txt, s1-stand-kit.txt, s2-stand.txt, full_s1.txt, full_final.txt. They carry no state of the project; every fact the next steps need is in the design and in this handoff (AP-149)."
+    },
+    "artifacts_out": [
+      "docs/design/REQ-106-e2e-pixel-office.md"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-15T18:07:34Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/code-designer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same. Step 0 by ORCH: tag base/E2E106-20261115-01 on 85e79b0; REQ-106 status pending -> in_progress (only that line)."
+  }
+}

@@ -1,4 +1,5 @@
 import { spawn as nodeSpawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import {
   installHandlers,
@@ -11,11 +12,20 @@ import {
   waitGroupGone,
 } from "./cleanup.js";
 import { E2eError, safeText } from "./errors.js";
-import { assertLoopbackUrl, assertUnderTempRoot, repoRoot } from "./guards.js";
+import {
+  assertLoopbackUrl,
+  assertOutsideRepo,
+  assertUnderTempRoot,
+  repoRoot,
+  tempRoot,
+} from "./guards.js";
 
 // Starts a server process of Sai for a page spec as its own process group, reads
 // its link from stdout, and stops it (docs/design/REQ-105-e2e-picker.md, section
-// 4.1). Clean-up is registered at spawn, before the first wait.
+// 4.1). Clean-up is registered at spawn, before the first wait. Every stand gets a
+// home folder of its own, and every absolute path it is given is checked before
+// anything is made or started (docs/design/REQ-106-e2e-pixel-office.md, section
+// 4.1; decisions/0112, О1).
 
 const KEPT_CHARS = 65536;
 const NAME = /^[a-z0-9-]{1,24}$/;
@@ -23,15 +33,21 @@ const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const GONE_WAIT_MS = 3000;
 const DRAIN_WAIT_MS = 1000;
 const MAX_TIMER_MS = 2147483647; // Node fires a longer timer after 1 ms
+// the two names of the home folder: the starter sets them, a caller cannot
+const HOME_NAMES = ["HOME", "USERPROFILE"];
+const REPO_REASON = ": inside the repository";
 
 // The only variables of the spec process that the starter passes to the server,
-// each read by name: no token or switch of the developer's shell, no HOME variable.
-// The home folder itself is not hidden: Node finds it through the system's list of
-// users (decisions/0109). The system and Node may add variables of their own, none
-// given by the starter: __CF_USER_TEXT_ENCODING on macOS, and NODE_V8_COVERAGE when
-// the spec process has it.
-function baseEnvironment() {
-  const named = {
+// each read by name: no token or switch of the developer's shell, and not the home
+// folder of the person. HOME and USERPROFILE are set by startStand itself to the
+// private home folder of the stand, so Node's home lookup in the server gives that
+// folder. The system's list of users (os.userInfo) still names the home folder of
+// the person; no server of Sai asks it (decisions/0112, О16). The system and Node
+// may add variables of their own, none given by the starter:
+// __CF_USER_TEXT_ENCODING on macOS, and NODE_V8_COVERAGE when the spec process has
+// it.
+function namedBase() {
+  return {
     PATH: process.env.PATH,
     TMPDIR: process.env.TMPDIR,
     TEMP: process.env.TEMP,
@@ -41,8 +57,14 @@ function baseEnvironment() {
     TZ: process.env.TZ,
     SystemRoot: process.env.SystemRoot,
   };
+}
+
+// the names of the base list, which stateEnv cannot give
+const BASE_NAMES = Object.keys(namedBase());
+
+function baseEnvironment() {
   const out = {};
-  for (const [key, value] of Object.entries(named)) {
+  for (const [key, value] of Object.entries(namedBase())) {
     if (typeof value === "string") out[key] = value;
   }
   return out;
@@ -58,13 +80,20 @@ function isPlainObject(value) {
 
 function checkOptions(options) {
   if (!isPlainObject(options)) throw usage("the options must be an object");
+  // a folder that is checked but not handed to the server proves nothing: the old
+  // option is refused, not taken as an alias (decisions/0112, О1)
+  if ("stateDirs" in options) {
+    throw usage(
+      "stateDirs is replaced by stateEnv, pairs of a variable and a folder",
+    );
+  }
   const {
     name,
     args,
     readyPattern,
     cwd = path.join(repoRoot(), "tools"),
     env = {},
-    stateDirs = [],
+    stateEnv = {},
     startTimeoutMs = 15000,
     stopTimeoutMs = 10000,
   } = options;
@@ -100,11 +129,34 @@ function checkOptions(options) {
     if (!ENV_NAME.test(key)) {
       throw usage(`env name "${safeText(key, 40)}" is not a variable name`);
     }
+    if (HOME_NAMES.includes(key)) {
+      throw usage(
+        `env may not give ${key}: the stand gets a home folder of its own`,
+      );
+    }
     if (typeof value !== "string" || value.includes("\0")) {
       throw usage(`env value of ${key} must be a string without NUL`);
     }
   }
-  if (!Array.isArray(stateDirs)) throw usage("stateDirs must be a list");
+  if (!isPlainObject(stateEnv)) throw usage("stateEnv must be an object");
+  const envNames = new Set(Object.keys(env));
+  for (const [key, value] of Object.entries(stateEnv)) {
+    if (!ENV_NAME.test(key)) {
+      throw usage(
+        `stateEnv name "${safeText(key, 40)}" is not a variable name`,
+      );
+    }
+    if (
+      HOME_NAMES.includes(key) ||
+      BASE_NAMES.includes(key) ||
+      envNames.has(key)
+    ) {
+      throw usage(`stateEnv may not give ${key}`);
+    }
+    if (typeof value !== "string" || value.includes("\0")) {
+      throw usage(`stateEnv value of ${key} must be a string without NUL`);
+    }
+  }
   for (const [label, value] of [
     ["startTimeoutMs", startTimeoutMs],
     ["stopTimeoutMs", stopTimeoutMs],
@@ -121,10 +173,55 @@ function checkOptions(options) {
     readyPattern,
     cwd,
     env,
-    stateDirs,
+    stateEnv,
     startTimeoutMs,
     stopTimeoutMs,
   };
+}
+
+// Rule P for one absolute path a stand is given: (1) its real path lies under the
+// temporary root, (2) that real path is not the root itself, whatever the spelling,
+// (3) it lies outside the repository. -> the real path, the only value the stand
+// gets; a refusal is PATH_REFUSED with the reason.
+function checkedPath(input) {
+  const real = assertUnderTempRoot(input);
+  if (real === tempRoot()) {
+    throw new E2eError(
+      "PATH_REFUSED",
+      `refused path "${safeText(input)}": the temporary root itself`,
+    );
+  }
+  return assertOutsideRepo(real);
+}
+
+// A value of env or an argument: an absolute path as a whole, or one after the
+// first "=" (the form --dir=<path>), is checked by rule P and rebuilt from the real
+// path; any other value (a relative path, a word) is given as it is.
+function checkedValue(value) {
+  if (path.isAbsolute(value)) return checkedPath(value);
+  const eq = value.indexOf("=");
+  if (eq !== -1 && path.isAbsolute(value.slice(eq + 1))) {
+    return `${value.slice(0, eq + 1)}${checkedPath(value.slice(eq + 1))}`;
+  }
+  return value;
+}
+
+// The first argument is the script: an absolute path inside the repository is kept
+// as it is (a script is run, not written); any other value goes by rule P. Inside
+// is decided by assertOutsideRepo of guards.js, the same test as step 3 of rule P;
+// its other refusal (a path that cannot be used) is thrown as it is.
+function checkedScript(value) {
+  if (path.isAbsolute(value)) {
+    try {
+      assertOutsideRepo(value);
+    } catch (err) {
+      if (err instanceof E2eError && err.message.endsWith(REPO_REASON)) {
+        return value;
+      }
+      throw err;
+    }
+  }
+  return checkedValue(value);
 }
 
 function exitInfoOf(exit) {
@@ -141,6 +238,16 @@ function keep(kept, chunk) {
   return text.length > KEPT_CHARS ? text.slice(-KEPT_CHARS) : text;
 }
 
+// The entries of the private home folder, sorted; a folder that cannot be read
+// gives the one entry that says so (the server touched it either way).
+function homeEntries(dir) {
+  try {
+    return fs.readdirSync(dir).sort();
+  } catch (err) {
+    return [`(not readable: ${err.code ?? "error"})`];
+  }
+}
+
 export class Stand {
   #state;
   #marker;
@@ -148,14 +255,24 @@ export class Stand {
   #stopPromise = null;
   #sentTerm = false;
 
-  constructor({ name, pid, url, stateDirs, state, marker, stopTimeoutMs }) {
+  constructor({
+    name,
+    pid,
+    url,
+    stateEnv,
+    homeDir,
+    state,
+    marker,
+    stopTimeoutMs,
+  }) {
     const parsed = new URL(url);
     this.name = name;
     this.pid = pid;
     this.url = url;
     this.origin = parsed.origin;
     this.port = Number(parsed.port);
-    this.stateDirs = Object.freeze([...stateDirs]);
+    this.stateEnv = Object.freeze({ ...stateEnv });
+    this.homeDir = homeDir;
     this.#state = state;
     this.#marker = marker;
     this.#stopTimeoutMs = stopTimeoutMs;
@@ -209,6 +326,10 @@ export class Stand {
       await state.closed;
     }
     unregisterGroup(this.pid);
+    // the home is empty at the start: anything in it now is a write of the server
+    // through its home lookup; it is read before it goes with the marker, whatever
+    // the end of the process was
+    const written = homeEntries(this.homeDir);
     let markerReason = null;
     try {
       removeTempDir(this.#marker);
@@ -226,6 +347,16 @@ export class Stand {
         "CLEANUP_FAILED",
         `could not clean up "${this.name}": pid ${this.pid}: ` +
           `${gone ? markerReason : "the process group is still alive after SIGKILL"}; ${end}`,
+        { pid: this.pid },
+      );
+    }
+    // the precedence: CLEANUP_FAILED > STAND_HOME_WRITTEN > STAND_STOP_TIMEOUT >
+    // STAND_EXIT (decisions/0112, О1)
+    if (written.length > 0) {
+      throw new E2eError(
+        "STAND_HOME_WRITTEN",
+        `${this.name} wrote into its own home folder: ` +
+          safeText(written.slice(0, 5).join(", "), 200),
         { pid: this.pid },
       );
     }
@@ -276,19 +407,50 @@ export async function startStand(options, deps = {}) {
     readyPattern,
     cwd,
     env,
-    stateDirs,
+    stateEnv,
     startTimeoutMs,
     stopTimeoutMs,
   } = checkOptions(options);
-  // every state folder is checked before anything is made or started
-  const realStateDirs = stateDirs.map((dir) => assertUnderTempRoot(dir));
+  // rule P on every folder of stateEnv, every value of env and every argument,
+  // before anything is made or started; only the checked values are used below
+  const checkedStateEnv = {};
+  for (const [key, dir] of Object.entries(stateEnv)) {
+    checkedStateEnv[key] = checkedPath(dir);
+  }
+  const checkedEnv = {};
+  for (const [key, value] of Object.entries(env)) {
+    checkedEnv[key] = checkedValue(value);
+  }
+  const checkedArgs = args.map((arg, i) =>
+    i === 0 ? checkedScript(arg) : checkedValue(arg),
+  );
   const marker = makeTempDir("profile");
+  // the private home: a new, empty folder inside the marker, so it goes with it
+  const homeDir = path.join(marker, "home");
+  try {
+    fs.mkdirSync(homeDir, { mode: 0o700 });
+  } catch (err) {
+    await abortStart(undefined, marker);
+    throw new E2eError(
+      "STAND_START_FAILED",
+      `could not make the home folder of "${name}": ${err.code ?? "error"}`,
+      {},
+      err,
+    );
+  }
 
   let child;
   try {
-    child = spawn(process.execPath, args, {
+    // the two home names last, so nothing given can replace them
+    child = spawn(process.execPath, checkedArgs, {
       cwd,
-      env: { ...baseEnvironment(), ...env },
+      env: {
+        ...baseEnvironment(),
+        ...checkedEnv,
+        ...checkedStateEnv,
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+      },
       detached: true,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -410,7 +572,8 @@ export async function startStand(options, deps = {}) {
     name,
     pid,
     url,
-    stateDirs: realStateDirs,
+    stateEnv: checkedStateEnv,
+    homeDir,
     state,
     marker,
     stopTimeoutMs,
