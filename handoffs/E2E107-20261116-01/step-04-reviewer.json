@@ -1,0 +1,212 @@
+{
+  "handoff_id": "step04-E2E107-20261116-01",
+  "run_id": "E2E107-20261116-01",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/E2E107-20261116-01/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-107"
+    ],
+    "agent_run_id": "a4c1da0d6724aa7cc",
+    "artifacts_in": [
+      "handoffs/E2E107-20261116-01/step-02-backend-dev.json",
+      "docs/design/REQ-107-e2e-team-web.md (sections 3, 4.5, 10, 12, 14, 16)",
+      "decisions/0113-e2e-team-web-conventions.md (О1, О8, О23, О24)"
+    ],
+    "route": "... 1d PASS -> BACKEND-DEV 2 -> SECURITY-REVIEWER 3 + REVIEWER 4 (this) at the same time -> TEST-DESIGNER 5 -> 5b -> 6 -> 9 -> 10 -> 11",
+    "write_set": [
+      "its own handoff only (a checker: reads, does not edit project files)"
+    ],
+    "base_tag": "base/E2E107-20261116-01",
+    "orch_check": {
+      "at": "2026-11-16T19:06:19Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-16T19:05:13Z, result.verdict PASS (L1, L2 Low); agent_run_id filled by ORCH",
+        "git status --short -> no project file changed by the reviewer besides its handoff",
+        "real Pixel Office folder: 5 sha256 equal to the record of step 01; real home has no .sai-team",
+        "L1 -> decisions/0113 О27 (step 10, E2K-60 robust to it); L2 -> О28 (TEST-DESIGNER); issue I1 -> О29 (5b and 9 read the starter calls); I4 builder's spec-home place -> О30; I4 of the reviewer (step-2 diff count wording) noted, the file is right",
+        "steps 3 and 4 both PASS -> step 5 TEST-DESIGNER"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 4 — REVIEWER, gate, on the change of step 2 (handoffs/E2E107-20261116-01/step-02-backend-dev.json): tools/test/e2e/kit/browser.js and tools/README.md, diff against the tag base/E2E107-20261116-01. Check against the design docs/design/REQ-107-e2e-team-web.md (sections 3, 4.5, 10, 14) and decisions/0113 (О1, О8, О23, О24): the argument and its place; nothing else in the kit changed; the lines of ISS-0109 untouched; the three README edits of section 10 word for word, each found once, prettier clean; the builder's issues I1-I6 (I1 the expected red E2K-25; I2 the leftover `com.google.Chrome.*` folders; I3 no full check at step 2; I4 the spec home location; I5 agent_run_id; I6 E2S-17 and the CLIs with the normal home) — say for each whether it is right and where it goes. Look for crutches: a change made only for a test, a sentence of the README that can drift from the code, a behaviour the design does not name. Run yourself: `node --test test/e2e-kit.test.js test/e2e-stand.test.js` (expected 74 tests, 73 pass, 1 fail = E2K-25), `npm run -s lint`, `npm run -s format:check`, and the released spec files `npm run -s e2e -- smoke picker pixel-office` on the changed kit (exit 0, each file under its budget). Apply at least 6 mutants of the change on copies outside the project (the argument removed, moved, misspelled, doubled; a README word changed; the table row removed) and say which tests catch them now and which tests of step 5 (design sections 12 and 16) will. Step 3 (SECURITY-REVIEWER) runs at the same time on the same files; do not coordinate, judge alone. SAFETY RULE R2-T (decision 0113 О2, О19): never start a program of tools/src (the team server, the engine, a team command, Pixel Office) with the real home folder as HOME; never start the team server, the engine or a team command without SAI_TEAM_HOME set to a new folder under the temporary root (this step needs none of them); never set SAI_TEAM_REAL_RUNS; never start the real `claude` program; a call that names the real home or the real Pixel Office folder goes only to a spawn that records and throws; never import a program file to read it (read it as text); a command denied by the permission check is not done another way. The released spec files smoke, picker and pixel-office may be run as the released evidence in the normal environment (0113 О2: each stand gets its private home); give the spec process SAI_TEAM_HOME = a new folder under the temporary root as well. Record before your first trial and after your last whether the folder `.sai-team` exists in the real home and the sha256 of the five files of the real Pixel Office folder (read only). Change no project file other than this handoff; no commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner. Verdict PASS or FAIL with findings ranked (Critical, High, Medium block).",
+    "acceptance_criteria": [
+      "the change checked against the design and decisions/0113 item by item, incl. the builder's issues I1-I6",
+      "crutches looked for; the kit files, lint, format and the three released spec files run on the changed kit",
+      "at least 6 mutants with the catching tests now and at step 5",
+      "the five real files unchanged and no .sai-team before and after; PASS or FAIL with findings ranked"
+    ]
+  },
+  "created_at": "2026-11-16T18:33:14Z",
+  "started_at": "2026-11-16T18:33:14Z",
+  "completed_at": "2026-11-16T19:05:13Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-02, step 4, REVIEWER on the change of step 2 (tools/test/e2e/kit/browser.js and tools/README.md against the tag base/E2E107-20261116-01), judged alone from my own reading and runs. Verdict PASS: no Critical, High or Medium finding; two Low findings (L1, L2) and the issues below. (1) Does it fix the cause: yes. The cause measured in design F32 is that Chrome on macOS does not answer its first navigation under a fresh home folder; the change gives Chromium's own test switch for a mock keychain (its name stands twice in this machine's Chrome binary, read as data) and does nothing else: no timeout raised, no retry of the first navigation, no check bypassed, no sandbox flag. My probe on a clone shows the effect: SMK-01 alone under a fresh home with the tag's browser.js timed out at its 20000 ms limit, with the changed browser.js it passed. It is a kit change made for the trial condition of rule R2-T, recorded in decisions/0113 О1; it changes no product code and hides no product behaviour (the three released spec files pass with it in the normal environment). (2) Agreement with what is recorded: design 4.5 exactly (one added line, the list stays frozen, the order is the design's; the tag file equals the changed file with line 33 removed, byte for byte); design section 10 exactly (I rebuilt the README from the tag with the three texts cut out of the design and it equals tools/README.md byte for byte; each text is found once; 'REQ-107 adds its row.' is gone); 0113 О1 (REQ-104 forbids only the two sandbox flags, no closed argument list), О8 (the budget sentence), О24 (the ISS-0109 lines of the tag 224, 242, 344, 354, 355 are identical at 225, 243, 345, 355, 356); О23 is a rule for the spec of step 5, which does not exist yet: it cannot be checked at this step (issue I1); decisions/0002 (no dependency; package files, lint config and the check command unchanged). (3) More than ordered: no. The change is exactly the write set; in tools/ and .github/ only the two files differ from the tag. (4) The bar holds: the erosion search over the changed files is empty (the two hits are words that were already there on the edited lines: 'skipped or todo test' and 'the sandbox of Chrome is never turned off'); the only red test is E2K-25, red by the design between steps 2 and 5. (5) Written as this code is written: the same frozen list, prettier and eslint clean; AP-014: browser.js:186 is the only place where the kit starts Chrome, so there is no neighbouring place to compare; AP-077: the README text is green in E2K-41, E2K-60 and E2S-19; AP-005: the argument list of docs/design/REQ-104-e2e-chrome-kit.md is now behind, already listed for DOC-UPDATER in design section 17. Measured: the two kit files 74 tests, 73 pass, 1 fail = E2K-25 (only the one extra element in its message); lint exit 0; format:check exit 0; npm run -s e2e -- smoke picker pixel-office exit 0, smoke 13 of 13 in 16733 ms (budget 30000), picker 9 of 9 in 16454 ms (80000), pixel-office 7 of 7 in 21905 ms (50000), record line duration_ms=55733. Mutants: 12 on a clone of the tag with the two files copied in (K01 to K05 of browser.js, G02 to G08 of the README), each run with the released kit tests (now) and with my sketch of the step-5 edits of design section 12, rows 1, 3, 4 (outside the project only, not TEST-DESIGNER's code): now only K01 is visible (the expected red disappears, 74 of 74 green) and K02 to K05 only change the message of the already red E2K-25; no README mutant is caught now. At step 5: E2K-25 catches K01 to K05, E2K-60 catches G02, G04, G05, G08, E2K-41 and E2K-60 catch G03; G06 (the stale line put back) and G07 (the meaning of the keychain sentence turned) stay green (L2; G07 by nature, AP-083). For TEST-DESIGNER at step 5 especially: the E2K-25 edit (row 1); the E2K-60 row expression for team-web.e2e.js and REQ-107 and the tokens 70000 and --use-mock-keychain (row 4), because the token REQ-107 is now also found in two sentences, so without the row expression the row can go unseen (G02, G08); E2K-41 with 70000 (row 3); the gap G06 (L2); О23 on every call of the starter in the spec (I1). The builder's issues I1 to I6 are judged one by one in issues I7 to I12. Safety: .sai-team in the person's home folder absent before my first trial and after my last; the five files of the real Pixel Office folder have the same sha256, sizes and times before and after (read only); the trap marker was never written; my net refused nothing in any valid run.",
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/README.md:842, the sentence after 'the sandbox of Chrome is never turned off.' (the text of docs/design/REQ-107-e2e-team-web.md, section 10, item 2)",
+        "what": "The sentence states as measured that without --use-mock-keychain Chrome does not answer its first navigation under a home folder below the temporary root, but does not say on which system this was measured. It was measured on macOS only (design F32; my probe: SMK-01 timed out at 20000 ms with the tag's browser.js under a fresh home and passed with the changed one, on macOS). On ubuntu-24.04 the 'without it' half is not measured, and step 6 measures only the 'with it' half (decisions/0113 О1). Not blocking: the clause before it names macOS, the text is the design's word for word as passed at gate 1d, and it is introduced as a measurement.",
+        "fix": "No edit in this step (the text is fixed by the design). ORCH: at step 10 DOC-UPDATER, with the GitHub reading of step 6, names the system of the measurement, for example 'measured for REQ-107 on macOS:'; E2K-60 keeps its token."
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocking": false,
+        "place": "tools/test/e2e-kit.test.js, E2K-60 (line 3904 on the tag), the test that step 5 edits by design section 12, row 4; design section 16 (mutant list)",
+        "what": "Mutant G06 (the removed line 'REQ-107 adds its row.' put back after the new row) is green now and stays green with my sketch of the step-5 edits of rows 1, 3 and 4: no test holds item 3 of design section 10 (the removal), so a stale sentence that refers to work already done (the AP-005 shape) could come back unseen. G07 (the keychain sentence turned to 'and without it it does as well.') also stays green; that is by nature (AP-083), a reader checks the meaning: I read it, it matches F32.",
+        "fix": "TEST-DESIGNER at step 5, if ORCH agrees (a strengthening, no prohibition weakened): E2K-60 also asserts that the section holds no 'adds its row'; G06 then goes to the mutants of section 16 and must be red."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "SAFETY BEFORE my first trial, 2026-11-16T18:34:37Z (read only): test -e on .sai-team in the person's home folder; find, shasum -a 256 and stat -f '%z %Sm' on the default Pixel Office state folder (.sai-pixel-office) in the person's home folder",
+        "output": ".sai-team: absent. Exactly five entries: events.jsonl 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244 (4035130 bytes, Oct 29 17:05:09 local); node-path 10ee90e816f43a29e511ed0c6161afa2a2ccbefa4ad10b84e2dfb257b43bdc2c (46, Oct 28 17:03:24); port 8d0d7d110042d429466cb6db2d6569714cd470115db692648be0fbeb7ddc6b19 (5, Oct 28 17:03:24); server-starts.jsonl b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e (280, Oct 28 17:03:24); write-secret 465f654a88e7cb3b172f4f557b0beaf44015440f3b04661bf6e569f30980e8b3 (44, Oct 1 22:52:26; the hash of the file, not the secret). The same values as the record of step 02."
+      },
+      {
+        "command": "SAFETY AFTER my last trial, 2026-11-16T19:02:17Z (the same commands); diff of the two records without the time line",
+        "output": ".sai-team: absent; the same five files with the same sha256, sizes and times; diff empty."
+      },
+      {
+        "command": "my trial net, outside the project (<scratch>/e2e107-04/net): a preload by NODE_OPTIONS=--import that wraps spawn, spawnSync, execFile, execFileSync, fork, exec and execSync (ESM exports synced) and, instead of starting, logs and throws on: a program or argument named claude; SAI_TEAM_REAL_RUNS in the child environment; an argument, working folder or environment value naming .sai-team or .sai-pixel-office in the person's home; an argument or working folder equal to that home; a start of a program of src/team, src/web, src/pixel-office or src/picker whose HOME is missing, is that home or is not under the temporary root; strict mode also any environment value equal to that home. The home is given to the net encoded, and the net's own variables are not scanned. Positive controls: every refusal row uses a program path that does not exist (a broken net gives ENOENT and starts nothing)",
+        "output": "normal mode: 7 of 7 refused, clean start exit 0; strict mode under a temporary HOME: 8 of 8 refused, clean start exit 0. Two mistakes of mine on the way, both before any valid run and both refusals (nothing started): the first strict control got a wrong home from a shell prefix assignment, and the first run of the kit files (2026-11-16T18:40:05Z..18:40:15Z, 34 red) was refused by my own net 33 times because its setting variable held the home and was inherited (strict rule); fixed as described, the controls run again (7 of 7, 8 of 8), the log then had 72 lines and still had 72 after every later trial: the net refused nothing in the valid runs."
+      },
+      {
+        "command": "git diff base/E2E107-20261116-01 -- tools/test/e2e/kit/browser.js tools/README.md; git diff --numstat base/E2E107-20261116-01 -- tools/; git diff --stat base/E2E107-20261116-01 -- tools/package.json tools/package-lock.json tools/eslint.config.js tools/.prettierignore .github tools/test/e2e/run.js tools/test/e2e/kit tools/test/e2e-kit.test.js tools/test/e2e-stand.test.js tools/test/fixtures tools/src; git status --short --untracked-files=all -- tools/ .github/",
+        "output": "browser.js one hunk, one added line '    \"--use-mock-keychain\",' after '--no-first-run'; README 3 insertions, 4 deletions; of the named kit, test, package, config and source paths only tools/test/e2e/kit/browser.js differs (1 insertion); tools/ and .github/ hold only the two modified files, no untracked file"
+      },
+      {
+        "command": "git show base/E2E107-20261116-01:tools/test/e2e/kit/browser.js > <scratch>/…/browser.tag.js; sed '33d' tools/test/e2e/kit/browser.js | cmp with it; the ISS-0109 lines of the tag 224, 242, 344, 354, 355 against lines 225, 243, 345, 355, 356 now",
+        "output": "IDENTICAL after removing line 33; the five lines equal (child.stderr.setEncoding, child.on(\"error\", …), let failure = null, if (failure === null) throw cleanupError, the cleanupError assignment)"
+      },
+      {
+        "command": "the three texts of design section 10 cut out of the design file; grep -cF of each in tools/README.md; grep -cxF of the row; a README rebuilt from the tag by replacing the old budget sentence, adding the keychain sentence after 'the sandbox of Chrome is never turned off.' and replacing the smoke row + blank line + 'REQ-107 adds its row.' by the two rows (python -I, outside the project); cmp with tools/README.md",
+        "output": "budget sentence 1, keychain sentence 1, row (whole line) 1, 'REQ-107 adds its row.' 0, '--use-mock-keychain' in the README 1, '70000' in the README 1; the rebuilt README equals tools/README.md byte for byte; the row stands right after the smoke row; the section is the last of the file"
+      },
+      {
+        "command": "erosion search: grep -nE '\\.skip\\(|\\.todo\\(|todo|TODO|FIXME|eslint-disable|\\|\\| true|no-sandbox|disable-setuid-sandbox|\\{ skip|\\{ todo' tools/test/e2e/kit/browser.js; the same plus 'sandbox|for now|later' over the added lines of the diff; the first set over the README section",
+        "output": "browser.js: no line (exit 1); added lines: 2 hits, both words already present on the edited lines ('registers no test, or has a skipped or todo test' and 'the sandbox of Chrome is never turned off'), neither is a skip, a disabled rule or a hidden exit code; README section: no line (exit 1)"
+      },
+      {
+        "command": "grep -nE 'spawn\\(|spawnSync\\(|execFile(Sync)?\\(|buildArgs' tools/test/e2e/kit/*.js tools/test/e2e/run.js (AP-014); grep -rlF -e '--no-first-run' docs tools/README.md tools/test tools/src; the REQ-104 block cut by its id and searched for argument rules; LC_ALL=C grep -a -o use-mock-keychain on the framework binary of the installed Chrome | wc -l",
+        "output": "Chrome is started only at browser.js:186 with buildArgs (runner.js:140 and stand.js:445 start Node); the argument list is also written in docs/design/REQ-104-e2e-chrome-kit.md (F12, line 44: already listed for DOC-UPDATER in REQ-107 design section 17) and in E2K-25; REQ-104 forbids only --no-sandbox and --disable-setuid-sandbox; the switch name stands 2 times in the binary"
+      },
+      {
+        "command": "cd tools && caffeinate -i node --test test/e2e-kit.test.js test/e2e-stand.test.js, in the project working folder, under rule R2-T: HOME and USERPROFILE a new folder under <scratch>/e2e107-04/homes, SAI_TEAM_HOME another new folder there, SAI_TEAM_CLAUDE_BIN a recording trap there (appends a line to a marker file, exits 1), SAI_TEAM_REAL_RUNS unset, the inherited editor variable whose value is the person's home unset, the strict net; 2026-11-16T18:40:49Z..18:41:23Z",
+        "output": "exit=1; 1..74 # tests 74 # suites 0 # pass 73 # fail 1 # cancelled 0 # skipped 0 # todo 0 # duration_ms 34932.384542; the only red: 'not ok 27 - E2K-25 the argument list: the sandbox stays on, only this computer can be reached' (e2e-kit.test.js:1696), 'Expected values to be strictly deep-equal', the diff is the one line '+ --use-mock-keychain' at index 4; both temporary homes empty after; trap marker absent; LEFT 0; 0"
+      },
+      {
+        "command": "cd tools && npm run -s lint; npm run -s format:check (project working folder, 2026-11-16T18:41:35Z)",
+        "output": "lint: no output, exit=0; format:check: 'Checking formatting... All matched files use Prettier code style!' exit=0"
+      },
+      {
+        "command": "cd tools && caffeinate -i npm run -s e2e -- smoke picker pixel-office, project working folder, the normal environment (the person's HOME: each stand gets its private home from the starter, 0113 О2) plus SAI_TEAM_HOME = a new folder under <scratch>/e2e107-04/homes and the normal-mode net; 2026-11-16T18:41:57Z..18:42:53Z",
+        "output": "exit=0; e2e: browser=Chrome/157.0.8103.78; smoke # tests 13 # pass 13 # fail 0 # skipped 0 # todo 0 # duration_ms 16732.788416; picker # tests 9 # pass 9 ... # duration_ms 16453.547; pixel-office # tests 7 # pass 7 ... # duration_ms 21905.020458; 'e2e: command=npm run e2e -- smoke picker pixel-office selection=smoke,picker,pixel-office exit=0 duration_ms=55733'; 0 'not ok'; each file under its budget (30000, 80000, 50000), the whole under 240000; the SAI_TEAM_HOME folder empty after; LEFT 0; 0; the temporary root: 35 new entries, all com.google.Chrome.XXXXXX (19 + 9 + 7 browser starts), 0 gone"
+      },
+      {
+        "command": "mutant clone: git clone -b base/E2E107-20261116-01 <the project> <scratch>/e2e107-04/clone; npm ci in its tools/; the two changed files copied in (sha256 equal to the project's: browser.js 67bc570cf8224f26…, README.md 19b36b1d96a474b7…). Harness (<scratch>/e2e107-04/scripts/harness.sh, mutate.py): for each mutant and each test form, the three files are copied from saved good copies, the mutant is applied by an exact replace that must match once, the two kit files run under the R2-T environment and the strict net (as above), then all three files are restored and checked by sha256. Form 'now' = the released e2e-kit.test.js; form 'step 5' = my sketch of design section 12 rows 1, 3, 4 (E2K-25 list with the argument; E2K-41 words + 70000; E2K-60 tokens + 70000 and --use-mock-keychain and the row expression for team-web.e2e.js / REQ-107), outside the project only. No git checkout, reset, stash or clean",
+        "output": "controls (no mutant), 18:44:35Z..18:45:46Z: now 74/73/1 red [E2K-25]; step 5 74/74/0. K01 the argument removed: now 74/74 green (the expected red disappears); step 5 red [E2K-25]. K02 misspelled '--use-mock-keychian': now red [E2K-25] (message shows the misspelling); step 5 red [E2K-25]. K03 moved before --no-first-run: now [E2K-25]; step 5 [E2K-25]. K04 moved after about:blank: now [E2K-25]; step 5 [E2K-25]. K05 doubled: now [E2K-25]; step 5 [E2K-25]. G02 the README row removed: now only [E2K-25] (not caught); step 5 [E2K-60]. G03 '`team-web` 70000' removed: now not caught; step 5 [E2K-41, E2K-60]. G04 the README names '--use-mock-keyring': now not caught; step 5 [E2K-60]. G05 the keychain sentence removed: now not caught; step 5 [E2K-60]. G06 'REQ-107 adds its row.' put back after the row: now not caught; step 5 green (L2). G07 '…and without it it does as well.': now not caught; step 5 green (by nature, AP-083). G08 the row reads REQ-106: now not caught; step 5 [E2K-60]. 18:45:54Z..19:00:19Z; every run: homes empty after, net log 72 lines, LEFT 0; 0; restored files equal the good copies"
+      },
+      {
+        "command": "behaviour of K01 (the README claim): in the clone, node --test --test-reporter=tap --test-name-pattern='^SMK-01 start click title$' test/e2e/smoke.e2e.js under the R2-T environment and the strict net (a fresh HOME in <scratch>/e2e107-04/homes), first with the tag's browser.js, then with the changed one; 2026-11-16T19:00:46Z..19:01:07Z",
+        "output": "tag browser.js: exit=1, 'not ok 1 - SMK-01 start click title', failureType testTimeoutFailure, 'test timed out after 20000ms'; changed browser.js: exit=0, 'ok 1 - SMK-01 start click title'; Chrome wrote nothing into either home; no Chrome process left"
+      },
+      {
+        "command": "repeat without the work for the builder's I2 (quality-bar §6, item 4): in the clone, npm run -s e2e -- smoke in the normal environment (SAI_TEAM_HOME a new folder, the normal net), once with the tag's browser.js and once with the changed one; the sorted listing of the system temporary root before and after each; 2026-11-16T19:01:28Z..19:02:03Z; no other headless Chrome was running",
+        "output": "tag kit: exit=0, 13 ok, duration_ms=17174, 19 new com.google.Chrome.* entries, 0 other new, 0 gone; changed kit: exit=0, 13 ok, duration_ms=17189, 19 new com.google.Chrome.*, 0 other, 0 gone: the same count without the work"
+      },
+      {
+        "command": "LEFT (design section 16) before and after every run: pgrep -f 'sai-e2e-|src/web/main\\.js' | wc -l; ls of os.tmpdir() | grep -c '^sai-e2e-'; pgrep -f 'headless=new'; the whole temporary root listed and sorted at 18:38:55Z and 19:02:17Z (comm)",
+        "output": "always 0; 0; headless Chrome 0. Whole root: 80 new entries, all com.google.Chrome.*, 0 gone; 75 of them are from my browser runs (35 + 1 + 1 + 19 + 19), the other 5 from outside my runs (step 3 ran at the same time until its end); none removed (decisions/0113 О26: no agent removes them)"
+      },
+      {
+        "command": "the reviewed files did not change during the check: cmp of tools/test/e2e/kit/browser.js and tools/README.md with the copies taken at my start; git status --short",
+        "output": "both equal; git status as at my start (the two tools files, decisions/README.md, docs/program/public-v1/PROGRESS.md, docs/requirements.yaml modified; decisions/0113, the design and the run folder untracked); I changed only this handoff"
+      },
+      {
+        "command": "reading as text (no import): tools/src/traces/rules.js, lists.js, cli.js and check.js for HOME, os.homedir and process.env",
+        "output": "the computer-path rule is a pattern (a path under /Users or /home and its encoded form, rules.js:9-15); the only environment input of the lists is SAI_TRACE_LIST (lists.js:168); no os.homedir (used for I12)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "decisions/0113 О23 says 'REVIEWER and TEST-DESIGN-VALIDATOR check it by reading every call of the starter in the spec', but the spec tools/test/e2e/team-web.e2e.js is written at step 5 and the route of this run has no REVIEWER step after step 5 ('-> TEST-DESIGNER 5 -> 5b -> 6 -> 9 -> 10 -> 11'); at step 4 the file does not exist (git status: no such file). So REVIEWER cannot check О23 in this route. For ORCH: either start REVIEWER on the spec after step 5, or record that TEST-DESIGN-VALIDATOR checks О23 alone at step 5b."
+      },
+      {
+        "id": "I2",
+        "kind": "Low",
+        "text": "Finding L1 (the README keychain sentence does not name the system of its measurement) goes to DOC-UPDATER at step 10, with the GitHub reading of step 6; the text is the design's, so the design gets the same note."
+      },
+      {
+        "id": "I3",
+        "kind": "Low",
+        "text": "Finding L2 (mutant G06: the stale line 'REQ-107 adds its row.' put back is held by no test, now and at step 5) goes to TEST-DESIGNER at step 5 if ORCH agrees, as a strengthening of E2K-60; G07 (the meaning of the keychain sentence) is for readers, by nature (AP-083)."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "handoffs/E2E107-20261116-01/step-02-backend-dev.json, result.changes, the README item, says 'diff: 7 lines (+4 -3)'; git diff --numstat base/E2E107-20261116-01 -- tools/ gives README 3 insertions and 4 deletions (the total of 7 is right). A slip of the report only; the file itself is right (rebuilt and compared byte for byte). For ORCH's orch_check."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "I found the sentence of 0113 О1 'the argument also keeps the browser of the normal check away from the person's keychain' unmeasured (the design C-7 and section 10 say the effect on the person's keychain was not measured). It was withdrawn by ORCH in О25 while I worked (read at the end of my check): nothing left open from me. The README sentence says only the measured part, as it should."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "text": "context.agent_run_id is left null: I cannot see the identifier of my launch, and the field is ORCH's."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "Builder I1 (EXPECTED_RED E2K-25): right. Measured by me: the two kit files 74/73/1 and the only red is E2K-25 with exactly the one extra element; allowed between steps 2 and 5 (WF-02, step 2). Goes to TEST-DESIGNER, step 5, sub-step 2 (design section 12, row 1); my sketch of that row turns the kit files green (74 of 74)."
+      },
+      {
+        "id": "I8",
+        "kind": "INFO",
+        "text": "Builder I2 (leftover com.google.Chrome.* folders): right as a fact, and not of this work: the repeat without the work (smoke on the tag's browser.js) left 19 such folders, the same as with the changed kit (quality-bar §6, item 4). My runs left 75 of them; I removed none. Recorded by ORCH in 0113 О26 (cause: the kit's close by signal) and goes to DOC-UPDATER at step 10 as an addendum of ISS-0108; the owner decides about removal. Not a finding of this change. The proposal stands that the leftover check of design section 16 also counts new com.google.Chrome.* entries."
+      },
+      {
+        "id": "I9",
+        "kind": "INFO",
+        "text": "Builder I3 (no full check at step 2): right. The task and 0113 О2 put the full npm run check at steps 6 and 9 (with the GitHub run, 0110); npm test starts team commands with SAI_TEAM_REAL_RUNS=1 through the fakes of tools/test/exec-helpers.js, which rule R2-T keeps out of the agents' trials. Not a lowering of the bar: done waits for steps 6 and 9. I did not run npm test either, for the same reason. Goes to TEST-RUNNER (step 6) and RELEASE-VALIDATOR (step 9)."
+      },
+      {
+        "id": "I10",
+        "kind": "INFO",
+        "text": "Builder I4 (the place of the spec home): right that the task ('under the temporary root') and the launch message ('in your work folder') name different places; it does not change the result. The effect needs a fresh home folder: in step 2's runs and in my probe the home was a new folder in the session work folder (outside the person's home, not below os.tmpdir()), and Chrome without the argument did not answer (my SMK-01 timeout) while with it it did; design F32 states a home below the temporary root. For ORCH: name one place in later tasks."
+      },
+      {
+        "id": "I11",
+        "kind": "INFO",
+        "text": "Builder I5 (agent_run_id): right; ORCH filled it (a8cbb69f99966fe6d) in step 02. Closed."
+      },
+      {
+        "id": "I12",
+        "kind": "INFO",
+        "text": "Builder I6 (E2S-17 and the two CLIs): the conclusion is right. E2S-17 starts the released picker server through the starter with its private home under the temporary root; it is not one of the four programs rule R2-T names, it ran in my kit runs under the R2-T environment and passed, and my net (which refuses a src/picker start without a private HOME under the temporary root) refused nothing. The handoffs and traces CLIs are not among the four programs either and ORCH's message runs them in the normal environment. But the stated reason ('with a temporary HOME the trace search could look for the wrong home') is not supported by the code text: tools/src/traces/rules.js:9-15 find computer paths by a pattern (a path under /Users or /home) and tools/src/traces/lists.js:168 reads only SAI_TRACE_LIST from the environment; no os.homedir. Not a finding; for the record."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-16T18:33:15Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/reviewer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. Steps 3 and 4 run at the same time (at most two agents)."
+  }
+}

@@ -158,6 +158,8 @@ New code: `STAND_HOME_WRITTEN` (the table of REQ-104 4.1 gets the row). Reused: 
 | REQ-106 | `{ name: "office", args: ["src/pixel-office/main.js", "--port", "<0 or the old port>"], readyPattern: /^Pixel Office: (http:\/\/127\.0\.0\.1:\d+\/)$/mu, stateEnv: { SAI_PIXEL_OFFICE_DIR: <office> } }`. The hook: 4.4 `runHook` |
 | REQ-107 | `stateEnv: { SAI_TEAM_HOME: <folder> }`; `HOME` is the starter's; `SAI_TEAM_REAL_RUNS` is not in the base list. `SAI_TEAM_CLAUDE_BIN` pointing at a trap program inside `tools/test/fixtures/` (the words of its block) is an absolute path inside the repository in `env` and is **refused** by rule P: the design of REQ-107 copies the trap under the temporary root or asks for a pinned exemption (О14) |
 
+*As built for REQ-107 (DOC-UPDATER, step 10 of run `E2E107-20261116-01`, 2026-11-16; the row above is not rewritten).* The design of REQ-107 took the first way and asked for no exemption: each test copies the trap and its scenario into its own folder under the temporary root (`decisions/0113` О3), `SAI_TEAM_CLAUDE_BIN` names the copy and is merged last into `env` by the spec's `teamOptions`, the scenario argument is the copy, `HOME` is the starter's, `PATH` comes from the base list and is never given in `env` (`decisions/0112` О22 holds). The starter did not change. Details: `docs/design/REQ-107-e2e-team-web.md`, sections 4.1 and 22.
+
 ### 4.4 `tools/test/e2e/pixel-office.e2e.js`
 
 Top-level `test()` calls only, seven of them, in this order; each has `{ timeout: 30000 }`, makes its own two folders (`makeTempDir("office")` for the state folder, `makeTempDir("hook-home")` for the home of the hook), starts its own server (`startStand`/`withStand` with the options of 4.3) and, where it opens the page, its own browser (`withBrowser`); it shares nothing with another test and removes its folders in a `finally`. The session and agent ids are invented and start with `e2e106-` (RELEASE-VALIDATOR's search of the real journal, criterion 5 in section 8).
@@ -320,6 +322,8 @@ Every test above appears in a row, every criterion has a row (Q5). Controls (the
    | smoke.e2e.js        | REQ-104     |
 
    and the line after it becomes: "REQ-107 adds its row."
+
+   *As built for REQ-107 (DOC-UPDATER, step 10 of run `E2E107-20261116-01`, 2026-11-16).* That line is gone: the table holds the row `team-web.e2e.js` | `REQ-107` after `smoke.e2e.js`, `E2K-60` asserts the absence of the words «adds its row» (`decisions/0113` О28), and the budgets sentence names `REQ-107, criterion 8` and `team-web` 70000 (`docs/design/REQ-107-e2e-team-web.md`, section 10).
 
 Measured in `proto`: the edit passes `prettier --check`; with the kit-test edits of section 12 `E2K-41`, `E2K-60` and `E2S-19` are green; without them they are green too (the old tokens stay in the text; `REQ-106` is found in the row).
 
@@ -571,6 +575,7 @@ Both gave 0 after every series of this design. The first gives 0 on a machine wi
 - `decisions/0109`, О15: carried out by this run (ORCH writes the addendum or the new record of О1).
 - `docs/requirements.yaml`, block REQ-106: «(tools/src/pixel-office/protocol.js, `prepareText`)» (О11), "Guard tests … none" (О12), «sets `HOME` to another new folder» (now the starter's private home, О1) — corrected at step 10 with `before_copy`, without a change of meaning; the status after PASS of RELEASE-VALIDATOR.
 - `docs/requirements.yaml`, block REQ-107: «`HOME` is another new folder» (now the starter's) and «`SAI_TEAM_CLAUDE_BIN` points to a trap program (a script in tools/test/fixtures/e2e/)» (refused by rule P, О14) — a note for its design, not an edit of its criteria in this run.
+  *As built 2026-11-16 (step 10 of run `E2E107-20261116-01`): both sentences corrected there without a change of meaning, with `before_copy` (the starter's private home, О1; the trap copy under the temporary root, `decisions/0113` О3).*
 - `docs/issues/ISS-0102`: item 2 continued with three real files (section 13). `docs/issues/ISS-0110`: one more caller of `safeText` (`STAND_HOME_WRITTEN`, the entry names of a home folder).
 - `STATE.md`, `PLAN.md`, the mistakes journal (Q13 items of section 15).
 

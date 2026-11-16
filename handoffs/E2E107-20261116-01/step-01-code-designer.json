@@ -1,0 +1,262 @@
+{
+  "handoff_id": "step01-E2E107-20261116-01",
+  "run_id": "E2E107-20261116-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/E2E107-20261116-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-107"
+    ],
+    "agent_run_id": "ab8ba8f0b8fd510b0",
+    "artifacts_in": [
+      "docs/requirements.yaml (block REQ-107, read by id)",
+      "docs/design/REQ-106-e2e-pixel-office.md (sections 4.1 and 22), REQ-105 (4, 21), REQ-104 (21)",
+      "decisions/0107 to 0112 (0112 О14, О22, О24, R2-S)",
+      "docs/anti-patterns.md (AP-140 to AP-154)",
+      "docs/issues/ISS-0105, ISS-0107, ISS-0108, ISS-0110, ISS-0111"
+    ],
+    "route": "ORCH step 0 (tag base/E2E107-20261116-01, REQ-107 in_progress) -> CODE-DESIGNER (this) -> ORCH 1a (answers to О) -> CODE-DESIGN-VALIDATOR 1b -> BACKEND-DEV 2 (only if the design changes the kit or the starter; otherwise recorded as not needed) -> SECURITY-REVIEWER 3 + REVIEWER 4 -> TEST-DESIGNER 5 -> TEST-DESIGN-VALIDATOR 5b -> TEST-RUNNER 6 (local and GitHub) -> 7, 8 not applicable -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11",
+    "write_set": [
+      "docs/design/REQ-107-e2e-team-web.md (new) only"
+    ],
+    "base_tag": "base/E2E107-20261116-01",
+    "orch_check": {
+      "at": "2026-11-16T17:00:50Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-16T16:57:13Z, result.status COMPLETED",
+        "docs/design/REQ-107-e2e-team-web.md -> 550 lines, sections 0-20 incl. 2 (C-1..C-13), 8 (criterion -> test), 12 (replacement), 15 (bar), 16 (mutants), 19 (open questions О1-О18)",
+        "git status --short -> only the design, the run folder, the REQ-107 status line, and PROGRESS.md (not of this run)",
+        "real Pixel Office folder (ORCH, read only): 5 files, sha256 prefixes events.jsonl 5dbc7b86913f (4035130 B, Oct 29), server-starts.jsonl b6e6452cdf24 (280 B), write-secret 465f654a88e7, port 8d0d7d110042, node-path 10ee90e816f4 - equal to the designer's record; no listener on 4780; real home has no .sai-team",
+        "О2 basis read by ORCH on the tag: tools/test/exec-helpers.js refuses SAI_TEAM_REAL_RUNS=1 unless SAI_TEAM_CLAUDE_BIN names a fake in tools/test/fixtures/team; other hits unset or check the variable; config.js: unset SAI_TEAM_CLAUDE_BIN means claude from PATH",
+        "the designer reports one diagnostic that would have given Chrome the real home folder, denied by the permission check and not retried (outside R2-T's letter, against its spirit; nothing ran); recorded for step 10 as an anti-pattern candidate",
+        "open questions О1-О18 answered in decisions/0113 (step 1a)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 1 — write the design of REQ-107 (end-to-end tests of the team page in a real headless Chrome, with the scripted test executor only) in docs/design/REQ-107-e2e-team-web.md, by the section \"Step 1\" of docs/workflows/WF-02-development.md. No implementation code in the design: shapes, signatures, tables only.\n\nREAD FIRST: the block REQ-107 in docs/requirements.yaml (all 8 criteria; read by id, the file is large); docs/design/REQ-106-e2e-pixel-office.md (section 4.1, the starter change, and section 22 \"As built\"), docs/design/REQ-105-e2e-picker.md (sections 4 and 21) and docs/design/REQ-104-e2e-chrome-kit.md (the kit API, section 21) — the code in tools/test/e2e/kit/ is the truth, read it too (stand.js, index.js, browser.js, errors.js, runner.js); tools/test/e2e/pixel-office.e2e.js and picker.e2e.js as models of a spec file; decisions/0107 to 0112 (0109 and 0112 with all addenda, especially 0112 О14, О22, О24 and the rule R2-S); docs/quality-bar.md; docs/anti-patterns.md (especially AP-140 to AP-154); the README sections about the team page (\"Sai Team — the interface\", \"The project buttons\", \"The project page: six questions\", \"Security\", the scripted executor and the scenario format); tools/src/web/ and tools/src/team/ (main.js, the server, the page files, config.js, home.js, executors/scripted.js, executors/claude-cli.js, errors.js, language.js); tools/test/team-web-dom.js and the existing team-web tests; tools/test/fixtures/team/engine-basic.json and README.md of that folder; docs/issues/ISS-0105, ISS-0107, ISS-0108, ISS-0110, ISS-0111 (open kit defects; say whether this design touches them; do not fix them here — if a starter change of this design has to touch the same lines as ISS-0111, name it as an open question with a default).\n\nWHAT THE DESIGN MUST SETTLE: (1) The stand. How the spec starts `node src/web/main.js --port 0 --executor scripted --scenario <file>` through the released starter (stateEnv pair for SAI_TEAM_HOME; the private home <marker>/home is given by the starter, not by the spec). The trap program for SAI_TEAM_CLAUDE_BIN: rule P refuses an absolute path inside the repository in env (decisions/0112, О14) — copy the trap under the temporary root, or propose a pinned exemption with a record. A PATH-like list in env is refused (0112, О22) — say whether the team server needs PATH in env at all. The scenario path is an argument, and rule P applies to arguments too — copy the scenario files under the temporary root, or propose a narrow exemption. SAI_TEAM_REAL_RUNS is never set, and the child's environment is checked for it. How the positive control of the trap (criterion 1) is run without starting any real program. (2) Re-check every fact the requirement lists as checked on 2026-11-03 (the options of main.js; the printed link line; the mark «тестовый исполнитель»; the six headings; the button names and the pause and stop phrases of README; the confirmation «Не останавливать»; the journal event names of pause, stop and message; «N из M задач»; «Попытка не удалась»; the write key and the Origin check; parseScenario at the start; a delay step in the scenario format; the words of the empty list) on the tag base/E2E107-20261116-01 and write the command, the output and the date; a fact that changed is an open question, not a silent fix. (3) The structure of tools/test/e2e/team-web.e2e.js: one test per criterion 1–7 (stand, create, finish, control, chat, failure, windows) and criterion 8 by commands; each test with its own server and folders; the oracles (the number of tasks read from the scenario file; the journal read from the data folder; the page text read as the visitor reads it, AP-145); the two new scenarios team-slow.json and team-fail.json (shape, checked by the real parseScenario); the second server under a regular file of criterion 6; the new tab of criterion 4 (a missing kit call is a change of the kit with its own tests, not a silent edit). (4) A time budget: criterion 8 says 70000 ms at most; measured runner times of the picker and Pixel Office specs were about 1.2–1.35 times the local ones (handoffs of runs E2E105-20261105-01 and E2E106-20261115-01); state how the file stays under the limit on the runner, measured with a sketch; waits are conditions with limits, not sleeps; do not take a timing of one machine as a fact of another (AP-144, ISS-0103). (5) The replacement table of earlier guard tests: search tools/test/ for tests that read tools/test/e2e or tools/test/fixtures (counts of files, scans of fixtures/team or fixtures/e2e by exec-*.test.js), README rows, package.json scripts; and the shared places (the README table row made by REQ-104, the order check of spec files). (6) Lessons of the last runs to apply from the start: an exemption must be as narrow as its reason and pinned with what it covers; a check read once at the end misses what removes itself before it; a red assertion must not print whole environments or folder listings into the public CI log (0112, О24); a check of absence needs a positive control.\n\nSAFETY RULE R2-T of this run (for every sketch, trial and mutant): (a) never start the team server, the engine, a command of tools/src/team or tools/src/web, a hook of Pixel Office, or any Node program of the project with the real home folder as HOME, or without SAI_TEAM_HOME set to a new folder under the temporary root; (b) never set SAI_TEAM_REAL_RUNS; SAI_TEAM_CLAUDE_BIN always points to a recording trap under the temporary root; never start the real `claude` program; (c) the rule R2-S of decisions/0112 stays: a call that names the real home or the real Pixel Office folder goes only to a spawn that records and throws; never import a program file to read it — read it as text; (d) before and after the work, record whether the folder `.sai-team` exists in the real home (today it does not) and the sha256 of the five files of the real Pixel Office folder (read only), in result.\n\nCheck every statement about the current system with a sketch outside the project (a fresh clone of the tag base/E2E107-20261116-01, npm ci, then dummy files) and write the command, the output and the date. The text of the design must hold no absolute machine paths, no temporary paths and no names of other projects of the owner (traces and handoffs-check fail on them). Mutants: at least 25, each with the test that catches it, covering the spec, the two scenarios, the trap and any kit or starter change. The section about the bar: Q1–Q14 and R1–R3, each \"applicable: how\" or \"not applicable: why\". Open questions go as a list О1, О2, … with a default, not settled by a guess.",
+    "acceptance_criteria": [
+      "Every criterion of REQ-107 leads to an element of the design and to a test",
+      "The stand settled with the released starter: the trap and the scenario paths against rule P (0112 О14, О22), the private home, SAI_TEAM_REAL_RUNS never set, the positive control of the trap",
+      "The facts of 2026-11-03 re-checked on the tag with commands and outputs",
+      "Time budget for the 70000 ms limit argued with a measurement, no timing of one machine taken as a fact of another",
+      "Replacement table measured on the tag; bar section Q1-Q14 and R1-R3 complete",
+      "At least 25 mutants, each with the test that catches it; open questions as a list with defaults; no implementation code"
+    ]
+  },
+  "created_at": "2026-11-16T15:38:05Z",
+  "started_at": "2026-11-16T15:38:05Z",
+  "completed_at": "2026-11-16T16:57:13Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Designed REQ-107 in docs/design/REQ-107-e2e-team-web.md (21 sections, 0-20): the spec tools/test/e2e/team-web.e2e.js with seven tests (stand, create, finish, control, chat, failure, windows) for criteria 1-7 and criterion 8 by commands; two scenarios team-slow.json and team-fail.json and the trap claude-trap.js in tools/test/fixtures/e2e/; the stand on the released starter with NO starter change and NO exemption of rule P: each test copies the trap and the scenario into its own folder under the temporary root (rule P refuses repository paths in env and arguments, decisions/0112 О14; SAI_TEAM_CLAUDE_BIN must be absolute), SAI_TEAM_HOME through stateEnv (<root>/data, not made: the start writes nothing), the starter's private home, PATH only from the base list (PATH in env is refused, О22, measured), SAI_TEAM_REAL_RUNS never given and checked in the recorded environment of a start whose spawn records and throws (R2-S); the positive control starts the trap copy by its path and sees its marker, and the same reading serves the end check of every test. Found and proposed (О1): one Chrome argument --use-mock-keychain in tools/test/e2e/kit/browser.js, because under rule R2-T (a home below the temporary root) the released kit's Chrome does not answer its first navigation on macOS (measured: CALL_TIMEOUT; with the argument 789 ms). Every fact the block lists as checked on 2026-11-03 holds on the tag, except: the stop phrase is not in the README; the sentence that no assertion counts fixture files is false (E2K-50). Prototype of the seven tests by the real command: 35193 and 33577 ms in its final form, 35209 ms under four busy loops (limit 70000); independence loop 7 of 7; 50 mutants applied (49 red in the named test, P19 green on purpose because criterion 5 allows that branch), 2 on record never applied. 18 open questions О1-О18 with defaults for ORCH (proposal: decisions/0113). The owner's real folders were not touched: .sai-team absent before and after, the five files of the real Pixel Office folder unchanged by sha256.",
+    "changes": [
+      {
+        "file": "docs/design/REQ-107-e2e-team-web.md",
+        "what": "new file"
+      },
+      {
+        "section": "0 Summary",
+        "what": "what is built, the stand, the differences from the block, time, sizes with commands"
+      },
+      {
+        "section": "1 Checked facts",
+        "what": "F1-F46 with commands, outputs and the measuring setup (the environment and the nets of every trial)"
+      },
+      {
+        "section": "2 Design choices",
+        "what": "C-1..C-13 (copies, the trap contract, the end check, the recorded environment, the retry pause, the kit argument, innerText, the row click, favicon declarations, pinned empty words, no time assertion, no real-home refusal rows)"
+      },
+      {
+        "section": "3 Files, owners, order",
+        "what": "BACKEND-DEV sub-step 1 (browser.js, README); TEST-DESIGNER sub-steps 2-4d; the variant without the kit change"
+      },
+      {
+        "section": "4 Interfaces",
+        "what": "4.1 teamOptions and testFolders shapes; 4.2 the two scenarios; 4.3 the trap contract; 4.4 constants, helpers and the seven tests; 4.5 the kit change"
+      },
+      {
+        "section": "5 Failure paths",
+        "what": "11 rows"
+      },
+      {
+        "section": "6 Protection",
+        "what": "protection in the same operation; rule R2-S applied; rule R2-T for the later steps"
+      },
+      {
+        "section": "7 Time budget",
+        "what": "measured runs, where the time goes (about 23 s product clock, 11 s machine), runner estimate 34-47 s from measured ratios of other files, the question line 42000 ms"
+      },
+      {
+        "section": "8 Criterion -> test",
+        "what": "8 rows, controls named"
+      },
+      {
+        "section": "10 README texts",
+        "what": "budgets sentence, keychain sentence, table row"
+      },
+      {
+        "section": "12 Replacement table",
+        "what": "E2K-25, E2K-50, E2K-41, E2K-60 edited; the scans that need no edit, measured"
+      },
+      {
+        "section": "13 Order check",
+        "what": "four real files; measured with three under R2-T"
+      },
+      {
+        "section": "14 Build sub-steps",
+        "what": "7 sub-steps with the red tests measured after each; 14.1 test x first sub-step"
+      },
+      {
+        "section": "15 Quality bar",
+        "what": "Q1-Q14, R1-R3 each applicable/not applicable with how"
+      },
+      {
+        "section": "16 Mutants",
+        "what": "52 rows: 50 applied, 2 on record; the series rule and the leftover check"
+      },
+      {
+        "section": "17-20",
+        "what": "what becomes outdated, sketch notes, open questions О1-О18, the open kit defects (none touched)"
+      }
+    ],
+    "self_check": [
+      "SAFETY BEFORE (2026-11-16T15:39:19Z): the folder .sai-team in the person's home folder: absent. The five files of the default Pixel Office state folder (README 'Where things are'), read only, shasum -a 256: events.jsonl 5dbc7b86913fc31984f5b8a186c16a3699844d5eb52a3129aa74f70039f45244; server-starts.jsonl b6e6452cdf2437d82a7b643d4e63d95098ce3f7c9f87cbdb6fbef65262178a1e; write-secret 465f654a88e7cb3b172f4f557b0beaf44015440f3b04661bf6e569f30980e8b3; port 8d0d7d110042d429466cb6db2d6569714cd470115db692648be0fbeb7ddc6b19; node-path 10ee90e816f43a29e511ed0c6161afa2a2ccbefa4ad10b84e2dfb257b43bdc2c. Sizes: events.jsonl 4035130, node-path 46, port 5, server-starts.jsonl 280, write-secret 44.",
+      "SAFETY AFTER (2026-11-16T16:45:17Z): .sai-team absent; the same five sha256 values, the same sizes and times of last change (events.jsonl last changed Oct 29).",
+      "ENVIRONMENT OF EVERY TRIAL: each shell of the trials sourced <scratch>/e2e107-01/guard/env107.sh: SAI_TEAM_REAL_RUNS unset; HOME, SAI_TEAM_HOME = new folders under the system temporary root; SAI_TEAM_CLAUDE_BIN = a recording trap under it; NODE_OPTIONS preloading the tripwire of run E2E106-20261115-01 and the net of this step <scratch>/e2e107-01/guard/guard107.cjs. Positive controls of both nets (node <scratch>/e2e107-01/sk/guard-control.cjs): 'a program named claude' -> EACCES refused; 'SAI_TEAM_REAL_RUNS in env' -> refused; 'team server without SAI_TEAM_HOME' -> refused; 'real Pixel Office folder in env' -> refused by the tripwire; a clean start -> 0. Net logs at the end: tripwire 3 lines (all controls); guard107: 3 control lines and 294 refusals of released tests (284 naming SAI_TEAM_REAL_RUNS, 8 naming only the repository fake Claude path, 2 team commands without a data folder under the temporary root); no refusal came from a REQ-107 trial. The net's first two forms refused 32 and 33 stand-ins of the kit tests (its load check read the child's nested TMPDIR); fixed by pinning its root (SAI_G107_TMP); those runs started nothing else.",
+      "Not done on purpose: an attempt to give Chrome the person's home folder for a diagnostic was refused by the permission system of the session and was not retried; the real claude program was never started; SAI_TEAM_REAL_RUNS was never set by this step.",
+      "git clone -q -b base/E2E107-20261116-01 <the project> <scratch>/e2e107-01/clone && npm ci (tools) -> 4cfe57e; added 80 packages. Fresh clones kitx and proto the same way.",
+      "Block on the tag vs tree: grep -c '^      - >-' -> 8; diff -> one line (status: pending -> in_progress); git diff --stat base/E2E107-20261116-01 -- . ':!handoffs' -> docs/program/public-v1/PROGRESS.md, docs/requirements.yaml (1 line).",
+      "Facts of 2026-11-03 re-checked on the clone (<scratch>/e2e107-01/sk/facts.txt, 2026-11-16T16:04:17Z): main.js:30 OPTIONS [--port, --executor, --scenario]; main.js:185 'Sai Team: http://${HOST}:${bound.port}/'; texts.js:8 testExecutor; index.html h3 q1-q6 at 253-323 = README 516-521; buttons index.html 182/190/198, stop-no 219; texts.js:15 paused (README count 1); texts.js:24 stoppedFinal (README count 0); schema.js:154/156/265 PROJECT_PAUSED, PROJECT_STOPPED, CHAT; README 523 'N из M задач'; language.js:256 'Попытка не удалась', SCRIPTED_SUFFIX language.js:13; config.js:20 KEY_HEADER x-sai-page, server.js:326-347 Origin/type/key; main.js:69,108 parseScenario and 'Файл сценария не найден или неверен'; scripted.js:25 DELAY_MS_MAX 60000, :87-94 delay_ms; index.html:60-61 the empty list words.",
+      "Chrome under a home below the temporary root (<scratch>/e2e107-01/sk/p0b.mjs): released kit -> 'FAILED CALL_TIMEOUT Page.navigate: no answer in 8000 ms 8506 ms'; kit with --use-mock-keychain -> goto answered, 789 ms. npm run -s e2e -- smoke with the released kit -> 'e2e: error=SPEC_TIMEOUT: smoke.e2e.js did not finish in 120000 ms'.",
+      "Probes through the released starter (p1-p6, outputs in <scratch>/e2e107-01/sk/): stand up 83-86 ms; the data folder absent after the start; engine-basic PROJECT_DONE 261 ms after create, page 'выполнен', '2 из 2 задач', no buttons; control flow on team-slow 13.4 s with A done at 13.05 s; failure with SAI_TEAM_RETRY_DELAY_MS=0: failed row 5176 ms after the click, default 25134 ms; f/home: 'Что-то пошло не так. Повторите позже', ENOTDIR, next request 200, one stderr line E_HOME; chat text exact, CHAT from USER, blank -> disabled, journal same; SIGTERM during a delay -> code 0 in 19 ms; windows: button inside in 3 sizes, no overflow, no unexpected entry.",
+      "Kit and starter tests (node --test test/e2e-kit.test.js test/e2e-stand.test.js): tag under the nets -> '# tests 74 # pass 74 # fail 0'; proto after sub-step 1 -> 74/73/1 (E2K-25); with the fixtures and no SCANNED entry -> 74/73/1 (E2K-50: 'claude-trap.js,...,team-fail.json,team-slow.json'); final proto -> E2K-50 '# pass 1 # fail 0' and the two files green.",
+      "Full npm test under the nets: tag -> '# tests 2209 # pass 2063 # fail 146 # skipped 0 # todo 0 # duration_ms 216263'; proto -> '# tests 2209 # pass 2063 # fail 146 # skipped 0 # todo 0 # duration_ms 184712'; diff of the two sorted red name lists -> empty ('same red set'). The 146 are released tests refused by the net (SAI_TEAM_REAL_RUNS=1 with a fake Claude program of tools/test/fixtures/team).",
+      "node --test test/exec-docs.test.js test/exec-scripted-source.test.js under the nets, tag and proto alike -> '# tests 9 # pass 6 # fail 3' (the three EX-51 tests that start the team command with SAI_TEAM_REAL_RUNS=1 and the repository fake Claude; refused by the net; open question О2).",
+      "Prototype by the real command (cd tools && npm run -s e2e -- team-web, proto, kit with the argument): runs 1-3 exit=0 7 ok duration_ms 39652, 38911, 39842; runs 4-6 34958, 33703, 33819; under four busy loops 35209; final runs 7-8 35193, 33577; each run: leftover processes 0, sai-e2e-* folders 0.",
+      "Independence loop (node --test --test-reporter=tap --test-name-pattern='^<name>$' test/e2e/team-web.e2e.js): stand, create, finish, control, chat, failure, windows -> each exit=0 ok_lines=1 [ok 1 - <name>] not_ok=0.",
+      "Order check (proto): sort -r -> 'team-web smoke pixel-office picker'; npm run -s e2e -- team-web smoke picker -> exit=0, files in that order, e2e: browser= once, duration_ms=67504; with pixel-office in the list exit=1 at its isolated start (STAND_START_FAILED instead of PATH_REFUSED: the spec process's home is under the temporary root under R2-T; the same on kitx without the work); team-web team-web -> 'e2e: error=SELECTION_DUPLICATE'.",
+      "proto: node src/traces/cli.js -> exit 0, 'файлов проверено 2523, следов 0'; grep -c of tools/test/e2e/team-web|tools/test/fixtures/e2e in it -> 0; grep -nE skip/todo/|| true in the spec -> 0 lines; grep -n SAI_TEAM_REAL_RUNS -> 1 line that only reads it; npx prettier --check . and npx eslint . --max-warnings 0 -> clean.",
+      "Mutants (<scratch>/e2e107-01/mut/harness.py; each in a fresh clone of the tag with the work's files; batch1..batch4.jsonl): controls C01 stand, C02 control, C03 E2K-50 -> GREEN; T01-T09 RED (stand); K01, K02 RED (E2K-25); G01 RED (E2K-50), G02 RED (E2K-60), G03 RED (E2K-41), G04 RED (E2K-60); P01-P09 RED (create/stand/finish); P02f RED (finish, by the end check 'rows with the mark = project folders'); P10-P16 RED (control); P17, P18 RED (chat); P19 GREEN (allowed by criterion 5: refused with a plain sentence, journal unchanged); P19b RED (chat); P20-P25 RED (failure); P26-P28 RED (windows); S01-S05 RED. left_before and left_after [0, 0] for every mutant. The search of the spec before the series: 2 startStand calls with { spawn: recorder } (3 refused rows and the recorded start).",
+      "Project checks at hand-in (cd tools; the same environment): node src/traces/cli.js -> 'traces: файлов проверено 2521, следов 0, пропущено 67', exit 0; node src/handoffs/cli.js -> 'handoffs-check: файлов проверено 1366, нарушений 0', exit 0. The design file counts: sed of section 16 | grep -cE mutant rows -> 52; section 19 О rows -> 18; section 1 F rows -> 46. git status --short: only docs/design/REQ-107-e2e-team-web.md and handoffs/E2E107-20261116-01/ new besides the owner's PROGRESS.md and the status line of REQ-107."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "О1 (proposal for a decisions record): add the Chrome argument --use-mock-keychain to the kit (browser.js, after --no-first-run), with E2K-25 edited and a README sentence. Reason: under rule R2-T (the spec process's home below the temporary root) the released kit's Chrome does not answer its first navigation on macOS (measured CALL_TIMEOUT, smoke SPEC_TIMEOUT); with the argument it answers in 789 ms, and Chrome then never touches the person's keychain. Default yes (BACKEND-DEV sub-step 1). Linux behaviour not measured: the first GitHub run is the measurement."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "О2: how rule R2-T binds the later steps. Measured: under a home below the temporary root the released Pixel Office test 'isolated start' is red (its first refusal row is the spec process's home), and 146 released tests of npm test (among them three EX-51 tests of criterion 8's last command) give a child SAI_TEAM_REAL_RUNS=1 with a fake Claude program inside the repository, which R2-T (b) forbids to run. Default: R2-T binds what its words say (sketches, trials and mutants for REQ-107); the full npm run check of steps 6 and 9 and criterion 8's last command are run as in REQ-106 and on GitHub (the evidence, decisions/0110). A stricter reading is the owner's raise of the bar."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "The stop phrase «Проект остановлен. Продолжить его нельзя» is not in tools/README.md (grep -c -> 0); it is src/web/texts.js:24 and the requirement's own text. The task named 'the pause and stop phrases of README'. Oracle: the requirement's words (О6)."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "The block says 'Guard tests of earlier requirements: none ... no existing assertion counts files of tools/test/fixtures'. E2K-50 asserts that every file of tools/test/fixtures/e2e is scanned or under specs/tap (red with the three new fixtures, measured); E2K-25, E2K-41, E2K-60 get an argument, words or a row. DOC-UPDATER corrects the sentence at step 10 with before_copy (О7)."
+      },
+      {
+        "id": "I5",
+        "kind": "DISCREPANCY",
+        "text": "The task says the runner times of the picker and Pixel Office specs were about 1.2-1.35 times the local ones. The handoffs say: picker 1.21 and 1.35 in run E2E105-20261105-01, 1.05 and 1.08 in run E2E106-20261115-01; pixel-office 0.98 and 0.99. The design uses the measured ratios of other files only as an estimate band (section 7)."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "О3: the trap and the scenario are copies under the temporary root; no exemption of rule P; the block's words 'HOME is another new folder' and 'SAI_TEAM_CLAUDE_BIN points to a trap program (a script in tools/test/fixtures/e2e/)' are read as the starter's private home and a copy of that script. Default as stated."
+      },
+      {
+        "id": "I7",
+        "kind": "QUESTION",
+        "text": "О4: 'At the end of the whole file the trap marker file does not exist, and the data folder has no project of claude-cli' is read as an end check at the end of every test with a server. Default as stated."
+      },
+      {
+        "id": "I8",
+        "kind": "QUESTION",
+        "text": "О5: the failure stand gets SAI_TEAM_RETRY_DELAY_MS=0 (saves about 20 s: 5176 ms against 25134 ms to the failed row). Default yes."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "О6: oracles with no README sentence: the stop phrase (the requirement) and the words of the empty list (pinned as measured on the tag). Default as stated."
+      },
+      {
+        "id": "I10",
+        "kind": "QUESTION",
+        "text": "О8: the README budgets sentence gets 'team-web 70000' (the block names only a row), read by E2K-41 and E2K-60. Default yes."
+      },
+      {
+        "id": "I11",
+        "kind": "QUESTION",
+        "text": "О9: the question line on the runner is 42000 ms (60 % of 70000, decisions/0109 О11). Default 42000."
+      },
+      {
+        "id": "I12",
+        "kind": "QUESTION",
+        "text": "О10: the favicon line is declared once per start in one-tab tests and at least one in control (two tabs). Default as stated."
+      },
+      {
+        "id": "I13",
+        "kind": "QUESTION",
+        "text": "О11: for a data folder under a regular file the page says the general «Что-то пошло не так. Повторите позже» and the list stays «Загрузка…»; this meets the criterion (a plain sentence); a more precise sentence would be a change of the page (a new requirement). Default: recorded, not changed."
+      },
+      {
+        "id": "I14",
+        "kind": "QUESTION",
+        "text": "О12: the empty message is tried as the empty field and as blanks, with one snapshot and one wait for the page's own chat poll (up to 5 s) as the proof that nothing went after the tries. Default as stated."
+      },
+      {
+        "id": "I15",
+        "kind": "FOR_OWNER",
+        "text": "О13: the block leaves horizontal overflow of the team page unasserted and asks a question. Measured on the tag: no horizontal overflow on the list page and the project page in 1470x784, 390x844 and 320x568. Not asserted."
+      },
+      {
+        "id": "I16",
+        "kind": "QUESTION",
+        "text": "О14 and О15: the second server's list words are not asserted (no row is); 'the state of a finished project' is read as the status «выполнен» with PROJECT_DONE last in the journal. Default as stated."
+      },
+      {
+        "id": "I17",
+        "kind": "INFO",
+        "text": "О16: the open kit defects ISS-0105, ISS-0107, ISS-0108, ISS-0110 and ISS-0111 are not touched: the starter is not changed (so no line of ISS-0111), no new caller of safeText, the spec's folders are removed in a finally."
+      },
+      {
+        "id": "I18",
+        "kind": "PROPOSAL",
+        "text": "О17: anti-pattern candidates for DOC-UPDATER at step 10 (Q13): (1) a fresh home blocks Chrome on macOS: a safety rule that changes HOME needs a measured browser start; (2) a preloaded net that judges paths by the child's os.tmpdir() misreads the nested TMPDIR that the kit tests give their children (this step's own net refused 65 kit stand-ins until its root was fixed by the shell); (3) page.goto to an address that differs only by its '#' part fires no load event (15 s NAVIGATION_FAILED); (4) textContent reads the hidden alternative sentences of the page; (5) a check stricter than its criterion (the first form of the empty chat tries asserted 'nothing sent' in both branches; mutant P19 showed it); (6) a refusal row built from the spec process's home is refused only while that home is the person's; (7) a zsh loop over an unsplit variable did not kill the four busy loops of a load trial, and a kill -0 right after the signal still saw them unreaped (AP-144 shape; they had ended); (8) in zsh an argument that starts with '=' (echo =====) is expanded and fails. The mutants of section 16 are recorded by DOC-UPDATER from this handoff."
+      },
+      {
+        "id": "I19",
+        "kind": "INFO",
+        "text": "О18: the owner's question decisions/0112 О19 (a preload net as a raise of the bar) is still open; this step used such nets for its own trials only."
+      },
+      {
+        "id": "I20",
+        "kind": "INFO",
+        "text": "Bookkeeping: context.agent_run_id was written by this agent at the take (value of its own launch), on the instruction of ORCH's launch message, together with status IN_PROGRESS; the protocol says ORCH writes it. No other field outside status, completed_at and result was changed."
+      }
+    ],
+    "prototype": "Outside the project in <scratch>/e2e107-01/: clone (fresh clone of the tag with npm ci, the before copy, unchanged); kitx (fresh clone, browser.js with --use-mock-keychain only); proto (fresh clone with the prototype: browser.js and tools/README.md of design 4.5 and 10, e2e-kit.test.js with the edits of design 12, tools/test/fixtures/e2e/claude-trap.js, team-slow.json, team-fail.json, tools/test/e2e/team-web.e2e.js 819 lines, 7 tests, 86 assert.; staged in the clone, never committed; sha256 spec 85feafb63102478de26c05f5897d9e8a53c0713ff7f564fcd7ea5211a9a59775, trap 89da48a155862209c9bf1e2babc3bf90a9246b937012b8bb8396c6aa8d9e40a9, team-slow 4987df6cd64cf339c9ca55805557b0b5ae844c5256ebea6e1cf5981c3726e44e, team-fail 6d786a88b93c46a415a9252a3c9814f3929a0e20b1853caf06ce23a3fe7c4b72); sk (probes p0b, p1-p6 and their outputs, facts.txt, run1-run8, load1, order1, order2, full-tag, full-proto, red lists, kit runs s0-s6); mut (harness.py, batch1-batch4.jsonl, the output of each mutant with the scratch path replaced); guard (guard107.cjs, env107.sh, the positive control); logs (the refusals of the two nets). The facts the later steps need are in the design and in this handoff.",
+    "artifacts_out": [
+      "docs/design/REQ-107-e2e-team-web.md"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-16T15:38:20Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/code-designer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. The rules, the handoff and the checks are the same. Step 0 by ORCH: tag base/E2E107-20261116-01 on 4cfe57e; REQ-107 status pending -> in_progress (only that line). Prerequisites checked by the files: REQ-104, REQ-011, REQ-035 are done. Real home has no folder .sai-team (checked by ORCH, 2026-11-16). Started on the owner's word «Продолжай» (2026-11-16) after the report of REQ-106 that named REQ-107 as next."
+  }
+}

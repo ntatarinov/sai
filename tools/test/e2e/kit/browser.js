@@ -30,6 +30,7 @@ function buildArgs(profileDir) {
     "--remote-debugging-port=0",
     `--user-data-dir=${profileDir}`,
     "--no-first-run",
+    "--use-mock-keychain",
     "--disable-gpu",
     "--no-proxy-server",
     "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1",

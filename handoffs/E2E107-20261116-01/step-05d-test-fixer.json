@@ -1,0 +1,134 @@
+{
+  "handoff_id": "step05d-E2E107-20261116-01",
+  "run_id": "E2E107-20261116-01",
+  "workflow_id": "WF-02",
+  "step": "05d",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/E2E107-20261116-01/step-05d-test-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-107"
+    ],
+    "agent_run_id": "a8936aa01df0a7204",
+    "artifacts_in": [
+      "decisions/0113-e2e-team-web-conventions.md (О12, О32)",
+      "handoffs/E2E107-20261116-01/step-05c-test-fixer.json (probe P13t)",
+      "handoffs/E2E107-20261116-01/step-05b-test-design-validator.json (F2)"
+    ],
+    "route": "... 5 -> 5b FAIL (pass 1) -> TEST-FIXER 5c -> TEST-FIXER 5d (this) -> TEST-DESIGN-VALIDATOR 5e (pass 2 of 3) -> TEST-RUNNER 6 -> 9 -> 10 -> 11",
+    "write_set": [
+      "tools/test/e2e/team-web.e2e.js",
+      "tools/test/fixtures/e2e/team-slow.json (only if the smallest margin is under 3000 ms)"
+    ],
+    "base_tag": "base/E2E107-20261116-01",
+    "orch_check": {
+      "at": "2026-11-16T21:45:21Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-16T21:44:29Z, result.status COMPLETED",
+        "git status --short -> no new project file; team-slow.json not changed (smallest margin 4759 ms >= 3000 ms, 12 runs, 6 under load), only team-web.e2e.js control changed",
+        "real Pixel Office folder: 5 sha256 equal to the record of step 01; real home has no .sai-team",
+        "P13t, P13t3, P13, P13a red at the new assertion; controls green; npm run check exit 0 by the fixer",
+        "next: 5e = gate pass 2 of 3 by the same TEST-DESIGN-VALIDATOR launch"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 5d — TEST-FIXER closes the rest of finding F2 of gate 5b by decisions/0113 О32, and only that (AP-019). Your probe P13t of step 5c (the page sends the stop one second after «Не останавливать») leaves the whole test `control` of tools/test/e2e/team-web.e2e.js green. Change `control`: after the cancel, wait for the page's next poll of that project (a condition with a limit, read from the page's own request records — not a sleep), then assert that no request but a GET went after the cancel, that the journal of the project in the data folder has no stop event, and that the page still shows the project in work (its buttons of the in-work state); only then «Остановить». P13t must be red at that assertion; P13 and the gate's other mutants of `control` stay red; the controls stay green. Measure the margin of the second project (the time it still had to work when it was stopped: its planned work from the scenario file minus the time from its first TASK_STARTED to its stop, from its journal) in a load series of `control`: at least 10 runs, half of them with busy loops on the side; report every margin and the smallest. If the smallest margin is under 3000 ms, lengthen the delays of tools/test/fixtures/e2e/team-slow.json (the chain stays: every task depends on the one before; the rule of the file and the journal check of F1 still hold; prettier on the file; the SCANNED entry of E2K-50 needs no change) and report how much the file's time grows against the 70000 ms limit and the 42000 ms question line (0113 О9, О22); if it is 3000 ms or more, do not change the scenario. Then: the independence loop of the seven tests; `npm run -s e2e -- team-web` three times with duration_ms; the kit files once; and `npm run check` once at the end, exit 0, in the normal environment (0113 О2). A red assertion still never prints a whole environment, a PATH, a folder listing, the person's home path or a journal (0112 О24). No skip, no todo, no sleep.\n\nSAFETY RULE R2-T (decision 0113 О2, О19, О30): in trials under R2-T the spec process's HOME is a new folder under the system temporary root; the team server only through the starter with SAI_TEAM_HOME under the temporary root and the trap copy as SAI_TEAM_CLAUDE_BIN; never set SAI_TEAM_REAL_RUNS; never start the real `claude` program; a call that names the real home or the real Pixel Office folder goes only to a spawn that records and throws; never import a program file to read it; a command denied by the permission check is not done another way. Record before your first trial and after your last whether the folder `.sai-team` exists in the real home and the sha256 of the five files of the real Pixel Office folder (read only). Change only tools/test/e2e/team-web.e2e.js and, only by the margin rule above, tools/test/fixtures/e2e/team-slow.json; no commit, push or pull. The handoff and the files hold no absolute machine paths, no temporary paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "control waits for the page's next poll after the cancel, then asserts no non-GET request, no stop event in the journal, still in work; P13t red, P13 red, controls green",
+      "margin of the second project measured in at least 10 control runs, half under load; the scenario lengthened only if the smallest margin is under 3000 ms, with the time growth reported",
+      "independence loop; three timed runs; kit files; npm run check exit 0; no leak in red output",
+      "no .sai-team and the five real files unchanged before and after"
+    ]
+  },
+  "created_at": "2026-11-16T21:22:00Z",
+  "started_at": "2026-11-16T21:22:00Z",
+  "completed_at": "2026-11-16T21:44:29Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 5d, TEST-FIXER closes the rest of finding F2 of gate 5b (handoffs/E2E107-20261116-01/step-05b-test-design-validator.json) by decisions/0113 О32, and only that (AP-019); the gate's pass 2 of 3 is step 5e. WHAT WAS OPEN: my probe P13t of step 5c (the page sends the stop 1 s after «Не останавливать») left the whole test `control` green, because the check of 5c saw only the requests sent before the confirmation closed. WHO WAS WRONG: the test (its proof had no window); criterion 4 says «Не останавливать» changes nothing. WHAT WAS FIXED, the test only, tools/test/e2e/team-web.e2e.js `control` lines 885-923 (19 lines added, 7 changed; no other line of the file): after the click of «Не останавливать» the test waits, with a limit of 8000 ms and no sleep, until the page's own records of requests hold its next GET of project B (the poll of the page, every 5000 ms); only then it asserts that since the click the page sent no request but a GET, that B's journal in the data folder has no PROJECT_STOPPED, that the status still reads «в работе» and that the buttons are still «Пауза» and «Остановить»; only then «Остановить». RESULTS (fresh clones of the tag with the run's work files, R2-T, the tripwire as an extra net, 37 runs, all as expected, leftovers 0): P13t red, and P13t3 (3 s later), the gate's P13 and the author's P13a red, each at 'B: «Не останавливать» sends no request but a GET'; the gate's other mutants of `control` (D01, D02, D03, D05, V18, V06j, S02, S10, F8b) and the author's (P10-P12, P14-P16, S01, S05, V06) red; the controls K2t, S10g and C02 green. MARGIN of project B (its planned work from the file, 10000 ms, minus the time from its first TASK_STARTED to its PROJECT_STOPPED, from its journal) in 12 runs of `control`: 6 quiet 4772-4776 ms, 3 with 6 busy loops 4786-4793 ms, 3 with 10 busy loops on 10 cores 4759-4764 ms; the smallest 4759 ms, 3000 or more, so tools/test/fixtures/e2e/team-slow.json was not changed (by the rule of the task). The window from the click to the next poll: 4981-5003 ms. TIME: `control` alone 12343 ms in the loop (5c: 13319 ms), and 13.0-14.6 s of wall time per run in the margin series (5c probes without the window 13.5-14.3 s): no growth, since `control` waits for project A to finish anyway; `npm run -s e2e -- team-web` three times exit 0, duration_ms 33357, 33818, 33647 (5c: 34564, 34693, 33729): no growth, against 70000 and the 42000 question line (this Mac; the runner's time is read at step 6). Independence loop 7 of 7; kit files 74 of 74; `npm run check` once at the end in the normal environment: exit 0 (self_check). Safety: .sai-team absent before and after, the five real Pixel Office files the same; the real claude never started, SAI_TEAM_REAL_RUNS never set. The way back: a test edit, so TEST-DESIGN-VALIDATOR (step 5e), then TEST-RUNNER (step 6).",
+    "changes": [
+      {
+        "finding": "F2 (Low), the rest by decisions/0113 О32 (probe P13t of step 5c, issue I2 there)",
+        "what": "the test",
+        "file": "tools/test/e2e/team-web.e2e.js",
+        "place": "`control`, lines 885-923 (from the comment before the click of «Не останавливать» to the click of «Остановить» that follows it)",
+        "was": "(step 5c) recordsBefore before the click; after the confirmation closed, at once: no record since the click but a GET; then B's journal has no PROJECT_STOPPED; then the status «в работе»; a stop sent later than the closing of the confirmation was not seen",
+        "became": "recordsBefore before the click; sinceCancel() = the records since the click; pollOfB = the address of B's own poll (the stand's link + api/projects/<B>); after the confirmation closed, until(a GET of pollOfB is among the records since the click, 8000 ms, 'B: the page's next poll after «Не останавливать»') - a condition with a limit, no sleep; then, in this order: assert.equal(the records since the click whose method is not GET, 0, 'B: «Не останавливать» sends no request but a GET'); B's journal has no PROJECT_STOPPED; the status reads «в работе»; assert.deepEqual(BUTTONS, [«Пауза», «Остановить»], 'B: still «Пауза» and «Остановить» after «Не останавливать»'); then «Остановить» as before",
+        "criterion": "REQ-107 criterion 4: «Не останавливать» changes nothing (no stop event, the project stays in work with its buttons). The proof now has a window as decisions/0113 О12 gives the chat (one wait for the page's own poll); P13t, which left `control` green, is red at the first assertion after the window."
+      }
+    ],
+    "self_check": [
+      "START 2026-11-16T21:22:21Z (clock), status set IN_PROGRESS at once; read: the handoff, decisions/0113 О12, О32, О33, my step 5c handoff (probe P13t, I2), the gate's F2; the role file, the quality bar, handoffs.md, WF-02 and the anti-patterns were read for step 5c in the same launch. Program files read as text only in step 5c (app.js: REFRESH_MS 5000, the stop-no handler, submitControl, post); no program file imported or required.",
+      "SAFETY BEFORE (2026-11-16T21:23:20Z, before my first trial of this step): .sai-team in the person's home folder absent; the five files of the real Pixel Office folder, read only, sha256 prefixes events.jsonl 5dbc7b86913fc319, node-path 10ee90e816f43a29, port 8d0d7d110042d429, server-starts.jsonl b6e6452cdf2437d8, write-secret 465f654a88e7cb3b, with sizes and times equal to the record of step 5c (<scratch>/e2e107-05c/notes/safety-before-05d.txt); leftovers 0 processes, 0 sai-e2e- folders, 0 of mine; com.google.Chrome.* 12340; 10 cores.",
+      "EDIT: tools/test/e2e/team-web.e2e.js `control` only, lines 885-923 (git diff --no-index against my 5c snapshot: 1 file, 19 insertions, 7 deletions, five hunks all inside test(\"control\")); sha256 cb6ef69d -> f0cbc838; npx prettier --write of the file (unchanged after) and npx eslint --max-warnings 0 of it: clean. Counts: grep -c '^test(' 7; grep -o 'assert\\.' | wc -l 107 -> 108; wc -l 1357 -> 1369; grep -cE '\\.skip\\(|\\.todo\\(|\\|\\| true' 0; grep -ci sleep 0; grep -n 'SAI_TEAM_REAL_RUNS' one line (556), which only reads it. tools/test/fixtures/e2e/team-slow.json not changed (sha256 5ab19f1c, the margin rule below).",
+      "HARNESS: <scratch>/e2e107-05c/mut/harness.py of step 5c (a fresh clone of the tag per run, the six other work files from the project checked by sha256, the spec from a snapshot outside the project, every edit asserted to match once, the named test alone under R2-T with the tripwire, hang limit 200 s, leftovers before and after, the clone removed), plus an option for busy loops on the side: shell loops started by the harness and stopped by their own recorded process numbers after each run. Before the series a search of the copy shows the recorder in both refused-start calls (lines 517, 526), and no mutant edits them.",
+      "MARGIN SERIES (clones only; three probe edits print milliseconds only: the window from the click to the next poll, and B's planned work from the file, its used time from its first TASK_STARTED to its PROJECT_STOPPED, and the margin = planned - used, from its journal), `control`, 21:25:16Z-21:28:12Z, 12 runs, 12 green: quiet M01-M06 margin 4772, 4776, 4773, 4774, 4773, 4773 ms (window 4994, 4986, 4995, 4987, 4998, 4991 ms); 6 busy loops M07-M09 margin 4793, 4786, 4787 ms (window 4986, 4991, 4981); 10 busy loops on 10 cores M10-M12 margin 4759, 4764, 4764 ms (window 5003, 5000, 5001); planned 10000 ms each time; the smallest margin 4759 ms (M10), 3000 or more, so by the task the scenario is not changed. Wall time per run 13.0-14.6 s. After the series: 0 busy loops left (pgrep of the loop pattern), leftovers [0,0,0] before and after every run.",
+      "MUTANTS of `control` on the changed spec (f0cbc838), 21:28:23Z-21:31:16Z, 25 runs, 25 as expected, leftovers [0,0,0] before and after each, the recording trap never started, no data folder made, the trial home empty. Control K2t (no breakage) green (13.1 s). Red at 'B: «Не останавливать» sends no request but a GET': P13t (the stop 1 s after the click; 2.5 s - the probe of 5c, green there), P13t3 (3 s after; 4.6 s), the gate's P13 (1.5 s), the author's P13a (1.5 s). The gate's other mutants of `control`: D01 red 'A paused: «Продолжить» and «Остановить», no «Пауза»'; D02 red 'B: the confirmation offers «Не останавливать»'; D03 red 'A paused: …'; D05 red 'B: the journal holds the stop event' (as at the gate); V18 red 'N < M while in work'; V06j red 'waited 15000 ms for: B: the stop line' (at the gate: 'in work for 10 s at least (the journal)'; issue I3); S02 red (the server refuses the file: 'Файл сценария не найден или неверен'); S10 red 'in work for 10 s at least (the file)'; F8b red 'the scenario copy is exact'; S10g green and C02 green on purpose (valid files; C02 19.4 s). The author's: P10, P11 red; P12 red 'waited 10000 ms for: A: the pause line'; P14 red 'waited 5000 ms for: B: the confirmation'; P15 red 'B: the stop phrase'; P16 red 'B stopped: no button'; S01, S05 red 'in work for 10 s at least (the file)'; V06 red 'task 2 depends on the one before it'.",
+      "INDEPENDENCE LOOP (<scratch>/e2e107-05c/alone.sh, R2-T, the clone with the changed spec f0cbc838, 21:31:41Z-21:32:49Z): the full file exit 0, 7 ok, 0 not ok, names stand create finish control chat failure windows; each name alone: exit 0, exactly one 'ok ' line and it is 'ok 1 - <name>', 0 'not ok': stand 1201 ms, create 1614, finish 1355, control 12343, chat 6403, failure 7624, windows 1877; loop failures 0; in each run the recording trap was not started, the data folder not made, the trial home empty.",
+      "THREE TIMED RUNS (R2-T, the clone with the changed spec): npm run -s e2e -- team-web -> exit 0, pass 7, fail 0, e2e duration_ms 33357, 33818, 33647 (step 5c: 34564, 34693, 33729): no growth; under 70000 and under the 42000 question line of О9 on this Mac (not the runner's time); the trial home of each held only npm's own cache folder .npm (the R2-T home, removed by the wrapper).",
+      "KIT FILES ONCE (R2-T, 21:34:44Z): node --test test/e2e-kit.test.js test/e2e-stand.test.js -> exit 0, tests 74, pass 74, fail 0, skipped 0, todo 0.",
+      "RED OUTPUTS (0112 О24): <scratch>/e2e107-05c/mut/leak.py over the 49 outputs of this step (22 with a red test), with the scratch folder and the temporary root replaced first: 0 files with a hit for the whole PATH, a PATH entry under the home, the planted value, the person's home path, the trial home name, a NODE_OPTIONS value, a journal line or a folder listing; control: the planted line hits 7 of 8 checks (the 8th has nothing to find: PATH holds no entry under the home), the clean line 0. The new assertions print their message and a count, true or false, or the button words of the page only. Tripwire: no refusal logged in this step; 19 more loads inside product-mutant servers (53 in all).",
+      "npm run check, once at the end, in the project, in the normal environment by О2 (no net, the person's home for the spec process, every stand its private home): cd tools && caffeinate -i npm run check, started by me as one background command and waited for in this turn (issue I8), 21:35:37Z-21:41:15Z, exit 0. format:check 'All matched files use Prettier code style!'; lint clean; traces: файлов проверено 2536, следов 0, пропущено 67; handoffs-check: файлов проверено 1376, нарушений 0, исключений использовано 114 из 114; test: tests 2209, pass 2209, fail 0, cancelled 0, skipped 0, todo 0; e2e (Chrome/157.0.8103.78): picker 9/9, pixel-office 7/7, smoke 13/13, team-web 7/7; 'e2e: command=npm run e2e selection=all exit=0 duration_ms=89242'. The full output is <scratch>/e2e107-05c/logs/05d/check.txt.",
+      "SAFETY AFTER (2026-11-16T21:43:21Z, after npm run check, my last command that ran tests): .sai-team in the person's home folder absent; the five files of the real Pixel Office folder the same sha256, sizes and times as before (the diff of the two records without their time line is empty); leftovers 0 processes, 0 sai-e2e- folders, 0 of mine, 0 busy loops, 0 mutant clones; com.google.Chrome.* 12457. The real claude program never started; SAI_TEAM_REAL_RUNS never set; no program file imported to read it; no command of mine was denied by a permission check.",
+      "PROJECT TREE: files newer than the start of this step (find, .git and tools/node_modules aside): this handoff and tools/test/e2e/team-web.e2e.js only; git status the same 13 entries; no commit, push, pull, tag or branch; no git checkout, reset, stash or clean anywhere; docs/program/public-v1/PROGRESS.md not touched.",
+      "BEFORE CLOSE (2026-11-16T21:44:16Z, with this result written): cd tools && node src/handoffs/cli.js -> handoffs-check: файлов проверено 1376, нарушений 0, исключений использовано 114 из 114, exit 0; node src/traces/cli.js -> traces: файлов проверено 2536, следов 0, пропущено 67, exit 0. Run again after this line was added, the same."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "context.agent_run_id was filled by ORCH (a8936aa01df0a7204); this step is the same launch as step 5c, given by a message. I did not change context."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "What the window covers: a stop sent by the page between the click of «Не останавливать» and its next poll of B, which came 4981-5003 ms after the click in all 12 margin runs (the page polls every 5000 ms and a cancel sends no request, so the window is about one poll interval). A stop that a wrong page would send later than that window is still not distinguishable before the real stop; such a page is a different breakage than P13t and stays a by-nature limit of a check with a finite window (as О12 for the chat)."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "One gate mutant of `control` is now red at an earlier step than at the gate: V06j (no dependency in team-slow.json and the chain rule removed from the spec) was red at 'in work for 10 s at least (the journal)' in 5b and is red now at 'waited 15000 ms for: B: the stop line' (B's two parallel tasks end within the new window, so the real stop finds B done). It is still red; the journal rule of F1 is unchanged and still reached by S10 and S05 through the file rule."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "The margin probe ran only in clones (three edits printing milliseconds: the window and B's planned, used and remaining time); the spec of the project prints nothing. The busy loops of the load half were shell loops started by my harness and stopped by their own recorded process numbers after each run; after the series none was left (pgrep of the loop pattern: 0)."
+      },
+      {
+        "id": "I5",
+        "kind": "LEFTOVER",
+        "severity": "Low",
+        "text": "The Chrome starts of this step left more com.google.Chrome.* folders in the per-user temporary folder of macOS (О26): 12340 before my first trial of this step; 12457 after my last command; not mine to remove, none removed."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "text": "Runner time not measured (no push in this step): this Mac only; the 42000 ms question line of О9 and О22 is read by TEST-RUNNER and RELEASE-VALIDATOR on the GitHub runner. The window adds no time to the file on this Mac, because `control` waits for project A to finish anyway."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "The way back (role file, item 8): only the test was edited, so the next steps are TEST-DESIGN-VALIDATOR (step 5e, gate pass 2 of 3) and then TEST-RUNNER (step 6). My green runs are self_check, not the PASS of a step."
+      },
+      {
+        "id": "I8",
+        "kind": "INFO",
+        "text": "A process note (AP-137): I started npm run check as one background command myself and waited for it in this turn with two waiters that read its output file; both waiters' tail processes stayed after the end line, and I stopped both waiter tasks by their own ids and checked that their two recorded process numbers were gone. No second copy of the check and no other test ran meanwhile."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/e2e/team-web.e2e.js"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-16T21:22:00Z",
+    "text": "Given to the same TEST-FIXER launch as step 05c (SendMessage), still bound by its role file .claude/agents/test-fixer.md. decisions/0113 addendum О32, О33 written by ORCH."
+  }
+}

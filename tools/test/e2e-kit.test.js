@@ -1705,6 +1705,8 @@ test(
         `--${RDP}=0`,
         `--user-data-dir=${browser.profileDir}`,
         "--no-first-run",
+        // the mock keychain of Chrome on macOS (REQ-107, decisions/0113 О1)
+        "--use-mock-keychain",
         "--disable-gpu",
         "--no-proxy-server",
         "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1",
@@ -3421,8 +3423,15 @@ test(
       readme.indexOf("## End-to-end tests in a real browser"),
     );
     // the budgets: smoke 30000 (REQ-104), picker 80000 (REQ-105), pixel-office
-    // 50000 (REQ-106), all files 240000
-    for (const word of ["duration_ms", "30000", "80000", "50000", "240000"]) {
+    // 50000 (REQ-106), team-web 70000 (REQ-107), all files 240000
+    for (const word of [
+      "duration_ms",
+      "30000",
+      "80000",
+      "50000",
+      "70000",
+      "240000",
+    ]) {
       assert.ok(section.includes(word), word);
     }
   },
@@ -3799,8 +3808,13 @@ const SCANNED = () => [
   path.join(E2E, "smoke.e2e.js"),
   path.join(E2E, "picker.e2e.js"),
   path.join(E2E, "pixel-office.e2e.js"),
+  path.join(E2E, "team-web.e2e.js"),
   fileURLToPath(import.meta.url),
   FAKE,
+  // the trap and the two scenarios of REQ-107 (docs/design/REQ-107-e2e-team-web.md, 12)
+  path.join(FIXTURES, "claude-trap.js"),
+  path.join(FIXTURES, "team-slow.json"),
+  path.join(FIXTURES, "team-fail.json"),
 ];
 
 test(
@@ -3897,6 +3911,16 @@ test(
       unscanned.join(","),
     );
     assert.ok(files.includes(FAKE));
+    // every spec file of tools/test/e2e is scanned, so a new spec left out of the
+    // list is red (docs/design/REQ-107-e2e-team-web.md, 12, row 2)
+    const specs = fs
+      .readdirSync(E2E)
+      .filter((entry) => entry.endsWith(".e2e.js"))
+      .sort();
+    assert.ok(specs.length >= 4, "the spec files are found");
+    for (const spec of specs) {
+      assert.ok(files.includes(path.join(E2E, spec)), `${spec} is scanned`);
+    }
   },
 );
 
@@ -3946,12 +3970,44 @@ test(
       "50000",
       "stateEnv",
       "STAND_HOME_WRITTEN",
+      // the budget of REQ-107 and the switch of the kit (docs/design/REQ-107-e2e-team-web.md, 10)
+      "70000",
+      "--use-mock-keychain",
     ]) {
       assert.ok(section.includes(token), `the section lacks: ${token}`);
     }
     assert.match(section, /^\|\s*smoke\.e2e\.js\s*\|\s*REQ-104\s*\|$/mu);
     assert.match(section, /^\|\s*picker\.e2e\.js\s*\|\s*REQ-105\s*\|$/mu);
     assert.match(section, /^\|\s*pixel-office\.e2e\.js\s*\|\s*REQ-106\s*\|$/mu);
+    assert.match(section, /^\|\s*team-web\.e2e\.js\s*\|\s*REQ-107\s*\|$/mu);
+    // the row stands in the table, so the line that promised it is gone
+    // (decisions/0113, О28)
+    assert.ok(
+      !section.includes("adds its row"),
+      "the section still promises a row",
+    );
+    // The keychain sentence, read by the switch and the words that stay when the
+    // system of the measurement is named after "measured for REQ-107" (О27).
+    const switchAt = section.indexOf("`--use-mock-keychain`");
+    assert.ok(switchAt >= 0, "the section names the switch as code");
+    const sentenceStart = section.lastIndexOf(". ", switchAt) + 2;
+    const sentenceEnd = section.indexOf(".", switchAt);
+    assert.ok(sentenceEnd > switchAt, "the keychain sentence ends");
+    const sentence = section.slice(sentenceStart, sentenceEnd + 1);
+    let wordAt = 0;
+    for (const words of [
+      "Chrome is started with `--use-mock-keychain`",
+      "mock keychain",
+      "for tests",
+      "measured for REQ-107",
+      "with it Chrome answers its first navigation",
+      "a home folder under the temporary root",
+      "without it it does not.",
+    ]) {
+      const at = sentence.indexOf(words, wordAt);
+      assert.ok(at >= wordAt, `the keychain sentence says, in order: ${words}`);
+      wordAt = at + words.length;
+    }
 
     const checkAt = readme.indexOf("\n## Check");
     assert.ok(checkAt >= 0);

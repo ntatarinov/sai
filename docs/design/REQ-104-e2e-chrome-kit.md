@@ -220,6 +220,8 @@ Steps of `launchBrowser` (all inside one function; a failure at any step runs th
 5. `connect(ws)`; `Browser.getVersion` → `browser.product`.
 6. On the `exit` event of the process after the start: `connection.fail(BROWSER_CLOSED with the exit info and the last stderr line)`.
 
+*As built 2026-11-16 (DOC-UPDATER, step 10 of run `E2E107-20261116-01`; the list of step 3 above is not rewritten).* The frozen list has two arguments more than step 3 names: `--no-proxy-server` between `--disable-gpu` and the resolver rule (section 21, item 3) and, since REQ-107, `--use-mock-keychain` right after `--no-first-run` (`decisions/0113` О1 as corrected by О25: Chromium's switch for a mock keychain on macOS, for tests; measured on macOS that with it Chrome answers its first navigation under a home folder below the temporary root, and without it it does not). `E2K-25` compares the exact list. The rule of criterion 10 (d) — never `--no-sandbox` or `--disable-setuid-sandbox` — is unchanged. Details: `docs/design/REQ-107-e2e-team-web.md`, sections 4.5 and 22.
+
 `Browser`:
 
 | Member | Contract |
@@ -570,6 +572,8 @@ Greps: `Chrome` ≥ 1, `SAI_CHROME` ≥ 1, `fails` ≥ 1 (the word is in "`npm r
 5. How to write a spec: a file named `<name>.e2e.js` with top-level `test()` calls only, each test starts its own browser with `withBrowser`, names are unique, each test passes alone; page code is given to `evaluate` as a string.
 6. The table "spec file → requirement": a header row and the row `smoke.e2e.js` | `REQ-104`; REQ-105, REQ-106 and REQ-107 add their rows.
 
+*As built 2026-11-16 (DOC-UPDATER, step 10 of run `E2E107-20261116-01`; the items above are not rewritten).* The table of `tools/README.md` now holds the rows `picker.e2e.js` | `REQ-105`, `pixel-office.e2e.js` | `REQ-106`, `smoke.e2e.js` | `REQ-104` and `team-web.e2e.js` | `REQ-107`, and no line promises a row any more (`E2K-60`; `decisions/0113` О28). The budgets of item 3 grew with the page specs: `picker` 80000, `pixel-office` 50000, `team-web` 70000 (`E2K-41`). Item 4 has one more sentence, about `--use-mock-keychain` (`decisions/0113` О1, О27: «measured for REQ-107 on macOS: …»).
+
 Run on the CI runner: a short note that the GitHub image is `ubuntu-24.04` and the result is read as REQ-104 criterion 10 says. (No address in the section.)
 
 ---
@@ -784,3 +788,5 @@ Rework `01c`: sketches in `<scratch>/e2e104c/` (a fresh clone of the tag; `sk/` 
 - The kit was run in a real Chrome 156 on the main computer and on the GitHub runner (Ubuntu 24.04, Chrome 156 with its sandbox on). It was not run on Windows (the full check never runs there, `docs/issues/ISS-0099`).
 
 **Added by ISS-0103 (2026-11-03, run `ISS-0103-20261103-01`).** After the push of the first release the check on `main` was red once: E2K-18 saw the killed stand-in alive (GitHub run 41685488320, 2184 of 2185). The design said `SIGKILL` of the group is instant (fact F20); the call is, the death seen from another process is not, because a killed process stays a zombie until its parent reaps it and still answers `kill(pid, 0)`. The three places that checked once right after the end of the child (E2K-18, and the signal loop and the preflight loop of E2K-38) now wait with `waitGone` (limit 5000 ms); the kit code did not change. Tests E2K-62 (the helper, with a deterministic hold) and E2K-63 (the call sites) were added; the record is `docs/issues/ISS-0103-e2e-kit-e2k18-stand-in-alive-on-github-main-red.md` and `decisions/0108`, Addendum 2026-11-03 (ISS-0103). Not proved: the Linux state at the failure («zombie or just slow») was not measured on the runner; one green GitHub run (41701454358) is one sample.
+
+**Added by REQ-107 (DOC-UPDATER, step 10 of run `E2E107-20261116-01`, 2026-11-16).** The kit got one more Chrome argument, `--use-mock-keychain`, right after `--no-first-run` (`tools/test/e2e/kit/browser.js`, one line; `decisions/0113` О1, О25), and `E2K-25` its exact list; nothing else of the kit changed (`git diff base/E2E107-20261116-01 -- tools/test/e2e/kit` shows only that line). The fourth real spec file, `tools/test/e2e/team-web.e2e.js`, made `E2K-41`, `E2K-50` and `E2K-60` read its budget, its files and its row; the kit file has 52 tests and 544 `assert.`. Not proven: the effect of the switch on Linux beyond the green files of two GitHub runs (43968701242, 43972314919). Details: `docs/design/REQ-107-e2e-team-web.md`, sections 4.5, 12 and 22.
