@@ -1,0 +1,205 @@
+{
+  "handoff_id": "step01-ISS-0116-20261117-01",
+  "run_id": "ISS-0116-20261117-01",
+  "workflow_id": "WF-03",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "ISSUE-FIXER",
+  "file": "handoffs/ISS-0116-20261117-01/step-01-issue-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-107"
+    ],
+    "agent_run_id": "af70dd96a92759ca7",
+    "artifacts_in": [
+      "docs/issues/ISS-0116-team-page-spec-low-gaps.md",
+      "handoffs/E2E107-20261116-01/step-09-release-validator.json (L1, L2, probes)",
+      "handoffs/E2E107-20261116-01/step-05e-test-design-validator.json (N1, I3, mutants)",
+      "decisions/0113-e2e-team-web-conventions.md (О32, О34-О36)",
+      "docs/design/REQ-107-e2e-team-web.md (4.4, 16, As built)"
+    ],
+    "route": "ORCH 0 (tag base/ISS-0116-20261117-01) -> ISSUE-FIXER 1 (this) -> [tests only by WF-03 'A fix only in tests': no design of the fix, no CODE-FIXER, no security and code review gates, if step 1 confirms the error is in tools/test only] -> TEST-DESIGNER 6 -> TEST-DESIGN-VALIDATOR 7 -> TEST-RUNNER 8 (local and GitHub) -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11",
+    "write_set": [
+      "its own handoff only (fixes nothing)"
+    ],
+    "base_tag": "base/ISS-0116-20261117-01",
+    "issue_id": "ISS-0116",
+    "orch_check": {
+      "at": "2026-11-17T09:26:14Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-17T09:24:58Z, result.status COMPLETED; agent_run_id filled by ORCH",
+        "git status --short -> no project file changed by the diagnosis besides its handoff",
+        "tests only confirmed with evidence (all fixes in team-web.e2e.js; 7 of 7 green on src and kit as tagged)",
+        "decisions/0114 written by ORCH: Д1 route (tests only), Д2 the floor form of N1 (the defect's form red on benign P13g0), Д3 places of the same kind in the same spec, Д4 the stack-frame shape, Д5 Pixel Office spec case -> ISS-0117 at step 10, Д6 R2-T",
+        "next: step 06 TEST-DESIGNER (write set: tools/test/e2e/team-web.e2e.js only)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 1 — ISSUE-FIXER diagnoses ISS-0116 (read the defect file docs/issues/ISS-0116-team-page-spec-low-gaps.md first, and decisions/0113 О32, О34, О35, О36). Follow 'Step 1' of docs/workflows/WF-03-defect.md. Fix nothing. The defect is in the tests only (tools/test/e2e/team-web.e2e.js, released in run E2E107-20261116-01); by WF-03 'A fix only in tests' the route is ISSUE-FIXER -> TEST-DESIGNER -> TEST-DESIGN-VALIDATOR -> TEST-RUNNER -> RELEASE-VALIDATOR -> DOC-UPDATER -> RELEASE-FINALIZER; confirm or refute that the error is in the tests only (that no product file of tools/src and no kit file must change), with evidence. (1) Look in docs/issues/ for closed defects with the same signs (a check read before the thing it checks can happen; a window or a scroll that hides what it should prove; a text pattern that a layout defeats) and say whether the same cause came back. (2) Reproduce each of the four gaps yourself on a fresh clone of the tag base/ISS-0116-20261117-01 outside the project, with the probes named in the defect (M01p for L1, M11b for L2, P13g1 for N1, D10e for I3; re-create them from the gate handoffs of run E2E107-20261116-01: step-09-release-validator.json and step-05e-test-design-validator.json): each named test stays green on its probe; write the command and the real output. (3) Find the cause of each: which function or line, which reading is missing, why the gates of the run did not catch it earlier. (4) AP-014: search the whole spec, and the other spec files tools/test/e2e/picker.e2e.js, pixel-office.e2e.js and smoke.e2e.js, for places of the same kind — an end check run before its stand stops; an 'inside the window' check that scrolls sideways; a wait 'until the next X' with no asserted length; a plain-words or stack check that a block layout can defeat; a red message that holds a temporary path — and list each with its line and a one-line reproduction or the reason it is not exposed; say which of them belong to this defect (the team-web spec) and which are new defects for ORCH to number (do not widen this run). (5) Measure on your clone each fix that the defect proposes (items 1-5 of «Как исправить»): red on its probe, green on today's page and server; for item 4 propose the exact stack-frame shape and show it gives no false red on today's page, on D10e0 and on the plain sentences of today's refusals; for item 5 say where the path comes from and what the message should hold instead. (6) Write in result the diagnosis: the cause of each gap, the files concerned, what must change (one sentence each), the mutants the regression must catch, and any new defect found.\n\nSAFETY RULE R2-T (decisions/0113 О2, О19, О30): in trials the spec process's HOME is a new folder under the system temporary root; the team server only through the starter with SAI_TEAM_HOME under the temporary root and the trap copy as SAI_TEAM_CLAUDE_BIN; never set SAI_TEAM_REAL_RUNS; never start the real `claude` program; a call that names the real home or the real Pixel Office folder goes only to a spawn that records and throws; never import a program file to read it (read it as text); a command denied by the permission check is not done another way. Record before your first trial and after your last whether the folder `.sai-team` exists in the real home and the sha256 of the five files of the real Pixel Office folder (read only). Change no project file other than this handoff; no commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "each of the four gaps reproduced on a fresh clone of the tag with its probe, command and real output",
+      "the cause of each found (function or line, missing reading, why the gates did not catch it); tests-only confirmed or refuted with evidence",
+      "AP-014: places of the same kind in the four spec files listed with line and reproduction; new defects named for ORCH, the run not widened",
+      "each proposed fix measured: red on its probe, green on today's page; the stack-frame shape with no false red; the path note explained",
+      "nothing fixed; no .sai-team and the five real files unchanged before and after"
+    ]
+  },
+  "created_at": "2026-11-17T08:53:46Z",
+  "started_at": "2026-11-17T08:53:46Z",
+  "completed_at": "2026-11-17T09:24:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Diagnosis of ISS-0116 (WF-03, step 1). Tests only: confirmed. All four gaps and the note are in tools/test/e2e/team-web.e2e.js. Every measured fix is a change of that file only, green on today's page, server and kit as tagged: the whole file is 7 of 7 green with all fixes in 33473 ms, against 33697 ms for the tag. No file of tools/src and no kit file must change, and the kit already has what a fix needs (page.network, page.evaluate, page.horizontalOverflow). L1, the trap marker read before the stand stops. Reproduced: M01p is a server that starts the trap copy in its SIGTERM handler when its data folder holds a project. With it, create and failure stay green, and the effect log says 'marker present: true' once per server with a project. Cause: endChecks (lines 461-480) runs inside the body of withTeam (254-256) or untilStopped (273-288). The reading of trapStarted (line 462) and of the project folders (line 463) therefore comes before withStand or stand.stop() sends SIGTERM. Only stand reads the marker after its stop (line 601), and it has no project. Why the gates missed it: decisions/0113 О4 reads criterion 1 as an end check in every test, and design 4.4 put that check in the body. The gates' trap mutants (V16, D22) started the trap at the server start or at create, never at shutdown; the first shutdown probe was M01p at step 9. Same kind, not named in the defect: the second half of criterion 1's end check (no project of the executor claude-cli in the data folder) is also read only before the stop. A server that makes a claude-cli project folder at shutdown (M01q) stays green, both on the tag and with the defect's marker-only fix (M01qL1). What must change: after the stop, withTeam and untilStopped read both end facts of criterion 1 again, the marker and the project folders (the same folders the end check saw). Measured: red on M01p (FIXp, FIXpf) and on M01q (M01qL1q, M01qfL1q); green on today's page (FIXALL2). L2, the window check that scrolls sideways. Reproduced: M11b moves the create button 400 px to the right in windows up to 330 px, and windows stays green. Cause: INSIDE (line 1308) calls scrollIntoView with inline: 'nearest' and only then reads the rectangle, so a sideways scroll makes an off-screen button count as inside. Why the gates missed it: design 4.4, test 7, says 'inside the window after it is scrolled into view'. Mutant M11 hides the button (display: none) and never pushes it sideways, and О13 left sideways overflow unasserted. The picker spec (picker.e2e.js lines 948-971) already has the right form: the sideways position is read before the scroll, and horizontalOverflow is asserted. What must change: INSIDE fails when the check scrolled the page sideways (scrollX stays 0), or it reads the sideways position before the scroll, as picker does. Measured: red on M11b at '320x568: the create button is inside the window' (M11c); green on today's page (M11k, FIXALL, FIXALL2). N1, the window after «Не останавливать» has no asserted length. Reproduced: P13g1 refreshes B at once on the cancel and sends the stop 1000 ms later; control stays green 3 of 3. Cause: the wait at lines 898-903 ends on the first GET of B after the click, and nothing asserts how long that took. Today it is about 5 s only because the cancel lands just after B's poll (measured 4973-5021 ms in this step). With an immediate refresh the wait ends after about 3 ms, and the late stop is then dropped by the test's own navigation. Why the gates missed it: the window came at step 05d (О32) as the fix of F2, and its probes (P13t) delayed the stop without a refresh. The refresh-at-once probe P13g1 came at 05e, the last pass. FINDING ON THE PROPOSED FIX (item 3 of «Как исправить»): asserting performance.now() - cancelAt >= 3000 after the existing wait is red on P13g1 (P13g1f, 1403 ms) and green on today's page (K2w). But it is also red on the benign P13g0, the page that only refreshes at once (P13g0f, 1408 ms, window 3 ms). The defect itself calls P13g0 benign, so that form is stricter than criterion 4 (AP-159 (3)) and must not be used. A form measured without that false red: the wait ends only when at least 3000 ms have passed since the click AND the next poll of B has come. It is red on P13g1 (P13g1a, at 'B: «Не останавливать» sends no request but a GET'), red on the earlier breakage P13t (P13t1a), green on P13g0 (P13g0a), and green on today's page with no added time (K2a 13304 ms, window 5016 ms). Same kind, same spec, not named in the defect: the chat proof that an empty message is not sent (О12; snapshot lines 1088-1091, wait 1129-1133) also ends on the next GET of the chat. P19g sends the empty text 1000 ms after an immediate chat refresh, and chat stays green 2 of 2. The same floor makes it red at 'the disabled control sent nothing' (P19gf), keeps the benign P19g0 green (P19g0f), and is green on today's page (K5a, window 4937 ms from the end of the tries). I3, a stack line in its own block element is not seen. Reproduced: D10e shows each line of a result in its own block span, and the create refusal holds a stack line; failure stays green. D10e0 (the same layout, no stack) is green. Cause: BAD (lines 75-81) has one line mark, /^\\s+at /mu. It is read on the folded innerText (textOf, 408-409), which has no line start after the first character, and on textContent (sourceOf, 416-419). textContent joins block elements with no line break, and in the rendered innerText CSS has dropped the frame's leading blanks, so no reading can match. Why the gates missed it: the step 05c fix (F1) read the unfolded textContent, which keeps a line start only when the server's text itself holds the line break. No mutant put a line in its own block until D10e at 05e. The stack-frame shape measured: /^[ \\t]*at \\S.*:\\d+:\\d+\\)?[ \\t]*$/mu, added to BAD and applied to the innerText of each refusal not folded (create-result, chat-result, the .frow-reason rows; the body innerText of failure (a) is already unfolded and gets it through BAD). Red on D10e at 'the lines of the refusal of the create: holds <shape>' (D10ef). Green on D10e0 (D10e0f), on today's failure and chat (D10k, D10kc) and in the whole file (FIXALL, FIXALL2). Offline (bin/shape.mjs, nothing imported): no hit on any of 91 plain texts. These are the 71 string literals of src/web/texts.js read as text, the team-fail.json strings, and today's 4 page readings of failure: the reason row, the create refusal, and the page bodies of 72 and 22 lines. It hits every V8 frame with a position, with or without its blanks and with a Windows path. It does not hit position-less frames such as '(<anonymous>)', which the literal mark still catches when their blanks are kept; a real stack always also holds frames with a position. The note, a temporary path in the red output of M03. Reproduced: with the trap copy made 0600, stand is red with error 'spawn <tmp>/sai-e2e-team-web-<id>/trap/claude-trap.js EACCES'. Where it comes from: runTrap (lines 299-332) spawns folders.trap, the real path under the kit's temporary folder from makeTempDir. Its 'error' handler (lines 323-326) rejects with Node's own spawn error, whose message Node builds as 'spawn <file> <code>' (frames ChildProcess._handle.onexit node:internal/child_process:285 and onErrorNT), and node:test prints that message as error. What the message should hold: the name of the check and the code only. Measured: 'the trap copy did not start: EACCES' (M03f, red, the system temporary root 0 times in the output). Same form in the same spec: every fs error from a reading of the test's own folders passes Node's message through, with the path. J01 (the server names its journal otherwise) makes finish red with \"ENOENT: no such file or directory, open '<tmp>/sai-e2e-team-web-<id>/data/p-<id>/events.jsonl'\" from journal() (lines 351-357). The regression (step 6) must make these mutants red on its own tests: M01p and M01q (create, and failure through untilStopped), M11b (windows), P13g1 (control), P19g (chat), D10e (failure), and M03 (a red stand whose output holds no temporary path). It must keep the benign twins P13g0, P19g0 and D10e0 green, keep P13t red, and keep today's page 7 of 7 green. Each mutant stays green today with the commands in self_check. A new defect for ORCH (not this run): the same end-before-stop kind in tools/test/e2e/pixel-office.e2e.js, reproduced (POj). Nothing was fixed. No project file changed except this handoff. ~/.sai-team was absent before and after, and the five real Pixel Office files are identical before and after.",
+    "self_check": [
+      {
+        "command": "safety reading before the first trial (read only), 2026-11-17T08:55:56Z: test -e ~/.sai-team; shasum -a 256 and stat of the five files of ~/.sai-pixel-office; lsof on port 4780",
+        "output": ".sai-team absent; events.jsonl 5dbc7b86913fc319... 4035130 2026-10-29T17:05:09, node-path 10ee90e816f43a29... 46 2026-10-28T17:03:24, port 8d0d7d110042d429... 5 2026-10-28T17:03:24, server-starts.jsonl b6e6452cdf2437d8... 280 2026-10-28T17:03:24, write-secret 465f654a88e7cb3b... 44 2026-10-01T22:52:26; listeners on 4780: 0"
+      },
+      {
+        "command": "git clone -q -b base/ISS-0116-20261117-01 <project> <scratch>/i116-01/clone; cd tools && node -v && npm ci; shasum -a 256 test/e2e/team-web.e2e.js",
+        "output": "HEAD ce90ba3; v22.23.4; npm ci exit 0; f0cbc83830cc1673f9238bb4c262b754314059c880fdaba776031670eaf8035e (the sha256 of the defect, the line numbers of the defect match the file: endChecks 461-480, withTeam 254-256, untilStopped 273-288, stand's after-stop reading 601, INSIDE 1308, the control window 885-923)"
+      },
+      {
+        "command": "R2-T wrapper <scratch>/i116-01/bin/r2t.sh: env -i with PATH, TMPDIR, LANG; HOME and USERPROFILE a new folder under the system temporary root; SAI_TEAM_HOME a name there that is never made; SAI_TEAM_CLAUDE_BIN a recording sh trap there; the tripwire preloaded (NODE_OPTIONS --require) with its log in my work folder; SAI_TEAM_REAL_RUNS never set. Positive control first: sh r2t.sh <scratch>/i116-01/net node net/ctl.mjs (every refused row names a program that does not exist)",
+        "output": "refused (EACCES): argument the real state folder; --dir=<a file of it>; env SAI_PIXEL_OFFICE_DIR = the real home; a Pixel Office program with HOME outside the temporary root; argument the real home; cwd the real state folder; execFileSync with the real home; a child of a child with a nested TMPDIR. Let through: /bin/echo fine; a team-shaped start under the temporary root (ENOENT, the program does not exist). Eight lines in the control log; R2T: recording-trap-started=no data-folder-made=no home-entries=0. No promisify of a wrapped execFile anywhere in src/web, src/team or test/e2e (grep: none), so the wrapper's lost promisify.custom (AP-160) does not apply."
+      },
+      {
+        "command": "probe harness <scratch>/i116-01/bin/mut.mjs (my own; per probe a fresh git clone -b base/ISS-0116-20261117-01 of the project, every edit asserted to match exactly once, for product probes the tripwire required at the top of the server's main.js in the clone, the named test alone under r2t.sh: node --test --test-reporter=tap --test-name-pattern=^<test>$ <spec>, the leftover check [processes, sai-e2e-* folders, my sai-i116-* folders] before and after, the clone removed). node bin/mut.mjs --dry first",
+        "output": "every probe: each edit matched once (47 runs below, 09:04:30Z-09:21:05Z, leftovers [0,0,0] before and after every run, R2T: recording-trap-started=no data-folder-made=no for every run; the tripwire loaded in 80 server processes and in every spec process; no refusal log was written, so no call named the real home or the real state folder; no output holds the home path)"
+      },
+      {
+        "command": "control K0: the tag as it is, the whole file (stand|create|finish|control|chat|failure|windows), tripwire in the server",
+        "output": "green: ok 1 - stand ... ok 7 - windows, exit 0, 33697 ms"
+      },
+      {
+        "command": "L1: node bin/mut.mjs M01p M01pf FIXp FIXpf (M01p: the server's SIGTERM handler starts the trap copy, by its real path under the temporary root only, when its data folder holds a project; FIXp/FIXpf: withTeam and untilStopped read trapStarted again after the stop)",
+        "output": "M01p create green (exit 0); M01pf failure green; the effect log: 'trap started at shutdown with a project; marker present: true' 4 times (one per probed server with a project); FIXp create red: 'the trap was never started, after the stop' (true !== false); FIXpf failure red: 'the trap was never started, after the stop (untilStopped)'"
+      },
+      {
+        "command": "L1, second half of criterion 1's end check (same kind): node bin/mut.mjs M01q M01qL1 M01qL1q M01qfL1q (M01q: at SIGTERM the server makes the folder p-20261117-dead01 with a copy of the first project's journal whose executor reads claude-cli)",
+        "output": "M01q create green; M01qL1 (the defect's marker-only fix) create green; M01qL1q (the project folders read again after the stop, equal to those the end check saw) create red: 'no project folder appeared after the end check, after the stop'; M01qfL1q failure red: '... (untilStopped)'; the effect log: 'claude-cli project folder made at shutdown' 4 times"
+      },
+      {
+        "command": "L2: node bin/mut.mjs M11b M11c M11k",
+        "output": "M11b windows green (exit 0); M11c (M11b with INSIDE requiring scrollX === 0) red: '320x568: the create button is inside the window'; M11k (the same INSIDE on today's page) green"
+      },
+      {
+        "command": "N1: node bin/mut.mjs P13g0 P13g1 P13g1 P13g1 P13g1f K2w P13g0f P13g1a P13g0a K2a; then P13t1a",
+        "output": "P13g0 green 13635 ms; P13g1 green 3 of 3 (14361, 14264, 14246 ms); the gate's form: P13g1f red 'B: the window after «Не останавливать» lasted most of a poll interval' (window 3 ms, 1403 ms), K2w green (window 5020 ms, 13238 ms), P13g0f RED on the benign page (window 3 ms, 1408 ms); the floor form (wait until >= 3000 ms since the click and the next GET of B): P13g1a red 'B: «Не останавливать» sends no request but a GET' (window 3022 ms), P13g0a green (window 3022 ms), K2a green (window 5016 ms, 13304 ms); P13t1a (the stop 1000 ms after the cancel, no refresh) red at the same message (window 3012 ms)"
+      },
+      {
+        "command": "N1 kind in chat: node bin/mut.mjs K5m K5m P19g0 P19g P19g P19gf P19g0f K5a (P19g: Ctrl+Enter in an empty field refreshes at once and posts the empty text 1000 ms later; P19g0: refreshes only)",
+        "output": "K5m green, window from the end of the tries to the next chat GET 4931 and 4949 ms; P19g0 green (window 0 ms); P19g green 2 of 2 (window 0 ms); the floor form: P19gf red 'the disabled control sent nothing', P19g0f green (3013 ms), K5a green (4937 ms, 6589 ms)"
+      },
+      {
+        "command": "I3: node bin/mut.mjs D10m D10e0 D10e D10ef D10e0f D10k D10kc; node bin/shape.mjs <the D10m output> <clone>/tools/src/web/texts.js <clone>/tools/test/fixtures/e2e/team-fail.json (texts.js read as text, nothing imported)",
+        "output": "D10e0 failure green; D10e failure green; D10ef red: 'the lines of the refusal of the create: holds /^[ \\t]*at \\S.*:\\d+:\\d+\\)?[ \\t]*$/mu'; D10e0f green; D10k failure green; D10kc chat green; D10m green (the measuring run). Offline: 'texts read: 91 (texts.js literals 71, today's page readings 4); shape hits: D10e lines x1; V8 frame as printed x3; V8 frame, blanks dropped x3; V8 frame, Windows path x1; false red of the shape on plain texts: none'; today's page bodies 72 and 22 lines, none starting with 'at '. (The first parse of the TAP comment kept doubled backslashes; corrected and re-run, the result above is the corrected one.)"
+      },
+      {
+        "command": "the note: node bin/mut.mjs M03 M03f",
+        "output": "M03 stand red: error 'spawn <tmp>/sai-e2e-team-web-<id>/trap/claude-trap.js EACCES', code EACCES, stack ChildProcess._handle.onexit (node:internal/child_process:285:19), onErrorNT; the system temporary root once in the output. M03f (runTrap rejects with `the trap copy did not start: ${err.code}`) stand red: 'the trap copy did not start: EACCES'; the system temporary root 0 times in the output"
+      },
+      {
+        "command": "same kind of the note: node bin/mut.mjs J01 (src/team/home.js names the journal events2.jsonl in the clone)",
+        "output": "finish red: \"ENOENT: no such file or directory, open '<tmp>/sai-e2e-team-web-<id>/data/p-<id>/events.jsonl'\" (journal(), the system temporary root once in the output)"
+      },
+      {
+        "command": "all measured fixes together: node bin/mut.mjs FIXALL (L1 marker, L2, N1 floor, I3, the note), once quiet and once with six busy loops (yes) on the side; then FIXALL2 (the same plus the project folders after the stop and the chat floor)",
+        "output": "FIXALL green 7 of 7, 33606 ms (window 5021 ms); FIXALL under load green 7 of 7, 34681 ms (window 5001 ms); FIXALL2 green 7 of 7, 33473 ms (control window 4973 ms, chat window 4928 ms). Every edit of these fixes is in tools/test/e2e/team-web.e2e.js; src and the kit as tagged"
+      },
+      {
+        "command": "the new kind in the pixel-office spec: node bin/mut.mjs POj POjf POk (POj: the Pixel Office server's stop handler appends one invented line to events.jsonl of its own test folder, only when that folder's real path is under the temporary root; the tripwire loaded inside that server)",
+        "output": "POj journal green; POjf (the journal read again after withStand) red: 'the lines of the journal file, after the stop' (4 !== 3); POk (the same reading on today's server) green"
+      },
+      {
+        "command": "search of the four spec files (grep for scrollIntoView/scrollX, withStand/startStand/stop()/end readings, until/waitFor windows of absence, BAD/stack/textContent/innerText, reject(err)/spawn error handlers, template messages with path variables, fs calls of temporary folders), each hit read",
+        "output": "listed in result.issues I4-I8"
+      },
+      {
+        "command": "safety reading after the last trial, 2026-11-17T09:21:50Z (read only)",
+        "output": ".sai-team absent; the five files of ~/.sai-pixel-office: the same names, sha256, size and time as before (diff: none); listeners on 4780: 0; leftovers: processes 0, sai-e2e-* 0, sai-i116-* 0, busy loops 0, headless Chrome 0; the probe clones removed (0 left); the refusal logs of the tripwire: none written"
+      },
+      {
+        "command": "the project at the end: git status --short; git diff --quiet base/ISS-0116-20261117-01 -- tools; git rev-parse HEAD",
+        "output": "' M docs/program/public-v1/PROGRESS.md' (modified before this step began; not touched) and '?? handoffs/ISS-0116-20261117-01/' (this handoff only); tools/ identical to the tag; HEAD ce90ba3 = the tag; no commit, push, tag, branch, checkout, reset, stash or clean"
+      },
+      {
+        "command": "before close: cd tools && node src/handoffs/cli.js; node src/traces/cli.js",
+        "output": "handoffs-check: 'файлов проверено 1382, нарушений 0, исключений использовано 114 из 114', exit 0; traces: 'файлов проверено 2546, следов 0, пропущено 67', exit 0 (with this result written, and again after this final write, before close)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Item 3 of «Как исправить» (the gate's ready fix of N1: assert performance.now() - cancelAt >= 3000 after the existing wait) is stricter than criterion 4. It is red on the benign page P13g0, which only refreshes B at once on the cancel (P13g0f red in 1408 ms, window 3 ms). The defect file and step 05e both call P13g0 benign (green). By AP-159 (3) a check is as strict as its criterion and no stricter, so this form must not be built. The measured form without that false red puts the lower bound inside the wait: it ends only when at least 3000 ms have passed since the click AND the next poll of B has come. Red on P13g1 and P13t, green on P13g0 and on today's page with no added time (K2a 13304 ms against K2w 13238 ms). The exact code is TEST-DESIGNER's; its regression keeps P13g0 green beside P13g1 red."
+      },
+      {
+        "id": "I2",
+        "kind": "SAME_KIND_THIS_DEFECT",
+        "text": "L1, the second half of criterion 1's end check, not named in the defect. 'The data folder has no project of the executor claude-cli' (О4) is read by endChecks (projectIds at line 463, compared with the rows that carry the mark) before the stop, like the marker. The defect's marker-only fix (item 1) leaves M01q green: a server that makes a claude-cli project folder at shutdown. Reading the project folders again after the stop, equal to those the end check saw, makes M01q red in create and in failure. untilStopped has no folders today, so it needs the stand's folders, which the measured form took from teamStand. Failure (b) reads its own end facts at lines 1289-1297, also before its stop."
+      },
+      {
+        "id": "I3",
+        "kind": "SAME_KIND_THIS_DEFECT",
+        "text": "N1 kind in chat, not named in the defect. The proof that an empty message is not sent (О12; snapshot 1088-1091, wait 1129-1133, checks 1134-1140) ends on the page's next GET of the chat, with no asserted length (today 4931-4949 ms from the end of the tries). P19g, which refreshes the chat at once and posts the empty text 1000 ms later, stays green 2 of 2. The same floor (at least 3000 ms since the end of the tries and the next chat GET) is red on P19g at 'the disabled control sent nothing', green on the benign P19g0 and green on today's page (K5a 6589 ms against K5m 6559-6579 ms)."
+      },
+      {
+        "id": "I4",
+        "kind": "SAME_KIND_THIS_DEFECT",
+        "text": "The note's kind in team-web: a red message that passes a Node system error through, with a temporary path. Exposed and reproduced: runTrap's spawn error (M03, lines 323-326) and journal() (J01, lines 351-357, a server that names or moves its journal otherwise). The same pass-through, reached only when a reading of the test's own folders fails: sha256 118-123, scenarioOf 136-138, testFolders 168-177 (removed and rethrown at 188-191), runTrap mkdir 301, projectIds rethrow 341-342 (other than ENOENT/ENOTDIR), the marker rm 492, the stand home 596, the chat journal stat 1088 and 1138, failure (b) 1243, 1271, 1275-1276. The explicit assertion messages of the spec hold no path (grep of template messages: only path.basename at 143 and 151). For ORCH: item 5 names only the trap control. Widening it to the readings of the test's folders (name the reading and the code, not the path) belongs to this spec. I recommend at least journal(), which a server regression reaches. Otherwise TEST-DESIGNER names the rest as a limit."
+      },
+      {
+        "id": "I5",
+        "kind": "NEW_DEFECT_FOR_ORCH",
+        "text": "tools/test/e2e/pixel-office.e2e.js (REQ-106) has the end-before-stop kind of L1; do not widen this run. Test 'journal' reads events.jsonl at line 673 inside withStand. A server that appends one invented line to its journal at its stop (POj, an event written after the fact, the R2 kind) leaves 'journal' green. Reading the journal again after withStand is red (POjf: 'the lines of the journal file, after the stop', 4 !== 3) and green on today's server (POk). The same placement, not run: test 'mask' reads events.jsonl and the server's stdout and stderr inside its stand (lines 757-781), so a key written at shutdown is unseen. Not of the kind: 'isolated start' (its criterion is the state before any event), 'untouched home' (reads after the stop, lines 810-815) and 'reconnect' (the second server reads after the first stops). Proposed severity LOW (the hook and the server write nothing at shutdown today; a detection gap)."
+      },
+      {
+        "id": "I6",
+        "kind": "SAME_KIND_NOT_EXPOSED",
+        "text": "Places searched and not exposed, each with its reason. (a) End before stop: picker.e2e.js has no disk end check of its own (its server reads tenants from the repository; its home is read by the kit's stop after the stop, kit/stand.js 329-361); smoke.e2e.js has no stand (an in-process page server). (b) Sideways scroll: picker.e2e.js 948-971 reads the start button's left and right before scrollIntoView and asserts horizontalOverflow, so it is the correct form; pixel-office 'windows' has no inside check (criterion 7 of REQ-106 asks only that the block exists); smoke SMK-05 asserts the overflow through the kit. (c) A window of absence ending on 'the next X': none in picker (its page does not poll; resultRecord counts POSTs at one moment), none in pixel-office or smoke (their waits are for facts that must happen). (d) A line-anchored mark a block layout can defeat: picker hasStack /^[ \\t]+at /mu (line 890) reads the server's raw stderr, not page text, so no layout acts on it; pixel-office 'mask' uses substring checks on textContent, which a block layout does not split; the other marks of BAD (undefined, [object, Error:, the E_ shape) are not line-anchored. (e) A temporary path in a red message: picker has no temporary folder (makeTempDir 0). Its red messages at 1714-1716 and 1783 print the server's stderr verbatim; that holds no folder of the test (the server gets only its private home and prints no path but its own source paths in a stack), so it is not exposed. pixel-office: runHook's spawn error names /bin/sh, not a folder (lines 152-155); the E2eError at 113-117 names the temporary root, but only for the two refusal rows (483, 485), whose validator compares the code and prints the error only if it is not an E2eError (491); its fs reads (lines, sha256, listing 320-347) guard a missing file or reach a path only on a vanished folder. smoke: the screenshot read at 607 would print the temporary path only on a kit regression that writes no file."
+      },
+      {
+        "id": "I7",
+        "kind": "SIMILAR_CLOSED_DEFECTS",
+        "text": "The same signs among the closed defects. A check read at the wrong moment relative to what it guards: ISS-0015 (WEB-15, a journal snapshot taken while the engine was live, closed 2026-10-10) and ISS-0103 (E2K-18, a single check right after a child's exit, closed 2026-11-03). Both were false reds in other files (team-web-channel.test.js, e2e-kit.test.js), fixed by stopping the writer first and by a wait with a limit, and both fixes still hold. Here the direction is the opposite (a check too early to see a later event, a false green), in a new file. So the same cause did not come back. A layout that defeats a check: ISS-0062 (a squeezed role name, closed 2026-10-13) was a product layout defect, not a check. The stack class: ISS-0001 (stack traces on unrealistic paths, closed 2026-09-30) was a product defect; today's refusals are plain (measured above), and I3 is a gap in the detector of that class. No closed defect has a window that ends on a benign refresh or a sideways scroll. The kind of these checks is recorded as process errors, not defects: AP-153 (5), a wait that waits for nothing, and AP-159 (5), which names exactly L1, L2 and N1."
+      },
+      {
+        "id": "I8",
+        "kind": "SEVERITY",
+        "text": "Proposed severity: LOW, unchanged. Each gap is a detection gap: a breakage of the product that the spec would not see. On today's page and server every criterion the gaps touch holds by my own runs (K0 7 of 7; the absence of sideways overflow is RELEASE-VALIDATOR's measurement of О36, not repeated here). No real Claude program can start in these tests: SAI_TEAM_REAL_RUNS is never given, and SAI_TEAM_CLAUDE_BIN is always the trap copy. The same cause did not come back (I7), so the MEDIUM floor of a recurrence does not apply. The I5 defect of the pixel-office spec: LOW for the same reasons."
+      },
+      {
+        "id": "I9",
+        "kind": "TESTS_ONLY",
+        "text": "Tests only, confirmed. (1) Every gap's mechanism is a line of tools/test/e2e/team-web.e2e.js (above). (2) Every measured fix (FIX_L1 with the project folders, FIX_L2, the N1 and chat floor, FIX_I3, FIX_NOTE) edits that file only, and the whole file with all of them is green on src and the kit exactly as tagged (FIXALL, FIXALL under load, FIXALL2). (3) The kit already provides every reading the fixes use (page.network(), page.evaluate with innerText, scrollX, and page.horizontalOverflow at kit/page.js 432-446 should the owner want the overflow held, О36). (4) Today's product holds the properties: no stack in today's refusals, no button outside the window, no stop after the cancel, no trap start at shutdown, so no product file must change. The route of WF-03 'A fix only in tests' applies; the pixel-office gap (I5) is in tools/test only too."
+      },
+      {
+        "id": "I10",
+        "kind": "PROPOSAL_ANTI_PATTERNS",
+        "text": "For DOC-UPDATER (Q13), two process lessons. (1) A gate's ready fix was measured on its breakage and on today's page, but not on the benign twin that the same gate had measured green (P13g0). The fix written into the defect is stricter than the criterion (I1). Lesson: a fix proposed for a gap is measured on the breakage, on today's page, and on every benign control of the same probe family, before it is written into a defect. (2) A repeat of AP-014: the defect file lists the places the gates found (the marker, the control window). The same kind stood in the same spec beside them (the project folders of the same end check, the chat window, the fs errors) and was found only by this search. AP-159 named the kind but no place beyond the gates' probes."
+      },
+      {
+        "id": "I11",
+        "kind": "OWN_SLIPS",
+        "text": "My own process slips in this step, recorded for the journal (AP-156 repeats); no harm. (a) At 09:11Z a zsh loop over an unsplit variable did not stop my six busy loops after the loaded FIXALL run; I stopped them by their pids at once (pgrep -x yes then 0). (b) At about 09:19Z, while checking a probe edit for syntax, one command copied the clone's src/pixel-office/main.js (a file of this public repository) to a file in the system temporary folder outside my work folder. The same command removed it, and ls confirmed it is gone. Nothing else outside my work folder was written. No permission check denied any command in this step."
+      },
+      {
+        "id": "I12",
+        "kind": "FACTS_CHECKED",
+        "text": "The facts of the defect, checked on the tag (AP-012). The sha256 f0cbc838... and every line number match. M01p, M11b/M11c/M11k, P13g0, P13g1 (3 of 3 green), P13g1f/K2w, D10e0/D10e and M03 behave as the defect says. One difference: today's control window measured 4973-5021 ms in this step (the defect: 4935-5003 ms at steps 05d and 05e), on the same Mac. context.agent_run_id: my launch id is not visible to me, so it stays null (it is ORCH's field). The temporary paths in the outputs are written here as <tmp> and the work folder as <scratch>/i116-01; the probe scripts (bin/mut.mjs, bin/r2t.sh, bin/shape.mjs, net/ctl.mjs), the run outputs (mut/runs/*.txt) and mut/results.jsonl lie there."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-17T08:53:47Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/issue-fixer.md (read first, as its instructions): the Sai role agents are not registered in this ORCH session. Step 0 by ORCH: the defect exists (docs/issues/ISS-0116, Статус: open); tag base/ISS-0116-20261117-01 on ce90ba3 (main after the release of REQ-107). Started on the owner's word «Продолжи работу» (2026-11-17) after the report of REQ-107 that named ISS-0116 as next; decisions/0113 О35 named it the first WF-03 to offer."
+  }
+}

@@ -12,11 +12,13 @@
 // words of the empty list as measured on the tag (О6) and the scenario files; the
 // code of the page is never read. The page text is read as the visitor reads it:
 // the innerText of shown elements; the plain-words rules are also applied to the
-// source text (textContent) of the refusals, where a stack line keeps its line
-// start. Every wait is for a fact, with a limit. A red message names the place and
-// holds names, counts, true or false and the texts of the page, never a value of
-// the environment or a listing of a folder. Run by
-// `cd tools && npm run e2e -- team-web`.
+// source text (textContent) and to the lines (innerText not folded) of the
+// refusals, where a stack line keeps its line start. The end facts of criterion 1
+// are read in the body and again after the stand stopped. Every wait is for a fact,
+// with a limit; a wait that proves that nothing was sent lasts WINDOW_FLOOR_MS at
+// least. A red message names the place and holds names, counts, true or false and
+// the texts of the page, never a value of the environment, the path of a system
+// error or a listing of a folder. Run by `cd tools && npm run e2e -- team-web`.
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import crypto from "node:crypto";
@@ -43,6 +45,10 @@ const FAIL = path.join(FIXTURES, "team-fail.json");
 const TRAP = path.join(FIXTURES, "claude-trap.js");
 const TRAP_LIMIT_MS = 10000;
 const PROJECT_ID = /^p-[0-9]{8}-[0-9a-f]+$/u;
+// The shortest window of a proof that something is not sent: the wait for the
+// page's next poll ends only when this time has passed as well, so a page that
+// polls at once cannot end the window early (decisions/0114, Д2 and Д3 (b)).
+const WINDOW_FLOOR_MS = 3000;
 
 // The link line of the server (README "Sai Team — the interface").
 const LINK = /^Sai Team: (http:\/\/127\.0\.0\.1:\d+\/)$/mu;
@@ -71,13 +77,17 @@ const STOPPED_WORDS = "Проект остановлен. Продолжить �
 const FAILED_WORDS = "Попытка не удалась";
 const CHAT_TEXT = "<b>привет</b> & «тест»";
 // The four marks of criterion 6 and, beyond its letter, the shape of a code of
-// tools/src/team/errors.js: E_ and a capital, not inside a longer word (О21).
+// tools/src/team/errors.js: E_ and a capital, not inside a longer word (О21), and
+// the shape of a stack frame: a line "at <place>:<line>:<column>" or "at
+// <place>:<line>", with or without its blanks and its closing bracket, which a line
+// in its own block keeps when CSS drops its blanks (decisions/0114, Д4 and Д9 (b)).
 const BAD = [
   /^\s+at /mu,
   /undefined/u,
   /\[object/u,
   /Error:/u,
   /(?<![A-Za-z0-9_])E_[A-Z][A-Z0-9_]*/u,
+  /^[ \t]*at \S.*:\d+(?::\d+)?\)?[ \t]*$/mu,
 ];
 // The only name a test may add to the environment of a server: the retry pause of
 // the failure stand (README "Other settings"; decisions/0113, О5).
@@ -191,13 +201,65 @@ function testFolders(scenario) {
   }
 }
 
+// A system error of Node (a reading of the disk or a start that failed: it has a
+// syscall) is told by its call, its code and its place (the line of this file, or
+// the place given), not by Node's message, which holds the path, here a temporary
+// path of the test (ISS-0116, probe J01); any other error is thrown as it is.
+function withoutPath(err, place = null) {
+  const system =
+    typeof err?.syscall === "string" && typeof err.code === "string";
+  if (!system) return err;
+  const at = String(err.stack).split(`${import.meta.url}:`)[1] ?? "";
+  const line = /^\d+/u.exec(at)?.[0] ?? "?";
+  const told = new Error(
+    `a system error: ${err.syscall.split(" ")[0]} ${err.code}, ${place ?? `at line ${line} of the spec`}`,
+  );
+  if (err.cleanupError !== undefined) told.cleanupError = err.cleanupError;
+  return told;
+}
+
+// Every test runs in its folders: made first, removed last, and a system error on
+// the way is told without its path. The removal is told so as well; when the body
+// failed too, the body's error is thrown and the removal's is attached to it as
+// cleanupError, as the kit's withStand does (decisions/0114, Д7).
 async function inFolders(scenario, body) {
-  const folders = testFolders(scenario);
+  let folders;
   try {
-    return await body(folders);
-  } finally {
-    removeTempDir(folders.root);
+    folders = testFolders(scenario);
+  } catch (err) {
+    throw withoutPath(err);
   }
+  let value;
+  let failed = false;
+  let failure;
+  try {
+    value = await body(folders);
+  } catch (err) {
+    failed = true;
+    failure = withoutPath(err);
+  }
+  try {
+    removeTempDir(folders.root);
+  } catch (err) {
+    const removal = withoutPath(
+      err,
+      "at the removal of the folder of the test",
+    );
+    if (!failed) throw removal;
+    if (failure !== null && typeof failure === "object") {
+      try {
+        // an earlier clean-up error of the body's error is kept on the removal's
+        if (failure.cleanupError !== undefined) {
+          removal.cleanupError = failure.cleanupError;
+        }
+        failure.cleanupError = removal;
+      } catch {
+        // a frozen body error is thrown without it
+      }
+    }
+  }
+  if (failed) throw failure;
+  return value;
 }
 
 // The only source of the options of a server. `env` may name only EXTRA_NAMES;
@@ -246,13 +308,28 @@ function checkedOptions(options, deps) {
   return options;
 }
 
-// The two calls of the starter in this file.
-function teamStand(options, deps) {
-  return startStand(checkedOptions(options, deps), deps);
+// a stand started by the two helpers below -> the folders of its options
+const STARTED = new WeakMap();
+// a stand -> the project folders its end check saw and their executors (endChecks)
+const SEEN = new WeakMap();
+
+// The two calls of the starter in this file. Each reads the end facts of criterion
+// 1 again after its stand stopped (afterStop).
+async function teamStand(options, deps) {
+  const stand = await startStand(checkedOptions(options, deps), deps);
+  STARTED.set(stand, MADE.get(options));
+  return stand;
 }
 
-function withTeam(options, body) {
-  return withStand(checkedOptions(options, undefined), body);
+async function withTeam(options, body) {
+  let started = null;
+  const value = await withStand(checkedOptions(options, undefined), (stand) => {
+    started = stand;
+    STARTED.set(stand, MADE.get(options));
+    return body(stand);
+  });
+  afterStop(started, "withTeam");
+  return value;
 }
 
 // A start with a spawn that records and throws (rule R2-S) -> the code of the
@@ -269,7 +346,8 @@ async function startCode(options, recorder) {
 }
 
 // The stand is stopped whatever the body did; a body that passed needs the end of
-// the server after SIGTERM to be code 0 (criterion 6).
+// the server after SIGTERM to be code 0 (criterion 6) and the end facts of
+// criterion 1 after the stop.
 async function untilStopped(stand, body) {
   let failure = null;
   try {
@@ -285,6 +363,7 @@ async function untilStopped(stand, body) {
   }
   if (failure !== null) throw failure;
   assert.deepEqual(end, { code: 0, signal: null }, "SIGTERM ends the server");
+  afterStop(stand, "untilStopped");
 }
 
 // ---- readings of the disk ----------------------------------------------------------
@@ -322,7 +401,13 @@ function runTrap(folders) {
     }, TRAP_LIMIT_MS);
     child.on("error", (err) => {
       clearTimeout(limit);
-      reject(err);
+      // the check and the code only: Node's message of a failed start names the
+      // copy by its path, a temporary path (ISS-0116, the note)
+      reject(
+        new Error(
+          `the trap control: the copy did not start (${err.code ?? "error"})`,
+        ),
+      );
     });
     child.on("close", (code) => {
       clearTimeout(limit);
@@ -342,6 +427,33 @@ function projectIds(data) {
     throw err;
   }
   return names.filter((name) => PROJECT_ID.test(name)).sort();
+}
+
+// The executor of each of the projects `ids` of a data folder, as "<id> <executor>":
+// the one its journal was created with (its first line, PROJECT_CREATED), which the
+// page marks (README: a project is claude-cli unless it is the test one). A missing
+// journal or a first line that is not that event is told by words, never by its
+// text.
+function executorsOf(data, ids) {
+  return ids.map((id) => {
+    let text;
+    try {
+      text = fs.readFileSync(path.join(data, id, "events.jsonl"), "utf8");
+    } catch (err) {
+      if (err.code === "ENOENT") return `${id} no journal`;
+      throw err;
+    }
+    let first = null;
+    try {
+      first = JSON.parse(text.split("\n")[0]);
+    } catch {
+      // not a line of the journal: told below
+    }
+    const created =
+      first?.type === "PROJECT_CREATED" &&
+      typeof first.data?.executor === "string";
+    return `${id} ${created ? first.data.executor : "not created by its journal"}`;
+  });
 }
 
 function journalFile(folders, id) {
@@ -417,6 +529,14 @@ const sourceOf = (id) =>
   `(() => { const e = document.getElementById(${JSON.stringify(id)}); return e === null ? null : e.textContent; })()`;
 const sourcesOf = (selector) =>
   `[...document.querySelectorAll(${JSON.stringify(selector)})].filter((e) => e.getClientRects().length > 0).map((e) => e.textContent)`;
+// The lines of a shown element as the visitor reads them (its innerText, not
+// folded), else null; and the same for the shown elements of a selector. A line
+// shown in its own block is a line here, while textContent joins the blocks with no
+// break, so the stack-frame shape of BAD is read here (decisions/0114, Д4).
+const linesOf = (id) =>
+  `(() => { const e = document.getElementById(${JSON.stringify(id)}); return e !== null && !e.hidden && e.getClientRects().length > 0 ? e.innerText : null; })()`;
+const linesOfAll = (selector) =>
+  `[...document.querySelectorAll(${JSON.stringify(selector)})].filter((e) => e.getClientRects().length > 0).map((e) => e.innerText)`;
 const STATUS = textOf("project-status");
 const statusIs = (word) => `(${STATUS}) === ${JSON.stringify(word)}`;
 const BUTTONS = `["ctl-pause", "ctl-resume", "ctl-stop"].map((id) => document.getElementById(id)).filter((e) => e !== null && !e.hidden && e.getClientRects().length > 0).map((e) => e.innerText.trim())`;
@@ -461,6 +581,7 @@ async function openRow(page, goal) {
 async function endChecks(page, stand, folders) {
   assert.equal(trapStarted(folders), false, "the trap was never started");
   const ids = projectIds(folders.data);
+  SEEN.set(stand, { ids, executors: executorsOf(folders.data, ids) });
   await openList(page, stand);
   if (ids.length === 0) {
     await page.waitFor(shown("projects-empty"), {
@@ -476,6 +597,32 @@ async function endChecks(page, stand, folders) {
     await page.evaluate(MARKED_ROWS),
     ids.length,
     "rows with the mark = project folders",
+  );
+}
+
+// The end facts of criterion 1 read again after the stand stopped (ISS-0116, L1;
+// decisions/0114, Д3 (a) and Д9 (a)): a server that starts its Claude program, makes
+// a project folder or rewrites the executor of a project while it shuts down is
+// seen here. The data folder is the one the server got; its project folders and
+// the executor of each are those the end check saw against the rows with the mark,
+// and none if no end check ran.
+function afterStop(stand, where) {
+  assert.ok(STARTED.has(stand), `${where}: a stand of this file`);
+  assert.equal(
+    trapStarted(STARTED.get(stand)),
+    false,
+    `the trap was never started, after the stop (${where})`,
+  );
+  const seen = SEEN.get(stand) ?? { ids: [], executors: [] };
+  const data = stand.stateEnv.SAI_TEAM_HOME;
+  const ids = projectIds(data);
+  assert.ok(
+    sameList(ids, seen.ids),
+    `no project folder appeared after the end check, after the stop (${where})`,
+  );
+  assert.ok(
+    sameList(executorsOf(data, ids), seen.executors),
+    `the executor of every project is the one the end check saw, after the stop (${where})`,
   );
 }
 
@@ -883,23 +1030,26 @@ test("control", LIMIT, async () => {
           "B: the confirmation offers «Остановить»",
         );
         // «Не останавливать» changes nothing, proved over a window (decisions/0113,
-        // О12, О32): from its click to the page's own next poll of B, read from
-        // the page's records of requests, the page sends no request but a GET (a
-        // stop is a POST to the control of the project); then B's journal has no
-        // stop event and the page still shows B in work with its buttons
+        // О12, О32): from its click until WINDOW_FLOOR_MS have passed and the
+        // page's own next poll of B has come (decisions/0114, Д2), read from the
+        // page's records of requests, the page sends no request but a GET (a stop
+        // is a POST to the control of the project); then B's journal has no stop
+        // event and the page still shows B in work with its buttons
         const recordsBefore = page.network().length;
         const sinceCancel = () => page.network().slice(recordsBefore);
         const pollOfB = `${stand.url}api/projects/${b}`;
         await page.click("#stop-no");
+        const cancelAt = performance.now();
         await page.waitFor(`!(${shown("stop-confirm")})`, {
           timeoutMs: 5000,
           description: "B: the confirmation closed",
         });
         await until(
           () =>
+            performance.now() - cancelAt >= WINDOW_FLOOR_MS &&
             sinceCancel().some((r) => r.method === "GET" && r.url === pollOfB),
           8000,
-          "B: the page's next poll after «Не останавливать»",
+          `B: ${WINDOW_FLOOR_MS} ms and the page's next poll after «Не останавливать»`,
         );
         assert.equal(
           sinceCancel().filter((r) => r.method !== "GET").length,
@@ -1063,7 +1213,9 @@ test("chat", LIMIT, async () => {
         assert.equal(chats[0].data?.text, CHAT_TEXT, "the text in the journal");
 
         // An empty message and a message of blanks: one snapshot, both tries, then
-        // the page's own next poll of its chat (decisions/0113, О12).
+        // a window until WINDOW_FLOOR_MS have passed since the tries and the page's
+        // own next poll of its chat has come (decisions/0113, О12; decisions/0114,
+        // Д3 (b)).
         const file = journalFile(folders, id);
         const chatApi = `/api/projects/${id}/chat`;
         const pathOf = (url) => {
@@ -1125,11 +1277,18 @@ test("chat", LIMIT, async () => {
             await page.evaluate(sourceOf("chat-result")),
             "the source text of the refusal of the chat",
           );
+          assertPlain(
+            await page.evaluate(linesOf("chat-result")),
+            "the lines of the refusal of the chat",
+          );
         }
+        const triesEnd = performance.now();
         await until(
-          () => chatGets() > gets0,
+          () =>
+            performance.now() - triesEnd >= WINDOW_FLOOR_MS &&
+            chatGets() > gets0,
           8000,
-          "the page's own next poll of its chat",
+          `${WINDOW_FLOOR_MS} ms and the page's own next poll of its chat`,
         );
         if (sent === 0) {
           assert.equal(posts(), posts0, "the disabled control sent nothing");
@@ -1199,6 +1358,16 @@ test("failure", LIMIT, async () => {
           reasonSource,
           "the source text of the reason of the failed task",
         );
+        const reasonLines = await page.evaluate(
+          linesOfAll("#failed > li .frow-reason"),
+        );
+        assert.ok(
+          reasonLines.length > 0,
+          "the lines of the reason of the failed task: a shown row",
+        );
+        for (const lines of reasonLines) {
+          assertPlain(lines, "the lines of the reason of the failed task");
+        }
         assert.ok(
           problem.includes(reason),
           "«Есть ли проблема» gives the reason",
@@ -1261,6 +1430,10 @@ test("failure", LIMIT, async () => {
           await page.evaluate(sourceOf("create-result")),
           "the source text of the refusal of the create",
         );
+        assertPlain(
+          await page.evaluate(linesOf("create-result")),
+          "the lines of the refusal of the create",
+        );
         assert.equal(
           await page.evaluate("location.hash"),
           "",
@@ -1304,8 +1477,47 @@ test("failure", LIMIT, async () => {
 
 test("windows", LIMIT, async () => {
   const goal = "Вымышленная проверка трёх окон";
-  // the create button, scrolled into view, lies inside the window
-  const INSIDE = `(() => { const b = document.getElementById("create"); b.scrollIntoView({ block: "nearest", inline: "nearest" }); const r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight; })()`;
+  // "Inside the window" is what the person can see and reach of the create button in
+  // that window (ISS-0116, L2; decisions/0114, Д8 and Д14), each part read on its own:
+  // it lies sideways inside the window before any scroll (as picker.e2e.js reads
+  // it); scrolled into view, the window did not move sideways, and no box the person
+  // cannot scroll moved (a box whose computed overflow on that axis is neither auto
+  // nor scroll, from the button's parent up to the body, and the window itself when
+  // its overflow, from the root or else the body, is hidden or clip); the button is
+  // wholly inside the window; and the element the window shows at its centre is the
+  // button or a node inside it (not a box over it, a clip or a hidden button).
+  const REACH = `(() => {
+    const b = document.getElementById("create");
+    const s = b.getBoundingClientRect();
+    const boxes = [];
+    for (let e = b.parentElement; e !== null && e !== document.documentElement; e = e.parentElement) boxes.push([e, e.scrollLeft, e.scrollTop]);
+    const viewY = scrollY;
+    b.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const r = b.getBoundingClientRect();
+    const can = (v) => v === "auto" || v === "scroll";
+    const boxMoved = boxes.some(([e, x, y]) => { const st = getComputedStyle(e); return (e.scrollLeft !== x && !can(st.overflowX)) || (e.scrollTop !== y && !can(st.overflowY)); });
+    const root = getComputedStyle(document.documentElement).overflowY;
+    const view = root === "visible" ? getComputedStyle(document.body).overflowY : root;
+    const viewMoved = scrollY !== viewY && (view === "hidden" || view === "clip");
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return {
+      sideways: s.left >= 0 && s.right <= innerWidth,
+      noSidewaysScroll: scrollX === 0,
+      noHiddenScroll: !boxMoved && !viewMoved,
+      inWindow: r.width > 0 && r.height > 0 && r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight,
+      atCentre: hit !== null && b.contains(hit),
+    };
+  })()`;
+  const REACH_PARTS = [
+    ["sideways", "lies sideways inside the window before any scroll"],
+    ["noSidewaysScroll", "is reached with no sideways scroll of the window"],
+    [
+      "noHiddenScroll",
+      "is reached with no scroll of a box the person cannot scroll",
+    ],
+    ["inWindow", "is inside the window"],
+    ["atCentre", "is what the window shows at its centre"],
+  ];
   const noUnexpected = (browser, where) => {
     const unexpected = browser.unexpectedEntries();
     assert.equal(
@@ -1349,11 +1561,14 @@ test("windows", LIMIT, async () => {
             timeoutMs: 10000,
             description: `${where}: one row`,
           });
-          assert.equal(
-            await page.evaluate(INSIDE),
-            true,
-            `${where}: the create button is inside the window`,
-          );
+          const reach = await page.evaluate(REACH);
+          for (const [part, what] of REACH_PARTS) {
+            assert.equal(
+              reach?.[part],
+              true,
+              `${where}: the create button ${what}`,
+            );
+          }
           noUnexpected(browser, `${where}, the list page`);
           await openRow(page, goal);
           await page.waitFor(statusIs(DONE), {

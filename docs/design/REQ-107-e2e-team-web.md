@@ -6,6 +6,8 @@ This file holds shapes, signatures, tables and texts. It holds no implementation
 
 **As built (DOC-UPDATER, step 10, 2026-11-16, after the PASS of step 9, `handoffs/E2E107-20261116-01/step-09-release-validator.json`).** The design text is not rewritten (AP-143): the places that the built work, the rework steps 05c and 05d and the addenda О23–О36 of `decisions/0113` changed carry a note «As built» (sections 0, 4.1, 4.4, 7, 12, 13, 16, 21), and section 22 holds the counts read from the files, the differences, what is recorded outside this design and what is not proven.
 
+**As built after the fix of ISS-0116 (DOC-UPDATER, run `ISS-0116-20261117-01`, WF-03 step 10, 2026-11-17, after the PASS of step 9, `handoffs/ISS-0116-20261117-01/step-09-release-validator.json`).** That run changed only the spec `tools/test/e2e/team-web.e2e.js`, by `decisions/0114` (Д1–Д21). Again the text above is not rewritten: sections 4.4 and 16 get a dated note each, and section 23 holds the counts read from the file, the new helpers, the closed places and the limits that stay.
+
 ---
 
 ## 0. Summary
@@ -236,6 +238,7 @@ Every page code given to `waitFor` or `evaluate` is an expression or a function 
 - *Test 1, (a).* Before the spawn, `runTrap` builds its options as one object and asserts that the `HOME` it passes is the test's own `<root>/trap-home` (step 05c, F3 of gate 5b; mutant A09 red). The part of F3 that only a reading can find — a change of both the folder and its literal, or a removed assertion — joins the by-nature gaps of section 16 (`decisions/0113` О33).
 - *Test 4, project B.* After the click of «Не останавливать» the test waits, at most 8000 ms and with no sleep, until the page's own records of requests hold its next `GET` of `api/projects/<B>` (the poll of the page, every 5000 ms); only then it asserts that since the click the page sent no request but a `GET`, that B's journal has no `PROJECT_STOPPED`, that the status still reads «в работе» and that the buttons are still «Пауза» and «Остановить»; only then «Остановить» (step 05d, `decisions/0113` О32; probes P13t and P13t3 red). The window measured 4935–5003 ms at steps 05d and 05e; its length is not asserted (finding N1 of step 05e: a page that refreshes B at once on the cancel and sends the stop a second later stays green, mutant P13g1), recorded in `docs/issues/ISS-0116`. The margin of B (its planned 10000 ms of work minus the time from its first `TASK_STARTED` to its `PROJECT_STOPPED`) was at least 4759 ms in 12 runs at step 05d and 4766 ms in 12 runs at step 05e, both on this Mac, so `team-slow.json` was not changed (the rule of О32: under 3000 ms it would have been).
 - *Test 7 and test 1, as RELEASE-VALIDATOR measured them at step 9.* The window check `INSIDE` scrolls the button into view with `inline: "nearest"`, so a button pushed past the right edge at 320 px still passes (probe M11b; `decisions/0113` О35 (b)); the end check of each test reads the trap marker before its stand stops, and only `stand` reads it again after the stop, where there is no project (probe M01p; О35 (a)). Both are named limits of the status note of REQ-107 and the first items of `docs/issues/ISS-0116`, with the validator's measured fixes.
+- *Closed by run `ISS-0116-20261117-01` (note of 2026-11-17; section 23).* The places of the two bullets above are closed. In test 4 the window after «Не останавливать» now lasts at least `WINDOW_FLOOR_MS` (3000 ms) from the click and up to the page's next poll of B (N1, `decisions/0114` Д2), and test 5 has the same floor after its empty tries (Д3 (b)). `INSIDE` of test 7 became `REACH` with five parts (L2, Д8, Д14, Д18). Both start helpers read the end facts of criterion 1 again after the stop with `afterStop` (L1, Д3 (a), Д9 (a)). `BAD` has a sixth pattern, the stack-frame shape (I3, Д4, Д9 (b)). What stays is the named limits Д10, Д12, Д17, Д19 and the boundary Д20 (section 23).
 
 ### 4.5 The kit change (О1)
 
@@ -546,6 +549,8 @@ Counts: 58 rows; 56 applied at step 01c (55 red, P19 green on purpose), 2 on rec
 | 05e gate, pass 2 | 26 | D10b, D10c, P13, P13t, A08, A09, D10, V06j, P13t4 and the probe P13g1f red; the controls and the benign forms green; survived P13g1 (×3, finding N1) and D10e (issue I3, beyond the letter); PASS |
 | 09 RELEASE-VALIDATOR | 26 | own M01–M12 red in the named test; the controls K9 and M11k green; the probes M01c, M01p, M01pf, M01ps green (finding L1), FIXp red and FIXk green for its fix; M11b green (finding L2), M11c red; O13m green and O13p red (the overflow measurement of `decisions/0113` О36); not applied, on record: a mutant that would set `SAI_TEAM_REAL_RUNS` or leave `SAI_TEAM_CLAUDE_BIN` unset; PASS |
 
+*Note of 2026-11-17 (run `ISS-0116-20261117-01`, section 23): the four survivors of the next paragraph are red now. RELEASE-VALIDATOR measured each on fresh clones of the tag `base/ISS-0116-20261117-01`: green with the tag's spec and red with the new one (step 09, «PART 1»).*
+
 Survivors on record at the end of the run, none fixed in it: P13g1 (N1), D10e (I3), M01p (L1), M11b (L2) — `docs/issues/ISS-0116` (`decisions/0113` О34, О35). Closed in the run: D10b, D10c and A09 at step 05c, P13t at step 05d. By-nature gaps (no test can see them; the gates read the file): the removal of the trap control or of the end checks; a start of the starter that bypasses `teamStand` and `withTeam`; the end check cannot tell which trap a server holds, because the scripted executor never starts its Claude program (step 05, issue I4); the part of F3 that only a reading finds (О33). The red output of M03 (the trap copy cannot start) holds the temporary path of the copy through Node's spawn error, not a value of the person's environment (step 09, issue I7 (c); `docs/issues/ISS-0116`).
 
 ---
@@ -657,3 +662,60 @@ Found beyond the list and not changed here (AP-019): none. Three references to t
 - Criterion 1 with the limit of О35 (a) and criterion 7 with the limit of О35 (b), section 4.4, «As built»; both are the first items of `docs/issues/ISS-0116`.
 - No sideways overflow on either page in the three windows (О13, О36): measured by RELEASE-VALIDATOR on this Mac with a red positive control; no test asserts it.
 - The margin of project B (at least 4759 ms) and the window after «Не останавливать» (4935–5003 ms) are measured on this Mac only.
+
+## 23. As built after the fix of ISS-0116 (DOC-UPDATER, run `ISS-0116-20261117-01`, WF-03 step 10, 2026-11-17; the text above is not rewritten)
+
+The run followed "A fix only in tests" (`decisions/0114` Д1) and changed one file, the spec. Its gate 7 failed twice (step 07: F1 and F2, Medium; step 07c: G1, Medium) and passed at the third and last pass (step 07e). Steps 08 and 09 passed. The records are `decisions/0114` (Д1–Д21) and the handoffs `handoffs/ISS-0116-20261117-01/`.
+
+**Counts (read from the file at step 10; the commands from `tools/`).**
+
+- `test/e2e/team-web.e2e.js`: sha256 `61d69de8…` (`f0cbc838…` on the tag `base/ISS-0116-20261117-01`); 1584 lines (`wc -l`; 1369 on the tag).
+- Tests: 7 top-level tests (`grep -c '^test('` → 7, at lines 631, 754, 834, 897, 1156, 1308 and 1478); `grep -c 'test('` → 9, as on the tag.
+- Assertions: 113 `assert.` (`grep -o 'assert\.' … | wc -l`; 108 on the tag); 12 `assertPlain` (9 on the tag); 6 patterns in `BAD` (lines 84–91; 5 on the tag).
+- `git diff --stat base/ISS-0116-20261117-01 -- .` in `tools/` → this one file only, 246 insertions and 31 deletions. No product file, kit file, fixture or other spec changed.
+
+**New helpers and constants (by line of the file).**
+
+- `WINDOW_FLOOR_MS = 3000` (line 51). It is the shortest window of a proof that nothing was sent. In `control` it is counted from the click of «Не останавливать» (lines 1033–1052); in `chat`, from the end of the empty tries (lines 1216–1291). Each wait ends only when the floor has passed and the page's next poll has come (`decisions/0114` Д2, Д3 (b)).
+- `BAD` (lines 84–91) has a sixth pattern, the stack-frame shape `/^[ \t]*at \S.*:\d+(?::\d+)?\)?[ \t]*$/mu`: Д4, with the optional column of Д9 (b).
+- `withoutPath(err, place)` (line 208) tells a Node system error (one with a `syscall` and a `code`) as `a system error: <call> <code>, <the place, or "at line <n> of the spec">`, with no path. It carries a `cleanupError` over, and any other error passes as it is (Д3 (c)). `inFolders` (line 225) sends through it the errors of `testFolders`, of the body and of the removal of the folder. When the body failed too, it keeps the body's error first and attaches the removal's as `cleanupError` (Д7).
+- `SEEN` (line 314) and `executorsOf(data, ids)` (line 437). The end check records, per stand, the project folders it saw against the rows with the mark, and the executor of each, read from its first journal line, `PROJECT_CREATED` (Д9 (a)).
+- `linesOf(id)` and `linesOfAll(selector)` (lines 536–539) read the unfolded `innerText` of shown elements, where a line shown in its own block is a line. They are read for the chat refusal (line 1281), the reason rows of a failed task (line 1362) and the create refusal (line 1434) (Д4).
+- `afterStop(stand, where)` (line 609) runs after the stop. It asserts that the trap marker is absent, that the project folders of the server's data folder (`stand.stateEnv.SAI_TEAM_HOME`) are those the end check saw, and that their executors are too. `withTeam` (line 331) and `untilStopped` (line 366) call it (Д3 (a), Д9 (a)).
+- The red message of the trap control is `the trap control: the copy did not start (<code>)` (line 408; the note of ISS-0116).
+- `REACH` and `REACH_PARTS` (lines 1489–1521) replace `INSIDE` in test `windows` (Д8, Д14, Д18). Each of the five parts is asserted in each of the three windows (lines 1553–1565), with a message that names the window and the part:
+  - `sideways`: «lies sideways inside the window before any scroll»;
+  - `noSidewaysScroll`: «is reached with no sideways scroll of the window»;
+  - `noHiddenScroll`: «is reached with no scroll of a box the person cannot scroll». No box from the button's parent up to the body moved on an axis whose computed overflow is neither `auto` nor `scroll`, and the window did not move while its overflow (the root's, or else the body's) is `hidden` or `clip`;
+  - `inWindow`: «is inside the window», the old rectangle check;
+  - `atCentre`: «is what the window shows at its centre», by `document.elementFromPoint`.
+
+**Places of this design that the run closed.**
+
+- Section 4.4, «As built»: the bullet *Test 4, project B* (the window of no asserted length, N1) and the bullet *Test 7 and test 1* (L2 and L1). See the dated note under them.
+- Section 16: the survivors P13g1, D10e, M01p and M11b are red now (step 09, «PART 1»).
+- Section 22: item 3 of the differences (the window of no asserted length), and the bullet of what is not proven «Criterion 1 with the limit of О35 (a) and criterion 7 with the limit of О35 (b)».
+- The note M03 (the temporary path in the red output) and its kind J01: the path is gone from the messages, 0 hits with the new spec (step 09; Д21).
+
+**Measured times.**
+
+- `npm run -s e2e -- team-web` here: exit 0 with `duration_ms` 33085, 34045 and 33815 at step 09 (under rule R2-T); 32850 to 33835 at step 07b; 32877 to 33599 at step 07d.
+- team-web in the full local check: 32990 ms at step 08 and 33800 ms at step 09.
+- On GitHub: 28575 ms (run 44106392711, step 08, image version 20261111.370.1) and 26531 ms (run 44113639129, step 09, image version 20261111.127.1). Both are under the 42000 ms question line and the 70000 ms limit.
+- The window after «Не останавливать» on this Mac: 4785–4995 ms (step 07b) and 4834–4991 ms (step 07d), above the floor of 3000 ms.
+
+**Limits that stay (named by `decisions/0114`).**
+
+- Д10: a stop or an empty message sent after the floor window is not seen.
+- Д12: a server that at exit rewrites only the run lines of a project to `claude-cli` and keeps its created line is not seen.
+- Д17 and Д19: what a check inside the page cannot prove; `docs/issues/ISS-0118-team-page-window-check-needs-a-check-from-outside-the-page.md`.
+- Д20: a stack frame with no line and no column is not matched; a measured boundary, no defect.
+- From section 22, unchanged: no test asserts that a page has no sideways overflow (О13, О36); the keychain switch is measured on macOS only; Windows was never run. The runner is now four samples of two image versions (AP-144), and every local run was on one Mac.
+
+**Recorded outside this design.**
+
+- `docs/issues/ISS-0116-team-page-spec-low-gaps.md`: closed, with its «Закрыто».
+- `docs/issues/ISS-0117-pixel-office-spec-journal-read-before-stop.md`: the same end-before-stop kind in the Pixel Office spec (Д5).
+- `docs/issues/ISS-0118-…`: Д17 and Д19.
+- The status note of REQ-107 in `docs/requirements.yaml`, corrected; its "before" line is in `handoffs/ISS-0116-20261117-01/step-10-doc-updater.json`.
+- The process errors of the run: `docs/anti-patterns.md`, AP-161 to AP-163.
