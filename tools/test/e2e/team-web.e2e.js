@@ -51,7 +51,8 @@ const PROJECT_ID = /^p-[0-9]{8}-[0-9a-f]+$/u;
 const WINDOW_FLOOR_MS = 3000;
 
 // The link line of the server (README "Sai Team — the interface").
-const LINK = /^Sai Team: (http:\/\/127\.0\.0\.1:\d+\/)$/mu;
+// the link carries the access key of the start (ISS-0122)
+const LINK = /^Sai Team: (http:\/\/127\.0\.0\.1:\d+\/\?k=[0-9a-f]{64})$/mu;
 // The words of the empty list, measured on the tag (decisions/0113, О6).
 const EMPTY_WORDS =
   "Проектов пока нет. Опишите цель одной фразой — и команда возьмётся за работу.";
@@ -1037,7 +1038,8 @@ test("control", LIMIT, async () => {
         // event and the page still shows B in work with its buttons
         const recordsBefore = page.network().length;
         const sinceCancel = () => page.network().slice(recordsBefore);
-        const pollOfB = `${stand.url}api/projects/${b}`;
+        // the link ends with ?k=<access key> (ISS-0122): the poll is on the origin
+        const pollOfB = `${new URL(stand.url).origin}/api/projects/${b}`;
         await page.click("#stop-no");
         const cancelAt = performance.now();
         await page.waitFor(`!(${shown("stop-confirm")})`, {

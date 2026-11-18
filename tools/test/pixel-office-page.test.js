@@ -18,6 +18,7 @@ import {
   LIVE,
   MAIN_ROW,
   NO_CONNECTION,
+  NO_READ_KEY,
   NOT_FROM_HOOKS,
   ROLE_UNKNOWN,
   SHOWN_NOTE,
@@ -6087,4 +6088,22 @@ test("DQ-05: in the card of an instance '.card-links' stands right after the lin
   legendOf(page, "role:Explore").click();
   assert.equal(cardEl(page).dataset.columns, "1");
   check("no record, one column", "card-launcher");
+});
+
+test("ISS-0122 page: a 401 answer (no read key in the browser) gives the state 'denied' and the text that names the link of the command; a 500 is still 'Нет связи'; the polling goes on", async () => {
+  const j = journal();
+  j.sessionStart("S1");
+  const page = await loaded(j.entries);
+  page.server.mode = "status401";
+  await page.tick(2000);
+  assert.equal(page.el("link").dataset.state, "denied");
+  assert.equal(page.text("link-status"), NO_READ_KEY);
+  assert.match(NO_READ_KEY, /npm run pixel-office/u);
+  page.server.mode = "status500";
+  await page.tick(2000);
+  assert.equal(page.el("link").dataset.state, "down");
+  assert.equal(page.text("link-status"), NO_CONNECTION);
+  page.server.mode = "ok";
+  await page.tick(2000);
+  assert.equal(page.el("link").dataset.state, "live");
 });

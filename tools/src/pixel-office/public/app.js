@@ -112,6 +112,7 @@ import {
   ROW_MORE,
   NOW_PREFIX,
   NO_CONNECTION,
+  NO_READ_KEY,
   NO_DATA,
   OFFICE_NAME,
   OFFICE_SCROLL_LABEL,
@@ -463,7 +464,11 @@ export function createApp(env) {
       });
       const ok =
         res.status === undefined ? res.ok === true : res.status === 200;
-      if (!ok) throw new Error(`HTTP ${res.status}`);
+      if (!ok) {
+        const failure = new Error(`HTTP ${res.status}`);
+        failure.status = res.status;
+        throw failure;
+      }
       return res.json();
     })();
     // An answer that comes after the limit is of no interest and must not
@@ -531,10 +536,12 @@ export function createApp(env) {
       let body;
       try {
         body = await getJson(`${API_EVENTS}?after=${entries.length}`);
-      } catch {
+      } catch (err) {
         // The server is not there, did not answer in time, or answered with
-        // something that is not JSON: the page keeps what it has.
-        setLink("down");
+        // something that is not JSON: the page keeps what it has. 401: the
+        // browser has no read key yet (ISS-0122), the link of the command
+        // gives it.
+        setLink(err?.status === 401 ? "denied" : "down");
         return;
       }
       if (!validShape(body)) {
@@ -638,6 +645,7 @@ export function createApp(env) {
       let text = "";
       if (link === "live") text = LIVE;
       else if (link === "down") text = NO_CONNECTION;
+      else if (link === "denied") text = NO_READ_KEY;
       els.linkStatus.textContent = text;
     }
   }

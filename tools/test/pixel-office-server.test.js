@@ -15,7 +15,7 @@ import {
   JournalReadError,
 } from "../src/pixel-office/journal.js";
 import { main } from "../src/pixel-office/main.js";
-import { buildWriteBody } from "../src/pixel-office/protocol.js";
+import { buildWriteBody, readKeyOf } from "../src/pixel-office/protocol.js";
 import { signBody } from "../src/pixel-office/protocol.js";
 import { writeSmallFile } from "../src/pixel-office/state-dir.js";
 import { readRule } from "../src/pixel-office/public/model.js";
@@ -1016,7 +1016,12 @@ test("SV-47: B1 - the reader of stdout is closed before the line with the link: 
       return 0;
     }
   });
-  const r = await request(port, { path: "/api/events?after=0&limit=0" });
+  // the read key, as the command derives it from the secret (ISS-0122)
+  const secret = fs.readFileSync(path.join(box.dir, "write-secret"), "utf8");
+  const r = await request(port, {
+    path: "/api/events?after=0&limit=0",
+    headers: { "x-pixel-office-key": readKeyOf(secret.trim()) },
+  });
   assert.equal(r.status, 200);
   child.kill("SIGTERM");
   assert.equal(await done, 0);
@@ -1741,13 +1746,16 @@ test("SV-64: with storage off the server refuses prompt_text and note_text (400 
     if (prior === undefined) delete process.env.SAI_PIXEL_OFFICE_STORE_TEXT;
     else process.env.SAI_PIXEL_OFFICE_STORE_TEXT = prior;
   });
+  // ISS-0122: on for "1" only; empty and absent are off
   for (const [value, status] of [
     ["0", 400],
     ["yes", 400],
     ["1", 204],
-    ["", 204],
+    ["", 400],
+    [undefined, 400],
   ]) {
-    process.env.SAI_PIXEL_OFFICE_STORE_TEXT = value;
+    if (value === undefined) delete process.env.SAI_PIXEL_OFFICE_STORE_TEXT;
+    else process.env.SAI_PIXEL_OFFICE_STORE_TEXT = value;
     const box = sandbox(t);
     const secret = prepareState(box);
     const { createServer } = await import("../src/pixel-office/server.js");
@@ -2056,4 +2064,83 @@ test("ISS-0123 a body is remembered for twice the time tolerance, then forgotten
   const fresh = sb("Stop", "s-keep", 2);
   assert.equal((await srv.post(fresh, { sign: "bad" })).status, 401);
   assert.equal((await srv.post(fresh)).status, 204);
+});
+
+// ---- ISS-0122: the journal is read only with the read key -------------------------
+
+test("ISS-0122 GET /api/events without the key, with a wrong key, with the write secret or a signature in its place is 401 and shows no line; the header or the cookie of the key gives 200", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  assert.equal((await srv.post(sb("Stop", "s-secret-goal", 0))).status, 204);
+  const wrong = "0".repeat(64);
+  for (const headers of [
+    {},
+    { "x-pixel-office-key": wrong },
+    { "x-pixel-office-key": srv.secret },
+    { "x-pixel-office-key": srv.readKey.toUpperCase() },
+    { cookie: `sai_pixel_office=${wrong}` },
+    { cookie: `other=${srv.readKey}` },
+  ]) {
+    const r = await srv.get("/api/events", headers, { readKey: false });
+    assert.equal(r.status, 401, JSON.stringify(headers));
+    assert.equal(r.body.includes("s-secret-goal"), false);
+  }
+  const byHeader = await srv.get(
+    "/api/events",
+    { "x-pixel-office-key": srv.readKey },
+    { readKey: false },
+  );
+  assert.equal(byHeader.status, 200);
+  assert.ok(byHeader.body.includes("s-secret-goal"));
+  const byCookie = await srv.get(
+    "/api/events",
+    { cookie: `a=b; sai_pixel_office=${srv.readKey}; c=d` },
+    { readKey: false },
+  );
+  assert.equal(byCookie.status, 200);
+  // the read key is not the secret and cannot sign a write
+  assert.notEqual(srv.readKey, srv.secret);
+  assert.equal(
+    (await srv.post(sb("Stop", "s2", 0), { key: srv.readKey })).status,
+    401,
+  );
+});
+
+test("ISS-0122 the link /?k=<key> answers 303 to / with an HttpOnly SameSite=Strict cookie of the key; a wrong k sets nothing; the page and its files stay open without the key", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  const ok = await srv.get(`/?k=${srv.readKey}`);
+  assert.equal(ok.status, 303);
+  assert.equal(ok.headers.location, "/");
+  const cookie = ok.headers["set-cookie"][0];
+  assert.ok(cookie.startsWith(`sai_pixel_office=${srv.readKey};`), cookie);
+  for (const part of ["HttpOnly", "SameSite=Strict", "Path=/"]) {
+    assert.ok(cookie.includes(part), part);
+  }
+  for (const k of ["0".repeat(64), "abc", ""]) {
+    const bad = await srv.get(`/?k=${k}`);
+    assert.equal(bad.status, 200, k);
+    assert.equal(bad.headers["set-cookie"], undefined, k);
+  }
+  assert.equal((await srv.get("/")).status, 200);
+  assert.equal((await srv.get("/app.js")).status, 200);
+});
+
+test("ISS-0122 the command prints the link with the read key of the secret; the same link after a restart", async (t) => {
+  const box = sandbox(t);
+  const first = await spawnMain(t, box);
+  assert.match(
+    first.link,
+    /^Pixel Office: http:\/\/127\.0\.0\.1:\d+\/\?k=[0-9a-f]{64}$/u,
+  );
+  const secret = fs.readFileSync(path.join(box.dir, "write-secret"), "utf8");
+  assert.equal(first.readKey, readKeyOf(secret.trim()));
+  assert.equal(first.link.includes(secret.trim()), false);
+  const noKey = await request(first.port, {
+    path: "/api/events",
+    readKey: false,
+  });
+  assert.equal(noKey.status, 401);
+  assert.equal((await first.stop()).code, 0);
+  const second = await spawnMain(t, box);
+  assert.equal(second.readKey, first.readKey);
+  assert.equal((await second.stop()).code, 0);
 });

@@ -21,7 +21,11 @@ import {
 } from "./journal.js";
 import { maskSecrets } from "./mask.js";
 import {
+  READ_COOKIE,
   SIGNATURE_HEADER,
+  linkKeyValid,
+  readAllowed,
+  readKeyOf,
   storeTextEnabled,
   validateNoteBody,
   validateWriteBody,
@@ -484,8 +488,14 @@ export function createServer(options) {
     const pathname = q === -1 ? target : target.slice(0, q);
     const query = q === -1 ? "" : target.slice(q + 1);
     if (pathname === "/api/events") {
-      if (req.method === "GET") handleRead(res, query);
-      else if (req.method === "POST") handleWrite(req, res, processEvent);
+      if (req.method === "GET") {
+        // 3. ISS-0122: the journal is read only with the read key.
+        if (!readAllowed(req.headers, readKeyOf(getSecret()))) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        handleRead(res, query);
+      } else if (req.method === "POST") handleWrite(req, res, processEvent);
       else sendEmpty(res, 405, { Allow: "GET, POST" });
       return;
     }
@@ -493,6 +503,20 @@ export function createServer(options) {
       if (req.method === "POST") handleWrite(req, res, processNote);
       else sendEmpty(res, 405, { Allow: "POST" });
       return;
+    }
+    // The link of the command (/?k=<read key>): the key goes into a cookie
+    // that only this browser holds, and the address without the key is
+    // opened (ISS-0122). A wrong key sets nothing and the page is served as
+    // usual: its reads are then refused.
+    if (pathname === "/" && req.method === "GET") {
+      const key = readKeyOf(getSecret());
+      if (linkKeyValid(query, key)) {
+        sendEmpty(res, 303, {
+          Location: "/",
+          "Set-Cookie": `${READ_COOKIE}=${key}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000`,
+        });
+        return;
+      }
     }
     const name = staticName(pathname);
     if (name !== null) {

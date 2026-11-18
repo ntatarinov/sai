@@ -31,7 +31,9 @@ In the office a role character «works» while the role has a task that is «в 
 
 The command starts the server and prints one line with a link:
 
-    Pixel Office: http://127.0.0.1:4780/
+    Pixel Office: http://127.0.0.1:4780/?k=<read key>
+
+Open this link: the journal is read only with the read key (ISS-0122, an external security review of 2026-11-18). The link puts the key into a cookie of this browser (HttpOnly, SameSite=Strict) and opens the page without it; after that the page and a bookmark of `http://127.0.0.1:4780/` work in this browser. Another browser, another user of the computer or a program that reaches the port gets `401` from `GET /api/events`, and the page says «Нет доступа: откройте ссылку, которую напечатала команда npm run pixel-office». The key is derived from the write secret (`write-secret`, mode 0600), so it stays the same between starts; it is not the secret and cannot sign a write. The page and its files themselves hold no data and are open.
 
 The default port is 4780. It is fixed, so the link does not change between starts. Another port: `npm run pixel-office -- --port <number>` (`--port 0` means any free port); another state folder: `--dir <absolute path>` (see "Where things are"). If Pixel Office is already running on the port, the same line is printed and the command ends with code 0; a second server is not started. If the port is taken by another process, the command writes about it in Russian to stderr and ends with code 1. Help: `npm run pixel-office -- --help`. Node 22 is needed: under another version the command prints a message with the version and ends with code 1.
 
@@ -189,7 +191,7 @@ Not stored: the answers of the model, inputs and outputs of tools, messages of a
 
 Do not paste secrets into messages; if you pasted one — erase the history (below).
 
-**How to turn off.** `SAI_PIXEL_OFFICE_STORE_TEXT=0` — storing is turned off (any value except empty and `1` also turns it off). The hook then writes only the kind of the message, the command sends nothing and answers «хранение текста отключено» (storing of text is turned off), the server refuses a record with text. Important: set the variable SAI_PIXEL_OFFICE_STORE_TEXT both for the server and for Claude Code (in both places). If storing is turned off only for the server, and the Claude Code hook still sends `prompt_text`, the server answers 400 and the request event is lost entirely (a known risk).
+**Off by default.** Since ISS-0122 (the owner's choice of 2026-11-18 after an external security review) the texts are stored only with `SAI_PIXEL_OFFICE_STORE_TEXT=1`; absent, empty, `0` and any other value keep them out of the journal. **How to turn on.** `SAI_PIXEL_OFFICE_STORE_TEXT=1` for the server and for the hook. With storing off the hook writes only the kind of the message, the command sends nothing and answers «хранение текста отключено» (storing of text is turned off), the server refuses a record with text. Important: set the variable SAI_PIXEL_OFFICE_STORE_TEXT both for the server and for Claude Code (in both places). If storing is turned off only for the server, and the Claude Code hook still sends `prompt_text`, the server answers 400 and the request event is lost entirely (a known risk).
 
 **The orchestrator record.** A command from `tools/` (the example is made up):
 
@@ -501,7 +503,7 @@ From the folder `tools/`:
 
     npm run team-web
 
-The command prints one line with a link to the page — by default `Sai Team: http://127.0.0.1:4781/` — and works until it is stopped. Parameters:
+The command prints one line with a link to the page — by default `Sai Team: http://127.0.0.1:4781/?k=<access key>` — and works until it is stopped. Parameters:
 
 - `--port <number>` — another port (0 means any free one); if the port is taken, the command says so and offers another;
 - `--executor scripted --scenario <file>` — the test executor by a scenario file, **only for tests and acceptance**; such projects are marked on the page «тестовый исполнитель» (test executor). Without parameters, new projects are led by Claude Code (`claude-cli`).
@@ -510,7 +512,7 @@ Real Claude Code runs on this computer are turned on by the variable `SAI_TEAM_R
 
 ### Security
 
-The server listens only on `127.0.0.1` and answers only to the address `127.0.0.1:<port>` or `localhost:<port>`. Creating a project, writing into the chat and pressing the project buttons is possible only from its own page: a write request is checked by the source (`Origin`), the type of the body and the key of the page. The key is created anew at every start and lives only in the memory of the server; a page opened before a restart will ask to refresh. The border of trust is the users of this computer (as in Pixel Office).
+The server listens only on `127.0.0.1` and answers only to the address `127.0.0.1:<port>` or `localhost:<port>`. Creating a project, writing into the chat and pressing the project buttons is possible only from its own page: a write request is checked by the source (`Origin`), the type of the body and the key of the page. The key is created anew at every start and lives only in the memory of the server; a page opened before a restart will ask to refresh. Reads need the access key of the start (ISS-0122, an external security review of 2026-11-18): the printed link is `Sai Team: http://127.0.0.1:<port>/?k=<access key>`, opening it puts the key into a cookie of this browser (HttpOnly, SameSite=Strict, for this start only); without that cookie the page is a short text «Нет доступа: откройте ссылку, которую напечатала команда npm run team-web» with no key of the writes, and every `GET /api/…` is `401`. So another user of the computer or a program that only reaches the port reads no project and cannot get the key of the writes. After a restart open the new link. The files `app.js` and `style.css` hold no data and are open. The border of trust is a program of the same user, which can read the data folder anyway.
 
 ### The project page: six questions
 

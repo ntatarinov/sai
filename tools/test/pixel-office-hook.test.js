@@ -1050,14 +1050,15 @@ test("HK-24: the known uncovered cases (design 3.3) are NOT masked - a change of
   );
 });
 
-test("HK-25: storage off at the hook (0 or any other value but empty or 1) - prompt_kind stays, no text; on for absent, empty and 1", async (t) => {
+test("HK-25: storage off at the hook (absent, empty, 0 or any other value but 1, ISS-0122) - prompt_kind stays, no text; on for 1 only", async (t) => {
   const srv = await startServer(t);
   const word = "уникальная-подстрока-хранение";
   const cases = [
     ["0", false],
     ["yes", false],
     ["true", false],
-    ["", true],
+    ["", false],
+    [undefined, false],
     ["1", true],
   ];
   for (const [value] of cases) {

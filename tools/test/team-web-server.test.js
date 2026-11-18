@@ -34,6 +34,7 @@ import {
   pageKey,
   project,
   publicFiles,
+  accessKeyOfLine,
   request,
   spawnWeb,
   startServer,
@@ -43,7 +44,7 @@ import {
 
 const USAGE =
   "Использование: npm run team-web [-- --port N] [--executor claude-cli|scripted --scenario <файл>]\n";
-const LINK = /^Sai Team: http:\/\/127\.0\.0\.1:(\d+)\/\n$/;
+const LINK = /^Sai Team: http:\/\/127\.0\.0\.1:(\d+)\/\?k=[0-9a-f]{64}\n$/;
 
 function io() {
   const out = [];
@@ -82,7 +83,7 @@ function otherAddresses() {
   return out;
 }
 
-test("WEB-1a the command prints exactly one line Sai Team: http://127.0.0.1:<port>/; only 127.0.0.1 answers; ::1 and the other addresses of the computer refuse the connection; SIGTERM ends it with 0 and the start writes nothing", async (t) => {
+test("WEB-1a the command prints exactly one line Sai Team: http://127.0.0.1:<port>/?k=<access key>; only 127.0.0.1 answers; ::1 and the other addresses of the computer refuse the connection; SIGTERM ends it with 0 and the start writes nothing", async (t) => {
   const box = webSandbox(t);
   // The data folder does not exist yet: the start must not make it.
   const home = path.join(box.sb.root, "not-yet");
@@ -91,10 +92,14 @@ test("WEB-1a the command prints exactly one line Sai Team: http://127.0.0.1:<por
   const line = await within(run.firstLine, 20_000, "the link");
   const m = LINK.exec(line ?? "");
   assert.ok(m !== null, `the line: ${JSON.stringify(line)} ${run.err()}`);
+  accessKeyOfLine(line); // ISS-0122: the cookie of the link for request()
   const port = Number(m[1]);
   assert.ok(port > 0);
   const page = await request(port, { path: "/" });
   assert.equal(page.status, 200);
+  const writeKey = /<meta name="sai-page" content="([0-9a-f]{64})"/.exec(
+    page.text,
+  )[1];
   const list = await request(port, { path: "/api/projects" });
   assert.deepStrictEqual(list.json, { projects: [] });
   assert.equal(await tryConnect("127.0.0.1", port), "connected");
@@ -108,7 +113,12 @@ test("WEB-1a the command prints exactly one line Sai Team: http://127.0.0.1:<por
   assert.equal(end.code, 0, end.stderr);
   assert.equal(end.stdout, line, "only the link goes to stdout");
   assert.equal(end.stderr, "");
-  assert.doesNotMatch(end.stdout + end.stderr, /[0-9a-f]{64}/, "no key");
+  // ISS-0122: the one 64-hex value of the output is the access key of the link;
+  // the key of the writes (the page key) is printed nowhere
+  assert.deepEqual((end.stdout + end.stderr).match(/[0-9a-f]{64}/g), [
+    accessKeyOfLine(line),
+  ]);
+  assert.equal((end.stdout + end.stderr).includes(writeKey), false, "no key");
 });
 
 test("WEB-1a the server object binds 127.0.0.1 (HOST of config.js) and its port; the constants of section 3", async (t) => {
@@ -433,4 +443,46 @@ test("WEB-1h listen refuses with another code of the system: the promise rejects
   await assert.rejects(server.listen(), (err) => err.code === "EADDRINUSE");
   assert.equal(server.port(), null);
   await server.close();
+});
+
+// ---- ISS-0122: the page and the reads only with the access key ------------------------
+
+test("ISS-0122 without the access cookie the page is a short 401 text with no key of the writes, every read of data is 401; a wrong cookie too; the files of the page stay open", async (t) => {
+  const box = webSandbox(t);
+  const s = await startServer(t, box);
+  for (const headers of [
+    {},
+    { Cookie: `sai_team_web=${"0".repeat(64)}` },
+    { Cookie: `other=${s.accessKey()}` },
+  ]) {
+    const page = await s.get("/", headers, { access: false });
+    assert.equal(page.status, 401, JSON.stringify(headers));
+    assert.doesNotMatch(page.text, /[0-9a-f]{64}/u);
+    assert.match(page.text, /npm run team-web/u);
+    assert.ok(page.headers["content-security-policy"]);
+    const list = await s.get("/api/projects", headers, { access: false });
+    assert.equal(list.status, 401);
+    assert.match(list.json.error_text, /Нет доступа/u);
+  }
+  assert.equal((await s.get("/app.js", {}, { access: false })).status, 200);
+  assert.equal((await s.get("/style.css", {}, { access: false })).status, 200);
+  const ok = await s.get("/api/projects");
+  assert.equal(ok.status, 200);
+});
+
+test("ISS-0122 the link /?k=<access key> answers 303 to / with an HttpOnly SameSite=Strict cookie; a wrong k sets nothing; the access key is not the key of the writes", async (t) => {
+  const box = webSandbox(t);
+  const s = await startServer(t, box);
+  const r = await s.get(`/?k=${s.accessKey()}`, {}, { access: false });
+  assert.equal(r.status, 303);
+  assert.equal(r.headers.location, "/");
+  const cookie = r.headers["set-cookie"][0];
+  assert.ok(cookie.startsWith(`sai_team_web=${s.accessKey()};`), cookie);
+  for (const part of ["HttpOnly", "SameSite=Strict", "Path=/"]) {
+    assert.ok(cookie.includes(part), part);
+  }
+  const bad = await s.get(`/?k=${"0".repeat(64)}`, {}, { access: false });
+  assert.equal(bad.status, 401);
+  assert.equal(bad.headers["set-cookie"], undefined);
+  assert.notEqual(await s.key(), s.accessKey());
 });

@@ -16,7 +16,13 @@ import {
   scenarioRun,
   spawnEngine,
 } from "./team-engine-helpers.js";
-import { request, spawnWeb, within, writeHeaders } from "./team-web-helpers.js";
+import {
+  accessKeyOfLine,
+  request,
+  spawnWeb,
+  within,
+  writeHeaders,
+} from "./team-web-helpers.js";
 
 export const SENT = { result_text: "Отправлено" };
 export const fail = (text) => ({
@@ -32,7 +38,8 @@ export const AFTER_FAILURE = fail(
 );
 export const ctlPath = (id) => `/api/projects/${id}/control`;
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-export const LINK = /^Sai Team: http:\/\/127\.0\.0\.1:(\d+)\/\n$/;
+export const LINK =
+  /^Sai Team: http:\/\/127\.0\.0\.1:(\d+)\/\?k=[0-9a-f]{64}\n$/;
 
 export const ofType = (events, type) => events.filter((e) => e.type === type);
 export const pairs = (events) => events.map((e) => [e.type, e.source]);
@@ -126,6 +133,7 @@ export async function webCommand(t, box, scenarioFile) {
   const line = await within(run.firstLine, 20_000, "the link");
   const m = LINK.exec(line ?? "");
   assert.ok(m !== null, `the line: ${JSON.stringify(line)} ${run.err()}`);
+  accessKeyOfLine(line); // ISS-0122: the cookie of the link for request()
   const port = Number(m[1]);
   const keyPage = await request(port, { path: "/" });
   const key = /<meta name="sai-page" content="([0-9a-f]{64})"/.exec(

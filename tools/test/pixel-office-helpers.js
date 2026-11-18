@@ -12,7 +12,12 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createServer } from "../src/pixel-office/server.js";
-import { signBody, SIGNATURE_HEADER } from "../src/pixel-office/protocol.js";
+import {
+  READ_KEY_HEADER,
+  SIGNATURE_HEADER,
+  readKeyOf,
+  signBody,
+} from "../src/pixel-office/protocol.js";
 import { ensureSecret, ensureStateDir } from "../src/pixel-office/state-dir.js";
 import { createApp } from "../src/pixel-office/public/app.js";
 
@@ -90,8 +95,13 @@ export function childEnv(box, extra = {}) {
     PATH: process.env.PATH,
     HOME: box.home,
     SAI_PIXEL_OFFICE_DIR: box.dir,
+    // Storage of texts is off by default since ISS-0122; the child processes of
+    // the tests store texts unless a test sets another value or undefined
+    // (undefined: the variable is absent).
+    SAI_PIXEL_OFFICE_STORE_TEXT: "1",
     ...extra,
   };
+  for (const [k, v] of Object.entries(env)) if (v === undefined) delete env[k];
   assertSafeEnv(env);
   return env;
 }
@@ -473,10 +483,32 @@ export function hookInputs(session = "sess-hook-01") {
 // ----------------------------------------------------------- HTTP helpers
 
 // One request on a fresh connection; the Host header can be replaced.
+// ISS-0122: the read key of every server a test started (port -> key). A GET
+// of /api/events through request() carries it, as the command does, unless the
+// test says readKey: false or gives the header itself.
+const READ_KEYS = new Map();
+
+export function rememberReadKey(port, key) {
+  READ_KEYS.set(port, key);
+}
+
+export function readKeyOfPort(port) {
+  return READ_KEYS.get(port);
+}
+
 export function request(port, o = {}) {
   return new Promise((resolve, reject) => {
     const headers = { ...(o.headers ?? {}) };
     if (o.host !== undefined) headers.host = o.host;
+    if (
+      o.readKey !== false &&
+      (o.method ?? "GET") === "GET" &&
+      (o.path ?? "/").startsWith("/api/events") &&
+      READ_KEYS.has(port) &&
+      !Object.keys(headers).some((h) => h.toLowerCase() === READ_KEY_HEADER)
+    ) {
+      headers[READ_KEY_HEADER] = READ_KEYS.get(port);
+    }
     const req = http.request(
       {
         host: "127.0.0.1",
@@ -524,6 +556,7 @@ export async function startServer(t, o = {}) {
   });
   const { port } = await server.listen();
   t.after(() => server.close());
+  rememberReadKey(port, readKeyOf(secret));
   const eventsFile = path.join(box.dir, "events.jsonl");
   const api = {
     box,
@@ -534,7 +567,8 @@ export async function startServer(t, o = {}) {
     warnings,
     eventsFile,
     startsFile: path.join(box.dir, "server-starts.jsonl"),
-    get: (p, headers) => request(port, { path: p, headers }),
+    readKey: readKeyOf(secret),
+    get: (p, headers, o = {}) => request(port, { path: p, headers, ...o }),
     // A signed write; sign: false → no signature, a string → that signature.
     post(body, { sign = true, key = secret, headers = {}, raw } = {}) {
       const text = raw ?? JSON.stringify(body);
@@ -601,12 +635,14 @@ export async function spawnMain(t, box, args = [], o = {}) {
       15000,
     );
     const check = () => {
-      const m = /^Pixel Office: http:\/\/127\.0\.0\.1:(\d+)\/$/m.exec(
-        out.stdout,
-      );
+      const m =
+        /^Pixel Office: http:\/\/127\.0\.0\.1:(\d+)\/\?k=([0-9a-f]{64})$/m.exec(
+          out.stdout,
+        );
       if (m) {
         clearTimeout(timer);
-        resolve({ port: Number(m[1]), line: m[0] });
+        rememberReadKey(Number(m[1]), m[2]);
+        resolve({ port: Number(m[1]), line: m[0], readKey: m[2] });
       }
     };
     child.stdout.on("data", check);
@@ -622,6 +658,7 @@ export async function spawnMain(t, box, args = [], o = {}) {
     out,
     port: link.port,
     link: link.line,
+    readKey: link.readKey,
     async stop() {
       child.kill("SIGTERM");
       return done;
@@ -1121,6 +1158,9 @@ export function makeEventsServer({ entries = [], starts = [] } = {}) {
       }
       if (s.mode === "status500")
         return { status: 500, json: async () => ({}) };
+      // ISS-0122: the browser has no read key
+      if (s.mode === "status401")
+        return { status: 401, json: async () => ({ error: "unauthorized" }) };
       if (s.mode === "notjson") {
         return {
           status: 200,

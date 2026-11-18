@@ -261,10 +261,10 @@ test(
   },
 );
 
-test("SV-64 (command): with SAI_PIXEL_OFFICE_STORE_TEXT=0 the command exits 0, says 'хранение текста отключено' on stderr, sends nothing and the journal does not change", async (t) => {
+test("SV-64 (command): with SAI_PIXEL_OFFICE_STORE_TEXT absent, empty, 0 or any value but 1 (ISS-0122) the command exits 0, says 'хранение текста отключено' on stderr, sends nothing and the journal does not change", async (t) => {
   const srv = await serverWithOwner(t);
   const sha = srv.sha();
-  for (const value of ["0", "yes", "false"]) {
+  for (const value of ["0", "yes", "false", "", undefined]) {
     const env = childEnv(srv.box, { SAI_PIXEL_OFFICE_STORE_TEXT: value });
     const r = await runNote(srv.box, ["--text", "а"], { env });
     assert.equal(r.code, 0, value);
@@ -273,9 +273,8 @@ test("SV-64 (command): with SAI_PIXEL_OFFICE_STORE_TEXT=0 the command exits 0, s
     assert.equal(r.requests.length, 0);
   }
   assert.equal(srv.sha(), sha);
-  // On: absent, empty, 1.
-  // (two texts: the same bytes twice would be a replay, 409, ISS-0123)
-  for (const value of ["", "1"]) {
+  // On: 1 only (ISS-0122).
+  for (const value of ["1"]) {
     const env = childEnv(srv.box, { SAI_PIXEL_OFFICE_STORE_TEXT: value });
     const r = await runNote(srv.box, ["--text", `а${value}`], { env });
     assert.equal(r.code, 0, value);

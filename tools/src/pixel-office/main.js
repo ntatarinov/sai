@@ -14,10 +14,12 @@ import {
   PROBE_MS,
 } from "./config.js";
 import { JournalReadError, JournalWriteError } from "./journal.js";
+import { READ_KEY_HEADER, readKeyOf } from "./protocol.js";
 import { createServer } from "./server.js";
 import {
   StateDirError,
   ensureSecret,
+  readSecret,
   ensureStateDir,
   resolveStateDir,
 } from "./state-dir.js";
@@ -79,9 +81,10 @@ function parseArgs(argv) {
   return opts;
 }
 
-// The one line the command prints on stdout.
-function linkLine(port) {
-  return `Pixel Office: http://${HOST}:${port}/`;
+// The one line the command prints on stdout. The link carries the read key
+// (ISS-0122): opening it once gives the browser the cookie of the reads.
+function linkLine(port, key) {
+  return `Pixel Office: http://${HOST}:${port}/?k=${key}`;
 }
 
 function describe(err) {
@@ -101,7 +104,7 @@ function homeDir(env) {
 // Is the occupant of this port a Pixel Office server? One bounded GET to
 // 127.0.0.1 (the host is a constant, the port is a checked integer); any
 // failure, silence, wrong status or foreign answer means "no".
-function isPixelOffice(port) {
+function isPixelOffice(port, key) {
   return new Promise((resolve) => {
     let timer = null;
     let settled = false;
@@ -120,7 +123,7 @@ function isPixelOffice(port) {
           host: HOST,
           port,
           path: "/api/events?after=0&limit=0",
-          headers: { Accept: "application/json" },
+          headers: { Accept: "application/json", [READ_KEY_HEADER]: key },
         },
         (res) => {
           if (res.statusCode !== 200) {
@@ -215,14 +218,16 @@ async function run(argv, env, io) {
     return 1;
   }
 
+  // The secret is in place (ensureSecret above), so the read key exists.
+  const readKey = readKeyOf(readSecret(stateDir));
   const server = createServer({ stateDir, port: args.port });
   let bound;
   try {
     bound = await server.listen();
   } catch (err) {
     if (err && err.code === "EADDRINUSE") {
-      if (await isPixelOffice(args.port)) {
-        io.out.write(`${linkLine(args.port)}\n`);
+      if (await isPixelOffice(args.port, readKey)) {
+        io.out.write(`${linkLine(args.port, readKey)}\n`);
         return 0;
       }
       io.err.write(
@@ -261,7 +266,7 @@ async function run(argv, env, io) {
   process.on("SIGTERM", stop);
 
   try {
-    io.out.write(`${linkLine(bound.port)}\n`);
+    io.out.write(`${linkLine(bound.port, readKey)}\n`);
   } catch (err) {
     stopping = true;
     process.off("SIGINT", stop);

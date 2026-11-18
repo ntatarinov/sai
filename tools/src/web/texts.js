@@ -35,6 +35,9 @@ export const TEXT = Object.freeze({
 
   // Refusals (section 10).
   hostRefused: "Запрос отклонён",
+  // ISS-0122: a read without the access key of this start.
+  noAccess:
+    "Нет доступа: откройте ссылку, которую напечатала команда npm run team-web",
   refused: "Запрос отклонён: действие доступно только со страницы Sai Team",
   staleKey:
     "Sai Team был перезапущен, и эта страница устарела. Обновите страницу и повторите — текст в поле пропадёт, скопируйте его, если он нужен",

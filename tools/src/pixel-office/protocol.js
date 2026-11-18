@@ -52,6 +52,68 @@ export function verifySignature(secret, body, signature) {
   );
 }
 
+// ISS-0122: the key of the reads. A read of the journal (GET /api/events) is
+// answered only to a client that shows this key, in the header READ_KEY_HEADER
+// (the command itself) or in the cookie READ_COOKIE (the page: the link that the
+// command prints sets it once). The key is derived from the write secret, so it
+// lives as long as the secret (file mode 0600, outside the repository) and the
+// link stays the same between starts; it is not the secret and cannot sign.
+export const READ_KEY_HEADER = "x-pixel-office-key";
+export const READ_COOKIE = "sai_pixel_office";
+const READ_KEY_LABEL = "sai-pixel-office-read-key-v1";
+const READ_KEY_PATTERN = /^[0-9a-f]{64}$/;
+
+// 64 lowercase hex digits, or null without a secret.
+export function readKeyOf(secret) {
+  if (typeof secret !== "string" || secret === "") return null;
+  return crypto
+    .createHmac("sha256", secret)
+    .update(READ_KEY_LABEL)
+    .digest("hex");
+}
+
+function sameKey(key, given) {
+  if (typeof given !== "string" || !READ_KEY_PATTERN.test(given)) return false;
+  return crypto.timingSafeEqual(
+    Buffer.from(key, "hex"),
+    Buffer.from(given, "hex"),
+  );
+}
+
+// The value of the cookie name in a Cookie header, or null.
+function cookieValue(header, name) {
+  if (typeof header !== "string") return null;
+  for (const part of header.split(";")) {
+    const at = part.indexOf("=");
+    if (at !== -1 && part.slice(0, at).trim() === name) {
+      return part.slice(at + 1).trim();
+    }
+  }
+  return null;
+}
+
+// True when the request shows the read key (header or cookie); never throws.
+export function readAllowed(headers, key) {
+  if (key === null || headers === null || typeof headers !== "object") {
+    return false;
+  }
+  return (
+    sameKey(key, headers[READ_KEY_HEADER]) ||
+    sameKey(key, cookieValue(headers.cookie, READ_COOKIE))
+  );
+}
+
+// The value of k in the query of the link, or null.
+export function linkKeyOf(query) {
+  const value = new URLSearchParams(query).get("k");
+  return value !== null && READ_KEY_PATTERN.test(value) ? value : null;
+}
+
+// True when the key of the link is the read key.
+export function linkKeyValid(query, key) {
+  return key !== null && sameKey(key, linkKeyOf(query));
+}
+
 function isPlainObject(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
@@ -76,11 +138,13 @@ export function maskField(value, limit) {
 }
 
 // Storage of message texts (REQ-008 2.4): on only when the variable is
-// absent, empty or "1"; "0" and any other value (a typo too) turn it off.
+// exactly "1". Off by default since ISS-0122 (the owner's choice of
+// 2026-11-18 after an external security review): absent, empty, "0" and any
+// other value (a typo too) keep the texts out of the journal.
 export function storeTextEnabled(env) {
   const value =
     env !== null && typeof env === "object" ? env[ENV_STORE_TEXT] : undefined;
-  return value === undefined || value === "" || value === "1";
+  return value === "1";
 }
 
 function bodyBytes(line) {

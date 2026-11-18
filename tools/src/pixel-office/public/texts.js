@@ -10,6 +10,9 @@
 export const HEADER_BADGE = "Источник событий — Claude Code";
 export const LIVE = "на связи";
 export const NO_CONNECTION = "Нет связи с сервером Pixel Office";
+// ISS-0122: the reads need the key that the link of the command carries.
+export const NO_READ_KEY =
+  "Нет доступа: откройте ссылку, которую напечатала команда npm run pixel-office";
 export const NOW_PREFIX = "Сейчас: ";
 export const NOW_EMPTY = "в работе ничего нет";
 // The name of the list of the rows of "Сейчас" for a screen reader.
