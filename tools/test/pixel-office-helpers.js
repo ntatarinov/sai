@@ -1540,6 +1540,31 @@ export const MASK_ROWS = [
 
 // The rules M1-M10 one by one: a text that is masked (exact result).
 export const MASK_RULE_ROWS = [
+  // ISS-0121: a space or a tab before "=", and an address with an empty user.
+  {
+    id: "M9-spaced-quoted",
+    input: 'password = "hunter2fake" дальше',
+    expected: `password = ${LB} дальше`,
+    leak: ["hunter2fake"],
+  },
+  {
+    id: "M9-spaced-bare",
+    input: "password = primer42",
+    expected: `password = ${LB}`,
+    leak: ["primer42"],
+  },
+  {
+    id: "M9-spaced-tab-comment",
+    input: "DB_PASSWORD\t=\tprimer42  # прод",
+    expected: `DB_PASSWORD\t=\t${LB}  # прод`,
+    leak: ["primer42"],
+  },
+  {
+    id: "M3-empty-user",
+    input: "redis://:primer42@host:6379",
+    expected: `redis://${LB}@host:6379`,
+    leak: ["primer42"],
+  },
   {
     id: "M1",
     input:
@@ -1670,7 +1695,18 @@ export const MASK_RULE_ROWS = [
 ];
 
 // Text that must stay as it is (N-1...N-7 and the examples of criterion 7).
+// ISS-0121: a comparison, an arrow, a ternary, a bare word or an expression with
+// a bracket after a spaced sign is no pair.
 export const MASK_KEEP_ROWS = [
+  "if (password == null)",
+  "password === other",
+  "x => password => 1",
+  "def f(password = None):",
+  "token = response.json()['token']",
+  'password = request.form["password"]',
+  "token = jwt",
+  "cond ? token : other",
+  "http://:8080/path",
   "docs/design/samples/history-view-sample-2026-10-05",
   "tools/src/pixel-office/public/panels.js",
   "REQ-008",
@@ -1696,7 +1732,6 @@ export const MASK_RESIDUAL = [
   "AB12CD34EF56GH78IJ90KL12MN34OP56QR78",
   "k9x2m4p7q1w8",
   "mypassword=primer42",
-  "password = primer42",
   "SECRET_ACCESS_KEY=abcd/EFGH+ijkl",
   "--password primer42",
   "pwd=primer42",
