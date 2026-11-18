@@ -1004,7 +1004,8 @@ test("EX-48 structured_output and a JSON string in result are both accepted; a r
 const ROLE_TOOLS = {
   project_manager: "Read,Write,Edit,Glob,Grep",
   business_analyst: "Read,Write,Edit,Glob,Grep",
-  researcher: "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch",
+  // ISS-0119: without SAI_TEAM_WEB_DOMAINS the Researcher has no WebFetch
+  researcher: "Read,Write,Edit,Glob,Grep,WebSearch",
   financial_analyst: "Read,Write,Edit,Glob,Grep",
   lawyer: "Read,Write,Edit,Glob,Grep",
   marketer: "Read,Write,Edit,Glob,Grep",
@@ -1046,7 +1047,7 @@ test("EX-49 the arguments equal the table of section 5.2 position by position; e
       tools,
       "--allowedTools",
       tools,
-      ...(role === "researcher" ? ["--disallowedTools", DENY] : []),
+      // no WebFetch, so no deny rules (ISS-0119); DENY is checked with a list of sites below
       "--permission-prompts",
       "none",
       "--restricted",
@@ -1068,4 +1069,19 @@ test("EX-49 the arguments equal the table of section 5.2 position by position; e
     );
     assert.ok(roleByCode(role).internal.prompt.length > 10);
   }
+  // with a list of sites: WebFetch in --tools, one allow rule per site, the deny rules
+  fs.rmSync(path.join(sb.user, "fake-claude", "log.jsonl"), { force: true });
+  const p = makeProject(sb, { role: "researcher" });
+  const r = run(sb, p, { SAI_TEAM_WEB_DOMAINS: "example.com" });
+  assert.equal(r.status, 0, describeRun(r));
+  const [start] = fakeStarts(sb);
+  const at = start.argv.indexOf("--tools");
+  assert.deepEqual(start.argv.slice(at, at + 6), [
+    "--tools",
+    "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch",
+    "--allowedTools",
+    "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch(domain:example.com)",
+    "--disallowedTools",
+    DENY,
+  ]);
 });

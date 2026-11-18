@@ -46,7 +46,7 @@ function runOf(sb, p, over = {}) {
 
 const setOf = (list) => [...new Set(list.split(","))].sort();
 
-test("EX-16 the tools of the ten roles: --tools and --allowedTools, no Bash, five deny rules for the Researcher only", (t) => {
+test("EX-16 the tools of the ten roles: --tools and --allowedTools, no Bash; by default the Researcher has WebSearch and no WebFetch, so no deny rules (ISS-0119)", (t) => {
   const sb = makeSandbox(t);
   writePlan(sb, OK_PLAN);
   const p = makeProject(sb, { role: ROLE_CODES, tasks: 10 });
@@ -65,7 +65,7 @@ test("EX-16 the tools of the ten roles: --tools and --allowedTools, no Bash, fiv
     const allowed = argAfter(argv, "--allowedTools");
     const expected =
       code === "researcher"
-        ? [...BASIC_TOOLS, "WebSearch", "WebFetch"].sort()
+        ? [...BASIC_TOOLS, "WebSearch"].sort()
         : [...BASIC_TOOLS].sort();
     assert.deepEqual(setOf(tools), expected, `${code} --tools`);
     assert.deepEqual(setOf(allowed), expected, `${code} --allowedTools`);
@@ -74,11 +74,7 @@ test("EX-16 the tools of the ten roles: --tools and --allowedTools, no Bash, fiv
       assert.equal(setOf(allowed).includes(name), false, `${code}: ${name}`);
     }
     const deny = argAfter(argv, "--disallowedTools");
-    if (code === "researcher") {
-      assert.deepEqual(deny.split(","), DENY_RULES);
-    } else {
-      assert.equal(deny, undefined, `${code} has deny rules`);
-    }
+    assert.equal(deny, undefined, `${code} has deny rules`);
   });
   // The developer has no Bash and no command execution at all.
   const dev = starts[ROLE_CODES.indexOf("developer")].argv;
@@ -119,27 +115,100 @@ test("EX-17 without SAI_TEAM_REAL_RUNS=1 the Researcher gets no network whatever
   }
 });
 
-test("EX-17 with the switch on and SAI_TEAM_WEB unset or 1: both tools and all five rules", (t) => {
+test("EX-17 with the switch on and SAI_TEAM_WEB unset or 1, without SAI_TEAM_WEB_DOMAINS: WebSearch only, no WebFetch and no deny rules (ISS-0119)", (t) => {
   const sb = makeSandbox(t);
   writePlan(sb, OK_PLAN);
   for (const web of [undefined, "1", "yes"]) {
-    const p = makeProject(sb);
-    const r = runOf(sb, p, { SAI_TEAM_WEB: web });
-    assert.equal(r.status, 0, describeRun(r));
+    for (const domains of [undefined, ""]) {
+      const p = makeProject(sb);
+      const r = runOf(sb, p, {
+        SAI_TEAM_WEB: web,
+        SAI_TEAM_WEB_DOMAINS: domains,
+      });
+      assert.equal(r.status, 0, describeRun(r));
+    }
   }
   const starts = fakeStarts(sb);
-  assert.equal(starts.length, 3);
+  assert.equal(starts.length, 6);
   for (const s of starts) {
-    assert.deepEqual(argAfter(s.argv, "--tools").split(","), [
-      ...BASIC_TOOLS,
-      "WebSearch",
-      "WebFetch",
-    ]);
-    assert.deepEqual(
-      argAfter(s.argv, "--disallowedTools").split(","),
-      DENY_RULES,
+    for (const flag of ["--tools", "--allowedTools"]) {
+      assert.deepEqual(argAfter(s.argv, flag).split(","), [
+        ...BASIC_TOOLS,
+        "WebSearch",
+      ]);
+    }
+    for (const arg of s.argv) {
+      assert.doesNotMatch(arg, /WebFetch/u, `argument ${arg}`);
+    }
+    assert.equal(s.argv.includes("--disallowedTools"), false);
+  }
+});
+
+test("ISS-0119 with SAI_TEAM_WEB_DOMAINS the Researcher gets WebFetch, --allowedTools allows it only for the listed sites (never a bare WebFetch), and the five deny rules stay", (t) => {
+  const sb = makeSandbox(t);
+  writePlan(sb, OK_PLAN);
+  const p = makeProject(sb);
+  const r = runOf(sb, p, {
+    SAI_TEAM_WEB_DOMAINS: "docs.python.org,example.com,docs.python.org",
+  });
+  assert.equal(r.status, 0, describeRun(r));
+  const [start] = fakeStarts(sb);
+  assert.deepEqual(argAfter(start.argv, "--tools").split(","), [
+    ...BASIC_TOOLS,
+    "WebSearch",
+    "WebFetch",
+  ]);
+  // a repeated site is one rule; the order of the list is kept
+  assert.deepEqual(argAfter(start.argv, "--allowedTools").split(","), [
+    ...BASIC_TOOLS,
+    "WebSearch",
+    "WebFetch(domain:docs.python.org)",
+    "WebFetch(domain:example.com)",
+  ]);
+  assert.deepEqual(
+    argAfter(start.argv, "--disallowedTools").split(","),
+    DENY_RULES,
+  );
+  // SAI_TEAM_WEB=0 still wins over the list
+  const off = makeProject(sb);
+  const r0 = runOf(sb, off, {
+    SAI_TEAM_WEB: "0",
+    SAI_TEAM_WEB_DOMAINS: "example.com",
+  });
+  assert.equal(r0.status, 0, describeRun(r0));
+  for (const arg of fakeStarts(sb)[1].argv) {
+    assert.doesNotMatch(arg, /WebSearch|WebFetch/u, `argument ${arg}`);
+  }
+});
+
+test("ISS-0119 a bad SAI_TEAM_WEB_DOMAINS is E_CONFIG and starts nothing: a wildcard, a scheme, a port, a path, an IP address, one label, upper case, spaces, an empty item", (t) => {
+  const sb = makeSandbox(t);
+  writePlan(sb, OK_PLAN);
+  const p = makeProject(sb);
+  for (const bad of [
+    "*.example.com",
+    "https://example.com",
+    "example.com:443",
+    "example.com/x",
+    "10.0.0.1",
+    "127.0.0.1",
+    "localhost",
+    "Example.com",
+    " example.com",
+    "example.com,",
+    "example..com",
+    "-a.example.com",
+    "a".repeat(64) + ".com",
+    Array.from({ length: 51 }, (_, i) => `s${i}.example.com`).join(","),
+  ]) {
+    const r = runOf(sb, p, { SAI_TEAM_WEB_DOMAINS: bad });
+    assert.equal(r.status, 2, `${bad}: ${describeRun(r)}`);
+    assert.ok(
+      r.stderr.startsWith("E_CONFIG: Неверная настройка SAI_TEAM_WEB_DOMAINS"),
+      `${bad}: ${r.stderr}`,
     );
   }
+  assert.equal(fakeStarts(sb).length, 0);
 });
 
 test("EX-30 every role has a prompt and tools; neither the prompt nor a tool name ever reaches the output of the commands or the phrases", (t) => {
