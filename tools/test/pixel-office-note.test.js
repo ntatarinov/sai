@@ -274,9 +274,10 @@ test("SV-64 (command): with SAI_PIXEL_OFFICE_STORE_TEXT=0 the command exits 0, s
   }
   assert.equal(srv.sha(), sha);
   // On: absent, empty, 1.
+  // (two texts: the same bytes twice would be a replay, 409, ISS-0123)
   for (const value of ["", "1"]) {
     const env = childEnv(srv.box, { SAI_PIXEL_OFFICE_STORE_TEXT: value });
-    const r = await runNote(srv.box, ["--text", "а"], { env });
+    const r = await runNote(srv.box, ["--text", `а${value}`], { env });
     assert.equal(r.code, 0, value);
     assert.equal(r.requests.length, 1);
   }
@@ -511,7 +512,8 @@ test(
       const result = await new Promise((resolve) => {
         const child = spawn(
           process.execPath,
-          [NOTE_JS, "--text", "через прокси"],
+          // a text of its own each time: the same bytes twice are a replay (ISS-0123)
+          [NOTE_JS, "--text", `через прокси ${Object.keys(extra)[0]}`],
           {
             env: childEnv(srv.box, extra),
             stdio: ["ignore", "pipe", "pipe"],
@@ -540,3 +542,12 @@ test(
     );
   },
 );
+
+test("ISS-0123 (command): a note that the server refuses as a replay gives code 1 and a Russian reason", async (t) => {
+  const srv = await serverWithOwner(t);
+  const first = await runNote(srv.box, ["--text", "повтор записи"]);
+  assert.equal(first.code, 0, first.stderr);
+  const second = await runNote(srv.box, ["--text", "повтор записи"]);
+  assert.equal(second.code, 1);
+  assert.match(second.stderr, /такая же запись уже принята, повтор отклонён/u);
+});

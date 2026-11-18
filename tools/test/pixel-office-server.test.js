@@ -854,7 +854,8 @@ test("SV-41: the state directory removed while running - GET gives an empty jour
   const g = await srv.get("/api/events");
   assert.equal(g.status, 200);
   assert.equal(JSON.parse(g.body).lines, 0);
-  const p = await srv.post(sb("Stop", "s", 0));
+  // another body: the same bytes again would be a replay (409, ISS-0123)
+  const p = await srv.post(sb("Stop", "s", 1));
   assert.equal(p.status, 500);
   assert.equal((await srv.get("/api/events")).status, 200);
 });
@@ -2008,4 +2009,51 @@ test("MK-02: the server masks the description, subagent_type and agent_type of a
   );
   assert.equal(last.description, masked.description);
   assert.equal(last.subagent_type, masked.subagent_type);
+});
+
+// ---- ISS-0123: a signed body is accepted once -------------------------------------
+
+test("ISS-0123 the same signed event sent twice: 204, then 409 replayed, one line in the journal", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  const body = sb("Stop", "s-replay", 0);
+  assert.equal((await srv.post(body)).status, 204);
+  const before = srv.sha();
+  const again = await srv.post(body);
+  assert.equal(again.status, 409);
+  assert.equal(JSON.parse(again.body).error, "replayed");
+  assert.equal(srv.sha(), before);
+  assert.equal(
+    srv.lines().filter((l) => JSON.parse(l).session_id === "s-replay").length,
+    1,
+  );
+  // another body (another moment of the event) is a new event
+  assert.equal((await srv.post(sb("Stop", "s-replay", 1))).status, 204);
+});
+
+test("ISS-0123 the same signed note sent twice: 200, then 409 replayed, one note line", async (t) => {
+  const srv = await startServer(t, { now: fixedNow });
+  const note = { note_text: "понял задачу", session_id: "s-note" };
+  assert.equal((await srv.postNote(note)).status, 200);
+  const before = srv.sha();
+  const again = await srv.postNote(note);
+  assert.equal(again.status, 409);
+  assert.equal(JSON.parse(again.body).error, "replayed");
+  assert.equal(srv.sha(), before);
+});
+
+test("ISS-0123 a body is remembered for twice the time tolerance, then forgotten; a refused body is not remembered", async (t) => {
+  let nowMs = T0;
+  const srv = await startServer(t, { now: () => nowMs });
+  const body = sb("Stop", "s-keep", 0);
+  assert.equal((await srv.post(body)).status, 204);
+  nowMs = T0 + 60000;
+  assert.equal((await srv.post(body)).status, 409);
+  // past the time tolerance the body is refused by the time check anyway
+  nowMs = T0 + 120001;
+  assert.equal((await srv.post(body)).status, 400);
+  // a body that failed the signature is not remembered: the same bytes, signed, pass
+  nowMs = T0;
+  const fresh = sb("Stop", "s-keep", 2);
+  assert.equal((await srv.post(fresh, { sign: "bad" })).status, 401);
+  assert.equal((await srv.post(fresh)).status, 204);
 });
