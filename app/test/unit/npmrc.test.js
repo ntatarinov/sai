@@ -12,7 +12,8 @@ import {
   tempDir,
 } from "../fixtures/helpers.js";
 
-// REQ-108 criteria 1, 2 and 13 (.env.example), REQ-109 criterion 7 (the check-public step).
+// REQ-108 criteria 1, 2 and 13 (.env.example), REQ-109 criteria 7 (the check-public step) and 10 (the grep
+// of the test selectors, the same text as in REQ-108 criterion 2).
 
 const ALLOWED_DEPS = ["hono", "@hono/node-server", "pg", "zod", "fflate"];
 const ALLOWED_DEV = [
@@ -43,6 +44,37 @@ const INT_FILES = [
   "smoke-local",
 ];
 const PG_FILES = ["migrate-pg", "selfcheck-pg"];
+
+// The regular expression of the grep of REQ-108 criterion 2 and REQ-109 criterion 10, as written there: the
+// method forms (a dot, one of the three selector names, a parenthesis) and the option forms (the name and a
+// colon) with any value but false. The criterion runs it as `grep -rnE '<this>' app/test`, which must print
+// no line.
+export const SELECTOR_GREP =
+  /\.(skip|todo|only) *\(|(^|[^A-Za-z0-9_$.])(skip|todo|only) *: *([^f ]|f[^a]|fa[^l]|fal[^s]|fals[^e]|false[A-Za-z0-9_$])/;
+
+/**
+ * The lines that SELECTOR_GREP hits in every file under `dir` (any file, whatever its name), read line by
+ * line, each as `<path>:<line>:<text>` like a line of `grep -rn`. Unlike grep -r, which skips a link met
+ * inside the folder, a link to a file is read as that file and a link to a folder or to nothing throws, so
+ * this reading is stricter than the criterion's grep (NPM-6 checks the three links).
+ * @param {string} dir
+ * @returns {string[]}
+ */
+export function selectorHits(dir) {
+  /** @type {string[]} */
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) out.push(...selectorHits(p));
+    else
+      fs.readFileSync(p, "utf8")
+        .split("\n")
+        .forEach((line, i) => {
+          if (SELECTOR_GREP.test(line)) out.push(`${p}:${i + 1}:${line}`);
+        });
+  }
+  return out;
+}
 
 /** @returns {string[]} the broken rules */
 export function packageFindings(npmrc, pkg, lock, tools, tracked) {
@@ -314,6 +346,61 @@ test("NPM-5 app/test/int holds its 10 named test files and app/test/pg its 2; a 
       assert.deepEqual(missingTestFiles(copy, names), [gone], gone);
     }
   }
+});
+
+test("NPM-6 no line under app/test is hit by the grep of criterion 2 for the skip, todo and only selectors", (t) => {
+  assert.deepEqual(selectorHits(path.join(APP, "test")), []);
+  // A control on planted lines, built from parts so that this file holds none: each selector form is hit,
+  // the benign lines are not, and a planted file deep in a folder is found by its path and line.
+  const names = [
+    ["sk", "ip"],
+    ["to", "do"],
+    ["on", "ly"],
+  ].map((p) => p.join(""));
+  for (const n of names) {
+    for (const line of [
+      `test.${n}("x", () => {});`,
+      `describe.${n} ("x", () => {});`,
+      `test("x", { ${n}: true }, () => {});`,
+      `test("x", { ${n}: "later" }, () => {});`,
+      `test("x", { ${n} : 1 }, () => {});`,
+      `test("x", { ${n}: falsey }, () => {});`,
+      `${n}:x`,
+    ])
+      assert.ok(SELECTOR_GREP.test(line), `not hit: ${line}`);
+    for (const line of [
+      `test("x", { ${n}: false }, () => {});`,
+      `const o = { no${n}: true, ${n}ped: 1 };`,
+      `const ${n}Count = a.${n};`,
+      `// ${n} the slow case`,
+    ])
+      assert.ok(!SELECTOR_GREP.test(line), `hit: ${line}`);
+  }
+  const dir = tempDir(t);
+  const deep = path.join(dir, "int", "deep");
+  fs.mkdirSync(deep, { recursive: true });
+  fs.writeFileSync(path.join(dir, "a.test.js"), "const a = 1;\n");
+  const planted = `test("y", { ${names[0]}: true });`;
+  fs.writeFileSync(path.join(deep, ".hidden"), `x\n${planted}\n`);
+  assert.deepEqual(selectorHits(dir), [
+    `${path.join(deep, ".hidden")}:2:${planted}`,
+  ]);
+  // Links met inside the folder, which grep -r skips: a link to the planted file is read as that file, a
+  // link to a folder or to nothing throws (each in a folder of its own).
+  const toFile = path.join(tempDir(t), "to-file.js");
+  fs.symlinkSync(path.join(deep, ".hidden"), toFile);
+  assert.deepEqual(selectorHits(path.dirname(toFile)), [
+    `${toFile}:2:${planted}`,
+  ]);
+  const toFolder = tempDir(t);
+  fs.symlinkSync(deep, path.join(toFolder, "to-folder"));
+  assert.throws(() => selectorHits(toFolder), { code: "EISDIR" });
+  const toNothing = tempDir(t);
+  fs.symlinkSync(
+    path.join(toNothing, "gone.js"),
+    path.join(toNothing, "to-nothing.js"),
+  );
+  assert.throws(() => selectorHits(toNothing), { code: "ENOENT" });
 });
 
 test("ENV-1 every variable the code reads is a line NAME= with an empty value in .env.example", () => {
