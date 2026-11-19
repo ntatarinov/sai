@@ -1,0 +1,29 @@
+# Local and CI parity with the Node server (ARCH §20.3). Passwords come from the environment only.
+services:
+  db:
+    image: postgres:17@sha256:0d938e975177bef9f1f61f3f9dbcf2e0aa0a139568f66d3415ed8892eb97f6ac
+    environment:
+      POSTGRES_DB: sai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  web:
+    build: .
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?required}@db:5432/sai
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?required}
+      APP_ORIGIN: http://127.0.0.1:8080
+      PREVIEW_ORIGIN: http://localhost:8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  db-data:
