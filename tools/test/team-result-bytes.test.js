@@ -559,12 +559,13 @@ const KEEP = {
     "token={{\ntoken={{x}}",
     "Bearer {{ Bearer {{",
   ],
-  // F3: no user, "://" without a scheme, a single slash, an empty password after a separator.
+  // F3: an empty user and an empty password (ISS-0121: an empty user alone is a user),
+  // "://" without a scheme, a single slash, an empty password after a separator.
   O60: [
     "https:/deploy:" + PW + "@host",
     "https:deploy:" + PW + "@host",
     "://deploy:" + PW + "@host",
-    "redis://:" + PW + "@host",
+    "redis://:@" + PW + "@host",
     "https://deploy:/" + PW + "@host",
     "https://deploy:@" + PW + "@host",
     "https://deploy: " + PW + "@host",
@@ -627,6 +628,21 @@ const KEEP = {
     "https://u:pwd@h",
     "token: bool",
     "password=token",
+  ], // O74 (ISS-0121): a space or a tab before "=" makes a pair only for a value in quotes
+  // or a lone word with no bracket that is not a bare word; a comparison, an arrow, a
+  // ternary, an expression and a placeholder after a spaced sign are stored.
+  O74: [
+    "if (password == null)",
+    "password === other",
+    "def f(password = None):",
+    "token = response.json()['token']",
+    'password = request.form["password"]',
+    "token = jwt",
+    "cond ? token : other",
+    "api_key = API_KEY",
+    'password = ""',
+    'password = "changeme"',
+    "password = ${PASSWORD}",
   ],
 };
 
@@ -1176,7 +1192,15 @@ const REFUSE = {
   C54: [EYJ + "a.b.9.", EYJ + "a.b.c.", EYJ + "a.b.c.."].map((text) => [
     "F7",
     text,
-  ]),
+  ]), // C74 (ISS-0121): a space or a tab before "=", and an address with an empty user.
+  C74: [
+    ["F9", 'password = "hunter2fake"'],
+    ["F9", "password = hunter2fake"],
+    ["F9", "DB_PASSWORD\t=\thunter2fake  # prod"],
+    ["F9", "const token = 'hunter2fake';"],
+    ["F9", '"password" = "hunter2fake"'],
+    ["F3", "redis://:" + PW + "@host"],
+  ],
 };
 
 // sha256 of the bytes of every sample, taken with the command shasum -a 256 on the
@@ -1215,7 +1239,7 @@ const SHA = {
   "E:g-O6": "d01cc07dc0d848d2c540a530d72aad98089bac9247d2b5197a4a0e31b45e94b8",
   "E:g-O7": "a813dbc8179aadb48a229abfc817bf07345789ec541bb53316bbd03384fe6823",
   "E:g-O8": "030268c3c21be6bcc370d599f936fd5f47385a047a94946213fd8b0040d18eea",
-  "E:g-new": "74ddf90b5dac3c74eb971f8eea9e90aa202750f57bdc946a59aa16b7344f7633",
+  "E:g-new": "7c360d77ca8089cc302b01663026c09ce5bc3963ebd642e56285e70e6d54e781",
   "E:long": "570f03beca7cefb57de4e7a1a0376d30c94afc5a7820f278c43c11aff5e634af",
   "E:o10": "eddee196646366b092eb98e1590064c601b61f01e98552b087896aee4f2355d2",
   "E:o9-0": "3a235001e0edd04ef7eeca003f24f3cc1a872e62cd6d36ba93f9237eb3da79b0",
@@ -1709,7 +1733,7 @@ const SHA = {
   "O60#0": "8b0a88b9ef409c63dfe3c100f3896b5adbb9718a99f031c05cead5bc04a38b91",
   "O60#1": "cad8ab82c049787f77ae30ec8755b1a3d0a44c014ba69106d6f6e7d067359761",
   "O60#2": "dc1079f0ef7114ff445410af177de7881d2aa2780553298606502dc9cb065f34",
-  "O60#3": "b5b9125702d263c54d80bb833a9ec0502289e9fe2a46b3775027452bca0d0355",
+  "O60#3": "b3ab1162ce7676bfc0d78a455a287f8ef592a45f66044e07566d39e697d2f756",
   "O60#4": "2fe4d44bcf682762035586b62bf39a0bf208c2c06a45dcd7cf526366be87b351",
   "O60#5": "b84ac920accfc08f48d4d06ff0b580a585f01c685422316eeb7749e59dcb1cac",
   "O60#6": "ffd969054e9cb471b8754ee34a149df16cff2187032e37e5aa92825fd93de8c4",
@@ -1788,6 +1812,17 @@ const SHA = {
   "O73#2": "663d67f302f6a95244e4994f277c1833cdba279d677147354910050356fbc890",
   "O73#3": "bd70059445a649c2d79f4fa3934129ddc6db6acc54ff744edb499873eddabdf1",
   "O73#4": "4205a53ed753cb8bb0f519540601777f626f4d8cb770fd7df2b01de4e3e60be0",
+  "O74#0": "483274912c4e589ed55fd78176ea365926b1869ecf0889f5bd155bc39055a178",
+  "O74#1": "b78e23931626ded9781038f9e89006d16783b3546e3414f0ae579ca51fd53567",
+  "O74#2": "873775c9df8f3c5495e258f2802bdf9bfe85395b25dd6bc72f04630d403dd43f",
+  "O74#3": "3c34907e011593fe8d3a4f77976b57ecf680af90c81f85c8879366cc1ced9d2d",
+  "O74#4": "4d942327f81ab7d9b441b7ced3b9867f5cb643349c9a0cebaee7cd89f8bdd7ae",
+  "O74#5": "657ec07138784c30a00af2d18f096e85d99c7e116d868a3e7c2fec8dee662c84",
+  "O74#6": "b2ba7c7534047a1e1472dbf94b3a672348a68b6d0ba88a6b59988d9b31700e8e",
+  "O74#7": "abe16b070e910561f3893e47c508190941a294820b1697c4cdc1d7b52cbd3259",
+  "O74#8": "08a0ec36647939195bc7b5c6a889b885a4d73608d804403bf454182071bc7e47",
+  "O74#9": "54ab7bd99cef0f81daab2e932799a061b4aaabac41083e7f087079b4a32dcbba",
+  "O74#10": "5fe657458d8494cd1a4ab192cb64dac08cd8e7f7a02f0ca48d7c11c14352bcbd",
   "O8#0": "f114617fb846483f736c2ab3e6174037241c465a03316ca261b95d2acc240efb",
   "O8#1": "db443900ac38801bc89cb32f035a31da832431bf527b6f240a91477fccd03e4e",
   "O8#2": "a761b805d35652ba8ab577974914cf3c64b3f4d0da5d4bff4790cff91605e706",
@@ -1906,9 +1941,9 @@ function assertSecretRefusal(err, name, sample, label) {
 
 // ---- RB-00: the sample tables themselves ---------------------------------------------
 
-test("RB-00 the sample tables hold every record of the requirement and the classes of its rules: 576 stored (O1-O26 less the assembly, O27-O35 of the first rework, O36-O61 of the second, O62-O71 of the fourth, O72-O73 of the fifth), 506 refused (C1-C26, C27-C34, C35-C55, C56-C58 of the third, C59-C71 of the fourth, C72-C73 of the fifth), the nine forms", () => {
-  assert.equal(KEEP_ALL.length, 576);
-  assert.equal(REFUSE_ALL.length, 506);
+test("RB-00 the sample tables hold every record of the requirement and the classes of its rules: 587 stored (O1-O26 less the assembly, O27-O35 of the first rework, O36-O61 of the second, O62-O71 of the fourth, O72-O73 of the fifth, O74 of ISS-0121), 512 refused (C1-C26, C27-C34, C35-C55, C56-C58 of the third, C59-C71 of the fourth, C72-C73 of the fifth, C74 of ISS-0121), the nine forms", () => {
+  assert.equal(KEEP_ALL.length, 587);
+  assert.equal(REFUSE_ALL.length, 512);
   assert.equal(new Set(KEEP_ALL.map((s) => s.text)).size, KEEP_ALL.length);
   assert.equal(new Set(REFUSE_ALL.map((s) => s.text)).size, REFUSE_ALL.length);
   assert.equal(KEEP.O26.length, 12);
@@ -2379,7 +2414,8 @@ test("RB-20 criterion 3 (sweeps, findSecrets): for every character of every swee
       rows.some((r) => r.stored === false),
       `${id}: no refused row`,
     );
-    if (!/^K[2-5]$/u.test(id)) {
+    // XU9 is refusal-only since ISS-0121: every length of the user, none included
+    if (!/^(K[2-5]|XU9)$/u.test(id)) {
       assert.ok(
         rows.some((r) => r.stored === true),
         `${id}: no stored row`,
@@ -2966,6 +3002,8 @@ const isWord = (x) => /^[A-Za-z0-9_]$/u.test(x);
 const isRun = (x) => /^[A-Za-z0-9_.-]$/u.test(x); // a run of F7
 const isTokenEnd = (x) => /^[A-Za-z0-9_+=-]$/u.test(x); // the right side of F6
 const isScheme = (x) => /^[A-Za-z0-9+.-]$/u.test(x); // the left of :// in F3
+// ISS-0121: a space or a tab between a name and "=" still makes a pair.
+const HWS_SIGN = (x) => x === " " || x === "\t";
 
 // A template is the WHOLE value (rework 08i, F1; AP-110): one slot for the character right
 // after the group, in every place where a value is read. Where the value is a quotation
@@ -3970,10 +4008,10 @@ const X_F3_SWEEPS = [
   ],
   [
     "XU2a",
-    "F3: the first character of the user - white space, / and @ end the user, a colon leaves the user empty; the form then does not apply",
+    "F3: the first character of the user - white space, / and @ end the user; a colon leaves the user empty, and an empty user is a user (ISS-0121)",
     CHARS_X,
     (x) => "https://" + x + "ser:" + F3_PW + "@host",
-    (x) => WS.includes(x) || x === "/" || x === "@" || x === ":",
+    (x) => WS.includes(x) || x === "/" || x === "@",
   ],
   [
     "XU2b",
@@ -4026,10 +4064,10 @@ const X_F3_SWEEPS = [
   ],
   [
     "XU9",
-    "F3: the number of characters of the user: none leaves the form out, one or more is a user",
+    "F3: the number of characters of the user: none is an empty user and still a user (ISS-0121: scheme://:password@host is refused), one or more is a user",
     [0, 1, 2, 3, 20].map((n) => "a".repeat(n)),
     (u) => "https://" + u + ":" + F3_PW + "@host",
-    (u) => u === "",
+    () => false,
   ],
   [
     "XU10",
@@ -4277,17 +4315,17 @@ const X_NAME_SWEEPS = NAME_SLOT_NAMES.flatMap((n) => [
   ],
   [
     `XN2${n}`,
-    `F9: the character behind the name ${n} - one quote, a colon or an equals sign is a pair; any other character, also a segment character, is not`,
+    `F9: the character behind the name ${n} - one quote, a colon or an equals sign is a pair, and so is a space or a tab before the equals sign (ISS-0121); any other character, also a segment character, is not`,
     CHARS_X,
     (x) => n + x + X_NAME_PW,
-    (x) => !(QUOTE_CHARS.includes(x) || x === ":" || x === "="),
+    (x) => !(QUOTE_CHARS.includes(x) || x === ":" || x === "=" || HWS_SIGN(x)),
   ],
   [
     `XN3${n}`,
-    `F9: the character behind one quote after the name ${n} - a colon or an equals sign is the sign, anything else (also a second quote) is no pair`,
+    `F9: the character behind one quote after the name ${n} - a colon or an equals sign is the sign, and so is a space or a tab before the equals sign (ISS-0121); anything else (also a second quote) is no pair`,
     CHARS_X,
     (x) => n + "'" + x + X_NAME_PW,
-    (x) => !(x === ":" || x === "="),
+    (x) => !(x === ":" || x === "=" || HWS_SIGN(x)),
   ],
   ...[...n].map((_, k) => [
     `XN4${n}${k}`,
@@ -4858,10 +4896,10 @@ const SWEEPS = [
   ],
   [
     "N2",
-    "after the name: one quote, then : or =; any other character, or a longer segment, is no pair",
+    "after the name: one quote, then : or =, or a space or a tab before = (ISS-0121); any other character, or a longer segment, is no pair",
     CHARS_ALL,
     (x) => "token" + x + "=hunter2fake",
-    (x) => !(QUOTE_CHARS.includes(x) || x === ":" || x === "="),
+    (x) => !(QUOTE_CHARS.includes(x) || x === ":" || x === "=" || HWS_SIGN(x)),
   ],
   [
     "U1",

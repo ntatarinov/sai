@@ -17,6 +17,7 @@ import { executorError } from "../errors.js";
 import {
   ACTIVITY_MAX,
   buildPrompt,
+  allowedToolsForRole,
   checkAnswer,
   checkBudget,
   floor6,
@@ -50,10 +51,13 @@ export function formatUsd(value) {
 }
 
 // The arguments, in the fixed order of section 5.2. The text of the task is not
-// an argument: it goes to stdin.
+// an argument: it goes to stdin. --allowedTools holds WebFetch only as one rule
+// per site of SAI_TEAM_WEB_DOMAINS (ISS-0119); with --permission-prompts none
+// any other address is not allowed.
 export function buildArgs(request, config) {
   const tools = toolsForRole(request.role, config);
   const list = tools.join(",");
+  const allowed = allowedToolsForRole(request.role, config).join(",");
   const args = [
     "-p",
     "--output-format",
@@ -66,7 +70,7 @@ export function buildArgs(request, config) {
     "--tools",
     list,
     "--allowedTools",
-    list,
+    allowed,
   ];
   if (tools.includes("WebFetch")) {
     args.push("--disallowedTools", WEB_DENY_RULES.join(","));

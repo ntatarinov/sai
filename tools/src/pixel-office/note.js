@@ -198,6 +198,8 @@ function parseJson(text) {
 const STATUS_REASONS = {
   401: "подпись не принята",
   403: "адрес отклонён",
+  // ISS-0123: the same bytes were accepted in the last two minutes.
+  409: "такая же запись уже принята, повтор отклонён",
   413: "запись слишком велика",
   500: "ошибка сервера",
 };

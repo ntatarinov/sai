@@ -185,7 +185,10 @@ async function run(argv, env, io) {
   process.on("SIGTERM", onSignal);
 
   try {
-    io.out.write(`Sai Team: http://${HOST}:${bound.port}/\n`);
+    // the link carries the access key of this start (ISS-0122)
+    io.out.write(
+      `Sai Team: http://${HOST}:${bound.port}/?k=${server.accessKey()}\n`,
+    );
   } catch (err) {
     process.off("SIGINT", onSignal);
     process.off("SIGTERM", onSignal);

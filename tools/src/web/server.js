@@ -104,6 +104,38 @@ export function loadPublicFiles(dir) {
 
 function noop() {}
 
+// ISS-0122: the cookie of the access key and its reader.
+export const ACCESS_COOKIE = "sai_team_web";
+
+function cookieValue(header, name) {
+  if (typeof header !== "string") return null;
+  for (const part of header.split(";")) {
+    const at = part.indexOf("=");
+    if (at !== -1 && part.slice(0, at).trim() === name) {
+      return part.slice(at + 1).trim();
+    }
+  }
+  return null;
+}
+
+// The page without the access key: a short text, nothing of the data.
+function sendNoAccessPage(res) {
+  const body = Buffer.from(
+    `<!doctype html>\n<html lang="ru"><head><meta charset="utf-8"><title>Sai Team</title></head><body><p>${TEXT.noAccess}</p></body></html>\n`,
+    "utf8",
+  );
+  res.writeHead(
+    401,
+    commonHeaders({
+      "Content-Type": "text/html; charset=utf-8",
+      "Content-Length": body.length,
+      "Content-Security-Policy": CSP,
+      "X-Frame-Options": "DENY",
+    }),
+  );
+  res.end(body);
+}
+
 function commonHeaders(extra) {
   return {
     "Cache-Control": "no-store",
@@ -240,6 +272,38 @@ export function createWebServer(opts) {
   // The key of this start: in memory only, never written, printed or answered.
   const key = crypto.randomBytes(KEY_BYTES).toString("hex");
   const keyBytes = Buffer.from(key, "utf8");
+  // ISS-0122: the access key of this start, another random value. The command
+  // prints it in the link (/?k=<access key>); opening the link puts it into a
+  // cookie that only that browser holds. The page (it holds the key above) and
+  // every read of data are answered only with that cookie, so another local
+  // process or user that reaches the port reads nothing. In memory only.
+  const accessKey = crypto.randomBytes(KEY_BYTES).toString("hex");
+
+  function accessAllowed(req) {
+    const given = cookieValue(req.headers.cookie, ACCESS_COOKIE);
+    return (
+      typeof given === "string" &&
+      KEY_FORM.test(given) &&
+      crypto.timingSafeEqual(
+        Buffer.from(given, "hex"),
+        Buffer.from(accessKey, "hex"),
+      )
+    );
+  }
+
+  // The link: a right k sets the cookie and opens the address without it; a
+  // wrong one sets nothing.
+  function linkKeyValid(query) {
+    const k = new URLSearchParams(query).get("k");
+    return (
+      k !== null &&
+      KEY_FORM.test(k) &&
+      crypto.timingSafeEqual(
+        Buffer.from(k, "hex"),
+        Buffer.from(accessKey, "hex"),
+      )
+    );
+  }
   const files = new Map(opts.publicFiles);
   const index = files.get("index.html");
   if (index !== undefined) {
@@ -440,6 +504,7 @@ export function createWebServer(opts) {
     const target = req.url ?? "";
     const q = target.indexOf("?");
     const pathname = q === -1 ? target : target.slice(0, q);
+    const query = q === -1 ? "" : target.slice(q + 1);
     const parts = pathParts(pathname);
     if (parts === null) {
       refuse(req, res, notFoundReply());
@@ -447,6 +512,27 @@ export function createWebServer(opts) {
     }
     if (parts.length === 1) {
       const name = parts[0] === "" ? "index.html" : parts[0];
+      if (parts[0] === "" && req.method === "GET" && linkKeyValid(query)) {
+        res.writeHead(
+          303,
+          commonHeaders({
+            Location: "/",
+            "Set-Cookie": `${ACCESS_COOKIE}=${accessKey}; Path=/; HttpOnly; SameSite=Strict`,
+            "Content-Length": 0,
+          }),
+        );
+        res.end();
+        return;
+      }
+      // the page holds the key of the writes: only with the access key
+      if (
+        name === "index.html" &&
+        req.method === "GET" &&
+        !accessAllowed(req)
+      ) {
+        sendNoAccessPage(res);
+        return;
+      }
       if (STATIC_NAME.test(name) && files.has(name)) {
         handleStatic(req, res, name);
         return;
@@ -460,6 +546,11 @@ export function createWebServer(opts) {
       return;
     }
     if (req.method === "GET" && route.get !== undefined) {
+      // 3. ISS-0122: a read of data only with the access key of this start.
+      if (!accessAllowed(req)) {
+        sendReply(res, failure(401, TEXT.noAccess));
+        return;
+      }
       run(res, () => route.get(ctx));
       return;
     }
@@ -524,5 +615,8 @@ export function createWebServer(opts) {
     },
 
     port: () => actualPort,
+
+    // The access key of this start, for the link that the command prints.
+    accessKey: () => accessKey,
   };
 }

@@ -76,13 +76,46 @@ function claudeBinSetting(env) {
   return raw;
 }
 
-// Config = { realRuns, claudeBin, web, taskTimeoutMs, retryDelayMs, runCapUsd }.
+// ISS-0119: the sites that WebFetch of the Researcher may open, an allow list
+// (deny by default). SAI_TEAM_WEB_DOMAINS is a comma-separated list of host
+// names in lower case: labels of [a-z0-9-] that do not start or end with "-",
+// at least two labels, the last one with a letter (no IP address), at most 253
+// characters each and WEB_DOMAINS_MAX names; no "*", port, scheme or path. Not
+// set or empty: no WebFetch at all (WebSearch stays). Anything else: E_CONFIG.
+export const WEB_DOMAINS_MAX = 50;
+const DOMAIN_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+function isDomain(name) {
+  if (name.length > 253) return false;
+  const labels = name.split(".");
+  return (
+    labels.length >= 2 &&
+    labels.every((l) => DOMAIN_LABEL.test(l)) &&
+    /[a-z]/.test(labels[labels.length - 1])
+  );
+}
+
+function webDomainsSetting(env) {
+  const name = "SAI_TEAM_WEB_DOMAINS";
+  const raw = env[name];
+  if (raw === undefined || raw === "") return Object.freeze([]);
+  if (typeof raw !== "string") throw configError(name);
+  const list = raw.split(",");
+  if (list.length > WEB_DOMAINS_MAX || !list.every(isDomain)) {
+    throw configError(name);
+  }
+  return Object.freeze([...new Set(list)]);
+}
+
+// Config = { realRuns, claudeBin, web, webDomains, taskTimeoutMs, retryDelayMs,
+// runCapUsd }.
 export function readConfig(env = process.env) {
   const e = env ?? {};
   return Object.freeze({
     realRuns: e.SAI_TEAM_REAL_RUNS === "1",
     claudeBin: claudeBinSetting(e),
     web: e.SAI_TEAM_WEB !== "0",
+    webDomains: webDomainsSetting(e),
     taskTimeoutMs: intSetting(
       e,
       "SAI_TEAM_TASK_TIMEOUT_MS",

@@ -37,6 +37,32 @@ function occupied(file) {
   }
 }
 
+// true when the real path of root/p (every symbolic link on the way resolved) is
+// outside the real path of root (ISS-0120, ISS-0037): a source that is a link to a
+// file outside the project, or lies in a linked folder outside it, is refused, so
+// its text never reaches the copies, the verdict or a commit. A cloned repository
+// is enough to bring such a link. A link that stays inside the project is read.
+// A path that cannot be resolved (missing, dangling) is not judged here: the read
+// below reports it as before.
+function leadsOutside(root, p) {
+  let realRoot;
+  let realFile;
+  try {
+    realRoot = fs.realpathSync(root);
+    realFile = fs.realpathSync(path.join(root, p));
+  } catch (err) {
+    if (isOsError(err)) return false;
+    throw err;
+  }
+  const rel = path.relative(realRoot, realFile);
+  return (
+    rel === "" ||
+    rel === ".." ||
+    rel.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(rel)
+  );
+}
+
 // Builds everything in memory first; nothing is written unless every check passes, and
 // the run folder is then created all or nothing (design §4.1, §5.3 P1-P4).
 export function prepareRun(root, opts) {
@@ -89,6 +115,14 @@ export function prepareRun(root, opts) {
   const sources = [];
   const copies = [];
   for (const p of sourcePaths) {
+    if (isSafeSourcePath(p) && leadsOutside(root, p)) {
+      issues.add(
+        "E_SOURCE_PATH",
+        label,
+        `source leads outside the project through a symbolic link: ${p}`,
+      );
+      continue;
+    }
     const original = isSafeSourcePath(p)
       ? readTextFile(path.join(root, p))
       : undefined;

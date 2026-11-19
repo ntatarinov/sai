@@ -2,6 +2,7 @@
 // signed write paths (hook events and records of the orchestrator, REQ-008),
 // a read API, and the static files of public/. node:http only, no
 // dependencies (decisions/0002).
+import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -20,7 +21,11 @@ import {
 } from "./journal.js";
 import { maskSecrets } from "./mask.js";
 import {
+  READ_COOKIE,
   SIGNATURE_HEADER,
+  linkKeyValid,
+  readAllowed,
+  readKeyOf,
   storeTextEnabled,
   validateNoteBody,
   validateWriteBody,
@@ -29,6 +34,7 @@ import {
 import {
   NOTE_MAX,
   SOURCE_ORCH,
+  WRITE_SKEW_MS,
   checkNoteLine,
   codePointLength,
 } from "./public/schema.js";
@@ -176,6 +182,28 @@ export function createServer(options) {
   let secret = null;
   let lastReadError = null;
 
+  // ISS-0123: a signed body is accepted once. The sha256 of every accepted body
+  // is kept for twice the time tolerance (a body passes the time check for at
+  // most that long), oldest first, and a second request with the same bytes in
+  // that time is refused 409 replayed: the journal gets no line that no hook
+  // firing produced. The time of a hook body has milliseconds, so two real
+  // events never have the same bytes. The memory is the process: a replay
+  // after a restart of the server, inside the time tolerance, is a named limit.
+  const REPLAY_KEEP_MS = 2 * WRITE_SKEW_MS;
+  const accepted = new Map();
+
+  function bodyKey(body) {
+    return crypto.createHash("sha256").update(body).digest("hex");
+  }
+
+  function replayed(key, nowMs) {
+    for (const [old, at] of accepted) {
+      if (nowMs - at <= REPLAY_KEEP_MS) break;
+      accepted.delete(old);
+    }
+    return accepted.has(key);
+  }
+
   function getSecret() {
     if (secret === null) secret = readSecret(stateDir);
     return secret;
@@ -321,12 +349,19 @@ export function createServer(options) {
   function processEvent(req, res, body) {
     const value = signedObject(req, res, body);
     if (value === null) return;
-    const checked = validateWriteBody(value, now(), { storeText });
+    const nowMs = now();
+    const checked = validateWriteBody(value, nowMs, { storeText });
     if (!checked.ok) {
       sendJson(res, 400, { error: checked.reason });
       return;
     }
+    const key = bodyKey(body);
+    if (replayed(key, nowMs)) {
+      sendJson(res, 409, { error: "replayed" });
+      return;
+    }
     if (!appendOr500(res, checked.line, "событие")) return;
+    accepted.set(key, nowMs);
     sendEmpty(res, 204);
   }
 
@@ -345,6 +380,13 @@ export function createServer(options) {
     }
     if (!storeText) {
       sendJson(res, 400, { error: "text_storage_off" });
+      return;
+    }
+    // A note body has no time of its own: the same bytes inside the keep time
+    // are the same request sent again (ISS-0123).
+    const key = bodyKey(body);
+    if (replayed(key, nowMs)) {
+      sendJson(res, 409, { error: "replayed" });
       return;
     }
     const { fields } = checked;
@@ -386,6 +428,7 @@ export function createServer(options) {
       return;
     }
     if (!appendOr500(res, line.line, "запись оркестратора")) return;
+    accepted.set(key, nowMs);
     sendJson(res, 200, {
       request_time: requestTime,
       request_time_auto: auto,
@@ -445,8 +488,14 @@ export function createServer(options) {
     const pathname = q === -1 ? target : target.slice(0, q);
     const query = q === -1 ? "" : target.slice(q + 1);
     if (pathname === "/api/events") {
-      if (req.method === "GET") handleRead(res, query);
-      else if (req.method === "POST") handleWrite(req, res, processEvent);
+      if (req.method === "GET") {
+        // 3. ISS-0122: the journal is read only with the read key.
+        if (!readAllowed(req.headers, readKeyOf(getSecret()))) {
+          sendJson(res, 401, { error: "unauthorized" });
+          return;
+        }
+        handleRead(res, query);
+      } else if (req.method === "POST") handleWrite(req, res, processEvent);
       else sendEmpty(res, 405, { Allow: "GET, POST" });
       return;
     }
@@ -454,6 +503,20 @@ export function createServer(options) {
       if (req.method === "POST") handleWrite(req, res, processNote);
       else sendEmpty(res, 405, { Allow: "POST" });
       return;
+    }
+    // The link of the command (/?k=<read key>): the key goes into a cookie
+    // that only this browser holds, and the address without the key is
+    // opened (ISS-0122). A wrong key sets nothing and the page is served as
+    // usual: its reads are then refused.
+    if (pathname === "/" && req.method === "GET") {
+      const key = readKeyOf(getSecret());
+      if (linkKeyValid(query, key)) {
+        sendEmpty(res, 303, {
+          Location: "/",
+          "Set-Cookie": `${READ_COOKIE}=${key}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000`,
+        });
+        return;
+      }
     }
     const name = staticName(pathname);
     if (name !== null) {

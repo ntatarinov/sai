@@ -123,6 +123,7 @@ export async function startServer(t, box, opts = {}) {
     ...(opts.bodyIdleMs === undefined ? {} : { bodyIdleMs: opts.bodyIdleMs }),
   });
   const { port } = await server.listen();
+  rememberAccessKey(port, server.accessKey());
   let closed = false;
   const close = async () => {
     if (closed) return;
@@ -149,7 +150,8 @@ export async function startServer(t, box, opts = {}) {
       body: typeof body === "string" ? body : JSON.stringify(body),
     });
   };
-  s.get = (p, headers) => request(port, { path: p, headers });
+  s.get = (p, headers, o = {}) => request(port, { path: p, headers, ...o });
+  s.accessKey = () => server.accessKey();
   return s;
 }
 
@@ -168,8 +170,36 @@ export function writeHeaders(port, key, over = {}) {
 // 127.0.0.1:<port> unless given), body (string|Buffer), parts ([string|Buffer,
 // pauseMs] sent one after another; the request is not ended unless `end`),
 // end, timeoutMs }. Returns { status, headers, text, json }.
+// ISS-0122: the access key of every server a test started (port -> key). A GET
+// through request() carries its cookie, as the browser does after the link,
+// unless the test says access: false or gives a Cookie header itself.
+const ACCESS_KEYS = new Map();
+
+export function rememberAccessKey(port, key) {
+  ACCESS_KEYS.set(port, key);
+}
+
+export function accessKeyOfPort(port) {
+  return ACCESS_KEYS.get(port);
+}
+
+// The access key in the line of the command, remembered for its port.
+export function accessKeyOfLine(line) {
+  const m = /http:\/\/127\.0\.0\.1:(\d+)\/\?k=([0-9a-f]{64})/.exec(line);
+  if (m !== null) rememberAccessKey(Number(m[1]), m[2]);
+  return m === null ? null : m[2];
+}
+
 export function request(port, o = {}) {
   const headers = { Host: `127.0.0.1:${port}`, ...(o.headers ?? {}) };
+  if (
+    o.access !== false &&
+    (o.method ?? "GET") === "GET" &&
+    ACCESS_KEYS.has(port) &&
+    !Object.keys(headers).some((h) => h.toLowerCase() === "cookie")
+  ) {
+    headers.Cookie = `sai_team_web=${ACCESS_KEYS.get(port)}`;
+  }
   for (const [k, v] of Object.entries(headers))
     if (v === undefined) delete headers[k];
   return new Promise((resolve, reject) => {

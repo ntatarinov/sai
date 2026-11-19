@@ -326,10 +326,31 @@ export function buildPrompt(request) {
 
 const WEB_TOOLS = Object.freeze(["WebSearch", "WebFetch"]);
 
+// ISS-0119: a role that reads text from the web must not be able to send data
+// out in the address of a request. WebSearch only asks the search service;
+// WebFetch opens any address the model writes, so it is given only together
+// with an allow list of sites (config.webDomains) and is absent without one.
 export function toolsForRole(role, config) {
   const tools = Array.isArray(role?.internal?.tools) ? role.internal.tools : [];
   if (config.web === false) return tools.filter((t) => !WEB_TOOLS.includes(t));
+  if (webDomainsOf(config).length === 0) {
+    return tools.filter((t) => t !== "WebFetch");
+  }
   return [...tools];
+}
+
+export function webDomainsOf(config) {
+  return Array.isArray(config?.webDomains) ? config.webDomains : [];
+}
+
+// The value of --allowedTools: WebFetch is allowed only for the sites of the
+// allow list, one rule per site; a bare WebFetch is never allowed.
+export function allowedToolsForRole(role, config) {
+  return toolsForRole(role, config).flatMap((t) =>
+    t === "WebFetch"
+      ? webDomainsOf(config).map((d) => `WebFetch(domain:${d})`)
+      : [t],
+  );
 }
 
 // The ceiling of one run (section 8.4); null when the project has no ceiling.

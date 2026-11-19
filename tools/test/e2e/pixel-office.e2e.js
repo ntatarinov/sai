@@ -69,7 +69,9 @@ function officeOptions(office, port = 0) {
   return {
     name: "office",
     args: ["src/pixel-office/main.js", "--port", String(port)],
-    readyPattern: /^Pixel Office: (http:\/\/127\.0\.0\.1:\d+\/)$/mu,
+    // the link carries the read key (ISS-0122)
+    readyPattern:
+      /^Pixel Office: (http:\/\/127\.0\.0\.1:\d+\/\?k=[0-9a-f]{64})$/mu,
     stateEnv: { SAI_PIXEL_OFFICE_DIR: office },
   };
 }

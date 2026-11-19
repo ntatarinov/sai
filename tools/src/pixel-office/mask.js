@@ -58,6 +58,7 @@ function maskAuthHeader(text) {
 
 // M3: user:password in scheme://user:password@host. One scan from each "://";
 // the user and the password have no "/", "@" or white space, the user no ":".
+// The user may be empty (scheme://:password@host, ISS-0121).
 function maskUrlCredentials(text) {
   let out = "";
   let pos = 0;
@@ -71,7 +72,7 @@ function maskUrlCredentials(text) {
     while (i < text.length && !"/@:".includes(text[i]) && !isSpace(text[i])) {
       i += 1;
     }
-    if (i === sep + 3 || text[i] !== ":") continue;
+    if (text[i] !== ":") continue;
     let j = i + 1;
     while (j < text.length && !"/@".includes(text[j]) && !isSpace(text[j])) {
       j += 1;
@@ -216,6 +217,38 @@ function endsWithName(segment) {
   });
 }
 
+// ISS-0121: spaces or tabs before the sign (password = "...") make a pair only
+// before "=" that is not "==" or "=>" (a comparison or an arrow), never before
+// ":" (a ternary or a type). Then the value counts when it is in quotes, or when
+// it holds no bracket, is not a bare word of letters, "_" and "$" (an
+// expression: password = None, token = jwt) and only spaces, tabs or a comment
+// ("#", ";") follow it on its line: password = primer42 is a pair,
+// def f(password = None): and x = token = a[0] are not.
+function isHws(ch) {
+  return ch === " " || ch === "\t";
+}
+
+// The index of the spaced "=" of a pair at text[i], or -1.
+function spacedSign(text, i) {
+  if (!isHws(text[i])) return -1;
+  let k = i;
+  while (isHws(text[k])) k += 1;
+  if (text[k] !== "=" || text[k + 1] === "=" || text[k + 1] === ">") return -1;
+  return k;
+}
+
+const BRACKETS = /[()[\]{}]/;
+const BARE_WORD = /^[A-Za-z_$]+$/;
+
+function spacedValueCounts(text, from, end) {
+  if (QUOTES.includes(text[from] ?? "\0")) return true;
+  const value = text.slice(from, end);
+  if (BRACKETS.test(value) || BARE_WORD.test(value)) return false;
+  let k = end;
+  while (isHws(text[k])) k += 1;
+  return k >= text.length || "\n\r#;".includes(text[k]);
+}
+
 function maskNamedValues(text) {
   let out = "";
   let pos = 0;
@@ -226,11 +259,16 @@ function maskNamedValues(text) {
     if (!endsWithName(match[0])) continue;
     let i = SEGMENT.lastIndex;
     if (QUOTES.includes(text[i] ?? "\0")) i += 1;
+    const spaced = isHws(text[i]);
+    if (spaced) {
+      i = spacedSign(text, i);
+      if (i === -1) continue;
+    }
     if (text[i] !== "=" && text[i] !== ":") continue;
     i += 1;
     while (text[i] === " " || text[i] === "\t") i += 1;
     const { end, replace } = scanValue(text, i);
-    if (replace) {
+    if (replace && (!spaced || spacedValueCounts(text, i, end))) {
       out += text.slice(pos, i) + MASK_LABEL;
       pos = end;
     }
@@ -801,7 +839,8 @@ function findPem(text) {
 }
 
 // F3: scheme://user:password@host with a password that is neither a
-// placeholder nor a whole template. With no user the form does not apply.
+// placeholder nor a whole template. The user may be empty
+// (scheme://:password@host, ISS-0121).
 function findUrlPassword(text) {
   const n = text.length;
   let from = 0;
@@ -816,7 +855,7 @@ function findUrlPassword(text) {
       if (c === 47 || c === 64 || c === 58 || findIsWs(c)) break;
       i += 1;
     }
-    if (i === from || text.charCodeAt(i) !== 58) continue;
+    if (text.charCodeAt(i) !== 58) continue;
     let j = i + 1;
     while (j < n) {
       const c = text.charCodeAt(j);
@@ -993,6 +1032,14 @@ function findAuthorization(text, p, rec) {
   return findValue(text, r, false, rec);
 }
 
+// ISS-0121: the value of a spaced pair (from the sign + 1 to the end that the
+// value scan reached) counts by the rule of spacedValueCounts.
+function findSpacedCounts(text, p, end) {
+  let v = p;
+  while (isHws(text[v])) v += 1;
+  return spacedValueCounts(text, v, Math.max(end, v));
+}
+
 function findNamedValue(text) {
   const n = text.length;
   const rec = {};
@@ -1009,6 +1056,12 @@ function findNamedValue(text) {
     if (name === -1) continue;
     let p = i;
     if (findIsQuote(text.charCodeAt(p))) p += 1;
+    // ISS-0121: the spaced "=" of a pair, by the same rule as spacedSign.
+    const spaced = text.charCodeAt(p) === 32 || text.charCodeAt(p) === 9;
+    if (spaced) {
+      p = spacedSign(text, p);
+      if (p === -1) continue;
+    }
     const sign = text.charCodeAt(p);
     if (sign !== 58 && sign !== 61) continue;
     p += 1;
@@ -1019,8 +1072,12 @@ function findNamedValue(text) {
       while (text.charCodeAt(p) === 32 || text.charCodeAt(p) === 9) p += 1;
       found = findValue(text, p, true, rec);
     }
-    if (found.kind === FIND_LITERAL)
+    if (
+      found.kind === FIND_LITERAL &&
+      (!spaced || findSpacedCounts(text, p, found.end))
+    ) {
       return name === FIND_NAME_AUTH ? "F2" : "F9";
+    }
     i = Math.max(found.end, p);
   }
   return null;
