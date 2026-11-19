@@ -7,13 +7,18 @@ import { APP, ROOT } from "../fixtures/helpers.js";
 
 // REQ-109 criterion 1. No test runs a Vercel command.
 
+// Folders stand without a trailing slash. Measured at spike S1 (2026-11-19, Vercel CLI 64.1.0): the CLI walks the
+// folder and asks its bundled `ignore` 4.0.6 about every entry by its relative name, a folder as "api", never "api/".
+// "/*" then "!api/" leaves that name ignored, so the walk skips the folder: the upload held only the four root files
+// and the build stopped with «The pattern "api/index.js" defined in `functions` doesn't match any Serverless
+// Functions inside the `api` directory». "!api" keeps the folder and every file under it.
 const KEEP = [
-  "api/",
-  "server/",
-  "public/",
-  "content/",
-  "scripts/",
-  "db/",
+  "api",
+  "server",
+  "public",
+  "content",
+  "scripts",
+  "db",
   "package.json",
   "package-lock.json",
   ".npmrc",
@@ -48,6 +53,8 @@ export function vercelFindings(v, apiFiles, tracked, ignore) {
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith("#"));
   if (lines[0] !== "/*") out.push("allowlist start");
+  if (lines.some((l) => l.startsWith("!") && l.endsWith("/")))
+    out.push("allowlist folder with a trailing slash");
   const kept = lines.filter((l) => l.startsWith("!")).map((l) => l.slice(1));
   if (
     JSON.stringify([...kept].sort()) !== JSON.stringify([...KEEP].sort()) ||
@@ -89,7 +96,19 @@ test("VC-2 each damaged copy is red", () => {
     ["another region", (c) => (c.v.regions = ["iad1"])],
     [
       "a missing allowlist entry",
-      (c) => (c.ignore = c.ignore.replace("!db/\n", "")),
+      (c) => (c.ignore = c.ignore.replace("!db\n", "")),
+    ],
+    [
+      "a folder kept with a trailing slash, as before spike S1",
+      (c) => (c.ignore = c.ignore.replace("!api\n", "!api/\n")),
+    ],
+    [
+      "every folder kept with a trailing slash",
+      (c) =>
+        (c.ignore = c.ignore.replace(
+          /^!(api|server|public|content|scripts|db)$/gm,
+          "!$1/",
+        )),
     ],
     ["a second file in app/api", (c) => c.api.push("x.js")],
     [
@@ -106,4 +125,23 @@ test("VC-2 each damaged copy is red", () => {
       name,
     );
   }
+});
+
+test("VC-3 a kept folder with a trailing slash is red by its own rule, also beside the list of names", () => {
+  const r = real();
+  const slashed = r.ignore.replace(
+    /^!(api|server|public|content|scripts|db)$/gm,
+    "!$1/",
+  );
+  assert.notEqual(slashed, r.ignore, "the damage changed the text");
+  const found = vercelFindings(r.v, r.api, r.tracked, slashed);
+  assert.ok(
+    found.includes("allowlist folder with a trailing slash"),
+    found.join(", "),
+  );
+  assert.ok(
+    !vercelFindings(r.v, r.api, r.tracked, r.ignore).includes(
+      "allowlist folder with a trailing slash",
+    ),
+  );
 });
