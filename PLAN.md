@@ -23,3 +23,5 @@ The requirements of the program that are checked and not yet done, and REQ-102 (
 | REQ-108 | R1.1 | M1SITE-20261117-01 |
 | REQ-109 | R1.4 | M1SITE-20261117-01 |
 | REQ-110 | R0.2 | ISS-0092-20261117-01 |
+| REQ-111 | R1.2 | M1SITE-20261119-01 |
+| REQ-112 | R1.3 | M1SITE-20261119-01 |
