@@ -1,7 +1,8 @@
 import { createFunctionApp } from "../server/app.js";
 import { ConfigError, readConfig } from "../server/config.js";
 
-// The Vercel entry (decisions/0116 О4): one function behind the rewrite /api/:path* → /api/index?__p=:path*.
+// The Vercel entry (decisions/0116 О4): one function behind the one rule of vercel.json that sends /api and
+// /api/<path> to /api/index?__p=<path> (an explicit `routes` table since spike S1).
 // It restores the path from __p, keeps the other query parameters and calls the app. Its shape (a default
 // export with fetch) is confirmed by spike S1.
 

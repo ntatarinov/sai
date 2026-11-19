@@ -24,13 +24,15 @@ const HTTPS = [
 const sorted = (/** @type {string[][]} */ l) =>
   l.map(([n, v]) => `${n}: ${v}`).sort();
 
-/** @param {any} vercel */
+/**
+ * The headers vercel.json gives every path: the first rule of `routes`, source `/(.*)`, with `continue`
+ * (the explicit routes of spike S1; vercel-config.test.js pins the rest of the table).
+ * @param {any} vercel
+ */
 export function vercelStatic(vercel) {
-  const rule = (vercel.headers ?? []).find(
-    (/** @type {any} */ h) => h.source === "/(.*)",
-  );
-  return rule
-    ? rule.headers.map((/** @type {any} */ h) => [h.key, h.value])
+  const rule = (vercel.routes ?? [])[0];
+  return rule && rule.src === "/(.*)" && rule.continue === true && rule.headers
+    ? Object.entries(rule.headers)
     : [];
 }
 
@@ -46,11 +48,14 @@ test("HP-2 vercel.json gives the static paths the same https set; damaged copies
   const v = JSON.parse(readApp("vercel.json").toString());
   assert.deepEqual(sorted(vercelStatic(v)), sorted(HTTPS));
   const one = structuredClone(v);
-  one.headers[0].headers.pop();
+  delete one.routes[0].headers["X-Robots-Tag"];
   const inline = structuredClone(v);
-  inline.headers[0].headers[0].value += "; script-src 'unsafe-inline'";
+  inline.routes[0].headers["Content-Security-Policy"] +=
+    "; script-src 'unsafe-inline'";
   const changed = structuredClone(v);
-  changed.headers[0].headers[3].value = "SAMEORIGIN";
-  for (const d of [one, inline, changed])
+  changed.routes[0].headers["X-Frame-Options"] = "SAMEORIGIN";
+  const later = structuredClone(v);
+  later.routes.push(later.routes.shift());
+  for (const d of [one, inline, changed, later])
     assert.notDeepEqual(sorted(vercelStatic(d)), sorted(HTTPS));
 });
