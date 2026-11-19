@@ -6,7 +6,7 @@ The WF-06 ("idea selection") commands: `npm run prepare-run`, `npm run validate`
 
 ## Check
 
-The one check command (quality-bar Q4) runs from the folder `tools/`; Node 22 is needed (`engines` in `package.json`: `>=22 <23`):
+The one check command (quality-bar Q4) runs from the folder `tools/`; it needs a Node 22 at or above 22.23.4 (`engines` in `package.json`: `>=22.23.4 <23`); on another Node a `node <file>` script of `package.json` that is started to do its work stops at once, before it writes anything, with one line in Russian that names both versions and code 2 (`pixel-office` with code 1), while `--help` and a wrong call are answered as on any Node:
 
     cd tools
     npm ci
@@ -33,7 +33,7 @@ The command starts the server and prints one line with a link:
 
     Pixel Office: http://127.0.0.1:4780/
 
-The default port is 4780. It is fixed, so the link does not change between starts. Another port: `npm run pixel-office -- --port <number>` (`--port 0` means any free port); another state folder: `--dir <absolute path>` (see "Where things are"). If Pixel Office is already running on the port, the same line is printed and the command ends with code 0; a second server is not started. If the port is taken by another process, the command writes about it in Russian to stderr and ends with code 1. Help: `npm run pixel-office -- --help`. Node 22 is needed: under another version the command prints a message with the version and ends with code 1.
+The default port is 4780. It is fixed, so the link does not change between starts. Another port: `npm run pixel-office -- --port <number>` (`--port 0` means any free port); another state folder: `--dir <absolute path>` (see "Where things are"). If Pixel Office is already running on the port, the same line is printed and the command ends with code 0; a second server is not started. If the port is taken by another process, the command writes about it in Russian to stderr and ends with code 1. Help: `npm run pixel-office -- --help`. It needs a Node 22 at or above 22.23.4: under another version the command prints one line in Russian with both versions, starts nothing and ends with code 1.
 
 Only the line with the link goes to stdout; warnings and errors go to stderr. If the reader of this output disappears (for example, the pipe closes after a start in the background), the server goes on working: what nobody can read is dropped.
 
@@ -154,7 +154,7 @@ The journal and the secret lie outside the repository — in the folder `~/.sai-
 
 The journal, the records of starts and the secret must be ordinary files: in their place the server does not read a link and does not write through it, so another's file will not change: at start the command prints an error and ends with code 1, and for a running server the journal answers with the error 500. The files `port` and `node-path` are replaced with new ones at start. If as the state folder one gives a folder where other files already lie (for example, the home folder), its rights will be narrowed to 0700.
 
-The folder can be changed with the variable `SAI_PIXEL_OFFICE_DIR` (an absolute path), the same one for the server and for Claude Code; the key `--dir` alone is not enough (limit 12). The second variable is `SAI_NODE_FALLBACKS`: folders separated by a colon where `hook.sh` looks for Node 22 (for example, `<Node 22 folder>:<one more folder>`); if it is not set, `hook.sh` looks in the standard Homebrew folders for node@22 (they are written in `tools/src/pixel-office/hook.sh`).
+The folder can be changed with the variable `SAI_PIXEL_OFFICE_DIR` (an absolute path), the same one for the server and for Claude Code; the key `--dir` alone is not enough (limit 12). The second variable is `SAI_NODE_FALLBACKS`: folders separated by a colon where `hook.sh` looks for a Node 22 at or above 22.23.4 (for example, `<Node 22 folder>:<one more folder>`); if it is not set, `hook.sh` looks in the standard Homebrew folders for node@22 (they are written in `tools/src/pixel-office/hook.sh`).
 
 ### What of the hook input is stored and what is not
 
@@ -204,7 +204,7 @@ The text is passed only through `--text`. Optional keys: `--req` (a requirement 
 ### How it is built
 
 - In Sai the hooks are set only in `sai/.claude/settings.json` (a copy of the handlers in the project settings of the folder where the owner's sessions begin is only by `decisions/0007`, it is not part of Sai): one handler each for the events `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`, `SubagentStart`, `SubagentStop` and `PostToolUse` (for the tool Agent). A handler is a command, synchronous, with a `timeout` of 4 seconds.
-- The command starts `tools/src/pixel-office/hook.sh`, and that finds Node 22: first the path from the file `node-path`, then `node` from `PATH`, if it is Node 22, then the folders from `SAI_NODE_FALLBACKS`. If there is no Node 22, the hook ends silently.
+- The command starts `tools/src/pixel-office/hook.sh`, and that takes only a Node 22 at or above 22.23.4, by the `--version` of each candidate: first the path from the file `node-path`, then `node` from `PATH`, then the folders from `SAI_NODE_FALLBACKS`; a candidate below the floor, of another major or that cannot start is skipped for the next one. If none is left, the hook ends quietly with code 0 and the event is lost: it is not written later. The hook has no timer of its own: a candidate whose `--version` does not answer holds the hook until the time-out of its handler in `.claude/settings.json` ends it, and that event is lost too.
 - `hook.js` sets the time by the clock of the computer at the moment of firing, leaves only the allowed fields, signs the request with the secret from the file (HMAC-SHA256; the secret itself is not sent over the network) and sends it to `127.0.0.1`. At any failure — the server is not running, does not answer, refused, there is no secret — the hook ends with code 0, writes nothing to stdout and fits in 2 seconds: the event is lost, the session does not notice it.
 - The server listens only on `127.0.0.1` and answers only requests with the header Host `127.0.0.1:<port>` or `localhost:<port>`. There are two write paths — `POST /api/events` (hook events) and `POST /api/note` (orchestrator records, "Storing the text") — and both require a signature; an event whose time differs from the server clock by more than 60 seconds is rejected. The page only reads (`GET`).
 - How to tell the answers of the Pixel Office handlers in the stream `claude -p --output-format stream-json --verbose --include-hook-events`: the handler first of all writes the line `sai-pixel-office` to stderr, and it gets into the field `stderr` of the message `hook_response`. The selection: `jq 'select(.type=="system" and .subtype=="hook_response" and (.stderr|startswith("sai-pixel-office")))'`.

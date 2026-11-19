@@ -29,3 +29,7 @@ Portability (the owner's words above), a small auditable surface, and Q4: produc
 ## Basis
 
 `docs/owner-requests/2026-10-27-public-launch-plan.md` (quoted above, with the launch line); quality bar Q4; decisions 0002, 0015; `docs/program/public-v1/ARCHITECTURE.md` §2, §3.
+
+## Addition 2026-11-18 (ORCH, the design of M1.3, `decisions/0118` О15)
+
+The pins of `app/` measured by the design `docs/design/REQ-108-109-app-skeleton.md` (section 5; each version at least 14 days old, the lockfile from npmjs only, made with `npm install --before`): runtime `hono` 4.13.16, `@hono/node-server` 2.1.6, `pg` 8.23.1 (the production tree 16 packages, MIT/ISC; `npm audit --omit=dev` empty on 2026-11-17); development `@electric-sql/pglite` 0.5.15, `typescript` 6.0.3, `@types/node` 22.20.5, `@types/pg` 8.23.1, and the eslint and prettier versions of `tools/`. The two `@types` packages are added to the list of allowed development dependencies. TypeScript 7.0.2 is not taken (measured: 15 errors from type-checking JavaScript inside node_modules). The browser-test tool of `app/` is `playwright-core` (`decisions/0118` О1), added with the first browser test of `app/` (R1.2) with its own Addition here.

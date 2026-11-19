@@ -1,0 +1,241 @@
+{
+  "handoff_id": "step05-ISS-0092-20261117-01",
+  "run_id": "ISS-0092-20261117-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/ISS-0092-20261117-01/step-05-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": "a179ba3672c70874b",
+    "artifacts_in": [
+      "the diff against base/ISS-0092-20261117-01 in the write sets of steps 04 and 04b",
+      "docs/design/REQ-110-tools-node-floor.md (gate PASS at step 03d)",
+      "docs/requirements.yaml (block REQ-110, amended)",
+      "decisions/0101, 0119, 0120 (О1-О17)",
+      "handoffs/ISS-0092-20261117-01/step-04-backend-dev.json, step-04b-code-fixer.json"
+    ],
+    "route": "... 4 + 4b -> SECURITY-REVIEWER 5 (this, pass 1 of 3) + REVIEWER 5b (the second check of step 5) -> TEST-DESIGNER 6 -> 7 -> 8 -> 9 -> 10 -> release with M0.13",
+    "write_set": [
+      "its own handoff only (a checker: reads, does not edit project files)"
+    ],
+    "base_tag": "base/ISS-0092-20261117-01",
+    "issue_id": "ISS-0092",
+    "parallel_work_now": [
+      "ISS-0092-20261117-01 step 05b REVIEWER (reads only, at the same time)"
+    ]
+  },
+  "task": {
+    "description": "WF-03, step 5 — SECURITY-REVIEWER, gate, pass 1 of at most 3, on the fix of ISS-0092 (REQ-110, the tools/ Node floor) as built at steps 04 (BACKEND-DEV, tools/src/node-floor.js) and 04b (CODE-FIXER, S2-S6): the change is the diff of the working tree against the tag base/ISS-0092-20261117-01 in the write sets of those two handoffs (tools/src/node-floor.js; the eleven entry points of design section 3; tools/src/pixel-office/hook.sh; tools/package.json line 8 and tools/package-lock.json line 17; .github/workflows/check.yml; tools/README.md lines 9, 36, 157, 207; .githooks/pre-push line 32) — the other changed files of the tree belong to the runs M0DOCS-20261117-01 and SECREG-20261118-01 and are not part of this review. Read the code yourself against docs/design/REQ-110-tools-node-floor.md (gate PASS at step 03d), the block REQ-110 (amended) and decisions/0101, 0119, 0120 (О1-О17), by \"Step 5\" of docs/workflows/WF-03-defect.md and \"Step 3\" of docs/workflows/WF-02-development.md. You decide whether your area is touched. The main question: is the cause removed, or does the fix only hide the symptom; and try to break it yourself: (a) the guard is the first statement of the work in the same function as the action in every entry point — nothing is read, written, started or sent before it (state folders, home, TMPDIR, the network, a browser, a child process), and the command dispatch comes after it; (b) the refusal line holds no value but versions (a hostile version text, a control character, a very long text, a non-string) and is one line; (c) the hook: candidates from node-path, PATH and the fallbacks — a candidate that prints a hostile or huge --version text, a symlink, a non-executable, a candidate in a folder writable by others; stdin from /dev/null; exit 0 quiet; no shell injection through the version text or a path with spaces or quotes; the named limit of a hanging candidate (decisions/0120 О4) stated in the README; (d) check.yml: check-latest: true downloads the newest 22.x on the runner — say whether it changes the supply chain beyond the pinned setup-node action and whether the version is still bounded by engines; (e) the picker and the e2e runner refuse before any server or browser starts; (f) no secret, no machine path, no external call added; nothing swallowed except the documented throwing write. Repeat on a fresh clone of the tag outside the project with the changed files copied in, with simulated Node versions only (a preload with a positive control): the refusal under 22.21.1 and 22.23.3 for every row of design 9.2 with a hash list of the folders before and after; your own attacks of (a)-(f); at least 8 mutants of your own of the security-relevant places (the guard moved after a write, the hook reading the version through a shell, the version shown raw, and so on), each with what catches it or the gap. CI-3 and CI-8 of tools/test/repo.test.js are red by the design until step 6 (EXPECTED_RED, named in step 04b's result.issues); they are not a finding of this step. Any item not passed is a FAIL; findings ranked (Critical, High, Medium block). SAFETY: simulate Node versions only — never install or download an old Node; never start Pixel Office or its hook with the real home or the real Pixel Office state folder (a private HOME and a state folder under your own temporary root); servers only on 127.0.0.1 port 0, never 4780, 4781, 4782 or 4790; a team server only through the starter with a temporary SAI_TEAM_HOME and the trap copy as SAI_TEAM_CLAUDE_BIN; never set SAI_TEAM_REAL_RUNS; never start the real claude; never import a program file to read it; TMPDIR of every run inside your own folder; npm_config_update_notifier=false and only local binaries; a command denied by the permission check is not done another way. Do not run the full npm run check of the project. Change no project file other than this handoff; no commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "the guard first in every entry point: nothing read, written, started or sent before it; the dispatch after it",
+      "the refusal line and the hook safe against hostile version texts and paths; no injection, no secret, no machine path, no external call added",
+      "own attacks and at least 8 own mutants on a fresh clone with simulated versions; PASS only if every item holds"
+    ]
+  },
+  "created_at": "2026-11-18T15:35:13Z",
+  "started_at": "2026-11-18T15:35:13Z",
+  "completed_at": "2026-11-18T16:16:04Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": {
+      "scope": "WF-03 step 5, gate pass 1 of 3, on the fix of ISS-0092 (REQ-110) as built at steps 04 and 04b: the diff of the working tree against base/ISS-0092-20261117-01 in the 18 files of their write sets (tools/src/node-floor.js new; the eleven entry points E1-E11; tools/src/pixel-office/hook.sh; tools/package.json line 8, tools/package-lock.json line 17; .github/workflows/check.yml; tools/README.md lines 9, 36, 157, 207; .githooks/pre-push line 32). The other changed files of the tree belong to the runs M0DOCS-20261117-01 and SECREG-20261118-01 and were not reviewed. The verdict is mine, from my own runs on fresh clones of the tag outside the project with the 18 files copied in (hashes equal to the project's), simulated Node versions only. Main question: the cause is removed, not hidden — the floor is now three numbers compared as numbers in one module, every entry point refuses before its work, the hook asks every candidate (node-path included) and CI asks for the newest 22.x; no check is silenced, the refusal is a non-zero code, the only swallowed error is the documented throwing write.",
+      "surface_map": [
+        "tools/src/node-floor.js — comes from outside (the running version, a text of the runtime) and goes to stderr (the refusal line): input check, Q7 (the line holds only a version of a fixed shape), Q10",
+        "tools/src/cli.js, tools/src/traces/cli.js, tools/src/handoffs/cli.js, tools/src/handoffs/handoff.js, tools/test/e2e/run.js — comes from outside (command arguments; WF-06 run files, git, handoff files; the e2e runner starts a browser): Q10, the guard before any read, write or start",
+        "tools/src/pixel-office/main.js, tools/src/pixel-office/note.js — writes files and holds a secret (the state folder, write-secret), Pixel Office: Q7, Q10, R2",
+        "tools/src/pixel-office/hook.sh — comes from outside (the event on stdin, the node-path file, PATH, SAI_NODE_FALLBACKS, the --version text of every candidate), starts programs: input check, shell injection, Q10, R2",
+        "tools/src/pixel-office/public/office-report.js — under public/ (the Pixel Office server serves any plain name of that folder, so the file can go to a browser; no page loads it); its import ../../node-floor.js lies outside public/ and cannot be served: Q7, text display (no page change)",
+        "tools/src/team/cli.js, tools/src/web/main.js — customer data (team projects) and a server: Q8, Q10; only the import and the guard are added",
+        "tools/src/picker/cli.js — tenant files and a server: Q8, Q10; only the import and the guard are added",
+        ".github/workflows/check.yml — the server goes by itself (CI downloads Node with check-latest): supply chain, Q10, Q11",
+        "tools/package.json, tools/package-lock.json (engines) — no surface: a declared range, npm only warns",
+        "tools/README.md, .githooks/pre-push — no surface: documents and one echo text (searched for secrets and machine paths with the rest of the change)"
+      ],
+      "items": {
+        "Q7": "applicable, met. The refusal line shows a version only when it is 1-64 characters of [0-9A-Za-z.+-] (my own code-point oracle, not the module's regex), else «неизвестная версия»: 23 hostile forms (a line end with a second line holding «секрет=abc», ESC, CR, BEL, U+2028, a space and an option, shell signs, a path with .., HTML, Cyrillic, empty, 64 / 65 / 10 000 characters, a nightly, a pre-release, a leading zero, four parts, another major) x 23 entry rows: the line is exactly the design's and one line with no control character in every string row; non-strings on the module copy: refused, «неизвестная версия», toString never called. The added lines hold no key, token, password, address or machine path (read in full; see I1 for the denied automated search); the page folders (pixel-office, picker, web public/) hold no secret shape; node src/traces/cli.js 0. No new log, message or answer carries a value of the environment.",
+        "Q8": "applicable (team/cli.js, web/main.js and picker/cli.js are on the customer-data surface), met: no new path to data; the guard returns before any data is read (tracer: the rows team projects, team project 01-alpha, team new, team-web through the starter, picker check and serve have no disk, process or network event before the refusal); under the real Node and a simulated 22.23.4 every row ends as on the tag (46 of 46 equal).",
+        "Q9": "not applicable: no query anywhere in the change (no SQL text in the added lines; Sai's tools have no database).",
+        "Q10": "applicable, met, with the Low finding F1. A refused start is one plain line, its code, nothing written, nothing started (46 of 46 rows end by themselves in 59-86 ms); a throwing or null stderr does not throw and the code still says it (module probe; mutant X17 red); the hook skips a candidate that cannot start, is not executable, is a directory, a dangling link or a link loop, and ends with code 0 and nothing on stdout or stderr; a --version that reads stdin gets /dev/null and the event reaches the next candidate whole; a candidate that holds its stdout holds the hook (3.3 s for a 3 s hold) — the named limit 2, stated in README line 207 word for word (handler time-out 4 s); a --version of megabytes holds macOS /bin/sh superlinearly (F1). No new external call in Sai code.",
+        "Q11": "not applicable: no address that a client or a user sets is called; the change adds no network call; check-latest: true makes the pinned setup-node action read its own version manifest on the GitHub runner (not an address of a user; see I5).",
+        "R2": "applicable (Pixel Office), met: hook.js, server.js, journal.js, state-dir.js, protocol.js and .claude/settings.json are unchanged (git diff --stat empty); a refused Pixel Office creates no state folder and touches no file (tracer: nothing before or after the line; listing equal); a refused note reads neither write-secret nor port (tracer, also with a fake secret and port in its folder); hook.sh writes nothing and a skipped or lost event is never written later (no write path added); no event is written in code; the real state folder was never named in any start (private HOME and state folder under my folder for every start) and its five files, sizes, times, inodes and hashes are equal before and after my runs; no server on 4780-4790.",
+        "R3": "not applicable: decision 0033; the change has no photo of a person."
+      },
+      "attacks": {
+        "a_guard_first": "fix clone, 23 rows (the 21 of design 9.2, team new and traces add) x simulated 22.21.1 and 22.23.3 = 46 starts, each a child with only named variables, its own HOME, TMPDIR, state folder, team home and working folder, stdin /dev/null, servers --port 0, team-web only through the kit's starter with a temporary SAI_TEAM_HOME and the trap copy, and my preload tracer (every fs, fs.promises, child_process, net, http, https, dgram, worker, os.homedir/tmpdir/userInfo call and every stdout/stderr write, in order): 42 of 46 with no event before the refusal line and none after it, code 2 (Pixel Office 1), stdout empty, the design's line exactly, listings equal, no server, trap never started; the 4 note rows have one event before the guard, os.homedir() of the entry block (F2). The events counted as module loading are 756 of 756 files of the entry's static import graph (read as text), package.json or their folders. Negative control: the same harness on the tag clone — 46 of 46 red (it sees the state folder made, write-secret opened, git started, the tenant read, the page files read). Wrong calls answered before the guard (decisions/0120 О5): 9 rows under 22.21.1 equal to the real Node and read nothing. --help of the six programs: 36 rows, stdout byte-equal to the tag's (the hashes of design F3), nothing read or written but module loading (and note's os.homedir).",
+        "b_refusal_line": "23 hostile version forms x 23 rows = 529 starts: every string form refused with the exact one-line text of my oracle (467 rows fully green, 38 note rows red only by F2's os.homedir); 24 non-string rows are an effect of my instrument (I3). Module copy: 853 checks, 0 failed — a grid of 768 versions against my split-and-compare oracle, 21 hostile texts, 10 non-strings, 12 line texts, the writer contract; 10 MB inputs refused in 0.62-1.44 ms (no slow regex).",
+        "c_hook": "68 rows x /bin/sh (bash 3.2) and /bin/dash x LC_ALL C and en_US.UTF-8 = 272 runs with stub nodes only (PATH and SAI_NODE_FALLBACKS name stub folders and /usr/bin:/bin, where no node is), the event on stdin: the floor rows; 31 hostile --version texts (\"$(touch PWNED)\", backticks, ;, |, &&, two lines, spaces, CR, TAB, V, vv, -evil, a leading v99, signs, e1, ten digits, leading zeros, full-width, superscript and Arabic-Indic digits, NBSP) refused, no PWNED, stderr empty in both locales; 6 accepted forms taken (nine-digit parts, 22.100.0); a node-path link to a stub at the floor taken, below it skipped, dangling and looping links skipped; a non-executable file and a directory skipped quietly; a node-path in a folder named with a space, quotes, $() and backticks taken with no file created; a node-path with a second line and one that holds $(touch PWNED) or a bare word; fallbacks with a glob, $() and a folder with a space; a failing --version skipped; stderr noise of a candidate dropped; IFS=2 and IFS=. in the environment change nothing. Green: 272 of 272 except the long-text rows of F1 under /bin/sh (5 MB of digits over 8 s; 20 MB of junk 6.4 s in UTF-8). Negative control on the tag's hook: 31 of 68 red. A candidate in a folder writable by others is taken (I6).",
+        "d_check_latest": "read, not run (no push in this step): the pinned action commit, permissions contents: read and persist-credentials: false are unchanged; the one added line adds no action, input with a secret, env: or address. See I5.",
+        "e_picker_e2e": "picker check and serve and e2e no-such-spec under 22.21.1 and 22.23.3: no listen, no child, no disk event before or after the refusal, code 2, stdout empty (for e2e no record line); mutants X11 and X14 red.",
+        "f_secret_path_external": "the added lines read in full; no secret, machine path or external call; the only catch is node-floor.js's documented one; traces 0; the page folders search empty."
+      },
+      "mutants": "17 own mutants, each in a fresh copy of the fix clone's tools/ outside the project, exact replacements, the copy removed after; the fix clone's tree hash equal before and after (b13c51762fafa2b0). All 17 caught by my probes: X01 Pixel Office guard after ensureStateDir/ensureSecret — caught (tracer, listing; also the tag's SV-39); X02 guard after server.listen — caught (code, server, listing; the tag's SV-39 red but its file hangs until my 180 s limit, I2 c); X03 note guard after the reads of write-secret and port — caught (tracer; with an empty state folder also by code and line); X04 the version shown raw — caught by 52 hostile rows and the module probe, not by the plain 22.21.1 rows; X05 team web guard after loadPublicFiles — caught only by the read tracer; X06 hook reads the version through sh -c — caught (hostile-path and spaced-folder rows; the tag's HK-09, HK-10); X07 hook evals the version text — caught (PWNED created); X08 hook keeps the candidate's stderr — caught (stderr rows); X09 a failing --version accepted — caught (exit-1 row); X10 a text that contains the floor accepted — caught (21 rows); X11 picker prints the refusal and goes on — caught (server, stdout, code); X12 handoff.js runs git before the guard — caught (tracer, line); X13 traces guard after repoRoot — caught (tracer, line); X14 e2e runAll before the guard — caught (stdout, line, tracer); X15 team runs the command then refuses — caught (stdout, tracer); X16 office-report guard after the journal read — caught (code, line, tracer); X17 the guard fails open on a throwing write — caught (module probe). The tag's own hook tests (control 50 of 50) catch only X06; X07-X10 pass them (I2 a).",
+      "probes_count": "46 + 46 (tag negative control) + 92 twins + 529 hostile + 23 team-web re-check entry starts; 853 module checks; 272 + 68 (tag) + 136 (bounded-trial copy) hook runs; 13 long-text hook timings; 36 help rows; 9 wrong-call rows; 17 mutants with 6 runs of the tag's hook tests."
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Low",
+        "item": "Q10 (the hook stays quick and quiet: REQ-110 criterion 4, REQ-001 criterion 15)",
+        "place": "tools/src/pixel-office/hook.sh lines 54-61 (node_ok: the --version text in v is unbounded; split3 runs `case \"$1\" in \"\" | *[!0-9.]*)` and `${rest%%.*}` over all of it)",
+        "what": "Under macOS /bin/sh (bash 3.2) the time of the shape check grows faster than the length of a candidate's --version text. Digits only: 10 000 characters 262 ms, 100 000 367 ms, 300 000 948 ms, 1 000 000 7 910 ms, 2 000 000 over 30 000 ms (killed by my limit); 20 MB of junk 6 445 ms in a UTF-8 locale (604 ms in C). The tag's hook takes 168 ms and 171 ms for 1 and 2 million digits (its case v22.* reads a prefix); /bin/dash takes 446 ms at 5 million. Such a candidate holds the hook past the 4 s handler time-out of .claude/settings.json, which ends it: the event is lost and never written later, the session is not disturbed — the effect of the named limit 2 by another cause (an answer too long, not no answer), and README line 207 names only «does not answer». A real Node prints about 9 characters, and a candidate is a binary of the person's own environment, so whoever can make one print megabytes already runs code as the person: no security border is crossed.",
+        "fix": "One line right after line 54: `[ \"${#v}\" -le 30 ] || return 1` (the longest accepted text is 23 characters). Measured on a copy: 5 million digits 319 ms, 20 MB of junk in UTF-8 735 ms, all 68 rows of my hook attacks green under /bin/sh and /bin/dash, the accepted twins v22.999999999.0 and v22.23.999999999 still taken. Or, if the design keeps the script, name «an answer of more than about 0.3 MB» beside limit 2 in design section 17 and README line 207 (pinned whole by NF-09, AP-077). Either is a design choice for ORCH; not blocking."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "item": "Q7 border / design section 3 («before any read of the environment»)",
+        "place": "tools/src/pixel-office/note.js line 342 (`home: os.homedir()` in the entry block; the guard is at line 275 inside main)",
+        "what": "Under a refused Node, pixel-office-note asks Node for the home folder path before main and its guard run: it reads the HOME value (or the user list when HOME is unset), no file of the home; nothing else is read and the value is not used before the refusal. The same call stands on the tag (line 339) and under --help; the ten other entry points pass only references (process.env, the streams). So «nothing is read before the guard» holds for files, folders, children and the network, not for this one value lookup.",
+        "fix": "No change needed for security. If the design's words are to hold literally: resolve the home inside main after the guard (pass io.home lazily), or record the exception in the design's «As built» at step 10 or in the follow-up LOW defect of decisions/0119 О6. Not blocking."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "date -u; node -v; git rev-parse HEAD base/ISS-0092-20261117-01 (2026-11-18T15:37:34Z)",
+        "output": "v22.23.4; both 6c756cd3a248…"
+      },
+      {
+        "command": "shasum -a 256 of the 18 files of the change, in the project, at the start (15:37Z) and at the end (16:11:49Z); diff of the two lists",
+        "output": "equal. node-floor.js 33b64b8d62c5, cli.js 9ba4e489e3a3, pixel-office/main.js 8fb8cf355274, note.js 07bd45b4d060, team/cli.js bcb6e768786e, web/main.js f3b490da0cf8, traces/cli.js 3e1f2a4e7cbc, handoffs/cli.js c27fc908c0e1, handoff.js 81cf4b735325, picker/cli.js 4eded5bfc7dc, test/e2e/run.js 990bc75d2de0, office-report.js e1eaf01d9735, hook.sh de4d452f236a, package.json eb2fc1cac198, package-lock.json a41e1483c757, check.yml 6f32c7c270e1, tools/README.md 2670e1911780, pre-push 581738e635d2"
+      },
+      {
+        "command": "git clone -q -b base/ISS-0092-20261117-01 <project> <outside the project>/i092-05/clones/tag and …/clones/fix; the 18 files copied into fix; shasum -a 256 compared with the project's",
+        "output": "both clones at 6c756cd; the 18 files equal to the project's; git status of the fix clone: the 17 modified files and the new module only. No checkout, reset, stash or clean anywhere."
+      },
+      {
+        "command": "preload positive controls: SAI_SIM_NODE=<v> node --import <outside the project>/i092-05/tmp/pre/preload.mjs -p … for 22.21.1, 22.23.3, 21.7.0, x, empty; an ES entry by --import and by NODE_OPTIONS; the tracer control (named and default fs imports, fs/promises, spawnSync, promisified execFile, os.homedir/tmpdir, listen, connect, stdout, stderr)",
+        "output": "each simulated value seen as process.versions.node and v<value>; no variable: 22.23.4; the ES entry sees 22.21.1 both ways; the tracer logged every one of the 12 kinds and promisify(execFile) still resolved its stdout («promisified-ok»)"
+      },
+      {
+        "command": "node entries.mjs <tag tools> tag refuse … (negative control)",
+        "output": "tag refuse: rows 46, ok 0, bad 46 (state written, write-secret opened, git started, tenant files and page files read, usage lines in place of the refusal)"
+      },
+      {
+        "command": "node entries.mjs <fix tools> fix refuse …; node graph.mjs <fix tools> …",
+        "output": "fix refuse: rows 46, ok 42, bad 4 (the 4 pixel-office-note rows: before=[\"os.homedir(null)\"] only, F2); every refused row 59-86 ms; own paths checked 756, not in the import graph 0"
+      },
+      {
+        "command": "node entries.mjs <tag tools> tag twin …; node entries.mjs <fix tools> fix twin …; compare",
+        "output": "tag twin 46 ok; fix twin 46 ok; twins equal to the tag: 46 of 46; refusal printed in any fix twin: false"
+      },
+      {
+        "command": "node entries.mjs <fix tools> fix hostile …",
+        "output": "rows 529, ok 467; bad: 38 note rows by os.homedir only (lines exact), 24 non-string rows (Node's undici crash at load, I3); no PWNED file"
+      },
+      {
+        "command": "node module.mjs <fix clone>/tools/src/node-floor.js <design copy>",
+        "output": "time 10MB digits 0.75 ms, 10MB shown chars 0.83 ms, 10MB dots 0.62 ms, 5M '22.' 1.44 ms, 10MB 9s then x 0.64 ms; module probe: 853 checks, 0 failed"
+      },
+      {
+        "command": "node hook.mjs <fix hook.sh> fix … for /bin/sh and /bin/dash, LC_ALL C and en_US.UTF-8",
+        "output": "sh C 67 of 68 (5MB digits 8003 ms); sh UTF-8 66 of 68 (5MB digits 8015 ms, 20MB junk 6445 ms); dash C 68 of 68; dash UTF-8 68 of 68; the hold row 3300-3307 ms (named limit); slowest other row 567 ms"
+      },
+      {
+        "command": "node hook.mjs <tag hook.sh> tag … /bin/sh C (negative control)",
+        "output": "rows 68, ok 37, bad 31 (node-path v22.21.1 started hook.js; every v22.* text taken; a stdin-reading --version took the event)"
+      },
+      {
+        "command": "node hookbig.mjs <hook.sh> <shell> <locale> <kind> <sizes>",
+        "output": "fix sh C digits: 1e4 262 ms, 1e5 367 ms, 3e5 948 ms, 1e6 7910 ms, 2e6 30002 ms SIGTERM; fix sh UTF-8 junk: 1e5 281, 1e6 372, 5e6 854 ms; tag sh C digits: 1e6 168, 2e6 171 ms; fix dash C digits: 1e6 293, 5e6 446 ms; trial copy with [ \"${#v}\" -le 30 ]: sh digits 1e6 154, 5e6 319 ms, sh UTF-8 junk 2e7 735 ms; the trial copy's 68 rows green under sh C and dash UTF-8"
+      },
+      {
+        "command": "node help.mjs <tag tools> <fix tools>",
+        "output": "36 rows, code 0, stdout hashes d80a1247, fddcaf2e, a59afba5, 6d545028, f05b9bdb, 22d9ef4c on the tag and the fix under real, 22.21.1 and 22.23.3; nothing read or left; the 6 'bad' are note's os.homedir on the tag and the fix alike"
+      },
+      {
+        "command": "node usage.mjs <fix tools>",
+        "output": "usage rows 9, bad 0 (main --bogus, main --port 99999, note --bogus, traces bogus, traces --root, handoffs-check --bogus, handoff bogus, handoff new: the same answer as on the real Node, nothing read; picker bogus: refused)"
+      },
+      {
+        "command": "node mutants.mjs <fix tools> <design copy> X01,…,X17 (two runs; the second in the harness's background, waited for by its end line)",
+        "output": "17 of 17 caught (summary.mutants); fix clone tree hash before b13c51762fafa2b0 after b13c51762fafa2b0 same"
+      },
+      {
+        "command": "node hooktests.mjs <fix clone> (the tag's tools/test/pixel-office-hook.test.js with .claude/settings.json at the copy root)",
+        "output": "control 50/0; X06 48/2 (HK-09, HK-10); X07 50/0; X08 50/0; X09 50/0; X10 50/0"
+      },
+      {
+        "command": "grep -rnEi '<secret shapes>' src/pixel-office/public src/picker/public src/web/public (from tools/)",
+        "output": "no match; the only page file holding the guard is office-report.js (lines 19 and 193), which no page loads"
+      },
+      {
+        "command": "git diff --stat base/ISS-0092-20261117-01 -- hook.js server.js journal.js state-dir.js protocol.js tools/src/team tools/src/web tools/src/picker; .claude/settings.json",
+        "output": "only picker/cli.js +14, team/cli.js +3, web/main.js +3; settings.json unchanged"
+      },
+      {
+        "command": "stat and shasum of the five files of the real Pixel Office state folder before my first start (15:43:00Z) and after my last (16:11:49Z); lsof of listeners",
+        "output": "equal (names, sizes, times, inodes, hashes of node-path, port, server-starts.jsonl, write-secret); no listener on 4780, 4781, 4782 or 4790 before; no node listener after"
+      },
+      {
+        "command": "ps of node and Chrome processes before and after",
+        "output": "no process of mine left (no command line names my folder); the old node -e setInterval processes untouched; a helper of the person's own Chrome (pid 4084, started 16:08:10Z) appeared and was left alone"
+      },
+      {
+        "command": "cd tools && node src/handoffs/cli.js; node src/traces/cli.js (16:12:46Z, before filling the result)",
+        "output": "handoffs-check: файлов проверено 1440, нарушений 0, исключений использовано 110 из 110 (exit 0); traces: файлов проверено 2627, следов 0, пропущено 67 (exit 0)"
+      },
+      {
+        "command": "the names of other projects and computer paths in this handoff",
+        "output": "searched by npm run traces → 0 (above and after close)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DENIED",
+        "at": null,
+        "at_note": "between 2026-11-18T16:05:09Z and 2026-11-18T16:06:32Z, the clock readings of my commands just before and just after the denied one; its exact second was not read",
+        "text": "The permission check of the session denied one command of mine: an automated search of the added lines of the 18 files for secret shapes, network words, swallowed errors and machine paths (a zsh array built from my file list, then git diff and grep). The check named it a removal it could not parse; the command held no removal. It was not repeated in any form. What stands in its place: my reading of every added line of the 18 files in this session (imports, guard calls, comments, the hook functions, the engines texts, the one check-latest line, the README and pre-push sentences): no key, token, password, address, machine path or external call, and the only catch is node-floor.js's documented one; the separate search of the page folders (empty); node src/traces/cli.js (0). The first form of the same search had run before (with my AP-156 slip, I4) and covered node-floor.js only: no match but the module's own regex and catch."
+      },
+      {
+        "id": "I2",
+        "kind": "PROPOSAL",
+        "text": "For TEST-DESIGNER at step 6 (gaps my mutants found in the tests of the tag and of design 9; the code is right): (a) X07 (the hook evaluates the --version text) and X08 (the hook keeps the candidate's stderr) pass the tag's 50 hook tests and no row of design 9.4 would catch them: add HK rows with --version texts holding $(touch <file>), a backtick, ; and | (refused, the file not created), a node-path candidate in a folder whose name has a space, quotes and $() (taken, no file created), and a candidate that writes to stderr (the hook's stderr empty). X09 and X10 are covered by the planned HK-34 and HK-35. (b) NF-05's oracle (code, stdout, the exact line, the listings, no server) cannot see a read or a start before the guard that changes no output: X05 (team web guard after loadPublicFiles) is green for it and red only for a read tracer; X03 is caught only because the note row has an empty state folder (with a secret and a port in it, my extra row, the moved guard prints the exact line). A preload tracer in NF-05 (my rule: every fs / child_process / net / os call before the first stderr write is a file of the entry's static import graph, measured 756 of 756), or a named limit, would close it. (c) The tag's SV-39 hangs under X02 (the guard after listen) until an outer kill; the new SV-39 of design 9.5 (stdout trap and 10 s limit) should take X02 as a mutant beside C05 and M12."
+      },
+      {
+        "id": "I3",
+        "kind": "INSTRUMENT",
+        "text": "AP-160: a simulated non-string version (a number, null, undefined, an object) makes Node's own bundled undici crash at load (process.versions.node.split in node:internal/deps/undici) in pixel-office, pixel-office-note, picker and team-web — 24 of the 529 hostile starts end with Node's crash footer. A real Node's version is always a string, so these rows lie outside what can happen; the module's handling of non-strings was proven directly on the module copy (refused, «неизвестная версия», toString never called). Two more instrument facts: the ES loader reads module files through the public fs, so the tracer's module filter was itself checked against the entry's import graph (756 of 756); my first mutant copies held only tools/, so the tag's hook tests found no .claude/settings.json and were red 40 of 50 — rerun with the file at the copy root (control 50 of 50), and only the rerun is reported."
+      },
+      {
+        "id": "I4",
+        "kind": "PROCESS",
+        "text": "My own slips, undone at once, for the error journal if ORCH wants them (Q13): (1) AP-156 again — zsh did not split an unquoted variable of file names in my first search of the diff, so its diff part was empty; seen in the count of lines, not used as evidence; (2) the same as step 04's I5 — the Write tool turned a \\u2028 escape inside a regex literal of my harness into a raw line separator (SyntaxError on the first run); replaced by a check built from character codes before any result was taken. No file was written outside my folder or into the system temporary folder (checked), no project file but this handoff was changed, no git checkout, reset, stash or clean was used, no program file of tools/src was imported to read it (my probes imported only a copy of the pure module and the kit's starter of the copy), no Node was installed or downloaded, the real claude was never started and SAI_TEAM_REAL_RUNS was never set."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "(d) check-latest: true — read, not measured (no push in this step; design limit 4). The action stays the same pinned commit (setup-node v7.0.0) with permissions contents: read and persist-credentials: false; the line adds no new action, no secret, no env: and no address. What changes is when Node is fetched: on every run where the runner image's cache lags, the action resolves the newest 22.x from its own version manifest and downloads it at run time, where before it took the image's cached build; the run-time download is now part of each run and cannot be reproduced to an exact build (not pinned). The version stays bounded: node-version \"22\" keeps the major at 22, the runtime guards refuse anything below 22.23.4 at npm run traces (engines only warns), and a newer 22.x is accepted (the named TT-1a risk of a new Unicode version). Whether the manifest and the download are integrity-checked is a fact of the action, not measured here; no claim is made about it (AP-158)."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "text": "The hook takes a candidate in a folder writable by others (no owner or mode check of a candidate or its folder): measured for PATH and node-path stubs in 0777 folders. This is the tag's behaviour for PATH and the fallbacks; the node-path binary was executed by the tag with no check at all and is now only asked its --version first, so the fix narrows, not widens, what runs. Whoever can write a candidate already runs code as the person. No finding."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "Shared mechanism (AP-014): the eleven entry points were compared with each other by the same tracer rule; all place the guard before the first read, write or start, the dispatch after it. Two differences by the design, not findings: the picker writes the refusal through its own emit (no try/catch; a failing stderr there is an 'error' event, and Node opens /dev/null for a closed fd 2 at start), as design E9 says; the e2e runner loads the kit by its static import before the guard, and the kit writes nothing at load (tracer: no event but module files)."
+      },
+      {
+        "id": "I8",
+        "kind": "INFO",
+        "text": "Parallel work seen, not touched: decisions/0121-security-review-defects-conventions.md and docs/issues/ISS-0123-pixel-office-accepts-a-replayed-signed-event.md appeared in the tree during my run (the SECREG-20261118-01 run, which context.parallel_work_now of this handoff does not name; step 04b's I6 said the same). handoffs-check and traces were 0 with them."
+      }
+    ],
+    "artifacts_out": [],
+    "prototype": "<outside the project>/i092-05/ (the session work folder): clones/tag and clones/fix (fresh clones of the tag; the 18 files copied into fix); tmp/pre/preload.mjs (the simulated version and the tracer) and control.mjs (its positive control); probe/entries.mjs, graph.mjs, module.mjs, hook.mjs, hookbig.mjs, help.mjs, usage.mjs, mutants.mjs, hooktests.mjs; logs/ (every output quoted above). Instruments of the check, not the implementation."
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-18T15:35:13Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/security-reviewer.md (read first): the Sai role agents are not registered in this ORCH session. REVIEWER (step 05b) runs at the same time; both only read."
+  }
+}

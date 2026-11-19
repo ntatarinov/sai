@@ -6,6 +6,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { refuseBelowNodeFloor } from "../node-floor.js";
 import {
   APP_MARKER,
   DEFAULT_PORT,
@@ -179,13 +180,10 @@ async function run(argv, env, io) {
     return 0;
   }
 
+  // The Node floor (REQ-110): below it, one line and code 1, before anything is read
+  // or started.
   const version = io.nodeVersion ?? process.versions.node;
-  if (String(version).split(".")[0] !== "22") {
-    io.err.write(
-      `Pixel Office: нужен Node 22 (сейчас ${version}). Подробности — tools/README.md\n`,
-    );
-    return 1;
-  }
+  if (refuseBelowNodeFloor(io.err, version)) return 1;
 
   // The directory the hook will look for: the environment, else the home
   // directory. A --dir that differs from it is allowed, with a warning.

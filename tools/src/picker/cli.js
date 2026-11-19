@@ -6,6 +6,11 @@
 // folder that cannot be read, one line `picker: <text>` to stderr; 3: a program error,
 // the stack goes to stderr. This file is a script: it runs its command when it is loaded
 // and exports nothing.
+import {
+  NODE_REFUSAL_EXIT,
+  meetsNodeFloor,
+  nodeFloorRefusal,
+} from "../node-floor.js";
 import { checkFile, show } from "./check.js";
 import { runServe } from "./serve.js";
 
@@ -83,6 +88,15 @@ const COMMANDS = new Map([
 
 function run(argv) {
   if (argv.includes("--help")) return { exitCode: 0, stdout: HELP, stderr: [] };
+  // The Node floor (REQ-110), before the usage checks and both commands.
+  const version = process.versions.node;
+  if (!meetsNodeFloor(version)) {
+    return {
+      exitCode: NODE_REFUSAL_EXIT,
+      stdout: [],
+      stderr: [nodeFloorRefusal(version)],
+    };
+  }
   if (argv.length === 0)
     return refusal(`Не указана команда. Доступны: check, serve. ${SEE_HELP}`);
   const handler = COMMANDS.get(argv[0]);

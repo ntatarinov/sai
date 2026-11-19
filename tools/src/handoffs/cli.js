@@ -5,6 +5,7 @@
 // pass, so a failed run prints nothing to stdout. Errors are one stderr line
 // `handoffs-check: <code>: <text>`, without a stack trace; a program error is not caught.
 import path from "node:path";
+import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "../node-floor.js";
 import { TraceError } from "../traces/lists.js";
 import { checkHandoffs, exitCodeOf, formatReport } from "./check.js";
 import { emitRecords } from "./exceptions.js";
@@ -55,6 +56,8 @@ function main(argv) {
       process.stdout.write(`${USAGE}\n`);
       return 0;
     }
+    // The Node floor (REQ-110), before the check, in both modes.
+    if (refuseBelowNodeFloor(process.stderr)) return NODE_REFUSAL_EXIT;
     const start = path.resolve(process.cwd(), parsed.opts.get("root") ?? ".");
     const report = checkHandoffs({ root: start });
     if (parsed.opts.has("emit-exceptions")) {

@@ -16,6 +16,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "../../node-floor.js";
 import { buildModel } from "./model.js";
 import { MAIN_KEY, buildOffice, countStates } from "./office-model.js";
 import { parseLine } from "./schema.js";
@@ -188,6 +189,8 @@ export function buildReport(entries, starts, nowMs, session) {
 // {stdout, stderr} with the method write; nowFn: the clock (milliseconds), the
 // real one by default. Returns the exit code.
 export function runReport(argv, io = process, nowFn = Date.now) {
+  // The Node floor (REQ-110), before the arguments and the journal are read.
+  if (refuseBelowNodeFloor(io.stderr)) return NODE_REFUSAL_EXIT;
   const out = (text) => io.stdout.write(text);
   const err = (text) => io.stderr.write(`${text}\n`);
   try {

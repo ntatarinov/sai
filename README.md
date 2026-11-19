@@ -117,7 +117,8 @@ green check on GitHub. You get a report in plain words. The order of the steps i
 ## What already works
 
 Everything below is checked by the command `cd tools && npm run check` and by the gates of the
-runs (`STATE.md`).
+runs (the release reports in `docs/releases/`; the old journal
+`docs/archive/STATE-until-M0DOCS-20261117-01.md`).
 
 - **Pixel Office** — a page that shows which tasks the agents are doing: a task list, an event
   journal and an office with characters of the roles. Everything is built only from events
@@ -179,9 +180,9 @@ runs (`STATE.md`).
   `look`, REQ-069, and the two demo tenants of the new office, REQ-070); the rest are written
   and checked (including the new office look, REQ-071…087, and the launch of development from
   the operator board and the customer cabinet, REQ-088…101, `decisions/0088`) but wait to be
-  built, in the order of `PLAN.md`: until the
+  built; their build queue is stopped by `decisions/0099`: until the
   result page exists the questionnaire ends with a temporary screen and the page is not for
-  real visitors. The exact status is in `docs/requirements.yaml` and `STATE.md`. Start
+  real visitors. The exact status is in `docs/requirements.yaml`. Start
   it with `cd tools && npm run picker`; how it is built — `tools/README.md`; code —
   `tools/src/picker/`; decision — `decisions/0065-solution-picker-stack-and-choices.md`.
 - **The agent pipeline** — the roles, workflows and quality bar by which the AI agents make Sai
@@ -327,15 +328,17 @@ Limits to know about:
 
 - `CLAUDE.md` — the index for agents: what to read at the start, the main rule, roles,
   workflows.
-- `STATE.md` — what is done, what is open, what is next; `PLAN.md` — iterations and steps.
+- `STATE.md` — one screen: the state, the open gates and the next step; `PLAN.md` — the
+  current iteration and its requirements.
 - `.claude/agents/` — the 37 role files; `.claude/settings.json` — the Pixel Office hooks.
 - `docs/` — the quality bar (`quality-bar.md`), requirements (`requirements.yaml`), workflows
   (`workflows/`), designs and samples (`design/`), defects (`issues/`), acceptance scenarios
   (`uat/`), release reports (`releases/`), the journal of process errors
   (`anti-patterns.md`), research and the business plan (`research/`, `business-plan/`),
-  product state and plans (`product/`), the owner's goals in his words (`owner-goals.md`). The
-  folder of audits `docs/audits/` will appear with the first audit
-  (`docs/workflows/WF-05-health-audit.md`).
+  snapshots of the product state of 2026-10 (`product/`), the owner's goals in his words
+  (`owner-goals.md`), the program PUBLIC-V1 (`program/public-v1/`), the old journals of
+  `STATE.md` and `PLAN.md` (`archive/`), and the audits (`audits/`, their list is
+  `docs/audits/README.md`; the first one, AUD-001, is closed).
 - `decisions/` — recorded decisions, their list is `decisions/README.md`.
 - `handoffs/` — tasks and reports of agents by runs; `runs/` — files of idea-selection runs;
   `reports/` — run reports. This is history: it is not rewritten.
@@ -352,7 +355,7 @@ defects, release reports, research) are still in Russian.
 
 ## What is not ready or not proven
 
-As of 2026-10-26, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
+As of 2026-11-18T05:27:52Z, from `docs/requirements.yaml` and `docs/issues/`:
 
 - **Demand is not tested.** Nobody has checked yet that businesses want a virtual team; this is
   an accepted risk (`decisions/0015`).
@@ -361,28 +364,30 @@ As of 2026-10-26, from `STATE.md`, `docs/requirements.yaml` and `docs/issues/`:
   check was not exercised on the real model. Pause, continue and stop, the chat and owner
   answers, network and executor failures, running out of the cap, parallel tasks, critical
   tasks and retries were tested only with a scripted executor. A real run through the web page
-  has not been done. A real run needs the owner's consent and a spending cap (`STATE.md`,
-  "Ждёт владельца", i.e. "Waits for the owner").
+  has not been done. A real run needs the owner's consent for that run and a spending cap
+  (gate G2 in `docs/program/public-v1/PROGRESS.md`, «Owner gates»).
 - **Pixel Office is not fully accepted.** Acceptance ran on separate test servers with made-up
   data; the newest features have not been run with a real Claude Code session; the owner has
   not yet confirmed that the page looks like the approved sample (criterion 16 of REQ-007).
-  The requirements for the core of Pixel Office (REQ-001, REQ-007, REQ-008) are still in
-  progress.
-- **Requirements:** 87 in total — 31 done, 4 in progress, 52 pending (counted from
-  `docs/requirements.yaml`; the order of work is in `docs/product/requirements-catalog.md`).
-  Still pending, for example: user accounts and login, workspaces and access roles, a
-  decisions window, goal templates, a second interface language. The requirements for a
-  built-in Pixel Office guide (help panel, first-visit tour, hints; REQ-050…REQ-053) are
-  built and done since 2026-10-18.
+  The requirements for the core of Pixel Office (REQ-001, REQ-007, REQ-008) are `blocked`:
+  they wait for one real Claude Code session that the owner allows and for his look at the
+  office (criterion 16 of REQ-007).
+- **Requirements:** 110 in total — 38 done, 2 in progress, 3 blocked, 60 pending, 7 cancelled
+  (counted from the status lines of `docs/requirements.yaml`; the order of work is the
+  program PUBLIC-V1, `docs/program/public-v1/PLAN.md`).
+  The requirements the program does not need now are deferred or cancelled with a pointer
+  (`decisions/0099`). The requirements for a built-in Pixel Office guide (help panel,
+  first-visit tour, hints; REQ-050…REQ-053) are built and done since 2026-10-18.
 - **A single computer only.** Both servers listen only on `127.0.0.1`; there are no user
   accounts yet. The interface is in Russian only.
-- **Open defects: 74** in `docs/issues/` — 9 of medium severity and 65 low; none high or
-  critical.
+- **Open defects: 97** in `docs/issues/` — 1 critical, 9 of medium severity and 87 low; none high.
 - **A merge in a way other than the push to `main` needs the owner's confirmation** (R1). The
   repository exists on GitHub; the owner opened it to everyone on purpose (read on GitHub on
   2026-11-15, `decisions/0111`, which replaces the part of `decisions/0062` about a closed
   repository). A push to `main` after PASS of RELEASE-VALIDATOR is allowed by the owner
   (`decisions/0048`, `decisions/0079`); the release step commits the run's files, pushes them
   and waits for a green check on GitHub (`docs/workflows/WF-02-development.md`, step 11).
-- **No health audit yet.** The first WF-05 audit has not run; the folder `docs/audits/` will
-  appear with it (`docs/workflows/WF-05-health-audit.md`).
+- **The first health audit, AUD-001, is closed** (WF-05, 2026-10-27; `docs/audits/README.md`,
+  the report `docs/audits/AUD-001/report.md`). Each of its Critical and High findings has a
+  defect (`docs/program/public-v1/PROGRESS.md`, «Finding → defect»); the open ones are in the
+  count above.

@@ -1,0 +1,304 @@
+{
+  "handoff_id": "step01-ISS-0092-20261117-01",
+  "run_id": "ISS-0092-20261117-01",
+  "workflow_id": "WF-03",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "ISSUE-FIXER",
+  "file": "handoffs/ISS-0092-20261117-01/step-01-issue-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": "af6db35d9e847a441",
+    "artifacts_in": [
+      "docs/issues/ISS-0092 (the defect)",
+      "docs/program/public-v1/PLAN.md (section 5, M0, item 9; AC0.4)",
+      "docs/program/public-v1/PROGRESS.md (G1 row, R0.2 row)",
+      "decisions/0101 (proposed), 0096 (light lane), 0002"
+    ],
+    "route": "ORCH 0 (tag base/ISS-0092-20261117-01 on 6c756cd) -> ISSUE-FIXER 1 (this) -> CODE-DESIGNER 3 + CODE-DESIGN-VALIDATOR (or the light lane, by step 1) -> CODE-FIXER 4 -> SECURITY-REVIEWER + REVIEWER 5 -> TEST-DESIGNER 6 -> TEST-DESIGN-VALIDATOR 7 -> TEST-RUNNER 8 (local and GitHub) -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11",
+    "write_set": [
+      "its own handoff only (fixes nothing)"
+    ],
+    "base_tag": "base/ISS-0092-20261117-01",
+    "issue_id": "ISS-0092",
+    "orch_check": {
+      "at": "2026-11-17T17:01:30Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-17T16:59:55Z, result.status COMPLETED; agent_run_id filled by ORCH",
+        "git status --short -> no project file changed by the diagnosis besides its handoff",
+        "real Pixel Office folder: 5 sha256 unchanged (the fixer's record and ORCH's reading)",
+        "diagnosis: cause = every Node check is major-only (package.json:8, lockfile:17, pixel-office main.js:182-188, hook.sh node_is_22 and the unchecked node-path); other entry points have no guard (DEP-02); CI uses the runner's cached 22.x; tests CI-3 and CI-8 turn red, SV-39 and the hook tests are blind; RT-1..RT-5 and mutants F1-F13, H1, H2 named",
+        "route by the diagnosis: FULL WF-03 (all files on the protected list of PLAN §4.1), with step 2 (WF-01 for R0.2: the expected behaviour is in no requirement) first",
+        "issue I1 (R0.2 has no row in the P-code table of PROGRESS) -> ORCH adds the row; decisions/0101 -> accepted by its Addition of 2026-11-17 (G1 part 2 «Да», AC0.4 green), the design questions left to step 3",
+        "next: step 02 REQ-ANALYST (R0.2 block) after the run M1SITE-20261117-01 frees docs/requirements.yaml, then REQ-VALIDATOR, then CODE-DESIGNER"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 1 — ISSUE-FIXER diagnoses the code part of ISS-0092 (read the defect file docs/issues/ISS-0092-*.md first), task M0.9 of the program PUBLIC-V1 (docs/program/public-v1/PLAN.md section 5, M0, item 9; requirement code R0.2 in docs/program/public-v1/PROGRESS.md, table \"Requirements (P-code → REQ)\"; acceptance AC0.4). Follow 'Step 1' of docs/workflows/WF-03-defect.md. Fix nothing. Facts given by ORCH (re-check them yourself, read only): on 2026-11-17 `node -v` gives v22.23.4 and the binary of the Pixel Office hook's recorded node-path gives v22.23.4 (AC0.4 facts green); the owner answered G1 part 2 «Да (Рекомендую)» (raise the floor) on 2026-10-28 (PROGRESS.md, Owner gates, G1); decisions/0101 is still `proposed`. The plan names the code part: tools/package.json and the lockfile `engines` to `>=22.23.4 <23`; the guard test CI-3 by a replacement table; tools/src/pixel-office/main.js a patch floor and the test SV-39; a regression test (a Pixel Office server started from the project code on port 0 with a temporary state folder refuses 2500 headers, then answers a normal GET); tools/README.md line 9 only, never line 176 (DC-01). (1) Look in docs/issues/ for closed defects with the same signs (a Node version floor, a guard that accepts a vulnerable build) and say whether the same cause came back. (2) Reproduce on a fresh clone of the tag base/ISS-0092-20261117-01 outside the project: show that today's declared floor and every Node guard of the project (the commands, the Pixel Office server and hook, the team and picker servers, the check) accept a simulated 22.21.1 — by reading the guards as text and by running them only with a simulated version, never by installing an old Node; and show the 2500-header request on a Pixel Office server started from the clone on port 0 with a temporary state folder and a private home, on today's Node (refused) — record the commands and the real output. (3) Find the cause and every place of the same kind (AP-014): every place that reads or checks the Node version (package.json engines of tools/ and of the lockfile, guards in tools/src/**, hook.sh, .githooks, CI, tests that pin the floor or the engines string such as CI-3, SV-39 and others, README lines), each with its line and whether it must change; say which tests turn red when the floor is raised, as a was -> became table. (4) Say whether the fix needs a design (WF-03 step 3) or is small enough for the light lane of decisions/0096 (PLAN §4.1; the protected list is never light) — with the reason. (5) Write the diagnosis in result: the cause, the files concerned, what must change (one sentence each), the regression test and the mutants it must catch, and the record decisions/0101 must get (proposed -> accepted by the owner's G1 part 2). SAFETY: never start Pixel Office, its hook or any server with the real home folder as HOME or with the real Pixel Office state folder; a server of the clone runs only on port 0 with a state folder under the system temporary root and a private home; never port 4780, 4781, 4782 or 4790; a call that names the real home or the real Pixel Office folder goes only to a spawn that records and throws (decisions/0112 R2-S); never import a program file to read it; never set SAI_TEAM_REAL_RUNS; never start the real `claude`; a command denied by the permission check is not done another way. Record before your first trial and after your last the sha256, size and time of the five files of the real Pixel Office folder (read only). Change no project file other than this handoff; no commit, push or pull. The handoff holds no absolute machine paths, no temporary paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "the acceptance of a simulated 22.21.1 by today's floor and guards reproduced on a fresh clone of the tag, with commands and output; the 2500-header request shown on a clone server on port 0",
+      "the cause and every place of the same kind listed with its line; the tests that turn red when the floor is raised as a was -> became table",
+      "full route or light lane decided with the reason; the regression test and its mutants named; the record decisions/0101 must get",
+      "nothing fixed; the five real Pixel Office files unchanged before and after"
+    ]
+  },
+  "created_at": "2026-11-17T16:27:40Z",
+  "started_at": "2026-11-17T16:27:40Z",
+  "completed_at": "2026-11-17T16:59:55Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Diagnosis of ISS-0092, code part (WF-03, step 1; PUBLIC-V1 M0.9, P-code R0.2, AC0.4). Nothing was fixed; no project file but this handoff was changed. HYPOTHESIS (the defect): `engines` `>=22 <23` lets any vulnerable 22.x pass the Node guards; the Pixel Office server and hook ran on 22.21.1, where a request with 2500 headers was accepted. HISTORY: no closed defect in docs/issues has the same signs (a Node version floor, a guard that accepts a vulnerable build); the nearest are ISS-0053 (closed, a stand-in git on Linux, another cause) and ISS-0112 (open, dev-dependency advisories, another cause). The cause did not come back: this is its first defect. FACTS OF THE TASK, re-read by me (read only): `node -v` v22.23.4; the binary named by the hook's recorded node-path answers v22.23.4; nobody listens on 4780, 4781, 4782 or 4790; G1 part 2 «Да (Рекомендую)» (PROGRESS.md gate table, 2026-10-28); decisions/0101 is `proposed`. All as stated. One fact of the task is not true: R0.2 has no row in the PROGRESS.md table «Requirements (P-code → REQ)» (I1). REPRODUCTION (my own runs on a fresh clone of base/ISS-0092-20261117-01, outside the project; the Node version simulated by a preload that replaces process.versions.node and process.version; no old Node installed; commands and output in self_check): (A) the declared floor accepts a simulated 22.21.1 even with `npm ci --engine-strict` (exit 0), while it refuses a simulated 21.7.0 (EBADENGINE, exit 1), so npm sees the simulation. With the floor raised to `>=22.23.4 <23` in a scratch package, plain `npm ci` on 22.21.1 still only warns (one EBADENGINE warning, exit 0), and `npm run <script> --engine-strict` runs on 22.21.1, 22.23.3 and 22.23.4 alike. So `engines` alone refuses nothing: there is no .npmrc, and `npm run` never reads `engines`. (B) The Pixel Office entry tools/src/pixel-office/main.js, started from the clone on port 0 with a private HOME and a state folder under the system temporary root, accepts 22.21.1, 22.22.0 and 22.23.3 (link printed, server listening, node-path, port, server-starts.jsonl and write-secret written, stopped by SIGTERM with code 0). It refuses only 21.7.0, 23.0.0 and 25.2.1 (code 1, «нужен Node 22 (сейчас X)», nothing created). (C) The hook tools/src/pixel-office/hook.sh, run with stub `node` scripts (never a real binary), runs hook.js on a v22.21.1 found in PATH, in SAI_NODE_FALLBACKS or named by node-path. It also runs hook.js on ANY version named by node-path (v21.7.0 and v25.2.1 ran). A node-path that names v22.21.1 wins over a v22.23.4 in PATH and in the fallbacks. (D) The team web server (tools/src/web/main.js) and the picker server (tools/src/picker/cli.js serve) start on port 0 under a simulated 22.21.1 and even under 21.7.0. The team, WF-06, traces, handoffs-check, handoff and pixel-office-note commands, `npm run traces`, `npm run handoffs-check` and `node --test test/repo.test.js` (26 of 26) all run under 22.21.1: they have no Node guard at all. (E) On today's Node 22.23.4 a clone Pixel Office server on port 0, with a private HOME and a temporary state folder, refuses 2500 header lines (15048 bytes, under the 16 KiB size limit) with `431 Request Header Fields Too Large` and closes the connection. It then answers a normal GET with 200, and its state files keep the same hashes. The exact limit is 1000 header lines (1000 → 200, 1001 → 431), not 2000 as the defect says (I3). The team web and picker servers behave the same. No server of tools/ sets a header limit of its own. CAUSE (where it is born): the floor is a major-number rule in every place that chooses or checks Node, while the security releases differ only in the minor and patch numbers. The places are: tools/package.json:8 and tools/package-lock.json:17 `>=22 <23`; the only runtime guard of tools/, main.js:182-183 `String(version).split(\".\")[0] !== \"22\"`; hook.sh:22-28 `node_is_22` (`v22.*`), used for PATH (31-34) and the fallbacks (36-47); and hook.sh:16-20, which execs the node-path binary with no version check at all. The http servers (pixel-office/server.js:467, web/server.js:481, picker/server.js:430) are where the effect shows, not where it is born. The header-count limit belongs to Node: an old Node drops the extra headers before any handler runs, so code in the server cannot add the refusal. The fix is the floor and the guards. Broken rule: quality-bar Q10, through the WF-05 rule on known vulnerabilities, and Q12 (decisions/0002 says only 'Node 22'; decisions/0101, still proposed, names 22.23.4). No requirement criterion holds a patch floor. WHY THE TESTS DID NOT CATCH IT: no test tries a 22.x below a security release. CI-3 pins the range `>=22 <23` itself, so it turns red on the fix, not on the gap. SV-39 tries only 21.7.0 and 25.2.1, both other majors. HK-09, HK-10 and HK-11g use the Node that runs the tests. The expected behaviour is in no requirement (REQ-002 criterion 2 'Node 22 (engines)', REQ-030 AC1 'Node 22', REQ-001 criterion 7 / design E17 'not Node 22'). WHAT MUST CHANGE (behaviour, one sentence per file; the how is for the design): (1) tools/package.json:8 and tools/package-lock.json:17: the declared floor becomes `>=22.23.4 <23`, the two kept equal. (2) tools/src/pixel-office/main.js:182-188: a version below 22.23.4 or outside 22 is refused with code 1 before anything is created, and the message names the floor and the found version. Today's text «нужен Node 22 (сейчас 22.21.1)» would be false for a refused 22.21.1. (3) tools/src/pixel-office/hook.sh:16-28, with its comments at 2-5, 30 and 51: the same floor applies to the node-path binary, the PATH node and the fallbacks. A candidate below it is skipped; with none left, the hook ends quietly with code 0 and the event is lost, never written later (R2). (4) The DEP-02 entry points (web/main.js; picker/cli.js serve and check; team/cli.js; the check: `npm test`, i.e. `node --test`, and test/e2e/run.js; also cli.js, traces, handoffs-check, handoff and pixel-office-note): the same refusal with a plain message and nothing written (the defect's item 2), or item 2 stays open with its reason (I4). (5) .github/workflows/check.yml:26-30: the check on GitHub runs on a Node at or above the floor (I2, I5). (6) tools/test/repo.test.js:212-223 (rule CI-3), 337 (test CI-3), 357-411 (CI-8 and its mutant 'engines changed'): changed by a replacement table, so that the new engines string passes, the major stays in step with node-version, and a floor below 22.23.4 is a violation. (7) tools/test/pixel-office-server.test.js:808-818 (SV-39) gets new rows: 22.21.1 and 22.23.3 refused (code 1, the version in stderr, stdout empty, no state folder), 22.23.4 and a later 22.x accepted. (8) tools/test/pixel-office-hook.test.js gets new rows with stub nodes below and at the floor in node-path, PATH and SAI_NODE_FALLBACKS (stub scripts, never links to the real Node, AP-020). (9) A header regression test (RT-4 below). (10) tools/README.md:9 states the floor. Lines 157 and 207 become inexact once the hook gets the floor (I6). Line 176 must never change (DC-01). (11) decisions/0101 becomes accepted (below). Every place of the same kind, with its line and whether it must change, is in issues I7-I13; the tests, was → became, are in `table`. ROUTE: the FULL route of WF-03 with a design, not the light lane. (a) Every file of the fix is under tools/** or .github/**, both on the protected list of PLAN §4.1 ('never LIGHT'); the light lane of decisions/0096 covers only app/public files and docs outside that list. (b) The fix changes a security guard at several entry points and in CI. It needs a requirement first: WF-03 step 2, because the expected behaviour is in no requirement or test (I1). It also leaves real choices to a design: one source of the floor; the hook's fall-through; how CI is bound to the floor; the DEP-02 scope; how each guard is tested with a simulated version. Proposed order: step 2 REQ-ANALYST + REQ-VALIDATOR (R0.2 as a REQ block, id read from the file, with this table as its «Guard tests of earlier requirements», AP-112) → ORCH writes decisions/0101 'accepted' (Q12) → step 3 CODE-DESIGNER + CODE-DESIGN-VALIDATOR → steps 4-11 as in the handoff's route. REGRESSION TEST. RT-1 fails before the fix: main() of the Pixel Office entry in the test process, with io.nodeVersion '22.21.1' and '22.23.3', must give code 1, the version in stderr, stdout empty, and no state folder; with '22.23.4' and '22.24.0' the start goes on (port 0, test folders). On the tag, 22.21.1 and 22.23.3 are accepted (trial B). RT-2 fails before the fix: the hook with stub nodes. Node-path v22.21.1, v21.7.0 or v25.2.1, PATH v22.21.1 or v22.23.3, or fallback v22.21.1 must mean hook.js never runs, exit 0, quiet, journal unchanged; PATH v22.23.4 runs; node-path v22.21.1 with PATH v22.23.4 runs the PATH one (if the design keeps the fall-through). On the tag, rows C1, C2, C3, C4a, C4b, C7 and C8 are red (trial C). RT-3 fails before the fix: engines of package.json and of the lockfile root equal the floor, and CI-3/CI-8 after the table make a floor below 22.23.4 a violation. RT-4 is the plan's header test. It does NOT fail before the fix on today's Node: it is a runtime canary. A Pixel Office server from the project code, on port 0 with a temporary state folder and a private home, refuses 2500 header lines (431, connection closed), then answers a normal GET with 200, with state files unchanged; a benign 1000 lines passes. RT-5, if DEP-02 is in scope: every other entry point refuses a simulated 22.21.1 with a plain message and writes nothing, and runs on 22.23.4. MUTANTS the tests must catch: F1 major only (today's main.js), caught by the 22.21.1 row. F2 floor off by one (22.23.3), caught by the 22.23.3 row. F3 versions compared as text ('22.3.0' >= '22.23.4' is true as text, '22.100.0' is false; measured), caught by rows 22.3.0 refused and 22.100.0 accepted. F4 patch ignored, caught by a 22.23.0 row. F5 upper bound dropped, caught by the 23.0.0 and 25.2.1 rows. F6 the check after the state folder is made, caught by 'nothing created'. F7 a malformed version accepted (a NaN patch), caught by a '22.23' or 'x' row. F8 the refusal text without the version, caught by the stderr check. F9 node-path without the floor (today's hook), caught by the node-path v22.21.1 row. F10 node_is_22 back to v22.*, caught by the PATH and fallback rows. F11 the hook exits instead of falling through, caught by row C8. F12 two floors out of step (engines, main.js, hook), caught by an equality test. F13 CI-3 accepting `>=22 <23` again, caught by a CI-8 mutant row. H1 server.maxHeadersCount = 0 and H2 = 6000 make RT-4 red (measured: 2500 lines answered 200); the benign twin B1 (a stricter limit, 200) keeps RT-4 green (measured). Switching the real Node is neither possible nor wanted (AP-021): the 'before' red of RT-1 to RT-3 comes from the version seam, and RT-4 is green before and after on 22.23.4 by construction. DECISIONS/0101 MUST GET: the status `accepted` instead of `proposed`, by an 'Addition' with (a) the owner's verbatim answer to G1 part 2, «Да (Рекомендую)» (2026-10-28, session 1, chat question), and (b) the AC0.4 measurement: node -v v22.23.4 and the hook's node-path binary v22.23.4 (ORCH 2026-11-17T16:26:46Z, re-read at this step). By Q12 it must also record the choices it leaves open or states too narrowly: the single source of the floor value and who raises it at each Node security release; that `engines` alone refuses nothing (measured), so the refusal lives in runtime guards, and whether engine-strict is added; the hook's rule for a below-floor node-path; how CI is bound to the floor; and the DEP-02 scope (its text says only 'the Pixel Office refuses Node below 22.23.4', while the defect's item 2 asks the same at every entry point). Its 'Boundary' sentence «Only after the owner updates Node himself» is met in fact by ORCH's brew upgrade on the owner's «ты сам обнови» (PROGRESS 2026-10-28T12:00:58Z), and the Addition should say so. SEVERITY: keep CRITICAL until the fix lands (I15). SAFETY: the five real Pixel Office files are the same before (16:29:59Z) and after (16:53:27Z) by sha256, size and time. Every server ran on port 0 with a private HOME and folders under the system temporary root. No program file of the project was imported to read it. SAI_TEAM_REAL_RUNS was never set, the real claude was never started, and no command was denied.",
+    "table": [
+      {
+        "test": "REQ-030 AC1 CI-3 (tools/test/repo.test.js:337; rule 212-223)",
+        "was": "green on the tag (26 of 26 in the file)",
+        "became": "RED with the floor raised (trial T1): 'CI-3: engines.node is >=22.23.4 <23' (the rule wants /^>=(\\d+) <(\\d+)$/ with 22 and 23)",
+        "source": "<scratch>/i092-01/was-repo.log, t1-repo.log",
+        "action": "replacement table: accept the new string, keep the major in step, a floor below 22.23.4 a violation"
+      },
+      {
+        "test": "REQ-030 AC1 CI-8 (tools/test/repo.test.js:357; mutant 'engines changed' at 411)",
+        "was": "green",
+        "became": "RED (trial T1): the real file is no longer free of violations (same CI-3 line)",
+        "source": "t1-repo.log",
+        "action": "same table; keep the 'engines changed' mutant and add one for a floor below 22.23.4"
+      },
+      {
+        "test": "SV-39 (tools/test/pixel-office-server.test.js:808)",
+        "was": "green",
+        "became": "green with the main.js floor (trial T2, 72 of 72): blind to the gap, its rows are 21.7.0 and 25.2.1 only",
+        "source": "was-pixel-office-server.log, t2-pixel-office-server.log",
+        "action": "new rows 22.21.1, 22.23.3 refused, 22.23.4 and a later 22.x accepted (RT-1)"
+      },
+      {
+        "test": "SV-43 (tools/test/pixel-office-server.test.js:879) and every in-process main() without io.nodeVersion",
+        "was": "green",
+        "became": "green on 22.23.4 with the trial floor; RED with the trial floor under a simulated 22.23.3 (71 of 72): it reads the runner's real version",
+        "source": "t3-sim22233-pixel-office-server.log",
+        "action": "none in the test; CI must run at or above the floor (I5)"
+      },
+      {
+        "test": "the other 70 tests of pixel-office-server.test.js",
+        "was": "green",
+        "became": "green (trial T2): they start servers on the real 22.23.4; on a runner below the floor every spawned server would refuse (not simulable: childEnv drops NODE_OPTIONS on purpose)",
+        "source": "t2-pixel-office-server.log",
+        "action": "none; CI binding (I5)"
+      },
+      {
+        "test": "HK-09 (pixel-office-hook.test.js:309), HK-10 (:320), HK-11g (:449) and the whole hook file (50 tests)",
+        "was": "green",
+        "became": "green with the hook floor (trial T3, 50 of 50): they use the running Node (node-path written by the test server, a link to it as fallback), so they are blind to the floor",
+        "source": "was-pixel-office-hook.log, t3-pixel-office-hook.log",
+        "action": "new rows with stub nodes (RT-2)"
+      },
+      {
+        "test": "DC-01 (tools/test/pixel-office-docs.test.js:22, phrase '22.21.1' of tools/README.md:176)",
+        "was": "green",
+        "became": "green (T1-T3: line 176 untouched)",
+        "source": "t1-pixel-office-docs.log",
+        "action": "never change line 176"
+      },
+      {
+        "test": "ST-01..ST-07 (pixel-office-settings.test.js), traces-readme.test.js",
+        "was": "green (7 of 7; 16 of 16 with the docs file)",
+        "became": "green (T1-T3)",
+        "source": "t1/t3-pixel-office-settings.log",
+        "action": "none"
+      },
+      {
+        "test": "RD words of the root README (repo.test.js:1117 'Node 22'), TM-01 (team-docs.test.js:62 'Node 22' in decisions/0015)",
+        "was": "green",
+        "became": "green while those words stay (repo file: only CI-3 and CI-8 red at T1)",
+        "source": "t1-repo.log; grep",
+        "action": "do not remove the words 'Node 22' from those files"
+      },
+      {
+        "test": "E2K-03, E2K-40, HO-54, HC-02, PK-7b, TM-49, ST-07, TR-4a, WEB-12 (read package.json scripts and dependencies, not engines)",
+        "was": "green",
+        "became": "not affected by the engines line (by reading each test: none reads engines); not run on the trial",
+        "source": "grep -n package.json over tools/test",
+        "action": "none"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "safety reading before the first trial (read only), 2026-11-17T16:29:59Z: shasum -a 256, stat size and mtime (UTC) of the five files of the real Pixel Office state folder",
+        "output": "events.jsonl 5dbc7b86913fc319… 4035130 2026-10-29T12:05:09Z; node-path 10ee90e816f43a29… 46 2026-10-28T12:03:24Z; port 8d0d7d110042d429… 5 2026-10-28T12:03:24Z; server-starts.jsonl b6e6452cdf2437d8… 280 2026-10-28T12:03:24Z; write-secret 465f654a88e7cb3b… 44 2026-10-01T17:52:26Z (full values in <scratch>/i092-01/real-office-before.txt)"
+      },
+      {
+        "command": "facts of the task (read only): node -v; which -a node; the binary named by the hook's recorded node-path with -v; lsof listeners on 4780/4781/4782/4790",
+        "output": "v22.23.4; four PATH entries, the first is the node@22 link (v22.23.4), the second Homebrew node is 25.2.1 and fails to load a library (I14); node-path binary: v22.23.4; no listener on 4780/4781/4782/4790. The old 22.21.1 keg is still installed beside 22.23.4."
+      },
+      {
+        "command": "git clone -b base/ISS-0092-20261117-01 <project> <scratch>/i092-01/clone; cd tools && npm ci",
+        "output": "HEAD 6c756cd; added 80 packages; 3 moderate severity vulnerabilities (already ISS-0112)"
+      },
+      {
+        "command": "instruments: (a) the tripwire <scratch>/e2e106-01b/guard/tripwire.cjs, positive control <scratch>/i092-01/guard/control.cjs (only /bin/echo and /usr/bin/true can run); (b) an ESM control with both preloads; (c) the version preload <scratch>/i092-01/sim/simver.cjs",
+        "output": "(a) without the tripwire 7 of 7 'NOT refused' (harmless echo/true); with it 7 of 7 'refused (EACCES)', negative control 'fine', 7 log lines; (b) 'esm named import: refused (EACCES)', 'versions.node seen: 22.21.1'; (c) SIM_NODE_VERSION=22.21.1 → '22.21.1 v22.21.1'; without it '22.23.4 v22.23.4'"
+      },
+      {
+        "command": "A1 (clone tools/): SIM_NODE_VERSION=22.21.1 NODE_OPTIONS=--require simver npm ci --engine-strict; controls with 21.7.0 (strict, plain)",
+        "output": "engines (package.json) >=22 <23, (lockfile root) >=22 <23; 22.21.1 strict: 'added 80 packages', exit 0; 21.7.0 strict: 'npm error code EBADENGINE … Required: {\"node\":\">=22 <23\"} Actual: {\"npm\":\"10.9.9\",\"node\":\"v21.7.0\"}', exit 1; 21.7.0 plain: 14 EBADENGINE warnings, 'added 80 packages', exit 0"
+      },
+      {
+        "command": "A2 (<scratch>/i092-01/engines-raised: a package with no dependencies, engines >=22.23.4 <23, lockfile root the same): for 22.21.1, 22.23.3, 22.23.4: npm ci; npm ci --engine-strict; npm run -s which --engine-strict",
+        "output": "22.21.1: npm ci exit 0 (1 EBADENGINE warning), --engine-strict exit 1 EBADENGINE, npm run 'ran on 22.21.1' exit 0; 22.23.3: the same ('ran on 22.23.3'); 22.23.4: npm ci exit 0 (0 warnings), strict exit 0, 'ran on 22.23.4'"
+      },
+      {
+        "command": "B (tag clone): <scratch>/i092-01/harness/po-start.mjs (spawns src/pixel-office/main.js --port 0; child env only PATH, HOME=<box>/home, SAI_PIXEL_OFFICE_DIR=<box>/state-<v>, TMPDIR, the preloads; box = <system temp>/sai-i092-…; SIGTERM by pid after the link) for 22.21.1 22.22.0 22.23.3 22.23.4 22.99.0 21.7.0 23.0.0 25.2.1",
+        "output": "22.21.1 code 0 accepted port 57036 created node-path,port,server-starts.jsonl,write-secret; 22.22.0 accepted 57037 (same files); 22.23.3 accepted 57038; 22.23.4 accepted 57039; 22.99.0 accepted 57040; 21.7.0 code 1 'Pixel Office: нужен Node 22 (сейчас 21.7.0). Подробности — tools/README.md' (not created); 23.0.0 code 1 (same text, not created); 25.2.1 code 1 (not created); tripwire log 0 lines; afterwards no main.js process"
+      },
+      {
+        "command": "C (tag clone): /bin/sh <scratch>/i092-01/harness/hook-trial.sh (env -i PATH=<stub dir>:/usr/bin:/bin HOME=<box>/hk/home SAI_PIXEL_OFFICE_DIR=<box>/hk/state-<case> SAI_NODE_FALLBACKS=<stub dir or empty> /bin/sh src/pixel-office/hook.sh < /dev/null; every node is a stub script that answers --version and otherwise only appends a line)",
+        "output": "C1 PATH v22.21.1 → 'ran v22.21.1 with hook.js'; C2 PATH v25.2.1, fallback v22.21.1 → ran v22.21.1; C3 node-path v22.21.1 → ran v22.21.1; C4a node-path v21.7.0 → ran v21.7.0; C4b node-path v25.2.1 → ran v25.2.1; C5 PATH v25.2.1 only → nothing ran; C6 PATH v22.23.4 → ran v22.23.4; C7 PATH v22.23.3 → ran v22.23.3; C8 node-path v22.21.1, PATH and fallback v22.23.4 → ran v22.21.1; every case exit 0, no output"
+      },
+      {
+        "command": "D (tag clone): <scratch>/i092-01/harness/others.mjs <box> 22.21.1 and 21.7.0 (team-web --port 0 with HOME and SAI_TEAM_HOME in the box; picker serve with two demo tenants copied into the box, --home in the box, --port 0; and the short commands)",
+        "output": "22.21.1: team-web started 'Sai Team: http://127.0.0.1:57067/' code 0 after SIGTERM; picker started 'Сайт подбора запущен. Откройте ссылки:' code 0; picker --help 0; team cli (no args) 2 'E_USAGE: Неизвестная команда…'; WF-06 cli 2 'E_USAGE: unknown command'; traces --help 0; handoffs-check --help 0; handoff --help 0; pixel-office-note --help 0. 21.7.0: exactly the same (team-web 57069, picker 57070). Tripwire log 0 lines; no server left"
+      },
+      {
+        "command": "D2 (tag clone, HOME=<box>/home-test, tripwire + simver 22.21.1): node --test test/repo.test.js; npm run -s traces; npm run -s handoffs-check",
+        "output": "repo: exit 0, tests 26, pass 26, fail 0, skipped 0, 'ok 7 - REQ-030 AC1 CI-3 …'; traces: 'файлов проверено 2561, следов 0, пропущено 67' exit 0; handoffs-check: 'файлов проверено 1392, нарушений 0, исключений использовано 114 из 114' exit 0"
+      },
+      {
+        "command": "E (tag clone, today's Node, no simulation, tripwire on): <scratch>/i092-01/harness/headers.mjs (main.js --port 0, HOME and SAI_PIXEL_OFFICE_DIR in the box; raw TCP GET / with Host 127.0.0.1:<port>, 'Connection: close' and N-2 lines 'x: 1'); two runs",
+        "output": "run 1: 'node 22.23.4; server … on port 0 -> 57081'; normal GET (60 bytes) 200 OK; 1999 lines (12042 bytes) 431; 2000 (12048) 431; 2001 (12054) 431; 2500 (15048) 431 Request Header Fields Too Large (closed); normal GET after 200 OK; state files before = after (node-path, port, server-starts.jsonl, write-secret hashes equal); stopped by SIGTERM, code 0. Run 2: 100 → 200, 500 → 200, 999 → 200, 1000 (6048 bytes) → 200, 1001 (6054) → 431, 1002 → 431, 1500 → 431, normal GET after 200; state unchanged"
+      },
+      {
+        "command": "E2 (tag clone): <scratch>/i092-01/harness/headers-any.mjs: team-web and picker on port 0, header lines 2, 1000, 1001, 2500, 2",
+        "output": "team-web (22.23.4, port 59283): 200 | 200 | 431 | 431 | 200, stopped code 0; picker (port 59289): 404 | 404 | 431 | 431 | 404 (no page at /; 431 by the line count, the size limit is 16384), stopped code 0"
+      },
+      {
+        "command": "header mutants (a fresh mutant clone <scratch>/i092-01/clone-m; <scratch>/i092-01/harness/mutate.mjs adds one line after http.createServer in src/pixel-office/server.js; headers.mjs with 100, 1000, 1001, 2500)",
+        "output": "H1 server.maxHeadersCount = 0: 200 | 200 | 200 | 200 (2500 accepted), GET after 200; H2 = 6000: 200 | 200 | 200 | 200; B1 = 200 (benign twin): 200 | 431 | 431 | 431, GET after 200; original: 200 | 200 | 431 | 431. server.js restored (sha256 equal to the original), then the mutant clone removed"
+      },
+      {
+        "command": "CI Node versions (read only): gh run list --workflow check.yml; gh run view <id> --log | grep 'node: v' for the 51 runs from 2026-10-18 to 2026-11-16, plus the last run 44124259440",
+        "output": "35 runs 'node: v22.23.3', 16 runs 'node: v22.23.4'; v22.23.3 from 2026-10-18T07:02:51Z to 2026-10-27T13:53:15Z (run 40516041491); first v22.23.4 2026-10-29T22:27:08Z (run 40965967184); run 40477852941: 'Found in cache @ <runner tool cache>/node/22.23.3/x64', 'node: v22.23.3'; run 44124259440: 'check-latest: false', 'Found in cache @ <runner tool cache>/node/22.23.4/x64', 'node: v22.23.4'"
+      },
+      {
+        "command": "was (tag clone, today's Node, HOME=<box>/home-test, tripwire): node --test test/{repo,pixel-office-docs,pixel-office-settings,pixel-office-server,pixel-office-hook}.test.js, one at a time",
+        "output": "repo 26/26, docs 9/9, settings 7/7, server 72/72, hook 50/50, all fail 0 skipped 0; 16:47:30Z-16:48:05Z; tripwire log 0 lines"
+      },
+      {
+        "command": "became (a fresh trial clone <scratch>/i092-01/clone-f, edits by <scratch>/i092-01/harness/floor-trial.mjs, kept as <scratch>/i092-01/trial-floor.diff sha256 7508cf37b924c398…; instruments only, not a design): T1 engines + lockfile + README:9; T2 + main.js patch floor; T3 + hook.sh floor (node-path too)",
+        "output": "T1: repo exit 1, pass 24, fail 2: 'not ok 7 - REQ-030 AC1 CI-3 …', 'not ok 12 - REQ-030 AC1 CI-8 …', message '+ CI-3: engines.node is >=22.23.4 <23'; docs 9/9; settings 7/7. T2: server 72/72; starts in a fresh box: 22.21.1 refused code 1 (not created), 22.23.3 refused (not created), 22.23.4 accepted, 22.24.0 accepted, 21.7.0 and 25.2.1 refused (message still «нужен Node 22 (сейчас 22.21.1)»). T3: hook 50/50, settings 7/7, traces-readme + docs 16/16; the stub trial: C1, C2, C3, C4a, C4b, C5, C7 nothing ran; C6 ran v22.23.4; C8 ran v22.23.4 (fall-through). T3 server file under a simulated 22.23.3: exit 1, pass 71, fail 1 'not ok 49 - SV-43: an unexpected error in main …' (saved in t3-sim22233-pixel-office-server.log). The trial clone then removed"
+      },
+      {
+        "command": "places of the same kind, read as text only (grep -rn over the tag clone): process.version(s), engines, node-version, Node 22 / v22 / node@22 / 22.x.y, `>=22`, maxHeadersCount, headersDistinct, async_hooks, http.createServer, listen(…HOST), `--help` of each entry, package.json readers in tools/test",
+        "output": "runtime guard: only src/pixel-office/main.js:182; engines: package.json:8, package-lock.json:17; hook: hook.sh:16-20, 22-28, 37; CI: check.yml:26-30; maxHeadersCount 0 hits, headersDistinct/trailersDistinct 0, async_hooks/AsyncLocalStorage 0; http servers pixel-office/server.js:467, web/server.js:481, picker/server.js:430, all listen on HOST; tests pinning engines: only repo.test.js (CI-3, CI-8); the list with lines is in issues I7-I13"
+      },
+      {
+        "command": "clean-up: rm -rf <system temp>/sai-i092-… (my box); find in the system temporary folder -maxdepth 1 -mmin -45; ps for the programs of the trials; lsof on 4780/4781/4782/4790; git status of the project",
+        "output": "box removed; two entries changed in the window, both of the system (com.apple.…, Temporar…), none of the trials; no process of this step; no listener; project: only my untracked handoff folder is mine (STATE.md, PROGRESS.md, docs/requirements.yaml and the M0BACKLOG/M1SITE handoffs belong to other agents and ORCH)"
+      },
+      {
+        "command": "safety reading after the last trial (read only), 2026-11-17T16:53:27Z; diff with the reading before",
+        "output": "the same five lines: events.jsonl 5dbc7b86913fc319… 4035130 2026-10-29T12:05:09Z; node-path 10ee90e816f43a29… 46 2026-10-28T12:03:24Z; port 8d0d7d110042d429… 5 2026-10-28T12:03:24Z; server-starts.jsonl b6e6452cdf2437d8… 280 2026-10-28T12:03:24Z; write-secret 465f654a88e7cb3b… 44 2026-10-01T17:52:26Z; diff empty ('IDENTICAL'); the folder holds the same five files"
+      },
+      {
+        "command": "before close, in the project tools/ (as handoffs.md, Common rules item 4): node src/handoffs/cli.js; node src/traces/cli.js",
+        "output": "handoffs-check: файлов проверено 1395, нарушений 0, исключений использовано 114 из 114 (exit 0); traces: файлов проверено 2564, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "The task says R0.2 is in the PROGRESS.md table «Requirements (P-code → REQ)». That table has only R0.3 (REQ-103) and R0.1 (REQ-102), and `context.requirement_ids` is empty. The expected behaviour (refuse a 22.x below 22.23.4) is in no requirement and no test: REQ-002 criterion 2 says 'tools/package.json фиксирует Node 22 (engines)', REQ-030 AC1 says 'Node 22', REQ-001 criterion 7 / design E17 say 'not Node 22 → refusal'. By WF-03 ('WF-03 or WF-01') and Q1, step 2 is needed before the design: REQ-ANALYST writes R0.2 as a REQ block (the next free id read with `grep -n '^  - id: REQ-' docs/requirements.yaml | tail -1`; at the tag the last is REQ-107), with criteria for items (1)-(10) of the summary and this diagnosis's `table` as its «Guard tests of earlier requirements» (AP-112)."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "The defect says 'The CI (… node-version: \"22\") takes the newest 22.x and is not affected'. docs/design/REQ-030-github-check.md:108 ('check-latest не задан, берётся последняя 22.x из манифеста действия') and ISS-0077 item 21 say the same. The run logs say otherwise: setup-node runs with 'check-latest: false' and takes the runner's cache ('Found in cache'). 35 of the 51 runs from 2026-10-18 to 2026-11-16 ran on v22.23.3, the last on 2026-10-27T13:53:15Z, a week after 22.23.4 came out (2026-10-20 by the defect); the first v22.23.4 run is 2026-10-29T22:27:08Z. So CI was affected, and it will lag again at the next security release."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "The defect says 2 500 headers are 'above the default limit of 2 000'. On v22.23.4 the limit is 1000 header lines: 1000 lines get 200 and 1001 get 431, on the Pixel Office, team web and picker servers (Node's 2000 counts names and values). The 2500-line probe is above both, so the plan's test stays valid. A test that probes 'just above the limit' must use 1001 or more, not 2001."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "Scope of the code part. PLAN M0.9 names only tools/src/pixel-office/main.js as a guard, which covers DEP-01 (the Pixel Office server; the hook is not named). The defect's item 2 (DEP-02) asks the same refusal at the check command, the team commands and the picker server, which have no Node guard at all today (trial D: they run even under 21.7.0), and says the two items 'can be closed only together'. decisions/0101 says only 'the Pixel Office refuses Node below 22.23.4'. ORCH decides, with the owner if needed: widen the run's write set to every entry point (one shared check is the obvious design question), or fix DEP-01 here and close the defect «closed, …, причина не устранена, продолжение — ISS-NNNN» for item 2. Either way the requirement of step 2 and decisions/0101 must say which."
+      },
+      {
+        "id": "I5",
+        "kind": "SAME_KIND",
+        "text": ".github/workflows/check.yml:26-30 (`node-version: \"22\"`, no check-latest) chooses Node on GitHub with no floor (I2); must change. Without a binding, either CI checks on a vulnerable build (as for the 35 runs on 22.23.3), or, once runtime guards exist, a lagging cache turns the whole check red. Measured: with the trial floor, SV-43 is red under a simulated 22.23.3, and every test that spawns Pixel Office would refuse on such a runner; that cannot be simulated, because childEnv passes no NODE_OPTIONS, by design. The binding is for the design (for example `check-latest: true`, or a version range in node-version). By reading CI-1..CI-7 (not run), `check-latest: true` breaks no rule, while a range breaks CI-3 (it wants the line `node-version: \"22\"` exactly) and needs the table. `.github/**` is on the protected list."
+      },
+      {
+        "id": "I6",
+        "kind": "DISCREPANCY",
+        "text": "PLAN M0.9 says 'tools/README.md line 9 only (never line 176: DC-01)'. If the hook gets the floor (item 3), lines 157 ('where hook.sh looks for Node 22') and 207 ('finds Node 22 … node from PATH, if it is Node 22 … If there is no Node 22, the hook ends silently') become inexact (AP-133). No test pins them (grep over tools/test). The hook comments at hook.sh:2-5, 30 and 51 are the same. ORCH decides whether these lines join the write set; line 176 must stay ('22.21.1' is pinned by DC-01 and is a masking example, not a floor)."
+      },
+      {
+        "id": "I7",
+        "kind": "SAME_KIND",
+        "text": "Declared floor. tools/package.json:8 `\"node\": \">=22 <23\"` and tools/package-lock.json:17 (the root `packages[\"\"].engines.node`, the same string): must change, to `>=22.23.4 <23`, kept equal. Advisory only: plain `npm ci` warns and goes on, `npm run` never reads it (trial A2), and there is no .npmrc. Dependency engines in the lockfile (for example '18 || 20 || >=22' at lines 330 and 343) are not ours: no change."
+      },
+      {
+        "id": "I8",
+        "kind": "SAME_KIND",
+        "text": "Runtime guard of Pixel Office. tools/src/pixel-office/main.js:182-188, `const version = io.nodeVersion ?? process.versions.node; if (String(version).split(\".\")[0] !== \"22\")` plus the message «нужен Node 22 (сейчас ${version})»: must change (patch floor; a message that names the floor). Its place before ensureStateDir is right: trial T2 shows a refused start creates nothing. The seam io.nodeVersion exists and is what RT-1 uses. It is the only runtime guard in tools/."
+      },
+      {
+        "id": "I9",
+        "kind": "SAME_KIND",
+        "text": "Hook. tools/src/pixel-office/hook.sh:16-20 (step 1: execs the node-path binary with no version check; trial C3, C4a, C4b, C8): must change. A node-path left by an older start keeps naming an old binary, and the old 22.21.1 keg is still on disk. hook.sh:22-28 `node_is_22` (`v22.*`), used at 31-34 (PATH) and 36-47 (fallbacks): must change. hook.sh:37, the default fallback list of two Homebrew node@22 folders: no change of its own once node_is_22 has the floor. hook.sh:2-5, 30, 51 (comments 'Node 22'): text, change with the floor. tools/src/pixel-office/hook.js has no guard and runs on what hook.sh chose: no change needed if hook.sh guards (a second check there is a design choice; the hook must stay quick and quiet, REQ-001 criterion 'Хук быстрый, тихий')."
+      },
+      {
+        "id": "I10",
+        "kind": "SAME_KIND",
+        "text": "Entry points with no Node guard (trial D, accepted even under 21.7.0). tools/src/web/main.js (team web server, node:http at web/server.js:481), tools/src/picker/cli.js serve (picker server, picker/server.js:430) and check, tools/src/team/cli.js, tools/src/cli.js (WF-06), tools/src/traces/cli.js, tools/src/handoffs/cli.js, tools/src/handoffs/handoff.js, tools/src/pixel-office/note.js, tools/test/e2e/run.js, and the test runner of `npm test` / `npm run check` (prettier and eslint run on any Node). They must change for DEP-02 (the defect's item 2), or that item stays open (I4). The ones with a network server (web, picker, Pixel Office) carry the reachable CVE; the others carry the 'whole build is unpatched' finding of DEP-02. .githooks/pre-push:32 only prints '(нужен Node 22)' when npm is missing and then runs `npm run check`, so it inherits the check's guard: no change needed."
+      },
+      {
+        "id": "I11",
+        "kind": "SAME_KIND",
+        "text": "Tests that pin the floor or the version (was → became in `table`). tools/test/repo.test.js:212-223 (rule CI-3: node-version line exactly '\"22\"', engines /^>=(\\d+) <(\\d+)$/ with 22 and 23), :337 (CI-3), :357-360 and the mutant at :411 ('engines changed' `>=22 <24`, CI-8): red on the floor, replacement table. tools/test/pixel-office-server.test.js:808-818 (SV-39, rows 21.7.0 and 25.2.1): green but blind, extend. :879 (SV-43) and every in-process main() without io.nodeVersion read the real Node: green while the runner is at or above the floor. tools/test/pixel-office-hook.test.js:309 (HK-09), :320 (HK-10, a stub v25.2.1 and a link to the running Node as fallback), :449 (HK-11g): green but blind, new rows. tools/test/pixel-office-docs.test.js:37 (DC-01 phrase '22.21.1'): must stay. tools/test/repo.test.js:1117 and tools/test/team-docs.test.js:62 ('Node 22'): must stay. tools/test/picker-text.test.js:69-73 (TT-1a, Unicode 17.0 of the running Node): not a floor, but a newer 22.x with another ICU would turn it red by design (decision 0076); note for the design, no change."
+      },
+      {
+        "id": "I12",
+        "kind": "SAME_KIND",
+        "text": "Documents and role files that state the Node requirement. tools/README.md:9 'Node 22 is needed (`engines` in `package.json`: `>=22 <23`)': must change. tools/README.md:157 and :207 (the hook's choice of Node): inexact after item 3 (I6). tools/README.md:3 ('The stack is Node 22') and :176 (masking example '22.21.1', DC-01): no change. Root README.md:233 ('Node 22 with npm (`tools/package.json`, field `engines`)'): stays true by its reference, optional. Root README.md:296: no change (RD words, PLAN M0.10). CLAUDE.md:199 ('(Node 22 is needed)'), the owner's start instruction: inexact after the floor; M0.10 FULL owns CLAUDE.md. .claude/agents/test-runner.md:41 ('`node -v` — Node 22 (`engines` …)') and .claude/agents/release-validator.md:62 ('Node 22 is needed; any other version is an environment failure'): the environment step of the two checking roles accepts any 22.x, the same kind for people; propose to change them in this run if `.claude/agents/` joins the write set (protected list, FULL), else ORCH opens a follow-up defect."
+      },
+      {
+        "id": "I13",
+        "kind": "NOT_OF_THE_KIND",
+        "text": "Checked and not of the kind: tools/src/util.js:299, a comment on a measured 22.21.1 behaviour of writeFileSync with flush (the workaround holds on every version; no change). tools/src/picker/server.js:432 `maxHeaderSize` 16384, a size limit, not a count (2500 short lines are 15048 bytes). The three http servers listen only on HOST 127.0.0.1 (pixel-office/server.js:504, web/server.js:510, picker/server.js:474), as the defect says. 0 hits for maxHeadersCount, headersDistinct/trailersDistinct and async_hooks/AsyncLocalStorage in tools/src, as the defect says. docs/design/REQ-030-github-check.md:28, :108, :218 and the audit files: history, not changed (I2 for :108)."
+      },
+      {
+        "id": "I14",
+        "kind": "ENVIRONMENT",
+        "text": "For the owner, no action taken (AP-021). (a) The defect and PLAN G1 say Homebrew node@22 stable is 22.23.3; today the linked node@22 is 22.23.4 (ORCH's brew upgrade, PROGRESS 2026-10-28T12:00:58Z), and the old 22.21.1 keg is still installed beside it (cleanup off). Nothing in Sai refuses it if node-path or a relink names it again. (b) The second Homebrew node on PATH (25.2.1) fails to start: a library it links to is missing. The hook only runs it with --version and skips it, so it does not touch Sai."
+      },
+      {
+        "id": "I15",
+        "kind": "SEVERITY",
+        "text": "Proposal: keep CRITICAL until the fix lands. The WF-05 point stands: nothing in Sai refuses a vulnerable build (trials B-D), the old keg is on disk, a stale node-path or a relink brings it back with no refusal, and CI ran 35 checks below the patched release (I2). The active exposure measured today is gone: the Mac's node and the hook's binary are 22.23.4, and no Pixel Office runs on 4780. If ORCH re-rates the open code part, HIGH is the lowest defensible level (DEP-02 is High on its own; the reach is loopback only; Node rates the reachable CVE Low). The cause did not come back, so the 'not lower than MEDIUM after a return' rule does not apply."
+      },
+      {
+        "id": "I16",
+        "kind": "AP_PROPOSAL",
+        "text": "Proposed entry for docs/anti-patterns.md (Q13), next free number AP-164: 'Which Node the CI uses was taken from the action's settings and repeated in a design, a defect and a plan; the run logs said the runner's cache (v22.23.3) for a week after a security release'. What happened: docs/design/REQ-030-github-check.md:108, ISS-0077 item 21 and ISS-0092 (audit finding DEP-01 note) say check.yml takes the newest 22.x; the 51 logs say 'check-latest: false', 'Found in cache', 35 runs on v22.23.3 (I2). Why it is bad: a security conclusion ('CI is not affected') rested on an assumption about an external tool, and the same shape repeats AP-102, AP-139 and AP-148. How right: a claim about the version a runner uses is read from the run log ('node: v…' of the setup step) at the time it is made, with the run id; a check that depends on a version asserts it at run time."
+      },
+      {
+        "id": "I17",
+        "kind": "PROCESS",
+        "text": "(a) context.agent_run_id: my launch id is not visible to me; I left it null (the recipient does not write context). (b) npm itself ran with the real home for its cache and wrote one debug log of the refused --engine-strict control there, as `npm ci` ordered by ORCH implies. No program of the project ran with the real home: every Pixel Office, hook, team, picker, test and command start had HOME under the system temporary root. (c) As the task orders, the servers' state folders and private homes lay under the system temporary root (one box `<system temp>/sai-i092-…`), not in the session folder (AP-136 asks the latter); the box was removed, and the listing after the step shows no entry of the trials. (d) Two clones made for trials (mutants and the floor trial) were removed after use; the trial edits are kept only as <scratch>/i092-01/trial-floor.diff. (e) The tripwire preload copies `child_process` functions without `util.promisify.custom` (AP-160 (1)); no file I ran uses promisify, by grep. (f) The protocol checks before close (handoffs-check, traces) and the handoff close command ran in the project tools/ with the real home, as handoffs.md orders: they only read the project, and traces needs the home folder to look for it."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-17T16:27:40Z",
+    "text": "Launched in session 3 of the program PUBLIC-V1 (decisions/0115) as a general agent bound by its role file .claude/agents/issue-fixer.md (read first): the Sai role agents are not registered in this ORCH session. Step 0 by ORCH: the defect exists (docs/issues/ISS-0092, CRITICAL, open); tag base/ISS-0092-20261117-01 on 6c756cd; AC0.4 facts read by ORCH (node -v v22.23.4; the hook's node-path binary v22.23.4). Runs at the same time as M0BACKLOG step 04 (different files)."
+  }
+}

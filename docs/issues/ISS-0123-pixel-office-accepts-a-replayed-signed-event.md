@@ -1,0 +1,33 @@
+# ISS-0123 — Pixel Office accepts the same signed `POST /api/events` again inside the time window: the replay answers 204 twice and writes two journal lines
+
+Серьёзность: LOW (предложена ORCH по словам проверки; диагноз может её изменить). Статус: open. Найдено: внешняя проверка безопасности (передано ORCH 2026-11-18 другой сессией владельца); заведено DOC-UPDATER (шаг 01), прогон `SECREG-20261118-01`, 2026-11-18T15:31:02Z. Пункт планки: R2 (Pixel Office показывает только правду: повтор пишет вторую строку, которой не было срабатывания хука). Требования: REQ-001 (Pixel Office, часть 1; статус `blocked` по `decisions/0099`), REQ-008 (путь `POST /api/note`, см. «Что не так»). Решение: проект `docs/design/REQ-001-pixel-office.md`, раздел 7.3 (повтор внутри окна ±60 с назван принятым остаточным риском F2 проверки безопасности реализации).
+
+## Что не так
+
+The words of the review (an external security review, relayed to ORCH on 2026-11-18; the reviewer used only artificial values and localhost, nothing real leaked): the same signed `POST /api/events` sent twice got 204 twice and two lines in the journal. The HMAC check and the time check pass; whether the event is new is not checked.
+
+What this step saw, reading the files as text (`tools/src/pixel-office/server.js`, `protocol.js`, `public/schema.js` and `hook.js` are unchanged against the tag `base/SECREG-20261118-01`). Nothing was run.
+
+- `processEvent` (`tools/src/pixel-office/server.js`, lines 321–331) does three things in order: `signedObject` checks the signature (lines 281–292); `validateWriteBody` checks the form and the time (`tools/src/pixel-office/protocol.js`, lines 213–236; line 218 refuses `time_skew` when the time of the event differs from the clock by more than `WRITE_SKEW_MS`, which is 60000 ms, `tools/src/pixel-office/public/schema.js`, line 67); then `appendOr500` appends the line (lines 306–316) and the answer is 204 (line 330). No step remembers a body, a signature or an identifier, and the keys of a journal line (`schema.js`, lines 18–38) have no event id or nonce. **Matches** the review by reading.
+- The risk is already written down as accepted: `docs/design/REQ-001-pixel-office.md`, section 7.3, lines 3097–3105 («Повтор запроса внутри окна ±60 с (F2; R2). Перехваченная пара (тело, подпись) принимается снова и снова внутри окна и каждый раз дописывает строку: 3 отправки — +3 строки»: the intercepted pair of body and signature is accepted again and again inside the window, each time with a new line). The design names who can do it — a foreign process on a port left by a stopped server (threat T6) or the holder of the secret — and what it breaks: a replayed `SubagentStart` after its own `SubagentStop` inside 60 s opens the task again on the page. It names a possible strengthening: remember the signatures of accepted bodies for 120 s and answer a repeat with 204 without an append (a test «то же тело и та же подпись дважды — в журнале +1 строка»: the same body and signature twice, one line in the journal). The review moves it from a named risk to a defect.
+- **A place of the same kind that the review did not name (AP-014), seen by reading only.** The second signed write path, `POST /api/note` (`processNote`, `server.js`, lines 337–393, the records of the orchestrator of REQ-008), goes through the same `signedObject`. Its body may not carry a time (`validateNoteBody` refuses `has_time`, `protocol.js`, line 258); the server stamps its own clock time, and the only time check is that a given `request_time` is not more than 60 s in the future (lines 274–279). So by reading, a captured signed note body would be accepted at any later moment, not only inside a window, and each time appended as a new record with a new time. This was not run; the diagnosis measures it.
+
+Good measures that the review named and that bear on this defect: HMAC on every write (401 without a valid signature) and the time check of the hook events.
+
+Why LOW (as proposed): a replay needs a captured signed request, and it repeats an event that really happened; but a repeated line is a line that no hook firing produced, which is what R2 forbids. The diagnosis may change the severity (the note path above may weigh more).
+
+## Доказательство
+
+- The review's statements: `docs/program/public-v1/PROGRESS.md`, the table «Finding → defect», row EXT-5, and the row of 2026-11-18T15:01:53Z.
+- Read as text at step 01: `tools/src/pixel-office/server.js` lines 281–292, 306–316, 321–331 and 337–393; `tools/src/pixel-office/protocol.js` lines 205–236 and 238–282; `tools/src/pixel-office/public/schema.js` lines 18–38 and 67; `docs/design/REQ-001-pixel-office.md` lines 3094–3105.
+- To repeat, only under the rules of the e2e runs (a temporary home, the state folder under the temporary root, the owner's real Pixel Office folder never named, never port 4780): start the test server with a test secret, send one signed hook body twice inside 60 s, and count the lines of `events.jsonl` of the test folder: today +2. For the note path: send one signed note body, wait past 60 s, send it again: by reading, +2 records.
+
+## Как исправить
+
+The acceptance that the review proposes (to be measured by the diagnosis; not a ready fix, AP-161): a second request with the same event id or nonce inside the time window is refused (for example with 409), and the journal has one line; a test pins it.
+
+The design REQ-001 proposed another answer to a repeat: 204 without an append. The hook today sends no id or nonce (`tools/src/pixel-office/hook.js`, line 81, `buildWriteBody`), so the fix either adds one to the hook's body or remembers the signatures of accepted bodies for at least the whole window; the design chooses, says how the hook treats the new answer, and covers the note path too (AP-014). A test also checks that the journal did not change on the refused repeat (Q5). Closing a named accepted risk is ORCH's decision; a weaker check or a skipped test is not a fix (Q6).
+
+## Маршрут
+
+WF-03, the fifth of the five (the order of `docs/program/public-v1/PROGRESS.md`): ISSUE-FIXER, CODE-DESIGNER and CODE-DESIGN-VALIDATOR, CODE-FIXER, SECURITY-REVIEWER and REVIEWER at the same time, TEST-DESIGNER and TEST-DESIGN-VALIDATOR, RELEASE-VALIDATOR; on ORCH's order, after ISS-0119 … ISS-0122. It can go together with ISS-0122 (the same server). Open question to the reviewer, through ORCH and the owner: which part of the code was reviewed (which commit or which files), and whether anything was checked on Windows.

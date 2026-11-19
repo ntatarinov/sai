@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyVerdict } from "./apply.js";
 import { STAGES } from "./contract.js";
+import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "./node-floor.js";
 import { prepareRun } from "./prepare.js";
 import { snapshot, snapshotDiff } from "./snapshot.js";
 import { UsageError, readTextFile } from "./util.js";
@@ -169,6 +170,8 @@ const commands = {
 };
 
 function main(argv) {
+  // The Node floor (REQ-110), before any of the five commands.
+  if (refuseBelowNodeFloor(process.stderr)) return NODE_REFUSAL_EXIT;
   const [command, ...rest] = argv;
   try {
     if (!(command in commands))

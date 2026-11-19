@@ -10,6 +10,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
+import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "../node-floor.js";
 import { HOST, NOTE_HTTP_MS, PORT_FILE } from "./config.js";
 import { maskSecrets } from "./mask.js";
 import { SIGNATURE_HEADER, signBody, storeTextEnabled } from "./protocol.js";
@@ -270,6 +271,8 @@ export async function main(argv, io) {
     writeLine(io.stdout, USAGE);
     return 0;
   }
+  // The Node floor (REQ-110), before the storage switch, the folder and the request.
+  if (refuseBelowNodeFloor(io.stderr)) return NODE_REFUSAL_EXIT;
   if (!storeTextEnabled(env)) {
     writeLine(io.stderr, "хранение текста отключено");
     return 0;
