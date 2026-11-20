@@ -1,4 +1,5 @@
 /* global document, requestAnimationFrame */
+import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { LANGS, TEXTS } from "../../public/shared/i18n/texts.js";
@@ -377,16 +378,103 @@ export function collector() {
 }
 
 /**
+ * The live line of the demo after the result is shown (the filled `live_result`).
+ * @param {string} kind the solution's name or the no-match text
+ * @param {string} lang
+ * @returns {string}
+ */
+export function liveResult(kind, lang) {
+  return filled(say("live_result", lang), { kind });
+}
+
+/**
+ * The live line of the demo after «Назад» to question i (the filled `live_back`).
+ * @param {number} i
+ * @param {string} lang
+ * @returns {string}
+ */
+export function liveBack(i, lang) {
+  return filled(say("live_back", lang), { i });
+}
+
+/**
+ * The name the receipt of the demo shows, once it shows one of the intake in `lang` (a solution's name or the
+ * no-match text): the test's own list of names is the oracle, the page's receipt is read.
+ * @param {import("playwright-core").Page} page
+ * @param {string} lang
+ * @returns {Promise<string>}
+ */
+export async function shownKind(page, lang) {
+  const intake = intakeIn(lang);
+  await page.waitForFunction(
+    (/** @type {string[]} */ names) => {
+      const e = document.querySelector("#demo .rc-kind, #demo .rc-nomatch");
+      return e !== null && names.includes(e.textContent ?? "");
+    },
+    [...intake.solutions.map((s) => s.name), intake.noMatch],
+    { timeout: 15000 },
+  );
+  return (
+    (await page.evaluate(
+      () =>
+        document.querySelector("#demo .rc-kind, #demo .rc-nomatch")
+          ?.textContent,
+    )) ?? ""
+  );
+}
+
+/**
+ * Waits until the live line (`#live`) holds its announcement (the demo writes it ANNOUNCE_MS after the action, so a
+ * read of the page right after the action sees an empty line: a condition, not a sleep) and asserts its text is
+ * `expected`.
+ * @param {import("playwright-core").Page} page
+ * @param {string} expected
+ * @param {string} where
+ * @returns {Promise<void>}
+ */
+export async function waitLive(page, expected, where) {
+  await page.waitForFunction(
+    () => (document.getElementById("live")?.textContent ?? "") !== "",
+    null,
+    { timeout: 15000 },
+  );
+  assert.equal(
+    await page.evaluate(() => document.getElementById("live")?.textContent),
+    expected,
+    `${where}: the live line`,
+  );
+}
+
+/** @typedef {{ result: string } | { back: number }} LiveExpect what the live line must say: the result of the named solution (or the no-match text), or «Назад» to a question */
+
+/**
  * The reads that every state gets: the lint of the shown text in the language of the page and what the page reported
  * (requests outside the server, CSP violations, page errors, console lines but the declared ones), then the
- * reports are emptied.
+ * reports are emptied. A state that follows a result or a «Назад» says so in `live`: the read waits for the live
+ * line and asserts its text first, so the lint sees the line (T1 of the gate pass 1).
  * @param {ReturnType<typeof collector>} problems
  * @param {string} where
  * @param {Awaited<ReturnType<typeof import("./browser.js").newPage>>} env
  * @param {string} lang
  * @param {string[]} [allowed] the declared console lines of this state
+ * @param {LiveExpect} [live] the announcement this state holds in the live line
  */
-export async function readState(problems, where, env, lang, allowed = []) {
+export async function readState(
+  problems,
+  where,
+  env,
+  lang,
+  allowed = [],
+  live = undefined,
+) {
+  if (live !== undefined)
+    await waitLive(
+      env.page,
+      "result" in live
+        ? liveResult(live.result, lang)
+        : liveBack(live.back, lang),
+      where,
+    );
   problems.add(where, await shownTextFindings(env.page, lang));
   problems.add(where, reportedProblems(env, allowed));
   clearReports(env);

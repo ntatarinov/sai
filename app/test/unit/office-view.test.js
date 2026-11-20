@@ -142,8 +142,10 @@ function stage(o = {}) {
   let viewport = { clientWidth: 390, innerHeight: 844 };
 
   // The recording canvas: a frame begins with the fill of the wall at the corner, the first fill of the
-  // drawing, so frames are counted by what was drawn and not by what the view says.
-  /** @type {Array<{ at: number, first: string, fills: string[] }>} */
+  // drawing, so frames are counted by what was drawn and not by what the view says. The jacket of the
+  // visitor's figure (10 x 9, the colour of its token) is the one rect whose row shows the step frame: frame 1
+  // lowers it by one row (the bob of the look's 9.8); a frame keeps the row it was drawn at.
+  /** @type {Array<{ at: number, first: string, fills: string[], jacketY?: number }>} */
   const frames = [];
   let style = "";
   let fillCount = 0;
@@ -154,13 +156,22 @@ function stage(o = {}) {
     get fillStyle() {
       return style;
     },
-    fillRect(/** @type {number} */ x, /** @type {number} */ y) {
+    fillRect(
+      /** @type {number} */ x,
+      /** @type {number} */ y,
+      /** @type {number} */ w,
+      /** @type {number} */ h,
+    ) {
       fillCount += 1;
       if (o.failAfter !== undefined && fillCount > o.failAfter)
         throw new Error("the canvas cannot draw");
       if (style === tokens["--sc-wall"] && x === 0 && y === 0)
         frames.push({ at: clock, first: style, fills: [] });
       frames[frames.length - 1]?.fills.push(style);
+      if (style === tokens["--sc-jacket"] && w === 10 && h === 9) {
+        const f = frames[frames.length - 1];
+        if (f !== undefined) f.jacketY = y;
+      }
     },
   };
   const canvas = {
@@ -276,6 +287,11 @@ function stage(o = {}) {
     },
     /** The values of --you written so far. */
     you: () => writes.filter(([n]) => n === "--you").map(([, v]) => Number(v)),
+    /** The page turns hidden (or visible) with no event: a callback that was asked for earlier still runs. */
+    /** @param {boolean} value */
+    flipHidden(value) {
+      hidden = value;
+    },
     /** @param {boolean} value */
     setHidden(value) {
       hidden = value;
@@ -395,6 +411,21 @@ test("OV-2 a tap walks «Вы» to the desk of the step table; frames are drawn 
       // Frames are 40 ms apart at least.
       for (let i = 1; i < walk.length; i++)
         assert.ok(walk[i].at - walk[i - 1].at >= 40);
+      // The step frame of the figure changes every 160 ms of the walk (look 9.8): the bob of its jacket is
+      // frame 1, and the frame drawn at the clock t of a walk that began at `started` is
+      // floor((t - started) / 160) mod 2. A frame at an exact multiple of 160 is left out (the sum of the
+      // walk's time is a decimal one and may fall on either side).
+      const rest = s.frames[0].jacketY;
+      assert.equal(typeof rest, "number", "the figure is drawn at the load");
+      for (const f of walk.slice(0, -1)) {
+        assert.equal(typeof f.jacketY, "number", `step ${n}: a figure drawn`);
+        if ((f.at - started) % 160 === 0) continue;
+        assert.equal(
+          /** @type {number} */ (f.jacketY) - /** @type {number} */ (rest),
+          Math.floor((f.at - started) / 160) % 2,
+          `step ${n} at ${f.at - started} ms: the step frame`,
+        );
+      }
       // After the walk no frame is drawn and none is asked for.
       assert.equal(s.pending(), 0, `step ${n}: a frame is still asked for`);
       const done = s.frames.length;
@@ -509,6 +540,25 @@ test("OV-3 while the page is hidden no frame is requested or drawn; when it is v
   assert.equal(s.you().at(-1), AT[3]);
   assert.equal(s.pending(), 0);
   assert.ok(s.frames.length > drawn + 3);
+  // The guard inside the frame: the page turns hidden with no event (the flag changes, the frame that was asked
+  // for stays asked) and the frame that runs then draws nothing and asks for nothing.
+  const g = stage({ page: "how" });
+  g.view.tap({ kind: "step", n: 4 });
+  g.pump(700);
+  const gDrawn = g.frames.length;
+  assert.equal(g.pending(), 1, "a frame of the walk is asked for");
+  g.flipHidden(true);
+  assert.equal(g.pending(), 1, "no event: the frame stays asked for");
+  const gAsked = g.rafCalls();
+  g.pump(16);
+  assert.equal(g.pending(), 0, "the frame ran and asked for no other");
+  g.pump(5000);
+  assert.equal(
+    g.frames.length,
+    gDrawn,
+    "the frame that ran while hidden drew none",
+  );
+  assert.equal(g.rafCalls(), gAsked, "and asked for none");
   // A hidden page shown with nothing owed draws no frame (the view stands still).
   const q = stage({ page: "landing" });
   q.setHidden(true);

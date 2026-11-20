@@ -501,3 +501,41 @@ test("VB-5 the open build into another output folder refuses a link that the out
     assert.ok(fs.existsSync(path.join(out, "index.html")));
   }
 });
+
+test("VB-6 the folder snapshot that the refusal checks rely on: it changes with an added empty directory, with a changed byte of the same length, with an added and a removed file, and with nothing else", (t) => {
+  const dir = tempDir(t);
+  fs.mkdirSync(path.join(dir, "sub"));
+  fs.writeFileSync(path.join(dir, "a.txt"), "abc");
+  fs.writeFileSync(path.join(dir, "sub", "b.txt"), "xyz");
+  const sha = (/** @type {string} */ text) =>
+    createHash("sha256").update(text).digest("hex");
+  const base = [`a.txt ${sha("abc")}`, "sub dir", `sub/b.txt ${sha("xyz")}`];
+  assert.deepEqual(
+    snapshot(dir),
+    base,
+    "the names, the directories, the bytes",
+  );
+  assert.deepEqual(snapshot(dir), base, "a read changes nothing");
+  // An added empty directory.
+  fs.mkdirSync(path.join(dir, "empty"));
+  assert.deepEqual(snapshot(dir), [base[0], "empty dir", base[1], base[2]]);
+  fs.rmdirSync(path.join(dir, "empty"));
+  assert.deepEqual(snapshot(dir), base, "the directory removed again");
+  // A changed byte, the size and the names the same.
+  fs.writeFileSync(path.join(dir, "a.txt"), "abd");
+  assert.deepEqual(snapshot(dir), [`a.txt ${sha("abd")}`, base[1], base[2]]);
+  assert.notDeepEqual(snapshot(dir), base);
+  fs.writeFileSync(path.join(dir, "a.txt"), "abc");
+  assert.deepEqual(snapshot(dir), base, "the byte restored");
+  // An added file and a removed file.
+  fs.writeFileSync(path.join(dir, "c.txt"), "");
+  assert.deepEqual(snapshot(dir), [
+    base[0],
+    `c.txt ${sha("")}`,
+    base[1],
+    base[2],
+  ]);
+  fs.rmSync(path.join(dir, "c.txt"));
+  fs.rmSync(path.join(dir, "sub", "b.txt"));
+  assert.deepEqual(snapshot(dir), [base[0], "sub dir"]);
+});

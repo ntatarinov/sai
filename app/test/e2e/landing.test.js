@@ -20,6 +20,8 @@ import {
   framesPass,
   intakeIn,
   LINE_404,
+  liveBack,
+  liveResult,
   LOCAL_LANGS,
   norm,
   pageReady,
@@ -28,7 +30,9 @@ import {
   readState,
   reportedProblems,
   say,
+  shownKind,
   waitHeading,
+  waitLive,
   waitPlace,
   WINDOWS,
 } from "../fixtures/e2e-kit.js";
@@ -650,7 +654,9 @@ test(
       );
       problems.add("result", await shownTextFindings(page, "ru"));
       assert.equal(await page.locator("#demo .receipt").count(), 1);
-      await readState(problems, "result", env, "ru");
+      await readState(problems, "result", env, "ru", [], {
+        result: await shownKind(page, "ru"),
+      });
     }
 
     // B. «Назад» keeps the answer, a changed answer goes on, «Не знаю» goes on.
@@ -673,7 +679,7 @@ test(
         await page.locator("#demo .card").nth(0).getAttribute("aria-pressed"),
         "false",
       );
-      await readState(problems, "after Назад", env, "ru");
+      await readState(problems, "after Назад", env, "ru", [], { back: 2 });
       await page.locator("#demo .back").click();
       await waitHeading(page, Q[0].title);
       assert.equal(
@@ -682,7 +688,7 @@ test(
         "back to question 1: its answer is kept",
       );
       await waitPlace(page, say("you_at_door", "ru"));
-      await readState(problems, "after Назад to 1", env, "ru");
+      await readState(problems, "after Назад to 1", env, "ru", [], { back: 1 });
       await tap(problems, "change 1", env, "ru", 0, Q[1].title);
       await tap(
         problems,
@@ -713,7 +719,9 @@ test(
       await page.waitForSelector(
         "#demo .receipt .rc-kind, #demo .receipt .rc-nomatch",
       );
-      await readState(problems, "result after Не знаю", env, "ru");
+      await readState(problems, "result after Не знаю", env, "ru", [], {
+        result: await shownKind(page, "ru"),
+      });
     }
 
     // C. The whole survey by the keyboard alone (no mouse): Tab to a card, Enter or Space, five times, then the result.
@@ -746,7 +754,9 @@ test(
       await page.waitForSelector(
         "#demo .receipt .rc-kind, #demo .receipt .rc-nomatch",
       );
-      await readState(problems, "keyboard result", env, "ru");
+      await readState(problems, "keyboard result", env, "ru", [], {
+        result: await shownKind(page, "ru"),
+      });
     }
 
     // D. A phone, in English: the same survey at 390 x 844 with the answers strip and the sheet.
@@ -769,7 +779,9 @@ test(
           ? waitHeading(page, en.questions[i + 1].title)
           : waitHeading(page, say("demo_result_title", "en")));
       }
-      await readState(problems, "phone result", env, "en");
+      await readState(problems, "phone result", env, "en", [], {
+        result: await shownKind(page, "en"),
+      });
     }
 
     // E. The focus above the live strip (the scroll padding of site.css, round 02c): on the two phone windows, in
@@ -986,7 +998,11 @@ test(
             `${where}: the list right under the receipt`,
           );
         }
-        await readState(problems, `${where} result`, env, lang);
+        // The live line says the result of the solution the server named (the no-match text when none): written
+        // 30 ms after the receipt, so the read waits for it and the lint of the shown text sees it.
+        await readState(problems, `${where} result`, env, lang, [], {
+          result: answer.recommended[0]?.name ?? intake.noMatch,
+        });
         // «Описать идею» opens the part of how.html and asks for nothing but the files of the page.
         if (number === 0) {
           const seen = /** @type {string[]} */ ([]);
@@ -1243,7 +1259,16 @@ test(
             { answers: body },
             `${where}: the same answers`,
           );
-        await readState(problems, `${where} after Повторить`, env, "ru");
+        await readState(
+          problems,
+          `${where} after Повторить`,
+          env,
+          "ru",
+          [],
+          route === "result"
+            ? { result: await shownKind(page, "ru") }
+            : undefined,
+        );
       }
     }
     // A server that is really stopped (E2, E3): the connection is refused, and the page says there is no
@@ -1341,8 +1366,13 @@ test(
       en: intakeIn("en"),
       kk: intakeIn("kk"),
     };
-    /** @param {string} where @param {string} lang */
-    const step = async (where, lang) => {
+    /**
+     * @param {string} where
+     * @param {string} lang
+     * @param {string} [live] the announcement the state holds in the live line (waited for, then asserted)
+     */
+    const step = async (where, lang, live = undefined) => {
+      if (live !== undefined) await waitLive(page, live, where);
       const s = await page.evaluate(() => ({
         local: Object.fromEntries(Object.entries(localStorage)),
         session: sessionStorage.length,
@@ -1392,7 +1422,7 @@ test(
     await step("to kk", lang);
     await page.locator("#demo .back").click();
     await waitHeading(page, intake.kk.questions[1].title);
-    await step("back", lang);
+    await step("back", lang, liveBack(2, lang));
     await tap(
       problems,
       "answer 2 again",
@@ -1421,7 +1451,7 @@ test(
       say("demo_result_title", lang),
     );
     await page.waitForSelector("#demo .rc-kind, #demo .rc-nomatch");
-    await step("result", lang);
+    await step("result", lang, liveResult(await shownKind(page, lang), lang));
     await page.click('[data-lang="ru"]');
     lang = "ru";
     await page.waitForFunction(
@@ -1430,7 +1460,11 @@ test(
       say("demo_result_title", "ru"),
     );
     await page.waitForSelector("#demo .rc-kind, #demo .rc-nomatch");
-    const local = await step("result in ru", lang);
+    const local = await step(
+      "result in ru",
+      lang,
+      liveResult(await shownKind(page, lang), lang),
+    );
     assert.deepEqual(Object.keys(local).sort(), ["sai-lang", "sai-theme"]);
     assert.equal(local["sai-lang"], "ru");
     assert.equal(local["sai-theme"], "auto");
@@ -1640,7 +1674,9 @@ test(
           },
           `${win.name} ${lang}: the fixed list of the result`,
         );
-        await readState(problems, `${win.name} ${lang} result`, env, lang);
+        await readState(problems, `${win.name} ${lang} result`, env, lang, [], {
+          result: await shownKind(page, lang),
+        });
         // A visitor who chose the language by its button has it stored; a link carries no ?lang=.
         await page.evaluate(
           (/** @type {string} */ l) => localStorage.setItem("sai-lang", l),

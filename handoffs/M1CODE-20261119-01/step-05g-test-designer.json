@@ -1,0 +1,124 @@
+{
+  "handoff_id": "step05g-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "05g",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/M1CODE-20261119-01/step-05g-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-05f-test-design-validator.json",
+      "docs/design/REQ-111-112-public-landing.md (sections 9, 10, 11, 13)"
+    ],
+    "route": "TEST-DESIGNER 05e -> TEST-DESIGN-VALIDATOR 05f FAIL -> TEST-DESIGNER 05g (this) -> REVIEWER again -> TEST-DESIGN-VALIDATOR 5b gate pass 2",
+    "write_set": [
+      "app/test/** (test files and fixtures) only"
+    ],
+    "base_tag": "base/M1CODE-20261119-01",
+    "rework_of": "handoffs/M1CODE-20261119-01/step-05f-test-design-validator.json"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-05f-test-design-validator.json, gate pass 1 of 3 (WF-02, step 5, rework 05g of run M1CODE-20261119-01). The remarks (tests only, app/test/** ; the code is not edited):\nT1 (Medium) - the e2e tests read the demo's live line before demo.js writes it (ANNOUNCE_MS 30 ms): before the readState calls of LD-5 section B, LD-6, the result states of LD-5, LD-7, LD-8, LD-9 and in fixtures/e2e-kit.js readState, wait until #live is non-empty (a conditional wait, no sleep) and assert it equals the filled live_result or live_back text; show F51 red under LD-6 and LD-9, F47 and F52 red under LD-5, the code green.\nT2 (Low) - OV-3: set hidden without the event, run the pending callback, assert no frame is drawn; mutant D26 red.\nT3 (Low) - OV-2: read the figure's frame at 160 ms steps so that STEP_FRAME_MS 160 to 100 is red; mutant I23.\nT5 (Low) - PP-4 asserts the data-t keys of #test-mode and #ai-disclosure; mutant B10.\nT6 (Low) - one small test that fixtures/snapshot.js differs after an added empty directory and after a changed byte; mutants J06 and J07.\nT4 (design section 10 counts) is not this step's.\nDone when: cd app && npm run check is green and cd app && npm run test:e2e is green twice in a row, cd tools && npm run traces shows 0 traces, the touched mutants are re-run in a scratch clone, the counts and the presence guards match the files, and the criterion grep of REQ-108 criterion 2 over app/test prints no line.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-20T20:25:42Z",
+  "started_at": "2026-11-20T20:25:42Z",
+  "completed_at": "2026-11-20T20:41:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": [
+      "All six remarks are closed in the tests only (app/test/**; the code was not edited: git diff of app outside app/test is empty). Verdict of this step for ORCH: the touched mutants F47, F51, F52, D26, I23, B10, J06, J07 are red, the code is green: npm run check exit 0 and npm run test:e2e green twice in a row.",
+      "T1 (Medium). New helpers in app/test/fixtures/e2e-kit.js: liveResult, liveBack (the filled live_result and live_back texts of the texts module, the test's own oracle), shownKind (waits until the receipt shows a name of the intake in the page's language - a solution's name or the no-match text - and returns it), waitLive (a conditional wait with a 15 s deadline until #live is non-empty, then assert.equal against the expected text; no sleep). readState got a sixth parameter `live` ({ result: name } or { back: n }): when it is given, waitLive runs before the lint, so the lint of the shown text now sees the live line. Callers: LD-5 section A (result), B (after Назад {back:2}, after Назад to 1 {back:1}, result after Не знаю), C (keyboard result), D (phone result, en); LD-6 (own oracle: the solution the server named for the fixture, or the intake's no-match text); LD-7 (after Повторить, only on the result route); LD-8 (its own step() got a live parameter: back {back:2}, result and result in ru with shownKind); LD-9 (the result state of every window and language). The question states keep the old reads (their live line is the live_answer, and F50 was already red).",
+      "T2 (Low). office-view.test.js: the stage stand-in got flipHidden (the hidden flag changes, no visibility event); OV-3 now taps a long walk, lets 700 ms pass, flips hidden with no event, asserts the frame that was asked for is still pending, runs it, and asserts no frame is drawn and none is asked for over 5 s more. D26 is red.",
+      "T3 (Low). office-view.test.js: the recording canvas now keeps, for every frame, the row of the figure's jacket (the one 10 x 9 rect of the jacket token; the bob of frame 1 lowers it one row). OV-2 asserts for every walking frame (both pump steps, 16 and 4 ms, all four desks) that the frame equals floor((t - start) / 160) mod 2 (a frame at an exact multiple of 160 is left out). STEP_FRAME_MS 160 to 100, 80 and 200 are red.",
+      "T5 (Low). public-pages.test.js PP-4: on every page but gate the data-t keys inside #test-mode are exactly [test_mode] and inside #ai-disclosure exactly [ai_disclosure]. B10 is red in PP-4.",
+      "T6 (Low). vercel-build.test.js: a new test VB-6 runs fixtures/snapshot.js on a temporary folder with its own sha256 oracle and asserts the exact lines before and after an added empty directory, a changed byte of the same length, an added file and a removed file, and that a plain read changes nothing. J06 (directories ignored) and J07 (bytes ignored) are red. THIS ADDS ONE UNIT TEST: unit is now 119 (the 05f report counted 118); int stays 47 and e2e 15.",
+      "Counts: unit '# tests 119 # pass 119 # fail 0 # skipped 0 # todo 0'; int '# tests 47 # pass 47 # fail 0 # skipped 0 # todo 0'; e2e 15 of 15 twice. The presence guards need no change and are green (NPM-5 12 int + 2 pg files, NM-5 25 unit files, NPM-7 landing LD-1..LD-9 and stage ST-1..ST-6, NM-6): no test file was added or removed and the ids of the e2e files are unchanged (VB-6 is inside an existing unit file). The criterion grep of REQ-108 criterion 2 over app/test prints no line (exit 1); no skip, todo or only, no path of this computer in app/test. test( and assert. lines of the changed files are not lower than at HEAD (landing 127 to 127, e2e-kit 0 to 1, office-view 159 to 167, public-pages 53 to 55, vercel-build 58 to 68); nothing removed but the six old readState calls and the step() signature that were replaced by their stronger form."
+    ],
+    "changes": [
+      {
+        "remark": "T1",
+        "file": "app/test/fixtures/e2e-kit.js",
+        "what_was_fixed": "readState read the page before demo.js wrote the live line (ANNOUNCE_MS 30 ms), so the lint never saw the line of a result or of «Назад»",
+        "where": "new exports liveResult, liveBack, shownKind, waitLive; readState got the parameter `live`; import of node:assert/strict"
+      },
+      {
+        "remark": "T1",
+        "file": "app/test/e2e/landing.test.js",
+        "what_was_fixed": "the eight result and «Назад» reads now wait for #live and assert its filled text before the lint",
+        "where": "LD-5 A result, B after Назад / after Назад to 1 / result after Не знаю, C keyboard result, D phone result; LD-6 result read (fixture oracle); LD-7 after Повторить (result route); LD-8 step() with live parameter (back, result, result in ru); LD-9 result of each window and language"
+      },
+      {
+        "remark": "T2",
+        "file": "app/test/unit/office-view.test.js",
+        "what_was_fixed": "the hidden guard inside the frame callback had no test (D26)",
+        "where": "stage() stand-in: flipHidden; OV-3, a new block before the last block of the test"
+      },
+      {
+        "remark": "T3",
+        "file": "app/test/unit/office-view.test.js",
+        "what_was_fixed": "the step frame of the figure that view.js gives the walker was not measured (I23)",
+        "where": "stage() stand-in: fillRect records the jacket row per frame (jacketY); OV-2, the step-frame loop before «After the walk no frame is drawn»"
+      },
+      {
+        "remark": "T5",
+        "file": "app/test/unit/public-pages.test.js",
+        "what_was_fixed": "PP-4 compared the texts but not the data-t keys of the two places (B10)",
+        "where": "PP-4: keysIn() and two deepEqual lines"
+      },
+      {
+        "remark": "T6",
+        "file": "app/test/unit/vercel-build.test.js",
+        "what_was_fixed": "the one snapshot helper had no test of its own (J06, J07)",
+        "where": "new test VB-6 at the end of the file (unit 118 to 119)"
+      }
+    ],
+    "self_check": [
+      "Clock: handoff created by the handoff command at 2026-11-20T20:25:42Z (one reading; the work itself began some minutes earlier, no reading kept); the result was written after the reading 2026-11-20T20:41:20Z.",
+      "Working copy: <scratch>/t05g/c1 and c2, `git clone --no-local` of the project at HEAD 1ed56e7 (the tag base/M1CODE-20261119-01-5b), node_modules copied from the project, then app/test synced from the working tree (rsync; `diff -r` of app/test between the project and both clones is empty at the end). Every mutant: one exact-text edit in a clone, the named test file or the named browser test, the edit restored; `git status --short` in the clones shows only the five changed test files. The project tree was never used to run a check, a server, a browser or a mutant.",
+      "cd app && npm run check in c1 -> exit 0: prettier, eslint --max-warnings 0, tsc, check-public, vendored, the picker check, unit '# tests 119 # pass 119 # fail 0 # skipped 0 # todo 0', int '# tests 47 # pass 47 # fail 0 # skipped 0 # todo 0'.",
+      "cd app && npm run test:e2e in c1, twice in a row: run 1 ended 2026-11-20T20:32:05Z, '# tests 15 # pass 15 # fail 0 # skipped 0 # todo 0 # duration_ms 399853', exit 0; run 2 ended 20:38:55Z, '# tests 15 # pass 15 # fail 0 # skipped 0 # todo 0 # duration_ms 400356', exit 0. Before them LD-5 and LD-6..LD-9 were run alone on the new tests: green.",
+      "Mutants touched by this step, each re-run on the final files (26 runs of this step, all red; the code run is the green check above): F51 (live_result gets ' 5 минут') red in LD-5, LD-6, LD-7, LD-8 and LD-9 (each alone; the message is the live line assertion: expected 'Результат готов: Калькулятор', actual with ' 5 минут'); F47 (live_back + ' гарантия') red in LD-5 and LD-8; F52 (live_back + ' 5 000 ₸') red in LD-5; D26 (the hidden guard of the frame removed) red in OV-3 (1 of 7: 'the frame that ran while hidden drew none'); I23 (STEP_FRAME_MS 160 to 100) red in OV-2 (1 of 7: 'step 1 at 144 ms: the step frame'); B10 (data-t of #ai-disclosure on how.html changed to test_mode) red in PP-4 (1 of 7); J06 (snapshot ignores directories) red in VB-6 (1 of 6); J07 (snapshot ignores bytes) red in VB-6 (1 of 6).",
+      "Regression sample on the files changed here (17 more runs, all red): office-view: STEP_FRAME_MS 200 red OV-2, 80 red OV-2, the hidden guard of ask() removed red OV-3, WALK_SPEED 72 to 60 red OV-2 ('walked 1216 ms for 1000'), FRAME_MS 40 to 20 red OV-2; public-pages: the data-t of #test-mode on 404.html changed to ai_disclosure red PP-4, the data-t removed from index.html red PP-4; vercel-build: the link refusal of the existing output folder removed red VB-5, the gate sha256 check turned off red VB-3; live line: live_back index wrong (i + 1) red LD-5, the result announce removed red LD-6 (the wait for #live runs out), a word added to the live_answer announce red LD-5 (F50-like, still red), the no-match result announce with ' 5 минут' red LD-6, F47 under LD-8 red.",
+      "Criterion grep of REQ-108 criterion 2 (SELECTOR_GREP of npmrc.test.js as grep -rnE over app/test): no line, exit 1; no path of this computer in app/test.",
+      "cd tools && npm run traces on the project tree before the handoff was filled: 'files checked 2813, traces 0, skipped 67' (repeated after the handoff was written, see handoffs-check below)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "COUNT",
+        "text": "T6 asked for one small test, so unit is 119, not 118 (VB-6 is new). The design's section 10 (T4, not this step) must say unit 119, int 47, e2e 15 when ORCH or CODE-DESIGNER writes the correction: the 05f report asked for 118. RELEASE-VALIDATOR compares the run's '# tests' with the catalogue."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "F47 and F52 are red under LD-5 and F51 under LD-6 and LD-9 by the equality assertion of waitLive (the exact filled text of the live line), which is stricter than the lint alone: a wrong word, a number or a price written into the live line fails at once with the text shown. The lint of the shown text runs on the same read after the wait, so a page script that writes a forbidden form into the live line is also found by the lint (it is read by body.innerText; #live is visually hidden, never display:none)."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "The step-frame check of OV-2 leaves out a frame at an exact multiple of 160 ms (the walker's sum of time is a decimal one). Nothing in the code needs an edit; no defect found in the code."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "The known PENDING line of handoffs/M0DOCS-20261117-01/step-05c-test-designer.json is not this step's. docs/program/public-v1/PROGRESS.md appeared as modified before this step (not touched by it) and the file step-05f-test-design-validator.json is untracked (the previous step's handoff)."
+      }
+    ],
+    "artifacts_out": [
+      "app/test/fixtures/e2e-kit.js",
+      "app/test/e2e/landing.test.js",
+      "app/test/unit/office-view.test.js",
+      "app/test/unit/public-pages.test.js",
+      "app/test/unit/vercel-build.test.js"
+    ]
+  }
+}

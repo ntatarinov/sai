@@ -423,6 +423,19 @@ test("PP-4 index.html holds «Sai — закрытое тестирование�
     assert.equal(byId("ai-disclosure").length, 1, f);
     assert.equal(textOf(byId("test-mode")[0]), TEST_MODE, f);
     assert.equal(textOf(byId("ai-disclosure")[0]), AI_DISCLOSURE, f);
+    // The text of each place is the one its `data-t` key names (the span inside #test-mode, #ai-disclosure
+    // itself), so the page script fills it in the language of the visitor and not with another text.
+    const keysIn = (/** @type {Node} */ place) =>
+      doc.tags
+        .filter((e) => {
+          for (let up = /** @type {Node | null} */ (e); up; up = up.parent)
+            if (up === place) return true;
+          return false;
+        })
+        .map((e) => e.attrs.get("data-t"))
+        .filter((k) => k !== undefined);
+    assert.deepEqual(keysIn(byId("test-mode")[0]), ["test_mode"], f);
+    assert.deepEqual(keysIn(byId("ai-disclosure")[0]), ["ai_disclosure"], f);
   }
   assert.ok(
     textOf(parseHtml(readPage("index.html")).root).includes(CLOSED_TEST),
