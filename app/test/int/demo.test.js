@@ -921,6 +921,142 @@ test("DM-6 a missing or broken intake gives 503 demo_unavailable on both routes,
   );
 });
 
+test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unavailable on the route that reads it, an answer body that cannot be written to text is the same 503, and the next request is answered (SECURITY-REVIEWER L1, L2 of the second pass)", async (t) => {
+  const dir = tempDir(t);
+  const UNAVAILABLE = '{"error":"demo_unavailable"}';
+  /** @param {(t: any) => void} edit */
+  const edited = (edit) => {
+    const tenant = structuredClone(RAW);
+    edit(tenant);
+    return tenant;
+  };
+  /** @param {string} name @param {any} tenant */
+  const file = (name, tenant) => {
+    const f = path.join(dir, name);
+    fs.writeFileSync(f, JSON.stringify(tenant));
+    return f;
+  };
+  const matched = FIXTURES.find(([n]) => n === "landing.json")?.[1] ?? {};
+  const unmatched =
+    FIXTURES.find(([n]) => n === "server-needed.json")?.[1] ?? {};
+  assert.ok(resultOf(matched, "ru").recommended.length > 0);
+  assert.equal(resultOf(unmatched, "ru").recommended.length, 0);
+  /** The seven shapes of the review: the route that reads the text, and the answers that reach it. */
+  /** @type {Array<[string, string, Record<string, string> | null, (t: any) => void]>} */
+  const rows = [
+    [
+      "a question title with an extra key",
+      "questionnaire",
+      null,
+      (x) => (x.questions[0].title.note = "note"),
+    ],
+    [
+      "an option label without en",
+      "questionnaire",
+      null,
+      (x) => {
+        for (const o of x.questions[0].options) delete o.label.en;
+      },
+    ],
+    [
+      "a solution summary without en",
+      "result",
+      matched,
+      (x) => {
+        for (const sol of x.solutions) delete sol.summary.en;
+      },
+    ],
+    [
+      "an includes item without en",
+      "result",
+      matched,
+      (x) => {
+        for (const sol of x.solutions) delete sol.includes[0].en;
+      },
+    ],
+    [
+      "a not_suitable_when item with an extra key",
+      "result",
+      matched,
+      (x) => {
+        for (const sol of x.solutions) sol.not_suitable_when[0].x = "x";
+      },
+    ],
+    [
+      "a no-match text without en",
+      "result",
+      unmatched,
+      (x) => delete x.result.no_match_text.en,
+    ],
+    [
+      "a solution name with an extra key",
+      "result",
+      matched,
+      (x) => {
+        for (const sol of x.solutions) sol.name.x = "x";
+      },
+    ],
+  ];
+  const good = real();
+  const goodWays = ways(good);
+  const health = await goodWays[0].fetch("/api/health");
+  for (const [i, [label, route, answers, edit]] of rows.entries()) {
+    const loaded = loadIntake(file(`shape-${i}.json`, edited(edit)));
+    assert.equal(loaded.ok, true, `${label}: the loader accepts the shape`);
+    for (const way of ways(loaded))
+      for (const lang of ["ru", "en", "kk"]) {
+        const x =
+          route === "questionnaire"
+            ? await way.fetch(`/api/demo/questionnaire?lang=${lang}`)
+            : await way.fetch(`/api/demo/result?lang=${lang}`, post(answers));
+        assert.deepEqual(
+          [x.status, x.text],
+          [503, UNAVAILABLE],
+          `${label} ${way.name} ${lang}`,
+        );
+        assert.equal(x.headers.get("content-type"), JSON_TYPE);
+        assert.equal(x.headers.get("cache-control"), "no-store");
+      }
+    for (const way of ways(loaded)) {
+      await way.fetch("/api/demo/questionnaire?lang=ru");
+      for (const l of way.logs.filter((e) => e.status >= 500))
+        assert.equal(l.code, "demo_unavailable", `${label} ${way.name}`);
+      assert.equal((await way.fetch("/api/health")).status, health.status);
+      assert.equal((await way.fetch("/api/demo/other")).status, 404);
+    }
+  }
+  // A body that JSON.stringify cannot write: a value of the intake whose toJSON throws reaches the body as
+  // it is (an id is copied whole), and the app writes the body after the handler returns.
+  const unwritable = edited((x) => {
+    x.questions[0].id = {
+      toJSON() {
+        throw new Error("cannot be written");
+      },
+    };
+  });
+  for (const way of ways({ ok: true, tenant: unwritable })) {
+    const q = await way.fetch("/api/demo/questionnaire?lang=ru");
+    assert.deepEqual([q.status, q.text], [503, UNAVAILABLE], way.name);
+    assert.deepEqual(
+      way.logs.filter((l) => l.status === 500),
+      [],
+      `${way.name}: a 500`,
+    );
+    assert.equal(way.logs.at(-1)?.code, "demo_unavailable", way.name);
+    assert.equal((await way.fetch("/api/health")).status, health.status);
+    assert.equal((await way.fetch("/api/demo/other")).status, 404);
+  }
+  // The control: the real intake is answered as before.
+  assert.equal(
+    (await goodWays[0].fetch("/api/demo/questionnaire?lang=ru")).status,
+    200,
+  );
+  assert.equal(
+    (await goodWays[1].fetch("/api/demo/result?lang=en", post(matched))).status,
+    200,
+  );
+});
+
 test("DM-7 SITE_GATE gives the gate answer with no cookie and no route runs; every request writes one log line with the keys of the skeleton and no answer in it", async () => {
   // The gate: the demo paths answer as every path does, and nothing of the demo runs.
   for (const way of [

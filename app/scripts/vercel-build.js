@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { refuseLinks, writePublicSet } from "./public-set.js";
+import { present, refuseLinks, writePublicSet } from "./public-set.js";
 
 // vercel-build (ARCH §19.6, REQ-109 criterion 8, REQ-111 criterion 9, decisions/0116 О18; design
 // docs/design/REQ-111-112-public-landing.md, 4.11): with SITE_GATE empty, the open build — migrate (only
@@ -167,6 +167,9 @@ export async function runBuild(d) {
   try {
     if (!inPlace) {
       refuseLinks(d.publicDir);
+      // The copy writes into what the output folder already holds, so a link there is refused too, before
+      // the copy; a folder that does not exist yet has none.
+      if (present(d.outDir)) refuseLinks(d.outDir);
       fs.cpSync(d.publicDir, d.outDir, { recursive: true });
     }
     await writePublicSet(d.outDir);

@@ -223,7 +223,7 @@ function htmlFiles(dir) {
  * @param {string} abs
  * @returns {boolean} whether there is an entry at `abs` (a link is not followed)
  */
-function present(abs) {
+export function present(abs) {
   try {
     fs.lstatSync(abs);
     return true;

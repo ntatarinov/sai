@@ -1,0 +1,172 @@
+{
+  "handoff_id": "step02c-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02c",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/M1CODE-20261119-01/step-02c-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-05-test-designer-t4.json",
+      "handoffs/M1CODE-20261119-01/step-04b-reviewer.json",
+      "handoffs/M1CODE-20261119-01/step-03b-security-reviewer.json",
+      "docs/design/REQ-111-112-public-landing.md",
+      "docs/design/V1-public-look.md",
+      "decisions/0123 and 0124 with all Additions (O13-O23)"
+    ],
+    "route": "... TEST-DESIGNER 5 (T4) FAIL + REVIEWER 04b + SECURITY-REVIEWER 03b lows -> CODE-FIXER 02c (this) -> SECURITY-REVIEWER and REVIEWER again -> TEST-DESIGNER",
+    "write_set": [
+      "app/public/css/site.css",
+      "app/server/routes/demo.js",
+      "app/scripts/vercel-build.js",
+      "app/scripts/public-set.js",
+      "app/test/int/demo.test.js",
+      "app/test/unit/vercel-build.test.js",
+      "handoffs/M1CODE-20261119-01/step-02c-code-fixer.json (this handoff)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01",
+    "rework_of": "handoffs/M1CODE-20261119-01/step-05-test-designer-t4.json"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-05-test-designer-t4.json, step-04b-reviewer.json and step-03b-security-reviewer.json, fix round 02c. The remarks:\n- T4 I1 [Medium] (step-05-test-designer-t4.json, test LD-1 red): demo.html at 390x844 and 320x568, ru, kk, en, both themes: the fixed phone bar aside#ticket lies over the footer links, which cannot be tapped (REQ-111 criterion 12). Smallest correct fix, checked at all three windows.\n- REVIEWER L1 [Low] (step-04b-reviewer.json, pass 2): at 320x568 «‹ Назад» (moved to the progress row below 360 px) lies partly under the fixed live strip at the first scroll and when it gets the focus by Tab from the question h2. Make it reachable and unobscured in the smallest way.\n- SECURITY L1 [Low] (step-03b-security-reviewer.json, pass 2): app/server/app.js about line 150 turns the response body into text after the handler returns, outside any mapping to demo_unavailable; map a failure there to the same stable code.\n- SECURITY L2 [Low] (same): an intake text that is not exactly {ru, kk, en} passes loadIntake and reaches the answer whole, so the public function app (ru and en only) can answer a Kazakh value (G9); reduce every intake text to one language in the projection or refuse the shape in loadIntake.\n- SECURITY L3 [Low] (same): app/scripts/vercel-build.js, runBuild into another output folder refuses links in the source but not links the output folder already holds; refuse them too before the copy.\nOpen and not touched: the low of decisions/0124 O23.",
+    "acceptance_criteria": [
+      "REQ-111 criterion 12: no control lies over another, every target is reachable (LD-1 green at 390x844 and 320x568, ru, kk, en, both themes)",
+      "REQ-111 criterion 7: both demo routes answer 503 demo_unavailable for a broken intake; no exception escapes; only the fields of the design reach the answer, in one language",
+      "decisions/0124 O13-O23 and docs/design/V1-public-look.md kept; npm run check green; npm run test:e2e 15 of 15 twice in a row; npm run traces 0 traces"
+    ]
+  },
+  "created_at": "2026-11-20T18:19:34Z",
+  "started_at": "2026-11-20T18:19:34Z",
+  "completed_at": "2026-11-20T18:30:10Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fix round 02c done: all five remarks are closed, nothing is in not_fixed, O23 untouched. The footer links of demo.html are free at the end of the page (T4 I1, LD-1 green): the phone bar is sticky at the bottom of the question wrap instead of fixed, so it is the same at the first screen and rests above the footer at the end; the first screens are byte-identical. A focused control is scrolled above the strip (REVIEWER L1): 22 -> 0 states. SEC L1 and L2: the demo routes write the body inside their mapping and refuse any intake text that is not one string after the language is picked, 503 demo_unavailable. SEC L3: the open build refuses links that another output folder already holds, before the copy. Files: app/public/css/site.css, app/server/routes/demo.js, app/scripts/vercel-build.js, app/scripts/public-set.js (one export), and two new test rows (DM-6c, VB-5). npm run check green (unit 118, int 47), e2e 15 of 15 twice in a row, traces 0. Issue I1: the look 7.11 text says fixed, the bar is now sticky (a design text follow-up, no stop).",
+    "changes": [
+      {
+        "remark": "T4 I1",
+        "file": "app/public/css/site.css",
+        "place": "the block max-width 759px: .ticket; .panel.v-ask (the old padding-bottom: 96px); new rule .panel.v-ask > .ask-wrap",
+        "was": "aside#ticket was position: fixed, bottom 0, over the footer: at the end of demo.html the footer links «Главная», «Как это работает», «Демо-опрос», «Примеры запросов» were under it and could not be tapped (page cannot scroll further). My driver, 390x844, 320x568, 360x640, 359x640 x ru, kk, en x light, dark x 5 questions = 120 states: the bar answered elementFromPoint over a footer link in 120 of 120; bar height 85 in all",
+        "became": "the bar is position: sticky; bottom: 0 inside the question wrap (left/right removed, margin: auto calc(-1 * var(--gut)) 0, so it is full width of the window and sits at the bottom of the wrap when the page is short): it is the same bar at the bottom of the window while the page scrolls, and at the end of the page it rests in the flow above the footer, so its height is reserved by the CSS itself (no measured number, no JS). The padding-bottom: 96px of .panel.v-ask, which reserved room for the old fixed bar, is replaced by display: flex column on .panel.v-ask and flex: 1 0 auto on its .ask-wrap (the bar stays at the bottom of the page when the page is shorter than the window). Result: 0 of 120 states with a footer link under the bar; first screens at 390x844 and 320x568 are byte-identical to before (cmp of the screenshots); at 390x1300 the bar stands above the footer, no longer over it"
+      },
+      {
+        "remark": "REVIEWER L1",
+        "file": "app/public/css/site.css",
+        "place": "the block max-width 759px: new rule html:has(#ticket) { scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom)) }",
+        "was": "at 320x568 «‹ Назад» (grid row 3 below 360 px) was under the strip (483-568) when it got the focus by Tab from the question h2: 22 of 120 states (ru q1-q4 14 px, kk q1-q2 30 px, kk q3-q4 7 px)",
+        "became": "a focused control is scrolled above the strip, not under it (the strip is 84.8 px by the look 7.11, measured 85; 90 px plus the safe area, only while the page has the strip, only below 760 px): 0 of 120 states with the focused control under the strip. The button stays where H1 put it. Without a focus, at the first scroll position, the lower 7-30 px of «‹ Назад» at 320x568 are still under the strip in 22 states: the look 12 allows it (the bar may cover the bottom of the page until the visitor scrolls), the button is reachable by scrolling and by Tab (issue I2)"
+      },
+      {
+        "remark": "SEC L1",
+        "file": "app/server/routes/demo.js",
+        "place": "new function answer(); both handlers return answer({...}) (the result inside a try that keeps an HttpError and maps anything else to demo_unavailable)",
+        "was": "the body of both demo routes was written to text by JSON.stringify in app.js after the handler returned, outside any mapping: a value that the projection copied and JSON.stringify cannot write went to onError as 500 server_error (driver: an id whose toJSON throws, through the function entry: status 500, log 500 server_error)",
+        "became": "answer() writes the body to text once inside the handler's own mapping and throws demo_unavailable when it cannot: 503 demo_unavailable, log code demo_unavailable, no 500. app/server/app.js is unchanged (the finding names it; the same stable code is given where the routes already map, so no demo path is known in the generic loop)"
+      },
+      {
+        "remark": "SEC L2",
+        "file": "app/server/routes/demo.js",
+        "place": "new functions text() and texts(); used for title and label (questionnaire) and name, summary, includes, not_suitable_when and no_match_text (result)",
+        "was": "a text that is not exactly {ru, kk, en} (an extra key, no en) was copied whole to the answer: driver through the function entry, 7 shapes: 200 for all 7, the whole object in the body, 6 of 7 with a Kazakh letter in the answer asked in en",
+        "became": "after the language is picked every such value must be a string (a list of strings for includes and not_suitable_when; no_match_text may be null as the engine gives it when there is a match): else demo_unavailable on the route that reads it. 7 of 7 shapes: 503 demo_unavailable, log code demo_unavailable. The real intake and every existing test answer as before"
+      },
+      {
+        "remark": "SEC L3",
+        "file": "app/scripts/vercel-build.js",
+        "place": "runBuild, the open branch step (4): if (present(d.outDir)) refuseLinks(d.outDir) before fs.cpSync; import of present",
+        "was": "into another output folder a link already in the output folder (an entry that is a link to a folder outside) took the copy: fs.cpSync wrote the six office files into the outside folder and only then writePublicSet refused",
+        "became": "the output folder is walked by refuseLinks before the copy when it exists: exit 1 'vercel-build: refused: <path>: a symbolic link, which the public set does not follow' (the folder itself: the folder line), nothing copied, nothing written outside, the output folder as it was. VB-5 is red on the review snapshot and green here"
+      },
+      {
+        "remark": "SEC L3",
+        "file": "app/scripts/public-set.js",
+        "place": "function present(abs)",
+        "was": "private",
+        "became": "exported, so vercel-build.js uses the one copy (no second copy of the helper); no other change"
+      },
+      {
+        "remark": "SEC L1, L2",
+        "file": "app/test/int/demo.test.js",
+        "place": "new test DM-6c before DM-7",
+        "was": "no row for a text that is not {ru, kk, en} or for a body that cannot be written",
+        "became": "7 shapes x both ways x ru, en, kk: 503 and the stable body, headers, no 500 in the log, health and the 404 unchanged; an id with a throwing toJSON through both ways: 503, no 500; control on the real intake. Red on the review snapshot (first row 200), green here; mutants: answer() without its stringify -> DM-6c red; text() returning the value whole -> DM-6c red"
+      },
+      {
+        "remark": "SEC L3",
+        "file": "app/test/unit/vercel-build.test.js",
+        "place": "new test VB-5 after VB-4",
+        "was": "no row for a link already in the output folder",
+        "became": "three plants (an entry linked to a folder outside, a page linked to a file outside, a link below a folder) each: code 1, the one refusal line naming the link, the output folder and the outside folder unchanged by lstat state; the output folder as a link: refused, nothing outside; control with a plain existing output folder: code 0. Red on the review snapshot, green here; mutant: the new line removed -> VB-5 red"
+      }
+    ],
+    "not_fixed": [],
+    "self_check": [
+      "Start state: git status of the tree clean; HEAD c12f34d (tag base/M1CODE-20261119-01-fix2). End state: git status --short shows only the files of artifacts_out and this handoff.",
+      "Scratch copies under <scratch>: before = git archive of HEAD (+ the new test files for the red runs), after = rsync of the working tree; drivers overlap.mjs (real Chrome 390x844, 320x568, 360x640, 359x640, ru kk en, light dark, 5 questions), shot.mjs (screenshots, cmp), l12.mjs (the demo routes through createEntry with 8 planted intakes).",
+      "T4 I1 before: node overlap.mjs <before>: rows 120, footer-covered rows 120, tab-focus covered rows 22, max strip height 85. After: rows 120, footer-covered rows 0, tab-focus covered rows 0, max strip height 85. cmp before/after screenshots at 390x844 and 320x568 (top of the page): identical; 390x1300: the strip above the footer.",
+      "SEC L1/L2 before: node l12.mjs <before>: 7 shapes answer 200 (the whole object in the body, 6 of 7 with a Kazakh letter in en), the unwritable id answers 500 server_error. After: all 8 answer 503 demo_unavailable, log code demo_unavailable.",
+      "SEC L3 and the tests: node --test test/int/demo.test.js on the before copy: DM-6c not ok (first row 200); VB-5 not ok before, ok after (5 of 5 in the tree). Mutants on a copy: answer() without stringify -> DM-6c not ok; text() returning the value -> DM-6c not ok; the new vercel-build line removed -> VB-5 not ok.",
+      "cd app && npm run check: green, exit 0; unit 118 of 118 (was 117), int 47 of 47 (was 46); prettier, eslint --max-warnings 0, tsc, check-public, vendored, picker check all passed.",
+      "cd app && npm run test:e2e: run 1 of 2: 15 of 15 (LD-1 .. LD-9, ST-1 .. ST-6), exit 0; run 2 of 2 right after: 15 of 15, exit 0 (about 6.5 min each).",
+      "cd tools && npm run traces: traces: файлов проверено 2806, следов 0, пропущено 67 (0 traces)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DESIGN_FOLLOW_UP",
+        "text": "For ORCH and CODE-DESIGNER: docs/design/V1-public-look.md 7.11 says the phone bar is 'fixed to the bottom of the window' and the code design (7.11 row of its phone block) says the same; the code now makes it position: sticky; bottom: 0 in the question wrap, so it is at the bottom of the window as before while the page scrolls and rests above the footer at the end of the page (T4 I1 named both 'space under the footer' and 'no bar over the footer'). I judged this inside the finding and the look's own rule of section 12 ('may cover the bottom of the page until the visitor scrolls'), not a departure: the first screens at 390x844 and 320x568 are byte-identical to the build, the bar and its sheet look the same. Visible differences: the page is about 85 px longer on a phone; on a window taller than the page the bar stands above the footer, not over it. The text of 7.11 (and 7.9 for the 360 edit) needs the edit 'sticky to the bottom'; if the gate reads it as a departure, the alternative is the fixed bar and a padding-bottom under the footer of the measured 85 px (a number the CSS cannot read), and I stop on that word."
+      },
+      {
+        "id": "I2",
+        "kind": "OBSERVATION",
+        "text": "REVIEWER L1 is closed for the focus (0 of 120 states) and not for the first scroll position without a focus: at 320x568 the lower 7-30 px of «‹ Назад» (ru 14, kk 7-30; none at 360x640 and 359x640 and 390x844) stand under the strip in 22 states until the visitor scrolls 30 px; the look 12 allows it. The scroll padding is a number (90 px plus the safe area, from the 84.8 of the look) because CSS cannot read the height of the strip; a custom property set from the page would need a setProperty beyond --tx in demo.js, which the strict list of public-pages.test.js (the only property demo.js may write is --tx) forbids, so it was not used. The rule covers every control of the question page below 760 px (the answer cards too, the kind of AP-014), not only «‹ Назад»."
+      },
+      {
+        "id": "I3",
+        "kind": "DESIGN_FOLLOW_UP",
+        "text": "SEC L1 was closed in app/server/routes/demo.js (answer()), not in app/server/app.js, which the finding names: the mapping to demo_unavailable is the route's (design 4.7), and app.js stays free of demo paths. Another route that would return a body JSON.stringify cannot write still goes to onError as before; none exists. Design 4.7 needs a line: the answer body is written inside the mapping, and every text of the answer must be a string after the language is picked."
+      },
+      {
+        "id": "I4",
+        "kind": "BEHAVIOUR_CHANGED",
+        "text": "Beyond the shapes of SEC L2, the same check changes one answer that the reviewer noted as no finding (step-04b I4b): an intake that loadIntake accepts whose option is a string or an array (no label) gave the questionnaire 200 with an option without id and label; it is now 503 demo_unavailable, as the other broken shapes. No existing test expects the old answer (npm run check green). Named so that TEST-DESIGNER and the reviewers know."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "Not covered by a deterministic row: the result route with an unwritable body (an id nested between 6 900 and 9 700 deep; the window depends on the stack of the machine). answer() serves both routes with the one code path; DM-6c holds the unwritable body through the questionnaire with a throwing toJSON, which is deterministic. The ids of a solution cannot carry such a value in a test because the engine reads them."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "text": "Evidence on scratch copies: the before copy is git archive of HEAD (the tag base/M1CODE-20261119-01-fix2) with the tests of this step copied in; the after copy is rsync of the working tree. On the before copy VB-4 fails only because an archive has no .git ('VB-4 needs app/ inside a git working tree'); it passes in the tree. The browser driver measured 120 states (3 windows plus 359 x ru, kk, en x light, dark x 5 questions): footer link under the bar 120 -> 0, focused control under the bar 22 -> 0."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "decisions/0124 O23 (the open low) was not touched. The check chain handoffs-check still prints its one known line about handoffs/M0DOCS-20261117-01/step-05c-test-designer.json (PENDING in a commit), not this work's."
+      },
+      {
+        "id": "I8",
+        "kind": "PROCESS",
+        "text": "Handoff created by the agent with the handoff command on the order of the task (from_agent ORCH), as in the earlier steps of the run; context.agent_run_id stays null. context.base_tag is base/M1CODE-20261119-01 as the command writes it; the working tree is at base/M1CODE-20261119-01-fix2."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/css/site.css",
+      "app/server/routes/demo.js",
+      "app/scripts/vercel-build.js",
+      "app/scripts/public-set.js",
+      "app/test/int/demo.test.js",
+      "app/test/unit/vercel-build.test.js"
+    ]
+  }
+}

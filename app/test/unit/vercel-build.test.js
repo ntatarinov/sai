@@ -391,3 +391,123 @@ test("VB-4 closed: the real app/public of a git working tree is never replaced; 
   ]);
   assert.deepEqual(snapshot(PUBLIC), real);
 });
+
+test("VB-5 the open build into another output folder refuses a link that the output folder already holds, before the copy: nothing is written through it and the folder stays as it was (SECURITY-REVIEWER L3 of the second pass)", async (t) => {
+  const refusal = (/** @type {string} */ link) =>
+    `vercel-build: refused: ${link}: a symbolic link, which the public set does not follow`;
+  /** The state of a folder by lstat: each entry, with the target of a link and the bytes of a file. */
+  const state = (/** @type {string} */ dir) => {
+    /** @type {string[]} */
+    const out = [];
+    /** @param {string} abs @param {string} rel */
+    const walk = (abs, rel) => {
+      for (const e of fs
+        .readdirSync(abs, { withFileTypes: true })
+        .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+        const r = rel === "" ? e.name : `${rel}/${e.name}`;
+        const at = path.join(abs, e.name);
+        if (e.isSymbolicLink()) out.push(`${r} -> ${fs.readlinkSync(at)}`);
+        else if (e.isDirectory()) {
+          out.push(`${r}/`);
+          walk(at, r);
+        } else out.push(`${r} ${fs.readFileSync(at).toString("base64")}`);
+      }
+    };
+    walk(dir, "");
+    return out;
+  };
+  /**
+   * @param {string} out
+   * @returns {Promise<{ code: number, lines: string[] }>}
+   */
+  const run = async (out) => {
+    /** @type {string[]} */
+    const lines = [];
+    const code = await runBuild({
+      env: {},
+      migrate: () => 0,
+      checkPublic: () => 0,
+      publicDir: PUBLIC,
+      outDir: out,
+      log: (l) => lines.push(l),
+    });
+    return { code, lines };
+  };
+  const rows = [
+    [
+      "an entry that is a link to a folder outside (the office folder)",
+      "office",
+      (/** @type {string} */ out, /** @type {string} */ outside) =>
+        fs.symlinkSync(outside, path.join(out, "office")),
+    ],
+    [
+      "a page that is a link to a file outside",
+      "index.html",
+      (/** @type {string} */ out, /** @type {string} */ outside) =>
+        fs.symlinkSync(
+          path.join(outside, "page.html"),
+          path.join(out, "index.html"),
+        ),
+    ],
+    [
+      "a link below a folder",
+      "css/link.html",
+      (/** @type {string} */ out, /** @type {string} */ outside) => {
+        fs.mkdirSync(path.join(out, "css"));
+        fs.symlinkSync(
+          path.join(outside, "page.html"),
+          path.join(out, "css", "link.html"),
+        );
+      },
+    ],
+  ];
+  for (const [
+    name,
+    named,
+    plant,
+  ] of /** @type {Array<[string, string, (o: string, x: string) => void]>} */ (
+    rows
+  )) {
+    const root = tempDir(t);
+    const outside = path.join(root, "outside");
+    fs.mkdirSync(outside);
+    fs.writeFileSync(path.join(outside, "page.html"), "<p>outside</p>\n");
+    const out = path.join(root, "out");
+    fs.mkdirSync(out);
+    plant(out, outside);
+    const outBefore = state(out);
+    const outsideBefore = state(outside);
+    const { code, lines } = await run(out);
+    assert.equal(code, 1, name);
+    assert.deepEqual(lines, [refusal(named)], name);
+    assert.deepEqual(state(out), outBefore, `${name}: the output folder`);
+    assert.deepEqual(state(outside), outsideBefore, `${name}: outside`);
+  }
+  {
+    // The output folder is itself a link to a folder outside.
+    const root = tempDir(t);
+    const outside = path.join(root, "outside");
+    fs.mkdirSync(outside);
+    const out = path.join(root, "out");
+    fs.symlinkSync(outside, out);
+    const { code, lines } = await run(out);
+    assert.equal(code, 1);
+    assert.deepEqual(lines, [
+      "vercel-build: refused: the folder of the public set is a symbolic link, which the public set does not follow",
+    ]);
+    assert.deepEqual(state(outside), []);
+    assert.equal(fs.readlinkSync(out), outside);
+  }
+  {
+    // The control: an output folder that holds only plain files and folders is built into, as one that does
+    // not exist is.
+    const root = tempDir(t);
+    const out = path.join(root, "out");
+    fs.mkdirSync(path.join(out, "css"), { recursive: true });
+    fs.writeFileSync(path.join(out, "css", "old.css"), "a{}\n");
+    const { code, lines } = await run(out);
+    assert.equal(code, 0);
+    assert.deepEqual(lines, ["vercel-build: done"]);
+    assert.ok(fs.existsSync(path.join(out, "index.html")));
+  }
+});

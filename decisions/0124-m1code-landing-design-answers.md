@@ -154,3 +154,17 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
 - **О22 (T3's finding I1, a correction of О16).** The 4 000-call bound of drawScene holds up to 3 700 px wide at scale 2 (measured by T3: the first window over 4 000 calls is 3 778 px wide and 639 px high; 3 920×630 already draws 4 047); above that up to 4 339 calls, the measured maximum. OS-3 asserts exactly this. O16's «3 920 px» is read as 3 700 px.
 - **О23 (T3's issue 3).** SEC L1 of review pass 2 (an array nested 6 900–9 700 deep that the projection can copy but JSON.stringify cannot write, 500 on the questionnaire) stays an open low: it depends on the stack depth and is not stable across runs, and the route keeps answering. It goes to the next fix round with the DESIGN-QA findings.
 
+## Addition 2026-11-20T18:32Z (ORCH, after the fix round 02c)
+
+- **О24 (CODE-FIXER 02c issue I1, the phone bar — G21).** The bar of the demo below 760 px is `position: sticky; bottom: 0`
+  in the question wrap instead of fixed: while the visitor scrolls it looks and behaves as the fixed bar of the look
+  (7.11), and at the end of the page it rests above the footer, so the footer links stay tappable (the defect LD-1 found;
+  the bar's height is reserved by the CSS itself). The page is about 85 px longer on a phone. This is accepted as inside
+  the finding and the look's section 12; the look's 7.11 and the code design's 4.7 get a one-line edit in the next edit
+  of the look (with J3/J5/J7's neighbours), and the difference goes on the owner's list (section 17 of the look) with a
+  phone snapshot. If DESIGN-QA or the owner reads it as a departure, the alternative is the fixed bar with a measured
+  padding-bottom under the footer.
+- **О25 (CODE-FIXER 02c issues I3, I4).** The mapping of an unwritable body lives in `demo.js` (`answer()`), not in `app.js`
+  (the design's 4.7 gets a line); an intake option that is a string or an array now answers 503 `demo_unavailable`
+  (before: 200 with an option without id and label; no test expected it).
+
