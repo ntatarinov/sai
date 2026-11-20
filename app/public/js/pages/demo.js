@@ -12,19 +12,24 @@
 // with «Повторить». Elements are made with createElement and texts set with textContent; the one
 // style write is the tail of the question panel.
 
-import { drawAvatar, readPalette } from "../../office/draw.js";
-import {
-  QUESTION_DESKS,
-  cameraOffset,
-  geometry,
-} from "../../office/stage-scene.js";
-import { mountStage } from "../../office/view.js";
+import { QUESTION_DESKS, cameraOffset } from "../../office/stage-scene.js";
+import { INERT, mountStage, pageGeometry } from "../../office/view.js";
 import { LANGS, TEXTS } from "../../shared/i18n/texts.js";
-import { applyTexts, currentLang, el, fill, mountLangSwitch } from "../dom.js";
-import { mountTheme, readChoice, themeFor } from "../theme.js";
+import {
+  REDUCED_MOTION,
+  applyTexts,
+  currentLang,
+  drawAvatars,
+  el,
+  fill,
+  mountLangSwitch,
+  syncKkNote,
+  text,
+  wordsFor,
+} from "../dom.js";
+import { drawnTheme, mountTheme } from "../theme.js";
 
 /** @typedef {{ readonly [key: string]: { readonly [lang: string]: string } }} Texts */
-/** @typedef {import("../../office/stage-scene.js").Words} Words */
 /** @typedef {import("../../office/view.js").StageView} StageView */
 /** @typedef {Window & typeof globalThis} PageWindow the window of the page, with its classes */
 
@@ -136,14 +141,6 @@ const ASTANA_MS = 5 * 60 * 60 * 1000;
 /** The ten items of the list «Чего Sai пока не делает», by their number in the texts module. */
 const NOT_BUILT = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-/** The four desks of the scene. */
-const DESKS = Object.freeze([1, 2, 3, 4]);
-
-const SYSTEM_DARK = "(prefers-color-scheme: dark)";
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-/** The narrow rule of the stage height: the query of the phone block of the style sheet (9.1). */
-const NARROW = "(max-width: 759px)";
-
 /**
  * The answer «Не знаю» in the memory of the page; it is never sent: the body of the result request
  * leaves its question out.
@@ -152,14 +149,6 @@ const NARROW = "(max-width: 759px)";
 const UNSURE = Symbol("unsure");
 
 /** @typedef {string | typeof UNSURE} Answer */
-
-/** A stage view that does nothing, for a page without the scene. */
-/** @type {StageView} */
-const NO_STAGE = Object.freeze({
-  tap() {},
-  setWords() {},
-  refresh() {},
-});
 
 /** No view on the page yet. */
 /** @type {Shown} */
@@ -181,98 +170,6 @@ const NOTHING_SHOWN = Object.freeze({
 
 /** @type {Texts} */
 const texts = TEXTS;
-
-/**
- * The text of a key in a language, else its Russian value (the text of the static page), else "".
- * @param {string} key
- * @param {string} lang
- * @returns {string}
- */
-function text(key, lang) {
-  if (!Object.hasOwn(texts, key)) return "";
-  const entry = texts[key];
-  if (Object.hasOwn(entry, lang)) return entry[lang];
-  return Object.hasOwn(entry, "ru") ? entry.ru : "";
-}
-
-/**
- * The words of the stage scene in a language (the code design 4.6): the four stage words, the four
- * role titles, the visitor's label and the two lines of the door sign.
- * @param {string} lang
- * @returns {Words}
- */
-function wordsFor(lang) {
-  return {
-    stages: DESKS.map((n) => text(`stage_${n}`, lang)),
-    roles: DESKS.map((n) => text(`role_${n}`, lang)),
-    you: text("you", lang),
-    doorName: text("brand_name", lang),
-    doorTagline: text("door_tagline", lang),
-  };
-}
-
-/**
- * The theme drawn now: the choice on the root element (none for «Авто») and the system setting, by
- * the rule of theme.js.
- * @param {Document} doc
- * @param {PageWindow} win
- * @returns {"light" | "dark"}
- */
-function drawnTheme(doc, win) {
-  const choice = readChoice(doc.documentElement.getAttribute("data-theme"));
-  return themeFor(choice, win.matchMedia(SYSTEM_DARK).matches);
-}
-
-/**
- * Draws every avatar of the page (canvas[data-avatar], the person of desk 1 to 4, 24 × 26 logical px
- * on a bitmap of that size) in a theme: on the demo, the speaker of the question shown. The palette
- * is read once, from the computed tokens of the root element, for all the avatars. A canvas that
- * cannot draw stays empty; no exception leaves this function.
- * @param {Document} doc
- * @param {PageWindow} win
- * @param {"light" | "dark"} theme
- * @returns {void}
- */
-function drawAvatars(doc, win, theme) {
-  const canvases = [...doc.querySelectorAll("canvas[data-avatar]")];
-  if (canvases.length === 0) return;
-  const computed = win.getComputedStyle(doc.documentElement);
-  const palette = readPalette(
-    (/** @type {string} */ name) => computed.getPropertyValue(name).trim(),
-    theme,
-  );
-  for (const canvas of canvases) {
-    if (!(canvas instanceof win.HTMLCanvasElement)) continue;
-    const desk = Number(canvas.getAttribute("data-avatar"));
-    try {
-      const ctx = canvas.getContext("2d");
-      if (ctx === null) continue;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawAvatar(ctx, desk, palette, 1);
-    } catch {
-      // the avatar stays as it is; the speaker keeps its texts
-    }
-  }
-}
-
-/**
- * The row of the footer that says the Kazakh translation is still being checked: the last element of
- * the footer while the page is in Kazakh, and no such row in another language.
- * @param {Document} doc
- * @param {string} lang
- * @returns {void}
- */
-function syncKkNote(doc, lang) {
-  const footer = doc.querySelector("body > footer");
-  if (footer === null) return;
-  const note = footer.querySelector(".kk-note");
-  if (lang !== "kk") {
-    if (note !== null) note.remove();
-    return;
-  }
-  const row = note ?? footer.appendChild(el("p", { cls: "kk-note" }));
-  row.textContent = text("kk_note", lang);
-}
 
 /**
  * The date of a moment in Astana time (UTC+5), as «dd.mm.yyyy», with no Intl (decision 0083 item 8).
@@ -412,31 +309,21 @@ async function fetchJson(win, url, init) {
 /**
  * Where the tail of the question panel points: the x of the asking desk on the screen, in CSS px from
  * the left edge of the window — (cx[desk] − 8) · s minus the camera offset (the look's 9.13 and
- * 9.14), by the geometry the stage view takes for this window. Null when no geometry fits.
+ * 9.14), by the geometry the stage view takes for this window (pageGeometry of view.js, the one
+ * place that reads it). Null when no geometry fits.
  * @param {Document} doc
- * @param {PageWindow} win
  * @param {number} desk
  * @returns {number | null}
  */
-function tailX(doc, win, desk) {
-  const root = doc.documentElement;
-  const s = Number.parseInt(
-    win.getComputedStyle(root).getPropertyValue("--px"),
-    10,
-  );
-  const geom = geometry({
-    s,
-    clientWidth: root.clientWidth,
-    innerHeight: win.innerHeight,
-    narrow: win.matchMedia(NARROW).matches,
-  });
+function tailX(doc, desk) {
+  const geom = pageGeometry(doc);
   if (geom === null) return null;
   const camera = cameraOffset(geom, desk);
   const cx = geom.cx[desk - 1];
   if (camera === null || cx === undefined) return null;
   const stage = doc.getElementById("stage");
   const left = stage === null ? 0 : stage.getBoundingClientRect().left;
-  return left + (cx - TAIL_BACK - camera) * s;
+  return left + (cx - TAIL_BACK - camera) * geom.s;
 }
 
 /**
@@ -507,7 +394,7 @@ function mountSurvey(doc, win, parts) {
   let shown = NOTHING_SHOWN;
 
   /** @param {string} key */
-  const t = (key) => text(key, lang);
+  const t = (key) => text(texts, key, lang);
 
   /** @param {string} message */
   const announce = (message) => {
@@ -576,7 +463,7 @@ function mountSurvey(doc, win, parts) {
   const placeTail = () => {
     const ask = shown.ask;
     if (ask === null) return;
-    const x = tailX(doc, win, shown.desk);
+    const x = tailX(doc, shown.desk);
     if (x === null) return;
     const box = ask.getBoundingClientRect();
     const at = Math.max(
@@ -1314,11 +1201,11 @@ function mountSurvey(doc, win, parts) {
 function start(doc, win) {
   let lang = currentLang(LANGS);
   /** @type {StageView} */
-  let stage = NO_STAGE;
+  let stage = INERT;
   const live = doc.getElementById("live");
 
   applyTexts(doc, texts, lang);
-  syncKkNote(doc, lang);
+  syncKkNote(doc, texts, lang);
 
   const theme = mountTheme(doc, {
     texts,
@@ -1330,7 +1217,7 @@ function start(doc, win) {
   });
 
   if (doc.getElementById("stage") !== null)
-    stage = mountStage(doc, { words: wordsFor(lang), page: "demo" });
+    stage = mountStage(doc, { words: wordsFor(texts, lang), page: "demo" });
 
   const main = doc.getElementById("main");
   const survey =
@@ -1343,10 +1230,10 @@ function start(doc, win) {
       lang = next;
       applyTexts(doc, texts, lang);
       theme.setLang(lang);
-      syncKkNote(doc, lang);
+      syncKkNote(doc, texts, lang);
       // The live region spoke in the earlier language; the page keeps one language.
       if (live !== null) live.textContent = "";
-      stage.setWords(wordsFor(lang));
+      stage.setWords(wordsFor(texts, lang));
       if (survey !== null) survey.setLang(lang);
     },
   });

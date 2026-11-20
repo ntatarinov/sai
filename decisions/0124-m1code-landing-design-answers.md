@@ -134,3 +134,18 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
   says, and the look's 7.9 follows in its next edit; the skip link wraps to two lines and its bottom 10.4 px show over
   the header on every page — it keeps one line or stays inside its own box until it gets the focus.
 
+## Addition 2026-11-20T12:31Z (ORCH, after review pass 1: SECURITY-REVIEWER PASS with L1, L2; REVIEWER FAIL with H1, H2, M1, M2, L1, L2)
+
+- **О19 (REVIEWER H1, the layout of the demo's speaker below 360 px — G21).** The О18 remedy is not enough: the first
+  word «Руководитель» alone is wider than its column at 320 px. Below 360 px the speaker block (avatar, role title, stage
+  word) takes its own full row above the question, and «‹ Назад» moves to the progress row; from 360 px the layout of the
+  look stays. The title breaks only at spaces. It goes on the owner's list of the look (section 17 of the look) for G21
+  with a phone snapshot; the look's 7.9 follows in its next edit, before DESIGN-QA.
+- **О20 (REVIEWER L1).** The live region of how.html announces the new place when «Вы» stands, after the walk (the
+  look's 9.16), not at the tap; with reduced motion «Вы» is placed at once, so the announcement comes at once.
+- **О21 (SECURITY-REVIEWER issue I1).** The string «ҚАЗ» stays in the public texts module: it is the label of the kk
+  button (the value of lang_kk in every language, as REQ-111 criterion 9 (c) allows), not a kk text, and no public page
+  shows the kk button (G9).
+- H2, M1, M2, L2 of REVIEWER and L1, L2 of SECURITY-REVIEWER are fixed by CODE-FIXER as their findings say (the lows
+  where the fix is small and safe); then both reviews run again.
+

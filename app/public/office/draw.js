@@ -137,9 +137,9 @@ const C = Object.freeze({
 });
 
 /**
- * The four people, desk 1 to desk 4 (the look's 9.6): skin and its shade, hair and its style, the
+ * The four people, desk 1 to desk 4 (the look's 9.6): skin and its shade, hair and its hairdo, the
  * shirt with its light top rows and its dark bottom rows.
- * @typedef {{ skin: string, skinShade: string, hair: string, style: "long" | "short" | "cap" | "bun", shirt: string, shirtLight: string, shirtDark: string }} Look
+ * @typedef {{ skin: string, skinShade: string, hair: string, hairdo: "long" | "short" | "cap" | "bun", shirt: string, shirtLight: string, shirtDark: string }} Look
  */
 /** @type {readonly Look[]} */
 const PEOPLE = Object.freeze([
@@ -147,7 +147,7 @@ const PEOPLE = Object.freeze([
     skin: "#f0cfae",
     skinShade: "#ceb296",
     hair: "#2b1d17",
-    style: /** @type {"long"} */ ("long"),
+    hairdo: /** @type {"long"} */ ("long"),
     shirt: "#e0731f",
     shirtLight: "#e68c47",
     shirtDark: "#af5a18",
@@ -156,7 +156,7 @@ const PEOPLE = Object.freeze([
     skin: "#e7bd96",
     skinShade: "#c7a381",
     hair: "#1f1a17",
-    style: /** @type {"short"} */ ("short"),
+    hairdo: /** @type {"short"} */ ("short"),
     shirt: "#1f7a8c",
     shirtLight: "#4792a1",
     shirtDark: "#185f6d",
@@ -165,7 +165,7 @@ const PEOPLE = Object.freeze([
     skin: "#f0cfae",
     skinShade: "#ceb296",
     hair: "#6a4a2c",
-    style: /** @type {"cap"} */ ("cap"),
+    hairdo: /** @type {"cap"} */ ("cap"),
     shirt: "#c99a2e",
     shirtLight: "#d3ac54",
     shirtDark: "#9d7824",
@@ -174,7 +174,7 @@ const PEOPLE = Object.freeze([
     skin: "#e7bd96",
     skinShade: "#c7a381",
     hair: "#241915",
-    style: /** @type {"bun"} */ ("bun"),
+    hairdo: /** @type {"bun"} */ ("bun"),
     shirt: "#2f5560",
     shirtLight: "#54747d",
     shirtDark: "#25424b",
@@ -471,7 +471,7 @@ function rgba(colour, alpha) {
 /**
  * A person at a desk, in the pose «attend» (leaning 1 px towards the visitor, the mouth open) or
  * «type», with the eyes open (the look's 9.6): the chair, the torso and the arms, the neck and the
- * head, the hair by its style, the face. px is the centre of the person, dt the top of the desk.
+ * head, the hair by its hairdo, the face. px is the centre of the person, dt the top of the desk.
  * @param {Fill} R
  * @param {Readonly<Record<string, string>>} P
  * @param {number} px
@@ -495,16 +495,16 @@ function drawPerson(R, P, px, dt, look, attend) {
   R(px - 4, head, 8, 9, skin);
   R(px - 4, head + 8, 8, 1, skinShade);
   R(px - 4, head - 1, 8, 4, hair);
-  if (look.style === "short") {
+  if (look.hairdo === "short") {
     R(px - 5, head + 1, 1, 3, hair);
     R(px + 4, head + 1, 1, 3, hair);
-  } else if (look.style === "long") {
+  } else if (look.hairdo === "long") {
     R(px - 5, head, 1, 11, hair);
     R(px + 4, head, 1, 11, hair);
     R(px - 6, head + 8, 2, 4, hair);
     R(px + 4, head + 8, 2, 4, hair);
     R(px - 5, head - 1, 10, 3, hair);
-  } else if (look.style === "bun") {
+  } else if (look.hairdo === "bun") {
     R(px - 2, head - 4, 4, 3, hair);
     R(px - 3, head - 2, 6, 1, hair);
     R(px - 5, head + 1, 1, 3, hair);

@@ -127,27 +127,33 @@ function refusalCode(reason) {
 export function demoRoutes({ intake, langs }) {
   /**
    * The questionnaire, built field by field: no help text, rule, point, condition or solution text, and
-   * no field that a file adds.
+   * no field that a file adds. An intake that loadIntake accepted but that this projection cannot read
+   * (an option that is not an object, a value nested too deep to copy) answers demo_unavailable, as the
+   * result route answers for the same intake.
    * @param {import("./index.js").RouteRequest} req
    * @returns {import("./index.js").RouteAnswer}
    */
   const questionnaire = ({ query }) => {
     if (!intake.ok) throw new HttpError("demo_unavailable");
     const lang = pickLang(query.get("lang"), null, langs);
-    const view = inLanguage(intake.tenant, lang);
+    /** @type {Array<{ id: unknown, title: unknown, options: Array<{ id: unknown, label: unknown }> }>} */
+    let questions;
+    try {
+      const view = inLanguage(intake.tenant, lang);
+      questions = view.questions.map((/** @type {any} */ q) => ({
+        id: q.id,
+        title: q.title,
+        options: q.options.map((/** @type {any} */ o) => ({
+          id: o.id,
+          label: o.label,
+        })),
+      }));
+    } catch {
+      throw new HttpError("demo_unavailable");
+    }
     return {
       status: 200,
-      body: {
-        lang,
-        questions: view.questions.map((/** @type {any} */ q) => ({
-          id: q.id,
-          title: q.title,
-          options: q.options.map((/** @type {any} */ o) => ({
-            id: o.id,
-            label: o.label,
-          })),
-        })),
-      },
+      body: { lang, questions },
     };
   };
 

@@ -1,12 +1,18 @@
 // The page helpers of the public pages (the code design of the public landing, 4.5): elements made
-// with document.createElement and texts set with textContent, the texts of a page set from the texts
-// module, the two one-word preferences of the reader's own browser, and the language switch. The
+// with document.createElement and texts set with textContent, the text of a key in a language, the
+// texts of a page set from the texts module, the words of the stage scene, the row of the footer
+// while the page is in Kazakh, the avatars of the people, the media queries of the pages and the one
+// way to follow a change of them, the two one-word preferences of the reader's own browser, and the
+// language switch. Each of these is written here once, for every page script and the stage. The
 // module touches document, window, history and localStorage only inside its functions, so it loads
-// in Node.
+// in Node (the drawing it imports is pure).
 
+import { drawAvatar, readPalette } from "../office/draw.js";
 import { pickLang } from "../shared/i18n/lang.js";
 
 /** @typedef {{ readonly [key: string]: { readonly [lang: string]: string } }} Texts */
+/** @typedef {import("../office/stage-scene.js").Words} Words */
+/** @typedef {Window & typeof globalThis} PageWindow the window of the page, with its classes */
 
 /**
  * @typedef {object} ElOptions
@@ -24,6 +30,18 @@ const PREF_VALUE = /^[a-z]{2,5}$/;
 
 /** A placeholder of a text: a name of Latin letters and "_" in braces. */
 const PLACEHOLDER = /\{([A-Za-z_]+)\}/g;
+
+/** The media query of the system's dark setting, which «Авто» follows (the look 6.1). */
+export const SYSTEM_DARK = "(prefers-color-scheme: dark)";
+
+/** The media query of the reader's reduced motion (the look 10). */
+export const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+/** The narrow rule of the stage height: the query of the phone block of the style sheet (the look 9.1). */
+export const NARROW = "(max-width: 759px)";
+
+/** The four desks of the scene, which are also the four steps of «how it works». */
+export const DESKS = Object.freeze([1, 2, 3, 4]);
 
 /**
  * The name in ASCII lower case: only A-Z change, as a browser compares attribute names.
@@ -74,16 +92,19 @@ export function fill(template, values) {
 }
 
 /**
- * The text of a key in a language, or null when the texts module holds no such key or language.
+ * The text of a key in a language: its value there, else its Russian value (the text of the static
+ * page), else "" (also for a key the texts module does not hold). The one rule of the pages, the
+ * theme button and the labels of the stage.
  * @param {Texts} texts
- * @param {string | null} key
+ * @param {string} key
  * @param {string} lang
- * @returns {string | null}
+ * @returns {string}
  */
-function textOf(texts, key, lang) {
-  if (key === null || !Object.hasOwn(texts, key)) return null;
+export function text(texts, key, lang) {
+  if (!Object.hasOwn(texts, key)) return "";
   const entry = texts[key];
-  return Object.hasOwn(entry, lang) ? entry[lang] : null;
+  if (Object.hasOwn(entry, lang)) return entry[lang];
+  return Object.hasOwn(entry, "ru") ? entry.ru : "";
 }
 
 /**
@@ -97,15 +118,99 @@ function textOf(texts, key, lang) {
  */
 export function applyTexts(root, texts, lang) {
   for (const node of root.querySelectorAll("[data-t]")) {
-    const value = textOf(texts, node.getAttribute("data-t"), lang);
-    if (value !== null) node.textContent = value;
+    const key = node.getAttribute("data-t");
+    if (key !== null && Object.hasOwn(texts, key))
+      node.textContent = text(texts, key, lang);
   }
   for (const node of root.querySelectorAll("[data-t-aria]")) {
-    const value = textOf(texts, node.getAttribute("data-t-aria"), lang);
-    if (value !== null) node.setAttribute("aria-label", value);
+    const key = node.getAttribute("data-t-aria");
+    if (key !== null && Object.hasOwn(texts, key))
+      node.setAttribute("aria-label", text(texts, key, lang));
   }
   const doc = "documentElement" in root ? root : root.ownerDocument;
   doc.documentElement.lang = lang;
+}
+
+/**
+ * The words of the stage scene in a language (the code design 4.6): the four stage words, the four
+ * role titles, the visitor's label and the two lines of the door sign.
+ * @param {Texts} texts
+ * @param {string} lang
+ * @returns {Words}
+ */
+export function wordsFor(texts, lang) {
+  return {
+    stages: DESKS.map((n) => text(texts, `stage_${n}`, lang)),
+    roles: DESKS.map((n) => text(texts, `role_${n}`, lang)),
+    you: text(texts, "you", lang),
+    doorName: text(texts, "brand_name", lang),
+    doorTagline: text(texts, "door_tagline", lang),
+  };
+}
+
+/**
+ * The row of the footer that says the Kazakh translation is still being checked: the last element of
+ * the footer while the page is in Kazakh, and no such row in another language.
+ * @param {Document} doc
+ * @param {Texts} texts
+ * @param {string} lang
+ * @returns {void}
+ */
+export function syncKkNote(doc, texts, lang) {
+  const footer = doc.querySelector("body > footer");
+  if (footer === null) return;
+  const note = footer.querySelector(".kk-note");
+  if (lang !== "kk") {
+    if (note !== null) note.remove();
+    return;
+  }
+  const row = note ?? footer.appendChild(el("p", { cls: "kk-note" }));
+  row.textContent = text(texts, "kk_note", lang);
+}
+
+/**
+ * Draws every avatar of the page (canvas[data-avatar], the person of desk 1 to 4, 24 × 26 logical px
+ * on a bitmap of that size) in a theme: the team cards of the landing, the speaker of the demo's
+ * question. The palette is read once, from the computed tokens of the root element, for all the
+ * avatars. A canvas that cannot draw stays empty; no exception leaves this function.
+ * @param {Document} doc
+ * @param {PageWindow} win
+ * @param {"light" | "dark"} theme
+ * @returns {void}
+ */
+export function drawAvatars(doc, win, theme) {
+  const canvases = [...doc.querySelectorAll("canvas[data-avatar]")];
+  if (canvases.length === 0) return;
+  const computed = win.getComputedStyle(doc.documentElement);
+  const palette = readPalette(
+    (/** @type {string} */ name) => computed.getPropertyValue(name).trim(),
+    theme,
+  );
+  for (const canvas of canvases) {
+    if (!(canvas instanceof win.HTMLCanvasElement)) continue;
+    const desk = Number(canvas.getAttribute("data-avatar"));
+    try {
+      const ctx = canvas.getContext("2d");
+      if (ctx === null) continue;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawAvatar(ctx, desk, palette, 1);
+    } catch {
+      // the avatar stays as it is; its card or speaker keeps its texts
+    }
+  }
+}
+
+/**
+ * Calls fn when a media query starts or stops matching: by addEventListener, or by addListener where
+ * the list has no addEventListener (older Safari).
+ * @param {MediaQueryList} query
+ * @param {() => void} fn
+ * @returns {void}
+ */
+export function onMediaChange(query, fn) {
+  if (typeof query.addEventListener === "function")
+    query.addEventListener("change", fn);
+  else if (typeof query.addListener === "function") query.addListener(fn);
 }
 
 /**

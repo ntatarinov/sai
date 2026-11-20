@@ -13,9 +13,12 @@
 // The only style writes are these, on the stage element (the closed list of the code design): the
 // custom properties --H, --rw, --dt, --wh and --cx1 ... --cx4 when the geometry changes and --you
 // when the visitor's place changes, which the style sheet places the labels and the canvas by; the
-// width and height attributes of the canvas; and scrollLeft of the stage for the camera.
+// width and height attributes of the canvas; and scrollLeft of the stage for the camera. The geometry
+// of the real page is read in one place, pageReads, for the view and for the tail of the demo's
+// question panel (pageGeometry).
 
-import { readChoice, themeFor } from "../js/theme.js";
+import { NARROW, REDUCED_MOTION, onMediaChange } from "../js/dom.js";
+import { drawnTheme } from "../js/theme.js";
 import { drawScene, readPalette } from "./draw.js";
 import { stageMap } from "./grid.js";
 import { createLabels } from "./labels.js";
@@ -83,16 +86,15 @@ const STEP_FRAME_MS = 160;
 const CAMERA_MS = 700;
 /** The figure of the visitor is 22 logical px tall (9.8). */
 const FIGURE_HEIGHT = 22;
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-/** The narrow rule of the stage height: the query of the phone block of the style sheet (9.1). */
-const NARROW = "(max-width: 759px)";
-const SYSTEM_DARK = "(prefers-color-scheme: dark)";
 /** @type {Moment} */
 const LOAD = Object.freeze({ kind: "load" });
 
-/** A view that does nothing: for a page without a stage, or a stage that could not be set up. */
+/**
+ * A view that does nothing: for a page without a stage, or a stage that could not be set up; a page
+ * script holds it until its stage is mounted.
+ */
 /** @type {StageView} */
-const INERT = Object.freeze({
+export const INERT = Object.freeze({
   tap() {},
   setWords() {},
   refresh() {},
@@ -131,14 +133,51 @@ function sameGeometry(a, b) {
 }
 
 /**
- * Calls fn when a media query starts or stops matching.
- * @param {MediaQueryList} query
- * @param {() => void} fn
+ * The geometry of the stage for the window now, by the reads of the scale and of the window and by
+ * whether the narrow query matches.
+ * @param {{ px: () => number, viewport: () => { clientWidth: number, innerHeight: number } }} reads
+ * @param {MediaQueryList} narrow
+ * @returns {Geometry | null}
  */
-function onChange(query, fn) {
-  if (typeof query.addEventListener === "function")
-    query.addEventListener("change", fn);
-  else if (typeof query.addListener === "function") query.addListener(fn);
+function measureWith(reads, narrow) {
+  const { clientWidth, innerHeight } = reads.viewport();
+  return geometry({
+    s: reads.px(),
+    clientWidth,
+    innerHeight,
+    narrow: narrow.matches,
+  });
+}
+
+/**
+ * The reads of the real page that the stage geometry is made of: the scale s (the integer of the
+ * computed --px) and the width of the root element and the height of the window.
+ * @param {Document} doc
+ * @param {Window} win
+ * @returns {{ px: () => number, viewport: () => { clientWidth: number, innerHeight: number } }}
+ */
+function pageReads(doc, win) {
+  const root = doc.documentElement;
+  return {
+    px: () =>
+      Number.parseInt(win.getComputedStyle(root).getPropertyValue("--px"), 10),
+    viewport: () => ({
+      clientWidth: root.clientWidth,
+      innerHeight: win.innerHeight,
+    }),
+  };
+}
+
+/**
+ * The geometry of the stage of the real page for the window now, read as the stage view reads it;
+ * null when no geometry fits. The tail of the demo's question panel points by it.
+ * @param {Document} doc
+ * @returns {Geometry | null}
+ */
+export function pageGeometry(doc) {
+  const win = doc.defaultView;
+  if (win === null) return null;
+  return measureWith(pageReads(doc, win), win.matchMedia(NARROW));
 }
 
 /**
@@ -206,15 +245,7 @@ function makeView(deps) {
   };
 
   /** The geometry of the stage for the window now, or null. */
-  const measure = () => {
-    const { clientWidth, innerHeight } = deps.viewport();
-    return geometry({
-      s: deps.px(),
-      clientWidth,
-      innerHeight,
-      narrow: narrow.matches,
-    });
-  };
+  const measure = () => measureWith(deps, narrow);
 
   /**
    * Takes a geometry: the stage map, the visitor standing at the place of the state taken (no
@@ -511,7 +542,7 @@ function makeView(deps) {
     }
   });
   deps.onResize(resize);
-  onChange(reduce, () => {
+  onMediaChange(reduce, () => {
     try {
       if (failed || !started || !reduce.matches) return;
       if (walker === null || geom === null || state === null) return;
@@ -551,8 +582,10 @@ export function createStageView(deps) {
 /**
  * Mounts the stage of a page (index.html, how.html, demo.html) on the real page: the canvas
  * #stage-canvas inside the stage #stage, the labels in #stage-labels, the text list #stage-desks and
- * #stage-you, the live region #live. The page calls it after it has set its texts and its theme. A
- * page without the stage gets a view that does nothing.
+ * #stage-you, and on how.html the live region #live, which says the new place when the visitor stands
+ * (the look's 9.16; on the demo the survey says what changed there, the look's 7.21). The page calls
+ * it after it has set its texts and its theme. A page without the stage gets a view that does
+ * nothing.
  * @param {Document} doc
  * @param {{ words: Words, page: "landing" | "how" | "demo" }} options
  * @returns {StageView}
@@ -572,10 +605,10 @@ export function mountStage(doc, { words, page }) {
       layer: doc.getElementById("stage-labels"),
       list: doc.getElementById("stage-desks"),
       youLine: doc.getElementById("stage-you"),
-      live: doc.getElementById("live"),
+      live: page === "how" ? doc.getElementById("live") : null,
       doc,
     });
-    const system = win.matchMedia(SYSTEM_DARK);
+    const reads = pageReads(doc, win);
     return createStageView({
       canvas,
       stage,
@@ -590,17 +623,9 @@ export function mountStage(doc, { words, page }) {
       onVisibility: (fn) => doc.addEventListener("visibilitychange", fn),
       onResize: (fn) => win.addEventListener("resize", fn),
       token: (name) => win.getComputedStyle(root).getPropertyValue(name).trim(),
-      px: () =>
-        Number.parseInt(
-          win.getComputedStyle(root).getPropertyValue("--px"),
-          10,
-        ),
-      viewport: () => ({
-        clientWidth: root.clientWidth,
-        innerHeight: win.innerHeight,
-      }),
-      theme: () =>
-        themeFor(readChoice(root.getAttribute("data-theme")), system.matches),
+      px: reads.px,
+      viewport: reads.viewport,
+      theme: () => drawnTheme(doc, win),
     });
   } catch {
     return INERT;

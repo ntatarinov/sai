@@ -1,14 +1,16 @@
 // The labels of the stage scene (the code design of the public landing, 4.6; the look 9.7, 9.8 and
 // 9.16): the door sign, the label of the visitor and the four desk plates over the canvas, and the
-// text list right after the stage, which says the four desks and where the visitor stands. Every
-// element is made with createElement and every text is set with textContent. This module places no
-// label: the style sheet places each one by the custom properties of the stage element, and only
-// the stage view writes those. The words of the labels are the scene's; the lines of the text list
-// are the texts module's, in the language of the page (the lang of the root element, which the
-// page sets before it shows the scene in a language). A page module: it touches only the elements
-// and the document it is given, and nothing at load.
+// text list right after the stage, which says the four desks and where the visitor stands. When the
+// visitor stands at a new desk, the live region it is given says that desk (the look's 9.16: the new
+// place after a walk, or at once when the visitor is placed with no walk). Every element is made with
+// createElement and every text is set with textContent. This module places no label: the style sheet
+// places each one by the custom properties of the stage element, and only the stage view writes
+// those. The words of the labels are the scene's; the lines of the text list and of the live region
+// are the texts module's, in the language of the page (the lang of the root element, which the page
+// sets before it shows the scene in a language). A page module: it touches only the elements and the
+// document it is given, and nothing at load.
 
-import { fill } from "../js/dom.js";
+import { fill, text } from "../js/dom.js";
 import { TEXTS } from "../shared/i18n/texts.js";
 import { youX } from "./stage-scene.js";
 
@@ -23,7 +25,8 @@ import { youX } from "./stage-scene.js";
  *   sign, of the visitor's label and of the plates, the current plate, and the four desk lines of
  *   the text list; it keeps the geometry, by which moveYou knows the places
  * @property {(x: number) => void} moveYou the visitor stands at x: when x is the door or the place
- *   at a desk, the place line of the text list says it
+ *   at a desk, the place line of the text list says it, and a desk that is a new place after the
+ *   first one is said in the live region
  * @property {(text: string) => void} say writes the live region
  */
 
@@ -33,23 +36,21 @@ import { youX } from "./stage-scene.js";
  * @property {HTMLElement | null} layer the layer over the canvas (#stage-labels)
  * @property {HTMLElement | null} list the list of the four desks (#stage-desks)
  * @property {HTMLElement | null} youLine the line where the visitor stands (#stage-you)
- * @property {HTMLElement | null} live the live region (#live)
+ * @property {HTMLElement | null} live the live region (#live), or null where the page's own script
+ *   says what changed
  * @property {Document} doc the document the elements are made in
  */
 
-/** @typedef {"desk_line" | "you_at_door" | "you_at_desk"} LineKey */
+/** @typedef {"desk_line" | "you_at_door" | "you_at_desk" | "live_desk"} LineKey */
 
 /**
- * A line of the text list in a language: the value of its key there, else its Russian value.
+ * A line of the text list or of the live region in a language (the rule of dom.js text).
  * @param {LineKey} key
  * @param {string} lang
  * @returns {string}
  */
 function lineText(key, lang) {
-  /** @type {Readonly<Record<string, string>>} */
-  const entry = TEXTS[key];
-  if (Object.hasOwn(entry, lang)) return entry[lang];
-  return Object.hasOwn(entry, "ru") ? entry.ru : "";
+  return text(TEXTS, key, lang);
 }
 
 /**
@@ -231,8 +232,20 @@ export function createLabels({ layer, list, youLine, live, doc }) {
       if (geometry === null || shown === null) return;
       const at = placeAt(geometry, x);
       if (at === null) return;
+      const before = place;
       place = at;
-      writePlace(pageLang());
+      const lang = pageLang();
+      writePlace(lang);
+      // The visitor stands at a new desk: the live region says it. Not the first place (the load),
+      // not the same place again (a frame after a change of the theme, the language or the size).
+      if (before !== null && at !== before && at !== "door")
+        write(
+          live,
+          fill(lineText("live_desk", lang), {
+            n: at,
+            stage: shown.desks[at - 1].stage,
+          }),
+        );
     },
 
     /** @param {string} text */

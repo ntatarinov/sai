@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { writePublicSet } from "./public-set.js";
+import { refuseLinks, writePublicSet } from "./public-set.js";
 
 // vercel-build (ARCH §19.6, REQ-109 criterion 8, REQ-111 criterion 9, decisions/0116 О18; design
 // docs/design/REQ-111-112-public-landing.md, 4.11): with SITE_GATE empty, the open build — migrate (only
@@ -11,9 +11,11 @@ import { writePublicSet } from "./public-set.js";
 // scripts/public-set.js written into the output folder (on Vercel public/ itself): no examples.html, no
 // order text and no Kazakh text (gates G8 and G9), every other file byte for byte. It writes in place, so
 // it refuses to run inside a git working tree, as the closed build does, and a second run on its own
-// output changes nothing. A refusal of the public set (a page whose markers cannot be paired, a texts
-// module that cannot be imported, a guard of the output) ends with exit 1 and the line
-// `vercel-build: refused: <its message>`, which names the file. runBuild is async
+// output changes nothing. A refusal of the public set (a symbolic link in the folder, a page whose markers
+// cannot be paired, a texts module that cannot be imported, a guard of the output) ends with exit 1 and the
+// line `vercel-build: refused: <its message>`, which names the file. Into another output folder, a source
+// that holds a symbolic link is refused the same way before the copy, so the copy never makes a link that
+// leads back into the source. runBuild is async
 // (it imports the texts module of the upload): it returns a promise of the exit code, which the CLI
 // awaits. With SITE_GATE non-empty: no database call, no migrate; the output folder holds only
 // index.html, the bytes of the gate page.
@@ -159,10 +161,14 @@ export async function runBuild(d) {
     d.log("vercel-build: refused: check-public found forbidden items");
     return 1;
   }
-  // (4) The copy into another output folder, (5) the public set in the output folder. A refusal of the
-  // public set (an Error naming the file) or a failure of the copy ends with exit 1 and its message.
+  // (4) The copy into another output folder, of a source with no symbolic link, (5) the public set in the
+  // output folder. A refusal (an Error naming the file) or a failure of the copy ends with exit 1 and its
+  // message.
   try {
-    if (!inPlace) fs.cpSync(d.publicDir, d.outDir, { recursive: true });
+    if (!inPlace) {
+      refuseLinks(d.publicDir);
+      fs.cpSync(d.publicDir, d.outDir, { recursive: true });
+    }
     await writePublicSet(d.outDir);
   } catch (err) {
     d.log(

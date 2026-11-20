@@ -11,13 +11,16 @@ import { PUBLIC_LANGS } from "../public/shared/i18n/lang.js";
 // kinds. A region is the lines from a marker line <!-- sai:order --> or <!-- sai:kk --> to the end marker
 // line of its kind, both included. Every other file stays byte for byte.
 //
-// Protection in the same operation as the action (4.11, section 7 of the design): the texts module is
-// imported and the markers of every page are read as one sequence before anything is written, so a texts
-// module that cannot be imported or exports other names, and a page that cannot be read as regions, are
-// refused with an Error naming the file (and for a page the line) while the folder is as it was; the cut
-// takes exactly the regions read; then the output is read again, failing closed with an Error naming the
-// file on a marker of a closed kind, an examples.html reference or an element data-lang="kk" left. A second
-// run on its own output changes nothing, and with the gates open the output is the source byte for byte.
+// Protection in the same operation as the action (4.11, section 7 of the design): first every entry of the
+// folder is read by lstat, and a symbolic link anywhere in it (a page, the texts module, a folder,
+// examples.html) is refused with an Error naming it, so no read, write or removal goes through a link and
+// out of the folder; then the texts module is imported and the markers of every page are read as one
+// sequence before anything is written, so a texts module that cannot be imported or exports other names,
+// and a page that cannot be read as regions, are refused with an Error naming the file (and for a page the
+// line) while the folder is as it was; the cut takes exactly the regions read; then the output is read
+// again, failing closed with an Error naming the file on a marker of a closed kind, an examples.html
+// reference or an element data-lang="kk" left. A second run on its own output changes nothing, and with
+// the gates open the output is the source byte for byte.
 
 /**
  * Gate G8, the order texts: false while the owner's answer is «б» (built and checked here, left out of
@@ -162,8 +165,39 @@ export function renderTexts(langs, texts) {
 }
 
 /**
+ * Refuses a folder that is a symbolic link or holds one at any depth: the public set reads, writes and
+ * removes only the plain files and folders of its own folder, so nothing it does can leave the folder
+ * through a link. Every entry is read by lstat (a link is never followed); the first link, in a fixed
+ * order, throws an Error naming its path in the folder ("/" separators).
+ * @param {string} dir
+ * @returns {void}
+ */
+export function refuseLinks(dir) {
+  if (fs.lstatSync(dir).isSymbolicLink())
+    throw new Error(
+      "the folder of the public set is a symbolic link, which the public set does not follow",
+    );
+  /** @param {string} abs @param {string} rel */
+  const walk = (abs, rel) => {
+    const entries = fs
+      .readdirSync(abs, { withFileTypes: true })
+      .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    for (const e of entries) {
+      const r = rel === "" ? e.name : `${rel}/${e.name}`;
+      if (e.isSymbolicLink())
+        throw new Error(
+          `${r}: a symbolic link, which the public set does not follow`,
+        );
+      if (e.isDirectory()) walk(path.join(abs, e.name), r);
+    }
+  };
+  walk(dir, "");
+}
+
+/**
  * The .html files of `dir` and of its folders (the extension in any letter case), as paths with "/"
- * separators, in a fixed order; a link to a folder is not followed.
+ * separators, in a fixed order; a link to a folder is not followed (and writePublicSet has refused any
+ * link before).
  * @param {string} dir
  * @returns {string[]}
  */
@@ -202,16 +236,19 @@ function present(abs) {
 
 /**
  * Writes the public set in place in the folder `dir` (the upload, or a copy of app/public), in the order of
- * 4.11: (1) import the texts module; (2) read the regions of every page; (3) write the texts module of the
- * public languages without the order_ keys, only when that drops a language or a key; (4) remove
- * examples.html; (5) cut the regions of the closed kinds from every page; (6) read the output again. Steps
- * (1) and (2) refuse before anything is written; every refusal is an Error naming the file.
+ * 4.11, after a refusal of any symbolic link in the folder (refuseLinks): (1) import the texts module; (2)
+ * read the regions of every page; (3) write the texts module of the public languages without the order_
+ * keys, only when that drops a language or a key; (4) remove examples.html; (5) cut the regions of the
+ * closed kinds from every page; (6) read the output again. The link refusal and steps (1) and (2) refuse
+ * before anything is read through a link or written; every refusal is an Error naming the file.
  * @param {string} dir
  * @param {{ langs: readonly string[], orderTexts: boolean }} [gates]
  * @returns {Promise<{ changed: string[], removed: string[] }>} the paths in `dir` ("/" separators) of the
  *   files written and of the files removed
  */
 export async function writePublicSet(dir, gates = GATES) {
+  // No symbolic link anywhere in the folder: every later step reads and writes plain files only.
+  refuseLinks(dir);
   // (1) The texts module, imported by its file URL with the sha256 of its bytes as the query, so the
   // import reads the bytes this folder holds now, not a module an earlier run of the process cached.
   const textsAbs = path.join(dir, TEXTS_FILE);

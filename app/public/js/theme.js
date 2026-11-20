@@ -1,10 +1,10 @@
 // The theme of the public pages (the code design of the public landing, 4.5; the look 6.1 and 7.2):
 // the pure part — the reader's choice and the theme it gives — and the page part, the one theme
-// button. «Авто» is no data-theme attribute on the root element, so tokens.css follows the system;
-// «Светлая» and «Тёмная» set the attribute. The pure part reads no document and no window, and the
-// module loads in Node.
+// button and the theme drawn now, which the page scripts and the stage read. «Авто» is no data-theme
+// attribute on the root element, so tokens.css follows the system; «Светлая» and «Тёмная» set the
+// attribute. The pure part reads no document and no window, and the module loads in Node.
 
-import { pref } from "./dom.js";
+import { SYSTEM_DARK, onMediaChange, pref, text } from "./dom.js";
 
 /** @typedef {"auto" | "light" | "dark"} Choice */
 /** @typedef {"light" | "dark"} Theme */
@@ -12,9 +12,6 @@ import { pref } from "./dom.js";
 
 /** The positions of the theme button, in the order of its cycle. */
 export const CHOICES = Object.freeze(["auto", "light", "dark"]);
-
-/** The media query of the system's dark setting. */
-const SYSTEM_DARK = "(prefers-color-scheme: dark)";
 
 /**
  * The choice a stored value names: exactly "light" or "dark"; anything else is "auto".
@@ -50,16 +47,14 @@ export function nextChoice(choice) {
 }
 
 /**
- * The text of a key in a language, or "" when the texts module holds no such key or language.
- * @param {Texts} texts
- * @param {string} key
- * @param {string} lang
- * @returns {string}
+ * The theme drawn now: the choice on the root element (none for «Авто») and the system setting.
+ * @param {Document} doc
+ * @param {Window} win
+ * @returns {Theme}
  */
-function textOf(texts, key, lang) {
-  if (!Object.hasOwn(texts, key)) return "";
-  const entry = texts[key];
-  return Object.hasOwn(entry, lang) ? entry[lang] : "";
+export function drawnTheme(doc, win) {
+  const choice = readChoice(doc.documentElement.getAttribute("data-theme"));
+  return themeFor(choice, win.matchMedia(SYSTEM_DARK).matches);
 }
 
 /**
@@ -83,12 +78,12 @@ export function mountTheme(doc, { texts, lang, onChange }) {
   let drawn = themeFor(choice, system.matches);
 
   const write = () => {
-    const position = textOf(texts, `theme_${choice}`, current);
+    const position = text(texts, `theme_${choice}`, current);
     if (label) label.textContent = position;
     if (button)
       button.setAttribute(
         "aria-label",
-        `${textOf(texts, "theme_name", current)}: ${position}`,
+        `${text(texts, "theme_name", current)}: ${position}`,
       );
   };
   const apply = () => {
@@ -109,7 +104,7 @@ export function mountTheme(doc, { texts, lang, onChange }) {
       pref.write("sai-theme", choice);
       apply();
     });
-  system.addEventListener("change", () => {
+  onMediaChange(system, () => {
     if (choice === "auto") apply();
   });
   return {
