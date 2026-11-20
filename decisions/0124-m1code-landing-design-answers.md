@@ -241,3 +241,11 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
   (T7); a top-level «z.txt» in VB-6 so the sort of the snapshot helper is pinned (T8). The counts of the design's
   section 10 (T4 and the REVIEWER's L2) and the look's 7.9 (380 px), 7.11 (sticky) are edited before the release gate.
 
+## Addition 2026-11-20T22:01Z (ORCH, the end of the loop after DESIGN-QA)
+
+- **О39.** Steps 3 and 4 of the loop after DESIGN-QA PASSED at pass 2 on tag base/M1CODE-20261119-01-review5 (step 03e
+  SECURITY-REVIEWER no findings, about 38 000 trials; step 04e REVIEWER PASS, low L5). L5 (the e2e row reads 379 and 390 px
+  but not 380–389 px, so a threshold edit up to 389 px stays green) is accepted in writing: the owner's rule is «below 380»
+  (О36), the tests pin it from the 379 side and at 390 px, and a deliberate edit of the threshold is a visible change of
+  the look that DESIGN-QA's measure catches. The open named limit О23 is closed by id() (О35).
+

@@ -1,0 +1,111 @@
+{
+  "handoff_id": "step03e-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "03e",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M1CODE-20261119-01/step-03e-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/quality-bar.md",
+      ".claude/agents/security-reviewer.md",
+      "handoffs/M1CODE-20261119-01/step-03d-security-reviewer.json",
+      "handoffs/M1CODE-20261119-01/step-02e-code-fixer.json",
+      "handoffs/M1CODE-20261119-01/step-05i-test-designer.json"
+    ],
+    "write_set": [
+      "handoffs/M1CODE-20261119-01/step-03e-security-reviewer.json only"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 3, review pass 2 of 3 (the loop after DESIGN-QA) - SECURITY-REVIEWER checks the change git diff base/M1CODE-20261119-01-review4 base/M1CODE-20261119-01-review5 -- app .github (fix round 02e and test rework 05i): the removed JSON.stringify guard of answer() in app/server/routes/demo.js, the speaker's own-row media query at 379 px, the result chips without title, the test edits. Own oracle over the demo routes; 0 answers 500; nothing stored, no answer logged, CSP unchanged, no secret in the diff.",
+    "acceptance_criteria": [
+      "Removing the guard opens nothing: no answer 500 and no value that JSON.stringify cannot write reaches app.js",
+      "Nothing stored, no answer logged, CSP unchanged, no secret in the diff",
+      "Items Q7-Q11, R3 named met or not applicable; trial counts in the summary"
+    ]
+  },
+  "created_at": "2026-11-20T22:00:14Z",
+  "started_at": "2026-11-20T22:00:14Z",
+  "completed_at": "2026-11-20T22:00:57Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "VERDICT PASS (review pass 2 of 3 of the loop after DESIGN-QA). No Critical, High, Medium or Low finding. Removing the dead JSON.stringify guard of answer() opens nothing: every field of a demo answer body is already forced to a string, a boolean or null before the body is built, so the body can always be written to text.\n\nMAP OF SURFACES (change of this pass: git diff base/M1CODE-20261119-01-review4 base/M1CODE-20261119-01-review5 -- app .github, 7 files, 97 insertions, 72 deletions; the tag is HEAD 63e92a9, and app/ and .github are equal to it in the tree at the start and at the end). Comes from outside and goes to the browser: app/server/routes/demo.js (answer() removed; the two call sites return { status: 200, body } directly; the comment of text() says why the body is writable). Goes to the browser: app/public/css/site.css (one media-query edge 371 -> 379 px and its comment, CSS only), app/public/js/pages/demo.js (the result chips lose the title attribute; aria-label stays, set through setAttribute by el()). Tests, no surface in production (read for secrets, hosts, weakened checks): app/test/e2e/landing.test.js, app/test/int/demo.test.js (the DM-6c rows for an unwritable body are removed together with the guard they tested), app/test/unit/office-view.test.js (a comment layout), app/test/unit/vercel-build.test.js (a longer snapshot fixture). Writes files, holds a secret, the server goes by itself, customer data, photos: none touched; the diff of review4..review5 over app/server/http, app/vercel.json, package.json, package-lock.json, Dockerfile, .github, app/api, app/scripts, app/content, app/public/shared, app/public/js/office is empty (git diff --quiet exit 0), so headers.js (the CSP) and the workflow are untouched.\n\nTHE GUARD. Why it was dead: the body is built in the route; after the projection every id and text is a string (id() = text() throws demo_unavailable for any other type, texts() needs an array of strings), no_match_text is a string or null, lang is a constant from the language list, clear_leader is the engine's own boolean or null (a comparison result or true or null), and the engine's ranking, scores, rules and hypotheses never enter the body. A string cannot overflow JSON.stringify (a nesting limit applies to objects and arrays only); no field is an object, array of non-strings, bigint, symbol, accessor or toJSON holder. The one place where the body could still fail to be written is an intake string longer than the engine limit (about 512 MB); the intake is the repository's own file read once at start, not input of a visitor, and the visitor cannot put a value into the answer (the answers of a POST only select; the language is picked from a fixed list).\n\nOWN ORACLES (my scripts, not the code's expression; run on a git archive of the tag in <scratch>/r5 and on a fresh clone <scratch>/r5clone). (1) ids.mjs of pass 1, unchanged: 19 slots x 41 shapes x 3 ways (createApp with the source languages, createEntry with the public languages, createEntry through the platform rewrite /api/index?__p=demo/...) x 6 lang values = 15 710 requests including the health checks: 0 answers 500, 0 violations (1 528 answers 200, 11 936 answers 503 with the exact stable body {\"error\":\"demo_unavailable\"}; every id, title, label, name, summary, no_match_text of a 200 is a string; no Kazakh letter in a 200 on the function paths); control landing and card-site answered 200. (2) NEW direct.mjs, the two handlers called directly so that a value that the app would write is judged without the app's catch: 37 slots (question id, title, option id and label, a whole question, options array, an option, solution id, name, summary, includes, not_suitable_when, a whole solution, the solutions array, needs_from_you, next_steps, price_text, rule points, when, solution, text, the rules array, result min_score, top, clear_lead_gap, no_match_text, the whole result object, hypotheses and their title, a root key, and two combined slots that force the no-match and the min_score -1e9 paths) x 30 values (strings incl. a 5 MB string, number, NaN, Infinity, -0, bigint, symbol, function, null, undefined, object, array, empty object and array, toJSON that throws, toJSON that returns a text, a getter that throws, a Proxy whose traps throw, a Proxy of an array, an array Proxy that throws on get, null-prototype object, class instance, String object, Date, Map, Buffer, an exact {ru,kk,en} text and a text-like object of objects, an own __proto__ key, and objects and arrays nested 1 000 and 20 000 deep) x 2 language sets x 5 lang values (ru, en, kk, xx, empty) x the matched and the cross answer set = 22 100 handler calls. Judged: a handler either throws HttpError (demo_unavailable or an engine refusal code) or returns a body whose every leaf, found by an iterative walk, is a string, a boolean or null, with plain Object or Array prototypes, no accessor and no symbol key, and JSON.stringify writes it. Result: 8 182 bodies 200 all passed, 13 918 refusals, 0 violations, 0 escapes, 0 stringify errors. Oracle control: on a mutant copy <scratch>/r5m with id: q.id, id: o.id and title: q.title (the projection removed) the same script found 483 violations (numbers, bigint, symbols, functions, undefined, odd prototypes), so it can see the failure it looks for. (3) depth scan, 8 slots x 100 depths from 100 to 20 000 x array and object = 1 600 requests through the function entry: 200 x 0, 503 x 1 600 (all with the stable body), 500 x 0, 0 log lines 500; the same scan on the mutant: 154 answers 200 with the Kazakh text and 10 answers 500, so the 20 000-deep window is real and is closed by the projection and not by the guard. (4) route fuzz, 2 900 requests through the function entry (all 900 valid answer sets x 3 languages, 26 hostile bodies x 7 lang values, 8 languages on the questionnaire, 10 methods): statuses 200, 400, 404, 413 only; 0 answers 500; 2 900 log lines, only the keys ts, level, req_id, route, status, ms, code, 0 log lines 500. (5) store and log probe, 300 requests with a marker in the query, the Cookie, Authorization, X-Mark and Accept-Language headers and the body, with fs write traps: 0 writes by the demo, 0 Set-Cookie, the marker is in none of the log lines, log keys ts, level, req_id, route, status, ms, code.\n\nITEMS. Q7 met: 0 key or token shapes (AKIA, ghp_, github_pat_, xox, sk-, PEM, JWT), 0 words secret, token, password, api key, 0 process.env, 0 urls and 0 paths of this computer or temporary folders in the 97 added lines and in app/test app/server app/public .github of the tree; 300 requests with a marker (above): no marker in logs. Q8 not applicable (no business space, account or customer data; no request selects the intake). Q9 met (no SQL in the change; the demo routes call no database; the probe with a database trap in pass 1 is unchanged). Q10 met: 15 710 + 22 100 + 1 600 + 2 900 + 300 requests gave 0 answers 500 and 0 log lines 500; every refusal is the stable 503 body; the app answers the next request (health checks in oracle 1). Q11 not applicable (the server calls no outside address; the change adds no fetch, and the only fetch of a page is still demo.js to its own two routes). R3 not applicable (decision 0033; headers.js unchanged, so the Permissions-Policy denies camera, microphone and geolocation as before). Q6 (not cheated): 0 skip, only, todo, eslint-disable, ts-ignore or '|| true' in the added lines; the removed DM-6c rows tested exactly the guard that is removed, and the projection rows of DM-6c (every non-string id and text, the deep values) stay and run; unit 120 of 120 and int 47 of 47.\n\nTHE OTHER EDITS. CSP unchanged (the diff of app/server/http is empty; script-src, connect-src 'self' etc. as in pass 1). The CSS edit is one media-query edge and its comment (no url(), @import, expression or content text added). The chips: the title attribute is removed and aria-label stays; the text still goes through setAttribute and textContent, no markup is built from a response text (grep of the added lines for innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function, cssText, srcdoc: 0 matches). The test edits touch no production file and add no outside host. The page still stores nothing new (no storage call in the diff).\n\nREGRESSION RUN. Fresh clone of the tag, HOME and TMPDIR in <scratch>: cd app && npm run check exit 0 (prettier, eslint, tsc, check-public, vendored, the picker check of the intake; unit 120 of 120, int 47 of 47, 0 skipped); npm run test:e2e 15 of 15, 0 fail, 0 skipped (the speaker row at 360 to 390 px and the live line test included).\n\nTRIAL COUNTS. ids and texts through the app 15 710; direct handler oracle 22 100 (control mutant 483 violations); depth scan 1 600 (mutant 154 wrong, 10 x 500); route fuzz 2 900; store and log probe 300; npm run check (120 + 47) and e2e 15. In all about 42 600 requests and calls.",
+    "findings": [],
+    "self_check": [
+      {
+        "command": "git rev-parse HEAD; git diff --quiet base/M1CODE-20261119-01-review5 -- app .github; git ls-files app .github | xargs shasum -a 256 | shasum -a 256 (at the start and at the end)",
+        "output": "HEAD 63e92a9f4a25f61e7393778168f0f1c0383e0805 = the tag base/M1CODE-20261119-01-review5 at both times; app/ and .github equal the tag (exit 0); sha256 of the hashes of all tracked files of app and .github f9cc2554d87e63f77cf83b4e2113ed013391feb3b1d3ca1f1b0d7432f1430579 at the start and at the end. Other files of the tree (docs/program/public-v1/PROGRESS.md, handoffs/M1CODE-20261119-01/step-04e-reviewer.json) were changed by other sessions; I changed nothing in the tree but this handoff. Every run was in <scratch>/r5 (git archive of the tag), <scratch>/r5m (the control mutant) and <scratch>/r5clone (a clone of the tag)."
+      },
+      {
+        "command": "git diff base/M1CODE-20261119-01-review4 base/M1CODE-20261119-01-review5 -- app .github (read in full: 7 files)",
+        "output": "demo.js route: answer() removed, two direct returns, comment of text() extended; site.css: max-width 371 -> 379 px; pages/demo.js: title removed from the chip; four test files edited."
+      },
+      {
+        "command": "git diff --quiet review4 review5 -- app/server/http app/vercel.json app/package.json app/package-lock.json app/Dockerfile .github app/api app/scripts app/content app/public/shared app/public/js/office",
+        "output": "exit 0 (empty): CSP, headers, build, CI, content and the office are unchanged"
+      },
+      {
+        "command": "grep of the added lines of the diff for key shapes, secret words, process.env, urls, paths of this computer, skip/only/todo/eslint-disable/ts-ignore/|| true, innerHTML and friends",
+        "output": "0 matches in every search"
+      },
+      {
+        "command": "node <scratch>/orc/ids.mjs <scratch>/r5/app",
+        "output": "control 200 200 [landing, card-site]; trials 15710, status mix {200:1528, 503:11936}, violations 0"
+      },
+      {
+        "command": "node <scratch>/orc/direct.mjs <scratch>/r5/app, then the same on <scratch>/r5m/app (mutant without id() and text() on the questionnaire)",
+        "output": "r5: trials 22100, 200 8182, refusals 13918, violations 0; r5m: trials 22100, violations 483"
+      },
+      {
+        "command": "node <scratch>/orc/depth20.mjs <scratch>/r5/app (100..20000 deep) and on <scratch>/r5m/app",
+        "output": "r5: trials 1600, 200 0, 503 1600, 500 0, bad 0, 500 log lines 0; r5m: 200 154, 503 1436, 500 10, bad 154"
+      },
+      {
+        "command": "node <scratch>/orc/fuzz.mjs <scratch>/r5/app; node <scratch>/orc/store.mjs <scratch>/r5/app",
+        "output": "trials 2900 {200:2723, 400:154, 404:9, 413:14} bad 0, log lines 2900, extra log keys 0, 500 logs 0; requests 300, fs writes by the demo 0, set-cookie 0, marker in logs false, log keys ts,level,req_id,route,status,ms,code"
+      },
+      {
+        "command": "cd <scratch>/r5clone/app && npm run check; npm run test:e2e (HOME and TMPDIR in <scratch>)",
+        "output": "check exit 0: unit 120 of 120, int 47 of 47, 0 skipped; test:e2e tests 15, pass 15, fail 0, skipped 0"
+      },
+      {
+        "command": "cd tools && npm run handoffs-check",
+        "output": "see the closing line below in issues"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "PROCESS",
+        "severity": "Low",
+        "text": "This handoff was created by the agent with npm run handoff -- new on the task's order (from_agent ORCH), as in earlier passes; docs/workflows/handoffs.md says only ORCH creates handoffs; by CLAUDE.md the task (2) stands above it; recorded, not resolved. started_at is the creation time; the work began earlier."
+      },
+      {
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "Not part of the verdict: an intake string longer than the engine's string limit (about 512 MB) could still make JSON.stringify throw. The intake is the repository's own file read at the start of the app, not an input of a visitor, and my 5 MB and 2 MB strings were written; so I did not call it a finding."
+      },
+      {
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "Not measured: the stack depth and the platform of the real Vercel function (all function trials went through createFunctionApp and createEntry in Node 22.23.4 on this machine). The public-build leak oracle (leak.mjs) and the 624-state browser run of pass 1 were not repeated: the diff touches no content file, no build file and no public/shared file, and the CSS edge is one media-query value covered by the e2e test of this tag (15 of 15). The open named limit of decisions/0124 O23 is untouched."
+      },
+      {
+        "kind": "RED_NOT_OF_THIS_WORK",
+        "severity": "Low",
+        "text": "cd tools && npm run handoffs-check ends with the known PENDING line of handoffs/M0DOCS-20261117-01/step-05c-test-designer.json, not this step's."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
