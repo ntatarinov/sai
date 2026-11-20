@@ -149,3 +149,8 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
 - H2, M1, M2, L2 of REVIEWER and L1, L2 of SECURITY-REVIEWER are fixed by CODE-FIXER as their findings say (the lows
   where the fix is small and safe); then both reviews run again.
 
+## Addition 2026-11-20T16:00Z (ORCH, after T3)
+
+- **О22 (T3's finding I1, a correction of О16).** The 4 000-call bound of drawScene holds up to 3 700 px wide at scale 2 (measured by T3: the first window over 4 000 calls is 3 778 px wide and 639 px high; 3 920×630 already draws 4 047); above that up to 4 339 calls, the measured maximum. OS-3 asserts exactly this. O16's «3 920 px» is read as 3 700 px.
+- **О23 (T3's issue 3).** SEC L1 of review pass 2 (an array nested 6 900–9 700 deep that the projection can copy but JSON.stringify cannot write, 500 on the questionnaire) stays an open low: it depends on the stack depth and is not stable across runs, and the route keeps answering. It goes to the next fix round with the DESIGN-QA findings.
+

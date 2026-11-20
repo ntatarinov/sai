@@ -916,17 +916,50 @@ export function gitEntries(app, env = process.env) {
 }
 
 /**
- * The entries of app/ that the rules cannot read: a link (its target is not read), and under app/server,
- * app/api and app/worker a file that is not a .js file (`.mjs`, `.cjs`, `.ts` and `.node` files load too).
- * @param {Array<[string, boolean]>} entries
+ * The `file` values of app/vendored.json, the byte copies of the originals (the code design 4.8 and 4.11,
+ * decisions/0124 О14): [] while the file does not exist; a file that cannot be read, is not JSON or does not
+ * hold `entries` with a string `file` each throws, so a broken list is red and never an empty one.
+ * @param {string} app
  * @returns {string[]}
  */
-export function fileFindings(entries) {
+export function vendoredFiles(app) {
+  /** @type {string} */
+  let text;
+  try {
+    text = fs.readFileSync(path.join(app, "vendored.json"), "utf8");
+  } catch (err) {
+    if (/** @type {NodeJS.ErrnoException} */ (err).code === "ENOENT") return [];
+    throw err;
+  }
+  const entries = JSON.parse(text)?.entries;
+  if (!Array.isArray(entries)) throw new Error("vendored.json: no entries");
+  return entries.map((/** @type {{ file?: unknown }} */ e) => {
+    if (typeof e?.file !== "string")
+      throw new Error("vendored.json: an entry has no file");
+    return e.file;
+  });
+}
+
+/**
+ * The entries of app/ that the rules cannot read: a link (its target is not read), and under app/server,
+ * app/api and app/worker a file that is not a .js file (`.mjs`, `.cjs`, `.ts` and `.node` files load too).
+ * The one narrow row (decisions/0124 О14): a declaration `<name>.d.ts` is no finding when it is no link and
+ * its twin at the same path, `<name>.js`, is a plain file among the entries and one of `vendored`, the
+ * `file` values of app/vendored.json. The suffix is exactly `.d.ts`; every other file stays red.
+ * @param {Array<[string, boolean]>} entries
+ * @param {readonly string[]} [vendored]
+ * @returns {string[]}
+ */
+export function fileFindings(entries, vendored = []) {
   const out = [];
+  const plain = new Set(entries.filter(([, link]) => !link).map(([f]) => f));
   for (const [rel, link] of entries)
     if (link) out.push(`a link: ${rel}`);
-    else if (/^(server|api|worker)\//.test(rel) && !rel.endsWith(".js"))
+    else if (/^(server|api|worker)\//.test(rel) && !rel.endsWith(".js")) {
+      const twin = rel.endsWith(".d.ts") ? `${rel.slice(0, -5)}.js` : null;
+      if (twin !== null && plain.has(twin) && vendored.includes(twin)) continue;
       out.push(`a file that is not .js: ${rel}`);
+    }
   return out;
 }
 
@@ -939,7 +972,7 @@ test("IB-1 the real tree of app/ breaks no rule", () => {
     files.includes("server/node-main.js") && files.includes("api/index.js"),
   );
   const all = [
-    ...fileFindings(entries),
+    ...fileFindings(entries, vendoredFiles(APP)),
     ...files.flatMap((f) =>
       findings(f, fs.readFileSync(path.join(APP, f), "utf8")).map(
         (x) => `${f}: ${x}`,
@@ -1677,6 +1710,137 @@ test("IB-2 every planted twin that breaks a rule is red with its own finding", (
       ["public/index.html", false],
     ]),
     [],
+  );
+  // The one narrow row of decisions/0124 О14: the declaration of the vendored engine beside its listed twin
+  // is green, and each damaged copy of it is red with the finding of its own rule (the same path, the exact
+  // suffix, a plain file, a twin that is listed and in the tree).
+  const engineJs = "server/vendor/picker-engine.js";
+  const engineDts = "server/vendor/picker-engine.d.ts";
+  const vendoredList = [engineJs];
+  /** @type {Array<[string, boolean][]>} */
+  const pair = [
+    [engineDts, false],
+    [engineJs, false],
+  ];
+  assert.deepEqual(fileFindings(pair, vendoredList), []);
+  assert.deepEqual(fileFindings(pair), [
+    `a file that is not .js: ${engineDts}`,
+  ]);
+  /** @type {Array<[string, Array<[string, boolean]>, string[], string[]]>} */
+  const damaged = [
+    [
+      "a second .d.ts with no twin",
+      [...pair, ["server/vendor/other.d.ts", false]],
+      vendoredList,
+      ["a file that is not .js: server/vendor/other.d.ts"],
+    ],
+    [
+      "a second .d.ts beside a plain .js that is not vendoredList",
+      [
+        ...pair,
+        ["server/vendor/other.d.ts", false],
+        ["server/vendor/other.js", false],
+      ],
+      vendoredList,
+      ["a file that is not .js: server/vendor/other.d.ts"],
+    ],
+    [
+      "a .ts beside the vendoredList twin",
+      [...pair, ["server/vendor/picker-engine.ts", false]],
+      vendoredList,
+      ["a file that is not .js: server/vendor/picker-engine.ts"],
+    ],
+    [
+      "a .d.ts beside a .js that app/vendored.json does not list",
+      [...pair, ["server/lib/util.d.ts", false], ["server/lib/util.js", false]],
+      vendoredList,
+      ["a file that is not .js: server/lib/util.d.ts"],
+    ],
+    [
+      "the declaration as a link",
+      [
+        [engineDts, true],
+        [engineJs, false],
+      ],
+      vendoredList,
+      [`a link: ${engineDts}`],
+    ],
+    [
+      "the declaration whose vendoredList twin is not in the tree",
+      [[engineDts, false]],
+      vendoredList,
+      [`a file that is not .js: ${engineDts}`],
+    ],
+    [
+      "the declaration beside a twin that is a link",
+      [
+        [engineDts, false],
+        [engineJs, true],
+      ],
+      vendoredList,
+      [`a link: ${engineJs}`, `a file that is not .js: ${engineDts}`].sort(),
+    ],
+    [
+      "the suffix in another letter case",
+      [
+        ["server/vendor/picker-engine.D.TS", false],
+        [engineJs, false],
+      ],
+      vendoredList,
+      ["a file that is not .js: server/vendor/picker-engine.D.TS"],
+    ],
+    [
+      "a .d.mts beside the vendoredList twin",
+      [...pair, ["server/vendor/picker-engine.d.mts", false]],
+      vendoredList,
+      ["a file that is not .js: server/vendor/picker-engine.d.mts"],
+    ],
+    [
+      "a .d.ts in api/ with no twin there",
+      [...pair, ["api/picker-engine.d.ts", false]],
+      vendoredList,
+      ["a file that is not .js: api/picker-engine.d.ts"],
+    ],
+    [
+      "the right pair with an empty list",
+      pair,
+      [],
+      [`a file that is not .js: ${engineDts}`],
+    ],
+    [
+      "the same file name in another folder",
+      [
+        ...pair,
+        ["server/lib/picker-engine.d.ts", false],
+        ["server/lib/picker-engine.js", false],
+      ],
+      vendoredList,
+      ["a file that is not .js: server/lib/picker-engine.d.ts"],
+    ],
+  ];
+  for (const [name, list, vendored, want] of damaged)
+    assert.deepEqual(fileFindings(list, vendored).sort(), want.sort(), name);
+  // app/vendored.json is read as a list of its `file` values: absent is an empty list, the real file lists
+  // the engine copy, and a folder in its place, a text that is not JSON, no `entries` and an entry with no
+  // `file` each throw.
+  assert.deepEqual(vendoredFiles(tempDir(t)), []);
+  assert.deepEqual(vendoredFiles(APP), [engineJs]);
+  const readIn = (/** @type {string | null} */ text) => {
+    const where = tempDir(t);
+    if (text === null) fs.mkdirSync(path.join(where, "vendored.json"));
+    else fs.writeFileSync(path.join(where, "vendored.json"), text);
+    return where;
+  };
+  assert.deepEqual(
+    vendoredFiles(readIn(JSON.stringify({ entries: [{ file: "a/b.js" }] }))),
+    ["a/b.js"],
+  );
+  assert.throws(() => vendoredFiles(readIn(null)), { code: "EISDIR" });
+  assert.throws(() => vendoredFiles(readIn("{")), SyntaxError);
+  assert.throws(() => vendoredFiles(readIn("{}")), /no entries/);
+  assert.throws(
+    () => vendoredFiles(readIn(JSON.stringify({ entries: [{}] }))),
+    /no file/,
   );
   const dir = tempDir(t);
   fs.mkdirSync(path.join(dir, "server", "node_modules"), { recursive: true });
