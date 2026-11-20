@@ -806,6 +806,62 @@ test(
           if (i < 4) await answerAndWait(page, 0, questions[i + 1].title);
         }
       }
+
+    // F. The speaker's title in Russian at 360 and 371 px (decisions/0124 О32): below 372 px the speaker has its own
+    // row, so the title (the longest, «Проверяющий» 130 px, and the pair «Руководитель проекта» 126 px) is not wider
+    // than its column and keeps 4 px from «‹ Назад»; read at each of the five questions.
+    for (const width of [360, 371]) {
+      const env = await newPage(browser, t, {
+        port,
+        viewport: { width, height: 640 },
+      });
+      const { page } = env;
+      await page.goto(`${origin}/demo.html?lang=ru`);
+      await pageReady(page, "/demo.html", "ru");
+      for (let i = 0; i < 5; i++) {
+        await waitHeading(page, Q[i].title);
+        await framesPass(page, 2);
+        const got = await page.evaluate(() => {
+          const title = document.querySelector("#demo .ask-h .who b");
+          const column = document.querySelector("#demo .ask-h .who");
+          const back = document.querySelector("#demo .ask-h .back");
+          if (title === null || column === null || back === null) return null;
+          const range = document.createRange();
+          range.selectNodeContents(title);
+          const text = range.getBoundingClientRect();
+          const col = column.getBoundingClientRect();
+          const btn = back.getBoundingClientRect();
+          return {
+            textRight: text.right,
+            textTop: text.top,
+            textBottom: text.bottom,
+            columnRight: col.right,
+            backLeft: btn.left,
+            backTop: btn.top,
+            backBottom: btn.bottom,
+            wide: column.scrollWidth - column.clientWidth,
+            page: document.documentElement.scrollWidth - window.innerWidth,
+          };
+        });
+        const where = `speaker ${width} question ${i + 1}`;
+        if (got === null) {
+          problems.add(where, ["the speaker or «Назад» is not on the page"]);
+          continue;
+        }
+        if (got.textRight > got.columnRight + 0.5 || got.wide > 0)
+          problems.add(where, [
+            `the title ends at ${got.textRight.toFixed(1)}, beyond its column at ${got.columnRight.toFixed(1)}`,
+          ]);
+        const sameRow =
+          got.textTop < got.backBottom && got.textBottom > got.backTop;
+        if (sameRow && got.textRight > got.backLeft - 4)
+          problems.add(where, [
+            `the title ends at ${got.textRight.toFixed(1)}, under 4 px from «Назад» at ${got.backLeft.toFixed(1)}`,
+          ]);
+        if (got.page > 0) problems.add(where, ["the page scrolls sideways"]);
+        if (i < 4) await answerAndWait(page, 0, Q[i + 1].title);
+      }
+    }
     assert.deepEqual(problems.lines(), []);
   },
 );
@@ -877,6 +933,8 @@ test(
         await page.goto(`${origin}/demo.html?lang=${lang}`);
         await pageReady(page, "/demo.html", lang);
         const chosen = /** @type {Record<string, string>} */ ({});
+        /** The answer each question was given, as the result's chip names it. */
+        const picked = /** @type {string[]} */ ([]);
         for (const [i, q] of intake.questions.entries()) {
           await waitHeading(page, q.title);
           const labels = await page.$$eval("#demo .card .cl", (els) =>
@@ -897,6 +955,11 @@ test(
             assert.ok(index >= 0, `${where}: the fixture answers ${q.id}`);
             chosen[q.id] = q.options[index].id;
           }
+          picked.push(
+            index < q.options.length
+              ? q.options[index].label
+              : say("demo_not_sure", lang),
+          );
           await page.locator("#demo .card").nth(index).click();
         }
         await waitHeading(page, say("demo_result_title", lang));
@@ -935,6 +998,18 @@ test(
           5,
           `${where}: five answers kept as chips`,
         );
+        // Each chip is named by its question and its answer (decisions/0124 О33): five answers «Не знаю» are five
+        // chips of one visible text, and the question is what tells them apart. The name is the browser's own
+        // computed one (the role query), not the attribute.
+        assert.deepEqual(got.chips, picked, `${where}: the text of the chips`);
+        for (const [k, q] of intake.questions.entries()) {
+          const name = `${q.title}: ${picked[k]}`;
+          assert.equal(
+            await page.getByRole("button", { name, exact: true }).count(),
+            1,
+            `${where}: the chip of question ${k + 1} is named «${name}»`,
+          );
+        }
         if (answer.recommended.length > 0) {
           const first = answer.recommended[0];
           const mine = intake.solutions.find((s) => s.name === first.name);

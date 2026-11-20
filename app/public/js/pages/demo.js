@@ -947,7 +947,14 @@ function mountSurvey(doc, win, parts) {
     const chips = s.questions.map((q, k) => {
       const chip = el(
         "button",
-        { cls: "chip", attrs: { type: "button", title: q.title } },
+        {
+          cls: "chip",
+          attrs: {
+            type: "button",
+            title: q.title,
+            "aria-label": `${q.title}: ${answerText(q)}`,
+          },
+        },
         [el("b", { text: answerText(q) })],
       );
       chip.addEventListener("click", () => editQuestion(k + 1));

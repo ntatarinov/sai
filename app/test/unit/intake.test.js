@@ -485,3 +485,13 @@ test("IN-6 the step content: picker check on content/sai-intake.json from app/ e
   );
   assert.notEqual(broken.status, 0);
 });
+
+test("IN-7 the no-match text is conditional: it names no answer the visitor did not give, in each language (decisions/0124 О33)", () => {
+  // The result without a match is shown for the answer «server» and for five answers «Не знаю» alike, so the
+  // sentence about the server is an «if», not a fact of the visitor's answers; the texts are the decision's own.
+  assert.deepEqual(readIntake().result.no_match_text, {
+    ru: "По этим ответам Sai пока не может собрать подходящий продукт. Если данные должны храниться на всех устройствах, нужен сервер, а серверы Sai пока не делает.",
+    kk: "Бұл жауаптар бойынша Sai әзірге сәйкес өнім құрастыра алмайды. Егер деректер барлық құрылғыларда сақталуы тиіс болса, сервер қажет, ал серверлерді Sai әзірге жасамайды.",
+    en: "Based on these answers, Sai cannot build a suitable product yet. If data must be stored on all devices, it needs a server, which Sai does not build yet.",
+  });
+});

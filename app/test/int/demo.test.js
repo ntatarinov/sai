@@ -941,7 +941,8 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
     FIXTURES.find(([n]) => n === "server-needed.json")?.[1] ?? {};
   assert.ok(resultOf(matched, "ru").recommended.length > 0);
   assert.equal(resultOf(unmatched, "ru").recommended.length, 0);
-  /** The seven shapes of the review: the route that reads the text, and the answers that reach it. */
+  const KAZAKH = "Қазақша мәтін";
+  /** The shapes of the review: the route that reads the text, and the answers that reach it. */
   /** @type {Array<[string, string, Record<string, string> | null, (t: any) => void]>} */
   const rows = [
     [
@@ -996,6 +997,49 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
         for (const sol of x.solutions) sol.name.x = "x";
       },
     ],
+    // SECURITY-REVIEWER L1 of the third pass (decisions/0124 О28): an id that is no string is copied whole into
+    // the answer, and a Kazakh text inside it would pass the function's two languages; the id is a string or
+    // the route is unavailable.
+    [
+      "a question id that is an object holding a Kazakh text",
+      "questionnaire",
+      null,
+      (x) => (x.questions[0].id = { a: KAZAKH }),
+    ],
+    [
+      "a question id that is an array holding a Kazakh text",
+      "questionnaire",
+      null,
+      (x) => (x.questions[2].id = [KAZAKH]),
+    ],
+    [
+      "an option id that is an object holding a Kazakh text",
+      "questionnaire",
+      null,
+      (x) => (x.questions[1].options[0].id = { a: KAZAKH }),
+    ],
+    [
+      "an option id that is an array holding a Kazakh text",
+      "questionnaire",
+      null,
+      (x) => (x.questions[4].options[1].id = [KAZAKH]),
+    ],
+    [
+      "a solution id that is an object holding a Kazakh text",
+      "result",
+      matched,
+      (x) => {
+        for (const sol of x.solutions) sol.id = { a: KAZAKH };
+      },
+    ],
+    [
+      "a solution id that is an array holding a Kazakh text",
+      "result",
+      matched,
+      (x) => {
+        for (const sol of x.solutions) sol.id = [KAZAKH];
+      },
+    ],
   ];
   const good = real();
   const goodWays = ways(good);
@@ -1016,6 +1060,7 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
         );
         assert.equal(x.headers.get("content-type"), JSON_TYPE);
         assert.equal(x.headers.get("cache-control"), "no-store");
+        assert.doesNotMatch(x.text, /[әіңғүұқөһ]/i, `${label} ${way.name}`);
       }
     for (const way of ways(loaded)) {
       await way.fetch("/api/demo/questionnaire?lang=ru");
@@ -1025,8 +1070,9 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
       assert.equal((await way.fetch("/api/demo/other")).status, 404);
     }
   }
-  // A body that JSON.stringify cannot write: a value of the intake whose toJSON throws reaches the body as
-  // it is (an id is copied whole), and the app writes the body after the handler returns.
+  // A value of the intake whose toJSON throws: it is no string, so the projection refuses the id (the rows
+  // above); the check of the body in answer() stays as the last guard, and the app writes the body after the
+  // handler returns.
   const unwritable = edited((x) => {
     x.questions[0].id = {
       toJSON() {

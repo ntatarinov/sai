@@ -131,6 +131,17 @@ function text(value) {
 }
 
 /**
+ * An id of the answer (a question, an option, a solution): a string, as a text is. An object or an array
+ * would reach the answer whole, and a text of another language inside it would pass the language of the
+ * route (the function answers ru and en only), so it is the refusal demo_unavailable too.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function id(value) {
+  return text(value);
+}
+
+/**
  * A list of texts of the answer (includes, not_suitable_when).
  * @param {unknown} value
  * @returns {string[]}
@@ -141,9 +152,11 @@ function texts(value) {
 }
 
 /**
- * The answer 200 whose body is written to text here, inside the mapping of the route: the app writes the
- * body after the handler returns, and a body that JSON.stringify cannot write (a value nested too deep)
- * must be demo_unavailable like the projection that overflows, never server_error.
+ * The answer 200 whose body is checked here, inside the mapping of the route: the body is written to text
+ * once here, and the text is thrown away; the app writes it again after the handler returns, outside this
+ * mapping. A body that JSON.stringify cannot write (a value nested too deep) must be demo_unavailable like
+ * the projection that overflows, never server_error. Every field of the body is a string or a boolean after
+ * the projection (ids and texts are strings), so this is the last guard, not the first.
  * @param {Record<string, unknown>} body
  * @returns {import("./index.js").RouteAnswer}
  */
@@ -166,23 +179,23 @@ export function demoRoutes({ intake, langs }) {
   /**
    * The questionnaire, built field by field: no help text, rule, point, condition or solution text, and
    * no field that a file adds. An intake that loadIntake accepted but that this projection cannot read
-   * (an option that is not an object, a value nested too deep to copy) answers demo_unavailable, as the
-   * result route answers for the same intake.
+   * (an option that is not an object, an id that is not a string, a value nested too deep to copy) answers
+   * demo_unavailable, as the result route answers for the same intake.
    * @param {import("./index.js").RouteRequest} req
    * @returns {import("./index.js").RouteAnswer}
    */
   const questionnaire = ({ query }) => {
     if (!intake.ok) throw new HttpError("demo_unavailable");
     const lang = pickLang(query.get("lang"), null, langs);
-    /** @type {Array<{ id: unknown, title: unknown, options: Array<{ id: unknown, label: unknown }> }>} */
+    /** @type {Array<{ id: string, title: string, options: Array<{ id: string, label: string }> }>} */
     let questions;
     try {
       const view = inLanguage(intake.tenant, lang);
       questions = view.questions.map((/** @type {any} */ q) => ({
-        id: q.id,
+        id: id(q.id),
         title: text(q.title),
         options: q.options.map((/** @type {any} */ o) => ({
-          id: o.id,
+          id: id(o.id),
           label: text(o.label),
         })),
       }));
@@ -229,7 +242,7 @@ export function demoRoutes({ intake, langs }) {
         lang,
         clear_leader: found.clear_leader,
         recommended: found.recommended.map((/** @type {any} */ s) => ({
-          id: s.id,
+          id: id(s.id),
           name: text(s.name),
           summary: text(s.summary),
           includes: texts(s.includes),
