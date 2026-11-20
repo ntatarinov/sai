@@ -4,8 +4,10 @@
   lane of PLAN §4.1): WF-04 step 1, run `M1SITE-20261119-01`, step 03, written by GUI-DESIGN-ANALYST on 2026-11-19.
   Its gate is step 03b (CODE-DESIGN-VALIDATOR); gate pass 1 gave FAIL with findings F1–F12, closed by the rework step
   03c (the places carry the finding number, «(F<n>)»); gate pass 2 (step 03d) gave FAIL with findings G1–G9, closed by
-  the rework step 03e («(G<n>)»; «(finding G8)» and «(finding G9)», as G8 and G9 also name owner gates). It is the
-  yardstick of DESIGN-QA-VALIDATOR (WF-04 step 4); the sample is the map. No code is written here.
+  the rework step 03e («(G<n>)»; «(finding G8)» and «(finding G9)», as G8 and G9 also name owner gates); gate pass 3
+  (step 03f) gave PASS with the low findings J1–J7, and the edit step 03g carries in what decisions/0123 (J3, J5, J7
+  and its answer to J2 under question I2) and decisions/0124 (О11) route to this file («(J<n>)», «(О11)»), with its own
+  check. It is the yardstick of DESIGN-QA-VALIDATOR (WF-04 step 4); the sample is the map. No code is written here.
 - **Requirements.** REQ-111 (R1.2: landing, how it works, examples, the demo survey, themes, texts) and REQ-112 (R1.3:
   the office renderer in stage mode), written at the same time in step 01 of this run. They were not in
   `docs/requirements.yaml` when this file was begun (the last id was REQ-110); step 01 closed at 2026-11-19T11:21:48Z,
@@ -30,7 +32,7 @@
 | [M shot] | read in a sample snapshot (`shots/<name>.png`) |
 | [M run] | measured on a byte copy of the sample (the five files, sha256 equal to the folder) rendered in headless Chrome 157 on macOS through Sai's kit `tools/test/e2e/kit/` (fresh profile under a temporary root outside the project, loopback server, `?still=1`), windows 1470×784, 390×844, 320×568; text widths by canvas `measureText` in the sample's font stack on the same machine. Another system draws other fonts: a width measured here is a fact of macOS Chrome 157, not of every system (AP-158) |
 | [C] | computed from marked values; the formula is given (contrast: WCAG 2.x relative luminance) |
-| [T] | measured on a trial page outside the project in the same Chrome as [M run]: the sample's own `styles.css` with only the changes this file names for that part (the extra rules are listed in the handoff of step 03c, `prototype`); used for the sizes of parts this file changes |
+| [T] | measured on a trial page outside the project in the same Chrome as [M run]: the sample's own `styles.css` with only the changes this file names for that part (the extra rules are listed in the handoff of step 03c, `prototype`; for the places marked (J<n>), in that of step 03g); used for the sizes of parts this file changes |
 | [R source] | required by a record: a decision, ARCH, PLAN or an existing requirement block |
 | [P] | proposed by this description, with the reason; DESIGN-QA compares it like any other value, the gate may reject it |
 | [Q In] | an open question (section 16); the value written is the default used until ORCH answers (decision 0123) |
@@ -135,7 +137,7 @@ is named), **N** «не переносится» (not carried over; the reason i
 | S15 | big button «Начать — {n} вопросов» | app.js:176; data.js:12 | CC | opens `/demo.html` (the first question; G4); wording REQ-111 |
 | S16 | «Продолжить с вопроса {i}» and «Сначала» | app.js:177; data.js:13 | N | answers are not kept between page loads («Без … данных») |
 | S17 | meta line «Около 2 минут · без регистрации · цена сразу на экране» | app.js:178; data.js:12 | N | ARCH §11.7 «Около 2 минут» and prices; its place holds the AI disclosure line (8.1 A) |
-| S18 | team list: four cards with avatar, name, role | app.js:179; styles.css:106-111 | CC | 7.7: role title and the desk's stage word instead of a name and a role (ARCH §11.6, §11.7); avatars at an integer scale (S55); by default the sample's row of four column cards with 72×78 avatars stays, its title line at 13/400 instead of the 16/900 name (finding G9); the option, a 2×2 grid of row cards with 48×52 avatars, is in 7.7 (F8; question I2; on the owner's list, section 17) |
+| S18 | team list: four cards with avatar, name, role | app.js:179; styles.css:106-111 | CC | 7.7: role title and the desk's stage word instead of a name and a role (ARCH §11.6, §11.7); avatars at an integer scale (S55); by default the sample's row of four column cards with 72×78 avatars stays, its title line at 13/400 instead of the 16/900 name (finding G9), under the intro up to 1206 px and beside it from 1207, where the sample has it beside the intro from 1001 (J2); the option, a 2×2 grid of row cards with 48×52 avatars, is in 7.7 (F8; question I2; on the owner's list, section 17) |
 
 ### 3.3 Question screen (app.js:189-251)
 
@@ -241,9 +243,13 @@ is named), **N** «не переносится» (not carried over; the reason i
    `<script type="module" src="/js/…">`); no `on…=` attribute.
 2. No `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`. Elements are made with
    `document.createElement`; every text, also a text from the server, is set with `textContent`.
-3. No `setAttribute("style", …)` and no `.style.cssText`: the CSP refuses both (measured in
+3. No `setAttribute("style", …)` and no `.style.cssText`. The CSP refuses the first (measured in
    `handoffs/PAGE057-20261021-01/step-01-gui-design-analyst.json`, `self_check`: «setAttribute style запрещён», while a
-   single property write worked).
+   single property write worked). The ban of `.style.cssText` is a rule of the code [R REQ-111 criterion 10], not of
+   the CSP: the CSP of Chrome 157 does not refuse it (О11; measured in the handoff of step 03g, `self_check`: on a
+   trial page under the app's CSP header in headless Chrome 157 on macOS, `cssText` was applied with no violation,
+   while `setAttribute("style", …)` was not applied and raised one `style-src-attr` violation; the same as fact F26 of
+   `docs/design/REQ-111-112-public-landing.md`).
 4. No external address anywhere (no font, image, script or link to another host); fonts are system stacks (6.4);
    the only image source is the canvas; the icon is `<link rel="icon" href="data:,">` [M `app/public/index.html`].
 5. Every `href` and `src` is root-relative — one `/` first, never `//`, `./`, `../` or a scheme — or an anchor `#<id>` of
@@ -299,7 +305,7 @@ tokens of this file (G6): `--rcerr`, `--rcpip` and the plate tokens.
 | `--plate-ink2` | `#5d5140` [M styles.css:66] | same | the door sign's tagline |
 | `--plate-edge` | `#8a7a60` [M styles.css:56, 63] | same | the 1 px inset edge of a plate and of the door sign |
 | `--plate-now` | `#ce6a1d` [P: the sample's current plate is `--btn`, styles.css:59; 9.7] | same | the fill of the current plate; its text is `--onbtn` |
-| `--plate-now-edge` | `#17343a` [P: the sample's `--ink` of styles.css:59, its light value kept in the dark theme with the plate] | same | the 1 px inset edge of the current plate |
+| `--plate-now-edge` | `#17343a` [M styles.css:5, 59: the sample's `--ink`] | `#f2ead8` [M styles.css:59, data.js:148: the sample's `--ink` of the dark theme, a light edge, as shot agency-1470-dark-05-ask5 shows it in that tenant's `#f6e9f1`, data.js:238] (J7) | the 1 px inset edge of the current plate |
 
 Theme: the dark values apply under `@media (prefers-color-scheme: dark)` to `:root` without `data-theme="light"`, and to
 `:root[data-theme="dark"]` in any case; «Авто» means no `data-theme` attribute, so a page without scripts follows the
@@ -459,8 +465,8 @@ sample's receipt and sheet rule, styles.css:182, 323), the list rule `--ink2` 35
 2.17:1 in dark (over `--card` 1.71 / 2.06); the pixel frame of a button on `--rc`, which stays `--ink` as in the sample
 (styles.css:28-32, 150): 12.78:1 against `--rc` in light and 1.16:1 in dark, where the button's boundary is its `--btn`
 fill (the `--btn` row: 3.56 / 3.06), as the sample's dark ticket shows it (shot agency-1470-dark-05-ask5); the 1 px edges
-of the plates (`--plate-edge` 3.64:1 against `--plate`, `--plate-now-edge` 3.59:1 against `--plate-now`); and the step
-bar below.
+of the plates (`--plate-edge` 3.64:1 against `--plate`, `--plate-now-edge` 3.59:1 in light and 3.07:1 in dark against
+`--plate-now`, J7); and the step bar below.
 
 Step buttons (F1): the default top bar of a step (left bar on phones), `--ink2` at 40 % over `--paper`, is `#b4b8b2`
 (1.85:1) in light and `#4f6367` (2.42:1) in dark [C]: it is decoration, not the border of the control. The boundary of
@@ -493,7 +499,8 @@ Mono", monospace`. No font file.
 | card key hint | 12 mono | 800 | hidden below 760 | styles.css:138, 310 |
 | speaker title / sub | 17 / 13 | 900 / 400 | `--ink2` sub | styles.css:123-124 |
 | progress text | 13 | 800 | `--ink2` | styles.css:130 |
-| team title / sub | 16 / 13 | 900 / 400 | sub 1.2 `--ink2` | styles.css:108-109 |
+| team title / sub, the default row of four (7.7) | 13 / 13 | 400 / 400 | 1.2 / 1.2; title `--ink`, sub `--ink2` (J3) | styles.css:108-109; the title [P] (7.7) |
+| team title / sub, the 2×2 option (7.7) | 16 / 13 | 900 / 400 | sub 1.2 `--ink2` | styles.css:108-109 |
 | receipt header | 12 mono | 800 | .1em, uppercase, `--rc2` | styles.css:182 |
 | receipt main value | clamp(26px, 3.4vw, 44px); 23 below 760; 20 at ≤ 360 | 900 | 1.1, −.02em | styles.css:162, 183, 328, 343 |
 | list row title / sub | 16 / 14 | 900 / 400 | sub 1.3 `--ink2` (on `--rc`: title `--rcink`, sub `--rc2`, 6.6) | styles.css:186-189, 323 |
@@ -633,8 +640,9 @@ which the owner wants matched one to one (finding G9):
 
 - **Default — the sample's row of four** [P] (finding G9): the sample's card unchanged in size and form (a column,
   centred, padding `12px 6px`, 109.3 × 156.8 at 1470 [T]) with the avatar 72×78 (24×26 logical at scale 3, 9.15); line
-  1 the role title at 13/400 in `--ink`, in the place of the sample's 16/900 name; line 2 the stage word at 13/400/1.2 in
-  `--ink2`,
+  1 the role title at 13/400/1.2 in `--ink`, in the place of the sample's 16/900 name (J3: the line height 1.2, 15.6 px,
+  is named for the title as for the sub; the body's 1.45 that the sample's `.team b` inherits, styles.css:13, would make
+  the cards 163.3 high [T]); line 2 the stage word at 13/400/1.2 in `--ink2`,
   the sample's role line. Widths at 13/400 [T]: «Руководитель» 87.8, «Проверяющий» 91.3, «Разработчик» 81.1, «Аналитик»
   60.2, «документацию» 94.0, «спецификацию» 95.6, «к просмотру» 79.6 — every word fits the 97.3 px of content;
   «Руководитель проекта», «Готовим документацию», «Готовим спецификацию» and «Готово к просмотру» take two lines. Every
@@ -651,7 +659,13 @@ which the owner wants matched one to one (finding G9):
   plus the padding 24), the other three 76 (the avatar 52 plus 24); the grid is 196 high with the frame margins, lower
   than the intro, so the hero keeps its height. It keeps the bold title and changes the layout and the avatar size.
 
-Both forms: 760 – 999 under the intro, max-width 560 [M styles.css:283]; below 760 hidden [M styles.css:296]. A title
+Both forms: 760 – 1206 under the intro, max-width 560, and beside the intro only from 1207 px [R decision 0123 I2, its
+answer to J2: the narrow hero's rule of styles.css:281-283, extended to 1206] (J2); below 760 hidden [M styles.css:296].
+Beside the intro the content of a card is 95.7 px at its narrowest, at 1207 [C: the team column (1207 − 2·20 − 36) /
+2.25, less 3 gaps of 16, divided by 4, less the frame margins 2·3 and the padding 2·6], so every word above fits; from
+1001 to 1206 the sample's two-column hero would leave 72.8 to 95.56 px [C], and «спецификацию» (95.61 [T]) and up to
+four more words would break inside the word [T: the sample's hero with Sai's words at 13/400/1.2 and the guard below on
+both lines; no word broken at 1207 – 1470]. Under the intro the content is 112 px at s 2 and 110 at s 3 [T]. A title
 breaks only at spaces; `overflow-wrap: anywhere` is the guard for a longer word in another language [P, AP-099].
 
 **7.8 Stage step** (`how.html`, and the overview row on the landing) [M styles.css:211-218, 329-332; shot
@@ -872,14 +886,14 @@ block is new]:
 The scene in its start state (9.13); the landing has no tap, so its camera stays at 0 and a phone shows the door, «Вы»
 and desks 1–2 (all four at 1470; 9.14, F7). Blocks in order:
 
-- **A. Hero** [M styles.css:102-111; app.js:175-179; shot stock-1470-light-01-start]: ≥ 1000: grid `1.25fr 1fr`, gap 36,
-  vertically centred; left the intro: eyebrow «Sai — закрытое тестирование» (F3), h1 «<landing h1>», pitch «<landing
-  pitch>», the CTA row (big `btn` «<take the demo survey>» → `/demo.html`; ghost `btn` «<how it works>» → `/how.html`;
-  G4)
+- **A. Hero** [M styles.css:102-111; app.js:175-179; shot stock-1470-light-01-start]: ≥ 1207 (J2): grid `1.25fr 1fr`,
+  gap 36, vertically centred; left the intro: eyebrow «Sai — закрытое тестирование» (F3), h1 «<landing h1>», pitch
+  «<landing pitch>», the CTA row (big `btn` «<take the demo survey>» → `/demo.html`; ghost `btn` «<how it works>» →
+  `/how.html`; G4)
   [P: the sample's second button «Продолжить» is gone, S16], the meta line = the AI disclosure of 7.19 (14 `--ink2`,
   margin-top 12), so it is read before the first tap; it stands in the footer too [P].
-  Right: the team row (7.7). 760 – 999: one column, team under the intro (max-width 560). Below 760: one column, no team,
-  the big button full width.
+  Right: the team row (7.7). 760 – 1206: one column, team under the intro (max-width 560; 7.7, J2). Below 760: one
+  column, no team, the big button full width.
   The eyebrow carries the closed-test text that index.html must hold (F3) [R REQ-111 criterion 1; REQ-108 criterion 4;
   guard NM-1; the post-deploy check «/ holds «Sai — закрытое тестирование»»]: a `<p>` in the static HTML of
   `index.html` whose text is exactly «Sai — закрытое тестирование», with the look of the sample's eyebrow (13/800,
@@ -1137,10 +1151,11 @@ office.js:196) [P; R REQ-112: no idle motion]: the person of the desk that faces
   together. A line wider than 46 logical is a text problem for REQ-111 (a shorter word): a label is never cut or shrunk
   [P; R REQ-112 criterion 6: no label cut].
 - Plate states [M styles.css:59; office.js:469]: default; `now` (9.13): fill `--plate-now` (`#ce6a1d`), text `--onbtn`
-  (`#1b1208`, 5.02:1), a 1 px inset edge `--plate-now-edge` (`#17343a`), the same in both themes (G6) [P: the plates keep
-  their light colours in the dark theme (shot
-  agency-1470-dark-05-ask5), and the dark `--btn` `#e0731f` would give 2.76:1 against a default plate, 6.3]. The sample's
-  `done` and `wait` are not used (S49).
+  (`#1b1208`, 5.02:1), the same in both themes (G6) [P: the plates keep their light colours in the dark theme (shot
+  agency-1470-dark-05-ask5), and the dark `--btn` `#e0731f` would give 2.76:1 against a default plate, 6.3]; a 1 px
+  inset edge `--plate-now-edge`, the sample's `--ink` of each theme [M styles.css:59]: `#17343a` in light and the light
+  `#f2ead8` in dark, the approved mockup kept one to one (3.59:1 in light and 3.07:1 in dark against the fill;
+  decoration, 6.3) (J7). The sample's `done` and `wait` are not used (S49).
 - At `H = 88` a two-line plate reaches `dt + 19` = 74 and covers the rug's top 3 rows under each desk [C].
 - «Вы» and the plates (F11): the layer keeps the sample's order — the door sign, the «Вы» label, then the four plates
   (office.js:424-427) — so where a plate and the «Вы» label meet, the plate paints over the label. At rest they never meet
@@ -1192,7 +1207,9 @@ Only «Вы» moves and the scene shows no time, count or status [R REQ-112]: no
   (the sample's `destination-out` multiplies, office.js:369) — in the start state and on the result, from row 6 down at
   1470 and from row 0 at 390 and 320 [C]. The alpha of a point is the strength (.15 light, .5 dark [M office.js:366])
   times the product of what the bands over it keep.
-- The rule (G3) [R REQ-112 criterion 4: an rgba of a token whose alpha comes from the given alpha and a listed factor]:
+- The rule (G3) [R REQ-112 criterion 4 (J5): the light layer carries the channels of `--sc-dim` with an alpha computed
+  from the strength `--sc-dim-alpha` and the closed list «What the bands keep» of the state drawn, the exact product
+  rounded half up to 4 decimals]:
   a fill of the light layer is `--sc-dim` with the alpha `--sc-dim-alpha` × k, where k is what the bands over the point
   keep, a value of the closed list of its state (the second column below), rounded half up to 4 decimals in exact
   decimal arithmetic — never a rounded binary floating-point product: four values are exactly half-way (.10935, .05145
@@ -1239,7 +1256,8 @@ nothing in the scene: it stays in the result state.
 
 ### 9.14 Camera [M office.js:476-486; CC]
 
-When `Rw > W` (windows under 700 CSS px at `s = 2`): offset = `clamp(round(focus − W/2), 0, Rw − W)` logical (rounding
+When `Rw > W`, that is whenever `W < 350` (under 700 px at `s = 2`, 1000–1049 px at `s = 3`, 1300–1399 px at `s = 4`;
+J7): offset = `clamp(round(focus − W/2), 0, Rw − W)` logical (rounding
 halves up, as `Math.round`), where focus is 70 in the start state — the landing, and `how.html` before a tap — [M
 office.js:480], the asking desk's `cx` during a question (desk 1 from the demo's load on, also while the questionnaire
 loads), `cx[4]` on the result, and the `cx` of desk n after a tap on step n of `how.html`. Measured offsets on question
@@ -1431,7 +1449,7 @@ the kk draft note shows in the footer (7.19).
 | landing pitch | two lines at 1470 (611.2 px at 18), three at 390 |
 | big button label | one line at 390 (294 px at 20/900; «Пройти демо-опрос» measures 206.3) |
 | plate line | 46 logical at 3.9 logical (9.7) |
-| team card title | two lines in 97.3 px at 13/400 (the default row of four) or in 154.7 px at 16/900 (the 2×2 option); no word wider (7.7, F8, finding G9) |
+| team card title | two lines in 95.7 px at 13/400 (the default row of four at its narrowest beside the intro, 1207 px; 97.3 at 1470; J2) or in 154.7 px at 16/900 (the 2×2 option); no word wider (7.7, F8, finding G9) |
 | an item of the fixed list (7.14) | one line at 1470 (730 px at 16/900), two lines at 320 (296 px); ru: one line at 1470, four items in two lines at 320 (G2) |
 | question h2 | two lines at 390 (334 px at 20/900) |
 | option label | two lines in the card (145 px at 15/900 at 390; 248 px at 17/900 at 1470) |
@@ -1463,7 +1481,7 @@ criterion numbers are those of step 01b, which 01c keeps (question I1).
 | REQ-111 c15 Look and the owner | the whole file |
 | REQ-112 c1, c2, c10 (files and port headers, port parity, guard tests) | not look criteria; 9.16 (the side view) |
 | REQ-112 c3 Pure modules | 2, 9.16 |
-| REQ-112 c4 The stage scene and the drawing (four desks, words, role titles, door, «Вы», fillRect/fillText, palette and constants) | 6.2: the palette `draw.js` gets — the 24 colour tokens `--sc-wall` … `--sc-dim`, the number `--sc-dim-alpha` and the page token `--ink`, nothing else (G3) — and the closed list of constants (F6); 9.1 – 9.8; 9.11 (the alpha rule from `--sc-dim-alpha` and its closed lists, F5, G3); 9.13. Step 01b's parenthesis «(`--btn`, `--onbtn`, `--ink`, `--acc2`)» named three page tokens the canvas never draws (6.2); step 01c's criterion names this palette (question I1) |
+| REQ-112 c4 The stage scene and the drawing (four desks, words, role titles, door, «Вы», fillRect and fillStyle only, no font or text on the canvas (J5), palette and constants) | 6.2: the palette `draw.js` gets — the 24 colour tokens `--sc-wall` … `--sc-dim`, the number `--sc-dim-alpha` and the page token `--ink`, nothing else (G3) — and the closed list of constants (F6); 9.1 – 9.8; 9.11 (the alpha rule from `--sc-dim-alpha` and its closed lists, F5, G3); 9.13. Step 01b's parenthesis «(`--btn`, `--onbtn`, `--ink`, `--acc2`)» named three page tokens the canvas never draws (6.2); step 01c's criterion names this palette (question I1) |
 | REQ-112 c5 Motion only on taps | 9.13, 10 |
 | REQ-112 c6 The scene on the pages (role img, text list, 320×568, figure ≥ 20 px, no cut or overlapping label, taps, reduced motion, canvas failure) | 7.4, 9.7 (labels at rest, F11), 9.8, 9.14 (the visible range and how «the canvas fits the width» is read, F7), 9.16 (the list beside the img, the text view, F12), 10, 12 |
 | REQ-112 c7 Browser step | 8, 9, 10 |
@@ -1511,10 +1529,10 @@ describes.
   «Тақырып» / «Theme».
 - **I5** — The step table of 9.13 is this file's proposal (REQ-112 asks the look description to name it): the questions
   asked at desks 1, 2, 3, 3, 4 as in the sample, «Вы» at the door until the first answer.
-- **I6** — REQ-112 criterion 4 lets the drawing set only `fillStyle`, `font`, `textAlign` and `textBaseline`, so the
-  sample's translucency (light layer, desk shadows, window beams, glow) is drawn with `rgba` fill styles from the closed
-  lists of 6.2 and 9.11. The light bands overlap as in the sample, and the lists hold the products (F5). If the gate
-  prefers `globalAlpha`, the criterion changes, not the look.
+- **I6** — REQ-112 criterion 4 lets the drawing call only `fillRect` and set only `fillStyle`, no font or text on the
+  canvas (J5), so the sample's translucency (light layer, desk shadows, window beams, glow) is drawn with `rgba` fill
+  styles from the closed lists of 6.2 and 9.11. The light bands overlap as in the sample, and the lists hold the
+  products (F5). If the gate prefers `globalAlpha`, the criterion changes, not the look.
 - **I7** — REQ-112 shows the scene on the landing, how and the demo only; the sample's not-found view had it. Default: 404
   and examples without the scene.
 - **I8** — Vertical budget: the two required lines (test-mode strip, caption) and the 48-px phone toggle put the demo's
@@ -1553,7 +1571,7 @@ DESIGN-QA compares with this file, not with these items; ORCH shows the list wit
 | D5 | no pixel icons on the answer cards; a card is the shape of the sample's «Не знаю» card | the intake of format /2 has no objects (REQ-111) | 7.10 (I9) |
 | D6 | the UI accent in light is `#ce6a1d` (buttons, pips, «Вы», the selected step), the current plate `#ce6a1d` in both themes; the canvas keeps the sample's `#e0731f` | ARCH §11.7: accents 3:1 | 6.1, 6.3, 9.7 |
 | D7 | on the cream panels the focus ring is `#ce6a1d` (light) / `#9a4306` (dark), not `--acct`, and a link turns `--rcink` on hover, not `--ink` | ARCH §17 (F1, G1) | 6.3, 6.6, 7.20 |
-| D8 | the team cards on the landing: the sample's row of four with the role title at 13/400 in place of the bold 16/900 name (default), or a 2×2 grid of row cards with 48×52 avatars (option) | the role titles do not fit the sample's card at 16/900 (F8, finding G9) | 7.7 (I2) |
+| D8 | the team cards on the landing: the sample's row of four with the role title at 13/400 in place of the bold 16/900 name (default), or a 2×2 grid of row cards with 48×52 avatars (option); from 1001 to 1206 px the team stands under the intro (max-width 560), where the sample puts it beside the intro (J2) | the role titles do not fit the sample's card at 16/900 (F8, finding G9); in the sample's narrower team column at 1001 – 1206 px Sai's words would break inside a word (decision 0123 I2, J2) | 7.7, 8.1 A (I2) |
 | D9 | the phone bar of the demo is 84.8 px high with a 48-px toggle; at 390×844 the bottom 14 – 16 px of «Не знаю» lie under it until a scroll; at 1470×784 the «<enough…>» button ends 13 px below the fold | REQ-111 criterion 12 (44×44 targets) and D2 (F2) | 7.11, 8.4 (I8) |
 | D10 | on a phone the landing's scene shows the door, «Вы» and desks 1 – 2, as the sample's framing does; desks 3 – 4 come into view after a tap on «how it works» or in the demo | the sample's look at s = 2 (F7); against PLAN M1 «Owner sees … on phone» | 9.14 (I10) |
 | D11 | the light of the desks switches at once on a tap; the sample eases it over about 1 s | REQ-112: no frames after a walk (F5) | 9.11 |

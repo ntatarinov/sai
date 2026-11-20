@@ -3,10 +3,20 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { writePublicSet } from "./public-set.js";
 
-// vercel-build (ARCH §19.6, REQ-109 criterion 8, decisions/0116 О18): with SITE_GATE empty, migrate
-// (only when MIGRATE_ON_BUILD=1), then check-public; the output is app/public. With SITE_GATE non-empty:
-// no database call, no migrate; the output folder holds only index.html, the bytes of the gate page.
+// vercel-build (ARCH §19.6, REQ-109 criterion 8, REQ-111 criterion 9, decisions/0116 О18; design
+// docs/design/REQ-111-112-public-landing.md, 4.11): with SITE_GATE empty, the open build — migrate (only
+// when MIGRATE_ON_BUILD=1), then check-public on the upload as it is, then the public set of
+// scripts/public-set.js written into the output folder (on Vercel public/ itself): no examples.html, no
+// order text and no Kazakh text (gates G8 and G9), every other file byte for byte. It writes in place, so
+// it refuses to run inside a git working tree, as the closed build does, and a second run on its own
+// output changes nothing. A refusal of the public set (a page whose markers cannot be paired, a texts
+// module that cannot be imported, a guard of the output) ends with exit 1 and the line
+// `vercel-build: refused: <its message>`, which names the file. runBuild is async
+// (it imports the texts module of the upload): it returns a promise of the exit code, which the CLI
+// awaits. With SITE_GATE non-empty: no database call, no migrate; the output folder holds only
+// index.html, the bytes of the gate page.
 //
 // The bytes of the gate page are the bytes of app/public/gate.html, pinned by their sha256 in GATE_SHA256
 // (unit test VB-3 compares the two, so a new gate page without a new constant is red in npm run check). A
@@ -76,9 +86,9 @@ export function closedOutput(dir) {
 
 /**
  * @param {BuildDeps} d
- * @returns {number}
+ * @returns {Promise<number>} the exit code
  */
-export function runBuild(d) {
+export async function runBuild(d) {
   const gate = typeof d.env.SITE_GATE === "string" && d.env.SITE_GATE !== "";
   if (gate) {
     const inPlace = path.resolve(d.outDir) === path.resolve(d.publicDir);
@@ -125,6 +135,16 @@ export function runBuild(d) {
     );
     return 0;
   }
+  // The open build (4.11, the steps of its table). (1) It writes the public set into the output folder,
+  // so in place it runs only in the uploaded copy: inside a git working tree it refuses before any step.
+  const inPlace = path.resolve(d.outDir) === path.resolve(d.publicDir);
+  if (inPlace && insideGitTree(d.outDir)) {
+    d.log(
+      "vercel-build: refused: the open build writes the public set into the output folder and runs only in the uploaded copy, not in a git working tree",
+    );
+    return 2;
+  }
+  // (2) The migration, (3) check-public on the upload as it is.
   if (d.env.MIGRATE_ON_BUILD === "1") {
     const code = d.migrate();
     if (code !== 0) {
@@ -139,8 +159,17 @@ export function runBuild(d) {
     d.log("vercel-build: refused: check-public found forbidden items");
     return 1;
   }
-  if (path.resolve(d.outDir) !== path.resolve(d.publicDir))
-    fs.cpSync(d.publicDir, d.outDir, { recursive: true });
+  // (4) The copy into another output folder, (5) the public set in the output folder. A refusal of the
+  // public set (an Error naming the file) or a failure of the copy ends with exit 1 and its message.
+  try {
+    if (!inPlace) fs.cpSync(d.publicDir, d.outDir, { recursive: true });
+    await writePublicSet(d.outDir);
+  } catch (err) {
+    d.log(
+      `vercel-build: refused: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 1;
+  }
   d.log("vercel-build: done");
   return 0;
 }
@@ -154,7 +183,7 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   const publicDir = path.join(APP, "public");
-  process.exitCode = runBuild({
+  process.exitCode = await runBuild({
     env: process.env,
     migrate: () => node(["server/db/migrate.js"]),
     checkPublic: () => node(["scripts/check-public.js"]),

@@ -106,3 +106,31 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
 - The look edit of decisions/0123 (J3, J5, J7) also carries the answer of I2/J2 (the team row under the intro from 760 to
   1206 px) into 7.7 and the answer of О11 above into 5.1 item 3; it runs before F3 (the design's section 12).
 
+## Addition 2026-11-20T09:31Z (ORCH, the stop of sub-step B6)
+
+- **О15 (B6 stopped by the rule of step 2, handoffs/M1CODE-20261119-01/step-02-backend-dev-b6.json, issue I0
+  BLOCKED).** Row B6 of section 12 reads «Red after it: CIW-1 and CIW-2 (section 11 rows 9–12) until T1». CIW-2 builds
+  its copies from the real app.yml and expects the clean ones to give no findings, so every app.yml written by 4.13 makes
+  it red exactly as CIW-1 until T1 lands rows 9–11 (measured by B6 in the project and in a fresh clone of the build tag,
+  with a trial of those rows: both tests green on the new file and red on the old one). app.yml needs no change. Every
+  later sub-step of step 2 (F6, F7) reads this row so. The whole check of step 2 runs once at its end, in F7, after both
+  lanes; B6's work of its row is complete. To DOC-UPDATER: B6's error-journal candidate (issue I9: a sub-step's red list
+  named the test that reads the changed file but not its twin that builds copies from it; measure every red list with the
+  changed file in place, as F50 did for B3).
+- **О16 (F6 stopped on the same test before О15 was written; F4's finding I6).** F6's stop is answered by О15 (its work
+  of the row is complete). F4's low finding I6 — the bound of 4 000 drawing calls a frame of the design's time budget
+  holds for every window up to 3 920 px wide; wider windows (from 3 940 px at scale 2 and 620–639 px high, from 6 760 px
+  at scale 4) draw up to 4 339 calls, measured — is a named limit of the design until a CODE-DESIGNER edit; a room wider
+  than 2 000 logical px gets no stage map and view.js shows the text view.
+
+## Addition 2026-11-20T10:44Z (ORCH, the end of step 2)
+
+- **О17 (F7's issue I1).** After a language switch the demo asks once more for the questionnaire, or for the result, in
+  the new language; the answers and the scene stay. The look's rule «no page mixes two languages» (§11) binds over the
+  design's «read once per load», which describes a load, not a switch; the request stores nothing.
+- **О18 (F7's issues I2 and I3, and F3's issue I4).** Two visible defects at 320 px go to CODE-FIXER with the findings
+  of steps 3 and 4, by REQ-111 criterion 12 (no cut text, no control over another): the speaker title of the demo is cut
+  in ru and kk («Руководитель проекта» 126 px in 82) — it breaks at spaces onto a second line, as 7.7's rule for titles
+  says, and the look's 7.9 follows in its next edit; the skip link wraps to two lines and its bottom 10.4 px show over
+  the header on every page — it keeps one line or stays inside its own box until it gets the focus.
+

@@ -5,6 +5,7 @@ RUN npm ci --omit=dev
 COPY server ./server
 COPY public ./public
 COPY db ./db
+COPY content ./content
 USER node
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
