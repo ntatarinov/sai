@@ -168,3 +168,47 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
   (the design's 4.7 gets a line); an intake option that is a string or an array now answers 503 `demo_unavailable`
   (before: 200 with an option without id and label; no test expected it).
 
+## Addition 2026-11-20T18:53Z (ORCH, after review pass 3 of REVIEWER: FAIL with M1–M3 in the tests, L1–L3)
+
+- **О26 (REVIEWER L1 and L2, a correction of О19 and О24 — G21).** Two facts the owner sees on a phone, measured by the
+  reviewer in Chrome 157 and put on his list of the look with a phone snapshot: (a) at 320×568, at the first scroll
+  position, «‹ Назад» (below 360 px on the progress row) is partly under the fixed live strip in 12 of 15 states by 7–37 px
+  and stays reachable by scroll and by Tab (the look's section 12 allows a bar the visitor can scroll away); at 360 px
+  and wider it is free; (b) at 390×844 the sticky bar of О24 is «byte-identical» to the fixed one only on question 1 —
+  on questions 2 and 4 it rests at y 743 of 844 with the top of the footer showing under it (12 of 120 states), the links
+  stay free. If the owner reads either as «not like the mockup», the rule «‹ Назад» back on row 2 below 360 px (and the
+  fixed bar with a measured padding) is the change.
+- **О27 (REVIEWER M1–M3, L3).** M1 (no test for the scroll padding of the focus), M2 (no test reads the skip link's
+  position) and M3 (duplicated test helpers: two blankers, `specifiersOf` ×2, the folder snapshot ×3, the target-desk
+  expression ×4) go to TEST-DESIGNER (fix round 05e): the rows red on the mutant that deletes each fix, one fixtures
+  module for each duplicated mechanism, the independent oracle tables stay. L3 (answer() serializes the body and discards
+  it, the comment says «once») goes to CODE-FIXER with the next findings. The open I1 of pass 2 (the ru titles cut at
+  360–371 px; no e2e window reads that band) is read by the DESIGN-QA step, which measures at the sample's windows and at
+  360 px.
+
+## Addition 2026-11-20T18:57Z (ORCH, after review pass 3 of SECURITY-REVIEWER: PASS, one low)
+
+- **О28.** SECURITY-REVIEWER's low L1 (a question or option id that is an object or an array is copied whole into the
+  questionnaire; through the function app (ru and en) the Kazakh text inside `id` bypasses G9; preconditions: an intake that
+  the content step refuses, deployed without the check chain) goes to CODE-FIXER with REVIEWER's L3: ids must be strings in
+  the projection (else `demo_unavailable`), a DM-6c row for an object id and an array id in a question and in an option
+  through the function entry (503, no Kazakh letter), the mutant «id copied whole» red. Not covered and named (as the
+  reviewer says): a hard link inside the output folder and a link in a parent of the output folder — neither is reachable
+  from the CLI, which writes in place.
+
+## Addition 2026-11-20T19:28Z (ORCH, after the fix round 05e)
+
+- **О29 (the review loop of steps 3 and 4).** The three passes of steps 3 and 4 are used (REVIEWER FAIL, PASS, FAIL; the
+  FAIL of pass 3 holds only tests, M1–M3, which the fix round 05e closed and TEST-DESIGN-VALIDATOR (step 5b) now checks as
+  WF-02 says for a test fix; the code has no blocking finding). The two lows left in the code (SECURITY-REVIEWER L1: ids
+  must be strings; REVIEWER L3: answer() serializes twice) and the lows of О26 wait for the one CODE-FIXER round that
+  follows DESIGN-QA (step 7), after which WF-02 sends steps 3 and 4 again on the whole change (a new loop of its own);
+  they are recorded, not lost.
+- **О30 (05e's note 3).** On /demo.html the question heading holds the focus at load (demo.js: the page announces the
+  first question), so the first Tab goes to the first card and the skip link is the stop after a Shift+Tab; on the other
+  pages it is the first stop. Accepted as the behaviour of the look's section 12 (focus order); DESIGN-QA reads it.
+- **О31 (step 6).** The code of this run goes to GitHub as a temporary branch `ci/m1-landing-<n>` made from main
+  d87b3d1 with only the `app/` and `.github/workflows/app.yml` of this tree (the records stay on `m0-records` until
+  M0.13, as for the skeleton, decisions/0122 О3), to measure `check.yml` and `app.yml` (incl. the e2e job on the runner's
+  Chrome, decisions/0124 О7) before any push to main; main is not touched, and nothing reaches production before G21.
+

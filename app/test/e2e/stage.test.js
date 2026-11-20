@@ -49,6 +49,19 @@ const STAGE_PAGES = Object.freeze(["/", "/how.html", "/demo.html"]);
 const ASKING_DESK = Object.freeze([1, 2, 3, 3, 4]);
 
 /**
+ * The desk the figure goes to when answer `i + 1` is given (`i` from 0): the desk that asks the next question,
+ * and desk 4 (the result) after the fifth answer.
+ * @param {number} i
+ */
+const deskAfterAnswer = (i) => (i < 4 ? ASKING_DESK[i + 1] : 4);
+/**
+ * The desk the figure stands at when answer `i + 1` is given: the door (null) before the first answer, else
+ * the desk it went to after the answer before.
+ * @param {number} i
+ */
+const deskBeforeAnswer = (i) => (i === 0 ? null : deskAfterAnswer(i - 1));
+
+/**
  * Starts the walk loop (before the tap), runs `act` (the tap) and waits for the walk to end at the line `until`
  * (the deadline of ten seconds is red). Gives what the loop saw.
  * @param {import("playwright-core").Page} page
@@ -328,12 +341,9 @@ test(
           for (let i = 0; i < 5; i++) {
             const next =
               i < 4 ? Q[i + 1].title : say("demo_result_title", lang);
-            const moves =
-              ASKING_DESK[i + 1] !== undefined &&
-              i < 4 &&
-              ASKING_DESK[i + 1] !== ASKING_DESK[i];
-            if (i === 0 || moves) {
-              const target = i < 4 ? ASKING_DESK[i + 1] : 4;
+            const moves = deskAfterAnswer(i) !== deskBeforeAnswer(i);
+            if (moves) {
+              const target = deskAfterAnswer(i);
               const seen = await walk(page, atDesk(target, lang), () =>
                 page.locator("#demo .card").nth(0).click(),
               );
@@ -534,8 +544,8 @@ test(
       assert.equal(await frameCount(page), f0, `${at}: no frame with no tap`);
       for (let i = 0; i < 5; i++) {
         const next = i < 4 ? Q[i + 1].title : say("demo_result_title", lang);
-        const target = i < 4 ? ASKING_DESK[i + 1] : 4;
-        const here = i === 0 ? null : i < 4 ? ASKING_DESK[i] : 4;
+        const target = deskAfterAnswer(i);
+        const here = deskBeforeAnswer(i);
         const before = await frameCount(page);
         if (here === null || target !== here) {
           const seen = await walk(page, atDesk(target, lang), () =>
@@ -638,8 +648,8 @@ test(
       const Q = intakeIn("ru").questions;
       for (let i = 0; i < 5; i++) {
         const next = i < 4 ? Q[i + 1].title : say("demo_result_title", "ru");
-        const target = i < 4 ? ASKING_DESK[i + 1] : 4;
-        const here = i === 0 ? null : i < 4 ? ASKING_DESK[i] : 4;
+        const target = deskAfterAnswer(i);
+        const here = deskBeforeAnswer(i);
         if (here === null || target !== here)
           await oneFrame(
             `reduced ${win.name} demo answer ${i + 1}`,
@@ -829,7 +839,7 @@ test(
             0,
             i < 4 ? Q[i + 1].title : say("demo_result_title", "ru"),
           );
-          await waitPlace(page, atDesk(i < 4 ? ASKING_DESK[i + 1] : 4, "ru"));
+          await waitPlace(page, atDesk(deskAfterAnswer(i), "ru"));
         }
         await page.waitForSelector("#demo .rc-kind, #demo .rc-nomatch");
         await textView(page, `${at} demo result`, "ru", atDesk(4, "ru"));

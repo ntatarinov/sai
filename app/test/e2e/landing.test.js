@@ -33,7 +33,12 @@ import {
   WINDOWS,
 } from "../fixtures/e2e-kit.js";
 import { startNode, waitFor } from "../fixtures/helpers.js";
-import { avatarPixels, layoutFindings } from "../fixtures/page-checks.js";
+import {
+  avatarPixels,
+  focusWalkFindings,
+  layoutFindings,
+  skipLinkFindings,
+} from "../fixtures/page-checks.js";
 
 // REQ-111 criterion 12 (the landing in a browser, automated) and the page parts of criteria 4, 9 and 10: the
 // tests LD-1 … LD-9 of the code design 10, one real Chrome, the local server on port 0 (the public set for LD-9).
@@ -136,6 +141,8 @@ test(
                   `#${id} does not hold the text of ${key}`,
                 ]);
             }
+            // The skip link first: it stands above the window at load and in the window, at 8 px, with the focus.
+            problems.add(where, await skipLinkFindings(env.page));
             problems.add(where, await layoutFindings(env.page));
             problems.add(where, await shownTextFindings(env.page, lang));
             for (const u of env.requested) {
@@ -583,9 +590,9 @@ function expectSpeaker(page, drawn, question, where) {
 }
 
 test(
-  "LD-5 the survey: the first question at load, five taps to the result, Back keeps the answer, Не знаю goes on, the whole survey by keyboard, the lint after each state",
+  "LD-5 the survey: the first question at load, five taps to the result, Back keeps the answer, Не знаю goes on, the whole survey by keyboard, the lint after each state, the focus above the live strip",
   {
-    timeout: 240000,
+    timeout: 600000,
   },
   async (t) => {
     const { port, origin } = await serveLocal(t);
@@ -764,6 +771,29 @@ test(
       }
       await readState(problems, "phone result", env, "en");
     }
+
+    // E. The focus above the live strip (the scroll padding of site.css, round 02c): on the two phone windows, in
+    // each language, at each of the five questions, Tab through every control from the start of the page; a
+    // focused control that is not the strip's own may not lie over the strip.
+    for (const win of WINDOWS.filter((w) => w.width < 760))
+      for (const lang of LOCAL_LANGS) {
+        const env = await newPage(browser, t, {
+          port,
+          viewport: { width: win.width, height: win.height },
+        });
+        const { page } = env;
+        const questions = intakeIn(lang).questions;
+        await page.goto(`${origin}/demo.html?lang=${lang}`);
+        await pageReady(page, "/demo.html", lang);
+        for (let i = 0; i < 5; i++) {
+          await waitHeading(page, questions[i].title);
+          problems.add(
+            `focus ${win.name} ${lang} question ${i + 1}`,
+            await focusWalkFindings(page),
+          );
+          if (i < 4) await answerAndWait(page, 0, questions[i + 1].title);
+        }
+      }
     assert.deepEqual(problems.lines(), []);
   },
 );

@@ -10,6 +10,7 @@ import {
   runBuild,
 } from "../../scripts/vercel-build.js";
 import { APP, tempDir } from "../fixtures/helpers.js";
+import { snapshot, tree } from "../fixtures/snapshot.js";
 
 // REQ-109 criterion 8 and REQ-111 criterion 9, with injected steps and a temporary output folder. runBuild is
 // async (decisions/0124 О2): every test here awaits it, because a test that does not await a promise proves
@@ -49,17 +50,6 @@ async function build(t, env, o = {}) {
   });
   return { code, calls, lines, outDir };
 }
-
-const tree = (/** @type {string} */ dir) =>
-  fs.readdirSync(dir, { recursive: true }).map(String).sort();
-
-/** The names and bytes of every file of a folder. */
-const snapshot = (/** @type {string} */ dir) =>
-  tree(dir).map((f) =>
-    fs.statSync(path.join(dir, f)).isFile()
-      ? `${f} ${fs.readFileSync(path.join(dir, f)).toString("base64")}`
-      : f,
-  );
 
 /**
  * One closed build in the Vercel shape: the output folder is the uploaded public/ itself (or `outDir`),

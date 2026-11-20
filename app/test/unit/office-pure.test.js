@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
-import { blank } from "../fixtures/blank.js";
+import { blank, specifiersOf } from "../fixtures/blank.js";
 import { APP } from "../fixtures/helpers.js";
 
 // REQ-112 criteria 3 and 9: the four pure modules of the office renderer (grid.js, sim.js, stage-scene.js,
@@ -40,20 +40,6 @@ const NAMES = [
 
 // ---------------------------------------------------------------------------------------------------------
 // The static rules.
-
-/**
- * The import specifiers of a source: `import … from "x"`, `import "x"`, `export … from "x"` and `import("x")`,
- * the comments blanked and the strings kept.
- * @param {string} src
- * @returns {string[]}
- */
-function specifiersOf(src) {
-  return [
-    ...blank(src, true).matchAll(
-      /\b(?:from|import)\s*\(?\s*(["'`])([^"'`\n]+)\1/g,
-    ),
-  ].map((m) => m[2]);
-}
 
 /**
  * Whether a source has an `import` or `export … from` or a dynamic import that names no string literal

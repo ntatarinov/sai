@@ -14,6 +14,7 @@ import {
 } from "../../scripts/public-set.js";
 import { insideGitTree, runBuild } from "../../scripts/vercel-build.js";
 import { APP, tempDir } from "../fixtures/helpers.js";
+import { fileNames, snapshot } from "../fixtures/snapshot.js";
 
 // REQ-111 criterion 9: the public set of the open build — what production leaves out (the order texts,
 // examples.html, the Kazakh texts) and what it keeps byte for byte. Every build here runs in place on a copy of
@@ -28,20 +29,7 @@ const TEXTS = "shared/i18n/texts.js";
 const CHANGED = ["404.html", "demo.html", "how.html", "index.html", TEXTS];
 const PAGES = ["404.html", "demo.html", "how.html", "index.html"];
 
-/** The names and bytes of every file of a folder, as "name sha256".
- * @param {string} dir */
-const snapshot = (dir) =>
-  fs
-    .readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((e) => e.isFile())
-    .map((e) => path.join(e.parentPath, e.name))
-    .sort()
-    .map(
-      (f) =>
-        `${path.relative(dir, f).split(path.sep).join("/")} ${createHash("sha256").update(fs.readFileSync(f)).digest("hex")}`,
-    );
-const names = (/** @type {string} */ dir) =>
-  snapshot(dir).map((l) => l.split(" ")[0]);
+const names = fileNames;
 const read = (/** @type {string} */ dir, /** @type {string} */ rel) =>
   fs.readFileSync(path.join(dir, rel), "utf8");
 

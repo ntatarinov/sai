@@ -1,136 +1,237 @@
-// A reader of JavaScript text for the tests of app/test (no test here): the text with its comments, strings,
-// template text and regular expressions blanked with spaces, the line breaks and every offset kept, so a
-// search in the blanked text finds the code only and a position in it is a position in the source. The code
-// of a template's `${…}` stays. It is the tests' own reader: it is written here and imports nothing from the
-// code under test. (A test file cannot be imported for this: importing one runs its tests again.)
+// The one reader of JavaScript text for the tests of app/test (no test here): `scan` reads a source text once,
+// token by token, and `blank` gives it with its comments, strings, template text and regular expressions blanked
+// with spaces, the line breaks and every offset kept, so a search in the blanked text finds the code only and a
+// position in it is a position in the source. The code of a template's `${…}` stays. It is the tests' own reader:
+// it is written here and imports nothing from the code under test. It lives in fixtures/ and not in a test file
+// because importing a test file runs its tests again (AP-014: one reader, so a case fixed in it is fixed for every
+// test that uses it).
 
-const KEYWORDS_BEFORE_REGEX = new Set([
+// The tokens after which a `/` starts a regular expression: a punctuator that cannot end an operand (a
+// division `/` and a spread `...` included), the start of the text, and "ctl)", the `)` of the condition
+// of `if`, `while`, `for` or `with`.
+const REGEX_AFTER = new Set([
+  "",
+  "(",
+  ",",
+  "=",
+  ":",
+  "[",
+  "!",
+  "&",
+  "|",
+  "?",
+  "{",
+  ";",
+  "+",
+  "-",
+  "*",
+  "%",
+  "<",
+  ">",
+  "~",
+  "^",
+  "/",
+  "...",
+  "ctl)",
+]);
+// The keywords after which an expression begins; after `.` (`x.in`) they are names and end one.
+const REGEX_AFTER_WORD = new Set([
   "return",
   "typeof",
   "case",
+  "do",
+  "else",
   "in",
-  "of",
+  "instanceof",
+  "new",
   "delete",
   "void",
   "throw",
-  "new",
-  "else",
-  "do",
   "yield",
   "await",
+  "extends",
+  "default",
+  "break",
+  "continue",
 ]);
-const SIGNS_BEFORE_REGEX = "(,=:[!&|?{};+-*%<>~^";
+// The tokens after which a `/` may start either: `}` (of a block or of an object), `++` and `--` (prefix
+// or postfix) and `of` (a keyword in `for (… of …)`, a name elsewhere).
+const SLASH_EITHER = new Set(["}", "++", "--", "of"]);
 
 /**
+ * Reads a source text once, token by token, into `code` (its comments, strings, template text and regular
+ * expressions blanked with spaces; the code of `${…}` stays) and `kept` (only its comments blanked); both
+ * keep line breaks and lengths. A `/` starts a regular expression or is a division by the token before it
+ * (REGEX_AFTER, REGEX_AFTER_WORD). Where that token leaves both open (SLASH_EITHER) the scan reads a
+ * division and lists the place in `slashes`, which `findings` makes red, so no text that the scan could
+ * read the other way hides code from the rules.
  * @param {string} src
- * @param {boolean} [commentsOnly] blank only the comments: strings, templates and regular expressions stay
- * @returns {string} a text of the same length
+ */
+export function scan(src) {
+  const code = src.split("");
+  const kept = src.split("");
+  /** @type {number[]} */
+  const slashes = [];
+  /** @type {number[]} the open `{` inside each `${…}`, innermost last */
+  const tpl = [];
+  /** @type {boolean[]} for each open `(`, whether it holds the condition of `if`, `while`, `for` or `with` */
+  const parens = [];
+  // The last token (a word, a punctuator, "0" for a literal, "ctl)"), the token before it, whether the
+  // last word follows `.` (a property name), and whether the next word character starts a new word.
+  let prev = "";
+  let before = "";
+  let dotted = false;
+  let fresh = true;
+  const blankAll = (/** @type {number} */ a, /** @type {number} */ b) => {
+    for (let k = a; k < b; k++) if (src[k] !== "\n") code[k] = kept[k] = " ";
+  };
+  const blankCode = (/** @type {number} */ a, /** @type {number} */ b) => {
+    for (let k = a; k < b; k++) if (src[k] !== "\n") code[k] = " ";
+  };
+  const token = (/** @type {string} */ t) => {
+    before = prev;
+    prev = t;
+    dotted = false;
+    fresh = true;
+  };
+  let i = 0;
+  if (src.startsWith("#!")) {
+    const e = src.indexOf("\n");
+    i = e < 0 ? src.length : e;
+    blankAll(0, i);
+  }
+  while (i < src.length) {
+    const ch = src[i];
+    const nx = src[i + 1];
+    if (tpl.length && tpl[tpl.length - 1] === 0 && ch === "}") {
+      tpl.pop();
+      i = template(i + 1);
+      continue;
+    }
+    if (ch === "/" && (nx === "/" || nx === "*")) {
+      const e = nx === "/" ? src.indexOf("\n", i) : src.indexOf("*/", i + 2);
+      const end = e < 0 ? src.length : nx === "/" ? e : e + 2;
+      blankAll(i, end);
+      i = end;
+      fresh = true;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      let k = i + 1;
+      while (k < src.length && src[k] !== ch && src[k] !== "\n")
+        k += src[k] === "\\" ? 2 : 1;
+      blankCode(i + 1, k);
+      i = k + 1;
+      token("0");
+      continue;
+    }
+    if (ch === "`") {
+      i = template(i + 1);
+      continue;
+    }
+    if (ch === "/") {
+      if (SLASH_EITHER.has(prev) && !(prev === "of" && dotted)) slashes.push(i);
+      else if (
+        REGEX_AFTER.has(prev) ||
+        (!dotted && REGEX_AFTER_WORD.has(prev))
+      ) {
+        let k = i + 1;
+        let cls = false;
+        while (k < src.length && src[k] !== "\n") {
+          if (src[k] === "\\") k += 2;
+          else if (src[k] === "[") ((cls = true), k++);
+          else if (src[k] === "]") ((cls = false), k++);
+          else if (src[k] === "/" && !cls) break;
+          else k++;
+        }
+        blankCode(i + 1, k);
+        i = k + 1;
+        while (i < src.length && /[A-Za-z]/.test(src[i])) i++;
+        token("0");
+        continue;
+      }
+      token("/");
+      i++;
+      continue;
+    }
+    if (tpl.length && ch === "{") tpl[tpl.length - 1] += 1;
+    if (tpl.length && ch === "}") tpl[tpl.length - 1] -= 1;
+    if (/[A-Za-z0-9_$]/.test(ch)) {
+      if (fresh || !/[A-Za-z0-9_$]$/.test(prev)) {
+        // A name after `.`, `?.` or `#` (a private name such as `#return`) is a property, not a keyword.
+        const property = prev === "." || prev === ".." || prev === "#";
+        token(ch);
+        dotted = property;
+        fresh = false;
+      } else prev += ch;
+    } else if (/\s/.test(ch)) fresh = true;
+    else if ((ch === "+" || ch === "-") && prev === ch && src[i - 1] === ch)
+      prev = ch + ch;
+    else if (
+      ch === "." &&
+      (prev === "." || prev === "..") &&
+      src[i - 1] === "."
+    )
+      prev += ".";
+    else if (ch === "(") {
+      parens.push(
+        !dotted &&
+          (["if", "while", "for", "with"].includes(prev) ||
+            (prev === "await" && before === "for")),
+      );
+      token("(");
+    } else if (ch === ")") token(parens.pop() ? "ctl)" : ")");
+    else token(ch);
+    i++;
+  }
+  return { code: code.join(""), kept: kept.join(""), slashes };
+
+  /**
+   * Blanks the text of a template from `k` to its end or to its next `${`, and gives the index after it.
+   * @param {number} k
+   */
+  function template(k) {
+    const start = k;
+    while (k < src.length) {
+      if (src[k] === "\\") k += 2;
+      else if (src[k] === "`") {
+        blankCode(start, k);
+        token("0");
+        return k + 1;
+      } else if (src[k] === "$" && src[k + 1] === "{") {
+        blankCode(start, k);
+        tpl.push(0);
+        token("{");
+        return k + 2;
+      } else k++;
+    }
+    blankCode(start, k);
+    return k;
+  }
+}
+
+/**
+ * The text with its comments, strings, template text and regular expressions blanked (`scan(src).code`),
+ * or with `commentsOnly` only its comments (`scan(src).kept`), so a comment between the words of an import
+ * hides nothing.
+ * @param {string} src
+ * @param {boolean} [commentsOnly]
  */
 export function blank(src, commentsOnly = false) {
-  const n = src.length;
-  const out = src.split("");
-  /** @param {number} a @param {number} b */
-  const wipe = (a, b) => {
-    for (let k = a; k < b; k++)
-      if (src[k] !== "\n" && src[k] !== "\r") out[k] = " ";
-  };
-  /** @param {number} at the quote */
-  const skipString = (at) => {
-    let j = at + 1;
-    while (j < n && src[j] !== src[at] && src[j] !== "\n")
-      j += src[j] === "\\" ? 2 : 1;
-    return Math.min(j + 1, n);
-  };
-  /** @param {number} at the slash */
-  const skipRegex = (at) => {
-    let j = at + 1;
-    let inClass = false;
-    while (j < n && src[j] !== "\n") {
-      if (src[j] === "\\") j += 2;
-      else {
-        if (src[j] === "[") inClass = true;
-        else if (src[j] === "]") inClass = false;
-        else if (src[j] === "/" && !inClass) break;
-        j++;
-      }
-    }
-    return Math.min(j + 1, n);
-  };
-  /** @param {number} at the backtick @returns {number} the index after the closing backtick */
-  const scanTemplate = (at) => {
-    let j = at + 1;
-    let textStart = j;
-    while (j < n) {
-      if (src[j] === "\\") j += 2;
-      else if (src[j] === "`") {
-        if (!commentsOnly) wipe(textStart, j);
-        return j + 1;
-      } else if (src[j] === "$" && src[j + 1] === "{") {
-        if (!commentsOnly) wipe(textStart, j);
-        j = scanCode(j + 2, true);
-        textStart = j;
-      } else j++;
-    }
-    return n;
-  };
-  /** @param {number} from @param {boolean} untilBrace @returns {number} */
-  const scanCode = (from, untilBrace) => {
-    let i = from;
-    let depth = 0;
-    let last = "";
-    while (i < n) {
-      const c = src[i];
-      const d = src[i + 1];
-      if (c === "/" && d === "/") {
-        const end = src.indexOf("\n", i);
-        const stop = end < 0 ? n : end;
-        wipe(i, stop);
-        i = stop;
-      } else if (c === "/" && d === "*") {
-        const end = src.indexOf("*/", i + 2);
-        const stop = end < 0 ? n : end + 2;
-        wipe(i, stop);
-        i = stop;
-      } else if (c === '"' || c === "'") {
-        const stop = skipString(i);
-        if (!commentsOnly) wipe(i + 1, stop - 1);
-        i = stop;
-        last = "0";
-      } else if (c === "`") {
-        i = scanTemplate(i);
-        last = "0";
-      } else if (
-        c === "/" &&
-        (last === "" ||
-          SIGNS_BEFORE_REGEX.includes(last) ||
-          KEYWORDS_BEFORE_REGEX.has(last))
-      ) {
-        const stop = skipRegex(i);
-        if (!commentsOnly) wipe(i + 1, stop - 1);
-        i = stop;
-        last = "0";
-      } else if (/[A-Za-z_$]/.test(c)) {
-        let j = i + 1;
-        while (j < n && /[\w$]/.test(src[j])) j++;
-        last = src.slice(i, j);
-        i = j;
-      } else if (/[0-9]/.test(c)) {
-        let j = i + 1;
-        while (j < n && /[\w.]/.test(src[j])) j++;
-        last = "0";
-        i = j;
-      } else {
-        if (c === "{") depth++;
-        else if (c === "}") {
-          if (untilBrace && depth === 0) return i + 1;
-          depth--;
-        }
-        if (!/\s/.test(c)) last = c;
-        i++;
-      }
-    }
-    return n;
-  };
-  scanCode(0, false);
-  return out.join("");
+  const s = scan(src);
+  return commentsOnly ? s.kept : s.code;
+}
+
+/**
+ * The import specifiers of a source: `import … from "x"`, `import "x"`, `export … from "x"` and `import("x")`,
+ * the comments blanked and the strings kept (so a path in a comment is no import).
+ * @param {string} src
+ * @returns {string[]}
+ */
+export function specifiersOf(src) {
+  return [
+    ...blank(src, true).matchAll(
+      /\b(?:from|import)\s*\(?\s*(["'`])([^"'`\n]+)\1/g,
+    ),
+  ].map((m) => m[2]);
 }

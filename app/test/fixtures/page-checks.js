@@ -1,10 +1,11 @@
-/* global document, getComputedStyle, innerWidth, NodeFilter, requestAnimationFrame, window */
+/* global document, getComputedStyle, HTMLElement, innerHeight, innerWidth, NodeFilter, requestAnimationFrame, window */
 
 // The in-page measures of the e2e tests of app/test/e2e (no test here; the code design 10, `landing.test.js` and
 // `stage.test.js`): what a page shows to the eye, read once in the page and reported as lines, so every LD and ST
 // test reads a state the same way (AP-014). Each function that runs in the page is self-contained (it is sent to
 // the browser as source text) and gives plain data; nothing in the page is changed, but a scroll position (a
-// control is scrolled to the middle of the window to see what lies over it, and the page is scrolled back).
+// control is scrolled to the middle of the window to see what lies over it, and the page is scrolled back) and,
+// for `skipLinkFindings` and `focusWalkFindings`, the focus.
 
 /**
  * Everything the layout rules of REQ-111 criterion 12 read in the page now, as lines of findings, and the sizes of
@@ -18,7 +19,7 @@
  * - `contrast`: every visible text element (the parent of such a text node) against its background found up the tree,
  *   at least 4.5:1 (the colour and the backgrounds composited, opacity of the element included).
  * - `size`: every visible button and link (the skip link, which stands outside the window until it has the focus,
- *   aside; its place is read by `skipLinkFindings`) at least 44 × 44 CSS pixels.
+ *   aside; its place is read by `skipLinkFindings` below) at least 44 × 44 CSS pixels.
  * - `overlap`: two visible controls whose boxes meet over more than one square pixel (a control that is fixed or
  *   sticky, as the phone bar of the demo, is read only against the others of its kind: the page scrolls from under
  *   it).
@@ -248,6 +249,144 @@ export async function layoutFindingsIn(options = {}) {
  */
 export function layoutFindings(page, options = {}) {
   return page.evaluate(layoutFindingsIn, options);
+}
+
+/**
+ * Where the skip link stands (REQ-111 criterion 12, decisions/0124 O18-b, look 7.1), read in the page. At rest (`focused`
+ * false: the page has just loaded, scrolled to the top) the link is off the window above: its bottom is at 0 or
+ * higher on the screen, whatever its text wraps to. With the focus (`focused` true) it stands in the window at
+ * `top: 8px` (look 7.1), inside the window on every side, with no cut text.
+ * @param {boolean} focused
+ * @returns {string[]}
+ */
+export function skipLinkFindingsIn(focused) {
+  const link = document.querySelector("a.skip");
+  if (link === null) return ["skip link: no a.skip on the page"];
+  const r = link.getBoundingClientRect();
+  const at = `${focused ? "focused" : "at rest"} (top ${r.top.toFixed(1)}, bottom ${r.bottom.toFixed(1)}, left ${r.left.toFixed(1)}, right ${r.right.toFixed(1)}, window ${innerWidth} x ${innerHeight})`;
+  /** @type {string[]} */
+  const out = [];
+  if (r.width === 0 || r.height === 0) out.push(`skip link: no box ${at}`);
+  if (!focused) {
+    if (document.activeElement === link)
+      out.push(`skip link: it has the focus at load ${at}`);
+    if (r.bottom > 0)
+      out.push(`skip link: its bottom shows over the window ${at}`);
+    return out;
+  }
+  if (document.activeElement !== link)
+    out.push(`skip link: it does not take the focus ${at}`);
+  if (Math.abs(r.top - 8) > 0.5)
+    out.push(`skip link: its top is not 8 px ${at}`);
+  if (r.left < 0 || r.right > innerWidth || r.bottom > innerHeight)
+    out.push(`skip link: it is not inside the window ${at}`);
+  if (link.scrollWidth > link.clientWidth)
+    out.push(
+      `skip link: cut text, scrollWidth ${link.scrollWidth} above clientWidth ${link.clientWidth}`,
+    );
+  return out;
+}
+
+/**
+ * The skip link of a page just loaded, at rest and then with the focus (given by a call); the focus is taken off
+ * again after the reading.
+ * @param {import("playwright-core").Page} page
+ * @returns {Promise<string[]>}
+ */
+export async function skipLinkFindings(page) {
+  const out = await page.evaluate(skipLinkFindingsIn, false);
+  // Focused by a call, not by the first Tab: the demo page puts the focus on its heading at load (demo.js), so the
+  // first Tab there starts after the heading; the rule under test is the link's `:focus` place.
+  await page.evaluate(() => {
+    const link = document.querySelector("a.skip");
+    if (link instanceof HTMLElement) link.focus();
+  });
+  out.push(...(await page.evaluate(skipLinkFindingsIn, true)));
+  await page.evaluate(() => {
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur();
+  });
+  return out;
+}
+
+/**
+ * What the focused control (`document.activeElement`) lies over, read in the page (REQ-111 criterion 12, the scroll
+ * padding of site.css that keeps a control the keyboard reaches above the live strip, look 7.11): a finding when
+ * its box meets the box of `#ticket` over more than one square pixel and it is not inside the strip itself. Also
+ * says which control it is, and whether the walk has come back to its start (the skip link or no control).
+ * @returns {{ at: string, card: boolean, back: boolean, findings: string[] }}
+ */
+export function focusOverStripIn() {
+  const strip = document.getElementById("ticket");
+  const a = document.activeElement;
+  if (strip === null)
+    return {
+      at: "",
+      card: false,
+      back: true,
+      findings: ["strip: #ticket is not on the page"],
+    };
+  if (
+    a === null ||
+    a === document.body ||
+    a === document.documentElement ||
+    a.classList.contains("skip")
+  )
+    return { at: "", card: false, back: true, findings: [] };
+  const cls =
+    typeof a.className === "string" && a.className !== ""
+      ? `.${a.className.trim().split(/\s+/).join(".")}`
+      : "";
+  const at = `${a.tagName.toLowerCase()}${a.id === "" ? "" : `#${a.id}`}${cls} «${(a.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 30)}»`;
+  /** @type {string[]} */
+  const findings = [];
+  if (!strip.contains(a)) {
+    const r = a.getBoundingClientRect();
+    const s = strip.getBoundingClientRect();
+    const w = Math.min(r.right, s.right) - Math.max(r.left, s.left);
+    const h = Math.min(r.bottom, s.bottom) - Math.max(r.top, s.top);
+    if (w > 1 && h > 1)
+      findings.push(
+        `focus under the strip: ${at} (top ${r.top.toFixed(1)}, bottom ${r.bottom.toFixed(1)}) meets #ticket (top ${s.top.toFixed(1)}) by ${w.toFixed(1)} x ${h.toFixed(1)}`,
+      );
+  }
+  return {
+    at,
+    card: a.classList.contains("card"),
+    back: false,
+    findings,
+  };
+}
+
+/**
+ * Tabs through the page from its start, one control at a time, and reads after each Tab what the focused control
+ * lies over (`focusOverStripIn`), until the walk is back at the skip link or leaves the page. The walk must have
+ * reached at least five controls and a card, so a walk that stands still is red as well (a green walk over no
+ * control proves nothing).
+ * @param {import("playwright-core").Page} page
+ * @returns {Promise<string[]>}
+ */
+export async function focusWalkFindings(page) {
+  /** @type {string[]} */
+  const out = [];
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+    const skip = document.querySelector("a.skip");
+    if (skip instanceof HTMLElement) skip.focus();
+  });
+  let stops = 0;
+  let cards = 0;
+  for (let n = 0; n < 80; n++) {
+    await page.keyboard.press("Tab");
+    const got = await page.evaluate(focusOverStripIn);
+    out.push(...got.findings);
+    if (got.back) break;
+    stops += 1;
+    if (got.card) cards += 1;
+  }
+  if (stops < 5 || cards === 0)
+    out.push(`focus walk: ${stops} controls and ${cards} cards reached`);
+  return out;
 }
 
 /**

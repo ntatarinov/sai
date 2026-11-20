@@ -5,8 +5,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
-import { blank } from "../fixtures/blank.js";
+import { specifiersOf } from "../fixtures/blank.js";
 import { APP, ROOT, tempDir } from "../fixtures/helpers.js";
+import { snapshot } from "../fixtures/snapshot.js";
 
 // REQ-111 criterion 6: the byte copy of the picker's engine, its record app/vendored.json, the step
 // `vendored` of the check, who imports the copy, and the declaration file that stands in for the copy under tsc.
@@ -46,19 +47,6 @@ test("VD-1 vendored.json lists exactly one entry; the sha256 of the copy, of its
 
 const SOURCE_EXT = /\.(?:js|mjs|cjs)$/;
 const ALLOWED_IMPORTERS = ["server/routes/demo.js"];
-
-/**
- * The import specifiers of a source file: `import … from "x"`, `import "x"`, `export … from "x"` and
- * `import("x")` (comments blanked, so a path in a comment is no import).
- * @param {string} src
- * @returns {string[]}
- */
-function specifiersOf(src) {
-  const kept = blank(src, true);
-  return [
-    ...kept.matchAll(/\b(?:from|import)\s*\(?\s*(["'`])([^"'`\n]+)\1/g),
-  ].map((m) => m[2]);
-}
 
 /**
  * The findings of VD-2 over the sources of app/ (path from app/ → text): the files that import the copy and
@@ -194,16 +182,6 @@ test("VD-2 server/vendor holds no other .js file; the copy is imported only by s
 
 // ---------------------------------------------------------------------------------------------------------
 // VD-3 the step on temporary copies.
-
-/** The names and bytes of every file under a folder.
- * @param {string} dir */
-const snapshot = (dir) =>
-  fs
-    .readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((e) => e.isFile())
-    .map((e) => path.join(e.parentPath, e.name))
-    .sort()
-    .map((f) => `${path.relative(dir, f)} ${sha(fs.readFileSync(f))}`);
 
 /**
  * A temporary tree of the shape the step reads — app/scripts/vendored.js, app/vendored.json, the copy and the
