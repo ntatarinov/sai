@@ -212,3 +212,17 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
   M0.13, as for the skeleton, decisions/0122 О3), to measure `check.yml` and `app.yml` (incl. the e2e job on the runner's
   Chrome, decisions/0124 О7) before any push to main; main is not touched, and nothing reaches production before G21.
 
+## Addition 2026-11-20T20:45Z (ORCH, after DESIGN-QA first pass: FAIL by N1; N2, N3 low)
+
+- **О32 (N1, the open I1 of О27; a correction of О19).** The own row of the demo's speaker applies below 372 px, not
+  below 360 px (`max-width: 371px`): in ru «Руководитель проекта» is 126 px and «Проверяющий» 130 px against a column of
+  122 px at 360 and 119 px at 361, and from 372 px they fit (kk and en never overflow, 17 widths measured). The look's 7.9
+  gets the threshold in its next edit; the e2e row that reads the speaker gets the windows 360 and 371 px.
+- **О33 (N2, N3).** N2: each result chip carries `aria-label="<question>: <answer>"` (the question was only in `title`).
+  N3: `no_match_text` of the intake is conditional in all three languages and names no answer the visitor did not give
+  (for the all-«Не знаю» result): «Если данные должны храниться на всех устройствах, нужен сервер, а серверы Sai пока не
+  делает.» and its kk and en forms.
+- **О34 (the round).** CODE-FIXER round 02d closes N1, N2, N3, SECURITY-REVIEWER L1 (string ids, О28) and REVIEWER L3
+  (answer() serializes twice); then steps 3 and 4 run again on the whole change (О29), TEST-DESIGN-VALIDATOR checks the
+  tests it touched, and DESIGN-QA runs its second pass on the same tree.
+
