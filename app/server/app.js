@@ -1,9 +1,11 @@
 import { Hono } from "hono";
+import { PUBLIC_LANGS } from "../public/shared/i18n/lang.js";
 import { readBody } from "./http/body.js";
 import { errorBody, HttpError, UNIFORM_404 } from "./http/errors.js";
 import { API_CACHE, securityHeaders } from "./http/headers.js";
 import { isPreviewHost } from "./http/origin.js";
 import { newRequestId } from "./http/request-id.js";
+import { loadIntake } from "./routes/demo.js";
 import { routeTable } from "./routes/index.js";
 
 // createApp(deps): the one Hono app of the Node server, Docker and the Vercel function (ARCH §0, §2).
@@ -19,6 +21,8 @@ import { routeTable } from "./routes/index.js";
  * @property {ReadonlyArray<{ name: string, sha256: string }>} migrations
  * @property {(entry: Record<string, unknown>) => void} log
  * @property {() => number} [now]
+ * @property {{ intake: import("./routes/demo.js").Intake, langs: readonly string[] }} [demo] the intake and
+ *   the languages of the two demo routes; without it their paths answer the uniform 404
  */
 
 const JSON_TYPE = "application/json; charset=utf-8";
@@ -38,6 +42,7 @@ export function createApp(deps) {
     db: deps.db,
     migrations: deps.migrations,
     version: deps.config.version,
+    demo: deps.demo,
   });
 
   app.use("*", async (c, next) => {
@@ -127,8 +132,21 @@ export function createApp(deps) {
 
   for (const r of routes) {
     app.on(r.method, r.path, async (c) => {
-      c.get("tag").route = r.path;
-      const out = await r.handler();
+      const tag = c.get("tag");
+      tag.route = r.path;
+      let out;
+      try {
+        out = await r.handler({
+          query: new URL(c.req.url).searchParams,
+          body: c.get("body"),
+        });
+      } catch (err) {
+        // A refusal of the handler: its status and its stable code, as the body limit answers above;
+        // any other exception goes to onError.
+        if (!(err instanceof HttpError)) throw err;
+        tag.code = err.code;
+        return json(c, err.status, errorBody(err.code));
+      }
       return json(c, out.status, JSON.stringify(out.body));
     });
   }
@@ -162,9 +180,10 @@ export function createApp(deps) {
 
 /**
  * The app of the Vercel function: the database by the runtime URL (no statement before the selfcheck),
- * no static files (the platform serves app/public), origins from the configuration only.
+ * no static files (the platform serves app/public), origins from the configuration only, and the demo in
+ * the public languages only (REQ-111 criterion 9 (g)).
  * @param {import("./config.js").Config} config
- * @param {{ adapter?: import("./db/index.js").Adapter, log?: (entry: Record<string, unknown>) => void }} [inject]
+ * @param {{ adapter?: import("./db/index.js").Adapter, log?: (entry: Record<string, unknown>) => void, intake?: import("./routes/demo.js").Intake }} [inject]
  */
 export async function createFunctionApp(config, inject = {}) {
   const { createDb } = await import("./db/index.js");
@@ -195,5 +214,6 @@ export async function createFunctionApp(config, inject = {}) {
     site: null,
     migrations,
     log,
+    demo: { intake: inject.intake ?? loadIntake(), langs: PUBLIC_LANGS },
   });
 }

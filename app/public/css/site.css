@@ -1,0 +1,1980 @@
+/*
+ * The components of the public pages (the code design of the public landing, 4.4; the look 6.3 -
+ * 6.6, 7, 8, 9.7, 9.8, 9.16, 10 and 12), carried from the approved v3 sample with the changes the
+ * look names. Colours are the tokens of tokens.css. A size that depends on the window comes only
+ * from a media query, a canvas attribute, scrollLeft or a custom property of the closed list of the
+ * code design: --H, --rw, --dt, --wh, --cx1 ... --cx4 and --you on the stage, --tx on the question
+ * panel. The selectors below are the markup the pages and their scripts write; each section names
+ * its own.
+ */
+
+/* ---- base (the look 6.5, 7.1, 7.20, 7.21) ---- */
+
+:root {
+  --gut: 20px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.45 var(--font);
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Visually hidden, never display: none: the live region #live and the text list of the stage stay
+   in the accessibility tree. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* a.skip, the first element of the body, to #main: off-screen above the window by its own height as
+   well, however many lines its text takes, until it has the focus (the look 7.1) */
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 50;
+  min-height: 48px;
+  padding: 12px 16px;
+  background: var(--btn);
+  color: var(--onbtn);
+  font-weight: 800;
+  transform: translateY(-100%);
+}
+
+.skip:focus {
+  top: 8px;
+  transform: none;
+}
+
+:focus-visible {
+  outline: 3px solid var(--acct);
+  outline-offset: 4px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--gut);
+}
+
+/* ---- the pixel frame (the look 6.5, 7.6): four hard edges of --px and one drop ---- */
+
+.btn,
+.card,
+.ticket,
+.receipt,
+.idea,
+.chip,
+.ask,
+.team li,
+.info,
+.example {
+  --bd: var(--ink);
+  box-shadow:
+    calc(-1 * var(--px)) 0 0 0 var(--bd),
+    var(--px) 0 0 0 var(--bd),
+    0 calc(-1 * var(--px)) 0 0 var(--bd),
+    0 var(--px) 0 0 var(--bd),
+    var(--px) calc(2 * var(--px)) 0 0 var(--shadow);
+  margin: var(--px);
+}
+
+/* ---- the header bar (the look 7.2): header.bar > a.brand (span.tile + span) + div.ctl >
+   (div.langs > button[data-lang]) + button.theme#theme (span.theme-icon + span.theme-label) ---- */
+
+.bar {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 var(--gut);
+  background: var(--bg);
+  border-bottom: var(--px) solid var(--ink);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 48px;
+  min-height: 48px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.tile {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  margin: 2px;
+  background: var(--btn);
+  color: var(--onbtn);
+  font-weight: 900;
+  font-size: 17px;
+  box-shadow:
+    -2px 0 0 var(--ink),
+    2px 0 0 var(--ink),
+    0 -2px 0 var(--ink),
+    0 2px 0 var(--ink);
+}
+
+.brand .tile + span {
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ctl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.langs {
+  display: inline-flex;
+  gap: 0;
+}
+
+.langs button,
+.theme {
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink2);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.langs button[aria-pressed="true"] {
+  color: var(--ink);
+  background: transparent;
+  box-shadow: inset 0 calc(-1 * var(--px)) 0 0 var(--acct);
+}
+
+@media (hover: hover) {
+  .langs button:hover,
+  .theme:hover {
+    color: var(--ink);
+  }
+}
+
+.theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.theme-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(90deg, var(--ink) 50%, transparent 50%);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.theme-label {
+  font-size: 13px;
+}
+
+/* ---- the test-mode strip (the look 7.3): p.testmode#test-mode > span.sq + span ---- */
+
+.testmode {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px var(--gut);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+  border-bottom: var(--px) solid var(--ink);
+}
+
+.testmode .sq {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: calc((1.35em - 12px) / 2);
+  background: var(--btn);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+/* ---- the stage (the look 7.4, 9.1, 9.7, 9.8, 9.14): div.stage#stage > div.stage-inner >
+   canvas#stage-canvas + div.stage-labels > div.sign (b + i), div.you, div.plate[data-desk="1"]
+   ... [data-desk="4"] (one span per line; .now on the current desk). Before its first frame the
+   stage keeps the lower bound of H for the window's scale; view.js writes the exact --H. ---- */
+
+.stage {
+  --H: 92;
+  position: relative;
+  flex: none;
+  height: calc(var(--H) * var(--px));
+  overflow: hidden;
+  background: var(--sc-wall);
+  border-bottom: var(--px) solid var(--ink);
+}
+
+@media (min-width: 1300px) and (min-height: 700px) {
+  .stage {
+    --H: 88;
+  }
+}
+
+@media (max-height: 599px) {
+  .stage {
+    --H: 84;
+  }
+}
+
+.stage-inner {
+  position: relative;
+  width: calc(var(--rw, 350) * var(--px));
+  height: calc(var(--H) * var(--px));
+}
+
+#stage-canvas {
+  display: block;
+  width: calc(var(--rw, 350) * var(--px));
+  height: calc(var(--H) * var(--px));
+  image-rendering: pixelated;
+}
+
+.stage-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sign {
+  position: absolute;
+  left: calc(7 * var(--px));
+  top: calc(max(7, var(--wh) - 27) * var(--px));
+  width: calc(34 * var(--px));
+  height: calc(17 * var(--px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  overflow: hidden;
+  text-align: center;
+  background: var(--plate);
+  color: var(--plate-ink);
+  box-shadow:
+    inset 0 0 0 1px var(--plate-edge),
+    inset 0 calc(-1.4 * var(--px)) 0 0 var(--btn);
+}
+
+.sign b {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-bottom: calc(1.2 * var(--px));
+  font-size: calc(3.9 * var(--px));
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+/* the tagline is hidden at s = 2: shown under the query that gives --px 3 or 4 (tokens.css) */
+.sign i {
+  display: none;
+}
+
+@media (min-width: 1000px) and (min-height: 640px) {
+  .sign i {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: -4px;
+    padding-bottom: 6px;
+    font-style: normal;
+    font-size: 10px;
+    line-height: 1.1;
+    color: var(--plate-ink2);
+  }
+}
+
+.you {
+  position: absolute;
+  left: calc(var(--you, 24) * var(--px));
+  top: calc((var(--H) - 36) * var(--px));
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  background: var(--btn);
+  color: var(--onbtn);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 16px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.you::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 6px;
+  height: 4px;
+  margin-left: -3px;
+  background: var(--ink);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.plate {
+  position: absolute;
+  top: calc((var(--dt) + 6) * var(--px));
+  width: calc(50 * var(--px));
+  height: calc(8 * var(--px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: calc(3.9 * var(--px));
+  font-weight: 900;
+  line-height: 1;
+  color: var(--plate-ink);
+  background: var(--plate);
+  box-shadow: inset 0 0 0 1px var(--plate-edge);
+  pointer-events: none;
+  transition:
+    background 0.3s,
+    color 0.3s;
+}
+
+.plate[data-desk="1"] {
+  left: calc((var(--cx1) - 25) * var(--px));
+}
+
+.plate[data-desk="2"] {
+  left: calc((var(--cx2) - 25) * var(--px));
+}
+
+.plate[data-desk="3"] {
+  left: calc((var(--cx3) - 25) * var(--px));
+}
+
+.plate[data-desk="4"] {
+  left: calc((var(--cx4) - 25) * var(--px));
+}
+
+/* one line element per line, never wrapped by itself; when a plate of the page language has two
+   lines, every plate of the stage is two lines high */
+.plate > span {
+  display: block;
+  white-space: nowrap;
+}
+
+.plate > span:first-child:not(:last-child),
+.plate > span + span {
+  line-height: 1.1;
+}
+
+.stage-labels:has(.plate > span + span) .plate {
+  height: calc(13 * var(--px));
+}
+
+.plate.now {
+  background: var(--plate-now);
+  color: var(--onbtn);
+  box-shadow: inset 0 0 0 1px var(--plate-now-edge);
+}
+
+/* ---- the text list of the stage and the text view (the look 9.16): div.stage-text.sr#stage-text
+   > ol#stage-desks > li (four) + p#stage-you, right after the stage. Hidden by .sr while the canvas
+   draws; shown in the place of the stage when view.js sets .text-view on the stage (and by
+   noscript.css when there is no script). ---- */
+
+.stage-text ol {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.stage-text li {
+  padding: 4px 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--plate-ink);
+  background: var(--plate);
+  box-shadow: inset 0 0 0 1px var(--plate-edge);
+}
+
+.stage-text p {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.stage.text-view {
+  display: none;
+}
+
+.stage.text-view + .stage-text {
+  position: static;
+  flex: none;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  padding: 12px var(--gut);
+  background: var(--sc-wall);
+  border-bottom: var(--px) solid var(--ink);
+}
+
+/* ---- the caption band (the look 7.4): p.caption#scene-caption, aligned with .wrap ---- */
+
+.caption {
+  flex: none;
+  padding: 5px calc(max(0px, (100% - 1240px) / 2) + var(--gut));
+  background: var(--paper);
+  color: var(--ink2);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* ---- the main panel (the look 6.5): main#main.panel > div.wrap; .v-ask while the demo asks,
+   .v-result while it shows the result ---- */
+
+.panel {
+  flex: 1 0 auto;
+  overflow-x: clip;
+  outline: none;
+  padding: 12px 0 36px;
+  background: var(--paper);
+}
+
+@media (min-width: 760px) {
+  body[data-page="landing"] .panel,
+  body[data-page="notfound"] .panel,
+  .panel.v-result {
+    padding-top: 26px;
+  }
+}
+
+/* ---- text (the look 6.4) ---- */
+
+h1 {
+  font-size: clamp(27px, 4vw, 46px);
+  line-height: 1.04;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+h2 {
+  font-size: clamp(22px, 2.6vw, 32px);
+  line-height: 1.15;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+:is(h1, h2, h3):focus {
+  outline: none;
+}
+
+.eyebrow {
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--acct);
+}
+
+.pitch {
+  max-width: 54ch;
+  margin-top: 12px;
+  font-size: 18px;
+  color: var(--ink2);
+}
+
+.meta,
+.fine {
+  font-size: 14px;
+  color: var(--ink2);
+}
+
+.lbl {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+.sub {
+  margin-top: 6px;
+  color: var(--ink2);
+}
+
+em {
+  font-style: normal;
+}
+
+/* ---- links and buttons (the look 6.5, 7.5): .lnk; .btn with .big, .small, .ghost ---- */
+
+.lnk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--acct);
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .lnk:hover {
+    color: var(--ink);
+  }
+}
+
+a.lnk {
+  text-decoration-line: underline;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 22px;
+  border: 0;
+  background: var(--btn);
+  color: var(--onbtn);
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.08s;
+}
+
+@media (hover: hover) {
+  .btn:hover {
+    filter: brightness(1.06);
+  }
+}
+
+.btn:active,
+.card.hit {
+  transform: translateY(var(--px));
+  box-shadow:
+    calc(-1 * var(--px)) 0 0 0 var(--bd),
+    var(--px) 0 0 0 var(--bd),
+    0 calc(-1 * var(--px)) 0 0 var(--bd),
+    0 var(--px) 0 0 var(--bd);
+}
+
+.btn.big {
+  min-height: 64px;
+  padding: 0 32px;
+  font-size: 20px;
+}
+
+.btn.small {
+  min-height: 48px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+.btn.ghost {
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* ---- the landing hero (the look 8.1 A, 7.7): section.hero > div.intro (p.eyebrow, h1, p.pitch,
+   div.cta, p.meta) + ul.team > li (canvas[data-avatar], b, span); beside the intro only from 1207
+   px, under it with max-width 560px from 760 to 1206 px, hidden below 760 ---- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 36px;
+  align-items: center;
+}
+
+@media (min-width: 1207px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+}
+
+.intro {
+  padding: 4px 0;
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 22px;
+}
+
+.meta {
+  margin-top: 12px;
+}
+
+.team {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  max-width: 560px;
+}
+
+@media (min-width: 1207px) {
+  .team {
+    max-width: none;
+  }
+}
+
+.team li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px;
+  text-align: center;
+  background: var(--card);
+}
+
+.team li > b {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.team li > span {
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--ink2);
+  overflow-wrap: anywhere;
+}
+
+/* an avatar: a 24 x 26 bitmap shown at an integer scale (the look 9.15) */
+canvas[data-avatar] {
+  width: calc(24 * var(--av, 3px));
+  height: calc(26 * var(--av, 3px));
+  image-rendering: pixelated;
+}
+
+.team canvas[data-avatar] {
+  --av: 3px;
+}
+
+/* ---- blocks of a page and info panels (the look 7.17, 8.1 B and D, 8.2, 8.3): div.wrap.blocks
+   holds the blocks of the landing, how it works, examples and 404; div.panels > section.info ---- */
+
+.blocks > * + * {
+  margin-top: 36px;
+}
+
+h2 + .steps,
+h2 + .panels {
+  margin-top: 22px;
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+@media (min-width: 1000px) {
+  .panels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 22px;
+  background: var(--card);
+}
+
+.panels + .lnk {
+  margin-top: 12px;
+}
+
+/* the four stage sections of how it works: div.how-stages > section#stage-1 ... #stage-4 */
+.how-stages {
+  margin-top: 22px;
+}
+
+.how-stages > section + section {
+  margin-top: 22px;
+}
+
+.how-stages p,
+.how-stages ul {
+  margin-top: 8px;
+}
+
+/* ---- the stage steps (the look 7.8): ol.steps > li > a (the landing, to /how.html#stage-n) or
+   button[data-step][aria-pressed] (how it works) > span.sn + span.st (b + span) ---- */
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.steps a,
+.steps button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 0 0;
+  border: 0;
+  border-top: calc(1.5 * var(--px)) solid
+    color-mix(in srgb, var(--ink2) 40%, transparent);
+  background: none;
+  color: var(--ink2);
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: none;
+}
+
+.steps .sn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font: 900 14px var(--mono);
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--ink2);
+}
+
+.steps .st {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.steps .st > b {
+  font-weight: 800;
+}
+
+.steps .st > span {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink2);
+}
+
+.steps [aria-pressed="true"] {
+  border-top-color: var(--btn);
+  color: var(--ink);
+}
+
+.steps [aria-pressed="true"] .sn {
+  background: var(--btn);
+  color: var(--onbtn);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+/* ---- the question (the look 7.9, 7.10): div.wrap.ask-wrap > div.ask (--tx: the tail) >
+   div.ask-h (div.spk (canvas[data-avatar] + div.who (b + span)), h2, div.prog (span.pg > i,
+   span.pt), button.btn.ghost.back) + div.cards > button.card (span.kb + span.cl), button.card.dk;
+   the next sibling of .ask is aside.ticket ---- */
+
+.ask-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.ask {
+  position: relative;
+  margin-top: calc(5 * var(--px));
+  padding: 12px 20px 16px;
+  background: var(--paper);
+}
+
+.ask::before,
+.ask::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--tx, 120px) - 5 * var(--px));
+  width: calc(10 * var(--px));
+  transition: left 0.6s cubic-bezier(0.3, 0.7, 0.2, 1);
+  pointer-events: none;
+}
+
+.ask::before {
+  top: calc(-5 * var(--px));
+  height: calc(5 * var(--px));
+  background: var(--ink);
+  clip-path: polygon(
+    calc(4 * var(--px)) 0,
+    calc(6 * var(--px)) 0,
+    calc(6 * var(--px)) var(--px),
+    calc(7 * var(--px)) var(--px),
+    calc(7 * var(--px)) calc(2 * var(--px)),
+    calc(8 * var(--px)) calc(2 * var(--px)),
+    calc(8 * var(--px)) calc(3 * var(--px)),
+    calc(9 * var(--px)) calc(3 * var(--px)),
+    calc(9 * var(--px)) calc(4 * var(--px)),
+    calc(10 * var(--px)) calc(4 * var(--px)),
+    calc(10 * var(--px)) calc(5 * var(--px)),
+    0 calc(5 * var(--px)),
+    0 calc(4 * var(--px)),
+    var(--px) calc(4 * var(--px)),
+    var(--px) calc(3 * var(--px)),
+    calc(2 * var(--px)) calc(3 * var(--px)),
+    calc(2 * var(--px)) calc(2 * var(--px)),
+    calc(3 * var(--px)) calc(2 * var(--px)),
+    calc(3 * var(--px)) var(--px),
+    calc(4 * var(--px)) var(--px)
+  );
+}
+
+.ask::after {
+  top: calc(-4 * var(--px));
+  height: calc(6 * var(--px));
+  background: var(--paper);
+  clip-path: polygon(
+    calc(4 * var(--px)) 0,
+    calc(6 * var(--px)) 0,
+    calc(6 * var(--px)) var(--px),
+    calc(7 * var(--px)) var(--px),
+    calc(7 * var(--px)) calc(2 * var(--px)),
+    calc(8 * var(--px)) calc(2 * var(--px)),
+    calc(8 * var(--px)) calc(3 * var(--px)),
+    calc(9 * var(--px)) calc(3 * var(--px)),
+    calc(9 * var(--px)) calc(6 * var(--px)),
+    var(--px) calc(6 * var(--px)),
+    var(--px) calc(3 * var(--px)),
+    calc(2 * var(--px)) calc(3 * var(--px)),
+    calc(2 * var(--px)) calc(2 * var(--px)),
+    calc(3 * var(--px)) calc(2 * var(--px)),
+    calc(3 * var(--px)) var(--px),
+    calc(4 * var(--px)) var(--px)
+  );
+}
+
+.ask-h {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 20px;
+  margin-bottom: 12px;
+}
+
+.spk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spk canvas[data-avatar] {
+  --av: 2px;
+  flex: none;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.who b {
+  font-weight: 900;
+  font-size: 17px;
+}
+
+.who span {
+  font-size: 13px;
+  color: var(--ink2);
+}
+
+.prog {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pg,
+.pp {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.pg i,
+.pp i {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--ink2);
+}
+
+.pg i.on,
+.pp i.on {
+  background: var(--btn);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.pp i.half {
+  background: linear-gradient(90deg, var(--btn) 50%, transparent 50%);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.pt {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+.ask h2 {
+  margin: 0;
+  font-size: clamp(22px, 2.2vw, 30px);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 104px;
+  padding: 8px 10px 10px;
+  border: 0;
+  background: var(--card);
+  text-align: center;
+  transition: transform 0.08s;
+}
+
+@media (hover: hover) {
+  .card:hover {
+    --bd: var(--acct);
+    transform: translateY(calc(-1 * var(--px)));
+  }
+}
+
+.card[aria-pressed="true"] {
+  --bd: var(--acct);
+  background: color-mix(in srgb, var(--btn) 16%, var(--card));
+}
+
+.card[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  width: 14px;
+  height: 14px;
+  background: var(--btn);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.kb {
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  font: 800 12px/1 var(--mono);
+  color: var(--ink2);
+}
+
+.cl {
+  font-weight: 900;
+  font-size: 17px;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.card.dk {
+  --bd: var(--ink2);
+  justify-content: center;
+  border: 0;
+  background: transparent;
+}
+
+.card.dk .cl {
+  font-size: 16px;
+}
+
+/* ---- the live strip (the look 7.11, 6.6): aside.ticket#ticket > div.tk-sum (span.lbl, span.pp >
+   i, span.pt), ul.tk-lines > li (li.new the newest, li.more the +N) or p.tk-hint, button.lnk.tgl,
+   div.tk-sheet (div.sh-h (b + button.lnk), ul.rl), button.btn.enough; .open opens the sheet ---- */
+
+.ticket {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 26px;
+  margin-top: 18px;
+  padding: 10px 22px 12px;
+  background: var(--rc);
+  color: var(--rcink);
+}
+
+.ticket::before,
+.ticket::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: calc(4 * var(--px));
+  height: calc(4 * var(--px));
+  margin-top: calc(-2 * var(--px));
+  background: var(--paper);
+}
+
+.ticket::before {
+  left: calc(-2 * var(--px));
+  box-shadow: var(--px) 0 0 0 var(--ink);
+}
+
+.ticket::after {
+  right: calc(-2 * var(--px));
+  box-shadow: calc(-1 * var(--px)) 0 0 0 var(--ink);
+}
+
+.ticket .lbl,
+.receipt .lbl,
+.example .lbl {
+  color: var(--rc2);
+}
+
+.ticket .pt,
+.receipt .pt {
+  color: var(--rc2);
+}
+
+.ticket .pp i,
+.receipt .pp i {
+  box-shadow: inset 0 0 0 2px var(--rcpip);
+}
+
+.ticket .pp i.on,
+.receipt .pp i.on {
+  background: var(--btn);
+  box-shadow: inset 0 0 0 2px var(--rcink);
+}
+
+.ticket .pp i.half,
+.receipt .pp i.half {
+  box-shadow: inset 0 0 0 2px var(--rcink);
+}
+
+.tk-sum {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tk-lines,
+.tk-hint {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.tk-lines {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  max-height: 30px;
+  overflow: hidden;
+}
+
+.tk-lines li {
+  max-width: 100%;
+  padding: 3px 9px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  background: var(--chip);
+}
+
+.tk-lines li.more {
+  background: transparent;
+  font-family: var(--mono);
+}
+
+.tk-hint {
+  font-size: 14px;
+  color: var(--rc2);
+}
+
+.tgl {
+  display: none;
+}
+
+.tk-sheet {
+  display: none;
+}
+
+.enough {
+  min-height: 56px;
+  background: var(--btn);
+}
+
+.ticket .enough {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.ticket .lnk,
+.receipt .lnk,
+.example .lnk {
+  color: var(--rclink);
+}
+
+@media (hover: hover) {
+  .ticket .lnk:hover,
+  .receipt .lnk:hover,
+  .example .lnk:hover {
+    color: var(--rcink);
+  }
+}
+
+/* the focus ring of the controls that stand on the cream --rc areas (the look 7.20) */
+.ticket :focus-visible,
+.receipt :focus-visible,
+.example :focus-visible {
+  outline-color: var(--ring-rc);
+}
+
+/* ---- the result (the look 8.4, 7.12 - 7.15): div.wrap.res (.nomatch on no match) > div.r-sum
+   (h2, p.sub, article.receipt), section.idea, div.r-ans > ul.chips > li > button.chip > b,
+   div.r-lines > section (h3 + ul.rl) ---- */
+
+.res {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-areas:
+    "sum panel"
+    "ans panel"
+    "lines panel";
+  align-items: start;
+  gap: 22px 40px;
+}
+
+.res.nomatch {
+  grid-template-areas:
+    "sum panel"
+    "lines panel"
+    "ans panel";
+}
+
+.r-sum {
+  grid-area: sum;
+}
+
+.r-ans {
+  grid-area: ans;
+}
+
+.r-lines {
+  grid-area: lines;
+}
+
+/* article.receipt > header.rc-h (span + span.num) + div.rc-body: div.rc-fit (span.lbl +
+   p.rc-kind), p.rc-text, p.rc-also, div.rc-acc (span.lbl + div.prog), or p.rc-nomatch, or div.msg */
+.receipt {
+  margin-top: 22px;
+  padding: 16px 20px 20px;
+  background: var(--rc);
+  color: var(--rcink);
+}
+
+.rc-h {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 2px dashed var(--rcline);
+  font: 800 12px/1.2 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rc2);
+}
+
+.rc-body > * + * {
+  margin-top: 12px;
+}
+
+.rc-kind {
+  font-size: clamp(26px, 3.4vw, 44px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  color: var(--rcink);
+}
+
+.rc-text {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.rc-also {
+  font-size: 14px;
+  color: var(--rc2);
+}
+
+.rc-acc .prog {
+  margin-top: 4px;
+}
+
+.rc-nomatch {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* section.idea: h3, p.sub, a.btn.big (to /how.html#describe-idea), p.fine */
+.idea {
+  grid-area: panel;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 20px 22px;
+  background: var(--card);
+}
+
+.idea .btn {
+  width: calc(100% - 2 * var(--px));
+  margin: 8px var(--px) 4px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 12px;
+}
+
+.chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 14px;
+  border: 0;
+  background: var(--card);
+  text-align: left;
+}
+
+@media (hover: hover) {
+  .chip:hover {
+    --bd: var(--acct);
+  }
+}
+
+.chip b {
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+/* ---- lists (the look 7.14): ul.rl > li > span.rn (b + small) ---- */
+
+.r-lines h3 {
+  margin: 6px 0 8px;
+}
+
+.r-lines > section + section {
+  margin-top: 22px;
+}
+
+.rl li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 2px dashed color-mix(in srgb, var(--ink2) 35%, transparent);
+}
+
+.rn {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rn b {
+  font-weight: 900;
+}
+
+.rn small {
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--ink2);
+}
+
+/* ---- the example card (the look 7.16): article.example > header.rc-h (span + span), p.ex-req,
+   span.lbl + ul.rl, span.lbl + ul.rl, a.lnk (to /demo.html); div.ex-cards holds the three ---- */
+
+.ex-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+@media (min-width: 1000px) {
+  .ex-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 760px) and (max-width: 999px) {
+  body[data-page="examples"] .panels,
+  .ex-cards {
+    max-width: 640px;
+  }
+}
+
+.example {
+  padding: 16px 20px 20px;
+  background: var(--rc);
+  color: var(--rcink);
+}
+
+.ex-req {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.example .lbl {
+  margin-top: 14px;
+}
+
+.example .rl li {
+  border-bottom-color: var(--rcline);
+}
+
+.example .rn small {
+  color: var(--rc2);
+}
+
+.example .rl + .lnk {
+  margin-top: 8px;
+}
+
+/* ---- the message block (the look 7.18, 8.4, 11): div.msg > span.lbl (an error only),
+   p.msg-title, p.msg-text, div.msg-acts (button.btn + a.lnk); on --paper inside div.ask, or
+   in the body of the receipt (the on-cream form) ---- */
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.msg .lbl {
+  color: var(--err);
+}
+
+.msg-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.msg-text {
+  font-size: 16px;
+  color: var(--ink2);
+}
+
+.msg-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 6px;
+}
+
+.receipt .msg .lbl {
+  color: var(--rcerr);
+}
+
+.receipt .msg-text {
+  color: var(--rc2);
+}
+
+/* ---- the footer (the look 7.19): footer > p.disclosure (span.sq2 + span#ai-disclosure), nav >
+   a.lnk, and p.kk-note while the page language is kk; aligned with .wrap ---- */
+
+body > footer {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px 24px;
+  padding: 10px calc(max(0px, (100% - 1240px) / 2) + var(--gut)) 12px;
+  background: var(--bg);
+  border-top: var(--px) solid var(--ink);
+  font-size: 14px;
+  color: var(--ink2);
+}
+
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  font-weight: 700;
+}
+
+.sq2 {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(90deg, var(--btn) 50%, var(--acc2) 50%);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+body > footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 12px;
+}
+
+body > footer .lnk {
+  color: var(--ink);
+}
+
+.kk-note {
+  width: 100%;
+  padding-bottom: 6px;
+  font-size: 13px;
+}
+
+/* ---- motion (the look 10): the press, the tail, the sheet and the plates always; the background
+   of the press, the rise of a new view and the newest chip only while the system allows motion ---- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .card,
+  .btn {
+    transition:
+      transform 0.08s,
+      background 0.2s;
+  }
+
+  .tk-lines li.new {
+    animation: newline 1.4s ease-out 1;
+  }
+
+  .panel > .wrap {
+    animation: rise 0.35s steps(5) backwards;
+  }
+}
+
+@keyframes newline {
+  0% {
+    background: var(--btn);
+    color: var(--onbtn);
+  }
+  100% {
+    background: var(--chip);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---- up to 1000 px: the result in one column (the look 8.4) ---- */
+
+@media (max-width: 1000px) {
+  .res {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "sum"
+      "panel"
+      "ans"
+      "lines";
+  }
+
+  .res.nomatch {
+    grid-template-areas:
+      "sum"
+      "lines"
+      "panel"
+      "ans";
+  }
+}
+
+/* ---- below 760 px: the phone (the look 6.4, 6.5, 7, 8) ---- */
+
+@media (max-width: 759px) {
+  :root {
+    --gut: 14px;
+  }
+
+  .bar {
+    padding: 0 8px 0 12px;
+  }
+
+  .brand .tile + span {
+    font-size: 15px;
+  }
+
+  .tile {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+
+  .theme-label {
+    display: none;
+  }
+
+  .testmode {
+    font-size: 12px;
+  }
+
+  .caption {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 12px;
+  }
+
+  .panel {
+    padding: 16px 0 24px;
+  }
+
+  .pitch {
+    margin-top: 8px;
+    font-size: 16px;
+  }
+
+  .team {
+    display: none;
+  }
+
+  .btn.big {
+    width: calc(100% - 2 * var(--px));
+    min-height: 60px;
+  }
+
+  .cta {
+    margin-top: 16px;
+  }
+
+  /* A control that gets the focus is scrolled above the live strip (84.8 px high, the look 7.11, and
+     the safe area), not under it; the page has the strip only while the demo asks. */
+  html:has(#ticket) {
+    scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+
+  /* The live strip below is in the flow (sticky, the look 7.11), so nothing reserves room for it and
+     the footer links stay free at the end of the page; the question wrap fills the panel so the strip
+     stands at the bottom of the window also where the page is shorter than the window. */
+  .panel.v-ask {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel.v-ask > .ask-wrap {
+    flex: 1 0 auto;
+  }
+
+  .ask {
+    padding: 12px 12px 14px;
+  }
+
+  .ask-h {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    margin-bottom: 8px;
+  }
+
+  .ask-h h2 {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: 20px;
+  }
+
+  .ask-h .prog {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-content: space-between;
+    margin-top: 2px;
+  }
+
+  .ask-h .back {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    min-height: 94px;
+    padding: 4px 6px 8px;
+    gap: 2px;
+  }
+
+  .cl {
+    font-size: 15px;
+  }
+
+  .card.dk {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    gap: 10px;
+    min-height: 48px;
+  }
+
+  .kb {
+    display: none;
+  }
+
+  .ticket {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 10px;
+    margin: auto calc(-1 * var(--gut)) 0;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    box-shadow: 0 calc(-1 * var(--px)) 0 0 var(--ink);
+  }
+
+  .ticket::before,
+  .ticket::after {
+    display: none;
+  }
+
+  .tk-sum .lbl {
+    display: none;
+  }
+
+  .tk-lines,
+  .tk-hint {
+    display: none;
+  }
+
+  .tgl {
+    display: inline-flex;
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    min-height: 48px;
+    padding: 0;
+  }
+
+  .ticket .enough {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    max-width: 150px;
+    min-height: 56px;
+    margin: 4px;
+    padding: 0 10px;
+    font-size: 14px;
+  }
+
+  .tk-sheet {
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    max-height: 58vh;
+    overflow: auto;
+    padding: 10px 14px 6px;
+    background: var(--rc);
+    box-shadow: 0 calc(-1 * var(--px)) 0 0 var(--ink);
+    transform: translateY(8px);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.15s,
+      transform 0.15s,
+      visibility 0.15s;
+  }
+
+  .ticket.open .tk-sheet {
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .sh-h {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .sh-h b {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .tk-sheet .rl li {
+    border-bottom-color: var(--rcline);
+  }
+
+  .tk-sheet .rn small {
+    color: var(--rc2);
+  }
+
+  .res {
+    gap: 18px;
+  }
+
+  .idea,
+  .info {
+    padding: 16px 14px;
+  }
+
+  .receipt,
+  .example {
+    padding: 14px 14px 16px;
+  }
+
+  .rc-kind {
+    font-size: 23px;
+    letter-spacing: -0.03em;
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .steps > li {
+    margin-bottom: 6px;
+  }
+
+  .steps a,
+  .steps button {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 0 0 0 10px;
+    border-top: 0;
+    border-left: calc(1.5 * var(--px)) solid
+      color-mix(in srgb, var(--ink2) 40%, transparent);
+  }
+
+  .steps [aria-pressed="true"] {
+    border-left-color: var(--btn);
+  }
+
+  body > footer {
+    gap: 0 12px;
+  }
+}
+
+/* ---- up to 360 px (the look 6.4, 6.5, 7.2) ---- */
+
+@media (max-width: 360px) {
+  :root {
+    --gut: 12px;
+  }
+
+  .rc-kind {
+    font-size: 20px;
+  }
+
+  .bar {
+    padding: 0 4px 0 10px;
+  }
+
+  .brand .tile + span {
+    font-size: 14px;
+  }
+
+  .tile {
+    display: none;
+  }
+
+  .langs button,
+  .theme {
+    padding: 0 4px;
+    font-size: 13px;
+  }
+
+  h1 {
+    font-size: 26px;
+  }
+
+  .cl {
+    font-size: 14px;
+  }
+}
+
+/* ---- below 360 px: the speaker of the question on its own row above the question, «‹ Назад» on the
+   row of the progress, whose count goes under its pips where the row is too narrow for both; the
+   role title breaks only at spaces (the look 7.9) ---- */
+
+@media (max-width: 359px) {
+  .ask-h .spk {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .ask-h .prog {
+    grid-column: 1;
+    grid-row: 3;
+    flex-wrap: wrap;
+  }
+
+  .ask-h .back {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+/* ---- 760 to 1000 px: the live strip in two rows, the button on its own row (the look 7.11) ---- */
+
+@media (min-width: 760px) and (max-width: 1000px) {
+  .ticket {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .tk-lines,
+  .tk-hint {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .ticket .enough {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* ---- a phone window up to 640 px high (the look 6.5) ---- */
+
+@media (max-height: 640px) and (max-width: 759px) {
+  .card {
+    min-height: 88px;
+  }
+}
