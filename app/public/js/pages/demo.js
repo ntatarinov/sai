@@ -951,7 +951,6 @@ function mountSurvey(doc, win, parts) {
           cls: "chip",
           attrs: {
             type: "button",
-            title: q.title,
             "aria-label": `${q.title}: ${answerText(q)}`,
           },
         },

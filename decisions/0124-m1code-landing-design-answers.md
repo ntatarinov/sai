@@ -226,3 +226,18 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
   (answer() serializes twice); then steps 3 and 4 run again on the whole change (О29), TEST-DESIGN-VALIDATOR checks the
   tests it touched, and DESIGN-QA runs its second pass on the same tree.
 
+## Addition 2026-11-20T21:16Z (ORCH, after the review pass 1 of the new loop: REVIEWER FAIL by M1; L1–L4)
+
+- **О35 (REVIEWER M1).** The `JSON.stringify` guard in `answer()` is dead code after id() and text() (every field is a
+  string, a boolean or null; the deeply nested array of О23 is refused earlier; removed in a scratch copy, the int tests stay
+  green): CODE-FIXER removes it and its comment and keeps the note on id()/text(); TEST-DESIGNER deletes the `unwritable`
+  row of DM-6c (or makes it a seventh id row) and cuts the clause from its title. The named limit О23 is closed by id().
+- **О36 (REVIEWER L1, a correction of О32).** The own row of the speaker applies below 380 px (`max-width: 379px`), an
+  8 px slack over the measured 371: the widths are of macOS Chrome in the system font stack with no slack at 372 px, and
+  390 px, the sample's phone, stays side by side. The e2e row reads the speaker at 360, 371, 372, 375 and 379 px.
+- **О37 (REVIEWER L3, L4).** The result chips keep only `aria-label` (the `title` repeating the question is dropped);
+  the CSS comment states the rule, not the history; `flipHidden` has one JSDoc block.
+- **О38 (the lows T7, T8 of 5b gate pass 2).** TEST-DESIGNER adds: in LD-8, right after the switch to kk, #live is empty
+  (T7); a top-level «z.txt» in VB-6 so the sort of the snapshot helper is pinned (T8). The counts of the design's
+  section 10 (T4 and the REVIEWER's L2) and the look's 7.9 (380 px), 7.11 (sticky) are edited before the release gate.
+

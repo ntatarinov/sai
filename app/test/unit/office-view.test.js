@@ -287,8 +287,10 @@ function stage(o = {}) {
     },
     /** The values of --you written so far. */
     you: () => writes.filter(([n]) => n === "--you").map(([, v]) => Number(v)),
-    /** The page turns hidden (or visible) with no event: a callback that was asked for earlier still runs. */
-    /** @param {boolean} value */
+    /**
+     * The page turns hidden (or visible) with no event: a callback that was asked for earlier still runs.
+     * @param {boolean} value
+     */
     flipHidden(value) {
       hidden = value;
     },

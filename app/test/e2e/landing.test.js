@@ -807,10 +807,13 @@ test(
         }
       }
 
-    // F. The speaker's title in Russian at 360 and 371 px (decisions/0124 О32): below 372 px the speaker has its own
-    // row, so the title (the longest, «Проверяющий» 130 px, and the pair «Руководитель проекта» 126 px) is not wider
-    // than its column and keeps 4 px from «‹ Назад»; read at each of the five questions.
-    for (const width of [360, 371]) {
+    // F. The speaker in Russian at 360, 371, 372, 375, 379 and 390 px (decisions/0124 О32, О36): up to 379 px the
+    // speaker has its own row above «‹ Назад», so the title (the longest, «Проверяющий» 130 px, and the pair
+    // «Руководитель проекта» 126 px) is not wider than its column and keeps 4 px from «‹ Назад» where they share a
+    // row; at 390 px, the phone of the sample, the speaker stays beside «‹ Назад» on one row. Read at each of the
+    // five questions.
+    const OWN_ROW_UP_TO = 379;
+    for (const width of [360, 371, 372, 375, 379, 390]) {
       const env = await newPage(browser, t, {
         port,
         viewport: { width, height: 640 },
@@ -822,13 +825,21 @@ test(
         await waitHeading(page, Q[i].title);
         await framesPass(page, 2);
         const got = await page.evaluate(() => {
+          const speaker = document.querySelector("#demo .ask-h .spk");
           const title = document.querySelector("#demo .ask-h .who b");
           const column = document.querySelector("#demo .ask-h .who");
           const back = document.querySelector("#demo .ask-h .back");
-          if (title === null || column === null || back === null) return null;
+          if (
+            speaker === null ||
+            title === null ||
+            column === null ||
+            back === null
+          )
+            return null;
           const range = document.createRange();
           range.selectNodeContents(title);
           const text = range.getBoundingClientRect();
+          const spk = speaker.getBoundingClientRect();
           const col = column.getBoundingClientRect();
           const btn = back.getBoundingClientRect();
           return {
@@ -836,6 +847,9 @@ test(
             textTop: text.top,
             textBottom: text.bottom,
             columnRight: col.right,
+            speakerRight: spk.right,
+            speakerTop: spk.top,
+            speakerBottom: spk.bottom,
             backLeft: btn.left,
             backTop: btn.top,
             backBottom: btn.bottom,
@@ -859,6 +873,20 @@ test(
             `the title ends at ${got.textRight.toFixed(1)}, under 4 px from «Назад» at ${got.backLeft.toFixed(1)}`,
           ]);
         if (got.page > 0) problems.add(where, ["the page scrolls sideways"]);
+        const speakerOnBackRow =
+          got.speakerTop < got.backBottom && got.speakerBottom > got.backTop;
+        if (width <= OWN_ROW_UP_TO && speakerOnBackRow)
+          problems.add(where, [
+            `the speaker (${got.speakerTop.toFixed(1)} to ${got.speakerBottom.toFixed(1)}) shares a row with «Назад» (${got.backTop.toFixed(1)} to ${got.backBottom.toFixed(1)}), not on its own row`,
+          ]);
+        if (width > OWN_ROW_UP_TO && !speakerOnBackRow)
+          problems.add(where, [
+            `the speaker (${got.speakerTop.toFixed(1)} to ${got.speakerBottom.toFixed(1)}) is not beside «Назад» (${got.backTop.toFixed(1)} to ${got.backBottom.toFixed(1)})`,
+          ]);
+        if (width > OWN_ROW_UP_TO && got.speakerRight > got.backLeft)
+          problems.add(where, [
+            `the speaker ends at ${got.speakerRight.toFixed(1)}, over «Назад» at ${got.backLeft.toFixed(1)}`,
+          ]);
         if (i < 4) await answerAndWait(page, 0, Q[i + 1].title);
       }
     }
@@ -1491,9 +1519,21 @@ test(
     await page.click("#theme");
     await step("theme dark", lang);
     await tap(problems, "answer 2", env, lang, 2, intake.en.questions[2].title);
+    // The announcement of the answer is in the live line before the switch (a condition: the demo writes it
+    // ANNOUNCE_MS after the tap), so the switch has a line to empty.
+    await page.waitForFunction(
+      () => (document.getElementById("live")?.textContent ?? "") !== "",
+      null,
+      { timeout: 15000 },
+    );
     await page.click('[data-lang="kk"]');
     lang = "kk";
     await waitHeading(page, intake.kk.questions[2].title);
+    assert.equal(
+      await page.evaluate(() => document.getElementById("live")?.textContent),
+      "",
+      "to kk: the live line that spoke in en is emptied",
+    );
     await step("to kk", lang);
     await page.locator("#demo .back").click();
     await waitHeading(page, intake.kk.questions[1].title);

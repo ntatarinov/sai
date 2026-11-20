@@ -507,9 +507,16 @@ test("VB-6 the folder snapshot that the refusal checks rely on: it changes with 
   fs.mkdirSync(path.join(dir, "sub"));
   fs.writeFileSync(path.join(dir, "a.txt"), "abc");
   fs.writeFileSync(path.join(dir, "sub", "b.txt"), "xyz");
+  // A top-level file that sorts after the nested one: the order is by the sorted names, not the order of reading.
+  fs.writeFileSync(path.join(dir, "z.txt"), "zzz");
   const sha = (/** @type {string} */ text) =>
     createHash("sha256").update(text).digest("hex");
-  const base = [`a.txt ${sha("abc")}`, "sub dir", `sub/b.txt ${sha("xyz")}`];
+  const base = [
+    `a.txt ${sha("abc")}`,
+    "sub dir",
+    `sub/b.txt ${sha("xyz")}`,
+    `z.txt ${sha("zzz")}`,
+  ];
   assert.deepEqual(
     snapshot(dir),
     base,
@@ -518,12 +525,23 @@ test("VB-6 the folder snapshot that the refusal checks rely on: it changes with 
   assert.deepEqual(snapshot(dir), base, "a read changes nothing");
   // An added empty directory.
   fs.mkdirSync(path.join(dir, "empty"));
-  assert.deepEqual(snapshot(dir), [base[0], "empty dir", base[1], base[2]]);
+  assert.deepEqual(snapshot(dir), [
+    base[0],
+    "empty dir",
+    base[1],
+    base[2],
+    base[3],
+  ]);
   fs.rmdirSync(path.join(dir, "empty"));
   assert.deepEqual(snapshot(dir), base, "the directory removed again");
   // A changed byte, the size and the names the same.
   fs.writeFileSync(path.join(dir, "a.txt"), "abd");
-  assert.deepEqual(snapshot(dir), [`a.txt ${sha("abd")}`, base[1], base[2]]);
+  assert.deepEqual(snapshot(dir), [
+    `a.txt ${sha("abd")}`,
+    base[1],
+    base[2],
+    base[3],
+  ]);
   assert.notDeepEqual(snapshot(dir), base);
   fs.writeFileSync(path.join(dir, "a.txt"), "abc");
   assert.deepEqual(snapshot(dir), base, "the byte restored");
@@ -534,8 +552,9 @@ test("VB-6 the folder snapshot that the refusal checks rely on: it changes with 
     `c.txt ${sha("")}`,
     base[1],
     base[2],
+    base[3],
   ]);
   fs.rmSync(path.join(dir, "c.txt"));
   fs.rmSync(path.join(dir, "sub", "b.txt"));
-  assert.deepEqual(snapshot(dir), [base[0], "sub dir"]);
+  assert.deepEqual(snapshot(dir), [base[0], "sub dir", base[3]]);
 });

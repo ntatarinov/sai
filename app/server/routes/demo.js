@@ -121,7 +121,8 @@ function refusalCode(reason) {
 /**
  * A text of the answer: after the language is picked it is one string; an object that is not exactly
  * {ru, kk, en} (an extra key, a missing language) or any other value would reach the answer whole, so it
- * is the refusal demo_unavailable, as every other intake that the routes cannot read.
+ * is the refusal demo_unavailable, as every other intake that the routes cannot read. So every field of an
+ * answer body is a string, a boolean or null, and the body can always be written to text.
  * @param {unknown} value
  * @returns {string}
  */
@@ -149,24 +150,6 @@ function id(value) {
 function texts(value) {
   if (!Array.isArray(value)) throw new HttpError("demo_unavailable");
   return value.map(text);
-}
-
-/**
- * The answer 200 whose body is checked here, inside the mapping of the route: the body is written to text
- * once here, and the text is thrown away; the app writes it again after the handler returns, outside this
- * mapping. A body that JSON.stringify cannot write (a value nested too deep) must be demo_unavailable like
- * the projection that overflows, never server_error. Every field of the body is a string or a boolean after
- * the projection (ids and texts are strings), so this is the last guard, not the first.
- * @param {Record<string, unknown>} body
- * @returns {import("./index.js").RouteAnswer}
- */
-function answer(body) {
-  try {
-    JSON.stringify(body);
-  } catch {
-    throw new HttpError("demo_unavailable");
-  }
-  return { status: 200, body };
 }
 
 /**
@@ -202,7 +185,7 @@ export function demoRoutes({ intake, langs }) {
     } catch {
       throw new HttpError("demo_unavailable");
     }
-    return answer({ lang, questions });
+    return { status: 200, body: { lang, questions } };
   };
 
   /**
@@ -238,19 +221,22 @@ export function demoRoutes({ intake, langs }) {
     if (!out.ok) throw new HttpError(refusalCode(out.error.reason));
     const found = out.result;
     try {
-      return answer({
-        lang,
-        clear_leader: found.clear_leader,
-        recommended: found.recommended.map((/** @type {any} */ s) => ({
-          id: id(s.id),
-          name: text(s.name),
-          summary: text(s.summary),
-          includes: texts(s.includes),
-          not_suitable_when: texts(s.not_suitable_when),
-        })),
-        no_match_text:
-          found.no_match_text === null ? null : text(found.no_match_text),
-      });
+      return {
+        status: 200,
+        body: {
+          lang,
+          clear_leader: found.clear_leader,
+          recommended: found.recommended.map((/** @type {any} */ s) => ({
+            id: id(s.id),
+            name: text(s.name),
+            summary: text(s.summary),
+            includes: texts(s.includes),
+            not_suitable_when: texts(s.not_suitable_when),
+          })),
+          no_match_text:
+            found.no_match_text === null ? null : text(found.no_match_text),
+        },
+      };
     } catch (err) {
       // A refusal of the mapping stays as it is; a value that the projection cannot read is demo_unavailable.
       if (err instanceof HttpError) throw err;

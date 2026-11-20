@@ -921,7 +921,7 @@ test("DM-6 a missing or broken intake gives 503 demo_unavailable on both routes,
   );
 });
 
-test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unavailable on the route that reads it, an answer body that cannot be written to text is the same 503, and the next request is answered (SECURITY-REVIEWER L1, L2 of the second pass)", async (t) => {
+test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unavailable on the route that reads it, and the next request is answered (SECURITY-REVIEWER L1, L2 of the second pass)", async (t) => {
   const dir = tempDir(t);
   const UNAVAILABLE = '{"error":"demo_unavailable"}';
   /** @param {(t: any) => void} edit */
@@ -1069,28 +1069,6 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
       assert.equal((await way.fetch("/api/health")).status, health.status);
       assert.equal((await way.fetch("/api/demo/other")).status, 404);
     }
-  }
-  // A value of the intake whose toJSON throws: it is no string, so the projection refuses the id (the rows
-  // above); the check of the body in answer() stays as the last guard, and the app writes the body after the
-  // handler returns.
-  const unwritable = edited((x) => {
-    x.questions[0].id = {
-      toJSON() {
-        throw new Error("cannot be written");
-      },
-    };
-  });
-  for (const way of ways({ ok: true, tenant: unwritable })) {
-    const q = await way.fetch("/api/demo/questionnaire?lang=ru");
-    assert.deepEqual([q.status, q.text], [503, UNAVAILABLE], way.name);
-    assert.deepEqual(
-      way.logs.filter((l) => l.status === 500),
-      [],
-      `${way.name}: a 500`,
-    );
-    assert.equal(way.logs.at(-1)?.code, "demo_unavailable", way.name);
-    assert.equal((await way.fetch("/api/health")).status, health.status);
-    assert.equal((await way.fetch("/api/demo/other")).status, 404);
   }
   // The control: the real intake is answered as before.
   assert.equal(
