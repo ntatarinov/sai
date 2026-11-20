@@ -168,3 +168,31 @@ step-03f (CODE-DESIGN-VALIDATOR; 03f PASS with J1–J7). The owner's words: «Д
 text («… потом главная с пиксельным офисом и демо-опросом … Без регистрации, заказов и данных …»),
 docs/owner-requests/2026-10-27-public-launch-plan.md, the section of 2026-11-18 – 2026-11-19; G8, G9 and G21 in
 PROGRESS.md «Owner gates».
+
+## Addition 2026-11-19T20:44Z (ORCH, after the micro-amendment M1AMEND-20261119-01)
+
+The micro-amendment passed its gate at the first pass (handoffs/M1AMEND-20261119-01/step-02-req-validator.json, PASS
+with the low findings L1–L5), and DOC-UPDATER set the status lines of О12 (step 03). ORCH's readings and routes:
+
+- **L1** REQ-112's frame sentence lists the cases in which a frame is drawn; the clause of О15 added by the amendment is a
+  third case of that list (V1), not an exception to it.
+- **L3** In REQ-112 criterion 6 the moment «when «Вы» stands (at load and after each walk)» binds only «no two labels
+  overlap» (V3); «no label is cut» holds at every moment, as the look says.
+- **L4** In REQ-108 criterion 11 «from the build of REQ-111 (R1.2) on» is read on the tree under check: the first lists
+  bind a tree without app/public/office/grid.js, the extended lists a tree with it; a checker of a sub-step of the build
+  reads the list of the state that sub-step leaves.
+- **Author I3** The replacements of REQ-108 criterion 11's literals come from REQ-111 guard row (8) and criterion 11, as
+  step 01c of M1SITE-20261119-01 (issue I5) named them; О3's «by REQ-111 criterion 9» is read so. **I4** The old forms
+  stay for the tree before the build (REQ-108 and REQ-109 are released on d87b3d1 and wait for a RELEASE-VALIDATOR
+  re-check). **I6** REQ-112's «What the visitor gets» is a summary; the frame sentence and criterion 5 bind.
+- To DOC-UPDATER at the release step of M1CODE-20261119-01 (decisions/0079 item 5: corrections that change no
+  criterion): L2 and author I5 — REQ-109's title, description and criterion 4 still name the one rewrite and its
+  `source` of before spike S1; L5 and author I9 — REQ-111 names the run «REQ109AMEND», which is M1AMEND-20261119-01;
+  author I8 — the Q12 lines of REQ-108 and REQ-109 gain decisions/0122 О5–О6 and this record; author I7 — the line
+  numbers and literals of the guard rows of REQ-111 and REQ-112 read on f78d09f are read again on
+  base/M1CODE-20261119-01-build (the design measures them there, decisions/0124 О13); the error-journal candidates of
+  «Order» above, of decisions/0124 and of DOC-UPDATER's issue I6 (next free AP-164).
+- DOC-UPDATER's issue I4 (twelve pending blocks name the cancelled REQ-086 or REQ-087 in depends_on) stays as the M0
+  backlog run left the same shape on 2026-10-28: each of those blocks is rescoped or deferred by decisions/0099 and gets
+  its depends_on when it is replaced.
+
