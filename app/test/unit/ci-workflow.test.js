@@ -68,6 +68,63 @@ const DOCKER_STEPS = [
   ],
 ];
 
+// The options of `docker run`, `docker create` and `docker pull` that take no value (Docker's CLI
+// reference, read, not measured). Any other option is read as taking the next word, so the word read as
+// the image is the first word that no option takes.
+const DOCKER_RUN_FLAGS = [
+  "-d",
+  "--detach",
+  "-i",
+  "--interactive",
+  "-t",
+  "--tty",
+  "-P",
+  "--publish-all",
+  "-q",
+  "--quiet",
+  "--rm",
+  "--init",
+  "--privileged",
+  "--read-only",
+  "--no-healthcheck",
+  "--oom-kill-disable",
+  "--disable-content-trust",
+  "--sig-proxy",
+];
+const DOCKER_PULL_FLAGS = [
+  "-a",
+  "--all-tags",
+  "-q",
+  "--quiet",
+  "--disable-content-trust",
+];
+// A word shaped like an image with a tag and no digest (`alpine:3.20`, `localhost:5000/x:1`).
+const UNPINNED =
+  /^(?:[a-z0-9.-]+(?::[0-9]+)?\/)?[a-z0-9][a-z0-9._/-]*:[A-Za-z0-9][\w.-]*$/;
+
+/**
+ * The word of the arguments of `docker run`, `create` or `pull` that Docker reads as the image, or "".
+ * @param {string} command
+ * @param {string} args
+ */
+export function dockerImageOf(command, args) {
+  const flags = command === "pull" ? DOCKER_PULL_FLAGS : DOCKER_RUN_FLAGS;
+  const words = args
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.replace(/^["']+|["']+$/g, ""));
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    if (!w.startsWith("-")) return w;
+    if (w.includes("=")) continue;
+    const cluster =
+      /^-[A-Za-z]+$/.test(w) &&
+      [...w.slice(1)].every((c) => flags.includes(`-${c}`));
+    if (!flags.includes(w) && !cluster) i++;
+  }
+  return "";
+}
+
 /** @param {string} text */
 export function jobsOf(text) {
   const lines = text.split("\n");
@@ -144,17 +201,54 @@ export function ciFindings(text) {
     if (text.includes(bad)) out.push(`text ${bad}`);
   for (const m of text.matchAll(/uses:\s*(\S+)/g))
     if (!/@[0-9a-f]{40}$/.test(m[1])) out.push(`uses ${m[1]}`);
-  // Every image by digest: the image of each `docker run`, `create` and `pull` command, and each value of
-  // an `image:` or `container:` key (a job container or a service).
-  for (const m of text.matchAll(
-    /\bdocker\s+(?:container\s+)?(run|create|pull)\b([^\n;&|]*)/g,
+  // Every image by digest, by five rules. The docker rules read the text with its shell line continuations
+  // joined. (1) Each `docker run`, `create` and `pull` command (also as `docker image …` or `docker
+  // container …`, after global options such as `--debug`, and with the word `docker` quoted): the word
+  // Docker reads as the image carries `@sha256:`, some word does, and no word is an image with a tag and no
+  // digest. (2) Each value of an `image:` or `container:` key (a job container or a service), the key
+  // quoted or not, in block or flow style (`{ image: … }`). (3) Kept from the first step: every
+  // other `postgres:<tag>` or `node:<tag>` text, such as a `--build-arg` of `docker buildx`. (4) Every
+  // `--build-arg` value shaped like an image with a tag, quoted or not. (5) The image of every line of an
+  // inline Dockerfile (a heredoc or an `echo` fed to `docker build -`): each word after `FROM` (and an
+  // optional `--platform=…`), and after `from` in any letter case at the start of a line or right after a
+  // quote, carries `@sha256:`, and so does every `docker-image://` source of a build context; after `from`
+  // elsewhere, a word shaped like an image with a tag is red.
+  const joined = text.replace(/\\\n\s*/g, " ");
+  for (const m of joined.matchAll(
+    /\bdocker["']?\s+(?:-\S+\s+(?:[^-\s]\S*\s+)?)*(?:(?:image|container)\s+)?(run|create|pull)\b([^\n;&|]*)/g,
   ))
-    if (!/(^|\s)[^\s=]+@sha256:[0-9a-f]{64}(?=\s|$)/.test(m[2]))
+    if (
+      !/@sha256:[0-9a-f]{64}$/.test(dockerImageOf(m[1], m[2])) ||
+      !/(^|\s)[^\s=]+@sha256:[0-9a-f]{64}(?=\s|$)/.test(m[2]) ||
+      m[2]
+        .split(/\s+/)
+        .some((w) => UNPINNED.test(w.replace(/^["']+|["']+$/g, "")))
+    )
       out.push(`image of docker ${m[1]}`);
   for (const m of text.matchAll(
-    /^\s*(?:-\s+)?(?:image|container)\s*:[ \t]*(\S[^\n]*?)\s*$/gm,
+    /(?:^\s*(?:-\s+)?|[{,]\s*)["']?(?:image|container)["']?\s*:[ \t]*([^\s,{}][^\n]*?)\s*(?=$|,|\})/gm,
   ))
     if (!/@sha256:[0-9a-f]{64}["']?$/.test(m[1])) out.push(`image ${m[1]}`);
+  for (const m of joined.matchAll(/\b(postgres|node):[A-Za-z0-9][^\s"']*/g))
+    if (!/@sha256:[0-9a-f]{64}$/.test(m[0])) out.push(`image ${m[0]}`);
+  for (const m of joined.matchAll(
+    /--build-arg[=\s]+["']?[A-Za-z_][A-Za-z0-9_]*=["']?([^\s"']+)/g,
+  ))
+    if (UNPINNED.test(m[1])) out.push(`image ${m[1]}`);
+  for (const m of [
+    ...joined.matchAll(
+      /(?:^|[\s"'])FROM\s+(?:--platform=\S+\s+)?([^\s"';&|)]+)/gm,
+    ),
+    ...joined.matchAll(
+      /(?:^[ \t]*|["'][ \t]*)from[ \t]+(?:--platform=\S+[ \t]+)?([^\s"';&|)]+)/gim,
+    ),
+    ...joined.matchAll(/docker-image:\/\/([^\s"',;&|)]+)/g),
+  ])
+    if (!/@sha256:[0-9a-f]{64}$/.test(m[1])) out.push(`image ${m[1]}`);
+  for (const m of joined.matchAll(
+    /(?:^|[\s"'])from\s+(?:--platform=\S+\s+)?([^\s"';&|)]+)/gim,
+  ))
+    if (UNPINNED.test(m[1])) out.push(`image ${m[1]}`);
   const jobs = jobsOf(text);
   if (JSON.stringify(Object.keys(jobs)) !== '["check","pg","docker"]')
     out.push("jobs");
@@ -234,6 +328,17 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
   const checkJob = "  check:\n    runs-on: ubuntu-24.04\n";
   const smoke =
     "run: node app/scripts/smoke.js --base http://127.0.0.1:8080 --preview http://localhost:8080\n";
+  // A digest of 64 hex digits, built from parts, and a copy with one more step before the audit.
+  const hex = "a".repeat(64);
+  const step = (/** @type {string} */ run) =>
+    change(t, audit, `      - name: Extra\n        run: ${run}\n${audit}`);
+  // A copy whose extra step builds an image from a Dockerfile given on stdin by a heredoc.
+  const heredoc = (/** @type {string} */ line) =>
+    change(
+      t,
+      audit,
+      `      - name: Extra\n        run: |\n          docker build -t x - <<'EOF'\n          ${line}\n          EOF\n${audit}`,
+    );
   /** @type {Array<[string, string]>} */
   const cases = [
     ["trigger", change(t, "on:\n  push:", "on:\n  pull_request:\n  push:")],
@@ -286,6 +391,121 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
         `      - name: Extra\n        run: docker pull node:lts\n${audit}`,
       ),
     ],
+    // `docker image pull`, red by the command rule and by the image text rule, each on its own.
+    [
+      "image of docker pull",
+      change(
+        t,
+        audit,
+        `      - name: Extra\n        run: docker image pull postgres:17\n${audit}`,
+      ),
+    ],
+    [
+      "image postgres:17",
+      change(
+        t,
+        audit,
+        `      - name: Extra\n        run: docker image pull postgres:17\n${audit}`,
+      ),
+    ],
+    [
+      "image node:22",
+      change(
+        t,
+        audit,
+        `      - name: Extra\n        run: docker buildx build --build-arg BASE=node:22 -t x app\n${audit}`,
+      ),
+    ],
+    [
+      "image of docker pull",
+      change(
+        t,
+        audit,
+        `      - name: Extra\n        run: docker --debug pull node:lts\n${audit}`,
+      ),
+    ],
+    [
+      "image of docker create",
+      change(
+        t,
+        audit,
+        `      - name: Extra\n        run: docker container create alpine:3.20\n${audit}`,
+      ),
+    ],
+    // A tag that is a word, a digest on a word that is not the image (with the image tagged or not), a
+    // tagged image beside the pinned one, a command continued with `\`, and an image in any build-arg.
+    [
+      "image node:lts",
+      step(`docker buildx build --build-arg BASE=node:lts -t x app`),
+    ],
+    [
+      "image node:lts",
+      change(
+        t,
+        audit,
+        `      - name: Extra\n        env:\n          BASE: node:lts\n        run: docker buildx build -t x app\n${audit}`,
+      ),
+    ],
+    [
+      "image of docker run",
+      step(`docker run --rm --label x@sha256:${hex} alpine:3.20 true`),
+    ],
+    [
+      "image of docker run",
+      step(`docker run --rm alpine:3.20 echo node@sha256:${hex}`),
+    ],
+    [
+      "image of docker run",
+      step(`docker run --rm --label x@sha256:${hex} alpine true`),
+    ],
+    [
+      "image of docker run",
+      step(`docker run --rm alpine echo x@sha256:${hex}`),
+    ],
+    [
+      "image of docker run",
+      step(`docker run --rm ${pinned} sh -c "docker pull alpine:3.20"`),
+    ],
+    [
+      "image of docker pull",
+      change(
+        t,
+        audit,
+        `      - name: Extra\n        run: |\n          docker \\\n            pull alpine:3.20\n${audit}`,
+      ),
+    ],
+    [
+      "image alpine:3.20",
+      step(`docker buildx build --build-arg BASE=alpine:3.20 -t x app`),
+    ],
+    // A quoted --build-arg value, an inline Dockerfile (a heredoc, an `echo`, a lower-case `from`, a FROM
+    // without a tag) and a `docker-image://` build context.
+    [
+      "image alpine:3.20",
+      step(`docker buildx build --build-arg BASE='alpine:3.20' -t x app`),
+    ],
+    [
+      "image alpine:3.20",
+      step(`docker buildx build --build-arg BASE="alpine:3.20" -t x app`),
+    ],
+    [
+      "image ubuntu:24.04",
+      step(`docker buildx build --build-arg=BASE='ubuntu:24.04' -t x app`),
+    ],
+    ["image alpine:3.20", heredoc("FROM alpine:3.20")],
+    [
+      "image alpine:3.20",
+      step(`echo "FROM alpine:3.20" | docker build -t x -`),
+    ],
+    ["image alpine:3.20", heredoc("from --platform=linux/amd64 alpine:3.20")],
+    ["image alpine", heredoc("FROM alpine")],
+    ["image alpine:3.20", step(`echo from alpine:3.20 | docker build -t x -`)],
+    [
+      "image alpine:3.20",
+      step(
+        `docker buildx build --build-context base=docker-image://alpine:3.20 -t x app`,
+      ),
+    ],
     [
       "image ubuntu:24.04",
       change(t, checkJob, `${checkJob}    container: ubuntu:24.04\n`),
@@ -298,6 +518,36 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
         `${checkJob}    services:\n      cache:\n        image: redis:7\n`,
       ),
     ],
+    // The key quoted, the flow style, and the word `docker` quoted.
+    [
+      "image redis:7",
+      change(
+        t,
+        checkJob,
+        `${checkJob}    services:\n      cache:\n        "image": redis:7\n`,
+      ),
+    ],
+    [
+      "image ubuntu:24.04",
+      change(t, checkJob, `${checkJob}    'container': ubuntu:24.04\n`),
+    ],
+    [
+      "image alpine:3.20",
+      change(
+        t,
+        checkJob,
+        `${checkJob}    services: { cache: { image: alpine:3.20 } }\n`,
+      ),
+    ],
+    [
+      "image ubuntu:24.04",
+      change(
+        t,
+        checkJob,
+        `${checkJob}    container: { image: ubuntu:24.04 }\n`,
+      ),
+    ],
+    ["image of docker run", step(`"docker" run --rm alpine:3.20 true`)],
     [
       "jobs",
       change(t, "jobs:\n", "jobs:\n  e2e:\n    runs-on: ubuntu-24.04\n"),
@@ -393,4 +643,20 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
       ciFindings(copy).includes(label),
       `${label}: ${JSON.stringify(ciFindings(copy))}`,
     );
+  // A pinned image after options that take a value, on a continued line, in a quoted --build-arg, an inline
+  // Dockerfile and a build context, stays green.
+  for (const copy of [
+    step(`docker run --rm --entrypoint sh -e A=1 -v x:/y ${pinned} -c true`),
+    step(`docker buildx build --build-arg BASE='${pinned}' -t x app`),
+    heredoc(`FROM --platform=linux/amd64 ${pinned}`),
+    step(
+      `docker buildx build --build-context base=docker-image://${pinned} -t x app`,
+    ),
+    change(
+      t,
+      audit,
+      `      - name: Extra\n        run: |\n          docker \\\n            run -it --rm ${pinned} true\n${audit}`,
+    ),
+  ])
+    assert.deepEqual(ciFindings(copy), []);
 });

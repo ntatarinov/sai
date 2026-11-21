@@ -34,13 +34,42 @@ export function vercelFindings(v, apiFiles, tracked, ignore) {
     v.functions["api/index.js"].maxDuration !== 30
   )
     out.push("functions");
+  // The routing is one explicit `routes` table (spike S1). With `framework` null the platform's static
+  // builder still picks a framework from package.json; it picked Hono and appended Hono's default
+  // `{ "src": "/(.*)", "dest": "/" }` after the rewrites, so every unknown path answered the bytes of
+  // index.html with 200. Routes of our own come first: the terminal 404 stands before that rule.
+  for (const k of [
+    "rewrites",
+    "headers",
+    "redirects",
+    "cleanUrls",
+    "trailingSlash",
+    "builds",
+  ])
+    if (k in v) out.push(`no ${k} beside routes`);
+  const r = Array.isArray(v.routes) ? v.routes : [];
+  if (r.length !== 4) out.push("routes count");
+  const head = r[0] ?? {};
   if (
-    JSON.stringify(v.rewrites) !==
-    JSON.stringify([
-      { source: "/api/:path*", destination: "/api/index?__p=:path*" },
-    ])
+    head.src !== "/(.*)" ||
+    head.continue !== true ||
+    typeof head.headers !== "object" ||
+    head.headers === null ||
+    Object.keys(head).sort().join() !== "continue,headers,src"
   )
-    out.push("rewrites");
+    out.push("routes: the header rule first, for every path, then continue");
+  if (JSON.stringify(r[1]) !== JSON.stringify({ handle: "filesystem" }))
+    out.push("routes: the files second");
+  if (
+    JSON.stringify(r[2]) !==
+    JSON.stringify({ src: "^/api(?:/(.*))?$", dest: "/api/index?__p=$1" })
+  )
+    out.push("routes: one rule to the function");
+  if (
+    JSON.stringify(r[3]) !==
+    JSON.stringify({ src: "/(.*)", status: 404, dest: "/404.html" })
+  )
+    out.push("routes: the terminal 404 last");
   if (JSON.stringify(apiFiles) !== '["index.js"]') out.push("app/api files");
   if (tracked.some((f) => f.includes("["))) out.push("a [ in a tracked name");
   const lines = ignore
@@ -83,8 +112,48 @@ test("VC-2 each damaged copy is red", () => {
     ],
     ["a [...path].js file", (c) => c.tracked.push("app/api/[...path].js")],
     [
-      "a second rewrite",
-      (c) => c.v.rewrites.push({ source: "/x", destination: "/y" }),
+      "a rewrite beside the routes",
+      (c) =>
+        (c.v.rewrites = [
+          { source: "/api/:path*", destination: "/api/index?__p=:path*" },
+        ]),
+      "no rewrites beside routes",
+    ],
+    [
+      "a second rule to the function",
+      (c) =>
+        c.v.routes.splice(3, 0, { src: "^/x(.*)$", dest: "/api/index?__p=$1" }),
+      "routes count",
+    ],
+    [
+      "no terminal 404: unknown paths fall to the platform's later rules",
+      (c) => c.v.routes.pop(),
+      "routes: the terminal 404 last",
+    ],
+    [
+      "the terminal 404 before the files",
+      (c) => c.v.routes.splice(1, 0, c.v.routes.pop()),
+      "routes: the files second",
+    ],
+    [
+      "a terminal rule that answers index.html with 200",
+      (c) => (c.v.routes[3] = { src: "/(.*)", dest: "/" }),
+      "routes: the terminal 404 last",
+    ],
+    [
+      "the header rule without continue",
+      (c) => delete c.v.routes[0].continue,
+      "routes: the header rule first, for every path, then continue",
+    ],
+    [
+      "the function rule keeps the extra path parameter",
+      (c) => (c.v.routes[2].dest = "/api/index?__p=$1&path=$1"),
+      "routes: one rule to the function",
+    ],
+    [
+      "a headers key beside the routes",
+      (c) => (c.v.headers = []),
+      "no headers beside routes",
     ],
     ["another region", (c) => (c.v.regions = ["iad1"])],
     [
@@ -97,13 +166,11 @@ test("VC-2 each damaged copy is red", () => {
       (c) => (c.ignore = c.ignore.replace("\n/*\n", "\n/x\n")),
     ],
   ];
-  for (const [name, damage] of cases) {
+  for (const [name, damage, label] of cases) {
     const c = structuredClone(r);
     damage(c);
-    assert.notDeepEqual(
-      vercelFindings(c.v, c.api, c.tracked, c.ignore),
-      [],
-      name,
-    );
+    const found = vercelFindings(c.v, c.api, c.tracked, c.ignore);
+    assert.notDeepEqual(found, [], name);
+    if (label) assert.ok(found.includes(label), `${name}: ${found.join(", ")}`);
   }
 });

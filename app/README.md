@@ -18,7 +18,10 @@ order:
 6. `npm run test:int` (`node --test` over `test/int`, PGlite)
 
 A green check ends with exit 0, and the output of each test step holds «# fail 0», «# skipped 0» and
-«# todo 0», and «# tests N» with N equal to the count of its folder in the test catalogue.
+«# todo 0», and «# tests N» with N equal to the count of its folder in the test catalogue (section 13 of
+`docs/design/REQ-108-109-app-skeleton.md`, as the runner counts: SC-2 runs as two tests, one per role
+attribute) together with the tests added after it: none in `test/unit`; in `test/int` AE-5
+(`api-entry.test.js`), HD-3 (`headers.test.js`), SC-5 and SC-6 (`selfcheck.test.js`).
 
 ## Local start
 
