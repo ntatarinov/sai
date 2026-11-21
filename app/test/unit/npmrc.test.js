@@ -42,8 +42,17 @@ const INT_FILES = [
   "health",
   "headers",
   "smoke-local",
+  "demo",
+  "demo-parity",
 ];
 const PG_FILES = ["migrate-pg", "selfcheck-pg"];
+// The e2e test files of REQ-111 criterion 12 and REQ-112 criterion 6, with the 15 named tests of the code design
+// 10 that they hold (the e2e step is not in the check chain; this guard is what makes an emptied folder red).
+const E2E_FILES = ["landing", "stage"];
+const E2E_TESTS = [
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => `LD-${n}`),
+  ...[1, 2, 3, 4, 5, 6].map((n) => `ST-${n}`),
+];
 
 // The regular expression of the grep of REQ-108 criterion 2 and REQ-109 criterion 10, as written there: the
 // method forms (a dot, one of the three selector names, a parenthesis) and the option forms (the name and a
@@ -118,6 +127,10 @@ export function packageFindings(npmrc, pkg, lock, tools, tracked) {
   return out;
 }
 
+// The e2e script of REQ-111 criterion 11 and the code design 4.12, exactly: one browser at a time, the files
+// of app/test/e2e, no selector.
+const E2E_COMMAND = 'node --test --test-concurrency=1 "test/e2e/**/*.test.js"';
+
 /** @returns {string[]} */
 export function checkScriptFindings(pkg) {
   const out = [];
@@ -128,6 +141,8 @@ export function checkScriptFindings(pkg) {
     "eslint . --max-warnings 0",
     "tsc --noEmit -p jsconfig.json",
     "node scripts/check-public.js",
+    "node scripts/vendored.js",
+    "node ../tools/src/picker/cli.js check content/sai-intake.json",
     "npm run test:unit",
     "npm run test:int",
   ];
@@ -137,7 +152,7 @@ export function checkScriptFindings(pkg) {
   const unit = steps.indexOf("npm run test:unit");
   if (!(tsc >= 0 && pub > tsc && unit > pub)) out.push("check-public place");
   if (/\|\||;/.test(check)) out.push("no || or ;");
-  for (const k of ["test:unit", "test:int", "test:pg"])
+  for (const k of ["test:unit", "test:int", "test:pg", "test:e2e"])
     if (
       /--test-only|--test-name-pattern|--test-skip-pattern/.test(
         String(pkg.scripts?.[k] ?? ""),
@@ -148,6 +163,7 @@ export function checkScriptFindings(pkg) {
     out.push("test:unit");
   if (!/^node --test .*test\/int\//.test(String(pkg.scripts?.["test:int"])))
     out.push("test:int");
+  if (pkg.scripts?.["test:e2e"] !== E2E_COMMAND) out.push("test:e2e");
   return out;
 }
 
@@ -306,6 +322,69 @@ test("NPM-3 the check script is the one chain, with no selector and no ||", () =
     "",
   );
   assert.ok(checkScriptFindings(noPublic).includes("check chain"));
+  // The eight steps of the code design 4.12: a copy without one of the two new steps, with them swapped or
+  // with one moved behind the tests is red by the chain, whatever else it keeps.
+  const steps8 = pkg.scripts.check.split(" && ");
+  assert.equal(steps8.length, 8);
+  const vendored = "node scripts/vendored.js";
+  const content =
+    "node ../tools/src/picker/cli.js check content/sai-intake.json";
+  assert.deepEqual(steps8.slice(3, 6), [
+    "node scripts/check-public.js",
+    vendored,
+    content,
+  ]);
+  /** @type {Array<[string, string[]]>} */
+  const chains = [
+    ["without vendored", steps8.filter((s) => s !== vendored)],
+    ["without content", steps8.filter((s) => s !== content)],
+    [
+      "vendored behind content",
+      [...steps8.slice(0, 4), content, vendored, ...steps8.slice(6)],
+    ],
+    [
+      "content behind the tests",
+      [...steps8.filter((s) => s !== content), content],
+    ],
+    [
+      "vendored behind the tests",
+      [...steps8.filter((s) => s !== vendored), vendored],
+    ],
+  ];
+  for (const [name, chain] of chains) {
+    const copy = structuredClone(pkg);
+    copy.scripts.check = chain.join(" && ");
+    assert.ok(checkScriptFindings(copy).includes("check chain"), name);
+  }
+  // test:e2e is exactly the command of 4.12; a selector, another folder, a changed concurrency, a missing
+  // script and an extra word are each red, and the selector also by the loop of the three other scripts.
+  assert.equal(
+    pkg.scripts["test:e2e"],
+    'node --test --test-concurrency=1 "test/e2e/**/*.test.js"',
+  );
+  for (const [name, command] of [
+    ["a selector", `${pkg.scripts["test:e2e"]} --test-only`],
+    ["a name pattern", `${pkg.scripts["test:e2e"]} --test-name-pattern=x`],
+    [
+      "another folder",
+      'node --test --test-concurrency=1 "test/int/**/*.test.js"',
+    ],
+    [
+      "another concurrency",
+      'node --test --test-concurrency=2 "test/e2e/**/*.test.js"',
+    ],
+    ["an extra word", `${pkg.scripts["test:e2e"]} --watch`],
+  ]) {
+    const copy = structuredClone(pkg);
+    copy.scripts["test:e2e"] = command;
+    assert.ok(checkScriptFindings(copy).includes("test:e2e"), name);
+  }
+  const selectorE2e = structuredClone(pkg);
+  selectorE2e.scripts["test:e2e"] += " --test-skip-pattern=x";
+  assert.ok(checkScriptFindings(selectorE2e).includes("selector test:e2e"));
+  const noE2e = structuredClone(pkg);
+  delete noE2e.scripts["test:e2e"];
+  assert.ok(checkScriptFindings(noE2e).includes("test:e2e"));
 });
 
 test("NPM-4 check-public stands after tsc and before npm run test:unit; moved after test:unit it is red", () => {
@@ -324,7 +403,7 @@ test("NPM-4 check-public stands after tsc and before npm run test:unit; moved af
   assert.ok(checkScriptFindings(moved).includes("check-public place"));
 });
 
-test("NPM-5 app/test/int holds its 10 named test files and app/test/pg its 2; a copy without one is red", (t) => {
+test("NPM-5 app/test/int holds its 12 named test files and app/test/pg its 2; a copy without one is red", (t) => {
   assert.deepEqual(
     missingTestFiles(path.join(APP, "test", "int"), INT_FILES),
     [],
@@ -345,6 +424,93 @@ test("NPM-5 app/test/int holds its 10 named test files and app/test/pg its 2; a 
         if (f !== `${gone}.test.js`) fs.writeFileSync(path.join(copy, f), "");
       assert.deepEqual(missingTestFiles(copy, names), [gone], gone);
     }
+  }
+});
+
+/**
+ * The named tests of the e2e files in `dir`: the ids (`LD-1` …) of the lines that open a test, and the number of
+ * lines that open one by any name. A `test(` whose first words are not an id is counted in `calls` only, so a
+ * renamed or an anonymous test is found; a test written with a selector (`test.<name>(`) is no line of either.
+ * @param {string} dir
+ * @returns {{ ids: string[], calls: number }}
+ */
+function e2eTests(dir) {
+  /** @type {string[]} */
+  const ids = [];
+  let calls = 0;
+  for (const name of E2E_FILES) {
+    const text = fs.readFileSync(path.join(dir, `${name}.test.js`), "utf8");
+    calls += (text.match(/^test\(/gm) ?? []).length;
+    for (const m of text.matchAll(/^test\(\s*["`']((?:LD|ST)-\d+) /gm))
+      ids.push(m[1]);
+  }
+  return { ids: ids.sort(), calls };
+}
+
+test("NPM-7 app/test/e2e holds landing and stage with their 15 named tests; an emptied folder, a copy without a file and a copy with a test skipped, renamed or missing are red", (t) => {
+  const real = path.join(APP, "test", "e2e");
+  assert.deepEqual(missingTestFiles(real, E2E_FILES), []);
+  const want = [...E2E_TESTS].sort();
+  assert.deepEqual(e2eTests(real), { ids: want, calls: want.length });
+  // A copy of the folder without one file, and an emptied folder: the guard names what is missing.
+  for (const gone of E2E_FILES) {
+    const copy = path.join(tempDir(t), "e2e");
+    fs.mkdirSync(copy);
+    for (const f of fs.readdirSync(real))
+      if (f !== `${gone}.test.js`) fs.writeFileSync(path.join(copy, f), "");
+    assert.deepEqual(missingTestFiles(copy, E2E_FILES), [gone], gone);
+  }
+  const empty = path.join(tempDir(t), "e2e");
+  fs.mkdirSync(empty);
+  assert.deepEqual(missingTestFiles(empty, E2E_FILES), E2E_FILES);
+  // Damaged copies of the real files: each is red by its ids or its count. The selector is built from parts, so
+  // that this file holds no such form (NPM-6).
+  const skip = ["sk", "ip"].join("");
+  const todo = ["to", "do"].join("");
+  /** @type {Array<[string, string, (text: string) => string]>} */
+  const damage = [
+    [
+      "landing",
+      "a test skipped",
+      (x) => x.replace(/^test\(\s*"LD-3 /m, `test.${skip}("LD-3 `),
+    ],
+    [
+      "landing",
+      "a test marked later",
+      (x) => x.replace(/^test\(\s*"LD-5 /m, `test.${todo}("LD-5 `),
+    ],
+    [
+      "stage",
+      "a test renamed",
+      (x) => x.replace(/^test\(\s*"ST-4 /m, 'test("a walk '),
+    ],
+    [
+      "stage",
+      "a test missing",
+      (x) => x.replace(/^test\(\s*"ST-6 /m, "function unused(){}\n// "),
+    ],
+    ["landing", "every test removed", (x) => x.replace(/^test\(/gm, "// ")],
+  ];
+  for (const [file, what, change] of damage) {
+    const copy = path.join(tempDir(t), "e2e");
+    fs.mkdirSync(copy);
+    for (const f of E2E_FILES) {
+      const text = fs.readFileSync(path.join(real, `${f}.test.js`), "utf8");
+      fs.writeFileSync(
+        path.join(copy, `${f}.test.js`),
+        f === file ? change(text) : text,
+      );
+    }
+    assert.notDeepEqual(
+      e2eTests(copy),
+      { ids: want, calls: want.length },
+      what,
+    );
+    assert.notEqual(
+      fs.readFileSync(path.join(copy, `${file}.test.js`), "utf8"),
+      fs.readFileSync(path.join(real, `${file}.test.js`), "utf8"),
+      `${what}: the damage changed the copy`,
+    );
   }
 });
 
