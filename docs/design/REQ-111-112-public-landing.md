@@ -80,7 +80,7 @@ ORCH are in section 18, each with a default: О1–О12 of step 01, answered by 
   decisions/0124 О14 (section 11 row 5; measured together with criterion 6: F37, F38); the closed branch of
   `vercel-build.js` (the bytes of the gate page, the second run) is the fix round's and is not changed.
 - **Sizes.** 26 criteria; 15 new test files and 6 changed ones; 96 new named tests (71 unit, 10 int, 15 e2e) in the
-  catalogue (section 10); 21 build sub-steps (F1–F7 with the four translation launches F1k, F1e, F2k, F2e, B1–B6,
+  catalogue (section 10) as designed, 100 as built (74 unit, 11 int, 15 e2e; section 20); 21 build sub-steps (F1–F7 with the four translation launches F1k, F1e, F2k, F2e, B1–B6,
   T1–T4); 93 mutants (12 applied on the sketch at the design tag; at step 01c 8 on the sketch at the build tag and 1 on
   a trial page; at step 01e 4 on the sketch at the build tag and 2 on trial pages); 15 open questions (О1–О14
   answered by decisions/0124, О15 new); 51 checked facts.
@@ -1131,9 +1131,34 @@ above; one place, AP-014; gate finding G1).
 
 Counts [P, from this catalogue]: new — unit 71 (PP 7, TX 8, FW 8, TC 5, IN 6, VD 4, PB 7, PO 4, OP 6, OS 7, OV 7,
 NPM-7 1, CP-3 1), int 10 (DM 7, DP 2, NM-6 1), e2e 15 (LD 9, ST 6); with the build tag's 46 and 36 (F35): unit 117,
-int 46, e2e 15. Test files: unit 25 (14 + 11), int 12 (10 + 2), pg 2, e2e 2, and the helper `fixtures/browser.js`.
-The new tests have no loop and no subtest, so each file adds its number of `^test(` lines to «# tests» of its folder
-(at the build tag `grep -c '^test('` gives unit 46 and int 34, and SC-2 of int is a loop of two: F35).
+int 46, e2e 15, **as designed**. **As built (step 10, the tree of commit f4ac340):** unit 120, int 47, e2e 15 — the
+GitHub run 44908361054 of that commit prints «# tests 120» (unit), «# tests 47» (int), «# tests 4» (pg) and «# tests
+15» (e2e), each with «# fail 0», «# skipped 0» and «# todo 0»; the fix rounds 02c and 02d added three unit tests and
+one int test to the designed ones (the log of `docs/program/public-v1/PROGRESS.md`: unit 117 and int 46 at step 5, 118
+and 47 after round 02c, 120 and 47 after round 02d), and the e2e count did not move although the rows of LD-5 grew
+(sections E, F, G, H). Test files: unit 25 (14 + 11), int 12 (10 + 2), pg 2, e2e 2, and the helper files of
+`app/test/fixtures/` (the next paragraph). The new tests have no loop and no subtest, so each file adds its number of
+`^test(` lines to «# tests» of its folder (at the build tag `grep -c '^test('` gave unit 46 and int 34, and SC-2 of int
+is a loop of two: F35; at the final tree it gives unit 120 and int 45, and the same loop makes «# tests» 47; e2e 15 and
+pg 4 equal their lines).
+
+**Helper files and rows added after the design (as built, no test of their own).** `fixtures/e2e-kit.js`: the node side
+of the e2e tests — the matrix, the texts and the intake read as the test's own oracle, the one reading of what a page
+reported (console, requests, CSP records), the waits that count frames, and, from round 05l, `speakerRow(page)`,
+`stressSpeakerLine(page, tag, over)` and `clearSpeakerStress(page)` for the speaker rows. `fixtures/page-checks.js`: the
+in-page measures shared by LD and ST (`layoutFindings`, `skipLinkFindings`, `focusWalkFindings`, `labelFindings`,
+`avatarPixels`, the walk helpers). `fixtures/blank.js`: `scan`, `blank` and `specifiersOf`, the one reader of JavaScript
+text of the tests (AP-014). `fixtures/snapshot.js`: `tree`, `fileNames` and `snapshot` of a folder, the one reader of a
+folder. LD-5 grew by sections: E (30 focus-walk states, round 05e), F, G and H (round 05l, the owner's ruling О45 on the
+speaker row, `decisions/0124`): F reads invariants only at ten windows from 320 to 420 px (380 and 389 included), five
+questions each — every line of the speaker inside its column (0.5 px), 4 px from «‹ Назад» on a shared row, no overlap of
+speaker, question, progress and «‹ Назад», the speaker above the question, the class `own` set exactly when the speaker
+is off the row of «‹ Назад», no sideways scroll — and never pins the choice, so nothing font-dependent is pinned; G at
+420 px first requires the plain state beside the question, then stresses the title and then the stage line by letter
+spacing calibrated with the page's own range measure and asserts the choice both ways (5 px beyond the column: own; 4 px
+before it: beside), for all five questions; H pins the own row at 320 px for all five questions and the beside state at
+420 px. Row IDs and mutants are in `handoffs/M1CODE-20261119-01/step-05l-test-designer-speaker-rows.json` and
+`step-05m-test-design-validator-speaker-rows.json`.
 
 ---
 
@@ -1360,7 +1385,7 @@ Chrome (F45, F51).
 | Q2 | yes | the gates of WF-02 and WF-04; the facts of section 1 and the trials of section 17 are for CODE-DESIGN-VALIDATOR to repeat on a fresh clone of the tag |
 | Q3 | yes | every fact has its command and output; what was not measured is named (F31, the platform's builder, the runner's Chrome) |
 | Q4 | yes | one check command `cd app && npm run check` with the steps `vendored` and `content` (ARCH §3); `test:e2e` in the job `e2e`; the tools check as it is |
-| Q5 | yes | 96 new named tests; failure tests compare the state before and after (PB-4, PB-6's refusals of the markers and of the texts module, VB-4, DP-2, DM-4, VD-3); the public set is tested for what it keeps as well as for what it leaves out (PB-2, PB-6, PP-7, LD-9); the shown text is linted in every state an LD test reaches (G1), the labels on every frame of a walk (ST-2, G7) |
+| Q5 | yes | 96 new named tests (100 as built, section 20); failure tests compare the state before and after (PB-4, PB-6's refusals of the markers and of the texts module, VB-4, DP-2, DM-4, VD-3); the public set is tested for what it keeps as well as for what it leaves out (PB-2, PB-6, PP-7, LD-9); the shown text is linted in every state an LD test reaches (G1), the labels on every frame of a walk (ST-2, G7) |
 | Q6 | yes | no skip, todo or only (the fix round's NPM-6 greps every line of every file under `app/test`, comments included, F49); no `\|\| true` in the chain or the jobs (NPM-3, CIW-1); no rule weakened (section 11; the one IB-1 row of decisions/0124 О14 lets exactly the vendored declaration stand, with its damaged copies); the presence guards and «# tests» per folder (NPM-5, NPM-7, NM-5) |
 | Q7 | yes | no secret in a page, a text, the intake or a test; REQ-108 criterion 13's grep reads all of `app/` |
 | Q8 | not applicable | no tenant, account or customer data; the demo stores nothing (DP-2, LD-8) |
@@ -1392,7 +1417,7 @@ For ORCH and DOC-UPDATER (outside the files of this run):
   test step with «the test catalogue of the run — section 13 of docs/design/REQ-108-109-app-skeleton.md, with every
   test that a later step of the run names in its handoff as added or removed». That literal describes the tree of the
   skeleton run only: the fix round already moved unit to 46 (its NPM-6, F35), and this run moves unit to 117, int to
-  46 and adds e2e 15 (section 10), so read at a later commit it would not hold (AP-133). Proposed for ORCH, for the
+  46 and adds e2e 15 (section 10; as built 120, 47 and 15), so read at a later commit it would not hold (AP-133). Proposed for ORCH, for the
   micro-amendment that follows this run (or M1AMEND-20261119-01 if ORCH widens it): the reference reads «the test
   catalogues of the runs whose changes the tree holds — section 13 of the skeleton design, the tests that the fix round
   of the skeleton named (NPM-6), and section 10 of docs/design/REQ-111-112-public-landing.md — with every test that a
@@ -1558,8 +1583,12 @@ New at step 01c:
   open questions 15 (section 18: О1–О14 answered by decisions/0124, О15 new).
 - New test files 15 (unit 11, int 2, e2e 2) and one helper; changed test files 6 (`npmrc`, `check-public`,
   `vercel-build`, `ci-workflow`, `import-boundaries`, `node-main`).
-- Named tests added 96: unit 71, int 10, e2e 15 (section 10); with the build tag's counts (unit 46, int 36, F35) unit
-  117, int 46, e2e 15.
+- Named tests added 96 as designed: unit 71, int 10, e2e 15 (section 10); with the build tag's counts (unit 46, int 36,
+  F35) unit 117, int 46, e2e 15. **As built (step 10): 100 added — unit 74, int 11, e2e 15; the tree has unit 120, int 47,
+  e2e 15 (pg 4)**, as GitHub run 44908361054 of commit f4ac340 prints them; the lines `^test(` of the files are unit 120,
+  int 45 (SC-2's loop makes 47), pg 4, e2e 15 (landing 9, stage 6).
+- New helper files: `fixtures/browser.js` (designed) and, as built, `e2e-kit.js`, `page-checks.js`, `blank.js` and
+  `snapshot.js` (section 10).
 - Build sub-steps 21: FRONTEND-DEV 11 (F1, F1k, F1e, F2, F2k, F2e, F3, F4, F5, F6, F7), BACKEND-DEV 6 (B1–B6),
   TEST-DESIGNER 4 (T1–T4); section 12 shows F1k with F1e and F2 with F2k, F2e in one row each.
 - Mutants 93 (section 13), applied with the result named: 12 on the sketch at the design tag (M01–M06, M44–M47 and
@@ -1567,4 +1596,78 @@ New at step 01c:
   M83–M87) and 1 on a trial page (M80); at step 01e 4 on the sketch at the build tag (M89–M92) and 2 on trial pages
   (M88, M93).
 - The look: sha256 `3dea234002153ff0a70f1dda61bf8cb587f025a2debab01f9a58e6c1ef3f9347` (unchanged during steps 01, 01c
-  and 01e).
+  and 01e; it was edited by later steps of the program and again at step 10 of the build run, sections 7.9, 7.13, 8, 12
+  and D9, D24, D25 of 17 — as it stands after step 10: sha256 `cd3f6ce276f5c6118c4e658beabfd5ee3e24bba8a99233fc5fe3bab9e19c2dfe`).
+
+---
+
+## 20. As built (step 10, DOC-UPDATER, 2026-11-21)
+
+Written after the RELEASE-VALIDATOR PASS of step 9 (`handoffs/M1CODE-20261119-01/step-09-release-validator.json`), from
+the handoffs of the run and `decisions/0124` (О13–О47). The design above is not rewritten; this section says what was
+built and where it differs.
+
+**What was built.** The landing, how it works, examples, demo and 404 pages in the approved look (ru, en; kk built and
+hidden on production, G9), the theme button, the test-mode line and the AI disclosure on every page, the one-tap demo
+survey of five questions on Sai's own intake through the byte copy of the picker engine (stores nothing), the
+forbidden-words lint and the production build that leaves out the order texts and kk (REQ-111); the office renderer in
+stage mode — the ported grid and movement with the parity test, the drawing, the scene at the top of the landing, how it
+works and the demo (REQ-112); the job `e2e` of `app.yml` (the runner's Chrome, `playwright-core` 1.64.1, 15 tests). The
+files and the sub-steps are as sections 3 and 12 say; the sub-steps ran as F1–F7 with the translation launches, B1–B6,
+T1–T4.
+
+**Where the build differs from the design.**
+
+- *The speaker of the demo question* (look 7.9, D25). The design and its first builds took its own row by a CSS window
+  threshold (`decisions/0124` О19, then 372 px in О32, then 380 px in О36). On GitHub the e2e row LD-5 failed at the
+  380 px window on the runner's Linux font (app.yml run 44887506935, snapshot ci/m1-landing-2, commit bc3af8d: the title
+  ended 8.4 px beyond its column), because the threshold was set on one platform's fonts. By the owner's ruling О45
+  («C: по содержимому») the threshold is gone: `fitSpeaker` in `app/public/js/pages/demo.js` lays the head out beside the
+  question, measures each line of the speaker against its column (slack 0.1 px) and sets the class `own` on the head;
+  the placements `.ask-h.own .spk`, `.prog` and `.back` stay in `app/public/css/site.css`, in the phone layout (below
+  760 px) only. The look says so since step 10. At 320×568 ru always takes the own row (the first word of its longest
+  title does not fit beside «‹ Назад»); en and kk take it only where a title or a stage line does not fit (on the Windows
+  font of the third DESIGN-QA pass: ru 5 of 5 questions, kk 4 of 5, en 0 of 5; with a wider font 13 of 15 states), and
+  «‹ Назад» on the own row lies partly under the live strip at the first scroll position in 5 of the 15 states on that
+  font (13.6 or 36.6 px; the owner's list D24); the count depends on the visitor's font. The look's text on these
+  figures was corrected at step 10a after the third pass (findings P1–P4); the look as it stands after step 10a has
+  sha256 `f6de5d87b793c47d6d157f16167ac67842425f966e7dffdeec9b200e68dd13c6` (the figure in section 19 is that of step 10).
+- *The phone bar of the demo* is sticky and in the flow, not fixed (О24, look 7.11, D23): a fixed bar covered the footer
+  links at the end of the page (found by LD-1; round 02c).
+- *The focus on demo.html*: the question heading holds the focus at load (О30); the first Tab goes to «‹ Назад», the
+  second to the first card (О40, a correction of О30).
+- *The result chips* carry `aria-label` «<question>: <answer>» and no `title` (О33, О37); the no-match text is
+  conditional (О33).
+- *`playwright-core`*: the Addition to `decisions/0001` was written at step 10 (the design said at the build, О12).
+- *Helper files and counts* (section 10): four helper files besides `browser.js`; unit 120, int 47, e2e 15 against the
+  designed 117, 46, 15.
+- *The GitHub snapshots* (decisions/0110, О31): ci/m1-landing-1 (commit ea55267, before the rounds 02d to 05k; check.yml
+  run 44802456727 and app.yml run 44802456836 green); ci/m1-landing-2 (bc3af8d, app.yml run 44887506935, job e2e red at
+  LD-5, the owner's ruling О45 followed); ci/m1-landing-3 (8337120, app.yml run 44906936052: the jobs pg, docker and e2e
+  green with e2e 15 of 15, job check red at check-public because two comments of round 02f named an internal record in a
+  public file, fixed by the comment round 02g); ci/m1-landing-4 (f4ac340, check.yml run 44908360975 and app.yml run
+  44908361054 green: jobs check, pg, docker, e2e; unit 120, int 47, pg 4, e2e 15). The working folder is equal to
+  f4ac340 in `app/` and `.github/workflows/app.yml`.
+
+**Named limits that stay open** (recorded as defects or notes; none fails a criterion):
+
+- Test rows of the speaker (step 05m): T13 the 4 px gap to «‹ Назад» is not pinned apart from the layout's own gap; T14
+  the 0.5 px tolerance is not backed against a larger slack; T15 `flex-wrap` of the own progress row is pinned by no row;
+  T16 the own pin at 320 px has about 2.5 px of margin on a Windows font (green on the runner font); T17 info. Review
+  lows of step 04f: L2 one check of `speakerRow` has no tolerance; L3 the comment of G says 6 px where it is 5 px; L4 the
+  stress style sheet is not tried under the CSP on the runner (the GitHub e2e is green); L5 no re-measure for a text-size
+  change or a late web font. Step 04g: L1 a ragged comment line break in `site.css` (formatting). All are in
+  `docs/issues/` (ISS-0124).
+- The skip link takes two lines at 320×568 in ru (UAT L-19; a look matter for the owner's G21; ISS-0125).
+- The twelve remarks of the reader without context (step 08d) and N11 (13 of the 900 answer combinations give no match with
+  few answers and the receipt still speaks of the server): ISS-0126.
+- The Kazakh texts, 285 lines and six corrections of round 1, wait for a person who knows Kazakh (AP-114; kk is hidden on
+  production): ISS-0127.
+- The check in a pruned shallow clone (criterion 11 of REQ-111) was **not** run on the owner's PC (his rule: checks on
+  GitHub only); it stands on the green GitHub checkouts and the static search of step 9.
+- The e2e rows were never run by their runner on the owner's Windows PC (his rule); GitHub proves them.
+- The micro-amendments left to the amendment run: REQ-108 criterion 2's count reference (section 16), the REQ-109 and
+  REQ-108 literals of `decisions/0123` «Order», and the own mutant of REQ-112 criterion 2 that swaps only the right and
+  left steps of the BFS (equal in effect; the criterion's mutant list should name a swap with up or down): ISS-0128.
+- The DESIGN-QA-VALIDATOR PASS stands on 3c66ba3, before the rule О45; a narrow pass on the speaker row, the protected
+  preview and the owner's «похоже» (G21) come next; the requirements stay `in_progress` until then.

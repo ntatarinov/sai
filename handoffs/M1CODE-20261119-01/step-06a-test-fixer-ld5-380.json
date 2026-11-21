@@ -1,0 +1,60 @@
+{
+  "handoff_id": "step06a-ld5-380-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "06a",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-FIXER",
+  "file": "handoffs/M1CODE-20261119-01/step-06a-test-fixer-ld5-380.json",
+  "status": "IN_PROGRESS",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "app/test/e2e/landing.test.js",
+      "app/public/css/site.css",
+      "decisions/0124-m1code-landing-design-answers.md"
+    ],
+    "route": "step 6 FAIL (GitHub run 44887506935) -> TEST-FIXER -> steps 3 and 4 -> 5b if a test changed -> a new snapshot on GitHub (owner's yes for the push) -> step 9",
+    "write_set": [
+      "app/public/css/site.css (only if the code is wrong)",
+      "app/test/e2e/landing.test.js (only if the test is wrong)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 6 FAIL -> TEST-FIXER. The full check of the final state of run M1CODE-20261119-01 ran on GitHub on the snapshot branch ci/m1-landing-2, commit bc3af8d (main d87b3d1 + app/ and .github/workflows/app.yml of m0-records 3c66ba3, the same app/ you have in the working folder): check.yml run 44887507034 SUCCESS; app.yml run 44887506935: jobs check, pg, docker SUCCESS, job e2e FAILURE: 14 of 15 e2e tests passed, one failed: test 5 'LD-5 the survey ...' at app/test/e2e/landing.test.js:894 (section F, the speaker's own row at 360-390 px, added in rework 05i and round 05k): expected [] but got three findings on Linux Chrome: 'the title ends at 227.4, beyond its column at 222.2 (1 x; e.g. speaker 380 question 1)', 'the title ends at 230.6, beyond its column at 222.2 (1 x; e.g. speaker 380 question 5)', 'the title ends at 230.6, under 4 px from «Назад» at 234.2 (1 x; e.g. speaker 380 question 5)'. The full log is in the scratchpad folder ci2 (file app-e2e-failed.log; the scratchpad is C:\\Users\\greve\\AppData\\Local\\Temp\\claude\\a6c11d6dc2554533\\483285e2-45d1-4ba0-be5f-d84094cb1f8a\\scratchpad). Facts to check first: the site uses system fonts (no @font-face), so text widths differ between the Mac of the earlier runs (title needs 218 px) and the Linux runner (227-231 px); the rule is in app/public/css/site.css near line 1933 (the speaker's own row below 380 px, max-width 379px) and in decisions/0124 O32, O36, O39 and the look (docs/design look file named in docs/design/REQ-111-112-public-landing.md, section 7.9); the owner's mockup keeps 390 px, the sample's phone, side by side. The earlier GitHub e2e on ci/m1-landing-1 (threshold 372) was green 15 of 15. Your job (.claude/agents/test-fixer.md): decide by the requirement whether the code or the test is wrong, delete and skip nothing, fit nothing. The layout must hold with platform font differences (the real visitors do not have the Mac's fonts), so the finding is probably a code defect with no slack: the REVIEWER warned of exactly that in 0124 O36/L1. RULE: do NOT change the owner's rulings on your own - the threshold 'below 380 px' (O36) and 'at 390 px side by side' - if the only fix needs to change either, do not edit anything: stop with a BLOCKED entry that gives the options (for example a threshold between 380 and 389, or letting the title wrap on its own), the measured numbers and your recommendation, and ORCH decides. Otherwise make the smallest fix (code in app/public/css/site.css or the test, as the requirement says), with result.changes saying what and why. CONSTRAINTS: this Windows PC must not run npm run check, any app test script or e2e tests (the owner's rule: the checks run only on GitHub in Linux); you may measure in a real headless Chrome of this PC with a script of your own in the scratchpad for hints (the fonts here differ from Linux, so such numbers are not proof) and you must say plainly what is not verified; the proof is the next run on GitHub, which ORCH starts after steps 3, 4 and 5b. Node 22 first on PATH (C:\\Users\\greve\\tools\\node22; node -v v22.23.4). No commit, push, checkout, reset, stash, clean. Close with the handoff close command after cd tools && npm run traces returns 0 (handoffs-check has one old known H4 violation of M0DOCS step-05c, accepted).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T09:09:37Z",
+  "started_at": "2026-11-21T09:09:37Z",
+  "completed_at": null,
+  "result": {
+    "status": "IN_PROGRESS",
+    "summary": "STOPPED, nothing edited. The three findings of LD-5 section F all come from one window, 380 px, and the cause is a code rule with no slack for the platform font: below 380 px the speaker has its own row (site.css, max-width 379px, decisions/0124 О36), from 380 px the speaker sits beside «Назад», and on the Linux runner the longest Russian title does not fit the speaker column at 380 px. By the requirement the code is right to be asked for 'side by side from 380 and at 390' and the test is right to demand 'no overflow'; both cannot hold at 380 px with the Linux font, and every fix needs to change the owner's threshold (О36), the 390 px side-by-side ruling, or the look (7.9, D25). ORCH decides.",
+    "changes": [],
+    "self_check": [
+      "Read the failed log (scratchpad ci2/app-e2e-failed.log): only test 5 failed, only the window 380 px in section F; windows 360, 371, 372, 375, 379, 389, 390 gave no finding.",
+      "Not repeated locally: the owner's rule forbids running e2e tests on this computer, and the fonts here differ from the Linux runner, so a local number would not be proof. No local measurement was made.",
+      "No file edited (site.css and landing.test.js unchanged). npm run traces not needed for an edit; handoff left IN_PROGRESS as a stop."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "BLOCKED",
+        "at": "2026-11-21T09:11:09Z",
+        "text": "LD-5 section F (landing.test.js:894) cannot be made green by a fix inside my write_set without changing an owner's ruling. MEASURED on the Linux runner (run 44887506935, snapshot bc3af8d), speaker column right edge (.who) = window - 157.8 px: at 380 px it is 222.2 and at 389 px 231.2; the longest title ends at 227.4 (question 1) and 230.6 (question 5, «Проверяющий»), so it passes the column by 5.2 and 8.4 px at 380 and stands 0.4 px under the 4 px gap to «Назад» (back left 234.2) at question 5. Where it fits: at 389 px the slack is 0.6 px (column 231.2 against 230.6, the test tolerates 0.5), at 390 px 1.6 px. So with the runner's font the title needs a column from about 388.4 px of window; on macOS (the look 7.9, 130.4 px title, 190.4 px needed against 198.4 at 380) there are 8 px to spare. The font is a system stack with no @font-face, so the real visitor's width is neither the Mac's nor the runner's. ROOT CAUSE: О36 chose a fixed window threshold (379) with an 8 px slack measured on one font; a fixed width threshold cannot be robust to the font, and the sample's own 390 px has only 1.6 px of slack on the runner's font. The test is not wrong: it asks for 'no title beyond its column' and 'beside «Назад» from 380 px' as О36/О39 say. The code is wrong only against the platform-independent reading of the layout.\n\nOPTIONS (each changes an owner's ruling or the look): (A) move the threshold up to max-width 387 or 388 px in site.css and the e2e constants OWN_ROW_UP_TO and the windows (380 and 389 expectations would then read 'own row'): changes О36 'below 380'; slack at 389 stays 0.6 px on the runner, so it is still no slack at the phone of the sample, and the test 389 px row must stay side by side only if the threshold is 388 or less; this is the smallest change but still tight. (B) keep 380 and the side-by-side from 380, and let the speaker row absorb the difference: in the 380-389 px window narrow the speaker's inner gap (12) and the head's column gap (10) by about 9 px in total, or set the title to 16 px; no ruling about the threshold changes but the look 7.9/D25 is changed in a measured place (a 1:1 mockup rule, owner's list G21) and the slack at 380 on the runner is about 0; not robust either. (C) make the layout content-driven instead of width-driven: the head wraps (flex-wrap or grid auto-fit) so that the speaker takes its own row exactly when its title does not fit beside «Назад» in the user's own font; then there is no font-dependent threshold at all, and the test row reads 'no overflow, no collision at every window', while the 'beside at 380/389/390' and 'own row at 379' expectations become font-dependent and must be rewritten; on the runner the speaker would be on its own row at 380 and 389 and, with 1.6 px, maybe at 390 as well, which breaks 'the mockup keeps 390 side by side' on this font. (D) the owner accepts the sample's phone as side by side on the Mac font and gives the runner's font a tolerance: only possible as a test change (the e2e sets a font stack with the same metrics as the Mac's, for example by loading a metric-compatible local font file in the test), which pins the platform instead of fixing the layout: I do not recommend it.\n\nRECOMMENDATION: (C) in the code, with the rows in the test rewritten by the same step 5b, because it is the only one that survives platform font differences as the task asks and it needs no new threshold number; if the owner wants 390 px side by side kept on every font, (A) with 388 px is the least change but is the same no-slack defect (0.6 px at 389, 1.6 at 390 on the runner's font) and will fail again on a slightly wider font. ORCH decides; steps 3, 4 and 5b follow whichever code or test edit is chosen."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-21T14:14:37Z",
+    "text": "This step stopped on purpose (BLOCKED: every fix changed an owner's ruling). ORCH asked the owner as a closed question in the chat and the owner answered «C: по содержимому (Recommended)» (decisions/0124 O45, 2026-11-21). The fix was done as CODE-FIXER round 02f (step-02f-code-fixer-speaker-content.json), the tests as TEST-DESIGNER round 05l, reviews 03f, 04f, gate 05m, comment round 02g with 03g and 04g; the GitHub run of ci/m1-landing-4 (f4ac340) is green. This handoff stays IN_PROGRESS with its BLOCKED entry as the record of the stop; nothing else is to be done in it."
+  }
+}

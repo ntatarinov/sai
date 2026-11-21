@@ -1,0 +1,85 @@
+{
+  "handoff_id": "step03f-speaker-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "03f",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M1CODE-20261119-01/step-03f-security-reviewer-speaker.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-02f-code-fixer-speaker-content.json",
+      "handoffs/M1CODE-20261119-01/step-03e-security-reviewer.json",
+      "decisions/0124-m1code-landing-design-answers.md"
+    ],
+    "route": "03f ‖ 04f (one at a time) -> 5b -> new snapshot on GitHub -> 9",
+    "write_set": [
+      "none in the project"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 3 (loop after the owner's ruling decisions/0124 O45), SECURITY-REVIEWER, pass 1 of this loop, run M1CODE-20261119-01. Scope: the edit of reviewed code since the reviewed state, HEAD 3c66ba3 of m0-records (the tag base/M1CODE-20261119-01-review5 of the Mac is not in this clone): `git diff 3c66ba3 -- app` in the working folder (read-only use of git diff; 4 files expected: app/public/css/site.css, app/public/js/pages/demo.js, app/test/e2e/landing.test.js, app/test/fixtures/e2e-kit.js). The code changes are in handoffs/M1CODE-20261119-01/step-02f-code-fixer-speaker-content.json (read its result.changes): the function fitSpeaker() in app/public/js/pages/demo.js measures the title with a Range and toggles the class own on .ask-h after each view and on resize; the CSS rule moved from a window threshold to the class. Review it by the role file .claude/agents/security-reviewer.md and the earlier passes of this run (handoffs/M1CODE-20261119-01/step-03e-security-reviewer.json) for what was already checked: the page script writes no style or HTML from visitor text (the closed list PP-6), no innerHTML, no eval, no new request, no new storage, the CSP unchanged, the text a script writes still goes only through textContent and the lint, the test helpers inject a constructed style sheet only into the test page. Check the facts, not the report of the author (quality-bar section 6). Trials: your own small drivers in a scratch clone outside the project are allowed (fresh git clone of the project folder in the scratchpad, npm ci there, Node 22), for example the demo page in a real headless Chrome with hostile answer texts, long titles, resize storms (many resizes in a row) and rapid answer sequences to see that fitSpeaker throws no error, loops no layout and leaves the page responsive; NOT allowed on this PC: npm run check, any app or tools test script, e2e tests (the owner's rule: only GitHub in Linux). Result: PASS or FAIL with findings by severity; do not repair code. No commit/push/checkout/reset/stash/clean. Node 22 first on PATH. Close with the handoff close command after cd tools && npm run traces returns 0 (handoffs-check has one old known H4 violation, accepted).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T10:39:02Z",
+  "started_at": "2026-11-21T10:39:02Z",
+  "completed_at": "2026-11-21T10:49:59Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "VERDICT PASS (pass 1 of the loop after the owner's ruling decisions/0124 O45). No Critical, High, Medium or Low finding; three Low observations are in issues and none is a defect of this change.\n\nMAP OF SURFACES (change: git diff 3c66ba3 -- app, 4 files, 332 insertions of 78 deletions; HEAD 3c66ba3 of m0-records, the tag of the Mac is not in this clone; the diff of the same range over app/server, app/vercel.json, package files, Dockerfile, .github, app/api, app/scripts, app/content, app/public/shared and app/public/js/office is empty, so the CSP in app/server/http/headers.js (default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none') and the build are unchanged). (1) app/public/js/pages/demo.js: goes to the browser; the new function fitSpeaker() and SPEAKER_SLACK, its calls in put() and in the resize listener. It reads geometry (getBoundingClientRect, a Range over the text of the lines of .who) and writes one thing: classList.add/remove of the class own on .ask-h. No text, no markup, no style member, no storage, no request. (2) app/public/css/site.css: goes to the browser; one rule block moved from max-width 379px to max-width 759px with the selector .ask-h.own; no url(), @import, expression or content text added. (3) app/test/e2e/landing.test.js and (4) app/test/fixtures/e2e-kit.js: tests, no surface in production (not served: the public folder is app/public; read for secrets, hosts, weakened checks, and for what they inject into a page). Writes files, holds a secret, the server goes by itself, customer data, photos: not touched.\n\nITEMS. Q7 met: the 332 added lines hold 0 key or token shapes (AKIA, ghp_, github_pat_, xox, PEM, JWT), 0 words secret, token, password, api key, 0 process.env, 0 paths or hosts of this computer; the only regex hits were the substring sk-h inside the class name ask-h (read, a false positive). Q8 not applicable (no business space, account or customer data; no new path to data). Q9 not applicable (no SQL, no database call in the change). Q10 met for the one path the change adds: fitSpeaker has no outside call and cannot throw on a missing element (it returns when .ask-h or .who is absent), a hostile run gave 0 page errors (below), and an error in one resize handler would not touch another request. Q11 not applicable (no fetch or outside address added; a grep of the added lines for fetch, XMLHttpRequest, WebSocket, sendBeacon, import() gives 0; in the walks the only request outside the page files is the page's own /api/demo/questionnaire, and 0 requests left the local origin). R3 not applicable (decision 0033; the Permissions-Policy of headers.js is unchanged). R2 not applicable (not the Pixel Office). Q6 not cheated: 0 skip, only, todo, eslint-disable, ts-ignore, ts-nocheck or '|| true' in the added lines.\n\nWHAT THE TASK ASKED, CHECKED BY FACT (not by the author's report). (a) The page script writes no style or HTML from visitor text: grep of the added lines for innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function, cssText, srcdoc, .style, setAttribute of style gives 0; the one writer is classList (added lines 22-26 of the added-lines list); the existing closed list of CSSOM writes (ask.style.setProperty('--tx', ...), PP-6) is unchanged. In a real Chrome with hostile texts the head had 0 style attributes in 132 + 33 states and the speaker column no child elements other than b and span in 132 states. (b) No new request, no new storage: a normal walk of five questions at 390 px made one request outside the page files (/api/demo/questionnaire?lang=ru, as in the tree before the change), 0 requests outside the origin, localStorage 0 and sessionStorage 0 keys, no cookie, 0 securitypolicyviolation events in any run. (c) The text a script writes still goes only through textContent: the diff adds no text write at all. (d) The test helpers: stressSpeakerLine builds a CSSStyleSheet and sets document.adoptedStyleSheets, clearSpeakerStress sets it to an empty list, both only inside page.evaluate of the test page; the selector and the CSS are built from the literal 'b' or 'span' of the test and from numbers the helper computed; app/public has 0 uses of adoptedStyleSheets or CSSStyleSheet, and the test folder is not served, so nothing of it reaches a visitor; clearing adoptedStyleSheets removes no sheet of the product (the product adopts none).\n\nOWN TRIALS (my drivers in <scratch>/sec3f against a scratch clone <scratch>/r6 = HEAD 3c66ba3 plus the four working files copied over, and an untouched clone <scratch>/r6b for the before state; the real Chrome 157 of this PC through playwright-core, server node server/node-main.js on port 0; npm run check, test scripts and e2e were not run). (1) Hostile texts in the speaker: the served texts module substituted so that role_1..4 and stage_1..4 hold each of 11 hostile strings (an img with onerror, a closing style and a script, a 5 000-letter word, 400 words, right-to-left controls, 900 combining marks, an empty string, newlines, a 60+60 letter pair, a CSS and attribute injection text, 40 repeats of a word with zero-width spaces) x widths 320, 360, 420, 700, 800, 1280 x two questions = 132 states: 0 window.__pwn set, 0 CSP violations, 0 style attributes, 0 foreign child elements, 0 page errors, 0 console errors, 0 outside requests, 0 sideways scroll; class own absent at 760 px and wider in all; the class own agrees with my oracle (a per-character Range, not the selectNodeContents of the code) in all narrow states; the tree before the change had 4 states where a line overflowed beside «Назад» (hostile-roles-0 at four widths) that the new code resolves. (2) Hostile question titles (the questionnaire response substituted, the h2 shares the grid): 11 strings x 3 widths = 33 states: 0 pwn, 0 CSP, 0 style attributes, 0 errors; the two strings that are empty or only newlines make the page fall to its failed state (no head) in the old and the new tree alike, with no error. (3) Resize storm: 500 real viewport changes in a row (widths 200 to 1500, random heights) on the open question: 0 page errors, 0 idle class mutations in the 700 ms after the storm (a MutationObserver on class and style over #demo counted 992 mutations during the storm and 0 after it: no layout loop), a card click afterwards answered in 503 ms (the tree before: 505 ms) and the page moved to question 2; and 20 000 resize events dispatched in one task: 356 ms in all, 0.018 ms per event (the tree before 246 ms, 0.012 ms), then 123 animation frames in 500 ms (122 before): the page stays responsive. (4) Settled-state sweep: 3 languages x 5 questions x 194 widths (200 to 779 px, step 3), each read after two animation frames = 2 910 states (run twice, 5 820): 0 states where the class own disagrees with my oracle (own exactly when the beside layout overflows its column by more than 0.1 px, at windows of 759 px and narrower); the only 43 'bad' rows per run are windows of 200 to 236 px where even the full-width row of its own is narrower than the longest word, the same overflow the tree before has at those widths (a word wider than the column cannot fit anywhere); 0 page errors. A first storm sample flagged 1 stale state at 279 px: it was read right after setViewportSize, before the browser dispatched the resize event; 32 changes from five widths to seven, read at once and again after two frames: 6 stale reads at once, 0 after two frames, so the state is transient and settles. (5) Rapid answers: six rounds of a card click, a viewport change and a Back click started together, then 60 key presses and card and Back clicks: 0 page errors, 0 console errors, the page answered and the head was consistent (class own off, 0 style attributes, scrollX 0) in the same way as the tree before (the timeouts of my own clicks on a moving card were identical in the old and the new tree, a property of the driver, not of the change).\n\nTRIAL COUNTS. About 29 000 checks in all: 132 + 33 hostile states (each also in the old tree), 500 real viewport changes with 25 oracle reads, 20 000 synthetic resize events, 5 820 sweep states, 32 race reads, 6 rapid rounds with 60 keys, 1 normal walk.",
+    "findings": [],
+    "self_check": [
+      {
+        "command": "git rev-parse HEAD; git ls-files -m app; git ls-files app .github | xargs sha256sum | sha256sum; git diff 3c66ba3 -- app | sha256sum (at the start and at the end)",
+        "output": "HEAD 3c66ba3c2f9df15496389c8ba55152123dabfad0 at both times; modified tracked files in app: site.css, pages/demo.js, test/e2e/landing.test.js, test/fixtures/e2e-kit.js (exactly the 4 expected); sha256 of the hashes of the tracked files of app and .github e2fa3023d6be0de09bfadcc1f5b2996eec7627181427109da60f38ab6d1a492c and sha256 of the diff 867ae8182d6288d4355361a85f151fcbf7d1bfce61afab60b3f053fe7f723d5d, the same at the start and at the end; I changed no project file but this handoff."
+      },
+      {
+        "command": "git diff 3c66ba3 -- app (read in full, 4 files); git diff --stat 3c66ba3 -- app/server app/vercel.json app/package.json app/package-lock.json app/Dockerfile .github app/api app/scripts app/content app/public/shared app/public/js/office",
+        "output": "4 files, 332 added lines; the second command prints nothing (empty): CSP, headers, build, CI, content and the office are unchanged."
+      },
+      {
+        "command": "grep -nE on the 332 added lines for innerHTML|outerHTML|insertAdjacentHTML|document.write|eval(|new Function|cssText|srcdoc|localStorage|sessionStorage|indexedDB|document.cookie|fetch(|XMLHttpRequest|WebSocket|sendBeacon|.style|import(; for key shapes, secret words, process.env, paths of this computer; for .skip|.only|todo|eslint-disable|ts-ignore|'|| true'",
+        "output": "0 matches in every search except 3 hits of 'import(\"playwright-core\")' in JSDoc type comments of the test helpers (types, no call) and the substring sk-h inside the class name ask-h (false positive of the key-shape pattern); grep -rn adoptedStyleSheets|CSSStyleSheet app/public: 0."
+      },
+      {
+        "command": "git clone . <scratch>/r6 (then the 4 working files copied in) and <scratch>/r6b (untouched), npm ci in app of r6 (102 packages; node_modules copied to r6b); node <scratch>/sec3f/drive.mjs <app> new|base (scenarios 1 to 6), sweep.mjs, race.mjs; Node v22.23.4",
+        "output": "drive.mjs new: storm-real {bad 1 (the stale read, see race), idleMutations 0, clickMs 503, errors []}; storm-synthetic {20 000 events in 356.6 ms, 123 frames in 500 ms, errors []}; hostile-roles-0..10: pwn 0, csp 0, style 0, kids 0, ownWrongNarrow 0, ownNeedlessNarrow 0, sideways 0, ownAtWide 0, errors [] in all 11; hostile-titles-0..10: pwn 0, csp 0, style 0, errors [] (6 and 7 fall to the failed state, as in base); normal-walk: ls 0, ss 0, cookie '', outside []. drive.mjs base: storm-real bad 0, clickMs 505; storm-synthetic 246.4 ms, 122 frames; hostile-roles-0 ownWrongNarrow 4. sweep new and new2: rows 2910, mismatches 0, 43 'own row still overflows' at 200 to 236 px, errors 0. race: {trials 32, immediateStale 6, settledStale 0}."
+      },
+      {
+        "command": "cd tools && npm run handoffs-check; npm run traces",
+        "output": "see the closing entries in issues; traces returns 0 before close."
+      }
+    ],
+    "issues": [
+      {
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "fitSpeaker measures once after a view is put and on each resize; it does not listen for a font that loads later. The pages load no web font (no @font-face in app/public/css; font-src 'self' unused for text), so there is no later font swap today; if a web font is added, a re-measure on document.fonts.ready is needed. Not a defect of this change and not a security matter."
+      },
+      {
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "At windows of about 236 px and narrower a single role word is wider than even the full-width own row, so it overflows its column (43 of 2 910 states per run); the tree before has the same overflow there. A visitor cannot put text there: the role and stage lines come from the page's own text table and the title from the repository's content. Recorded for REVIEWER, not a finding."
+      },
+      {
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "Not measured: the fonts of the Linux runner differ from those of this PC; the layout choice itself (which row a title takes) is the e2e test's matter on GitHub, which I did not run by the owner's rule. The security statements above do not depend on the font: the script writes only a class name."
+      },
+      {
+        "kind": "PROCESS",
+        "severity": "Low",
+        "text": "handoffs-check has the old accepted H4 violation; recorded as told by the task, not this step's."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -2,14 +2,13 @@
 
 One screen. DOC-UPDATER rewrites the lines of this block at the end of every run and adds no dated sections (REQ-103, `decisions/0091` item 6). The journal up to the run M0DOCS-20261117-01 is `docs/archive/STATE-until-M0DOCS-20261117-01.md`, a byte copy of the file this one replaced. The iteration is in `PLAN.md`; the program is `docs/program/public-v1/PLAN.md`, its checkpoint `docs/program/public-v1/PROGRESS.md`.
 
-**State:** the program PUBLIC-V1 (`decisions/0091`; the owner's choice of the finished product, `decisions/0115`), milestone M0 «Clean start» in progress; the first audit AUD-001 is closed («готов», `docs/audits/README.md`).
+**State:** the program PUBLIC-V1 (`decisions/0091`; the owner's choice of the finished product, `decisions/0115`), milestone M0 «Clean start» in progress, milestone M1 «Public URL» in progress; the first audit AUD-001 is closed («готов», `docs/audits/README.md`). What works now, checked on production https://sai-team.vercel.app (served from `main` e0a425b since 2026-11-21): the closed-test site on the skeleton (REQ-108, REQ-109, released on the owner's word, `decisions/0122`; their status stays pending until a RELEASE-VALIDATOR re-check), and on it the public landing, how it works, the one-tap demo survey and the stage scene (REQ-111, REQ-112, run `M1CODE-20261119-01`, both `done` since 2026-11-21). How that was checked: GitHub runs on the pushed commit, `check.yml` 44919421116 and `app.yml` 44919421105 green (tools tests 2226 of 2226; unit 120, int 47, pg 4 and e2e 15 of 15 in the runner's Chrome, each with fail 0); RELEASE-VALIDATOR PASS at step 9 (23 PASS, 0 FAIL, 3 open, the open ones closed by the owner's G21 «Похоже» and, in part, by the Addition for `playwright-core`); the post-deploy record `docs/uat/M1CODE-20261119-01-prod.md` PASS (50 of 54 entries run in a real Chrome 157 on production, no defect; `/api/health` version e0a425b, `migrations_pending` 0, smoke 7 of 7); the release report is `docs/releases/M1CODE-20261119-01.md`. Not proven: the run of the check in a pruned shallow clone (REQ-111 criterion 11, that part rests on the GitHub checkouts and a static search), and the speaker row on more than two fonts. Decided: the speaker row of the demo question is laid out by content, not by a window width (the owner's ruling О45, `decisions/0124`); the look was accepted by the owner («Похоже», G21, О49); `playwright-core` 1.64.1 is pinned (`decisions/0001`, Addition 2026-11-21); kk stays hidden on production (G9); the check commands run on GitHub only, never on the owner's Windows PC. The records of this run (decisions, handoffs, docs/uat, docs/design, docs/issues, this file) are on `m0-records` and not in `main` until M0.13 (`decisions/0122` О3).
 
-- Requirements (`docs/requirements.yaml`, the status lines of the blocks, read 2026-11-18T05:27:52Z): 110 in total — 38 done, 2 in progress, 3 blocked, 60 pending, 7 cancelled.
-- Open defects (`docs/issues/`, the first line «Серьёзность: …» of each file, read 2026-11-18T05:27:52Z): 97 — 1 critical, 0 high, 9 medium, 87 low.
+- Requirements (`docs/requirements.yaml`, the status lines of the blocks, read 2026-11-21T16:26:26Z): 112 in total — 40 done, 2 in progress, 3 blocked, 56 pending, 11 cancelled.
+- Open defects (`docs/issues/`, the first line «Серьёзность: …» of each file, read 2026-11-21T16:26:26Z): 108 — 1 critical, 2 high, 12 medium, 93 low.
 
-**Open gates:** the rows of «Owner gates» in `docs/program/public-v1/PROGRESS.md` with no recorded answer (read 2026-11-18T05:27:52Z):
+**Open gates:** the rows of «Owner gates» in `docs/program/public-v1/PROGRESS.md` with no recorded answer (read 2026-11-21T16:26:26Z):
 
-- G4 First URL (with G8, at the first deploy)
 - G6 API key, limit, model (report #M0, after P1)
 - G7 Personal data (report #M2)
 - G8 Vercel Pro (with G4)
@@ -22,13 +21,12 @@ One screen. DOC-UPDATER rewrites the lines of this block at the end of every run
 - G17 Anthropic confirmation (report #M7)
 - G19 Mac residual risk (only if S4 or P1(c) fails)
 - G20 Admin second factor (report #M2)
-- G21 «Похоже» (each look release)
 - G22 Office event source, quality-bar R2 (report #M1)
 - WF-05 step 8 (AUD-001)
 
-Owner actions pending (the same file, «Now»): Vercel part 1 in his existing account with a new project for Sai, then the account e-mail, Team ID and Project ID; REQ-014 two checks
+Owner actions pending (the same file, «Now»): a person who knows Kazakh for the 285 kk lines (ISS-0127; G9); his yes to delete the temporary branches `ci/m1-landing-1` … `-4` and `ci/m1-site` on origin; REQ-014 two checks
 
-**Next step:** M0.10 build of run M0DOCS-20261117-01 — step 02 DOC-UPDATER (sub-steps S1-S4 of the design: archive and replace STATE.md and PLAN.md, edit docs/product, ideas/README.md, CLAUDE.md, README.md) under the locks L0 and L1 taken by ORCH; then S5a (ORCH cancels the four stale handoffs) and S5b (BACKEND-DEV, the two tools edits), the reviews, the tests, the gates. In parallel M0.9: run ISS-0092-20261117-01 step 03 CODE-DESIGNER. The order of M0 is decisions/0117 О33 (ISS-0092 through its step 10, then M0DOCS step 10, then one records release M0.13). — `docs/program/public-v1/PROGRESS.md`, «Now», «Next step (exact)».
+**Next step:** M1CODE-20261119-01 is closed (step 13, REQ-111 and REQ-112 `done`). The next workflow is WF-01 for what M1 still holds: (1) a micro-amendment run for ISS-0128 and the forms of REQ-109 criteria 1 and 8; (2) the requirement block of R1.5 (lane B, CORE-1…CORE-9), then WF-02 FULL on `tools/src/team/`; (3) the RELEASE-VALIDATOR re-check of the released REQ-108 and REQ-109, then their statuses; (4) report #M1 to the owner with the URL (it asks G9 and G22). In parallel (M0): ISS-0092 step 06, M0DOCS step 05c, M0.13 the records release, M0.14 report #M0. The checkpoint is `docs/program/public-v1/PROGRESS.md` («Now»); the open defects of the landing run are ISS-0124 … ISS-0128 (all Low) and its error-journal entries AP-164 … AP-170.
 
 The three sections below the line are copied verbatim from the old file: the code (`tools/src/contract.js`, `tools/src/apply.js`) and the test TM-01 (`tools/test/team-docs.test.js`) read them. Their text is the record of 2026-10-06, not the current plan.
 

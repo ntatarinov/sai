@@ -372,15 +372,15 @@ As of 2026-11-18T05:27:52Z, from `docs/requirements.yaml` and `docs/issues/`:
   The requirements for the core of Pixel Office (REQ-001, REQ-007, REQ-008) are `blocked`:
   they wait for one real Claude Code session that the owner allows and for his look at the
   office (criterion 16 of REQ-007).
-- **Requirements:** 110 in total — 38 done, 2 in progress, 3 blocked, 60 pending, 7 cancelled
-  (counted from the status lines of `docs/requirements.yaml`; the order of work is the
+- **Requirements:** 112 in total — 40 done, 2 in progress, 3 blocked, 56 pending, 11 cancelled
+  (counted on 2026-11-21 from the status lines of `docs/requirements.yaml`; the order of work is the
   program PUBLIC-V1, `docs/program/public-v1/PLAN.md`).
   The requirements the program does not need now are deferred or cancelled with a pointer
   (`decisions/0099`). The requirements for a built-in Pixel Office guide (help panel,
   first-visit tour, hints; REQ-050…REQ-053) are built and done since 2026-10-18.
 - **A single computer only.** Both servers listen only on `127.0.0.1`; there are no user
   accounts yet. The interface is in Russian only.
-- **Open defects: 97** in `docs/issues/` — 1 critical, 9 of medium severity and 87 low; none high.
+- **Open defects: 108** in `docs/issues/` — 1 critical, 2 high, 12 of medium severity and 93 low (counted on 2026-11-21).
 - **A merge in a way other than the push to `main` needs the owner's confirmation** (R1). The
   repository exists on GitHub; the owner opened it to everyone on purpose (read on GitHub on
   2026-11-15, `decisions/0111`, which replaces the part of `decisions/0062` about a closed

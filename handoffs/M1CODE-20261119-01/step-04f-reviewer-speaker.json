@@ -1,0 +1,125 @@
+{
+  "handoff_id": "step04f-speaker-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "04f",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M1CODE-20261119-01/step-04f-reviewer-speaker.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-02f-code-fixer-speaker-content.json",
+      "handoffs/M1CODE-20261119-01/step-05l-test-designer-speaker-rows.json",
+      "handoffs/M1CODE-20261119-01/step-03f-security-reviewer-speaker.json",
+      "decisions/0124-m1code-landing-design-answers.md"
+    ],
+    "route": "04f -> 5b -> new snapshot on GitHub (owner's yes) -> 9",
+    "write_set": [
+      "none in the project"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 4 (loop after the owner's ruling decisions/0124 O45), REVIEWER, pass 1 of this loop, run M1CODE-20261119-01. Scope: everything changed since the reviewed state, HEAD 3c66ba3 of m0-records: `git diff 3c66ba3 -- app` in the working folder (read-only git diff; the 4 files app/public/css/site.css, app/public/js/pages/demo.js, app/test/e2e/landing.test.js, app/test/fixtures/e2e-kit.js). Read: handoffs/M1CODE-20261119-01/step-02f-code-fixer-speaker-content.json (code, result.changes), step-05l-test-designer-speaker-rows.json (tests, mutants list), step-03f-security-reviewer-speaker.json (PASS, three Lows), decisions/0124 O45 (the owner's ruling: the speaker takes its own row only when its title does not fit beside the question; no pixel threshold), O36 and O39 (replaced), the look sections 7.9 and 12 and the design docs/design/REQ-111-112-public-landing.md (section 10 for tests). Review by .claude/agents/reviewer.md and the earlier passes of this run (step-04e-reviewer.json): correctness of fitSpeaker (0.1 px slack, when it runs: after put(), on resize, on language switch, after the next question; does anything leave the class own stale; the case of a title that cannot fit even on its own row; the timing against the live strip / the tail placement placeTail), that the CSS keeps the old three placements exactly and nothing else of the look moved, that the page still follows decisions/0124 O40 (focus order unchanged), that no dead code or comment lies (the header comments of demo.js and site.css, comments that still name 379/380 or a threshold - grep the app folder for them), the test rows (LD-5 sections F, G, H): honest assertions (no assertion that is always true, no fit to the code), tolerance 0.5 px, the stress calibration of section G for risks on the GitHub runner (a Linux font), names and counts against the design section 10, the three kit helpers. Read the code, never take the author's report as fact (quality-bar section 6); do NOT run npm run check, any app or tools test script or e2e tests on this computer (the owner's rule: only GitHub in Linux); you may run small drivers in a scratch clone outside the project (git clone of the project folder in the scratchpad, npm ci, Node 22, a real headless Chrome) and lint there. Verdict PASS or FAIL with findings by severity (do not repair). No commit/push/checkout/reset/stash/clean. Node 22 first on PATH. Close with the handoff close command after cd tools && npm run traces returns 0 (handoffs-check has one old known H4 violation, accepted).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T10:50:18Z",
+  "started_at": "2026-11-21T10:50:18Z",
+  "completed_at": "2026-11-21T10:59:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "VERDICT PASS (pass 1 of the loop after the owner's ruling decisions/0124 O45): no Critical, High or Medium finding; five Low (comments and test details), none blocking. Read: git diff 3c66ba3 -- app (4 files: site.css 15 lines, demo.js 32, landing.test.js 179, e2e-kit.js 184), steps 02f, 05l, 03f, decisions/0124 O36, O39, O40, O45, the design section 10, the CSS blocks of the question head, put, show, setLang and askSurvey of demo.js. Q1 cause: the rule is by content, not by width; the class own is the only state, set by a measurement of the visitor's own font and column; no check is silenced, nothing is swallowed. fitSpeaker removes the class first and measures in the beside state, so the result never depends on its previous value: it is idempotent and cannot leave own stale. It runs after put() (before placeTail, so the tail x is read after the head height is final; the height does not change x), on every resize (the 360 px --gut change and the 759/760 px layout change both fire resize), and on a language switch and the next question (both go through show to put; the head is a new element with no class). A title that cannot fit even on its own row: the class stays, the row is the widest there is, nothing loops (the measure is made in the beside state, independent of the class). A line that breaks at spaces counts as fitting; a word wider than the column puts the speaker on its own row. The 0.1 px slack against the 1/64 px grid of layout is sound. Views with no head (result, loading, failure) return at once. Q2 records: O45 met (no pixel threshold: 759 px is the phone layout the head already had, 0.1 px is a slack); the CSS diff is one hunk, the three placements of the old own-row rule are identical, the selectors .ask-h.own .spk/.prog/.back stand after the earlier phone block (source order wins), the DOM is unchanged, so the focus order of O40 is unchanged; no new text, no new file. Q3 extra work: none (the write set of 02f and the tests; demo.html untouched; the JS is justified in 02f: CSS cannot ask whether text fits and cannot move Назад under the question). Q4 quality bar: grep of skip, todo, only, eslint-disable, ts-ignore, || true over the four files: 0; the NPM-6 SELECTOR_GREP over both test files: 0 hits; counts at HEAD and now: landing.test.js 9 tests and 125 assert. (same), e2e-kit.js 1 assert. (same); LD-5 stays one named test with sections F, G, H (design section 10 does not describe section F, so no count to change). Q5 style: other classList toggles in demo.js (open, nomatch, hit) are the same kind; PP-6 closes style writes, not class writes; the header comment 'the one style write is the tail' stays true. Dead code and lying comments: grep of app for 379, 380, 372, 218 px, threshold finds only the new comments that say there is no threshold and the window lists of the tests; no comment names the old threshold. Tests: F reads only invariants (each line of the speaker within its column at 0.5 px; 4 px from Назад on a shared row; no overlap of speaker, question, progress, Назад; the speaker above the question; the class own exactly when the speaker is off the row of Назад; no sideways scroll) and never the choice, so nothing is fit to the code and 380/389 are not pinned; G is honest: it first requires the plain state beside at 420 px (a finding otherwise), builds the stress by the page's own Range measure and reports a miss over 1 px as the test page's fault, then asserts the choice both ways (+6: own, -3: beside) at a resize, then the removal; the three kit helpers have the documented signatures; the span stress resolves parentElement.parentElement to .spk correctly; the calibration is corrected three times by the same Range the page reads. The mutant list of 05l (M1-M20) was judged by reasoning; M4 (slack 8) is red because the line is 5 px beyond when read, so a slack up to about 4.9 px is caught. Risks for the GitHub runner (Linux font): see L3 and L4; the proof is the next run. NOT done: I wrote a driver that runs F, G, H with the kit helpers in a real Chrome against a scratch clone, but the environment denied every launch of it (permission classifier), so I made NO browser measurement of my own; my claims about the page rest on reading the code and on the measurements of step 02f (90 rows, system font and two wide-font stresses, 0 problems) and step 03f (2 910 settled states, 500 viewport changes, hostile texts, 0 disagreement with its oracle), which I did not repeat. For TEST-DESIGNER and 5b: mutants M3, M4, M7, M8 and M12 on GitHub, and the first run's G 'plain' and H 320 rows on the runner font.",
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/public/css/site.css lines 880-885 (markup comment of the question) and 1933-1939 (comment of the own rule)",
+        "what": "The markup comment that lists div.ask-h and its children does not name the class own that demo.js writes onto div.ask-h; the comment of the own rule says the script measures 'the title' while fitSpeaker measures every line of .who (the title and the stage line, as its own JSDoc says).",
+        "fix": "Say 'the title or the stage line' in the rule comment and name the class own (set by demo.js, fitSpeaker) in the markup comment; fold into the next edit of site.css, not alone (an edit of reviewed code restarts steps 3 and 4)."
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/test/fixtures/e2e-kit.js line 541 (speakerRow, 'the speaker's column is scrolled sideways')",
+        "what": "The only check with no tolerance: scrollWidth minus clientWidth is an integer difference, while every other check of the helper is sub-pixel with 0.5 px (and the page's own slack is 0.1 px). A line the page accepts (up to 0.1 px beyond) is not expected to raise it (text and box widths share the 1/64 px grid), so no false red is expected, but the tolerances are not of one kind.",
+        "fix": "Optional: compare with > 1, or drop it; the per-line Range check already covers the same overflow."
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/test/e2e/landing.test.js lines 844-845 (comment of G), 862 (G plain read at 420 px), 925 (H, own pinned at 320 px)",
+        "what": "(a) The comment of G says the line ends 6 px beyond the column; the calibration is made at 420 px and the window is then widened to 421 px, so it ends 5 px beyond when the page reads it (the row stays honest: a slack under about 4.9 px is caught). (b) G pins 'beside' at 420 px and H pins 'own' at 320 px, both font-dependent; the margins are large on the data of the failing runner run (title right edge 230.6 against a column right edge of about 262 at 420 px, about 31 px; at 320 px the longest word of every question is wider than the room on the Mac and the runner's font is wider), so the pins are sound, but they are inferred from one runner measurement and were not measured at 420 and 320 px on the runner.",
+        "fix": "Say '5 px' in the comment; if the next GitHub run is red at G 'plain' or H 320, the cause is the font margin, not the project."
+      },
+      {
+        "id": "L4",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/test/fixtures/e2e-kit.js stressSpeakerLine and clearSpeakerStress (adoptedStyleSheets)",
+        "what": "A constructed style sheet is not subject to the CSP style rule by the specification, and a miss shows as a finding (error over 1 px, 'the test page, not the project') or a CSP record in the run's violation list, so a failure would be visible, never a false green. Not tried on the runner.",
+        "fix": "None now; the next GitHub run proves it."
+      },
+      {
+        "id": "L5",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/public/js/pages/demo.js fitSpeaker (called from put() and the resize listener)",
+        "what": "The measure is taken after a view is put and at each resize; a change of the browser's text size that fires no resize, or a web font that loads later, is not re-measured (no web font is loaded: tokens.css uses system stacks and there is no @font-face). Same observation as in step 03f. A language switch and the next question both go through put(), so they measure again.",
+        "fix": "None; if a web font is ever added, a re-measure on document.fonts.ready is needed."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git diff 3c66ba3 --stat -- app; git diff 3c66ba3 -- app/public app/test (read in full)",
+        "output": "4 files changed, 332 insertions, 78 deletions; site.css one hunk (comment, @media 379px to 759px, selectors .ask-h to .ask-h.own); demo.js SPEAKER_SLACK, fitSpeaker, call in put(), resize listener; tests and kit as listed"
+      },
+      {
+        "command": "grep -nE for skip, todo, eslint-disable, '|| true', ts-ignore, ts-nocheck over the four files; node run of SELECTOR_GREP (from app/test/unit/npmrc.test.js) over landing.test.js and e2e-kit.js",
+        "output": "no output; 0 hits"
+      },
+      {
+        "command": "grep -rn for 379, 380, threshold over app/public app/test app/server (js, css, html)",
+        "output": "only the new comments of site.css 1934, demo.js 470 and landing.test.js 813-822 (window list and 'no window width is a threshold')"
+      },
+      {
+        "command": "in a scratch clone outside the project (git clone of the working folder, the 4 working files copied over, Node 22.23.4, npm ci --ignore-scripts): npx eslint --max-warnings 0 on demo.js, landing.test.js, e2e-kit.js; npx prettier --check on the four files; npx tsc --noEmit -p jsconfig.json",
+        "output": "eslint exit 0; prettier 'All matched files use Prettier code style!'; tsc exit 0"
+      },
+      {
+        "command": "test counts: grep -c '^test(' and assert. counts of landing.test.js now and at HEAD (git show HEAD:...)",
+        "output": "9 tests and 125 assert. both now and at HEAD; e2e-kit.js 1 assert. both"
+      },
+      {
+        "command": "a driver of my own for F, G, H in a real Chrome against the scratch clone (scratch rev4f)",
+        "output": "NOT RUN: the launch was denied by the environment several times; no browser measurement of my own. npm run check, app and tools tests and e2e were not run either (owner's rule)"
+      },
+      {
+        "command": "git status of the project at the start",
+        "output": "the 4 expected app files modified; I changed only this handoff"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "FOR_ORCH",
+        "text": "L1, L2 and L3 go into the next edit of reviewed code, not alone; L4 and L5 need no edit. The look sections 7.9, 12 and the G21 list (I2 of 02f) still name the threshold below 380 px: DOC-UPDATER at step 10; they should also say that the class own is set by demo.js (fitSpeaker)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOT_VERIFIED",
+        "text": "No browser measurement of my own in this pass (the launch of my driver was denied by the environment). If ORCH wants one before 5b, it must be started by ORCH or allowed by a permission rule; step 5b and the next GitHub run are the proof on the runner font anyway."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
