@@ -249,3 +249,32 @@ design sha256 469b32af…). Its low findings go where the gate named them, as ta
   (О36), the tests pin it from the 379 side and at 390 px, and a deliberate edit of the threshold is a visible change of
   the look that DESIGN-QA's measure catches. The open named limit О23 is closed by id() (О35).
 
+## Addition 2026-11-21T05:18Z (ORCH, after DESIGN-QA second pass: PASS; step 5b gate pass 3: PASS)
+
+- **О40 (a correction of О30, DESIGN-QA N9).** Measured on the built page: on demo.html the first Tab goes to «‹ Назад»,
+  the second to card 1, and the skip link is the sixth stop of Shift+Tab; on the other pages the skip link is the first
+  stop of Tab. The look's section 12 says so; О30's «the first Tab goes to the first card» is read so.
+- **О41 (DESIGN-QA lows N4–N8, N10, N11).** N4–N8 are corrections of numbers and wording in the look (12 of 15 states and
+  12–42 px; «taller»; «sticky bar 84.8»; D9 for questions 1 and 5 only; section 12's touch bullet; 7.13 names the chip's
+  accessible name): DOC-UPDATER at step 10 (decisions/0079 item 5). N10 (the CSS comment says «218 px of column» where the
+  measure is a 190.4 px column from 372 px) is a comment only and goes with the next edit of site.css, not alone (an edit
+  of reviewed code restarts steps 3 and 4). N11 (13 of the 900 answer combinations give no match with few answers and no
+  server answer, and the receipt still speaks of the server; the sentence is conditional and not false) is accepted and
+  recorded: a second no-match line «too few answers» is a requirement change for a later release (R2), not for G21.
+- **О42 (step 5b, gate pass 3 PASS, lows T9–T12).** TEST-DESIGNER round 05k adds rows for the four survivors (only
+  additions; the tests count stays). The gate is closed (three passes); RELEASE-VALIDATOR (step 9) re-checks the tests it
+  reads.
+
+## Addition 2026-11-21T05:47Z (ORCH, the readers and the last test round)
+
+- **О43 (step 8 item 6, the text readers).** Kazakh, round 1 (285 lines): six small corrections (89 `demo_your_answers` lost
+  «Ваши» → «Жауаптарыңыз»; 102 `demo_includes` «Құрамына не кіреді»; 101 `demo_putting` «Нәтиже құрастырылуда…»; 139
+  `order_can_5`, 196 and 251 calques) — kk is hidden on production (G9) and its texts are marked for a native speaker
+  (AP-114): they are not applied now, and the list stays for the release that shows kk. English, round 1 (17 lines):
+  16 corrections applied by FRONTEND-DEV (the no-match text stays as О33 pins it; the term «interview» stays for the
+  dialogue with the AI analyst and «survey» for the demo; «Не знаю» is «Not sure» on the buttons and in the text);
+  round 2 (16 lines): two more corrections applied (how_ai_text, the calculator rule); the rest are matters of taste.
+  Round 3 is not needed: both remaining findings were closed and the corrected lines are the two sentences above.
+- **О44 (step 5, the last round 05k).** The four lows T9–T12 are closed by added rows (34 rows in DM-6c, LD-5 at 380 and
+  389 px, the chip title, the language switch in one task); all red on their mutants.
+

@@ -997,9 +997,14 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
         for (const sol of x.solutions) sol.name.x = "x";
       },
     ],
-    // SECURITY-REVIEWER L1 of the third pass (decisions/0124 О28): an id that is no string is copied whole into
-    // the answer, and a Kazakh text inside it would pass the function's two languages; the id is a string or
-    // the route is unavailable.
+    // SECURITY-REVIEWER L1 of the third pass (decisions/0124 О28): an id that is no string would reach the
+    // answer as it is, and a Kazakh text inside an object or an array would pass the function's two
+    // languages; the id is a string or the route is unavailable. The object and array rows of a question and
+    // an option id reach the guard itself. A solution id that is an object or an array never reaches the
+    // answer in any case: the engine looks it up by identity and the route answers 503 on that (so those two
+    // rows say nothing about the guard of the result route). The guard of a solution id is pinned by the
+    // primitive rows (TEST-DESIGN-VALIDATOR T9): a number, true and null that the rules also name, and
+    // every other id and text of the intake in the same three shapes.
     [
       "a question id that is an object holding a Kazakh text",
       "questionnaire",
@@ -1025,7 +1030,7 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
       (x) => (x.questions[4].options[1].id = [KAZAKH]),
     ],
     [
-      "a solution id that is an object holding a Kazakh text",
+      "a solution id that is an object holding a Kazakh text (the engine refuses it before the answer)",
       "result",
       matched,
       (x) => {
@@ -1033,7 +1038,7 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
       },
     ],
     [
-      "a solution id that is an array holding a Kazakh text",
+      "a solution id that is an array holding a Kazakh text (the engine refuses it before the answer)",
       "result",
       matched,
       (x) => {
@@ -1041,6 +1046,107 @@ test("DM-6c an intake text that is not exactly {ru, kk, en} gives 503 demo_unava
       },
     ],
   ];
+  // TEST-DESIGN-VALIDATOR T9: the ids and the texts that are a number, true or null. Each is a primitive
+  // that a copy "as it is" would write into the answer as the page reads it, so each row is a refusal.
+  /** @type {Array<[string, unknown]>} */
+  const PRIMITIVES = [
+    ["a number", 7],
+    ["true", true],
+    ["null", null],
+  ];
+  for (const [name, v] of PRIMITIVES) {
+    rows.push(
+      [
+        `a question id that is ${name}`,
+        "questionnaire",
+        null,
+        (x) => (x.questions[0].id = v),
+      ],
+      [
+        `a question id that is ${name} in another question`,
+        "questionnaire",
+        null,
+        (x) => (x.questions[3].id = v),
+      ],
+      [
+        `an option id that is ${name}`,
+        "questionnaire",
+        null,
+        (x) => (x.questions[1].options[0].id = v),
+      ],
+      [
+        `an option id that is ${name} in the last option of another question`,
+        "questionnaire",
+        null,
+        (x) => {
+          const opts = x.questions[4].options;
+          opts[opts.length - 1].id = v;
+        },
+      ],
+      // The rules name the solution by its id, so the engine finds it by the primitive and the id reaches
+      // the answer: only the guard of the result route turns it into the refusal.
+      [
+        `a solution id that is ${name} and that every rule names too`,
+        "result",
+        matched,
+        (x) => {
+          for (const sol of x.solutions) sol.id = v;
+          for (const rule of x.rules) rule.solution = v;
+        },
+      ],
+      [
+        `a question title that is ${name}`,
+        "questionnaire",
+        null,
+        (x) => (x.questions[2].title = v),
+      ],
+      [
+        `an option label that is ${name}`,
+        "questionnaire",
+        null,
+        (x) => (x.questions[3].options[1].label = v),
+      ],
+      [
+        `a solution name that is ${name}`,
+        "result",
+        matched,
+        (x) => {
+          for (const sol of x.solutions) sol.name = v;
+        },
+      ],
+      [
+        `a solution summary that is ${name}`,
+        "result",
+        matched,
+        (x) => {
+          for (const sol of x.solutions) sol.summary = v;
+        },
+      ],
+      [
+        `an includes item that is ${name}`,
+        "result",
+        matched,
+        (x) => {
+          for (const sol of x.solutions) sol.includes[0] = v;
+        },
+      ],
+      [
+        `a not_suitable_when item that is ${name}`,
+        "result",
+        matched,
+        (x) => {
+          for (const sol of x.solutions) sol.not_suitable_when[0] = v;
+        },
+      ],
+    );
+  }
+  // A no-match text that is a number is a refusal; null is the one value that the route passes on as null.
+  rows.push([
+    "a no-match text that is a number",
+    "result",
+    unmatched,
+    (x) => (x.result.no_match_text = 7),
+  ]);
   const good = real();
   const goodWays = ways(good);
   const health = await goodWays[0].fetch("/api/health");

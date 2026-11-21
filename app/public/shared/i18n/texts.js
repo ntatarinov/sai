@@ -118,7 +118,7 @@ export const TEXTS = Object.freeze({
   scene_alt: Object.freeze({
     ru: "Пиксельный офис Sai: дверь и четыре стола с этапами работы",
     kk: "Sai пиксельдік кеңсесі: есік және жұмыс кезеңдері бар төрт үстел",
-    en: "The pixel office of Sai: a door and four desks with the stages of work",
+    en: "Sai's pixel office: a door and four desks, one for each stage of work",
   }),
   door_tagline: Object.freeze({
     ru: "ИИ-команда",
@@ -200,7 +200,7 @@ export const TEXTS = Object.freeze({
   stage_3_sub: Object.freeze({
     ru: "Задачи и разработка по ТЗ",
     kk: "Тапсырмалар, ТТ бойынша әзірлеу",
-    en: "Tasks and coding to the requirements",
+    en: "Tasks and development based on the requirements",
   }),
   stage_4_sub: Object.freeze({
     ru: "Вы проверяете и принимаете работу",
@@ -262,7 +262,7 @@ export const TEXTS = Object.freeze({
   how_ai_text: Object.freeze({
     ru: "ИИ-агенты задают вопросы, пишут техническое задание и код, проверяют работу друг друга. Они не делают серверы, вход по паролю, приём оплаты и мобильные приложения. Агенты могут ошибаться, поэтому ТЗ утверждаете вы, и результат принимаете тоже вы.",
     kk: "ЖИ-агенттер сұрақтар қояды, техникалық тапсырма мен код жазады, бір-бірінің жұмысын тексереді. Олар серверлерді, құпиясөзбен кіруді, төлем қабылдауды және мобильді қосымшаларды жасамайды. Агенттер қателесуі мүмкін, сондықтан ТТ-ны сіз бекітесіз, нәтижені де сіз қабылдайсыз.",
-    en: "AI agents ask questions, write the requirements and the code, and check each other’s work. They do not build servers, password sign-in, payment processing or mobile apps. Agents can make mistakes, so you approve the requirements, and you accept the result too.",
+    en: "AI agents ask questions, write the requirements and the code, and check each other’s work. They do not build servers, password sign-in, payment processing or mobile apps. Agents can make mistakes, so you approve the requirements and you are the one who accepts the result.",
   }),
   idea_title: Object.freeze({
     ru: "Как описать идею",
@@ -272,12 +272,12 @@ export const TEXTS = Object.freeze({
   idea_text: Object.freeze({
     ru: "Напишите простыми словами, для кого это, что человек должен сделать и что увидеть в итоге. О технике не думайте: уточняющие вопросы задаст ИИ-аналитик.",
     kk: "Қарапайым сөздермен жазыңыз: бұл кімге арналған, адам не істеуі керек және соңында не көреді. Техникалық жағы туралы ойламаңыз: нақтылау сұрақтарын ЖИ-талдаушы қояды.",
-    en: "Write plainly who it is for, what people must do and what they see in the end. Do not worry about the technical side: the AI analyst will ask clarifying questions.",
+    en: "Write in plain words who it is for. Say what a person needs to do and what they should see at the end. Do not worry about the technical side: the AI analyst will ask clarifying questions.",
   }),
   idea_example: Object.freeze({
     ru: "Пример хорошего описания: «Страница для моей студии йоги: расписание занятий, тренеры и запись по телефону».",
     kk: "Жақсы сипаттаманың мысалы: «Йога студиям үшін бет: сабақтар кестесі, жаттықтырушылар және телефон арқылы жазылу».",
-    en: "Example of a good description: “A page for my yoga studio: class schedule, teachers and phone sign-up.”",
+    en: "Example of a good description: “A page for my yoga studio: class schedule, instructors and booking by phone.”",
   }),
   idea_invited: Object.freeze({
     ru: "В тестовом режиме идеи описывают только приглашённые участники.",
@@ -292,7 +292,7 @@ export const TEXTS = Object.freeze({
   how_interview_text: Object.freeze({
     ru: "ИИ-аналитик задаёт вопросы по вашей идее по одному. К каждому есть готовые ответы в одно нажатие, вариант «Не знаю» и поле для своего ответа. Опрос заканчивается, когда всё ясно, или раньше, если вы так решите.",
     kk: "ЖИ-талдаушы идеяңыз бойынша сұрақтарды бір-бірден қояды. Әр сұраққа бір басумен таңдалатын дайын жауаптар, «Білмеймін» нұсқасы және өз жауабыңызға арналған өріс бар. Сауалнама бәрі анық болғанда аяқталады, ал сіз шешсеңіз — одан ертерек.",
-    en: "The AI analyst asks questions about your idea one at a time. Each has one-tap answers, a “Not sure” option and a field for your own answer. The interview ends when everything is clear, or earlier if you so decide.",
+    en: "The AI analyst asks questions about your idea one at a time. Each question comes with ready-made answers you can choose with one tap. There is also a “Not sure” option and a field for your own answer. The interview ends when everything is clear, or earlier if you choose.",
   }),
   how_spec_title: Object.freeze({
     ru: "Как создаётся техническое задание",
@@ -302,7 +302,7 @@ export const TEXTS = Object.freeze({
   how_spec_text: Object.freeze({
     ru: "По ответам ИИ-аналитик пишет первую версию ТЗ: цели, экраны, данные, ограничения и открытые вопросы. У каждого пункта видно, из какого ответа он взят, а догадки отмечены отдельно.",
     kk: "Жауаптар бойынша ЖИ-талдаушы ТТ-ның бірінші нұсқасын жазады: мақсаттар, экрандар, деректер, шектеулер және ашық сұрақтар. Әр тармақтың қай жауаптан алынғаны көрінеді, ал болжамдар бөлек белгіленеді.",
-    en: "From the answers, the AI analyst writes the first version: goals, screens, data, constraints and open questions. Each item shows which answer it came from, and assumptions are marked separately.",
+    en: "From the answers, the AI analyst writes the first version of the requirements. It covers goals, screens, data, constraints and open questions. Each item shows which answer it came from, and assumptions are marked separately.",
   }),
   how_fix_title: Object.freeze({
     ru: "Как проверить и исправить ТЗ",
@@ -412,7 +412,7 @@ export const TEXTS = Object.freeze({
   demo_enough: Object.freeze({
     ru: "Хватит, к результату",
     kk: "Жеткілікті, нәтижеге өту",
-    en: "Enough, show the result",
+    en: "That’s enough, show the result",
   }),
   demo_not_sure: Object.freeze({
     ru: "Не знаю",
@@ -488,7 +488,7 @@ export const TEXTS = Object.freeze({
   nobuild_4: Object.freeze({
     ru: "Настоящая отправка писем и сообщений в мессенджеры",
     kk: "Хаттар мен мессенджер хабарламаларын нақты жіберу",
-    en: "Actually sending emails and messenger messages",
+    en: "Sending real emails and messenger messages",
   }),
   nobuild_5: Object.freeze({
     ru: "Связь с внешними системами учёта и CRM",
@@ -674,7 +674,7 @@ export const TEXTS = Object.freeze({
   order_cannot_3: Object.freeze({
     ru: "Настоящая отправка писем и сообщений в мессенджеры",
     kk: "Хаттар мен мессенджер хабарламаларын нақты жіберу",
-    en: "Actually sending emails and messenger messages",
+    en: "Sending real emails and messenger messages",
   }),
   order_cannot_4: Object.freeze({
     ru: "Мобильные приложения",
@@ -729,7 +729,7 @@ export const TEXTS = Object.freeze({
   order_example_2_request: Object.freeze({
     ru: "«Хочу каталог из полусотни товаров мастерской: с поиском по названию и фильтром по виду.»",
     kk: "«Шеберханамның елуге жуық тауарынан тұратын каталог керек: атауы бойынша іздеу және түрі бойынша сүзгі.»",
-    en: "“I want a catalog of about fifty workshop items, searchable by name, with a filter by type.”",
+    en: "“I want a catalog of about fifty products from my workshop. It needs search by name and a filter by type.”",
   }),
   order_example_2_gets_1: Object.freeze({
     ru: "Страница каталога с карточками товаров",

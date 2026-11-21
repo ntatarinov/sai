@@ -33,6 +33,7 @@
 | [M run] | measured on a byte copy of the sample (the five files, sha256 equal to the folder) rendered in headless Chrome 157 on macOS through Sai's kit `tools/test/e2e/kit/` (fresh profile under a temporary root outside the project, loopback server, `?still=1`), windows 1470×784, 390×844, 320×568; text widths by canvas `measureText` in the sample's font stack on the same machine. Another system draws other fonts: a width measured here is a fact of macOS Chrome 157, not of every system (AP-158) |
 | [C] | computed from marked values; the formula is given (contrast: WCAG 2.x relative luminance) |
 | [T] | measured on a trial page outside the project in the same Chrome as [M run]: the sample's own `styles.css` with only the changes this file names for that part (the extra rules are listed in the handoff of step 03c, `prototype`; for the places marked (J<n>), in that of step 03g); used for the sizes of parts this file changes |
+| [M build] | measured on the built page (the code of tag `base/M1CODE-20261119-01-review5`, run from a fresh copy with `node server/node-main.js`, `PORT=0`; headless Chrome 157 on macOS, an own temporary profile, windows 390×844, 360×640, 379×640, 380×640 and 320×568, ru, kk and en where a place says so; step 03i of run `M1SITE-20261119-01`, `prototype` of its handoff). Where a value is of the built page with rules added in the trial (the bar forced to `position: fixed`; the below-380 speaker rule overridden), the place says so. A width measured here is a fact of macOS Chrome 157, not of every system (AP-158) |
 | [R source] | required by a record: a decision, ARCH, PLAN or an existing requirement block |
 | [P] | proposed by this description, with the reason; DESIGN-QA compares it like any other value, the gate may reject it |
 | [Q In] | an open question (section 16); the value written is the default used until ORCH answers (decision 0123) |
@@ -691,7 +692,29 @@ sample's «СДЕЛАНО / СЕЙЧАС / ВПЕРЕДИ» tag is not used]. St
   panel edges [M app.js:165-169; styles.css:116-118].
 - Head (grid `auto 1fr auto auto`): speaker (avatar 48×52 + title 17/900 + sub 13 `--ink2`), the question h2, the
   progress (pips + «<question i of n>»), «‹ <back>» (ghost button, 111.6×48 measured [M run]). Below 760 [M
-  styles.css:301-304]: row 1 speaker and back, row 2 the h2 (20px), row 3 the progress spread over the width.
+  styles.css:301-304]: row 1 speaker and back, row 2 the h2 (20px), row 3 the progress spread over the width (this holds
+  from 380 px; below it the next item changes it, О36).
+- **Below 380 px (`max-width: 379px`) the speaker takes its own row** (О19, О32, О36 [R decision 0124]; the owner's list
+  D25, G21): row 1 the speaker over the full width of the panel (avatar 48×52, the role title 17/900, the stage word 13
+  `--ink2`), row 2 the h2, row 3 the progress at the left and «‹ <back>» at the right, centred on each other; the
+  sample's row 1 pair (speaker at the left, back at the right) is split, and «‹ <back>» moves to the progress row. From
+  380 px the layout of the sample stays, and 390 px, the sample's phone, stays side by side. Why (a place where the
+  sample is changed): beside the question the speaker's column is the window's width less 181.6 px (198.4 at 380, 208.4
+  at 390), the longest Russian title «Проверяющий» is 130.4 px at 17/900 and with the avatar and its gap of 12 needs
+  190.4 px, so it fits from 372 px, where its right edge is the column's; below that it passes the column (by 1.0 px at
+  371, 11.0 at 361) and at 361 stands 1.0 px from «‹ Назад» (finding N1 of DESIGN-QA's first pass) [M build, the own-row
+  rule overridden in the trial: 380, 372, 371, 361, 360 px]. At 320 the first word «Руководитель» alone does not fit
+  beside it [R О19]. The threshold 380 is an 8-px slack over the measured 372, because the widths are those of macOS
+  Chrome in the system font stack, with none to spare at 372 (О36, a correction of О32, whose 372 corrected О19's 360).
+  Measured below 380 [M build, ru, kk, en, 379, 360 and 320 px]: the title keeps one line at every width (the longest,
+  «Руководитель проекта», is 201.4 px in 208 of room at 320), it breaks only at spaces, nothing is cut and nothing
+  leaves the panel; «‹ <back>» is 48 high and 111.6 (ru), 109.8 (kk) or 99.1 (en) wide, as beside the question; the pips
+  (76 px) and the count «<question i of n>» (71.6 to 100 px) stand on one line at 379 and 360 px, and at 320 the count
+  goes under the pips in all three languages (the row 40.8 high instead of 18.8); the head is 31.2 px higher than at 380
+  px on a question with one title line (99.8 at 380, 131.0 at 379; 122.8 and 154.0 on question 5), as the 48-px back
+  stands in the progress row. Beside the question, at 380 and 390 px, «Руководитель проекта» takes two lines of at most
+  125.7 px (39.1 high), and kk «Жоба жетекшісі» two lines at 380 [M build]. The place of «‹ <back>» at the first scroll
+  position at 320×568 is partly under the live strip: D24.
 - Speaker title = the role title of the asking desk, sub = that desk's stage word; the asking desk of each question
   is the step table's (9.13) [P]. Back on question 1 opens the landing [M app.js:249].
 - Pips [M styles.css:126-129; app.js:204]: n squares 12×12, gap 4; questions 1 … i (the current one included) are
@@ -729,8 +752,9 @@ sample's «СДЕЛАНО / СЕЙЧАС / ВПЕРЕДИ» tag is not used]. St
   `--rcpip`, G6) up to N; K = floor(S). Example: two options and one «Не знаю» give S 2.5: two full pips, one half pip,
   «2 из 5».
 - 760 – 1000: two rows, the button on its own row [M styles.css:350].
-- Below 760 [M styles.css:311-323]: fixed to the bottom of the window, full width, padding `8px 12px` plus the safe area,
-  a `--px` top edge in `--ink`, no notches. Left, row 1: the pips with «<K of N>», gap 10 [P: the sample's `0 14px` (styles.css:316)
+- Below 760 [M styles.css:311-323, changed in one place: sticky, not fixed, О24]: sticky to the bottom of the question
+  wrap (`position: sticky; bottom: 0`, in the flow after the question panel), full width, padding `8px 12px` plus the
+  safe area, a `--px` top edge in `--ink`, no notches. Left, row 1: the pips with «<K of N>», gap 10 [P: the sample's `0 14px` (styles.css:316)
   would wrap the pair in the 128-px column at 320; with 10 the pair is 126 px in ru: pips 76 + 10 + «3 из 5» 40.0 [T]];
   left, row 2: the toggle «<your answers> ▴» (`lnk`, `--rclink`, padding 0, `min-height: 48px` [P: the sample's 40,
   styles.css:315, is below REQ-111 criterion 12's 44] (F2); 118.7 × 48 in ru at 16/800 [T]). Right, over both rows: the
@@ -743,10 +767,31 @@ sample's «СДЕЛАНО / СЕЙЧАС / ВПЕРЕДИ» tag is not used]. St
   (a «Не знаю» answer shows «<not sure>», as its chip in 7.13), the sub is the question, 14/1.3 `--rc2`, a 2 px dashed
   `--rcline` rule under each row, padding `12px 0`, no right column [P: the sample's sheet lists the estimate's lines
   with their days, app.js:220].
+- **Sticky, not fixed** (a place where the sample is changed; О24 and О26 (b) [R decision 0124]; the owner's list D23):
+  the bar stands at the bottom of the window, as the sample's fixed bar does, while the end of the question wrap lies
+  below the window's bottom edge; when that end comes into view the bar moves up with the page and rests at the end of
+  the wrap, 24 px above the footer (the panel's bottom padding). Why: a fixed bar lies over the footer links at the end
+  of the page and nothing can scroll them out from under it (found by the e2e row LD-1, fix round 02c,
+  `handoffs/M1CODE-20261119-01/step-02c-code-fixer.json`: with the bar forced to fixed, and the sample's 96-px bottom
+  padding added, the centres of all four footer links lie under the bar at 759.2 – 844 on 390×844 (the links at 736 –
+  784 and 784 – 832) and answer with the bar); with the sticky bar the centre of every footer link answers with the link
+  at the end of the page, in 35 states (390×844, 360×640, 379×640 and 380×640 in ru, 320×568 in ru, kk and en, each of
+  the five questions) [M build]. The bar's height is reserved by its place in the flow: the page is 85 px longer (the
+  bar's 84.8) than with a fixed bar and no reserved room, and 13 px longer than with the fixed bar and the sample's
+  96-px bottom padding [M build, the bar forced to fixed in the trial; `scrollHeight` at 390×844 on questions 1 and 2:
+  1083 and 948 against 998 and 863, and against 1070 and 935]. At the first scroll position the bar is where the fixed
+  bar is (759.2 – 844 at 390×844, 555.2 – 640 at 360×640, 379×640 and 380×640, 483.2 – 568 at 320×568; 84.8 high)
+  wherever the page is long enough; the exception is a window where the end of the wrap lies above the window's bottom
+  edge: at 390×844 on questions 2 and 4 (6 of the 15 states of ru, kk and en) the bar rests at 658.4 – 743.3 and 76.7 px
+  of the footer show under it, its links free [M build]. A control that takes the focus is scrolled above the bar (the
+  page's scroll padding is 90 px plus the safe area), and the sheet stands right above the bar wherever it rests (at
+  390×844 on question 2: the sheet 527.0 – 658.4, the bar's top 658.4) [M build]. If the owner reads this as «not like
+  the mockup», the alternative is the fixed bar with a measured bottom padding under the footer [R О24].
 - Height of the bar (F2): 84.8 px at 390 and at 320 [T] — padding 8 + row 1 18.8 + gap 2 + the toggle 48 + padding 8;
   the button with its margins (64) is centred in the 68.8 of the rows — plus the safe area. A «<K of N>» text wider than
-  42 px at 13/800 would wrap row 1 at 320 and make the bar 100.8 [T] (13.3). The question screen gets 96 px of bottom
-  padding, more than the bar, so every card can be scrolled above it [M styles.css:299].
+  42 px at 13/800 would wrap row 1 at 320 and make the bar 100.8 [T] (13.3). The sample's 96 px of bottom padding of the
+  question screen [M styles.css:299] is not used: the bar is in the flow, so at the end of the page every card has been
+  scrolled above it (О24).
 - Focus ring: «<enough…>», the toggle and «<close>» stand on `--rc` and take `--ring-rc` (7.20, F1). Every text, rule,
   link and pip of the strip, the bar and the sheet takes the on-cream value of 6.6 (G1).
 
@@ -1399,7 +1444,12 @@ the speaker (7.9) and in the team card of the 2×2 option (7.7, F8). The sample'
 - Tab order: skip link → brand → language buttons → theme button → `<main>` in reading order → footer links [M
   index.html]. In `<main>`: landing — big button, ghost button, step links, (local) examples link; how — the step buttons,
   then the links of the sections; question — back, cards 1…n, «Не знаю», the toggle (narrow), «<enough…>»; result — the
-  «Описать идею» link, chips in order, links.
+  «Описать идею» link, chips in order, links. On `demo.html` the question heading already holds the focus at load
+  (`demo.js` announces the first question, as the sample's `app.js:135` does after each step; О30 [R decision 0124]), so
+  the first Tab goes to «‹ Назад», the second to card 1, and the skip link is the sixth stop of Shift+Tab (after the theme
+  button, «EN», «ҚАЗ», «RU» and the brand link; on production, which has no «ҚАЗ» (G9), the fifth [C], not run here); on the other pages
+  (`index.html`, `how.html`, `404.html` and the local `examples.html`) the skip link is the first stop of Tab [M build,
+  local set; `examples.html` at 1470×784 only, the others also at 390×844 and 320×568].
 - Keys on a question [M app.js:391-403; README «Клавиатура»]: 1–4 press the cards, 0 «Не знаю»; Backspace goes back
   wherever the focus is (the demo has no text field), and ArrowLeft goes back when the focus is on no button at all
   (app.js:397: `k === 'ArrowLeft' && tag !== 'button'`) (F10); on a card, ArrowLeft and ArrowRight move to the card before
@@ -1586,3 +1636,7 @@ DESIGN-QA compares with this file, not with these items; ORCH shows the list wit
 | D20 | the result's right panel is «Описать идею» (a title, a lead, the big button, a fine line; no field) in the place and look of the request form | «Без регистрации, заказов и данных»; G8 «б» (finding G8) | 7.15; S31 |
 | D21 | two new pages built from sample parts: «how it works» (`how.html`: the step row of «Мой запрос» as buttons, info panels) and the examples (`examples.html`, local only: info panels and example cards in the receipt's look) | PLAN M1.4 (finding G8) | 8.2, 8.3, 7.8, 7.16, 7.17 |
 | D22 | under the result's «<what it includes>» stand «<not a fit if>» and the fixed list «Чего Sai пока не делает» with ten items; on no match the receipt holds only the no-match text and that list follows it | REQ-111 (G2) | 7.12, 7.14, 8.4 |
+| D23 | the phone bar of the demo (below 760) is sticky to the bottom of the question wrap, not fixed: it stands at the bottom of the window while the end of the wrap lies below it, then moves up with the page and rests 24 px above the footer; the page is 85 px longer; at 390×844 on questions 2 and 4 (6 of 15 states) it rests at 658.4 – 743.3 of 844 at the first scroll position with 76.7 px of the footer showing under it, where the sample's bar stands at 759.2 – 844; at 320×568 and 360×640 it is at the window's bottom as the sample's | a fixed bar lies over the footer links at the end of the page and they cannot be tapped (decisions/0124 О24, О26 (b)); if the owner reads it as «not like the mockup», the change is the fixed bar with a measured padding under the footer (О24) | 7.11, 12 (D9) |
+| D24 | below 380 px «‹ Назад» is on the progress row (D25); at 320×568, at the first scroll position, it lies partly under the live strip by 6.7 – 36.6 px in 11 of the 15 states (five questions in ru, kk and en), and at 360×640, 379×640 and 380×640 it is free; a scroll or a Tab brings it above the strip (the Tab scrolled the page 19 – 35 px) | the speaker's own row (D25) moves it down to the row that the strip then covers at the first scroll position; the page may be scrolled, as section 12 allows for the bar (decisions/0124 О19, О26 (a)) | 7.9, 7.11, 12 |
+| D25 | below 380 px (`max-width: 379px`) the speaker of the question (avatar, role title, stage word) takes its own full row above the question, «‹ Назад» moves to the progress row and the head is 31.2 px higher; at 320 the question's count goes under its pips; from 380 px, and at 390 px, the sample's phone, the speaker is beside the question as in the sample | the longest Russian title «Проверяющий» needs a speaker column of 190.4 px, which exists from 372 px; 380 keeps 8 px of slack (decisions/0124 О19, О32, О36; N1 of DESIGN-QA's first pass) | 7.9, 12 |
+| D26 | each answer chip of the result keeps its visible text, the answer, and is named «<question>: <answer>» for a screen reader (no tooltip); nothing changes on the screen | five answers «Не знаю» would be five equal chips with no name of the question they open (decisions/0124 О33, О37; N2 of DESIGN-QA's first pass) | 7.13 |

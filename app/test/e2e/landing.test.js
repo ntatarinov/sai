@@ -807,13 +807,14 @@ test(
         }
       }
 
-    // F. The speaker in Russian at 360, 371, 372, 375, 379 and 390 px (decisions/0124 О32, О36): up to 379 px the
-    // speaker has its own row above «‹ Назад», so the title (the longest, «Проверяющий» 130 px, and the pair
-    // «Руководитель проекта» 126 px) is not wider than its column and keeps 4 px from «‹ Назад» where they share a
-    // row; at 390 px, the phone of the sample, the speaker stays beside «‹ Назад» on one row. Read at each of the
-    // five questions.
+    // F. The speaker in Russian at 360, 371, 372, 375, 379, 380, 389 and 390 px (decisions/0124 О32, О36): up to
+    // 379 px the speaker has its own row above «‹ Назад», so the title (the longest, «Проверяющий» 130 px, and the
+    // pair «Руководитель проекта» 126 px) is not wider than its column and keeps 4 px from «‹ Назад» where they
+    // share a row; from 380 px up, 380 and 389 as well as 390 px (the phone of the sample), the speaker stays beside
+    // «‹ Назад» on one row, so a threshold that is moved up to 380 to 389 px is red (TEST-DESIGN-VALIDATOR T10).
+    // Read at each of the five questions.
     const OWN_ROW_UP_TO = 379;
-    for (const width of [360, 371, 372, 375, 379, 390]) {
+    for (const width of [360, 371, 372, 375, 379, 380, 389, 390]) {
       const env = await newPage(browser, t, {
         port,
         viewport: { width, height: 640 },
@@ -927,6 +928,9 @@ function readResult(page) {
         href: link?.getAttribute("href") ?? null,
       },
       chips: [...document.querySelectorAll("#demo .chips .chip b")].map(text),
+      chipTitles: [...document.querySelectorAll("#demo .chips .chip")].map(
+        (c) => c.getAttribute("title"),
+      ),
     };
   });
 }
@@ -1030,6 +1034,15 @@ test(
         // chips of one visible text, and the question is what tells them apart. The name is the browser's own
         // computed one (the role query), not the attribute.
         assert.deepEqual(got.chips, picked, `${where}: the text of the chips`);
+        // The chip keeps only its aria-label: no title attribute that repeats the question (decisions/0124 О37,
+        // TEST-DESIGN-VALIDATOR T11), so a screen reader does not say the name twice. Read on each chip.
+        assert.equal(got.chipTitles.length, 5, `${where}: five chips read`);
+        for (const [k, title] of got.chipTitles.entries())
+          assert.equal(
+            title,
+            null,
+            `${where}: the chip of question ${k + 1} has no title attribute`,
+          );
         for (const [k, q] of intake.questions.entries()) {
           const name = `${q.title}: ${picked[k]}`;
           assert.equal(
@@ -1584,6 +1597,47 @@ test(
     assert.equal(local["sai-lang"], "ru");
     assert.equal(local["sai-theme"], "auto");
     problems.add("the pass", reportedProblems(env));
+    // No announcement of the old language arrives after a switch (TEST-DESIGN-VALIDATOR T12): the tap and the
+    // language button are pressed in ONE task, so the announcement of the answer is still pending (the demo writes
+    // it ANNOUNCE_MS after the tap) when the language changes; the survey drops it, and the live line stays
+    // empty. The wait is a condition: the page is past 30 ms by its own clock, and the next question has opened
+    // in Kazakh (its timer was set after the announcement's, so the announcement's timer has fired by then).
+    const late = await newPage(browser, t, { port });
+    await late.page.goto(`${origin}/demo.html?lang=en`);
+    await pageReady(late.page, "/demo.html", "en");
+    await waitHeading(late.page, intake.en.questions[0].title);
+    const pressedAt = await late.page.evaluate(() => {
+      const card = /** @type {HTMLElement | undefined} */ (
+        document.querySelectorAll("#demo .card")[1]
+      );
+      const button = /** @type {HTMLElement | null} */ (
+        document.querySelector('[data-lang="kk"]')
+      );
+      if (card === undefined || button === null) return null;
+      const at = performance.now();
+      card.click();
+      button.click();
+      return at;
+    });
+    assert.notEqual(
+      pressedAt,
+      null,
+      "the card and the Kazakh button are there",
+    );
+    await waitHeading(late.page, intake.kk.questions[1].title);
+    await late.page.waitForFunction(
+      (/** @type {number} */ at) => performance.now() - at >= 130,
+      pressedAt,
+      { timeout: 15000 },
+    );
+    assert.equal(
+      await late.page.evaluate(
+        () => document.getElementById("live")?.textContent,
+      ),
+      "",
+      "the announcement of the tap, pending at the switch to kk, does not write the old language afterwards",
+    );
+    problems.add("the late announcement", reportedProblems(late));
     assert.deepEqual(problems.lines(), []);
   },
 );
