@@ -15,6 +15,7 @@ import {
   answerFixtures,
   atDesk,
   clearReports,
+  clearSpeakerStress,
   collector,
   filled,
   framesPass,
@@ -31,6 +32,8 @@ import {
   reportedProblems,
   say,
   shownKind,
+  speakerRow,
+  stressSpeakerLine,
   waitHeading,
   waitLive,
   waitPlace,
@@ -807,14 +810,16 @@ test(
         }
       }
 
-    // F. The speaker in Russian at 360, 371, 372, 375, 379, 380, 389 and 390 px (decisions/0124 О32, О36): up to
-    // 379 px the speaker has its own row above «‹ Назад», so the title (the longest, «Проверяющий» 130 px, and the
-    // pair «Руководитель проекта» 126 px) is not wider than its column and keeps 4 px from «‹ Назад» where they
-    // share a row; from 380 px up, 380 and 389 as well as 390 px (the phone of the sample), the speaker stays beside
-    // «‹ Назад» on one row, so a threshold that is moved up to 380 to 389 px is red (TEST-DESIGN-VALIDATOR T10).
-    // Read at each of the five questions.
-    const OWN_ROW_UP_TO = 379;
-    for (const width of [360, 371, 372, 375, 379, 380, 389, 390]) {
+    // F. The speaker in Russian at 320, 360, 371, 372, 375, 379, 380, 389, 390 and 420 px, at each of the five
+    // questions (decisions/0124 О45): the speaker takes a row of its own above the question only where its title does
+    // not fit beside «‹ Назад» in the visitor's font, so no window width is a threshold and the row it takes is NOT
+    // asserted here — the widths 380 and 389 px in particular, where the Mac and the Linux runner choose differently.
+    // What holds at every window and every font (`speakerRow` of the kit): every line of the speaker ends within its
+    // column (0.5 px); the title is 4 px or more from «‹ Назад» where they share a row; the speaker, the question,
+    // the progress and «‹ Назад» overlap in no two boxes; the speaker is beside «‹ Назад» or on a row of its own above
+    // the question; the class own stands on the head exactly when the speaker is not on the row of «‹ Назад»; no
+    // sideways scroll. The choice itself is pinned by G (a wider title moves to its own row) and H (a resize).
+    for (const width of [320, 360, 371, 372, 375, 379, 380, 389, 390, 420]) {
       const env = await newPage(browser, t, {
         port,
         viewport: { width, height: 640 },
@@ -825,69 +830,103 @@ test(
       for (let i = 0; i < 5; i++) {
         await waitHeading(page, Q[i].title);
         await framesPass(page, 2);
-        const got = await page.evaluate(() => {
-          const speaker = document.querySelector("#demo .ask-h .spk");
-          const title = document.querySelector("#demo .ask-h .who b");
-          const column = document.querySelector("#demo .ask-h .who");
-          const back = document.querySelector("#demo .ask-h .back");
-          if (
-            speaker === null ||
-            title === null ||
-            column === null ||
-            back === null
-          )
-            return null;
-          const range = document.createRange();
-          range.selectNodeContents(title);
-          const text = range.getBoundingClientRect();
-          const spk = speaker.getBoundingClientRect();
-          const col = column.getBoundingClientRect();
-          const btn = back.getBoundingClientRect();
-          return {
-            textRight: text.right,
-            textTop: text.top,
-            textBottom: text.bottom,
-            columnRight: col.right,
-            speakerRight: spk.right,
-            speakerTop: spk.top,
-            speakerBottom: spk.bottom,
-            backLeft: btn.left,
-            backTop: btn.top,
-            backBottom: btn.bottom,
-            wide: column.scrollWidth - column.clientWidth,
-            page: document.documentElement.scrollWidth - window.innerWidth,
-          };
-        });
-        const where = `speaker ${width} question ${i + 1}`;
-        if (got === null) {
-          problems.add(where, ["the speaker or «Назад» is not on the page"]);
-          continue;
+        problems.add(
+          `speaker ${width} question ${i + 1}`,
+          (await speakerRow(page)).lines,
+        );
+        if (i < 4) await answerAndWait(page, 0, Q[i + 1].title);
+      }
+    }
+
+    // G. The content rule (decisions/0124 О45), font-proof: at 420 px every title of the five questions fits beside
+    // «‹ Назад» (the plain state, read first). Then a line of the speaker, the title and after it the stage line, is
+    // made wider on the test page alone (a letter spacing from a sheet that the kit makes in the page, never in the
+    // project) and the window is made 1 px wider, which is a resize. A line whose longest word ends 6 px beyond the
+    // column it had beside «‹ Назад» must take the speaker to its own row (the invariants of F hold there: the row of
+    // its own is wider); a line whose longest word ends 3 px before that edge keeps the speaker beside «‹ Назад»
+    // (and still 4 px from it). With the stress taken away and the window back at 420 px the speaker is beside
+    // «‹ Назад» again and the class own is gone.
+    {
+      const env = await newPage(browser, t, {
+        port,
+        viewport: { width: 420, height: 640 },
+      });
+      const { page } = env;
+      await page.goto(`${origin}/demo.html?lang=ru`);
+      await pageReady(page, "/demo.html", "ru");
+      for (let i = 0; i < 5; i++) {
+        await waitHeading(page, Q[i].title);
+        await framesPass(page, 2);
+        const plain = await speakerRow(page);
+        problems.add(`title stress question ${i + 1} plain`, plain.lines);
+        if (!plain.beside)
+          problems.add(`title stress question ${i + 1}`, [
+            "the title does not fit beside «Назад» at 420 px, so the stress has nothing to move",
+          ]);
+        for (const tag of /** @type {const} */ (["b", "span"]))
+          for (const over of [6, -3]) {
+            const where = `${tag === "b" ? "title" : "stage line"} stress ${over} question ${i + 1}`;
+            const stress = await stressSpeakerLine(page, tag, over);
+            if (Math.abs(stress.error) > 1)
+              problems.add(where, [
+                `the stress missed its mark by ${stress.error.toFixed(1)} px (the test page, not the project)`,
+              ]);
+            await page.setViewportSize({ width: 421, height: 640 });
+            await framesPass(page, 2);
+            const got = await speakerRow(page);
+            problems.add(where, got.lines);
+            if (over > 0 && got.beside)
+              problems.add(where, [
+                "a line that ends beyond its column stays beside «Назад» (the speaker must take its own row)",
+              ]);
+            if (over < 0 && !got.beside)
+              problems.add(where, [
+                "a line that fits its column goes to its own row (the speaker must stay beside «Назад»)",
+              ]);
+            await clearSpeakerStress(page);
+            await page.setViewportSize({ width: 420, height: 640 });
+            await framesPass(page, 2);
+            const back = await speakerRow(page);
+            problems.add(`${where} taken away`, back.lines);
+            if (!back.beside)
+              problems.add(`${where} taken away`, [
+                "with the stress taken away and the window resized the speaker stays on its own row",
+              ]);
+          }
+        if (i < 4) await answerAndWait(page, 0, Q[i + 1].title);
+      }
+    }
+
+    // H. A resize in place re-measures (decisions/0124 О45): on the open question, with no reload and no new question,
+    // the window goes 420, 340, 320, 360 and back to 420 px. At 420 the title fits beside «‹ Назад» and at 320 it
+    // cannot (every question is on its own row there on the Mac, and the Linux runner's font is
+    // wider, so it holds there too); the widths between are read for the invariants of F, not for the row. The class
+    // own that the narrow window set is gone at 420 px again.
+    {
+      const env = await newPage(browser, t, {
+        port,
+        viewport: { width: 420, height: 640 },
+      });
+      const { page } = env;
+      await page.goto(`${origin}/demo.html?lang=ru`);
+      await pageReady(page, "/demo.html", "ru");
+      for (let i = 0; i < 5; i++) {
+        await waitHeading(page, Q[i].title);
+        for (const width of [420, 340, 320, 360, 420]) {
+          const where = `resize question ${i + 1} to ${width}`;
+          await page.setViewportSize({ width, height: 640 });
+          await framesPass(page, 2);
+          const got = await speakerRow(page);
+          problems.add(where, got.lines);
+          if (width === 420 && !got.beside)
+            problems.add(where, [
+              "the speaker is not beside «Назад» at 420 px after a resize",
+            ]);
+          if (width === 320 && got.beside)
+            problems.add(where, [
+              "the speaker is beside «Назад» at 320 px after a resize",
+            ]);
         }
-        if (got.textRight > got.columnRight + 0.5 || got.wide > 0)
-          problems.add(where, [
-            `the title ends at ${got.textRight.toFixed(1)}, beyond its column at ${got.columnRight.toFixed(1)}`,
-          ]);
-        const sameRow =
-          got.textTop < got.backBottom && got.textBottom > got.backTop;
-        if (sameRow && got.textRight > got.backLeft - 4)
-          problems.add(where, [
-            `the title ends at ${got.textRight.toFixed(1)}, under 4 px from «Назад» at ${got.backLeft.toFixed(1)}`,
-          ]);
-        if (got.page > 0) problems.add(where, ["the page scrolls sideways"]);
-        const speakerOnBackRow =
-          got.speakerTop < got.backBottom && got.speakerBottom > got.backTop;
-        if (width <= OWN_ROW_UP_TO && speakerOnBackRow)
-          problems.add(where, [
-            `the speaker (${got.speakerTop.toFixed(1)} to ${got.speakerBottom.toFixed(1)}) shares a row with «Назад» (${got.backTop.toFixed(1)} to ${got.backBottom.toFixed(1)}), not on its own row`,
-          ]);
-        if (width > OWN_ROW_UP_TO && !speakerOnBackRow)
-          problems.add(where, [
-            `the speaker (${got.speakerTop.toFixed(1)} to ${got.speakerBottom.toFixed(1)}) is not beside «Назад» (${got.backTop.toFixed(1)} to ${got.backBottom.toFixed(1)})`,
-          ]);
-        if (width > OWN_ROW_UP_TO && got.speakerRight > got.backLeft)
-          problems.add(where, [
-            `the speaker ends at ${got.speakerRight.toFixed(1)}, over «Назад» at ${got.backLeft.toFixed(1)}`,
-          ]);
         if (i < 4) await answerAndWait(page, 0, Q[i + 1].title);
       }
     }

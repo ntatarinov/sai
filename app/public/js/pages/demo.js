@@ -132,6 +132,9 @@ const MAX_LINES = 7;
 const TAIL_EDGE = 30;
 const TAIL_BACK = 8;
 
+/** How far (px) a line of the speaker may end beyond its column before the speaker takes its own row. */
+const SPEAKER_SLACK = 0.1;
+
 /** The desk of the result (9.13). */
 const RESULT_DESK = 4;
 
@@ -459,6 +462,29 @@ function mountSurvey(doc, win, parts) {
     return Object.fromEntries(chosen);
   };
 
+  /**
+   * The speaker of the question takes its own row (the class "own" on the head of the question, whose
+   * rule is in the phone layout of site.css) only where its title or its stage line does not fit
+   * beside «Назад» in the visitor's font (the owner's ruling of the look, section 7.9): the head is
+   * laid out beside, each line of the speaker is measured, and a line that ends beyond its column
+   * puts the speaker on its own row. No window width is a threshold. A title breaks at spaces only,
+   * so a line that breaks does fit; one word wider than the column does not.
+   */
+  const fitSpeaker = () => {
+    const head = shown.ask?.querySelector(".ask-h") ?? null;
+    if (head === null) return;
+    head.classList.remove("own");
+    const column = head.querySelector(".who");
+    if (column === null) return;
+    const edge = column.getBoundingClientRect().right;
+    const range = doc.createRange();
+    const beyond = Array.from(column.children).some((line) => {
+      range.selectNodeContents(line);
+      return range.getBoundingClientRect().right > edge + SPEAKER_SLACK;
+    });
+    if (beyond) head.classList.add("own");
+  };
+
   /** Points the tail of the shown question panel at its asking desk, as seen now. */
   const placeTail = () => {
     const ask = shown.ask;
@@ -488,6 +514,7 @@ function mountSurvey(doc, win, parts) {
     main.className =
       next.resultWrap === null ? "panel v-ask" : "panel v-result";
     shown = next;
+    fitSpeaker();
     placeTail();
     if (next.question) drawAvatars(doc, win, drawnTheme(doc, win));
     if (how.scroll === true) win.scrollTo(0, 0);
@@ -1177,7 +1204,10 @@ function mountSurvey(doc, win, parts) {
       shown.enough.click();
     }
   });
-  win.addEventListener("resize", placeTail);
+  win.addEventListener("resize", () => {
+    fitSpeaker();
+    placeTail();
+  });
 
   askSurvey({ focus: true });
 

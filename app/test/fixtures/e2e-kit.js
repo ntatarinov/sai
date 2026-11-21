@@ -1,4 +1,4 @@
-/* global document, requestAnimationFrame */
+/* global CSSStyleSheet, document, getComputedStyle, requestAnimationFrame, window */
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -478,4 +478,186 @@ export async function readState(
   problems.add(where, await shownTextFindings(env.page, lang));
   problems.add(where, reportedProblems(env, allowed));
   clearReports(env);
+}
+
+/**
+ * What the head of the question on the screen shows of its speaker, as lines of findings (decisions/0124 О45): the
+ * rule of the row is the content, not a window width, so this reads the invariants that hold at every window and
+ * every font, and reports which row the speaker took — it never says which row is right.
+ *
+ * - every line of the speaker (the title, the stage line) ends within its column (0.5 px), and the column is not
+ *   scrolled sideways;
+ * - the speaker lies above the question; it is either beside «Назад» (on its row) or on a row of its own;
+ * - on one row with «Назад», the title is at least 4 px from it and the speaker's box does not reach it;
+ * - the speaker, the question text, the progress and «Назад» overlap in no two boxes (over 0.5 px both ways);
+ * - the class `own` stands on the head exactly when the speaker is not on the row of «Назад»;
+ * - the page does not scroll sideways.
+ * @param {import("playwright-core").Page} page
+ * @returns {Promise<{ lines: string[], beside: boolean, own: boolean }>}
+ */
+export async function speakerRow(page) {
+  return page.evaluate(() => {
+    /** @type {string[]} */
+    const lines = [];
+    /** @param {string} s */
+    const one = (s) =>
+      /** @type {HTMLElement | null} */ (document.querySelector(`#demo ${s}`));
+    const head = one(".ask-h");
+    const speaker = one(".ask-h .spk");
+    const column = one(".ask-h .who");
+    const title = one(".ask-h .who b");
+    const question = one(".ask-h h2");
+    const progress = one(".ask-h .prog");
+    const back = one(".ask-h .back");
+    if (
+      head === null ||
+      speaker === null ||
+      column === null ||
+      title === null ||
+      question === null ||
+      progress === null ||
+      back === null
+    )
+      return {
+        lines: ["the head of the question is not on the page"],
+        beside: false,
+        own: false,
+      };
+    const own = head.classList.contains("own");
+    const range = document.createRange();
+    /** @param {Element} e */
+    const textBox = (e) => {
+      range.selectNodeContents(e);
+      return range.getBoundingClientRect();
+    };
+    const col = column.getBoundingClientRect();
+    for (const line of Array.from(column.children)) {
+      const box = textBox(line);
+      if (box.right > col.right + 0.5)
+        lines.push(
+          `the speaker's line «${(line.textContent ?? "").trim()}» ends at ${box.right.toFixed(1)}, beyond its column at ${col.right.toFixed(1)}`,
+        );
+    }
+    if (column.scrollWidth - column.clientWidth > 0)
+      lines.push("the speaker's column is scrolled sideways");
+    const spk = speaker.getBoundingClientRect();
+    const ask = question.getBoundingClientRect();
+    const btn = back.getBoundingClientRect();
+    const text = textBox(title);
+    const beside = spk.top < btn.bottom && spk.bottom > btn.top;
+    if (spk.bottom > ask.top + 0.5)
+      lines.push(
+        `the speaker (to ${spk.bottom.toFixed(1)}) does not lie above the question (from ${ask.top.toFixed(1)})`,
+      );
+    if (beside) {
+      if (
+        text.top < btn.bottom &&
+        text.bottom > btn.top &&
+        text.right > btn.left - 4
+      )
+        lines.push(
+          `the title ends at ${text.right.toFixed(1)}, under 4 px from «Назад» at ${btn.left.toFixed(1)}`,
+        );
+      if (spk.right > btn.left)
+        lines.push(
+          `the speaker ends at ${spk.right.toFixed(1)}, over «Назад» at ${btn.left.toFixed(1)}`,
+        );
+    }
+    const boxes = [
+      ["the speaker", spk],
+      ["the question", ask],
+      ["the progress", progress.getBoundingClientRect()],
+      ["«Назад»", btn],
+    ];
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = /** @type {DOMRect} */ (boxes[i][1]);
+        const b = /** @type {DOMRect} */ (boxes[j][1]);
+        const across = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const down = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (across > 0.5 && down > 0.5)
+          lines.push(`${boxes[i][0]} and ${boxes[j][0]} overlap`);
+      }
+    if (own === beside)
+      lines.push(
+        beside
+          ? "the class own stands on the head, but the speaker is on the row of «Назад»"
+          : "the speaker is not on the row of «Назад», but the class own is not on the head",
+      );
+    const root = document.documentElement;
+    if (root.scrollWidth > window.innerWidth)
+      lines.push("the page scrolls sideways");
+    return { lines, beside, own };
+  });
+}
+
+/**
+ * Makes a line of the speaker on the screen (the title `b` or the stage line `span`) wider or narrower, for the test
+ * page alone (never the project): a letter spacing, set on a style sheet that the test makes in the page, brings the
+ * longest word of the line to end `over` px beyond (a negative `over`: before) the right edge of the room the
+ * speaker's text has beside «Назад» now (the right edge of the speaker's box). The spacing is first computed from
+ * the font's measure of the word and then corrected by the page's own measure (the same Range of the text that the
+ * page script reads), so `error` (the end of the line minus the wanted end) is a fraction of a pixel on any font.
+ * Call it where the speaker is beside «Назад» (the room is read then). Calling it again replaces the spacing;
+ * `clearSpeakerStress` removes it. The page is not told: its own re-measure (a window resize, a new question) sees
+ * the changed line.
+ * @param {import("playwright-core").Page} page
+ * @param {"b" | "span"} tag
+ * @param {number} over
+ * @returns {Promise<{ word: string, spacing: number, error: number }>}
+ */
+export async function stressSpeakerLine(page, tag, over) {
+  return page.evaluate(
+    (/** @type {{ tag: string, over: number }} */ want) => {
+      const line = document.querySelector(`#demo .ask-h .who ${want.tag}`);
+      const speaker = line?.parentElement?.parentElement ?? null;
+      if (line === null || speaker === null)
+        throw new Error("the speaker is not on the page");
+      const style = getComputedStyle(line);
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d");
+      if (context === null) throw new Error("no canvas context");
+      context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      const words = (line.textContent ?? "").split(" ").filter(Boolean);
+      let word = words[0];
+      let natural = context.measureText(word).width;
+      for (const w of words) {
+        const width = context.measureText(w).width;
+        if (width > natural) {
+          word = w;
+          natural = width;
+        }
+      }
+      // The column of the text (.who) is as wide as its longest line and no wider than the room beside the avatar, so
+      // the room is the right edge of the speaker's box minus the left edge of the text.
+      const text = line.getBoundingClientRect();
+      const edge = speaker.getBoundingClientRect();
+      const room = edge.right - text.left;
+      const range = document.createRange();
+      const sheet = new CSSStyleSheet();
+      let spacing = (room + want.over - natural) / word.length;
+      const apply = () => {
+        sheet.replaceSync(
+          `#demo .ask-h .who ${want.tag} { letter-spacing: ${spacing}px !important; }`,
+        );
+        document.adoptedStyleSheets = [sheet];
+        range.selectNodeContents(line);
+        return range.getBoundingClientRect().right - edge.right - want.over;
+      };
+      for (let k = 0; k < 3; k++) spacing -= apply() / word.length;
+      return { word, spacing, error: apply() };
+    },
+    { tag, over },
+  );
+}
+
+/**
+ * Removes what `stressSpeakerLine` put on the page.
+ * @param {import("playwright-core").Page} page
+ * @returns {Promise<void>}
+ */
+export async function clearSpeakerStress(page) {
+  await page.evaluate(() => {
+    document.adoptedStyleSheets = [];
+  });
 }
