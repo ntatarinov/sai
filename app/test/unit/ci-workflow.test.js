@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readRoot } from "../fixtures/helpers.js";
 
-// REQ-108 criteria 11 and 12 (the checks of the docker job) and REQ-109 criterion 6 (the smoke step). Line
-// rules over .github/workflows/app.yml.
+// REQ-108 criteria 11 and 12 (the checks of the docker job), REQ-109 criterion 6 (the smoke step) and REQ-111
+// criteria 11 and 12 (the e2e job, the paths of the picker, the layout and the sim of the office, the demo
+// step of the docker job; code design 4.13). Line rules over .github/workflows/app.yml.
 //
 // The named limit (the scope decided for this round by the session that leads the program in ORCH's role).
 // The rules guard the forms an author writes in good faith; deliberate obfuscation is outside what text
@@ -20,7 +21,21 @@ const PATHS = [
   "tools/package.json",
   "tools/src/team/**",
   "tools/src/pixel-office/mask.js",
+  "tools/src/pixel-office/public/layout.js",
+  "tools/src/pixel-office/public/office-sim.js",
+  "tools/src/picker/**",
+  "tools/src/node-floor.js",
   ".github/workflows/app.yml",
+];
+
+// The jobs of the file, in this order (REQ-111 criterion 11: e2e joins check, pg and docker).
+const JOBS = ["check", "pg", "docker", "e2e"];
+
+// The first step of the e2e job (decisions/0124 О7): it prints the path and the version of the Chrome that
+// the browser tests open, so a runner without it is red at once.
+const CHROME_STEP = [
+  "- name: Chrome path and version",
+  "run: ls -l /opt/google/chrome/chrome && /opt/google/chrome/chrome --version",
 ];
 
 // The steps of the docker job (REQ-108 criterion 12, REQ-109 criterion 6), each an exact line of the job,
@@ -49,6 +64,10 @@ const DOCKER_STEPS = [
   [
     "docker preview 307",
     `test "$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' -H 'Host: localhost:8080' http://127.0.0.1:8080/x)" = "307 http://127.0.0.1:8080/x"`,
+  ],
+  [
+    "docker demo questionnaire",
+    `run: test "$(curl -sS -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8080/api/demo/questionnaire?lang=ru')" = "200"`,
   ],
   [
     "docker uid",
@@ -265,7 +284,7 @@ export function ciFindings(text) {
       if (UNPINNED.test(m[1])) out.push(`image ${m[1]}`);
   }
   const jobs = jobsOf(text);
-  if (JSON.stringify(Object.keys(jobs)) !== '["check","pg","docker"]')
+  if (JSON.stringify(Object.keys(jobs)) !== JSON.stringify(JOBS))
     out.push("jobs");
   for (const [name, body] of Object.entries(jobs)) {
     if (!/^ {4}timeout-minutes: \d+$/m.test(body)) out.push(`${name} timeout`);
@@ -299,6 +318,30 @@ export function ciFindings(text) {
     !/postgres:17@sha256:[0-9a-f]{64}/.test(jobs.pg ?? "")
   )
     out.push("pg job");
+  // The e2e job: its first step is the Chrome line, and it installs with `npm ci` and runs
+  // `npm run test:e2e`, each in app/, in this order.
+  const e2e = jobs.e2e ?? "";
+  const e2eSteps = e2e
+    .split(/^ {6}(?=- )/m)
+    .slice(1)
+    .map((s) =>
+      s
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean),
+    );
+  if (JSON.stringify(e2eSteps[0]) !== JSON.stringify(CHROME_STEP))
+    out.push("e2e chrome step");
+  const e2eRun = (/** @type {string} */ command) =>
+    e2e.search(
+      new RegExp(
+        `working-directory: app\\n\\s+run: ${command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n`,
+      ),
+    );
+  if (e2eRun("npm ci") < 0) out.push("e2e npm ci");
+  if (e2eRun("npm run test:e2e") < 0) out.push("e2e npm run test:e2e");
+  if (e2eRun("npm ci") >= 0 && e2eRun("npm run test:e2e") < e2eRun("npm ci"))
+    out.push("e2e order");
   // The steps of the docker job, in order; a step that is missing or out of place is red with its label.
   const docker = (jobs.docker ?? "").split("\n").map((l) => l.trim());
   let at = -1;
@@ -344,6 +387,7 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
   const lastPath = '      - ".github/workflows/app.yml"\n';
   const audit = "      - name: Audit the production dependencies\n";
   const checkJob = "  check:\n    runs-on: ubuntu-24.04\n";
+  const demo = `run: test "$(curl -sS -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8080/api/demo/questionnaire?lang=ru')" = "200"\n`;
   const smoke =
     "run: node app/scripts/smoke.js --base http://127.0.0.1:8080 --preview http://localhost:8080\n";
   // A digest of 64 hex digits, built from parts, and a copy with one more step before the audit.
@@ -357,6 +401,22 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
       audit,
       `      - name: Extra\n        run: |\n          docker build -t x - <<'EOF'\n          ${line}\n          EOF\n${audit}`,
     );
+  // The e2e job is the last job of the file: a copy changes only its own text, so a rule of the other jobs
+  // cannot be what turns a copy red.
+  const e2eAt = t.indexOf("\n  e2e:\n");
+  assert.ok(e2eAt > 0, "app.yml has no e2e job");
+  const beforeE2e = t.slice(0, e2eAt);
+  const e2eText = t.slice(e2eAt);
+  const inE2e = (/** @type {string} */ a, /** @type {string} */ b) =>
+    beforeE2e + change(e2eText, a, b);
+  const chromeStep =
+    "      - name: Chrome path and version\n        run: ls -l /opt/google/chrome/chrome && /opt/google/chrome/chrome --version\n";
+  const checkoutStep =
+    "      - name: Get the code\n        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n";
+  const e2eInstall =
+    "      - name: Install the app dependencies\n        working-directory: app\n        run: npm ci\n";
+  const e2eRunStep =
+    "      - name: Run the browser tests\n        working-directory: app\n        run: npm run test:e2e\n";
   /** @type {Array<[string, string]>} */
   const cases = [
     ["trigger", change(t, "on:\n  push:", "on:\n  pull_request:\n  push:")],
@@ -375,6 +435,42 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
     ["branches", change(t, '      - "ci/**"\n', "")],
     ["branches", change(t, "      - main\n", "")],
     ["paths", change(t, '      - "docs/runbooks/**"\n', "")],
+    // Each of the four entries of REQ-111 criterion 11 (the picker, the node floor it imports, the layout and
+    // the sim of the office), and the order of the list.
+    [
+      "paths",
+      change(t, '      - "tools/src/pixel-office/public/layout.js"\n', ""),
+    ],
+    [
+      "paths",
+      change(t, '      - "tools/src/pixel-office/public/office-sim.js"\n', ""),
+    ],
+    ["paths", change(t, '      - "tools/src/picker/**"\n', "")],
+    ["paths", change(t, '      - "tools/src/node-floor.js"\n', "")],
+    [
+      "paths",
+      change(
+        t,
+        '      - "tools/src/picker/**"\n',
+        '      - "tools/src/picker/*"\n',
+      ),
+    ],
+    [
+      "paths",
+      change(
+        change(t, '      - "tools/src/picker/**"\n', ""),
+        '      - "tools/src/node-floor.js"\n',
+        '      - "tools/src/node-floor.js"\n      - "tools/src/picker/**"\n',
+      ),
+    ],
+    [
+      "paths",
+      change(
+        t,
+        '      - "tools/src/node-floor.js"\n',
+        '      - "tools/src/node-floor.js"\n      - "tools/**"\n',
+      ),
+    ],
     ["permissions", change(t, "  contents: read", "  contents: write")],
     [
       "job permissions",
@@ -603,9 +699,109 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
       ),
     ],
     ["image of docker run", step(`"docker" run --rm alpine:3.20 true`)],
+    // An added job of another name is red, before the others and after the last; so is a file without the
+    // e2e job, and one with the e2e job moved before the docker job.
     [
       "jobs",
-      change(t, "jobs:\n", "jobs:\n  e2e:\n    runs-on: ubuntu-24.04\n"),
+      change(t, "jobs:\n", "jobs:\n  extra:\n    runs-on: ubuntu-24.04\n"),
+    ],
+    ["jobs", `${t.trimEnd()}\n\n  extra:\n    runs-on: ubuntu-24.04\n`],
+    ["jobs", beforeE2e],
+    [
+      "jobs",
+      change(
+        beforeE2e,
+        "\n  docker:\n",
+        `${e2eText.replace(/^\n/, "")}\n  docker:\n`,
+      ),
+    ],
+    // The e2e job (REQ-111 criterion 11, code design 4.13): its Chrome step first and exactly this line; the
+    // install and the run of the browser tests, each in app/ and in this order; and the rules every job has
+    // (a timeout, the node version, `node -v`, no hidden exit code), each shown on this job.
+    ["e2e chrome step", inE2e(chromeStep, "")],
+    [
+      "e2e chrome step",
+      inE2e(chromeStep, "").replace(
+        checkoutStep,
+        `${checkoutStep}${chromeStep}`,
+      ),
+    ],
+    [
+      "e2e chrome step",
+      inE2e(
+        "run: ls -l /opt/google/chrome/chrome && /opt/google/chrome/chrome --version",
+        "run: /opt/google/chrome/chrome --version",
+      ),
+    ],
+    [
+      "e2e chrome step",
+      inE2e(
+        "run: ls -l /opt/google/chrome/chrome && /opt/google/chrome/chrome --version",
+        "run: ls -l /opt/google/chrome/chrome",
+      ),
+    ],
+    [
+      "e2e chrome step",
+      inE2e("- name: Chrome path and version", "- name: Chrome"),
+    ],
+    ["e2e npm ci", inE2e(e2eInstall, "")],
+    [
+      "e2e npm ci",
+      inE2e(
+        e2eInstall,
+        "      - name: Install the app dependencies\n        run: npm ci\n",
+      ),
+    ],
+    [
+      "e2e npm ci",
+      inE2e(
+        e2eInstall,
+        "      - name: Install the app dependencies\n        working-directory: app\n        run: npm install\n",
+      ),
+    ],
+    ["e2e npm run test:e2e", inE2e(e2eRunStep, "")],
+    [
+      "e2e npm run test:e2e",
+      inE2e("run: npm run test:e2e\n", "run: npm run test:unit\n"),
+    ],
+    [
+      "e2e npm run test:e2e",
+      inE2e(
+        e2eRunStep,
+        "      - name: Run the browser tests\n        run: npm run test:e2e\n",
+      ),
+    ],
+    [
+      "e2e order",
+      inE2e(e2eRunStep, "").replace(e2eInstall, `${e2eRunStep}${e2eInstall}`),
+    ],
+    ["e2e timeout", inE2e("    timeout-minutes: 20\n", "")],
+    [
+      "e2e node-version 22.23.3",
+      inE2e('node-version: "22.23.4"', 'node-version: "22.23.3"'),
+    ],
+    ["e2e setup-node", inE2e('          node-version: "22.23.4"\n', "")],
+    [
+      "e2e node -v",
+      inE2e("      - name: Node version\n        run: node -v\n", ""),
+    ],
+    [
+      "a hidden exit code",
+      inE2e("run: npm run test:e2e\n", "run: npm run test:e2e || true\n"),
+    ],
+    [
+      "a hidden exit code",
+      inE2e(
+        "    timeout-minutes: 20\n",
+        "    timeout-minutes: 20\n    continue-on-error: true\n",
+      ),
+    ],
+    [
+      "a negated command",
+      inE2e(
+        "run: npm run test:e2e\n",
+        "run: |\n          ! npm run test:e2e\n",
+      ),
     ],
     ["docker timeout", change(t, "    timeout-minutes: 20\n", "")],
     [
@@ -666,6 +862,36 @@ test("CIW-2 each damaged copy is red with the finding of the rule it breaks", ()
         "      - name: Start db and web\n",
         `      - name: Smoke against the container\n        ${smoke}      - name: Start db and web\n`,
       ),
+    ],
+    // The demo step of the docker job (REQ-111 criterion 11): moved before the preview step, another status,
+    // another language, no status at all.
+    [
+      "docker demo questionnaire",
+      change(
+        change(
+          t,
+          `      - name: The demo questionnaire answers 200\n        ${demo}`,
+          "",
+        ),
+        "      - name: The closed page, the 404 page, the uniform 404 and the preview redirect\n",
+        `      - name: The demo questionnaire answers 200\n        ${demo}      - name: The closed page, the 404 page, the uniform 404 and the preview redirect\n`,
+      ),
+    ],
+    [
+      "docker demo questionnaire",
+      change(
+        t,
+        'questionnaire?lang=ru\')" = "200"',
+        'questionnaire?lang=ru\')" = "201"',
+      ),
+    ],
+    [
+      "docker demo questionnaire",
+      change(t, "questionnaire?lang=ru", "questionnaire?lang=en"),
+    ],
+    [
+      "docker demo questionnaire",
+      change(t, "api/demo/questionnaire", "api/health"),
     ],
     ["a hidden exit code", change(t, smoke, `${smoke.slice(0, -1)} || true\n`)],
     [
