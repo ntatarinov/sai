@@ -1,14 +1,18 @@
 import { createServer } from "node:http";
 import { getRequestListener } from "@hono/node-server";
+import { SOURCE_LANGS } from "../public/shared/i18n/lang.js";
 import { createApp } from "./app.js";
 import { ConfigError, nodeFloorRefusal, readConfig } from "./config.js";
 import { openRuntimeDb } from "./db/index.js";
 import { defaultMigrationsDir, readMigrations } from "./db/migrate.js";
 import { originsFor } from "./http/origin.js";
+import { loadIntake } from "./routes/demo.js";
 import { loadStaticSite } from "./static.js";
 
 // The Node and Docker entry (ARCH §0, §3): prints the app URL on 127.0.0.1 and the preview URL on
-// localhost (same port); exits on an unsafe database role; stays alive when the database is down.
+// localhost (same port); exits on an unsafe database role; stays alive when the database is down, and
+// when the demo intake is missing or broken (both demo routes then answer 503). It serves the local set:
+// the demo answers in every language of the source.
 
 const SELFCHECK_DEADLINE_MS = 4000;
 const STOP_LIMIT_MS = 3000;
@@ -32,6 +36,11 @@ async function main() {
     throw err;
   }
   const site = loadStaticSite();
+  const intake = loadIntake();
+  if (!intake.ok)
+    process.stderr.write(
+      "sai: the demo intake is missing or broken; /api/demo answers 503\n",
+    );
   const migrations = readMigrations(
     config.migrationsDir ?? defaultMigrationsDir(),
   ).map(({ name, sha256 }) => ({ name, sha256 }));
@@ -73,6 +82,7 @@ async function main() {
       site,
       migrations,
       log: (e) => process.stdout.write(`${JSON.stringify(e)}\n`),
+      demo: { intake, langs: SOURCE_LANGS },
     });
     server.on("request", getRequestListener(app.fetch));
     process.stdout.write(
