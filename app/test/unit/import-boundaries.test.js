@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
+import { blank, scan } from "../fixtures/blank.js";
 import { APP, tempDir } from "../fixtures/helpers.js";
 
 // REQ-108 criterion 3 (ARCH §2.2, decisions/0094, decisions/0116 О22, N1, N2).
@@ -77,222 +78,6 @@ const PROCESS_ALLOWED = [
   "stdout",
   "version",
 ];
-
-// The tokens after which a `/` starts a regular expression: a punctuator that cannot end an operand (a
-// division `/` and a spread `...` included), the start of the text, and "ctl)", the `)` of the condition
-// of `if`, `while`, `for` or `with`.
-const REGEX_AFTER = new Set([
-  "",
-  "(",
-  ",",
-  "=",
-  ":",
-  "[",
-  "!",
-  "&",
-  "|",
-  "?",
-  "{",
-  ";",
-  "+",
-  "-",
-  "*",
-  "%",
-  "<",
-  ">",
-  "~",
-  "^",
-  "/",
-  "...",
-  "ctl)",
-]);
-// The keywords after which an expression begins; after `.` (`x.in`) they are names and end one.
-const REGEX_AFTER_WORD = new Set([
-  "return",
-  "typeof",
-  "case",
-  "do",
-  "else",
-  "in",
-  "instanceof",
-  "new",
-  "delete",
-  "void",
-  "throw",
-  "yield",
-  "await",
-  "extends",
-  "default",
-  "break",
-  "continue",
-]);
-// The tokens after which a `/` may start either: `}` (of a block or of an object), `++` and `--` (prefix
-// or postfix) and `of` (a keyword in `for (… of …)`, a name elsewhere).
-const SLASH_EITHER = new Set(["}", "++", "--", "of"]);
-
-/**
- * Reads a source text once, token by token, into `code` (its comments, strings, template text and regular
- * expressions blanked with spaces; the code of `${…}` stays) and `kept` (only its comments blanked); both
- * keep line breaks and lengths. A `/` starts a regular expression or is a division by the token before it
- * (REGEX_AFTER, REGEX_AFTER_WORD). Where that token leaves both open (SLASH_EITHER) the scan reads a
- * division and lists the place in `slashes`, which `findings` makes red, so no text that the scan could
- * read the other way hides code from the rules.
- * @param {string} src
- */
-export function scan(src) {
-  const code = src.split("");
-  const kept = src.split("");
-  /** @type {number[]} */
-  const slashes = [];
-  /** @type {number[]} the open `{` inside each `${…}`, innermost last */
-  const tpl = [];
-  /** @type {boolean[]} for each open `(`, whether it holds the condition of `if`, `while`, `for` or `with` */
-  const parens = [];
-  // The last token (a word, a punctuator, "0" for a literal, "ctl)"), the token before it, whether the
-  // last word follows `.` (a property name), and whether the next word character starts a new word.
-  let prev = "";
-  let before = "";
-  let dotted = false;
-  let fresh = true;
-  const blankAll = (/** @type {number} */ a, /** @type {number} */ b) => {
-    for (let k = a; k < b; k++) if (src[k] !== "\n") code[k] = kept[k] = " ";
-  };
-  const blankCode = (/** @type {number} */ a, /** @type {number} */ b) => {
-    for (let k = a; k < b; k++) if (src[k] !== "\n") code[k] = " ";
-  };
-  const token = (/** @type {string} */ t) => {
-    before = prev;
-    prev = t;
-    dotted = false;
-    fresh = true;
-  };
-  let i = 0;
-  if (src.startsWith("#!")) {
-    const e = src.indexOf("\n");
-    i = e < 0 ? src.length : e;
-    blankAll(0, i);
-  }
-  while (i < src.length) {
-    const ch = src[i];
-    const nx = src[i + 1];
-    if (tpl.length && tpl[tpl.length - 1] === 0 && ch === "}") {
-      tpl.pop();
-      i = template(i + 1);
-      continue;
-    }
-    if (ch === "/" && (nx === "/" || nx === "*")) {
-      const e = nx === "/" ? src.indexOf("\n", i) : src.indexOf("*/", i + 2);
-      const end = e < 0 ? src.length : nx === "/" ? e : e + 2;
-      blankAll(i, end);
-      i = end;
-      fresh = true;
-      continue;
-    }
-    if (ch === "'" || ch === '"') {
-      let k = i + 1;
-      while (k < src.length && src[k] !== ch && src[k] !== "\n")
-        k += src[k] === "\\" ? 2 : 1;
-      blankCode(i + 1, k);
-      i = k + 1;
-      token("0");
-      continue;
-    }
-    if (ch === "`") {
-      i = template(i + 1);
-      continue;
-    }
-    if (ch === "/") {
-      if (SLASH_EITHER.has(prev) && !(prev === "of" && dotted)) slashes.push(i);
-      else if (
-        REGEX_AFTER.has(prev) ||
-        (!dotted && REGEX_AFTER_WORD.has(prev))
-      ) {
-        let k = i + 1;
-        let cls = false;
-        while (k < src.length && src[k] !== "\n") {
-          if (src[k] === "\\") k += 2;
-          else if (src[k] === "[") ((cls = true), k++);
-          else if (src[k] === "]") ((cls = false), k++);
-          else if (src[k] === "/" && !cls) break;
-          else k++;
-        }
-        blankCode(i + 1, k);
-        i = k + 1;
-        while (i < src.length && /[A-Za-z]/.test(src[i])) i++;
-        token("0");
-        continue;
-      }
-      token("/");
-      i++;
-      continue;
-    }
-    if (tpl.length && ch === "{") tpl[tpl.length - 1] += 1;
-    if (tpl.length && ch === "}") tpl[tpl.length - 1] -= 1;
-    if (/[A-Za-z0-9_$]/.test(ch)) {
-      if (fresh || !/[A-Za-z0-9_$]$/.test(prev)) {
-        // A name after `.`, `?.` or `#` (a private name such as `#return`) is a property, not a keyword.
-        const property = prev === "." || prev === ".." || prev === "#";
-        token(ch);
-        dotted = property;
-        fresh = false;
-      } else prev += ch;
-    } else if (/\s/.test(ch)) fresh = true;
-    else if ((ch === "+" || ch === "-") && prev === ch && src[i - 1] === ch)
-      prev = ch + ch;
-    else if (
-      ch === "." &&
-      (prev === "." || prev === "..") &&
-      src[i - 1] === "."
-    )
-      prev += ".";
-    else if (ch === "(") {
-      parens.push(
-        !dotted &&
-          (["if", "while", "for", "with"].includes(prev) ||
-            (prev === "await" && before === "for")),
-      );
-      token("(");
-    } else if (ch === ")") token(parens.pop() ? "ctl)" : ")");
-    else token(ch);
-    i++;
-  }
-  return { code: code.join(""), kept: kept.join(""), slashes };
-
-  /**
-   * Blanks the text of a template from `k` to its end or to its next `${`, and gives the index after it.
-   * @param {number} k
-   */
-  function template(k) {
-    const start = k;
-    while (k < src.length) {
-      if (src[k] === "\\") k += 2;
-      else if (src[k] === "`") {
-        blankCode(start, k);
-        token("0");
-        return k + 1;
-      } else if (src[k] === "$" && src[k + 1] === "{") {
-        blankCode(start, k);
-        tpl.push(0);
-        token("{");
-        return k + 2;
-      } else k++;
-    }
-    blankCode(start, k);
-    return k;
-  }
-}
-
-/**
- * The text with its comments, strings, template text and regular expressions blanked (`scan(src).code`),
- * or with `commentsOnly` only its comments (`scan(src).kept`), so a comment between the words of an import
- * hides nothing.
- * @param {string} src
- * @param {boolean} [commentsOnly]
- */
-export function blank(src, commentsOnly = false) {
-  const s = scan(src);
-  return commentsOnly ? s.kept : s.code;
-}
 
 // A block comment and a line comment, each with one possible end (its first `*/`, the end of its line),
 // so a pattern that fails never tries them again at another length.
@@ -916,17 +701,50 @@ export function gitEntries(app, env = process.env) {
 }
 
 /**
- * The entries of app/ that the rules cannot read: a link (its target is not read), and under app/server,
- * app/api and app/worker a file that is not a .js file (`.mjs`, `.cjs`, `.ts` and `.node` files load too).
- * @param {Array<[string, boolean]>} entries
+ * The `file` values of app/vendored.json, the byte copies of the originals (the code design 4.8 and 4.11,
+ * decisions/0124 О14): [] while the file does not exist; a file that cannot be read, is not JSON or does not
+ * hold `entries` with a string `file` each throws, so a broken list is red and never an empty one.
+ * @param {string} app
  * @returns {string[]}
  */
-export function fileFindings(entries) {
+export function vendoredFiles(app) {
+  /** @type {string} */
+  let text;
+  try {
+    text = fs.readFileSync(path.join(app, "vendored.json"), "utf8");
+  } catch (err) {
+    if (/** @type {NodeJS.ErrnoException} */ (err).code === "ENOENT") return [];
+    throw err;
+  }
+  const entries = JSON.parse(text)?.entries;
+  if (!Array.isArray(entries)) throw new Error("vendored.json: no entries");
+  return entries.map((/** @type {{ file?: unknown }} */ e) => {
+    if (typeof e?.file !== "string")
+      throw new Error("vendored.json: an entry has no file");
+    return e.file;
+  });
+}
+
+/**
+ * The entries of app/ that the rules cannot read: a link (its target is not read), and under app/server,
+ * app/api and app/worker a file that is not a .js file (`.mjs`, `.cjs`, `.ts` and `.node` files load too).
+ * The one narrow row (decisions/0124 О14): a declaration `<name>.d.ts` is no finding when it is no link and
+ * its twin at the same path, `<name>.js`, is a plain file among the entries and one of `vendored`, the
+ * `file` values of app/vendored.json. The suffix is exactly `.d.ts`; every other file stays red.
+ * @param {Array<[string, boolean]>} entries
+ * @param {readonly string[]} [vendored]
+ * @returns {string[]}
+ */
+export function fileFindings(entries, vendored = []) {
   const out = [];
+  const plain = new Set(entries.filter(([, link]) => !link).map(([f]) => f));
   for (const [rel, link] of entries)
     if (link) out.push(`a link: ${rel}`);
-    else if (/^(server|api|worker)\//.test(rel) && !rel.endsWith(".js"))
+    else if (/^(server|api|worker)\//.test(rel) && !rel.endsWith(".js")) {
+      const twin = rel.endsWith(".d.ts") ? `${rel.slice(0, -5)}.js` : null;
+      if (twin !== null && plain.has(twin) && vendored.includes(twin)) continue;
       out.push(`a file that is not .js: ${rel}`);
+    }
   return out;
 }
 
@@ -939,7 +757,7 @@ test("IB-1 the real tree of app/ breaks no rule", () => {
     files.includes("server/node-main.js") && files.includes("api/index.js"),
   );
   const all = [
-    ...fileFindings(entries),
+    ...fileFindings(entries, vendoredFiles(APP)),
     ...files.flatMap((f) =>
       findings(f, fs.readFileSync(path.join(APP, f), "utf8")).map(
         (x) => `${f}: ${x}`,
@@ -1677,6 +1495,137 @@ test("IB-2 every planted twin that breaks a rule is red with its own finding", (
       ["public/index.html", false],
     ]),
     [],
+  );
+  // The one narrow row of decisions/0124 О14: the declaration of the vendored engine beside its listed twin
+  // is green, and each damaged copy of it is red with the finding of its own rule (the same path, the exact
+  // suffix, a plain file, a twin that is listed and in the tree).
+  const engineJs = "server/vendor/picker-engine.js";
+  const engineDts = "server/vendor/picker-engine.d.ts";
+  const vendoredList = [engineJs];
+  /** @type {Array<[string, boolean][]>} */
+  const pair = [
+    [engineDts, false],
+    [engineJs, false],
+  ];
+  assert.deepEqual(fileFindings(pair, vendoredList), []);
+  assert.deepEqual(fileFindings(pair), [
+    `a file that is not .js: ${engineDts}`,
+  ]);
+  /** @type {Array<[string, Array<[string, boolean]>, string[], string[]]>} */
+  const damaged = [
+    [
+      "a second .d.ts with no twin",
+      [...pair, ["server/vendor/other.d.ts", false]],
+      vendoredList,
+      ["a file that is not .js: server/vendor/other.d.ts"],
+    ],
+    [
+      "a second .d.ts beside a plain .js that is not vendoredList",
+      [
+        ...pair,
+        ["server/vendor/other.d.ts", false],
+        ["server/vendor/other.js", false],
+      ],
+      vendoredList,
+      ["a file that is not .js: server/vendor/other.d.ts"],
+    ],
+    [
+      "a .ts beside the vendoredList twin",
+      [...pair, ["server/vendor/picker-engine.ts", false]],
+      vendoredList,
+      ["a file that is not .js: server/vendor/picker-engine.ts"],
+    ],
+    [
+      "a .d.ts beside a .js that app/vendored.json does not list",
+      [...pair, ["server/lib/util.d.ts", false], ["server/lib/util.js", false]],
+      vendoredList,
+      ["a file that is not .js: server/lib/util.d.ts"],
+    ],
+    [
+      "the declaration as a link",
+      [
+        [engineDts, true],
+        [engineJs, false],
+      ],
+      vendoredList,
+      [`a link: ${engineDts}`],
+    ],
+    [
+      "the declaration whose vendoredList twin is not in the tree",
+      [[engineDts, false]],
+      vendoredList,
+      [`a file that is not .js: ${engineDts}`],
+    ],
+    [
+      "the declaration beside a twin that is a link",
+      [
+        [engineDts, false],
+        [engineJs, true],
+      ],
+      vendoredList,
+      [`a link: ${engineJs}`, `a file that is not .js: ${engineDts}`].sort(),
+    ],
+    [
+      "the suffix in another letter case",
+      [
+        ["server/vendor/picker-engine.D.TS", false],
+        [engineJs, false],
+      ],
+      vendoredList,
+      ["a file that is not .js: server/vendor/picker-engine.D.TS"],
+    ],
+    [
+      "a .d.mts beside the vendoredList twin",
+      [...pair, ["server/vendor/picker-engine.d.mts", false]],
+      vendoredList,
+      ["a file that is not .js: server/vendor/picker-engine.d.mts"],
+    ],
+    [
+      "a .d.ts in api/ with no twin there",
+      [...pair, ["api/picker-engine.d.ts", false]],
+      vendoredList,
+      ["a file that is not .js: api/picker-engine.d.ts"],
+    ],
+    [
+      "the right pair with an empty list",
+      pair,
+      [],
+      [`a file that is not .js: ${engineDts}`],
+    ],
+    [
+      "the same file name in another folder",
+      [
+        ...pair,
+        ["server/lib/picker-engine.d.ts", false],
+        ["server/lib/picker-engine.js", false],
+      ],
+      vendoredList,
+      ["a file that is not .js: server/lib/picker-engine.d.ts"],
+    ],
+  ];
+  for (const [name, list, vendored, want] of damaged)
+    assert.deepEqual(fileFindings(list, vendored).sort(), want.sort(), name);
+  // app/vendored.json is read as a list of its `file` values: absent is an empty list, the real file lists
+  // the engine copy, and a folder in its place, a text that is not JSON, no `entries` and an entry with no
+  // `file` each throw.
+  assert.deepEqual(vendoredFiles(tempDir(t)), []);
+  assert.deepEqual(vendoredFiles(APP), [engineJs]);
+  const readIn = (/** @type {string | null} */ text) => {
+    const where = tempDir(t);
+    if (text === null) fs.mkdirSync(path.join(where, "vendored.json"));
+    else fs.writeFileSync(path.join(where, "vendored.json"), text);
+    return where;
+  };
+  assert.deepEqual(
+    vendoredFiles(readIn(JSON.stringify({ entries: [{ file: "a/b.js" }] }))),
+    ["a/b.js"],
+  );
+  assert.throws(() => vendoredFiles(readIn(null)), { code: "EISDIR" });
+  assert.throws(() => vendoredFiles(readIn("{")), SyntaxError);
+  assert.throws(() => vendoredFiles(readIn("{}")), /no entries/);
+  assert.throws(
+    () => vendoredFiles(readIn(JSON.stringify({ entries: [{}] }))),
+    /no file/,
   );
   const dir = tempDir(t);
   fs.mkdirSync(path.join(dir, "server", "node_modules"), { recursive: true });

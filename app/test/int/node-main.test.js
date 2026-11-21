@@ -30,6 +30,17 @@ const UNIT_FILES = [
   "check-public",
   "vercel-build",
   "runbooks",
+  "public-pages",
+  "texts",
+  "forbidden-words",
+  "theme-contrast",
+  "intake",
+  "vendored",
+  "public-build",
+  "port-parity",
+  "office-pure",
+  "office-stage",
+  "office-view",
 ];
 
 const INDEX = readApp("public/index.html");
@@ -165,7 +176,7 @@ test("NM-4 the static map serves no dot-name, no unknown type and no folder", as
   assert.ok(site.lookup("/ok.txt"));
 });
 
-test("NM-5 app/test/unit holds its 14 named test files; a copy without one is red", (t) => {
+test("NM-5 app/test/unit holds its 25 named test files; a copy without one is red", (t) => {
   const real = path.join(APP, "test", "unit");
   assert.deepEqual(missingTestFiles(real, UNIT_FILES), []);
   const files = fs.readdirSync(real);
@@ -175,5 +186,35 @@ test("NM-5 app/test/unit holds its 14 named test files; a copy without one is re
     for (const f of files)
       if (f !== `${gone}.test.js`) fs.writeFileSync(path.join(copy, f), "");
     assert.deepEqual(missingTestFiles(copy, UNIT_FILES), [gone], gone);
+  }
+});
+
+test("NM-6 the local server serves the whole source: examples.html and the texts module with its kk values and order_ keys, byte for byte", async (t) => {
+  const s = startNode(t, { PORT: "0" });
+  const port = await s.ready;
+  const examples = await request(port, "/examples.html");
+  assert.equal(examples.status, 200);
+  assert.equal(examples.headers["content-type"], "text/html; charset=utf-8");
+  assert.ok(examples.body.equals(readApp("public/examples.html")));
+  const texts = await request(port, "/shared/i18n/texts.js");
+  assert.equal(texts.status, 200);
+  assert.equal(texts.headers["content-type"], "text/javascript; charset=utf-8");
+  const source = readApp("public/shared/i18n/texts.js");
+  assert.ok(texts.body.equals(source));
+  // The bytes are the source's: the kk values and the order_ keys are in them (the closed build removes
+  // them from the public set; the local server keeps them).
+  assert.match(texts.body.toString(), /\border_[a-z_]+:/);
+  assert.match(texts.body.toString(), /\bkk: /);
+  assert.match(examples.body.toString(), /order_/);
+  // The page's own scripts and style sheets are served as the source holds them too.
+  for (const p of [
+    "/shared/i18n/lang.js",
+    "/office/view.js",
+    "/css/site.css",
+    "/index.html",
+  ]) {
+    const r = await request(port, p);
+    assert.equal(r.status, 200, p);
+    assert.ok(r.body.equals(readApp(`public${p}`)), p);
   }
 });
