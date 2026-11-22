@@ -1,0 +1,90 @@
+{
+  "handoff_id": "step02-M1WORDS-20261122-02",
+  "run_id": "M1WORDS-20261122-02",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M1WORDS-20261122-02/step-02-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-113"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1WORDS-20261122-02/step-01-frontend-dev.json (result)",
+      "docs/requirements.yaml block REQ-113 (amendment paragraph, criteria 1, 2, 11, guard rows (11)-(13))",
+      "git diff (working tree against HEAD d1bfb93)"
+    ],
+    "base_tag": "base/M1WORDS-20261122-02",
+    "route": "WF-02 step 4 narrow review of the wording code round; PASS -> ORCH: snapshot to GitHub (needs owner yes)",
+    "write_set": [
+      "handoffs/M1WORDS-20261122-02/step-02-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "Narrow REVIEWER pass over the wording code round of REQ-113 (the diff of the working tree against HEAD d1bfb93: texts.js, how.html, texts.test.js, landing.test.js, and the two design docs). Check: (1) every changed value equals the requirement text exactly (ru, en, kk; compare character by character with your own read-only script in your own subfolder of the scratchpad C:UsersgreveAppDataLocalTempclaudea6c11d6dc2554533\u000483285e2-45d1-4ba0-be5f-d84094cb1f8ascratchpad); (2) the tests changed in the diff are sound: exact-value tables, the new KK_DRAFT_VALUES table in TX-4 (is the check of exactly one occurrence correct, could it be green with a wrong text, will it be red on the base commit), TX-10 and the static ru of how.html equal the module values, nothing weakened, no test removed or skipped, the test count stays unit 122 as the requirement says (count test( and it( lines against HEAD); (3) no other change slipped in: diff is limited to the write set; line endings LF; the stage name Принято and how_stage_1_note untouched; key count 179; (4) the one reworded sentence in docs/design/V1-public-look.md line 952 (a cell about the invitation): does it contradict anything; (5) the mark width risk: en stat_on is now Working (longer than Works) inside a nowrap mark: read site.css rules of the mark and the how.html and demo.js markup and say if a long word can overflow at 320x568 in en and in kk (kk stat_on value?) (a real browser measurement is done later by DESIGN-QA, you only reason from CSS); (6) the public build rules for the new strings (no banned word, 18 words). Report Critical/High/Medium/Low findings with place and fix. Do NOT run npm run check, cd app && npm run ..., node --test, tools test scripts or e2e tests on this Windows PC. Node 22 first on PATH (C:Usersgreve\tools\node22). Edit nothing but your handoff result; no git writes. Status stays PENDING; ORCH closes. English. Never write the name of the reference product.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T14:01:31Z",
+  "started_at": "2026-11-22T14:01:31Z",
+  "completed_at": "2026-11-22T14:04:51Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "PASS. No Critical, High or Medium finding; three Low remarks (two stale sentences in the design docs, one note for DESIGN-QA). Q1 cause: the change is a pure wording round, nothing is swallowed or bypassed. Q2 recorded: all 12 changed values (ru, en, kk) of the seven keys of the amendment equal the REQ-113 text; both design docs follow the new values; the old en/ru/kk texts stand nowhere in app/ or docs/design/. Q3 extra work: the working-tree diff is exactly six files (how.html, texts.js, landing.test.js, texts.test.js, the two design docs), all among the files the requirement names; no css, js or server file touched; LF kept (git ls-files --eol: i/lf w/lf on all six); keys 179; the stage name Принято and how_stage_1_note are not in the diff. Q4 quality bar: no .skip, .only, todo, eslint-disable or || true in the changed files; test( and it( counts equal HEAD (texts.test.js 42/42, landing.test.js 11/11), so the unit count 122 is unchanged by construction (nothing added or removed: the kk check lives inside TX-4); the e2e edits are comments and assertion messages only. Q5 idiom: the new TX-4 code follows the neighbouring style (fs and path are imported, SHARED is defined at line 16). TEST-DESIGNER should look at: (a) the KK_DRAFT_VALUES block of TX-4: red at the base (the base kk texts differ), and the exact-once count of the whole text in texts.js is sound because the whole text is compared, not a fragment, and T[key].kk is compared too; (b) TX-10 row (a), static ru of how.html against the module: I reproduced it with my own script over 78 keyed elements, 0 differences; (c) the mark width at 320x568 is a DESIGN-QA browser measurement, from CSS I see no overflow risk (F3).",
+    "findings": [
+      {
+        "id": "F1",
+        "place": "docs/design/REQ-113-visitor-status.md lines 101 (C12) and 152; docs/design/V1-public-look.md line 979",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The sentences 'none [of the kk values] is fixed by this design' (C12), 'The kk values are drafts' (line 152) and 'are not set here' (look, line 979) were true before the amendment. Now two kk values (now_idea_s, now_closing) are pinned by REQ-113 criterion 1 and by TX-4, and the table row 144 of the code design already shows them. A reader of the docs can take those two kk rows for free drafts (AP-005).",
+        "fix": "One sentence each: 'except the kk values of now_idea_s and now_closing, pinned by REQ-113 criterion 1 (amendment of 2026-11-22) and by the KK_DRAFT_VALUES rows of TX-4'. Docs only; with the next doc edit; no code change."
+      },
+      {
+        "id": "F2",
+        "place": "docs/design/REQ-113-visitor-status.md line 513 (the TX-4 row of the test table)",
+        "severity": "Low",
+        "blocking": false,
+        "what": "The table says 'TX-4 gains rows (9.1)' for the status values but does not name the new exact-once check of the two kk drafts, which now exists in texts.test.js (TX-4). The code design is the table that the tests follow.",
+        "fix": "Add 'and the kk drafts of now_idea_s and now_closing, each exactly once in texts.js' to that row. Docs only."
+      },
+      {
+        "id": "F3",
+        "place": "app/public/css/site.css 1449-1491 (.stat, .stat.on, .now .stat, @media max-width 479px, .stat-line, .pair); app/public/how.html 94-114 and 180-226; app/public/js/pages/demo.js 838-862",
+        "severity": "Low",
+        "blocking": false,
+        "what": "Mark width risk, reasoning from CSS only. .stat is inline-flex, flex:none, white-space:nowrap, 13px/800, padding 3px 8px, letter-spacing .02em. Only the en word grows: Works (5 letters) to Working (7 letters), about +14 px (about 60 px wide in all). ru Работает and kk 'Жұмыс істейді' (13 letters, the longest mark, about 120-130 px) did not change, so kk has nothing new. At 320 px (below 479) the status rows are a column (.now .rl li: flex-direction column, align-items flex-start, mark order 0 first), so a mark sits alone in its row; the content width is about 260 px or more, the kk mark fits twice over. In how.html the stage-1 .pair is an inline-flex of mark + name in .stat-line with flex-wrap: the pair wraps as a unit and its minimum width is mark + 8 px gap + the longest word of the name (kk 'Демо-сауалнама' breaks at the hyphen, about 90 px), about 230 px for kk and less for en. No long word can overflow in en or kk.",
+        "fix": "None. For DESIGN-QA only: look at en and kk at 320x568 in the status block of the result and in the stage-1 pair of how.html."
+      }
+    ],
+    "self_check": [
+      "git status --short; git diff --stat: 6 files changed, 80 insertions, 41 deletions: how.html, texts.js, landing.test.js, texts.test.js, REQ-113-visitor-status.md, V1-public-look.md (plus the untracked handoffs/M1WORDS-20261122-02/). No css, js, server, content, index, examples, gate or 404 file.",
+      "git ls-files --eol -m: i/lf w/lf for all six changed files (LF kept). A plain grep -c for CR is misleading in this Git Bash, so git's own report was used.",
+      "node cmp.mjs (own read-only script in the scratchpad, Node v22.23.4): takes the requirement text (docs/requirements.yaml lines 16337-16380, whitespace normalised) and checks that each of 12 values (idea_panel_lead en; now_idea_t ru, en; now_idea_s ru, en, kk; stat_on ru, en; now_closing ru, en, kk; demo_accuracy_note en) is a verbatim substring of the requirement and strictly equal to TEXTS[key][lang]. Output: compared 12 bad 0; keys 179. No NBSP, zero-width sign, tab or double space in any value. stat_on kk stays 'Жұмыс істейді'.",
+      "node lint.mjs (own script): for the 6 changed keys x ru, kk, en: lintText of app/scripts/word-lists.js = [], textProblem of text-rules.js = null, longest phrase 17 words (idea_panel_lead en; limit 18), no digit, none of the banned whole words of criterion 2 (ru and en lists): all 18 values clean.",
+      "node how.mjs (own script): the static ru text of all 78 data-t elements of how.html equals the module ru value after whitespace normalisation: checked 78 bad 0; now_idea_s stands 1 time, now_closing 1, stat_on 2 (agrees with HOW_KEY_COUNTS of TX-10).",
+      "grep for .skip, .todo, todo, eslint-disable, '|| true', .only, xit(, xtest over texts.test.js, landing.test.js, texts.js, how.html: no output.",
+      "Counts against HEAD d1bfb93 (grep -cE with test and it calls): texts.test.js 42 now / 42 at HEAD, landing.test.js 11 / 11; at line start 10/10 and 9/9. Nothing added or removed.",
+      "grep -rnF of the old texts (You cannot send an idea, Interview and requirements, surer the hint, 'пишет ТЗ.', 'и ТТ жазады', the mark word Works) over app/, docs/design/, tools/: no hit in app/public, app/test or docs/design; the only hits are unrelated (Workspace trust, 'Works with barcodes', assertNextStartWorks).",
+      "git diff -U0 filtered for Принято and how_stage_1_note: no changed line.",
+      "Read in full: site.css 1405-1530, how.html 85-230, demo.js statusBlock, the amendment paragraph, criteria 1 and 2 and guard rows (11)-(13) of REQ-113, TX-4 (texts.test.js 274-400) and TX-10 (1245-1330)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "LOW",
+        "text": "ORCH: F1 and F2 are doc-only remarks; they do not block the snapshot to GitHub. Fix them in the next doc edit or open one small DOC-FIXER item."
+      },
+      {
+        "id": "I2",
+        "kind": "DOUBT",
+        "text": "The unit count 122 is judged from the test and it call counts of the only changed unit file (equal to HEAD; the new checks sit inside TX-4). TX-4 itself was not executed here (forbidden on this PC): I read its new block and reproduced the value logic with my own scripts (module equals requirement). The real run is the one on GitHub."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

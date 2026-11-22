@@ -184,10 +184,14 @@ const ADDED_VALUES = [
     "Пять вопросов и подсказка, какой вид продукта вам подойдёт.",
     "Five questions and a hint at which kind of product fits you.",
   ],
-  ["now_idea_t", "Опрос по вашей идее и ТЗ", "Interview and requirements"],
+  [
+    "now_idea_t",
+    "Опрос по вашей идее и ТЗ",
+    "Survey on your idea and the requirements",
+  ],
   [
     "now_idea_s",
-    "ИИ-аналитик задаёт вопросы и пишет ТЗ.",
+    "ИИ-аналитик задаёт вопросы и пишет техническое задание (ТЗ).",
     "The AI analyst asks questions and writes the requirements.",
   ],
   ["now_build_t", "Сборка и результат", "Build and result"],
@@ -196,12 +200,12 @@ const ADDED_VALUES = [
     "Разработчик собирает продукт, вы принимаете работу.",
     "The developer builds the product and you accept the work.",
   ],
-  ["stat_on", "Работает", "Works"],
+  ["stat_on", "Работает", "Working"],
   ["stat_off", "Пока нет", "Not yet"],
   [
     "now_closing",
-    "Даты запуска пока нет. Описать идею смогут только приглашённые участники. Готовый продукт посетителям пока не выдаётся.",
-    "No launch date is set yet. Only invited participants will be able to describe an idea. Finished products are not handed out to visitors yet.",
+    "Даты запуска пока нет. Описать идею смогут только приглашённые участники. Способа получить приглашение пока нет. Готовый продукт посетителям пока не выдаётся.",
+    "No launch date is set yet. Only invited participants will be able to describe an idea. There is no way to get an invitation yet. Finished products are not handed out to visitors yet.",
   ],
   [
     "how_plan_note",
@@ -216,7 +220,7 @@ const ADDED_VALUES = [
   [
     "demo_accuracy_note",
     "Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину.",
-    "The more answers, the surer the hint. “Not sure” counts as half.",
+    "The more answers, the more reliable the hint. “Not sure” counts as half.",
   ],
 ];
 
@@ -225,13 +229,29 @@ const CHANGED_VALUES = [
   [
     "idea_panel_lead",
     "Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать.",
-    "You cannot send an idea yet. The button opens tips on how to describe it.",
+    "You cannot describe an idea in Sai yet: the button opens tips on how to describe it.",
   ],
   ["demo_accuracy", "Учтено ответов", "Answers counted"],
 ];
 
 /** The 15 keys of REQ-113 criterion 1. */
 const STATUS_VALUES = [...ADDED_VALUES, ...CHANGED_VALUES];
+
+/**
+ * The two kk drafts that REQ-113 criterion 1 pins (the amendment of 2026-11-22): [key, kk]. They follow the new ru
+ * values and nothing more; the kk of the other keys stays the coding role's draft, no row pins it.
+ * @type {ReadonlyArray<readonly [string, string]>}
+ */
+const KK_DRAFT_VALUES = [
+  [
+    "now_idea_s",
+    "ЖИ-талдаушы сұрақтар қояды және техникалық тапсырма (ТТ) жазады.",
+  ],
+  [
+    "now_closing",
+    "Іске қосу датасы әзірге жоқ. Идеяны тек шақырылған қатысушылар сипаттай алады. Шақыру алудың жолы әзірге жоқ. Дайын өнім келушілерге әзірге берілмейді.",
+  ],
+];
 
 /**
  * Every file under a folder, as absolute paths, in the order of the directory listing sorted by name.
@@ -349,6 +369,21 @@ test("TX-4 the exact values fixed by records; kk and en of the theme words; no n
       key in T && !key.startsWith("order_"),
       `${key}: a new key must exist and be no order text`,
     );
+  // The amendment of 2026-11-22: the two kk drafts follow the new ru values, so each holds the exact text, and the
+  // texts file holds each of the two texts exactly once (the grep -c of criterion 1).
+  assert.equal(KK_DRAFT_VALUES.length, 2);
+  const textsSource = fs.readFileSync(
+    path.join(SHARED, "i18n", "texts.js"),
+    "utf8",
+  );
+  for (const [key, kkValue] of KK_DRAFT_VALUES) {
+    assert.equal(T[key]?.kk, kkValue, `${key}: kk`);
+    assert.equal(
+      textsSource.split(kkValue).length - 1,
+      1,
+      `${key}: the kk text stands once in texts.js`,
+    );
+  }
   // The label of the receipt's count is no longer called accuracy in any language.
   assert.notEqual(
     T.demo_accuracy.kk,
@@ -1466,7 +1501,7 @@ test("TX-10 the static source of how.html: the status block between the intro an
       /how_plan_note stands 0 times/,
     ],
     [
-      "stage 3 with the mark Works",
+      "stage 3 with the mark Working",
       damage(
         stageMark(off),
         stageMark('<span class="stat on" data-t="stat_on">Работает</span>'),

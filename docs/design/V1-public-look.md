@@ -871,7 +871,7 @@ on `--paper`, titles only, in this order (G2):
 run M1STATUS-20261122-02]: `--card` with the pixel frame, padding `20px 22px` (`16px 14px`), column gap 6 [S site.css:1353-1360,
 1851-1854]: h3 «<describe your idea title>» (`idea_panel_title`, unchanged), sub «<lead>» (`idea_panel_lead`, `p.sub`, 16
 `--ink2`; the words are now the honest ones, ru «Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней
-рассказать.», en «You cannot send an idea yet. The button opens tips on how to describe it.» [R REQ-113 criterion 4]), and
+рассказать.», en «You cannot describe an idea in Sai yet: the button opens tips on how to describe it.» [R REQ-113 criterion 4]), and
 the big button «Описать идею» [R PLAN M1] full width — a link to `/how.html#describe-idea`, the part «Как описать идею» of
 `how.html` (8.2 H3; G4), which sends and keeps nothing [R REQ-111, its question О1]. The button is the last element of the
 panel: the fine line that stood under it (14 `--ink2`, the test-mode explanation, key `idea_panel_fine`) is removed, and
@@ -949,7 +949,7 @@ shows no date, and in the test mode only the owner of Sai receives a result [R R
 | row 1, «Демо-опрос — Пять вопросов и подсказка…»: mark «Работает» | keys `now_demo_t`, `now_demo_s`, `stat_on`; the fact: the demo survey is the one thing released [R REQ-113 c3] | no date, no link «пройти опрос» inside the block (the block holds no `a`, `button`, `input`, `select`, `textarea` or `form`: nothing that could be taken for a way to leave a contact) |
 | row 2, «Опрос по вашей идее и ТЗ»: mark «Пока нет» | keys `now_idea_t`, `now_idea_s`, `stat_off` | no third mark «По приглашению» («Будет по приглашению» is not asked either) and no «Скоро»: the first is untrue today and the second hints at a date [R REQ-113 description; decisions/0125 item 3; Rv section 0] |
 | row 3, «Сборка и результат»: mark «Пока нет» | keys `now_build_t`, `now_build_s`, `stat_off` | the same |
-| the closing paragraph | key `now_closing`: three sentences, «Даты запуска пока нет», only invited participants will describe ideas, finished products are not handed out to visitors yet | not small grey print (not `.fine`, not `.meta`): the owner's complaint was exactly the 14 px grey line; no word of the list С («срока», «день», «минут» …), no «контакт», «почта», «форма», no «как получить приглашение» (there is no such way) [Rv section 0] |
+| the closing paragraph | key `now_closing`: four sentences, «Даты запуска пока нет», only invited participants will describe ideas, there is no way to get an invitation yet, finished products are not handed out to visitors yet | not small grey print (not `.fine`, not `.meta`): the owner's complaint was exactly the 14 px grey line; no word of the list С («срока», «день», «минут» …), no «контакт», «почта», «форма», no instruction «как получить приглашение» and no promise of a contact, form or waiting list (the text only says that there is no way to get an invitation yet) [Rv section 0] |
 | the lead above «Описать идею» (7.15) | key `idea_panel_lead` | the label of the button is not changed (REQ-111 criterion 2, TX-4, 13.1); the review's option «Как описать идею» as a label is not taken |
 | the row «Учтено ответов» of the receipt and its sentence (below) | key `demo_accuracy`, key `demo_accuracy_note`, the count `receiptCount` [S demo.js:447-451] | no quality or guarantee word: the number is the count of answers, not how right the hint is |
 | the marks beside the four stages on `how.html` (below) | keys `stat_on`, `stat_off`, `now_demo_t`, `now_idea_t` | nothing inside `button[data-step]`; nothing on the scene (the marks tell which parts of the site exist and are no status of any project: decisions/0083 item 7, 0097 item 1, 0125 item 2) |
@@ -963,20 +963,20 @@ search finds it.
 | `now_title` | Что работает сейчас | What works now |
 | `now_demo_t` | Демо-опрос | Demo survey |
 | `now_demo_s` | Пять вопросов и подсказка, какой вид продукта вам подойдёт. | Five questions and a hint at which kind of product fits you. |
-| `now_idea_t` | Опрос по вашей идее и ТЗ | Interview and requirements |
-| `now_idea_s` | ИИ-аналитик задаёт вопросы и пишет ТЗ. | The AI analyst asks questions and writes the requirements. |
+| `now_idea_t` | Опрос по вашей идее и ТЗ | Survey on your idea and the requirements |
+| `now_idea_s` | ИИ-аналитик задаёт вопросы и пишет техническое задание (ТЗ). | The AI analyst asks questions and writes the requirements. |
 | `now_build_t` | Сборка и результат | Build and result |
 | `now_build_s` | Разработчик собирает продукт, вы принимаете работу. | The developer builds the product and you accept the work. |
-| `stat_on` | Работает | Works |
+| `stat_on` | Работает | Working |
 | `stat_off` | Пока нет | Not yet |
-| `now_closing` | Даты запуска пока нет. Описать идею смогут только приглашённые участники. Готовый продукт посетителям пока не выдаётся. | No launch date is set yet. Only invited participants will be able to describe an idea. Finished products are not handed out to visitors yet. |
+| `now_closing` | Даты запуска пока нет. Описать идею смогут только приглашённые участники. Способа получить приглашение пока нет. Готовый продукт посетителям пока не выдаётся. | No launch date is set yet. Only invited participants will be able to describe an idea. There is no way to get an invitation yet. Finished products are not handed out to visitors yet. |
 | `how_plan_note` | Ниже описано, как работа будет устроена, когда этапы запустятся. | Below is how the work will go once the stages start. |
 | `how_stage_1_note` (name given here; the code design confirms it) | Название этапа описывает будущий проект. Заказы сейчас не принимаются. | The stage name describes a future project. Orders are not accepted now. |
-| `demo_accuracy_note` (name given here; the code design confirms it) | Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину. | The more answers, the surer the hint. “Not sure” counts as half. |
-| `idea_panel_lead` (changed value) | Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать. | You cannot send an idea yet. The button opens tips on how to describe it. |
+| `demo_accuracy_note` (name given here; the code design confirms it) | Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину. | The more answers, the more reliable the hint. “Not sure” counts as half. |
+| `idea_panel_lead` (changed value) | Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать. | You cannot describe an idea in Sai yet: the button opens tips on how to describe it. |
 | `demo_accuracy` (changed value) | Учтено ответов | Answers counted |
 
-The key `idea_panel_fine` is removed: no page uses it. The kk values are drafts of the coding role in the pattern of the
+The key `idea_panel_fine` is removed: no page uses it. The kk values (the exact drafts of now_idea_s and now_closing are fixed by the requirement amendment of 2026-11-22) are drafts of the coding role in the pattern of the
 neighbours (kk is hidden on production, G9; its review is ISS-0127) and are not set here. All new keys are no `order_` keys
 and stand in no `<!-- sai:order -->` region, so the open build keeps them. Each phrase is at most 18 words (13.2).
 
@@ -1001,7 +1001,7 @@ the key's value].
 
 | Mark | Background | Text | Edge | Pairs (6.3) |
 |---|---|---|---|---|
-| `.stat.on` «Работает» / «Works» | `--btn` | `--onbtn` | inset 2 px `--ink` | text 5.02 / 5.84; the fill against `--card` 3.56 / 3.94, against `--paper` 3.39 / 4.86 |
+| `.stat.on` «Работает» / «Working» | `--btn` | `--onbtn` | inset 2 px `--ink` | text 5.02 / 5.84; the fill against `--card` 3.56 / 3.94, against `--paper` 3.39 / 4.86 |
 | `.stat` «Пока нет» / «Not yet» | transparent | `--ink2` | inset 2 px `--ink2` | text on `--card` 6.71 / 6.31, on `--paper` 6.39 / 7.77; the edge the same |
 
 The meaning is carried by the word, never by the colour alone (the two marks differ in fill, in edge and in the word). A

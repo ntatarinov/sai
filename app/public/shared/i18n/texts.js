@@ -528,7 +528,7 @@ export const TEXTS = Object.freeze({
   idea_panel_lead: Object.freeze({
     ru: "Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать.",
     kk: "Қазір Sai-да идеяны сипаттау мүмкін емес: түймені басқанда оны қалай айту керегі туралы кеңес ашылады.",
-    en: "You cannot send an idea yet. The button opens tips on how to describe it.",
+    en: "You cannot describe an idea in Sai yet: the button opens tips on how to describe it.",
   }),
   describe_idea: Object.freeze({
     ru: "Описать идею",
@@ -553,11 +553,11 @@ export const TEXTS = Object.freeze({
   now_idea_t: Object.freeze({
     ru: "Опрос по вашей идее и ТЗ",
     kk: "Идеяңыз бойынша сауалнама және ТТ",
-    en: "Interview and requirements",
+    en: "Survey on your idea and the requirements",
   }),
   now_idea_s: Object.freeze({
-    ru: "ИИ-аналитик задаёт вопросы и пишет ТЗ.",
-    kk: "ЖИ-талдаушы сұрақтар қояды және ТТ жазады.",
+    ru: "ИИ-аналитик задаёт вопросы и пишет техническое задание (ТЗ).",
+    kk: "ЖИ-талдаушы сұрақтар қояды және техникалық тапсырма (ТТ) жазады.",
     en: "The AI analyst asks questions and writes the requirements.",
   }),
   now_build_t: Object.freeze({
@@ -573,7 +573,7 @@ export const TEXTS = Object.freeze({
   stat_on: Object.freeze({
     ru: "Работает",
     kk: "Жұмыс істейді",
-    en: "Works",
+    en: "Working",
   }),
   stat_off: Object.freeze({
     ru: "Пока нет",
@@ -581,9 +581,9 @@ export const TEXTS = Object.freeze({
     en: "Not yet",
   }),
   now_closing: Object.freeze({
-    ru: "Даты запуска пока нет. Описать идею смогут только приглашённые участники. Готовый продукт посетителям пока не выдаётся.",
-    kk: "Іске қосу датасы әзірге жоқ. Идеяны тек шақырылған қатысушылар сипаттай алады. Дайын өнім келушілерге әзірге берілмейді.",
-    en: "No launch date is set yet. Only invited participants will be able to describe an idea. Finished products are not handed out to visitors yet.",
+    ru: "Даты запуска пока нет. Описать идею смогут только приглашённые участники. Способа получить приглашение пока нет. Готовый продукт посетителям пока не выдаётся.",
+    kk: "Іске қосу датасы әзірге жоқ. Идеяны тек шақырылған қатысушылар сипаттай алады. Шақыру алудың жолы әзірге жоқ. Дайын өнім келушілерге әзірге берілмейді.",
+    en: "No launch date is set yet. Only invited participants will be able to describe an idea. There is no way to get an invitation yet. Finished products are not handed out to visitors yet.",
   }),
   how_plan_note: Object.freeze({
     ru: "Ниже описано, как работа будет устроена, когда этапы запустятся.",
@@ -598,7 +598,7 @@ export const TEXTS = Object.freeze({
   demo_accuracy_note: Object.freeze({
     ru: "Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину.",
     kk: "Жауап неғұрлым көп болса, кеңес соғұрлым сенімді. «Білмеймін» жарты болып саналады.",
-    en: "The more answers, the surer the hint. “Not sure” counts as half.",
+    en: "The more answers, the more reliable the hint. “Not sure” counts as half.",
   }),
   demo_needs_js: Object.freeze({
     ru: "Для демо-опроса нужен JavaScript",

@@ -239,7 +239,7 @@ function readBlock(page, scope) {
 /**
  * The status block as REQ-113 criteria 3 and 6 want it, against the words the caller gives: one block, its
  * heading and the label that names it, three rows with the title and the line of each part, the marks in
- * order (words, not only a colour; the mark `Works` filled and the other two plain), the closing paragraph as
+ * order (words, not only a colour; the mark `Working` filled and the other two plain), the closing paragraph as
  * body text of at least 16 px, no link, button or field, and the markup of the design.
  * @param {BlockRead} read
  * @param {(key: string) => string} words
@@ -271,19 +271,19 @@ function checkBlock(read, words, where) {
   );
   for (const r of b.rows)
     assert.equal(r.markInner, r.mark, `${where}: a mark reads as its word`);
-  // The mark «Works» is filled and the marks «Not yet» are plain: they differ by the computed fill and colour, so the
+  // The mark «Working» is filled and the marks «Not yet» are plain: they differ by the computed fill and colour, so the
   // eye tells them apart as well as the word does.
   const [on, ...off] = b.rows.map((r) => r.fill);
   for (const plain of off) {
     assert.notEqual(
       on.background,
       plain.background,
-      `${where}: the mark Works is filled, the others are plain`,
+      `${where}: the mark Working is filled, the others are plain`,
     );
     assert.notEqual(
       on.color,
       plain.color,
-      `${where}: the mark Works has its own colour`,
+      `${where}: the mark Working has its own colour`,
     );
     assert.equal(
       plain.background,
@@ -294,7 +294,7 @@ function checkBlock(read, words, where) {
   assert.notEqual(
     on.background,
     "rgba(0, 0, 0, 0)",
-    `${where}: the mark Works is filled, the others are plain`,
+    `${where}: the mark Working is filled, the others are plain`,
   );
   const c = b.closing;
   assert.ok(c !== null, `${where}: the closing paragraph`);

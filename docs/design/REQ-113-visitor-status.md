@@ -98,7 +98,7 @@ All dates 2026-11-22. A fact is [M] unless marked otherwise. Commands that only 
 | C9 | Helpers of the new assertions | `fixtures/e2e-kit.js`, `page-checks.js` / inside `landing.test.js` | inside `landing.test.js`: the guard `git diff --stat … -- app/test tools/test` then lists only the two files the requirement names |
 | C10 | `.r-side` and the grid | explicit `grid-area: panel` / none | explicit: the wrapper stands in the area the panel stood in. Measured (F22, M23): without it auto-placement puts the wrapper into the same empty cell at every width, so the rule is for the reader of the CSS and cannot be caught by a geometry test |
 | C11 | `how_plan_note` | a `p.fine` as the review proposed / a plain `p` | plain `p`, first element of the section that holds the steps, above `ol.steps` (look 8.2 H2; criterion 6 forbids `fine` and `meta` and asks 16 px in the colour of `body`) |
-| C12 | The kk values | left to the coding role / proposed here | proposed here as measured drafts (4.1); the coding role may write others if they pass section 9's lint; none is fixed by this design (the requirement: drafts, ISS-0127) |
+| C12 | The kk values | left to the coding role / proposed here | proposed here as measured drafts (4.1); the coding role may write others if they pass section 9's lint; none is fixed by this design except the kk values of now_idea_s and now_closing, which the requirement (amendment of 2026-11-22) fixes as exact drafts (the rest: drafts, ISS-0127) |
 
 ---
 
@@ -135,21 +135,21 @@ order keys of TX-5 stay.
 | `now_title` | new | Что работает сейчас | What works now | Қазір не жұмыс істейді | `h3` of the block (both places) |
 | `now_demo_t` | new | Демо-опрос | Demo survey | Демо-сауалнама | row 1 title; stage-1 pair name |
 | `now_demo_s` | new | Пять вопросов и подсказка, какой вид продукта вам подойдёт. | Five questions and a hint at which kind of product fits you. | Бес сұрақ және қандай өнім түрі сізге сәйкес келетіні туралы кеңес. | row 1 line |
-| `now_idea_t` | new | Опрос по вашей идее и ТЗ | Interview and requirements | Идеяңыз бойынша сауалнама және ТТ | row 2 title; stage-1 pair name |
-| `now_idea_s` | new | ИИ-аналитик задаёт вопросы и пишет ТЗ. | The AI analyst asks questions and writes the requirements. | ЖИ-талдаушы сұрақтар қояды және ТТ жазады. | row 2 line |
+| `now_idea_t` | new | Опрос по вашей идее и ТЗ | Survey on your idea and the requirements | Идеяңыз бойынша сауалнама және ТТ | row 2 title; stage-1 pair name |
+| `now_idea_s` | new | ИИ-аналитик задаёт вопросы и пишет техническое задание (ТЗ). | The AI analyst asks questions and writes the requirements. | ЖИ-талдаушы сұрақтар қояды және техникалық тапсырма (ТТ) жазады. | row 2 line |
 | `now_build_t` | new | Сборка и результат | Build and result | Құрастыру және нәтиже | row 3 title |
 | `now_build_s` | new | Разработчик собирает продукт, вы принимаете работу. | The developer builds the product and you accept the work. | Әзірлеуші өнімді құрастырады, сіз жұмысты қабылдайсыз. | row 3 line |
-| `stat_on` | new | Работает | Works | Жұмыс істейді | the mark of row 1; the mark before the first stage-1 name |
+| `stat_on` | new | Работает | Working | Жұмыс істейді | the mark of row 1; the mark before the first stage-1 name |
 | `stat_off` | new | Пока нет | Not yet | Әзірге жоқ | the marks of rows 2, 3; the second stage-1 mark; the marks of stages 2 – 4 |
-| `now_closing` | new | Даты запуска пока нет. Описать идею смогут только приглашённые участники. Готовый продукт посетителям пока не выдаётся. | No launch date is set yet. Only invited participants will be able to describe an idea. Finished products are not handed out to visitors yet. | Іске қосу датасы әзірге жоқ. Идеяны тек шақырылған қатысушылар сипаттай алады. Дайын өнім келушілерге әзірге берілмейді. | closing paragraph |
+| `now_closing` | new | Даты запуска пока нет. Описать идею смогут только приглашённые участники. Способа получить приглашение пока нет. Готовый продукт посетителям пока не выдаётся. | No launch date is set yet. Only invited participants will be able to describe an idea. There is no way to get an invitation yet. Finished products are not handed out to visitors yet. | Іске қосу датасы әзірге жоқ. Идеяны тек шақырылған қатысушылар сипаттай алады. Шақыру алудың жолы әзірге жоқ. Дайын өнім келушілерге әзірге берілмейді. | closing paragraph |
 | `how_plan_note` | new | Ниже описано, как работа будет устроена, когда этапы запустятся. | Below is how the work will go once the stages start. | Төменде кезеңдер басталғанда жұмыс қалай өтетіні сипатталған. | `how.html` only |
 | `how_stage_1_note` | new, name given by the look and confirmed here | Название этапа описывает будущий проект. Заказы сейчас не принимаются. | The stage name describes a future project. Orders are not accepted now. | Кезеңнің атауы болашақ жобаны сипаттайды. Тапсырыстар қазір қабылданбайды. | `how.html`, stage 1 |
-| `demo_accuracy_note` | new, name given by the look and confirmed here | Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину. | The more answers, the surer the hint. “Not sure” counts as half. | Жауап неғұрлым көп болса, кеңес соғұрлым сенімді. «Білмеймін» жарты болып саналады. | the receipt's `.rc-acc` on a recommended result |
-| `idea_panel_lead` | value changed | Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать. | You cannot send an idea yet. The button opens tips on how to describe it. | Қазір Sai-да идеяны сипаттау мүмкін емес: түймені басқанда оны қалай айту керегі туралы кеңес ашылады. | the panel's `p.sub` |
+| `demo_accuracy_note` | new, name given by the look and confirmed here | Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину. | The more answers, the more reliable the hint. “Not sure” counts as half. | Жауап неғұрлым көп болса, кеңес соғұрлым сенімді. «Білмеймін» жарты болып саналады. | the receipt's `.rc-acc` on a recommended result |
+| `idea_panel_lead` | value changed | Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать. | You cannot describe an idea in Sai yet: the button opens tips on how to describe it. | Қазір Sai-да идеяны сипаттау мүмкін емес: түймені басқанда оны қалай айту керегі туралы кеңес ашылады. | the panel's `p.sub` |
 | `demo_accuracy` | value changed | Учтено ответов | Answers counted | Ескерілген жауаптар (was «Таңдау дәлдігі») | the receipt's `.lbl` |
 | `idea_panel_fine` | **removed** | — | — | — | nothing after F3 |
 
-The ru and en values equal the requirement's (F10). The kk values are drafts: each passes `lintText` (kk lists), has no
+The ru and en values equal the requirement's (F10). The kk values are drafts (the two of now_idea_s and now_closing are exact drafts since the amendment of 2026-11-22): each passes `lintText` (kk lists), has no
 digit and at most 18 words per phrase; the word in `now_closing` is «датасы» because «күні» is in list Ц (a kk draft of
 the first version failed on it; measured). The readers (WF-02 step 8 item 6, criterion 2) go through ru → en and ru → kk in
 two rounds; a kk line that stays disputed is `FOR_NATIVE_SPEAKER` (AP-114) and kk stays hidden on production (G9).
@@ -220,7 +220,8 @@ step of the check chain and this PC cannot run it (F11).
               <span class="rn"
                 ><b data-t="now_idea_t">Опрос по вашей идее и ТЗ</b
                 ><small data-t="now_idea_s"
-                  >ИИ-аналитик задаёт вопросы и пишет ТЗ.</small
+                  >ИИ-аналитик задаёт вопросы и пишет техническое задание
+                  (ТЗ).</small
                 ></span
               >
             </li>
@@ -236,7 +237,8 @@ step of the check chain and this PC cannot run it (F11).
           </ul>
           <p data-t="now_closing">
             Даты запуска пока нет. Описать идею смогут только приглашённые
-            участники. Готовый продукт посетителям пока не выдаётся.
+            участники. Способа получить приглашение пока нет. Готовый продукт
+            посетителям пока не выдаётся.
           </p>
         </section>
 ```
@@ -508,7 +510,7 @@ folder and 120 in unit; the work adds to them and removes none).
 | 4 | LD-9 (1684 – 1913): `for (const win of [WINDOWS[0], WINDOWS[1]])` (1690), `if (win === WINDOWS[0])` (1840) before `layoutFindings` (1841), the result pass (1861 – 1900), `got.lists.at(-1)` (1876) | the public set in two windows | the guard of 1840 is removed (both windows); the result pass gains the layout call and a second pass on the no-match result; the output assertions of 9.2 are added; the existing assertions stay |
 | 5 | LD-1 (89) | every page in the matrix, `layoutFindings` at 153 | no edit: its matrix reads `how.html` and meets the block (measured 0 findings, F12) |
 | 6 | LD-2, LD-4, LD-5, LD-7, LD-8 | `section.info` on `examples.html` only (223); `#demo .idea a` at 1173 and 1893 are LD-6 and LD-9's; LD-7's failure messages; LD-8's storage keys | no edit |
-| 7 | `unit/texts.test.js` TX-4 (171 – 257), TX-2 (129), TX-3 (138), TX-5 (283) | the pinned values; every key's shape and phrase length; the 45 order keys | TX-4 gains rows (9.1); TX-2 and TX-3 read every key and meet the new ones with no edit; TX-5 no edit; two tests are added (TX-9, TX-10) |
+| 7 | `unit/texts.test.js` TX-4 (171 – 257), TX-2 (129), TX-3 (138), TX-5 (283) | the pinned values; every key's shape and phrase length; the 45 order keys | TX-4 gains rows (9.1) and, by the amendment of 2026-11-22, the exact-once rows of the two kk drafts; TX-2 and TX-3 read every key and meet the new ones with no edit; TX-5 no edit; two tests are added (TX-9, TX-10) |
 | 8 | `unit/public-build.test.js` PB-1, PB-2, PB-6, PB-7 | the open build: the leak rule, the files that differ, the regions, the byte-equal output | no edit; the block stands outside every region (F21, F20) |
 | 9 | `unit/public-pages.test.js` PP-1 … PP-5, PP-7; `unit/forbidden-words.test.js`; `unit/check-public.test.js` CP-1 … CP-3 | the page rules, the lint, the real files | no edit; the real `app/public` passes (the values F10, the markup 6) |
 | 10 | `e2e/stage.test.js` ST-1 … ST-6 | `button[data-step]`, the buttons' names, the text view, JS-off layout | no edit; `git diff --stat base/… -- app/test/e2e/stage.test.js` lists no line (criterion 9) |
