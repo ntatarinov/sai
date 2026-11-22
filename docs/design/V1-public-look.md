@@ -824,13 +824,14 @@ of 6.6 (G1).
   8], mono 12/800 uppercase `--rc2`, a 2px dashed `--rcline` rule under it, padding-bottom 12, margin-bottom 14.
 - Body: label «<fits>» (`lbl`, `--rc2`) [P, after decision 0084 §3 item 1 «Подходит: <решение>»]; the kind of product
   (`recommended[0].name`) as the main value in `--rcink` (6.4, wraps at spaces, balanced, no `nowrap` [P: the sample's
-  price is `nowrap`, styles.css:162]); the summary (16/1.45 `--rcink`); the label «<accuracy>» (`lbl`, `--rc2`) with pips
-  and «<K of N answers>» (13/800 `--rc2`) [M styles.css:164-167; data.js:19] by the rule of 7.11, with the one
+  price is `nowrap`, styles.css:162]); the summary (16/1.45 `--rcink`); the label «Учтено ответов» (`demo_accuracy`, `lbl`, `--rc2`) with pips
+  and «<K of N answers>» (13/800 `--rc2`), and under the pips its one sentence (`demo_accuracy_note`, 7.22 «The accuracy
+  row of the receipt») [M styles.css:164-167; data.js:19; changed by REQ-113] by the rule of 7.11, with the one
   difference of the sample's result: a question not reached (the visitor pressed «<enough…>») also counts .5 there, like
   «Не знаю» [M app.js:47, 51, 256: `compute` with fill] (F10).
 - Close options (`clear_leader` false): one more line «<also fits>: <name 2>, <name 3>» (14 `--rc2`) [P].
 - No match (`no_match_text`) (G2): the body holds only the text, 18/800 `--rcink`, in place of the label «<fits>», the
-  name and the summary, and no accuracy row [P: the accuracy says how surely the answers point at the kind shown, and no
+  name and the summary, and no «Учтено ответов» row or sentence [P: that row counts the answers behind the kind shown, and no
   kind is shown]. Right under the receipt, with nothing between, stands the fixed list «Чего Sai пока не делает» (7.14);
   the solution's own lists («<what it includes>», «<not a fit if>») are not shown, as there is no solution [P].
 - Loading and failure (8.4 state 3; §11 «result request fails»): the header row stays; the body holds the message block
@@ -866,11 +867,20 @@ on `--paper`, titles only, in this order (G2):
   использования ИИ» 380.7), 601.5 px; at 320 (296 px) also «Связь с внешними системами учёта и CRM» (360.5), four rows
   in two lines, 624.7 px. A row is 49.2 px high with one line and 72.4 with two.
 
-**7.15 «Описать идею» panel** (the place of the sample's request form; CC) [M styles.css:194-198]: `--card` with the
-pixel frame, padding `20px 22px` (`16px 14px`), column gap 6: h3 «<describe your idea title>», sub «<lead>» (`--ink2`),
-the big button «Описать идею» [R PLAN M1] full width — a link to `/how.html#describe-idea`, the part «Как описать
-идею» of `how.html` (8.2 H3; G4), which sends and keeps nothing [R REQ-111, its question О1] — and a fine line (14
-`--ink2`) with the test-mode explanation «<only invited participants describe ideas>». No field [R owner's words].
+**7.15 «Описать идею» panel** (the place of the sample's request form; CC) [M styles.css:194-198; changed by REQ-113,
+run M1STATUS-20261122-02]: `--card` with the pixel frame, padding `20px 22px` (`16px 14px`), column gap 6 [S site.css:1353-1360,
+1851-1854]: h3 «<describe your idea title>» (`idea_panel_title`, unchanged), sub «<lead>» (`idea_panel_lead`, `p.sub`, 16
+`--ink2`; the words are now the honest ones, ru «Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней
+рассказать.», en «You cannot send an idea yet. The button opens tips on how to describe it.» [R REQ-113 criterion 4]), and
+the big button «Описать идею» [R PLAN M1] full width — a link to `/how.html#describe-idea`, the part «Как описать идею» of
+`how.html` (8.2 H3; G4), which sends and keeps nothing [R REQ-111, its question О1]. The button is the last element of the
+panel: the fine line that stood under it (14 `--ink2`, the test-mode explanation, key `idea_panel_fine`) is removed, and
+its meaning is said at body size in the closing paragraph of the status block (7.22) [R REQ-113 criterion 4; AP-133]. The
+button keeps its width `100% − 2·--px` and its margin `8px var(--px) 4px` [S site.css:1362-1365], so the panel's bottom
+space is now 4 + 20 = 24 px (it was the fine line plus 20), against 20 on top: nothing is added to even it up. The label
+«Описать идею» is fixed by records (13.1; REQ-111 criterion 2; test TX-4) and does not change. No field [R owner's words].
+The panel no longer stands alone in its area: on the result it is the second part of `div.r-side`, under the status
+block (7.22, 8.4).
 
 **7.16 Example card** (`examples.html`) [P, built from the receipt look 7.12 and lists 7.14]: `--rc` with the pixel
 frame, padding as the receipt (`16px 20px 20px`, `14px 14px 16px` below 760; 6.5); header row (mono 12/800 uppercase
@@ -917,6 +927,189 @@ none on mouse focus; headings focused by script have no ring [M styles.css:82]. 
 **7.21 Live region** [M index.html:28; styles.css:19]: `role="status" aria-live="polite"`, visually hidden by the `.sr`
 rule (never `display: none`, AP-107). It says what changed: «<accepted: option>», «<back to question i>», «<result
 ready: kind>», on `how.html` «<desk n: stage>» [M app.js:238, 250, 274; P for how].
+
+**7.22 Status block «Что работает сейчас»** [R REQ-113; P; written by GUI-DESIGN-ANALYST in run M1STATUS-20261122-02, WF-02
+step 1, no sample: this description is the yardstick, and the page is accepted by UAT-RUNNER in real Chrome, decisions/0079
+item 13]: one block that says in plain words what works on the site now and what does not exist yet; the same markup and
+the same words on the demo result (8.4) and on `how.html` (8.2). Marks used here, besides those of section 0: [S file:line]
+read in the code of the tag `base/M1STATUS-20261122-02` (`app/public/...`) on 2026-11-22; [Rv] a statement of
+`docs/owner-requests/2026-11-22-visitor-status/review-design.ru.md`, checked against that code; [R REQ-113 c<n>] the
+criterion of `docs/requirements.yaml` block REQ-113.
+
+**Where each part comes from.** Every visible part of this block is a key of the texts module and a fixed fact of the
+markup; none comes from the engine, the server, a hook or an agent event, and nothing in it is read or written at run
+time (R2; Q8). The facts are true today and only a later requirement changes them (M2, M3): M1 is the only released
+milestone, the interview, the ТЗ, the build and the delivery of results are M2, M3, M4 and M8 and do not exist, the site
+shows no date, and in the test mode only the owner of Sai receives a result [R REQ-113 description; PLAN M1, D18].
+
+| Part | Where it comes from | What of the review does NOT get in |
+|---|---|---|
+| the frame: `section.info.now`, labelled by its h3 (`aria-labelledby`) | the info panel 7.17 [S site.css:789-795] with the class `now` added; no data | the class `.chip` is not used: it is a button, 48 high, with hover and an edge [S site.css:1373-1383], and the e2e reads `#demo .chips .chip` [S landing.test.js:969] [Rv confirmed] |
+| the heading, h3 | key `now_title` | an h2 with h3 looks: no, the heading stays h3 as in the review (question below) |
+| row 1, «Демо-опрос — Пять вопросов и подсказка…»: mark «Работает» | keys `now_demo_t`, `now_demo_s`, `stat_on`; the fact: the demo survey is the one thing released [R REQ-113 c3] | no date, no link «пройти опрос» inside the block (the block holds no `a`, `button`, `input`, `select`, `textarea` or `form`: nothing that could be taken for a way to leave a contact) |
+| row 2, «Опрос по вашей идее и ТЗ»: mark «Пока нет» | keys `now_idea_t`, `now_idea_s`, `stat_off` | no third mark «По приглашению» («Будет по приглашению» is not asked either) and no «Скоро»: the first is untrue today and the second hints at a date [R REQ-113 description; decisions/0125 item 3; Rv section 0] |
+| row 3, «Сборка и результат»: mark «Пока нет» | keys `now_build_t`, `now_build_s`, `stat_off` | the same |
+| the closing paragraph | key `now_closing`: three sentences, «Даты запуска пока нет», only invited participants will describe ideas, finished products are not handed out to visitors yet | not small grey print (not `.fine`, not `.meta`): the owner's complaint was exactly the 14 px grey line; no word of the list С («срока», «день», «минут» …), no «контакт», «почта», «форма», no «как получить приглашение» (there is no such way) [Rv section 0] |
+| the lead above «Описать идею» (7.15) | key `idea_panel_lead` | the label of the button is not changed (REQ-111 criterion 2, TX-4, 13.1); the review's option «Как описать идею» as a label is not taken |
+| the row «Учтено ответов» of the receipt and its sentence (below) | key `demo_accuracy`, key `demo_accuracy_note`, the count `receiptCount` [S demo.js:447-451] | no quality or guarantee word: the number is the count of answers, not how right the hint is |
+| the marks beside the four stages on `how.html` (below) | keys `stat_on`, `stat_off`, `now_demo_t`, `now_idea_t` | nothing inside `button[data-step]`; nothing on the scene (the marks tell which parts of the site exist and are no status of any project: decisions/0083 item 7, 0097 item 1, 0125 item 2) |
+| the notes `how_plan_note` and `how_stage_1_note` (below) | keys of the same names | not `p.fine` (the review proposed it): they are body text [R REQ-113 c6]; the times inside `how_stage_N_text` and the eleven panels are not rewritten [R REQ-113 «Not covered»] |
+
+**Wording of the block (the values of the requirement).** One row each; the ru value stands alone on its line so that a
+search finds it.
+
+| Key | ru | en |
+|---|---|---|
+| `now_title` | Что работает сейчас | What works now |
+| `now_demo_t` | Демо-опрос | Demo survey |
+| `now_demo_s` | Пять вопросов и подсказка, какой вид продукта вам подойдёт. | Five questions and a hint at which kind of product fits you. |
+| `now_idea_t` | Опрос по вашей идее и ТЗ | Interview and requirements |
+| `now_idea_s` | ИИ-аналитик задаёт вопросы и пишет ТЗ. | The AI analyst asks questions and writes the requirements. |
+| `now_build_t` | Сборка и результат | Build and result |
+| `now_build_s` | Разработчик собирает продукт, вы принимаете работу. | The developer builds the product and you accept the work. |
+| `stat_on` | Работает | Works |
+| `stat_off` | Пока нет | Not yet |
+| `now_closing` | Даты запуска пока нет. Описать идею смогут только приглашённые участники. Готовый продукт посетителям пока не выдаётся. | No launch date is set yet. Only invited participants will be able to describe an idea. Finished products are not handed out to visitors yet. |
+| `how_plan_note` | Ниже описано, как работа будет устроена, когда этапы запустятся. | Below is how the work will go once the stages start. |
+| `how_stage_1_note` (name given here; the code design confirms it) | Название этапа описывает будущий проект. Заказы сейчас не принимаются. | The stage name describes a future project. Orders are not accepted now. |
+| `demo_accuracy_note` (name given here; the code design confirms it) | Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину. | The more answers, the surer the hint. “Not sure” counts as half. |
+| `idea_panel_lead` (changed value) | Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать. | You cannot send an idea yet. The button opens tips on how to describe it. |
+| `demo_accuracy` (changed value) | Учтено ответов | Answers counted |
+
+The key `idea_panel_fine` is removed: no page uses it. The kk values are drafts of the coding role in the pattern of the
+neighbours (kk is hidden on production, G9; its review is ISS-0127) and are not set here. All new keys are no `order_` keys
+and stand in no `<!-- sai:order -->` region, so the open build keeps them. Each phrase is at most 18 words (13.2).
+
+**Structure of the block** (words, not code). The frame is an info panel (7.17): `--card`, the pixel frame of 6.5, padding
+`20px 22px` (`16px 14px` below 760), column gap 6 [S site.css:789-795, 1851-1854]. Inside, in this order: the h3
+(`now_title`, 18/900, `--ink`); a list `ul.rl` of three rows in the look of 7.14 (`li`: padding `12px 0`, a 2 px dashed rule
+`--ink2` 35 % into transparent [S site.css:1407-1413]); one closing paragraph `p`. A row holds a mark `span.stat` and
+`span.rn` (its `b` is the title, 16/900 `--ink`; its `small` is the explaining line, 14/1.3 `--ink2` [S site.css:1415-1429];
+the lists of the result are built the same way, demo.js `list()` [S demo.js:812-822]). The DOM order of a row is the mark
+first, then the title and the line, so a screen reader says «Работает. Демо-опрос. Пять вопросов…»: the status is read
+before the thing it is the status of. The closing paragraph is 16/1.45 in `--ink` with no class (the page text, as the
+paragraphs of the info panels 7.17): contrast `--ink` on `--card` 12.77 / 10.41 (6.3). The block has no focusable element;
+the Tab order of 12 is unchanged.
+
+**The two marks** [P; no new token]. They borrow the pressed / not pressed vocabulary of the step number square [S
+site.css:845-854, 877-881] and of the pips [S site.css:1010-1028]. Shared by both: `display: inline-flex`,
+`align-items: center`, `flex: none`, `white-space: nowrap`, `min-height: 24`, padding `3px 8px`, font 13/800 with line
+height 1.2 and letter spacing `.02em`, no frame of its own; the text stays in the case of the key (no `text-transform`, so
+the word that a script reads in the DOM is the word the eye reads) [P: the review proposed the `.lbl` look in capitals
+(Rv; S site.css:582-589); not taken, because the capitals would read as «ПОКА НЕТ» in `innerText` while the test compares
+the key's value].
+
+| Mark | Background | Text | Edge | Pairs (6.3) |
+|---|---|---|---|---|
+| `.stat.on` «Работает» / «Works» | `--btn` | `--onbtn` | inset 2 px `--ink` | text 5.02 / 5.84; the fill against `--card` 3.56 / 3.94, against `--paper` 3.39 / 4.86 |
+| `.stat` «Пока нет» / «Not yet» | transparent | `--ink2` | inset 2 px `--ink2` | text on `--card` 6.71 / 6.31, on `--paper` 6.39 / 7.77; the edge the same |
+
+The meaning is carried by the word, never by the colour alone (the two marks differ in fill, in edge and in the word). A
+mark is not a control: no hover, no focus, no pressed state, no 44/48 px target (6.5 applies to buttons, links and
+switches). No square icon is added (the review's option): next to the pips of the receipt it would be taken for a pip
+[Rv]. Light and dark take only the tokens above, so no literal colour and no new pair enter 6.3.
+
+**Rows by width** [P; widths from 6.5 and the rules above, [C]]. The block's content width: 378 px in the 430 px column of
+the result at 1470; 330 at 390 (362 − 2·2 − 2·14); 320 at 380; 304 at 360 (gut 12); 264 at 320 (gut 12). From 480 px
+up a row is the 7.14 row: the title block on the left and the mark on the right, `justify-content: space-between`, gap 16
+(the mark `order: 2`, `align-self: flex-start`, so its top is the title's top; the DOM order is not changed). Below 480 px
+a row is a column, `align-items: flex-start`, gap 8: the mark above the title, so the title and the line get the whole
+content width (a mark of about 80 px plus the gap would leave 168 – 224 px for a 16/900 title at 320 – 390, and the
+longest title would break; the review's arithmetic at 360, 304 − 88 = 216, is the same) [Rv; the breakpoint 480 is new: the
+sheet has 1000, 760 and 360, S site.css:1610, 1631, 1897]. Every line wraps at spaces and is never cut; no inner scroll.
+
+**On the demo result** (8.4, state 4) [R REQ-113 c3]. The block is the first part of `div.r-side`, the wrapper of the
+panel area, above the «Описать идею» panel (7.15). The wrapper is new: a flex column with gap 22 (18 below 760), which takes
+the place that `.idea` had in the grid (`grid-area: panel`, S site.css:1353-1355) [P]. The block is not inside `.r-lines`
+and is no `section` of it: the e2e reads `.r-lines section` and takes the last one for the fixed list [S landing.test.js:946,
+1054]; the link of the panel stays the first link after the block (`#demo .idea a`, S landing.test.js:952). The block's
+bottom edge is above the panel's top edge in every window and on both results (the assertion of criterion 3). On a
+recommended result and on no match the block is the same.
+
+**On `how.html`** (8.2 H1b) [R REQ-113 c6]. A direct child of `div.wrap.blocks`, after the intro `section.intro` and before the
+section that holds `ol.steps` [S how.html:82-90]. From 760 px up, at most 640 px wide, left aligned (the precedent is the
+rule of `examples.html`, S site.css:1447-1452, which keys on the page's `data-page`; here the page is `how`): at 1470 the
+block would otherwise be 1200 px wide for three short rows. Content at 640: 596 px (border-box, S site.css:17-19). Below 760
+it takes the full width. Its static Russian text is in the HTML and equals the ru values (the build tests read it); every
+text is a `data-t` element and follows the language switch; the live region (7.21) says nothing about the block.
+
+**The marks beside the four stages** (`how.html`, 8.2 H2) [R REQ-113 c6]. Each of `#stage-1` … `#stage-4`, between the h2 and
+its paragraph, gets `p.stat-line`: a flex row, `flex-wrap: wrap`, `align-items: center`, gap `6px 14px`; its top space is the
+8 px of `.how-stages p` [S site.css:810-813]. Stage 1 holds two pairs, each a `span.pair` (`display: inline-flex`,
+`align-items: center`, gap 8) of a mark and its name in 16/1.45 `--ink` (the keys `now_demo_t`, `now_idea_t`; the name is body
+text, not grey, because the fact it names is the point): «Работает» + «Демо-опрос», then «Пока нет» + «Опрос по вашей идее
+и ТЗ»; the name may wrap inside its pair, and a pair may drop to the next line; the mark never breaks. Stages 2, 3 and 4 hold
+one mark each, «Пока нет», with no name. After the marks, in stage 1 only, `how_stage_1_note` (a `p`, 16/1.45 `--ink`,
+no class; margin 8 from `.how-stages p`), and last the stage's own paragraph `how_stage_N_text`, whose words, place at the
+end of the section and the h2 are unchanged. The marks stand on `--paper` (pairs in the table above). `ol.steps` with its
+four `button[data-step]`, `aria-pressed`, names (`stage_N`, `stage_N_sub`) and the scene are byte for byte as they were:
+the stage tests click these buttons [S landing.js:89-97; stage.test.js], and a mark inside a button would be read in its
+name. «Принято» stays as the name of stage 1 [13.1]; the note under it and the mark are what remove the reading «the order
+is accepted».
+
+**The notes** `how_plan_note` and `how_stage_1_note` are plain paragraphs: 16/1.45, the computed colour of `body` (`--ink`),
+no class `fine` or `meta` (those are 14 px `--ink2`, S site.css:576-580), margin as the neighbours. `how_plan_note` is the
+first element of the section that holds the steps, above `ol.steps` (which keeps its own margin-top 22, S site.css:818-823):
+it speaks of everything that follows, the steps, the stage texts and the eleven panels. Contrast on `--paper`: 12.17 / 12.82
+(6.3).
+
+**The accuracy row of the receipt** [R REQ-113 c5; this section overrides the label «<accuracy>» of 7.12 for the result]. The
+row stays inside `.rc-acc` of the receipt (one on a recommended result, none on no match, 7.12): the label `demo_accuracy`
+(`lbl`, `--rc2`), the five pips and «K из N» as before, and, after the pips, one more paragraph `p`: `demo_accuracy_note`, 14/1.3
+`--rc2`, margin-top 6 [P; the size of `.rc-also` and of the list lines, S site.css:1338-1341, 1425-1429]. It is on the cream
+`--rc`, so it takes the secondary-text value of 6.6, not `--ink2` (1.91:1 in dark): `--rc2` on `--rc` 6.89 in both themes.
+The number is the whole part of the count (`Math.floor`, S demo.js:896): four answers and one «Не знаю» show «4 из 5» with
+four full pips and one half pip, and the sentence says why; the number understates and never overstates [decisions/0125
+item 5]. The word «точность» / «accuracy» appears nowhere on the result. On no match there is no row and no sentence, and
+the receipt body is the no-match text alone (7.12).
+
+**States.**
+
+| Where | State | What is seen |
+|---|---|---|
+| result | loading the result, the result request failed | the block stands in place (it needs no request) above the panel, as in 8.4 state 4 |
+| result | a kind recommended, close options, no match | the same block; its place is above the panel, and the panel is above the chips |
+| result | the language is changed | the block, the lead, the label and the sentence are built again in the language chosen, with no Russian left (REQ-113 c7); `?lang=` and `sai-lang` as before |
+| how | no script | the static Russian text of the block, the marks, the notes (the `data-t` elements hold the ru values); the stage buttons do nothing, as before |
+| how | the language is changed | the heading, the rows, the marks, `how_plan_note` and `how_stage_1_note` show the values of that language |
+| any | dark and light | only the tokens of the tables above; the same layout |
+| any | production (G8 «б», G9) | the block, the marks and the notes are shown in ru and en; `?lang=kk` shows the Russian page; no `order_` key is in the output |
+| any | very long text in a language | rows wrap at spaces, no cut and no inner scroll; the mark does not shrink (`flex: none`) |
+| any | windows 1470×784, 390×844, 320×568 (and 360, 380) | the widths of «Rows by width»; no horizontal scroll (12) |
+
+**Placement limits and questions for ORCH** (the defaults are what this file says).
+1. On a no-match result at 1000 px and narrower the block stands under the fixed list (601 – 625 px high at 390 and 320,
+   7.14), because nothing may stand between the receipt and that list [R REQ-111 criterion 12]. The block is still above the
+   button. The default: accepted. The alternative, which needs a change of that criterion, is to put the block between the
+   receipt and the list.
+2. On `how.html` the block's h3 follows the page's h1 and skips h2 (the stage sections and the panels have the same order,
+   how.html:170 after the h2); the review keeps h3 so that one markup serves both pages [Rv]. The default: h3.
+3. At 480 px and wider the mark stands to the right of the title but comes first in the DOM (reading order, above); the
+   look is the 7.14 row, the reading order the status first. The default: as written.
+4. The block's top edge on `how.html` at 390×844 is an estimate (8.2 H1b); the run of REQ-113 records the measured value.
+
+**Where the criteria are met.** REQ-113 c1 words and keys: the words table above (every ru value is written once, on one
+line) and 7.15; c2 forbidden words: the rows «does NOT get in» and 13.2 (the values are the requirement's, which passed the
+lists); c3 the block on the result: «Structure», «On the demo result», 8.4; c4 the idea panel: 7.15; c5 the accuracy row:
+«The accuracy row»; c6 how.html: «On how.html», «The marks beside the four stages», «The notes», 8.2; c7 the language switch:
+«States»; c8 the public set: «States» (production), the words table; c9 what stays: «The marks beside the four stages»
+(buttons and scene byte for byte), 7.15 (label), the banner (7.3, 13.1) and «Принято» (13.1) unchanged; c10 layout and
+contrast: «The two marks», «Rows by width», the pairs of 6.3; c11 this file; c12 the real-browser step and the reader: the
+parts above, read by UAT-RUNNER.
+
+**What the earlier text of 7.15, 8.2 and 8.4 said, and what is changed.**
+- 7.15: the panel ended with a fine line (14 `--ink2`, «only invited participants describe ideas»); removed, its meaning is in the
+  closing paragraph of this block. The lead was «Посмотрите, как рассказать о ней простыми словами, чтобы агенты поняли
+  задачу.»; it is now the honest sentence above. The panel stood alone in its area; it is now the second part of `r-side`.
+- 8.2: the page had the intro, the step row with the four sections, the panels and the button; now the status block comes
+  after the intro, the plan note opens the section of the steps, each stage section carries its mark(s) and stage 1 a note.
+- 8.4: state 4 named «the panel» as the grid's right area; that area now holds `r-side` (the block, then the panel), at
+  every width and on both results. The grid's areas, the order of the left column, `.r-sum + .r-lines` and the fixed list
+  are unchanged.
+- Elsewhere in this file, changed by the rework step 01d of run M1STATUS-20261122-02 (REQ-113 c11): the 7.12 line that
+  named the label «<accuracy>» now reads «Учтено ответов» with the sentence above; the item D20 of section 17 no longer
+  says «a fine line»; the map of section 14 has a row for REQ-113. No text of this file describes the removed line as
+  part of the panel: the places that name it (7.15, the changes above) say that it is removed.
 
 ## 8. Pages
 
@@ -992,9 +1185,25 @@ Production (G8 «б»): block D absent; nothing else changes.
 The scene in its start state at load («Вы» at the door); a tap on step n sends «Вы» to desk n (9.13). Blocks:
 
 - **H1. Intro**: eyebrow «<how it works>», h1 «<…>», pitch «<…>» (one column, max 54ch).
-- **H2. The four stages**: the step row of 7.8 as buttons (the scene reacts to a tap: the figure moves only on the
-  visitor's taps here and in the demo [R ARCH §11.6]); then four sections `#stage-1` … `#stage-4`, each an h2 «<n · stage
-  word>» with paragraphs and lists, always visible (no hidden content) [P].
+- **H1b. Status block «Что работает сейчас»** [R REQ-113 criterion 6; P its place]: the block of 7.22, the same markup and
+  the same words as on the demo result, directly under the intro and before the section of the steps: a direct child of
+  `div.wrap.blocks`, so the rule `.blocks > * + *` gives it 36 px above and 36 px below [S site.css:767-769]. Not inside
+  `div.panels`, not between `<!-- sai:order -->` markers and with no `order_` key, so the open build keeps it (7.22).
+  From 760 px up it is at most 640 px wide (7.22); below 760 the full width. At 390×844 its top edge is inside the first
+  screen: about y 560 – 600 [C, from 8's `<main>` start 334 and the intro's lines: padding 16, eyebrow 18.8 + 10, h1 two
+  lines 56, pitch three or four lines 70 – 93 + 8, intro padding 8, then 36]; the run of REQ-113 measures it
+  (decisions/0125 item 6). At 1470×784 it starts at about 690 [C] and at 320×568 at about the fold or below [C]; only the
+  390×844 position is a criterion.
+- **H2. The four stages**: first a plain paragraph, `how_plan_note` («Ниже описано, как работа будет устроена, когда этапы
+  запустятся.»), the first element of the section that holds the steps, above `ol.steps` (so after the block and before
+  `div.how-stages`, and in none of them) [R REQ-113 criterion 6; P its place]; then the step row of 7.8 as buttons (the scene
+  reacts to a tap: the figure moves only on the visitor's taps here and in the demo [R ARCH §11.6]); then four sections
+  `#stage-1` … `#stage-4`, each an h2 «<n · stage word>», then its status marks (7.22: stage 1 two marks with the names of
+  the two parts, stages 2 – 4 one mark), then in stage 1 only the note `how_stage_1_note`, then the stage's paragraph
+  `how_stage_N_text` last, with paragraphs and lists, always visible (no hidden content) [P]. The four step buttons
+  `button[data-step]`, their names and the scene are unchanged and carry no mark and no note (7.22). The words of the stage
+  paragraphs and of the eleven panels of H3 are the same and stay in the present tense: the paragraph `how_plan_note`, the
+  marks and the note of stage 1 are what tell the reader that they describe the plan [R REQ-113, «Not covered»].
 - **H3. Topic panels** (info panels 7.17, two columns ≥ 1000, one below): the answers to the twelve questions of the
   colleague's brief §4 (D2; PLAN AC1.9), in this order [P]: what Sai is; which products can be ordered and which services
   the platform gives (local only under G8 «б»); what the AI agents can and cannot do (the long AI disclosure); how to
@@ -1040,17 +1249,31 @@ States in order (section 11 for the failure states):
 3. **Result loading**: after the fifth answer or «<enough…>», «Вы» goes to desk 4 — a walk, or one frame when it stands
    there already (9.13, §10; G5); the result layout with the receipt showing the message «<putting your result
    together…>» in its body, in the on-cream form of 7.18 (G1) [P].
-4. **Result**: «Вы» at desk 4. The blocks in reading order, which is the order of the page's DOM (G2):
-   - a kind recommended: h2 «<result title>», sub «<answers can be changed with one tap>», the receipt (7.12); the
-     «Описать идею» panel (7.15); the chips (7.13); the lists (7.14) — «<what it includes>», «<not a fit if>», then the
-     fixed list «Чего Sai пока не делает»;
+4. **Result**: «Вы» at desk 4. The blocks in reading order, which is the order of the page's DOM (G2). The panel area
+   (the grid area `panel`) holds one wrapper, `div.r-side`, with two parts in this order: the status block «Что работает
+   сейчас» (7.22) and the «Описать идею» panel (7.15) [R REQ-113 criterion 3; P the wrapper]:
+   - a kind recommended: h2 «<result title>», sub «<answers can be changed with one tap>», the receipt (7.12; its accuracy
+     row is changed by 7.22); `r-side` = the status block (7.22), then the «Описать идею» panel (7.15); the chips (7.13);
+     the lists (7.14) — «<what it includes>», «<not a fit if>», then the fixed list «Чего Sai пока не делает»;
    - no match: h2, sub, the receipt with the no-match text (7.12); right under it, with nothing between, the fixed list
-     «Чего Sai пока не делает» (7.14); the panel (7.15); the chips (7.13).
+     «Чего Sai пока не делает» (7.14) [R REQ-111 criterion 12: `.r-sum + .r-lines`]; `r-side` = the status block, then the
+     panel (7.15); the chips (7.13).
 
-   ≥ 1000 [M styles.css:178-179]: grid `1fr 430px`, gap `22px 40px`, the panel on the right over all rows; areas «sum |
-   panel», «answers | panel», «lists | panel» when a kind is recommended [M], and «sum | panel», «lists | panel»,
-   «answers | panel» on no match [P]. ≤ 1000: one column, sum, panel, answers, lists [M styles.css:284]; on no match sum,
-   lists, panel, answers [P]. The fixed list's sizes at the three windows are in 7.14.
+   ≥ 1000 [M styles.css:178-179; S site.css:1267-1283]: grid `1fr 430px`, gap `22px 40px`, the panel area on the right over
+   all rows, now `r-side`: a flex column with gap 22 (18 below 760, as the grid's gap [S site.css:1847-1849]), the status
+   block above the panel, both the full width of the 430 px column (block content 378 px at 1470 [C: 430 − 2·4 margin −
+   2·22 padding]); areas «sum | panel», «answers | panel», «lists | panel» when a kind is recommended [M], and «sum |
+   panel», «lists | panel», «answers | panel» on no match [P]. The tall panel area spans all rows, so the left column must
+   stay the taller one, or the rows between «sum», «answers» and «lists» would stretch: the left column is about 900 px or
+   more on both results and `r-side` about 700 px [C, an estimate: block ≈ 420, panel ≈ 260, gap 22], and DESIGN-QA
+   measures it on the page. ≤ 1000: one column, sum, `r-side`, answers, lists [M styles.css:284] — so the block stands right
+   after the receipt and above the button «Описать идею»; on no match sum, lists, `r-side`, answers [P], so on a phone the
+   block starts under the fixed list (601 – 625 px high at 390 and 320, 7.14): nothing may stand between the receipt and
+   that list [R REQ-111 criterion 12], and this is the cost (the question for ORCH is written in 7.22, «Placement
+   limits»). The fixed list's sizes at the three windows are in 7.14; the block's are in 7.22.
+   The block is built from the texts module only: it appears from the first frame of the result view and does not wait for
+   the result request, so it is on the screen in the loading state, on a failure of the request, on a recommended result
+   and on no match alike (7.22, states).
 
 Fold arithmetic of state 2 (F2), recomputed on a trial page [T]: the sample's styles with Sai's test-mode strip and
 caption band, option cards without icons (7.10), the phone toggle at 48 (7.11), the sample's question 5 as the text (two
@@ -1535,7 +1758,7 @@ DESIGN-QA measures the longest word of each language in each slot (AP-089).
 ## 14. Criteria → description
 
 REQ-111 and REQ-112 as they stand in the tree during their rework step 01c, after gate 02b (step 02b, FAIL); the
-criterion numbers are those of step 01b, which 01c keeps (question I1).
+criterion numbers are those of step 01b, which 01c keeps (question I1). The last row is REQ-113 (run M1STATUS-20261122-02).
 
 | Criterion | Where met |
 |---|---|
@@ -1562,6 +1785,7 @@ criterion numbers are those of step 01b, which 01c keeps (question I1).
 | PLAN M1 «Owner sees» (scene, how, order texts locally, demo, AI disclosure, test-mode line, RU/EN, theme) | 9, 8.1 – 8.4, 1, 7.3, 7.19, 7.2; on a phone the scene's framing is the sample's (9.14, question I10, section 17) |
 | PLAN AC1.5, AC1.6, AC1.8, AC1.9; D28 | 8, 6.3, 12, 10; 4, 5; the whole file; 8.2 H3; 3, 4, 6 |
 | Rescoped REQ-085, REQ-086, REQ-087, REQ-071 (scene part), REQ-028 (texts) | through REQ-111 and REQ-112 above |
+| REQ-113 c1 – c12 Visitor status (words and keys; forbidden words; the status block on the demo result and on `how.html`; the «Описать идею» panel with its honest lead and without the small line; the label «Учтено ответов» with its sentence; the marks and notes of `how.html`; the language switch; the public set; what stays; layout and contrast; this file; the real-browser step) | 7.22 (words, structure, «The accuracy row of the receipt», states, «Where the criteria are met» with each criterion), 7.15, 7.12, 8.2 H1b, 8.4 state 4, 13.1 – 13.2 |
 
 ## 15. The bar on the screen
 
@@ -1655,7 +1879,7 @@ DESIGN-QA compares with this file, not with these items; ORCH shows the list wit
 | D17 | the landing has two new blocks under the hero — B, the four stages as links to «how it works», and D, what Sai builds and does not build (local only) — and its CTA row a ghost button «<how it works>» in place of «Продолжить» | PLAN M1 «Owner sees»; G8 «б» (finding G8) | 8.1 A, B, D |
 | D18 | the meta line under the CTA row is the AI disclosure, not «Около 2 минут · без регистрации · цена сразу на экране» | ARCH §11.7; REQ-111 (finding G8) | 8.1 A; S17 |
 | D19 | the footer: the AI disclosure in place of «Работает на платформе Sai», links to the pages in place of the demo switchers and «Оператор» | REQ-111; ARCH §11.7 (finding G8) | 7.19; S5 – S7 |
-| D20 | the result's right panel is «Описать идею» (a title, a lead, the big button, a fine line; no field) in the place and look of the request form | «Без регистрации, заказов и данных»; G8 «б» (finding G8) | 7.15; S31 |
+| D20 | the result's right panel is «Описать идею» (a title, a lead, the big button; no field and no small line under the button) in the place and look of the request form; it stands under the status block «Что работает сейчас» in the right area (`r-side`) | «Без регистрации, заказов и данных»; G8 «б» (finding G8); REQ-113 criterion 4 | 7.15; 7.22; S31 |
 | D21 | two new pages built from sample parts: «how it works» (`how.html`: the step row of «Мой запрос» as buttons, info panels) and the examples (`examples.html`, local only: info panels and example cards in the receipt's look) | PLAN M1.4 (finding G8) | 8.2, 8.3, 7.8, 7.16, 7.17 |
 | D22 | under the result's «<what it includes>» stand «<not a fit if>» and the fixed list «Чего Sai пока не делает» with ten items; on no match the receipt holds only the no-match text and that list follows it | REQ-111 (G2) | 7.12, 7.14, 8.4 |
 | D23 | the phone bar of the demo (below 760) is sticky to the bottom of the question wrap, not fixed: it stands at the bottom of the window while the end of the wrap lies below it, then moves up with the page and rests 24 px above the footer; the page is 85 px longer; at 390×844 on questions 2 and 4 (6 of 15 states) it rests at 658.4 – 743.3 of 844 at the first scroll position with 76.7 px of the footer showing under it, where the sample's bar stands at 759.2 – 844; at 320×568 and 360×640 it is at the window's bottom as the sample's | a fixed bar lies over the footer links at the end of the page and they cannot be tapped (decisions/0124 О24, О26 (b)); if the owner reads it as «not like the mockup», the change is the fixed bar with a measured padding under the footer (О24) | 7.11, 12 (D9) |

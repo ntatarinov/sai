@@ -1,0 +1,116 @@
+{
+  "handoff_id": "step04-M1STATUS-20261122-02",
+  "run_id": "M1STATUS-20261122-02",
+  "workflow_id": "WF-02",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M1STATUS-20261122-02/step-04-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-113"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-113-visitor-status.md"
+    ],
+    "route": "WF-02 step 4 gate",
+    "write_set": [
+      "handoffs/M1STATUS-20261122-02/step-04-reviewer.json (result only)"
+    ],
+    "base_tag": "base/M1STATUS-20261122-02"
+  },
+  "task": {
+    "description": "WF-02 step 4, REVIEWER (role file .claude/agents/reviewer.md; read the checks of step 4 in docs/workflows/WF-02-development.md). Does the code match the design and the requirement criteria 1-10 and 12 (every criterion leads to code, nothing outside the write set changed, no dead key, no unused CSS rule, exact strings equal the requirement, order inside #stage-1, h3, a11y names, no stale text left in the public pages), is the logic honest (nothing promises a date, a contact or an invitation), do the old tests still hold by reading every assertion that touches the four files (the design's replacement table), prettier-friendly LF files. Review the build of REQ-113 (docs/design/REQ-113-visitor-status.md is the design, the look docs/design/V1-public-look.md 7.22 is the measure, decisions/0125 and 0126 are the answers). The change is the working-tree diff of four files against the tag: git diff base/M1STATUS-20261122-02 -- app/public (css/site.css, how.html, js/pages/demo.js, shared/i18n/texts.js); also read handoffs/M1STATUS-20261122-02/step-02-frontend-dev.json (the developer report: the placements, margin-top 2px on .now .stat is in the design CSS table but not in the look: judge it). You read only: edit nothing but your own handoff result (status stays PENDING; ORCH closes). Rules for this Windows PC: NEVER run npm run check, cd app && npm run ..., tools test scripts or e2e tests; allowed: cd tools && npm run -s handoffs-check and traces, read-only scripts and a real headless Chrome on scratch copies outside the project (scratchpad C:\\Users\\greve\\AppData\\Local\\Temp\\claude\\a6c11d6dc2554533\\483285e2-45d1-4ba0-be5f-d84094cb1f8a\\scratchpad, own subfolder; clone with core.autocrlf=false; npm ci in a scratch clone is allowed). Node 22 first on PATH. No git commit/push/checkout/stash/reset in the project. PASS or FAIL with a list (file:line, what, severity, the fix wanted). English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T05:21:32Z",
+  "started_at": "2026-11-22T05:21:32Z",
+  "completed_at": "2026-11-22T05:42:46Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "REVIEWER, WF-02 step 4, REQ-113. PASS: no Critical, High or Medium finding; four Low findings, none blocking. Q1 cause: the change adds a static block and moves text; nothing swallows an error, no check is bypassed; the failure paths keep the block (measured: result request answered 500 -> block, panel and failure message all stand). Q2 agreement: the four files equal design 4.1 to 4.5 (13 keys added, 2 values changed, idea_panel_fine removed, 167 -> 179 keys, 45 order_ keys); all 30 ru and en values equal docs/requirements.yaml verbatim; order inside #stage-1 is h2, p.stat-line, note, paragraph; h3#now-title labels section.info.now; criteria 1 to 10 and 12 each lead to code. Honesty: nothing promises a date, a contact or an invitation; the block holds no a, button, input, select, textarea or form (0 in 90 result loads). Q3 extra work: git diff of base tag lists only the four write-set files in app/ and nothing in tools/ or .github/; the only extra item is margin-top 2px (L1 below). Q4 erosion: grep of the diff for skip, todo, eslint-disable, innerHTML, style=, http://, decisions, handoff, orch, REQ-digit finds nothing; no test touched. Q5 idiom: el()/textContent only, key names written in full in NOW_ROWS, frozen constant, same style as the neighbours. Old tests: read every assertion that touches the four files (landing.test.js readResult/LD-3/LD-6/LD-9/LD-1/LD-2, stage.test.js, public-pages PP-1..5, public-build PB-1/PB-2/PB-6, forbidden-words, texts TX-1..5, e2e-kit, page-checks, browser.js shownTextFindings): none pins the changed values or counts children of .res / how.html sections, so none turns red from the product change; the replacement table of the design (section 10) is right. Files are LF (0 CR bytes), prettier-clean. For TEST-DESIGNER: LD-6 must assert the mark-to-title geometry and the first-screen top (measured 557 px at 390x844) because no existing oracle sees max-width 640 or the .stat.on fill; the dead .fine selector (L2) is a free negative oracle for nothing, do not add a test for it.",
+    "findings": [
+      {
+        "id": "L1",
+        "place": "app/public/css/site.css:1470-1474 (.now .stat { margin-top: 2px }) and 1483-1486 (the phone rule margin-top: 0)",
+        "severity": "Low",
+        "blocks": false,
+        "what": "The design CSS table (4.5) has margin-top: 2px on .now .stat, the look 7.22 does not: it says the mark is order 2, align-self flex-start so that its top is the title's top. Measured in real Chrome at 1470 in ru, en, kk and both themes: mark top minus title top is exactly 2.0 px in all 18 wide loads (mark box 24 px, title line 23.2 px), so the mark's centre sits 2.4 px below the title's centre instead of level with it. Without the 2 px the boxes are 24 and 23.2 high and start together. The design departs from its own measure here.",
+        "fix": "Delete margin-top: 2px from .now .stat and, with it, the now redundant margin-top: 0 in the max-width 479px rule. No test pins it; layoutFindings gives 0 either way. Fold into the next CODE-FIXER pass if one is opened, otherwise DESIGN-QA-VALIDATOR judges it against 7.22."
+      },
+      {
+        "id": "L2",
+        "place": "app/public/css/site.css:575-580 (.meta, .fine)",
+        "severity": "Low",
+        "blocks": false,
+        "what": "The class fine is now used by no element in app/public (grep -w fine over html and js, outside texts.js, finds nothing; at the base its only user was the removed p.fine of demo.js). The selector .fine in the shared rule is dead. The look and the requirement still name .fine as the 14 px grey class that the notes must not use, so removing it needs a note in the look.",
+        "fix": "Either reduce the rule to .meta { ... } (index.html still uses .meta) and note it in the look, or keep it and record it as vocabulary. Not blocking."
+      },
+      {
+        "id": "L3",
+        "place": "app/public/css/site.css:1263-1265 and 1297-1298 (comments)",
+        "severity": "Low",
+        "blocks": false,
+        "what": "The comment of the result grid still says div.wrap.res > div.r-sum, section.idea, div.r-ans ...; the wrapper now holds div.r-side > (section.info.now, section.idea). The comment of .receipt says div.rc-acc (span.lbl + div.prog); it now also holds a p. Stale comments (AP-005).",
+        "fix": "Write div.r-side (section.info.now + section.idea) in the first comment and div.rc-acc (span.lbl + div.prog + p) in the second."
+      },
+      {
+        "id": "L4",
+        "place": "app/public/js/pages/demo.js:976-978 (JSDoc of showResult)",
+        "severity": "Low",
+        "blocks": false,
+        "what": "The rewrapped comment has one line of about 120 characters next to two short ones. Prettier does not reflow comments, so this is formatting only.",
+        "fix": "Rewrap the three lines to the width of the neighbouring comments."
+      }
+    ],
+    "self_check": [
+      {
+        "check": "scope and erosion",
+        "command": "git diff base/M1STATUS-20261122-02 --stat -- app tools .github; grep of the added lines for skip|todo|eslint-disable|innerHTML|style=|http://|decisions|handoff|orch|REQ-digit; grep -c CR on the four files",
+        "output": "4 files changed, 255 insertions, 17 deletions (texts.js, how.html, demo.js, site.css); grep: no match; CR count 0 in all four. sha256 of the four files equals the 'after' list of step-02."
+      },
+      {
+        "check": "values and keys",
+        "command": "node scratch script (rev113/tx.mjs, leak.mjs) importing texts.js, text-rules.js and word-lists.js read-only",
+        "output": "179 keys, 45 order_; 15 keys x 3 languages = 45 values: textProblem null, lintText empty, no digit, no brace, longest phrase <= 18, none of the closed words; 30 ru and en values found verbatim in docs/requirements.yaml; no new value equals an order_ value; the PB-1 leak rule replayed over all app/public files (order and kk regions cut): 0 hits in how.html, demo.js, site.css (hits only in examples.html and the nav of 404.html and demo.html, which exist at the base). Each of the 13 new keys is used by a data-t in how.html or a quoted name in demo.js; idea_panel_fine appears nowhere."
+      },
+      {
+        "check": "real headless Chrome 157, own CDP driver, scratch copy of app/ (rev113/app, same sha256), the project's layoutFindingsIn copied as text, lintText over the whole innerText",
+        "command": "node rev113/cdp.mjs how | demo | extra | nojs",
+        "output": "how.html: 5 windows (1470x784, 390x844, 320x568, 360x800, 380x800) x light/dark x ru/en/kk = 30 loads, 0 layout findings, 0 lint findings, no horizontal scroll, block top 557 px at 390x844 in all three languages, the plan note, the stage note and the closing paragraph 16 px in the colour of body with no class, DOM order section.intro, section.info.now, section, div.panels; #stage-1 children h2, p.stat-line, p, p; stages 2 to 4 h2, p.stat-line, p; mark right of the title from 480 px up and above it below. Demo result: same 5 windows x 2 themes x 3 languages x 3 passes (landing, landing with Не знаю on storage, five Не знаю) = 90 loads, 0 findings, 0 lint findings, block above .idea in all 90, r-side holds section.info.now then section.idea, .idea holds h3, p.sub, a.btn.big, .fine 0, no control in the block, .rc-acc 1 / 0 with children span.lbl, div.prog, p, pips on,on,on,on,half and 4 of 5 on the storage pass, order of tops correct at <= 1000 px and r-side right of the receipt with equal tops at 1470 (905 / 491 against 865 / 491). Language switch on a result ru>en, en>kk, kk>ru: block, lead, label, sentence in the new language, 1 block, pips unchanged. Result request answered 500: block, panel and failure message stand. JavaScript off: block, marks and both notes visible with the ru values. Chrome stopped by its own child handle; the static/demo server I started (PID 5180, checked by its command line) stopped by that PID."
+      },
+      {
+        "check": "format and chain steps in a scratch clone of the tag with the four files copied in (core.autocrlf=false, npm ci there; no npm run, no test)",
+        "command": "npx prettier --check public; npx eslint public/js/pages/demo.js public/shared/i18n/texts.js --max-warnings 0; npx tsc --noEmit -p jsconfig.json; node scripts/check-public.js",
+        "output": "All matched files use Prettier code style!; eslint rc=0; tsc rc=0; 'check-public: app/public is clean' rc=0"
+      },
+      {
+        "check": "cd tools && npm run -s handoffs-check; npm run -s traces (Node 22)",
+        "command": "as written",
+        "output": "handoffs-check: файлов проверено 1543, нарушений 1 (handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 H4, an earlier run, none names this run); traces: файлов проверено 2874, следов 0, пропущено 67"
+      },
+      {
+        "check": "not run, by the owner rule for this PC",
+        "command": "npm run check, cd app && npm run ..., unit, int, e2e tests, tools test scripts",
+        "output": "not run; the GitHub run of ORCH covers them"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "QUESTION",
+        "text": "Outside this change: the banner test_mode (pinned by REQ-111 criterion 2 and TX-4) says «вход по приглашению», while REQ-113 itself says there are no invitations and no sign-in before M2. The block's closing text is honest, the banner is older and unchanged. ORCH may open a defect or ask the owner; it does not block REQ-113."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "The developer's discrepancy I1 (margin-top 2px) is judged as L1: remove it. Findings L2 to L4 are non-blocking and may go to a defect or into a CODE-FIXER pass with L1; any edit of these files needs steps 3 and 4 again."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
