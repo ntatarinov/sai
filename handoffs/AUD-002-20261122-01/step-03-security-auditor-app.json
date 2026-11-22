@@ -1,0 +1,89 @@
+{
+  "handoff_id": "step03-app-AUD-002-20261122-01",
+  "run_id": "AUD-002-20261122-01",
+  "workflow_id": "WF-05",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-AUDITOR",
+  "file": "handoffs/AUD-002-20261122-01/step-03-security-auditor-app.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/AUD-002/plan.json (your entry: id step-03-security-auditor-app; also rules_of_this_pc and open_points)",
+      "docs/audits/scope-20261122.json (the passport of your part and the reasons; read it with scripts, it is 300 KB)",
+      "docs/workflows/WF-05-health-audit.md (step 3 and the dimension table), docs/quality-bar.md (the items Q and R), docs/anti-patterns.md",
+      "the open defects of the part in docs/issues/ (do not report a covered place twice)",
+      "the fixed copy: <scratch>/aud002/tree (commit f72eaa7)"
+    ],
+    "base_tag": "base/AUD-002-20261122-01",
+    "route": "WF-05 step 3, wave 1 -> step 4 AUDIT-COMPILER re-checks every Critical and High finding",
+    "write_set": [
+      "docs/audits/AUD-002/app/security.json",
+      "handoffs/AUD-002-20261122-01/step-03-security-auditor-app.json (result only)"
+    ],
+    "parallel_work_now": [
+      "other auditors of audit AUD-002 (each writes only its own report)",
+      "ORCH and other roles on other runs"
+    ],
+    "audit": {
+      "number": "AUD-002",
+      "wave": 1,
+      "plan_id": "step-03-security-auditor-app",
+      "part": "app",
+      "dimension": "security",
+      "requirement_group": null,
+      "est_size": "L"
+    }
+  },
+  "task": {
+    "description": "WF-05 step 3, SECURITY-AUDITOR, dimension «security» of the part `app`, audit AUD-002 (run AUD-002-20261122-01). SCOPE. Security of the product folder app/ (72 own files, 16172 lines; never audited; production https://sai-team.vercel.app accepts input from the internet and writes to a database). Read app/server (app.js, config.js, static.js, node-main.js, http/body.js, errors.js, headers.js, origin.js, request-id.js, site-gate.js, routes/demo.js, health.js, index.js, db/*), app/api/index.js, app/vercel.json, app/Dockerfile, app/compose.yaml, app/.env.example, app/.npmrc, app/.vercelignore, app/scripts/*, app/db/migrations/0001_init.sql and app/public (pages and js: every write into the DOM, every use of innerHTML or equivalent). Check by the WF-05 Security row and quality-bar Q7 (secrets in code, config, pages and git history of app/), Q8 (isolation of customer data), Q9, Q10 (every input from the network validated: size, type, origin, content type), Q11 and R3, where they apply to a public site with a database. Also: security headers and cookies, the site gate, the shape of error answers (no stack, no internal names), SQL built only with parameters, the rights of the database role, what the .vercelignore and Docker image leave out, the 3 run-time dependencies as used (@hono/node-server, hono, pg). EXTRA CHECKS. (1) Production: at most a handful of harmless GET requests to https://sai-team.vercel.app (for example /api/health, the home page, one unknown path, response headers); no POST, no load, no scanning, no attempt to reach the database; production serves main e0a425b, the head differs in 6 REQ-113 files (css, how.html, demo.js, texts.js and two tests), so read the head for those files (2) protection in the same operation as the action: the gate, the origin check and the body limit sit in the code path of the route, not only in a front layer (3) app/server/vendor/picker-engine.js is a pinned copy of tools/src/picker/engine.js (app/vendored.json): check that it takes no input the original does not validate (4) defects already open for app: ISS-0124, ISS-0125, ISS-0126, ISS-0127, ISS-0129 (LOW): do not report the same place again, name the defect NEEDS. The fixed copy <scratch>/aud002/tree (commit f72eaa7); read-only git (show, diff, log, grep, ls-tree against f72eaa7, e0a425b and the tags base/AUD-001-20261027-01 = b64562a and base/AUD-002-20261122-01); read-only gh; the scout's scope file for the passport of the part; the open defects in docs/issues/. GitHub records of app/ as it is at the head: app run 45031353708 (branch ci/m1-words-1, commit 0c50fc2, jobs check, pg, docker, e2e success; app/ equal to the head) and app run 45034277809 (branch ci/aud002-head-1, commit ae26cc4, success). NOT ALLOWED. On this PC: run npm run check, any npm script of tools/ or app/ that runs tests, node --test, the tools test scripts or the e2e tests; start Chrome; bind, probe or stop the ports 4780, 4781, 4782 and 4790; edit any project file other than your own report; commit, push, pull, checkout, stash, reset or tag. REPORT. Write your report to the file named in `output` (create the folder; JSON, 2-space indent, LF) as an object {audit:'AUD-002', part, dimension, role, subject:'f72eaa7', checked:[{check, how (the command or the files read), result}], not_checked:[{check, why}], findings:[...], summary}. A finding has the fields of WF-05 step 3: id (a short code like SEC-APP-01), check (what was checked; for requirements the requirement id and the criterion), severity (Critical, High, Medium, Low by WF-05 step 3), title, where (file and line), evidence (the command and its output, or a quote: a finding without evidence is not written), item (the bar item Q/R), recommendation (what exactly to fix and in which files). Severity by WF-05: Critical = a violation of a bar item that harms already now (a secret in files, invented events in Pixel Office, mixing of customer data, writing outside the own folder); High = a bar item not met or a criterion of a `done` requirement no longer met or a divergence from a recorded decision or a dependency with a known vulnerability; Medium = a document diverges from the files, a weak test, an outdated dependency without a known vulnerability; Low = names, dead code, formatting. Do not report a place that an open defect in docs/issues/ already covers: name the defect in `checked` instead. Do not pad: only real, evidenced findings; report what you could NOT check with the reason (this is not a finding and not a pass). In the `result` of your handoff write: verdict COMPLETED, the path of the report, the counts of findings by severity, the number of checks done and not done, and `issues` for anything ORCH or the owner must decide. The audit changes nothing in the project: your only files are the report and the result of your handoff. BE ECONOMICAL: the owner's usage limit is real. Prefer one script per group of checks, read files with targeted commands (grep, sed ranges, git show) instead of whole large files, keep narration short, and stop when the scope is covered. RULES OF THIS PC: FORBIDDEN here: npm run check, any npm script of tools/ or app/ that runs tests, node --test, the tools test scripts, the e2e tests, starting Chrome or any server on the ports 4780, 4781, 4782 and 4790 (a server started for a check binds port 0 and is stopped by its exact process id, AP-119); git commit, push, pull, checkout, stash, reset, tag; any edit of a project file other than the agent's own report. ALLOWED: reading the fixed copy of f72eaa7; read-only git and gh (gh run list, gh run view, gh run view --log, gh api GET); `cd tools && npm run -s traces` and `npm run -s handoffs-check`; the agent's own scripts and fresh clones only in its own folder under the scratchpad; Node 22 first on PATH (the Node 22 folder of this PC). WHAT REPLACES «COVERAGE-AUDITOR runs npm run check himself» (the dimension row of WF-05 is older than this PC rule): the agent READS the tests and the GitHub record of a run. The record of main is check run 44919421116 and app run 44919421105 (commit e0a425b, both success); the record of the head app/ is app run 45031353708 (app/ equal to f72eaa7); the work line has NO green record for tools/ (check runs 44875023688, 44875030768 and 45034277858 are red at handoffs-check, the fourth of six steps, so the steps test and e2e never ran for it). A tools file counts as covered by the record of main only when it is byte-equal between e0a425b and f72eaa7 (`git diff --name-status e0a425b f72eaa7 -- <file>` is empty, and the same for the test file and the helpers it imports); the diff is printed in the report. THIS RULE MAKES THESE FINDINGS «not checked: no record on GitHub for the work line» (never «met», never «not met»): (1) the result of any test that exercises a tools/ file that differs between main and the head (21 files of tools/, .github and .githooks, among them tools/src/node-floor.js, the REQ-110 guards, tools/src/team/cli.js, tools/src/web/main.js, tools/src/prepare.js, tools/src/handoffs/handoff.js, tools/src/picker/cli.js, tools/src/pixel-office/hook.sh, main.js, note.js, public/office-report.js, tools/test/e2e/run.js, tools/package.json); (2) every statement that the check of the work line passes; (3) tools/test/current-docs.test.js and the REQ-110 guards (no run has ever existed); (4) flakiness, duration, order dependence and any number that only a live run gives; (5) every criterion that needs a browser, a real Claude Code session (the owner's money, gate G2) or a reader and has no line in a record. A finding of severity Critical or High may rest only on something the agent read or ran itself (an allowed command, a file, a GitHub record line), never on a run it could not make. No report may print a secret (first 4 characters and the length only), a user name or a path of this PC (write paths relative to the project), or the name of the reference product. The report is the agent's own file; the project is only read. Your own folder for scripts and clones is <scratch>/aud002/<your-id> (the real path is in the message that launched you); the fixed copy of the project that is the SUBJECT of the audit is <scratch>/aud002/tree (a fresh clone at commit f72eaa7): read it, never edit it. Node 22 first on PATH (<node22>). Never write a path of this computer into your report or your handoff: write <scratch>, <node22> or <outside the project>. Never write the name of the reference product. One browser at a time on this PC and none is needed for your task unless the task says so.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T19:08:39Z",
+  "started_at": "2026-11-22T19:08:38Z",
+  "completed_at": "2026-11-22T19:14:03Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "COMPLETED",
+    "summary": "Security of app/ at f72eaa7: 0 Critical, 0 High, 1 Medium, 4 Low. No secret in the tree or the history of app/; no markup written into pages; all SQL parameterised; no outbound call; uniform error answers; strong headers on every answer; gate, body limit and preview check in the one app that serves every route, plus a second gate layer in the build; the vendored picker engine is byte-equal to its source. Medium: dev-only minimatch advisory behind eslint 10.11.0. Low: no content-type or origin check on POST /api/demo/result; public /api/health queries the database on every call with no limit; TLS to the database left to the URL; the owner database credentials are in the runtime environment by decision 0116 О17.",
+    "findings": "docs/audits/AUD-002/app/security.json",
+    "counts": {
+      "Critical": 0,
+      "High": 0,
+      "Medium": 1,
+      "Low": 4
+    },
+    "checks_done": 19,
+    "checks_not_done": 7,
+    "self_check": [
+      "grep over app/ for secret patterns (postgres://user:pw@, npg_, sk-, ghp_, AKIA, private keys, quoted password/token literals): 0 matches in the tree; history of app/ (16 commits, added lines): 0 matches",
+      "grep of app/public for innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function, srcdoc, location., cookie: only textContent/append and constant hrefs",
+      "grep of app/server and app/api for .query(/.exec( and SQL template literals: only constants and  parameters",
+      "grep of app/server and app/api for node:https/http2/net/tls/dns, child_process, fetch(: none besides node:http in node-main.js",
+      "sha256sum app/server/vendor/picker-engine.js tools/src/picker/engine.js: both a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe, equal to vendored.json",
+      "npm audit --omit=dev --package-lock-only: 0 vulnerabilities; npm audit --package-lock-only: 1 moderate (minimatch, via eslint)",
+      "9 GET requests to production: headers complete, uniform 404, source paths not served, health body as recorded",
+      "gh run view 45031353708: success, jobs check, pg, docker, e2e"
+    ],
+    "issues": [
+      {
+        "kind": "QUESTION",
+        "text": "SEC-APP-04: by the WF-05 scale a known vulnerability is High; I set Medium because the package is dev-only and not reachable from the internet. AUDIT-COMPILER may rescale."
+      },
+      {
+        "kind": "QUESTION",
+        "text": "SEC-APP-03 and SEC-APP-05 need the owner (or ORCH with the owner) to read the production Vercel environment: does DATABASE_URL carry sslmode=require, and where does the owner URL live at run time. The auditor could not read it."
+      },
+      {
+        "kind": "NOTE",
+        "text": "Not checked: live behaviour of the head (6 REQ-113 files), POST against production, the Vercel platform settings, the real production database rights. Reasons are in not_checked of the report."
+      }
+    ],
+    "artifacts_out": [
+      "docs/audits/AUD-002/app/security.json"
+    ]
+  }
+}

@@ -1,0 +1,355 @@
+{
+  "handoff_id": "step02-b4-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/M1CODE-20261119-01/step-02-backend-dev-b4.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-111-112-public-landing.md (sha256 469b32af…; section 12 row B4, sections 4.1 (lang.js), 4.7, 4.8, 4.12 (the Docker line), 5 (E8–E12), 6, 7, 9 (rows REQ-111/7, /8, /9), 10 (DM-1…DM-7, DP-1, DP-2), 11 rows 13–15, 14, 15; facts F13, F14, F22, F33)",
+      "handoffs/M1CODE-20261119-01/step-01f-code-design-validator.json (PASS)",
+      "decisions/0123-m1site-public-look-answers.md (with its Addition of 2026-11-19T20:44Z)",
+      "decisions/0124-m1code-landing-design-answers.md (with its Additions: О13, О14, H1–H7)",
+      "docs/requirements.yaml (blocks REQ-111 and REQ-112, read by id; REQ-111 criteria 7, 8 and 9)",
+      "docs/design/V1-public-look.md (the look)",
+      "app/public/shared/i18n/lang.js (F1), app/server/vendor/picker-engine.js and .d.ts (B1), app/content/sai-intake.json and its answers (F2e)",
+      "app/ at the tag base/M1CODE-20261119-01-build (2144f2a)",
+      "docs/quality-bar.md, .claude/agents/backend-dev.md, docs/workflows/WF-02-development.md, docs/workflows/WF-04-ui-by-sample.md, docs/workflows/handoffs.md, docs/anti-patterns.md"
+    ],
+    "route": "ORCH 0 -> CODE-DESIGNER 01 -> ORCH 1a (decisions/0124) -> CODE-DESIGN-VALIDATOR 01b, 01d (FAIL) -> CODE-DESIGNER 01c, 01e -> CODE-DESIGN-VALIDATOR 01f (PASS) -> FRONTEND-DEV 2 (F1–F7, its own files; F1, F1k, F1e, F2, F2k, F2e, F3 done, F4 in progress) ‖ BACKEND-DEV 2 (B1, B2, B3 done) sub-step B4 (this), then B5, B6 -> SECURITY-REVIEWER 3 ‖ REVIEWER 4 -> TEST-DESIGNER 5 (T1–T4) -> TEST-DESIGN-VALIDATOR 5b -> TEST-RUNNER 6 -> DESIGN-QA-VALIDATOR 7 -> step 8 -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11",
+    "write_set": [
+      "app/server/routes/demo.js",
+      "app/server/routes/index.js",
+      "app/server/http/errors.js",
+      "app/server/app.js",
+      "app/server/node-main.js",
+      "app/Dockerfile"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 2, sub-step B4 — BACKEND-DEV builds sub-step B4 of section 12 of the code design docs/design/REQ-111-112-public-landing.md (run M1CODE-20261119-01, task M1.4 of PUBLIC-V1; REQ-111 criteria 7, 8 and 9 (g): the two demo routes over the byte copy of the picker engine and Sai's own intake, which store nothing and log no answer), only by the design that passed its gate (handoffs/M1CODE-20261119-01/step-01f-code-design-validator.json, PASS; design sha256 469b32af…). The files of the row: app/server/routes/demo.js (new: INTAKE_FILE, loadIntake, inLanguage, demoRoutes and the two handlers of 4.7), app/server/routes/index.js (routeTable: the demo rows first when deps.demo is given, then the health row; meta { tenant: false }), app/server/http/errors.js (the codes bad_json, bad_body, bad_answers, unknown_question, unknown_option, wrong_kind 400 and demo_unavailable 503), app/server/app.js (AppDeps gains demo; the route loop passes { query, body } to the handler and turns a thrown HttpError into its status, errorBody(code) and tag.code; any other exception to onError; the middleware order unchanged; createFunctionApp passes demo { intake: inject.intake ?? loadIntake(), langs: PUBLIC_LANGS }), app/server/node-main.js (demo { intake: loadIntake(), langs: SOURCE_LANGS }; when the intake is missing or broken one stderr line «sai: the demo intake is missing or broken; /api/demo answers 503» and the server starts) and app/Dockerfile (one line COPY content ./content after COPY db ./db) — sections 4.7, 4.12 (the Docker line), 5 (E8–E12), 6, 7, 14 and 15 of the design, bound by decisions/0123 and decisions/0124 with their Additions (0123 О4: Docker serves the local set; О5: no rate limit in R1.2; О20: the public languages are one constant; 0124 О13: the build starts from the tag base/M1CODE-20261119-01-build, and every command that names base/<RUN-ID> reads that tag for this run; no low finding H1–H7 is routed to B4), by REQ-111 and REQ-112 in docs/requirements.yaml (as amended by run M1AMEND-20261119-01) and by the look docs/design/V1-public-look.md. Done before this launch and not redone: F1, F1k, F1e, F2, F2k, F2e, F3, B1, B2 and the look edit (M1SITE-20261119-01 steps 03g and 03h). If files of the row or this handoff exist from an earlier interrupted launch, they are inventoried first against the design and the build tag. The row's own check: PORT=0 node server/node-main.js; curl of the rows of F13 on the app host; a driver of createFunctionApp with PUBLIC_LANGS (outside the project); the static part on the row's own files while FRONTEND-DEV writes; cd tools && npm run traces → 0 traces. Red after it: none of this row (F22: int 36 of 36 with the sketch route); the reds of the rows before it may stay red, each named EXPECTED_RED with its row in result.issues; any other red test is a STOP and a report to ORCH; a departure from the design is a STOP and a question to ORCH. Write only the files of the row; every saved file is consistent with the others (FRONTEND-DEV works in parallel in its own files and may start a check at any moment; while it writes, only the own files are checked). No commit, push, tag, stash, reset, checkout, clean or switch of branches, in the project or in any copy; trials only in a fresh git clone outside the project; temporary files only in the session folder, named <scratch>; no path of this computer in a Sai file; no real AI call and no network call (the row needs none). The handoff is created by BACKEND-DEV on ORCH's order (the workflow task of this step) and closed with the result; cd tools && npm run handoffs-check and npm run traces before close (docs/workflows/handoffs.md, «Common rules for all roles»).",
+    "acceptance_criteria": [
+      "The six files of row B4 are written by sections 4.7 and 4.12 of the design and nothing else changes: app/server/routes/demo.js (INTAKE_FILE, loadIntake that never throws, inLanguage, demoRoutes with the two handlers: 503 demo_unavailable for a missing or broken intake, the language by pickLang with no header, the questionnaire and the result built field by field, the refusals bad_json, bad_body, bad_answers, unknown_question, unknown_option, wrong_kind, an engine exception as demo_unavailable), app/server/routes/index.js, app/server/http/errors.js, app/server/app.js, app/server/node-main.js and app/Dockerfile",
+      "On PORT=0 node server/node-main.js the rows of F13 answer on the app host as the design says: the questionnaire in ru, kk and en and ru for de, RU, an empty value, 1 000 characters and none; the result field by field; each refusal with its code; GET of the result and POST of the questionnaire the uniform 404; Cache-Control no-store and no Set-Cookie; one log line per request with the keys of REQ-108 criterion 10 and no answer value; a missing intake 503 on both with health answering",
+      "A driver outside the project through createFunctionApp with PUBLIC_LANGS and the function entry: ru and en in their language, kk and every other value in ru; the database adapter called 0 times by the demo routes; the local answers equal the original engine on tenantInLanguage for every fixture in ru, kk and en",
+      "The static part is clean on the row's files (prettier --check, eslint --max-warnings 0, tsc --noEmit -p jsconfig.json with no error in them); IB-1 gains no line from them",
+      "npm run test:unit and npm run test:int: no red test of this row (int 36 of 36); the reds of the rows before it — IB-1 (B1), CP-2's js/ line (B2), NPM-3 (B3) — each named EXPECTED_RED with its row until T1; any other red test is a STOP",
+      "cd tools && npm run traces exits 0 and npm run handoffs-check has no line for this handoff"
+    ]
+  },
+  "created_at": "2026-11-20T08:01:25Z",
+  "started_at": "2026-11-20T08:01:25Z",
+  "completed_at": "2026-11-20T08:23:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Sub-step B4 of section 12 is built by section 4.7 (and the Docker line of 4.12) of the design: the two demo routes of the public landing over the byte copy of the picker engine and Sai's own intake, which store nothing and log no answer. First an inventory: no earlier launch of B4 had left anything (app/server/routes/demo.js did not exist, the five other files of the row were byte-equal to the build tag base/M1CODE-20261119-01-build, and there was no B4 handoff), so all six files are this launch's. app/server/routes/demo.js (new) holds INTAKE_FILE in the literal form of 4.7, loadIntake (the shape rule of 4.7, never throws), inLanguage (the rule of tenantInLanguage of the picker's view module written again, an own key __proto__ kept an own key, a language outside ru, kk, en giving ru as the original does) and demoRoutes with the two handlers: 503 demo_unavailable for a missing or broken intake, the language by pickLang from ?lang= alone, the questionnaire and the result built field by field, the refusals bad_json, bad_body, bad_answers, unknown_question, unknown_option and wrong_kind, an engine exception as demo_unavailable; it is the only importer of the copy. routes/index.js puts the demo rows first when the app is given the demo, then health; http/errors.js has the seven new codes; app.js passes { query, body } to a handler and answers a thrown HttpError with its status, body and log code (anything else goes to onError), and createFunctionApp gives the demo the public languages (PUBLIC_LANGS, ru and en); node-main.js gives it SOURCE_LANGS and prints one stderr line when the intake is missing or broken; the Dockerfile copies content after db. The row's own check, measured on a fresh clone of the build tag with the run's 26 finished files (state A) and then this row's six (state B), and again on the project after the save: PORT=0 node server/node-main.js with 64 curl rows of F13 on the app host — 164 checks of my own oracle, 0 failures (27 results equal to the original engine on tenantInLanguage, the refusal codes, the uniform 404 of the other methods, no-store, no Set-Cookie, one log line per request with the keys of REQ-108 criterion 10 and every value of its closed form, no answer value); the missing-intake run (clone only) answers 503 demo_unavailable on both routes with health and the page as before and the one stderr line; the gate answers first; an in-process driver of the function entry with PUBLIC_LANGS and of createApp — 108 checks, 0 failures (35 entry results and 21 local results equal to the original engine, kk and every other value in Russian through the function, none of the 103 Kazakh-only texts of the intake leaves it, the database adapter called 0 times by 100 demo requests with a positive control, planted fields reach no answer, an engine that throws gives 503 and the next request is answered, 17 hostile intake files give { ok: false } without an exception). 13 mutants of the demo (the design's M09, M11–M14, M16, M17 and M19, a variant of M15, and four of my own) are each red in the driver or the rows check; the files were restored and compared. The static part is clean (prettier, eslint, tsc 0 with no error, check-public, vendored, the content step); test:unit is 46 with 43 passing and red exactly IB-1 (B1), CP-2's js/ line (B2) and NPM-3 (B3), byte-identical to state A without this row, and IB-1 still names only the one .d.ts line, so the row adds no import finding; test:int is 36 of 36 in the clone and in the project. No red test of this row. cd tools && npm run traces: 2765 files, 0 traces. No secret, hidden character or bypass form in the six files. Found on the way, named for ORCH and the reviewers: the measured design-literal answer for an intake that passes the shape check but holds an option that is not an object (I6), the tracer form of F14 not re-measured without the network (I7), HEAD answered by the GET route as for /api/health (I5), a leading byte-order mark consumed by the strict decoder (I8), and the task's done list that omits B3 (I4).",
+    "inventory": [
+      {
+        "file": "app/server/routes/demo.js",
+        "found": "absent at the start (ls of app/server/routes: health.js, index.js)",
+        "verdict": "written by this launch"
+      },
+      {
+        "file": "app/server/routes/index.js, app/server/http/errors.js, app/server/app.js, app/server/node-main.js, app/Dockerfile",
+        "found": "byte-equal to the build tag at 08:00:49Z (git status lists none of them) and again at 08:13:23Z, just before the save (shasum -c of the hash list taken at the start: 5 OK)",
+        "verdict": "changed by this launch only"
+      },
+      {
+        "file": "handoffs/M1CODE-20261119-01/step-02-backend-dev-b4.json",
+        "found": "absent at the start (the listing of the run folder held no b4 file)",
+        "verdict": "created by this launch with the handoff command"
+      }
+    ],
+    "changes": [
+      {
+        "file": "app/server/routes/demo.js (new, 217 lines)",
+        "what": "INTAKE_FILE = new URL(\"../../content/sai-intake.json\", import.meta.url); loadIntake(file = INTAKE_FILE) → { ok: true, tenant } | { ok: false }: read, parse, ok only for schema sai-picker-tenant/2, id sai-intake, five questions each single with an options array, arrays solutions and rules, an object result, never throws; inLanguage(tenant, lang): a new copy in which every object with exactly the keys ru, kk, en is its value in lang (keys defined, not assigned, so an own __proto__ stays own; a language outside ru, kk, en gives ru, as tenantInLanguage does), the input unchanged; demoRoutes({ intake, langs }) → two frozen rows GET /api/demo/questionnaire and POST /api/demo/result with meta { tenant: false }; the handlers take { query, body }: (1) intake.ok false → HttpError demo_unavailable, (2) lang = pickLang(query.get(\"lang\"), null, langs), (3) the questionnaire { lang, questions: [{ id, title, options: [{ id, label }] }] } field by field, (4) the body by a strict UTF-8 decoder and JSON.parse else bad_json, an object with exactly the key answers else bad_body, answers an object else bad_answers, computeResult of the byte copy on inLanguage inside try (an exception → demo_unavailable), a refusal → its code for unknown_question, unknown_option, wrong_kind and bad_answers for any other, the answer { lang, clear_leader, recommended: [{ id, name, summary, includes, not_suitable_when }], no_match_text } field by field; (5) no database, no cookie, no log of the body. Imports node:fs, ../../public/shared/i18n/lang.js, ../http/errors.js and ../vendor/picker-engine.js (its only importer)",
+        "design": "4.7 (routes/demo.js, the handlers 1–5), 6, 7 (field by field, no spread), 5 E8, E9, E12; 4.8 (the copy imported only here); REQ-111 criteria 7 and 8"
+      },
+      {
+        "file": "app/server/routes/index.js",
+        "what": "the typedefs RouteRequest { query, body }, RouteAnswer { status, body } and Route; routeTable(deps) gains deps.demo and returns, frozen, the demo rows first when it is given, then the health row (unchanged, meta { tenant: false }); without the demo the two paths answer the uniform 404",
+        "design": "4.7 (routes/index.js), C10"
+      },
+      {
+        "file": "app/server/http/errors.js",
+        "what": "ErrorCode and ERROR_STATUS gain bad_json 400, bad_body 400, bad_answers 400, unknown_question 400, unknown_option 400, wrong_kind 400 and demo_unavailable 503; the body stays {\"error\":\"<code>\"}",
+        "design": "4.7 (http/errors.js)"
+      },
+      {
+        "file": "app/server/app.js",
+        "what": "imports PUBLIC_LANGS from ../public/shared/i18n/lang.js and loadIntake from ./routes/demo.js; AppDeps gains demo?: { intake, langs }; routeTable gets demo; the route loop passes { query: new URL(c.req.url).searchParams, body: c.get(\"body\") } to the handler, answers its { status, body } as JSON, and turns a thrown HttpError into its status with errorBody(code) and tag.code = code (any other exception goes to onError, 500); the order of the middlewares is unchanged; createFunctionApp(config, inject) gains inject.intake and passes demo: { intake: inject.intake ?? loadIntake(), langs: PUBLIC_LANGS }",
+        "design": "4.7 (app.js); REQ-111 criterion 9 (g); PB-5 (PUBLIC_LANGS imported by server/app.js)"
+      },
+      {
+        "file": "app/server/node-main.js",
+        "what": "imports SOURCE_LANGS and loadIntake; the intake is read once after loadStaticSite; when it is not ok one stderr line «sai: the demo intake is missing or broken; /api/demo answers 503» and the server starts; createApp gets demo: { intake, langs: SOURCE_LANGS }; the header comment names the new case",
+        "design": "4.7 (node-main.js), C15, E8"
+      },
+      {
+        "file": "app/Dockerfile",
+        "what": "one line COPY content ./content after COPY db ./db (the image serves the local set)",
+        "design": "4.12 (app/Dockerfile); decisions/0123 О4"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git clone -q -b base/M1CODE-20261119-01-build <the project> <scratch>/b4/clone; git rev-parse HEAD; git status --short | wc -l",
+        "exit": 0,
+        "output": "2144f2a895b73d50047651509c5ac13a4b8abd16; 0 (clean)"
+      },
+      {
+        "command": "state A: the 26 finished files of the run under app/ (git ls-files --modified --others --exclude-standard -- app of the project at 08:01Z: B1–B3, F1–F3; no file of F4 existed then) copied into the clone and compared with cmp; cd app && npm ci --offline --no-audit --no-fund",
+        "exit": 0,
+        "output": "no DIFF line; «added 102 packages in 430ms» (from the npm cache, no network)"
+      },
+      {
+        "command": "state A: cd app && npm run test:unit (08:02:00Z–08:02:08Z; <scratch>/b4/A-test-unit.log)",
+        "exit": 1,
+        "output": "# tests 46, # pass 43, # fail 3, # cancelled 0, # skipped 0, # todo 0; not ok 4 - CP-2, not ok 16 - IB-1 (actual ['a file that is not .js: server/vendor/picker-engine.d.ts']), not ok 26 - NPM-3"
+      },
+      {
+        "command": "state B: the six files of the row written in the clone; npx prettier --write on the five .js files (demo.js: one line wrapped, the other four unchanged)",
+        "exit": 0,
+        "output": "server/routes/demo.js 30ms; index.js, errors.js, app.js, node-main.js (unchanged)"
+      },
+      {
+        "command": "state B, cd app: npx prettier --check . ; npx eslint . --max-warnings 0 ; npx tsc --noEmit -p jsconfig.json ; node scripts/check-public.js ; node scripts/vendored.js ; node ../tools/src/picker/cli.js check content/sai-intake.json",
+        "exit": 0,
+        "output": "«All matched files use Prettier code style!» exit 0; eslint exit 0 (no line); tsc exit 0 (no line); «check-public: app/public is clean» exit 0; «vendored: 1 file matches its source» exit 0; «Файл арендатора sai-intake в порядке: вопросов 5, решений 6, правил 35.» exit 0"
+      },
+      {
+        "command": "state B: cd app && npm run test:unit (08:04:12Z–08:04:20Z; <scratch>/b4/B-test-unit.log); the three red blocks of A and B compared with diff, the duration lines left out",
+        "exit": 1,
+        "output": "# tests 46, # pass 43, # fail 3, # skipped 0, # todo 0: CP-2, IB-1, NPM-3; IB-1 actual exactly ['a file that is not .js: server/vendor/picker-engine.d.ts'] (IB-1 collects the file findings and the import findings of every .js file into one list before it asserts, so no line of the row's five .js files exists); «IB-1 block identical A vs B», «CP-2 block identical», «NPM-3 block identical»"
+      },
+      {
+        "command": "state B: cd app && npm run test:int (08:04:41Z–08:05:32Z; <scratch>/b4/B-test-int.log)",
+        "exit": 0,
+        "output": "# tests 36, # pass 36, # fail 0, # cancelled 0, # skipped 0, # todo 0"
+      },
+      {
+        "command": "state B: cd app && npm run check (08:15:38Z–08:15:48Z; <scratch>/b4/B-check.log)",
+        "exit": 1,
+        "output": "the eight-step chain; prettier «All matched files use Prettier code style!», eslint and tsc silent, «check-public: app/public is clean», «vendored: 1 file matches its source», «… вопросов 5, решений 6, правил 35.», then test:unit # tests 46, # pass 43, # fail 3 (CP-2, IB-1, NPM-3); the chain stops there, as it must until T1"
+      },
+      {
+        "command": "bash <scratch>/b4/rows.sh <clone>/app <scratch>/b4/rows-normal normal (env -i PATH HOME=<scratch>/b4/home PORT=0 node server/node-main.js, NODE_ENV unset; 64 curl requests on http://127.0.0.1:<port>; the server stopped by its own pid), then node <scratch>/b4/check-rows.mjs <clone>/app <rows> <clone>/tools",
+        "exit": 0,
+        "output": "«mode normal port 63161 requests 64 stopped 75942»; ps -p of that pid: no process; stderr of node-main empty; «checks 164, failures 0, rows 64, parity 27»: the questionnaire in ru, kk, en and ru for de, RU, an empty value, 1 000 characters, none and an Accept-Language header alone, keys exactly lang, questions → id, title, options → id, label, the texts equal to the intake's in that language; 27 results (7 fixtures × ru, kk, en, three empty answer sets, de, no lang, the request after the refusals) equal field by field to the original tools/src/picker/engine.js on tenantInLanguage with the oracle's own projection, keys exactly lang, clear_leader, recommended, no_match_text → id, name, summary, includes, not_suitable_when, no key ranking, score, rules, points, price_text, duration_text, needs_from_you, next_steps, hypotheses, help, when or text anywhere; every fixture's solution first, server-needed and the empty set the no-match text; refusals bad_json ×3 (not JSON, invalid UTF-8, no body), bad_body ×6, bad_answers ×3, unknown_question, unknown_option, wrong_kind ×3 (null, a list, a number), 413 body_too_large; GET result, POST questionnaire, PUT result, DELETE questionnaire, a trailing slash and an encoded path → 404 {\"error\":\"not_found\"}; the preview host → 307 to the app origin; every /api answer application/json and Cache-Control no-store; no Set-Cookie in any answer; 64 log lines in request order, each with keys among ts, level, req_id, route, status, ms, code, its status equal to the answer's, its code only on a refusal, every value of its closed form, 64 distinct req_id, no marker and no answer value"
+      },
+      {
+        "command": "controls of the rows check: a copy of the saved rows with four planted wrong rows (a kk title, a score field, a wrong refusal code, a changed log line), then one with an answer value as the code of a log line",
+        "exit": 1,
+        "output": "«checks 159, failures 4»: q-kk body, r-catalog-en body, x-option refusal, log keys and order; then «failures 1»: no answer value or marker in any log line: \"calculate\" — the instrument sees what it names"
+      },
+      {
+        "command": "missing intake, clone only: the clone's content/sai-intake.json moved away, bash rows.sh <clone>/app <scratch>/b4/rows-nointake nointake, moved back, cmp with the project's intake",
+        "exit": 0,
+        "output": "stderr of node-main: «sai: the demo intake is missing or broken; /api/demo answers 503» (the one line); questionnaire 503 {\"error\":\"demo_unavailable\"}, result 503 {\"error\":\"demo_unavailable\"}, /api/health 200 {\"ok\":true,\"db\":\"ok\",…}, / 200 (the page), the questionnaire again 503; «intake restored, equal to the project's»; no process left"
+      },
+      {
+        "command": "SITE_GATE=1: bash rows.sh <app> <rows> gate, on the clone and on the project",
+        "exit": 0,
+        "output": "questionnaire 503 {\"error\":\"site_closed\"}, result 503 {\"error\":\"site_closed\"} on both; no process left"
+      },
+      {
+        "command": "node <scratch>/b4/driver.mjs <clone>/app <clone>/tools <scratch>/b4/driver-work (env -i PATH HOME=<scratch>/b4/home; in process: createEntry(() => createFunctionApp(readConfig({ APP_ORIGIN }), { adapter: counting, log })) and createApp variants)",
+        "exit": 0,
+        "output": "«measured odd option: questionnaire 500 {\"error\":\"server_error\"}; result with no answer 200 {…}; result with an answer 503 {\"error\":\"demo_unavailable\"}»; «checks 108, failures 0, entry parity 35, local parity 21, kk-only texts 103, adapter calls after the control 1»: PUBLIC_LANGS is ru and en; through the entry (the rewritten /api/index?__p=demo/… and the plain path, with Accept-Language «kk, en») the questionnaire in ru and en, and ru for kk, de, RU, empty, 1 000 characters and none; 35 results (7 fixtures × ru, en, kk, de, none) equal to the original engine in the public language; none of the 103 kk values of the intake that differ from their ru and en leaves the entry; the counting adapter 0 calls by the demo, then 1 by /api/health (the control); one entry log line per request with the allowed keys; locally 21 results in ru, kk, en equal to the original; a copy of the intake with planted help, extra fields, price_text, duration_text, a rule text and hypotheses: no marker in any of 24 answers, while the engine itself returns the planted price_text and hypotheses; a tenant whose rule has when null: the engine throws, the result 503 demo_unavailable with that code in its log line, the questionnaire 200, the next request answered; loadIntake gives { ok: false } without an exception for 17 files (missing, a folder, not JSON, invalid UTF-8, a list, null, a number, 200 000 opening brackets, another schema, another id, four questions, a multiple question, options null, a null question, solutions not a list, rules null, result a list) and ok for the real file and a copy; INTAKE_FILE names <app>/content/sai-intake.json; a missing intake: both routes 503 (also with a bad body), /api/health, /, /nope and /api/nope answer as with the intake; createApp without demo: both paths the uniform 404; the gate first; 65 536 bytes answered, 65 537 → 413; an answers key __proto__ → unknown_question and a body key __proto__ → bad_body, Object.prototype untouched; 100 demo requests through createDb(a counting adapter) → 0 calls, then health calls it; the intake not served as a file (three paths → 404); inLanguage equal to tenantInLanguage for ru, kk, en, de, empty and RU, a new copy each time, the input deep-equal before and after, an own __proto__ key kept own with its kk value and Object.prototype as the copy's prototype; demoRoutes two frozen rows"
+      },
+      {
+        "command": "node <scratch>/b4/mutants.mjs <scratch>/b4 (a lock file; one mutant at a time in the clone; each file restored from a saved copy and compared; shasum -c of the row's six clone files after)",
+        "exit": 0,
+        "output": "13 of 13 red: M09 the function answers SOURCE_LANGS (driver: 10 failures, entry questionnaire kk); M11 the questionnaire passes the whole question (driver: the planted field; rows: 9); M12 the result keeps score (driver 48, rows 21); M13 a body with a second key accepted (rows: x-body-4); M14 null read as no answer (rows: x-kind-1); M15′, a variant of the design's M15 (a language source other than ?lang=, here a fixed stored value en: the design's form, a language read from Accept-Language, cannot be planted in demo.js, whose handlers get only the query and the body) (driver 12, rows 7); M16 an engine exception not caught (driver: the throwing engine); M17 the body written into the log line (rows: 2 — the code on a result row and the closed form of the code); M19 GET /api/demo/result answered (rows: m-get-result); MI1 loadIntake accepts any object (driver: other schema); MI2 inLanguage assigns keys (driver: the own __proto__); MA1 a handler's HttpError not caught (rows 19); MR1 the engine's refusal code dropped (rows 6); after: 6 OK, no lock left. M18 (the adapter called) is not applicable as a code mutant here: the demo module has no database handle, and the counting adapter of the driver is its check"
+      },
+      {
+        "command": "the save into the project (08:13:31Z): for each of errors.js, routes/demo.js, routes/index.js, app.js, node-main.js, Dockerfile in this order, cp to <file>.b4tmp in its folder, then mv onto the file; then shasum -c of the clone's six hashes in the project; find of *.b4tmp",
+        "exit": 0,
+        "output": "6 OK (demo.js c5c973f37a6a…, index.js 578ddbcaa36e…, errors.js 33090ee19f70…, app.js ed14988e413d…, node-main.js a44e55e795d5…, Dockerfile 0c37f06c5c5f…); 0 temporary files left"
+      },
+      {
+        "command": "the project: bash rows.sh <app> <scratch>/b4/proj-rows-normal normal and check-rows.mjs; driver.mjs <app> <tools> (08:13:50Z–08:13:52Z, and the driver again with the two added checks)",
+        "exit": 0,
+        "output": "«mode normal port 64599 requests 64 stopped 79590», no process left, stderr empty; «checks 164, failures 0, rows 64, parity 27»; driver «checks 108, failures 0, entry parity 35, local parity 21, kk-only texts 103, adapter calls after the control 1»"
+      },
+      {
+        "command": "the project, the row's own files (08:14:03Z; F4 writing app/public/office in parallel): npx prettier --check <the five .js files>; npx eslint --max-warnings 0 <the five .js files>; npx tsc --noEmit -p jsconfig.json",
+        "exit": 0,
+        "output": "«All matched files use Prettier code style!»; eslint exit 0; tsc exit 0 with no line (the whole tree at that moment)"
+      },
+      {
+        "command": "the project: cd app && npm run test:unit (08:14:16Z–08:14:24Z) and npm run test:int (08:14:33Z–08:15:24Z)",
+        "exit": 1,
+        "output": "unit: # tests 46, # pass 43, # fail 3: CP-2, IB-1, NPM-3 — IB-1 actual still exactly the one .d.ts line, with F4's four office files present; int: # tests 36, # pass 36, # fail 0 (exit 0)"
+      },
+      {
+        "command": "grep -nE of the secret pattern of REQ-108 criterion 13 over the six files; the same grep -rnE over app and .github/workflows/app.yml --exclude-dir=node_modules",
+        "exit": 1,
+        "output": "no line in either (exit 1 of grep = nothing found)"
+      },
+      {
+        "command": "node <scratch>/b4/scan-chars.mjs <the six files> (raw C0/C1, space-like and format characters, with a planted control)",
+        "exit": 0,
+        "output": "hidden 0 in each; visible non-ASCII only U+00A7 (§) in all five .js files, U+2026 (…) in demo.js and U+2192 (→) in app.js, all in comments; control «true true false»"
+      },
+      {
+        "command": "grep -nE of .skip(/.todo(/.only(, eslint-disable, || true, @ts-ignore, @ts-nocheck, @ts-expect-error over the six files",
+        "exit": 1,
+        "output": "no line"
+      },
+      {
+        "command": "grep -rn picker-engine over app/**/*.js (without node_modules, test and server/vendor)",
+        "exit": 0,
+        "output": "app/server/routes/demo.js:4:import { computeResult } from \"../vendor/picker-engine.js\"; (the only importer, VD-2)"
+      },
+      {
+        "command": "node ../tools/src/picker/cli.js check <scratch>/b4/odd/sai-intake.json (the intake with questions[0].options[0] null, which passes the shape check of loadIntake)",
+        "exit": 1,
+        "output": "«sai-intake.json: questions[0].options[0]: E_FIELD: Ожидается объект. Исправьте значение.» and two E_REF lines: the content step of the check refuses such a file"
+      },
+      {
+        "command": "node <scratch>/b4/bom.mjs <clone>/app (POST /api/demo/result with a UTF-8 byte-order mark)",
+        "exit": 0,
+        "output": "leading BOM: 200 {\"lang\":\"en\",…}; BOM inside: 400 {\"error\":\"bad_json\"}; two BOMs: 400 {\"error\":\"bad_json\"}"
+      },
+      {
+        "command": "a hash list of every file of app/ but node_modules at 08:01Z and at 08:18:41Z, compared",
+        "exit": 0,
+        "output": "differ exactly the six files of the row and app/public/office/draw.js, grid.js, sim.js, stage-scene.js (FRONTEND-DEV's F4, its write_set, IN_PROGRESS); no other file of app/ changed"
+      },
+      {
+        "command": "ps -axo pid,lstart,command for node-main, driver, rows and mutants processes after the step",
+        "exit": 0,
+        "output": "0 processes of this step; eight idle node -e setInterval(…) processes started 2026-11-03 were there before the step, are not of it and were left alone (I13)"
+      },
+      {
+        "command": "cd tools && npm run traces (08:16:44Z, and again before close)",
+        "exit": 0,
+        "output": "«traces: файлов проверено 2765, следов 0, пропущено 67»"
+      },
+      {
+        "command": "cd tools && npm run handoffs-check (after the handoff was created, and before close)",
+        "exit": 1,
+        "output": "the one known line «handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 — H4: status: PENDING в коммите …» (not of this step); no line for this handoff"
+      }
+    ],
+    "expected_red": [
+      {
+        "test": "app/test/unit/import-boundaries.test.js IB-1",
+        "row": "B1; section 11 row 5",
+        "until": "T1"
+      },
+      {
+        "test": "app/test/unit/check-public.test.js CP-2 (its js/ line, line 62)",
+        "row": "B2; section 11 row 6",
+        "until": "T1"
+      },
+      {
+        "test": "app/test/unit/npmrc.test.js NPM-3",
+        "row": "B3; section 11 row 1",
+        "until": "T1"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "test": "app/test/unit/import-boundaries.test.js IB-1 «the real tree of app/ breaks no rule»",
+        "row": "section 12 row B1 (a row before this one; section 11 row 5)",
+        "text": "IB-1 is red with exactly the one line «a file that is not .js: server/vendor/picker-engine.d.ts», as B1 left it, until T1 lands the row of decisions/0124 О14. Not caused by B4 (quality-bar §6 item 4, a repeat without the work): on the fresh clone of the build tag with the run's 26 finished files and without this row's six (state A) IB-1 is red with the same block; with the six (state B) the block is byte-identical but its durations, and IB-1 lists every import finding of every .js file in the same assertion, so this row's five .js files have none. The project gives the same single line."
+      },
+      {
+        "id": "I2",
+        "kind": "EXPECTED_RED",
+        "test": "app/test/unit/check-public.test.js CP-2 «each planted item is red with its file, each benign twin is green»",
+        "row": "section 12 row B2 (a row before this one; section 11 row 6)",
+        "text": "CP-2 is red at its line 62, assert.deepEqual(checkText(\"js/a.js\", \"Math.random()\"), []), actual [{ file: 'js/a.js', item: 'Math.random' }], as B2 left it, until T1 turns the line to notDeepEqual. Not caused by B4: the test imports only scripts/check-public.js and test/fixtures/helpers.js, none of this row's files, and the A/B repeat gives the same block."
+      },
+      {
+        "id": "I3",
+        "kind": "EXPECTED_RED",
+        "test": "app/test/unit/npmrc.test.js NPM-3 «the check script is the one chain, with no selector and no ||»",
+        "row": "section 12 row B3 (a row before this one; section 11 row 1)",
+        "text": "NPM-3 is red with actual ['check chain'] (the eight-step chain of B3 against the six-step list of the build tag), until T1 lands replacement row 1. Not caused by B4: it reads app/package.json, not a file of this row, and the A/B repeat gives the same block."
+      },
+      {
+        "id": "I4",
+        "kind": "DISCREPANCY",
+        "text": "The task lists F1, F1k, F1e, F2, F2k, F2e, F3, B1, B2 and the look edit as done before this launch; B3 is not in the list, while handoffs/M1CODE-20261119-01/step-02-backend-dev-b3-run2.json is COMPLETED (07:50:10Z, after the interrupted step-02-backend-dev-b3.json, FAILED) and its files stand in the tree (the eight-step chain, playwright-core, the README). The work went by what was measured: B3 is a row before B4, so its NPM-3 is one of the reds allowed after B4 (I3). The other facts of the task were checked and hold: the branch m0-records at 9e96d61, the build tag at 2144f2a, the design sha256 469b32af…, step-01f PASS, the look edit 03g COMPLETED and 03h PASS, and the one known handoffs-check line."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "Measured: HEAD /api/demo/questionnaire answers 200 with the headers of the GET answer and no body (curl -I), because Hono answers a HEAD by the GET route — the same as HEAD /api/health today; HEAD /api/demo/result has no GET route and falls to the uniform 404. The design's «other methods on the demo paths fall through to the uniform 404» holds for every other method (measured: GET of the result, POST of the questionnaire, PUT of the result, DELETE of the questionnaire). No change; named for TEST-DESIGNER (DM-5) and REVIEWER."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "severity": "Low",
+        "text": "Measured, design-literal, not changed: an intake that passes the shape check of loadIntake (4.7) but holds an option that is not an object (questions[0].options[0] null) gives no stderr line in node-main (loadIntake says ok), the questionnaire answers 500 {\"error\":\"server_error\"} (its build stands outside the engine's try, and app.js sends any exception that is not an HttpError to onError, as 4.7 says), and the result answers 200 for no answers (the engine reads no option) and 503 demo_unavailable for an answer (the engine throws inside the try); the original engine behaves the same on that tenant. Q10 holds (a JSON error, the process up, the next request answered), and the content step of the check refuses such a file (exit 1, E_FIELD at questions[0].options[0]), so it cannot reach a release. Answering 503 there too would mean catching more than 4.7 names, a departure, so it is a question for CODE-DESIGNER through ORCH if wanted, not a change of this step."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "Not measured by B4: F14 traced the intake with the inline form fs.readFileSync(new URL(\"../../content/sai-intake.json\", import.meta.url)); 4.7 writes the same literal as the exported constant INTAKE_FILE, read by loadIntake(file = INTAKE_FILE), and the file holds it so. @vercel/nft is not installed here and this row makes no network call, so whether the function bundle holds the intake with this form is left to the post-deploy record, as REQ-111 «Not measured» already says. If the bundle lacked the file, both demo routes of the function would answer 503 demo_unavailable and nothing would crash (measured with a missing intake through createApp and node-main). Named for ORCH and RELEASE-VALIDATOR."
+      },
+      {
+        "id": "I8",
+        "kind": "INFO",
+        "text": "Measured: the strict UTF-8 decode of 4.7 step 4 is new TextDecoder(\"utf-8\", { fatal: true }), the same form as readText of server/http/body.js; it consumes one leading byte-order mark, so a body «<BOM>{\"answers\":{}}» is answered 200, while a mark anywhere else, or two, is bad_json (RFC 8259 lets a parser ignore a leading mark). Named for TEST-DESIGNER (DM-4) in case a planted body holds one."
+      },
+      {
+        "id": "I9",
+        "kind": "INFO",
+        "text": "inLanguage gives ru for a language outside ru, kk and en, as tenantInLanguage does (4.7: «the rule of tools/src/picker/view.js tenantInLanguage, written again»); the routes never pass such a language (pickLang gives one of langs or ru). The driver compared inLanguage with tenantInLanguage for ru, kk, en, de, an empty value and RU (equal), and on a planted own key __proto__ (kept own, as the original's defineProperty keeps it)."
+      },
+      {
+        "id": "I10",
+        "kind": "PROCESS",
+        "text": "This handoff was created by BACKEND-DEV on ORCH's order (the workflow task of this step), with cd tools && npm run handoff -- new … --qualifier b4 at 2026-11-20T08:01:25Z (one clock reading for created_at and started_at), after the mandatory files were read, as B1–B3 of this run were created; docs/workflows/handoffs.md says only ORCH creates handoffs. status was then set to IN_PROGRESS. context.base_tag is the run's tag base/M1CODE-20261119-01 (the command writes it); the build base is base/M1CODE-20261119-01-build by decisions/0124 О13, and every comparison of this step was made with that tag."
+      },
+      {
+        "id": "I11",
+        "kind": "PROCESS",
+        "text": "Parallel work (AP-008): FRONTEND-DEV's F4 was IN_PROGRESS through this step, and its four office files appeared in the project at about 08:10–08:12Z. The clean measure of this row is the clone (state A without the row, state B with it; no file of F4 in either). In the project only the row's own files were checked by name (prettier, eslint); the whole-tree runs there (tsc, test:unit, test:int, the rows and the driver) were read for this row's lines only and showed nothing else. The six files were saved by one command at 08:13:31Z, each written whole (a copy to a temporary name in its folder, then a rename), in the order errors.js, routes/demo.js, routes/index.js, app.js, node-main.js, Dockerfile, so every saved state imports only what exists; one window remains by the nature of two files: between the rename of routes/index.js (the handler type with its argument) and that of app.js (the call with the argument), a few milliseconds of the same command, a tsc started in it would have seen one TS2554 in app.js. Lesson candidate for DOC-UPDATER: a change of a shared signature across two files is saved by one command, and its window is named."
+      },
+      {
+        "id": "I12",
+        "kind": "PROCESS",
+        "text": "Slips of my own instruments, named (Q13; none touched a file of the project): (a) zsh does not split an unquoted variable into words (AP-156's kind): grep got the six file names as one name and ended with exit 2; repeated with a zsh array. (b) An inline node -e with \\u escapes in a regular expression reached node with raw separator characters and did not parse; repeated as a script file (scan-chars.mjs) with a planted control. (c) curl -I writes the header block into its output file as well, so my first rows check read it as a body; the check now asserts that the output holds the header block and nothing after it. (d) My first log-value check searched for unescaped answer values and missed a body written as an escaped string; my own mutant M17 showed it (caught only by the «no code on a result row» rule), and the check now holds every log value to a closed form; the series was run again (13 of 13 red). (e) A literal of the driver was two characters too long for its 40-character slice; fixed and run again on both trees."
+      },
+      {
+        "id": "I13",
+        "kind": "INFO",
+        "text": "Eight idle processes node -e setInterval(() => {}, 1000), started on 2026-11-03 (pids 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481), were running before this step; they are not of this step and were left alone (AP-137 item 3); ORCH decides. Every process this step started (each node-main of the rows runs on the clone and on the project and inside the mutant series, the drivers, the mutant runs) ended or was stopped by its own pid, and ps after the step shows none."
+      },
+      {
+        "id": "I14",
+        "kind": "INFO",
+        "text": "The Docker image was not built here: a build pulls the base image from the network, which this row does not use. The one line was checked by reading (git diff: COPY content ./content right after COPY db ./db), DF-1 and DF-2 of docker-files.test.js are green (they pin no COPY line), and the image's read of the intake is proved by the docker job's demo step of 4.13, which B6 adds and app.yml runs on GitHub. The missing-intake run of node-main was made in the clone only: in the project it would have moved F2's file."
+      }
+    ],
+    "artifacts_out": [
+      "app/server/routes/demo.js",
+      "app/server/routes/index.js",
+      "app/server/http/errors.js",
+      "app/server/app.js",
+      "app/server/node-main.js",
+      "app/Dockerfile"
+    ],
+    "driver": {
+      "where": "<scratch>/b4/ (outside the project)",
+      "what": "clone/ — a fresh clone of base/M1CODE-20261119-01-build with the run's 26 finished files of app/ (state A) and then this row's six (state B), node_modules from npm ci --offline; rows.sh — node-main on PORT=0 with a private home and the curl rows of F13 (modes normal, nointake, gate; the server stopped by its pid); check-rows.mjs — the oracle of the rows (its own language rule, the original engine and view of tools/ for the results, exact keys, refusal codes, headers, the log lines in order with closed value forms); driver.mjs — the function entry with PUBLIC_LANGS and createApp variants in process; mutants.mjs — the 13 mutants with a lock file and restore-and-compare; bom.mjs, scan-chars.mjs; the logs A-test-unit.log, B-test-unit.log, B-test-int.log, B-check.log, proj-test-unit.log, proj-test-int.log, mutants.log, mutants2.log, driver*.log, proj-driver*.log, traces1.log; the saved rows rows-normal/, rows-nointake/, rows-gate/, proj-rows-normal/, proj-rows-gate/; the hash lists app-before.sha, app-after.sha, clone-row.sha"
+    }
+  }
+}

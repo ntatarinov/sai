@@ -1,0 +1,99 @@
+{
+  "handoff_id": "step06-M1STATUS-20261122-02",
+  "run_id": "M1STATUS-20261122-02",
+  "workflow_id": "WF-02",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-RUNNER",
+  "file": "handoffs/M1STATUS-20261122-02/step-06-test-runner.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-113"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "GitHub Actions runs on the temporary branch ci/m1-status-1, commit b22f71efa06d8aa879e122ebabcbcfc68a80af0f: app run 45001073839 and check run 45001073841",
+      "docs/design/REQ-113-visitor-status.md (sections 8, 9, 16)",
+      "handoffs/M1STATUS-20261122-02/step-05-test-designer.json (the mutant table, the expected counts)"
+    ],
+    "route": "WF-02 step 6 gate: the check runs only on GitHub in Linux (decisions/0110, the owner's rule for this PC); TEST-RUNNER reads the record of that run, never runs the check on this PC",
+    "write_set": [
+      "handoffs/M1STATUS-20261122-02/step-06-test-runner.json (result only)"
+    ],
+    "base_tag": "base/M1STATUS-20261122-02"
+  },
+  "task": {
+    "description": "WF-02 step 6, TEST-RUNNER (role file .claude/agents/test-runner.md). On this Windows PC the single check command does not run (the owner's rule, decisions/0110); the run was made on GitHub from a temporary branch snapshot: app run 45001073839 (jobs check, pg, docker, e2e) and check run 45001073841, both completed success on commit b22f71e (origin/main e0a425b plus the REQ-113 files of app/; verify with gh read-only and git diff that app/ of this snapshot equals app/ of the local HEAD b25c11e and that nothing else differs from main). Read the logs (gh run view <id> --log; read-only) and report the real output, not a summary: every step of each job, the '# tests / # pass / # fail / # skipped / # todo' lines of the unit, int, pg and e2e steps (the orchestrator read unit 122, int 47, pg 4, e2e 15, fail 0, skipped 0, todo 0), prettier, eslint, tsc, check-public, the public-build step, the Node version and Chrome version lines, the count of tools tests in check.yml, any warning or retry line, timing of the LD-3, LD-6, LD-9 tests (the designer measured about 8 s, 60 s and 33 s on Windows: compare to the timeouts in landing.test.js), anything flaky. Compare the counts with the rule of REQ-108 criterion 2 and the design section 16 (unit 120 -> 122, others unchanged). Say honestly what the run does NOT prove: the new tests have not been seen red on the base product on GitHub (the 'red before the product change' proof exists only as the designer's and validator's Chrome drivers); recommend whether ORCH should push one more snapshot (origin/main app plus only the two new test files) to see them red, and which tests are expected red there (LD-3, LD-6, LD-9, TX-4, TX-9, TX-10). Allowed: gh read-only, git read-only, cd tools && npm run -s handoffs-check and traces. NEVER run npm run check, cd app && npm run ..., node --test or e2e anywhere on this PC. No commit/push. Fill result; status stays PENDING; ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T08:15:39Z",
+  "started_at": "2026-11-22T08:15:39Z",
+  "completed_at": "2026-11-22T08:19:00Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "at": "2026-11-22T08:18:23Z",
+    "summary": "PASS on the GitHub record, not on a run of mine (the owner's rule for this PC, decisions/0110): app.yml run 45001073839 and check.yml run 45001073841 on branch ci/m1-status-1, commit b22f71efa06d8aa879e122ebabcbcfc68a80af0f, both conclusion success, every job and every step success. Counts read from the logs: unit 122 of 122, int 47 of 47, pg 4 of 4, app e2e 15 of 15; tools tests 2226 of 2226, tools e2e 9+7+13+7 and exit 0; fail 0, cancelled 0, skipped 0, todo 0 in every step; 'not ok' occurs 0 times in either log. Unit moved 120 -> 122 as design section 16 expects (TX-9 ok 103 and TX-10 ok 104 are the two new named tests); int 47, pg 4, e2e 15 are unchanged. The run does NOT prove that the new tests are red on the base product: see issues I1 and not_proved.",
+    "findings": [],
+    "verified_facts": [
+      "git diff b22f71e HEAD -- app is empty: app/ of the snapshot equals app/ of the local HEAD b25c11e.",
+      "git diff --name-status origin/main b22f71e lists exactly six files: app/public/css/site.css, app/public/how.html, app/public/js/pages/demo.js, app/public/shared/i18n/texts.js, app/test/e2e/landing.test.js, app/test/unit/texts.test.js; the snapshot has the single parent e0a425b (origin/main), so nothing else differs from main.",
+      "git diff --name-status origin/main HEAD -- app lists the same six files, so the whole app/ change of REQ-113 is inside the run.",
+      "Outside app/ the snapshot is origin/main, NOT the local HEAD: HEAD differs from origin/main in 245 files (records, handoffs, decisions, and also .github/workflows/check.yml, tools/README.md, tools/package.json and package-lock.json, tools/src/cli.js, handoffs/cli.js, handoff.js, node-floor.js, picker/cli.js, tools/handoffs/exceptions.tsv). The check.yml run therefore tested main's tools and main's records (traces: 2685 files, 0 traces; handoffs-check: 1392 files, 0 violations, 114 of 114 exceptions), not the records of HEAD."
+    ],
+    "self_check": {
+      "note": "No command of the check was run on this PC. Read with gh run view <id> --json and gh run view <id> --log (read-only), git fetch of the one branch and git diff (read-only). Logs saved outside the project: <scratch>/tr/app.log, <scratch>/tr/check.log, <scratch>/tr/base-app.log (main e0a425b, run 44919421105, for the timing comparison).",
+      "node": "v22.23.4 in all four jobs of app.yml (pg, check, e2e, docker) and in check.yml; docker image web: v22.23.4 (step 'Node version in the image'). Chrome: Google Chrome 157.0.8103.78 (/opt/google/chrome/chrome, step 'Chrome path and version' of the e2e job).",
+      "app_yml": {
+        "run": "45001073839, created 2026-11-22T08:04:13Z, updated 2026-11-22T08:13:02Z, success",
+        "job_check": "08:04:16 - 08:06:07 (1 min 52 s). Step 'Run the app check' (npm run check) 08:04:28 - 08:06:04 exit 0: prettier 'All matched files use Prettier code style!'; eslint --max-warnings 0 silent; tsc --noEmit -p jsconfig.json silent; 'check-public: app/public is clean'; 'vendored: 1 file matches its source'; picker check of content/sai-intake.json 'вопросов 5, решений 6, правил 35'; then test:unit and test:int. Then 'Audit the production dependencies' (npm audit --omit=dev --audit-level=high): found 0 vulnerabilities.",
+        "unit": "# tests 122, # suites 0, # pass 122, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 14597.006532",
+        "int": "# tests 47, # pass 47, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 75639.22059",
+        "job_pg": "08:04:16 - 08:04:44; test:pg (node --test --test-concurrency=1): # tests 4, # pass 4, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 793.482153 (MP-1, MP-2, MP-3, SP-1, 121 to 192 ms each; the job starts a real Postgres 17 in the same run, and skipped is 0)",
+        "job_e2e": "08:04:15 - 08:13:01; test:e2e (node --test --test-concurrency=1): # tests 15, # pass 15, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 509583.62258 (8 min 30 s; base run: 477753 ms)",
+        "job_docker": "08:04:16 - 08:04:53; image build, db and web start, closed page / 404 / uniform 404 / preview redirect, demo questionnaire 200, web not root, migration 0001 recorded, app connects as sai_app_login only, smoke against the container, logs, stop: all steps success",
+        "public_build_step": "There is no separate 'public build' step in app.yml; the equivalent steps are check-public and vendored inside 'Run the app check' (both clean) and the docker image build (success)."
+      },
+      "check_yml": {
+        "run": "45001073841, created 2026-11-22T08:04:13Z, job check 08:04:16 - 08:10:31, step 'Run the check' 08:04:29 - 08:10:29 (6 min 0 s), success",
+        "command": "npm run format:check && npm run lint && npm run traces && npm run handoffs-check && npm run test && npm run e2e",
+        "stages": "format:check 'All matched files use Prettier code style!'; lint (eslint . --max-warnings 0) silent; traces 'файлов проверено 2685, следов 0, пропущено 67' (the 67 are binary files); handoffs-check 'файлов проверено 1392, нарушений 0, исключений использовано 114 из 114'",
+        "tools_tests": "# tests 2226, # suites 0, # pass 2226, # fail 0, # cancelled 0, # skipped 0, # todo 0, # duration_ms 251849.923166 (same 2226 as run 44919421116 on main e0a425b)",
+        "tools_e2e": "'e2e: command=npm run e2e selection=all exit=0 duration_ms=86956'; four sub-runs: 9 of 9, 7 of 7, 13 of 13, 7 of 7, each fail 0, skipped 0, todo 0"
+      },
+      "timing_of_the_three_new_e2e_tests": {
+        "LD-3": "10244.7 ms on GitHub (base main: 5178.3 ms); timeout in landing.test.js 180000 ms; 5.7 % of it used",
+        "LD-6": "44569.8 ms (base: 21558.7 ms); timeout 480000 ms; 9.3 % used",
+        "LD-9": "36385.8 ms (base: 19247.5 ms); timeout 300000 ms; 12.1 % used",
+        "comparison": "The designer measured about 8 s, 60 s and 33 s on Windows; on Linux CI it is 10.2 s, 44.6 s and 36.4 s, so the timeouts have a margin of 8 to 17 times. The three tests took about twice their base time, which is what the added passes and checks cost. The longest e2e tests are unchanged in kind: LD-1 65.1 s, LD-5 65.7 s, ST-2 102.2 s, ST-3 63.6 s."
+      },
+      "count_rule": "REQ-108 criterion 2 and design section 16: base unit 120, int 47, pg 4, e2e 15 (run 44919421105 on e0a425b, re-read now: unit 120, int 47, e2e 15 in its log). Now unit 122 (+2 = TX-9, TX-10), int 47, pg 4, e2e 15: equal to the expected counts; no folder below the base; skipped 0, todo 0 everywhere; NPM-6 (no skip, todo or only selector under app/test) ok 46 and NPM-7 (the 15 named e2e tests present) ok 45 in the unit step.",
+      "warnings_retries_flaky": "No 'not ok' line, no skip or todo, no retry of any step, no job that failed and then passed. The only warnings in the logs are the pre-existing Node line '(node:35269) ExperimentalWarning: The MockTimers API is an experimental feature' inside the tools tests, and npm's '3 moderate severity vulnerabilities' notice of npm ci (the production audit says found 0 vulnerabilities). One run per commit, so stability over repeated runs cannot be judged from this record.",
+      "tests_seen": "TX-4 ok 98, TX-5 ok 99, TX-9 ok 103, TX-10 ok 104 (unit step); LD-3 ok 3, LD-6 ok 6, LD-9 ok 9 (e2e step)."
+    },
+    "not_proved": [
+      "That the new tests are red on the base product. In this run they were only seen green on the product. The 'red before the product change' evidence exists only as the designer's and the validator's Chrome drivers on Windows (35 mutants applied there, 34 red, 1 equivalent), never on GitHub, never in Linux Chrome.",
+      "The mutant series 'mutants_for_ci' of step-05: none of it was run on GitHub.",
+      "The state of everything outside app/: the check.yml run used origin/main's tools, records and workflow, not the local HEAD b25c11e (records of the run, decisions 0125 to 0127, changed tools files). The tools tests, traces and handoffs-check of HEAD itself have no GitHub record yet.",
+      "Stability over repeated runs (one run only) and the behaviour on Vercel production.",
+      "That the work is right against the requirement and the look: this step proves that the written checks pass, nothing more."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "RECOMMENDATION",
+        "severity": "Medium",
+        "text": "Recommendation to ORCH: push ONE more temporary snapshot, a new branch such as ci/m1-status-2 (no reuse of ci/m1-status-1, no force), whose tree is origin/main e0a425b plus ONLY the two new test files app/test/unit/texts.test.js and app/test/e2e/landing.test.js (the product files of REQ-113 stay at the base). Expected red there: unit TX-4, TX-9, TX-10 (unit step ends with # fail 3 of 122; because npm run check is a && chain the int step does not run in that job, which is expected); e2e LD-3, LD-6, LD-9 (# fail 3 of 15; the other 12 stay green; pg and docker jobs stay green). That gives the 'red on the base' proof in Linux Chrome with the real messages, and costs one e2e job of roughly 8 to 9 minutes. Read the messages of the three red e2e tests, not only their names: a test red by a timeout (180, 480 or 300 s) or an import error instead of the intended assertion would be a false proof. A re-run of the green snapshot proves nothing new. The mutant series stays optional."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "severity": "Low",
+        "text": "Scope of the PASS: the green record is for app/ of HEAD plus main's outside tree. The check on the real release commit must still be seen on GitHub, and RELEASE-VALIDATOR runs its own command (quality-bar Q2); this PASS does not carry over to step 9."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

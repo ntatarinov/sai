@@ -144,6 +144,13 @@ const ASTANA_MS = 5 * 60 * 60 * 1000;
 /** The ten items of the list «Чего Sai пока не делает», by their number in the texts module. */
 const NOT_BUILT = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
+/** The three rows of the status block (the look 7.22): the keys of the title and of the line, and whether the part works. */
+const NOW_ROWS = Object.freeze([
+  Object.freeze({ title: "now_demo_t", line: "now_demo_s", on: true }),
+  Object.freeze({ title: "now_idea_t", line: "now_idea_s", on: false }),
+  Object.freeze({ title: "now_build_t", line: "now_build_s", on: false }),
+]);
+
 /**
  * The answer «Не знаю» in the memory of the page; it is never sent: the body of the result request
  * leaves its question out.
@@ -828,6 +835,33 @@ function mountSurvey(doc, win, parts) {
       NOT_BUILT.map((n) => t(`nobuild_${n}`)),
     );
 
+  /** The status block (the look 7.22): three rows, each a mark and a title with its line, and one closing paragraph. */
+  const statusBlock = () =>
+    el(
+      "section",
+      { cls: "info now", attrs: { "aria-labelledby": "now-title" } },
+      [
+        el("h3", { id: "now-title", text: t("now_title") }),
+        el(
+          "ul",
+          { cls: "rl" },
+          NOW_ROWS.map((row) =>
+            el("li", {}, [
+              el("span", {
+                cls: row.on ? "stat on" : "stat",
+                text: t(row.on ? "stat_on" : "stat_off"),
+              }),
+              el("span", { cls: "rn" }, [
+                el("b", { text: t(row.title) }),
+                el("small", { text: t(row.line) }),
+              ]),
+            ]),
+          ),
+        ),
+        el("p", { text: t("now_closing") }),
+      ],
+    );
+
   /** The body of the receipt and the lists, by the state of the result request (8.4 states 3, 4). */
   const fillReceipt = () => {
     const body = shown.receiptBody;
@@ -898,6 +932,7 @@ function mountSurvey(doc, win, parts) {
             }),
           }),
         ]),
+        el("p", { text: t("demo_accuracy_note") }),
       ]),
     );
     body.replaceChildren(...lines);
@@ -938,9 +973,9 @@ function mountSurvey(doc, win, parts) {
   };
 
   /**
-   * The result (8.4 states 3 and 4; 7.12 – 7.15): the heading, the receipt, the panel «Описать
-   * идею» and the answer chips; the receipt waits for the result request, which is made here when the
-   * result of the page's language is not there yet.
+   * The result (8.4 states 3 and 4; 7.12 – 7.15, 7.22): the heading, the receipt, the status block
+   * and the panel «Описать идею» and the answer chips; the receipt waits for the result request,
+   * which is made here when the result of the page's language is not there yet.
    * @param {Survey} s
    * @param {{ focus?: boolean, scroll?: boolean }} how
    */
@@ -969,8 +1004,8 @@ function mountSurvey(doc, win, parts) {
         attrs: { href: "/how.html#describe-idea" },
         text: t("describe_idea"),
       }),
-      el("p", { cls: "fine", text: t("idea_panel_fine") }),
     ]);
+    const side = el("div", { cls: "r-side" }, [statusBlock(), idea]);
     const chips = s.questions.map((q, k) => {
       const chip = el(
         "button",
@@ -988,7 +1023,7 @@ function mountSurvey(doc, win, parts) {
     });
     const wrap = el("div", { cls: "wrap res" }, [
       sum,
-      idea,
+      side,
       el("div", { cls: "r-ans" }, [el("ul", { cls: "chips" }, chips)]),
     ]);
     put(

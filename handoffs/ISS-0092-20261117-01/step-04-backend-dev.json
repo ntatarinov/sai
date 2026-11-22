@@ -1,0 +1,180 @@
+{
+  "handoff_id": "step04-ISS-0092-20261117-01",
+  "run_id": "ISS-0092-20261117-01",
+  "workflow_id": "WF-03",
+  "step": "04",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/ISS-0092-20261117-01/step-04-backend-dev.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": "afd3cf63378d5fdf5",
+    "artifacts_in": [
+      "docs/design/REQ-110-tools-node-floor.md (sections 2, 3, 12, 13, 14, 15; gate PASS at step 03d)",
+      "docs/requirements.yaml (block REQ-110, amended)",
+      "decisions/0101, 0119 (О1-О14), 0120 (О1-О17)"
+    ],
+    "route": "... 3d PASS -> BACKEND-DEV 4 (this, S1) -> CODE-FIXER 4b (S2-S6, then the full check once) -> SECURITY-REVIEWER + REVIEWER 5 -> TEST-DESIGNER 6 -> 7 -> 8 -> 9 -> 10 -> release with M0.13",
+    "write_set": [
+      "tools/src/node-floor.js (new)",
+      "its own handoff"
+    ],
+    "base_tag": "base/ISS-0092-20261117-01",
+    "issue_id": "ISS-0092",
+    "parallel_work_now": [
+      "M0DOCS-20261117-01 step 05b TEST-DESIGN-VALIDATOR (reads only)"
+    ],
+    "interruptions": [
+      {
+        "at": "2026-11-18T07:38:58Z",
+        "cause": "stopped by ORCH (TaskStop) on the owner's word «остановись»; the stop was at or shortly before this time, when ORCH recorded it in PROGRESS; the owner said «Продолжи работу свою)» later",
+        "checked_by_orch_at": "2026-11-18T14:47:44Z",
+        "resumed_at": "2026-11-18T14:47:44Z",
+        "how": "same agent run resumed via SendMessage (the handoff stays PENDING with result null; tools/src/node-floor.js does not exist; no project file changed)"
+      }
+    ],
+    "orch_check": {
+      "at": "2026-11-18T14:57:29Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-18T14:56:08Z, result.status COMPLETED; one interruption record (the owner's stop), resumed in the same launch",
+        "git status --short -> the only new project file is tools/src/node-floor.js (64 lines, sha256 33b64b8d62c5...); no other file changed by the step",
+        "ORCH read the module: no import, no disk or environment read but the default argument; the five exports of design section 2; the refusal line built from NODE_FLOOR; a throwing write swallowed",
+        "issues: I2 (non-strings refused, the 64-character bound) -> for TEST-DESIGNER at step 6; I4 (64 lines against the sketch's 54, comments) -> As built at step 10; I5 (an escape turned into a raw U+2028 by the tools in a probe; the probe was fixed before any result) -> a proposal for the error journal at step 10",
+        "next: step 04b CODE-FIXER (S2-S6, then the full check once)"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 4, sub-step S1 of the passed design of the fix of ISS-0092 (docs/design/REQ-110-tools-node-floor.md, sha256 119d0b2d6352…, gate PASS at step 03d) — BACKEND-DEV writes the new module tools/src/node-floor.js exactly by design section 2 (decisions/0120 О7: a new module, so BACKEND-DEV): the exports NODE_FLOOR (\"22.23.4\", the only JavaScript text of the floor), NODE_REFUSAL_EXIT (2), meetsNodeFloor(version), nodeFloorRefusal(version) and refuseBelowNodeFloor(stderr, version = process.versions.node) with the contracts of the table, the strict version shape (decisions/0120 О8), the exact refusal line of section 2 with 22 and 22.23.4 taken from NODE_FLOOR (no second literal), a throwing write swallowed (the guard returns true and does not throw); a pure ES module with no import, no read of the disk or the environment except the default argument, and none of the words the bans of section 2 name. Read the design yourself (sections 2, 3, 12, 13, 14, 15), the block REQ-110 (amended) and decisions/0101, 0119, 0120 (О1-О17). Only S1: no caller is changed here (S2-S6 are CODE-FIXER's step 04b). Check your module yourself before hand-in, outside the project in your own folder, with your own probes that import only the module: every row of the rule table of section 2 (refused and accepted) gives the stated answer; the refusal line equals the design's text byte for byte for a normal version and for a version outside the shown shape; a throwing writer; the mutants of section 13 that concern the rule (M01-M05, V06, V07 and the strict-shape ones) each turn one of your probes red. Then in the project, after the file is written: `cd tools && npm run -s format:check`, `npm run -s lint`, `npm run -s traces`, `node src/handoffs/cli.js`, and the test files named for S1 in design section 12 (repo, traces-runtime, team-deps, picker-config, traces-check) — each by `node --test` with a private TMPDIR — all green; a format:check failure only on a file of the parallel run M0DOCS-20261117-01 is not yours (name it in result.issues). SAFETY: simulate Node versions only by passing version strings — never install or download an old Node; never start Pixel Office, its hook or a team server; never set SAI_TEAM_REAL_RUNS; never start the real claude; never import a program file of tools/src to read it (your own probes import only tools/src/node-floor.js, the file you write); TMPDIR of every run inside your own folder; npm_config_update_notifier=false and only local binaries; a command denied by the permission check is not done another way. Change no project file other than tools/src/node-floor.js and this handoff; do not run the full npm run check (CODE-FIXER runs it once at the end of step 4); no commit, push or pull. The handoff and the module hold no absolute machine paths, no temporary paths and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "tools/src/node-floor.js exactly by design section 2: exports, contracts, the strict shape, the exact refusal line from NODE_FLOOR, a throwing write swallowed",
+      "a pure module: no import, no disk or environment read but the default argument, none of the banned words",
+      "own probes: every row of the rule table, the refusal line byte for byte, the rule mutants red; format:check, lint, traces, handoffs-check and the S1 test files green"
+    ]
+  },
+  "created_at": "2026-11-18T07:34:57Z",
+  "started_at": "2026-11-18T07:34:57Z",
+  "completed_at": "2026-11-18T14:56:08Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-03 step 4, sub-step S1 of the passed design (docs/design/REQ-110-tools-node-floor.md, sha256 119d0b2d6352…, checked equal to the task before the work; gate PASS at step 03d). Written: the new pure module tools/src/node-floor.js (64 lines) by design section 2 — NODE_FLOOR \"22.23.4\" (the only JavaScript text of the floor and the only bordered 22.<n>.<n> text of the file), NODE_REFUSAL_EXIT 2, meetsNodeFloor(version) with the strict shape of decisions/0120 О8 (three parts, each 0 or 1–9 digits with no leading zero, anchored, a non-string false, major equal to the floor's, (minor, patch) compared as numbers, a malformed floor accepts nothing), nodeFloorRefusal(version) with the exact line of section 2 (the major and the floor taken from NODE_FLOOR, a version shown only in the shape ^[0-9A-Za-z.+-]{1,64}$, else «неизвестная версия»), refuseBelowNodeFloor(stderr, version = process.versions.node) (false and stderr untouched at or above the floor; else one write of the line and \"\\n\", a throwing write swallowed, true). It loads no module, reads neither the disk nor the environment except the default argument, and holds none of the banned words of section 2. No caller is changed (S2–S6 are CODE-FIXER's step 04b). Checked outside the project with my own probe (292 checks: every row of the rule table, the refusal line byte for byte against the design text, the guard with a recording, a throwing and a missing writer, the default argument, variants of NODE_FLOOR, the text bans) and 25 mutants of the rule, the shape, the line and the guard, each red under a named probe row; then in the project format:check, lint, traces, handoffs-check and the five test files of S1 — all code 0.",
+    "changes": [
+      {
+        "file": "tools/src/node-floor.js",
+        "what": "new module, design section 2 (the export table and the contracts, the rule table, the refusal line); decisions/0120 О7 (a new module, BACKEND-DEV), О8 (the strict shape); section 14 row «the stderr of a refused command is closed» (the swallowed write); section 15 Q7 (the line holds only versions; a strange version text is not printed)"
+      },
+      {
+        "file": "handoffs/ISS-0092-20261117-01/step-04-backend-dev.json",
+        "what": "status IN_PROGRESS at the start (after the resume), then result; status and completed_at by the close command"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node -v",
+        "output": "v22.23.4"
+      },
+      {
+        "command": "shasum -a 256 docs/design/REQ-110-tools-node-floor.md",
+        "output": "119d0b2d6352d93740f5e4c07606da4d62088899aaaba77b05b4e36988de9a36 (equal to the task's 119d0b2d6352…)"
+      },
+      {
+        "command": "(probe, outside the project) node <outside the project>/i092-04/probe/probe.mjs tools/src/node-floor.js docs/design/REQ-110-tools-node-floor.md <outside the project>/i092-04/work/real (TMPDIR in the same folder)",
+        "output": "exit 0 — «probe: 292 checks, 0 failed; sha256 of the 22.21.1 line 173fa69f0031b31c4e0a12bd1fe3c66597b9198dd2d68e00e2bb924a5806a769». Rows: A exports (exactly the five names, NODE_FLOOR \"22.23.4\", NODE_REFUSAL_EXIT 2); B every refused row of the table of section 2 false (21.7.0, 23.0.0, 24.11.0, 25.2.1; 23.24.0, 24.23.4, 23.23.4, 21.24.0, 21.23.4; 22.0.0, 22.3.0, 22.21.1, 22.22.0, 22.23.0, 22.23.3; 22.23, 22.23.4.1, 22.23.x, 22.24.0-pre, x, empty; 022.23.4, 22.023.4, a leading space, a line end, 2222222222.0.0, undefined, null, the number 22.234) plus rows of the contract words (a ten-digit minor and patch, +/- signs, a trailing space, 22.23.04, v22.23.4, \\r, NUL, full-width digits, an array, a String object, an object with toString, true, 22), every accepted row true (22.23.4, 22.23.10, 22.24.0, 22.100.0 and the nine-digit twins 22.999999999.0, 22.23.999999999), the rows read from the rule (the floor true; patch − 1, next major .0.0, next major minor + 1, previous major minor + 1 false); C the line byte-equal to the design's line 92 with the version (8 shown versions, 64 characters shown) and with «неизвестная версия» (14 versions: line end, control character, \\r, 65 characters, empty, leading space, a slash, U+2028, Cyrillic, undefined, null, a number, an array, an object), each one line, Cyrillic, holding 22.23.4, no stack line; D the guard: one write of the line and \"\\n\" under 7 refused versions, no write under the 6 accepted, a throwing writer below the floor → true and no throw, at the floor → false and never called, stderr null/undefined/{}/{write: 5} → true and no throw; the default argument under the real Node and under process.versions.node set to 22.21.1, 22.24.0, 23.0.0 in the probe process (a version string only, with a positive control and the property restored); E copies with NODE_FLOOR 22.23.5 and 23.1.0 (rule and line follow the floor, no second literal) and malformed 22.23, x, empty, 022.23.4 (every version false, the guard refuses); F text of the module (no module loaded, no node:, child_process, fetch(, network import, write word of PK-6e, WEB-9d, CTL-5a, PG-20 or PK-7a, no clock, no environment, no computer path; process once, as the default; exactly one bordered 22.<n>.<n> text, the floor; no «Node 22» literal; five exports)"
+      },
+      {
+        "command": "sed -n 92p docs/design/REQ-110-tools-node-floor.md | sed 's/^    //; s/<версия>/22.21.1/' | tr -d '\\n' | shasum -a 256",
+        "output": "173fa69f0031b31c4e0a12bd1fe3c66597b9198dd2d68e00e2bb924a5806a769 (equal to the probe's line for 22.21.1)"
+      },
+      {
+        "command": "(mutants, outside the project) node <outside the project>/i092-04/probe/mutants.mjs tools/src/node-floor.js docs/design/REQ-110-tools-node-floor.md <outside the project>/i092-04/mut — each mutant one exact replacement in a copy under <outside the project>/i092-04/mut/<id>/, applied only if its text stands once, then the probe on the copy",
+        "output": "exit 0 — «mutants: 25, not caught or not applied: 0»; control (unchanged copy) exit 0, 292 checks 0 failed; project module sha256 before 33b64b8d62c578021c43833c307cbeb7ce4cd6aeb753cde7a84cedb7ba25cd8f after the same. Each mutant exit 1, CAUGHT, first red rows: M01 major only — B1 refused 22.0.0, 22.3.0 (23 red); M02 NODE_FLOOR 22.23.3 — A2, B1 refused 22.23.3 (59 red); M03 compared as text — B1 refused 22.3.0, B2 accepted 22.23.10 (5); M04 patch ignored — B1 refused 22.23.0, 22.23.3 (7); M05 upper bound dropped — B1 refused 23.0.0, 24.11.0 (17); V07 refuses only a lower major — B1 refused 23.24.0, 24.23.4 (7); M06 not anchored at the end — B1 refused 22.23.4.1, 22.24.0-pre (7); M07 leading zeros accepted — B1 refused 022.23.4, 22.023.4 (5); S01 no nine-digit limit — B1 refused 22.1000000000.0, 22.23.10000000000 (2); S02 not anchored at the start — B1 refused 022.23.4, leading space (7); S03 typeof check removed — B1 refused the array and the String object (3); S04 multiline flag — B1 refused \"22.23.4\\n\", \"22.23.4\\r\" (2); S05 shown version not checked — C2 «неизвестная версия» rows (19); S06 no 64 limit — C2 row of 65 characters (1); S07 not fail closed — E6 malformed floor 22.23 (8); M08 line without the running version — C1 (33); M09 line in English — C1 (41); M10 a second line — D3 (9); V06 try/catch removed — D5 throwing writer: no throw (6); W01 two writes — D2 exactly one write (20); W02 writer touched at the floor — D4 (9); W03 throwing write gives false — D6 (5); B01 second literal of the floor in the line — E3 floor 22.23.5 (3); B02 literal major in the line — E5 floor 23.1.0, F4 (2); D01 default argument a constant — D13 simulated 22.21.1 (5). Section 13's rule mutants covered: M01–M07, V06, V07 (and M08–M10 of the line at module level; their NF-05 and SV-39 rows are step 6)"
+      },
+      {
+        "command": "cd tools && ./node_modules/.bin/prettier --check src/node-floor.js && ./node_modules/.bin/eslint --max-warnings 0 src/node-floor.js (private TMPDIR)",
+        "output": "«All matched files use Prettier code style!», exit 0; eslint no output, exit 0"
+      },
+      {
+        "command": "cd tools && npm run -s format:check (TMPDIR <outside the project>/i092-04/tmp, npm_config_update_notifier=false; 2026-11-18T14:53:16Z)",
+        "output": "«Checking formatting... All matched files use Prettier code style!», exit 0 (no failure on a file of the parallel run M0DOCS-20261117-01 either)"
+      },
+      {
+        "command": "cd tools && npm run -s lint",
+        "output": "no output, exit 0"
+      },
+      {
+        "command": "cd tools && npm run -s traces",
+        "output": "«traces: файлов проверено 2616, следов 0, пропущено 67», exit 0"
+      },
+      {
+        "command": "cd tools && node src/handoffs/cli.js",
+        "output": "«handoffs-check: файлов проверено 1435, нарушений 0, исключений использовано 110 из 110», exit 0"
+      },
+      {
+        "command": "cd tools && node --test test/<file>.test.js, one file at a time, private TMPDIR",
+        "output": "repo: # tests 26 # pass 26 # fail 0; traces-runtime: 6/6 # fail 0; team-deps: 2/2 # fail 0; picker-config: 35/35 # fail 0; traces-check: 29/29 # fail 0; each exit 0, # skipped 0, # todo 0 (section 12 row S1: none red)"
+      },
+      {
+        "command": "grep -niE 'secret|token|passw|api[_-]?key|bearer|private key|sk-[a-z0-9]' tools/src/node-floor.js",
+        "output": "no match (exit 1): no secret in the changed file (Q7)"
+      },
+      {
+        "command": "grep -nE '(skip|only|todo)\\(|eslint-disable|\\|\\| true' tools/src/node-floor.js",
+        "output": "no match (exit 1) (Q6)"
+      },
+      {
+        "command": "git status --short tools/ handoffs/ISS-0092-20261117-01/",
+        "output": "?? tools/src/node-floor.js (mine), ?? handoffs/ISS-0092-20261117-01/ (the run folder); the other entries (M tools/handoffs/exceptions.tsv, M tools/test/handoffs-real.test.js, ?? tools/test/current-docs.test.js) are not mine and were not touched"
+      },
+      {
+        "command": "search for the names of other projects and computer paths",
+        "output": "the module and this handoff: empty (npm run traces above, 0 traces; the probe's F1 row for computer paths in the module)"
+      },
+      {
+        "command": "not run, by the task",
+        "output": "the full npm run check and npm test (CODE-FIXER runs the full check once at the end of step 4)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Interruption: the run was stopped by ORCH on the owner's word while I was reading the inputs (no project file had been changed; the handoff was still PENDING) and resumed by SendMessage; the record is ORCH's context.interruptions, not edited. After the resume I re-checked the facts of ORCH's message (status PENDING, result null, tools/src/node-floor.js absent, design sha256 119d0b2d6352…) and set IN_PROGRESS."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "A reading of section 2 for TEST-DESIGNER (step 6), no departure: «a non-string → false» is kept strictly — the rule never coerces, so an array [\"22.23.4\"], a String object and an object whose toString gives the floor are false (probe rows; mutant S03 shows a coercing rule would take them). nodeFloorRefusal shows a version «as given» only when it is a string of the shown shape; a number such as 22.234, null, undefined or an object is shown as «неизвестная версия». A version of exactly 64 shown characters is printed, 65 is not (the border twins)."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "SAFETY note: to prove that the default argument reads process.versions.node (mutant D01, «the default is a constant», would otherwise pass), the probe set the configurable property process.versions.node to the strings 22.21.1, 22.24.0 and 23.0.0 inside its own process, with a positive control and the descriptor restored (D12–D15) — a version string only, as the design's preload does (F1); no Node was installed or downloaded. Nothing of tools/src but the new module (and copies of it outside the project) was imported; no Pixel Office, hook, team server or real claude was started; SAI_TEAM_REAL_RUNS was never set; the real home's state folder was not touched; no command was denied by the permission check."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "Counts for «As built» (AP-143): the built module has 64 lines (section 0 names 54 for the sketch; the difference is comments). It holds exactly one bordered 22.<n>.<n> text (the NODE_FLOOR literal), which is the «module» text among the 9 floor texts NF-01 expects after S6. Until S2 the module has no caller."
+      },
+      {
+        "id": "I5",
+        "kind": "PROPOSAL",
+        "text": "A small process slip, for ORCH to judge as a journal record (Q13; nothing of the project was touched): the Write tool turned printable \\u escapes of my probe (\\u2028, \\u2029, \\u0400, \\uFF12) into raw characters, and a raw U+2028 inside a regex literal is a line end, so the probe's first run ended with a SyntaxError (a red of the instrument, not of the module). Fixed in the probe with explicit character codes (String.fromCharCode, new RegExp from an escaped string) before any result was taken. Lesson: a probe that needs such characters builds them from codes, and its first run is read for an error of its own before its output is trusted (AP-160)."
+      }
+    ],
+    "prototype": "<outside the project>/i092-04/ (the session work folder): probe/probe.mjs (the probe, 292 checks), probe/mutants.mjs (the 25 mutants and the control), probe/fill-result.cjs (writes this result); work/ and mut/ (the copies and variants of the module); logs/ (probe-real.txt, mutants.txt, format.txt, lint.txt, traces.txt, hc.txt, test-<file>.txt — every output quoted above); tmp/ (the private TMPDIR). Instruments of the check, not the implementation.",
+    "artifacts_out": [
+      "tools/src/node-floor.js"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-18T07:34:56Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/backend-dev.md (read first): the Sai role agents are not registered in this ORCH session. decisions/0120 О17 written by ORCH after the design gate's PASS."
+  }
+}

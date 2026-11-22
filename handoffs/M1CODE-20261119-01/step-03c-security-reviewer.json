@@ -1,0 +1,129 @@
+{
+  "handoff_id": "step03c-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "03c",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M1CODE-20261119-01/step-03c-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/quality-bar.md",
+      ".claude/agents/security-reviewer.md",
+      "handoffs/M1CODE-20261119-01/step-03b-security-reviewer.json",
+      "handoffs/M1CODE-20261119-01/step-02c-code-fixer.json"
+    ],
+    "write_set": [
+      "handoffs/M1CODE-20261119-01/step-03c-security-reviewer.json only"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 3, review pass 3 of 3 - SECURITY-REVIEWER checks the fix round 02c and the tests of run M1CODE-20261119-01 (task M1.4: REQ-111 public landing, REQ-112 stage-mode office): the three SEC findings of pass 2 (L1 body written outside the mapping, L2 an intake text not exactly {ru, kk, en} reaching the answer whole, L3 links already in the output folder), regressions of the fixes and of the sticky phone bar, nothing stored and no answer logged, the public set (production build) with no order text and no kk, the CSP unchanged, the e2e fixtures and the CI job without secret or outside call. Change: git diff base/M1CODE-20261119-01-review base/M1CODE-20261119-01-review3 -- app .github. Open and not touched: the low of decisions/0124 O23.",
+    "acceptance_criteria": [
+      "The three SEC findings of pass 2 are tried against their fixes with own oracles",
+      "Regressions of the fixes and the sticky bar are looked for",
+      "Items Q7-Q11, R3 named met or not applicable; trial counts in the summary"
+    ]
+  },
+  "created_at": "2026-11-20T18:55:41Z",
+  "started_at": "2026-11-20T18:55:41Z",
+  "completed_at": "2026-11-20T18:56:33Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "VERDICT PASS (review pass 3 of 3), with one new Low finding (L1) that does not block; no Critical, High or Medium finding. The three SEC findings of pass 2 are fixed for every shape I could build, with one residue of the same class (L1, below). The open low of decisions/0124 O23 is untouched and stays open.\n\nMAP OF SURFACES (the change of this pass: git diff 35b593f..a2103bd, the code of fix round 02c, plus the 25 files of tests and fixtures since pass 2). Goes to the browser: app/public/css/site.css (the sticky phone bar, scroll-padding; CSS only, no url(), no @import, no expression: 0 added lines match), and every answer of the two demo routes. Comes from outside: app/server/routes/demo.js (query lang, POST body, the intake texts the routes copy into the answer). Writes files: app/scripts/vercel-build.js (the check of the output folder before the copy) and app/scripts/public-set.js (one word: present is exported). Holds a secret: none (.github unchanged since the review tag: git diff is empty; package.json, lockfile and .npmrc unchanged). The server goes by itself: none. Customer data: none. Photos: none. Tests and fixtures (app/test/**, 25 files, 15 171 lines): no surface in production; read for secrets and outside calls.\n\nITEMS. Q7 met: no secret in the change; no URL other than 127.0.0.1 or example.test in app/test/fixtures and app/test/e2e (grep: 0 matches for another host); no process.env, child_process, WebSocket or XMLHttpRequest in the fixtures; browser.js aborts and records every request whose address does not start with the local origin, serviceWorkers are blocked, downloads off; the CI job e2e has no secrets context, no env, checkout persist-credentials false, actions pinned by SHA (unchanged); 650 log lines and 10 more (marker in query, header, cookie, Authorization, body) hold only ts, level, req_id, route, status, ms, code; the marker is in none. Q8 not applicable (no space, account or customer data; no request selects the intake). Q9 met (no SQL in the diff; a database proxy that records every call was passed to nothing: db null, 0 calls in 12 241 in-process requests). Q10 met: see the SEC L1 paragraph below (0 of 2 400 requests answer 500, before the fix 72 did); the app keeps answering after each refusal. Q11 not applicable (the server calls no outside address; the pages call only their own origin: 46 browser trials, 0 outside requests, a canary port on 127.0.0.1 got 0 hits from 8 hostile redirect trials; the fs write traps recorded 0 writes by the demo routes in 10 requests). R3 not applicable (decision 0033; Permissions-Policy camera, microphone, geolocation denied; headers.js unchanged since pass 2).\n\nTHE THREE FINDINGS OF PASS 2, TRIED.\nSEC L1 (body written outside the mapping): fixed. answer() writes the body inside the handler's mapping, so a body that cannot be written is 503 demo_unavailable. Own oracle: a depth scan of arrays nested 100 to 14 000 deep (100 depths) in 8 places (question id, option id, solution id, title, includes item, not_suitable_when item, no_match_text, name under en) x 3 requests = 2 400 requests through the function app (the code the Vercel function runs). After: 0 answers 500, 0 log lines 500, every 503 body exactly the stable code. Before (tag base/M1CODE-20261119-01-tests): 72 answers 500 plus 72 log lines 500 in the window 6 950 to 9 700 deep. The serialization inside the handler runs deeper in the stack than the one in app.js, so a body that passes the first also passes the second (checked by the scan, not only by reading). Not measured: the stack depth of the Vercel function itself.\nSEC L2 (an intake text not exactly {ru, kk, en}): fixed for every text the design names. Own oracle: 7 text slots (question title, option label, solution name, summary, includes item, not_suitable_when item, no_match_text) x 14 shapes (kk-only pair, extra key, no en, en an object holding a kk text, en an array holding a kk text, an array, an object with only kk, a nested object that picks to a kk text, a number, null, true, a toJSON-like key, an exact {ru,kk,en} with arrays as control, an exact {ru,kk,en} of strings as control) and 3 slots x 5 shapes for the ids, each intake through the function app (ru and en only; kk asked as ru), in ru, en and kk, with the questionnaire and 37 valid answer sets: 9 831 requests. Judged by my own oracle: status 500 never; a 503 only with the stable body; a 200 with no Kazakh-specific letter, no plant marker and none of the 157 kk-only texts of the module. After: 18 violations, all in the ids (below, L1), 0 in the 7 text slots. Before: 1 191 violations. The controls (exact shapes) answer as before. Not through the real Vercel platform.\nSEC L3 (links already in the output folder): fixed. runBuild into another folder with the output folder holding: an entry that is a link to a folder outside, a page that is a link to a file outside, a link below a folder, a link four folders deep, a dangling link, a loop, a relative link up, a dot file link, an upper-case .HTML link, the output folder itself a link, the output folder a dangling link, the output folder a plain file: 12 of 12 exit 1 with one refusal line, 0 files changed outside (lstat walk with sha256 of every file and the target of every link, nothing outside, in the output folder or in the source changed). Controls: an existing plain output folder, a missing one and an empty one exit 0, nothing outside. Before (the tests tag): the same driver aborts the process on the dangling link (libc++abi, exit 134) and pass 2 measured the outside write. Not covered, same as the known I2 of pass 2 (hard link), unreachable from the CLI, which writes in place: a hard link in the output folder to an outside file is written through by the copy (1 of 16 shapes: outside file changed, exit 0); a link in a parent of the output folder is not looked at.\n\nREGRESSIONS. (1) The sticky phone bar (position sticky, in the flow; scroll-padding-bottom): CSS only, no new script, style or request; in a real Chrome (channel chrome 157, a fresh profile, HOME and TMPDIR under <scratch>) on the public set the footer links were reachable at the end of the page in 144 of 144 states (6 windows 390x844, 320x568, 360x640, 759x700, 760x700, 1280x800 x ru, en x light, dark x the question pages), no horizontal scroll in 144 of 144. (2) text()/texts()/answer(): every valid intake and answer set answers as before (npm run check green: unit 118 of 118, int 47 of 47; e2e 15 of 15 in 385 s). (3) The sticky bar, the scroll padding and the new checks add no storage: the page keeps only sai-lang and sai-theme (a real full survey and 45 hostile runs: localStorage keys none beyond the two, sessionStorage 0, cookies 0, IndexedDB 0, caches 0).\n\nPAGES IN A REAL HEADLESS CHROME, THE SERVER ANSWER REPLACED. The open build of the review tag was written outside any git tree and served by the app's own createApp with the public languages. 46 trials (1 positive-control run excluded): the real survey through all five questions, and the questionnaire replaced by 10 hostile bodies (an img with onerror and a script in titles and labels, ids that are objects and arrays, wrong types, null, an empty object, an array, 1 MB titles and labels, a 20 000-deep array, kk text in en, an own __proto__ key) x status 200, 503, 500 and a 302 to a canary port, plus 5 hostile result bodies (html in name and summary, wrong types, null, kk text, a 20 000-deep array). Judged: window.__pwn never set, no img, script, iframe or on-attribute added to #demo, no inline script in the document, 0 CSP violations, 0 hits on the canary, 0 requests outside the origin, no call of innerHTML, outerHTML, insertAdjacentHTML or document.write (hooks with a positive control: the control run saw both the CSP violation of an inline script and the innerHTML call). grep of app/public for innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function, cssText, DOMParser, srcdoc, createContextualFragment: 0 matches; localStorage is touched only in js/dom.js (the two preferences, already checked in pass 2). No <script> with a body, no <style>, no style= and no on-attribute in the five pages. The CSP in server/http/headers.js is unchanged since pass 2 (not in the diff): default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'.\n\nTHE PUBLIC SET. The open build (node scripts/vercel-build.js, exit 0, 'check-public: app/public is clean', 'vercel-build: done') of git archive of the tag in a folder outside any git tree: 21 files, no examples.html. My own oracle on the output: the 157 kk-only texts of the texts module and the 114 kk-only texts of the intake appear in 0 files; the 45 order_ keys: 0 leak (the 8 hits are strings that a non-order key of the public set also holds, e.g. nobuild_1 'Servers, APIs and databases'); 27 lines of examples.html appear only as shared chrome (skip link, test-mode strip). The only Kazakh letters left in the public set are the language label ҚАЗ (decisions/0124 O21). The control: the same oracle on the source folder gives 435 hits. The function app and the entry answer no kk (0 Kazakh letters in 9 831 + 2 400 answers; ?lang=kk gives ru).\n\nNOTHING STORED, NO ANSWER LOGGED. 10 requests through the function app and the local app with a marker in the query, the headers (Cookie, Authorization, X-Mark, Accept-Language kk), the body key, the answer value and a raw body: no Set-Cookie, no marker in any of the 10 log lines, extra keys 0, 0 fs writes (fs.writeFileSync, appendFileSync, mkdirSync, rmSync, renameSync trapped), 0 database calls; the browser runs above store nothing.\n\nTRIAL COUNTS. Text and id shapes 9 831 requests (before 1 191 violations, after 18, all ids); depth scan 2 400 requests (after 0 x 500; before 72); link shapes 16 (12 refused, 3 controls clean, 1 hard link as the known I2); browser trials 46 + 1 control + 144 layout states; unit 118, int 47, e2e 15; leak oracle over 21 files, 157 + 114 + 45 + 27 items; 10 logging requests. Total about 12 500 trials.",
+    "findings": [
+      {
+        "id": "L1",
+        "severity": "Low",
+        "item": "G9 (kk hidden on production) and REQ-111 criterion 7 'only the fields the design names ... in one language'; not a Q item (the intake texts are not secret, the repository is public); the fix of SEC L2 of pass 2 is not complete for the ids",
+        "place": "app/server/routes/demo.js: questionnaire() line 'id: q.id' and 'id: o.id' (questions and options), and result() 'id: s.id' (the solution); the new text() and texts() cover title, label, name, summary, includes, not_suitable_when and no_match_text only",
+        "what": "A question id or an option id that is not a string is copied whole to the questionnaire. Measured through the function app (ru and en only): an intake whose question id is {a: <kk text>} or whose option id is {a: <kk text>} (or an array holding it) answers 200 with the object whole in 'id', so a Kazakh text reaches production (9 + 9 of the shapes, 18 violations in 9 831 requests; the depth scan shows the same copy up to 6 800 deep, then 503). The solution id is not reachable the same way (a rule refers to it by string, so the engine throws and the result is 503). Preconditions as in L2 of pass 2: an intake in the repository that the content step refuses (the picker check says E_FIELD 'Ожидается строка' for such an id), that loadIntake and check-public accept (check-public: exit 0), and that is deployed without the check chain (the open build does not run the content step). The kk text is not secret and sits in the public repository; the harm is the G9 gate (kk not shown on production) and a non-string where the page expects a string (the page shows its failure message). Of the fix round, a residue of the class, not a new route.",
+        "fix": "Make the ids strings in the projection (typeof id === 'string' for question and option ids, else demo_unavailable), or accept in loadIntake only an intake whose question and option ids are strings; a DM-6c row for an object id and an array id in a question and in an option, through the function entry: 503, no Kazakh letter; the mutant 'id copied whole' red."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git rev-parse HEAD of the tree; git status; shasum of every app/ file at the start and the end",
+        "output": "HEAD a2103bdc31ae4aac9c567a1e336865a92a8977ea at both times. At the start git status was clean and the app/ digest 4eccf8a9...; at the end the digest was 1e3a0fec... and git status showed the 7 + 2 files of another session (I2); I changed nothing in the tree: every run was in <scratch>/p3 (after = clone of base/M1CODE-20261119-01-review3, before = clone of base/M1CODE-20261119-01-tests, pb = git archive of the tag outside any git tree for the open build)."
+      },
+      {
+        "command": "git diff 35b593f a2103bd -- app/public app/scripts app/server (read in full); git diff --stat 35b593f a2103bd -- .github",
+        "output": "5 code files (site.css, public-set.js, vercel-build.js, demo.js); .github: no change."
+      },
+      {
+        "command": "node <scratch>/p3/drv/shapes.mjs <clone> (own oracle: 113 intakes x 3 languages x the questionnaire and 37 answer sets, through createFunctionApp)",
+        "output": "after: trials 9831, violations 18 (ids only: question id obj 9, option id obj 9); before: trials 9831, violations 1191."
+      },
+      {
+        "command": "node drv/depth.mjs <clone> (8 places x 100 depths x 3 requests)",
+        "output": "after: 2400 requests, 0 x 500, 0 log 500, other violations 0 (104 kk-in-200 only in question id and option id); before: 352 bad lines, 144 of them 500 or log 500."
+      },
+      {
+        "command": "node drv/l3.mjs <clone> (16 output-folder shapes, lstat walk with sha256 outside, in the output and in the source)",
+        "output": "12 of 12 link shapes exit 1 with one refusal line naming the link, 0 changed outside; 3 controls exit 0; the hard link: exit 0 and the outside file changed (known I2)."
+      },
+      {
+        "command": "HOME and TMPDIR in <scratch>: node drv/browser.mjs <clone> <public set> (Chrome 157 by playwright-core 1.64.1, channel chrome)",
+        "output": "control hooks: [csp script-src-elem, SINK innerHTML]; trials 46, problems 0, canaryHits 0, log lines 650 with extra keys 0."
+      },
+      {
+        "command": "node drv/sticky.mjs <clone> <public set>",
+        "output": "states 144, footerCovered 0, horizontalScroll 0, noTicket 24 (the windows of 760 and 1280)."
+      },
+      {
+        "command": "node drv/leak.mjs <source> <public set>",
+        "output": "21 files; kkKeys 157, orderKeys 45, intakeKk 114, exLines 27; real leaks after excluding strings a public key also holds: only the test-mode strip; control on the source folder: 435 hits."
+      },
+      {
+        "command": "cd app && npm run check; npm run test:e2e (in the clone, HOME and TMPDIR in <scratch>)",
+        "output": "prettier, eslint, tsc, check-public, vendored, picker check green; unit tests 118 pass 0 fail; int tests 47 pass 0 fail; e2e 15 pass 0 fail (385 s)."
+      },
+      {
+        "command": "node drv/log.mjs <clone> (marker in query, headers, body, answers; fs write traps)",
+        "output": "requests 10, markerInLogs false, extraKeys 0, fsWrites 0."
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "PROCESS",
+        "severity": "Low",
+        "text": "This handoff was created by the agent with the command npm run handoff -- new on the task's order (from_agent ORCH). docs/workflows/handoffs.md says only ORCH creates handoffs; by CLAUDE.md the task (2) stands above it; recorded, not resolved. started_at is the creation time; the work itself began earlier."
+      },
+      {
+        "id": "I2",
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "The project tree did not stay clean during the check, and not by this step: git status at the end shows 7 modified files (app/test/fixtures/blank.js, app/test/unit/import-boundaries.test.js, office-pure.test.js, public-build.test.js, vendored.test.js, vercel-build.test.js, decisions/0124-m1code-landing-design-answers.md) and two new files (app/test/fixtures/snapshot.js, handoffs/M1CODE-20261119-01/step-04c-reviewer.json), written by another session (the parallel REVIEWER or ORCH). HEAD is still a2103bd = tag base/M1CODE-20261119-01-review3, and all my runs were in fresh clones of that tag (and one archive of it), never in the tree. The app/ hash list I took at the start differs from the end only because of those test edits. My verdict is on the tag, not on the edited tree."
+      },
+      {
+        "id": "I3",
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "Out of the verdict, for ORCH: the hard link in the output folder is written through by the copy (the known I2 of pass 2, now also on the output side), a link in a parent of the output folder is not looked at; both unreachable from the CLI, which always writes in place. The phone-bar text of docs/design/V1-public-look.md 7.11 still says 'fixed' while the bar is sticky (issue I1 of 02c, a design text follow-up). The 24 of 144 layout states with no aside#ticket are the 760 and 1280 windows (the bar belongs to the phone layout below 760)."
+      },
+      {
+        "id": "I4",
+        "kind": "RED_NOT_OF_THIS_WORK",
+        "severity": "Low",
+        "text": "cd tools && npm run handoffs-check ends with the known line about handoffs/M0DOCS-20261117-01/step-05c-test-designer.json (PENDING), not this step's."
+      },
+      {
+        "id": "I5",
+        "kind": "OBSERVATION",
+        "severity": "Low",
+        "text": "AP-018: the task names expected results (the three findings really fixed); recorded and not taken into account: the verdict comes from my own trials, and they found a residue (L1)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

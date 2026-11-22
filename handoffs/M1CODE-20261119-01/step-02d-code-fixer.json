@@ -1,0 +1,161 @@
+{
+  "handoff_id": "step02d-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02d",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/M1CODE-20261119-01/step-02d-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-07-design-qa-validator.json",
+      "handoffs/M1CODE-20261119-01/step-03c-security-reviewer.json",
+      "handoffs/M1CODE-20261119-01/step-04c-reviewer.json",
+      "docs/design/REQ-111-112-public-landing.md",
+      "docs/design/V1-public-look.md",
+      "decisions/0123 and 0124 with all Additions (О26-О34)"
+    ],
+    "route": "DESIGN-QA 07 FAIL + SECURITY-REVIEWER 03c L1 + REVIEWER 04c L3 -> CODE-FIXER 02d (this) -> SECURITY-REVIEWER and REVIEWER again, TEST-DESIGN-VALIDATOR, DESIGN-QA second pass",
+    "write_set": [
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js",
+      "app/server/routes/demo.js",
+      "app/content/sai-intake.json",
+      "app/test/e2e/landing.test.js",
+      "app/test/int/demo.test.js",
+      "app/test/unit/intake.test.js",
+      "handoffs/M1CODE-20261119-01/step-02d-code-fixer.json (this handoff)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-07-design-qa-validator.json, step-03c-security-reviewer.json and step-04c-reviewer.json, fix round 02d. The remarks:\n- N1 [Medium] (step-07-design-qa-validator.json, decisions/0124 О32): demo.html, ru, 360 to 371 px wide: the speaker title is wider than its column; move the own-row rule of site.css from max-width 359px to 371px; add the windows 360 and 371 px (ru) to the e2e row that reads the speaker (e2e count stays 15).\n- N2 [Low] (same, О33): the result chips carry the question only in title; give each chip aria-label \"<question>: <answer>\" and a row that reads the accessible names with all answers «Не знаю».\n- N3 [Low] (same, О33): no_match_text of the intake (ru, kk, en) names an answer the visitor did not give; make it conditional; the picker check must exit 0.\n- SECURITY L1 [Low] (step-03c-security-reviewer.json, О28): a question, option or solution id that is an object or an array must give 503 demo_unavailable on the demo routes; DM-6c rows for an object id and an array id in a question and in an option through the function entry; the mutant «id copied whole» red.\n- REVIEWER L3 [Low] (step-04c-reviewer.json, О27): answer() in demo.js serializes the body and discards it, the app serializes again, the comment says «once»; carry the text or reword the comment truthfully; behaviour and the 503 mapping unchanged.\nNot touched: the lows L1 and L2 of the reviewer's pass 3 (О26, the owner's G21 list) and the other findings.",
+    "acceptance_criteria": [
+      "REQ-111 criterion 12: no text cut or over another control at 360 to 371 px in ru",
+      "REQ-111 criterion 7: demo routes answer 503 demo_unavailable for an id that is not a string; one language",
+      "npm run check green; npm run test:e2e 15 of 15 twice; npm run traces 0 traces"
+    ]
+  },
+  "created_at": "2026-11-20T21:06:00Z",
+  "started_at": "2026-11-20T21:06:00Z",
+  "completed_at": "2026-11-20T21:06:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fix round 02d done: N1, N2, N3, SECURITY L1 and REVIEWER L3 are closed, nothing is in not_fixed. N1: the own row of the demo's speaker now applies below 372 px (one CSS line), and LD-5 reads the speaker's title at 360 and 371 px in ru. N2: each result chip has aria-label «<question>: <answer>», read by LD-6 through the browser's role query. N3: no_match_text is conditional in ru, kk and en (О33). SECURITY L1: a question, option or solution id that is not a string gives 503 demo_unavailable; six DM-6c rows. REVIEWER L3: the comment of answer() is true now. Files: app/public/css/site.css, app/public/js/pages/demo.js, app/server/routes/demo.js, app/content/sai-intake.json and the tests app/test/e2e/landing.test.js, app/test/int/demo.test.js, app/test/unit/intake.test.js. npm run check green (unit 120, int 47), npm run test:e2e 15 of 15 twice in a row, npm run traces 0 traces, the criterion grep of REQ-108 criterion 2 over app/test prints nothing.",
+    "changes": [
+      {
+        "remark": "N1",
+        "file": "app/public/css/site.css",
+        "place": "the media query of the own row of the speaker (about line 1937) and the comment above it",
+        "was": "@media (max-width: 359px): from 360 px the speaker stood beside the question in a column 122 px wide at 360 and 129 at 371, and the ru titles (130 px «Проверяющий», 126 px «Руководитель проекта») were wider than it",
+        "became": "@media (max-width: 371px) (decisions/0124 О32); the comment says below 372 px (it was 360). Nothing else of the block changed, so «‹ Назад» moves to the progress row below 372 px as it did below 360"
+      },
+      {
+        "remark": "N1",
+        "file": "app/test/e2e/landing.test.js",
+        "place": "LD-5, new section F (inside the existing test; the e2e count stays 15, NPM-7 untouched)",
+        "was": "no row read the speaker's title in the 360-371 band (WINDOWS are 1470x784, 390x844, 320x568)",
+        "became": "ru, windows 360x640 and 371x640, each of the five questions: the title's text right edge is not beyond its column (.who) and, when on the row of «‹ Назад», at least 4 px from it; no sideways scroll of the page. Red on the before copy with the numbers of DESIGN-QA (360 q1 211.7 against 208.4, q5 216.4 against 208.4; 371 q5 218.4 against 217.4), green after"
+      },
+      {
+        "remark": "N2",
+        "file": "app/public/js/pages/demo.js",
+        "place": "the chips of the result (editQuestion chips, about line 948)",
+        "was": "the question was only in title: five answers «Не знаю» gave five buttons named «Не знаю»",
+        "became": "aria-label=\"<question>: <answer>\" built from q.title and answerText(q) (the existing texts, no new key); the visible text and the title are as before"
+      },
+      {
+        "remark": "N2",
+        "file": "app/test/e2e/landing.test.js",
+        "place": "LD-6, after the five-chips assertion, in every pass of every language (the fixtures and five «Не знаю»)",
+        "was": "the chips were read by their text only",
+        "became": "the chips' texts equal the answers given, and for each question the browser's own role query getByRole('button', {name: '<question>: <answer>', exact: true}) finds exactly one button; with five «Не знаю» the five names differ by the question. Red on the before copy (ru calculator: no button named «Для чего вам нужен сайт или приложение?: Посчитать или подобрать»), green after"
+      },
+      {
+        "remark": "N3",
+        "file": "app/content/sai-intake.json",
+        "place": "result.no_match_text ru, kk, en",
+        "was": "«Например, данные для всех устройств хранятся на сервере…» (kk, en the same): for five answers «Не знаю» it named a storage answer the visitor did not give",
+        "became": "ru: «Если данные должны храниться на всех устройствах, нужен сервер, а серверы Sai пока не делает.» (О33); kk: «Егер деректер барлық құрылғыларда сақталуы тиіс болса, сервер қажет, ал серверлерді Sai әзірге жасамайды.»; en: «If data must be stored on all devices, it needs a server, which Sai does not build yet.» (my first en wording had 19 words and the picker's text rule E_TEXT refused it at 18; the shipped one has 18). The picker check exits 0"
+      },
+      {
+        "remark": "N3",
+        "file": "app/test/unit/intake.test.js",
+        "place": "new test IN-7 (unit count 119 -> 120)",
+        "was": "no row held the texts of О33",
+        "became": "the no_match_text of the real intake equals the three texts of О33 (exact); red before (the old texts), green after"
+      },
+      {
+        "remark": "SECURITY L1",
+        "file": "app/server/routes/demo.js",
+        "place": "new id() next to text(); questionnaire() ids of questions and options; result() id of the solution; the types of the questions list",
+        "was": "id: q.id and id: o.id and id: s.id copied whole: an object or an array holding a Kazakh text reached the answer through the function app (ru and en only), 200",
+        "became": "id(...) = text(...): an id that is not a string throws HttpError demo_unavailable inside the existing mapping, so both routes answer 503 {\"error\":\"demo_unavailable\"}; the behaviour for strings is unchanged"
+      },
+      {
+        "remark": "SECURITY L1",
+        "file": "app/test/int/demo.test.js",
+        "place": "DM-6c: six new rows (question id object and array, option id object and array, solution id object and array), the no-Kazakh-letter assertion for every row, the comment of the unwritable-body row",
+        "was": "no row for an id that is no string",
+        "became": "each row through createApp and the function entry, ru, en, kk: status 503, body exactly the demo_unavailable body, no Kazakh letter, content type and no-store, health and the next requests answered. Mutants on a scratch copy: `id: o.id` and `id: q.id` each make DM-6c red on the row of that id (the old code: 200 with the Kazakh text in id for the four question and option shapes; the two solution rows were already 503 because the engine throws, they are controls)"
+      },
+      {
+        "remark": "REVIEWER L3",
+        "file": "app/server/routes/demo.js",
+        "place": "the comment of answer()",
+        "was": "said the body is written to text here and the app writes after; in fact the body is serialised twice and the comment spoke of once",
+        "became": "reworded to say what is true: the body is written to text once here, the text is thrown away, the app writes it again outside the mapping; every field is a string or a boolean after the projection, so this is the last guard. I chose to reword and not to carry the text (carrying it needs a change of the shared route answer type and of app.js, outside the finding's list). Behaviour and the 503 mapping are unchanged; the DM-6c rows stay green"
+      }
+    ],
+    "not_fixed": [],
+    "self_check": [
+      "Start state: git status of the tree clean at HEAD of m0-records (tag base/M1CODE-20261119-01-fix3). End state: git status --short shows only the seven files of artifacts_out and this handoff. No commit, tag, stash or branch change.",
+      "Method: the tests were written first in the tree, then the tree (new tests, old code) was copied to <scratch>/before for the red runs; the fixes were made in the tree; <scratch>/after was a copy used for two mutants. Drivers: <scratch>/drv/ids.mjs (the demo routes over six planted intakes).",
+      "N1 before (node --test --test-name-pattern LD-5 on <scratch>/before): not ok, 3 findings: 'the title ends at 211.7, beyond its column at 208.4 (speaker 360 question 1)', 'ends at 216.4 ... 208.4 (360 question 5)', 'ends at 218.4 ... 217.4 (371 question 5)'. After: LD-5 green in both full e2e runs.",
+      "N2 before (LD-6 on <scratch>/before): not ok, 'ru calculator: the chip of question 1 is named «Для чего вам нужен сайт или приложение?: Посчитать или подобрать»' not found. After: LD-6 green.",
+      "N3 before (node --test test/unit/intake.test.js on <scratch>/before): IN-7 not ok, actual the three old texts, expected the three new. After: 7 of 7. cd app && node ../tools/src/picker/cli.js check content/sai-intake.json: 'Файл арендатора sai-intake в порядке: вопросов 5, решений 6, правил 35.', exit 0 (the first en wording failed E_TEXT 'Фраза длиннее 18 слов (в ней 19)' and was shortened).",
+      "SECURITY L1 before (driver ids.mjs on <scratch>/before): question id object, question id array, option id object, option id array: 200 with the Kazakh text in the body; solution id object and array: demo_unavailable (engine throws). DM-6c before: not ok at 'a question id that is an object holding a Kazakh text createApp ru' (200, the questionnaire with the object in id). After: all six shapes throw demo_unavailable; DM-6c green; mutants `id: id(o.id)` -> `id: o.id` and `id: id(q.id)` -> `id: q.id` on a copy: DM-6c red on the option row and on the question row.",
+      "cd app && npm run check: exit 0; prettier, eslint, tsc, check-public, vendored, picker check; unit tests 120 pass 0 fail, integration tests 47 pass 0 fail. (check-public refused the word «decisions» in a CSS comment on the first try; the comment was reworded.)",
+      "cd app && npm run test:e2e: run 1 tests 15 pass 15 fail 0 skipped 0 todo 0 (403.7 s); run 2 tests 15 pass 15 fail 0 skipped 0 todo 0, one after the other on the same tree.",
+      "cd tools && npm run traces: 'traces: файлов проверено 2814, следов 0, пропущено 67'. The grep of REQ-108 criterion 2 (the regular expression of SELECTOR_GREP, grep -rnE over app/test): no line, exit 1. cd tools && npm run handoffs-check: see the line below."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DESIGN_FOLLOW_UP",
+        "text": "For ORCH and CODE-DESIGNER: the look docs/design/V1-public-look.md 7.9 and the code design still say the own row of the speaker is below 360 px (and the comment in the look names the 359 window); decisions/0124 О32 already says «the look's 7.9 gets the threshold in its next edit». The code follows О32. Also: below 372 px «‹ Назад» now sits on the progress row (it did so below 360 px; the same rule), so at 360 to 371 px the two facts of О26 (the 320 px phone snapshot of the owner's list G21) apply to this band too: «‹ Назад» is on the row of the progress, not beside the speaker. I did not measure it against the fixed strip at 360 to 371 px beyond the rows of LD-1 and LD-5 E (which run at 320 and 390 only)."
+      },
+      {
+        "id": "I2",
+        "kind": "TEST_NOTE",
+        "text": "After SECURITY L1 the check of the body in answer() cannot be reached by any value of the intake (every field of the answer is a string or a boolean after the projection), so the DM-6c row of the unwritable body (an id whose toJSON throws) is now answered by the id check and no longer exercises that guard. The row stays and is green; the guard is kept as the last defence, as the finding asked (behaviour and the 503 mapping unchanged). If ORCH wants it either removed or carried by a route answer that holds the text, that is a separate change (it touches app.js and the RouteAnswer type)."
+      },
+      {
+        "id": "I3",
+        "kind": "PROCESS",
+        "text": "The first call of `handoff new` carried a stray --suffix r2 and made step-02d-code-fixer-r2.json (PENDING, my own file, nothing else written to it); I deleted that file and created step-02d-code-fixer.json as asked. The two calls have different handoff ids; no other handoff was touched."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "`handoff new` wrote context.base_tag base/M1CODE-20261119-01 (the tag the command looks for by the run id); the working tree is at base/M1CODE-20261119-01-fix3 as the task says. The e2e step of the check takes about 6.7 minutes in this environment (403.7 s)."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js",
+      "app/server/routes/demo.js",
+      "app/content/sai-intake.json",
+      "app/test/e2e/landing.test.js",
+      "app/test/int/demo.test.js",
+      "app/test/unit/intake.test.js"
+    ]
+  }
+}

@@ -9,6 +9,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { pathToFileURL } from "node:url";
 import { DEFAULT_PORT, STATE_FILES } from "../src/pixel-office/config.js";
 import {
   createJournal,
@@ -805,15 +806,110 @@ function memoryIo(extra = {}) {
   return io;
 }
 
-test("SV-39: not Node 22 - a refusal with the version, code 1, nothing created", async (t) => {
-  for (const version of ["21.7.0", "25.2.1"]) {
+// REQ-110: the Node version is simulated by a preload that the test writes into its own
+// folder; the child gets it by NODE_OPTIONS (both properties are configurable).
+const SV_PRELOAD_TEXT = [
+  "const v = process.env.SAI_TEST_NODE_VERSION;",
+  "if (v !== undefined) {",
+  '  Object.defineProperty(process.versions, "node", { value: v, configurable: true, enumerable: true });',
+  '  Object.defineProperty(process, "version", { value: `v${v}`, configurable: true, enumerable: true });',
+  "}",
+  "",
+].join("\n");
+// The floor as the one source (engines of tools/package.json) states it.
+const SV_FLOOR =
+  /^>=(\d+\.\d+\.\d+) </u.exec(
+    JSON.parse(fs.readFileSync(path.join(TOOLS, "package.json"), "utf8"))
+      .engines.node,
+  )?.[1] ?? "";
+
+function simulatedEnv(box, version) {
+  const preload = path.join(box.root, "version-preload.mjs");
+  fs.writeFileSync(preload, SV_PRELOAD_TEXT);
+  return childEnv(box, {
+    SAI_TEST_NODE_VERSION: version,
+    NODE_OPTIONS: `--import=${pathToFileURL(preload).href}`,
+  });
+}
+
+function refusalOf(version) {
+  return `Нужен Node ${SV_FLOOR.split(".")[0]} не ниже ${SV_FLOOR}, а запущен ${version}: команда остановлена, ничего не записано. Подробности — tools/README.md, раздел «Check».\n`;
+}
+
+test("SV-39: a Node below the floor 22.23.4 or not 22 - the refusal line with both versions, code 1, nothing created; at or above the floor the start goes on", async (t) => {
+  // In-process rows through the seam io.nodeVersion. `out` throws: a refused start
+  // writes nothing to stdout, a start that goes on writes its link line there, and
+  // main then closes its own server and returns, so a lost seam or a removed guard is
+  // a red row with a message and never a hang.
+  for (const version of ["21.7.0", "25.2.1", "22.21.1", "22.23.3", "23.0.0"]) {
     const box = sandbox(t);
-    const io = memoryIo({ nodeVersion: version });
-    const code = await main(["--port", "0"], childEnv(box), io);
-    assert.equal(code, 1);
-    assert.ok(io.stderr.includes(version));
-    assert.equal(io.stdout, "");
-    assert.equal(fs.existsSync(box.dir), false);
+    const io = memoryIo({
+      nodeVersion: version,
+      out: {
+        write() {
+          throw new Error("stdout was written: the start went on");
+        },
+      },
+    });
+    let timer;
+    const limit = new Promise((_, reject) => {
+      timer = setTimeout(
+        () =>
+          reject(
+            new Error(
+              `${version}: main did not return within 10 s: the guard is missing or ignores the seam`,
+            ),
+          ),
+        10_000,
+      );
+    });
+    const code = await Promise.race([
+      main(["--port", "0"], childEnv(box), io),
+      limit,
+    ]).finally(() => clearTimeout(timer));
+    assert.equal(
+      io.stderr,
+      refusalOf(version),
+      `${version}: stderr is not the refusal line`,
+    );
+    assert.equal(code, 1, `${version}: code ${code}`);
+    assert.equal(io.stdout, "", `${version}: stdout`);
+    assert.equal(
+      fs.existsSync(box.dir),
+      false,
+      `${version}: the state folder was made`,
+    );
+  }
+  // The positive control of the preload: a child sees the simulated version.
+  const control = sandbox(t);
+  const seen = await new Promise((resolve) => {
+    const c = spawn(process.execPath, ["-p", "process.versions.node"], {
+      env: simulatedEnv(control, "22.21.1"),
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    let out = "";
+    c.stdout.on("data", (d) => (out += d));
+    c.on("close", () => resolve(out.trim()));
+  });
+  assert.equal(seen, "22.21.1", "the preload does not simulate the version");
+  // A child start under a simulated 22.21.1 is refused the same way.
+  const refused = sandbox(t);
+  const r = await runMain(refused, ["--port", "0"], {
+    env: simulatedEnv(refused, "22.21.1"),
+  });
+  assert.equal(r.code, 1);
+  assert.equal(r.stdout, "");
+  assert.equal(r.stderr, refusalOf("22.21.1"));
+  assert.equal(fs.existsSync(refused.dir), false);
+  // At the floor and above it the start goes on: the link line, no refusal line.
+  for (const version of [SV_FLOOR, "22.24.0"]) {
+    const box = sandbox(t);
+    const run = await spawnMain(t, box, [], {
+      env: simulatedEnv(box, version),
+    });
+    assert.match(run.out.stdout, /^Pixel Office: http:\/\/127\.0\.0\.1:\d+\//m);
+    assert.equal((await run.stop()).code, 0, version);
+    assert.equal(run.out.stderr.includes("Нужен Node"), false, version);
   }
 });
 
@@ -2143,4 +2239,73 @@ test("ISS-0122 the command prints the link with the read key of the secret; the 
   const second = await spawnMain(t, box);
   assert.equal(second.readKey, first.readKey);
   assert.equal((await second.stop()).code, 0);
+});
+
+// ===================================================================
+// REQ-110 criterion 7 (design 9.3): the header-count canary. The server keeps Node's
+// default count of header lines: 2 500 lines are refused with 431, 1 000 are answered
+// as a normal request, and the folder the server writes is the same after the probes.
+// ===================================================================
+
+// A raw request: the request line, Host and Connection and `total - 2` short lines, so
+// `total` header lines in all. Resolves to the status ("431", "200"), the head size and closedByServer (false when the
+// connection was still open at the safety-net timer).
+function rawHeadStatus(port, total) {
+  const lines = [`Host: 127.0.0.1:${port}`, "Connection: close"];
+  while (lines.length < total) lines.push("a:b");
+  const head = `GET / HTTP/1.1\r\n${lines.join("\r\n")}\r\n\r\n`;
+  return new Promise((resolve) => {
+    const socket = net.connect(port, "127.0.0.1");
+    let got = "";
+    // the safety net only: a server that behaves ends the connection itself and the
+    // promise resolves at once; a server that leaves the socket open runs into the timer
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      socket.destroy();
+    }, 10_000);
+    socket.on("connect", () => socket.write(head));
+    socket.on("data", (d) => (got += d));
+    socket.on("error", () => {});
+    socket.on("close", () => {
+      clearTimeout(timer);
+      resolve({
+        status: /^HTTP\/1\.1 (\d{3})/u.exec(got)?.[1] ?? null,
+        bytes: Buffer.byteLength(head),
+        closedByServer: !timedOut,
+      });
+    });
+  });
+}
+
+function folderListing(dir) {
+  return fs
+    .readdirSync(dir)
+    .sort()
+    .map((name) => `${name} ${sha256File(path.join(dir, name))}`)
+    .join("\n");
+}
+
+test("SV-68: the header count is Node's default - 2 500 header lines get 431 and a closed connection, 1 000 get the status of a normal request, and the state folder is unchanged", async (t) => {
+  const srv = await startServer(t);
+  const before = folderListing(srv.dir);
+  const first = await rawHeadStatus(srv.port, 2);
+  const big = await rawHeadStatus(srv.port, 2500);
+  const mid = await rawHeadStatus(srv.port, 1000);
+  const last = await rawHeadStatus(srv.port, 2);
+  assert.ok(
+    big.bytes < 16_384,
+    `the probe head is ${big.bytes} bytes: only the count may refuse it`,
+  );
+  assert.notEqual(first.status, null, "no answer to a normal request");
+  assert.notEqual(first.status, "431", "a normal request is refused");
+  assert.equal(big.status, "431", "2500 lines");
+  assert.equal(
+    big.closedByServer,
+    true,
+    "the connection stays open after the 431",
+  );
+  assert.equal(mid.status, first.status, "1000 lines");
+  assert.equal(last.status, first.status, "a normal request after the probe");
+  assert.equal(folderListing(srv.dir), before, "the state folder changed");
 });

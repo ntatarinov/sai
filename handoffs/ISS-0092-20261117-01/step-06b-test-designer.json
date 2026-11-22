@@ -1,0 +1,203 @@
+{
+  "handoff_id": "step06b-ISS-0092-20261117-01",
+  "run_id": "ISS-0092-20261117-01",
+  "workflow_id": "WF-03",
+  "step": "06b",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0092-20261117-01/step-06b-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0092-20261117-01/step-07-test-design-validator.json (result: verdict FAIL at gate pass 1; findings F1 to F4; read it whole)",
+      "handoffs/ISS-0092-20261117-01/step-06-test-designer.json (your own result of the first pass)",
+      "docs/design/REQ-110-tools-node-floor.md (sections 9 and 10)"
+    ],
+    "base_tag": "base/ISS-0092-20261117-01",
+    "rework_of": "handoffs/ISS-0092-20261117-01/step-06-test-designer.json",
+    "route": "WF-03 step 6b: rework by the list of remarks only (AP-019) -> step 7b TEST-DESIGN-VALIDATOR gate pass 2 of 3 -> a GitHub snapshot (ORCH) -> step 8 TEST-RUNNER",
+    "write_set": [
+      "tools/test/pixel-office-server.test.js",
+      "tools/test/node-floor.test.js",
+      "handoffs/ISS-0092-20261117-01/step-06b-test-designer.json (result only)"
+    ],
+    "parallel_work_now": [
+      "none of the files above is edited by another role"
+    ]
+  },
+  "task": {
+    "description": "WF-03 step 6b, TEST-DESIGNER, REWORK of your step 06 by the list of remarks of the gate (handoffs/ISS-0092-20261117-01/step-07-test-design-validator.json, verdict FAIL at pass 1 of 3). Only these four remarks, nothing else (AP-019). F1 (Medium, required): SV-68 (pixel-office-server.test.js, helper `rawHeadStatus`) and NF-07 (node-floor.test.js, helper `rawHead`) never check that the server closes the connection after the 431; the helpers resolve after a 10 s destroy timer and return only the status, so the validator's mutants D05 (Pixel Office server) and D06 (team web server), a clientError handler that leaves the socket open, stay green. Fix: make both helpers return `closedByServer` (true when the connection ended before the destroy timer fired) and assert it for the 2 500-line probe in both tests (criterion 7: «closes the connection»), keeping the existing status assertions; the 10 s timer stays only as the safety net and must not make the test slow when the server behaves (it resolves as soon as the socket closes). F3 (Low, do it): NF-05c takes the expected exit code from the imported NODE_REFUSAL_EXIT, so the mutant NODE_REFUSAL_EXIT = 3 (R07) is caught only by NF-04's pin: write the literal 2 (the value the design fixes) in the NF-05 rows that compare the exit code. F2 (Low, do it if it stays small): a guard moved behind a pure parse of the arguments survives in the programs without a help (A-E5 web/main.js, W-E1 cli.js, W-E11 office-report.js) because every row uses valid calls: add three twin rows under the old Node (22.21.1 as the other rows use) with a WRONG call each, which must still be answered by the refusal line of the guard (design section 3 says the guard stands before the dispatch of every command): if the design or README line 9 says the opposite for these three (a wrong call is answered as on any Node), do NOT add the rows and instead name this as a limit in result.issues with the line you read. F4 (Low): NF-05a hard-codes the counts 14 and 23 by design: add one comment line at the constant saying that adding a script means updating it, and nothing else. After the edit prove with your own scripts (outside the project, as in step 06) that D05 and D06 and R07 are now red and that no earlier mutant went green, and that the unmutated tests are green on the current code; run `npx prettier --check` and `npx eslint --max-warnings 0` on the changed files in a fresh clone (they do not run the tests); print the counts of test( registrations and assert. occurrences before and after (not lower). Do NOT run the tests, npm run check or node --test (decisions/0110). Fill result with the changes per remark, the mutant results, the counts, must_be_proved_on_github, the issues. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T20:41:59Z",
+  "started_at": "2026-11-22T20:42:09Z",
+  "completed_at": "2026-11-22T20:49:09Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-03 step 6b, rework of step 06 by the four remarks of the gate (step 07, pass 1), nothing else (AP-019). Two files changed: tools/test/node-floor.test.js and tools/test/pixel-office-server.test.js. F1 and F3 and F4 done; F2 not done on purpose and named as a limit (README line 9 says the opposite for these three programs). The tests were not run by node --test; the harness of step 06 (collector instead of node:test, copies of the project subset in <scratch>/iss92-06) shows the unmutated tests green on the current code and every mutant red; prettier and eslint are clean on the two files in a fresh clone.",
+    "remarks": [
+      {
+        "id": "F1 (Medium)",
+        "change": "Both helpers (rawHead in node-floor.test.js, rawHeadStatus in pixel-office-server.test.js) now set a flag in the 10 s safety-net timer before it destroys the socket and return closedByServer: !timedOut; the promise still resolves on the socket's close event, so a server that behaves costs no time (NF-07 340 ms, SV-68 40 ms in the harness, as before). NF-07 (for team web and the picker) and SV-68 assert closedByServer === true for the 2 500-line probe, after the existing 431 assertion; all earlier status assertions are kept.",
+        "proof": "D05 (Pixel Office: a clientError handler writes the 431 and leaves the socket open) -> red in SV-68 with the message 'the connection stays open after the 431 | false !== true'; D06 (the same on the team web server) -> red in NF-07 with 'team web: the connection stays open after the 431'. Both were green before the rework (validator's finding)."
+      },
+      {
+        "id": "F3 (Low)",
+        "change": "NF-05c now compares the exit code with the literal 2 (row.code ?? 2; the Pixel Office rows keep their literal 1). The import NODE_REFUSAL_EXIT stays for NF-04's pin.",
+        "proof": "R07 (NODE_REFUSAL_EXIT = 3) -> red in NF-04 and now also in NF-05c ('prepare-run under 22.21.1: code 3')."
+      },
+      {
+        "id": "F2 (Low)",
+        "change": "No rows added.",
+        "reason": "The instruction says to add the three wrong-call rows unless the design or README line 9 says the opposite. README line 9 (tools/README.md, the line that starts 'The one check command (quality-bar Q4)') says: 'on another Node a node <file> script ... that is started to do its work stops at once, ... while `--help` and a wrong call are answered as on any Node'; the design says the same in section 8 (line 9 text) and in its failure table ('A wrong call on such a Node, for the five commands whose parsing comes before the help: the usage line, code 2'), while its section 3 puts the guard before parseArgs for cli.js, web/main.js and office-report.js. So the two documents disagree for these three programs, and the README states the wrong call is answered as on any Node: a row that expects the refusal line for a wrong call would contradict it, and a row that expects the usage line would pin the guard behind the parse, which is what the gate wants to forbid. The decision is not mine; it is the reviewer's open question I3 of step 05b (a dated addendum to decisions/0120 О5 and the README wording).",
+        "limit": "Named in result.issues I1: a guard moved behind a pure parse of the arguments in cli.js, web/main.js and office-report.js (mutants A-E5, W-E1, W-E11) stays green; nothing is written or read before either way."
+      },
+      {
+        "id": "F4 (Low)",
+        "change": "One comment line at the constant of NF-05a: 'By design the counts below are edited together with a new script and its row.' The counts 14 and 23 are unchanged."
+      }
+    ],
+    "changes": [
+      {
+        "file": "tools/test/node-floor.test.js",
+        "why": "F1 (rawHead returns closedByServer, NF-07 asserts it), F3 (the literal 2 in NF-05c), F4 (one comment line)"
+      },
+      {
+        "file": "tools/test/pixel-office-server.test.js",
+        "why": "F1 (rawHeadStatus returns closedByServer, SV-68 asserts it)"
+      },
+      {
+        "file": "handoffs/ISS-0092-20261117-01/step-06b-test-designer.json",
+        "why": "result only"
+      }
+    ],
+    "mutants": [
+      "M01 | the rule checks the major only | RED: NF-03, NF-04",
+      "M02 | NODE_FLOOR = 22.23.3 | RED: NF-01, NF-02, NF-03, NF-05c",
+      "M03 | versions compared as text | RED: NF-03",
+      "M04 | the patch ignored | RED: NF-03",
+      "V07 | the rule refuses only a lower major | RED: NF-03",
+      "M06 | the pattern is not anchored at the end | RED: NF-03",
+      "M07 | leading zeros accepted | RED: NF-03",
+      "R3a | the part limit raised to ten digits | RED: NF-03",
+      "R3b | the part limit lowered to eight digits | RED: NF-03",
+      "V06 | the guard's try/catch removed | RED: NF-04",
+      "X04 | the version shown raw | RED: NF-04",
+      "M08 | the refusal line without the running version | RED: NF-04, NF-05c, SV-39",
+      "M09 | the refusal line in English | RED: NF-04, NF-05c",
+      "M10 | a second line after the refusal | RED: NF-04, NF-05c",
+      "M12 | the Pixel Office guard removed | RED: NF-05c, SV-39",
+      "C05 | the Pixel Office guard ignores the seam | RED: SV-39",
+      "M16 | Pixel Office refuses with 2 | RED: NF-05c, SV-39",
+      "M11 | Pixel Office writes the refusal to stdout | RED: NF-05c, SV-39",
+      "M18 | the Pixel Office guard before the help | RED: NF-08",
+      "X02 | the Pixel Office guard after server.listen | RED: NF-05c, SV-39",
+      "X01 | the Pixel Office guard after the state folder | RED: NF-05c, SV-39",
+      "C5 | the Pixel Office guard after the warning of a foreign --dir | RED: NF-05c",
+      "M13 | the team guard removed | RED: NF-05c",
+      "C03 | the team guard only for projects | RED: NF-05c",
+      "M14 | the traces guard removed | RED: NF-05c",
+      "C04 | the traces guard only for check | RED: NF-05c",
+      "M15 | the traces guard before the help | RED: NF-08",
+      "C01 | the cli.js guard only for validate | RED: NF-05c",
+      "C02 | the handoff guard skipped for new | RED: NF-05c",
+      "C06 | the handoffs-check guard skipped for --emit-exceptions | RED: NF-05c",
+      "C07 | the picker does not refuse check | RED: NF-05c",
+      "M33 | the picker does not refuse serve | RED: NF-05c",
+      "M34 | the office-report guard removed | RED: NF-05c",
+      "M35 | the note guard after the storage switch | RED: NF-05c",
+      "C7 | the team-web guard after the configuration is read | RED: NF-05c",
+      "M17 | the e2e runner refuses with 1 | RED: NF-05c",
+      "M20e | the e2e guard removed | RED: NF-05c",
+      "D05 | Pixel Office: a 431 that leaves the connection open | RED: SV-68",
+      "D06 | team web: a 431 that leaves the connection open | RED: NF-07",
+      "R07 | NODE_REFUSAL_EXIT = 3 | RED: NF-04, NF-05c",
+      "H1 | maxHeadersCount = 0 on Pixel Office | RED: SV-68",
+      "H2 | maxHeadersCount = 0 on team web | RED: NF-07",
+      "H3 | maxHeadersCount = 0 on the picker | RED: NF-07",
+      "H4 | maxHeadersCount = 6000 on Pixel Office | RED: SV-68",
+      "H7 | maxHeadersCount = 200 on Pixel Office | RED: SV-68",
+      "H8 | maxHeadersCount = 200 on team web | RED: NF-07",
+      "H9 | maxHeadersCount = 200 on the picker | RED: NF-07",
+      "P01 | the picker MAX_HEADER_BYTES lowered to 8192 | RED: NF-07",
+      "E1 | engines of package.json one patch below | RED: CI-3, CI-8, NF-01, NF-02",
+      "E1b | engines of package.json as at the tag | RED: CI-3, CI-8, NF-01, NF-02",
+      "E2 | the lockfile root out of step | RED: CI-3, CI-8, NF-01, NF-02",
+      "Y1 | check-latest removed from the workflow | RED: CI-3, CI-8",
+      "Y1b | check-latest: false in the workflow | RED: CI-3, CI-8",
+      "Y2 | check-latest moved to the checkout step | RED: CI-3, CI-8",
+      "M27 | CI-3 without the lockfile comparison | RED: CI-8",
+      "M24 | hook line node_floor=22.23.3 | RED: NF-01, NF-02, HK-35",
+      "M29 | README line of the second variable at 22.23.3 | RED: NF-01, NF-02, NF-09",
+      "D01 | README 157 in the H1 form | RED: NF-09",
+      "D02 | README 207 with finds Node 22 (floor) | RED: NF-09",
+      "D03 | README 207 without the hang sentence | RED: NF-09",
+      "M37 | a second node_floor line in the hook | RED: NF-01, NF-02",
+      "M30 | the walk pattern without borders | RED: NF-02",
+      "M38 | the history exception matched by file and value only | RED: NF-02",
+      "M31 | the check rule reads one-letter short options only | RED: NF-06",
+      "M32 | the check rule by prefix | RED: NF-06",
+      "N01 | the sign ban removed | RED: NF-06",
+      "M19 | node-path executed with no version check | RED: HK-32, HK-33, HK-34, HK-36, HK-38, HK-40",
+      "M20 | the hook checks the major only | RED: HK-32, HK-33, HK-35, HK-36, HK-37, HK-40",
+      "M21 | no fall-through after a refused node-path | RED: HK-33, HK-34, HK-36, HK-40",
+      "M22 | --version run with the hook's stdin | RED: HK-36",
+      "M23 | the patch compared by its first digit | RED: HK-35",
+      "M25 | the hook prints a word when it skips | RED: HK-34, HK-40",
+      "K04 | the hook compares the major with -ge | RED: HK-35",
+      "X07 | the hook evaluates the version text | RED: HK-35, HK-38",
+      "X08 | the hook keeps the candidate's stderr | RED: HK-40",
+      "X09 | a failing --version is accepted | RED: HK-34, HK-40",
+      "X10 | a text that contains the floor is accepted | RED: HK-35, HK-38",
+      "X06 | the hook reads the version through sh -c | RED: HK-33, HK-34, HK-35, HK-36, HK-37, HK-39, HK-40",
+      "K37 | the hook ignores its node_floor line | RED: HK-37"
+    ],
+    "mutant_summary": "The whole table of step 06 was run again on the reworked files (76 mutants) and the three new ones added: 79 mutants, 79 caught, 0 alive; no earlier mutant went green. New: D05 (SV-68), D06 (NF-07), R07 (NF-04 and NF-05c). Each mutant is applied in its own copy under <scratch>/iss92-06/trees; the project tree is not mutated (the two changed files are byte-equal to the files checked by prettier and eslint in the fresh clone).",
+    "counts": {
+      "note": "test( registrations at line start; text counts in brackets (occurrences of test( and assert.)",
+      "node_floor_test_js": "registrations 12 -> 12 (text 17/83 -> 17/84)",
+      "pixel_office_server_test_js": "registrations 79 -> 79 (text 85/399 -> 85/400)",
+      "other_files": "tools/test/repo.test.js and tools/test/pixel-office-hook.test.js are not touched by this rework (26 and 54 registrations as after step 06)",
+      "expected_node_test_report": "unchanged from step 06: no registration added or removed"
+    },
+    "self_check": [
+      {
+        "command": "npx prettier --check and npx eslint --max-warnings 0 on tools/test/node-floor.test.js and tools/test/pixel-office-server.test.js in the fresh clone of step 06 (npm ci done there), after prettier --write and a copy back (cmp: byte-equal)",
+        "output": "All matched files use Prettier code style!; eslint exit 0, no output"
+      },
+      {
+        "command": "harness (no node:test) on the current code: CI-1 ... CI-8; NF-01 ... NF-09; SV-39, SV-68; HK-32 ... HK-40",
+        "output": "repo 8 of 8, node-floor 12 of 12, server 2 of 2, hook 9 of 9 green"
+      },
+      {
+        "command": "node mutants.mjs (79 mutants)",
+        "output": "SUMMARY mutants 79 caught 79 alive 0"
+      }
+    ],
+    "must_be_proved_on_github": [
+      "F1: on Linux the real servers answer the 2 500-line probe with 431 and end the connection before the 10 s timer (the harness showed it on Windows only); the timer is not reached in a green run",
+      "everything listed in step 06 (hook rows under the real /bin/sh, server exit code 0 after SIGTERM, child starts on Linux, the whole npm run check, the setup line of the log)"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NAMED_LIMIT",
+        "text": "F2 not closed by rows (see remarks): README line 9 says a wrong call is answered as on any Node while design section 3 puts the guard before the parse in cli.js, web/main.js and office-report.js; a guard moved behind a pure parse there is not seen by any row. It needs the owner's or ORCH's decision on the wording (the reviewer's I3 of step 05b: a dated addendum to decisions/0120 О5 and README line 9 naming the five programs); after that three twin rows can be added in one line each. Still named from step 06: NF-05 has no read tracer."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "No code edit is needed; no new test caught an error of the code."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/node-floor.test.js",
+      "tools/test/pixel-office-server.test.js"
+    ]
+  }
+}

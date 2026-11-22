@@ -1,0 +1,793 @@
+{
+  "handoff_id": "step01b-M1SITE-20261119-01",
+  "run_id": "M1SITE-20261119-01",
+  "workflow_id": "WF-01",
+  "step": "01b",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/M1SITE-20261119-01/step-01b-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1SITE-20261119-01/step-02-req-validator.json (the FAIL of gate pass 1: findings F1-F15, self_check, issues)",
+      "handoffs/M1SITE-20261119-01/step-01-req-analyst.json (the first version: changes, self_check, the open questions О1-О18)",
+      "docs/requirements.yaml (the header; the blocks REQ-108, REQ-109; the blocks REQ-111 and REQ-112 with their comment lines)",
+      "docs/design/V1-public-look.md (sections 6.2, 7.12, 7.14, 8.1, 9.1, 9.4-9.16, 10, 12)",
+      "docs/program/public-v1/PLAN.md (§2, §3 G8, G9, G21, §4.1, §4.8, M1), ARCHITECTURE.md (§2, §2.1, §2.2, §3, §11.4, §11.6, §11.7, §13, §17, §18, §19.3), PROGRESS.md (Plan amendments)",
+      "decisions/0045, 0074, 0083, 0084, 0093, 0097, 0099, 0116 (О26), 0118 (О12 and its Boundary), 0122",
+      ".github/workflows/app.yml, .github/workflows/check.yml, app/scripts/check-public.js, app/test/unit/import-boundaries.test.js, app/public/*.html",
+      "docs/design/samples/picker-v3-approved-2026-10-26/data.js, tools/src/picker/engine.js, validate.js, text-rules.js, tools/src/pixel-office/public/layout.js, office-sim.js"
+    ],
+    "route": "REQ-ANALYST (step 01) -> REQ-VALIDATOR (step 02, FAIL, gate pass 1 of 3) -> REQ-ANALYST (this, step 01b) -> REQ-VALIDATOR (gate pass 2 of 3); beside it WF-04 step 1 GUI-DESIGN-ANALYST (step 03) -> CODE-DESIGN-VALIDATOR (03b); then ORCH decision 0123 and the M1.4 run",
+    "write_set": [
+      "docs/requirements.yaml (the blocks REQ-111 and REQ-112 and their comment lines only; the rest byte-equal)",
+      "handoffs/M1SITE-20261119-01/step-01b-req-analyst.json (status, completed_at, result)"
+    ],
+    "base_tag": "base/M1SITE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1SITE-20261119-01/step-02-req-validator.json, gate pass 1 of 3 — WF-01, step 1 (rework step 01b): REQ-ANALYST reworks the two blocks REQ-111 (R1.2) and REQ-112 (R1.3) at the end of docs/requirements.yaml only by the findings F1-F15 of that handoff, closing each in the text or, where a finding is wrong, keeping the text and saying why in result.issues with evidence; what the gate did not question stays. The list of remarks (the findings of gate pass 1, with their fixes as the gate wrote them): F1 [medium] REQ-112 criterion 1 (port header sha, `git show <sha>:<path>`), description «The port», О17; REQ-111 criterion 11 (app.yml success on GitHub), files list, guard row (8): the check job of app.yml fetches one commit, so `git show` of the port header's commit fails there (measured: exit 128); fix — name how the oracle gets the originals' history in CI (full history in the app.yml check job, with the files list, guard row (8) and whether ci-workflow.test.js gains a rule, or an oracle that needs no git history, such as a recorded hash of each original), and say that the path-removal check of criterion 11 keeps .git. F2 [medium] REQ-111 description, criterion 7, criterion 9 (g): the rule that ?lang=kk gives Russian through the function entry is written only for GET questionnaire; fix — the function-entry language rule for both demo routes (kk and unknown values → Russian), test rows in criterion 7 for POST …/result?lang=kk through the function entry, criterion 9 (g) covering both routes. F3 [medium] REQ-111 criterion 10 (the kk-draft script) against criterion 2 (kk «Авто»): the word limit binds only the L(…) clause; fix — state the word limit for both sets and how words are counted, whether a hit is an equal whole value or a substring, keep the printed count above zero. F4 [medium] PLAN M1 «Owner sees», REQ-111 criteria 5 and 12: «what it cannot build yet» is checked only as the presence of free not_suitable_when texts; fix — a check with its test that the demo result, for every recommended solution and the no-match case, says what Sai cannot build yet in V1, measured against a closed list from PLAN §2 «What they do not build in V1», tested in every language and seen on the result screen by the criterion-12 e2e. F5 [medium] REQ-111 «Words used», «Changing G8 or G9 is a release…», criterion 9 (b, c), О3: the source constant of the public languages departs from ARCH §19.3 (public_langs in platform_settings) unnamed; fix — name the departure and its reason and add it to the open questions with a default for decision 0123 and a Plan amendments row, or choose a form §19.3 allows. F6 [medium] REQ-112 criterion 6 («at 320×568 the canvas fits the width»): the approved sample and the look description have a wider canvas clipped by the stage with a camera; fix — measure no horizontal scroll of the page and the visible stage box within the window, with a wider canvas allowed inside the clipping stage, one reading in both documents. F7 [low] REQ-112 criterion 4 («seven distinct #rrggbb values»): fix — name the palette the test passes, say every given value is found back and how alpha fills are listed, settled together with gate 03b. F8 [low] REQ-111 criterion 11 and О10 (the runner's Chrome), guard row (8) (new app.yml paths), criterion 8 and О9 (demo-parity at the int level): fix — list them for decision 0123 so that ORCH writes the Plan amendments rows. F9 [low] REQ-111 criterion 10 and the CSP paragraph, REQ-112 criterion 9: fix — name the identifier borders and one benign twin for each form; add the other HTML-from-string sinks or narrow the sentence to the listed forms. F10 [low] REQ-111 criterion 1 (literal meta forms; hrefs naming files): fix — name the elements by tag and attributes, say how / and query strings are read, cover the 404 page at a nested path. F11 [low] REQ-111 criteria 3 and 9: fix — a tested rule that every visible page text comes from the texts module, or the criterion-12 e2e lints the rendered text of each page in each language; the readers of criterion 2 flag any pair outside order_ that offers ordering. F12 [low] REQ-112 criterion 3 («loads … in Node with none of those globals»): fix — name which globals the test removes, or the context it imports the modules in, and leave globalThis to the static rule. F13 [low] REQ-111 description («Не знаю» as a missing key; the CSS and icon files): fix — name decision 0084 §3 item 11 and decision 0118 О12 as not applying to R1.2, with the reason. F14 [low] REQ-111 criterion 10 (the grep of names; the WhatsApp number): fix — add the sample's customer names and the digits of its phone numbers to the grep. F15 [low] REQ-111 and REQ-112 descriptions (code-structure choices): no change needed for the gate. This file was created by REQ-ANALYST with the handoff command on the order of the session that leads the program in ORCH's role (decisions/0122 О1), as steps 01, 02 and 03 of this run were. Common rules: docs/workflows/handoffs.md, section «Common rules for all roles».",
+    "acceptance_criteria": [
+      "every finding F1-F15 closed in the text of REQ-111 or REQ-112, or kept with its reason and evidence in result.issues; nothing changed beyond the list (AP-019)",
+      "only the two blocks and their comment lines changed; the rest of docs/requirements.yaml byte-equal (sha256 of lines 1-15171 before and after) and result.before_copy holds the before lines of every edit",
+      "result.changes holds the table «what was fixed, where»: the finding, the place, what it was and what it became",
+      "every new fact measured on the tree or a fresh clone outside the project and listed; new open questions with defaults for decision 0123",
+      "cd tools && npm run handoffs-check passes for this file; npm run traces exit 0"
+    ]
+  },
+  "created_at": "2026-11-19T12:22:26Z",
+  "started_at": "2026-11-19T12:22:26Z",
+  "completed_at": "2026-11-19T12:35:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework step 01b of WF-01 run M1SITE-20261119-01 by the findings F1-F15 of gate pass 1 (handoffs/M1SITE-20261119-01/step-02-req-validator.json), only inside the blocks REQ-111 and REQ-112 and their comment lines of docs/requirements.yaml: lines 1-15171 byte-equal (sha256 3fdee311… before and after, equal to the tag), the blocks grew from 793 to 980 lines, the file loads as YAML (112 requirements; REQ-111 16 criteria, REQ-112 10, both pending, the fields id, title, owner, status, depends_on and original_request unchanged), and a YAML compare shows every untouched paragraph and criterion equal and every edited one equal to the intended text. F1: the port headers name the original, its commit and the sha256 of its bytes; port-parity.test.js compares hashes with no git command (the checkouts of app.yml keep one commit, measured), RELEASE-VALIDATOR checks the commit in a full clone by `git show … | shasum -a 256`; criterion 11's clone is of depth 1 and keeps .git (on the tag with the unlisted paths removed: app check exit 0, 45 and 36 tests; without .git 8 of 13 tests are red); no checkout change and no new ci-workflow rule. F2: both demo routes of the function entry answer only ru and en (criterion 7 rows for POST …/result?lang=kk, criterion 9 (g), the post-deploy record). F3: the kk-draft script compares strings of three or more words (runs of Unicode letters and digits) from both sets, a hit is a whole phrase between word borders, 150 compared strings measured (Python and JavaScript agree); the short words such as kk «Авто» are never compared. F4: every demo result, also the no-match one that five «Не знаю» always give, shows the closed list «Чего Sai пока не делает» of PLAN §2 with ten exact ru texts (texts test, the e2e for every fixture and for five «Не знаю» in each language, the public set, the post-deploy record; question О19). F5: the departure from ARCH §19.3 is named with its reason (question О20). F6: REQ-112 criterion 6 measures no page scroll and the stage box inside the window, the wider canvas clipped by the stage, as the look description says. F7: criterion 4 names the palette of the look description, its derived colours and constants, every marker found back. F8: the departures (1)-(6) are listed for Plan amendments rows (question О21). F9: identifier borders and named twins for every code form; the HTML-from-string forms are a closed list of ten. F10: criterion 1 by tags and attributes, root-relative addresses read without query and anchor, the 404 page at nested paths. F11: the e2e lints what each page shows; the readers mark ordering pairs outside order_. F12: criterion 3 names the seven globals of Node 22 replaced by traps (measured). F13: decisions/0084 §3 item 11 and decisions/0118 О12 named as not applying. F14: 29 names and handles in the grep and a script for the sample's 11 phone numbers by their digits. F15: no edit. Every new fact was measured at this step outside the project and is listed in the blocks (REQ-111 facts 14-19, REQ-112 facts 7-10). Open questions with defaults for decision 0123: О17 (its default changed), О19, О20, О21; three points for gate 03b of the look description (issue I6).",
+    "changes": [
+      {
+        "remark": "F1-F15",
+        "file": "docs/requirements.yaml",
+        "place": "line 15173 (new), after the comment line of step 01 above REQ-111",
+        "was": "(one comment line of step 01)",
+        "became": "a second comment line: the rework of step 01b by F1-F15 with «was -> now» per finding"
+      },
+      {
+        "remark": "F1, F6, F7, F9, F12",
+        "file": "docs/requirements.yaml",
+        "place": "line 15850 (new), after the comment line of step 01 above REQ-112",
+        "was": "(one comment line of step 01)",
+        "became": "a second comment line: the rework of step 01b by F1, F6, F7, F9, F12 with «was -> now»"
+      },
+      {
+        "remark": "F4",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «What the visitor gets»: lines 15210-15224 before, 15211-15226 now",
+        "was": "whose result says which kind of product Sai builds for these answers, or that Sai cannot build it yet, says what Sai cannot build yet, and offers «Описать идею»;",
+        "became": "the demo result «lists what Sai cannot build yet in V1 (the closed list of PLAN §2)»"
+      },
+      {
+        "remark": "F5",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Words used in the criteria»: lines 15238-15250 before, 15240-15260 now",
+        "was": "The public languages: ru and en while G9 holds its default, one constant of the source whose place the design names (ARCH §17 PUBLIC_LANGS).",
+        "became": "the source constant of the public languages named as a departure from ARCH §19.3, with its reason (no admin before M2/M5, the demo reads no database, the public set is static files; a run-time switch would serve the kk draft); question О20"
+      },
+      {
+        "remark": "F1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Files (from the root of Sai; new unless said): app/public/in»: lines 15252-15267 before, 15262-15282 now",
+        "was": ".github/workflows/app.yml (changed: the job e2e, the paths, one docker step);",
+        "became": "app.yml: its checkouts stay one commit with persist-credentials false, so no test may need the git history (criterion 11)"
+      },
+      {
+        "remark": "F13",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Files (from the root of Sai; new unless said): app/public/in»: lines 15252-15267 before, 15262-15282 now",
+        "was": "The stage scene, the office renderer and their texts are REQ-112, built in the same run.",
+        "became": "decisions/0118 О12 named as not applying: its Boundary binds the run M1CODE-20261117-01 and REQ-108/REQ-109; R1.2 has the CSS files of ARCH §2 and PLAN M1.4; the icon stays data: or a file"
+      },
+      {
+        "remark": "F13",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «The demo survey (Sai as storefront #1)»: lines 15269-15282 before, 15284-15300 now",
+        "was": "so «Не знаю» leaves a question unanswered as the engine reads a missing key (decisions/0083 item 2: one tap per answer, «Назад» and «Не знаю» one tap, no «Далее», the full keyboard path).",
+        "became": "decisions/0084 §3 item 11 named as not applying: it binds the partial-answer function of REQ-072 (not built, deferred by decisions/0099); the byte copy refuses null with wrong_kind"
+      },
+      {
+        "remark": "F2",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «The production build leaves out the order texts and kk — a r»: lines 15290-15302 before, 15324-15337 now",
+        "was": "The function entry answers the demo questionnaire only in the public languages.",
+        "became": "on both demo routes the function entry answers only in the public languages: kk, an unknown value and no value give Russian; the local server answers ru, kk, en"
+      },
+      {
+        "remark": "F11",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «The forbidden-words lint (the idea of REQ-086, carried here »: lines 15318-15346 before, 15353-15382 now",
+        "was": "The lint applies to every value of the texts module (the order texts too), to the visible text and the attribute values alt, title, aria-label and content of every page of app/public, and to every string of the intake.",
+        "became": "the lint also applies in the browser test to the text each page shows in each language (criterion 12)"
+      },
+      {
+        "remark": "F9",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «The CSP of app/ and what is not carried over»: lines 15354-15361 before, 15390-15401 now",
+        "was": "the code sets no style attribute and no HTML from a string, and a real browser sees no violation (criteria 10, 12, 13).",
+        "became": "the HTML-from-string forms are the closed list of criterion 10 (innerHTML, outerHTML, insertAdjacentHTML, document.write/writeln, createContextualFragment, parseFromString, setHTML, setHTMLUnsafe, parseHTMLUnsafe, srcdoc); a form not listed is no violation"
+      },
+      {
+        "remark": "F14",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «The CSP of app/ and what is not carried over»: lines 15354-15361 before, 15390-15401 now",
+        "was": "the demo WhatsApp number and demo switchers (criterion 10), invented staff names (criterion 10, and REQ-112 for the scene),",
+        "became": "the demo WhatsApp number with the sample's other phone numbers, and the sample's invented customers, mapped to criterion 10"
+      },
+      {
+        "remark": "F3, F14",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Named limits»: lines 15372-15379 before, 15412-15422 now",
+        "was": "The lint compares listed word forms: a price or a time in words («пять тысяч», «сто процентов») passes it, and the reader agents look for such phrases when they read the translations.",
+        "became": "two named limits: the kk-draft script compares only strings of three or more words; the phone script finds digits apart by the listed separators, not numbers in words"
+      },
+      {
+        "remark": "F1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Guard tests of earlier requirements, \"was → became\" (grep of»: lines 15381-15414 before, 15424-15459 now",
+        "was": "DOCKER_STEPS (lines 19-69, an ordered list of exact lines): one row added, the demo questionnaire through the container.",
+        "became": "guard row (8): the checkout options of app.yml are pinned by no row and gain none; the depth-1 run of criterion 11 proves that no app test needs the history"
+      },
+      {
+        "remark": "F1, F3, F4, F9, F13, F14",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Facts checked on 2026-11-19 on a fresh clone of base/M1SITE-»: lines 15416-15449 before, 15461-15518 now",
+        "was": "playwright-core driving the runner's Chrome (the design measures it, as decisions/0118 О1 measured it on this computer).",
+        "became": "facts (14)-(19) measured at step 01b: the depth-1 clone and .git; the kk drafts (150); the 29 names and 11 numbers; the code-form sketch; the no-match rule and null; the ten texts pass the rules"
+      },
+      {
+        "remark": "F4, F5, F8",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Bar: Q1 — every criterion names its check; Q2 — the gates of»: lines 15455-15466 before, 15535-15547 now",
+        "was": "Q12 — the choices are the open questions О1–О12 of the handoff, answered by ORCH in decisions/0123;",
+        "became": "Q12 names the questions of both handoffs: О1–О12 (step 01) and О19–О21 (step 01b)"
+      },
+      {
+        "remark": "F2, F4",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Post-deploy record (not a criterion; PLAN §4»: lines 15468-15477 before, 15549-15559 now",
+        "was": "`POST <APP_ORIGIN>/api/demo/result` with a fixture answers 200 (the function bundle holds the intake);",
+        "became": "post-deploy record: both demo routes with ?lang=kk answer in Russian; the demo result shows the list «Чего Sai пока не делает»"
+      },
+      {
+        "remark": "F10",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 1: lines 15480-15491 before, 15562-15583 now",
+        "was": "Pages. Test app/test/unit/public-pages.test.js (created by this work) reads every .html file of app/public: the set is exactly index.html, how.html, examples.html, demo.html, 404.html and gate.html (gate.html of REQ-108 unchanged); every page but gate.html …",
+        "became": "criterion 1 rewritten: tags and attributes parsed (either void form, prettier writes `/>`), every href/src an anchor of the page, data: (icon) or a root-relative path read without query and anchor (`/` = index.html), an anchor after a path checked in that file; damaged copies incl. `css/site.css` and `//`; the built forms green; the 404 page holds at nested paths"
+      },
+      {
+        "remark": "F4",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 2: lines 15493-15512 before, 15585-15607 now",
+        "was": "the theme positions «Авто», «Светлая», «Тёмная» (kk «Авто», «Ашық», «Қараңғы»; en «Auto», «Light», «Dark») and «Описать идею»;",
+        "became": "criterion 2: the ru values of the heading and the ten items of «Чего Sai пока не делает» are exact, none of their keys order_"
+      },
+      {
+        "remark": "F11",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 2: lines 15493-15512 before, 15585-15607 now",
+        "was": "Readers (decisions/0079 item 7): the pairs «key — ru — translation» of kk and of en go to reader agents with no code and no Sai document; their «да» per pair, the rounds and the kk lines left FOR_NATIVE_SPEAKER (AP-114) stand in the handoffs of the run.",
+        "became": "criterion 2: the readers also mark every pair outside order_ that offers ordering, says what can be ordered or names a price or a term; a marked pair is rewritten or moved under order_"
+      },
+      {
+        "remark": "F2",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 7: lines 15578-15594 before, 15673-15692 now",
+        "was": "`?lang=en` → English; `?lang=kk` → Kazakh through the local server and Russian through the function entry (kk is not a public language there, G9); an unknown value (`de`, empty, 1 000 characters) → Russian. `POST /api/demo/result?lang=<l>` with the JSON bod…",
+        "became": "criterion 7: POST /api/demo/result in the language of the same rule — kk in Kazakh through the local server and Russian through the function entry; an unknown value and no lang Russian through both"
+      },
+      {
+        "remark": "F2",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 9: lines 15605-15618 before, 15703-15717 now",
+        "was": "(g) the public languages of the build and the languages of the function entry in criterion 7 are read from one constant.",
+        "became": "criterion 9 (g): the public languages of the build and the languages of both demo routes of the function entry come from one constant"
+      },
+      {
+        "remark": "F3, F9, F14",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 10: lines 15620-15639 before, 15719-15763 now",
+        "was": "No inline code, nothing that is not carried over (ARCH §14.1, §11.7). Test app/test/unit/check-public.test.js (rows added; REQ-109 criterion 7): `node scripts/check-public.js` also refuses, in every served file of app/public, `outerHTML`, `insertAdjacentHTM…",
+        "became": "criterion 10 rewritten: every code form with the identifier border of check-public and spaces allowed, 4 sinks added (createContextualFragment, parseFromString, setHTML/setHTMLUnsafe, parseHTMLUnsafe, srcdoc, writeln), 16 named twins; the grep with 29 names and handles; a script for the 11 phone numbers by digits; the kk-draft script: strings of three or more words from both sets, a hit is a whole phrase between word borders, 150 compared"
+      },
+      {
+        "remark": "F1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 11: lines 15641-15658 before, 15765-15786 now",
+        "was": "RELEASE-VALIDATOR, in a fresh clone outside the project, removes every path that is not in the list and runs `cd app && npm ci && npm run check` → exit 0 (REQ-108 criterion 11's command).",
+        "became": "criterion 11: the RELEASE-VALIDATOR clone is of depth 1 (the checkouts of app.yml) and keeps .git, which npmrc, vercel-config and VB-4 need; no test needs the history (hash oracle)"
+      },
+      {
+        "remark": "F10",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "was": "for every page (index, how, examples, demo, 404) in the matrix —",
+        "became": "criterion 12: the 404 page also at /a/b/c.html and /x/y/, its style sheets and scripts loading as at /nope"
+      },
+      {
+        "remark": "F11",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "was": "each once, with its status or error and its address).",
+        "became": "criterion 12: the rendered text and alt/title/aria-label of every page and demo state in each language pass the lint, the word ban and the phrases"
+      },
+      {
+        "remark": "F4",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "was": "the result shows the name of a solution or the no-match text, the not_suitable_when texts and «Описать идею», which opens how.html at the part «Как описать идею» and makes no request beyond the files of the page;",
+        "became": "criterion 12: in each language, for every fixture and for five «Не знаю», the result shows the heading and the ten items of «Чего Sai пока не делает»"
+      },
+      {
+        "remark": "F4",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "was": "the language buttons RU and EN only, `?lang=kk` in Russian, and no console error.",
+        "became": "criterion 12: the public set shows the list in ru and en"
+      },
+      {
+        "remark": "F4",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description: a new paragraph after the paragraph «The demo survey (Sai as storefront #1)» (lines 15282 before; 15302-15316 now)",
+        "was": "(no paragraph)",
+        "became": "new paragraph «What Sai cannot build yet»: the closed list of PLAN §2 under «Чего Sai пока не делает» with ten exact ru texts, every PLAN item in exactly one; five «Не знаю» always give no match (validate.js lines 212, 359); no order texts, public; question О19"
+      },
+      {
+        "remark": "F8, F5",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description: a new paragraph after the paragraph «Replaces: REQ-085, REQ-086 and REQ-087 and the tex» (lines 15453 before; 15524-15533 now)",
+        "was": "(no paragraph)",
+        "became": "new paragraph «Departures from PLAN and ARCH» (1)-(6): ARCH §19.3, ARCH §3/§18 Chromium, ARCH §18 paths, PLAN M1.4 demo-parity level, ARCH §13/§14.3 rate limit, ARCH §2.1 header hash; question О21"
+      },
+      {
+        "remark": "F1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 description, paragraph «The port (ARCH §2»: lines 15780-15787 before, 15918-15929 now",
+        "was": "each starts with a header naming its original and the commit it was ported from and «no import of tools/»;",
+        "became": "the port header names the original, its commit and the sha256 of its bytes at that commit; the test compares hashes and needs no git history"
+      },
+      {
+        "remark": "F1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 description, paragraph «The port (ARCH §2»: lines 15780-15787 before, 15918-15929 now",
+        "was": "The parity test imports the originals and the ports and drives both with the same calls (question О17: so app.yml's paths hold the two originals, REQ-111's guard row (8)).",
+        "became": "question О17 with its changed default: the oracle of «the original changed» is the recorded hash"
+      },
+      {
+        "remark": "F1, F6, F7, F9, F12",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 description, paragraph «Facts checked on 2026-11-19 on the working tree (equal to th»: lines 15831-15850 before, 15973-16010 now",
+        "was": "and writes a door plate by innerHTML (line 449) — not carried over (REQ-111 criterion 10).",
+        "became": "facts (7)-(10) measured at step 01b: the depth-1 clone and the hash at the commit; the globals of Node 22 and the trap sketch; the canvas width and the palette of the look; the criterion-9 sketch"
+      },
+      {
+        "remark": "F1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 description, paragraph «Bar: Q1 — every criterion names its check; Q2 — the gates of»: lines 15855-15863 before, 16015-16024 now",
+        "was": "Q12 — the choices are the open questions О13–О18 of the handoff, answered by ORCH in decisions/0123;",
+        "became": "Q12 names the questions of step 01 and the changed default of О17"
+      },
+      {
+        "remark": "F1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 criterion 1: lines 15870-15878 before, 16031-16043 now",
+        "was": "The renderer files and the port headers (ARCH §2, §2.1). app/public/office/ holds grid.js, sim.js, draw.js, stage-scene.js, view.js and labels.js. Test app/test/unit/port-parity.test.js (created by this work): the first comment of grid.js names tools/src/pi…",
+        "became": "criterion 1 rewritten: the header has a 40-character commit, the 64-character sha256 and «no import of tools/»; the test compares the sha256 of the current original with no git command; a header hash with one digit changed and an original copy with one byte changed are red; RELEASE-VALIDATOR in a full clone: git show <commit>:<path> | shasum -a 256 = the header hash"
+      },
+      {
+        "remark": "F12",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 criterion 3: lines 15891-15899 before, 16056-16069 now",
+        "was": "each loads by a dynamic import in Node with none of those globals;",
+        "became": "criterion 3: the test replaces the seven names that Node 22 defines (navigator, setTimeout, setInterval, performance, Date, fetch, WebSocket) by throwing getters, descriptors saved first, and Math.random; no read recorded; globalThis and typeof left to the static rule"
+      },
+      {
+        "remark": "F7",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 criterion 4: lines 15901-15914 before, 16071-16092 now",
+        "was": "every fillStyle is a value of the palette it was given or a scene constant the design lists (seven distinct #rrggbb values are all found back and the test subtracts the palette and the constants and finds no rest); a palette value that is not #rrggbb is rep…",
+        "became": "criterion 4: the palette is the colour tokens of the look description 6.2, --sc-dim-alpha and the page tokens of 9.1; markers for all; every fill a given colour, a colour derived by a rule of the look's closed list (shade or rgba with a given or listed alpha) or a listed constant; every marker found back; no «seven»"
+      },
+      {
+        "remark": "F6",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 criterion 6: lines 15927-15938 before, 16105-16119 now",
+        "was": "at 320×568 the canvas fits the width with no horizontal scroll, a figure is at least 20 CSS pixels tall",
+        "became": "criterion 6: in every window no page scroll and the stage box inside the window; the canvas may be wider (700 CSS px at 390 and 320, the camera of the look 9.1, 9.14) and the stage clips it (overflow-x hidden or clip)"
+      },
+      {
+        "remark": "F9",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 criterion 9: lines 15953-15959 before, 16134-16146 now",
+        "was": "no file of app/public/office names fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon or a /api address (a planted one is red), so the scene reads no event and sends nothing;",
+        "became": "criterion 9: the five names as whole identifiers after blanking, /api bounded on the raw text; planted reds and green twins named"
+      },
+      {
+        "remark": "F15",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 and REQ-112 descriptions (the lists module, lang.js, the declaration file and jsconfig, one constant per gate, stage-scene parameters)",
+        "was": "as written at step 01",
+        "became": "no edit: the gate wrote «No change is needed for the gate»; the code design may refine them without weakening a check, a criterion that must change goes through a WF-01 micro-amendment"
+      }
+    ],
+    "table": [
+      {
+        "remark": "F1",
+        "was": "REQ-112 criterion 1: `git show <sha>:<path>` of each port header equals the original; REQ-111 criterion 11: the path-removal clone without a word on .git",
+        "became": "the header names commit and sha256; the test compares the sha256 of the current original (no git); RELEASE-VALIDATOR checks the commit in a full clone; criterion 11 clones with depth 1 and keeps .git",
+        "source": "measured: depth-1 clone of the tag holds 1 commit, cat-file of b5df4a8… fails; git show of each original at its last commit | shasum = the current sha256; the app check on the depth-1 pruned clone exit 0; without .git 8 of 13 tests red; app.yml checkouts read; decisions/0045 item 2"
+      },
+      {
+        "remark": "F2",
+        "was": "the function entry answers the demo questionnaire only in the public languages; POST …/result «in that language»",
+        "became": "both demo routes of the function entry: kk, unknown and no lang → Russian; test rows in criterion 7; (g) of criterion 9 for both routes; post-deploy kk check",
+        "source": "G9 default (PLAN §3 row G9), PLAN NEVER-DO 14"
+      },
+      {
+        "remark": "F3",
+        "was": "«every string value of its kk block and the second argument of every L(…) call that has three or more words … verbatim»",
+        "became": "both sets limited to three or more words (runs of Unicode letters and digits); a hit is an equal value or the string between word borders after folding whitespace; 150 compared",
+        "source": "measured on data.js: 114 strings in the kk block (45 of ≥3 words), 145 L calls (105 kk args of ≥3 words), 150 distinct; planted hits and non-hits"
+      },
+      {
+        "remark": "F4",
+        "was": "«what it cannot build yet» checked only as the presence of not_suitable_when texts",
+        "became": "the closed list «Чего Sai пока не делает» of PLAN §2 with ten exact ru texts on every result, the no-match one included; texts test, e2e for every fixture and five «Не знаю», the public set, post-deploy",
+        "source": "PLAN M1 «Owner sees»; PLAN §2 «What they do not build in V1»; tools/src/picker/validate.js lines 212 and 359 and engine.js (no answer → no match, measured)"
+      },
+      {
+        "remark": "F5",
+        "was": "the public languages a source constant, citing ARCH §17 only",
+        "became": "named as a departure from ARCH §19.3 with its reason; question О20 for decision 0123 and a Plan amendments row",
+        "source": "ARCH §19.3, §13 (settings route M5), §17; PLAN NEVER-DO 14; REQ-111 criterion 8"
+      },
+      {
+        "remark": "F6",
+        "was": "«at 320×568 the canvas fits the width with no horizontal scroll»",
+        "became": "no page scroll and the stage box inside the window in every window; the canvas may be wider and the stage clips it",
+        "source": "docs/design/V1-public-look.md 9.1 (canvas CSS width 700 at 390×844 and 320×568), 9.14 (camera), 12 («the stage clips the wider canvas»)"
+      },
+      {
+        "remark": "F7",
+        "was": "«seven distinct #rrggbb values are all found back»; non-#rrggbb replaced",
+        "became": "the palette of the look description (6.2 colour tokens, --sc-dim-alpha, 9.1 page tokens), derived colours and constants from its closed lists, every marker found back",
+        "source": "docs/design/V1-public-look.md 6.2, 9.1, 9.4-9.11 (18 colour tokens counted)"
+      },
+      {
+        "remark": "F8",
+        "was": "departures from ARCH §3/§18 (Chromium), §18 (paths) and PLAN M1.4 (demo-parity unit) not listed",
+        "became": "paragraph «Departures from PLAN and ARCH» (1)-(6); question О21",
+        "source": "ARCH §3, §18, §2.1, §13, §14.3, §19.3; PLAN M1.4; decisions/0116 О26"
+      },
+      {
+        "remark": "F9",
+        "was": "code forms without borders or twins; «no HTML from a string» wider than the list",
+        "became": "identifier borders of check-public for every form, spaces allowed, 16 twins; createContextualFragment, parseFromString, setHTML, setHTMLUnsafe, parseHTMLUnsafe, srcdoc and writeln added; the sentence narrowed to the closed list; REQ-112 criterion 9 by whole identifiers and a bounded /api",
+        "source": "sketch outside the project: 27 red and 14 green (criterion 10), 10 red and 6 green (criterion 9); no hit in app/public, tools/src/picker/public, the two office originals; app/scripts/check-public.js read"
+      },
+      {
+        "remark": "F10",
+        "was": "literal `<meta charset=\"utf-8\">` etc.; «every href and src names a file»",
+        "became": "tags and attributes parsed (either void form); root-relative addresses read without query and anchor; anchors after a path checked; the 404 page opened at nested paths in criterion 12",
+        "source": "app/public/*.html as built (prettier `/>` forms, href=\"/\"); the gate's prettier trial (exit 1 on the literal form)"
+      },
+      {
+        "remark": "F11",
+        "was": "the lint reaches only the texts module, the page files and the intake; order texts by the key prefix only",
+        "became": "the e2e lints the rendered text and attributes of every page and demo state in each language; the readers mark ordering pairs outside order_",
+        "source": "ARCH §17 («covers all of Sai's public texts»); G8 «б»"
+      },
+      {
+        "remark": "F12",
+        "was": "«each loads by a dynamic import in Node with none of those globals»",
+        "became": "the seven names Node 22 defines replaced by throwing getters (descriptors saved first) and Math.random trapped during a fresh import and the calls; globalThis, typeof and undefined names left to the static rule",
+        "source": "measured on node v22.23.4: the defined globals and their descriptors; the trap sketch (originals: no read; 9 planted seen; typeof window not)"
+      },
+      {
+        "remark": "F13",
+        "was": "«Не знаю» as a missing key and the CSS and icon files, without the two decisions",
+        "became": "decisions/0084 §3 item 11 and decisions/0118 О12 named as not applying, with the reasons",
+        "source": "decisions/0084 §3 item 11 (REQ-072 pending, decisions/0099); engine.js checkAnswer (null → wrong_kind, measured); decisions/0118 О12 and its Boundary"
+      },
+      {
+        "remark": "F14",
+        "was": "the grep of staff and company names only; the WhatsApp number left to «no external address»",
+        "became": "the grep holds the 29 names and handles (customers too); a script finds the sample's 11 phone numbers by their digits",
+        "source": "data.js lines 25, 66, 107, 136-143, 152-155, 214-220, 226-233, 242-245, 309-314 (read and grepped); the digit script on the sample (11 of 11) and planted lines"
+      },
+      {
+        "remark": "F15",
+        "was": "code-structure choices in the descriptions",
+        "became": "no edit",
+        "source": "the gate's own fix: «No change is needed for the gate»"
+      }
+    ],
+    "before_copy": [
+      {
+        "file": "docs/requirements.yaml",
+        "place": "the whole file before this step",
+        "note": "the blocks REQ-111 and REQ-112 are not in the tag (git show base/M1SITE-20261119-01:docs/requirements.yaml has 15171 lines, sha256 3fdee311…); the «before» is the file of step 01 (sha256 3d841bc3…, its blocks at lines 15172-15964 with sha256 4a32ce8f…), copied outside the project before the first edit; the entries below hold the before text of every edit, the rewritten criteria whole"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F4",
+        "place": "REQ-111 description, paragraph «What the visitor gets»: lines 15210-15224 before, 15211-15226 now",
+        "kind": "replaced",
+        "before": "whose result says which kind of product Sai builds for these answers, or that Sai cannot build it yet, says what Sai cannot build yet, and offers «Описать идею»;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F5",
+        "place": "REQ-111 description, paragraph «Words used in the criteria»: lines 15238-15250 before, 15240-15260 now",
+        "kind": "replaced",
+        "before": "The public languages: ru and en while G9 holds its default, one constant of the source whose place the design names (ARCH §17 PUBLIC_LANGS)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1",
+        "place": "REQ-111 description, paragraph «Files (from the root of Sai; new unless said): app/public/in»: lines 15252-15267 before, 15262-15282 now",
+        "kind": "replaced",
+        "before": ".github/workflows/app.yml (changed: the job e2e, the paths, one docker step);"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F13",
+        "place": "REQ-111 description, paragraph «Files (from the root of Sai; new unless said): app/public/in»: lines 15252-15267 before, 15262-15282 now",
+        "kind": "replaced",
+        "before": "The stage scene, the office renderer and their texts are REQ-112, built in the same run."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F13",
+        "place": "REQ-111 description, paragraph «The demo survey (Sai as storefront #1)»: lines 15269-15282 before, 15284-15300 now",
+        "kind": "replaced",
+        "before": "so «Не знаю» leaves a question unanswered as the engine reads a missing key (decisions/0083 item 2: one tap per answer, «Назад» and «Не знаю» one tap, no «Далее», the full keyboard path)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F2",
+        "place": "REQ-111 description, paragraph «The production build leaves out the order texts and kk — a r»: lines 15290-15302 before, 15324-15337 now",
+        "kind": "replaced",
+        "before": "The function entry answers the demo questionnaire only in the public languages."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F11",
+        "place": "REQ-111 description, paragraph «The forbidden-words lint (the idea of REQ-086, carried here »: lines 15318-15346 before, 15353-15382 now",
+        "kind": "replaced",
+        "before": "The lint applies to every value of the texts module (the order texts too), to the visible text and the attribute values alt, title, aria-label and content of every page of app/public, and to every string of the intake."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F9",
+        "place": "REQ-111 description, paragraph «The CSP of app/ and what is not carried over»: lines 15354-15361 before, 15390-15401 now",
+        "kind": "replaced",
+        "before": "the code sets no style attribute and no HTML from a string, and a real browser sees no violation (criteria 10, 12, 13)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F14",
+        "place": "REQ-111 description, paragraph «The CSP of app/ and what is not carried over»: lines 15354-15361 before, 15390-15401 now",
+        "kind": "replaced",
+        "before": "the demo WhatsApp number and demo switchers (criterion 10), invented staff names (criterion 10, and REQ-112 for the scene),"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F3, F14",
+        "place": "REQ-111 description, paragraph «Named limits»: lines 15372-15379 before, 15412-15422 now",
+        "kind": "replaced",
+        "before": "The lint compares listed word forms: a price or a time in words («пять тысяч», «сто процентов») passes it, and the reader agents look for such phrases when they read the translations."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1",
+        "place": "REQ-111 description, paragraph «Guard tests of earlier requirements, \"was → became\" (grep of»: lines 15381-15414 before, 15424-15459 now",
+        "kind": "replaced",
+        "before": "DOCKER_STEPS (lines 19-69, an ordered list of exact lines): one row added, the demo questionnaire through the container."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1, F3, F4, F9, F13, F14",
+        "place": "REQ-111 description, paragraph «Facts checked on 2026-11-19 on a fresh clone of base/M1SITE-»: lines 15416-15449 before, 15461-15518 now",
+        "kind": "replaced",
+        "before": "playwright-core driving the runner's Chrome (the design measures it, as decisions/0118 О1 measured it on this computer)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F4, F5, F8",
+        "place": "REQ-111 description, paragraph «Bar: Q1 — every criterion names its check; Q2 — the gates of»: lines 15455-15466 before, 15535-15547 now",
+        "kind": "replaced",
+        "before": "Q12 — the choices are the open questions О1–О12 of the handoff, answered by ORCH in decisions/0123;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F2, F4",
+        "place": "REQ-111 description, paragraph «Post-deploy record (not a criterion; PLAN §4»: lines 15468-15477 before, 15549-15559 now",
+        "kind": "replaced",
+        "before": "`POST <APP_ORIGIN>/api/demo/result` with a fixture answers 200 (the function bundle holds the intake);"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F10",
+        "place": "REQ-111 criterion 1: lines 15480-15491 before, 15562-15583 now",
+        "kind": "rewritten",
+        "before": "Pages. Test app/test/unit/public-pages.test.js (created by this work) reads every .html file of app/public: the set is exactly index.html, how.html, examples.html, demo.html, 404.html and gate.html (gate.html of REQ-108 unchanged); every page but gate.html starts with `<!doctype html>` and has `<html lang=\"ru\">`, `<meta charset=\"utf-8\">`, the viewport line, `<meta name=\"color-scheme\" content=\"light dark\">`, `<meta name=\"robots\" content=\"noindex\">`, one `<title>`, an icon `<link rel=\"icon\">` with a `data:` address or a file of app/public, every `<script>` with a `src` of a file of app/public, every style sheet a `<link rel=\"stylesheet\">` of a file of app/public; every `href` and `src` names a file of app/public, or an anchor that exists on its page; index.html holds the text «Sai — закрытое тестирование» (REQ-108 criterion 4); every page but gate.html holds the places of the test-mode line and of the AI disclosure (the elements the design names); a damaged copy for each rule — no robots line, a script whose `src` names a missing file, a link to a missing file, an anchor that does not exist, index.html without the closed-test text, a page without the place of the test-mode line — is red."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F4",
+        "place": "REQ-111 criterion 2: lines 15493-15512 before, 15585-15607 now",
+        "kind": "replaced",
+        "before": "the theme positions «Авто», «Светлая», «Тёмная» (kk «Авто», «Ашық», «Қараңғы»; en «Auto», «Light», «Dark») and «Описать идею»;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F11",
+        "place": "REQ-111 criterion 2: lines 15493-15512 before, 15585-15607 now",
+        "kind": "replaced",
+        "before": "Readers (decisions/0079 item 7): the pairs «key — ru — translation» of kk and of en go to reader agents with no code and no Sai document; their «да» per pair, the rounds and the kk lines left FOR_NATIVE_SPEAKER (AP-114) stand in the handoffs of the run."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F2",
+        "place": "REQ-111 criterion 7: lines 15578-15594 before, 15673-15692 now",
+        "kind": "replaced",
+        "before": "`?lang=en` → English; `?lang=kk` → Kazakh through the local server and Russian through the function entry (kk is not a public language there, G9); an unknown value (`de`, empty, 1 000 characters) → Russian. `POST /api/demo/result?lang=<l>` with the JSON body `{\"answers\": {…}}` → 200 and the result in that language, field by field, never with ranking, score, points, price_text or duration_text (no fit number, ARCH §11.7);"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F2",
+        "place": "REQ-111 criterion 9: lines 15605-15618 before, 15703-15717 now",
+        "kind": "replaced",
+        "before": "(g) the public languages of the build and the languages of the function entry in criterion 7 are read from one constant."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F3, F9, F14",
+        "place": "REQ-111 criterion 10: lines 15620-15639 before, 15719-15763 now",
+        "kind": "rewritten",
+        "before": "No inline code, nothing that is not carried over (ARCH §14.1, §11.7). Test app/test/unit/check-public.test.js (rows added; REQ-109 criterion 7): `node scripts/check-public.js` also refuses, in every served file of app/public, `outerHTML`, `insertAdjacentHTML`, `document.write`, `setAttribute(\"style\"` (any quotes and spaces), `.style.cssText`, `eval(`, `new Function`, `Math.random` in any folder (not only office/), `file://`, and the texts «Демо: компания», «Демо: этап», «Demo: company» and «Demo: stage»; each planted item red, the twins `el.style.setProperty(\"--x\", v)`, `outerHTMLx` and `data-style=\"a\"` green; the word ban of decision 0074 item 6 (`REQ-` before a digit, and handoff, handoffs, orch and decisions as whole words in any letter case) and the refusals of REQ-109 criterion 7 (innerHTML, `style=` and `on…=` attributes, `<style>`, a `<script>` without src, an http:// or https:// text) hold for every served file of app/public, the new ones included (CP-1 on the real app/public, exit 0); the browser runs of criteria 12 and 13 see no Content-Security-Policy violation on any page of the matrix. Commands (RELEASE-VALIDATOR, outputs in its handoff): `grep -rnwE 'Айгерим|Данияр|Руслан|Мадина|Алия|Тимур|Динара|Ерлан|Складеон|Лидвейв|Skladeon|Leadway' app/public app/content` → no line (the invented staff and company names of the sample); the sha256 of every file of app/public and of every file of docs/design/samples/picker-v3-approved-2026-10-26/ (its snapshots included, one of which shows a local file path) have no value in common; a script outside the project that reads the sample's data.js as text — every string value of its kk block and the second argument of every `L(…)` call that has three or more words — finds none of them verbatim in the texts module or the intake, and prints the number of compared strings, not zero. Leads in localStorage, request numbers, the fit percentage, the prices and the WhatsApp number are refused by criteria 5, 7 and 12 and by this one (no external address, check-public)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1",
+        "place": "REQ-111 criterion 11: lines 15641-15658 before, 15765-15786 now",
+        "kind": "replaced",
+        "before": "RELEASE-VALIDATOR, in a fresh clone outside the project, removes every path that is not in the list and runs `cd app && npm ci && npm run check` → exit 0 (REQ-108 criterion 11's command)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F10",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "kind": "replaced",
+        "before": "for every page (index, how, examples, demo, 404) in the matrix —"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F11",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "kind": "replaced",
+        "before": "each once, with its status or error and its address)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F4",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "kind": "replaced",
+        "before": "the result shows the name of a solution or the no-match text, the not_suitable_when texts and «Описать идею», which opens how.html at the part «Как описать идею» and makes no request beyond the files of the page;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F4",
+        "place": "REQ-111 criterion 12: lines 15660-15682 before, 15788-15819 now",
+        "kind": "replaced",
+        "before": "the language buttons RU and EN only, `?lang=kk` in Russian, and no console error."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1",
+        "place": "REQ-112 description, paragraph «The port (ARCH §2»: lines 15780-15787 before, 15918-15929 now",
+        "kind": "replaced",
+        "before": "each starts with a header naming its original and the commit it was ported from and «no import of tools/»;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1",
+        "place": "REQ-112 description, paragraph «The port (ARCH §2»: lines 15780-15787 before, 15918-15929 now",
+        "kind": "replaced",
+        "before": "The parity test imports the originals and the ports and drives both with the same calls (question О17: so app.yml's paths hold the two originals, REQ-111's guard row (8))."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1, F6, F7, F9, F12",
+        "place": "REQ-112 description, paragraph «Facts checked on 2026-11-19 on the working tree (equal to th»: lines 15831-15850 before, 15973-16010 now",
+        "kind": "replaced",
+        "before": "and writes a door plate by innerHTML (line 449) — not carried over (REQ-111 criterion 10)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1",
+        "place": "REQ-112 description, paragraph «Bar: Q1 — every criterion names its check; Q2 — the gates of»: lines 15855-15863 before, 16015-16024 now",
+        "kind": "replaced",
+        "before": "Q12 — the choices are the open questions О13–О18 of the handoff, answered by ORCH in decisions/0123;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F1",
+        "place": "REQ-112 criterion 1: lines 15870-15878 before, 16031-16043 now",
+        "kind": "rewritten",
+        "before": "The renderer files and the port headers (ARCH §2, §2.1). app/public/office/ holds grid.js, sim.js, draw.js, stage-scene.js, view.js and labels.js. Test app/test/unit/port-parity.test.js (created by this work): the first comment of grid.js names tools/src/pixel-office/public/layout.js and that of sim.js names tools/src/pixel-office/public/office-sim.js, each with a 40-character commit sha and the words «no import of tools/»; `git show <sha>:<path>` of each equals the current original byte for byte (a change of an original makes the test red until the port is done again); the route kind of the original `handoff` is `deliver` in the port, and check-public finds no whole word handoff in app/public; `git diff --stat base/<RUN-ID> -- tools/src/pixel-office` → no line; no file of app/public imports anything outside app/public (REQ-108 criterion 3; IB-1)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F12",
+        "place": "REQ-112 criterion 3: lines 15891-15899 before, 16056-16069 now",
+        "kind": "replaced",
+        "before": "each loads by a dynamic import in Node with none of those globals;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F7",
+        "place": "REQ-112 criterion 4: lines 15901-15914 before, 16071-16092 now",
+        "kind": "replaced",
+        "before": "every fillStyle is a value of the palette it was given or a scene constant the design lists (seven distinct #rrggbb values are all found back and the test subtracts the palette and the constants and finds no rest); a palette value that is not #rrggbb is replaced by a neutral constant with no exception;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F6",
+        "place": "REQ-112 criterion 6: lines 15927-15938 before, 16105-16119 now",
+        "kind": "replaced",
+        "before": "at 320×568 the canvas fits the width with no horizontal scroll, a figure is at least 20 CSS pixels tall"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "F9",
+        "place": "REQ-112 criterion 9: lines 15953-15959 before, 16134-16146 now",
+        "kind": "replaced",
+        "before": "no file of app/public/office names fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon or a /api address (a planted one is red), so the scene reads no event and sends nothing;"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "date -u; cp docs/requirements.yaml <scratch>/requirements.before-01b.yaml; shasum -a 256 of the file, of lines 1-15171, of lines 15172-15964; git show base/M1SITE-20261119-01:docs/requirements.yaml | shasum -a 256; git rev-parse HEAD base/M1SITE-20261119-01; git diff --numstat base/M1SITE-20261119-01 -- docs/requirements.yaml",
+        "out": "2026-11-19T12:03:52Z; file 3d841bc39d1e6ae41c3748a0d73755507e9dc41a60b79c82c4ec51c3e5246294 (the gate's value); lines 1-15171 3fdee3114f30e6d0cb8d9f6c2c0ef603a14a74e669c73957feb7a047e2d5afbd = the tag; the blocks 4a32ce8fbc35f994b9fe0afb6b9f8b9654049812fcf3598ab313d3d42dbf2321 (step 01's value); HEAD = tag = f78d09fab86e2ac06ac58af13437831cade02263; «793 0»"
+      },
+      {
+        "cmd": "git clone --quiet --depth 1 --branch base/M1SITE-20261119-01 file://<the Sai folder> <scratch>/shallow; git rev-list --count HEAD; git cat-file -t b5df4a808243a1f669ad3697374c265c720a7c31; python3 -I <scratch>/scripts/prune.py (remove every path not in the paths list of app.yml, keep .git); cd app && npm ci && npm run check",
+        "out": "1 commit; «fatal: git cat-file: could not get object info»; 61 entries removed, left .github/workflows/app.yml, app, docs/runbooks, tools/package.json, tools/src/team, tools/src/pixel-office/mask.js; check exit 0 (12:11:47Z-12:12:48Z): check-public «app/public is clean», unit «# tests 45 / # pass 45 / # fail 0 / # skipped 0 / # todo 0», int «# tests 36 / # pass 36 / # fail 0 / # skipped 0 / # todo 0»"
+      },
+      {
+        "cmd": "in the same clone: mv .git aside; node --test test/unit/vercel-config.test.js test/unit/npmrc.test.js test/unit/vercel-build.test.js; mv .git back; the same run",
+        "out": "without .git: «# tests 13 / # pass 5 / # fail 8» (not ok NPM-1, NPM-2, NPM-3, NPM-4, VB-4, VC-1, VC-2, VC-3); with the depth-1 .git: «# tests 13 / # pass 13 / # fail 0»"
+      },
+      {
+        "cmd": "for layout.js and office-sim.js: git log -1 --format=%H; git show <commit>:<path> | shasum -a 256; shasum -a 256 <path>; grep -n checkout and the options in .github/workflows/app.yml and check.yml; grep -n \"fetch-depth|checkout|persist-credentials\" app/test/unit/ci-workflow.test.js",
+        "out": "b5df4a808243a1f669ad3697374c265c720a7c31 → f23b9fe29b24bf37df8781f995e9f4eb33e9e73de7836bd33d6d4d1dd9c58c5f twice; 7591fc064505dc030edf26df43889bcd52a852bf → 2b8f90c4b9210e27ce35e7a65780dbe7687892668ed045b58d3e03ffa9403842 twice; app.yml: three actions/checkout with only persist-credentials: false; check.yml: fetch-depth: 0; ci-workflow.test.js: only line 268, the damaged copy «uses actions/checkout@v7» of the SHA pin rule"
+      },
+      {
+        "cmd": "node (v22.23.4) -e: for 20 names, `in globalThis` and the descriptor; node --test <scratch>/f12/trap.test.mjs (save the descriptors of navigator, setTimeout, setInterval, performance, Date, fetch, WebSocket first, then throwing getters and a throwing Math.random; fresh imports with a query of copies of layout.js and office-sim.js, buildLayout, officeSize, createSim, sync, enqueue, 50 ticks, positions; ten planted modules)",
+        "out": "defined: globalThis, navigator (getter), setTimeout, setInterval, performance (getter), Date, fetch, WebSocket, all configurable; not defined: document, window, self, localStorage, sessionStorage, indexedDB, matchMedia, requestAnimationFrame, cancelAnimationFrame, XMLHttpRequest, EventSource. First try with traps set while the descriptors were still being read: every test red with «trap performance» from Node's own fetch module (undici reads performance when the fetch descriptor is read). Fixed order: «# tests 11 / # pass 10 / # fail 1»: originals no read; date, newdate, perf, timer, random, fetch, nav, ws, interval seen; window (`typeof window`) not seen — the expected one, left to the static rule"
+      },
+      {
+        "cmd": "python3 -I <scratch>/scripts/kk_draft.py docs/design/samples/picker-v3-approved-2026-10-26/data.js; the same count in node with /[\\p{L}\\p{N}]+/gu",
+        "out": "kk block lines 50-91; 114 strings, 45 of three or more words, 69 under; 145 L() calls, 105 kk args of three or more words; 150 distinct compared; none of Авто, Ашық, Қараңғы, Сіз, Артқа, Білмеймін, Дайын, Жабу compared; planted: whole value, inside a longer value, doubled spaces → hit; glued letters, a new text, the short words → no hit; node: «kk lines 50 91 k1 114 >=3 45 k2 145 >=3 105 compared 150»"
+      },
+      {
+        "cmd": "/usr/bin/grep (BSD grep 2.6.0-FreeBSD) -cw for each of the 29 terms in data.js; /usr/bin/grep -rnwE '<the 29 terms>' app/public; printf of five lines | /usr/bin/grep -nwE '<the 29 terms>'; grep -n of the company names in data.js",
+        "out": "each term found in data.js (Складеон and Лидвейв 3 times, every other once); app/public: no line, exit 1; «Ли и Ким», «Светлана Кимова», «текст про сумку» no hit; «Виктор Ли.», «Сумка» hit; companies at lines 136, 140-142, 226, 230-232"
+      },
+      {
+        "cmd": "python3 -I <scratch>/scripts/phones.py --sample data.js; --planted; app/public",
+        "out": "sample numbers found in data.js: 11 of 11; planted «+7 701 555-12-40», «8 (701) 555 12 40», «77010000000», «+7 (707) 600 11 77», «+7 701 000 00 00» found; «19.11.2026, 18:53», «1 250 000 ₸», «Вопрос 5 из 5» none; app/public: 11 compared, no hit"
+      },
+      {
+        "cmd": "node <scratch>/f9/sketch.mjs <the Sai folder> (the forms of REQ-111 criterion 10 with the border A-Za-z0-9_$, and of REQ-112 criterion 9 on a copy of blank() of import-boundaries.test.js lines 46-135)",
+        "out": "«planted red10 27 green10 14 red9 10 green9 6 wrong 0»; criterion-10 forms over app/public (3 files) and tools/src/picker/public (14 files): no hit; over the sample: app.js outerHTML and Math.random, data.js the four demo texts; criterion-9 rule over layout.js and office-sim.js: no hit"
+      },
+      {
+        "cmd": "node: tools/src/picker/engine.js computeResult and resolveAnswers on a copy of tools/src/picker/demo-tenants/uchet-pro.json with every question required false; grep -n of when, min_score and checkConditions in tools/src/picker/validate.js",
+        "out": "{} → {\"ok\":true,\"recommended\":0,\"no_match\":true} (min_score 8); resolveAnswers({}) ok; null to the single question business → E_ANSWER wrong_kind; validate.js line 212 checkConditions 1 to 3 items for rules, line 359 min_score at least 1"
+      },
+      {
+        "cmd": "node <scratch>/scripts/texts-check.mjs <the Sai folder> (the eleven exact ru texts of «Чего Sai пока не делает» against textProblem, forbiddenSign, phrasesOf and wordCount of tools/src/picker/text-rules.js, checkText of app/scripts/check-public.js and the ru lists Г, Б, В, Ц, С)",
+        "out": "11 texts, 2 to 7 words a phrase, «with a finding 0»"
+      },
+      {
+        "cmd": "python3 -I <scratch>/scripts/apply.py (edits on the logical text of each unit, re-wrapped at 120 at single spaces; two paragraphs and two comment lines inserted) on <scratch>/requirements.before-01b.yaml; cmp of the project file with the before copy; cp into docs/requirements.yaml at 12:29:35Z; head -n 15171 | shasum -a 256; ruby -ryaml load; python3 <scratch>/scripts/compare.py (the YAML-folded texts of both blocks before and after against the intended edits); widths; git diff --numstat base/M1SITE-20261119-01 -- docs/requirements.yaml",
+        "out": "cmp equal before the copy; lines 1-15171 3fdee3114f30e6d0cb8d9f6c2c0ef603a14a74e669c73957feb7a047e2d5afbd — equal before and after; the file 4fe5bcdeacd9e8f1d9112afd0710fc1aa555e67f08beb897cda990b079300184, 16151 lines; the blocks (15172-16151) 6bfa1d7f1deb2ee7e24227fbfc686958f223b8701eec4f5e042edd0728bf5ce1; YAML: 112 requirements, 112 distinct ids, last REQ-110 REQ-111 REQ-112; REQ-111 pending [REQ-108, REQ-109] 16 criteria; REQ-112 pending [REQ-111] 10 criteria; compare: «REQ-111 paragraphs 18 -> 20 criteria 16 -> 16 / REQ-112 paragraphs 13 -> 13 criteria 10 -> 10 / mismatches 0»; no new line over 120 characters, no trailing space, no tab; «980 0»"
+      },
+      {
+        "cmd": "awk '/^  - id: REQ-111$/{f=1} f&&/^  - id: /&&!/REQ-111$/{exit} f' docs/requirements.yaml | wc -l; the same for REQ-112; grep -c in the blocks of «seven distinct», «fits the width», «answers the demo questionnaire only», «О1–О12 of the handoff», «none of those globals», «git show»",
+        "out": "677 and 301 lines; the first five 0; «git show» 4, all in the new text (the measured failure, the changed О17, fact 7, the RELEASE-VALIDATOR command)"
+      },
+      {
+        "cmd": "cd tools && node --test test/current-docs.test.js test/repo.test.js (working tree); node --test test/repo.test.js on a fresh clone of base/M1SITE-20261119-01 outside the project; git diff --stat base/M1SITE-20261119-01 -- tools .github app | wc -l",
+        "out": "working tree «# tests 39 / # pass 37 / # fail 2», not ok CI-3 and CI-8 only, message «CI-3: engines.node is >=22.23.4 <23»; the clean clone of the tag (f78d09f, no work of mine) «not ok 7 CI-3» and «not ok 12 CI-8» with the same message; the tests read .github/workflows/check.yml and tools/package.json; my diff over tools, .github and app: 0 lines"
+      },
+      {
+        "cmd": "cd tools && npm run -s traces",
+        "out": "exit 0; «traces: файлов проверено 2705, следов 0, пропущено 67»"
+      },
+      {
+        "cmd": "cd tools && node src/handoffs/cli.js (after creating this handoff with npm run -s handoff -- new and setting IN_PROGRESS)",
+        "out": "«handoffs-check: файлов проверено 1446, нарушений 1, исключений использовано 110 из 110»; the one finding «handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 — H4: status: PENDING в коммите» is not of this step (issue I9); none for this file"
+      },
+      {
+        "cmd": "my own assessment of fitness (not the gate)",
+        "out": "(а) 16 and 10 criteria, each naming its test or command; the new rules have borders, twins and measured counts (150, 11, 29, 27/14, 10/6); (б) the departures from ARCH and PLAN named for decision 0123 (О20, О21), G9 now binds both demo routes; (в) depends_on unchanged; (г) unchanged; (д) Q10 rows unchanged, no word about lowering the bar; (е) original_request untouched. For REQ-VALIDATOR, gate pass 2 of 3 (AP-010)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "This handoff was created by REQ-ANALYST with `npm run -s handoff -- new` on the order of the session that leads the program in ORCH's role (decisions/0122 О1), as steps 01, 02 and 03 of this run were, not by ORCH itself (docs/workflows/handoffs.md «Who writes what»). created_at and started_at are the one clock reading of that command, 2026-11-19T12:22:26Z; the work began at 2026-11-19T12:03:52Z (the first clock reading of self_check); agent_run_id stays null (unknown to me). The task says «gate pass 1 of 3» as ORCH wrote it; the next gate is pass 2 of 3. ORCH may record this in an orch_note."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "О17, the parity oracle — its default changed by F1. Default now: each port header names the original's path, the commit it was ported from and the sha256 of the original's bytes at that commit; app/test/unit/port-parity.test.js compares the sha256 of the current original with the header, with no git command, so it holds in the check job of app.yml, which keeps one commit; RELEASE-VALIDATOR checks the commit in a full clone (`git show <commit>:<path> | shasum -a 256` = the header hash); app.yml's paths hold the two originals because the test imports them. Alternatives: (a) `fetch-depth: 0` in the check job of app.yml and `git show` in the test, with a rule and a damaged copy in ci-workflow.test.js — not chosen: every push then fetches the whole history for one test, and the header could still never name the pushed commit; (b) frozen copies of the originals as test fixtures (no path in app.yml, but a second copy of the owner's code in app/test)."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "О19, the list «Чего Sai пока не делает» on the public demo result (F4). Default: every result shows it, the no-match one included, on production in ru and en, with the ten exact ru texts of REQ-111 that cover each item of PLAN §2 «What they do not build in V1» once; these are no order texts under G8 «б» (they say what Sai does not build and offer nothing; PLAN M1 «Owner sees» names them in the demo result, decisions/0092 item 5 keeps the demo public, PLAN §2 says «The landing and the interview say so plainly»). This also answers the gate's I6 for the result: ORCH may confirm in decisions/0123 that the demo result is not an order text. Alternatives: the list only on the local server (then the public result says nothing of what Sai cannot build, against PLAN M1); another wording or grouping of the PLAN items (a micro-amendment of criterion 2)."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "О20, the departure from ARCH §19.3 (F5). Default: in R1.2 the public languages are one constant of the source; the build leaves kk out of the public set and the function entry answers both demo routes in ru and en; kk is shown only by a release after the owner's answer to G9; ORCH writes a row of PROGRESS «Plan amendments» citing decisions/0123; when the admin of M5 exists, a later requirement may move the switch into platform_settings with kk still out of the public files until G9. Alternative (the form §19.3 allows): public_langs read from platform_settings at run time — not chosen: the kk texts would have to be in the public files and only hidden, so the kk draft would be served (against G9's default and PLAN NEVER-DO 14); the demo routes would read the database (against REQ-111 criterion 8); and no admin can change the setting before M5."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "О21, the rows of PROGRESS «Plan amendments» (F8). Default: ORCH writes one row for each departure that REQ-111 lists in its paragraph «Departures from PLAN and ARCH» — (1) ARCH §19.3 public_langs (О20); (2) ARCH §3 and §18 «Chromium in CI» → the runner's Chrome with playwright-core (О10); (3) ARCH §18, the app.yml paths gain tools/src/picker/**, tools/src/node-floor.js and the two office originals; (4) PLAN M1.4 demo-parity is an int test (О9); (5) ARCH §13 and §14.3, the demo rate limit not built in R1.2 (О5); (6) ARCH §2.1, the port header also names the sha256 of the original (О17) — in decisions/0123, as decisions/0116 О26 did."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "For gate 03b of the look description (docs/design/V1-public-look.md; F4, F6 and F7 are «settled together with gate 03b»): (a) F4 — the description shows no list on a no-match result (7.12) and maps «what Sai does not build yet» to not_suitable_when (7.14); REQ-111 now asks for the heading «Чего Sai пока не делает» and its ten items on every result, the no-match one included, so the description needs their place and look; (b) F6 — REQ-112 criterion 6 now reads as the description does (9.1, 9.14, 12: the stage clips the wider canvas, no page scroll), no change needed there; (c) F7 — the sentence of 6.2 «Every fill on the canvas is a scene token, a page token named here, or one of these constants» does not cover the shades it draws in 9.4-9.8 (`--acc2` lightened .25 and darkened .2, the lighter and darker rows of `--sc-chair` and `--sc-jacket`, the highlight row of `--sc-wood-l`) or the alpha fills of 9.11 derived from `--sc-dim` and `--sc-dim-alpha`; REQ-112 criterion 4 now admits them only as a closed list of derivation rules that the description writes, so 03b should see that the list is closed. ORCH routes these to step 03b or to the look's rework."
+      },
+      {
+        "id": "I7",
+        "kind": "DISCREPANCY",
+        "text": "The gate's issue I9 is not among F1-F15, so it is not edited (AP-019, the role file item 12): REQ-111 fact (4) says the copy «still [fails with] 44 with server/vendor excluded while a file imports it»; the gate re-measured 50 errors (44 TS7006, 5 TS2339, 1 TS7053), the «44» counts TS7006 only. No criterion depends on it. Proposal: DOC-UPDATER corrects the number (decisions/0079 item 5), or ORCH adds it to a later list of remarks."
+      },
+      {
+        "id": "I8",
+        "kind": "EXPECTED_RED",
+        "text": "`cd tools && npm run check` has CI-3 and CI-8 of tools/test/repo.test.js red by the design of the open run ISS-0092-20261117-01 (its step 06 changes them), as the task says. Repeated now on a fresh clone of base/M1SITE-20261119-01 with the same message «CI-3: engines.node is >=22.23.4 <23» (quality-bar §6 item 4, a repeat without the work); the tests read .github/workflows/check.yml and tools/package.json, which my work does not touch (git diff over tools, .github and app: 0 lines). Not fixed here."
+      },
+      {
+        "id": "I9",
+        "kind": "DISCREPANCY",
+        "text": "`cd tools && npm run handoffs-check` exits 1 in this tree with one finding that is not of this step: «handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 — H4: status: PENDING в коммите» (the open step 05c of run M0DOCS-20261117-01, committed as found, decisions/0122 О1; steps 01 and 02 of this run recorded the same). This handoff has no finding; `close` checks only its own file."
+      },
+      {
+        "id": "I10",
+        "kind": "NOTE",
+        "text": "Commands of the reworked criteria that cannot run in full before task M1.4: the grep of REQ-111 criterion 10 over app/content (the folder is created by M1.4; over app/public it gives no line), the phone script over app/content (over app/public: no hit), the comparison of the kk-draft script (no texts module or intake yet; its compared set is measured: 150), and every new test file. Run in full now: the depth-1 run of criterion 11 on the tag (exit 0), the commit check of REQ-112 criterion 1 (`git show … | shasum -a 256` equal for both originals), the rule sketches of criteria 10 (REQ-111) and 9 (REQ-112), the global traps of REQ-112 criterion 3. Not run: the full `cd tools && npm run check` (about 15 minutes, with the two expected reds of I8) and `cd app && npm run check` on the working tree (this step changes no file of app/; the app check ran on the depth-1 clone of the tag)."
+      },
+      {
+        "id": "I11",
+        "kind": "NOTE",
+        "text": "F15 is closed with no edit, as the gate wrote. F3 and F10 (REQ-111) and F6 (REQ-112) change a criterion's reading, not its strength: the plain readings could not hold together with criterion 2 (kk «Авто»), with the formatter of the check (`<meta … />`) and with the approved look (the clipped wider canvas); each now names what is measured, and REQ-VALIDATOR may judge whether any of them weakens a check."
+      }
+    ],
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}

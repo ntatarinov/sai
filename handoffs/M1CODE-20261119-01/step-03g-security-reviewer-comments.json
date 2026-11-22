@@ -1,0 +1,66 @@
+{
+  "handoff_id": "step03g-comments-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "03g",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M1CODE-20261119-01/step-03g-security-reviewer-comments.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-02g-code-fixer-comments.json"
+    ],
+    "route": "03g then 04g -> new snapshot ci/m1-landing-4 (owner's yes) -> 9",
+    "write_set": [
+      "none in the project"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 3 narrow pass 2 of the loop after decisions/0124 O45 (SECURITY-REVIEWER), run M1CODE-20261119-01. Scope ONLY the round 02g: comments rewritten in app/public/css/site.css and app/public/js/pages/demo.js, shown by `git diff 8337120 -- app` (8337120 is the pushed snapshot commit on ci/m1-landing-3; read-only git diff; the diff must be comment lines only). Read handoffs/M1CODE-20261119-01/step-02g-code-fixer-comments.json and the earlier PASS handoffs/M1CODE-20261119-01/step-03f-security-reviewer-speaker.json. Check the facts yourself: strip all comments from the two files in the working folder and in `git show 8337120:app/public/css/site.css` / `:app/public/js/pages/demo.js` and show that the results are byte-equal (a small node script in the scratchpad; acorn or the project's own tools if present, else a careful tokenizer); no new executable line, no new string, no URL, no secret, no internal name in a public file (grep the two files for decisions, handoff, orch, REQ-digits, ISS-, machine paths). Verdict PASS or FAIL with findings by severity. Do NOT run npm run check, any app or tools test script, or e2e tests on this computer (the owner's rule). No commit/push/checkout/reset/stash/clean. Node 22 first on PATH. Close with the handoff close command after cd tools && npm run traces returns 0 (handoffs-check has one old known H4 violation, accepted).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T13:14:05Z",
+  "started_at": "2026-11-21T13:14:05Z",
+  "completed_at": "2026-11-21T13:17:21Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Map of surfaces: app/public/css/site.css and app/public/js/pages/demo.js are files the browser receives (surface: goes to the browser), but the round-02g diff is comment text only, so no executable or rendered content changes. Items: Q7 applicable and met (grep for secret, password, key, URL, machine path in the added lines found none; the only hits are the quote characters and the word \"own\" inside comment text); Q8, Q9, Q10, Q11, R2, R3 not applicable (no data path, query, external call, request, Pixel Office or photo surface touched; R3 dropped by decision 0033). Facts checked myself: git diff 8337120 -- app shows 2 files, 12 insertions and 11 deletions, all inside comments; stripping all comments gives byte-equal results for site.css (29575 chars, 39 comments before and after) and demo.js (27383 chars, 109 comments before and after; acorn token streams also equal, 6783 tokens); no new string, URL, secret or internal name; the earlier PASS step-03f (no innerHTML, no eval, no new request or storage, text only via textContent) therefore still holds unchanged. Probes: 3 byte/token comparisons, 2 greps, 1 forbidden-word lint of the added text in 3 languages.",
+    "findings": [],
+    "self_check": [
+      {
+        "command": "node -v (Node 22 first on PATH)",
+        "output": "v22.23.4"
+      },
+      {
+        "command": "git diff 8337120 -- app; git diff 8337120 --stat -- app",
+        "output": "app/public/css/site.css 15 lines, app/public/js/pages/demo.js 8 lines (12 insertions, 11 deletions); only comment lines changed (decisions/0124 reference replaced by the owner ruling of the look section 7.9; title or stage line; class own named in the markup comment)"
+      },
+      {
+        "command": "scratchpad proof.cjs: strip comments (acorn onComment for demo.js; CSS stripper that respects strings) from git show 8337120:file and the working file, compare",
+        "output": "css comments old/new 39 39 stripped byte-equal true len 29575; js comments old/new 109 109 stripped byte-equal true len 27383; js token streams equal true 6783"
+      },
+      {
+        "command": "grep -n -i -E decisions|handoff|orch|REQ-[0-9]|ISS-|machine path|URL|secret|password|key|0124|O45 on the two files and on the added diff lines",
+        "output": "files: only pre-existing words token/tokens (async token counter and CSS tokens file, not in the diff); added lines: no decisions/handoff/orch/REQ/ISS/path/URL/secret; only apostrophe, guillemet and the quoted word own inside comments"
+      },
+      {
+        "command": "word-lists.js lintText(added diff text) for ru, kk, en (read-only import, not a test script)",
+        "output": "[] [] []"
+      },
+      {
+        "command": "sha256sum before and after the check",
+        "output": "site.css 6e48df1a550acd038b78b66aa296d7cefe8bb46da21fb45c362bb8d0dd521f22; demo.js 384de2a5de363741734fe288282ba004f3b9f8cb3f65e920f147efac32f2accf; identical at start and end"
+      }
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}

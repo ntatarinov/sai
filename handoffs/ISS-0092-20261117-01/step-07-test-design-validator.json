@@ -1,0 +1,302 @@
+{
+  "handoff_id": "step07-ISS-0092-20261117-01",
+  "run_id": "ISS-0092-20261117-01",
+  "workflow_id": "WF-03",
+  "step": "07",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/ISS-0092-20261117-01/step-07-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0092-20261117-01/step-06-test-designer.json (result: the files, the counts, the 76 mutants, the proof harness; read it whole)",
+      "handoffs/ISS-0092-20261117-01/step-04b-code-fixer.json (issues I1, I2, I5)",
+      "handoffs/ISS-0092-20261117-01/step-05-security-reviewer.json and step-05b-reviewer.json (the proposals for the tests)",
+      "docs/design/REQ-110-tools-node-floor.md (sections 5, 6.3, 6.4, 9, 10, 11, 13)",
+      "docs/requirements.yaml block REQ-110; docs/issues/ISS-0092-*.md",
+      "the test change: `git diff HEAD -- tools/test` and the new file tools/test/node-floor.test.js",
+      "the GitHub record of the head before the change: run 45061034491 (2239 tests, CI-3 and CI-8 red as the CODE-FIXER's issues I1 and I2 foresaw)"
+    ],
+    "base_tag": "base/ISS-0092-20261117-01",
+    "route": "WF-03 step 7 gate pass 1 of 3 -> ORCH pushes a ci/* snapshot -> step 8 TEST-RUNNER on its GitHub record",
+    "write_set": [
+      "handoffs/ISS-0092-20261117-01/step-07-test-design-validator.json (result only)"
+    ],
+    "parallel_work_now": [
+      "UAT-RUNNER of M1WORDS-20261122-02 step 08 (a browser; not your files)"
+    ]
+  },
+  "task": {
+    "description": "WF-03 step 7, TEST-DESIGN-VALIDATOR, gate pass 1 of 3, the regression tests of the fix of ISS-0092 (REQ-110; run ISS-0092-20261117-01). Gate as WF-02 step 5b, and for a defect also: the new tests FAIL on the product before the fix and PASS after it. You cannot run the tests on this PC (decisions/0110), so prove everything with your own read-only scripts in your own folder and put what only GitHub can prove into result.must_be_proved_on_github. Do, in this order: (1) Read the whole test change (git diff HEAD -- tools/test and the new file tools/test/node-floor.test.js) and the designer's result. (2) Coverage table: every criterion of REQ-110 (and the numbered parts of the design section 10) → the test that goes red when it is violated; every entry point E1 to E11 of the design section 3 has a row; the hook rules of section 4; the single source of the floor and the equality (section 5); CI-3 and CI-8 (6.3, 6.4); anything without a test is a finding. (3) Soundness and independence: own oracles (a test does not import the rule it tests, except where the design makes the guard module the subject: say which test does and judge it); no dependence on the clock or the order; each test has its own data; no real home folder and no port 4780, 4781, 4782 or 4790; no secret; a test of a child process cannot hang the run (a timeout is set). (4) Mutants: apply at least 25 mutants of your OWN (not only the designer's 76) to copies of the product or of the rule functions, evaluated by your own independent harness (say what you reused); include: the floor constant changed in each of its places one at a time; the guard missing in each entry point one at a time; the guard placed after the dispatch; the version compare using string order or ignoring the patch part; a pre-release or an empty version accepted; engines text edited in the package file and in the lock root separately; check-latest removed, false, moved to another step; the hook accepting a version text with a shell metacharacter; the hook keeping a candidate's stderr; a candidate in a folder with a space; the header count changed. A surviving mutant is a finding unless proved equivalent. Prove the working tree is unchanged by your mutants (hashes before and after). (5) Defect rule: show which of the new tests are red on the product before the fix (a copy of the tree with the fix files at the state of the tag base/ISS-0092-20261117-01 and the new tests) and which stay green on purpose and why. (6) Nothing weakened: print the number of test( registrations and assert. occurrences of each changed file at the tag and now (not lower except where the replacement table says a row is replaced by stronger ones); no skip, todo or only. (7) The harness you rely on (a collector that replaces the node:test import): is it faithful for these tests; name what it cannot show. (8) Format and lint: run `npx prettier --check` and `npx eslint --max-warnings 0` on the four changed files in a fresh clone of the project in your own folder (core.autocrlf=false, npm ci; they do not run the tests) and print the output. (9) Verdict PASS or FAIL with findings by severity; any item not passed is FAIL. Be economical: one script that applies all mutants and prints a table. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch>. Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T20:02:07Z",
+  "started_at": "2026-11-22T20:02:17Z",
+  "completed_at": "2026-11-22T20:41:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "WF-03 step 7, TEST-DESIGN-VALIDATOR, gate pass 1 of 3, tests of the fix of ISS-0092 (REQ-110). VERDICT FAIL: one Medium finding (F1: the canary of criterion 7 never checks that the server CLOSES the connection after the 431; two own mutants D05 and D06 survive) and three Low findings (F2 to F4); everything else passed. COVERAGE (own table, from the eleven criteria of the block, not from the author's table): every criterion and every entry point E1 to E11 has a test that I turned red with a mutant; see coverage_table. Nothing is skipped, todo or only (grep: the only hits are words inside strings). MUTANTS (my own, a table of 86 written by me, evaluated by my own harness; the designer's 76 were not reused): 81 red, 5 survived (A-E5, W-E1, W-E11, D05, D06); the five survivors are two classes: F1 (D05, D06) and F2 (A-E5, W-E1, W-E11); none is equivalent. DEFECT RULE: on a copy whose 17 fix files are at the state before commit a2fd74f (the node-floor module kept but unused), the new tests that are red: CI-3, CI-8, NF-01, NF-02, NF-03 (its grid oracle takes the floor from engines, which then holds no floor), NF-05c, NF-05d, NF-09, SV-39, HK-32, HK-33, HK-34, HK-35, HK-36, HK-37, HK-38, HK-40; green on purpose (the behaviour held before the fix, each proved by killed mutants): NF-04 (module only: R07 to R10, R12), NF-05a (P05), NF-05b (positive control of the preload), NF-06 (P01 to P04), NF-07 (D01, D02, D04), NF-08 (H-E8, H-E9), SV-68 (D03), HK-39 (K03, K04); the old rules CI-1, CI-2, CI-4 to CI-7 stay green. With the module also removed every NF test is red at load (import error) and only SV-68, HK-39 and the old CI rules stay green. SERIES: three full runs in a row 31 of 31 green (22.4 s, 21.0 s, 21.5 s); every test alone in its own process, in reverse order, 31 of 31 green; under load (4 busy loops on 12 CPUs) 5 runs of the 11 hook, NF-05c and SV-39 tests, all green. A first load series with 12 busy loops on 12 CPUs gave no result in 14 minutes and was stopped by me (my own processes, by exact id): a full-saturation series is NOT done and goes to GitHub. NOTHING WEAKENED: see counts; no D line, no skip; two titles renamed (CI-3, SV-39), as the replacement table says; HK-25 is renamed between the tag and the head by another run (ISS-0122), not by this change (info I3). FORMAT AND LINT: prettier --check and eslint --max-warnings 0 on the four files in my own fresh clone: clean (self_check).",
+    "coverage_table": [
+      "1 declared floor (engines, lockfile root, one value) -> CI-3, CI-8 (F02, F03, F09), NF-01, NF-02 (F01 to F12), HK-37 (F04, K12)",
+      "2 version rule -> NF-03 (R01 to R06, R13), NF-04 (R07 to R10, R12), HK-35 (K01, K05, K06, K13, K15, K16)",
+      "3 Pixel Office server -> SV-39 (S-E2, G-E2, R16, F01), NF-05c row pixel-office and its foreign --dir twin (G-E2, R16)",
+      "4 Pixel Office hook -> HK-32 to HK-36, HK-38, HK-39, HK-40 (K01 to K17); the earlier HK-09, HK-10, HK-11g, HK-12b, HK-31 are untouched",
+      "5 every entry point -> NF-05a (script list against the rows: P05), NF-05c (E1 G-E1, E2 G-E2, E3 G-E3 and A-E3, E4 G-E4, A-E4, W-E4, E5 G-E5, W-E5, E6 G-E6, A-E6, E7 G-E7, A-E7, E8 G-E8, A-E8, E9 G-E9, E10 G-E10, E11 G-E11), NF-05d (the same starts at the floor and under the running Node). GAP: a guard placed after a pure parse of the arguments in the programs without a help (E1, E5, E11): A-E5, W-E1, W-E11 survive (F2)",
+      "6 check command -> NF-06 (P01 to P04); the sign-only and twin rows are in the test",
+      "7 header-count canary -> SV-68 (D03), NF-07 (D01, D02, D04). GAP: the clause 'closes the connection' (D05, D06 survive, F1)",
+      "8 CI at or above the floor -> CI-3, CI-8 (Y01 to Y05, F06); the two GitHub runs and the log line are for RELEASE-VALIDATOR",
+      "9 documents -> NF-01 (F05, F07, F10, F12), NF-09 (F07, F11); the grep commands of the criterion are in step 04b and 05",
+      "10 the checks -> counts below; the whole work on GitHub",
+      "11 help below the floor -> NF-08 (H-E8, H-E9)",
+      "hook rules of design section 4 -> split3 (K01, K15, K16), node_ok (K02, K03, K05, K06, K11, K13, K14), the three candidates (K07, K08, K09), the fall-through (K17), the quiet end (K10), stdin (K11), stderr (K02), a folder with a space (K03, K04)",
+      "single source and equality (design 5) -> NF-01, NF-02, NF-09; CI-3 and CI-8 and CI_ENGINES (6.3, 6.4)",
+      "failure paths -> nothing written: NF-05c listings, SV-39 no state folder, HK rows state folder unchanged; a throwing stderr writer: NF-04 (R12); the event kept whole: HK-36 (K11)",
+      "Q8, Q11, R3: not touched by this change (no tenant path, no user address; R3 not applicable); the picker and team rows use a temporary home and port 0"
+    ],
+    "mutants": [
+      "F01 | NODE_FLOOR in node-floor.js = 22.23.3 | RED: NF-01, NF-02, NF-03, NF-05c, SV-39",
+      "F02 | engines of package.json = >=22.23.3 <23 | RED: CI-3, CI-8, NF-01, NF-02",
+      "F03 | engines of the lockfile root = >=22.23.3 <23 | RED: CI-3, CI-8, NF-01, NF-02",
+      "F04 | hook.sh node_floor=22.23.3 | RED: HK-32, HK-35, NF-01, NF-02",
+      "F05 | pre-push names 22.23.3 | RED: NF-01, NF-02",
+      "F06 | check.yml node-version \"22.23.3\" | RED: CI-3, CI-8, NF-01, NF-02",
+      "F07 | README line 157 names 22.23.3 | RED: NF-01, NF-02, NF-09",
+      "F08 | a stray 22.23.5 in team/executor.js | RED: NF-01, NF-02",
+      "F09 | engines upper bound <24 in both files | RED: CI-3, CI-8, NF-01, NF-02",
+      "F10 | README line 9 holds >=22 <23 | RED: NF-01, NF-02",
+      "F11 | README line 207 without the hang sentence | RED: NF-09",
+      "F12 | README line 36 (default port) names 22.23.3 | RED: NF-01, NF-02",
+      "G-E1 | guard removed from src/cli.js | RED: NF-05c",
+      "G-E3 | guard removed from src/pixel-office/note.js | RED: NF-05c",
+      "G-E4 | guard removed from src/team/cli.js | RED: NF-05c",
+      "G-E5 | guard removed from src/web/main.js | RED: NF-05c",
+      "G-E6 | guard removed from src/traces/cli.js | RED: NF-05c",
+      "G-E7 | guard removed from src/handoffs/cli.js | RED: NF-05c",
+      "G-E8 | guard removed from src/handoffs/handoff.js | RED: NF-05c",
+      "G-E11 | guard removed from src/pixel-office/public/office-report.js | RED: NF-05c",
+      "G-E2 | guard removed from pixel-office/main.js | RED: NF-05c, SV-39",
+      "G-E9 | picker guard disabled (if (false)) | RED: NF-05c",
+      "G-E10 | e2e guard disabled | RED: NF-05c",
+      "A-E1 | cli.js: the command runs, then the guard | RED: NF-05c",
+      "A-E4 | team/cli.js: run, then the guard | RED: NF-05c",
+      "A-E6 | traces/cli.js: guard after repoRoot | RED: NF-05c",
+      "A-E7 | handoffs/cli.js: guard after checkHandoffs | RED: NF-05c",
+      "A-E5 | web/main.js: guard after parseArgs (a silent read earlier) | SURVIVED",
+      "A-E8 | handoff.js: guard only for the command new | RED: NF-05c",
+      "A-E3 | note.js: guard after the storage switch | RED: NF-05c",
+      "S-E2 | pixel-office main.js ignores the seam io.nodeVersion | RED: SV-39",
+      "H-E9 | picker: guard before the --help line | RED: NF-08",
+      "H-E8 | handoff.js: guard before the help branch | RED: NF-08",
+      "R01 | compare minor as text | RED: NF-03",
+      "R02 | patch ignored when minor equals | RED: NF-03, NF-05c, SV-39",
+      "R03 | patch compared with > (the floor itself refused) | RED: NF-03, NF-04, SV-39",
+      "R04 | pre-release suffix accepted | RED: NF-03",
+      "R05 | empty version accepted | RED: NF-03",
+      "R06 | only a lower major refused | RED: NF-03",
+      "R07 | NODE_REFUSAL_EXIT = 3 | RED: NF-04",
+      "R08 | the guard writes the line and its end in two writes | RED: NF-04",
+      "R09 | version shown raw | RED: NF-04",
+      "R10 | shown limit 200 | RED: NF-04",
+      "R11 | refusal line in English | RED: NF-05c, SV-39",
+      "R12 | write failure makes the guard return false | RED: NF-04",
+      "R13 | leading zeros accepted | RED: NF-03",
+      "R14 | the refusal prints to stdout in cli.js | RED: NF-05c",
+      "R15 | traces refuses with 1 | RED: NF-05c",
+      "R16 | pixel-office refuses with 2 | RED: NF-05c, SV-39",
+      "K01 | split3 strips a tail after the digits (accepts a text with shell signs) | RED: HK-35, HK-38",
+      "K02 | the hook keeps the candidate's stderr | RED: HK-40",
+      "K03 | unquoted candidate in --version | RED: HK-39",
+      "K04 | unquoted exec of node-path | RED: HK-39",
+      "K05 | the major is not compared | RED: HK-35",
+      "K06 | minor compared with -ge (patch ignored) | RED: HK-32, HK-35, HK-37",
+      "K07 | node-path not checked | RED: HK-32, HK-33, HK-34, HK-36, HK-38, HK-40",
+      "K08 | PATH node not checked | RED: HK-32, HK-33, HK-34, HK-35, HK-37, HK-38, HK-40",
+      "K09 | fallbacks not checked | RED: HK-32, HK-34",
+      "K10 | the hook ends with 1 when no candidate is left | RED: HK-32, HK-34, HK-35, HK-37, HK-38, HK-40",
+      "K11 | --version keeps the hook's stdin | RED: HK-36",
+      "K12 | a second node_floor line | RED: HK-32, HK-35, HK-37, NF-01, NF-02",
+      "K13 | a text without the v accepted | RED: HK-35",
+      "K14 | a failing --version accepted | RED: HK-34, HK-40",
+      "K15 | leading zero ban removed | RED: HK-35",
+      "K16 | ten-digit limit removed | RED: HK-35",
+      "K17 | no fall-through: PATH is not tried after node-path | RED: HK-33, HK-34, HK-36, HK-40",
+      "Y01 | check-latest removed | RED: CI-3, CI-8",
+      "Y02 | check-latest: false | RED: CI-3, CI-8",
+      "Y03 | check-latest moved to the install step | RED: CI-3, CI-8",
+      "Y04 | check-latest: \"true\" (quoted) | RED: CI-3, CI-8",
+      "Y05 | check-latest: true twice | RED: CI-3, CI-8",
+      "P01 | lint with --fix | RED: NF-06",
+      "P02 | format:check with --cache | RED: NF-06",
+      "P03 | test step before traces in check | RED: NF-06",
+      "P04 | check without traces | RED: NF-06",
+      "P05 | a new node <file> script with a key before the file | RED: NF-05a",
+      "D01 | web server maxHeadersCount = 6000 | RED: NF-07",
+      "D02 | picker server maxHeadersCount = 0 | RED: NF-07",
+      "D03 | pixel-office server maxHeadersCount = 500 | RED: SV-68",
+      "D04 | picker MAX_HEADER_BYTES lowered to 4096 | RED: NF-07",
+      "W-E1 | cli.js: guard after the unknown-command check | SURVIVED",
+      "W-E4 | team/cli.js: guard after parseArgs | RED: NF-05c",
+      "W-E11 | office-report.js: guard after parseArgs | SURVIVED",
+      "W-E5 | web/main.js: guard after the home and config reads | RED: NF-05c",
+      "D05 | pixel-office server: a 431 that leaves the connection open | SURVIVED",
+      "D06 | team web server: a 431 that leaves the connection open | SURVIVED"
+    ],
+    "mutant_summary": "86 mutants of my own, each in its own copy of the project subset in <scratch>/iss92-07 (the project tree was never mutated): 81 red, 5 survived: A-E5, W-E1, W-E11, D05, D06. Kinds: the floor in each place one at a time (12), the guard missing in each of the 11 entry points (11), the guard after the dispatch or only in one command or after a read (11), the guard before the help (2), a lost seam (1), the version rule (16), the hook (17), check-latest (5), the scripts (5), the header count and size (6). Hang check (AP-116): the mutants S-E2 (seam lost) and G-E2 (guard removed) end in 4 to 9 s with SV-39 and NF-05c red and no hang; every server row of NF-05c kills a server that prints its link where a refusal is expected.",
+    "defect_rule": {
+      "tree": "the project test files and the project head, with the 17 files of commit a2fd74f taken as at a2fd74f^ (package.json, lockfile, README, pre-push, check.yml, the 10 entry files, hook.sh, e2e run.js); caveat: main.js, note.js and web/main.js at a2fd74f^ also lack later unrelated edits, so each red below was read from its message (NF-05c: 'stderr is not the refusal line'; HK rows: 'started'; SV-39: 'stderr is not the refusal line')",
+      "red": [
+        "CI-3",
+        "CI-8",
+        "NF-01",
+        "NF-02",
+        "NF-03",
+        "NF-05c",
+        "NF-05d",
+        "NF-09",
+        "SV-39",
+        "HK-32",
+        "HK-33",
+        "HK-34",
+        "HK-35",
+        "HK-36",
+        "HK-37",
+        "HK-38",
+        "HK-40"
+      ],
+      "green_on_purpose": [
+        "CI-1",
+        "CI-2",
+        "CI-4",
+        "CI-5",
+        "CI-6",
+        "CI-7",
+        "NF-04",
+        "NF-05a",
+        "NF-05b",
+        "NF-06",
+        "NF-07",
+        "NF-08",
+        "SV-68",
+        "HK-39"
+      ],
+      "note": "NF-03 and NF-05d are red here through their oracle: both take the floor from engines, which at the tag holds no patch (FLOOR becomes empty: NF-05d then simulates an empty version and the old Pixel Office check refuses it). They are real regression rows for criterion 1, but the behaviour of the old entry points is shown by NF-05c, SV-39 and the HK rows. With the module also absent all NF tests fail at load."
+    },
+    "counts": {
+      "note": "test( registrations at a line start / occurrences of test( / occurrences of assert. ; tag = base/ISS-0092-20261117-01, head = the working tree before this change (the tag lacks tests of other runs)",
+      "repo_test_js": "tag 26 / 50 / 69, head 26 / 50 / 69, now 26 / 51 / 69 (the extra test( is the regex call in the new rule); removed lines: only the old CI rule and call lines, replaced by stronger ones",
+      "pixel_office_hook_test_js": "tag 44 / 46 / 244, head 44 / 46 / 244, now 53 / 55 / 260: 9 added, 0 removed lines",
+      "pixel_office_server_test_js": "tag 72 / 78 / 346, head 78 / 84 / 384, now 79 / 85 / 399: SV-68 added, SV-39 body replaced by a wider one (asserts 5 -> more), title renamed",
+      "node_floor_test_js": "new: 12 registrations, 83 assert. occurrences",
+      "ls": "tools/test/node-floor.test.js, repo.test.js, pixel-office-hook.test.js, pixel-office-server.test.js all exist (AP-123)"
+    },
+    "harness": {
+      "what": "own harness in <scratch>/iss92-07/h: shim.mjs (a collector that gets test(name, fn)), hooks.mjs (an ES resolve hook that maps the import of node:test to the collector, so no test file is edited), pre.mjs (runner process only: /bin/sh is mapped to the sh of Git for Windows, and a child that got SIGTERM reports code 0 as a Linux server does), runner.mjs (runs the named tests one by one with t.after), lib.mjs (tree copy, edit that fails when the pattern is not found, run), mutants.mjs (the table of 86), prefix.mjs (defect rule), series.mjs (series and load).",
+      "reused": "the technique only (a collector instead of node:test, the sh of Git for Windows, a tree that holds a subset of the project) as I saw it in the designer's folder; no file, no mutant and no result of the designer was used; all numbers above are my own runs. The baseline of my harness on the unmutated tree: 31 of 31 green, as the designer reported.",
+      "faithful_for": "the tests are plain functions with t.after and no subtests, mock, skip or timers of node:test (grep of t.<name>: only t.after), so a collector gives the same assertions and the same children; the red messages are the real assert messages.",
+      "cannot_show": "(1) Linux: the real /bin/sh (dash) for the hook rows, file modes, the real exit code 0 of a server after SIGTERM (emulated in my runner), POSIX paths; (2) the concurrency of node --test over many files and its load; (3) node:test's own handling of an uncaught exception or an unhandled rejection (my runner would end with no result, which I would have seen as NO RESULT); (4) the full npm run check and the e2e step; (5) the real Node of the runner (check-latest)."
+    },
+    "findings": [
+      {
+        "id": "F1",
+        "severity": "Medium",
+        "place": "tools/test/pixel-office-server.test.js, function rawHeadStatus and test SV-68; tools/test/node-floor.test.js, function rawHead and test NF-07",
+        "what": "Criterion 7 (and design 9.3) say the server answers 2 500 header lines with 431 AND CLOSES the connection. The helpers resolve on the 'close' event or after a 10 s timer that destroys the socket, and return only the status, so a server that answers 431 and leaves the socket open passes. Own mutants D05 (Pixel Office server) and D06 (team web server): a clientError handler that writes the 431 and does not end the socket; SV-68 and NF-07 stay green (the run only takes 10 s longer). The clause of the criterion has no assertion; a test that cannot fail for it is not a test (Q5).",
+        "fix": "In both helpers set a flag in the timer (timedOut = true before the destroy) and return closedByServer: !timedOut; in SV-68 and in NF-07 assert big.closedByServer === true for the 2 500-line probe (and, if wished, that the whole probe took under 5 s). Add D05 and D06 to the mutant table and run them."
+      },
+      {
+        "id": "F2",
+        "severity": "Low",
+        "place": "tools/test/node-floor.test.js, NF-05 rows of the programs without a help (cli.js E1, web/main.js E5, office-report.js E11)",
+        "what": "Design section 3 puts the guard as the first statement before the parsing of the arguments in these programs. All rows use a valid call, so a guard moved behind a pure parse survives: A-E5 (web/main.js after parseArgs), W-E1 (cli.js after the unknown-command check), W-E11 (office-report.js after parseArgs). The only visible difference is a wrong call below the floor: the usage line and code 2 instead of the refusal line; nothing is written either way, and README line 9 says a wrong call is answered as on any Node, so the harm is small. The designer's named limit (I1) is about reads, not about this.",
+        "fix": "Either add three twin rows under a simulated 22.21.1 (cli.js with an unknown command, web/main.js --port abc, office-report.js with an unknown option) that expect the refusal line and code 2 (design section 3, no help), or state in the design and in the README line the exact rule for a wrong call and name this as a limit in the report."
+      },
+      {
+        "id": "F3",
+        "severity": "Low",
+        "place": "tools/test/node-floor.test.js, NF-05c, line row.code ?? NODE_REFUSAL_EXIT",
+        "what": "The expected exit code of every refusal row is read from the imported constant. Mutant R07 (NODE_REFUSAL_EXIT = 3) is therefore green in NF-05c and red only in NF-04 (which pins the constant to 2). It is covered, but through one test; the end-to-end rows do not state the code themselves (AP-110).",
+        "fix": "Write the literal 2 in the rows (code: 2 as the default), keep NF-04's pin."
+      },
+      {
+        "id": "F4",
+        "severity": "Low",
+        "place": "tools/test/node-floor.test.js, NF-05a, assert.equal(files.size, 14) and assert.equal(ROWS.length, 23)",
+        "what": "Two hard-coded counts: a legitimate new node <file> script plus its row turns NF-05a red until the numbers are edited. The design says a later script adds its own row in the same run, so this is by design, but it is a second place to edit; the comparison of the script list with the rows already catches a missing row.",
+        "fix": "Optional: drop the two counts or keep them and name the rule in the test message ('edit the counts with the row')."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "own baseline: the 31 tests (CI-1 to CI-8, NF-01 to NF-09, SV-39, SV-68, HK-32 to HK-40) by my runner on a copy of the unmutated tree",
+        "output": "31 of 31 green; the slowest NF-05c 4.9 s, NF-05d 5.1 s, HK-35 3.5 s, NF-08 2.2 s"
+      },
+      {
+        "command": "node <scratch>/iss92-07/h/mutants.mjs (80 mutants), then the same script for the 4 mutants W-* and the 2 mutants D05, D06",
+        "output": "SUMMARY mutants 80 red 79 survived 1 (A-E5); W-*: 4 mutants, 2 red (W-E4, W-E5), 2 survived (W-E1, W-E11); D05, D06: 2 mutants, 0 red, 2 survived. Total 86: 81 red, 5 survived"
+      },
+      {
+        "command": "node <scratch>/iss92-07/h/prefix.mjs <scratch>/iss92-07 keep, and the same with drop",
+        "output": "keep: red CI-3 CI-8 NF-01 NF-02 NF-03 NF-05c NF-05d NF-09 SV-39 HK-32 to HK-38 HK-40; green CI-1 CI-2 CI-4 to CI-7 NF-04 NF-05a NF-05b NF-06 NF-07 NF-08 SV-68 HK-39. drop: every NF test red at load (import error), green CI-1 CI-2 CI-4 to CI-7 SV-68 HK-39"
+      },
+      {
+        "command": "node <scratch>/iss92-07/h/series.mjs <scratch>/iss92-07 seq / solo / load (LOAD_N=4 RUNS=5)",
+        "output": "run 1: 31/31 green, 22374 ms; run 2: 31/31, 20967 ms; run 3: 31/31, 21519 ms; solo reverse order: 31/31 green, 26294 ms; load (4 busy loops, 12 cpus): 5 runs of 11 tests, 71432 ms, red: none"
+      },
+      {
+        "command": "git clone -c core.autocrlf=false <project> <scratch>/iss92-07/clone; cd clone/tools; npm ci; copy the four test files from the project; npx prettier --check on them; npx eslint --max-warnings 0 on them; npm run -s traces",
+        "output": "added 80 packages; Checking formatting... All matched files use Prettier code style!; prettier exit 0; eslint exit 0 with no output; traces: files checked 2944, traces 0, skipped 67, exit 0"
+      },
+      {
+        "command": "counts of test( at a line start and of assert. at the tag, at the head and now (git show base/ISS-0092-20261117-01:<file>; grep -c; grep -o | wc -l); git diff HEAD -- tools/test | grep removed lines",
+        "output": "see counts; removed lines: the old SV-39 body, the old ciFindings signature and its three call lines, the old CI-3 title and range rule; no skip, todo or only; CR count 0 in the four files; no port 4780, 4781, 4782 or 4790 and no machine path in the added lines"
+      },
+      {
+        "command": "working tree before and after: sha256 of every tracked file of tools/, .github, .githooks and the four test files, plus node-floor.test.js (601 files), compared with cmp",
+        "output": "IDENTICAL. The hash of the whole tree differs only by files that other agents changed in parallel (STATE.md, docs, handoffs of other runs); no git commit, push, pull, checkout, stash, reset or tag by me (git stash list: 0; the tag base/ISS-0092-20261117-01 present)"
+      }
+    ],
+    "must_be_proved_on_github": [
+      "the hook rows HK-32 to HK-40 under the real /bin/sh of Linux (dash) and the real file modes of the stubs; the 2 000 ms limit of every row on the runner (my load series had 4 busy loops, not a full saturation)",
+      "the exit code 0 of a server after SIGTERM on Linux (SV-39 child rows at the floor, NF-07 stop, NF-05d stop): emulated by my runner on Windows, so it is not proved here",
+      "NF-05c, NF-05d, NF-07 and NF-08 child starts on Linux with the Node that setup-node with check-latest gives (NF-05d needs the running Node at or above the floor)",
+      "the whole npm run check with the new tests and the e2e step; the count of reported tests (the designer expects about 2261)",
+      "the setup line node: v... of the workflow log (criterion 8) and the effect of check-latest: true",
+      "the re-run of F1's two mutants D05 and D06 after the rework is mine to do on my own harness; no GitHub run is needed for it"
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "FOR_TEST_DESIGNER",
+        "text": "Rework for F1 (Medium) and, at your choice, F2, F3, F4; then gate pass 2 of 3. Please add D05 and D06 to your mutant table."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "AP-018: the task named no expected verdict; the verdict is derived from my own runs."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "Criterion 10 compares test titles with the tag: HK-25 of pixel-office-hook.test.js is renamed between the tag and the head by another run (ISS-0122), and ISS-0122 and ISS-0123 tests were added there; this change adds and renames only what the replacement table says. RELEASE-VALIDATOR should expect the HK-25 title in its comparison."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "The design's named limit I1 of the designer (a guard moved after a read that changes no output) is real: my A-E5, W-E1 and W-E11 show it for argument parsing in three programs; the twin rows for pixel-office --dir and team-web SAI_TEAM_TASK_TIMEOUT_MS close the cases C5 and C7 (my W-E5 'after the home and config reads' is red by the twin)."
+      }
+    ],
+    "artifacts_out": [],
+    "prototype": "<scratch>/iss92-07/ : h/ (shim.mjs, hooks.mjs, pre.mjs, runner.mjs, lib.mjs, mutants.mjs, prefix.mjs, series.mjs), logs mut-all.log, mutants-result-main.json, series-*.log, hash-before.txt, hash-after.txt, a fresh clone with node_modules for prettier and eslint. Instruments of the check, not the implementation."
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-11-22T20:02:56Z",
+    "text": "Paths of this computer were replaced by placeholders in this file at commit (AP-050; docs/workflows/handoffs.md, «Bookkeeping check» item 5): <scratch> is the working folder of the session outside the project, <node22> the folder of Node 22 outside the project, <Sai> the root of the project, <home> the home folder, <outside the project> any other place outside the project. Nothing else in the file was changed."
+  }
+}

@@ -1,0 +1,478 @@
+{
+  "handoff_id": "step01c-M1SITE-20261119-01",
+  "run_id": "M1SITE-20261119-01",
+  "workflow_id": "WF-01",
+  "step": "01c",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-ANALYST",
+  "file": "handoffs/M1SITE-20261119-01/step-01c-req-analyst.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1SITE-20261119-01/step-02b-req-validator.json (the FAIL of gate pass 2: findings N1-N8, issues I1-I9, self_check)",
+      "handoffs/M1SITE-20261119-01/step-01b-req-analyst.json (the rework of gate pass 1: changes, self_check, the open questions О19-О21)",
+      "handoffs/M1SITE-20261119-01/step-01-req-analyst.json (the open questions О1-О18, among them О3)",
+      "docs/requirements.yaml (the header; REQ-108 criterion 11; REQ-109 criterion 8; the blocks REQ-111 and REQ-112 with their comment lines, lines 15172-16151)",
+      "docs/design/V1-public-look.md (sha256 2e3e2dbd…5648, the version of rework 03c: sections 6.2, 7.21, 9.1, 9.4-9.11, 9.13, 9.14, 9.16)",
+      "handoffs/M1SITE-20261119-01/step-03c-gui-design-analyst.json (issue I1 (b), (c)) and step-03d-code-design-validator.json (findings G2, G3)",
+      "decisions/0116 (О2), 0118 (О1, О2, О3), 0122 (О1, О6, О7); docs/design/samples/picker-v3-approved-2026-10-26/ (styles.css, app.js, data.js)",
+      "app/ as built (app/public, app/scripts/check-public.js, app/jsconfig.json, app/test/unit/ci-workflow.test.js), tools/src/picker/engine.js, tools/src/picker/public, tools/src/pixel-office/public/layout.js, office-sim.js"
+    ],
+    "route": "REQ-ANALYST (01) -> REQ-VALIDATOR (02, FAIL, pass 1 of 3) -> REQ-ANALYST (01b) -> REQ-VALIDATOR (02b, FAIL, pass 2 of 3) -> REQ-ANALYST (this, 01c) -> REQ-VALIDATOR (gate pass 3 of 3, the last); beside it WF-04 step 1: GUI-DESIGN-ANALYST (03, 03c) -> CODE-DESIGN-VALIDATOR (03b, 03d, FAIL) -> the look's alignment rework; then ORCH decision 0123 and the M1.4 run",
+    "write_set": [
+      "docs/requirements.yaml (the blocks REQ-111 and REQ-112 and their comment lines only; the rest byte-equal)",
+      "handoffs/M1SITE-20261119-01/step-01c-req-analyst.json (status, completed_at, result)"
+    ],
+    "base_tag": "base/M1SITE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1SITE-20261119-01/step-02b-req-validator.json, gate pass 2 of 3 — WF-01, step 1 (rework step 01c): REQ-ANALYST reworks the two blocks REQ-111 (R1.2) and REQ-112 (R1.3) at the end of docs/requirements.yaml only by the findings N1-N8 of that handoff, closing each in the text or, where a finding is wrong, keeping the text and saying why in result.issues with evidence; what the gate did not question stays. The list of remarks (the findings of gate pass 2, with their fixes as the gate wrote them): N1 [medium] REQ-112 criterion 4 (the parenthesis of the page tokens of section 9.1 and «every marker is found back at least once»), REQ-112 fact (9) and the description sentence «draw.js draws … (figures, desks, monitors, plates, the door)» do not match the look description in the tree (docs/design/V1-public-look.md, sha256 2e3e2dbd…, rework 03c): its 9.1 reads the colours from the scene tokens of 6.2 and the page token --ink only, nothing derived while drawing, no --btn (the sample's accent #e0731f kept); its 6.2 has 24 colour tokens with values, one derivation rule (the alpha of 9.11) and leaves --sc-dim-alpha to the code design; no text is drawn on the canvas, the plates are DOM labels; so criterion 4 and criterion 8 cannot both hold (AP-016, AP-055) and fact (9) is false; fix — make criterion 4, fact (9) and the draw.js sentence read one version with the look: name the palette as the look gives it (the 6.2 scene tokens and --ink) and say how the alpha of the light layer is checked (from a given --sc-dim-alpha with the test computing the alphas from the closed lists of 9.11 with the look's rounding, or from the closed alpha lists per theme), or keep --btn, --onbtn and --acc2 and name the change 9.1 and 6.2 then need; route it with the look's alignment (step 03c issue I1 (b), (c)) and name in this handoff the hash of the look version it aligned to. N2 [low] REQ-111 criterion 11 («a fresh clone of depth 1 … (`git clone --depth 1`: the one commit that the checkouts of app.yml get)») and fact (14): a clone from a local path ignores --depth (measured: 181 commits, not shallow); with file:// it holds one commit; fix — name a form that holds one commit (`git clone --depth 1 file://<path>`, `--no-local`, or a clone from origin) and a check in the clone: `git rev-parse --is-shallow-repository` gives true and `git rev-list --count HEAD` gives 1. N3 [low] REQ-111 criterion 12, «no text element whose scrollWidth exceeds its clientWidth», says nothing about visibility: the .sr boxes (styles.css:19) and the stage that clips the 700-px canvas have scrollWidth above clientWidth on a page built to the look; fix — say which elements the rule reads (own visible text), or name the .sr elements and the clipping stage as outside it, or require a visually hidden form that keeps scrollWidth ≤ clientWidth. N4 [low] REQ-111 criterion 12 (the public-set sentence, «… and no console error») and criterion 13 («no console error, exception or …»): every load of a 404 page writes Chrome's «Failed to load resource … 404» line (decisions/0118 О2); fix — write «no console entry but the declared ones (decisions/0118 О2)» in both places. N5 [low] REQ-111 criterion 3, «a form of another language's list in a text of this language is not found»: «минут» is a form of list В in ru and kk; fix — write «a form that only another language's list has», or name «минут» as the one form two lists share. N6 [low] REQ-111 fact (4), «fails tsc … with 50 errors (TS7006; still 44 with server/vendor excluded while a file imports it)»: measured 50 errors (44 TS7006, 5 TS2339, 1 TS7053), and also 50 with server/vendor excluded, an importer and no declaration file; fix — correct the parenthesis. N7 [low] REQ-111 (guard row (8), criterion 11) against REQ-108 criterion 11 («paths exactly …» six entries; «the jobs are exactly check, pg and docker»): REQ-111 adds the job e2e and four paths and names REQ-109 criterion 8's replaced sentence for decision 0123 and the micro-amendment (question О3, AP-133), but not these two literals; fix — add REQ-108 criterion 11's job list and path list to question О3 (decisions/0123) and to a REQ-108 micro-amendment, as for REQ-109 criterion 8. N8 [low] REQ-111 criterion 10, the parenthesis «(a sketch … 27 planted lines red, 14 twins green …)»: the criterion lists 16 twins, the gate's sketch gave 29 planted lines red and 16 twins green; fix — give the count that matches the list, or drop it. This file was created by REQ-ANALYST with the handoff command on the order of the session that leads the program in ORCH's role (decisions/0122 О1), as the earlier steps of this run were. Common rules: docs/workflows/handoffs.md, section «Common rules for all roles».",
+    "acceptance_criteria": [
+      "every finding N1-N8 closed in the text of REQ-111 or REQ-112, or kept with its reason and evidence in result.issues; nothing changed beyond the list (AP-019)",
+      "only the two blocks and their comment lines changed; the rest of docs/requirements.yaml byte-equal (sha256 of lines 1-15171 before and after) and result.before_copy holds the before lines of every edit",
+      "result.changes holds the table «what was fixed, where»: the finding, the place, what it was and what it became",
+      "REQ-112 criterion 4, fact (9) and the draw.js sentence read one version with docs/design/V1-public-look.md, whose sha256 this handoff names",
+      "every new fact measured on the tree or a fresh clone outside the project and listed; new or changed open questions with defaults for decision 0123",
+      "cd tools && npm run handoffs-check passes for this file; npm run traces exit 0"
+    ]
+  },
+  "created_at": "2026-11-19T15:08:45Z",
+  "started_at": "2026-11-19T15:08:45Z",
+  "completed_at": "2026-11-19T15:35:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework of REQ-111 and REQ-112 by the eight findings N1-N8 of gate pass 2 only (step 02b), read and measured in the tree; every edit is in the two blocks or their comment lines, and the rest of docs/requirements.yaml is byte-equal (lines 1-15171 sha256 3fdee311…, equal to the tag). N1 (Medium, REQ-112): criterion 4 now gives draw.js the palette the look description names for the canvas — the 24 colour tokens of its 6.2, the page token --ink and the strength of the light layer as the number --sc-dim-alpha, with no --btn, --onbtn or --acc2 — and draw.js calls only fillRect and sets only fillStyle, with no text on the canvas; the test checks every fill against markers (a given colour, the light layer of the --sc-dim marker with an alpha computed exactly from a marker strength and the «What the bands keep» lists of 9.11 rounded half up to 4 decimals, or a constant of 6.2's list for the theme), finds every marker back, and with the real strengths .15 and .5 finds exactly the closed alpha lists of 9.11; fact (9) and the description's draw.js sentence say the same. It was aligned to the look of sha256 2e3e2dbd…5648 (step 03c); the look's own rework step 03e ran in parallel and closed at 15:28:59Z during this step, so fact (9) was re-measured and quoted from its final version 3dea2340…9347, which takes the same route (its 6.2, 9.1 and §14 name this palette and state the strength as --sc-dim-alpha). N2: criterion 11 names a clone form that holds one commit (`git clone --depth 1 file://<path>`, --no-local or the origin) and checks it is shallow with one commit; fact (14) names the form and the measured trap of a plain local path. N3: criterion 12's overflow rule reads only elements with their own visible text and leaves out the .sr elements; the stage holds no own text; a Chrome probe (fact 20) shows the rule holds on a page built to the look. N4: criteria 12 and 13 allow only the declared console entries (the 404 page's line, decisions/0118 О2). N5: criterion 3 says «a form that only another language's list has» and names «минут» as the one shared form (an exhaustive pass of 118 forms). N6: fact (4) gives the measured tsc errors (44 TS7006, 5 TS2339, 1 TS7053; the same 50 with vendor excluded and no declaration). N7: guard row (8) and the Bar name REQ-108 criterion 11's two literals for question О3 and a REQ-108 micro-amendment. N8: criterion 10 and fact (17) give the counts of my own sketch (22 forms, 16 twins). No criterion was weakened and no outcome changed. Beyond the list, raised as issues and not edited: REQ-112's frame sentence and criterion 5 against the look's new one-frame rule for a state change with no walk (I2), REQ-112 fact (10)'s twin count (I3), REQ-112 fact (7)'s clone form (I4); two wording points of the look (I8). Open questions for decisions/0123: О3 widened (I5) and the new О22 on the canvas palette (I6).",
+    "changes": [
+      {
+        "remark": "N1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 criterion 4 (lines 16133-16165)",
+        "was": "draw.js «calls on the context only fillRect and fillText and sets only fillStyle, font, textAlign and textBaseline»; the palette «every colour token of its section 6.2 (`--sc-wall` … `--sc-dim`) …, the number `--sc-dim-alpha`, and the page tokens of its section 9.1 (`--btn`, `--onbtn`, `--ink`, `--acc2`)»; fills «a given colour; a colour derived from a given one by a rule of the closed list …; or a scene constant»; «every marker is found back at least once, itself or in a colour derived from it»",
+        "became": "draw.js calls only fillRect and sets only fillStyle (no text on the canvas; planted fillText, strokeRect, arc, drawImage, getImageData, globalAlpha, globalCompositeOperation or font red); the palette is the look's: the 24 colour tokens of 6.2, the page token --ink (no --btn, --onbtn or --acc2) and the strength as the number --sc-dim-alpha; the test gives 25 colour markers and a strength marker m, draws every state of the step table in both themes at the three logical sizes, reads each fillStyle as red, green, blue and alpha; each fill is a given colour with alpha 1, the light layer (the --sc-dim marker with an alpha computed exactly from m and the «What the bands keep» list of 9.11, rounded half up to 4 decimals) or a constant of 6.2's list for the theme; every colour marker found back in each theme, the alpha m where no band lies; with .15 and .5 the light-layer alphas equal the closed lists of 9.11 (9, 4, 21 values, the four half-way products included)"
+      },
+      {
+        "remark": "N1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 description, fact (9) (lines 16046-16070)",
+        "was": "«it reads the colours of the scene from 18 colour tokens and --sc-dim-alpha (its 6.2) and the page tokens --btn, --onbtn, --ink and --acc2 (9.1), and it draws shades of some of them (9.4–9.8) and alpha fills (9.4, 9.11)»",
+        "became": "the look of sha256 3dea2340…9347 (step 03e; the 03c version 2e3e2dbd… gave the same colours) quoted: the palette «exactly … the 24 colour tokens …, the number --sc-dim-alpha … and the page token --ink; nothing else», the strength reaching draw.js as --sc-dim-alpha, «The canvas reads no --btn, --onbtn or --acc2», nothing shaded while drawing, the one computed value the light layer's alpha (exact half-up rounding, the closed lists 9/4/21, 29 per theme), the other alpha fills constants, fillRect with fillStyle only, no text on the canvas; measured: 23 table rows (22 colour rows, 24 tokens, the --sc-dim-alpha row), the exact rule reproduces 9.11 while a float toFixed gives .1093, the band simulation at the three sizes gives 9, 4 (each asking desk) and 21, every token drawn"
+      },
+      {
+        "remark": "N1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 description, paragraph «The stage scene» (lines 15975-15983)",
+        "was": "«draw.js draws in the approved v3 look (figures, desks, monitors, plates, the door) at an integer pixel scale with fillRect and fillText only, in the colours of a palette given to it;»",
+        "became": "draw.js draws the room, the door, the furniture, the people, the visitor's figure and the light; the plates, the door sign and the label «Вы» are DOM labels of labels.js, no text on the canvas (look 9.1, 9.7, 9.8); fillRect only with fillStyle (ARCH §11.4 allows fillText, the stage scene does not use it); the palette named as in criterion 4 and the constants of 6.2"
+      },
+      {
+        "remark": "N1",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-112 description, paragraph «Bar», Q12 (lines 16081-16083)",
+        "was": "the open questions О13–О18 of step 01 (О17 with the default of step 01b)",
+        "became": "also О22 of step 01c (the canvas palette of criterion 4)"
+      },
+      {
+        "remark": "N2",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 11 (lines 15804-15809)",
+        "was": "«in a fresh clone of depth 1 outside the project (`git clone --depth 1`: the one commit that the checkouts of app.yml get), removes every path …»",
+        "became": "the clone is made as `git clone --depth 1 file://<path of the repository>` (or `--no-local`, or from the origin; a plain local path ignores --depth, fact 14), and RELEASE-VALIDATOR checks in it that `git rev-parse --is-shallow-repository` prints true and `git rev-list --count HEAD` prints 1 before removing the paths"
+      },
+      {
+        "remark": "N2",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, fact (14) (lines 15505-15511)",
+        "was": "«a clone of base/M1SITE-20261119-01 of depth 1 … holds one commit»",
+        "became": "names the form `git clone --depth 1 file://<path>` and the step-01c measurement: shallow true, one commit, the same with --no-local; a plain local path: git 2.54.0 warns «--depth is ignored in local clones; use file:// instead.», 181 commits, not shallow"
+      },
+      {
+        "remark": "N3",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 12, the matrix rules (lines 15822-15828)",
+        "was": "«no text element whose scrollWidth exceeds its clientWidth»",
+        "became": "no element with its own visible text (a child text node that is not only white space, checkVisibility() true) whose scrollWidth exceeds its clientWidth, the visually hidden .sr elements of the look (the scene's text list while the canvas draws and the live regions, 7.21, 9.16) and their descendants left out; the stage holds no own text (look 7.4), so the canvas it clips by design is not read"
+      },
+      {
+        "remark": "N3",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, fact (20) (lines 15535-15541, new)",
+        "was": "(no fact on the reach of the overflow rule)",
+        "became": "the probe in headless Chrome 157 on a trial page: checkVisibility() true everywhere; the stage 700 above 500, the .sr item and live region 278 and 254 above 1, plate lines and a paragraph none, the planted cut 355 above 60; no page scroll"
+      },
+      {
+        "remark": "N4",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 12, last sentence (line 15853), and criterion 13 (lines 15857-15858)",
+        "was": "«and no console error.»; «no console error, exception or Content-Security-Policy violation»",
+        "became": "«no console entry but the declared ones (the 404 page's line of decisions/0118 О2, as above)»; «no console entry but the declared ones (the 404 page's line of decisions/0118 О2, as criterion 12 declares it), no exception and no Content-Security-Policy violation»"
+      },
+      {
+        "remark": "N5",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 3 (lines 15639-15642)",
+        "was": "«a form of another language's list in a text of this language is not found»",
+        "became": "«a form that only another language's list has, set in a text of this language, is not found» with «минут» named as the one form two languages' lists share (an exhaustive pass over the 118 forms)"
+      },
+      {
+        "remark": "N6",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, fact (4) (lines 15478-15481)",
+        "was": "«50 errors (TS7006; still 44 with server/vendor excluded while a file imports it)»",
+        "became": "«50 errors (44 TS7006, 5 TS2339 and 1 TS7053; the same 50 with server/vendor excluded while a file of app/server imports the copy and no declaration file exists; measured again at step 01c with typescript 6.0.3 of app/)»"
+      },
+      {
+        "remark": "N7",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, guard row (8) (lines 15452-15458)",
+        "was": "(REQ-108 criterion 11 not named)",
+        "became": "REQ-108 criterion 11's two literals (the exact paths list and the exact jobs list) quoted as made false by this row, foreseen by REQ-108 itself and decisions/0116 О2, and amended like REQ-109 criterion 8's sentence: in the list of question О3 for decisions/0123 and by a WF-01 micro-amendment of REQ-108 (AP-133)"
+      },
+      {
+        "remark": "N7",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 description, paragraph «Bar», Q12 (lines 15566-15569)",
+        "was": "«the open questions О1–О12 of … step-01-req-analyst.json and О19–О21 of step-01b-req-analyst.json»",
+        "became": "the same, with «О3 widened by step-01c-req-analyst.json to REQ-108 criterion 11's two literals»"
+      },
+      {
+        "remark": "N8",
+        "file": "docs/requirements.yaml",
+        "place": "REQ-111 criterion 10 (lines 15759-15762) and fact (17) (lines 15523-15529)",
+        "was": "«a sketch of these rules at step 01b: 27 planted lines red, 14 twins green»; fact (17) the same counts",
+        "became": "the step-01c sketch: one planted line per form of the list, 22 lines (the three quotes of style, .write and .writeln and the four demo texts counted one by one), each red by its own rule only, the 16 twins green, spaced forms red (6 of 6); the same hits and non-hits as before"
+      },
+      {
+        "remark": "N1-N8",
+        "file": "docs/requirements.yaml",
+        "place": "one comment line above REQ-111 (line 15174) and one above REQ-112 (line 15886), new",
+        "was": "two comment lines above each block (steps 01 and 01b)",
+        "became": "a third line for step 01c with «was -> now» per finding; the REQ-112 line names the look versions 2e3e2dbd…5648 and 3dea2340…9347"
+      }
+    ],
+    "table": [
+      {
+        "remark": "N1",
+        "was": "REQ-112 c4: the page tokens --btn, --onbtn, --ink, --acc2; derived shades by a closed rule list; fillRect and fillText",
+        "became": "the look's canvas palette (24 colour tokens of 6.2, --ink, the number --sc-dim-alpha); fillRect and fillStyle only; the light-layer alpha computed exactly from a given strength and the keep lists of 9.11, and equal to the closed alpha lists with .15 and .5",
+        "source": "docs/design/V1-public-look.md 6.2, 9.1, 9.11 (sha256 2e3e2dbd…5648 of step 03c, and 3dea2340…9347 of step 03e, which closed during this step and says the same); measured: the 6.2 table, the exact rounding, the band simulation"
+      },
+      {
+        "remark": "N2",
+        "was": "`git clone --depth 1` (no form)",
+        "became": "`git clone --depth 1 file://<path>` or --no-local, with the shallow check",
+        "source": "measured: local path 181 commits, not shallow, git warns; file:// and --no-local 1 commit, shallow, cat-file of b5df4a8… fails"
+      },
+      {
+        "remark": "N3",
+        "was": "every text element",
+        "became": "elements with their own visible text, the .sr elements left out, the stage with no own text",
+        "source": "look 7.4, 7.21, 9.16; the sample's styles.css line 19; the Chrome probe (fact 20)"
+      },
+      {
+        "remark": "N4",
+        "was": "no console error",
+        "became": "no console entry but the declared ones (decisions/0118 О2)",
+        "source": "decisions/0118 О2; REQ-111 criterion 12's first part; REQ-108 criterion 14's measurement"
+      },
+      {
+        "remark": "N5",
+        "was": "a form of another language's list",
+        "became": "a form that only another language's list has; «минут» the one shared form",
+        "source": "the exhaustive pass over the lists of the description: 118 forms, 6903 pairs, one shared form"
+      },
+      {
+        "remark": "N6",
+        "was": "50 errors (TS7006; still 44 …)",
+        "became": "50 errors (44 TS7006, 5 TS2339, 1 TS7053), the same 50 with vendor excluded and an importer without a declaration",
+        "source": "measured on a depth-1 file:// clone of the tag, typescript 6.0.3"
+      },
+      {
+        "remark": "N7",
+        "was": "REQ-108 criterion 11's literals not named",
+        "became": "named for question О3 and a REQ-108 micro-amendment",
+        "source": "REQ-108 criterion 11 (read); decisions/0116 О2; decisions/0122 О6"
+      },
+      {
+        "remark": "N8",
+        "was": "27 planted, 14 twins",
+        "became": "22 planted (one per form), 16 twins",
+        "source": "the step-01c sketch of the rules as written"
+      }
+    ],
+    "before_copy": [
+      {
+        "file": "docs/requirements.yaml",
+        "place": "the whole file before this step",
+        "note": "the blocks REQ-111 and REQ-112 are not in the tag (git show base/M1SITE-20261119-01:docs/requirements.yaml has 15171 lines, sha256 3fdee311…); the «before» is the file of step 01b as gate pass 2 read it (sha256 4fe5bcde…0184, 16151 lines; its blocks at lines 15172-16151, sha256 6bfa1d7f…5ce1), copied outside the project (<scratch>/r01c/requirements.before.yaml) before the first edit; every entry below holds the before text of an edit, folded as YAML reads it (line breaks as spaces), whole for the rewritten criterion 4 of REQ-112 and its fact (9)"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N7",
+        "place": "REQ-111 description, paragraph «Guard tests of earlier requirements», row (8): line 15451 before, 15452-15458 now",
+        "kind": "inserted",
+        "before": "(nothing between «… the run of depth 1 of criterion 11 is what proves that no test of app/ needs the history.» and «(9) app/test/unit/docker-files.test.js: no edit …»)"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N6",
+        "place": "REQ-111 description, paragraph «Facts checked on 2026-11-19 …», fact (4): line 15470 before, 15478-15481 now",
+        "kind": "replaced",
+        "before": "with 50 errors (TS7006; still 44 with server/vendor excluded while a file imports it), and with server/vendor excluded and a declaration file beside the copy tsc exits 0;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N2",
+        "place": "REQ-111 description, the same paragraph, fact (14): lines 15495-15497 before, 15505-15511 now",
+        "kind": "replaced",
+        "before": "(14) a clone of base/M1SITE-20261119-01 of depth 1, the history that the checkouts of app.yml get (actions/checkout with only `persist-credentials: false`; check.yml has `fetch-depth: 0`, decisions/0045 item 2), holds one commit, and `git cat-file -t b5df4a8…` fails there;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N8",
+        "place": "REQ-111 description, the same paragraph, fact (17): lines 15509-15512 before, 15523-15529 now",
+        "kind": "replaced",
+        "before": "(17) The code forms of criterion 10, sketched with the identifier border of check-public.js: 27 planted lines red and 14 twins green; no hit in app/public, in tools/src/picker/public (14 files) or in the two office originals; in the sample, outerHTML and Math.random in app.js and the four demo texts in data.js."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N3",
+        "place": "REQ-111 description, the same paragraph, after fact (19): line 15518 before, 15535-15541 now",
+        "kind": "inserted",
+        "before": "(nothing after «(19) … and the ru lists Г, Б, В, Ц and С: no finding.»; fact (20) is new)"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N7",
+        "place": "REQ-111 description, paragraph «Bar», Q12: lines 15543-15545 before, 15566-15569 now",
+        "kind": "replaced",
+        "before": "Q12 — the choices are the open questions О1–О12 of handoffs/M1SITE-20261119-01/step-01-req-analyst.json and О19–О21 of step-01b-req-analyst.json, answered by ORCH in decisions/0123;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N5",
+        "place": "REQ-111 criterion 3: lines 15615-15616 before, 15639-15642 now",
+        "kind": "replaced",
+        "before": "(every form, not examples, AP-094), and a form of another language's list in a text of this language is not found;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N8",
+        "place": "REQ-111 criterion 10: lines 15733-15735 before, 15759-15762 now",
+        "kind": "replaced",
+        "before": "(a sketch of these rules at step 01b: 27 planted lines red, 14 twins green; no hit in the real app/public, in tools/src/picker/public or in the two office originals)"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N2",
+        "place": "REQ-111 criterion 11: lines 15777-15779 before, 15804-15809 now",
+        "kind": "replaced",
+        "before": "RELEASE-VALIDATOR, in a fresh clone of depth 1 outside the project (`git clone --depth 1`: the one commit that the checkouts of app.yml get), removes every path that is not in the list — .git stays,"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N3",
+        "place": "REQ-111 criterion 12, the matrix rules: lines 15792-15793 before, 15822-15828 now",
+        "kind": "replaced",
+        "before": "no text element whose scrollWidth exceeds its clientWidth,"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N4",
+        "place": "REQ-111 criterion 12, the public-set sentence: line 15819 before, 15853 now",
+        "kind": "replaced",
+        "before": "in ru and en, and no console error."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N4",
+        "place": "REQ-111 criterion 13: line 15823 before, 15857-15858 now",
+        "kind": "replaced",
+        "before": "no horizontal scroll, no console error, exception or Content-Security-Policy violation,"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N1",
+        "place": "REQ-112 description, paragraph «The stage scene (ARCH §11.6)»: lines 15939-15940 before, 15975-15983 now",
+        "kind": "replaced",
+        "before": "draw.js draws in the approved v3 look (figures, desks, monitors, plates, the door) at an integer pixel scale with fillRect and fillText only, in the colours of a palette given to it;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N1",
+        "place": "REQ-112 description, paragraph «Facts checked on 2026-11-19 …», fact (9) whole: lines 16005-16009 before, 16046-16070 now",
+        "kind": "replaced",
+        "before": "(9) The look description gives the canvas a CSS width of 700 px at 390×844 and at 320×568, wider than the window, moved by a camera, and «the stage clips the wider canvas (overflow: hidden)» (docs/design/V1-public-look.md 9.1, 9.14, 12); it reads the colours of the scene from 18 colour tokens and --sc-dim-alpha (its 6.2) and the page tokens --btn, --onbtn, --ink and --acc2 (9.1), and it draws shades of some of them (9.4–9.8) and alpha fills (9.4, 9.11)."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N1",
+        "place": "REQ-112 description, paragraph «Bar», Q12: lines 16020-16021 before, 16081-16083 now",
+        "kind": "replaced",
+        "before": "Q12 — the choices are the open questions О13–О18 of handoffs/M1SITE-20261119-01/step-01-req-analyst.json (О17 with the default of step-01b-req-analyst.json), answered by ORCH in decisions/0123;"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N1",
+        "place": "REQ-112 criterion 4 whole: lines 16071-16092 before, 16133-16165 now",
+        "kind": "replaced",
+        "before": "The stage scene and the drawing (ARCH §11.6; decisions/0084 §3 items 8 and 13). Test app/test/unit/office-stage.test.js (created by this work; draw.js with a recording 2D context): the scene of stage-scene.js has exactly four desks, in this order, labelled with the texts module's stage words, ru exactly «Принято», «Готовим документацию», «Готовим спецификацию», «Готово к просмотру»; at each desk one role title, ru equal to the `name` of project_manager, business_analyst, developer and reviewer in tools/src/team/roles.js (read by the test), desk by desk; a door; the figure labelled with the texts module's «Вы», at the door at the start; the caption «Картинка показывает этапы работы, а не движения людей.» (ru exact) is a key of the texts module; the words of the scene are only the parameters given (markers passed by the test are all found and nothing else is); draw.js calls on the context only fillRect and fillText and sets only fillStyle, font, textAlign and textBaseline (a planted arc, drawImage, strokeRect or getImageData is red); every coordinate and size it passes is an integer and its scale an integer of at least 1; draw.js gets the palette that the look description names for the scene — every colour token of its section 6.2 (`--sc-wall` … `--sc-dim`, each of the form #rrggbb), the number `--sc-dim-alpha`, and the page tokens of its section 9.1 (`--btn`, `--onbtn`, `--ink`, `--acc2`) — and the test gives every colour a distinct #rrggbb marker and the alpha a marker number, draws the scene in every state of the step table, and finds every fillStyle in the set that it computes from the markers: a given colour; a colour derived from a given one by a rule of the closed list that the look description writes (a shade of a token, or an rgba of a token whose alpha comes from the given alpha or a listed factor; its sections 9.4–9.11); or a scene constant of its closed list (sections 6.2 and 9.4–9.11, the rgba constants with their alpha included) — no fill is outside that set, and every marker is found back at least once, itself or in a colour derived from it; a palette colour that is not #rrggbb, and an alpha that is not a number from 0 to 1, is replaced by a neutral constant with no exception; the keys of the scene keep the rules of REQ-111 criteria 2 and 3."
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N2-N8",
+        "place": "the comment lines above REQ-111: line 15174 (new)",
+        "kind": "inserted",
+        "before": "(two comment lines, of steps 01 and 01b)"
+      },
+      {
+        "file": "docs/requirements.yaml",
+        "remark": "N1",
+        "place": "the comment lines above REQ-112: line 15886 (new)",
+        "kind": "inserted",
+        "before": "(two comment lines, of steps 01 and 01b)"
+      }
+    ],
+    "self_check": [
+      {
+        "cmd": "date -u +%Y-%m-%dT%H:%M:%SZ (the first reading, before the inputs were read); cd tools && npm run -s handoff -- new --run M1SITE-20261119-01 --step 01c --role REQ-ANALYST --workflow WF-01 … (the task text from <scratch>/r01c/task.txt)",
+        "out": "2026-11-19T15:01:10Z; «handoffs/M1SITE-20261119-01/step-01c-req-analyst.json», «handoff_id: step01c-M1SITE-20261119-01», created_at = started_at = 2026-11-19T15:08:45Z; status set to IN_PROGRESS"
+      },
+      {
+        "cmd": "before the first edit: shasum -a 256 docs/requirements.yaml; head -15171 docs/requirements.yaml | shasum -a 256; sed -n '15172,16151p' docs/requirements.yaml | shasum -a 256; git show base/M1SITE-20261119-01:docs/requirements.yaml | shasum -a 256; copy to <scratch>/r01c/requirements.before.yaml",
+        "out": "4fe5bcdeacd9e8f1d9112afd0710fc1aa555e67f08beb897cda990b079300184 (16151 lines, the file gate pass 2 read); 3fdee3114f30e6d0cb8d9f6c2c0ef603a14a74e669c73957feb7a047e2d5afbd; 6bfa1d7f1deb2ee7e24227fbfc686958f223b8701eec4f5e042edd0728bf5ce1; 3fdee311…afbd (the tag, 15171 lines)"
+      },
+      {
+        "cmd": "after the last edit: shasum -a 256 docs/requirements.yaml; head -15171 … | shasum -a 256; tail -n +15172 … | shasum -a 256; git diff --numstat base/M1SITE-20261119-01 -- docs/requirements.yaml; git diff --stat base/M1SITE-20261119-01 -- app tools .github",
+        "out": "2a1fc6fa085dbcd41e0b75f86fac9e39a89d5d2bc7910e6f28776066ccfb98a6 (16224 lines); 3fdee3114f30e6d0cb8d9f6c2c0ef603a14a74e669c73957feb7a047e2d5afbd (the rest byte-equal, before and after); b65285f69962c286cb092d72e37940c04c57caa698962c8f7ef62dcac4529645 (lines 15172-16224, 1053 lines); «1053 0»; empty"
+      },
+      {
+        "cmd": "node <scratch>/r01c/struct.mjs docs/requirements.yaml 15172 (a line parse of the appended part: comment lines, keys, block scalars, criteria, tabs)",
+        "out": "REQ-111 keys id,title,owner,status,depends_on,original_request,description,acceptance_criteria criteria 16; REQ-112 the same keys, criteria 10; problems 0; the only lines over 120 characters are the title, owner and depends_on lines, two original_request lines and three 121-character lines, all as before"
+      },
+      {
+        "cmd": "node <scratch>/r01c/fold.mjs <before copy> docs/requirements.yaml and wdiff.mjs (paragraphs and criteria folded as YAML reads them, a word diff)",
+        "out": "changed: REQ-111 description ¶15 (guard table, N7), ¶16 (facts 4, 14, 17, 20: N6, N2, N8, N3), ¶19 (Bar, N7); criteria 3 (N5), 10 (N8), 11 (N2), 12 (N3, N4), 13 (N4); REQ-112 description ¶6 (stage scene, N1), ¶10 (fact 9, N1), ¶12 (Bar, N1); criterion 4 (N1); two new comment lines; every other paragraph and criterion, title, owner, status, depends_on and original_request equal"
+      },
+      {
+        "cmd": "shasum -a 256 docs/design/V1-public-look.md at 15:01Z, 15:12:03Z, 15:23:44Z, 15:29:01Z and 15:31:18Z; git show HEAD:docs/design/V1-public-look.md; the status of handoffs/M1SITE-20261119-01/step-03e-gui-design-analyst.json",
+        "out": "2e3e2dbdb53c4e0c3adbc9ce50327811b8daf3d023da6c7861757b9636cb5648 (1383 lines, step 03c; read 15:01-15:06Z); 8d4b406a… and 2b582312… while step 03e was IN_PROGRESS; 3dea234002153ff0a70f1dda61bf8cb587f025a2debab01f9a58e6c1ef3f9347 (1570 lines) after 03e closed COMPLETED at 15:28:59Z, unchanged at 15:31:18Z; the file is untracked (no HEAD copy); a copy of 3dea2340 at <scratch>/r01c/look-3dea.md"
+      },
+      {
+        "cmd": "node <scratch>/r01c/look-palette.mjs on the 03c version and on the 03e copy; node <scratch>/r01c/look-palette2.mjs on the 03e copy",
+        "out": "03c: 22 table rows of 6.2, 24 colour tokens, every light and dark value #rrggbb; «The one page token the canvas reads is `--ink`» line 337, «The canvas reads no `--btn`» 897, «No text is drawn on the canvas» 888, «`fillRect` with `fillStyle` only» 890, «Every `fillStyle` the canvas uses is a scene token of the table, the page token `--ink`, or a constant of this list» 376. 03e: 23 rows, 22 colour rows with 24 tokens (each light and dark #rrggbb) and the row `--sc-dim-alpha` .15 .5. Both: the three 9.11 rows have 9, 4 and 21 keep values; the exact rule (BigInt, strength × keep rounded half up to 4 decimals) gives the light and dark lists with 0 mismatches, 29 distinct values per theme; half-way: .15 × .729 → .1094 (float 0.10934999999999998888; `(0.15 * 0.729).toFixed(4)` 0.1093), .15 × .343 → .0515, .5 × .6561 → .3281, .5 × .2401 → .1201; every one of the 24 tokens and --ink stands in the drawn parts 9.4-9.11"
+      },
+      {
+        "cmd": "node <scratch>/r01c/bands.mjs (the bands of the sample's office.js lines 370-376 over every row and column at the logical sizes 367×88, 350×106 and 350×84; products exact in thousandths)",
+        "out": "at each size: start 9 values (1, .7, .49, .343, .30625, .2401, .214375, .1500625, .0937890625); a question at desk 1, 2, 3 and 4: 4 values each (1, .6, .36, .18); the result 21 values (1 … .127575) — equal to the «What the bands keep» column of 9.11"
+      },
+      {
+        "cmd": "fact (9)'s «…» quotes searched in the folded text of the 03e copy (a «…» inside a quote taken as a gap); grep there for 7.4, 7.21, 9.16, 9.1, 9.11, 9.13, 6.2",
+        "out": "10 of 10 quotes found; 7.4 «It holds the canvas and the layer of DOM labels over it (9.7, 9.8), nothing else» (line 598), 7.21 «visually hidden by the `.sr`» (836), 9.16 the list «visually hidden by the `.sr` rule» (1297), headings 9.1 (1015), 9.11 (1180), 9.13 (1219), 6.2 (318)"
+      },
+      {
+        "cmd": "git (2.54.0) clone --depth 1 -b base/M1SITE-20261119-01 of the Sai folder as a plain path, as file://<the Sai folder> and with --no-local, into <scratch>/r01c/; in each: git rev-parse --is-shallow-repository; git rev-list --count HEAD; git cat-file -t b5df4a808243a1f669ad3697374c265c720a7c31",
+        "out": "plain path: «warning: --depth is ignored in local clones; use file:// instead.», false, 181, «commit»; file://: true, 1, «fatal: git cat-file: could not get object info»; --no-local: true, 1, the same; HEAD f78d09f in both"
+      },
+      {
+        "cmd": "node <scratch>/r01c/lists.mjs docs/requirements.yaml (parses the lists Г, Б, В, Ц and С of the REQ-111 description; every pair of forms of two languages compared lower-cased)",
+        "out": "Г 14/7/6, Б 10/2/2, В 9/5/2, Ц 23/11/8, С 10/7/2; 118 forms, 6903 pairs; shared across languages: «минут» (В ru = В kk) only; a form twice in one language: none"
+      },
+      {
+        "cmd": "in the file:// clone of the tag: cd app && npm ci; cp ../tools/src/picker/engine.js server/vendor/picker-engine.js; npx tsc -v; npx tsc --noEmit -p jsconfig.json (a); jsconfig exclude += server/vendor/** and server/routes/demo-probe.js importing computeResult (b); a declaration picker-engine.d.ts beside the copy (c)",
+        "out": "copy sha256 a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe = the source; Version 6.0.3; (a) exit 2, 50 errors: 44 TS7006, 5 TS2339, 1 TS7053; (b) exit 2, 50 errors, all in server/vendor/picker-engine.js; (c) exit 0, 0 errors"
+      },
+      {
+        "cmd": "node <scratch>/r01c/c10-sketch.mjs app/public tools/src/picker/public tools/src/pixel-office/public/layout.js tools/src/pixel-office/public/office-sim.js docs/design/samples/picker-v3-approved-2026-10-26 (the code forms of REQ-111 criterion 10 as written: identifier border A-Z, a-z, digit, _ and $; spaces around «.» and before «(»; srcdoc also bordered by «-»; file:// after no letter or digit; the demo texts between word borders)",
+        "out": "planted lines 22, red by their own rule only 22, wrong 0; twins 16, green 16; spaced variants red 6 of 6; app/public 3 files: none; tools/src/picker/public 14 files: none; layout.js: none; office-sim.js: none; the sample (5 text files): app.js outerHTML and Math.random, data.js «Демо: компания», «Демо: этап», «Demo: company», «Demo: stage»"
+      },
+      {
+        "cmd": "node <scratch>/r01c/c9-sketch.mjs tools/src/pixel-office/public/layout.js tools/src/pixel-office/public/office-sim.js (REQ-112 criterion 9 as written, for issue I3)",
+        "out": "planted 10, red 10; twins 7, green 7; layout.js no hit; office-sim.js no hit"
+      },
+      {
+        "cmd": "Google Chrome 157.0.8103.79 --headless=new --user-data-dir=<scratch>/r01c/n3/prof --window-size=320,568 --dump-dom file://<scratch>/r01c/n3/probe.html (a trial page with the sample's .sr rule, a stage with overflow hidden holding a 700-px canvas and a label layer, a two-line nowrap plate, a paragraph and a planted 60-px nowrap cut; the profile removed after)",
+        "out": "innerWidth 500 (the headless window floor); checkVisibility() true for every element; stage (no own text) scrollWidth 700 > clientWidth 500; plate lines 100 = 100; ol.sr 318 > 41 (no own text), its li 278 > 1; the live .sr paragraph 254 > 1; the paragraph 500 = 500; the cut 355 > 60; the page scrollWidth 500 = innerWidth 500"
+      },
+      {
+        "cmd": "cd tools && node --test test/current-docs.test.js test/pixel-office-guide.test.js test/team-result-bytes.test.js test/pixel-office-panels.test.js (the tests that read docs/requirements.yaml)",
+        "out": "# tests 162, # pass 162, # fail 0, # skipped 0, # todo 0"
+      },
+      {
+        "cmd": "fitness, my own reading (not the gate's, AP-010): (а)-(е) after the rework",
+        "out": "(а) 16 and 10 criteria, each naming its test, command or browser step; the rules changed here have their measured counts (22/16, 118 forms, the 9/4/21 lists) and a positive control (the Chrome cut, the float trap); (б) c4 reads one version with the look (03c and 03e), REQ-108 criterion 11's literals named for О3, no decision contradicted (0118 О2 read with its Boundary, issue I7); (в) depends_on unchanged; (г) unchanged; (д) no word of lowering the bar, the Q rows unchanged; (е) original_request untouched. For REQ-VALIDATOR, gate pass 3 of 3"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "N1, the look version. The rework aligned REQ-112 criterion 4, fact (9) and the draw.js sentence to docs/design/V1-public-look.md of sha256 2e3e2dbdb53c4e0c3adbc9ce50327811b8daf3d023da6c7861757b9636cb5648 (step 03c), read at 15:01-15:06Z. The look's rework step 03e (GUI-DESIGN-ANALYST, created 15:07:24Z) rewrote the file at the same time; I did not rate its unfinished text (AP-008). It closed COMPLETED at 15:28:59Z with sha256 3dea234002153ff0a70f1dda61bf8cb587f025a2debab01f9a58e6c1ef3f9347, and then I re-measured on it: its 6.2 gives draw.js «exactly … the 24 colour tokens …, the number `--sc-dim-alpha` … and the page token `--ink`; nothing else», states that the strength «reaches `draw.js` as the number `--sc-dim-alpha` of the palette, the form REQ-112 criterion 4 asks», and its 9.1 says «The canvas reads no `--btn`, `--onbtn` or `--acc2`»; its 9.11 computes the alpha in exact decimal arithmetic. So both texts take route (a) of N1 and G3, and fact (9) is quoted from 3dea2340 (10 of 10 quotes found). The file is untracked in this tree, so 2e3e2dbd exists only by its hash in the handoffs 02b, 03c, 03d and 03e; a copy of 3dea2340 is in <scratch>/r01c/look-3dea.md. Gate pass 3 compares criterion 4 with the look as it is then."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "Beyond N1-N8, not edited (AP-019): the frames of a tap with no walk. REQ-112's description says «after the first frame a frame is drawn only during a walk that a tap started, or after a change of the theme, the language or the size of the page», and criterion 5 «a tap starts one walk of «Вы» to the desk the step table names for that step, and only then frames are drawn». The look's G5 rule (03d G5 (a); 03e, its §10 «Frames, one rule» and 9.13) adds «a tap that changes the state with no walk … one frame with the new state, the camera at its new offset at once» — the fifth answer or «<enough…>» on question 5 and a result chip of question 5, where «Вы» already stands at desk 4 while the light goes from «desk 4 1, others 0» to «others .25». Read literally, REQ-112 never draws that light change; read with the step table, a tap to the desk where «Вы» stands is a walk of length zero with its one last frame, which agrees with the look, so no criterion is impossible today. Proposal, for a REQ-112 micro-amendment or the next list of remarks: the sentence «… only during a walk that a tap started, once after a tap that changes the state with no walk, or once after a change of the theme, the language or the size of the page», and criterion 5 «a tap whose target is where «Вы» stands draws exactly one frame with the new state and no walk; a tap whose state equals the drawn one draws none», with the mutant «no frame on a state change with no walk». Default until ORCH routes it: the text as it stands, read with the zero-length walk."
+      },
+      {
+        "id": "I3",
+        "kind": "DISCREPANCY",
+        "text": "Beyond N1-N8, not edited (the class of N8, AP-129): REQ-112 fact (10) says «The rule of criterion 9, sketched: 10 planted lines red, 6 twins green», while criterion 9 lists 7 green twins (`prefetch()`, `fetchedAt`, `eventSource`, `sendBeacons()`, a comment «fetch», a string `\"fetch\"` and `\"/apiary\"`). My sketch of the rule as written (self_check): 10 planted red, 7 twins green, no hit in layout.js or office-sim.js (step 01b's self_check printed «red9 10 green9 6»). Proposal: DOC-UPDATER corrects the number to 7 (decisions/0079 item 5: a number, the meaning unchanged), or the next list of remarks names it."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Beyond N1-N8, not edited: REQ-112 fact (7) «a clone of the tag of depth 1, as the checkouts of app.yml make it, holds one commit» is true for the file:// form that step 01b used (its self_check), but does not name the form, so a reader who repeats it with a plain local path meets the trap of N2 (181 commits). REQ-112 criterion 1 runs `git show` in a full clone and is not affected. Proposal: the phrase of REQ-111 fact (14) («made with `git clone --depth 1 file://<path>`») in a later edit."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "О3, widened by N7 (the question of step 01, issue I14). The default of step 01 stands: the G8 «б» / G9 split lives in the production build and REQ-109 criterion 8's sentence is replaced. The earlier literals that R1.2 makes false, for decisions/0123 to name and a WF-01 micro-amendment to amend (AP-133): (1) REQ-109 criterion 8 «the output then equals app/public byte for byte», for the open build (in REQ109AMEND, decisions/0122 О6); (2) REQ-108 criterion 11 «with `paths` exactly app/**, docs/runbooks/**, tools/package.json, tools/src/team/**, tools/src/pixel-office/mask.js and .github/workflows/app.yml» → the same list and tools/src/picker/**, tools/src/node-floor.js, tools/src/pixel-office/public/layout.js and tools/src/pixel-office/public/office-sim.js (REQ-111 guard row (8)); (3) REQ-108 criterion 11 «the jobs are exactly `check` (…), `pg` (…) and `docker`» → check, pg, docker and e2e (REQ-111 criterion 11). Default for (2) and (3): a micro-amendment of REQ-108 in the same run as REQ109AMEND or beside it, as ORCH names, before the release of M1.4, so that RELEASE-VALIDATOR's re-check of REQ-108 on the built tree (decisions/0122 О3) reads no false literal."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "О22 (new), the canvas palette of REQ-112 criterion 4 (N1; 03d G3). Options: (a) the look's palette — the 24 colour tokens of 6.2, the page token --ink and the strength as the number --sc-dim-alpha, the sample's accents #e0731f and #1f7a8c kept as constants (F9); (b) keep --btn, --onbtn and --acc2 in the palette, which needs the look to draw them: the light scene's accent would turn from the sample's #e0731f into the UI --btn #ce6a1d, and --onbtn has no canvas use in the sample (03e issue I1). Default and the text of this step: (a), the route both gates named first and the look's rework 03e took. ORCH records it in decisions/0123 (Q12)."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "N4 cites decisions/0118 О2 for the declared console line. That decision's Boundary is «Only the run M1CODE-20261117-01 and the blocks REQ-108 and REQ-109», so it does not bind REQ-111 by itself; REQ-111 criterion 12 declares the line in its own first part («the 404 page's line of decisions/0118 О2, … each once, with its status or error and its address»), and the two edited places now refer to that declaration («as above», «as criterion 12 declares it»). So the rule is REQ-111's own, in the form of 0118 О2."
+      },
+      {
+        "id": "I8",
+        "kind": "DISCREPANCY",
+        "text": "For the look (not this file; for ORCH to route to the look's gate pass 3 or its bookkeeping): in the version 3dea2340, (a) 9.11's rule cites «[R REQ-112 criterion 4: an rgba of a token whose alpha comes from the given alpha and a listed factor]», words of the step-01b criterion that step 01c no longer has (the rule itself is the same: an rgba of --sc-dim with the alpha --sc-dim-alpha × k); (b) the §14 row of REQ-112 c4 is labelled «(… fillRect/fillText, palette and constants)», while criterion 4 and the look's own 9.1 say fillRect with fillStyle only. Neither changes a behaviour."
+      },
+      {
+        "id": "I9",
+        "kind": "PROCESS",
+        "text": "The lesson that gate pass 2 proposed (its issue I3, AP-164) happened again: this rework (created 15:08:45Z) and the look's rework 03e (created 15:07:24Z) ran at the same time on texts that cite each other. This step aligned to the version both started from (2e3e2dbd) and, when 03e closed before this step ended, re-measured and quoted the final version (3dea2340) instead of leaving fact (9) one version behind. 03e's issue I9 proposes the same lesson; for DOC-UPDATER through ORCH."
+      },
+      {
+        "id": "I10",
+        "kind": "PROCESS",
+        "text": "`cd tools && npm run -s handoffs-check` exits 1 with one line of another run: «handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 — H4: status: PENDING в коммите» (as steps 01, 01b, 02, 02b, 03 to 03e recorded); this file has no violation (the close command checks it by the same rules before writing). ORCH: launch or cancel that step before the next commit."
+      },
+      {
+        "id": "I11",
+        "kind": "NOTE",
+        "text": "This file was created by REQ-ANALYST with `npm run -s handoff -- new` on the order of the session that leads the program in ORCH's role (decisions/0122 О1), as the earlier steps of this run were, not by ORCH itself (docs/workflows/handoffs.md «Who writes what»); created_at and started_at are that command's one clock reading, 2026-11-19T15:08:45Z; my first clock reading was 15:01:10Z (reading the inputs). context.agent_run_id stays null; task.description holds the gate's list of remarks with its fixes. ORCH may add an orch_note."
+      },
+      {
+        "id": "I12",
+        "kind": "NOTE",
+        "text": "Not run, because the code of M1.4 is not written: the new test files of both blocks, the steps vendored and content, the e2e and browser steps, the GitHub runs. The full tools check (about 15 minutes; CI-3 and CI-8 of tools/test/repo.test.js expected red from ISS-0092-20261117-01) was not run: this step changes only docs/requirements.yaml, and the four tool test files that read it pass (162 of 162). The clone form «from the origin» of criterion 11 was not measured (no network clone); the shallow check that criterion 11 now asks catches a form that holds more than one commit. Temporary files of this step lie in <scratch>/r01c (outside the project); nothing was written into the Sai folder but docs/requirements.yaml and this handoff."
+      }
+    ],
+    "prototype": "<scratch>/r01c/ (outside the project): requirements.before.yaml (the before copy), look-3dea.md (the final look), task.txt; scripts look-palette.mjs, look-palette2.mjs, bands.mjs, lists.mjs, c10-sketch.mjs, c9-sketch.mjs, struct.mjs, fold.mjs, fold-lib.mjs, wdiff.mjs (output wdiff-final.txt), reflow.mjs (line wrapping only, text equal after joining), build-result.mjs; n3/probe.html (the Chrome probe); the clones c-file (file://, with the tsc trials tsc-a/b/c.txt) and c-nolocal",
+    "artifacts_out": [
+      "docs/requirements.yaml"
+    ]
+  }
+}
