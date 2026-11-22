@@ -1394,3 +1394,395 @@ test("MK-05: identifiers are never masked - a long random agent_id (40 letters o
     [id, id, id],
   );
 });
+
+// ---- REQ-110: hook.sh takes only a Node at or above the floor (HK-32 ... HK-40) ----------
+//
+// Candidates are stub nodes written by the test: shell scripts that use only built-in
+// commands, with mode 755. `--version` prints a fixed text and ends with a fixed code
+// (optionally after reading all of stdin, or after writing a line to stderr); any other
+// start appends `start <args>` and the lines of its stdin to the stub's own record file.
+// PATH and SAI_NODE_FALLBACKS name only stub folders and an empty folder, so no real
+// node is reachable, and hook.sh is run directly as `/bin/sh <hook.sh>` (the command of
+// settings.json hides the script's own output). The state, HOME and every record are in
+// the test's own temporary folder.
+
+const HOOK_SH = path.join(SRC, "hook.sh");
+const HOOK_DELIMITER = process.platform === "win32" ? ";" : ":";
+
+// A path as a POSIX shell reads it (the identity where the hook runs: Linux and macOS).
+function posix(p) {
+  if (process.platform !== "win32") return p;
+  return p.replace(/^([A-Za-z]):/u, "/$1").replaceAll("\\", "/");
+}
+
+function singleQuoted(text) {
+  return `'${text.replaceAll("'", "'\\''")}'`;
+}
+
+function writeStub(dir, spec, record) {
+  fs.mkdirSync(dir, { recursive: true });
+  const lines = ["#!/bin/sh", 'if [ "$1" = "--version" ]; then'];
+  if (spec.readsStdin)
+    lines.push('  while IFS= read -r l || [ -n "$l" ]; do l=; done');
+  if (spec.noise) lines.push('  echo "stub noise" >&2');
+  lines.push(`  printf '%s\\n' ${singleQuoted(spec.version)}`);
+  lines.push(`  exit ${spec.exit ?? 0}`, "fi");
+  lines.push(
+    `{ printf 'start %s\\n' "$*"; while IFS= read -r l || [ -n "$l" ]; do printf 'in %s\\n' "$l"; l=; done; } >> ${singleQuoted(posix(record))}`,
+  );
+  const file = path.join(dir, "node");
+  fs.writeFileSync(file, `${lines.join("\n")}\n`);
+  fs.chmodSync(file, 0o755);
+  return file;
+}
+
+function hookWorld(t) {
+  const box = sandbox(t);
+  fs.mkdirSync(box.dir);
+  const empty = path.join(box.root, "empty");
+  fs.mkdirSync(empty);
+  const cwd = path.join(box.root, "cwd");
+  fs.mkdirSync(cwd);
+  let n = 0;
+  const stub = (spec, folder) => {
+    n += 1;
+    const dir = path.join(box.root, folder ?? `stub-${n}`);
+    const record = path.join(box.root, `record-${n}.txt`);
+    return { dir, node: writeStub(dir, spec, record), record };
+  };
+  return { box, empty, cwd, stub };
+}
+
+function dirListing(dir) {
+  return fs
+    .readdirSync(dir)
+    .sort()
+    .map(
+      (name) =>
+        `${name} ${crypto
+          .createHash("sha256")
+          .update(fs.readFileSync(path.join(dir, name)))
+          .digest("hex")}`,
+    )
+    .join("\n");
+}
+
+// The starts of hook.js that a stub recorded: a start whose last argument ends with /hook.js.
+function hookStarts(stub) {
+  if (!fs.existsSync(stub.record)) return [];
+  return fs
+    .readFileSync(stub.record, "utf8")
+    .split("\n")
+    .filter((l) => l.startsWith("start ") && l.endsWith("/hook.js"));
+}
+
+function runHookSh(world, o = {}) {
+  const { box, empty, cwd } = world;
+  const { pathStubs = [], fallbackDirs = [], input = "{}\n" } = o;
+  const env = {
+    PATH: [...pathStubs.map((s) => s.dir), empty].join(HOOK_DELIMITER),
+    HOME: box.home,
+    SAI_PIXEL_OFFICE_DIR: box.dir,
+    SAI_NODE_FALLBACKS: [...fallbackDirs, empty].map(posix).join(":"),
+  };
+  assertSafeEnv(env);
+  const script = o.script ?? HOOK_SH;
+  return new Promise((resolve) => {
+    const t0 = performance.now();
+    const child = spawn("/bin/sh", [posix(script)], {
+      cwd,
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.stdin.on("error", () => {});
+    const timer = setTimeout(() => child.kill("SIGKILL"), 15_000);
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      resolve({ code, stdout, stderr, ms: performance.now() - t0 });
+    });
+    child.stdin.end(input);
+  });
+}
+
+// One row: the stubs are made and the hook runs; the stubs it started are compared with
+// `starter` ("np", "path", "fb" or null), and the common rules of every row hold: exit
+// code 0, stdout and stderr empty, at most 2 s, the state folder unchanged.
+async function hookRow(t, label, o, starter) {
+  const w = hookWorld(t);
+  const stubs = {};
+  if (o.np !== undefined) stubs.np = w.stub(o.np, o.npFolder);
+  if (o.path !== undefined) stubs.path = w.stub(o.path, o.pathFolder);
+  if (o.fb !== undefined) stubs.fb = w.stub(o.fb, o.fbFolder);
+  if (stubs.np !== undefined)
+    fs.writeFileSync(
+      path.join(w.box.dir, "node-path"),
+      `${posix(stubs.np.node)}\n`,
+    );
+  const before = dirListing(w.box.dir);
+  const r = await runHookSh(w, {
+    pathStubs: stubs.path === undefined ? [] : [stubs.path],
+    fallbackDirs: stubs.fb === undefined ? [] : [stubs.fb.dir],
+    input: o.input,
+    script: o.script,
+  });
+  assert.equal(r.code, 0, `${label}: exit code ${r.code}`);
+  assert.equal(r.stdout, "", `${label}: stdout`);
+  assert.equal(r.stderr, "", `${label}: stderr`);
+  assert.ok(r.ms <= 2000, `${label}: took ${r.ms} ms`);
+  assert.equal(
+    dirListing(w.box.dir),
+    before,
+    `${label}: the state folder changed`,
+  );
+  const started = Object.keys(stubs).filter(
+    (k) => hookStarts(stubs[k]).length > 0,
+  );
+  assert.deepEqual(
+    started,
+    starter === null ? [] : [starter],
+    `${label}: started`,
+  );
+  return { w, stubs, r };
+}
+
+const V_FLOOR = "v22.23.4";
+
+test("HK-32: a candidate below the floor, alone, is not started - node-path, PATH and fallbacks (REQ-110 criterion 4 a)", async (t) => {
+  for (const v of ["v22.21.1", "v22.23.3", "v21.7.0", "v25.2.1"])
+    await hookRow(t, `node-path ${v}`, { np: { version: v } }, null);
+  for (const v of ["v22.21.1", "v22.23.3"])
+    await hookRow(t, `PATH ${v}`, { path: { version: v } }, null);
+  await hookRow(t, "fallback v22.21.1", { fb: { version: "v22.21.1" } }, null);
+});
+
+test("HK-33: a candidate at the floor starts; a refused node-path falls through to PATH, a refused PATH to the fallbacks; the order is node-path, PATH, fallbacks (criterion 4 b)", async (t) => {
+  await hookRow(t, "PATH at the floor", { path: { version: V_FLOOR } }, "path");
+  await hookRow(
+    t,
+    "node-path below, PATH at the floor",
+    { np: { version: "v22.21.1" }, path: { version: V_FLOOR } },
+    "path",
+  );
+  await hookRow(
+    t,
+    "PATH another major, fallback at the floor",
+    { path: { version: "v25.2.1" }, fb: { version: V_FLOOR } },
+    "fb",
+  );
+  await hookRow(
+    t,
+    "node-path at the floor wins over PATH at the floor",
+    { np: { version: V_FLOOR }, path: { version: V_FLOOR } },
+    "np",
+  );
+  await hookRow(
+    t,
+    "PATH at the floor wins over a fallback at the floor",
+    { path: { version: V_FLOOR }, fb: { version: V_FLOOR } },
+    "path",
+  );
+});
+
+test("HK-34: a candidate whose --version ends with a code other than 0 is skipped, although its text is right (criterion 4 c)", async (t) => {
+  await hookRow(
+    t,
+    "PATH exit 1",
+    { path: { version: V_FLOOR, exit: 1 } },
+    null,
+  );
+  await hookRow(
+    t,
+    "node-path exit 1, PATH at the floor",
+    { np: { version: V_FLOOR, exit: 1 }, path: { version: V_FLOOR } },
+    "path",
+  );
+  await hookRow(
+    t,
+    "fallback exit 3",
+    { fb: { version: V_FLOOR, exit: 3 } },
+    null,
+  );
+});
+
+test("HK-35: the version rule of the hook - every refused text of the rule table is not started, every accepted one is", async (t) => {
+  const refused = [
+    "21.7.0",
+    "23.0.0",
+    "24.11.0",
+    "25.2.1",
+    "23.24.0",
+    "24.23.4",
+    "23.23.4",
+    "21.24.0",
+    "21.23.4",
+    "22.0.0",
+    "22.3.0",
+    "22.21.1",
+    "22.22.0",
+    "22.23.0",
+    "22.23.3",
+    "22.23",
+    "22.23.4.1",
+    "22.23.x",
+    "22.24.0-pre",
+    "x",
+    "",
+    "022.23.4",
+    "22.023.4",
+    "22.23.04",
+    "2222222222.0.0",
+    "22.1000000000.0",
+    "22.23.1000000000",
+  ];
+  for (const text of refused)
+    await hookRow(t, `v${text}`, { path: { version: `v${text}` } }, null);
+  const raw = [
+    "22.23.4",
+    "V22.23.4",
+    "v22.23.4 ",
+    "v22.23.4\nv22.23.4",
+    "vv22.23.4",
+    "v+22.23.4",
+    "v22.-23.4",
+  ];
+  for (const text of raw)
+    await hookRow(t, JSON.stringify(text), { path: { version: text } }, null);
+  const accepted = [
+    "22.23.4",
+    "22.23.10",
+    "22.24.0",
+    "22.100.0",
+    "22.999999999.0",
+    "22.23.999999999",
+  ];
+  for (const text of accepted)
+    await hookRow(t, `v${text}`, { path: { version: `v${text}` } }, "path");
+});
+
+test("HK-36: a candidate's --version that reads all of stdin does not take the event - the candidate that runs hook.js gets it whole (Q10, R2)", async (t) => {
+  const input =
+    'line one\nline two with $(x) and `y` "q"\nlast line without a line end';
+  const { stubs } = await hookRow(
+    t,
+    "event after a stdin-reading --version",
+    {
+      np: { version: "v22.21.1", readsStdin: true },
+      path: { version: V_FLOOR },
+      input,
+    },
+    "path",
+  );
+  const record = fs
+    .readFileSync(stubs.path.record, "utf8")
+    .split("\n")
+    .filter((l) => l !== "");
+  assert.deepEqual(record.slice(1), [
+    "in line one",
+    'in line two with $(x) and `y` "q"',
+    "in last line without a line end",
+  ]);
+});
+
+test("HK-37: the line node_floor= is what the rule uses - a copy of hook.sh with the floor raised by one patch skips the old floor and takes the raised one", async (t) => {
+  const text = fs.readFileSync(HOOK_SH, "utf8");
+  const lines = text.split("\n").filter((l) => l.startsWith("node_floor="));
+  assert.equal(lines.length, 1, "exactly one node_floor= line");
+  const m = /^node_floor=(\d+)\.(\d+)\.(\d+)$/u.exec(lines[0]);
+  assert.notEqual(m, null, lines[0]);
+  const old = `v${m[1]}.${m[2]}.${m[3]}`;
+  const raised = `v${m[1]}.${m[2]}.${Number(m[3]) + 1}`;
+  const holder = hookWorld(t);
+  const same = path.join(holder.box.root, "hook-same.sh");
+  const up = path.join(holder.box.root, "hook-up.sh");
+  fs.writeFileSync(same, text);
+  fs.writeFileSync(
+    up,
+    text.replace(lines[0], `node_floor=${m[1]}.${m[2]}.${Number(m[3]) + 1}`),
+  );
+  // the copy with the same line works: the control of the mechanism
+  await hookRow(
+    t,
+    "copy, same floor, stub at it",
+    { path: { version: old }, script: same },
+    "path",
+  );
+  await hookRow(
+    t,
+    "raised floor, stub at the old floor",
+    { path: { version: old }, script: up },
+    null,
+  );
+  await hookRow(
+    t,
+    "raised floor, stub at the raised floor",
+    { path: { version: raised }, script: up },
+    "path",
+  );
+});
+
+test("HK-38: a --version text with shell signs is only text - refused, and nothing it names is created or run", async (t) => {
+  let n = 0;
+  for (const tail of [
+    ";touch @F",
+    "$(touch @F)",
+    "`touch @F`",
+    "|touch @F",
+    " && touch @F",
+    "\ntouch @F",
+  ]) {
+    n += 1;
+    const w = hookWorld(t);
+    const target = path.join(w.box.root, `pwned-${n}`);
+    const version = `${V_FLOOR}${tail.replaceAll("@F", posix(target))}`;
+    const label = JSON.stringify(tail);
+    const stub = w.stub({ version });
+    fs.writeFileSync(
+      path.join(w.box.dir, "node-path"),
+      `${posix(stub.node)}\n`,
+    );
+    const before = dirListing(w.box.dir);
+    const r = await runHookSh(w, { pathStubs: [stub] });
+    assert.equal(r.code, 0, label);
+    assert.equal(r.stdout, "", label);
+    assert.equal(r.stderr, "", label);
+    assert.equal(fs.existsSync(target), false, `${label}: the text was run`);
+    assert.deepEqual(hookStarts(stub), [], `${label}: started`);
+    assert.equal(dirListing(w.box.dir), before, label);
+  }
+});
+
+test("HK-39: a candidate in a folder whose name has a space, a quote, $() and a backtick is taken from node-path, PATH and the fallbacks, and the name is not run", async (t) => {
+  const folder = "sp ace 'q' $(touch pwned-a) `touch pwned-b`";
+  for (const where of ["np", "path", "fb"]) {
+    const o = { [where]: { version: V_FLOOR }, [`${where}Folder`]: folder };
+    const { w } = await hookRow(t, `a spaced folder as ${where}`, o, where);
+    for (const name of ["pwned-a", "pwned-b"])
+      assert.equal(
+        fs.existsSync(path.join(w.cwd, name)),
+        false,
+        `${where}: ${name} was made`,
+      );
+  }
+});
+
+test("HK-40: what a candidate writes to stderr is not shown - a skipped one and a taken one leave the hook's stderr empty", async (t) => {
+  await hookRow(
+    t,
+    "a noisy node-path that fails, a noisy PATH at the floor",
+    {
+      np: { version: V_FLOOR, exit: 1, noise: true },
+      path: { version: V_FLOOR, noise: true },
+    },
+    "path",
+  );
+  await hookRow(
+    t,
+    "a noisy PATH below the floor",
+    { path: { version: "v22.21.1", noise: true } },
+    null,
+  );
+});

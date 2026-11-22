@@ -178,9 +178,14 @@ const CI_FORBIDDEN = [
   "actions/cache",
 ];
 
+// The floor of tools/ as `engines.node` states it (REQ-110, criterion 1; decisions/0119,
+// item О1). It moves only with a run that raises every place that states the floor.
+const CI_ENGINES = ">=22.23.4 <23";
+
 // The rules of the workflow in one place: the list of violations, each starting with
-// the id of the test that owns the rule. `engines` is the `engines.node` of tools/.
-function ciFindings(buf, engines) {
+// the id of the test that owns the rule. `engines` is the `engines.node` of tools/ and
+// `lockEngines` the `engines.node` of the root of tools/package-lock.json.
+function ciFindings(buf, engines, lockEngines = engines) {
   const text = buf.toString("utf8");
   const out = [];
   const add = (n, msg) => out.push(`CI-${n}: ${msg}`);
@@ -218,9 +223,19 @@ function ciFindings(buf, engines) {
     )
   )
     add(3, `node-version lines are ${nodeLines.join("|")}`);
-  const range = /^>=(\d+) <(\d+)$/u.exec(engines ?? "");
-  if (range === null || range[1] !== "22" || range[2] !== "23")
-    add(3, `engines.node is ${engines}`);
+  // the floor: engines is exactly the constant, the lockfile root states the same, and
+  // the major of engines is the major of node-version
+  if (engines !== CI_ENGINES)
+    add(3, `engines.node is ${engines}, need ${CI_ENGINES}`);
+  if (lockEngines !== engines)
+    add(3, `the lockfile root engines.node is ${lockEngines}, not ${engines}`);
+  const major = /^>=(\d+)\./u.exec(engines ?? "")?.[1];
+  const nodeMajor = /node-version: "(\d+)"/u.exec(nodeLines.join("\n"))?.[1];
+  if (major === undefined || major !== nodeMajor)
+    add(
+      3,
+      `the major of engines.node (${major}) is not node-version (${nodeMajor})`,
+    );
 
   // CI-4: the four steps
   const jobs = (lineBlock(lines, "jobs:", 0) ?? []).filter(
@@ -261,6 +276,18 @@ function ciFindings(buf, engines) {
     )
   )
     add(4, `run lines are ${runs.join("|")}`);
+
+  // CI-3 (continued): the newest 22.x is asked for on every run, in the setup-node step
+  const latestLines = lines.filter((l) => /check-latest/u.test(l));
+  if (
+    !same(
+      latestLines.map((l) => l.trim()),
+      ["check-latest: true"],
+    )
+  )
+    add(3, `check-latest lines are ${latestLines.join("|")}`);
+  else if (steps.length === 4 && !has(steps[1], "check-latest: true"))
+    add(3, "check-latest: true is not in the setup-node step");
 
   // CI-5: only two actions, each pinned to a full commit
   const uses = lines.filter((l) => /\buses:/u.test(l));
@@ -318,9 +345,13 @@ function enginesNode() {
   return JSON.parse(read("tools/package.json")).engines.node;
 }
 
+function lockEnginesNode() {
+  return JSON.parse(read("tools/package-lock.json")).packages[""].engines.node;
+}
+
 function ciOwn(id) {
-  return ciFindings(readWorkflow(), enginesNode()).filter((f) =>
-    f.startsWith(`${id}:`),
+  return ciFindings(readWorkflow(), enginesNode(), lockEnginesNode()).filter(
+    (f) => f.startsWith(`${id}:`),
   );
 }
 
@@ -334,7 +365,7 @@ test("REQ-030 AC1 CI-2: the workflow runs on push to every branch and on pull_re
   assert.deepEqual(ciOwn("CI-2"), []);
 });
 
-test("REQ-030 AC1 CI-3: node-version is 22 and the major version equals engines.node of tools/package.json", () => {
+test("REQ-030 AC1 CI-3: node-version is 22 with check-latest: true, and engines.node of tools/package.json and of the lockfile root is the floor >=22.23.4 <23 (REQ-110)", () => {
   assert.deepEqual(ciOwn("CI-3"), []);
 });
 
@@ -357,7 +388,8 @@ test("REQ-030 AC1 CI-7: nothing hides a red check; no secrets, tokens, addresses
 test("REQ-030 AC1 CI-8: the rules are not blind: the real file has no violation and every damaged copy of it has the expected one", () => {
   const original = readWorkflow().toString("utf8");
   const engines = enginesNode();
-  assert.deepEqual(ciFindings(Buffer.from(original), engines), []);
+  const lockEngines = lockEnginesNode();
+  assert.deepEqual(ciFindings(Buffer.from(original), engines, lockEngines), []);
   const shaOf = (name) =>
     new RegExp(
       `(uses: actions/${name}@)[0-9a-f]{40}( # v\\d+\\.\\d+\\.\\d+)`,
@@ -409,6 +441,44 @@ test("REQ-030 AC1 CI-8: the rules are not blind: the real file has no violation 
       () => change(original, 'node-version: "22"', 'node-version: "23"'),
     ],
     ["engines changed", "CI-3", () => original, ">=22 <24"],
+    // REQ-110: the floor, its lockfile twin and check-latest. A row has an optional
+    // fourth element (the engines text) and fifth (the lockfile root text); the fifth
+    // defaults to the fourth.
+    ["engines of the tag", "CI-3", () => original, ">=22 <23"],
+    ["engines one patch below", "CI-3", () => original, ">=22.23.3 <23"],
+    [
+      "engines with another upper bound",
+      "CI-3",
+      () => original,
+      ">=22.23.4 <24",
+    ],
+    [
+      "the lockfile root out of step",
+      "CI-3",
+      () => original,
+      CI_ENGINES,
+      ">=22.23.3 <23",
+    ],
+    [
+      "check-latest removed",
+      "CI-3",
+      () => change(original, "          check-latest: true\n", ""),
+    ],
+    [
+      "check-latest: false",
+      "CI-3",
+      () => change(original, "check-latest: true", "check-latest: false"),
+    ],
+    [
+      "check-latest moved to the checkout step",
+      "CI-3",
+      () =>
+        change(
+          change(original, "          check-latest: true\n", ""),
+          "          fetch-depth: 0\n",
+          "          fetch-depth: 0\n          check-latest: true\n",
+        ),
+    ],
     [
       "setup-node step removed",
       "CI-4",
@@ -514,8 +584,14 @@ test("REQ-030 AC1 CI-8: the rules are not blind: the real file has no violation 
       () => change(original, "contents: read", "contents: write"),
     ],
   ];
-  for (const [name, expected, make, engineText = engines] of mutants) {
-    const found = ciFindings(Buffer.from(make()), engineText);
+  for (const [
+    name,
+    expected,
+    make,
+    engineText = engines,
+    lockText = engineText,
+  ] of mutants) {
+    const found = ciFindings(Buffer.from(make()), engineText, lockText);
     assert.ok(
       found.some((f) => f.startsWith(`${expected}:`)),
       `${name}: expected a ${expected} violation, got ${JSON.stringify(found)}`,

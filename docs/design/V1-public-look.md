@@ -1190,10 +1190,11 @@ The scene in its start state at load («Вы» at the door); a tap on step n sen
   `div.wrap.blocks`, so the rule `.blocks > * + *` gives it 36 px above and 36 px below [S site.css:767-769]. Not inside
   `div.panels`, not between `<!-- sai:order -->` markers and with no `order_` key, so the open build keeps it (7.22).
   From 760 px up it is at most 640 px wide (7.22); below 760 the full width. At 390×844 its top edge is inside the first
-  screen: about y 560 – 600 [C, from 8's `<main>` start 334 and the intro's lines: padding 16, eyebrow 18.8 + 10, h1 two
-  lines 56, pitch three or four lines 70 – 93 + 8, intro padding 8, then 36]; the run of REQ-113 measures it
-  (decisions/0125 item 6). At 1470×784 it starts at about 690 [C] and at 320×568 at about the fold or below [C]; only the
-  390×844 position is a criterion.
+  screen: y 557 in ru, en and kk [M, DESIGN-QA of the wording round, 116 loads; the estimate was about y 560 – 600, from 8's
+  `<main>` start 334 and the intro's lines: padding 16, eyebrow 18.8 + 10, h1 two lines 56, pitch three or four lines
+  70 – 93 + 8, intro padding 8, then 36] (decisions/0125 item 6). At 1470×784 it starts at y 662 to 688 [M: 688 in ru and
+  kk, 662 in en], at 360×640 at y 527 and at 320×568 at y 550, which is inside the window by 18 px [M]; only the 390×844
+  position is a criterion.
 - **H2. The four stages**: first a plain paragraph, `how_plan_note` («Ниже описано, как работа будет устроена, когда этапы
   запустятся.»), the first element of the section that holds the steps, above `ol.steps` (so after the block and before
   `div.how-stages`, and in none of them) [R REQ-113 criterion 6; P its place]; then the step row of 7.8 as buttons (the scene
@@ -1264,9 +1265,11 @@ States in order (section 11 for the failure states):
    block above the panel, both the full width of the 430 px column (block content 378 px at 1470 [C: 430 − 2·4 margin −
    2·22 padding]); areas «sum | panel», «answers | panel», «lists | panel» when a kind is recommended [M], and «sum |
    panel», «lists | panel», «answers | panel» on no match [P]. The tall panel area spans all rows, so the left column must
-   stay the taller one, or the rows between «sum», «answers» and «lists» would stretch: the left column is about 900 px or
-   more on both results and `r-side` about 700 px [C, an estimate: block ≈ 420, panel ≈ 260, gap 22], and DESIGN-QA
-   measures it on the page. ≤ 1000: one column, sum, `r-side`, answers, lists [M styles.css:284] — so the block stands right
+   stay the taller one, or the rows between «sum», «answers» and «lists» would stretch: the left column is taller than
+   `r-side` [M, DESIGN-QA of the wording round at 1470×784: the least margin measured is 159 px, en on no match; the left
+   column is 1480 px on a recommended result and 855 to 881 px on no match; `r-side` 672 px in ru, 695 in en and 718 in kk;
+   the block 428 px in ru and 451 in en and kk, the panel 207 px in ru and en and 230 in kk, gap 22; the earlier estimate was
+   a left column of about 900 and block ≈ 420, panel ≈ 260]. ≤ 1000: one column, sum, `r-side`, answers, lists [M styles.css:284] — so the block stands right
    after the receipt and above the button «Описать идею»; on no match sum, lists, `r-side`, answers [P], so on a phone the
    block starts under the fixed list (601 – 625 px high at 390 and 320, 7.14): nothing may stand between the receipt and
    that list [R REQ-111 criterion 12], and this is the cost (the question for ORCH is written in 7.22, «Placement
