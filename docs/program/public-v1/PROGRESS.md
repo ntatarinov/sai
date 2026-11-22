@@ -210,6 +210,7 @@ Never write a secret, a machine path or a name of another project here.
 | 2026-11-22T08:20:00Z | ARCH §8–§9 (three hard-wired executor modes) | one provider contract and a registry (implementations `claude-cli`, `api`, `scripted`); no code for other vendors, only the contract and a conformance test | decisions/0127 (audit R-8) |
 | 2026-11-22T08:20:00Z | ARCH §8 (demo rule of the test executor) | the test executor may run in the owner's own organisation, always marked «тест» in the interface and the data; in client organisations it is forbidden in production | decisions/0127 Ж |
 | 2026-11-22T08:20:00Z | decisions/0097 (office projection), ARCH §11 | an admin-only mode «show the basis» (from a state to the event, the task and the result), written to the audit; clients keep the projection of 0097 | decisions/0127 З |
+| 2026-11-22T14:25:07Z | PLAN §4.6 (machine limits of the owner's 16 GB MacBook: at most two agents at a time, one browser at a time) | on the owner's Windows PC (measured 2026-11-22: 31.9 GB of memory, 12 logical processors) independent steps run at the same time, at most ten agents; one browser at a time stays; no check command runs on this PC (decisions/0110) | decisions/0129 item 4 (the owner's «по максимуму») |
 
 ## Log (append only; one line per finished task)
 
