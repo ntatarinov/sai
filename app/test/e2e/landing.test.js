@@ -185,6 +185,20 @@ function readBlock(page, scope) {
     const labelled = root.getAttribute("aria-labelledby");
     const closing = root.lastElementChild;
     const bodyColor = getComputedStyle(document.body).color;
+    // Words that stand in no part of the block (a bare text node in the section, the list or a row, or after the
+    // closing paragraph): the shape of the elements cannot see them.
+    /** @type {string[]} */
+    const stray = [];
+    const SHOW_TEXT = 0x4;
+    const walker = document.createTreeWalker(root, SHOW_TEXT);
+    for (let n = walker.nextNode(); n !== null; n = walker.nextNode()) {
+      const holder = n.parentElement;
+      const own =
+        holder !== null &&
+        (holder === closing || holder.matches("h3, span.stat, b, small"));
+      const said = (n.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (!own && said !== "") stray.push(said);
+    }
     const rows = [...root.querySelectorAll("ul.rl > li")].map((li) => {
       const mark = /** @type {HTMLElement} */ (li.querySelector(".stat"));
       const title = /** @type {Element} */ (li.querySelector(".rn"));
@@ -209,6 +223,7 @@ function readBlock(page, scope) {
           labelled !== null &&
           document.getElementById(labelled) === h3,
         text: text(root),
+        stray,
         rows,
         closing:
           closing === null
@@ -240,7 +255,8 @@ function readBlock(page, scope) {
  * The status block as REQ-113 criteria 3 and 6 want it, against the words the caller gives: one block, its
  * heading and the label that names it, three rows with the title and the line of each part, the marks in
  * order (words, not only a colour; the mark `Working` filled and the other two plain), the closing paragraph as
- * body text of at least 16 px, no link, button or field, and the markup of the design.
+ * body text of at least 16 px, no link, button or field, the markup of the design, and no word outside the heading,
+ * the rows and the closing paragraph.
  * @param {BlockRead} read
  * @param {(key: string) => string} words
  * @param {string} where
@@ -317,6 +333,11 @@ function checkBlock(read, words, where) {
     b.skeleton,
     NOW_SKELETON,
     `${where}: the status block has the markup of the design`,
+  );
+  assert.deepEqual(
+    b.stray,
+    [],
+    `${where}: the status block holds its words and nothing more`,
   );
   assert.equal(
     b.everyShown,

@@ -1,0 +1,43 @@
+{
+  "handoff_id": "step02-AUD-002-20261122-01",
+  "run_id": "AUD-002-20261122-01",
+  "workflow_id": "WF-05",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "AUDIT-PLANNER",
+  "file": "handoffs/AUD-002-20261122-01/step-02-audit-planner.json",
+  "status": "PENDING",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/audits/scope-20261122.json (the scout's result, 306 KB: read it with scripts, never print it whole; keys: parts, chosen_rows, not_chosen_rows, requirements_recheck, github_runs, not_built, notes_for_the_planner)",
+      "docs/workflows/WF-05-health-audit.md (step 2, step 3, the dimensions table, Rework loop)",
+      "docs/audits/AUD-001/plan.json (the form of the last plan)",
+      "docs/audits/README.md",
+      "decisions/0129-owner-max-instruction-audit-fix-build.md",
+      "handoffs/AUD-002-20261122-01/step-01-audit-scout.json (result.issues I1 to I11)",
+      "the fixed copy for reading: C:\\Users\\greve\\AppData\\Local\\Temp\\claude\\a6c11d6dc2554533\\483285e2-45d1-4ba0-be5f-d84094cb1f8a\\scratchpad\\aud002\\tree (commit f72eaa7)"
+    ],
+    "base_tag": "base/AUD-002-20261122-01",
+    "route": "WF-05 step 2 (this) -> ORCH checks the plan against the scope -> step 3 in WAVES (ORCH generates the handoffs from plan.json) -> step 4 AUDIT-COMPILER",
+    "write_set": [
+      "docs/audits/AUD-002/plan.json",
+      "docs/audits/README.md (only: the new row of AUD-002 with the state «идёт»)",
+      "handoffs/AUD-002-20261122-01/step-02-audit-planner.json (result only)"
+    ],
+    "parallel_work_now": [
+      "TEST-DESIGNER M0DOCS step 05c (writes tools/test/current-docs.test.js)",
+      "M1WORDS-20261122-02 steps 05 and 06 (the REQ-113 wording round)"
+    ]
+  },
+  "task": {
+    "description": "WF-05 step 2, AUDIT-PLANNER, audit AUD-002 (run AUD-002-20261122-01). Make the plan of step 3 from the scout's scope file docs/audits/scope-20261122.json: create docs/audits/AUD-002/ and write docs/audits/AUD-002/plan.json, and add the row of AUD-002 (date 2026-11-22, the scope in one line, the state «идёт», the re-check column «2026-11-22 (in this audit)» only if requirements are planned) to the table of docs/audits/README.md. Follow WF-05 step 2 and the form of AUD-001/plan.json, with these additions that the owner's situation needs. THE OWNER'S USAGE LIMIT IS REAL: the scout chose 41 part×dimension rows and 42 `done` requirements (425 criteria); running everything at once exhausted his usage window earlier today. So the plan is executed in WAVES, and every handoff is sized for ONE agent that finishes in one go. (1) HANDOFF LIST. plan.json holds an array `handoffs`; each entry has: `id` (for example `step-03-security-auditor-app`), `kind` (`auditor` or `requirements`), `role` (SECURITY-AUDITOR, DEPENDENCY-AUDITOR, ARCHITECTURE-AUDITOR, COVERAGE-AUDITOR, DOC-AUDITOR or RELEASE-VALIDATOR), `part` and `dimension` (or the list of requirement ids), `wave` (1, 2 or 3), `output` (the report path `docs/audits/AUD-002/<part>/<dimension>.json` or `docs/audits/AUD-002/requirements/<group>.json`), `scope` (what exactly to check and in which files or folders: 3 to 8 sentences, from the scout's reasons and the WF-05 dimension row), `extra_checks` (the additional checks by part that step 2 asks for, for example the write permissions and R2 for pixel-office, «all or nothing» writing for the idea tools, the workflow settings for ci), `needs` (what the auditor may use: the fixed copy, read-only git and gh, the GitHub run records with their ids from the scout's `github_runs`), `not_allowed` (running the test commands on this PC; say it), and `est_size` (S, M or L by the number of files and lines the part holds). You may MERGE two dimensions of one small part into one handoff (for example documentation and coverage of a part with few files) when one agent can do both well in one go: say so in `merged_from` and keep both dimension names in the report. Never merge security with anything. (2) WAVES. Wave 1 = what can harm already now or can leak, and what has never been audited and faces the internet: the security of app (production https://sai-team.vercel.app, a database, internet input), of ci (permissions, pinned actions, secrets, runs of forks in a PUBLIC repository), of records and docs (secrets, identifiers, paths and personal data in a public repository) and of team (the executor and the files it writes); plus the architecture and the coverage of app; plus the requirements group that production serves (REQ-108, REQ-109, REQ-111, REQ-112). Wave 2 = the security and the architecture of picker, pixel-office, tools-core and e2e, and the coverage of those parts and of ci. Wave 3 = the dependencies of every part (`npm audit` and `npm outdated` need the network: write that they are «not checked» unless an agent can run them read-only in a fresh clone of the project, then they are allowed), the documentation, and the remaining requirements. Wave 1 holds at most 10 handoffs, waves 2 and 3 at most 14 each; if the scout's rows do not fit, merge small rows (rule above) and, only if still too many, put the rest into a wave 4 with a reason. Nothing the scout chose may disappear: every chosen row is in a handoff or in `not_planned` with the reason, and plan.json lists the counts (chosen rows, rows in handoffs, merged, not planned). (3) REQUIREMENTS. Group the 42 `done` requirements into at most 9 handoffs of at most 6 requirements each, by area (the app and production; the process documents and the tests of M0; the idea selection and the picker; Pixel Office; the team engine; and so on, from the requirements' own milestones and the files their criteria name). For each group: the ids, `test_record` (for every requirement the GitHub record the scout found, or `none`: those criteria are «not checked: no record on GitHub for the work line» unless a read-only way exists) and `needs_run` (how many criteria name a test). Put the groups whose criteria can be verified by reading and by read-only commands first. (4) THE WORKFLOW TEXT IS OLDER THAN THE TREE: the dimension row of coverage says that COVERAGE-AUDITOR runs `npm run check` himself; on this PC that is not allowed. Write in `rules_of_this_pc` (a string that every handoff will carry) what replaces it (the GitHub record of the head and of main) and which findings that rule makes «not checked». (5) Also write `scope_check`: the parts and rows of the scout you did not take and why; and `open_points`: anything in the scout's result.issues (I1 to I11) that needs ORCH or the owner. You write no handoff files of step 3 (ORCH generates them from plan.json) and change no other file. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones only in your own folder under C:\\Users\\greve\\AppData\\Local\\Temp\\claude\\a6c11d6dc2554533\\483285e2-45d1-4ba0-be5f-d84094cb1f8a\\scratchpad. Node 22 first on PATH (C:\\Users\\greve\\tools\\node22). No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product into a Sai file. Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T18:57:09Z",
+  "started_at": "2026-11-22T18:57:40Z",
+  "completed_at": null,
+  "result": null
+}
