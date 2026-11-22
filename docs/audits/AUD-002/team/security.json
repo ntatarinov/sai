@@ -1,0 +1,159 @@
+{
+  "audit": "AUD-002",
+  "part": "team",
+  "dimension": "security",
+  "role": "SECURITY-AUDITOR",
+  "subject": "f72eaa7",
+  "checked": [
+    {
+      "check": "Secrets (Q7): search for keys, tokens, private keys, JWT and key=value pairs in tools/src/team, tools/src/web, tools/test/fixtures/team, the team and web tests, and (key shapes only) the whole fixed copy including handoffs, decisions, docs and reports",
+      "how": "grep -rnEI with the shapes sk-ant-, sk-, AKIA, ghp_/gho_/ghu_/ghs_/ghr_, xox*, AIza, BEGIN PRIVATE KEY, eyJ.eyJ., Telegram bot shape, and (password|secret|api_key|token) = quoted value of 8+ characters; every match read by hand",
+      "result": "No real secret. Matches in code: only the word 'секрет' in language.js (a text). Matches in tests and fixtures are all marked fakes: ghp_FAKEfake000..., ghp_FAKEFAKE..., sk-ant-api03-FAKEFAKE..., AKIAFAKEFAKEFAKE1234. tools/test/fixtures/team/scenario-secret.json holds only the bait marker @@BAIT@@ (the test inserts the fake); stream-secret.jsonl holds ghp_FAKEfake0000000000000000000000000000 in a text that says 'вымышленный'. In docs, decisions and handoffs the matches are pattern descriptions (BEGIN ... PRIVATE KEY as a header, the JWT eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJmYWtlIn0. which decodes to {\"sub\":\"fake\"}, sk-abcdefghijklmnopqrst). No .env, .pem or .key file is tracked in the part (git ls-files)."
+    },
+    {
+      "check": "What the executor passes to a real Claude Code session: command line, environment, working directory, allow list of sites (ISS-0119)",
+      "how": "Read tools/src/team/executors/claude-cli.js (buildArgs, buildChildEnv, check, run), executor.js (toolsForRole, allowedToolsForRole, webDomainsOf), config.js (CHILD_ENV_ALLOW, webDomainsSetting, isDomain), role-internal.js",
+      "result": "Task text goes to stdin, not to the arguments; the arguments are a fixed list; spawn has shell:false, detached:true, windowsHide:true, cwd = work/ of the project, stdio pipes; the environment is built only from CHILD_ENV_ALLOW (PATH, HOME, USER, LOGNAME, LANG, LC_ALL, LC_CTYPE, TMPDIR, TZ, CLAUDE_CONFIG_DIR), no key, no SAI_TEAM_*; stderr of the process is drained and never kept. WebFetch is given to a role only with SAI_TEAM_WEB_DOMAINS and only as one allow rule per site (a bare WebFetch is never allowed); not set or empty means no WebFetch at all; names are validated (labels of a-z0-9-, at least two labels, last label with a letter, so no IP address and no single label such as localhost; at most 50). Matches ISS-0119 (closed). The effect of the flags --restricted, --safe-mode, --permission-prompts none in a real session: see not_checked."
+    },
+    {
+      "check": "Gate G2: can any real model run start without the owner's go",
+      "how": "grep for child_process, spawn(, exec(, execFile, eval, new Function in tools/src/team and tools/src/web; read check() in claude-cli.js, postProject in web/api.js, readConfig realRuns",
+      "result": "The only process start is claude-cli.js:207 (cp.spawn). run() calls check() first: executor code, SAI_TEAM_REAL_RUNS exactly '1' (config.realRuns), project budget above 0, work folder is a real folder and not a link, budget left. The web server refuses to create a claude-cli project when realRuns is off (api.js postProject, TEXT.realRunsOff). The default executor of both commands is claude-cli, but without the variable the run refuses (E_REAL_RUNS_OFF). No other path to a model; no eval, no exec, no shell. Met."
+    },
+    {
+      "check": "Result files: paths cannot leave their folder, byte-exact (REQ-102)",
+      "how": "Read files.js (publishResultFile, readWorkFile, cleanPartials), schema.js checkResultName and checkWorkPath (lines 631-656), runner.js accept step (lines 640-760: planned list, removeSource), store.js #publish, home.js resolveProjectDir, and the diff of these files against b64562a",
+      "result": "Name pattern ^[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}$, no '..', no leading dot, no backslash and no NUL in a path, at most WORK_PATH_PARTS_MAX parts; the file is published as .partial-<name> (mode 0600, flag wx) then linkSync, which never replaces a name; files/ must be a real folder; readWorkFile walks every part with lstat (a link refused, a file with nlink other than 1 refused), opens with O_NOFOLLOW where it exists, compares dev and ino with the lstat, caps the size and decodes strict UTF-8 keeping the BOM; removeSource walks the path again before unlink. Project id must match ^p-[0-9]{8}-[0-9a-f]{6}$ before any access. Secrets: every accepted file passes findSecrets (not the free-text masking of ISS-0093, closed) before any write, a refused file leaves work/. Met on a system with O_NOFOLLOW; on Windows see SEC-TEAM-02."
+    },
+    {
+      "check": "Masking of secrets in results (ISS-0058 history, ISS-0093, ISS-0121)",
+      "how": "Read the changes of runner.js, store.js, files.js against b64562a; runner.js withheldOrContent; where maskSecrets still applies (journal text fields, chat text: store.js mapTextFields, channel.js maskedArgs)",
+      "result": "Result files: findSecrets refuses, nothing is rewritten. Files put in files/ by hand or of an older core: replaced with FILE_WITHHELD, and a thrown RangeError also gives FILE_WITHHELD (fail closed). Text fields of events and chat: maskSecrets. Errors and logs: formatError gives code and fixed text, never a stack (errors.js:84-93). The rule gaps are covered by open ISS-0097 and ISS-0098 and by closed ISS-0058, ISS-0093, ISS-0121: not repeated."
+    },
+    {
+      "check": "Local HTTP server: address, Host, Origin, key, body, answer codes, input checks (Q10), ISS-0122",
+      "how": "Read tools/src/web/server.js whole (handle, writeAllowed, readBody, accessAllowed, linkKeyValid, handleStatic, loadPublicFiles), config.js, api.js (postProject, postChat, controlAction, failure, internal), main.js (parseArgs, link printing)",
+      "result": "listen(port, '127.0.0.1') only; Host must be exactly 127.0.0.1:<port> or localhost:<port> else 403, before any data is touched; every read of data (GET api and the page index.html) needs the access cookie sai_team_web (HttpOnly, SameSite=Strict) that is set only by the link /?k=<64 hex> printed to stdout, compared with timingSafeEqual; a read without it is 401 and returns no data; a POST needs Origin equal to the own address, Content-Type application/json, and the page key in X-Sai-Page (timingSafeEqual; a stale key gets a reload answer); the page key is inside index.html, which needs the cookie; body at most 65536 bytes (4096 for control), declared length checked first, counted while read, idle timeout 15 s (408), strict UTF-8, JSON object only, unknown keys refused (hasExactKeys); goal length, budget (finite, >0, 6 digits, bounded) checked before use; route ids by regexes (project, task, role number 1-99); the static files are a fixed Map in memory by name pattern and extension, no path to the disk; keys are random 32 bytes, held in memory only; CSP default-src 'self' without inline, frame-ancestors none, nosniff, no-referrer, no-store; errors answer a fixed text (500 TEXT.internal), the detail goes to stderr as one line without a stack. Met."
+    },
+    {
+      "check": "The page shows event and response text as text (item 6)",
+      "how": "grep innerHTML, insertAdjacentHTML, outerHTML, document.write, eval, new Function, setAttribute, href, fetch in tools/src/web/public/app.js; read request(), setAttr(), linkHash()",
+      "result": "No innerHTML, no eval; text goes in with textContent; the only dynamic attribute is an href of the form #/<api path> built from a link object of the own server (the prefix is cut, the result starts with #); the only network call is fetch of a relative path, credentials same-origin. No foreign address in the page files (grep for http(s):// in public). Met."
+    },
+    {
+      "check": "Responses and errors do not give a stack, an internal path or a secret",
+      "how": "Read formatError and escapeUnsafe (errors.js), internal() and readFailure() in api.js, internalError() in server.js, line() and warn() in web/main.js, fromOsError use in channel.js:938",
+      "result": "Non-TeamError becomes 'E_INTERNAL ... (<error name of letters only>)'; TeamError messages are fixed texts; an OS error message is not passed on (fromOsError gives a fixed text). No stack in any answer or log line. Met."
+    },
+    {
+      "check": "Product items Q8, Q9, Q11 (R3 not applicable, decision 0033)",
+      "how": "grep -niE tenant|business_id|SELECT|INSERT INTO|sqlite|.query(|fetch( in tools/src/team and tools/src/web; grep https?:// in the same; reading of the data folder layout (home.js)",
+      "result": "Q8: no tenants in this part; the isolation unit is one project folder under the data folder, the agent starts with cwd = work/ of its own project, no --add-dir, accepted only through the core; met as a principle. Q9: no database and no query in the part, nothing to check. Q11: this part makes no outbound request itself; the only outbound path is WebFetch of the Claude process, covered by the allow list above. See doubt D2 about names that resolve to a local address."
+    },
+    {
+      "check": "Extra check 1: every file write stays inside the project or home folder given by configuration; symbolic links and .. in names",
+      "how": "grep path.join|path.resolve|mkdirSync|writeFileSync|renameSync|chmodSync|rmSync|unlinkSync|openSync across tools/src/team (store.js, home.js, runner.js, lock.js, journal.js, channel.js, files.js, cli.js); read each site",
+      "result": "All writes go to <home>/<project id>/ (events.jsonl, files/, work/, scenario.json, writer.lock, inbox/) or to <home> itself; <home> is SAI_TEAM_HOME (absolute path only, NUL refused) or ~/.sai-team; the project id and every file name are pattern-checked before use; .creating-<id> then renameSync for a new project; the lock and the journal are opened with NOFOLLOW where it exists. No write by a name that comes from the model other than through checkResultName. Met on POSIX; Windows: SEC-TEAM-02."
+    },
+    {
+      "check": "Extra check 2: fixtures hold no real secret",
+      "how": "Read scenario-secret.json and stream-secret.jsonl whole; the secret-shape grep over tools/test/fixtures/team and over the team tests (see the first check)",
+      "result": "All values are fakes (names FAKE, zeros, the marker @@BAIT@@, the word 'вымышленный'). Met."
+    },
+    {
+      "check": "Extra check 3: no server on a fixed port",
+      "how": "No server was started by this audit; the ports 4780, 4781, 4782 and 4790 were not touched. Only a local child process of node (sleep 25 s) was started for the probe of SEC-TEAM-01 and stopped by its exact process id.",
+      "result": "Done as asked."
+    },
+    {
+      "check": "Process stop (REQ-010 section 5.6) on the PC where the owner works (Windows): a probe of proc.js outside the project",
+      "how": "Script <scratch>/aud002/sec-team/procprobe.mjs imports the proc.js of the fixed copy, starts a node child (detached, sleeps 25 s), calls process.kill(-pid, 0) and stopGroup(pid, {graceMs:3000, waitMs:5000}), then checks the child with process.kill(pid, 0) and stops it by its exact pid; Node 22.23.4",
+      "result": "Finding SEC-TEAM-01."
+    },
+    {
+      "check": "Permission model on this PC: a probe of the mode bits outside the project",
+      "how": "node -e in <scratch>: mkdirSync(d, {mode: 0o700}), chmodSync(d, 0o700), lstat; writeFileSync(f, {mode: 0o600}); typeof process.getuid; fs.constants.O_NOFOLLOW",
+      "result": "Finding SEC-TEAM-02 (dir mode 666 after chmod 700, file mode 666, getuid undefined, O_NOFOLLOW undefined)."
+    },
+    {
+      "check": "Node version of the part (DEP-02)",
+      "how": "Named only",
+      "result": "Open CRITICAL ISS-0092 (Node 22.21.1 behind security releases) covers it; not repeated."
+    },
+    {
+      "check": "Open defects of the part that were not reported twice",
+      "how": "Read the heads of ISS-0058, ISS-0093, ISS-0097, ISS-0098, ISS-0119, ISS-0121, ISS-0122; grep docs/issues for stopGroup, process group, O_NOFOLLOW and Windows",
+      "result": "ISS-0058 (open, Medium: M7 hides three-part hosts), ISS-0097 and ISS-0098 (open: residual risk 7 of findSecrets and Low test gaps) were not repeated. ISS-0093, ISS-0119, ISS-0121 and ISS-0122 are closed and their fixes were found in the code as described. No open defect covers SEC-TEAM-01 or SEC-TEAM-02."
+    },
+    {
+      "check": "Record of GitHub for the team and web files (rule of this PC)",
+      "how": "git diff --name-status e0a425b f72eaa7 -- tools/src/team tools/src/web tools/test/team-security.test.js tools/test/team-web-guard.test.js tools/test/fixtures/team; gh run view 44919421116 --json conclusion,headSha",
+      "result": "The diff prints exactly two files: M tools/src/team/cli.js and M tools/src/web/main.js (both only add the call refuseBelowNodeFloor of REQ-110 and its import). Every other file of the part, and the tests exec-*.js, team-*.js, team-web-*.js and the fixtures, are byte-equal to main, so they are covered by the record of main: check run 44919421116, conclusion success, headSha e0a425b (2226 tests pass, 0 fail, 0 skipped; e2e team-web 7). That record was made on ubuntu-24.04 (check.yml line 18), so it says nothing about Windows. The two changed files have no run on GitHub for the work line (runs 44875023688, 44875030768, 45034277858 are red at handoffs-check): their guard is not checked."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Real isolation of the Claude Code session: that --restricted limits Read, Write, Edit, Glob and Grep to the work folder, that --safe-mode loads nothing of the owner's settings, that --permission-prompts none denies an unlisted site, and how WebFetch treats a redirect to another site",
+      "why": "It needs a real Claude Code session and the owner's money (gate G2); the code only passes the flags (design REQ-010 section 5.2 cites the help of version 2.1.289). Only reading of the argument list was done, and the tests with a fake binary (exec-*.js) were read as names, not run."
+    },
+    {
+      "check": "Whether the child process starts and works on Windows with the short environment (no USERPROFILE, SystemRoot, TEMP, APPDATA, PATHEXT) and with a claude command that is a .cmd shim (shell:false)",
+      "why": "Needs a real Claude Code binary on this PC; it is not installed in the audit shell (command not found). The same repository gives SystemRoot to the e2e stand (tools/README.md line 847) but not to the executor. A failure here is closed (the run does not start), not a leak."
+    },
+    {
+      "check": "Any statement that the check of the work line passes for cli.js and web/main.js (the node-floor guard), and tools/test/current-docs.test.js and the REQ-110 guards",
+      "why": "No record on GitHub for the work line (runs red at handoffs-check, step 4 of 6, so tests never ran); the rule of this PC forbids running the tests here."
+    },
+    {
+      "check": "Timing, flakiness and order dependence of the exec and team-web tests; anything that needs a browser (the look of the page)",
+      "why": "Only a live run gives it; no browser was started."
+    },
+    {
+      "check": "Scripted executor and the command queue of the engine (engine/channel.js, 950 lines) read line by line",
+      "why": "Economy: the message names, nonces and the checks of the files in inbox/ were read in the parts that touch paths (lines 99-100, 209, 300-330, 375, 632, 925-950); the rest was not read. The folder is 0700 by design and its content can be planted only by the same user (tools/README.md line 493)."
+    },
+    {
+      "check": "Concurrency and denial of service of the local server (many simultaneous project creations, slow readers of GET answers, the size of events.jsonl read whole)",
+      "why": "Would need a server and a load run; the server was not started. Reading shows body limits and idle timeouts for POST only."
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-TEAM-01",
+      "check": "Process group of the executor is stopped after a timeout, a cancel, too much output or a server shutdown (REQ-010 section 5.6; extra check 1, the executor)",
+      "severity": "High",
+      "title": "On Windows stopGroup reports 'the group is gone' without stopping anything: the Claude Code process keeps running (and spending) after a timeout or a cancel",
+      "where": "tools/src/team/executors/proc.js lines 14-31 (process.kill(-pid, ...)), tools/src/team/executors/claude-cli.js lines 229-247 (stop) and 207-214 (detached: true)",
+      "evidence": "The code stops the group with process.kill(-pid, sig) and reads 'group gone' from the error code ESRCH (proc.js:16-19 and 26-28). A negative pid is a POSIX group address. Probe on this PC (win32, Node 22.23.4), script <scratch>/aud002/sec-team/procprobe.mjs importing the proc.js of the fixed copy: output 'platform win32 child alive before true' / 'kill(-pid,0) error code: ESRCH groupAlive: false' / 'stopGroup returned true after ms 0' / 'child really alive after stopGroup: true' / 'child alive after direct kill by exact pid: false' (the child was stopped by the probe itself by its exact pid). So stopGroup returns true at once, sends nothing to the process, and groupAlive says false while the process is alive. In run(), stopping.then(...) calls forceCloseSoon only if the process has exited or the group is stuck (claude-cli.js:242-245), and groupStuck is never set here, so after a timeout or a cancel the attempt waits for 'close' of a process that nobody stopped; the timeout (default 1,200,000 ms) and the cancel therefore do not end the model process. The tests of the group (exec-group.test.js) ran on ubuntu-24.04 only (check.yml:18), the code has no branch for win32 (grep process.platform|win32 in tools/src: no match).",
+      "item": "Q10 and REQ-010 section 5.6 (a process of an attempt does not outlive the attempt); the money ceiling of the project (the stop is the last guard of the cost)",
+      "recommendation": "In tools/src/team/executors/proc.js add a Windows branch: stop the tree of the process with taskkill /PID <pid> /T (then /F after the grace time) and answer groupAlive by asking whether the pid exists (process.kill(pid, 0)) plus the descendants, or run the child inside a Windows job object; do not return true from goneWithin when nothing was sent. Until then claude-cli.js check() should refuse a real run when process.platform is win32 (new E_ code, texts in language.js), so the gate of G2 cannot be passed on the PC that cannot stop the process. Add a test of the Windows branch that starts a sleeping child and requires it to be gone (a Windows runner in check.yml or a documented 'not checked on Windows')."
+    },
+    {
+      "check": "Permissions of the data folder and the journal ('closed to other users', README: folders 0700, files 0600; links not followed); extra check 1",
+      "severity": "Medium",
+      "id": "SEC-TEAM-02",
+      "title": "On Windows the mode bits 0700/0600, the owner check and O_NOFOLLOW do nothing, and the code neither says so nor checks the folder access list",
+      "where": "tools/src/team/home.js lines 90-97 (ownUid, isOwn), 160-167 and 246-275 (ensureHome, ensureModes, wider), files.js:12, journal.js:17, runner.js:49, engine/channel.js:99, executors/scripted.js:36 (O_NOFOLLOW); tools/README.md lines 251 and 493",
+      "evidence": "Probe on this PC (win32): mkdirSync(d, {mode: 0o700}) then chmodSync(d, 0o700) gives lstat mode 666; a file written with mode 0o600 has mode 666; typeof process.getuid is 'undefined' (so isOwn returns true for every owner: home.js:94-96); fs.constants.O_NOFOLLOW is undefined (so NOFOLLOW is 0 in files.js, journal.js, runner.js and the flags of channel.js and scripted.js). Consequences read in the code: wider(st, 0o700) is true on every start, so every write command prints 'Права сужены до 0700' although chmod changed nothing, and the real protection is only whatever access list the folder inherits (the default under the user profile is the owner, the administrators and the system; a folder named in SAI_TEAM_HOME on another drive may be readable by other users). README line 493 builds the trust in the inbox and in the journal on 'the folders are 0700'. A link planted between the lstat and the open is not stopped by the flag on Windows (files.js readWorkFile compares dev and ino, which covers that read only).",
+      "item": "Q7 (the journal and the results are kept where an outsider does not read them); README section 'Rights' versus the files",
+      "recommendation": "In tools/README.md (line 251 and 493) say that the 0700/0600 guarantee holds on Linux and macOS only and that on Windows the folder must lie under the user profile. In tools/src/team/home.js: on win32 do not print the false 'narrowed' notice, and warn (or refuse, as E_HOME) when SAI_TEAM_HOME is outside the user profile folder; optionally set an owner-only access list with icacls on creation of <home>. Add a test for the win32 branch of ensureHome that does not depend on mode bits."
+    }
+  ],
+  "summary": {
+    "counts": {
+      "Critical": 0,
+      "High": 1,
+      "Medium": 1,
+      "Low": 0
+    },
+    "checks_done": 17,
+    "checks_not_done": 6,
+    "main_point": "On Linux and macOS the part is sound: no secret in code, tests or fixtures (all fakes), the server is loopback-only with Host, Origin, page key and access cookie (ISS-0122 holds), the page inserts only text, paths and names cannot leave the project folder, secrets in result files are refused and not rewritten, and a real model run cannot start without SAI_TEAM_REAL_RUNS=1 and a project budget (gate G2 holds). The weak point is Windows, the PC where the owner works now: the process stop does nothing (High) and the file permission model is not enforced or announced (Medium). ISS-0092 (Node version) is open and named, not repeated.",
+    "doubts": [
+      "D1. The effect of the flags --restricted, --safe-mode and --permission-prompts none is taken from the design; --allowedTools lists Read, Write, Edit, Glob, Grep without a path limit, so the confinement to work/ rests wholly on --restricted in a real session (not checked).",
+      "D2. isDomain checks names only: a name an owner puts into SAI_TEAM_WEB_DOMAINS that resolves to a local address passes, and the deny list names only literal local hosts; whether WebFetch checks the resolved address was not checked. The allow list is set by the owner, so the risk is small.",
+      "D3. WebSearch stays for the Researcher without an allow list (ISS-0119 closed it for WebFetch only); data could in principle go out in a search query. Not tested, left as a doubt.",
+      "D4. The name of a result file is stored unmasked by design (pattern only); a prompt-injected model could put a short value into the name. Local journal only; not reported."
+    ]
+  }
+}

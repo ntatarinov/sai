@@ -1,0 +1,192 @@
+{
+  "audit": "AUD-002",
+  "part": "app",
+  "dimension": "security",
+  "role": "SECURITY-AUDITOR",
+  "subject": "f72eaa7",
+  "checked": [
+    {
+      "check": "Q7 secrets in the working tree of app/ (code, config, pages, tests, README, compose, Dockerfile, .env.example)",
+      "how": "grep over app/ for postgres://user:password@, npg_, sk-, ghp_, AKIA, private-key headers, vercel_ tokens, JWT heads, and for password|secret|token|api_key assigned a quoted literal; every match read by hand",
+      "result": "No secret. The only postgres:// strings with a password slot are built from variables (compose.yaml:19 ${POSTGRES_PASSWORD:?required}; test fixtures use a MARK variable and the fake user owner_x). .env.example holds empty values only. The CI passwords are made per run with openssl rand and masked (app.yml lines 71-76, 104-110)."
+    },
+    {
+      "check": "Q7 secrets in the git history of app/",
+      "how": "git log -p --all --since=2026-10-01 -- app, added lines searched with the same patterns; git log --all --name-only -- app searched for .env, .pem, .key, credentials, .vercel",
+      "result": "16 commits touch app/; no secret pattern in any added line; the only env-like files ever committed are app/.env.example and app/.vercelignore. .gitignore lists .env, .env.* (except .env.example) and .vercel/."
+    },
+    {
+      "check": "Q7 secrets in logs, errors and server answers",
+      "how": "read server/app.js, http/errors.js, db/index.js, config.js, db/migrate.js; GET /api/health, /api/nope on production",
+      "result": "Met. Errors carry a fixed code only: errorBody gives {\"error\":\"<code>\"}; onError drops the exception (no stack, no name); DbError replaces the client message by a fixed text (db/index.js 20-35, the client message holds host and port); ConfigError names the variable, never its value; the request log line holds ts, level, req_id, route, status, ms, code (no path, no query, no body). Production answers read: health body {ok, db, role, migrations_pending, version, node}, 404 body {\"error\":\"not_found\"}."
+    },
+    {
+      "check": "Q10 input from the network: size, type, encoding (every route)",
+      "how": "read server/http/body.js, server/app.js 93-131, routes/demo.js, api/index.js, vendored engine",
+      "result": "Met for size and shape. Body: 64 KiB limit, Content-Length checked first and the stream counted and cancelled at the limit (a missing or false length is covered), a body on any method and path is read through the same code in the same middleware, before routing and before the static files; the gate answers before the body is read. POST /api/demo/result: UTF-8 decode with fatal, JSON.parse in try, exactly one key answers, answers must be an object, then the engine checks every question id, kind and option (unknown key -> unknown_question, wrong type -> wrong_kind, unknown id -> unknown_option); the answer is built field by field from strings only. lang comes from ?lang= alone and is picked from a fixed list (pickLang). The Vercel entry restores the path from __p with a segment pattern [A-Za-z0-9._~-]+, refuses . and .., needs exactly one __p and at most 2048 characters. Content type and origin are not checked: see SEC-APP-01."
+    },
+    {
+      "check": "Extra check (2): protection sits in the same operation as the action, not only in a front layer",
+      "how": "read server/app.js order of middlewares, api/index.js, scripts/vercel-build.js, vercel.json, docs/runbooks/incident.md",
+      "result": "Met. Gate (SITE_GATE), body limit and preview-host check are middlewares of the one Hono app that every route and every static path passes (app.js 93-131); routes are registered after them. In the function the gate answers 503 site_closed for every /api path and opens no database (createFunctionApp: db stays null when siteGate). The static layer of the platform is closed separately by the build (vercel-build replaces public/ by the gate page, pinned by sha256 GATE_SHA256, fail closed). Two independent layers. The runbook says a changed SITE_GATE acts only for a new deployment and gives the redeploy step. The security headers are set in code for every answer (app.js 57-60) and repeated for the static layer in vercel.json; production static answers carry all of them."
+    },
+    {
+      "check": "Extra check (3): app/server/vendor/picker-engine.js is a pinned copy of tools/src/picker/engine.js and takes no input the original does not validate",
+      "how": "sha256sum of both files; git diff --stat e0a425b f72eaa7 -- tools/src/picker/engine.js app/server; read the whole copy (256 lines) and its use in routes/demo.js",
+      "result": "Met. Both files sha256 a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe, equal to app/vendored.json; no difference between main e0a425b and the head in the engine or in app/server. The engine is pure (no import, no file, no clock, no environment), checks every answer strictly in computeResult/strictWalk, uses Object.hasOwn, and a key named __proto__ of a parsed body is only an unknown question key. The route passes it a tenant copy and an object that is known to be an object; nothing else reaches it. Input size is capped before (64 KiB)."
+    },
+    {
+      "check": "Q8 isolation of customer data",
+      "how": "read server/routes/index.js, routes/demo.js, routes/health.js, db/*, migration 0001",
+      "result": "Not applicable to the code as it is: no route reads or writes customer data; all three routes carry meta.tenant false; the demo routes touch no database; health reads only schema_migrations; no space identifier is read from a request. The database holds only schema_migrations and platform_settings (the latter has no grant to the app roles). When a tenant route appears, Q8 applies at once."
+    },
+    {
+      "check": "Q9 SQL only with parameters",
+      "how": "search of server/ and api/ for .query( and .exec( and for template literals with select|insert|update|delete|alter; each place read",
+      "result": "Met. Every statement is a constant or takes values through $1, $2 (migrate.js 60-117, health.js 46, selfcheck.js 11). The one dynamic statement is PASSWORD_BLOCK, a constant do-block that quotes the password with format('%L') from current_setting; the password itself goes in as a bound parameter of set_config (migrate.js 112-115) and the block's handler replaces any error text. exec(file.text) runs migration files from the repository, not network input."
+    },
+    {
+      "check": "Q11 and decision 0116 О22: external addresses and outside calls",
+      "how": "search of server/ and api/ for node:https, node:http2, node:net, node:tls, node:dns, child_process, fetch(, XMLHttpRequest, axios, undici",
+      "result": "Met by absence: the server makes no outbound request; node:http is imported only by node-main.js (server part only); the only outside connection is the database client pg through server/db/pg.js. No address is taken from a request. The 307 redirect of the preview host takes its origin from the configured APP_ORIGIN only and sets the request path as a path (comment app.js 122-124; Host and X-Forwarded-Host are never read). R3 not applicable (decision 0033)."
+    },
+    {
+      "check": "Security headers, cookies, caching",
+      "how": "read server/http/headers.js and vercel.json; GET on production of /, /nope, /api/health, /api/nope, /api/demo/questionnaire?lang=kk (response headers)",
+      "result": "Met. CSP default-src 'self' with no unsafe-inline, no inline style and no inline script allowed, object-src none, base-uri none, frame-ancestors none; HSTS 1 year; nosniff; X-Frame-Options DENY; Referrer-Policy no-referrer; Permissions-Policy; COOP same-origin; X-Robots-Tag noindex; every /api answer has Cache-Control no-store; X-Request-Id is a server-made UUID, never taken from the request. No cookie is set anywhere (grep document.cookie and Set-Cookie: none in app/). Platform-added on static files: Access-Control-Allow-Origin * (public static files only, no credentials) and Server: Vercel; noted, not a finding."
+    },
+    {
+      "check": "Error answers: no stack, no internal names",
+      "how": "read app.js onError, errors.js, api/index.js, health.js; production GET /api/nope, /api/index (no __p), /server/app.js, /package.json",
+      "result": "Met. Unknown /api paths answer the one body {\"error\":\"not_found\"}; unknown pages the 404 page; /api/index alone answers the same uniform 404; source paths /server/app.js and /package.json answer the 404 page (outputDirectory is public). A config error becomes {\"error\":\"server_config\"} with a log line carrying the code only. /api/health tells db, role, migrations_pending, version (short commit) and node version: a recorded decision (0116 О5), so not reported."
+    },
+    {
+      "check": "Static file serving, path traversal",
+      "how": "read server/static.js, scripts/public-set.js, scripts/vercel-build.js (refuseLinks)",
+      "result": "Met. The server reads app/public once into a map and looks a request path up exactly; a request path is never joined to a folder; file names must match a segment pattern; only listed extensions; size caps 2 MiB and 8 MiB. The build refuses a symbolic link in the public folder before copying. Only GET and HEAD are served."
+    },
+    {
+      "check": "The pages (app/public): every write into the DOM, every use of innerHTML or equivalent",
+      "how": "search of app/public for innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function, createContextualFragment, DOMParser, srcdoc, .src=, .href=, location., localStorage, document.cookie, postMessage, setAttribute, querySelector with data from the server; read public/js/dom.js (el, applyTexts, pref) and the fetch/answer path of public/js/pages/demo.js; head diff of REQ-113 (css, how.html, demo.js, texts.js) scanned for added risky forms",
+      "result": "Met. Nothing writes markup: nodes are made by el() with textContent and append; an attribute name style or on... is refused by el(); the only dynamic setAttribute values are fixed words or numbers; the answer of the server reaches the page only as text nodes (labels, names, summaries); the only href values are the constants / and /how.html#describe-idea; the stage uses style.setProperty with numbers (allowed under the CSP). Local storage holds two keys, sai-lang and sai-theme, read only after a one-word pattern check. check-public.js bans the same forms in every served file and the CI check job runs it. The four files changed at the head hold no added risky form; they are covered by the code review of the same forms but not by a record of the head for the tools part, see not_checked."
+    },
+    {
+      "check": "Database role and rights",
+      "how": "read db/migrations/0001_init.sql, db/selfcheck.js, db/index.js (ensureSafe), node-main.js, config.js",
+      "result": "Met. Roles sai_app and sai_preview are nologin nosuperuser nobypassrls; the login role sai_app_login is nosuperuser nobypassrls and is a member of both; grants are usage on schema public and select on schema_migrations to sai_app only (platform_settings gets none); no password in SQL (set by the runner from APP_DB_PASSWORD). No statement runs before the selfcheck, which reads every role the session user is a member of and folds them in one reading; no row or a true flag reads as unsafe; node-main exits on unsafe and the function answers role unsafe with 503. An absent APP_DB_PASSWORD means the owner URL is used as the runtime URL, and the selfcheck then refuses it (fail closed). Real Postgres behaviour is covered by the pg job of GitHub run 45031353708 (success), which I read, not ran."
+    },
+    {
+      "check": "Dockerfile, compose.yaml, .vercelignore, .npmrc, what the image and the upload leave out",
+      "how": "read all four files; git ls-tree of app/",
+      "result": "Met. Image: base pinned by digest and Node 22.23.4, npm ci --omit=dev with ignore-scripts, selective COPY of server, public, db, content only (no tests, no scripts, no docs, no .git, no vendored.json), USER node, healthcheck on 127.0.0.1. compose publishes only 127.0.0.1:8080, passwords only from the environment with a required marker, db image pinned by digest, no db port published. .vercelignore is an allowlist (api, server, public, content, scripts, db, package files, .npmrc, vercel.json) so tests, README, compose and Dockerfile are not uploaded. .npmrc: save-exact, engine-strict, ignore-scripts. The Docker host binds 0.0.0.0 inside the container only."
+    },
+    {
+      "check": "Dependencies as used: @hono/node-server 2.1.6, hono 4.13.16, pg 8.23.1",
+      "how": "read package.json and the lock; npm audit --omit=dev --package-lock-only and npm audit --package-lock-only in the fixed copy (Node 22 on PATH); search of the use of each package",
+      "result": "Runtime: 0 known vulnerabilities (16 production packages). The three are pinned exactly. hono is used only for routing, with getPath overridden to the raw path (app.js 40, so a percent-encoded /%61pi/health cannot reach a handler as a page); @hono/node-server only getRequestListener in node-main.js; pg only in db/pg.js. Dev tree: 1 moderate advisory, see SEC-APP-04."
+    },
+    {
+      "check": "Extra check (1): production, harmless GET requests",
+      "how": "9 GET requests to the production site in total: /api/health, /api/nope, /, /nope, /api/demo/questionnaire?lang=kk, /server/app.js, /package.json, /examples.html, /api/index. No POST, no load.",
+      "result": "Production serves main (version e0a425b in the health body); headers as above; examples.html answers 404 (public set, as the README says); source and package files are not served; no cookie. The head differs from production in 6 REQ-113 files, which were read from git, not probed."
+    },
+    {
+      "check": "Open defects of the part: ISS-0124, ISS-0125, ISS-0126, ISS-0127, ISS-0129",
+      "how": "read the titles and scope of the five files in docs/issues/",
+      "result": "All five are about wording, layout, Kazakh text and the CI coverage of REQ-108 criteria; none touches security, so nothing of this report repeats them. No finding here rests on the parts of REQ-108 criteria 2, 11 and 14 that ISS-0129 names."
+    },
+    {
+      "check": "GitHub record of app/ as it is at the head",
+      "how": "gh run view 45031353708 --json conclusion,headSha,jobs",
+      "result": "Run on commit 0c50fc2b0930dc3f0f9343c74c1aa3633593a16a: conclusion success, jobs check, pg, docker, e2e all success. The handoff states app/ equals the head; I read the run result, I did not re-compare the commit trees."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Behaviour of the live site under the head (the 6 REQ-113 files)",
+      "why": "Production serves main; the head is not deployed. The files were read in git only. Any statement about how the head behaves in a browser has no record read by me beyond app run 45031353708."
+    },
+    {
+      "check": "Whether the production DATABASE_URL carries sslmode=require, and the real environment values of the Vercel project (SITE_GATE, APP_ORIGIN, PREVIEW_ORIGIN, MIGRATE_ON_BUILD, who holds the owner credentials)",
+      "why": "Environment values are not readable from the repository or from a GET; reading them needs the owner's Vercel account. Reported as SEC-APP-03 and SEC-APP-05 for the code side only."
+    },
+    {
+      "check": "POST requests to production, load, scanning, attempts to reach the database, a malformed or oversized body against the live function",
+      "why": "Forbidden by the handoff (no POST, no load). The body limit and the parsing were read in code and are covered by the unit and integration tests, which I read by their names and did not run."
+    },
+    {
+      "check": "Running any test, a local server, or a request against a local copy of the app",
+      "why": "Not allowed on this PC for this audit (npm run check, node --test and the e2e tests are forbidden). The result of the tests is taken only from the GitHub record."
+    },
+    {
+      "check": "Vercel platform settings: deployment protection, firewall and rate limits, log retention, who can read the logs",
+      "why": "Platform configuration is outside the repository; no access."
+    },
+    {
+      "check": "Real Postgres rights of sai_app_login on the production database (for example the create privilege on schema public, the server's statement logging)",
+      "why": "Needs the production database. Read from migration text and from the pg job record only. The README states the statement-log limit itself."
+    },
+    {
+      "check": "Tests of the head that exercise tools/ files which differ between main and the head (the hash-covered picker engine is byte-equal and so out of this rule)",
+      "why": "No green record on GitHub for the work line (check runs red at handoffs-check); no finding rests on them."
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-APP-01",
+      "check": "Q10 input from the network: content type and origin of a request that carries a body",
+      "severity": "Low",
+      "title": "POST /api/demo/result checks neither the Content-Type nor the Origin of the request",
+      "where": "app/server/app.js:102-131 (the body middleware reads any body), app/server/routes/demo.js:197-209 (the route parses the bytes as JSON whatever the type was)",
+      "evidence": "Search of app/server and app/api for content-type, origin and sec-fetch in request handling: the only reads of a request header are content-length (http/body.js:12) and the Host of the request URL (http/origin.js:45). A text/plain or form POST from another site is parsed and answered 200 like an application/json one. Impact is nil today: the route stores nothing, sets no cookie, reads no cookie, answers no CORS header, so a foreign page cannot read the answer; it only costs a CPU run of the engine.",
+      "item": "Q10",
+      "recommendation": "Hardening for the day the first state-changing route appears (M2): in the body middleware of app/server/app.js refuse a POST whose Content-Type is not application/json with 415 and a stable code, and refuse a browser request whose Origin or Sec-Fetch-Site names another site; add the two codes to app/server/http/errors.js and tests in app/test/int. Not urgent now."
+    },
+    {
+      "check": "Q10 an error of one request does not break others; availability of a public function that uses a paid database",
+      "severity": "Low",
+      "title": "GET /api/health is public, uncached (Cache-Control no-store) and runs one database statement on every request, with no limit on the caller",
+      "where": "app/server/routes/health.js:33-66, app/server/app.js:59-60, app/server/db/pg.js:21-29",
+      "evidence": "Production: GET /api/health returns 200 with {\"ok\":true,\"db\":\"ok\",\"role\":\"ok\",\"migrations_pending\":0,...} and the header Cache-Control: no-store (and X-Vercel-Cache: MISS). The handler calls db.query(\"select name, sha256 from schema_migrations\") each time; the pool has max 3 connections and query_timeout 3000 ms, so a flood queues behind 3 connections and each caller waits up to 4 s, but nothing in the code limits the rate. docs/design/V1-public-look.md:1678 records «no rate limit in M1» for the demo only, not for health.",
+      "item": "Q10",
+      "id": "SEC-APP-02",
+      "recommendation": "Decide and record whether health needs a limit. Cheapest fix: let the platform cache the answer for a few seconds (Cache-Control: public, s-maxage=5 for the 200 answer, in app/server/app.js or health.js) or add a Vercel firewall rate rule on /api/health; keep no-store for the 503 answers. The Docker healthcheck calls the same path and is not affected."
+    },
+    {
+      "id": "SEC-APP-03",
+      "check": "Q7 secrets in transit (the database password on the network)",
+      "severity": "Low",
+      "title": "The code does not require TLS for the production database connection; it relies on the URL holding sslmode",
+      "where": "app/server/config.js:42-58 and 93-104 (only the scheme is checked), app/server/db/pg.js:22-29 (no ssl option)",
+      "evidence": "readConfig(production) accepts any postgres:// URL; createPgAdapter passes connectionString and no ssl option, so the pg client uses TLS only if the URL says so (the unit test db-config.test.js builds its URLs with ?sslmode=require, but nothing enforces it). A DATABASE_URL without the parameter would send the login role's password and every statement in clear text over the internet. I could not read the production value (not_checked), so this is a missing guard, not a known leak.",
+      "item": "Q7",
+      "recommendation": "In app/server/config.js, when NODE_ENV=production and the host of DATABASE_URL is not loopback or the compose service name, refuse a URL whose query has no sslmode=require (or verify-full) with a ConfigError that names the variable; add a unit test in app/test/unit/db-config.test.js. Compose and CI use plain TCP inside one host and need the loopback/db exception."
+    },
+    {
+      "id": "SEC-APP-04",
+      "check": "Dependencies with a known vulnerability (dev tree of app/)",
+      "severity": "Medium",
+      "title": "The dev tree holds minimatch with a moderate advisory (denial of service by globparts amplification), pulled by eslint 10.11.0",
+      "where": "app/package.json:29 (eslint 10.11.0), app/package-lock.json (minimatch, @eslint/config-array)",
+      "evidence": "npm audit --package-lock-only in the fixed copy: minimatch 7.0.0 - 11.0.0, moderate, GHSA-g3hv-75wg-m249 (advisory 1244623), reached through @eslint/config-array 0.23.0 - 0.23.5 and eslint 10.0.0-alpha.0 - 10.14.0; fix reported: eslint 10.15.0. npm audit --omit=dev: 0 vulnerabilities (16 production packages). It is not on a runtime path: the Docker image installs with --omit=dev, the function does not import eslint; it runs in the owner's and CI's lint run on trusted files. By the WF-05 scale a known vulnerability is High; I set Medium because the package is dev-only and not reachable from the internet. AUDIT-COMPILER may rescale.",
+      "item": "Q7 (supply chain), WF-05 dependencies",
+      "recommendation": "Raise eslint to 10.15.0 or later in app/package.json (and the lock) in the next dependency step, together with the rule that prettier/eslint versions are pinned exactly (save-exact is already set). Re-run npm audit afterwards."
+    },
+    {
+      "id": "SEC-APP-05",
+      "check": "Least privilege of the runtime process",
+      "severity": "Low",
+      "title": "The function and the container hold the owner's database URL at run time, although they only need the login role",
+      "where": "app/server/config.js:88-93 and 118-120, app/compose.yaml:19, app/Dockerfile:15 (migrate and server run from the same environment)",
+      "evidence": "The runtime URL is built from DATABASE_URL (the owner's host, database and, in compose, the superuser postgres password) plus the login role and APP_DB_PASSWORD (runtimeUrl, config.js:68-73; decision 0116 О17). So the process environment of the function and of the web container contains the owner's password, and migrationUrl is DATABASE_URL_UNPOOLED. The role selfcheck refuses the case of an owner connection by mistake (selfcheck.js), which covers an error of configuration but not a code-execution flaw that reads process.env. This is the recorded design of decision 0116 О17; I report it for the owner's awareness, not as a divergence.",
+      "item": "Q7",
+      "recommendation": "When M2 brings real customer data: give the runtime a separate variable that holds only the login role URL (host, database, role, password) and keep the owner URL available only to the migration step (a build-time variable or a separate Vercel environment scope; in compose, a second service or a one-shot migrate service). Needs an owner decision and an amendment of decision 0116 О17."
+    }
+  ],
+  "summary": {
+    "counts": { "Critical": 0, "High": 0, "Medium": 1, "Low": 4 },
+    "checks_done": 19,
+    "checks_not_done": 7,
+    "text": "app/ is in good shape on security: no secret in the tree or the history, no markup written into pages, all SQL parameterised, no outbound call, a uniform error shape with no stack, strong headers on every answer, the gate and the body limit in the same app that serves every route (and a second gate layer in the build), a role selfcheck that fails closed, and a vendored engine that is byte-equal to its source and validates every answer. Five small points: one dev-only advisory in minimatch behind eslint (Medium by my reading of reachability), and four Low hardening points (no content-type or origin check for POST, no limit on the public health route that queries the database, TLS to the database is left to the URL, and the owner's database credentials are present in the runtime environment by recorded decision). Production was probed with 9 GET requests only; the live database value of sslmode and the Vercel settings could not be read."
+  }
+}

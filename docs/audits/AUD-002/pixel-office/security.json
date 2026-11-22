@@ -1,0 +1,175 @@
+{
+  "audit": "AUD-002",
+  "part": "pixel-office",
+  "dimension": "security",
+  "role": "SECURITY-AUDITOR",
+  "subject": "f72eaa7",
+  "checked": [
+    {
+      "check": "Secrets in code, settings, page files, fixtures, docs, handoffs and reports (Q7, AP-001)",
+      "how": "grep -rIhoE over the whole fixed copy with the shapes sk-, ghp_, github_pat_, AKIA, xox, AIza, vcp_, JWT; the distinct matches were listed and read one by one; git ls-files for .env, .pem, .key, secret, credential names; app/.env.example read with values hidden",
+      "result": "21 distinct matches, all made-up test values (AKIAFAKEFAKEFAKE1234, AKIAIOSFODNN7EXAMPLE, AKIAZZZZEXAMPLE00001, sk-ant-abcdefghij1234567890, ghp_FAKE..., a JWT whose payload decodes to a fake subject) or ordinary words that begin with sk- (task-, risk-, ISS file names). No real secret. app/.env.example has empty values. The page files (tools/src/pixel-office/public) hold no key."
+    },
+    {
+      "check": "Fixtures with secrets: tools/test/fixtures/pixel-office must hold only fake values (extra check 3)",
+      "how": "ls and wc -l of the folder (3 files, 15 lines); grep for prompt_text, note_text, sk-, ghp_, AKIA, Bearer, password, token, secret in them; read events-fresh.jsonl",
+      "result": "The folder holds three event journals (events-fresh, events-restart, events-stale) with session ids like sample-s4 and the description text Образец. No secret-shaped value, no prompt_text, no note_text. Met."
+    },
+    {
+      "check": "The server listens only on 127.0.0.1 and answers only to its own Host header",
+      "how": "Read server.js (listen: server.listen(requestedPort, HOST), HOST = 127.0.0.1 in config.js; route step 1 compares req.headers.host with 127.0.0.1:port and localhost:port). Ran the server of the fixed copy on port 0 in the agent's own folder with a state folder of its own and sent requests (probe script in the agent's folder).",
+      "result": "Host evil.example:PORT gives 403, no port in Host gives 403, a cookie-bearing read with a foreign Host gives 403, localhost:PORT gives 200. The bind address is a constant; no option or environment variable changes it. Met."
+    },
+    {
+      "check": "An event is written only one way: a request with the signature of the secret; no signature or a time far from the clock is refused (decision 0005, REQ-001)",
+      "how": "Read protocol.js (signBody, verifySignature with timingSafeEqual, validateWriteBody, WRITE_SKEW_MS = 60000 in public/schema.js) and server.js signedObject, processEvent, processNote; ran the probe against a live test server",
+      "result": "POST /api/events without signature 401; wrong signature 401; the read key used as a signature 401; a body 120 s old 400 time_skew; a body 120 s in the future 400 time_skew; the correct pair 204; the same pair again 409 replayed; a body with a source field 400 has_source; an unknown key 400 unknown_key:evil; a __proto__ key 400 unknown_key:__proto__; 20000 bytes 413 too_large (BODY_MAX 16384, rest drained with a limit); not JSON 400. The signature is checked before the JSON is parsed, in constant time. Met for the event path. The note path has a gap: see SEC-PO-01."
+    },
+    {
+      "check": "Reads of the journal need the read key (ISS-0122, fixed in the head)",
+      "how": "Read protocol.js readKeyOf, readAllowed, linkKeyValid and server.js route; probe",
+      "result": "GET /api/events without key 401, wrong key 401, the write secret given as a key 401, the right key in the header 200. The key is an HMAC of a label under the secret, compared in constant time; the cookie is HttpOnly, SameSite=Strict. The link GET /?k=<key> answers 303 with the cookie. Met. One weaker point is SEC-PO-03."
+    },
+    {
+      "check": "The page only reads (extra check 1, page part)",
+      "how": "grep -n for fetch(, XMLHttpRequest, sendBeacon, WebSocket, EventSource, method in tools/src/pixel-office/public/*.js; read app.js getJson",
+      "result": "The only network call is getJson in app.js: fetchFn(url, {method: GET}) with a relative address; boot.js only passes window.fetch. No POST, no beacon, no socket. The CSP of the page is default-src 'self', connect-src 'self', form-action 'none', frame-ancestors 'none', object-src 'none'. Met."
+    },
+    {
+      "check": "R2 and the write permissions: nothing in the whole project writes Pixel Office events outside the hook and the signed note path (extra check 1)",
+      "how": "grep -rn for events.jsonl, api/events, api/note, .sai-pixel-office, SAI_PIXEL_OFFICE_DIR, write-secret, x-pixel-office-signature over the fixed copy without tools/test, docs, handoffs, reports, runs and the pixel-office folder; then tools/test; the 7 hook entries of .claude/settings.json read; the code of the folder searched for demo, sample, fake, mock, Math.random",
+      "result": "Outside the folder the only matches are tools/src/team (events.jsonl of a team project, a different journal of REQ-009, not the Pixel Office journal) and app/ (the Pixel Office look in app/public/office, which has no write code). Inside the folder the writers are exactly hook.js (signed POST), note.js (signed POST /api/note), and the server (journal.append). Tests that sign bodies (pixel-office-server, -hook, -note, -page, -panels tests, e2e/pixel-office.e2e.js) run on a server of their own; pixel-office-helpers.js refuses any environment whose HOME or SAI_PIXEL_OFFICE_DIR is outside the temporary folder and any use of port 4780 (assertSafeEnv, HK-17). No event is written in advance in the code. Met. Settings: 7 hook entries (SessionStart, SessionEnd, UserPromptSubmit, Stop, SubagentStart, SubagentStop, PostToolUse), each runs hook.sh with output dropped and exit 0."
+    },
+    {
+      "check": "A signed body is accepted once (ISS-0123, closed)",
+      "how": "Read server.js replayed(), REPLAY_KEEP_MS = 2 * WRITE_SKEW_MS; probe with a controllable clock",
+      "result": "Hook events: replay 409 inside the window, and after the window the body is refused by the time check, so the replay is closed. Notes: replay is refused only for 120 s; see SEC-PO-01 (the closed defect named this place itself and the fix does not cover it)."
+    },
+    {
+      "check": "File paths do not leave their folder: static files, state files, journal (state-dir.js, journal.js)",
+      "how": "Read server.js staticName, STATIC_NAME, readPublicFile (O_NOFOLLOW, fstat isFile), state-dir.js (resolveStateDir, writeSmallFile name check, ensureSecret with wx, withSmallFile) and journal.js (APPEND_FLAGS, fstat isFile); probe with 13 request paths",
+      "result": "/../../etc/passwd, /%2e%2e/%2e%2e/package.json, /..%2fserver.js, /server.js, /public/app.js, /app.js%00.html, //app.js, /.hidden.js, a backslash path, /api/events/../note all 404; /app.js?x=1 200. A static name is one flat name of at most 64 characters with one of three extensions; the request target is split by hand and never parsed as a URL. State files are written only by names of a fixed list through temporary file and rename; a link in the last component is refused (ELOOP) on POSIX. Met on POSIX semantics; see SEC-PO-02 for Windows."
+    },
+    {
+      "check": "Input from outside is validated before use (Q10): network body, hook input, command arguments",
+      "how": "Read protocol.js buildWriteBody (builds a new object from allowed fields only, takeString with ID_MAX), validateWriteBody, validateNoteBody; hook.js (HOOK_INPUT_MAX 8 MB, JSON.parse inside try, port from the port file by /^\\s*(\\d{1,5})\\s*$/); note.js parseArgs (REQ_ID_PATTERN, isCanonicalTime, length limits, duplicate and unknown options); main.js parseArgs (port digits and at most 65535, absolute --dir); probe for the server side",
+      "result": "Every field is type-checked, length-limited and, for text, masked again on the server. Nothing from the network or the hook reaches a file name or a command: the file names are constants, the port is an integer from a file and the host a constant. hook.sh builds the node path only from node-path (read, then tested by --version with stdin closed), PATH and SAI_NODE_FALLBACKS; the version text is validated by split3 before any comparison. Met."
+    },
+    {
+      "check": "Responses and errors give no stack trace, internal path or secret",
+      "how": "Read server.js internalError (500 {error: internal}; the text goes to the warn sink of the server process only), sendJson uses of the error codes; note.js interpret (an error code is echoed only if it matches ERROR_CODE); main.js describe; probe of error answers",
+      "result": "Answers are short codes (unauthorized, time_skew, replayed, too_large, not_found, read_failed, write_failed, internal). Messages with the state folder path go only to the owner's own terminal (main.js stderr), never into a network answer. The hook and note command never print the secret, the signature or the body. Met."
+    },
+    {
+      "check": "The page shows text of events as text, not as markup (item 6)",
+      "how": "grep -n for innerHTML, outerHTML, insertAdjacentHTML, document.write, eval(, new Function, srcdoc, setAttribute(on in tools/src/pixel-office/public/*.js; index.html read for script and link tags",
+      "result": "No match for any of them. 49 uses of textContent or createElement. index.html loads one module script (boot.js) and one stylesheet, both from the same origin, no inline script. Together with the CSP this closes markup insertion. Not rendered in a browser (see not_checked)."
+    },
+    {
+      "check": "Masking of secrets in what the journal and page hold (REQ-102 findSecrets, ISS-0121 fixed)",
+      "how": "Probe: a prompt_text with a sk-ant key and password=Hunter22x sent as a signed event to the test server; 10 shapes passed to maskSecrets (spaced assignment, redis://:pass@host, https://user:pw@host, token:, Bearer + 36, AKIA, ghp_, api_key=, quoted secret=); ReDoS probe with 21 hostile inputs of 65536 characters through maskSecrets",
+      "result": "The journal line reads key [скрыто] and password=[скрыто]; all 10 shapes are masked, including the two shapes ISS-0121 named (password = x and redis://:x@host). The slowest hostile input took 10 ms, none above that. The residual holes of ISS-0097 (open) were not measured again."
+    },
+    {
+      "check": "The hook never prints or stores a secret; hook.sh (extra check 2)",
+      "how": "Read hook.sh (98 lines) and hook.js whole; git diff --name-status e0a425b f72eaa7 on the folder; hook.sh not run",
+      "result": "hook.sh prints nothing (stdin closed for --version, stderr dropped), takes only a Node 22 at or above 22.23.4 and exits 0 when none is found. hook.js writes nothing to stdout or stderr, signs in memory, posts through an agent of its own so proxy variables never carry the body away, sends only to 127.0.0.1, ends in 1.5 s at most. It stores nothing. Met by reading."
+    },
+    {
+      "check": "Q8, Q9, Q11 and R3 (product code)",
+      "how": "The part is Pixel Office, not tools/src/team or tools/src/web",
+      "result": "Not applicable to this part. The part makes no database query and no request to an external address (the hook and the note command send to 127.0.0.1 only; main.js probes 127.0.0.1 only)."
+    },
+    {
+      "check": "Open defects of the part were not reported twice",
+      "how": "docs/issues of the head read by title and status line: ISS-0092 (Node security releases), ISS-0097 (masking residual risks, open), ISS-0113 and ISS-0117 (test gaps, open), ISS-0121, ISS-0122, ISS-0123 (closed)",
+      "result": "ISS-0097 covers the named masking holes; ISS-0092 is about the Node floor, which this PC meets (Node 22.23.4 and the floor is checked by hook.sh, main.js, note.js and office-report.js). SEC-PO-01 is a place that ISS-0123 named itself and that its closing record treats as fixed, so it is reported as a finding and the issue is named in it."
+    },
+    {
+      "check": "What a record of GitHub covers (rule of this PC for coverage)",
+      "how": "git diff --name-status e0a425b f72eaa7 on tools/src/pixel-office and on the pixel-office test files and their helper (pixel-office-server, -note, -hook, -helpers, -page, -protocol, -state-dir, -mask tests)",
+      "result": "Printed diff: M tools/src/pixel-office/hook.sh, M main.js, M note.js, M public/office-report.js; no test file or helper differs. So server.js, protocol.js, mask.js, state-dir.js, journal.js, public/app.js and their tests are byte-equal between main and the head and are covered by check run 44919421116 (success, tests 2226 pass); hook.sh, main.js, note.js and office-report.js have no record for the head. Nothing in this report rests on a test result, only on reading and on the agent's own runs."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Running hook.sh and the hook chain on this Windows PC",
+      "why": "Scout issue I8: whether /bin/sh runs here is not measured; the task says read it and do not run it. hook.sh was read only."
+    },
+    {
+      "check": "Test results for hook.sh, main.js, note.js and public/office-report.js",
+      "why": "They differ between main and the head and the work line has no green record for tools/ (check runs 44875023688, 44875030768, 45034277858 red at handoffs-check). The task forbids running the tests here. Not checked: no record on GitHub for the work line."
+    },
+    {
+      "check": "Rendering of the page in a browser (markup insertion, the CSP in a real browser, the cookie flow, REQ-001 criteria that need a browser)",
+      "why": "No browser is started on this PC for this task. The page code, the CSP header and the cookie header were checked by reading and by raw HTTP only."
+    },
+    {
+      "check": "A real Claude Code session with the 7 hooks (gate G2, the owner's money)",
+      "why": "Needs the owner's limit; not done."
+    },
+    {
+      "check": "File modes 0700 and 0600 and the link guards as they work on POSIX",
+      "why": "The only runtime here is Windows, where the mode of a file reads 666. The POSIX behaviour was read in the code only (state-dir.js, journal.js) and is covered, on the main files, by the record of main."
+    },
+    {
+      "check": "The default port 4780 and the owner's real state folder and journal",
+      "why": "Forbidden here (ports 4780, 4781, 4782 and 4790 are never bound, probed or stopped; the real home folder is not read). All runs used a server on port 0, a state folder of the agent's own and a stopped server."
+    },
+    {
+      "check": "Masking beyond the 10 shapes probed",
+      "why": "mask.js is 1098 lines of rules; the open defect ISS-0097 names the residual holes. Only a sample was run, and the time of 21 hostile inputs."
+    },
+    {
+      "check": "Loopback traffic capture, flood and many-connection load on the server",
+      "why": "Not part of an allowed check on this PC; the replay finding rests on a clock that the test injected, not on a captured packet."
+    },
+    {
+      "check": "Dependencies with known vulnerabilities",
+      "why": "The part has no dependency of its own (node:http, node:crypto, node:fs only, decision 0002); the packages of tools/ belong to the handoff tools-packages."
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-PO-01",
+      "check": "REQ-001 / R2: a line in the journal exists only because of a hook firing or a fresh signed record; ISS-0123 sibling place (note path)",
+      "severity": "High",
+      "title": "A signed note body is accepted again after 120 seconds, at any later time, and each time appends a new ORCH record",
+      "where": "tools/src/pixel-office/server.js lines 192-206 (REPLAY_KEEP_MS = 2 * WRITE_SKEW_MS, replayed()) and 372-395 (processNote); tools/src/pixel-office/protocol.js line 322 (a note body may not carry time)",
+      "evidence": "Probe on the head, a test server on port 0 with a clock that the test moves, one signed note body sent four times. Output: note_1 -> 200 {request_time:2026-11-22T12:00:00.000Z,request_time_auto:true}; note_replay_t+10s -> 409 {error:replayed}; note_replay_t+210s -> 200; note_replay_t+30d -> 200. The journal read afterwards holds three ORCH records with the same note_text and the times 12:00:00, 12:03:30 and 2026-12-22T12:03:30, each bound to the same owner message. Cause by reading: a hook body carries its own time, so after 60 s it fails the time check and the 120 s memory is enough; a note body has no time (the server stamps it), so after 120 s nothing refuses it. The tests pin only the inside of the window (pixel-office-server.test.js lines 2041-2058, pixel-office-note.test.js line 545). The closed defect ISS-0123 named this place itself (section on the note path: a captured note body is accepted at any later moment) and its closing record says the cause is removed.",
+      "item": "R2 (Pixel Office shows only the truth); Q10 (replay); decision 0005",
+      "recommendation": "Give a note a time that the signature covers and the server checks, the way a hook body has one: the note command adds a time field to the signed body (canonical ISO with milliseconds), validateNoteBody checks it against the clock with WRITE_SKEW_MS, the server still stamps its own record time; or keep the hashes of accepted note bodies for the life of the process. Add a test in tools/test/pixel-office-server.test.js that sends the same signed note body after the window and expects 409 or 400, and fix the closing record of ISS-0123 (open a defect for the part that is not closed). Practical reach is narrow: the attacker needs a captured signed request (a process that took the port of a stopped server, or something that sees the loopback), which is why the audit did not rate it Critical."
+    },
+    {
+      "id": "SEC-PO-02",
+      "check": "decision 0005 / tools/README.md (Pixel Office files, rights 0700 and 0600); Q7 (secret closed to other users)",
+      "severity": "Medium",
+      "title": "On Windows the secret, journal and state folder have no mode protection and the link and owner checks silently do nothing; the README says 0700 and 0600 without a limit",
+      "where": "tools/src/pixel-office/state-dir.js lines 30, 92, 100 (O_NOFOLLOW ?? 0, getuid check only if present, chmodSync 0o700); journal.js line 37 (NOFOLLOW ?? 0); server.js line 79; tools/README.md (table of the five state files, rights column)",
+      "evidence": "The tree was moved to this Windows PC. Probe: state folder created by ensureStateDir and ensureSecret in the agent's own folder; the modes read back: dir_mode 666, write-secret 666, events.jsonl 666, port 666, node-path 666, server-starts.jsonl 666 (the README promises 0700 for the folder and 0600 for each file). icacls on write-secret: the access list is inherited from the parent folder (the user, SYSTEM, Administrators and one more principal with read and write), nothing narrowed. In the code: O_NOFOLLOW is undefined on Windows and falls back to 0, so a link in the last component is followed; process.getuid does not exist, so the owner check is skipped; chmodSync does not narrow an ACL and reports no error. git grep for windows and win32 in decisions/0005 and tools/src/pixel-office finds no statement about this. The same code path also lets SAI_PIXEL_OFFICE_DIR point to a folder whose ACL is open, and the hook runs the file named in node-path from that folder (hook.sh step 1).",
+      "item": "Q7; tools/README.md Pixel Office files table; decision 0005",
+      "recommendation": "Decide whether Windows is a supported place for Pixel Office. If yes: tools/src/pixel-office/state-dir.js checks the ACL (or documents that the folder under the user profile is private by default and refuses a SAI_PIXEL_OFFICE_DIR outside it), and tools/README.md says in the table that the modes apply to POSIX only and what protects the secret on Windows. If no: say so in tools/README.md and in decision 0005. Either way add a test that records the behaviour on win32."
+    },
+    {
+      "id": "SEC-PO-03",
+      "check": "ISS-0122 (the read key is held only by the owner's browser and the command)",
+      "severity": "Low",
+      "title": "The read key is sent to whatever process holds the port during the busy-port probe, and its cookie is not tied to the port",
+      "where": "tools/src/pixel-office/main.js lines 118-130 (isPixelOffice sends the key header to the occupant of the port); tools/src/pixel-office/server.js line 516 (Set-Cookie with Path=/ and no port scope)",
+      "evidence": "main.js line 127: headers: { Accept: application/json, [READ_KEY_HEADER]: key } in an http.get to 127.0.0.1:<port> made after EADDRINUSE, before it is known that the occupant is Pixel Office. server.js line 516: the cookie is name=<key>; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000. Cookies do not isolate by port, so the browser sends it to every server on 127.0.0.1 (the team page, a dev server). Read by the agent; the probe did not run against a foreign listener.",
+      "item": "Q7 (key handling); ISS-0122",
+      "recommendation": "In main.js ask the occupant first without the key (the answer 401 with the body app: sai-pixel-office would need the server to put the marker in the 401 body), then send the key only to a confirmed server; or accept it and name it in tools/README.md. For the cookie, a name with the port in it (sai_pixel_office_4780) limits sending to servers that read that name only, and the key can be shortened in life (Max-Age) to match the use. The key lets one read the masked journal, not write."
+    }
+  ],
+  "summary": {
+    "counts": {
+      "Critical": 0,
+      "High": 1,
+      "Medium": 1,
+      "Low": 1
+    },
+    "checks_done": 17,
+    "checks_not_done": 9,
+    "text": "The write side of Pixel Office holds: loopback only, a Host check, a signature on every write, a time window, one-time bodies for hook events, flat static names, no markup insertion, page that only sends GET, no secret in files and fake-only fixtures, and no writer of events in the project outside the hook and the signed note path. The one real gap is the note path: a signed note body has no time, so the replay guard of ISS-0123 holds for 120 seconds only and the same body is accepted again later (SEC-PO-01, High). On Windows the mode and owner protections of the state folder do nothing and the README does not say so (SEC-PO-02, Medium). The read key goes to the occupant of a busy port during the probe (SEC-PO-03, Low). Four changed files (hook.sh, main.js, note.js, office-report.js) have no test record for the head; they were read, not run."
+  }
+}

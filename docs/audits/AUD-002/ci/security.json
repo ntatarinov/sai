@@ -1,0 +1,139 @@
+{
+  "audit": "AUD-002",
+  "part": "ci",
+  "dimension": "security",
+  "role": "SECURITY-AUDITOR",
+  "subject": "f72eaa7",
+  "checked": [
+    {
+      "check": "Permissions of each workflow and job (least rights)",
+      "how": "Read .github/workflows/check.yml and app.yml in the fixed copy; GitHub record of app run 44919421105 (log, section GITHUB_TOKEN Permissions)",
+      "result": "Both workflows have a top-level `permissions: contents: read` and no job overrides it. The log of every job of app run 44919421105 shows `Contents: read`, `Metadata: read`. No job writes to the repository, packages or checks. Met."
+    },
+    {
+      "check": "Triggers: pull_request versus pull_request_target, branches and paths filters",
+      "how": "git grep -n \"pull_request_target\\|workflow_run\\|issue_comment\\|workflow_dispatch\" in .github -> no match; read the `on:` blocks",
+      "result": "check.yml: `push` on all branches and `pull_request`. app.yml: `push` on main and ci/** with a paths filter. No pull_request_target, no workflow_run, no comment trigger. Code of a fork runs only in check.yml, with the read-only token. Met."
+    },
+    {
+      "check": "Any secret or token available to code of a fork",
+      "how": "gh api repos/<repo>/actions/secrets, /variables, /environments (read-only); git grep for `secrets.` and `GITHUB_TOKEN` in .github and .githooks",
+      "result": "Secrets 0, variables 0, environments 0; no `secrets.` or `GITHUB_TOKEN` in the workflows; checkout has `persist-credentials: false` in all 5 uses (the token is not left in .git/config). The only secrets are made inside the run (`openssl rand -hex 24`, `::add-mask::` before use). Met."
+    },
+    {
+      "check": "Actions pinned by a full commit hash; images by an exact tag or digest",
+      "how": "Read the `uses:` and `image:` lines; gh api repos/actions/checkout/git/ref/tags/v7.0.1 and repos/actions/setup-node/git/ref/tags/v7.0.0, and /commits/<sha> for each full hash",
+      "result": "All 9 `uses:` lines are full 40-char hashes with the version in a comment: checkout 3d3c42e5aac5ba805825da76410c181273ba90b1 = tag v7.0.1 (type commit, exists), setup-node 820762786026740c76f36085b0efc47a31fe5020 = tag v7.0.0 (type commit, exists). Images: postgres:17@sha256:0d93... in app.yml and app/compose.yaml; the Dockerfile base is node:22.23.4-bookworm-slim@sha256:5ec2.... The runner label is the exact `ubuntu-24.04`. Met. Not pinned: Chrome of the runner image (see not_checked / note in SEC-CI-03)."
+    },
+    {
+      "check": "Untrusted text (branch names, titles) reaching a shell line",
+      "how": "git grep -nE '\\$\\{\\{' -- .github",
+      "result": "The only two expressions are `${{ github.ref }}` in the `concurrency.group` of both files; no `run:` line contains an expression and no github.event context is used. No injection path. Met."
+    },
+    {
+      "check": "What the jobs write (artifacts, caches, logs) and whether a secret or identifier can reach a log",
+      "how": "gh api repos/<repo>/actions/artifacts and /caches (total_count); read the `run:` lines; gh run view 44919421105 --log saved in the own folder, grep for the password values and for `***`; grep for `password=` / `postgres://user:pass@`",
+      "result": "No upload-artifact, no cache step (package-manager-cache: false); artifacts 0, caches 0. Passwords are masked before use; the log has 36 masked lines (`***`) and no unmasked value (the only two matches of `password=` are the source text of the script, not a value). `docker compose logs --tail 50` runs with `if: always()`; the passwords are masked in the log by the earlier `::add-mask::`. Met."
+    },
+    {
+      "check": "Pre-push hook: network, arguments, push/reset/file changes (EXTRA 3)",
+      "how": "Read .githooks/pre-push whole (48 lines); git diff --name-status e0a425b f72eaa7 -- .githooks (one line changed, file read at the head)",
+      "result": "The hook reads the four fields of git's stdin only to see whether a pushed object is non-zero; it uses no argument ($1, $2) and does not put stdin text into a command. It calls only `git rev-parse --show-toplevel`, `command -v npm`, `cd \"$root/tools\"` (quoted) and `npm run check`. No git push, reset, checkout, commit, no file write, no curl. Network: only what `npm run check` does; the check script chain is format:check, lint, traces, handoffs-check, test, e2e (tools/package.json line 29), no install step. Met. What the tests and e2e of tools/ write on the owner's machine is not read here (tests are a coverage matter; no run exists for the work line)."
+    },
+    {
+      "check": "Repository settings of Actions (EXTRA 1)",
+      "how": "gh api GET: /actions/permissions, /actions/permissions/workflow, /actions/permissions/fork-pr-contributor-approval, /actions/permissions/selected-actions, /actions/permissions/artifact-and-log-retention, repos/<repo> (security_and_analysis), /branches/main, /branches/main/protection, /rulesets, /rules/branches/main",
+      "result": "Default token rights `read`, `can_approve_pull_request_reviews` false (met). Fork approval `all_external_contributors` (met, recorded in ISS-0052 as done). `allowed_actions: all` and `sha_pinning_required: false`: covered by the open defect ISS-0052 (items 2 and 3), not reported again. No dependabot.yml (.github has only workflows/): covered by ISS-0052 item 1. Fork PR settings for private repos: HTTP 422 (not applicable to a public repository). Branch protection of main: see SEC-CI-01 (not covered by ISS-0052: that defect records it as enabled). Secret scanning: see SEC-CI-02. Forks of the repository: 0. Retention of logs: 90 days (default)."
+    },
+    {
+      "check": "What app.yml's filters mean for a fork (EXTRA 2)",
+      "how": "Read on: of app.yml; git diff --name-status b64562a f72eaa7 -- .github (app.yml added, check.yml modified)",
+      "result": "app.yml has no pull_request trigger, so a pull request from a fork never runs it: no docker, no Postgres container and no Chrome run for fork code, and the `pg`, `docker` and `e2e` jobs are reachable only by a push to main or ci/**, which needs write access to the repository (a fork pushes to its own repository, where the workflow runs with the fork's own rights and secrets, not Sai's). Consequence: a fork PR that changes app/ is checked only by check.yml (tools/), never by app.yml; this is a coverage gap, not a security hole, because main is the only place that matters and it is reached by the owner's push. Met for security; the gap is noted in SEC-CI-01 because without branch protection nothing forces any check before main."
+    },
+    {
+      "check": "Shared .gitignore",
+      "how": "Read .gitignore whole; git diff e0a425b f72eaa7 -- .gitignore (no change)",
+      "result": "Ignores node_modules, .env and .env.* (with `!.env.example`), .vercel/, app/test-results, app/.tmp, .claude/settings.local.json, the tmp files of the write phase. The files .env.example has an empty SAI_PG_SUPERUSER_PASSWORD= (no value). Met."
+    },
+    {
+      "check": "Install scripts of dependencies on the runner",
+      "how": "grep -c '\"hasInstallScript\": true' tools/package-lock.json app/package-lock.json; cat app/.npmrc; ls tools/.npmrc",
+      "result": "Both lock files: 0 packages with an install script; app/.npmrc has ignore-scripts=true and save-exact=true; tools has no .npmrc but its 4 dev dependencies have no install script. Met."
+    },
+    {
+      "check": "Secrets in the part's files",
+      "how": "git grep -nE '(ghp_|github_pat_|AKIA|BEGIN [A-Z ]*PRIVATE|secrets\\.|GITHUB_TOKEN)' -- .github .githooks",
+      "result": "No match. Met."
+    },
+    {
+      "check": "Open defects of the part, not reported twice",
+      "how": "Read docs/issues/ISS-0052-github-actions-hardening.md and ISS-0057-readme-says-no-branch-protection.md",
+      "result": "ISS-0052 covers allowed_actions=all, sha_pinning_required=false and no dependabot.yml (named above). ISS-0057 is a README wording defect (it says there is no protection); it is not a workflow or hook defect and is not reported again. Note that ISS-0057 and the owner's decisions 0110 and 0111 assume the protection exists: the state read today differs (SEC-CI-01)."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Whether the Chrome of the runner image used by the e2e job of app.yml is a known-vulnerable version",
+      "why": "The job prints `chrome --version` but the value is in the log of a run; not read for the version. Chrome comes from the floating image ubuntu-24.04, not pinned; this is the nature of GitHub-hosted runners, and a vulnerability check of a browser needs a record that was not asked for."
+    },
+    {
+      "check": "Security of what `npm run check` of tools/ (tests, e2e) does with files and the network when run by the hook or by GitHub",
+      "why": "Tests of tools/ and e2e are forbidden on this PC; the work line has no green run record for tools/ (check runs 44875023688, 44875030768, 45034277858 are red at handoffs-check, so test and e2e never ran). The hook itself was read; what the called script writes belongs to the security audits of tools-core and e2e."
+    },
+    {
+      "check": "Whether the hook is activated on the owner's machine (git config core.hooksPath .githooks)",
+      "why": "That is a setting of a working clone outside the fixed copy; the fixed copy is a fresh clone and has no such setting. README line 313 describes the command."
+    },
+    {
+      "check": "Behaviour of a real fork pull request (the approval screen, the token given to the run)",
+      "why": "The repository has 0 forks and no fork PR run exists in gh run list (all 30 listed check runs are `push` on ci/* or main branches); a fork PR cannot be made from this PC without creating content on GitHub. Settings and workflow text were read instead."
+    },
+    {
+      "check": "Secrets in handoffs, reports and docs of the repository",
+      "why": "Not part of the scope of this handoff (the scope is the workflows, the hook and .gitignore); other security handoffs of AUD-002 cover records and documents."
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-CI-01",
+      "check": "Repository settings of Actions and the branch (extra check 1); decisions 0048, 0110, 0111",
+      "severity": "High",
+      "title": "Branch protection of main is off, although the recorded decision 0048 (and ISS-0052) say it was switched on and decisions 0110 and 0111 rely on it",
+      "where": "GitHub repository settings, branch main (read with gh api); decisions/0048-owner-delegates-open-points-repo-public.md; docs/issues/ISS-0052-github-actions-hardening.md (section «Сделано 2026-10-13»); decisions/0110-run-checks-on-github.md line 29; decisions/0111-repository-open-on-purpose.md line 29",
+      "evidence": "gh api repos/<repo>/branches/main -q '{protected,protection}' -> {\"protected\":false,\"protection\":{\"enabled\":false,\"required_status_checks\":{\"checks\":[],\"contexts\":[],\"enforcement_level\":\"off\"}}}; gh api repos/<repo>/branches/main/protection -> HTTP 404 {\"message\":\"Branch not protected\"}; gh api repos/<repo>/rulesets -> []; gh api repos/<repo>/rules/branches/main -> []; the token of this PC has permissions admin:true, so the 404 is not a lack of rights. ISS-0052: «защита ветки main включена: обязательная проверка check, force-push и удаление ветки запрещены, enforce_admins = false»; decision 0111: «It does not change check.yml, the branch protection...». Not covered by an open defect: ISS-0052 records the protection as done, so it does not report its loss; ISS-0057 is only about README words.",
+      "item": "R1 (main gets only a checked, released result), Q7 (the repository is public)",
+      "recommendation": "Owner decision (settings of GitHub are changed only with the owner's word, decision 0048 limits): ask whether the protection was switched off on purpose. If not, switch it on again as in 0048: required status check `check`, no force-push, no deletion of main, enforce_admins false. If it was removed on purpose, record that in a decision and correct ISS-0052, ISS-0057, decisions 0110/0111 and README, which still assume it. A cheap guard: a read-only `gh api repos/<repo>/branches/main/protection` line in the release checklist (RELEASE-FINALIZER) so a lost protection is seen before a push."
+    },
+    {
+      "id": "SEC-CI-02",
+      "check": "Repository settings (secret scanning) on a public repository",
+      "severity": "Low",
+      "title": "Secret scanning, push protection and Dependabot security updates are all disabled on a public repository",
+      "where": "GitHub repository settings (security_and_analysis)",
+      "evidence": "gh api repos/<repo> -q '{visibility,security_and_analysis}' -> visibility public; secret_scanning disabled; secret_scanning_push_protection disabled; secret_scanning_non_provider_patterns disabled; secret_scanning_validity_checks disabled; dependabot_security_updates disabled. ISS-0052 names allowed_actions, sha_pinning and dependabot.yml only, not these switches.",
+      "item": "Q7",
+      "recommendation": "Owner decision: switch on secret scanning with push protection (free for public repositories) and Dependabot security updates; they cost no money and add a second net after the local traces check. Add the settings to ISS-0052 or to a new defect so they are decided together."
+    },
+    {
+      "id": "SEC-CI-03",
+      "check": "Pinning of what the jobs download (actions and runtime)",
+      "severity": "Low",
+      "title": "check.yml installs a floating Node 22 (`check-latest: true`, added after e0a425b), while app.yml pins Node 22.23.4",
+      "where": ".github/workflows/check.yml lines 28-30 (diff e0a425b..f72eaa7 added line 30)",
+      "evidence": "check.yml: `node-version: \"22\"` + `check-latest: true`; app.yml: `node-version: \"22.23.4\"` in all four jobs; git diff e0a425b f72eaa7 -- .github/workflows/check.yml shows the added `+          check-latest: true`. The job `check` runs fork code (pull_request) and installs the newest 22.x on every run, so the toolchain of the main check is not the one of the record of main (the log of the run records the version, but nothing pins it).",
+      "item": "Q7 (supply chain of the check), Q10",
+      "recommendation": "Decide on purpose: either pin `22.23.4` in check.yml as in app.yml (the floor of tools/src/node-floor.js is 22.23.4) or keep the floating version and write the reason in the file next to the line. The change in check.yml needs the work of WF-02, not an edit by the auditor."
+    }
+  ],
+  "summary": {
+    "counts": {
+      "Critical": 0,
+      "High": 1,
+      "Medium": 0,
+      "Low": 2
+    },
+    "checks_done": 13,
+    "checks_not_done": 5,
+    "text": "The workflows are tight: read-only token everywhere, no pull_request_target, no secrets in the repository, no untrusted text in a shell line, all actions pinned by a full hash that matches the tag, images pinned by a digest, passwords made in the run and masked, and a pre-push hook that only runs the check and never pushes or changes files. The one real problem is not in a file: the branch protection of main that decisions 0048, 0110 and 0111 rely on is off today. Two Low points: secret scanning is off on the public repository, and check.yml floats the Node version. The settings allowed_actions=all, sha_pinning_required=false and the missing dependabot.yml are the open defect ISS-0052 and are not reported again."
+  }
+}

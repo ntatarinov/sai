@@ -1,0 +1,193 @@
+{
+  "audit": "AUD-002",
+  "part": "team",
+  "dimension": "architecture",
+  "role": "ARCHITECTURE-AUDITOR",
+  "subject": "f72eaa7",
+  "scope": "tools/src/team (engine/, executors/) and tools/src/web, against decisions 0017 to 0026, 0095, 0102, 0105; AUD-001 did not check this line by line",
+  "checked": [
+    {
+      "check": "Which files differ between the record of main (e0a425b, check run 44919421116 success, tests 2226 pass 0 fail 0 skipped) and the subject (f72eaa7)",
+      "how": "git diff --name-status e0a425b f72eaa7 -- tools/src/team tools/src/web tools/test/team-faults.test.js tools/test/team-result-bytes.test.js tools/test/team-helpers.js tools/test/fault-inject.js tools/src/pixel-office/mask.js tools/src/node-floor.js",
+      "result": "Output: A tools/src/node-floor.js, M tools/src/team/cli.js, M tools/src/web/main.js. Nothing else in tools/src/team, tools/src/web, the two team test files, their helpers and mask.js differs, so for every cited test except those that run team/cli.js or web/main.js the record of main covers the file (the passing test lines cited below were read from the log of run 44919421116: TM-47 ok 1637, 1638, 1639; RB-19 late refusal ok 1834, 1835). The two differing files add only the Node floor guard (refuseBelowNodeFloor) before parsing; they were read, not run."
+    },
+    {
+      "check": "Decisions 0017 P3 and the catalogue: 37 event types, five types and two values written only by the core",
+      "how": "own script arch-team/events.mjs importing tools/src/team/schema.js and reading reducer.js",
+      "result": "Output: event types 37; coreOnly PROJECT_CREATED, PROJECT_RECOVERED, RESULT_FILE, LOCK_STALE_REMOVED, JOURNAL_RECOVERED; coreOnlyValues RUN_FINISHED outcome interrupted, TASK_INTERRUPTED cause recovery; every type has a handler in reducer.js (PROJECT_CREATED through initState). Matches 0017 and the list of the core-only events. store.js #prepare refuses them from append() (INTERNAL_APPEND is a module-private WeakMap)."
+    },
+    {
+      "check": "Journal as the single source of state (0017 P2); the reducer rebuilds state; one write, one fsync, rollback (0017 P11, P13)",
+      "how": "read journal.js appendBytes/appendLine/appendBatch/truncateTo, store.js Writer #prepare/#commit/#appendBatch, recover(), reducer.js reduce/reduceInPlace/replay",
+      "result": "Met. No derived state file is written (grep of every write call in tools/src/team found writes only in files.js, journal.js, lock.js, store.js create path, channel.js inbox, home.js modes, runner.js removeSource). A write is lock check, size check (E_CONFLICT), one write, one fsync; on a failure ftruncate plus fsync, then the writer is broken. Recovery events are one batch. Residual windows (lock check before the write, three-process lock race) are named in 0017 'Остаточный риск' and are not findings."
+    },
+    {
+      "check": "Protection in the same operation as the action: lock and journal entry, executor conditions, project creation",
+      "how": "read store.js openWriter/#commit (assertLockHeld passed into appendBytes as lockCheck), executors/claude-cli.js check() as the first line of run(), runner.js (second check), web/api.js postProject",
+      "result": "Met. The lock check is passed into the same call that writes the journal line. claude-cli run() calls check() first (0018 'Условия настоящего запуска'), runner repeats it, the web refuses claude-cli without SAI_TEAM_REAL_RUNS before creating the folder (0025 W3). No 'check now, act later in another call' found."
+    },
+    {
+      "check": "EXTRA CHECK 1: result set written by files.js (REQ-102): a failure in the middle leaves the previous state; the test that proves it",
+      "how": "read files.js publishResultFile/removeResultFile/cleanPartials, store.js #publish (405-431), runner.js acceptResult (614-716), decisions 0105 item 7, tests team-faults.test.js TM-47 (three tests), exec-closure.test.js EX-54 a and b, team-result-bytes.test.js RB-19, exec-faults.test.js line 72-81",
+      "result": "One file is all or nothing: partial name, link, unlink of the partial, then the event; a failed link, a failed unlink or a failed event removes the file again and leaves files/ and the journal as before (TM-47 tests 1637 and 1638 pass in the log of main). The SET of files is not all or nothing by decision: 0105 item 7 says a file accepted before a refused one stays stored, and RB-19 (second case, ok 1835) proves it for a late secret refusal. A secret in any file is found at step 1 before the first write (claude-cli). Decision 0004 (rename plus hardlink rollback) governs apply-verdict and prepare-run, not the team core; the team code does not use it and no decision says it should. The gap is a missing test: see finding ARCH-TEAM-02."
+    },
+    {
+      "check": "EXTRA CHECK 2: the real executor (claude-cli.js) and the scripted executor (scripted.js) obey one interface: error and stop behaviour",
+      "how": "read executor.js header and OUTCOMES, executors/claude-cli.js check, baseResult, outcomeOf, run, spawnFailure, executors/scripted.js check, run, RESULT_OUTCOMES; runner.js chargeIfSpawned",
+      "result": "Both export code, check(request, io), run(request, io); both return the same RunResult shape and throw a TeamError only before the process starts. Differences: (a) scripted cannot produce not_found, cancelled by its own, a too-big output or a stuck group (RESULT_OUTCOMES lists five outcomes), so those runner paths need a fake spawn; this is by design (0018 'scripted только для тестов'). (b) scripted marks every run spawned: true, including a run cancelled before its first step and a scenario with no matching step; claude-cli returns spawned: false for a pre-aborted run. See finding ARCH-TEAM-03."
+    },
+    {
+      "check": "Part boundaries: the team does not import web, web does not write files, no network in the team, no import cycles",
+      "how": "own script arch-team/imports.mjs over 40 files of tools/src/team and tools/src/web (public/ excluded); grep for node:http, node:net, child_process, fetch and for fs write calls in tools/src/web",
+      "result": "team->web imports: none. web imports team 21 times (config 1, engine/answers 1, engine/channel 1, engine/engine 1, engine/facts 1, engine/schedule 1, errors 4, executors/scripted 1, home 1, language 1, reducer 1, roles 1, schema 4, store 1, view 1), as 0024 allows. Network modules in team: only node:child_process in executors/claude-cli.js (the one place allowed by 0025 reasons). fs writes in tools/src/web: none. Outside imports: team to pixel-office/mask.js (8 files) and to node-floor.js (cli.js) only. Cycles: two, executor.js with executors/claude-cli.js and executor.js with executors/scripted.js: see finding ARCH-TEAM-04."
+    },
+    {
+      "check": "One mechanism in neighbouring places (AP-014): result-file name and path rules, secret scan, masking, error type",
+      "how": "read runner.js acceptResult, store.js importWorkFile/importResultBytes/#publish, files.js, engine/single-run.js, depsOf; grep for prepareText, lstatOrNull, unlinkQuietly, internal",
+      "result": "checkWorkPath, checkResultName, findSecrets and the strict UTF-8 decode are applied on all three import paths and on depsOf (with a try/catch for the over-size case that the other paths cannot reach because of the 5 MiB check). Masking of journal text is central in Writer #prepare (mapTextFields), not per caller. Not applied in one place: single-run.js (written exclusion, 0102 item 5, 0105 item 7). Duplicated helper code is a Low finding: ARCH-TEAM-05."
+    },
+    {
+      "check": "Decisions 0018 P2, P3, P7 against buildArgs, buildChildEnv, spawn options",
+      "how": "read executors/claude-cli.js lines 30-100 and 205-215, config.js CHILD_ENV_ALLOW",
+      "result": "Met: flags --restricted, --safe-mode, --strict-mcp-config, --no-session-persistence, --permission-prompts none, no --bare; text through stdin; env only from the ten names of CHILD_ENV_ALLOW, no ANTHROPIC_API_KEY or SAI_TEAM_*; shell false, detached true (own process group)."
+    },
+    {
+      "check": "Decision 0020 (channel in inbox/, channel.js writes no journal events) and 0025 (server on 127.0.0.1 only, Host, no state file of its own, 15 s stop)",
+      "how": "grep of append/openWriter in engine/channel.js; read web/server.js handle() and listen(), web/config.js SHUTDOWN_WAIT_MS, web/main.js signal handlers; routes in routeOf against the table of docs/design/REQ-011-team-web.md lines 223-229",
+      "result": "Met. channel.js opens the writer only to call recordDropped; the server binds HOST 127.0.0.1, checks Host in every request first, answers GET only on the routes of the design and POST only on /api/projects, /control and /chat, 405 with Allow otherwise; SHUTDOWN_WAIT_MS 15000. The /control route is from REQ-035, not in the REQ-011 table, and is described in its own design. One divergence of text: finding ARCH-TEAM-01."
+    },
+    {
+      "check": "Error responses and codes of the Team Web (Q10)",
+      "how": "read web/server.js (refuse, sendReply, internalError, readBody) and web/api.js (failure, CHAT_REFUSALS, createFailure)",
+      "result": "Met. Every refusal goes through failure(status, text, field, reload): 400 bad input, 401 no access, 403 bad Host or Origin or key, 404 unknown address, 405 wrong method, 408 idle body, 413 too big, 409/504 chat refusals, 500 disk or internal; a GET changes nothing (reads use listProjects/readProject, writes go only through createProject, deliver and the engines)."
+    },
+    {
+      "check": "Dead code",
+      "how": "own script arch-team/imports.mjs (exports used nowhere else in tools/); loop over every top-level function and const of the 40 files counting uses; grep for commented-out statements",
+      "result": "No unused private function, no unused module constant, no commented-out code. 32 exports are used only inside their own file (listed in ARCH-TEAM-06), which is an over-wide interface, not dead code."
+    },
+    {
+      "check": "Files and functions that are too large",
+      "how": "wc -l of the 40 files; own script arch-team/sizes.mjs; awk over the nested functions of engine.js",
+      "result": "Neighbours: the largest file outside team/web in tools/src is pixel-office/mask.js 1098 lines, validate.js 967, util.js 546. In team/web: engine/engine.js 1086, engine/channel.js 989, store.js 951, reducer.js 790, runner.js 778, schema.js 656, web/server.js 622. One function each is the cause: see finding ARCH-TEAM-07."
+    },
+    {
+      "check": "Platform: process group handling on Windows",
+      "how": "read executors/proc.js (process.kill(-pid)), grep for win32 and platform in tools/src/team, decisions/0127 item Г",
+      "result": "proc.js is POSIX only and has no platform guard. Decision 0127 item Г records 'Porting the team core to Windows is not planned' and that the executor stays on the Mac, so this is a recorded limit, not a finding."
+    },
+    {
+      "check": "Open defects of the part that already cover a place",
+      "how": "read docs/issues/ISS-0006, 0007, 0008, 0012, 0013, 0018, 0019, 0024, 0026, 0030, 0031, 0041 headers",
+      "result": "Not reported again: ISS-0013 (lock key by path and releaseLock compares only the pid, lock.js releaseLock), ISS-0008 (unreachable size check and dead branch in the sender of channel.js), ISS-0006 (taken/.bad-* folders not cleaned), ISS-0007 (number window of the channel), ISS-0012, ISS-0018, ISS-0019, ISS-0024, ISS-0026, ISS-0030, ISS-0041 (all open, Low or Medium, by their own headers)."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Any test result for tools/src/team/cli.js and tools/src/web/main.js (the two files that differ from main)",
+      "why": "not checked: no record on GitHub for the work line (check runs 44875023688, 44875030768, 45034277858 are red at handoffs-check, so the steps test and e2e never ran); running tests is not allowed on this PC. The code of both was read: the only change is the Node floor guard."
+    },
+    {
+      "check": "Live behaviour of the Team Web server (response codes, headers) on a copy with port 0",
+      "why": "not checked: the codes and routes were read from the code and the design to keep the usage small; no server was started. The coverage of the codes by tests (team-web-*.test.js) is byte-equal between main and the head, so the record of main applies, but was not read test by test."
+    },
+    {
+      "check": "A real claude-cli run and the real process group stop",
+      "why": "not checked: needs a real Claude Code session (the owner's money, gate G2) and a POSIX machine; tests with a fake process are in the record of main but were not read one by one."
+    },
+    {
+      "check": "Durability after a power loss: no fsync of the folder after link/rename of result files, lock files and inbox files",
+      "why": "not checked by a run: a power loss cannot be made on this PC; the doubt is written in the handoff issues, not as a finding."
+    },
+    {
+      "check": "Cost of structuredClone of the whole state at every event (reducer.js reduce, line 772)",
+      "why": "not measured: no allowed command gives a real project size; written as a doubt in the handoff issues."
+    },
+    {
+      "check": "Flakiness, duration, order dependence of the team tests; tools/test/current-docs.test.js and the REQ-110 guards",
+      "why": "not checked: only a live run gives them, and the work line has no green record for tools/."
+    },
+    {
+      "check": "Security of the access key and the cookie of the Team Web",
+      "why": "not an architecture question; the security dimension report of the same part (docs/audits/AUD-002/team/security.json) covers it."
+    }
+  ],
+  "findings": [
+    {
+      "id": "ARCH-TEAM-01",
+      "check": "Code against the recorded decisions (0025 W2) and the design (REQ-011)",
+      "severity": "Medium",
+      "title": "Decision 0025 W2 still names as an accepted risk what the server no longer allows, and neither it nor the REQ-011 design describes the access key",
+      "where": "decisions/0025-team-web-server.md line 48 (W2); docs/design/REQ-011-team-web.md section 4.3 (key of the page) and the route table lines 223-229; tools/src/web/server.js lines 1-4 (header comment), 276-312 (accessKey, accessAllowed, linkKeyValid), 515-533 and 548-553",
+      "evidence": "0025 W2 line 48: 'Принятый остаточный риск: любой процесс на этом компьютере ... может открыть GET /, прочесть ключ страницы и читать и менять все проекты Sai Team через API.' The code after commit 8d8b59b (ISS-0122): server.js lines 530-534 answer GET / without the cookie with sendNoAccessPage, and line 550-553 answer every data read without the cookie 401 (TEXT.noAccess); the cookie is set only by a link GET /?k=<access key> printed by the command (tools/README.md line 506). grep of decisions/*.md for 'access key' and ACCESS_COOKIE finds only decisions 0121 and 0122 that mention ISS-0122 as a list item; no decision amends W2 (the amendment form is shown by W9 of the same file, which carries 'отменён: исправлено решением'). The header comment of server.js lines 1-4 says Host, Origin and the key of the page are checked 'before any read of data', but a read needs only the cookie; decision 0121 О5 sent this comment to the diagnosis of ISS-0122 and the issue was closed 2026-11-22 with the comment unchanged.",
+      "item": "Q12 (a choice is recorded; the code does not silently diverge from the record)",
+      "recommendation": "ORCH: add a dated amendment to decisions/0025 W2 that says reads and the page need the access key of the start (cookie sai_team_web, link /?k=), that the old residual risk is closed for other local processes, and name the new residual risk (the link with the key is printed in the terminal and travels in the address; the cookie is HttpOnly and SameSite=Strict); add the key and the 401 row to the REQ-011 design (section 4.3 and the route table) and correct the header comment of tools/src/web/server.js lines 1-4 to say what is checked before a read and what before a write."
+    },
+    {
+      "id": "ARCH-TEAM-02",
+      "check": "EXTRA CHECK 1 and Q5: a failure test also checks that the state did not change; the result set is written file by file",
+      "severity": "Medium",
+      "title": "No test of a disk failure or a name clash on the second or later file of a result set: the earlier files stay by design, but only the secret case proves it",
+      "where": "tools/src/team/runner.js lines 692-722 (loop over planned files, E_DISK returns result_disk after earlier files are stored); tests tools/test/exec-closure.test.js lines 47-54 and 76 (PLAN_FILE has one file report.md, EX-54 a and b), tools/test/exec-faults.test.js lines 72-81 (one file)",
+      "evidence": "grep -n result_disk in tools/test returns one place, exec-closure.test.js EX-54 (a), whose plan is { work_files: [report.md], answer_files: [report.md] } and whose fault path is .partial-t-0001-1-report.md. The runner loop pushes names only after each successful import (line 716) and on E_DISK or E_FILE_EXISTS at file n returns a refusal while files 1 to n-1 already have RESULT_FILE events and stay in files/ (decision 0105 item 7). The only test of 'files accepted before it stay, exactly' is RB-19 (team-result-bytes.test.js line 5779 onward), which covers a late secret refusal, not a disk failure or E_FILE_EXISTS. So the claim of the task 'a failure in the middle leaves the previous state' is true for one file (TM-47, EX-54) and by decision false for a set, and the second half has no test for the non-secret errors: RUN_FINISHED files list, task files, the next attempt's names, BUDGET_SPENT are not checked in that case.",
+      "item": "Q5 (a test for a failure also checks the state), Q12",
+      "recommendation": "TEST-DESIGNER: add one test in tools/test/exec-closure.test.js with a two-file plan where the fault hits the second partial (.partial-t-0001-1-<second>), asserting the first file stays with its RESULT_FILE event, the RUN_FINISHED files list holds it, TASK_FAILED result_file with detail result_disk, the writer is not broken, and a retry with the next attempt number stores both files under new names; add the same for a clash (E_FILE_EXISTS) on the second file. If the owner wants the set to be all or nothing instead, that is a new decision replacing 0105 item 7."
+    },
+    {
+      "id": "ARCH-TEAM-03",
+      "check": "EXTRA CHECK 2: one executor interface, same stop behaviour",
+      "severity": "Low",
+      "title": "The scripted executor charges a run that was stopped before it started; the real executor does not",
+      "where": "tools/src/team/executors/scripted.js lines 218-242 and 226 (spawned: true in the base result, cancelled return inside the step loop); tools/src/team/executors/claude-cli.js lines 189-191 and 127; tools/src/team/runner.js lines 555-565 (chargeIfSpawned)",
+      "evidence": "claude-cli run(): 'if (signal !== null && signal.aborted) return { ...baseResult(stats), outcome: \"cancelled\", transient: false };' and baseResult has spawned: false, so chargeIfSpawned returns null and no BUDGET_SPENT is written. scripted run(): out.spawned is true from the start (line 226); an already aborted signal returns { ...out, outcome: \"cancelled\" } at line 242 (and a scenario with no matching step returns out with spawned true), so chargeIfSpawned writes BUDGET_SPENT with cost maxBudget and accounted assumed (runner.js lines 559-562) for a run that never started a process.",
+      "item": "Q5 and AP-014 (the test double must show the behaviour of the real one at the edges that tests prove)",
+      "recommendation": "In tools/src/team/executors/scripted.js set spawned false for the pre-aborted return and for NO_MATCH_DETAIL (set it true only once the first step has run), or write the difference into the header of executor.js and the test that depends on it; check the tests that stop a scripted run (team-engine-control, team-engine-finish) for expectations of the assumed charge before changing."
+    },
+    {
+      "id": "ARCH-TEAM-04",
+      "check": "Part boundaries: modules do not import each other in a circle",
+      "severity": "Low",
+      "title": "executor.js and the two executors import each other",
+      "where": "tools/src/team/executor.js lines 13-14 and 395-399 (imports claude-cli.js and scripted.js for getExecutor); tools/src/team/executors/claude-cli.js lines 17-25 and tools/src/team/executors/scripted.js lines 9-14 (import checkAnswer, buildPrompt, checkBudget and constants back from executor.js)",
+      "evidence": "Output of arch-team/imports.mjs: CYCLES [ 'tools/src/team/executor.js > tools/src/team/executors/claude-cli.js > tools/src/team/executor.js', 'tools/src/team/executor.js > tools/src/team/executors/scripted.js > tools/src/team/executor.js' ]. The header of executor.js line 7 says 'Everything here is pure except getExecutor, which imports the two executors.' It works today because the executors use the shared names only inside functions; a module-level statement that uses a const of executor.js (not a function declaration) in either executor would fail with a ReferenceError that depends on which module is loaded first.",
+      "item": "No bar item; WF-05 step 3 Low (a boundary: no circle)",
+      "recommendation": "Move getExecutor into a new file tools/src/team/executors/index.js that imports the two executors and executor.js, and make runner.js, engine/single-run.js and the tests import getExecutor from there; executor.js then imports no executor. Update the header comment of executor.js."
+    },
+    {
+      "id": "ARCH-TEAM-05",
+      "check": "One mechanism in all neighbouring places (AP-014): shared helpers",
+      "severity": "Low",
+      "title": "Small helpers are copied into several files, and the copies do not behave the same",
+      "where": "prepared(): tools/src/team/runner.js line 95 and tools/src/team/engine/single-run.js line 15 (identical); lstatOrNull(): files.js 32, store.js 113, home.js 99, engine/channel.js 132; unlinkQuietly(): files.js 41 (returns true/false, ENOENT counts as success), lock.js 147 (returns nothing, swallows every error), engine/channel.js 141; internal(what) building the same E_INTERNAL error: store.js 106 (internalError), engine/engine.js 72, engine/single-run.js 21; codePoints(): store.js 81, executor.js 139, engine/commands.js 25",
+      "evidence": "grep -rnE '^function (lstatOrNull|unlinkQuietly|codePoints|internal|prepared)' tools/src/team tools/src/web lists the 13 definitions above; the three unlinkQuietly differ in return value and in which errors they swallow; the three E_INTERNAL builders have the same text 'Внутренняя ошибка ядра Sai Team (what)'.",
+      "item": "No bar item; AP-014 and WF-05 Low",
+      "recommendation": "Put prepared, lstatOrNull, codePoints and the E_INTERNAL builder into tools/src/team/common.js (33 lines today) and import them; keep unlinkQuietly in files.js and lock.js only if the different return value is needed, and name them differently (unlinkIgnoringErrors, removeIfPresent) so the difference is visible."
+    },
+    {
+      "id": "ARCH-TEAM-06",
+      "check": "Dead code and interface width",
+      "severity": "Low",
+      "title": "32 exported names are used by no other file and by no test",
+      "where": "tools/src/team/config.js (TASK_TIMEOUT_MS_DEFAULT, RETRY_DELAY_MS_DEFAULT, WEB_DOMAINS_MAX); engine/answers.js (DECISIONS); engine/channel.js (MSG_NAME, SEND_POLL_MS, INBOX_ENTRIES_MAX, PUBLISH_TRIES_MAX, ORPHAN_ACK_MS, NUMBER_MAX, NUMBER_JUMP_MAX, countsAsNumber, nextNumber, parseEngineArgs); engine/commands.js (parseParallel); engine/schedule.js (DRAFT_NEEDED_NOTE, dependentsToClose); errors.js (EXECUTOR_MESSAGES, ENGINE_MESSAGES); executor.js (webDomainsOf); executors/claude-cli.js (WEB_DENY_RULES, formatUsd, buildChildEnv); reducer.js (initialState); schema.js (SOURCES, EVENT_KEYS, MSG_TYPES, textFields); web/display.js (roleNo, openWaits, pauseText); web/server.js (ACCESS_COOKIE)",
+      "evidence": "Output of arch-team/imports.mjs, section 'EXPORTS not used elsewhere': each name is listed '(used only inside)'; the script searches every .js, .mjs, .sh and .html file under tools/ including tools/test for the name as a whole word and finds none outside the defining file. A search of the private functions and constants of the 40 files found none unused and no commented-out code.",
+      "item": "No bar item; WF-05 Low (dead code)",
+      "recommendation": "Remove the word export from these names in the listed files (each stays as a file-private constant or function); keep the ones the design says are public (check the design of REQ-010 for formatUsd, buildChildEnv, WEB_DENY_RULES before removing)."
+    },
+    {
+      "id": "ARCH-TEAM-07",
+      "check": "Files and functions that are too large",
+      "severity": "Low",
+      "title": "One function holds most of the engine, most of the runner and most of the web server",
+      "where": "tools/src/team/engine/engine.js function createEngine lines 107-1050 (944 lines, 35 nested functions in one closure); tools/src/team/runner.js function runTask lines 177-762 (586 lines, 11 nested functions, among them acceptResult of about 130 lines); tools/src/web/server.js function createWebServer lines 249-622 (374 lines)",
+      "evidence": "arch-team/sizes.mjs output: 944 engine.js:107 createEngine; 586 runner.js:177 runTask; 374 web/server.js:249 createWebServer. The next largest real functions are 238 lines (claude-cli.js run) and the nested planRun of 96 lines; the largest file outside team and web in tools/src is mask.js with 1098 lines, so the file sizes are in the range of the neighbours (engine.js 1086, channel.js 989, store.js 951) and the closures are the outliers. How it gets in the way: the nested functions share the closure variables (the writer, the controller, the run state), so none of them can be loaded or tested alone, every engine test builds the whole engine (more than ten team-engine-* test files), and a change of one command reads through 944 lines to see which variables it touches.",
+      "item": "No bar item; WF-05 Low",
+      "recommendation": "Not before PUBLIC-V1 needs it: split createEngine by command into files in tools/src/team/engine/ that receive a small context object (writer, state getters, emit) instead of closing over everything (the plan, goal, review and reassign runs are already separate nested functions of 45 to 96 lines); move acceptResult and removeSource out of runTask into runner-files.js with the writer as an argument. Do it only with the existing team-engine tests green on each step."
+    }
+  ],
+  "summary": {
+    "counts": { "Critical": 0, "High": 0, "Medium": 2, "Low": 5 },
+    "checks_done": 15,
+    "checks_not_done": 7,
+    "text": "The team core and the web server match the line-by-line reading of decisions 0017 to 0026, 0095, 0102 and 0105 in the points that matter: 37 events and the five core-only types, one journal write with one fsync and a rollback, the lock check inside the write call, no import of web by the team, no write to files by the web, no network in the team except the one child process file, all routes and codes as designed. No Critical or High finding. The two Medium findings: decision 0025 W2 and the REQ-011 design were not updated after the access-key change (ISS-0122), and there is no test of a disk failure on the second file of a result set (the earlier files stay by decision 0105, only the secret case is tested). Low: the scripted executor charges a run stopped before it started, the executor files import each other in a circle, copied helpers, 32 names exported without a user, and three very large functions."
+  }
+}

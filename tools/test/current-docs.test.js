@@ -27,7 +27,23 @@
 //   REQ-003 AC3 pin their words;
 // - the WF-06 block and the owner's section of the STATE.md tail equal to the archive
 //   (criterion 2 (c), the design's M05): apply-verdict and the owner's start record write
-//   there (decisions/0117 О47); TM-01 (а) of team-docs.test.js pins the owner's record.
+//   there (decisions/0117 О47); TM-01 (а) of team-docs.test.js pins the owner's record;
+// - the bodies of the four docs/product files after their first line, the number of *.md
+//   files there (four), and the lines of ideas/README.md other than the row of 02-sai.md
+//   (criteria 6 (a), 6 (b); the gate's O20, O21, O22): another requirement may legally
+//   rewrite those texts, so only their forms are pinned here (the snapshot line, the
+//   three cells of the row, decisions/0033).
+// RELEASE-VALIDATOR checks all the run-time parts above against the base tag at step 9
+// (decisions/0117 О51, F2): the README sections and the IDEA paragraph (4 (b), 5 (e)) are
+// byte-equal to the tag, the bodies named above are equal to the tag, and the counts and
+// times are equal to a fresh count.
+//
+// One rule that the durable part of GATESEQ in CD-2 rests on (decisions/0117 О51, F6): a
+// gate row's name, the first column of the table «Owner gates» in
+// docs/program/public-v1/PROGRESS.md, is never edited after it is written. The tables of
+// PROGRESS.md are only appended (decisions/0091); a gate that is asked again is a new row
+// with a new name. A gate line of STATE.md names a row, so a renamed row turns CD-2 red
+// with no write to STATE.md: the fix is to restore the name, or to write a new row.
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -179,6 +195,27 @@ function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+// The passing gates one parsed handoff holds, [requirement id, completed_at, run] for
+// each requirement it names: only a handoff to REQ-VALIDATOR with the verdict PASS is a
+// gate (a FAIL handoff of an earlier run is not the first gate of anything).
+function gatesOf(json) {
+  const ids = json.context?.requirement_ids;
+  if (
+    json.to_agent !== "REQ-VALIDATOR" ||
+    !isObject(json.result) ||
+    json.result.verdict !== "PASS" ||
+    !Array.isArray(ids)
+  )
+    return [];
+  return ids
+    .filter((id) => typeof id === "string" && /^REQ-[0-9]{3}$/u.test(id))
+    .map((id) => [
+      id,
+      json.completed_at === null ? "null" : String(json.completed_at),
+      String(json.run_id),
+    ]);
+}
+
 // Every handoff handoffs/<run>/<name>.json; only those that can be a passing
 // REQ-VALIDATOR handoff or a cancellation are parsed.
 function readHandoffs() {
@@ -209,21 +246,7 @@ function readHandoffs() {
         unreadable.push([file, gateLike, cancelLike]);
         continue;
       }
-      const ids = json.context?.requirement_ids;
-      if (
-        json.to_agent === "REQ-VALIDATOR" &&
-        isObject(json.result) &&
-        json.result.verdict === "PASS" &&
-        Array.isArray(ids)
-      ) {
-        for (const id of ids)
-          if (typeof id === "string" && /^REQ-[0-9]{3}$/u.test(id))
-            gates.push([
-              id,
-              json.completed_at === null ? "null" : String(json.completed_at),
-              String(json.run_id),
-            ]);
-      }
+      gates.push(...gatesOf(json));
       if (
         json.status === "CANCELLED" ||
         Object.hasOwn(json, "orch_cancellation")
@@ -729,17 +752,27 @@ function cd6(m) {
       `README.md has ${at.length} lines with REQ-008, need 1 (criterion 5 (d) reads that line and the next)`,
     );
   else {
-    const line = lines[at[0]];
-    const said = /REQ-008\) are `?([a-z_]+)`?/u.exec(line);
-    const truth = ["REQ-001", "REQ-007", "REQ-008"].map((id) =>
-      statusOf(m.requirements, id),
-    );
-    if (!said) add("the REQ-008 line does not say «… REQ-008) are `<status>`»");
-    else if (truth.some((s) => s !== said[1]))
-      add(
-        `the REQ-008 line says «${said[1]}», the status lines of REQ-001, REQ-007, REQ-008 say ${truth.join(", ")}`,
-      );
-    if (`${line}\n${lines[at[0] + 1] ?? ""}`.includes("still in"))
+    // Each of the three requirements stands next to the status word of its own status
+    // line on the one REQ-008 line: the first word of a status after its id. One word may
+    // serve all three, or the sentence may split them (decisions/0117 О51, F3).
+    const sentence = lines[at[0]];
+    for (const id of ["REQ-001", "REQ-007", "REQ-008"]) {
+      const from = sentence.indexOf(id);
+      const said =
+        from === -1
+          ? null
+          : /\b(in_progress|blocked|pending|done|cancelled)\b/u.exec(
+              sentence.slice(from + id.length),
+            );
+      const truth = statusOf(m.requirements, id);
+      if (!said)
+        add(`the REQ-008 sentence does not say a status word after ${id}`);
+      else if (said[1] !== truth)
+        add(
+          `the REQ-008 sentence says «${said[1]}» for ${id}, the status lines of docs/requirements.yaml say ${truth}`,
+        );
+    }
+    if (`${sentence}\n${lines[at[0] + 1] ?? ""}`.includes("still in"))
       add("the REQ-008 sentence still says «still in»");
   }
   // The forms of the time lines (their values are checked at the run).
@@ -780,11 +813,14 @@ function cd6(m) {
 
 // ---- CD-7, CD-8: docs/product and ideas/README.md -------------------------------------
 
+// Criterion 6 (a) reads the *.md files of docs/product: a .DS_Store or another entry that
+// is not Markdown is not a snapshot (decisions/0117 О51, F5).
 function cd7(m) {
-  if (!m.product.length) return ["CD-7: docs/product holds no file"];
+  const product = m.product.filter(([name]) => name.endsWith(".md"));
+  if (!product.length) return ["CD-7: docs/product holds no file *.md"];
   const out = [];
   const add = (msg) => out.push(`CD-7: ${msg}`);
-  for (const [name, body] of m.product) {
+  for (const [name, body] of product) {
     if (body === null) {
       add(`docs/product/${name} is not a file`);
       continue;
@@ -964,7 +1000,13 @@ const SHAPES = [
     /\+[0-9][0-9 ()-]{8,}[0-9]/gu,
     (h) => digits(h[0]).length >= 10 && digits(h[0]).length <= 15,
   ],
-  ["a 12-digit identity number", /(?<![0-9A-Za-z])[0-9]{12}(?![0-9A-Za-z])/gu],
+  [
+    "a 12-digit identity number",
+    /(?<![0-9A-Za-z])[0-9]{12}(?![0-9A-Za-z])/gu,
+    // A GitHub run id is not an identity number: inside an actions/runs/ link or right
+    // after the word «run» (decisions/0117 О51, F4).
+    (h) => !/(?:actions\/runs\/|\bruns? )$/iu.test(h.input.slice(0, h.index)),
+  ],
   [
     "a card number",
     /(?<![0-9A-Za-z])(?:[0-9]{4}[ -]){3}[0-9]{1,7}(?![0-9A-Za-z])|(?<![0-9A-Za-z])[0-9]{13,19}(?![0-9A-Za-z])/gu,
@@ -1002,17 +1044,45 @@ function scanTexts(m) {
   return texts;
 }
 
+// The shapes of personal data; the rest of SHAPES are key shapes (decisions/0117 О51, F4).
+const PERSONAL = new Set([
+  "an e-mail address",
+  "a phone number",
+  "a 12-digit identity number",
+  "a card number",
+  "a public IP address",
+  "a bank account number (IBAN)",
+]);
+
+// The lines of the WF-06 block of STATE.md, from the start marker to the end marker.
+// apply-verdict copies the analysts' reasons there, and the sources under runs/ are read
+// by the traces check, so the personal-data shapes do not read it; the key shapes do.
+// With the markers not once each, start before end, the whole file is read.
+function wf06Lines(text) {
+  const lines = text.split("\n");
+  const s = indexes(lines, START);
+  const e = indexes(lines, END);
+  const inside = new Set();
+  if (s.length === 1 && e.length === 1 && s[0] < e[0])
+    for (let i = s[0]; i <= e[0]; i += 1) inside.add(i);
+  return inside;
+}
+
 function cd11(m) {
   const out = [];
-  for (const [where, body] of scanTexts(m))
+  for (const [where, body] of scanTexts(m)) {
+    const unread = where === "STATE.md" ? wf06Lines(body) : new Set();
     body.split("\n").forEach((line, i) => {
-      for (const [name, re, keep] of SHAPES)
+      for (const [name, re, keep] of SHAPES) {
+        if (unread.has(i) && PERSONAL.has(name)) continue;
         for (const hit of line.matchAll(re))
           if (!keep || keep(hit)) {
             out.push(`CD-11: ${where} line ${i + 1}: ${name}`);
             break;
           }
+      }
     });
+  }
   return out;
 }
 
@@ -1386,6 +1456,9 @@ const PLACES = [
       }),
   ],
 ];
+const ID_SHAPE = "a 12-digit identity number";
+// A GitHub run id of 12 digits (they are 11 digits today), made from parts.
+const RUN_ID = "4396" + "87012420";
 const BENIGN = [
   "the server listens on 127.0.0.1:4780 and the docs use a@example.invalid and owner@host.example",
   "clone git@github.com:owner/sai.git; sha256 728cb4eae27bf23c4f05c8d9c3dc886bf1c6174d3c593f58ccf13f2aa5b2ced6",
@@ -1399,6 +1472,52 @@ function cases(m) {
   const green = (name, ids, make) => ({ name, ids, make });
   const journal = "- **2026-11-18T10:00:00Z — a run X done (a journal line).**";
   const rows = gateRows(m.progress);
+  // The gate entries of a parsed handoff of an earlier run, added to the model the way
+  // readHandoffs adds them (the rule `gatesOf` decides which of them count).
+  const earlierGate = (patch) => ({
+    to_agent: "REQ-VALIDATOR",
+    run_id: "OTHER-20261001-01",
+    completed_at: "2026-10-01T00:00:00Z",
+    context: { requirement_ids: ["REQ-103"] },
+    result: { verdict: "PASS" },
+    ...patch,
+  });
+  const withGates = (x, json) => ({
+    ...x,
+    gates: [...x.gates, ...gatesOf(json)],
+  });
+  // The REQ-008 line of README.md replaced by `text`, and the status lines of REQ-001,
+  // REQ-007 and REQ-008 set to `statuses`, so the case does not depend on today's words.
+  const sentence = (x, text, statuses) => ({
+    ...x,
+    readme: replaceLine(
+      x.readme,
+      (l) => l.includes("REQ-008"),
+      () => text,
+    ),
+    requirements: ["REQ-001", "REQ-007", "REQ-008"].reduce(
+      (y, id, i) => setStatus(y, id, statuses[i]),
+      x.requirements,
+    ),
+  });
+  const SHARED =
+    "The requirements for the core of Pixel Office (REQ-001, REQ-007, REQ-008) are `blocked`:";
+  const SPLIT =
+    "The requirements for the core of Pixel Office: REQ-001 is `done`; the other two (REQ-007, REQ-008) are `blocked`:";
+  const SPLIT_BACK =
+    "The requirements for the core of Pixel Office: REQ-007 and REQ-008 are `blocked`; REQ-001 is `done`:";
+  const plant = (name) => PLANTS.find(([n]) => n === name)[1];
+  // A WF-06 block the way apply-verdict writes it, the reasons holding the named shapes.
+  const blockWith = (...names) => [
+    START,
+    BLOCK,
+    "",
+    "Причины:",
+    ...names.map((n) => `- ${plant(n)}`),
+    "",
+    END,
+  ];
+  const PERSONAL_NAMES = [...PERSONAL];
   const atGates = (t, line) =>
     editLines(t, (l) =>
       l.splice(lineIndex(l, starts("**Open gates:** ")) + 2, 0, line),
@@ -1508,6 +1627,9 @@ function cases(m) {
             "- 2026-11-18 — ISS-0092 closed, a run X done (a journal line).",
           ),
         ),
+    ),
+    red("05b T15: a dated journal line above the title", "CD-2", "SHAPE", (x) =>
+      withState(x, (t) => `${journal}\n${t}`),
     ),
     red("two gate lines out of the table order", "CD-2", "table order", (x) =>
       withState(x, (t) => withGateLines(t, [`- ${rows[1]}`, `- ${rows[0]}`])),
@@ -1769,6 +1891,27 @@ function cases(m) {
         ],
       }),
     ),
+    red(
+      "05b T02: an earlier passing handoff of REQ-103 to REQ-VALIDATOR by another run",
+      "CD-4",
+      "first passing",
+      (x) => withGates(x, earlierGate({})),
+    ),
+    green(
+      "05b T02: an earlier FAIL handoff of REQ-103 to REQ-VALIDATOR by another run",
+      ["CD-4"],
+      (x) => withGates(x, earlierGate({ result: { verdict: "FAIL" } })),
+    ),
+    green(
+      "05b T02: an earlier PASS handoff of REQ-103 to another role by another run",
+      ["CD-4"],
+      (x) => withGates(x, earlierGate({ to_agent: "REVIEWER" })),
+    ),
+    green(
+      "05b T02: an earlier handoff of REQ-103 that names no requirement list",
+      ["CD-4"],
+      (x) => withGates(x, earlierGate({ context: {} })),
+    ),
     green(
       "an amendment gate of REQ-103 after its first gate",
       ["CD-4"],
@@ -1982,7 +2125,89 @@ function cases(m) {
         ),
       }),
     ),
+    green(
+      "one status word for the three requirements, each status line the same",
+      ["CD-6"],
+      (x) => sentence(x, SHARED, ["blocked", "blocked", "blocked"]),
+    ),
+    green(
+      "the split of O07: REQ-001 `done`, the other two `blocked`, as the status lines say",
+      ["CD-6"],
+      (x) => sentence(x, SPLIT, ["done", "blocked", "blocked"]),
+    ),
+    green(
+      "the split the other way round: REQ-007 and REQ-008 first, REQ-001 last",
+      ["CD-6"],
+      (x) => sentence(x, SPLIT_BACK, ["done", "blocked", "blocked"]),
+    ),
+    red(
+      "the split sentence, but REQ-007 is `done` in its block",
+      "CD-6",
+      "status lines",
+      (x) => sentence(x, SPLIT, ["done", "done", "blocked"]),
+    ),
+    red(
+      "the split sentence, but REQ-001 is still `blocked` in its block",
+      "CD-6",
+      "status lines",
+      (x) => sentence(x, SPLIT, ["blocked", "blocked", "blocked"]),
+    ),
+    red(
+      "05b T03: REQ-001 alone `in_progress` under the sentence that says `blocked`",
+      "CD-6",
+      "for REQ-001",
+      (x) => sentence(x, SHARED, ["in_progress", "blocked", "blocked"]),
+    ),
+    red(
+      "05b T03: REQ-007 alone `in_progress` under the sentence that says `blocked`",
+      "CD-6",
+      "for REQ-007",
+      (x) => sentence(x, SHARED, ["blocked", "in_progress", "blocked"]),
+    ),
+    red(
+      "05b T03: REQ-008 alone `in_progress` under the sentence that says `blocked`",
+      "CD-6",
+      "for REQ-008",
+      (x) => sentence(x, SHARED, ["blocked", "blocked", "in_progress"]),
+    ),
+    red(
+      "the sentence names only REQ-008, REQ-001 and REQ-007 are not on it",
+      "CD-6",
+      "does not say a status word after REQ-001",
+      (x) =>
+        sentence(x, "The window of REQ-008 is `blocked`:", [
+          "blocked",
+          "blocked",
+          "blocked",
+        ]),
+    ),
     // CD-7
+    green(
+      "a .DS_Store, a non-Markdown file and a folder in docs/product are not snapshots",
+      ["CD-7"],
+      (x) => ({
+        ...x,
+        product: [
+          ...x.product,
+          [".DS_Store", "\u0000\u0000\u0000\u0001Bud1"],
+          ["notes.txt", "no snapshot line here\n"],
+          ["images", null],
+        ],
+      }),
+    ),
+    red("a Markdown file named like a folder", "CD-7", "sub.md", (x) => ({
+      ...x,
+      product: [...x.product, ["sub.md", null]],
+    })),
+    red(
+      "docs/product holds only entries that are not Markdown",
+      "CD-7",
+      "no file",
+      (x) => ({
+        ...x,
+        product: [[".DS_Store", "\u0000\u0000\u0000\u0001Bud1"]],
+      }),
+    ),
     red("M21: the snapshot line without the last /", "CD-7", "line 1", (x) => ({
       ...x,
       product: x.product.map(([n, b], i) => [
@@ -2131,6 +2356,108 @@ function cases(m) {
       "benign twins: loopback, reserved domains, hashes, run ids, times, versions, names",
       ["CD-11"],
       (x) => withText(x, "readme", (t) => `${t}\n${BENIGN.join("\n")}\n`),
+    ),
+    green(
+      "a GitHub run id of 12 digits, right after «run» and inside an actions/runs/ link",
+      ["CD-11"],
+      (x) =>
+        withText(
+          x,
+          "readme",
+          (t) =>
+            `${t}\nthe GitHub run ${RUN_ID} and Run ${RUN_ID} again\nhttps://github.com/owner/sai/actions/runs/${RUN_ID}/job/5\n`,
+        ),
+    ),
+    red(
+      "a 12-digit number after «run of», not right after «run»",
+      "CD-11",
+      "a 12-digit identity number",
+      (x) =>
+        withText(x, "readme", (t) => `${t}\na run of ${plant(ID_SHAPE)}\n`),
+    ),
+    red(
+      "a 12-digit number after «running», not right after «run»",
+      "CD-11",
+      "a 12-digit identity number",
+      (x) => withText(x, "readme", (t) => `${t}\nrunning ${plant(ID_SHAPE)}\n`),
+    ),
+    red(
+      "a 12-digit number in a runs/ path that is not an actions/runs/ link",
+      "CD-11",
+      "a 12-digit identity number",
+      (x) =>
+        withText(
+          x,
+          "readme",
+          (t) => `${t}\nsee other/runs/${plant(ID_SHAPE)}\n`,
+        ),
+    ),
+    green(
+      "the personal-data shapes inside the WF-06 block of STATE.md",
+      ["CD-11"],
+      (x) =>
+        withState(x, (t) =>
+          placeLikeApplyVerdict(t, blockWith(...PERSONAL_NAMES)),
+        ),
+    ),
+    red(
+      "a key shape inside the WF-06 block of STATE.md: an AWS access key",
+      "CD-11",
+      "an AWS access key",
+      (x) =>
+        withState(x, (t) =>
+          placeLikeApplyVerdict(t, blockWith("an AWS access key")),
+        ),
+    ),
+    red(
+      "a key shape inside the WF-06 block of STATE.md: a secret given to a name",
+      "CD-11",
+      "a secret given to a name",
+      (x) =>
+        withState(x, (t) =>
+          placeLikeApplyVerdict(t, blockWith("a secret given to a name")),
+        ),
+    ),
+    red(
+      "an e-mail address on the line before the start marker",
+      "CD-11",
+      "an e-mail address",
+      (x) =>
+        withState(x, (t) =>
+          insertBefore(t, is(START), `- ${plant("an e-mail address")}`),
+        ),
+    ),
+    red(
+      "an e-mail address on the line after the end marker",
+      "CD-11",
+      "an e-mail address",
+      (x) =>
+        withState(x, (t) =>
+          insertAfter(t, is(END), `- ${plant("an e-mail address")}`),
+        ),
+    ),
+    red(
+      "personal data in the block whose start marker is lost: the whole file is read",
+      "CD-11",
+      "an e-mail address",
+      (x) =>
+        withState(x, (t) =>
+          removeLine(
+            placeLikeApplyVerdict(t, blockWith("an e-mail address")),
+            is(START),
+          ),
+        ),
+    ),
+    red(
+      "personal data between two markers of a file other than STATE.md",
+      "CD-11",
+      "an e-mail address",
+      (x) =>
+        withText(
+          x,
+          "readme",
+          (t) => `${t}\n${blockWith("an e-mail address").join("\n")}\n`,
+        ),
     ),
     // CD-12
     red("a third cancelled handoff without by", "CD-12", "no «by»", (x) => ({
