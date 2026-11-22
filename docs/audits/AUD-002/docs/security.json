@@ -1,0 +1,149 @@
+{
+  "audit": "AUD-002",
+  "part": "docs",
+  "dimension": "security",
+  "role": "SECURITY-AUDITOR",
+  "subject": "f72eaa7",
+  "checked": [
+    {
+      "check": "Q7 key and token patterns in the documents of the part (working tree f72eaa7)",
+      "how": "git grep -hIoE over docs decisions STATE.md PLAN.md CLAUDE.md README.md tools/README.md app/README.md ideas LICENSE: sk-, ghp_/gho_/ghs_, github_pat_, AKIA/ASIA, xox*, AIza, JWT, PEM private-key headers, Telegram bot tokens, Vercel tokens; every distinct match read in context",
+      "result": "15 distinct matches, all made-up test values or rule texts (sk-ant-abcdefghij1234567890, AKIAZZZZEXAMPLE00001, AKIAIOSFODNN7EXAMPLE, ghp_abcdefghij0123456789, a JWT whose payload decodes to a fake subject, PEM header lines quoted as scanner rules, and 'sk-' fragments that are slugs such as 'sk-without-depends-on-cannot-edit-file'). No real secret."
+    },
+    {
+      "check": "Q7 connection strings, passwords, URLs with credentials, env assignments",
+      "how": "git grep for scheme://user:pass@, password/secret/api_key/token assignments with a value, DATABASE_URL/APP_DB_PASSWORD/VERCEL_TOKEN/ANTHROPIC_API_KEY/GITHUB_TOKEN = value; all hits read",
+      "result": "Every URL with credentials is a scanner test sample (postgres://app:app@db/x, postgres://user:password@localhost..., placeholders with $VAR) in REQ-102 and requirements.yaml; password= lines are examples of the mask rules (decisions/0013, REQ-008). The only env assignment with a literal value is a fake GITHUB_TOKEN=ghp_abcdefghij0123456789 test row. No real value."
+    },
+    {
+      "check": "Q7 long hex strings (possible keys)",
+      "how": "git grep -hIoE '[A-Fa-f0-9]{32,}' with a length histogram; the 32-36 character hits read",
+      "result": "44 strings of 40 characters and 101 of 64 characters are commit and file hashes; of the 3 shorter ones one is a public gist id in a research note and two are digit runs ('67890123...'). No secret."
+    },
+    {
+      "check": "Extra 1: Q7 secret value anywhere in git history of the documents of the part",
+      "how": "git log --all -p over docs decisions STATE.md PLAN.md CLAUDE.md README.md tools/README.md app/README.md ideas LICENSE (all branches, 211 commits), grep -o for the same token patterns plus postgres(ql)://user:pass@host",
+      "result": "Same made-up values only (plus 8 distinct fake connection strings in test samples, one with a password-like sample word, in REQ-102 samples). No real secret, so no Critical. GitHub secret scanning could not be read as enabled (see SEC-DOCS-03)."
+    },
+    {
+      "check": "Environment and key files tracked",
+      "how": "git ls-tree -r --name-only f72eaa7 | grep -iE '(^|/)\\.env|\\.pem$|\\.key$|id_rsa|\\.p12$|credentials|secret'",
+      "result": "Only app/.env.example (placeholder file), a test and fixtures named 'secret' under tools/test, and decision/defect documents with 'secret' in the name. No key file."
+    },
+    {
+      "check": "Personal data: e-mails, phones, IIN-like numbers, social handles, names",
+      "how": "git grep for e-mail, phone (+7 and international forms), 12-digit numbers, t.me/wa.me/instagram/linkedin/vk, ИИН/БИН/IBAN/passport/card words; hits read",
+      "result": "E-mails are example.* / example.invalid test values, one noreply address of Anthropic and one GitHub noreply address of the project account (deliberate). Phones: only '+7 701 000 00 00' placeholders and the invented demo leads of docs/design/samples/picker-v3-approved-2026-10-26/data.js (names with +7 numbers, labelled demo; the file is unchanged since AUD-001, so outside the changed set; not reported). 12-digit hits are IDs and UUID pieces. t.me hits are public competitor bots in docs/research. No IIN/BIN/IBAN. No finding."
+    },
+    {
+      "check": "Paths and user names of a private computer (own search, because traces is blind to backslash paths, scout issue I4)",
+      "how": "git grep -nIE of drive-letter backslash paths, '[A-Za-z]:/(Users|solution|Program|Windows)', '/Users/[A-Za-z]', '/home/[a-z]', AppData, OneDrive, 'Рабочий стол', '/private/var', '/var/folders' over the documents of the part; git grep -F 'Users\\' over the whole tree; the user names of the owner's computers",
+      "result": "No drive-letter path, no home path, no private user name in any document (37 regex hits were 'git show \"$B:path\"' shell fragments, a rule text saying 'no C:\\Users in the document', and '~/.claude/projects/' in the standard form). Commit messages (211 commits): 0 with a computer path."
+    },
+    {
+      "check": "Extra 3: traces check",
+      "how": "cd tools && npm run -s traces (Node 22, on the fixed copy)",
+      "result": "'traces: файлов проверено 2903, следов 0, пропущено 67' (the 67 skipped are binary files). The check does not cover backslash paths; the own search above covers them (0 hits)."
+    },
+    {
+      "check": "Extra 2: the rule of the reference product (decision 0082) in files",
+      "how": "git grep -IiE over the whole fixed tree with the name and its spelling variants ('let[ _-]?flow'), and git ls-tree file names",
+      "result": "0 hits in 2970 tracked files and 0 in file names; the decision files use only the neutral words 'reference product'. The history is not clean: see SEC-DOCS-01."
+    },
+    {
+      "check": "Extra 2 in git history (decision 0082, item 3)",
+      "how": "git log --all -i -S'<name>' --name-only (the name is not repeated here); git branch -r --contains 7591fc0; gh repo view --json visibility",
+      "result": "The name is added in 6 commits (7591fc0, 187b0aa, 6143f0c, 3cb5166, 956decd, a879495; 2026-10-05..09), under reference/, runs/ and handoffs/; reachable from origin/main; repository visibility PUBLIC. Reported as SEC-DOCS-01."
+    },
+    {
+      "check": "PROGRESS.md line 17: are the Vercel identifiers 'not secret'",
+      "how": "sed -n 17p docs/program/public-v1/PROGRESS.md; git grep for team_/prj_ identifiers over the tree; git log -S for the first commit; reading docs/program/public-v1/ARCHITECTURE.md line 848",
+      "result": "Two identifiers on the line: the Vercel team id (team_O4mo..., 29 characters) and the project id (prj_5vWT..., 28 characters). Both are account identifiers, not credentials: a deploy needs VERCEL_TOKEN, which is written in no file. The marking 'not secret' is right for both in the sense of Q7 (a deploy or API call cannot be made with them alone). It is not right in the sense of 'harmless': they name the owner's account and project, are public since f8b8973 (2026-11-19), and the deploy runbook already takes them as <id> placeholders, so the public line is not needed. Reported as Low SEC-DOCS-02. The Neon connection is described by plan and region only, no host or database name; the variable names listed are names only (APP_DB_PASSWORD is marked sensitive and has no value anywhere)."
+    },
+    {
+      "check": "Owner-requests, business-plan, research, archive: names of people, companies, numbers",
+      "how": "listed the folders; git grep for colleague/employer/family words, ИИН/БИН, handles, URLs; read the head and structure of docs/owner-requests/2026-10-27-public-launch-plan.md (537 lines, a document of a colleague inserted whole, added 2026-11-19, public)",
+      "result": "No personal name, no employer or company name (the employer and its product are replaced by neutral placeholders, as ideas/README.md says), no phone or number of a person, no internal host. The colleague's text is quoted whole and unnamed: no secret in it; whether the colleague agreed to its publication is an open doubt (not a finding). Competitor and market notes name only public companies and public pages."
+    },
+    {
+      "check": "Commit author identity in history",
+      "how": "git log --all --format='%an <%ae> | %cn <%ce>' | sort | uniq -c",
+      "result": "211 commits, one author and committer, the GitHub noreply address only (56 of them since the AUD-001 base). No private e-mail."
+    },
+    {
+      "check": "Open defects covering the part",
+      "how": "listed docs/issues/ISS-*.md with status open and read the titles about secrets, paths, identity",
+      "result": "No open defect covers a document secret, an identifier, or the history. ISS-0100 (a Chrome path printed raw by the e2e kit) is in tools/, not in the documents. Nothing was skipped as 'already covered'."
+    },
+    {
+      "check": "GitHub repository settings seen from gh (read-only)",
+      "how": "gh repo view --json visibility; gh api repos/<repo>/secret-scanning/alerts (GET)",
+      "result": "Visibility PUBLIC (matches decision 0111). The secret-scanning call returned 'Secret scanning is disabled on this repository' (HTTP 404). Reported as SEC-DOCS-03."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Text inside the 64 images and PDFs in docs/ (screenshots in docs/design/samples)",
+      "why": "No OCR or viewer was run (the traces check skips binaries); screenshots may show paths or tabs of a private computer."
+    },
+    {
+      "check": "handoffs/, runs/, reports/, .claude/, tools/, app/, .github/ contents",
+      "why": "Not part 'docs' (other parts and other auditors of AUD-002); only the history of the documents and the name search over the whole tree were done."
+    },
+    {
+      "check": "Secret scan of git history with a dedicated scanner and of objects only on GitHub (closed pull requests, forks)",
+      "why": "No scanner is installed and installing one is outside the rules; the history search was own grep over all branches of the fixed copy."
+    },
+    {
+      "check": "Whether the owner may publish the colleague's document (docs/owner-requests/2026-10-27-public-launch-plan.md) and the code of the former project in the history",
+      "why": "A question of rights and consent, not of files; only the owner can answer (see issues of the handoff)."
+    },
+    {
+      "check": "The 21 differing tools/ files and any test run (the REQ-110 guards, current-docs.test.js)",
+      "why": "Not part of this dimension; no record on GitHub for the work line; no test was run (rules of this PC)."
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-DOCS-01",
+      "check": "Extra 2 (decision 0082 item 3) and decision 0019 'Граница' against the public repository (decision 0111)",
+      "severity": "High",
+      "title": "The public git history still holds the name of the reference product and the code of a former project (reference/, 12 files, 160799 bytes); rewriting was left to the owner in decision 0019 and not asked again when the repository was opened",
+      "where": "git history: commits 7591fc0 (adds reference/ and run sources, 2026-10-05) and 187b0aa (removes them from the tree, 2026-10-06); the name is also in handoffs/PROD-20261006-02/step-05-req-validator.json and handoffs/REQ-20261006-01/step-01-req-analyst.json (commits 6143f0c, 3cb5166, 956decd, a879495); decisions/0019-standalone-no-traces.md section 'Граница'; decisions/0111-repository-open-on-purpose.md",
+      "evidence": "git log --all -i -S'<name of the reference product>' --format=%h -> 6 commits (7591fc0 187b0aa 6143f0c 3cb5166 956decd a879495). git ls-tree -r -l 7591fc0 -- reference -> 12 files, 160799 bytes (a former project, with a C# domain file whose comment names the reference product). git branch -r --contains 7591fc0 -> origin/main, origin/m0-records. gh repo view --json visibility -> PUBLIC. decisions/0019 'Граница': «Старые коммиты git содержат прежние названия и код reference/. Переписывать историю git ORCH не стал: ... нужно отдельное решение владельца»; grep of decisions/0111 for '0019', 'reference/' and 'history' -> the decision does not treat the history. No open defect in docs/issues/ covers it. The working tree is clean (0 hits in 2970 files; traces: 0 traces).",
+      "item": "decision 0082 item 3 and decision 0019 (no Q item is broken: no secret involved)",
+      "recommendation": "Ask the owner (a question for ORCH, not a file edit): either accept in a new decision that the history stays public with the names and the former project's code (and say who owns that code), or rewrite the history (git filter-repo over reference/, runs/WF06-2026092*/sources and the two handoffs, then a forced push and a new clone everywhere, plus a request to GitHub to drop cached views), or make the repository private again (decision 0111). Until the owner decides, record the open risk in STATE.md and decisions/0111."
+    },
+    {
+      "id": "SEC-DOCS-02",
+      "check": "PROGRESS.md line 17 (identifiers), spirit of Q7",
+      "severity": "Low",
+      "title": "Vercel team id and project id of the owner's account are written in a public document although the deploy runbook already uses placeholders",
+      "where": "docs/program/public-v1/PROGRESS.md:17 (added in f8b8973, 2026-11-19); docs/program/public-v1/ARCHITECTURE.md:848 says 'not secret' for both",
+      "evidence": "git grep -nIE 'team_O4mo|prj_5vWT' -> only docs/program/public-v1/PROGRESS.md:17 (team id 29 characters, project id 28 characters). git grep VERCEL_ORG_ID -> the runbook, the design and app/test/unit/runbooks.test.js use '<id>' placeholders only. No VERCEL_TOKEN value anywhere.",
+      "item": "Q7 (not violated: an id is not a credential)",
+      "recommendation": "Keep the 'not secret' marking but replace the two values in PROGRESS.md line 17 with a note '<recorded at G3, kept outside the repository>'; the ids stay in the public history either way, so nothing needs rotating. Low because a token is also needed for any use."
+    },
+    {
+      "id": "SEC-DOCS-03",
+      "check": "Q7 safety net of a public repository",
+      "severity": "Low",
+      "title": "GitHub secret scanning is disabled on a repository that has been public since 2026-11-15",
+      "where": "GitHub repository settings (not a file)",
+      "evidence": "gh api repos/<owner>/sai/secret-scanning/alerts -> {\"message\":\"Secret scanning is disabled on this repository.\",\"status\":\"404\"}; gh repo view --json visibility -> \"PUBLIC\".",
+      "item": "Q7",
+      "recommendation": "The owner turns on 'Secret scanning' and 'Push protection' in the repository settings (free for public repositories); the project's own findsecrets stays the first line. Not a defect in any document, so Low."
+    }
+  ],
+  "summary": {
+    "counts": {
+      "Critical": 0,
+      "High": 1,
+      "Medium": 0,
+      "Low": 2
+    },
+    "checks_done": 15,
+    "checks_not_done": 5,
+    "text": "No real secret, key, personal number, computer path or user name in the documents of the part, in the working tree or in the history of the documents; the traces check gives 0 traces in 2903 files and the name of the reference product is in no file of the tree. One High: the public git history still carries that name and the code of a former project (decision 0019 left the rewriting to the owner and the opening of the repository did not ask again). Two Low: the Vercel team and project ids stand in a public line although the runbooks already use placeholders ('not secret' is right for credentials, not for harmless), and GitHub secret scanning is off."
+  }
+}

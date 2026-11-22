@@ -1,0 +1,640 @@
+{
+  "audit": "AUD-002",
+  "part": null,
+  "requirement_group": "production-app",
+  "dimension": "Requirements",
+  "role": "RELEASE-VALIDATOR",
+  "subject": "f72eaa7",
+  "records_used": [
+    "app run 45031353708 (commit 0c50fc2, app/ equal to the head f72eaa7)",
+    "app run 44919421105 (main e0a425b)",
+    "check run 44919421116 (main e0a425b)",
+    "check run 45031353719 (0c50fc2)"
+  ],
+  "requirements": [
+    {
+      "requirement": "REQ-108",
+      "counts": {
+        "criteria": 15,
+        "met": 12,
+        "not_met": 0,
+        "not_checked": 3
+      },
+      "criteria": [
+        {
+          "n": 1,
+          "verdict": "met",
+          "how": "Read app/.npmrc, app/package.json and app/package-lock.json with an own script on f72eaa7; npm view <name> time --json for the 12 direct dependencies; the named test npmrc.test.js in the record.",
+          "evidence": [
+            "app/.npmrc = save-exact=true, engine-strict=true, ignore-scripts=true; package.json private true, type module, engines.node 22.x; 12 versions all ^\\d+\\.\\d+\\.\\d+$ (3 dependencies hono 4.13.16, @hono/node-server 2.1.6, pg 8.23.1; 9 devDependencies, the two @types packages are named in decisions/0001); eslint 10.11.0, @eslint/js 10.0.1, globals 17.12.0, prettier 3.9.9 equal to tools/package.json; no preinstall/install/postinstall/prepare; app/package-lock.json tracked (git ls-files), lockfileVersion 3, 102 resolved all start with https://registry.npmjs.org/, licences of the 12 direct entries MIT or Apache-2.0.",
+            "npm view time: youngest pin @electric-sql/pglite 0.5.15 (2026-11-03), 16 days before the release commit d87b3d1 (2026-11-19); all 12 are 16 to 285 days old (>= 14).",
+            "unit/npmrc.test.js: head record job check: ok 40 - NPM-1, ok 41 - NPM-2, ok 42 - NPM-3, ok 43 - NPM-4, ok 44 - NPM-5, ok 45 - NPM-7, ok 46 - NPM-6, ok 47 - ENV-1; main 8/8"
+          ]
+        },
+        {
+          "n": 2,
+          "verdict": "not_checked",
+          "how": "Read app/package.json, grepped app/test, ls on the 26 named test files, read the CI records. The fresh-clone run of the planted failures and of the four empty-test cases was not made (no npm run here, ISS-0129 covers it) and the work line has no tools/ record.",
+          "evidence": [
+            "check script is one && chain prettier --check . && eslint . --max-warnings 0 && tsc --noEmit -p jsconfig.json && node scripts/check-public.js && node scripts/vendored.js && node ../tools/src/picker/cli.js check content/sai-intake.json && npm run test:unit && npm run test:int; no || and no ;; test scripts carry no --test-only/--test-name-pattern/--test-skip-pattern.",
+            "ls: 10 int (node-main, migrate, selfcheck, site-gate, logging, db-down, api-entry, health, headers, smoke-local), 2 pg (migrate-pg, selfcheck-pg) and 14 unit (npmrc, import-boundaries, node-floor, no-string-sql, db-config, body, ci-workflow, docker-files, vercel-config, headers-parity, smoke, check-public, vercel-build, runbooks) test files all present.",
+            "grep -rnE skip/todo/only pattern over app/test -> no line.",
+            "Head record, job check, step 'Run the app check': unit '# tests 122 / # pass 122 / # fail 0 / # skipped 0 / # todo 0'; int '# tests 47 / # pass 47 / # fail 0 / # skipped 0 / # todo 0'; the 122 equals the top-level test( count of app/test/unit (my count 122); main record 44919421105 had 120 (+2 REQ-113 tests in texts.test.js).",
+            "unit/npmrc.test.js (the presence and count guard) ok 1..8 in the record, see criterion 1."
+          ],
+          "unchecked_parts": [
+            "the ten planted-failure/empty-test outputs in a fresh clone (npm run forbidden here; open defect ISS-0129)",
+            "the comparison of N with the design catalogues (section 13 of docs/design/REQ-108-109-app-skeleton.md and later runs) was not made; only equality with the number of tests in the files",
+            "cd tools && npm run check on the work line: no green GitHub record (check runs on the work line are red at handoffs-check)"
+          ]
+        },
+        {
+          "n": 3,
+          "verdict": "met",
+          "how": "Named test in the record; the real tree is what the test reads.",
+          "evidence": [
+            "unit/import-boundaries.test.js: head record job check: ok 25 - IB-1, ok 26 - IB-2, ok 27 - IB-3, ok 28 - IB-4; main 4/4"
+          ]
+        },
+        {
+          "n": 4,
+          "verdict": "met",
+          "how": "Named test in the record; live GET on production for the 404/page parts; the closed text read in app/public/index.html.",
+          "evidence": [
+            "int/node-main.test.js: head record job check: ok 31 - NM-1, ok 32 - NM-2, ok 33 - NM-3, ok 34 - NM-4, ok 35 - NM-5, ok 36 - NM-6; main 6/6",
+            "index.html title holds 'Sai — закрытое тестирование' (grep count 2), root <html lang=\"ru\">; production GET / -> 200 text/html; charset=utf-8, <html lang=\"ru\">."
+          ]
+        },
+        {
+          "n": 5,
+          "verdict": "met",
+          "how": "Named test in the record; live GET on production.",
+          "evidence": [
+            "int/node-main.test.js: head record job check: ok 31 - NM-1, ok 32 - NM-2, ok 33 - NM-3, ok 34 - NM-4, ok 35 - NM-5, ok 36 - NM-6; main 6/6",
+            "production: GET /api/x/y and /api/p/x -> 404 application/json, body {\"error\":\"not_found\"} (21 bytes both); /nope, /a/b/c.html -> 404 text/html 3092 bytes (equal lengths); GET / -> 200."
+          ]
+        },
+        {
+          "n": 6,
+          "verdict": "met",
+          "how": "Named test in the record; git grep for the call.",
+          "evidence": [
+            "unit/node-floor.test.js: head record job check: ok 38 - NF-1, ok 39 - NF-2; main 2/2",
+            "git grep nodeFloorRefusal over app/server app/api app/scripts: defined in app/server/config.js:140, imported and called only in app/server/node-main.js:5 and :28."
+          ]
+        },
+        {
+          "n": 7,
+          "verdict": "met",
+          "how": "Named tests in the record (PGlite, run in the job check).",
+          "evidence": [
+            "int/migrate.test.js: head record job check: ok 26 - MG-1, ok 27 - MG-2, ok 28 - MG-3, ok 29 - MG-4, ok 30 - MG-5; main 5/5",
+            "unit/no-string-sql.test.js: head record job check: ok 36 - SQL-1, ok 37 - SQL-2; main 2/2"
+          ]
+        },
+        {
+          "n": 8,
+          "verdict": "met",
+          "how": "Named tests in the record: the pg tests ran against Postgres 17 in the job pg.",
+          "evidence": [
+            "pg/migrate-pg.test.js: head record job pg: ok 1 - MP-1, ok 2 - MP-2, ok 3 - MP-3; main 3/3",
+            "pg/selfcheck-pg.test.js: head record job pg: ok 4 - SP-1; main 1/1",
+            "unit/db-config.test.js: head record job check: ok 8 - DBC-1, ok 9 - DBC-2, ok 10 - DBC-3, ok 11 - DBC-4, ok 12 - DBC-5; main 5/5",
+            "int/selfcheck.test.js: head record job check: ok 37 - SC-1, ok 40 - SC-3, ok 41 - SC-4, ok 42 - SC-5, ok 43 - SC-6; main 5/5",
+            "Head job pg: '# tests 4 / # pass 4 / # fail 0 / # skipped 0 / # todo 0' (log line 632-638 of the run log)."
+          ]
+        },
+        {
+          "n": 9,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "int/site-gate.test.js: head record job check: ok 44 - SG-1, ok 45 - SG-2, ok 46 - SG-3; main 3/3"
+          ]
+        },
+        {
+          "n": 10,
+          "verdict": "met",
+          "how": "Named tests in the record.",
+          "evidence": [
+            "int/logging.test.js: head record job check: ok 25 - LG-1; main 1/1",
+            "unit/body.test.js: head record job check: ok 1 - BODY-1, ok 2 - BODY-2; main 2/2"
+          ]
+        },
+        {
+          "n": 11,
+          "verdict": "not_checked",
+          "how": "Read .github/workflows/app.yml, the three job logs, run lists; the pruned-clone run, the emptied-pg-folder and one-pg-test-removed runs were not made (open defect ISS-0129).",
+          "evidence": [
+            "unit/ci-workflow.test.js: head record job check: ok 6 - CIW-1, ok 7 - CIW-2; main 2/2",
+            "app.yml read on f72eaa7: trigger push on main and ci/**; paths app/**, docs/runbooks/**, tools/package.json, tools/src/team/**, tools/src/pixel-office/mask.js, public/layout.js, public/office-sim.js, tools/src/picker/**, tools/src/node-floor.js, .github/workflows/app.yml; permissions contents: read; jobs exactly check, pg, docker, e2e, each with timeout-minutes; every uses: pinned to 40 hex (checkout 3d3c42e..., setup-node 8207627...); node-version 22.23.4; 5 'node -v'; postgres:17@sha256:0d938e97... in app.yml and compose.yaml; no pull_request_target, no secrets., no github.event text. app.yml is byte-equal between e0a425b and f72eaa7.",
+            "check.yml is unchanged by the REQ-108 build commit (git diff ed7f67d^ ed7f67d -- .github/workflows/check.yml: empty); later it was changed by the REQ-110 line (a2fd74f), which is not REQ-108's.",
+            "gh: run 45031353708 (app, ci/m1-words-1, 0c50fc2) success, check run 45031353719 success on the same sha; run 44919421105/44919421116 success on main e0a425b.",
+            "Head job pg: '# tests 4 / # pass 4 / # fail 0 / # skipped 0 / # todo 0'; main job pg the same.",
+            "Note: the pg job starts Postgres with `docker run postgres:17@sha256:...` in a step, not as a `services:` entry; the test passes with it."
+          ],
+          "unchecked_parts": [
+            "pruned-clone run (every unlisted path removed, npm ci, npm run check)",
+            "npm run test:pg over an emptied pg folder and with one pg test removed",
+            "cd tools && node --test test/repo.test.js (forbidden on this PC)",
+            "git diff --exit-code base/<RUN-ID> -- check.yml with the literal base tag: the tag of the run M1SITE-20261117-01 is not in the repository; substituted by the parent of the build commit ed7f67d"
+          ]
+        },
+        {
+          "n": 12,
+          "verdict": "met",
+          "how": "Named test in the record; docker job steps in both logs; Dockerfile and compose.yaml read.",
+          "evidence": [
+            "unit/docker-files.test.js: head record job check: ok 13 - DF-1, ok 14 - DF-2; main 2/2",
+            "Dockerfile: FROM node:22.23.4-bookworm-slim@sha256:5ec23b7c..., RUN npm ci --omit=dev, USER node, ENV NODE_ENV=production, ENV PORT=8080, EXPOSE 8080, HEALTHCHECK, CMD sh -c 'node server/db/migrate.js && exec node server/node-main.js'. compose.yaml: services db (postgres:17@sha256:0d938e97...) and web; passwords are ${POSTGRES_PASSWORD:?required} and ${APP_DB_PASSWORD:?required} references.",
+            "Head docker job steps, all ok: 'The closed page, the 404 page, the uniform 404 and the preview redirect', 'The web container does not run as root', 'Migration 0001 is recorded', 'The app connects as sai_app_login only', 'Smoke against the container' (smoke: ok / 200 ... smoke: ok preview 307), 'The demo questionnaire answers 200'; job docker conclusion success."
+          ]
+        },
+        {
+          "n": 13,
+          "verdict": "met",
+          "how": "Ran every command of the criterion in the fixed copy.",
+          "evidence": [
+            "git check-ignore -q: ignored app/.env, app/.env.local, app/.vercel/project.json, .vercel/project.json, app/test-results/x, app/.tmp/x; app/.env.example not ignored.",
+            "git ls-files app | grep .env pattern minus .env.example -> no line; git ls-files | grep -c '.vercel/' -> 0.",
+            "git log of .gitignore: 3 commits (ed7f67d, a879495, 7591fc0); git diff ed7f67d^ ed7f67d -- .gitignore: 8 insertions, 0 deletions.",
+            "app/.env.example holds, with empty values, the 11 names that app/server reads through raw() (APP_DB_PASSWORD, APP_ORIGIN, APP_VERSION, DATABASE_URL, DATABASE_URL_UNPOOLED, HOST, LOG_LEVEL, MIGRATIONS_DIR, PGLITE_DIR, PORT, PREVIEW_ORIGIN) and NODE_ENV, SITE_GATE, MIGRATE_ON_BUILD.",
+            "The secret grep of the criterion over app and .github/workflows/app.yml (node_modules excluded) -> no line."
+          ]
+        },
+        {
+          "n": 14,
+          "verdict": "not_checked",
+          "how": "Needs real Chrome (UAT-RUNNER); no test of a record carries the closed-page step with SITE_GATE set; one browser rule, none started here.",
+          "evidence": [
+            "Earlier records exist (docs/uat/M1CODE-20261119-01-prod.md, handoffs/M1CODE-20261119-01/step-08b), not re-checked; ISS-0129 names the real-Chrome step of the gate page as never run."
+          ],
+          "unchecked_parts": [
+            "browser step on /, /nope and the gate page in three windows, two schemes",
+            "gate page with SITE_GATE set in real Chrome"
+          ]
+        },
+        {
+          "n": 15,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "int/db-down.test.js: head record job check: ok 6 - DD-1, ok 7 - DD-2; main 2/2"
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "REQ-109",
+      "counts": {
+        "criteria": 10,
+        "met": 9,
+        "not_met": 0,
+        "not_checked": 1
+      },
+      "criteria": [
+        {
+          "n": 1,
+          "verdict": "met",
+          "how": "Parsed app/vercel.json, read app/.vercelignore, ls app/api, git ls-files for '[' on f72eaa7; named test in the record.",
+          "evidence": [
+            "unit/vercel-config.test.js: head record job check: ok 120 - VC-1, ok 121 - VC-2, ok 122 - VC-3; main 3/3",
+            "vercel.json: framework null, buildCommand 'npm run vercel-build', outputDirectory public, regions [\"fra1\"], functions {\"api/index.js\": {\"maxDuration\": 30}}, routes exactly 4: {src '/(.*)', continue true, headers (8)}, {handle filesystem}, {src '^/api(?:/(.*))?$', dest '/api/index?__p=$1'}, {src '/(.*)', status 404, dest '/404.html'}; no other key.",
+            "app/api holds index.js only; git ls-files app | grep -c '[' -> 0; app/.vercelignore: /*, then !api !server !public !content !scripts !db !package.json !package-lock.json !.npmrc !vercel.json (no trailing slash)."
+          ]
+        },
+        {
+          "n": 2,
+          "verdict": "met",
+          "how": "Named test in the record; harmless GETs on production.",
+          "evidence": [
+            "int/api-entry.test.js: head record job check: ok 1 - AE-1, ok 2 - AE-2, ok 3 - AE-3, ok 4 - AE-4, ok 5 - AE-5; main 5/5",
+            "production: /api/index?__p=health -> 200 with the /api/health body (94 bytes both); /api/index?__p=x/y -> {\"error\":\"not_found\"}; __p=../index.html -> 404; __p=//evil.example/x -> 404, no redirect."
+          ]
+        },
+        {
+          "n": 3,
+          "verdict": "met",
+          "how": "Named test in the record; GET on production.",
+          "evidence": [
+            "int/health.test.js: head record job check: ok 21 - HL-1, ok 22 - HL-2, ok 23 - HL-3, ok 24 - HL-4; main 4/4",
+            "production GET /api/health -> 200, application/json, Cache-Control: no-store, body {\"ok\":true,\"db\":\"ok\",\"role\":\"ok\",\"migrations_pending\":0,\"version\":\"e0a425b\",\"node\":\"v22.23.5\"} (exactly the six keys)."
+          ]
+        },
+        {
+          "n": 4,
+          "verdict": "met",
+          "how": "Named tests in the record; response headers of production read.",
+          "evidence": [
+            "unit/headers-parity.test.js: head record job check: ok 23 - HP-1, ok 24 - HP-2; main 2/2",
+            "int/headers.test.js: head record job check: ok 18 - HD-1, ok 19 - HD-2, ok 20 - HD-3; main 3/3",
+            "production GET / carries the https set equal to the criterion's list: CSP (default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'), HSTS max-age=31536000, nosniff, X-Frame-Options DENY, Referrer-Policy no-referrer, Permissions-Policy camera=(), microphone=(), geolocation=(), payment=(), COOP same-origin, X-Robots-Tag noindex; Server: Vercel (no digit), no X-Powered-By."
+          ]
+        },
+        {
+          "n": 5,
+          "verdict": "met",
+          "how": "Named tests in the record; ran scripts/smoke.js against production (7 GETs).",
+          "evidence": [
+            "unit/smoke.test.js: head record job check: ok 88 - SM-1, ok 89 - SM-2, ok 90 - SM-3, ok 91 - SM-4, ok 92 - SM-5, ok 93 - SM-6, ok 94 - SM-7; main 7/7",
+            "int/smoke-local.test.js: head record job check: ok 47 - SL-1; main 1/1",
+            "node app/scripts/smoke.js --base https://sai-team.vercel.app --expect-version e0a425b -> exit 0, 'smoke: ok / 200', 'ok headers of /', 'ok /api/health 200', 'ok /api/health version', 'ok /api/health node', 'ok nested /api 404', 'ok random path 404'."
+          ]
+        },
+        {
+          "n": 6,
+          "verdict": "met",
+          "how": "Named tests in the record; Dockerfile read; docker job log.",
+          "evidence": [
+            "unit/docker-files.test.js: head record job check: ok 13 - DF-1, ok 14 - DF-2; main 2/2",
+            "unit/ci-workflow.test.js: head record job check: ok 6 - CIW-1, ok 7 - CIW-2; main 2/2",
+            "Dockerfile has HEALTHCHECK; head docker job step 'Smoke against the container' printed smoke: ok / 200 ... smoke: ok preview 307; job success."
+          ]
+        },
+        {
+          "n": 7,
+          "verdict": "met",
+          "how": "Named test in the record; ran node app/scripts/check-public.js on f72eaa7 (a plain script, read-only).",
+          "evidence": [
+            "unit/check-public.test.js: head record job check: ok 3 - CP-1, ok 4 - CP-2, ok 5 - CP-3; main 3/3",
+            "node scripts/check-public.js -> 'check-public: app/public is clean', exit 0; the check script puts it after tsc and before test:unit (npmrc.test.js ok)."
+          ]
+        },
+        {
+          "n": 8,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "unit/vercel-build.test.js: head record job check: ok 114 - VB-1, ok 115 - VB-2, ok 116 - VB-3, ok 117 - VB-4, ok 118 - VB-5, ok 119 - VB-6; main 6/6"
+          ]
+        },
+        {
+          "n": 9,
+          "verdict": "met",
+          "how": "Named test in the record; grep of vercel@; ran the traces command.",
+          "evidence": [
+            "unit/runbooks.test.js: head record job check: ok 86 - RB-1, ok 87 - RB-2; main 2/2",
+            "git grep vercel@ over docs/runbooks and app/README.md: 9 hits, all vercel@64.1.0; no 'vercel link', '--token', '--force', 'vercel@latest', no '--yes' on rollback.",
+            "cd tools && npm run -s traces (Node v22.23.4) -> 'traces: файлов проверено 2903, следов 0, пропущено 67', exit 0."
+          ]
+        },
+        {
+          "n": 10,
+          "verdict": "not_checked",
+          "how": "Read the head record of the job check and grepped app/test; the tools/ check of the work line has no green record.",
+          "evidence": [
+            "Head job check: unit '# tests 122', int '# tests 47', both '# fail 0 # skipped 0 # todo 0', check-public step in the chain; step Run the app check green.",
+            "grep of the skip/todo/only forms over app/test -> no line."
+          ],
+          "unchecked_parts": [
+            "cd tools && npm run check on the work line: no green GitHub record (check runs 44875023688, 44875030768, 45034277858 red at handoffs-check)",
+            "equality of N with the catalogue count (see REQ-108 criterion 2)"
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "REQ-111",
+      "counts": {
+        "criteria": 16,
+        "met": 11,
+        "not_met": 0,
+        "not_checked": 5
+      },
+      "criteria": [
+        {
+          "n": 1,
+          "verdict": "met",
+          "how": "Named test in the record; ls app/public/*.html.",
+          "evidence": [
+            "unit/public-pages.test.js: head record job check: ok 79 - PP-1, ok 80 - PP-2, ok 81 - PP-3, ok 82 - PP-4, ok 83 - PP-5, ok 84 - PP-6, ok 85 - PP-7; main 7/7",
+            "ls: 404.html demo.html examples.html gate.html how.html index.html (the exact set of six); index.html holds the closed-test text."
+          ]
+        },
+        {
+          "n": 2,
+          "verdict": "not_checked",
+          "how": "Named test in the record; grepped the named ru strings in app/public/shared/i18n/texts.js on f72eaa7. The reader part was not re-checked.",
+          "evidence": [
+            "unit/texts.test.js: head record job check: ok 95 - TX-1, ok 96 - TX-2, ok 97 - TX-3, ok 98 - TX-4, ok 99 - TX-5, ok 100 - TX-6, ok 101 - TX-7, ok 102 - TX-8, ok 103 - TX-9, ok 104 - TX-10; main 8/10",
+            "head texts.test.js 10/10 ok (main e0a425b 8/8; the two added tests are REQ-113's).",
+            "f72eaa7 texts.js holds, once each, the ru test-mode line, the AI disclosure, Авто/Светлая/Тёмная, Описать идею, 'Чего Sai пока не делает', the four stage words, the caption, kk Ашық/Қараңғы; the 15 REQ-113 key changes did not remove any of them."
+          ],
+          "unchecked_parts": [
+            "the pairs sent to reader agents, their 'да', marks and rounds in the handoffs (a reader record; ISS-0126 and ISS-0127 are open on them)"
+          ]
+        },
+        {
+          "n": 3,
+          "verdict": "met",
+          "how": "Named test in the record; ran check-public; grep for the one-place rule.",
+          "evidence": [
+            "unit/forbidden-words.test.js: head record job check: ok 15 - FW-1, ok 16 - FW-2, ok 17 - FW-3, ok 18 - FW-4, ok 19 - FW-5, ok 20 - FW-6, ok 21 - FW-7, ok 22 - FW-8; main 8/8",
+            "node scripts/check-public.js -> clean, exit 0 (it applies the lists to texts, pages and the intake).",
+            "grep -rl 'кепілдейді' app (node_modules and test excluded) -> exactly app/scripts/word-lists.js."
+          ]
+        },
+        {
+          "n": 4,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "unit/theme-contrast.test.js: head record job check: ok 105 - TC-1, ok 106 - TC-2, ok 107 - TC-3, ok 108 - TC-4, ok 109 - TC-5; main 5/5"
+          ]
+        },
+        {
+          "n": 5,
+          "verdict": "met",
+          "how": "Ran the command of the criterion in app/; named test in the record.",
+          "evidence": [
+            "unit/intake.test.js: head record job check: ok 29 - IN-1, ok 30 - IN-2, ok 31 - IN-3, ok 32 - IN-4, ok 33 - IN-5, ok 34 - IN-6, ok 35 - IN-7; main 7/7",
+            "cd app && node ../tools/src/picker/cli.js check content/sai-intake.json -> 'Файл арендатора sai-intake в порядке: вопросов 5, решений 6, правил 35.', exit 0 (N = 6, in 1..6); cli.js differs between main and the head, so this run on f72eaa7 stands in for the record."
+          ]
+        },
+        {
+          "n": 6,
+          "verdict": "met",
+          "how": "Named test in the record; ran node scripts/vendored.js.",
+          "evidence": [
+            "unit/vendored.test.js: head record job check: ok 110 - VD-1, ok 111 - VD-2, ok 112 - VD-3, ok 113 - VD-4; main 4/4",
+            "node scripts/vendored.js -> 'vendored: 1 file matches its source', exit 0; app/vendored.json has one entry server/vendor/picker-engine.js <- tools/src/picker/engine.js, sha256 a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe (the value of the criterion)."
+          ]
+        },
+        {
+          "n": 7,
+          "verdict": "met",
+          "how": "Named test in the record; GET on production.",
+          "evidence": [
+            "int/demo.test.js: head record job check: ok 10 - DM-1, ok 11 - DM-2, ok 12 - DM-3, ok 13 - DM-4, ok 14 - DM-5, ok 15 - DM-6, ok 16 - DM-6c, ok 17 - DM-7; main 8/8",
+            "production GET /api/demo/questionnaire?lang=kk and ?lang=ru -> 200, both bodies start {\"lang\":\"ru\",...} and are byte-identical (same md5): kk answers in Russian through the function entry; GET /api/demo/result -> 404."
+          ]
+        },
+        {
+          "n": 8,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "int/demo-parity.test.js: head record job check: ok 8 - DP-1, ok 9 - DP-2; main 2/2"
+          ]
+        },
+        {
+          "n": 9,
+          "verdict": "met",
+          "how": "Named tests in the record; GET on production.",
+          "evidence": [
+            "unit/public-build.test.js: head record job check: ok 72 - PB-1, ok 73 - PB-2, ok 74 - PB-3, ok 75 - PB-4, ok 76 - PB-5, ok 77 - PB-6, ok 78 - PB-7; main 7/7",
+            "int/node-main.test.js: head record job check: ok 31 - NM-1, ok 32 - NM-2, ok 33 - NM-3, ok 34 - NM-4, ok 35 - NM-5, ok 36 - NM-6; main 6/6",
+            "production: /examples.html -> 404 (3092 bytes, the 404 page), as /nope; kk request answered in Russian."
+          ]
+        },
+        {
+          "n": 10,
+          "verdict": "met",
+          "how": "Named test in the record; ran every command of the criterion with own scripts (outside the project, in <scratch>).",
+          "evidence": [
+            "unit/check-public.test.js: head record job check: ok 3 - CP-1, ok 4 - CP-2, ok 5 - CP-3; main 3/3",
+            "check-public on the real app/public: exit 0.",
+            "grep -rnwE of the 29 sample names over app/public app/content -> no line.",
+            "phone script over the 30 files of app/public and app/content (3338 digit runs): 0 of the 11 sample numbers found; positive control: all 11 found in the sample's data.js.",
+            "sha256 of the 22 files of app/public against the 14 files of the sample folder: 0 in common.",
+            "kk draft strings of data.js (kk block plus second argument of L(...), >= 3 words): 150 compared with 179 kk values of the texts module and every string of the intake (527, all languages, a stricter reading) -> 0 hits; the criterion's number 150 is reproduced."
+          ]
+        },
+        {
+          "n": 11,
+          "verdict": "not_checked",
+          "how": "Named tests and the e2e job log in the record; read package.json, playwright-core date. The depth-1 pruned clone run (npm ci, npm run check) was not made.",
+          "evidence": [
+            "unit/npmrc.test.js: head record job check: ok 40 - NPM-1, ok 41 - NPM-2, ok 42 - NPM-3, ok 43 - NPM-4, ok 44 - NPM-5, ok 45 - NPM-7, ok 46 - NPM-6, ok 47 - ENV-1; main 8/8",
+            "unit/ci-workflow.test.js: head record job check: ok 6 - CIW-1, ok 7 - CIW-2; main 2/2",
+            "check script order prettier, eslint, tsc, check-public, vendored, picker content, test:unit, test:int; test:e2e = node --test --test-concurrency=1 over test/e2e; playwright-core 1.64.1 exact, Apache-2.0 in the lockfile; npm view playwright-core time: 1.64.1 of 2026-10-14, 36 days before d87b3d1.",
+            "Head job e2e: '# tests 15 / # pass 15 / # fail 0 / # skipped 0 / # todo 0' (= LD-1..LD-9 plus ST-1..ST-6); main job e2e the same; run 45031353708 success on 0c50fc2 with check.yml run 45031353719 success on the same sha; run 44919421105/44919421116 success on e0a425b."
+          ],
+          "unchecked_parts": [
+            "shallow clone (--depth 1), removal of unlisted paths, cd app && npm ci && npm run check (npm run forbidden here)"
+          ]
+        },
+        {
+          "n": 12,
+          "verdict": "met",
+          "how": "Named browser test in the record (it ran in Chrome in CI, job e2e).",
+          "evidence": [
+            "e2e/landing.test.js: head record job e2e: ok 1 - LD-1, ok 2 - LD-2, ok 3 - LD-3, ok 4 - LD-4, ok 5 - LD-5, ok 6 - LD-6, ok 7 - LD-7, ok 8 - LD-8, ok 9 - LD-9; main 9/9",
+            "REQ-113 changed landing.test.js and the pages after the release (how.html status block, demo result block, texts.js); the test at the head is the one that passed in the head record, and the strings the criterion names (the list heading 'Чего Sai пока не делает', its ten items, 'Описать идею' -> /how.html#describe-idea) are still in texts.js, demo.js and how.html. No mismatch found between head and the criterion text."
+          ]
+        },
+        {
+          "n": 13,
+          "verdict": "not_checked",
+          "how": "Needs a real Chrome run (UAT-RUNNER); none started here.",
+          "evidence": [
+            "Earlier record: handoffs/M1CODE-20261119-01/step-08b-uat-runner-req111.json (34 PASS, 1 FAIL L-19 Low); not re-checked."
+          ],
+          "unchecked_parts": [
+            "the browser step on every page of the matrix"
+          ]
+        },
+        {
+          "n": 14,
+          "verdict": "not_checked",
+          "how": "Needs a reader agent without context; not run here.",
+          "evidence": [
+            "Earlier record, read not re-run: handoffs/M1CODE-20261119-01/step-08d-ba-analyst-signoff.json says the reader test R-01 scored 12 of 12 (11 needed)."
+          ],
+          "unchecked_parts": [
+            "the reader run and its scoring"
+          ]
+        },
+        {
+          "n": 15,
+          "verdict": "met",
+          "how": "Read the records the criterion names.",
+          "evidence": [
+            "handoffs/M1CODE-20261119-01/step-07b-design-qa-validator.json verdict PASS and step-07c-design-qa-validator-speaker.json verdict PASS (step-07 was FAIL by one Medium, closed in 07b).",
+            "docs/program/public-v1/PROGRESS.md line 77: gate G21 answer «Похоже» with the date 2026-11-21, in force for the look of REQ-111 and REQ-112 as built at f4ac340; the open items he saw are listed there (ISS-0125 etc.)."
+          ]
+        },
+        {
+          "n": 16,
+          "verdict": "not_checked",
+          "how": "Read the app record, ran grep and the traces command; the tools/ check of the work line has no green record and the base tag of the run is missing.",
+          "evidence": [
+            "Head job check '# tests 122 / 47', '# fail 0 # skipped 0 # todo 0'; grep of skip/todo/only over app/test -> no line; cd tools && npm run -s traces -> exit 0 (2903 files, 0 traces)."
+          ],
+          "unchecked_parts": [
+            "cd tools && npm run check on the work line (no record)",
+            "git diff --stat base/<RUN-ID> -- app/test tools/test: the tag base/M1SITE-20261119-01 is not in the repository",
+            "each changed test still red on its damaged copy (a run)"
+          ]
+        }
+      ]
+    },
+    {
+      "requirement": "REQ-112",
+      "counts": {
+        "criteria": 10,
+        "met": 8,
+        "not_met": 0,
+        "not_checked": 2
+      },
+      "criteria": [
+        {
+          "n": 1,
+          "verdict": "met",
+          "how": "ls, sed of the two header comments, git show | sha256sum, git grep, git diff on f72eaa7; named test in the record.",
+          "evidence": [
+            "unit/port-parity.test.js: head record job check: ok 68 - PO-1, ok 69 - PO-2, ok 70 - PO-3, ok 71 - PO-4; main 4/4",
+            "app/public/office holds draw.js grid.js labels.js sim.js stage-scene.js view.js.",
+            "grid.js header: layout.js at b5df4a80..., sha256 f23b9fe29b24bf37df8781f995e9f4eb33e9e73de7836bd33d6d4d1dd9c58c5f; git show b5df4a80:tools/src/pixel-office/public/layout.js | sha256sum = the same, and the file at f72eaa7 has the same hash. sim.js header: office-sim.js at 7591fc06..., sha256 2b8f90c4b9210e27ce35e7a65780dbe7687892668ed045b58d3e03ffa9403842; commit and f72eaa7 both give it. Both headers say 'no import of tools/'.",
+            "git grep -niE handoffs? app/public -> no line; sim.js names the kind 'deliver'.",
+            "git diff --stat 69fb943^ 69fb943 -- tools/src tools/test (the build commit of REQ-111/112) -> no line; layout.js and office-sim.js are byte-equal between e0a425b and f72eaa7. (Literal base tag of the run is missing; the parent of the build commit stands in.)"
+          ]
+        },
+        {
+          "n": 2,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "unit/port-parity.test.js: head record job check: ok 68 - PO-1, ok 69 - PO-2, ok 70 - PO-3, ok 71 - PO-4; main 4/4"
+          ]
+        },
+        {
+          "n": 3,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "unit/office-pure.test.js: head record job check: ok 48 - OP-1, ok 49 - OP-2, ok 50 - OP-3, ok 51 - OP-4, ok 52 - OP-5, ok 53 - OP-6; main 6/6"
+          ]
+        },
+        {
+          "n": 4,
+          "verdict": "met",
+          "how": "Named test in the record (OS-6 appears in the log as 'a colour that is not \\#rrggbb...', the same test).",
+          "evidence": [
+            "unit/office-stage.test.js: head record job check: ok 54 - OS-1, ok 55 - OS-2, ok 56 - OS-3, ok 57 - OS-4, ok 58 - OS-5, ok 59 - OS-6, ok 60 - OS-7; main 7/7"
+          ]
+        },
+        {
+          "n": 5,
+          "verdict": "met",
+          "how": "Named test in the record.",
+          "evidence": [
+            "unit/office-view.test.js: head record job check: ok 61 - OV-1, ok 62 - OV-2, ok 63 - OV-3, ok 64 - OV-4, ok 65 - OV-5, ok 66 - OV-6, ok 67 - OV-7; main 7/7"
+          ]
+        },
+        {
+          "n": 6,
+          "verdict": "met",
+          "how": "Named browser test in the record (Chrome in CI, job e2e).",
+          "evidence": [
+            "e2e/stage.test.js: head record job e2e: ok 10 - ST-1, ok 11 - ST-2, ok 12 - ST-3, ok 13 - ST-4, ok 14 - ST-5, ok 15 - ST-6; main 6/6"
+          ]
+        },
+        {
+          "n": 7,
+          "verdict": "not_checked",
+          "how": "Needs a real Chrome run (UAT-RUNNER) with a hidden tab; none started here.",
+          "evidence": [
+            "Earlier record: handoffs/M1CODE-20261119-01/step-08c-uat-runner-req112.json verdict PASS (16 PASS); not re-checked."
+          ],
+          "unchecked_parts": [
+            "the browser step of the scene in the matrix"
+          ]
+        },
+        {
+          "n": 8,
+          "verdict": "met",
+          "how": "Read the records the criterion names.",
+          "evidence": [
+            "step-07b and step-07c DESIGN-QA-VALIDATOR PASS (handoffs/M1CODE-20261119-01); docs/program/public-v1/PROGRESS.md line 77 quotes the owner's «Похоже» of 2026-11-21 for the stage-mode office as built at f4ac340."
+          ]
+        },
+        {
+          "n": 9,
+          "verdict": "met",
+          "how": "Named tests in the record.",
+          "evidence": [
+            "unit/office-pure.test.js: head record job check: ok 48 - OP-1, ok 49 - OP-2, ok 50 - OP-3, ok 51 - OP-4, ok 52 - OP-5, ok 53 - OP-6; main 6/6",
+            "e2e/stage.test.js: head record job e2e: ok 10 - ST-1, ok 11 - ST-2, ok 12 - ST-3, ok 13 - ST-4, ok 14 - ST-5, ok 15 - ST-6; main 6/6"
+          ]
+        },
+        {
+          "n": 10,
+          "verdict": "not_checked",
+          "how": "Read the app record, git diff on the build commit, traces command; the tools/ check of the work line has no green record.",
+          "evidence": [
+            "Head job check '# tests 122 / 47', '# fail 0 # skipped 0 # todo 0'; git diff --stat 69fb943^ 69fb943 -- tools/src -> no line; cd tools && npm run -s traces -> exit 0."
+          ],
+          "unchecked_parts": [
+            "cd tools && npm run check on the work line (no record)"
+          ]
+        }
+      ]
+    }
+  ],
+  "checked": [
+    {
+      "check": "The record of app/ at the head: app run 45031353708 (jobs check, pg, docker, e2e, all success; unit 122, int 47, pg 4, e2e 15, each fail 0, skipped 0, todo 0) and the record of main: app run 44919421105 and check run 44919421116 (success)",
+      "how": "gh run view --json and gh run view --log; the top-level test names of every app/test file matched against the 'ok N - <name>' lines of the logs (188 ok in the head log, 0 not ok; 186 in the main log, the two missing are the REQ-113 tests of texts.test.js)",
+      "result": "every test that the 51 criteria name is green in the head record, and in the main record too except the two REQ-113 tests of texts.test.js"
+    },
+    {
+      "check": "app/ of the head equals app/ of the record commit",
+      "how": "git diff --name-status 0c50fc2 f72eaa7 -- app",
+      "result": "empty: app/ is byte-equal, so the head record is the record of app/ at f72eaa7"
+    },
+    {
+      "check": "Files outside app/ that the app tests and the check chain read, between main e0a425b and f72eaa7",
+      "how": "git diff --name-status e0a425b f72eaa7 -- <path>",
+      "result": "byte-equal: .github/workflows/app.yml, docs/runbooks, tools/src/pixel-office/mask.js, public/layout.js, public/office-sim.js. Different: tools/package.json (only engines.node '>=22 <23' -> '>=22.23.4 <23'; the eslint, @eslint/js, globals, prettier versions are equal), tools/src/picker/cli.js (+14 lines, the node floor), tools/src/team/cli.js (+3 lines). No app test reads team/cli.js; the picker content check was run by me on f72eaa7 (REQ-111 criterion 5)."
+    },
+    {
+      "check": "Plain read-only scripts of the app and the tools traces command on f72eaa7",
+      "how": "node scripts/check-public.js, node scripts/vendored.js, node ../tools/src/picker/cli.js check content/sai-intake.json in app/; npm run -s traces in tools/ (Node v22.23.4)",
+      "result": "all exit 0 (check-public clean; vendored 1 file; picker 5 questions, 6 solutions, 35 rules; traces 2903 files, 0 traces)"
+    },
+    {
+      "check": "Static files of the product (REQ-108 criteria 1, 6, 11, 12, 13; REQ-109 criteria 1, 9; REQ-111 criteria 1, 3, 5, 6, 10)",
+      "how": "own scripts and grep over the fixed copy; npm view time for 12 packages; sha256 of the originals of the port",
+      "result": "see the evidence of each criterion; no deviation found"
+    },
+    {
+      "check": "Production https://sai-team.vercel.app (serves e0a425b)",
+      "how": "about 25 harmless GET requests with curl and node app/scripts/smoke.js (7 GETs)",
+      "result": "/api/health 200 with the six keys and version e0a425b; one function and the explicit route /api/index?__p=; /api/x/y and /api/p/x uniform 404 JSON; /nope, /a/b/c.html and /examples.html the 404 page; the security headers equal the list of REQ-109 criterion 4; kk request answered in Russian; smoke exit 0. The landing wording was read in the files of the head (REQ-113 round), the site serves e0a425b."
+    },
+    {
+      "check": "Open defects of the part not reported twice",
+      "how": "docs/issues ISS-0124..ISS-0129",
+      "result": "ISS-0129 (parts of REQ-108 criteria 2, 11, 14 not run in Linux CI), ISS-0125 (skip link at 320 px in ru), ISS-0126 (reader remarks), ISS-0127 (kk texts), ISS-0128 (requirement text amendments) are named, not repeated"
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "REQ-108 criteria 2 and 11, REQ-109 criterion 10, REQ-111 criteria 11 and 16, REQ-112 criterion 10: the parts that need npm run in a fresh or pruned clone (planted failures, empty-test cases, pruned-clone run, emptied pg folder)",
+      "why": "npm run, node --test and test scripts are forbidden on this PC; open defect ISS-0129 for REQ-108"
+    },
+    {
+      "check": "cd tools && npm run check in every criterion that asks for it (REQ-108 2, REQ-109 10, REQ-111 16, REQ-112 10) and the tools tests that exercise a tools/ file that differs between main and the head",
+      "why": "the work line has no green GitHub record for tools/ (check runs 44875023688, 44875030768, 45034277858 are red at handoffs-check, steps test and e2e never ran)"
+    },
+    {
+      "check": "REQ-108 criterion 14, REQ-111 criterion 13, REQ-112 criterion 7 (real Chrome UAT steps) and REQ-111 criteria 2 (reader part) and 14 (reader without context)",
+      "why": "need a real browser or reader agents and have no line in a GitHub record; the earlier handoffs say PASS but are marks of earlier steps"
+    },
+    {
+      "check": "git diff --stat base/<RUN-ID> forms (REQ-108 criterion 11 check.yml, REQ-111 criterion 16, REQ-112 criteria 1 and 10)",
+      "why": "the tags base/M1SITE-20261117-01 and base/M1SITE-20261119-01 are not in the repository; where the intent could be checked I used the parent of the build commit (ed7f67d^ for REQ-108, 69fb943^ for REQ-111/112), and said so in the criterion"
+    },
+    {
+      "check": "Equality of the test counts with the design catalogues (REQ-108 criterion 2 rule)",
+      "why": "only equality with the number of tests found in the files was checked; the catalogues of five design documents were not recomputed"
+    },
+    {
+      "check": "Flakiness, duration and order dependence",
+      "why": "only a live run gives them"
+    }
+  ],
+  "findings": [],
+  "summary": "Group production-app, subject f72eaa7, 51 criteria: 40 met, 0 not met, 11 not checked. REQ-108: (15, 12, 0, 3); REQ-109: (10, 9, 0, 1); REQ-111: (16, 11, 0, 5); REQ-112: (10, 8, 0, 2) (criteria, met, not met, not checked). No finding: every criterion that could be checked from the files, the GitHub records and production is met. The not checked criteria are the ones that need npm run in a fresh clone (ISS-0129 for REQ-108), the tools/ check of the work line (no green record), a real Chrome or a reader agent."
+}

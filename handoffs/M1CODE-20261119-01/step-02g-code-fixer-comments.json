@@ -1,0 +1,96 @@
+{
+  "handoff_id": "step02g-comments-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02g",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/M1CODE-20261119-01/step-02g-code-fixer-comments.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "app/scripts/word-lists.js",
+      "app/scripts/check-public.js",
+      "handoffs/M1CODE-20261119-01/step-04f-reviewer-speaker.json"
+    ],
+    "route": "02g -> narrow 3 and 4 on the comment diff -> new snapshot ci/m1-landing-4 (owner's yes) -> 9",
+    "write_set": [
+      "app/public/css/site.css (comments only)",
+      "app/public/js/pages/demo.js (comments only)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02 rework (CODE-FIXER round 02g, comments only) for the FAIL of step 6 on the second snapshot: the GitHub app.yml run 44906936052 on ci/m1-landing-3 (8337120): jobs pg, docker and e2e SUCCESS (e2e 15 of 15: the speaker rows on the runner font pass), but job check FAILED at node scripts/check-public.js with exactly two findings: 'css/site.css: word «decisions»' and 'js/pages/demo.js: word «decisions»'. Cause: the comments written in round 02f name 'decisions/0124 О45' and a public file must not hold that word (the forbidden-word list of app/scripts/word-lists.js, REQ-111 criterion 12/13 and the public-set rule). Places: app/public/css/site.css near line 1934 and app/public/js/pages/demo.js near line 468 (grep -n -i decisions in these two files; there must be none left, and no other forbidden word of the list: read app/scripts/word-lists.js and app/scripts/check-public.js and run the same word check as a plain node driver on a scratch copy of app/public - allowed - NOT npm run check). Reword both comments without the file name: say 'the owner's ruling of the look' (or the look section number 7.9 if the look words are allowed in comments: check the list), keep every meaning and keep the content rule explained. In the same edit apply the Low L1 of step 04f (handoffs/M1CODE-20261119-01/step-04f-reviewer-speaker.json): where a comment says 'title' but fitSpeaker also measures the stage line, say 'title or stage line', and let the markup comment (if there is one in app/public/demo.html or demo.js) name the class own; no code change, no CSS rule change, no change of any behaviour: the diff of app/public against the working-folder state before this round must be comment lines only (prove it: compare the files with all comments stripped, by a small node script, byte-equal). Write_set: app/public/css/site.css, app/public/js/pages/demo.js (comments only). Do not edit tests. FORBIDDEN on this PC: npm run check, any app or tools test script, e2e tests; prettier --check and eslint on a scratch copy are allowed (fresh git clone of the project folder in the scratchpad, npm ci, copy the two files in). No commit/push/checkout/reset/stash/clean. Node 22 first on PATH. Close with the handoff close command after cd tools && npm run traces returns 0 (handoffs-check has one old known H4 violation, accepted).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T13:12:06Z",
+  "started_at": "2026-11-21T13:12:06Z",
+  "completed_at": "2026-11-21T13:13:45Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Round 02g, comments only. The word decisions is gone from app/public/css/site.css and app/public/js/pages/demo.js: both comments of round 02f now say 'the owner's ruling of the look, section 7.9' (look words are not on the forbidden list). Low L1 of step 04f applied: the own-rule comment says 'title or stage line'; the markup comment of the question in site.css names the class own (set on div.ask-h by demo.js, fitSpeaker); the JSDoc of fitSpeaker already said 'title or its stage line'. demo.html has no comment about the head. No code, no CSS rule, no behaviour changed.",
+    "changes": [
+      {
+        "item": "02g-1 (finding 'css/site.css: word decisions')",
+        "file": "app/public/css/site.css",
+        "place": "comment before @media (max-width: 759px), the own-row rule (about line 1933)",
+        "change": "'decisions/0124 О45' replaced by 'the owner's ruling of the look, section 7.9'; the comment rewrapped; the content rule (no window width is a threshold, the script measures and sets the class own) kept."
+      },
+      {
+        "item": "02g-2 (finding 'js/pages/demo.js: word decisions')",
+        "file": "app/public/js/pages/demo.js",
+        "place": "JSDoc of fitSpeaker (about line 465)",
+        "change": "'decisions/0124 О45' replaced by 'the owner's ruling of the look, section 7.9'; rewrapped to the line width."
+      },
+      {
+        "item": "02g-3 (L1 of step 04f, part 1)",
+        "file": "app/public/css/site.css",
+        "place": "comment before the own rule",
+        "change": "'its title does not fit' -> 'its title or its stage line does not fit'; 'measures the title' -> 'measures the title and the stage line'; 'where the title fits' -> 'where the lines fit'."
+      },
+      {
+        "item": "02g-4 (L1 of step 04f, part 2)",
+        "file": "app/public/css/site.css",
+        "place": "markup comment of the question (about line 882)",
+        "change": "added 'the class own is set on div.ask-h by demo.js, fitSpeaker'."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "node proof.mjs (scratchpad): strip every comment (acorn onComment for demo.js, regex for the CSS) from the file before this round and after, compare byte-equal",
+        "output": "site.css: raw equal false, comment-stripped byte-equal true (29575 chars); demo.js: raw equal false, comment-stripped byte-equal true (27383 chars)"
+      },
+      {
+        "command": "node app/scripts/check-public.js <scratch copy of app/public + app/content> (the same word check, plain driver, not npm run check)",
+        "output": "check-public: app/public is clean, exit 0. Negative control (old site.css copied back into the scratch copy): 'check-public: css/site.css: word «decisions»', exit 1"
+      },
+      {
+        "command": "grep -n -i -E 'decisions|handoff|orch|REQ-[0-9]' app/public/css/site.css app/public/js/pages/demo.js",
+        "output": "no output"
+      },
+      {
+        "command": "cd tools && npx prettier --check app/public/css/site.css app/public/js/pages/demo.js",
+        "output": "All matched files use Prettier code style!"
+      },
+      {
+        "command": "cd tools && npm run traces",
+        "output": "traces: файлов проверено 2841, следов 0, пропущено 67 (exit 0)"
+      },
+      {
+        "command": "npm run check, app and tools tests, e2e, eslint",
+        "output": "NOT run (owner's rule: checks only on GitHub in Linux; eslint not run because app has no installed dependencies here, and only comments changed, proved above)"
+      }
+    ],
+    "issues": [],
+    "artifacts_out": [
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js"
+    ]
+  }
+}

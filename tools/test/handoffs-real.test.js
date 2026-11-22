@@ -82,7 +82,7 @@ test("HC-7b the line 'База handoffs-check:' of the record of decisions/ with
 
 test("HC-7c the base holds the records of the requirement and none that it excludes", () => {
   const rows = records();
-  assert.equal(rows.length, 114);
+  assert.equal(rows.length, 110);
   const has = (file, rule, field) =>
     rows.some(
       (r) =>
@@ -97,7 +97,6 @@ test("HC-7c the base holds the records of the requirement and none that it exclu
       "status",
     ),
   );
-  assert.ok(has("handoffs/WF06-20260926-01/step-10-orch.json", "H4", "status"));
   assert.ok(
     has(
       "handoffs/PROD-20261011-01/step-17-reviewer.json",
@@ -112,9 +111,26 @@ test("HC-7c the base holds the records of the requirement and none that it exclu
       "result.issues[0].at",
     ),
   );
-  // The two CANCELLED handoffs give no violation.
+  // The CANCELLED handoffs give no violation, and the base holds no H4 record of them:
+  // the two of WF06-20260925-01 and the four of REQ-103 (run M0DOCS-20261117-01).
   assert.ok(!has("handoffs/WF06-20260925-01/step-10-orch.json", "H4"));
   assert.ok(!has("handoffs/WF06-20260925-01/step-13-req-analyst.json", "H4"));
+  assert.ok(
+    !has("handoffs/WF06-20260926-01/step-10-orch.json", "H4"),
+    "the base holds an H4 record of handoffs/WF06-20260926-01/step-10-orch.json",
+  );
+  assert.ok(
+    !has("handoffs/WF06-20260926-01/step-11-req-analyst.json", "H4"),
+    "the base holds an H4 record of handoffs/WF06-20260926-01/step-11-req-analyst.json",
+  );
+  assert.ok(
+    !has("handoffs/WF06-20260926-01/step-12-ba-analyst.json", "H4"),
+    "the base holds an H4 record of handoffs/WF06-20260926-01/step-12-ba-analyst.json",
+  );
+  assert.ok(
+    !has("handoffs/ISS-0002-20260930-01/step-06-test-designer-r2.json", "H4"),
+    "the base holds an H4 record of handoffs/ISS-0002-20260930-01/step-06-test-designer-r2.json",
+  );
   // The values written after the first commit but not after their own are no H7.
   assert.ok(
     !has("handoffs/PROD-20261006-01/step-04-code-designer-r2.json", "H7"),

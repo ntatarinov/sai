@@ -1,0 +1,69 @@
+{
+  "handoff_id": "step04e-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "04e",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M1CODE-20261119-01/step-04e-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-04d-reviewer.json, step-02e-code-fixer.json, step-05i-test-designer.json, decisions/0124 O35-O38"
+    ],
+    "route": "04d FAIL -> 02e + 05i -> REVIEWER 04e (this)",
+    "write_set": [
+      "its own handoff only"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 4, review pass 2 of 3 (the loop after DESIGN-QA) - REVIEWER, gate, on the change git diff base/M1CODE-20261119-01-review4 base/M1CODE-20261119-01-review5 -- app .github (fix round 02e and test rework 05i, decisions/0124 O35-O38): check that M1, L1, L3, L4 are closed and nothing else changed; cd app && npm run check once in a fresh clone of the review5 tag, counts reported.",
+    "acceptance_criteria": [
+      "Verdict by the common scale of docs/workflows/handoffs.md: Critical, High, Medium are a FAIL; Low is recorded",
+      "cd app && npm run check run once in a fresh clone of the tag, counts reported"
+    ]
+  },
+  "created_at": "2026-11-20T21:54:00Z",
+  "started_at": "2026-11-20T21:54:00Z",
+  "completed_at": "2026-11-20T21:54:28Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Verdict PASS: no Critical, High or Medium finding; one Low (L5, new) recorded. Review pass 2 of 3 of the loop after DESIGN-QA, on base/M1CODE-20261119-01-review5 (63e92a9), a fresh clone in <scratch> with node_modules copied, no network. The change since review4 is exactly the seven files of 02e (3 code files) and 05i (4 test files); nothing else in app or .github. (1) M1 closed: answer() and its comment are gone, both call sites return { status: 200, body } directly, grep 'answer(' over app/server and app/api finds no caller, no test imports it; the try/catch around the projection of the result route stays and still maps a non-HttpError to demo_unavailable; the note that every body field is a string, a boolean or null now stands on text() (id() is its alias) and is true (lang by pickLang, ids and texts by id()/text(), clear_leader a boolean from the engine, no_match_text a string or null). The row `unwritable` of DM-6c is deleted with its comment and the clause of the title; the other rows and assertions of the test are unchanged (the diff removes only that block); no other mention of the guard in app or docs/design. (2) L1 closed: @media (max-width: 379px) and the comment above it states the rule and its reason (218 px of column, 390 px stays side by side), no history of numbers; the rules inside are unchanged; no other file names 371 or 372 as the threshold. LD-5 section F reads 360, 371, 372, 375, 379 and 390 px (ru, five questions each), with the speaker's rectangle: up to 379 px the speaker must not share a row with the back button, at 390 px it must be beside it and end before it; the old checks (title in its column, 4 px, no sideways scroll) stay for every width; the e2e count is still 15. Gap: 380-389 px is not read. I measured what it means: in a scratch copy with max-width: 389px LD-5 stays green (47 s), so a threshold edit anywhere from 379 to 389 px passes; the tests pin the edge only at the 379 side (378 and 399 are red by the author's mutants) and at 390. It does not matter for the owner's rule (below 380) or for REQ-111 criterion 12 (372, 375, 379) as long as nobody edits the number; it matters only as a guard of the exact edge: Low L5. (3) L3 closed: the chips have the aria-label '<question>: <answer>' only; LD-6 reads the names by the role query and passed in my run; no test or code reads a chip title. (4) L4 closed: flipHidden has one JSDoc block with the description and @param. T7: LD-8 waits conditionally (waitForFunction, 15 s deadline, no sleep) for a non-empty #live, switches to kk, waits for the kk heading, then asserts #live is empty; the code that empties it is at demo.js line 1241 and no later announce is pending in the kk switch; correct. T8: VB-6 has a top-level z.txt, every expectation carries base[3], so an unsorted tree() fails. (5) Nothing weakened: test( counts per file unchanged (8, 9, 7, 6), assert counts change only by the deleted row, no skip, only, todo, eslint-disable, ts-ignore or '|| true' in the added lines (grep over the diff prints nothing), no waitForTimeout or sleep in landing.test.js; every wait is on a condition. Counts true: unit 120, int 47, e2e 15 (reported by 05i, 15 of 15 twice; I ran LD-5, LD-6, LD-8 alone in the clone: 3 of 3 pass; not the whole e2e, it is not in the check chain); guards NPM-5 (12 int + 2 pg), NPM-7 (15 tests in landing and stage), NM-5 (25 unit files), NM-6 are green on the files. Decisions: code and tests follow O35, O36, O37, O38; the design counts (section 10) and the look 7.9 (380 px), 7.11 are still to be edited before the release gate by O38 (the open L2 of pass 1, not a finding of this pass). For TEST-DESIGN-VALIDATOR and DESIGN-QA second pass: re-measure the speaker at 372, 375, 379, 380 and 390 px by eye and in numbers; the 380-389 px edge is the open low L5.",
+    "findings": [
+      {
+        "id": "L5",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/test/e2e/landing.test.js, LD-5 section F (widths 360, 371, 372, 375, 379, 390); app/public/css/site.css @media (max-width: 379px)",
+        "what": "The edge of the own-row rule is pinned only from below (379 px: own row) and at 390 px (beside), not at 380-389 px. In a copy with max-width: 389px LD-5 is green, so the threshold can move by up to 10 px without a red test, while О36 says below 380 px. The visible effect would be limited (the title fits at 380 px with a 20 px gap measured by 02e), so it is not a defect of the product now.",
+        "fix": "TEST-DESIGNER, if the exact edge is wanted: add 380 px (the speaker beside the back button) to the widths of section F, with OWN_ROW_UP_TO = 379 as it is; the e2e count stays 15; the mutant max-width: 380px or more must then be red. Otherwise accept it in writing as the known slack of 379..389."
+      }
+    ],
+    "self_check": [
+      "Clone: git clone of the project into <scratch>/r5, git checkout base/M1CODE-20261119-01-review5, HEAD 63e92a9f4a25f61e7393778168f0f1c0383e0805 (equal to the tree's HEAD), node_modules of app and tools copied, no network. The change read in full: git diff base/M1CODE-20261119-01-review4 base/M1CODE-20261119-01-review5 -- app .github = 7 files, 97 insertions, 72 deletions (site.css, pages/demo.js, routes/demo.js, landing.test.js, int/demo.test.js, office-view.test.js, vercel-build.test.js).",
+      "cd app && npm run check in the clone, exit 0: prettier 'All matched files use Prettier code style!'; eslint --max-warnings 0 exit 0; tsc --noEmit exit 0; 'check-public: app/public is clean'; 'vendored: 1 file matches its source'; the picker check of content/sai-intake.json exit 0 (IN-6 ok); unit '# tests 120 # pass 120 # fail 0 # cancelled 0 # skipped 0 # todo 0'; int '# tests 47 # pass 47 # fail 0 # cancelled 0 # skipped 0 # todo 0'. NPM-5, NPM-7, NM-5 (25 unit files), NM-6 ok. Two earlier attempts in the clone were an environment fault of my own copy (the first: eslint could not load its formatter file during the copy; the second: the clone's .git was gone, so 10 tests that call git failed with 'not a git repository'); I recloned and ran the check once on the intact clone, which is the run reported here.",
+      "Erosion search over the added lines of the diff: git diff ... | grep -nE '^\\+.*(\\.skip|\\.only|todo|eslint-disable|ts-ignore|\\|\\| true|waitForTimeout)' prints nothing; grep -nE 'waitForTimeout|setTimeout|sleep' app/test/e2e/landing.test.js prints nothing.",
+      "grep -rn 'answer(' app/server app/api: no line. grep -rnE 'unwritable|last guard|cannot be written' app: no line in app (hits only in unrelated old design documents of REQ-102/107).",
+      "grep -rnE '\\[title|getAttribute(\"title\")|getByTitle' app/test app/public: only the generic lint in fixtures/browser.js (alt, title, aria-label attributes); no reader of a chip title.",
+      "cd app && node --test --test-concurrency=1 --test-name-pattern='LD-5|LD-8|LD-6' test/e2e/landing.test.js in the clone: '# tests 3 # pass 3 # fail 0 # skipped 0 # todo 0'.",
+      "Mutant for L5: in a copy of the clone site.css max-width: 379px -> 389px, LD-5 alone: 'ok 1', '# pass 1 # fail 0' (the gap is real).",
+      "cd tools && npm run handoffs-check after closing: 'handoffs-check: файлов проверено 1505, нарушений 1, исключений использовано 110 из 110'; the one violation is the known PENDING line (H4) of handoffs/M0DOCS-20261117-01/step-05c-test-designer.json, not from this work. Clock: date -u 2026-11-20T21:54Z. The project tree was not changed by me except this handoff; no commit, tag, push or stash."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "FOR_ORCH",
+        "text": "L5 is the only open item of this pass and is Low: record it, or ask TEST-DESIGNER for the 380 px row of section F in the same round as the next change. The open L2 of pass 1 (the design counts of section 10 and the look 7.9 and 7.11) is still to be done before the release gate by O38; I did not recheck the documents in this pass because the change does not touch them."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

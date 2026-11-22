@@ -1,0 +1,178 @@
+{
+  "audit": "AUD-002",
+  "part": "app",
+  "dimension": "architecture",
+  "role": "ARCHITECTURE-AUDITOR",
+  "subject": "f72eaa7",
+  "checked": [
+    {
+      "check": "Decision records used (list)",
+      "how": "read decisions/0091, 0092, 0094, 0097, 0098, 0100, 0116 (app skeleton conventions, in force as the stack record), 0122 (spike S1: one function and explicit routes), 0110 (checks run on GitHub); design docs/design/REQ-108-109-app-skeleton.md (sections 4, 9, 10), docs/design/REQ-111-112-public-landing.md; docs/program/public-v1/PLAN.md section M1. 0093 (AI providers) and 0097 (office data honesty) have no code in app/ beyond the landing stage illustration: the honesty of its texts is the content dimension, not read here",
+      "result": "no divergence from a recorded decision found; three document/code divergences and four code findings below"
+    },
+    {
+      "check": "Layers and who imports whom (api entry, server, http helpers, routes, db, static, public)",
+      "how": "read api/index.js, server/app.js, server/node-main.js, server/config.js, server/static.js, server/http/*, server/routes/*, server/db/*; import census with grep over app/{server,public,scripts,api}; read the rule table of test/unit/import-boundaries.test.js (IB-1..IB-4; server may import only server/ and public/shared/, public/shared imports only public/shared/, pg and PGlite only in db/pg.js and db/pglite.js)",
+      "result": "met: server imports public/shared/i18n/lang.js only (pure, imports nothing); pg and PGlite are imported once each; no import of tools/ or of test/ in runtime code; no cycle (config.js <- http/origin.js, http/site-gate.js; db/migrate.js -> config.js, db/index.js; db/index.js -> selfcheck.js, no back edge)"
+    },
+    {
+      "check": "Protection in the same operation as the action",
+      "how": "read server/db/index.js (createDb.query awaits ensureSafe in the same call; one shared selfcheck promise with a deadline), server/app.js (site gate middleware before the body read, the routes and any database use; preview-host redirect before the routes; body limit counted while reading), scripts/vercel-build.js (closed build checks SITE_GATE and the gate-page sha256 before any step)",
+      "result": "met: no 'check now, use later' found; the selfcheck state ok/unsafe is kept for the life of the db object by design (design section 4.4)"
+    },
+    {
+      "check": "Database access: one transaction helper, migration runner, selfcheck, the two drivers",
+      "how": "read server/db/{index,tx,migrate,selfcheck,pg,pglite}.js and db/migrations/0001_init.sql; read the GitHub record of app run 45031353708 (jobs check, pg, docker, e2e success; app/ equal to f72eaa7) and 45034277809 (success)",
+      "result": "the migration runner is met (session advisory lock, one transaction per file, sha256 recorded, changed or missing applied file refused before any statement, password step in its own transaction, rollback on failure: the all-or-nothing promise holds). Both drivers share one Adapter contract and one toDbError and the same SELFCHECK_SQL (PGlite switches to the login role first); the pg job is green at the head. There is NO transaction helper: server/db/tx.js withPlatform is a pass-through with no caller (finding ARCH-APP-05). Findings ARCH-APP-01 and ARCH-APP-02 are in this area"
+    },
+    {
+      "check": "One function behind one explicit rewrite on Vercel",
+      "how": "read app/vercel.json and api/index.js; read the VC tests' expectations in test/unit/vercel-config.test.js and test/unit/headers-parity.test.js; read the release record docs/releases/M1CODE-20261119-01.md (production /api/health answered with migrations_pending 0 at e0a425b)",
+      "result": "met: functions has one entry api/index.js; routes table is header set (continue), filesystem, the one /api rewrite to /api/index?__p=$1, then 404; restorePath accepts exactly one clean relative __p (segments of [A-Za-z0-9._~-], no . or .., max 2048), a repeated or empty __p falls to /api/index which answers the uniform 404; vercel.json headers equal server/http/headers.js (headers-parity test). The bundle holds db/migrations only through the platform tracer (no includeFiles): the production health record shows it works; design V3 names includeFiles as the fallback"
+    },
+    {
+      "check": "Pinned copy of the picker engine and its hash check",
+      "how": "sha256sum and cmp of app/server/vendor/picker-engine.js against tools/src/picker/engine.js in the fixed copy; read app/vendored.json and app/scripts/vendored.js; read .github/workflows/app.yml path filter; git diff --name-status e0a425b f72eaa7 -- tools/src/picker",
+      "result": "met: both files are byte-equal, sha256 a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe, equal to vendored.json; the engine has no import, so no transitive file escapes the pin; it is kept in step by `node scripts/vendored.js` in `npm run check` of app/ (copy, source and recorded hash must be equal; a stray .js in server/vendor/ is refused) and by app.yml, which runs on any push touching tools/src/picker/**. server/vendor/picker-engine.d.ts is not hashed (declarations only; drift is caught by tsc). Between e0a425b and f72eaa7 engine.js is unchanged (only tools/src/picker/cli.js differs)"
+    },
+    {
+      "check": "Extra check 2: vendored engine versus tools/src/picker/engine.js",
+      "how": "see the row above",
+      "result": "byte difference: none; keeper: scripts/vendored.js in app `npm run check` plus the app.yml path filter"
+    },
+    {
+      "check": "The office renderer ported into app/public/office",
+      "how": "read the headers of grid.js and sim.js, sha256sum of tools/src/pixel-office/public/layout.js and office-sim.js; read test/unit/port-parity.test.js (PO-1..PO-4); census of the importers of grid.js, sim.js, draw.js, view.js, stage-scene.js, labels.js",
+      "result": "met: both ports carry a header with the original's path, commit and sha256 and the current sha256 of the two originals equal the headers (f23b9fe2... and 2b8f90c4...); PO-1 pins this and PO-3/PO-4 drive port and original with the same calls; the originals are unchanged between e0a425b and f72eaa7. app.yml watches both originals. The stage scene modules (draw, view, labels, stage-scene) are new code with no original. Not a finding: createSim (sim.js lines 87-420) and most of grid.js are never called by a page (view.js imports only stageMap and createWalker); they are required by REQ-112 criteria 1 and 2 as ports, so the question is in result.issues"
+    },
+    {
+      "check": "AP-014: one mechanism in all neighbouring places",
+      "how": "compared: the JSON error shape (errors.js errorBody, app.js json helper, api/index.js, onError); the body limit (app.js middleware before every route); the security headers (headers.js in app.js and in the function path, vercel.json); the one-line log writer (app.js, node-main.js, api/index.js, createFunctionApp); the language list (public/shared/i18n/lang.js against server/routes/demo.js); the 4000 ms deadline (db/index.js, health.js, node-main.js, app.js); the output path of text into the DOM in public/js and public/office (grep for innerHTML, insertAdjacentHTML, outerHTML, document.write, eval, new Function over app/)",
+      "result": "headers, body limit, uniform 404 and the DOM output are applied everywhere alike (no innerHTML or similar in runtime code; check-public.js bans them in the public set). The parity of inLanguage with tools/src/picker/view.js is pinned by test/int/demo-parity.test.js. Copies that are not pinned: finding ARCH-APP-06"
+    },
+    {
+      "check": "Extra check 1: test helpers do not leak into run-time code",
+      "how": "grep -rn 'test/\\|fixtures' over app/server app/api app/scripts app/public (.js and .html); read the imports of app/test/fixtures/*.js; read app/.vercelignore (allowlist: api server public content scripts db and the package/vercel files) and app/Dockerfile (COPY of server, public, db, content only)",
+      "result": "met: no runtime file imports anything under test/; fixtures import server code, never the reverse; test/ is not uploaded to Vercel and not copied into the image. fixtures/browser.js imports playwright-core (a devDependency), and 3 unit tests import e2e fixtures, so `test:unit` needs the e2e dev dependency installed: not a leak, noted. Run-time code does hold two injection seams for tests (createFunctionApp inject.adapter/log/intake, createApp deps.now): the default export of api/index.js passes none and config.js refuses PGLITE_DIR and MIGRATIONS_DIR when NODE_ENV=production (E_CONFIG_TEST_ONLY), so they cannot be reached in production"
+    },
+    {
+      "check": "Extra check 3: head differs from production e0a425b in 6 files of app/ (REQ-113)",
+      "how": "git diff --name-status e0a425b f72eaa7 -- app; git diff of demo.js, how.html, site.css, texts.js for import, script, link, url(), style, on* additions",
+      "result": "the 6 files are app/public/css/site.css, how.html, js/pages/demo.js, shared/i18n/texts.js, test/e2e/landing.test.js and test/unit/texts.test.js; all are in public/ or test/; no new import, no server file, no boundary touched. Nothing to name as a boundary break. (tools/src/picker/cli.js also differs: it adds the Node-floor import from ../node-floor.js; app/package.json `check` calls this cli, and app.yml watches it)"
+    },
+    {
+      "check": "Docker settings and compose",
+      "how": "read app/Dockerfile, app/compose.yaml; read test names in test/unit/docker-files.test.js",
+      "result": "met: Node 22.23.4 pinned by digest, non-root USER node, NODE_ENV=production, copies server/public/db/content only, health check on /api/health, migrate before start; compose takes passwords from the environment with :? required. Docker serves the full local set (examples.html, three languages) by design (node-main comment); the Vercel build strips it (public-set.js)"
+    },
+    {
+      "check": "Dead code and commented-out code",
+      "how": "scripts exported-symbol census over app/ (own script in the agent folder, node 22): exports with no importer outside their own file and outside test/; grep for commented-out statements",
+      "result": "one finding, ARCH-APP-05. The other exports with no runtime importer are pure helpers kept for their tests or for the port parity (grid.js constants, text-rules.js, scripts/*) and are not reported"
+    },
+    {
+      "check": "Files and functions too large (compared with neighbours)",
+      "how": "line counts of app/ (find + wc); function sizes by a script over demo.js, draw.js, view.js, texts.js, check-public.js",
+      "result": "one finding, ARCH-APP-03: mountSurvey is 886 lines against 44 for the next function in the same file and 284 for the largest function in office/draw.js. Other large files are data or CSS (site.css 2062, texts.js 854 with no functions) or tests (landing.test.js 3020, import-boundaries.test.js 1798) and are cohesive; makeView in view.js is 385 lines in a 633-line file, within the range of its neighbours, not reported"
+    },
+    {
+      "check": "Open defects of the part in docs/issues/",
+      "how": "grep for 'app/' over docs/issues; read the status lines of ISS-0124..0129",
+      "result": "ISS-0124..0127 (open, LOW) concern a landing test and comments, the skip link at 320 px, reader remarks and Kazakh texts; ISS-0128 (closed) and ISS-0129 (parts of REQ-108 criteria not run in Linux CI) are not architecture. None covers a finding below, so none is skipped"
+    },
+    {
+      "check": "Stage plan M1 in docs/program/public-v1/PLAN.md",
+      "how": "read section M1 (lines 551-622) against the code tree",
+      "result": "skeleton (api/index.js, server, db, scripts, CI app.yml, Docker, compose), spikes S1-S3 results used, landing and demo present as planned; nothing in app/ belongs to M2 or later (no tenant tables, one route table with the demo rows and health). No divergence found"
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Any result of npm run check, test:unit, test:int, test:pg or test:e2e for the head on this PC",
+      "why": "forbidden on this PC (decisions/0110, 0127, 0129). Used instead: the GitHub records app run 45031353708 (commit 0c50fc2, check, pg, docker, e2e success) and app run 45034277809 (commit ae26cc4, success); app/ is equal to f72eaa7 in both (git diff --name-only against f72eaa7 prints nothing for app/)"
+    },
+    {
+      "check": "Behaviour of the two drivers against a real Postgres (error classes, timeouts, EPIPE and 57P01 cases of ARCH-APP-02)",
+      "why": "no Postgres and no server may be started here; the findings rest on reading code and on a regex evaluation, not on a live connection"
+    },
+    {
+      "check": "That the production function bundle holds db/migrations and content/sai-intake.json at the head",
+      "why": "no deploy is allowed; evidence is the release record of e0a425b (health answered with migrations_pending 0) and the design's tracer trial F14; the head adds no server file"
+    },
+    {
+      "check": "Honesty of the office stage illustration against decisions/0097 and quality-bar R2 (no invented events)",
+      "why": "this is the content and security dimension, not code structure; no event or journal code exists in app/"
+    },
+    {
+      "check": "Any tools/ file: team, pixel-office server, picker (except engine.js and the pins), CI workflow content",
+      "why": "other parts of the audit; the 21 tools files that differ between main and the head have no green record on GitHub for the work line (check runs 44875023688, 44875030768, 45034277858 red at handoffs-check), so nothing about them is stated"
+    },
+    {
+      "check": "Test quality (do the tests prove what they name) and coverage of app/",
+      "why": "COVERAGE-AUDITOR's dimension"
+    }
+  ],
+  "findings": [
+    {
+      "id": "ARCH-APP-01",
+      "check": "Database access: the migration runner (all-or-nothing writes, failure handling)",
+      "severity": "Medium",
+      "title": "The 12 s guard of the migration command stays armed during the migration and kills it with the message 'no answer from the database'",
+      "where": "app/server/db/migrate.js lines 149-152 (timer) and 189 (the only clearTimeout); app/Dockerfile line 15 (migrate runs before the server at every start)",
+      "evidence": "Lines 149-152: `const timer = setTimeout(() => { process.stderr.write(\"migrate: refused: no answer from the database\\n\"); process.exit(2); }, CONNECT_TIMEOUT_MS + 2000);` with CONNECT_TIMEOUT_MS = 10000 (line 16). `grep -n \"setTimeout\\|clearTimeout\\|CONNECT_TIMEOUT\" server/db/migrate.js` prints the single clearTimeout at line 189, inside `finally` of main(), after `await migrate(...)`. The guard is meant for E8 (design: the database is unreachable or silent, one line within 12 s), but it is not cleared after the connection and the first statement have succeeded, so it also covers every later migration file and the password step.",
+      "item": "Q3 (a failure is handled and named correctly); Q10 (the message tells the truth)",
+      "recommendation": "In app/server/db/migrate.js main(): clear the timer as soon as the session is connected and the advisory-lock query has answered (or arm it only around connectPgSession and the first query), so a long but healthy migration is not killed and the wrong message is not printed. Add an int test in app/test/int/migrate.test.js with a migration file that sleeps longer than the guard. State stays consistent today (the server rolls back the open transaction when the session ends and releases the advisory lock), so this is Medium, not High, while only 0001_init.sql exists; it becomes a crash loop in Docker (migrate && start) as soon as one migration needs more than about 12 s."
+    },
+    {
+      "id": "ARCH-APP-02",
+      "check": "Database access: error classes of the two drivers (toDbError), honest /api/health",
+      "severity": "Medium",
+      "title": "toDbError takes any five-character upper-case code for an SQLSTATE: Node codes EPIPE and EBUSY become E_DB_QUERY and /api/health says db \"ok\" for a broken connection",
+      "where": "app/server/db/index.js lines 43-52; app/server/routes/health.js lines 60-62",
+      "evidence": "Line 48: `/^[0-9A-Z]{5}$/.test(code) && !code.startsWith(\"08\")` gives E_DB_QUERY. Run with Node 22: `EPIPE E_DB_QUERY`, `EBUSY E_DB_QUERY`, `ECONNRESET E_DB_DOWN`, `ETIMEDOUT E_DB_DOWN`, `ECONNREFUSED E_DB_DOWN`, `08006 E_DB_DOWN`, `57P01 E_DB_QUERY`. health.js lines 60-62: on E_DB_QUERY the body gets `db: \"ok\"` and `role` from roleState. A socket error `write EPIPE` (the peer closed a pooled connection) carries code 'EPIPE', so the health answer is 503 with `\"db\":\"ok\"` while the connection is down. `grep -rn 'toDbError\\|EPIPE' app/test` finds no test of this function by name or of an errno code.",
+      "item": "Q3 (failure handled correctly); Q10 (an honest, understandable status)",
+      "recommendation": "In app/server/db/index.js toDbError: accept an SQLSTATE only when the error comes from the server (the pg DatabaseError has a `severity` field and PGlite's error too) or exclude Node errno codes (a code that starts with 'E' followed by letters only, or `typeof err.errno === 'number'`/`err.syscall`). Add unit cases for EPIPE, EBUSY, 57P01 and 08006 in a new app/test/unit test, and a health case for a driver error with code EPIPE that must answer db \"down\". Decide separately whether class 57 (operator intervention: admin shutdown, cannot connect now) should read as down: today 57P01 also gives db \"ok\"."
+    },
+    {
+      "id": "ARCH-APP-03",
+      "check": "Files and functions too large (compare with neighbours)",
+      "severity": "Medium",
+      "title": "mountSurvey in the demo page script is one 886-line function holding 29 nested functions; no part of it can be tested or read alone",
+      "where": "app/public/js/pages/demo.js lines 378-1263 (the file has 1314 lines)",
+      "evidence": "A script over the top-level functions of the file: mountSurvey 886 lines, then start 44, readOutcome 35, readSurvey 32. The same script over neighbours: office/draw.js largest function drawScene 284, office/view.js makeView 385, scripts/check-public.js lintTextsModule 79. mountSurvey is not exported (`grep -n mountSurvey public/js/pages/demo.js test -r` prints only its definition at 378 and its single call at 1295), so only the e2e file (landing.test.js, 3020 lines) can exercise it; the pure parts of the same page (readSurvey, readOutcome, astanaDate) were already taken out as small functions, which shows the intended style.",
+      "item": "Q12 (the code follows the design's structure and stays maintainable)",
+      "recommendation": "Split mountSurvey in app/public/js/pages/demo.js along its own closures (question flow, result sheet, status block, keyboard and focus handling) into named functions that take a small state object, as stage-scene.js does for the pure part, and export them for unit tests. Do it in a WF-03 run with the e2e record green before and after; do not change texts or behaviour in the same run. WF-05 has no row for size, so Medium is the auditor's choice (a maintenance cost that also makes the REQ-111/113 changes costly: the head's change of 45 lines in demo.js sits inside this function); ORCH may lower it to Low."
+    },
+    {
+      "id": "ARCH-APP-04",
+      "check": "Recorded design against the code: the role selfcheck statement",
+      "severity": "Medium",
+      "title": "The design of the app skeleton gives another SELFCHECK_SQL than the code; the membership rule that the code adds is written in no document",
+      "where": "docs/design/REQ-108-109-app-skeleton.md line 384 against app/server/db/selfcheck.js lines 1-11",
+      "evidence": "Design line 384: `SELFCHECK_SQL = \"select rolsuper, rolbypassrls from pg_roles where rolname = session_user\"`. Code: `select coalesce(bool_or(rolsuper), true) as rolsuper, coalesce(bool_or(rolbypassrls), true) as rolbypassrls from pg_roles where pg_has_role(session_user, oid, 'MEMBER')`, with a comment saying a role the session can become by `set role` counts as its own. `grep -rln pg_has_role docs decisions` prints nothing. The code is the stricter one (it also refuses a sai_app that bypasses row security), so the behaviour is safe; the document is what is outdated.",
+      "item": "Q12 (a divergence from the recorded design without a new record); documents match the files",
+      "recommendation": "DOC-UPDATER: amend docs/design/REQ-108-109-app-skeleton.md section 4.4 (line 384) (and any line of the same document that repeats the one-row reading) to the membership reading, with the reason from the code comment, or record the change as a decision record (decisions/) if it was taken on purpose after the design; name which."
+    },
+    {
+      "id": "ARCH-APP-05",
+      "check": "Dead code",
+      "severity": "Low",
+      "title": "withPlatform (db/tx.js), readText and two error codes have no caller in run-time code; the 'transaction helper' of the design does not exist",
+      "where": "app/server/db/tx.js lines 1-12; app/server/http/body.js lines 38-51; app/server/http/errors.js lines 8 and 10 (bad_request, bad_encoding)",
+      "evidence": "`grep -rn \"withPlatform\\|readText\\|bad_encoding\\|bad_request\\|tx.js\" --include=*.js .` outside test/ finds only the definitions; `grep -rln \"withPlatform\\|readText\" test` finds readText in test/unit/body.test.js only and withPlatform in no file. withPlatform's header says 'Transactions under the group role' but its body is `return fn((text, params) => db.query(text, params))`: no begin, no commit, no role switch; /api/health (the 'one reader' the comment names) calls db.query directly (health.js line 40). The exported-symbol script prints `server/db/tx.js withPlatform runtime-users:0 test-users: 0`.",
+      "item": "Q12 (dead code; code that promises what it does not do)",
+      "recommendation": "Delete app/server/db/tx.js (and its mention in docs/design/REQ-108-109-app-skeleton.md B3 row, section 2 file list) until M2 needs a real transaction helper, or write the real one with a test when M2 starts; delete readText and the codes bad_request and bad_encoding from body.js and errors.js (with the unit case that names readText) or give them a caller."
+    },
+    {
+      "id": "ARCH-APP-06",
+      "check": "AP-014: one mechanism in all neighbouring places",
+      "severity": "Low",
+      "title": "Copies of one constant or one error answer stand in several files without a pin: the 4000 ms deadline (4 places), the language list, the 503 server_config body",
+      "where": "app/server/node-main.js line 17 and app/server/db/index.js line 61; app/server/routes/health.js line 5; app/server/app.js line 199; app/server/routes/demo.js line 20 and app/public/shared/i18n/lang.js line 6; app/api/index.js lines 48-55 and app/server/http/errors.js",
+      "evidence": "node-main.js line 17 `const SELFCHECK_DEADLINE_MS = 4000;` redefines the constant that db/index.js line 61 exports under the same name; health.js line 5 `HEALTH_DEADLINE_MS = 4000`; app.js line 199 passes the literal `connectTimeoutMs: 4000`. demo.js line 20 `TEXT_LANGS = Object.freeze([\"ru\", \"kk\", \"en\"])` is SOURCE_LANGS of lang.js (same file already imports pickLang from it), so a fourth language added to lang.js would not be read as a text object by inLanguage. api/index.js builds `JSON.stringify({ error: \"server_config\" })` by hand with its own headers while errors.js has the code server_config and errorBody; the 503 of the entry also skips the app's header and request-id middleware (on Vercel vercel.json adds the headers, so the visible effect today is only the missing X-Request-Id).",
+      "item": "Q12 (one mechanism in all neighbouring places, AP-014)",
+      "recommendation": "Import SELFCHECK_DEADLINE_MS from db/index.js in node-main.js and name one constant for the 4000 ms of app.js; import SOURCE_LANGS in routes/demo.js instead of TEXT_LANGS (the test demo-parity already compares the result with the tools implementation); build the entry's 503 with errorBody('server_config') and ERROR_STATUS from errors.js."
+    }
+  ],
+  "summary": "app/ is built as its records say: the layers are clean and held by a rule test (server imports only server and public/shared; pg and PGlite once each; nothing of tools/ or test/ at run time), the selfcheck stands inside every database statement, the migration runner keeps its all-or-nothing promise, one function sits behind one explicit rewrite on Vercel, and the pinned engine and the two office ports match their sources byte for byte with checks in app `npm run check` and in app.yml paths. The head's 6 changed files break no boundary. Findings: 0 Critical, 0 High, 4 Medium (the migrate guard that kills a long migration, toDbError reading EPIPE/EBUSY as an SQLSTATE so health says db ok, the 886-line mountSurvey, the design's outdated selfcheck statement), 2 Low (dead withPlatform/readText/codes, unpinned copies of constants). 16 checks done, 6 not done (all for the rules of this PC or other dimensions); every result of a test run rests on the GitHub records of app runs 45031353708 and 45034277809, never on a local run."
+}

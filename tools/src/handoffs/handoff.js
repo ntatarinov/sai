@@ -3,6 +3,7 @@
 // a new handoff file or closes one. Exit 0: done; 1: a refusal by the rules; 2: a wrong
 // call or environment. A refusal is one stderr line `handoff: <code>: <text>`, without a
 // stack trace and without the values of the arguments; a program error is not caught.
+import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "../node-floor.js";
 import { isOsError } from "../util.js";
 import { repoRoot } from "../traces/git-files.js";
 import { TraceError } from "../traces/lists.js";
@@ -68,6 +69,8 @@ function main(argv) {
       process.stdout.write(`${HELP}\n`);
       return 0;
     }
+    // The Node floor (REQ-110), before both commands.
+    if (refuseBelowNodeFloor(process.stderr)) return NODE_REFUSAL_EXIT;
     const lines =
       parsed.cmd === "new"
         ? newHandoff(parsed.opts)

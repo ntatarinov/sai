@@ -1,0 +1,78 @@
+{
+  "handoff_id": "step05l-speaker-rows-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "05l",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/M1CODE-20261119-01/step-05l-test-designer-speaker-rows.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-02f-code-fixer-speaker-content.json",
+      "decisions/0124-m1code-landing-design-answers.md",
+      "app/test/e2e/landing.test.js"
+    ],
+    "route": "05l TEST-DESIGNER -> 3 and 4 -> 5b -> new snapshot on GitHub (owner's yes) -> 9",
+    "write_set": [
+      "app/test/e2e/landing.test.js",
+      "app/test/fixtures/e2e-kit.js (only if a helper is needed)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 5 rework round 05l (TEST-DESIGNER) for the FAIL of step 6 (GitHub app.yml run 44887506935, LD-5 section F at 380 px) after the owner's ruling decisions/0124 O45 and the code round 02f (handoffs/M1CODE-20261119-01/step-02f-code-fixer-speaker-content.json: read its result, especially issue I1 with the expected new behaviour, and the diff of app/public/css/site.css and app/public/js/pages/demo.js against HEAD 3c66ba3, function fitSpeaker). Rewrite ONLY the rows of app/test/e2e/landing.test.js LD-5 section F (the comment, the constant OWN_ROW_UP_TO = 379, the window list 360 to 390, and the three checks that read it) so that they pin the ruling and no pixel threshold: at every window of the list (keep 360, 371, 372, 375, 379, 380, 389, 390 and add 320 and 420 if the section allows) and every question the title ends within its column (tolerance 0.5 px as today), is at least 4 px from «Назад» when on one row, nothing overlaps the question text, no sideways scroll; the speaker is either on the row of «Назад» (beside) or on its own row above the question; the class own is on .ask-h exactly when the speaker is not on the row of «Назад» (consistency row); the font-dependent choice is NOT pinned at 380 and 389 px (it differs between the Mac and the Linux runner: do not assert beside or own there). Add a row that proves the content rule with a font stress inside the test page (inject a wider font-family or letter-spacing into the page for that row only, through the test kit, never into the project) so that at a width where the title fits it is beside and, with the stress, it moves to its own row and the invariants still hold; and a row that a resize in place (window width change on the open question) re-measures. Read the test kit (app/test/fixtures/e2e-kit.js) and the rules of the design for tests (docs/design/REQ-111-112-public-landing.md section 10: names, counts, no selector forms by NPM-6, what the other rows pin); keep the test counts and file names consistent with the design (a changed count goes into result.issues for DOC-UPDATER). Edit only app/test/e2e/landing.test.js (and app/test/fixtures/e2e-kit.js only if a helper is needed). Check on this PC what the rules allow: NO npm run check, no app or tools test script, NO e2e run (the owner's rule: they run only on GitHub in Linux); you may lint your edit on a scratch copy with the eslint/prettier/tsc binaries of a scratch clone's app folder (a fresh git clone outside the project plus npm ci there, then copy the edited files in) and say that the e2e result itself is not verified here. Also write the mutants you would run on GitHub: list in result at least ten mutants of fitSpeaker/CSS for each row (for example the old fixed threshold back, the measurement removed, the 0.1 px slack set to 8, the class never added, the class never removed on resize) and which row must turn red; the validator (step 5b) checks them. No commit/push/checkout/reset/stash/clean. Node 22 first on PATH. Close with the handoff close command after cd tools && npm run traces returns 0 (handoffs-check has one old known H4 violation, accepted).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T10:29:03Z",
+  "started_at": "2026-11-21T10:29:03Z",
+  "completed_at": "2026-11-21T10:38:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Round 05l done: the rows of LD-5 section F that pinned the fixed threshold of О36 (the constant OWN_ROW_UP_TO = 379, own row up to 379 px, beside from 380 px, speaker not over «Назад» from 380 px) are gone; LD-5 now has sections F, G and H, all inside the one named test LD-5, so the test counts of the design do not change (landing.test.js 9 tests and 125 assert. as at HEAD; the design 10 does not describe section F). F: ten windows (320, 360, 371, 372, 375, 379, 380, 389, 390, 420 px), five questions, ru: every line of the speaker ends within its column (0.5 px), the title is 4 px or more from «Назад» on one row, nothing overlaps (speaker, question, progress, «Назад»), the speaker lies above the question, the class own is on .ask-h exactly when the speaker is not on the row of «Назад», no sideways scroll; the choice beside or own is not asserted anywhere in F, 380 and 389 px included. G (new, content rule, font-proof): at 420 px, for each of the five questions, the title and then the stage line are made wider or narrower with a letter spacing on a sheet that the kit builds inside the test page (never in the project; calibrated by the page's own Range measure to within 1 px of +6 px beyond or 3 px before the room beside «Назад») and the window is made 1 px wider (a resize): +6 px must go to its own row with the invariants, -3 px must stay beside, and with the stress taken away and the window back at 420 px the speaker is beside again and the class is gone. H (new): resize in place on each open question, 420, 340, 320, 360, 420 px with no reload: invariants at every width, beside pinned at 420 px (both times) and own pinned at 320 px only (the Mac measured all five questions on their own row at 320 px; the runner's font is wider). New kit helpers in e2e-kit.js: speakerRow (the invariants and which row), stressSpeakerLine, clearSpeakerStress. Criterion table: decisions/0124 О45 (no pixel threshold; speaker beside where the title fits, own row where it does not; the choice follows a resize) -> LD-5 F (invariants at every window), G (content rule), H (re-measure on a resize and the class removal). Quality items Q8, Q10, Q11, R3: not touched (a layout rule of the public landing: no business data, no external call, no address, no photo).",
+    "changes": [
+      {
+        "remark": "I1 (EXPECTED_RED of 02f)",
+        "file": "app/test/e2e/landing.test.js",
+        "place": "LD-5 section F (its comment, OWN_ROW_UP_TO, the window list and the three checks); sections G and H added after it; imports speakerRow, stressSpeakerLine, clearSpeakerStress",
+        "was": "fixed threshold 379/380 px: own row up to 379, beside from 380, speaker not over «Назад» from 380 (windows 360 to 390)",
+        "became": "no pixel threshold and no pinned choice at any window of F (320 to 420 px); the invariants of the ruling at every window; G pins the content rule by a font stress; H pins the re-measure on a resize and the removal of the class"
+      },
+      {
+        "remark": "I1",
+        "file": "app/test/fixtures/e2e-kit.js",
+        "place": "three exported helpers at the end of the file; the global comment now names CSSStyleSheet and window",
+        "was": "no helper",
+        "became": "speakerRow(page) -> { lines, beside, own }; stressSpeakerLine(page, tag, over) -> { word, spacing, error }; clearSpeakerStress(page). The stress is a constructed style sheet set in the page by the test (adoptedStyleSheets), so it touches no project file"
+      }
+    ],
+    "self_check": [
+      "Lint on a scratch copy of the app folder (the two edited files copied in, node_modules of an earlier scratch): prettier --check on both files after prettier --write (the formatted files are the ones in the project): clean; eslint --max-warnings 0 on both files: exit 0; tsc --noEmit -p jsconfig.json (the project's config, which does not include app/test): exit 0. A trial tsc over the two files themselves shows no error in the new code (the errors it prints are old ones, in lines outside this edit and in browser.js and helpers.js).",
+      "NPM-6 selector grep (the SELECTOR_GREP expression of npmrc.test.js) over both files: no hit, comments included. Counts: test( in landing.test.js 9 (HEAD 9), assert. 125 (HEAD 125); e2e-kit.js assert. 1 (HEAD 1).",
+      "NOT verified: the e2e rows themselves were not run (the owner's rule: they run only on GitHub in Linux), so the new rows are checked by reading only. Open risks for the run: (1) the stress is checked by the row itself (a finding 'the stress missed its mark' if the correction by the page's Range measure is more than 1 px off), so a red with that line is the test page, not the project; (2) a constructed style sheet is not subject to the CSP style rule by the specification, not tried here; (3) the plain read of G at 420 px needs every title beside «Назад» at 420 px: on the runner the longest title was 230.6 px against a column of 222.2 px at 380 px and the column grows 1 px per px, so it fits at 420 px by about 30 px; (4) H pins own at 320 px for all five questions.",
+      "Mutants to run on GitHub (step 5b; 20 listed, each in a fresh clone, the working tree untouched): M1 the old fixed threshold back: CSS @media (max-width: 379px) with the three placements on .ask-h (no class), fitSpeaker unchanged -> red: G (the +6 line stays beside at 421 px), F (consistency at 320..379 px where the class is not set but the speaker is on its own row; on the runner also the title beyond its column at 380 px) || M2 the same threshold moved to 389 px -> red: G and F as M1 || M3 measurement removed: fitSpeaker returns on its first line -> red: F at 320 px (title beyond column, overlap, consistency), G (+6 stays beside), H (beside at 320 px) || M4 the 0.1 px slack set to 8 (SPEAKER_SLACK) -> red: G (a line ending 6 px beyond its column stays beside: the beyond-column finding and the beside check), for the title and for the stage line || M5 the class never added: the head.classList.add own call removed -> red: as M3 (F at 320, G, H) || M6 the class never removed: the head.classList.remove own call at the start of fitSpeaker removed (the head is then measured in its own state) -> red: H (the speaker is not beside at 420 px after 320 px) and G ('taken away' rows) || M7 no re-measure on a resize: the resize listener calls only placeTail -> red: H (stays beside at 320 px), G (+6 at 421 px stays beside) || M8 fitSpeaker removed from put() (measured on a resize only) -> red: F at 320 px (the first question is put at load with no resize, so it has no class: overflow, overlap, consistency); G and H stay green because they resize || M9 only the title measured (the stage line left out of the lines that are read) -> red: G, rows 'stage line stress 6' (the stage line beyond its column, the speaker beside) || M10 only the stage line measured -> red: G, rows 'title stress 6'; F at 320 px on a platform where the title does not fit || M11 eager: a line counts as beyond when it ends past the column minus 20 px -> red: G rows 'stress -3' (a line that fits is sent to its own row), and the plain read of G at 420 px where a title is within 20 px of the column || M12 window width instead of content: fitSpeaker sets own when win.innerWidth < 380 and measures nothing -> red: G (+6 at 421 px stays beside), F at 380 and 389 px on the runner (title beyond column) || M13 CSS: the rule .ask-h.own .spk removed (the class is set, the speaker does not move) -> red: F, G, H by consistency (own set, speaker still on the row of «Назад») and by the overlap or beyond-column findings || M14 CSS: the rule .ask-h.own .back removed (the button stays on the first row, beside a speaker that has the whole row) -> red: F at 320 px, G (+6), H (320 px): speaker and «Назад» overlap || M15 CSS: .ask-h.own .spk set to grid-row 2 (the speaker over the question text) -> red: 'does not lie above the question' and the overlap of the speaker and the question in F at 320 px, G, H || M16 CSS: the column gap of .ask-h 20px set to 0 -> red: G rows 'title stress -3' (the title ends 3 px before the room and so under 4 px from «Назад») || M17 fitSpeaker measures only the first question (a done flag) -> red: F at 320 px, question 2 and later (no class, overflow) || M18 the class name misspelt in the JS (own -> owm) -> red: as M13 || M19 the class put on the wrong element (the question panel instead of the head .ask-h) -> red: the consistency line in F, G, H (the head has no class while the speaker is on its own row, and the CSS does not apply) || M20 the own placement CSS wrapped in a window width media query again (@media (min-width: 380px) .ask-h.own ...) -> red: F at 320..379 px (overflow and overlap: the class is set, the layout is not applied)",
+      "Mutants that stay green by design (not pinned): a slack of 0.5 px (the same as the 0.5 px of the rows); an eager margin of 2 px (a line counts beyond when it ends 2 px before the column), because the narrow stress stops 3 px before the edge; a measure by the scroll width of .who instead of a Range (the same measure)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Test counts and file names are unchanged: LD-5 stays one named test (sections F, G, H inside it, no loop-made test, no subtest), landing.test.js 9 named tests, no new file. The design 10 has no sentence on section F, so DOC-UPDATER has nothing to change in the counts; the look sections 7.9, 12 and the G21 list (I2 of 02f) still name the threshold below 380 px."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "G and H resize the window of the page (setViewportSize), 1 px in G and larger steps in H. The put() path (a new question measured under a stress) is caught only by F at 320 px (mutant M8); a stress that survives the next question would need a calibration per question. Say if TEST-DESIGN-VALIDATOR wants it."
+      }
+    ],
+    "artifacts_out": [
+      "app/test/e2e/landing.test.js",
+      "app/test/fixtures/e2e-kit.js"
+    ]
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "handoff_id": "step04a-M1STATUS-20261122-02",
+  "run_id": "M1STATUS-20261122-02",
+  "workflow_id": "WF-02",
+  "step": "04a",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/M1STATUS-20261122-02/step-04a-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-113"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1STATUS-20261122-02/step-04-reviewer.json (findings L1-L4)",
+      "docs/design/V1-public-look.md (7.22: the mark's top is the title's top)"
+    ],
+    "route": "WF-02 fix after REVIEWER PASS with Low findings -> narrow REVIEWER 04b -> step 5",
+    "write_set": [
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js"
+    ],
+    "base_tag": "base/M1STATUS-20261122-02",
+    "rework_of": "handoffs/M1STATUS-20261122-02/step-04-reviewer.json"
+  },
+  "task": {
+    "description": "CODE-FIXER (role file .claude/agents/code-fixer.md). Fix the four Low findings of the REVIEWER (read its result): L1 delete 'margin-top: 2px' on '.now .stat' and the redundant 'margin-top: 0' in the 479px rule in site.css (the look 7.22 says the mark's top is the title's top; measure in real headless Chrome on a scratch copy that the mark top now equals the title top at 1470 and 390); L2 reduce '.meta, .fine' to '.meta' in site.css:577 ONLY if no file in app/public, app/test or the design still uses the class fine (grep; otherwise leave it and say so); L3 correct the two comments in site.css (about line 1263-1265 and 1297-1298: section.idea is now a child of .r-side, .rc-acc has a p after the pips); L4 re-wrap the long JSDoc line in demo.js:976-978 to prettier width. Change nothing else: comments must contain no word of the public forbidden list (decisions, REQ-, handoff, ORCH). Own check: prettier --check, eslint --max-warnings 0, tsc --noEmit and node scripts/check-public.js in a SCRATCH clone of the base tag with your two files copied in (clone with core.autocrlf=false, npm ci there). Forbidden on this Windows PC: npm run check, cd app && npm run ... in the project, tools test scripts, e2e tests. LF endings. No git commit/push/checkout/stash/reset in the project. Fill result with before/after sha256 of the two files and the measured mark/title tops; status stays PENDING; ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T05:42:48Z",
+  "started_at": "2026-11-22T05:42:48Z",
+  "completed_at": "2026-11-22T05:45:59Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "CODE-FIXER, rework step 04a for the four Low findings of REVIEWER step 04 (PASS). L1, L3 and L4 are closed by edits; L2 is deliberately left (a rule still names the class). Only app/public/css/site.css and app/public/js/pages/demo.js changed. Measured in real headless Chrome 157 on a scratch copy: the mark top equals the title top (difference 0.0 px) in the wide layout at 1470, and at 390 the mark stands above the title by exactly the 24 px mark box plus the 8 px gap as before.",
+    "changes": [
+      {
+        "remark": "L1",
+        "file": "app/public/css/site.css",
+        "place": "rule .now .stat (about line 1470) and the max-width 479px rule (about line 1483)",
+        "change": "deleted margin-top: 2px from .now .stat and the redundant margin-top: 0 from .now .stat inside the 479px rule; the look 7.22 (the mark's top is the title's top) is now the only measure"
+      },
+      {
+        "remark": "L2",
+        "file": "app/public/css/site.css",
+        "place": ".meta, .fine (line 575-580)",
+        "change": "not edited: grep -w fine over app/public finds no element or script using the class, and app/test finds no use, but the design and the look still name .fine as the 14 px grey class that notes must not use (look table row 'meta, fine', section 8.2 and the closing paragraph row; design REQ-113 criterion 4 and 6 checks LD-6 row 10 and LD-3 row 4 assert the '.fine' count is 0 and 'no class fine or meta'). Removing the selector would need a look note and a design change; recorded in issues I1"
+      },
+      {
+        "remark": "L3",
+        "file": "app/public/css/site.css",
+        "place": "comment before .res (about line 1263-1265) and comment before .receipt (about line 1296-1298)",
+        "change": "first comment now says div.r-side (section.info.now + section.idea) in place of the bare section.idea; second comment now says div.rc-acc (span.lbl + div.prog + p); the second comment is re-wrapped to 100 columns"
+      },
+      {
+        "remark": "L4",
+        "file": "app/public/js/pages/demo.js",
+        "place": "JSDoc of showResult (about line 975-979)",
+        "change": "the over-long middle line is re-wrapped into three lines of the width of the neighbouring comments; words unchanged"
+      }
+    ],
+    "self_check": [
+      {
+        "check": "files",
+        "command": "sha256sum before and after; grep -c CR; git diff base tag of added lines for the forbidden public words",
+        "output": "app/public/css/site.css before 70c7288a6b7ffb091eecd51d9386bf225ea70a6069d4bc9a3d8591d4387cf2cc, after 7274b7f94a585b78485ce47fbd09b0f5d04d289a7aabddc00996d99ce6b9ffe1. app/public/js/pages/demo.js before 017478220aab320ac784caf088f37608531c6eb6e289b2e0638be1706404a2a6, after fdbf02eb4000185d73963aeb933428731ad996e1c35f514c4a7a11140fd12a82. CR count 0 in both. The whole diff of app/public against the tag: no match for decisions, REQ-, handoff, orch. how.html and texts.js not touched (hashes unchanged)."
+      },
+      {
+        "check": "scratch clone of the tag base/M1STATUS-20261122-02 (core.autocrlf=false, npm ci), the four run files copied in (byte-equal to the project: cmp)",
+        "command": "npx prettier --check public; npx eslint public/js/pages/demo.js public/shared/i18n/texts.js --max-warnings 0; npx tsc --noEmit -p jsconfig.json; node scripts/check-public.js",
+        "output": "All matched files use Prettier code style!; eslint rc=0; tsc rc=0; check-public: app/public is clean, rc=0"
+      },
+      {
+        "check": "real headless Chrome 157 on the scratch copy (own CDP driver, the project's layout oracle copied as text, lintText over the page text), windows 1470x784 and 390x844 x light/dark x ru/en/kk",
+        "command": "how.html: 12 loads; demo result (landing pass): 12 loads; mark top minus title top per row",
+        "output": "1470: mark top minus title top is 0.0 px in all three rows in every load (how.html ru 752.1/819.5/886.9 both; en 726/793.4/860.8 both; demo the same 0 difference); mark box 24 px. Before the fix the reviewer measured 2.0 px. 390: mark above the title by 32 px (24 mark box + 8 gap), unchanged by design. Layout findings 0, lint findings 0 in all 24 loads, no horizontal scroll, .fine count 0, r-side children section.info.now then section.idea, rc-acc children span.lbl, div.prog, p. The static server I started was stopped by its own PID; Chrome closed by its own handle (PID checked)."
+      },
+      {
+        "check": "not run, by the owner rule for this PC",
+        "command": "npm run check, cd app && npm run ..., unit, int, e2e tests, tools test scripts",
+        "output": "not run; the GitHub run of ORCH covers them"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "L2 left open on purpose: the .fine selector in the shared rule '.meta, .fine' is still named by the look and by the design checks as the forbidden 14 px grey class. If ORCH wants it removed, the look (table row 'meta, fine', 7.22 and 8.2 notes) and the design checks LD-6 row 10 and LD-3 row 4 need a note first; the edit itself is one line in site.css. No test pins the rule's presence."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Any edit of these two files needs the narrow REVIEWER 04b again (route in the handoff); the other two files of the run (how.html, texts.js) are unchanged."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js"
+    ]
+  }
+}

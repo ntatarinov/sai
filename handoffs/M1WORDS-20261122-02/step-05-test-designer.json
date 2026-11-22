@@ -1,0 +1,189 @@
+{
+  "handoff_id": "step05-M1WORDS-20261122-02",
+  "run_id": "M1WORDS-20261122-02",
+  "workflow_id": "WF-02",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/M1WORDS-20261122-02/step-05-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-113"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/requirements.yaml, block REQ-113: the paragraph «Amendment of 2026-11-22», criteria 1, 2, 3 to 8, 11 and 13, and the rows (11), (12), (13) of the guard table «was → became»",
+      "docs/design/REQ-113-visitor-status.md (sections 9 to 16: the test catalogue T1–T4, the mutants, the counts)",
+      "handoffs/M1STATUS-20261122-02/step-05-test-designer.json (your own step 5 before the wording round) and step-05b-test-design-validator.json (its gate)",
+      "handoffs/M1WORDS-20261122-02/step-01-frontend-dev.json (what was changed in the two test files) and step-02-reviewer.json",
+      "the test change: `git diff base/M1WORDS-20261122-02 07a9759 -- app/test` (base tag = d1bfb93)",
+      "the GitHub record of the wording snapshot: branch ci/m1-words-1, commit 0c50fc2 (the tree of main e0a425b with app/ of 4fa85ed; app/ unchanged since 07a9759), workflow app run 45031353708 and workflow check run 45031353719, both success"
+    ],
+    "base_tag": "base/M1WORDS-20261122-02",
+    "route": "WF-02 step 5 for the wording round -> step 5b TEST-DESIGN-VALIDATOR -> step 6 TEST-RUNNER (on the GitHub record; a new snapshot is sent only if this step changes a test file)",
+    "write_set": [
+      "app/test/unit/texts.test.js",
+      "app/test/e2e/landing.test.js",
+      "handoffs/M1WORDS-20261122-02/step-05-test-designer.json (result only)"
+    ],
+    "parallel_work_now": [
+      "M1WORDS-20261122-02 step 04 SECURITY-REVIEWER: reads only; writes its own handoff",
+      "M1WORDS-20261122-02 step 05 TEST-DESIGNER: may write app/test/unit/texts.test.js and app/test/e2e/landing.test.js",
+      "M1WORDS-20261122-02 step 06 DESIGN-QA-VALIDATOR: reads only; the only role with a browser now; writes its own handoff",
+      "M1WORDS-20261122-02 step 07 BA-ANALYST: writes docs/uat/REQ-113.md",
+      "AUD-002-20261122-01 step 01 AUDIT-SCOUT: reads only; writes docs/audits/scope-20261122.json"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 5, TEST-DESIGNER, the wording round of REQ-113 (run M1WORDS-20261122-02). In step 01 of this run FRONTEND-DEV, on ORCH's instruction, replaced the pinned values in the two test files together with the product texts (the rows (11) to (13) of the requirement's guard table) and added the table KK_DRAFT_VALUES to TX-4. By WF-02 the tests are yours; this step puts that change under your hand. Do, in this order: (1) Read the amended requirement and the diff of the two test files line by line. For every changed row: the pinned value equals the requirement's text exactly (compare by your own read-only script that takes the value from the requirement text, not from the product). (2) The new table KK_DRAFT_VALUES and its check in TX-4: is the oracle the test's own; does it compare the whole kk text; is «exactly one occurrence in texts.js» counted soundly (could it pass with a wrong text, with the text in a comment, with the text twice); is it red on the product of the base tag d1bfb93 (show it by a script that evaluates the same comparison on the module of the tag and on the module of the work). (3) Nothing is weakened: print the number of `test(` and `it(` calls and of `assert.` occurrences in each of the two files at the tag base/M1WORDS-20261122-02 and now (the number now is not lower); no skip, todo or only; the unit count stays 122 and the e2e count 15 unless you add a test (then say the new numbers). (4) Decide whether the amendment needs a new or a stronger assertion. Think by the class of error, not by these examples: a page that kept an old literal while the module changed (the result block, the how.html block, the four stage marks, the static Russian of how.html); the invitation sentence living outside the closing paragraph element or twice; the closing paragraph of four sentences in ru and en; the en mark shown anywhere as the old word; a kk draft leaking into the open build. If an existing test already goes red for the class, name the test and the assertion (file and line) and add nothing. If not, write the assertion in your two files by the conventions of the design's catalogue (own oracles; nothing imported from the product beyond what these files already import). A test that only looks for a word in a document is not written (Q6). (5) Mutants of the amendment, at least 14: each changed value mutated in a copy (ru now_idea_s back to the old text; the same without «(ТЗ)»; ru now_closing without the invitation sentence; the sentences in another order; en now_closing old; en stat_on «Works»; en now_idea_t old; en idea_panel_lead old; en demo_accuracy_note with «surer»; each kk draft changed by one letter; a kk draft twice in the module; the static Russian of how.html old for now_idea_s and for now_closing; two languages of one key swapped), and for each the test and the assertion that goes red. You cannot run the tests here: prove each mutant with your own script that applies it to a copy in your folder and evaluates the same comparison the test makes, and list in `result.must_be_proved_on_github` what only a run on GitHub can prove (ORCH plans one snapshot «the product of main with the tests of the work» that must be red). (6) Read the logs of the two GitHub runs (read-only: `gh run view <id> --log`) and write what they prove for the amended tests: TX-4, TX-9, TX-10 and LD-3, LD-6, LD-9 ran and passed, with the counts of each step. (7) Say plainly in `result.changes` whether you changed a test file: «no change» means the GitHub record above stands for step 6; a change means ORCH must send a new snapshot. You do not change product code; if a test needs a change of a product file, write it in `result.issues`. RULES OF THIS PC (decisions/0110, 0127 Г, 0129): do NOT run `npm run check`, `cd app && npm run ...`, `node --test`, the tools test scripts or the e2e test files here; they run only on GitHub in Linux, and their record is read with `gh run view` (read-only). Allowed: `cd tools && npm run -s traces` and `npm run -s handoffs-check`; read-only git and gh; your own scripts and fresh clones (`git clone -c core.autocrlf=false`, `npm ci`) only in your own folder <scratch>\\words\\testdesign (outside the project). Node 22 first on PATH (<node22>); the system Node is not changed. A server you start binds port 0 or a free high port and is stopped by its exact process id (AP-119); never bind, probe or stop the ports 4780, 4781, 4782 and 4790. No git commit, push, pull, checkout, stash, reset or tag in the project. Files keep LF line endings. Never write the name or a path of the reference product into a Sai file (the `traces` check). Other agents work at the same time (context.parallel_work_now): touch nothing outside your write_set. Fill only `result` of this handoff (verdict, summary, findings, self_check with the commands and their output, issues, artifacts_out); the top-level `status` stays PENDING and `completed_at` null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T14:26:49Z",
+  "started_at": "2026-11-22T14:28:55Z",
+  "completed_at": "2026-11-22T18:57:40Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Wording round of REQ-113, step 5. I checked the amended tests and found one real gap, which I closed with one new assertion in app/test/e2e/landing.test.js (no new test( call; counts unchanged: unit 122, e2e 15). (1) Pinned values: my read-only script took the 15 key pairs from the requirement paragraph «Words» and the two kk drafts from the amendment text, and compared them with the pinned tables of texts.test.js, with the module of the work and with the module of the tag d1bfb93: 32 rows, 0 differ from the requirement; exactly 9 differ from the base module, the nine values of the amendment (now_idea_t en, now_idea_s ru and kk, stat_on en, now_closing ru, en and kk, demo_accuracy_note en, idea_panel_lead en). landing.test.js holds no pinned product text: its diff against the tag is only the word Works to Working in two comments and three messages, and the page values come from the module through say(). (2) KK_DRAFT_VALUES: the table is a literal of the test file (no import, no call), the check compares the whole kk text with assert.equal, and counts the occurrences of the whole kk text in the source of texts.js (split on the text). The comparison is red on the module of the tag (both drafts: value and count) and green on the module of the work (count 1 each). I damaged the module in 19 ways (one letter, a look-alike Latin I, a trailing space, a dropped full stop, a no-break space, old text, sentences moved, the text twice as another value, in a comment on its own line, in a comment on the same line, value swapped with en or ru): 18 red; the one green case, K19 (the value written as two joined pieces and the whole text kept once in a comment), has the right value and one occurrence, so no wrong text and no leak passes: harmless and named. (3) Nothing weakened: test( calls 10 to 10 and 9 to 9, it( 0 and 0, assert. 93 to 96 (texts, unchanged file against the pre-step state; the rise is the amendment's) and 194 to 195 (landing, my new assertion), no skip, todo or only, every test title and order the same, LF only. (4) By the class of error the existing assertions already catch every class of the task except one: bare words in the status block that no element shape can see (a text node after the closing paragraph, between the heading and the list, or in a row). My mutants C03 (the invitation sentence as bare text after the closing paragraph of the result) and C06 (a bare word after the heading) stayed green in the stand-in of LD-6, because checkBlock compared the skeleton of elements only. I added to readBlock a TreeWalker over the text nodes of the block (field stray: every non-blank text node whose parent is not the h3, a span.stat, a b, a small or the closing paragraph) and to checkBlock one assertion «the status block holds its words and nothing more» (deepEqual with []); checkBlock runs for the result in ru/kk/en, the how.html block in ru/kk/en at two widths and with no script, and the held, retried and failed results, so one assertion guards all of them. It is not a word-in-a-document check: it fails on the page structure. (5) 43 mutants, one edit of a copy each, evaluated by my own script that cuts the real tables and the real checkBlock, checkHowPage, howFindings out of the test files and evaluates them on the damaged copy (stand-in page for the browser parts): 41 red before my change, 43 red after it, 0 green; on the product of the tag 11 failing assertions in TX-4 (the nine values, plus the two once-counts), on the product of the work none. (6) The GitHub record: workflow app run 45031353708 on 0c50fc2: job e2e success, 15 tests 15 pass, 0 skipped, 0 todo, with LD-3 (ok 3), LD-6 (ok 6) and LD-9 (ok 9) ok; job check step «Run the app check» success: unit 122 pass 0 fail 0 skipped 0 todo, with TX-4 (ok 98), TX-9 (ok 103) and TX-10 (ok 104) ok; int 47 pass; job pg 4 pass; job docker success. Workflow check run 45031353719 (the tools set): 2226 pass plus 9, 7, 13, 7, all 0 fail, 0 skipped, 0 todo (it does not run the app tests). That record covers the tests as they stood at 07a9759; it does not cover my new assertion. (7) I changed one test file: app/test/e2e/landing.test.js (+22 -1 lines against HEAD). So the GitHub record above does NOT stand for step 6 for that file: ORCH must send a new snapshot. texts.test.js is unchanged (sha256 8a417f0c...). No product file was touched.",
+    "table": [
+      {
+        "criterion": "1 the pinned values equal the requirement (ru and en of 15 keys, kk of the two drafts)",
+        "test": "texts.test.js TX-4 lines 364, 365 (ru, en) and 380 (kk)",
+        "why": "own oracle tables STATUS_VALUES, ADDED_VALUES, CHANGED_VALUES, KK_DRAFT_VALUES; red on the tag for the 9 changed values, green on the work"
+      },
+      {
+        "criterion": "kk draft stands once in texts.js and never leaks (amendment, criterion 1 and 8)",
+        "test": "texts.test.js TX-4 lines 382-384; landing.test.js LD-9 line 2755 (the open build has no kk value)",
+        "why": "occurrence count of the whole kk text in the source; catches the text twice, in a comment, as another key; the output keeps no kk"
+      },
+      {
+        "criterion": "how.html static Russian equals the module, each key stands the expected times, four stage marks",
+        "test": "texts.test.js TX-10 (lines 1317, 1322, about 1381, 1411); landing.test.js LD-3 checkHowPage",
+        "why": "static literal that kept an old text, a key dropped from an element, a second closing paragraph, a literal mark"
+      },
+      {
+        "criterion": "result block built by demo.js in ru, kk, en: rows, marks Working/Not yet, closing paragraph of four sentences",
+        "test": "landing.test.js LD-6 via checkBlock lines 264-270, 320 (closing says its words) and 334 (markup)",
+        "why": "words come from the module through say(); a literal in demo.js, the old word of a mark, a second paragraph all fail"
+      },
+      {
+        "criterion": "the invitation sentence lives inside the one closing paragraph and once (new strength)",
+        "test": "landing.test.js checkBlock new assertion «the status block holds its words and nothing more» (line 337) in LD-3, LD-6, LD-9",
+        "why": "bare text nodes outside the parts of the block cannot be seen by the skeleton of elements; mutants C03 and C06 were green and B03 only language-dependent before"
+      },
+      {
+        "criterion": "forbidden words, length, no digit in the 45 values",
+        "test": "texts.test.js TX-9",
+        "why": "unchanged; green on the GitHub record; every amended value passes it (mutants A23 and A24 red here too)"
+      }
+    ],
+    "mutants_applied": [
+      "A01 ru now_idea_s back to the old text «…пишет ТЗ.» -> TX-4: «now_idea_s: ru»; TX-10: «how.html: now_idea_s static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: three rows with the title and the line of each part»",
+      "A02 ru now_idea_s without «(ТЗ)» -> TX-4: «now_idea_s: ru»; TX-10: «how.html: now_idea_s static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: three rows with the title and the line of each part»",
+      "A03 ru now_closing without the invitation sentence (the old text) -> TX-4: «now_closing: ru»; TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: the closing paragraph says its words»",
+      "A04 ru now_closing: the sentences in another order (the invitation sentence before «only invited») -> TX-4: «now_closing: ru»; TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: the closing paragraph says its words»",
+      "A05 en now_closing old (three sentences) -> TX-4: «now_closing: en»",
+      "A06 en now_closing: the sentences in another order -> TX-4: «now_closing: en»",
+      "A07 en stat_on «Works» (the old word of the mark) -> TX-4: «stat_on: en»",
+      "A08 en now_idea_t old «Interview and requirements» -> TX-4: «now_idea_t: en»",
+      "A09 en idea_panel_lead old «You cannot send an idea yet. …» -> TX-4: «idea_panel_lead: en»",
+      "A10 en demo_accuracy_note with «surer» -> TX-4: «demo_accuracy_note: en»",
+      "A11 kk now_idea_s: one letter changed -> TX-4: «now_idea_s: kk» (+1 more)",
+      "A12 kk now_closing: one letter changed -> TX-4: «now_closing: kk» (+1 more)",
+      "A13 the kk draft of now_idea_s twice in the module (also the kk value of now_build_s) -> TX-4: «now_idea_s: the kk text stands once in texts.js»",
+      "A14 the kk draft of now_closing twice in the module (also in a comment) -> TX-4: «now_closing: the kk text stands once in texts.js»",
+      "A15 how.html: the static Russian of now_idea_s old (the module is new) -> TX-10: «how.html: now_idea_s static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: three rows with the title and the line of each part»",
+      "A16 how.html: the static Russian of now_closing old (three sentences; the module is new) -> TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: the closing paragraph says its words»",
+      "A17 now_closing: ru and en swapped -> TX-4: «now_closing: ru» (+1 more); TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «how.html en 1280: no Russian left in the status block» (+2 more)",
+      "A18 stat_on: kk and en swapped -> TX-4: «stat_on: en»; LD-3: «how.html en 1280: no Russian left in the status block» (+1 more)",
+      "A19 now_idea_s: ru and kk swapped -> TX-4: «now_idea_s: ru» (+1 more); TX-10: «how.html: now_idea_s static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: three rows with the title and the line of each part»",
+      "A20 en stat_on «working» (a small first letter) -> TX-4: «stat_on: en»",
+      "A21 ru now_closing: the invitation sentence twice -> TX-4: «now_closing: ru»; TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: the closing paragraph says its words»",
+      "A22 en now_closing: the invitation sentence twice -> TX-4: «now_closing: en»",
+      "A23 ru now_closing: the invitation sentence promises a contact («Чтобы получить приглашение, оставьте контакт.») -> TX-4: «now_closing: ru»; TX-9: «now_closing ru: the whole word «контакт»; TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: the closing paragraph says its words»",
+      "A24 en now_closing: the invitation sentence offers a waitlist -> TX-4: «now_closing: en»; TX-9: «now_closing en: the whole word «waitlist»",
+      "A25 ru now_closing: the fourth sentence dropped (three sentences, the invitation sentence last) -> TX-4: «now_closing: ru»; TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: the closing paragraph says its words»",
+      "A26 en now_idea_s changed although the amendment keeps it («…writes the requirements (the spec).») -> TX-4: «now_idea_s: en»",
+      "A27 ru how_stage_1_note sharpened although the amendment keeps it -> TX-4: «how_stage_1_note: ru»; TX-10: «how.html: how_stage_1_note static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: how_stage_1_note says its words»",
+      "B01 how.html: the closing paragraph twice (the element with its key a second time) -> TX-10: «how.html: now_closing stands 2 times, not 1» (+1 more); LD-3: «how.html ru 1280: the status block has the markup of the design» (+6 more)",
+      "B02 how.html: the invitation sentence in a paragraph of its own inside the block, the closing paragraph without it -> TX-10: «how.html: now_closing static text differs from its ru value» (+1 more); LD-3: «how.html ru 1280: the closing paragraph says its words» (+6 more)",
+      "B03 how.html: the invitation sentence a second time, as bare text after the closing paragraph, inside the block -> LD-3: «how.html ru 1280: the status block holds its words and nothing more» (+6 more)",
+      "B04 how.html: the invitation sentence as bare text inside the block and the closing paragraph of three sentences -> TX-10: «how.html: now_closing static text differs from its ru value»; LD-3: «how.html ru 1280: the status block holds its words and nothing more» (+6 more)",
+      "B05 how.html: the closing paragraph without its key (a literal that no switch translates) -> TX-10: «how.html: now_closing stands 0 times, not 1»; LD-3: «how.html kk 1280: the closing paragraph says its words» (+3 more)",
+      "B06 how.html: the mark of stage 3 without its key (a literal) -> TX-10: «how.html: stat_off stands 5 times, not 6» (+1 more); LD-3: «how.html kk 1280: the stage 3 holds its marks, its note and its text in order» (+3 more)",
+      "B07 how.html: the mark of row 1 of the block is a literal with no key -> TX-10: «how.html: stat_on stands 1 times, not 2»; LD-3: «how.html kk 1280: the marks in order» (+3 more)",
+      "B08 how.html: the static text of the stage-1 mark is the old en word -> TX-10: «how.html: stat_on static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: the stage 1 holds its marks, its note and its text in order»",
+      "B09 how.html: a kk draft as the static text of now_idea_s -> TX-10: «how.html: now_idea_s static text differs from its ru value»; LD-3: «no script: the status block holds the ru values: three rows with the title and the line of each part»",
+      "C01 demo.js: the closing paragraph of the result is a literal (the old ru text) -> LD-6: «ru landing: the closing paragraph says its words» (+2 more)",
+      "C02 demo.js: the mark that works is the literal «Works» -> LD-6: «ru landing: the marks in order» (+2 more)",
+      "C03 demo.js: the invitation sentence a second time, as bare text after the closing paragraph (in the page's language) -> LD-6: «ru landing: the status block holds its words and nothing more» (+2 more)",
+      "C04 demo.js: the invitation sentence in a paragraph of its own after the closing paragraph -> LD-6: «ru landing: the closing paragraph says its words» (+2 more)",
+      "C05 demo.js: the closing paragraph built twice -> LD-6: «ru landing: the status block has the markup of the design» (+2 more)",
+      "C06 demo.js: a bare word after the heading of the block («Sai») -> LD-6: «ru landing: the status block holds its words and nothing more» (+2 more)",
+      "C07 demo.js: the line of row 2 is built from the key of its title -> LD-6: «ru landing: three rows with the title and the line of each part» (+2 more)"
+    ],
+    "must_be_proved_on_github": [
+      "The new assertion in a real browser: readBlock runs in page.evaluate with a TreeWalker (SHOW_TEXT = 4), parentElement and matches; my stand-in reads the source with a parser, so only a run on GitHub proves that LD-3, LD-6 and LD-9 stay green with it on the real DOM (no stray whitespace-only or script text inside the block). A new snapshot is needed because landing.test.js changed.",
+      "The planned snapshot: the product of main with the tests of the work. Expected red is TX-4 (11 failing assertions by my evaluation: now_idea_t en, now_idea_s ru, stat_on en, now_closing ru and en, demo_accuracy_note en, idea_panel_lead en, now_idea_s kk and now_closing kk, and the two once-counts). On the product of the tag the static how.html and the browser tests agree with the old module, so by my stand-in only TX-4 turns red; a red in the e2e on that snapshot would be news, not a failure of the plan.",
+      "Optional, one snapshot of the work with demo.js edited (mutant C03 or C06: bare text in the block of the result) to see LD-6 red in a real browser; the stand-in shows it red.",
+      "The counts of the full check: unit 122, int 47, pg 4, e2e 15, skipped 0, todo 0, and prettier on the whole app, eslint and tsc on the whole project: I ran prettier and eslint only on the two test files and tsc on the whole project in a scratch clone (see self_check); the full npm run check was not run on this PC.",
+      "Computed styles, boxes and visibility in the stand-in page are set by classes, not measured: every assertion of the geometry class stays proved by the GitHub record of 07a9759 only."
+    ],
+    "changes": [
+      "app/test/e2e/landing.test.js CHANGED: readBlock gets a TreeWalker over the text nodes of the status block and returns the field stray (the non-blank text whose parent is not h3, span.stat, b, small or the closing paragraph); checkBlock gets one assertion assert.deepEqual(b.stray, [], the status block holds its words and nothing more) after the markup assertion; the doc comment of checkBlock says so. 22 lines added, 1 changed against HEAD; assert. 194 to 195; test( 9 and it( 0 unchanged.",
+      "app/test/unit/texts.test.js: no change (sha256 8a417f0cd543b35b82ab658e57d15bcfdbac26a9846c93d88bbb5375f3f71312, equal to the file reviewed in step 01).",
+      "handoffs/M1WORDS-20261122-02/step-05-test-designer.json: result only.",
+      "No product file changed. Because a test file changed, ORCH must send a new snapshot for step 6; the record of ci/m1-words-1 (0c50fc2) does not cover the new assertion."
+    ],
+    "self_check": {
+      "note": "Nothing was run with npm run check, cd app && npm run, node --test, the tools test scripts or the e2e tests. No server was started. All scripts and clones are in the scratchpad folder words/testdesign (outside the project); the project was only read, apart from the one edited test file. Node 22.23.4 first on PATH.",
+      "scripts_and_outputs": [
+        "scripts/01-values.mjs -> out/01-values.txt: 32 rows compared, 0 differ from the requirement or from the module of the work, 9 differ from the module of the tag, the same 9 as the amendment; no key of the requirement without a row; no odd signs; the whole word Works: 0 in both test files",
+        "scripts/02-kk.mjs -> out/02-kk.txt: KK_DRAFT_VALUES is a literal of 2 rows; red on the tag (value and count, both keys), green on the work (count 1); 19 damaged copies: 18 red, 1 green (K19, harmless)",
+        "scripts/03-counts.mjs -> out/07-counts-after.txt: texts.test.js test( 10 to 10, assert. 93 to 96; landing.test.js test( 9 to 9, assert. 194 to 195; it( 0; skip, todo, only 0; measures lower than at the tag: 0; CR 0; ends with one line feed",
+        "scripts/05-mutants.mjs <project> -> out/06-mutants-after-strengthening.txt: work green; tag red in TX-4 (11 assertions); mutants 43: red 43, green 0 (before the new assertion: red 41, green 2: C03, C06)",
+        "scratch clone words/testdesign/new/app (npm ci there) with the changed landing.test.js copied in: prettier --check on both test files: All matched files use Prettier code style!; eslint --max-warnings 0 on both: ok (a first version with NodeFilter failed no-undef and was changed to the constant 0x4); tsc --noEmit -p jsconfig.json: ok; node --check on landing.test.js: ok",
+        "cd tools && npm run -s traces: traces: files checked 2910, traces 0, skipped 67; npm run -s handoffs-check: 1 violation, handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 H4 (not from this work, an earlier run)",
+        "git status --short -- app tools in the project: only M app/test/e2e/landing.test.js; no other product or test file changed; the mutants were applied only to copies in the scratch folder"
+      ],
+      "github_record_read": "words/testdesign/out/run-app.json, run-app.log, run-check.json, run-check.log (gh run view, read-only): app run 45031353708 and check run 45031353719 on 0c50fc2, both success; counts as in the summary"
+    },
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "landing.test.js changed, so the GitHub record of 0c50fc2 does not cover step 6 for that file: ORCH sends a new snapshot (the same product, the changed test file) and the planned snapshot of the main product with the tests of the work should carry the new test file too."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Gap found and closed: before this step a bare text node in the status block (after the closing paragraph, between the heading and the list, or in a row) was not seen by any assertion, because the markup check compares elements only. Mutants C03 and C06 proved it (green in the stand-in). Now red. The assertion sees text nodes only: words delivered by a CSS content rule or an attribute (title, aria-label) are outside it."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "K19 stays green on purpose: a kk value written as two joined pieces with the whole text left once in a comment has the right value and one occurrence; nothing wrong or leaking passes. A stricter count would break a legitimate line wrap of a long value."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Quality-bar items: Q8 (space against space), Q10 (external call failure), Q11 (a supplied address) and R3 (photos) are not touched by this change: only static public wording and its page structure; no business data, no external call, no address, no photo. Q6: no skip, todo or only; no word is looked up in a document for the sake of a tick."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "No product file needs a change for any test; no code edit is requested from CODE-FIXER."
+      }
+    ],
+    "artifacts_out": [
+      "app/test/e2e/landing.test.js",
+      "handoffs/M1WORDS-20261122-02/step-05-test-designer.json"
+    ]
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-11-22T19:28:49Z",
+    "text": "Paths of this computer were replaced by placeholders in this file at commit (AP-050; docs/workflows/handoffs.md, «Bookkeeping check» item 5): <scratch> is the working folder of the session outside the project, <node22> the folder of Node 22 outside the project, <Sai> the root of the project, <home> the home folder, <outside the project> any other place outside the project. Nothing else in the file was changed."
+  }
+}

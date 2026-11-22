@@ -1,0 +1,403 @@
+{
+  "handoff_id": "step01c-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "01c",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/M1CODE-20261119-01/step-01c-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-111-112-public-landing.md (the design of step 01, sha256 67da923e…f401f)",
+      "handoffs/M1CODE-20261119-01/step-01b-code-design-validator.json (gate pass 1, FAIL: F1 high, F2 medium, F3–F10 low)",
+      "handoffs/M1CODE-20261119-01/step-01-code-designer.json",
+      "decisions/0124-m1code-landing-design-answers.md (with its Addition: О13, О14)",
+      "decisions/0123-m1site-public-look-answers.md",
+      "docs/requirements.yaml (blocks REQ-111 and REQ-112, read by id)",
+      "docs/design/V1-public-look.md (sha256 3dea2340…9347)",
+      "app/ at the tag base/M1CODE-20261119-01-build (2144f2a, the merge of main d87b3d1)"
+    ],
+    "route": "ORCH 0 -> CODE-DESIGNER 01 -> ORCH 1a (decisions/0124) -> CODE-DESIGN-VALIDATOR 01b (pass 1, FAIL) -> CODE-DESIGNER 01c (this, rework) -> CODE-DESIGN-VALIDATOR 01d (gate pass 2 of 3) -> on PASS FRONTEND-DEV and BACKEND-DEV 2",
+    "write_set": [
+      "docs/design/REQ-111-112-public-landing.md",
+      "handoffs/M1CODE-20261119-01/step-01c-code-designer.json"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-01b-code-design-validator.json, gate pass 1 of 3 — WF-02, step 1 (rework), CODE-DESIGNER, run M1CODE-20261119-01 (task M1.4 of PUBLIC-V1: REQ-111, REQ-112). Close each remark below in docs/design/REQ-111-112-public-landing.md (or keep the text and say why in result.issues with evidence), keep what the gate did not question, re-run on a clean copy the trials a change touches, and record them. The readings of decisions/0124, Addition of 2026-11-19 (О13: the build starts from the tag base/M1CODE-20261119-01-build, the merge 2144f2a of main d87b3d1, and every command naming base/<RUN-ID> reads that tag for this run; О14: one narrow IB-1 row for a .d.ts whose .js twin is an entry of app/vendored.json, with its damaged copies), bind the fix of F1.\n\nRemarks (gate pass 1, step 01b):\n- F1 [high] The replacement table, the guard facts and the counts were measured at the tag only, while the fix round of the app skeleton lands first. (a) The fix round's IB-1 makes every non-.js file under app/server, app/api, app/worker red, so server/vendor/picker-engine.d.ts (4.8, section 3, B1) is red and row 5 «no edit» is wrong; a plain move with rootDirs leaves tsc at 50 errors. (b) The fix round already has a test NPM-6 (the skip/todo/only grep); the design's new e2e guard is also NPM-6 and its counts (unit 69 new, 114) are the tag's. (c) REQ-111 criterion 16 and REQ-112 criterion 10 read git diff --stat base/M1CODE-20261119-01 -- app/test tools/test, which after the merge also lists the fix round's files; the line numbers of rows 1, 2, 5 and 9–12 move (RED.length 53 → 161). Fix: re-measure against the tree the build starts from with a «was → became» row for every changed guard; choose and measure the declaration's place or form (or the narrow row); rename the guard and recount sections 0, 10, 19; say how the two diffs tell this run's changes from the fix round's.\n- F2 [medium] The public set is tested only for what it leaves out. stripRegions does not say a region ends at its nearest end marker; a greedy cut (V01) passes every check while index.html loses </main>, the footer, the AI disclosure and the nav links. Fix: the shortest match in 4.11 and V01 in section 13; positive checks of the public set (each changed page equals its source with exactly the region lines removed; the rules of PP-2…PP-4 on the output: the test-mode line and the AI disclosure with their texts, every href and src naming a file of the public set); LD-9 also sees the scene and caption on index, how, demo and «Описать идею» opening /how.html#describe-idea; mutants for the greedy cut and a region enclosing #ai-disclosure.\n- F3 [low] Row REQ-112/9 and OP-6 count one list two ways; one wording: ten planted forms (six calls, three strings, one template literal), seven green twins.\n- F4 [low] No E-row and no LD-7 case names «no connection» (a request that fails at once) with the look's offline message; E7 (no script) is mapped to UAT criterion 13, which does not name it. Fix: the network-error case in E2 and an LD-7 case (a route that aborts); E7 to DESIGN-QA's states or an e2e case with script off.\n- F5 [low] The team avatars have no draw or redraw rule. Fix: drawn at load and after each theme change from the palette read once per change; name the check.\n- F6 [low] decisions/0124 О7 says the first step of the e2e job prints the Chrome version and the path it uses; the design's step prints only the version, after the three common steps. Fix: print the path too, or record that the logged command line is the path.\n- F7 [low] RB-1 of runbooks.test.js reads app/README.md (a lowercase vercel outside npx vercel@<pin> is red); B3 rewrites its Deploy part and B3's own check may not include the unit step. Fix: name RB-1 among B3's checks and include test:unit.\n- F8 [low] PB-4 runs the open build in place on the project's real app/public and relies on the refusal it tests (VB-4 has the same shape). Fix: run it on a copy inside a temporary git tree made by the test, or record why the real tree is needed.\n- F9 [low] el() refuses style and on… attribute names, but no test pins it. Fix: a unit case (style and onclick refused, data-x allowed), for TEST-DESIGNER.\n- F10 [low] REQ-108 criterion 2 compares «# tests N» with the skeleton design's catalogue; this run and the fix round change the counts. Fix: add REQ-108 criterion 2's count reference to the list for ORCH and M1AMEND, or say how its re-check reads the counts at the released commit.\n\nRules (docs/workflows/handoffs.md, «Common rules for all roles»): write only the design and this handoff; trials only in a fresh git clone outside the project; no commit, push, tag, stash, reset, checkout, clean or branch switch in the project or any copy; no path of the computer in a Sai file; result.changes holds the table «what was fixed, where» by remark; new questions only ORCH can answer go in result.issues with a default. Before close: cd tools && npm run handoffs-check and npm run traces.",
+    "acceptance_criteria": [
+      "Every remark F1–F10 is closed in the design, or kept with the reason and evidence in result.issues",
+      "The trials a change touches are re-run on a fresh clone of base/M1CODE-20261119-01-build outside the project and recorded with command and output",
+      "result.changes holds the table «what was fixed, where» by remark (docs/workflows/handoffs.md, «Rework steps and re-runs»)",
+      "cd tools && npm run handoffs-check and npm run traces end with code 0 (the known PENDING line of another run aside)"
+    ]
+  },
+  "created_at": "2026-11-19T19:44:42Z",
+  "started_at": "2026-11-19T19:44:42Z",
+  "completed_at": "2026-11-19T20:14:21Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 01c of the code design docs/design/REQ-111-112-public-landing.md for the FAIL of gate pass 1 (F1 high, F2 medium, F3–F10 low): every remark closed in the design, measured again on fresh clones of the build tag base/M1CODE-20261119-01-build (2144f2a, decisions/0124 О13) in the new section 1.1 (F34–F44, trials T-16 – T-22). F1: the replacement table, the guard facts and the counts are those of the build tag (the fix round changed five guard files; line numbers moved); (a) the engine's declaration stays beside the copy with the one IB-1 row of О14 — IB 4 of 4 over the whole sketch with the row, each of four row mutants red at its own damaged copy, RED.length 161 kept, tsc exit 0 and the whole check exit 0 (unit 46, int 36) with criterion 6; (b) the e2e guard is NPM-7, the counts are unit 71 new (117), int 10 (46), e2e 15, 96 new named tests; (c) every command naming base/<RUN-ID> reads the build tag, whose diff holds no file of the fix round. F2: the region cut is the shortest match; PB-2 compares each changed page with its source minus exactly its region lines, PB-6 checks what a region may hold, a new PP-7 runs PP-1…PP-4 on the public set, LD-9 sees the scene, the caption, the two places and «Описать идею» there; the greedy cut (M78, the gate's V01) and a region opened before the disclosure (M79) pass every negative check and are red by the new ones (measured). F3 one count wording; F4 «no connection» in E2 and LD-7 (a route abort, its console line measured in Chrome 157), E7 to DESIGN-QA; F5 the avatars redrawn after each theme change, checked in LD-4 by --sc-chair in the pixels; F6 the first e2e step prints the Chrome path and version; F7 RB-1 named for the README and in B3's check; F8 PB-4 and VB-4 on a copy inside a temporary git tree (a broken refusal measured to leave the tree byte-equal); F9 CP-3 pins el(); F10 REQ-108 criterion 2's count reference for ORCH (new question О15). Mutants 87 (M78–M87 new); open questions 15 (О1–О14 answered by decisions/0124, О15 new). One pre-existing gap found outside the list (PP-6 without a row of section 9) is in issues, not edited.",
+    "changes": [
+      {
+        "remark": "F1 (a) [high] the declaration and the fix round's IB-1",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "4.8 (the declaration bullet); 2 C17 (new); 11 row 5; 12 B1 and T1; 13 M83–M86 (new); 0 (bullet «The build starts from the fix round»); 18 О14",
+        "was": "row 5 «no edit» for import-boundaries.test.js (RED.length 53 at line 522); the declaration server/vendor/picker-engine.d.ts with no word on the fix round's file rule; B1 «Red after it: none»",
+        "became": "the one narrow row of decisions/0124 О14: fileFindings(entries, vendored) lets a .d.ts that is no link stand when its .js twin is a plain file of the tree and the file of an entry of app/vendored.json; IB-1 passes those files; IB-2 gains ten damaged copies (a second .d.ts, a .ts, a twin not listed, the declaration as a link, the twin not in the tree, the twin a link, .D.TS, .d.mts, api/ without a twin, an empty list); RED.length 161 kept, assert lines 35 → 38 (F37); 4.8 says why the place is the measured one (rootDirs: 50 errors) and that nothing imports the declaration; B1 lists IB-1 as EXPECTED_RED until T1, T1 lands row 5; F38: tsc exit 0 and the whole check exit 0 at the build tag with the row"
+      },
+      {
+        "remark": "F1 (b) [high] the name NPM-6 and the counts",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "10 (npmrc paragraph, intro, counts); 9 REQ-111/11; 11 row 2; 12 T4; 13 M77; 15 Q6; 0 and 19 (counts)",
+        "was": "the new e2e-folder guard named NPM-6; new unit 69, unit 114 and int 46 from the tag's 45 and 36, «plus the fix round's own»",
+        "became": "the guard is NPM-7 (NPM-6 is the fix round's selector grep, kept, and section 10 says every new file must pass it); counts from the build tag (unit 46, int 36, F35): new unit 71 (with PP-7 of F2 and CP-3 of F9), int 10, e2e 15; totals unit 117, int 46, e2e 15; 96 new named tests; 6 changed test files"
+      },
+      {
+        "remark": "F1 (c) [high] the base of the diffs",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "header; 9 rows REQ-111/16, REQ-112/1, REQ-112/10 and the note under the table; 12 T4; 18 О13",
+        "was": "git diff --stat base/M1CODE-20261119-01 -- app/test tools/test (and -- tools/src, -- tools/src/pixel-office)",
+        "became": "the same commands with base/M1CODE-20261119-01-build (decisions/0124 О13), measured: from the design tag the diff lists the fix round's five test files, from the build tag nothing (F36)"
+      },
+      {
+        "remark": "F1 [high] re-measure at the tree the build starts from",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "1.1 (new, F34–F44); 11 intro and rows 1–5, 7–12, 15, 16 (build-tag line numbers); 4.11 (the closed branch); 8; F22 citations of rows 3, 4, 7",
+        "was": "facts, line numbers and counts measured at the tag f8b8973 only (the designer's I6: the fix round «was not seen»)",
+        "became": "re-measured on fresh clones of base/M1CODE-20261119-01-build: what the fix round changed (F34), the check counts (F35), the diffs (F36), IB-1 and the row (F37), criterion 6 (F38), the async branch against the fix round's VB tests (F39), the refusals on temporary git trees (F40); every changed guard has its «was → became» row with the lines of the build tag; F3, F18, F19, F21, F22, F32 are named as replaced"
+      },
+      {
+        "remark": "F2 [medium] the public set is tested only for what it leaves out",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "4.11 stripRegions; 4.3 «Regions» (content rule); 10 PP-7 (new), PB-2, PB-6, LD-9; 9 rows REQ-111/1, /9, /12; 13 M78, M79 (new); 0; 15 Q5",
+        "was": "the region match not named; PB-1…PB-7 and LD-9 check only what the output leaves out; PP-2…PP-4 only on the local set",
+        "became": "the shortest match named (to the nearest end marker of the kind); PB-2 compares each changed page with its source minus exactly its region lines; PB-6 checks what a region may hold (order_ keys only, the kk button only, no id); PP-7 runs PP-1…PP-4 on the output (the test-mode line and the AI disclosure with their texts, every address a file of the output); LD-9 sees the scene, the caption, the two places and «Описать идею» on the public set; measured: the greedy cut (M78 = V01) and a region opened before #ai-disclosure (M79) pass every negative check and are red by the new ones (F41)"
+      },
+      {
+        "remark": "F3 [low] one list, two counts",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "9 REQ-112/9; 10 OP-6",
+        "was": "«the ten planted calls and three strings, seven green twins» against «the ten planted forms red, the seven twins green»",
+        "became": "both: the ten planted forms (six calls, three strings, one template literal) red, the seven twins green"
+      },
+      {
+        "remark": "F4 [low] no connection; E7",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "5 E2, E7; 4.5 pages/demo.js; 10 LD-7; 13 M82 (new); 15 Q10",
+        "was": "E2 «never answers» only, LD-7 without a request that fails at once; E7 mapped to UAT criterion 13",
+        "became": "E2 also «fails at once with no answer (the fetch rejects with a TypeError)» with demo_offline (look §11); demo.js maps a rejected fetch or the time limit to demo_offline and a wrong answer to demo_failed; LD-7 adds a route that aborts the request (internetdisconnected) with its console line «Failed to load resource: net::ERR_INTERNET_DISCONNECTED» (F42); E7 mapped to DESIGN-QA (criterion 15, the state of look §11 and 9.16)"
+      },
+      {
+        "remark": "F5 [low] the avatars",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "4.5 pages/landing.js; 10 LD-4; 13 M80 (new)",
+        "was": "no draw or redraw rule for the team avatars",
+        "became": "drawn at load and after each change of the theme (the onChange of mountTheme), the palette read once per change; LD-4 reads --sc-chair of the theme drawn among each avatar's pixels after each change (#418e9d / #3c4b6a, read back exactly; a canvas not redrawn keeps the old value, F42)"
+      },
+      {
+        "remark": "F6 [low] the Chrome path",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "4.13 the e2e job; 2 C7; 11 row 12",
+        "was": "after the three common steps: name «Chrome version», run /opt/google/chrome/chrome --version",
+        "became": "the first step of the job, «Chrome path and version»: run: ls -l /opt/google/chrome/chrome && /opt/google/chrome/chrome --version (one line, so a missing file ends the step non-zero before the version; measured with a stand-in under bash --noprofile --norc -eo pipefail, F43); the fix round's ciFindings rules hold for the job"
+      },
+      {
+        "remark": "F7 [low] RB-1 and B3",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "4.12 app/README.md; 12 B3; 11 row 15",
+        "was": "B3's own check «npm ci; npm run check up to the unit step»; RB-1 not named",
+        "became": "4.12 names RB-1's rule for the README (a lowercase vercel only as npx vercel@64.1.0 …); B3's check runs node --test test/unit/runbooks.test.js and npm run test:unit (only NPM-3, and IB-1 from B1, red)"
+      },
+      {
+        "remark": "F8 [low] PB-4 on the real tree",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "10 PB-4; 11 row 8 (VB-4, the same shape named by the finding); 12 B5; 13 intro, M06, M87 (new)",
+        "was": "PB-4 and VB-4 ran the build in place on the project's real app/public; B5's driver ran once on the tree's app/public",
+        "became": "the real app/public is only read (insideGitTree true); the build runs in place on a copy inside a temporary git working tree made by git init -q; B5's driver never runs on the tree's own folder; measured: each refusal removed turns its test red and the sketch's own app/public stays byte-equal (F40)"
+      },
+      {
+        "remark": "F9 [low] el() not pinned",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "4.5 dom.js; 10 CP-3 (new, in the changed check-public.test.js); 9 REQ-111/10; 11 row 7; 13 M81 (new)",
+        "was": "el() refuses style and on… names, no test",
+        "became": "the rule by the ASCII lower case of the name, refused before anything is set; dom.js touches document, window, history, localStorage only inside its functions; CP-3 loads dom.js in Node with a recording document: style, STYLE, Style, onclick, onClick, ONLOAD throw with no recorded call; data-x, aria-label, lang set"
+      },
+      {
+        "remark": "F10 [low] REQ-108 criterion 2's counts",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "16 (new item); 18 О15 (new); 4.12 (the README count sentence)",
+        "was": "section 16 named REQ-109 criterion 8 and REQ-108 criterion 11 only",
+        "became": "REQ-108 criterion 2's count reference added for ORCH and the micro-amendment with a proposed text, and the reading until then (the counts at the released commit d87b3d1: unit 46, int 36); question О15 with that default"
+      }
+    ],
+    "table": [
+      {
+        "was": "Base: the tag base/M1CODE-20261119-01 (commit f8b8973)",
+        "became": "Base of the design steps base/M1CODE-20261119-01; base of the build base/M1CODE-20261119-01-build (2144f2a), read by every command naming base/<RUN-ID>",
+        "source": "F1 (c); decisions/0124 О13; F34, F36"
+      },
+      {
+        "was": "the facts F1–F33 at the tag",
+        "became": "section 1.1 with F34–F44 at the build tag; F3, F18, F19, F21, F22, F32 named as replaced",
+        "source": "F1; trials T-16 – T-22"
+      },
+      {
+        "was": "4.8: the declaration «prettier-formatted»",
+        "became": "the declaration stands by the one IB-1 row of О14; nothing imports it; rootDirs gives 50 errors",
+        "source": "F1 (a); decisions/0124 О14; F37, F38; gate 01b"
+      },
+      {
+        "was": "11 row 5: «no edit … the literal 53 stays»",
+        "became": "the row of О14 with its ten damaged copies; RED.length 161 kept",
+        "source": "F1 (a); F37"
+      },
+      {
+        "was": "NPM-6 (new) app/test/e2e holds landing and stage",
+        "became": "NPM-7 (new) …; NPM-6 is the fix round's selector grep",
+        "source": "F1 (b); F35"
+      },
+      {
+        "was": "unit 69 new, 114 total; 94 new named tests",
+        "became": "unit 71 new, 117 total; int 46; e2e 15; 96 new named tests",
+        "source": "F1 (b), F2 (PP-7), F9 (CP-3); F35"
+      },
+      {
+        "was": "git diff --stat base/M1CODE-20261119-01 -- …",
+        "became": "git diff --stat base/M1CODE-20261119-01-build -- …",
+        "source": "F1 (c); decisions/0124 О13; F36"
+      },
+      {
+        "was": "11 rows with the tag's lines (want 94–101, INT_FILES 33–44, VB-1 line 40, PATHS 8–15, jobs line 159, DOCKER_STEPS 19–69)",
+        "became": "the build tag's lines (want 126–133 compared at 134, INT_FILES 34–45, build() 20–40, closedRun() 59–79, VB-4 320, PATHS 17–24 compared at 200, jobs 268, DOCKER_STEPS 28–78, «jobs» copy 607–608, RB-1 206/219)",
+        "source": "F1; grep -n on the build clone"
+      },
+      {
+        "was": "stripRegions removes each region `^…sai:<kind>…` … (match length unnamed)",
+        "became": "to the nearest end marker of the same kind (the shortest match)",
+        "source": "F2; F41 (M78)"
+      },
+      {
+        "was": "PB-2 every other file byte-equal; the differing files the list",
+        "became": "also each changed page equals its source minus exactly its region lines (the test's own line oracle)",
+        "source": "F2; F41"
+      },
+      {
+        "was": "PB-6 markers, nesting, kinds, references inside regions",
+        "became": "also the region content rule (order_ keys only; the kk button only; no id)",
+        "source": "F2; F41 (M79); 4.3"
+      },
+      {
+        "was": "(no PP-7)",
+        "became": "PP-7 the rules of PP-1…PP-4 on the public set",
+        "source": "F2; F41"
+      },
+      {
+        "was": "LD-9 links, languages, 404, demo list, console",
+        "became": "also the scene and caption on index, how, demo; #test-mode and #ai-disclosure; «Описать идею» → /how.html#describe-idea",
+        "source": "F2"
+      },
+      {
+        "was": "the ten planted calls and three strings / the ten planted forms",
+        "became": "the ten planted forms (six calls, three strings, one template literal)",
+        "source": "F3; REQ-112 criterion 9"
+      },
+      {
+        "was": "E2 the questionnaire never answers; E7 → UAT (criterion 13)",
+        "became": "E2 also fails at once (TypeError) → demo_offline; E7 → DESIGN-QA (criterion 15)",
+        "source": "F4; look §11, 9.16; F26, F42"
+      },
+      {
+        "was": "LD-7 500, not JSON, never answering, refused",
+        "became": "also a route that aborts (internetdisconnected), with the console line of each case",
+        "source": "F4; F42; REQ-111 criterion 12"
+      },
+      {
+        "was": "avatars by drawAvatar on canvas[data-avatar]",
+        "became": "at load and after each theme change, palette once per change; LD-4 checks --sc-chair in the pixels",
+        "source": "F5; look 6.2, 9.15; F42"
+      },
+      {
+        "was": "name: Chrome version, run: /opt/google/chrome/chrome --version (after the common steps)",
+        "became": "first step «Chrome path and version»: ls -l /opt/google/chrome/chrome && /opt/google/chrome/chrome --version",
+        "source": "F6; decisions/0124 О7; F16, F43"
+      },
+      {
+        "was": "B3 own check: npm ci; npm run check up to the unit step",
+        "became": "npm ci; static part; node --test test/unit/runbooks.test.js; npm run test:unit (only NPM-3 and IB-1 red)",
+        "source": "F7; runbooks.test.js RB-1 (line 206)"
+      },
+      {
+        "was": "PB-4 the real app/public of the git working tree; VB-4 the same; B5 driver once on the tree's app/public",
+        "became": "a copy inside a temporary git working tree (git init -q); the real tree only read; B5 never on the tree's own folder",
+        "source": "F8; F40; AP-150"
+      },
+      {
+        "was": "el(): an attribute name style or on… is refused with an exception",
+        "became": "by the ASCII lower case, before anything is set; dom.js loads in Node; CP-3",
+        "source": "F9"
+      },
+      {
+        "was": "section 16: REQ-109 c8 and REQ-108 c11 for the micro-amendment",
+        "became": "+ REQ-108 criterion 2's count reference (proposal and reading); О15",
+        "source": "F10; AP-133; F35, F44"
+      },
+      {
+        "was": "77 mutants (12 applied)",
+        "became": "87 mutants: + M78–M87; M06 measured again (F40); 12 + 8 applied on sketches, 1 on a trial page",
+        "source": "F1, F2, F4, F5, F8, F9"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "date -u +%Y-%m-%dT%H:%M:%SZ (first reading of this work; the handoff command's reading)",
+        "output": "2026-11-19T19:36:31Z; created_at and started_at 2026-11-19T19:44:42Z"
+      },
+      {
+        "command": "shasum -a 256 docs/design/REQ-111-112-public-landing.md (before the first edit, 20:00:50Z; after the last edit)",
+        "output": "before 67da923e4fc5f737561e5270da0ff80cec3f34ea410fe56275adb3ea44bf401f (the gate's 67da923e…f401f); after: the value in the line «DESIGN AFTER» below"
+      },
+      {
+        "command": "shasum -a 256 docs/design/V1-public-look.md",
+        "output": "3dea234002153ff0a70f1dda61bf8cb587f025a2debab01f9a58e6c1ef3f9347 before and after (unchanged)"
+      },
+      {
+        "command": "T-16: git clone -b base/M1CODE-20261119-01-build <the project> <outside the project>/m1c/clone; cd app && npm ci && npm run check; grep -c '^test(' per test file",
+        "output": "HEAD 2144f2a; exit 0 in 61 s; unit # tests 46, int # tests 36, fail/skipped/todo 0; unit 46 named tests in 14 files (npmrc 7), int 34 named + SC-2 loop of two (F35)"
+      },
+      {
+        "command": "T-16: on the clone git diff --stat base/M1CODE-20261119-01 -- app/test tools/test; … -- tools/src; git diff --stat base/M1CODE-20261119-01-build -- app/test tools/test tools/src; in the project (20:00:50Z) git diff --stat base/M1CODE-20261119-01-build -- app tools .github and git status --short -- app tools .github",
+        "output": "5 files (ci-workflow, import-boundaries, npmrc, runbooks, vercel-build tests; 2278 insertions); tools/src none; build tag: none; project: no line (F36)"
+      },
+      {
+        "command": "T-17: the sketch carried onto the clone + app/vendored.json; node --test test/unit/import-boundaries.test.js",
+        "output": "exit 1, pass 3, fail 1: IB-1 actual ['a file that is not .js: server/vendor/picker-engine.d.ts'] (the one line)"
+      },
+      {
+        "command": "T-17: python3 ib-row.py <app> none|any-dts|any-twin|link-late|no-tree (each on a saved copy), prettier --write, node --test test/unit/import-boundaries.test.js",
+        "output": "none: exit 0, 4 of 4; any-dts: IB-2 red at 'a file that is not .js: server/vendor/extra.d.ts'; any-twin: at 'server/lib/util.d.ts'; link-late: at 'a link: server/vendor/picker-engine.d.ts'; no-tree: at the declaration alone; RED.length 161; lines with assert. 35 → 38 (F37)"
+      },
+      {
+        "command": "T-17: cloneb (copy, declaration, vendored.json, exclude, one importer): npx tsc --noEmit -p jsconfig.json with and without the declaration; npm run check with the row",
+        "output": "with: exit 0, 0 errors; without: exit 2, 53 errors (50 in server/vendor/picker-engine.js, 3 in the importer); npm run check exit 0 in 60 s, unit 46, int 36 (F38)"
+      },
+      {
+        "command": "T-18: node --test \"test/unit/**/*.test.js\"; node --test --test-concurrency=1 \"test/int/**/*.test.js\" on the sketch (async open branch on the fix round's vercel-build.js)",
+        "output": "unit exit 1, 43 of 46: not ok VB-1, VB-3, VB-4 (VB-2 ok without awaiting); int exit 0, 36 of 36 (F39)"
+      },
+      {
+        "command": "T-18: python3 vb-row8.py <app> on a saved copy; prettier; node --test test/unit/vercel-build.test.js; eslint",
+        "output": "exit 0, 4 of 4; lines with assert. 37 → 38; eslint clean (F39)"
+      },
+      {
+        "command": "T-19: node --test test/unit/pb4-sketch.test.js test/unit/vercel-build.test.js; open refusal removed → pb4-sketch; closed refusal removed → vercel-build.test.js; hash of every file of the clone's app/public before and after",
+        "output": "5 of 5; open removed: PB-4 red; closed removed: VB-4 red; hash 1ea61eea06516f13 before and after both (F40); vercel-build.js restored (cmp equal)"
+      },
+      {
+        "command": "T-20: node ps-positive.mjs scripts/public-set.js f2pages; scripts/public-set-greedy.js f2pages; scripts/public-set.js f2pages-m79",
+        "output": "lazy: negative 0, strict 0, pp7 0, regions 0; greedy: negative 0, strict 2 (index, how), pp7 3 (#ai-disclosure ×2, /how.html#describe-idea); M79: negative 0, strict 0, pp7 1 (#ai-disclosure), regions 5 (F41)"
+      },
+      {
+        "command": "T-21: env -i PATH=… HOME=<scratch>/home TMPDIR=<scratch>/tmp node f4f5-trial.mjs <playwright-core dir> (19:55:26Z)",
+        "output": "Chrome 157.0.8103.79; abort internetdisconnected → TypeError: Failed to fetch, console 'error: Failed to load resource: net::ERR_INTERNET_DISCONNECTED @ <the request>'; abort failed → the same, net::ERR_FAILED; held + timeout 400 → TimeoutError: signal timed out, no console line; avatar redraw 65,142,157,255 → 60,75,106,255 → 65,142,157,255; no redraw: light value three times (F42)"
+      },
+      {
+        "command": "T-22: bash --noprofile --norc -eo pipefail step.sh / step2.sh (a stand-in at the path / a missing path); gh run view 44483031561 --log | grep '##[group]Run '",
+        "output": "present exit 0, ls -l line then 'Google Chrome 157.0.8103.79'; missing exit 1, 'No such file or directory', no version; log headers '##[group]Run npm ci', '##[group]Run npm run check' (F43)"
+      },
+      {
+        "command": "on cloneb: grep -n vercel-build docs/runbooks/*.md app/README.md; grep -n of «The check» of app/README.md",
+        "output": "none; the README names section 13 of the skeleton design plus VC-3, NPM-6, AE-5, HD-3, SC-5, SC-6 (F44)"
+      },
+      {
+        "command": "a cell count of every table row of the design against its header",
+        "output": "every row this step wrote has its header's count; two rows of step 01 (F6, C15) are one off (issue I4)"
+      },
+      {
+        "command": "pgrep -f <the scratch folder of this step>; ls of the system temporary folder for sai-app-test-*; ls <scratch>/tmp",
+        "output": "0 processes; 3 sai-app-test folders dated 2026-11-17/18 (not this step's); <scratch>/tmp empty"
+      },
+      {
+        "command": "search for computer paths and names of other projects in the design and this handoff",
+        "output": "empty"
+      },
+      {
+        "command": "DESIGN AFTER: shasum -a 256 docs/design/REQ-111-112-public-landing.md (2026-11-19T20:13:43Z)",
+        "output": "254b5651fd1c40a1d4317940e8b3adcd53e940cae153ff2f28811d409501ebad; 1437 lines (1243 before); diff against the before copy: 297 lines added, 103 removed"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check (before close)",
+        "output": "handoffs-check: файлов проверено 1457, нарушений 1, исключений использовано 110 из 110 — the one line is handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 H4 (PENDING in a commit), the known file of another run; no line for this handoff (exit 1 by that line only)"
+      },
+      {
+        "command": "cd tools && npm run -s traces (before close)",
+        "output": "traces: файлов проверено 2719, следов 0, пропущено 67 (exit 0)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "PROCESS",
+        "text": "The task told this step to write its own handoff; docs/workflows/handoffs.md says only ORCH creates handoffs. It was created with the handoff command (cd tools && npm run -s handoff -- new …) so that the fields, the base tag and the time follow the rules: created_at and started_at are that command's one clock reading, 2026-11-19T19:44:42Z; the first clock reading of this work was 19:36:31Z, and PROGRESS «Agents running» names the relaunch at 19:34Z. context.base_tag is base/M1CODE-20261119-01 (the command writes base/<RUN-ID>); the build tag of decisions/0124 О13 is named in the task and the design."
+      },
+      {
+        "id": "I2",
+        "kind": "QUESTION",
+        "text": "О15 (gate finding F10) — REQ-108 criterion 2 compares «# tests N» with «section 13 of docs/design/REQ-108-109-app-skeleton.md, with every test that a later step of the run names»: the skeleton run only, while the fix round (unit 46) and this run (unit 117, int 46, e2e 15) change the counts. Default: the micro-amendment that follows this run (or M1AMEND-20261119-01, if ORCH widens it) writes «the test catalogues of the runs whose changes the tree holds — section 13 of the skeleton design, the tests the skeleton's fix round named (NPM-6) and section 10 of docs/design/REQ-111-112-public-landing.md — with every test that a later step of those runs names as added or removed»; until then a re-check of REQ-108 criterion 2 reads the counts at the commit at which REQ-108 was released (d87b3d1: unit 46, int 36). The running M1AMEND run2 does not touch this criterion (its comment lines of 19:55:35Z name REQ-108 criterion 11 and REQ-109 criterion 1; searched)."
+      },
+      {
+        "id": "I3",
+        "kind": "QUESTION",
+        "text": "Found while checking that every test of section 10 maps to a row of section 9 (its own sentence says so): PP-6 (the closed list of CSSOM writes, C5, О5; mutant M35) has no row — REQ-111/1 names PP-1…PP-5 (now with PP-7) and REQ-111/10 does not name it. It is so since step 01, and gate pass 1 did not raise it. Not edited (a rework goes by the list of remarks, AP-019). Proposed one-cell fix for ORCH or the next pass: add «PP-6 (the closed list of CSSOM writes, 4.10)» to the test column of REQ-111/10 and «M35» to its mutants (the rule serves «the code sets no style attribute … `.style.cssText`» of criterion 10 and the look's 5.2 (d))."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "Two table rows of step 01 render one cell off: F6 holds an unescaped | inside the code span `export declare (const|function) <name>`, and C15 has no cell for the column «О». Not in the remarks, not edited; every row this step wrote has its header's count (self_check)."
+      },
+      {
+        "id": "I5",
+        "kind": "NOTE",
+        "text": "F8 names VB-4 as «the same shape» as PB-4; VB-4 was changed with PB-4 (AP-014, the same kind in the neighbouring place), inside replacement row 8, which this design already owns for VB-1…VB-4: the real app/public is still read (insideGitTree(PUBLIC) true), the closed build runs on a copy inside a temporary git tree, every assertion kept, assert lines 37 → 38, measured (F39, F40). If ORCH wants VB-4 of REQ-109 kept on the real tree, only PB-4 and B5's driver change, and the danger of a broken closed refusal to this run's uncommitted pages stays for VB-4."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "During this step docs/requirements.yaml changed (the micro-amendment M1AMEND-20261119-01 run2: comment lines of 2026-11-19T19:55:35Z over REQ-108 criterion 11 and REQ-109 criterion 1) and docs/program/public-v1/PROGRESS.md and decisions/README.md show ORCH's edits; this step did not touch them. The change names no command with base/<RUN-ID> (searched: 0 lines), and decisions 0123 and 0124 bind the design over a half-amended block."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Trial safety: Chrome ran only in T-21, with HOME and TMPDIR under the scratch folder and --use-mock-keychain; nothing of the person's home was started with (AP-155). No program file was imported to count it (AP-151). The refusal mutants of T-19 ran in the scratch clone on its own copies and the clone's app/public was hashed before and after. The tests run in T-16 – T-19 made their temporary folders through the tests' own helper and removed them; no git checkout, reset, stash or clean was run anywhere, every copy is a fresh git clone."
+      },
+      {
+        "id": "I8",
+        "kind": "NOTE",
+        "text": "Candidates for the error journal (Q13; for ORCH to give to DOC-UPDATER) are the two of gate pass 1 (its issue I5), now in section 16 of the design: a design measured on its base tag while a parallel fix round that lands first changes its guard files; a filter tested only for what it leaves out. This step adds none."
+      }
+    ],
+    "prototype": {
+      "where": "<outside the project>/m1c/ (the working folder of the session; never in the project)",
+      "contents": [
+        "clone/ — a fresh clone of base/M1CODE-20261119-01-build with the sketch of step 01 carried onto it (every file but scripts/vercel-build.js), app/vendored.json, the build tag's vercel-build.js with the open branch of 4.11 added, scripts/public-set-greedy.js (mutant M78), test/unit/pb4-sketch.test.js (PB-4's form), the import-boundaries and vercel-build tests with the rows of section 11 rows 5 and 8",
+        "cloneb/ — a fresh clone of the build tag with only the byte copy, its declaration, app/vendored.json, the exclude, one importer and the row of row 5 (F38)",
+        "f2pages/, f2pages-m79/ — the pages shaped as 4.3 and their M79 copy (F41)",
+        "trials/ — ib-row.py (the IB-1 row and its four mutants), vb-row8.py (row 8), ps-positive.mjs (the oracle of F41), f4f5-trial.mjs (F42)",
+        "f6/ — the stand-in program and the two one-line step scripts (F43)",
+        "the saved copies (ib.saved.js, vb.saved.js, vbjs.hold, design.before.md) and the logs of every run (baseline-check.log, ib-*.log, check-b.log, sketch-unit.log, sketch-int.log, vb-row8.log, f8-*.log, f4f5.log, tsc-*.log)"
+      ],
+      "github": "nothing pushed; one read of the log of run 44483031561"
+    },
+    "artifacts_out": [
+      "docs/design/REQ-111-112-public-landing.md"
+    ]
+  }
+}

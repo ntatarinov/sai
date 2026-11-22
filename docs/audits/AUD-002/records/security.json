@@ -1,0 +1,149 @@
+{
+  "audit": "AUD-002",
+  "part": "records",
+  "dimension": "security",
+  "role": "SECURITY-AUDITOR",
+  "subject": "f72eaa7",
+  "checked": [
+    {
+      "check": "Q7 secrets: key and token patterns over handoffs/, runs/, reports/ of the fixed copy (sk-, ghp_/github_pat_, xox, AKIA, AIza, JWT, private-key blocks, Bearer, password/secret/token = value, connection strings, user:pass@ URLs, 40+ hex, 48+ base64, vercel prj_/team_/dpl_, cookie and authorization headers, URL query tokens)",
+      "how": "own script over the 2903 files of the three folders (a scratch script outside the project, run on the fixed copy and on the current project read-only); every hit group read with its context",
+      "result": "No real secret. All hits are test fixtures or names: sk-ant-abcdefghij..., AKIAIOSFODNN7EXAMPLE and AKIA...EXAMPLE, ghp_FAKE..., a fake JWT with the payload {\"sub\":\"fake\"}, postgres/redis/mysql URLs with user:password, hunter2fake, Pr0dPassw0rd, ya29.a0AfH6SMBx1234567890..., 'https://u:u@' in the mask-rule runs ISS-0093, PO-20261005-02, PROD-20261006-01, REQ044, REQ048, M1SITE, REQ108AMEND, SECREG. Long hex strings are git hashes, sha256 of files and test vectors; the 3 base64-like strings left after filtering are fixtures. No key block with a body (only the BEGIN line quoted inside test descriptions). Environment variable names (GITHUB_TOKEN, ANTHROPIC_API_KEY, OPENAI_API_KEY) appear only as names in requirement and review text."
+    },
+    {
+      "check": "Q7 a record that keeps the full text of an environment, a settings file or a command output with a secret",
+      "how": "grep over the fixed copy for USERPROFILE/APPDATA/COMPUTERNAME/USERNAME/CLAUDE_CODE_*/ANTHROPIC_* followed by = or :, for printenv, for settings blocks (\"permissions\": {, \"allow\": [, \"env\": {), for PATH= with 200+ characters; the few PATH= hits read",
+      "result": "No dump. Hits are descriptions of the env that a test gives to a child process (HOME and USERPROFILE point to a private folder), and `Object.keys(process.env)` output of the run E2E105 (key names only, no values). No settings file is quoted whole."
+    },
+    {
+      "check": "Q7 output of a real Claude session: session identifiers, cookies, tokens in runs/ and reports/",
+      "how": "regex for uuid, cookie/authorization header values, URL query tokens, IPv4, phone numbers over the three folders; read runs/ (44 files of WF06 runs) and reports/WF06-20260926-01-protocol.html (108 KB; 1 inline script, only Google Fonts as external address)",
+      "result": "No secret. Two uuids: one is the scratch folder id of an old run (CLEAN-20261006-01, a session folder name with the user part already replaced by a placeholder) and one is the id of the current audit session (only in the uncommitted AUD-002 handoffs and in 0 files of origin/main). Phones are demo numbers (555 pattern, 7701000...). IPv4 hits are example, link-local and version strings."
+    },
+    {
+      "check": "Extra check 1: path of this PC and the user name of this PC in tracked records, both slash kinds, JSON-escaped (C:\\\\Users\\\\...), unescaped, stripped (C:Users<name>AppData), drive-letter-with-slash (C:/Users, /c/Users), home paths /Users/ /home/ and the encoded -Users-<name>- form",
+      "how": "own script over the fixed copy and over the current project (read-only); `git grep -l -I -i <user name> <ref> -- handoffs runs reports` for f72eaa7, HEAD, origin/main, origin/m0-records, origin/ci/aud002-head-1, origin/ci/m1-status-1, origin/ci/m1-words-1, origin/transfer/m0-records-wip, origin/transfer/m1-site-wip; `git log -i -S<name> --branches --remotes -- handoffs runs reports` and `git branch -r --contains <commit>` for every commit that touched the name",
+      "result": "At the fixed copy f72eaa7: 26 files in 6 runs (M1STATUS-20261122-02 12, M1CODE-20261119-01 4, M1WORDS-20261122-01 4, M1AMEND-20261122-01 2, M1RECHECK-20261122-01 2, M1WORDS-20261122-02 2), as the scout measured. After 6cb68b1 they are gone from those runs, and the name is in 0 files on every origin branch and ci branch (so it never reached the public repository). BUT the name is back in 8 files of the current project (finding SEC-REC-01). The 8 commits that ever touched the name (19f0654, c7bc6bb, b25c11e, ded392b, d1bfb93, 07a9759, 6cb68b1, cd9b28b) are on no origin branch. The other-user hits of the second kind are SEC-REC-03."
+    },
+    {
+      "check": "Extra check 1 (rule): the rule that fails to see such a path, hasHomePath in tools/src/traces",
+      "how": "read tools/src/traces/rules.js lines 7-16 and check.js line 145; ran `cd tools && npm run -s traces` (allowed) in the fixed copy and in the current project; read the scope of REQ-014 in docs/requirements.yaml and docs/design/REQ-014-traces.md; searched docs/issues for backslash, hasHomePath, Windows path",
+      "result": "Finding SEC-REC-02. No open defect in docs/issues covers it (the only mentions are a validator remark in handoffs/E2E104-20261103-01/step-01f-code-design-validator.json and anti-patterns AP-050, AP-052, AP-062, which are the repeats, not the rule)."
+    },
+    {
+      "check": "Extra check 2: git history, which hits are on origin and which only in the working tree or local commits",
+      "how": "git grep over 9 refs (listed above); `git log -S` with `git branch -r --contains`; `git grep -l` of the write-secret hash on origin/main and on f72eaa7",
+      "result": "Windows user name: local commits and working tree only (0 on origin). Old Mac user name: on origin/main in 7 handoffs since October (SEC-REC-03, worse). Hash of the owner's write-secret file: on origin/main in 36 files (SEC-REC-04). The reference-product name and the names of the owner's other repositories (searched as words, case-insensitive): 0 files in the three folders on f72eaa7 and on origin/main. The owner's name and GitHub login stand only in the copyright and author lines (public by design); the noreply author address stands in 1 file of f72eaa7 (public by GitHub design)."
+    },
+    {
+      "check": "Extra check 3: no secret printed in the report",
+      "how": "own reading of this file before saving; only the first 12 characters of one fingerprint are quoted for locating it (a file hash, not a secret)",
+      "result": "Done. No user name, no path of this PC, no reference-product name stands in this report."
+    },
+    {
+      "check": "Scope of the part: the 357 files changed since AUD-001 (353 added, 4 modified)",
+      "how": "`git diff --name-status b64562a f72eaa7 -- handoffs runs reports` (353 A, 4 M: ISS-0002 step-06-test-designer-r2, WF06-20260926-01 step-10, 11, 12) and `git diff --name-status f72eaa7 HEAD -- handoffs runs reports` (6 A, 28 M); the scans above cover all 2903 files of the three folders (a superset), so the changed files are covered",
+      "result": "The 4 modified files and the 353 added files carry no secret; the path hits are the ones in SEC-REC-01."
+    },
+    {
+      "check": "Open defects of the part in docs/issues: not reported twice",
+      "how": "grep of docs/issues for traces, hasHomePath, backslash, Windows path, secret, private, home path",
+      "result": "No open defect covers a place named in this report. AP-050, AP-052, AP-062 are anti-pattern entries for the repeats of the path problem (documented, not defects)."
+    },
+    {
+      "check": "GitHub side of Q7: secret scanning of the public repository",
+      "how": "`gh api repos/<owner>/sai/secret-scanning/alerts` (GET) and `gh api repos/<owner>/sai --jq .visibility`",
+      "result": "visibility: public. Secret scanning answers 404 'Secret scanning is disabled on this repository' (SEC-REC-05)."
+    },
+    {
+      "check": "Pre-push gate over the records",
+      "how": "read .githooks/pre-push (it runs the tools check, which includes the traces step) and ran `npm run -s traces` in both trees",
+      "result": "The gate would pass the 8 files of SEC-REC-01 because traces prints 'следов 0' (same cause as SEC-REC-02)."
+    }
+  ],
+  "not_checked": [
+    {
+      "check": "Whether the owner's open list SAI_TRACE_LIST (names to look for) holds the two user names",
+      "why": "The list is the owner's private local data and is not in the repository; the hashed file tools/traces/forbidden-names.sha256 has 6 entries and a plain sha256 of the two names is not in it, but the hashing scheme (words, pairs of words) was not reproduced, so this is not proven either way. The proof that the names are not seen is the traces output 0 on files that hold them."
+    },
+    {
+      "check": "Blobs of origin branches that are not branch tips (deleted branches, dangling objects, pull-request refs) for the same patterns",
+      "why": "Only the 9 refs listed were searched; GitHub keeps objects of force-pushed or deleted branches that a clone does not fetch. Read-only gh cannot list them (the old Mac name and the secret hash would be there in any case)."
+    },
+    {
+      "check": "Whether the write-secret hash in SEC-REC-04 belongs to a secret still in use",
+      "why": "It needs the owner's real working folder (file size 44, change time 2026-10-01 in the record); reading it is outside this audit."
+    },
+    {
+      "check": "Records outside handoffs/, runs/, reports/ (docs/audits, docs/uat, docs/issues, decisions)",
+      "why": "Outside this part. A scan of the whole HEAD for the Windows user name outside the three folders gave 0 files, shown in the working command output, but docs/ and decisions/ were not read for other secrets."
+    },
+    {
+      "check": "Binary files in the three folders",
+      "why": "The scripts read files as utf8 text; a file that is not valid text would be skipped silently, and the number of skipped files was not counted."
+    }
+  ],
+  "findings": [
+    {
+      "id": "SEC-REC-01",
+      "check": "Extra check 1: a path of this PC in a tracked file (Q7, private information in a public repository)",
+      "severity": "Medium",
+      "title": "The Windows user name and the scratch path of this PC are back in 8 handoffs after the clean-up of commit 6cb68b1, among them the handoffs of this audit",
+      "where": "handoffs/AUD-002-20261122-01/step-01-audit-scout.json, step-02-audit-planner.json (modified in the working tree, 3 hits each); handoffs/M0DOCS-20261117-01/step-05c-test-designer.json; handoffs/M1WORDS-20261122-02/step-04-security-reviewer.json, step-05-test-designer.json, step-06-design-qa-validator.json, step-07-ba-analyst.json (committed in cd9b28b and 07a9759); handoffs/M1WORDS-20261122-02/step-05b-test-design-validator.json (untracked)",
+      "evidence": "Command: git grep -l -I -i -E '<user name>' HEAD -- handoffs runs reports  -> 7 files (the list above without step-05b); the same on the working tree -> 8 files; on origin/main, origin/m0-records and the three ci/* branches -> 0 files. A quoted line (user name replaced by <U>): \"Node 22 first on PATH (C:\\\\Users\\\\<U>\\\\tools\\\\node22). Your own folder is under C:\\\\Users\\\\<U>\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\...\" (M0DOCS-20261117-01/step-05c-test-designer.json). Same hits at f72eaa7: 26 files of 6 runs, replaced in 6cb68b1. `git branch -r --contains` of the 8 commits that touched the name: none on origin, so nothing is public yet; the next push would publish them. `cd tools && npm run -s traces` on the current project: 'файлов проверено 2919, следов 0'. At the last look (end of the audit run) a ninth file had appeared in the working tree: handoffs/M0DOCS-20261117-01/step-05d-test-design-validator.json (the number grows with every new handoff written with the real path).",
+      "item": "Q7 (private information of the owner's PC in a public repository); AP-050, AP-052, AP-062 (the fourth repeat; the handoffs of the audit itself repeat it on the same day as the clean-up)",
+      "recommendation": "Before any push of these commits: replace the path with <scratch> / <node22> / <outside the project> in the 8 files (the ORCH way of 6cb68b1), and make the templates that ORCH uses for the launch message of a role write the placeholders in `context` and `task`, not the real path. Add to the check list of ORCH: a search over handoffs/<RUN-ID>/ for the user name and for the backslash path form before a commit, until SEC-REC-02 is fixed."
+    },
+    {
+      "check": "Extra check 1: the rule that fails to see such a path (hasHomePath in tools/src/traces), a finding of tools-core named here, not fixed",
+      "severity": "Medium",
+      "id": "SEC-REC-02",
+      "title": "The traces check and the pre-push gate do not see Windows paths: only /Users/<name>, /home/<name> and the encoded form are looked for, and the temporary-folder rule knows only /tmp roots",
+      "where": "tools/src/traces/rules.js:7-16 (HOME_PATH, HOME_ENCODED, hasHomePath) and :20-22 (TEMP_ROOT); tools/src/traces/check.js:145; docs/design/REQ-014-traces.md and docs/requirements.yaml REQ-014 (the criterion names 'macOS and Linux' home folders only)",
+      "evidence": "rules.js:9: const HOME_PATH = /(?:^|[^A-Za-z0-9._-])\\/(?:Users|home)\\/[A-Za-z0-9._-]/u;  rules.js:12: HOME_ENCODED needs '-Users-<name>-'. A Windows path in a JSON handoff is C:\\\\Users\\\\<name>\\\\... (backslashes, no slash), so neither pattern matches. Command: cd tools && npm run -s traces in the fixed copy of f72eaa7 (26 files with the path) -> 'traces: файлов проверено 2903, следов 0, пропущено 67'; in the current project (8 files) -> 'файлов проверено 2919, следов 0, пропущено 67'. The cause is by design: the requirement text of REQ-014 lists macOS and Linux only (docs/requirements.yaml, REQ-014 criterion, 'пути домашних каталогов пользователей macOS и Linux'). The gap was noted once in handoffs/E2E104-20261103-01/step-01f-code-design-validator.json ('a Windows path with backslashes (C:\\Users\\...) is not seen by hasHomePath') and never opened as a defect (grep of docs/issues: 0). The owner works on Windows since 2026-10-30.",
+      "item": "Q7 and REQ-014 (traces of the PC in the repository); the pre-push gate .githooks/pre-push relies on it",
+      "recommendation": "Open a defect for tools-core: extend the rule for Windows (a drive letter, a backslash or a slash and the folder Users, in plain, JSON-escaped (two backslashes) and slash form, and the Windows temporary-folder forms AppData\\Local\\Temp and /c/Users/); change the REQ-014 criterion and design text first (the requirement says macOS and Linux only), then the tests in tools/test for traces with a Windows line in plain, escaped and Git-Bash form. ORCH decides about the defect (plan open point 3)."
+    },
+    {
+      "id": "SEC-REC-03",
+      "check": "Extra check 1 and 2: the name of the user of the owner's previous computer in records, on origin (git history worse than the working tree)",
+      "severity": "Medium",
+      "title": "The login name of the owner's old Mac stands in 7 handoffs that are on origin/main, in search patterns written to prove that the name is absent",
+      "where": "handoffs/ISS-0053-20261013-01/step-00-doc-updater.json:49 and step-10-doc-updater.json:98; handoffs/LANG061-20261020-01/step-02b-backend-dev.json:62; handoffs/PROD-20261011-01/step-03-code-designer.json:64, step-04-code-design-validator.json:93, step-05-code-designer.json:67, step-06-code-design-validator.json:82",
+      "evidence": "Command: git grep -n -I -i -o -E '.{0,50}<old Mac name>.{0,30}' origin/main -- handoffs runs reports, quoted with the name replaced by <U>: \"grep -nE '/Users|/private|/tmp|<U>' по проекту и 0032 → код 1\" (PROD-20261011-01 step-03, 04, 05, 06); \"grep -n 'Users\\\\|private/tmp\\\\|<U>' по STATE.md ...\" (ISS-0053 step-10); \"латиница, «Users», «<U>»\" (LANG061). Present on origin/main, origin/m0-records, all ci/* and transfer/* branches (7 files each). The runs that carry it are of 2026-10-11 to 2026-10-20 (run folder names). REQ-014 itself lists the name of the user of this computer as a trace (docs/design/REQ-014-traces.md, F14, 'the name of the user of this computer in the files of Sai'); the traces output is 0 because the name is in a word position, not in a path.",
+      "item": "Q7 (private information in a public repository); REQ-014",
+      "recommendation": "Replace the name with <user name> in the 7 files in the working tree (the records are append-only by rule, so this is an ORCH edit like 6cb68b1). The name stays in the history of origin; whether to rewrite the history of the public repository (it was rewritten once before for the commit author) is the owner's decision. Add the name to the owner's SAI_TRACE_LIST so the check sees it."
+    },
+    {
+      "id": "SEC-REC-04",
+      "check": "Q7: a value derived from a secret in the records",
+      "severity": "Low",
+      "title": "The SHA-256 of the owner's real Pixel Office write-secret file is written in 36 handoffs on origin/main (as the 'untouched' control of the e2e runs)",
+      "where": "handoffs/E2E106-20261115-01/ (first written in commit 02c6b1a), handoffs/E2E107-20261116-01/, handoffs/ISS-0116-20261117-01/step-08-test-runner.json and step-09-release-validator.json",
+      "evidence": "Command: git grep -l 465f654a88e7 origin/main -> 36 files; 42 at f72eaa7. One line (the hash is 64 characters; first 12 shown): \"write-secret 465f654a88e7..., 44 bytes, 2026-10-01 22:52:26 (the hash of the file, not the secret)\" in handoffs/E2E106-20261115-01/step-01d-code-design-validator.json. The record also gives the size and change time of the owner's real events.jsonl and server-starts.jsonl. No secret value itself stands in any file (the scan for 40+ character values next to the words secret/token/key found only this hash).",
+      "item": "Q7 (not a secret itself: a 256-bit hash of a 32-byte random file cannot be reversed; it is a fingerprint of the real key in a public repository)",
+      "recommendation": "No rewrite of history needed. Write the next control without the full digest (compare in the test by the digest held in a scratch file, quote only the first 8 characters, or 'equal / not equal'). If the owner wants, rotate the write secret at the next Pixel Office start, then the old fingerprint is of no use."
+    },
+    {
+      "id": "SEC-REC-05",
+      "check": "Q7: protection of a public repository against a secret in a record",
+      "severity": "Low",
+      "title": "GitHub secret scanning is switched off on the public repository, so nothing on the GitHub side catches a key that gets into a record",
+      "where": "repository settings (no file); .githooks/pre-push and tools/src/traces are the only gates and have no rule for keys",
+      "evidence": "Command: gh api repos/<owner>/sai/secret-scanning/alerts -> '{\"message\":\"Secret scanning is disabled on this repository.\",\"status\":\"404\"}'; gh api repos/<owner>/sai --jq '.visibility,.private' -> 'public', 'false'. grep of tools/src/traces for key patterns (sk-, ghp_, AKIA, BEGIN PRIVATE KEY): none; the traces rules look for paths, names and links only.",
+      "item": "Q7",
+      "recommendation": "Owner: switch on 'Secret scanning' and 'Push protection' in the repository settings (free for public repositories). Optional for tools-core: a key-pattern step in the traces check with the patterns of this audit (not a requirement now)."
+    }
+  ],
+  "summary": {
+    "counts": {
+      "Critical": 0,
+      "High": 0,
+      "Medium": 3,
+      "Low": 2
+    },
+    "checks_done": 11,
+    "checks_not_done": 5,
+    "text": "No real secret in the 2903 files of handoffs/, runs/ and reports/ (every key-like hit is a test fixture or a name). The problems are private data of the owner's computers: after the clean-up commit 6cb68b1 the Windows user name and the scratch path are back in 8 handoffs of the current project (none on origin yet), the traces check is blind to Windows paths by the wording of REQ-014 and would let them through the pre-push gate, and the login name of the old Mac stays in 7 handoffs on origin/main. A file hash of the real Pixel Office write secret is in 36 public handoffs (Low), and secret scanning is off on the public repository (Low)."
+  }
+}

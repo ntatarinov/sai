@@ -1,0 +1,169 @@
+{
+  "handoff_id": "step05h-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "05h",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGN-VALIDATOR",
+  "file": "handoffs/M1CODE-20261119-01/step-05h-test-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-05f-test-design-validator.json",
+      "handoffs/M1CODE-20261119-01/step-05g-test-designer.json",
+      "docs/design/REQ-111-112-public-landing.md (sections 9, 10, 11, 13)"
+    ],
+    "route": "TEST-DESIGNER 05g -> TEST-DESIGN-VALIDATOR 05h (this, gate pass 2 of 3)",
+    "write_set": [
+      "handoffs/M1CODE-20261119-01/step-05h-test-design-validator.json only"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 5b, gate pass 2 of 3 - TEST-DESIGN-VALIDATOR re-checks the tests of run M1CODE-20261119-01 at the tag base/M1CODE-20261119-01-5b2 after the rework step-05g-test-designer.json for the FAIL of step-05f-test-design-validator.json (T1 Medium; T2, T3, T5, T6 Low; T4 is ORCH's).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-20T21:06:25Z",
+  "started_at": "2026-11-20T21:06:25Z",
+  "completed_at": "2026-11-20T21:07:53Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": [
+      "Verdict PASS: no finding of severity high or medium remains. T1 (Medium) and the lows T2, T3, T5, T6 of pass 1 are closed by my own runs in a fresh clone of the tag base/M1CODE-20261119-01-5b2 (5cb280c, the tag and HEAD of the project are the same sha): each of my 8 mutants F47, F51, F52, D26, I23, B10, J06, J07 is red in the expected test, and the code is green (`cd app && npm run check` exit 0: unit 119/119, int 47/47, skipped 0, todo 0; `npm run test:e2e` twice, 15 of 15 both times). T4 (the counts of the design's section 10) is still open and is ORCH's, as in pass 1 (Low). Two new Lows of my own (T7, T8) are recorded; neither is a criterion of REQ-111 or REQ-112 and neither blocks.",
+      "Mutants: 44 new mutants of my own (34 red; 10 green: 4 equal in effect or no-ops, 2 controls that must stay green, 1 the oracle reading the texts module by design, 3 that are findings or notes: T7, T8 and the U09 note) and 12 re-runs of the 8 pass-1 mutants (F51 under LD-5, LD-6, LD-7, LD-8, LD-9). In total 57 runs in clones; the working tree of the project was not used for any run. The numbers are in `mutants`.",
+      "T1 closed. waitLive waits (a conditional wait with a 15 s deadline, no sleep) until #live is non-empty and asserts its text equals the filled live_result or live_back of the page's language; readState with the sixth parameter runs it before the lint. F51 (live_result + ' 5 минут') is red under LD-5, LD-6, LD-7, LD-8, LD-9; F47 (live_back + ' гарантия') and F52 (live_back + ' 5 000 ₸') are red under LD-5, with the message 'after Назад: the live line' and the two texts shown. The ways round it that I tried: a forbidden word in the no-match live text (E02 ru, E30 kk only: red in LD-6), in live_result in kk only (E16, LD-6) and in en only (E17, LD-9), in live_back only for question 1 (E28, red in LD-5), in live_answer for «Не знаю» only (E27, red in LD-5 by the lint of the next state) and for every answer (E08, red); a wrong language (E05, ru text in every language: red in LD-6); the live text a solution's summary (E13: red); a late second write 400 ms after the announcement (E03: red in LD-5, so a line that changes after the read is also found by the later reads); an announcement that is never written (E07: red in 20 s by the 15 s deadline, the test file finishes, no hang); no announcement for the no-match result (E12: red). Racy waits: ANNOUNCE_MS 30 to 250 (E19 LD-5, E20 LD-6) stays green, so the waits do not depend on the 30 ms; the clear of #live is synchronous in the same task that renders the receipt (demo.js announce, openResult), so a stale line cannot be read as the result line; the 15 s deadlines turn a missing line into a red, never a hang. e2e twice in a row green (400.4 s and 399.8 s, exit 0, skipped 0, todo 0).",
+      "T2 closed: D26 (the hidden guard inside the frame callback removed) is red in OV-3 (1 of 7: 'the frame that ran while hidden drew none'); D27 (the guard in ask()) is also red there; U07 (the guard only when a frame is owed, so walk frames are drawn hidden) is red in OV-3. U06 (the hidden branch of the frame calls ask(), which has its own guard) is equal in effect and green. U09 (the guard moved before `asked = null`) is green: the state it leaves is reachable only if a frame callback runs while hidden with no visibility event and the page is then shown; OV-3 does not show the page again after the flip (a note, no finding: in a browser the event clears `asked` at once).",
+      "T3 closed: I23 (STEP_FRAME_MS 160 to 100) red in OV-2 (1 of 7, 'step 1 at 144 ms: the step frame'); 161 (U04) and 170 (U05) red too; the draw bob removed (U08), the walker's step-frame formula changed (U10) and FRAME_MS 40 to 30 (U11) red in OV-2. T5 closed: B10 red in PP-4 (1 of 7); a second key inside #test-mode (P06), the key of the test line pointing at ai_disclosure (P02), the data-t removed from the AI span (P03), a nested data-t span inside the AI line (P04) and an unknown key (P05) all red in PP-4 only; P07 (an attribute that is not data-t) is a no-op of mine and green. T6 closed: J06 (directories ignored) and J07 (bytes ignored) red in VB-6 (1 of 6); the names dropped (S03), `dir` renamed (S04), not recursive (S06), md5 (S08), two bytes hashed (S09) and a short hash (S10) red in VB-6; S05 (the sort removed) is green, T8.",
+      "Own coverage table (from the criteria; pass-1 table stands, this pass adds): REQ-111 criterion 12 (the lint in every state the demo reaches, including the live line): LD-5 A, B, C, D, LD-6, LD-7, LD-8, LD-9 (live_result, live_back and no-match: red, E01-E03, E05, E07, E12, E13, E16, E17, E24, E25, E26, E28, E30); live_answer by the lint of the next state (E08, E27: red); criterion 1 (the pages hold the two lines with their keys): PP-4 (B10, P02-P06: red); criterion 16 and the refusal checks of REQ-111 c9 (the snapshot helper): VB-6, PB-4 (J06, J07, S03, S04, S06, S08-S10: red); REQ-112 criterion 3 and 4 (hidden page, step frame): OV-2, OV-3 (D26, D27, I23, U04, U05, U07, U08, U10, U11: red). No criterion that names a test file lacks it (the 18 files exist, ls).",
+      "Counts: unit 119 (118 + VB-6), int 47, e2e 15; skipped 0, todo 0 in all three. Presence guards NPM-5, NPM-7, NM-5, NM-6 match the files and are green in `npm run check` (12 int + 2 pg, 25 unit, 2 e2e files with LD-1..LD-9 and ST-1..ST-6; no file was added or removed by 05g). The criterion grep of REQ-108 criterion 2 (SELECTOR_GREP of npmrc.test.js as `grep -rnE` over app/test) prints no line (exit 1). No xit, xtest, skip, todo or only in app/test outside the planted strings of the guards; no path of this computer in app/test. Nothing weakened: against the tag 5b the changed files have test( 9, 7, 7, 5 to 6, and `assert.` 118, 152, 46, 53 to 118, 160, 48, 62 for landing, office-view, public-pages, vercel-build (vercel-build one test more), the kit 0 to 1; no line removed but the six readState calls that got the stronger form and the step() signature; `git diff base/M1CODE-20261119-01-5b base/M1CODE-20261119-01-5b2 --stat -- app tools` lists only the five test files.",
+      "Stability: the five touched test files three times in a row (20 of 20, 20 of 20, 20 of 20); VB-6, OV-2, OV-3, PP-4 each on its own three times (green); the e2e twice (above). The new waits cannot hang: every wait has a 15 s deadline and is a condition (waitLive, shownKind), and the one mutant that never writes the line (E07) finished in 20 s with a red.",
+      "Working tree: the index of the project and the tag are unchanged by this step (every run was in a clone under <scratch>; git status of each of my clones was empty after every batch). BUT the working files of the project changed during my work, not by me: at the end `git status --short` shows app/content/sai-intake.json, app/public/css/site.css, app/public/js/pages/demo.js, app/server/routes/demo.js, app/test/e2e/landing.test.js, app/test/int/demo.test.js, app/test/unit/intake.test.js modified and handoffs/M1CODE-20261119-01/step-02d-code-fixer.json new: a CODE-FIXER round (02d) running at the same time; at my start `git status --short` was empty and the hash list was ecb71c59ee2db035975c856cdda74dd649b0c05f, at the end 34b716d6f09c57ec86229f251566f1b78d96c710. I did not write any of these files; the verdict is for the tag base/M1CODE-20261119-01-5b2, not for these edits, which will need their own gate."
+    ],
+    "findings": [
+      {
+        "id": "T1",
+        "severity": "Medium",
+        "status": "CLOSED",
+        "where": "app/test/e2e/landing.test.js, app/test/fixtures/e2e-kit.js (waitLive, shownKind, readState)",
+        "what": "Closed: the live line is waited for and asserted before the lint in LD-5, LD-6, LD-7, LD-8, LD-9; F47, F51, F52 red, code green, e2e twice green.",
+        "fix": "none"
+      },
+      {
+        "id": "T2",
+        "severity": "Low",
+        "status": "CLOSED",
+        "where": "app/test/unit/office-view.test.js OV-3",
+        "what": "Closed: D26 red in OV-3.",
+        "fix": "none"
+      },
+      {
+        "id": "T3",
+        "severity": "Low",
+        "status": "CLOSED",
+        "where": "app/test/unit/office-view.test.js OV-2",
+        "what": "Closed: I23 red in OV-2 (and 161, 170).",
+        "fix": "none"
+      },
+      {
+        "id": "T5",
+        "severity": "Low",
+        "status": "CLOSED",
+        "where": "app/test/unit/public-pages.test.js PP-4",
+        "what": "Closed: B10 red in PP-4.",
+        "fix": "none"
+      },
+      {
+        "id": "T6",
+        "severity": "Low",
+        "status": "CLOSED",
+        "where": "app/test/unit/vercel-build.test.js VB-6",
+        "what": "Closed: J06 and J07 red in VB-6.",
+        "fix": "none"
+      },
+      {
+        "id": "T4",
+        "severity": "Low",
+        "status": "OPEN, not this step's (ORCH or CODE-DESIGNER)",
+        "blocking": false,
+        "where": "docs/design/REQ-111-112-public-landing.md section 10, the line 'Counts [P, from this catalogue]' (line 1132: unit 117, int 46)",
+        "what": "The catalogue counts are stale: the runs give unit 119, int 47, e2e 15 (VB-5, DM-6c and VB-6 are in no row). REQ-111 criterion 16 compares '# tests N' with the catalogue, so RELEASE-VALIDATOR will find a difference of two in unit and of one in int.",
+        "fix": "Write unit 119 and int 47 and add VB-5, DM-6c and VB-6 to the text of section 10 before step 6 or the release gate."
+      },
+      {
+        "id": "T7",
+        "severity": "Low",
+        "status": "NEW",
+        "blocking": false,
+        "where": "app/test/e2e/landing.test.js LD-8 (step 'to kk') or LD-3; app/public/js/pages/demo.js onChange of the language switch (the line `if (live !== null) live.textContent = \"\";`)",
+        "what": "Mutant E04 (that line removed, so the live region keeps the announcement in the earlier language after a language switch) stays green in the whole landing file (9 of 9, run on all of it). The lint of the shown text has no rule that a text of another language is wrong, and the live line is only asserted after a result or a Back. The code's own comment says the page keeps one language; no criterion of REQ-111 or REQ-112 states it, and #live is not visible, so this is a missing guard on a code choice, not a gap in a criterion.",
+        "fix": "In LD-8, right after the switch to kk (step 'to kk'), assert that #live is empty (or holds the kk text) with the page's own read."
+      },
+      {
+        "id": "T8",
+        "severity": "Low",
+        "status": "NEW",
+        "blocking": false,
+        "where": "app/test/unit/vercel-build.test.js VB-6; app/test/fixtures/snapshot.js tree()",
+        "what": "Mutant S05 (the sort in tree() removed) stays green: every name VB-6 makes sorts before the directory 'sub' and the folder reader of node lists top entries first, so the unsorted order equals the sorted one on this file system. On a file system that lists in another order the helper would give a different order for the same folder, and a before and after comparison of one folder would still agree, so the refusal checks are not weakened; only the exact lists of VB-6 would vary.",
+        "fix": "Add a top-level name that sorts after 'sub/' (for example 'z.txt') to VB-6 so the order is pinned by the oracle, or state that the order is not part of the contract."
+      }
+    ],
+    "mutants": {
+      "numbers": "57 runs in clones: 44 new mutants of my own (34 red, 10 green) and 12 re-runs of the 8 pass-1 mutants (all red). Green of the 44: U06 (redundant guard, equal in effect), U12 (the cancel of a pending frame on failure; the frame returns on `failed`, equal in effect), E06 (view.i equals i at that point, equal), P07 (an attribute that is not data-t, a no-op of mine), E19 and E20 (ANNOUNCE_MS 250: controls that must stay green and did), E29 (the {kind} placeholder dropped from the ru text: the oracle reads the texts module, by design the same text), U09 (note in the summary), S05 (T8), E04 (T7).",
+      "re_run_of_pass_1": {
+        "F47 live_back + ' гарантия'": "red in LD-5 ('after Назад: the live line')",
+        "F51 live_result + ' 5 минут'": "red in LD-5 (E25), LD-6 (E26), LD-7 (E23), LD-8 (E22), LD-9 (E21)",
+        "F52 live_back + ' 5 000 ₸'": "red in LD-5",
+        "D26 the hidden guard of the frame": "red in OV-3 (1 of 7)",
+        "I23 STEP_FRAME_MS 160 to 100": "red in OV-2 (1 of 7)",
+        "B10 data-t of #ai-disclosure on how.html": "red in PP-4 (1 of 7)",
+        "J06 snapshot ignores directories": "red in VB-6 (1 of 6)",
+        "J07 snapshot ignores bytes": "red in VB-6 (1 of 6)"
+      },
+      "new_red": {
+        "view (OV)": "D27 red OV-3; U04 (161), U05 (170) red OV-2; U07 red OV-3; U08 (bob off, draw.js) red OV-2; U10 (step-frame formula, sim.js) red OV-2; U11 (FRAME_MS 30) red OV-2",
+        "pages (PP-4)": "P02, P03, P04, P05, P06 red PP-4 only",
+        "snapshot (VB-6)": "S03, S04, S06, S08, S09, S10 red VB-6 only",
+        "live line (e2e)": "E01 (live_result + гарантия) red LD-5; E02 (no-match + 5 000 ₸, ru) red LD-6; E30 (no-match + 5 000 ₸, kk only) red LD-6; E03 (a second write 400 ms later) red LD-5; E05 (ru text in all languages) red LD-6; E07 (never written) red LD-5 in 20 s, no hang; E08 (live_answer + ₸) red LD-5; E27 (live_answer for «Не знаю» + 5 минут) red LD-5; E28 (live_back to question 1 + гарантия) red LD-5; E12 (no announcement for the no-match) red LD-6; E13 (live_result with the solution's summary) red LD-6; E16 (kk only + ₸) red LD-6; E17 (en only + guarantee) red LD-9; E24 (live_back + 5 минут) red LD-8",
+        "texts": "T01 (en live_result + 'Money-back guarantee.') red FW-7 and red in check-public; T02 (kk live_back + 5 000 ₸) red FW-7"
+      },
+      "survivors": "E04 (T7), S05 (T8), U09 (note), and the equal or control ones listed in numbers"
+    },
+    "self_check": [
+      "Clock: the first reading of this work 2026-11-20T20:44:01Z (`npm run check`), the e2e runs started 20:45:07Z and 20:51:56Z and ended 20:51:48Z and 20:58:36Z, the handoff was created at the reading below by the handoff command.",
+      "Fresh clone: `git clone --no-local <repository> <scratch>/g2h/c1`, `git checkout base/M1CODE-20261119-01-5b2` -> 5cb280cfa2ff3e162350170bb722e98353354e48, the same sha as `git rev-parse base/M1CODE-20261119-01-5b2` and HEAD of the project; `npm ci` in app and tools; Node 22.23.4. Mutant clones m1 and m2 are a clone of the tag plus the copied node_modules; a runner outside the project applied each edit by exact text (a count check: a bad edit is reported, never run), ran the named test file or the named browser test with a timeout, restored the file; `git status --short` of c1, m1 and m2 was empty at the end.",
+      "`cd app && npm run check` in c1 -> exit 0; unit '# tests 119 # pass 119 # fail 0 # skipped 0 # todo 0', int '# tests 47 # pass 47 # fail 0 # skipped 0 # todo 0' (51 s).",
+      "`cd app && npm run test:e2e` in c1, run 1 20:45:07Z to 20:51:48Z: '# tests 15 # pass 15 # fail 0 # skipped 0 # todo 0 # duration_ms 400419', exit 0; run 2 20:51:56Z to 20:58:36Z: '# tests 15 # pass 15 # fail 0 # skipped 0 # todo 0 # duration_ms 399795', exit 0.",
+      "Three runs of the three touched unit files together: 20 of 20 each time, skipped 0, todo 0; VB-6, OV-2, OV-3 and PP-4 each on its own three times green.",
+      "The criterion grep: `grep -rnE '<SELECTOR_GREP of npmrc.test.js>' app/test` in c1 -> no line, exit 1; a second search for xit, xtest, `skip:`, `todo:` outside the guards' own files -> no line; no path of this computer in app/test.",
+      "Counts of `^test(` and `assert.` per file, tag 5b to tag 5b2: landing 9/118 to 9/118, stage 6/25 unchanged, office-view 7/152 to 7/160, public-pages 7/46 to 7/48, vercel-build 5/53 to 6/62, e2e-kit assert. 0 to 1; `git diff --stat base/M1CODE-20261119-01-5b base/M1CODE-20261119-01-5b2 -- app tools` lists the five test files only.",
+      "Messages of the live-line mutants (examples): F47 'after Назад: the live line + Назад к вопросу 2 гарантия - Назад к вопросу 2'; E02 'ru server-needed result: the live line' with the no-match text and ' 5 000 ₸'; E16 'kk calculator result: the live line' with 'Нәтиже дайын: Калькулятор 5 000 ₸'; E17 '1470x784 en result: the live line' with 'Result ready: Landing page guarantee'.",
+      "Hashes of the working tree (`git ls-files -z | xargs -0 shasum | shasum`): before ecb71c59ee2db035975c856cdda74dd649b0c05f, after 34b716d6f09c57ec86229f251566f1b78d96c710. The difference is the files of a concurrent CODE-FIXER round listed in the summary (git status at my start was empty); nothing of it comes from this step, which wrote no file of the project but this handoff (tag sha unchanged)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "The working tree changed under this check by another session (CODE-FIXER round 02d: demo.js, site.css, routes/demo.js, sai-intake.json, landing.test.js, int/demo.test.js, intake.test.js and handoffs/.../step-02d-code-fixer.json). The verdict PASS is for the tag base/M1CODE-20261119-01-5b2. Those edits change app/test/e2e/landing.test.js and app/test/unit/intake.test.js, so they need steps 3, 4 and 5b again by WF-02 (a code fix touching tests)."
+      },
+      {
+        "id": "I2",
+        "kind": "PROCESS",
+        "text": "T4 (design section 10 counts: write unit 119, int 47, e2e 15 and add VB-5, DM-6c, VB-6) must be done by ORCH or CODE-DESIGNER before RELEASE-VALIDATOR compares '# tests' with the catalogue; by itself it is Low and does not stop this gate."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "The known PENDING line of handoffs/M0DOCS-20261117-01/step-05c-test-designer.json is not this step's and was not touched."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "handoff_id": "step05e-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "05e",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/M1CODE-20261119-01/step-05e-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-04c-reviewer.json",
+      "decisions/0124-m1code-landing-design-answers.md (O26, O27)",
+      "docs/design/REQ-111-112-public-landing.md"
+    ],
+    "route": "... REVIEWER 04c FAIL -> TEST-DESIGNER 05e (this) -> REVIEWER again (the tests) -> TEST-DESIGN-VALIDATOR 5b",
+    "write_set": [
+      "app/test/** (test files and fixtures) only"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-04c-reviewer.json, review pass 3 of 3 (WF-02, step 5, fix round 05e of run M1CODE-20261119-01; decisions/0124 O26 and O27). The remarks, all three Medium, all in the tests (app/test/** only; the code is not edited):\nM1 - the scroll padding of the focus (site.css, html:has(#ticket) { scroll-padding-bottom }, round 02c) has no test. Tab through the demo at 320x568 and 390x844 and assert that no focused control other than the strip's own overlaps #ticket; keep the e2e count and the ids of NPM-7 consistent; show the row red on the mutant that deletes the rule, green on the code.\nM2 - nothing reads the skip link's position (layoutFindings leaves .skip out and its comment names a skipLinkFindings that does not exist). Write skipLinkFindings in app/test/fixtures/page-checks.js: at load the skip link's bottom is at 0 or higher above the window in every window, theme and language; focused it is inside the window (top 8px, look 7.1); wire it into LD-1; show it red on the mutant that deletes `transform: translateY(-100%)` from the skip rule.\nM3 (AP-014) - the same mechanism written several times: one fixtures module for the JavaScript blanker and scanner (import-boundaries.test.js scan and blank, fixtures/blank.js), one specifiersOf (office-pure.test.js, vendored.test.js), one folder snapshot helper (public-build.test.js, vendored.test.js, vercel-build.test.js), one helper for the target desk (the expression `i < 4 ? ASKING_DESK[i + 1] : 4` four times in e2e/stage.test.js). The independent oracle tables stay. No test may get weaker: every mutant series that was red stays red; the T1-T4 mutants that touch these files are run again and counted.\nNot to be done here: L1, L2 (ORCH, the owner's list) and L3 (CODE-FIXER).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-20T19:11:20Z",
+  "started_at": "2026-11-20T19:11:20Z",
+  "completed_at": "2026-11-20T19:27:26Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fix round 05e closes the three Medium findings of review pass 3 in app/test only; the code is not touched and no DEFECT_FOUND. M1: LD-5 has a new section E, a Tab walk through the demo at 390x844 and 320x568 in ru, kk and en at all five questions (30 states) that fails when a focused control outside the strip meets #ticket; red on the mutant that deletes the scroll-padding rule (cards at 320x568, «Не знаю» at 390x844, «‹ Назад»), green on the code. M2: skipLinkFindings is written in fixtures/page-checks.js and is read in every load of LD-1 (126 loads): at rest the bottom is at 0 or above, focused the link is at top 8 px inside the window with no cut text; red on the mutant without `transform: translateY(-100%)` (bottom 10.4 px at 320x568 ru), green on the code. M3: one reader of JavaScript text (fixtures/blank.js: the stricter token scan, blank, specifiersOf) used by import-boundaries, office-pure, public-pages, public-build, texts and vendored; one folder reader (fixtures/snapshot.js: tree, fileNames, snapshot with bytes and directories) used by public-build, vendored and vercel-build; two helpers deskAfterAnswer and deskBeforeAnswer in stage.test.js. The e2e count stays 15 and NPM-7 is unchanged. Results: cd app && npm run check exit 0 (unit 118 of 118, int 47 of 47); npm run test:e2e twice in a row 15 of 15 (399.8 s and 398.8 s); cd tools && npm run traces 0 traces; the grep of REQ-108 criterion 2 over app/test prints no line. The mutants that touch these files were run again: 169 of 169 original T2, 22 of 22 T3, 25 of 25 e2e (T4 and new), and 33 re-written or new (T1 import-boundaries 10, T1 vercel-build 10, the reader, specifiersOf and snapshot 13), all red. Table criterion to test: REQ-111 criterion 12 (focus above the strip, skip link place, no control over another) -> LD-5 section E, LD-1; the earlier rows are unchanged.",
+    "changes": [
+      {
+        "remark": "M1",
+        "file": "app/test/fixtures/page-checks.js",
+        "place": "new exports focusOverStripIn (in the page) and focusWalkFindings (Tab walk)",
+        "was": "no test read the scroll padding of the focus (site.css html:has(#ticket) { scroll-padding-bottom }); the rule deleted -> npm run test:e2e 15 of 15 green",
+        "became": "focusWalkFindings: focus the skip link, then Tab one control at a time (80 stops at most) until the walk is back at the skip link or leaves the page; after each Tab the focused control's box is read against the box of #ticket, and a control that is not inside the strip and meets it over more than 1 x 1 px is a finding; the walk is red when it reached fewer than 5 controls or no card (a walk over nothing proves nothing)"
+      },
+      {
+        "remark": "M1",
+        "file": "app/test/e2e/landing.test.js",
+        "place": "LD-5, new section E (before the final assert); the timeout 240000 -> 600000; the title of LD-5 ends with ', the focus above the live strip'",
+        "was": "LD-5 stopped at section D (phone, English); no test Tabbed through the demo against the strip",
+        "became": "section E: 390x844 and 320x568 (WINDOWS narrower than 760 px, the media query of the rule) x ru, kk, en x the five questions (answer 0 goes on) = 30 states, each read by focusWalkFindings. The e2e count stays 15 and the ids of NPM-7 stay LD-1..LD-9, ST-1..ST-6 (rows are inside LD-5, so E2E_TESTS and the guard's count are unchanged)"
+      },
+      {
+        "remark": "M2",
+        "file": "app/test/fixtures/page-checks.js",
+        "place": "new exports skipLinkFindingsIn (in the page) and skipLinkFindings (page); the header of layoutFindingsIn now names a function that exists; the file's header says the focus is changed too",
+        "was": "layoutFindings left .skip out and its comment named a skipLinkFindings that did not exist (AP-005); nothing read where the skip link stands",
+        "became": "skipLinkFindings: at load (scrolled to the top) a.skip is present, does not hold the focus and its bottom is <= 0; then the link takes the focus by a call and stands at top 8 px (+-0.5), left >= 0, right <= innerWidth, bottom <= innerHeight, with scrollWidth <= clientWidth; the focus is taken off after the reading. (A call, not the first Tab: demo.js puts the focus on the heading of /demo.html at load, so the first Tab there starts after the heading, see issue I2.)"
+      },
+      {
+        "remark": "M2",
+        "file": "app/test/e2e/landing.test.js",
+        "place": "LD-1, in the loop of the 126 loads, before layoutFindings",
+        "was": "the skip link was in no row of LD-1",
+        "became": "problems.add(where, await skipLinkFindings(env.page)) in every window (1470, 390, 320), theme, language and page (7 paths, the 404 pages included)"
+      },
+      {
+        "remark": "M3 blanker",
+        "file": "app/test/fixtures/blank.js",
+        "place": "the whole file: scan, blank (the code that stood in import-boundaries.test.js lines 81-296 with REGEX_AFTER, REGEX_AFTER_WORD, SLASH_EITHER) and specifiersOf",
+        "was": "two blankers: the token scan of import-boundaries.test.js (a kept text, the list of ambiguous slashes) and a shorter one with a regex heuristic in fixtures/blank.js, copied because a test file cannot be imported",
+        "became": "fixtures/blank.js holds ONE reader, the stricter one (the token scan, with `slashes`, the `of`/`++`/`--`/`}` rule and the line-break rule), and exports scan, blank, specifiersOf; import-boundaries.test.js imports scan and blank from it (the block is deleted there: 1 line added, 216 deleted); office-pure, public-pages, public-build, texts, vendored keep importing blank from the same path and now get the stricter reader"
+      },
+      {
+        "remark": "M3 specifiersOf",
+        "file": "app/test/fixtures/blank.js; app/test/unit/office-pure.test.js; app/test/unit/vendored.test.js",
+        "place": "specifiersOf (the same regex line in two files)",
+        "was": "two copies of the same function",
+        "became": "one exported specifiersOf in fixtures/blank.js; both tests import it"
+      },
+      {
+        "remark": "M3 snapshot",
+        "file": "app/test/fixtures/snapshot.js (new); app/test/unit/public-build.test.js; app/test/unit/vendored.test.js; app/test/unit/vercel-build.test.js",
+        "place": "snapshot (three formats: sha256 of files only, sha256 with relative path, base64 with directories)",
+        "was": "three snapshots with three formats, only the third saw an added empty directory",
+        "became": "fixtures/snapshot.js exports tree (every entry, files and directories, with /), fileNames (files only) and snapshot (a file as 'path sha256', a directory as 'path dir'): the strictest of the three (bytes and directories); public-build.test.js names = fileNames, vercel-build.test.js uses tree and snapshot, vendored.test.js uses snapshot"
+      },
+      {
+        "remark": "M3 target desk",
+        "file": "app/test/e2e/stage.test.js",
+        "place": "two helpers after ASKING_DESK; the five uses at the walks of ST-2, ST-3, ST-4 and ST-5",
+        "was": "`i < 4 ? ASKING_DESK[i + 1] : 4` four times, `i === 0 ? null : i < 4 ? ASKING_DESK[i] : 4` twice, and a `moves` test written another way",
+        "became": "deskAfterAnswer(i) and deskBeforeAnswer(i), each used where the expression stood; `moves = deskAfterAnswer(i) !== deskBeforeAnswer(i)` (the same truth table for i = 0..4: true, true, false, true, false); ASKING_DESK (the independent oracle table) stays"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "cd app && npm run check (in a scratch clone of the working-tree state, final files)",
+        "output": "exit 0: prettier all matched files use Prettier code style; eslint --max-warnings 0, tsc: no output; check-public: app/public is clean; vendored: 1 file matches its source; the picker check: sai-intake in order (5 questions, 6 solutions, 35 rules); unit '# tests 118 # pass 118 # fail 0 # skipped 0 # todo 0'; int '# tests 47 # pass 47 # fail 0 # skipped 0 # todo 0' (the same counts as at the review tag: no test added or removed, the checks went into existing tests)"
+      },
+      {
+        "command": "cd app && npm run test:e2e, twice in a row in the scratch clone (started 2026-11-20T19:11:07Z and about 19:18:30Z)",
+        "output": "run 1: '# tests 15 # pass 15 # fail 0 # skipped 0 # todo 0 # duration_ms 399800', exit 0; run 2: '# tests 15 # pass 15 # fail 0 # skipped 0 # todo 0 # duration_ms 398822', exit 0; LD-1..LD-9 and ST-1..ST-6 ok in both. The runs were made on the files of the working tree except the two comment lines added afterwards to the header of fixtures/page-checks.js (the diff of the two trees is only those lines); npm run check was run again on the final files (above)"
+      },
+      {
+        "command": "counts of test( and assert. per changed file, HEAD against the working tree (git show / grep)",
+        "output": "landing 9/118 -> 9/118; stage 6/25 -> 6/25; import-boundaries 4/45 -> 4/45; office-pure 6/54 -> 6/54; public-build 7/92 -> 7/92; vendored 4/34 -> 4/34; vercel-build 5/53 -> 5/53 (test( / assert.: none lower)"
+      },
+      {
+        "command": "the grep of REQ-108 criterion 2 (SELECTOR_GREP of npmrc.test.js) as grep -rnE over app/test; a search of app/test for the home folder and the system temporary folders",
+        "output": "no line (exit 1); no path of this computer; NPM-6 green"
+      },
+      {
+        "command": "M1 mutant, in a scratch clone: the rule `html:has(#ticket) { scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom)); }` deleted from site.css; node --test --test-name-pattern='LD-5 ' test/e2e/landing.test.js (also as F1 of the series below, with the final files)",
+        "output": "RED, LD-5 fails with 'focus under the strip' lines, e.g. 390x844 ru question 1: button.card.dk «Не знаю» (top 727.4, bottom 775.4) meets #ticket (top 759.2) by 330.0 x 16.3; 320x568 ru question 1: button.card «1Рассказать о себе…» (top 479.8, bottom 567.8) meets #ticket (top 483.2) by 124.0 x 84.6; «‹ Назад» 320x568 meets it by 111.6 x 13.6; the cards of every question at 320x568 in ru, kk and en and «Не знаю» at 390x844 (question 1 and 5). On the code (no mutant): LD-5 ok, 0 findings in 30 states"
+      },
+      {
+        "command": "M2 mutant, in a scratch clone: `transform: translateY(-100%);` deleted from the .skip rule; node --test --test-name-pattern='LD-1 ' test/e2e/landing.test.js (also as F2 of the series below)",
+        "output": "RED, LD-1 fails with one line: 'skip link: its bottom shows over the window at rest (top -60.0, bottom 10.4, left 8.0, right 320.0, window 320 x 568) (14 x; e.g. 320x568 light ru / | 320x568 light ru /how.html | 320x568 light ru /examples.html)' - the 10.4 px the reviewer measured; on the code: LD-1 ok. (The first form of the row, with the first Tab, was red on the code at /demo.html; changed to a call, see I2, and read again red on the mutant and green on the code)"
+      },
+      {
+        "command": "M3 series 1, scratch clone 'mw' (python runner, one edit per run, the file restored and the tree's sha256 compared): the T2 mutants of the four files that use the moved code, public-build.test.js, public-pages.test.js, texts.test.js, vendored.test.js (scripts of T2 kept in the scratch folder: the same edits, with the number of the clone changed)",
+        "output": "169 of 169 original T2 mutants red, each by the test the T2 handoff names (public-build 53 of 53, public-pages 41 of 41 without its 4 BL, texts 47 of 47, vendored 28 of 28); tree restored: True. The 4 BL mutants of the old short blanker were written again for the one reader in fixtures/blank.js: BL1 line comments not blanked, BL2 strings not blanked, BL3 regular expressions not read, BL4b block comments not blanked -> red in PP-6 (and IB-1..IB-4), BL4 (the end of a block comment looked for at the line end) -> red in IB-1, IB-2, IB-3. New on the moved code: BL5 template text not blanked -> PP-6, IB-1, IB-3, IB-4; BL6 and BL7 the ambiguous slash not listed -> IB-2, IB-4; BL8 blank(src, true) returns the code text -> IB-4; SP1 specifiersOf drops the relative paths -> VD-2; SP2 specifiersOf reads the strings blanked -> OP-1, OP-2, OP-5, VD-2; SP3 specifiersOf without `import` -> VD-2; SN1 snapshot lists names only -> PB-2. Total 182 mutants, 182 red (181 by the expected id; BL4 by IB only)"
+      },
+      {
+        "command": "M3 series 2, scratch clone 'mt': the T3 mutants of office-pure.test.js (the T3 script m_op.py: 16 mutants M50, M50-top, M50-sim, M50-rand, M50-doc, M50-glob, M50-nav, M61, M61-draw, M60, M60-api, M60-comment-api, M60-ws, M60-beacon, M-in1, M-in2) and the six office-pure rows of m_self.py (S-pure-names, S-pure-dot, S-pure-import, S-pure-random, S-ev-api, S-ev-dot)",
+        "output": "22 of 22 red, in the same tests as in T3: M50* OP-2/OP-3/OP-4, M61 OP-1+OP-2, M61-draw OP-1, M60* OP-6, M-in1 OP-3+OP-4, M-in2 OP-4, S-pure-* OP-5 (S-pure-import OP-1+OP-5), S-ev-* OP-6"
+      },
+      {
+        "command": "M3 series 3, scratch clone 'mv': the T1 mutants of vercel-build.test.js (the script of T1 was not kept: written again from the list of the T1 handoff) on scripts/vercel-build.js",
+        "output": "10 of 10 red: open build writes no public set -> VB-1; a failing check-public does not fail, a failing migrate does not stop -> VB-2; the closed build leaves a second file, leaves an empty folder (the case only the directory-aware snapshot sees), runs the migration, a wrong gate page passes, keeps an old file -> VB-3; M87 the git-tree refusal of the closed build removed, the closed refusal answers 0 -> VB-4"
+      },
+      {
+        "command": "M3 series 4, scratch clone 'mt': the T1 mutants of the row of fileFindings and of vendoredFiles in import-boundaries.test.js (the script of T1 was not kept: written again from the list of the T1 handoff)",
+        "output": "10 of 10 red: M83 every .d.ts allowed, M84 a .d.ts beside any .js, M86 only that the twin is listed, M92 the twin matched by file name in any folder, the suffix in any letter case, a twin that is a link counts as plain, vendored.json absent throws, unreadable gives [], not JSON gives [] -> IB-2; the row dropped -> IB-1, IB-2. git diff of import-boundaries.test.js is 1 line added, 216 deleted (only the block that moved), so the mutants of its other rules read the same text as before"
+      },
+      {
+        "command": "M3 series 5 (T4 mutants of the e2e files that read the walk target and LD-5), a copy of the clone per mutant, node --test with the test name of the mutant (W=3): S3a-S3h (ST-3), S4a-S4c (ST-4), L5a-L5f (LD-5); new: D1 QUESTION_DESKS [1,2,3,4,4] (ST-3), D2 [1,3,3,3,4] (ST-2), D3 [1,2,2,3,4] (ST-4), F1 (M1), F2 (M2)",
+        "output": "25 of 25 red: S3a no frame while the tab is hidden, S3b the live line at the tap, S3c idle frames, S3d no frame on a state change without a walk, S3e a tap to the drawn state draws a frame, S3f language change, S3g the step buttons do not walk, S3h a forbidden form after a step tap (all ST-3); S4a, S4b, S4c (ST-4); L5a Back does not keep the answer, L5b Не знаю does not go on, L5c cards out of the tab order, L5d the speaker's avatar, L5e a forbidden form in the live line, L5f five taps do not open the result (all LD-5); D1 ST-3, D2 ST-2, D3 ST-4 (the target desk of each walk); F1 LD-5; F2 LD-1"
+      },
+      {
+        "command": "not rerun, and why: the T1 mutants of check-public.test.js (CP-2, CP-3), npmrc.test.js (NPM-3), ci-workflow.test.js (CIW-1, CIW-2) and the T2 mutants of forbidden-words, theme-contrast, intake; the T3 mutants of office-stage, office-view, port-parity, node-main and the demo int tests; the T4 mutants of the other LD and ST groups (L1a-n, L2-L4, L6-L9, S1, S2, S5, S6, N7)",
+        "output": "these test files and the files they load from fixtures/ (helpers.js, blank.js for the T2 forbidden-words and intake rows is not imported by them) are not changed by this round; the additions to LD-1 and LD-5 only add reads and change no earlier line (git diff of landing.test.js: 36 lines, all added or the timeout and the title); NPM-7 is green on the final files (unit 118 of 118) with the same ids and count"
+      },
+      {
+        "command": "working tree: git status --short; the mutants and the e2e ran only in scratch clones, never in the project",
+        "output": "only app/test/e2e/landing.test.js, app/test/e2e/stage.test.js, app/test/fixtures/blank.js, app/test/fixtures/page-checks.js, app/test/fixtures/snapshot.js (new), app/test/unit/import-boundaries.test.js, app/test/unit/office-pure.test.js, app/test/unit/public-build.test.js, app/test/unit/vendored.test.js, app/test/unit/vercel-build.test.js and this handoff changed by this step (the other lines of git status, decisions/0124 and the handoffs step-03c and step-04c, are not this step's)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "INFO",
+        "text": "Scratch only: the folders <scratch>/w, <scratch>/m1 and <scratch>/m2 of earlier sessions in the shared working folder were deleted and made again as the clones of this step (rm -rf before git clone); nothing of the project was touched. The scripts of the T2, T3 and T4 mutants were still in the scratch folder and were run again; the scripts of the T1 mutants were not kept, so the T1 mutants of vercel-build.test.js and import-boundaries.test.js (series 3 and 4) were written again from the list of the T1 handoff, not replayed byte for byte."
+      },
+      {
+        "id": "I2",
+        "kind": "INFO",
+        "text": "Observation of the code, no test asks for a change: on /demo.html the heading holds the focus at load (demo.js:495, heading.focus), so the first Tab there goes to «‹ Назад» and the skip link is reachable only by Shift+Tab; on / it is the first stop. Evidence: a driver in Chrome, the local server: '/ active at load: BODY | after first Tab: A.skip'; '/demo.html active at load: H2 | after first Tab: BUTTON.btn ghost back'. The first form of the M2 row (the first Tab) was red on the code at /demo.html for exactly this; the row now takes the focus by a call, because its subject is where the link stands, not the tab order. Whether the first Tab of the demo should reach the skip link is a question for the design (the look 7.1 and the focus rule of the demo), not decided here."
+      },
+      {
+        "id": "I3",
+        "kind": "INFO",
+        "text": "The M1 rows are inside LD-5 (section E) and the M2 rows inside LD-1, so the count of e2e tests (15) and the ids of NPM-7 and E2E_TESTS stay as they are and the design's count in the guard needs no edit. LD-5's timeout is 600000 ms (was 240000: the new section adds about 30 s on this machine) and its title ends with ', the focus above the live strip'; the full e2e run is about 6.7 minutes (399.8 s and 398.8 s)."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "The M1 row reads the first scroll position too: at 320x568 «‹ Назад» is read when it is focused, and the finding L1 of the reviewer (the sliver under the strip without a focus, 12 of 15 states) is not asserted by any test, as O26 keeps it as an owner's decision (G21). If the owner moves «‹ Назад» (the rule of O26), a row for the unfocused position at 320x568 is the next test."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "The handoffs-check line for handoffs/M0DOCS-20261117-01/step-05c-test-designer.json (PENDING in a commit) is the known one and not this step's."
+      }
+    ],
+    "artifacts_out": [
+      "app/test/e2e/landing.test.js",
+      "app/test/e2e/stage.test.js",
+      "app/test/fixtures/blank.js",
+      "app/test/fixtures/page-checks.js",
+      "app/test/fixtures/snapshot.js",
+      "app/test/unit/import-boundaries.test.js",
+      "app/test/unit/office-pure.test.js",
+      "app/test/unit/public-build.test.js",
+      "app/test/unit/vendored.test.js",
+      "app/test/unit/vercel-build.test.js"
+    ]
+  }
+}

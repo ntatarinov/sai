@@ -1,0 +1,127 @@
+{
+  "handoff_id": "step03-M1STATUS-20261122-02",
+  "run_id": "M1STATUS-20261122-02",
+  "workflow_id": "WF-02",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/M1STATUS-20261122-02/step-03-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-113"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-113-visitor-status.md"
+    ],
+    "route": "WF-02 step 3 gate (sequential before step 4 by the owner's rule: one agent at a time)",
+    "write_set": [
+      "handoffs/M1STATUS-20261122-02/step-03-security-reviewer.json (result only)"
+    ],
+    "base_tag": "base/M1STATUS-20261122-02"
+  },
+  "task": {
+    "description": "WF-02 step 3, SECURITY-REVIEWER (role file .claude/agents/security-reviewer.md). Decide whether the security area is touched (public static text, one DOM-building function in demo.js, CSS, no input, no storage, no server change): if out of scope, PASS with the reason, but still check the public rules yourself: no innerHTML/outerHTML/insertAdjacentHTML, textContent/el() only, no inline style or event attributes, CSP-compatible markup, no new external address, no order_ key or kk value leaks into the open public build (G8 b, G9; run the public build in a scratch copy and replay the leak scan), no word of the project internals in public files. Review the build of REQ-113 (docs/design/REQ-113-visitor-status.md is the design, the look docs/design/V1-public-look.md 7.22 is the measure, decisions/0125 and 0126 are the answers). The change is the working-tree diff of four files against the tag: git diff base/M1STATUS-20261122-02 -- app/public (css/site.css, how.html, js/pages/demo.js, shared/i18n/texts.js); also read handoffs/M1STATUS-20261122-02/step-02-frontend-dev.json (the developer report: the placements, margin-top 2px on .now .stat is in the design CSS table but not in the look: judge it). You read only: edit nothing but your own handoff result (status stays PENDING; ORCH closes). Rules for this Windows PC: NEVER run npm run check, cd app && npm run ..., tools test scripts or e2e tests; allowed: cd tools && npm run -s handoffs-check and traces, read-only scripts and a real headless Chrome on scratch copies outside the project (scratchpad <scratch>, own subfolder; clone with core.autocrlf=false; npm ci in a scratch clone is allowed). Node 22 first on PATH. No git commit/push/checkout/stash/reset in the project. PASS or FAIL with a list (file:line, what, severity, the fix wanted). English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T05:21:30Z",
+  "started_at": "2026-11-22T05:21:30Z",
+  "completed_at": "2026-11-22T05:29:17Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-02 step 3, SECURITY-REVIEWER, REQ-113: PASS.\n\nMAP OF SURFACES. All four changed files (app/public/css/site.css, how.html, js/pages/demo.js, shared/i18n/texts.js) lie on one surface: 'goes to the browser' (public pages). None lies on 'comes from outside' (no input, no form, no new request; the block, marks and notes are built from fixed keys of the texts module, nothing comes from a request, the storage or a server response), 'writes files', 'holds a secret', 'the server goes by itself', 'customer data' or 'photos of people'. The area is touched only through the browser surface: text display, CSP, public build (G8 b, G9).\n\nITEMS. Q7 applicable and met (search for secrets on the diff and on every file of the built open output: only the CSS word 'tokens' and a numeric 'token' counter of the demo; no key, no address, no long random string, no order_ key). Q8, Q9 not applicable (no server, no data, no query; the demo API is untouched). Q10 not applicable to the change (no new external call or network input), but the page path was probed anyway, see below. Q11 not applicable (no outgoing request added). R3 not applicable (decision 0033). R2 not applicable (Pixel Office office/ untouched).\n\nPUBLIC RULES, checked by me on the diff and on a scratch copy of the open build: no innerHTML, outerHTML, insertAdjacentHTML, document.write, eval, new Function or srcdoc; no inline style or on-event attribute; no <style> or inline <script>; the block is built with el() and text: only; no new http(s) address, link, font, image, url() or @import; no storage or cookie use added; no word of the project internals and no REQ-, ISS-, WF- number or computer path in the added lines or in any file of app/public (only two old comments with the singular 'decision 0083', identical at the base, not in the ban list).\n\nG8 b AND G9. Open build (scripts/vercel-build.js, SITE_GATE empty, in a scratch copy outside any git tree): check-public clean, 'vercel-build: done'. My own leak replay (own script, whole word, NFC, case-folded, Unicode letter/digit borders; not the test's expression): 240 leak values (every order_ value in ru, kk, en plus every kk-only value, minus the values the output keeps) searched in all 21 output files: 0 hits. Output texts module: 134 keys, 0 order_ keys, languages ru and en, no kk value, all 13 new keys kept; no examples.html reference, no data-lang kk; ?lang=kk shows Russian.\n\nREAL BROWSER. Chrome 157 headless with my own CDP driver on the real app server of the scratch copy (npm ci there) with its real CSP (default-src, script-src and style-src 'self'). how.html at 1470, 390 and 320 wide, ru, en, kk = 9 loads: 0 CSP violations, 0 console errors, one section.now, 0 on-attributes, 0 controls in the block, no horizontal scroll, heading and marks in the language of the page. Demo result by a real 5-answer flow, ru and en: 0 CSP violations, block inside div.r-side, no p.fine, label and sentence as designed. Hostile server bodies (questionnaire titles and labels and the result's name, summary, lists and no-match text all set to <img onerror>, <svg onload>, <script> strings), ru and en: the hostile text is shown as text (confirmed in innerText), 0 injected elements, window.__pwn never set, 0 inline scripts, 0 style attributes in the block. Result request answered 500, ru and en: block and panel stand, no sentence, only the browser's own network log lines. Storage substituted with markup values, and storage whose getItem and setItem throw: block built in Russian, nothing injected, 0 CSP violations. Total 17 page runs (9 how.html loads and 8 demo passes), 5 answers in each demo pass. The single style attribute on how.html is the scene's div.stage set through CSSOM by old code, identical at the base, outside the block.\n\nMARGIN-TOP 2PX (asked in the task): margin-top: 2px on .now .stat is in the design CSS table 4.5 and was measured (0 layout findings in the design and in the developer's run), the look 7.22 does not name it. It has no effect on any security item; I judge it no blocker (Low S1), and the step-4 question 'work beyond the look' stays with REVIEWER.",
+    "findings": [
+      {
+        "id": "S1",
+        "place": "app/public/css/site.css, rule .now .stat (margin-top: 2px)",
+        "item": "none (not a security item)",
+        "severity": "Low",
+        "what": "margin-top: 2px is in the design CSS table (4.5) and was measured, but the look 7.22 names only order 2 and align-self flex-start. No effect on security.",
+        "fix": "Nothing needed for this gate. REVIEWER decides; if the look must rule, delete that one declaration and keep margin-top: 0 in the phone rule."
+      }
+    ],
+    "self_check": [
+      {
+        "check": "sha256sum of the four changed files at the start and at the end; git diff --stat against the base tag; CR count",
+        "output": [
+          "site.css 70c7288a6b7ffb091eecd51d9386bf225ea70a6069d4bc9a3d8591d4387cf2cc",
+          "how.html 744cd2bad7b603fca43391496470d321bebe92824c6da81398241cc10098d7f4",
+          "demo.js 017478220aab320ac784caf088f37608531c6eb6e289b2e0638be1706404a2a6",
+          "texts.js 9a5f24ae7e8866e5f70b0b74b99495b1528f9c0140d7c99b01c80bc38fa54e33",
+          "equal at the start and at the end, and equal to the 'after' hashes of the developer's report; 4 files changed, 255 insertions, 17 deletions; git status of app/ lists exactly these four; 0 CR bytes in each"
+        ]
+      },
+      {
+        "check": "git diff base/M1STATUS-20261122-02 -- app/public read in full",
+        "output": [
+          "demo.js: frozen NOW_ROWS, statusBlock() with el() and text:, div.r-side [statusBlock(), idea], p.fine removed, a p with demo_accuracy_note in .rc-acc; no new fetch, storage, listener or URL",
+          "how.html: static markup, data-t on every text element, no style or on attribute, no script; the new block stands outside both sai:order regions and the sai:kk region",
+          "texts.js: 13 keys added, 2 values changed, idea_panel_fine removed (179 keys), no order_ key added",
+          "site.css: existing tokens only; no url(), no @import, no address"
+        ]
+      },
+      {
+        "check": "scratch copy of the app (git archive, four working files copied over, no .git): node scripts/check-public.js; node scripts/vercel-build.js with SITE_GATE unset",
+        "output": [
+          "check-public: app/public is clean",
+          "vercel-build: done",
+          "files that differ from the source: 404.html, demo.html, how.html, index.html, shared/i18n/texts.js; examples.html removed"
+        ]
+      },
+      {
+        "check": "own leak replay, source against output",
+        "output": [
+          "{ srcKeys: 179, outKeys: 134, outOrderKeys: 0, outLangs: ['ru','en'], outHasKk: false, leakValues: 240, files: 21, hits: 0 }",
+          "examples refs: [] data-lang kk: []; no 'MISSING in out' line (all 13 new keys kept)"
+        ]
+      },
+      {
+        "check": "grep for forbidden code forms, external addresses, secrets and project words on the diff and on all app/public files",
+        "output": [
+          "innerHTML, outerHTML, insertAdjacentHTML, document.write, eval(, new Function, srcdoc, on-attributes, style=: no match in the changed lines; the only hit in app/public is ask.style.setProperty at demo.js:506 (CSSOM, old, not in the diff)",
+          "http(s)://, url(, @import, <link, <script, src=, fetch(, localStorage, cookie in the added lines: no match",
+          "handoff, orch, decisions, REQ-n, ISS-n, WF-0n, computer paths: no match (two old 'decision 0083' comments in the singular)",
+          "secret patterns on the whole output: 'tokens' of CSS and a numeric token counter only"
+        ]
+      },
+      {
+        "check": "real Chrome 157 headless, own CDP driver (Node 22 WebSocket), real server of the scratch copy of the open build",
+        "output": [
+          "how.html 3 windows x ru, en, kk: csp [], console errors [], nowCount 1, onAttrs 0, controls in block 0, scroll false; ?lang=kk shows Russian",
+          "demo real flow ru, en: csp [], r-side holds section.now, fine 0, label and sentence present",
+          "demo hostile bodies ru, en: hostileShown true, injected 0, imgs 0, svg[onload] 0, inline scripts 0, __pwn null, styleAttrInBlock 0, csp []",
+          "demo result 500: block and panel stand, no sentence",
+          "storage with markup values, storage that throws: block built in Russian, nothing injected, csp []"
+        ]
+      },
+      {
+        "check": "cd tools && npm run -s handoffs-check; npm run -s traces (Node 22), run before writing this result",
+        "output": [
+          "handoffs-check: 1 finding, handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 H4 (an earlier run, the same one the developer's report named); files checked 1543; no finding names this run",
+          "traces: files checked 2874, traces 0, skipped 67"
+        ]
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Not run, by the owner's rule for this PC: npm run check, any app npm script, tools test scripts, e2e tests (they run on GitHub from the ci/* branch). Scratch work lies outside the project in my own subfolder of the session scratchpad; nothing was written to the project except this result."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "For REVIEWER, not a security finding: the old comments 'decision 0083' in demo.js (lines 141 and 185) use the singular; check-public bans only the whole word 'decisions', so they pass, as at the base."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-11-22T14:40:43Z",
+    "text": "Paths of this computer were replaced by placeholders in this file at commit (AP-050; docs/workflows/handoffs.md, «Bookkeeping check» item 5): <scratch> is the working folder of the session outside the project, <node22> the folder of Node 22 outside the project, <Sai> the root of the project, <home> the home folder, <outside the project> any other place outside the project. Nothing else in the file was changed."
+  }
+}

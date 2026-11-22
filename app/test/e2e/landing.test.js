@@ -1,4 +1,4 @@
-/* global document, Node, window */
+/* global document, getComputedStyle, Node, window */
 import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
@@ -84,6 +84,593 @@ const DEMO_ROUTES = new Set(["/api/demo/questionnaire", "/api/demo/result"]);
 async function tap(problems, where, env, lang, index, next) {
   await answerAndWait(env.page, index, next);
   problems.add(where, await shownTextFindings(env.page, lang));
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// REQ-113 (the visitor status block): the readers and the checks that LD-3 (how.html), LD-6 (the demo result) and
+// LD-9 (the public set) share. The oracle is the test's own: the words come from the function `words(key)` that
+// the caller gives (the texts module for the local server, the output's module for the public set); the three rows,
+// the marks, the skeleton and the geometry rules are written here.
+
+/** The three rows of the status block (the look 7.22): the keys of the title, of the line and of the mark. */
+const STATUS_ROWS = Object.freeze([
+  Object.freeze({
+    title: "now_demo_t",
+    line: "now_demo_s",
+    mark: "stat_on",
+    cls: "stat on",
+  }),
+  Object.freeze({
+    title: "now_idea_t",
+    line: "now_idea_s",
+    mark: "stat_off",
+    cls: "stat",
+  }),
+  Object.freeze({
+    title: "now_build_t",
+    line: "now_build_s",
+    mark: "stat_off",
+    cls: "stat",
+  }),
+]);
+
+/**
+ * The shape of the status block, the same on the result and on how.html (REQ-113 design 4.2): an element is
+ * `<tag`, then (when it has attributes other than `data-t`) a space and the attributes sorted by name as
+ * `name=value` joined by commas, `>`, its child elements, `</>`; text and `data-t` are left out.
+ */
+const NOW_SKELETON =
+  "<section aria-labelledby=now-title,class=info now><h3 id=now-title></><ul class=rl>" +
+  "<li><span class=stat on></><span class=rn><b></><small></></></>" +
+  "<li><span class=stat></><span class=rn><b></><small></></></>" +
+  "<li><span class=stat></><span class=rn><b></><small></></></>" +
+  "</><p></></>";
+
+/** The 15 keys of REQ-113 criterion 1 (13 new, two changed): the public set must keep each with its ru and en values. */
+const STATUS_KEYS = Object.freeze([
+  "now_title",
+  "now_demo_t",
+  "now_demo_s",
+  "now_idea_t",
+  "now_idea_s",
+  "now_build_t",
+  "now_build_s",
+  "stat_on",
+  "stat_off",
+  "now_closing",
+  "how_plan_note",
+  "how_stage_1_note",
+  "demo_accuracy_note",
+  "idea_panel_lead",
+  "demo_accuracy",
+]);
+
+/** The windows of the layout cells of LD-6 row 15: the three of the matrix and the two between the phones. */
+const CELL_WINDOWS = Object.freeze([
+  ...WINDOWS,
+  { name: "360x800", width: 360, height: 800 },
+  { name: "380x800", width: 380, height: 800 },
+]);
+
+/**
+ * Reads the status block inside `scope` (a selector), as plain data: how many blocks stand there, and for the
+ * first one its heading, the target of its label, its rows (the mark, its class, the mark's `innerText`, its
+ * fill, the title, the line, the boxes of the mark and of the title block), its closing paragraph (the
+ * computed size and colour against those of `body`), the controls inside, its shape and its box.
+ * @param {import("playwright-core").Page} page
+ * @param {string} scope
+ */
+function readBlock(page, scope) {
+  return page.evaluate((/** @type {string} */ within) => {
+    const text = (/** @type {Element | null} */ e) =>
+      (e?.textContent ?? "").replace(/\s+/g, " ").trim();
+    /** @param {Element} e @returns {string} */
+    const skeletonOf = (e) => {
+      const attrs = [...e.attributes]
+        .filter((a) => a.name !== "data-t")
+        .sort((a, b) => (a.name < b.name ? -1 : 1))
+        .map((a) => `${a.name}=${a.value}`)
+        .join(",");
+      return `<${e.tagName.toLowerCase()}${attrs === "" ? "" : ` ${attrs}`}>${[...e.children].map(skeletonOf).join("")}</>`;
+    };
+    /** @param {Element} e */
+    const box = (e) => {
+      const r = e.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    };
+    const blocks = [...document.querySelectorAll(`${within} section.info.now`)];
+    const root = blocks[0];
+    if (root === undefined) return { count: 0, block: null };
+    const h3 = root.querySelector("h3");
+    const labelled = root.getAttribute("aria-labelledby");
+    const closing = root.lastElementChild;
+    const bodyColor = getComputedStyle(document.body).color;
+    // Words that stand in no part of the block (a bare text node in the section, the list or a row, or after the
+    // closing paragraph): the shape of the elements cannot see them.
+    /** @type {string[]} */
+    const stray = [];
+    const SHOW_TEXT = 0x4;
+    const walker = document.createTreeWalker(root, SHOW_TEXT);
+    for (let n = walker.nextNode(); n !== null; n = walker.nextNode()) {
+      const holder = n.parentElement;
+      const own =
+        holder !== null &&
+        (holder === closing || holder.matches("h3, span.stat, b, small"));
+      const said = (n.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (!own && said !== "") stray.push(said);
+    }
+    const rows = [...root.querySelectorAll("ul.rl > li")].map((li) => {
+      const mark = /** @type {HTMLElement} */ (li.querySelector(".stat"));
+      const title = /** @type {Element} */ (li.querySelector(".rn"));
+      const style = getComputedStyle(mark);
+      return {
+        mark: text(mark),
+        markInner: mark.innerText,
+        markClass: mark.getAttribute("class"),
+        fill: { background: style.backgroundColor, color: style.color },
+        title: text(li.querySelector("b")),
+        line: text(li.querySelector("small")),
+        markBox: box(mark),
+        titleBox: box(title),
+      };
+    });
+    return {
+      count: blocks.length,
+      block: {
+        heading: text(h3),
+        labelledByHeading:
+          h3 !== null &&
+          labelled !== null &&
+          document.getElementById(labelled) === h3,
+        text: text(root),
+        stray,
+        rows,
+        closing:
+          closing === null
+            ? null
+            : {
+                tag: closing.tagName.toLowerCase(),
+                text: text(closing),
+                cls: closing.getAttribute("class"),
+                size: parseFloat(getComputedStyle(closing).fontSize),
+                color: getComputedStyle(closing).color,
+                bodyColor,
+              },
+        controls: root.querySelectorAll(
+          "a, button, input, select, textarea, form",
+        ).length,
+        skeleton: skeletonOf(root),
+        box: box(root),
+        everyShown: [root, ...root.querySelectorAll("*")].every((e) =>
+          e.checkVisibility({ checkVisibilityCSS: true }),
+        ),
+      },
+    };
+  }, scope);
+}
+
+/** @typedef {Awaited<ReturnType<typeof readBlock>>} BlockRead */
+
+/**
+ * The status block as REQ-113 criteria 3 and 6 want it, against the words the caller gives: one block, its
+ * heading and the label that names it, three rows with the title and the line of each part, the marks in
+ * order (words, not only a colour; the mark `Working` filled and the other two plain), the closing paragraph as
+ * body text of at least 16 px, no link, button or field, the markup of the design, and no word outside the heading,
+ * the rows and the closing paragraph.
+ * @param {BlockRead} read
+ * @param {(key: string) => string} words
+ * @param {string} where
+ */
+function checkBlock(read, words, where) {
+  assert.equal(read.count, 1, `${where}: exactly one status block`);
+  const b = read.block;
+  assert.ok(b !== null, `${where}: exactly one status block`);
+  assert.equal(
+    b.heading,
+    norm(words("now_title")),
+    `${where}: the heading of the status block`,
+  );
+  assert.equal(
+    b.labelledByHeading,
+    true,
+    `${where}: the heading of the status block labels it`,
+  );
+  assert.deepEqual(
+    b.rows.map((r) => [r.title, r.line]),
+    STATUS_ROWS.map((r) => [norm(words(r.title)), norm(words(r.line))]),
+    `${where}: three rows with the title and the line of each part`,
+  );
+  assert.deepEqual(
+    b.rows.map((r) => [r.mark, r.markClass]),
+    STATUS_ROWS.map((r) => [norm(words(r.mark)), r.cls]),
+    `${where}: the marks in order`,
+  );
+  for (const r of b.rows)
+    assert.equal(r.markInner, r.mark, `${where}: a mark reads as its word`);
+  // The mark «Working» is filled and the marks «Not yet» are plain: they differ by the computed fill and colour, so the
+  // eye tells them apart as well as the word does.
+  const [on, ...off] = b.rows.map((r) => r.fill);
+  for (const plain of off) {
+    assert.notEqual(
+      on.background,
+      plain.background,
+      `${where}: the mark Working is filled, the others are plain`,
+    );
+    assert.notEqual(
+      on.color,
+      plain.color,
+      `${where}: the mark Working has its own colour`,
+    );
+    assert.equal(
+      plain.background,
+      "rgba(0, 0, 0, 0)",
+      `${where}: a mark Not yet has no fill`,
+    );
+  }
+  assert.notEqual(
+    on.background,
+    "rgba(0, 0, 0, 0)",
+    `${where}: the mark Working is filled, the others are plain`,
+  );
+  const c = b.closing;
+  assert.ok(c !== null, `${where}: the closing paragraph`);
+  assert.equal(c.tag, "p", `${where}: the closing paragraph is the last child`);
+  assert.equal(
+    c.text,
+    norm(words("now_closing")),
+    `${where}: the closing paragraph says its words`,
+  );
+  assert.ok(
+    c.cls === null && c.size >= 16 && c.color === c.bodyColor,
+    `${where}: the closing paragraph is body text of at least 16 px`,
+  );
+  assert.equal(
+    b.controls,
+    0,
+    `${where}: the status block holds no link, button or field`,
+  );
+  assert.equal(
+    b.skeleton,
+    NOW_SKELETON,
+    `${where}: the status block has the markup of the design`,
+  );
+  assert.deepEqual(
+    b.stray,
+    [],
+    `${where}: the status block holds its words and nothing more`,
+  );
+  assert.equal(
+    b.everyShown,
+    true,
+    `${where}: every part of the status block is visible`,
+  );
+}
+
+/**
+ * Where the mark of each row stands against its title block (the look 7.22): from 480 px up right of it and with
+ * its top at the top of the title block, below 480 px above it.
+ * @param {BlockRead} read
+ * @param {number} width the window's width
+ * @param {string} where
+ */
+function checkRowSides(read, width, where) {
+  const b = read.block;
+  assert.ok(b !== null, `${where}: the status block is there`);
+  for (const r of b.rows)
+    if (width >= 480) {
+      assert.ok(
+        r.markBox.left >= r.titleBox.right - 0.5,
+        `${where}: the mark of a row stands right of its title`,
+      );
+      assert.ok(
+        Math.abs(r.markBox.top - r.titleBox.top) <= 0.5,
+        `${where}: the mark of a row starts at the top of its title`,
+      );
+    } else
+      assert.ok(
+        r.markBox.bottom <= r.titleBox.top + 0.5,
+        `${where}: the mark of a row stands above its title`,
+      );
+}
+
+/**
+ * The boxes of the parts of the demo result that the look 8.4 orders: the receipt block, the side area, the status
+ * block, the idea panel, the answers, the lists.
+ * @param {import("playwright-core").Page} page
+ */
+function readParts(page) {
+  return page.evaluate(() => {
+    /** @param {string} s */
+    const box = (s) => {
+      const e = document.querySelector(`#demo ${s}`);
+      if (e === null) return null;
+      const r = e.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    };
+    return {
+      sum: box(".r-sum"),
+      side: box(".r-side"),
+      now: box("section.info.now"),
+      idea: box(".idea"),
+      answers: box(".r-ans"),
+      lists: box(".r-lines"),
+    };
+  });
+}
+
+/**
+ * Reads how.html as REQ-113 criterion 6 describes it: the order of the block, the plan note, the steps, the stages
+ * and the panels; the two notes (class, computed size and colour); each stage's children, marks and names; the
+ * four step buttons and what they hold.
+ * @param {import("playwright-core").Page} page
+ */
+function readHow(page) {
+  return page.evaluate(() => {
+    const text = (/** @type {Element | null} */ e) =>
+      (e?.textContent ?? "").replace(/\s+/g, " ").trim();
+    /** @param {Element | null} a @param {Element | null} b whether b follows a and is no part of it */
+    const follows = (a, b) =>
+      a !== null &&
+      b !== null &&
+      !a.contains(b) &&
+      (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    const intro = document.querySelector("section.intro");
+    const block = document.querySelector("section.info.now");
+    const plan = document.querySelector('[data-t="how_plan_note"]');
+    const steps = document.querySelector("ol.steps");
+    const stages = document.querySelector("div.how-stages");
+    const panels = document.querySelector("div.panels");
+    const bodyColor = getComputedStyle(document.body).color;
+    const notes = ["how_plan_note", "how_stage_1_note"].map((key) => {
+      const e = document.querySelector(`[data-t="${key}"]`);
+      return {
+        key,
+        text: text(e),
+        cls: e?.getAttribute("class") ?? null,
+        size: e === null ? 0 : parseFloat(getComputedStyle(e).fontSize),
+        color: e === null ? "" : getComputedStyle(e).color,
+        bodyColor,
+        shown: e?.checkVisibility({ checkVisibilityCSS: true }) ?? false,
+      };
+    });
+    const stageList = [1, 2, 3, 4].map((n) => {
+      const s = document.getElementById(`stage-${n}`);
+      return {
+        n,
+        kids: [...(s?.children ?? [])].map((e) => ({
+          tag: e.tagName.toLowerCase(),
+          cls: e.getAttribute("class"),
+          text: text(e),
+          marks: [...e.querySelectorAll(".stat")].map((m) => ({
+            text: text(m),
+            cls: m.getAttribute("class"),
+            name: text(m.nextElementSibling),
+            shown: m.checkVisibility({ checkVisibilityCSS: true }),
+          })),
+        })),
+      };
+    });
+    const buttons = [...document.querySelectorAll("ol.steps button")].map(
+      (b) => ({
+        step: b.getAttribute("data-step"),
+        pressed: b.getAttribute("aria-pressed"),
+        name: text(b.querySelector("b")),
+        sub: text(b.querySelector("b + span")),
+      }),
+    );
+    return {
+      order: {
+        introBeforeBlock: follows(intro, block),
+        blockBeforePlan: follows(block, plan),
+        planBeforeSteps: follows(plan, steps),
+        stepsBeforeStages: follows(steps, stages),
+        blockOutsidePanels:
+          block !== null &&
+          (panels === null ||
+            (!panels.contains(block) && follows(block, panels))),
+        planOutside:
+          plan !== null &&
+          block !== null &&
+          steps !== null &&
+          !block.contains(plan) &&
+          !steps.contains(plan) &&
+          plan.closest("button") === null,
+      },
+      notes,
+      stages: stageList,
+      buttons,
+      inSteps:
+        steps?.querySelectorAll(
+          '.stat, .stat-line, [data-t="how_plan_note"], [data-t="how_stage_1_note"]',
+        ).length ?? -1,
+    };
+  });
+}
+
+/**
+ * how.html as REQ-113 criteria 6 and 7 want it in a language: the status block (and, from 760 px up, no wider than
+ * 640 px), the order of the parts, the plan note after the block and before the stages, each stage's marks, note and
+ * text in order, the two notes as body text, the four step buttons with no mark or note in them.
+ * @param {import("playwright-core").Page} page
+ * @param {(key: string) => string} words
+ * @param {string} where
+ * @param {number} width the window's width
+ * @param {string} lang
+ */
+async function checkHowPage(page, words, where, width, lang) {
+  const block = await readBlock(page, "main");
+  checkBlock(block, words, where);
+  assert.ok(block.block !== null);
+  if (lang === "en")
+    assert.doesNotMatch(
+      block.block.text,
+      /\p{Script=Cyrillic}/u,
+      `${where}: no Russian left in the status block`,
+    );
+  if (width >= 760)
+    assert.ok(
+      block.block.box.right - block.block.box.left <= 640.5,
+      `${where}: the status block is no wider than 640 px`,
+    );
+  checkRowSides(block, width, where);
+  const how = await readHow(page);
+  assert.deepEqual(
+    [
+      how.order.introBeforeBlock,
+      how.order.blockBeforePlan,
+      how.order.blockOutsidePanels,
+    ],
+    [true, true, true],
+    `${where}: the block follows the intro and precedes the steps`,
+  );
+  assert.deepEqual(
+    [
+      how.order.planBeforeSteps,
+      how.order.stepsBeforeStages,
+      how.order.planOutside,
+    ],
+    [true, true, true],
+    `${where}: the plan note stands after the block and before the stages`,
+  );
+  for (const note of how.notes) {
+    assert.equal(
+      note.text,
+      norm(words(note.key)),
+      `${where}: ${note.key} says its words`,
+    );
+    assert.ok(
+      note.cls === null && note.size >= 16 && note.color === note.bodyColor,
+      `${where}: a note is body text`,
+    );
+    assert.equal(note.shown, true, `${where}: ${note.key} is visible`);
+  }
+  for (const stage of how.stages) {
+    const want = [
+      ["h2", null],
+      ["p", "stat-line"],
+      ...(stage.n === 1 ? [["p", null]] : []),
+      ["p", null],
+    ];
+    assert.deepEqual(
+      stage.kids.map((k) => [k.tag, k.cls]),
+      want,
+      `${where}: the stage ${stage.n} holds its marks, its note and its text in order`,
+    );
+    const [head, marks, ...rest] = stage.kids;
+    assert.equal(
+      head.text,
+      `${stage.n} · ${norm(words(`stage_${stage.n}`))}`,
+      `${where}: the stage ${stage.n} keeps its name`,
+    );
+    const marked =
+      stage.n === 1
+        ? [
+            ["stat_on", "stat on", "now_demo_t"],
+            ["stat_off", "stat", "now_idea_t"],
+          ]
+        : [["stat_off", "stat", null]];
+    assert.deepEqual(
+      marks.marks.map((m) => [m.text, m.cls, m.name]),
+      marked.map(([mark, cls, name]) => [
+        norm(words(mark)),
+        cls,
+        name === null ? "" : norm(words(name)),
+      ]),
+      `${where}: the stage ${stage.n} holds its marks, its note and its text in order`,
+    );
+    assert.ok(
+      marks.marks.every((m) => m.shown),
+      `${where}: the marks of the stage ${stage.n} are visible`,
+    );
+    assert.deepEqual(
+      rest.map((k) => k.text),
+      [
+        ...(stage.n === 1 ? [norm(words("how_stage_1_note"))] : []),
+        norm(words(`how_stage_${stage.n}_text`)),
+      ],
+      `${where}: the stage ${stage.n} holds its marks, its note and its text in order`,
+    );
+  }
+  assert.deepEqual(
+    how.buttons,
+    [1, 2, 3, 4].map((n) => ({
+      step: String(n),
+      pressed: "false",
+      name: norm(words(`stage_${n}`)),
+      sub: norm(words(`stage_${n}_sub`)),
+    })),
+    `${where}: the stage buttons carry no mark and no note`,
+  );
+  assert.equal(
+    how.inSteps,
+    0,
+    `${where}: the stage buttons carry no mark and no note`,
+  );
+}
+
+/**
+ * The parts of a demo result that REQ-113 criteria 3 to 5 name, on a result `readResult` has read: the status
+ * block (rows 2 to 8 of LD-6), its place against the lists and the idea panel, the panel's title, honest lead and
+ * button with no grey line, and the accuracy row with its label and sentence (a recommended result) or none (the
+ * no-match result), and no whole word «точность» or «accuracy» in ru and en.
+ * @param {Awaited<ReturnType<typeof readResult>>} got
+ * @param {string} lang
+ * @param {(key: string) => string} words
+ * @param {string} where
+ * @param {boolean} recommended whether the receipt names a solution
+ */
+function checkStatus(got, lang, words, where, recommended) {
+  checkBlock(got.now, words, where);
+  assert.ok(
+    got.blockBeforeIdea && !got.blockInLists,
+    `${where}: the block is outside the lists of the result`,
+  );
+  assert.deepEqual(
+    got.linkAfterBlock,
+    {
+      text: words("describe_idea"),
+      href: "/how.html#describe-idea",
+      isIdeaLink: true,
+    },
+    `${where}: the link of the panel is the first link after the block`,
+  );
+  assert.deepEqual(
+    got.ideaKids,
+    [
+      ["h3", norm(words("idea_panel_title"))],
+      ["p", norm(words("idea_panel_lead"))],
+      ["a", norm(words("describe_idea"))],
+    ],
+    `${where}: the idea panel holds its title, the honest lead and the button`,
+  );
+  assert.equal(got.fineCount, 0, `${where}: the small grey line is gone`);
+  if (recommended) {
+    assert.equal(
+      got.accLabel,
+      norm(words("demo_accuracy")),
+      `${where}: the label of the accuracy row`,
+    );
+    assert.deepEqual(
+      got.accNote,
+      {
+        count: 1,
+        text: norm(words("demo_accuracy_note")),
+        afterProg: true,
+      },
+      `${where}: the sentence stands in the accuracy row after the pips`,
+    );
+  } else
+    assert.deepEqual(
+      got.accNote,
+      { count: 0, text: "", afterProg: false },
+      `${where}: no sentence of the accuracy row on a no-match result`,
+    );
+  if (lang === "ru" || lang === "en")
+    assert.doesNotMatch(
+      got.resultText,
+      /(?<![\p{L}\p{N}])(?:точность|accuracy)(?![\p{L}\p{N}])/iu,
+      `${where}: no word accuracy on the result`,
+    );
 }
 
 test(
@@ -345,6 +932,127 @@ test(
       "the questionnaire is asked again in the new language",
     );
     await readState(problems, "demo switch", env, "en");
+
+    // REQ-113 criteria 6 and 7: how.html shows the status block, the plan note and the marks of the four stages in
+    // the language of the page, in both colour schemes, and a switch of the language keeps them in the language of
+    // the button, with no reload.
+    {
+      const how = await newPage(browser, t, { port });
+      await how.page.goto(`${origin}/how.html?lang=ru`);
+      await pageReady(how.page, "/how.html", "ru");
+      /** @param {string} lang */
+      const read = async (lang) => {
+        for (const scheme of /** @type {const} */ (["light", "dark"])) {
+          await how.page.emulateMedia({ colorScheme: scheme });
+          await framesPass(how.page, 2);
+          await checkHowPage(
+            how.page,
+            (key) => say(key, lang),
+            `how.html ${lang} ${scheme}`,
+            1280,
+            lang,
+          );
+        }
+        await how.page.emulateMedia({ colorScheme: "light" });
+        await readState(problems, `how.html ${lang}`, how, lang);
+      };
+      await read("ru");
+      for (const lang of ["kk", "en", "ru", "en"]) {
+        await how.page.click(`[data-lang="${lang}"]`);
+        await pageReady(how.page, "/how.html", lang);
+        await read(lang);
+      }
+    }
+    // At 390x844 the block starts inside the first screen (the page at its top), and each mark stands above its title.
+    for (const scheme of /** @type {const} */ (["light", "dark"])) {
+      const phone = await newPage(browser, t, {
+        port,
+        viewport: { width: 390, height: 844 },
+        colorScheme: scheme,
+      });
+      for (const lang of LOCAL_LANGS) {
+        const where = `how.html ${lang} ${scheme} 390x844`;
+        await phone.page.goto(`${origin}/how.html?lang=${lang}`);
+        await pageReady(phone.page, "/how.html", lang);
+        await framesPass(phone.page, 2);
+        const first = await readBlock(phone.page, "main");
+        const top = first.block?.box.top ?? -1;
+        const scrolled = await phone.page.evaluate(() => window.scrollY);
+        if (scrolled !== 0 || !(top >= 0 && top < 844))
+          problems.add(where, [
+            "how.html: the status block starts inside the first screen at 390x844",
+          ]);
+        await checkHowPage(
+          phone.page,
+          (key) => say(key, lang),
+          where,
+          390,
+          lang,
+        );
+        await readState(problems, where, phone, lang);
+      }
+    }
+    // A storage that throws on read and on write: the block stands on how.html in ru, the button en turns it English,
+    // and a short pass to a result shows the block.
+    {
+      const bad = await newPage(browser, t, { port });
+      await bad.context.addInitScript(() => {
+        const fail = () => {
+          throw new Error("storage planted to fail");
+        };
+        Storage.prototype.getItem = fail;
+        Storage.prototype.setItem = fail;
+      });
+      const { page } = bad;
+      await page.goto(`${origin}/how.html`);
+      await pageReady(page, "/how.html", "ru");
+      checkBlock(
+        await readBlock(page, "main"),
+        (key) => say(key, "ru"),
+        "a throwing storage: the status block",
+      );
+      await page.click('[data-lang="en"]');
+      await pageReady(page, "/how.html", "en");
+      checkBlock(
+        await readBlock(page, "main"),
+        (key) => say(key, "en"),
+        "a throwing storage: the status block in en",
+      );
+      await page.goto(`${origin}/demo.html?lang=en`);
+      await pageReady(page, "/demo.html", "en");
+      const fixture = answerFixtures().find((f) => f.name === "landing");
+      assert.ok(fixture, "the landing fixture");
+      for (const q of en.questions) {
+        await waitHeading(page, q.title);
+        await page
+          .locator("#demo .card")
+          .nth(q.options.findIndex((o) => o.id === fixture.answers[q.id]))
+          .click();
+      }
+      await waitHeading(page, say("demo_result_title", "en"));
+      await page.waitForSelector("#demo .rc-kind, #demo .rc-nomatch");
+      checkBlock(
+        await readBlock(page, "#demo"),
+        (key) => say(key, "en"),
+        "a throwing storage: the status block on a result",
+      );
+      await readState(problems, "a throwing storage how", bad, "en");
+    }
+    // No script: the page holds the block, the marks and the notes with the ru values, and they are visible.
+    {
+      const bare = await newPage(browser, t, { port, javaScript: false });
+      await bare.page.goto(`${origin}/how.html`);
+      await bare.page.waitForSelector("section.info.now");
+      await checkHowPage(
+        bare.page,
+        (key) => say(key, "ru"),
+        "no script: the status block holds the ru values",
+        1280,
+        "ru",
+      );
+      problems.add("no script", await shownTextFindings(bare.page, "ru"));
+      problems.add("no script", reportedProblems(bare));
+    }
     assert.deepEqual(problems.lines(), []);
   },
 );
@@ -936,11 +1644,14 @@ test(
 
 /**
  * Reads the result of the demo on the screen: the heading, the receipt, the lists of the result by their heading,
- * the idea panel's link and the chips.
+ * the idea panel's link and the chips, and (REQ-113) the status block, the panel's children and the count of the
+ * grey line, the accuracy row (label, the class of each pip, the count text, the sentence and whether it follows
+ * the pips), the whole text of the demo, the place of the block against the panel and the lists, and the first
+ * link after the block.
  * @param {import("playwright-core").Page} page
  */
-function readResult(page) {
-  return page.evaluate(() => {
+async function readResult(page) {
+  const read = await page.evaluate(() => {
     const text = (/** @type {Element | null} */ e) =>
       (e?.textContent ?? "").replace(/\s+/g, " ").trim();
     const lists = [...document.querySelectorAll("#demo .r-lines section")].map(
@@ -950,7 +1661,52 @@ function readResult(page) {
       }),
     );
     const link = document.querySelector("#demo .idea a");
+    const idea = document.querySelector("#demo .idea");
+    const block = document.querySelector("#demo section.info.now");
+    const prog = document.querySelector("#demo .rc-acc .prog");
+    const sentence = document.querySelector("#demo .rc-acc > p");
+    const first =
+      block === null
+        ? null
+        : ([...document.querySelectorAll("#demo a")].find(
+            (a) =>
+              !block.contains(a) &&
+              (block.compareDocumentPosition(a) &
+                Node.DOCUMENT_POSITION_FOLLOWING) !==
+                0,
+          ) ?? null);
     return {
+      ideaKids:
+        idea === null
+          ? []
+          : [...idea.children].map((e) => [e.tagName.toLowerCase(), text(e)]),
+      fineCount: document.querySelectorAll("#demo .fine").length,
+      accLabel: text(document.querySelector("#demo .rc-acc .lbl")),
+      accPips: [...document.querySelectorAll("#demo .rc-acc .pp i")].map(
+        (i) => i.className,
+      ),
+      accPt: text(document.querySelector("#demo .rc-acc .pt")),
+      accNote: {
+        count: document.querySelectorAll("#demo .rc-acc > p").length,
+        text: text(sentence),
+        afterProg: prog !== null && prog.nextElementSibling === sentence,
+      },
+      resultText: document.getElementById("demo")?.innerText ?? "",
+      blockBeforeIdea:
+        block !== null &&
+        idea !== null &&
+        (block.compareDocumentPosition(idea) &
+          Node.DOCUMENT_POSITION_FOLLOWING) !==
+          0,
+      blockInLists: block !== null && block.closest(".r-lines") !== null,
+      linkAfterBlock:
+        first === null
+          ? null
+          : {
+              text: text(first),
+              href: first.getAttribute("href"),
+              isIdeaLink: first === link,
+            },
       heading: text(document.querySelector("#demo .r-sum h2")),
       kind: text(document.querySelector("#demo .rc-kind")),
       summary: text(document.querySelector("#demo .rc-text")),
@@ -972,6 +1728,7 @@ function readResult(page) {
       ),
     };
   });
+  return { ...read, now: await readBlock(page, "#demo") };
 }
 
 test(
@@ -992,12 +1749,39 @@ test(
         reducedMotion: "reduce",
       });
       const { page } = env;
+      // The pass of REQ-113 criterion 5: the answers of the fixture landing, the question storage left to «Не знаю».
+      // If the engine's data change so that these answers name no solution, the pass fails here and is replaced by
+      // another that does, never dropped.
+      const landing = fixtures.find((f) => f.name === "landing");
+      assert.ok(
+        landing !== undefined && "storage" in landing.answers,
+        "the fixture landing answers the question storage",
+      );
       const passes = [
         ...fixtures.map((f) => ({
           name: f.name,
           answers: /** @type {Record<string, string> | null} */ (f.answers),
+          cells: f.name === "landing",
+          mustRecommend: false,
         })),
-        { name: "five Не знаю", answers: null },
+        {
+          name: "landing with Не знаю on storage",
+          answers: /** @type {Record<string, string> | null} */ (
+            Object.fromEntries(
+              Object.entries(landing.answers).filter(
+                ([id]) => id !== "storage",
+              ),
+            )
+          ),
+          cells: false,
+          mustRecommend: true,
+        },
+        {
+          name: "five Не знаю",
+          answers: null,
+          cells: true,
+          mustRecommend: false,
+        },
       ];
       for (const [number, pass] of passes.entries()) {
         const where = `${lang} ${pass.name}`;
@@ -1020,8 +1804,15 @@ test(
             `${where} q${i + 1}`,
             await shownTextFindings(page, lang),
           );
+          assert.equal(
+            await page.locator("#demo .now").count(),
+            0,
+            i === intake.questions.length - 1
+              ? `${where}: no status block on the last question`
+              : `${where} q${i + 1}: no status block on a question screen`,
+          );
           let index = q.options.length;
-          if (pass.answers !== null) {
+          if (pass.answers !== null && pass.answers[q.id] !== undefined) {
             index = q.options.findIndex((o) => o.id === pass.answers?.[q.id]);
             assert.ok(index >= 0, `${where}: the fixture answers ${q.id}`);
             chosen[q.id] = q.options[index].id;
@@ -1064,6 +1855,38 @@ test(
         );
         assert.equal(got.idea.text, say("describe_idea", lang), where);
         assert.equal(got.idea.href, "/how.html#describe-idea", where);
+        const recommended = answer.recommended.length > 0;
+        if (pass.mustRecommend)
+          assert.ok(
+            recommended,
+            `${where}: the pass has a recommended solution`,
+          );
+        /** @param {string} key */
+        const words = (key) => say(key, lang);
+        checkStatus(got, lang, words, where, recommended);
+        // The count of the receipt: a given answer is one, «Не знаю» is half; the pips show the whole answers full
+        // and the skipped one as a half pip, and the text says the whole number (REQ-113 criterion 5).
+        const n = intake.questions.length;
+        const known = intake.questions.filter(
+          (q) => pass.answers?.[q.id] !== undefined,
+        ).length;
+        const count = known + (n - known) / 2;
+        if (recommended) {
+          assert.deepEqual(
+            got.accPips,
+            Array.from({ length: n }, (_v, k) =>
+              count >= k + 1 ? "on" : count > k ? "half" : "",
+            ),
+            known === n
+              ? `${where}: five whole answers fill five pips`
+              : `${where}: the pips of a skipped answer`,
+          );
+          assert.equal(
+            got.accPt,
+            filled(say("demo_k_of_n", lang), { k: Math.floor(count), n }),
+            `${where}: the count text`,
+          );
+        }
         assert.equal(
           got.chips.length,
           5,
@@ -1158,6 +1981,101 @@ test(
         await readState(problems, `${where} result`, env, lang, [], {
           result: answer.recommended[0]?.name ?? intake.noMatch,
         });
+        // REQ-113 criterion 10: the result in each window of the cells and in both colour schemes, on this page (the
+        // window and the scheme are set, two frames pass, then the page is read): no layout finding, the block above
+        // the panel, the parts in the order of the look 8.4, the mark of each row on its side of the title.
+        if (pass.cells) {
+          for (const win of CELL_WINDOWS)
+            for (const scheme of /** @type {const} */ (["light", "dark"])) {
+              const cell = `${where} ${win.name} ${scheme}`;
+              await page.setViewportSize({
+                width: win.width,
+                height: win.height,
+              });
+              await page.emulateMedia({ colorScheme: scheme });
+              await framesPass(page, 2);
+              problems.add(`status block ${cell}`, await layoutFindings(page));
+              const { sum, side, now, idea, answers, lists } =
+                await readParts(page);
+              assert.ok(
+                sum !== null &&
+                  side !== null &&
+                  now !== null &&
+                  idea !== null &&
+                  answers !== null &&
+                  lists !== null,
+                `${cell}: the parts of the result are there`,
+              );
+              if (now.bottom > idea.top)
+                problems.add(cell, [
+                  "result: the status block stands above Описать идею",
+                ]);
+              const tops = (/** @type {Array<{ top: number }>} */ list) =>
+                list.every((p, k) => k === 0 || list[k - 1].top < p.top);
+              assert.ok(
+                win.width >= 1000
+                  ? side.left >= sum.right - 0.5 &&
+                      Math.abs(side.top - sum.top) <= 0.5
+                  : tops(
+                      recommended
+                        ? [sum, side, answers, lists]
+                        : [sum, lists, side, answers],
+                    ),
+                `${cell}: the parts of the result stand in the order of 8.4`,
+              );
+              checkRowSides(await readBlock(page, "#demo"), win.width, cell);
+            }
+          await page.setViewportSize({ width: 1280, height: 800 });
+          await page.emulateMedia({ colorScheme: "light" });
+        }
+        // REQ-113 criterion 7: a language chosen on a result shows the lead, the label, the sentence, the count text and
+        // the block in that language, and the pips and the answers stay (decisions/0124 О17 for the survey).
+        if (number === 1 && recommended) {
+          const other = lang === "en" ? "ru" : "en";
+          /** @param {string} key */
+          const there = (key) => say(key, other);
+          const after = `${where}: after a switch to ${other} the`;
+          await page.click(`[data-lang="${other}"]`);
+          await waitHeading(page, say("demo_result_title", other));
+          await shownKind(page, other);
+          const again = await readResult(page);
+          checkBlock(again.now, there, `${where} after a switch to ${other}`);
+          assert.deepEqual(
+            again.ideaKids[1],
+            ["p", norm(there("idea_panel_lead"))],
+            `${after} lead is in ${other}`,
+          );
+          assert.equal(
+            again.accLabel,
+            norm(there("demo_accuracy")),
+            `${after} label is in ${other}`,
+          );
+          assert.equal(
+            again.accNote.text,
+            norm(there("demo_accuracy_note")),
+            `${after} sentence is in ${other}`,
+          );
+          assert.equal(
+            again.accPt,
+            filled(there("demo_k_of_n"), {
+              k: Math.floor(count),
+              n,
+            }),
+            `${after} count text is in ${other}`,
+          );
+          assert.deepEqual(
+            again.accPips,
+            got.accPips,
+            `${after} pips are as they were`,
+          );
+          assert.deepEqual(again.chips.length, 5, `${after} answers are kept`);
+          await readState(
+            problems,
+            `${where} switched to ${other}`,
+            env,
+            other,
+          );
+        }
         // «Описать идею» opens the part of how.html and asks for nothing but the files of the page.
         if (number === 0) {
           const seen = /** @type {string[]} */ ([]);
@@ -1198,6 +2116,140 @@ test(
           clearReports(env);
         }
       }
+    }
+    // REQ-113 design 5, rows 4 to 6: the block in the states of the demo's requests (ru, a fresh page each). A
+    // result request that is held, that fails with 500 or is refused leaves the block and the panel as they stood,
+    // and «Повторить» fills the receipt without building the block again; a questionnaire that fails shows no block.
+    const ru = intakeIn("ru");
+    const ANSWERS = [0, 1, 0, 1, 0];
+    const wordsRu = (/** @type {string} */ key) => say(key, "ru");
+    const resultTitle = say("demo_result_title", "ru");
+    const messageIs = (/** @type {string} */ key) => [
+      (/** @type {string} */ want) =>
+        document.querySelector("#demo .msg .msg-title")?.textContent === want,
+      say(key, "ru"),
+      { timeout: 20000 },
+    ];
+    const pattern = "**/api/demo/result*";
+    {
+      const env = await newPage(browser, t, { port, reducedMotion: "reduce" });
+      const { page } = env;
+      /** @type {() => void} */
+      let release = () => {};
+      const gate = new Promise((resolve) => {
+        release = () => resolve(null);
+      });
+      await env.context.route(pattern, async (route) => {
+        await gate;
+        await route.continue();
+      });
+      await page.goto(`${origin}/demo.html?lang=ru`);
+      await pageReady(page, "/demo.html", "ru");
+      for (const [i, q] of ru.questions.entries()) {
+        await waitHeading(page, q.title);
+        await page.locator("#demo .card").nth(ANSWERS[i]).click();
+      }
+      await waitHeading(page, resultTitle);
+      await page.waitForFunction(...messageIs("demo_putting"));
+      const held = await readBlock(page, "#demo");
+      assert.equal(
+        held.count,
+        1,
+        "result held: the status block stands while the receipt waits",
+      );
+      checkBlock(held, wordsRu, "result held");
+      release();
+      await page.waitForFunction(
+        () =>
+          document.querySelector("#demo .rc-kind, #demo .rc-nomatch") !== null,
+        null,
+        { timeout: 15000 },
+      );
+      checkBlock(await readBlock(page, "#demo"), wordsRu, "result released");
+      await readState(problems, "result held then released", env, "ru", [], {
+        result: await shownKind(page, "ru"),
+      });
+    }
+    for (const failure of [FAILURES[0], FAILURES[3]]) {
+      const where = `result ${failure.name}`;
+      const env = await newPage(browser, t, { port, reducedMotion: "reduce" });
+      const { page } = env;
+      /** @type {(r: import("playwright-core").Route) => unknown} */
+      const handler = (r) => failure.fail(r);
+      await page.goto(`${origin}/demo.html?lang=ru`);
+      await pageReady(page, "/demo.html", "ru");
+      for (const [i, q] of ru.questions.entries()) {
+        if (i === 4) await env.context.route(pattern, handler);
+        await waitHeading(page, q.title);
+        await page.locator("#demo .card").nth(ANSWERS[i]).click();
+      }
+      await waitHeading(page, resultTitle);
+      await page.waitForFunction(...messageIs(failure.message));
+      const failed = await readResult(page);
+      assert.equal(failed.now.count, 1, `${where}: the status block stays`);
+      checkBlock(failed.now, wordsRu, where);
+      assert.deepEqual(
+        failed.ideaKids,
+        [
+          ["h3", norm(wordsRu("idea_panel_title"))],
+          ["p", norm(wordsRu("idea_panel_lead"))],
+          ["a", norm(wordsRu("describe_idea"))],
+        ],
+        `${where}: the panel stays`,
+      );
+      const labels = ANSWERS.map((a, i) => ru.questions[i].options[a].label);
+      assert.deepEqual(failed.chips, labels, `${where}: the answers are kept`);
+      problems.add(where, reportedProblems(env, [failure.line(origin)]));
+      clearReports(env);
+      // «Повторить» asks again and fills the receipt; the block is the one that stood, not a new one.
+      await page.evaluate(() => {
+        /** @type {any} */ (
+          document.querySelector("#demo section.info.now")
+        ).__kept = true;
+      });
+      await env.context.unroute(pattern, handler);
+      await page.locator("#demo .msg button").click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector("#demo .rc-kind, #demo .rc-nomatch") !== null,
+        null,
+        { timeout: 15000 },
+      );
+      assert.equal(
+        await page.evaluate(
+          () =>
+            /** @type {any} */ (
+              document.querySelector("#demo section.info.now")
+            )?.__kept === true,
+        ),
+        true,
+        `${where}: the status block stays`,
+      );
+      checkBlock(await readBlock(page, "#demo"), wordsRu, `${where} retried`);
+      await readState(problems, `${where} after Повторить`, env, "ru", [], {
+        result: await shownKind(page, "ru"),
+      });
+    }
+    {
+      const env = await newPage(browser, t, { port, reducedMotion: "reduce" });
+      const { page } = env;
+      await env.context.route("**/api/demo/questionnaire*", (r) =>
+        FAILURES[0].fail(r),
+      );
+      await page.goto(`${origin}/demo.html?lang=ru`);
+      await pageReady(page, "/demo.html", "ru", { survey: false });
+      await page.waitForFunction(...messageIs("demo_failed"));
+      assert.equal(
+        (await page.locator("#demo .now").count()) +
+          (await page.locator("#demo .r-side").count()),
+        0,
+        "questionnaire failed: no status block",
+      );
+      problems.add(
+        "questionnaire failed",
+        reportedProblems(env, [FAILURES[0].line(origin)]),
+      );
+      clearReports(env);
     }
     assert.deepEqual(problems.lines(), []);
   },
@@ -1696,6 +2748,18 @@ test(
     assert.deepEqual([...output.LANGS], ["ru", "en"], "the output's languages");
     /** @param {string} key @param {string} lang */
     const out = (key, lang) => output.TEXTS[key][lang];
+    // REQ-113 criterion 8: the output's module keeps the 15 keys with their ru and en values, and holds no order
+    // text and no kk value.
+    assert.ok(
+      !Object.keys(output.TEXTS).some((key) => key.startsWith("order_")) &&
+        !Object.values(output.TEXTS).some((entry) => "kk" in entry),
+      "the output has a kk value or an order key",
+    );
+    for (const key of STATUS_KEYS)
+      for (const lang of ["ru", "en"]) {
+        assert.ok(output.TEXTS[key] !== undefined, `the output keeps ${key}`);
+        assert.equal(out(key, lang), say(key, lang), `the output keeps ${key}`);
+      }
     const fixture = answerFixtures().find((f) => f.name === "landing");
     assert.ok(fixture, "the landing fixture");
     for (const win of [WINDOWS[0], WINDOWS[1]]) {
@@ -1837,8 +2901,15 @@ test(
               where,
             );
           } else assert.equal(facts.stage, null, `${where}: no scene`);
-          if (win === WINDOWS[0])
-            problems.add(where, await layoutFindings(page));
+          if (pathname === "/how.html")
+            await checkHowPage(
+              page,
+              (key) => out(key, lang),
+              `${where}: the output shows`,
+              win.width,
+              lang,
+            );
+          problems.add(where, await layoutFindings(page));
           await readState(
             problems,
             where,
@@ -1857,6 +2928,21 @@ test(
             "?lang=kk in Russian",
           );
           await readState(problems, `${win.name} kk asked`, env, "ru");
+          await page.goto(`${origin}/how.html?lang=kk`);
+          await pageReady(page, "/how.html", "ru");
+          const asked = (await readBlock(page, "main")).block;
+          assert.deepEqual(
+            [asked?.heading, asked?.rows.map((r) => r.mark)],
+            [
+              norm(out("now_title", "ru")),
+              [
+                norm(out("stat_on", "ru")),
+                norm(out("stat_off", "ru")),
+                norm(out("stat_off", "ru")),
+              ],
+            ],
+            "kk asked: how.html shows Russian",
+          );
         }
         // The demo result with the fixed list, and «Описать идею» opening the part of how.html.
         const intake = intakeIn(lang);
@@ -1882,6 +2968,18 @@ test(
           },
           `${win.name} ${lang}: the fixed list of the result`,
         );
+        const words = (/** @type {string} */ key) => out(key, lang);
+        checkStatus(
+          got,
+          lang,
+          words,
+          `${win.name} ${lang} result: the output shows`,
+          true,
+        );
+        problems.add(
+          `${win.name} ${lang}: the status block, the lead, the label and the sentence on a recommended result`,
+          await layoutFindings(page),
+        );
         await readState(problems, `${win.name} ${lang} result`, env, lang, [], {
           result: await shownKind(page, lang),
         });
@@ -1906,6 +3004,36 @@ test(
           `${win.name} ${lang}: the idea part is on the screen`,
         );
         await readState(problems, `${win.name} ${lang} idea`, env, lang);
+        // The no-match result (five «Не знаю») shows the block, the lead and the label of the output as well.
+        await page.goto(`${origin}/demo.html?lang=${lang}`);
+        await pageReady(page, "/demo.html", lang);
+        for (const q of intake.questions) {
+          await waitHeading(page, q.title);
+          await page.locator("#demo .card").nth(q.options.length).click();
+        }
+        await waitHeading(page, out("demo_result_title", lang));
+        await page.waitForSelector("#demo .rc-nomatch");
+        checkStatus(
+          await readResult(page),
+          lang,
+          words,
+          `${win.name} ${lang} no match: the output shows`,
+          false,
+        );
+        problems.add(
+          `${win.name} ${lang}: the status block, the lead, the label and the sentence on the no-match result`,
+          await layoutFindings(page),
+        );
+        await readState(
+          problems,
+          `${win.name} ${lang} no match`,
+          env,
+          lang,
+          [],
+          {
+            result: intake.noMatch,
+          },
+        );
       }
     }
     assert.deepEqual(problems.lines(), []);

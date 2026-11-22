@@ -1,0 +1,91 @@
+{
+  "handoff_id": "step04b-M1STATUS-20261122-02",
+  "run_id": "M1STATUS-20261122-02",
+  "workflow_id": "WF-02",
+  "step": "04b",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M1STATUS-20261122-02/step-04b-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-113"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1STATUS-20261122-02/step-04a-code-fixer.json",
+      "handoffs/M1STATUS-20261122-02/step-04-reviewer.json"
+    ],
+    "route": "WF-02 narrow re-review after CODE-FIXER 04a (site.css and demo.js only: one margin line removed, comments); security re-review not needed: no code path, no markup, no text changed (ORCH note)",
+    "write_set": [
+      "handoffs/M1STATUS-20261122-02/step-04b-reviewer.json (result only)"
+    ],
+    "base_tag": "base/M1STATUS-20261122-02",
+    "rework_of": "handoffs/M1STATUS-20261122-02/step-04a-code-fixer.json"
+  },
+  "task": {
+    "description": "WF-02 step 4 again, narrow REVIEWER pass for the fix 04a (role file .claude/agents/reviewer.md). Check only the delta of the fix: the diff of app/public/css/site.css and app/public/js/pages/demo.js between the state read by step-04 (the developer's after hashes site.css 70c7288a..., demo.js 01747822...) and the project now (site.css 7274b7f9..., demo.js fdbf02eb...); get the 'before' text from the developer handoff or by reading both files against the tag diff. Confirm: L1 only the two margin declarations are gone and nothing else moved; L2 left on purpose (the look and design checks still name .fine as the forbidden class): judge it; L3/L4 comments and wrapping only, no forbidden words; no other change in the two files; how.html and texts.js unchanged (sha256 equal to the developer's after values in step-02-frontend-dev.json); the mark top equals the title top in real headless Chrome on a scratch copy at 1470 and 390 (0 layout findings). Rules: NEVER run npm run check, cd app && npm run ... or tests on this Windows PC; scratch copies and real Chrome outside the project allowed; stop only a server you started, by exact PID; Node 22 first on PATH (<node22>). No commit/push. PASS or FAIL with a list. Fill result; status stays PENDING; ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-22T05:46:00Z",
+  "started_at": "2026-11-22T05:46:00Z",
+  "completed_at": "2026-11-22T05:51:25Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Narrow re-review of CODE-FIXER 04a, delta only. PASS, no findings of any severity. L1 closed: the delta of site.css is exactly the two margin declarations plus the two comment edits of L3; L2 left on purpose and that is right; L3/L4 are comment text and wrapping only; demo.js changed only in the wrap of one JSDoc; how.html and texts.js are equal to the developer's after hashes. Measured in real headless Chrome on a scratch copy: the mark top equals the title top (0.0 px) at 1470, 0 layout findings, 0 lint findings, no horizontal scroll, class fine count 0. At 390 the phone rule puts the mark above the title by the 24 px mark box plus the 8 px gap, as designed (the 479px rule keeps order 0 and a column), not a regression. TEST-DESIGNER: nothing new to pin beyond the existing LD-6 checks; if a check wants 'mark top = title top' it applies at widths of 480 and more only.",
+    "findings": [],
+    "checks": [
+      {
+        "id": "C1",
+        "what": "hashes of the project now",
+        "output": "site.css 7274b7f94a58..., demo.js fdbf02eb4000..., how.html 744cd2bad7b6... and texts.js 9a5f24ae7e88... (the last two equal to the developer's after values of step-02-frontend-dev.json)"
+      },
+      {
+        "id": "C2",
+        "what": "the developer's 'before' state rebuilt from the project file by undoing only the fixer's claimed edits, then sha256",
+        "output": "site.css: re-adding margin-top: 2px in .now .stat, margin-top: 0 in the 479px rule and the two old comment texts gives sha256 70c7288a6b7f... (equal to the developer's after hash), so the whole delta of site.css is those four edits. demo.js: the one JSDoc of showResult wrapped as 'status block / and the panel ... request, which is made here when the / result of ...' gives 017478220aab... (equal to the developer's after hash), so the whole delta of demo.js is the re-wrap, words unchanged."
+      },
+      {
+        "id": "C3",
+        "what": "L2 judgement",
+        "output": "site.css:575-580 still '.meta,\n.fine'. No element or script in app/public uses the class; the look (table row 'meta, fine', 7.22 and 8.2 notes) and the REQ-113 design (criteria 4 and 6, LD-6, LD-3) still name .fine as the forbidden class, and its count 0 is asserted. Leaving the selector is a vocabulary choice, not an error; removing it needs a look note first. Accepted."
+      },
+      {
+        "id": "C4",
+        "what": "forbidden words and erosion signs in both files",
+        "output": "grep -niE 'decisions|REQ-|handoff|orch' app/public/css/site.css app/public/js/pages/demo.js: no match; grep -nE '.skip(|todo|eslint-disable||| true': no match"
+      },
+      {
+        "id": "C5",
+        "what": "real headless Chrome 157 on a scratch copy of the project's app/public (own server on 127.0.0.1:18755 over the base-tag server code; own CDP driver; the project's layout oracle copied as text; lintText) , windows 1470x784 and 390x844 x light/dark x ru/en/kk: how.html 12 loads and the demo result (landing fixture) 12 loads",
+        "output": "1470: mark top minus title top is 0.0 px in all three rows of all 12 wide loads (mark box 24 px); 390: -32.0 (the mark above the title: 24 + 8 gap) in all 12 narrow loads, unchanged by design; layout findings 0 and lint findings 0 in all 24 loads; no horizontal scroll; .fine count 0 on the result. The server I started (PID 39492) was stopped by that PID; Chrome was closed by the driver (PIDs 40792, 47556, gone)."
+      },
+      {
+        "id": "C6",
+        "what": "cd tools && npm run -s handoffs-check",
+        "output": "files checked 1545, violations 1, exceptions 110 of 110: handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 H4 (status PENDING in a commit) - an old file of another run, not this run; not touched by this change"
+      }
+    ],
+    "self_check": "Not run, by the owner rule for this PC: npm run check, cd app && npm run ..., tests. Project files not edited, no git write command used.",
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "Pre-existing, not from this run: handoffs-check reports one H4 violation in handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 (status PENDING in a commit). ORCH may want to look before the commit of this run."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Low, not blocking and not from the delta: two new comments from the developer are longer than 100 columns (demo.js, the JSDoc above NOW_ROWS and above statusBlock). Prettier does not reflow comments; same kind as L4, optional."
+      }
+    ],
+    "artifacts_out": []
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-11-22T14:40:43Z",
+    "text": "Paths of this computer were replaced by placeholders in this file at commit (AP-050; docs/workflows/handoffs.md, «Bookkeeping check» item 5): <scratch> is the working folder of the session outside the project, <node22> the folder of Node 22 outside the project, <Sai> the root of the project, <home> the home folder, <outside the project> any other place outside the project. Nothing else in the file was changed."
+  }
+}
