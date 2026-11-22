@@ -15,18 +15,26 @@
 
 ## What we are building
 
-The virtual team: the user sets a goal in ordinary words, the engine builds a plan, starts
-the role agents, checks the result, and asks a human only about what is critical, while Pixel
-Office shows the real work — with no imitation and no invented statuses. Where we are now:
-`docs/product/current-state.md`; comparison and order of work: `docs/product/parity-matrix.md`,
-`docs/product/roadmap.md`; the decision on the start, the stack and the storage rules:
-`decisions/0015-product-virtual-team-start.md`. The product code is in `tools/src/team/`.
+Sai is a virtual team of AI agents for business: a person describes an idea in ordinary words,
+the agents clarify it, write the specification (ТЗ) in versions, build the result after the
+owner's approval, and the office shows only their real work. Now it is built as the program
+PUBLIC-V1 (`decisions/0091`; the owner chose it as the finished product, `decisions/0115`): a
+closed public product site on Vercel in test mode. The landing and the demo survey are open to
+everyone, accounts are by invitation; the owner runs the whole chain on his own projects —
+idea, AI interview, ТЗ versions, approval, «В разработку» behind his password, the agents
+build, the office shows the real work, he opens the result. V1 is the milestones M0–M7; open
+registration, the customer cabinet, the own domain and hosting in Kazakhstan come later (M8,
+M9). The plan is `docs/program/public-v1/PLAN.md`, the architecture
+`docs/program/public-v1/ARCHITECTURE.md`, the checkpoint and the next step
+`docs/program/public-v1/PROGRESS.md`; the stack and the one check command of the product —
+`decisions/0001-product-stack-and-check-command.md`.
 
-The solution picker site — a visitor answers the questions of a questionnaire and sees which
-solution suits them; every tenant has its own file, texts in Russian, Kazakh and English. The
-code is in `tools/src/picker/`, the command is `cd tools && npm run picker`, the requirements
-are REQ-054…REQ-068, the decision is `decisions/0065-solution-picker-stack-and-choices.md`.
-What of this is already done can be seen in `docs/requirements.yaml` and `STATE.md`.
+The code of the earlier work stays: the team core and engine in `tools/src/team/`
+(`decisions/0015-product-virtual-team-start.md`), Pixel Office — the owner's local monitor of
+the pipeline, never published (`tools/src/pixel-office/`), and the solution picker site in
+`tools/src/picker/` (`decisions/0065-solution-picker-stack-and-choices.md`; its build queue is
+stopped by `decisions/0099`). The files of `docs/product/` are snapshots of 2026-10, kept as
+history.
 
 What is already done, what is open and what comes next — `STATE.md`. The current iteration
 and the plan — `PLAN.md`.
@@ -127,6 +135,11 @@ ORCH writes by itself only this (a closed list):
   to raise the bar (quality-bar §4) and decisions on the course of work; a record carries the
   owner's words or the proposal of a role, with a section "Basis" (`decisions/README.md`); an
   exception from the bar — only by the owner's written words (quality-bar §1, item 3);
+- the files of the program in `docs/program/public-v1/**` — bookkeeping and the owner's
+  instructions, no code; its `PLAN.md` and `ARCHITECTURE.md` are not edited, a change is a
+  dated row of the table "Plan amendments" of `PROGRESS.md` (`decisions/0091`, items 4 and 8);
+- appending the owner's words verbatim to `docs/owner-requests/` (`decisions/0091`, item 4):
+  only appended, nothing in those files is rewritten;
 - moving a requirement status to `in_progress` when work on it starts (WF-02, step 0; the
   WF-07 variant);
 - the fix on the short path of WF-02;

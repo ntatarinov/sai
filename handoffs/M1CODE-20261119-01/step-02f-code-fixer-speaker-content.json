@@ -1,0 +1,86 @@
+{
+  "handoff_id": "step02f-speaker-content-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02f",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/M1CODE-20261119-01/step-02f-code-fixer-speaker-content.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-06a-test-fixer-ld5-380.json",
+      "decisions/0124-m1code-landing-design-answers.md",
+      "app/public/css/site.css"
+    ],
+    "route": "02f CODE-FIXER -> 05l TEST-DESIGNER -> 3 and 4 -> 5b -> new snapshot on GitHub (owner's yes) -> 9",
+    "write_set": [
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js (only if CSS alone cannot)",
+      "app/public/demo.html (only if CSS alone cannot)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02 rework (CODE-FIXER round 02f) for the FAIL of step 6 (the GitHub app.yml run 44887506935 on ci/m1-landing-2, bc3af8d; job e2e, LD-5 section F) and for the TEST-FIXER stop in handoffs/M1CODE-20261119-01/step-06a-test-fixer-ld5-380.json (read its BLOCKED issue: the numbers and the options). The owner's ruling is decisions/0124 O45 (read it): option C - the speaker of the question takes its own row ONLY when its title does not fit beside the question in the visitor's font; there is NO pixel threshold; where the title fits the speaker stays beside the question as in the sample (390 px included). It replaces the fixed rule 'max-width: 379px' of O36 in app/public/css/site.css (the block near line 1933 and the comment there). Implement it with the smallest change that is driven by the content (for example a wrapping flex or grid where the speaker keeps its natural width and moves to its own row when it cannot fit, with no media query on the window width for this), keeping everything else of the look: the title breaks only at spaces (look 7.9), «‹ Назад» on the row of the progress, the progress count under the pips where the row is too narrow, no horizontal scroll at 320 px, the focus order (decisions/0124 O40), no new text, no new file. Invariants that must hold at EVERY window width from 320 to 420 px and with a font about 8 percent wider than the system font: the title does not end beyond its column or box, is at least 4 px away from «Назад», nothing overlaps the question text, no horizontal scroll. Files you may edit (write_set): app/public/css/site.css, and only if the CSS alone cannot do it app/public/js/pages/demo.js and app/public/demo.html (say why in result.changes). Do not edit tests (round 05l of TEST-DESIGNER rewrites the rows that pinned the 379/380 threshold; they will be red until then, say so) and do not edit the look or decisions files (DOC-UPDATER at step 10). VERIFY by measurement in a real headless Chrome of this PC with a script of your own in the scratchpad (<scratch>): serve app/public from a scratch copy or the stand clone at stand\\main (read-only use; it is a clone, the stand server is stopped, you may start it by PID with PORT, node from <node22>) at widths 320, 340, 360, 372, 380, 389, 390, 400, 420 for the five questions in ru, en, and for a wider-font stress (override the speaker/title font-family to a wider installed font such as Verdana for the trial only, never in the project); report the numbers; say plainly that the fonts of this PC differ from the Linux runner, so the proof is the next GitHub run. FORBIDDEN on this PC: npm run check, any app or tools test script, e2e tests. No git commit/push/checkout/reset/stash/clean. Node 22 first on PATH. Close with the handoff close command after cd tools && npm run traces returns 0 (handoffs-check has one old known violation, H4 of M0DOCS step-05c, accepted).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T10:14:18Z",
+  "started_at": "2026-11-21T10:14:18Z",
+  "completed_at": "2026-11-21T10:28:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 02f done: the speaker of the question takes its own row only when its title (or stage line) does not fit beside «‹ Назад» in the visitor's font (decisions/0124 О45); there is no pixel threshold any more and the fixed rule max-width 379px of О36 is gone. CSS alone cannot do it: the head of the question is a grid of four siblings, and where the speaker does not fit, «‹ Назад» must move from the row above the question to the row under it (the progress row), while a wrapping flex or grid can only move the item that does not fit to a line after its neighbours in the source order («Назад» would land above the question, not under it), and CSS cannot ask whether a text fits. So a small content measurement in demo.js sets a class and the placements stay in CSS. Nothing else of the look changed: the same three placements as the old own-row rule, the title breaks only at spaces, the progress count goes under the pips where the row is too narrow, the DOM and its focus order are unchanged, no new text, no new file.",
+    "changes": [
+      {
+        "remark": "О45 (replaces О36, О39)",
+        "file": "app/public/css/site.css",
+        "place": "the block near line 1933 (comment and media query)",
+        "was": "/* below 380 px ... */ @media (max-width: 379px) { .ask-h .spk, .ask-h .prog, .ask-h .back }: a fixed window threshold set with the Mac fonts",
+        "became": "@media (max-width: 759px) (the phone layout the head already has) { .ask-h.own .spk, .ask-h.own .prog, .ask-h.own .back } with the same three placements; the comment states the content rule (О45) and gives no pixel number"
+      },
+      {
+        "remark": "О45",
+        "file": "app/public/js/pages/demo.js",
+        "place": "new const SPEAKER_SLACK; new function fitSpeaker() before placeTail(); its call in put() before placeTail(); the resize listener (now fitSpeaker, then placeTail)",
+        "was": "the speaker's row depended only on the window width (CSS)",
+        "became": "after a view is put on the page and at each window resize: the class own is removed from .ask-h (the fit state, speaker beside «Назад»), every line of .who (title, stage line) is measured with a Range, and if one ends more than 0.1 px beyond the column of .who the class own is added. It measures the visitor's own font and column, so no window width is involved; a title that breaks at spaces fits, a word wider than the column does not. The language switch and the next question go through put(), so they measure again"
+      }
+    ],
+    "self_check": [
+      "Measured in a real headless Chrome 157 of this PC (script scratch m02f/measure.mjs; a scratch copy of app/ served by the app server on port 4710): five questions, ru and en, windows 320, 340, 360, 372, 380, 389, 390, 400, 420, height 640. Per row: end of the title and of the stage line against the column of .who, the gap to «Назад» when on one row, overlaps of speaker, «Назад», question text and progress, sideways scroll of page and body.",
+      "System font of this PC: 0 problems in 90 rows. The title never ends beyond its column (worst end minus column 0.0 px at every window); the least distance title end to «Назад» is 12.0 px (ru, 360) and 13.1 px (en, 372); no overlap with the question text, «Назад» or the progress; no sideways scroll at any width; at 320 px ru all five questions on an own row, en questions 2 to 4 own. Beside (b) or own (O) per question, ru: 320 OOOOO, 340 ObOOO, 360 ObbbO, 372 ObbbO, 380 bbbbO, 389 bbbbb, 390 bbbbb, 400 bbbbb, 420 bbbbb; at 390 px and above all five are beside as in the sample.",
+      "Stress 1, Verdana as the speaker's font (trial only, injected by the script, never in the project): 0 problems; worst end minus column 0.0; least gap to «Назад» 12.0 px (ru 390) and 13.0 px (en 400); ru 390 px: questions 1 to 4 beside, 5 own; 400 and 420 all beside; 320 and 340 all own.",
+      "Stress 2, the speaker's lines 8 percent wider (title 17 px to 18.36 px, stage line 13 px to 14.04 px): 0 problems; worst end minus column 0.0; least gap 12.3 px (en 320) and 13.8 px (ru 389); ru 389 and 390 px: questions 1 to 4 beside, 5 own; 400 and 420 all beside.",
+      "Resize in place on one question (420, 340, 320, 390, 360, 420 px, no reload): the head followed the fit each time (beside at 420 and 390, own at 340, 320 and 360).",
+      "eslint with max-warnings 0, prettier --check and tsc --noEmit -p jsconfig.json on the scratch copy with the two edited files: clean. Not run: npm run check, any app or tools test, any e2e test (forbidden on this computer).",
+      "NOT verified: the fonts of this PC differ from the Linux runner (there the title «Проверяющий» ends at 230.6 px at the 380 px window, here it is about 130 px and fits from 389 px of window on the system font), so these numbers are not the proof; the proof is the next GitHub run. The failing state before the edit could not be shown on this PC either, because the old rule does not fail with the fonts of this PC; the failing numbers are those of the runner in the handoff step-06a (title end 230.6 against column 222.2 at 380 px). On the runner the content rule must put the longest title on its own row at 380 and wherever it does not fit, and keep it beside where it fits; which windows that is cannot be read from this PC."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "text": "app/test/e2e/landing.test.js, LD-5 section F (its comment, the constant OWN_ROW_UP_TO = 379, the window list 360 to 390 and the three checks that read OWN_ROW_UP_TO: own row up to 379, beside from 380, speaker not over «Назад» from 380) pins the fixed threshold of О36 and will be red until TEST-DESIGNER round 05l rewrites it. New expected behaviour (О45): at every window of the list and every question the title ends within its column (0.5 px), is at least 4 px from «Назад» when on one row, nothing overlaps, no sideways scroll, and the speaker is either beside «Назад» (same row) or on its own row above the question; the choice is font dependent and must not be pinned at 380 and 389 px. A consistency row is possible: .ask-h has the class own exactly when the speaker is not on the row of «Назад». No other test in app/test mentions the rule (searched OWN_ROW, 379, own row, .spk)."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "The look sections 7.9, 12 and the G21 list still name the threshold below 380 px; DOC-UPDATER at step 10 changes them (the task says so). They should also say that the own row is set by the class own from demo.js (fitSpeaker), not by CSS alone. The header comment of demo.js (the one style write is the tail) stays true: a class toggle is not a style write."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js"
+    ]
+  },
+  "orch_correction": {
+    "by": "ORCH",
+    "at": "2026-11-22T14:40:43Z",
+    "text": "Paths of this computer were replaced by placeholders in this file at commit (AP-050; docs/workflows/handoffs.md, «Bookkeeping check» item 5): <scratch> is the working folder of the session outside the project, <node22> the folder of Node 22 outside the project, <Sai> the root of the project, <home> the home folder, <outside the project> any other place outside the project. Nothing else in the file was changed."
+  }
+}

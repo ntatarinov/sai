@@ -1,0 +1,100 @@
+{
+  "handoff_id": "step08-en-r2-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "08",
+  "round": 2,
+  "from_agent": "ORCH",
+  "to_agent": "FRONTEND-DEV",
+  "file": "handoffs/M1CODE-20261119-01/step-08-frontend-dev-en-r2.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-08-frontend-dev-en-r1.json (round 1 of the same texts)"
+    ],
+    "route": "FRONTEND-DEV (step 2, en) -> readers round 1 -> FRONTEND-DEV (en-r1) -> readers round 2 -> FRONTEND-DEV (this, corrections)",
+    "write_set": [
+      "app/public/shared/i18n/texts.js (en values only) and app/content/sai-intake.json (en values only)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 8 item 6, English text corrections after reader round 2 - FRONTEND-DEV applies exactly two corrections of the independent text reader to the English values (key en) of app/public/shared/i18n/texts.js (texts.how_ai_text) and of app/content/sai-intake.json (rules[4].text); run M1CODE-20261119-01, REQ-111; one language per launch (decisions/0079 item 7). The ru and kk values stay untouched. Every constraint of the files stays: the picker text rules (word limits per field and phrase; a sentence over 18 words is split into two and reported), the word lists, the order_ key rules. Check in a scratch clone: cd app && npm run check (unit 120, int 47), node ../tools/src/picker/cli.js check content/sai-intake.json, cd app && npm run test:e2e once (15 of 15); then the two files into the tree and the static part there plus cd tools && npm run traces.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-21T05:45:24Z",
+  "started_at": "2026-11-21T05:45:24Z",
+  "completed_at": "2026-11-21T05:45:39Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Applied exactly the two corrections of reader round 2 to English values only: texts.how_ai_text.en in app/public/shared/i18n/texts.js and rules[4].text.en in app/content/sai-intake.json. ru and kk values and every other byte are untouched (the diff of the two files against the scratch clone's base differs only in these two lines). No sentence breaks the 18-word limit, so nothing was split; the last sentence of how_ai_text is exactly 18 words, at the limit. All runs were done in a scratch clone of the working-tree state (a fresh git clone with the tree's files laid over it); only after green runs the two files were copied into the tree.",
+    "changes": [
+      {
+        "file": "app/public/shared/i18n/texts.js",
+        "key": "texts.how_ai_text.en",
+        "was": "AI agents ask questions, write the requirements and the code, and check each other’s work. They do not build servers, password sign-in, mobile apps or payment acceptance. Agents can make mistakes, so you approve the requirements and you also accept the result.",
+        "became": "AI agents ask questions, write the requirements and the code, and check each other’s work. They do not build servers, password sign-in, payment processing or mobile apps. Agents can make mistakes, so you approve the requirements and you are the one who accepts the result.",
+        "source": "reader round 2, correction of the independent text reader"
+      },
+      {
+        "file": "app/content/sai-intake.json",
+        "key": "rules[4].text.en",
+        "was": "A calculator helps you calculate or pick an option.",
+        "became": "A calculator helps you work out numbers or choose the right option.",
+        "source": "reader round 2, correction of the independent text reader"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "scratch clone: cd app && npm run check",
+        "output": "exit 0: prettier clean, eslint 0 warnings, tsc, check-public clean, vendored: 1 file matches its source, picker check «Файл арендатора sai-intake в порядке: вопросов 5, решений 6, правил 35.», unit tests 120 pass 120 fail 0, int tests 47 pass 47 fail 0 (run twice, both green)"
+      },
+      {
+        "command": "scratch clone: cd app && node ../tools/src/picker/cli.js check content/sai-intake.json",
+        "output": "Файл арендатора sai-intake в порядке: вопросов 5, решений 6, правил 35. Exit 0"
+      },
+      {
+        "command": "scratch clone: cd app && npm run test:e2e (once)",
+        "output": "tests 15, pass 15, fail 0, skipped 0"
+      },
+      {
+        "command": "tree after copying the two files: cd app && npx prettier --check . && npx eslint . --max-warnings 0 && node scripts/check-public.js && node scripts/vendored.js",
+        "output": "exit 0: All matched files use Prettier code style; eslint no warnings; check-public: app/public is clean; vendored: 1 file matches its source"
+      },
+      {
+        "command": "tree: cd tools && npm run traces",
+        "output": "traces: файлов проверено 2827, следов 0, пропущено 67; exit 0"
+      },
+      {
+        "command": "tree: diff of each of the two files against the scratch clone after the copy, and git diff --stat -- app/content app/public",
+        "output": "the two files are identical to the clone; 2 files, 16 insertions and 16 deletions (round 1 and round 2 together, still uncommitted)"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "The last sentence of texts.how_ai_text.en, «Agents can make mistakes, so you approve the requirements and you are the one who accepts the result.», is exactly 18 words, the limit of the picker text rules (unit tests TX-2, TX-3, TX-8 green). No split was needed. Any longer wording of this sentence would need a split."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "A first clone made without .git (copy of the files only) made 10 unit tests fail with 'git ls-files: not a git repository' (vercel-config.test.js); this is a defect of that clone, not of the work. The runs above are in a clone made with git clone and the tree's files laid over it (the same modified state: texts.js, sai-intake.json, TEST-DESIGNER's two test files, docs)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "app/test/** is edited by TEST-DESIGNER at the same time; the clone carried the state of the tree at its copying. No test file is touched by this work."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/shared/i18n/texts.js",
+      "app/content/sai-intake.json"
+    ]
+  }
+}

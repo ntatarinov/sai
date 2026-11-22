@@ -1,0 +1,116 @@
+{
+  "handoff_id": "step04d-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "04d",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/M1CODE-20261119-01/step-04d-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-02d-code-fixer.json, step-05e-test-designer.json, step-05g-test-designer.json, step-05f and step-05h TEST-DESIGN-VALIDATOR, step-07-design-qa-validator.json, step-04c-reviewer.json"
+    ],
+    "route": "02d -> REVIEWER 04d (this) -> on PASS TEST-DESIGN-VALIDATOR, DESIGN-QA second pass",
+    "write_set": [
+      "its own handoff only (a checker: reads, does not edit project files)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 4, review pass 1 of 3 (the loop after DESIGN-QA) - REVIEWER, gate, on the whole change of run M1CODE-20261119-01 (REQ-111 public landing, REQ-112 stage-mode office): the new part git diff base/M1CODE-20261119-01-review3 base/M1CODE-20261119-01-review4 -- app .github (test rework 05e, 05g, fix round 02d), the whole change git diff base/M1CODE-20261119-01-build base/M1CODE-20261119-01-review4 -- app .github. Measures: docs/design/REQ-111-112-public-landing.md, decisions/0123 and 0124 with all Additions, REQ-111 and REQ-112, docs/design/V1-public-look.md.",
+    "acceptance_criteria": [
+      "Verdict by the common scale of docs/workflows/handoffs.md: Critical, High, Medium are a FAIL; Low is recorded",
+      "cd app && npm run check run once in a fresh clone of the review tag, counts reported"
+    ]
+  },
+  "created_at": "2026-11-20T21:14:33Z",
+  "started_at": "2026-11-20T21:14:33Z",
+  "completed_at": "2026-11-20T21:15:15Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Verdict FAIL: one Medium finding (M1), no Critical or High; four Low (L1-L4). Review pass 1 of 3 of the loop after DESIGN-QA, on base/M1CODE-20261119-01-review4 (e0cca52), a fresh clone in <scratch> with node_modules copied, no network. The five questions. (1) Cause: each 02d fix is a real solution, not a crutch. The id() check refuses every non-string id before the body is built, so the whole class (object, array, anything with a toJSON) is closed, and it also closes the open low of decisions/0124 O23 (a deep array copied as an id); id() is an alias of text(), which only names the intent. The chip aria-label is the browser's accessible name, read by LD-6 through the role query, with the visible text unchanged. The no-match texts are one conditional sentence per language, the same as О33 word for word (IN-7 exact), under the 18-word rule, and the picker check exits 0. The media query at 371 px is the remedy that decisions/0124 О32 prescribes and the code follows it; I measured it (see L1): the layout is correct at 360 and 371 px, but the threshold has no slack. (2) The JSON.stringify guard in answer() is now dead code and should go (M1): after id() and text() every field of the body is a string, a boolean or null, so JSON.stringify cannot throw; the 02d issue I2 says so itself. I deleted the try/catch in a scratch copy: all 8 tests of int/demo.test.js stay green, so the guard is unfalsifiable, and the DM-6c row that was written for it (an id whose toJSON throws) is now answered by id() and exercises nothing of the guard, while the test title still says an answer body that cannot be written is the same 503. The comment of answer() is true now, but it describes a guard that can never fire. (3) Tests: honest otherwise. Test counts per file against the pass-3 tag differ by exactly two added tests (IN-7, VB-6), none removed; no skip, todo, only, eslint-disable, ts-ignore or `|| true` in the added lines; no sleep in the e2e kit (waitLive, shownKind, readState wait on a condition: the live region is emptied and written 30 ms later, so the stale-text case cannot pass); the duplicated reader of JavaScript text is now one (blank.js, scan moved out of import-boundaries.test.js, its own tests of scan stay), the two folder snapshots are one (snapshot.js, with a test of its own, VB-6), the desk arithmetic of stage.test.js is one pair of helpers with the same values at every i (checked by hand); the guards NPM-5 (12 int + 2 pg), NPM-7 (15 ids and 15 calls, LD-1..9 and ST-1..6), NM-5 (25 unit files), NM-6 are true on the files (25 unit files, 12 int, 2 pg, 2 e2e, 15 tests) and green in the check. (4) Not asked for: nothing in 02d beyond its list; the seven files of its artifacts_out are the seven it names. (5) Decisions: the code follows О32, О33, О34 and О28; the look 7.9 and the counts of the code design still carry the old numbers, by the decision's own words (L2). The check: cd app && npm run check in the clone, exit 0: unit 120 pass 0 fail 0 skipped 0 todo 0, int 47 pass 0 fail 0 skipped 0 todo 0 (the expected counts). I did not run the e2e (not in the check chain; 02d reports 15 of 15 twice). For TEST-DESIGNER and the next DESIGN-QA pass: after M1 is fixed re-run DM-6c; at 360 and 371 px my probe found no overlap of «‹ Назад» with the strip and no sideways scroll (see issues I1).",
+    "findings": [
+      {
+        "id": "M1",
+        "severity": "Medium",
+        "blocking": true,
+        "place": "app/server/routes/demo.js, function answer() (try { JSON.stringify(body) } catch -> demo_unavailable) and its comment; app/test/int/demo.test.js, the title of DM-6c and its row `unwritable` (an id with a throwing toJSON, about lines 1073-1095)",
+        "what": "After the id() check (02d, SECURITY L1) the body of both routes holds only strings, booleans and null (lang by pickLang, ids and texts by id() and text(), clear_leader from the engine is true, false or null, no_match_text a string or null), so JSON.stringify(body) cannot throw and the guard in answer() never fires; the only value that could reach it (an array nested too deep, the open low O23) is refused earlier. Proof: in a scratch copy the try/catch of answer() was removed (the function reduced to return { status: 200, body }) and `node --test --test-concurrency=1 test/int/demo.test.js` gave tests 8, pass 8, fail 0. The row `unwritable` in DM-6c was the only row for this guard; its id with a toJSON is now a non-string id and is refused by id() like the six rows above it, so the row proves nothing about the body; the DM-6c title still says «an answer body that cannot be written to text is the same 503», a claim no test checks (the comment of the row says the guard 'stays as the last guard'). So: a guard that cannot be exercised (Q5: not falsifiable), a test name that promises coverage that is gone, and one more full JSON.stringify of the body on every request that the app repeats. The 02d issue I2 names the same fact and leaves the decision to ORCH.",
+        "fix": "CODE-FIXER: remove the guard (answer() becomes `return { status: 200, body }`, or inline it at its two call sites) and its comment; keep the comment on id()/text() that every field is a string and why. TEST-DESIGNER (same round): delete the row `unwritable` (or turn it into a seventh id row if it is wanted), cut the clause about the unwritable body from the DM-6c title and the comment, keep every other assertion; the app's own JSON.stringify in app.js stays as it is. Do not keep the guard 'as the last defence': it has no test and no input."
+      },
+      {
+        "id": "L1",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/public/css/site.css, @media (max-width: 371px) (decisions/0124 О32); app/test/e2e/landing.test.js LD-5 section F",
+        "what": "The threshold is tuned to one machine and has no slack. Measured in Chrome (probe in <scratch>, 640 px high, the five questions of ru, kk, en): at 371 px the ru title «Проверяющий» (question 5) is 218.4 px and its column 218.4 (the own row, fits); at 372 px, the first width of the side-by-side layout, it is 218.4 against 218.4, that is zero slack, and DESIGN-QA measured it 1.0 px over at 371 before the fix; the page font is the system stack (ui-rounded, SF Pro Rounded, system-ui, Segoe UI, Roboto), and the look itself says (line 33, AP-158) that a width measured here is a fact of macOS Chrome. On a phone of 375 to 380 px with another system font the title can again touch «‹ Назад». Section F reads only 360 and 371 px (the own-row side); no row reads 372 or 375 px, where the side-by-side layout must still hold. At 360 and 371 px my probe found no overlap of «‹ Назад» with the strip (its bottom 473.6 to 512.8 against the strip top 555.2), no sideways scroll, and the title inside its column in all three languages.",
+        "fix": "ORCH, for the owner (a change of О32 needs a new record): give the threshold a slack of several pixels (for example 379 px, the 390 px window of the sample stays side by side) or accept the limit in writing as 'measured on macOS Chrome 157'; TEST-DESIGNER: if the threshold moves, run section F at the new edge and one pixel above it."
+      },
+      {
+        "id": "L2",
+        "severity": "Low",
+        "blocking": false,
+        "place": "docs/design/V1-public-look.md 7.9 and the code design docs/design/REQ-111-112-public-landing.md section 10 (line 'Counts [P, from this catalogue]': unit 117, int 46) and the rows of VB-5, DM-6c, VB-6, IN-7",
+        "what": "Documents behind the code: the look still has no threshold for the own row (decisions/0124 О32 says 'in its next edit'), and the design catalogue counts are old (unit 117, int 46; the runs give 120 and 47, e2e 15). REQ-111 criterion 16 compares '# tests N' with the catalogue. Known (05h T4, 02d I1); not fixed by this change.",
+        "fix": "CODE-DESIGNER or ORCH before the release gate: write 120, 47 and 15, add the four tests to the catalogue, put the 372 px threshold into 7.9."
+      },
+      {
+        "id": "L3",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/public/js/pages/demo.js chips of the result (attrs title and aria-label)",
+        "what": "Each chip keeps title = the question and gets aria-label = '<question>: <answer>'; with a name from aria-label the title becomes the accessible description in Chrome, so a screen reader may read the question twice. The visible text 'Не знаю' is inside the name (label in name holds). A second small point: for a question ending with '?' the name reads 'Question?: answer'.",
+        "fix": "Optional: drop the title (the question is in the name) or keep it as the tooltip for the mouse and accept the repeat; no test needs a change except LD-6 if the title is dropped."
+      },
+      {
+        "id": "L4",
+        "severity": "Low",
+        "blocking": false,
+        "place": "app/public/css/site.css the comment above the 371 px block ('below 372 px (it was 360)'); app/test/unit/office-view.test.js flipHidden (two JSDoc blocks in a row)",
+        "what": "A comment that tells the history of the number ('it was 360') instead of the rule, and a doubled JSDoc block in which the first (the description) is lost for the type checker.",
+        "fix": "Write the rule only; merge the two JSDoc blocks into one."
+      }
+    ],
+    "self_check": [
+      "Clock: date -u at the start of the handoff 2026-11-20T21:14:33Z (the clock of this machine).",
+      "Start state: the tree on m0-records, HEAD e0cca52 = tag base/M1CODE-20261119-01-review4; I wrote only this handoff in the tree. All runs in <scratch>: a fresh clone of the review tag (node_modules copied, no network), a mutant copy of it and a probe file; the tree was not touched.",
+      "cd app && npm run check in the clone: exit 0. prettier, eslint --max-warnings 0, tsc, check-public, vendored, the picker check on content/sai-intake.json all passed; '# tests 120 / # pass 120 / # fail 0 / # cancelled 0 / # skipped 0 / # todo 0' for the unit tests; '# tests 47 / # pass 47 / # fail 0 / # cancelled 0 / # skipped 0 / # todo 0' for the integration tests; 'not ok' lines in the log: 0.",
+      "Mutant (M1): in a copy of the clone the try/catch of answer() in app/server/routes/demo.js was removed; node --test --test-concurrency=1 test/int/demo.test.js: '# tests 8 # pass 8 # fail 0'.",
+      "Probe (L1): a node:test file in <scratch> using the fixtures browser.js and e2e-kit.js of the clone, real Chrome, widths 360, 371, 372 at 640 px and 320 at 568 px, ru kk en, five questions each; printed the bottom of «‹ Назад», the top of #ticket, the text edge of the title against its column and the sideways scroll. 360 and 371: no overlap, no scroll, title inside; 372: no overlap, ru q5 218.4 against 218.4; 320x568: the known 13.6-36.6 px of О26 (a), unchanged.",
+      "Erosion search over the lines added since review3 (git diff base/M1CODE-20261119-01-review3 base/M1CODE-20261119-01-review4 -- app .github | grep -E '^\\+' | grep -nEi '\\.skip\\(|\\.todo|\\.only\\(|eslint-disable|@ts-(ignore|nocheck|expect)|\\|\\| true|TODO|FIXME|a home-folder or temp-folder path pattern'): no match. git grep for a path of this computer in app and .github at the review tag: no match. Per-file count of top-level test( calls, review3 against review4: equal in all 41 files but intake.test.js (6 to 7, IN-7) and vercel-build.test.js (5 to 6, VB-6); e2e 15 (LD 9, ST 6).",
+      "Presence guards read on the files: test/unit 25 files, test/int 12, test/pg 2, test/e2e 2 with 15 ids (NPM-5, NPM-7, NM-5 in the check green; NM-6 in the int run green).",
+      "Reading: every added line of the diff review3..review4 for app/ and the 02d handoff; the rest of the change since the build tag by its files and the earlier handoffs (step-04, 04b, 04c, 05f, 05h, 07)."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "02d issue I1 (the band 360-371 px against the strip and «‹ Назад») is answered by my probe: no overlap at 640 px high, 42 px clearance at question 1 (ru), see L1. The 320 px sliver of О26 (a) is unchanged and stays the owner's G21 item."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Open and not owned by this change: the Low T7 of step-05h (mutant: the line that empties the live region on a language switch survives the e2e) and the lows L1 and L2 of review pass 3 (О26, the owner's G21 list). Not repeated as findings."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "The kk sentence of the no-match text (Егер деректер барлық құрылғыларда сақталуы тиіс болса, сервер қажет, ал серверлерді Sai әзірге жасамайды.) is not marked FOR_NATIVE_SPEAKER in 02d; it goes to the text readers of WF-02 step 8 (AP-114) like every kk line."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "npm run test:e2e was not run by me (not in the check chain; the 02d handoff reports 15 of 15 twice, 403.7 s each)."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

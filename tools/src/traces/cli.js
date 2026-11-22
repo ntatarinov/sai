@@ -7,6 +7,7 @@
 // error is not caught.
 import fs from "node:fs";
 import path from "node:path";
+import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "../node-floor.js";
 import { sha256 } from "../util.js";
 import { addNames, readInput } from "./add.js";
 import {
@@ -142,6 +143,8 @@ function main(argv) {
       process.stdout.write(`${USAGE}\n`);
       return 0;
     }
+    // The Node floor (REQ-110), before the repository is read, for every subcommand.
+    if (refuseBelowNodeFloor(process.stderr)) return NODE_REFUSAL_EXIT;
     const start = path.resolve(process.cwd(), parsed.opts.get("root") ?? ".");
     const root = repoRoot(start);
     if (parsed.command === "add") return runAdd(root);

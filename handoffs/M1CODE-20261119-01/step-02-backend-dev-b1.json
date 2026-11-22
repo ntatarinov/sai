@@ -1,0 +1,228 @@
+{
+  "handoff_id": "step02-b1-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02",
+  "from_agent": "ORCH",
+  "to_agent": "BACKEND-DEV",
+  "file": "handoffs/M1CODE-20261119-01/step-02-backend-dev-b1.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-111-112-public-landing.md (sha256 469b32af…56d6; section 12 row B1, sections 4.8, 5, 6, 7, 11 row 5, 14, 15)",
+      "handoffs/M1CODE-20261119-01/step-01f-code-design-validator.json (PASS)",
+      "decisions/0123-m1site-public-look-answers.md (with its Addition of 2026-11-19T20:44Z)",
+      "decisions/0124-m1code-landing-design-answers.md (with its Additions: О13, О14, H1–H7)",
+      "docs/requirements.yaml (block REQ-111, criterion 6, read by id)",
+      "tools/src/picker/engine.js (the source of the byte copy)",
+      "app/ at the tag base/M1CODE-20261119-01-build (2144f2a)",
+      "docs/quality-bar.md, .claude/agents/backend-dev.md, docs/workflows/WF-02-development.md, docs/workflows/WF-04-ui-by-sample.md, docs/workflows/handoffs.md, docs/anti-patterns.md"
+    ],
+    "route": "ORCH 0 -> CODE-DESIGNER 01 -> ORCH 1a (decisions/0124) -> CODE-DESIGN-VALIDATOR 01b, 01d (FAIL) -> CODE-DESIGNER 01c, 01e -> CODE-DESIGN-VALIDATOR 01f (PASS) -> FRONTEND-DEV 2 (F1–F7, its own files) ‖ BACKEND-DEV 2 sub-step B1 (this), then B2–B6 -> SECURITY-REVIEWER 3 ‖ REVIEWER 4 -> TEST-DESIGNER 5 (T1–T4) -> TEST-DESIGN-VALIDATOR 5b -> TEST-RUNNER 6 -> DESIGN-QA-VALIDATOR 7 -> step 8 -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11",
+    "write_set": [
+      "app/server/vendor/picker-engine.js",
+      "app/server/vendor/picker-engine.d.ts",
+      "app/vendored.json",
+      "app/scripts/vendored.js",
+      "app/jsconfig.json"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "WF-02, step 2, sub-step B1 — BACKEND-DEV builds sub-step B1 of section 12 of the code design docs/design/REQ-111-112-public-landing.md (run M1CODE-20261119-01, task M1.4 of PUBLIC-V1; REQ-111 criterion 6, the byte copy of the picker engine), only by the design that passed its gate (handoffs/M1CODE-20261119-01/step-01f-code-design-validator.json, PASS; design sha256 469b32af…56d6): the files of the row are app/server/vendor/picker-engine.js (a byte copy of tools/src/picker/engine.js, sha256 a8263…81fe), app/server/vendor/picker-engine.d.ts (the declarations of the four exports with the shapes of the engine's answers, prettier-formatted), app/vendored.json (one entry: file, source, sha256), app/scripts/vendored.js (checkVendored({ appDir, rootDir }) → string[], and the step vendored with its output lines) and app/jsconfig.json (exclude exactly [\"node_modules\", \"server/vendor/picker-engine.js\"]) — sections 4.8, 5 (E16), 6, 7, 14 and 15 of the design, bound by decisions/0123 and decisions/0124 with their Additions (О13: the build starts from the tag base/M1CODE-20261119-01-build, and every command that names base/<RUN-ID> reads that tag for this run; О14: the one narrow IB-1 row for the declaration is landed by TEST-DESIGNER at T1, not here). The row's own check: node scripts/vendored.js → exit 0 and its line; tsc exit 0 (F5, F38); the static part (prettier, eslint, tsc, check-public); node --test test/unit/import-boundaries.test.js → only IB-1 red, with exactly the one line «a file that is not .js: server/vendor/picker-engine.d.ts» (F37), named EXPECTED_RED with its row (section 11 row 5) until T1; a driver outside the project; cd tools && npm run traces → 0. Any other red test is a STOP and a report to ORCH; a departure from the design is a STOP and a question to ORCH. Write only the files of the row; every saved file is consistent with the others (FRONTEND-DEV works in parallel in its own files and may start a check at any moment; while it writes, only the own files are checked). No commit, push, tag, stash, reset, checkout, clean or switch of branches, in the project or in any copy; trials only in a fresh git clone outside the project; temporary files only in the session folder, named <scratch>; no path of this computer in a Sai file. The handoff is created by BACKEND-DEV on ORCH's order (the workflow task of this step) and closed with the result; cd tools && npm run handoffs-check and npm run traces before close (docs/workflows/handoffs.md, «Common rules for all roles»).",
+    "acceptance_criteria": [
+      "The five files of row B1 are written by section 4.8 of the design and nothing else changes: the copy byte-equal to tools/src/picker/engine.js (sha256 a8263…81fe), the declaration with exactly the four exports of the copy, app/vendored.json with its one entry, app/scripts/vendored.js with checkVendored and the step's output, app/jsconfig.json excluding exactly the copy",
+      "node scripts/vendored.js from app/ exits 0 with «vendored: 1 file matches its source»; on damaged copies outside the project (one byte of the copy, a stale record, a second .js file, a changed source, a missing or unreadable record) it exits 1 with a line «vendored: <file>: <rule>»",
+      "The static part is clean (prettier --check, eslint --max-warnings 0, tsc --noEmit -p jsconfig.json, check-public), and tsc exits 0 with an importer of the copy in a driver outside the project (and fails without the declaration)",
+      "node --test test/unit/import-boundaries.test.js: only IB-1 red, with exactly the one line «a file that is not .js: server/vendor/picker-engine.d.ts», named EXPECTED_RED with section 11 row 5; any other red test is a STOP",
+      "cd tools && npm run traces exits 0 and npm run handoffs-check has no line for this handoff"
+    ]
+  },
+  "created_at": "2026-11-20T03:17:04Z",
+  "started_at": "2026-11-20T03:17:04Z",
+  "completed_at": "2026-11-20T03:34:30Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Sub-step B1 of section 12 is built by section 4.8 of the design, and nothing else was written. app/server/vendor/picker-engine.js is a byte copy of tools/src/picker/engine.js (sha256 a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe for both, cmp equal); app/server/vendor/picker-engine.d.ts declares exactly the four exports of the copy with the shapes of the engine's answers; app/vendored.json holds the one entry of 4.8; app/scripts/vendored.js exports checkVendored({ appDir, rootDir }) and is the step vendored; app/jsconfig.json excludes exactly the copy. The row's own check: `node scripts/vendored.js` prints «vendored: 1 file matches its source», exit 0; the static part (prettier, eslint, tsc, check-public, vendored) is clean; `node --test test/unit/import-boundaries.test.js` is red only in IB-1 with exactly the one line «a file that is not .js: server/vendor/picker-engine.d.ts» (F37) — the EXPECTED_RED of the row until T1 lands the IB-1 row of decisions/0124 О14 (issue I1). Every other test of today is green: unit 45 of 46 (IB-1 the only red), int 36 of 36, in the project before the other developer's files existed and again on a fresh clone of base/M1CODE-20261119-01-build holding only these five files. Drivers outside the project: tsc with an importer of the copy (exit 0 with the declaration; without it the copy's 50 errors of F5/F38 come back; six misuses refused, each control red); the copy's real answers against the declared shapes (every error reason and both result forms); the step on 36 damaged trees (the four of VD-3 among them), each with its exact line, nothing on stderr and its tree unchanged; four mutants of the script, each caught by its own case. traces 0; handoffs-check has no line for this handoff. No STOP: no red test outside the row's list, no departure from the design. FRONTEND-DEV began its row F1 during this step; a whole-folder check at 2026-11-20T03:27:30Z stopped at prettier on its half-written public/shared/text-rules.js, which is not a file of this work (issue I4).",
+    "changes": [
+      {
+        "file": "app/server/vendor/picker-engine.js",
+        "what": "new: the bytes of tools/src/picker/engine.js, written by `cp`; sha256 a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe equal to the source and to the design's value (F4); imported by no file yet (server/routes/demo.js is B4's)",
+        "design": "4.8, item 1"
+      },
+      {
+        "file": "app/server/vendor/picker-engine.d.ts",
+        "what": "new: `export declare const ANSWER_REASONS` (the frozen list as a readonly tuple, in the copy's order) and `export declare function` visibleQuestions, resolveAnswers and computeResult; the tenant parameter is typed by the fields the engine reads (the view of a checked tenant file in one language: questions single, multiple or number, solutions, rules, result settings, optional hypotheses), the answers `unknown`; the returns are the engine's answers: string[] for visibleQuestions, { ok: true, visible, answers } or { ok: false, error } for resolveAnswers, { ok: true, result: { clear_leader, recommended, no_match_text, ranking, hypotheses } } or { ok: false, error } for computeResult, the error { code: \"E_ANSWER\", question: string | null, reason }; the helper types are local and the file ends with `export {};`, so the module exports exactly the four names (measured with TypeScript 6.0.3: without it a local type of a .d.ts module is importable as an export); prettier-formatted",
+        "design": "4.8, item 2; F6"
+      },
+      {
+        "file": "app/vendored.json",
+        "what": "new: { \"entries\": [ { \"file\": \"server/vendor/picker-engine.js\", \"source\": \"tools/src/picker/engine.js\", \"sha256\": \"a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe\" } ] }, prettier-formatted",
+        "design": "4.8, item 4"
+      },
+      {
+        "file": "app/scripts/vendored.js",
+        "what": "new: `checkVendored({ appDir, rootDir }) → string[]`, each finding `<file>: <rule>`; one read of the record, the copies, the sources and server/vendor/ (section 7); the record must have exactly the key entries (a list) and each entry exactly file, source and sha256 — the paths plain and inside their folder, the sha256 64 lowercase hex digits — else that is the finding of an unreadable vendored.json and the other rules are not read; per entry the sha256 of the copy, of the source and the record compared (a copy that differs, a stale record, a source that differs, each with its own line); every .js under server/vendor/, every level down, links listed by name and not followed, that is no entry's file is a finding; a missing or unreadable file (ENOENT, EACCES, ENOTDIR) is a finding, never an exception. The CLI (the step, run from app/ with no arguments on the app/ folder it lies in): `vendored: <finding>` per finding and exit 1, else «vendored: 1 file matches its source» (for another number of entries «vendored: N files match their sources») and exit 0. No environment variable is read (ENV-1)",
+        "design": "4.8, item 5; section 5 E16; section 7"
+      },
+      {
+        "file": "app/jsconfig.json",
+        "what": "changed: \"exclude\" [\"node_modules\"] → [\"node_modules\", \"server/vendor/picker-engine.js\"] (only the copy); nothing else",
+        "design": "4.8, item 3; REQ-111 criterion 6"
+      }
+    ],
+    "self_check": [
+      {
+        "at": "2026-11-20T03:12:06Z",
+        "command": "facts of the task: shasum -a 256 docs/design/REQ-111-112-public-landing.md tools/src/picker/engine.js; the verdict of step-01f; git diff --quiet base/M1CODE-20261119-01-build -- app/jsconfig.json tools/src/picker/engine.js; git status --short",
+        "exit": 0,
+        "output": "design 469b32afbac33d3f36b99d92bf72c269e046b8be9337c8dd9dc8bc94835556d6 (the task's 469b32af…); engine a82637570dde86848ed440d7eee4fbdf4ed2f9b6de943c119b3d9579081ef1fe, last commit 9f7eff0 2026-10-20; step-01f COMPLETED, verdict PASS, its result names 469b32af…; jsconfig.json and engine.js equal the build tag; no file of the row and no handoff of this step existed (nothing to inventory); the tree held only ORCH's edits of docs/program/public-v1/PROGRESS.md and docs/requirements.yaml"
+      },
+      {
+        "at": "2026-11-20T03:21:31Z",
+        "command": "cd app && npx prettier --check . && npx eslint . --max-warnings 0 && npx tsc --noEmit -p jsconfig.json && node scripts/check-public.js && node scripts/vendored.js",
+        "exit": 0,
+        "output": "Checking formatting... / All matched files use Prettier code style! / check-public: app/public is clean / vendored: 1 file matches its source"
+      },
+      {
+        "at": "2026-11-20T03:21:38Z",
+        "command": "cd app && node --test test/unit/import-boundaries.test.js",
+        "exit": 1,
+        "output": "not ok 1 - IB-1 the real tree of app/ breaks no rule — actual ['a file that is not .js: server/vendor/picker-engine.d.ts'], expected []; ok 2 - IB-2; ok 3 - IB-3; ok 4 - IB-4; # tests 4, # pass 3, # fail 1"
+      },
+      {
+        "at": "2026-11-20T03:21:57Z",
+        "command": "cd app && npm run test:unit; npm run test:int (each output into a file outside the project; git status before and after)",
+        "exit": 1,
+        "output": "unit: # tests 46, # pass 45, # fail 1, cancelled, skipped, todo 0 — the one red is «not ok 16 - IB-1 the real tree of app/ breaks no rule» with the one line 'a file that is not .js: server/vendor/picker-engine.d.ts'; int: exit 0, # tests 36, # pass 36, # fail 0; the tree status unchanged by the runs; the runs ended 03:22:54Z, before the other developer's handoff (created 03:23:58Z) and files (03:25:58Z on)"
+      },
+      {
+        "at": "2026-11-20T03:23:52Z",
+        "at_note": "the time of the log file of the run with the five files (its end); the run without them came right before it",
+        "command": "<scratch>/b1/clone: git clone -b base/M1CODE-20261119-01-build of the project, node_modules copied from app/ (no network); node --test test/unit/import-boundaries.test.js without the five files, then with them (copied from the project, compared with cmp), and node scripts/vendored.js",
+        "exit": 1,
+        "output": "without the five files: IB 4 of 4 green (# tests 4, # pass 4, # fail 0); with them: not ok 1 - IB-1, actual 'a file that is not .js: server/vendor/picker-engine.d.ts', IB-2, IB-3, IB-4 ok, # pass 3, # fail 1; «vendored: 1 file matches its source», exit 0"
+      },
+      {
+        "at": "2026-11-20T03:24:51Z",
+        "command": "<scratch>/b1/clone/app: a probe importer server/zz-probe.js (in the clone only, removed after) of the copy with six `// @ts-expect-error` lines; npx tsc --noEmit -p jsconfig.json in four forms; each directive removed in turn; the declaration alone with strict and skipLibCheck false",
+        "exit": 0,
+        "output": "the design's form (exclude only the copy): exit 0, 0 errors, every directive used; each directive removed → TS2322 (an error code other than E_ANSWER), TS2339 (no field points on the result), TS2322 (price_text may be absent), TS2554 (the answers are required), TS2345 (a tenant without questions), TS2694 (a local type is no export of the module); the declaration removed → exit 2, 69 errors: the copy's 50 (44 TS7006, 5 TS2339, 1 TS7053) and 19 in the probe; exclude [\"node_modules\"] with the declaration → exit 2, the copy's 50; exclude [\"node_modules\", \"server/vendor/**\"] → exit 0 (the M24 form, refused by VD-4, not used); the declaration alone, strict, skipLibCheck false → exit 0",
+        "at_note": "the times of its log files: without the declaration 03:24:51Z, the two other exclude forms 03:24:52Z, the design's form 03:24:53Z, skipLibCheck false 03:25:03Z, the declaration alone after 03:25:09Z; the first run with the probe and the six controls came before 03:24:51Z and wrote no file"
+      },
+      {
+        "at": null,
+        "command": "env -i PATH=… HOME=<scratch>/b1/home TMPDIR=<scratch>/b1/tmp node <scratch>/b1/drv/shapes.mjs <clone copy> <clone declaration>",
+        "exit": 0,
+        "output": "shapes driver: every answer of the copy has the keys and values its declaration states; exports ANSWER_REASONS,computeResult,resolveAnswers,visibleQuestions — the export names of the copy (as text and at run time) equal the declaration's `export declare` names, its only other export line is `export {};`; the declared tuple equals the frozen list in order; all nine reasons with their question, the result keys, a recommended solution with and without price_text, because with selected and with value, clear_leader false, true and null, no_match_text",
+        "at_note": "no clock reading and no log file of its own: it ran after 03:25:09Z and before 03:26:51Z (the times of the neighbouring log files)"
+      },
+      {
+        "at": "2026-11-20T03:26:51Z",
+        "command": "env -i PATH=… HOME=<scratch>/b1/home TMPDIR=<scratch>/b1/tmp node <scratch>/b1/drv/step-cases.mjs <clone script> <clone engine> <scratch>/b1/cases — each case its own tree (app/scripts/vendored.js, app/vendored.json, app/server/vendor/, tools/src/picker/engine.js), the CLI run from its app/, exit and lines compared exactly, stderr empty, the tree hashed before and after",
+        "exit": 0,
+        "output": "step driver: 36 cases as expected; checkVendored gives the findings without the prefix. Among them: good → exit 0 «vendored: 1 file matches its source»; one byte of the copy → exit 1 «vendored: server/vendor/picker-engine.js: the copy is not the bytes of its source tools/src/picker/engine.js (its sha256 is 66c72a76…, the recorded one a8263757…)»; a stale record → exit 1 «vendored: vendored.json: the sha256 recorded for server/vendor/picker-engine.js is stale: the copy and its source are both a8263757…»; a second .js → exit 1 «vendored: server/vendor/extra.js: a .js file in server/vendor/ that vendored.json does not list»; a changed source → exit 1 «vendored: tools/src/picker/engine.js: the source of server/vendor/picker-engine.js is not the recorded bytes (…)»; the copy, the source or the record missing → «… is missing»; not JSON, a list, null, an extra key, no entries → the shape line; entry keys, plain paths (.., absolute, //, \\, ./, a number) and the sha256 form → their lines; a .js in a subfolder and a .js link → listed; the declaration and a .txt stand; no folder and no entries → «vendored: 0 files match their sources»; server/vendor a file → ENOTDIR lines; a copy and a record without read permission → «cannot be read (EACCES)»; two good entries → «vendored: 2 files match their sources»",
+        "at_note": "the time of its log file, the end of the second series; the first series stopped on a fault of the driver (issue I8)"
+      },
+      {
+        "at": "2026-11-20T03:27:04Z",
+        "command": "four mutants of scripts/vendored.js written in <scratch>/b1/mut/ and run through the same step driver",
+        "exit": 1,
+        "output": "m1 the folder rule removed → red at «second-js: exit 0»; m2 the source not compared → red at «changed-source: exit 0»; m3 the record not compared → red at «stale-record: exit 0»; m4 the exact key of the record not checked → red at «record-extra-key: exit 0»; no file left without read permission",
+        "at_note": "the times of the mutants' log files, 03:27:04Z to 03:27:06Z"
+      },
+      {
+        "at": "2026-11-20T03:27:54Z",
+        "command": "cd app && npx prettier --check <the five files>; npx eslint --max-warnings 0 server/vendor/picker-engine.js scripts/vendored.js; node scripts/vendored.js (own files only: FRONTEND-DEV was writing)",
+        "exit": 0,
+        "output": "All matched files use Prettier code style! / eslint exit 0 / vendored: 1 file matches its source; the copy and the source have one sha256"
+      },
+      {
+        "at": "2026-11-20T03:28:09Z",
+        "at_note": "clock readings at the start and at the end (03:29:09Z); the probe importer had been removed from the clone first",
+        "command": "<scratch>/b1/clone/app (the build tag with exactly the five files): npx prettier --check . && npx eslint . --max-warnings 0 && npx tsc --noEmit -p jsconfig.json && node scripts/check-public.js && node scripts/vendored.js; npm run test:unit; npm run test:int",
+        "exit": 1,
+        "output": "the static part exit 0 («All matched files use Prettier code style!», «check-public: app/public is clean», «vendored: 1 file matches its source»); unit exit 1: # tests 46, # pass 45, # fail 1 — only «not ok 16 - IB-1», actual 'a file that is not .js: server/vendor/picker-engine.d.ts'; int exit 0: # tests 36, # pass 36, # fail 0"
+      },
+      {
+        "at": "2026-11-20T03:29:16Z",
+        "command": "cd tools && npm run traces; npm run handoffs-check",
+        "exit": 1,
+        "output": "traces: файлов проверено 2733, следов 0, пропущено 67 (exit 0; it lists untracked files too, so the five new files were read); handoffs-check: one line «handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 — H4: status: PENDING в коммите…» (the known one, not this step's), «файлов проверено 1464, нарушений 1»; no line for this handoff"
+      },
+      {
+        "at": "2026-11-20T03:29:34Z",
+        "command": "a secrets search over the five files (grep -nEi 'secret|token|passw|api[_-]?key|private key|BEGIN [A-Z ]*KEY|bearer|authoriz|sk-…|AKIA…' and every run of 40 or more base64-like characters); a search for .skip( .only( .todo( eslint-disable @ts-ignore @ts-nocheck and `|| true`; the hash of every file git lists, before (03:17:21Z) and after",
+        "exit": 0,
+        "output": "no secret word; the one long string is the sha256 of the engine in app/vendored.json (a hash of a repository file, examined: not a secret); no skip, disabled rule or hidden exit code; changed since the before snapshot: the five files of this row, and FRONTEND-DEV's own row F1 (app/public/shared/i18n/lang.js, app/public/shared/i18n/texts.js, app/public/shared/text-rules.js) with its handoff; ORCH's two earlier edits did not move",
+        "at_note": "the after snapshot at 03:29:34Z; the two searches right after it, before the result was written (03:32:46Z)"
+      },
+      {
+        "at": "2026-11-20T03:34:06Z",
+        "command": "before close: cd tools && npm run -s handoffs-check; npm run -s traces; cmp of the five files with the verified clone copies; cd app && node scripts/vendored.js",
+        "exit": 1,
+        "output": "handoffs-check exit 1 with only the known line «handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 — H4: status: PENDING в коммите…» («файлов проверено 1464, нарушений 1»), no line for this handoff; traces exit 0 «файлов проверено 2733, следов 0, пропущено 67»; the five files are byte-equal to the copies the clone checks verified (sha256: the copy a8263757…81fe, the declaration 5cd3244f…cc1d, vendored.json fa2afd9a…e041, scripts/vendored.js 0d1403f5…60dd, jsconfig.json 059b696e…6ff7); «vendored: 1 file matches its source», exit 0"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "EXPECTED_RED",
+        "test": "app/test/unit/import-boundaries.test.js IB-1 «the real tree of app/ breaks no rule»",
+        "row": "section 12 row B1 («Red after it»: IB-1, row 5); section 11 row 5",
+        "text": "IB-1 is red with exactly the one line «a file that is not .js: server/vendor/picker-engine.d.ts» (F37), because the build tag's fileFindings refuses every file that is not .js under app/server. The new expected behaviour (decisions/0124 О14, design 4.8 and section 11 row 5): fileFindings(entries, vendored) lets stand a .d.ts that is no link whose .js twin at the same path is a plain file among the entries and the `file` of an entry of app/vendored.json — exactly server/vendor/picker-engine.d.ts — while every other file that is not .js stays red, with the damaged copies of row 5 in IB-2. TEST-DESIGNER lands the row at T1. IB-2, IB-3 and IB-4 are green; the copy and scripts/vendored.js break no import rule. Measured: IB-1 green at the build tag without the five files, red with this one line with them (a fresh clone)."
+      },
+      {
+        "id": "I2",
+        "kind": "PROCESS",
+        "text": "Order of the saves: the copy was saved at 2026-11-20T03:17:28Z and the exclude of app/jsconfig.json at 03:17:35Z (the file times), so for 7 seconds a `tsc` of the tree would have shown the 50 errors of the copy. No other check ran then: FRONTEND-DEV's handoff was created at 03:23:58Z. Lesson for the next byte copy: write the exclude first, then the copy (AP-008)."
+      },
+      {
+        "id": "I3",
+        "kind": "PROCESS",
+        "text": "This handoff was created by BACKEND-DEV on ORCH's order (the task of this step), with `cd tools && npm run handoff -- new … --qualifier b1` at 2026-11-20T03:17:04Z (one clock reading for created_at and started_at), after reading the mandatory files from 03:12:06Z; docs/workflows/handoffs.md says that only ORCH creates handoffs, and the step 01 of this run was created the same way on ORCH's order (decisions/0124, «Bookkeeping»). context.base_tag is the run's tag base/M1CODE-20261119-01 (the command writes it); the build base is base/M1CODE-20261119-01-build by decisions/0124 О13, and every comparison of this step was made with that tag."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "Another's file in progress, with evidence (quality-bar §6 item 4, «the work did not touch the test»): the whole `npm run check` of app/ at 2026-11-20T03:27:30Z ended with exit 2 at its first step, «[error] public/shared/text-rules.js: SyntaxError: Unterminated regular expression. (28:20)». The file is FRONTEND-DEV's (row F1; its handoff step-02-frontend-dev-f1.json, IN_PROGRESS, write_set lang.js, texts.js, text-rules.js; the file was born at 03:25:58Z and changed at 03:27:44Z, while it was being written), it is not among this step's artifacts_out, and the same chain on the fresh clone holding only this step's five files is clean except the expected IB-1. From then on only this step's own files were checked here (AP-008); whether the file is right when F1 hands in is FRONTEND-DEV's own check."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "Choices inside what the design leaves open, for SECURITY-REVIEWER and REVIEWER (no departure: each serves a rule of 4.8): (a) the success line for a number of entries other than one is «vendored: N files match their sources» (the design shows only the one-entry line, which is what the real tree prints); (b) a record of another shape than 4.8's — not exactly the key entries, an entry not exactly file, source, sha256, a path that is not plain and inside its folder, a sha256 that is not 64 lowercase hex digits — is the design's «unreadable vendored.json» finding, named by its place, and the hash and folder rules are then not read (they rest on the entries); (c) the folder rule reads server/vendor/ every level down, lists a link by its name and does not follow it, and matches «.js» with its letter case, as IB-1's file rule does; (d) the CLI reads no argument (the design names none), so `node scripts/vendored.js <x>` checks the folder the script lies in and ignores <x>. Proposal, Low, for ORCH and CODE-DESIGNER: refuse a stray argument with a usage line and exit 2, so that nobody believes another tree was checked; not built, because it is an outcome the design does not list."
+      },
+      {
+        "id": "I6",
+        "kind": "INFO",
+        "text": "For B4 and T2. The declaration types the tenant by the fields the engine reads (texts as strings: the view in one language) and the answers as unknown; an importer that passes the intake as parsed from JSON (any) type-checks as it is, while one that types it as unknown needs a JSDoc cast (measured with the probe importer). For VD-4: the export names of the declaration equal the copy's both as text (`export declare (const|function) <name>`, F6) and for tsc (the `export {}` at its end; a local type is refused with TS2694), and its only other export line is `export {};`. The exact lines of the step on the four damaged copies of VD-3 are in self_check."
+      },
+      {
+        "id": "I7",
+        "kind": "INFO",
+        "text": "Found on the way, not in this task (quality-bar §6 item 6), low importance: app/jsconfig.json has skipLibCheck true, which hides errors inside every .d.ts, the new declaration included; so the declaration was checked alone with strict and skipLibCheck false (exit 0). The whole project with skipLibCheck false gives 9 errors, all inside the typings of the dependency @electric-sql/pglite (dist/interface-*.d.ts: TS2503 «Cannot find namespace 'Emscripten'» and like it) — reproduce with `cd app && npx tsc --noEmit -p jsconfig.json --skipLibCheck false`. Nothing to fix here; named so that a later step that turns the option off is not surprised."
+      },
+      {
+        "id": "I8",
+        "kind": "PROCESS",
+        "text": "A slip of my own driver, undone at once and outside the project: the step driver's own tree hash read the copy of the case «copy-unreadable» that the case had just made unreadable, threw, and left that one file of <scratch>/b1/cases/ with mode 000; it was checked to be a regular file by lstat and set back to 644, the driver was fixed to record such a file by its mode, and the whole series was run again from fresh trees (36 cases, exit 0; no file without read permission left). chmod was used only on named regular files of the case trees (AP-020). No git checkout, reset, stash or clean was run anywhere; the clone was made with `git clone -b <tag>`; no network was used (node_modules copied from app/)."
+      }
+    ],
+    "expected_red": [
+      "app/test/unit/import-boundaries.test.js IB-1 — row B1 of section 12 (section 11 row 5), until T1"
+    ],
+    "artifacts_out": [
+      "app/server/vendor/picker-engine.js",
+      "app/server/vendor/picker-engine.d.ts",
+      "app/vendored.json",
+      "app/scripts/vendored.js",
+      "app/jsconfig.json"
+    ],
+    "driver": "<scratch>/b1/: clone/ (a fresh clone of base/M1CODE-20261119-01-build with the five files), drv/shapes.mjs (the copy's answers against the declaration), drv/step-cases.mjs (36 damaged trees of the step), mut/ (four mutants of the script), and the logs of every run"
+  }
+}

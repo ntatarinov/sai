@@ -1,0 +1,316 @@
+{
+  "handoff_id": "step01e-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "01e",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/M1CODE-20261119-01/step-01e-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/REQ-111-112-public-landing.md (the design after rework 01c, sha256 254b5651…01ebad, 1437 lines)",
+      "handoffs/M1CODE-20261119-01/step-01d-code-design-validator.json (gate pass 2, FAIL: G1, G2 medium; G3–G7 low)",
+      "handoffs/M1CODE-20261119-01/step-01c-code-designer.json",
+      "handoffs/M1CODE-20261119-01/step-01-code-designer.json",
+      "decisions/0124-m1code-landing-design-answers.md (with its Addition: О13, О14)",
+      "decisions/0123-m1site-public-look-answers.md (with its Addition of 2026-11-19T20:44Z: L1, L3, L4)",
+      "docs/requirements.yaml (blocks REQ-111 and REQ-112, read by id)",
+      "docs/design/V1-public-look.md (sha256 3dea2340…9347)",
+      "app/ at the tag base/M1CODE-20261119-01-build (2144f2a, the merge of main d87b3d1)"
+    ],
+    "route": "ORCH 0 -> CODE-DESIGNER 01 -> ORCH 1a (decisions/0124) -> CODE-DESIGN-VALIDATOR 01b (pass 1, FAIL) -> CODE-DESIGNER 01c (rework) -> CODE-DESIGN-VALIDATOR 01d (pass 2, FAIL) -> CODE-DESIGNER 01e (this, rework) -> CODE-DESIGN-VALIDATOR 01f (gate pass 3 of 3) -> on PASS FRONTEND-DEV and BACKEND-DEV 2",
+    "write_set": [
+      "docs/design/REQ-111-112-public-landing.md",
+      "handoffs/M1CODE-20261119-01/step-01e-code-designer.json"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-01d-code-design-validator.json, gate pass 2 of 3 — WF-02, step 1 (rework), CODE-DESIGNER, run M1CODE-20261119-01 (task M1.4 of PUBLIC-V1: REQ-111, REQ-112). Close each remark below in docs/design/REQ-111-112-public-landing.md (or keep the text and say why in result.issues with evidence), keep what the gate did not question, re-run on a clean copy the trials a change touches, and record them. decisions/0124 (О13: the build starts from base/M1CODE-20261119-01-build and every command naming base/<RUN-ID> reads that tag for this run; О14: the one narrow IB-1 row) and decisions/0123 with its Addition of 2026-11-19T20:44Z (L1, L3, L4) bind.\n\nRemarks (gate pass 2, step 01d):\n- G1 [medium] Section 10 LD-5, LD-6, LD-7, LD-9 against LD-1; section 9 row REQ-111/12; section 13 (no mutant); 4.10 item 4: REQ-111 criterion 12 asks: «On every page and in every state of the demo that the test reaches, in each language», the text the page shows must pass the lint of criterion 3, the word ban and the phrases, «so a text that a page script writes is linted as well». The catalogue lints only in LD-1, when each page loads. LD-5, LD-6, LD-7 and LD-9 reach the question, result, no-match and failure states, where the scripts write their texts, and none of them applies the lint. check-public's lint (4.10 item 4) reads the texts module, the .html files and the intake, not the string literals of a page script. Section 13 has no mutant for the rule. So a demo.js that writes «бесплатно» into the result after a tap is green in every test of the catalogue. Fix: in LD-5, LD-6, LD-7 and LD-9, apply LD-1's lint and word ban to innerText and to alt, title and aria-label after each state the test reaches, in the page's language. Add a section 13 mutant (a page script that writes a list form only after a tap) and name the test that kills it (LD-6 or LD-7). Carry both into row REQ-111/12.\n- G2 [medium] 4.11 stripRegions and writePublicSet step (5); E14; section 7; PB-6; section 13: the cut pairs an opening marker with the nearest end marker of its kind, and the guard looks only at the output. An opening marker left unclosed before a later region of its kind (nested, or its end marker missing) is paired with the next region's end marker: everything between is cut and no marker is left (measured by the gate: no throw, the footer's home link cut). An unclosed marker at the end and a stray end marker do throw. On the designer's f2pages with block D's end marker dropped, the negative checks and PB-2's strict comparison are green; only PP-7 and PB-6's content rule are red. So E14's «exit 1», section 7's «nothing reaches the platform's output unchecked» and PB-6's «a planted unclosed region … makes writePublicSet throw» do not hold for this shape. Fix: before any cut, writePublicSet checks the pairing of the markers in each .html file and throws, naming the file, on an opening marker while one of its kind is open, an end marker with none open, or a marker never closed. PB-6 names its planted shapes and their positions: a region left open before a later one, a nested opening marker, a stray end marker. Section 13 gains the mutant «the cut with no pairing check».\n- G3 [low] Section 11 row 5, the damaged copies of the IB-1 row in IB-2: the gate's mutant of the row that matches the twin by file name in any folder leaves IB 4 of 4 green against all ten damaged copies; no damaged copy pins «the same path». Fix: add a damaged copy — server/lib/picker-engine.d.ts beside a plain server/lib/picker-engine.js, with the vendored list [server/vendor/picker-engine.js], red — and the mutant to section 13. With the rework or at T1.\n- G4 [low] LD-4, F42, the console rules of LD-1 and fixtures/browser.js: measured in Chrome 157 through playwright-core 1.64.1, a second getImageData read of the same canvas prints the console warning «Canvas2D: Multiple readback operations using getImageData…»; LD-4's three rounds over four avatars print four such lines; a copy into a willReadFrequently canvas prints none. The e2e allows only declared console lines, and F42 does not name this one. Fix: read the avatar pixels through a copy into a canvas made with { willReadFrequently: true } (or once per canvas and state), and name the fact in F42. With the rework or at T4.\n- G5 [low] F39 and F40; section 10 NPM-6 paragraph; T1: the designer's sketch of replacement row 8 is red by the fix round's NPM-6: its comment «…read only: it stands…» is hit as `only:`. F39's «4 of 4» was measured with the VB file alone, and section 10 says «no new file», while NPM-6 reads changed files and comments too. Fix: section 10 says every new or changed file under app/test, comments included, avoids the selector forms; measure F39 again with NPM-6 on the same tree. With the rework or at T1.\n- G6 [low] Section 12 B3 against B2: B2 leaves CP-2's js/ line red until T1 and comes before B3; B3's own check says «only NPM-3 red (and IB-1, from B1)», so CP-2 is red at B3 but not on its list (WF-02 step 2). Fix: B3's check names NPM-3, IB-1 (from B1) and CP-2 (from B2) as the expected red tests.\n- G7 [low] Section 10 ST-2 against decisions/0123 Addition 2026-11-19T20:44Z, L3: ORCH's reading L3 says «no label is cut» holds at every moment and only «no two labels overlap» is read when «Вы» stands; ST-2 reads both at that moment. Fix: ST-2 checks «no label cut» also on the frames of a walk (or shows, by a measurement, that a label's box cannot change during a walk), and the overlap when «Вы» stands, citing L3.\n\nRules (docs/workflows/handoffs.md, «Common rules for all roles»): write only the design and this handoff; trials only in a fresh git clone outside the project; no commit, push, tag, stash, reset, checkout, clean or branch switch in the project or any copy; no path of the computer in a Sai file; result.changes holds the table «what was fixed, where» by remark; new questions only ORCH can answer go in open questions with a default. Before close: cd tools && npm run handoffs-check and npm run traces.",
+    "acceptance_criteria": [
+      "Every remark G1–G7 is closed in the design, or kept with the reason and evidence in result.issues",
+      "The trials a change touches are re-run on a fresh clone of base/M1CODE-20261119-01-build outside the project and recorded with command and output",
+      "result.changes holds the table «what was fixed, where» by remark (docs/workflows/handoffs.md, «Rework steps and re-runs»)",
+      "cd tools && npm run handoffs-check and npm run traces end with code 0 (the known PENDING line of another run aside)"
+    ]
+  },
+  "created_at": "2026-11-19T21:27:40Z",
+  "started_at": "2026-11-19T21:27:40Z",
+  "completed_at": "2026-11-19T21:31:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 01e of the code design docs/design/REQ-111-112-public-landing.md for the FAIL of gate pass 2 (handoffs/M1CODE-20261119-01/step-01d-code-design-validator.json: G1, G2 medium; G3–G7 low): every remark closed in the design, the changed statements measured again on fresh clones of the build tag base/M1CODE-20261119-01-build (2144f2a) in the new section 1.2 (facts F45–F51, trials T-23 – T-29). G1: one helper shownTextFindings (innerText and alt, title, aria-label; the lists of the page's language, the word ban and the phrases of REQ-109 criterion 7) asserted empty after every state each LD test reaches — each question, «Назад», «Не знаю», each result and the no-match result in each language, each failure message, the public set's pages and result in ru and en, and in the same file (AP-014) each language switch, theme change and step of LD-8's pass; mutant M88 (a list form written only after a tap) red in LD-5, LD-6 or LD-7 and green in LD-1, check-public and FW-7, measured on a trial page (F45: the .sr live line is part of innerText; check-public's served-file rules do not see the lists in a script). G2 (a change of approach): readRegions reads the markers of every page as one sequence before the first write and refuses, with the file and the line, an opening marker while a region is open, an end marker with none open, a region never closed and a marker not alone on its line or not one of the four forms; stripRegions cuts exactly the regions read; E14, E15, section 7 and PB-6 (the planted shapes (a)–(j) with their positions, a refusal before the first write leaving the copy byte-equal) follow; M89 (the cut with no pairing check), M90 (the read after the first write), M91 (a marker-like comment read as text) each red, measured on 13 planted shapes (F46). G3: the eleventh damaged copy server/lib/picker-engine.d.ts and M92, measured (F47). G4: LD-4 reads the avatars through a willReadFrequently copy, F42 names the console warning of a second read (F48). G5: section 10 says every new or changed file under app/test, comments included, keeps clear of NPM-6's forms; F39 measured again under NPM-6 on the same tree (F49: unit 47 of 47, int 36 of 36 with rows 5 and 8). G6: B3's expected reds NPM-3, IB-1, CP-2, measured (F50: 43 of 46). G7: ST-2 by decisions/0123 L3 — no label cut at load, on every frame of each walk and after it, no overlap when «Вы» stands — with M93, measured (F51). Counts: named tests 96 unchanged; mutants 93 (M88–M93 new); facts 51; open questions 15, none new (О15 of step 01c still has no record: issue I5).",
+    "changes": [
+      {
+        "remark": "G1 [medium] the lint of the shown text in every state",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "10: the landing test (new paragraph «The lint of the shown text, in every state» before LD-1; LD-1, LD-3, LD-4, LD-5, LD-6, LD-7, LD-8, LD-9) and test/fixtures/browser.js (the helper shownTextFindings); 9 row REQ-111/12; 13 M88 (new); 4.10 item 4 (last sentence); 1.2 F45 (new); 15 Q5, Q13; 16; 17 T-23",
+        "was": "LD-1 only, at the load of each page: «the lint and the word ban over innerText and alt, title, aria-label (the module of the lists imported)»; LD-5, LD-6, LD-7 and LD-9 without the lint; row REQ-111/12 «LD-1…LD-9 | M65–M69; M78–M80, M82»; no mutant of the rule; 4.10 item 4 silent on the literals of the page scripts",
+        "became": "one helper shownTextFindings(page, lang) of test/fixtures/browser.js (document.body.innerText and the alt, title, aria-label values; lintText of app/scripts/word-lists.js in the page's language, imported; the word ban and the three phrases of REQ-109 criterion 7 as the helper's own table, built from parts); every LD test asserts it empty after each state it reaches: LD-5 each question, «Назад», «Не знаю», the result, by taps and keyboard; LD-6 each question and each result and the no-match result in each language; LD-7 each failure message and after «Повторить»; LD-9 each page of the public set and the result in ru and en — and, as the same rule of the same file (AP-014), LD-1 at load, LD-3 after each switch, LD-4 after each theme change, LD-8 after each step of its pass; M88 (a list form written only after a tap: into the result → LD-6, into a failure message → LD-7, into the live line only → LD-5 and LD-6; green in LD-1, check-public and FW-7); row REQ-111/12 carries the rule and M88; 4.10 item 4 says check-public does not read the literals of the page scripts and the e2e lints them where they are shown; F45 measured"
+      },
+      {
+        "remark": "G2 [medium] the pairing of the markers before any cut",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "4.11 (readRegions new; stripRegions by the regions read; writePublicSet steps (1)–(6); the vercel-build table, step 5); 4.3 «Regions»; 5 E14, E15; 7 second item; 10 PB-2 (one clause), PB-6 (rewritten); 12 B5's own check; 13 M78 (wording), M89–M91 (new); 0 (the production-split bullet); 9 row REQ-111/9; 1.1 F41 (wording); 1.2 F46 (new); 15 Q5, Q10, Q13; 16; 17 T-24",
+        "was": "stripRegions cut from an opening marker line to the nearest following end marker line of its kind (a regex); writePublicSet (1) import, (2) texts, (3) examples.html, (4) cut, (5) guards of the output only; E14 «A region the build cannot cut … exit 1 | PB-6, mutant M04»; section 7 «checks its own output … nothing reaches the platform's output unchecked»; PB-6 «a planted unclosed region, a planted out-of-region link and … (M79) are red — the first two make writePublicSet throw»; E15 mapped to PB-6 with no plant of its own",
+        "became": "readRegions(html, file) reads the markers of a file as one sequence — a marker line exactly ^[ \\t]*<!-- (/?)sai:(order|kk) -->[ \\t]*$, any other marker-like comment refused, an opening marker only while no region is open, the next marker the end marker of that kind — and throws naming the file and the line with one of four rules (not alone or not one of the four forms; an opening marker while the <kind> region of line <m> is open; an end marker with no region of its kind open; a region never closed); stripRegions removes exactly the lines of the regions read; writePublicSet: (1) the texts module import (a failed import thrown again naming the file, with cause) and its two export names, (2) readRegions of every .html file before the first write, (3) texts, (4) examples.html, (5) the cut, (6) the guards of the output; E14 names the shapes and the pairing line, the upload byte for byte for a pairing refusal, mutants M04, M89–M91; E15 names step (1), the upload byte for byte, PB-6 (i); section 7: the markers read before the first write, exactly the regions read cut, then the output checked; PB-6 plants (a)–(j) with their positions — block D's end marker dropped, an opening marker before the footer's home link, one nested inside block D, a stray end marker before block D, one never closed after the last region, block D's end marker on one line with the element before it, the how panel's markers written with no spaces, a kk region crossing block D, the texts module with a third export and one that cannot be imported, a link to examples.html outside a region — (a)–(i) each refused with the file (and the line and rule) and the copy byte-equal, (j) by the guard of the output; M89 the cut with no pairing check, M90 the read after the first write, M91 a marker-like comment read as text, each red in PB-6; B5's own check runs the plants; F46 measured"
+      },
+      {
+        "remark": "G3 [low] a damaged copy that pins «the same path»",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "11 row 5 (IB-2's damaged copies of the row); 13 M92 (new); 1.2 F47 (new); 17 T-25",
+        "was": "ten damaged copies (a second .d.ts, a .ts, a twin not listed, the declaration as a link, a listed twin not in the tree, a twin that is a link, .D.TS, .d.mts, api/ with no twin, the right pair with an empty list); assert lines 35 → 38 (F37)",
+        "became": "an eleventh: server/lib/picker-engine.d.ts beside a plain server/lib/picker-engine.js under the list [server/vendor/picker-engine.js], red with «a file that is not .js: server/lib/picker-engine.d.ts»; M92 (the twin matched by its file name in any folder); measured F47: the row 4 of 4 with and without the copy, the four mutants of F37 red either way, the file-name mutant green without the copy and red with it; assert lines 35 → 38 either way, RED.length 161"
+      },
+      {
+        "remark": "G4 [low] the avatar read and its console line",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "10 LD-4; 1.1 F42 (a pointer to F48); 1.2 F48 (new); 17 T-26",
+        "was": "LD-4: every avatar canvas «read with getImageData» after each of three theme changes (a second read of each canvas); F42 without the console line",
+        "became": "LD-4 reads the pixels through a copy — for each read a new canvas of the avatar's bitmap size, getContext(\"2d\", { willReadFrequently: true }), drawImage of the avatar, getImageData of the copy — never from the avatar canvas twice, and names the warning «Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true» that LD-1's console rule does not allow; F42 names the fact and points to F48 (directly four warnings over three rounds of four canvases, through the copy none, the same values)"
+      },
+      {
+        "remark": "G5 [low] NPM-6 reads every changed file, comments included",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "10 (the NPM-6 paragraph); 11 rows 2 and 8; 12 T1's own check; 1.1 F39, F40 (pointers to F49); 1.2 F49 (new); 15 Q6; 16; 17 T-27",
+        "was": "«it reads every new test file and helper too: no new file holds .skip(, .todo(, .only(, or skip:, todo:, only: with a value other than false»; F39 «with row 8: VB 4 of 4» measured with the VB file alone; the sketch of row 8 with the comment «The real app/ is read only: it stands …»",
+        "became": "section 10: NPM-6 (its SELECTOR_GREP) reads every line of every new and every changed file under app/test, comments and strings included; its two forms named; a prose «… is read only: it stands …» is hit; no new or changed file holds either form, in code or in prose; rows 2 and 8 and T1's check say it for the changed files; F39 and F40 point to F49: the comment of step 01c red under NPM-6 at line 337, the reworded row 8 11 of 11 with npmrc.test.js, and with rows 5 and 8 on the same tree unit 47 of 47 (the build tag's 46 and the sketch's PB-4 form) and int 36 of 36, eslint 0, prettier clean"
+      },
+      {
+        "remark": "G6 [low] B3's expected red tests",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "12 B3 (own check); 1.2 F50 (new); 17 T-28",
+        "was": "«npm run test:unit → only NPM-3 red (and IB-1, from B1)»",
+        "became": "«npm run test:unit → red exactly NPM-3 (this sub-step), IB-1 (from B1) and CP-2's js/ line (from B2), each EXPECTED_RED until T1»; measured F50: B1's files, B2's Math.random rule and B3's chain on a fresh clone of the build tag give unit 43 of 46 with exactly CP-2 (line 62), IB-1 and NPM-3 red"
+      },
+      {
+        "remark": "G7 [low] ST-2 by decisions/0123 L3",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "10 ST-2; 9 row REQ-112/6; 13 M93 (new); 8 (the e2e time budget); header (the readings L1, L3, L4 of decisions/0123's Addition named as binding); 1.2 F51 (new); 15 Q5; 17 T-29",
+        "was": "«when «Вы» stands, no label cut and no two labels overlapping, in each language (0123 V3)»; no walk in ST-2",
+        "became": "ST-2 by L3: no label cut (scrollWidth not above clientWidth) at load on index, how and demo, on every animation frame of each walk and after it; no two labels overlap when «Вы» stands (at load and after each walk); the walks: on how the steps 1–4 in turn, on demo the five answers of one pass (look 9.13); the test's own requestAnimationFrame loop with its end condition (the text list names the target, data-frames still for 300 ms), a 10 s deadline and a positive control (at least three values of --you per walk); M93 a label cut only while «Вы» walks; row REQ-112/6 carries both; section 8 adds about 1.5 min of walks; F51 measured (the loop sees 66 of 66 frames; the narrowed label red on 199 of 224 samples, none at load or after)"
+      },
+      {
+        "remark": "sweep after the edits (AP-005, AP-035; no new remark)",
+        "file": "docs/design/REQ-111-112-public-landing.md",
+        "place": "header; 0 «Sizes»; 1.1 F41; 13 intro; 19",
+        "was": "the header named only the rework 01c; «87 mutants», «44 checked facts», «F1–F44»; F41 «the lazy cut of 4.11»; the look «unchanged during steps 01 and 01c»",
+        "became": "the header names rework 01e and section 1.2 (F45–F51); 93 mutants with the measured breakdown, 51 facts, F1–F51; F41 «the lazy cut of 4.11 as step 01c wrote it (the cut by the regions read gives the same bytes on these pages, F46)»; 13's intro says where M88–M93 were applied; the look unchanged during 01, 01c and 01e"
+      }
+    ],
+    "table": [
+      {
+        "was": "LD-1 lints the shown text at load only",
+        "became": "every LD test lints the shown text after each state it reaches (shownTextFindings); M88",
+        "source": "G1; REQ-111 criterion 12; F45"
+      },
+      {
+        "was": "4.10 item 4 silent on the literals of page scripts",
+        "became": "check-public does not read them; the e2e lints them where they are shown",
+        "source": "G1; F45"
+      },
+      {
+        "was": "stripRegions: an opening marker to the nearest end marker of its kind (a regex)",
+        "became": "readRegions reads the markers as one sequence and refuses four shapes with the file and the line; stripRegions cuts exactly the regions read",
+        "source": "G2; F46"
+      },
+      {
+        "was": "writePublicSet (1)–(5), the guards of the output only",
+        "became": "(1) import and export names, (2) readRegions of every page before the first write, (3)–(5) as before, (6) the guards of the output",
+        "source": "G2; F46"
+      },
+      {
+        "was": "E14 «A region the build cannot cut … exit 1»",
+        "became": "E14 names the shapes, the pairing line and the upload byte for byte; E15 names step (1) and PB-6 (i)",
+        "source": "G2; F46"
+      },
+      {
+        "was": "section 7: «checks its own output … nothing reaches the platform's output unchecked»",
+        "became": "the markers read before the first write, exactly the regions read cut, then the output checked",
+        "source": "G2"
+      },
+      {
+        "was": "PB-6: «a planted unclosed region … the first two make writePublicSet throw»",
+        "became": "PB-6 plants (a)–(j) with their positions; (a)–(i) refused before the first write, the copy byte-equal; M89–M91",
+        "source": "G2; F46"
+      },
+      {
+        "was": "IB-2: ten damaged copies of the row",
+        "became": "eleven: + server/lib/picker-engine.d.ts beside server/lib/picker-engine.js; M92",
+        "source": "G3; F47"
+      },
+      {
+        "was": "LD-4 reads each avatar with getImageData after each change",
+        "became": "LD-4 reads through a willReadFrequently copy; F42 names the warning of a second read",
+        "source": "G4; F48"
+      },
+      {
+        "was": "section 10: «no new file holds … only: with a value other than false»",
+        "became": "every new or changed file under app/test, comments and strings included, holds neither form of NPM-6",
+        "source": "G5; F49"
+      },
+      {
+        "was": "F39 «with row 8: VB 4 of 4» (the VB file alone)",
+        "became": "F39, F40 point to F49: under NPM-6 on the same tree, unit 47 of 47, int 36 of 36",
+        "source": "G5; F49"
+      },
+      {
+        "was": "B3: «only NPM-3 red (and IB-1, from B1)»",
+        "became": "B3: red exactly NPM-3, IB-1 (B1) and CP-2's js/ line (B2)",
+        "source": "G6; F50"
+      },
+      {
+        "was": "ST-2: «when «Вы» stands, no label cut and no two labels overlapping»",
+        "became": "ST-2 by L3: no label cut at load, on every frame of each walk and after it; no overlap when «Вы» stands; M93",
+        "source": "G7; decisions/0123 Addition L3; F51"
+      },
+      {
+        "was": "87 mutants; 44 checked facts",
+        "became": "93 mutants; 51 checked facts",
+        "source": "the counts of sections 0, 13 and 19"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "date -u +%Y-%m-%dT%H:%M:%SZ (first reading of this work; the handoff command's reading)",
+        "output": "2026-11-19T20:53:56Z; created_at and started_at 2026-11-19T21:27:40Z (the command's one reading)"
+      },
+      {
+        "command": "shasum -a 256 docs/design/REQ-111-112-public-landing.md (at 20:53:56Z, before the first edit; after the last edit)",
+        "output": "before 254b5651fd1c40a1d4317940e8b3adcd53e940cae153ff2f28811d409501ebad (the gate's 254b5651…01ebad, 1437 lines); after 469b32afbac33d3f36b99d92bf72c269e046b8be9337c8dd9dc8bc94835556d6 (1570 lines)"
+      },
+      {
+        "command": "shasum -a 256 docs/design/V1-public-look.md decisions/0123-m1site-public-look-answers.md decisions/0124-m1code-landing-design-answers.md (at the start and at the end)",
+        "output": "3dea234002153ff0a70f1dda61bf8cb587f025a2debab01f9a58e6c1ef3f9347, 321c68d307c5b81ed376ef043ab82c0cf17074d9f7281b650cd842db394c2998 (with its Addition of 20:44Z), 426ed189ddb260ad6308cc7f98ed51328c068d4e11d9969861a998295c45c727 — the same at both readings"
+      },
+      {
+        "command": "git clone -q -b base/M1CODE-20261119-01-build <the project> <scratch>/m1e/clone (and <scratch>/m1e/b3); git rev-parse HEAD; node -v; npm -v; git --version",
+        "output": "2144f2a895b73d50047651509c5ac13a4b8abd16 in both; v22.23.4, 10.9.9, git 2.54.0; npm ci exit 0 (102 packages, playwright-core 1.64.1) in each; no checkout, reset, stash or clean anywhere; every file a trial changed restored from its saved copy and compared with cmp"
+      },
+      {
+        "command": "T-23 / T-26 / T-29: env -i PATH=… HOME=<scratch>/m1e/home TMPDIR=<scratch>/m1e/tmp node g147-trial.mjs <clone>/app (2026-11-19T21:09:06Z – 21:09:20Z)",
+        "output": "exit 0; Chrome 157.0.8103.79. G1: at load no finding in four variants; after the tap «бесплатно» (Б) in the result, «бесплатно» (Б) in the .sr live region only, «минут» (В) in a failure message, none for the plain page; the live line in innerText; no console line. G4: three rounds direct → four warnings «Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true…»; three rounds through a willReadFrequently copy → no console line; 65,142,157,255 in every read. G7 at 390 × 844: plain 220 samples, 67 distinct --you, 0 cut, none at load or after; narrowed while walking 199 of 224 cut, none at load or after; no console line"
+      },
+      {
+        "command": "T-23: node -e \"import('./scripts/check-public.js').then(m => console.log(JSON.stringify(m.checkText('js/pages/demo.js', <a script writing «… Это бесплатно.»>))))\" in <clone>/app",
+        "output": "[]"
+      },
+      {
+        "command": "T-24: node ps-pairing.mjs <clone>/app/scripts <scratch>/m1e/f2pages <work> (21:13:39Z, after prettier --write of the sketch)",
+        "output": "public-set.js: P0 no throw; P1 «index.html: line 35: an opening marker while the order region of line 23 is open», P2 «line 37: … region of line 33 …», P2b «line 25: … region of line 23 …», P3 «line 23: an end marker with no region of its kind open», P4 «line 39: a region never closed», P5 and P6 «a marker that is not alone on its line or not one of the four forms», P7 «line 24: … region of line 23 …», P6h «how.html: line 22: a marker that is not alone…», P1h «how.html: line 35: … region of line 22 …», P9 «shared/i18n/texts.js: the texts module exports EXTRA, LANGS, TEXTS, not exactly LANGS and TEXTS», P10 «shared/i18n/texts.js: the texts module cannot be imported: Unexpected token '='» — each unchanged true; P8 «index.html: a link to examples.html outside a region» unchanged false (the guard of the output). public-set-nopair.js (M89): no throw at P1, P5, P1h (</main>, <footer>, the home link and #ai-disclosure cut), P2 (the home link cut), P2b, P6h (an order_ key kept), P9; P3, P4, P6 (by the examples.html guard) and P7 refused only after the first write; P10 refused before any write but without the file's name. -m90 (M90): every marker plant refused with unchanged false. -m91 (M91): P6h no throw (an order_ key kept)"
+      },
+      {
+        "command": "T-24: node ps-equal.mjs <clone>/app/scripts <f2pages> <work>; node ps-positive.mjs <clone>/app/scripts/public-set.js <f2pages> and <f2pages-m79>; node vb-pairing.mjs <clone>/app <f2pages> <work>",
+        "output": "the cut of step 01c and the cut by the regions read byte-equal on the well-formed pages (changed 404, demo, how, index, texts.js; removed examples.html); second run byte-equal (changed none); gates open byte-equal to the source; the oracle of F41 {\"negative\":[],\"strict\":[],\"pp7\":[],\"regions\":[]}, M79 pp7 1 and regions 5 as F41; runBuild exit 1 «vercel-build: refused: index.html: line 35: an opening marker while the order region of line 23 is open», unchanged true"
+      },
+      {
+        "command": "T-24: npx eslint --max-warnings 0 scripts/public-set.js; npx prettier --check scripts/public-set.js; npx tsc --noEmit -p jsconfig.json | grep -c scripts/public-set (in <clone>/app)",
+        "output": "before the rethrow carried its cause: eslint 1 error «There is no `cause` attached to the symptom error being thrown  preserve-caught-error»; with { cause: err }: eslint 0, prettier clean (after --write), 0 tsc errors in the file (the sketch's other files keep their known tsc errors: the raw ports 68, F23, and the sketch modules of step 01)"
+      },
+      {
+        "command": "T-25: for m in none any-dts any-twin link-late no-tree basename, with and without g3: python3 ib-row.py . $m [g3] on a fresh copy of the build tag's import-boundaries.test.js; node --test test/unit/import-boundaries.test.js; grep -c 'assert\\.'",
+        "output": "as built: 3 of 4, «a file that is not .js: server/vendor/picker-engine.d.ts»; none 4 of 4 (no and g3); any-dts red at server/vendor/extra.d.ts, any-twin at server/lib/util.d.ts, link-late at «a link: server/vendor/picker-engine.d.ts», no-tree at the declaration (no and g3 alike); basename 4 of 4 green without g3, red with g3 at «a file that is not .js: server/lib/picker-engine.d.ts»; lines with assert. 38 in every patched form (35 as built); RED.length 161; the file restored (cmp equal)"
+      },
+      {
+        "command": "T-27: python3 vb-row8.py .; node --test test/unit/npmrc.test.js test/unit/vercel-build.test.js; again from the saved copy with vb-row8-g5.py; then ib-row.py . none g3, npx prettier --write on both files, node --test npmrc, vercel-build and import-boundaries, npm run -s test:unit, npm run -s test:int, eslint and prettier --check on both",
+        "output": "row 8 of step 01c: pass 10, fail 1 (NPM-6, the line vercel-build.test.js:337 «// The real app/ is read only: it stands in a git working tree …»); reworded: pass 11, fail 0; both rows formatted: 15 of 15; unit «# tests 47», pass 47, fail 0 (21:05:40Z); int «# tests 36», pass 36, fail 0 (21:05:56Z – 21:06:46Z); eslint 0; prettier clean; lines with assert. 38 (VB, was 37) and 38 (IB, was 35)"
+      },
+      {
+        "command": "T-28: in <scratch>/m1e/b3/app B1's files, B2's Math.random rule (any folder), B3's chain and test:e2e; npm ci; npm run -s test:unit",
+        "output": "npm ci 0; «# tests 46», pass 43, fail 3: not ok CP-2 (check-public.test.js:62, actual [{file: 'js/a.js', item: 'Math.random'}]), not ok IB-1, not ok NPM-3 (npmrc.test.js:292)"
+      },
+      {
+        "command": "pmset -g log for 2026-11-20 01:53–02:29 +0500 (20:53Z – 21:29Z): sleep, clamshell and thermal entries",
+        "output": "none (only maintenance-wake assertions); no trial was cut by a sleep (AP-163)"
+      },
+      {
+        "command": "pgrep -fl for the trial folders' HOME and TMPDIR and for node-main of the clones",
+        "output": "no browser and no server of the trials left"
+      },
+      {
+        "command": "git diff --stat base/M1CODE-20261119-01-build -- app tools .github; git status --short -- app tools .github (in the project, 21:28:53Z); git status --short",
+        "output": "both empty: the project's app/, tools/ and .github/ equal the build tag; git status as at the start (M decisions/0123, decisions/README.md, PROGRESS.md, requirements.yaml; ?? decisions/0124, the design, handoffs/M1AMEND-20261119-01/, handoffs/M1CODE-20261119-01/) — this step changed the design and added this handoff only"
+      },
+      {
+        "command": "python3 table check of the design (every table row has its header's cell count)",
+        "output": "all rows this step wrote are whole; two rows of earlier steps are not (F6, C15: issue I7)"
+      },
+      {
+        "command": "search for the names of other projects and computer paths in the design and this handoff",
+        "output": "by npm run traces below: 0 traces"
+      },
+      {
+        "command": "cd tools && npm run -s handoffs-check (2026-11-19T21:31Z, with this result written)",
+        "output": "«handoffs-check: файлов проверено 1461, нарушений 1, исключений использовано 110 из 110», exit 1 by that one line: handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 H4 (PENDING in a commit), known and not this step's (the task's criterion sets it aside; gate pass 2 saw the same line); no line for any handoff of M1CODE-20261119-01"
+      },
+      {
+        "command": "cd tools && npm run -s traces (2026-11-19T21:31:51Z)",
+        "output": "«traces: файлов проверено 2723, следов 0, пропущено 67», exit 0"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "PROCESS",
+        "text": "The task told this step to write its own handoff with from_agent ORCH; docs/workflows/handoffs.md says only ORCH creates handoffs. It was created with the handoff command (cd tools && npm run -s handoff -- new …) so that the fields, the base tag and the time follow the rules: created_at and started_at are that command's one clock reading, 2026-11-19T21:27:40Z; the first clock reading of this work was 20:53:56Z (the task says the earlier launch of this rework stopped on the usage limit before it wrote any file — measured: no step-01e file, the design's sha256 was the gate's 254b5651…01ebad). context.base_tag is base/M1CODE-20261119-01 (the command writes base/<RUN-ID>); the build tag of decisions/0124 О13 is named in the task and the design."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "G1 was applied as one rule of the whole landing test (AP-014), not only to the four tests the gate named: LD-1, LD-3 (after each language switch), LD-4 (after each theme change: the label and the name «Тема: …») and LD-8 (after each step of its pass) call the same helper, because criterion 12 reads «on every page and in every state … that the test reaches» and those states are written by page scripts too. No new test, no new count. LD-7 stays in ru, as criterion 12's failure sentence and the gate's fix read it; its messages are keys of the texts module, which check-public lints in each language. ST-3's step taps on how are not linted: criterion 12 names landing.test.js and REQ-112 criterion 6 asks for no lint; labels.js writes the same texts on demo, where LD-5 and LD-6 lint them. If ORCH wants the stage test to lint too, it is one call of the helper in ST-3."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "G2 also closes two places of the same family that the gate did not name, measured in F46 and written in PB-6: an end marker sharing its line with the element before it (the cut of step 01c paired block D's opening marker with the footer's end marker: </main>, the footer, the home link and #ai-disclosure cut, no throw) and the markers in another form (`<!--sai:order-->`: on the how panel, which holds no examples.html, the order text reached the output with no throw). E15 named PB-6 as its test while PB-6 had no plant of the texts module; PB-6 (i) now plants a third export and a module that cannot be imported (both refused before the first write). B5's own check runs PB-6's plants through the developer's driver. These follow from the approach the gate asked for (the markers read as one sequence, AP-162: the fix tried against the other ways to over-cut), not a widening of the task."
+      },
+      {
+        "id": "I4",
+        "kind": "NOTE",
+        "text": "The sketch's messages are the design's forms (4.11), and its step (1) refuses a third export and a failed import — the sketch of step 01c did neither, so M89's copy (public-set-nopair.js) does not refuse P9 either; that is outside M89's definition (the cut with no pairing check), and PB-6 (i) is killed by its own rule. The rethrow of a failed import carries { cause }: without it the app's eslint 10.11.0 is red by preserve-caught-error (F46)."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "Carried, not new: the design's О15 (section 18; REQ-108 criterion 2's count reference) still has no answer in a record — decisions/0124 holds О1–О14 (gate pass 2's issue I2 said the same). WF-02 step 1a has ORCH answer the design's questions before the gate, and REQ-111 criterion 16 reads its counts «as criterion 2 of REQ-108 reads it». Default as section 16 and 18: the micro-amendment that follows this run writes the reference to the test catalogues of the runs the tree holds; until then a re-check reads the counts at d87b3d1 (unit 46, int 36). This rework changes no count of the catalogue (96 new named tests, unit 117, int 46, e2e 15)."
+      },
+      {
+        "id": "I6",
+        "kind": "NOTE",
+        "text": "Carried from step 01c (its issue I3), still not edited (a rework goes by the list of remarks, AP-019): PP-6 (the closed list of CSSOM writes, C5, О5; mutant M35) has no row in section 9. Proposed one-cell fix: add «PP-6 (the closed list of CSSOM writes, 4.10)» to the test column of REQ-111/10 and «M35» to its mutants."
+      },
+      {
+        "id": "I7",
+        "kind": "NOTE",
+        "text": "Found by a table check of the whole design, not edited (beyond the list, cosmetic, no outcome): two rows of earlier steps have the wrong number of cells for a table renderer — F6 (section 1) holds an unescaped `|` inside `export declare (const|function) <name>`, and C15 (section 2) has one cell fewer than its header (no О column). Every row this step wrote is whole."
+      },
+      {
+        "id": "I8",
+        "kind": "PROCESS",
+        "text": "Error-journal candidates for DOC-UPDATER through ORCH (next free AP-164 by decisions/0123's Addition), as gate pass 2's issue I5 named them and section 16 now lists: (a) the over-cut of gate pass 1 was fixed against its own probe, and the guard was not tried against the other ways to over-cut — a guard of a cut reads the pairing of its input before it cuts (AP-162's kind; G2, F46: of ten planted marker shapes the cut of step 01c refused four, each only after its first write); (b) a sketch test measured alone, not under the check's other guards (G5, F49); (c) a read of a test that prints a console line under a console-silence rule (AP-159's kind; G4, F48); (d) a criterion's scope «every state … that the test reaches» mapped to one test of the load (AP-126's kind; G1, F45)."
+      }
+    ],
+    "prototype": {
+      "where": "<outside the project>/m1e/ (the working folder of the session; never in the project)",
+      "contents": [
+        "clone/ — a fresh clone of base/M1CODE-20261119-01-build with the 32 sketch files of step 01c carried onto it (not its two changed test files), scripts/public-set.js rewritten by 4.11 of this rework (readRegions, stripRegions by the regions read, step (1)'s two refusals with cause, step (2) before the first write; sha256 3ae72f2e…, formatted by prettier), the mutant copies public-set-nopair.js (M89, the sketch of step 01c), public-set-m90.js, public-set-m91.js; the build tag's import-boundaries and vercel-build tests with rows 5 (with the copy of G3) and 8 (its comment reworded) applied and formatted at the end",
+        "b3/ — a fresh clone of the build tag with B1's files, B2's Math.random rule and B3's chain (F50)",
+        "f2pages/, f2pages-m79/ — copies of the pages of F41",
+        "trials/ — ps-pairing.mjs (13 planted shapes on four variants), ps-equal.mjs, vb-pairing.mjs, ps-positive.mjs (of step 01c), ib-row.py (of step 01c, with the damaged copy of G3 and the file-name mutant), vb-row8.py (of step 01c), vb-row8-g5.py (its comment reworded), g147-trial.mjs (F45, F48, F51)",
+        "home/, tmp/ — HOME and TMPDIR of the browser trials; work/ — the copies the trials built and judged",
+        "the saved copies (ib.saved.js, vb.saved.js, public-set.01c.saved.js, design.after.md) and the logs (npmci.log, ib-*.log, g5-*.log, b3-*.log, ps-pairing.log, ps-equal.log, ps-positive.log, g147.log)"
+      ],
+      "github": "nothing pushed, nothing read"
+    },
+    "artifacts_out": [
+      "docs/design/REQ-111-112-public-landing.md"
+    ]
+  }
+}

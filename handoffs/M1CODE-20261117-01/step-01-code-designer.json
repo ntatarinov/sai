@@ -1,0 +1,290 @@
+{
+  "handoff_id": "step01-M1CODE-20261117-01",
+  "run_id": "M1CODE-20261117-01",
+  "workflow_id": "WF-02",
+  "step": "01",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/M1CODE-20261117-01/step-01-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-108",
+      "REQ-109"
+    ],
+    "agent_run_id": "a23af76c6958dcf02",
+    "artifacts_in": [
+      "docs/requirements.yaml (blocks REQ-108, REQ-109)",
+      "handoffs/M1SITE-20261117-01/ (gate passes 02, 02b)",
+      "decisions/0116 (О1-О26)",
+      "docs/program/public-v1/ARCHITECTURE.md (§1-§4, §13, §14, §16, §18-§20)",
+      "docs/program/public-v1/PLAN.md (§4, §5 M1)"
+    ],
+    "route": "ORCH 0 (tag base/M1CODE-20261117-01 on 6c756cd; REQ-108/109 in_progress when the build starts) -> CODE-DESIGNER 1 (this) -> ORCH 1a (answers, decision record) -> CODE-DESIGN-VALIDATOR 1b -> BACKEND-DEV 2 (after the M0 release, PLAN §5.0) -> SECURITY-REVIEWER 3 + REVIEWER 4 -> TEST-DESIGNER 5 -> 5b -> TEST-RUNNER 6 (local and GitHub) -> UAT 8 (closed page in Chrome) -> RELEASE-VALIDATOR 9 -> DOC-UPDATER 10 -> RELEASE-FINALIZER 11 (push; no deploy before G3/G4)",
+    "write_set": [
+      "docs/design/REQ-108-109-app-skeleton.md (new) only; at most one temporary branch ci/m1code-design-<n> on GitHub, deleted after its run"
+    ],
+    "base_tag": "base/M1CODE-20261117-01",
+    "parallel_work_now": [
+      "REQ103AMEND-20261117-01 step 01 REQ-ANALYST (writes only the block REQ-103 of docs/requirements.yaml)"
+    ],
+    "orch_check": {
+      "at": "2026-11-17T19:18:49Z",
+      "by": "ORCH",
+      "verdict": "PASS",
+      "checked": [
+        "status COMPLETED, completed_at 2026-11-17T19:16:19Z, result.status COMPLETED; agent_run_id filled by ORCH",
+        "docs/design/REQ-108-109-app-skeleton.md new (121 KB, sections 0-22); no app/ in the project; git status: only the design new from this step",
+        "gh: the sketch branch ci/m1code-design-1 is gone (git ls-remote origin -> HEAD and main at 6c756cd); app.yml sketch run 44151782390 and check.yml run 44151782067 success (the designer's record)",
+        "open questions О1-О17 answered in decisions/0118; О15 -> Addition to decisions/0001 by ORCH; О2 and О17 (+ the wording points N7, N9, N10, N11 of 0116 О25) -> a micro-amendment run REQ108AMEND of REQ-108/REQ-109 before the design gate",
+        "issue I21: three sketch servers left by the first mutant series were found and stopped by the designer by pid",
+        "next: the micro-amendment run (after REQ103AMEND frees docs/requirements.yaml), then step 01b CODE-DESIGN-VALIDATOR"
+      ]
+    }
+  },
+  "task": {
+    "description": "WF-02, step 1 — CODE-DESIGNER writes the design of REQ-108 (R1.1, the app skeleton) and REQ-109 (R1.4, Vercel readiness), task M1.3 of the program PUBLIC-V1, in docs/design/REQ-108-109-app-skeleton.md, by the section \"Step 1\" of docs/workflows/WF-02-development.md. No implementation code in the design: shapes, signatures, tables, exact file lists and exact command lines only. READ FIRST: the blocks REQ-108 and REQ-109 in docs/requirements.yaml (all criteria; read by id; they are in the working file, not yet in the tag base/M1CODE-20261117-01); their gate handoffs handoffs/M1SITE-20261117-01/step-02-req-validator.json and step-02b-req-validator.json; decisions/0001, 0091, 0092, 0094, 0096, 0106, 0107, 0110, 0111, 0115, 0116 (all addenda, especially О3, О10, О17-О26); docs/program/public-v1/PLAN.md §4 and §5 M1 (M1.2, M1.3, M1.7, AC1.1-AC1.4, AC1.6, AC1.11); docs/program/public-v1/ARCHITECTURE.md §1-§4, §13, §14, §16, §18-§20 and the PROGRESS «Plan amendments» rows of 2026-11-17; docs/program/public-v1/vercel-setup.ru.md; the own Chrome kit tools/test/e2e/kit/ and its README section; docs/anti-patterns.md. WHAT THE DESIGN MUST SETTLE: (1) the file tree of app/ and every file's role, the exports and their signatures, the config keys, the error codes and the plain messages; (2) the package pins (exact versions, the 14-day age by `npm view <pkg> time`, licences of the direct dependencies, the lockfile from npmjs only) and the one check command of app/; (3) the browser-test tool of app/ (decisions/0116 О3): reuse the own pure-Node Chrome kit or add playwright-core — measured both ways on a sketch, proposed as a decision record (open question with a default); (4) the database: PGlite locally (does PGlite support CREATE ROLE, row security and the advisory lock? measure), real Postgres in the pg job, the login role sai_app_login and the server-side password form of 0116 О24 (measure a working form on PGlite and, if possible, on real Postgres), migration 0001, the selfcheck and its order (no SQL before it passes), the fallback of 0116 О23; (5) the Vercel shape: one function app/api/index.js behind one rewrite (0116 О4), vercel.json, vercel-build with the SITE_GATE path that makes no database call and outputs only index.html (0116 О18, N6), check-public, smoke; what only spikes S1-S3 can show (after the owner's G3/G4) is listed, not guessed; (6) app.yml (triggers main and ci/**, jobs check, pg, docker, pinned actions, the Node pin at or above 22.23.4, the path list with docs/runbooks/** and tools/package.json) and Docker/compose parity; (7) the Low points of 0116 О25 assigned to the design: N1, N2, N3, N4, N5, N6, N8 — settle each; (8) the criterion -> test table for every criterion of both blocks, the replacement table of earlier guard tests (search tools/test and .github for what reads the root .gitignore, .github/workflows, the root README and CLAUDE.md), the build sub-steps with the tests red after each, at least 30 mutants each with its catching test, the bar section Q1-Q14 and R1-R3, failure paths with what the user sees and what stays unchanged, the time budget of the app check and of app.yml; (9) the README and docs sections that change. Check every statement on a sketch outside the project (a fresh clone of the tag, then a sketch app/ in that clone: install only exact versions at least 14 days old from npmjs; run the app check, the PGlite trials and a local Chrome check of the closed page). Real Postgres and Docker: if they cannot run on this Mac, you MAY push ONE sketch snapshot (built through a temporary index on a clone, never in the project's index) to a temporary branch ci/m1code-design-<n> of GitHub to run a sketch of app.yml there, read its log, and delete the branch at once (decisions/0107, 0110 rules: nothing to main, no tags, no force; the repository is public, so the sketch holds no secret and no machine path); otherwise mark those facts \"read, not measured\". Never create a Vercel project, never run a Vercel command that needs an account, never deploy. Open questions go as a list О1, О2, … with a default. Write only docs/design/REQ-108-109-app-skeleton.md (new). The design holds no absolute machine paths, no temporary paths, no secrets and no names of other projects of the owner.",
+    "acceptance_criteria": [
+      "every criterion of REQ-108 and REQ-109 leads to an element of the design and a test; files, exports, config, errors complete",
+      "pins, licences, the check command, the browser-test tool, the database (PGlite, sai_app_login, password form, selfcheck order), the Vercel shape and app.yml settled with measurements or marked read-not-measured",
+      "the Low points N1-N6, N8 of decisions/0116 О25 settled; replacement table measured; sub-steps; at least 30 mutants; bar section; time budget",
+      "statements checked on a sketch outside the project; at most one temporary ci/ branch, deleted; open questions with defaults; no Vercel account action"
+    ]
+  },
+  "created_at": "2026-11-17T18:09:12Z",
+  "started_at": "2026-11-17T18:09:12Z",
+  "completed_at": "2026-11-17T19:16:19Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-02 step 1 for REQ-108 (R1.1) and REQ-109 (R1.4): the design docs/design/REQ-108-109-app-skeleton.md (about 121 KB, sections 0-22). It settles the file tree of app/ (every file's role, exports, signatures, config keys with error codes and messages, the plain lines of the entries), the pins (hono 4.13.16, @hono/node-server 2.1.6, pg 8.23.1; dev @electric-sql/pglite 0.5.15, typescript 6.0.3, @types/node 22.20.5, @types/pg 8.23.1 and the four lint/format versions of tools/; the lockfile made with npm install --before, 101 entries all at least 14 days old and from npmjs), the one check command of app/, the database (PGlite supports CREATE ROLE, forced RLS under SET LOCAL ROLE and advisory locks; its session user is a superuser, so the PGlite adapter switches to sai_app_login by SET SESSION AUTHORIZATION after the migrations and the one selfcheck statement reads session_user on both; the password form of decisions/0116 О24 works on PGlite, Postgres 16.14 and Postgres 17.12 with a guarded DO block — without the handler the error carries the password; the password step is a runner step on every run), the Vercel shape and nine facts that wait for spikes S1-S3, app.yml (check, pg, docker; green on GitHub), Docker and compose parity, the Low points N1-N6 and N8, the criterion -> test table for all 25 criteria, a catalogue of 79 named tests in 26 files, the replacement table (no guard test turns red, measured by check.yml on GitHub), 11 build sub-steps (B1-B7 BACKEND-DEV, T1-T4 TEST-DESIGNER), 48 mutants (29 applied on the sketch), the bar section Q1-Q14, R1-R3, failure paths, the time budget, and 17 open questions with defaults. Three points of the requirement need ORCH before gate 1b: criterion 14 of REQ-108 cannot be met as written (Chrome logs one console error for every 404 or 503 page, О2), the pg job cannot use a services: container with a password made in the run (О4), and a test step with no test file passes criterion 2's counts (О17). Every statement was measured on a sketch outside the project; one temporary branch ci/m1code-design-1 was pushed, its two runs read (app.yml success, check.yml success 2209/2209) and the branch deleted. No Vercel command, no deploy, no commit to the project.",
+    "changes": [
+      "docs/design/REQ-108-109-app-skeleton.md (new): header and 0 summary; 1 checked facts F1-F28 with commands and outputs; 2 disputable choices C1-C14; 3 the file tree of app/ and owners; 4 interfaces (4.1 config keys and errors, 4.2 error codes and plain lines, 4.3 createApp and its middleware order with the answer table, 4.4 node-main start order, 4.5 static map, 4.6 http modules, 4.7 routes and /api/health values, 4.8 db layer and the adapter contract, 4.9 the migration runner with the outcome of each step, 4.10 migration 0001, 4.11 the Vercel entry, 4.12 the pages with their exact texts, 4.13 vercel-build, smoke, check-public, 4.14 package files, 4.15 Vercel files, 4.16 Docker files, 4.17 app.yml, 4.18 .gitignore lines, 4.19 runbooks); 5 pins, licences and the proposed Addition to decisions/0001; 6 the database; 7 the Vercel shape and V1-V9 for the spikes; 8 the browser-test tool measured both ways; 9 failure paths E1-E18; 10 protection in the same operation; 11 time budget; 12 criterion -> test; 13 test catalogue; 14 replacement table; 15 build sub-steps; 16 mutants M01-M44, P1-P4; 17 N1-N6, N8; 18 quality bar; 19 documents and what becomes outdated; 20 the sketch; 21 open questions О1-О17; 22 counts."
+    ],
+    "self_check": [
+      {
+        "command": "cd tools && npm run -s format:check",
+        "output": "All matched files use Prettier code style!"
+      },
+      {
+        "command": "cd tools && node src/handoffs/cli.js",
+        "output": "handoffs-check: файлов проверено 1404, нарушений 0, исключений использовано 114 из 114 (exit 0)"
+      },
+      {
+        "command": "cd tools && node src/traces/cli.js",
+        "output": "traces: файлов проверено 2577, следов 0, пропущено 67 (exit 0)"
+      },
+      {
+        "command": "search for the names of other projects and computer paths in the design",
+        "output": "empty (the traces run above; also a grep for home, temporary and scratch path shapes in the design: 0)"
+      },
+      {
+        "command": "git clone -b base/M1CODE-20261117-01 <the project> <outside the project>/m1code-01/clone; the blocks REQ-108/109 counted on the tag and in the working file",
+        "output": "tag 0, working file 2 (F1); the tag has only .github/workflows/check.yml, no app/, no docs/runbooks (F2)"
+      },
+      {
+        "command": "npm install --before=2026-11-03T18:00:00Z in the sketch app/; npm view <name> time --json for all 101 lockfile entries",
+        "output": "lockfileVersion 3, 101 entries, every resolved on https://registry.npmjs.org/, newest @electric-sql/pglite@0.5.15 2026-11-03T12:39:40Z, none later than the cut; licences MIT 73, Apache-2.0 14, ISC 6, BSD-2-Clause 6, BSD-3-Clause 1, BlueOak-1.0.0 1; npm audit --omit=dev --audit-level=high: found 0 vulnerabilities"
+      },
+      {
+        "command": "npx tsc --noEmit -p jsconfig.json with typescript 6.0.3 and with 7.0.2 (a throwaway copy)",
+        "output": "6.0.3: 0 errors; 7.0.2: 15 errors in node_modules/punycode/punycode.js and 20 platform packages in the lockfile (F8)"
+      },
+      {
+        "command": "node <outside the project>/m1code-01/trials/pglite-roles.mjs and pglite-switch.mjs",
+        "output": "PostgreSQL 18.6 (PGlite 0.5.15); session user postgres rolsuper and rolbypassrls true; CREATE ROLE, grants, duplicate 42710, the DO handler, set_config with a bound value and the DO format %L block (SCRAM stored), the unguarded failure's where holds the value, the guarded one does not; advisory locks; forced RLS 1 of 2 rows under set local role sai_app; set session authorization sai_app_login -> rolsuper false, rolbypassrls false, is_superuser off (F9)"
+      },
+      {
+        "command": "a private Postgres 16.14 cluster in <outside the project>/m1code-01/pgdata with listen_addresses '' (Unix socket only, lsof: 0 internet sockets), log_statement all; trials pg-real.mjs, pg-login.mjs, pg-login2.mjs, pg-timeouts.mjs; then stopped with pg_ctl stop",
+        "output": "the password form works; login with a password holding @:/?#% only with encodeURIComponent (the URL setter leaves %: 28P01); the server log holds bound values in DETAIL lines (29) and never the quoted alter role (0); advisory locks are per database; refused -> 'connect ECONNREFUSED 127.0.0.1:<port>' in 2 ms, silent -> 'timeout expired' after 2004 ms (F10, F11)"
+      },
+      {
+        "command": "cd <outside the project>/m1code-01/clone/app && npm run check (three times; last at 2026-11-17T19:03Z)",
+        "output": "exit 0 in 39.0-39.9 s; unit # tests 38 # pass 38 # fail 0 # skipped 0 # todo 0; int # tests 25 # pass 25 # fail 0 # skipped 0 # todo 0"
+      },
+      {
+        "command": "SAI_PG_HOST=<the socket folder> SAI_PG_SUPERUSER_PASSWORD=<from a file outside the project> npm run -s test:pg (local Postgres 16.14)",
+        "output": "# tests 4 # pass 4 # fail 0"
+      },
+      {
+        "command": "the snapshot through a temporary index in the clone (git read-tree HEAD; git add app .github/workflows/app.yml .gitignore docs/runbooks; write-tree; commit-tree) -> 7c14e72; its tree in a copy whose HEAD is the snapshot (AP-146): node src/handoffs/cli.js, node src/traces/cli.js, the secret grep of REQ-108 criterion 13, the skip grep of criterion 2",
+        "output": "72 files over the base tree; git status of the copy empty; handoffs-check 0 violations of 1392; traces 2632 files 0 traces; both greps: no line"
+      },
+      {
+        "command": "a fresh clone of the snapshot with every path outside the app.yml paths list removed (rm -rf, .git kept); cd app && npm ci && npm run check",
+        "output": "exit 0 (unit 38, int 21 of the snapshot)"
+      },
+      {
+        "command": "git push https://github.com/ntatarinov/sai.git \"${SNAP}:refs/heads/ci/m1code-design-1\" at 2026-11-17T18:48:17Z; git ls-remote",
+        "output": "only main at 6c756cd and ci/m1code-design-1 at 7c14e72"
+      },
+      {
+        "command": "gh run view 44151782390 --json status,conclusion,jobs and --log (app.yml)",
+        "output": "success: check 80 s (unit 38/38, int 21/21, audit 0), pg 26 s (4/4 on PostgreSQL 17.12), docker 42 s (node v22.23.4 in every job and in the image; pg_stat_activity probe printed one row sai_app_login; smoke 8 ok lines; id -u not 0; schema_migrations 0001_init.sql)"
+      },
+      {
+        "command": "gh run view 44151782067 --json status,conclusion,jobs and --log (check.yml on the same sha)",
+        "output": "success 18:48:25Z-18:56:09Z; traces 2632/0; handoffs-check 0; # tests 2209 # pass 2209 # fail 0 # cancelled 0 # skipped 0 # todo 0"
+      },
+      {
+        "command": "git push https://github.com/ntatarinov/sai.git --delete ci/m1code-design-1 at 2026-11-17T18:59:17Z; git ls-remote",
+        "output": "[deleted]; the remote holds only main at 6c756cd"
+      },
+      {
+        "command": "TMPDIR=<outside the project>/m1code-01/trials/tmproot node trials/chrome-kit.mjs (withBrowser of tools/test/e2e/kit; 3 pages x 3 windows x 2 schemes)",
+        "output": "18 loads, 18 snapshots; text, lang ru, no overflow, one request per load (no favicon), contrast 21/18.73 and 9.4/7.84; / no console line; /nope and the gate page one console error each per load: 'Failed to load resource: the server responded with a status of 404 (Not Found)' / '... 503 (Service Unavailable)' (F16, О2)"
+      },
+      {
+        "command": "node pw-trial/pw-check.mjs (playwright-core 1.64.1, channel chrome) and trials/kit-limits.mjs",
+        "output": "playwright-core 13 MB, launch 940 ms, opens localhost, reports CSP violations; kit launch 294 ms, localhost -> URL_REFUSED, a CSP violation ends withBrowser with CONSOLE_ENTRIES (F17, F18)"
+      },
+      {
+        "command": "mutant series on <outside the project>/m1code-01/mut (25, then 11 with the formatted texts, then 2, then P1-P4 on local Postgres); the clone status after each series",
+        "output": "29 applied: 27 red, M07 equivalent (a commit of a failed transaction rolls back), P4 green at pg level and red at int level (SC-1); 4 first survivors (M05, M09, M16/M17, M18) closed by MG-4, SG-2, AE-3, NM-4, then red; git status of the mutant clone clean"
+      },
+      {
+        "command": "bash -ec '! echo postgres | grep -qx postgres; echo reached'; node --test \"test/unit/**/*.test.js\" in an empty folder",
+        "output": "'reached' (F19); exit 0 with # tests 0 (F28)"
+      },
+      {
+        "command": "date -u +%Y-%m-%dT%H:%M:%SZ at the end of the work",
+        "output": "2026-11-17T19:14:28Z"
+      }
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "NOTE",
+        "text": "context.agent_run_id: I cannot see the id of my launch in this session; it stays null (ORCH's field, not written by me)."
+      },
+      {
+        "id": "I2",
+        "kind": "DISCREPANCY",
+        "text": "REQ-108 criterion 14 cannot be met as written: Chrome writes one console error «Failed to load resource: the server responded with a status of 404 (Not Found)» for /nope and «… 503 (Service Unavailable)» for the gate page in every load (F16, measured 6 of 6 each), while criteria 5 and 9 require those statuses and criterion 14 excuses no console line. Proposal: a micro-amendment of REQ-108 before gate 1b (design О2)."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Outside this run: npm ci on the GitHub runner reports «3 moderate severity vulnerabilities» for the whole tree in tools/ (and in app/, the same dev packages); npm audit --omit=dev --audit-level=high is clean in app/. For ORCH to decide whether a defect is opened for tools/ (quality-bar §6 item 6)."
+      },
+      {
+        "id": "I4",
+        "kind": "QUESTION",
+        "text": "О1 — the browser-test tool of app/ (decisions/0116 О3). Default: playwright-core (exact version, ≥ 14 days old), from node:test, channel chrome, a fresh context per test, --use-mock-keychain, a URL guard for the test's own 127.0.0.1 and localhost hosts; installed with the first browser test (R1.2), not now. Proposal for a decisions/ record (design section 8)."
+      },
+      {
+        "id": "I5",
+        "kind": "QUESTION",
+        "text": "О2 — criterion 14 (I2). Default: a micro-amendment excusing exactly one console line per load on /nope and on the gate page: level error, that text with that status, the URL of the page itself; any other line fails."
+      },
+      {
+        "id": "I6",
+        "kind": "QUESTION",
+        "text": "О3 — the scope of tsc. Default: api/, server/, scripts/, public/ and eslint.config.js; not test/."
+      },
+      {
+        "id": "I7",
+        "kind": "QUESTION",
+        "text": "О4 — the Postgres of the pg job. Default: docker run in a step with a password made and masked in the run, read as the «postgres:17@sha256:… service» of criterion 11 (a services: container starts before any step; trust auth would make the login check prove nothing). Alternative: services: with a predictable password expression."
+      },
+      {
+        "id": "I8",
+        "kind": "QUESTION",
+        "text": "О5 — stricter rules than criterion 3 lists (N2 plus node:worker_threads, node:vm, eval(, Function(, the names globalThis, global, self, window, the member getBuiltinModule, a destructuring of the node:http binding). Default: all red."
+      },
+      {
+        "id": "I9",
+        "kind": "QUESTION",
+        "text": "О6 — /api/health values when the database is down. Default: role \"unknown\", migrations_pending null."
+      },
+      {
+        "id": "I10",
+        "kind": "QUESTION",
+        "text": "О7 — the error codes not_found, bad_request, body_too_large, bad_encoding, site_closed, server_error, server_config (design 4.2). Default: as written."
+      },
+      {
+        "id": "I11",
+        "kind": "QUESTION",
+        "text": "О8 — the test-only variables PGLITE_DIR and MIGRATIONS_DIR. Default: these names, refused with NODE_ENV=production, listed in app/.env.example."
+      },
+      {
+        "id": "I12",
+        "kind": "QUESTION",
+        "text": "О9 — the closed vercel-build refuses to replace public/ inside a git working tree; S1 builds once with SITE_GATE=closed on a protected preview deployment. Default: as written."
+      },
+      {
+        "id": "I13",
+        "kind": "QUESTION",
+        "text": "О10 — /gate.html is reachable while the site is open (Node, Docker, Vercel). Default: accepted."
+      },
+      {
+        "id": "I14",
+        "kind": "QUESTION",
+        "text": "О11 — a Postgres server with log_statement all logs bound values, the password of the password step included (F10). Default: a named limit in the design and app/README.md; S3 reads Neon's logging."
+      },
+      {
+        "id": "I15",
+        "kind": "QUESTION",
+        "text": "О12 — no CSS file and no icon file in M1. Default: none (browser colours pass 4.5:1; the icon is data:,)."
+      },
+      {
+        "id": "I16",
+        "kind": "QUESTION",
+        "text": "О13 — three helper files under app/test/fixtures/ (helpers.js, db.js, pg-env.js), beyond the test files named in the criteria. Default: allowed (ARCH §2 lists test/fixtures/)."
+      },
+      {
+        "id": "I17",
+        "kind": "QUESTION",
+        "text": "О14 — app/server/db/tx.js holds only withPlatform with a one-statement body in M1; the adapter's transaction method comes with M2. Default: as written."
+      },
+      {
+        "id": "I18",
+        "kind": "QUESTION",
+        "text": "О15 — the Addition to decisions/0001: the dev type packages @types/node and @types/pg (MIT), the transitive BlueOak-1.0.0 of minimatch named, no install-script exception. Default: ORCH appends it."
+      },
+      {
+        "id": "I19",
+        "kind": "QUESTION",
+        "text": "О16 — the post-deploy smoke of REQ-109 runs without --preview (no second host before S2). Default: --preview stays optional."
+      },
+      {
+        "id": "I20",
+        "kind": "QUESTION",
+        "text": "О17 — node --test over a glob that matches nothing ends with 0 and «# tests 0» (F28), so criterion 2's counts are met by an empty folder. Default: the presence guards NPM-5 and NM-5 and the reading of «# tests» by TEST-RUNNER and RELEASE-VALIDATOR; a micro-amendment adding «# tests ≥ 1» is ORCH's choice."
+      },
+      {
+        "id": "I21",
+        "kind": "PROCESS",
+        "text": "My first mutant series (6 min 5 s) left three sketch servers of node-main running in the mutant clone after the harness ended a hung test process at its 120 s limit (a mutant of the unsafe-role exit among them; AP-140 kind). Found after the series by their working folder, stopped by their pids (ps shows none left); the design now asks a per-test timeout, the kill in t.after and a kill by recorded pids (section 16). For DOC-UPDATER: a candidate for the error journal together with F19 (bash -e and a negated pipeline), F27 (the cancel of one branch of a tee waits for the other) and F16 (the console line of a 404 page, the kind of AP-117)."
+      },
+      {
+        "id": "I22",
+        "kind": "NOTE",
+        "text": "Safety record: every sketch server listened on 127.0.0.1 port 0; the private Postgres listened on no TCP port at all (a Unix socket in the work folder) and was stopped at the end; the Chrome runs used the kit's withBrowser with TMPDIR set to the work folder (fresh profiles there); ports 4780/4781/4782/4790 were never touched; Pixel Office, the team server and the real claude were not started; SAI_TEAM_REAL_RUNS was never set; no Vercel command and no Vercel login; no commit in the project; no permission check denied a command. One zsh slip: a node -e script with a quote in its text failed to parse (nothing ran); the edits went through files in the work folder after it."
+      }
+    ],
+    "prototype": {
+      "where": "<outside the project>/m1code-01/ (the working folder of the session; never in the project)",
+      "contents": [
+        "clone/ — a fresh clone of base/M1CODE-20261117-01 with the sketch: app/ (the files of design section 3 as a working sketch, 26 test files, three helpers at the sketch's own places, node_modules from the lockfile), .github/workflows/app.yml, the .gitignore lines, docs/runbooks/; the temporary ref snap = 7c14e72 (the pushed snapshot)",
+        "snapcopy/ — the snapshot tree with its own git metadata (AP-146), where handoffs-check, traces and the greps ran",
+        "rmcheck/ — a fresh clone of the snapshot with every path outside the app.yml list removed (F20), also the TypeScript 7.0.2 trial (F8)",
+        "mut/ — the mutant clone (clean)",
+        "pw-trial/ — playwright-core 1.64.1 and pw-check.mjs",
+        "pgdata/, pg.log, pgsu.pw — the private Postgres 16.14 cluster (stopped) and its superuser password file (never printed, never pushed)",
+        "trials/ — pglite-roles.mjs, pglite-switch.mjs, pg-real.mjs, pg-login.mjs, pg-login2.mjs, pg-timeouts.mjs, chrome-kit.mjs, kit-limits.mjs, silent.mjs, mutants*.mjs, check logs, the GitHub logs app-run.log and check-run.log, 18 snapshots in trials/tmproot/",
+        "lock-list.txt, lock-times.txt, times.mjs — the age measurement of the 101 lockfile entries",
+        "edits/ — the scripts that applied the text edits to the design"
+      ],
+      "github": "branch ci/m1code-design-1 at 7c14e72, pushed 2026-11-17T18:48:17Z, runs 44151782390 (app, success) and 44151782067 (check, success), deleted 2026-11-17T18:59:17Z"
+    },
+    "artifacts_out": [
+      "docs/design/REQ-108-109-app-skeleton.md"
+    ]
+  },
+  "orch_note": {
+    "by": "ORCH",
+    "at": "2026-11-17T18:09:13Z",
+    "text": "Launched in session 3 of the program PUBLIC-V1 (decisions/0115) as a general agent bound by its role file .claude/agents/code-designer.md (read first): the Sai role agents are not registered in this ORCH session. Step 0 by ORCH: tag base/M1CODE-20261117-01 on 6c756cd."
+  }
+}

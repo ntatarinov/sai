@@ -1,0 +1,236 @@
+{
+  "handoff_id": "step02b-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/M1CODE-20261119-01/step-02b-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-03-security-reviewer.json",
+      "handoffs/M1CODE-20261119-01/step-04-reviewer.json",
+      "docs/design/REQ-111-112-public-landing.md",
+      "docs/design/V1-public-look.md",
+      "decisions/0122-takeover-releases-and-spike-s1.md, decisions/0123-m1site-public-look-answers.md, decisions/0124-m1code-landing-design-answers.md (with their Additions, О19–О21 included)",
+      "docs/requirements.yaml (blocks REQ-111, REQ-112)"
+    ],
+    "route": "... 02 (B1-B6, F1-F7) -> SECURITY-REVIEWER 03 PASS with L1, L2 + REVIEWER 04 FAIL -> CODE-FIXER 02b (this) -> SECURITY-REVIEWER and REVIEWER again (review pass 2 of 3) -> TEST-DESIGNER 5 -> 5b -> 6 -> 7 -> 8 -> 9 -> 10 -> 11",
+    "write_set": [
+      "app/public/css/site.css",
+      "app/public/js/dom.js",
+      "app/public/js/theme.js",
+      "app/public/js/pages/landing.js",
+      "app/public/js/pages/demo.js",
+      "app/public/office/draw.js",
+      "app/public/office/view.js",
+      "app/public/office/labels.js",
+      "app/scripts/public-set.js",
+      "app/scripts/vercel-build.js",
+      "app/server/routes/demo.js",
+      "handoffs/M1CODE-20261119-01/step-02b-code-fixer.json (this handoff)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-03-security-reviewer.json and step-04-reviewer.json, review pass 1 of 3 — WF-02, CODE-FIXER, the fix round after review pass 1 of run M1CODE-20261119-01 (REQ-111, REQ-112; the change under check: git diff base/M1CODE-20261119-01-build -- app .github, then git diff base/M1CODE-20261119-01-review -- app .github for the fixes). The remarks (Critical, High and Medium must be fixed; a Low is fixed when the fix is small and safe, else not_fixed with the reason; a fix that needs a departure from the design is a stop in not_fixed):\n- SEC L1 [Low] (step 03): app/scripts/public-set.js (htmlFiles; the texts module read and written; the page write) and app/scripts/vercel-build.js (fs.cpSync): the public-set writer of the open build follows symbolic links, so a write can leave its own folder. Fix: writePublicSet lstats every entry and refuses any symbolic link (a page, texts.js, a folder, examples.html) with an Error naming the file before the first write; vercel-build refuses links in the source before the copy (or copies with verbatimSymlinks).\n- SEC L2 [Low] (step 03): app/server/routes/demo.js (the loadIntake shape rule; the questionnaire projection outside any try) and app/server/app.js: for an intake that loadIntake accepts but the projection cannot read (an option that is null, a field nested 20 000 deep) the questionnaire answers 500 server_error while the result answers 503 demo_unavailable. Fix: widen loadIntake, or put the questionnaire projection inside a try that maps an exception to demo_unavailable.\n- REV H1 [High] (step 04) with ORCH defect O18-a and ruling decisions/0124 О19: at 320×568 the demo speaker's role title is cut in ru and kk («Руководитель проекта» 126 px in 82). О19: below 360 px the speaker block (avatar, role title, stage word) takes its own full row above the question and «‹ Назад» moves to the progress row; from 360 px the look's layout stays; the title breaks only at spaces.\n- REV H2 [High] (step 04) with ORCH defect O18-b: app/public/css/site.css .skip: at 320×568 in ru the skip link wraps to two lines and its bottom 10.4 px show over the header on every page and take the taps of the header controls. Fix: the link stays out of the window by its own height, whatever its line count, until it has the focus; the focused link stays at top 8px (look 7.1).\n- REV M1 [Medium] (step 04): app/public/office/draw.js names a person's hair descriptor `style` and reads look.style three times, against the closed list of .style uses of design 4.10 and decisions/0124 О5 (PP-6). Fix: rename the field (the typedef, the four people, drawPerson); nothing else changes.\n- REV M2 [Medium] (step 04): one mechanism in several places (AP-014): text, wordsFor, drawnTheme, drawAvatars, syncKkNote, SYSTEM_DARK and NO_STAGE copied into both page scripts; the drawn-theme rule a third time in mountStage; the stage geometry read twice (view.js and demo.js tailX) with REDUCED_MOTION and NARROW repeated; the text of a key in a language written four ways with three fallbacks (dom.js, theme.js, labels.js, the pages). Fix: one copy each in files the design already has (no new file): drawnTheme in js/theme.js; the other helpers and the shared media queries in js/dom.js; demo.js's tail reads the same geometry helper; behaviour unchanged.\n- REV L1 [Low] (step 04) with ruling decisions/0124 О20: app/public/js/pages/landing.js writes the live region of how.html at the tap; О20: it announces the new place when «Вы» stands, after the walk (at once with reduced motion).\n- REV L2 [Low] (step 04): app/public/js/theme.js calls MediaQueryList addEventListener only, where view.js falls back to addListener. Fix: one listener helper for both places, together with M2.\n- SEC issue I1 with ruling decisions/0124 О21: the string «ҚАЗ» stays; no change.\nFor each fix: a driver or a browser run that fails before and passes after; name for TEST-DESIGNER what each fix needs. Then the static part of app/ (prettier, eslint --max-warnings 0, tsc, check-public, vendored), npm run test:unit (only the 8 known reds IB-1, CP-2 at its js/ line, NPM-3, VB-1, VB-3, VB-4, CIW-1, CIW-2, each with its recorded message), npm run test:int (36 of 36), cd tools && npm run traces, then cd tools && npm run handoffs-check. Common rules: docs/workflows/handoffs.md, «Common rules for all roles» (no commit, push, tag, stash, reset or branch switch; anything that writes runs in a fresh clone of the review tag or in the scratch folder; no path of this computer in a Sai file).",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-20T12:47:50Z",
+  "started_at": "2026-11-20T12:47:50Z",
+  "completed_at": "2026-11-20T13:27:37Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fix round after review pass 1 of 3 (WF-02, CODE-FIXER) on the build of M1CODE-20261119-01. All eight remarks are fixed and the two ORCH defects of decisions/0124 О18 with them; О21 needed no change; nothing is left in not_fixed. 11 files of app/ changed (git diff --stat base/M1CODE-20261119-01-review -- app: 400 insertions, 404 deletions), nothing outside app/, no test file. Each fix was shown by a driver or a browser run on a fresh clone of the review tag (before) and on a second fresh clone with this diff applied (after), both under <scratch>: SEC L1 — the five link trials (a page, the texts module, a folder, examples.html, a relative link copied into another output) rewrote an outside file in 3 cases and refused none before; after, all five are refused with an Error naming the file and nothing outside changes (writePublicSet refuses every symbolic link before it reads or writes, the open build refuses a linked source before the copy). SEC L2 — an option that is null and a value nested 5 000 to 20 000 deep gave questionnaire 500 server_error against result 503; after, 503 demo_unavailable on both (the projection is inside the same mapping), every other answer the same. H1 (О18-a, by О19) — at 320 px the role title and the stage word of every demo question were cut in ru and kk (20 of 30 rows); after, below 360 px the speaker has its own full row above the question and «‹ Назад» stands on the progress row: 0 cut rows at 320 and 359 in ru, kk, en, light, dark; from 360 px the look's layout stays, where ru still cuts two titles up to 371 px (issue I1, measured, for ORCH). H2 (О18-b) — the ru skip link at 320 px stood from -60 to 10.4 over the header on all 7 paths (14 rows hit); after, it stays above the window by its own height until it has the focus (0 of 210 rows hit; focused at top 8 inside the window in 210 of 210). M1 — 13 .style member uses in the served .js files, 3 of them look.style in draw.js; after, 10, all the allowed setProperty writes, and 420 drawings (168 256 fill calls) equal call by call. M2 and L2 — every copied page helper, constant, query and the geometry reads now stand in one place (dom.js, theme.js, view.js; no new file), the theme listener falls back to addListener (before: mountTheme threw and the page scripts stopped; after: the pages run), and 252 page states of the local set (texts, names, pressed states, stage hooks, stage and avatar pixels, live region, storage) are equal before and after. L1 (О20) — the live region of how.html said the desk at the tap, 3.3 s before «Вы» stood; after, it says it when «Вы» stands (3.33 s; at once, 10-12 ms, with reduced motion), and the demo's live region keeps its own messages. Static part in the tree and in the after clone: prettier, eslint --max-warnings 0, tsc, check-public, vendored (and the content step) exit 0; test:unit 46 / 38 pass / 8 fail, exactly IB-1, CP-2 (js/a.js Math.random), NPM-3, VB-1, VB-3, VB-4, CIW-1, CIW-2 with the same messages as on the review tag; test:int 36 of 36; no CSP violation, page error or console line but the 404 lines in 186 page loads of the local and the public set; traces 0; handoffs-check only the known line of handoffs/M0DOCS-20261117-01/step-05c-test-designer.json (issue I9). What TEST-DESIGNER needs for each fix is issue I3.",
+    "changes": [
+      {
+        "remark": "SEC L1",
+        "file": "app/scripts/public-set.js",
+        "place": "new export refuseLinks(dir) (lines 166-195); its call as the first action of writePublicSet (line 251), before step (1); the header comment and the JSDoc of htmlFiles and writePublicSet",
+        "was": "htmlFiles took a link named *.html as a page and steps (2) and (5) read and wrote through it; the texts module was imported and rewritten through a link; a folder link was skipped with no word; examples.html as a link was removed with no word — a write could leave the folder (trials W1, W2 rewrote the outside page and the outside texts module)",
+        "became": "the folder and every entry at every depth are read by lstat before anything is imported, read or written, and the first symbolic link, in name order, throws Error('<path>: a symbolic link, which the public set does not follow') (the folder itself: 'the folder of the public set is a symbolic link, which the public set does not follow'); the folder stays as it was"
+      },
+      {
+        "remark": "SEC L1",
+        "file": "app/scripts/vercel-build.js",
+        "place": "line 6 (import), the header comment (lines 13-17), the open branch step (4) (lines 164-172)",
+        "was": "into another output folder fs.cpSync copied a relative link as an absolute link back into the source, and writePublicSet then rewrote the source file; exit 0 'vercel-build: done' (trial W5)",
+        "became": "into another output folder refuseLinks(publicDir) runs before the copy inside the same try: exit 1 'vercel-build: refused: <path>: a symbolic link, which the public set does not follow', no output folder made, the source unchanged; in place writePublicSet refuses the link itself"
+      },
+      {
+        "remark": "SEC L2",
+        "file": "app/server/routes/demo.js",
+        "place": "demoRoutes, the questionnaire handler (lines 128-158)",
+        "was": "inLanguage and the field-by-field projection outside any try: for an intake that loadIntake accepts with an option that is null, or a value nested 5 000 deep or more, the exception went to onError: 500 server_error, while the result route answered 503 demo_unavailable",
+        "became": "inLanguage and the projection inside a try that throws HttpError('demo_unavailable'): 503 demo_unavailable on both routes for these intakes; for a valid intake the body has the same keys, order and values ({ lang, questions: [{ id, title, options: [{ id, label }] }] }); loadIntake unchanged"
+      },
+      {
+        "remark": "REV H1 (ORCH defect O18-a; ruling decisions/0124 О19)",
+        "file": "app/public/css/site.css",
+        "place": "new block @media (max-width: 359px) after the block 'up to 360 px' (comment from line 1921, block lines 1925-1941)",
+        "was": "below 760 px the speaker (avatar, role title, stage word) and «‹ Назад» shared row 1 of .ask-h; at 320 px the title had 82 px in ru and 84 in kk, and every question's title and stage word were cut (ru «Руководитель проекта» 126 > 82, «Проверяющий» 130 > 82, «Готовим документацию» 94 > 82; kk «Талдаушы» 94 > 84)",
+        "became": "below 360 px: .ask-h .spk grid-column 1 / -1, grid-row 1 (its own full row above the h2); .ask-h .prog grid-column 1, grid-row 3 with flex-wrap: wrap; .ask-h .back grid-column 2, grid-row 3 (the progress row). The title keeps white-space normal and overflow-wrap normal: it breaks only at spaces (at 320 ru «Руководитель проекта» fits one line, 201 px). Where the progress row cannot hold the pips, the count and the button on one line (320 px: ru needs 177.7 + 10 + 111.6 px in 266), the count goes under the pips (no size, colour or spacing changed); at 359 px it stays beside them. From 360 px nothing changed (the look's layout, О19)"
+      },
+      {
+        "remark": "REV H2 (ORCH defect O18-b)",
+        "file": "app/public/css/site.css",
+        "place": ".skip and .skip:focus (lines 77-95)",
+        "was": ".skip at top -60px with no limit of its lines: at 320 px in ru two lines, 70.4 px, its box from -60 to 10.4 over the brand link, RU, ҚАЗ, EN and the theme button on every page",
+        "became": ".skip also has transform: translateY(-100%), so its box ends at -60 whatever its height (ru at 320: -130.4 to -60; one line: -108 to -60); .skip:focus has transform: none with top 8px, as the look's 7.1 says"
+      },
+      {
+        "remark": "REV M1",
+        "file": "app/public/office/draw.js",
+        "place": "the Look typedef (line 142) and its comment (140), the four people (150, 159, 168, 177), drawPerson's comment (474) and its three reads (498, 501, 507)",
+        "was": "the hair descriptor of a person was the field style, read as look.style three times",
+        "became": "the field is hairdo, read as look.hairdo; the two comments name the hairdo; no other change (the drawings equal call by call)"
+      },
+      {
+        "remark": "REV M2",
+        "file": "app/public/js/dom.js",
+        "place": "header comment; import of drawAvatar and readPalette from ../office/draw.js; new exports SYSTEM_DARK, REDUCED_MOTION, NARROW, DESKS (lines 34-44), text (103-108), wordsFor (141-149), syncKkNote (159-169), drawAvatars (181-202), onMediaChange (210-214); applyTexts (119-132)",
+        "was": "a private textOf (null for a key or a language not held); text, wordsFor, drawAvatars, syncKkNote, SYSTEM_DARK, DESKS copied into both page scripts, REDUCED_MOTION and NARROW in demo.js and view.js, the listener only in view.js",
+        "became": "one copy of each: text(texts, key, lang) is the one rule of a key's text (the language, else ru, else \"\"); applyTexts leaves an element as it is for a key the module does not hold and else writes text(); wordsFor(texts, lang), syncKkNote(doc, texts, lang), drawAvatars(doc, win, theme) moved here unchanged; the three media queries and DESKS exported; onMediaChange(query, fn) moved from view.js"
+      },
+      {
+        "remark": "REV M2 and L2",
+        "file": "app/public/js/theme.js",
+        "place": "header comment; import (line 7); new export drawnTheme(doc, win) (lines 49-58); mountTheme's write() and its system listener (lines 81, 86, 107)",
+        "was": "its own SYSTEM_DARK and a private textOf (\"\" for a key or a language not held); system.addEventListener only; the drawn-theme rule written again in both page scripts and in mountStage",
+        "became": "drawnTheme exported, the one drawn-theme rule; SYSTEM_DARK, text and onMediaChange from dom.js; the listener by onMediaChange (addListener where addEventListener is missing)"
+      },
+      {
+        "remark": "REV M2",
+        "file": "app/public/js/pages/landing.js",
+        "place": "whole module: imports and start()",
+        "was": "its own copies of text, wordsFor, drawnTheme, drawAvatars, syncKkNote, SYSTEM_DARK, DESKS and NO_STAGE",
+        "became": "the copies removed; DESKS, applyTexts, currentLang, drawAvatars, mountLangSwitch, syncKkNote, wordsFor from dom.js, drawnTheme and mountTheme from theme.js, INERT and mountStage from view.js; the flow of start() the same"
+      },
+      {
+        "remark": "REV M2",
+        "file": "app/public/js/pages/demo.js",
+        "place": "imports; the removed helpers and constants; tailX (lines 308-326); t() in mountSurvey (line 397); placeTail (line 466); start() (lines 1204-1236)",
+        "was": "its own copies of text, wordsFor, drawnTheme, drawAvatars, syncKkNote, SYSTEM_DARK, REDUCED_MOTION, NARROW, DESKS and NO_STAGE; tailX read --px, the window and the narrow query itself",
+        "became": "the copies removed and imported from dom.js, theme.js and view.js; tailX(doc, desk) takes the geometry from pageGeometry(doc) of view.js and its s from it"
+      },
+      {
+        "remark": "REV M2 and L2",
+        "file": "app/public/office/view.js",
+        "place": "header comment; imports (lines 20-21); export INERT (line 97); measureWith, pageReads and export pageGeometry (lines 135-181); makeView's measure (line 248) and the reduced-motion listener (line 545); mountStage (lines 582-629)",
+        "was": "its own REDUCED_MOTION, NARROW, SYSTEM_DARK and onChange; the geometry read in measure() and again in demo.js; the drawn-theme rule written again in mountStage; INERT private",
+        "became": "one composition of the geometry (measureWith) over one set of real-page reads (pageReads), used by the view's measure, by mountStage's px and viewport, and by pageGeometry, which the demo's tail reads; theme: () => drawnTheme(doc, win); NARROW, REDUCED_MOTION, onMediaChange from dom.js; INERT exported as the one view that does nothing"
+      },
+      {
+        "remark": "REV M2",
+        "file": "app/public/office/labels.js",
+        "place": "import (line 13); lineText (lines 44-54)",
+        "was": "lineText wrote the rule of a key's text a fourth time",
+        "became": "lineText(key, lang) is text(TEXTS, key, lang) of dom.js; LineKey gains live_desk (for L1)"
+      },
+      {
+        "remark": "REV L1 (ruling decisions/0124 О20)",
+        "file": "app/public/office/labels.js, app/public/office/view.js, app/public/js/pages/landing.js",
+        "place": "labels.js header comment, the Labels and LabelParts typedefs and moveYou (lines 231-249); view.js mountStage's comment and createLabels call (live: page === \"how\" ? #live : null); landing.js the step buttons' click handler and the header comment",
+        "was": "landing.js wrote live_desk into #live at the tap (2-12 ms), about 3.3 s before «Вы» stood at the desk",
+        "became": "when «Вы» stands at a desk that is a new place after the first one, labels.moveYou writes live_desk {n, stage} into the live region it was given — after the walk, or at once when «Вы» is placed with no walk (reduced motion, a size change, the text view); mountStage gives #live to the labels on how.html only, so the demo's survey keeps its own messages; the step buttons set aria-pressed and tap the stage only; a language switch still empties the live region"
+      },
+      {
+        "remark": "SEC issue I1 (ruling decisions/0124 О21)",
+        "file": "-",
+        "place": "-",
+        "was": "the string «ҚАЗ» in the public texts module",
+        "became": "no change, as О21 rules"
+      }
+    ],
+    "not_fixed": [],
+    "self_check": [
+      "Clock: work started 2026-11-20T12:40:26Z (first reading); this handoff created 12:47:50Z by the handoff command (issue I6); result written after 13:24:06Z.",
+      "Start state: git rev-parse HEAD base/M1CODE-20261119-01-review → 69fb943d both; git diff --stat base/M1CODE-20261119-01-review -- app .github → empty; no step-02b file (the earlier launch wrote none). End state: git status --short of the tree → the 11 app files of this step, this handoff, and the files not of this step (decisions/0124 and PROGRESS.md modified, the handoffs of steps 03 and 04 untracked).",
+      "Copies (common rule 3): git clone -b base/M1CODE-20261119-01-review <project> <scratch>/cf/before and <scratch>/cf/after; in after git apply of git diff base/M1CODE-20261119-01-review -- app .github of the tree (1327 lines), then cmp of the 11 files with the tree → all same; npm ci in each app/ (102 packages); node v22.23.4; HOME and TMPDIR of every run under <scratch>; Chrome 157 by playwright-core 1.64.1 of the clone, channel chrome, --use-mock-keychain, headless, closed in finally.",
+      "SEC L1 driver (links.mjs; each trial on a fresh copy of app/public and app/content under <scratch>, outside any git tree; the outside targets hashed before and after). BEFORE: W1 page link → resolved, changed outside: outside/page.html; W2 texts link → resolved, changed outside: outside/texts.js; W3 folder link → resolved, nothing outside; W4 examples link → resolved, nothing outside; W5 relative link, build into another folder → code 0 'vercel-build: done', changed outside: app/public/shared/i18n/texts.real.js (the source); W6, W7 controls → resolved, nothing outside. AFTER: W1 refused 'linked.html: a symbolic link, which the public set does not follow'; W2 refused 'shared/i18n/texts.js: …'; W3 refused 'more: …'; W4 refused 'examples.html: …'; W5 code 1 'vercel-build: refused: shared/i18n/texts.js: a symbolic link, which the public set does not follow', output folder not made; each 'changed outside: none'; W6 code 0 done, W7 changed 404.html, demo.html, how.html, index.html, shared/i18n/texts.js and removed examples.html, as before.",
+      "SEC L2 driver (intake.mjs; createApp in process with the intake copy, langs SOURCE_LANGS). BEFORE: control 200/200; option null → questionnaire 500 server_error, result 503 demo_unavailable; a solution field nested 20 000 deep → 500 / 503; a question title nested 5 000, 7 000, 8 000, 9 000, 10 000, 12 000 deep and an option label 9 000 deep → 500 / 503; title 3 000 deep, a solution without includes, a rule with an unknown solution → 200 / 200. AFTER: option null and every nesting of 5 000 and more → 503 demo_unavailable on both routes, log code demo_unavailable; title 3 200 to 4 700 deep → 200 / 200 (no depth gives 500); the other shapes as before; /api/health and /api/nope as before in every case.",
+      "H1 and H2 browser probe (layout.mjs; 1470×784, 390×844, 360×640, 359×640, 320×568 × light, dark × ru, kk, en; the 7 paths /, /how.html, /examples.html, /demo.html, /nope, /a/b/c.html, /x/y/ for the header; the 5 demo questions by «Не знаю» for the speaker; the cut reading of decisions/0123 V2 over #main). BEFORE: header 14 of 210 rows hit, all 320/ru (elementFromPoint at y 2 in the brand link, RU, ҚАЗ, EN, theme → a.skip; skip box -60..10.4 in ru, -60..-12 in kk and en); speaker 28 of 150 rows cut: 320 ru and kk every question both themes, 359 and 360 ru q1 and q5. AFTER: header 0 of 210 (skip box at 320 ru -130.4..-60, kk and en -108..-60; 1470 and 390 -108..-60); focused skip link (page.focus) at top 8 and inside the window in 210 of 210; speaker 4 of 150 rows cut, exactly 360 ru q1 «Руководитель проекта» 126 > 122 and q5 «Проверяющий» 130 > 122 in both themes (the look's layout, kept from 360 by О19; issue I1); at 320 and 359 0 cut, no overlap of speaker, h2, progress and «‹ Назад», «‹ Назад» 99.1–111.6 × 48 below the h2 beside the progress, the count inside its box; no horizontal scroll.",
+      "Narrow range of the look's layout (range.mjs on after, ru, kk, en, all 5 questions): 360-367 px ru «Руководитель проекта» and «Проверяющий» cut; 368-371 px «Проверяющий» cut (130 in 126-129); from 372 px no cut; kk and en no cut from 360.",
+      "M1 driver (m1.mjs; espree tokens, comments and strings left out, every '.style', '?.style' and '[\"style\"]' member in the served .js files of app/public). BEFORE: 13 — demo.js ask.style.setProperty('--tx'), view.js stage.style.setProperty × 9, draw.js look.style × 3 (lines 498, 501, 507). AFTER: 10 — the nine setProperty writes of view.js (--H, --rw, --dt, --wh, --cx1…--cx4, --you) and the one of demo.js (--tx), nothing else. Drawings before against after with a recording context: drawScene for the 14 moments × 3 pages × 3 windows × 2 palettes × standing and walking, drawAvatar for desks 1-4 × 2 palettes × scales 1-3 → 420 drawings, 168 256 fill calls, 0 differ (the same driver before against before: 0 differ).",
+      "M2 driver (m2.mjs; espree tokens over dom.js, theme.js, landing.js, demo.js, view.js, labels.js). BEFORE: text 2 (landing 51, demo 191); textOf/lineText 3 (dom 83, theme 59, labels 48); wordsFor 2; drawnTheme 2 plus the rule inline in view.js 603; drawAvatars 2; syncKkNote 2; NO_STAGE/INERT 3 (landing 36, demo 158, view 95); '(prefers-color-scheme: dark)' 4 (theme, landing, demo, view); '(prefers-reduced-motion: reduce)' 2; '(max-width: 759px)' 2; geometry({ 2 (demo 427, view 211); '--px' read 2; media listener in theme 112 and view 140-141. AFTER: each one place — text dom 103; lineText labels 52 (a call of dom's text, not a rule); wordsFor dom 141; drawnTheme theme 55 (no inline rule left); drawAvatars dom 181; syncKkNote dom 159; INERT view 97; the three queries dom 35, 38, 41; geometry({ view 144 (measureWith); '--px' view 163 (pageReads); the listener dom 212-213 (onMediaChange).",
+      "Behaviour unchanged (snap.mjs; 1470×784 and 390×844 × light, dark × ru, kk, en: /, /how.html, /examples.html, /nope at load; the landing after three theme clicks and the switches EN, ҚАЗ, RU; how after a tap on step 2 and its walk; the demo at each of the five questions, at the result, after a language switch at the result and after three theme clicks on a chip's question; recorded: lang, data-theme, title, innerText (the date masked), every aria-label, the pressed states, the kk note, data-frames, data-figure, text-view, the stage custom properties, the stage canvas pixels and every avatar's pixels by a hash through a copy canvas, #live, #stage-you, the desk lines, the labels, localStorage). before against a second before run: 252 of 252 equal (the snapshot is deterministic); before against after: 252 of 252 equal; page errors 0 and 0.",
+      "L1 driver (live.mjs; how.html at 390×844, a tap on step 4 from the door, read by a requestAnimationFrame loop). BEFORE, no-preference: #live at the tap «Стол 4: Готово к просмотру» (kk «4-үстел: Қарауға дайын», en «Desk 4: Ready to view»), written at 2-12 ms, «Вы» stands at 3 324-3 339 ms; reduce: at once. AFTER, no-preference: #live empty at the tap, first written at 3 337 / 3 333 / 3 329 ms, the same frame in which the text list names desk 4; reduce: written at 10-12 ms with «Вы» at desk 4; 68 and 2 frames as before. The demo (ru, en): 2.5 s after the first answer the live region says «Ответ принят: …» / «Answer accepted: …», before and after.",
+      "L2 driver (l2.mjs). Node, a MediaQueryList with addListener and no addEventListener: BEFORE mountTheme threw 'TypeError: system.addEventListener is not a function'; AFTER it returned, used addListener, and a system change to dark called onChange(['dark']). Chrome with MediaQueryList.prototype.addEventListener hidden by an init script, / and /demo.html at 1470×784: BEFORE data-frames null, RU not pressed, no question, page error 'system.addEventListener is not a function'; AFTER data-frames 1, RU pressed, the first question shown, no page error.",
+      "Node loads (nodeload.mjs, no document and no window): dom.js, theme.js, labels.js, view.js and pages/demo.js load before and after (CP-3, TC-5 and the demo's astanaDate import keep working); after, dom.js exports DESKS, NARROW, REDUCED_MOTION, SYSTEM_DARK, applyTexts, currentLang, drawAvatars, el, fill, mountLangSwitch, onMediaChange, pref, syncKkNote, text, wordsFor; theme.js adds drawnTheme; view.js adds INERT, pageGeometry.",
+      "Browser console, CSP and errors after (csp.mjs): the local set (node-main) 126 loads (7 paths × 3 windows × 2 themes × 3 languages) plus the demo to its result and a theme click per language, and the public set (a copy written by writePublicSet under <scratch>, served by createApp with loadStaticSite of the copy and PUBLIC_LANGS) 60 loads (5 paths × 3 × 2 × ru, en) plus the demo: CSP violations 0 and 0, page errors 0 and 0, other console lines 0 and 0, the 404 lines 54 and 24 (one per not-found load); the public set written: changed 404.html, demo.html, how.html, index.html, shared/i18n/texts.js; removed examples.html (the list of 4.11).",
+      "Static part in the tree (read-only commands, 13:02Z): cd app && npx prettier --check . → exit 0 'All matched files use Prettier code style!'; npx eslint . --max-warnings 0 → exit 0; npx tsc --noEmit -p jsconfig.json → exit 0; node scripts/check-public.js → exit 0 'check-public: app/public is clean'; node scripts/vendored.js → exit 0 'vendored: 1 file matches its source'. The same in the after clone → all exit 0, and the content step node ../tools/src/picker/cli.js check content/sai-intake.json → exit 0 'Файл арендатора sai-intake в порядке: вопросов 5, решений 6, правил 35.'",
+      "npm run -s test:unit in the after clone (13:16:40Z) → exit 1; # tests 46, # pass 38, # fail 8, # cancelled 0, # skipped 0, # todo 0; not ok: CP-2 (actual [{ file 'js/a.js', item 'Math.random' }]), CIW-1 and CIW-2 (actual ['paths', 'jobs']), IB-1 (['a file that is not .js: server/vendor/picker-engine.d.ts']), NPM-3 (['check chain']), VB-1, VB-3, VB-4 (a Promise where a number is expected). The same command in the before clone (13:16:48Z) → the same 8 names, and the failure lines of each (error, expected, actual, operator) compared with the after run → equal for all 8 (quality-bar §6 item 4, a repeat without the work). Full outputs kept in <scratch>/cf/unit-after.txt and unit-before.txt.",
+      "npm run -s test:int in the after clone (13:17:28Z-13:18:18Z) → exit 0; # tests 36, # pass 36, # fail 0, # skipped 0, # todo 0. git status --short of the after clone after all runs → only the 11 applied files.",
+      "cd tools && npm run -s traces (tree, 13:23:35Z) → exit 0 'traces: файлов проверено 2781, следов 0, пропущено 67' (run again after this result is written, before close).",
+      "cd tools && npm run -s handoffs-check (tree) → exit 1, one line 'handoffs/M0DOCS-20261117-01/step-05c-test-designer.json:9 — H4: status: PENDING в коммите …', 'файлов проверено 1485, нарушений 1'; the same command in the review-tag clone → the same line, 1482 files, 1 violation (issue I9); no line names this handoff.",
+      "Processes and folders: before the work only processes not started by this step (issue I7); after every run pgrep for node-main, the probes and headless Chrome → none; no file named com.google.Chrome.* or playwright* in the system temporary folder newer than 12:40Z (find -newermt → 0 and 0); every file of this step lies under <scratch>/cf. No program file of the project was imported in the project: modules were imported only from the two clones."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "DISCREPANCY",
+        "text": "decisions/0124 О19 keeps the look's layout of the speaker from 360 px. Measured in Chrome 157 on this Mac (range.mjs, after): in that layout ru still cuts two role titles above 359 px — «Руководитель проекта» (question 1, first word 125.7 px) from 360 to 367 px, «Проверяющий» (question 5, 130 px) from 360 to 371 px; from 372 px no title or stage word is cut, kk and en none from 360. 360 px is a common phone width. The matrix windows of REQ-111 criterion 12 (1470, 390, 320) are clean, so LD-1 is not affected; outside them the cut stays as О19 rules. For ORCH: either keep О19 and name the 360-371 px cut as a limit, or move the boundary of the narrow layout to below 372 px (one value in the new block of site.css) with the look's 7.9 edit; the fixer did not change the ruled value."
+      },
+      {
+        "id": "I2",
+        "kind": "DESIGN_FOLLOW_UP",
+        "text": "What the code design and the look must follow (CODE-DESIGNER or DOC-UPDATER «As built»; GUI-DESIGN-ANALYST's next look edit, which О18 and О19 announce): (a) design 4.5 dom.js gains the exports text, wordsFor, syncKkNote, drawAvatars, onMediaChange, SYSTEM_DARK, REDUCED_MOTION, NARROW, DESKS; theme.js gains drawnTheme; view.js 4.6 gains INERT and pageGeometry (M2, by the finding's places; no new file); (b) design 4.5 «on how, the step buttons … say live_desk» and 4.6 mountStage «the live region #live» now read: the labels say live_desk when «Вы» stands, and mountStage gives #live to the labels on how.html only (О20); (c) design 4.11 writePublicSet refuses every symbolic link before step (1), and the open build refuses a linked source before the copy (step 4) (SEC L1); (d) design 4.7 the questionnaire maps a projection failure to demo_unavailable, as E8 and E12 say for both routes (SEC L2); (e) look 7.1: the skip link is off-screen at top -60px and above it by its own height (transform), focused at 8px/8px (H2); (f) look 7.9 below 360 px: the speaker's own full row above the question, «‹ Назад» on the progress row, and — measured necessary at 320 px, where the pips, the count and the button need 299 px in ru against 266 — the count under the pips when the row is too narrow (the flex row of the progress wraps; no size, colour or spacing changed). (f) is the one layout detail the fixer had to settle that О19 does not name; it goes on the owner's list of the look with the phone snapshot, as О19 says."
+      },
+      {
+        "id": "I3",
+        "kind": "FOR_TEST_DESIGNER",
+        "text": "Tests each fix needs at step 5 (no test was written or changed here): SEC L1 — PB rows on fresh copies outside a git tree: a page that is a link to an outside page, shared/i18n/texts.js as a link, a folder link holding a page, examples.html as a link → writePublicSet rejects naming the path, the outside targets byte-equal, the copy as it was; a VB row: a relative link in the source with outDir not publicDir → exit 1 with 'vercel-build: refused: shared/i18n/texts.js: a symbolic link, which the public set does not follow', the source byte-equal, no output folder; the controls without links unchanged; mutants: refuseLinks removed, called after the import, or not called before the copy. SEC L2 — DM-6 rows: an option that is null and a value nested 20 000 deep → 503 demo_unavailable on both routes, /api/health and the pages as before; mutant: the try removed → 500. H1 — LD-1 at 320×568 reads every demo question (not only the first), and the speaker row, the h2, the progress row and «‹ Назад» do not overlap, «‹ Назад» ≥ 44×44; a check at 359 px (the new layout) and the I1 range if ORCH keeps it as a limit. H2 — LD-1: elementFromPoint at every point of the header controls returns the control in the three windows × ru, kk, en × all paths, and the focused skip link inside the window at top 8. M1 — PP-6 strict as 4.10 writes it, with no exception for draw.js. M2 — LD-4 and LD-5 now test the one drawAvatars (dom.js) and drawnTheme (theme.js); CP-3 and TC-5 still import dom.js and theme.js in Node (dom.js now imports the pure draw.js; measured loading). L1 — an e2e row on how.html: #live keeps its earlier text at the tap and says «Стол n: …» when the text list names desk n, after the walk; at once with reduced motion; on demo.html the live region never says a desk. L2 — a unit row: mountTheme with a MediaQueryList that has addListener and no addEventListener follows a system change while «Авто» (and view.js's reduced-motion listener the same through onMediaChange). No existing test checks a behaviour this step changed: the 8 known reds have the same messages, int 36 of 36."
+      },
+      {
+        "id": "I4",
+        "kind": "INFO",
+        "text": "SEC L1, the kind of error (role step 3): a hard link is another way a write can leave its folder; it is not refused. A git checkout and the Vercel upload give separate files, and a build machine that materialised two equal files as one inode would make a refusal of nlink > 1 fail a legitimate build. Only symbolic links are refused, as the finding says. check-public (step 3 of the build and of npm run check) still reads and imports through a link (no write), as the finding's alternative left it; ORCH may ask for a link rule there by a design edit."
+      },
+      {
+        "id": "I5",
+        "kind": "INFO",
+        "text": "Behaviour of the one text rule (M2) on inputs that cannot occur today: before, applyTexts left an element alone and the theme button wrote \"\" when an entry lacked the page's language; now both write the Russian value of the entry (the rule of the pages and the labels). Every entry of the local and of the public texts module holds every language of its LANGS (TX-2; renderTexts throws otherwise), and the page's language is always one of LANGS, so no page shows a difference (252 states equal)."
+      },
+      {
+        "id": "I6",
+        "kind": "PROCESS",
+        "text": "This handoff was created by CODE-FIXER with `cd tools && npm run -s handoff -- new --run M1CODE-20261119-01 --step 02b --role CODE-FIXER --workflow WF-02 …` at 2026-11-20T12:47:50Z (one clock reading for created_at and started_at), on the order of the task («Write your handoff … from_agent ORCH»), as the earlier steps of this run were; docs/workflows/handoffs.md says only ORCH creates handoffs — by CLAUDE.md the task (2) stands above handoffs.md (5); recorded, not resolved. The work started at 12:40:26Z; context.agent_run_id stays null (ORCH writes it); context.base_tag, written by the command, is base/M1CODE-20261119-01, while every diff of this step used base/M1CODE-20261119-01-build and -review (decisions/0124 О13). The status was set to IN_PROGRESS by the agent at the start."
+      },
+      {
+        "id": "I7",
+        "kind": "PROCESS",
+        "text": "Processes not started by this step, left alone (AP-132, AP-137): 8 idle «node -e setInterval(() => {}, 1000)» with parent 1, started 2026-11-03 (pids 10044, 10090, 10141, 10153, 10171, 13667, 14415, 14481), as SECURITY-REVIEWER found them; the editor's own helpers. Every server and browser of this step was stopped by its pid or closed in a finally block; none is left."
+      },
+      {
+        "id": "I8",
+        "kind": "INFO",
+        "text": "AP-018: the task names expected results (exactly 8 red unit tests, int 36 of 36). The counts above come from this step's own runs, with the reds compared to a run on the review tag."
+      },
+      {
+        "id": "I9",
+        "kind": "RED_NOT_OF_THIS_WORK",
+        "text": "cd tools && npm run handoffs-check ends with exit 1 and one line about handoffs/M0DOCS-20261117-01/step-05c-test-designer.json (H4, PENDING in a commit); no line names this handoff. Not caused by this work (quality-bar §6 item 4, a repeat without the work): the same command in a fresh clone of the review tag, which holds none of this step's files, gives the same line (1482 files, 1 violation). It is ORCH's to resolve (the M0 work committed as found, decisions/0122); the close command checks this file by the same rules."
+      }
+    ],
+    "artifacts_out": [
+      "app/public/css/site.css",
+      "app/public/js/dom.js",
+      "app/public/js/theme.js",
+      "app/public/js/pages/landing.js",
+      "app/public/js/pages/demo.js",
+      "app/public/office/draw.js",
+      "app/public/office/view.js",
+      "app/public/office/labels.js",
+      "app/scripts/public-set.js",
+      "app/scripts/vercel-build.js",
+      "app/server/routes/demo.js"
+    ]
+  }
+}

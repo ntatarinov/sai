@@ -1,0 +1,108 @@
+{
+  "handoff_id": "step02e-M1CODE-20261119-01",
+  "run_id": "M1CODE-20261119-01",
+  "workflow_id": "WF-02",
+  "step": "02e",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-FIXER",
+  "file": "handoffs/M1CODE-20261119-01/step-02e-code-fixer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-111",
+      "REQ-112"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M1CODE-20261119-01/step-04d-reviewer.json",
+      "handoffs/M1CODE-20261119-01/step-03d-security-reviewer.json",
+      "decisions/0124 Addition 2026-11-20T21:16Z (О35-О38)"
+    ],
+    "route": "REVIEWER 04d FAIL -> CODE-FIXER 02e (this) with TEST-DESIGNER (app/test/** only) -> SECURITY-REVIEWER and REVIEWER again, TEST-DESIGN-VALIDATOR, DESIGN-QA second pass",
+    "write_set": [
+      "app/server/routes/demo.js",
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js",
+      "handoffs/M1CODE-20261119-01/step-02e-code-fixer.json (this handoff)"
+    ],
+    "base_tag": "base/M1CODE-20261119-01"
+  },
+  "task": {
+    "description": "rework for FAIL handoffs/M1CODE-20261119-01/step-04d-reviewer.json, review pass 1 of 3 of the loop after DESIGN-QA, fix round 02e. The remarks:\n- M1 [Medium] (decisions/0124 О35): the JSON.stringify guard (try/catch) in answer() of app/server/routes/demo.js is dead code after id() and text(); remove it and its comment, keep the string-only note on id()/text(); check that no other code depends on it.\n- L1 [Low] (О36, a correction of О32): in app/public/css/site.css the own row of the speaker applies below 380 px (max-width: 379px); the comment states the rule only.\n- L3 [Low] (О37): in app/public/js/pages/demo.js the result chips keep only the aria-label \"<question>: <answer>\"; the title that repeats the question is dropped.\n- L4 [Low] (О37), the CSS part: the comment above the own-row block of site.css is the rule, not the history (done with L1). The flipHidden JSDoc part is a test file, TEST-DESIGNER's.\nNot touched: the tests (TEST-DESIGNER, same round), L2 (documents, before the release gate), the other lows.",
+    "acceptance_criteria": [
+      "REQ-111 criterion 12: the speaker's title in its column and 4 px from the back button at 372, 375, 379 px, no sideways scroll",
+      "demo routes answer 200 and 503 as before",
+      "static part: prettier, eslint, tsc, check-public, vendored, traces 0"
+    ]
+  },
+  "created_at": "2026-11-20T21:29:52Z",
+  "started_at": "2026-11-20T21:29:52Z",
+  "completed_at": "2026-11-20T21:30:20Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Fix round 02e done: M1, L1, L3 and the CSS part of L4 are closed, nothing in not_fixed. M1: the JSON.stringify guard is gone; answer() is inlined at its two call sites as `{ status: 200, body }` (nothing else called it), and the note that every body field is a string, a boolean or null now stands on text() (id() is its alias). L1: the own row of the speaker applies below 380 px (`max-width: 379px`), the comment states the rule only. L3: the result chips keep only the aria-label '<question>: <answer>'. Each was shown red before and green after on a scratch copy (a real Chrome run for the CSS and the chips, the demo int tests for the guard). Only the three files of the write set were edited; the static part is green in the tree; the whole check and the e2e were not run by instruction (the TEST-DESIGNER's files are changing).",
+    "changes": [
+      {
+        "remark": "M1 (О35)",
+        "file": "app/server/routes/demo.js",
+        "place": "function answer() with its comment; its two call sites in questionnaire and result; the comment of text()",
+        "was": "answer(body) wrote the body with JSON.stringify inside try/catch (catch -> HttpError demo_unavailable) and returned { status: 200, body }; the comment said it was the last guard",
+        "became": "answer() is removed: the two call sites return { status: 200, body: {...} } directly (the try/catch around the projection of the result route stays and still maps a non-HttpError to demo_unavailable); the comment of text() ends with 'So every field of an answer body is a string, a boolean or null, and the body can always be written to text.'; no other code or file referred to answer()"
+      },
+      {
+        "remark": "L1 (О36), L4",
+        "file": "app/public/css/site.css",
+        "place": "the block above the own-row of the speaker (about line 1933) and its media query",
+        "was": "/* below 372 px (it was 360): ... */ @media (max-width: 371px)",
+        "became": "/* below 380 px: the speaker takes its own row above the question, because the longest Russian role title needs 218 px of column and 390 px, the sample's phone, stays side by side; ... */ @media (max-width: 379px); the rules inside are unchanged; the comment has no history of the number"
+      },
+      {
+        "remark": "L3 (О37)",
+        "file": "app/public/js/pages/demo.js",
+        "place": "the chips of the result (the attrs of the chip button, about line 954)",
+        "was": "attrs: type, title: q.title, aria-label: '<question>: <answer>'",
+        "became": "attrs: type, aria-label: '<question>: <answer>' (the title that repeated the question is dropped)"
+      },
+      {
+        "remark": "L4 (О37), flipHidden JSDoc",
+        "file": "app/test/unit/office-view.test.js",
+        "place": "two JSDoc blocks in a row",
+        "was": "-",
+        "became": "not touched by CODE-FIXER: a test file, TEST-DESIGNER's"
+      }
+    ],
+    "not_fixed": [],
+    "self_check": [
+      "Clock: date -u at the creation of the handoff 2026-11-20T21:29:40Z (the clock of this machine). Work in two scratch copies of the working tree state, <scratch>/f02e/before and <scratch>/f02e/after (node_modules linked); the tree was edited only in the three files of the write set; nothing committed, tagged or stashed.",
+      "L1 red before (driver <scratch>/f02e/drv/css.test.js, real Chrome, 640 px high, widths 372, 375, 379, 380 and 390, ru kk en, light and dark, the five questions each = 150 rows; per row: the title's text edge against its column, the gap to «‹ Назад» if on the same row, sideways scroll, and the speaker on its own row below 380 px): before: 'RESULT rows=150 bad=90', every bad row is 'speaker not on its own row' (30 each at 372, 375, 379); no row failed the column, the 4 px gap or the sideways scroll; the tightest side-by-side gap measured is 12.0 px (ru, 372 px, question 5). So the metric of the title is not red on this machine at 372; what is red is the rule of О36 (the own row below 380 px).",
+      "L1 green after: 'RESULT rows=150 bad=0', 'BAD {}', test ok; the tightest remaining side-by-side gaps are 19.6 px (kk, 390 px, question 1) and 20.0 px (ru, 380 px, question 5); at 372, 375 and 379 px the speaker is on its own row in all three languages, both themes, all five questions; no sideways scroll at any width.",
+      "L3 red before (driver <scratch>/f02e/drv/chips.test.js, 390 x 844, ru kk en, five answers, the result page): 'CHIPS total=15 withTitle=15 badLabel=0', test not ok. Green after: 'CHIPS total=15 withTitle=0 badLabel=0', test ok; the aria-label of the first chip in ru is 'Для чего вам нужен сайт или приложение?: Рассказать о себе или о деле', the visible text is unchanged.",
+      "M1 guard, the answer paths unchanged: the tree's app/test/int/demo.test.js copied unchanged into both copies; node --test --test-concurrency=1 test/int/demo.test.js: before (with the guard) '# tests 8 # pass 8 # fail 0'; after (guard removed) '# tests 8 # pass 8 # fail 0'. Both routes' 200 and 503 rows (DM-6, DM-6b, DM-6c with the id rows) are in that file. The row 'unwritable' of DM-6c passes after as well (its id with a toJSON is refused by id() before any body exists), so it proves nothing about the guard; the title and the row are the TEST-DESIGNER's part of О35. Search: grep 'answer(' in app/server: no other user; no test or doc imports answer().",
+      "Static part in the tree: cd app && npx prettier --check . -> 'All matched files use Prettier code style!'; npx eslint . --max-warnings 0 -> exit 0; npx tsc --noEmit -p jsconfig.json -> exit 0; node scripts/check-public.js -> 'check-public: app/public is clean' (the word 'decisions' is not in the public CSS); node scripts/vendored.js -> 'vendored: 1 file matches its source'; cd tools && npm run traces -> 'traces: файлов проверено 2818, следов 0, пропущено 67'. The whole check, the unit/int run of the tree and the e2e were not run (by instruction; ORCH verifies the combined tree).",
+      "cd tools && npm run handoffs-check after closing: 'handoffs-check: файлов проверено 1503, нарушений 1, исключений использовано 110 из 110'; the one violation is the known PENDING line of handoffs/M0DOCS-20261117-01/step-05c-test-designer.json (H4), not from this work."
+    ],
+    "issues": [
+      {
+        "id": "I1",
+        "kind": "TEST_FOLLOW_UP",
+        "text": "For TEST-DESIGNER (same round, О36): app/test/e2e/landing.test.js LD-5 section F reads the speaker at 360 and 371 px with the comment 'below 372 px'; the code now has the own row below 380 px, so section F must read 360, 371, 372, 375, 379 px (the driver above found the 4 px gap and the column fine at all of them; at 379 px the speaker is on its own row) and its comment must say below 380 px. The e2e count stays 15. The chips' row of LD-6 reads the accessible name by role, which is the aria-label, so dropping the title needs no change there (a search of the e2e file found no read of the chip title)."
+      },
+      {
+        "id": "I2",
+        "kind": "NOTE",
+        "text": "Inlining answer(): the instruction allowed 'return { status: 200, body }'; I inlined it instead of keeping a wrapper that does nothing else (the reviewer's own fix names both). The diff of demo.js is larger than a deletion because the two bodies were re-indented by prettier; behaviour is as measured above."
+      },
+      {
+        "id": "I3",
+        "kind": "NOTE",
+        "text": "Open for ORCH and CODE-DESIGNER, not edited here: docs/design/V1-public-look.md 7.9 and the code design section 10 still carry the old threshold (below 360 px) and the old counts (L2 of the review, О38 says they are edited before the release gate); the e2e metric of the title was not red at 372 to 379 px on this machine (gap 12 px at 372), the O36 change is a slack for other system fonts, not a repaired defect."
+      }
+    ],
+    "artifacts_out": [
+      "app/server/routes/demo.js",
+      "app/public/css/site.css",
+      "app/public/js/pages/demo.js"
+    ]
+  }
+}
