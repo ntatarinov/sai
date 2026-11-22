@@ -13,6 +13,8 @@ node scripts/smoke.js --base <APP_ORIGIN> --expect-version <sha>
 rm -rf <outside the project>/deploy-<sha>
 ```
 
+The deploy command runs INSIDE the app folder of the export (`cd <export>/app`), never in the folder that holds it. On 2026-11-22 a deploy started one level up uploaded 121 files instead of 63 (the `.vercelignore` of app/ was not read), the build ran no install and no `vercel-build`, and production answered 404 on every path for about two to three minutes until the same command was repeated inside app/; the smoke check caught it at once. Always read the line «Downloading 63 deployment files» (the number of an allowlisted upload) and run the smoke check before anything else.
+
 ## 2. Rollback
 
 ```

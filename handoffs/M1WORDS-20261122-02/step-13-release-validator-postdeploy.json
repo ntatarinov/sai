@@ -6,7 +6,7 @@
   "from_agent": "ORCH",
   "to_agent": "RELEASE-VALIDATOR",
   "file": "handoffs/M1WORDS-20261122-02/step-13-release-validator-postdeploy.json",
-  "status": "PENDING",
+  "status": "COMPLETED",
   "priority": "NORMAL",
   "context": {
     "requirement_ids": [
@@ -43,6 +43,75 @@
   },
   "created_at": "2026-11-22T22:16:01Z",
   "started_at": "2026-11-22T22:16:11Z",
-  "completed_at": null,
-  "result": null
+  "completed_at": "2026-11-22T22:35:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Post-deploy validation of REQ-113 on https://sai-team.vercel.app, served commit dd54f43 (health version dd54f43, migrations_pending 0). Verdict PASS for the production state. 1) Right build: /api/health ok; the eight REQ-109 security headers are byte equal on all 12 addresses, /api answers carry no-store; /examples.html, /nope and /office/ are the uniform 404, /api/a/b and /api/nope are 404 {error:not_found}. 2) Served files: site.css and demo.js equal the repository byte for byte; texts.js and how.html equal the output of the project's own public build step run by me on a copy of dd54f43 outside the project; 21 of 21 files of that output served byte for byte; the served module has LANGS [ru,en], no order_ key, no kk value, no idea_panel_fine; the 15 REQ-113 keys, 30 of 30 ru and en values, equal the requirement; the static ru how.html carries the block, the plan note, the stage marks and the sentence about the missing way to get an invitation. 3) Real Chrome 157 on production: 442 of 442 checks in the final run (how.html and the demo result, recommended answers and five 'Не знаю', ru and en, 1470x784 and 390x844, light and dark): the block once on the result and on how.html, three rows with the marks (ru Работает / Пока нет, en Working / Not yet), closing text of four sentences, the exact lead, no grey line, label 'Учтено ответов' with its sentence, stage marks, the two notes, block above 'Описать идею' (DOM order and edges), the button opens 'Как описать идею', block top at y 557 at 390x844, no horizontal scroll, no console error, no failed request, only the page's own POST /api/demo/result. 24 screenshots, six opened and read. 4) Landing facts hold: examples closed, demo works, scene and stage press work, RU and EN buttons only, ?lang=kk shows Russian on /, /how.html and /demo.html. 5) Incident of the first deploy recorded plainly with the lesson; what I could confirm is that the site answers 200 now and serves the exact build output; the 404 window and the file counts are not visible to me. GitHub runs app 45075584788 and check 45075584839 on dd54f43 read as success (gh run view, read-only). The record is docs/uat/M1WORDS-20261122-02-prod.md. I ran no test, no check, no Vercel command, no git write.",
+    "findings": [
+      {
+        "id": "I-1",
+        "severity": "Medium",
+        "where": "the first deploy command (process, closed)",
+        "evidence": "ORCH's facts: deploy run from the export root, 121 files, empty build output, 404 on every path from about 22:13:48Z to about 22:16Z, found by the smoke check, redeployed from the app folder (63 files). Seen by me: production serves 21 of 21 build-output files byte for byte and health says dd54f43, so nothing of the empty build remains.",
+        "item": "R1 (release order), runbook",
+        "recommendation": "ORCH writes into docs/runbooks/release.md that the deploy command runs inside the app folder of the export, the expected file count of the upload (63), and that the smoke result is read first; no product change."
+      },
+      {
+        "id": "R-1",
+        "severity": "Low",
+        "where": "https://sai-team.vercel.app/demo.html?lang=en",
+        "evidence": "With English coming only from the ?lang=en address, 'Describe your idea' opens how.html in Russian; with English chosen by the EN button (stored) it stays English (8 of 8). Language module of REQ-111, not changed by REQ-113.",
+        "item": "none (remark)",
+        "recommendation": "Owner decides whether ?lang= should store the language; not a REQ-113 matter."
+      },
+      {
+        "id": "R-2",
+        "severity": "Low",
+        "where": "served shared/i18n/texts.js",
+        "evidence": "Holds the label lang_kk and the note kk_note; no kk value, no order_ key, no page shows them (as R-3 of the landing record).",
+        "item": "none (remark, known)",
+        "recommendation": "none"
+      },
+      {
+        "id": "R-3",
+        "severity": "Low",
+        "where": "handoff wording",
+        "evidence": "The task says the office stage page /office/ answers; on production /office/ is the uniform 404 (the folder holds scene modules and no index page); the modules are served (21 of 21 files).",
+        "item": "none (remark)",
+        "recommendation": "ORCH words it as 'the office scene modules' in later handoffs."
+      }
+    ],
+    "self_check": [
+      "GET script (Node 22.23.4, fetch, no redirects): /api/health -> 200 {\"ok\":true,\"db\":\"ok\",\"role\":\"ok\",\"migrations_pending\":0,\"version\":\"dd54f43\",\"node\":\"v22.23.5\"}, cache-control no-store; / and /how.html 200 with the eight headers; /examples.html, /nope, /office/ 404 (3092 B, same ETag); /api/a/b and /api/nope 404 {\"error\":\"not_found\"}",
+      "CMP site.css 38245 B EQUAL, demo.js 43984 B EQUAL; texts.js served 23258 / repo 50745 DIFF and how.html served 18004 / repo 19279 DIFF, both EQUAL to the output of writePublicSet run on git archive dd54f43 app outside the project",
+      "all.js: files 21 equal 21 bad []; served module: order_ keys 0, kk values 0, LANGS [ru,en], 134 keys",
+      "vals.mjs: keys checked 15 values equal 30 of 30 bad []; idea_panel_fine present false; how.html static ru now_title, now_closing, how_plan_note, how_stage_1_note, now_idea_s FOUND; invite sentence true; closing sentences ru 4 en 4",
+      "browser.mjs (Chrome 157 headless, CDP, fresh profile, one context per cell): final run 'checks 442 pass 442 fail 0'; runs 1 to 3 had 29, 4 and 4 alarms, all faults of my driver (card label number badge, wait too short, ?lang=en not kept, screenshot rescaled the scene), listed in the record; 356 requests in the final run, 8 POST /api/demo/result",
+      "probe: block top at 390x844 on a fresh load = 557 (light and dark), 1470x784 = 688",
+      "gh run view 45075584788 -> app success on dd54f43; gh run view 45075584839 -> check success on dd54f43",
+      "git show --stat dd54f43 -> 6 files, 2119 insertions, 29 deletions; health after the run: version dd54f43, migrations_pending 0",
+      "no Chrome process left (Win32_Process listing of my profile: 0); ports 4780, 4781, 4782, 4790 not touched; working tree: no change by me (the modified docs/runbooks/release.md is ORCH's)"
+    ],
+    "issues": [
+      {
+        "id": "D1",
+        "kind": "DOUBT",
+        "text": "Load on production: I ran the browser matrix four times (three runs had faults of my own driver) plus probes, about 1300 requests in about 20 minutes (static files and the page's own demo POSTs, one browser at a time, no load test). Tell me if the owner wants a lower budget next time."
+      },
+      {
+        "id": "D2",
+        "kind": "DOUBT",
+        "text": "R-1: whether the address ?lang=en should keep the language for the next page; pre-existing, for the owner."
+      },
+      {
+        "id": "Q1",
+        "kind": "QUESTION",
+        "text": "Not checked by me: the Vercel side (deployment list, upload counts, build logs), the 404 window, the branch protection and secret scanning settings (decisions/0132), the owner's phone look, 320x568, keyboard and reduced-motion runs. The incident stands in the record as reported by ORCH, not witnessed."
+      }
+    ],
+    "artifacts_out": [
+      "docs/uat/M1WORDS-20261122-02-prod.md"
+    ]
+  }
 }

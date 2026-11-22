@@ -18,3 +18,7 @@ docs/audits/AUD-002/app/security.json (SEC-APP-04).
 ## Маршрут
 
 WF-03 (a small dependency change; RELEASE-VALIDATOR re-reads `npm audit` on GitHub).
+
+## Добавлено 2026-11-23
+
+Dependabot (switched on by decisions/0132) opened pull request #1 «Bump minimatch and eslint in /tools» on the same advisory for the tools folder. It is NOT merged: it is made against `main` (the old tools) and would conflict with the work line; the pins must also be at least 14 days old (REQ-108 criterion 1). Handle both folders (app and tools) in one WF-03 run after the records are on `main` (M0.13), then close the pull request.
