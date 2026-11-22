@@ -182,3 +182,96 @@ Criteria that no person sees are not part of this record (see `docs/uat/REQ-113.
 ## The reader pack (for R-01, made by this role; not scored here)
 
 Folder `reader-pack` in the scratch folder of this run (`<scratch>/uat113/reader-pack`): a plain `README.txt` (the one line «This is a website of a service called Sai. Read it as a visitor and answer the three questions.», Part A of R-01 copied word for word, and one line saying what the folder holds), and, for the windows 390x844 and 1470x784 in light, ru: `1-demo-start`, `2-demo-result-landing`, `3-demo-result-no-match`, `4-how-it-works`, each as a `.txt` (the visible text of the page, `innerText`) and a full-page `.png`, taken from `<APP>`. The folder has no repository text, no file names, no requirement word and nothing of Part B (a search of the folder for `REQ-`, `handoff`, `decisions`, `Part B`, `key` found nothing).
+
+---
+
+## Run of the wording round (2026-11-22)
+
+WF-02, step 8, item 4 (UAT-RUNNER), run `M1WORDS-20261122-02`, handoff `step-08-uat-runner.json`. The scenarios are those of
+`docs/uat/REQ-113.md` as amended on 2026-11-22: V-01 to V-07, V-09 to V-12, V-15 and V-20 in full, V-08 as a CORE regression.
+The earlier text of this file is not edited; the sections above describe the build before the amendment (commit `b25c11e`).
+No scenario spent the owner's limit or money (no real AI run, G2); the people and the data are invented (AP-004); no
+credential exists (Q7).
+
+**Verdict: V-01 to V-12, V-15 and V-20 PASS, 0 failures; V-13, V-14, V-16, V-17, V-18, V-19 and K-01 were not run again (their
+earlier PASS stands by the amendment table); R-01 is not scored by this role (the reader pack is made, see the end).**
+
+### The stand
+
+- Commit `4a4ca93` (the head of the working branch). One fresh clone of the project folder (`core.autocrlf=false`, LF) in the
+  scratchpad, `npm ci` in `app/` (102 packages); `app/` of the clone equals `app/` of the working tree (`diff -rq`, no
+  difference), so it is the code that passed GitHub run 45031353708 except the test file `landing.test.js`. A second copy of
+  that clone (with its `node_modules`) served the public set.
+- `<APP>`: `node server/node-main.js` on a free port, in-memory data; `GET /api/health` answered `{"ok":true,"db":"ok",...}`.
+  `<APP-PUBLIC>`: the output of the open build (`runBuild`, exit 0, "vercel-build: done") served through `createApp` as the
+  integration test serves it, on another free port. Both servers were stopped by their exact process ids at the end; the ports
+  4780, 4781, 4782 and 4790 were not touched.
+- The check of the build before any scenario (rule 1 of R-01): `how.html` on the stand holds the sentence «Способа получить
+  приглашение пока нет.» (the closing text of the block), so the stand serves the amended build. The expected words (15 keys, ru
+  and en) were also compared with the values of the texts module of the stand, whitespace folded: 30 values, 0 differences; the
+  module holds 179 keys, 45 of them `order_` keys.
+- Real Chrome 157 (the installed program, `--headless=new`, a fresh temporary profile), driven by my own client of the debugging
+  protocol (Node 22.23.4). Every cell is a fresh isolated browser context; language and theme are set through the real buttons;
+  clicks are real input events. Only the requests the pages make themselves (GET of files, the demo's two requests), no load.
+  The expected words were copied from `docs/uat/REQ-113.md` (the amended ones), not read back from the product.
+- Evidence: 204 snapshots in `<scratch>/uat113w/snaps`, named `V<nn>-<window>-<theme>-<lang>-<what>.png`; the records of every
+  step with the measured values are `<scratch>/uat113w/res/*.json` (`s1` V-01/03/04/07, `s2` V-02/05/06/08, `s3`
+  V-09/10/11/12, `s4-V15`, `s5` V-20, `marks`). 531 recorded checks, 0 red.
+
+### Scenarios
+
+| Scenario | Cells | Result | Key measured numbers | Evidence |
+| --- | --- | --- | --- | --- |
+| V-01 | FULL 12 | PASS | 0 blocks on the last question, 1 on the result; marks Работает / Пока нет / Пока нет (en Working / Not yet / Not yet); the new ru row line «...пишет техническое задание (ТЗ).» and the four-sentence closing text (with «Способа получить приглашение пока нет.», en «There is no way to get an invitation yet.») equal the amended words; 0 controls in the block; closing text 16 px, no class `fine`; block bottom above `.idea` top in all cells (gap 30 at 1470, 22 at 390 and 320); first link after the block «Описать идею» `/how.html#describe-idea`; last list «Чего Sai пока не делает», 10 items; block top: 495 at 1470 (right of the receipt), 763 (ru) or 740 (en) at 390, 799 or 781 at 320 | `V01-*-q5.png`, `V01-*-result.png` |
+| V-02 | CORE 6 x 6 sets | PASS | landing, card-site, catalog, calculator, dashboard and single-page-app each name their kind; one block above the panel with the amended words; `.rc-acc` 1, five full dots, 0 half, «5 из 5» (en «5 of 5»); last list 10 items | `V02-*.png` (each set at 1470 light ru and 390 dark en) |
+| V-03 | FULL 12 x 2 answer sets | PASS | no kind, `.rc-acc` 0, the receipt equals the no-match text, one block with the amended words above the panel, `.r-sum + .r-lines` holds; at 1470 the block is at the right of the receipt (top 495; receipt bottom 736 ru, 710 en); at 390 ru the fixed list is under the receipt and the block after it (receipt bottom 679, block top 1344, panel top 1905); at 320 ru block top 1394, panel top 1977 | `V03-*.png` |
+| V-04 | FULL 12 | PASS | block after `section.intro`, before `ol.steps`, outside `div.panels` and the order regions, words as V-01; the sentence «Ниже описано, как работа будет устроена, когда этапы запустятся.» (en «Below is how the work will go once the stages start.») after the block and before `div.how-stages`; top of the block with the page at its top: 557 px at 390x844 (all four theme and language cells), 550 at 320x568, 688 (ru) and 662 (en) at 1470x784, all inside the window height | `V04-*-top.png`, `V04-*-full.png` |
+| V-05 | CORE 6 x 2 results | PASS | `#demo .idea` holds h3, one lead paragraph (ru «Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать.», en «You cannot describe an idea in Sai yet: the button opens tips on how to describe it.») and the link; elements with class `fine`: 0; the grey line «В тестовом режиме идеи описывают только приглашённые участники.» is not on the result | `V05-*.png` |
+| V-06 | CORE 6 x 2 passes | PASS | (a) label «Учтено ответов», 5 full dots, «5 из 5», the sentence (en «The more answers, the more reliable the hint. “Not sure” counts as half.»); (b) still «Лендинг» / «Landing page», 4 full and 1 half dot, «4 из 5» / «4 of 5»; «точность» and «accuracy» nowhere | `V06-*.png` |
+| V-07 | FULL 12 | PASS | stage 1: h2, marks «Работает» «Демо-опрос» and «Пока нет» «Опрос по вашей идее и ТЗ» (en «Working» «Demo survey» and «Not yet» «Survey on your idea and the requirements»), the note, the text; stages 2 to 4: one «Пока нет» each; the two notes are 16 px, no `fine` or `meta`, computed colour equal to `body` in both themes; four `button[data-step]` with `aria-pressed`, no mark or note inside a button | `res/s1.json` (V-07 records), `V04-*-full.png` |
+| V-08 | CORE 6 x 7 checks (regression) | PASS | after steps 1, 2, 3, 4, 1 the text list reads «Вы у стола n: <этап>» (en «You are at desk n: <stage>»), exactly one button pressed, block and notes unchanged as text; «Описать идею» opens `/how.html#describe-idea`; the ru part holds «Страница для моей студии йоги: расписание занятий, тренеры и запись по телефону»; no input, textarea or select in `main` | `V08-*.png` |
+| V-09 | FULL 12 x 5 checks | PASS | EN, RU, EN on a new profile: after each press the block, marks, closing text, sentence, five stage marks and the stage 1 note equal the words of the language pressed; no Cyrillic letter in the English state; a marker survived the three presses (no reload); `?lang=` in the address; after the last reload still English | `V09-*.png` |
+| V-10 | CORE 6 x 4 checks | PASS | (a) English chosen before the survey: lead, label, sentence, «4 of 5» and block in English, no Cyrillic; (b) with a result open RU then EN: all texts follow, the dots stay four full and one half | `V10-*.png` |
+| V-11 | FULL + 360 and 380 = 20 | PASS | `how.html`: no horizontal scroll (page width 1455 of 1470 where the scrollbar takes 15 px), 0 cut texts, 0 texts below 4.5:1 (lowest 5.02:1, the skip link, outside the block), the marks' text at least 5.02:1, controls at least 48 px high, marks are `span` with tab index -1; frame of the marks at least 6.31:1, fill at least 3.39:1; 0 CSP violations, 0 console lines | `V11-*.png`, `res/marks.json` |
+| V-12 | FULL + 360 and 380 = 20 x 2 results | PASS | the same on the recommended and the no-match result, including the sentence on the cream surface of the receipt: 0 below 4.5:1 (lowest 5.02:1), 0 cut, no horizontal scroll, controls at least 48 px, block above the panel in every cell, 0 CSP violations, 0 console lines | `V12-*.png`, `res/marks.json` |
+| V-15 | CORE 6 (ru; JavaScript off) | PASS | the static ru text of `how.html` equals the words of V-01, V-04 and V-07 (the amended row line and closing text included); the list of four desks stands in place of the picture; no horizontal scroll; 4 requests, all GET of files of the stand, none to `/api/` | `V15-*.png` |
+| V-20 (`<APP-PUBLIC>`) | CORE 6 (+ one request) | PASS | `how.html` and the three results (recommended, "landing" with «Не знаю» on storage, five «Не знаю») show the block, the sentence, the stage marks, the note, the lead, the label and its sentence in ru and en with the amended words; language buttons `RU` and `EN` only; no «Что можно заказать», no link to the examples page; `?lang=kk` on `how.html` and `demo.html` with nothing stored gives Russian; 0 console lines | `V20-*.png` |
+| V-13, V-14, V-16, V-17, V-18, V-19 | - | not run again | no changed word or size is checked; the earlier PASS stands (the table of the amendment) | the first record above |
+| K-01 | - | not run: kk hidden, G9 | the button «ҚАЗ» was not pressed | - |
+| R-01 | - | not scored here | the reader pack is made (below) | `reader-pack-w` |
+
+### Findings
+
+None: no failure and no blocking finding.
+
+Remarks (AP-117, none is a failure):
+
+1. On a recommended result the block starts below the first screen at 320x568 (page y 799 ru, 781 en; the window is 568 high).
+   At 390x844 its top is at page y 763 (ru) or 740 (en), that is 81 or 104 px above the bottom of the first screen: inside it,
+   but only the beginning of the block is seen without scrolling. The look 8.4 and `decisions/0126` О1 name the cost; the
+   scenario's remark names 320x568 only. The block of `how.html` is inside the first screen in every window (V-04).
+2. The sentence of the receipt row («Чем больше ответов...») is 14 px (colour `rgb(98, 86, 74)`) on the cream surface; the
+   criterion asks 4.5:1 only, which holds (lowest text 5.02:1), so it is no failure. It is smaller than the 16 px of the other
+   body notes: a note for DESIGN-QA and the owner's G21 list.
+3. V-08: the example sentence of the part «Как описать идею» was compared in ru only (the scenario quotes the Russian one); the
+   English page has no input field.
+4. A visible Chrome was not started; the snapshots are from the headless one.
+
+### Not run
+
+V-13, V-14, V-16, V-17, V-18, V-19 (the earlier PASS stands), K-01 (kk hidden, G9), R-01 (a separate reader, not scored by this
+role), a visible Chrome, `npm run check`, the app and tools test scripts, `node --test` and the e2e tests (the owner's rule for
+this PC), anything on Vercel or on the internet. Criteria that no person sees are not part of this record (1, 2, 9, 11 and 13:
+see `docs/uat/REQ-113.md`, the list after the table).
+
+### The reader pack (for R-01, made by this role from the stand of this run; not scored here)
+
+Folder `reader-pack-w` in the scratch folder of this run (`<scratch>/uat113w/reader-pack-w`): a plain `README.txt` (the line «This
+is a website of a service called Sai. Read it as a visitor and answer the three questions.» and Part A of R-01 copied word for
+word; nothing of Part B), and for the windows 390x844 and 1470x784 in light, ru, five items each as a `.txt` (the visible text,
+`innerText`) and a full-page `.png`: `1-demo-start`, `2-demo-result-landing`, `3-demo-result-no-match`, `4-how-it-works` and
+`5-after-pressing-describe-idea` (the part «Как описать идею» that the button «Описать идею» opens, pressed on a result, so the
+reader sees where the button leads: the answer to finding F8 of the first reader). The texts of items 2 to 4 hold the sentence
+«Способа получить приглашение пока нет.» (checked, rule 1 of R-01). The folder has no repository text, no requirement word and
+nothing of Part B (a search of the text files for `REQ-`, `handoff`, `decisions`, `Part B`, `key` found nothing). The form used
+is a pack of pages, the weaker form of rule 5 of R-01 (no live browser).
