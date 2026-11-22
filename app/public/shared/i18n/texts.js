@@ -441,9 +441,9 @@ export const TEXTS = Object.freeze({
     en: "Good fit",
   }),
   demo_accuracy: Object.freeze({
-    ru: "Точность подбора",
-    kk: "Таңдау дәлдігі",
-    en: "Match accuracy",
+    ru: "Учтено ответов",
+    kk: "Ескерілген жауаптар",
+    en: "Answers counted",
   }),
   demo_also_fits: Object.freeze({
     ru: "Также подходит: {names}",
@@ -526,19 +526,79 @@ export const TEXTS = Object.freeze({
     en: "Would you like to describe your idea?",
   }),
   idea_panel_lead: Object.freeze({
-    ru: "Посмотрите, как рассказать о ней простыми словами, чтобы агенты поняли задачу.",
-    kk: "Агенттер міндетті түсінуі үшін ол туралы қарапайым сөздермен қалай айтуға болатынын қараңыз.",
-    en: "See how to describe it in plain words so the agents understand the task.",
+    ru: "Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать.",
+    kk: "Қазір Sai-да идеяны сипаттау мүмкін емес: түймені басқанда оны қалай айту керегі туралы кеңес ашылады.",
+    en: "You cannot send an idea yet. The button opens tips on how to describe it.",
   }),
   describe_idea: Object.freeze({
     ru: "Описать идею",
     kk: "Идеяны сипаттау",
     en: "Describe your idea",
   }),
-  idea_panel_fine: Object.freeze({
-    ru: "В тестовом режиме идеи описывают только приглашённые участники.",
-    kk: "Сынақ режимінде идеяларды тек шақырылған қатысушылар сипаттайды.",
-    en: "In test mode, only invited participants describe ideas.",
+  now_title: Object.freeze({
+    ru: "Что работает сейчас",
+    kk: "Қазір не жұмыс істейді",
+    en: "What works now",
+  }),
+  now_demo_t: Object.freeze({
+    ru: "Демо-опрос",
+    kk: "Демо-сауалнама",
+    en: "Demo survey",
+  }),
+  now_demo_s: Object.freeze({
+    ru: "Пять вопросов и подсказка, какой вид продукта вам подойдёт.",
+    kk: "Бес сұрақ және қандай өнім түрі сізге сәйкес келетіні туралы кеңес.",
+    en: "Five questions and a hint at which kind of product fits you.",
+  }),
+  now_idea_t: Object.freeze({
+    ru: "Опрос по вашей идее и ТЗ",
+    kk: "Идеяңыз бойынша сауалнама және ТТ",
+    en: "Interview and requirements",
+  }),
+  now_idea_s: Object.freeze({
+    ru: "ИИ-аналитик задаёт вопросы и пишет ТЗ.",
+    kk: "ЖИ-талдаушы сұрақтар қояды және ТТ жазады.",
+    en: "The AI analyst asks questions and writes the requirements.",
+  }),
+  now_build_t: Object.freeze({
+    ru: "Сборка и результат",
+    kk: "Құрастыру және нәтиже",
+    en: "Build and result",
+  }),
+  now_build_s: Object.freeze({
+    ru: "Разработчик собирает продукт, вы принимаете работу.",
+    kk: "Әзірлеуші өнімді құрастырады, сіз жұмысты қабылдайсыз.",
+    en: "The developer builds the product and you accept the work.",
+  }),
+  stat_on: Object.freeze({
+    ru: "Работает",
+    kk: "Жұмыс істейді",
+    en: "Works",
+  }),
+  stat_off: Object.freeze({
+    ru: "Пока нет",
+    kk: "Әзірге жоқ",
+    en: "Not yet",
+  }),
+  now_closing: Object.freeze({
+    ru: "Даты запуска пока нет. Описать идею смогут только приглашённые участники. Готовый продукт посетителям пока не выдаётся.",
+    kk: "Іске қосу датасы әзірге жоқ. Идеяны тек шақырылған қатысушылар сипаттай алады. Дайын өнім келушілерге әзірге берілмейді.",
+    en: "No launch date is set yet. Only invited participants will be able to describe an idea. Finished products are not handed out to visitors yet.",
+  }),
+  how_plan_note: Object.freeze({
+    ru: "Ниже описано, как работа будет устроена, когда этапы запустятся.",
+    kk: "Төменде кезеңдер басталғанда жұмыс қалай өтетіні сипатталған.",
+    en: "Below is how the work will go once the stages start.",
+  }),
+  how_stage_1_note: Object.freeze({
+    ru: "Название этапа описывает будущий проект. Заказы сейчас не принимаются.",
+    kk: "Кезеңнің атауы болашақ жобаны сипаттайды. Тапсырыстар қазір қабылданбайды.",
+    en: "The stage name describes a future project. Orders are not accepted now.",
+  }),
+  demo_accuracy_note: Object.freeze({
+    ru: "Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину.",
+    kk: "Жауап неғұрлым көп болса, кеңес соғұрлым сенімді. «Білмеймін» жарты болып саналады.",
+    en: "The more answers, the surer the hint. “Not sure” counts as half.",
   }),
   demo_needs_js: Object.freeze({
     ru: "Для демо-опроса нужен JavaScript",

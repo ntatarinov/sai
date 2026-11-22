@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { pathToFileURL } from "node:url";
+import { textProblem } from "../../public/shared/text-rules.js";
+import { lintText } from "../../scripts/word-lists.js";
 import { blank } from "../fixtures/blank.js";
 import { APP, ROOT, tempDir } from "../fixtures/helpers.js";
 
@@ -168,6 +171,86 @@ test("TX-3 no control or invisible sign, no phrase over 18 words, no ты-form i
   assert.ok(probe("Claude  Code").some((f) => /Claude Code/.test(f)));
 });
 
+/**
+ * The 13 keys that REQ-113 (the visitor status block) adds, with the exact ru and en values the requirement
+ * writes: [key, ru, en]. The test's own oracle: the module is read, these are not imported from it.
+ * @type {ReadonlyArray<readonly [string, string, string]>}
+ */
+const ADDED_VALUES = [
+  ["now_title", "Что работает сейчас", "What works now"],
+  ["now_demo_t", "Демо-опрос", "Demo survey"],
+  [
+    "now_demo_s",
+    "Пять вопросов и подсказка, какой вид продукта вам подойдёт.",
+    "Five questions and a hint at which kind of product fits you.",
+  ],
+  ["now_idea_t", "Опрос по вашей идее и ТЗ", "Interview and requirements"],
+  [
+    "now_idea_s",
+    "ИИ-аналитик задаёт вопросы и пишет ТЗ.",
+    "The AI analyst asks questions and writes the requirements.",
+  ],
+  ["now_build_t", "Сборка и результат", "Build and result"],
+  [
+    "now_build_s",
+    "Разработчик собирает продукт, вы принимаете работу.",
+    "The developer builds the product and you accept the work.",
+  ],
+  ["stat_on", "Работает", "Works"],
+  ["stat_off", "Пока нет", "Not yet"],
+  [
+    "now_closing",
+    "Даты запуска пока нет. Описать идею смогут только приглашённые участники. Готовый продукт посетителям пока не выдаётся.",
+    "No launch date is set yet. Only invited participants will be able to describe an idea. Finished products are not handed out to visitors yet.",
+  ],
+  [
+    "how_plan_note",
+    "Ниже описано, как работа будет устроена, когда этапы запустятся.",
+    "Below is how the work will go once the stages start.",
+  ],
+  [
+    "how_stage_1_note",
+    "Название этапа описывает будущий проект. Заказы сейчас не принимаются.",
+    "The stage name describes a future project. Orders are not accepted now.",
+  ],
+  [
+    "demo_accuracy_note",
+    "Чем больше ответов, тем надёжнее подсказка. «Не знаю» считается за половину.",
+    "The more answers, the surer the hint. “Not sure” counts as half.",
+  ],
+];
+
+/** The two keys whose values REQ-113 changes, with the exact ru and en values: [key, ru, en]. */
+const CHANGED_VALUES = [
+  [
+    "idea_panel_lead",
+    "Сейчас идею описать в Sai нельзя: по кнопке откроется подсказка, как о ней рассказать.",
+    "You cannot send an idea yet. The button opens tips on how to describe it.",
+  ],
+  ["demo_accuracy", "Учтено ответов", "Answers counted"],
+];
+
+/** The 15 keys of REQ-113 criterion 1. */
+const STATUS_VALUES = [...ADDED_VALUES, ...CHANGED_VALUES];
+
+/**
+ * Every file under a folder, as absolute paths, in the order of the directory listing sorted by name.
+ * @param {string} dir
+ * @returns {string[]}
+ */
+function filesUnder(dir) {
+  /** @type {string[]} */
+  const out = [];
+  for (const e of fs
+    .readdirSync(dir, { withFileTypes: true })
+    .sort((a, b) => (a.name < b.name ? -1 : 1))) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) out.push(...filesUnder(p));
+    else out.push(p);
+  }
+  return out;
+}
+
 test("TX-4 the exact values fixed by records; kk and en of the theme words; no nobuild_ key starts with order_", async () => {
   const T = texts.TEXTS;
   /** @type {Array<[string, string]>} */
@@ -253,6 +336,39 @@ test("TX-4 the exact values fixed by records; kk and en of the theme words; no n
     "nobuild_title",
   ]);
   for (const k of nobuild) assert.ok(!k.startsWith("order_"), k);
+
+  // REQ-113 criterion 1: the 15 keys of the visitor status block have exactly the ru and en values the
+  // requirement writes (13 new, two changed), and the 13 new ones exist and are no order texts.
+  assert.equal(STATUS_VALUES.length, 15);
+  for (const [key, ruValue, enValue] of STATUS_VALUES) {
+    assert.equal(T[key]?.ru, ruValue, `${key}: ru`);
+    assert.equal(T[key]?.en, enValue, `${key}: en`);
+  }
+  for (const [key] of ADDED_VALUES)
+    assert.ok(
+      key in T && !key.startsWith("order_"),
+      `${key}: a new key must exist and be no order text`,
+    );
+  // The label of the receipt's count is no longer called accuracy in any language.
+  assert.notEqual(
+    T.demo_accuracy.kk,
+    "Таңдау дәлдігі",
+    "demo_accuracy: kk still says accuracy",
+  );
+  // The removed key: not in the module and in no file of the public pages or of the tests. The name is built
+  // from two parts, so that no file of app/test holds it in one piece (AP-093).
+  const removed = ["idea_panel_", "fine"].join("");
+  assert.equal(removed in T, false, "the removed key is still in the module");
+  const holders = [
+    ...filesUnder(path.join(APP, "public")),
+    ...filesUnder(path.join(APP, "test")).filter((f) => f.endsWith(".js")),
+  ];
+  assert.ok(holders.length > 30, `${holders.length} files read`);
+  for (const file of holders)
+    assert.ok(
+      !fs.readFileSync(file, "utf8").includes(removed),
+      `the removed key is still used: ${path.relative(APP, file)}`,
+    );
 });
 
 /** The 45 order_ keys of the design 4.1, closed. */
@@ -837,4 +953,576 @@ test("TX-8 the seven damaged copies of the criterion are red: a key without kk, 
       JSON.stringify(langFindings(header)),
     );
   }
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// REQ-113 (the visitor status block): TX-9, the words of the 15 keys, and TX-10, the static source of how.html.
+
+/**
+ * The whole words that no ru or en value of the 15 keys may hold (REQ-113 criterion 2; the list is closed: a form
+ * that is not written here is no violation).
+ * @type {Record<string, string[]>}
+ */
+const CLOSED_WORDS = {
+  ru: [
+    "контакт",
+    "контакты",
+    "контактов",
+    "почта",
+    "почту",
+    "почты",
+    "почте",
+    "форма",
+    "форму",
+    "формы",
+    "форме",
+    "регистрация",
+    "регистрации",
+    "регистрацию",
+  ],
+  en: [
+    "contact",
+    "contacts",
+    "email",
+    "mail",
+    "form",
+    "forms",
+    "register",
+    "registration",
+    "waitlist",
+  ],
+};
+
+/**
+ * The closed words that a text holds as whole words: compared without letter case, between borders of Unicode
+ * letters and digits, never as a substring (AP-120).
+ * @param {string} text
+ * @param {string} lang
+ * @returns {string[]}
+ */
+function closedWordHits(text, lang) {
+  return (CLOSED_WORDS[lang] ?? []).filter((word) =>
+    new RegExp(`(?<![\\p{L}\\p{N}])${word}(?![\\p{L}\\p{N}])`, "iu").test(text),
+  );
+}
+
+/**
+ * The findings of REQ-113 criterion 2 in one value: the lists of the forbidden-words lint in the value's own
+ * language, the rules of the public text (a phrase of at most 18 words, no ты-form), a digit, and for ru and en
+ * the closed whole words. Each finding is one line, `<key> <lang>: <what>`.
+ * @param {string} key
+ * @param {string} lang
+ * @param {string} value
+ * @returns {string[]}
+ */
+function valueFindings(key, lang, value) {
+  /** @type {string[]} */
+  const out = [];
+  for (const f of lintText(value, lang))
+    out.push(`${key} ${lang}: list ${f.list} «${f.form}»`);
+  const problem = textProblem(value);
+  if (problem !== null)
+    out.push(`${key} ${lang}: the text rule gives ${JSON.stringify(problem)}`);
+  if (/\p{N}/u.test(value)) out.push(`${key} ${lang}: a digit`);
+  for (const word of closedWordHits(value, lang))
+    out.push(`${key} ${lang}: the whole word «${word}»`);
+  return out;
+}
+
+test("TX-9 the 45 values of the 15 keys of the visitor status block pass the lint of the lists, the text rule, no digit and none of the closed words", () => {
+  /** @type {string[]} */
+  const found = [];
+  let checked = 0;
+  for (const [key] of STATUS_VALUES) {
+    const entry = texts.TEXTS[key];
+    if (entry === undefined) {
+      found.push(`${key}: the key is missing`);
+      continue;
+    }
+    for (const lang of texts.LANGS) {
+      checked += 1;
+      found.push(...valueFindings(key, lang, entry[lang]));
+    }
+  }
+  assert.equal(checked, 45, "15 keys in three languages, every value read");
+  assert.deepEqual(found, []);
+
+  // The rule's own cases: it finds what it is meant to find, so the empty answer above is no blind rule. The
+  // cases are by class of input: every closed word as a whole word in four settings, and as a part of a longer
+  // word in four others (AP-110).
+  for (const lang of Object.keys(CLOSED_WORDS))
+    for (const word of CLOSED_WORDS[lang]) {
+      for (const text of [
+        `Тут ${word}.`,
+        `«${word}»`,
+        word.toUpperCase(),
+        `a-${word}`,
+      ])
+        assert.deepEqual(
+          closedWordHits(text, lang),
+          [word],
+          `the rule finds «${word}» as a whole word`,
+        );
+      for (const text of [`${word}ный`, `без${word}`, `${word}1`, `1${word}`])
+        assert.deepEqual(
+          closedWordHits(text, lang),
+          [],
+          "the rule does not find a substring",
+        );
+    }
+  assert.deepEqual(
+    closedWordHits("Контакты", "ru"),
+    ["контакты"],
+    "the rule finds «контакт» as a whole word",
+  );
+  assert.deepEqual(
+    closedWordHits("контактный", "ru"),
+    [],
+    "the rule does not find a substring",
+  );
+  assert.deepEqual(closedWordHits("Contact us", "ru"), []);
+  assert.ok(
+    valueFindings("k", "ru", "Срок запуска").some((f) =>
+      /list С «срок»/.test(f),
+    ),
+    "a form of a list in ru is found",
+  );
+  assert.ok(
+    valueFindings("k", "kk", "Іске қосу күні").some((f) =>
+      /list Ц «күні»/.test(f),
+    ),
+    "a form of a list in kk is found",
+  );
+  assert.ok(
+    valueFindings("k", "en", "Price 100 %").some((f) => /list Ц/.test(f)),
+    "a form of a list in en is found",
+  );
+  assert.ok(
+    valueFindings("k", "ru", "Это ты сам").some((f) => /formal/.test(f)),
+    "the ты-form is found",
+  );
+  const nineteen = Array.from({ length: 19 }, () => "слово").join(" ");
+  assert.equal(
+    valueFindings("k", "ru", `${nineteen}.`).length,
+    1,
+    "a phrase of 19 words is found",
+  );
+  assert.deepEqual(valueFindings("k", "ru", `${nineteen.slice(6)}.`), []);
+  assert.deepEqual(
+    valueFindings("k", "ru", "Один 2 три."),
+    ["k ru: a digit"],
+    "a digit is found",
+  );
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// TX-10: the static source of how.html, read by a tolerant reader of the markup built here (the oracle).
+
+/**
+ * @typedef {{ tag: string, attrs: Record<string, string>, kids: Array<HtmlNode | string>, parent: HtmlNode | null, start: number, end: number }} HtmlNode
+ */
+
+const VOID_TAGS = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "source",
+  "track",
+  "wbr",
+]);
+
+/**
+ * A tolerant reader of a page's markup: the tree of its elements with their attributes, the text, and the place
+ * of each element in the source (`start` at its `<`, `end` after its closing tag). Comments and the doctype are
+ * skipped, void elements have no children, a closing tag closes the nearest open element of its name.
+ * @param {string} src
+ * @returns {HtmlNode}
+ */
+function readHtml(src) {
+  /** @type {HtmlNode} */
+  const root = {
+    tag: "#root",
+    attrs: {},
+    kids: [],
+    parent: null,
+    start: 0,
+    end: src.length,
+  };
+  let node = root;
+  let at = 0;
+  const tags =
+    /<!--[\s\S]*?-->|<!doctype[^>]*>|<(\/?)([A-Za-z][A-Za-z0-9-]*)((?:"[^"]*"|'[^']*'|[^'">])*)>/gi;
+  for (const m of src.matchAll(tags)) {
+    if (m.index > at) node.kids.push(src.slice(at, m.index));
+    at = m.index + m[0].length;
+    if (m[2] === undefined) continue;
+    const tag = m[2].toLowerCase();
+    if (m[1] === "/") {
+      let up = node;
+      while (up !== root && up.tag !== tag)
+        up = /** @type {HtmlNode} */ (up.parent);
+      if (up !== root) {
+        up.end = at;
+        node = /** @type {HtmlNode} */ (up.parent);
+      }
+      continue;
+    }
+    /** @type {Record<string, string>} */
+    const attrs = {};
+    for (const a of m[3].matchAll(
+      /([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g,
+    ))
+      attrs[a[1].toLowerCase()] = a[2] ?? a[3] ?? a[4] ?? "";
+    /** @type {HtmlNode} */
+    const el = { tag, attrs, kids: [], parent: node, start: m.index, end: at };
+    node.kids.push(el);
+    if (!VOID_TAGS.has(tag) && !m[3].endsWith("/")) node = el;
+  }
+  if (at < src.length) node.kids.push(src.slice(at));
+  return root;
+}
+
+/** @param {HtmlNode} n @returns {HtmlNode[]} the child elements */
+const childElements = (n) =>
+  /** @type {HtmlNode[]} */ (n.kids.filter((k) => typeof k !== "string"));
+
+/** @param {HtmlNode} n @returns {HtmlNode[]} every element below `n`, in source order */
+function descendants(n) {
+  /** @type {HtmlNode[]} */
+  const out = [];
+  for (const k of childElements(n)) out.push(k, ...descendants(k));
+  return out;
+}
+
+/** @param {HtmlNode} n @returns {string} the text of the element, white space folded */
+const textOfNode = (n) =>
+  n.kids
+    .map((k) => (typeof k === "string" ? k : textOfNode(k)))
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** @param {HtmlNode} n @param {string} cls */
+const hasClass = (n, cls) =>
+  (n.attrs.class ?? "").split(/\s+/).filter(Boolean).includes(cls);
+
+/**
+ * The shape of an element: `<tag` and, when it has attributes other than `data-t`, a space and the attributes
+ * sorted by name as `name=value` joined by commas, `>`, the shapes of the child elements, `</>`; text and
+ * `data-t` are left out. The same function stands in landing.test.js for the page in the browser.
+ * @param {HtmlNode} n
+ * @returns {string}
+ */
+function skeletonOfNode(n) {
+  const attrs = Object.entries(n.attrs)
+    .filter(([name]) => name !== "data-t")
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([name, value]) => `${name}=${value}`)
+    .join(",");
+  return `<${n.tag}${attrs === "" ? "" : ` ${attrs}`}>${childElements(n).map(skeletonOfNode).join("")}</>`;
+}
+
+/** The shape of the status block on every page that holds it (REQ-113 design 4.2, F15). */
+const NOW_SKELETON =
+  "<section aria-labelledby=now-title,class=info now><h3 id=now-title></><ul class=rl>" +
+  "<li><span class=stat on></><span class=rn><b></><small></></></>" +
+  "<li><span class=stat></><span class=rn><b></><small></></></>" +
+  "<li><span class=stat></><span class=rn><b></><small></></></>" +
+  "</><p></></>";
+
+/** How many elements of how.html carry each of the added keys (REQ-113 design F19). */
+const HOW_KEY_COUNTS = {
+  now_title: 1,
+  now_demo_t: 2,
+  now_demo_s: 1,
+  now_idea_t: 2,
+  now_idea_s: 1,
+  now_build_t: 1,
+  now_build_s: 1,
+  stat_on: 2,
+  stat_off: 6,
+  now_closing: 1,
+  how_plan_note: 1,
+  how_stage_1_note: 1,
+  demo_accuracy_note: 0,
+};
+
+/** The text of `ol.steps` of how.html at the base of REQ-113, from `<ol class="steps">` to `</ol>`. */
+const STEPS_SHA256 =
+  "8a03a716ebbf3bda63ecc562747382cd1e9a8878fc647f9ab9dde20046941cb5";
+
+/**
+ * What the static source of how.html gets wrong against REQ-113 criterion 6, as lines.
+ * @param {string} src the page's source text
+ * @param {Record<string, Record<string, string>>} T the texts module
+ * @returns {string[]}
+ */
+function howFindings(src, T) {
+  /** @type {string[]} */
+  const out = [];
+  const all = descendants(readHtml(src));
+  /** @param {string} key */
+  const keyed = (key) => all.filter((n) => n.attrs["data-t"] === key);
+
+  // (a) every element with a key shows its ru value as its static text (the page without script).
+  for (const n of all) {
+    const key = n.attrs["data-t"];
+    if (key === undefined) continue;
+    const want = T[key]?.ru;
+    if (typeof want !== "string")
+      out.push(`how.html: ${key} is no key of the module`);
+    else if (textOfNode(n) !== want.replace(/\s+/g, " ").trim())
+      out.push(`how.html: ${key} static text differs from its ru value`);
+  }
+  // (b) the added keys stand as often as the design says.
+  for (const [key, want] of Object.entries(HOW_KEY_COUNTS)) {
+    const n = keyed(key).length;
+    if (n !== want) out.push(`how.html: ${key} stands ${n} times, not ${want}`);
+  }
+
+  const blocks = all.filter(
+    (n) => n.tag === "section" && hasClass(n, "info") && hasClass(n, "now"),
+  );
+  const intros = all.filter((n) => n.tag === "section" && hasClass(n, "intro"));
+  const steps = all.filter((n) => n.tag === "ol" && hasClass(n, "steps"));
+  const stages = all.filter(
+    (n) => n.tag === "div" && hasClass(n, "how-stages"),
+  );
+  const panels = all.filter((n) => n.tag === "div" && hasClass(n, "panels"));
+  const plan = keyed("how_plan_note");
+  const block = blocks[0];
+  // (c) the order in the source: the intro, the block, the plan note, the steps, the stages, the panels; the block
+  // beside the intro, the note the first element of the section that holds the steps.
+  const ordered =
+    blocks.length === 1 &&
+    intros.length === 1 &&
+    plan.length === 1 &&
+    steps.length === 1 &&
+    stages.length === 1 &&
+    panels.length === 1 &&
+    [intros[0], block, plan[0], steps[0], stages[0], panels[0]].every(
+      (n, i, line) => i === 0 || n.start > line[i - 1].start,
+    ) &&
+    block.parent === intros[0].parent &&
+    plan[0].parent === steps[0].parent &&
+    steps[0].parent !== null &&
+    childElements(steps[0].parent)[0] === plan[0];
+  if (!ordered)
+    out.push(
+      "how.html: the status block follows the intro and precedes the steps",
+    );
+  if (block === undefined || steps.length === 0) return out;
+
+  // (d) the block is no part of the panels and of no region that the open build cuts, and holds no order text.
+  const regions = [
+    ...src.matchAll(
+      /<!--\s*sai:(order|kk)\s*-->[\s\S]*?<!--\s*\/sai:\1\s*-->/g,
+    ),
+  ].map((m) => [m.index, m.index + m[0].length]);
+  let inPanels = false;
+  for (let up = block.parent; up !== null; up = up.parent)
+    if (hasClass(up, "panels")) inPanels = true;
+  const orderKey = [block, ...descendants(block)].some((n) =>
+    (n.attrs["data-t"] ?? "").startsWith("order_"),
+  );
+  if (
+    inPanels ||
+    orderKey ||
+    regions.some(([from, to]) => block.start >= from && block.start < to)
+  )
+    out.push(
+      "how.html: the status block is inside the panels or an order region",
+    );
+
+  // (e) the markup of the block.
+  if (skeletonOfNode(block) !== NOW_SKELETON)
+    out.push("how.html: the status block has the markup of the design");
+
+  // (f) the stages: the children of each section in order, the marks and the names beside them.
+  /** @param {HtmlNode} e */
+  const describe = (e) => {
+    if (e.tag === "p" && hasClass(e, "stat-line"))
+      return `p.stat-line(${childElements(e)
+        .map((k) =>
+          hasClass(k, "pair")
+            ? childElements(k)
+                .map((x) => x.attrs["data-t"] ?? "?")
+                .join("+")
+            : (k.attrs["data-t"] ?? "?"),
+        )
+        .join(" | ")})`;
+    const cls = e.attrs.class === undefined ? "" : `.${e.attrs.class}`;
+    const key = e.attrs["data-t"] === undefined ? "" : `:${e.attrs["data-t"]}`;
+    return `${e.tag}${cls}${key}`;
+  };
+  for (const n of [1, 2, 3, 4]) {
+    const stage = all.find((e) => e.attrs.id === `stage-${n}`);
+    const got =
+      stage === undefined
+        ? "no section"
+        : childElements(stage).map(describe).join(", ");
+    const want =
+      n === 1
+        ? "h2, p.stat-line(stat_on+now_demo_t | stat_off+now_idea_t), p:how_stage_1_note, p:how_stage_1_text"
+        : `h2, p.stat-line(stat_off), p:how_stage_${n}_text`;
+    if (got !== want)
+      out.push(`how.html: the stage ${n} holds ${got}, not ${want}`);
+  }
+
+  // (g) the two notes are plain paragraphs: no class (so no small grey print).
+  for (const note of [...plan, ...keyed("how_stage_1_note")])
+    if (note.attrs.class !== undefined)
+      out.push("how.html: a note carries a class");
+
+  // (h) the steps and their buttons are as at the base.
+  const list = steps[0];
+  const inside = descendants(list);
+  const buttons = inside.filter((n) => n.tag === "button");
+  if (
+    createHash("sha256")
+      .update(src.slice(list.start, list.end))
+      .digest("hex") !== STEPS_SHA256 ||
+    buttons.map((b) => b.attrs["data-step"]).join() !== "1,2,3,4" ||
+    buttons.some((b) => b.attrs["aria-pressed"] === undefined) ||
+    inside.some((n) => hasClass(n, "stat") || hasClass(n, "stat-line"))
+  )
+    out.push("how.html: ol.steps is not byte for byte as at the base");
+  return out;
+}
+
+test("TX-10 the static source of how.html: the status block between the intro and the steps, its markup and keys, the stage marks and notes, the static Russian text equals the module, ol.steps as at the base", () => {
+  const src = fs.readFileSync(path.join(APP, "public", "how.html"), "utf8");
+  assert.deepEqual(howFindings(src, texts.TEXTS), []);
+
+  // (i) each of the 13 added keys is used by a page or by a script of app/public.
+  const pages = filesUnder(path.join(APP, "public"))
+    .filter((f) => f.endsWith(".html"))
+    .map((f) => fs.readFileSync(f, "utf8"))
+    .join("\n");
+  const scripts = filesUnder(path.join(APP, "public", "js"))
+    .filter((f) => f.endsWith(".js"))
+    .map((f) => fs.readFileSync(f, "utf8"))
+    .join("\n");
+  for (const [key] of ADDED_VALUES)
+    assert.ok(
+      pages.includes(`data-t="${key}"`) ||
+        scripts.includes(`"${key}"`) ||
+        scripts.includes(`'${key}'`),
+      `${key} is used by no page`,
+    );
+
+  // The reader is no blind one: each damaged copy of the page gives the finding of its place.
+  /**
+   * @param {string} from
+   * @param {string} to
+   * @returns {string}
+   */
+  const damage = (from, to) => {
+    assert.ok(src.includes(from), `the place to damage: ${from}`);
+    return src.replace(from, () => to);
+  };
+  const block = descendants(readHtml(src)).find(
+    (n) => n.tag === "section" && hasClass(n, "now"),
+  );
+  assert.ok(block !== undefined, "the block is in the source");
+  const blockText = src.slice(block.start, block.end);
+  const withoutBlock = src.slice(0, block.start) + src.slice(block.end);
+  const stageMark = (/** @type {string} */ mark) =>
+    `<p class="stat-line">\n                ${mark}\n              </p>\n              <p data-t="how_stage_3_text">`;
+  const off = '<span class="stat" data-t="stat_off">Пока нет</span>';
+  /** @type {Array<[string, string, RegExp]>} */
+  const copies = [
+    [
+      "a typo in a static text",
+      damage(">Работает</span>", ">Работаеть</span>"),
+      /stat_on static text differs/,
+    ],
+    [
+      "the block after the steps",
+      withoutBlock.replace(
+        '<div class="how-stages">',
+        () => `${blockText}<div class="how-stages">`,
+      ),
+      /the status block follows the intro and precedes the steps/,
+    ],
+    [
+      "the plan note with a class",
+      damage(
+        '<p data-t="how_plan_note">',
+        '<p class="fine" data-t="how_plan_note">',
+      ),
+      /a note carries a class/,
+    ],
+    [
+      "the plan note without its key",
+      damage('<p data-t="how_plan_note">', "<p>"),
+      /how_plan_note stands 0 times/,
+    ],
+    [
+      "stage 3 with the mark Works",
+      damage(
+        stageMark(off),
+        stageMark('<span class="stat on" data-t="stat_on">Работает</span>'),
+      ),
+      /the stage 3 holds/,
+    ],
+    [
+      "a mark inside a stage button",
+      damage('<span class="sn">1</span', `${off}<span class="sn">1</span`),
+      /ol\.steps is not byte for byte/,
+    ],
+    [
+      "a step button without aria-pressed",
+      damage(
+        '<button type="button" data-step="2" aria-pressed="false">',
+        '<button type="button" data-step="2">',
+      ),
+      /ol\.steps is not byte for byte/,
+    ],
+    [
+      "the block inside an order region",
+      damage(
+        '<section class="info now"',
+        '<!-- sai:order -->\n<section class="info now"',
+      ).replace(
+        '</section>\n        <section>\n          <p data-t="how_plan_note">',
+        () =>
+          '</section>\n<!-- /sai:order -->\n        <section>\n          <p data-t="how_plan_note">',
+      ),
+      /inside the panels or an order region/,
+    ],
+    [
+      "the closing paragraph without its key",
+      damage('<p data-t="now_closing">', "<p>"),
+      /now_closing stands 0 times/,
+    ],
+    [
+      "an odd class on the mark of row 3",
+      damage(
+        `${off}\n              <span class="rn"\n                ><b data-t="now_build_t">`,
+        `<span class="stat later" data-t="stat_off">Пока нет</span>\n              <span class="rn"\n                ><b data-t="now_build_t">`,
+      ),
+      /the status block has the markup of the design/,
+    ],
+    [
+      "a link inside the block",
+      damage(
+        '<p data-t="now_closing">',
+        '<a href="/x">x</a><p data-t="now_closing">',
+      ),
+      /the status block has the markup of the design/,
+    ],
+  ];
+  for (const [name, copy, want] of copies)
+    assert.ok(
+      howFindings(copy, texts.TEXTS).some((f) => want.test(f)),
+      `${name}: ${JSON.stringify(howFindings(copy, texts.TEXTS))}`,
+    );
 });
