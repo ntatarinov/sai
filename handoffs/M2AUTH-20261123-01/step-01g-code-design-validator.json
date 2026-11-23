@@ -1,0 +1,49 @@
+{
+  "handoff_id": "step01g-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "01g",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/M2AUTH-20261123-01/step-01g-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "your pass-2 findings (step-01e)",
+      "handoffs/M2AUTH-20261123-01/step-01f-code-designer.json (the rework)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-01e-code-design-validator.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-01g-code-design-validator.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 1b gate, pass 3 over the sections changed by rework 01f: P1 and P2 fixed, R1-R4 done, nothing else changed that weakens the design (diff the design yourself against the commit named in the launch message). PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:41:10Z",
+  "started_at": "2026-11-23T18:41:11Z",
+  "completed_at": "2026-11-23T18:48:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Pass 3 over rework 01f: `git diff 043c612 84fe178 -- docs/design/M2AUTH-accounts-tenancy-backup.md` read whole (sha256 of the design at 84fe178: 0e9c89e53226e15e0bbb5a724a4359770333d4477e8712148d87ac7154dde326, before and after). P1 fixed: the list is the module app/server/auth/common-passwords.js (one frozen export COMMON_PASSWORDS, header with the source, the commit and the full MIT text), imported by password.js with no fs read; C20, §3, 4.9.2, PW-4, A21, B6 and §17 follow it; no `.txt` is left in the design (grep 0); REQ-114 names the same module (3 places). This matches decisions/0137 Addition 2 «N2b, form of the list», so IB-1 stays green. P2 fixed: the login's first read of users is unlocked; the lock is taken on the one row that holds the counter (the ordinary users row read again under the lock, the login_failures row, or for the admin the login_delays row of the address made by insert … on conflict do nothing then select … for update); the admin's users row is never locked by a login (grep of the old sentence: 0); login_delays.fails ≥ 0; the delay formula on the locked row keeps REQ-114 c5's 2^(n−1) s; one counter-row lock per request after the rate row and before the audit lock, so no reverse wait; AUTH-RACE-3 restated, AUTH-RACE-4 added (a right admin login from a clean address answers 200 within 4 s while six other addresses fail in parallel); M52 restated, M52b added. Not measurable here (no Postgres): the pg job proves it, named so in the design. R1-R4 done: one vCPU named in 4.9.2, §7 and §14 with F32 (re-run on my clone: eight parallel computations on one thread end at 540 … 3982, 4628 ms); the full MIT notice in the header (PW-4 checks it); traces run over the module before its commit (B6); the deadline answer switched off once COMMIT is sent, with an ADD-2 case for a COMMIT in flight. The generated sample of the module passes the pinned prettier (re-run). Nothing else changed that weakens the design: the other hunks only close О15/О16 (answered by decisions/0137 Addition 2; REQ-114 amended in dfd23bc), update counts (62 mutants) and add the section-19 table. Criteria 32 of 32, the bar section, the replacement table and the earlier fixes B1-B7, N1-N6 stay as passed in pass 2.",
+    "findings": [],
+    "self_check": [
+      "sha256 of docs/design/M2AUTH-accounts-tenancy-backup.md (84fe178) before and after: 0e9c89e53226e15e0bbb5a724a4359770333d4477e8712148d87ac7154dde326",
+      "git diff 043c612 84fe178 -- docs/design/M2AUTH-accounts-tenancy-backup.md read whole; grep -c 'common-passwords.txt|users row is locked by the same first' → 0; grep of docs/requirements.yaml → app/server/auth/common-passwords.js ×3",
+      "2026-11-23T18:46:53Z UV_THREADPOOL_SIZE=1 node sketch/t8-list-designer.mjs 8 (the designer's t8-list.mjs copied to my clone <scratch>/m2auth-01b) → threads=1 parallel=8 finish ms [540,1085,1645,2203,2744,3345,3982,4628]; npx prettier --check sketch/out/common-passwords.js → All matched files use Prettier code style!",
+      "Not run here (decisions/0110, 0129): npm run check, any app test, node --test, e2e; no server started; no port touched"
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}
