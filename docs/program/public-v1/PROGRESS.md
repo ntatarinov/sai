@@ -227,6 +227,7 @@ Never write a secret, a machine path or a name of another project here.
 | 2026-11-23T17:13:39Z | ARCH §20.4 (`db-verify --a <url> --b <url>`) | the URLs only from `SAI_VERIFY_A_URL` and `SAI_VERIFY_B_URL`; an address in argv is refused | decisions/0136 О13 |
 | 2026-11-23T17:13:39Z | ARCH §8, §9 (worker modes `owner-local`, `api`, `fake`) | V1 worker modes are `api` and `fake` only; `owner-local` and CORE-9 `runStructured` are left out of V1 | decisions/0136 О2 |
 | 2026-11-23T17:22:26Z | PLAN R2.4 and AC2.6 (the demo's «Описать идею» prefills the quick facts) | left out of REQ-117; it comes with the first public-look release after G7 «б» (it changes released public texts and needs G21) | decisions/0135 О10 |
+| 2026-11-23T17:39:46Z | PLAN §5 M2 task order (run order named by REQ-119 criterion 11 and the REQ-110 description) | the fix of ISS-0132 (run ISS-0132-20261123-01) is released to `main` before task M2.4 starts; REQ-119 criterion 11 compares `tools/src` and `tools/test` with that release commit | decisions/0136 (ISS-0132 part) |
 
 ## Log (append only; one line per finished task)
 
@@ -420,3 +421,4 @@ Never write a secret, a machine path or a name of another project here.
 - 2026-11-23T16:47:01Z M2ACCT-20261123-01 step 01 lane-a REQ-ANALYST closed COMPLETED: REQ-114 (14 criteria), REQ-115 (12), REQ-116 (10), REQ-117 (12) appended; 16 open questions answered by ORCH in decisions/0135; next step 01 lane-b (R2.5, R2.6, backup, REQ-111 c3 micro-amendment), then REQ-VALIDATOR 02
 - 2026-11-23T17:13:39Z M2ACCT-20261123-01 step 01 lane-b REQ-ANALYST closed COMPLETED: REQ-118 (13 criteria), REQ-119 (13), REQ-120 (6) and the REQ-111 criterion 3 exception for the consent keys; ISS-0132-20261123-01 step 02 REQ-ANALYST closed COMPLETED: REQ-110 criteria 12-19; open questions answered in decisions/0136; ISS-0144 (LOW) opened; next REQ-VALIDATOR over all of it
 - 2026-11-23T17:22:26Z M2ACCT-20261123-01 step 02 lane-a REQ-VALIDATOR closed: FAIL (blocking F1-F4, non-blocking N1-N9); rework 01c prepared with ORCH answers
+- 2026-11-23T17:39:46Z M2ACCT-20261123-01 step 02b lane-b REQ-VALIDATOR pass 2 PASS (low P1, P2); ISS-0132-20261123-01 step 02d REQ-VALIDATOR pass 2 PASS (low P1, P2); the run order recorded here (P2); P1s go to DOC-UPDATER
