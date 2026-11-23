@@ -1,0 +1,103 @@
+{
+  "handoff_id": "step01a-grants-gate-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "01a",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-VALIDATOR",
+  "file": "handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants.json (the amendment)",
+      "decisions/0137 О1"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "REQ-VALIDATOR gate over the grants micro-amendment of REQ-115 and REQ-120: the change is only what decisions/0137 О1 says, no criterion changed its meaning, the lists stay consistent with each other and with REQ-114. Re-derive the diff scope yourself (git diff of docs/requirements.yaml against HEAD). PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:06:51Z",
+  "started_at": "2026-11-23T18:07:06Z",
+  "completed_at": "2026-11-23T18:12:01Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "verdict_by_requirement": {
+      "REQ-115": "FAIL (G1)",
+      "REQ-120": "PASS (non-blocking G2)"
+    },
+    "summary": {
+      "scope": "Diff 01421bc -> e5b099b of docs/requirements.yaml, re-derived: 6 hunks, 8 lines removed, 15 added; REQ-115: the status line (old text kept after «before this»), the Files paragraph (l.17213-17218) and guard row (9) (l.17240-17243); REQ-120: the status line, the Files paragraph (l.18264-18267) and guard row (5) (l.18282-18284). Every hunk lies before the blocks' acceptance_criteria (l.17252 and l.18290): no criterion text changed. The working tree equals e5b099b; the file hash was the same at the start and the end of the check.",
+      "decision_fit": "The change is what decisions/0137 О1 says: one app/db/grants.sql with every GRANT of the app roles, applied by migrate.js after the migration files on every run, MG-6 as its test, the dump flags unchanged; REQ-120 names it as used, not written. REQ-114 has no grant text (grep of its block), so no conflict there.",
+      "а": "MG-6 (a database whose grants were revoked gets them back by one migrate run; a failing grants file -> exit 1 and nothing changed) is checkable; the existing MG-1..MG-5 of app/test/int/migrate.test.js exist and guard row (9) keeps their inputs and answers.",
+      "б": "One contradiction with another block (G1) and one design trap in REQ-120 (G2).",
+      "в_г_д_е": "Dependencies, size, quality bar and original_request unchanged by the hunks."
+    },
+    "findings": [
+      {
+        "id": "G1",
+        "requirement": "REQ-115 (Files, l.17213-17214) against REQ-117 (Files, l.17616-17617)",
+        "point": "б",
+        "severity": "Medium",
+        "blocking": true,
+        "problem": "REQ-115 now fixes «app/db/grants.sql … every GRANT of the app roles … the migration files hold no new grant» (decisions/0137 О1), while REQ-117 still says «app/db/migrations/0003_projects.sql (projects, idea_versions, their RLS and grants …)». The two blocks name two places for the grants of 0003.",
+        "needed": "Align REQ-117's Files line to decisions/0137 О1 (the grants of projects and idea_versions go into app/db/grants.sql, 0003 holds the tables and their RLS), or limit REQ-115's sentence to 0002 if ORCH means that; REQ-118 (0004) states no grant place and needs nothing."
+      },
+      {
+        "id": "G2",
+        "requirement": "REQ-120 (description, the rehearsal job: «database A migrated to the previous schema (every migration file but the newest)»)",
+        "point": "а / б (AP-016)",
+        "severity": "Medium",
+        "blocking": false,
+        "problem": "grants.sql holds the grants of every table, including those of the newest migration, and a failing grants file is exit 1 (MG-6). If the job builds A with migrate.js over the migrations without the newest file, the grants step fails on the missing tables and the rehearsal is red for a reason that is not a defect. The text does not say how A is built or that grants.sql must apply on any prefix of the migrations.",
+        "needed": "Name one of: A is built without the grants step (A only feeds the dump, which carries no ACL), or grants.sql is written so it applies to whichever tables exist; the code design can pick, but the block should name the constraint."
+      },
+      {
+        "id": "G3",
+        "requirement": "REQ-115 (Files: «the two of 0001 restated»)",
+        "point": "а",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "0001_init.sql has four GRANT statements (l.36-39: two role memberships, usage on schema public, select on schema_migrations); «the two» does not say which, and «every GRANT of the app roles» reads as all four, while the memberships depend on the login role of MG-5.",
+        "needed": "Name which grants of 0001 grants.sql restates."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git log --oneline -3; git diff --quiet e5b099b -- docs/requirements.yaml; sha256sum docs/requirements.yaml (start, end)",
+        "output": "e5b099b, 01421bc, 22438cb; working tree equals e5b099b; 1c5848bc…8686 both times (01421bc gives 42a96125…184c)"
+      },
+      {
+        "command": "git diff -U0 01421bc e5b099b -- docs/requirements.yaml",
+        "output": "6 hunks at new lines 17154, 17213, 17240, 18205, 18264, 18282; acceptance_criteria start at 17252 (REQ-115) and 18290 (REQ-120)"
+      },
+      {
+        "command": "awk over REQ-114..REQ-120 for grant|privilege|no-acl",
+        "output": "l.17195 (REQ-115 «grants are the least each route needs, listed in the code design»), the amended lines, l.17617 (REQ-117 «their RLS and grants» in 0003 — G1), l.18249 (the dump flags)"
+      },
+      {
+        "command": "grep -n -i grant app/db/migrations/0001_init.sql; grep -n '^test(\"MG-' app/test/int/migrate.test.js",
+        "output": "l.36-39 four grants (G3); MG-1..MG-5 exist, no MG-6 yet"
+      },
+      {
+        "command": "cd tools && npm run -s traces; npm run -s handoffs-check",
+        "output": "traces=0, hc=0"
+      }
+    ],
+    "issues": [
+      "The base tag base/M2AUTH-20261123-01 is f3f5a3b; the scope was re-derived against 01421bc, the parent of the amendment commit, as ORCH's message names."
+    ],
+    "artifacts_out": []
+  }
+}

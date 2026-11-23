@@ -17151,7 +17151,7 @@ requirements:
   - id: REQ-115
     title: Tenancy — the four organisation roles of decisions/0127 И, forced row-level security on every table with org_id, the tx.js helpers, the role selfcheck that also refuses a table owner, route metadata, the isolation suite with three organisations, the permission matrix, the append-only audit log with its hash chain and docs/security-invariants.md (PUBLIC-V1, R2.3)
     owner: BACKEND-DEV   # migration 0002 (tenancy part), server/db, the route middleware and the tests; lane FULL
-    status: in_progress   # 2026-11-23T18:08:18Z, run M2AUTH-20261123-01, WF-01 micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants.json) by decisions/0137 О1, in the form of decisions/0079 item 5: app/db/grants.sql (every GRANT of the app roles, applied by app/server/db/migrate.js after the migration files on every run) and the test MG-6 of app/test/int/migrate.test.js added to the file list and the guard table; no criterion changed; before this: 2026-11-23T17:42:58Z run M2AUTH-20261123-01 starts (WF-02 step 0, task M2.2 of PLAN M2; set by run M2ACCT-20261123-01, WF-01 step 3 (DOC-UPDATER)); the requirement passed the REQ-VALIDATOR gate on pass 2 (handoffs/M2ACCT-20261123-01/step-02b-req-validator-lane-a.json); no criterion is checked yet; was pending
+    status: in_progress   # 2026-11-23T18:13:13Z, run M2AUTH-20261123-01, rework of the grants micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants-b.json) by the findings G2, G3 of handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json and decisions/0137 О1, in the form of decisions/0079 item 5; no criterion changed; before this: 2026-11-23T18:08:18Z, run M2AUTH-20261123-01, WF-01 micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants.json) by decisions/0137 О1, in the form of decisions/0079 item 5: app/db/grants.sql (every GRANT of the app roles, applied by app/server/db/migrate.js after the migration files on every run) and the test MG-6 of app/test/int/migrate.test.js added to the file list and the guard table; no criterion changed; before this: 2026-11-23T17:42:58Z run M2AUTH-20261123-01 starts (WF-02 step 0, task M2.2 of PLAN M2; set by run M2ACCT-20261123-01, WF-01 step 3 (DOC-UPDATER)); the requirement passed the REQ-VALIDATOR gate on pass 2 (handoffs/M2ACCT-20261123-01/step-02b-req-validator-lane-a.json); no criterion is checked yet; was pending
     depends_on: [REQ-114]   # built in the same run M2.2: the isolation suite and the permission matrix sign in with the sessions of REQ-114; REQ-108 (done) gave the login role, the selfcheck and the route table
     original_request: >
       Слова владельца дословно. 2026-11-23, чат сессии на компьютере владельца с Windows (decisions/0133, раздел
@@ -17211,10 +17211,15 @@ requirements:
       REQ-108 and REQ-109 give them); app/server/services/audit.js (the name may change in the design; one file); the
       verify route in the admin routes file the design names; docs/security-invariants.md;
       app/test/fixtures/permission-matrix.golden.json; app/db/grants.sql (new, decisions/0137 О1: every GRANT of the app
-      roles, the two of 0001 restated; the migration files hold no new grant) and the grants step of
+      roles on schema objects; of the four GRANT statements of 0001 it restates exactly `grant usage on schema public
+      to sai_app, sai_preview` and `grant select on schema_migrations to sai_app`, while the role memberships `grant
+      sai_app to sai_app_login` and `grant sai_preview to sai_app_login` stay in 0001 only; each grant on a table is
+      applied only when that table exists at that moment, so a database built from an older prefix of the migrations
+      gets exactly the grants of its own tables; the migration files hold no new grant) and the grants step of
       app/server/db/migrate.js (changed: it applies grants.sql after the migration files on every run, in its own
       transaction under the same advisory lock), with the test MG-6 of app/test/int/migrate.test.js (a database whose
-      grants were revoked gets them back by one migrate run; a failing grants file → exit 1 and nothing changed); the
+      grants were revoked gets them back by one migrate run; a database migrated without the newest migration file gets
+      the grants of its own tables and no error; a failing grants file → exit 1 and nothing changed); the
       tests named in the criteria. Not changed: tools/.
 
       Not covered: the routes of projects, invites and the board (REQ-116, REQ-117; their cases enter the suites of
@@ -17563,7 +17568,7 @@ requirements:
   - id: REQ-117
     title: Projects and the request board — «Новый проект» with a title, the idea and three one-tap quick facts, versioned ideas with a reason, the stage strip from shared/project/stages.js, the admin request board with counts by stage, the request card with «Изменить заявку», the audit log page and the KZ date and number formats (PUBLIC-V1, R2.4)
     owner: BACKEND-DEV   # services projects and audit, the project and admin routes, migration 0003; the app and admin pages, public/js/api.js and the two shared modules by FRONTEND-DEV in the same run; lane FULL
-    status: pending
+    status: pending   # 2026-11-23T18:13:13Z, run M2AUTH-20261123-01, rework of the grants micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants-b.json) by the findings G1 of handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json and decisions/0137 О1, in the form of decisions/0079 item 5; no criterion changed
     depends_on: [REQ-116]   # accounts and organisations of the invited client (REQ-116, which depends on REQ-114 and REQ-115); built in run M2.3 together with REQ-116
     original_request: >
       Слова владельца дословно. 2026-11-23, чат сессии на компьютере владельца с Windows (decisions/0133, раздел
@@ -17613,8 +17618,8 @@ requirements:
       versions through one purge helper of the projects service; the insert-only trigger refuses every other UPDATE
       and DELETE (open question О12).
 
-      Files (from the root of Sai; new unless said): app/db/migrations/0003_projects.sql (projects, idea_versions,
-      their RLS and grants; shared with REQ-116); app/server/services/projects.js and the audit page route in the
+      Files (from the root of Sai; new unless said): app/db/migrations/0003_projects.sql (projects, idea_versions and
+      their RLS; shared with REQ-116; their grants go into app/db/grants.sql of REQ-115, decisions/0137 О1); app/server/services/projects.js and the audit page route in the
       admin routes; app/server/routes/projects.js and app/server/routes/admin.js (the names may change in the design),
       app/server/routes/index.js (changed); app/public/js/api.js; app/public/shared/format/kz.js,
       app/public/shared/project/stages.js and the quick-facts module; the app pages (project list, new project,
@@ -18202,7 +18207,7 @@ requirements:
   - id: REQ-120
     title: Backup and its rehearsal before the first deploy of migration 0002 — app/scripts/db-verify.js, a rehearsal seed for every migration, the CI job migration-rehearsal (dump, restore, verify, the newest migration on the restored copy, selfcheck and smoke) and the runbook docs/runbooks/backup-restore.md (PUBLIC-V1, stage 7a)
     owner: BACKEND-DEV   # the script, the seeds, the CI job, the runbook; lane FULL (PLAN §4.1: app/scripts/**, .github/** and the runbook path read by app tests are protected); built in task M2.2 together with REQ-114 and REQ-115 (lane-B question О15)
-    status: in_progress   # 2026-11-23T18:08:18Z, run M2AUTH-20261123-01, WF-01 micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants.json) by decisions/0137 О1, in the form of decisions/0079 item 5: app/db/grants.sql (every GRANT of the app roles, applied by app/server/db/migrate.js after the migration files on every run) and the test MG-6 of app/test/int/migrate.test.js added to the file list and the guard table (as used, not written here); no criterion changed; before this: 2026-11-23T17:42:58Z run M2AUTH-20261123-01 starts (WF-02 step 0, task M2.2 of PLAN M2; set by run M2ACCT-20261123-01, WF-01 step 3 (DOC-UPDATER)); the requirement passed the REQ-VALIDATOR gate on pass 2 (handoffs/M2ACCT-20261123-01/step-02b-req-validator-lane-b.json); no criterion is checked yet; was pending
+    status: in_progress   # 2026-11-23T18:13:13Z, run M2AUTH-20261123-01, rework of the grants micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants-b.json) by the findings G2 of handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json and decisions/0137 О1, in the form of decisions/0079 item 5; no criterion changed; before this: 2026-11-23T18:08:18Z, run M2AUTH-20261123-01, WF-01 micro-amendment (REQ-ANALYST, handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants.json) by decisions/0137 О1, in the form of decisions/0079 item 5: app/db/grants.sql (every GRANT of the app roles, applied by app/server/db/migrate.js after the migration files on every run) and the test MG-6 of app/test/int/migrate.test.js added to the file list and the guard table (as used, not written here); no criterion changed; before this: 2026-11-23T17:42:58Z run M2AUTH-20261123-01 starts (WF-02 step 0, task M2.2 of PLAN M2; set by run M2ACCT-20261123-01, WF-01 step 3 (DOC-UPDATER)); the requirement passed the REQ-VALIDATOR gate on pass 2 (handoffs/M2ACCT-20261123-01/step-02b-req-validator-lane-b.json); no criterion is checked yet; was pending
     depends_on: [REQ-108, REQ-115]   # REQ-108 done (server/db/migrate.js, the docker job, smoke.js); REQ-115 pending (migration 0002, the first data migration, which this rehearsal must prove before its first deploy)
     original_request: >
       Слова владельца дословно. 2026-11-22, сессия 4 на компьютере владельца с Windows, после выдачи аудита
@@ -18263,7 +18268,10 @@ requirements:
       app/README.md (changed: one line naming the runbook, if the design keeps the runbook list there); the tests named
       in the criteria. Used, written by REQ-115 (decisions/0137 О1): app/db/grants.sql and the grants step of
       app/server/db/migrate.js with its test MG-6, because pg_dump --no-acl restores no GRANT and the restored copy B
-      gets its grants back when the job runs migrate.js on it. Not changed: the migrations themselves, app/server
+      gets its grants back when the job runs migrate.js on it; grants.sql applies each grant on a table only when that
+      table exists (REQ-115), so database A, built by migrate.js over every migration file but the newest, gets exactly
+      the grants of its own tables and the grants step does not fail for a table of the newest migration. Not changed:
+      the migrations themselves, app/server
       (except that grants step of REQ-115), app/public, tools/.
 
       Pre-deploy part (not criteria, PLAN §4.2). Before the deploy that first carries 0002 (the release of task M2.2),
