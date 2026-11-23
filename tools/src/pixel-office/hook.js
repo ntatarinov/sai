@@ -68,6 +68,10 @@ function post(http, host, port, body, signature, headerName, timeoutMs) {
 }
 
 async function run() {
+  // Linux and macOS only (ISS-0132): elsewhere the event is dropped silently, before
+  // stdin and before any state is read; it is never written later.
+  const platformGuard = await import("../platform-guard.js");
+  if (!platformGuard.isSupportedPlatform(process.platform)) return;
   const config = await import("./config.js");
   // Safety net: whatever happens, the hook is gone after this long.
   setTimeout(quit, config.HOOK_HARD_EXIT_MS);

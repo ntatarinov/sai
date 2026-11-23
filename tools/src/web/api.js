@@ -342,6 +342,7 @@ const PREFLIGHT_CODES = Object.freeze([
   "E_REAL_RUNS_OFF",
   "E_EXECUTOR",
   "E_EXECUTOR_NOT_FOUND",
+  "E_PLATFORM",
 ]);
 
 // Exported for the tests of the refusals of the control (design REQ-035, section

@@ -14,6 +14,12 @@ The one check command (quality-bar Q4) runs from the folder `tools/`; it needs a
 
 `npm run check` is, in a row, `npm run format:check` (prettier --check), `npm run lint` (eslint --max-warnings 0), `npm run traces` (the trace check), `npm run handoffs-check` (the check of the run records), `npm run test` (node --test over `test/**/*.test.js`) and `npm run e2e` (the end-to-end tests in a real headless Chrome); it stops at the first error. Chrome is needed for the last step: the variable `SAI_CHROME` (a full path) is read first, then the standard places; without a browser the step fails with a clear message and is never skipped (decisions/0107). The check is not bypassed: there is no `skip` and no `todo` in the tests, and there are no turned-off rules in the code or in the settings (quality-bar Q6).
 
+## Platforms
+
+Sai Team (the core, the executors, the engine and the team web) and Pixel Office (the server, the hook and the note) run on Linux and macOS only: they stop a run by its process group and keep their folders private by the modes 0700 and 0600 and by the owner of a folder, and Windows gives none of these (defect ISS-0132; decisions/0127 and 0134). Nothing of them is ported to Windows. On any other platform these scripts stop at once, before they write or start anything, with one line in Russian «Эта команда работает только на Linux и macOS, а запущена на win32: команда остановлена, ничего не записано и не запущено. …» (this command runs on Linux and macOS only, and it was started on win32: the command is stopped, nothing is written or started): `npm run pixel-office` with code 1; `npm run team`, `npm run team-web`, `npm run pixel-office-note` and `npm run e2e` (it stops Chrome by a process group) with code 2. The help of `pixel-office` and `pixel-office-note` (`--help`) is answered as on Linux. The hook drops the event silently: code 0, no output, nothing is sent, and the event is lost (it is not written later). A real run of the executor `claude-cli` is refused there as well, with `E_PLATFORM`. If a folder still has wider rights than 0700 after they are narrowed (a file system that keeps no rights), the data folder of Sai Team is refused with `E_HOME` and the state folder of Pixel Office with the line «Права каталога состояния … не стали 0700», and nothing is written into it.
+
+Windows is a client: the documents, the site code, `npm run traces`, `npm run handoffs-check`, `npm run handoff`, the picker check (`npm run picker -- check`) and the commands of WF-06 (`prepare-run`, `validate`, `apply-verdict`, `snapshot`, `snapshot-diff`) work on it. The full check runs on GitHub (decisions/0110), and the worker of the site runs in a Linux container (decisions/0134, item 4).
+
 ## Pixel Office
 
 Pixel Office shows live which tasks the Sai agents are doing. A task is one start of a subagent (the tool Agent): a role (`agent_type`), a short description, a start, an end and one of five states: «в работе» (working), «нет свежих данных» (no fresh data), «сервер перезапускался, события не записывались» (the server was restarted, events were not recorded), «закончила работу, итог не записан» (finished the work, the result is not recorded) or «окончание не записано» (the end is not recorded). The work of the main session is shown as a separate row. Next to it are the event journal and the office: characters of the roles at desks; a click on a character, on the label at its desk or on its desk opens the card of the agent run. Everything is built from one source — the events that the Claude Code hooks send themselves at the moment they fire, with that time. There are no events written in advance or after the fact (bar item R2).
@@ -144,7 +150,7 @@ Empty states: in an empty journal after the answer of the server — «Чтоб�
 
 ### Where things are
 
-The journal and the secret lie outside the repository — in the folder `~/.sai-pixel-office/` (rights 0700). Not in `sai/`, because `npm run snapshot` takes a snapshot of the whole `sai/`, and the journal would change with every session of any run. The server creates in it only these five files:
+The journal and the secret lie outside the repository — in the folder `~/.sai-pixel-office/` (rights 0700, which hold on Linux and macOS; on another platform Pixel Office does not start, section «Platforms»). Not in `sai/`, because `npm run snapshot` takes a snapshot of the whole `sai/`, and the journal would change with every session of any run. The server creates in it only these five files:
 
 | File                  | Rights | What is in it                                                                                                      |
 | --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
@@ -248,7 +254,7 @@ The data folder is `~/.sai-team`; another folder is set by the variable `SAI_TEA
 - `scenario.json` — only in test projects (the executor `scripted`): a byte-for-byte copy of the scenario file;
 - `writer.lock` — the lock of the writer, present while the right to write is taken.
 
-Rights: folders 0700, files 0600. If the rights are wider, the writer (the write command) narrows them to 0700/0600 — only after it has taken the lock and checked the journal — and says so in `notices`; the read commands do not change rights but warn (`warnings` in the output and the same line in stderr).
+Rights: folders 0700, files 0600 (these rights hold on Linux and macOS; on another platform the core does not start, section «Platforms»). If the rights are wider, the writer (the write command) narrows them to 0700/0600 — only after it has taken the lock and checked the journal — and says so in `notices`; the read commands do not change rights but warn (`warnings` in the output and the same line in stderr).
 
 ### What is stored
 

@@ -110,6 +110,7 @@ export const WHY_NOT_STARTED = Object.freeze({
   E_NO_BUDGET: "у проекта нет потолка расходов",
   E_REAL_RUNS_OFF: "настоящие запуски на этом компьютере выключены",
   E_DISK: "не удалось записать на диск",
+  E_PLATFORM: "Sai Team работает только на Linux и macOS",
 });
 export const WHY_OTHER = "внутренняя ошибка";
 

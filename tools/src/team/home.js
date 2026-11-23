@@ -96,9 +96,9 @@ function isOwn(st) {
   return uid === null || st.uid === uid;
 }
 
-function lstatOrNull(p) {
+function lstatOrNull(p, fsImpl = fs) {
   try {
-    return fs.lstatSync(p);
+    return fsImpl.lstatSync(p);
   } catch (err) {
     if (err.code === "ENOENT") return null;
     throw err;
@@ -143,24 +143,33 @@ function modeText(mode) {
 }
 
 // For createProject: creates <HOME> (0700) or narrows its mode. Returns notices.
-export function ensureHome(home) {
+// After a narrowing the mode is read again; a mode that did not hold is a refusal
+// (ISS-0132), never a notice. `fsImpl` gives lstatSync, mkdirSync and chmodSync.
+export function ensureHome(home, fsImpl = fs) {
   const notices = [];
   let st;
   try {
-    st = lstatOrNull(home);
+    st = lstatOrNull(home, fsImpl);
     if (st === null) {
-      fs.mkdirSync(home, { recursive: true, mode: DIR_MODE });
-      st = fs.lstatSync(home);
+      fsImpl.mkdirSync(home, { recursive: true, mode: DIR_MODE });
+      st = fsImpl.lstatSync(home);
     }
   } catch (err) {
     throw homeError(err && typeof err.code === "string" ? err.code : "EIO");
   }
   checkHomeStat(st);
   if (wider(st, DIR_MODE)) {
+    let after;
     try {
-      fs.chmodSync(home, DIR_MODE);
+      fsImpl.chmodSync(home, DIR_MODE);
+      after = fsImpl.lstatSync(home);
     } catch (err) {
       throw fromOsError(err, "write");
+    }
+    if (wider(after, DIR_MODE)) {
+      throw homeError(
+        `права 0700 не установились (сейчас ${modeText(after.mode)})`,
+      );
     }
     notices.push(
       `Права папки данных сужены до 0700 (были ${modeText(st.mode)})`,

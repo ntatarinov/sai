@@ -9,6 +9,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "../node-floor.js";
+import { refuseUnsupportedPlatform } from "../platform-guard.js";
 import { readConfig } from "../team/config.js";
 import { escapeUnsafe, formatError } from "../team/errors.js";
 import { parseScenario } from "../team/executors/scripted.js";
@@ -85,6 +86,7 @@ function line(io, text) {
 async function run(argv, env, io) {
   // The Node floor (REQ-110), before the arguments, the data folder and the server.
   if (refuseBelowNodeFloor(io.err)) return NODE_REFUSAL_EXIT;
+  if (refuseUnsupportedPlatform(io.err)) return NODE_REFUSAL_EXIT;
   let args;
   try {
     args = parseArgs(argv);

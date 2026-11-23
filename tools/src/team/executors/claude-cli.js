@@ -14,6 +14,7 @@ import {
   KILL_GRACE_MS,
 } from "../config.js";
 import { executorError } from "../errors.js";
+import { isSupportedPlatform } from "../../platform-guard.js";
 import {
   ACTIVITY_MAX,
   buildPrompt,
@@ -111,7 +112,11 @@ function checkWorkDir(dir) {
 }
 
 // The conditions of a real run (section 5.1), in this order. Writes nothing.
+// The first: Linux and macOS only (ISS-0132); `io.platform` is set by tests.
 export function check(request, io) {
+  if (!isSupportedPlatform(io.platform ?? process.platform)) {
+    throw executorError("E_PLATFORM");
+  }
   if (request.project.executor !== code) throw executorError("E_EXECUTOR");
   if (io.config.realRuns !== true) throw executorError("E_REAL_RUNS_OFF");
   if (!(request.project.budget_usd > 0)) throw executorError("E_NO_BUDGET");

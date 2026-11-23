@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { refuseBelowNodeFloor } from "../node-floor.js";
+import { refuseUnsupportedPlatform } from "../platform-guard.js";
 import {
   APP_MARKER,
   DEFAULT_PORT,
@@ -187,6 +188,8 @@ async function run(argv, env, io) {
   // or started.
   const version = io.nodeVersion ?? process.versions.node;
   if (refuseBelowNodeFloor(io.err, version)) return 1;
+  // Linux and macOS only (ISS-0132): elsewhere one line and code 1, before the same.
+  if (refuseUnsupportedPlatform(io.err)) return 1;
 
   // The directory the hook will look for: the environment, else the home
   // directory. A --dir that differs from it is allowed, with a warning.

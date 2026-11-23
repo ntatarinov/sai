@@ -20,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { NODE_REFUSAL_EXIT, refuseBelowNodeFloor } from "../node-floor.js";
+import { refuseUnsupportedPlatform } from "../platform-guard.js";
 import { readConfig } from "./config.js";
 import {
   EXIT,
@@ -451,6 +452,7 @@ function run(args, env, io) {
 export function main(argv, env = process.env, io = defaultIo()) {
   // The Node floor (REQ-110), before any command is parsed or run.
   if (refuseBelowNodeFloor(io.stderr)) return NODE_REFUSAL_EXIT;
+  if (refuseUnsupportedPlatform(io.stderr)) return NODE_REFUSAL_EXIT;
   return runGuarded(() => run(parseArgs(argv), env, io), io);
 }
 

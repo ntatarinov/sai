@@ -114,6 +114,8 @@ export function notFoundError() {
 // of the variable, the status, the detail) from the caller.
 export const EXECUTOR_MESSAGES = Object.freeze({
   E_CONFIG: "Неверная настройка",
+  E_PLATFORM:
+    "Настоящие запуски на этой системе запрещены: только Linux и macOS (Windows — только клиент)",
   E_REAL_RUNS_OFF:
     "Настоящие запуски выключены: нужна переменная SAI_TEAM_REAL_RUNS=1",
   E_NO_BUDGET:

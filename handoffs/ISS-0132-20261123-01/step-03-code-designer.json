@@ -1,0 +1,112 @@
+{
+  "handoff_id": "step03-ISS-0132-20261123-01",
+  "run_id": "ISS-0132-20261123-01",
+  "workflow_id": "WF-03",
+  "step": "03",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/ISS-0132-20261123-01/step-03-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/ISS-0132-20261123-01/step-01-issue-fixer.json (the diagnosis: every place, the entry points, the thin-client tools)",
+      "docs/requirements.yaml block REQ-110 (criteria 12-19 and the description paragraph of the platform rule; committed in 9d39876)",
+      "decisions/0136 (ISS-0132 part)",
+      "docs/design/REQ-110-tools-node-floor.md (the model: the node-floor module, its guards of the entry points, its tests NF-01 … NF-09 and the preload injection of NF-05b)",
+      "docs/workflows/WF-02-development.md step 1 (what a design holds) and WF-03 step 3",
+      "tools/src/node-floor.js, tools/src/team/executors/proc.js and claude-cli.js, tools/src/team/home.js, tools/src/pixel-office/state-dir.js, the entry points named in the diagnosis, tools/README.md"
+    ],
+    "base_tag": "base/ISS-0132-20261123-01",
+    "write_set": [
+      "docs/design/ISS-0132-platform-guard.md (new)",
+      "handoffs/ISS-0132-20261123-01/step-03-code-designer.json (result only)"
+    ],
+    "parallel_work_now": [
+      "REQ-VALIDATOR pass-2 gates over docs/requirements.yaml (read only)"
+    ]
+  },
+  "task": {
+    "description": "WF-03 step 3, CODE-DESIGNER, defect ISS-0132: write docs/design/ISS-0132-platform-guard.md, the design of the fix that meets REQ-110 criteria 12-19, in the form of docs/design/REQ-110-tools-node-floor.md: the pure module (name, exports, the allow-list, the injectable platform, the refusal code and the Russian line), every entry point that refuses and the exact place of the call (before any write or spawn), the thin-client tools that must not refuse, the second layer in the executor check, the mode read-back after chmod in the home and the state folder (the error code and what is reported), --help, the README section, exit codes; the failure paths; the table criterion → test (PG-1 …) with what each test injects and asserts and which are red on the tag; the list of mutants (at least one per criterion) that the tests must catch; the table of earlier guard tests that change («was → became») or none; the write set of CODE-FIXER (the exact files); what must be proved on GitHub. The design must not port anything (decisions/0127 Г, 0134 item 4). Verify: traces 0, handoffs-check 0. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T17:37:16Z",
+  "started_at": "2026-11-23T17:37:30Z",
+  "completed_at": "2026-11-23T17:56:25Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Design docs/design/ISS-0132-platform-guard.md of the fix of ISS-0132 for REQ-110 criteria 12-19, in the form of the REQ-110 design. A new pure module tools/src/platform-guard.js: SUPPORTED_PLATFORMS [linux, darwin], isSupportedPlatform (no default, undefined refused), platformRefusal (the shown shape of node-floor.js, else «неизвестная платформа»), refuseUnsupportedPlatform(stderr, platform = process.platform); the Russian refusal line is exact in section 2. Five entries refuse right after their floor guard: team (main, code 2), team-web (run, 2), pixel-office (run, after the help, 1), pixel-office-note (main, after the help, 2), e2e (run.js, 2); hook.js drops the event as the first statement of run() (code 0, quiet, nothing read or sent). Second layer: claude-cli check() gets the first rule E_PLATFORM from io.platform ?? process.platform, with one row each in EXECUTOR_MESSAGES, PREFLIGHT_CODES and WHY_NOT_STARTED (exact texts, section 4). ensureHome(home, fsImpl = fs) and ensureStateDir(dir, fsImpl = fs) read the mode back after chmod and refuse with E_HOME and E_STATE_DIR (exact messages, section 5); the false notice is gone. README: a section ## Platforms after ## Check and the two rights lines (exact texts, section 6). Tests: tools/test/platform-guard.test.js PLT-01..PLT-15 and HK-41, HK-42 in tools/test/pixel-office-hook.test.js (17 tests; the prefix PLT because PG-01..PG-28 exist). 34 mutants (U1-U8, E1-E9, H1-H3, T1-T2, X1-X5, M1-M4, D1-D2, G1), at least one per criterion; the tag itself is the measured mutant «guard absent» of every place. Replacement table: no earlier test changes. CODE-FIXER write set: 13 files (section 12); the new module is BACKEND-DEV's by WF-03 «Roles». All facts measured on a real win32 (this PC) on fresh clones of the tag and of a sketch of the fix under <scratch>; the Linux side goes to GitHub (section 15). Nothing ported.",
+    "changes": [
+      "Sections: 0 summary; 1 checked facts P1-P16 (2026-11-23 17:44-17:52 UTC, real win32, tag and sketch); 2 the module and the exact refusal line; 3 the entry points G1-G5, the hook, the closed tables of the 14 node <file> scripts, every place of the diagnosis I2 and what covers it; 4 the executor rule and the three table rows; 5 the mode read-back; 6 the README texts; 7 exit codes; 8 failure paths; 9 tests PLT-01..PLT-15, HK-41, HK-42 (what each injects and asserts, which are red on the tag); 10 criterion -> test; 11 replacement table (none changes; the readers that stay green); 12 build steps S1-S5 and T, the write sets; 13 mutants; 14 quality bar Q1-Q14, R1-R3; 15 what GitHub must prove; 16 named limits; 17 outdated outside; 18 open questions (none)"
+    ],
+    "self_check": [
+      {
+        "command": "read only: git rev-parse --short base/ISS-0132-20261123-01; git diff --stat base/ISS-0132-20261123-01 -- tools/src tools/README.md tools/test",
+        "output": "d9104a3; empty diff"
+      },
+      {
+        "command": "git clone -q -c core.autocrlf=false --branch base/ISS-0132-20261123-01 <sai> <scratch>/tag, the same into <scratch>/sketch; node <scratch>/patch.mjs <scratch>/sketch (the edits of sections 2-5); node --check of the changed and new files",
+        "output": "12 files changed, 47 insertions, 15 deletions, plus the new module (27 lines); every file parses"
+      },
+      {
+        "command": "node <scratch>/probe.mjs <scratch> (Node 22.23.4, win32; children with HOME, USERPROFILE, TMPDIR, TEMP, TMP, SAI_TEAM_HOME, SAI_PIXEL_OFFICE_DIR in boxes under <scratch>; servers on port 0; preload SAI_TEST_PLATFORM / SAI_TEST_NODE_VERSION)",
+        "output": "PRELOAD win32/linux/darwin take effect, process.platform configurable true writable false; UNIT rows as design P2-P3; ENTRY tag real: team-web and pixel-office reach their link line (pixel-office writes its state), e2e 1 SELECTION_UNKNOWN; ENTRY sketch real: team 2, team-web 2, pixel-office 1, note 2, e2e 2, stdout empty, the refusal line, written=false; floor+win32: the floor line on all five; HELP pixel-office d80a1247 and note fddcaf2e equal on tag and sketch; THIN 11 of 11 same code and stdout on tag and sketch, no refusal; HOOK tag received=1, sketch received=0 code 0 quiet, sketch linux preload received=1; EXEC tag win32 valid pass, sketch win32 E_PLATFORM (valid, no budget, real runs off), linux valid pass, run win32 E_PLATFORM spawns=0; MODES tag real fs notice «Права папки данных сужены до 0700 (были 0666)» on both calls, sketch E_HOME and E_STATE_DIR on the real and the stuck fs, the obeying fs gives the tag's notice; CHILDREN 54 alive_at_end 0"
+      },
+      {
+        "command": "node <scratch>/team-row.mjs <scratch>; node <scratch>/note-row.mjs <scratch> (team new --goal <invented> --budget 1; note --text <invented> with SAI_PIXEL_OFFICE_STORE_TEXT=1 and a stub listener)",
+        "output": "TEAM tag real code 0, project created (5 entries); sketch real code 2 refusal, 0 entries; sketch linux preload code 1 E_HOME by the read-back (1 empty folder). NOTE tag real code 1 after POST /api/note received; sketch real code 2, nothing received; sketch linux preload POST received"
+      },
+      {
+        "command": "sketch README (section 6): grep -c '^## Platforms$'; grep -n 'rights 0700'; grep -n 'folders 0700, files 0600'; the 22.<n>.<n> texts; grep -c '>=22 <23'; grep -rln 'platform-guard' tools/src/traces tools/src/handoffs tools/src/picker tools/src/cli.js tools/src/pixel-office/public; node src/traces/cli.js",
+        "output": "1; one line holding Linux and macOS; one line holding Linux and macOS; only 22.23.4 and the M7 22.21.1; 0; nothing (exit 1); «файлов проверено 2970, следов 0, пропущено 67», exit 0"
+      },
+      {
+        "command": "a copy of technical() of tools/test/team-web-helpers.js with the codes of WEB-7a over the new WHY text and createdNotStarted / resumeFailed of it",
+        "output": "[] for all three"
+      },
+      {
+        "command": "grep -ohE '^test\\(\"PG-[0-9]+' tools/test/*.js | sort -u",
+        "output": "PG-01..PG-28 in pixel-office-page.test.js: the new tests take the prefix PLT"
+      },
+      {
+        "command": "cd tools && npm run -s traces; npm run -s handoffs-check (Node 22 first on PATH), after the design and this result were written",
+        "output": "traces: traces: файлов проверено 2990, следов 0, пропущено 67 exit 0; handoffs-check: handoffs-check: файлов проверено 1613, нарушений 0, исключений использовано 110 из 110 exit 0"
+      }
+    ],
+    "issues": [
+      {
+        "id": "N1",
+        "kind": "NOTE",
+        "text": "Test-id prefix: the task gave PG-1 as an example, but PG-01..PG-28 are ids of tools/test/pixel-office-page.test.js (measured); a shared id is the slip of ISS-0142, so the design uses PLT-01..PLT-15. Process point for Q13: an id taken from a task example is checked against the existing ids before use."
+      },
+      {
+        "id": "N2",
+        "kind": "NOTE",
+        "text": "Owner of the new module: WF-03 «Roles» says a new module is written by BACKEND-DEV; the route of the run names only CODE-FIXER 04. The design gives S1 (tools/src/platform-guard.js) to BACKEND-DEV and 13 files to CODE-FIXER; if ORCH gives the module to step 04, it is its fourteenth file."
+      },
+      {
+        "id": "N3",
+        "kind": "NAMED_LIMIT",
+        "text": "The other chmod places (ensureModes, the project files, the lock, the channel, the Pixel Office secret and small files, the journal) are not read back: not a criterion; on Windows they are behind the entry refusal, and on Linux and macOS a file system that keeps no modes is refused earlier by the read-back of the same folder. A follow-up LOW only if ORCH wants it (design section 16 item 2)."
+      },
+      {
+        "id": "N4",
+        "kind": "NOT_MEASURED",
+        "text": "No Linux on this PC (WSL needs virtualisation that is not installed; the Docker engine is not running), so the win32 preload on Linux, the thin client under win32 against linux and the existing tests are proved on GitHub (design section 15)."
+      }
+    ],
+    "artifacts_out": [
+      "docs/design/ISS-0132-platform-guard.md"
+    ],
+    "prototype": "Outside the project under <scratch>: two fresh clones of the tag (tag, sketch), patch.mjs (the sketch edits), platforms.md and readme.mjs (the README texts), probe.mjs, team-row.mjs, note-row.mjs, words2.mjs, preload.mjs and probe-out.txt; every child was killed by its pid (0 alive at the end)",
+    "must_be_proved_on_github": [
+      "check.yml green on a temporary ci/iss-0132-... branch with the fix; PLT-01..PLT-15, HK-41, HK-42 and every test of the tag ok in the log (gh run view)",
+      "a fresh clone of the tag with only the new tests: PLT-01..PLT-05, PLT-12..PLT-15 and HK-41 red; PLT-06..PLT-11 and HK-42 green; the run id recorded",
+      "the Linux side: the win32 preload takes effect (PLT-08, HK-42), the thin client is equal under win32 and linux (PLT-10), the group-stop, mode and floor tests stay green"
+    ]
+  }
+}

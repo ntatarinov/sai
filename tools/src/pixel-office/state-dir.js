@@ -34,9 +34,9 @@ function osCode(err) {
   return err && typeof err.code === "string" ? err.code : "EIO";
 }
 
-function lstatOrNull(target) {
+function lstatOrNull(target, fsImpl = fs) {
   try {
-    return fs.lstatSync(target);
+    return fsImpl.lstatSync(target);
   } catch (err) {
     if (err.code === "ENOENT") return null;
     throw new StateDirError(
@@ -70,18 +70,20 @@ export function resolveStateDir(env, home) {
 
 // Creates the directory with mode 0700, or checks an existing one: it must be
 // a plain directory (not a link) of the current user; wider modes are narrowed.
-export function ensureStateDir(dir) {
-  let st = lstatOrNull(dir);
+// After a narrowing the mode is read again; a mode that is not 0700 then is a
+// refusal (ISS-0132). `fsImpl` gives lstatSync, mkdirSync and chmodSync.
+export function ensureStateDir(dir, fsImpl = fs) {
+  let st = lstatOrNull(dir, fsImpl);
   if (st === null) {
     try {
-      fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+      fsImpl.mkdirSync(dir, { recursive: true, mode: 0o700 });
     } catch (err) {
       throw new StateDirError(
         "E_STATE_DIR",
         `Не удалось создать каталог состояния ${dir} (${osCode(err)})`,
       );
     }
-    st = lstatOrNull(dir);
+    st = lstatOrNull(dir, fsImpl);
   }
   if (st === null || !st.isDirectory()) {
     throw new StateDirError(
@@ -97,11 +99,22 @@ export function ensureStateDir(dir) {
   }
   if ((st.mode & 0o777) !== 0o700) {
     try {
-      fs.chmodSync(dir, 0o700);
+      fsImpl.chmodSync(dir, 0o700);
     } catch (err) {
       throw new StateDirError(
         "E_STATE_DIR",
         `Не удалось сузить права каталога ${dir} до 0700 (${osCode(err)})`,
+      );
+    }
+    const after = lstatOrNull(dir, fsImpl);
+    if (after === null || (after.mode & 0o777) !== 0o700) {
+      const now =
+        after === null
+          ? "нет каталога"
+          : (after.mode & 0o777).toString(8).padStart(4, "0");
+      throw new StateDirError(
+        "E_STATE_DIR",
+        `Права каталога состояния ${dir} не стали 0700 (сейчас ${now}): каталог не используется`,
       );
     }
   }
