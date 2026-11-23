@@ -11,6 +11,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { pathToFileURL } from "node:url";
 import {
   BODY_MAX,
   HOOK_INPUT_MAX,
@@ -1785,4 +1786,103 @@ test("HK-40: what a candidate writes to stderr is not shown - a skipped one and 
     { path: { version: "v22.21.1", noise: true } },
     null,
   );
+});
+
+// ---- HK-41, HK-42: the hook drops the event on a platform other than Linux and macOS ----
+// (REQ-110 criterion 14; fix of ISS-0132; design docs/design/ISS-0132-platform-guard.md,
+// sections 3.2 and 9.2). A platform is simulated by a preload written into the test's
+// own folder.
+
+const PLATFORM_PRELOAD = [
+  "const p = process.env.SAI_TEST_PLATFORM;",
+  "if (p !== undefined) {",
+  '  Object.defineProperty(process, "platform", { value: p, configurable: true, enumerable: true });',
+  "}",
+  "",
+].join("\n");
+
+// A valid state folder written by the test itself (not by the code under test): the
+// port of a listener of the test on 127.0.0.1 port 0 and a secret of 50 characters.
+async function platformWorld(t) {
+  const box = sandbox(t);
+  const preload = path.join(box.root, "platform-preload.mjs");
+  fs.writeFileSync(preload, PLATFORM_PRELOAD);
+  const requests = [];
+  const server = http.createServer((req, res) => {
+    req.resume();
+    req.on("end", () => {
+      requests.push(`${req.method} ${req.url}`);
+      res.statusCode = 204;
+      res.end();
+    });
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  t.after(() => {
+    server.closeAllConnections();
+    server.close();
+  });
+  fs.mkdirSync(box.dir, { mode: 0o700 });
+  fs.chmodSync(box.dir, 0o700);
+  fs.writeFileSync(path.join(box.dir, "port"), `${server.address().port}\n`, {
+    mode: 0o600,
+  });
+  fs.writeFileSync(
+    path.join(box.dir, "write-secret"),
+    `${"HkPlatformSecret0123456789abcdefghijKLMNOPQRSTUVW"}\n`,
+    { mode: 0o600 },
+  );
+  return { box, preload, requests };
+}
+
+// hook.js as hook.sh starts it (node <hook.js>, the event on stdin), under the preload.
+function runHookJs(t, w, platform, args = [path.join(SRC, "hook.js")]) {
+  const env = childEnv(w.box, { SAI_TEST_PLATFORM: platform });
+  if (process.env.SystemRoot !== undefined)
+    env.SystemRoot = process.env.SystemRoot;
+  return new Promise((resolve) => {
+    const t0 = performance.now();
+    const child = spawn(
+      process.execPath,
+      ["--import", pathToFileURL(w.preload).href, ...args],
+      { cwd: w.box.root, env, stdio: ["pipe", "pipe", "pipe"] },
+    );
+    const timer = setTimeout(() => child.kill("SIGKILL"), 15_000);
+    t.after(() => {
+      if (child.exitCode === null && child.signalCode === null)
+        child.kill("SIGKILL");
+    });
+    let stdout = "";
+    let stderr = "";
+    child.stdout.on("data", (d) => (stdout += d));
+    child.stderr.on("data", (d) => (stderr += d));
+    child.stdin.on("error", () => {});
+    child.on("close", (code, signal) => {
+      clearTimeout(timer);
+      resolve({ code, signal, stdout, stderr, ms: performance.now() - t0 });
+    });
+    child.stdin.end(JSON.stringify(hookInputs().SessionStart));
+  });
+}
+
+test("HK-41: under the win32 preload hook.js drops the event - code 0 within 2000 ms, quiet, the listener receives nothing, the state folder is unchanged", async (t) => {
+  const w = await platformWorld(t);
+  const before = dirListing(w.box.dir);
+  const r = await runHookJs(t, w, "win32");
+  assert.equal(r.code, 0, `code ${r.code}, signal ${r.signal}`);
+  assert.ok(r.ms < 2000, `the hook took ${Math.round(r.ms)} ms`);
+  assert.equal(r.stdout, "", "stdout is not empty");
+  assert.equal(r.stderr, "", "stderr is not empty");
+  assert.deepEqual(w.requests, [], "the listener received the event");
+  assert.equal(dirListing(w.box.dir), before, "the state folder changed");
+});
+
+test("HK-42: the positive control - a child under the preload sees win32; the same start under the linux preload sends one POST /api/events, code 0, quiet", async (t) => {
+  const w = await platformWorld(t);
+  const probe = await runHookJs(t, w, "win32", ["-p", "process.platform"]);
+  assert.equal(probe.stdout.trim(), "win32", "the preload did not set win32");
+  const r = await runHookJs(t, w, "linux");
+  assert.equal(r.code, 0, `code ${r.code}, signal ${r.signal}`);
+  assert.equal(r.stdout, "", "stdout is not empty");
+  assert.equal(r.stderr, "", "stderr is not empty");
+  assert.deepEqual(w.requests, ["POST /api/events"], "the event was not sent");
 });
