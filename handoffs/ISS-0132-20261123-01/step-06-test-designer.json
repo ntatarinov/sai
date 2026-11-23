@@ -1,0 +1,116 @@
+{
+  "handoff_id": "step06-ISS-0132-20261123-01",
+  "run_id": "ISS-0132-20261123-01",
+  "workflow_id": "WF-03",
+  "step": "06",
+  "from_agent": "ORCH",
+  "to_agent": "TEST-DESIGNER",
+  "file": "handoffs/ISS-0132-20261123-01/step-06-test-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/ISS-0132-platform-guard.md sections 13-15 (the tests PLT-01 … PLT-15, HK-41, HK-42, the mutants, the red rows on the tag)",
+      "handoffs/ISS-0132-20261123-01/step-03b-code-design-validator.json (L2: PLT-10 adds one call that is not --help for traces, handoffs-check, handoff and picker)",
+      "handoffs/ISS-0132-20261123-01/step-05-reviewer-code.json and step-05-security-reviewer.json (notes for TEST-DESIGNER)",
+      "the fix: commit b76ca6e; the tests of the model: tools/test/node-floor.test.js (NF-05b preload injection)",
+      "docs/workflows/WF-03-defect.md step 6, WF-02 step 5, .claude/agents/test-designer.md"
+    ],
+    "base_tag": "base/ISS-0132-20261123-01",
+    "write_set": [
+      "tools/test/platform-guard.test.js (new: PLT-01 … PLT-15)",
+      "tools/test/pixel-office-hook.test.js (HK-41, HK-42 appended)",
+      "any preload fixture the design names under tools/test/fixtures/",
+      "handoffs/ISS-0132-20261123-01/step-06-test-designer.json (result only)"
+    ],
+    "parallel_work_now": [
+      "M2AUTH-20261123-01 design rework (docs/design only)"
+    ]
+  },
+  "task": {
+    "description": "WF-03 step 6, TEST-DESIGNER: write the regression tests of the design (PLT-01 … PLT-15 in tools/test/platform-guard.test.js, HK-41 and HK-42 in tools/test/pixel-office-hook.test.js), with L2 (PLT-10 also calls traces, handoffs-check, handoff and picker once without --help). The tests run on Linux in CI and inject win32 by a preload as NF-05b does; they must be red on the tag where the design says (PLT-01 … 05, PLT-12 … 15, HK-41) and green on the fix. You cannot run node --test on this PC (decision 0110): prove instead with your own harness under <scratch> that cuts each test's assertion logic into a plain script and runs it against a fresh clone of the tag and of b76ca6e (on this PC the platform IS win32, so the preload rows can be exercised directly), and apply at least 8 mutants of the design to a copy of the fix to show which test catches each (hash the working tree before and after; leave no mutant). Then prepare the GitHub proof: the list of commands TEST-RUNNER will run on a ci/ snapshot (the full check) and on a second snapshot = the tag plus only your new tests (expected red rows). prettier and eslint pass on your files. Verify traces 0, handoffs-check 0. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:21:15Z",
+  "started_at": "2026-11-23T18:21:16Z",
+  "completed_at": "2026-11-23T18:40:35Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "WF-03 step 6. Written: tools/test/platform-guard.test.js (new, PLT-01 … PLT-15) and HK-41, HK-42 appended to tools/test/pixel-office-hook.test.js (one import line `pathToFileURL` added; every test of the tag unchanged: test( 55→57, assert. 260→271). No code touched. The win32 platform is injected by a preload the test writes into its own temporary folder (process.platform via Object.defineProperty from SAI_TEST_PLATFORM, the version from SAI_TEST_NODE_VERSION, as NF-05b); positive controls PLT-08 and HK-42. Criterion → test: 12 → PLT-01 (allow-list exactly linux, darwin, frozen; refused: 9 other names, 9 near misses of the allowed names, 10 non-strings and no argument), PLT-02 (the line: one line, no control character, Cyrillic, no stack, Linux, macOS, tools/README.md and the platform; 16 hostile values incl. 65 characters, line ends, ESC, U+2028 and a throwing toString show «неизвестная платформа»; 64 characters is shown), PLT-03 (one write equal to the line and \\n; allowed platforms never touch the writer; a throwing writer → true, no throw; no second argument = the running platform judged by the file's own oracle), PLT-04 (source: no import/require/process.env/fs/node:, process.platform once, as the default of the second parameter); 13 → PLT-05 (team new, team projects, team-web, pixel-office, pixel-office-note with a valid state folder and a listener on 127.0.0.1 port 0, e2e: code 2 / pixel-office 1, empty stdout, stderr exactly the line, the sha256 listing of the whole test folder unchanged, the listener received nothing, ended by itself), PLT-06 (win32 + 22.21.1: the floor's line and code win, nothing written), PLT-07 (--help of pixel-office and the note under win32 = the running Node's help, empty stderr, nothing written), PLT-08 (controls: -p process.platform under win32/linux/darwin and none; under linux and darwin every PLT-05 row goes on: link lines, a project p-…, POST /api/note received, e2e 1 SELECTION_UNKNOWN, no refusal line), PLT-09 (every node <file> script of package.json in exactly one of the two closed tables of 3.3, and back); 15 → PLT-10 (14 thin-client rows under win32 and under linux: the same code, stdout and stderr byte for byte, no refusal line, nothing written; with L2 of step 03b: traces check --root <tmp>, handoffs-check --root <tmp>, handoff close … and picker check <fixture> are calls that pass the floor guard), PLT-11 (no thin-client file names platform-guard), PLT-09; 16 → PLT-12 (a full request built by hand, a temporary work folder, a spawn spy and an onEvent counter, claude bin a missing path: io.platform win32 → E_PLATFORM for a valid request, no budget, real runs off, another executor; linux and darwin → passes / E_NO_BUDGET / E_REAL_RUNS_OFF / E_EXECUTOR; no io.platform → by the oracle; run() under win32 rejects E_PLATFORM with spawn 0, onEvent 0, the folder listing unchanged), PLT-13 (EXECUTOR_MESSAGES.E_PLATFORM and WHY_NOT_STARTED.E_PLATFORM are strings naming Linux and macOS; \"E_PLATFORM\" once in api.js, inside PREFLIGHT_CODES; controlFailure(resume, TeamError E_PLATFORM with a bait) = 409 «Проект не продолжен: …»; postProject with engines that refuse E_PLATFORM = 201 started false «Проект создан, но работа не началась: …»; neither holds WHY_OTHER or the bait; no warning); 17 → PLT-14 (an fs whose chmodSync does nothing and whose lstat reports 0666, a new and an existing folder: E_HOME / E_STATE_DIR, one line, Cyrillic, no stack, 0700 and 0666, no notice, the state folder stays empty; an fs that keeps chmod: the notice «… (были 0755)», ensureStateDir passes, a 0700 home gives no notice; the real fs: a new folder 0700 without a notice, a 0755 folder narrowed with the notice, for both functions); 18 → PLT-15 (one «## Platforms», the heading right after «## Check», the section words of design 6 and the two code sentences, each rights anchor on exactly one line naming Linux and macOS); 14 → HK-41 (hook.js as hook.sh starts it, under win32, with a state folder written by the test: code 0 within 2000 ms, quiet, the listener received nothing, the state folder listing unchanged), HK-42 (control: the preload sets win32; under linux exactly one POST /api/events, code 0, quiet); 19 → the GitHub proof below. Failure tests check the state: every refusal row compares the sha256 listing of its whole temporary folder before and after. Quality bar: Q8 not touched (no business space or customer data; the guard reads only the platform name); Q10 the refusals are plain lines and plain texts (PLT-05/06/13/14), the listener rows prove nothing is sent; Q11 not touched (no address set by a client or user is called; the tests' listeners are their own on 127.0.0.1 port 0); R3 not applicable (decision 0033); Q7 no secret in the tests (the two 49/50-character state secrets are invented fixed texts in a temporary folder); children get named variables only, SAI_TEAM_REAL_RUNS never set, servers only --port 0, a 15 s limit and SIGKILL in t.after. No skip, no todo, no disabled rule.",
+    "changes": [
+      {
+        "file": "tools/test/platform-guard.test.js (new)",
+        "what": "PLT-01 … PLT-15 of design 9.1, plus L2 of step 03b in PLT-10 (non-help calls of traces, handoffs-check, handoff, picker); the module is imported dynamically inside PLT-01 … 03 and PLT-05, so on the tag those are red while PLT-06 … 11 stay readable"
+      },
+      {
+        "file": "tools/test/pixel-office-hook.test.js",
+        "what": "one import line (pathToFileURL of node:url); HK-41 and HK-42 appended at the end with their own preload, state folder and listener; no line of the tag's tests changed"
+      },
+      {
+        "file": "handoffs/ISS-0132-20261123-01/step-06-test-designer.json",
+        "what": "result only (status PENDING, completed_at null kept)"
+      }
+    ],
+    "self_check": [
+      {
+        "command": "npm run check — NOT run (decision 0110: no check, node --test or repository suites on this PC); the final run is TEST-RUNNER's on GitHub (plan below)",
+        "output": "—"
+      },
+      {
+        "command": "cd tools && npx prettier --write / --check and npx eslint --max-warnings 0 over test/platform-guard.test.js and test/pixel-office-hook.test.js",
+        "output": "prettier clean; eslint 0 problems; LF endings (0 CR)"
+      },
+      {
+        "command": "harness under <scratch>: fresh clones (git clone -c core.autocrlf=false) of the tag d9104a3 and of b76ca6e with the two test files copied in; each test file run as `node --import <register.mjs> <file>` where the loader maps node:test to a 40-line shim of mine (runs the selected tests in order with t.after; not the Node test runner), HK file filtered to HK-41|HK-42; on this PC the platform IS win32",
+        "output": "TAG: red PLT-01, 02, 03, 05 (no module), PLT-04 (no file), PLT-12 «Missing expected exception: win32, a valid request», PLT-13 «WHY_NOT_STARTED has no E_PLATFORM», PLT-14 «Missing expected exception» (the injected fs is ignored), PLT-15 «not exactly one heading ## Platforms», HK-41 «the listener received the event [POST /api/events]»; green PLT-06, 07, 08, 09, 10, 11, HK-42 — exactly the «on the tag» column of design 9. FIX: green PLT-01 … 07, 09 … 12, 15, HK-41, HK-42; red only where this PC is not a run host: PLT-08 rows team new and pixel-office under linux/darwin (E_HOME «права 0700 не установились (сейчас 0666)» and «Права каталога состояния … не стали 0700 (сейчас 0666)» — design fact P8: the read-back of section 5 refuses this PC's fs), PLT-13 only at its 201 row (createProject meets the same read-back; green with a harness-only shim that makes directories under the temp root report 0700), PLT-14 only at its first real-fs row (every injected-fs row passed before it). The Linux side of these three is the GitHub proof."
+      },
+      {
+        "command": "mutants (harness mutants.mjs): 31 mutants of design 13 applied one at a time by exact-text replacement in a third clone of b76ca6e under <scratch>, the PLT file + HK-41/42 run after each, the file restored; caught = a test whose result differs from the unmutated run",
+        "output": "31 of 31 killed, 0 survived. U1 deny-list → PLT-01 (cygwin), PLT-03; U2 darwin dropped → PLT-01, PLT-03, PLT-08, PLT-12; U4 shape check removed → PLT-02; U5 try/catch removed → PLT-03; U6 no tools/README.md → PLT-02; U7 two writes → PLT-03; U8 process.env read → PLT-04; E1 team guard dropped → PLT-05 (team new, team projects); E2 team-web → PLT-05 (a server started); E3 pixel-office → PLT-05; E4 note → PLT-05; E5 e2e → PLT-05 (code 1); E6 platform before floor → PLT-06; E7 pixel-office guard before help → PLT-06, PLT-07; E8 pixel-office code 2 → PLT-05; E9 team guard only in `new` → PLT-05 (team projects code 0); H1 drop removed → HK-41 (POST received); H3 a word when dropping → HK-41 (stderr); T1 guard in traces/cli.js after help → PLT-10 (traces check row), PLT-11; T1b guard in handoff.js after help without the module name (L2) → PLT-10 only (handoff close row); T2 a new node <file> script → PLT-09; X1 rule dropped → PLT-12; X2 rule after E_NO_BUDGET → PLT-12 (win32, no budget); X3 io.platform ignored → PLT-12; X4 not in PREFLIGHT_CODES → PLT-13; X5 not in WHY_NOT_STARTED → PLT-13; M1 ensureHome read-back removed → PLT-14, PLT-08; M2 ensureStateDir read-back removed → PLT-14, PLT-08; M4 module fs in place of the injected one → PLT-14 (the obeying row); D1 heading renamed → PLT-15; D2 a rights line without Linux and macOS → PLT-15. After the last mutant the run equals the unmutated run; the working tree hash (sha256 over every tracked and untracked file of tools/ but node_modules) is the same before and after (0d27fc25…); no mutant left (the mutant clone shows only the two copied test files)."
+      },
+      {
+        "command": "cd tools && npm run -s traces; npm run -s handoffs-check (the working tree)",
+        "output": "traces: файлов проверено 3005, следов 0, пропущено 67 (exit 0); handoffs-check: файлов проверено 1624, нарушений 0, исключений использовано 110 из 110 (exit 0); traces also 0 in the clone of b76ca6e with the two new test files staged (the untracked file is not walked in the working tree)"
+      },
+      {
+        "command": "git diff --name-status base/ISS-0132-20261123-01 -- tools/test",
+        "output": "M tools/test/e2e/run.js (the fix), M tools/test/pixel-office-hook.test.js, plus the new untracked tools/test/platform-guard.test.js; no D"
+      },
+      {
+        "command": "children and ports",
+        "output": "every child ended by itself or by its 15 s SIGKILL; servers only --port 0; the tests' listeners on 127.0.0.1 port 0; no port 4780-4782 or 4790 bound, probed or stopped"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "PLT-05 on the tag is red already by the missing module (it reads the expected line from it, as the design says); that each entry really starts and writes there is shown by the mutants E1-E5 on the fix copy (each guard alone dropped → its own row red)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "L3 of step 03b (the drop placed after the state read, before post) is not pinned by HK-41: criterion 14 does not require it and the visible behaviour is the same; REVIEWER checked the place at step 05. Not added, to stay within the design."
+      },
+      {
+        "kind": "NOTE",
+        "text": "PLT-14's real-fs rows, PLT-08's linux/darwin rows of team new and pixel-office and PLT-13's 201 row assert Linux and macOS behaviour; on a win32 host they are red by fact P8 (no mode is kept). The suite runs on the run hosts only (decisions/0110, 0127)."
+      },
+      {
+        "kind": "NOTE",
+        "text": "The LOW of step 05 security (ensureHome accepts a mode narrower than 0700 after chmod) is not tested: it is not a criterion and no code edit was made; if ORCH has CODE-FIXER align it, PLT-14 gets one row (obeying fs reporting 0o500) in the same run."
+      }
+    ],
+    "artifacts_out": [
+      "tools/test/platform-guard.test.js",
+      "tools/test/pixel-office-hook.test.js"
+    ],
+    "must_be_proved_on_github": [
+      "Snapshot 1 (full check), by TEST-RUNNER in a fresh clone under <scratch>: `git clone -c core.autocrlf=false <repo> ci-full && cd ci-full && git config user.email <the noreply address> && git config user.name <the owner's name> && git checkout -b ci/iss-0132-06-full b76ca6e`, copy tools/test/platform-guard.test.js and tools/test/pixel-office-hook.test.js from the working tree, `git add tools/test/platform-guard.test.js tools/test/pixel-office-hook.test.js && git commit -m \"ci snapshot ISS-0132 step 06 (full)\"`, `git push origin ci/iss-0132-06-full` (push on the owner's approval, decisions on autonomy), then `gh run list --branch ci/iss-0132-06-full --workflow check.yml --limit 1 --json databaseId,status,conclusion`, `gh run watch <id>`, `gh run view <id> --json conclusion` = success, and `gh run view <id> --log | grep -E '(not ok|ok) [0-9]+ - (PLT-[0-9]+|HK-4[12])'` = 17 lines, all `ok`; `gh run view <id> --log | grep -cE '^.*not ok '` = 0 (every test of the tag still ok). This proves on Linux: the win32 preload takes effect (PLT-08, HK-42), the thin client is equal under win32 and linux (PLT-10), the real-fs rows of PLT-14, the linux rows of PLT-08 and the 201 row of PLT-13.",
+      "Snapshot 2 (the red record): `git checkout -b ci/iss-0132-06-red base/ISS-0132-20261123-01` in a second fresh clone, copy only the same two test files, commit, push, read the run the same way. Expected: conclusion failure at the `npm run test` step (format:check, lint, traces, handoffs-check pass before it); `not ok` exactly PLT-01, PLT-02, PLT-03, PLT-04, PLT-05, PLT-12, PLT-13, PLT-14, PLT-15 and HK-41; `ok` PLT-06, PLT-07, PLT-08, PLT-09, PLT-10, PLT-11 and HK-42; no other `not ok` line in the log. Record both run ids in the step-07/08 handoff.",
+      "After both runs: delete the two temporary branches (`git push origin --delete ci/iss-0132-06-full ci/iss-0132-06-red`, on approval) and check `git diff --name-status base/ISS-0132-20261123-01 -- tools/test` has no D."
+    ]
+  }
+}
