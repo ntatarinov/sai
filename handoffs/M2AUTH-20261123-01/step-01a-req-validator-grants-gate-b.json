@@ -1,0 +1,86 @@
+{
+  "handoff_id": "step01a-grants-gate-b-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "01a",
+  "from_agent": "ORCH",
+  "to_agent": "REQ-VALIDATOR",
+  "file": "handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate-b.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-115",
+      "REQ-117",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "your pass-1 findings (step-01a-req-validator-grants-gate.json)",
+      "handoffs/M2AUTH-20261123-01/step-01a-req-analyst-grants-b.json (the rework)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate-b.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "REQ-VALIDATOR gate pass 2 over the grants micro-amendment: G1-G3 fixed as the rework says, no criterion changed, diff scope re-derived. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:12:04Z",
+  "started_at": "2026-11-23T18:12:05Z",
+  "completed_at": "2026-11-23T18:15:43Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "verdict_by_requirement": {
+      "REQ-115": "PASS (low H1)",
+      "REQ-117": "PASS",
+      "REQ-120": "PASS"
+    },
+    "summary": {
+      "scope": "Diff e5b099b -> 65397a6 of docs/requirements.yaml, re-derived: 7 hunks, 8 lines removed; REQ-115 status (old text kept after «before this»), Files (new l.17214-17222); REQ-117 status comment and Files (l.17571, l.17621-17622); REQ-120 status and Files (l.18210, l.18271-18274). All before the acceptance_criteria of their blocks (l.17257, l.17654, l.18298): no criterion changed. Working tree equals 65397a6; the file hash was the same at the start and the end of the check.",
+      "G1": "Fixed: REQ-117 Files now says 0003 holds projects, idea_versions and their RLS, and their grants go into app/db/grants.sql of REQ-115 (decisions/0137 О1); no second place for grants remains (grep over REQ-114..REQ-120: l.17195 «grants … listed in the code design» does not name a place).",
+      "G2": "Fixed: REQ-115 fixes that each grant on a table is applied only when the table exists, MG-6 gains the case «a database migrated without the newest migration file gets the grants of its own tables and no error», and REQ-120 states that A, built by migrate.js over every file but the newest, does not fail in the grants step.",
+      "G3": "Fixed: grants.sql restates exactly `grant usage on schema public to sai_app, sai_preview` and `grant select on schema_migrations to sai_app`; the two role memberships stay in 0001 only — matches 0001_init.sql l.36-39.",
+      "items": "а checkable by MG-6 and the rehearsal job; б no contradiction left between REQ-115, REQ-117, REQ-118 (states no grant place), REQ-120 and decisions/0137 О1; REQ-114 holds no grant text; в-е unchanged."
+    },
+    "findings": [
+      {
+        "id": "H1",
+        "requirement": "REQ-115 (Files: «each grant on a table is applied only when that table exists»)",
+        "point": "д (fail closed)",
+        "severity": "Low",
+        "blocking": false,
+        "problem": "A grant whose table name is misspelt, or names a table no migration creates, is skipped silently on every database, so a missing grant shows only later as a permission error of a route.",
+        "needed": "Optional for the code design: a case of MG-6 (or a unit test) that every table named in grants.sql is created by some migration file, so a skipped grant can only be one of a newer migration."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git log --oneline -2; git diff --quiet 65397a6 -- docs/requirements.yaml; sha256sum docs/requirements.yaml (start, end)",
+        "output": "65397a6, e5b099b; working tree equals 65397a6; c3777e9d…1131 both times"
+      },
+      {
+        "command": "git diff -U0 e5b099b 65397a6 -- docs/requirements.yaml | grep '^@@'; count of '-' lines",
+        "output": "hunks at new lines 17154, 17214, 17221, 17571, 17621, 18210, 18271; 8 removed"
+      },
+      {
+        "command": "awk: line of acceptance_criteria of REQ-115, REQ-117, REQ-120",
+        "output": "17257, 17654, 18298 — every hunk lies before them"
+      },
+      {
+        "command": "grep -n -i grant app/db/migrations/0001_init.sql (pass 1)",
+        "output": "l.36 grant sai_app to sai_app_login; l.37 grant sai_preview to sai_app_login; l.38 grant usage on schema public to sai_app, sai_preview; l.39 grant select on schema_migrations to sai_app — the two restated are l.38 and l.39"
+      },
+      {
+        "command": "cd tools && npm run -s traces; npm run -s handoffs-check",
+        "output": "traces=0, hc=0"
+      }
+    ],
+    "issues": [],
+    "artifacts_out": []
+  }
+}
