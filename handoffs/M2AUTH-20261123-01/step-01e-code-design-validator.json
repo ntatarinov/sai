@@ -1,0 +1,104 @@
+{
+  "handoff_id": "step01e-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "01e",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/M2AUTH-20261123-01/step-01e-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "your pass-1 findings (step-01b-code-design-validator.json)",
+      "handoffs/M2AUTH-20261123-01/step-01c-code-designer.json (the rework, per finding; new scripts t6-rework.mjs and t7-onetx.mjs in the designer's sketch)",
+      "docs/design/M2AUTH-accounts-tenancy-backup.md section 19 (the finding map)",
+      "decisions/0137 Addition and Addition 2 (REQ-114 is being amended to scrypt N = 2^17 in parallel by a micro-amendment: judge the design against N = 2^17)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-01b-code-design-validator.json",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-01e-code-design-validator.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 1b gate, pass 2: check that B1-B7 and N1-N6 are fixed as the rework says, by reading the changed sections whole and by re-running the measurable ones yourself on your clone (B1, B2, B4, B5, B6, N1, N3, scrypt timing); apply at least 6 of the new mutants (M47-M58) and say which test kills each; check that nothing new contradicts the requirements, decisions or the bar. PASS or FAIL. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:34:42Z",
+  "started_at": "2026-11-23T18:34:43Z",
+  "completed_at": "2026-11-23T18:41:08Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Pass 2 of the gate over the rework 01c (design at 043c612, sha256 57fc6b12047837134a850143442b32415735dcba98fff4a1403312a20f5f2ff0 before and after). Read whole: the diff 01421bc..043c612 of the design, section 19, the rewritten 4.2.4, 4.5.1-4.5.3, 4.7, 4.8, 4.9.2, 4.9.5, 6.1, 6.4, 7, 8, 9, 11 and 13; decisions/0137 Addition and Addition 2; the REQ-114 micro-amendment in the working tree (N = 2^17, `scrypt$17$8$1$`, maxmem 160 MiB, the common list under criterion 1): the design agrees with it. Pass-1 findings: B1 fixed (one to_regclass block per table, static grants, own transaction, MG-6 (a)(b)(c), MG-7; re-run F23 on my clone: 0001-only gets only platform_settings and schema_migrations, revoke then re-grant, a failing text leaves the grants unchanged). B2 fixed (guard before every statement and before COMMIT; re-run F24: 503 and 0 rows, also after the last statement). B3 fixed for ordinary accounts, unknown e-mails and re-auth (row lock first, lock order named, AUTH-RACE-1..3 in the pg job; not measurable here), but the admin's row lock is new (P2). B4 fixed (one transaction, switchToTenant, DBC-3, TXH-5; re-run F25: platform 2 rows, tenant 1 row, foreign insert 42501, one transaction). B5 fixed (PW-2b; M42 now `with check (true)`; re-run F26: [false, true] and INSERT ALLOWED). B6 fixed (printable ASCII e-mail, 400 bad_body; re-run F27). B7a/b/c fixed as decisions/0137 answers (login_failures, 23 codes, RT-6, LO-7). N1 fixed (count statement; re-run F28). N2a/N2b/N2c answered (scrypt re-measured: 128 MiB throws, 160 MiB 531 ms, four parallel 686 ms), but the list's place breaks a test (P1). N3 fixed (re-run F29: TRUNCATE as owner P0001). N4, N5, N6 named. New mutants applied (t8-mutants2.mjs and the re-run t6): M37b killed by ADD-2 (503 and the row committed), M47 by MG-6 (b) (42P01), M48 by MG-6 (c) (the revoke stayed), M49 by MG-7 (`user` is no created table), M53 by TXH-5 (no answer in 5 s, two transactions), M55 by SU-5 (not 400), M58 by DVP-1 (count 0 for 3 rows), M42 by RLS-2 (foreign insert allowed), M2 by PW-2b. M50-M52 need Postgres (pg job only), named so. New contradictions: the list file under app/server breaks IB-1 (P1); the admin's row lock works against REQ-114's «the platform admin is never locked… an attacker who knows his e-mail must not keep him out» (P2). Nothing else new contradicts the requirements, decisions/0137 or the bar; the bar section, the criterion table (32 of 32) and the replacement table stay complete apart from A21 (P1).",
+    "findings": [
+      {
+        "id": "P1",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "C20, §3, 4.9.2, §11 A21, §12 B6",
+        "text": "The bundled list `app/server/auth/common-passwords.txt` is a non-.js file under app/server. app/test/unit/import-boundaries.test.js `fileFindings` (lines 728-748) reports every file under server/, api/ or worker/ that is not .js («a file that is not .js: …»; the one exception is a vendored .d.ts twin), and IB-1 asserts the real tree has no finding, so IB-1 turns red; A21 says import-boundaries is unchanged. The design names the .txt in 5 places. Needed, as decisions/0137 «N2b, form of the list» now decides: the list is the module `app/server/auth/common-passwords.js` (a frozen set of strings generated once from the named source, source, commit and licence in its header comment), imported by password.js (no fs read); C20, §3, 4.9.2 (the file rules and the reading), §9.1 PW-4 (the header and entry rules read from the module), §12 B6 and §17 updated to it; the IB guard stays unchanged. Recorded as a finding only; ORCH says it is not a reason to fail the rest."
+      },
+      {
+        "id": "P2",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "4.9.5 «Platform admin», C16, §9.1 c5 AUTH-RACE-3, §13 M52",
+        "text": "The rework locks the admin's users row as the first statement of every login, «so every admin attempt, from any address, is serialised», and holds it for the scrypt (about 0.5 s). The admin's users row carries no counter (he is never locked; the delay is per address in login_delays), so the lock protects nothing there, but it lets attackers from several addresses keep the row busy: each queued attempt waits under the 4 s request deadline, and the admin's own right password from a clean address waits behind them or answers 503. That works against REQ-114's description («the platform admin is never locked (an attacker who knows his e-mail must not keep him out of «Стоп всем»)») and the spirit of c5 («the right password from a second IP logs in at once»). Needed: no row lock on the admin's users row; the admin's per-address state is locked instead (`insert … on conflict do nothing` then `select … for update` of the login_delays row of that address); AUTH-RACE-3 keeps its expectation for one address, a new pg case shows that parallel wrong admin attempts from other addresses do not delay a right login from a clean address (200 within the deadline), and M52 is restated against that row."
+      },
+      {
+        "id": "R1",
+        "severity": "Low",
+        "blocks": false,
+        "place": "F30, §7 «Many parallel logins»",
+        "text": "The capacity note counts memory only (2 GB, about 12 areas of 128 MiB). A Vercel Hobby function has 1 vCPU (same page as F30): N parallel scrypt computations at N = 2^17 take about N × 0.5 s of CPU, so beyond about 7 parallel logins the 4 s deadline answers 503 to all of them. Name this in §7 and in the post-deploy record (measure one login's time on production)."
+      },
+      {
+        "id": "R2",
+        "severity": "Low",
+        "blocks": false,
+        "place": "4.9.2 the list header",
+        "text": "MIT requires the copyright notice and the permission notice in every copy; the planned one-line header names the licence and the copyright only. Include the full MIT text in the header (or a licence file beside the list)."
+      },
+      {
+        "id": "R3",
+        "severity": "Low",
+        "blocks": false,
+        "place": "4.9.2, §12 B6",
+        "text": "A third-party word list of thousands of lines enters a repository whose `npm run traces` scans every file; the developer runs traces on it before the commit and filters any entry that matches a trace word, so step 10 is not surprised."
+      },
+      {
+        "id": "R4",
+        "severity": "Low",
+        "blocks": false,
+        "place": "4.5.2 items 3-4",
+        "text": "Say in so many words that the deadline answer of item 3 is disarmed once COMMIT is sent (item 4), so a transaction that committed is never answered 503 by the race; the text implies it but a developer could keep both."
+      }
+    ],
+    "self_check": [
+      "sha256 of docs/design/M2AUTH-accounts-tenancy-backup.md before and after: 57fc6b12047837134a850143442b32415735dcba98fff4a1403312a20f5f2ff0 (same); git log: 043c612 is the design commit",
+      "Clone <scratch>/m2auth-01b/sai of base/M2AUTH-20261123-01 (f3f5a3b, npm ci) reused; the designer's t6-rework.mjs and t7-onetx.mjs copied into its app/sketch",
+      "2026-11-23T18:36:33Z node sketch/t6-rework.mjs → scrypt 2^17 maxmem 128 MiB ERR_CRYPTO_INVALID_SCRYPT_PARAMS; 160 MiB 531 ms; 4 parallel async 686 ms; PW-2b [false,true]; grants form on 0001 only [platform_settings INSERT,SELECT; schema_migrations SELECT]; after revoke []; after re-grant audit_log, platform_settings, schema_migrations, users; failing grants text 42P01, grants unchanged true; truncate as owner refused P0001; lower() of ASCII equals the ASCII mapping true; e-mail rule [true,false,false]; with check (true) INSERT ALLOWED; count statement 3; tableforest literal <row> / element match [0,3]; deadline guard [503, rolled back, 0]; after the last statement [rolled back, 0]",
+      "node sketch/t7-onetx.mjs → {platform:2, tenant:1, who sai_app/tenant/org A, foreignInsert rolled back 42501, transactions:1}",
+      "2026-11-23T18:37:25Z node sketch/t8-mutants2.mjs → every original passes; M47 killed (42P01), M48 killed, M49 killed ([user]), M37b killed ({503, rows 1}), M53 killed (NO ANSWER in 5 s, 2 transactions), M55 killed (201 instead of 400), M58 killed (0 for 3 rows)",
+      "read app/test/unit/import-boundaries.test.js 728-760 (fileFindings, IB-1) and its own case «a file that is not .js: server/notes.txt»; app/.vercelignore allowlist (api, server, public, content, scripts, db); app/Dockerfile COPY content; routes/demo.js reads ../../content/sai-intake.json",
+      "grep of docs/requirements.yaml (working tree): REQ-114 c1 and the description now say N = 2^17, maxmem 160 MiB, `scrypt$17$8$1$` and the common-password check (step 01d)",
+      "Not run here (decisions/0110, 0129): npm run check, any app test, node --test, e2e; no server started; no port touched"
+    ],
+    "issues": [
+      {
+        "id": "Q1",
+        "kind": "QUESTION",
+        "text": "P1 and P2 go back to CODE-DESIGNER (small edits: the list as the .js module of decisions/0137 «N2b, form of the list»; the admin's lock moved to the per-address row); a short pass 3 of the gate on those sections. The verdict FAIL rests on P2; P1 alone would be a mechanical edit already decided by ORCH."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

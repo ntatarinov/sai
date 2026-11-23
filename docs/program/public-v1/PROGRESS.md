@@ -244,6 +244,7 @@ Never write a secret, a machine path or a name of another project here.
 | 2026-11-23T17:39:46Z | PLAN §5 M2 task order (run order named by REQ-119 criterion 11 and the REQ-110 description) | the fix of ISS-0132 (run ISS-0132-20261123-01) is released to `main` before task M2.4 starts; REQ-119 criterion 11 compares `tools/src` and `tools/test` with that release commit | decisions/0136 (ISS-0132 part) |
 | 2026-11-23T18:06:48Z | ARCH §3 (zod for request bodies) | no zod: an own strict body validator `app/server/http/schema.js` | decisions/0137 О2 |
 | 2026-11-23T18:06:48Z | ARCH §4 (tables of 0002) | adds `password_resets` and `login_delays`; `auth_sessions` without `idle_expires_at` (idle from `last_seen_at`); every GRANT in `app/db/grants.sql`, re-applied by `migrate.js` on every run | decisions/0137 О1, О3 |
+| 2026-11-23T18:39:23Z | ARCH §5 and §14 (scrypt N = 2^15) | scrypt N = 2^17, r = 8, p = 1, maxmem 160 MiB, stored form `scrypt$17$8$1$`; a new or changed password is refused when it is in the bundled common-password list `app/server/auth/common-passwords.js` (SecLists, MIT) | decisions/0137 Additions |
 
 ## Log (append only; one line per finished task)
 

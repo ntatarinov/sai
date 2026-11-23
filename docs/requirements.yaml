@@ -16857,6 +16857,7 @@ requirements:
         npm run traces` → exit 0 and `cd tools && npm run -s handoffs-check` → exit 0.
   # 2026-11-23T16:34:49Z, run M2ACCT-20261123-01, WF-01 step 1 lane A (REQ-ANALYST): R2.1 of PUBLIC-V1 (decisions/0091, 0133, 0134); English by the owner's answer G18; the open questions О1-О16 of this step are in handoffs/M2ACCT-20261123-01/step-01-req-analyst-lane-a.json, result.issues
   # 2026-11-23T18:35:13Z, run M2AUTH-20261123-01, WF-01 micro-amendment step 01d (REQ-ANALYST): criterion 1 and the «Mechanics» paragraph of the description — scrypt N = 2^17 with maxmem 160 MiB and the form scrypt$17$8$1$, and the bundled common-password check under criterion 1 (decisions/0137 Addition N2a, N2b and Addition 2 О15, О16); the meaning of criterion 1 is unchanged, nothing else changed
+  # 2026-11-23T18:39:56Z, run M2AUTH-20261123-01, WF-01 micro-amendment step 01d-b (REQ-ANALYST): by the gate (B-1, N-1) the common-password list is the module app/server/auth/common-passwords.js (decisions/0137 «N2b, form of the list»), and criterion 1 names the password-change case; nothing else changed
   - id: REQ-114
     title: Accounts, part 1 — the admin bootstrap /setup, login and logout, sessions with the __Host- cookie, the CSRF token, single-use re-auth tokens, the lockout rules (no lock for the platform admin, a per-IP limit and a growing delay), the rate limits, the admin-issued password reset link and the admin TOTP enrolment for G20 (PUBLIC-V1, R2.1)
     owner: BACKEND-DEV   # server/auth, server/http, the auth routes, the two scripts; the setup, login and reset pages by FRONTEND-DEV in the same run; lane FULL (PLAN §4.1, M2 «Lane: FULL»)
@@ -16901,7 +16902,8 @@ requirements:
       N = 2^17, r = 8, p = 1 (the OWASP minimum, decisions/0137 Addition N2a) with `maxmem` 160 MiB (the memory limit
       the code design measured: 128 MiB is refused by Node), 16-byte salt, 64-byte key, stored as
       `scrypt$17$8$1$<salt>$<hash>`; a new or changed password that is in the bundled common-password list
-      app/server/auth/common-passwords.txt (decisions/0137 N2b; its source and licence in the code design) is refused;
+      app/server/auth/common-passwords.js (a frozen set of strings with its source and licence in its header comment,
+      decisions/0137 «N2b, form of the list»: no .txt under app/server, the import-boundary guard stays) is refused;
       length 10 to 128; an
       unknown e-mail runs scrypt on a dummy hash; constant-time comparison. Session: 32 random bytes in the cookie
       `__Host-sai_s` (Secure, HttpOnly, SameSite=Lax, Path=/, no Domain) when APP_ORIGIN is https, and the plain
@@ -17003,9 +17005,11 @@ requirements:
         `scrypt$17$8$1$<salt>$<hash>` with a 16-byte salt and a 64-byte key (decoded lengths checked); the right
         password verifies, a password differing in the first or the last character does not; lengths 9 and 129 are
         refused with the code `password_rules` and lengths 10 and 128 are accepted; a password of the bundled
-        common-password list app/server/auth/common-passwords.txt, also in upper case, is refused with `password_rules`
+        common-password list app/server/auth/common-passwords.js, also in upper case, is refused with `password_rules`
         and a long random password is accepted (PW-4 of this file), and the same refusal with unchanged row counts holds
-        at setup (SU-5 of app/test/int/auth-setup.test.js), at the password change and at a reset link (RS-2 of
+        at setup (SU-5 of app/test/int/auth-setup.test.js), at the password change (the case «PW-4 at the password
+        change» of app/test/int/auth-session.test.js, beside SS-8; the code design gives it no name of its own) and at
+        a reset link (RS-2 of
         app/test/int/auth-reset.test.js), the test names of the code design (decisions/0137 N2b, Addition 2 О16). Test
         app/test/int/auth-login.test.js (created by this work): POST /api/auth/login with an unknown e-mail and with a
         wrong password of an existing account give the same status and a body and headers byte-equal except `Date`
