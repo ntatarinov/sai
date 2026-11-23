@@ -15,6 +15,11 @@ REQ-115, REQ-117 and REQ-120 read here is that of commits e5b099b and 65397a6 (e
 exists). No reference to the earlier version of a changed rule is left (AP-005): the earlier deadline race (B2), the
 nested tenant transaction (B4), the 21-code list (B7b), N = 2^15 (N2a) and the `<row>` count (N1) are gone everywhere.
 
+**Rework 01f** (handoff `handoffs/M2AUTH-20261123-01/step-01f-code-designer.json`, base 043c612) fixes the pass-2
+findings P1 (the common-password list is the module `app/server/auth/common-passwords.js`, decisions/0137 Addition 2)
+and P2 (no lock on the admin's users row at login; the per-address `login_delays` row is locked instead), and R1–R4 by
+ORCH's answers in that handoff; section 19 ends with its table. The earlier list file and the admin row lock are gone.
+
 This file holds shapes, signatures, tables, closed lists and rules. It holds no implementation code (the SQL of section 4.2
 is a column list with constraints, not the migration file). Values are marked **[M]** measured (fact number of section 1),
 **[R]** required by a block, a decision or ARCH, **[P]** proposed here with its reason (a disputable [P] is a question of
@@ -46,10 +51,8 @@ One build (task M2.2) of three blocks that share one migration and one request p
   and the runbook `docs/runbooks/backup-restore.md` with the Neon facts read on 2026-11-23 (F17).
 
 Files the code adds: 37 product files (18 changed) and 27 test files plus 2 fixtures (sections 3, 17). Criteria
-mapped: 32 of 32 (section 9). Mutants: 61 (section 13). Questions О1–О14 are answered by decisions/0137; the rework adds
-two (section 16): О15 (REQ-114 still writes N = 2^15 and the form `scrypt$15$8$1$`, while 0137 N2a sets 2^17: a
-micro-amendment of the block text) and О16 (the common-password list is a test-named check, not a criterion: confirm
-that its test PW-4 stands under REQ-114 c1).
+mapped: 32 of 32 (section 9). Mutants: 62 (section 13). Questions О1–О16 are answered by decisions/0137, its Addition
+and Addition 2 (REQ-114 amended to N = 2^17 in dfd23bc); none is open.
 
 ---
 
@@ -90,8 +93,10 @@ All runs on the trial clone of section 18 unless said; dates UTC.
 | F29 | **[N3]** A `before truncate … for each statement` trigger refuses TRUNCATE of `audit_log` for its owner (P0001) | t6 → `truncate as owner refused "P0001"` | 2026-11-23T18:24:43Z |
 | F30 | **[N2a]** Vercel Hobby functions «always execute with 2 GB (1 vCPU)», not configurable (https://vercel.com/docs/functions/configuring-functions/memory, updated 2026-07-15); one scrypt computation needs 128 MiB, so at most about 12 parallel logins fit one instance beside the app's own memory — the per-address login limit and the admin delay keep that out of reach of one caller; beyond it a login fails as 500 (named in 7) | WebFetch of the page | 2026-11-23 |
 | F31 | **[N2b]** SecLists (github.com/danielmiessler/SecLists) is under the MIT License, «Copyright (c) 2018 Daniel Miessler»; its folder `Passwords/Common-Credentials` holds `xato-net-10-million-passwords-100000.txt` | WebFetch of `https://raw.githubusercontent.com/danielmiessler/SecLists/master/LICENSE` and of the folder page | 2026-11-23 |
+| F32 | **[R1, P1]** With `UV_THREADPOOL_SIZE=1` (one thread, like one vCPU) eight parallel async scrypt computations at N = 2^17 end at 534, 1059, 1577, 2103, 2657, 3240, 3870, 4503 ms (seven within 4 s); with the default 4 threads at 619 … 1299 ms. A generated sample of `common-passwords.js` in the form of 4.9.2 (block comment header, `export const COMMON_PASSWORDS = Object.freeze([` one double-quoted string per line with a trailing comma `]);`) passes `prettier --check` of the clone's pinned prettier | `UV_THREADPOOL_SIZE=1 node sketch/t8-list.mjs 8` → `threads=1 parallel=8 finish ms [534,…,3870,4503]`; `node sketch/t8-list.mjs 8` → `[619,656,648,619,1186,1247,1299,1288]`; `prettier --check sketch/out/common-passwords.js` → «All matched files use Prettier code style!», exit 0 | 2026-11-23T18:42:17Z |
 
-Not measurable on this PC (no Postgres): **[B3]** whether parallel wrong attempts on one account from several addresses
+Not measurable on this PC (no Postgres): **[P2]** that parallel wrong admin attempts from other addresses do not delay
+a right login from a clean address once only the per-address row is locked (AUTH-RACE-4, the pg job); **[B3]** whether parallel wrong attempts on one account from several addresses
 all pass the check under READ COMMITTED without the row lock — reasoned from Postgres semantics and proved only by the
 pg job (`app/test/pg/auth-race-pg.test.js`, 9.1 c5); PGlite serialises transactions (F9), so an int test cannot show it.
 
@@ -121,11 +126,11 @@ direct request (the page states only the overwrite; post-deploy probe, 14); the 
 | C13 | **[P]** REQ-120 previous-schema mode (lane-b P1): `schema_migrations` is compared only by the prefix rule; the row-count, key and content rules read «every other table of A» | settles the two readings | — |
 | C14 | **[R 0137 О1]** Grants in `app/db/grants.sql`, applied by `migrate.js` on every run after the files; **[B1]** each table's grants inside one `do` block guarded by `to_regclass` (static statements, no dynamic SQL) | `--no-acl` restores no GRANT; a database built from an older prefix gets the grants of its own tables (F23) | the table-exists test in migrate.js (would need table names from the file: SQL built from strings) |
 | C15 | **[B2]** A deadline check before every statement of a request transaction and before COMMIT; a late transaction rolls back | no commit after a 503 (F24) | the race alone (rejected: commits after the answer) |
-| C16 | **[B3]** The first statement of the login, re-auth and password-change transactions locks the counter row (`select … for update`) | parallel attempts on one account from several addresses or sessions are serialised; counts are never lost | one conditional update that counts and locks (rejected: the check must come before scrypt) |
+| C16 | **[B3, P2]** The login, re-auth and password-change transactions lock the one row that holds the counter of the attempt (`select … for update`): the users row of an active ordinary account, the login_failures row, or for the admin the login_delays row of the address — never the admin's users row at login | parallel attempts on one account from several addresses or sessions are serialised; counts are never lost | one conditional update that counts and locks (rejected: the check must come before scrypt) |
 | C17 | **[B4]** One connection and one transaction per request; a tenant route's request transaction switches to tenant settings (`set_config(…, true)`) after the checks and before the handler | F25: a nested PGlite transaction never answers; on Postgres a second pool connection per request | the pipeline's transaction ends and withTenant opens another (two commits) |
 | C18 | **[B6]** E-mails are printable ASCII only (`^[!-~]{1,64}@[!-~]{1,189}$`, one `@`); a non-ASCII e-mail is 400 bad_body; `email_norm` is the ASCII lower case, which equals `lower()` (F27) | one rule for the validator and the column check | Unicode case folding (no rule both sides agree on) |
 | C19 | **[R 0137 B7a, N2c]** Unknown, disabled and deleted e-mails take one path: scrypt on DUMMY_HASH, 401 invalid_credentials, the counter in `login_failures` keyed by `mac("acct", email_norm)` with the same 5-in-15-minutes lock; the users counters of that account never change | an unknown e-mail and a locked account answer like a wrong password until the lock, and the lock answer is the same for both | counters only for existing accounts (shows which e-mails exist) |
-| C20 | **[R 0137 N2b]** A bundled list `app/server/auth/common-passwords.txt` (from SecLists, MIT, F31), compared after NFC and lower case | ASVS 2.1.7 without a network call | a breach API (network, a vendor) |
+| C20 | **[R 0137 N2b and Addition 2]** A bundled list as the module `app/server/auth/common-passwords.js` (a frozen array of strings from SecLists, MIT, F31, imported by password.js), compared after NFC and lower case | ASVS 2.1.7 without a network call | a breach API (network, a vendor) |
 
 ---
 
@@ -156,7 +161,7 @@ the developers name the tests, TEST-DESIGNER writes and fixes them, WF-02).
 | B | `app/server/http/client-ip.js` | address normalisation (4.10) |
 | B | `app/server/auth/keys.js` | the pepper-derived HMAC and the TOTP key (4.9.1) |
 | B | `app/server/auth/password.js`, `sessions.js`, `reauth.js`, `lockout.js`, `setup.js`, `totp.js` | 4.9 |
-| B | `app/server/auth/common-passwords.txt` **[N2b]** | the bundled list (4.9.2) |
+| B | `app/server/auth/common-passwords.js` **[N2b, P1]** | the bundled list as a module (4.9.2) |
 | B | `app/server/services/audit.js` | the one audit writer (4.11) |
 | B | `app/server/routes/index.js` (changed), `app/server/routes/health.js` (changed), `app/server/routes/demo.js` (changed: the meta object of its two rows only) | 4.4, 4.5.4 |
 | B | `app/server/routes/auth.js`, `app/server/routes/admin.js` | 4.4 |
@@ -206,7 +211,7 @@ with type, nullability, default and check. «→» is a foreign key. The file ho
 | `reauth_tokens` | id uuid pk; user_id uuid not null → users; auth_session_id uuid not null → auth_sessions on delete cascade; purpose text not null in (the 11 purposes of 4.9.4); token_hash text not null unique; created_at, expires_at timestamptz not null; used_at timestamptz null | index (auth_session_id) |
 | `password_resets` | id uuid pk; user_id uuid not null → users; code_hash text not null unique; created_by uuid not null → users; created_at, expires_at timestamptz not null; used_at timestamptz null | index (user_id) |
 | `rate_limits` | key text not null (64 hex); window_start timestamptz not null; count int not null ≥ 1 | pk (key, window_start) **[R ARCH §4]** |
-| `login_delays` | key text pk (64 hex); fails int not null ≥ 1; next_at timestamptz not null; updated_at timestamptz not null | — |
+| `login_delays` | key text pk (64 hex); fails int not null ≥ 0 (the row is inserted with 0 before it is locked, P2); next_at timestamptz not null; updated_at timestamptz not null | — |
 | `login_failures` **[B7a, N2c]** | key text pk (64 hex, `mac("acct", email_norm)`); fails int not null ≥ 0; failed_since timestamptz null; locked_until timestamptz null; updated_at timestamptz not null | the login counter of an e-mail with no active account (unknown, disabled, deleted); same rule as the users columns (4.9.5) |
 
 `password_resets`, `login_delays` and `login_failures` are added to the ARCH §4 table list (the reset code, the admin
@@ -375,8 +380,11 @@ start + `TX_DEADLINE_MS` = 4000 **[P]**. `Db.transaction`:
    the adapter rolls back. So a transaction whose deadline passed is rolled back, never committed (F24);
 3. answers the caller with `E_DB_DOWN` at `deadlineAt` while `fn` is still running (the race stays, so the user gets
    503 in time); the late `fn` then hits the guard at its next statement or before COMMIT and rolls back;
-4. once COMMIT is sent (the guard passed), the caller waits for the COMMIT's answer, at most `COMMIT_LIMIT_MS` (900 ms):
-   the answer is then the true outcome (committed → the route's answer; refused or timed out → 503 `db_unavailable`).
+4. **[R4]** once COMMIT is sent (the guard passed), the deadline answer of item 3 is **switched off** for this
+   transaction: the caller waits for the COMMIT's answer, at most `COMMIT_LIMIT_MS` (900 ms), and that answer is the
+   true outcome (committed → the route's answer; refused or timed out → 503 `db_unavailable`). A transaction that
+   committed is never answered 503 by the deadline race; items 3 and 4 never both apply to one transaction (ADD-2 has
+   a case with the deadline passing while COMMIT is in flight: the committed change is answered 200, not 503).
    Worst case 4000 + 900 = 4.9 s < 5 s (REQ-114 c10).
 
 Residual (named, not hidden): a COMMIT that reaches the server but whose answer is lost or later than 900 ms leaves the
@@ -516,21 +524,36 @@ schema.js answers a body that is not UTF-8 with bad_json). No answer text names 
 `hash(pw): Promise<string>`, `verify(pw, stored): Promise<boolean>`, `rules(pw): "ok" | "password_rules"`.
 **[N2a]** scrypt N = 2^17, r = 8, p = 1 (the OWASP minimum, 0137 Addition), `maxmem` 160 MiB (F11: 128 MiB throws),
 async `crypto.scrypt` only (the libuv pool; the event loop is not blocked), 16-byte random salt, 64-byte key; form
-`scrypt$17$8$1$<salt b64url>$<key b64url>` (О15: the block text still says 15); `verify` derives the full 64 bytes and
-compares all 64 with `timingSafeEqual`; a stored text of another form → false. Measured 531 ms per computation here,
-693 ms for four in parallel (F11); a Vercel Hobby instance has 2 GB (F30), so about 12 parallel computations fit [C].
+`scrypt$17$8$1$<salt b64url>$<key b64url>` (REQ-114 as amended in dfd23bc, decisions/0137 Addition 2 О15); `verify`
+derives the full 64 bytes and compares all 64 with `timingSafeEqual`; a stored text of another form → false. Measured
+531 ms per computation here, 693 ms for four in parallel (F11); a Vercel Hobby instance has 2 GB (F30), so about 12
+parallel computations fit in memory [C], but its **1 vCPU** is the tighter bound **[R1]**: on one thread eight parallel
+computations finish at 534, 1059 … 3870, 4503 ms (F32), so about 7 parallel logins fit the 4 s deadline and the rest
+answer 503 (7, 14).
 `DUMMY_HASH`: a constant of the same form (the hash of a random text made once by the developer; not a secret),
 verified for an unknown, disabled or deleted e-mail so that each login runs exactly one scrypt. The `Hasher` is injected
 (`deps.auth.passwords`) so LI-1 counts the computations.
 
 `rules(pw)` **[N2b]**: `password_rules` when the length (code points) is below 10 or above 128, **or** when
-`pw.normalize("NFC").toLowerCase()` is in the set read once at module load from `app/server/auth/common-passwords.txt`.
-That file: line 1 a comment `# source: SecLists Passwords/Common-Credentials/xato-net-10-million-passwords-100000.txt
-at commit <sha>, MIT License, Copyright (c) 2018 Daniel Miessler` (F31; the developer fills the sha of the commit he
-copies from); then one password per line, the source's entries of 10 to 128 code points, lower-cased, de-duplicated,
-sorted by code unit, LF; no other content. It is read with `fs.readFileSync(new URL(…, import.meta.url))`, the pattern
-the function already uses for the intake (`routes/demo.js`, decisions/0122), so it ships with `server/` (vercelignore
-allowlist). Used by setup, password change and reset (every new or changed password); never at login. No network call.
+`pw.normalize("NFC").toLowerCase()` is in the set that `password.js` builds once at module load (`new Set(…)`, private to
+the module) from the import of `app/server/auth/common-passwords.js` **[P1, decisions/0137 Addition 2 «N2b, form of
+the list»]**: a module, not a data file, because import-boundaries refuses every non-`.js` file under `server/`
+(`fileFindings`, IB-1 unchanged); no `fs` read.
+
+The module, generated once by the developer from the named source and committed as generated:
+- a header block comment holding: the source (SecLists, `Passwords/Common-Credentials/xato-net-10-million-passwords-100000.txt`,
+  the commit sha the developer copied from), how it was generated (the rules below), and **[R2]** the full MIT licence
+  text of SecLists with its copyright line «Copyright (c) 2018 Daniel Miessler» and the whole permission notice (F31);
+- then exactly one export: `export const COMMON_PASSWORDS = Object.freeze([ … ]);` — one string literal per line with
+  two spaces of indent and a trailing comma, in double quotes (the prettier form, measured: `prettier --check` passes on
+  a generated sample, F32);
+- the entries: the source's entries of 10 to 128 code points, lower-cased, de-duplicated, sorted by code unit; an entry
+  holding a character outside printable ASCII or a `"`, `'` or `\` is dropped (so every literal is plain, prettier
+  keeps double quotes, and no escape is needed); **[R3]** before the commit the developer runs `cd tools && npm run -s
+  traces` with the module in the tree and drops entries until traces reports 0 traces for the module, so the check of step 10 finds
+  nothing (a line of sub-step B6).
+Used by setup, password change and reset (every new or changed password); never at login. No network call. It ships
+with `server/` like every module (vercelignore allowlist).
 
 #### 4.9.3 Sessions and cookie (`auth/sessions.js`)
 
@@ -565,10 +588,14 @@ throw rolls the consumption back (the action did not happen).
 
 #### 4.9.5 Lockout and the admin delay (`auth/lockout.js`)
 
-**[B3] Row locks first.** The login transaction's first statement after the pipeline's checks (after step 9) is the
-account read **with a row lock**: `select … from users where email_norm = $1 for update`. Then:
+**[B3, P2] Row locks first, on the row that holds the counter.** The login transaction's first statement after the
+pipeline's checks (after step 9) reads the account **without a lock**: `select id, status, is_platform_admin from users
+where email_norm = $1`. The second statement locks the one row whose counter this attempt may change, by the kind of
+account:
 
-- **Active ordinary account** (row found, `status = 'active'`, not admin): `locked_until > now` → 429 locked,
+- **Active ordinary account** (row found, `status = 'active'`, not admin): `select … from users where id = $1 for update`
+  (the counters and the status are read again under the lock; a status changed in between takes the branch of the
+  locked read); `locked_until > now` → 429 locked,
   Retry-After = ceil(seconds left), no scrypt. Else scrypt. Wrong password → one statement on the locked row:
   `failed_logins` = 1 and `failed_since` = now when `failed_since` is null or older than 15 min, else `failed_logins + 1`;
   at 5 → `locked_until = now + 15 min`. Right password → counters reset, `last_login_at = now`. Parallel attempts on the
@@ -580,20 +607,30 @@ account read **with a row lock**: `select … from users where email_norm = $1 f
   DUMMY_HASH and the same counting update; answer 401 invalid_credentials. The users row of a disabled or deleted
   account is never written. So an unknown e-mail, a disabled account and a wrong password answer alike, and the lock
   comes after the same 5 failures for all of them.
-- **Platform admin**: never locked (`locked_until` stays null). The admin's users row is locked by the same first
-  statement, so every admin attempt, from any address, is serialised. Delay key `mac("delay", ip or "unknown")` in
-  `login_delays`, read after the row lock: `next_at > now` → 429 rate_limited, Retry-After = ceil(seconds left), no
-  scrypt. A failure — a wrong password, **and a right password followed by a missing (totp_required) or wrong
-  (totp_invalid) code [B7c]** — → upsert `fails + 1`, `next_at = now + min(2^(fails − 1), 60) s`. A full success from
-  that address deletes the row.
+- **Platform admin** **[P2]**: never locked, and **his users row is never locked by a login** (it holds no login
+  counter; a lock on it would let attackers from many addresses queue every admin login behind their scrypt, against
+  REQ-114's «an attacker who knows his e-mail must not keep him out»). The per-address state is locked instead: key
+  `mac("delay", ip or "unknown")`; `insert into login_delays (key, fails, next_at, updated_at) values ($1, 0, $now, $now)
+  on conflict (key) do nothing`, then `select fails, next_at from login_delays where key = $1 for update`.
+  `next_at > now` → 429 rate_limited, Retry-After = ceil(seconds left), no scrypt. Else scrypt. A failure — a wrong
+  password, **and a right password followed by a missing (totp_required) or wrong (totp_invalid) code [B7c]** — →
+  `update login_delays set fails = fails + 1, next_at = $now + min(2^fails, 60) s, updated_at = $now where key = $1` on
+  the locked row (the n-th failure in a row gives 2^(n−1) s). A full success from that address deletes the row and sets
+  `last_login_at` (a plain update after scrypt, no wait for other addresses). So parallel attempts from **one** address
+  are serialised (one scrypt, the rest 429, AUTH-RACE-3), and attempts from other addresses never wait for each other
+  nor delay a right login from a clean address (AUTH-RACE-4). The `fails` column check becomes `fails >= 0` (the row
+  is inserted with 0, 4.2.1). The TOTP step claim of 4.9.7 is one conditional update reached only after a right
+  password.
 - **Re-auth** (and the `current` of POST /api/auth/password, О12): first statement `select … from users where id = $1
   for update`; `reauth_locked_until > now` → 429 reauth_locked; failure counted in `reauth_failures` /
   `reauth_failed_since` with the same 5-in-15-minutes rule → `reauth_locked_until = now + 15 min`; success resets them.
   Parallel attempts from several sessions of one user are serialised by that lock. `failed_logins` and `locked_until`
   are never touched by re-auth.
-- The row lock lasts for the scrypt of that attempt (about 0.5 s, F11); a lawful parallel login of the same account
-  waits for it. Lock order is always the rate_limits row of step 7 → the users (or login_failures) row → the
-  login_delays row, in every request, so no two requests wait on each other in reverse (no deadlock).
+- The row lock lasts for the scrypt of that attempt (about 0.5 s, F11); a lawful parallel login of the same ordinary
+  account waits for it. Each request takes at most one counter-row lock (the users row of an ordinary account, the
+  login_failures row, or the admin's login_delays row of its address) after the rate_limits row of step 7, and the
+  audit advisory lock last, so no two requests wait on each other in reverse (no deadlock). Re-auth and password
+  change lock the users row by id (an authenticated user's own row; no anonymous caller reaches it).
 
 Note for 9.4 (N2): until the lock, an attacker cannot tell an existing account from an unknown e-mail by the answer;
 the residual tells are the admin delay (it names the admin's e-mail, accepted in 0137 О8 and N2c) and `totp_required`
@@ -916,7 +953,7 @@ need not read it). `app/README.md` gets one line naming the runbook beside relea
 | Common or short password at setup, password change or reset **[N2b]** | 400 password_rules | every row; a reset code stays usable |
 | Admin route, no session cookie, database down **[N4]** | 404 uniform (no statement) | — |
 | Admin route with a session cookie, database down **[N4]** | 503 db_unavailable (accepted: the caller holds a session) | every row |
-| Many parallel logins on one Vercel instance (about 12 scrypt areas of 128 MiB in 2 GB, F30) | a computation that cannot get memory fails → 500 server_error, the transaction rolls back | every row |
+| Many parallel logins on one Vercel instance **[R1]**: the 1 vCPU is the bound (F32: on one thread the 7th of eight parallel scrypt computations ends at 3.9 s, the 8th at 4.5 s); memory allows about 12 (F30) | about 7 parallel logins fit the 4 s deadline; above that the later ones answer 503 db_unavailable (the deadline) and roll back; a computation that cannot get memory fails → 500. Accepted for an invite-only V1 (ORCH's answer R1 in `handoffs/M2AUTH-20261123-01/step-01f-code-designer.json`); the post-deploy record measures one login's time on production (14) | every row |
 | Unsafe role at start | node-main exits 1 with the one line; on Vercel health 503 role unsafe, auth 503 | — |
 | Pepper missing in production | node-main and migrate refuse with one line; Vercel /api 503 server_config (also the demo) | database untouched |
 | Foreign Origin, wrong type, bad CSRF, missing re-auth, bad body, unknown purpose | 403 / 415 / 403 / 403 / 400 / 400 | every row, the rate counters included (thrown → rollback). **[N6]** So a request refused at step 8 or 9, after the increment of step 7, is not counted by the rate limit: accepted, because such a refusal runs no scrypt and changes nothing; the limits that matter (the scrypt paths) count every attempt that reaches the handler |
@@ -940,8 +977,9 @@ that checks it and in the transaction of the action; the setup guard is the `ins
 `setup_done` in the same transaction as the admin; the reset code is consumed by one `update … returning`; the TOTP step
 and a recovery code are claimed by one conditional `update`; a rate window is incremented and compared by one upsert;
 the audit row is chained under the advisory lock of the same transaction. **[B3]** The lockout, the admin delay and the
-re-auth counter are read under a row lock (`select … for update`) taken as the first statement of the attempt, and
-written in the same transaction after scrypt, so the check and the count are one operation per account. **[B2]** The
+re-auth counter are read under a row lock (`select … for update`) on the row that holds the counter (the admin's: the
+login_delays row of the address, never his users row, P2), and written in the same transaction after scrypt, so the
+check and the count are one operation per counter. **[B2]** The
 deadline guard sits inside the same transaction, before every statement and before COMMIT. **[B4]** A tenant route's
 checks and its action share one transaction and one connection. No «check now, act later».
 
@@ -953,16 +991,16 @@ checks and its action share one transaction and one connection. No «check now, 
 
 | c | Design element | Test (file → names) |
 | --- | --- | --- |
-| 1 | 4.9.2, DUMMY_HASH, injected hasher, C18, C19, C20 | unit/auth-password.test.js PW-1 form `scrypt$17$8$1$` and decoded lengths (О15), PW-2 first/last char, **PW-2b [B5]** the right password against a stored hash whose last key byte is changed → false, PW-3 lengths 9/10/128/129, **PW-4 [N2b]** a password of the bundled list (also in upper case) → password_rules, a long random one → ok; the list file's header names source, commit and MIT licence, entries 10–128 code points, lower case, unique, sorted; int/auth-login.test.js LI-1 byte-equal answers and one scrypt each, LI-2 no cookie, no auth_sessions row, **LI-3 [B7a]** a disabled and a deleted account answer byte-equal to a wrong password with one scrypt and their users rows unchanged (sha256), **LI-4 [B6]** a non-ASCII e-mail → 400 bad_body with counts unchanged; an upper-case ASCII e-mail logs in as its lower case |
+| 1 | 4.9.2, DUMMY_HASH, injected hasher, C18, C19, C20 | unit/auth-password.test.js PW-1 form `scrypt$17$8$1$` and decoded lengths (REQ-114 c1 as amended), PW-2 first/last char, **PW-2b [B5]** the right password against a stored hash whose last key byte is changed → false, PW-3 lengths 9/10/128/129, **PW-4 [N2b]** a password of the bundled list (also in upper case) → password_rules, a long random one → ok; the module `app/server/auth/common-passwords.js` **[P1]** is imported (no file read): its header comment names the source file and commit and holds the full MIT licence text with «Copyright (c) 2018 Daniel Miessler» (R2), it has exactly one export `COMMON_PASSWORDS`, frozen, and every entry has 10–128 code points, is lower case, printable ASCII without `"`, `'` or `\`, unique and sorted by code unit; int/auth-login.test.js LI-1 byte-equal answers and one scrypt each, LI-2 no cookie, no auth_sessions row, **LI-3 [B7a]** a disabled and a deleted account answer byte-equal to a wrong password with one scrypt and their users rows unchanged (sha256), **LI-4 [B6]** a non-ASCII e-mail → 400 bad_body with counts unchanged; an upper-case ASCII e-mail logs in as its lower case |
 | 2 | 4.9.6, 4.10 setup, 4.16 | int/auth-setup.test.js SU-1 rows, SU-2 the four 404 cases byte-equal with counts, SU-3 parallel, SU-4 sixth → 429, **SU-5 [B6, N2b]** a Cyrillic e-mail → 400 bad_body and a listed common password → 400 password_rules, row counts unchanged (no 500); unit/setup-compare.test.js SCMP-1 (source holds `timingSafeEqual`, first/last byte, equal); unit/setup-token.test.js STK-1 |
 | 3 | 4.9.3, 4.7 steps 1, 11 | int/auth-session.test.js SS-1 https flags, SS-2 http cookie, SS-3 dump search (text and bytea, raw, base64url, hex), SS-4 idle ±1 s, SS-5 absolute, SS-6 rotation, SS-7 logout, SS-8 password change and wrong current, SS-9 me body |
 | 4 | 4.7 steps 3–5, meta.session | int/auth-csrf.test.js CS-1 every non-GET session route (printed count > 0) with row counts and sha256, CS-2 the session-false non-GET routes are demo/result or /api/worker/*, CS-3 demo/result without Origin answers as before, CS-4 GET routes change only the three allowed tables |
-| 5 | 4.9.5, 4.10 login, C16, C19 | int/auth-lockout.test.js LO-1 ordinary lock + 429 locked, LO-2 4/16 min/4, LO-3 admin 20 failures, second address, delay and no scrypt, LO-4 eleventh login → 429, LO-5 re-auth lock separate and users counters unchanged, **LO-6 [N2c]** an unknown e-mail: five failures answer byte-equal to those of an existing account, the sixth answers byte-equal 429 locked (Retry-After equal), and `login_failures` holds no clear e-mail, **LO-7 [B7c]** the admin with TOTP on: a right password with no code and with a wrong code each add one failure to the delay (the next attempt before the delay → 429, no scrypt); **pg/auth-race-pg.test.js [B3]** AUTH-RACE-1 ten parallel wrong logins on one ordinary account from ten addresses (pool of 10): exactly 5 answers 401 and 5 answers 429 locked, `failed_logins` = 5, scrypt count 5; AUTH-RACE-2 ten parallel wrong re-auth calls from ten sessions of one user: 5 × 401, 5 × 429 reauth_locked, `reauth_failures` = 5; AUTH-RACE-3 five parallel wrong admin logins from one address: 1 scrypt, 4 × 429 with Retry-After, `login_delays.fails` = 1 (only the pg job shows these: PGlite serialises, F9) |
+| 5 | 4.9.5, 4.10 login, C16, C19 | int/auth-lockout.test.js LO-1 ordinary lock + 429 locked, LO-2 4/16 min/4, LO-3 admin 20 failures, second address, delay and no scrypt, LO-4 eleventh login → 429, LO-5 re-auth lock separate and users counters unchanged, **LO-6 [N2c]** an unknown e-mail: five failures answer byte-equal to those of an existing account, the sixth answers byte-equal 429 locked (Retry-After equal), and `login_failures` holds no clear e-mail, **LO-7 [B7c]** the admin with TOTP on: a right password with no code and with a wrong code each add one failure to the delay (the next attempt before the delay → 429, no scrypt); **pg/auth-race-pg.test.js [B3]** AUTH-RACE-1 ten parallel wrong logins on one ordinary account from ten addresses (pool of 10): exactly 5 answers 401 and 5 answers 429 locked, `failed_logins` = 5, scrypt count 5; AUTH-RACE-2 ten parallel wrong re-auth calls from ten sessions of one user: 5 × 401, 5 × 429 reauth_locked, `reauth_failures` = 5; AUTH-RACE-3 five parallel wrong admin logins from one address: 1 scrypt, 4 × 429 with Retry-After, `login_delays.fails` = 1 (the login_delays row of that address is the lock, P2); **AUTH-RACE-4 [P2]** six parallel wrong admin logins from six addresses and, started at the same moment, the right admin password from a seventh, clean address: the right one answers 200 with a session within the request deadline (4 s) and is not refused or delayed by the others (no 429, no 503), each of the six gets 401 with its own `login_delays` row at `fails` = 1, and the admin's users row keeps `failed_logins` 0 and `locked_until` null (only the pg job shows these: PGlite serialises, F9) |
 | 6 | 4.9.4, 4.7 step 8 | int/auth-reauth.test.js RA-1 one use, RA-2 second use / +5 min 1 s / other session / other user / other purpose with counts, RA-3 unknown purpose, RA-4 hash only, RA-5 every `reauth` route without token |
 | 7 | 4.9.7 | unit/totp.test.js TO-1 RFC 6238 vectors; int/auth-totp.test.js TT-1 admin only + token, TT-2 dump search, TT-3 password only until confirmed, TT-4 codes −1/0/+1 and replay, TT-5 wrong codes delay and no lock, TT-6 recovery codes, TT-7 switch-off needs token and code, TT-8 audit rows |
 | 8 | 4.9.8 | int/auth-reset.test.js RS-1 issue and use, RS-2 second use / +30 min 1 s / 9 characters / a password of the common list (N2b) unchanged, RS-3 404 for ordinary and anonymous, RS-4 audit rows |
 | 9 | 4.10, client-ip.js, api/index.js | int/rate-limit.test.js RL-1 planted address in no column and no log line, RL-2 X-Forwarded-For ignored on the Node server, RL-3 the Vercel entry reads only `x-forwarded-for` (a planted `x-real-ip` changes nothing), RL-4 each limit's first refusal 429 + Retry-After, RL-5 cleanup |
-| 10 | 4.5.2, 4.7 DbError mapping, C15 | int/auth-db-down.test.js ADD-1 refused and silent adapters, four routes, 503 within 5 s, no cookie, recovery; **ADD-2 [B2]** an adapter that answers every statement but slowly (each statement of POST /api/auth/password and POST /api/auth/setup delayed so that the deadline passes before the last one, deadline injected small): the answer is 503 db_unavailable, and after the adapter's transactions have settled the row counts and the sha256 of users and auth_sessions are unchanged; a case where the deadline passes after the last statement and before COMMIT: the same; **ADD-3 [N4]** with the database down, an admin route without a session cookie answers 404 byte-equal to an unknown /api address and sends no statement |
+| 10 | 4.5.2, 4.7 DbError mapping, C15 | int/auth-db-down.test.js ADD-1 refused and silent adapters, four routes, 503 within 5 s, no cookie, recovery; **ADD-2 [B2]** an adapter that answers every statement but slowly (each statement of POST /api/auth/password and POST /api/auth/setup delayed so that the deadline passes before the last one, deadline injected small): the answer is 503 db_unavailable, and after the adapter's transactions have settled the row counts and the sha256 of users and auth_sessions are unchanged; a case where the deadline passes after the last statement and before COMMIT: the same; **[R4]** a case where the deadline passes while COMMIT is in flight (the adapter holds COMMIT past the deadline but under 900 ms, then commits): the answer is the route's 200 and the change is there, never 503; **ADD-3 [N4]** with the database down, an admin route without a session cookie answers 404 byte-equal to an unknown /api address and sends no statement |
 | 11 | 4.17 | int/uat-login.test.js UL-1 works, UL-2 each refusal, UL-3 modes 0640/0604/0600 (POSIX) and the win32 branch through `run({ platform: "win32" })`, UL-4 grep and the planted child_process |
 | 12 | 4.7 log line, 4.11 no clear values | int/logging.test.js LG-2 (LG-1 unchanged) |
 | 13 | 5, 4.8 | unit/texts.test.js TX-11 (the literal of the 23 codes of 4.8 = `AUTH_CODES`, `body_too_large` and `site_closed` among them **[B7b]**, each `auth_err_<code>` with ru, kk, en); unit/route-table.test.js **RT-6 [B7b]** a scan of `app/server/app.js`, `app/server/http/*.js` and `app/server/routes/{auth,admin}.js` (comments blanked) collects every code literal of `new HttpError("…")` and of `{ error: "…" }` answers; that set is ⊆ `AUTH_CODES` (a planted `new HttpError("bad_request")` in a copy of routes/auth.js is red); it reads files only and needs no other test; texts.test.js and forbidden-words.test.js existing; the two commands of c13 |
@@ -1039,7 +1077,7 @@ V3: 3.2.1–3.2.3 (32 random bytes, rotated at login, HMAC at rest), 3.3.1–3.3
 | Q9 | yes | every statement a constant text with parameters; SQL-1 for app/server; SQL-3 added for `app/scripts/db-verify.js` (A20); db-verify names are bound parameters (C11); grants.sql has only static statements in `if` blocks, no `execute` (B1, MG-7) |
 | Q10 | yes | 503 db_unavailable within 4.9 s; the deadline guard rolls a late transaction back (B2, ADD-2); the pg client dropped on error; ADD-1; parallel attempts serialised by row locks (B3) |
 | Q11 | not applicable | the server calls no address a user sets; `uat-login.js --base` is the owner's own CLI and allows only https or 127.0.0.1 |
-| Q12 | yes | C1–C20; О1–О14 answered by decisions/0137 and its Addition; О15, О16 open (section 16) |
+| Q12 | yes | C1–C20; О1–О16 answered by decisions/0137, its Addition and Addition 2 (section 16) |
 | Q13 | yes | the traps found here go to DOC-UPDATER as proposed anti-patterns (15): the manual begin on PGlite (F9), `--no-acl` without a grants step, a deadline race that answers 503 and commits later (F24), a nested transaction on one PGlite (F25), a check-then-act lockout without a row lock (B3) |
 | Q14 | yes | the handoff result now; status lines by DOC-UPDATER at step 10 |
 | R1 | yes | push to main after green checks (0134 item 2); the deploy, the pepper and the setup hash are the owner's |
@@ -1072,7 +1110,7 @@ V3: 3.2.1–3.2.3 (32 random bytes, rotated at login, HMAC at rest), 3.3.1–3.3
 | A18 | app/test/int/health.test.js:71, 155 `0002_more.sql` | → `9999_more.sql` (REQ-115 row 4) | — |
 | A19 | int/selfcheck.test.js, pg/selfcheck-pg.test.js | every case keeps input and answer (F4, F8); SC-7 and SP-2 added | — |
 | A20 | app/test/unit/no-string-sql.test.js | SQL-1/SQL-2 unchanged; SQL-3 added: the same finder over `app/scripts/db-verify.js` (REQ-120 row 4) | — |
-| A21 | import-boundaries.test.js | unchanged (scripts outside it, F20; server imports only `node:crypto` and existing packages; `node:net` not used, 4.10) | — |
+| A21 | import-boundaries.test.js | unchanged (scripts outside it, F20; server imports only `node:crypto` and existing packages; `node:net` not used, 4.10; every new file under `server/` is a `.js` module — the common-password list included, P1 — so `fileFindings` and IB-1 stay green) | — |
 | A22 | app/test/unit/runbooks.test.js RB-1 | unchanged; RB-3 added (the new runbook names no Vercel command) | — |
 | A23 | app/test/int/logging.test.js LG-1 | unchanged; LG-2 added | — |
 | A24 | app/test/e2e/landing.test.js DEMO_ROUTES; demo.test.js; demo-parity.test.js; stage.test.js | unchanged (CS-3 proves the demo answers as before) | — |
@@ -1090,7 +1128,7 @@ V3: 3.2.1–3.2.3 (32 random bytes, rotated at login, HMAC at rest), 3.3.1–3.3
 | B3 | B | selfcheck folded statement | none (F8; SC-* unchanged answers) |
 | B4 | B | `0002_identity.sql` (11 tables, the TRUNCATE trigger), `grants.sql` (table-exists blocks, B1), the grants step in migrate.js | MG-1 (A16), MP-1 (A14), MP-2 (A15), docker 0001 row (A13; red on GitHub only) |
 | B5 | B | config pepper and setup hash; `.env.example`; compose and the docker job's passwords line | none (DBC-5 order kept, F22; ENV-1 green with the names) |
-| B6 | B | keys.js, password.js (N = 2^17, the common list), common-passwords.txt, totp.js (pure) | none |
+| B6 | B | keys.js, password.js (N = 2^17, the common list), common-passwords.js (generated once; **[R3]** `cd tools && npm run -s traces` run with it in the tree before the commit, every reported entry dropped), totp.js (pure) | none (IB-1 stays green: the list is a `.js` module, P1) |
 | B7 | B | auth-store.js, audit-store.js, services/audit.js | none |
 | B8 | B | csrf.js, rate-limit.js, client-ip.js, auth-mw.js pipeline | none |
 | B9 | B | routes/auth.js (setup, login, logout, me, password, reauth, reset) | none |
@@ -1111,7 +1149,7 @@ the tests they expect red in their handoffs, by this table.
 
 ---
 
-## 13. Mutants (one per trap; ≥ 1 per criterion; 61: M1–M60 and M37b)
+## 13. Mutants (one per trap; ≥ 1 per criterion; 62: M1–M60, M37b and M52b)
 
 | # | Breakage | Caught by |
 | --- | --- | --- |
@@ -1168,7 +1206,8 @@ the tests they expect red in their handoffs, by this table.
 | M49 | **[H1]** a block names `public.user` (a misspelt table) | MG-7 |
 | M50 | **[B3]** the login account read without `for update` | AUTH-RACE-1 (more than 5 answers 401, or `failed_logins` < number of failures) |
 | M51 | **[B3]** the re-auth counter read without `for update` | AUTH-RACE-2 |
-| M52 | **[B3]** the admin delay read before the admin's row lock | AUTH-RACE-3 (more than one scrypt) |
+| M52 | **[B3, P2]** the admin's login_delays row read without `for update` (or without the insert that makes it exist before the lock) | AUTH-RACE-3 (more than one scrypt from one address, `fails` below the number of failures) |
+| M52b | **[P2]** the admin's users row locked `for update` at login | AUTH-RACE-4 (the right login from the clean address waits behind the six scrypt computations; with the queue made long enough by the test's injected hasher delay it answers 503 instead of 200 within the deadline) |
 | M53 | **[B4]** a tenant route opens `withTenant` inside the request transaction | TXH-5 (no answer within 5 s on PGlite, F25; or 2 transactions counted) |
 | M54 | **[B4]** a store function calls `set_config('app.role', 'platform', true)` | DBC-3 |
 | M55 | **[B6]** email_norm lowered with `toLowerCase()` on a Unicode text and the ASCII rule dropped | SU-5 (500 instead of 400), LI-4 |
@@ -1188,15 +1227,17 @@ of M1–M60 on a fresh clone (WF-02 1b).
 Before the deploy: the owner sets `SECRET_PEPPER` (without it every /api answer of production is 503, the demo
 included) and `SETUP_TOKEN_HASH` in Vercel, and makes the Neon restore point by the runbook. After it: `/setup.html`
 once, then he removes `SETUP_TOKEN_HASH` and redeploys. RELEASE-VALIDATOR reads the `__Host-sai_s` flags, the 404 of a
-second setup, the headers of the four pages, `GET /api/admin/audit/verify`, and probes C8: eleven logins with an unknown
+second setup, the headers of the four pages, `GET /api/admin/audit/verify`, **[R1]** the time of one login on
+production (the `ms` of its log line or the wall time of the call; when it is above about 0.6 s, the capacity of
+about 7 parallel logins named in section 7 is smaller, and the measured number is recorded), and probes C8: eleven logins with an unknown
 e-mail, each with another `X-Forwarded-For`, end with 429 on the eleventh (the platform overwrote the header).
 
 ---
 
 ## 15. What becomes outdated outside the project (DOC-UPDATER)
 
-- ARCH §5 scrypt N = 2^15 → 2^17 and the common-password check (0137 Addition N2a, N2b); REQ-114 description and c1
-  (О15).
+- ARCH §5 scrypt N = 2^15 → 2^17 and the common-password check (0137 Addition N2a, N2b); REQ-114 is already amended
+  (dfd23bc, О15).
 - ARCH §4 table list: + `password_resets`, `login_delays`, `login_failures`; users columns (totp_*, failed_since, reauth_*); org_members
   roles four (already a Plan amendment, 0127 И); ARCH §3 «zod» (C1); ARCH §2 file names (`auth/totp.js`, `auth/keys.js`,
   `http/schema.js`, `http/client-ip.js`, `db/auth-store.js`, `db/audit-store.js`, `db/health-read.js`, `db/grants.sql`);
@@ -1213,7 +1254,8 @@ e-mail, each with another `X-Forwarded-For`, end with 429 on the eleventh (the p
 ## 16. Questions for ORCH
 
 О1–О14 are answered by decisions/0137 (every recommendation taken); the design follows those answers and the Addition
-(B7, N2). Rows kept for the trace. Open after rework 01c: О15, О16 (at the end).
+(B7, N2); О15 and О16 by its Addition 2 (REQ-114 amended in dfd23bc: N = 2^17, `scrypt$17$8$1$`, 160 MiB; the
+common-password tests count under REQ-114 c1). Rows kept for the trace; none is open.
 
 | # | Question | Recommendation |
 | --- | --- | --- |
@@ -1231,8 +1273,8 @@ e-mail, each with another `X-Forwarded-For`, end with 429 on the eleventh (the p
 | О12 | A wrong `current` in POST /api/auth/password counts as a re-auth failure (changes `users.reauth_*`, not `password_hash` or the sessions of REQ-114 c3) | yes |
 | О13 | Re-auth tokens for ordinary users are issued (no route of theirs consumes one) rather than refused | yes |
 | О14 | The rehearsal job binds port 5433 for its Postgres and 18080 for the app on the GitHub runner (not this PC) | yes |
-| О15 | **[N2a]** REQ-114 (description «crypto.scrypt N = 2^15» and criterion 1 «a hash has the form `scrypt$15$8$1$<salt>$<hash>`») contradicts decisions/0137 Addition N2a (N = 2^17); the design uses 2^17 and `scrypt$17$8$1$`, so PW-1 as the criterion is written would be red. A micro-amendment of REQ-114 (the two places, the form of decisions/0079 item 5) before step 2 | the micro-amendment by REQ-ANALYST and REQ-VALIDATOR, as for the grants text |
-| О16 | **[N2b]** The common-password check is a test-named check (PW-4, SU-5, RS-2) under REQ-114 c1, not a criterion of its own (0137 Addition: «a named criterion of the tests, not of the requirement text»). Confirm that RELEASE-VALIDATOR reads PW-4 under c1 | yes |
+| О15 (answered: Addition 2, REQ-114 amended in dfd23bc) | **[N2a]** REQ-114 (description «crypto.scrypt N = 2^15» and criterion 1 «a hash has the form `scrypt$15$8$1$<salt>$<hash>`») contradicts decisions/0137 Addition N2a (N = 2^17); the design uses 2^17 and `scrypt$17$8$1$`, so PW-1 as the criterion is written would be red. A micro-amendment of REQ-114 (the two places, the form of decisions/0079 item 5) before step 2 | the micro-amendment by REQ-ANALYST and REQ-VALIDATOR, as for the grants text |
+| О16 (answered: Addition 2, under REQ-114 c1) | **[N2b]** The common-password check is a test-named check (PW-4, SU-5, RS-2) under REQ-114 c1, not a criterion of its own (0137 Addition: «a named criterion of the tests, not of the requirement text»). Confirm that RELEASE-VALIDATOR reads PW-4 under c1 | yes |
 
 ---
 
@@ -1244,11 +1286,11 @@ e-mail, each with another `X-Forwarded-For`, end with 429 on the eleventh (the p
   `auth.js`, `permission-matrix.golden.json`; new cases in existing files: texts (TX-11), ci-workflow (rehearsal rules),
   runbooks (RB-3), no-string-sql (SQL-3), logging (LG-2), selfcheck (SC-7), selfcheck-pg (SP-2), migrate (MG-6, MG-7).
 - Product files new: 37 (section 3): 0002, grants.sql, health-read, auth-store, audit-store, schema, csrf, auth-mw,
-  rate-limit, client-ip, keys, password, common-passwords.txt, sessions, reauth, lockout, setup, totp, services/audit, routes/auth,
+  rate-limit, client-ip, keys, password, common-passwords.js, sessions, reauth, lockout, setup, totp, services/audit, routes/auth,
   routes/admin, setup-token, uat-login, db-verify, 2 seeds, 2 docs, 4 pages, api.js and 4 page scripts); changed: 18
   (db/index, pg, pglite, tx, selfcheck, migrate, config, app, errors, routes/index, health, demo, api/index,
   .env.example, compose.yaml, README, app.yml, texts.js).
-- Mutants: 61 (section 13: M1–M60 and M37b).
+- Mutants: 62 (section 13: M1–M60, M37b and M52b).
 
 ---
 
@@ -1290,3 +1332,15 @@ The validator's own trials t3–t5 (its clone, `<scratch>/m2auth-01b`) gave the 
 | N5 roles on another server | 6.4 (4) | RB-3 (the runbook text) | — | — |
 | N6 uncounted late refusals | 7 | — (named) | — | — |
 | H1 grants names | 4.2.4 | MG-7 | M49 | — |
+
+Rework 01f (handoff `handoffs/M2AUTH-20261123-01/step-01f-code-designer.json`, pass-2 findings of
+`step-01e-code-design-validator.json`, decisions/0137 Addition 2 and ORCH's answers R1–R4 in the handoff):
+
+| Finding | Sections changed | Tests added or changed | Mutants | Measured here |
+| --- | --- | --- | --- | --- |
+| P1 the list as a module | C20, 3, 4.9.2, 9.1 PW-4, 11 A21, 12 B6, 17 | PW-4 (the module's header, export and entries) | M60 (list not consulted) | F32 (the prettier form) |
+| P2 no lock on the admin's users row | C16, 4.2.1 `login_delays.fails ≥ 0`, 4.9.5, 8, 9.1 c5 | AUTH-RACE-3 (one address), AUTH-RACE-4 (other addresses, a right login from a clean one: 200 within 4 s) | M52 restated, M52b | not measurable here (no Postgres); the pg job |
+| R1 one vCPU | 4.9.2, 7, 14 | — (post-deploy measure) | — | F32 |
+| R2 MIT notice | 4.9.2 | PW-4 | — | — |
+| R3 traces over the list | 4.9.2, 12 B6 | traces (step 10) | — | — |
+| R4 no 503 after COMMIT | 4.5.2 item 4 | ADD-2 (commit in flight) | M37b | — |

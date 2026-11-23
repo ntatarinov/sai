@@ -1,0 +1,88 @@
+{
+  "handoff_id": "step01f-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "01f",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/M2AUTH-20261123-01/step-01f-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2AUTH-20261123-01/step-01e-code-design-validator.json (pass 2 FAIL: P1, P2 blocking; R1-R4)",
+      "decisions/0137 (last line: the list as app/server/auth/common-passwords.js)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-01c-code-designer.json",
+    "orch_answers": {
+      "R1": "Name the capacity in §7 and the post-deploy steps: on one Hobby vCPU about 7 parallel logins fit the 4 s deadline; above that the answer is 503; accepted for an invite-only V1.",
+      "R2": "The full MIT notice in the header of common-passwords.js.",
+      "R3": "traces runs over the list before it is committed (a sub-step line).",
+      "R4": "Say it: once COMMIT is sent the deadline answer is switched off; a committed transaction is never answered 503."
+    },
+    "write_set": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md",
+      "handoffs/M2AUTH-20261123-01/step-01f-code-designer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 1 rework 01f, CODE-DESIGNER: P1 — the list becomes the module app/server/auth/common-passwords.js everywhere (C20, §3, 4.9.2, PW-4, B6, §17); P2 — no lock on the admin's users row: lock the per-address login_delays row instead (insert … on conflict do nothing, then select … for update), add the pg case that parallel wrong admin attempts from other addresses do not delay a right login from a clean address, restate M52 against that row; R1-R4 as context.orch_answers say. Re-measure on your sketch what this PC can show. Verify traces 0, handoffs-check 0. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:41:09Z",
+  "started_at": "2026-11-23T18:41:11Z",
+  "completed_at": "2026-11-23T18:46:13Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 01f of docs/design/M2AUTH-accounts-tenancy-backup.md (base 043c612) by the pass-2 findings P1, P2 and ORCH's answers R1-R4. P1: the common-password list is the module app/server/auth/common-passwords.js (one frozen export COMMON_PASSWORDS, imported by password.js, no fs read; header with source, commit and the full MIT text), everywhere (C20, §3, 4.9.2, PW-4, A21, B6, §17); import-boundaries IB-1 stays unchanged and green. P2: the admin's users row is never locked at login; the per-address login_delays row is locked (insert … on conflict do nothing, then select … for update); ordinary accounts lock their users row by id after an unlocked read; new pg case AUTH-RACE-4 (six wrong admin logins from six addresses do not delay a right login from a seventh clean address: 200 within 4 s); M52 restated against the delay row, M52b (the admin users row locked) added. R1 capacity on 1 vCPU (about 7 parallel logins in 4 s, then 503) in 4.9.2, §7 and the post-deploy record; R2 full MIT notice; R3 traces run over the list before the commit (sub-step B6); R4 the deadline answer is switched off once COMMIT is sent, with an ADD-2 case. 32 of 32 criteria mapped; 62 mutants; no open question (О15, О16 answered by decisions/0137 Addition 2).",
+    "changes": [
+      {
+        "remark": "P1",
+        "text": "C20, §3 file row, 4.9.2 (the module form: header block comment with source, commit, generation rules and the full MIT text; `export const COMMON_PASSWORDS = Object.freeze([...])`, one double-quoted string per line; entries 10-128 code points, lower case, printable ASCII without quote or backslash, unique, sorted; password.js builds a private Set), §9.1 PW-4 reads the module, §11 A21 (IB-1 green: every new server file is .js), §12 B6, §17 count line; F32 (prettier --check passes on a generated sample)"
+      },
+      {
+        "remark": "P2",
+        "text": "4.9.5 rewritten for the admin: no lock on his users row; login_delays row inserted with fails 0 and locked for update; update fails+1 and next_at = now + min(2^fails, 60) s on the locked row; success deletes the row; ordinary account: unlocked read, then users row for update by id with status re-read; lock-order paragraph (at most one counter-row lock per request); 4.2.1 login_delays.fails ≥ 0; C16; §8; §9.1 c5 AUTH-RACE-3 (one address) and new AUTH-RACE-4; §13 M52 restated, M52b added; §1 the not-measurable note"
+      },
+      {
+        "remark": "R1",
+        "text": "4.9.2 capacity (1 vCPU: about 7 parallel logins within 4 s, F32), §7 row (above that 503, accepted for an invite-only V1), §14 post-deploy: measure one login's time on production"
+      },
+      {
+        "remark": "R2",
+        "text": "4.9.2 and PW-4: the full MIT licence text with its copyright line in the module header"
+      },
+      {
+        "remark": "R3",
+        "text": "4.9.2 and §12 B6: `cd tools && npm run -s traces` with the module in the tree before the commit, entries dropped until 0 traces"
+      },
+      {
+        "remark": "R4",
+        "text": "4.5.2 item 4: once COMMIT is sent the deadline answer is switched off, a committed transaction is never answered 503; ADD-2 case with COMMIT in flight past the deadline → 200"
+      },
+      {
+        "remark": "all",
+        "text": "header note of rework 01f; §0 counts (62 mutants, no open question); Q12; §15; §16 О15 and О16 marked answered by Addition 2; §19 table of 01f; stale text searched (common-passwords.txt, the admin row lock, 61 mutants): none left"
+      }
+    ],
+    "self_check": [
+      "UV_THREADPOOL_SIZE=1 node sketch/t8-list.mjs 8 on <scratch>/m2auth-01/sai/app (2026-11-23T18:42:17Z): eight parallel scrypt 2^17 on one thread end at [534,1059,1577,2103,2657,3240,3870,4503] ms; with 4 threads [619,656,648,619,1186,1247,1299,1288]; the clone's prettier --check on the generated sample common-passwords.js → «All matched files use Prettier code style!», exit 0",
+      "P2 (other addresses do not delay a clean right login once only the per-address row is locked) is not measurable on this PC (no Postgres; PGlite serialises transactions): only the pg job shows it (AUTH-RACE-4)",
+      "Read: handoffs/M2AUTH-20261123-01/step-01e-code-design-validator.json (P1, P2, R1-R4); decisions/0137 Addition 2 (О15, О16, the list as a .js module); git log: dfd23bc amended REQ-114 (N = 2^17), 043c612 holds the design of rework 01c",
+      "cd tools && npm run -s traces → exit 0, «traces: файлов проверено 3013, следов 0, пропущено 67»; cd tools && npm run -s handoffs-check → exit 0 after this result was filled",
+      "Not run on this PC by decisions/0110 and 0129: npm run check, any app test, node --test, e2e"
+    ],
+    "issues": [],
+    "prototype": "Outside the project: <scratch>/m2auth-01/sai (the fresh clone of base/M2AUTH-20261123-01 with npm ci in app/); app/sketch/ holds the earlier trials and, new in rework 01f, t8-list.mjs (one-thread scrypt timing and a generated sample of the list module, written to app/sketch/out/ of the clone). No server was started; no port 4780, 4781, 4782 or 4790 was touched.",
+    "artifacts_out": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md"
+    ]
+  }
+}
