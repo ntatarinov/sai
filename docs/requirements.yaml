@@ -16883,31 +16883,35 @@ requirements:
       `__Host-sai_s` (Secure, HttpOnly, SameSite=Lax, Path=/, no Domain) when APP_ORIGIN is https, and the plain
       `sai_s` (HttpOnly, SameSite=Lax, Path=/) only when APP_ORIGIN is `http://127.0.0.1:<port>`; the database holds
       HMAC-SHA256(SECRET_PEPPER, token) and a CSRF hash; idle 12 h, absolute 7 days; rotated at login; a password
-      change revokes every other session. CSRF: every non-GET request needs `Origin` equal to APP_ORIGIN and
-      `Content-Type: application/json`; every non-GET request of a signed-in user also needs `x-sai-csrf` equal to the
-      session's CSRF token, returned by GET /api/auth/me. Re-auth: POST /api/auth/reauth {password, purpose, totp?} →
-      a token of 5 minutes, single use, bound to the user, the session and the purpose; the purposes are the closed
-      list of ARCH §5 plus those this program adds, written as one table in the code design. Lockout: an ordinary
-      account → 5 wrong passwords within 15 minutes lock it for 15 minutes; the platform admin → never locked, the
-      per-IP delay 1, 2, 4 … 60 s; re-auth failures have their own counter (5 → re-auth refused for 15 minutes) and
-      never touch the login counter. Rate limits (ARCH §14.3, fixed windows in rate_limits, keys
-      HMAC(SECRET_PEPPER, client IP)): login 10 per 15 minutes per IP, setup 5 per hour per IP, other user routes 600
-      per 10 minutes per session; 429 with Retry-After. The client IP is the socket address on the Node server and
-      the one platform header the code design names on Vercel (never a header a client can set on the Node server).
-      Bootstrap: `node scripts/setup-token.js` prints a one-time token and its sha256 and writes nothing; only
-      SETUP_TOKEN_HASH goes into the host environment; POST /api/auth/setup compares sha256 digests with
-      crypto.timingSafeEqual, creates the platform admin (is_platform_admin and is_owner_identity true), the owner
-      organisation (kind owner, ai_allowed true) and his membership org_owner, sets setup_done, and answers the
-      uniform 404 forever after. Reset link (ARCH §5, G16 default): POST /api/admin/users/:id/reset-link with a re-auth
-      token → a one-time code of 128 bits, 30 minutes, stored as HMAC, shown once to the admin; using it sets a new
-      password and revokes every session of that user. TOTP (ARCH §5, G20): RFC 6238, SHA-1, 30 s steps, 6 digits,
-      ±1 step, a used code refused again in its step, `node:crypto` only (no QR library: the page shows the key and
-      the otpauth address as text), the secret stored only encrypted with a key derived from SECRET_PEPPER, ten
-      one-time recovery codes shown once and stored as HMAC (the recommended answer of open question О9), required at
-      login and re-auth only after the admin confirmed the enrolment with a valid code; only the platform admin can
+      change revokes every other session. CSRF (decisions/0135, ORCH answer F1 of step 01c): the rule covers the
+      routes whose route-table metadata says they use the session cookie (the metadata key `session` of REQ-115
+      criterion 6): the auth, tenant and admin routes, setup and login. The released public route POST
+      /api/demo/result keeps its own rules of REQ-111 criterion 7 and the worker routes of REQ-118 use the Bearer
+      worker token and no cookie, so both stand outside this rule by the same metadata. Every non-GET request of a
+      covered route needs `Origin` equal to APP_ORIGIN and `Content-Type: application/json`; every such request of a
+      signed-in user also needs `x-sai-csrf` equal to the session's CSRF token, returned by GET /api/auth/me. Re-auth:
+      POST /api/auth/reauth {password, purpose, totp?} → a token of 5 minutes, single use, bound to the user, the
+      session and the purpose; the purposes are the closed list of ARCH §5 plus those this program adds, written as
+      one table in the code design. Lockout: an ordinary account → 5 wrong passwords within 15 minutes lock it for 15
+      minutes; the platform admin → never locked, the per-IP delay 1, 2, 4 … 60 s; re-auth failures have their own
+      counter (5 → re-auth refused for 15 minutes) and never touch the login counter. Rate limits (ARCH §14.3, fixed
+      windows in rate_limits, keys HMAC(SECRET_PEPPER, client IP)): login 10 per 15 minutes per IP, setup 5 per hour
+      per IP, other user routes 600 per 10 minutes per session; 429 with Retry-After. The client IP is the socket
+      address on the Node server and the one platform header the code design names on Vercel (never a header a client
+      can set on the Node server). Bootstrap: `node scripts/setup-token.js` prints a one-time token and its sha256 and
+      writes nothing; only SETUP_TOKEN_HASH goes into the host environment; POST /api/auth/setup compares sha256
+      digests with crypto.timingSafeEqual, creates the platform admin (is_platform_admin and is_owner_identity true),
+      the owner organisation (kind owner, ai_allowed true) and his membership org_owner, sets setup_done, and answers
+      the uniform 404 forever after. Reset link (ARCH §5, G16 default): POST /api/admin/users/:id/reset-link with a
+      re-auth token → a one-time code of 128 bits, 30 minutes, stored as HMAC, shown once to the admin; using it sets
+      a new password and revokes every session of that user. TOTP (ARCH §5, G20): RFC 6238, SHA-1, 30 s steps, 6
+      digits, ±1 step, a used code refused again in its step, `node:crypto` only (no QR library: the page shows the
+      key and the otpauth address as text), the secret stored only encrypted with a key derived from SECRET_PEPPER,
+      ten one-time recovery codes shown once and stored as HMAC (the recommended answer of open question О9), required
+      at login and re-auth only after the admin confirmed the enrolment with a valid code; only the platform admin can
       enrol. Every auth event writes one audit row through the audit writer of REQ-115 (ARCH §14.5), with closed keys
-      only. The texts of the lock and limit answers name no duration, because the public word lists (REQ-111
-      criterion 3, app/scripts/word-lists.js, lists В and Ц) ban «минут» and «дней» in every value of texts.js.
+      only. The texts of the lock and limit answers name no duration, because the public word lists (REQ-111 criterion
+      3, app/scripts/word-lists.js, lists В and Ц) ban «минут» and «дней» in every value of texts.js.
 
       Files (from the root of Sai; new unless said): app/server/auth/password.js, sessions.js, reauth.js, lockout.js,
       setup.js, totp.js (five of the six names of ARCH §2 plus totp.js; invites.js is REQ-116); app/server/http/csrf.js,
@@ -16931,25 +16935,27 @@ requirements:
       app/test/unit/npmrc.test.js criterion 1 of REQ-108).
 
       Guard tests of earlier requirements, "was → became" (grep of app/test and tools/test on 2026-11-23 for the
-      migration names, the page lists, the test-file lists, readdir walks and env names; the code design completes
-      the table by its own grep, AP-068, AP-112): (1) app/test/unit/npmrc.test.js INT_FILES, PG_FILES, E2E_FILES and
+      migration names, the page lists, the test-file lists, readdir walks and env names; the code design completes the
+      table by its own grep, AP-068, AP-112): (1) app/test/unit/npmrc.test.js INT_FILES, PG_FILES, E2E_FILES and
       E2E_TESTS: was the M1 lists → became the same lists plus the files and test ids of this work, so the guard
       protects them; ENV-1 of the same file stays as it is (the new names go into app/.env.example). (2)
-      app/test/unit/public-build.test.js PB-6 (`assert.deepEqual(pages, ["404.html", … "index.html"])` over the .html
-      files of app/public) and its PAGES and CHANGED lists, app/test/unit/public-pages.test.js PAGES and the page
-      lists of app/test/unit/forbidden-words.test.js: was the six M1 pages → became the six plus the new pages of this
-      work, each with the regions and checks the code design gives them; the six pages keep their checks. (3)
-      app/test/unit/vercel-config.test.js VC-1 (the four rules of app/vercel.json, REQ-109 criterion 1): unchanged if
-      the pages are served by their .html names; if the code design serves clean addresses such as /setup and
-      /login, the table of app/vercel.json and VC-1 change by one row of this table in the design. (4)
-      app/test/unit/docker-files.test.js and app/test/unit/runbooks.test.js: unchanged unless the design changes
-      app/compose.yaml (a generated SECRET_PEPPER) or docs/runbooks/*.md (the owner's bootstrap steps); then one row
-      each. (5) app/test/int/logging.test.js LG-1 stays as it is; the cases of criterion 12 are added. (6)
-      app/test/unit/import-boundaries.test.js and app/test/unit/no-string-sql.test.js: unchanged (node:crypto is
-      allowed; zod is in SERVER_PACKAGES; a new runtime dependency needs an Addition to decisions/0001 and the list of
-      REQ-108 criterion 1). (7) app/test/e2e/landing.test.js DEMO_ROUTES: unchanged (no public page calls an auth
-      route). tools/test: no guard reads app/ auth files (grep on 2026-11-23: only tools/test/e2e/kit/find-chrome.js
-      and tools/test/e2e-kit.test.js name app/, for the Chrome path).
+      app/test/unit/public-build.test.js PB-6 (the .html files of app/public without gate.html, asserted as the five
+      names 404.html, demo.html, examples.html, how.html, index.html) and its PAGES and CHANGED lists: was those five
+      (gate.html filtered out) → became the five plus the new pages of this work, which enter the list and are not
+      filtered, each with the regions and checks the code design gives them; app/test/unit/public-pages.test.js PAGES
+      (the six M1 pages with gate.html) and the page lists of app/test/unit/forbidden-words.test.js: was the six →
+      became the six plus the new pages; the M1 pages keep their checks. (3) app/test/unit/vercel-config.test.js VC-1
+      (the four rules of app/vercel.json, REQ-109 criterion 1): unchanged if the pages are served by their .html
+      names; if the code design serves clean addresses such as /setup and /login, the table of app/vercel.json and
+      VC-1 change by one row of this table in the design. (4) app/test/unit/docker-files.test.js and
+      app/test/unit/runbooks.test.js: unchanged unless the design changes app/compose.yaml (a generated SECRET_PEPPER)
+      or docs/runbooks/*.md (the owner's bootstrap steps); then one row each. (5) app/test/int/logging.test.js LG-1
+      stays as it is; the cases of criterion 12 are added. (6) app/test/unit/import-boundaries.test.js and
+      app/test/unit/no-string-sql.test.js: unchanged (node:crypto is allowed; zod is in SERVER_PACKAGES; a new runtime
+      dependency needs an Addition to decisions/0001 and the list of REQ-108 criterion 1). (7)
+      app/test/e2e/landing.test.js DEMO_ROUTES: unchanged (no public page calls an auth route). tools/test: no guard
+      reads app/ auth files (grep on 2026-11-23: only tools/test/e2e/kit/find-chrome.js and tools/test/e2e-kit.test.js
+      name app/, for the Chrome path).
 
       Replaces: none in this run (the old blocks REQ-018 and the lockout rules of REQ-089 are listed in
       result.rescoped of the handoff; DOC-UPDATER sets their status later, PLAN §4.2, open question О14).
@@ -17008,14 +17014,19 @@ requirements:
         GET /api/auth/me answers the user's id, name, language, the platform-admin flag, the memberships and the CSRF
         token, and its body holds no password hash, token hash, CSRF hash or TOTP field.
       - >-
-        CSRF and Origin. Test app/test/int/auth-csrf.test.js (created by this work): for every route of the real
-        route table whose method is not GET (read from app/server/routes/index.js at test time; a route without a case
-        fails the test; the number of cases is printed and is greater than 0): a foreign `Origin` and a missing
-        `Origin` → 403; a `Content-Type` other than `application/json` → 415; for a signed-in caller a missing
-        `x-sai-csrf`, the CSRF token of another session and a changed last character → 403; after each refused call
-        the row counts of every table and the sha256 of every row of users, auth_sessions, reauth_tokens, orgs,
-        org_members and audit_log are unchanged. Every GET route of the table changes no row of any table except
-        auth_sessions.last_seen_at, rate_limits and audit_log (the same dump before and after).
+        CSRF and Origin. Test app/test/int/auth-csrf.test.js (created by this work): for every route of the real route
+        table whose method is not GET and whose metadata `session` is true (read from app/server/routes/index.js at
+        test time; a route without a case fails the test; the number of cases is printed and is greater than 0): a
+        foreign `Origin` and a missing `Origin` → 403; a `Content-Type` other than `application/json` → 415; for a
+        signed-in caller a missing `x-sai-csrf`, the CSRF token of another session and a changed last character → 403;
+        after each refused call the row counts of every table and the sha256 of every row of users, auth_sessions,
+        reauth_tokens, orgs, org_members and audit_log are unchanged. Outside the rule: every non-GET route of the
+        table with `session` false is POST /api/demo/result or a worker route (/api/worker/*); any other such route
+        fails the test; POST /api/demo/result called without `Origin` and with a text body answers as before this work
+        (200 and the answer of REQ-111 criterion 7 for a fixture of the test), and the released tests that call it
+        this way (app/test/int/demo.test.js, app/test/int/demo-parity.test.js, app/test/e2e/landing.test.js,
+        app/test/e2e/stage.test.js) stay unchanged and green. Every GET route of the table changes no row of any table
+        except auth_sessions.last_seen_at, rate_limits and audit_log (the same dump before and after).
       - >-
         Lockout and the admin delay. Test app/test/int/auth-lockout.test.js (created by this work), with the clock
         injected: an ordinary account after 5 wrong passwords within 15 minutes refuses the sixth attempt, also with
@@ -17077,12 +17088,17 @@ requirements:
         UAT login script (AC2.6 part; open question О2). Test app/test/int/uat-login.test.js (created by this work),
         against a local server on port 0 with an owner-identity user made by the test: `node scripts/uat-login.js
         --base <url> --out <file outside the repository>` reads the e-mail and the password in-process from the secret
-        file named by SAI_UAT_IDENTITY_FILE, signs in, writes one session-state file at --out and prints only its path;
-        the stdout and stderr of the run hold neither the planted password nor the session token; it exits 1 with one
-        line and writes no file when the secret file lies inside the repository, is a symbolic link, is missing, holds
-        a wrong password, or when --out lies inside the repository; the script never reads a Keychain and starts no
-        child process (`grep -nE 'node:child_process|find-generic-password' app/scripts/uat-login.js` prints nothing;
-        the self-check of the test plants `import cp from "node:child_process"` in a copy and sees the grep find it).
+        file named by SAI_UAT_IDENTITY_FILE, signs in, writes one session-state file at --out and prints only its
+        path; the stdout and stderr of the run hold neither the planted password nor the session token; it exits 1
+        with one line and writes no file when the secret file lies inside the repository, is a symbolic link, is
+        missing, holds a wrong password, when --out lies inside the repository, and, on POSIX, when the mode of the
+        secret file lets group or others read it (decisions/0135 О2; the test sets mode 0640 and 0604 on a copy and
+        expects the refusal, and 0600 works); the mode case runs where POSIX modes exist, that is in the Linux CI jobs
+        of app.yml, where every app test runs (decisions/0110), and the test holds no skip or todo form (REQ-108
+        criterion 2): on a system without POSIX modes it takes the branch the code design names and still checks the
+        other refusals; the script never reads a Keychain and starts no child process (`grep -nE
+        'node:child_process|find-generic-password' app/scripts/uat-login.js` prints nothing; the self-check of the
+        test plants `import cp from "node:child_process"` in a copy and sees the grep find it).
       - >-
         Logs without personal data (AC2.7). Test app/test/int/logging.test.js (existing; the cases are added by this
         work, LG-1 unchanged): after setup, a right and a wrong login, logout, a password change, re-auth, a TOTP
@@ -17101,12 +17117,17 @@ requirements:
         app/public/404.html app/public/gate.html app/public/office` prints nothing (<RUN-ID> is the run of task M2.2).
       - >-
         Guard table and both checks. The rows (1) to (7) of the guard table above are done as written, and no other
-        test of app/test or tools/test changes; `cd app && npm ci && npm run check` → exit 0 with the counts rule of
-        REQ-108 criterion 2; the jobs check, pg, docker and e2e of .github/workflows/app.yml are green on the snapshot
-        of the run on GitHub (decisions/0110: read with `gh run view`); `cd tools && npm run traces` → exit 0; the
-        result of the SECURITY-REVIEWER step of the run (handoffs/<RUN-ID>/, step 3) lists no open finding of severity
-        Critical or High and answers the OWASP ASVS 4.0.3 chapters V2 (authentication) and V3 (session management) row by row
-        as the code design lists them.
+        test of app/test or tools/test changes; On GitHub (decisions/0110), with the commit of the work on a temporary
+        ci/* branch: `gh run list --workflow app.yml --branch <that branch> --limit 1 --json conclusion,headSha` →
+        success on that sha (the jobs check, pg, docker and e2e), and check.yml green on the same sha; the job log
+        holds, for each test step of app (unit, int, pg, e2e), «# tests N», «# fail 0», «# skipped 0» and «# todo 0»,
+        with N not below the count of that folder in the log of the last green app.yml run before this work plus the
+        tests this work adds, as its step handoffs name them (REQ-108 criterion 2, AP-143, AP-170); on this computer
+        no app check, no test and no e2e is run (decisions/0110, 0129), and `cd tools && npm run traces` → exit 0 and
+        `cd tools && npm run -s handoffs-check` → exit 0; the result of the SECURITY-REVIEWER step of the run
+        (handoffs/<RUN-ID>/, step 3) lists no open finding of severity Critical or High and answers the OWASP ASVS
+        4.0.3 chapters V2 (authentication) and V3 (session management) row by row as the code design lists them (this
+        handoff stands for the record docs/uat/<RUN-ID>-security.md that the audit, chapter 10 stage 2, names).
   # 2026-11-23T16:34:49Z, run M2ACCT-20261123-01, WF-01 step 1 lane A (REQ-ANALYST): R2.3 of PUBLIC-V1 (decisions/0091, 0127 И, 0133, 0134); English by the owner's answer G18
   - id: REQ-115
     title: Tenancy — the four organisation roles of decisions/0127 И, forced row-level security on every table with org_id, the tx.js helpers, the role selfcheck that also refuses a table owner, route metadata, the isolation suite with three organisations, the permission matrix, the append-only audit log with its hash chain and docs/security-invariants.md (PUBLIC-V1, R2.3)
@@ -17127,14 +17148,17 @@ requirements:
       What the owner and the client get. The data of one organisation is never seen or changed by another, at two
       walls: the API (the organisation comes from the session or the resource row, a foreign object answers exactly
       like a missing one) and the database (row-level security enabled and forced on every table with an org_id
-      column, behind `SET LOCAL ROLE sai_app`). The first real client's idea is therefore invisible to everyone but his
-      organisation and the platform admin. Every action that matters lands in one append-only audit log whose hash
+      column, behind `SET LOCAL ROLE sai_app`). The first real client's idea is therefore invisible to everyone but
+      his organisation and the platform admin. Every action that matters lands in one append-only audit log whose hash
       chain shows any later change. Program PUBLIC-V1, milestone M2, requirement R2.3, task M2.2 (WF-02 FULL together
       with REQ-114). Design pointers: ARCHITECTURE.md §0 item 3, §1.2 (TB2), §4 «Conventions», «Roles and row-level
       security», the audit_log row and «Audit chain», §5 «Separation», §13 (route metadata), §14.5, §14.7, §18; the
       audit docs/audits/SAI-ARCHITECTURE-AUDIT.md chapter 10, stages 1 and 2 (the criteria named there are taken in
-      criteria 1, 6, 7, 9, 10 and 11; their test names are kept where the audit names them, except
-      `uniform-404.test.js`, whose checks stand in app/test/int/isolation.test.js).
+      criteria 1, 6, 7, 9, 10 and 11; their test names are kept where the audit names them, except two (decisions/0135
+      О16): `rls-completeness.test.js`, whose check stands in app/test/pg/rls.test.js, and `uniform-404.test.js`,
+      whose checks stand in app/test/int/isolation.test.js; the audit's «a check command in every row» of
+      docs/security-invariants.md is the test file and test name of the row, and its record
+      docs/uat/<RUN-ID>-security.md is the SECURITY-REVIEWER handoff of the run, criteria 11 and 12).
 
       Roles (decisions/0127 И, the plan amendment of 2026-11-22T08:20:00Z). org_members.role is one of `org_owner`,
       `org_admin`, `member`, `viewer` from migration 0002; the platform admin stays the attribute users.is_platform_admin
@@ -17161,9 +17185,12 @@ requirements:
 
       Files (from the root of Sai; new unless said): app/db/migrations/0002_identity.sql (with REQ-114);
       app/server/db/tx.js and app/server/db/selfcheck.js (changed); app/server/http/auth-mw.js (with REQ-114: the
-      enforcement of the metadata tenant, admin, reauth, worker, rateLimit); app/server/routes/index.js (changed: the
-      metadata keys of ARCH §13 on every route); app/server/services/audit.js (the name may change in the design; one
-      file); the verify route in the admin routes file the design names; docs/security-invariants.md;
+      enforcement of the metadata tenant, admin, reauth, worker, session, rateLimit; `session` marks the routes that
+      use the session cookie and fall under the CSRF rule of REQ-114); app/server/routes/index.js (changed: the
+      metadata keys of ARCH §13 and the key `session` on every route); app/server/routes/health.js (changed: its read
+      of schema_migrations moves under app/server/db/, so the one place of database calls holds; its answers stay as
+      REQ-108 and REQ-109 give them); app/server/services/audit.js (the name may change in the design; one file); the
+      verify route in the admin routes file the design names; docs/security-invariants.md;
       app/test/fixtures/permission-matrix.golden.json; the tests named in the criteria. Not changed: tools/.
 
       Not covered: the routes of projects, invites and the board (REQ-116, REQ-117; their cases enter the suites of
@@ -17182,10 +17209,12 @@ requirements:
       0001 only → became the names of every migration file in order, joined by newlines, and the test's expected line
       follows the workflow line. (4) app/test/int/health.test.js, the planted pending `0002_more.sql`: was the number
       0002 → became a number above every real file (for example `9999_more.sql`), so it stays the only pending one.
-      (5) app/test/int/selfcheck.test.js and app/test/pg/selfcheck-pg.test.js: every existing case keeps its input
-      and its answer; the cases of criterion 5 are added. (6) app/test/unit/npmrc.test.js INT_FILES, PG_FILES: plus
-      the files of this work. (7) app/test/unit/no-string-sql.test.js and app/test/unit/import-boundaries.test.js:
-      unchanged. tools/test: no guard (grep on 2026-11-23).
+      (5) app/test/int/selfcheck.test.js and app/test/pg/selfcheck-pg.test.js: every existing case keeps its input and
+      its answer; the cases of criterion 5 are added. (6) app/test/unit/npmrc.test.js INT_FILES, PG_FILES: plus the
+      files of this work. (7) app/test/unit/no-string-sql.test.js and app/test/unit/import-boundaries.test.js:
+      unchanged. (8) app/test/int/health.test.js: every case keeps its input and its answer after the read of
+      app/server/routes/health.js moves under app/server/db/ (row (4) changes only the planted name). tools/test: no
+      guard (grep on 2026-11-23).
 
       Replaces: none in this run (REQ-065 and the first part of REQ-101 are listed in result.rescoped, open question
       О14). Bar: Q8 — criteria 2, 3, 7, 8 and 9 (this block is the Q8 wall of M2); Q9 — criterion 4 and
@@ -17200,9 +17229,9 @@ requirements:
         app.yml): every table of the public schema with an org_id column, read from information_schema at test time,
         has pg_class.relrowsecurity and relforcerowsecurity true and at least one policy that applies to sai_app; the
         count of such tables is printed and is at least 3 after 0002 (org_members, invites, audit_log; orgs is checked
-        by its id column with the same rule) and at least 5 after 0003 (plus projects and idea_versions); a copy of the schema in a fresh test database with one planted table that has org_id and no RLS makes
-        the check report that table by name; no table of the public schema is owned by sai_app, sai_preview or
-        sai_app_login.
+        by its id column with the same rule; the count after 0003 is REQ-117 criterion 2); a copy of the schema in a
+        fresh test database with one planted table that has org_id and no RLS makes the check report that table by
+        name; no table of the public schema is owned by sai_app, sai_preview or sai_app_login.
       - >-
         Isolation in the database with three organisations. Test app/test/pg/rls.test.js: organisations A, B and C
         each get rows in every tenant table of the list of criterion 1 (a listed table without a fixture row fails the
@@ -17219,16 +17248,19 @@ requirements:
         'tenant' returns 0 rows and with app.role 'platform' returns every row; the row count is unchanged after each
         refused statement.
       - >-
-        tx.js helpers and the one place of database calls. Test app/test/int/tx.test.js (created by this work, PGlite):
-        withTenant with a value that is not a uuid (an empty string, `org`, a uuid with one character changed to `g`)
-        throws before any statement (the adapter counts 0 statements); inside withTenant(A) `select current_user`
-        answers sai_app and current_setting('app.org_id', true) answers A and current_setting('app.role', true) answers
-        'tenant'; inside withPlatform() app.role answers 'platform'; after the transaction the same connection answers
-        the login role and an empty app.org_id; a throw inside the callback rolls back every statement of it (row
-        counts unchanged). Test app/test/unit/db-calls.test.js (created by this work): a walk of every .js file of
-        app/server and app/api finds a database call (the forms the code design lists: `.query(`, `.exec(` and the
-        adapter's transaction method on a database object) only under app/server/db/; planted copies of one call in
-        app/server/services/x.js and in app/server/routes/x.js are each reported by path.
+        tx.js helpers and the one place of database calls. Test app/test/int/tx.test.js (created by this work,
+        PGlite): withTenant with a value that is not a uuid (an empty string, `org`, a uuid with one character changed
+        to `g`) throws before any statement (the adapter counts 0 statements); inside withTenant(A) `select
+        current_user` answers sai_app and current_setting('app.org_id', true) answers A and
+        current_setting('app.role', true) answers 'tenant'; inside withPlatform() app.role answers 'platform'; after
+        the transaction the same connection answers the login role and an empty app.org_id; a throw inside the
+        callback rolls back every statement of it (row counts unchanged). Test app/test/unit/db-calls.test.js (created
+        by this work): a walk of every .js file of app/server and app/api finds a database call (the forms the code
+        design lists: `.query(`, `.exec(` and the adapter's transaction method, matched on a database object only, so
+        the `.exec(` of a regular expression, as in app/server/config.js, is no database call) only under
+        app/server/db/; the released app/server/routes/health.js is no exception (its read moves under
+        app/server/db/); planted copies of one call in app/server/services/x.js and in app/server/routes/x.js are each
+        reported by path.
       - >-
         Role selfcheck refuses a table owner. Test app/test/int/selfcheck.test.js (existing; the cases are added by this
         work, every existing case unchanged) and app/test/pg/selfcheck-pg.test.js (existing; the same): when the role of
@@ -17238,27 +17270,34 @@ requirements:
         selfcheck, so this case is red there (AP-071).
       - >-
         Route metadata. Test app/test/unit/route-table.test.js (created by this work): every route of the real route
-        table has a meta object with exactly the keys tenant, admin, reauth, worker and rateLimit, each with a value
-        of the type the code design gives; a planted table where a route lacks one key, or has an extra key, is
-        reported; with a planted route marked admin, a signed-in ordinary user and an anonymous caller get 404
+        table has a meta object with exactly the keys tenant, admin, reauth, worker, session and rateLimit, each with
+        a value of the type the code design gives; a planted table where a route lacks one key, or has an extra key,
+        is reported; with a planted route marked admin, a signed-in ordinary user and an anonymous caller get 404
         byte-equal (except `Date` and `X-Request-Id`) to an unknown /api address; with a planted route marked reauth,
-        a call without a re-auth token gets 403.
+        a call without a re-auth token gets 403; `session` is false for POST /api/demo/result, GET
+        /api/demo/questionnaire, GET /api/health and the worker routes, and true for every non-GET route of the table
+        besides POST /api/demo/result and the worker routes (REQ-114 criterion 4).
       - >-
         Route-level isolation suite (AC2.1, open questions О6 and О7). Test app/test/int/isolation.test.js (created by
-        this work): it reads every route with `tenant: true` from the real route table at test time; for each it
-        calls the route as a member of organisation B with the id of an object of organisation A and with a random
-        uuid that no row has, and both answers are 404 with bodies and headers byte-equal except `Date` and
-        `X-Request-Id`; an anonymous call answers 401; a tenant route without a case fails the test; the number of cases
-        is printed. Besides the real table, the same suite runs on a planted table of two test-only tenant routes, one
-        that reads its object with the organisation of the session and one that reads it by id alone: the suite is
-        green on the first and red on the second. (On the routes of this run the printed count may be 0; the count on
-        the real table greater than 0 is REQ-117 criterion 4.)
+        this work): it reads every route with `tenant: true` from the real route table at test time; for each such
+        route that takes an object id it calls the route as a member of organisation B with the id of an object of
+        organisation A and with a random uuid that no row has, and both answers are 404 with bodies and headers
+        byte-equal except `Date` and `X-Request-Id`; an anonymous call answers 401; for each tenant route without an
+        object id (a list or a create) the case checks that the answer of a member of B holds no id and no name of an
+        object of A, and that a row it creates carries B's org_id (read back); a tenant route without a case fails the
+        test; the number of cases is printed. Besides the real table, the same suite runs on a planted table of two
+        test-only tenant routes, one that reads its object with the organisation of the session and one that reads it
+        by id alone: the suite is green on the first and red on the second. (On the routes of this run the printed
+        count may be 0; the count on the real table greater than 0 is REQ-117 criterion 4.)
       - >-
-        The organisation never comes from the request (Q8). Test app/test/int/isolation.test.js: for every route of the
-        real table that takes a JSON body, a body with an added key `org_id` or `orgId` is refused with 400 by the
-        strict schema and the state is unchanged; for every route of the table, a query parameter `org_id` and a header
-        `x-sai-org` with the id of another organisation change nothing in the answer (the same status and body as
-        without them) and in the database (row counts).
+        The organisation never comes from the request (Q8). Test app/test/int/isolation.test.js: for every route of
+        the real table that takes a JSON body, a body with an added key `org_id` or `orgId` is refused with 400 by the
+        strict schema and the state is unchanged; for every route of the table, a call with a query parameter `org_id`
+        and a header `x-sai-org` holding the id of another organisation and the same call without them, each from an
+        equal starting state (a fresh database or a restored dump), answer the same status and bodies that are equal
+        after masking the generated fields that the route table names for that route (new ids, codes, tokens and
+        times; a route without such a list masks nothing); for a route that creates a row, the row read back belongs
+        to the session's organisation, never to the planted one.
       - >-
         Permission matrix (audit chapter 10, stage 2; open question О8). File
         app/test/fixtures/permission-matrix.golden.json (created by this work) holds one row per route of the real
@@ -17284,20 +17323,27 @@ requirements:
         the lockout and the admin delay; append-only audit with its chain; no SQL built from strings; no secret or
         personal data in logs; admin routes answer 404 to non-admins; each row names a test file and a test name. Test
         app/test/unit/security-invariants.test.js (created by this work): every named file exists and contains the
-        named test name; the row count is at least 11.
+        named test name; the row count is at least 11. The test file and test name of a row are its check command (the
+        CI job runs the file; the name is the test that proves the row).
       - >-
-        Guard table and both checks. The rows (1) to (7) of the guard table above are done as written and no other test
-        changes; `cd app && npm ci && npm run check` → exit 0 with the counts rule of REQ-108 criterion 2; the jobs check,
-        pg, docker and e2e of .github/workflows/app.yml are green on the snapshot of the run on GitHub (read with `gh
-        run view`), and the pg job's log shows app/test/pg/rls.test.js and app/test/pg/audit-chain.test.js with fail 0;
-        `cd tools && npm run traces` → exit 0; the result of the SECURITY-REVIEWER step of the run lists no open
-        finding of severity Critical or High.
+        Guard table and both checks. The rows (1) to (8) of the guard table above are done as written and no other
+        test changes; On GitHub (decisions/0110), with the commit of the work on a temporary ci/* branch: `gh run list
+        --workflow app.yml --branch <that branch> --limit 1 --json conclusion,headSha` → success on that sha (the jobs
+        check, pg, docker and e2e), and check.yml green on the same sha; the job log holds, for each test step of app
+        (unit, int, pg, e2e), «# tests N», «# fail 0», «# skipped 0» and «# todo 0», with N not below the count of
+        that folder in the log of the last green app.yml run before this work plus the tests this work adds, as its
+        step handoffs name them (REQ-108 criterion 2, AP-143, AP-170), and the pg job's log shows
+        app/test/pg/rls.test.js and app/test/pg/audit-chain.test.js with fail 0; on this computer no app check, no
+        test and no e2e is run (decisions/0110, 0129), and `cd tools && npm run traces` → exit 0 and `cd tools && npm
+        run -s handoffs-check` → exit 0; the result of the SECURITY-REVIEWER step of the run lists no open finding of
+        severity Critical or High (this handoff stands for the record docs/uat/<RUN-ID>-security.md that the audit,
+        chapter 10 stage 2, names).
   # 2026-11-23T16:34:49Z, run M2ACCT-20261123-01, WF-01 step 1 lane A (REQ-ANALYST): R2.2 of PUBLIC-V1 (decisions/0091, 0100, 0133, 0134); English by the owner's answer G18
   - id: REQ-116
     title: Organisations and invitations — owner identities, admin-issued invites, accepting an invite with the consent sentence that names every element of PLAN R2.2, the registration modes, the personal-data rule of gate G7 and the deletion request with the admin's deletion (PUBLIC-V1, R2.2)
     owner: BACKEND-DEV   # server/auth/invites.js, the org and invite services and routes; the invite, account and admin invite pages by FRONTEND-DEV in the same run; lane FULL
     status: pending
-    depends_on: [REQ-114, REQ-115]   # sessions, re-auth and the tables of 0002 (REQ-114); tenancy, the audit writer, the suites (REQ-115); built in run M2.3 together with REQ-117
+    depends_on: [REQ-114, REQ-115]   # sessions, re-auth and the tables of 0002 (REQ-114); tenancy, the audit writer, the suites (REQ-115); built in run M2.3 together with REQ-117 and released with it: criterion 6 uses the KZ formats of REQ-117 criterion 7 and criterion 10 the e2e step of REQ-117 criterion 10, so neither block is done without the other
     original_request: >
       Слова владельца дословно. 2026-11-23, чат сессии на компьютере владельца с Windows (decisions/0133, раздел
       «Owner's words»): «Сейчас я не планирую открывать регистрацию для всех пользователей.» «Для этого предварительно
@@ -17434,13 +17480,16 @@ requirements:
         character for character; each sentence has at most 18 words by app/public/shared/text-rules.js; each of these
         fixed phrases stands in the ru value: «обработку моих данных», «по приглашению», «адрес почты», «имя», «хеш
         пароля», «запись об этом согласии», «HMAC-код IP-адреса», «до удаления учётной записи», «в Германии
-        (Франкфурт)», «Anthropic в США», «отозвать», «в течение 15 рабочих дней»; and in the en value: «processing of my
-        data», «by invitation», «e-mail», «name», «password hash», «this consent record», «HMAC code of the IP», «until
-        the account is deleted», «Germany (Frankfurt)», «Anthropic in the USA», «withdraw consent»,
-        «within 15 working days»; the kk value is non-empty. Test app/test/int/invites.test.js: after an acceptance the
-        user row holds the sha256 of the sentence shown, its language and the time, and no other new personal field
-        than those of decisions/0100 item 1 (the column list of users and of the consent table, read from
-        information_schema, equals the list of the code design).
+        (Франкфурт)», «Anthropic в США», «отозвать», «в течение 15 рабочих дней»; and in the en value: «processing of
+        my data», «by invitation», «e-mail», «name», «password hash», «this consent record», «HMAC code of the IP»,
+        «until the account is deleted», «Germany (Frankfurt)», «Anthropic in the USA», «withdraw consent», «within 15
+        working days»; the kk value holds five sentences (five sentence ends) and the tokens that every language
+        keeps: «Sai», «HMAC», «IP», «Франкфурт», «Anthropic» and «15»; its wording is a draft of the coding role for a
+        native speaker (FOR_NATIVE_SPEAKER, ISS-0127), whose text later replaces it with its own edit of this
+        criterion. Test app/test/int/invites.test.js: after an acceptance the user row holds the sha256 of the
+        sentence shown, its language and the time, and no other new personal field than those of decisions/0100 item 1
+        (the column list of users and of the consent table, read from information_schema, equals the list of the code
+        design).
       - >-
         Deletion request and deletion. Test app/test/int/deletion.test.js (created by this work): a signed-in user's
         deletion request with his password stores one request with the time and writes one audit row; a second request
@@ -17473,10 +17522,16 @@ requirements:
         app/test/unit/forbidden-words.test.js pass with the one exception of open question О13 as amended in REQ-111
         criterion 3 and no other; the consent box of the invite page is not ticked when the page opens (e2e step of
         REQ-117 criterion 10); with a failing database adapter POST /api/invites/:code/accept answers 503
-        `db_unavailable` within 5 s and writes nothing (test app/test/int/invites.test.js); the rows of the guard table
-        above are done; `cd app && npm ci && npm run check` → exit 0 with the counts rule of REQ-108 criterion 2; the
-        jobs of .github/workflows/app.yml are green on the snapshot of the run on GitHub; `cd tools && npm run traces` →
-        exit 0; the SECURITY-REVIEWER result of the run lists no open Critical or High finding.
+        `db_unavailable` within 5 s and writes nothing (test app/test/int/invites.test.js); the rows of the guard
+        table above are done; On GitHub (decisions/0110), with the commit of the work on a temporary ci/* branch: `gh
+        run list --workflow app.yml --branch <that branch> --limit 1 --json conclusion,headSha` → success on that sha
+        (the jobs check, pg, docker and e2e), and check.yml green on the same sha; the job log holds, for each test
+        step of app (unit, int, pg, e2e), «# tests N», «# fail 0», «# skipped 0» and «# todo 0», with N not below the
+        count of that folder in the log of the last green app.yml run before this work plus the tests this work adds,
+        as its step handoffs name them (REQ-108 criterion 2, AP-143, AP-170); on this computer no app check, no test
+        and no e2e is run (decisions/0110, 0129), and `cd tools && npm run traces` → exit 0 and `cd tools && npm run
+        -s handoffs-check` → exit 0; the SECURITY-REVIEWER result of the run lists no open Critical or High finding
+        (this handoff stands for the record docs/uat/<RUN-ID>-security.md that the audit, chapter 10 stage 2, names).
   # 2026-11-23T16:34:49Z, run M2ACCT-20261123-01, WF-01 step 1 lane A (REQ-ANALYST): R2.4 of PUBLIC-V1 (decisions/0091, 0133, 0134); English by the owner's answer G18; the demo carry-over of PLAN R2.4 is left out (open question О10)
   - id: REQ-117
     title: Projects and the request board — «Новый проект» with a title, the idea and three one-tap quick facts, versioned ideas with a reason, the stage strip from shared/project/stages.js, the admin request board with counts by stage, the request card with «Изменить заявку», the audit log page and the KZ date and number formats (PUBLIC-V1, R2.4)
@@ -17578,8 +17633,10 @@ requirements:
         characters, by a viewer → refused with unchanged state; the platform admin's edit of a project of a customer
         organisation adds a version the same way and its audit row has actor_kind `admin`; GET /api/projects/:id
         answers the versions in order with their reasons. Test app/test/pg/rls.test.js (REQ-115; the case is added by
-        this work): UPDATE and DELETE of an idea_versions row are refused by the trigger also for the owner role; the trigger's one
-        exception is the purge helper of criterion 9, in the form the code design shows.
+        this work): UPDATE and DELETE of an idea_versions row are refused by the trigger also for the owner role; the
+        trigger's one exception is the purge helper of criterion 9, in the form the code design shows. The
+        completeness check of REQ-115 criterion 1 in the same file prints a count of at least 5 after 0003
+        (org_members, invites, audit_log, projects, idea_versions; orgs by its id column) and passes.
       - >-
         Stages. Test app/test/unit/project-stages.test.js (created by this work): the stage list of stages.js equals
         the eleven literals of the description in that order; for every ordered pair of the eleven stages (121 pairs)
@@ -17650,11 +17707,17 @@ requirements:
         page) each show every text of their keys, no horizontal scroll at 320 px, the footer, and dates in the form of
         criterion 7; snapshots outside the project, listed in the handoff.
       - >-
-        Guard table and both checks. The guard rows named in the description are done and no other test changes; `cd app
-        && npm ci && npm run check` → exit 0 with the counts rule of REQ-108 criterion 2; the jobs check, pg, docker and
-        e2e of .github/workflows/app.yml are green on the snapshot of the run on GitHub, and the e2e job's log shows
-        app/test/e2e/accounts.test.js with fail 0; `cd tools && npm run traces` → exit 0; the SECURITY-REVIEWER result
-        of the run lists no open Critical or High finding.
+        Guard table and both checks. The guard rows named in the description are done and no other test changes; On
+        GitHub (decisions/0110), with the commit of the work on a temporary ci/* branch: `gh run list --workflow
+        app.yml --branch <that branch> --limit 1 --json conclusion,headSha` → success on that sha (the jobs check, pg,
+        docker and e2e), and check.yml green on the same sha; the job log holds, for each test step of app (unit, int,
+        pg, e2e), «# tests N», «# fail 0», «# skipped 0» and «# todo 0», with N not below the count of that folder in
+        the log of the last green app.yml run before this work plus the tests this work adds, as its step handoffs
+        name them (REQ-108 criterion 2, AP-143, AP-170), and the e2e job's log shows app/test/e2e/accounts.test.js
+        with fail 0; on this computer no app check, no test and no e2e is run (decisions/0110, 0129), and `cd tools &&
+        npm run traces` → exit 0 and `cd tools && npm run -s handoffs-check` → exit 0; the SECURITY-REVIEWER result of
+        the run lists no open Critical or High finding (this handoff stands for the record
+        docs/uat/<RUN-ID>-security.md that the audit, chapter 10 stage 2, names).
   # 2026-11-23T17:02:40Z, run M2ACCT-20261123-01, WF-01 step 1 lane B (REQ-ANALYST): R2.5 of PUBLIC-V1 (decisions/0091, 0133, 0134, 0135); English by the owner's answer G18; the open questions О1-О16 of this step (cited below as «lane-B question О<n>») are in handoffs/M2ACCT-20261123-01/step-01-req-analyst-lane-b.json, result.issues
   - id: REQ-118
     title: The job queue and the worker API — migration 0004 with workers, jobs and spend_ledger, worker tokens made by the admin with a re-auth, claim with the filter of ARCH §8.3 and the demo rule, lease epochs and fencing, heartbeat with its control, complete and fail, idempotency, spend booked once even after a lost lease, poll hints, the kill switch, and the re-validation of every worker field by the server (PUBLIC-V1, R2.5)
