@@ -1,0 +1,159 @@
+{
+  "handoff_id": "step01b-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "01b",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGN-VALIDATOR",
+  "file": "handoffs/M2AUTH-20261123-01/step-01b-code-design-validator.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md (the design)",
+      "handoffs/M2AUTH-20261123-01/step-01-code-designer.json (result: prototype, facts, mutants, open questions)",
+      "decisions/0137 (ORCH's answers to О1-О14) and the grants micro-amendment of REQ-115/REQ-120 (commit e5b099b)",
+      "docs/requirements.yaml blocks REQ-114, REQ-115, REQ-120",
+      "docs/workflows/WF-02-development.md step 1b, .claude/agents/code-design-validator.md, docs/quality-bar.md"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "write_set": [
+      "handoffs/M2AUTH-20261123-01/step-01b-code-design-validator.json (result only)"
+    ],
+    "parallel_work_now": [
+      "a REQ-VALIDATOR gate over the grants micro-amendment (read only)",
+      "ISS-0132-20261123-01 step 03b CODE-DESIGN-VALIDATOR (tools/ only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 1b gate, CODE-DESIGN-VALIDATOR, the M2.2 design for REQ-114, REQ-115 and REQ-120. Apply your role's whole checklist and WF-02 step 1b: every criterion (32) leads to a design element and a named test; no «decide later»; signatures, data, codes and errors complete; the bar section complete; protection in the same operation as the action (look hard at: session and CSRF checks, re-auth consumption, lockout counting, RLS context set in the same transaction as the query, the audit append in the same transaction as its action, the setup token one-time use); no contradiction with decisions without a proposal; no implementation code; security of the own auth (scrypt parameters, timing-safe compares, cookie flags, token entropy and storage as hashes, TOTP window and replay, recovery codes): name any weakness against OWASP ASVS 4.0.3 V2/V3. Repeat the design's claims about today's code YOURSELF on a fresh clone of the tag base/M2AUTH-20261123-01 under <scratch> (npm ci in its app/ and your own node or PGlite scripts are allowed; not the repository test suites: decision 0110); apply at least 10 of the design's mutants to a sketch and say which planned test catches each; check the replacement table against a search of app/test and tools/test; assess the 20 sub-steps (size, order, each checkable alone). Verdict PASS or FAIL, findings by severity with the exact change wanted. Be economical but thorough: this is the first own-auth code of the product. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:09:42Z",
+  "started_at": "2026-11-23T18:09:43Z",
+  "completed_at": "2026-11-23T18:20:48Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "FAIL",
+    "summary": "Design read whole (1081 lines, sha256 ca0d26d8eeac7da54d21780645a3fad19e00b99c5cc961c40ff01de2f8112e09 before and after). Judged against the current text of REQ-114, REQ-115 and REQ-120 including the grants rework 65397a6 (ORCH note): the table-exists rule of grants.sql is not in the design (B1). Pass A (true about today's Sai): fresh clone of base/M2AUTH-20261123-01 (f3f5a3b) under <scratch>/m2auth-01b, npm ci; the designer's sketch copied and re-run: F5-F14 repeated with the same outputs (forced RLS 42501, audit trigger P0001, folded selfcheck true on a planted owner, PGlite transaction() serialises and a manual begin does not, query_to_xml with a bound name, scrypt default maxmem throws, RFC 6238 vectors, Hono env clientIp, 43/22 characters). F2, F4, F15, F19-F22 repeated by reading app.js, routes/index.js, health.js, selfcheck.js, config.js, migrate.js, pg.js, pglite.js, api/index.js, vercel.json and the tests. Own trials t3/t4/t5: the base SELFCHECK_SQL reads ok on a planted owner (SC-7 red on the base, AP-071 holds); the grants of 4.2.3 work under sai_app for the rate upsert and the setup guard; but a nested transaction deadlocks on PGlite (B4), a deadline answer does not stop the commit (B2), a plain grant on a 0002 table fails on a 0001-only database (B1), the e-mail check refuses an ASCII-lowered Cyrillic address (B6). Shared mechanisms (AP-014): the transaction mechanism has three users in the design (the request pipeline, withTenant inside a handler, Db.query for health) and the second is not compatible with the first (B4); the grants step is used by migrate on PGlite, Postgres, the Vercel build, Docker and the rehearsal databases A and B (B1). Replacement table A1-A26 checked by grep of app/test and tools/test on the clone: every named line exists as stated (npmrc.test.js INT_FILES 12 / PG_FILES 2 / NPM-5 title, ci-workflow JOBS line 32 and the docker 0001 row line 78, migrate-pg MP-1 104-110 and MP-2 172-174, migrate.test MG-1, health.test 71/155 0002_more, the selfcheck cases); no further guard found (node-main NM-2 production refusal stays first; DBC-4/DBC-5 keep their codes because the pepper is checked last; migrate.test:208 matches with /m; tools/test names app/ only for the Chrome path). Complete except the MG-6 case added by 65397a6 (B1). Mutants: 13 applied on sketches (t4-mutants.mjs; t1/t3 for SQL). Killed by their named test: M1 PW-1, M3 PW-3, M6 SCMP-1, M20 LO-1, M25 RA-2, M26 RA-2, M28 TT-4, M29 TT-4, M32 RS-2, M41 RLS-1, M44 SC-7. Survived: M2 (PW-2 cannot see a compare of only the first 32 key bytes) and M42 (equivalent: Postgres uses USING as WITH CHECK for a FOR ALL policy, measured 42501 without WITH CHECK) (B5). Pass B (developer): signatures, shapes, route table, codes, pipeline order, files and owners are given in full; one writer per file; no implementation code (only shapes, constant statement forms and tables). Places where the developer would choose: B1, B2, B3, B4, B6, B7. Pass C (tests): 32 of 32 criteria have a design element and a named test (9.1-9.3, rows counted); no «decide later» row; the ASVS rows of 9.4 are listed. Pass D (checkers): the bar section names Q1-Q14 and R1-R3 with how or why not; decisions 0001, 0110, 0116, 0122, 0129, 0133-0137 respected; C1, C2 and О1-О14 answered by decisions/0137. Protection in the same operation: re-auth consumption, setup guard, reset code, TOTP step and recovery code, the rate window and the audit chain are single conditional statements in the action's transaction (good); the lockout and re-auth counters and the admin delay are check-then-act (B3); the deadline breaks «what stays unchanged» (B2). Build sub-steps B1-B14, F1-F2, T1-T4: small and in a sound order (contract first, F after B1, T last); the expected red tests per sub-step agree with my reading of the tests; each is checkable only through a GitHub run of a snapshot (0110), which the design states.",
+    "findings": [
+      {
+        "id": "B1",
+        "severity": "High",
+        "blocks": true,
+        "place": "§4.2.4, §6.3 steps 5 and 11, §9.3 (MG-6), §12 B4",
+        "text": "grants.sql is described as plain `grant … to sai_app;` statements for the whole table of 4.2.3, run after the files on every run. The current REQ-115/REQ-120 text (65397a6) requires each table grant only when that table exists. Measured on PGlite: a plain grant on users on a 0001-only database fails with 42P01, so rehearsal step 5 (A migrated without the newest file) would exit 1 and the job would be red. Needed: the design gives the form of the table-exists rule (who checks to_regclass, in SQL or in migrate.js, as constant text with no SQL built from strings, Q9), the log line, the MG-6 case «a database migrated without the newest file gets the grants of its own tables and no error», and its mutant."
+      },
+      {
+        "id": "B2",
+        "severity": "High",
+        "blocks": true,
+        "place": "§4.5.2, §7 row 1, §9.1 c10 (ADD-1)",
+        "text": "Db.transaction races the transaction against the deadline and answers 503 while «the late transaction still ends by its own timeouts». Measured (t3 b): 503 is answered and the row is committed afterwards. So a slow password change, reset, re-auth-guarded action or setup can commit while the user sees 503 db_unavailable, and §7 «every row (transaction never committed)» is false. Needed: a rule that a transaction whose deadline passed is rolled back, never committed (for example a deadline check before every statement and before COMMIT in the adapter's transaction), an ADD-1 case with a slow but answering adapter (after the 503 the row counts are unchanged) and a mutant."
+      },
+      {
+        "id": "B3",
+        "severity": "High",
+        "blocks": true,
+        "place": "§4.9.5, §8",
+        "text": "The lockout is check-then-act: locked_until and failed_logins are read before scrypt and written after it, with no row lock named and the new count computed by a rule over the read values. Under READ COMMITTED, parallel wrong logins for one account from several addresses (the per-IP rate-limit row lock serialises one address only) all pass the check, each gets a guess, and increments can be lost; the same holds for reauth_failures (several sessions) and for login_delays (serialised only by accident through the per-IP rate row of the same transaction). ASVS 4.0.3 V2.2.1. Needed: the statement form that closes it (for example `select … for update` of the users row, or of the login_delays row, as the first statement of the login and re-auth transaction, or one conditional update that counts and locks), a pg-job case with parallel wrong attempts (PGlite serialises, so an int test cannot see it) and a mutant. Reasoned from Postgres semantics; not measurable here (no Postgres on this PC)."
+      },
+      {
+        "id": "B4",
+        "severity": "High",
+        "blocks": true,
+        "place": "§4.7 step 10, §4.5.3, §4.12 IS-3, §9.2 c7",
+        "text": "Tenant routes open withTenant(session.orgId) inside the request transaction as a second transaction. Measured (t3 a): a PGlite transaction() opened inside another never answers (deadlock), so the planted pair of IS-3, which runs on PGlite in int/isolation.test.js in this run, would hang; on Postgres it takes a second pool connection while holding the first (pool max 3: three parallel tenant requests exhaust it) and the outer and inner transactions commit separately. Needed: one connection and one transaction per request for tenant routes (for example the pipeline's transaction switches to the tenant settings by set_config(…, true) before the handler, or a tenant route's request transaction is the withTenant one), named in 4.5.3 and 4.7, with the IS-3 case and TXH cases that prove it."
+      },
+      {
+        "id": "B5",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "§13 M2, M42; §9.1 c1 PW-2",
+        "text": "Two applied mutants survive their named test. M2 (verify compares only the first 32 of 64 key bytes) is not caught by PW-2: a password differing in its first or last character changes both halves of the key. Needed: a PW case that verifies the right password against a stored hash whose last key byte is changed (must be false), named as M2's killer. M42 (policy without WITH CHECK) is equivalent in Postgres (USING serves as WITH CHECK for FOR ALL; measured 42501); replace it by a mutant that changes behaviour, for example `with check (true)`."
+      },
+      {
+        "id": "B6",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "§4.2.1 users.email_norm, §4.4 e-mail rule",
+        "text": "The column check is written «(= lower(email_norm))» and the normalisation is ASCII-only lower case, while the e-mail rule allows non-ASCII letters. Measured: `email_norm = lower(email_norm)` refuses an address with an upper-case Cyrillic letter lowered by ASCII only (23514), which reaches the user as 500 server_error at setup. Needed: one rule that the validator and the check agree on (either non-ASCII e-mails are refused with 400 bad_body, or the check matches the ASCII mapping), with its test case."
+      },
+      {
+        "id": "B7",
+        "severity": "Medium",
+        "blocks": true,
+        "place": "§4.4 row 5, §4.8 AUTH_CODES, §5.1",
+        "text": "Places the developer would choose: (a) the login answer, the scrypt count and the counters for a users row with status disabled or deleted (the audit reason `disabled` exists, the route row says nothing); (b) AUTH_CODES («every code a route of this run answers», 21) omits body_too_large (413, the body limit answers it for every route) and site_closed (503, the gate), so a page gets a code without a text and TX-11 pins an incomplete list; (c) whether a missing TOTP code after a right password (401 totp_required) counts as a failure of the admin delay. Needed: each named in the route table or the code list."
+      },
+      {
+        "id": "N1",
+        "severity": "Low",
+        "blocks": false,
+        "place": "§6.1 count",
+        "text": "«count = number of <row> elements»: with tableforest true every row element carries an xmlns:xsi attribute (measured: a literal `<row>` counts 0 on both sides, a false equal for the count rule). Name the counting rule (an element match or a constant count statement)."
+      },
+      {
+        "id": "N2",
+        "severity": "Low",
+        "blocks": false,
+        "place": "§9.4 ASVS",
+        "text": "For SECURITY-REVIEWER: 2.1.7 (breached-password check) is an L1 item not met, not «not applicable»; record it as accepted. scrypt N=2^15 is fixed by REQ-114 but below the OWASP cheat-sheet minimum N=2^17; name it as a known deviation. Account existence shows through the lock (an existing ordinary account gets 429 locked, an unknown e-mail never does) and the admin's address through the delay (О8 accepted); name both under 2.2.1. totp_required tells that the password was right (bounded by the delay)."
+      },
+      {
+        "id": "N3",
+        "severity": "Low",
+        "blocks": false,
+        "place": "§4.2.2 audit_log trigger",
+        "text": "The append-only trigger fires on UPDATE and DELETE but not on TRUNCATE; sai_app has no TRUNCATE grant, so only the owner can; a BEFORE TRUNCATE trigger would close it for the owner too."
+      },
+      {
+        "id": "N4",
+        "severity": "Low",
+        "blocks": false,
+        "place": "§4.7 steps 1-2",
+        "text": "The session read (step 1, a database statement) precedes the admin 404 (step 2): with the database down an admin path answers 503 while an unknown /api address answers 404, so admin routes are visible during an outage. Name it as accepted or answer the 404 for a caller without a session cookie before the transaction."
+      },
+      {
+        "id": "N5",
+        "severity": "Low",
+        "blocks": false,
+        "place": "§4.2.4, §6.4 (4)",
+        "text": "A dump restored onto another server lacks the roles and role memberships (pg_dump holds neither, and 0001 is already recorded as applied), so the grants step fails there; the runbook's restore section should say that the target server needs the roles of 0001 first."
+      },
+      {
+        "id": "N6",
+        "severity": "Low",
+        "blocks": false,
+        "place": "§4.7 step 7",
+        "text": "Refusals thrown after step 7 (re-auth, body) roll back the rate-limit increment, so such requests are never counted; acceptable because they run no scrypt; name it in §7 so REVIEWER does not read it as a defect."
+      }
+    ],
+    "self_check": [
+      "sha256 of docs/design/M2AUTH-accounts-tenancy-backup.md before and after: ca0d26d8eeac7da54d21780645a3fad19e00b99c5cc961c40ff01de2f8112e09 (same)",
+      "git clone -c core.autocrlf=false -b base/M2AUTH-20261123-01 <the local repository> <scratch>/m2auth-01b/sai → f3f5a3b; node v22.23.4; npm ci in app → added 102 packages",
+      "2026-11-23T18:13:33Z node sketch/t1-rls.mjs (the designer's sketch, copied) → tenant A sees orgs 1, m 1, al 0; after tx sai_app_login and ''; insert/update foreign refused 42501; no org 0/0; audit update tenant 42501, superuser update/delete P0001; selfcheck clean false/false, planted owner rolbypassrls true; transaction() interleave [tx-insert, tx-end, outside saw 1]; manual begin [manual-insert, outside saw 2, manual-rollback]; query_to_xml ok",
+      "node sketch/t2-crypto.mjs → scrypt default maxmem ERR_CRYPTO_INVALID_SCRYPT_PARAMS; 133 ms sync and async with 64 MiB; the six RFC 6238 vectors equal; GCM stored form 70; app.request env given 203.0.113.7; node server env incoming 127.0.0.1; 43 and 22 characters",
+      "2026-11-23T18:14:18Z node sketch/t3-gate.mjs → (a) nested transaction() on PGlite: TIMEOUT after 3000 ms (deadlock); (b) [\"503 E_DB_DOWN\", 1] (answered 503, row committed); (c) base SELFCHECK_SQL with a planted owner → rolbypassrls false (passes: SC-7 red on the base); (d) rate upsert [1,2,3], setup insert [[setup_done],[]], sai_app grants listed; (e) email_norm with a Cyrillic upper-case letter refused 23514; (f) a table name with `; drop table users` refused 42P01 (bound name)",
+      "2026-11-23T18:15:51Z node sketch/t4-mutants.mjs → original []; M1 PW-1, M3 PW-3, M6 SCMP-1, M20 LO-1, M25 RA-2, M26 RA-2, M28 TT-4, M29 TT-4, M32 RS-2 killed; M2 [] NOT KILLED; M41 killed by RLS-1 ([org_members]); M42 refused 42501 NOT KILLED (equivalent); SC-7 design statement unsafe, M44 old statement ok (killed by SC-7)",
+      "node sketch/t5.mjs → grants on A (0001 only) refused 42P01; the tableforest form begins `<row xmlns:xsi=…>`, literal <row> count 0",
+      "grep on the clone: the app/test lines of A1-A26 as stated; grep -rln \"app/\" tools/test → tools/test/e2e/kit/find-chrome.js, tools/test/e2e-kit.test.js; grep of production/NODE_ENV/readConfig in app/test → NM-2, DBC-4, DBC-5 only, each refused by an earlier code",
+      "git show 65397a6 -- docs/requirements.yaml read (the table-exists rule and the new MG-6 case)",
+      "Not run here (decisions/0110, 0129): npm run check, any app test, node --test, e2e; no server started; no port touched"
+    ],
+    "issues": [
+      {
+        "id": "Q1",
+        "kind": "QUESTION",
+        "text": "B1-B7 go back to CODE-DESIGNER for a rework of the design; B4 may change the shape of withTenant in 4.5.3 that REQ-117 relies on, and B1 follows the amended REQ text of 65397a6. A new gate 1b after the rework."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

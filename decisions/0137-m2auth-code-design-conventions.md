@@ -28,3 +28,20 @@ Every recommended answer is taken.
 ## Basis
 
 `handoffs/M2AUTH-20261123-01/step-01-code-designer.json` (result.issues); `docs/design/M2AUTH-accounts-tenancy-backup.md`; decisions/0134, 0135, 0136; ARCHITECTURE §1.1, §3, §4, §14, §20.4.
+
+## Addition — ORCH's answers to the design gate 1b (FAIL, B1-B7, N1-N6), 2026-11-23
+
+CODE-DESIGN-VALIDATOR gave FAIL (`handoffs/M2AUTH-20261123-01/step-01b-code-design-validator.json`). B1-B6 are fixed by the designer as the validator asks. The places where the developer would have to choose (B7) and the security remarks (N2) are answered here:
+
+- **B7a** A login of a disabled or deleted account answers exactly as a wrong password (the same code, body and timing path: scrypt runs against a fixed dummy hash), and changes no counter of that account.
+- **B7b** `AUTH_CODES` includes `body_too_large` (413) and `site_closed` (503), and every code a route of M2.2 can answer.
+- **B7c** A right password followed by a missing or wrong TOTP code counts as a failed attempt for the admin delay.
+- **N2a** scrypt at the OWASP minimum: N = 2^17, r = 8, p = 1 (memory limit set to fit); the measured time on this PC and the Vercel function memory are recorded in the design.
+- **N2b** ASVS 2.1.7: a new or changed password is refused when it is in a bundled list of common passwords (a data file in the repository, no network call; its source and licence named in the design); the check is a named criterion of the tests, not of the requirement text.
+- **N2c** Lockout and enumeration: the answers for an unknown e-mail and for a locked account are the same as for a wrong password until the lock, and the lock answer is the same for an unknown e-mail (a counter keyed by the e-mail HMAC). That the growing delay names the admin's address is a residual risk accepted by ORCH (REQ-114 c5 and decisions/0137 О8 keep the delay for the admin only; the admin address is the owner's own).
+- **N1, N3-N6** fixed in the design: N1 count rows without the namespace trap; N3 TRUNCATE on `audit_log` refused (revoke plus a trigger); N4 named as is (admin routes answer 503 while the database is down); N5 the runbook creates the roles of 0001 before a restore onto another server; N6 named.
+
+## Addition 2 — the design rework 01c, О15 and О16, 2026-11-23
+
+- **О15** REQ-114 criterion 1 names scrypt N = 2^15 and the form `scrypt$15$8$1$`; the Addition above sets N = 2^17. REQ-114 is amended by a micro-amendment (N = 2^17, `scrypt$17$8$1$`, the memory limit 160 MiB measured by the designer) before step 2; the meaning of the criterion (one fixed, recorded parameter set at or above the OWASP minimum) does not change.
+- **О16** The common-password tests (PW-4, SU-5, RS-2) count under REQ-114 criterion 1 (the password rule), not as a criterion of their own.

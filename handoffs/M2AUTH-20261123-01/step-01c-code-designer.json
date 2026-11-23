@@ -1,0 +1,138 @@
+{
+  "handoff_id": "step01c-M2AUTH-20261123-01",
+  "run_id": "M2AUTH-20261123-01",
+  "workflow_id": "WF-02",
+  "step": "01c",
+  "from_agent": "ORCH",
+  "to_agent": "CODE-DESIGNER",
+  "file": "handoffs/M2AUTH-20261123-01/step-01c-code-designer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-114",
+      "REQ-115",
+      "REQ-120"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "handoffs/M2AUTH-20261123-01/step-01b-code-design-validator.json (FAIL: B1-B7 blocking, N1-N6; the validator's trial scripts are named there)",
+      "decisions/0137 and its Addition (ORCH's answers to B7 and N2)",
+      "the grants text of REQ-115, REQ-117, REQ-120 after commits e5b099b and 65397a6 (each grant applied only if its table exists; REQ-VALIDATOR low H1: add a test that every table named in grants.sql is created by some migration)"
+    ],
+    "base_tag": "base/M2AUTH-20261123-01",
+    "rework_of": "handoffs/M2AUTH-20261123-01/step-01-code-designer.json",
+    "write_set": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md",
+      "handoffs/M2AUTH-20261123-01/step-01c-code-designer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-02 step 1 rework 01c, CODE-DESIGNER: fix every blocking finding B1-B7 and the non-blocking N1-N6 of the design gate, by the validator's wanted changes and the Addition of decisions/0137 (B7, N2 answered there), plus H1 of the grants gate. For each finding: what changed in the design (section), the new or changed test case, the new mutant; re-measure on your sketch what can be measured on this PC (B1 the table-exists form on PGlite; B2 no commit after the deadline; B4 one connection and one transaction per tenant request on PGlite; B5 the two mutants now killed; B6 one rule for email_norm; scrypt 2^17 timing) and name what only the GitHub pg job can show (B3 parallel attempts). Keep the criterion → test table complete. Verify traces 0, handoffs-check 0. Be economical but complete. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:20:49Z",
+  "started_at": "2026-11-23T18:20:50Z",
+  "completed_at": "2026-11-23T18:34:38Z",
+  "result": {
+    "status": "COMPLETED",
+    "summary": "Rework 01c of docs/design/M2AUTH-accounts-tenancy-backup.md by the gate 1b findings B1-B7, N1-N6, the grants-gate note H1 and the Addition of decisions/0137. Blocking ones: grants.sql in one to_regclass-guarded do block per table (static grants, no execute) with MG-6 and MG-7; a deadline guard before every statement and before COMMIT so a late transaction rolls back (COMMIT limit 900 ms, worst case 4.9 s, in-doubt residual named) with ADD-2; row locks (select … for update) first in login, re-auth and password change, a new pg file auth-race-pg.test.js; one connection and one transaction per request, a tenant route switched by switchToTenant (set_config) with TXH-5 and DBC-3; PW-2b kills M2 and M42 becomes with check (true); e-mails printable ASCII only so the column check equals the validator; B7a/N2c a login_failures table keyed by mac(e-mail) gives unknown, disabled and deleted e-mails the wrong-password answer and the same lock; B7b AUTH_CODES 23 with body_too_large and site_closed (TX-11, RT-6); B7c TOTP missing/wrong counts for the admin delay (LO-7). Low ones: count by a constant count statement (N1), scrypt N=2^17 with maxmem 160 MiB and a bundled SecLists list (N2a, N2b), ASVS rows rewritten (N2), TRUNCATE trigger (N3), admin 404 before any statement without a session cookie (N4), the runbook creates the roles first on another server (N5), late refusals not counted named (N6). 32 of 32 criteria mapped; 61 mutants; two new questions О15 (REQ-114 text still says 2^15) and О16.",
+    "changes": [
+      {
+        "remark": "B1",
+        "text": "§4.2.4 rewritten: the grants form (two schema lines, then one `do $$ begin if to_regclass(...) is not null then grant ...; end if; end $$;` block per table), the file path independent of MIGRATIONS_DIR, the log line, E_MIGRATE_GRANTS; C14; §6.3 step 5; §9.3 MG-6 (a) revoked → back, (b) 0001-only → exit 0 with its own grants, (c) failing file → E_MIGRATE_GRANTS and grants unchanged; mutants M47, M48; F23"
+      },
+      {
+        "remark": "H1",
+        "text": "§4.2.4 file rules and MG-7 (every to_regclass table is created by a migration; every grant in a block names its table or sequence; no execute; no migration but 0001 holds a grant); mutant M49"
+      },
+      {
+        "remark": "B2",
+        "text": "§4.5.1 COMMIT limit 900 ms; §4.5.2 rewritten: deadline 4000 ms from request start, guard before every statement and after the callback before COMMIT, race answers in time, the late transaction rolls back, worst case 4.9 s, in-doubt COMMIT residual named; §7 rows; §8; C15; ADD-2; mutant M37b; F24"
+      },
+      {
+        "remark": "B3",
+        "text": "§4.9.5 rewritten: the first statement of login, re-auth and password change is `select … for update` of the users row (or of the login_failures row), the admin delay read after the admin's row lock, one lock order (rate row → account row → delay row → audit lock); §4.11 lock order; §8; C16; pg/auth-race-pg.test.js AUTH-RACE-1..3 (PG_FILES 6, A2, A3); mutants M50-M52; not measurable here (no Postgres), named in §1"
+      },
+      {
+        "remark": "B4",
+        "text": "§4.3, §4.5.3 (switchToTenant; no nested transaction), §4.7 (RouteRequest without withTenant, step 9b, step 10), §4.12 IS-3 planted pair on the one switched transaction with an in-memory object list; C17; TXH-5, DBC-3; mutants M53, M54; F25"
+      },
+      {
+        "remark": "B5",
+        "text": "§13 M2 now killed by PW-2b (last key byte changed → false); M42 replaced by `with check (true)`, killed by RLS-2; F26"
+      },
+      {
+        "remark": "B6",
+        "text": "§4.2.1 users email/email_norm checks; §4.4 the e-mail rule (printable ASCII, one @, ASCII lower case = lower()); §7; C18; LI-4, SU-5; mutant M55; F27"
+      },
+      {
+        "remark": "B7",
+        "text": "(a) §4.2.1 table login_failures, §4.4 row 5, §4.9.5, C19, LI-3, M56; (b) §4.8 AUTH_CODES 23 with body_too_large and site_closed, TX-11, RT-6 (source scan), M59; (c) §4.4 row 5 and §4.9.5: totp_required/totp_invalid after a right password count for the admin delay, LO-7"
+      },
+      {
+        "remark": "N1",
+        "text": "§6.1 count by the constant count statement read from <n>; DV-1 count-only case; M58; F28"
+      },
+      {
+        "remark": "N2",
+        "text": "§4.9.2 scrypt N=2^17, r=8, p=1, maxmem 160 MiB, async only, 531 ms measured, Vercel Hobby 2 GB (F30); the bundled list app/server/auth/common-passwords.txt (SecLists xato-net-10-million-passwords-100000.txt, MIT, F31) used by setup, password change and reset; LO-6 uniform answers for unknown e-mails; §9.4 ASVS 2.1.7 met, 2.2.1 residual tells named, 2.4.1 at the OWASP minimum; PW-1, PW-4, SU-5, RS-2; M57, M60; О15, О16"
+      },
+      {
+        "remark": "N3",
+        "text": "§4.2.2 BEFORE TRUNCATE statement trigger; RLS-4; M60; F29"
+      },
+      {
+        "remark": "N4",
+        "text": "§4.7 step 0a: an admin route without a session cookie answers the uniform 404 before any statement; the cookie case named as accepted; ADD-3"
+      },
+      {
+        "remark": "N5",
+        "text": "§6.4 (4): on another server first run migrate on an empty database (0001 creates the server-wide roles and memberships), then restore"
+      },
+      {
+        "remark": "N6",
+        "text": "§7: refusals thrown after step 7 are not counted by the rate limit, named as accepted"
+      },
+      {
+        "remark": "all",
+        "text": "header note of rework 01c; §0 counts; §1 F11 replaced, F23-F31 and the not-measurable B3 note; §2 C14-C20; §3 common-passwords.txt; §10 Q2, Q8, Q9, Q10, Q12, Q13; §11 A2, A3, A16; §12 B2, B4, B6; §15 ARCH §5 and the new table; §16 О1-О14 marked answered by 0137, О15, О16 added; §17 counts; §18 t6, t7; §19 finding → change table. Earlier-version references searched (grep for 2^15, 21 codes, 4.5 s, 10 tables, 64 MiB, 4500, M1–M46, F1–F22, second transaction): only the intended mentions in the rework note, О15 and M60 remain"
+      }
+    ],
+    "self_check": [
+      "node sketch/t6-rework.mjs on <scratch>/m2auth-01/sai/app (2026-11-23T18:24:43Z): scrypt 2^17 maxmem 128 MiB → ERR_CRYPTO_INVALID_SCRYPT_PARAMS, 160 MiB → 531 ms, four parallel 693 ms; PW-2b [false,true]; grants form on 0001 only → platform_settings INSERT,SELECT and schema_migrations SELECT; after revoke [] → after the grants text every grant back; a failing grants text 42P01 and grants unchanged true; truncate as owner refused P0001; lower() of ASCII equals the ASCII mapping true; e-mail rule [true,false,false]; with check (true) → INSERT ALLOWED; count statement <n>3</n> while literal <row> counts 0 (element match 3); deadline guard [503 E_DB_DOWN, rolled back, 0 rows] and [rolled back, 0 rows] when the deadline passes after the last statement",
+      "node sketch/t7-onetx.mjs (2026-11-23T18:24:58Z): one PGlite transaction, platform settings see 2 rows, after set_config to tenant A 1 row, current_user sai_app, role tenant, org A; a foreign insert rolled back 42501; adapter transaction() called once",
+      "WebFetch 2026-11-23: https://vercel.com/docs/functions/configuring-functions/memory (Hobby always 2 GB / 1 vCPU, updated 2026-07-15); https://raw.githubusercontent.com/danielmiessler/SecLists/master/LICENSE (MIT, Copyright (c) 2018 Daniel Miessler); the SecLists folder Passwords/Common-Credentials lists xato-net-10-million-passwords-100000.txt",
+      "Read: handoffs/M2AUTH-20261123-01/step-01b-code-design-validator.json (B1-B7, N1-N6) and the validator's trials t3-t5 in its clone <scratch>/m2auth-01b; decisions/0137 and its Addition; docs/requirements.yaml REQ-115 file list after 65397a6 (each table grant only when the table exists, MG-6 cases); handoffs/M2AUTH-20261123-01/step-01a-req-validator-grants-gate-b.json H1",
+      "B3 (parallel attempts under READ COMMITTED) is not measurable on this PC (no Postgres; PGlite serialises, F9): only the pg job shows it (AUTH-RACE-1..3)",
+      "cd tools && npm run traces → exit 0, «traces: файлов проверено 3005, следов 0, пропущено 67»; cd tools && npm run -s handoffs-check → exit 0 after this result was filled",
+      "Not run on this PC by decisions/0110 and 0129: npm run check, any app test, node --test, e2e"
+    ],
+    "issues": [
+      {
+        "id": "О15",
+        "kind": "QUESTION",
+        "text": "REQ-114 description («crypto.scrypt N = 2^15») and criterion 1 (form `scrypt$15$8$1$<salt>$<hash>`) contradict decisions/0137 Addition N2a (N = 2^17). The design uses 2^17 and `scrypt$17$8$1$`, so PW-1 as criterion 1 is written would be red. Recommended: a micro-amendment of REQ-114 (the two places, the form of decisions/0079 item 5) by REQ-ANALYST and REQ-VALIDATOR before step 2."
+      },
+      {
+        "id": "О16",
+        "kind": "QUESTION",
+        "text": "The common-password check (0137 Addition N2b) stands as test-named cases PW-4, SU-5 and RS-2 under REQ-114 c1, not as a criterion of its own. Recommended: confirm, so RELEASE-VALIDATOR reads them under c1."
+      },
+      {
+        "id": "N1",
+        "kind": "NOTE",
+        "text": "B2 residual named in design 4.5.2: a COMMIT already sent whose answer is lost or later than 900 ms leaves the outcome unknown to that request (503); the window is the COMMIT round trip only. Every other late transaction is rolled back before COMMIT (F24)."
+      },
+      {
+        "id": "N2",
+        "kind": "NOTE",
+        "text": "Proposed anti-patterns for DOC-UPDATER (Q13), beyond the two of step 01: a deadline race that answers 503 while the transaction later commits (F24); a transaction opened inside another on one PGlite never answers (F25); a lockout read and written around a slow hash without a row lock loses counts under parallel attempts (B3)."
+      }
+    ],
+    "prototype": "Outside the project: <scratch>/m2auth-01/sai, the fresh clone of base/M2AUTH-20261123-01 of step 01 with npm ci in app/; app/sketch/ there holds 0002_trial.sql, t1-rls.mjs, t2-crypto.mjs (step 01) and, new in rework 01c, t6-rework.mjs (F11, F23, F24, F26-F29) and t7-onetx.mjs (F25). No server was started in the rework; no port 4780, 4781, 4782 or 4790 was touched.",
+    "artifacts_out": [
+      "docs/design/M2AUTH-accounts-tenancy-backup.md"
+    ]
+  }
+}

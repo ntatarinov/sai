@@ -1,0 +1,106 @@
+{
+  "handoff_id": "step05-ISS-0132-20261123-01",
+  "run_id": "ISS-0132-20261123-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "SECURITY-REVIEWER",
+  "file": "handoffs/ISS-0132-20261123-01/step-05-security-reviewer.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff base/ISS-0132-20261123-01 b76ca6e -- tools/ (the fix: 14 files)",
+      "docs/design/ISS-0132-platform-guard.md and its gate handoff step-03b (L1-L4)",
+      "handoffs/ISS-0132-20261123-01/step-04-code-fixer.json (probe results; the note for REVIEWER about comments)",
+      "docs/requirements.yaml REQ-110 criteria 12-19; docs/workflows/WF-03-defect.md step 5 and WF-02 steps 3-4"
+    ],
+    "base_tag": "base/ISS-0132-20261123-01",
+    "parallel_work_now": [
+      "the other reviewer of step 05 (read only)",
+      "M2AUTH-20261123-01 design gate (app/ read only)"
+    ],
+    "write_set": [
+      "handoffs/ISS-0132-20261123-01/step-05-security-reviewer.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-03 step 5, SECURITY-REVIEWER gate over the fix of ISS-0132 (read only). The main question (Q6): is the cause removed or only hidden — a guard that can be bypassed (an entry point that starts a run or writes a state folder without the guard, a path through which the real executor spawns on win32, a refusal that leaves something written), a check that swallows an error, a mode read-back that can still report success falsely. Also: the refusal line leaks nothing; the hook drop sends nothing; the thin-client tools are untouched. Verify by reading AND by your own small probes on this PC (real win32) on a fresh copy of the commit b76ca6e under <scratch>. PASS or FAIL with findings by severity. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:16:58Z",
+  "started_at": "2026-11-23T18:17:15Z",
+  "completed_at": "2026-11-23T18:21:14Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "Verdict PASS, no blocking finding. MAP OF SURFACES (the 14 changed files of b76ca6e against base/ISS-0132-20261123-01): platform-guard.js (new, pure module) - comes from outside and the server goes by itself (the rule only); team/cli.js, web/main.js, pixel-office/main.js, pixel-office/note.js, test/e2e/run.js - comes from outside (entry points: the arguments), writes files, the server goes by itself; pixel-office/hook.js - comes from outside (hook events), writes nothing; team/executors/claude-cli.js - the server goes by itself (the only spawn of the team core); team/errors.js, web/api.js, web/texts.js - text shown to the owner, partly to the browser as a refusal text; team/home.js, pixel-office/state-dir.js - writes files (folder mode); tools/README.md - no surface (document). No page file (pixel-office/public, web/public, picker/public) is in the change; the thin client (cli.js, traces, handoffs, picker) holds no reference to platform-guard. ITEMS. Q7 applicable, met: secret search over the diff and the three page folders found only the word secret in README prose; the refusal line carries only the platform name, shown only when it matches ^[0-9A-Za-z.+-]{1,64}$, else a fixed text; the hook reads no state before the drop. Q8 not applicable (no business-space data, no tenants touched). Q9 not applicable (no query of any kind in the change). Q10 applicable, met: a throwing or null stderr is swallowed and the refusal code is still returned (probed); read errors of the read-back become E_DISK (home.js) or E_STATE_DIR (state-dir.js), none is swallowed into success; a failed import in the hook ends in the existing catch with no request. Q11 not applicable (no outgoing request added; the hook posts only to the local address as before). R3 not applicable (decision 0033; no photos). R2 applicable, met: the hook still writes only with the source secret; the platform drop comes before stdin and any state read, sends nothing and keeps nothing for later; the server is not changed; no event is written in advance. Q6 (is the cause removed or only hidden): every entry that starts a run or writes a state folder is behind the guard (team, team-web, pixel-office, pixel-office-note, e2e) and the hook drops; the only spawn of the team core is in claude-cli.js run(), whose first statement is check(), whose first rule is E_PLATFORM (0 spawns on win32, probed); io.platform is set by no production code (grep) and any value other than linux and darwin, including empty string, null and wrong case, is refused; the read-back covers both folder functions. Two checks beyond the items: writes files - the new code only reads a mode and refuses, no new path is written; goes to the browser - the only new text that can reach the browser is the fixed WHY_NOT_STARTED row and the code E_PLATFORM in PREFLIGHT_CODES, static text shown through the existing display path. PROBES (about 120 rows in 5 groups, real win32 of this PC, Node 22.23.4, fresh clone of b76ca6e under <scratch>): (1) the rule against my own oracle (platform equals linux or darwin) over 24 hostile values (case, trailing space, newline, NUL, bidi mark, null, undefined, number, object, array, an object whose toString says linux, 1 000 000 characters, 8 other platform names): 0 mismatches; the refusal line over 10 hostile values (CRLF header injection, ANSI escape, 65 characters, non-ASCII, markup, format directive, template text, object): no control character in any line, a hostile value is never echoed; a 5 000 000 character value in 0.6 ms (no ReDoS); (2) the guard: linux does not touch stderr; win32 with a throwing writer, a null writer and an explicit null platform returns true and does not throw; (3) check() with io.platform undefined, null, empty, win32, Linux, 0: E_PLATFORM; linux and darwin pass the platform gate; run() on win32 with real runs on and a spawn spy: E_PLATFORM, 0 spawns; (4) ten real starts on win32 with the real-runs variable set to 1 and a clean box folder (team new, team new with the scripted executor, team --help, team bogus, team-web, team-web with a bad argument, pixel-office, pixel-office-note with text storing on, e2e): code 2 (pixel-office 1), stdout empty, stderr exactly one refusal line, the box folder empty after each; pixel-office with a bad argument keeps the usage error 2 (parsed before the guard, nothing written); the hook with a valid state folder and a stub listener: fix code 0, 278 ms, stub received 0, folder unchanged; the tag in the same probe: stub received 1 (so the probe can see a send); (5) the read-back with an injected fs, 11 cases for each of ensureHome and ensureStateDir (chmod that does nothing, chmod that works, read error EIO, vanished folder, a symlink after chmod, chmod EPERM, non-directory, 0750, 0500, 0000, already 0700): refusal in every case where the mode is wider than 0700 or unknown; the real fs of this PC: E_HOME (now 0666) and E_STATE_DIR (now 0666), the false notice is gone.",
+    "findings": [
+      {
+        "place": "tools/src/team/home.js, ensureHome, the new read-back (the test wider(after, DIR_MODE))",
+        "item": "Q6 / AP-014",
+        "severity": "LOW",
+        "blocking": false,
+        "what": "The read-back refuses only a mode wider than 0700, so a mode narrower than 0700 after chmod (0500, 0000) is accepted and the notice about narrowing to 0700 is then not true. ensureStateDir in state-dir.js requires exactly 0700 and refuses the same case, so the two neighbouring read-backs differ (AP-014). Not reachable on a normal Linux or macOS file system; probed only with an injected fs.",
+        "fix": "Optional: compare with exactly 0700 in ensureHome, as ensureStateDir does; or leave it and record. No safety effect: a narrower folder is not a leak."
+      },
+      {
+        "place": "tools/src/team/engine/channel.js:609 (prepareDir), team/files.js:100, team/lock.js:182, team/store.js:626-639, pixel-office/journal.js:69",
+        "item": "Q6 / AP-014",
+        "severity": "LOW",
+        "blocking": false,
+        "what": "Other places that set a mode still do not read it back. Already named by the design as limit 2: on win32 each is behind the entry refusal, and on Linux and macOS a file system that keeps no modes is refused earlier by the folder read-back of the home and the state folder. A file system mounted later inside a checked folder is not covered.",
+        "fix": "None for this fix; record as the follow-up the design offers (limit 2)."
+      },
+      {
+        "place": "tools/src/cli.js and the thin client (apply.js write phase, snapshot, prepare-run)",
+        "item": "Q10",
+        "severity": "INFO",
+        "blocking": false,
+        "what": "The thin client still runs on win32 with no guard (REQ-110 criterion 15; the O_NOFOLLOW fallback is the open LOW ISS-0144). It holds no reference to platform-guard (grep, exit 1). Not a defect of this fix.",
+        "fix": "None."
+      }
+    ],
+    "self_check": [
+      {
+        "command": "git rev-parse HEAD; git diff --quiet HEAD -- tools; blob hashes of the 14 changed files piped to sha256sum, at the start and at the end",
+        "output": "HEAD b76ca6e5855b8902df21dc97edecb581b2f1a827; the tools working tree equals HEAD; sha256 of the 14 blob hashes 5014726ef48de9019f3aa5f2bf701fc220752ef0b74a7fbd228c077299df7aef at the start and at the end (identical): the code did not change during the check"
+      },
+      {
+        "command": "grep over the added lines of the diff for secret, token, api key, password, bearer, private key; the same kind of grep over pixel-office/public, web/public, picker/public",
+        "output": "one match: a README prose line with the word secret (a description of the Pixel Office folder, no value); page folders: no match"
+      },
+      {
+        "command": "grep -rl platform-guard tools/src/cli.js tools/src/traces tools/src/handoffs tools/src/picker tools/src/pixel-office/public; git diff --name-only ... | grep -c public/",
+        "output": "nothing (exit 1); 0 changed files under a public folder"
+      },
+      {
+        "command": "grep -rn spawn and child_process in tools/src; grep -rn platform in tools/src",
+        "output": "spawn sites: claude-cli.js (guarded by check, first rule), traces/git-files.js and handoffs/git-history.js (thin client, git reads); io.platform is read only in claude-cli.js check() and set by no production code"
+      },
+      {
+        "command": "own probe scripts under <scratch>: rule oracle, hostile refusal line, guard writers, check() io.platform, run() spawn spy, ten real win32 starts, the hook with a stub on the fix and on the tag, the read-back with an injected fs and with the real fs",
+        "output": "0 oracle mismatches; no control character in any line; 10 starts refused with one line and an empty box; hook stub 0 on the fix and 1 on the tag; the read-back refuses every wider or unknown mode"
+      },
+      {
+        "command": "npm run check, node --test, the tools test scripts, e2e",
+        "output": "not run on this PC (decisions/0110, 0127, 0129); left to GitHub; the must_be_proved_on_github list of the fixer stands, the tests PLT-01..15 and HK-41/42 are step 06"
+      }
+    ],
+    "issues": [
+      {
+        "kind": "NOTE",
+        "text": "No port of 4780-4782 or 4790 touched; I started no server; every child ended by itself or by its timeout; the one stub listener of the hook probe bound port 0 and was closed. My clone sits under <scratch> and was moved between the tag and b76ca6e only inside it."
+      },
+      {
+        "kind": "NOTE",
+        "text": "For ORCH: the two LOW findings do not block. If the read-backs should be equal (AP-014), the first is a one-line change in home.js for CODE-FIXER with a re-check here; otherwise record both as limits."
+      }
+    ],
+    "artifacts_out": []
+  }
+}

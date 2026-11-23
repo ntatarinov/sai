@@ -1,0 +1,69 @@
+{
+  "handoff_id": "step05-code-ISS-0132-20261123-01",
+  "run_id": "ISS-0132-20261123-01",
+  "workflow_id": "WF-03",
+  "step": "05",
+  "from_agent": "ORCH",
+  "to_agent": "REVIEWER",
+  "file": "handoffs/ISS-0132-20261123-01/step-05-reviewer-code.json",
+  "status": "COMPLETED",
+  "priority": "NORMAL",
+  "context": {
+    "requirement_ids": [
+      "REQ-110"
+    ],
+    "agent_run_id": null,
+    "artifacts_in": [
+      "git diff base/ISS-0132-20261123-01 b76ca6e -- tools/ (the fix: 14 files)",
+      "docs/design/ISS-0132-platform-guard.md and its gate handoff step-03b (L1-L4)",
+      "handoffs/ISS-0132-20261123-01/step-04-code-fixer.json (probe results; the note for REVIEWER about comments)",
+      "docs/requirements.yaml REQ-110 criteria 12-19; docs/workflows/WF-03-defect.md step 5 and WF-02 steps 3-4"
+    ],
+    "base_tag": "base/ISS-0132-20261123-01",
+    "parallel_work_now": [
+      "the other reviewer of step 05 (read only)",
+      "M2AUTH-20261123-01 design gate (app/ read only)"
+    ],
+    "write_set": [
+      "handoffs/ISS-0132-20261123-01/step-05-reviewer-code.json (result only)"
+    ]
+  },
+  "task": {
+    "description": "WF-03 step 5, REVIEWER gate over the fix of ISS-0132 (read only): the code does exactly what the design says and nothing more (every change traced to a design section; any line outside it is a finding); the hook's drop is the first statement of run() (validator L3); the module has no word `import` (L1); the comments the fixer added hold no word that the repository's word-scanning tests forbid (read those tests and run their rule over the changed files with your own read-only script cut from them, not the test files); naming, errors and messages as the neighbouring code; prettier and eslint pass on the changed files (you may run them: they only read). PASS or FAIL with findings by severity. Be economical. RULES OF THIS PC (decisions/0110, 0127, 0129): do NOT run npm run check, cd app && npm run ..., node --test, the tools test scripts or the e2e tests; the record of a test run is read from GitHub with gh run view (read-only). Allowed: cd tools && npm run -s traces and handoffs-check; read-only git and gh; your own scripts and fresh clones (git clone -c core.autocrlf=false, npm ci) only in your own folder under <scratch> (the real path is in the message that launched you). Node 22 first on PATH (<node22>). A server you start binds port 0 or a free high port and is stopped by its exact process id; never bind, probe or stop the ports 4780, 4781, 4782 and 4790. One browser at a time on this PC. No git commit, push, pull, checkout, stash, reset or tag. LF line endings. Never write the name of the reference product, nor a path of this computer, into a Sai file or a handoff (write <scratch> or <outside the project>). Fill only the result of your handoff; the top-level status stays PENDING and completed_at null: ORCH closes. English.",
+    "acceptance_criteria": []
+  },
+  "created_at": "2026-11-23T18:17:00Z",
+  "started_at": "2026-11-23T18:17:15Z",
+  "completed_at": "2026-11-23T18:19:58Z",
+  "result": {
+    "status": "COMPLETED",
+    "verdict": "PASS",
+    "summary": "WF-03 step 5, REVIEWER, read only, over git diff base/ISS-0132-20261123-01 b76ca6e -- tools/ (13 changed files + the new module platform-guard.js = the 14 files of the write set), read in full against docs/design/ISS-0132-platform-guard.md and the gate step-03b. Verdict derived from my own reading (AP-018). Q1 cause: the fix refuses at the entry (G1-G5, floor guard first, guard is the next statement in the same function; pixel-office after its help branch, note after its help branch), the second layer is check() rule 1 in claude-cli.js, and the mode is read back after chmod in ensureHome and ensureStateDir with a refusal (E_HOME, E_STATE_DIR) and the notice pushed only after the read-back holds; nothing is swallowed, no symptom is hidden (the only swallowed write is the guard's own stderr write, as in node-floor.js). Q2 design/decisions: every changed line traces to a design section (2, 3.1, 3.2, 4, 5, 6); the texts (module line, E_PLATFORM rows in EXECUTOR_MESSAGES, PREFLIGHT_CODES, WHY_NOT_STARTED, the two read-back messages, the README section Platforms and the two rights lines) are word for word as in the design; the three parallel E_ tables (errors.js, api.js, texts.js) all carry E_PLATFORM (AP-014); Node 22, ES modules, no dependencies (0002) kept; nothing ported to Windows (0127, 0134). Hook: the drop (await import of the guard, then return when unsupported) is the first statement of run(), before config.js, stdin, resolveStateDir, readSecret and the request, so the L3 place is right; a failed import ends in the existing catch and quit(). Module: no word `import`, no `node:`, no process.env or fs (grep empty), `process.platform` only as the default of the guard's second argument; the fixer's comments there honour L1. Q3 extras: none; no generalisation, no setting, no test file touched; the file list equals the write set. Q4 quality bar: grep for skip, todo, eslint-disable, `|| true` over the added lines is empty; no check step touched. Word-scanning tests (CTL-1c, CTL-5a, WEB-9d, WEB-14, TM-49, TR-4b, TR-4c, E2K-02, NF-01 and the 22.n.n rule), applied by my own read-only grep to the added lines of src and test/e2e: no appendFile, writeFile, createWriteStream, openSync, rename, inbox, child_process, channel, engineHolder, deliver, node:http/https/net/tls/dgram, fetch(, require(, sqlite, 22.n.n, URLs; web files hold only the three single-row edits. Q5 idiom: naming, error classes and messages as the neighbours (homeError, StateDirError, executorError, Russian texts); prettier --check and eslint --max-warnings 0 pass on the 13 JS files and on README.md; npm run -s traces 0 (3002 files, 0 traces), handoffs-check 0 violations. Tests are not run here (decisions/0110); their record is the GitHub run (design section 15). For TEST-DESIGNER: PLT-04 (no `import` word in the module, comments included) is green on my grep; HK-41 should keep the drop first (before config and state); the read-back rows need an fsImpl that ignores chmod (design 9.1); the platform seam of check() is `io.platform ?? process.platform`.",
+    "findings": [
+      {
+        "id": "R1",
+        "severity": "Low",
+        "blocks": false,
+        "place": "tools/README.md lines 327 and 335-339 (the text of `run` refusals and the section Conditions of real runs); tools/src/pixel-office/note.js lines 255-257 (comment of main)",
+        "what": "The lists of refusal conditions of the real executor name E_EXECUTOR, E_REAL_RUNS_OFF, E_NO_BUDGET ... but not the new first rule E_PLATFORM (and the exit-code lists do not name the platform code). The design section 17 names this as outdated outside the work and leaves it to DOC-UPDATER, and the fixer followed the design (section 6 gives only the Platforms section and two rights lines), so this is not a deviation of the fix. Statement 'a real run begins only if all conditions are met' is still true, the list is incomplete.",
+        "fix": "DOC-UPDATER at step 10: add E_PLATFORM to the refusal list of line 327 and the conditions list, as the design section 17 says."
+      }
+    ],
+    "self_check": [
+      "git diff base/ISS-0132-20261123-01 b76ca6e -- tools/ read in full (13 files + platform-guard.js); design sections 2-6, 13-17 and the gate findings L1-L4 read",
+      "grep -nE 'import|node:|process.env|fs' tools/src/platform-guard.js: empty; process.platform elsewhere: hook.js:74 and claude-cli.js:117 only (plus the module's default argument)",
+      "grep over added lines (appendFile|writeFile|createWriteStream|openSync|rename|inbox|child_process|channel|engineHolder|node:(https|net|tls|dgram|http)|fetch(|deliver|require(|sqlite|22.n.n|https?://|todo|skip|eslint-disable|'|| true'): empty",
+      "prettier --check on the 13 changed JS files and on README.md: All matched files use Prettier code style; eslint --max-warnings 0 on the 13 JS files: code 0",
+      "cd tools && npm run -s traces: files 3002, traces 0, code 0; npm run -s handoffs-check: files 1622, violations 0, code 0",
+      "no CR in the diff (LF); git status: only the handoffs of this run and M2AUTH are untracked, no repository file changed by me"
+    ],
+    "issues": [
+      {
+        "kind": "DOC",
+        "at": "2026-11-23T18:19:00Z",
+        "text": "R1: README lines 327 and 335-339 and the note.js comment do not name E_PLATFORM / the platform exit code; design section 17 already assigns this to DOC-UPDATER at step 10. No proposal against a decision in decisions/."
+      }
+    ],
+    "artifacts_out": []
+  }
+}
