@@ -103,8 +103,8 @@ jobs:
         run: node -v
       - name: Make the passwords of this run
         run: |
-          for name in POSTGRES_PASSWORD APP_DB_PASSWORD; do
-            pw="$(openssl rand -hex 24)"
+          for name in POSTGRES_PASSWORD APP_DB_PASSWORD SECRET_PEPPER; do
+            pw="$(openssl rand -hex 32)"
             echo "::add-mask::$pw"
             echo "$name=$pw" >> "$GITHUB_ENV"
           done
@@ -126,8 +126,8 @@ jobs:
         run: test "$(curl -sS -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8080/api/demo/questionnaire?lang=ru')" = "200"
       - name: The web container does not run as root
         run: test "$(docker compose -f app/compose.yaml exec -T web id -u)" != "0"
-      - name: Migration 0001 is recorded
-        run: test "$(docker compose -f app/compose.yaml exec -T db psql -U postgres -d sai -Atc 'select name from schema_migrations')" = "0001_init.sql"
+      - name: Every migration is recorded
+        run: test "$(docker compose -f app/compose.yaml exec -T db psql -U postgres -d sai -Atc 'select name from schema_migrations order by name')" = "$(ls app/db/migrations | sort)"
       - name: The app connects as sai_app_login only
         run: |
           curl -sS -o /dev/null http://127.0.0.1:8080/api/health
@@ -143,6 +143,99 @@ jobs:
       - name: Stop the containers
         if: always()
         run: docker compose -f app/compose.yaml down -v
+
+  # The migration rehearsal (REQ-120 criterion 3; ARCH §20.4; the code design M2AUTH, 6.3): database A from the
+  # previous migrations and their seeds, a logical dump restored into B and compared, then B migrated to the
+  # newest migration, seeded and compared in the previous-schema mode, and the app started on B.
+  migration-rehearsal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Get the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Node 22.23.4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.23.4"
+          package-manager-cache: false
+      - name: Node version
+        run: node -v
+      - name: Install the app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Make the passwords of this run
+        run: |
+          for name in POSTGRES_PASSWORD APP_DB_PASSWORD SECRET_PEPPER; do
+            pw="$(openssl rand -hex 32)"
+            echo "::add-mask::$pw"
+            echo "$name=$pw" >> "$GITHUB_ENV"
+          done
+      - name: Start Postgres 17
+        run: |
+          docker run -d --name sai-reh -e POSTGRES_PASSWORD -p 127.0.0.1:5433:5432 postgres:17@sha256:0d938e975177bef9f1f61f3f9dbcf2e0aa0a139568f66d3415ed8892eb97f6ac
+          for i in $(seq 1 60); do docker exec sai-reh pg_isready -U postgres -d postgres -h 127.0.0.1 && exit 0; sleep 1; done
+          exit 1
+      - name: Create the databases a and b
+        run: |
+          docker exec sai-reh createdb -U postgres a
+          docker exec sai-reh createdb -U postgres b
+      - name: The previous set of migrations
+        run: |
+          mkdir "$RUNNER_TEMP/prev"
+          for name in $(ls app/db/migrations | sort | head -n -1); do cp "app/db/migrations/$name" "$RUNNER_TEMP/prev/$name"; done
+          ls "$RUNNER_TEMP/prev"
+      - name: Migrate A with the previous set
+        working-directory: app
+        run: MIGRATIONS_DIR="$RUNNER_TEMP/prev" DATABASE_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/a" node server/db/migrate.js
+      - name: Seed A
+        run: |
+          for name in $(ls "$RUNNER_TEMP/prev" | sort); do
+            docker exec -i sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d a -f - < "app/test/fixtures/rehearsal/$name"
+          done
+      - name: openssl is in the pinned image
+        run: docker exec sai-reh openssl version
+      - name: pg_dump of A
+        run: docker exec sai-reh pg_dump --format=custom --no-owner --no-acl -U postgres -d a -f /tmp/a.dump
+      - name: pg_restore into B
+        run: docker exec sai-reh pg_restore --no-owner --no-acl -U postgres -d b /tmp/a.dump
+      - name: db-verify A and B
+        working-directory: app
+        run: SAI_VERIFY_A_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/a" SAI_VERIFY_B_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node scripts/db-verify.js
+      - name: Migrate B to the newest migration
+        working-directory: app
+        run: DATABASE_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node server/db/migrate.js
+      - name: Seed B with the newest seed
+        run: |
+          name="$(ls app/db/migrations | sort | tail -n 1)"
+          docker exec -i sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d b -f - < "app/test/fixtures/rehearsal/$name"
+      - name: db-verify A and B in the previous-schema mode
+        working-directory: app
+        run: SAI_VERIFY_A_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/a" SAI_VERIFY_B_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" node scripts/db-verify.js --previous-schema
+      - name: Every table of B has a row
+        run: docker exec sai-reh psql -v ON_ERROR_STOP=1 -U postgres -d b -c 'do $ declare t text; n bigint; begin for t in select table_name from information_schema.tables where table_schema = $s$public$s$ and table_type = $s$BASE TABLE$s$ loop execute format($f$select count(*) from public.%I$f$, t) into n; if n = 0 then raise exception $m$a public table has no row$m$; end if; end loop; end $'
+      - name: Start the app on B
+        working-directory: app
+        run: |
+          NODE_ENV=production PORT=18080 HOST=127.0.0.1 DATABASE_URL="postgres://postgres:$POSTGRES_PASSWORD@127.0.0.1:5433/b" APP_ORIGIN=http://127.0.0.1:18080 PREVIEW_ORIGIN=http://localhost:18080 nohup node server/node-main.js > "$RUNNER_TEMP/app.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/app.pid"
+      - name: The selfcheck passed on B
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:18080/api/health | grep -q '"role":"ok"'; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Smoke against the app on B
+        working-directory: app
+        run: node scripts/smoke.js --base http://127.0.0.1:18080 --preview http://localhost:18080
+      - name: Stop the app and remove the database
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/app.pid" ]; then kill "$(cat "$RUNNER_TEMP/app.pid")"; fi
+          if [ -f "$RUNNER_TEMP/app.log" ]; then tail -n 50 "$RUNNER_TEMP/app.log"; fi
+          if docker inspect sai-reh > /dev/null 2>&1; then docker exec sai-reh rm -f /tmp/a.dump; docker rm -f sai-reh; fi
 
   e2e:
     runs-on: ubuntu-24.04

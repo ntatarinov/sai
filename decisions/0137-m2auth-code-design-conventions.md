@@ -46,3 +46,10 @@ CODE-DESIGN-VALIDATOR gave FAIL (`handoffs/M2AUTH-20261123-01/step-01b-code-desi
 - **О15** REQ-114 criterion 1 names scrypt N = 2^15 and the form `scrypt$15$8$1$`; the Addition above sets N = 2^17. REQ-114 is amended by a micro-amendment (N = 2^17, `scrypt$17$8$1$`, the memory limit 160 MiB measured by the designer) before step 2; the meaning of the criterion (one fixed, recorded parameter set at or above the OWASP minimum) does not change.
 - **О16** The common-password tests (PW-4, SU-5, RS-2) count under REQ-114 criterion 1 (the password rule), not as a criterion of their own.
 - **N2b, form of the list (gate of the scrypt amendment, B-1)** The common-password list is data in a JavaScript module `app/server/auth/common-passwords.js` (a frozen set of strings, generated once from the named source, with the source and licence in its header comment), not a `.txt` file: the import-boundary rule of `app/test/unit/import-boundaries.test.js` refuses non-`.js` files under `server/`, and that guard stays unchanged.
+
+## Addition 3 — divergences reported at step 2, 2026-11-24
+
+- **I1** The closed label list of the pepper-derived keys (design 4.9.1) gets the label `acct` that 4.9.5 uses; accepted as written by BACKEND-DEV in `keys.js`.
+- **I2** `AUTH_CODES` has 23 codes (design 4.8 rules over the count of 5.3); every code has a text key (FRONTEND-DEV wrote all 23).
+- **Pages and the kk region** Each new page carries exactly one `sai:kk` region around its kk button, as the five existing pages do; the guard edit A6 of the design («no region») is read as «no kk outside the one region», and TEST-DESIGNER writes it so at step 5. The setup page's language select offers ru and en only (kk stays hidden, G9).
+- **Turning TOTP off takes two codes** (the re-auth consumes one step) — accepted as designed; the page says so.

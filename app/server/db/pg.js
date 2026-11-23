@@ -13,6 +13,11 @@ import { toDbError } from "./index.js";
 // its effect behind the Neon pooler is not measured (spike S3).
 export const QUERY_TIMEOUT_MS = 3000;
 
+// The client-side limit of the COMMIT of a request transaction (the code design M2AUTH, 4.5.1 and 4.5.2):
+// the request waits at most this long for the COMMIT's answer after its deadline guard passed, so the
+// worst answer comes at 4000 + 900 ms.
+export const COMMIT_LIMIT_MS = 900;
+
 /**
  * @param {string} url
  * @param {{ connectTimeoutMs: number, max?: number }} options
@@ -43,6 +48,48 @@ export function createPgAdapter(url, { connectTimeoutMs, max = 3 }) {
       } catch (err) {
         throw toDbError(err);
       }
+    },
+    // One connection of the pool between BEGIN and COMMIT. On any throw the transaction is rolled back and
+    // the connection is dropped (release(true)), so a broken or silent connection never returns to the
+    // pool. The throw of `fn` goes on unchanged; a failure of BEGIN, COMMIT or the connect is a DbError.
+    async transaction(fn) {
+      /** @type {pg.PoolClient} */
+      let client;
+      try {
+        client = await pool.connect();
+      } catch (err) {
+        throw toDbError(err);
+      }
+      /** @param {string | pg.QueryConfig} statement @param {unknown[]} [params] */
+      const run = async (statement, params) => {
+        try {
+          const r = await client.query(statement, params);
+          return { rows: r.rows };
+        } catch (err) {
+          throw toDbError(err);
+        }
+      };
+      let value;
+      try {
+        await run("begin");
+        value = await fn({ query: (text, params) => run(text, params) });
+        await run(
+          /** @type {pg.QueryConfig} */ ({
+            text: "commit",
+            query_timeout: COMMIT_LIMIT_MS,
+          }),
+        );
+      } catch (err) {
+        // Not awaited: the answer does not wait for the ROLLBACK of a silent connection (which has its own
+        // statement limit); the connection is dropped once it settles, and dropping it rolls back as well.
+        void client
+          .query("rollback")
+          .catch(() => {})
+          .finally(() => client.release(true));
+        throw err;
+      }
+      client.release();
+      return value;
     },
     async close() {
       await pool.end();

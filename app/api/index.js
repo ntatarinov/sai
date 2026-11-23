@@ -1,10 +1,11 @@
-import { createFunctionApp } from "../server/app.js";
+import { createFunctionApp, vercelClientIp } from "../server/app.js";
 import { ConfigError, readConfig } from "../server/config.js";
 
 // The Vercel entry (decisions/0116 О4): one function behind the one rule of vercel.json that sends /api and
 // /api/<path> to /api/index?__p=<path> (an explicit `routes` table since spike S1).
 // It restores the path from __p, keeps the other query parameters and calls the app. Its shape (a default
-// export with fetch) is confirmed by spike S1.
+// export with fetch) is confirmed by spike S1. Every call of the app carries the client address that the
+// platform sets in x-forwarded-for, when it is exactly one IP literal (the code design M2AUTH, 4.10, C8).
 
 const SEGMENT = /^[A-Za-z0-9._~-]+$/;
 const MAX_P = 2048;
@@ -25,10 +26,10 @@ export function restorePath(url) {
 }
 
 /**
- * @param {() => Promise<{ fetch: (r: Request) => Response | Promise<Response> }>} makeApp
+ * @param {() => Promise<{ fetch: (r: Request, env?: { clientIp: string | null }) => Response | Promise<Response> }>} makeApp
  */
 export function createEntry(makeApp) {
-  /** @type {Promise<{ fetch: (r: Request) => Response | Promise<Response> }> | null} */
+  /** @type {Promise<{ fetch: (r: Request, env?: { clientIp: string | null }) => Response | Promise<Response> }> | null} */
   let appPromise = null;
   return {
     /** @param {Request} request */
@@ -53,8 +54,9 @@ export function createEntry(makeApp) {
           },
         });
       }
+      const env = { clientIp: vercelClientIp(request.headers) };
       const url = new URL(request.url);
-      if (url.pathname !== "/api/index") return app.fetch(request);
+      if (url.pathname !== "/api/index") return app.fetch(request, env);
       const path = restorePath(url);
       const target = new URL(url.origin);
       target.pathname = path ?? "/api/index";
@@ -71,6 +73,7 @@ export function createEntry(makeApp) {
             duplex: "half",
           }),
         ),
+        env,
       );
     },
   };
